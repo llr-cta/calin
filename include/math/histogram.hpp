@@ -1,0 +1,680 @@
+#pragma once
+
+#include <string>
+#include <algorithm>
+#include <deque>
+#include <cmath>
+#include <limits>
+#include <iterator>
+
+#include "proto/histogram.pb.h"
+#include "math/accumulator.hpp"
+
+// This class has some changes/improvements over the VERITAS ChiLA
+// implementation.  They are motivated by our preference for
+// simplicity over "speed at all costs", and desire for mathematical
+// rigor.
+
+// Major changes are:
+// - Remove temlated type for binned variable - now only double is supported
+// - Use deque instead of two vectors for simplicity (and to remove
+//   inconsistency in rounding at the bin edges). If this turns out to not
+//   be fast enough a custom double-ended vector would be the solution.
+// - Support diffrent accumulators for bin weights. SimpleAccumulator is
+//   sufficient for most cases, but KahanAccumulator may be used if necessary
+// - Include limits as option in this class rather than in separate LimitedHist
+
+// Design has regrettibly evolved from one simple class to include a
+// multitude of base and support classes. It is in danger of becoming
+// overly complexified
+
+namespace calin { namespace math { namespace histogram {
+
+// Base class for one-dimensional binned data -- separated from the
+// actual historam class since it is in common with the integral
+// distribution (CDF) class.
+
+template<typename T, typename Container = std::vector<T>> class BinnedData1D
+{
+ public:
+  using data_type = T;
+  using data_container_type = Container;
+  
+  BinnedData1D(double dxval, double xval_align = 0.5,
+               const std::string& xval_units = std::string{}):
+      dxval_{dxval}, xval_align_{xval_align}, xval_units_{xval_units}
+  { /* nothing to see here */ }
+  BinnedData1D(double dxval, double xval_limit_lo, double xval_limit_hi,
+               double xval_align = 0.5,
+               const std::string& xval_units = std::string{}):
+      dxval_{dxval}, xval_align_{xval_align}, limited_{true},
+      xval_limit_lo_{xval_limit_lo}, xval_limit_hi_{xval_limit_hi},
+      xval_units_{xval_units}
+  { /* nothing to see here */ }
+  
+  // Getters and setters
+  double dxval() const { return dxval_; }
+  double xval_align() const { return xval_align_; }  
+  std::string xval_units() const { return xval_units_; }
+  void set_xval_units(const std::string& units) { xval_units_=units; }
+  double xval0() const { return xval0_; }
+  
+  // Functions to get size of histogram and clear it
+  bool empty() const { return bins_.empty(); }
+  int size() const { return static_cast<int>(bins_.size()); }
+  int nbin() const { return size(); }
+  void clear() { bins_.clear(); overflow_lo_=T{}; overflow_hi_=T{}; }
+
+  // Bin to value and vice-versa
+  double xval_left(int ibin) const { return ibin*dxval_+xval0_; }
+  double xval_right(int ibin) const { return (ibin+1)*dxval_+xval0_; }
+  double xval_center(int ibin) const { return (ibin+0.5)*dxval_+xval0_; }
+  int ibin(double x) const { return std::floor((x-xval0_)/dxval_); }
+  int ibin_and_rem(double x, double& dx) const { int ix = std::floor((x-xval0_)/dxval_); dx = x-xval_left(ix); return ix; }
+  bool has_ibin(int ibin) const { return ibin>=0 and ibin<bins_.size(); }
+  bool has_xval(double x) const
+  {
+    if (x<xval0_)return false;
+    return ibin(x) < bins_.size();
+  }
+  static double xalign_to_center_value(double xval, double dx)
+  {
+    return 0.5-xval+std::round(xval/dx)*dx;
+  }
+  
+  // Limits
+  bool is_limited() const { return limited_; }
+  double xval_limit_lo() const { return xval_limit_lo_; }
+  double xval_limit_hi() const { return xval_limit_hi_; }
+
+ protected:
+  BinnedData1D(double dxval, double xval_align, double xval0,
+               bool limited, double xval_limit_lo, double xval_limit_hi,
+               const std::string& xval_units):
+      dxval_(dxval), xval_align_(xval_align), xval0_(xval0),
+      xval_limit_lo_(xval_limit_lo), xval_limit_hi_(xval_limit_hi),
+      xval_units_(xval_units) { /* nothing to see here */ }
+
+  template<typename iterator>
+  BinnedData1D(double dxval, double xval_align, double xval0,
+               iterator bins_data_begin, iterator bins_data_end,
+               bool limited, double xval_limit_lo, double xval_limit_hi,
+               const T& overflow_lo, const T& overflow_hi,
+               const std::string& xval_units):
+      dxval_(dxval), xval_align_(xval_align), xval0_(xval0),
+      bins_(bins_data_begin, bins_data_end), limited_(limited),
+      xval_limit_lo_(xval_limit_lo), xval_limit_hi_(xval_limit_hi),
+      overflow_lo_(overflow_lo), overflow_hi_(overflow_hi),
+      xval_units_(xval_units) { /* nothing to see here */ }
+
+  // Retrieve value for bin
+  T& bin(int ibin) { return bins_[ibin]; }
+  T& checked_bin(int ibin) { return bins_.at(ibin); }
+  T& overflow_lo() { return overflow_lo_; }
+  T& overflow_hi() { return overflow_hi_; }
+
+  const T& bin(int ibin) const { return bins_[ibin]; }
+  const T& checked_bin(int ibin) const { return bins_.at(ibin); }
+  const T& overflow_lo() const { return overflow_lo_; }
+  const T& overflow_hi() const { return overflow_hi_; }
+
+  T& bin_with_extend(const double x, bool& x_outside_limits)
+  {
+    if(!std::isfinite(x))throw std::out_of_range("bin_with_extend");
+    if(limited_)
+    {
+      if(x < xval_limit_lo_) { x_outside_limits = true; return overflow_lo_; }
+      if(x >= xval_limit_hi_) { x_outside_limits = true; return overflow_hi_; }
+    }
+    x_outside_limits = false;
+    return unchecked_bin_with_extend(x);
+  }
+
+  T& unchecked_bin_with_extend(const double x)
+  {
+    int thebin = bins_.empty() ? -1 : ibin(x);
+    if(thebin < 0)
+    {
+      do {
+        bins_.push_front({});
+        ++thebin;
+      }while(thebin<0);
+      xval0_ = std::floor((x+xval_align_)/dxval_)*dxval_ - xval_align_;
+    }
+    else if(thebin >= bins_.size())
+    {
+      do {
+        bins_.push_back({});
+      }while(thebin >= bins_.size());
+    }
+    return bins_[thebin];
+  }
+
+  T& bin_with_extend_back(const double x, bool& x_outside_limits)
+  {
+    if(!std::isfinite(x))throw std::out_of_range("bin_with_extend_back");
+    if(limited_)
+    {
+      if(x < xval_limit_lo_) { x_outside_limits = true; return overflow_lo_; }
+      if(x >= xval_limit_hi_) { x_outside_limits = true; return overflow_hi_; }
+    }
+    x_outside_limits = false;
+    return unchecked_bin_with_extend_back(x);
+  }
+
+  T& unchecked_bin_with_extend_back(const double x)
+  {
+    if(bins_.empty())
+    {
+      bins_.push_back({});
+      xval0_ = std::floor((x+xval_align_)/dxval_)*dxval_ - xval_align_;
+      return bins_.front();
+    }
+    int thebin { ibin(x) };
+    while(thebin<=bins_.size())bins_.push_back({});
+    return bins_[thebin];
+  }
+
+  double dxval_           = 1.0;
+  double xval_align_      = 0.5;
+  double xval0_;
+  Container bins_;
+  bool limited_           = false;
+  double xval_limit_lo_   = -std::numeric_limits<double>::infinity();
+  double xval_limit_hi_   = std::numeric_limits<double>::infinity();
+  T overflow_lo_          = {};
+  T overflow_hi_          = {};
+  std::string xval_units_;
+};
+
+// ============================================================================
+//
+// Bin accessor and iterator -- the accessor provides default access to the
+// x-value of the bin and its bin number. Sub-classes should provide access to
+// the data itself in whatever way is meaningful
+//
+// ============================================================================
+
+template<typename DataBinner> class basic_bin_accessor
+{
+ public:
+  using data_binner_type = DataBinner;
+  using data_type = typename DataBinner::data_type;
+  basic_bin_accessor(DataBinner& binner, int ibin): binner_{&binner},ibin_{ibin} {}
+  double dxval() const { return binner_->dxval(); }
+  double xval_left() const { return binner_->xval_left(ibin_); }
+  double xval_right() const { return binner_->xval_right(ibin_); }
+  double xval_center() const { return binner_->xval_center(ibin_); }
+  int ibin() const { return ibin_; }
+  bool has_bin() const { return binner_->has_ibin(ibin_); }
+ protected:
+  const data_type& data() const { return binner_->bin(ibin_); }
+  data_type& data() { return binner_->bin(ibin_); }
+  DataBinner* binner_;
+  int ibin_;
+};
+
+template<typename DataBinner,
+         typename bin_accessor = basic_bin_accessor<DataBinner> >
+class basic_iterator:
+      public std::iterator<std::random_access_iterator_tag,
+                           bin_accessor, int, bin_accessor*, bin_accessor&>,
+      protected bin_accessor
+{
+ public:
+  using bin_accessor_type = bin_accessor;
+  using data_binner_type = DataBinner;
+  using data_type = typename bin_accessor::data_type;
+  
+  basic_iterator(DataBinner& data, int ibin):
+      bin_accessor {data,ibin} {}
+  
+  bin_accessor* operator->() { return this; }
+  bin_accessor& operator*() { return *this; }
+  
+  basic_iterator& operator++() { ++this->ibin_; return *this; }
+  basic_iterator operator++(int) { basic_iterator i=*this; ++this->ibin_; return i; }
+  basic_iterator& operator--() { --this->ibin_; return *this; }
+  basic_iterator operator--(int) { basic_iterator i=*this; --this->ibin_; return i; }
+  basic_iterator& operator+=(int ibin) { this->ibin_+=ibin; return *this; }
+  basic_iterator& operator-=(int ibin) { this->ibin_-=ibin; return *this; }
+  basic_iterator operator+(int ibin) const { basic_iterator i(*this); i+=ibin; return i; }
+  basic_iterator operator-(int ibin) const { basic_iterator i(*this); i-=ibin; return i; }
+  int operator-(const basic_iterator& o) { return this->ibin_ - o.ibin_; }
+  bool operator!=(const basic_iterator& o) const { return this->ibin_ != o.ibin_; }
+  bool operator==(const basic_iterator& o) const { return this->ibin_ == o.ibin_; }
+  bool operator<(const basic_iterator& o) const { return this->ibin_ < o.ibin_; }
+  bool operator<=(const basic_iterator& o) const { return this->ibin_ <= o.ibin_; }
+  bool operator>(const basic_iterator& o) const { return this->ibin_ > o.ibin_; }
+  bool operator>=(const basic_iterator& o) const { return this->ibin_ >= o.ibin_; }
+};
+
+// ============================================================================
+//
+// One-dimensional histogram class templated by accumulator
+//
+// ============================================================================
+
+template<typename Acc> class BasicHistogram1D:
+      public BinnedData1D<Acc, std::deque<Acc>>
+{
+  using Base = BinnedData1D<Acc, std::deque<Acc>>;
+ public:
+  using accumulator_type = Acc;
+
+  class bin_accessor : public basic_bin_accessor<BasicHistogram1D>
+  {
+   public:
+    using basic_bin_accessor<BasicHistogram1D>::basic_bin_accessor;
+    double weight() const { return this->binner_->weight(this->ibin_); }
+  };
+
+  class const_bin_accessor : public basic_bin_accessor<const BasicHistogram1D>
+  {
+   public:
+    using basic_bin_accessor<const BasicHistogram1D>::basic_bin_accessor;
+    double weight() const { return this->binner_->weight(this->ibin_); }
+  };
+
+  using iterator =
+      basic_iterator<BasicHistogram1D,bin_accessor>;
+  using reverse_iterator = std::reverse_iterator<iterator>;
+
+  using const_iterator =
+      basic_iterator<const BasicHistogram1D,const_bin_accessor>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+  BasicHistogram1D(double dxval, double xval_align = 0.5,
+                   const std::string& name = std::string{},
+                   const std::string& xval_units = std::string{},
+                   const std::string& weight_units = std::string{}):
+      Base(dxval, xval_align, xval_units), 
+      name_{name}, weight_units_{weight_units} { /* nothing to see here */ }
+
+  BasicHistogram1D(double dxval, double xval_limit_lo, double xval_limit_hi,
+                   double xval_align = 0.5,
+                   const std::string& name = std::string{},
+                   const std::string& xval_units = std::string{},
+                   const std::string& weight_units = std::string{}):
+      Base(dxval, xval_limit_lo, xval_limit_hi, xval_align, xval_units),
+      name_{name}, weight_units_{weight_units}
+  { /* nothing to see here */ }
+
+  BasicHistogram1D(data::Histogram1DData& data);
+
+  // Get all data as protobuf message
+  data::Histogram1DData* getData(data::Histogram1DData* data = nullptr) const;
+  
+  // Getters and setters
+  std::string name() const { return name_; }
+  std::string weight_units() const { return weight_units_; }
+  void set_name(const std::string& name) { name_=name; }
+  void set_weight_units(const std::string& units) { weight_units_=units; }
+  
+  // Functions to get size of histogram and clear it
+  void clear() { this->clear(); sum_w_={}; sum_wx_={}; sum_wxx_={}; }
+  
+  // Accumulate weight for x value
+  inline bool accumulate(const double x, const double w = 1.0);
+
+  // Retrieve value for bin
+  double weight(int ibin) const { return this->bin(ibin).total(); }
+  double checked_weight(int ibin) const { return this->checked_bin(ibin).total(); }
+  double weight_overflow_lo() const { return this->overflow_lo().total(); }
+  double weight_overflow_hi() const { return this->overflow_hi().total(); }
+  
+  // Raw access to the accumulators
+  accumulator_type& accumulator(int ibin) { return this->bin(ibin); }
+  const accumulator_type& accumulator(int ibin) const { return this->bin(ibin); }
+  accumulator_type& checked_accumulator(int ibin) { return this->checked_bin(ibin); }
+  const accumulator_type& checked_accumulator(int ibin) const { return this->checked_bin(ibin); }
+  
+  // Accessors
+  bin_accessor accessor(int ibin) { return bin_accessor{*this,ibin}; }
+  const const_bin_accessor accessor(int ibin) const { return const_bin_accessor{*this,ibin}; }
+  
+  // Iterator functions
+  iterator begin() { return iterator{*this, 0}; }
+  iterator end() { return iterator{*this, this->size()}; }
+  reverse_iterator rbegin() { return reverse_iterator{end()}; }
+  reverse_iterator rend() { return reverse_iterator{begin()}; }
+
+  const_iterator begin() const { return const_iterator{*this, 0}; }
+  const_iterator end() const { return const_iterator{*this, this->size()}; }
+  const_iterator cbegin() const { return const_iterator{*this, 0}; }
+  const_iterator cend() const { return const_iterator{*this, this->size()}; }
+  const_reverse_iterator crbegin() const { return const_reverse_iterator{end()}; }
+  const_reverse_iterator crend() const { return const_reverse_iterator{begin()}; }
+
+  // Moments
+  double sum_w() const { return sum_w_.total(); }
+  double sum_wx() const { return sum_wx_.total(); }
+  double sum_wxx() const { return sum_wxx_.total(); }
+  double mean() const { return sum_wx()/sum_w(); }
+  double var() const { return sum_wxx()/sum_w()-mean()*mean(); }
+  double std() const { return std::sqrt(var()); }
+
+  // Sum function over bins  
+  template<typename Fcn, typename IntAcc = Acc>
+      double summation(const Fcn& fcn) const {
+    IntAcc acc;
+    for(auto& ibin : *this)
+      acc.accumulate(fcn(ibin.xval_center(), ibin.weight()));
+    return acc.total();
+  }
+
+  // Integrate function over bins
+  template<typename Fcn, typename IntAcc = Acc>
+      double integrate(const Fcn& fcn) const {
+    return summation<Fcn,IntAcc>(fcn)*this->dxval_;
+  }
+
+  template<typename Fcn> void visit_bins(const Fcn& fcn) const {
+    for(auto ibin : *this)fcn(ibin.xval_center(), ibin.weight()); }
+
+  // Equality test
+  bool operator==(const BasicHistogram1D& o) const;
+  
+ private:
+  Acc sum_w_;
+  Acc sum_wx_;
+  Acc sum_wxx_;
+  std::string name_;
+  std::string weight_units_;
+};
+
+template<typename Acc> bool BasicHistogram1D<Acc>::
+accumulate(const double x, const double w)
+{
+  if(!std::isfinite(w))return false;
+  bool x_exceeds_limits { false };
+  Acc& bin { this->bin_with_extend(x, x_exceeds_limits) };
+  if(!x_exceeds_limits)
+  {
+    double wxx { w };
+    sum_w_.accumulate(wxx);
+    sum_wx_.accumulate(wxx *= x);
+    sum_wxx_.accumulate(wxx *= x);
+  }
+
+  bin.accumulate(w);
+  return true;
+}
+
+template<typename Acc>
+BasicHistogram1D<Acc>::BasicHistogram1D(data::Histogram1DData& data):
+    Base(data.dxval(), data.xval_align(), data.xval0(),
+         &(*data.bins().begin()),&(*data.bins().end()), data.limited(),
+         data.xval_limit_lo(), data.xval_limit_hi(),
+         data.overflow_lo(), data.overflow_hi(), data.xval_units()),
+    sum_w_{data.sum_w()}, sum_wx_{data.sum_wx()}, sum_wxx_{data.sum_wxx()},
+    name_{data.name()}, weight_units_{data.weight_units()}
+{
+  // nothing to see here
+}
+
+template<typename Acc> data::Histogram1DData*
+BasicHistogram1D<Acc>::getData(data::Histogram1DData* data) const
+{
+  if(data == nullptr)data = new data::Histogram1DData {};
+  data->set_dxval(this->dxval_);
+  data->set_xval_align(this->xval_align_);
+  data->set_xval0(this->xval0_);
+  data->clear_bins();
+  for(const auto& iacc : this->bins_)data->add_bins(iacc.total());
+  data->set_limited(this->limited_);
+  data->set_xval_limit_lo(this->xval_limit_lo_);
+  data->set_xval_limit_hi(this->xval_limit_hi_);
+  data->set_overflow_lo(this->overflow_lo_.total());
+  data->set_overflow_hi(this->overflow_hi_.total());
+  data->set_sum_w(sum_w_.total());
+  data->set_sum_wx(sum_wx_.total());
+  data->set_sum_wxx(sum_wxx_.total());
+  data->set_name(name_);
+  data->set_xval_units(this->xval_units_);
+  data->set_weight_units(weight_units_);
+  return data;
+}
+
+template<typename Acc>
+bool BasicHistogram1D<Acc>::operator==(const BasicHistogram1D& o) const
+{
+  return
+      this->dxval_ == o.dxval_ and
+      this->xval_align_ == o.xval_align_ and
+      this->xval0_ == o.xval0_ and
+      this->bins_ == o.bins_ and
+      this->limited_ == o.limited_ and
+      this->xval_limit_lo_ == o.xval_limit_lo_ and
+      this->xval_limit_hi_ == o.xval_limit_hi_ and
+      this->overflow_lo_ == o.overflow_lo_ and
+      this->overflow_hi_ == o.overflow_hi_ and
+      sum_w_ == o.sum_w_ and
+      sum_wx_ == o.sum_wx_ and
+      sum_wxx_ == o.sum_wxx_ and
+      name_ == o.name_ and
+      this->xval_units_ == o.xval_units_ and
+      weight_units_ == o.weight_units_;
+}
+
+// ============================================================================
+//
+// PDF and CDF
+//
+// ============================================================================
+
+class CDF: public BinnedData1D<double>
+{
+  using Base = BinnedData1D<double>;
+ public:
+  class const_bin_accessor : public basic_bin_accessor<const CDF>
+  {
+   public:
+    using basic_bin_accessor<const CDF>::basic_bin_accessor;
+    double density() const { return this->binner_->density(this->ibin_); }
+    double cumulative_right() const { return this->binner_->cumulative_right(this->ibin_); }
+    double cumulative_left() const { return this->binner_->cumulative_left(this->ibin_); }
+  };
+  using const_iterator =
+      basic_iterator<const CDF,const_bin_accessor>;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
+  using bin_accessor = const_bin_accessor;
+  using iterator = const_iterator;
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  
+  template<typename Acc> CDF(const BasicHistogram1D<Acc>& hist):
+      Base{hist.dxval(), hist.xval_align(), hist.xval0(),
+        hist.is_limited(), hist.xval_limit_lo(), hist.xval_limit_hi(),
+        hist.xval_units()}
+  {
+    Acc cumsum;
+    for(const auto& ibin : hist)
+    {
+      cumsum.accumulate(ibin.weight());
+      this->bins_.push_back(cumsum.total());
+    }
+    double total_weight = cumsum.total();
+    for(auto& ibin : this->bins_)ibin /= total_weight;
+    overflow_hi_ = 1.0 + hist.weight_overflow_hi() / total_weight;
+    overflow_lo_ = -hist.weight_overflow_lo() / total_weight;
+    set_name(hist.name());
+  }
+
+  // Getters and setters
+  std::string name() const { return name_; }
+  void set_name(const std::string& name) { name_=name; }
+
+  // Statistics
+  template<typename IntAcc = SimpleAccumulator>
+  void moments2(double& m1, double& m2) const {
+    IntAcc ax {};
+    IntAcc axx {};
+    visit_delta([&ax,&axx](double xc, double w){ double wx {w*xc};
+        ax.accumulate(wx); axx.accumulate(wx*xc); });
+    m1 = ax.total();
+    m2 = axx.total();
+  }
+  void mean_and_variance(double& mean, double var) const {
+    moments2(mean,var);
+    var -= mean*mean;
+  }
+  double mean() const {
+    SimpleAccumulator ax {};
+    visit_delta([&ax](double xc, double w){ ax.accumulate(xc*w); });
+    return ax.total();
+  }
+  double variance() const {
+    double mean;
+    double var;
+    mean_and_variance(mean, var);
+    return var;
+  }
+  double rms() const { return std::sqrt(variance()); }
+
+  double median() const { return quantile(0.5); }
+  double quantile(double q) const {
+    auto lhb = this->bins_.cbegin();
+    return quantile_with_lhb(q, lhb);
+  }
+  
+  // Retrieve cumulative at edges of bin and density in bin
+  double cumulative_right(int ibin) const { return this->bin(ibin); }
+  double checked_cumulative_right(int ibin) const { return this->checked_bin(ibin); }
+  double cumulative_left(int ibin) const { return (ibin==0)?0.0:this->bin(ibin-1); }
+  double checked_cumulative_left(int ibin) const { return (ibin==0)?0.0:this->checked_bin(ibin-1); }
+  double cumulative_overflow_lo() const { return this->overflow_lo(); }
+  double cumulative_overflow_hi() const { return this->overflow_hi(); }  
+
+  double density(int ibin) const {
+    double cright = cumulative_right(ibin);
+    double cleft = cumulative_left(ibin);
+    return (cright-cleft)/this->dxval();
+  }
+  
+  double checked_density(int ibin) const {
+    double cright = checked_cumulative_right(ibin);
+    double cleft = cumulative_left(ibin); // no need to recheck
+    return (cright-cleft)/this->dxval();
+  };
+
+  double delta(int ibin) const {
+    double cright = cumulative_right(ibin);
+    double cleft = cumulative_left(ibin);
+    return cright-cleft;
+  }
+  
+  double checked_delta(int ibin) const {
+    double cright = checked_cumulative_right(ibin);
+    double cleft = cumulative_left(ibin); // no need to recheck
+    return cright-cleft;
+  };
+
+  inline double interpolate_cumulative(double xval)
+  {
+    if(this->is_limited())
+    {
+      if(xval<this->xval_limit_lo())return 0.0;
+      if(xval>=this->xval_limit_hi())return 1.0;
+    }
+    int thebin { this->ibin(xval) };
+    if(thebin<0)return 0.0;
+    if(thebin>=this->size())return 1.0;
+    double y0 { thebin==0?0.0:cumulative_left(thebin) };
+    double y1 { cumulative_right(thebin) };
+    double dx = xval - xval_left(thebin);
+    return y0*(1.0-dx) + y1*dx;
+  }   
+
+  // Integration over bins
+
+  template<typename Fcn> void visit_density(const Fcn& fcn) const
+  {
+    double cleft = 0;
+    for(auto ibin : *this)
+    {
+      double cright = ibin.cumulative_right();
+      fcn(ibin.xval_center(), (cright-cleft)/this->dxval_);
+      cleft = cright;
+    }
+  }
+
+  template<typename Fcn> void visit_delta(const Fcn& fcn) const
+  {
+    double cleft = 0;
+    for(auto ibin : *this)
+    {
+      double cright = ibin.cumulative_right();
+      fcn(ibin.xval_center(), cright-cleft);
+      cleft = cright;
+    }
+  }
+
+  template<typename Fcn, typename IntAcc = SimpleAccumulator>
+  double integrate_density(const Fcn& fcn) const
+  {
+    IntAcc acc;
+    double cleft = 0;
+    for(auto& ibin : *this)
+    {
+      double cright = ibin.cumulative_right();
+      acc.accumulate(fcn(ibin.xval_center(), (cright-cleft)/this->dxval_));
+      cleft = cright;
+    }
+    return acc.total()*this->dxval_;
+  }
+
+  template<typename Fcn, typename IntAcc = SimpleAccumulator>
+  double integrate_delta(const Fcn& fcn) const
+  {
+    IntAcc acc;
+    double cleft = 0;
+    for(auto& ibin : *this)
+    {
+      double cright = ibin.cumulative_right();
+      acc.accumulate(fcn(ibin.xval_center(), cright-cleft));
+      cleft = cright;
+    }
+    return acc.total();
+  }
+
+  // Iterator functions
+  iterator begin() { return iterator{*this, 0}; }
+  iterator end() { return iterator{*this, this->size()}; }
+  reverse_iterator rbegin() { return reverse_iterator{end()}; }
+  reverse_iterator rend() { return reverse_iterator{begin()}; }
+
+  const_iterator begin() const { return const_iterator{*this, 0}; }
+  const_iterator end() const { return const_iterator{*this, this->size()}; }
+  const_iterator cbegin() const { return const_iterator{*this, 0}; }
+  const_iterator cend() const { return const_iterator{*this, this->size()}; }
+  const_reverse_iterator crbegin() const {
+    return const_reverse_iterator{end()}; }
+  const_reverse_iterator crend() const {
+    return const_reverse_iterator{begin()}; }
+  
+ protected:
+  double quantile_with_lhb(double q, data_container_type::const_iterator& lhb)
+      const
+  {
+    lhb = std::lower_bound(lhb, this->bins_.cend(), q);
+    int ibin = lhb-this->bins_.cbegin();
+    double y0 = (ibin==0)?0:*(lhb-1);
+    double y1 = *lhb;
+    double x0 = xval_left(ibin);
+    double x1 = xval_right(ibin);
+    return (q-y0)*(x1-x0)/(y1-y0)+x0;
+  }
+
+ protected:
+  std::string name_;
+};
+
+} // namespace histogram
+
+using histogram::BasicHistogram1D;
+using Histogram1D = BasicHistogram1D<SimpleAccumulator>;
+using SimpleHist = Histogram1D;
+using histogram::CDF;
+
+} } // namespace calin::math
