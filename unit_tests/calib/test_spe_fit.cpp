@@ -673,7 +673,7 @@ TEST(SPELikelihood, Minimize_Minuit75)
   std::vector<double> x { 1.0, 3100.0, 20.0, 100.0, 0.45 };
   opt.set_initial_values(x);
   opt.set_scale({ 0.001, 0.1, 0.01, 0.1, 0.001 });
-  opt.find_min(x);
+  opt.minimize(x);
 
   #if 0
   //EXPECT_EQ(status, GSL_SUCCESS);

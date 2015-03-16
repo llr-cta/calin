@@ -25,13 +25,22 @@ class Optimizer
       fcn_(fcn), my_fcn_(adopt_fcn) { /* nothing to see here */ }
   virtual ~Optimizer();
 
-  virtual bool find_min(std::vector<double>& xopt) = 0;
-  virtual bool get_optimizer_error_matrix_estimate(Eigen::MatrixXd& err_mat) = 0;
+  virtual bool requires_gradient() = 0;
+  virtual bool requires_hessian() = 0;
+
+  virtual bool can_estimate_error() = 0;
+  virtual bool can_use_gradient() = 0;
+  virtual bool can_use_hessian() = 0;
+  
+  virtual bool minimize(std::vector<double>& xopt) = 0;
+  virtual bool error_matrix_estimate(Eigen::MatrixXd& err_mat) = 0;
   virtual bool calc_error_matrix(Eigen::MatrixXd& err_mat) = 0;
 
   void set_verbosity_level(VerbosityLevel verbose = VerbosityLevel::SILENT) { verbose_=verbose; }
   void set_initial_values(const std::vector<double>& x0 = {}) { x0_=x0; }
+  void clear_initial_values() { x0_.clear(); }
   void set_scale(const std::vector<double>& xscale = {}) { xscale_=xscale; }
+  void clear_scale() { xscale_.clear(); }
 
  protected:
   bool my_fcn_ { false };

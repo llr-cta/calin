@@ -87,7 +87,32 @@ Minuit75Optimizer::~Minuit75Optimizer()
   delete cast_fcb(fcb_);
 }
 
-bool Minuit75Optimizer::find_min(std::vector<double>& xopt)
+bool Minuit75Optimizer::requires_gradient()
+{
+  return false;
+}
+
+bool Minuit75Optimizer::requires_hessian()
+{
+  return false;
+}
+
+bool Minuit75Optimizer::can_estimate_error()
+{
+  return true;
+}
+
+bool Minuit75Optimizer::can_use_gradient()
+{
+  return true;
+}
+
+bool Minuit75Optimizer::can_use_hessian()
+{
+  return false;
+}
+
+bool Minuit75Optimizer::minimize(std::vector<double>& xopt)
 {
   constexpr auto inf = std::numeric_limits<double>::infinity();
   mn7fcb* fcb { cast_fcb(fcb_) };
@@ -151,8 +176,7 @@ bool Minuit75Optimizer::find_min(std::vector<double>& xopt)
   return true;
 }
 
-bool Minuit75Optimizer::
-get_optimizer_error_matrix_estimate(Eigen::MatrixXd& err_mat)
+bool Minuit75Optimizer::error_matrix_estimate(Eigen::MatrixXd& err_mat)
 {
 
 }

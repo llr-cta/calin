@@ -20,8 +20,15 @@ class Minuit75Optimizer: public Optimizer
   Minuit75Optimizer(MultiAxisFunction* fcn, bool adopt_fcn = false);
   ~Minuit75Optimizer();
 
-  bool find_min(std::vector<double>& xopt) override;
-  bool get_optimizer_error_matrix_estimate(Eigen::MatrixXd& err_mat) override;
+  bool requires_gradient() override;
+  bool requires_hessian() override;
+
+  bool can_estimate_error() override;
+  bool can_use_gradient() override;
+  bool can_use_hessian() override;
+
+  bool minimize(std::vector<double>& xopt) override;
+  bool error_matrix_estimate(Eigen::MatrixXd& err_mat) override;
   bool calc_error_matrix(Eigen::MatrixXd& err_mat) override;
 
  protected:
