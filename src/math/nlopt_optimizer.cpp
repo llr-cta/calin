@@ -22,75 +22,81 @@ NLOptOptimizer::~NLOptOptimizer()
   // nothing to see here
 }
 
-bool requires_gradient(algorithm_type a)
+bool NLOptOptimizer::requires_gradient(algorithm_type a)
 {
   switch(a)
   {
-    case GN_DIRECT:
-    case GN_DIRECT_L:
-    case GN_DIRECT_L_RAND:
-    case GN_DIRECT_NOSCAL:
-    case GN_DIRECT_L_NOSCAL:
-    case GN_DIRECT_L_RAND_NOSCAL:
-    case GN_ORIG_DIRECT:
-    case GN_ORIG_DIRECT_L:
-    case LN_PRAXIS:
-    case GN_CRS2_LM:
-    case GN_MLSL:
-    case GN_MLSL_LDS:
-    case LN_COBYLA:
-    case LN_NEWUOA:
-    case LN_NEWUOA_BOUND:
-    case LN_NELDERMEAD:
-    case LN_SBPLX:
-    case LN_AUGLAG:
-    case LN_AUGLAG_EQ:
-    case LN_BOBYQA:
-    case GN_ISRES:
-    case GN_ESCH:
+    case nlopt::GN_DIRECT:
+    case nlopt::GN_DIRECT_L:
+    case nlopt::GN_DIRECT_L_RAND:
+    case nlopt::GN_DIRECT_NOSCAL:
+    case nlopt::GN_DIRECT_L_NOSCAL:
+    case nlopt::GN_DIRECT_L_RAND_NOSCAL:
+    case nlopt::GN_ORIG_DIRECT:
+    case nlopt::GN_ORIG_DIRECT_L:
+    case nlopt::LN_PRAXIS:
+    case nlopt::GN_CRS2_LM:
+    case nlopt::GN_MLSL:
+    case nlopt::GN_MLSL_LDS:
+    case nlopt::LN_COBYLA:
+    case nlopt::LN_NEWUOA:
+    case nlopt::LN_NEWUOA_BOUND:
+    case nlopt::LN_NELDERMEAD:
+    case nlopt::LN_SBPLX:
+    case nlopt::LN_AUGLAG:
+    case nlopt::LN_AUGLAG_EQ:
+    case nlopt::LN_BOBYQA:
+    case nlopt::GN_ISRES:
+    case nlopt::GN_ESCH:
       return false;
 
-    case GD_STOGO:
-    case GD_STOGO_RAND:
-    case LD_LBFGS_NOCEDAL:
-    case LD_LBFGS:
-    case LD_VAR1:
-    case LD_VAR2:
-    case LD_TNEWTON:
-    case LD_TNEWTON_RESTART:
-    case LD_TNEWTON_PRECOND:
-    case LD_TNEWTON_PRECOND_RESTART:
-    case GD_MLSL:
-    case GD_MLSL_LDS:
-    case LD_MMA:
-    case LD_AUGLAG:
-    case LD_AUGLAG_EQ:
-    case AUGLAG:
-    case AUGLAG_EQ:
-    case G_MLSL:
-    case G_MLSL_LDS:
-    case LD_SLSQP:
-    case LD_CCSAQ:
+    case nlopt::GD_STOGO:
+    case nlopt::GD_STOGO_RAND:
+    case nlopt::LD_LBFGS_NOCEDAL:
+    case nlopt::LD_LBFGS:
+    case nlopt::LD_VAR1:
+    case nlopt::LD_VAR2:
+    case nlopt::LD_TNEWTON:
+    case nlopt::LD_TNEWTON_RESTART:
+    case nlopt::LD_TNEWTON_PRECOND:
+    case nlopt::LD_TNEWTON_PRECOND_RESTART:
+    case nlopt::GD_MLSL:
+    case nlopt::GD_MLSL_LDS:
+    case nlopt::LD_MMA:
+    case nlopt::LD_AUGLAG:
+    case nlopt::LD_AUGLAG_EQ:
+    case nlopt::AUGLAG:
+    case nlopt::AUGLAG_EQ:
+    case nlopt::G_MLSL:
+    case nlopt::G_MLSL_LDS:
+    case nlopt::LD_SLSQP:
+    case nlopt::LD_CCSAQ:
       return true;
+
+    case nlopt::NUM_ALGORITHMS:
+    default:
+      assert(0);
   }
+
+  assert(0);
 }
 
-bool requires_hessian(algorithm_type a)
+bool NLOptOptimizer::requires_hessian(algorithm_type a)
 {
   return false;
 }
 
-bool can_estimate_error(algorithm_type a)
+bool NLOptOptimizer::can_estimate_error(algorithm_type a)
 {
   return false;
 }
 
-bool can_use_gradient(algorithm_type a)
+bool NLOptOptimizer::can_use_gradient(algorithm_type a)
 {
   return requires_gradient(a);
 }
 
-bool can_use_hessian(algorithm_type a)
+bool NLOptOptimizer::can_use_hessian(algorithm_type a)
 {
   return false; // (a==LD_CCSAQ);
 }
