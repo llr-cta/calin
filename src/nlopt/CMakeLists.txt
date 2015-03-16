@@ -40,6 +40,10 @@ CHECK_C_SOURCE_COMPILES("#include<time.h>
 #include<sys/time.h>
 int main() { return 0; }" TIME_WITH_SYS_TIME)
 
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
+${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
+add_compile_options(-Wno-deprecated-declarations)
+
 add_library(calin_nlopt SHARED DIRect.c DIRserial.c DIRsubrout.c auglag.c bobyqa.c ccsa_quadratic.c cdirect.c cobyla.c crs.c deprecated.c direct_wrap.c esch.c f77api.c general.c global.cc hybrid.c isres.c linalg.cc local.cc mlsl.c mma.c mssubs.c mt19937ar.c newuoa.c nldrmd.c optimize.c options.c plip.c plis.c pnet.c praxis.c pssubs.c qsort_r.c redblack.c redblack_test.c rescale.c sbplx.c slsqp.c sobolseq.c stogo.cc stop.c timer.c tools.cc)
 
