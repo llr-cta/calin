@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <vector>
 #include <Eigen/Core>
 
@@ -41,6 +42,19 @@ class Optimizer
   void set_verbosity_level(VerbosityLevel verbose = VerbosityLevel::SILENT) {
     verbose_=verbose; }
 
+  void set_abs_tolerance(double tol) { abs_tol_ = std::max(0.0,tol); }
+  void set_rel_tolerance(double tol) { rel_tol_ = std::max(0.0,tol); }
+  void set_max_iterations(unsigned max_num) { max_iterations_ = max_num; }
+
+  double abs_tolerance(double tol) { return abs_tol_; }
+  double rel_tolerance(double tol) {
+    return (abs_tol_==0.0 and rel_tol_==0.0 and max_iterations_==0)?
+        0.001:rel_tol_; }
+  unsigned max_iterations(unsigned max_num) { return max_iterations_; }
+  
+  double step_size_scale_factor() const { return stepsize_scale_; }
+  void set_step_size_scale_factor(double sss = 1.0) { stepsize_scale_ = sss; }
+  
   void set_initial_values(const std::vector<double>& x0 = {}) { x0_=x0; }
   void set_scale(const std::vector<double>& xscale = {}) { xscale_=xscale; }
   void set_limits_lo(const std::vector<double>& xlim = {}) { xlim_lo_ = xlim; }
@@ -50,6 +64,11 @@ class Optimizer
   void clear_scale() { xscale_.clear(); }
   void clear_limits_lo() { xlim_lo_.clear(); }
   void clear_limits_hi() { xlim_hi_.clear(); }
+
+  std::vector<double> initial_values() const;
+  std::vector<double> initial_stepsize() const;
+  std::vector<double> limits_lo() const;
+  std::vector<double> limits_hi() const;
   
  protected:
   bool my_fcn_ { false };
@@ -59,6 +78,10 @@ class Optimizer
   std::vector<double> xscale_ { };
   std::vector<double> xlim_lo_ { };
   std::vector<double> xlim_hi_ { };
+  double stepsize_scale_ { 1.0 };
+  double abs_tol_ { 0.0 };
+  double rel_tol_ { 0.0 };
+  unsigned max_iterations_ { 0 };
 };
 
 } // namespace optimizer

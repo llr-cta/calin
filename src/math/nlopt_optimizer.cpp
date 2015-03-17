@@ -208,33 +208,15 @@ bool NLOptOptimizer::minimize(std::vector<double>& xopt, double& fopt)
   nlopt::opt opt(algorithm_, axes.size());
   opt.set_min_objective(nlopt_callback, this);
 
-  // Set lower limits from caller's values with fallback to function defaults
-  std::vector<double> xlim_lo;
-  if(xlim_lo_.size() == axes.size())xlim_lo = xlim_lo_;
-  else for(const auto& ipar : axes) {
-      xlim_lo.push_back(ipar.has_lo_bound?ipar.lo_bound:-inf); }
-  if(std::any_of(xlim_lo.begin(),xlim_lo.end(),[](double x){return x!=-inf;}))
-    opt.set_lower_bounds(xlim_lo);
+  std::vector<double> xlim_lo { limits_lo() };
+  if(!xlim_lo.empty())opt.set_lower_bounds(xlim_lo);
 
-  // Set upper limits from caller's values with fallback to function defaults
-  std::vector<double> xlim_hi;
-  if(xlim_hi_.size() == axes.size())xlim_hi = xlim_hi_;
-  else for(const auto& ipar : axes) {
-      xlim_hi.push_back(ipar.has_hi_bound?ipar.hi_bound:inf); }
-  if(std::any_of(xlim_hi.begin(),xlim_hi.end(),[](double x){return x!=inf;}))
-    opt.set_upper_bounds(xlim_hi);
+  std::vector<double> xlim_hi { limits_hi() };
+  if(!xlim_lo.empty())opt.set_upper_bounds(xlim_hi);
 
-  // Set the step size from caller's values with fallback to function defaults
-  std::vector<double> xscale;
-  if(xscale_.size() == axes.size())xscale = xscale_;
-  else for(const auto& ipar : axes)xscale.push_back(ipar.scale);
-  opt.set_initial_step(xscale);
+  opt.set_initial_step(initial_stepsize());
 
-  // Set initial values from caller's values with fallback to function defaults
-  xopt.clear();
-  if(x0_.size() == axes.size())xopt = x0_;
-  else for(const auto& ipar : axes)xopt.push_back(ipar.initial_value);
-  
+  xopt = initial_values();
   opt.set_ftol_abs(0.001);
   opt.optimize(xopt, fopt);
 }
