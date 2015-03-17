@@ -5,6 +5,7 @@
 #include "calib/spe_fit.hpp"
 #include "karkar_data.hpp"
 #include "math/optimizer.hpp"
+#include "math/nlopt_optimizer.hpp"
 #include "math/minuit75_optimizer.hpp"
 
 using namespace calin::math;
@@ -577,41 +578,6 @@ TEST(SPELikelihood, Minimize_GSL_BFGS2)
   gsl_vector_free (x);
 }
 
-namespace {
-
-unsigned nlopt_f_count(bool increment = true, bool reset = false)
-{
-  static unsigned iter = 0;
-  if(increment)iter++;
-  if(reset)iter=0;
-  return iter;
-}
-
-static double nlopt_f(unsigned n, const double* x, double* grad,
-                      void* f_data)
-{
-  SPELikelihood* like = static_cast<SPELikelihood*>(f_data);
-  double value = like->value_and_gradient(x, grad);
-#if 1
-  std::cout << nlopt_f_count() << ' '
-            << std::setprecision(10) << value << ' '
-            << x[0] << ' '
-            << x[1] << ' '
-            << x[2] << ' '
-            << x[3] << ' '
-            << x[4] << ' '
-            << grad[0] << ' '
-            << grad[1] << ' '
-            << grad[2] << ' '
-            << grad[3] << ' '
-            << grad[4] << '\n';
-#endif
-  return value;
-}
-
-} // anonymous namespace
-
-
 TEST(SPELikelihood, Minimize_NLOpt_LD_LBFGS)
 {
   auto mes_data = karkar_data();
@@ -620,22 +586,13 @@ TEST(SPELikelihood, Minimize_NLOpt_LD_LBFGS)
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, mes_hist);
 
-  nlopt::opt opt(nlopt::LD_LBFGS, 5);
-  opt.set_min_objective(nlopt_f, &like);
-  std::vector<double> xlim_lo;
-  std::vector<double> xlim_hi;
-  for(const auto& ipar : like.domain_axes())
-  {
-    xlim_lo.push_back(ipar.has_lo_bound?ipar.lo_bound:-HUGE_VAL);
-    xlim_hi.push_back(ipar.has_hi_bound?ipar.hi_bound:HUGE_VAL);
-  }
-  opt.set_lower_bounds(xlim_lo);
-  opt.set_upper_bounds(xlim_hi);
+  optimizer::NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
+  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  opt.set_abs_tolerance(0.001);
   std::vector<double> x { 1.0, 3100.0, 20.0, 100.0, 0.45 };
+  opt.set_initial_values(x);
   double f_val;
-  opt.set_ftol_abs(0.001);
-  nlopt_f_count(false,/*reset=*/true);
-  opt.optimize(x, f_val);
+  opt.minimize(x, f_val);
   
   //EXPECT_EQ(status, GSL_SUCCESS);
   EXPECT_NEAR(x[0], 0.55349337, 0.0001);

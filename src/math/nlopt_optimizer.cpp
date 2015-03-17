@@ -6,6 +6,9 @@
 
 */
 
+#include <iostream>
+#include <iomanip>
+
 #include "math/nlopt_optimizer.hpp"
 
 using namespace calin::math::optimizer;
@@ -210,20 +213,21 @@ bool NLOptOptimizer::minimize(std::vector<double>& xopt, double& fopt)
 
   std::vector<double> xlim_lo { limits_lo() };
   if(!xlim_lo.empty())opt.set_lower_bounds(xlim_lo);
-
   std::vector<double> xlim_hi { limits_hi() };
-  if(!xlim_lo.empty())opt.set_upper_bounds(xlim_hi);
-
+  if(!xlim_hi.empty())opt.set_upper_bounds(xlim_hi);
   opt.set_initial_step(initial_stepsize());
-
   xopt = initial_values();
-  opt.set_ftol_abs(0.001);
+
+  if(abs_tolerance()>0)opt.set_ftol_abs(abs_tolerance());
+  if(rel_tolerance()>0)opt.set_ftol_rel(rel_tolerance());
+  if(max_iterations()>0)opt.set_maxeval(max_iterations());
+
   opt.optimize(xopt, fopt);
 }
 
 bool NLOptOptimizer::error_matrix_estimate(Eigen::MatrixXd& err_mat)
 {
-
+  
 }
 
 bool NLOptOptimizer::calc_error_matrix(Eigen::MatrixXd& err_mat)
@@ -234,11 +238,17 @@ bool NLOptOptimizer::calc_error_matrix(Eigen::MatrixXd& err_mat)
 double NLOptOptimizer::nlopt_callback(unsigned n, const double* x, double* grad,
                                       void* self)
 {
-  return static_cast<NLOptOptimizer*>(self)->eval_func(x,grad);
+  return static_cast<NLOptOptimizer*>(self)->eval_func(n,x,grad);
 }
 
-double NLOptOptimizer::eval_func(const double* x, double* grad)
+double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
 {
-  double fcn_eval { grad?fcn_->value_and_gradient(x,grad):fcn_->value(x) };
-  return fcn_eval;
+  double fcn_value { grad?fcn_->value_and_gradient(x,grad):fcn_->value(x) };
+  if(verbose_ != VerbosityLevel::SILENT)
+  {
+    std::cout << std::fixed << std::setprecision(3) << fcn_value;
+    for(unsigned ipar=0;ipar<n;ipar++)std::cout << ' ' << x[ipar];
+    std::cout << '\n';
+  }
+  return fcn_value;
 }

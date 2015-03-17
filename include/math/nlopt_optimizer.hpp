@@ -46,7 +46,7 @@ class NLOptOptimizer: public Optimizer
  protected:
   static double nlopt_callback(unsigned n, const double* x, double* grad,
                                void* self);
-  double eval_func(const double* x, double* grad);
+  double eval_func(unsigned n, const double* x, double* grad);
   
   algorithm_type algorithm_;
 };

@@ -41,16 +41,16 @@ class Optimizer
 
   void set_verbosity_level(VerbosityLevel verbose = VerbosityLevel::SILENT) {
     verbose_=verbose; }
+  VerbosityLevel verbosity_level() const { return verbose_; }
 
   void set_abs_tolerance(double tol) { abs_tol_ = std::max(0.0,tol); }
   void set_rel_tolerance(double tol) { rel_tol_ = std::max(0.0,tol); }
   void set_max_iterations(unsigned max_num) { max_iterations_ = max_num; }
 
-  double abs_tolerance(double tol) { return abs_tol_; }
-  double rel_tolerance(double tol) {
-    return (abs_tol_==0.0 and rel_tol_==0.0 and max_iterations_==0)?
-        0.001:rel_tol_; }
-  unsigned max_iterations(unsigned max_num) { return max_iterations_; }
+  double abs_tolerance() const { return abs_tol_; }
+  double rel_tolerance() const { return (abs_tol_==0.0 and rel_tol_==0.0 and
+                                         max_iterations_==0)?0.001:rel_tol_; }
+  unsigned max_iterations() const { return max_iterations_; }
   
   double step_size_scale_factor() const { return stepsize_scale_; }
   void set_step_size_scale_factor(double sss = 1.0) { stepsize_scale_ = sss; }
