@@ -25,21 +25,29 @@ class NLOptOptimizer: public Optimizer
 
   static bool requires_gradient(algorithm_type a);
   static bool requires_hessian(algorithm_type a);
+  static bool requires_box_constraints(algorithm_type a);
   static bool can_estimate_error(algorithm_type a);
   static bool can_use_gradient(algorithm_type a);
   static bool can_use_hessian(algorithm_type a);
+  static bool can_impose_box_constraints(algorithm_type a);
   
   bool requires_gradient() override;
   bool requires_hessian() override;
+  bool requires_box_constraints() override;
   bool can_estimate_error() override;
   bool can_use_gradient() override;
   bool can_use_hessian() override;
+  bool can_impose_box_constraints() override;
 
-  bool minimize(std::vector<double>& xopt) override;
+  bool minimize(std::vector<double>& xopt, double& fopt) override;
   bool error_matrix_estimate(Eigen::MatrixXd& err_mat) override;
   bool calc_error_matrix(Eigen::MatrixXd& err_mat) override;
 
  protected:
+  static double nlopt_callback(unsigned n, const double* x, double* grad,
+                               void* self);
+  double eval_func(const double* x, double* grad);
+  
   algorithm_type algorithm_;
 };
 

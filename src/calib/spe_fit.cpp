@@ -33,13 +33,13 @@ MultiElectronSpectrum::~MultiElectronSpectrum()
 }
 
 
-double MultiElectronSpectrum::pdf_derivs_hessian_ped(double x, double* derivs,
+double MultiElectronSpectrum::pdf_gradient_hessian_ped(double x, double* gradient,
                                                      double* hessian)
 {
   assert(0);
 }
 
-double MultiElectronSpectrum::pdf_derivs_hessian_mes(double x, double* derivs,
+double MultiElectronSpectrum::pdf_gradient_hessian_mes(double x, double* gradient,
                                                      double* hessian)
 {
   assert(0);
@@ -96,7 +96,7 @@ void PoissonGaussianMES::set_parameter_values(const double* values)
   calc_cached_vars();
 }
 
-bool PoissonGaussianMES::can_calculate_parameter_derivs()
+bool PoissonGaussianMES::can_calculate_parameter_gradient()
 {
   return true;
 }
@@ -120,13 +120,13 @@ double PoissonGaussianMES::pdf_mes(double x)
   return c_gauss_norm * apdf.total();;
 }
 
-double PoissonGaussianMES::pdf_derivs_mes(double x, double* derivs)
+double PoissonGaussianMES::pdf_gradient_mes(double x, double* gradient)
 {
   const double x0 = ped_zero_dc_;
   const double xc = x-x0;
 
   accumulator apdf;
-  accumulator aderivs[5];
+  accumulator agradient[5];
 
   for(unsigned n=nmin_; n<nmax_; n++)
   {
@@ -143,23 +143,23 @@ double PoissonGaussianMES::pdf_derivs_mes(double x, double* derivs)
     const double dlog3 = dC1_dg_[n] - dC2_dg_[n]*xn2 + dC3_dg_[n]*xn;
     const double dlog4 = dC1_db_[n] - dC2_db_[n]*xn2;
     
-    aderivs[0].accumulate(pdf_n*dlog0);
-    aderivs[1].accumulate(pdf_n*dlog1);
-    aderivs[2].accumulate(pdf_n*dlog2);
-    aderivs[3].accumulate(pdf_n*dlog3);
-    aderivs[4].accumulate(pdf_n*dlog4);
+    agradient[0].accumulate(pdf_n*dlog0);
+    agradient[1].accumulate(pdf_n*dlog1);
+    agradient[2].accumulate(pdf_n*dlog2);
+    agradient[3].accumulate(pdf_n*dlog3);
+    agradient[4].accumulate(pdf_n*dlog4);
   }
 
-  derivs[0] = c_gauss_norm * aderivs[0].total();
-  derivs[1] = c_gauss_norm * aderivs[1].total();
-  derivs[2] = c_gauss_norm * aderivs[2].total();
-  derivs[3] = c_gauss_norm * aderivs[3].total();
-  derivs[4] = c_gauss_norm * aderivs[4].total();
+  gradient[0] = c_gauss_norm * agradient[0].total();
+  gradient[1] = c_gauss_norm * agradient[1].total();
+  gradient[2] = c_gauss_norm * agradient[2].total();
+  gradient[3] = c_gauss_norm * agradient[3].total();
+  gradient[4] = c_gauss_norm * agradient[4].total();
   return c_gauss_norm * apdf.total();
 }
 
 double PoissonGaussianMES::
-pdf_derivs_hessian_mes(double x, double* derivs, double* hessian)
+pdf_gradient_hessian_mes(double x, double* gradient, double* hessian)
 {
   if(!hessian_elements_good_)calc_cached_vars(true);
 
@@ -167,7 +167,7 @@ pdf_derivs_hessian_mes(double x, double* derivs, double* hessian)
   const double xc = x-x0;
       
   accumulator apdf;
-  accumulator aderivs[5];
+  accumulator agradient[5];
   accumulator ahessian[15];
 
   for(unsigned n=nmin_; n<nmax_; n++)
@@ -185,11 +185,11 @@ pdf_derivs_hessian_mes(double x, double* derivs, double* hessian)
     const double dln3 = dC1_dg_[n] - dC2_dg_[n]*xn2 + dC3_dg_[n]*xn;
     const double dln4 = dC1_db_[n] - dC2_db_[n]*xn2;
 
-    aderivs[0].accumulate(pdf_n*dln0);
-    aderivs[1].accumulate(pdf_n*dln1);
-    aderivs[2].accumulate(pdf_n*dln2);
-    aderivs[3].accumulate(pdf_n*dln3);
-    aderivs[4].accumulate(pdf_n*dln4);
+    agradient[0].accumulate(pdf_n*dln0);
+    agradient[1].accumulate(pdf_n*dln1);
+    agradient[2].accumulate(pdf_n*dln2);
+    agradient[3].accumulate(pdf_n*dln3);
+    agradient[4].accumulate(pdf_n*dln4);
 
     const double d2ln00 = d2C1_dF2_[n];
 
@@ -229,11 +229,11 @@ pdf_derivs_hessian_mes(double x, double* derivs, double* hessian)
     ahessian[14].accumulate(pdf_n*(dln4*dln4 + d2ln44));
   }
 
-  derivs[0] = c_gauss_norm * aderivs[0].total();
-  derivs[1] = c_gauss_norm * aderivs[1].total();
-  derivs[2] = c_gauss_norm * aderivs[2].total();
-  derivs[3] = c_gauss_norm * aderivs[3].total();
-  derivs[4] = c_gauss_norm * aderivs[4].total();
+  gradient[0] = c_gauss_norm * agradient[0].total();
+  gradient[1] = c_gauss_norm * agradient[1].total();
+  gradient[2] = c_gauss_norm * agradient[2].total();
+  gradient[3] = c_gauss_norm * agradient[3].total();
+  gradient[4] = c_gauss_norm * agradient[4].total();
 
   hessian[0] = c_gauss_norm * ahessian[0].total();
   hessian[1] = c_gauss_norm * ahessian[1].total();
@@ -276,7 +276,7 @@ double PoissonGaussianMES::pdf_ped(double x)
 }
 
 double PoissonGaussianMES::
-pdf_derivs_ped(double x, double* derivs)
+pdf_gradient_ped(double x, double* gradient)
 {
   const double xc = x - ped_zero_dc_;
   const double xc2 = SQR(xc);
@@ -286,17 +286,17 @@ pdf_derivs_ped(double x, double* derivs)
   const double dln1 = 2.0*C2_[0]*xc;
   const double dln2 = -(1.0/ped_rms_dc_ + dC2_ds_[0]*xc2);
 
-  derivs[0] = 0;
-  derivs[1] = pdf * dln1;
-  derivs[2] = pdf * dln2;
-  derivs[3] = 0;
-  derivs[4] = 0;
+  gradient[0] = 0;
+  gradient[1] = pdf * dln1;
+  gradient[2] = pdf * dln2;
+  gradient[3] = 0;
+  gradient[4] = 0;
   
   return pdf;
 }
 
 double PoissonGaussianMES::
-pdf_derivs_hessian_ped(double x, double* derivs, double* hessian)
+pdf_gradient_hessian_ped(double x, double* gradient, double* hessian)
 {
   if(!hessian_elements_good_)calc_cached_vars(true);
 
@@ -308,11 +308,11 @@ pdf_derivs_hessian_ped(double x, double* derivs, double* hessian)
   const double dln1 = 2.0*C2_[0]*xc;
   const double dln2 = -(1.0/ped_rms_dc_ + dC2_ds_[0]*xc2);
 
-  derivs[0] = 0;
-  derivs[1] = pdf * dln1;
-  derivs[2] = pdf * dln2;
-  derivs[3] = 0;
-  derivs[4] = 0;
+  gradient[0] = 0;
+  gradient[1] = pdf * dln1;
+  gradient[2] = pdf * dln2;
+  gradient[3] = 0;
+  gradient[4] = 0;
 
   hessian[0] = hessian[1] = hessian[2] = hessian[3] = hessian[4] = 0;
 
@@ -472,7 +472,7 @@ set_parameter_values(const double* values)
                     gain_dc_pe_, ses_rms_pe_);
 }
 
-bool PoissonGaussianMES_HighAccuracy::can_calculate_parameter_derivs()
+bool PoissonGaussianMES_HighAccuracy::can_calculate_parameter_gradient()
 {
   return true;
 }
@@ -491,36 +491,36 @@ double PoissonGaussianMES_HighAccuracy::pdf_ped(double x)
 }
 
 double PoissonGaussianMES_HighAccuracy::
-pdf_derivs_mes(double x, double* derivs)
+pdf_gradient_mes(double x, double* gradient)
 {
-  PMTModelPGDerivs log_derivs;
+  PMTModelPGDerivs log_gradient;
   double p =
-      std::exp(PMTModelPG::logL_multi_pe_derivs(log_derivs, x,
+      std::exp(PMTModelPG::logL_multi_pe_derivs(log_gradient, x,
            intensity_pe_, 1.0, SQR(ses_rms_pe_), gain_dc_pe_,
            SQR(ped_rms_dc_), ped_zero_dc_, tol_));
 
-  derivs[0] = p * log_derivs.dfdF;
-  derivs[1] = p * log_derivs.dfdx0;
-  derivs[2] = p * 2.0 * ped_rms_dc_ * log_derivs.dfds2;
-  derivs[3] = p * log_derivs.dfdg;
-  derivs[4] = p * 2.0 * ses_rms_pe_ * log_derivs.dfdb2;
+  gradient[0] = p * log_gradient.dfdF;
+  gradient[1] = p * log_gradient.dfdx0;
+  gradient[2] = p * 2.0 * ped_rms_dc_ * log_gradient.dfds2;
+  gradient[3] = p * log_gradient.dfdg;
+  gradient[4] = p * 2.0 * ses_rms_pe_ * log_gradient.dfdb2;
 
   return p;
 }
 
 double PoissonGaussianMES_HighAccuracy::
-pdf_derivs_ped(double x, double* derivs)
+pdf_gradient_ped(double x, double* gradient)
 {
-  PMTModelPGDerivs log_derivs;
+  PMTModelPGDerivs log_gradient;
   double p =
-      std::exp(PMTModelPG::logL_ped_derivs(log_derivs, x,
+      std::exp(PMTModelPG::logL_ped_derivs(log_gradient, x,
                                            SQR(ped_rms_dc_), ped_zero_dc_));
 
-  derivs[0] = 0; // p * log_derivs.dfdF;
-  derivs[1] = p * log_derivs.dfdx0;
-  derivs[2] = p * 2.0 * ped_rms_dc_ * log_derivs.dfds2;
-  derivs[3] = 0; // p * log_derivs.dfdg;
-  derivs[4] = 0; // p * 2.0 * ses_rms_pe_ * log_derivs.dfdb2;
+  gradient[0] = 0; // p * log_gradient.dfdF;
+  gradient[1] = p * log_gradient.dfdx0;
+  gradient[2] = p * 2.0 * ped_rms_dc_ * log_gradient.dfds2;
+  gradient[3] = 0; // p * log_gradient.dfdg;
+  gradient[4] = 0; // p * 2.0 * ses_rms_pe_ * log_gradient.dfdb2;
 
   return p;
 }
@@ -579,9 +579,9 @@ double SPELikelihood::value(const double* x)
   return -acc.total();
 }
 
-bool SPELikelihood::can_calculate_derivs()
+bool SPELikelihood::can_calculate_gradient()
 {
-  return mes_model_->can_calculate_parameter_derivs();
+  return mes_model_->can_calculate_parameter_gradient();
 }
 
 bool SPELikelihood::can_calculate_hessian()
@@ -589,53 +589,53 @@ bool SPELikelihood::can_calculate_hessian()
   return mes_model_->can_calculate_parameter_hessian();
 }
 
-double SPELikelihood::value_and_derivs(const double* x, double* derivs)
+double SPELikelihood::value_and_gradient(const double* x, double* gradient)
 {
   mes_model_->set_parameter_values(x);
   math::LikelihoodAccumulator acc;
-  std::vector<math::LikelihoodAccumulator> derivs_acc(npar_);
+  std::vector<math::LikelihoodAccumulator> gradient_acc(npar_);
   for(auto& ibin : mes_data_)
   {
-    double pdf = mes_model_->pdf_derivs_mes(ibin.xval_center(), derivs);
+    double pdf = mes_model_->pdf_gradient_mes(ibin.xval_center(), gradient);
     acc.accumulate(std::log(pdf)*ibin.weight());
     for(unsigned ipar=0;ipar<npar_;ipar++)
-      derivs_acc[ipar].accumulate(derivs[ipar]/pdf*ibin.weight());
+      gradient_acc[ipar].accumulate(gradient[ipar]/pdf*ibin.weight());
   }
     
   if(has_ped_data_)
     for(auto& ibin : ped_data_)
     {
-      double pdf = mes_model_->pdf_derivs_ped(ibin.xval_center(), derivs);
+      double pdf = mes_model_->pdf_gradient_ped(ibin.xval_center(), gradient);
       acc.accumulate(std::log(pdf)*ibin.weight());
       for(unsigned ipar=0;ipar<npar_;ipar++)
-        derivs_acc[ipar].accumulate(derivs[ipar]/pdf*ibin.weight());
+        gradient_acc[ipar].accumulate(gradient[ipar]/pdf*ibin.weight());
     }
   
   for(unsigned ipar=0;ipar<npar_;ipar++)
-    derivs[ipar] = -derivs_acc[ipar].total();
+    gradient[ipar] = -gradient_acc[ipar].total();
   return -acc.total();
 }
 
 double SPELikelihood::
-value_derivs_and_hessian(const double* x, double* derivs, double* hessian)
+value_gradient_and_hessian(const double* x, double* gradient, double* hessian)
 {
   mes_model_->set_parameter_values(x);
   math::LikelihoodAccumulator acc;
-  std::vector<math::LikelihoodAccumulator> derivs_acc(npar_);
+  std::vector<math::LikelihoodAccumulator> gradient_acc(npar_);
   std::vector<math::LikelihoodAccumulator> hessian_acc(npar_*(npar_+1)/2);
   for(auto& ibin : mes_data_)
   {
     double pdf =
-        mes_model_->pdf_derivs_hessian_mes(ibin.xval_center(), derivs, hessian);
+        mes_model_->pdf_gradient_hessian_mes(ibin.xval_center(), gradient, hessian);
     acc.accumulate(std::log(pdf)*ibin.weight());
     for(unsigned ipar=0;ipar<npar_;ipar++)
-      derivs_acc[ipar].accumulate(derivs[ipar]/pdf*ibin.weight());
+      gradient_acc[ipar].accumulate(gradient[ipar]/pdf*ibin.weight());
     unsigned itri = 0;
     for(unsigned icol=0;icol<npar_;icol++)
       for(unsigned irow=icol;irow<npar_;irow++)
       {
         unsigned iel = icol*npar_+irow;
-        double summand = (hessian[iel] - derivs[icol]*derivs[irow]/pdf)/pdf;
+        double summand = (hessian[iel] - gradient[icol]*gradient[irow]/pdf)/pdf;
         hessian_acc[itri++].accumulate(summand*ibin.weight());
       }
   }
@@ -644,22 +644,22 @@ value_derivs_and_hessian(const double* x, double* derivs, double* hessian)
     for(auto& ibin : ped_data_)
     {
       double pdf =
-          mes_model_->pdf_derivs_hessian_ped(ibin.xval_center(), derivs, hessian);
+          mes_model_->pdf_gradient_hessian_ped(ibin.xval_center(), gradient, hessian);
       acc.accumulate(std::log(pdf)*ibin.weight());
       for(unsigned ipar=0;ipar<npar_;ipar++)
-        derivs_acc[ipar].accumulate(derivs[ipar]/pdf*ibin.weight());
+        gradient_acc[ipar].accumulate(gradient[ipar]/pdf*ibin.weight());
       unsigned iacc = 0;
       for(unsigned icol=0;icol<npar_;icol++)
         for(unsigned irow=icol;irow<npar_;irow++)
         {
           unsigned iel = icol*npar_+irow;
-          double summand = (hessian[iel] - derivs[icol]*derivs[irow]/pdf)/pdf;
+          double summand = (hessian[iel] - gradient[icol]*gradient[irow]/pdf)/pdf;
           hessian_acc[iacc++].accumulate(summand*ibin.weight());
         }
     }
   
   for(unsigned ipar=0;ipar<npar_;ipar++)
-    derivs[ipar] = -derivs_acc[ipar].total();
+    gradient[ipar] = -gradient_acc[ipar].total();
 
   unsigned iacc = 0;
   for(unsigned icol=0;icol<npar_;icol++)

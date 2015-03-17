@@ -35,16 +35,16 @@ double SingleAxisFunction::value(const double* x)
   return value(x[0]);
 }
 
-double SingleAxisFunction::value_and_derivs(const double* x,
-                                            double* derivs) 
+double SingleAxisFunction::value_and_gradient(const double* x,
+                                            double* gradient) 
 {
-  return value_and_deriv(*x,*derivs);
+  return value_and_deriv(*x,*gradient);
 }
 
 double SingleAxisFunction::
-value_derivs_and_hessian(const double* x, double* derivs, double* hessian) 
+value_gradient_and_hessian(const double* x, double* gradient, double* hessian) 
 {
-  return value_derivs_and_hessian(*x,*derivs,*hessian);
+  return value_gradient_and_hessian(*x,*gradient,*hessian);
 }
 
 #if 0

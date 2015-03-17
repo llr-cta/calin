@@ -23,7 +23,7 @@ static double nlopt_f(unsigned n, const double* x, double* grad,
                       void* f_data)
 {
   SPELikelihood* like = static_cast<SPELikelihood*>(f_data);
-  double value = like->value_and_derivs(x, grad);
+  double value = like->value_and_gradient(x, grad);
 #if 1
   std::cout << nlopt_f_count() << ' '
             << std::setprecision(10) << value << ' '
@@ -116,8 +116,8 @@ int main(int argc, char** argv)
             << x[3] << ' ' << x[4] << '\n';
   
   Eigen::MatrixXd hessian_mat;
-  std::vector<double> derivs;
-  like.value_derivs_and_hessian(x, derivs, hessian_mat);
+  std::vector<double> gradient;
+  like.value_gradient_and_hessian(x, gradient, hessian_mat);
   Eigen::MatrixXd err_mat = hessian_mat.inverse();
   std::cout << err_mat << '\n';
 

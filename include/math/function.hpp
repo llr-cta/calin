@@ -66,7 +66,7 @@ class Parameterizable
   virtual std::vector<ParameterAxis> parameters() = 0;
   virtual std::vector<double> parameter_values() = 0;
   virtual void set_parameter_values(const double* values) = 0;
-  virtual bool can_calculate_parameter_derivs() = 0;
+  virtual bool can_calculate_parameter_gradient() = 0;
   virtual bool can_calculate_parameter_hessian() = 0;
 };
 
@@ -76,60 +76,60 @@ class MultiAxisFunction
   virtual ~MultiAxisFunction();
   virtual std::vector<DomainAxis> domain_axes() = 0;
   virtual double value(const double* x) = 0;
-  virtual bool can_calculate_derivs() = 0;
-  virtual double value_and_derivs(const double* x, double* derivs) = 0;
+  virtual bool can_calculate_gradient() = 0;
+  virtual double value_and_gradient(const double* x, double* gradient) = 0;
   virtual bool can_calculate_hessian() = 0;
-  virtual double value_derivs_and_hessian(const double* x, double* derivs,
+  virtual double value_gradient_and_hessian(const double* x, double* gradient,
                                           double* hessian) = 0;
   virtual double error_up() = 0;
   
   // Utility functions
-  double value_and_derivs(const std::vector<double>& x,
-                          std::vector<double>& derivs)
+  double value_and_gradient(const std::vector<double>& x,
+                          std::vector<double>& gradient)
   {
     unsigned npar = domain_axes().size();
-    derivs.resize(npar);
-    return value_and_derivs(&x.front(), &derivs.front());
+    gradient.resize(npar);
+    return value_and_gradient(&x.front(), &gradient.front());
   }
 
-  double value_and_derivs(const std::vector<double>& x,
-                          Eigen::VectorXd& derivs)
+  double value_and_gradient(const std::vector<double>& x,
+                          Eigen::VectorXd& gradient)
   {
     unsigned npar = domain_axes().size();
-    derivs.resize(npar);
-    return value_and_derivs(&x.front(), derivs.data());
+    gradient.resize(npar);
+    return value_and_gradient(&x.front(), gradient.data());
   }
 
-  double value_derivs_and_hessian(const std::vector<double>& x,
-                                  std::vector<double>& derivs,
+  double value_gradient_and_hessian(const std::vector<double>& x,
+                                  std::vector<double>& gradient,
                                   std::vector<double>& hessian)
   {
     unsigned npar = domain_axes().size();
-    derivs.resize(npar);
+    gradient.resize(npar);
     hessian.resize(npar*npar);
-    return value_derivs_and_hessian(&x.front(), &derivs.front(),
+    return value_gradient_and_hessian(&x.front(), &gradient.front(),
                                     &hessian.front());
   }
   
-  double value_derivs_and_hessian(const std::vector<double>& x,
-                                  std::vector<double>& derivs,
+  double value_gradient_and_hessian(const std::vector<double>& x,
+                                  std::vector<double>& gradient,
                                   Eigen::MatrixXd& hessian)
   {
     unsigned npar = domain_axes().size();
-    derivs.resize(npar);
+    gradient.resize(npar);
     hessian.resize(npar,npar);
-    return value_derivs_and_hessian(&x.front(), &derivs.front(),
+    return value_gradient_and_hessian(&x.front(), &gradient.front(),
                                     hessian.data());
   }    
 
-  double value_derivs_and_hessian(const std::vector<double>& x,
-                                  Eigen::VectorXd& derivs,
+  double value_gradient_and_hessian(const std::vector<double>& x,
+                                  Eigen::VectorXd& gradient,
                                   Eigen::MatrixXd& hessian)
   {
     unsigned npar = domain_axes().size();
-    derivs.resize(npar);
+    gradient.resize(npar);
     hessian.resize(npar,npar);
-    return value_derivs_and_hessian(&x.front(), derivs.data(), hessian.data());
+    return value_gradient_and_hessian(&x.front(), gradient.data(), hessian.data());
   }    
 };
 
@@ -140,14 +140,14 @@ class SingleAxisFunction: virtual public MultiAxisFunction
   virtual DomainAxis domain_axis() = 0;
   virtual double value(double x) = 0;
   virtual double value_and_deriv(double x,  double& dfdx) = 0;
-  virtual double value_derivs_and_hessian(double x, double& dfdx,
+  virtual double value_gradient_and_hessian(double x, double& dfdx,
                                           double& d2fdx2) = 0;
 
   // Members from MultiAxisFunction that we override
   std::vector<DomainAxis> domain_axes() override;
   double value(const double* x) override;
-  double value_and_derivs(const double* x, double* derivs) override;
-  double value_derivs_and_hessian(const double* x, double* derivs,
+  double value_and_gradient(const double* x, double* gradient) override;
+  double value_gradient_and_hessian(const double* x, double* gradient,
                                   double* hessian) override;
 };
 

@@ -20,12 +20,12 @@ class MultiElectronSpectrum: public math::Parameterizable
  public:
   virtual ~MultiElectronSpectrum();
   virtual double pdf_ped(double x) = 0;
-  virtual double pdf_derivs_ped(double x, double* derivs) = 0;
-  virtual double pdf_derivs_hessian_ped(double x, double* derivs,
+  virtual double pdf_gradient_ped(double x, double* gradient) = 0;
+  virtual double pdf_gradient_hessian_ped(double x, double* gradient,
                                         double* hessian);
   virtual double pdf_mes(double x) = 0;
-  virtual double pdf_derivs_mes(double x, double* derivs) = 0;
-  virtual double pdf_derivs_hessian_mes(double x, double* derivs,
+  virtual double pdf_gradient_mes(double x, double* gradient) = 0;
+  virtual double pdf_gradient_hessian_mes(double x, double* gradient,
                                         double* hessian);
 
   virtual double intensity_pe() = 0;
@@ -46,17 +46,17 @@ class PoissonGaussianMES: public MultiElectronSpectrum
   std::vector<math::ParameterAxis> parameters() override;
   std::vector<double> parameter_values() override;
   void set_parameter_values(const double* values) override;
-  bool can_calculate_parameter_derivs() override;
+  bool can_calculate_parameter_gradient() override;
   bool can_calculate_parameter_hessian() override;
 
   double pdf_ped(double x) override;
-  double pdf_derivs_ped(double x, double* derivs) override;
-  double pdf_derivs_hessian_ped(double x, double* derivs,
+  double pdf_gradient_ped(double x, double* gradient) override;
+  double pdf_gradient_hessian_ped(double x, double* gradient,
                                 double* hessian) override;
 
   double pdf_mes(double x) override;
-  double pdf_derivs_mes(double x, double* derivs) override;
-  double pdf_derivs_hessian_mes(double x, double* derivs,
+  double pdf_gradient_mes(double x, double* gradient) override;
+  double pdf_gradient_hessian_mes(double x, double* gradient,
                                 double* hessian) override;
 
   double intensity_pe() override { return intensity_pe_; };
@@ -131,12 +131,12 @@ class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
   std::vector<math::ParameterAxis> parameters() override;
   std::vector<double> parameter_values() override;
   void set_parameter_values(const double* values) override;
-  bool can_calculate_parameter_derivs() override;
+  bool can_calculate_parameter_gradient() override;
 
   double pdf_mes(double x) override;
   double pdf_ped(double x) override;
-  double pdf_derivs_mes(double x, double* derivs) override;
-  double pdf_derivs_ped(double x, double* derivs) override;
+  double pdf_gradient_mes(double x, double* gradient) override;
+  double pdf_gradient_ped(double x, double* gradient) override;
 
   double intensity_pe() override { return intensity_pe_; };
   double ped_rms_dc() override { return ped_rms_dc_; }
@@ -164,16 +164,16 @@ class SPELikelihood: public math::MultiAxisFunction
   virtual ~SPELikelihood();
   std::vector<math::DomainAxis> domain_axes() override;
   double value(const double* x) override;
-  bool can_calculate_derivs() override;
-  double value_and_derivs(const double* x, double* derivs) override;
+  bool can_calculate_gradient() override;
+  double value_and_gradient(const double* x, double* gradient) override;
   bool can_calculate_hessian() override;
-  double value_derivs_and_hessian(const double* x, double* derivs,
+  double value_gradient_and_hessian(const double* x, double* gradient,
                                   double* hessian) override;
   double error_up() override { return 0.5; }
   
   // Bring in non-virtual helper functions from base class (stupid C++)
-  using math::MultiAxisFunction::value_and_derivs;
-  using math::MultiAxisFunction::value_derivs_and_hessian;
+  using math::MultiAxisFunction::value_and_gradient;
+  using math::MultiAxisFunction::value_gradient_and_hessian;
 
  private:
   MultiElectronSpectrum* mes_model_;

@@ -97,6 +97,11 @@ bool Minuit75Optimizer::requires_hessian()
   return false;
 }
 
+bool Minuit75Optimizer::requires_box_constraints()
+{
+  return false;
+}
+
 bool Minuit75Optimizer::can_estimate_error()
 {
   return true;
@@ -112,7 +117,12 @@ bool Minuit75Optimizer::can_use_hessian()
   return false;
 }
 
-bool Minuit75Optimizer::minimize(std::vector<double>& xopt)
+bool Minuit75Optimizer::can_impose_box_constraints()
+{
+  return true;
+}
+
+bool Minuit75Optimizer::minimize(std::vector<double>& xopt, double& fopt)
 {
   constexpr auto inf = std::numeric_limits<double>::infinity();
   mn7fcb* fcb { cast_fcb(fcb_) };
@@ -135,7 +145,7 @@ bool Minuit75Optimizer::minimize(std::vector<double>& xopt)
   pline << "SET ERR " << fcn_->error_up();
   do_command(pline.str());
 
-  if(fcn_->can_calculate_derivs())
+  if(fcn_->can_calculate_gradient())
     do_command("SET GRAD 1");  // Use gradient calculated by fcn
 
   auto params = fcn_->domain_axes();
@@ -209,7 +219,7 @@ void Minuit75Optimizer::
 eval_function(long npar, double* grad, double& fcnval,
               const double* x, long& iflag)
 {
-  if(iflag==2)fcnval = fcn_->value_and_derivs(x, grad);
+  if(iflag==2)fcnval = fcn_->value_and_gradient(x, grad);
   else fcnval = fcn_->value(x);
 
   std::cout << fcnval;

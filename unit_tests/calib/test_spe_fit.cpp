@@ -35,14 +35,14 @@ TEST(PoissonGaussianMES, PDFEqualityWithLegacyCode_Ped) {
   pg_mes1.set_parameter_values(&params.front());
   pg_mes2.set_parameter_values(&params.front());
   
-  std::vector<double> derivs(5);
+  std::vector<double> gradient(5);
   
   for(double x=-1.0;x<1.001;x+=0.01)
   {
     EXPECT_NEAR(pg_mes1.pdf_ped(x),pg_mes2.pdf_ped(x),pg_mes2.pdf_ped(x)*1e-8);
-    EXPECT_NEAR(pg_mes1.pdf_ped(x),pg_mes1.pdf_derivs_ped(x,&derivs.front()),
+    EXPECT_NEAR(pg_mes1.pdf_ped(x),pg_mes1.pdf_gradient_ped(x,&gradient.front()),
                 pg_mes1.pdf_ped(x)*1e-8);
-    EXPECT_NEAR(pg_mes2.pdf_ped(x),pg_mes2.pdf_derivs_ped(x,&derivs.front()),
+    EXPECT_NEAR(pg_mes2.pdf_ped(x),pg_mes2.pdf_gradient_ped(x,&gradient.front()),
                 pg_mes2.pdf_ped(x)*1e-8);
   }
 }
@@ -55,14 +55,14 @@ TEST(PoissonGaussianMES, PDFEqualityWithLegacyCode_MES) {
   pg_mes1.set_parameter_values(&params.front());
   pg_mes2.set_parameter_values(&params.front());
 
-  std::vector<double> derivs(5);
+  std::vector<double> gradient(5);
   
   for(double x=-1.0;x<10.001;x+=0.01)
   {
     EXPECT_NEAR(pg_mes1.pdf_mes(x),pg_mes2.pdf_mes(x),pg_mes2.pdf_mes(x)*1e-8);
-    EXPECT_NEAR(pg_mes1.pdf_mes(x),pg_mes1.pdf_derivs_mes(x,&derivs.front()),
+    EXPECT_NEAR(pg_mes1.pdf_mes(x),pg_mes1.pdf_gradient_mes(x,&gradient.front()),
                 pg_mes1.pdf_mes(x)*1e-8);
-    EXPECT_NEAR(pg_mes2.pdf_mes(x),pg_mes2.pdf_derivs_mes(x,&derivs.front()),
+    EXPECT_NEAR(pg_mes2.pdf_mes(x),pg_mes2.pdf_gradient_mes(x,&gradient.front()),
                 pg_mes2.pdf_mes(x)*1e-8);
   }
 }
@@ -85,19 +85,19 @@ static void deriv_test(MESFactory fact,
   mes_dx->set_parameter_values(&params.front());
 
   std::vector<double> ld1(5);
-  std::vector<double> derivs1(5);
+  std::vector<double> gradient1(5);
   for(double x=xlo;x<xhi;x+=0.01)
   {
-    double pdf = (mes->*fn_der)(x,&derivs1.front());
+    double pdf = (mes->*fn_der)(x,&gradient1.front());
     double pdf_dx = (mes_dx->*fn_pdf)(x);
 
-    EXPECT_NEAR(derivs1[ip], (pdf_dx-pdf)/dx,
-                (std::abs(ld1[ip])+std::abs(derivs1[ip]))*nearness);
-    if(std::abs(derivs1[ip] - (pdf_dx-pdf)/dx)>(std::abs(ld1[ip])+std::abs(derivs1[ip]))*nearness)
+    EXPECT_NEAR(gradient1[ip], (pdf_dx-pdf)/dx,
+                (std::abs(ld1[ip])+std::abs(gradient1[ip]))*nearness);
+    if(std::abs(gradient1[ip] - (pdf_dx-pdf)/dx)>(std::abs(ld1[ip])+std::abs(gradient1[ip]))*nearness)
     {
-      std::cout << ld1[ip] << ' ' << derivs1[ip] << ' ' << x << '\n';
+      std::cout << ld1[ip] << ' ' << gradient1[ip] << ' ' << x << '\n';
     }
-    ld1 = derivs1;
+    ld1 = gradient1;
   }
 
   delete mes;
@@ -119,98 +119,98 @@ MultiElectronSpectrum* make_pgha_mes()
 TEST(PoissonGaussianMES, Dervative_PedZero_Ped) {
   deriv_test(make_pg_mes,
              &MultiElectronSpectrum::pdf_ped,
-             &MultiElectronSpectrum::pdf_derivs_ped,
+             &MultiElectronSpectrum::pdf_gradient_ped,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 1, 1e-8, 1e-6, -1.0, 1.0);
 }
 
 TEST(PoissonGaussianMES, Dervative_PedRMS_Ped) {
   deriv_test(make_pg_mes,
              &MultiElectronSpectrum::pdf_ped,
-             &MultiElectronSpectrum::pdf_derivs_ped,
+             &MultiElectronSpectrum::pdf_gradient_ped,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 2, 1e-8, 1e-6, -1.0, 1.0);
 }
 
 TEST(PoissonGaussianMES, Dervative_Intensity_MES) {
   deriv_test(make_pg_mes,
              &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_derivs_mes,
+             &MultiElectronSpectrum::pdf_gradient_mes,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 0, 1e-8, 2e-6, -1.0, 20.0);
 }
 
 TEST(PoissonGaussianMES, Dervative_PedZero_MES) {
   deriv_test(make_pg_mes,
              &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_derivs_mes,
+             &MultiElectronSpectrum::pdf_gradient_mes,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 1, 1e-8, 1e-6, -1.0, 20.0);
 }
 
 TEST(PoissonGaussianMES, Dervative_PedRMS_MES) {
   deriv_test(make_pg_mes,
              &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_derivs_mes,
+             &MultiElectronSpectrum::pdf_gradient_mes,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 2, 1e-8, 1e-5, -1.0, 20.0);
 }
 
 TEST(PoissonGaussianMES, Dervative_Gain_MES) {
   deriv_test(make_pg_mes,
              &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_derivs_mes,
+             &MultiElectronSpectrum::pdf_gradient_mes,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 3, 1e-8, 1e-5, -1.0, 20.0);
 }
 
 TEST(PoissonGaussianMES, Dervative_SESRMS_MES) {
   deriv_test(make_pg_mes,
              &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_derivs_mes,
+             &MultiElectronSpectrum::pdf_gradient_mes,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 4, 1e-8, 1e-5, -1.0, 20.0);
 }
 
 TEST(PoissonGaussianMES_HighAccuracy, Dervative_PedZero_Ped) {
   deriv_test(make_pgha_mes,
              &MultiElectronSpectrum::pdf_ped,
-             &MultiElectronSpectrum::pdf_derivs_ped,
+             &MultiElectronSpectrum::pdf_gradient_ped,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 1, 1e-8, 1e-5, -1.0, 1.0);
 }
 
 TEST(PoissonGaussianMES_HighAccuracy, Dervative_PedRMS_Ped) {
   deriv_test(make_pgha_mes,
              &MultiElectronSpectrum::pdf_ped,
-             &MultiElectronSpectrum::pdf_derivs_ped,
+             &MultiElectronSpectrum::pdf_gradient_ped,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 2, 1e-8, 1e-5, -1.0, 1.0);
 }
 
 TEST(PoissonGaussianMES_HighAccuracy, Dervative_Intensity_MES) {
   deriv_test(make_pgha_mes,
              &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_derivs_mes,
+             &MultiElectronSpectrum::pdf_gradient_mes,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 0, 1e-8, 1e-4, -1.0, 20.0);
 }
 
 TEST(PoissonGaussianMES_HighAccuracy, Dervative_PedZero_MES) {
   deriv_test(make_pgha_mes,
              &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_derivs_mes,
+             &MultiElectronSpectrum::pdf_gradient_mes,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 1, 1e-8, 1e-5, -1.0, 20.0);
 }
 
 TEST(PoissonGaussianMES_HighAccuracy, Dervative_PedRMS_MES) {
   deriv_test(make_pgha_mes,
              &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_derivs_mes,
+             &MultiElectronSpectrum::pdf_gradient_mes,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 2, 1e-8, 1e-4, -1.0, 20.0);
 }
 
 TEST(PoissonGaussianMES_HighAccuracy, Dervative_Gain_MES) {
   deriv_test(make_pgha_mes,
              &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_derivs_mes,
+             &MultiElectronSpectrum::pdf_gradient_mes,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 3, 1e-8, 1e-4, -1.0, 20.0);
 }
 
 TEST(PoissonGaussianMES_HighAccuracy, Dervative_SESRMS_MES) {
   deriv_test(make_pgha_mes,
              &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_derivs_mes,
+             &MultiElectronSpectrum::pdf_gradient_mes,
              { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 4, 1e-8, 1e-5, -1.0, 20.0);
 }
 
@@ -263,14 +263,14 @@ void mes_hessian_test(double (PoissonGaussianMES::*der)(double, double*),
 
 TEST(PoissonGaussianMES, HessianTest_MES)
 {
-  mes_hessian_test(&PoissonGaussianMES::pdf_derivs_mes,
-                   &PoissonGaussianMES::pdf_derivs_hessian_mes);
+  mes_hessian_test(&PoissonGaussianMES::pdf_gradient_mes,
+                   &PoissonGaussianMES::pdf_gradient_hessian_mes);
 }
 
 TEST(PoissonGaussianMES, HessianTest_PED)
 {
-  mes_hessian_test(&PoissonGaussianMES::pdf_derivs_ped,
-                   &PoissonGaussianMES::pdf_derivs_hessian_ped, 4.0);
+  mes_hessian_test(&PoissonGaussianMES::pdf_gradient_ped,
+                   &PoissonGaussianMES::pdf_gradient_hessian_ped, 4.0);
 }
 
 namespace {
@@ -285,13 +285,13 @@ void spe_deriv_test(unsigned ip, double dx, double nearness)
   std::vector<double> x { 0.55349034289601895, 3094.2718624743093,
         19.614139336940855, 89.181964780087668, 0.32388058781378032 };
   //std::vector<double> x { 0.6, 3095, 20, 91, 0.4 };
-  std::vector<double> derivs(5);
+  std::vector<double> gradient(5);
   double lvalue = like.value(&x.front());
   for(unsigned ix=0; ix<100; ix++)
   {
     x[ip] += dx;
-    double value = like.value_and_derivs(&x.front(), &derivs.front());
-    EXPECT_NEAR(derivs[ip], (value-lvalue)/dx, (lvalue+value)*nearness);
+    double value = like.value_and_gradient(&x.front(), &gradient.front());
+    EXPECT_NEAR(gradient[ip], (value-lvalue)/dx, (lvalue+value)*nearness);
     lvalue = value;
   }
 }
@@ -337,8 +337,8 @@ TEST(SPELikelihood, Hessian_Test)
 
   for(unsigned ipar = 0; ipar<5; ipar++)
   {
-    double pdf = like.value_and_derivs(&x0.front(),&deriv1.front());
-    double pdfh = like.value_derivs_and_hessian(&x0.front(),&derivh.front(),
+    double pdf = like.value_and_gradient(&x0.front(),&deriv1.front());
+    double pdfh = like.value_gradient_and_hessian(&x0.front(),&derivh.front(),
                                                 &hessian.front());
 
     EXPECT_EQ(pdf,pdfh);
@@ -346,10 +346,10 @@ TEST(SPELikelihood, Hessian_Test)
 
     std::vector<double> x1 { x0 };
     x1[ipar] = x0[ipar] - dx;
-    like.value_and_derivs(&x1.front(),&deriv1.front());
+    like.value_and_gradient(&x1.front(),&deriv1.front());
 
     x1[ipar] = x0[ipar] + dx;
-    like.value_and_derivs(&x1.front(),&deriv2.front());
+    like.value_and_gradient(&x1.front(),&deriv2.front());
 
     for(unsigned jpar=ipar;jpar<5;jpar++)
     {
@@ -380,7 +380,7 @@ double my_f(const gsl_vector * x, void * params)
 void my_df(const gsl_vector * x, void * params, gsl_vector* g)
 {
   SPELikelihood* like = static_cast<SPELikelihood*>(params);
-  like->value_and_derivs(x->data, g->data);
+  like->value_and_gradient(x->data, g->data);
 #if 0
   std::cout << g->data[0] << ' '
             << g->data[1] << ' '
@@ -398,7 +398,7 @@ void my_df(const gsl_vector * x, void * params, gsl_vector* g)
 void my_fdf(const gsl_vector * x, void * params, double* value, gsl_vector* g)
 {
   SPELikelihood* like = static_cast<SPELikelihood*>(params);
-  *value = like->value_and_derivs(x->data, g->data);
+  *value = like->value_and_gradient(x->data, g->data);
 #if 0
   std::cout << *value << ' '
             << g->data[0] << ' '
@@ -591,7 +591,7 @@ static double nlopt_f(unsigned n, const double* x, double* grad,
                       void* f_data)
 {
   SPELikelihood* like = static_cast<SPELikelihood*>(f_data);
-  double value = like->value_and_derivs(x, grad);
+  double value = like->value_and_gradient(x, grad);
 #if 1
   std::cout << nlopt_f_count() << ' '
             << std::setprecision(10) << value << ' '
@@ -648,8 +648,8 @@ TEST(SPELikelihood, Minimize_NLOpt_LD_LBFGS)
             << x[3] << ' ' << x[4] << '\n';
 
   Eigen::MatrixXd hessian_mat(5,5);
-  std::vector<double> derivs(5);
-  like.value_derivs_and_hessian(&x.front(), &derivs.front(), hessian_mat.data());
+  std::vector<double> gradient(5);
+  like.value_gradient_and_hessian(&x.front(), &gradient.front(), hessian_mat.data());
   Eigen::MatrixXd err_mat = hessian_mat.inverse();
   std::cout << err_mat << '\n';
 
@@ -670,10 +670,11 @@ TEST(SPELikelihood, Minimize_Minuit75)
   SPELikelihood like(mes_model, mes_hist);
 
   optimizer::Minuit75Optimizer opt(&like);
-  std::vector<double> x { 1.0, 3100.0, 20.0, 100.0, 0.45 };
-  opt.set_initial_values(x);
+  std::vector<double> xopt { 1.0, 3100.0, 20.0, 100.0, 0.45 };
+  double fopt;
+  opt.set_initial_values(xopt);
   opt.set_scale({ 0.001, 0.1, 0.01, 0.1, 0.001 });
-  opt.minimize(x);
+  opt.minimize(xopt,fopt);
 
   #if 0
   //EXPECT_EQ(status, GSL_SUCCESS);
@@ -687,8 +688,8 @@ TEST(SPELikelihood, Minimize_Minuit75)
             << x[3] << ' ' << x[4] << '\n';
 
   Eigen::MatrixXd hessian_mat(5,5);
-  std::vector<double> derivs(5);
-  like.value_derivs_and_hessian(&x.front(), &derivs.front(), hessian_mat.data());
+  std::vector<double> gradient(5);
+  like.value_gradient_and_hessian(&x.front(), &gradient.front(), hessian_mat.data());
   Eigen::MatrixXd err_mat = hessian_mat.inverse();
   std::cout << err_mat << '\n';
 

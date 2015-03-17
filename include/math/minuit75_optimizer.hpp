@@ -22,12 +22,13 @@ class Minuit75Optimizer: public Optimizer
 
   bool requires_gradient() override;
   bool requires_hessian() override;
-
+  bool requires_box_constraints() override;
   bool can_estimate_error() override;
   bool can_use_gradient() override;
   bool can_use_hessian() override;
+  bool can_impose_box_constraints() override;
 
-  bool minimize(std::vector<double>& xopt) override;
+  bool minimize(std::vector<double>& xopt, double& fopt) override;
   bool error_matrix_estimate(Eigen::MatrixXd& err_mat) override;
   bool calc_error_matrix(Eigen::MatrixXd& err_mat) override;
 
