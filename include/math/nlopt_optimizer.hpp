@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <Eigen/Dense>
+
 #include "function.hpp"
 #include "optimizer.hpp"
 #include "nlopt/nlopt.hpp"
@@ -49,6 +51,11 @@ class NLOptOptimizer: public Optimizer
   double eval_func(unsigned n, const double* x, double* grad);
   
   algorithm_type algorithm_;
+
+  unsigned iter_;
+  Eigen::MatrixXd err_mat_est_;
+  Eigen::VectorXd last_grad_;
+  Eigen::VectorXd last_point_;
 };
 
 } } } // namespace calin::math::optimizer

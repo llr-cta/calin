@@ -588,7 +588,7 @@ TEST(SPELikelihood, Minimize_NLOpt_LD_LBFGS)
 
   optimizer::NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
-  opt.set_abs_tolerance(0.001);
+  opt.set_abs_tolerance(0.0001);
   std::vector<double> x { 1.0, 3100.0, 20.0, 100.0, 0.45 };
   opt.set_initial_values(x);
   double f_val;
@@ -600,7 +600,8 @@ TEST(SPELikelihood, Minimize_NLOpt_LD_LBFGS)
   EXPECT_NEAR(x[2], 19.6141970, 0.001);
   EXPECT_NEAR(x[3], 89.1810077, 0.01);
   EXPECT_NEAR(x[4], 0.32388838, 0.0001);  
-
+ 
+  std::cout << std::fixed << std::setprecision(3);
   std::cout << x[0] << ' ' << x[1] << ' ' << x[2] << ' '
             << x[3] << ' ' << x[4] << '\n';
 
@@ -608,7 +609,7 @@ TEST(SPELikelihood, Minimize_NLOpt_LD_LBFGS)
   std::vector<double> gradient(5);
   like.value_gradient_and_hessian(&x.front(), &gradient.front(), hessian_mat.data());
   Eigen::MatrixXd err_mat = hessian_mat.inverse();
-  std::cout << err_mat << '\n';
+  std::cout << std::scientific << std::setprecision(8) << err_mat << '\n';
 
   std::cout << std::sqrt(err_mat(0,0)) << ' '
             << std::sqrt(err_mat(1,1)) << ' '
