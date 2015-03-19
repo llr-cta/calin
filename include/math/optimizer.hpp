@@ -84,6 +84,59 @@ class Optimizer
   unsigned max_iterations_ { 0 };
 };
 
+enum class ErrorMatrixStatus { UNAVAILABLE, FORCED_POS_DEF, GOOD };
+
+class ErrorMatrixEstimator
+{
+ public:
+  using Status = ErrorMatrixStatus;
+  ErrorMatrixEstimator(bool error_up):
+      npar_(0), error_up_(error_up) { /* nothing to see here */ }
+  virtual ~ErrorMatrixEstimator();
+  virtual void reset(unsigned npar) = 0;
+  virtual void invalid_func_value(const Eigen::VectorXd& x) = 0;
+  virtual void incorporate_func_value(const Eigen::VectorXd& x, double f_val) = 0;
+  virtual void incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
+                                         const Eigen::VectorXd& gradient) = 0;
+  virtual Status error_matrix(Eigen::MatrixXd& err_mat) = 0;
+ protected:
+  unsigned npar_;
+  bool error_up_;
+};
+
+class IdentityErrorMatrixEstimator: public ErrorMatrixEstimator
+{
+ public:
+  using Status = ErrorMatrixStatus;
+  using ErrorMatrixEstimator::ErrorMatrixEstimator;
+  ~IdentityErrorMatrixEstimator();
+  void reset(unsigned npar) override;
+  void invalid_func_value(const Eigen::VectorXd& x) override;
+  void incorporate_func_value(const Eigen::VectorXd& x, double f_val) override;
+  void incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
+                                 const Eigen::VectorXd& gradient) override;
+  Status error_matrix(Eigen::MatrixXd& err_mat) override;
+};
+
+class BFGSErrorMatrixEstimator: public ErrorMatrixEstimator
+{
+ public:
+  using Status = ErrorMatrixStatus;
+  using ErrorMatrixEstimator::ErrorMatrixEstimator;
+  ~BFGSErrorMatrixEstimator();
+  void reset(unsigned npar) override;
+  void invalid_func_value(const Eigen::VectorXd& x) override;
+  void incorporate_func_value(const Eigen::VectorXd& x, double f_val) override;
+  void incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
+                                 const Eigen::VectorXd& gradient) override;
+  Status error_matrix(Eigen::MatrixXd& err_mat) override;
+ protected:
+  bool last_good_ { false };
+  Eigen::MatrixXd Bk_;  // last estimate of error matrix
+  Eigen::VectorXd xk_;  // position of last evaluation
+  Eigen::VectorXd gk_;  // gradient at last evaluation
+};
+
 } // namespace optimizer
 
 using Optimizer = optimizer::Optimizer;

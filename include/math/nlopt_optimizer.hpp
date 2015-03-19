@@ -53,9 +53,11 @@ class NLOptOptimizer: public Optimizer
   algorithm_type algorithm_;
 
   unsigned iter_;
-  Eigen::MatrixXd err_mat_est_;
-  Eigen::VectorXd last_grad_;
-  Eigen::VectorXd last_point_;
+  std::unique_ptr<ErrorMatrixEstimator> err_est_;
 };
 
-} } } // namespace calin::math::optimizer
+} // namesace optimizer
+
+using optimizer::NLOptOptimizer;
+
+} } // namespace calin::math

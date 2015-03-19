@@ -17,7 +17,10 @@ NLOptOptimizer::
 NLOptOptimizer(algorithm_type algorithm, MultiAxisFunction* fcn, bool adopt_fcn)
     : Optimizer(fcn, adopt_fcn), algorithm_(algorithm)
 {
-  // nothing to see here
+  if(can_use_gradient(algorithm))
+    err_est_.reset(new BFGSErrorMatrixEstimator(fcn->error_up()));
+  else
+    err_est_.reset(new IdentityErrorMatrixEstimator(fcn->error_up()));
 }
 
 NLOptOptimizer::~NLOptOptimizer()
@@ -222,6 +225,7 @@ bool NLOptOptimizer::minimize(std::vector<double>& xopt, double& fopt)
   if(rel_tolerance()>0)opt.set_ftol_rel(rel_tolerance());
   if(max_iterations()>0)opt.set_maxeval(max_iterations());
 
+  err_est_->reset(fcn_->domain_axes().size());
   iter_ = 0;
   opt.optimize(xopt, fopt);
 }
@@ -244,6 +248,7 @@ double NLOptOptimizer::nlopt_callback(unsigned n, const double* x, double* grad,
 
 double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
 {
+  Eigen::Map<const Eigen::VectorXd> xvec(x,n);
   double fcn_value { grad?fcn_->value_and_gradient(x,grad):fcn_->value(x) };
   if(verbose_ != VerbosityLevel::SILENT)
   {
@@ -252,60 +257,22 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
     for(unsigned ipar=0;ipar<n;ipar++)std::cout << ' ' << x[ipar];
     std::cout << '\n';
   }
-
-  if(!isfinite(fcn_value))fcn_value = std::numeric_limits<double>::infinity();
   
-  if(grad)
+  if(!isfinite(fcn_value))
   {
-    if(iter_ == 0)
-    {
-      err_mat_est_.resize(n,n);
-      err_mat_est_.setIdentity();
-      last_grad_.resize(n);
-      last_point_.resize(n);
-      std::copy(x,x+n,last_point_.data());
-      std::copy(grad,grad+n,last_grad_.data());
-    }
-    else if(isfinite(fcn_value))
-    {
-      Eigen::VectorXd sk(n);
-      std::copy(x,x+n,sk.data());
-      sk -= last_point_;
-
-      Eigen::VectorXd yk(n);
-      std::copy(grad,grad+n,yk.data());
-      yk -= last_grad_;
-
-      const double skyk = sk.dot(yk);
-      sk /= skyk;
-#if 0
-      Eigen::VectorXd bkyk(n);
-      for(unsigned i=0;i<n;i++)
-      {
-        bkyk(i) = err_mat_est_(i,i)*yk(i);
-        for(unsigned j=i+1;j<n;j++)bkyk(i) += err_mat_est_(i,j)*yk(j);
-        for(unsigned j=0;j<i;j++)bkyk(i) += err_mat_est_(j,i)*yk(j);
-      }
-      const double C1 = skyk + yk.dot(bkyk);
-      for(unsigned i=0;i<n;i++)
-        for(unsigned j=i;j<n;j++)
-          err_mat_est_(i,j) += C1*sk(i)*sk(j) - bkyk(i)*sk(j) - sk(i)*bkyk(j);
-#else
-      const Eigen::VectorXd bkyk = err_mat_est_*yk;
-      err_mat_est_.noalias() += // What will Eigen make of this?
-          (skyk + yk.dot(bkyk))*sk*sk.transpose()
-          - bkyk*sk.transpose()
-          - sk*bkyk.transpose();
-#endif
-      std::cout << std::scientific << std::setprecision(8)
-                << err_mat_est_ << "\n\n";
-
-      std::copy(x,x+n,last_point_.data());
-      std::copy(grad,grad+n,last_grad_.data());
-    }
-  }  
+    fcn_value = std::numeric_limits<double>::infinity();
+    err_est_->invalid_func_value(xvec);
+  }
+  else if(grad)
+  {
+    Eigen::Map<const Eigen::VectorXd> gvec(grad,n);
+    err_est_->incorporate_func_gradient(xvec, fcn_value, gvec);
+  }
+  else
+  {
+    err_est_->incorporate_func_value(xvec, fcn_value);
+  }
   
   iter_++;
-
   return fcn_value;
 }

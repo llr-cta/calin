@@ -4,6 +4,9 @@
 
 */
 
+#include <iostream>
+#include <iomanip>
+
 #include "math/optimizer.hpp"
 
 using namespace calin::math::optimizer;
@@ -61,3 +64,132 @@ std::vector<double> Optimizer::limits_hi() const
     return std::vector<double>{};
   return xlim_hi;
 }
+
+// =============================================================================
+//
+// Error matrix estimator
+//
+// =============================================================================
+
+ErrorMatrixEstimator::~ErrorMatrixEstimator()
+{
+  // nothing to see here
+}
+
+IdentityErrorMatrixEstimator::~IdentityErrorMatrixEstimator()
+{
+  // nothing to see here
+}
+
+void IdentityErrorMatrixEstimator::reset(unsigned npar)
+{
+  npar_ = npar;
+}
+
+void IdentityErrorMatrixEstimator::
+invalid_func_value(const Eigen::VectorXd& x)
+{
+  // nothing to see here
+}
+
+void IdentityErrorMatrixEstimator::
+incorporate_func_value(const Eigen::VectorXd& x, double f_val)
+{
+  // nothing to see here
+}
+
+void IdentityErrorMatrixEstimator::
+incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
+                          const Eigen::VectorXd& gradient)
+{
+  // nothing to see here
+}
+
+auto IdentityErrorMatrixEstimator::
+error_matrix(Eigen::MatrixXd& err_mat) -> Status
+{
+  err_mat.resize(npar_,npar_);
+  err_mat.setIdentity();
+  return Status::UNAVAILABLE;
+}
+
+BFGSErrorMatrixEstimator::~BFGSErrorMatrixEstimator()
+{
+  // nothing to see here
+}
+
+void BFGSErrorMatrixEstimator::reset(unsigned npar)
+{
+  npar_ = npar;
+  last_good_ = false;
+  Bk_.resize(npar_,npar_);
+  Bk_.setIdentity();
+  xk_.resize(npar);
+  gk_.resize(npar);
+}
+
+void BFGSErrorMatrixEstimator::invalid_func_value(const Eigen::VectorXd& x)
+{
+  // Ignore last point for next update
+  last_good_ = false;
+}
+
+void BFGSErrorMatrixEstimator::
+incorporate_func_value(const Eigen::VectorXd& x, double f_val)
+{
+  // BGFS requires derivative so ignore last point for next update
+  last_good_ = false;
+}
+
+void BFGSErrorMatrixEstimator::
+incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
+                          const Eigen::VectorXd& gradient)
+{
+  // Form error matrix estimate using BFGS update method, see
+  // http://en.wikipedia.org/wiki/Broyden-Fletcher-Goldfarb-Shanno_algorithm
+
+  if(last_good_)
+  {
+    Eigen::VectorXd sk = x;
+    sk -= xk_;
+      
+    Eigen::VectorXd yk = gradient;
+    yk -= gk_;
+
+    const double skyk = sk.dot(yk);
+    sk /= skyk;
+
+#if 0
+    Eigen::VectorXd bkyk(n);
+    for(unsigned i=0;i<n;i++)
+    {
+      bkyk(i) = Bk_(i,i)*yk(i);
+      for(unsigned j=i+1;j<n;j++)bkyk(i) += Bk_(i,j)*yk(j);
+      for(unsigned j=0;j<i;j++)bkyk(i) += Bk_(j,i)*yk(j);
+    }
+    const double C1 = skyk + yk.dot(bkyk);
+    for(unsigned i=0;i<n;i++)
+      for(unsigned j=i;j<n;j++)
+        Bk_(i,j) += C1*sk(i)*sk(j) - bkyk(i)*sk(j) - sk(i)*bkyk(j);
+#else
+    const Eigen::VectorXd bkyk = Bk_*yk;
+    Bk_.noalias() += // What will Eigen make of this?
+        (skyk + yk.dot(bkyk))*sk*sk.transpose()
+        - bkyk*sk.transpose()
+        - sk*bkyk.transpose();
+#endif
+    std::cout << std::scientific << std::setprecision(8) << Bk_ << "\n\n";
+  }
+      
+  last_good_ = true;
+  xk_ = x;
+  gk_ = gradient;
+}
+
+auto BFGSErrorMatrixEstimator::error_matrix(Eigen::MatrixXd& err_mat) -> Status
+{
+  err_mat = 2.0*error_up_*Bk_;
+  return Status::GOOD;
+}
+
+
