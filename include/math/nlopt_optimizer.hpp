@@ -19,6 +19,10 @@ namespace calin { namespace math { namespace optimizer {
 class NLOptOptimizer: public Optimizer
 {
  public:
+  using ConstVecRef = function::ConstVecRef;
+  using VecRef = function::VecRef;
+  using MatRef = function::MatRef;
+
   using algorithm_type = nlopt::algorithm;
 
   NLOptOptimizer(algorithm_type algorithm,
@@ -41,9 +45,9 @@ class NLOptOptimizer: public Optimizer
   bool can_use_hessian() override;
   bool can_impose_box_constraints() override;
 
-  bool minimize(std::vector<double>& xopt, double& fopt) override;
-  bool error_matrix_estimate(Eigen::MatrixXd& err_mat) override;
-  bool calc_error_matrix(Eigen::MatrixXd& err_mat) override;
+  bool minimize(VecRef xopt, double& fopt) override;
+  bool error_matrix_estimate(MatRef err_mat) override;
+  bool calc_error_matrix(MatRef err_mat) override;
 
  protected:
   static double nlopt_callback(unsigned n, const double* x, double* grad,

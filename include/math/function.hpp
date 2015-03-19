@@ -17,6 +17,11 @@
 
 namespace calin { namespace math { namespace function {
 
+using VecRef = Eigen::Ref<Eigen::VectorXd>;
+using ConstVecRef = const Eigen::Ref<const Eigen::VectorXd>&;
+using MatRef = Eigen::Ref<Eigen::MatrixXd>;
+using ConstMatRef = const Eigen::Ref<const Eigen::MatrixXd>&;
+
 struct ParameterAxis
 {
   ParameterAxis(const std::string& _name = { },
@@ -59,13 +64,21 @@ void assign_parameters(const double* values, T& x, Params & ... params)
   assign_parameters(++values, params...);
 }
 
+template<typename T, typename... Params>
+void assign_parameters(ConstVecRef values, T& x, Params & ... params)
+{
+  const double* values_data = values.data();
+  x = *values_data;
+  assign_parameters(++values_data, params...);
+}
+
 class Parameterizable
 {
  public:
   virtual ~Parameterizable();
   virtual std::vector<ParameterAxis> parameters() = 0;
-  virtual std::vector<double> parameter_values() = 0;
-  virtual void set_parameter_values(const double* values) = 0;
+  virtual Eigen::VectorXd parameter_values() = 0;
+  virtual void set_parameter_values(ConstVecRef values) = 0;
   virtual bool can_calculate_parameter_gradient() = 0;
   virtual bool can_calculate_parameter_hessian() = 0;
 };
@@ -75,62 +88,13 @@ class MultiAxisFunction
  public:
   virtual ~MultiAxisFunction();
   virtual std::vector<DomainAxis> domain_axes() = 0;
-  virtual double value(const double* x) = 0;
+  virtual double value(ConstVecRef x) = 0;
   virtual bool can_calculate_gradient() = 0;
-  virtual double value_and_gradient(const double* x, double* gradient) = 0;
+  virtual double value_and_gradient(ConstVecRef x, VecRef gradient) = 0;
   virtual bool can_calculate_hessian() = 0;
-  virtual double value_gradient_and_hessian(const double* x, double* gradient,
-                                          double* hessian) = 0;
-  virtual double error_up() = 0;
-  
-  // Utility functions
-  double value_and_gradient(const std::vector<double>& x,
-                          std::vector<double>& gradient)
-  {
-    unsigned npar = domain_axes().size();
-    gradient.resize(npar);
-    return value_and_gradient(&x.front(), &gradient.front());
-  }
-
-  double value_and_gradient(const std::vector<double>& x,
-                          Eigen::VectorXd& gradient)
-  {
-    unsigned npar = domain_axes().size();
-    gradient.resize(npar);
-    return value_and_gradient(&x.front(), gradient.data());
-  }
-
-  double value_gradient_and_hessian(const std::vector<double>& x,
-                                  std::vector<double>& gradient,
-                                  std::vector<double>& hessian)
-  {
-    unsigned npar = domain_axes().size();
-    gradient.resize(npar);
-    hessian.resize(npar*npar);
-    return value_gradient_and_hessian(&x.front(), &gradient.front(),
-                                    &hessian.front());
-  }
-  
-  double value_gradient_and_hessian(const std::vector<double>& x,
-                                  std::vector<double>& gradient,
-                                  Eigen::MatrixXd& hessian)
-  {
-    unsigned npar = domain_axes().size();
-    gradient.resize(npar);
-    hessian.resize(npar,npar);
-    return value_gradient_and_hessian(&x.front(), &gradient.front(),
-                                    hessian.data());
-  }    
-
-  double value_gradient_and_hessian(const std::vector<double>& x,
-                                  Eigen::VectorXd& gradient,
-                                  Eigen::MatrixXd& hessian)
-  {
-    unsigned npar = domain_axes().size();
-    gradient.resize(npar);
-    hessian.resize(npar,npar);
-    return value_gradient_and_hessian(&x.front(), gradient.data(), hessian.data());
-  }    
+  virtual double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
+                                          MatRef hessian) = 0;
+  virtual double error_up() = 0;  
 };
 
 class SingleAxisFunction: virtual public MultiAxisFunction
@@ -145,10 +109,10 @@ class SingleAxisFunction: virtual public MultiAxisFunction
 
   // Members from MultiAxisFunction that we override
   std::vector<DomainAxis> domain_axes() override;
-  double value(const double* x) override;
-  double value_and_gradient(const double* x, double* gradient) override;
-  double value_gradient_and_hessian(const double* x, double* gradient,
-                                  double* hessian) override;
+  double value(ConstVecRef x) override;
+  double value_and_gradient(ConstVecRef x, VecRef gradient) override;
+  double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
+                                    MatRef hessian) override;
 };
 
 class Optimizable: virtual public MultiAxisFunction
@@ -165,8 +129,8 @@ class MultiParameterSet: virtual public Parameterizable
  public:
   virtual ~MultiParameterSet() { /* nothing to see here */ }
   virtual std::vector<ParameterAxis> parameters() override;
-  virtual std::vector<double> parameter_values() override;
-  virtual void set_parameter_values(const double* values) override;
+  virtual Eigen::VectorXd parameter_values() override;
+  virtual void set_parameter_values(ConstVecRef values) override;
  private:
   unsigned find_parameter_set(unsigned iparam);
   std::vector<std::pair<unsigned, ParamType*> > parameter_sets_;

@@ -30,21 +30,23 @@ std::vector<DomainAxis> SingleAxisFunction::domain_axes()
   return { domain_axis() };
 }
 
-double SingleAxisFunction::value(const double* x)
+double SingleAxisFunction::value(ConstVecRef x)
 {
-  return value(x[0]);
+  return value(x(0));
 }
 
-double SingleAxisFunction::value_and_gradient(const double* x,
-                                            double* gradient) 
+double SingleAxisFunction::value_and_gradient(ConstVecRef x, VecRef gradient) 
 {
-  return value_and_deriv(*x,*gradient);
+  gradient.resize(1);
+  return value_and_deriv(x(0),gradient(0));
 }
 
 double SingleAxisFunction::
-value_gradient_and_hessian(const double* x, double* gradient, double* hessian) 
+value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian) 
 {
-  return value_gradient_and_hessian(*x,*gradient,*hessian);
+  gradient.resize(1);
+  hessian.resize(1,1);
+  return value_gradient_and_hessian(x(0),gradient(0),hessian(0,0));
 }
 
 #if 0

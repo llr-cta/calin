@@ -207,7 +207,7 @@ bool NLOptOptimizer::can_impose_box_constraints()
   return can_impose_box_constraints(algorithm_);
 }
 
-bool NLOptOptimizer::minimize(std::vector<double>& xopt, double& fopt)
+bool NLOptOptimizer::minimize(VecRef xopt, double& fopt)
 {
   constexpr auto inf = std::numeric_limits<double>::infinity();
   auto axes = fcn_->domain_axes();
@@ -219,7 +219,6 @@ bool NLOptOptimizer::minimize(std::vector<double>& xopt, double& fopt)
   std::vector<double> xlim_hi { limits_hi() };
   if(!xlim_hi.empty())opt.set_upper_bounds(xlim_hi);
   opt.set_initial_step(initial_stepsize());
-  xopt = initial_values();
 
   if(abs_tolerance()>0)opt.set_ftol_abs(abs_tolerance());
   if(rel_tolerance()>0)opt.set_ftol_rel(rel_tolerance());
@@ -227,15 +226,19 @@ bool NLOptOptimizer::minimize(std::vector<double>& xopt, double& fopt)
 
   err_est_->reset(fcn_->domain_axes().size());
   iter_ = 0;
-  opt.optimize(xopt, fopt);
+
+  std::vector<double> x { initial_values() };
+  opt.optimize(x, fopt);
+
+  xopt = Eigen::Map<Eigen::VectorXd>(x.data(), x.size());
 }
 
-bool NLOptOptimizer::error_matrix_estimate(Eigen::MatrixXd& err_mat)
+bool NLOptOptimizer::error_matrix_estimate(MatRef err_mat)
 {
   
 }
 
-bool NLOptOptimizer::calc_error_matrix(Eigen::MatrixXd& err_mat)
+bool NLOptOptimizer::calc_error_matrix(MatRef err_mat)
 {
 
 }
@@ -249,7 +252,8 @@ double NLOptOptimizer::nlopt_callback(unsigned n, const double* x, double* grad,
 double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
 {
   Eigen::Map<const Eigen::VectorXd> xvec(x,n);
-  double fcn_value { grad?fcn_->value_and_gradient(x,grad):fcn_->value(x) };
+  Eigen::Map<Eigen::VectorXd> gvec(grad,n);
+  double fcn_value { grad?fcn_->value_and_gradient(xvec,gvec):fcn_->value(xvec) };
   if(verbose_ != VerbosityLevel::SILENT)
   {
     std::cout << std::left << std::setw(4) << iter_+1 << ' '
@@ -265,7 +269,6 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
   }
   else if(grad)
   {
-    Eigen::Map<const Eigen::VectorXd> gvec(grad,n);
     err_est_->incorporate_func_gradient(xvec, fcn_value, gvec);
   }
   else

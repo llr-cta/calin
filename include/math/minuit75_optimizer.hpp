@@ -17,6 +17,10 @@ namespace calin { namespace math { namespace optimizer {
 class Minuit75Optimizer: public Optimizer
 {
  public:
+  using ConstVecRef = function::ConstVecRef;
+  using VecRef = function::VecRef;
+  using MatRef = function::MatRef;
+  
   Minuit75Optimizer(MultiAxisFunction* fcn, bool adopt_fcn = false);
   ~Minuit75Optimizer();
 
@@ -28,9 +32,9 @@ class Minuit75Optimizer: public Optimizer
   bool can_use_hessian() override;
   bool can_impose_box_constraints() override;
 
-  bool minimize(std::vector<double>& xopt, double& fopt) override;
-  bool error_matrix_estimate(Eigen::MatrixXd& err_mat) override;
-  bool calc_error_matrix(Eigen::MatrixXd& err_mat) override;
+  bool minimize(VecRef xopt, double& fopt) override;
+  bool error_matrix_estimate(MatRef err_mat) override;
+  bool calc_error_matrix(MatRef err_mat) override;
 
  protected:
   int do_command(const std::string& command);

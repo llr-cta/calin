@@ -17,12 +17,13 @@ TEST(PoissonGaussianMES, SetAndRecallParameters) {
   PoissonGaussianMES pg_mes1;
   PoissonGaussianMES_HighAccuracy pg_mes2;
 
-  std::vector<double> params { 1.0, 0.1, 0.2, 1.0, 0.45 };
-  pg_mes1.set_parameter_values(&params.front());
-  pg_mes2.set_parameter_values(&params.front());
+  Eigen::VectorXd params;
+  params <<  1.0, 0.1, 0.2, 1.0, 0.45;
+  pg_mes1.set_parameter_values(params);
+  pg_mes2.set_parameter_values(params);
 
-  std::vector<double> params1 { pg_mes1.parameter_values() };
-  std::vector<double> params2 { pg_mes2.parameter_values() };
+  Eigen::VectorXd params1 { pg_mes1.parameter_values() };
+  Eigen::VectorXd params2 { pg_mes2.parameter_values() };
 
   EXPECT_EQ(params, params1);
   EXPECT_EQ(params, params2);
@@ -32,18 +33,19 @@ TEST(PoissonGaussianMES, PDFEqualityWithLegacyCode_Ped) {
   PoissonGaussianMES pg_mes1;
   PoissonGaussianMES_HighAccuracy pg_mes2;
 
-  std::vector<double> params { 1.0, 0.0, 0.2, 1.0, 0.45 };
-  pg_mes1.set_parameter_values(&params.front());
-  pg_mes2.set_parameter_values(&params.front());
+  Eigen::VectorXd params;
+  params <<  1.0, 0.1, 0.2, 1.0, 0.45;
+  pg_mes1.set_parameter_values(params);
+  pg_mes2.set_parameter_values(params);
   
-  std::vector<double> gradient(5);
+  Eigen::VectorXd gradient(5);
   
   for(double x=-1.0;x<1.001;x+=0.01)
   {
     EXPECT_NEAR(pg_mes1.pdf_ped(x),pg_mes2.pdf_ped(x),pg_mes2.pdf_ped(x)*1e-8);
-    EXPECT_NEAR(pg_mes1.pdf_ped(x),pg_mes1.pdf_gradient_ped(x,&gradient.front()),
+    EXPECT_NEAR(pg_mes1.pdf_ped(x),pg_mes1.pdf_gradient_ped(x,gradient),
                 pg_mes1.pdf_ped(x)*1e-8);
-    EXPECT_NEAR(pg_mes2.pdf_ped(x),pg_mes2.pdf_gradient_ped(x,&gradient.front()),
+    EXPECT_NEAR(pg_mes2.pdf_ped(x),pg_mes2.pdf_gradient_ped(x,gradient),
                 pg_mes2.pdf_ped(x)*1e-8);
   }
 }
@@ -52,18 +54,19 @@ TEST(PoissonGaussianMES, PDFEqualityWithLegacyCode_MES) {
   PoissonGaussianMES pg_mes1(20);
   PoissonGaussianMES_HighAccuracy pg_mes2;
 
-  std::vector<double> params { 1.0, 0.1, 0.2, 1.0, 0.45 };
-  pg_mes1.set_parameter_values(&params.front());
-  pg_mes2.set_parameter_values(&params.front());
+  Eigen::VectorXd params;
+  params <<  1.0, 0.1, 0.2, 1.0, 0.45;
+  pg_mes1.set_parameter_values(params);
+  pg_mes2.set_parameter_values(params);
 
-  std::vector<double> gradient(5);
+  Eigen::VectorXd gradient(5);
   
   for(double x=-1.0;x<10.001;x+=0.01)
   {
     EXPECT_NEAR(pg_mes1.pdf_mes(x),pg_mes2.pdf_mes(x),pg_mes2.pdf_mes(x)*1e-8);
-    EXPECT_NEAR(pg_mes1.pdf_mes(x),pg_mes1.pdf_gradient_mes(x,&gradient.front()),
+    EXPECT_NEAR(pg_mes1.pdf_mes(x),pg_mes1.pdf_gradient_mes(x,gradient),
                 pg_mes1.pdf_mes(x)*1e-8);
-    EXPECT_NEAR(pg_mes2.pdf_mes(x),pg_mes2.pdf_gradient_mes(x,&gradient.front()),
+    EXPECT_NEAR(pg_mes2.pdf_mes(x),pg_mes2.pdf_gradient_mes(x,gradient),
                 pg_mes2.pdf_mes(x)*1e-8);
   }
 }
@@ -586,7 +589,8 @@ TEST(SPELikelihood, Minimize_NLOpt_LD_LBFGS)
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, mes_hist);
 
-  optimizer::NLOptOptimizer opt(nlopt::/*LN_SBPLX*/ LD_LBFGS, &like);
+  //optimizer::NLOptOptimizer opt(nlopt::LN_SBPLX, &like);
+  optimizer::NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
   opt.set_scale({0.1,0.1,1.0,1.0,0.05});
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   opt.set_abs_tolerance(0.0001);
@@ -629,7 +633,7 @@ TEST(SPELikelihood, Minimize_Minuit75)
   SPELikelihood like(mes_model, mes_hist);
 
   optimizer::Minuit75Optimizer opt(&like);
-  std::vector<double> xopt { 1.0, 3100.0, 20.0, 100.0, 0.45 };
+  Eigen::VectorXd xopt { 1.0, 3100.0, 20.0, 100.0, 0.45 };
   double fopt;
   opt.set_initial_values(xopt);
   opt.set_scale({ 0.001, 0.1, 0.01, 0.1, 0.001 });

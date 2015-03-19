@@ -87,20 +87,20 @@ void IdentityErrorMatrixEstimator::reset(unsigned npar)
 }
 
 void IdentityErrorMatrixEstimator::
-invalid_func_value(const Eigen::VectorXd& x)
+invalid_func_value(function::ConstVecRef x)
 {
   // nothing to see here
 }
 
 void IdentityErrorMatrixEstimator::
-incorporate_func_value(const Eigen::VectorXd& x, double f_val)
+incorporate_func_value(function::ConstVecRef x, double f_val)
 {
   // nothing to see here
 }
 
 void IdentityErrorMatrixEstimator::
-incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
-                          const Eigen::VectorXd& gradient)
+incorporate_func_gradient(function::ConstVecRef x, double f_val,
+                          function::ConstVecRef gradient)
 {
   // nothing to see here
 }
@@ -128,22 +128,22 @@ void BFGSErrorMatrixEstimator::reset(unsigned npar)
   gk_.resize(npar);
 }
 
-void BFGSErrorMatrixEstimator::invalid_func_value(const Eigen::VectorXd& x)
+void BFGSErrorMatrixEstimator::invalid_func_value(function::ConstVecRef x)
 {
   // Ignore last point for next update
   last_good_ = false;
 }
 
 void BFGSErrorMatrixEstimator::
-incorporate_func_value(const Eigen::VectorXd& x, double f_val)
+incorporate_func_value(function::ConstVecRef x, double f_val)
 {
   // BGFS requires derivative so ignore last point for next update
   last_good_ = false;
 }
 
 void BFGSErrorMatrixEstimator::
-incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
-                          const Eigen::VectorXd& gradient)
+incorporate_func_gradient(function::ConstVecRef x, double f_val,
+                          function::ConstVecRef gradient)
 {
   // Form error matrix estimate using BFGS update method, see
   // http://en.wikipedia.org/wiki/Broyden-Fletcher-Goldfarb-Shanno_algorithm
@@ -159,7 +159,9 @@ incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
     const double skyk = sk.dot(yk);
     sk /= skyk;
 
-#if 0
+    std::cout << "B: " << gradient.data() << '\n';
+    
+#ifdef BFGS_COMPUTE_WITH_LOOPS
     Eigen::VectorXd bkyk(n);
     for(unsigned i=0;i<n;i++)
     {
@@ -189,6 +191,11 @@ incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
 auto BFGSErrorMatrixEstimator::error_matrix(Eigen::MatrixXd& err_mat) -> Status
 {
   err_mat = 2.0*error_up_*Bk_;
+#ifdef BFGS_COMPUTE_WITH_LOOPS
+    for(unsigned i=0;i<n;i++)
+      for(unsigned j=i+1;j<n;j++)
+        err_mat(j,i) = err_mat(i,j);
+#endif
   return Status::GOOD;
 }
 

@@ -7,39 +7,10 @@
 #include <Eigen/Dense>
 #include <nlopt/nlopt.hpp>
 #include <calib/spe_fit.hpp>
+#include <math/nlopt_optimizer.hpp>
 
 using namespace calin::math;
 using namespace calin::calib;
-
-unsigned nlopt_f_count(bool increment = true, bool reset = false)
-{
-  static unsigned iter = 0;
-  if(increment)iter++;
-  if(reset)iter=0;
-  return iter;
-}
-
-static double nlopt_f(unsigned n, const double* x, double* grad,
-                      void* f_data)
-{
-  SPELikelihood* like = static_cast<SPELikelihood*>(f_data);
-  double value = like->value_and_gradient(x, grad);
-#if 1
-  std::cout << nlopt_f_count() << ' '
-            << std::setprecision(10) << value << ' '
-            << x[0] << ' '
-            << x[1] << ' '
-            << x[2] << ' '
-            << x[3] << ' '
-  << x[4] << ' '
-            << grad[0] << ' '
-            << grad[1] << ' '
-            << grad[2] << ' '
-            << grad[3] << ' '
-            << grad[4] << '\n';
-#endif
-  return value;
-}
 
 int main(int argc, char** argv)
 {
@@ -88,37 +59,26 @@ int main(int argc, char** argv)
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, hist);
 
-  nlopt::opt opt(nlopt::LD_LBFGS, 5);
-  opt.set_min_objective(nlopt_f, &like);
-  std::vector<double> xlim_lo;
-  std::vector<double> xlim_hi;
-  bool has_xlim_lo = false;
-  bool has_xlim_hi = false;
-  for(const auto& ipar : like.domain_axes())
-  {
-    has_xlim_lo |= ipar.has_lo_bound;
-    xlim_lo.push_back(ipar.has_lo_bound?ipar.lo_bound:-HUGE_VAL);
-    has_xlim_hi |= ipar.has_hi_bound;
-    xlim_hi.push_back(ipar.has_hi_bound?ipar.hi_bound:HUGE_VAL);
-  }
-  if(has_xlim_lo)opt.set_lower_bounds(xlim_lo);
-  if(has_xlim_hi)opt.set_upper_bounds(xlim_hi);
+  NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
+  Eigen::VectorXd x(5);
+  x <<  atof(argv[0]),atof(argv[1]),atof(argv[2]),
+      atof(argv[3]),atof(argv[4]);
+  std::cout << "START " << like.value(x) << ' '
+            << x(0) << ' ' << x(1) << ' ' << x(2) << ' ' << x(3) << ' ' << x(4)
+            << '\n';
 
-  std::vector<double> x { atof(argv[0]),atof(argv[1]),atof(argv[2]),
-        atof(argv[3]),atof(argv[4]) };
-  std::cout << "START " << like.value(&x.front()) << ' ' << x[0] << ' ' << x[1] << ' ' << x[2] << ' ' << x[3] << ' ' << x[4] << '\n';
   double f_val;
-  opt.set_ftol_abs(0.001);
-  nlopt_f_count(false,/*reset=*/true);
-  opt.optimize(x, f_val);
+  opt.set_abs_tolerance(0.001);
+  opt.set_initial_values(x);
+  opt.minimize(x, f_val);
 
-  std::cout << x[0] << ' ' << x[1] << ' ' << x[2] << ' '
-            << x[3] << ' ' << x[4] << '\n';
+  std::cout << x(0) << ' ' << x(1) << ' ' << x(2) << ' '
+            << x(3) << ' ' << x(4) << '\n';
   
-  Eigen::MatrixXd hessian_mat;
-  std::vector<double> gradient;
-  like.value_gradient_and_hessian(x, gradient, hessian_mat);
-  Eigen::MatrixXd err_mat = hessian_mat.inverse();
+  Eigen::MatrixXd hessian;
+  Eigen::VectorXd gradient;
+  like.value_gradient_and_hessian(x, gradient, hessian);
+  Eigen::MatrixXd err_mat = hessian.inverse();
   std::cout << err_mat << '\n';
 
   std::cout << std::sqrt(0.5*err_mat(0,0)) << ' '

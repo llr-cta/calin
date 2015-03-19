@@ -21,6 +21,10 @@ enum class OptimizerVerbosityLevel { SILENT, FCN_EVALS_ONLY, ELEVATED, MAX };
 class Optimizer
 {
  public:
+  using ConstVecRef = function::ConstVecRef;
+  using VecRef = function::VecRef;
+  using MatRef = function::MatRef;
+
   using VerbosityLevel = OptimizerVerbosityLevel;
   Optimizer(MultiAxisFunction* fcn, bool adopt_fcn = false):
       fcn_(fcn), my_fcn_(adopt_fcn) { /* nothing to see here */ }
@@ -35,9 +39,9 @@ class Optimizer
   virtual bool can_use_hessian() = 0;
   virtual bool can_impose_box_constraints() = 0;
   
-  virtual bool minimize(std::vector<double>& xopt, double& fopt) = 0;
-  virtual bool error_matrix_estimate(Eigen::MatrixXd& err_mat) = 0;
-  virtual bool calc_error_matrix(Eigen::MatrixXd& err_mat) = 0;
+  virtual bool minimize(VecRef xopt, double& fopt) = 0;
+  virtual bool error_matrix_estimate(MatRef err_mat) = 0;
+  virtual bool calc_error_matrix(MatRef err_mat) = 0;
 
   void set_verbosity_level(VerbosityLevel verbose = VerbosityLevel::SILENT) {
     verbose_=verbose; }
@@ -56,6 +60,8 @@ class Optimizer
   void set_step_size_scale_factor(double sss = 1.0) { stepsize_scale_ = sss; }
   
   void set_initial_values(const std::vector<double>& x0 = {}) { x0_=x0; }
+  void set_initial_values(ConstVecRef x0) {
+    x0_.assign(x0.data(),x0.data()+x0.innerSize()); }
   void set_scale(const std::vector<double>& xscale = {}) { xscale_=xscale; }
   void set_limits_lo(const std::vector<double>& xlim = {}) { xlim_lo_ = xlim; }
   void set_limits_hi(const std::vector<double>& xlim = {}) { xlim_hi_ = xlim; }
@@ -94,10 +100,10 @@ class ErrorMatrixEstimator
       npar_(0), error_up_(error_up) { /* nothing to see here */ }
   virtual ~ErrorMatrixEstimator();
   virtual void reset(unsigned npar) = 0;
-  virtual void invalid_func_value(const Eigen::VectorXd& x) = 0;
-  virtual void incorporate_func_value(const Eigen::VectorXd& x, double f_val) = 0;
-  virtual void incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
-                                         const Eigen::VectorXd& gradient) = 0;
+  virtual void invalid_func_value(function::ConstVecRef x) = 0;
+  virtual void incorporate_func_value(function::ConstVecRef x, double f_val) = 0;
+  virtual void incorporate_func_gradient(function::ConstVecRef x, double f_val,
+                                         function::ConstVecRef gradient) = 0;
   virtual Status error_matrix(Eigen::MatrixXd& err_mat) = 0;
  protected:
   unsigned npar_;
@@ -111,10 +117,10 @@ class IdentityErrorMatrixEstimator: public ErrorMatrixEstimator
   using ErrorMatrixEstimator::ErrorMatrixEstimator;
   ~IdentityErrorMatrixEstimator();
   void reset(unsigned npar) override;
-  void invalid_func_value(const Eigen::VectorXd& x) override;
-  void incorporate_func_value(const Eigen::VectorXd& x, double f_val) override;
-  void incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
-                                 const Eigen::VectorXd& gradient) override;
+  void invalid_func_value(function::ConstVecRef x) override;
+  void incorporate_func_value(function::ConstVecRef x, double f_val) override;
+  void incorporate_func_gradient(function::ConstVecRef x, double f_val,
+                                 function::ConstVecRef gradient) override;
   Status error_matrix(Eigen::MatrixXd& err_mat) override;
 };
 
@@ -125,10 +131,10 @@ class BFGSErrorMatrixEstimator: public ErrorMatrixEstimator
   using ErrorMatrixEstimator::ErrorMatrixEstimator;
   ~BFGSErrorMatrixEstimator();
   void reset(unsigned npar) override;
-  void invalid_func_value(const Eigen::VectorXd& x) override;
-  void incorporate_func_value(const Eigen::VectorXd& x, double f_val) override;
-  void incorporate_func_gradient(const Eigen::VectorXd& x, double f_val,
-                                 const Eigen::VectorXd& gradient) override;
+  void invalid_func_value(function::ConstVecRef x) override;
+  void incorporate_func_value(function::ConstVecRef x, double f_val) override;
+  void incorporate_func_gradient(function::ConstVecRef x, double f_val,
+                                 function::ConstVecRef gradient) override;
   Status error_matrix(Eigen::MatrixXd& err_mat) override;
  protected:
   bool last_good_ { false };

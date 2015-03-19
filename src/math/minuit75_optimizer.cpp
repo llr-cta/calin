@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <cmath>
 #include <limits>
+#include <iostream>
+#include <iomanip>
 
 #include "math/minuit75_optimizer.hpp"
 
@@ -122,7 +124,7 @@ bool Minuit75Optimizer::can_impose_box_constraints()
   return true;
 }
 
-bool Minuit75Optimizer::minimize(std::vector<double>& xopt, double& fopt)
+bool Minuit75Optimizer::minimize(VecRef xopt, double& fopt)
 {
   constexpr auto inf = std::numeric_limits<double>::infinity();
   mn7fcb* fcb { cast_fcb(fcb_) };
@@ -186,12 +188,12 @@ bool Minuit75Optimizer::minimize(std::vector<double>& xopt, double& fopt)
   return true;
 }
 
-bool Minuit75Optimizer::error_matrix_estimate(Eigen::MatrixXd& err_mat)
+bool Minuit75Optimizer::error_matrix_estimate(MatRef err_mat)
 {
 
 }
 
-bool Minuit75Optimizer::calc_error_matrix(Eigen::MatrixXd& err_mat)
+bool Minuit75Optimizer::calc_error_matrix(MatRef err_mat)
 {
 
 }
@@ -214,16 +216,19 @@ minuit_callback(integer* npar, double* grad, double* fcnval,
   m75->eval_function(*npar,grad,*fcnval,x,*iflag);
   return 0;
 }
-#include<iostream>
+
 void Minuit75Optimizer::
 eval_function(long npar, double* grad, double& fcnval,
               const double* x, long& iflag)
 {
-  if(iflag==2)fcnval = fcn_->value_and_gradient(x, grad);
-  else fcnval = fcn_->value(x);
+  Eigen::Map<const Eigen::VectorXd> xvec(x,npar);
+  Eigen::Map<Eigen::VectorXd> gvec(grad,npar);
+
+  if(iflag==2)fcnval = fcn_->value_and_gradient(xvec, gvec);
+  else fcnval = fcn_->value(xvec);
 
   std::cout << fcnval;
-  for(unsigned ipar=0;ipar<npar;ipar++)std::cout << ' ' << x[ipar];
+  for(unsigned ipar=0;ipar<npar;ipar++)std::cout << ' ' << xvec(ipar);
   std::cout << '\n';
   
 }

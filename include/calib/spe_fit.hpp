@@ -18,15 +18,19 @@ class SingleElectronSpectrum: public math::Parameterizable
 class MultiElectronSpectrum: public math::Parameterizable
 {
  public:
+  using ConstVecRef = math::function::ConstVecRef;
+  using VecRef = math::function::VecRef;
+  using MatRef = math::function::MatRef;
+
   virtual ~MultiElectronSpectrum();
   virtual double pdf_ped(double x) = 0;
-  virtual double pdf_gradient_ped(double x, double* gradient) = 0;
-  virtual double pdf_gradient_hessian_ped(double x, double* gradient,
-                                        double* hessian);
+  virtual double pdf_gradient_ped(double x, VecRef gradient) = 0;
+  virtual double pdf_gradient_hessian_ped(double x, VecRef gradient,
+                                        MatRef hessian);
   virtual double pdf_mes(double x) = 0;
-  virtual double pdf_gradient_mes(double x, double* gradient) = 0;
-  virtual double pdf_gradient_hessian_mes(double x, double* gradient,
-                                        double* hessian);
+  virtual double pdf_gradient_mes(double x, VecRef gradient) = 0;
+  virtual double pdf_gradient_hessian_mes(double x, VecRef gradient,
+                                        MatRef hessian);
 
   virtual double intensity_pe() = 0;
   virtual double ped_rms_dc() = 0;
@@ -40,24 +44,28 @@ class MultiElectronSpectrum: public math::Parameterizable
 class PoissonGaussianMES: public MultiElectronSpectrum
 {
  public:
+  using ConstVecRef = math::function::ConstVecRef;
+  using VecRef = math::function::VecRef;
+  using MatRef = math::function::MatRef;
+
   PoissonGaussianMES(unsigned nmax = 10, bool force_calc_hessian = false);
   virtual ~PoissonGaussianMES();
 
   std::vector<math::ParameterAxis> parameters() override;
-  std::vector<double> parameter_values() override;
-  void set_parameter_values(const double* values) override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
   bool can_calculate_parameter_gradient() override;
   bool can_calculate_parameter_hessian() override;
 
   double pdf_ped(double x) override;
-  double pdf_gradient_ped(double x, double* gradient) override;
-  double pdf_gradient_hessian_ped(double x, double* gradient,
-                                double* hessian) override;
+  double pdf_gradient_ped(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_ped(double x, VecRef gradient,
+                                MatRef hessian) override;
 
   double pdf_mes(double x) override;
-  double pdf_gradient_mes(double x, double* gradient) override;
-  double pdf_gradient_hessian_mes(double x, double* gradient,
-                                double* hessian) override;
+  double pdf_gradient_mes(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_mes(double x, VecRef gradient,
+                                MatRef hessian) override;
 
   double intensity_pe() override { return intensity_pe_; };
   double ped_rms_dc() override { return ped_rms_dc_; }
@@ -125,18 +133,22 @@ class PoissonGaussianMES: public MultiElectronSpectrum
 class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
 {
  public:
+  using ConstVecRef = math::function::ConstVecRef;
+  using VecRef = math::function::VecRef;
+  using MatRef = math::function::MatRef;
+
   PoissonGaussianMES_HighAccuracy(double tol = 1e-200);
   virtual ~PoissonGaussianMES_HighAccuracy();
 
   std::vector<math::ParameterAxis> parameters() override;
-  std::vector<double> parameter_values() override;
-  void set_parameter_values(const double* values) override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
   bool can_calculate_parameter_gradient() override;
 
   double pdf_mes(double x) override;
   double pdf_ped(double x) override;
-  double pdf_gradient_mes(double x, double* gradient) override;
-  double pdf_gradient_ped(double x, double* gradient) override;
+  double pdf_gradient_mes(double x, VecRef gradient) override;
+  double pdf_gradient_ped(double x, VecRef gradient) override;
 
   double intensity_pe() override { return intensity_pe_; };
   double ped_rms_dc() override { return ped_rms_dc_; }
@@ -156,6 +168,10 @@ class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
 class SPELikelihood: public math::MultiAxisFunction
 {
  public:
+  using ConstVecRef = math::function::ConstVecRef;
+  using VecRef = math::function::VecRef;
+  using MatRef = math::function::MatRef;
+
   SPELikelihood(MultiElectronSpectrum& mes_model,
                 const math::SimpleHist& mes_data);
   SPELikelihood(MultiElectronSpectrum& mes_model,
@@ -163,18 +179,14 @@ class SPELikelihood: public math::MultiAxisFunction
                 const math::SimpleHist& ped_data);
   virtual ~SPELikelihood();
   std::vector<math::DomainAxis> domain_axes() override;
-  double value(const double* x) override;
+  double value(ConstVecRef x) override;
   bool can_calculate_gradient() override;
-  double value_and_gradient(const double* x, double* gradient) override;
+  double value_and_gradient(ConstVecRef x, VecRef gradient) override;
   bool can_calculate_hessian() override;
-  double value_gradient_and_hessian(const double* x, double* gradient,
-                                  double* hessian) override;
+  double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
+                                    MatRef hessian) override;
   double error_up() override { return 0.5; }
   
-  // Bring in non-virtual helper functions from base class (stupid C++)
-  using math::MultiAxisFunction::value_and_gradient;
-  using math::MultiAxisFunction::value_gradient_and_hessian;
-
  private:
   MultiElectronSpectrum* mes_model_;
   unsigned npar_;
