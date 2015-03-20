@@ -136,11 +136,11 @@ bool gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
                     VecRef good);
 
 template<typename ParameterizableType> using ValGetter =
-    std::function<double(ParameterizableType*, ConstVecRef)>;
+    std::function<double(ParameterizableType*)>;
 template<typename ParameterizableType> using GradGetter =
-    std::function<double(ParameterizableType*, ConstVecRef, VecRef)>;
+    std::function<double(ParameterizableType*, VecRef)>;
 template<typename ParameterizableType> using HessGetter =
-    std::function<double(ParameterizableType*, ConstVecRef, VecRef, MatRef)>;
+    std::function<double(ParameterizableType*, VecRef, MatRef)>;
     
 template<typename ParameterizableType>
 class ParameterizableToMultiAxisFunctionAdapter: public MultiAxisFunction
@@ -160,16 +160,20 @@ class ParameterizableToMultiAxisFunctionAdapter: public MultiAxisFunction
   ~ParameterizableToMultiAxisFunctionAdapter() { }
   unsigned num_domain_axes() override { return par_->num_parameters(); }
   std::vector<DomainAxis> domain_axes() override { return par_->parameters(); }
-  double value(ConstVecRef x) { return val_getter_(par_, x); }
-  bool can_calculate_gradient() {
+  double value(ConstVecRef x) {
+    par_->set_parameter_values(x);
+    return val_getter_(par_); }
+  bool can_calculate_gradient() { 
     return par_->can_calculate_parameter_gradient(); }
   double value_and_gradient(ConstVecRef x, VecRef gradient) {
-    return grad_getter_(par_, x, gradient); }
+    par_->set_parameter_values(x);
+    return grad_getter_(par_, gradient); }
   bool can_calculate_hessian() {
     return par_->can_calculate_parameter_hessian(); }
   double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
-                                  MatRef hessian) {
-    return hess_getter_(par_, x, gradient, hessian); }
+                                    MatRef hessian) {
+    par_->set_parameter_values(x);
+    return hess_getter_(par_, gradient, hessian); }
   double error_up() { return error_up_; }
  protected:
   ParameterizableType* par_;

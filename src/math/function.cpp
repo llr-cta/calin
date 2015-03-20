@@ -87,9 +87,15 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
     //double dfdx = (fm2 - 8.0*fm1 + 8.0*fp1 - fp2)/(6.0*h2);
     double dfdx = (-fm1 + fp1)/h2;
     double h2d3fdx3 = (-fm2 + 2.0*fm1 - 2.0*fp1 + fp2)/(6.0*h2);
-    if(dfdx == gradient(iaxis))err(iaxis)=0;
-    else err(iaxis) =
-             std::abs(std::abs(dfdx - gradient(iaxis))/std::abs(h2d3fdx3)-1);
+    if(dfdx==gradient(iaxis))err(iaxis)=0.0;
+    else
+    {
+      double grad_err = dfdx - gradient(iaxis);
+      double grad_surplus_err = std::abs(grad_err - h2d3fdx3);
+      if(grad_surplus_err < eps)err(iaxis)=0;
+      else err(iaxis) = 1.0-std::log(grad_surplus_err)/std::log(eps);
+      std::cout << "A: " << grad_surplus_err << ' ' << grad_err << ' ' << std::sqrt(eps) << '\n';
+    }
     std::cout << iaxis << ' ' << dfdx << ' ' << gradient(iaxis) << ' '
               << err(iaxis) << ' '
               << std::abs(dfdx - gradient(iaxis)) << ' '

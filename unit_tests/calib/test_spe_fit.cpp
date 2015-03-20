@@ -80,157 +80,66 @@ TEST(PoissonGaussianMES, GradientTest_PED)
   Eigen::VectorXd p(5);
   p << 1.0, 0.100000, 0.2, 1.0, 0.45;
   Eigen::VectorXd dp(5);
-  double dp1 = 1e-5;
+  double dp1 = 1e-7;
   dp << dp1, dp1, dp1, dp1, dp1;
   for(double xval = -1.0; xval<1.0; xval+=0.1)
   {
     bool check_ok;
-    Eigen::VectorXd good(5);
-    std::function<double(PoissonGaussianMES*, ConstVecRef)> val_get =
-        [xval](PoissonGaussianMES* mes, ConstVecRef p) {
-      mes->set_parameter_values(p); return mes->pdf_ped(xval); };
-    std::function<double(PoissonGaussianMES*, ConstVecRef, VecRef)> grad_get =
-        [xval](PoissonGaussianMES* mes, ConstVecRef p, VecRef grad) {
-      mes->set_parameter_values(p); return mes->pdf_gradient_ped(xval,grad); };
-    std::function<double(PoissonGaussianMES*, ConstVecRef, VecRef, MatRef)>
-        hess_get = [xval](PoissonGaussianMES* mes, ConstVecRef p, VecRef grad,
-                          MatRef hess) { mes->set_parameter_values(p);
-                      return mes->pdf_gradient_hessian_ped(xval,grad,hess); };
+    Eigen::VectorXd err(5);
+    function::ValGetter<PoissonGaussianMES> val_get =
+        [xval](PoissonGaussianMES* mes) {
+      return mes->pdf_ped(xval); };
+    function::GradGetter<PoissonGaussianMES>  grad_get =
+        [xval](PoissonGaussianMES* mes, VecRef grad) {
+      return mes->pdf_gradient_ped(xval,grad); };
+    function::HessGetter<PoissonGaussianMES> hess_get =
+        [xval](PoissonGaussianMES* mes, VecRef grad, MatRef hess) {
+      return mes->pdf_gradient_hessian_ped(xval,grad,hess); };
 
-    check_ok = function::gradient_check_par(mes, p, dp, good,
+    check_ok = function::gradient_check_par(mes, p, dp, err,
                                             val_get, grad_get, hess_get);
 
     EXPECT_TRUE(check_ok);
+    for(unsigned ipar=0;ipar<5;ipar++)
+      EXPECT_LE(err(ipar),0.5);
+  }
+}
+
+TEST(PoissonGaussianMES, GradientTest_MES)
+{
+  using function::ConstVecRef;
+  using function::VecRef;
+  using function::MatRef;
+  PoissonGaussianMES mes(40);
+  Eigen::VectorXd p(5);
+  p << 1.0, 0.100000, 0.2, 1.0, 0.45;
+  Eigen::VectorXd dp(5);
+  double dp1 = 1e-7;
+  dp << dp1, dp1, dp1, dp1, dp1;
+  for(double xval = -1.0; xval<1.0; xval+=0.1)
+  {
+    bool check_ok;
+    Eigen::VectorXd err(5);
+    function::ValGetter<PoissonGaussianMES> val_get =
+        [xval](PoissonGaussianMES* mes) {
+      return mes->pdf_mes(xval); };
+    function::GradGetter<PoissonGaussianMES>  grad_get =
+        [xval](PoissonGaussianMES* mes, VecRef grad) {
+      return mes->pdf_gradient_mes(xval,grad); };
+    function::HessGetter<PoissonGaussianMES> hess_get =
+        [xval](PoissonGaussianMES* mes, VecRef grad, MatRef hess) {
+      return mes->pdf_gradient_hessian_mes(xval,grad,hess); };
+
+    check_ok = function::gradient_check_par(mes, p, dp, err,
+                                            val_get, grad_get, hess_get);
+
+    EXPECT_TRUE(check_ok);
+    for(unsigned ipar=0;ipar<5;ipar++)
+      EXPECT_LE(err(ipar),0.5);
   }
 }
 
 #if 0
-
-namespace {
-
-template<typename MESFactory>
-static void deriv_test(MESFactory fact,
-                       double (MultiElectronSpectrum::*fn_pdf)(double),
-                       double (MultiElectronSpectrum::*fn_der)(double,double*),
-                       std::vector<double> params,
-                       unsigned ip, double dx, double nearness,
-                       double xlo, double xhi)
-{
-  MultiElectronSpectrum* mes = fact();
-  mes->set_parameter_values(&params.front());
-
-  params[ip] += dx;
-  MultiElectronSpectrum* mes_dx = fact();
-  mes_dx->set_parameter_values(&params.front());
-
-  std::vector<double> ld1(5);
-  std::vector<double> gradient1(5);
-  for(double x=xlo;x<xhi;x+=0.01)
-  {
-    double pdf = (mes->*fn_der)(x,&gradient1.front());
-    double pdf_dx = (mes_dx->*fn_pdf)(x);
-
-    EXPECT_NEAR(gradient1[ip], (pdf_dx-pdf)/dx,
-                (std::abs(ld1[ip])+std::abs(gradient1[ip]))*nearness);
-    if(std::abs(gradient1[ip] - (pdf_dx-pdf)/dx)>(std::abs(ld1[ip])+std::abs(gradient1[ip]))*nearness)
-    {
-      std::cout << ld1[ip] << ' ' << gradient1[ip] << ' ' << x << '\n';
-    }
-    ld1 = gradient1;
-  }
-
-  delete mes;
-  delete mes_dx;
-}
-
-MultiElectronSpectrum* make_pg_mes()
-{
-  return new PoissonGaussianMES(40);
-}
-
-MultiElectronSpectrum* make_pgha_mes()
-{
-  return new PoissonGaussianMES_HighAccuracy;
-}
-
-} // anonymous namespace
-
-TEST(PoissonGaussianMES, Dervative_PedZero_Ped) {
-  deriv_test(make_pg_mes,
-             &MultiElectronSpectrum::pdf_ped,
-             &MultiElectronSpectrum::pdf_gradient_ped,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 1, 1e-8, 1e-6, -1.0, 1.0);
-}
-
-TEST(PoissonGaussianMES, Dervative_PedRMS_Ped) {
-  deriv_test(make_pg_mes,
-             &MultiElectronSpectrum::pdf_ped,
-             &MultiElectronSpectrum::pdf_gradient_ped,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 2, 1e-8, 1e-6, -1.0, 1.0);
-}
-
-TEST(PoissonGaussianMES, Dervative_Intensity_MES) {
-  deriv_test(make_pg_mes,
-             &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_gradient_mes,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 0, 1e-8, 2e-6, -1.0, 20.0);
-}
-
-TEST(PoissonGaussianMES, Dervative_PedZero_MES) {
-  deriv_test(make_pg_mes,
-             &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_gradient_mes,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 1, 1e-8, 1e-6, -1.0, 20.0);
-}
-
-TEST(PoissonGaussianMES, Dervative_PedRMS_MES) {
-  deriv_test(make_pg_mes,
-             &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_gradient_mes,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 2, 1e-8, 1e-5, -1.0, 20.0);
-}
-
-TEST(PoissonGaussianMES, Dervative_Gain_MES) {
-  deriv_test(make_pg_mes,
-             &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_gradient_mes,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 3, 1e-8, 1e-5, -1.0, 20.0);
-}
-
-TEST(PoissonGaussianMES, Dervative_SESRMS_MES) {
-  deriv_test(make_pg_mes,
-             &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_gradient_mes,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 4, 1e-8, 1e-5, -1.0, 20.0);
-}
-
-TEST(PoissonGaussianMES_HighAccuracy, Dervative_PedZero_Ped) {
-  deriv_test(make_pgha_mes,
-             &MultiElectronSpectrum::pdf_ped,
-             &MultiElectronSpectrum::pdf_gradient_ped,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 1, 1e-8, 1e-5, -1.0, 1.0);
-}
-
-TEST(PoissonGaussianMES_HighAccuracy, Dervative_PedRMS_Ped) {
-  deriv_test(make_pgha_mes,
-             &MultiElectronSpectrum::pdf_ped,
-             &MultiElectronSpectrum::pdf_gradient_ped,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 2, 1e-8, 1e-5, -1.0, 1.0);
-}
-
-TEST(PoissonGaussianMES_HighAccuracy, Dervative_Intensity_MES) {
-  deriv_test(make_pgha_mes,
-             &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_gradient_mes,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 0, 1e-8, 1e-4, -1.0, 20.0);
-}
-
-TEST(PoissonGaussianMES_HighAccuracy, Dervative_PedZero_MES) {
-  deriv_test(make_pgha_mes,
-             &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_gradient_mes,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 1, 1e-8, 1e-5, -1.0, 20.0);
-}
 
 TEST(PoissonGaussianMES_HighAccuracy, Dervative_PedRMS_MES) {
   deriv_test(make_pgha_mes,
