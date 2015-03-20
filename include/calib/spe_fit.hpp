@@ -51,6 +51,7 @@ class PoissonGaussianMES: public MultiElectronSpectrum
   PoissonGaussianMES(unsigned nmax = 10, bool force_calc_hessian = false);
   virtual ~PoissonGaussianMES();
 
+  unsigned num_parameters() override;
   std::vector<math::ParameterAxis> parameters() override;
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
@@ -140,6 +141,7 @@ class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
   PoissonGaussianMES_HighAccuracy(double tol = 1e-200);
   virtual ~PoissonGaussianMES_HighAccuracy();
 
+  unsigned num_parameters() override;
   std::vector<math::ParameterAxis> parameters() override;
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
@@ -178,6 +180,8 @@ class SPELikelihood: public math::MultiAxisFunction
                 const math::SimpleHist& mes_data,
                 const math::SimpleHist& ped_data);
   virtual ~SPELikelihood();
+
+  unsigned num_domain_axes() override;
   std::vector<math::DomainAxis> domain_axes() override;
   double value(ConstVecRef x) override;
   bool can_calculate_gradient() override;

@@ -17,7 +17,7 @@ TEST(PoissonGaussianMES, SetAndRecallParameters) {
   PoissonGaussianMES pg_mes1;
   PoissonGaussianMES_HighAccuracy pg_mes2;
 
-  Eigen::VectorXd params;
+  Eigen::VectorXd params(5);
   params <<  1.0, 0.1, 0.2, 1.0, 0.45;
   pg_mes1.set_parameter_values(params);
   pg_mes2.set_parameter_values(params);
@@ -33,7 +33,7 @@ TEST(PoissonGaussianMES, PDFEqualityWithLegacyCode_Ped) {
   PoissonGaussianMES pg_mes1;
   PoissonGaussianMES_HighAccuracy pg_mes2;
 
-  Eigen::VectorXd params;
+  Eigen::VectorXd params(5);
   params <<  1.0, 0.1, 0.2, 1.0, 0.45;
   pg_mes1.set_parameter_values(params);
   pg_mes2.set_parameter_values(params);
@@ -54,7 +54,7 @@ TEST(PoissonGaussianMES, PDFEqualityWithLegacyCode_MES) {
   PoissonGaussianMES pg_mes1(20);
   PoissonGaussianMES_HighAccuracy pg_mes2;
 
-  Eigen::VectorXd params;
+  Eigen::VectorXd params(5);
   params <<  1.0, 0.1, 0.2, 1.0, 0.45;
   pg_mes1.set_parameter_values(params);
   pg_mes2.set_parameter_values(params);
@@ -70,6 +70,41 @@ TEST(PoissonGaussianMES, PDFEqualityWithLegacyCode_MES) {
                 pg_mes2.pdf_mes(x)*1e-8);
   }
 }
+
+TEST(PoissonGaussianMES, GradientTest_PED)
+{
+  using function::ConstVecRef;
+  using function::VecRef;
+  using function::MatRef;
+  PoissonGaussianMES mes(40);
+  Eigen::VectorXd p(5);
+  p << 1.0, 0.100000, 0.2, 1.0, 0.45;
+  Eigen::VectorXd dp(5);
+  double dp1 = 1e-5;
+  dp << dp1, dp1, dp1, dp1, dp1;
+  for(double xval = -1.0; xval<1.0; xval+=0.1)
+  {
+    bool check_ok;
+    Eigen::VectorXd good(5);
+    std::function<double(PoissonGaussianMES*, ConstVecRef)> val_get =
+        [xval](PoissonGaussianMES* mes, ConstVecRef p) {
+      mes->set_parameter_values(p); return mes->pdf_ped(xval); };
+    std::function<double(PoissonGaussianMES*, ConstVecRef, VecRef)> grad_get =
+        [xval](PoissonGaussianMES* mes, ConstVecRef p, VecRef grad) {
+      mes->set_parameter_values(p); return mes->pdf_gradient_ped(xval,grad); };
+    std::function<double(PoissonGaussianMES*, ConstVecRef, VecRef, MatRef)>
+        hess_get = [xval](PoissonGaussianMES* mes, ConstVecRef p, VecRef grad,
+                          MatRef hess) { mes->set_parameter_values(p);
+                      return mes->pdf_gradient_hessian_ped(xval,grad,hess); };
+
+    check_ok = function::gradient_check_par(mes, p, dp, good,
+                                            val_get, grad_get, hess_get);
+
+    EXPECT_TRUE(check_ok);
+  }
+}
+
+#if 0
 
 namespace {
 
@@ -663,6 +698,8 @@ TEST(SPELikelihood, Minimize_Minuit75)
             << std::sqrt(err_mat(4,4)) << '\n';
 #endif
 }
+
+#endif
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

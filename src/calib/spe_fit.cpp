@@ -70,6 +70,11 @@ PoissonGaussianMES::~PoissonGaussianMES()
   // nothing to see here
 }
 
+unsigned PoissonGaussianMES::num_parameters()
+{
+  return 5;
+}
+
 auto PoissonGaussianMES::parameters() -> std::vector<math::ParameterAxis>
 {
   constexpr double tiny_val = std::numeric_limits<double>::min();
@@ -85,7 +90,7 @@ auto PoissonGaussianMES::parameters() -> std::vector<math::ParameterAxis>
 
 Eigen::VectorXd PoissonGaussianMES::parameter_values()
 {
-  Eigen::VectorXd vec;
+  Eigen::VectorXd vec(5);
   vec << intensity_pe_, ped_zero_dc_, ped_rms_dc_,
       gain_dc_pe_, ses_rms_pe_;
   return vec;
@@ -460,6 +465,11 @@ PoissonGaussianMES_HighAccuracy::~PoissonGaussianMES_HighAccuracy()
   // nothing to see here
 }
 
+unsigned PoissonGaussianMES_HighAccuracy::num_parameters()
+{
+  return 5;
+}
+
 auto PoissonGaussianMES_HighAccuracy::parameters() ->
     std::vector<math::ParameterAxis>
 {
@@ -473,7 +483,7 @@ auto PoissonGaussianMES_HighAccuracy::parameters() ->
 
 Eigen::VectorXd PoissonGaussianMES_HighAccuracy::parameter_values()
 {
-  Eigen::VectorXd vec;
+  Eigen::VectorXd vec(5);
   vec << intensity_pe_, ped_zero_dc_, ped_rms_dc_,
       gain_dc_pe_, ses_rms_pe_;
   return vec;
@@ -569,6 +579,11 @@ SPELikelihood::SPELikelihood(MultiElectronSpectrum& mes_model,
 SPELikelihood::~SPELikelihood()
 {
   // nothing to see here
+}
+
+unsigned SPELikelihood::num_domain_axes()
+{
+  return mes_model_->num_parameters();
 }
 
 auto SPELikelihood::domain_axes() -> std::vector<math::DomainAxis>
