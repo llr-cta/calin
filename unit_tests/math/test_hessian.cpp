@@ -59,8 +59,8 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   Eigen::MatrixXd eigenvectors(5,5);
   Eigen::VectorXd eigenvalues(5);
   
-  hessian::calculate_error_matrix(like, hessian_mat_num, err_mat_num,
-                                  eigenvalues, eigenvectors);
+  hessian::hessian_to_error_matrix(like, hessian_mat_num, err_mat_num,
+                                   eigenvalues, eigenvectors);
   std::cout << std::scientific << std::setprecision(8) << err_mat_num << "\n\n";
 
   std::cout << eigenvalues << "\n\n";
@@ -71,11 +71,13 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
             << std::sqrt(err_mat(3,3)) << ' '
             << std::sqrt(err_mat(4,4)) << '\n';
 
-    std::cout << std::sqrt(err_mat_num(0,0)) << ' '
-              << std::sqrt(err_mat_num(1,1)) << ' '
-              << std::sqrt(err_mat_num(2,2)) << ' '
-              << std::sqrt(err_mat_num(3,3)) << ' '
-              << std::sqrt(err_mat_num(4,4)) << '\n';
+  std::cout << std::sqrt(err_mat_num(0,0)) << ' '
+            << std::sqrt(err_mat_num(1,1)) << ' '
+            << std::sqrt(err_mat_num(2,2)) << ' '
+            << std::sqrt(err_mat_num(3,3)) << ' '
+            << std::sqrt(err_mat_num(4,4)) << '\n';
+  
+  hessian::step_size_err_up(like, x);
 
 }
 
