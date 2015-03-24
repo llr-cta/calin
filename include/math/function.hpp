@@ -17,10 +17,17 @@
 
 namespace calin { namespace math { namespace function {
 
+#if 1
 using VecRef = Eigen::Ref<Eigen::VectorXd>;
 using ConstVecRef = const Eigen::Ref<const Eigen::VectorXd>&;
 using MatRef = Eigen::Ref<Eigen::MatrixXd>;
 using ConstMatRef = const Eigen::Ref<const Eigen::MatrixXd>&;
+#else
+using VecRef = Eigen::VectorXd&;
+using ConstVecRef = const Eigen::VectorXd&;
+using MatRef = Eigen::MatrixXd&;
+using ConstMatRef = const Eigen::MatrixXd&;
+#endif
 
 struct ParameterAxis
 {

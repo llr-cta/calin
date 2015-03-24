@@ -230,6 +230,7 @@ bool NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   std::vector<double> x { initial_values() };
   opt.optimize(x, fopt);
 
+  xopt.resize(x.size());
   xopt = Eigen::Map<Eigen::VectorXd>(x.data(), x.size());
 }
 

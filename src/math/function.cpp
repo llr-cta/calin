@@ -99,6 +99,7 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
     const double dfdx = (-fm1 + fp1)/h2;
     const double theerr = std::abs(dfdx - gradient(iaxis));
 
+    // Coefficients from Abromowitz & Stegun Table 25.2
     const double h2d3fdx3 = (-fm2 + 2.0*fm1 - 2.0*fp1 + fp2)/h2;
     const double h2d3fdx3a = (-3.0*fm2 + 10.0*fm1 - 12.0*f0 + 6.0*fp1 - fp2)/h2;
     const double h2d3fdx3b = (fm2 - 6.0*fm1 + 12.0*f0 - 10.0*fp1 + 3.0*fp2)/h2;
