@@ -849,6 +849,13 @@ double local_min_rc ( double &a, double &b, int &status, double value )
 
 
 double zero ( double a, double b, double t, func_base& f )
+{
+  double fa { f(a) };
+  double fb { f(b) };
+  return zero(a,b,t,f,fa,fb);
+}
+
+double zero ( double a, double b, double t, func_base& f, double fa, double fb )
 
 //****************************************************************************80
 //
@@ -907,8 +914,6 @@ double zero ( double a, double b, double t, func_base& f )
   double c;
   double d;
   double e;
-  double fa;
-  double fb;
   double fc;
   double m;
   double macheps;
@@ -924,8 +929,6 @@ double zero ( double a, double b, double t, func_base& f )
 //
   sa = a;
   sb = b;
-  fa = f ( sa );
-  fb = f ( sb );
 
   c = sa;
   fc = fa;

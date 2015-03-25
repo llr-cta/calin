@@ -236,7 +236,7 @@ bool NLOptOptimizer::minimize(VecRef xopt, double& fopt)
 
 bool NLOptOptimizer::error_matrix_estimate(MatRef err_mat)
 {
-  
+  return err_est_->error_matrix(err_mat) != ErrorMatrixStatus::UNAVAILABLE;
 }
 
 bool NLOptOptimizer::calc_error_matrix(MatRef err_mat)

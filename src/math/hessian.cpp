@@ -82,17 +82,20 @@ step_size_err_up(MultiAxisFunction& fcn, ConstVecRef x,
 {
   const double scale { 2.0*fcn.error_up() };
   double f0 { fcn.value(x) };
-  double fup { f0+scale*err_up_frac };
+  double fup { f0+fcn.error_up()*err_up_frac };
   unsigned npar = x.innerSize();
   Eigen::VectorXd dx(npar);
+  auto axes = fcn.domain_axes();
   if(error_hint.innerSize() == npar)
   {
     for(unsigned ipar=0;ipar<npar;ipar++)
-      dx(ipar) = error_hint(ipar)*std::sqrt(scale*err_up_frac);
+      if(isfinite(error_hint(ipar)) and error_hint(ipar)>0)
+        dx(ipar) = error_hint(ipar)*std::sqrt(scale*err_up_frac);
+      else
+        dx(ipar) = axes[ipar].scale;
   }
   else
   {
-    auto axes = fcn.domain_axes();
     for(unsigned ipar=0;ipar<npar;ipar++)
       dx(ipar) = axes[ipar].scale;
   }
@@ -103,15 +106,14 @@ step_size_err_up(MultiAxisFunction& fcn, ConstVecRef x,
     auto f_of_x = [ipar,&xx,&fcn,fup](double x){
       xx(ipar)=x; std::cout << ipar << ' ' << x << ' ' << fcn.value(xx)-fup << '\n'; return fcn.value(xx)-fup; };
     double xlo = x(ipar);
-    double flo = -scale*err_up_frac;
+    double flo = -fcn.error_up()*err_up_frac;
     double xhi = xlo + dx(ipar);
     double fhi = f_of_x(xhi);
     while(fhi<0){
       xlo=xhi; flo=fhi; dx(ipar)*=2.0; xhi=xlo+dx(ipar); fhi = f_of_x(xhi); };
-    double xtol = std::abs((xhi-xlo)/(fhi-flo))*tol;
-    double xroot = brent_zero(xlo,xhi,f_of_x,xtol);
-    double froot = f_of_x(xroot);
-    std::cout << "ROOT at: " << xroot << " is " << froot << '\n';
+    double xtol = std::abs((xhi-xlo)/(fhi-flo))*tol*fcn.error_up();
+    double xroot = brent_zero(xlo,xhi,f_of_x,flo,fhi,xtol);
+    std::cout << "ROOT at: " << xroot << '\n';
   }
 }
 

@@ -24,9 +24,9 @@ using MatRef = Eigen::Ref<Eigen::MatrixXd>;
 using ConstMatRef = const Eigen::Ref<const Eigen::MatrixXd>&;
 #else
 using VecRef = Eigen::VectorXd&;
-using ConstVecRef = const Eigen::VectorXd&;
 using MatRef = Eigen::MatrixXd&;
-using ConstMatRef = const Eigen::MatrixXd&;
+using ConstVecRef = const Eigen::Ref<const Eigen::VectorXd>&;
+using ConstMatRef = const Eigen::Ref<const Eigen::MatrixXd>&;
 #endif
 
 struct ParameterAxis

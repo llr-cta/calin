@@ -18,22 +18,28 @@ public:
   virtual double operator() (double) = 0;
 };
 
-double glomin ( double a, double b, double c, double m, double e, double t,
-  func_base& f, double &x );
-double local_min ( double a, double b, double t, func_base& f,
-  double &x );
-double local_min_rc ( double &a, double &b, int &status, double value );
-double zero ( double a, double b, double t, func_base& f );
-void zero_rc ( double a, double b, double t, double &arg, int &status,
-  double value );
+double glomin(double a, double b, double c, double m, double e, double t,
+  func_base& f, double &x);
+double local_min(double a, double b, double t, func_base& f,
+  double &x);
+double local_min_rc(double &a, double &b, int &status, double value);
+
+double zero(double a, double b, double t, func_base& f);
+
+// SJF - added this version which accepts pre-computer values of f(a) and f(b)
+// to avoid recomputing them
+double zero(double a, double b, double t, func_base& f, double fa, double fb);
+
+void zero_rc(double a, double b, double t, double &arg, int &status,
+  double value);
 
 // === simple wrapper functions
 // === for convenience and/or compatibility
-double glomin ( double a, double b, double c, double m, double e, double t,
-  double f ( double x ), double &x );
-double local_min ( double a, double b, double t, double f ( double x ),
-  double &x );
-double zero ( double a, double b, double t, double f ( double x ) );
+double glomin(double a, double b, double c, double m, double e, double t,
+  double f(double x), double &x);
+double local_min(double a, double b, double t, double f(double x),
+  double &x);
+double zero(double a, double b, double t, double f(double x));
 
 template<typename F_of_X> class func_adapter: public func_base
 {
@@ -50,6 +56,14 @@ double brent_zero(double xlo, double xhi, F_of_X f, double tol=0.001)
 {
   func_adapter<F_of_X> adapter(f);
   return zero(xlo,xhi,tol,adapter);
+}
+
+template<typename F_of_X>
+double brent_zero(double xlo, double xhi, F_of_X f, double flo, double fhi,
+                  double tol=0.001)
+{
+  func_adapter<F_of_X> adapter(f);
+  return zero(xlo,xhi,tol,adapter,flo,fhi);
 }
 
 } // namespace brent

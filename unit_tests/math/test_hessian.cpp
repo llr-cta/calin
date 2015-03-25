@@ -76,8 +76,11 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
             << std::sqrt(err_mat_num(2,2)) << ' '
             << std::sqrt(err_mat_num(3,3)) << ' '
             << std::sqrt(err_mat_num(4,4)) << '\n';
-  
-  hessian::step_size_err_up(like, x);
+
+  Eigen::MatrixXd err_mat_est(5,5);
+  opt.error_matrix_estimate(err_mat_est);
+  std::cout << "Err est: " << err_mat_est.diagonal() << '\n';
+  hessian::step_size_err_up(like, x, err_mat_est.diagonal().array().sqrt());
 
 }
 

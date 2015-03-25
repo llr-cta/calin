@@ -96,6 +96,7 @@ class ErrorMatrixEstimator
 {
  public:
   using Status = ErrorMatrixStatus;
+  using MatRef = function::MatRef;
   ErrorMatrixEstimator(bool error_up):
       npar_(0), error_up_(error_up) { /* nothing to see here */ }
   virtual ~ErrorMatrixEstimator();
@@ -104,7 +105,7 @@ class ErrorMatrixEstimator
   virtual void incorporate_func_value(function::ConstVecRef x, double f_val) = 0;
   virtual void incorporate_func_gradient(function::ConstVecRef x, double f_val,
                                          function::ConstVecRef gradient) = 0;
-  virtual Status error_matrix(Eigen::MatrixXd& err_mat) = 0;
+  virtual Status error_matrix(MatRef err_mat) = 0;
  protected:
   unsigned npar_;
   bool error_up_;
@@ -114,6 +115,7 @@ class IdentityErrorMatrixEstimator: public ErrorMatrixEstimator
 {
  public:
   using Status = ErrorMatrixStatus;
+  using MatRef = ErrorMatrixEstimator::MatRef;
   using ErrorMatrixEstimator::ErrorMatrixEstimator;
   ~IdentityErrorMatrixEstimator();
   void reset(unsigned npar) override;
@@ -121,13 +123,14 @@ class IdentityErrorMatrixEstimator: public ErrorMatrixEstimator
   void incorporate_func_value(function::ConstVecRef x, double f_val) override;
   void incorporate_func_gradient(function::ConstVecRef x, double f_val,
                                  function::ConstVecRef gradient) override;
-  Status error_matrix(Eigen::MatrixXd& err_mat) override;
+  Status error_matrix(MatRef err_mat) override;
 };
 
 class BFGSErrorMatrixEstimator: public ErrorMatrixEstimator
 {
  public:
   using Status = ErrorMatrixStatus;
+  using MatRef = ErrorMatrixEstimator::MatRef;
   using ErrorMatrixEstimator::ErrorMatrixEstimator;
   ~BFGSErrorMatrixEstimator();
   void reset(unsigned npar) override;
@@ -135,7 +138,7 @@ class BFGSErrorMatrixEstimator: public ErrorMatrixEstimator
   void incorporate_func_value(function::ConstVecRef x, double f_val) override;
   void incorporate_func_gradient(function::ConstVecRef x, double f_val,
                                  function::ConstVecRef gradient) override;
-  Status error_matrix(Eigen::MatrixXd& err_mat) override;
+  Status error_matrix(MatRef err_mat) override;
  protected:
   bool last_good_ { false };
   Eigen::MatrixXd Bk_;  // last estimate of error matrix

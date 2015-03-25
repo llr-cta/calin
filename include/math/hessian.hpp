@@ -54,7 +54,7 @@ Eigen::VectorXd step_size_epsmult(ConstVecRef x, double eps_mult=100.0);
 // they are known
 Eigen::VectorXd step_size_err_up(MultiAxisFunction& fcn, ConstVecRef x,
                                  ConstVecRef error_hint = Eigen::VectorXd(),
-                                 double err_up_frac = 0.01, double tol = 0.005);
+                                 double err_up_frac = 0.1, double tol = 0.03);
 
 // Convenience function which chooses method depending on what Function
 // supports
@@ -81,7 +81,7 @@ void calculate_hessian_gradient_err_up(MultiAxisFunction& fcn, ConstVecRef x,
                                        MatRef hessian,
                                      ConstVecRef error_hint = Eigen::VectorXd(),
                                        double err_up_frac = 0.01,
-                                       double tol = 0.01);
+                                       double tol = 0.001);
 
 } // namespave hessian
 

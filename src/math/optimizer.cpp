@@ -106,7 +106,7 @@ incorporate_func_gradient(function::ConstVecRef x, double f_val,
 }
 
 auto IdentityErrorMatrixEstimator::
-error_matrix(Eigen::MatrixXd& err_mat) -> Status
+error_matrix(MatRef err_mat) -> Status
 {
   err_mat.resize(npar_,npar_);
   err_mat.setIdentity();
@@ -188,7 +188,7 @@ incorporate_func_gradient(function::ConstVecRef x, double f_val,
   gk_ = gradient;
 }
 
-auto BFGSErrorMatrixEstimator::error_matrix(Eigen::MatrixXd& err_mat) -> Status
+auto BFGSErrorMatrixEstimator::error_matrix(MatRef err_mat) -> Status
 {
   err_mat = 2.0*error_up_*Bk_;
 #ifdef BFGS_COMPUTE_WITH_LOOPS
