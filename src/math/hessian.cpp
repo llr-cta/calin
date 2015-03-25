@@ -104,7 +104,7 @@ step_size_err_up(MultiAxisFunction& fcn, ConstVecRef x,
   {
     Eigen::VectorXd xx { x };
     auto f_of_x = [ipar,&xx,&fcn,fup](double x){
-      xx(ipar)=x; std::cout << ipar << ' ' << x << ' ' << fcn.value(xx)-fup << '\n'; return fcn.value(xx)-fup; };
+      xx(ipar)=x; return fcn.value(xx)-fup; };
     double xlo = x(ipar);
     double flo = -fcn.error_up()*err_up_frac;
     double xhi = xlo + dx(ipar);
@@ -113,8 +113,9 @@ step_size_err_up(MultiAxisFunction& fcn, ConstVecRef x,
       xlo=xhi; flo=fhi; dx(ipar)*=2.0; xhi=xlo+dx(ipar); fhi = f_of_x(xhi); };
     double xtol = std::abs((xhi-xlo)/(fhi-flo))*tol*fcn.error_up();
     double xroot = brent_zero(xlo,xhi,f_of_x,flo,fhi,xtol);
-    std::cout << "ROOT at: " << xroot << '\n';
+    dx(ipar) = xroot-x(ipar);
   }
+  return dx;
 }
 
 void hessian::

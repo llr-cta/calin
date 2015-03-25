@@ -241,7 +241,13 @@ bool NLOptOptimizer::error_matrix_estimate(MatRef err_mat)
 
 bool NLOptOptimizer::calc_error_matrix(MatRef err_mat)
 {
-
+#if 0
+  const unsigned npar { fcn_->num_domain_axes() };
+  err_mat.resize(npar,npar);
+  VectorXd err_hint;
+  if(error_matrix_estimate(err_mat))
+    err_hint = err_mat_est.diagonal().array().sqrt();
+#endif
 }
 
 double NLOptOptimizer::nlopt_callback(unsigned n, const double* x, double* grad,
