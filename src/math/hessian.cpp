@@ -119,9 +119,22 @@ step_size_err_up(MultiAxisFunction& fcn, ConstVecRef x,
 }
 
 void hessian::
-calculate_hessian(MultiAxisFunction& fcn, ConstVecRef x, MatRef hessian)
+calculate_hessian(MultiAxisFunction& fcn, ConstVecRef x, MatRef hessian,
+                  ConstVecRef error_hint)
 {
-
+  if(fcn.can_calculate_hessian())
+  {
+    Eigen::VectorXd gradient(fcn.num_domain_axes());
+    fcn.value_gradient_and_hessian(x, gradient, hessian);
+  }
+  else if(fcn.can_calculate_gradient())
+  {
+    calculate_hessian_1st_order_err_up(fcn, x, hessian, error_hint);
+  }
+  else
+  {
+    calculate_hessian_2nd_order_err_up(fcn, x, hessian, error_hint);
+  }
 }
 
 void hessian::
@@ -205,11 +218,12 @@ calculate_hessian_2nd_order_dx(MultiAxisFunction& fcn, ConstVecRef x,
       xx(ipar) = xp_i; xx(jpar) = xn_j; double vpn = fcn.value(xx);
       xx(ipar) = xn_i; xx(jpar) = xp_j; double vnp = fcn.value(xx);
       xx(ipar) = xn_i; xx(jpar) = xn_j; double vnn = fcn.value(xx);
-      xx(jpar) = x(jpar); // reset for next loop
 
       // Abromowitz & Stegun 25.3.26
       hessian(ipar,jpar) = hessian(jpar,ipar)
                          = (vpp - vpn - vnp + vnn)/(h2_i*h2_j);
+
+      xx(jpar) = x(jpar); // reset for next loop
     }
     
     xx(ipar) = x(ipar); // reset for next loop

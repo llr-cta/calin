@@ -58,7 +58,8 @@ Eigen::VectorXd step_size_err_up(MultiAxisFunction& fcn, ConstVecRef x,
 
 // Convenience function which chooses method depending on what Function
 // supports
-void calculate_hessian(MultiAxisFunction& fcn, ConstVecRef x, MatRef hessian);
+void calculate_hessian(MultiAxisFunction& fcn, ConstVecRef x, MatRef hessian,
+                       ConstVecRef error_hint = Eigen::VectorXd());
 
 // Calculate Hessian by numerical differentiation of gradient using
 // the two-point difference formula - O(2N). Step sizes in each of the
@@ -106,7 +107,9 @@ void calculate_hessian_2nd_order_err_up(MultiAxisFunction& fcn, ConstVecRef x,
                                        double err_up_frac = 0.01,
                                        double tol = 0.001);
 
-
 } // namespace hessian
+
+using hessian::calculate_hessian;
+using hessian::hessian_to_error_matrix;
 
 } } // namespace calin::math
