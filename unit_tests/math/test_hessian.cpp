@@ -49,7 +49,7 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   std::cout << std::scientific << std::setprecision(8) << hessian_mat << "\n\n";
 
   Eigen::MatrixXd hessian_mat_num(5,5);
-  hessian::calculate_hessian_gradient_eps(like, x, hessian_mat_num, 100.0);
+  hessian::calculate_hessian_1st_order_eps(like, x, hessian_mat_num, 100.0);
   std::cout << std::scientific << std::setprecision(8) << hessian_mat_num << "\n\n";
 
   Eigen::MatrixXd err_mat = hessian_mat.inverse();
@@ -70,7 +70,7 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
       hessian::step_size_err_up(like, x, err_mat_est.diagonal().array().sqrt());
   std::cout << "DX: " << dx.transpose() << "\n\n";
   Eigen::MatrixXd hessian_mat_num2(5,5);
-  hessian::calculate_hessian_gradient_dx(like, x, dx, hessian_mat_num2);
+  hessian::calculate_hessian_1st_order_dx(like, x, dx, hessian_mat_num2);
 
   Eigen::MatrixXd err_mat_num2(5,5);
   Eigen::MatrixXd eigenvectors2(5,5);
@@ -81,6 +81,20 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   std::cout << std::scientific << std::setprecision(8) << err_mat_num2
             << "\n\n";
   std::cout << eigenvalues2.transpose() << "\n\n";
+
+  Eigen::MatrixXd hessian_mat_2nd(5,5);
+  hessian::calculate_hessian_2nd_order_dx(like, x, dx, hessian_mat_2nd);
+
+  Eigen::MatrixXd err_mat_2nd(5,5);
+  Eigen::MatrixXd eigenvectors3(5,5);
+  Eigen::VectorXd eigenvalues3(5);
+  
+  hessian::hessian_to_error_matrix(like, hessian_mat_2nd, err_mat_2nd,
+                                   eigenvalues3, eigenvectors3);
+  std::cout << std::scientific << std::setprecision(8) << err_mat_2nd
+            << "\n\n";
+  std::cout << eigenvalues3.transpose() << "\n\n";
+
 
   
   std::cout << std::sqrt(err_mat(0,0)) << ' '

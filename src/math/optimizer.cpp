@@ -161,7 +161,7 @@ incorporate_func_gradient(function::ConstVecRef x, double f_val,
 
     std::cout << "B: " << gradient.data() << '\n';
     
-#ifdef BFGS_COMPUTE_WITH_LOOPS
+#ifdef BFGS_COMPUTE_WITH_LOOPS // todo: test if faster when npar->inf
     Eigen::VectorXd bkyk(n);
     for(unsigned i=0;i<n;i++)
     {

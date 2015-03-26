@@ -125,14 +125,13 @@ calculate_hessian(MultiAxisFunction& fcn, ConstVecRef x, MatRef hessian)
 }
 
 void hessian::
-calculate_hessian_gradient_dx(MultiAxisFunction& fcn, ConstVecRef x,
+calculate_hessian_1st_order_dx(MultiAxisFunction& fcn, ConstVecRef x,
                               ConstVecRef dx, MatRef hessian)
 {
   const unsigned npar = fcn.num_domain_axes();
   Eigen::VectorXd xx { x };
   Eigen::VectorXd grad_p(npar);
   Eigen::VectorXd grad_n(npar);
-  hessian.resize(npar,npar);
   hessian.resize(npar,npar);
   for(unsigned ipar=0;ipar<npar;ipar++)
   {
@@ -157,17 +156,81 @@ calculate_hessian_gradient_dx(MultiAxisFunction& fcn, ConstVecRef x,
 }
 
 void hessian::
-calculate_hessian_gradient_eps(MultiAxisFunction& fcn, ConstVecRef x,
+calculate_hessian_1st_order_eps(MultiAxisFunction& fcn, ConstVecRef x,
                                MatRef hessian, double eps_mult)
 {
   Eigen::VectorXd dx { step_size_epsmult(x, eps_mult) };
-  calculate_hessian_gradient_dx(fcn, x, dx, hessian);
+  calculate_hessian_1st_order_dx(fcn, x, dx, hessian);
 }
 
 void hessian::
-calculate_hessian_gradient_err_up(MultiAxisFunction& fcn, ConstVecRef x,
+calculate_hessian_1st_order_err_up(MultiAxisFunction& fcn, ConstVecRef x,
                                   MatRef hessian, ConstVecRef error_hint,
                                   double err_up_frac, double tol)
 {
-  
+  Eigen::VectorXd dx {
+    step_size_err_up(fcn, x, error_hint, err_up_frac, tol) };
+  calculate_hessian_1st_order_dx(fcn, x, dx, hessian);
 }
+
+void hessian::
+calculate_hessian_2nd_order_dx(MultiAxisFunction& fcn, ConstVecRef x,
+                               ConstVecRef dx, MatRef hessian)
+{
+  const unsigned npar = fcn.num_domain_axes();
+  Eigen::VectorXd xx { x };
+  hessian.resize(npar,npar);
+  double v0 = fcn.value(xx);
+  for(unsigned ipar=0;ipar<npar;ipar++)
+  {
+    double h_i { dx(ipar) };
+    double xp_i { x(ipar)+h_i };
+    double xn_i { x(ipar)-h_i };
+    double h2_i = { xp_i-xn_i };
+    xx(ipar) = xp_i;
+    double vp_i = fcn.value(xx);
+    xx(ipar) = xn_i;
+    double vn_i = fcn.value(xx);
+
+    // Abromowitz & Stegun 25.3.23
+    hessian(ipar,ipar) = 4.0*(vn_i - 2.0*v0 + vp_i)/(h2_i*h2_i);
+    
+    for(unsigned jpar=0;jpar<ipar;jpar++)
+    {
+      double h_j { dx(jpar) };
+      double xp_j { x(jpar)+h_j };
+      double xn_j { x(jpar)-h_j };
+      double h2_j = { xp_j-xn_j };
+      xx(ipar) = xp_i; xx(jpar) = xp_j; double vpp = fcn.value(xx);
+      xx(ipar) = xp_i; xx(jpar) = xn_j; double vpn = fcn.value(xx);
+      xx(ipar) = xn_i; xx(jpar) = xp_j; double vnp = fcn.value(xx);
+      xx(ipar) = xn_i; xx(jpar) = xn_j; double vnn = fcn.value(xx);
+      xx(jpar) = x(jpar); // reset for next loop
+
+      // Abromowitz & Stegun 25.3.26
+      hessian(ipar,jpar) = hessian(jpar,ipar)
+                         = (vpp - vpn - vnp + vnn)/(h2_i*h2_j);
+    }
+    
+    xx(ipar) = x(ipar); // reset for next loop
+  }
+}
+
+void hessian::
+calculate_hessian_2nd_order_eps(MultiAxisFunction& fcn, ConstVecRef x,
+                                     MatRef hessian, double eps_mult)
+{
+  Eigen::VectorXd dx { step_size_epsmult(x, eps_mult) };
+  calculate_hessian_2nd_order_dx(fcn, x, dx, hessian);
+}
+
+void hessian::
+calculate_hessian_2nd_order_err_up(MultiAxisFunction& fcn, ConstVecRef x,
+                                   MatRef hessian, ConstVecRef error_hint,
+                                   double err_up_frac, double tol)
+{
+  Eigen::VectorXd dx {
+    step_size_err_up(fcn, x, error_hint, err_up_frac, tol) };
+  calculate_hessian_2nd_order_dx(fcn, x, dx, hessian);
+}
+

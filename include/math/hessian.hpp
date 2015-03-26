@@ -63,13 +63,13 @@ void calculate_hessian(MultiAxisFunction& fcn, ConstVecRef x, MatRef hessian);
 // Calculate Hessian by numerical differentiation of gradient using
 // the two-point difference formula - O(2N). Step sizes in each of the
 // directions should be given.
-void calculate_hessian_gradient_dx(MultiAxisFunction& fcn, ConstVecRef x,
+void calculate_hessian_1st_order_dx(MultiAxisFunction& fcn, ConstVecRef x,
                                     ConstVecRef dx, MatRef hessian);
 
 // Calculate Hessian by numerical differentiation of gradient using
 // the two-point difference formula - O(2N). The step sizes is given
 // by multiple of machine epsilon.
-void calculate_hessian_gradient_eps(MultiAxisFunction& fcn, ConstVecRef x,
+void calculate_hessian_1st_order_eps(MultiAxisFunction& fcn, ConstVecRef x,
                                     MatRef hessian, double eps_mult=100.0);
 
 // Calculate Hessian by numerical differentiation of gradient using
@@ -77,12 +77,36 @@ void calculate_hessian_gradient_eps(MultiAxisFunction& fcn, ConstVecRef x,
 // to increase function by some fraction of "error up" from its
 // minimum position. The tol parameter sets the tolerance how much the
 // function increases. 
-void calculate_hessian_gradient_err_up(MultiAxisFunction& fcn, ConstVecRef x,
+void calculate_hessian_1st_order_err_up(MultiAxisFunction& fcn, ConstVecRef x,
                                        MatRef hessian,
                                      ConstVecRef error_hint = Eigen::VectorXd(),
                                        double err_up_frac = 0.01,
                                        double tol = 0.001);
 
-} // namespave hessian
+// Calculate Hessian by numerical differentiation of the function
+// using value using the 3/4-point difference formula - O(4N*N). Step
+// sizes in each of the directions should be given.
+void calculate_hessian_2nd_order_dx(MultiAxisFunction& fcn, ConstVecRef x,
+                                    ConstVecRef dx, MatRef hessian);
+
+// Calculate Hessian by numerical differentiation of the function
+// using value using the 3/4-point difference formula - O(4N*N). The
+// step sizes is given by multiple of machine epsilon.
+void calculate_hessian_2nd_order_eps(MultiAxisFunction& fcn, ConstVecRef x,
+                                     MatRef hessian, double eps_mult=100.0);
+
+// Calculate Hessian by numerical differentiationof the function using
+// value using the 3/4-point difference formula - O(4N*N). The step
+// size is chosen to increase function by some fraction of "error up"
+// from its minimum position. The tol parameter sets the tolerance how
+// much the function increases.
+void calculate_hessian_2nd_order_err_up(MultiAxisFunction& fcn, ConstVecRef x,
+                                       MatRef hessian,
+                                     ConstVecRef error_hint = Eigen::VectorXd(),
+                                       double err_up_frac = 0.01,
+                                       double tol = 0.001);
+
+
+} // namespace hessian
 
 } } // namespace calin::math
