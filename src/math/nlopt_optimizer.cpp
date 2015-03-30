@@ -241,13 +241,13 @@ bool NLOptOptimizer::error_matrix_estimate(MatRef err_mat)
 
 bool NLOptOptimizer::calc_error_matrix(MatRef err_mat)
 {
-#if 0
   const unsigned npar { fcn_->num_domain_axes() };
   err_mat.resize(npar,npar);
-  VectorXd err_hint;
+  Eigen::VectorXd error_hint;
   if(error_matrix_estimate(err_mat))
-    err_hint = err_mat_est.diagonal().array().sqrt();
-#endif
+    error_hint = err_mat.diagonal().array().sqrt();
+  Eigen::MatrixXd hessian;
+  hessian::calculate_hessian(*fcn_, x, hessian, error_hint)
 }
 
 double NLOptOptimizer::nlopt_callback(unsigned n, const double* x, double* grad,
@@ -260,7 +260,9 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
 {
   Eigen::Map<const Eigen::VectorXd> xvec(x,n);
   Eigen::Map<Eigen::VectorXd> gvec(grad,n);
-  double fcn_value { grad?fcn_->value_and_gradient(xvec,gvec):fcn_->value(xvec) };
+  double fcn_value {
+    grad?fcn_->value_and_gradient(xvec,gvec):fcn_->value(xvec) };
+
   if(verbose_ != VerbosityLevel::SILENT)
   {
     std::cout << std::left << std::setw(4) << iter_+1 << ' '

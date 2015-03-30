@@ -560,7 +560,7 @@ pdf_gradient_ped(double x, VecRef gradient)
 SPELikelihood::SPELikelihood(MultiElectronSpectrum& mes_model,
                              const SimpleHist& mes_data):
     MultiAxisFunction(), mes_model_(&mes_model),
-    npar_(mes_model.parameters().size()),
+    npar_(mes_model.num_parameters()),
     mes_data_(mes_data), has_ped_data_(false), ped_data_(1.0)
 {
   // nothing to see here
@@ -570,7 +570,7 @@ SPELikelihood::SPELikelihood(MultiElectronSpectrum& mes_model,
                              const SimpleHist& mes_data,
                              const SimpleHist& ped_data):
     MultiAxisFunction(), mes_model_(&mes_model),
-    npar_(mes_model.parameters().size()),
+    npar_(mes_model.num_parameters()),
     mes_data_(mes_data), has_ped_data_(true), ped_data_(ped_data)
 {
   // nothing to see here
