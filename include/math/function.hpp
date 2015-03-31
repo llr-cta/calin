@@ -102,7 +102,7 @@ class MultiAxisFunction
   virtual double value_and_gradient(ConstVecRef x, VecRef gradient) = 0;
   virtual bool can_calculate_hessian() = 0;
   virtual double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
-                                          MatRef hessian) = 0;
+                                            MatRef hessian) = 0;
   virtual double error_up() = 0;  
 };
 
@@ -112,7 +112,7 @@ class SingleAxisFunction: virtual public MultiAxisFunction
   virtual ~SingleAxisFunction();
   virtual DomainAxis domain_axis() = 0;
   virtual double value(double x) = 0;
-  virtual double value_and_deriv(double x,  double& dfdx) = 0;
+  virtual double value_and_gradient(double x,  double& dfdx) = 0;
   virtual double value_gradient_and_hessian(double x, double& dfdx,
                                           double& d2fdx2) = 0;
 
@@ -122,6 +122,34 @@ class SingleAxisFunction: virtual public MultiAxisFunction
   double value_and_gradient(ConstVecRef x, VecRef gradient) override;
   double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
                                     MatRef hessian) override;
+};
+
+class ParameterizableMultiAxisFunction: public Parameterizable,
+                                        virtual public MultiAxisFunction
+{
+ public:
+  virtual ~ParameterizableMultiAxisFunction();
+  virtual double value_and_parameter_gradient(ConstVecRef x,
+                                         VecRef gradient) = 0;
+  virtual double value_parameter_gradient_and_hessian(ConstVecRef x,
+                                         VecRef gradient, MatRef hessian) = 0;
+};
+
+class ParameterizableSingleAxisFunction:
+      public ParameterizableMultiAxisFunction,
+      public SingleAxisFunction
+{
+ public:
+  virtual ~ParameterizableSingleAxisFunction();
+  virtual double value_and_parameter_gradient(double x,  VecRef gradient) = 0;
+  virtual double value_parameter_gradient_and_hessian(double x,
+                                         VecRef gradient, MatRef hessian) = 0;
+
+  // Members from ParameterizableMultiAxisFunction that we override
+  double value_and_parameter_gradient(ConstVecRef x,
+                                      VecRef gradient) override;
+  double value_parameter_gradient_and_hessian(ConstVecRef x,
+                                      VecRef gradient, MatRef hessian) override;
 };
 
 template<typename ParamType>
@@ -203,6 +231,41 @@ bool gradient_check_par(ParameterizableType& par_fcn,
   return function::gradient_check(fcn, p, dp, good);
 }
 
+// *****************************************************************************
+//
+// Miscellaneous functions
+//
+// *****************************************************************************
+
+class GaussianPDF: public ParameterizableSingleAxisFunction
+{
+ public:
+  virtual ~GaussianPDF();
+
+  unsigned num_parameters() override;
+  std::vector<ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+  DomainAxis domain_axis() override;
+
+  bool can_calculate_gradient() override;
+  bool can_calculate_hessian() override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  double value(double x) override;
+  double value_and_gradient(double x,  double& dfdx) override;
+  double value_gradient_and_hessian(double x, double& dfdx,
+                                    double& d2fdx2) override;
+  double value_and_parameter_gradient(double x,  VecRef gradient) override;
+  double value_parameter_gradient_and_hessian(double x, VecRef gradient,
+                                              MatRef hessian) override;
+
+ protected:
+  double x0_;
+  double s_;
+};
+
 } // namespace function
 
 using function::ParameterAxis;
@@ -210,5 +273,7 @@ using function::DomainAxis;
 using function::Parameterizable;
 using function::MultiAxisFunction;
 using function::SingleAxisFunction;
+using function::ParameterizableMultiAxisFunction;
+using function::ParameterizableSingleAxisFunction;
 
 } } // namespace calin::math

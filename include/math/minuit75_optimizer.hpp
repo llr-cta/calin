@@ -33,8 +33,8 @@ class Minuit75Optimizer: public Optimizer
   bool can_impose_box_constraints() override;
 
   bool minimize(VecRef xopt, double& fopt) override;
-  bool error_matrix_estimate(MatRef err_mat) override;
-  bool calc_error_matrix(MatRef err_mat) override;
+  ErrorMatrixStatus error_matrix_estimate(MatRef err_mat) override;
+  ErrorMatrixStatus calc_error_matrix(MatRef err_mat) override;
 
  protected:
   int do_command(const std::string& command);

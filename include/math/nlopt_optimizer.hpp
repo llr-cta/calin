@@ -46,8 +46,8 @@ class NLOptOptimizer: public Optimizer
   bool can_impose_box_constraints() override;
 
   bool minimize(VecRef xopt, double& fopt) override;
-  bool error_matrix_estimate(MatRef err_mat) override;
-  bool calc_error_matrix(MatRef err_mat) override;
+  ErrorMatrixStatus error_matrix_estimate(MatRef err_mat) override;
+  ErrorMatrixStatus calc_error_matrix(MatRef err_mat) override;
 
  protected:
   static double nlopt_callback(unsigned n, const double* x, double* grad,
@@ -57,6 +57,7 @@ class NLOptOptimizer: public Optimizer
   algorithm_type algorithm_;
 
   unsigned iter_;
+  Eigen::VectorXd xopt_;
   std::unique_ptr<ErrorMatrixEstimator> err_est_;
 };
 

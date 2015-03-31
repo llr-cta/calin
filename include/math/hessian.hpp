@@ -24,26 +24,28 @@ using function::VecRef;
 using function::ConstVecRef;
 using function::ConstMatRef;
 
-enum class ErrorStatus { FORCED_POS_DEF, GOOD };
+enum class ErrorMatrixStatus { UNAVAILABLE, FORCED_POS_DEF, GOOD };
 
 // Calculate error matrix by inverting the given Hessian, testing for
 // positive-definiteness, and "correcting" negative eigenvalues if
 // necessary. This version return the (corrected) eigenvalues and the
 // eigenvectors.
-ErrorStatus hessian_to_error_matrix(MultiAxisFunction& fcn, ConstMatRef hessian,
+ErrorMatrixStatus hessian_to_error_matrix(MultiAxisFunction& fcn,
+                                    ConstMatRef hessian,
                                     MatRef error_matrix, VecRef eigenvalues,
                                     MatRef eigenvectors);
 
 // Calculate error matrix by inverting the given Hessian, testing for
 // positive-definiteness, and "correcting" negative eigenvalues if
 // necessary.
-ErrorStatus hessian_to_error_matrix(MultiAxisFunction& fcn, ConstMatRef hessian,
-                                    MatRef error_matrix);
+ErrorMatrixStatus hessian_to_error_matrix(MultiAxisFunction& fcn,
+                                          ConstMatRef hessian,
+                                          MatRef error_matrix);
 
 // Calculate error matrix by calling calculating the Hessiana and
 // then inverting it.
-ErrorStatus calculate_error_matrix(MultiAxisFunction& fcn, ConstVecRef x,
-                                   MatRef error_matrix);
+ErrorMatrixStatus calculate_error_matrix(MultiAxisFunction& fcn, ConstVecRef x,
+                                         MatRef error_matrix);
 
 // Calculate step size as multiple of machine epslion
 Eigen::VectorXd step_size_epsmult(ConstVecRef x, double eps_mult=100.0);

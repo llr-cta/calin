@@ -17,7 +17,7 @@ namespace {
 inline double SQR(double x) { return x*x; }
 }
 
-hessian::ErrorStatus
+hessian::ErrorMatrixStatus
 hessian::hessian_to_error_matrix(MultiAxisFunction& fcn, ConstMatRef hessian,
                                  MatRef error_matrix, VecRef eigenvalues,
                                  MatRef eigenvectors)
@@ -30,12 +30,12 @@ hessian::hessian_to_error_matrix(MultiAxisFunction& fcn, ConstMatRef hessian,
       es(hessian,Eigen::ComputeEigenvectors);
   eigenvalues = es.eigenvalues();
   eigenvectors = es.eigenvectors();
-  hessian::ErrorStatus status = ErrorStatus::GOOD;
+  hessian::ErrorMatrixStatus status = ErrorMatrixStatus::GOOD;
   for(unsigned ipar=0;ipar<npar;ipar++)
   {
     if(eigenvalues(ipar)<=0)
     {
-      status = ErrorStatus::FORCED_POS_DEF;
+      status = ErrorMatrixStatus::FORCED_POS_DEF;
       eigenvalues(ipar) = eps;
     }
     eigenvalues(ipar) = scale/eigenvalues(ipar);
@@ -44,7 +44,7 @@ hessian::hessian_to_error_matrix(MultiAxisFunction& fcn, ConstMatRef hessian,
   return status;
 }
 
-hessian::ErrorStatus
+hessian::ErrorMatrixStatus
 hessian::hessian_to_error_matrix(MultiAxisFunction& fcn, ConstMatRef hessian,
                                  MatRef error_matrix)
 {
@@ -55,7 +55,7 @@ hessian::hessian_to_error_matrix(MultiAxisFunction& fcn, ConstMatRef hessian,
                                  unused_eigenvectors);
 }
 
-hessian::ErrorStatus
+hessian::ErrorMatrixStatus
 hessian::calculate_error_matrix(MultiAxisFunction& fcn, ConstVecRef x,
                                 MatRef error_matrix)
 {

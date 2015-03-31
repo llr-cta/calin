@@ -13,10 +13,13 @@
 #include <Eigen/Core>
 
 #include "function.hpp"
+#include "hessian.hpp"
 
 namespace calin { namespace math { namespace optimizer {
 
 enum class OptimizerVerbosityLevel { SILENT, FCN_EVALS_ONLY, ELEVATED, MAX };
+
+using hessian::ErrorMatrixStatus;
 
 class Optimizer
 {
@@ -40,8 +43,8 @@ class Optimizer
   virtual bool can_impose_box_constraints() = 0;
   
   virtual bool minimize(VecRef xopt, double& fopt) = 0;
-  virtual bool error_matrix_estimate(MatRef err_mat) = 0;
-  virtual bool calc_error_matrix(MatRef err_mat) = 0;
+  virtual ErrorMatrixStatus error_matrix_estimate(MatRef err_mat) = 0;
+  virtual ErrorMatrixStatus calc_error_matrix(MatRef err_mat) = 0;
 
   void set_verbosity_level(VerbosityLevel verbose = VerbosityLevel::SILENT) {
     verbose_=verbose; }
@@ -89,8 +92,6 @@ class Optimizer
   double rel_tol_ { 0.0 };
   unsigned max_iterations_ { 0 };
 };
-
-enum class ErrorMatrixStatus { UNAVAILABLE, FORCED_POS_DEF, GOOD };
 
 class ErrorMatrixEstimator
 {

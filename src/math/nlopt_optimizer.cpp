@@ -10,6 +10,7 @@
 #include <iomanip>
 
 #include "math/nlopt_optimizer.hpp"
+#include "math/hessian.hpp"
 
 using namespace calin::math::optimizer;
 
@@ -232,22 +233,23 @@ bool NLOptOptimizer::minimize(VecRef xopt, double& fopt)
 
   xopt.resize(x.size());
   xopt = Eigen::Map<Eigen::VectorXd>(x.data(), x.size());
+  xopt_ = xopt;
 }
 
-bool NLOptOptimizer::error_matrix_estimate(MatRef err_mat)
+ErrorMatrixStatus NLOptOptimizer::error_matrix_estimate(MatRef err_mat)
 {
-  return err_est_->error_matrix(err_mat) != ErrorMatrixStatus::UNAVAILABLE;
+  return err_est_->error_matrix(err_mat);
 }
 
-bool NLOptOptimizer::calc_error_matrix(MatRef err_mat)
+ErrorMatrixStatus NLOptOptimizer::calc_error_matrix(MatRef err_mat)
 {
   const unsigned npar { fcn_->num_domain_axes() };
   err_mat.resize(npar,npar);
   Eigen::VectorXd error_hint;
-  if(error_matrix_estimate(err_mat))
+  if(error_matrix_estimate(err_mat) != ErrorMatrixStatus::UNAVAILABLE)
     error_hint = err_mat.diagonal().array().sqrt();
   Eigen::MatrixXd hessian;
-  hessian::calculate_hessian(*fcn_, x, hessian, error_hint)
+  hessian::calculate_hessian(*fcn_, xopt_, hessian, error_hint);
 }
 
 double NLOptOptimizer::nlopt_callback(unsigned n, const double* x, double* grad,

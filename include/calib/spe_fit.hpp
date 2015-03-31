@@ -9,10 +9,11 @@
 
 namespace calin { namespace calib { namespace spe_fit {
 
-class SingleElectronSpectrum: public math::Parameterizable
+class SingleElectronSpectrum: public math::ParameterizableSingleAxisFunction
 {
  public:
   virtual ~SingleElectronSpectrum();
+  
 };
 
 class MultiElectronSpectrum: public math::Parameterizable
