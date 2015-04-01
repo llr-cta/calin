@@ -568,3 +568,142 @@ double GaussianPDF::error_up()
 {
   return error_up_;
 }
+
+// ============================= LimitedGaussianPDF ============================
+
+LimitedGaussianPDF::~LimitedGaussianPDF()
+{
+  // nothing to see here
+}
+
+void LimitedGaussianPDF::set_parameter_values(ConstVecRef values)
+{
+  GaussianPDF::set_parameter_values(values);
+  set_cache();
+}
+
+double LimitedGaussianPDF::value(double x)
+{
+  if(x<xlo_ or x>=xhi_)return 0;
+  return norm_*GaussianPDF::value(x);
+}
+    
+double LimitedGaussianPDF::value_and_gradient(double x,  double& dfdx)
+{
+  if(x<xlo_ or x>=xhi_)
+  {
+    dfdx = 0;
+    return 0;
+  }
+  double val = norm_*GaussianPDF::value_and_gradient(x, dfdx);
+  dfdx *= norm_;
+  return val;
+}
+
+double LimitedGaussianPDF::value_gradient_and_hessian(double x, double& dfdx,
+                                                      double& d2fdx2)
+{
+  if(x<xlo_ or x>=xhi_)
+  {
+    d2fdx2 = 0;
+    dfdx = 0;
+    return 0;
+  }
+  double val = GaussianPDF::value_gradient_and_hessian(x, dfdx, d2fdx2);
+  dfdx *= norm_;
+  d2fdx2 *= norm_;
+  return norm_*val;
+}
+
+double LimitedGaussianPDF::
+value_and_parameter_gradient(double x,  VecRef gradient)
+{
+  if(x<xlo_ or x>=xhi_)
+  {
+    gradient[0] = gradient[1] = 0;
+    return 0;
+  }  
+  double val = GaussianPDF::value_and_parameter_gradient(x, gradient);
+  gradient = norm_*gradient + val*norm_gradient_;
+  return norm_*val;
+}
+
+double LimitedGaussianPDF::
+value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
+{
+  if(x<xlo_ or x>=xhi_)
+  {
+    gradient[0] = gradient[1] = 0;
+    hessian(0,0) = hessian(0,1) = hessian(1,0) = hessian(1,1) = 0;
+    return 0;
+  }  
+  double val =
+      GaussianPDF::value_parameter_gradient_and_hessian(x, gradient, hessian);
+  hessian = norm_*hessian + val*norm_hessian_;
+  hessian(0,0) += 2.0*norm_gradient_[0]*gradient[0];
+  hessian(0,1) += norm_gradient_[0]*gradient[1] + norm_gradient_[1]*gradient[0];
+  hessian(1,0) = hessian(0,1);
+  hessian(1,1) += 2.0*norm_gradient_[1]*gradient[1];
+  gradient = norm_*gradient + val*norm_gradient_;
+  return norm_*val;
+}
+
+void LimitedGaussianPDF::set_cache()
+{
+  constexpr double inf = std::numeric_limits<double>::infinity();
+
+  double ehi         = 1.0;
+  double dehi_dx0    = 0.0;
+  double dehi_ds     = 0.0;
+  double d2ehi_dx02  = 0.0;
+  double d2ehi_ds2   = 0.0;
+  double d2ehi_dx0ds = 0.0;
+  
+  if(xhi_!=inf)
+  {
+    double xc = xhi_-x0_;
+    double xs = xc/s_;
+    double xs2 = SQR(xs);
+
+    ehi         = 0.5*(1.0+std::erf(M_SQRT1_2*xs));
+
+    dehi_dx0    = -c_gauss_norm/s_*exp(-0.5*xs2);
+    dehi_ds     = xs*dehi_dx0;
+
+    d2ehi_dx02  = dehi_ds/s_;
+    d2ehi_dx0ds = dehi_dx0*(xs2-1)/s_;
+    d2ehi_ds2   = xs*d2ehi_dx0ds - d2ehi_dx02;
+  }
+    
+  double elo         = 0.0;
+  double delo_dx0    = 0.0;
+  double delo_ds     = 0.0;
+  double d2elo_dx02  = 0.0;
+  double d2elo_ds2   = 0.0;
+  double d2elo_dx0ds = 0.0;
+  
+  if(xlo_!=-inf)
+  {
+    double xc = xlo_-x0_;
+    double xs = xc/s_;
+    double xs2 = SQR(xs);
+
+    elo         = 0.5*(1.0+std::erf(M_SQRT1_2*xs));
+
+    delo_dx0    = -c_gauss_norm/s_*exp(-0.5*xs2);
+    delo_ds     = xs*delo_dx0;
+
+    d2elo_dx02  = delo_ds/s_;
+    d2elo_dx0ds = delo_dx0*(xs2-1)/s_;
+    d2elo_ds2   = xs*d2elo_dx0ds - d2elo_dx02;
+  }
+
+  norm_              = ehi         - elo;  
+  norm_gradient_(0)  = dehi_dx0    - delo_dx0;
+  norm_gradient_(1)  = dehi_ds     - delo_ds;
+  norm_hessian_(0,0) = d2ehi_dx02  - d2elo_dx02;
+  norm_hessian_(0,1) = d2ehi_dx0ds - d2elo_dx0ds;
+  norm_hessian_(1,0) = norm_hessian_(0,1);
+  norm_hessian_(1,1) = d2ehi_ds2   - d2elo_ds2;  
+}
+

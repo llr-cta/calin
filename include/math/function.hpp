@@ -310,8 +310,35 @@ class GaussianPDF: public ParameterizableSingleAxisFunction
   double error_up() override;
  protected:
   double error_up_ = 0.5;
-  double x0_;
-  double s_;
+  double x0_ = 0;
+  double s_ = 1;
+};
+
+class LimitedGaussianPDF: public GaussianPDF
+{
+ public:
+  LimitedGaussianPDF(double xlo, double xhi, double error_up = 0.5):
+      GaussianPDF(error_up), xlo_(xlo), xhi_(xhi),
+      norm_gradient_(2), norm_hessian_(2,2) { set_cache(); }
+  
+  virtual ~LimitedGaussianPDF();
+
+  void set_parameter_values(ConstVecRef values) override;
+
+  double value(double x) override;
+  double value_and_gradient(double x,  double& dfdx) override;
+  double value_gradient_and_hessian(double x, double& dfdx,
+                                    double& d2fdx2) override;
+  double value_and_parameter_gradient(double x,  VecRef gradient) override;
+  double value_parameter_gradient_and_hessian(double x, VecRef gradient,
+                                              MatRef hessian) override;
+ protected:
+  void set_cache();
+  double xlo_;
+  double xhi_;
+  double norm_ = 0;
+  Eigen::VectorXd norm_gradient_;
+  Eigen::MatrixXd norm_hessian_;
 };
 
 } // namespace function
@@ -325,5 +352,6 @@ using function::ParameterizableMultiAxisFunction;
 using function::ParameterizableSingleAxisFunction;
 
 using function::GaussianPDF;
+using function::LimitedGaussianPDF;
 
 } } // namespace calin::math
