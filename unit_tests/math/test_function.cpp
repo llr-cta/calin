@@ -156,6 +156,40 @@ TEST(TestLimitedGaussianPDF, ParameterHessianCheck) {
   }
 }
 
+TEST(TestLimitedExponentialPDF, GradientCheck) {
+  Eigen::VectorXd p(1);
+  p << 3; // scale
+  Eigen::VectorXd x(1);
+  Eigen::VectorXd dx(1);
+  dx << 1e-6;
+  LimitedExponentialPDF pdf(1.0,9.0);
+  pdf.set_parameter_values(p);
+  EXPECT_EQ(p, pdf.parameter_values());
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    Eigen::VectorXd good(1);
+    EXPECT_TRUE(gradient_check(pdf, x, dx, good));
+    EXPECT_LE(good(0), 0.5);
+  }
+}
+
+TEST(TestLimitedExponentialPDF, HessianCheck) {
+  Eigen::VectorXd p(1);
+  p << 3; // scale
+  Eigen::VectorXd x(1);
+  Eigen::VectorXd dx(1);
+  dx << 1e-6;
+  LimitedExponentialPDF pdf(1.0,9.0);
+  pdf.set_parameter_values(p);
+  EXPECT_EQ(p, pdf.parameter_values());
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    Eigen::MatrixXd good(1,1);
+    EXPECT_TRUE(hessian_check(pdf, x, dx, good));
+    EXPECT_LE(good(0,0), 0.5);
+  }
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

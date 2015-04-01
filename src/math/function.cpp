@@ -650,8 +650,6 @@ value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
 
 void LimitedGaussianPDF::set_cache()
 {
-  constexpr double inf = std::numeric_limits<double>::infinity();
-
   double ehi         = 1.0;
   double dehi_dx0    = 0.0;
   double dehi_ds     = 0.0;
@@ -698,12 +696,119 @@ void LimitedGaussianPDF::set_cache()
     d2elo_ds2   = xs*d2elo_dx0ds - d2elo_dx02;
   }
 
-  norm_              = ehi         - elo;  
-  norm_gradient_(0)  = dehi_dx0    - delo_dx0;
-  norm_gradient_(1)  = dehi_ds     - delo_ds;
-  norm_hessian_(0,0) = d2ehi_dx02  - d2elo_dx02;
-  norm_hessian_(0,1) = d2ehi_dx0ds - d2elo_dx0ds;
+  norm_              = 1.0/(ehi - elo);
+  const double norm2 = SQR(norm_);
+  norm_gradient_(0)  = -norm2*(dehi_dx0 - delo_dx0);
+  norm_gradient_(1)  = -norm2*(dehi_ds - delo_ds);
+  norm_hessian_(0,0) = -norm2*(d2ehi_dx02 - d2elo_dx02)
+                       + 2.0*SQR(norm_gradient_(0))/norm_;
+  norm_hessian_(0,1) = -norm2*(d2ehi_dx0ds - d2elo_dx0ds)
+                       + 2.0*norm_gradient_(0)*norm_gradient_(1)/norm_;
   norm_hessian_(1,0) = norm_hessian_(0,1);
-  norm_hessian_(1,1) = d2ehi_ds2   - d2elo_ds2;  
+  norm_hessian_(1,1) = -norm2*(d2ehi_ds2 - d2elo_ds2)
+                       + 2.0*SQR(norm_gradient_(1))/norm_;
 }
 
+// =========================== LimitedExponentialPDF ===========================
+
+LimitedExponentialPDF::~LimitedExponentialPDF()
+{
+  // nothing to see here
+}
+
+unsigned LimitedExponentialPDF::num_parameters()
+{
+  return 1;
+}
+
+std::vector<ParameterAxis> LimitedExponentialPDF::parameters()
+{
+  return { { "scale", "x-value units", false, -inf, false, inf } };
+}
+
+Eigen::VectorXd LimitedExponentialPDF::parameter_values()
+{
+  Eigen::VectorXd p(1);
+  p << a_;
+  return p;
+}
+
+void LimitedExponentialPDF::set_parameter_values(ConstVecRef values)
+{
+  assign_parameters(values, a_);
+  set_cache();
+}
+
+DomainAxis LimitedExponentialPDF::domain_axis()
+{
+  return { "x-value", "x-value units", false, -inf, false, inf };
+}
+
+bool LimitedExponentialPDF::can_calculate_gradient()
+{
+  return true;
+}
+
+bool LimitedExponentialPDF::can_calculate_hessian()
+{
+  return true;
+}
+
+bool LimitedExponentialPDF::can_calculate_parameter_gradient()
+{
+  return true;
+}
+
+bool LimitedExponentialPDF::can_calculate_parameter_hessian()
+{
+  return true;
+}
+
+double LimitedExponentialPDF::value(double x)
+{
+  if(x<xlo_ or x>=xhi_)return 0;
+  const double xs = x/a_;
+  return norm_ * std::exp(-xs);
+}
+
+double LimitedExponentialPDF::value_and_gradient(double x,  double& dfdx)
+{
+  if(x<xlo_ or x>=xhi_)return 0;
+  const double xs = x/a_;
+  const double val = std::exp(-xs);
+  dfdx = -val/a_;
+  return norm_*val;
+}
+
+double LimitedExponentialPDF::
+value_gradient_and_hessian(double x, double& dfdx, double& d2fdx2)
+{
+  if(x<xlo_ or x>=xhi_)return 0;
+  const double xs = x/a_;
+  const double val = std::exp(-xs);
+  dfdx = -val/a_;
+  d2fdx2 = val/SQR(a_);
+  return norm_*val;
+}
+
+double LimitedExponentialPDF::
+value_and_parameter_gradient(double x,  VecRef gradient)
+{
+
+}
+
+double LimitedExponentialPDF::
+value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
+{
+
+}
+
+double LimitedExponentialPDF::error_up()
+{
+  return error_up_;
+}
+
+void LimitedExponentialPDF::set_cache()
+{
+
+}
