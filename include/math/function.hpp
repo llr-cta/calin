@@ -209,6 +209,8 @@ bool gradient_check(MultiAxisFunction& fcn, ConstVecRef x, VecRef good,
                     double eps_factor = 10.0);
 bool gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
                     VecRef good);
+bool hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
+                   MatRef good);
 
 template<typename ParameterizableType> using ValGetter =
     std::function<double(ParameterizableType*)>;

@@ -315,6 +315,131 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
   return true;
 }
 
+bool calin::math::function::
+hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
+              MatRef good)
+{
+  constexpr double eps = std::numeric_limits<double>::epsilon();
+  unsigned fcn_num_axes = fcn.num_domain_axes();
+  assert(fcn_num_axes == x.innerSize());
+  assert(fcn_num_axes == dx.innerSize());
+
+  Eigen::VectorXd g0(fcn_num_axes);
+  double f0 = fcn.value_and_gradient(x, g0);
+  assert(fcn_num_axes == g0.innerSize());
+  
+  Eigen::VectorXd g0h(fcn_num_axes);
+  Eigen::MatrixXd hessian(fcn_num_axes,fcn_num_axes);
+  double f0h = fcn.value_gradient_and_hessian(x, g0h, hessian);
+  assert(fcn_num_axes == g0h.innerSize());
+  assert(fcn_num_axes == hessian.innerSize());
+  assert(fcn_num_axes == hessian.outerSize());
+
+  if(hessian != hessian.transpose())
+  {
+    std::cerr << "hessian_check: hessian matrix not symmetric\n";
+    return false;
+  }
+
+  if(std::abs(f0 - f0h)/std::abs(f0) > eps)
+  {
+    std::cerr << "hessian_check: function value differs\n";
+    return false;
+  }
+  
+  for(unsigned iaxis = 0;iaxis<fcn_num_axes;iaxis++)
+    if(std::abs(g0(iaxis) - g0h(iaxis))/std::abs(g0(iaxis)) > eps)
+    {
+      std::cerr << "hessian_check: gradient value differs (axis=" << iaxis
+                << ")\n";
+      return false;
+    }
+
+  good.resize(fcn_num_axes, fcn_num_axes);
+  for(unsigned iaxis = 0;iaxis<fcn_num_axes;iaxis++)
+  {
+    // The philosophy used here is to calculate the hessian with the two-point
+    // differnce formula, and compare that value to the expected numerical
+    // error, which is: 1/6 h^2 d3f/dx3. We calculate the 3rd derivative with
+    // the five point formula at the given point and at +/-h, and use the
+    // maximum value found as the expected error (maxerr). If the difference
+    // between the numerical and analytic hessian is less than maxerr we return
+    // zero. If the difference is larger then we return 0.5*log10(diff/maxerr).
+    // Users can test this to see how bad the computation is. Values up to 0.5
+    // might be OK in practice.
+    
+    const double h = dx(iaxis);
+    Eigen::VectorXd xh = x;
+    xh(iaxis) = x(iaxis) + h;
+    Eigen::VectorXd gp1(fcn_num_axes); fcn.value_and_gradient(xh,gp1);
+    xh(iaxis) = x(iaxis) + 2.0*h;
+    Eigen::VectorXd gp2(fcn_num_axes); fcn.value_and_gradient(xh,gp2);
+    xh(iaxis) = x(iaxis) - h;
+    Eigen::VectorXd gm1(fcn_num_axes); fcn.value_and_gradient(xh,gm1);
+    xh(iaxis) = x(iaxis) - 2.0*h;
+    Eigen::VectorXd gm2(fcn_num_axes); fcn.value_and_gradient(xh,gm2);
+    volatile double h2v = x(iaxis) + h;
+    h2v -= (x(iaxis) - h);
+    const double h2 = h2v;
+    
+    Eigen::VectorXd dgdx = (-gm1 + gp1)/h2;
+    Eigen::VectorXd theerr(fcn_num_axes);
+
+    // Coefficients from Abromowitz & Stegun Table 25.2
+    Eigen::VectorXd h2d3gdx3 = (-gm2 + 2.0*gm1 - 2.0*gp1 + gp2)/h2;
+    Eigen::VectorXd h2d3gdx3a =
+        (-3.0*gm2 + 10.0*gm1 - 12.0*g0 + 6.0*gp1 - gp2)/h2;
+    Eigen::VectorXd h2d3gdx3b =
+        (gm2 - 6.0*gm1 + 12.0*g0 - 10.0*gp1 + 3.0*gp2)/h2;
+
+    for(unsigned jaxis = 0; jaxis<fcn_num_axes; jaxis++)
+    {
+      const double theerr = std::abs(dgdx(jaxis) - hessian(iaxis,jaxis));
+      const double maxerr =
+          std::max({std::abs(h2d3gdx3(jaxis)),std::abs(h2d3gdx3a(jaxis)),
+                  std::abs(h2d3gdx3b(jaxis))})/6.0;
+      
+      if(theerr < eps)
+      {
+        good(iaxis,jaxis)=0;
+      }
+      else if(maxerr<eps)
+      {
+        // What to do if the 3rd derivative is itself zero?
+        // Compare with epsilon - return zero if difference is less than
+        // epsilon - grow to 0.5 (our nominal threshold) by sqrt(eps).
+        if(theerr < eps)good(iaxis, jaxis)=0.0;
+        else good(iaxis, jaxis)=std::log10(theerr)/std::log10(eps)-1;
+      }
+      else
+      {
+        // This is the main branch - compare difference to 3rd derivative,
+        // return zero if smaller and grow to 0.5 (nominal threshold) by 10
+        // times the expected error
+        if(theerr < maxerr)good(iaxis, jaxis)=0.0;
+        else good(iaxis, jaxis)=0.5*std::log10(theerr/(maxerr+eps)*(1.0+h+eps));
+      }
+
+      if(good(iaxis, jaxis) > 0.5)
+        std::cout << iaxis << ' ' << jaxis << ' '
+                  << "diff: " << dgdx(jaxis) << ' '
+                  << "hess: " << hessian(iaxis, jaxis) << ' '
+                  << "err: " << std::abs(dgdx(jaxis) - hessian(iaxis, jaxis)) << ' '
+                  << "maxerr: " << maxerr << ' '
+                  << "h2d3gdx3: " << h2d3gdx3(jaxis) << ' '
+                  << "h2d3gdx3a: " << h2d3gdx3a(jaxis) << ' '
+                  << "h2d3gdx3b: " << h2d3gdx3b(jaxis) << ' '
+                  << "g(-2)-g(0): " << gm2(jaxis)-g0(jaxis) <<  ' '
+                  << "g(-1)-g(0): " << gm1(jaxis)-g0(jaxis) <<  ' '
+                  << "g(+1)-g(0): " << gp1(jaxis)-g0(jaxis) <<  ' '
+                  << "g(+2)-g(0): " << gp1(jaxis)-g0(jaxis) <<  ' '
+                  << "ret: " << good(iaxis, jaxis) << ' '
+                  << '\n';
+    }
+  }
+  return true;
+}
+
 // *****************************************************************************
 //
 // Miscellaneous functions
@@ -435,7 +560,7 @@ value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
   hessian(0,0) = gradient[1]/s_; // val*(xs2 - 1.0)/SQR(s_);
   hessian(0,1) = val*(xs2 - 3.0)*xs/SQR(s_);
   hessian(1,0) = hessian(0,1);
-  hessian(1,1) = val*(SQR(xs2) - 5.0*xs2 + 3.0)/SQR(s_);
+  hessian(1,1) = val*(SQR(xs2) - 5.0*xs2 + 2.0)/SQR(s_);
   return val;
 }
 
