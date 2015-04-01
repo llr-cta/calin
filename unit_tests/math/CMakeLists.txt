@@ -8,3 +8,6 @@ calin_math
 calin_proto calin_nlopt)  
 add_test(TestHessian test_hessian) 
 
+add_executable(test_function test_function.cpp)   
+target_link_libraries(test_function ${GTEST_BOTH_LIBRARIES} calin_math)
+add_test(TestFunction test_function) 

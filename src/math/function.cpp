@@ -5,6 +5,7 @@
 */
 
 #include <iostream>
+#include <iomanip>
 
 #include "math/function.hpp"
 
@@ -12,7 +13,7 @@ using namespace calin::math::function;
 
 namespace {
 
-inline double SQR(double x) { return x*x; }
+inline static double SQR(double x) { return x*x; }
 constexpr double c_gauss_norm = 0.5*M_2_SQRTPI*M_SQRT1_2;
 
 } // anonymous namespace
@@ -36,6 +37,11 @@ MultiAxisFunction::~MultiAxisFunction()
 SingleAxisFunction::~SingleAxisFunction()
 {
   // nothing to see here
+}
+
+unsigned SingleAxisFunction::num_domain_axes()
+{
+  return 1;
 }
 
 std::vector<DomainAxis> SingleAxisFunction::domain_axes()
@@ -93,25 +99,135 @@ value_parameter_gradient_and_hessian(ConstVecRef x, VecRef gradient,
 
 // *****************************************************************************
 //
+// PMAFReverser
+//
+// *****************************************************************************
+
+PMAFReverser::PMAFReverser(ParameterizableMultiAxisFunction* fcn_deligate,
+                           bool adopt_fcn_deligate, double error_up):
+    ParameterizableMultiAxisFunction(), fcn_deligate_(fcn_deligate),
+    adopt_fcn_deligate_(adopt_fcn_deligate), error_up_(error_up),
+    x_(fcn_deligate->num_domain_axes())
+{
+  // nothing to see here
+}
+
+PMAFReverser::~PMAFReverser()
+{
+  if(adopt_fcn_deligate_)delete fcn_deligate_;
+}
+
+unsigned PMAFReverser::num_parameters()
+{
+  return fcn_deligate_->num_domain_axes();
+}
+
+auto PMAFReverser::parameters() -> std::vector<function::ParameterAxis>
+{
+  return fcn_deligate_->domain_axes();
+}
+
+Eigen::VectorXd PMAFReverser::parameter_values()
+{
+  return x_;
+}
+
+void PMAFReverser::set_parameter_values(ConstVecRef values)
+{
+  x_ = values;
+}
+
+bool PMAFReverser::can_calculate_parameter_gradient()
+{
+  return fcn_deligate_->can_calculate_gradient();
+}
+
+bool PMAFReverser::can_calculate_parameter_hessian()
+{
+  return fcn_deligate_->can_calculate_hessian();
+}
+
+unsigned PMAFReverser::num_domain_axes()
+{
+  return fcn_deligate_->num_parameters();
+}
+
+auto PMAFReverser::domain_axes() -> std::vector<function::DomainAxis>
+{
+  return fcn_deligate_->parameters();
+}
+
+double PMAFReverser::value(ConstVecRef x)
+{
+  fcn_deligate_->set_parameter_values(x);
+  return fcn_deligate_->value(x_);
+}
+
+bool PMAFReverser::can_calculate_gradient()
+{
+  return fcn_deligate_->can_calculate_parameter_gradient();
+}
+
+double PMAFReverser::value_and_gradient(ConstVecRef x, VecRef gradient)
+{
+  fcn_deligate_->set_parameter_values(x);
+  return fcn_deligate_->value_and_parameter_gradient(x_, gradient);
+}
+
+bool PMAFReverser::can_calculate_hessian()
+{
+  return fcn_deligate_->can_calculate_parameter_hessian();
+}
+
+double PMAFReverser::value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
+                                                MatRef hessian)
+{
+  fcn_deligate_->set_parameter_values(x);
+  return fcn_deligate_->value_parameter_gradient_and_hessian(x_, gradient,
+                                                             hessian);
+}
+
+double PMAFReverser::error_up()
+{
+  return error_up_;
+}
+
+double PMAFReverser::value_and_parameter_gradient(ConstVecRef x,
+                                                  VecRef gradient)
+{
+  fcn_deligate_->set_parameter_values(x);
+  return fcn_deligate_->value_and_gradient(x_, gradient);
+}
+
+double PMAFReverser::value_parameter_gradient_and_hessian(ConstVecRef x,
+                                           VecRef gradient, MatRef hessian)
+{
+  fcn_deligate_->set_parameter_values(x);
+  return fcn_deligate_->value_gradient_and_hessian(x_, gradient, hessian);
+}
+
+// *****************************************************************************
+//
 // gradient_check
 //
 // *****************************************************************************
 
 bool calin::math::function::
-gradient_check(MultiAxisFunction& fcn, ConstVecRef x, VecRef err,
-               double eps_factor = 10.0)
+gradient_check(MultiAxisFunction& fcn, ConstVecRef x, VecRef good,
+               double eps_factor)
 {
   constexpr double eps = std::numeric_limits<double>::epsilon();
+  constexpr double tiny_val = std::numeric_limits<double>::min();
   unsigned fcn_num_axes = fcn.num_domain_axes();
   Eigen::VectorXd dx(fcn_num_axes);
   for(unsigned idx=0;idx<fcn_num_axes;idx++)
-    dx[idx] = (x[idx]*eps_factor)*eps;
-  return gradient_check(fcn, x, dx, err);
+    dx[idx] = std::max((std::abs(x[idx])*eps_factor)*eps, eps_factor*tiny_val);
+  return gradient_check(fcn, x, dx, good);
 }
 
 bool calin::math::function::
 gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
-               VecRef err)
+               VecRef good)
 {
   constexpr double eps = std::numeric_limits<double>::epsilon();
   unsigned fcn_num_axes = fcn.num_domain_axes();
@@ -122,7 +238,7 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
   double f0g = fcn.value_and_gradient(x, gradient);
   assert(fcn_num_axes == gradient.innerSize());
   if(std::abs(f0 - f0g)/std::abs(f0) > eps)return false;
-  err.resize(fcn_num_axes);
+  good.resize(fcn_num_axes);
   for(unsigned iaxis = 0;iaxis<fcn_num_axes;iaxis++)
   {
     // The philosophy used here is to calculate the gradient with the two-point
@@ -161,26 +277,26 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
 
     if(theerr < eps)
     {
-      err(iaxis)=0;
+      good(iaxis)=0;
     }
     else if(maxerr<eps)
     {
       // What to do if the 3rd derivative is itself zero?
       // Compare with epsilon - return zero if difference is less than
       // epsilon - grow to 0.5 (our nominal threshold) by sqrt(eps).
-      if(theerr < eps)err(iaxis)=0.0;
-      else err(iaxis)=std::log10(theerr)/std::log10(eps)-1;
+      if(theerr < eps)good(iaxis)=0.0;
+      else good(iaxis)=std::log10(theerr)/std::log10(eps)-1;
     }
     else
     {
       // This is the main branch - compare difference to 3rd derivative,
       // return zero if smaller and grow to 0.5 (nominal threshold) by 10
       // times the expected error
-      if(theerr < maxerr)err(iaxis)=0.0;
-      else err(iaxis)=0.5*std::log10(theerr/(maxerr+eps)*(1.0+h+eps));
+      if(theerr < maxerr)good(iaxis)=0.0;
+      else good(iaxis)=0.5*std::log10(theerr/(maxerr+eps)*(1.0+h+eps));
     }
 
-    if(err(iaxis) > 0.5)
+    if(good(iaxis) > 0.5)
       std::cout << iaxis << ' '
                 << "diff: " << dfdx << ' '
                 << "grad: " << gradient(iaxis) << ' '
@@ -193,7 +309,7 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
                 << "f(-1)-f(0): " << fm1-f0 <<  ' '
                 << "f(+1)-f(0): " << fp1-f0 <<  ' '
                 << "f(+2)-f(0): " << fp1-f0 <<  ' '
-                << "ret: " << err(iaxis) << ' '
+                << "ret: " << good(iaxis) << ' '
                 << '\n';
   }
   return true;
@@ -263,7 +379,12 @@ DomainAxis GaussianPDF::domain_axis()
 
 double GaussianPDF::value(double x) 
 {
-  return c_gauss_norm/s_*std::exp(-SQR(x-x0_)/(2.0*SQR(s_)));
+  const double xc = x-x0_;
+  const double xs = xc/s_;
+  const double xs2 = SQR(xs);
+  double val = c_gauss_norm/s_*exp(-0.5*xs2);
+  //std::cout << std::setprecision(17) << x << ' ' << val << '\n';
+  return val;
 }
     
 double GaussianPDF::value_and_gradient(double x,  double& dfdx)
@@ -316,4 +437,9 @@ value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
   hessian(1,0) = hessian(0,1);
   hessian(1,1) = val*(SQR(xs2) - 5.0*xs2 + 3.0)/SQR(s_);
   return val;
+}
+
+double GaussianPDF::error_up()
+{
+  return error_up_;
 }

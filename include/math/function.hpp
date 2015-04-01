@@ -117,6 +117,7 @@ class SingleAxisFunction: virtual public MultiAxisFunction
                                           double& d2fdx2) = 0;
 
   // Members from MultiAxisFunction that we override
+  unsigned num_domain_axes() override;
   std::vector<DomainAxis> domain_axes() override;
   double value(ConstVecRef x) override;
   double value_and_gradient(ConstVecRef x, VecRef gradient) override;
@@ -152,6 +153,45 @@ class ParameterizableSingleAxisFunction:
                                       VecRef gradient, MatRef hessian) override;
 };
 
+class PMAFReverser: public ParameterizableMultiAxisFunction
+{
+ public:
+  PMAFReverser(ParameterizableMultiAxisFunction* fcn_deligate,
+               bool adopt_fcn_deligate = false, double error_up = 0.5);
+  virtual ~PMAFReverser();
+
+  // Parameterizable interface
+  unsigned num_parameters() override;
+  std::vector<ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  // MultiAxisFunction interface
+  unsigned num_domain_axes() override;
+  std::vector<DomainAxis> domain_axes() override;
+  double value(ConstVecRef x) override;
+  bool can_calculate_gradient() override;
+  double value_and_gradient(ConstVecRef x, VecRef gradient) override;
+  bool can_calculate_hessian() override;
+  double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
+                                    MatRef hessian) override;
+  double error_up() override;
+
+  // ParameterizableMultiAxisFunction interface
+  double value_and_parameter_gradient(ConstVecRef x,
+                                      VecRef gradient) override;
+  double value_parameter_gradient_and_hessian(ConstVecRef x,
+                                      VecRef gradient, MatRef hessian) override;
+
+ protected:
+  ParameterizableMultiAxisFunction* fcn_deligate_;
+  bool adopt_fcn_deligate_ = false;
+  double error_up_ = 0.5;
+  Eigen::VectorXd x_;
+};
+
 template<typename ParamType>
 class MultiParameterSet: virtual public Parameterizable
 {
@@ -166,7 +206,7 @@ class MultiParameterSet: virtual public Parameterizable
 };
 
 bool gradient_check(MultiAxisFunction& fcn, ConstVecRef x, VecRef good,
-                    double eps_factor);
+                    double eps_factor = 10.0);
 bool gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
                     VecRef good);
 
@@ -240,6 +280,10 @@ bool gradient_check_par(ParameterizableType& par_fcn,
 class GaussianPDF: public ParameterizableSingleAxisFunction
 {
  public:
+  GaussianPDF(double error_up = 0.5):
+      ParameterizableSingleAxisFunction(), error_up_(error_up)
+  { /* nothing to see here */ }
+  
   virtual ~GaussianPDF();
 
   unsigned num_parameters() override;
@@ -261,7 +305,9 @@ class GaussianPDF: public ParameterizableSingleAxisFunction
   double value_parameter_gradient_and_hessian(double x, VecRef gradient,
                                               MatRef hessian) override;
 
+  double error_up() override;
  protected:
+  double error_up_ = 0.5;
   double x0_;
   double s_;
 };
@@ -275,5 +321,7 @@ using function::MultiAxisFunction;
 using function::SingleAxisFunction;
 using function::ParameterizableMultiAxisFunction;
 using function::ParameterizableSingleAxisFunction;
+
+using function::GaussianPDF;
 
 } } // namespace calin::math
