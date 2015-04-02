@@ -381,13 +381,13 @@ class LimitedExponentialPDF: public ParameterizableSingleAxisFunction
   double error_up() override;
  protected:
   void set_cache();
-  double error_up_     = 0.5;
-  double a_            = 1.0;
+  double error_up_      = 0.5;
+  double a_             = 1.0;
   double xlo_;
   double xhi_;
-  double norm_         = 1.0;
-  double norm_gradient = 0.0;
-  double norm_hessian  = 0.0;
+  double norm_          = 1.0;
+  double norm_gradient_ = 0.0;
+  double norm_hessian_  = 0.0;
 };
 
   

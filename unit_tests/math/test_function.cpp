@@ -190,6 +190,42 @@ TEST(TestLimitedExponentialPDF, HessianCheck) {
   }
 }
 
+TEST(TestLimitedExponentialPDF, ParameterGradientCheck) {
+  Eigen::VectorXd p(1);
+  p << 3; // scale
+  Eigen::VectorXd dp(1);
+  dp << 1e-6;
+  LimitedExponentialPDF pdf_x(1.0,9.0);
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(1);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+  }
+}
+
+TEST(TestLimitedExponentialPDF, ParameterHessianCheck) {
+  Eigen::VectorXd p(1);
+  p << 3; // scale
+  Eigen::VectorXd dp(1);
+  dp << 1e-6;
+  LimitedExponentialPDF pdf_x(1.0,9.0);
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::MatrixXd good(1,1);
+    EXPECT_TRUE(hessian_check(pdf, p, dp, good));
+    EXPECT_LE(good(0,0), 0.5);
+  }
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

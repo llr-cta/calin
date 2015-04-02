@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <stdexcept>
 
 #include "math/function.hpp"
 
@@ -773,34 +774,62 @@ double LimitedExponentialPDF::value(double x)
 
 double LimitedExponentialPDF::value_and_gradient(double x,  double& dfdx)
 {
-  if(x<xlo_ or x>=xhi_)return 0;
+  if(x<xlo_ or x>=xhi_)
+  {
+    dfdx = 0;
+    return 0;
+  }
   const double xs = x/a_;
-  const double val = std::exp(-xs);
+  const double val = norm_*std::exp(-xs);
   dfdx = -val/a_;
-  return norm_*val;
+  return val;
 }
 
 double LimitedExponentialPDF::
 value_gradient_and_hessian(double x, double& dfdx, double& d2fdx2)
 {
-  if(x<xlo_ or x>=xhi_)return 0;
+  if(x<xlo_ or x>=xhi_)
+  {
+    dfdx = 0;
+    d2fdx2 = 0;
+    return 0;
+  }
   const double xs = x/a_;
-  const double val = std::exp(-xs);
+  const double val = norm_*std::exp(-xs);
   dfdx = -val/a_;
   d2fdx2 = val/SQR(a_);
-  return norm_*val;
+  return val;
 }
 
 double LimitedExponentialPDF::
 value_and_parameter_gradient(double x,  VecRef gradient)
 {
-
+  if(x<xlo_ or x>=xhi_)
+  {
+    gradient(0) = 0;
+    return 0;
+  }
+  const double xs = x/a_;
+  const double val = std::exp(-xs);
+  gradient(0) = val*(norm_gradient_ + norm_*xs/a_);
+  return norm_*val;
 }
 
 double LimitedExponentialPDF::
 value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
 {
-
+  if(x<xlo_ or x>=xhi_)
+  {
+    gradient(0) = 0;
+    hessian(0,0) = 0;
+    return 0;
+  }
+  const double xs = x/a_;
+  const double val = std::exp(-xs);
+  gradient(0) = val*(norm_gradient_ + norm_*xs/a_);  
+  hessian(0,0) = val*(norm_hessian_ + 2.0*norm_gradient_*xs/a_
+                      + norm_*xs*(xs - 2.0)/SQR(a_));
+  return norm_*val;
 }
 
 double LimitedExponentialPDF::error_up()
@@ -810,5 +839,47 @@ double LimitedExponentialPDF::error_up()
 
 void LimitedExponentialPDF::set_cache()
 {
+  double ehi         = 0.0;
+  double dehi_da     = 0.0;
+  double d2ehi_da2   = 0.0;
+  
+  if(xhi_!=inf)
+  {
+    double xs = xhi_/a_;
+    double exs = exp(-xs);
+    
+    ehi         = exs*a_;
+    dehi_da     = exs*(1.0 + xs);
+    d2ehi_da2   = exs*SQR(xs)/a_;
+  }
+  else if(a_<=0)
+  {
+    throw std::out_of_range("LimitedExponentialPDF: scale must be strictly "
+                            "positive when xhi=inf");
+  }
+    
+  double elo         = 0.0;
+  double delo_da     = 0.0;
+  double d2elo_da2   = 0.0;
+  
+  if(xlo_!=-inf)
+  {
+    double xs = xlo_/a_;
+    double exs = exp(-xs);
+    
+    elo         = exs*a_;
+    delo_da     = exs*(1.0 + xs);
+    d2elo_da2   = exs*SQR(xs)/a_;
+  }
+  else if(a_>=0)
+  {
+    throw std::out_of_range("LimitedExponentialPDF: scale must be strictly "
+                            "negative when xlo=-inf");
+  }
 
+  norm_              = 1.0/(ehi - elo);
+  const double norm2 = SQR(norm_);
+  norm_gradient_     = -norm2*(dehi_da - delo_da);
+  norm_hessian_      = -norm2*(d2ehi_da2 - d2elo_da2)
+                       + 2.0*SQR(norm_gradient_)/norm_;
 }
