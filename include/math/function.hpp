@@ -278,118 +278,6 @@ bool gradient_check_par(ParameterizableType& par_fcn,
       fcn(&par_fcn, val_getter, grad_getter, hess_getter, error_up);
   return function::gradient_check(fcn, p, dp, good);
 }
-
-// *****************************************************************************
-//
-// Miscellaneous functions
-//
-// *****************************************************************************
-
-class GaussianPDF: public ParameterizableSingleAxisFunction
-{
- public:
-  GaussianPDF(double error_up = 0.5):
-      ParameterizableSingleAxisFunction(), error_up_(error_up)
-  { /* nothing to see here */ }
-  
-  virtual ~GaussianPDF();
-
-  unsigned num_parameters() override;
-  std::vector<ParameterAxis> parameters() override;
-  Eigen::VectorXd parameter_values() override;
-  void set_parameter_values(ConstVecRef values) override;
-  DomainAxis domain_axis() override;
-
-  bool can_calculate_gradient() override;
-  bool can_calculate_hessian() override;
-  bool can_calculate_parameter_gradient() override;
-  bool can_calculate_parameter_hessian() override;
-
-  double value(double x) override;
-  double value_and_gradient(double x,  double& dfdx) override;
-  double value_gradient_and_hessian(double x, double& dfdx,
-                                    double& d2fdx2) override;
-  double value_and_parameter_gradient(double x,  VecRef gradient) override;
-  double value_parameter_gradient_and_hessian(double x, VecRef gradient,
-                                              MatRef hessian) override;
-
-  double error_up() override;
- protected:
-  double error_up_ = 0.5;
-  double x0_ = 0;
-  double s_ = 1;
-};
-
-class LimitedGaussianPDF: public GaussianPDF
-{
- public:
-  constexpr static double inf = std::numeric_limits<double>::infinity();
-
-  LimitedGaussianPDF(double xlo, double xhi, double error_up = 0.5):
-      GaussianPDF(error_up), xlo_(xlo), xhi_(xhi),
-      norm_gradient_(2), norm_hessian_(2,2) { set_cache(); }
-  
-  virtual ~LimitedGaussianPDF();
-
-  void set_parameter_values(ConstVecRef values) override;
-
-  double value(double x) override;
-  double value_and_gradient(double x,  double& dfdx) override;
-  double value_gradient_and_hessian(double x, double& dfdx,
-                                    double& d2fdx2) override;
-  double value_and_parameter_gradient(double x,  VecRef gradient) override;
-  double value_parameter_gradient_and_hessian(double x, VecRef gradient,
-                                              MatRef hessian) override;
- protected:
-  void set_cache();
-  double xlo_;
-  double xhi_;
-  double norm_ = 0;
-  Eigen::VectorXd norm_gradient_;
-  Eigen::MatrixXd norm_hessian_;
-};
-
-class LimitedExponentialPDF: public ParameterizableSingleAxisFunction
-{
- public:
-  constexpr static double inf = std::numeric_limits<double>::infinity();
-
-  LimitedExponentialPDF(double xlo=0.0, double xhi=inf, double error_up = 0.5):
-      error_up_(error_up), xlo_(xlo), xhi_(xhi) { set_cache(); }
-
-  virtual ~LimitedExponentialPDF();
-
-  unsigned num_parameters() override;
-  std::vector<ParameterAxis> parameters() override;
-  Eigen::VectorXd parameter_values() override;
-  void set_parameter_values(ConstVecRef values) override;
-  DomainAxis domain_axis() override;
-
-  bool can_calculate_gradient() override;
-  bool can_calculate_hessian() override;
-  bool can_calculate_parameter_gradient() override;
-  bool can_calculate_parameter_hessian() override;
-
-  double value(double x) override;
-  double value_and_gradient(double x,  double& dfdx) override;
-  double value_gradient_and_hessian(double x, double& dfdx,
-                                    double& d2fdx2) override;
-  double value_and_parameter_gradient(double x,  VecRef gradient) override;
-  double value_parameter_gradient_and_hessian(double x, VecRef gradient,
-                                              MatRef hessian) override;
-
-  double error_up() override;
- protected:
-  void set_cache();
-  double error_up_      = 0.5;
-  double a_             = 1.0;
-  double xlo_;
-  double xhi_;
-  double norm_          = 1.0;
-  double norm_gradient_ = 0.0;
-  double norm_hessian_  = 0.0;
-};
-
   
 } // namespace function
 
@@ -400,9 +288,5 @@ using function::MultiAxisFunction;
 using function::SingleAxisFunction;
 using function::ParameterizableMultiAxisFunction;
 using function::ParameterizableSingleAxisFunction;
-
-using function::GaussianPDF;
-using function::LimitedGaussianPDF;
-using function::LimitedExponentialPDF;
 
 } } // namespace calin::math

@@ -200,6 +200,8 @@ class SPELikelihood: public math::MultiAxisFunction
   const math::SimpleHist ped_data_;
 };
 
+
+
 } // namespace spe_fit
 
 using spe_fit::SingleElectronSpectrum;

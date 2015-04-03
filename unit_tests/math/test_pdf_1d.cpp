@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "Eigen/Dense"
-#include "math/function.hpp"
+#include "math/pdf_1d.hpp"
 
 using namespace calin::math;
 
