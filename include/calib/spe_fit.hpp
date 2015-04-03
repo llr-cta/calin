@@ -5,16 +5,13 @@
 
 #include "math/accumulator.hpp"
 #include "math/function.hpp"
+#include "math/pdf_1d.hpp"
 #include "math/histogram.hpp"
 
 namespace calin { namespace calib { namespace spe_fit {
 
-class SingleElectronSpectrum: public math::ParameterizableSingleAxisFunction
-{
- public:
-  virtual ~SingleElectronSpectrum();
-  
-};
+using math::Parameterizable1DPDF;
+using SingleElectronSpectrum = math::Parameterizable1DPDF;
 
 class MultiElectronSpectrum: public math::Parameterizable
 {
@@ -166,6 +163,63 @@ class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
   double ses_rms_pe_   = 0.4;
   double ped_rms_dc_   = 0.2;
   double ped_zero_dc_  = 0.0;
+};
+
+class GeneralPoissonMES: public MultiElectronSpectrum
+{
+ public:
+  using ConstVecRef = math::function::ConstVecRef;
+  using VecRef = math::function::VecRef;
+  using MatRef = math::function::MatRef;
+
+  GeneralPoissonMES(double x0, double dx, unsigned npoint,
+                    SingleElectronSpectrum* ses, Parameterizable1DPDF* ped,
+                    unsigned nmax = 10,
+                    bool adopt_ses = false, bool adopt_ped = false);
+
+  virtual ~GeneralPoissonMES();
+
+  unsigned num_parameters() override;
+  std::vector<math::ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  double pdf_ped(double x) override;
+  double pdf_gradient_ped(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_ped(double x, VecRef gradient,
+                                MatRef hessian) override;
+
+  double pdf_mes(double x) override;
+  double pdf_gradient_mes(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_mes(double x, VecRef gradient,
+                                MatRef hessian) override;
+
+  double intensity_pe() override { return intensity_pe_; };
+  double ped_rms_dc() override;
+  double ped_zero_dc() override;
+  double ses_mean_dc() override;
+  double ses_rms_pe() override;
+
+ protected:
+  void set_cache();
+  void multiply_fft(double* offt, const double* ifft1, const double* ifftw2);
+  
+  SingleElectronSpectrum* ses_;
+  Parameterizable1DPDF* ped_;
+  bool adopt_ses_ = false;
+  bool adopt_ped_ = false;
+  unsigned nmax_ = 10;
+  double intensity_pe_ = 1.0;
+
+  double x0_ = 0;
+  double dx_ = 0;
+  unsigned nsample_ = 0;
+  double* ped_fft_ = nullptr;
+  std::vector<double*> nes_fft_;
+  double* mes_fft_ = nullptr;
+  double* mes_ = nullptr;
 };
 
 class SPELikelihood: public math::MultiAxisFunction

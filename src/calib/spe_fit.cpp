@@ -2,6 +2,8 @@
 #include <limits>
 #include <cassert>
 
+#include <fftw3.h>
+
 #include "calib/spe_fit.hpp"
 #include "calib/pmt_model_pg.hpp"
 
@@ -22,10 +24,18 @@ constexpr double c_gauss_norm = 0.5*M_2_SQRTPI*M_SQRT1_2;
 
 } // anonymous namespace
 
+#if 0
 SingleElectronSpectrum::~SingleElectronSpectrum()
 {
   // nothing to see here
 }
+#endif
+
+// ============================================================================
+//
+// MultiElectronSpectrum base class
+//
+// ============================================================================
 
 MultiElectronSpectrum::~MultiElectronSpectrum()
 {
@@ -33,14 +43,14 @@ MultiElectronSpectrum::~MultiElectronSpectrum()
 }
 
 
-double MultiElectronSpectrum::pdf_gradient_hessian_ped(double x, VecRef gradient,
-                                                     MatRef hessian)
+double MultiElectronSpectrum::
+pdf_gradient_hessian_ped(double x, VecRef gradient, MatRef hessian)
 {
   assert(0);
 }
 
-double MultiElectronSpectrum::pdf_gradient_hessian_mes(double x, VecRef gradient,
-                                                     MatRef hessian)
+double MultiElectronSpectrum::
+pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
 {
   assert(0);
 }
@@ -52,7 +62,8 @@ bool MultiElectronSpectrum::can_calculate_parameter_hessian()
 
 // ============================================================================
 //
-// Fast PG model for single PE regime where maximum number of PEs is specified
+// PoissonGaussMES -Fast PG model for single PE regime where maximum
+// number of PEs is specified
 //
 // ============================================================================
 
@@ -449,7 +460,10 @@ void PoissonGaussianMES::calc_cached_vars(bool calc_hessian)
 
 // ============================================================================
 //
-// High accuracy PG model for low and high intensity regime using legacy code
+// PoissonGaussianMES_HighAccuracy - PG model for low and high
+// intensity regime using legacy code. May be more flexable in certain
+// circumstances but also likely more brittle. Definitely slower. NOT
+// RECOMMENDED!!
 //
 // ============================================================================
 
@@ -549,6 +563,166 @@ pdf_gradient_ped(double x, VecRef gradient)
   gradient[4] = 0; // p * 2.0 * ses_rms_pe_ * log_gradient.dfdb2;
 
   return p;
+}
+
+// ============================================================================
+//
+// GeneralPoissonMES - Poisson model using generic SES and pedestal
+// distribution. Uses FFTs to do convolution
+//
+// ============================================================================
+
+GeneralPoissonMES::
+GeneralPoissonMES(double x0, double dx, unsigned npoint,
+                  SingleElectronSpectrum* ses, Parameterizable1DPDF* ped,
+                  unsigned nmax, bool adopt_ses, bool adopt_ped):
+    MultiElectronSpectrum(),
+    ses_(ses), ped_(ped), adopt_ses_(adopt_ses), adopt_ped_(adopt_ped),
+    nmax_(nmax), x0_(x0), dx_(dx), nsample_(npoint), nes_fft_(nmax)
+{
+  ped_fft_ = fftw_alloc_real(nsample_);
+  for(unsigned ines=0; ines<nmax_;ines++)
+    nes_fft_[ines] = fftw_alloc_real(nsample_);
+  mes_fft_ = fftw_alloc_real(nsample_);
+  mes_ = fftw_alloc_real(nsample_);
+}
+
+GeneralPoissonMES::~GeneralPoissonMES()
+{
+  if(adopt_ses_)delete ses_;
+  if(adopt_ped_)delete ped_;
+  fftw_free(ped_fft_);
+  for(unsigned ines=0; ines<nmax_;ines++)fftw_free(nes_fft_[ines]);
+  fftw_free(mes_fft_);
+  fftw_free(mes_);
+}
+
+unsigned GeneralPoissonMES::num_parameters()
+{
+  return 1+ses_->num_parameters()+ped_->num_parameters();
+}
+
+std::vector<ParameterAxis> GeneralPoissonMES::parameters()
+{
+  std::vector<ParameterAxis> pvec
+  { { "light_intensity", "PE", true, 0, false, 0 } };
+  std::vector<ParameterAxis> pped { ped_->parameters() };
+  for(auto& ip : pped)ip.name = std::string("ped.") + ip.name;
+  pvec.insert(pvec.end(), pped.begin(), pped.end());
+  std::vector<ParameterAxis> pses { ses_->parameters() };
+  for(auto& ip : pses)ip.name = std::string("ses.") + ip.name;
+  pvec.insert(pvec.end(), pses.begin(), pses.end());  
+  return pvec;
+}
+
+Eigen::VectorXd GeneralPoissonMES::parameter_values()
+{
+  Eigen::VectorXd param(num_parameters());
+  param[0] = intensity_pe_;
+  unsigned ip = 1;
+  unsigned num_ped_params = ped_->num_parameters();
+  param.segment(ip,ip+num_ped_params) = ped_->parameter_values();
+  ip += num_ped_params;
+  param.segment(ip,ip+ses_->num_parameters()) = ses_->parameter_values();
+  return param;
+}
+
+void GeneralPoissonMES::set_parameter_values(ConstVecRef values)
+{
+  assign_parameters(values, intensity_pe_);
+  unsigned ip = 1;
+  unsigned num_ped_params = ped_->num_parameters();
+  ped_->set_parameter_values(values.segment(ip,ip+num_ped_params));
+  ip += num_ped_params;
+  ses_->set_parameter_values(values.segment(ip,ip+ses_->num_parameters()));
+  set_cache();
+}
+
+bool GeneralPoissonMES::can_calculate_parameter_gradient()
+{
+  return ped_->can_calculate_parameter_gradient() &&
+      ses_->can_calculate_parameter_gradient();
+}
+
+bool GeneralPoissonMES::can_calculate_parameter_hessian()
+{
+  return false; // for the moment we are lazy
+}
+    
+double GeneralPoissonMES::pdf_ped(double x)
+{
+  return ped_->value(x);
+}
+
+double GeneralPoissonMES::pdf_gradient_ped(double x, VecRef gradient)
+{
+  return ped_->value_and_parameter_gradient(x,gradient);
+}
+
+double GeneralPoissonMES::pdf_gradient_hessian_ped(double x, VecRef gradient,
+                                                   MatRef hessian)
+{
+  return ped_->value_parameter_gradient_and_hessian(x, gradient, hessian);
+}
+
+double GeneralPoissonMES::pdf_mes(double x)
+{
+  
+}
+
+double GeneralPoissonMES::pdf_gradient_mes(double x, VecRef gradient)
+{
+
+}
+
+double GeneralPoissonMES::pdf_gradient_hessian_mes(double x, VecRef gradient,
+                                                   MatRef hessian)
+{
+
+}
+
+double GeneralPoissonMES::ped_rms_dc()
+{
+
+}
+
+double GeneralPoissonMES::ped_zero_dc()
+{
+
+}
+
+double GeneralPoissonMES::ses_mean_dc()
+{
+  
+}
+
+double GeneralPoissonMES::ses_rms_pe()
+{
+
+}
+
+void GeneralPoissonMES::set_cache()
+{
+  
+}
+
+void GeneralPoissonMES::multiply_fft(double* offt,
+                                     const double* ifft1, const double* ifft2)
+{
+  double *ro = offt;
+  double *co = offt + nsample_-1;
+  const double *ri1 = ifft1;
+  const double *ci1 = ifft1 + nsample_-1;
+  const double *ri2 = ifft2;
+  const double *ci2 = ifft2 + nsample_-1;
+
+  (*ro++) = (*ri1++) * (*ri2++);
+  while(ro < co)
+  {
+    (*ro++) = (*ri1)*(*ri2) - (*ci1)*(*ci2);
+    (*co--) = (*ri1++)*(*ci2--) + (*ci1--)*(*ri2++);
+  }
+  if(ro==co)(*ro) = (*ri1) * (*ri2);
 }
 
 // ============================================================================

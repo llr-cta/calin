@@ -4,7 +4,7 @@
 using namespace calin::math;
 using namespace calin::data;
 
-TEST(SimpleHistTest, InsertIntegersFrom0ToN) {
+TEST(TestSimpleHist, InsertIntegersFrom0ToN) {
   unsigned N { 1000 };
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
@@ -17,7 +17,7 @@ TEST(SimpleHistTest, InsertIntegersFrom0ToN) {
     EXPECT_EQ(myhist.weight(i), i+1);
 }
 
-TEST(SimpleHistTest, InsertIntegersFromNTo0) {
+TEST(TestSimpleHist, InsertIntegersFromNTo0) {
   unsigned N { 1000 };
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
@@ -30,7 +30,7 @@ TEST(SimpleHistTest, InsertIntegersFromNTo0) {
     EXPECT_EQ(myhist.weight(i), N-i);
 }
 
-TEST(SimpleHistTest, InsertIntegersFrom0ToNWithNegativeDX) {
+TEST(TestSimpleHist, InsertIntegersFrom0ToNWithNegativeDX) {
   unsigned N { 1000 };
   SimpleHist myhist {-1.0};
   for(unsigned i=0;i<N;++i)
@@ -43,7 +43,7 @@ TEST(SimpleHistTest, InsertIntegersFrom0ToNWithNegativeDX) {
     EXPECT_EQ(myhist.weight(i), N-i);
 }
 
-TEST(SimpleHistTest, LimitedInsertIntegersFrom0ToN) {
+TEST(TestSimpleHist, LimitedInsertIntegersFrom0ToN) {
   unsigned N { 1000 };
   SimpleHist myhist {1.0,99.5,899.5};
   for(unsigned i=0;i<N;++i)
@@ -62,7 +62,7 @@ TEST(SimpleHistTest, LimitedInsertIntegersFrom0ToN) {
 }
 
 
-TEST(SimpleHistTest, RangeFor) {
+TEST(TestSimpleHist, RangeFor) {
   unsigned N { 10000 };
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
@@ -150,31 +150,31 @@ void iterator_test(FB fbegin, FE fend, FC fival)
   ASSERT_EQ(fbegin(myhist),ibin2);
 }
 
-TEST(SimpleHistTest, Iterator) {
+TEST(TestSimpleHist, Iterator) {
   iterator_test([](SimpleHist& h){return h.begin();},
                 [](SimpleHist& h){return h.end();},
                 [](double i, double N) { return i; });
 }
 
-TEST(SimpleHistTest, ConstIterator) {
+TEST(TestSimpleHist, ConstIterator) {
   iterator_test([](SimpleHist& h){return h.cbegin();},
                 [](SimpleHist& h){return h.cend();},
                 [](double i, double N) { return i; });
 }
 
-TEST(SimpleHistTest, ReverseIterator) {
+TEST(TestSimpleHist, ReverseIterator) {
   iterator_test([](SimpleHist& h){return h.rbegin();},
                 [](SimpleHist& h){return h.rend();},
                 [](double i, double N) { return N-i-1; });
 }
 
-TEST(SimpleHistTest, ConstReverseIterator) {
+TEST(TestSimpleHist, ConstReverseIterator) {
   iterator_test([](SimpleHist& h){return h.crbegin();},
                 [](SimpleHist& h){return h.crend();},
                 [](double i, double N) { return N-i-1; });
 }
 
-TEST(SimpleHistTest, Moments) {
+TEST(TestSimpleHist, Moments) {
   unsigned N { 10000 };
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
@@ -184,7 +184,7 @@ TEST(SimpleHistTest, Moments) {
   ASSERT_EQ(myhist.sum_wxx(), (dN-1)*(dN-1)*dN*dN/4);
 }
 
-TEST(SimpleHistTest, IterateOverBins) {
+TEST(TestSimpleHist, IterateOverBins) {
   unsigned N { 10000 };
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
@@ -198,7 +198,7 @@ TEST(SimpleHistTest, IterateOverBins) {
   ASSERT_EQ(swxx, (dN-1)*(dN-1)*dN*dN/4);
 }
 
-TEST(SimpleHistTest, Integrate) {
+TEST(TestSimpleHist, Integrate) {
   unsigned N { 10000 };
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
@@ -211,7 +211,7 @@ TEST(SimpleHistTest, Integrate) {
   ASSERT_EQ(swxx, (dN-1)*(dN-1)*dN*dN/4);
 }
 
-TEST(SimpleHistTest, KahanInsertIntegersFrom0ToN) {
+TEST(TestSimpleHist, KahanInsertIntegersFrom0ToN) {
   unsigned N { 1000 };
   BasicHistogram1D<KahanAccumulator> myhist {1.0};
   for(unsigned i=0;i<N;++i)
@@ -221,7 +221,7 @@ TEST(SimpleHistTest, KahanInsertIntegersFrom0ToN) {
     EXPECT_EQ(myhist.weight(i), i+1);
 }
 
-TEST(SimpleHistTest, CopyAndEquality) {
+TEST(TestSimpleHist, CopyAndEquality) {
   unsigned N { 10000 };
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
@@ -235,7 +235,7 @@ TEST(SimpleHistTest, CopyAndEquality) {
   ASSERT_FALSE(myhist == myhist2);
 }
   
-TEST(SimpleHistTest, ToAndFromProtobuf) {
+TEST(TestSimpleHist, ToAndFromProtobuf) {
   unsigned N { 300 };
   SimpleHist myhist {1.0,99.5,199.5};
   for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
@@ -249,7 +249,7 @@ TEST(SimpleHistTest, ToAndFromProtobuf) {
   delete hist_data;
 }
 
-TEST(SimpleHistTest, KahanToAndFromProtobuf) {
+TEST(TestSimpleHist, KahanToAndFromProtobuf) {
   unsigned N { 10000 };
   BasicHistogram1D<KahanAccumulator> myhist {1.0};
   for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
@@ -257,16 +257,16 @@ TEST(SimpleHistTest, KahanToAndFromProtobuf) {
   BasicHistogram1D<KahanAccumulator> myhist2(*hist_data);
   // THIS COULD FAIL IN GENERAL AS CORRECTIONS AREN'T STORED IN THE
   // PROTOBUF DATA - IT SHOULD BE OK WITH THE VALUES USED HERE
-  ASSERT_EQ(myhist,myhist2); 
+  ASSERT_EQ(myhist,myhist2);
   delete hist_data;
 }
 
-TEST(SimpleHistTest, CDFFill) {
+TEST(TestBinnedCDF, CreateFromHistogram) {
   unsigned N { 1000 };
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
     myhist.accumulate(i,i);
-  CDF mycdf(myhist);
+  BinnedCDF mycdf(myhist);
   ASSERT_EQ(mycdf.size(), N);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(mycdf.xval_center(i), i);  
@@ -278,23 +278,22 @@ double median_zero_to_Nminus1(unsigned N) {
   return (N%2==0)?0.5*double((N-1)/2+(N/2)):double(N/2);
 }
 
-TEST(SimpleHistTest, CDFStats) {
+TEST(TestBinnedCDF, Stats) {
   unsigned N { 1000 }; // Should be even
   //BasicHistogram1D<KahanAccumulator> myhist {1.0};
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
     myhist.accumulate(i,1.0);
-  CDF mycdf(myhist);
+  BinnedCDF mycdf(myhist);
   EXPECT_EQ(mycdf.median(), median_zero_to_Nminus1(N));
   myhist.accumulate(N,1.0);
-  CDF mycdf2(myhist);
+  BinnedCDF mycdf2(myhist);
   EXPECT_EQ(mycdf2.median(), median_zero_to_Nminus1(N+1));
   double dN { static_cast<double>(N) };
   double swx;
   double swxx;
   //mycdf.moments2<KahanAccumulator>(swx,swxx);
   mycdf.moments2(swx,swxx);
-  std::cout << swx - (dN-1.0)/2.0 << '\n';
   ASSERT_LE(std::abs(swx - (dN-1.0)/2.0),1e-6);
   ASSERT_LE(std::abs(swxx - (dN-1)*(2.0*dN-1.0)/6.0),1e-6);
 }

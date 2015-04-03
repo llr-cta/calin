@@ -463,27 +463,27 @@ bool BasicHistogram1D<Acc>::operator==(const BasicHistogram1D& o) const
 //
 // ============================================================================
 
-class CDF: public BinnedData1D<double>
+class BinnedCDF: public BinnedData1D<double>
 {
   using Base = BinnedData1D<double>;
  public:
-  class const_bin_accessor : public basic_bin_accessor<const CDF>
+  class const_bin_accessor : public basic_bin_accessor<const BinnedCDF>
   {
    public:
-    using basic_bin_accessor<const CDF>::basic_bin_accessor;
+    using basic_bin_accessor<const BinnedCDF>::basic_bin_accessor;
     double density() const { return this->binner_->density(this->ibin_); }
     double cumulative_right() const { return this->binner_->cumulative_right(this->ibin_); }
     double cumulative_left() const { return this->binner_->cumulative_left(this->ibin_); }
   };
   using const_iterator =
-      basic_iterator<const CDF,const_bin_accessor>;
+      basic_iterator<const BinnedCDF,const_bin_accessor>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
   using bin_accessor = const_bin_accessor;
   using iterator = const_iterator;
   using reverse_iterator = std::reverse_iterator<iterator>;
   
-  template<typename Acc> CDF(const BasicHistogram1D<Acc>& hist):
+  template<typename Acc> BinnedCDF(const BasicHistogram1D<Acc>& hist):
       Base{hist.dxval(), hist.xval_align(), hist.xval0(),
         hist.is_limited(), hist.xval_limit_lo(), hist.xval_limit_hi(),
         hist.xval_units()}
@@ -675,6 +675,6 @@ class CDF: public BinnedData1D<double>
 using histogram::BasicHistogram1D;
 using Histogram1D = BasicHistogram1D<SimpleAccumulator>;
 using SimpleHist = Histogram1D;
-using histogram::CDF;
+using histogram::BinnedCDF;
 
 } } // namespace calin::math
