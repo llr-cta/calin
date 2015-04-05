@@ -583,17 +583,28 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
   ped_fft_ = fftw_alloc_real(nsample_);
   for(unsigned ines=0; ines<nmax_;ines++)
     nes_fft_[ines] = fftw_alloc_real(nsample_);
-  mes_fft_ = fftw_alloc_real(nsample_);
+  //mes_fft_ = fftw_alloc_real(nsample_);
   mes_ = fftw_alloc_real(nsample_);
+
+  ped_plan_fwd_ =
+      fftw_plan_r2r_1d(nsample_, ped_fft_, ped_fft_, FFTW_R2HC, 0);
+  ses_plan_fwd_ =
+      fftw_plan_r2r_1d(nsample_, nes_fft_[0], nes_fft_[0], FFTW_R2HC, 0);
+  mes_plan_rev_ = 
+      fftw_plan_r2r_1d(nsample_, mes_, mes_, FFTW_HC2R, 0);
 }
 
 GeneralPoissonMES::~GeneralPoissonMES()
 {
+  fftw_destroy_plan(mes_plan_rev_);
+  fftw_destroy_plan(ses_plan_fwd_);
+  fftw_destroy_plan(ped_plan_fwd_);
+  
   if(adopt_ses_)delete ses_;
   if(adopt_ped_)delete ped_;
   fftw_free(ped_fft_);
   for(unsigned ines=0; ines<nmax_;ines++)fftw_free(nes_fft_[ines]);
-  fftw_free(mes_fft_);
+  //fftw_free(mes_fft_);
   fftw_free(mes_);
 }
 
@@ -640,6 +651,7 @@ void GeneralPoissonMES::set_parameter_values(ConstVecRef values)
 
 bool GeneralPoissonMES::can_calculate_parameter_gradient()
 {
+  return false;
   return ped_->can_calculate_parameter_gradient() &&
       ses_->can_calculate_parameter_gradient();
 }
@@ -703,18 +715,49 @@ double GeneralPoissonMES::ses_rms_pe()
 
 void GeneralPoissonMES::set_cache()
 {
+  for(unsigned isample = 0;isample<nsample_;isample++)
+  {
+    const double x = x0_ + double(isample)*dx_;
+    double val = ses_->value(x);
+    if(!isfinite(val))val = 0;
+    nes_fft_[0][isample] = val;
+  }
+  fftw_execute(ses_plan_fwd_);
+  for(unsigned ines=1;ines<nmax_;ines++)
+    hcvec_multiply(nes_fft_[ines], nes_fft_[ines-1], nes_fft_[0]);
   
+  for(unsigned isample = 0;isample<nsample_;isample++)
+  {
+    const double x = x0_ + double(isample)*dx_;
+    double val = ped_->value(x);
+    ped_fft_[isample] = val;
+  }
+  fftw_execute(ped_plan_fwd_);
+
+  for(unsigned isample=0;isample<nsample_;isample++)mes_[isample]=0;
+
+  double log_intensity = std::log(intensity_pe_);
+  for(unsigned ines = 0;ines<nmax_;ines++)
+  {
+    double dbl_n { double(ines+1) };
+    double posson_factor {
+      std::exp(dbl_n*log_intensity - intensity_pe_ - lgamma(dbl_n+1.0)) };
+    hcvec_scale_and_add(mes_, nes_fft_[ines], posson_factor);
+  }
+  hcvec_scale_and_add(mes_, ped_fft_, std::exp(-intensity_pe_));
+
+  fftw_execute(mes_plan_rev_);
 }
 
-void GeneralPoissonMES::multiply_fft(double* offt,
-                                     const double* ifft1, const double* ifft2)
+void GeneralPoissonMES::
+hcvec_multiply(double* ovec, const double* ivec1, const double* ivec2)
 {
-  double *ro = offt;
-  double *co = offt + nsample_-1;
-  const double *ri1 = ifft1;
-  const double *ci1 = ifft1 + nsample_-1;
-  const double *ri2 = ifft2;
-  const double *ci2 = ifft2 + nsample_-1;
+  double *ro = ovec;
+  double *co = ovec + nsample_-1;
+  const double *ri1 = ivec1;
+  const double *ci1 = ivec1 + nsample_-1;
+  const double *ri2 = ivec2;
+  const double *ci2 = ivec2 + nsample_-1;
 
   (*ro++) = (*ri1++) * (*ri2++);
   while(ro < co)
@@ -723,6 +766,16 @@ void GeneralPoissonMES::multiply_fft(double* offt,
     (*co--) = (*ri1++)*(*ci2--) + (*ci1--)*(*ri2++);
   }
   if(ro==co)(*ro) = (*ri1) * (*ri2);
+}
+
+void GeneralPoissonMES::
+hcvec_scale_and_add(double* ovec, const double* ivec, double scale)
+{
+  double *ro = ovec;
+  double *re = ovec + nsample_;
+  const double *ri = ivec;
+  while(ro<re)
+    *(ro++) += *(ri++)*scale;
 }
 
 // ============================================================================

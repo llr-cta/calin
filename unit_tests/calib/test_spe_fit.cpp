@@ -13,7 +13,7 @@ using namespace calin::data;
 using namespace calin::calib;
 using namespace calin::unit_tests;
 
-TEST(PoissonGaussianMES, SetAndRecallParameters) {
+TEST(TestPoissonGaussianMES, SetAndRecallParameters) {
   PoissonGaussianMES pg_mes1;
   PoissonGaussianMES_HighAccuracy pg_mes2;
 
@@ -29,7 +29,7 @@ TEST(PoissonGaussianMES, SetAndRecallParameters) {
   EXPECT_EQ(params, params2);
 }
 
-TEST(PoissonGaussianMES, PDFEqualityWithLegacyCode_Ped) {
+TEST(TestPoissonGaussianMES, PDFEqualityWithLegacyCode_Ped) {
   PoissonGaussianMES pg_mes1;
   PoissonGaussianMES_HighAccuracy pg_mes2;
 
@@ -50,7 +50,7 @@ TEST(PoissonGaussianMES, PDFEqualityWithLegacyCode_Ped) {
   }
 }
 
-TEST(PoissonGaussianMES, PDFEqualityWithLegacyCode_MES) {
+TEST(TestPoissonGaussianMES, PDFEqualityWithLegacyCode_MES) {
   PoissonGaussianMES pg_mes1(20);
   PoissonGaussianMES_HighAccuracy pg_mes2;
 
@@ -111,11 +111,9 @@ mes_gradient_test(MultiElectronSpectrum* mes,
   }
 }
                        
-} // anonymous namespave
+} // anonymous namespace
 
-
-
-TEST(PoissonGaussianMES, GradientTest_PED)
+TEST(TestPoissonGaussianMES, GradientCheck_PED)
 {
   double dp1 = 1e-7;
   PoissonGaussianMES mes(40);
@@ -127,7 +125,7 @@ TEST(PoissonGaussianMES, GradientTest_PED)
                     { dp1, dp1, dp1, dp1, dp1}, -1.0, 1.0, 0.1);
 }
 
-TEST(PoissonGaussianMES, GradientTest_MES)
+TEST(TestPoissonGaussianMES, GradientCheck_MES)
 {
   double dp1 = 1e-7;
   PoissonGaussianMES mes(40);
@@ -139,7 +137,7 @@ TEST(PoissonGaussianMES, GradientTest_MES)
                     { dp1, dp1, dp1, dp1, dp1}, -1.0, 10.0, 0.1);
 }
 
-TEST(PoissonGaussianMES_HighAccuracy, GradientTest_PED)
+TEST(TestPoissonGaussianMES_HighAccuracy, GradientCheck_PED)
 {
   double dp1 = 1e-7;
   PoissonGaussianMES_HighAccuracy mes(1e-20);
@@ -151,7 +149,7 @@ TEST(PoissonGaussianMES_HighAccuracy, GradientTest_PED)
                     { dp1, dp1, dp1, dp1, dp1}, -1.0, 1.0, 0.1);
 }
 
-TEST(PoissonGaussianMES_HighAccuracy, GradientTest_MES)
+TEST(TestPoissonGaussianMES_HighAccuracy, GradientCheck_MES)
 {
   double dp1 = 1e-7;
   PoissonGaussianMES_HighAccuracy mes(1e-20);
@@ -161,178 +159,113 @@ TEST(PoissonGaussianMES_HighAccuracy, GradientTest_MES)
                     &MultiElectronSpectrum::pdf_gradient_hessian_mes,
                     { 1.123, 0.100000, 0.2, 1.321, 0.45 },
                     { dp1, dp1, dp1, dp1, dp1}, -1.0, 10.0, 0.1);
+}
+
+namespace {
+
+using function::ConstVecRef;
+using function::VecRef;
+using function::MatRef;
+
+void
+mes_hessian_test(MultiElectronSpectrum* mes,
+                 double(MultiElectronSpectrum::*val_get_f)(double),
+                 double(MultiElectronSpectrum::*grad_get_f)(double,VecRef) ,
+        double(MultiElectronSpectrum::*hess_get_f)(double,VecRef,MatRef),
+                 const std::vector<double> vp, const std::vector<double> vdp,
+                 double xlo, double xhi, double dx)
+{
+  Eigen::VectorXd p(5);
+  p << vp[0], vp[1], vp[2], vp[3], vp[4];
+  Eigen::VectorXd dp(5);
+  dp << vdp[0], vdp[1], vdp[2], vdp[3], vdp[4];
+  for(double xval = xlo; xval<xhi; xval+=dx)
+  {
+    bool check_ok;
+    Eigen::MatrixXd good(5,5);
+    function::ValGetter<MultiElectronSpectrum> val_get =
+        [xval,val_get_f](MultiElectronSpectrum* mes) {
+      return (mes->*val_get_f)(xval); };
+    function::GradGetter<MultiElectronSpectrum>  grad_get =
+        [xval,grad_get_f](MultiElectronSpectrum* mes, VecRef grad) {
+      return (mes->*grad_get_f)(xval,grad); };
+    function::HessGetter<MultiElectronSpectrum> hess_get =
+      [xval,hess_get_f](MultiElectronSpectrum* mes, VecRef grad, MatRef hess) {
+      return (mes->*hess_get_f)(xval,grad,hess); };
+
+    check_ok = function::hessian_check_par(*mes, p, dp, good,
+                                           val_get, grad_get, hess_get);
+
+    EXPECT_TRUE(check_ok);
+    for(unsigned ipar=0;ipar<5;ipar++)
+      for(unsigned jpar=0;jpar<5;jpar++)EXPECT_LE(good(ipar,jpar),0.5);
+  }
+}
+                       
+} // anonymous namespace
+
+TEST(TestPoissonGaussianMES, HessianCheck_PED)
+{
+  double dp1 = 1e-7;
+  PoissonGaussianMES mes(40);
+  mes_hessian_test(&mes,
+                   &MultiElectronSpectrum::pdf_ped,
+                   &MultiElectronSpectrum::pdf_gradient_ped,
+                   &MultiElectronSpectrum::pdf_gradient_hessian_ped,
+                   { 1.123, 0.100000, 0.2, 1.321, 0.45 },
+                   { dp1, dp1, dp1, dp1, dp1}, -1.0, 1.0, 0.1);
+}
+
+TEST(TestPoissonGaussianMES, HessianCheck_MES)
+{
+  double dp1 = 1e-7;
+  PoissonGaussianMES mes(40);
+  mes_hessian_test(&mes,
+                   &MultiElectronSpectrum::pdf_mes,
+                   &MultiElectronSpectrum::pdf_gradient_mes,
+                   &MultiElectronSpectrum::pdf_gradient_hessian_mes,
+                   { 1.123, 0.100000, 0.2, 1.321, 0.45 },
+                   { dp1, dp1, dp1, dp1, dp1}, -1.0, 10.0, 0.1);
+}
+
+TEST(TestSPELikelihood, KarkarPG_GradientCheck) {
+  auto mes_data = karkar_data();
+  SimpleHist mes_hist(1.0);
+  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  PoissonGaussianMES mes_model(20);
+  SPELikelihood like(mes_model, mes_hist);
+  Eigen::VectorXd x(5);
+  x << 0.55349034289601895, 3094.2718624743093,
+      19.614139336940855, 89.181964780087668, 0.32388058781378032;
+  Eigen::VectorXd dx(5);
+  dx << 1e-7, 1e-7, 1e-7, 1e-7, 1e-7;
+  Eigen::VectorXd good(5);
+  
+  bool check_ok = function::gradient_check(like, x, dx, good);
+  EXPECT_TRUE(check_ok);
+  for(unsigned ipar=0;ipar<5;ipar++)EXPECT_LE(good(ipar),0.5);
+}
+
+TEST(TestSPELikelihood, KarkarPG_HessianCheck) {
+  auto mes_data = karkar_data();
+  SimpleHist mes_hist(1.0);
+  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  PoissonGaussianMES mes_model(20);
+  SPELikelihood like(mes_model, mes_hist);
+  Eigen::VectorXd x(5);
+  x << 0.55349034289601895, 3094.2718624743093,
+      19.614139336940855, 89.181964780087668, 0.32388058781378032;
+  Eigen::VectorXd dx(5);
+  dx << 1e-7, 1e-7, 1e-7, 1e-7, 1e-7;
+  Eigen::MatrixXd good(5,5);
+  
+  bool check_ok = function::hessian_check(like, x, dx, good);
+  EXPECT_TRUE(check_ok);
+  for(unsigned ipar=0;ipar<5;ipar++)
+    for(unsigned jpar=0;jpar<5;jpar++)EXPECT_LE(good(ipar,jpar),0.5);
 }
 
 #if 0
-
-TEST(PoissonGaussianMES_HighAccuracy, Dervative_PedRMS_MES) {
-  deriv_test(make_pgha_mes,
-             &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_gradient_mes,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 2, 1e-8, 1e-4, -1.0, 20.0);
-}
-
-TEST(PoissonGaussianMES_HighAccuracy, Dervative_Gain_MES) {
-  deriv_test(make_pgha_mes,
-             &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_gradient_mes,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 3, 1e-8, 1e-4, -1.0, 20.0);
-}
-
-TEST(PoissonGaussianMES_HighAccuracy, Dervative_SESRMS_MES) {
-  deriv_test(make_pgha_mes,
-             &MultiElectronSpectrum::pdf_mes,
-             &MultiElectronSpectrum::pdf_gradient_mes,
-             { 1.0, 0.100000, 0.2, 1.0, 0.45 }, 4, 1e-8, 1e-5, -1.0, 20.0);
-}
-
-namespace {
-
-void mes_hessian_test(double (PoissonGaussianMES::*der)(double, double*),
-                      double (PoissonGaussianMES::*hes)(double, double*, double *),
-                      double xmax = 10.0)
-{
-  PoissonGaussianMES mes(20);
-
-  std::vector<double> deriv1(5);
-  std::vector<double> deriv2(5);
-  std::vector<double> derivh(5);
-  std::vector<double> hessian(25);
-
-  const double dx = 1e-8;
-
-  for(double x=0; x<xmax; x+=0.1)
-    for(unsigned ipar = 0; ipar<5; ipar++)
-    {
-      std::vector<double> pars { 1.123, 0.234, 0.2, 0.9, 0.33 };
-
-      mes.set_parameter_values(&pars.front());
-      double pdf = (mes.*der)(x,&deriv1.front());
-      double pdfh = (mes.*hes)(x,&derivh.front(),&hessian.front());
-
-      EXPECT_EQ(pdf,pdfh);
-      EXPECT_EQ(deriv1,derivh);
-
-      std::vector<double> pars1 { pars };
-      pars1[ipar] -= dx;
-      mes.set_parameter_values(&pars1.front());
-      (mes.*der)(x,&deriv1.front());      
-
-      pars1 = pars;
-      pars1[ipar] += dx;
-      mes.set_parameter_values(&pars1.front());
-      (mes.*der)(x,&deriv2.front());
-      
-      for(unsigned jpar=ipar;jpar<5;jpar++)
-      {
-        double dpdx = (deriv2[jpar]-deriv1[jpar])/(2.0*dx);
-        EXPECT_NEAR(dpdx, hessian[ipar*5+jpar], std::abs(dpdx)*1e-5);
-      }
-    }
-}
-
-} // anonymous namespace
-
-TEST(PoissonGaussianMES, HessianTest_MES)
-{
-  mes_hessian_test(&PoissonGaussianMES::pdf_gradient_mes,
-                   &PoissonGaussianMES::pdf_gradient_hessian_mes);
-}
-
-TEST(PoissonGaussianMES, HessianTest_PED)
-{
-  mes_hessian_test(&PoissonGaussianMES::pdf_gradient_ped,
-                   &PoissonGaussianMES::pdf_gradient_hessian_ped, 4.0);
-}
-
-namespace {
-
-void spe_deriv_test(unsigned ip, double dx, double nearness)
-{
-  auto mes_data = karkar_data();
-  SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.accumulate(idata);
-  PoissonGaussianMES mes_model(20);
-  SPELikelihood like(mes_model, mes_hist);
-  std::vector<double> x { 0.55349034289601895, 3094.2718624743093,
-        19.614139336940855, 89.181964780087668, 0.32388058781378032 };
-  //std::vector<double> x { 0.6, 3095, 20, 91, 0.4 };
-  std::vector<double> gradient(5);
-  double lvalue = like.value(&x.front());
-  for(unsigned ix=0; ix<100; ix++)
-  {
-    x[ip] += dx;
-    double value = like.value_and_gradient(&x.front(), &gradient.front());
-    EXPECT_NEAR(gradient[ip], (value-lvalue)/dx, (lvalue+value)*nearness);
-    lvalue = value;
-  }
-}
-
-}
-
-TEST(SPELikelihood, Deriv_Intensity) {
-  spe_deriv_test(0, 1e-4, 1e-5);
-  //spe_deriv_test(0, 1e-8, 1e-10);
-}
-
-TEST(SPELikelihood, Deriv_PedZero) {
-  spe_deriv_test(1, 1e-2, 1e-3);
-}
-
-TEST(SPELikelihood, Deriv_PedRMS) {
-  spe_deriv_test(2, 1e-3, 1e-4);
-}
-
-TEST(SPELikelihood, Deriv_Gain) {
-  spe_deriv_test(3, 1e-3, 1e-4);
-}
-
-TEST(SPELikelihood, Deriv_SESRMS) {
-  spe_deriv_test(4, 1e-4, 1e-5);
-}
-
-TEST(SPELikelihood, Hessian_Test)
-{
-  auto mes_data = karkar_data();
-  SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.accumulate(idata);
-  PoissonGaussianMES mes_model(20);
-  SPELikelihood like(mes_model, mes_hist);
-  std::vector<double> x0 { 0.55349034289601895, 3094.2718624743093,
-        19.614139336940855, 89.181964780087668, 0.32388058781378032 };
-  double dx = 1e-8;
-  
-  std::vector<double> deriv1(5);
-  std::vector<double> deriv2(5);
-  std::vector<double> derivh(5);
-  std::vector<double> hessian(25);
-
-  for(unsigned ipar = 0; ipar<5; ipar++)
-  {
-    double pdf = like.value_and_gradient(&x0.front(),&deriv1.front());
-    double pdfh = like.value_gradient_and_hessian(&x0.front(),&derivh.front(),
-                                                &hessian.front());
-
-    EXPECT_EQ(pdf,pdfh);
-    EXPECT_EQ(deriv1,derivh);
-
-    std::vector<double> x1 { x0 };
-    x1[ipar] = x0[ipar] - dx;
-    like.value_and_gradient(&x1.front(),&deriv1.front());
-
-    x1[ipar] = x0[ipar] + dx;
-    like.value_and_gradient(&x1.front(),&deriv2.front());
-
-    for(unsigned jpar=ipar;jpar<5;jpar++)
-    {
-      double dfdx = (deriv2[jpar]-deriv1[jpar])/(2.0*dx);
-      EXPECT_NEAR(dfdx, hessian[ipar*5+jpar], std::abs(dfdx)*2e-5);
-    }
-  }
-}
-
-
-namespace {
 
 double my_f(const gsl_vector * x, void * params)
 {
@@ -548,8 +481,9 @@ TEST(SPELikelihood, Minimize_GSL_BFGS2)
   gsl_multimin_fdfminimizer_free (s);
   gsl_vector_free (x);
 }
+#endif
 
-TEST(SPELikelihood, Minimize_NLOpt_LD_LBFGS)
+TEST(TestSPELikelihood, Optimize_NLOpt)
 {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
@@ -562,25 +496,25 @@ TEST(SPELikelihood, Minimize_NLOpt_LD_LBFGS)
   opt.set_scale({0.1,0.1,1.0,1.0,0.05});
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   opt.set_abs_tolerance(0.0001);
-  std::vector<double> x { 1.0, 3100.0, 20.0, 100.0, 0.45 };
-  opt.set_initial_values(x);
+  opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 0.45 });
+  Eigen::VectorXd x_opt(5);
   double f_val;
-  opt.minimize(x, f_val);
+  opt.minimize(x_opt, f_val);
   
   //EXPECT_EQ(status, GSL_SUCCESS);
-  EXPECT_NEAR(x[0], 0.55349337, 0.0001);
-  EXPECT_NEAR(x[1], 3094.2715, 0.01);
-  EXPECT_NEAR(x[2], 19.6141970, 0.001);
-  EXPECT_NEAR(x[3], 89.1810077, 0.01);
-  EXPECT_NEAR(x[4], 0.32388838, 0.0001);  
+  EXPECT_NEAR(x_opt[0], 0.55349337, 0.0001);
+  EXPECT_NEAR(x_opt[1], 3094.2715, 0.01);
+  EXPECT_NEAR(x_opt[2], 19.6141970, 0.001);
+  EXPECT_NEAR(x_opt[3], 89.1810077, 0.01);
+  EXPECT_NEAR(x_opt[4], 0.32388838, 0.0001);  
  
   std::cout << std::fixed << std::setprecision(3);
-  std::cout << x[0] << ' ' << x[1] << ' ' << x[2] << ' '
-            << x[3] << ' ' << x[4] << '\n';
+  std::cout << x_opt[0] << ' ' << x_opt[1] << ' ' << x_opt[2] << ' '
+            << x_opt[3] << ' ' << x_opt[4] << '\n';
 
   Eigen::MatrixXd hessian_mat(5,5);
-  std::vector<double> gradient(5);
-  like.value_gradient_and_hessian(&x.front(), &gradient.front(), hessian_mat.data());
+  Eigen::VectorXd gradient(5);
+  like.value_gradient_and_hessian(x_opt, gradient, hessian_mat);
   Eigen::MatrixXd err_mat = hessian_mat.inverse();
   std::cout << std::scientific << std::setprecision(8) << err_mat << '\n';
 
@@ -592,6 +526,7 @@ TEST(SPELikelihood, Minimize_NLOpt_LD_LBFGS)
 
 }
 
+#if 0
 TEST(SPELikelihood, Minimize_Minuit75)
 {
   auto mes_data = karkar_data();

@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include <fftw3.h>
+
 #include "math/accumulator.hpp"
 #include "math/function.hpp"
 #include "math/pdf_1d.hpp"
@@ -204,7 +206,8 @@ class GeneralPoissonMES: public MultiElectronSpectrum
 
  protected:
   void set_cache();
-  void multiply_fft(double* offt, const double* ifft1, const double* ifftw2);
+  void hcvec_multiply(double* ovec, const double* ivec1, const double* ivec2);
+  void hcvec_scale_and_add(double* ovec, const double* ivec, double scale);
   
   SingleElectronSpectrum* ses_;
   Parameterizable1DPDF* ped_;
@@ -218,8 +221,11 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   unsigned nsample_ = 0;
   double* ped_fft_ = nullptr;
   std::vector<double*> nes_fft_;
-  double* mes_fft_ = nullptr;
+  //double* mes_fft_ = nullptr;
   double* mes_ = nullptr;
+  fftw_plan ses_plan_fwd_; // Forward FFT of SES stored in nes_fft_[0]
+  fftw_plan ped_plan_fwd_; // Forward FFT of PED stored in ped_fft_
+  fftw_plan mes_plan_rev_; // Reverse FFT of MES stored on mes_
 };
 
 class SPELikelihood: public math::MultiAxisFunction

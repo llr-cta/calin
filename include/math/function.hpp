@@ -239,7 +239,8 @@ class ParameterizableToMultiAxisFunctionAdapter: public MultiAxisFunction
                                             PTHessGetter hess_getter,
                                             double error_up = 0.5):
       MultiAxisFunction(), par_(par), val_getter_(val_getter),
-      grad_getter_(grad_getter), error_up_(error_up) { }
+      grad_getter_(grad_getter), hess_getter_(hess_getter),
+      error_up_(error_up) { }
   ~ParameterizableToMultiAxisFunctionAdapter() { }
   unsigned num_domain_axes() override { return par_->num_parameters(); }
   std::vector<DomainAxis> domain_axes() override { return par_->parameters(); }
@@ -278,7 +279,20 @@ bool gradient_check_par(ParameterizableType& par_fcn,
       fcn(&par_fcn, val_getter, grad_getter, hess_getter, error_up);
   return function::gradient_check(fcn, p, dp, good);
 }
-  
+
+template<typename ParameterizableType>
+bool hessian_check_par(ParameterizableType& par_fcn,
+                       ConstVecRef p, ConstVecRef dp, MatRef good,
+                       ValGetter<ParameterizableType> val_getter,
+                       GradGetter<ParameterizableType> grad_getter,
+                       HessGetter<ParameterizableType> hess_getter,
+                       double error_up = 0.5)
+{
+  function::ParameterizableToMultiAxisFunctionAdapter<ParameterizableType>
+      fcn(&par_fcn, val_getter, grad_getter, hess_getter, error_up);
+  return function::hessian_check(fcn, p, dp, good);
+}
+
 } // namespace function
 
 using function::ParameterAxis;
