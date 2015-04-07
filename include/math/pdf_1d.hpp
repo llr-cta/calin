@@ -186,6 +186,53 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   double norm_hessian_  = 0.0;
 };
 
+class TwoComponentPDF: public Parameterizable1DPDF
+{
+ public:
+  TwoComponentPDF(Parameterizable1DPDF* pdf1, const std::string& cpt1_name,
+                  Parameterizable1DPDF* pdf2, const std::string& cpt2_name,
+                  bool adopt_pdf1 = false, bool adopt_pdf2 = false,
+                  double error_up = 0.5);
+  virtual ~TwoComponentPDF();
+  
+  unsigned num_parameters() override;
+  std::vector<ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+
+  DomainAxis domain_axis() override;
+
+  bool can_calculate_gradient() override;
+  bool can_calculate_hessian() override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  double value(double x) override;
+  double value_and_gradient(double x,  double& dfdx) override;
+  double value_gradient_and_hessian(double x, double& dfdx,
+                                    double& d2fdx2) override;
+  double value_and_parameter_gradient(double x,  VecRef gradient) override;
+  double value_parameter_gradient_and_hessian(double x, VecRef gradient,
+                                              MatRef hessian) override;
+
+  double error_up() override;
+
+  // Moments
+
+  bool can_calculate_mean_and_variance() override;
+  void get_mean_and_variance(double& mean, double& var) override;
+
+ protected:
+  double prob_cpt1_;
+  Parameterizable1DPDF* pdf1_;
+  Parameterizable1DPDF* pdf2_;
+  bool adopt_pdf1_;
+  bool adopt_pdf2_;
+  std::string cpt1_name_;
+  std::string cpt2_name_;
+  double error_up_;
+};
+
 } // namespace pdf_1d
 
 using pdf_1d::Parameterizable1DPDF;

@@ -666,7 +666,7 @@ bool GeneralPoissonMES::can_calculate_parameter_hessian()
     
 double GeneralPoissonMES::pdf_ped(double x)
 {
-  return ped_spec_[ibin(x)];
+  return std::max(ped_spec_[ibin(x)],0.0);
 }
 
 double GeneralPoissonMES::pdf_gradient_ped(double x, VecRef gradient)
@@ -682,7 +682,8 @@ double GeneralPoissonMES::pdf_gradient_hessian_ped(double x, VecRef gradient,
 
 double GeneralPoissonMES::pdf_mes(double x)
 {
-  return mes_spec_[ibin(x)];  
+  //std::cout << x << ' ' << ibin(x) << ' ' << mes_spec_[ibin(x)] << '\n';
+  return std::max(mes_spec_[ibin(x)],0.0);  
 }
 
 double GeneralPoissonMES::pdf_gradient_mes(double x, VecRef gradient)
@@ -886,6 +887,7 @@ double SPELikelihood::value(ConstVecRef x)
   for(auto& ibin : mes_data_)
   {
     double pdf = mes_model_->pdf_mes(ibin.xval_center());
+    if(pdf<=0)continue;
     acc.accumulate(std::log(pdf)*ibin.weight());
   }
   
@@ -893,6 +895,7 @@ double SPELikelihood::value(ConstVecRef x)
     for(auto& ibin : ped_data_)
     {
       double pdf = mes_model_->pdf_ped(ibin.xval_center());
+      if(pdf<=0)continue;
       acc.accumulate(std::log(pdf)*ibin.weight());
     }
   return -acc.total();
@@ -918,6 +921,7 @@ double SPELikelihood::value_and_gradient(ConstVecRef x, VecRef gradient)
   for(auto& ibin : mes_data_)
   {
     double pdf = mes_model_->pdf_gradient_mes(ibin.xval_center(), gradient);
+    if(pdf<=0)continue;
     acc.accumulate(std::log(pdf)*ibin.weight());
     for(unsigned ipar=0;ipar<npar_;ipar++)
       gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
@@ -927,6 +931,7 @@ double SPELikelihood::value_and_gradient(ConstVecRef x, VecRef gradient)
     for(auto& ibin : ped_data_)
     {
       double pdf = mes_model_->pdf_gradient_ped(ibin.xval_center(), gradient);
+      if(pdf<=0)continue;
       acc.accumulate(std::log(pdf)*ibin.weight());
       for(unsigned ipar=0;ipar<npar_;ipar++)
         gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
@@ -951,6 +956,7 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
   {
     double pdf =
         mes_model_->pdf_gradient_hessian_mes(ibin.xval_center(), gradient, hessian);
+    if(pdf<=0)continue;
     acc.accumulate(std::log(pdf)*ibin.weight());
     for(unsigned ipar=0;ipar<npar_;ipar++)
       gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
@@ -969,6 +975,7 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
     {
       double pdf =
           mes_model_->pdf_gradient_hessian_ped(ibin.xval_center(), gradient, hessian);
+      if(pdf<=0)continue;
       acc.accumulate(std::log(pdf)*ibin.weight());
       for(unsigned ipar=0;ipar<npar_;ipar++)
         gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
@@ -996,3 +1003,4 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
   
   return -acc.total();
 }
+

@@ -570,8 +570,9 @@ TEST(TestSPELikelihood, Minimize_Minuit75)
 }
 
 #endif
+  
 
-TEST(TestGeneralPoissonMES_GG, SetAndRecallParameters) {
+TEST(TestGeneralPoissonMES_Gauss, SetAndRecallParameters) {
   pdf_1d::GaussianPDF ped;
   pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
   GeneralPoissonMES mes(0, 1, 1025, &ses, &ped);
@@ -580,6 +581,7 @@ TEST(TestGeneralPoissonMES_GG, SetAndRecallParameters) {
   p << 1.0, 100.0, 20.0, 100.0, 35.0;
   mes.set_parameter_values(p);
   EXPECT_EQ(mes.parameter_values(), p);
+#if 0
   std::ofstream file("spec.dat");
   std::vector<double> mes_spec = mes.multi_electron_spectrum();
   std::vector<double> ped_spec = mes.pedestal_spectrum();
@@ -588,6 +590,55 @@ TEST(TestGeneralPoissonMES_GG, SetAndRecallParameters) {
   for(unsigned i=0;i<mes_spec.size();i++)
     file << mes_spec[i] << ' ' << ped_spec[i] << ' '
          << one_es_spec[i] << ' ' << two_es_spec[i] << '\n';
+#endif
+}
+
+TEST(TestGeneralPoissonMES_Gauss, Optimize_NLOpt_Simplex)
+{
+  auto mes_data = karkar_data();
+  SimpleHist mes_hist(1.0);
+  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+  GeneralPoissonMES mes_model(mes_hist.xval0(), mes_hist.dxval(),
+                              mes_hist.size(), &ses, &ped);
+  SPELikelihood like(mes_model, mes_hist);
+
+  optimizer::NLOptOptimizer opt(nlopt::LN_SBPLX, &like);
+  //optimizer::NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
+  opt.set_scale({0.1,0.1,1.0,1.0,0.05});
+  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  opt.set_abs_tolerance(0.0001);
+  opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 45.0 });
+  Eigen::VectorXd x_opt(5);
+  double f_val;
+  opt.minimize(x_opt, f_val);
+}
+
+TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
+{
+  double inf = std::numeric_limits<double>::infinity();
+  auto mes_data = karkar_data();
+  SimpleHist mes_hist(1.0);
+  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
+  pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
+  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  GeneralPoissonMES mes_model(mes_hist.xval0(), mes_hist.dxval(),
+                              mes_hist.size(), &ses, &ped);
+  SPELikelihood like(mes_model, mes_hist);
+
+  optimizer::NLOptOptimizer opt(nlopt::LN_SBPLX, &like);
+  //optimizer::NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
+  opt.set_scale({0.1,0.1,1.0,0.01,1.0,1.0,1.0});
+  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  opt.set_abs_tolerance(0.0001);
+  opt.set_initial_values({ 1.0, 3100.0, 20.0, 0.25, 30.0, 100.0, 45.0 });
+  //opt.set_initial_values({ 0.56, 3094.7, 19.6, 0.0, 25.0, 88.9, 29.3 });
+  Eigen::VectorXd x_opt(7);
+  double f_val;
+  opt.minimize(x_opt, f_val);
 }
 
 int main(int argc, char **argv) {
