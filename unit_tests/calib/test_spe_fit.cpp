@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include <gsl/gsl_multimin.h>
 #include <gtest/gtest.h>
 #include "Eigen/Dense"
@@ -321,7 +323,7 @@ void my_fdf(const gsl_vector * x, void * params, double* value, gsl_vector* g)
 
 }
 
-TEST(SPELikelihood, Minimize_GSL_Simplex)
+TEST(TestSPELikelihood, Minimize_GSL_Simplex)
 {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
@@ -404,7 +406,7 @@ TEST(SPELikelihood, Minimize_GSL_Simplex)
   gsl_multimin_fminimizer_free (s);
 }
 
-TEST(SPELikelihood, Minimize_GSL_BFGS2)
+TEST(TestSPELikelihood, Minimize_GSL_BFGS2)
 {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
@@ -527,7 +529,7 @@ TEST(TestSPELikelihood, Optimize_NLOpt)
 }
 
 #if 0
-TEST(SPELikelihood, Minimize_Minuit75)
+TEST(TestSPELikelihood, Minimize_Minuit75)
 {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
@@ -568,6 +570,25 @@ TEST(SPELikelihood, Minimize_Minuit75)
 }
 
 #endif
+
+TEST(TestGeneralPoissonMES_GG, SetAndRecallParameters) {
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+  GeneralPoissonMES mes(0, 1, 1025, &ses, &ped);
+  EXPECT_EQ(mes.num_parameters(), 5);
+  Eigen::VectorXd p(5);
+  p << 1.0, 100.0, 20.0, 100.0, 35.0;
+  mes.set_parameter_values(p);
+  EXPECT_EQ(mes.parameter_values(), p);
+  std::ofstream file("spec.dat");
+  std::vector<double> mes_spec = mes.multi_electron_spectrum();
+  std::vector<double> ped_spec = mes.pedestal_spectrum();
+  std::vector<double> one_es_spec = mes.n_electron_spectrum(1);
+  std::vector<double> two_es_spec = mes.n_electron_spectrum(2);
+  for(unsigned i=0;i<mes_spec.size();i++)
+    file << mes_spec[i] << ' ' << ped_spec[i] << ' '
+         << one_es_spec[i] << ' ' << two_es_spec[i] << '\n';
+}
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

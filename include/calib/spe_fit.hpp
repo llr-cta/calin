@@ -1,7 +1,17 @@
+/* 
+
+   calin/calib/spe_fit.hpp -- Stephen Fegan -- 2015-03-01
+
+   Functions to do fit to multi-electron spectrum in the "single PE"
+   domain.
+
+*/
+
 #pragma once
 
 #include <string>
 #include <vector>
+#include <cmath>
 
 #include <fftw3.h>
 
@@ -204,28 +214,36 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   double ses_mean_dc() override;
   double ses_rms_pe() override;
 
+  double x0() { return x0_; }
+  double dx() { return dx_; }
+  double num_electrons_in_model() { return nmax_; }
+  std::vector<double> multi_electron_spectrum();
+  std::vector<double> pedestal_spectrum();
+  std::vector<double> n_electron_spectrum(unsigned n); // 0<=n<=nmax_
+  
  protected:
+  int ibin(double x) { return std::round((x-x0_)/dx_); }
   void set_cache();
   void hcvec_multiply(double* ovec, const double* ivec1, const double* ivec2);
   void hcvec_scale_and_add(double* ovec, const double* ivec, double scale);
   
-  SingleElectronSpectrum* ses_;
-  Parameterizable1DPDF* ped_;
-  bool adopt_ses_ = false;
-  bool adopt_ped_ = false;
+  SingleElectronSpectrum* ses_pdf_;
+  Parameterizable1DPDF* ped_pdf_;
+  bool adopt_ses_pdf_ = false;
+  bool adopt_ped_pdf_ = false;
   unsigned nmax_ = 10;
   double intensity_pe_ = 1.0;
 
   double x0_ = 0;
   double dx_ = 0;
   unsigned nsample_ = 0;
+  double* ped_spec_ = nullptr;
   double* ped_fft_ = nullptr;
   std::vector<double*> nes_fft_;
-  //double* mes_fft_ = nullptr;
-  double* mes_ = nullptr;
-  fftw_plan ses_plan_fwd_; // Forward FFT of SES stored in nes_fft_[0]
-  fftw_plan ped_plan_fwd_; // Forward FFT of PED stored in ped_fft_
-  fftw_plan mes_plan_rev_; // Reverse FFT of MES stored on mes_
+  double* mes_spec_ = nullptr;
+  fftw_plan ses_plan_fwd_; // Forward FFT of SES in place in nes_fft_[0]
+  fftw_plan ped_plan_fwd_; // Forward FFT of PED from ped_spec to ped_fft_
+  fftw_plan mes_plan_rev_; // Reverse FFT of MES in place in mes_spec_
 };
 
 class SPELikelihood: public math::MultiAxisFunction
@@ -268,6 +286,7 @@ using spe_fit::SingleElectronSpectrum;
 using spe_fit::MultiElectronSpectrum;
 using spe_fit::PoissonGaussianMES;
 using spe_fit::PoissonGaussianMES_HighAccuracy;
+using spe_fit::GeneralPoissonMES;
 using spe_fit::SPELikelihood;
 
 } } // namespace calin::calib

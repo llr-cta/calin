@@ -1,3 +1,4 @@
+#include <iostream>
 #include <cmath>
 #include <limits>
 #include <cassert>
@@ -577,21 +578,22 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
                   SingleElectronSpectrum* ses, Parameterizable1DPDF* ped,
                   unsigned nmax, bool adopt_ses, bool adopt_ped):
     MultiElectronSpectrum(),
-    ses_(ses), ped_(ped), adopt_ses_(adopt_ses), adopt_ped_(adopt_ped),
+    ses_pdf_(ses), ped_pdf_(ped),
+    adopt_ses_pdf_(adopt_ses), adopt_ped_pdf_(adopt_ped),
     nmax_(nmax), x0_(x0), dx_(dx), nsample_(npoint), nes_fft_(nmax)
 {
+  ped_spec_ = fftw_alloc_real(nsample_);
   ped_fft_ = fftw_alloc_real(nsample_);
   for(unsigned ines=0; ines<nmax_;ines++)
     nes_fft_[ines] = fftw_alloc_real(nsample_);
-  //mes_fft_ = fftw_alloc_real(nsample_);
-  mes_ = fftw_alloc_real(nsample_);
+  mes_spec_ = fftw_alloc_real(nsample_);
 
   ped_plan_fwd_ =
       fftw_plan_r2r_1d(nsample_, ped_fft_, ped_fft_, FFTW_R2HC, 0);
   ses_plan_fwd_ =
       fftw_plan_r2r_1d(nsample_, nes_fft_[0], nes_fft_[0], FFTW_R2HC, 0);
   mes_plan_rev_ = 
-      fftw_plan_r2r_1d(nsample_, mes_, mes_, FFTW_HC2R, 0);
+      fftw_plan_r2r_1d(nsample_, mes_spec_, mes_spec_, FFTW_HC2R, 0);
 }
 
 GeneralPoissonMES::~GeneralPoissonMES()
@@ -600,27 +602,28 @@ GeneralPoissonMES::~GeneralPoissonMES()
   fftw_destroy_plan(ses_plan_fwd_);
   fftw_destroy_plan(ped_plan_fwd_);
   
-  if(adopt_ses_)delete ses_;
-  if(adopt_ped_)delete ped_;
   fftw_free(ped_fft_);
+  fftw_free(ped_spec_);
   for(unsigned ines=0; ines<nmax_;ines++)fftw_free(nes_fft_[ines]);
-  //fftw_free(mes_fft_);
-  fftw_free(mes_);
+  fftw_free(mes_spec_);
+
+  if(adopt_ses_pdf_)delete ses_pdf_;
+  if(adopt_ped_pdf_)delete ped_pdf_;
 }
 
 unsigned GeneralPoissonMES::num_parameters()
 {
-  return 1+ses_->num_parameters()+ped_->num_parameters();
+  return 1+ses_pdf_->num_parameters()+ped_pdf_->num_parameters();
 }
 
 std::vector<ParameterAxis> GeneralPoissonMES::parameters()
 {
   std::vector<ParameterAxis> pvec
   { { "light_intensity", "PE", true, 0, false, 0 } };
-  std::vector<ParameterAxis> pped { ped_->parameters() };
+  std::vector<ParameterAxis> pped { ped_pdf_->parameters() };
   for(auto& ip : pped)ip.name = std::string("ped.") + ip.name;
   pvec.insert(pvec.end(), pped.begin(), pped.end());
-  std::vector<ParameterAxis> pses { ses_->parameters() };
+  std::vector<ParameterAxis> pses { ses_pdf_->parameters() };
   for(auto& ip : pses)ip.name = std::string("ses.") + ip.name;
   pvec.insert(pvec.end(), pses.begin(), pses.end());  
   return pvec;
@@ -631,10 +634,10 @@ Eigen::VectorXd GeneralPoissonMES::parameter_values()
   Eigen::VectorXd param(num_parameters());
   param[0] = intensity_pe_;
   unsigned ip = 1;
-  unsigned num_ped_params = ped_->num_parameters();
-  param.segment(ip,ip+num_ped_params) = ped_->parameter_values();
+  unsigned num_ped_params = ped_pdf_->num_parameters();
+  param.segment(ip,num_ped_params) = ped_pdf_->parameter_values();
   ip += num_ped_params;
-  param.segment(ip,ip+ses_->num_parameters()) = ses_->parameter_values();
+  param.segment(ip,ses_pdf_->num_parameters()) = ses_pdf_->parameter_values();
   return param;
 }
 
@@ -642,18 +645,18 @@ void GeneralPoissonMES::set_parameter_values(ConstVecRef values)
 {
   assign_parameters(values, intensity_pe_);
   unsigned ip = 1;
-  unsigned num_ped_params = ped_->num_parameters();
-  ped_->set_parameter_values(values.segment(ip,ip+num_ped_params));
+  unsigned num_ped_params = ped_pdf_->num_parameters();
+  ped_pdf_->set_parameter_values(values.segment(ip,num_ped_params));
   ip += num_ped_params;
-  ses_->set_parameter_values(values.segment(ip,ip+ses_->num_parameters()));
+  ses_pdf_->set_parameter_values(values.segment(ip,ses_pdf_->num_parameters()));
   set_cache();
 }
 
 bool GeneralPoissonMES::can_calculate_parameter_gradient()
 {
   return false;
-  return ped_->can_calculate_parameter_gradient() &&
-      ses_->can_calculate_parameter_gradient();
+  return ped_pdf_->can_calculate_parameter_gradient() &&
+      ses_pdf_->can_calculate_parameter_gradient();
 }
 
 bool GeneralPoissonMES::can_calculate_parameter_hessian()
@@ -663,23 +666,23 @@ bool GeneralPoissonMES::can_calculate_parameter_hessian()
     
 double GeneralPoissonMES::pdf_ped(double x)
 {
-  return ped_->value(x);
+  return ped_spec_[ibin(x)];
 }
 
 double GeneralPoissonMES::pdf_gradient_ped(double x, VecRef gradient)
 {
-  return ped_->value_and_parameter_gradient(x,gradient);
+
 }
 
 double GeneralPoissonMES::pdf_gradient_hessian_ped(double x, VecRef gradient,
                                                    MatRef hessian)
 {
-  return ped_->value_parameter_gradient_and_hessian(x, gradient, hessian);
+  throw std::logic_error("GeneralPoissonMES: cannot calculate ped hessian");
 }
 
 double GeneralPoissonMES::pdf_mes(double x)
 {
-  
+  return mes_spec_[ibin(x)];  
 }
 
 double GeneralPoissonMES::pdf_gradient_mes(double x, VecRef gradient)
@@ -690,7 +693,7 @@ double GeneralPoissonMES::pdf_gradient_mes(double x, VecRef gradient)
 double GeneralPoissonMES::pdf_gradient_hessian_mes(double x, VecRef gradient,
                                                    MatRef hessian)
 {
-
+  throw std::logic_error("GeneralPoissonMES: cannot calculate ses hessian");
 }
 
 double GeneralPoissonMES::ped_rms_dc()
@@ -713,38 +716,81 @@ double GeneralPoissonMES::ses_rms_pe()
 
 }
 
+std::vector<double> GeneralPoissonMES::multi_electron_spectrum()
+{
+  std::vector<double> spec(nsample_);
+  std::copy(mes_spec_, mes_spec_+nsample_, spec.begin());
+  return spec;
+}
+
+std::vector<double> GeneralPoissonMES::pedestal_spectrum()
+{
+  std::vector<double> spec(nsample_);
+  std::copy(ped_spec_, ped_spec_+nsample_, spec.begin());
+  return spec;
+}
+
+std::vector<double> GeneralPoissonMES::n_electron_spectrum(unsigned n)
+{
+  if(n==0)return pedestal_spectrum();
+  double* spec_buffer = fftw_alloc_real(nsample_);
+  assert(spec_buffer);
+  fftw_plan spec_plan =
+      fftw_plan_r2r_1d(nsample_, nes_fft_[n-1], spec_buffer, FFTW_HC2R, 0);
+  assert(spec_plan);
+  fftw_execute(spec_plan);
+  std::vector<double> spec(nsample_);
+  double norm { 1.0/double(nsample_) };
+  std::transform(spec_buffer, spec_buffer+nsample_, spec.begin(),
+                 [norm](double x){return x*norm;});
+  fftw_destroy_plan(spec_plan);
+  fftw_free(spec_buffer);  
+  return spec;
+}
+
 void GeneralPoissonMES::set_cache()
 {
   for(unsigned isample = 0;isample<nsample_;isample++)
   {
-    const double x = x0_ + double(isample)*dx_;
-    double val = ses_->value(x);
+    // The SES describes charge delivered by the PMT and is assumed be
+    // positive. Hence the function is sampled from zero here and not
+    // from x0. We could allow negative charges by using the domain
+    // axis limits to specify the minimum bound. We would need to
+    // adjust x0 to compensate for where the pedestal distribution
+    // would end up.
+    const double x = double(isample)*dx_; 
+    double val = ses_pdf_->value(x);
     if(!isfinite(val))val = 0;
     nes_fft_[0][isample] = val;
   }
   fftw_execute(ses_plan_fwd_);
   for(unsigned ines=1;ines<nmax_;ines++)
     hcvec_multiply(nes_fft_[ines], nes_fft_[ines-1], nes_fft_[0]);
-  
+
   for(unsigned isample = 0;isample<nsample_;isample++)
   {
     const double x = x0_ + double(isample)*dx_;
-    double val = ped_->value(x);
-    ped_fft_[isample] = val;
+    double val = ped_pdf_->value(x);
+    if(!isfinite(val))val = 0;
+    ped_spec_[isample] = ped_fft_[isample] = val;
   }
   fftw_execute(ped_plan_fwd_);
 
-  for(unsigned isample=0;isample<nsample_;isample++)mes_[isample]=0;
+  for(unsigned isample=0;isample<nsample_;isample++)mes_spec_[isample]=0;
 
   double log_intensity = std::log(intensity_pe_);
+  double log_nsample = std::log(double(nsample_));
   for(unsigned ines = 0;ines<nmax_;ines++)
   {
     double dbl_n { double(ines+1) };
     double posson_factor {
-      std::exp(dbl_n*log_intensity - intensity_pe_ - lgamma(dbl_n+1.0)) };
-    hcvec_scale_and_add(mes_, nes_fft_[ines], posson_factor);
+      std::exp(dbl_n*log_intensity - intensity_pe_ - lgamma(dbl_n+1.0) -
+               log_nsample) };
+    hcvec_scale_and_add(mes_spec_, nes_fft_[ines], posson_factor);
   }
-  hcvec_scale_and_add(mes_, ped_fft_, std::exp(-intensity_pe_));
+  hcvec_multiply(mes_spec_, mes_spec_, ped_fft_);
+  hcvec_scale_and_add(mes_spec_, ped_fft_,
+                      std::exp(-intensity_pe_-log_nsample));
 
   fftw_execute(mes_plan_rev_);
 }
@@ -760,10 +806,25 @@ hcvec_multiply(double* ovec, const double* ivec1, const double* ivec2)
   const double *ci2 = ivec2 + nsample_-1;
 
   (*ro++) = (*ri1++) * (*ri2++);
-  while(ro < co)
+  if(ro==ri1 or ro==ri2)
   {
-    (*ro++) = (*ri1)*(*ri2) - (*ci1)*(*ci2);
-    (*co--) = (*ri1++)*(*ci2--) + (*ci1--)*(*ri2++);
+    while(ro < co)
+    {
+      double vri1 = *ri1++;
+      double vci1 = *ci1--;
+      double vri2 = *ri2++;
+      double vci2 = *ci2--;
+      (*ro++) = vri1*vri2 - vci1*vci2;
+      (*co--) = vri1*vci2 + vci1*vri2;
+    }
+   }
+  else
+  {
+    while(ro < co)
+    {
+      (*ro++) = (*ri1)*(*ri2) - (*ci1)*(*ci2);
+      (*co--) = (*ri1++)*(*ci2--) + (*ci1--)*(*ri2++);
+    }
   }
   if(ro==co)(*ro) = (*ri1) * (*ri2);
 }
