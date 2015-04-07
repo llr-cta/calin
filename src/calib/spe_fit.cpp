@@ -717,28 +717,29 @@ double GeneralPoissonMES::ses_rms_pe()
 
 }
 
-std::vector<double> GeneralPoissonMES::multi_electron_spectrum()
+std::vector<double> GeneralPoissonMES::multi_electron_spectrum() const 
 {
   std::vector<double> spec(nsample_);
   std::copy(mes_spec_, mes_spec_+nsample_, spec.begin());
   return spec;
 }
 
-std::vector<double> GeneralPoissonMES::pedestal_spectrum()
+std::vector<double> GeneralPoissonMES::pedestal_spectrum() const
 {
   std::vector<double> spec(nsample_);
   std::copy(ped_spec_, ped_spec_+nsample_, spec.begin());
   return spec;
 }
 
-std::vector<double> GeneralPoissonMES::n_electron_spectrum(unsigned n)
+std::vector<double> GeneralPoissonMES::n_electron_spectrum(unsigned n) const
 {
   if(n==0)return pedestal_spectrum();
   double* spec_buffer = fftw_alloc_real(nsample_);
   assert(spec_buffer);
   fftw_plan spec_plan =
-      fftw_plan_r2r_1d(nsample_, nes_fft_[n-1], spec_buffer, FFTW_HC2R, 0);
+      fftw_plan_r2r_1d(nsample_, spec_buffer, spec_buffer, FFTW_HC2R, 0);
   assert(spec_plan);
+  std::copy(nes_fft_[n-1], nes_fft_[n-1]+nsample_, spec_buffer);
   fftw_execute(spec_plan);
   std::vector<double> spec(nsample_);
   double norm { 1.0/double(nsample_) };

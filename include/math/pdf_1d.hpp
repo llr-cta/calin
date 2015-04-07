@@ -152,6 +152,11 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
 
   virtual ~LimitedExponentialPDF();
 
+  void limit_scale(double scale_lo, double scale_hi) {
+    limit_a_lo_ = scale_lo;
+    limit_a_hi_ = scale_hi;
+  }
+  
   unsigned num_parameters() override;
   std::vector<ParameterAxis> parameters() override;
   Eigen::VectorXd parameter_values() override;
@@ -177,6 +182,8 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   void get_mean_and_variance(double& mean, double& var) override;  
  protected:
   void set_cache();
+  double limit_a_lo_    = -inf;
+  double limit_a_hi_    = inf;
   double error_up_      = 0.5;
   double a_             = 1.0;
   double xlo_;

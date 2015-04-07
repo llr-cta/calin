@@ -214,12 +214,12 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   double ses_mean_dc() override;
   double ses_rms_pe() override;
 
-  double x0() { return x0_; }
-  double dx() { return dx_; }
-  double num_electrons_in_model() { return nmax_; }
-  std::vector<double> multi_electron_spectrum();
-  std::vector<double> pedestal_spectrum();
-  std::vector<double> n_electron_spectrum(unsigned n); // 0<=n<=nmax_
+  double x0() const { return x0_; }
+  double dx() const { return dx_; }
+  double num_electrons_in_model() const { return nmax_; }
+  std::vector<double> multi_electron_spectrum() const;
+  std::vector<double> pedestal_spectrum() const;
+  std::vector<double> n_electron_spectrum(unsigned n) const; // 0<=n<=nmax_
   
  protected:
   int ibin(double x) { return std::round((x-x0_)/dx_); }

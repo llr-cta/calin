@@ -349,7 +349,7 @@ unsigned LimitedExponentialPDF::num_parameters()
 
 std::vector<ParameterAxis> LimitedExponentialPDF::parameters()
 {
-  return { { "scale", "x-value units", false, -inf, false, inf } };
+  return { { "scale", "x-value units", limit_a_lo_>-inf, limit_a_lo_, limit_a_hi_<inf, limit_a_hi_ } };
 }
 
 Eigen::VectorXd LimitedExponentialPDF::parameter_values()
@@ -512,10 +512,10 @@ void LimitedExponentialPDF::set_cache()
                             "negative when xlo=-inf");
   }
 
-  norm_              = 1.0/(ehi - elo);
+  norm_              = -1.0/(ehi - elo);
   const double norm2 = SQR(norm_);
-  norm_gradient_     = -norm2*(dehi_da - delo_da);
-  norm_hessian_      = -norm2*(d2ehi_da2 - d2elo_da2)
+  norm_gradient_     = norm2*(dehi_da - delo_da);
+  norm_hessian_      = norm2*(d2ehi_da2 - d2elo_da2)
                        + 2.0*SQR(norm_gradient_)/norm_;
 }
 
@@ -610,6 +610,7 @@ bool TwoComponentPDF::can_calculate_parameter_hessian()
 
 double TwoComponentPDF::value(double x)
 {
+  //std::cout << pdf1_->value(x) << ' ' << pdf2_->value(x) << '\n';
   return prob_cpt1_*pdf1_->value(x) + (1.0-prob_cpt1_)*pdf2_->value(x);
 }
 

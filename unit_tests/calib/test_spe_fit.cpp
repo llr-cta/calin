@@ -602,6 +602,7 @@ TEST(TestGeneralPoissonMES_Gauss, Optimize_NLOpt_Simplex)
   pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
   GeneralPoissonMES mes_model(mes_hist.xval0(), mes_hist.dxval(),
                               mes_hist.size(), &ses, &ped);
+
   SPELikelihood like(mes_model, mes_hist);
 
   optimizer::NLOptOptimizer opt(nlopt::LN_SBPLX, &like);
@@ -622,7 +623,8 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   SimpleHist mes_hist(1.0);
   for(auto idata : mes_data)mes_hist.accumulate(idata);
   pdf_1d::GaussianPDF ped;
-  pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
+  pdf_1d::LimitedExponentialPDF exp_pdf(1,inf);
+  exp_pdf.limit_scale(0, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
   pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   GeneralPoissonMES mes_model(mes_hist.xval0(), mes_hist.dxval(),
@@ -631,14 +633,46 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
 
   optimizer::NLOptOptimizer opt(nlopt::LN_SBPLX, &like);
   //optimizer::NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
-  opt.set_scale({0.1,0.1,1.0,0.01,1.0,1.0,1.0});
+  opt.set_scale({0.1,0.1,1.0,0.01,0.1,1.0,1.0});
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   opt.set_abs_tolerance(0.0001);
-  opt.set_initial_values({ 1.0, 3100.0, 20.0, 0.25, 30.0, 100.0, 45.0 });
-  //opt.set_initial_values({ 0.56, 3094.7, 19.6, 0.0, 25.0, 88.9, 29.3 });
+  opt.set_initial_values({ 1.0, 3100.0, 20.0, 0.25, 50.0, 100.0, 45.0 });
+  //opt.set_initial_values({ 0.56, 3094.7, 19.6, 0.1, 5.0, 88.9, 29.3 });
   Eigen::VectorXd x_opt(7);
   double f_val;
-  opt.minimize(x_opt, f_val);
+  try {
+    opt.minimize(x_opt, f_val);
+  }
+  catch(const nlopt::forced_stop& x)
+  {
+    std::cout << "Caught: nlopt::forced_stop: " << x.what() << '\n'; 
+    throw;
+  }
+  catch(const nlopt::roundoff_limited& x)
+  {
+    std::cout << "Caught: nlopt::roundoff_limited: " << x.what() << '\n'; 
+    throw;
+  }
+  catch(const std::runtime_error& x)
+  {
+    std::cout << "Caught: runtime_error: " << x.what() << '\n'; 
+    throw;
+  }
+
+#if 1
+  Eigen::VectorXd p(7);
+  p << 1.0, 3100.0, 20.0, 0.2, 30.0, 100.0, 30.0;
+  mes_model.set_parameter_values(p);
+  std::ofstream file("spec.dat");
+  std::vector<double> mes_spec = mes_model.multi_electron_spectrum();
+  std::vector<double> ped_spec = mes_model.pedestal_spectrum();
+  std::vector<double> one_es_spec = mes_model.n_electron_spectrum(1);
+  one_es_spec = mes_model.n_electron_spectrum(1);
+  std::vector<double> two_es_spec = mes_model.n_electron_spectrum(2);
+  for(unsigned i=0;i<mes_spec.size();i++)
+    file << mes_spec[i] << ' ' << ped_spec[i] << ' '
+         << one_es_spec[i] << ' ' << two_es_spec[i] << '\n';
+#endif
 }
 
 int main(int argc, char **argv) {
