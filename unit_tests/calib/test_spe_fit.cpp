@@ -87,14 +87,17 @@ mes_gradient_test(MultiElectronSpectrum* mes,
                   const std::vector<double> vp, const std::vector<double> vdp,
                   double xlo, double xhi, double dx)
 {
-  Eigen::VectorXd p(5);
-  p << vp[0], vp[1], vp[2], vp[3], vp[4];
-  Eigen::VectorXd dp(5);
-  dp << vdp[0], vdp[1], vdp[2], vdp[3], vdp[4];
+  Eigen::VectorXd p(mes->num_parameters());
+  Eigen::VectorXd dp(mes->num_parameters());
+  for(unsigned ipar = 0; ipar<mes->num_parameters(); ipar++)
+  {
+    p[ipar] = vp[ipar];
+    dp[ipar] = vdp[ipar];
+  }
   for(double xval = xlo; xval<xhi; xval+=dx)
   {
     bool check_ok;
-    Eigen::VectorXd err(5);
+    Eigen::VectorXd good(mes->num_parameters());
     function::ValGetter<MultiElectronSpectrum> val_get =
         [xval,val_get_f](MultiElectronSpectrum* mes) {
       return (mes->*val_get_f)(xval); };
@@ -105,11 +108,19 @@ mes_gradient_test(MultiElectronSpectrum* mes,
       [xval,hess_get_f](MultiElectronSpectrum* mes, VecRef grad, MatRef hess) {
       return (mes->*hess_get_f)(xval,grad,hess); };
 
-    check_ok = function::gradient_check_par(*mes, p, dp, err,
+    check_ok = function::gradient_check_par(*mes, p, dp, good,
                                             val_get, grad_get, hess_get);
 
     EXPECT_TRUE(check_ok);
-    for(unsigned ipar=0;ipar<5;ipar++)EXPECT_LE(err(ipar),0.5);
+    
+    for(unsigned ipar=0;ipar<mes->num_parameters();ipar++)
+      if(good(ipar)>0.5)
+      {
+        std::cout << "At x = " << xval << '\n';
+        break;
+      }
+    for(unsigned ipar=0;ipar<mes->num_parameters();ipar++)
+      EXPECT_LE(good(ipar),0.5);
   }
 }
                        
@@ -616,6 +627,36 @@ TEST(TestGeneralPoissonMES_Gauss, Optimize_NLOpt_Simplex)
   opt.minimize(x_opt, f_val);
 }
 
+TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
+{
+  double inf = std::numeric_limits<double>::infinity();
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
+  exp_pdf.limit_scale(0.1, inf);
+  pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
+  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped);
+  double dp1 = 1e-7;
+  mes_gradient_test(&mes_model,
+                    &MultiElectronSpectrum::pdf_mes,
+                    &MultiElectronSpectrum::pdf_gradient_mes,
+                    &MultiElectronSpectrum::pdf_gradient_hessian_mes,
+                    { 1.123, 0.100000, 0.2, 0.3, 0.2, 1.321, 0.35 },
+                    { dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 10.0, 0.1);
+
+  std::ofstream file("spec.dat");
+  std::vector<double> mes_spec = mes_model.multi_electron_spectrum();
+  std::vector<double> ped_spec = mes_model.pedestal_spectrum();
+  std::vector<double> one_es_spec = mes_model.n_electron_spectrum(1);
+  one_es_spec = mes_model.n_electron_spectrum(1);
+  std::vector<double> two_es_spec = mes_model.n_electron_spectrum(2);
+  std::vector<double> three_es_spec = mes_model.n_electron_spectrum(3);
+  for(unsigned i=0;i<mes_spec.size();i++)
+    file << mes_spec[i] << ' ' << ped_spec[i] << ' '
+         << one_es_spec[i] << ' ' << two_es_spec[i] << ' ' 
+         << three_es_spec[i] << ' ' << '\n';
+}
+
 TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
 {
   double inf = std::numeric_limits<double>::infinity();
@@ -623,55 +664,61 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   SimpleHist mes_hist(1.0);
   for(auto idata : mes_data)mes_hist.accumulate(idata);
   pdf_1d::GaussianPDF ped;
-  pdf_1d::LimitedExponentialPDF exp_pdf(1,inf);
-  exp_pdf.limit_scale(0, inf);
+  pdf_1d::LimitedExponentialPDF exp_pdf(0,inf,mes_hist.dxval());
+  exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
   pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
-  GeneralPoissonMES mes_model(mes_hist.xval0(), mes_hist.dxval(),
+#if 0
+  GeneralPoissonMES mes_model(mes_hist.xval_center(0)-5*mes_hist.dxval()/10.0,
+                              mes_hist.dxval()/10.0,
+                              mes_hist.size()*10, &ses, &ped);
+#endif
+  GeneralPoissonMES mes_model(mes_hist.xval_left(0),
+                              mes_hist.dxval(),
                               mes_hist.size(), &ses, &ped);
   SPELikelihood like(mes_model, mes_hist);
 
-  optimizer::NLOptOptimizer opt(nlopt::LN_SBPLX, &like);
-  //optimizer::NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
+  //optimizer::NLOptOptimizer opt(nlopt::LN_SBPLX, &like);
+  optimizer::NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
   opt.set_scale({0.1,0.1,1.0,0.01,0.1,1.0,1.0});
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   opt.set_abs_tolerance(0.0001);
-  opt.set_initial_values({ 1.0, 3100.0, 20.0, 0.25, 50.0, 100.0, 45.0 });
+  opt.set_initial_values({ 1.0, 3100.0, 20.0, 0.05, 50.0, 100.0, 45.0 });
   //opt.set_initial_values({ 0.56, 3094.7, 19.6, 0.1, 5.0, 88.9, 29.3 });
   Eigen::VectorXd x_opt(7);
   double f_val;
+
   try {
     opt.minimize(x_opt, f_val);
   }
   catch(const nlopt::forced_stop& x)
   {
     std::cout << "Caught: nlopt::forced_stop: " << x.what() << '\n'; 
-    throw;
   }
   catch(const nlopt::roundoff_limited& x)
   {
     std::cout << "Caught: nlopt::roundoff_limited: " << x.what() << '\n'; 
-    throw;
   }
   catch(const std::runtime_error& x)
   {
     std::cout << "Caught: runtime_error: " << x.what() << '\n'; 
-    throw;
   }
 
 #if 1
   Eigen::VectorXd p(7);
   p << 1.0, 3100.0, 20.0, 0.2, 30.0, 100.0, 30.0;
-  mes_model.set_parameter_values(p);
+  //mes_model.set_parameter_values(p);
   std::ofstream file("spec.dat");
   std::vector<double> mes_spec = mes_model.multi_electron_spectrum();
   std::vector<double> ped_spec = mes_model.pedestal_spectrum();
   std::vector<double> one_es_spec = mes_model.n_electron_spectrum(1);
   one_es_spec = mes_model.n_electron_spectrum(1);
   std::vector<double> two_es_spec = mes_model.n_electron_spectrum(2);
+  std::vector<double> three_es_spec = mes_model.n_electron_spectrum(3);
   for(unsigned i=0;i<mes_spec.size();i++)
     file << mes_spec[i] << ' ' << ped_spec[i] << ' '
-         << one_es_spec[i] << ' ' << two_es_spec[i] << '\n';
+         << one_es_spec[i] << ' ' << two_es_spec[i] << ' ' 
+         << three_es_spec[i] << ' ' << '\n';
 #endif
 }
 

@@ -222,9 +222,13 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   std::vector<double> n_electron_spectrum(unsigned n) const; // 0<=n<=nmax_
   
  protected:
+  using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
+  using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
+  
   int ibin(double x) { return std::round((x-x0_)/dx_); }
   void set_cache();
-  void hcvec_multiply(double* ovec, const double* ivec1, const double* ivec2);
+  void hcvec_scale_and_multiply(double* ovec, const double* ivec1,
+                                const double* ivec2, double scale = 1.0);
   void hcvec_scale_and_add(double* ovec, const double* ivec, double scale);
   
   SingleElectronSpectrum* ses_pdf_;
@@ -244,6 +248,12 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   fftw_plan ses_plan_fwd_; // Forward FFT of SES in place in nes_fft_[0]
   fftw_plan ped_plan_fwd_; // Forward FFT of PED from ped_spec to ped_fft_
   fftw_plan mes_plan_rev_; // Reverse FFT of MES in place in mes_spec_
+  std::vector<double*> ped_grad_fft_;
+  std::vector<double*> ses_grad_fft_;
+  std::vector<fftw_plan> ped_grad_plan_fwd_;
+  std::vector<fftw_plan> ses_grad_plan_fwd_;
+  std::vector<double*> mes_grad_;
+  std::vector<fftw_plan> mes_grad_plan_rev_;
 };
 
 class SPELikelihood: public math::MultiAxisFunction

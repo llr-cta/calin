@@ -146,10 +146,11 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
  public:
   constexpr static double inf = std::numeric_limits<double>::infinity();
 
-  LimitedExponentialPDF(double xlo=0.0, double xhi=inf, double error_up = 0.5):
-      Parameterizable1DPDF(), error_up_(error_up), xlo_(xlo), xhi_(xhi) {
-    set_cache(); }
-
+  LimitedExponentialPDF(double xlo=0.0, double xhi=inf, double dx = 0,
+                        double error_up = 0.5):
+      Parameterizable1DPDF(), error_up_(error_up),
+      xlo_(xlo), xhi_(xhi), dx_(dx) { set_cache(); }
+  
   virtual ~LimitedExponentialPDF();
 
   void limit_scale(double scale_lo, double scale_hi) {
@@ -188,6 +189,7 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   double a_             = 1.0;
   double xlo_;
   double xhi_;
+  double dx_;
   double norm_          = 1.0;
   double norm_gradient_ = 0.0;
   double norm_hessian_  = 0.0;

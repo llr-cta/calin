@@ -262,6 +262,7 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
 {
   Eigen::Map<const Eigen::VectorXd> xvec(x,n);
   Eigen::Map<Eigen::VectorXd> gvec(grad,n);
+
   double fcn_value {
     grad?fcn_->value_and_gradient(xvec,gvec):fcn_->value(xvec) };
 

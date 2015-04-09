@@ -311,6 +311,7 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
                 << "f(+1)-f(0): " << fp1-f0 <<  ' '
                 << "f(+2)-f(0): " << fp1-f0 <<  ' '
                 << "ret: " << good(iaxis) << ' '
+                << "x: ( " << x.transpose() << ')'
                 << '\n';
   }
   return true;
@@ -435,6 +436,7 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
                   << "g(+1)-g(0): " << gp1(jaxis)-g0(jaxis) <<  ' '
                   << "g(+2)-g(0): " << gp1(jaxis)-g0(jaxis) <<  ' '
                   << "ret: " << good(iaxis, jaxis) << ' '
+                  << "x: ( " << x.transpose() << " )"
                   << '\n';
     }
   }
