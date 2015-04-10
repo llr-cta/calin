@@ -244,7 +244,7 @@ TEST(TestLimitedExponentialPDF, Binned_ParameterGradientCheck) {
   }
 }
 
-TEST(TestLimitedExponentialPDF, BinnedParameterHessianCheck) {
+TEST(TestLimitedExponentialPDF, Binned_ParameterHessianCheck) {
   Eigen::VectorXd p(1);
   p << 3; // scale
   Eigen::VectorXd dp(1);

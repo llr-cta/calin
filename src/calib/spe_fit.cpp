@@ -782,7 +782,10 @@ std::vector<double> GeneralPoissonMES::pedestal_spectrum() const
 
 std::vector<double> GeneralPoissonMES::n_electron_spectrum(unsigned n) const
 {
-  if(n==0)return pedestal_spectrum();
+  if(n==0 or n>nmax_)
+    throw std::out_of_range("GeneralPoissonMES::n_electron_spectrum: "
+                            "number of PEs out of range");
+  
   uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
   assert(spec_buffer);
 
@@ -799,6 +802,45 @@ std::vector<double> GeneralPoissonMES::n_electron_spectrum(unsigned n) const
                  [norm](double x){return x*norm;});
   return spec;
 }
+
+std::vector<double> GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
+{
+  if(n>nmax_)
+    throw std::out_of_range("GeneralPoissonMES::mes_n_electron_cpt: "
+                            "number of PEs out of range");
+
+  std::vector<double> spec(nsample_);
+  double log_nsample = std::log(double(nsample_));
+
+  if(n==0)
+  {
+    double scale = std::exp(-intensity_pe_);
+    std::transform(ped_spec_, ped_spec_+nsample_, spec.begin(),
+                   [scale](const double& x){ return x*scale; });
+    return spec;  
+  }
+  
+  uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
+  assert(spec_buffer);
+
+  uptr_fftw_plan spec_plan = {
+    fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
+                     FFTW_HC2R, 0), fftw_destroy_plan };
+  assert(spec_plan);
+
+  double log_intensity = std::log(intensity_pe_);
+  double dbl_n { double(n) };
+  double poisson_factor {
+    std::exp(dbl_n*log_intensity - intensity_pe_ - lgamma(dbl_n+1.0) -
+             log_nsample) };
+
+  hcvec_scale_and_multiply(spec_buffer.get(), nes_fft_[n-1], ped_fft_,
+                           poisson_factor*dx_);    
+  
+  fftw_execute(spec_plan.get());
+  std::copy(spec_buffer.get(), spec_buffer.get()+nsample_, spec.begin());
+  return spec;
+}  
 
 void GeneralPoissonMES::set_cache()
 {
@@ -869,30 +911,29 @@ void GeneralPoissonMES::set_cache()
     for(unsigned ipar=0;ipar<ped_npar;ipar++)
       fftw_execute(ped_grad_plan_fwd_[ipar]);
     for(unsigned ipar=0;ipar<mes_npar;ipar++)
-      for(unsigned isample=0;isample<nsample_;isample++)
-        mes_grad_[ipar][isample]=0;
+      std::fill(mes_grad_[ipar], mes_grad_[ipar]+nsample_, 0.0);
   }
-  
-  for(unsigned isample=0;isample<nsample_;isample++)mes_spec_[isample]=0;
+
+  std::fill(mes_spec_, mes_spec_+nsample_, 0.0);
 
   double log_intensity = std::log(intensity_pe_);
   double log_nsample = std::log(double(nsample_));
   for(unsigned ines = 0;ines<nmax_;ines++)
   {
     double dbl_n { double(ines+1) };
-    double posson_factor {
+    double poisson_factor {
       std::exp(dbl_n*log_intensity - intensity_pe_ - lgamma(dbl_n+1.0) -
                log_nsample) };
-    hcvec_scale_and_add(mes_spec_, nes_fft_[ines], posson_factor);
+    hcvec_scale_and_add(mes_spec_, nes_fft_[ines], poisson_factor);
 
     if(calc_gradient)
     {
       hcvec_scale_and_add(mes_grad_[0], nes_fft_[ines],
-                          posson_factor*(dbl_n/intensity_pe_ - 1.0));
+                          poisson_factor*(dbl_n/intensity_pe_ - 1.0));
       if(ines>0)
         for(unsigned ipar=0;ipar<ses_npar;ipar++)
           hcvec_scale_and_add(mes_grad_[1+ped_npar+ipar], nes_fft_[ines-1],
-                              dbl_n*posson_factor);
+                              dbl_n*poisson_factor);
     }
   }
 
@@ -932,7 +973,8 @@ void GeneralPoissonMES::set_cache()
 }
 
 void GeneralPoissonMES::
-hcvec_scale_and_multiply(double* ovec, const double* ivec1, const double* ivec2, double scale)
+hcvec_scale_and_multiply(double* ovec, const double* ivec1,
+                         const double* ivec2, double scale) const
 {
   double *ro = ovec;
   double *co = ovec + nsample_-1;
@@ -966,7 +1008,7 @@ hcvec_scale_and_multiply(double* ovec, const double* ivec1, const double* ivec2,
 }
 
 void GeneralPoissonMES::
-hcvec_scale_and_add(double* ovec, const double* ivec, double scale)
+hcvec_scale_and_add(double* ovec, const double* ivec, double scale) const
 {
   double *ro = ovec;
   double *re = ovec + nsample_;

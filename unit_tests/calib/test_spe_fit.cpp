@@ -668,11 +668,6 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
   pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
-#if 0
-  GeneralPoissonMES mes_model(mes_hist.xval_center(0)-5*mes_hist.dxval()/10.0,
-                              mes_hist.dxval()/10.0,
-                              mes_hist.size()*10, &ses, &ped);
-#endif
   GeneralPoissonMES mes_model(mes_hist.xval_left(0),
                               mes_hist.dxval(),
                               mes_hist.size(), &ses, &ped);
@@ -712,13 +707,19 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   std::vector<double> mes_spec = mes_model.multi_electron_spectrum();
   std::vector<double> ped_spec = mes_model.pedestal_spectrum();
   std::vector<double> one_es_spec = mes_model.n_electron_spectrum(1);
-  one_es_spec = mes_model.n_electron_spectrum(1);
   std::vector<double> two_es_spec = mes_model.n_electron_spectrum(2);
   std::vector<double> three_es_spec = mes_model.n_electron_spectrum(3);
+  std::vector<double> zero_es_cpt = mes_model.mes_n_electron_cpt(0);
+  std::vector<double> one_es_cpt = mes_model.mes_n_electron_cpt(1);
+  std::vector<double> two_es_cpt = mes_model.mes_n_electron_cpt(2);
+  std::vector<double> three_es_cpt = mes_model.mes_n_electron_cpt(3);
+
   for(unsigned i=0;i<mes_spec.size();i++)
     file << mes_spec[i] << ' ' << ped_spec[i] << ' '
          << one_es_spec[i] << ' ' << two_es_spec[i] << ' ' 
-         << three_es_spec[i] << ' ' << '\n';
+         << three_es_spec[i] << ' '
+         << zero_es_cpt[i] << ' ' << one_es_cpt[i] << ' '
+         << two_es_cpt[i] << ' ' << three_es_cpt[i] << ' ' << '\n';
 #endif
 }
 

@@ -219,7 +219,8 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   double num_electrons_in_model() const { return nmax_; }
   std::vector<double> multi_electron_spectrum() const;
   std::vector<double> pedestal_spectrum() const;
-  std::vector<double> n_electron_spectrum(unsigned n) const; // 0<=n<=nmax_
+  std::vector<double> n_electron_spectrum(unsigned n) const; // 1<=n<=nmax_
+  std::vector<double> mes_n_electron_cpt(unsigned n) const; // 0<=n<=nmax_
   
  protected:
   using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
@@ -228,8 +229,9 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   int ibin(double x) { return std::round((x-x0_)/dx_); }
   void set_cache();
   void hcvec_scale_and_multiply(double* ovec, const double* ivec1,
-                                const double* ivec2, double scale = 1.0);
-  void hcvec_scale_and_add(double* ovec, const double* ivec, double scale);
+                                const double* ivec2, double scale = 1.0) const;
+  void hcvec_scale_and_add(double* ovec, const double* ivec, double scale)
+      const;
   
   SingleElectronSpectrum* ses_pdf_;
   Parameterizable1DPDF* ped_pdf_;

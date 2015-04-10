@@ -148,6 +148,13 @@ incorporate_func_gradient(function::ConstVecRef x, double f_val,
   // Form error matrix estimate using BFGS update method, see
   // http://en.wikipedia.org/wiki/Broyden-Fletcher-Goldfarb-Shanno_algorithm
 
+  if(!isfinite(f_val) or !std::all_of(gradient.data(), gradient.data()+npar_,
+                                   [](const double& x){return isfinite(x);}))
+  {
+    last_good_ = false;
+    return;
+  }
+  
   if(last_good_)
   {
     Eigen::VectorXd sk = x;

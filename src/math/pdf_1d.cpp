@@ -521,10 +521,9 @@ void LimitedExponentialPDF::set_cache()
   if(dx_ != 0)
   {
     double dxs = 0.5*dx_/a_;
-    double bf = a_*(std::exp(-dxs) - exp(dxs))/dx_; // binning factor
-    double dbfda = (std::exp(-dxs) - exp(dxs))/dx_
-                   +0.5*(std::exp(-dxs) + exp(dxs))/a_;
-    double d2bfda2 = 0.5*(std::exp(-dxs) - exp(dxs))*dxs/SQR(a_);
+    double bf = -a_*(std::exp(-dxs) - exp(dxs))/dx_; // binning factor
+    double dbfda = -(std::exp(-dxs)*(1.0+dxs) - exp(dxs)*(1.0-dxs))/dx_;
+    double d2bfda2 = -0.5*(std::exp(-dxs) - exp(dxs))*dxs/SQR(a_);
 
     norm_hessian_ = norm_hessian_*bf + 2.0*norm_gradient_*dbfda + norm_*d2bfda2;
     norm_gradient_ = norm_gradient_*bf + norm_*dbfda;
