@@ -842,6 +842,19 @@ std::vector<double> GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
   return spec;
 }  
 
+int GeneralPoissonMES::ibin(double x) const
+{
+  int thebin = std::floor((x-x0_)/dx_);
+  if(thebin<0 or thebin>=nsample_)
+  {
+    std::ostringstream str;
+    str << "GeneralPoissonMES::ibin: x=" << x
+        << " out of range (bin=" << thebin << ", nsample=" << nsample_ << ")";
+    throw std::out_of_range(str.str());
+  }
+  return thebin;
+}
+
 void GeneralPoissonMES::set_cache()
 {
   // THIS FUNCTION IS TOO LONG

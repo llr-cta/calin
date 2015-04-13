@@ -11,6 +11,10 @@
 
 using namespace calin::math::optimizer;
 
+const double Optimizer::inf;
+const double Optimizer::pos_inf;
+const double Optimizer::neg_inf;
+
 Optimizer::~Optimizer()
 {
   if(my_fcn_)delete fcn_;
@@ -40,29 +44,31 @@ std::vector<double> Optimizer::initial_stepsize() const
 std::vector<double> Optimizer::limits_lo() const
 {
   // Set lower limits from caller's values with fallback to function defaults
-  constexpr auto inf = std::numeric_limits<double>::infinity();
   auto axes = fcn_->domain_axes();
-  std::vector<double> xlim_lo;
-  if(xlim_lo_.size() == axes.size())xlim_lo = xlim_lo_;
-  else for(const auto& ipar : axes) {
-      xlim_lo.push_back(ipar.has_lo_bound?ipar.lo_bound:-inf); }
-  if(std::all_of(xlim_lo.begin(),xlim_lo.end(),[](double x){return x==-inf;}))
-    return std::vector<double>{};
-  return xlim_lo;
+  std::vector<double> xlim(axes.size());
+  std::transform(axes.begin(), axes.end(), xlim.begin(),
+                 [](const decltype(axes)::value_type& ipar)
+                 { return ipar.has_lo_bound?ipar.lo_bound:neg_inf;});
+  if(xlim_lo_.size() <= axes.size())
+    std::transform(xlim_lo_.begin(), xlim_lo_.end(), xlim.begin(),
+                   xlim.begin(), [](double ipar1, double ipar2) {
+                     return std::max(ipar1, ipar2); });
+  return xlim;
 }
 
 std::vector<double> Optimizer::limits_hi() const
 {
   // Set upper limits from caller's values with fallback to function defaults
-  constexpr auto inf = std::numeric_limits<double>::infinity();
   auto axes = fcn_->domain_axes();
-  std::vector<double> xlim_hi;
-  if(xlim_hi_.size() == axes.size())xlim_hi = xlim_hi_;
-  else for(const auto& ipar : axes) {
-      xlim_hi.push_back(ipar.has_hi_bound?ipar.hi_bound:inf); }
-  if(std::all_of(xlim_hi.begin(),xlim_hi.end(),[](double x){return x==inf;}))
-    return std::vector<double>{};
-  return xlim_hi;
+  std::vector<double> xlim(axes.size());
+  std::transform(axes.begin(), axes.end(), xlim.begin(),
+                 [](const decltype(axes)::value_type& ipar)
+                 { return ipar.has_hi_bound?ipar.hi_bound:pos_inf;});
+  if(xlim_hi_.size() <= axes.size())
+    std::transform(xlim_hi_.begin(), xlim_hi_.end(), xlim.begin(),
+                   xlim.begin(), [](double ipar1, double ipar2) {
+                     return std::min(ipar1, ipar2); });
+  return xlim;
 }
 
 // =============================================================================
@@ -148,8 +154,8 @@ incorporate_func_gradient(function::ConstVecRef x, double f_val,
   // Form error matrix estimate using BFGS update method, see
   // http://en.wikipedia.org/wiki/Broyden-Fletcher-Goldfarb-Shanno_algorithm
 
-  if(!isfinite(f_val) or !std::all_of(gradient.data(), gradient.data()+npar_,
-                                   [](const double& x){return isfinite(x);}))
+  if(!isfinite(f_val) or !std::all_of(gradient.data(), gradient.data()+npar_, 
+                                      [](const double& x){return isfinite(x);}))
   {
     last_good_ = false;
     return;
@@ -164,10 +170,9 @@ incorporate_func_gradient(function::ConstVecRef x, double f_val,
     yk -= gk_;
 
     const double skyk = sk.dot(yk);
+    if(skyk == 0)goto skip_rank1_update; // don't like goto? i don't care :-)
     sk /= skyk;
 
-    std::cout << "B: " << gradient.data() << '\n';
-    
 #ifdef BFGS_COMPUTE_WITH_LOOPS // todo: test if faster when npar->inf
     Eigen::VectorXd bkyk(n);
     for(unsigned i=0;i<n;i++)
@@ -187,9 +192,10 @@ incorporate_func_gradient(function::ConstVecRef x, double f_val,
         - bkyk*sk.transpose()
         - sk*bkyk.transpose();
 #endif
-    std::cout << std::scientific << std::setprecision(8) << Bk_ << "\n\n";
+    //std::cout << std::scientific << std::setprecision(8) << Bk_ << "\n\n";
   }
-      
+skip_rank1_update:
+  
   last_good_ = true;
   xk_ = x;
   gk_ = gradient;

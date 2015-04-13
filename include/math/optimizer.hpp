@@ -24,6 +24,10 @@ using hessian::ErrorMatrixStatus;
 class Optimizer
 {
  public:
+  constexpr static double inf = std::numeric_limits<double>::infinity();
+  constexpr static double pos_inf = inf;
+  constexpr static double neg_inf = -inf;
+  
   using ConstVecRef = function::ConstVecRef;
   using VecRef = function::VecRef;
   using MatRef = function::MatRef;
@@ -66,11 +70,21 @@ class Optimizer
   void set_initial_values(ConstVecRef x0) {
     x0_.assign(x0.data(),x0.data()+x0.innerSize()); }
   void set_scale(const std::vector<double>& xscale = {}) { xscale_=xscale; }
+  void set_limit_lo(unsigned ipar, double lim) {
+    if(ipar>=xlim_lo_.size())xlim_lo_.resize(ipar+1, neg_inf);
+    xlim_lo_[ipar]=lim; }
+  void set_limit_hi(unsigned ipar, double lim) {
+    if(ipar>=xlim_hi_.size())xlim_hi_.resize(ipar+1, pos_inf);
+    xlim_hi_[ipar]=lim; }    
   void set_limits_lo(const std::vector<double>& xlim = {}) { xlim_lo_ = xlim; }
   void set_limits_hi(const std::vector<double>& xlim = {}) { xlim_hi_ = xlim; }
-
+  
   void clear_initial_values() { x0_.clear(); }
   void clear_scale() { xscale_.clear(); }
+  void clear_limit_lo(unsigned ipar) {
+    if(ipar<=xlim_lo_.size())xlim_lo_[ipar] = neg_inf; }
+  void clear_limit_hi(unsigned ipar) {
+    if(ipar<=xlim_hi_.size())xlim_hi_[ipar] = pos_inf; }
   void clear_limits_lo() { xlim_lo_.clear(); }
   void clear_limits_hi() { xlim_hi_.clear(); }
 

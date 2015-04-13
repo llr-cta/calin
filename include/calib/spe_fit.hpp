@@ -226,7 +226,7 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
   using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
   
-  int ibin(double x) { return std::round((x-x0_)/dx_); }
+  int ibin(double x) const;
   void set_cache();
   void hcvec_scale_and_multiply(double* ovec, const double* ivec1,
                                 const double* ivec2, double scale = 1.0) const;

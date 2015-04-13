@@ -210,16 +210,24 @@ bool NLOptOptimizer::can_impose_box_constraints()
 
 bool NLOptOptimizer::minimize(VecRef xopt, double& fopt)
 {
-  constexpr auto inf = std::numeric_limits<double>::infinity();
   auto axes = fcn_->domain_axes();
   nlopt::opt opt(algorithm_, axes.size());
   opt.set_min_objective(nlopt_callback, this);
 
+#if 1
   std::vector<double> xlim_lo { limits_lo() };
-  if(!xlim_lo.empty())opt.set_lower_bounds(xlim_lo);
+  if(!xlim_lo.empty() &&
+     std::count(xlim_lo.begin(), xlim_lo.end(), neg_inf)!=xlim_lo.size())
+    opt.set_lower_bounds(xlim_lo);
+
   std::vector<double> xlim_hi { limits_hi() };
-  if(!xlim_hi.empty())opt.set_upper_bounds(xlim_hi);
-  opt.set_initial_step(initial_stepsize());
+  if(!xlim_hi.empty() &&
+     std::count(xlim_hi.begin(), xlim_hi.end(), pos_inf)!=xlim_hi.size())
+    opt.set_upper_bounds(xlim_hi);
+#endif
+  
+  std::vector<double> stepsize { initial_stepsize() };
+  opt.set_initial_step(stepsize);
 
   if(abs_tolerance()>0)opt.set_ftol_abs(abs_tolerance());
   if(rel_tolerance()>0)opt.set_ftol_rel(rel_tolerance());
@@ -229,6 +237,16 @@ bool NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   iter_ = 0;
 
   std::vector<double> x { initial_values() };
+
+  for(unsigned ipar=0; ipar<axes.size(); ipar++)
+  {
+    std::cout << axes[ipar].name << ' '
+              << ((ipar<x.size())?x[ipar]:0.0) << ' '
+              << ((ipar<stepsize.size())?stepsize[ipar]:0.0) << ' '
+              << (ipar<xlim_lo.size()?xlim_lo[ipar]:0.0) << ' '
+              << (ipar<xlim_hi.size()?xlim_hi[ipar]:0.0) << '\n';
+  }
+
   opt.optimize(x, fopt);
 
   xopt.resize(x.size());
@@ -263,14 +281,30 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
   Eigen::Map<const Eigen::VectorXd> xvec(x,n);
   Eigen::Map<Eigen::VectorXd> gvec(grad,n);
 
-  double fcn_value {
-    grad?fcn_->value_and_gradient(xvec,gvec):fcn_->value(xvec) };
+  double fcn_value;
+  try
+  {
+    if(grad)
+      fcn_value = fcn_->value_and_gradient(xvec,gvec);
+    else
+      fcn_value = fcn_->value(xvec);
+  }
+  catch(std::exception& x)
+  {
+    std::cout
+        << "NLOptOptimizer::eval_func: exception in user function with x = "
+        << xvec.transpose() << '\n'
+        << "NLOptOptimizer::eval_func: exception is: " << x.what() << '\n';
+    throw;
+  }
 
   if(verbose_ != VerbosityLevel::SILENT)
   {
     std::cout << std::left << std::setw(4) << iter_+1 << ' '
-              << std::fixed << std::setprecision(4) << fcn_value;
+              << std::fixed << std::setprecision(8) << fcn_value;
     for(unsigned ipar=0;ipar<n;ipar++)std::cout << ' ' << x[ipar];
+    if(grad)
+      for(unsigned ipar=0;ipar<n;ipar++)std::cout << ' ' << grad[ipar];
     std::cout << '\n';
   }
   

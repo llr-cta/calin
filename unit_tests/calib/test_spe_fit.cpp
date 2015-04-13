@@ -657,6 +657,42 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
          << three_es_spec[i] << ' ' << '\n';
 }
 
+TEST(TestGeneralPoissonMES_ExpGauss, Repeatability)
+{
+  double inf = std::numeric_limits<double>::infinity();
+  std::vector<double> all_val;
+  std::vector<Eigen::VectorXd> all_grad;
+  for(unsigned iloop=0;iloop<10;iloop++)
+  {
+    auto mes_data = karkar_data();
+    SimpleHist mes_hist(1.0);
+    for(auto idata : mes_data)mes_hist.accumulate(idata);
+    pdf_1d::GaussianPDF ped;
+    pdf_1d::LimitedExponentialPDF exp_pdf(0,inf,mes_hist.dxval());
+    exp_pdf.limit_scale(0.1, inf);
+    pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
+    pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+    GeneralPoissonMES mes_model(mes_hist.xval_left(0),
+                                mes_hist.dxval(),
+                                mes_hist.size(), &ses, &ped);
+    SPELikelihood like(mes_model, mes_hist);
+    Eigen::VectorXd p(7);
+    p << 0.56, 3094.7, 19.6, 0.1, 5.0, 88.9, 29.3;
+
+    Eigen::VectorXd grad(7);
+    double val = like.value_and_gradient(p,grad);
+
+    all_val.push_back(val);
+    all_grad.push_back(grad);
+  }
+
+  EXPECT_EQ(std::count(all_val.begin(), all_val.end(), all_val.front()),
+            all_val.size());
+
+  EXPECT_EQ(std::count(all_grad.begin(), all_grad.end(), all_grad.front()),
+            all_grad.size());
+}
+  
 TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
 {
   double inf = std::numeric_limits<double>::infinity();
@@ -675,11 +711,13 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
 
   //optimizer::NLOptOptimizer opt(nlopt::LN_SBPLX, &like);
   optimizer::NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
-  opt.set_scale({0.1,0.1,1.0,0.01,0.1,1.0,1.0});
+  opt.set_scale({0.01,0.1,1.0,0.01,0.1,1.0,1.0});
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
-  opt.set_abs_tolerance(0.0001);
+  opt.set_abs_tolerance(0.000001);
   opt.set_initial_values({ 1.0, 3100.0, 20.0, 0.05, 50.0, 100.0, 45.0 });
-  //opt.set_initial_values({ 0.56, 3094.7, 19.6, 0.1, 5.0, 88.9, 29.3 });
+  opt.set_initial_values({ 0.56, 3094.7, 19.6, 0.1, 5.0, 88.9, 29.3 });
+  opt.set_limits_lo({ 0.001, 3000.0, 1.0,   0.0, 1.0,    10.0,  10.0});
+  opt.set_limits_hi({ 100.0, 3200.0, 100.0, 1.0, 1000.0, 300.0, 100.0});
   Eigen::VectorXd x_opt(7);
   double f_val;
 
@@ -688,20 +726,23 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   }
   catch(const nlopt::forced_stop& x)
   {
-    std::cout << "Caught: nlopt::forced_stop: " << x.what() << '\n'; 
+    std::cout << "Caught: nlopt::forced_stop: " << x.what() << '\n';
+    throw;
   }
   catch(const nlopt::roundoff_limited& x)
   {
     std::cout << "Caught: nlopt::roundoff_limited: " << x.what() << '\n'; 
+    throw;
   }
   catch(const std::runtime_error& x)
   {
     std::cout << "Caught: runtime_error: " << x.what() << '\n'; 
+    throw;
   }
 
 #if 1
   Eigen::VectorXd p(7);
-  p << 1.0, 3100.0, 20.0, 0.2, 30.0, 100.0, 30.0;
+  p << 1.0, 3100.0, 10.0, 0.4, 50.0, 100.0, 25.0;
   //mes_model.set_parameter_values(p);
   std::ofstream file("spec.dat");
   std::vector<double> mes_spec = mes_model.multi_electron_spectrum();
@@ -715,9 +756,9 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   std::vector<double> three_es_cpt = mes_model.mes_n_electron_cpt(3);
 
   for(unsigned i=0;i<mes_spec.size();i++)
-    file << mes_spec[i] << ' ' << ped_spec[i] << ' '
-         << one_es_spec[i] << ' ' << two_es_spec[i] << ' ' 
-         << three_es_spec[i] << ' '
+    file << mes_spec[i] << ' '
+         << ped_spec[i] << ' ' << one_es_spec[i] << ' '
+         << two_es_spec[i] << ' ' << three_es_spec[i] << ' '
          << zero_es_cpt[i] << ' ' << one_es_cpt[i] << ' '
          << two_es_cpt[i] << ' ' << three_es_cpt[i] << ' ' << '\n';
 #endif
