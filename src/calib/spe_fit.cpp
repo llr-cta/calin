@@ -647,7 +647,7 @@ GeneralPoissonMES::~GeneralPoissonMES()
   
   fftw_free(ped_fft_);
   fftw_free(ped_spec_);
-  for(unsigned ines=0; ines<nmax_;ines++)fftw_free(nes_fft_[ines]);
+  for(auto x : nes_fft_)fftw_free(x);
   fftw_free(mes_spec_);
 
   if(adopt_ses_pdf_)delete ses_pdf_;
@@ -1072,7 +1072,6 @@ auto SPELikelihood::domain_axes() -> std::vector<math::DomainAxis>
 
 double SPELikelihood::value(ConstVecRef x)
 {
-  std::cout << x.transpose() << '\n';
   mes_model_->set_parameter_values(x);
   math::LikelihoodAccumulator acc;
   for(auto& ibin : mes_data_)

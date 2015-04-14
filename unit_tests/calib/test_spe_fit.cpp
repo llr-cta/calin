@@ -642,7 +642,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
                     &MultiElectronSpectrum::pdf_gradient_mes,
                     &MultiElectronSpectrum::pdf_gradient_hessian_mes,
                     { 1.123, 0.100000, 0.2, 0.3, 0.2, 1.321, 0.35 },
-                    { dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 10.0, 0.1);
+                    { dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 0.5);
 
   std::ofstream file("spec.dat");
   std::vector<double> mes_spec = mes_model.multi_electron_spectrum();
@@ -713,10 +713,10 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   optimizer::NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
   opt.set_scale({0.01,0.1,1.0,0.01,0.1,1.0,1.0});
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
-  opt.set_abs_tolerance(0.000001);
+  opt.set_abs_tolerance(0.001);
   opt.set_initial_values({ 1.0, 3100.0, 20.0, 0.05, 50.0, 100.0, 45.0 });
   opt.set_initial_values({ 0.56, 3094.7, 19.6, 0.1, 5.0, 88.9, 29.3 });
-  opt.set_limits_lo({ 0.001, 3000.0, 1.0,   0.0, 1.0,    10.0,  10.0});
+  opt.set_limits_lo({ 0.001, 3000.0,   1.0, 0.0,    1.0,  10.0,  10.0});
   opt.set_limits_hi({ 100.0, 3200.0, 100.0, 1.0, 1000.0, 300.0, 100.0});
   Eigen::VectorXd x_opt(7);
   double f_val;

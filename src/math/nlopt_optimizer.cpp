@@ -266,8 +266,9 @@ ErrorMatrixStatus NLOptOptimizer::calc_error_matrix(MatRef err_mat)
   Eigen::VectorXd error_hint;
   if(error_matrix_estimate(err_mat) != ErrorMatrixStatus::UNAVAILABLE)
     error_hint = err_mat.diagonal().array().sqrt();
-  Eigen::MatrixXd hessian;
+  Eigen::MatrixXd hessian(npar,npar);
   hessian::calculate_hessian(*fcn_, xopt_, hessian, error_hint);
+  return hessian::hessian_to_error_matrix(*fcn_, hessian, err_mat);
 }
 
 double NLOptOptimizer::nlopt_callback(unsigned n, const double* x, double* grad,
