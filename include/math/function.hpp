@@ -15,19 +15,9 @@
 
 #include <Eigen/Core>
 
-namespace calin { namespace math { namespace function {
+#include "package_wide_definitions.hpp"
 
-#if 1
-using VecRef = Eigen::Ref<Eigen::VectorXd>;
-using ConstVecRef = const Eigen::Ref<const Eigen::VectorXd>&;
-using MatRef = Eigen::Ref<Eigen::MatrixXd>;
-using ConstMatRef = const Eigen::Ref<const Eigen::MatrixXd>&;
-#else
-using VecRef = Eigen::VectorXd&;
-using MatRef = Eigen::MatrixXd&;
-using ConstVecRef = const Eigen::Ref<const Eigen::VectorXd>&;
-using ConstMatRef = const Eigen::Ref<const Eigen::MatrixXd>&;
-#endif
+namespace calin { namespace math { namespace function {
 
 struct ParameterAxis
 {
@@ -54,7 +44,7 @@ struct ParameterAxis
   double initial_value;
 };
 
-using DomainAxis = ParameterAxis;
+CALIN_TYPEALIAS(DomainAxis, ParameterAxis);
 
 // Variadic template.. what fun!
 
@@ -218,6 +208,8 @@ bool gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
 bool hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
                    MatRef good);
 
+#ifndef SWIG
+
 template<typename ParameterizableType> using ValGetter =
     std::function<double(ParameterizableType*)>;
 template<typename ParameterizableType> using GradGetter =
@@ -293,8 +285,11 @@ bool hessian_check_par(ParameterizableType& par_fcn,
   return function::hessian_check(fcn, p, dp, good);
 }
 
+#endif // ifndef SWIG
+
 } // namespace function
 
+#ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
 using function::ParameterAxis;
 using function::DomainAxis;
 using function::Parameterizable;
@@ -302,5 +297,6 @@ using function::MultiAxisFunction;
 using function::SingleAxisFunction;
 using function::ParameterizableMultiAxisFunction;
 using function::ParameterizableSingleAxisFunction;
+#endif // ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
 
 } } // namespace calin::math

@@ -7,6 +7,8 @@
 #include "math/pdf_1d.hpp"
 
 using namespace calin::math;
+using namespace calin::math::function;
+using namespace calin::math::pdf_1d;
 
 TEST(TestGaussianPDF, GradientCheck) {
   Eigen::VectorXd p(2);

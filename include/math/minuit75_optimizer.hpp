@@ -17,11 +17,7 @@ namespace calin { namespace math { namespace optimizer {
 class Minuit75Optimizer: public Optimizer
 {
  public:
-  using ConstVecRef = function::ConstVecRef;
-  using VecRef = function::VecRef;
-  using MatRef = function::MatRef;
-  
-  Minuit75Optimizer(MultiAxisFunction* fcn, bool adopt_fcn = false);
+  Minuit75Optimizer(function::MultiAxisFunction* fcn, bool adopt_fcn = false);
   ~Minuit75Optimizer();
 
   bool requires_gradient() override;

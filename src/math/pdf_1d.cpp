@@ -43,7 +43,7 @@ unsigned GaussianPDF::num_parameters()
   return 2;
 }
 
-auto GaussianPDF::parameters() -> std::vector<math::ParameterAxis>
+std::vector<function::ParameterAxis> GaussianPDF::parameters()
 {
   constexpr double inf = std::numeric_limits<double>::infinity();
   constexpr double tiny_val = std::numeric_limits<double>::min();
@@ -83,7 +83,7 @@ bool GaussianPDF::can_calculate_parameter_hessian()
   return true;
 }
 
-DomainAxis GaussianPDF::domain_axis()
+function::DomainAxis GaussianPDF::domain_axis()
 {
   constexpr double inf = std::numeric_limits<double>::infinity();
   return { "x-value", "x-value units", false, -inf, false, inf };
@@ -178,9 +178,9 @@ LimitedGaussianPDF::~LimitedGaussianPDF()
   // nothing to see here
 }
 
-DomainAxis LimitedGaussianPDF::domain_axis()
+function::DomainAxis LimitedGaussianPDF::domain_axis()
 {
-  DomainAxis a = GaussianPDF::domain_axis();
+  function::DomainAxis a = GaussianPDF::domain_axis();
   a.has_lo_bound = xlo_>-inf;
   a.lo_bound = xlo_;
   a.has_hi_bound = xhi_<inf;
@@ -347,7 +347,7 @@ unsigned LimitedExponentialPDF::num_parameters()
   return 1;
 }
 
-std::vector<ParameterAxis> LimitedExponentialPDF::parameters()
+std::vector<function::ParameterAxis> LimitedExponentialPDF::parameters()
 {
   return { { "scale", "x-value units", limit_a_lo_>-inf, limit_a_lo_, limit_a_hi_<inf, limit_a_hi_ } };
 }
@@ -365,7 +365,7 @@ void LimitedExponentialPDF::set_parameter_values(ConstVecRef values)
   set_cache();
 }
 
-DomainAxis LimitedExponentialPDF::domain_axis()
+function::DomainAxis LimitedExponentialPDF::domain_axis()
 {
   return { "x-value", "x-value units", xlo_>-inf, xlo_, xhi_<inf, xhi_ };
 }
@@ -559,14 +559,14 @@ unsigned TwoComponentPDF::num_parameters()
   return 1 + pdf1_->num_parameters() + pdf2_->num_parameters();
 }
  
-std::vector<ParameterAxis> TwoComponentPDF::parameters()
+std::vector<function::ParameterAxis> TwoComponentPDF::parameters()
 {
-  std::vector<ParameterAxis> pvec {
+  std::vector<function::ParameterAxis> pvec {
     { cpt1_name_+std::string(" probability"), "1", true, 0, true, 1 } };
-  std::vector<ParameterAxis> pdf1_pvec = pdf1_->parameters();
+  std::vector<function::ParameterAxis> pdf1_pvec = pdf1_->parameters();
   for(auto& p : pdf1_pvec)p.name = cpt1_name_ + std::string(".") + p.name;
   pvec.insert(pvec.end(), pdf1_pvec.begin(), pdf1_pvec.end());
-  std::vector<ParameterAxis> pdf2_pvec = pdf2_->parameters();
+  std::vector<function::ParameterAxis> pdf2_pvec = pdf2_->parameters();
   for(auto& p : pdf2_pvec)p.name = cpt2_name_ + std::string(".") + p.name;
   pvec.insert(pvec.end(), pdf2_pvec.begin(), pdf2_pvec.end());
   return pvec;
@@ -593,7 +593,7 @@ void TwoComponentPDF::set_parameter_values(ConstVecRef values)
                                              pdf2_->num_parameters()));
 }
 
-DomainAxis TwoComponentPDF::domain_axis()
+function::DomainAxis TwoComponentPDF::domain_axis()
 {
   return pdf1_->domain_axis();
 }

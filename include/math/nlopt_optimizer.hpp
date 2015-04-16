@@ -19,14 +19,10 @@ namespace calin { namespace math { namespace optimizer {
 class NLOptOptimizer: public Optimizer
 {
  public:
-  using ConstVecRef = function::ConstVecRef;
-  using VecRef = function::VecRef;
-  using MatRef = function::MatRef;
-
-  using algorithm_type = nlopt::algorithm;
+  CALIN_TYPEALIAS(algorithm_type, nlopt::algorithm);
 
   NLOptOptimizer(algorithm_type algorithm,
-                 MultiAxisFunction* fcn, bool adopt_fcn = false);
+                 function::MultiAxisFunction* fcn, bool adopt_fcn = false);
   ~NLOptOptimizer();
 
   static bool requires_gradient(algorithm_type a);
@@ -63,6 +59,8 @@ class NLOptOptimizer: public Optimizer
 
 } // namesace optimizer
 
+#ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
 using optimizer::NLOptOptimizer;
+#endif // ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
 
 } } // namespace calin::math

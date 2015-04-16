@@ -1,3 +1,11 @@
+/* 
+
+   calin/math/histogram.hpp -- Stephen Fegan -- 2015-02-16
+
+   Simple histogramming classes
+
+*/
+
 #pragma once
 
 #include <string>
@@ -7,6 +15,7 @@
 #include <limits>
 #include <iterator>
 
+#include "package_wide_definitions.hpp"
 #include "proto/histogram.pb.h"
 #include "math/accumulator.hpp"
 
@@ -33,6 +42,8 @@ namespace calin { namespace math { namespace histogram {
 // Base class for one-dimensional binned data -- separated from the
 // actual historam class since it is in common with the integral
 // distribution (CDF) class.
+
+CALIN_TYPEALIAS(DefaultAccumulator, accumulator::SimpleAccumulator);
 
 template<typename T, typename Container = std::vector<T>> class BinnedData1D
 {
@@ -506,7 +517,7 @@ class BinnedCDF: public BinnedData1D<double>
   void set_name(const std::string& name) { name_=name; }
 
   // Statistics
-  template<typename IntAcc = SimpleAccumulator>
+  template<typename IntAcc = DefaultAccumulator>
   void moments2(double& m1, double& m2) const {
     IntAcc ax {};
     IntAcc axx {};
@@ -520,7 +531,7 @@ class BinnedCDF: public BinnedData1D<double>
     var -= mean*mean;
   }
   double mean() const {
-    SimpleAccumulator ax {};
+    DefaultAccumulator ax {};
     visit_delta([&ax](double xc, double w){ ax.accumulate(xc*w); });
     return ax.total();
   }
@@ -610,7 +621,7 @@ class BinnedCDF: public BinnedData1D<double>
     }
   }
 
-  template<typename Fcn, typename IntAcc = SimpleAccumulator>
+  template<typename Fcn, typename IntAcc = DefaultAccumulator>
   double integrate_density(const Fcn& fcn) const
   {
     IntAcc acc;
@@ -624,7 +635,7 @@ class BinnedCDF: public BinnedData1D<double>
     return acc.total()*this->dxval_;
   }
 
-  template<typename Fcn, typename IntAcc = SimpleAccumulator>
+  template<typename Fcn, typename IntAcc = DefaultAccumulator>
   double integrate_delta(const Fcn& fcn) const
   {
     IntAcc acc;
@@ -670,11 +681,7 @@ class BinnedCDF: public BinnedData1D<double>
   std::string name_;
 };
 
-} // namespace histogram
+CALIN_TYPEALIAS(Histogram1D, BasicHistogram1D<DefaultAccumulator>);
+CALIN_TYPEALIAS(SimpleHist, Histogram1D);
 
-using histogram::BasicHistogram1D;
-using Histogram1D = BasicHistogram1D<SimpleAccumulator>;
-using SimpleHist = Histogram1D;
-using histogram::BinnedCDF;
-
-} } // namespace calin::math
+} } } // namespace calin::math::histogram

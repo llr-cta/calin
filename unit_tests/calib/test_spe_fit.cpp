@@ -11,8 +11,10 @@
 #include "math/minuit75_optimizer.hpp"
 
 using namespace calin::math;
+using namespace calin::math::histogram;
 using namespace calin::data;
 using namespace calin::calib;
+using namespace calin::calib::spe_fit;
 using namespace calin::unit_tests;
 
 TEST(TestPoissonGaussianMES, SetAndRecallParameters) {
@@ -75,9 +77,7 @@ TEST(TestPoissonGaussianMES, PDFEqualityWithLegacyCode_MES) {
 
 namespace {
 
-using function::ConstVecRef;
-using function::VecRef;
-using function::MatRef;
+using namespace calin;
 
 void
 mes_gradient_test(MultiElectronSpectrum* mes,
@@ -176,9 +176,7 @@ TEST(TestPoissonGaussianMES_HighAccuracy, GradientCheck_MES)
 
 namespace {
 
-using function::ConstVecRef;
-using function::VecRef;
-using function::MatRef;
+using namespace calin;
 
 void
 mes_hessian_test(MultiElectronSpectrum* mes,

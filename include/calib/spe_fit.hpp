@@ -22,16 +22,11 @@
 
 namespace calin { namespace calib { namespace spe_fit {
 
-using math::Parameterizable1DPDF;
-using SingleElectronSpectrum = math::Parameterizable1DPDF;
+CALIN_TYPEALIAS(SingleElectronSpectrum, math::pdf_1d::Parameterizable1DPDF);
 
-class MultiElectronSpectrum: public math::Parameterizable
+class MultiElectronSpectrum: public math::function::Parameterizable
 {
  public:
-  using ConstVecRef = math::function::ConstVecRef;
-  using VecRef = math::function::VecRef;
-  using MatRef = math::function::MatRef;
-
   virtual ~MultiElectronSpectrum();
   virtual double pdf_ped(double x) = 0;
   virtual double pdf_gradient_ped(double x, VecRef gradient) = 0;
@@ -54,15 +49,11 @@ class MultiElectronSpectrum: public math::Parameterizable
 class PoissonGaussianMES: public MultiElectronSpectrum
 {
  public:
-  using ConstVecRef = math::function::ConstVecRef;
-  using VecRef = math::function::VecRef;
-  using MatRef = math::function::MatRef;
-
   PoissonGaussianMES(unsigned nmax = 10, bool force_calc_hessian = false);
   virtual ~PoissonGaussianMES();
 
   unsigned num_parameters() override;
-  std::vector<math::ParameterAxis> parameters() override;
+  std::vector<math::function::ParameterAxis> parameters() override;
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
   bool can_calculate_parameter_gradient() override;
@@ -88,7 +79,7 @@ class PoissonGaussianMES: public MultiElectronSpectrum
   PoissonGaussianMES(unsigned nmax, unsigned nmin,
                      bool force_calc_hessian = false);
 
-  using accumulator = math::LikelihoodAccumulator;
+  using accumulator = math::accumulator::LikelihoodAccumulator;
 
   void calc_cached_vars(bool calc_hessian = false);
   
@@ -144,15 +135,11 @@ class PoissonGaussianMES: public MultiElectronSpectrum
 class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
 {
  public:
-  using ConstVecRef = math::function::ConstVecRef;
-  using VecRef = math::function::VecRef;
-  using MatRef = math::function::MatRef;
-
   PoissonGaussianMES_HighAccuracy(double tol = 1e-200);
   virtual ~PoissonGaussianMES_HighAccuracy();
 
   unsigned num_parameters() override;
-  std::vector<math::ParameterAxis> parameters() override;
+  std::vector<math::function::ParameterAxis> parameters() override;
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
   bool can_calculate_parameter_gradient() override;
@@ -180,19 +167,16 @@ class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
 class GeneralPoissonMES: public MultiElectronSpectrum
 {
  public:
-  using ConstVecRef = math::function::ConstVecRef;
-  using VecRef = math::function::VecRef;
-  using MatRef = math::function::MatRef;
-
   GeneralPoissonMES(double x0, double dx, unsigned npoint,
-                    SingleElectronSpectrum* ses, Parameterizable1DPDF* ped,
+                    SingleElectronSpectrum* ses,
+                    math::pdf_1d::Parameterizable1DPDF* ped,
                     unsigned nmax = 10,
                     bool adopt_ses = false, bool adopt_ped = false);
 
   virtual ~GeneralPoissonMES();
 
   unsigned num_parameters() override;
-  std::vector<math::ParameterAxis> parameters() override;
+  std::vector<math::function::ParameterAxis> parameters() override;
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
   bool can_calculate_parameter_gradient() override;
@@ -234,7 +218,7 @@ class GeneralPoissonMES: public MultiElectronSpectrum
       const;
   
   SingleElectronSpectrum* ses_pdf_;
-  Parameterizable1DPDF* ped_pdf_;
+  math::pdf_1d::Parameterizable1DPDF* ped_pdf_;
   bool adopt_ses_pdf_ = false;
   bool adopt_ped_pdf_ = false;
   unsigned nmax_ = 10;
@@ -258,22 +242,18 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   std::vector<fftw_plan> mes_grad_plan_rev_;
 };
 
-class SPELikelihood: public math::MultiAxisFunction
+class SPELikelihood: public math::function::MultiAxisFunction
 {
  public:
-  using ConstVecRef = math::function::ConstVecRef;
-  using VecRef = math::function::VecRef;
-  using MatRef = math::function::MatRef;
-
   SPELikelihood(MultiElectronSpectrum& mes_model,
-                const math::SimpleHist& mes_data);
+                const math::histogram::SimpleHist& mes_data);
   SPELikelihood(MultiElectronSpectrum& mes_model,
-                const math::SimpleHist& mes_data,
-                const math::SimpleHist& ped_data);
+                const math::histogram::SimpleHist& mes_data,
+                const math::histogram::SimpleHist& ped_data);
   virtual ~SPELikelihood();
 
   unsigned num_domain_axes() override;
-  std::vector<math::DomainAxis> domain_axes() override;
+  std::vector<math::function::DomainAxis> domain_axes() override;
   double value(ConstVecRef x) override;
   bool can_calculate_gradient() override;
   double value_and_gradient(ConstVecRef x, VecRef gradient) override;
@@ -285,18 +265,20 @@ class SPELikelihood: public math::MultiAxisFunction
  private:
   MultiElectronSpectrum* mes_model_;
   unsigned npar_;
-  const math::SimpleHist mes_data_;
+  const math::histogram::SimpleHist mes_data_;
   bool has_ped_data_ { false };
-  const math::SimpleHist ped_data_;
+  const math::histogram::SimpleHist ped_data_;
 };
 
 } // namespace spe_fit
 
+#ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
 using spe_fit::SingleElectronSpectrum;
 using spe_fit::MultiElectronSpectrum;
 using spe_fit::PoissonGaussianMES;
 using spe_fit::PoissonGaussianMES_HighAccuracy;
 using spe_fit::GeneralPoissonMES;
 using spe_fit::SPELikelihood;
+#endif // ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
 
 } } // namespace calin::calib

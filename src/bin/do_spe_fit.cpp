@@ -10,7 +10,10 @@
 #include <math/nlopt_optimizer.hpp>
 
 using namespace calin::math;
+using namespace calin::math::histogram;
+using namespace calin::math::optimizer;
 using namespace calin::calib;
+using namespace calin::calib::spe_fit;
 
 int main(int argc, char** argv)
 {

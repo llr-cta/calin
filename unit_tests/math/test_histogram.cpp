@@ -2,6 +2,8 @@
 #include "math/histogram.hpp"
 
 using namespace calin::math;
+using namespace calin::math::histogram;
+using namespace calin::math::accumulator;
 using namespace calin::data;
 
 TEST(TestSimpleHist, InsertIntegersFrom0ToN) {

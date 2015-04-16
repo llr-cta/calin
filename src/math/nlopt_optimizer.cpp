@@ -15,7 +15,8 @@
 using namespace calin::math::optimizer;
 
 NLOptOptimizer::
-NLOptOptimizer(algorithm_type algorithm, MultiAxisFunction* fcn, bool adopt_fcn)
+NLOptOptimizer(algorithm_type algorithm,
+               function::MultiAxisFunction* fcn, bool adopt_fcn)
     : Optimizer(fcn, adopt_fcn), algorithm_(algorithm)
 {
   if(can_use_gradient(algorithm))

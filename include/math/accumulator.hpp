@@ -1,12 +1,22 @@
+/* 
+
+   calin/math/accumulator.hpp -- Stephen Fegan -- 2015-02-10
+
+   Classes to sum up double precision values in a reliable way
+
+*/
+
 #pragma once
 
 #include <limits>
 #include <vector>
 #include <array>
 
+#include "package_wide_definitions.hpp"
+
 namespace calin { namespace math { namespace accumulator {
 
-using accumulator_value_type = double;
+CALIN_TYPEALIAS(accumulator_value_type, double);
 
 class SimpleAccumulator
 {
@@ -98,12 +108,6 @@ private:
   Acc acc_;
 };
 
-} // namespace accumulator
+CALIN_TYPEALIAS(LikelihoodAccumulator, KahanAccumulator);
 
-using accumulator::SimpleAccumulator;
-using accumulator::KahanAccumulator;
-using accumulator::Accumulator;
-using accumulator::BasicAccumulator;
-using LikelihoodAccumulator = accumulator::KahanAccumulator;
-
-} } // namespace calin::math
+} } } // namespace calin::math::accumulator

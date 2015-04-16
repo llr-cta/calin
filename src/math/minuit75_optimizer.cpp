@@ -77,7 +77,7 @@ static mn7fcb* cast_fcb(void* x)
 using namespace calin::math::optimizer;
 
 Minuit75Optimizer::
-Minuit75Optimizer(MultiAxisFunction* fcn, bool adopt_fcn):
+Minuit75Optimizer(function::MultiAxisFunction* fcn, bool adopt_fcn):
     Optimizer(fcn, adopt_fcn), fcb_(new mn7fcb)
 {
   integer i5=5, i6=6, i7=7;

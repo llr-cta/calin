@@ -87,7 +87,7 @@ unsigned PoissonGaussianMES::num_parameters()
   return 5;
 }
 
-auto PoissonGaussianMES::parameters() -> std::vector<math::ParameterAxis>
+std::vector<function::ParameterAxis> PoissonGaussianMES::parameters()
 {
   constexpr double tiny_val = std::numeric_limits<double>::min();
   constexpr double phuge_val = std::numeric_limits<double>::max();
@@ -485,8 +485,8 @@ unsigned PoissonGaussianMES_HighAccuracy::num_parameters()
   return 5;
 }
 
-auto PoissonGaussianMES_HighAccuracy::parameters() ->
-    std::vector<math::ParameterAxis>
+std::vector<function::ParameterAxis>
+PoissonGaussianMES_HighAccuracy::parameters()    
 {
   return { { "light_intensity", "PE", true, 0, false, 0 },
     { "ped_zero", "DC", false, 0, false, 0 },
@@ -575,7 +575,8 @@ pdf_gradient_ped(double x, VecRef gradient)
 
 GeneralPoissonMES::
 GeneralPoissonMES(double x0, double dx, unsigned npoint,
-                  SingleElectronSpectrum* ses, Parameterizable1DPDF* ped,
+                  SingleElectronSpectrum* ses,
+                  math::pdf_1d::Parameterizable1DPDF* ped,
                   unsigned nmax, bool adopt_ses, bool adopt_ped):
     MultiElectronSpectrum(),
     ses_pdf_(ses), ped_pdf_(ped),
@@ -659,14 +660,15 @@ unsigned GeneralPoissonMES::num_parameters()
   return 1+ses_pdf_->num_parameters()+ped_pdf_->num_parameters();
 }
 
-std::vector<ParameterAxis> GeneralPoissonMES::parameters()
+auto GeneralPoissonMES::parameters() ->
+    std::vector<math::function::ParameterAxis>
 {
-  std::vector<ParameterAxis> pvec
+  std::vector<math::function::ParameterAxis> pvec
   { { "light_intensity", "PE", true, 0, false, 0 } };
-  std::vector<ParameterAxis> pped { ped_pdf_->parameters() };
+  std::vector<math::function::ParameterAxis> pped { ped_pdf_->parameters() };
   for(auto& ip : pped)ip.name = std::string("ped.") + ip.name;
   pvec.insert(pvec.end(), pped.begin(), pped.end());
-  std::vector<ParameterAxis> pses { ses_pdf_->parameters() };
+  std::vector<math::function::ParameterAxis> pses { ses_pdf_->parameters() };
   for(auto& ip : pses)ip.name = std::string("ses.") + ip.name;
   pvec.insert(pvec.end(), pses.begin(), pses.end());  
   return pvec;
@@ -1037,8 +1039,8 @@ hcvec_scale_and_add(double* ovec, const double* ivec, double scale) const
 // ============================================================================
 
 SPELikelihood::SPELikelihood(MultiElectronSpectrum& mes_model,
-                             const SimpleHist& mes_data):
-    MultiAxisFunction(), mes_model_(&mes_model),
+                             const math::histogram::SimpleHist& mes_data):
+    function::MultiAxisFunction(), mes_model_(&mes_model),
     npar_(mes_model.num_parameters()),
     mes_data_(mes_data), has_ped_data_(false), ped_data_(1.0)
 {
@@ -1046,9 +1048,9 @@ SPELikelihood::SPELikelihood(MultiElectronSpectrum& mes_model,
 }
 
 SPELikelihood::SPELikelihood(MultiElectronSpectrum& mes_model,
-                             const SimpleHist& mes_data,
-                             const SimpleHist& ped_data):
-    MultiAxisFunction(), mes_model_(&mes_model),
+                             const math::histogram::SimpleHist& mes_data,
+                             const math::histogram::SimpleHist& ped_data):
+    function::MultiAxisFunction(), mes_model_(&mes_model),
     npar_(mes_model.num_parameters()),
     mes_data_(mes_data), has_ped_data_(true), ped_data_(ped_data)
 {
@@ -1065,7 +1067,7 @@ unsigned SPELikelihood::num_domain_axes()
   return mes_model_->num_parameters();
 }
 
-auto SPELikelihood::domain_axes() -> std::vector<math::DomainAxis>
+auto SPELikelihood::domain_axes() -> std::vector<math::function::DomainAxis>
 {
   return mes_model_->parameters();
 }
@@ -1073,7 +1075,7 @@ auto SPELikelihood::domain_axes() -> std::vector<math::DomainAxis>
 double SPELikelihood::value(ConstVecRef x)
 {
   mes_model_->set_parameter_values(x);
-  math::LikelihoodAccumulator acc;
+  math::accumulator::LikelihoodAccumulator acc;
   for(auto& ibin : mes_data_)
   {
     double pdf = mes_model_->pdf_mes(ibin.xval_center());
@@ -1106,8 +1108,8 @@ double SPELikelihood::value_and_gradient(ConstVecRef x, VecRef gradient)
   gradient.resize(x.size());
   
   mes_model_->set_parameter_values(x);
-  math::LikelihoodAccumulator acc;
-  std::vector<math::LikelihoodAccumulator> gradient_acc(npar_);
+  math::accumulator::LikelihoodAccumulator acc;
+  std::vector<math::accumulator::LikelihoodAccumulator> gradient_acc(npar_);
   for(auto& ibin : mes_data_)
   {
     double pdf = mes_model_->pdf_gradient_mes(ibin.xval_center(), gradient);
@@ -1139,9 +1141,10 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
   hessian.resize(5,5);
   
   mes_model_->set_parameter_values(x);
-  math::LikelihoodAccumulator acc;
-  std::vector<math::LikelihoodAccumulator> gradient_acc(npar_);
-  std::vector<math::LikelihoodAccumulator> hessian_acc(npar_*(npar_+1)/2);
+  math::accumulator::LikelihoodAccumulator acc;
+  std::vector<math::accumulator::LikelihoodAccumulator> gradient_acc(npar_);
+  std::vector<math::accumulator::LikelihoodAccumulator>
+      hessian_acc(npar_*(npar_+1)/2);
   for(auto& ibin : mes_data_)
   {
     double pdf =

@@ -17,17 +17,12 @@
 
 #include <Eigen/Core>
 
+#include "package_wide_definitions.hpp"
 #include "function.hpp"
 
 namespace calin { namespace math { namespace pdf_1d {
 
-using function::MatRef;
-using function::VecRef;
-using function::ConstVecRef;
-using function::ConstMatRef;
-using function::ParameterAxis;
-
-class Parameterizable1DPDF: public ParameterizableSingleAxisFunction
+class Parameterizable1DPDF: public function::ParameterizableSingleAxisFunction
 {
 public:
   virtual ~Parameterizable1DPDF();
@@ -35,11 +30,11 @@ public:
   // Reiterate functions from ParameterizableSingleAxisFunction
 
   unsigned num_parameters() override = 0;
-  std::vector<ParameterAxis> parameters() override = 0;
+  std::vector<function::ParameterAxis> parameters() override = 0;
   Eigen::VectorXd parameter_values() override = 0;
   void set_parameter_values(ConstVecRef values) override = 0;
 
-  DomainAxis domain_axis() override = 0;
+  function::DomainAxis domain_axis() override = 0;
 
   bool can_calculate_gradient() override = 0;
   bool can_calculate_hessian() override = 0;
@@ -78,10 +73,10 @@ class GaussianPDF: public Parameterizable1DPDF
   virtual ~GaussianPDF();
 
   unsigned num_parameters() override;
-  std::vector<ParameterAxis> parameters() override;
+  std::vector<function::ParameterAxis> parameters() override;
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
-  DomainAxis domain_axis() override;
+  function::DomainAxis domain_axis() override;
 
   bool can_calculate_gradient() override;
   bool can_calculate_hessian() override;
@@ -118,7 +113,7 @@ class LimitedGaussianPDF: public GaussianPDF
   
   virtual ~LimitedGaussianPDF();
 
-  DomainAxis domain_axis() override;
+  function::DomainAxis domain_axis() override;
 
   void set_parameter_values(ConstVecRef values) override;
 
@@ -159,10 +154,10 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   }
   
   unsigned num_parameters() override;
-  std::vector<ParameterAxis> parameters() override;
+  std::vector<function::ParameterAxis> parameters() override;
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
-  DomainAxis domain_axis() override;
+  function::DomainAxis domain_axis() override;
 
   bool can_calculate_gradient() override;
   bool can_calculate_hessian() override;
@@ -205,11 +200,11 @@ class TwoComponentPDF: public Parameterizable1DPDF
   virtual ~TwoComponentPDF();
   
   unsigned num_parameters() override;
-  std::vector<ParameterAxis> parameters() override;
+  std::vector<function::ParameterAxis> parameters() override;
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
 
-  DomainAxis domain_axis() override;
+  function::DomainAxis domain_axis() override;
 
   bool can_calculate_gradient() override;
   bool can_calculate_hessian() override;
@@ -244,10 +239,11 @@ class TwoComponentPDF: public Parameterizable1DPDF
 
 } // namespace pdf_1d
 
+#ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
 using pdf_1d::Parameterizable1DPDF;
-
 using pdf_1d::GaussianPDF;
 using pdf_1d::LimitedGaussianPDF;
 using pdf_1d::LimitedExponentialPDF;
+#endif // ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
 
 } } // namespace calin::math

@@ -93,30 +93,30 @@ void IdentityErrorMatrixEstimator::reset(unsigned npar)
 }
 
 void IdentityErrorMatrixEstimator::
-invalid_func_value(function::ConstVecRef x)
+invalid_func_value(ConstVecRef x)
 {
   // nothing to see here
 }
 
 void IdentityErrorMatrixEstimator::
-incorporate_func_value(function::ConstVecRef x, double f_val)
+incorporate_func_value(ConstVecRef x, double f_val)
 {
   // nothing to see here
 }
 
 void IdentityErrorMatrixEstimator::
-incorporate_func_gradient(function::ConstVecRef x, double f_val,
-                          function::ConstVecRef gradient)
+incorporate_func_gradient(ConstVecRef x, double f_val,
+                          ConstVecRef gradient)
 {
   // nothing to see here
 }
 
-auto IdentityErrorMatrixEstimator::
-error_matrix(MatRef err_mat) -> Status
+ErrorMatrixStatus IdentityErrorMatrixEstimator::
+error_matrix(MatRef err_mat)
 {
   err_mat.resize(npar_,npar_);
   err_mat.setIdentity();
-  return Status::UNAVAILABLE;
+  return ErrorMatrixStatus::UNAVAILABLE;
 }
 
 BFGSErrorMatrixEstimator::~BFGSErrorMatrixEstimator()
@@ -134,22 +134,22 @@ void BFGSErrorMatrixEstimator::reset(unsigned npar)
   gk_.resize(npar);
 }
 
-void BFGSErrorMatrixEstimator::invalid_func_value(function::ConstVecRef x)
+void BFGSErrorMatrixEstimator::invalid_func_value(ConstVecRef x)
 {
   // Ignore last point for next update
   last_good_ = false;
 }
 
 void BFGSErrorMatrixEstimator::
-incorporate_func_value(function::ConstVecRef x, double f_val)
+incorporate_func_value(ConstVecRef x, double f_val)
 {
   // BGFS requires derivative so ignore last point for next update
   last_good_ = false;
 }
 
 void BFGSErrorMatrixEstimator::
-incorporate_func_gradient(function::ConstVecRef x, double f_val,
-                          function::ConstVecRef gradient)
+incorporate_func_gradient(ConstVecRef x, double f_val,
+                          ConstVecRef gradient)
 {
   // Form error matrix estimate using BFGS update method, see
   // http://en.wikipedia.org/wiki/Broyden-Fletcher-Goldfarb-Shanno_algorithm
@@ -201,7 +201,7 @@ skip_rank1_update:
   gk_ = gradient;
 }
 
-auto BFGSErrorMatrixEstimator::error_matrix(MatRef err_mat) -> Status
+ErrorMatrixStatus BFGSErrorMatrixEstimator::error_matrix(MatRef err_mat)
 {
   err_mat = 2.0*error_up_*Bk_;
 #ifdef BFGS_COMPUTE_WITH_LOOPS
@@ -209,7 +209,7 @@ auto BFGSErrorMatrixEstimator::error_matrix(MatRef err_mat) -> Status
       for(unsigned j=i+1;j<n;j++)
         err_mat(j,i) = err_mat(i,j);
 #endif
-  return Status::GOOD;
+  return ErrorMatrixStatus::GOOD;
 }
 
 
