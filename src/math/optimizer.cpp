@@ -93,12 +93,6 @@ void IdentityErrorMatrixEstimator::reset(unsigned npar)
 }
 
 void IdentityErrorMatrixEstimator::
-invalid_func_value(ConstVecRef x)
-{
-  // nothing to see here
-}
-
-void IdentityErrorMatrixEstimator::
 incorporate_func_value(ConstVecRef x, double f_val)
 {
   // nothing to see here
@@ -132,12 +126,6 @@ void BFGSErrorMatrixEstimator::reset(unsigned npar)
   Bk_.setIdentity();
   xk_.resize(npar);
   gk_.resize(npar);
-}
-
-void BFGSErrorMatrixEstimator::invalid_func_value(ConstVecRef x)
-{
-  // Ignore last point for next update
-  last_good_ = false;
 }
 
 void BFGSErrorMatrixEstimator::

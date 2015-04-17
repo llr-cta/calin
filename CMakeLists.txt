@@ -22,5 +22,6 @@ include_directories(${GSL_INCLUDE_DIRS})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${GSL_LIBRARIES} ) 
 
 add_subdirectory(proto)
-add_subdirectory(src)
+add_subdirectory(src)  
+add_subdirectory(swig)  
 add_subdirectory(unit_tests)

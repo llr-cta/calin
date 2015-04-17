@@ -656,10 +656,12 @@ double TwoComponentPDF::value_and_parameter_gradient(double x,  VecRef gradient)
   const unsigned npar1 = pdf1_->num_parameters();
   const unsigned npar2 = pdf2_->num_parameters();
   gradient.resize(1+npar1+npar2);
-  auto grad1 = gradient.segment(1,npar1);
-  auto grad2 = gradient.segment(1+npar1,npar2);
+  Eigen::VectorXd grad1(npar1);
+  Eigen::VectorXd grad2(npar2);
   double val1 = pdf1_->value_and_parameter_gradient(x, grad1);
   double val2 = pdf2_->value_and_parameter_gradient(x, grad2);
+  gradient.segment(1,npar1) = grad1;
+  gradient.segment(1+npar1,npar2) = grad2;
   gradient[0] = val1 - val2;
   grad1 *= prob_cpt1_;
   grad2 *= omp;
@@ -675,21 +677,28 @@ value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
   gradient.resize(1+npar1+npar2);
   hessian.resize(1+npar1+npar2,1+npar1+npar2);
   hessian.setZero();
-  auto grad1 = gradient.segment(1,npar1);
-  auto grad2 = gradient.segment(1+npar1,npar2);
-  auto hess1 = hessian.block(1,1,npar1,npar1);
-  auto hess2 = hessian.block(1+npar1,1+npar1,npar2,npar2);
+  Eigen::VectorXd grad1(npar1);
+  Eigen::VectorXd grad2(npar2);
+  Eigen::MatrixXd hess1(npar1, npar1);
+  Eigen::MatrixXd hess2(npar2, npar2);
   double val1 = pdf1_->value_parameter_gradient_and_hessian(x, grad1, hess1);
   double val2 = pdf2_->value_parameter_gradient_and_hessian(x, grad2, hess2);
+
+  hess1 *= prob_cpt1_;
+  hess2 *= omp;
+  hessian.block(1,1,npar1,npar1) = hess1;
+  hessian.block(1+npar1,1+npar1,npar2,npar2) = hess2;
   hessian.block(1,0,npar1,1) = grad1;
   hessian.block(1+npar1,0,npar2,1) = -grad2;
   hessian.block(0,1,1,npar1) = grad1.transpose();
   hessian.block(0,1+npar1,1,npar2) = -grad2.transpose();
-  hess1 *= prob_cpt1_;
-  hess2 *= omp;
-  gradient[0] = val1 - val2;
+
   grad1 *= prob_cpt1_;
   grad2 *= omp;
+  gradient[0] = val1 - val2;
+  gradient.segment(1,npar1) = grad1;
+  gradient.segment(1+npar1,npar2) = grad2;
+
   return prob_cpt1_*val1 + omp*val2;
 }
 

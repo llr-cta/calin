@@ -111,7 +111,6 @@ class ErrorMatrixEstimator
       npar_(0), error_up_(error_up) { /* nothing to see here */ }
   virtual ~ErrorMatrixEstimator();
   virtual void reset(unsigned npar) = 0;
-  virtual void invalid_func_value(ConstVecRef x) = 0;
   virtual void incorporate_func_value(ConstVecRef x, double f_val) = 0;
   virtual void incorporate_func_gradient(ConstVecRef x, double f_val,
                                          ConstVecRef gradient) = 0;
@@ -127,7 +126,6 @@ class IdentityErrorMatrixEstimator: public ErrorMatrixEstimator
   using ErrorMatrixEstimator::ErrorMatrixEstimator;
   ~IdentityErrorMatrixEstimator();
   void reset(unsigned npar) override;
-  void invalid_func_value(ConstVecRef x) override;
   void incorporate_func_value(ConstVecRef x, double f_val) override;
   void incorporate_func_gradient(ConstVecRef x, double f_val,
                                  ConstVecRef gradient) override;
@@ -140,7 +138,6 @@ class BFGSErrorMatrixEstimator: public ErrorMatrixEstimator
   using ErrorMatrixEstimator::ErrorMatrixEstimator;
   ~BFGSErrorMatrixEstimator();
   void reset(unsigned npar) override;
-  void invalid_func_value(ConstVecRef x) override;
   void incorporate_func_value(ConstVecRef x, double f_val) override;
   void incorporate_func_gradient(ConstVecRef x, double f_val,
                                  ConstVecRef gradient) override;

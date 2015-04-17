@@ -18,16 +18,17 @@ namespace calin {
 #define CALIN_TYPEALIAS(A,B) typedef B A
 #endif
 
-#if 1
+
+#if 0
 CALIN_TYPEALIAS(VecRef, Eigen::Ref<Eigen::VectorXd>);
 CALIN_TYPEALIAS(ConstVecRef, const Eigen::Ref<const Eigen::VectorXd>&);
 CALIN_TYPEALIAS(MatRef, Eigen::Ref<Eigen::MatrixXd>);
 CALIN_TYPEALIAS(ConstMatRef, const Eigen::Ref<const Eigen::MatrixXd>&);
 #else
-using VecRef = Eigen::VectorXd&;
-using MatRef = Eigen::MatrixXd&;
-using ConstVecRef = const Eigen::Ref<const Eigen::VectorXd>&;
-using ConstMatRef = const Eigen::Ref<const Eigen::MatrixXd>&;
+CALIN_TYPEALIAS(VecRef, Eigen::VectorXd&);
+CALIN_TYPEALIAS(MatRef, Eigen::MatrixXd&);
+CALIN_TYPEALIAS(ConstVecRef, const Eigen::VectorXd&);
+CALIN_TYPEALIAS(ConstMatRef, const Eigen::MatrixXd&);
 #endif
 
 }; // namespace calin

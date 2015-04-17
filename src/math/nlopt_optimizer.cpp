@@ -280,16 +280,23 @@ double NLOptOptimizer::nlopt_callback(unsigned n, const double* x, double* grad,
 
 double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
 {
-  Eigen::Map<const Eigen::VectorXd> xvec(x,n);
-  Eigen::Map<Eigen::VectorXd> gvec(grad,n);
+  Eigen::VectorXd xvec = Eigen::Map<const Eigen::VectorXd>(x,n);
 
   double fcn_value;
   try
   {
     if(grad)
+    {
+      Eigen::VectorXd gvec(n);
       fcn_value = fcn_->value_and_gradient(xvec,gvec);
+      Eigen::Map<Eigen::VectorXd>(grad,n) = gvec;
+      err_est_->incorporate_func_gradient(xvec, fcn_value, gvec);
+    }
     else
+    {
       fcn_value = fcn_->value(xvec);
+      err_est_->incorporate_func_value(xvec, fcn_value);
+    }
   }
   catch(std::exception& x)
   {
@@ -300,6 +307,8 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
     throw;
   }
 
+  if(!isfinite(fcn_value))fcn_value = std::numeric_limits<double>::infinity();
+
   if(verbose_ != VerbosityLevel::SILENT)
   {
     std::cout << std::left << std::setw(4) << iter_+1 << ' '
@@ -309,21 +318,7 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
       for(unsigned ipar=0;ipar<n;ipar++)std::cout << ' ' << grad[ipar];
     std::cout << '\n';
   }
-  
-  if(!isfinite(fcn_value))
-  {
-    fcn_value = std::numeric_limits<double>::infinity();
-    err_est_->invalid_func_value(xvec);
-  }
-  else if(grad)
-  {
-    err_est_->incorporate_func_gradient(xvec, fcn_value, gvec);
-  }
-  else
-  {
-    err_est_->incorporate_func_value(xvec, fcn_value);
-  }
-  
+    
   iter_++;
   return fcn_value;
 }

@@ -221,11 +221,18 @@ void Minuit75Optimizer::
 eval_function(long npar, double* grad, double& fcnval,
               const double* x, long& iflag)
 {
-  Eigen::Map<const Eigen::VectorXd> xvec(x,npar);
-  Eigen::Map<Eigen::VectorXd> gvec(grad,npar);
-
-  if(iflag==2)fcnval = fcn_->value_and_gradient(xvec, gvec);
-  else fcnval = fcn_->value(xvec);
+  Eigen::VectorXd xvec = Eigen::Map<const Eigen::VectorXd>(x,npar);
+  
+  if(iflag==2)
+  {
+    Eigen::VectorXd gvec(npar);
+    fcnval = fcn_->value_and_gradient(xvec, gvec);
+    Eigen::Map<Eigen::VectorXd>(grad,npar) = gvec;
+  }
+  else
+  {
+    fcnval = fcn_->value(xvec);
+  }
 
   std::cout << fcnval;
   for(unsigned ipar=0;ipar<npar;ipar++)std::cout << ' ' << xvec(ipar);
