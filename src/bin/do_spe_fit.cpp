@@ -47,13 +47,13 @@ int main(int argc, char** argv)
   double xalign = SimpleHist::xalign_to_center_value(xval0,dx);
   
   SimpleHist hist(dx, xalign);
-  hist.accumulate(xval0,wval0);
-  hist.accumulate(xval1,wval1);
+  hist.insert(xval0,wval0);
+  hist.insert(xval1,wval1);
 
   *stream >> xval1 >> wval1;
   while(*stream)
   {
-    hist.accumulate(xval1,wval1);
+    hist.insert(xval1,wval1);
     *stream >> xval1 >> wval1;
   }
   

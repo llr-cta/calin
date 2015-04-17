@@ -20,7 +20,7 @@ using namespace calin::unit_tests;
 TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  for(auto idata : mes_data)mes_hist.insert(idata);
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, mes_hist);
 

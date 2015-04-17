@@ -242,7 +242,7 @@ TEST(TestPoissonGaussianMES, HessianCheck_MES)
 TEST(TestSPELikelihood, KarkarPG_GradientCheck) {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  for(auto idata : mes_data)mes_hist.insert(idata);
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, mes_hist);
   Eigen::VectorXd x(5);
@@ -260,7 +260,7 @@ TEST(TestSPELikelihood, KarkarPG_GradientCheck) {
 TEST(TestSPELikelihood, KarkarPG_HessianCheck) {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  for(auto idata : mes_data)mes_hist.insert(idata);
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, mes_hist);
   Eigen::VectorXd x(5);
@@ -336,7 +336,7 @@ TEST(TestSPELikelihood, Minimize_GSL_Simplex)
 {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  for(auto idata : mes_data)mes_hist.insert(idata);
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, mes_hist);
 
@@ -419,7 +419,7 @@ TEST(TestSPELikelihood, Minimize_GSL_BFGS2)
 {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  for(auto idata : mes_data)mes_hist.insert(idata);
   PoissonGaussianMES mes_model(20);
   //PoissonGaussianMES_HighAccuracy mes_model;
   SPELikelihood like(mes_model, mes_hist);
@@ -498,7 +498,7 @@ TEST(TestSPELikelihood, Optimize_NLOpt)
 {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  for(auto idata : mes_data)mes_hist.insert(idata);
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, mes_hist);
 
@@ -542,7 +542,7 @@ TEST(TestSPELikelihood, Minimize_Minuit75)
 {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  for(auto idata : mes_data)mes_hist.insert(idata);
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, mes_hist);
 
@@ -606,7 +606,7 @@ TEST(TestGeneralPoissonMES_Gauss, Optimize_NLOpt_Simplex)
 {
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  for(auto idata : mes_data)mes_hist.insert(idata);
   pdf_1d::GaussianPDF ped;
   pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
   GeneralPoissonMES mes_model(mes_hist.xval0(), mes_hist.dxval(),
@@ -664,7 +664,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, Repeatability)
   {
     auto mes_data = karkar_data();
     SimpleHist mes_hist(1.0);
-    for(auto idata : mes_data)mes_hist.accumulate(idata);
+    for(auto idata : mes_data)mes_hist.insert(idata);
     pdf_1d::GaussianPDF ped;
     pdf_1d::LimitedExponentialPDF exp_pdf(0,inf,mes_hist.dxval());
     exp_pdf.limit_scale(0.1, inf);
@@ -696,7 +696,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   double inf = std::numeric_limits<double>::infinity();
   auto mes_data = karkar_data();
   SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.accumulate(idata);
+  for(auto idata : mes_data)mes_hist.insert(idata);
   pdf_1d::GaussianPDF ped;
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf,mes_hist.dxval());
   exp_pdf.limit_scale(0.1, inf);

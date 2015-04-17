@@ -325,8 +325,8 @@ template<typename Acc> class BasicHistogram1D:
   // Functions to get size of histogram and clear it
   void clear() { this->clear(); sum_w_={}; sum_wx_={}; sum_wxx_={}; }
   
-  // Accumulate weight for x value
-  inline bool accumulate(const double x, const double w = 1.0);
+  // Insert x value weight into histogram
+  inline bool insert(const double x, const double w = 1.0);
 
   // Retrieve value for bin
   double weight(int ibin) const { return this->bin(ibin).total(); }
@@ -395,7 +395,7 @@ template<typename Acc> class BasicHistogram1D:
 };
 
 template<typename Acc> bool BasicHistogram1D<Acc>::
-accumulate(const double x, const double w)
+insert(const double x, const double w)
 {
   if(!std::isfinite(w))return false;
   bool x_exceeds_limits { false };

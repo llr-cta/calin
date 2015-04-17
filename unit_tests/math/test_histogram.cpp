@@ -11,7 +11,7 @@ TEST(TestSimpleHist, InsertIntegersFrom0ToN) {
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
-      myhist.accumulate(j);  
+      myhist.insert(j);  
   ASSERT_EQ(myhist.size(), N);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(myhist.xval_center(i), i);  
@@ -24,7 +24,7 @@ TEST(TestSimpleHist, InsertIntegersFromNTo0) {
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
-      myhist.accumulate(N-(j+1));
+      myhist.insert(N-(j+1));
   ASSERT_EQ(myhist.size(), N);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(myhist.xval_center(i), i);  
@@ -37,7 +37,7 @@ TEST(TestSimpleHist, InsertIntegersFrom0ToNWithNegativeDX) {
   SimpleHist myhist {-1.0};
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
-      myhist.accumulate(j);  
+      myhist.insert(j);  
   ASSERT_EQ(myhist.size(), N);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(myhist.xval_center(i), N-i-1);  
@@ -50,7 +50,7 @@ TEST(TestSimpleHist, LimitedInsertIntegersFrom0ToN) {
   SimpleHist myhist {1.0,99.5,899.5};
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
-      myhist.accumulate(j);  
+      myhist.insert(j);  
   ASSERT_EQ(myhist.size(), N-200);
   for(unsigned i=0;i<N-200;++i)
     EXPECT_EQ(myhist.xval_center(i), i+100);  
@@ -68,7 +68,7 @@ TEST(TestSimpleHist, RangeFor) {
   unsigned N { 10000 };
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
-    myhist.accumulate(i,i);
+    myhist.insert(i,i);
   unsigned i=0;
   for(auto ibin : myhist)EXPECT_EQ(ibin.weight(), i++);
   ASSERT_EQ(i,N);
@@ -80,7 +80,7 @@ void iterator_test(FB fbegin, FE fend, FC fival)
   unsigned N { 10000 };
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
-    myhist.accumulate(i,i);
+    myhist.insert(i,i);
 
   // Test post increment
   unsigned i=0;
@@ -179,7 +179,7 @@ TEST(TestSimpleHist, ConstReverseIterator) {
 TEST(TestSimpleHist, Moments) {
   unsigned N { 10000 };
   SimpleHist myhist {1.0};
-  for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
+  for(unsigned i=0;i<N;++i)myhist.insert(i,i);
   double dN { static_cast<double>(N) };
   ASSERT_EQ(myhist.sum_w(), (dN-1)*dN/2);
   ASSERT_EQ(myhist.sum_wx(), (dN-1)*dN*(2*dN-1)/6);
@@ -189,7 +189,7 @@ TEST(TestSimpleHist, Moments) {
 TEST(TestSimpleHist, IterateOverBins) {
   unsigned N { 10000 };
   SimpleHist myhist {1.0};
-  for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
+  for(unsigned i=0;i<N;++i)myhist.insert(i,i);
   double dN { static_cast<double>(N) };
   double sw {};
   double swx {};
@@ -203,7 +203,7 @@ TEST(TestSimpleHist, IterateOverBins) {
 TEST(TestSimpleHist, Integrate) {
   unsigned N { 10000 };
   SimpleHist myhist {1.0};
-  for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
+  for(unsigned i=0;i<N;++i)myhist.insert(i,i);
   double dN { static_cast<double>(N) };
   double sw { myhist.integrate([](double x,double w) { return w; }) };
   double swx { myhist.integrate([](double x,double w) { return w*x; }) };
@@ -218,7 +218,7 @@ TEST(TestSimpleHist, KahanInsertIntegersFrom0ToN) {
   BasicHistogram1D<KahanAccumulator> myhist {1.0};
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
-      myhist.accumulate(j);
+      myhist.insert(j);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(myhist.weight(i), i+1);
 }
@@ -226,10 +226,10 @@ TEST(TestSimpleHist, KahanInsertIntegersFrom0ToN) {
 TEST(TestSimpleHist, CopyAndEquality) {
   unsigned N { 10000 };
   SimpleHist myhist {1.0};
-  for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
+  for(unsigned i=0;i<N;++i)myhist.insert(i,i);
   SimpleHist myhist2 { myhist };
   ASSERT_EQ(myhist,myhist2);
-  myhist2.accumulate(N,N);
+  myhist2.insert(N,N);
   ASSERT_FALSE(myhist == myhist2);
   myhist2 = myhist;
   ASSERT_EQ(myhist,myhist2);
@@ -240,7 +240,7 @@ TEST(TestSimpleHist, CopyAndEquality) {
 TEST(TestSimpleHist, ToAndFromProtobuf) {
   unsigned N { 300 };
   SimpleHist myhist {1.0,99.5,199.5};
-  for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
+  for(unsigned i=0;i<N;++i)myhist.insert(i,i);
   myhist.set_name("Test histogram");
   myhist.set_xval_units("xval units");
   myhist.set_weight_units("weight units");
@@ -254,7 +254,7 @@ TEST(TestSimpleHist, ToAndFromProtobuf) {
 TEST(TestSimpleHist, KahanToAndFromProtobuf) {
   unsigned N { 10000 };
   BasicHistogram1D<KahanAccumulator> myhist {1.0};
-  for(unsigned i=0;i<N;++i)myhist.accumulate(i,i);
+  for(unsigned i=0;i<N;++i)myhist.insert(i,i);
   Histogram1DData* hist_data = myhist.getData();
   BasicHistogram1D<KahanAccumulator> myhist2(*hist_data);
   // THIS COULD FAIL IN GENERAL AS CORRECTIONS AREN'T STORED IN THE
@@ -267,7 +267,7 @@ TEST(TestBinnedCDF, CreateFromHistogram) {
   unsigned N { 1000 };
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
-    myhist.accumulate(i,i);
+    myhist.insert(i,i);
   BinnedCDF mycdf(myhist);
   ASSERT_EQ(mycdf.size(), N);
   for(unsigned i=0;i<N;++i)
@@ -285,10 +285,10 @@ TEST(TestBinnedCDF, Stats) {
   //BasicHistogram1D<KahanAccumulator> myhist {1.0};
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
-    myhist.accumulate(i,1.0);
+    myhist.insert(i,1.0);
   BinnedCDF mycdf(myhist);
   EXPECT_EQ(mycdf.median(), median_zero_to_Nminus1(N));
-  myhist.accumulate(N,1.0);
+  myhist.insert(N,1.0);
   BinnedCDF mycdf2(myhist);
   EXPECT_EQ(mycdf2.median(), median_zero_to_Nminus1(N+1));
   double dN { static_cast<double>(N) };

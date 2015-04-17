@@ -41,7 +41,7 @@ int main(int argc, char** argv)
   *stream >> xval;
   while(*stream)
   {
-    mes_hist.accumulate(xval);
+    mes_hist.insert(xval);
     *stream >> xval;
   }
   
