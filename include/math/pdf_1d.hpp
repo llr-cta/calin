@@ -237,13 +237,4 @@ class TwoComponentPDF: public Parameterizable1DPDF
   double error_up_;
 };
 
-} // namespace pdf_1d
-
-#ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-using pdf_1d::Parameterizable1DPDF;
-using pdf_1d::GaussianPDF;
-using pdf_1d::LimitedGaussianPDF;
-using pdf_1d::LimitedExponentialPDF;
-#endif // ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-
-} } // namespace calin::math
+} } } // namespace calin::math::pdf_1d

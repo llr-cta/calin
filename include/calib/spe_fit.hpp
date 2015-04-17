@@ -270,15 +270,4 @@ class SPELikelihood: public math::function::MultiAxisFunction
   const math::histogram::SimpleHist ped_data_;
 };
 
-} // namespace spe_fit
-
-#ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-using spe_fit::SingleElectronSpectrum;
-using spe_fit::MultiElectronSpectrum;
-using spe_fit::PoissonGaussianMES;
-using spe_fit::PoissonGaussianMES_HighAccuracy;
-using spe_fit::GeneralPoissonMES;
-using spe_fit::SPELikelihood;
-#endif // ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-
-} } // namespace calin::calib
+} } } // namespace calin::calib::spe_fit

@@ -287,16 +287,4 @@ bool hessian_check_par(ParameterizableType& par_fcn,
 
 #endif // ifndef SWIG
 
-} // namespace function
-
-#ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-using function::ParameterAxis;
-using function::DomainAxis;
-using function::Parameterizable;
-using function::MultiAxisFunction;
-using function::SingleAxisFunction;
-using function::ParameterizableMultiAxisFunction;
-using function::ParameterizableSingleAxisFunction;
-#endif // ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-
-} } // namespace calin::math
+} } } // namespace calin::math::function

@@ -57,10 +57,4 @@ class NLOptOptimizer: public Optimizer
   std::unique_ptr<ErrorMatrixEstimator> err_est_;
 };
 
-} // namesace optimizer
-
-#ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-using optimizer::NLOptOptimizer;
-#endif // ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-
-} } // namespace calin::math
+} } } // namespace calin::math::optimizer

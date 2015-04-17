@@ -152,10 +152,4 @@ class BFGSErrorMatrixEstimator: public ErrorMatrixEstimator
   Eigen::VectorXd gk_;  // gradient at last evaluation
 };
 
-} // namespace optimizer
-
-#ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-using Optimizer = optimizer::Optimizer;
-#endif // ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-
-} } // namespace calin::math
+} } } // namespace calin::math::optimizer

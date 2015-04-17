@@ -110,11 +110,4 @@ void calculate_hessian_2nd_order_err_up(function::MultiAxisFunction& fcn,
                                      double err_up_frac = 0.01,
                                      double tol = 0.001);
 
-} // namespace hessian
-
-#ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-using hessian::calculate_hessian;
-using hessian::hessian_to_error_matrix;
-#endif // ifdef CALIN_IMPORT_INTO_BASE_NAMESPACE
-
-} } // namespace calin::math
+} } } // namespace calin::math::hessian

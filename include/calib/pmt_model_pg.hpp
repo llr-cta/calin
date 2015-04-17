@@ -119,6 +119,4 @@ public:
 
 };
 
-} // namespace pmt_model_pg
-
-} } // namespace calin::calib
+} } } // namespace calin::calib::pmt_model_pg
