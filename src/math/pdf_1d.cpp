@@ -660,11 +660,11 @@ double TwoComponentPDF::value_and_parameter_gradient(double x,  VecRef gradient)
   Eigen::VectorXd grad2(npar2);
   double val1 = pdf1_->value_and_parameter_gradient(x, grad1);
   double val2 = pdf2_->value_and_parameter_gradient(x, grad2);
-  gradient.segment(1,npar1) = grad1;
-  gradient.segment(1+npar1,npar2) = grad2;
-  gradient[0] = val1 - val2;
   grad1 *= prob_cpt1_;
   grad2 *= omp;
+  gradient[0] = val1 - val2;
+  gradient.segment(1,npar1) = grad1;
+  gradient.segment(1+npar1,npar2) = grad2;
   return prob_cpt1_*val1 + omp*val2;
 }
 

@@ -336,6 +336,9 @@ TEST(TestTwoComponentPDF_ExpGauss, ParameterGradientCheck) {
     Eigen::VectorXd good(4);
     EXPECT_TRUE(gradient_check(pdf, p, dp, good));
     EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
   }
 }
 
