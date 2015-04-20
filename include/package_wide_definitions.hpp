@@ -18,8 +18,9 @@ namespace calin {
 #define CALIN_TYPEALIAS(A,B) typedef B A
 #endif
 
+//#define CALIN_USE_EIGEN_REF
 
-#if 0
+#ifdef CALIN_USE_EIGEN_REF
 CALIN_TYPEALIAS(VecRef, Eigen::Ref<Eigen::VectorXd>);
 CALIN_TYPEALIAS(ConstVecRef, const Eigen::Ref<const Eigen::VectorXd>&);
 CALIN_TYPEALIAS(MatRef, Eigen::Ref<Eigen::MatrixXd>);

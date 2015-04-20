@@ -877,7 +877,7 @@ void GeneralPoissonMES::set_cache()
     double val;
     if(calc_gradient)
     {
-      val = ses_pdf_->value_and_parameter_gradient(x, ses_gradient);
+      val = ses_pdf_->value_and_parameter_gradient_1d(x, ses_gradient);
       if(!isfinite(val)){ val = 0; ses_gradient.setZero(); }
       for(unsigned ipar=0;ipar<ses_npar;ipar++)
         ses_grad_fft_[ipar][isample] = ses_gradient[ipar];
@@ -904,7 +904,7 @@ void GeneralPoissonMES::set_cache()
     double val;
     if(calc_gradient)
     {
-      val = ped_pdf_->value_and_parameter_gradient(x, ped_gradient);
+      val = ped_pdf_->value_and_parameter_gradient_1d(x, ped_gradient);
       if(!isfinite(val)){ val = 0; ped_gradient.setZero(); }
       for(unsigned ipar=0;ipar<ped_npar;ipar++)
         ped_grad_fft_[ipar][isample] = ped_gradient[ipar];    

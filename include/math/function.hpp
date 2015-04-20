@@ -108,9 +108,9 @@ class SingleAxisFunction: virtual public MultiAxisFunction
   virtual ~SingleAxisFunction();
   virtual DomainAxis domain_axis() = 0;
   virtual double value(double x) = 0;
-  virtual double value_and_gradient(double x,  double& dfdx) = 0;
-  virtual double value_gradient_and_hessian(double x, double& dfdx,
-                                          double& d2fdx2) = 0;
+  virtual double value_and_1_deriv(double x,  double& dfdx) = 0;
+  virtual double value_and_2_derivs(double x, double& dfdx,
+                                    double& d2fdx2) = 0;
 
   // Members from MultiAxisFunction that we override
   unsigned num_domain_axes() override;
@@ -138,8 +138,9 @@ class ParameterizableSingleAxisFunction:
 {
  public:
   virtual ~ParameterizableSingleAxisFunction();
-  virtual double value_and_parameter_gradient(double x,  VecRef gradient) = 0;
-  virtual double value_parameter_gradient_and_hessian(double x,
+  virtual double value_and_parameter_gradient_1d(double x,
+                                                 VecRef gradient) = 0;
+  virtual double value_parameter_gradient_and_hessian_1d(double x,
                                          VecRef gradient, MatRef hessian) = 0;
 
   // Members from ParameterizableMultiAxisFunction that we override

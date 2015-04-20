@@ -42,11 +42,12 @@ public:
   bool can_calculate_parameter_hessian() override = 0;
 
   double value(double x) override = 0;
-  double value_and_gradient(double x,  double& dfdx) override = 0;
-  double value_gradient_and_hessian(double x, double& dfdx,
-                                    double& d2fdx2) override = 0;
-  double value_and_parameter_gradient(double x,  VecRef gradient) override = 0;
-  double value_parameter_gradient_and_hessian(double x, VecRef gradient,
+  double value_and_1_deriv(double x,  double& dfdx) override = 0;
+  double value_and_2_derivs(double x, double& dfdx,
+                            double& d2fdx2) override = 0;
+  double value_and_parameter_gradient_1d(double x,
+                                         VecRef gradient) override = 0;
+  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                               MatRef hessian) override = 0;
 
   double error_up() override = 0;
@@ -84,12 +85,12 @@ class GaussianPDF: public Parameterizable1DPDF
   bool can_calculate_parameter_hessian() override;
 
   double value(double x) override;
-  double value_and_gradient(double x,  double& dfdx) override;
-  double value_gradient_and_hessian(double x, double& dfdx,
-                                    double& d2fdx2) override;
-  double value_and_parameter_gradient(double x,  VecRef gradient) override;
-  double value_parameter_gradient_and_hessian(double x, VecRef gradient,
-                                              MatRef hessian) override;
+  double value_and_1_deriv(double x,  double& dfdx) override;
+  double value_and_2_derivs(double x, double& dfdx,
+                            double& d2fdx2) override;
+  double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
+  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                                 MatRef hessian) override;
 
   double error_up() override;
 
@@ -118,12 +119,12 @@ class LimitedGaussianPDF: public GaussianPDF
   void set_parameter_values(ConstVecRef values) override;
 
   double value(double x) override;
-  double value_and_gradient(double x,  double& dfdx) override;
-  double value_gradient_and_hessian(double x, double& dfdx,
+  double value_and_1_deriv(double x,  double& dfdx) override;
+  double value_and_2_derivs(double x, double& dfdx,
                                     double& d2fdx2) override;
-  double value_and_parameter_gradient(double x,  VecRef gradient) override;
-  double value_parameter_gradient_and_hessian(double x, VecRef gradient,
-                                              MatRef hessian) override;
+  double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
+  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                                 MatRef hessian) override;
 
   bool can_calculate_mean_and_variance() override;
   void get_mean_and_variance(double& mean, double& var) override;
@@ -165,12 +166,12 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   bool can_calculate_parameter_hessian() override;
 
   double value(double x) override;
-  double value_and_gradient(double x,  double& dfdx) override;
-  double value_gradient_and_hessian(double x, double& dfdx,
-                                    double& d2fdx2) override;
-  double value_and_parameter_gradient(double x,  VecRef gradient) override;
-  double value_parameter_gradient_and_hessian(double x, VecRef gradient,
-                                              MatRef hessian) override;
+  double value_and_1_deriv(double x,  double& dfdx) override;
+  double value_and_2_derivs(double x, double& dfdx,
+                            double& d2fdx2) override;
+  double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
+  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                                 MatRef hessian) override;
 
   double error_up() override;
 
@@ -212,12 +213,12 @@ class TwoComponentPDF: public Parameterizable1DPDF
   bool can_calculate_parameter_hessian() override;
 
   double value(double x) override;
-  double value_and_gradient(double x,  double& dfdx) override;
-  double value_gradient_and_hessian(double x, double& dfdx,
-                                    double& d2fdx2) override;
-  double value_and_parameter_gradient(double x,  VecRef gradient) override;
-  double value_parameter_gradient_and_hessian(double x, VecRef gradient,
-                                              MatRef hessian) override;
+  double value_and_1_deriv(double x,  double& dfdx) override;
+  double value_and_2_derivs(double x, double& dfdx,
+                            double& d2fdx2) override;
+  double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
+  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                                 MatRef hessian) override;
 
   double error_up() override;
 

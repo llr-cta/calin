@@ -58,7 +58,7 @@ double SingleAxisFunction::value(ConstVecRef x)
 double SingleAxisFunction::value_and_gradient(ConstVecRef x, VecRef gradient) 
 {
   gradient.resize(1);
-  return value_and_gradient(x(0),gradient(0));
+  return value_and_1_deriv(x(0),gradient(0));
 }
 
 double SingleAxisFunction::
@@ -66,7 +66,7 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
 {
   gradient.resize(1);
   hessian.resize(1,1);
-  return value_gradient_and_hessian(x(0),gradient(0),hessian(0,0));
+  return value_and_2_derivs(x(0),gradient(0),hessian(0,0));
 }
 
 // *****************************************************************************
@@ -88,14 +88,14 @@ ParameterizableSingleAxisFunction::~ParameterizableSingleAxisFunction()
 double ParameterizableSingleAxisFunction::
 value_and_parameter_gradient(ConstVecRef x, VecRef gradient)
 {
-  return value_and_parameter_gradient(x[0], gradient);
+  return value_and_parameter_gradient_1d(x[0], gradient);
 }
 
 double ParameterizableSingleAxisFunction::
 value_parameter_gradient_and_hessian(ConstVecRef x, VecRef gradient,
                                      MatRef hessian)
 {
-  return value_parameter_gradient_and_hessian(x[0], gradient, hessian);
+  return value_parameter_gradient_and_hessian_1d(x[0], gradient, hessian);
 }
 
 // *****************************************************************************

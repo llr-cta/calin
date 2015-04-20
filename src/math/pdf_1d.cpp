@@ -99,7 +99,7 @@ double GaussianPDF::value(double x)
   return val;
 }
     
-double GaussianPDF::value_and_gradient(double x,  double& dfdx)
+double GaussianPDF::value_and_1_deriv(double x,  double& dfdx)
 {
   const double xc = x-x0_;
   const double xs = xc/s_;
@@ -110,7 +110,7 @@ double GaussianPDF::value_and_gradient(double x,  double& dfdx)
 }
 
 double GaussianPDF::
-value_gradient_and_hessian(double x, double& dfdx, double& d2fdx2)
+value_and_2_derivs(double x, double& dfdx, double& d2fdx2)
 {
   const double xc = x-x0_;
   const double xs = xc/s_;
@@ -122,7 +122,7 @@ value_gradient_and_hessian(double x, double& dfdx, double& d2fdx2)
 }
 
 double GaussianPDF::
-value_and_parameter_gradient(double x,  VecRef gradient)
+value_and_parameter_gradient_1d(double x,  VecRef gradient)
 {
   const double xc = x-x0_;
   const double xs = xc/s_;
@@ -135,7 +135,8 @@ value_and_parameter_gradient(double x,  VecRef gradient)
 }
 
 double GaussianPDF::
-value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
+value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                        MatRef hessian)
 {
   const double xc = x-x0_;
   const double xs = xc/s_;
@@ -200,20 +201,20 @@ double LimitedGaussianPDF::value(double x)
   return norm_*GaussianPDF::value(x);
 }
     
-double LimitedGaussianPDF::value_and_gradient(double x,  double& dfdx)
+double LimitedGaussianPDF::value_and_1_deriv(double x,  double& dfdx)
 {
   if(x<xlo_ or x>=xhi_)
   {
     dfdx = 0;
     return 0;
   }
-  double val = norm_*GaussianPDF::value_and_gradient(x, dfdx);
+  double val = norm_*GaussianPDF::value_and_1_deriv(x, dfdx);
   dfdx *= norm_;
   return val;
 }
 
-double LimitedGaussianPDF::value_gradient_and_hessian(double x, double& dfdx,
-                                                      double& d2fdx2)
+double LimitedGaussianPDF::value_and_2_derivs(double x, double& dfdx,
+                                              double& d2fdx2)
 {
   if(x<xlo_ or x>=xhi_)
   {
@@ -221,27 +222,28 @@ double LimitedGaussianPDF::value_gradient_and_hessian(double x, double& dfdx,
     dfdx = 0;
     return 0;
   }
-  double val = GaussianPDF::value_gradient_and_hessian(x, dfdx, d2fdx2);
+  double val = GaussianPDF::value_and_2_derivs(x, dfdx, d2fdx2);
   dfdx *= norm_;
   d2fdx2 *= norm_;
   return norm_*val;
 }
 
 double LimitedGaussianPDF::
-value_and_parameter_gradient(double x,  VecRef gradient)
+value_and_parameter_gradient_1d(double x,  VecRef gradient)
 {
   if(x<xlo_ or x>=xhi_)
   {
     gradient[0] = gradient[1] = 0;
     return 0;
   }  
-  double val = GaussianPDF::value_and_parameter_gradient(x, gradient);
+  double val = GaussianPDF::value_and_parameter_gradient_1d(x, gradient);
   gradient = norm_*gradient + val*norm_gradient_;
   return norm_*val;
 }
 
 double LimitedGaussianPDF::
-value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
+value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                        MatRef hessian)
 {
   if(x<xlo_ or x>=xhi_)
   {
@@ -250,7 +252,7 @@ value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
     return 0;
   }  
   double val =
-      GaussianPDF::value_parameter_gradient_and_hessian(x, gradient, hessian);
+     GaussianPDF::value_parameter_gradient_and_hessian_1d(x, gradient, hessian);
   hessian = norm_*hessian + val*norm_hessian_;
   hessian(0,0) += 2.0*norm_gradient_[0]*gradient[0];
   hessian(0,1) += norm_gradient_[0]*gradient[1] + norm_gradient_[1]*gradient[0];
@@ -397,7 +399,7 @@ double LimitedExponentialPDF::value(double x)
   return norm_ * std::exp(-xs);
 }
 
-double LimitedExponentialPDF::value_and_gradient(double x,  double& dfdx)
+double LimitedExponentialPDF::value_and_1_deriv(double x,  double& dfdx)
 {
   if(x<xlo_ or x>=xhi_)
   {
@@ -411,7 +413,7 @@ double LimitedExponentialPDF::value_and_gradient(double x,  double& dfdx)
 }
 
 double LimitedExponentialPDF::
-value_gradient_and_hessian(double x, double& dfdx, double& d2fdx2)
+value_and_2_derivs(double x, double& dfdx, double& d2fdx2)
 {
   if(x<xlo_ or x>=xhi_)
   {
@@ -427,7 +429,7 @@ value_gradient_and_hessian(double x, double& dfdx, double& d2fdx2)
 }
 
 double LimitedExponentialPDF::
-value_and_parameter_gradient(double x,  VecRef gradient)
+value_and_parameter_gradient_1d(double x,  VecRef gradient)
 {
   if(x<xlo_ or x>=xhi_)
   {
@@ -441,7 +443,8 @@ value_and_parameter_gradient(double x,  VecRef gradient)
 }
 
 double LimitedExponentialPDF::
-value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
+value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                        MatRef hessian)
 {
   if(x<xlo_ or x>=xhi_)
   {
@@ -626,50 +629,62 @@ double TwoComponentPDF::value(double x)
   return prob_cpt1_*pdf1_->value(x) + (1.0-prob_cpt1_)*pdf2_->value(x);
 }
 
-double TwoComponentPDF::value_and_gradient(double x,  double& dfdx)
+double TwoComponentPDF::value_and_1_deriv(double x,  double& dfdx)
 {
   double dfdx1;
   double dfdx2;
-  double val = prob_cpt1_*pdf1_->value_and_gradient(x,dfdx1) +
-               (1.0-prob_cpt1_)*pdf2_->value_and_gradient(x,dfdx2);
+  double val = prob_cpt1_*pdf1_->value_and_1_deriv(x,dfdx1) +
+               (1.0-prob_cpt1_)*pdf2_->value_and_1_deriv(x,dfdx2);
   dfdx = prob_cpt1_*dfdx1 + (1.0-prob_cpt1_)*dfdx2;
   return val;
 }
 
-double TwoComponentPDF::value_gradient_and_hessian(double x, double& dfdx,
-                                                   double& d2fdx2)
+double TwoComponentPDF::value_and_2_derivs(double x, double& dfdx,
+                                           double& d2fdx2)
 {
   double dfdx1;
   double dfdx2;
   double d2fdx21;
   double d2fdx22;
-  double val = prob_cpt1_*pdf1_->value_gradient_and_hessian(x,dfdx1,d2fdx21) +
-          (1.0-prob_cpt1_)*pdf2_->value_gradient_and_hessian(x,dfdx2,d2fdx22);
+  double val = prob_cpt1_*pdf1_->value_and_2_derivs(x,dfdx1,d2fdx21) +
+          (1.0-prob_cpt1_)*pdf2_->value_and_2_derivs(x,dfdx2,d2fdx22);
   dfdx = prob_cpt1_*dfdx1 + (1.0-prob_cpt1_)*dfdx2;
   d2fdx2 = prob_cpt1_*d2fdx21 + (1.0-prob_cpt1_)*d2fdx22;
   return val;
 }
 
-double TwoComponentPDF::value_and_parameter_gradient(double x,  VecRef gradient)
+double
+TwoComponentPDF::value_and_parameter_gradient_1d(double x,  VecRef gradient)
 {
   const double omp = 1.0-prob_cpt1_;
   const unsigned npar1 = pdf1_->num_parameters();
   const unsigned npar2 = pdf2_->num_parameters();
   gradient.resize(1+npar1+npar2);
+
+#ifndef CALIN_USE_EIGEN_REF
   Eigen::VectorXd grad1(npar1);
   Eigen::VectorXd grad2(npar2);
-  double val1 = pdf1_->value_and_parameter_gradient(x, grad1);
-  double val2 = pdf2_->value_and_parameter_gradient(x, grad2);
+#else
+  auto grad1 = gradient.segment(1,npar1);
+  auto grad2 = gradient.segment(1+npar1,npar2);
+#endif
+  
+  double val1 = pdf1_->value_and_parameter_gradient_1d(x, grad1);
+  double val2 = pdf2_->value_and_parameter_gradient_1d(x, grad2);
+
   grad1 *= prob_cpt1_;
   grad2 *= omp;
   gradient[0] = val1 - val2;
+#ifndef CALIN_USE_EIGEN_REF
   gradient.segment(1,npar1) = grad1;
   gradient.segment(1+npar1,npar2) = grad2;
+#endif
   return prob_cpt1_*val1 + omp*val2;
 }
 
 double TwoComponentPDF::
-value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
+value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                        MatRef hessian)
 {
   const double omp = 1.0-prob_cpt1_;
   const unsigned npar1 = pdf1_->num_parameters();
@@ -677,17 +692,28 @@ value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
   gradient.resize(1+npar1+npar2);
   hessian.resize(1+npar1+npar2,1+npar1+npar2);
   hessian.setZero();
+
+#ifndef CALIN_USE_EIGEN_REF
   Eigen::VectorXd grad1(npar1);
   Eigen::VectorXd grad2(npar2);
   Eigen::MatrixXd hess1(npar1, npar1);
   Eigen::MatrixXd hess2(npar2, npar2);
-  double val1 = pdf1_->value_parameter_gradient_and_hessian(x, grad1, hess1);
-  double val2 = pdf2_->value_parameter_gradient_and_hessian(x, grad2, hess2);
+#else
+  auto grad1 = gradient.segment(1,npar1);
+  auto grad2 = gradient.segment(1+npar1,npar2);
+  auto hess1 = hessian.block(1,1,npar1,npar1);
+  auto hess2 = hessian.block(1+npar1,1+npar1,npar2,npar2);
+#endif
+
+  double val1 = pdf1_->value_parameter_gradient_and_hessian_1d(x, grad1, hess1);
+  double val2 = pdf2_->value_parameter_gradient_and_hessian_1d(x, grad2, hess2);
 
   hess1 *= prob_cpt1_;
   hess2 *= omp;
+#ifndef CALIN_USE_EIGEN_REF
   hessian.block(1,1,npar1,npar1) = hess1;
   hessian.block(1+npar1,1+npar1,npar2,npar2) = hess2;
+#endif
   hessian.block(1,0,npar1,1) = grad1;
   hessian.block(1+npar1,0,npar2,1) = -grad2;
   hessian.block(0,1,1,npar1) = grad1.transpose();
@@ -696,9 +722,11 @@ value_parameter_gradient_and_hessian(double x, VecRef gradient, MatRef hessian)
   grad1 *= prob_cpt1_;
   grad2 *= omp;
   gradient[0] = val1 - val2;
+#ifndef CALIN_USE_EIGEN_REF
   gradient.segment(1,npar1) = grad1;
   gradient.segment(1+npar1,npar2) = grad2;
-
+#endif
+  
   return prob_cpt1_*val1 + omp*val2;
 }
 
