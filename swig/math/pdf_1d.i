@@ -14,6 +14,10 @@
 #define SWIG_FILE_WITH_INIT
   %}
 
+%init %{
+  import_array();
+%}
+
 %include "package_wide_definitions.i"
 %import "math/function.i"
 

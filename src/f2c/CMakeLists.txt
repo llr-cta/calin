@@ -28,3 +28,5 @@ add_library(calin_f2c SHARED f77vers.c i77vers.c s_rnge.c abort_.c exit_.c
         dtime_.c etime_.c)
 
 #// main.c getarg_.c iargc_.c pow_qq.c qbitbits.c qbitshft.c ftell64_.c 
+
+install(TARGETS calin_f2c DESTINATION lib)

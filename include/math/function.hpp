@@ -107,10 +107,10 @@ class SingleAxisFunction: virtual public MultiAxisFunction
  public:
   virtual ~SingleAxisFunction();
   virtual DomainAxis domain_axis() = 0;
-  virtual double value(double x) = 0;
-  virtual double value_and_1_deriv(double x,  double& dfdx) = 0;
-  virtual double value_and_2_derivs(double x, double& dfdx,
-                                    double& d2fdx2) = 0;
+  virtual double value_1d(double x) = 0;
+  virtual double value_and_gradient_1d(double x,  double& dfdx) = 0;
+  virtual double value_gradient_and_hessian_1d(double x, double& dfdx,
+                                               double& d2fdx2) = 0;
 
   // Members from MultiAxisFunction that we override
   unsigned num_domain_axes() override;

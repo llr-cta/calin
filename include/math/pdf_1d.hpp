@@ -41,9 +41,9 @@ public:
   bool can_calculate_parameter_gradient() override = 0;
   bool can_calculate_parameter_hessian() override = 0;
 
-  double value(double x) override = 0;
-  double value_and_1_deriv(double x,  double& dfdx) override = 0;
-  double value_and_2_derivs(double x, double& dfdx,
+  double value_1d(double x) override = 0;
+  double value_and_gradient_1d(double x,  double& dfdx) override = 0;
+  double value_gradient_and_hessian_1d(double x, double& dfdx,
                             double& d2fdx2) override = 0;
   double value_and_parameter_gradient_1d(double x,
                                          VecRef gradient) override = 0;
@@ -84,9 +84,9 @@ class GaussianPDF: public Parameterizable1DPDF
   bool can_calculate_parameter_gradient() override;
   bool can_calculate_parameter_hessian() override;
 
-  double value(double x) override;
-  double value_and_1_deriv(double x,  double& dfdx) override;
-  double value_and_2_derivs(double x, double& dfdx,
+  double value_1d(double x) override;
+  double value_and_gradient_1d(double x,  double& dfdx) override;
+  double value_gradient_and_hessian_1d(double x, double& dfdx,
                             double& d2fdx2) override;
   double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
@@ -118,9 +118,9 @@ class LimitedGaussianPDF: public GaussianPDF
 
   void set_parameter_values(ConstVecRef values) override;
 
-  double value(double x) override;
-  double value_and_1_deriv(double x,  double& dfdx) override;
-  double value_and_2_derivs(double x, double& dfdx,
+  double value_1d(double x) override;
+  double value_and_gradient_1d(double x,  double& dfdx) override;
+  double value_gradient_and_hessian_1d(double x, double& dfdx,
                                     double& d2fdx2) override;
   double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
@@ -165,9 +165,9 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   bool can_calculate_parameter_gradient() override;
   bool can_calculate_parameter_hessian() override;
 
-  double value(double x) override;
-  double value_and_1_deriv(double x,  double& dfdx) override;
-  double value_and_2_derivs(double x, double& dfdx,
+  double value_1d(double x) override;
+  double value_and_gradient_1d(double x,  double& dfdx) override;
+  double value_gradient_and_hessian_1d(double x, double& dfdx,
                             double& d2fdx2) override;
   double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
@@ -212,9 +212,9 @@ class TwoComponentPDF: public Parameterizable1DPDF
   bool can_calculate_parameter_gradient() override;
   bool can_calculate_parameter_hessian() override;
 
-  double value(double x) override;
-  double value_and_1_deriv(double x,  double& dfdx) override;
-  double value_and_2_derivs(double x, double& dfdx,
+  double value_1d(double x) override;
+  double value_and_gradient_1d(double x,  double& dfdx) override;
+  double value_gradient_and_hessian_1d(double x, double& dfdx,
                             double& d2fdx2) override;
   double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,

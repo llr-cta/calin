@@ -52,13 +52,13 @@ std::vector<DomainAxis> SingleAxisFunction::domain_axes()
 
 double SingleAxisFunction::value(ConstVecRef x)
 {
-  return value(x(0));
+  return value_1d(x(0));
 }
 
 double SingleAxisFunction::value_and_gradient(ConstVecRef x, VecRef gradient) 
 {
   gradient.resize(1);
-  return value_and_1_deriv(x(0),gradient(0));
+  return value_and_gradient_1d(x(0),gradient(0));
 }
 
 double SingleAxisFunction::
@@ -66,7 +66,7 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
 {
   gradient.resize(1);
   hessian.resize(1,1);
-  return value_and_2_derivs(x(0),gradient(0),hessian(0,0));
+  return value_gradient_and_hessian_1d(x(0),gradient(0),hessian(0,0));
 }
 
 // *****************************************************************************

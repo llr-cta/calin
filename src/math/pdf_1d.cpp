@@ -89,7 +89,7 @@ function::DomainAxis GaussianPDF::domain_axis()
   return { "x-value", "x-value units", false, -inf, false, inf };
 }
 
-double GaussianPDF::value(double x) 
+double GaussianPDF::value_1d(double x) 
 {
   const double xc = x-x0_;
   const double xs = xc/s_;
@@ -99,7 +99,7 @@ double GaussianPDF::value(double x)
   return val;
 }
     
-double GaussianPDF::value_and_1_deriv(double x,  double& dfdx)
+double GaussianPDF::value_and_gradient_1d(double x,  double& dfdx)
 {
   const double xc = x-x0_;
   const double xs = xc/s_;
@@ -110,7 +110,7 @@ double GaussianPDF::value_and_1_deriv(double x,  double& dfdx)
 }
 
 double GaussianPDF::
-value_and_2_derivs(double x, double& dfdx, double& d2fdx2)
+value_gradient_and_hessian_1d(double x, double& dfdx, double& d2fdx2)
 {
   const double xc = x-x0_;
   const double xs = xc/s_;
@@ -195,25 +195,25 @@ void LimitedGaussianPDF::set_parameter_values(ConstVecRef values)
   set_cache();
 }
 
-double LimitedGaussianPDF::value(double x)
+double LimitedGaussianPDF::value_1d(double x)
 {
   if(x<xlo_ or x>=xhi_)return 0;
-  return norm_*GaussianPDF::value(x);
+  return norm_*GaussianPDF::value_1d(x);
 }
     
-double LimitedGaussianPDF::value_and_1_deriv(double x,  double& dfdx)
+double LimitedGaussianPDF::value_and_gradient_1d(double x,  double& dfdx)
 {
   if(x<xlo_ or x>=xhi_)
   {
     dfdx = 0;
     return 0;
   }
-  double val = norm_*GaussianPDF::value_and_1_deriv(x, dfdx);
+  double val = norm_*GaussianPDF::value_and_gradient_1d(x, dfdx);
   dfdx *= norm_;
   return val;
 }
 
-double LimitedGaussianPDF::value_and_2_derivs(double x, double& dfdx,
+double LimitedGaussianPDF::value_gradient_and_hessian_1d(double x, double& dfdx,
                                               double& d2fdx2)
 {
   if(x<xlo_ or x>=xhi_)
@@ -222,7 +222,7 @@ double LimitedGaussianPDF::value_and_2_derivs(double x, double& dfdx,
     dfdx = 0;
     return 0;
   }
-  double val = GaussianPDF::value_and_2_derivs(x, dfdx, d2fdx2);
+  double val = GaussianPDF::value_gradient_and_hessian_1d(x, dfdx, d2fdx2);
   dfdx *= norm_;
   d2fdx2 *= norm_;
   return norm_*val;
@@ -392,14 +392,14 @@ bool LimitedExponentialPDF::can_calculate_parameter_hessian()
   return true;
 }
 
-double LimitedExponentialPDF::value(double x)
+double LimitedExponentialPDF::value_1d(double x)
 {
   if(x<xlo_ or x>=xhi_)return 0;
   const double xs = x/a_;
   return norm_ * std::exp(-xs);
 }
 
-double LimitedExponentialPDF::value_and_1_deriv(double x,  double& dfdx)
+double LimitedExponentialPDF::value_and_gradient_1d(double x,  double& dfdx)
 {
   if(x<xlo_ or x>=xhi_)
   {
@@ -413,7 +413,7 @@ double LimitedExponentialPDF::value_and_1_deriv(double x,  double& dfdx)
 }
 
 double LimitedExponentialPDF::
-value_and_2_derivs(double x, double& dfdx, double& d2fdx2)
+value_gradient_and_hessian_1d(double x, double& dfdx, double& d2fdx2)
 {
   if(x<xlo_ or x>=xhi_)
   {
@@ -623,31 +623,31 @@ bool TwoComponentPDF::can_calculate_parameter_hessian()
       pdf2_->can_calculate_parameter_hessian();
 }
 
-double TwoComponentPDF::value(double x)
+double TwoComponentPDF::value_1d(double x)
 {
-  //std::cout << pdf1_->value(x) << ' ' << pdf2_->value(x) << '\n';
-  return prob_cpt1_*pdf1_->value(x) + (1.0-prob_cpt1_)*pdf2_->value(x);
+  //std::cout << pdf1_->value_1d(x) << ' ' << pdf2_->value_1d(x) << '\n';
+  return prob_cpt1_*pdf1_->value_1d(x) + (1.0-prob_cpt1_)*pdf2_->value_1d(x);
 }
 
-double TwoComponentPDF::value_and_1_deriv(double x,  double& dfdx)
+double TwoComponentPDF::value_and_gradient_1d(double x,  double& dfdx)
 {
   double dfdx1;
   double dfdx2;
-  double val = prob_cpt1_*pdf1_->value_and_1_deriv(x,dfdx1) +
-               (1.0-prob_cpt1_)*pdf2_->value_and_1_deriv(x,dfdx2);
+  double val = prob_cpt1_*pdf1_->value_and_gradient_1d(x,dfdx1) +
+               (1.0-prob_cpt1_)*pdf2_->value_and_gradient_1d(x,dfdx2);
   dfdx = prob_cpt1_*dfdx1 + (1.0-prob_cpt1_)*dfdx2;
   return val;
 }
 
-double TwoComponentPDF::value_and_2_derivs(double x, double& dfdx,
+double TwoComponentPDF::value_gradient_and_hessian_1d(double x, double& dfdx,
                                            double& d2fdx2)
 {
   double dfdx1;
   double dfdx2;
   double d2fdx21;
   double d2fdx22;
-  double val = prob_cpt1_*pdf1_->value_and_2_derivs(x,dfdx1,d2fdx21) +
-          (1.0-prob_cpt1_)*pdf2_->value_and_2_derivs(x,dfdx2,d2fdx22);
+  double val = prob_cpt1_*pdf1_->value_gradient_and_hessian_1d(x,dfdx1,d2fdx21)+
+        (1.0-prob_cpt1_)*pdf2_->value_gradient_and_hessian_1d(x,dfdx2,d2fdx22);
   dfdx = prob_cpt1_*dfdx1 + (1.0-prob_cpt1_)*dfdx2;
   d2fdx2 = prob_cpt1_*d2fdx21 + (1.0-prob_cpt1_)*d2fdx22;
   return val;

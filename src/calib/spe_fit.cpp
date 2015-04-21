@@ -884,7 +884,7 @@ void GeneralPoissonMES::set_cache()
     }
     else
     {
-      val = ses_pdf_->value(x);
+      val = ses_pdf_->value_1d(x);
       if(!isfinite(val))val = 0;
     }
     nes_fft_[0][isample] = val;
@@ -911,7 +911,7 @@ void GeneralPoissonMES::set_cache()
     }
     else
     {
-      val = ped_pdf_->value(x);
+      val = ped_pdf_->value_1d(x);
       if(!isfinite(val))val = 0;
     }
     ped_spec_[isample] = ped_fft_[isample] = val;
