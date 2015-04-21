@@ -11,8 +11,10 @@
 
 %{
 #include "math/pdf_1d.hpp"
+#define SWIG_FILE_WITH_INIT
   %}
 
+%include "package_wide_definitions.i"
 %import "math/function.i"
 
 %include "math/pdf_1d.hpp"
