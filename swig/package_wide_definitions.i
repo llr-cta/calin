@@ -107,6 +107,7 @@
     if(!require_dimensions(in_array, 1) or 
        !require_size(in_array, size, 1)) return false;        
 
+    size[0] = array_size(in_array,0);
     vec.resize(size[0]);
 
     PyArrayObject* out_array = (PyArrayObject*)
