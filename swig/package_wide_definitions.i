@@ -15,6 +15,8 @@
   %}
 
 %include "numpy.i"
+%include "std_string.i"
+%include "std_vector.i"
 
 %init %{
   import_array();
@@ -22,64 +24,14 @@
 
 %import "package_wide_definitions.hpp"
 
-#ifdef CALIN_USE_EIGEN_REF
+// =============================================================================
+//
+// Typemaps for using Eigen::VectorXd - these require data be copied once on
+// input and again on output (for non-const references)
+//
+// =============================================================================
 
-%typemap(in,
-         fragment="NumPy_Fragments")
-   calin::ConstVecRef
-(PyArrayObject* array=NULL, int is_new_object=0,
- Eigen::Map<const Eigen::VectorXd>* eigenmap=0)
-{
-  npy_intp size[1] = { -1 };
-  array = obj_to_array_contiguous_allow_conversion($input,
-                                                   NPY_DOUBLE,
-                                                   &is_new_object);
-  if (!array || !require_dimensions(array, 1) ||
-      !require_size(array, size, 1)) SWIG_fail;
-  eigenmap =
-      new Eigen::Map<const Eigen::VectorXd>((const double*)array_data(array),
-                                            array_size(array,0));
-  $1 = new $*1_ltype(*eigenmap);
-}
-
-%typemap(freearg) calin::ConstVecRef
-{
-  delete arg$argnum;
-  delete eigenmap$argnum;
-  if (is_new_object$argnum && array$argnum)
-    { Py_DECREF(array$argnum); }
-}
-
-%typemap(in,
-         fragment="NumPy_Fragments")
-   calin::VecRef
-(PyArrayObject* array=NULL, int is_new_object=0,
- Eigen::Map<Eigen::VectorXd>* eigenmap=0)
-{
-  npy_intp size[1] = { -1 };
-  array = obj_to_array_contiguous_allow_conversion($input,
-                                                   NPY_DOUBLE,
-                                                   &is_new_object);
-  if (!array || !require_dimensions(array, 1) ||
-      !require_size(array, size, 1)) SWIG_fail;
-  eigenmap =
-      new Eigen::Map<const Eigen::VectorXd>((const double*)array_data(array),
-                                            array_size(array,0));
-  $1 = new $*1_ltype(*eigenmap);
-}
-
-%typemap(freearg) calin::VecRef
-{
-  delete arg$argnum;
-  delete eigenmap$argnum;
-  if (is_new_object$argnum && array$argnum)
-    { Py_DECREF(array$argnum); }
-}
-
-
-#else // ifdef CALIN_USE_EIGEN_REF
-
-%fragment("Calin_Python_to_Eigen",
+%fragment("Calin_Python_to_EigenVec",
           "header",
           fragment="NumPy_Array_Requirements",
           fragment="NumPy_Backward_Compatibility",
@@ -175,37 +127,77 @@
 }
 
 %typemap(in,
-         fragment="Calin_Python_to_Eigen")
-   calin::ConstVecRef
+         fragment="Calin_Python_to_EigenVec")
+         const Eigen::VectorXd&
 {
   $1 = new Eigen::VectorXd();
   if(!calin_python_to_eigen_vec($input, *$1))SWIG_fail;
 }
 
-%typemap(freearg) calin::ConstVecRef
+%typemap(freearg) const Eigen::VectorXd&
 {
   delete arg$argnum;
 }
 
 %typemap(in,
-         fragment="Calin_Python_to_Eigen")
-   calin::VecRef
+         fragment="Calin_Python_to_EigenVec")
+         Eigen::VectorXd&
 {
   $1 = new Eigen::VectorXd();
   if(!calin_python_to_eigen_vec($input, *$1))SWIG_fail;
 }
 
 %typemap(argout,
-         fragment="Calin_Python_to_Eigen")
-   calin::VecRef
+         fragment="Calin_Python_to_EigenVec")
+         Eigen::VectorXd&
 {
+  //  if(!calin_eigen_vec_to_python(*$1, $result))SWIG_fail;
   if(!calin_eigen_vec_to_python(*$1, $input))SWIG_fail;
 }
 
-%typemap(freearg) calin::VecRef
+%typemap(freearg)
+         Eigen::VectorXd&
 {
   delete arg$argnum;
 }
 
-#endif
+%typemap(out,
+         fragment="Calin_Python_to_EigenVec")
+         Eigen::VectorXd
+{
+  npy_intp size[1] { $1.size() };
+  $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
+  if(!calin_eigen_vec_to_python($1, $result))SWIG_fail;
+}
 
+// =============================================================================
+//
+// Typemaps for using Eigen::Ref - these avoid copies if data types match
+//
+// =============================================================================
+
+%typemap(in,
+         fragment="NumPy_Fragments")
+         const Eigen::Ref<const Eigen::VectorXd>&
+         (PyArrayObject* array=NULL, int is_new_object=0,
+          Eigen::Map<const Eigen::VectorXd>* eigenmap=0)
+{
+  npy_intp size[1] = { -1 };
+  array = obj_to_array_contiguous_allow_conversion($input,
+                                                   NPY_DOUBLE,
+                                                   &is_new_object);
+  if (!array || !require_dimensions(array, 1) ||
+      !require_size(array, size, 1)) SWIG_fail;
+  eigenmap =
+      new Eigen::Map<const Eigen::VectorXd>((const double*)array_data(array),
+                                            array_size(array,0));
+  $1 = new $*1_ltype(*eigenmap);
+}
+
+%typemap(freearg) const Eigen::Ref<const Eigen::VectorXd>&
+{
+  delete arg$argnum;
+  delete eigenmap$argnum;
+  if (is_new_object$argnum && array$argnum)
+    { Py_DECREF(array$argnum); }
+}

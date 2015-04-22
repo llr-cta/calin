@@ -20,3 +20,5 @@
 %include "package_wide_definitions.i"
 
 %include "math/function.hpp"
+
+%template (VectorParameterAxis) std::vector<calin::math::function::ParameterAxis>;
