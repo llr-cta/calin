@@ -1,2 +1,2 @@
-__all__ = ["function", "pdf_1d"]
+__all__ = ["function", "pdf_1d", "histogram", "optimizer"]
 

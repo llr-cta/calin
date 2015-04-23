@@ -1,6 +1,6 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-set(CALIN_MATH_SWIG_FILES function.i pdf_1d.i)
+set(CALIN_MATH_SWIG_FILES function.i pdf_1d.i histogram.i optimizer.i)
 
 set_source_files_properties(${CALIN_MATH_SWIG_FILES} PROPERTIES CPLUSPLUS ON)
 #set_source_files_properties(${CALIN_MATH_SWIG_FILES} PROPERTIES SWIG_FLAGS "-py3")

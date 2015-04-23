@@ -30,7 +30,8 @@ class Minuit75Optimizer: public Optimizer
 
   bool minimize(VecRef xopt, double& fopt) override;
   ErrorMatrixStatus error_matrix_estimate(MatRef err_mat) override;
-  ErrorMatrixStatus calc_error_matrix(MatRef err_mat) override;
+  ErrorMatrixStatus calc_error_matrix_and_eigenvectors(MatRef err_mat,
+                     VecRef eigenvalues, MatRef eigenvectors) override;
 
  protected:
   int do_command(const std::string& command);

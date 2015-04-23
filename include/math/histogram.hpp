@@ -10,6 +10,7 @@
 
 #include <string>
 #include <algorithm>
+#include <vector>
 #include <deque>
 #include <cmath>
 #include <limits>
@@ -43,21 +44,22 @@ namespace calin { namespace math { namespace histogram {
 // actual historam class since it is in common with the integral
 // distribution (CDF) class.
 
-CALIN_TYPEALIAS(DefaultAccumulator, accumulator::SimpleAccumulator);
+CALIN_TYPEALIAS(DefaultAccumulator,
+                calin::math::accumulator::SimpleAccumulator);
 
 template<typename T, typename Container = std::vector<T>> class BinnedData1D
 {
  public:
-  using data_type = T;
-  using data_container_type = Container;
+  CALIN_TYPEALIAS(data_type, T);
+  CALIN_TYPEALIAS(data_container_type, Container);
   
   BinnedData1D(double dxval, double xval_align = 0.5,
-               const std::string& xval_units = std::string{}):
+               const std::string& xval_units = std::string()):
       dxval_{dxval}, xval_align_{xval_align}, xval_units_{xval_units}
   { /* nothing to see here */ }
   BinnedData1D(double dxval, double xval_limit_lo, double xval_limit_hi,
                double xval_align = 0.5,
-               const std::string& xval_units = std::string{}):
+               const std::string& xval_units = std::string()):
       dxval_{dxval}, xval_align_{xval_align}, limited_{true},
       xval_limit_lo_{xval_limit_lo}, xval_limit_hi_{xval_limit_hi},
       xval_units_{xval_units}
@@ -106,6 +108,7 @@ template<typename T, typename Container = std::vector<T>> class BinnedData1D
       xval_limit_lo_(xval_limit_lo), xval_limit_hi_(xval_limit_hi),
       xval_units_(xval_units) { /* nothing to see here */ }
 
+#ifndef SWIG
   template<typename iterator>
   BinnedData1D(double dxval, double xval_align, double xval0,
                iterator bins_data_begin, iterator bins_data_end,
@@ -117,7 +120,8 @@ template<typename T, typename Container = std::vector<T>> class BinnedData1D
       xval_limit_lo_(xval_limit_lo), xval_limit_hi_(xval_limit_hi),
       overflow_lo_(overflow_lo), overflow_hi_(overflow_hi),
       xval_units_(xval_units) { /* nothing to see here */ }
-
+#endif
+  
   // Retrieve value for bin
   T& bin(int ibin) { return bins_[ibin]; }
   T& checked_bin(int ibin) { return bins_.at(ibin); }
@@ -198,6 +202,12 @@ template<typename T, typename Container = std::vector<T>> class BinnedData1D
   std::string xval_units_;
 };
 
+#ifdef SWIG
+// What a mess!
+%template (BinnedDataCDFBase) BinnedData1D<double>;
+%template (BinnedDataHistogramBase) BinnedData1D<calin::math::accumulator::SimpleAccumulator,std::deque<calin::math::accumulator::SimpleAccumulator>>;
+#endif
+
 // ============================================================================
 //
 // Bin accessor and iterator -- the accessor provides default access to the
@@ -206,11 +216,14 @@ template<typename T, typename Container = std::vector<T>> class BinnedData1D
 //
 // ============================================================================
 
+#ifndef SWIG
+
 template<typename DataBinner> class basic_bin_accessor
 {
  public:
-  using data_binner_type = DataBinner;
-  using data_type = typename DataBinner::data_type;
+  CALIN_TYPEALIAS(data_binner_type, DataBinner);
+  CALIN_TYPEALIAS(data_type, typename DataBinner::data_type);
+                  
   basic_bin_accessor(DataBinner& binner, int ibin): binner_{&binner},ibin_{ibin} {}
   double dxval() const { return binner_->dxval(); }
   double xval_left() const { return binner_->xval_left(ibin_); }
@@ -233,9 +246,9 @@ class basic_iterator:
       protected bin_accessor
 {
  public:
-  using bin_accessor_type = bin_accessor;
-  using data_binner_type = DataBinner;
-  using data_type = typename bin_accessor::data_type;
+  CALIN_TYPEALIAS(bin_accessor_type, bin_accessor);
+  CALIN_TYPEALIAS(data_binner_type, DataBinner);
+  CALIN_TYPEALIAS(data_type, typename bin_accessor::data_type);
   
   basic_iterator(DataBinner& data, int ibin):
       bin_accessor {data,ibin} {}
@@ -259,6 +272,7 @@ class basic_iterator:
   bool operator>(const basic_iterator& o) const { return this->ibin_ > o.ibin_; }
   bool operator>=(const basic_iterator& o) const { return this->ibin_ >= o.ibin_; }
 };
+#endif
 
 // ============================================================================
 //
@@ -269,10 +283,15 @@ class basic_iterator:
 template<typename Acc> class BasicHistogram1D:
       public BinnedData1D<Acc, std::deque<Acc>>
 {
-  using Base = BinnedData1D<Acc, std::deque<Acc>>;
+#ifdef SWIG
+  typedef BinnedData1D<Acc,std::deque<Acc>> Base;
+#else
+  using Base = BinnedData1D<Acc,std::deque<Acc>>;  
+#endif
  public:
-  using accumulator_type = Acc;
+  CALIN_TYPEALIAS(accumulator_type, Acc);
 
+#ifndef SWIG
   class bin_accessor : public basic_bin_accessor<BasicHistogram1D>
   {
    public:
@@ -294,27 +313,29 @@ template<typename Acc> class BasicHistogram1D:
   using const_iterator =
       basic_iterator<const BasicHistogram1D,const_bin_accessor>;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
+#endif
+  
   BasicHistogram1D(double dxval, double xval_align = 0.5,
-                   const std::string& name = std::string{},
-                   const std::string& xval_units = std::string{},
-                   const std::string& weight_units = std::string{}):
+                   const std::string& name = std::string(),
+                   const std::string& xval_units = std::string(),
+                   const std::string& weight_units = std::string()):
       Base(dxval, xval_align, xval_units), 
       name_{name}, weight_units_{weight_units} { /* nothing to see here */ }
 
   BasicHistogram1D(double dxval, double xval_limit_lo, double xval_limit_hi,
                    double xval_align = 0.5,
-                   const std::string& name = std::string{},
-                   const std::string& xval_units = std::string{},
-                   const std::string& weight_units = std::string{}):
+                   const std::string& name = std::string(),
+                   const std::string& xval_units = std::string(),
+                   const std::string& weight_units = std::string()):
       Base(dxval, xval_limit_lo, xval_limit_hi, xval_align, xval_units),
       name_{name}, weight_units_{weight_units}
   { /* nothing to see here */ }
 
-  BasicHistogram1D(data::Histogram1DData& data);
+  BasicHistogram1D(calin::data::Histogram1DData& data);
 
   // Get all data as protobuf message
-  data::Histogram1DData* getData(data::Histogram1DData* data = nullptr) const;
+  calin::data::Histogram1DData*
+      getData(calin::data::Histogram1DData* data = nullptr) const;
   
   // Getters and setters
   std::string name() const { return name_; }
@@ -328,6 +349,13 @@ template<typename Acc> class BasicHistogram1D:
   // Insert x value weight into histogram
   inline bool insert(const double x, const double w = 1.0);
 
+  unsigned insert_vec(const std::vector<double>& x, const double w = 1.0)
+  {
+    unsigned insert_count { 0 };
+    for(auto ix : x)if(insert(ix,w))insert_count++;
+    return insert_count;
+  }
+
   // Retrieve value for bin
   double weight(int ibin) const { return this->bin(ibin).total(); }
   double checked_weight(int ibin) const { return this->checked_bin(ibin).total(); }
@@ -339,7 +367,8 @@ template<typename Acc> class BasicHistogram1D:
   const accumulator_type& accumulator(int ibin) const { return this->bin(ibin); }
   accumulator_type& checked_accumulator(int ibin) { return this->checked_bin(ibin); }
   const accumulator_type& checked_accumulator(int ibin) const { return this->checked_bin(ibin); }
-  
+
+#ifndef SWIG
   // Accessors
   bin_accessor accessor(int ibin) { return bin_accessor{*this,ibin}; }
   const const_bin_accessor accessor(int ibin) const { return const_bin_accessor{*this,ibin}; }
@@ -356,7 +385,8 @@ template<typename Acc> class BasicHistogram1D:
   const_iterator cend() const { return const_iterator{*this, this->size()}; }
   const_reverse_iterator crbegin() const { return const_reverse_iterator{end()}; }
   const_reverse_iterator crend() const { return const_reverse_iterator{begin()}; }
-
+#endif
+  
   // Moments
   double sum_w() const { return sum_w_.total(); }
   double sum_wx() const { return sum_wx_.total(); }
@@ -476,8 +506,15 @@ bool BasicHistogram1D<Acc>::operator==(const BasicHistogram1D& o) const
 
 class BinnedCDF: public BinnedData1D<double>
 {
+#ifdef SWIG
+  typedef BinnedData1D<double> Base;
+#else
   using Base = BinnedData1D<double>;
+#endif
+
  public:
+
+#ifndef SWIG
   class const_bin_accessor : public basic_bin_accessor<const BinnedCDF>
   {
    public:
@@ -493,6 +530,10 @@ class BinnedCDF: public BinnedData1D<double>
   using bin_accessor = const_bin_accessor;
   using iterator = const_iterator;
   using reverse_iterator = std::reverse_iterator<iterator>;
+#endif
+
+  BinnedCDF(double dxval, double xval_align = 0.5):
+      Base{dxval, xval_align} { }
   
   template<typename Acc> BinnedCDF(const BasicHistogram1D<Acc>& hist):
       Base{hist.dxval(), hist.xval_align(), hist.xval0(),
@@ -649,6 +690,7 @@ class BinnedCDF: public BinnedData1D<double>
     return acc.total();
   }
 
+#ifndef SWIG
   // Iterator functions
   iterator begin() { return iterator{*this, 0}; }
   iterator end() { return iterator{*this, this->size()}; }
@@ -663,6 +705,7 @@ class BinnedCDF: public BinnedData1D<double>
     return const_reverse_iterator{end()}; }
   const_reverse_iterator crend() const {
     return const_reverse_iterator{begin()}; }
+#endif
   
  protected:
   double quantile_with_lhb(double q, data_container_type::const_iterator& lhb)

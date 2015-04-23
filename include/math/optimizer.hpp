@@ -45,8 +45,17 @@ class Optimizer
   
   virtual bool minimize(VecRef xopt, double& fopt) = 0;
   virtual ErrorMatrixStatus error_matrix_estimate(MatRef err_mat) = 0;
-  virtual ErrorMatrixStatus calc_error_matrix(MatRef err_mat) = 0;
+  virtual ErrorMatrixStatus calc_error_matrix_and_eigenvectors(MatRef err_mat,
+                                 VecRef eigenvalues, MatRef eigenvectors) = 0;
 
+  ErrorMatrixStatus calc_error_matrix(MatRef err_mat)
+  {
+    Eigen::VectorXd eigenvalues;
+    Eigen::MatrixXd eigenvectors;
+    return
+        calc_error_matrix_and_eigenvectors(err_mat, eigenvalues, eigenvectors);
+  }
+  
   void set_verbosity_level(VerbosityLevel verbose = VerbosityLevel::SILENT) {
     verbose_=verbose; }
   VerbosityLevel verbosity_level() const { return verbose_; }

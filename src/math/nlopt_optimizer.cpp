@@ -260,7 +260,9 @@ ErrorMatrixStatus NLOptOptimizer::error_matrix_estimate(MatRef err_mat)
   return err_est_->error_matrix(err_mat);
 }
 
-ErrorMatrixStatus NLOptOptimizer::calc_error_matrix(MatRef err_mat)
+ErrorMatrixStatus NLOptOptimizer::
+calc_error_matrix_and_eigenvectors(MatRef err_mat,
+                                   VecRef eigenvalues, MatRef eigenvectors)
 {
   const unsigned npar { fcn_->num_domain_axes() };
   err_mat.resize(npar,npar);
@@ -269,7 +271,8 @@ ErrorMatrixStatus NLOptOptimizer::calc_error_matrix(MatRef err_mat)
     error_hint = err_mat.diagonal().array().sqrt();
   Eigen::MatrixXd hessian(npar,npar);
   hessian::calculate_hessian(*fcn_, xopt_, hessian, error_hint);
-  return hessian::hessian_to_error_matrix(*fcn_, hessian, err_mat);
+  return hessian::hessian_to_error_matrix(*fcn_, hessian, err_mat,
+                                          eigenvalues, eigenvectors);
 }
 
 double NLOptOptimizer::nlopt_callback(unsigned n, const double* x, double* grad,

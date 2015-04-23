@@ -1,11 +1,10 @@
+//-*-mode:swig;-*-
+
 /* 
 
    calin/math/pdf_1d.i -- Stephen Fegan -- 2015-04-16
 
 */
-
-
-//-*-mode:swig;-*-
 
 %module (package="calin.math") pdf_1d
 

@@ -192,8 +192,9 @@ ErrorMatrixStatus Minuit75Optimizer::error_matrix_estimate(MatRef err_mat)
 {
 
 }
-
-ErrorMatrixStatus Minuit75Optimizer::calc_error_matrix(MatRef err_mat)
+ErrorMatrixStatus Minuit75Optimizer::
+calc_error_matrix_and_eigenvectors(MatRef err_mat,
+                                   VecRef eigenvalues, MatRef eigenvectors)
 {
 
 }
