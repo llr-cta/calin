@@ -344,7 +344,7 @@ template<typename Acc> class BasicHistogram1D:
   void set_weight_units(const std::string& units) { weight_units_=units; }
   
   // Functions to get size of histogram and clear it
-  void clear() { this->clear(); sum_w_={}; sum_wx_={}; sum_wxx_={}; }
+  void clear() { Base::clear(); sum_w_={}; sum_wx_={}; sum_wxx_={}; }
   
   // Insert x value weight into histogram
   inline bool insert(const double x, const double w = 1.0);

@@ -105,7 +105,7 @@
     std::cout << "IN:" << output->ob_refcnt << '\n';
 
     PyArray_Dims dims = { size, 1 };
-    if(PyArray_Resize(out_array, &dims, 1, NPY_ANYORDER) == nullptr)
+    if(PyArray_Resize(out_array, &dims, 0, NPY_ANYORDER) == nullptr)
       {
         // Do we need to call Py_DECREF on returned val??
         Py_DECREF(in_array);
@@ -168,6 +168,153 @@
   npy_intp size[1] { $1.size() };
   $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
   if(!calin_eigen_vec_to_python($1, $result))SWIG_fail;
+}
+
+// =============================================================================
+//
+// Typemaps for using Eigen::MatrixXd - these require data be copied once on
+// input and again on output (for non-const references)
+//
+// =============================================================================
+
+%fragment("Calin_Python_to_EigenMat",
+          "header",
+          fragment="NumPy_Array_Requirements",
+          fragment="NumPy_Backward_Compatibility",
+          fragment="NumPy_Macros",
+          fragment="NumPy_Utilities")
+{
+  static bool calin_python_to_eigen_mat(PyObject* input, Eigen::MatrixXd& mat)
+  {
+    const int typecode = NPY_DOUBLE;
+
+    if(!is_array(input))
+      {
+        const char* desired_type = typecode_string(typecode);
+        const char* actual_type  = pytype_string(input);
+        PyErr_Format(PyExc_TypeError,
+                     "Array of type '%s' required.  A '%s' was given",
+                     desired_type,
+                     actual_type);
+        return false;
+      }
+    
+    PyArrayObject* in_array = (PyArrayObject*) input;
+
+    npy_intp size[2] = { -1, -1 };
+    if(!require_dimensions(in_array, 2) or 
+       !require_size(in_array, size, 2)) return false;        
+
+    size[0] = array_size(in_array,0);
+    size[1] = array_size(in_array,1);
+    mat.resize(size[0], size[1]);
+
+    PyArrayObject* out_array = (PyArrayObject*)
+        PyArray_SimpleNewFromData(2, size, typecode, mat.data());
+    if(out_array == nullptr)return false;
+        
+    if(PyArray_CopyInto(out_array, in_array) != 0)
+      {
+        Py_DECREF(out_array);
+        return false;
+      }
+
+    Py_DECREF(out_array);
+    return true;
+  }
+
+  static bool calin_eigen_mat_to_python(Eigen::MatrixXd& mat,
+                                        PyObject* output)
+  {
+    const int typecode = NPY_DOUBLE;
+
+    if(!is_array(output))
+      {
+        const char* desired_type = typecode_string(typecode);
+        const char* actual_type  = pytype_string(output);
+        PyErr_Format(PyExc_TypeError,
+                     "Array of type '%s' required.  A '%s' was given",
+                     desired_type,
+                     actual_type);
+        return false;
+      }
+
+    npy_intp size[2] = { mat.outerSize(), mat.innerSize() };
+    PyArrayObject* in_array = (PyArrayObject*)
+        PyArray_SimpleNewFromData(2, size, typecode, mat.data());
+    if(in_array == nullptr)
+      {
+        return false;
+      }
+
+    PyArrayObject* out_array = (PyArrayObject*) output;
+
+    std::cout << "IN:" << output->ob_refcnt << '\n';
+
+    PyArray_Dims dims = { size, 2 };
+    if(PyArray_Resize(out_array, &dims, 0, NPY_ANYORDER) == nullptr)
+      {
+        // Do we need to call Py_DECREF on returned val??
+        Py_DECREF(in_array);
+        return false;  
+      }
+
+    std::cout << "OUT:" << output->ob_refcnt << '\n';
+    
+    if(PyArray_CopyInto(out_array, in_array) != 0)
+      {
+        Py_DECREF(in_array);
+        return false;
+      }
+
+    Py_DECREF(in_array);
+    return true;
+  }
+
+}
+
+%typemap(in,
+         fragment="Calin_Python_to_EigenMat")
+         const Eigen::MatrixXd&
+{
+  $1 = new Eigen::MatrixXd();
+  if(!calin_python_to_eigen_mat($input, *$1))SWIG_fail;
+}
+
+%typemap(freearg) const Eigen::MatrixXd&
+{
+  delete arg$argnum;
+}
+
+%typemap(in,
+         fragment="Calin_Python_to_EigenMat")
+         Eigen::MatrixXd&
+{
+  $1 = new Eigen::MatrixXd();
+  if(!calin_python_to_eigen_mat($input, *$1))SWIG_fail;
+}
+
+%typemap(argout,
+         fragment="Calin_Python_to_EigenMat")
+         Eigen::MatrixXd&
+{
+  //  if(!calin_eigen_mat_to_python(*$1, $result))SWIG_fail;
+  if(!calin_eigen_mat_to_python(*$1, $input))SWIG_fail;
+}
+
+%typemap(freearg)
+         Eigen::MatrixXd&
+{
+  delete arg$argnum;
+}
+
+%typemap(out,
+         fragment="Calin_Python_to_EigenMat")
+         Eigen::MatrixXd
+{
+  npy_intp size[2] { $1.outerSize(), $1.innerSize() };
+  $result = PyArray_EMPTY(2, size, NPY_DOUBLE, 0);
+  if(!calin_eigen_mat_to_python($1, $result))SWIG_fail;
 }
 
 // =============================================================================
