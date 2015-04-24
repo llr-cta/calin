@@ -55,11 +55,22 @@
     
     PyArrayObject* in_array = (PyArrayObject*) input;
 
-    npy_intp size[1] = { -1 };
-    if(!require_dimensions(in_array, 1) or 
-       !require_size(in_array, size, 1)) return false;        
+    if(PyArray_NDIM(in_array) > 1)
+    {
+      PyErr_Format(PyExc_TypeError,
+                   "Array must have 1 dimension. "
+                   "Given array has %d dimensions",
+                   PyArray_NDIM(in_array));
+      return false;
+    }
+    
+    if(PyArray_NDIM(in_array)==0 or PyArray_DIM(in_array, 0)==0)
+    {
+      vec = Eigen::VectorXd();
+      return true;
+    }
 
-    size[0] = array_size(in_array,0);
+    npy_intp size[1] = { PyArray_DIM(in_array, 0) };
     vec.resize(size[0]);
 
     PyArrayObject* out_array = (PyArrayObject*)
@@ -102,8 +113,6 @@
 
     PyArrayObject* out_array = (PyArrayObject*) output;
 
-    std::cout << "IN:" << output->ob_refcnt << '\n';
-
     PyArray_Dims dims = { size, 1 };
     if(PyArray_Resize(out_array, &dims, 0, NPY_ANYORDER) == nullptr)
       {
@@ -112,8 +121,6 @@
         return false;  
       }
 
-    std::cout << "OUT:" << output->ob_refcnt << '\n';
-    
     if(PyArray_CopyInto(out_array, in_array) != 0)
       {
         Py_DECREF(in_array);
@@ -193,7 +200,7 @@
         const char* desired_type = typecode_string(typecode);
         const char* actual_type  = pytype_string(input);
         PyErr_Format(PyExc_TypeError,
-                     "Array of type '%s' required.  A '%s' was given",
+                     "Array of type '%s' required. A '%s' was given",
                      desired_type,
                      actual_type);
         return false;
@@ -201,16 +208,32 @@
     
     PyArrayObject* in_array = (PyArrayObject*) input;
 
-    npy_intp size[2] = { -1, -1 };
-    if(!require_dimensions(in_array, 2) or 
-       !require_size(in_array, size, 2)) return false;        
+    if(PyArray_NDIM(in_array) > 2)
+    {
+      PyErr_Format(PyExc_TypeError,
+                   "Array must have at most 2 dimensions. "
+                   "Given array has %d dimensions",
+                   PyArray_NDIM(in_array));
+      return false;
+    }
+    
+    if(PyArray_NDIM(in_array)==0 or PyArray_DIM(in_array, 0)==0 or
+       (PyArray_NDIM(in_array)==2 and PyArray_DIM(in_array, 1)==0))
+    {
+      mat = Eigen::MatrixXd();
+      return true;
+    }
 
-    size[0] = array_size(in_array,0);
-    size[1] = array_size(in_array,1);
+    npy_intp size[2] = { PyArray_DIM(in_array, 0), 1 };
+    if(PyArray_NDIM(in_array)==2)
+      size[1] = array_size(in_array,1);
+
     mat.resize(size[0], size[1]);
-
+    
     PyArrayObject* out_array = (PyArrayObject*)
-        PyArray_SimpleNewFromData(2, size, typecode, mat.data());
+        PyArray_New(&PyArray_Type, PyArray_NDIM(in_array), size, typecode,
+                    NULL, mat.data(), 0, NPY_ARRAY_FARRAY, NULL);
+    
     if(out_array == nullptr)return false;
         
     if(PyArray_CopyInto(out_array, in_array) != 0)
@@ -239,17 +262,16 @@
         return false;
       }
 
-    npy_intp size[2] = { mat.outerSize(), mat.innerSize() };
+    npy_intp size[2] = { mat.rows(), mat.cols() };
     PyArrayObject* in_array = (PyArrayObject*)
-        PyArray_SimpleNewFromData(2, size, typecode, mat.data());
+        PyArray_New(&PyArray_Type, 2, size, typecode,
+                    NULL, mat.data(), 0, NPY_ARRAY_FARRAY, NULL);
     if(in_array == nullptr)
       {
         return false;
       }
-
+    
     PyArrayObject* out_array = (PyArrayObject*) output;
-
-    std::cout << "IN:" << output->ob_refcnt << '\n';
 
     PyArray_Dims dims = { size, 2 };
     if(PyArray_Resize(out_array, &dims, 0, NPY_ANYORDER) == nullptr)
@@ -259,8 +281,6 @@
         return false;  
       }
 
-    std::cout << "OUT:" << output->ob_refcnt << '\n';
-    
     if(PyArray_CopyInto(out_array, in_array) != 0)
       {
         Py_DECREF(in_array);

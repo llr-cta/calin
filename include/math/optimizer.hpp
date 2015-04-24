@@ -74,7 +74,7 @@ class Optimizer
   
   void set_initial_values(const std::vector<double>& x0 = {}) { x0_=x0; }
   void set_initial_values(ConstVecRef x0) {
-    x0_.assign(x0.data(),x0.data()+x0.innerSize()); }
+    x0_.assign(x0.data(),x0.data()+x0.size()); }
   void set_scale(const std::vector<double>& xscale = {}) { xscale_=xscale; }
   void set_limit_lo(unsigned ipar, double lim) {
     if(ipar>=xlim_lo_.size())xlim_lo_.resize(ipar+1, neg_inf);

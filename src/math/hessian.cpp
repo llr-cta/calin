@@ -72,7 +72,7 @@ Eigen::VectorXd hessian::
 step_size_epsmult(ConstVecRef x, double eps_mult)
 {
   constexpr double eps { std::numeric_limits<double>::epsilon() };
-  unsigned npar = x.innerSize();
+  unsigned npar = x.size();
   Eigen::VectorXd dx(npar);
   for(unsigned ipar=0; ipar<npar; ipar++)
     dx(ipar) = (std::abs(x(ipar))*eps_mult)*eps;
@@ -86,10 +86,10 @@ step_size_err_up(function::MultiAxisFunction& fcn, ConstVecRef x,
   const double scale { 2.0*fcn.error_up() };
   double f0 { fcn.value(x) };
   double fup { f0+fcn.error_up()*err_up_frac };
-  unsigned npar = x.innerSize();
+  unsigned npar = x.size();
   Eigen::VectorXd dx(npar);
   auto axes = fcn.domain_axes();
-  if(error_hint.innerSize() == npar)
+  if(error_hint.size() == npar)
   {
     for(unsigned ipar=0;ipar<npar;ipar++)
       if(isfinite(error_hint(ipar)) and error_hint(ipar)>0)

@@ -232,12 +232,12 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
 {
   constexpr double eps = std::numeric_limits<double>::epsilon();
   unsigned fcn_num_axes = fcn.num_domain_axes();
-  assert(fcn_num_axes == x.innerSize());
-  assert(fcn_num_axes == dx.innerSize());
+  assert(fcn_num_axes == x.size());
+  assert(fcn_num_axes == dx.size());
   double f0 = fcn.value(x);
   Eigen::VectorXd gradient(fcn_num_axes);
   double f0g = fcn.value_and_gradient(x, gradient);
-  assert(fcn_num_axes == gradient.innerSize());
+  assert(fcn_num_axes == gradient.size());
   if(std::abs(f0 - f0g)/std::abs(f0) > eps)return false;
   good.resize(fcn_num_axes);
   for(unsigned iaxis = 0;iaxis<fcn_num_axes;iaxis++)
@@ -323,19 +323,19 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
 {
   constexpr double eps = std::numeric_limits<double>::epsilon();
   unsigned fcn_num_axes = fcn.num_domain_axes();
-  assert(fcn_num_axes == x.innerSize());
-  assert(fcn_num_axes == dx.innerSize());
+  assert(fcn_num_axes == x.size());
+  assert(fcn_num_axes == dx.size());
 
   Eigen::VectorXd g0(fcn_num_axes);
   double f0 = fcn.value_and_gradient(x, g0);
-  assert(fcn_num_axes == g0.innerSize());
+  assert(fcn_num_axes == g0.size());
   
   Eigen::VectorXd g0h(fcn_num_axes);
   Eigen::MatrixXd hessian(fcn_num_axes,fcn_num_axes);
   double f0h = fcn.value_gradient_and_hessian(x, g0h, hessian);
-  assert(fcn_num_axes == g0h.innerSize());
-  assert(fcn_num_axes == hessian.innerSize());
-  assert(fcn_num_axes == hessian.outerSize());
+  assert(fcn_num_axes == g0h.size());
+  assert(fcn_num_axes == hessian.rows());
+  assert(fcn_num_axes == hessian.cols());
 
   if(hessian != hessian.transpose())
   {
