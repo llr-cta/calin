@@ -23,5 +23,9 @@
 %import "math/function.i"
 
 %include "nlopt/nlopt.hpp"
+
+%include "typemaps.i"
+%apply double &OUTPUT { double& fopt };
+
 %include "math/optimizer.hpp"
 %include "math/nlopt_optimizer.hpp"

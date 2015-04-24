@@ -3,7 +3,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 set(CALIN_MATH_SWIG_FILES function.i pdf_1d.i histogram.i optimizer.i)
 
 set_source_files_properties(${CALIN_MATH_SWIG_FILES} PROPERTIES CPLUSPLUS ON)
-#set_source_files_properties(${CALIN_MATH_SWIG_FILES} PROPERTIES SWIG_FLAGS "-py3")
+#set_source_files_properties(${CALIN_MATH_SWIG_FILES} PROPERTIES SWIG_FLAGS "-importall")
 
 foreach (interface_file ${CALIN_MATH_SWIG_FILES})
 	string(REPLACE ".i" "" output_file ${interface_file})

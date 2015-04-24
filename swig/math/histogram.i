@@ -17,13 +17,6 @@
   import_array();
 %}
 
-%include <std_vector.i>
-
-%template (VectorDouble) std::vector<double>;
-
 %include "package_wide_definitions.i"
 
 %include "math/histogram.hpp"
-
-%template (Histogram1D) calin::math::histogram::BasicHistogram1D<calin::math::histogram::DefaultAccumulator>;
-

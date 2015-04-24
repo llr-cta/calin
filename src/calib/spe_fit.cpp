@@ -14,6 +14,9 @@ using namespace calin::calib::pmt_model_pg;
 
 using calin::math::function::assign_parameters;
 
+using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
+using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
+
 namespace {
 
 static double SQR(double x)

@@ -22,6 +22,8 @@
   import_array();
 %}
 
+%template (VectorDouble) std::vector<double>;
+
 %import "package_wide_definitions.hpp"
 
 // =============================================================================

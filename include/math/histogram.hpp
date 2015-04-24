@@ -724,7 +724,11 @@ class BinnedCDF: public BinnedData1D<double>
   std::string name_;
 };
 
+#ifdef SWIG
+%template (SimpleHist) BasicHistogram1D<DefaultAccumulator>;
+#endif
+
+CALIN_TYPEALIAS(SimpleHist, BasicHistogram1D<DefaultAccumulator>);
 CALIN_TYPEALIAS(Histogram1D, BasicHistogram1D<DefaultAccumulator>);
-CALIN_TYPEALIAS(SimpleHist, Histogram1D);
 
 } } } // namespace calin::math::histogram
