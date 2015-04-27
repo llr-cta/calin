@@ -106,10 +106,10 @@ incorporate_func_gradient(ConstVecRef x, double f_val,
 }
 
 ErrorMatrixStatus IdentityErrorMatrixEstimator::
-error_matrix(MatRef err_mat)
+error_matrix(MatRef error_matrix)
 {
-  err_mat.resize(npar_,npar_);
-  err_mat.setIdentity();
+  error_matrix.resize(npar_,npar_);
+  error_matrix.setIdentity();
   return ErrorMatrixStatus::UNAVAILABLE;
 }
 
@@ -189,13 +189,13 @@ skip_rank1_update:
   gk_ = gradient;
 }
 
-ErrorMatrixStatus BFGSErrorMatrixEstimator::error_matrix(MatRef err_mat)
+ErrorMatrixStatus BFGSErrorMatrixEstimator::error_matrix(MatRef error_matrix)
 {
-  err_mat = 2.0*error_up_*Bk_;
+  error_matrix = 2.0*error_up_*Bk_;
 #ifdef BFGS_COMPUTE_WITH_LOOPS
     for(unsigned i=0;i<n;i++)
       for(unsigned j=i+1;j<n;j++)
-        err_mat(j,i) = err_mat(i,j);
+        error_matrix(j,i) = error_matrix(i,j);
 #endif
   return ErrorMatrixStatus::GOOD;
 }

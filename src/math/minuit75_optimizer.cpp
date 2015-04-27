@@ -188,12 +188,12 @@ bool Minuit75Optimizer::minimize(VecRef xopt, double& fopt)
   return true;
 }
 
-ErrorMatrixStatus Minuit75Optimizer::error_matrix_estimate(MatRef err_mat)
+ErrorMatrixStatus Minuit75Optimizer::error_matrix_estimate(MatRef error_matrix)
 {
 
 }
 ErrorMatrixStatus Minuit75Optimizer::
-calc_error_matrix_and_eigenvectors(MatRef err_mat,
+calc_error_matrix_and_eigenvectors(MatRef error_matrix,
                                    VecRef eigenvalues, MatRef eigenvectors)
 {
 

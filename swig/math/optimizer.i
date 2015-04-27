@@ -21,11 +21,17 @@
 %include "package_wide_definitions.i"
 
 %import "math/function.i"
+%import "math/hessian.i"
 
 %include "nlopt/nlopt.hpp"
 
 %include "typemaps.i"
+
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& xopt };
 %apply double &OUTPUT { double& fopt };
+//%apply Eigen::MatrixXd &OUTPUT { Eigen::MatrixXd& error_matrix };
+//%apply Eigen::MatrixXd &OUTPUT { Eigen::MatrixXd& eigenvectors };
+//%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& eigenvalues };
 
 %include "math/optimizer.hpp"
 %include "math/nlopt_optimizer.hpp"

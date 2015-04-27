@@ -19,6 +19,10 @@
 
 %include "package_wide_definitions.i"
 
+%include "typemaps.i"
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& gradient };
+%apply Eigen::MatrixXd &OUTPUT { Eigen::MatrixXd& hessian };
+
 %include "math/function.hpp"
 
 %template (VectorParameterAxis) std::vector<calin::math::function::ParameterAxis>;

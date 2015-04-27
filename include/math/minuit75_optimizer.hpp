@@ -29,8 +29,8 @@ class Minuit75Optimizer: public Optimizer
   bool can_impose_box_constraints() override;
 
   bool minimize(VecRef xopt, double& fopt) override;
-  ErrorMatrixStatus error_matrix_estimate(MatRef err_mat) override;
-  ErrorMatrixStatus calc_error_matrix_and_eigenvectors(MatRef err_mat,
+  ErrorMatrixStatus error_matrix_estimate(MatRef error_matrix) override;
+  ErrorMatrixStatus calc_error_matrix_and_eigenvectors(MatRef error_matrix,
                      VecRef eigenvalues, MatRef eigenvectors) override;
 
  protected:

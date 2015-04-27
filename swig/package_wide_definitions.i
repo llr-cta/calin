@@ -40,7 +40,7 @@
           fragment="NumPy_Macros",
           fragment="NumPy_Utilities")
 {
-  static bool calin_python_to_eigen_vec(PyObject* input, Eigen::VectorXd& vec)
+  static bool calin_python_to_eigen_vec(PyObject* input, Eigen::VectorXd* vec)
   {
     const int typecode = NPY_DOUBLE;
 
@@ -68,15 +68,15 @@
     
     if(PyArray_NDIM(in_array)==0 or PyArray_DIM(in_array, 0)==0)
     {
-      vec = Eigen::VectorXd();
+      *vec = Eigen::VectorXd();
       return true;
     }
 
     npy_intp size[1] = { PyArray_DIM(in_array, 0) };
-    vec.resize(size[0]);
+    vec->resize(size[0]);
 
     PyArrayObject* out_array = (PyArrayObject*)
-        PyArray_SimpleNewFromData(1, size, typecode, vec.data());
+        PyArray_SimpleNewFromData(1, size, typecode, vec->data());
     if(out_array == nullptr)return false;
         
     if(PyArray_CopyInto(out_array, in_array) != 0)
@@ -89,7 +89,7 @@
     return true;
   }
 
-  static bool calin_eigen_vec_to_python(Eigen::VectorXd& vec,
+  static bool calin_eigen_vec_to_python(Eigen::VectorXd* vec,
                                         PyObject* output)
   {
     const int typecode = NPY_DOUBLE;
@@ -105,9 +105,9 @@
         return false;
       }
 
-    npy_intp size[1] = { vec.size() };
+    npy_intp size[1] = { vec->size() };
     PyArrayObject* in_array = (PyArrayObject*)
-        PyArray_SimpleNewFromData(1, size, typecode, vec.data());
+        PyArray_SimpleNewFromData(1, size, typecode, vec->data());
     if(in_array == nullptr)
       {
         return false;
@@ -135,48 +135,86 @@
 
 }
 
-%typemap(in,
-         fragment="Calin_Python_to_EigenVec")
-         const Eigen::VectorXd&
+// *************************** const Eigen::VectorXd& **************************
+
+%typemap(in, fragment="Calin_Python_to_EigenVec") const Eigen::VectorXd&
 {
+  // typemap(in) const Eigen::VectorXd& -- package_wide_definitions.i
   $1 = new Eigen::VectorXd();
-  if(!calin_python_to_eigen_vec($input, *$1))SWIG_fail;
+  if(!calin_python_to_eigen_vec($input, $1))SWIG_fail;
+}
+
+%typemap(argout) const Eigen::VectorXd&
+{
+  // typemap(argout) const Eigen::VectorXd& -- package_wide_definitions.i
+  // nothing to see here
 }
 
 %typemap(freearg) const Eigen::VectorXd&
 {
+  // typemap(freearg) const Eigen::VectorXd& -- package_wide_definitions.i
   delete arg$argnum;
 }
 
-%typemap(in,
-         fragment="Calin_Python_to_EigenVec")
-         Eigen::VectorXd&
+// ****************************** Eigen::VectorXd& *****************************
+
+%typemap(in, fragment="Calin_Python_to_EigenVec") Eigen::VectorXd&
 {
+  // typemap(in) Eigen::VectorXd& -- package_wide_definitions.i
   $1 = new Eigen::VectorXd();
-  if(!calin_python_to_eigen_vec($input, *$1))SWIG_fail;
+  if(!calin_python_to_eigen_vec($input, $1))SWIG_fail;
 }
 
-%typemap(argout,
-         fragment="Calin_Python_to_EigenVec")
-         Eigen::VectorXd&
+%typemap(argout, fragment="Calin_Python_to_EigenVec") Eigen::VectorXd&
 {
-  //  if(!calin_eigen_vec_to_python(*$1, $result))SWIG_fail;
-  if(!calin_eigen_vec_to_python(*$1, $input))SWIG_fail;
+  // typemap(argout) Eigen::VectorXd& -- package_wide_definitions.i
+  if(!calin_eigen_vec_to_python($1, $input))SWIG_fail;
 }
 
-%typemap(freearg)
-         Eigen::VectorXd&
+%typemap(freearg) Eigen::VectorXd&
 {
+  // typemap(freearg) Eigen::VectorXd& -- package_wide_definitions.i
   delete arg$argnum;
 }
 
-%typemap(out,
-         fragment="Calin_Python_to_EigenVec")
-         Eigen::VectorXd
+// ************************** Eigen::VectorXd &OUTPUT **************************
+
+%typemap(in, numinputs=0, fragment="Calin_Python_to_EigenVec")
+         Eigen::VectorXd &OUTPUT
 {
+  // typemap(in) Eigen::VectorXd &OUTPUT -- package_wide_definitions.i
+  $1 = new Eigen::VectorXd();
+}
+
+%typemap(argout, fragment="Calin_Python_to_EigenVec") Eigen::VectorXd &OUTPUT
+{
+  // typemap(argout) Eigen::VectorXd &OUTPUT -- package_wide_definitions.i
+  npy_intp size[1] { $1->size() };
+  PyObject* temp_array = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
+  if(!temp_array)SWIG_fail;
+  if(!calin_eigen_vec_to_python($1, temp_array))
+  {
+    Py_DECREF(temp_array);
+    SWIG_fail;
+  }
+  $result = SWIG_Python_AppendOutput($result, temp_array);
+}
+
+%typemap(freearg) Eigen::VectorXd &OUTPUT
+{
+  // typemap(freearg) Eigen::VectorXd &OUTPUT -- package_wide_definitions.i
+  delete arg$argnum;
+}
+
+// ****************************** Eigen::VectorXd ******************************
+
+%typemap(out, fragment="Calin_Python_to_EigenVec") Eigen::VectorXd
+{
+  // typemap(out) Eigen::VectorXd -- package_wide_definitions.i
   npy_intp size[1] { $1.size() };
   $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
-  if(!calin_eigen_vec_to_python($1, $result))SWIG_fail;
+  if(!$result)SWIG_fail;
+  if(!calin_eigen_vec_to_python(&$1, $result))SWIG_fail;
 }
 
 // =============================================================================
@@ -193,7 +231,7 @@
           fragment="NumPy_Macros",
           fragment="NumPy_Utilities")
 {
-  static bool calin_python_to_eigen_mat(PyObject* input, Eigen::MatrixXd& mat)
+  static bool calin_python_to_eigen_mat(PyObject* input, Eigen::MatrixXd* mat)
   {
     const int typecode = NPY_DOUBLE;
 
@@ -222,7 +260,7 @@
     if(PyArray_NDIM(in_array)==0 or PyArray_DIM(in_array, 0)==0 or
        (PyArray_NDIM(in_array)==2 and PyArray_DIM(in_array, 1)==0))
     {
-      mat = Eigen::MatrixXd();
+      *mat = Eigen::MatrixXd();
       return true;
     }
 
@@ -230,11 +268,11 @@
     if(PyArray_NDIM(in_array)==2)
       size[1] = array_size(in_array,1);
 
-    mat.resize(size[0], size[1]);
+    mat->resize(size[0], size[1]);
     
     PyArrayObject* out_array = (PyArrayObject*)
         PyArray_New(&PyArray_Type, PyArray_NDIM(in_array), size, typecode,
-                    NULL, mat.data(), 0, NPY_ARRAY_FARRAY, NULL);
+                    NULL, mat->data(), 0, NPY_ARRAY_FARRAY, NULL);
     
     if(out_array == nullptr)return false;
         
@@ -248,7 +286,7 @@
     return true;
   }
 
-  static bool calin_eigen_mat_to_python(Eigen::MatrixXd& mat,
+  static bool calin_eigen_mat_to_python(Eigen::MatrixXd* mat,
                                         PyObject* output)
   {
     const int typecode = NPY_DOUBLE;
@@ -264,10 +302,10 @@
         return false;
       }
 
-    npy_intp size[2] = { mat.rows(), mat.cols() };
+    npy_intp size[2] = { mat->rows(), mat->cols() };
     PyArrayObject* in_array = (PyArrayObject*)
         PyArray_New(&PyArray_Type, 2, size, typecode,
-                    NULL, mat.data(), 0, NPY_ARRAY_FARRAY, NULL);
+                    NULL, mat->data(), 0, NPY_ARRAY_FARRAY, NULL);
     if(in_array == nullptr)
       {
         return false;
@@ -295,48 +333,86 @@
 
 }
 
-%typemap(in,
-         fragment="Calin_Python_to_EigenMat")
-         const Eigen::MatrixXd&
+// *************************** const Eigen::MatrixXd& **************************
+
+%typemap(in, fragment="Calin_Python_to_EigenMat") const Eigen::MatrixXd&
 {
+  // typemap(in) const Eigen::MatrixXd& -- package_wide_definitions.i
   $1 = new Eigen::MatrixXd();
-  if(!calin_python_to_eigen_mat($input, *$1))SWIG_fail;
+  if(!calin_python_to_eigen_mat($input, $1))SWIG_fail;
+}
+
+%typemap(argout) const Eigen::MatrixXd&
+{
+  // typemap(argout) const Eigen::MatrixXd& -- package_wide_definitions.i
+  // nothing to see here
 }
 
 %typemap(freearg) const Eigen::MatrixXd&
 {
+  // typemap(freearg) const Eigen::MatrixXd& -- package_wide_definitions.i
   delete arg$argnum;
 }
 
-%typemap(in,
-         fragment="Calin_Python_to_EigenMat")
-         Eigen::MatrixXd&
+// ****************************** Eigen::MatrixXd& *****************************
+
+%typemap(in, fragment="Calin_Python_to_EigenMat") Eigen::MatrixXd&
 {
+  // typemap(in) Eigen::MatrixXd& -- package_wide_definitions.i
   $1 = new Eigen::MatrixXd();
-  if(!calin_python_to_eigen_mat($input, *$1))SWIG_fail;
+  if(!calin_python_to_eigen_mat($input, $1))SWIG_fail;
 }
 
-%typemap(argout,
-         fragment="Calin_Python_to_EigenMat")
-         Eigen::MatrixXd&
+%typemap(argout, fragment="Calin_Python_to_EigenMat") Eigen::MatrixXd&
 {
-  //  if(!calin_eigen_mat_to_python(*$1, $result))SWIG_fail;
-  if(!calin_eigen_mat_to_python(*$1, $input))SWIG_fail;
+  // typemap(argout) Eigen::MatrixXd& -- package_wide_definitions.i
+  if(!calin_eigen_mat_to_python($1, $input))SWIG_fail;
 }
 
-%typemap(freearg)
-         Eigen::MatrixXd&
+%typemap(freearg) Eigen::MatrixXd&
 {
+  // typemap(freearg) Eigen::MatrixXd& -- package_wide_definitions.i
   delete arg$argnum;
 }
 
-%typemap(out,
-         fragment="Calin_Python_to_EigenMat")
-         Eigen::MatrixXd
+// ************************** Eigen::MatrixXd &OUTPUT **************************
+
+%typemap(in, numinputs=0, fragment="Calin_Python_to_EigenMat")
+         Eigen::MatrixXd &OUTPUT
 {
-  npy_intp size[2] { $1.outerSize(), $1.innerSize() };
-  $result = PyArray_EMPTY(2, size, NPY_DOUBLE, 0);
-  if(!calin_eigen_mat_to_python($1, $result))SWIG_fail;
+  // typemap(in) Eigen::MatrixXd &OUTPUT -- package_wide_definitions.i
+  $1 = new Eigen::MatrixXd();
+}
+
+%typemap(argout, fragment="Calin_Python_to_EigenMat") Eigen::MatrixXd &OUTPUT
+{
+  // typemap(argout) Eigen::MatrixXd &OUTPUT -- package_wide_definitions.i
+  npy_intp size[1] { $1->size() };
+  PyObject* temp_array = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
+  if(!temp_array)SWIG_fail;
+  if(!calin_eigen_mat_to_python($1, temp_array))
+  {
+    Py_DECREF(temp_array);
+    SWIG_fail;
+  }
+  $result = SWIG_Python_AppendOutput($result, temp_array);
+}
+
+%typemap(freearg) Eigen::MatrixXd &OUTPUT
+{
+  // typemap(freearg) Eigen::MatrixXd &OUTPUT -- package_wide_definitions.i
+  delete arg$argnum;
+}
+
+// ****************************** Eigen::MatrixXd ******************************
+
+%typemap(out, fragment="Calin_Python_to_EigenMat") Eigen::MatrixXd
+{
+  // typemap(out) Eigen::MatrixXd -- package_wide_definitions.i
+  npy_intp size[1] { $1.size() };
+  $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
+  if(!$result)SWIG_fail;
+  if(!calin_eigen_mat_to_python(&$1, $result))SWIG_fail;
 }
 
 // =============================================================================

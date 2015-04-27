@@ -255,23 +255,23 @@ bool NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   xopt_ = xopt;
 }
 
-ErrorMatrixStatus NLOptOptimizer::error_matrix_estimate(MatRef err_mat)
+ErrorMatrixStatus NLOptOptimizer::error_matrix_estimate(MatRef error_matrix)
 {
-  return err_est_->error_matrix(err_mat);
+  return err_est_->error_matrix(error_matrix);
 }
 
 ErrorMatrixStatus NLOptOptimizer::
-calc_error_matrix_and_eigenvectors(MatRef err_mat,
+calc_error_matrix_and_eigenvectors(MatRef error_matrix,
                                    VecRef eigenvalues, MatRef eigenvectors)
 {
   const unsigned npar { fcn_->num_domain_axes() };
-  err_mat.resize(npar,npar);
+  error_matrix.resize(npar,npar);
   Eigen::VectorXd error_hint;
-  if(error_matrix_estimate(err_mat) != ErrorMatrixStatus::UNAVAILABLE)
-    error_hint = err_mat.diagonal().array().sqrt();
+  if(error_matrix_estimate(error_matrix) != ErrorMatrixStatus::UNAVAILABLE)
+    error_hint = error_matrix.diagonal().array().sqrt();
   Eigen::MatrixXd hessian(npar,npar);
   hessian::calculate_hessian(*fcn_, xopt_, hessian, error_hint);
-  return hessian::hessian_to_error_matrix(*fcn_, hessian, err_mat,
+  return hessian::hessian_to_error_matrix(*fcn_, hessian, error_matrix,
                                           eigenvalues, eigenvectors);
 }
 

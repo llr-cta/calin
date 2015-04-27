@@ -44,16 +44,16 @@ class Optimizer
   virtual bool can_impose_box_constraints() = 0;
   
   virtual bool minimize(VecRef xopt, double& fopt) = 0;
-  virtual ErrorMatrixStatus error_matrix_estimate(MatRef err_mat) = 0;
-  virtual ErrorMatrixStatus calc_error_matrix_and_eigenvectors(MatRef err_mat,
+  virtual ErrorMatrixStatus error_matrix_estimate(MatRef error_matrix) = 0;
+  virtual ErrorMatrixStatus calc_error_matrix_and_eigenvectors(MatRef error_matrix,
                                  VecRef eigenvalues, MatRef eigenvectors) = 0;
 
-  ErrorMatrixStatus calc_error_matrix(MatRef err_mat)
+  ErrorMatrixStatus calc_error_matrix(MatRef error_matrix)
   {
     Eigen::VectorXd eigenvalues;
     Eigen::MatrixXd eigenvectors;
     return
-        calc_error_matrix_and_eigenvectors(err_mat, eigenvalues, eigenvectors);
+        calc_error_matrix_and_eigenvectors(error_matrix, eigenvalues, eigenvectors);
   }
   
   void set_verbosity_level(VerbosityLevel verbose = VerbosityLevel::SILENT) {
@@ -123,7 +123,7 @@ class ErrorMatrixEstimator
   virtual void incorporate_func_value(ConstVecRef x, double f_val) = 0;
   virtual void incorporate_func_gradient(ConstVecRef x, double f_val,
                                          ConstVecRef gradient) = 0;
-  virtual ErrorMatrixStatus error_matrix(MatRef err_mat) = 0;
+  virtual ErrorMatrixStatus error_matrix(MatRef error_matrix) = 0;
  protected:
   unsigned npar_;
   bool error_up_;
@@ -138,7 +138,7 @@ class IdentityErrorMatrixEstimator: public ErrorMatrixEstimator
   void incorporate_func_value(ConstVecRef x, double f_val) override;
   void incorporate_func_gradient(ConstVecRef x, double f_val,
                                  ConstVecRef gradient) override;
-  ErrorMatrixStatus error_matrix(MatRef err_mat) override;
+  ErrorMatrixStatus error_matrix(MatRef error_matrix) override;
 };
 
 class BFGSErrorMatrixEstimator: public ErrorMatrixEstimator
@@ -150,7 +150,7 @@ class BFGSErrorMatrixEstimator: public ErrorMatrixEstimator
   void incorporate_func_value(ConstVecRef x, double f_val) override;
   void incorporate_func_gradient(ConstVecRef x, double f_val,
                                  ConstVecRef gradient) override;
-  ErrorMatrixStatus error_matrix(MatRef err_mat) override;
+  ErrorMatrixStatus error_matrix(MatRef error_matrix) override;
  protected:
   bool last_good_ { false };
   Eigen::MatrixXd Bk_;  // last estimate of error matrix
