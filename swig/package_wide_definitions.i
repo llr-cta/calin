@@ -137,10 +137,11 @@
 
 // *************************** const Eigen::VectorXd& **************************
 
-%typemap(in, fragment="Calin_Python_to_EigenVec") const Eigen::VectorXd&
+%typemap(in, fragment="Calin_Python_to_EigenVec")
+     const Eigen::VectorXd& (Eigen::VectorXd temp)
 {
   // typemap(in) const Eigen::VectorXd& -- package_wide_definitions.i
-  $1 = new Eigen::VectorXd();
+  $1 = &temp;
   if(!calin_python_to_eigen_vec($input, $1))SWIG_fail;
 }
 
@@ -150,18 +151,13 @@
   // nothing to see here
 }
 
-%typemap(freearg) const Eigen::VectorXd&
-{
-  // typemap(freearg) const Eigen::VectorXd& -- package_wide_definitions.i
-  delete arg$argnum;
-}
-
 // ****************************** Eigen::VectorXd& *****************************
 
-%typemap(in, fragment="Calin_Python_to_EigenVec") Eigen::VectorXd&
+%typemap(in, fragment="Calin_Python_to_EigenVec")
+     Eigen::VectorXd& (Eigen::VectorXd temp)
 {
   // typemap(in) Eigen::VectorXd& -- package_wide_definitions.i
-  $1 = new Eigen::VectorXd();
+  $1 = &temp;
   if(!calin_python_to_eigen_vec($input, $1))SWIG_fail;
 }
 
@@ -171,19 +167,13 @@
   if(!calin_eigen_vec_to_python($1, $input))SWIG_fail;
 }
 
-%typemap(freearg) Eigen::VectorXd&
-{
-  // typemap(freearg) Eigen::VectorXd& -- package_wide_definitions.i
-  delete arg$argnum;
-}
-
 // ************************** Eigen::VectorXd &OUTPUT **************************
 
 %typemap(in, numinputs=0, fragment="Calin_Python_to_EigenVec")
-         Eigen::VectorXd &OUTPUT
+     Eigen::VectorXd &OUTPUT (Eigen::VectorXd temp)
 {
   // typemap(in) Eigen::VectorXd &OUTPUT -- package_wide_definitions.i
-  $1 = new Eigen::VectorXd();
+  $1 = &temp;
 }
 
 %typemap(argout, fragment="Calin_Python_to_EigenVec") Eigen::VectorXd &OUTPUT
@@ -198,12 +188,6 @@
     SWIG_fail;
   }
   $result = SWIG_Python_AppendOutput($result, temp_array);
-}
-
-%typemap(freearg) Eigen::VectorXd &OUTPUT
-{
-  // typemap(freearg) Eigen::VectorXd &OUTPUT -- package_wide_definitions.i
-  delete arg$argnum;
 }
 
 // ****************************** Eigen::VectorXd ******************************
@@ -335,10 +319,11 @@
 
 // *************************** const Eigen::MatrixXd& **************************
 
-%typemap(in, fragment="Calin_Python_to_EigenMat") const Eigen::MatrixXd&
+%typemap(in, fragment="Calin_Python_to_EigenMat")
+     const Eigen::MatrixXd& (Eigen::MatrixXd temp)
 {
   // typemap(in) const Eigen::MatrixXd& -- package_wide_definitions.i
-  $1 = new Eigen::MatrixXd();
+  $1 = &temp;
   if(!calin_python_to_eigen_mat($input, $1))SWIG_fail;
 }
 
@@ -348,18 +333,13 @@
   // nothing to see here
 }
 
-%typemap(freearg) const Eigen::MatrixXd&
-{
-  // typemap(freearg) const Eigen::MatrixXd& -- package_wide_definitions.i
-  delete arg$argnum;
-}
-
 // ****************************** Eigen::MatrixXd& *****************************
 
-%typemap(in, fragment="Calin_Python_to_EigenMat") Eigen::MatrixXd&
+%typemap(in, fragment="Calin_Python_to_EigenMat")
+     Eigen::MatrixXd& (Eigen::MatrixXd temp)
 {
   // typemap(in) Eigen::MatrixXd& -- package_wide_definitions.i
-  $1 = new Eigen::MatrixXd();
+  $1 = &temp;
   if(!calin_python_to_eigen_mat($input, $1))SWIG_fail;
 }
 
@@ -369,19 +349,13 @@
   if(!calin_eigen_mat_to_python($1, $input))SWIG_fail;
 }
 
-%typemap(freearg) Eigen::MatrixXd&
-{
-  // typemap(freearg) Eigen::MatrixXd& -- package_wide_definitions.i
-  delete arg$argnum;
-}
-
 // ************************** Eigen::MatrixXd &OUTPUT **************************
 
 %typemap(in, numinputs=0, fragment="Calin_Python_to_EigenMat")
-         Eigen::MatrixXd &OUTPUT
+     Eigen::MatrixXd &OUTPUT (Eigen::MatrixXd temp)
 {
   // typemap(in) Eigen::MatrixXd &OUTPUT -- package_wide_definitions.i
-  $1 = new Eigen::MatrixXd();
+  $1 = &temp;
 }
 
 %typemap(argout, fragment="Calin_Python_to_EigenMat") Eigen::MatrixXd &OUTPUT
@@ -396,12 +370,6 @@
     SWIG_fail;
   }
   $result = SWIG_Python_AppendOutput($result, temp_array);
-}
-
-%typemap(freearg) Eigen::MatrixXd &OUTPUT
-{
-  // typemap(freearg) Eigen::MatrixXd &OUTPUT -- package_wide_definitions.i
-  delete arg$argnum;
 }
 
 // ****************************** Eigen::MatrixXd ******************************
