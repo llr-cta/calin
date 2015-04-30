@@ -847,6 +847,34 @@ std::vector<double> GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
   return spec;
 }  
 
+Eigen::VectorXd GeneralPoissonMES::
+extract_ped_gradient_values(ConstVecRef gradient)
+{
+  return gradient.segment(1, ped_pdf_->num_parameters());
+}
+
+Eigen::VectorXd GeneralPoissonMES::
+extract_ses_gradient_values(ConstVecRef gradient)
+{
+  return gradient.segment(1+ped_pdf_->num_parameters(),
+                          ses_pdf_->num_parameters());
+}
+
+Eigen::MatrixXd GeneralPoissonMES::
+extract_ped_hessian_values(ConstMatRef hessian)
+{
+  unsigned ped_npar = ped_pdf_->num_parameters();
+  return hessian.block(1, 1, ped_npar, ped_npar);
+}
+
+Eigen::MatrixXd GeneralPoissonMES::
+extract_ses_hessian_values(ConstMatRef hessian)
+{
+  unsigned ped_npar = ped_pdf_->num_parameters();
+  unsigned ses_npar = ses_pdf_->num_parameters();
+  return hessian.block(1+ped_npar, 1+ped_npar, ses_npar, ses_npar);  
+}
+
 int GeneralPoissonMES::ibin(double x) const
 {
   int thebin = std::floor((x-x0_)/dx_);
@@ -876,7 +904,7 @@ void GeneralPoissonMES::set_cache()
     // axis limits to specify the minimum bound. We would need to
     // adjust x0 to compensate for where the pedestal distribution
     // would end up.
-    const double x = (0.5+double(isample))*dx_;
+    const double x = ses_x(isample); // (0.5+double(isample))*dx_;
     double val;
     if(calc_gradient)
     {
@@ -903,7 +931,7 @@ void GeneralPoissonMES::set_cache()
   ped_gradient.setZero();
   for(unsigned isample = 0;isample<nsample_;isample++)
   {
-    const double x = x0_ + (0.5+double(isample))*dx_;
+    const double x = ped_x(isample); // x0_ + (0.5+double(isample))*dx_;
     double val;
     if(calc_gradient)
     {

@@ -201,10 +201,20 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   double x0() const { return x0_; }
   double dx() const { return dx_; }
   double num_electrons_in_model() const { return nmax_; }
+
+  double ses_x(unsigned isample) { return (0.5+double(isample))*dx_; }
+  double ped_x(unsigned isample) { return x0_ + (0.5+double(isample))*dx_; }
+  double mes_x(unsigned isample) { return ped_x(isample); }
+  
   std::vector<double> multi_electron_spectrum() const;
   std::vector<double> pedestal_spectrum() const;
   std::vector<double> n_electron_spectrum(unsigned n) const; // 1<=n<=nmax_
   std::vector<double> mes_n_electron_cpt(unsigned n) const; // 0<=n<=nmax_
+
+  Eigen::VectorXd extract_ped_gradient_values(ConstVecRef gradient);
+  Eigen::VectorXd extract_ses_gradient_values(ConstVecRef gradient);
+  Eigen::MatrixXd extract_ped_hessian_values(ConstMatRef hessian);
+  Eigen::MatrixXd extract_ses_hessian_values(ConstMatRef hessian);
   
  protected:  
   int ibin(double x) const;
