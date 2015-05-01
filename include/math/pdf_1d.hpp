@@ -55,7 +55,7 @@ public:
   // Moments
 
   virtual bool can_calculate_mean_and_variance() = 0;
-  virtual void get_mean_and_variance(double& mean, double& var) = 0;
+  virtual void mean_and_variance(double& mean, double& var) = 0;
 };
 
 // *****************************************************************************
@@ -95,7 +95,7 @@ class GaussianPDF: public Parameterizable1DPDF
   double error_up() override;
 
   bool can_calculate_mean_and_variance() override;
-  void get_mean_and_variance(double& mean, double& var) override;
+  void mean_and_variance(double& mean, double& var) override;
 
  protected:
   double error_up_ = 0.5;
@@ -127,7 +127,7 @@ class LimitedGaussianPDF: public GaussianPDF
                                                  MatRef hessian) override;
 
   bool can_calculate_mean_and_variance() override;
-  void get_mean_and_variance(double& mean, double& var) override;
+  void mean_and_variance(double& mean, double& var) override;
 protected:
   void set_cache();
   double xlo_;
@@ -176,7 +176,7 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   double error_up() override;
 
   bool can_calculate_mean_and_variance() override;
-  void get_mean_and_variance(double& mean, double& var) override;  
+  void mean_and_variance(double& mean, double& var) override;  
  protected:
   void set_cache();
   double limit_a_lo_    = -inf;
@@ -225,7 +225,7 @@ class TwoComponentPDF: public Parameterizable1DPDF
   // Moments
 
   bool can_calculate_mean_and_variance() override;
-  void get_mean_and_variance(double& mean, double& var) override;
+  void mean_and_variance(double& mean, double& var) override;
 
  protected:
   double prob_cpt1_;

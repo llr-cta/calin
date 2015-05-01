@@ -162,7 +162,7 @@ bool GaussianPDF::can_calculate_mean_and_variance()
   return true;
 }
 
-void GaussianPDF::get_mean_and_variance(double& mean, double& var)
+void GaussianPDF::mean_and_variance(double& mean, double& var)
 {
   mean = x0_;
   var = SQR(s_);
@@ -267,7 +267,7 @@ bool LimitedGaussianPDF::can_calculate_mean_and_variance()
   return false;
 }
 
-void LimitedGaussianPDF::get_mean_and_variance(double& mean, double& var)
+void LimitedGaussianPDF::mean_and_variance(double& mean, double& var)
 {
   assert(0);
 }
@@ -470,7 +470,7 @@ bool LimitedExponentialPDF::can_calculate_mean_and_variance()
   return false;
 }
 
-void LimitedExponentialPDF::get_mean_and_variance(double& mean, double& var)
+void LimitedExponentialPDF::mean_and_variance(double& mean, double& var)
 {
   assert(0);
 }
@@ -740,7 +740,7 @@ bool TwoComponentPDF::can_calculate_mean_and_variance()
   return false;
 }
 
-void TwoComponentPDF::get_mean_and_variance(double& mean, double& var)
+void TwoComponentPDF::mean_and_variance(double& mean, double& var)
 {
-  
+  assert(0);
 }
