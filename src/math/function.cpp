@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
+#include <numeric>
 
 #include "math/function.hpp"
 
@@ -96,6 +97,224 @@ value_parameter_gradient_and_hessian(ConstVecRef x, VecRef gradient,
                                      MatRef hessian)
 {
   return value_parameter_gradient_and_hessian_1d(x[0], gradient, hessian);
+}
+
+// *****************************************************************************
+//
+// FreezeThawFunction
+//
+// *****************************************************************************
+
+FreezeThawFunction::
+FreezeThawFunction(MultiAxisFunction* fcn, bool adopt_fcn):
+    MultiAxisFunction(), fcn_(fcn), adopt_fcn_(adopt_fcn),
+    free_axes_(fcn->num_domain_axes()), frozen_axes_(),
+    xfrozen_(fcn->num_domain_axes())
+{
+  std::iota(free_axes_.begin(), free_axes_.end(), 0);
+}
+
+FreezeThawFunction::~FreezeThawFunction()
+{
+  if(adopt_fcn_)delete fcn_;
+}
+
+bool FreezeThawFunction::freeze(unsigned iparam, double value)
+{
+  xfrozen_(iparam) = value;
+  auto index = std::lower_bound(free_axes_.begin(), free_axes_.end(), iparam);
+  if(index == free_axes_.end() or *index != iparam)return false;
+  free_axes_.erase(index);
+  index = std::lower_bound(frozen_axes_.begin(), frozen_axes_.end(), iparam);
+  frozen_axes_.insert(index, iparam);
+  return true;
+}
+
+bool FreezeThawFunction::thaw(unsigned iparam)
+{
+  auto index =
+      std::lower_bound(frozen_axes_.begin(), frozen_axes_.end(), iparam);
+  if(index == frozen_axes_.end() or *index != iparam)return false;
+  frozen_axes_.erase(index);
+  index = std::lower_bound(free_axes_.begin(), free_axes_.end(), iparam);
+  free_axes_.insert(index, iparam);
+  return true;
+}
+
+unsigned FreezeThawFunction::num_domain_axes()
+{
+  return free_axes_.size();
+}
+
+std::vector<DomainAxis> FreezeThawFunction::domain_axes()
+{
+  std::vector<DomainAxis> return_axes(free_axes_.size());
+  std::vector<DomainAxis> axes = fcn_->domain_axes();
+  for(unsigned iaxis=0;iaxis<free_axes_.size();iaxis++)
+    return_axes[iaxis] = std::move(axes[free_axes_[iaxis]]);
+  return return_axes;
+}
+
+Eigen::VectorXd FreezeThawFunction::x_in2out(ConstVecRef x)
+{
+  if(x.size() != free_axes_.size())
+  {
+    std::ostringstream stream;
+    stream << "FreezeThawFunction - position vector has " << x.size()
+           << " values, " << free_axes_.size() << " required.";
+    throw(std::runtime_error(stream.str()));
+  }
+  Eigen::VectorXd xx { xfrozen_ };
+  for(unsigned iaxis=0;iaxis<free_axes_.size();iaxis++)
+    xx[free_axes_[iaxis]] = x[iaxis];
+  return xx;
+}
+
+Eigen::VectorXd FreezeThawFunction::gradient_out2in(ConstVecRef gradient)
+{
+  Eigen::VectorXd gg(free_axes_.size());
+  for(unsigned iaxis=0;iaxis<free_axes_.size();iaxis++)
+    gg(iaxis) = gradient(free_axes_[iaxis]);
+  return gg;
+}
+
+Eigen::MatrixXd FreezeThawFunction::hessian_out2in(ConstMatRef hessian)
+{
+  Eigen::MatrixXd hh(free_axes_.size(),free_axes_.size());
+  for(unsigned iaxis=0;iaxis<free_axes_.size();iaxis++)
+    for(unsigned jaxis=0;jaxis<free_axes_.size();jaxis++)
+      hh(jaxis,iaxis) = hessian(free_axes_[jaxis],free_axes_[iaxis]);
+  return hh;
+}
+
+Eigen::VectorXd FreezeThawFunction::par_gradient_out2in(ConstVecRef gradient)
+{
+  Eigen::VectorXd gg(frozen_axes_.size());
+  for(unsigned iaxis=0;iaxis<frozen_axes_.size();iaxis++)
+    gg(iaxis) = gradient(frozen_axes_[iaxis]);
+  return gg;
+}
+
+Eigen::MatrixXd FreezeThawFunction::par_hessian_out2in(ConstMatRef hessian)
+{
+  Eigen::MatrixXd hh(frozen_axes_.size(),frozen_axes_.size());
+  for(unsigned iaxis=0;iaxis<frozen_axes_.size();iaxis++)
+    for(unsigned jaxis=0;jaxis<frozen_axes_.size();jaxis++)
+      hh(jaxis,iaxis) = hessian(frozen_axes_[jaxis],frozen_axes_[iaxis]);
+  return hh;
+}
+
+double FreezeThawFunction::value(ConstVecRef x)
+{
+  Eigen::VectorXd xx = x_in2out(x);
+  return fcn_->value(xx);
+}
+
+bool FreezeThawFunction::can_calculate_gradient()
+{
+  return fcn_->can_calculate_gradient();
+}
+
+double FreezeThawFunction::value_and_gradient(ConstVecRef x, VecRef gradient)
+{
+  Eigen::VectorXd xx = x_in2out(x);
+  Eigen::VectorXd gg(free_axes_.size() + frozen_axes_.size());
+  double val { fcn_->value_and_gradient(xx,gg) };
+  gradient = gradient_out2in(gg);
+  return val;
+}
+
+bool FreezeThawFunction::can_calculate_hessian()
+{
+  return fcn_->can_calculate_hessian();
+}
+
+double FreezeThawFunction::
+value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
+                           MatRef hessian)
+{
+  Eigen::VectorXd xx = x_in2out(x);
+  Eigen::VectorXd gg(free_axes_.size() + frozen_axes_.size());
+  Eigen::MatrixXd hh(free_axes_.size() + frozen_axes_.size(),
+                     free_axes_.size() + frozen_axes_.size());
+  double val { fcn_->value_gradient_and_hessian(xx,gg,hh) };
+  gradient = gradient_out2in(gg);
+  hessian =  hessian_out2in(hh);
+  return val;
+}
+
+double FreezeThawFunction::error_up()
+{
+  return fcn_->error_up();
+}
+
+unsigned FreezeThawFunction::num_parameters()
+{
+  return frozen_axes_.size();
+}
+
+std::vector<ParameterAxis>FreezeThawFunction::parameters()
+{
+  std::vector<ParameterAxis> return_axes(frozen_axes_.size());
+  std::vector<ParameterAxis> axes = fcn_->domain_axes();
+  for(unsigned iaxis=0;iaxis<frozen_axes_.size();iaxis++)
+    return_axes[iaxis] = std::move(axes[frozen_axes_[iaxis]]);
+  return return_axes;
+}
+
+Eigen::VectorXd FreezeThawFunction::parameter_values()
+{
+  Eigen::VectorXd p(frozen_axes_.size());
+  for(unsigned iaxis=0;iaxis<frozen_axes_.size();iaxis++)
+    p(iaxis) = xfrozen_(frozen_axes_[iaxis]);
+  return p;
+}
+
+void FreezeThawFunction::set_parameter_values(ConstVecRef values)
+{
+  if(values.size() != frozen_axes_.size())
+  {
+    std::ostringstream stream;
+    stream << "FreezeThawFunction - parameter vector has " << values.size()
+           << " values, " << frozen_axes_.size() << " required.";
+    throw(std::runtime_error(stream.str()));
+  }  
+  for(unsigned iaxis=0;iaxis<frozen_axes_.size();iaxis++)
+    xfrozen_(frozen_axes_[iaxis]) = values(iaxis);  
+}
+
+bool FreezeThawFunction::can_calculate_parameter_gradient()
+{
+  return fcn_->can_calculate_gradient();
+}
+
+bool FreezeThawFunction::can_calculate_parameter_hessian()
+{
+  return fcn_->can_calculate_hessian();
+}
+
+double FreezeThawFunction::
+value_and_parameter_gradient(ConstVecRef x, VecRef gradient)
+{
+  Eigen::VectorXd xx = x_in2out(x);
+  Eigen::VectorXd gg(free_axes_.size() + frozen_axes_.size());
+  double val { fcn_->value_and_gradient(xx,gg) };
+  gradient = par_gradient_out2in(gg);
+  return val;
+}
+
+double FreezeThawFunction::
+value_parameter_gradient_and_hessian(ConstVecRef x,
+                                     VecRef gradient, MatRef hessian)
+{
+  Eigen::VectorXd xx = x_in2out(x);
+  Eigen::VectorXd gg(free_axes_.size() + frozen_axes_.size());
+  Eigen::MatrixXd hh(free_axes_.size() + frozen_axes_.size(),
+                     free_axes_.size() + frozen_axes_.size());
+  double val { fcn_->value_gradient_and_hessian(xx,gg,hh) };
+  gradient = par_gradient_out2in(gg);
+  hessian =  par_hessian_out2in(hh);
+  return val;
 }
 
 // *****************************************************************************

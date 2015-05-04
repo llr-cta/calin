@@ -150,6 +150,63 @@ class ParameterizableSingleAxisFunction:
                                       VecRef gradient, MatRef hessian) override;
 };
 
+class FreezeThawFunction: public ParameterizableMultiAxisFunction
+{
+ public:
+  FreezeThawFunction(MultiAxisFunction* fcn, bool adopt_fcn=false);
+  virtual ~FreezeThawFunction();
+
+  MultiAxisFunction* function() { return fcn_; }
+  bool freeze(unsigned index, double value);
+  bool thaw(unsigned index);
+  const std::vector<unsigned>& free_axes() const { return free_axes_; }
+  const std::vector<unsigned>& frozen_axes() const { return frozen_axes_; }
+  unsigned index_of_free_axis(unsigned iparam) const {
+    return free_axes_.at(iparam); }
+  unsigned index_of_frozen_axis(unsigned iparam) const {
+    return frozen_axes_.at(iparam); }
+
+  Eigen::VectorXd x_in2out(ConstVecRef x);
+  
+  // Function interface
+  unsigned num_domain_axes() override;
+  std::vector<DomainAxis> domain_axes() override;
+  double value(ConstVecRef x) override;
+  bool can_calculate_gradient() override;
+  double value_and_gradient(ConstVecRef x, VecRef gradient) override;
+  bool can_calculate_hessian() override;
+  double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
+                                    MatRef hessian) override;
+  double error_up() override;
+
+  // Parameterizable interface
+  unsigned num_parameters() override;
+  std::vector<ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  // ParameterizableMultiAxisFunction interface
+  double value_and_parameter_gradient(ConstVecRef x,
+                                      VecRef gradient) override;
+  double value_parameter_gradient_and_hessian(ConstVecRef x,
+                                     VecRef gradient, MatRef hessian) override;
+
+ protected:
+  Eigen::VectorXd gradient_out2in(ConstVecRef gradient);
+  Eigen::MatrixXd hessian_out2in(ConstMatRef hessian);
+
+  Eigen::VectorXd par_gradient_out2in(ConstVecRef gradient);
+  Eigen::MatrixXd par_hessian_out2in(ConstMatRef hessian);
+
+  MultiAxisFunction* fcn_;
+  bool adopt_fcn_ = false;
+  std::vector<unsigned> free_axes_;
+  std::vector<unsigned> frozen_axes_;
+  Eigen::VectorXd xfrozen_;
+};
+
 class PMAFReverser: public ParameterizableMultiAxisFunction
 {
  public:
