@@ -224,9 +224,9 @@ double FreezeThawFunction::value_and_gradient(ConstVecRef x, VecRef gradient)
   return val;
 }
 
-bool FreezeThawFunction::can_calculate_hessian(bool on_demand)
+bool FreezeThawFunction::can_calculate_hessian()
 {
-  return fcn_->can_calculate_hessian(on_demand);
+  return fcn_->can_calculate_hessian();
 }
 
 double FreezeThawFunction::
@@ -288,9 +288,9 @@ bool FreezeThawFunction::can_calculate_parameter_gradient()
   return fcn_->can_calculate_gradient();
 }
 
-bool FreezeThawFunction::can_calculate_parameter_hessian(bool on_demand)
+bool FreezeThawFunction::can_calculate_parameter_hessian()
 {
-  return fcn_->can_calculate_hessian(on_demand);
+  return fcn_->can_calculate_hessian();
 }
 
 double FreezeThawFunction::
@@ -362,9 +362,9 @@ bool PMAFReverser::can_calculate_parameter_gradient()
   return fcn_deligate_->can_calculate_gradient();
 }
 
-bool PMAFReverser::can_calculate_parameter_hessian(bool on_demand)
+bool PMAFReverser::can_calculate_parameter_hessian()
 {
-  return fcn_deligate_->can_calculate_hessian(on_demand);
+  return fcn_deligate_->can_calculate_hessian();
 }
 
 unsigned PMAFReverser::num_domain_axes()
@@ -394,9 +394,9 @@ double PMAFReverser::value_and_gradient(ConstVecRef x, VecRef gradient)
   return fcn_deligate_->value_and_parameter_gradient(x_, gradient);
 }
 
-bool PMAFReverser::can_calculate_hessian(bool on_demand)
+bool PMAFReverser::can_calculate_hessian()
 {
-  return fcn_deligate_->can_calculate_parameter_hessian(on_demand);
+  return fcn_deligate_->can_calculate_parameter_hessian();
 }
 
 double PMAFReverser::value_gradient_and_hessian(ConstVecRef x, VecRef gradient,

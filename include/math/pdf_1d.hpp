@@ -37,9 +37,9 @@ public:
   function::DomainAxis domain_axis() override = 0;
 
   bool can_calculate_gradient() override = 0;
-  bool can_calculate_hessian(bool on_demand = false) override = 0;
+  bool can_calculate_hessian() override = 0;
   bool can_calculate_parameter_gradient() override = 0;
-  bool can_calculate_parameter_hessian(bool on_demand = false) override = 0;
+  bool can_calculate_parameter_hessian() override = 0;
 
   double value_1d(double x) override = 0;
   double value_and_gradient_1d(double x,  double& dfdx) override = 0;
@@ -80,9 +80,9 @@ class GaussianPDF: public Parameterizable1DPDF
   function::DomainAxis domain_axis() override;
 
   bool can_calculate_gradient() override;
-  bool can_calculate_hessian(bool on_demand = false) override;
+  bool can_calculate_hessian() override;
   bool can_calculate_parameter_gradient() override;
-  bool can_calculate_parameter_hessian(bool on_demand = false) override;
+  bool can_calculate_parameter_hessian() override;
 
   double value_1d(double x) override;
   double value_and_gradient_1d(double x,  double& dfdx) override;
@@ -161,9 +161,9 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   function::DomainAxis domain_axis() override;
 
   bool can_calculate_gradient() override;
-  bool can_calculate_hessian(bool on_demand = false) override;
+  bool can_calculate_hessian() override;
   bool can_calculate_parameter_gradient() override;
-  bool can_calculate_parameter_hessian(bool on_demand = false) override;
+  bool can_calculate_parameter_hessian() override;
 
   double value_1d(double x) override;
   double value_and_gradient_1d(double x,  double& dfdx) override;
@@ -208,9 +208,9 @@ class TwoComponentPDF: public Parameterizable1DPDF
   function::DomainAxis domain_axis() override;
 
   bool can_calculate_gradient() override;
-  bool can_calculate_hessian(bool on_demand = false) override;
+  bool can_calculate_hessian() override;
   bool can_calculate_parameter_gradient() override;
-  bool can_calculate_parameter_hessian(bool on_demand = false) override;
+  bool can_calculate_parameter_hessian() override;
 
   double value_1d(double x) override;
   double value_and_gradient_1d(double x,  double& dfdx) override;

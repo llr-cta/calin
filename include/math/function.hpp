@@ -84,7 +84,7 @@ class Parameterizable
   virtual Eigen::VectorXd parameter_values() = 0;
   virtual void set_parameter_values(ConstVecRef values) = 0;
   virtual bool can_calculate_parameter_gradient() = 0;
-  virtual bool can_calculate_parameter_hessian(bool on_demand = false) = 0;
+  virtual bool can_calculate_parameter_hessian() = 0;
 };
 
 class MultiAxisFunction
@@ -96,7 +96,7 @@ class MultiAxisFunction
   virtual double value(ConstVecRef x) = 0;
   virtual bool can_calculate_gradient() = 0;
   virtual double value_and_gradient(ConstVecRef x, VecRef gradient) = 0;
-  virtual bool can_calculate_hessian(bool on_demand = false) = 0;
+  virtual bool can_calculate_hessian() = 0;
   virtual double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
                                             MatRef hessian) = 0;
   virtual double error_up() = 0;  
@@ -174,7 +174,7 @@ class FreezeThawFunction: public ParameterizableMultiAxisFunction
   double value(ConstVecRef x) override;
   bool can_calculate_gradient() override;
   double value_and_gradient(ConstVecRef x, VecRef gradient) override;
-  bool can_calculate_hessian(bool on_demand = false) override;
+  bool can_calculate_hessian() override;
   double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
                                     MatRef hessian) override;
   double error_up() override;
@@ -185,7 +185,7 @@ class FreezeThawFunction: public ParameterizableMultiAxisFunction
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
   bool can_calculate_parameter_gradient() override;
-  bool can_calculate_parameter_hessian(bool on_demand = false) override;
+  bool can_calculate_parameter_hessian() override;
 
   // ParameterizableMultiAxisFunction interface
   double value_and_parameter_gradient(ConstVecRef x,
@@ -220,7 +220,7 @@ class PMAFReverser: public ParameterizableMultiAxisFunction
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
   bool can_calculate_parameter_gradient() override;
-  bool can_calculate_parameter_hessian(bool on_demand = false) override;
+  bool can_calculate_parameter_hessian() override;
 
   // MultiAxisFunction interface
   unsigned num_domain_axes() override;
@@ -228,7 +228,7 @@ class PMAFReverser: public ParameterizableMultiAxisFunction
   double value(ConstVecRef x) override;
   bool can_calculate_gradient() override;
   double value_and_gradient(ConstVecRef x, VecRef gradient) override;
-  bool can_calculate_hessian(bool on_demand = false) override;
+  bool can_calculate_hessian() override;
   double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
                                     MatRef hessian) override;
   double error_up() override;
@@ -302,8 +302,8 @@ class ParameterizableToMultiAxisFunctionAdapter: public MultiAxisFunction
   double value_and_gradient(ConstVecRef x, VecRef gradient) {
     par_->set_parameter_values(x);
     return grad_getter_(par_, gradient); }
-  bool can_calculate_hessian(bool on_demand = false) {
-    return par_->can_calculate_parameter_hessian(on_demand); }
+  bool can_calculate_hessian() {
+    return par_->can_calculate_parameter_hessian(); }
   double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
                                     MatRef hessian) {
     par_->set_parameter_values(x);

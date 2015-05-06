@@ -43,7 +43,7 @@ class MultiElectronSpectrum: public calin::math::function::Parameterizable
   virtual double ses_mean_dc() = 0;
   virtual double ses_rms_pe() = 0;
   
-  bool can_calculate_parameter_hessian(bool on_demand = false) override;
+  bool can_calculate_parameter_hessian() override;
 };
 
 class PoissonGaussianMES: public MultiElectronSpectrum
@@ -57,7 +57,7 @@ class PoissonGaussianMES: public MultiElectronSpectrum
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
   bool can_calculate_parameter_gradient() override;
-  bool can_calculate_parameter_hessian(bool on_demand = false) override;
+  bool can_calculate_parameter_hessian() override;
 
   double pdf_ped(double x) override;
   double pdf_gradient_ped(double x, VecRef gradient) override;
@@ -180,7 +180,7 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
   bool can_calculate_parameter_gradient() override;
-  bool can_calculate_parameter_hessian(bool on_demand = false) override;
+  bool can_calculate_parameter_hessian() override;
 
   double pdf_ped(double x) override;
   double pdf_gradient_ped(double x, VecRef gradient) override;
@@ -264,7 +264,7 @@ class SPELikelihood: public calin::math::function::MultiAxisFunction
   double value(ConstVecRef x) override;
   bool can_calculate_gradient() override;
   double value_and_gradient(ConstVecRef x, VecRef gradient) override;
-  bool can_calculate_hessian(bool on_demand = false) override;
+  bool can_calculate_hessian() override;
   double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
                                     MatRef hessian) override;
   double error_up() override { return 0.5; }
