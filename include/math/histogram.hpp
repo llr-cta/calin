@@ -356,6 +356,15 @@ template<typename Acc> class BasicHistogram1D:
     return insert_count;
   }
 
+  unsigned insert_two_vec(const std::vector<double>& x,
+                          const std::vector<double>& w)
+  {
+    unsigned insert_count { 0 };
+    for(unsigned i=0; i<std::min(x.size(), w.size()); i++)
+      if(insert(x[i],w[i]))insert_count++;
+    return insert_count;
+  }
+
   // Retrieve value for bin
   double weight(int ibin) const { return this->bin(ibin).total(); }
   double checked_weight(int ibin) const { return this->checked_bin(ibin).total(); }
