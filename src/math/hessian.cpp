@@ -126,7 +126,7 @@ calculate_hessian(function::MultiAxisFunction& fcn,
                   ConstVecRef x, MatRef hessian,
                   ConstVecRef error_hint)
 {
-  if(fcn.can_calculate_hessian())
+  if(fcn.can_calculate_hessian(true))
   {
     Eigen::VectorXd gradient(fcn.num_domain_axes());
     fcn.value_gradient_and_hessian(x, gradient, hessian);

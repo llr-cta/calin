@@ -68,7 +68,7 @@ bool GaussianPDF::can_calculate_gradient()
   return true;
 }
 
-bool GaussianPDF::can_calculate_hessian()
+bool GaussianPDF::can_calculate_hessian(bool on_demand)
 {
   return true;
 }
@@ -78,7 +78,7 @@ bool GaussianPDF::can_calculate_parameter_gradient()
   return true;
 }
   
-bool GaussianPDF::can_calculate_parameter_hessian()
+bool GaussianPDF::can_calculate_parameter_hessian(bool on_demand)
 {
   return true;
 }
@@ -377,7 +377,7 @@ bool LimitedExponentialPDF::can_calculate_gradient()
   return true;
 }
 
-bool LimitedExponentialPDF::can_calculate_hessian()
+bool LimitedExponentialPDF::can_calculate_hessian(bool on_demand)
 {
   return true;
 }
@@ -387,7 +387,7 @@ bool LimitedExponentialPDF::can_calculate_parameter_gradient()
   return true;
 }
 
-bool LimitedExponentialPDF::can_calculate_parameter_hessian()
+bool LimitedExponentialPDF::can_calculate_parameter_hessian(bool on_demand)
 {
   return true;
 }
@@ -606,9 +606,10 @@ bool TwoComponentPDF::can_calculate_gradient()
   return pdf1_->can_calculate_gradient() and pdf2_->can_calculate_gradient();
 }
 
-bool TwoComponentPDF::can_calculate_hessian()
+bool TwoComponentPDF::can_calculate_hessian(bool on_demand)
 {
-  return pdf1_->can_calculate_hessian() and pdf2_->can_calculate_hessian();
+  return pdf1_->can_calculate_hessian(on_demand) and
+      pdf2_->can_calculate_hessian(on_demand);
 }
 
 bool TwoComponentPDF::can_calculate_parameter_gradient()
@@ -617,10 +618,10 @@ bool TwoComponentPDF::can_calculate_parameter_gradient()
       pdf2_->can_calculate_parameter_gradient();
 }
 
-bool TwoComponentPDF::can_calculate_parameter_hessian()
+bool TwoComponentPDF::can_calculate_parameter_hessian(bool on_demand)
 {
-  return pdf1_->can_calculate_parameter_hessian() and
-      pdf2_->can_calculate_parameter_hessian();
+  return pdf1_->can_calculate_parameter_hessian(on_demand) and
+      pdf2_->can_calculate_parameter_hessian(on_demand);
 }
 
 double TwoComponentPDF::value_1d(double x)

@@ -59,7 +59,7 @@ pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
   assert(0);
 }
 
-bool MultiElectronSpectrum::can_calculate_parameter_hessian()
+bool MultiElectronSpectrum::can_calculate_parameter_hessian(bool on_demand)
 {
   return false;
 }
@@ -123,9 +123,9 @@ bool PoissonGaussianMES::can_calculate_parameter_gradient()
   return true;
 }
 
-bool PoissonGaussianMES::can_calculate_parameter_hessian()
+bool PoissonGaussianMES::can_calculate_parameter_hessian(bool on_demand)
 {
-  return true;
+  return on_demand || force_calc_hessian_;
 }
 
 double PoissonGaussianMES::pdf_mes(double x)
@@ -707,7 +707,7 @@ bool GeneralPoissonMES::can_calculate_parameter_gradient()
       ses_pdf_->can_calculate_parameter_gradient();
 }
 
-bool GeneralPoissonMES::can_calculate_parameter_hessian()
+bool GeneralPoissonMES::can_calculate_parameter_hessian(bool on_demand)
 {
   return false; // for the moment we are lazy
 }
@@ -1129,9 +1129,9 @@ bool SPELikelihood::can_calculate_gradient()
   return mes_model_->can_calculate_parameter_gradient();
 }
 
-bool SPELikelihood::can_calculate_hessian()
+bool SPELikelihood::can_calculate_hessian(bool on_demand)
 {
-  return mes_model_->can_calculate_parameter_hessian();
+  return mes_model_->can_calculate_parameter_hessian(on_demand);
 }
 
 double SPELikelihood::value_and_gradient(ConstVecRef x, VecRef gradient)
