@@ -193,9 +193,9 @@ ErrorMatrixStatus BFGSErrorMatrixEstimator::error_matrix(MatRef error_matrix)
 {
   error_matrix = 2.0*error_up_*Bk_;
 #ifdef BFGS_COMPUTE_WITH_LOOPS
-    for(unsigned i=0;i<n;i++)
-      for(unsigned j=i+1;j<n;j++)
-        error_matrix(j,i) = error_matrix(i,j);
+  for(unsigned i=0;i<n;i++)
+    for(unsigned j=i+1;j<n;j++)
+      error_matrix(j,i) = error_matrix(i,j);
 #endif
   return ErrorMatrixStatus::GOOD;
 }

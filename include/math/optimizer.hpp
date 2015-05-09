@@ -116,7 +116,7 @@ class Optimizer
 class ErrorMatrixEstimator
 {
  public:
-  ErrorMatrixEstimator(bool error_up):
+  ErrorMatrixEstimator(double error_up):
       npar_(0), error_up_(error_up) { /* nothing to see here */ }
   virtual ~ErrorMatrixEstimator();
   virtual void reset(unsigned npar) = 0;
@@ -125,8 +125,8 @@ class ErrorMatrixEstimator
                                          ConstVecRef gradient) = 0;
   virtual ErrorMatrixStatus error_matrix(MatRef error_matrix) = 0;
  protected:
-  unsigned npar_;
-  bool error_up_;
+  unsigned npar_ { 0 };
+  double error_up_ { 0.5 };
 };
 
 class IdentityErrorMatrixEstimator: public ErrorMatrixEstimator

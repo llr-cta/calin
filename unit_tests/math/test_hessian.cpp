@@ -68,6 +68,7 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
 
   Eigen::MatrixXd err_mat_est(5,5);
   opt.error_matrix_estimate(err_mat_est);
+  std::cout << std::scientific << std::setprecision(8) << err_mat_est << "\n\n";
   Eigen::VectorXd dx =
       hessian::step_size_err_up(like, x, err_mat_est.diagonal().array().sqrt());
   std::cout << "DX: " << dx.transpose() << "\n\n";
