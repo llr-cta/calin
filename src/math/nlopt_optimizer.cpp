@@ -26,6 +26,7 @@ bool does_algorithm_match(const std::string& name, const std::string& algo_name)
      strcasecmp(name.c_str(), algo_name.c_str()+6) == 0)return true;
   if(strncasecmp(algo_name.c_str(), "NLOPP::", 7)==0 and
      strcasecmp(name.c_str(), algo_name.c_str()+7) == 0)return true;
+  return false;
 }
 
 #define MATCH_ALGORITHM(x) if(does_algorithm_match(name, #x))return x
