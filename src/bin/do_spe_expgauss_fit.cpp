@@ -57,7 +57,7 @@ int main(int argc, char** argv)
                               mes_hist.size(), &ses, &ped);
   SPELikelihood like(mes_model, mes_hist);
 
-  NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
+  NLOptOptimizer opt("LD_LBFGS", &like);
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   Eigen::VectorXd x(7);
   x <<  atof(argv[0]),atof(argv[1]),atof(argv[2]),

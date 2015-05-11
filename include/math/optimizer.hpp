@@ -19,6 +19,9 @@ namespace calin { namespace math { namespace optimizer {
 
 enum class OptimizerVerbosityLevel { SILENT, FCN_EVALS_ONLY, ELEVATED, MAX };
 
+enum class OptimizationStatus { TOLERANCE_REACHED, STOPPED_AT_MAXCALLS,
+    STOPPED_AT_MAXTIME, LIMITED_BY_PRECISION, OPTIMIZER_FAILURE };
+
 CALIN_TYPEALIAS(ErrorMatrixStatus, hessian::ErrorMatrixStatus);
 
 class Optimizer
@@ -43,9 +46,14 @@ class Optimizer
   virtual bool can_use_hessian() = 0;
   virtual bool can_impose_box_constraints() = 0;
   
-  virtual bool minimize(VecRef xopt, double& fopt) = 0;
+  virtual OptimizationStatus minimize(VecRef xopt, double& fopt) = 0;
+
+  unsigned num_iterations() const { return iterations_; }
+  double best_evaluation(VecRef xbest) const { xbest=xbest_; return fbest_; }
+  
   virtual ErrorMatrixStatus error_matrix_estimate(MatRef error_matrix) = 0;
-  virtual ErrorMatrixStatus calc_error_matrix_and_eigenvectors(MatRef error_matrix,
+  virtual ErrorMatrixStatus
+  calc_error_matrix_and_eigenvectors(MatRef error_matrix,
                                  VecRef eigenvalues, MatRef eigenvectors) = 0;
 
   ErrorMatrixStatus calc_error_matrix(MatRef error_matrix)
@@ -53,7 +61,8 @@ class Optimizer
     Eigen::VectorXd eigenvalues;
     Eigen::MatrixXd eigenvectors;
     return
-        calc_error_matrix_and_eigenvectors(error_matrix, eigenvalues, eigenvectors);
+        calc_error_matrix_and_eigenvectors(error_matrix, eigenvalues,
+                                           eigenvectors);
   }
   
   void set_verbosity_level(VerbosityLevel verbose = VerbosityLevel::SILENT) {
@@ -63,12 +72,14 @@ class Optimizer
   void set_abs_tolerance(double tol) { abs_tol_ = std::max(0.0,tol); }
   void set_rel_tolerance(double tol) { rel_tol_ = std::max(0.0,tol); }
   void set_max_iterations(unsigned max_num) { max_iterations_ = max_num; }
+  void set_max_walltime(double max_wtime) { max_walltime_ = max_wtime; }
 
   double abs_tolerance() const { return abs_tol_; }
   double rel_tolerance() const { return (abs_tol_==0.0 and rel_tol_==0.0 and
                                          max_iterations_==0)?0.001:rel_tol_; }
   unsigned max_iterations() const { return max_iterations_; }
-  
+  double max_walltime() const { return max_walltime_; }
+
   double step_size_scale_factor() const { return stepsize_scale_; }
   void set_step_size_scale_factor(double sss = 1.0) { stepsize_scale_ = sss; }
   
@@ -111,6 +122,11 @@ class Optimizer
   double abs_tol_ { 0.0 };
   double rel_tol_ { 0.0 };
   unsigned max_iterations_ { 0 };
+  double max_walltime_ { 0.0 };
+
+  unsigned iterations_ { 0 };
+  double fbest_ { inf };
+  Eigen::VectorXd xbest_;
 };
 
 class ErrorMatrixEstimator

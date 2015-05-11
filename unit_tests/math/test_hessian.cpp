@@ -24,8 +24,8 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, mes_hist);
 
-  //optimizer::NLOptOptimizer opt(nlopt::LN_SBPLX, &like);
-  optimizer::NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
+  //optimizer::NLOptOptimizer opt("LN_SBPLX", &like);
+  optimizer::NLOptOptimizer opt("LD_LBFGS", &like);
   opt.set_scale({0.1,0.1,1.0,1.0,0.05});
   opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   opt.set_abs_tolerance(0.0001);

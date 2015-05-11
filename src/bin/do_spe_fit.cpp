@@ -62,7 +62,7 @@ int main(int argc, char** argv)
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, hist);
 
-  NLOptOptimizer opt(nlopt::LD_LBFGS, &like);
+  NLOptOptimizer opt("LD_LBFGS", &like);
   Eigen::VectorXd x(5);
   x <<  atof(argv[0]),atof(argv[1]),atof(argv[2]),
       atof(argv[3]),atof(argv[4]);

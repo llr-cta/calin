@@ -124,7 +124,7 @@ bool Minuit75Optimizer::can_impose_box_constraints()
   return true;
 }
 
-bool Minuit75Optimizer::minimize(VecRef xopt, double& fopt)
+OptimizationStatus Minuit75Optimizer::minimize(VecRef xopt, double& fopt)
 {
   constexpr auto inf = std::numeric_limits<double>::infinity();
   mn7fcb* fcb { cast_fcb(fcb_) };
@@ -185,7 +185,7 @@ bool Minuit75Optimizer::minimize(VecRef xopt, double& fopt)
               &intvar, sizeof(buffer)/sizeof(*buffer)-1, fcb);
     }
   
-  return true;
+  
 }
 
 ErrorMatrixStatus Minuit75Optimizer::error_matrix_estimate(MatRef error_matrix)

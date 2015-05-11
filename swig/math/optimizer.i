@@ -23,10 +23,11 @@
 %import "math/function.i"
 %import "math/hessian.i"
 
-%include "nlopt/nlopt.hpp"
+//%include "nlopt/nlopt.hpp"
 
 %include "typemaps.i"
 
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& xbest };
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& xopt };
 %apply double &OUTPUT { double& fopt };
 //%apply Eigen::MatrixXd &OUTPUT { Eigen::MatrixXd& error_matrix };
