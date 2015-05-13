@@ -1,4 +1,5 @@
-add_subdirectory(nlopt)
+add_subdirectory(io)
+add_subdirectory(nlopt)  
 add_subdirectory(f2c)
 add_subdirectory(math) 
 add_subdirectory(calib) 
