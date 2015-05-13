@@ -15,7 +15,7 @@ TEST(TestLog, WriteStream) {
   LOG(VERBOSE) << "Multi-line\n   hello!\n";
   LOG(VERBOSE) << "Unfinished line";
   LOG(VERBOSE) << "Second unfinished line";
-  LOG(VERBOSE) << "Unfinished multi-line\n   hello\n";
+  LOG(VERBOSE) << "Unfinished multi-line\n   hello";
 }
 
 int main(int argc, char **argv) {

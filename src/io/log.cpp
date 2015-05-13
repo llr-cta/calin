@@ -47,9 +47,9 @@ void MultiLogger::log_message(Level level, const std::string& message,
   }
 
   std::string timestamp_string = "1999-01-01 12:34:56"; //timestamp.string();
-  //const char* level_string = level_string(level);
+  const char* this_level_string = level_string(level);
   const char* apply_color_string = color_string(level);
-  const char* reset_color_string = "\x1b[39;0m";
+  const char* reset_color_string = "\x1b[0m";
 
   size_t spos = 0;
   while(spos < message.size())
@@ -62,8 +62,9 @@ void MultiLogger::log_message(Level level, const std::string& message,
       try
       {
         if(ss.apply_timestamp) (*ss.stream) << timestamp_string;
-        if(ss.use_colors and *apply_color_string)
-          (*ss.stream) << ": " << apply_color_string;
+        if(ss.use_colors and *apply_color_string and *level_string)
+          (*ss.stream) << ' ' << apply_color_string << ' ' << this_level_string
+                       << ' ' << reset_color_string << ": ";
         else (*ss.stream) << /* ' ' << level_string << */ ": ";
       
         ss.stream->write(message.c_str() + spos, n);
@@ -158,10 +159,10 @@ const char* MultiLogger::color_string(Level level)
 {
   switch(level)
   {
-    case Level::FATAL:    return "\x1b[31;4m";
-    case Level::ERROR:    return "\x1b[35m";
-    case Level::WARNING:  return "\x1b[33m";
-    case Level::INFO:     return "\x1b[32m";
+    case Level::FATAL:    return "\x1b[37;41;97;101;1m";
+    case Level::ERROR:    return "\x1b[30;45;105;1m";
+    case Level::WARNING:  return "\x1b[30;43;103;1m";
+    case Level::INFO:     return "\x1b[37;46;97;1m";
     case Level::VERBOSE:  return "";
   }
 }
@@ -174,6 +175,6 @@ const char* MultiLogger::level_string(Level level)
     case Level::ERROR:    return "ERROR";
     case Level::WARNING:  return "WARN";
     case Level::INFO:     return "INFO";
-    case Level::VERBOSE:  return "VERBOSE";
+    case Level::VERBOSE:  return "";
   }
 }
