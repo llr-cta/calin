@@ -18,11 +18,12 @@ namespace calin { namespace io { namespace log {
 
 enum Level { FATAL, ERROR, WARNING, INFO, VERBOSE };
 
-class TimeStamp
+struct TimeStamp
 {
- public:
-  std::string string() const { return std::string(); }
+  std::string string() const;
   static TimeStamp now();
+  uint64_t sec;
+  uint32_t usec;
 };
 
 class Logger
@@ -30,7 +31,7 @@ class Logger
  public:
   virtual ~Logger();
   virtual void log_message(Level level, const std::string& message,
-                           TimeStamp timestamp = TimeStamp()) = 0;
+                           TimeStamp timestamp = TimeStamp::now()) = 0;
 };
 
 class MultiLogger: public Logger
@@ -38,7 +39,7 @@ class MultiLogger: public Logger
  public:
   virtual ~MultiLogger();
   void log_message(Level level, const std::string& message,
-                   TimeStamp timestamp = TimeStamp()) override;
+                   TimeStamp timestamp = TimeStamp::now()) override;
 
   void add_logger(Logger* logger, bool adopt_logger = false);
   void add_stream(std::ostream* stream, bool adopt_stream = false,
@@ -50,7 +51,7 @@ class MultiLogger: public Logger
   bool add_file(const std::string filename,
                 bool apply_timestamp = false, bool use_colors = false);
   
- private:
+ protected:
   void lock();
   void unlock();
 
@@ -91,6 +92,18 @@ inline MultiLogger* default_logger()
   static MultiLogger s_logger;
   return &s_logger;
 }
+
+class PythonLogger: public Logger
+{
+ public:
+  PythonLogger(bool use_stderr = false): Logger(), use_stderr_(use_stderr) { }
+  virtual ~PythonLogger();
+  void log_message(Level level, const std::string& message,
+                   TimeStamp timestamp = TimeStamp::now()) override;
+  static bool is_python_initialised();
+ protected:
+  bool use_stderr_ { false };
+};
 
 class LoggerStream
 {

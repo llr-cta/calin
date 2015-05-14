@@ -7,10 +7,37 @@
 */
 
 #include <fstream>
+#include <Python.h>
+
+#include <sys/time.h>
+#include <time.h>
 
 #include "io/log.hpp"
 
 using namespace calin::io::log;
+
+std::string TimeStamp::string() const
+{
+  time_t ts = time_t(sec);
+  struct tm the_tm;
+  localtime_r(&ts, &the_tm);
+  char buffer[] = "1999-12-31 23:59:59";
+  strftime(buffer, sizeof(buffer)-1, "%Y-%m-%dT%H:%M:%S", &the_tm);
+  std::string str(buffer);
+  uint32_t ms = usec/1000;
+  if(ms<10) { str += ".00"; }
+  else if(ms<100) { str += ".0"; }
+  else { str += "."; }
+  str += std::to_string(ms);
+  return str;
+}
+
+TimeStamp TimeStamp::now()
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return { uint64_t(tv.tv_sec), uint32_t(tv.tv_usec) };
+}
 
 Logger::~Logger()
 {
@@ -31,7 +58,10 @@ void MultiLogger::log_message(Level level, const std::string& message,
 
   if(sub_loggers_.empty() and sub_streams_.empty())
   {
-    nolock_add_stream(&std::cout, false, false, false);
+    if(PythonLogger::is_python_initialised())
+      nolock_add_logger(new PythonLogger, true);
+    else
+      nolock_add_stream(&std::cout, false, false, false);
   }
   
   for(auto& sl : sub_loggers_)
@@ -46,7 +76,7 @@ void MultiLogger::log_message(Level level, const std::string& message,
     }
   }
 
-  std::string timestamp_string = "1999-01-01 12:34:56"; //timestamp.string();
+  std::string timestamp_string = timestamp.string();
   const char* this_level_string = level_string(level);
   const char* apply_color_string = color_string(level);
   const char* reset_color_string = "\x1b[0m";
@@ -61,26 +91,23 @@ void MultiLogger::log_message(Level level, const std::string& message,
     {
       try
       {
-        if(ss.apply_timestamp) (*ss.stream) << timestamp_string;
+        if(ss.apply_timestamp) (*ss.stream) << timestamp_string << ' ';
         if(ss.use_colors and *apply_color_string and *level_string)
-          (*ss.stream) << ' ' << apply_color_string << ' ' << this_level_string
-                       << ' ' << reset_color_string << ": ";
-        else (*ss.stream) << /* ' ' << level_string << */ ": ";
+        {
+          (*ss.stream) << apply_color_string << ' ' << this_level_string
+                       << ' ' << reset_color_string << ' ';
+        }
       
         ss.stream->write(message.c_str() + spos, n);
-        
-        if(ss.use_colors and *apply_color_string)
-          (*ss.stream) << reset_color_string;
-
         ss.stream->write("\n",1);
-
-        spos += n+1;
       }
       catch(...)
       {
         // for better or worse - ignore all errors
       }
     }
+
+    spos += n+1;    
   }
   
   unlock();
@@ -178,3 +205,23 @@ const char* MultiLogger::level_string(Level level)
     case Level::VERBOSE:  return "";
   }
 }
+
+PythonLogger::~PythonLogger()
+{
+  // nothing to see here
+}
+
+void PythonLogger::
+log_message(Level level, const std::string& message, TimeStamp timestamp)
+{
+  if(use_stderr_)
+    PySys_WriteStderr("%.1000s", message.c_str());
+  else
+    PySys_WriteStdout("%.1000s", message.c_str());
+}
+
+bool PythonLogger::is_python_initialised()
+{
+  return Py_IsInitialized() != 0;
+}
+

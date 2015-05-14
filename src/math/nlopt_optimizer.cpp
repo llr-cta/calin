@@ -12,10 +12,12 @@
 
 #include "nlopt/nlopt.h"
 
+#include "io/log.hpp"
 #include "math/nlopt_optimizer.hpp"
 #include "math/hessian.hpp"
 
 using namespace calin::math::optimizer;
+using namespace calin::io::log;
 
 namespace {
 
@@ -341,7 +343,7 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   
   for(unsigned ipar=0; ipar<axes.size(); ipar++)
   {
-    std::cout << axes[ipar].name << ' '
+    LOG(INFO) << axes[ipar].name << ' '
               << ((ipar<x.size())?x[ipar]:0.0) << ' '
               << ((ipar<stepsize.size())?stepsize[ipar]:0.0) << ' '
               << (ipar<xlim_lo.size()?xlim_lo[ipar]:0.0) << ' '
