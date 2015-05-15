@@ -92,12 +92,16 @@ void MultiLogger::log_message(Level level, const std::string& message,
       try
       {
         if(ss.apply_timestamp) (*ss.stream) << timestamp_string << ' ';
-        if(ss.use_colors and *apply_color_string and *level_string)
+        if(ss.use_colors and *apply_color_string and *this_level_string)
         {
           (*ss.stream) << apply_color_string << ' ' << this_level_string
                        << ' ' << reset_color_string << ' ';
         }
-      
+        else if(*this_level_string)
+        {
+          (*ss.stream) << '[' << this_level_string << ']' << ' ';
+        }
+        
         ss.stream->write(message.c_str() + spos, n);
         ss.stream->write("\n",1);
       }
@@ -200,7 +204,7 @@ const char* MultiLogger::level_string(Level level)
   {
     case Level::FATAL:    return "FATAL";
     case Level::ERROR:    return "ERROR";
-    case Level::WARNING:  return "WARN";
+    case Level::WARNING:  return "WARNING";
     case Level::INFO:     return "INFO";
     case Level::VERBOSE:  return "";
   }

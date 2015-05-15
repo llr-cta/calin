@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <vector>
 #include <Eigen/Core>
 
 namespace calin { 
@@ -31,5 +32,15 @@ CALIN_TYPEALIAS(MatRef, Eigen::MatrixXd&);
 CALIN_TYPEALIAS(ConstVecRef, const Eigen::VectorXd&);
 CALIN_TYPEALIAS(ConstMatRef, const Eigen::MatrixXd&);
 #endif
+
+inline std::vector<double> eigen_to_stdvec(const Eigen::VectorXd& x)
+{
+  return std::vector<double>(x.data(), x.data()+x.size());
+}
+
+inline Eigen::VectorXd std_to_eigenvec(const std::vector<double> &x)
+{
+  return Eigen::Map<const Eigen::VectorXd>(&x.front(), x.size());
+}
 
 }; // namespace calin

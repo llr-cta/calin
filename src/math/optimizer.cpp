@@ -6,10 +6,13 @@
 
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 
+#include "io/log.hpp"
 #include "math/optimizer.hpp"
 
 using namespace calin::math::optimizer;
+using namespace calin::io::log;
 
 const double Optimizer::inf;
 const double Optimizer::pos_inf;
@@ -69,6 +72,58 @@ std::vector<double> Optimizer::limits_hi() const
                    xlim.begin(), [](double ipar1, double ipar2) {
                      return std::min(ipar1, ipar2); });
   return xlim;
+}
+
+#if 0
+enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY, 
+    SUMMARY_AND_PROGRESS, ELEVATED, MAX };
+#endif
+
+void Optimizer::print_header(const std::string& opt_name,
+                             const std::vector<double>& lower_limit,
+                             const std::vector<double>& upper_limit,
+                             const std::vector<double>& step_size)
+{
+  if(verbose_ == OptimizerVerbosityLevel::SILENT or
+     verbose_ == OptimizerVerbosityLevel::ALL_FCN_EVALS_ONLY)return;
+  auto L = LOG(INFO);
+  unsigned naxis = fcn_->num_domain_axes();
+  unsigned wnaxis = std::max(3U, num_digits(naxis));
+  L << "Minimization starting using " << opt_name << " (naxis = "
+    << naxis << ")\n";
+  if(verbose_ == OptimizerVerbosityLevel::SUMMARY_ONLY or
+     verbose_ == OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS)return;
+
+  unsigned wname = 0;
+  auto axes = fcn_->domain_axes();
+  for(const auto& a : axes)wname = std::max(wname, (unsigned)a.name.size());
+  wname = std::min(wname, 40U);
+  
+  L << "List of function domain axes: \n"
+    << std::setw(wnaxis) << "Num" << ' '
+    << std::left
+    << std::setw(wname) << "Name" << ' '
+    << std::setw(8) << "Lo bound" << ' '
+    << std::setw(8) << "Hi bound" << ' '
+    << std::setw(8) << "Stepsize" << '\n';
+
+  for(unsigned iaxis = 0; iaxis<axes.size(); iaxis++)
+  {
+    L << std::setw(wnaxis) << iaxis << ' '
+      << std::setw(wname) << axes[iaxis].name << ' ';
+    if(iaxis < lower_limit.size())
+      L << std::setw(8) << lower_limit[iaxis] << ' ';
+    else
+      L << "********" << ' ';
+    if(iaxis < upper_limit.size())
+      L << std::setw(8) << upper_limit[iaxis] << ' ';
+    else
+      L << "********" << ' ';
+    if(iaxis < step_size.size())
+      L << std::setw(8) << step_size[iaxis] << '\n';
+    else
+      L << "********" << '\n';    
+  }
 }
 
 // =============================================================================

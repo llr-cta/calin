@@ -305,90 +305,138 @@ bool NLOptOptimizer::can_impose_box_constraints()
 
 OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
 {
-  auto axes = fcn_->domain_axes();
+  nlopt_result nlopt_status;
+
   unsigned naxes { fcn_->num_domain_axes() };
-
-  std::unique_ptr<nlopt_opt_s, void(*)(nlopt_opt)>
-      opt(nlopt_create(name_to_algorithm(algorithm_name_), naxes),
-          nlopt_destroy);
-  nlopt_set_min_objective(opt.get(), nlopt_callback, this);
-
-#if 1
-  std::vector<double> xlim_lo { limits_lo() };
-  if(!xlim_lo.empty() &&
-     std::count(xlim_lo.begin(), xlim_lo.end(), neg_inf)!=xlim_lo.size())
-    nlopt_set_lower_bounds(opt.get(), &xlim_lo.front());
-
-  std::vector<double> xlim_hi { limits_hi() };
-  if(!xlim_hi.empty() &&
-     std::count(xlim_hi.begin(), xlim_hi.end(), pos_inf)!=xlim_hi.size())
-    nlopt_set_upper_bounds(opt.get(), &xlim_hi.front());
-#endif
-  
-  std::vector<double> stepsize { initial_stepsize() };
-  nlopt_set_initial_step(opt.get(), &stepsize.front());
-  
-  if(abs_tolerance()>0)nlopt_set_ftol_abs(opt.get(), abs_tolerance());
-  if(rel_tolerance()>0)nlopt_set_ftol_rel(opt.get(), rel_tolerance());
-  if(max_iterations()>0)nlopt_set_maxeval(opt.get(), max_iterations());
-  if(max_walltime()>0)nlopt_set_maxtime(opt.get(), max_walltime());
-
-  std::vector<double> x { initial_values() };
 
   err_est_->reset(naxes);
   iterations_ = 0;
   fbest_ = inf;
-  xbest_.resize(x.size());
-  xbest_ = Eigen::Map<Eigen::VectorXd>(x.data(), x.size());
+  xbest_.resize(naxes);
+  xbest_ = std_to_eigenvec(initial_values());
+
+  opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
+  opt_message_ = "Optimizer did not run";
+
+  fopt = fbest_;
+  xopt = xbest_;
   
-  for(unsigned ipar=0; ipar<axes.size(); ipar++)
+  std::unique_ptr<nlopt_opt_s, void(*)(nlopt_opt)>
+      opt(nlopt_create(name_to_algorithm(algorithm_name_), naxes),
+          nlopt_destroy);
+  if(opt.get() == NULL)
   {
-    LOG(INFO) << axes[ipar].name << ' '
-              << ((ipar<x.size())?x[ipar]:0.0) << ' '
-              << ((ipar<stepsize.size())?stepsize[ipar]:0.0) << ' '
-              << (ipar<xlim_lo.size()?xlim_lo[ipar]:0.0) << ' '
-              << (ipar<xlim_hi.size()?xlim_hi[ipar]:0.0) << '\n';
+    opt_message_ = "Could not create NLOpt object";
+    return opt_status_;
   }
 
-  nlopt_result nlopt_status = nlopt_optimize(opt.get(), &x.front(), &fopt);
+  nlopt_status = nlopt_set_min_objective(opt.get(), nlopt_callback, this);
+  if(nlopt_status != NLOPT_SUCCESS)
+  {
+    opt_message_ = "Could not set objective function";
+    return opt_status_;
+  }
+  
+  std::vector<double> xlim_lo { limits_lo() };
+  if(!xlim_lo.empty() &&
+     std::count(xlim_lo.begin(), xlim_lo.end(), neg_inf)!=xlim_lo.size())
+  {
+    nlopt_status = nlopt_set_lower_bounds(opt.get(), &xlim_lo.front());
+    if(nlopt_status != NLOPT_SUCCESS)
+    {
+      opt_message_ = "Could not set lower bounds";
+      return opt_status_;
+    }
+  }
 
-  OptimizationStatus return_status;
+  std::vector<double> xlim_hi { limits_hi() };
+  if(!xlim_hi.empty() &&
+     std::count(xlim_hi.begin(), xlim_hi.end(), pos_inf)!=xlim_hi.size())
+  {
+    nlopt_status = nlopt_set_upper_bounds(opt.get(), &xlim_hi.front());
+    if(nlopt_status != NLOPT_SUCCESS)
+    {
+      opt_message_ = "Could not set upper bounds";
+      return opt_status_;
+    }
+  }
+  
+  std::vector<double> stepsize { initial_stepsize() };
+  nlopt_status = nlopt_set_initial_step(opt.get(), &stepsize.front());
+  if(nlopt_status != NLOPT_SUCCESS)
+  {
+    opt_message_ = "Could not set initial stepsize";
+    return opt_status_;
+  }
+
+  if((abs_tolerance()>0 and
+      nlopt_set_ftol_abs(opt.get(), abs_tolerance()) != NLOPT_SUCCESS) or
+     (rel_tolerance()>0 and
+      nlopt_set_ftol_rel(opt.get(), rel_tolerance()) != NLOPT_SUCCESS) or
+     (max_iterations()>0 and
+      nlopt_set_maxeval(opt.get(), max_iterations()) != NLOPT_SUCCESS) or
+     (max_walltime()>0 and
+      nlopt_set_maxtime(opt.get(), max_walltime()) != NLOPT_SUCCESS))
+  {
+    opt_message_ = "Could not set stopping criteria";
+    return opt_status_;
+  }
+
+  print_header("Hello", xlim_lo, xlim_hi, stepsize);
+      
+  nlopt_status = nlopt_optimize(opt.get(), xopt.data(), &fopt);
+  
   switch(nlopt_status)
   {
     case NLOPT_SUCCESS:
     case NLOPT_FTOL_REACHED:
-      return_status = OptimizationStatus::TOLERANCE_REACHED;
+      opt_status_ = OptimizationStatus::TOLERANCE_REACHED;
+      opt_message_ = "Tolerance reached";
       break;
     case NLOPT_MAXEVAL_REACHED:
-      return_status = OptimizationStatus::STOPPED_AT_MAXCALLS;
+      opt_status_ = OptimizationStatus::STOPPED_AT_MAXCALLS;
+      opt_message_ = "Calls limit reached";
       break;
     case NLOPT_MAXTIME_REACHED:
-      return_status = OptimizationStatus::STOPPED_AT_MAXTIME;
+      opt_status_ = OptimizationStatus::STOPPED_AT_MAXTIME;
+      opt_message_ = "Time limit reached";
       break;
     case NLOPT_ROUNDOFF_LIMITED:
-      return_status = OptimizationStatus::LIMITED_BY_PRECISION;
+      opt_status_ = OptimizationStatus::LIMITED_BY_PRECISION;
+      opt_message_ = "Minimization limited by machine precision";
       break;
     case NLOPT_FAILURE:
+      opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
+      opt_message_ = "Optimizer failed for unknown reason";
+      break;
     case NLOPT_INVALID_ARGS:
+      opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
+      opt_message_ = "Invalid arguments";
+      break;
     case NLOPT_OUT_OF_MEMORY:
-      return_status = OptimizationStatus::OPTIMIZER_FAILURE;
+      opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
+      opt_message_ = "Out of memory";
       break;
     case NLOPT_STOPVAL_REACHED:
     case NLOPT_XTOL_REACHED:
     case NLOPT_FORCED_STOP:
+      opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
+      opt_message_ = "This should not happen";
       assert(0);
   }
 
-  if(return_status != OptimizationStatus::OPTIMIZER_FAILURE)
+  if(opt_status_ == OptimizationStatus::OPTIMIZER_FAILURE)
+  {
+    fopt = fbest_;
+    xopt = xbest_;
+  }
+  else
   {
     fbest_ = fopt;
-    xbest_ = Eigen::Map<Eigen::VectorXd>(x.data(), x.size());
+    xbest_ = xopt;
   }
   
-  fopt = fbest_;
-  xopt = xbest_;
-
-  return return_status;
+  return opt_status_;
 }
 
 ErrorMatrixStatus NLOptOptimizer::error_matrix_estimate(MatRef error_matrix)
@@ -439,7 +487,7 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
   }
   catch(std::exception& x)
   {
-    std::cout
+    LOG(ERROR)
         << "NLOptOptimizer::eval_func: exception in user function with x = "
         << xvec.transpose() << '\n'
         << "NLOptOptimizer::eval_func: exception is: " << x.what() << '\n';
@@ -450,12 +498,16 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
   
   if(verbose_ != VerbosityLevel::SILENT)
   {
-    std::cout << std::left << std::setw(4) << iterations_+1 << ' '
-              << std::fixed << std::setprecision(8) << fcn_value;
-    for(unsigned ipar=0;ipar<n;ipar++)std::cout << ' ' << x[ipar];
+    auto stream = LOG(VERBOSE);
+    stream << std::left << std::setw(4) << iterations_+1 << ' '
+           << std::setprecision(8) << std::setw(10) << fcn_value;
+    for(unsigned ipar=0;ipar<n;ipar++)
+      stream << ' '  << std::setprecision(8) << std::setw(10) << x[ipar];
+#if 0
     if(grad)
-      for(unsigned ipar=0;ipar<n;ipar++)std::cout << ' ' << grad[ipar];
-    std::cout << '\n';
+      for(unsigned ipar=0;ipar<n;ipar++)stream << ' ' << grad[ipar];
+#endif
+    stream << '\n';
   }
     
   if(iterations_ == 0 or fcn_value < fbest_)fbest_ = fcn_value, xbest_ = xvec;

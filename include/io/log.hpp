@@ -124,6 +124,7 @@ class LoggerStream
     (*message_) << t;
     return *this;
   }
+  std::ostream& stream() { return *message_; }
  protected:
   Logger* logger_;
   Level level_;
@@ -142,6 +143,53 @@ class VaporStream
 inline LoggerStream LOG(Level level, Logger* logger = default_logger())
 {  
   return LoggerStream(logger, level);
+}
+
+#if 0
+template<typename Streamer>
+const char* printv(Streamer& streamer, const char* format)
+{
+  
+}
+
+template<typename Streamer, typename T>
+const char* printv(Streamer& streamer, const char* format, const T& x)
+{
+  std::ostringstream str;
+  
+  while(*format)
+  {
+    if(*format == '%')
+    {
+      format++;
+      if(*format == '-')
+      {
+        str << std::left;
+        format++;
+      }
+    }
+    else
+    {
+      str << *format;
+      format++;
+    }
+}
+
+template<typename Streamer, typename T, typename... Params>
+const char* printv(Streamer& streamer, const char* format, const T& x,
+                   const Params & ... params)
+{
+  format = printv(streamer, format, x);
+  if(*format) format = printv(streamer, format, params...);
+  return format;
+}
+#endif
+
+inline unsigned num_digits(unsigned x)
+{
+  unsigned n = 1;
+  while(x/=10)n++;
+  return n;
 }
 
 } } } // namespace calin::io::log

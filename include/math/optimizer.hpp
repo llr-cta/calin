@@ -17,7 +17,8 @@
 
 namespace calin { namespace math { namespace optimizer {
 
-enum class OptimizerVerbosityLevel { SILENT, FCN_EVALS_ONLY, ELEVATED, MAX };
+enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY, 
+    SUMMARY_AND_PROGRESS, ELEVATED, MAX };
 
 enum class OptimizationStatus { TOLERANCE_REACHED, STOPPED_AT_MAXCALLS,
     STOPPED_AT_MAXTIME, LIMITED_BY_PRECISION, OPTIMIZER_FAILURE };
@@ -50,6 +51,8 @@ class Optimizer
 
   unsigned num_iterations() const { return iterations_; }
   double best_evaluation(VecRef xbest) const { xbest=xbest_; return fbest_; }
+  OptimizationStatus last_minimize_status() const { return opt_status_; }
+  const std::string& last_minimize_message() const { return opt_message_; }
   
   virtual ErrorMatrixStatus error_matrix_estimate(MatRef error_matrix) = 0;
   virtual ErrorMatrixStatus
@@ -109,8 +112,16 @@ class Optimizer
   std::vector<double> initial_stepsize() const;
   std::vector<double> limits_lo() const;
   std::vector<double> limits_hi() const;
+
   
  protected:
+  void print_header(const std::string& opt_name,
+                    const std::vector<double>& lower_limit,
+                    const std::vector<double>& upper_limit,
+                    const std::vector<double>& step_size);
+  void print_eval();
+  void print_results();
+  
   bool my_fcn_ { false };
   function::MultiAxisFunction* fcn_  { nullptr };
   VerbosityLevel verbose_ { VerbosityLevel::SILENT };
@@ -127,6 +138,8 @@ class Optimizer
   unsigned iterations_ { 0 };
   double fbest_ { inf };
   Eigen::VectorXd xbest_;
+  OptimizationStatus opt_status_ { OptimizationStatus::OPTIMIZER_FAILURE };
+  std::string opt_message_ { "Live long and prosper" };
 };
 
 class ErrorMatrixEstimator
