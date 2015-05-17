@@ -33,7 +33,7 @@ bool does_algorithm_match(const std::string& name, const std::string& algo_name)
 
 #define MATCH_ALGORITHM(x) if(does_algorithm_match(name, #x))return x
 
-nlopt_algorithm name_to_algorithm(const std::string& name)
+static nlopt_algorithm name_to_algorithm(const std::string& name)
 {
   MATCH_ALGORITHM(NLOPT_GN_DIRECT);
   MATCH_ALGORITHM(NLOPT_GN_DIRECT_L);
@@ -101,32 +101,90 @@ nlopt_algorithm name_to_algorithm(const std::string& name)
   return NLOPT_NUM_ALGORITHMS;
 }
 
+#undef MATCH_ALGORITHM
+
+#define MATCH_ALGORITHM(x) case x: return(std::string(#x))
+
+static std::string algorithm_to_name(nlopt_algorithm algo)
+{
+  switch(algo)
+  {
+    MATCH_ALGORITHM(NLOPT_GN_DIRECT);
+    MATCH_ALGORITHM(NLOPT_GN_DIRECT_L);
+    MATCH_ALGORITHM(NLOPT_GN_DIRECT_L_RAND);
+    MATCH_ALGORITHM(NLOPT_GN_DIRECT_NOSCAL);
+    MATCH_ALGORITHM(NLOPT_GN_DIRECT_L_NOSCAL);
+    MATCH_ALGORITHM(NLOPT_GN_DIRECT_L_RAND_NOSCAL);
+  
+    MATCH_ALGORITHM(NLOPT_GN_ORIG_DIRECT);
+    MATCH_ALGORITHM(NLOPT_GN_ORIG_DIRECT_L);
+    
+    MATCH_ALGORITHM(NLOPT_GD_STOGO);
+    MATCH_ALGORITHM(NLOPT_GD_STOGO_RAND);
+
+    MATCH_ALGORITHM(NLOPT_LD_LBFGS_NOCEDAL);
+
+    MATCH_ALGORITHM(NLOPT_LD_LBFGS);
+
+    MATCH_ALGORITHM(NLOPT_LN_PRAXIS);
+    MATCH_ALGORITHM(NLOPT_LD_VAR1);
+    MATCH_ALGORITHM(NLOPT_LD_VAR2);
+
+    MATCH_ALGORITHM(NLOPT_LD_TNEWTON);
+    MATCH_ALGORITHM(NLOPT_LD_TNEWTON_RESTART);
+    MATCH_ALGORITHM(NLOPT_LD_TNEWTON_PRECOND);
+    MATCH_ALGORITHM(NLOPT_LD_TNEWTON_PRECOND_RESTART);
+
+    MATCH_ALGORITHM(NLOPT_GN_CRS2_LM);
+
+    MATCH_ALGORITHM(NLOPT_GN_MLSL);
+    MATCH_ALGORITHM(NLOPT_GD_MLSL);
+    MATCH_ALGORITHM(NLOPT_GN_MLSL_LDS);
+    MATCH_ALGORITHM(NLOPT_GD_MLSL_LDS);
+  
+    MATCH_ALGORITHM(NLOPT_LD_MMA);
+
+    MATCH_ALGORITHM(NLOPT_LN_COBYLA);
+
+    MATCH_ALGORITHM(NLOPT_LN_NEWUOA);
+    MATCH_ALGORITHM(NLOPT_LN_NEWUOA_BOUND);
+    MATCH_ALGORITHM(NLOPT_LN_NELDERMEAD);
+    MATCH_ALGORITHM(NLOPT_LN_SBPLX);
+
+    MATCH_ALGORITHM(NLOPT_LN_AUGLAG);
+    MATCH_ALGORITHM(NLOPT_LD_AUGLAG);
+    MATCH_ALGORITHM(NLOPT_LN_AUGLAG_EQ);
+    MATCH_ALGORITHM(NLOPT_LD_AUGLAG_EQ);
+
+    MATCH_ALGORITHM(NLOPT_LN_BOBYQA);
+
+    MATCH_ALGORITHM(NLOPT_GN_ISRES);
+    
+    /* new variants that require local_optimizer to be set,
+       not with older constants for backwards compatibility */
+    MATCH_ALGORITHM(NLOPT_AUGLAG);
+    MATCH_ALGORITHM(NLOPT_AUGLAG_EQ);
+    MATCH_ALGORITHM(NLOPT_G_MLSL);
+    MATCH_ALGORITHM(NLOPT_G_MLSL_LDS);
+
+    MATCH_ALGORITHM(NLOPT_LD_SLSQP);
+    MATCH_ALGORITHM(NLOPT_LD_CCSAQ);
+
+    MATCH_ALGORITHM(NLOPT_GN_ESCH);
+
+    case NLOPT_NUM_ALGORITHMS:
+    default:
+      return std::string();
+  };
+
+  return std::string();
 }
 
-NLOptOptimizer::
-NLOptOptimizer(const std::string& algorithm_name,
-               function::MultiAxisFunction* fcn, bool adopt_fcn)
-    : Optimizer(fcn, adopt_fcn), algorithm_name_(algorithm_name)
-{
-  if(can_use_gradient(algorithm_name))
-    err_est_.reset(new BFGSErrorMatrixEstimator(fcn->error_up()));
-  else
-    err_est_.reset(new IdentityErrorMatrixEstimator(fcn->error_up()));
-}
+#undef MATCH_ALGORITHM
 
-NLOptOptimizer::~NLOptOptimizer()
+static bool algo_requires_gradient(nlopt_algorithm algo)
 {
-  // nothing to see here
-}
-
-bool NLOptOptimizer::is_valid_algorithm(const std::string& algorithm_name)
-{
-  return name_to_algorithm(algorithm_name) != NLOPT_NUM_ALGORITHMS;
-}
-
-bool NLOptOptimizer::requires_gradient(const std::string& algorithm_name)
-{
-  switch(name_to_algorithm(algorithm_name))
+  switch(algo)
   {
     case NLOPT_GN_DIRECT:
     case NLOPT_GN_DIRECT_L:
@@ -181,6 +239,39 @@ bool NLOptOptimizer::requires_gradient(const std::string& algorithm_name)
   }
 
   assert(0);
+}
+
+static bool algo_requires_hessian(nlopt_algorithm algo)
+{
+  return false;
+}
+
+}
+
+NLOptOptimizer::
+NLOptOptimizer(const std::string& algorithm_name,
+               function::MultiAxisFunction* fcn, bool adopt_fcn)
+    : Optimizer(fcn, adopt_fcn), algorithm_name_(algorithm_name)
+{
+  if(can_use_gradient(algorithm_name))
+    err_est_.reset(new BFGSErrorMatrixEstimator(fcn->error_up()));
+  else
+    err_est_.reset(new IdentityErrorMatrixEstimator(fcn->error_up()));
+}
+
+NLOptOptimizer::~NLOptOptimizer()
+{
+  // nothing to see here
+}
+
+bool NLOptOptimizer::is_valid_algorithm(const std::string& algorithm_name)
+{
+  return name_to_algorithm(algorithm_name) != NLOPT_NUM_ALGORITHMS;
+}
+
+bool NLOptOptimizer::requires_gradient(const std::string& algorithm_name)
+{
+  return algo_requires_gradient(name_to_algorithm(algorithm_name));
 }
 
 bool NLOptOptimizer::requires_box_constraints(const std::string& algorithm_name)
@@ -245,7 +336,7 @@ bool NLOptOptimizer::requires_box_constraints(const std::string& algorithm_name)
 
 bool NLOptOptimizer::requires_hessian(const std::string& algorithm_name)
 {
-  return false;
+  return algo_requires_hessian(name_to_algorithm(algorithm_name));
 }
 
 bool NLOptOptimizer::can_estimate_error(const std::string& algorithm_name)
@@ -308,7 +399,8 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   nlopt_result nlopt_status;
 
   unsigned naxes { fcn_->num_domain_axes() };
-
+  nlopt_algorithm algo { name_to_algorithm(algorithm_name_) };
+  
   err_est_->reset(naxes);
   iterations_ = 0;
   fbest_ = inf;
@@ -320,10 +412,15 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
 
   fopt = fbest_;
   xopt = xbest_;
-  
+
+  std::vector<double> xlim_lo { limits_lo() };
+  std::vector<double> xlim_hi { limits_hi() };
+  std::vector<double> stepsize { initial_stepsize() };
+  print_header(algorithm_to_name(algo), algo_requires_gradient(algo),
+               algo_requires_hessian(algo), xlim_lo, xlim_hi, stepsize);
+
   std::unique_ptr<nlopt_opt_s, void(*)(nlopt_opt)>
-      opt(nlopt_create(name_to_algorithm(algorithm_name_), naxes),
-          nlopt_destroy);
+      opt(nlopt_create(algo, naxes), nlopt_destroy);
   if(opt.get() == NULL)
   {
     opt_message_ = "Could not create NLOpt object";
@@ -337,7 +434,6 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
     return opt_status_;
   }
   
-  std::vector<double> xlim_lo { limits_lo() };
   if(!xlim_lo.empty() &&
      std::count(xlim_lo.begin(), xlim_lo.end(), neg_inf)!=xlim_lo.size())
   {
@@ -349,7 +445,6 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
     }
   }
 
-  std::vector<double> xlim_hi { limits_hi() };
   if(!xlim_hi.empty() &&
      std::count(xlim_hi.begin(), xlim_hi.end(), pos_inf)!=xlim_hi.size())
   {
@@ -361,7 +456,6 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
     }
   }
   
-  std::vector<double> stepsize { initial_stepsize() };
   nlopt_status = nlopt_set_initial_step(opt.get(), &stepsize.front());
   if(nlopt_status != NLOPT_SUCCESS)
   {
@@ -382,8 +476,6 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
     return opt_status_;
   }
 
-  print_header("Hello", xlim_lo, xlim_hi, stepsize);
-      
   nlopt_status = nlopt_optimize(opt.get(), xopt.data(), &fopt);
   
   switch(nlopt_status)

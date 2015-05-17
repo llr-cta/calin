@@ -78,8 +78,9 @@ class Optimizer
   void set_max_walltime(double max_wtime) { max_walltime_ = max_wtime; }
 
   double abs_tolerance() const { return abs_tol_; }
-  double rel_tolerance() const { return (abs_tol_==0.0 and rel_tol_==0.0 and
-                                         max_iterations_==0)?0.001:rel_tol_; }
+  double rel_tolerance() const { return (abs_tol_<=0.0 and rel_tol_<=0.0 and
+                                         max_iterations_==0 and
+                                         max_walltime_<=0.0)?0.001:rel_tol_; }
   unsigned max_iterations() const { return max_iterations_; }
   double max_walltime() const { return max_walltime_; }
 
@@ -116,6 +117,7 @@ class Optimizer
   
  protected:
   void print_header(const std::string& opt_name,
+                    bool requires_gradient, bool requires_hessian,
                     const std::vector<double>& lower_limit,
                     const std::vector<double>& upper_limit,
                     const std::vector<double>& step_size);

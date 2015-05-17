@@ -80,17 +80,55 @@ enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY,
 #endif
 
 void Optimizer::print_header(const std::string& opt_name,
+                             bool requires_gradient, bool requires_hessian,
                              const std::vector<double>& lower_limit,
                              const std::vector<double>& upper_limit,
                              const std::vector<double>& step_size)
 {
   if(verbose_ == OptimizerVerbosityLevel::SILENT or
      verbose_ == OptimizerVerbosityLevel::ALL_FCN_EVALS_ONLY)return;
+
   auto L = LOG(INFO);
+  L << "Minimization starting using " << opt_name << '.';
+  if(requires_gradient || requires_hessian)
+  {
+    L << " Requires: ";
+    if(requires_gradient)
+    {
+      L << "gradient";
+      if(requires_hessian)L << " and hessian.";
+      else L << '.';
+    }
+    else
+      L << "hessian.";
+  }
+  L << '\n';
+
+  L << "Stopping criteria:";
+  if(abs_tolerance() > 0)L << " dF<" << abs_tolerance();
+  if(rel_tolerance() > 0)L << " dF/F<" << rel_tolerance();
+  if(max_iterations() > 0)L << " N_eval>" << max_iterations();
+  if(max_walltime() > 0)L << " T_wall>" << max_walltime();
+  L << '\n';
+  
   unsigned naxis = fcn_->num_domain_axes();
   unsigned wnaxis = std::max(3U, num_digits(naxis));
-  L << "Minimization starting using " << opt_name << " (naxis = "
-    << naxis << ")\n";
+  
+  L << "Function:  N_dim = " << naxis << '.';
+  if(fcn_->can_calculate_gradient() || fcn_->can_calculate_hessian())
+  {
+    L << " Provides: ";
+    if(fcn_->can_calculate_gradient())
+    {
+      L << "gradient";
+      if(fcn_->can_calculate_hessian())L << " and hessian.";
+      else L << '.';
+    }
+    else
+      L << "hessian.";
+  }
+  L << '\n';
+  
   if(verbose_ == OptimizerVerbosityLevel::SUMMARY_ONLY or
      verbose_ == OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS)return;
 
@@ -99,9 +137,9 @@ void Optimizer::print_header(const std::string& opt_name,
   for(const auto& a : axes)wname = std::max(wname, (unsigned)a.name.size());
   wname = std::min(wname, 40U);
   
-  L << "List of function domain axes: \n"
-    << std::setw(wnaxis) << "Num" << ' '
+  L << "List of function dimensions: \n"
     << std::left
+    << std::setw(wnaxis) << "Dim" << ' '
     << std::setw(wname) << "Name" << ' '
     << std::setw(8) << "Lo bound" << ' '
     << std::setw(8) << "Hi bound" << ' '
@@ -114,15 +152,15 @@ void Optimizer::print_header(const std::string& opt_name,
     if(iaxis < lower_limit.size())
       L << std::setw(8) << lower_limit[iaxis] << ' ';
     else
-      L << "********" << ' ';
+      L << std::setw(8) << '-' << ' ';
     if(iaxis < upper_limit.size())
       L << std::setw(8) << upper_limit[iaxis] << ' ';
     else
-      L << "********" << ' ';
+      L << std::setw(8) << '-' << ' ';
     if(iaxis < step_size.size())
       L << std::setw(8) << step_size[iaxis] << '\n';
     else
-      L << "********" << '\n';    
+      L << std::setw(8) << '-' << '\n';    
   }
 }
 

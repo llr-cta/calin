@@ -71,7 +71,8 @@ hessian::calculate_error_matrix(function::MultiAxisFunction& fcn,
 Eigen::VectorXd hessian::
 step_size_epsmult(ConstVecRef x, double eps_mult)
 {
-  constexpr double eps { std::numeric_limits<double>::epsilon() };
+  // Remember: at minimum dF~dx^2 so use sqrt(epsilon) as basis for step size!
+  const double eps { std::sqrt(std::numeric_limits<double>::epsilon()) };
   unsigned npar = x.size();
   Eigen::VectorXd dx(npar);
   for(unsigned ipar=0; ipar<npar; ipar++)
