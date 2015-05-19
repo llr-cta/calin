@@ -341,7 +341,7 @@ bool NLOptOptimizer::requires_hessian(const std::string& algorithm_name)
 
 bool NLOptOptimizer::can_estimate_error(const std::string& algorithm_name)
 {
-  return false;
+  return requires_gradient(algorithm_name);
 }
 
 bool NLOptOptimizer::can_use_gradient(const std::string& algorithm_name)
@@ -402,22 +402,17 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   nlopt_algorithm algo { name_to_algorithm(algorithm_name_) };
   
   err_est_->reset(naxes);
-  iterations_ = 0;
-  fbest_ = inf;
-  xbest_.resize(naxes);
-  xbest_ = std_to_eigenvec(initial_values());
-
-  opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
-  opt_message_ = "Optimizer did not run";
-
-  fopt = fbest_;
-  xopt = xbest_;
-
+  gvec_.resize(naxes);
+  
   std::vector<double> xlim_lo { limits_lo() };
   std::vector<double> xlim_hi { limits_hi() };
   std::vector<double> stepsize { initial_stepsize() };
-  print_header(algorithm_to_name(algo), algo_requires_gradient(algo),
+
+  opt_starting(algorithm_to_name(algo), algo_requires_gradient(algo),
                algo_requires_hessian(algo), xlim_lo, xlim_hi, stepsize);
+
+  fopt = fbest_;
+  xopt = xbest_;
 
   std::unique_ptr<nlopt_opt_s, void(*)(nlopt_opt)>
       opt(nlopt_create(algo, naxes), nlopt_destroy);
@@ -527,6 +522,8 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
     fbest_ = fopt;
     xbest_ = xopt;
   }
+
+  opt_finished(opt_status_, fbest_, xbest_);
   
   return opt_status_;
 }
@@ -566,10 +563,9 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
   {
     if(grad)
     {
-      Eigen::VectorXd gvec(n);
-      fcn_value = fcn_->value_and_gradient(xvec,gvec);
-      Eigen::Map<Eigen::VectorXd>(grad,n) = gvec;
-      err_est_->incorporate_func_gradient(xvec, fcn_value, gvec);
+      fcn_value = fcn_->value_and_gradient(xvec,gvec_);
+      Eigen::Map<Eigen::VectorXd>(grad,n) = gvec_;
+      err_est_->incorporate_func_gradient(xvec, fcn_value, gvec_);
     }
     else
     {
@@ -587,23 +583,8 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
   }
 
   if(!isfinite(fcn_value))fcn_value = inf;
-  
-  if(verbose_ != VerbosityLevel::SILENT)
-  {
-    auto stream = LOG(VERBOSE);
-    stream << std::left << std::setw(4) << iterations_+1 << ' '
-           << std::setprecision(8) << std::setw(10) << fcn_value;
-    for(unsigned ipar=0;ipar<n;ipar++)
-      stream << ' '  << std::setprecision(8) << std::setw(10) << x[ipar];
-#if 0
-    if(grad)
-      for(unsigned ipar=0;ipar<n;ipar++)stream << ' ' << grad[ipar];
-#endif
-    stream << '\n';
-  }
-    
-  if(iterations_ == 0 or fcn_value < fbest_)fbest_ = fcn_value, xbest_ = xvec;
-  iterations_++;
+
+  opt_progress(fcn_value, xvec, grad?&gvec_:nullptr, nullptr);
   
   return fcn_value;
 }

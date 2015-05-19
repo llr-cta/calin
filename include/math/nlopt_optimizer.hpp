@@ -54,7 +54,7 @@ class NLOptOptimizer: public Optimizer
   double eval_func(unsigned n, const double* x, double* grad);
   
   std::string algorithm_name_;
-
+  Eigen::VectorXd gvec_;
   std::unique_ptr<ErrorMatrixEstimator> err_est_;
 };
 

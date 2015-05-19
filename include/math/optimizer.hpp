@@ -12,13 +12,14 @@
 #include <vector>
 #include <Eigen/Core>
 
+#include "io/log.hpp"
 #include "function.hpp"
 #include "hessian.hpp"
 
 namespace calin { namespace math { namespace optimizer {
 
 enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY, 
-    SUMMARY_AND_PROGRESS, ELEVATED, MAX };
+    SUMMARY_AND_PROGRESS, SUMMARY_AND_ALL_FCN_EVALS, ELEVATED, MAX };
 
 enum class OptimizationStatus { TOLERANCE_REACHED, STOPPED_AT_MAXCALLS,
     STOPPED_AT_MAXTIME, LIMITED_BY_PRECISION, OPTIMIZER_FAILURE };
@@ -116,13 +117,16 @@ class Optimizer
 
   
  protected:
-  void print_header(const std::string& opt_name,
+  void opt_starting(const std::string& opt_name,
                     bool requires_gradient, bool requires_hessian,
                     const std::vector<double>& lower_limit,
                     const std::vector<double>& upper_limit,
                     const std::vector<double>& step_size);
-  void print_eval();
-  void print_results();
+  void opt_progress(double fval, const Eigen::VectorXd& x,
+                    const Eigen::VectorXd* gradient,
+                    const Eigen::MatrixXd* hessian);
+  void opt_finished(OptimizationStatus status, double fopt,
+                    const Eigen::VectorXd& xopt);
   
   bool my_fcn_ { false };
   function::MultiAxisFunction* fcn_  { nullptr };
@@ -137,11 +141,16 @@ class Optimizer
   unsigned max_iterations_ { 0 };
   double max_walltime_ { 0.0 };
 
+  OptimizationStatus opt_status_ { OptimizationStatus::OPTIMIZER_FAILURE };
+  std::string opt_message_ { "Live long and prosper" };
+  io::log::TimeStamp opt_start_time_;
   unsigned iterations_ { 0 };
   double fbest_ { inf };
   Eigen::VectorXd xbest_;
-  OptimizationStatus opt_status_ { OptimizationStatus::OPTIMIZER_FAILURE };
-  std::string opt_message_ { "Live long and prosper" };
+  unsigned wfval_ { 0 };
+  unsigned pfval_ { 0 };
+  unsigned progress_update_iter_ { 0 };
+  double progress_update_time_ { 0.0 };
 };
 
 class ErrorMatrixEstimator

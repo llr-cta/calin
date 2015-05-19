@@ -16,12 +16,13 @@
 
 namespace calin { namespace io { namespace log {
 
-enum Level { FATAL, ERROR, WARNING, INFO, VERBOSE };
+enum Level { FATAL, ERROR, WARNING, INFO, SUCCESS, FAILURE, VERBOSE };
 
 struct TimeStamp
 {
   std::string string() const;
   static TimeStamp now();
+  double seconds_since(const TimeStamp& then);
   uint64_t sec;
   uint32_t usec;
 };

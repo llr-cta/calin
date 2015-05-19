@@ -505,7 +505,7 @@ TEST(TestSPELikelihood, Optimize_NLOpt)
   //optimizer::NLOptOptimizer opt("LN_SBPLX", &like);
   optimizer::NLOptOptimizer opt("LD_LBFGS", &like);
   opt.set_scale({0.1,0.1,1.0,1.0,0.05});
-  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SUMMARY_ONLY);
   opt.set_abs_tolerance(0.0001);
   opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 0.45 });
   Eigen::VectorXd x_opt(5);
@@ -617,7 +617,7 @@ TEST(TestGeneralPoissonMES_Gauss, Optimize_NLOpt_Simplex)
   optimizer::NLOptOptimizer opt("LN_SBPLX", &like);
   //optimizer::NLOptOptimizer opt("LD_LBFGS", &like);
   opt.set_scale({0.1,0.1,1.0,1.0,0.05});
-  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS);
   opt.set_abs_tolerance(0.0001);
   opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 45.0 });
   Eigen::VectorXd x_opt(5);

@@ -74,58 +74,70 @@ std::vector<double> Optimizer::limits_hi() const
   return xlim;
 }
 
-#if 0
-enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY, 
-    SUMMARY_AND_PROGRESS, ELEVATED, MAX };
-#endif
-
-void Optimizer::print_header(const std::string& opt_name,
+void Optimizer::opt_starting(const std::string& opt_name,
                              bool requires_gradient, bool requires_hessian,
                              const std::vector<double>& lower_limit,
                              const std::vector<double>& upper_limit,
                              const std::vector<double>& step_size)
 {
+  // Set up common (base-class) variables used to keep track of optimization
+  // progress and status
+  unsigned naxes { fcn_->num_domain_axes() };
+  opt_status_           = OptimizationStatus::OPTIMIZER_FAILURE;
+  opt_message_          = "Optimizer did not run";
+  opt_start_time_       = TimeStamp::now();
+  iterations_           = 0;
+  fbest_                = inf;
+  xbest_                = std_to_eigenvec(initial_values());
+  progress_update_iter_ = 0;
+  progress_update_time_ = 0;
+
+  // Print status message if required by verbosity
   if(verbose_ == OptimizerVerbosityLevel::SILENT or
      verbose_ == OptimizerVerbosityLevel::ALL_FCN_EVALS_ONLY)return;
 
   auto L = LOG(INFO);
-  L << "Minimization starting using " << opt_name << '.';
+  L << "Optimization using " << opt_name;
   if(requires_gradient || requires_hessian)
   {
-    L << " Requires: ";
+    L << " (requires: ";
     if(requires_gradient)
     {
       L << "gradient";
-      if(requires_hessian)L << " and hessian.";
-      else L << '.';
+      if(requires_hessian)L << " and hessian)";
+      else L << ')';
     }
     else
-      L << "hessian.";
+      L << "hessian)";
   }
   L << '\n';
 
-  L << "Stopping criteria:";
-  if(abs_tolerance() > 0)L << " dF<" << abs_tolerance();
-  if(rel_tolerance() > 0)L << " dF/F<" << rel_tolerance();
-  if(max_iterations() > 0)L << " N_eval>" << max_iterations();
-  if(max_walltime() > 0)L << " T_wall>" << max_walltime();
+  L << "- stopping criteria:";
+  bool has_crit = false;
+  if(abs_tolerance() > 0) {
+    L << " dF < " << abs_tolerance(); has_crit = true; }
+  if(rel_tolerance() > 0) { if(has_crit) L << " or";
+    L << " dF/F < " << rel_tolerance(); has_crit = true; }
+  if(max_iterations() > 0) { if(has_crit) L << " or";
+    L << " N_eval > " << max_iterations(); }
+  if(max_walltime() > 0) { if(has_crit) L << " or";
+    L << " T_wall > " << max_walltime() << " sec"; }
   L << '\n';
   
   unsigned naxis = fcn_->num_domain_axes();
-  unsigned wnaxis = std::max(3U, num_digits(naxis));
+  unsigned wnaxis = std::max(1U, num_digits(naxis));
   
-  L << "Function:  N_dim = " << naxis << '.';
+  L << "- function: N_dim = " << naxis;
   if(fcn_->can_calculate_gradient() || fcn_->can_calculate_hessian())
   {
-    L << " Provides: ";
+    L << ", provides: ";
     if(fcn_->can_calculate_gradient())
     {
       L << "gradient";
-      if(fcn_->can_calculate_hessian())L << " and hessian.";
-      else L << '.';
+      if(fcn_->can_calculate_hessian())L << " and hessian";
     }
     else
-      L << "hessian.";
+      L << "hessian";
   }
   L << '\n';
   
@@ -138,8 +150,8 @@ void Optimizer::print_header(const std::string& opt_name,
   wname = std::min(wname, 40U);
   
   L << "List of function dimensions: \n"
-    << std::left
-    << std::setw(wnaxis) << "Dim" << ' '
+    << "- " << std::left
+    << std::setw(wnaxis) << "#" << ' '
     << std::setw(wname) << "Name" << ' '
     << std::setw(8) << "Lo bound" << ' '
     << std::setw(8) << "Hi bound" << ' '
@@ -147,7 +159,7 @@ void Optimizer::print_header(const std::string& opt_name,
 
   for(unsigned iaxis = 0; iaxis<axes.size(); iaxis++)
   {
-    L << std::setw(wnaxis) << iaxis << ' '
+    L << "- " << std::setw(wnaxis) << iaxis << ' '
       << std::setw(wname) << axes[iaxis].name << ' ';
     if(iaxis < lower_limit.size())
       L << std::setw(8) << lower_limit[iaxis] << ' ';
@@ -162,6 +174,131 @@ void Optimizer::print_header(const std::string& opt_name,
     else
       L << std::setw(8) << '-' << '\n';    
   }
+}
+
+void Optimizer::opt_progress(double fval, const Eigen::VectorXd& x,
+                             const Eigen::VectorXd* gradient,
+                             const Eigen::MatrixXd* hessian)
+{
+  double flast = fbest_;
+  if(iterations_ == 0 or fval < fbest_)fbest_ = fval, xbest_ = x;
+  iterations_++;
+  
+  if(iterations_ == 1)
+  {
+    pfval_ = 0;
+    if(abs_tolerance() > 0.0 and abs_tolerance() < 1.0)
+      pfval_ = 1+unsigned(std::ceil(-std::log10(abs_tolerance())));
+    if(rel_tolerance() > 0.0 and std::abs(fval)*rel_tolerance() < 1.0)
+      pfval_ = std::max(pfval_, 1+unsigned(std::ceil(-std::log10(std::abs(fval)*
+                                                     rel_tolerance()))));
+    if(pfval_ == 0 and 0.001*fcn_->error_up() < 1.0)
+      pfval_ = std::ceil(-std::log10(.001*fcn_->error_up()));
+
+    std::ostringstream s;
+    s << std::fixed << std::setprecision(pfval_) << fval;
+    wfval_ = s.str().size();
+  }
+  
+  if(verbose_ == OptimizerVerbosityLevel::SILENT or
+     (verbose_ == OptimizerVerbosityLevel::SUMMARY_ONLY))
+    return;
+
+  TimeStamp ts = TimeStamp::now();
+  double tss = ts.seconds_since(opt_start_time_);
+  if(verbose_ == OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS)
+  {
+    if(iterations_-progress_update_iter_ > 100 or
+       tss-progress_update_time_ > 60.0)
+      progress_update_iter_ = iterations_, progress_update_time_ = tss;
+    else
+      return;
+  }
+  
+  auto L = LOG(VERBOSE);
+
+  L << std::left << std::setw(std::max(3U, num_digits(max_iterations())))
+    << iterations_ << ' '
+    << std::fixed
+    << std::setw(wfval_) << std::setprecision(pfval_) << fval << ' '
+    << std::setw(wfval_) << std::setprecision(pfval_) << fbest_ << ' '
+    << std::right
+    << std::setw(wfval_) << std::setprecision(pfval_) << fbest_-flast << ' '
+    << std::scientific << std::setw(10) << std::setprecision(3)
+    << (fbest_-flast)/fbest_ << ' '
+    << std::fixed << std::setw(9) << std::setprecision(3) << tss << '\n';
+}
+
+#if 0
+enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY, 
+    SUMMARY_AND_PROGRESS, SUMMARY_AND_FCN_EVALS, ELEVATED, MAX };
+#endif
+
+void Optimizer::opt_finished(OptimizationStatus status, double fopt,
+                             const Eigen::VectorXd& xopt)
+{
+  if(verbose_ == OptimizerVerbosityLevel::SILENT or
+     (verbose_ == OptimizerVerbosityLevel::ALL_FCN_EVALS_ONLY))return;
+
+  Level level = Level::FAILURE;
+  switch(status)
+  {
+    case OptimizationStatus::TOLERANCE_REACHED:
+    case OptimizationStatus::STOPPED_AT_MAXCALLS:
+    case OptimizationStatus::STOPPED_AT_MAXTIME:
+      level = Level::SUCCESS;
+      break;
+    case OptimizationStatus::LIMITED_BY_PRECISION:
+      level = Level::WARNING;
+      break;
+    case OptimizationStatus::OPTIMIZER_FAILURE:
+      level = Level::FAILURE;
+      break;
+  }
+
+  TimeStamp ts = TimeStamp::now();
+  double tss = ts.seconds_since(opt_start_time_);
+
+  LOG(level)
+      << "Optimization finished with status: " << opt_message_ << '\n'
+      << "- " << iterations_ << " function evaluations in "
+      << std::setprecision(3) << tss << " seconds\n"
+      << "- Best function value: "
+      << std::fixed
+      << std::setw(wfval_) << std::setprecision(pfval_) << fopt << '\n';
+
+  if(verbose_ != OptimizerVerbosityLevel::ELEVATED and
+     verbose_ != OptimizerVerbosityLevel::MAX)return;
+
+  bool has_err_mat = this->can_estimate_error();
+  Eigen::MatrixXd err_mat;
+  if(has_err_mat)
+    has_err_mat =
+        this->error_matrix_estimate(err_mat) != ErrorMatrixStatus::UNAVAILABLE;
+  
+  auto axes = fcn_->domain_axes();
+  unsigned wnaxis = std::max(1U, num_digits(axes.size()));
+  unsigned wname = 0;
+  for(const auto& a : axes)wname = std::max(wname, (unsigned)a.name.size());
+  wname = std::min(wname, 40U);
+
+  auto L = LOG(INFO);
+  L << "Final position values";
+  if(has_err_mat) L << " and APPROXIMATE errors";
+  L << ":\n";
+  for(unsigned iaxis = 0; iaxis<axes.size(); iaxis++)
+  {
+    L << "- " << std::left << std::setw(wnaxis) << iaxis << ' '
+      << std::setw(wname) << axes[iaxis].name << ' '
+      << xopt(iaxis);
+    if(has_err_mat)
+      L << " +/- " << std::sqrt(err_mat(iaxis,iaxis));
+    L << '\n';
+  }
+
+  if(verbose_ != OptimizerVerbosityLevel::MAX)return;
+  if(has_err_mat)
+    L << "\nAPPROXIMATE error matrix:\n" << err_mat << '\n';
 }
 
 // =============================================================================

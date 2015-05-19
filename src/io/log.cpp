@@ -39,6 +39,13 @@ TimeStamp TimeStamp::now()
   return { uint64_t(tv.tv_sec), uint32_t(tv.tv_usec) };
 }
 
+double TimeStamp::seconds_since(const TimeStamp& then)
+{
+  double dt { sec>then.sec?double(sec-then.sec):-double(then.sec-sec) };
+  dt += (usec>then.usec?double(usec-then.usec):-double(then.usec-usec))*1e-6;
+  return dt;
+}
+  
 Logger::~Logger()
 {
   //nothing to see here
@@ -61,7 +68,7 @@ void MultiLogger::log_message(Level level, const std::string& message,
     if(PythonLogger::is_python_initialised())
       nolock_add_logger(new PythonLogger, true);
     else
-      nolock_add_stream(&std::cout, false, false, false);
+      nolock_add_stream(&std::cout, false, false, true);
   }
   
   for(auto& sl : sub_loggers_)
@@ -191,8 +198,10 @@ const char* MultiLogger::color_string(Level level)
   switch(level)
   {
     case Level::FATAL:    return "\x1b[37;41;97;101;1m";
+    case Level::FAILURE:
     case Level::ERROR:    return "\x1b[30;45;105;1m";
     case Level::WARNING:  return "\x1b[30;43;103;1m";
+    case Level::SUCCESS:  return "\x1b[37;42;97;1m";
     case Level::INFO:     return "\x1b[37;46;97;1m";
     case Level::VERBOSE:  return "";
   }
@@ -205,6 +214,8 @@ const char* MultiLogger::level_string(Level level)
     case Level::FATAL:    return "FATAL";
     case Level::ERROR:    return "ERROR";
     case Level::WARNING:  return "WARNING";
+    case Level::FAILURE:  return "FAILURE";
+    case Level::SUCCESS:  return "SUCCESS";
     case Level::INFO:     return "INFO";
     case Level::VERBOSE:  return "";
   }

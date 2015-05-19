@@ -8,10 +8,12 @@ using namespace calin::io::log;
 
 TEST(TestLog, WriteStream) {
   default_logger()->add_cerr(true,true);
-  LOG(FATAL) << "Hello!\n";
-  LOG(ERROR) << "Hello!\n";
-  LOG(WARNING) << "Hello!\n";
-  LOG(INFO) << "Hello!\n";
+  LOG(FATAL) << "Fatal!\n";
+  LOG(ERROR) << "Error!\n";
+  LOG(WARNING) << "Warning!\n";
+  LOG(INFO) << "Info!\n";
+  LOG(SUCCESS) << "Success :-)\n";
+  LOG(FAILURE) << "Failure :-(\n";
   LOG(VERBOSE) << "Multi-line\n   hello!\n";
   LOG(VERBOSE) << "Unfinished line";
   LOG(VERBOSE) << "Second unfinished line";
