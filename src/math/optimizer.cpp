@@ -262,9 +262,8 @@ void Optimizer::opt_finished(OptimizationStatus status, double fopt,
   LOG(level)
       << "Optimization finished with status: " << opt_message_ << '\n'
       << "- " << iterations_ << " function evaluations in "
-      << std::setprecision(3) << tss << " seconds\n"
+      << std::fixed << std::setprecision(3) << tss << " seconds\n"
       << "- Best function value: "
-      << std::fixed
       << std::setw(wfval_) << std::setprecision(pfval_) << fopt << '\n';
 
   if(verbose_ != OptimizerVerbosityLevel::ELEVATED and

@@ -60,8 +60,6 @@ class MultiLogger: public Logger
   void nolock_add_stream(std::ostream* stream, bool adopt_stream,
                            bool apply_timestamp, bool use_colors);
 
-  static const char* level_string(Level level);
-  static const char* color_string(Level level);
   
   class sub_logger
   {

@@ -51,6 +51,85 @@ Logger::~Logger()
   //nothing to see here
 }
 
+namespace {
+
+const char* ansi_color_string(Level level)
+{
+  switch(level)
+  {
+    case Level::FATAL:    return "\x1b[37;41;97;101;1m";
+    case Level::ERROR:    return "\x1b[30;45;105;1m";
+    case Level::WARNING:  return "\x1b[30;43;103;1m";
+      //case Level::SUCCESS:  return "\x1b[37;42;97;1m";
+    case Level::SUCCESS:  return "\x1b[37;42;97;38;5;15;1m";
+    case Level::FAILURE:  return "\x1b[31;91;47;1m";
+      //case Level::FAILURE:  return "\x1b[30;41;101;1m";
+    case Level::INFO:     return "\x1b[37;46;97;1m";
+    case Level::VERBOSE:  return "";
+  }
+}
+
+const char* level_string(Level level)
+{
+  switch(level)
+  {
+    case Level::FATAL:    return "FATAL";
+    case Level::ERROR:    return "ERROR";
+    case Level::WARNING:  return "WARNING";
+    case Level::FAILURE:  return "FAILURE";
+    case Level::SUCCESS:  return "SUCCESS";
+    case Level::INFO:     return "INFO";
+    case Level::VERBOSE:  return "";
+  }
+}
+
+const char* ansi_reset_string()
+{
+  return "\x1b[0m";
+}
+
+template <typename Writer> void 
+write_message_lines(Writer &&writer,
+                    const char* timestamp_string,
+                    const char* this_level_string,
+                    const char* apply_color_string,
+                    const char* reset_color_string,
+                    const std::string& message)
+{
+  size_t spos = 0;
+  while(spos < message.size())
+  {
+    size_t epos = message.find_first_of('\n',spos);
+    unsigned n = (epos==std::string::npos ? message.size() : epos) - spos;
+
+    if(timestamp_string and *timestamp_string) {
+      writer(timestamp_string, strlen(timestamp_string));
+      writer(" ",1);
+    }
+    if(apply_color_string and *apply_color_string and
+       this_level_string and *this_level_string) {
+      writer(apply_color_string, std::strlen(apply_color_string));
+      writer(" ",1);
+      writer(this_level_string, std::strlen(this_level_string));
+      writer(" ",1);
+      writer(reset_color_string, std::strlen(reset_color_string));
+      writer(" ",1);
+    }
+    else if(this_level_string and *this_level_string) {
+      writer("[",1);
+      writer(this_level_string, std::strlen(this_level_string));
+      writer("]",1);
+    }      
+        
+    writer(message.c_str() + spos, n);
+    writer("\n",1);
+    
+    spos += n+1;
+  }
+}
+
+} // anonymous namespace
+
 MultiLogger::~MultiLogger()
 {
   //nothing to see here
@@ -85,40 +164,24 @@ void MultiLogger::log_message(Level level, const std::string& message,
 
   std::string timestamp_string = timestamp.string();
   const char* this_level_string = level_string(level);
-  const char* apply_color_string = color_string(level);
-  const char* reset_color_string = "\x1b[0m";
-
-  size_t spos = 0;
-  while(spos < message.size())
+  const char* apply_color_string = ansi_color_string(level);
+  const char* reset_color_string = ansi_reset_string();
+  
+  for(auto& ss : sub_streams_)
   {
-    size_t epos = message.find_first_of('\n',spos);
-    unsigned n = (epos==std::string::npos ? message.size() : epos) - spos;
-
-    for(auto& ss : sub_streams_)
+    try
     {
-      try
-      {
-        if(ss.apply_timestamp) (*ss.stream) << timestamp_string << ' ';
-        if(ss.use_colors and *apply_color_string and *this_level_string)
-        {
-          (*ss.stream) << apply_color_string << ' ' << this_level_string
-                       << ' ' << reset_color_string << ' ';
-        }
-        else if(*this_level_string)
-        {
-          (*ss.stream) << '[' << this_level_string << ']' << ' ';
-        }
-        
-        ss.stream->write(message.c_str() + spos, n);
-        ss.stream->write("\n",1);
-      }
-      catch(...)
-      {
-        // for better or worse - ignore all errors
-      }
+      std::ostream* stream { ss.stream };
+      write_message_lines([stream](const char* c, unsigned n) {
+          stream->write(c,n); },
+        ss.apply_timestamp?timestamp_string.c_str():nullptr, this_level_string,
+        ss.use_colors?apply_color_string:nullptr, reset_color_string,
+        message);
     }
-
-    spos += n+1;    
+    catch(...)
+    {
+      // for better or worse - ignore all errors
+    }
   }
   
   unlock();
@@ -193,34 +256,6 @@ void MultiLogger::unlock()
 
 }
 
-const char* MultiLogger::color_string(Level level)
-{
-  switch(level)
-  {
-    case Level::FATAL:    return "\x1b[37;41;97;101;1m";
-    case Level::FAILURE:
-    case Level::ERROR:    return "\x1b[30;45;105;1m";
-    case Level::WARNING:  return "\x1b[30;43;103;1m";
-    case Level::SUCCESS:  return "\x1b[37;42;97;1m";
-    case Level::INFO:     return "\x1b[37;46;97;1m";
-    case Level::VERBOSE:  return "";
-  }
-}
-
-const char* MultiLogger::level_string(Level level)
-{
-  switch(level)
-  {
-    case Level::FATAL:    return "FATAL";
-    case Level::ERROR:    return "ERROR";
-    case Level::WARNING:  return "WARNING";
-    case Level::FAILURE:  return "FAILURE";
-    case Level::SUCCESS:  return "SUCCESS";
-    case Level::INFO:     return "INFO";
-    case Level::VERBOSE:  return "";
-  }
-}
-
 PythonLogger::~PythonLogger()
 {
   // nothing to see here
@@ -229,10 +264,22 @@ PythonLogger::~PythonLogger()
 void PythonLogger::
 log_message(Level level, const std::string& message, TimeStamp timestamp)
 {
+  const char* this_level_string = level_string(level);
+  const char* apply_color_string = ansi_color_string(level);
+  const char* reset_color_string = ansi_reset_string();
+  
   if(use_stderr_)
-    PySys_WriteStderr("%.1000s", message.c_str());
+    write_message_lines([](const char* c, unsigned n) { while(n) {
+          unsigned nn = std::min(n,1000U); PySys_WriteStderr("%.*s", nn, c);
+          c += nn; n -= nn; } },
+      nullptr, this_level_string, apply_color_string, reset_color_string,
+      message);
   else
-    PySys_WriteStdout("%.1000s", message.c_str());
+    write_message_lines([](const char* c, unsigned n) { while(n) {
+          unsigned nn = std::min(n,1000U); PySys_WriteStdout("%.*s", nn, c);
+          c += nn; n -= nn; } },
+      nullptr, this_level_string, apply_color_string, reset_color_string,
+      message); 
 }
 
 bool PythonLogger::is_python_initialised()
