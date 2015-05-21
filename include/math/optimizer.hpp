@@ -115,7 +115,10 @@ class Optimizer
   std::vector<double> limits_lo() const;
   std::vector<double> limits_hi() const;
 
-  
+  static Optimizer* create_optimizer_for_function(
+                    function::MultiAxisFunction* fcn, bool adopt_fcn = false);
+  static Optimizer* create_optimizer_by_name(const std::string& name,
+                    function::MultiAxisFunction* fcn, bool adopt_fcn = false);
  protected:
   void opt_starting(const std::string& opt_name,
                     bool requires_gradient, bool requires_hessian,

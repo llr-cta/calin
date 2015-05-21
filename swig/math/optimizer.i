@@ -34,5 +34,8 @@
 //%apply Eigen::MatrixXd &OUTPUT { Eigen::MatrixXd& eigenvectors };
 //%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& eigenvalues };
 
+%newobject calin::math::optimizer::Optimizer::create_optimizer_for_function;
+%newobject calin::math::optimizer::Optimizer::create_optimizer_by_name;
+
 %include "math/optimizer.hpp"
 %include "math/nlopt_optimizer.hpp"

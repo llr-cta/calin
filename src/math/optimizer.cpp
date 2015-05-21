@@ -10,6 +10,7 @@
 
 #include "io/log.hpp"
 #include "math/optimizer.hpp"
+#include "math/nlopt_optimizer.hpp"
 
 using namespace calin::math::optimizer;
 using namespace calin::io::log;
@@ -72,6 +73,24 @@ std::vector<double> Optimizer::limits_hi() const
                    xlim.begin(), [](double ipar1, double ipar2) {
                      return std::min(ipar1, ipar2); });
   return xlim;
+}
+
+Optimizer* Optimizer::create_optimizer_for_function(
+    function::MultiAxisFunction* fcn, bool adopt_fcn)
+{
+  if(fcn->can_calculate_gradient())
+    return new NLOptOptimizer("LD_LBFGS", fcn, adopt_fcn);
+  else
+    return new NLOptOptimizer("LN_NELDERMEAD", fcn, adopt_fcn);
+  return nullptr;
+}
+
+Optimizer* Optimizer::create_optimizer_by_name(const std::string& name,
+    function::MultiAxisFunction* fcn, bool adopt_fcn)
+{
+  if(NLOptOptimizer::is_valid_algorithm(name))
+    return new NLOptOptimizer(name, fcn, adopt_fcn);
+  return nullptr;
 }
 
 void Optimizer::opt_starting(const std::string& opt_name,
