@@ -171,23 +171,27 @@ void Optimizer::opt_starting(const std::string& opt_name,
   L << "List of function dimensions: \n"
     << "- " << std::left
     << std::setw(wnaxis) << "#" << ' '
-    << std::setw(wname) << "Name" << ' '
-    << std::setw(8) << "Lo bound" << ' '
-    << std::setw(8) << "Hi bound" << ' '
-    << std::setw(8) << "Stepsize" << '\n';
+    << std::setw(wname) << "Name" << ' ';
+  if(this->can_impose_box_constraints())
+    L << std::setw(8) << "Lo bound" << ' '
+      << std::setw(8) << "Hi bound" << ' ';
+  L << std::setw(8) << "Stepsize" << '\n';
 
   for(unsigned iaxis = 0; iaxis<axes.size(); iaxis++)
   {
     L << "- " << std::setw(wnaxis) << iaxis << ' '
       << std::setw(wname) << axes[iaxis].name << ' ';
-    if(iaxis < lower_limit.size())
-      L << std::setw(8) << lower_limit[iaxis] << ' ';
-    else
-      L << std::setw(8) << '-' << ' ';
-    if(iaxis < upper_limit.size())
-      L << std::setw(8) << upper_limit[iaxis] << ' ';
-    else
-      L << std::setw(8) << '-' << ' ';
+    if(this->can_impose_box_constraints())
+    {
+      if(iaxis < lower_limit.size())
+        L << std::setw(8) << lower_limit[iaxis] << ' ';
+      else
+        L << std::setw(8) << '-' << ' ';
+      if(iaxis < upper_limit.size())
+        L << std::setw(8) << upper_limit[iaxis] << ' ';
+      else
+        L << std::setw(8) << '-' << ' ';
+    }
     if(iaxis < step_size.size())
       L << std::setw(8) << step_size[iaxis] << '\n';
     else
@@ -236,15 +240,25 @@ void Optimizer::opt_progress(double fval, const Eigen::VectorXd& x,
   
   auto L = LOG(VERBOSE);
 
+  double edm = fbest_-flast;
+
+#if 0
+  if(err_mat_est != nullptr and gradient != nullptr)
+  {
+    edm = ((gradient->transpose())*(*err_mat_est)*(*gradient));
+    edm /= 2.0*fcn_->error_up();
+  }
+#endif
+  
   L << std::left << std::setw(std::max(3U, num_digits(max_iterations())))
     << iterations_ << ' '
     << std::fixed
     << std::setw(wfval_) << std::setprecision(pfval_) << fval << ' '
     << std::setw(wfval_) << std::setprecision(pfval_) << fbest_ << ' '
     << std::right
-    << std::setw(wfval_) << std::setprecision(pfval_) << fbest_-flast << ' '
+    << std::setw(wfval_) << std::setprecision(pfval_) << edm << ' '
     << std::scientific << std::setw(10) << std::setprecision(3)
-    << (fbest_-flast)/fbest_ << ' '
+    << edm/fbest_ << ' '
     << std::fixed << std::setw(9) << std::setprecision(3) << tss << '\n';
 }
 
@@ -439,7 +453,10 @@ skip_rank1_update:
 
 ErrorMatrixStatus BFGSErrorMatrixEstimator::error_matrix(MatRef error_matrix)
 {
-  error_matrix = 2.0*error_up_*Bk_;
+  if(error_up_ != 0.5)
+    error_matrix = (2.0*error_up_)*Bk_;
+  else
+    error_matrix = Bk_;
 #ifdef BFGS_COMPUTE_WITH_LOOPS
   for(unsigned i=0;i<n;i++)
     for(unsigned j=i+1;j<n;j++)

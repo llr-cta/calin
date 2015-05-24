@@ -39,6 +39,7 @@ class Optimizer
       fcn_(fcn), my_fcn_(adopt_fcn) { /* nothing to see here */ }
   virtual ~Optimizer();
 
+  virtual bool is_local_optimizer() = 0;
   virtual bool requires_gradient() = 0;
   virtual bool requires_hessian() = 0;
   virtual bool requires_box_constraints() = 0;
@@ -126,8 +127,8 @@ class Optimizer
                     const std::vector<double>& upper_limit,
                     const std::vector<double>& step_size);
   void opt_progress(double fval, const Eigen::VectorXd& x,
-                    const Eigen::VectorXd* gradient,
-                    const Eigen::MatrixXd* hessian);
+                    const Eigen::VectorXd* gradient = nullptr,
+                    const Eigen::MatrixXd* hessian = nullptr);
   void opt_finished(OptimizationStatus status, double fopt,
                     const Eigen::VectorXd& xopt);
   

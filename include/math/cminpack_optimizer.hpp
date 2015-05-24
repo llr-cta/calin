@@ -16,15 +16,13 @@
 
 namespace calin { namespace math { namespace optimizer {
 
-class enum CMinpackMode { AUTO, REQUIRE_HESSIAN, DONT_USE_HESSIAN };
-
 class CMinpackOptimizer: public Optimizer
 {
  public:
-  CMinpackOptimizer(CMinpackMode mode,
-                    function::MultiAxisFunction* fcn, bool adopt_fcn = false);
+  CMinpackOptimizer(function::MultiAxisFunction* fcn, bool adopt_fcn = false);
   ~CMinpackOptimizer();
 
+  bool is_local_optimizer() override;  
   bool requires_gradient() override;
   bool requires_hessian() override;
   bool requires_box_constraints() override;
@@ -41,17 +39,21 @@ class CMinpackOptimizer: public Optimizer
 
  protected:
 
-  int cminpack_callback_grad(void* self, int n, double* x, double* grad,
-                             int iflag);
+  static int cminpack_callback_grad(void* self, int n, const double* x,
+                                    double* grad, int iflag);
 
-  int cminpack_callback_hess(void *self, int n, double* x, double* grad,
-                             double* hess, int ldfjac, int iflag);
+  static int cminpack_callback_hess(void *self, int n, const double* x,
+                                    double* grad, double* hess, int ldfjac,
+                                    int iflag);
   
-  int eval_func(unsigned n, const double* x, bool hessian);
+  int eval_func(unsigned n, const double* x, double* grad, double* hess,
+                int iflag);
   
-  CMinpackMode mode_;
+  double fval_;
+  Eigen::VectorXd xvec_;
   Eigen::VectorXd gvec_;
   Eigen::MatrixXd hmat_;
+  unsigned nbest_ { 0 };
   std::unique_ptr<ErrorMatrixEstimator> err_est_;
 };
 

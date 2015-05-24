@@ -105,7 +105,7 @@ static nlopt_algorithm name_to_algorithm(const std::string& name)
 
 #define MATCH_ALGORITHM(x) case x: return(std::string(#x))
 
-static std::string algorithm_to_name(nlopt_algorithm algo)
+static std::string ZZZ_algorithm_to_name(nlopt_algorithm algo)
 {
   switch(algo)
   {
@@ -182,81 +182,26 @@ static std::string algorithm_to_name(nlopt_algorithm algo)
 
 #undef MATCH_ALGORITHM
 
-static bool algo_requires_gradient(nlopt_algorithm algo)
-{
-  switch(algo)
-  {
-    case NLOPT_GN_DIRECT:
-    case NLOPT_GN_DIRECT_L:
-    case NLOPT_GN_DIRECT_L_RAND:
-    case NLOPT_GN_DIRECT_NOSCAL:
-    case NLOPT_GN_DIRECT_L_NOSCAL:
-    case NLOPT_GN_DIRECT_L_RAND_NOSCAL:
-    case NLOPT_GN_ORIG_DIRECT:
-    case NLOPT_GN_ORIG_DIRECT_L:
-    case NLOPT_LN_PRAXIS:
-    case NLOPT_GN_CRS2_LM:
-    case NLOPT_GN_MLSL:
-    case NLOPT_GN_MLSL_LDS:
-    case NLOPT_LN_COBYLA:
-    case NLOPT_LN_NEWUOA:
-    case NLOPT_LN_NEWUOA_BOUND:
-    case NLOPT_LN_NELDERMEAD:
-    case NLOPT_LN_SBPLX:
-    case NLOPT_LN_AUGLAG:
-    case NLOPT_LN_AUGLAG_EQ:
-    case NLOPT_LN_BOBYQA:
-    case NLOPT_GN_ISRES:
-    case NLOPT_GN_ESCH:
-      return false;
-
-    case NLOPT_GD_STOGO:
-    case NLOPT_GD_STOGO_RAND:
-    case NLOPT_LD_LBFGS_NOCEDAL:
-    case NLOPT_LD_LBFGS:
-    case NLOPT_LD_VAR1:
-    case NLOPT_LD_VAR2:
-    case NLOPT_LD_TNEWTON:
-    case NLOPT_LD_TNEWTON_RESTART:
-    case NLOPT_LD_TNEWTON_PRECOND:
-    case NLOPT_LD_TNEWTON_PRECOND_RESTART:
-    case NLOPT_GD_MLSL:
-    case NLOPT_GD_MLSL_LDS:
-    case NLOPT_LD_MMA:
-    case NLOPT_LD_AUGLAG:
-    case NLOPT_LD_AUGLAG_EQ:
-    case NLOPT_AUGLAG:
-    case NLOPT_AUGLAG_EQ:
-    case NLOPT_G_MLSL:
-    case NLOPT_G_MLSL_LDS:
-    case NLOPT_LD_SLSQP:
-    case NLOPT_LD_CCSAQ:
-      return true;
-
-    case NLOPT_NUM_ALGORITHMS:
-    default:
-      assert(0);
-  }
-
-  assert(0);
 }
 
-static bool algo_requires_hessian(nlopt_algorithm algo)
+NLOptOptimizer::
+NLOptOptimizer(NLOptOptimizer::algorithm_type algorithm,
+               function::MultiAxisFunction* fcn, bool adopt_fcn)
+    : Optimizer(fcn, adopt_fcn), algorithm_(algorithm)
 {
-  return false;
-}
-
+  if(is_local_optimizer(algorithm) and can_use_gradient(algorithm))
+    err_est_.reset(new BFGSErrorMatrixEstimator(fcn->error_up()));
+  else
+    err_est_.reset(new IdentityErrorMatrixEstimator(fcn->error_up()));
 }
 
 NLOptOptimizer::
 NLOptOptimizer(const std::string& algorithm_name,
                function::MultiAxisFunction* fcn, bool adopt_fcn)
-    : Optimizer(fcn, adopt_fcn), algorithm_name_(algorithm_name)
+    : NLOptOptimizer(algorithm_by_name(algorithm_name),
+                     fcn, adopt_fcn)
 {
-  if(can_use_gradient(algorithm_name))
-    err_est_.reset(new BFGSErrorMatrixEstimator(fcn->error_up()));
-  else
-    err_est_.reset(new IdentityErrorMatrixEstimator(fcn->error_up()));
+  // nothing to see here
 }
 
 NLOptOptimizer::~NLOptOptimizer()
@@ -264,19 +209,139 @@ NLOptOptimizer::~NLOptOptimizer()
   // nothing to see here
 }
 
+NLOptOptimizer::algorithm_type NLOptOptimizer::
+algorithm_by_name(const std::string& algorithm_name)
+{
+  return name_to_algorithm(algorithm_name);
+}
+
+
 bool NLOptOptimizer::is_valid_algorithm(const std::string& algorithm_name)
 {
   return name_to_algorithm(algorithm_name) != NLOPT_NUM_ALGORITHMS;
 }
 
-bool NLOptOptimizer::requires_gradient(const std::string& algorithm_name)
+bool NLOptOptimizer::is_local_optimizer(algorithm_type algorithm)
 {
-  return algo_requires_gradient(name_to_algorithm(algorithm_name));
+  switch(algorithm)
+  {
+    case NLOPT_GN_DIRECT:
+    case NLOPT_GN_DIRECT_L:
+    case NLOPT_GN_DIRECT_L_RAND:
+    case NLOPT_GN_DIRECT_NOSCAL:
+    case NLOPT_GN_DIRECT_L_NOSCAL:
+    case NLOPT_GN_DIRECT_L_RAND_NOSCAL:
+    case NLOPT_GN_ORIG_DIRECT:
+    case NLOPT_GN_ORIG_DIRECT_L:
+    case NLOPT_GD_STOGO:
+    case NLOPT_GD_STOGO_RAND:
+    case NLOPT_GN_CRS2_LM:
+    case NLOPT_GN_MLSL:
+    case NLOPT_GD_MLSL:
+    case NLOPT_GN_MLSL_LDS:
+    case NLOPT_GD_MLSL_LDS:
+    case NLOPT_GN_ISRES:
+    case NLOPT_G_MLSL:
+    case NLOPT_G_MLSL_LDS:
+    case NLOPT_GN_ESCH:
+      return false;
+      
+    case NLOPT_LD_LBFGS_NOCEDAL:
+    case NLOPT_LD_LBFGS:
+    case NLOPT_LN_PRAXIS:
+    case NLOPT_LD_VAR1:
+    case NLOPT_LD_VAR2:
+    case NLOPT_LD_TNEWTON:
+    case NLOPT_LD_TNEWTON_RESTART:
+    case NLOPT_LD_TNEWTON_PRECOND:
+    case NLOPT_LD_TNEWTON_PRECOND_RESTART:
+    case NLOPT_LD_MMA:
+    case NLOPT_LN_COBYLA:
+    case NLOPT_LN_NEWUOA:
+    case NLOPT_LN_NEWUOA_BOUND:
+    case NLOPT_LN_NELDERMEAD:
+    case NLOPT_LN_SBPLX:
+    case NLOPT_LN_AUGLAG:
+    case NLOPT_LD_AUGLAG:
+    case NLOPT_LN_AUGLAG_EQ:
+    case NLOPT_LD_AUGLAG_EQ:
+    case NLOPT_LN_BOBYQA:
+    case NLOPT_AUGLAG:
+    case NLOPT_AUGLAG_EQ:
+    case NLOPT_LD_SLSQP:
+    case NLOPT_LD_CCSAQ:
+      return true;
+
+    case NLOPT_NUM_ALGORITHMS:
+    default:
+      assert(0);
+  }
+
+  assert(0);
 }
 
-bool NLOptOptimizer::requires_box_constraints(const std::string& algorithm_name)
+bool NLOptOptimizer::requires_gradient(algorithm_type algorithm)
 {
-  switch(name_to_algorithm(algorithm_name))
+  switch(algorithm)
+  {
+    case NLOPT_GN_DIRECT:
+    case NLOPT_GN_DIRECT_L:
+    case NLOPT_GN_DIRECT_L_RAND:
+    case NLOPT_GN_DIRECT_NOSCAL:
+    case NLOPT_GN_DIRECT_L_NOSCAL:
+    case NLOPT_GN_DIRECT_L_RAND_NOSCAL:
+    case NLOPT_GN_ORIG_DIRECT:
+    case NLOPT_GN_ORIG_DIRECT_L:
+    case NLOPT_LN_PRAXIS:
+    case NLOPT_GN_CRS2_LM:
+    case NLOPT_GN_MLSL:
+    case NLOPT_GN_MLSL_LDS:
+    case NLOPT_LN_COBYLA:
+    case NLOPT_LN_NEWUOA:
+    case NLOPT_LN_NEWUOA_BOUND:
+    case NLOPT_LN_NELDERMEAD:
+    case NLOPT_LN_SBPLX:
+    case NLOPT_LN_AUGLAG:
+    case NLOPT_LN_AUGLAG_EQ:
+    case NLOPT_LN_BOBYQA:
+    case NLOPT_GN_ISRES:
+    case NLOPT_GN_ESCH:
+      return false;
+
+    case NLOPT_GD_STOGO:
+    case NLOPT_GD_STOGO_RAND:
+    case NLOPT_LD_LBFGS_NOCEDAL:
+    case NLOPT_LD_LBFGS:
+    case NLOPT_LD_VAR1:
+    case NLOPT_LD_VAR2:
+    case NLOPT_LD_TNEWTON:
+    case NLOPT_LD_TNEWTON_RESTART:
+    case NLOPT_LD_TNEWTON_PRECOND:
+    case NLOPT_LD_TNEWTON_PRECOND_RESTART:
+    case NLOPT_GD_MLSL:
+    case NLOPT_GD_MLSL_LDS:
+    case NLOPT_LD_MMA:
+    case NLOPT_LD_AUGLAG:
+    case NLOPT_LD_AUGLAG_EQ:
+    case NLOPT_AUGLAG:
+    case NLOPT_AUGLAG_EQ:
+    case NLOPT_G_MLSL:
+    case NLOPT_G_MLSL_LDS:
+    case NLOPT_LD_SLSQP:
+    case NLOPT_LD_CCSAQ:
+      return true;
+
+    case NLOPT_NUM_ALGORITHMS:
+    default:
+      assert(0);
+  }
+
+  assert(0);
+}
+
+bool NLOptOptimizer::requires_box_constraints(algorithm_type algorithm)
+{
+  switch(algorithm)
   {
     case NLOPT_GN_DIRECT:
     case NLOPT_GN_DIRECT_L:
@@ -334,64 +399,69 @@ bool NLOptOptimizer::requires_box_constraints(const std::string& algorithm_name)
 }
 
 
-bool NLOptOptimizer::requires_hessian(const std::string& algorithm_name)
+bool NLOptOptimizer::requires_hessian(algorithm_type algorithm)
 {
-  return algo_requires_hessian(name_to_algorithm(algorithm_name));
+  return false;
 }
 
-bool NLOptOptimizer::can_estimate_error(const std::string& algorithm_name)
+bool NLOptOptimizer::can_estimate_error(algorithm_type algorithm)
 {
-  return requires_gradient(algorithm_name);
+  return requires_gradient(algorithm);
 }
 
-bool NLOptOptimizer::can_use_gradient(const std::string& algorithm_name)
+bool NLOptOptimizer::can_use_gradient(algorithm_type algorithm)
 {
-  return requires_gradient(algorithm_name);
+  return requires_gradient(algorithm);
 }
 
-bool NLOptOptimizer::can_use_hessian(const std::string& algorithm_name)
+bool NLOptOptimizer::can_use_hessian(algorithm_type algorithm)
 {
   return false; // (a==LD_CCSAQ);
 }
 
-bool NLOptOptimizer::can_impose_box_constraints(const std::string& algorithm_name)
+bool NLOptOptimizer::can_impose_box_constraints(algorithm_type algorithm)
 {
   return true;
 }
 
+bool NLOptOptimizer::is_local_optimizer()
+{
+  return is_local_optimizer(algorithm_);
+}
+
 bool NLOptOptimizer::requires_gradient()
 {
-  return requires_gradient(algorithm_name_);
+  return requires_gradient(algorithm_);
 }
 
 bool NLOptOptimizer::requires_hessian()
 {
-  return requires_hessian(algorithm_name_);
+  return requires_hessian(algorithm_);
 }
 
 bool NLOptOptimizer::requires_box_constraints()
 {
-  return requires_box_constraints(algorithm_name_);
+  return requires_box_constraints(algorithm_);
 }
 
 bool NLOptOptimizer::can_estimate_error()
 {
-  return can_estimate_error(algorithm_name_);
+  return can_estimate_error(algorithm_);
 }
 
 bool NLOptOptimizer::can_use_gradient()
 {
-  return can_use_gradient(algorithm_name_);
+  return can_use_gradient(algorithm_);
 }
 
 bool NLOptOptimizer::can_use_hessian()
 {
-  return can_use_hessian(algorithm_name_);
+  return can_use_hessian(algorithm_);
 }
 
 bool NLOptOptimizer::can_impose_box_constraints()
 {
-  return can_impose_box_constraints(algorithm_name_);
+  return can_impose_box_constraints(algorithm_);
 }
 
 OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
@@ -399,7 +469,6 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   nlopt_result nlopt_status;
 
   unsigned naxes { fcn_->num_domain_axes() };
-  nlopt_algorithm algo { name_to_algorithm(algorithm_name_) };
   
   err_est_->reset(naxes);
   gvec_.resize(naxes);
@@ -408,14 +477,14 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   std::vector<double> xlim_hi { limits_hi() };
   std::vector<double> stepsize { initial_stepsize() };
 
-  opt_starting(algorithm_to_name(algo), algo_requires_gradient(algo),
-               algo_requires_hessian(algo), xlim_lo, xlim_hi, stepsize);
+  opt_starting(nlopt_algorithm_name(algorithm_), requires_gradient(),
+               requires_hessian(), xlim_lo, xlim_hi, stepsize);
 
   fopt = fbest_;
   xopt = xbest_;
 
   std::unique_ptr<nlopt_opt_s, void(*)(nlopt_opt)>
-      opt(nlopt_create(algo, naxes), nlopt_destroy);
+      opt(nlopt_create(algorithm_, naxes), nlopt_destroy);
   if(opt.get() == NULL)
   {
     opt_message_ = "Could not create NLOpt object";
@@ -583,6 +652,16 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
   }
 
   if(!isfinite(fcn_value))fcn_value = inf;
+
+#if 0
+  if(dynamic_cast<BFGSErrorMatrixEstimator*>(err_est_.get()))
+  {
+    Eigen::MatrixXd err_mat_est;
+    err_est_->error_matrix(err_mat_est);
+    opt_progress(fcn_value, xvec, grad?&gvec_:nullptr, nullptr, &err_mat_est);
+  }
+  else;
+#endif
 
   opt_progress(fcn_value, xvec, grad?&gvec_:nullptr, nullptr);
   

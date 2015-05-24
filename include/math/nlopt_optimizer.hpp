@@ -11,6 +11,8 @@
 #include <string>
 #include <Eigen/Dense>
 
+#include "nlopt/nlopt_algorithm.h"
+
 #include "function.hpp"
 #include "optimizer.hpp"
 
@@ -19,21 +21,27 @@ namespace calin { namespace math { namespace optimizer {
 class NLOptOptimizer: public Optimizer
 {
  public:
-  CALIN_TYPEALIAS(algorithm_type, std::string);
-
+  CALIN_TYPEALIAS(algorithm_type, nlopt_algorithm);
+  
+  NLOptOptimizer(algorithm_type algorithm,
+                 function::MultiAxisFunction* fcn, bool adopt_fcn = false);
   NLOptOptimizer(const std::string& algorithm_name,
                  function::MultiAxisFunction* fcn, bool adopt_fcn = false);
   ~NLOptOptimizer();
 
+  static algorithm_type algorithm_by_name(const std::string& algorithm_name);
   static bool is_valid_algorithm(const std::string& algorithm_name);
-  static bool requires_gradient(const std::string& algorithm_name);
-  static bool requires_hessian(const std::string& algorithm_name);
-  static bool requires_box_constraints(const std::string& algorithm_name);
-  static bool can_estimate_error(const std::string& algorithm_name);
-  static bool can_use_gradient(const std::string& algorithm_name);
-  static bool can_use_hessian(const std::string& algorithm_name);
-  static bool can_impose_box_constraints(const std::string& algorithm_name);
+
+  static bool is_local_optimizer(algorithm_type algorithm);
+  static bool requires_gradient(algorithm_type algorithm);
+  static bool requires_hessian(algorithm_type algorithm);
+  static bool requires_box_constraints(algorithm_type algorithm);
+  static bool can_estimate_error(algorithm_type algorithm);
+  static bool can_use_gradient(algorithm_type algorithm);
+  static bool can_use_hessian(algorithm_type algorithm);
+  static bool can_impose_box_constraints(algorithm_type algorithm);
   
+  bool is_local_optimizer() override;
   bool requires_gradient() override;
   bool requires_hessian() override;
   bool requires_box_constraints() override;
@@ -53,7 +61,7 @@ class NLOptOptimizer: public Optimizer
                                void* self);
   double eval_func(unsigned n, const double* x, double* grad);
   
-  std::string algorithm_name_;
+  algorithm_type algorithm_;
   Eigen::VectorXd gvec_;
   std::unique_ptr<ErrorMatrixEstimator> err_est_;
 };
