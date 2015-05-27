@@ -104,6 +104,37 @@ class PythonLogger: public Logger
   bool use_stderr_ { false };
 };
 
+enum class LoggerStreamEnabledState { LEAVE_AS_IS, ENABLE, DISABLE, TOGGLE };
+
+class LoggerStreamManipulorSetEnabledState
+{
+ public:
+  LoggerStreamManipulorSetEnabledState(LoggerStreamEnabledState state):
+      state_(state) { /* nothing to see here */ }
+  LoggerStreamEnabledState state() const { return state_; }
+ private:
+  LoggerStreamEnabledState state_;
+};
+
+inline LoggerStreamManipulorSetEnabledState enable_logging() {
+  return LoggerStreamManipulorSetEnabledState(LoggerStreamEnabledState::ENABLE); }
+
+inline LoggerStreamManipulorSetEnabledState disable_logging() {
+  return LoggerStreamManipulorSetEnabledState(LoggerStreamEnabledState::DISABLE); }
+
+inline LoggerStreamManipulorSetEnabledState toggle_logging() {
+  return LoggerStreamManipulorSetEnabledState(LoggerStreamEnabledState::TOGGLE); }
+
+inline LoggerStreamManipulorSetEnabledState enable_logging_if(bool clause) {
+  return LoggerStreamManipulorSetEnabledState(clause?
+      LoggerStreamEnabledState::ENABLE:
+      LoggerStreamEnabledState::LEAVE_AS_IS); }
+
+inline LoggerStreamManipulorSetEnabledState disable_logging_if(bool clause) {
+  return LoggerStreamManipulorSetEnabledState(clause?
+      LoggerStreamEnabledState::DISABLE:
+      LoggerStreamEnabledState::LEAVE_AS_IS); }
+
 class LoggerStream
 {
  public:
@@ -120,14 +151,33 @@ class LoggerStream
   }
   template<typename T> LoggerStream& operator<< (const T& t)
   {
-    (*message_) << t;
+    if(enabled_)*message_ << t;
     return *this;
   }
   std::ostream& stream() { return *message_; }
+  void set_logging_enabled_state(LoggerStreamEnabledState state)
+  {
+    switch(state) {
+      case LoggerStreamEnabledState::LEAVE_AS_IS: break;
+      case LoggerStreamEnabledState::ENABLE:  enabled_ = true; break;
+      case LoggerStreamEnabledState::DISABLE: enabled_ = false; break;
+      case LoggerStreamEnabledState::TOGGLE:  enabled_ = !enabled_; break;
+    }
+  }
+  LoggerStream& operator<< (const LoggerStreamManipulorSetEnabledState& m)
+  {
+    set_logging_enabled_state(m.state());
+    return *this;
+  }
+
+  void enable_logging() { enabled_ = true; }
+  void disable_logging() { enabled_ = false; }
+  bool is_logging_enabled() const { return enabled_; }
  protected:
   Logger* logger_;
   Level level_;
   std::ostringstream* message_;
+  bool enabled_ { true };
 };
 
 class VaporStream

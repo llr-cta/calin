@@ -80,55 +80,131 @@ OptimizationStatus CMinpackOptimizer::minimize(VecRef xopt, double& fopt)
                requires_hessian(), {}, {}, {});
 
   unsigned naxes = fcn_->num_domain_axes();
-  Eigen::VectorXd xvec = xbest_;
+  xopt = xbest_;
   Eigen::VectorXd gvec(naxes);
-  Eigen::MatrixXd hmat(naxes, naxes);
-
+  qmat_.resize(naxes,naxes);
+  rvec_.resize(naxes*(naxes+1)/2);
+  qtfvec_.resize(naxes);
+  dxvec_.resize(naxes);
+  
   Eigen::VectorXd diag(naxes);
   int ngrad { 0 };
   int nhess { 0 };
-  Eigen::VectorXd rvec(naxes*(naxes+1)/2);
-  Eigen::VectorXd qtfvec(naxes);
+
   Eigen::VectorXd wa1(naxes);
   Eigen::VectorXd wa2(naxes);
   Eigen::VectorXd wa3(naxes);
   Eigen::VectorXd wa4(naxes);
-  
+
   int istat = hybrj(cminpack_callback_hess,     // fcn
                     this,                       // void* p
                     naxes,                      // int n
-                    xvec.data(),                // double* x
+                    xopt.data(),                // double* x
                     gvec.data(),                // double* fvec
-                    hmat.data(),                // double& fjac
+                    qmat_.data(),               // double& fjac
                     naxes,                      // int ldfjac
                     xtol,                       // double xtol
                     maxfev,                     // int maxfev
                     diag.data(),                // double* diag,
                     1,                          // int mode
                     100.0,                      // double factor
-                    0,                          // int nprint
+                    1,                          // int nprint
                     &ngrad,                     // int* nfev
                     &nhess,                     // int& njev
-                    rvec.data(),                // double* r
-                    rvec.size(),                // int lr
-                    qtfvec.data(),              // double* qtf
+                    rvec_.data(),               // double* r
+                    rvec_.size(),               // int lr
+                    qtfvec_.data(),             // double* qtf
                     wa1.data(),                 // double* wa1
                     wa2.data(),                 // double* wa2
                     wa3.data(),                 // double* wa3
                     wa4.data());                // double* wa4
 
+  gvec_ = gvec;
+
+  switch(istat)
+  {
+    case -3:
+      opt_status_ = OptimizationStatus::STOPPED_AT_MAXTIME;
+      opt_message_ = "Time limit reached";
+      break;
+    case -2:
+    case -1:
+      opt_status_ = OptimizationStatus::TOLERANCE_REACHED;
+      opt_message_ = "Tolerance reached";
+      break;
+    case 0:
+      opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
+      opt_message_ = "Invalid arguments";
+      break;
+    case 1:
+      opt_status_ = OptimizationStatus::TOLERANCE_REACHED;
+      opt_message_ = "Tolerance reached";
+      break;
+    case 2:
+      opt_status_ = OptimizationStatus::STOPPED_AT_MAXCALLS;
+      opt_message_ = "Calls limit reached";
+      break;
+    case 3:
+      opt_status_ = OptimizationStatus::LIMITED_BY_PRECISION;
+      opt_message_ = "Minimization limited by machine precision";
+      break;
+    case 4:
+    case 5:
+      opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
+      opt_message_ = "Optimizer not making progress";
+      break;
+    default:
+      opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
+      opt_message_ = "This should not happen";
+      assert(0);
+  }
+
+  double f_edm = edm(naxes);
+
+  fopt = fbest_;
+  xopt = xbest_;
+
+  opt_finished(opt_status_, fbest_, xbest_, &f_edm);
+
+  return opt_status_;
 }
   
 ErrorMatrixStatus CMinpackOptimizer::error_matrix_estimate(MatRef error_matrix)
 {
-
+  // Use the CMinpack QR factorization of the Hessian to calculate the
+  // error matrix: Sigma = ( Q R )^-1. We solve for each column the
+  // equation: Q^-1 = R Sigma, noting that Q is orthogonal: Q^-1 = Q^T
+  const double scale = 2.0*fcn_->error_up();
+  unsigned n = fcn_->num_domain_axes();
+  error_matrix.resize(n,n);
+  for(unsigned ivec = 0; ivec<n; ++ivec)
+  {
+    for(unsigned iir = 0; iir<n; ++iir)
+    {
+      unsigned ir = n-iir-1;
+      const double* rr = rvec_.data() + n*(n+1)/2 - iir*(iir+1)/2 - n;
+      double sum = qmat_(ivec,ir);
+      for(unsigned ic = ir+1; ic<n; ++ic)sum -= rr[ic]*error_matrix(ic,ivec);
+      error_matrix(ir,ivec) = sum/rr[ir];
+    }
+  }
+  if(scale != 1)error_matrix *= scale;
+  return ErrorMatrixStatus::GOOD;
 }
 
 ErrorMatrixStatus CMinpackOptimizer::
 calc_error_matrix_and_eigenvectors(MatRef error_matrix,
                                    VecRef eigenvalues, MatRef eigenvectors)
 {
-  
+  const unsigned npar { fcn_->num_domain_axes() };
+  error_matrix.resize(npar,npar);
+  Eigen::VectorXd error_hint;
+  if(error_matrix_estimate(error_matrix) != ErrorMatrixStatus::UNAVAILABLE)
+    error_hint = error_matrix.diagonal().array().sqrt();
+  Eigen::MatrixXd hessian(npar,npar);
+  hessian::calculate_hessian(*fcn_, xbest_, hessian, error_hint);
+  return hessian::hessian_to_error_matrix(*fcn_, hessian, error_matrix,
+                                          eigenvalues, eigenvectors);
 }
 
 int CMinpackOptimizer::
@@ -157,13 +233,50 @@ eval_func(unsigned n, const double* x, double* grad, double* hess, int iflag)
   {
     fval_ = fcn_->value_gradient_and_hessian(xvec_,gvec_,hmat_);
     this->opt_progress(fval_, xvec_, &gvec_, &hmat_);
-    Eigen::Map<Eigen::MatrixXd>(hess,n,n) = hmat_;    
+    Eigen::Map<Eigen::MatrixXd>(hess,n,n) = hmat_;
+    return iflag;
   }
-  else // (iflag == 1)
+  else if(iflag == 1)
   {
     fval_ = fcn_->value_and_gradient(xvec_,gvec_);
     this->opt_progress(fval_, xvec_, &gvec_, nullptr);
     Eigen::Map<Eigen::VectorXd>(grad,n) = gvec_;
+    return iflag;
   }
+  else if(iflag == 0)
+  {
+    if(abs_tolerance()>0 or rel_tolerance()>0)
+    {
+      double f_edm = edm(n);
+      if(std::abs(f_edm)<abs_tolerance())return -1;
+      if(std::abs(fval_*f_edm)<rel_tolerance())return -2;
+    }
+    if(max_walltime()>0)
+    {
+      TimeStamp ts = TimeStamp::now();
+      double tss = ts.seconds_since(opt_start_time_);
+      if(tss > max_walltime())return -3;
+    }
+    return iflag;
+  }
+
+  assert(0);
 }
 
+double CMinpackOptimizer::edm(unsigned n)
+{
+  // Use the running QR factorization of the Hessian to calculate
+  // EDM = Df * H^-1 * Df . The part Q^-1 Df is already calculated by
+  // minpack in "qtfvec_" so it suffices to solve for R * qtvec_
+  // and then finish with a scalar multiplication by Df.
+  for(unsigned iir = 0; iir<n; ++iir)
+  {
+    unsigned ir = n-iir-1;
+    const double* rr = rvec_.data() + n*(n+1)/2 - iir*(iir+1)/2 - n;
+    double sum = qtfvec_(ir);
+    for(unsigned ic = ir+1; ic<n; ++ic)sum -= rr[ic]*dxvec_(ic);      
+        dxvec_(ir) = sum/rr[ir];
+  }
+  return dxvec_.transpose()*gvec_;
+}
+  

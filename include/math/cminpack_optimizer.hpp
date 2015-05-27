@@ -48,11 +48,16 @@ class CMinpackOptimizer: public Optimizer
   
   int eval_func(unsigned n, const double* x, double* grad, double* hess,
                 int iflag);
+  double edm(unsigned n);
   
   double fval_;
   Eigen::VectorXd xvec_;
   Eigen::VectorXd gvec_;
   Eigen::MatrixXd hmat_;
+  Eigen::MatrixXd qmat_;
+  Eigen::VectorXd rvec_;
+  Eigen::VectorXd qtfvec_;
+  Eigen::VectorXd dxvec_;
   unsigned nbest_ { 0 };
   std::unique_ptr<ErrorMatrixEstimator> err_est_;
 };

@@ -11,6 +11,7 @@
 %{
 #include "math/optimizer.hpp"
 #include "math/nlopt_optimizer.hpp"
+#include "math/cminpack_optimizer.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -39,3 +40,4 @@
 
 %include "math/optimizer.hpp"
 %include "math/nlopt_optimizer.hpp"
+%include "math/cminpack_optimizer.hpp"

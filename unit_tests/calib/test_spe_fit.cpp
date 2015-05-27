@@ -8,6 +8,7 @@
 #include "karkar_data.hpp"
 #include "math/optimizer.hpp"
 #include "math/nlopt_optimizer.hpp"
+#include "math/cminpack_optimizer.hpp"
 #include "math/minuit75_optimizer.hpp"
 
 using namespace calin::math;
@@ -505,7 +506,7 @@ TEST(TestSPELikelihood, Optimize_NLOpt)
   //optimizer::NLOptOptimizer opt("LN_SBPLX", &like);
   optimizer::NLOptOptimizer opt("LD_LBFGS", &like);
   opt.set_scale({0.1,0.1,1.0,1.0,0.05});
-  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SUMMARY_ONLY);
+  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
   opt.set_abs_tolerance(0.0001);
   opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 0.45 });
   Eigen::VectorXd x_opt(5);
@@ -535,6 +536,42 @@ TEST(TestSPELikelihood, Optimize_NLOpt)
             << std::sqrt(err_mat(3,3)) << ' '
             << std::sqrt(err_mat(4,4)) << '\n';
 
+}
+
+TEST(TestSPELikelihood, Optimize_CMinpack)
+{
+  auto mes_data = karkar_data();
+  SimpleHist mes_hist(1.0);
+  for(auto idata : mes_data)mes_hist.insert(idata);
+  PoissonGaussianMES mes_model(20);
+  SPELikelihood like(mes_model, mes_hist);
+
+  //optimizer::NLOptOptimizer opt("LN_SBPLX", &like);
+  optimizer::CMinpackOptimizer opt(&like);
+  opt.set_scale({0.1,0.1,1.0,1.0,0.05});
+  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  opt.set_abs_tolerance(0.0001);
+  opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 0.45 });
+  Eigen::VectorXd x_opt(5);
+  double f_val;
+  opt.minimize(x_opt, f_val);
+  
+  //EXPECT_EQ(status, GSL_SUCCESS);
+  EXPECT_NEAR(x_opt[0], 0.55349337, 0.0001);
+  EXPECT_NEAR(x_opt[1], 3094.2715, 0.01);
+  EXPECT_NEAR(x_opt[2], 19.6141970, 0.001);
+  EXPECT_NEAR(x_opt[3], 89.1810077, 0.01);
+  EXPECT_NEAR(x_opt[4], 0.32388838, 0.0001);  
+ 
+  std::cout << f_val << ' ' << std::fixed << std::setprecision(3);
+  std::cout << x_opt[0] << ' ' << x_opt[1] << ' ' << x_opt[2] << ' '
+            << x_opt[3] << ' ' << x_opt[4] << '\n';
+
+  Eigen::MatrixXd hessian_mat;
+  Eigen::VectorXd gradient;
+  like.value_gradient_and_hessian(x_opt, gradient, hessian_mat);
+  Eigen::MatrixXd err_mat = hessian_mat.inverse();
+  std::cout << std::fixed << std::setprecision(9) << err_mat << '\n';
 }
 
 #if 0

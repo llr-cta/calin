@@ -251,8 +251,11 @@ void Optimizer::opt_progress(double fval, const Eigen::VectorXd& x,
 #endif
   
   L << std::left << std::setw(std::max(3U, num_digits(max_iterations())))
-    << iterations_ << ' '
-    << std::fixed
+    << iterations_ << ' ';
+  if(hessian)L << "2 ";
+  else if(gradient)L << "1 ";
+  else L << "0 ";
+  L << std::fixed
     << std::setw(wfval_) << std::setprecision(pfval_) << fval << ' '
     << std::setw(wfval_) << std::setprecision(pfval_) << fbest_ << ' '
     << std::right
@@ -268,7 +271,7 @@ enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY,
 #endif
 
 void Optimizer::opt_finished(OptimizationStatus status, double fopt,
-                             const Eigen::VectorXd& xopt)
+                             const Eigen::VectorXd& xopt, const double* edm)
 {
   if(verbose_ == OptimizerVerbosityLevel::SILENT or
      (verbose_ == OptimizerVerbosityLevel::ALL_FCN_EVALS_ONLY))return;
@@ -297,8 +300,11 @@ void Optimizer::opt_finished(OptimizationStatus status, double fopt,
       << "- " << iterations_ << " function evaluations in "
       << std::fixed << std::setprecision(3) << tss << " seconds\n"
       << "- Best function value: "
-      << std::setw(wfval_) << std::setprecision(pfval_) << fopt << '\n';
-
+      << std::setw(wfval_) << std::setprecision(pfval_) << fopt
+      << disable_logging_if(edm == nullptr)
+      << " (EDM: " << std::scientific << (edm==nullptr?0.0:*edm) << ")"
+      << enable_logging() << '\n';
+  
   if(verbose_ != OptimizerVerbosityLevel::ELEVATED and
      verbose_ != OptimizerVerbosityLevel::MAX)return;
 
@@ -363,6 +369,13 @@ incorporate_func_value(ConstVecRef x, double f_val)
 void IdentityErrorMatrixEstimator::
 incorporate_func_gradient(ConstVecRef x, double f_val,
                           ConstVecRef gradient)
+{
+  // nothing to see here
+}
+
+void IdentityErrorMatrixEstimator::
+incorporate_func_hessian(ConstVecRef x, double f_val,
+                         ConstVecRef gradient, ConstMatRef hessian)
 {
   // nothing to see here
 }
@@ -446,6 +459,26 @@ incorporate_func_gradient(ConstVecRef x, double f_val,
   }
 skip_rank1_update:
   
+  last_good_ = true;
+  xk_ = x;
+  gk_ = gradient;
+}
+
+void BFGSErrorMatrixEstimator::
+incorporate_func_hessian(ConstVecRef x, double f_val,
+                         ConstVecRef gradient, ConstMatRef hessian)
+{
+  if(!isfinite(f_val) or
+     !std::all_of(gradient.data(), gradient.data()+npar_, 
+                  [](const double& x){return isfinite(x);}) or
+     !std::all_of(hessian.data(), hessian.data()+npar_*npar_, 
+                  [](const double& x){return isfinite(x);}))
+  {
+    last_good_ = false;
+    return;
+  }
+
+  Bk_ = hessian.inverse();
   last_good_ = true;
   xk_ = x;
   gk_ = gradient;

@@ -130,7 +130,7 @@ class Optimizer
                     const Eigen::VectorXd* gradient = nullptr,
                     const Eigen::MatrixXd* hessian = nullptr);
   void opt_finished(OptimizationStatus status, double fopt,
-                    const Eigen::VectorXd& xopt);
+                    const Eigen::VectorXd& xopt, const double* edm = nullptr);
   
   bool my_fcn_ { false };
   function::MultiAxisFunction* fcn_  { nullptr };
@@ -167,6 +167,9 @@ class ErrorMatrixEstimator
   virtual void incorporate_func_value(ConstVecRef x, double f_val) = 0;
   virtual void incorporate_func_gradient(ConstVecRef x, double f_val,
                                          ConstVecRef gradient) = 0;
+  virtual void incorporate_func_hessian(ConstVecRef x, double f_val,
+                                        ConstVecRef gradient,
+                                        ConstMatRef hessian) = 0;
   virtual ErrorMatrixStatus error_matrix(MatRef error_matrix) = 0;
  protected:
   unsigned npar_ { 0 };
@@ -182,6 +185,9 @@ class IdentityErrorMatrixEstimator: public ErrorMatrixEstimator
   void incorporate_func_value(ConstVecRef x, double f_val) override;
   void incorporate_func_gradient(ConstVecRef x, double f_val,
                                  ConstVecRef gradient) override;
+  void incorporate_func_hessian(ConstVecRef x, double f_val,
+                                ConstVecRef gradient,
+                                ConstMatRef hessian) override;
   ErrorMatrixStatus error_matrix(MatRef error_matrix) override;
 };
 
@@ -194,6 +200,9 @@ class BFGSErrorMatrixEstimator: public ErrorMatrixEstimator
   void incorporate_func_value(ConstVecRef x, double f_val) override;
   void incorporate_func_gradient(ConstVecRef x, double f_val,
                                  ConstVecRef gradient) override;
+  void incorporate_func_hessian(ConstVecRef x, double f_val,
+                                ConstVecRef gradient,
+                                ConstMatRef hessian) override;
   ErrorMatrixStatus error_matrix(MatRef error_matrix) override;
  protected:
   bool last_good_ { false };
