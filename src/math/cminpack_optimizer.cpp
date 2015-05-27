@@ -188,7 +188,8 @@ ErrorMatrixStatus CMinpackOptimizer::error_matrix_estimate(MatRef error_matrix)
       error_matrix(ir,ivec) = sum/rr[ir];
     }
   }
-  if(scale != 1)error_matrix *= scale;
+  Eigen::MatrixXd ems = (0.5*scale)*(error_matrix + error_matrix.transpose());
+  error_matrix = ems;
   return ErrorMatrixStatus::GOOD;
 }
 
