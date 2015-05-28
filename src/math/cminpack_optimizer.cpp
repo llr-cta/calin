@@ -188,8 +188,14 @@ ErrorMatrixStatus CMinpackOptimizer::error_matrix_estimate(MatRef error_matrix)
       error_matrix(ir,ivec) = sum/rr[ir];
     }
   }
+
+  // The calculated "error_matrix" may not be symmetric as the final rank-1
+  // updates in CMinpack do not assume a symmetric Hessian (rather a more
+  // generic Jacbian of the N functions). So we symmetrize the matrix here.
+  // We don't worry about enforcing positive-definiteness.
   Eigen::MatrixXd ems = (0.5*scale)*(error_matrix + error_matrix.transpose());
   error_matrix = ems;
+  
   return ErrorMatrixStatus::GOOD;
 }
 
@@ -197,6 +203,7 @@ ErrorMatrixStatus CMinpackOptimizer::
 calc_error_matrix_and_eigenvectors(MatRef error_matrix,
                                    VecRef eigenvalues, MatRef eigenvectors)
 {
+  // Duplicate of the code from nlopt_optimizer. Move to base class?
   const unsigned npar { fcn_->num_domain_axes() };
   error_matrix.resize(npar,npar);
   Eigen::VectorXd error_hint;
