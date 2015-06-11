@@ -2,9 +2,9 @@
 
 syntax = "proto3";
 
-import "cta.proto";
+import "calin.proto";
 
-package calin.data;
+package calin.ix.math;
 
 message Histogram1DData {
   double dxval                 = 1

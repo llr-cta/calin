@@ -4,6 +4,8 @@ syntax="proto3";
 
 import "google/protobuf/descriptor.proto";
 
+package calin;
+
 message SQLOptions
 {
   optional bool enable          = 1;
@@ -11,7 +13,7 @@ message SQLOptions
   optional bool inline_message  = 3;
 };
  
-message CTAFieldOptions
+message FieldOptions
 {
   enum Int32StorageType {
     INT_32   = 0;
@@ -26,6 +28,6 @@ message CTAFieldOptions
 };
 
 extend google.protobuf.FieldOptions {
-  optional CTAFieldOptions CFO = 50000;
+  optional calin.FieldOptions CFO = 50000;
 };
 

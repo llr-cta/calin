@@ -11,11 +11,9 @@
 
 using namespace calin::math;
 using namespace calin::math::histogram;
-using namespace calin::data;
 using namespace calin::calib;
 using namespace calin::calib::spe_fit;
 using namespace calin::unit_tests;
-
 
 TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   auto mes_data = karkar_data();

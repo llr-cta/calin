@@ -17,7 +17,7 @@
 #include <iterator>
 
 #include "package_wide_definitions.hpp"
-#include "proto/histogram.pb.h"
+#include "proto/math_histogram.pb.h"
 #include "math/accumulator.hpp"
 
 // This class has some changes/improvements over the VERITAS ChiLA
@@ -331,11 +331,11 @@ template<typename Acc> class BasicHistogram1D:
       name_{name}, weight_units_{weight_units}
   { /* nothing to see here */ }
 
-  BasicHistogram1D(calin::data::Histogram1DData& data);
+  BasicHistogram1D(calin::ix::math::Histogram1DData& data);
 
   // Get all data as protobuf message
-  calin::data::Histogram1DData*
-      getData(calin::data::Histogram1DData* data = nullptr) const;
+  calin::ix::math::Histogram1DData*
+      getData(calin::ix::math::Histogram1DData* data = nullptr) const;
   
   // Getters and setters
   std::string name() const { return name_; }
@@ -452,7 +452,7 @@ insert(const double x, const double w)
 }
 
 template<typename Acc>
-BasicHistogram1D<Acc>::BasicHistogram1D(data::Histogram1DData& data):
+BasicHistogram1D<Acc>::BasicHistogram1D(calin::ix::math::Histogram1DData& data):
     Base(data.dxval(), data.xval_align(), data.xval0(),
          &(*data.bins().begin()),&(*data.bins().end()), data.limited(),
          data.xval_limit_lo(), data.xval_limit_hi(),
@@ -463,10 +463,10 @@ BasicHistogram1D<Acc>::BasicHistogram1D(data::Histogram1DData& data):
   // nothing to see here
 }
 
-template<typename Acc> data::Histogram1DData*
-BasicHistogram1D<Acc>::getData(data::Histogram1DData* data) const
+template<typename Acc> calin::ix::math::Histogram1DData*
+BasicHistogram1D<Acc>::getData(calin::ix::math::Histogram1DData* data) const
 {
-  if(data == nullptr)data = new data::Histogram1DData {};
+  if(data == nullptr)data = new calin::ix::math::Histogram1DData {};
   data->set_dxval(this->dxval_);
   data->set_xval_align(this->xval_align_);
   data->set_xval0(this->xval0_);
