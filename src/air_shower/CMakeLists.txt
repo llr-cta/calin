@@ -1,0 +1,6 @@
+set(CALIN_TARGET_LIBRARY calin_air_shower)
+set(CALIN_SOURCES atmosphere.cpp)
+
+add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
+
+install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)

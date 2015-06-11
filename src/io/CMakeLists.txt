@@ -1,4 +1,8 @@
-include_directories(${PYTHON_INCLUDE_PATH})
-add_library(calin_io SHARED log.cpp)
-target_link_libraries(calin_io ${PYTHON_LIBRARIES})
-install(TARGETS calin_io DESTINATION lib)
+set(CALIN_TARGET_LIBRARY calin_io)
+set(CALIN_SOURCES log.cpp)
+
+include_directories(${PYTHON_INCLUDE_PATH}) 
+add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
+target_link_libraries(${CALIN_TARGET_LIBRARY} ${PYTHON_LIBRARIES})
+
+install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)
