@@ -64,9 +64,10 @@ std::vector<AtmSlice> Atmosphere::make_atm_slices(unsigned nslice,
 // ****************************************************************************
 
 IsothermalAtmosphere::
-IsothermalAtmosphere(double rho0, double zs, double zmax, double nmo0):
+IsothermalAtmosphere(double rho0, double zs, double zmax, double nmo0,
+                     double temperature):
   Atmosphere(), m_ttoa(rho0*zs*std::exp(-zmax/zs)), m_rho0(rho0),
-  m_zs(zs), m_zmax(zmax), m_nmo0(nmo0) 
+  m_zs(zs), m_zmax(zmax), m_nmo0(nmo0), temperature_(temperature)
 {
   // nothing to see here
 }
