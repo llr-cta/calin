@@ -602,13 +602,16 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
   if(can_calculate_parameter_gradient())
   {
     unsigned ped_npar = ped_pdf_->num_parameters();
+
+    ped_grad_.resize(ped_npar);
     ped_grad_fft_.resize(ped_npar);
     ped_grad_plan_fwd_.resize(ped_npar);
     for(unsigned ipar=0;ipar<ped_npar;ipar++)
     {
+      ped_grad_[ipar] = fftw_alloc_real(nsample_);
       ped_grad_fft_[ipar] = fftw_alloc_real(nsample_);
       ped_grad_plan_fwd_[ipar] =
-          fftw_plan_r2r_1d(nsample_, ped_grad_fft_[ipar], ped_grad_fft_[ipar],
+          fftw_plan_r2r_1d(nsample_, ped_grad_[ipar], ped_grad_fft_[ipar],
                            FFTW_R2HC, 0);
     }
   
@@ -642,6 +645,7 @@ GeneralPoissonMES::~GeneralPoissonMES()
   for(auto x : ses_grad_plan_fwd_)fftw_destroy_plan(x);
   for(auto x : ped_grad_plan_fwd_)fftw_destroy_plan(x);
   for(auto x : mes_grad_)fftw_free(x);
+  for(auto x : ped_grad_)fftw_free(x);
   for(auto x : ses_grad_fft_)fftw_free(x);
   for(auto x : ped_grad_fft_)fftw_free(x);
   
@@ -719,7 +723,16 @@ double GeneralPoissonMES::pdf_ped(double x)
 
 double GeneralPoissonMES::pdf_gradient_ped(double x, VecRef gradient)
 {
-
+  assert(can_calculate_parameter_gradient());
+  int thebin = ibin(x);
+  //std::cout << "HELLO : " << x << ' ' << thebin << '\n';
+  unsigned npar = ped_pdf_->num_parameters();
+  gradient.resize(num_parameters());
+  gradient.setZero();
+  for(unsigned ipar=0;ipar<npar;ipar++)
+    gradient[1+ipar] = ped_grad_[ipar][thebin];
+  //std::cout << gradient << ' ' << std::max(ped_spec_[thebin],0.0) << '\n';
+  return std::max(ped_spec_[thebin],0.0);
 }
 
 double GeneralPoissonMES::pdf_gradient_hessian_ped(double x, VecRef gradient,
@@ -938,7 +951,7 @@ void GeneralPoissonMES::set_cache()
       val = ped_pdf_->value_and_parameter_gradient_1d(x, ped_gradient);
       if(!isfinite(val)){ val = 0; ped_gradient.setZero(); }
       for(unsigned ipar=0;ipar<ped_npar;ipar++)
-        ped_grad_fft_[ipar][isample] = ped_gradient[ipar];    
+        ped_grad_[ipar][isample] = ped_gradient[ipar];    
     }
     else
     {
@@ -1108,19 +1121,21 @@ double SPELikelihood::value(ConstVecRef x)
   mes_model_->set_parameter_values(x);
   math::accumulator::LikelihoodAccumulator acc;
   for(auto& ibin : mes_data_)
-  {
-    double pdf = mes_model_->pdf_mes(ibin.xval_center());
-    if(pdf<=0)continue;
-    acc.accumulate(std::log(pdf)*ibin.weight());
-  }
-  
-  if(has_ped_data_)
-    for(auto& ibin : ped_data_)
+    if(ibin.weight())
     {
-      double pdf = mes_model_->pdf_ped(ibin.xval_center());
+      double pdf = mes_model_->pdf_mes(ibin.xval_center());
       if(pdf<=0)continue;
       acc.accumulate(std::log(pdf)*ibin.weight());
     }
+  
+  if(has_ped_data_)
+    for(auto& ibin : ped_data_)
+      if(ibin.weight())
+      {
+        double pdf = mes_model_->pdf_ped(ibin.xval_center());
+        if(pdf<=0)continue;
+        acc.accumulate(std::log(pdf)*ibin.weight());
+      }
   return -acc.total();
 }
 
@@ -1136,29 +1151,30 @@ bool SPELikelihood::can_calculate_hessian()
 
 double SPELikelihood::value_and_gradient(ConstVecRef x, VecRef gradient)
 {
-  gradient.resize(x.size());
-  
   mes_model_->set_parameter_values(x);
+  gradient.resize(npar_);
   math::accumulator::LikelihoodAccumulator acc;
   std::vector<math::accumulator::LikelihoodAccumulator> gradient_acc(npar_);
   for(auto& ibin : mes_data_)
-  {
-    double pdf = mes_model_->pdf_gradient_mes(ibin.xval_center(), gradient);
-    if(pdf<=0)continue;
-    acc.accumulate(std::log(pdf)*ibin.weight());
-    for(unsigned ipar=0;ipar<npar_;ipar++)
-      gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
-  }
-    
-  if(has_ped_data_)
-    for(auto& ibin : ped_data_)
+    if(ibin.weight())
     {
-      double pdf = mes_model_->pdf_gradient_ped(ibin.xval_center(), gradient);
+      double pdf = mes_model_->pdf_gradient_mes(ibin.xval_center(), gradient);
       if(pdf<=0)continue;
       acc.accumulate(std::log(pdf)*ibin.weight());
       for(unsigned ipar=0;ipar<npar_;ipar++)
         gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
     }
+    
+  if(has_ped_data_)
+    for(auto& ibin : ped_data_)
+      if(ibin.weight())
+      {
+        double pdf = mes_model_->pdf_gradient_ped(ibin.xval_center(), gradient);
+        if(pdf<=0)continue;
+        acc.accumulate(std::log(pdf)*ibin.weight());
+        for(unsigned ipar=0;ipar<npar_;ipar++)
+          gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
+      }
   
   for(unsigned ipar=0;ipar<npar_;ipar++)
     gradient(ipar) = -gradient_acc[ipar].total();
@@ -1168,50 +1184,51 @@ double SPELikelihood::value_and_gradient(ConstVecRef x, VecRef gradient)
 double SPELikelihood::
 value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
 {
-  gradient.resize(5);
-  hessian.resize(5,5);
-  
   mes_model_->set_parameter_values(x);
+  gradient.resize(npar_);
+  hessian.resize(npar_,npar_);  
   math::accumulator::LikelihoodAccumulator acc;
   std::vector<math::accumulator::LikelihoodAccumulator> gradient_acc(npar_);
   std::vector<math::accumulator::LikelihoodAccumulator>
       hessian_acc(npar_*(npar_+1)/2);
   for(auto& ibin : mes_data_)
-  {
-    double pdf =
-        mes_model_->pdf_gradient_hessian_mes(ibin.xval_center(), gradient, hessian);
-    if(pdf<=0)continue;
-    acc.accumulate(std::log(pdf)*ibin.weight());
-    for(unsigned ipar=0;ipar<npar_;ipar++)
-      gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
-    unsigned itri = 0;
-    for(unsigned icol=0;icol<npar_;icol++)
-      for(unsigned irow=icol;irow<npar_;irow++)
-      {
-        double summand = (hessian(icol,irow)
-                          - gradient[icol]*gradient[irow]/pdf)/pdf;
-        hessian_acc[itri++].accumulate(summand*ibin.weight());
-      }
-  }
-    
-  if(has_ped_data_)
-    for(auto& ibin : ped_data_)
+    if(ibin.weight())
     {
       double pdf =
-          mes_model_->pdf_gradient_hessian_ped(ibin.xval_center(), gradient, hessian);
+          mes_model_->pdf_gradient_hessian_mes(ibin.xval_center(), gradient, hessian);
       if(pdf<=0)continue;
       acc.accumulate(std::log(pdf)*ibin.weight());
       for(unsigned ipar=0;ipar<npar_;ipar++)
         gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
-      unsigned iacc = 0;
+      unsigned itri = 0;
       for(unsigned icol=0;icol<npar_;icol++)
         for(unsigned irow=icol;irow<npar_;irow++)
         {
           double summand = (hessian(icol,irow)
                             - gradient[icol]*gradient[irow]/pdf)/pdf;
-          hessian_acc[iacc++].accumulate(summand*ibin.weight());
+          hessian_acc[itri++].accumulate(summand*ibin.weight());
         }
     }
+    
+  if(has_ped_data_)
+    for(auto& ibin : ped_data_)
+      if(ibin.weight())
+      {
+        double pdf =
+            mes_model_->pdf_gradient_hessian_ped(ibin.xval_center(), gradient, hessian);
+        if(pdf<=0)continue;
+        acc.accumulate(std::log(pdf)*ibin.weight());
+        for(unsigned ipar=0;ipar<npar_;ipar++)
+          gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
+        unsigned iacc = 0;
+        for(unsigned icol=0;icol<npar_;icol++)
+          for(unsigned irow=icol;irow<npar_;irow++)
+          {
+            double summand = (hessian(icol,irow)
+                            - gradient[icol]*gradient[irow]/pdf)/pdf;
+            hessian_acc[iacc++].accumulate(summand*ibin.weight());
+          }
+      }
   
   for(unsigned ipar=0;ipar<npar_;ipar++)
     gradient(ipar) = -gradient_acc[ipar].total();

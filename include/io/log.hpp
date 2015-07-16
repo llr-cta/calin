@@ -16,7 +16,7 @@
 
 namespace calin { namespace io { namespace log {
 
-enum Level { FATAL, ERROR, WARNING, INFO, SUCCESS, FAILURE, VERBOSE };
+enum Level { FATAL, ERROR, WARNING, INFO, SUCCESS, FAILURE, VERBOSE, DISCARD };
 
 struct TimeStamp
 {

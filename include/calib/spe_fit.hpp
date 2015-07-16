@@ -245,6 +245,7 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   std::vector<double*> ses_grad_fft_;
   std::vector<fftw_plan> ped_grad_plan_fwd_;
   std::vector<fftw_plan> ses_grad_plan_fwd_;
+  std::vector<double*> ped_grad_;
   std::vector<double*> mes_grad_;
   std::vector<fftw_plan> mes_grad_plan_rev_;
 };

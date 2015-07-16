@@ -53,8 +53,8 @@ hessian::hessian_to_error_matrix(function::MultiAxisFunction& fcn,
   const unsigned npar = fcn.num_domain_axes();
   Eigen::VectorXd unused_eigenvalues(npar);
   Eigen::MatrixXd unused_eigenvectors(npar,npar);
-  return hessian_to_error_matrix(fcn, hessian, error_matrix, unused_eigenvalues,
-                                 unused_eigenvectors);
+  return hessian_to_error_matrix(fcn, hessian, error_matrix,
+                                 unused_eigenvalues, unused_eigenvectors);
 }
 
 hessian::ErrorMatrixStatus
@@ -107,7 +107,7 @@ step_size_err_up(function::MultiAxisFunction& fcn, ConstVecRef x,
   for(unsigned ipar=0;ipar<npar;ipar++)
   {
     Eigen::VectorXd xx { x };
-    auto f_of_x = [ipar,&xx,&fcn,fup](double x){
+    auto f_of_x = [ipar,&xx,&fcn,fup](double x){ //std::cout << ' ' << ipar << ' ' << x << ' ' << fcn.value(xx)-fup << '\n';
       xx(ipar)=x; return fcn.value(xx)-fup; };
     double xlo = x(ipar);
     double flo = -fcn.error_up()*err_up_frac;
@@ -119,6 +119,7 @@ step_size_err_up(function::MultiAxisFunction& fcn, ConstVecRef x,
     double xroot = brent_zero(xlo,xhi,f_of_x,flo,fhi,xtol);
     dx(ipar) = xroot-x(ipar);
   }
+  //std::cout << dx << '\n';
   return dx;
 }
 
@@ -162,6 +163,8 @@ calculate_hessian_1st_order_dx(function::MultiAxisFunction& fcn,
     fcn.value_and_gradient(xx, grad_p);
     xx(ipar) = xn;
     fcn.value_and_gradient(xx, grad_n);
+    std::cout << ipar << ' ' << xp << ' ' << xn << ' '
+              << "[ " << grad_p.transpose() << " ] [ " << grad_n.transpose() << "]\n";
     xx(ipar) = x(ipar); // reset for next loop
     for(unsigned jpar=0;jpar<npar;jpar++)
       hessian(ipar,jpar) = (grad_p(jpar) - grad_n(jpar))/h2;
@@ -172,6 +175,8 @@ calculate_hessian_1st_order_dx(function::MultiAxisFunction& fcn,
     for(unsigned jpar=0;jpar<ipar;jpar++)
       hessian(ipar,jpar) = hessian(jpar,ipar) =
                            0.5*(hessian(ipar,jpar) + hessian(jpar,ipar));
+
+  std::cout << hessian << '\n';
 }
 
 void hessian::

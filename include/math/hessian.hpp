@@ -52,7 +52,7 @@ Eigen::VectorXd step_size_epsmult(ConstVecRef x, double eps_mult=100.0);
 Eigen::VectorXd step_size_err_up(function::MultiAxisFunction& fcn,
                                  ConstVecRef x,
                                  ConstVecRef error_hint = Eigen::VectorXd(),
-                                 double err_up_frac = 0.1, double tol = 0.03);
+                                 double err_up_frac = 0.001, double tol = 0.03);
 
 // Convenience function which chooses method depending on what Function
 // supports
@@ -82,7 +82,7 @@ void calculate_hessian_1st_order_eps(function::MultiAxisFunction& fcn,
 void calculate_hessian_1st_order_err_up(function::MultiAxisFunction& fcn,
                                      ConstVecRef x, MatRef hessian,
                                      ConstVecRef error_hint = Eigen::VectorXd(),
-                                     double err_up_frac = 0.01,
+                                     double err_up_frac = 0.001,
                                      double tol = 0.001);
 
 // Calculate Hessian by numerical differentiation of the function
@@ -107,7 +107,7 @@ void calculate_hessian_2nd_order_eps(function::MultiAxisFunction& fcn,
 void calculate_hessian_2nd_order_err_up(function::MultiAxisFunction& fcn,
                                      ConstVecRef x, MatRef hessian,
                                      ConstVecRef error_hint = Eigen::VectorXd(),
-                                     double err_up_frac = 0.01,
+                                     double err_up_frac = 0.001,
                                      double tol = 0.001);
 
 } } } // namespace calin::math::hessian

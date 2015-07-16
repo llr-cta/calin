@@ -66,6 +66,7 @@ const char* ansi_color_string(Level level)
       //case Level::FAILURE:  return "\x1b[30;41;101;1m";
     case Level::INFO:     return "\x1b[37;46;97;1m";
     case Level::VERBOSE:  return "";
+    case Level::DISCARD:  return "";
   }
 }
 
@@ -80,6 +81,7 @@ const char* level_string(Level level)
     case Level::SUCCESS:  return "SUCCESS";
     case Level::INFO:     return "INFO";
     case Level::VERBOSE:  return "";
+    case Level::DISCARD:  return "";
   }
 }
 
@@ -138,7 +140,7 @@ MultiLogger::~MultiLogger()
 void MultiLogger::log_message(Level level, const std::string& message,
                               TimeStamp timestamp)
 {
-  if(message.empty())return;
+  if(message.empty() || level==DISCARD)return;
   
   lock();
 
@@ -264,6 +266,8 @@ PythonLogger::~PythonLogger()
 void PythonLogger::
 log_message(Level level, const std::string& message, TimeStamp timestamp)
 {
+  if(message.empty() || level==DISCARD)return;
+  
   const char* this_level_string = level_string(level);
   const char* apply_color_string = ansi_color_string(level);
   const char* reset_color_string = ansi_reset_string();

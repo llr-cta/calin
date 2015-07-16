@@ -276,6 +276,24 @@ TEST(TestSPELikelihood, KarkarPG_HessianCheck) {
     for(unsigned jpar=0;jpar<5;jpar++)EXPECT_LE(good(ipar,jpar),0.5);
 }
 
+TEST(TestSPELikelihood, KarkarPG_GradientCheck_WithPed) {
+  auto mes_data = karkar_data();
+  SimpleHist mes_hist(1.0);
+  for(auto idata : mes_data)mes_hist.insert(idata);
+  PoissonGaussianMES mes_model(20);
+  SPELikelihood like(mes_model, mes_hist, mes_hist);
+  Eigen::VectorXd x(5);
+  x << 0.55349034289601895, 3094.2718624743093,
+      19.614139336940855, 89.181964780087668, 0.32388058781378032;
+  Eigen::VectorXd dx(5);
+  dx << 1e-7, 1e-7, 1e-7, 1e-7, 1e-7;
+  Eigen::VectorXd good(5);
+  
+  bool check_ok = function::gradient_check(like, x, dx, good);
+  EXPECT_TRUE(check_ok);
+  for(unsigned ipar=0;ipar<5;ipar++)EXPECT_LE(good(ipar),0.5);
+}
+
 #if 0
 
 double my_f(const gsl_vector * x, void * params)
@@ -689,6 +707,24 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
     file << mes_spec[i] << ' ' << ped_spec[i] << ' '
          << one_es_spec[i] << ' ' << two_es_spec[i] << ' ' 
          << three_es_spec[i] << ' ' << '\n';
+}
+
+TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_PED)
+{
+  double inf = std::numeric_limits<double>::infinity();
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
+  exp_pdf.limit_scale(0.1, inf);
+  pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
+  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped);
+  double dp1 = 1e-7;
+  mes_gradient_test(&mes_model,
+                    &MultiElectronSpectrum::pdf_ped,
+                    &MultiElectronSpectrum::pdf_gradient_ped,
+                    &MultiElectronSpectrum::pdf_gradient_hessian_ped,
+                    { 1.123, 0.100000, 0.2, 0.3, 0.2, 1.321, 0.35 },
+                    { dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 0.5);
 }
 
 TEST(TestGeneralPoissonMES_ExpGauss, Repeatability)
