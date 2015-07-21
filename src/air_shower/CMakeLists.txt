@@ -3,7 +3,7 @@ find_package(Geant4 REQUIRED)
 include(${Geant4_USE_FILE})
 
 set(CALIN_TARGET_LIBRARY calin_air_shower)
-set(CALIN_SOURCES atmosphere.cpp geant4_shower_generator.cpp
+set(CALIN_SOURCES tracker.cpp atmosphere.cpp geant4_shower_generator.cpp
 		  geant4_shower_generator_internals.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})

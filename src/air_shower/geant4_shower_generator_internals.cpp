@@ -7,20 +7,22 @@
 
 */
 
+#include<stdexcept>
+
 #include"air_shower/geant4_shower_generator_internals.hpp"
 
 using namespace calin::air_shower::shower_generator;
 
-namespace {
-
-void g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec)
+void calin::air_shower::shower_generator::
+g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec)
 {
   evec[0] = g4vec[0];
   evec[1] = g4vec[1];
   evec[2] = g4vec[2];
 }
 
-void g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
+void calin::air_shower::shower_generator::
+g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
                     double to_units)
 {
   evec[0] = g4vec[0]/to_units;
@@ -28,54 +30,111 @@ void g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
   evec[2] = g4vec[2]/to_units;
 }
 
-} // anonymous namespace
+void calin::air_shower::shower_generator::
+eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec)
+{
+  g4vec[0] = evec[0];
+  g4vec[1] = evec[1];
+  g4vec[2] = evec[2];
+}
+
+void calin::air_shower::shower_generator::
+eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec,
+               double from_units)
+{
+  g4vec[0] = evec[0]*from_units;
+  g4vec[1] = evec[1]*from_units;
+  g4vec[2] = evec[2]*from_units;
+}
+
+calin::air_shower::tracker::ParticleType
+calin::air_shower::shower_generator::pdg_to_track_type(G4int pdg_type)
+{
+  using calin::air_shower::tracker::ParticleType;
+  switch(pdg_type)
+  {
+    case 22:    return ParticleType::GAMMA;
+    case 1:     return ParticleType::ELECTRON;
+    case -1:    return ParticleType::POSITRON;
+    case 13:    return ParticleType::MUON;
+    case -13:   return ParticleType::ANTI_MUON;
+    case 2212:  return ParticleType::PROTON;
+    case -2212: return ParticleType::ANTI_PROTON;
+    default:    return ParticleType::OTHER;
+  };
+  assert(0);
+}
+
+G4int calin::air_shower::shower_generator::
+track_to_pdg_type(calin::air_shower::tracker::ParticleType track_type)
+{
+  using calin::air_shower::tracker::ParticleType;
+  switch(track_type)
+  {
+    case ParticleType::GAMMA:       return 22;
+    case ParticleType::ELECTRON:    return 1;
+    case ParticleType::POSITRON:    return -1;
+    case ParticleType::MUON:        return 13;
+    case ParticleType::ANTI_MUON:   return -13;
+    case ParticleType::PROTON:      return 2212;
+    case ParticleType::ANTI_PROTON: return -2212;
+    case ParticleType::OTHER:
+      throw(std::runtime_error("ParticleType::OTHER has no PDG type code"));
+  };
+  assert(0);
+}
 
 // ============================================================================
 //
-// EAS_Actions - Run / Track / Step actions
+// EAS_SteppingAction - Stacking action - kill low energy particles
 //
 // ============================================================================
 
-EAS_Actions::EAS_Actions(calin::air_shower::tracker::TrackVisitor* visitor)
+EAS_StackingAction::EAS_StackingAction(): G4UserStackingAction()
+{
+  // nothing to see here
+}
+
+EAS_StackingAction::~EAS_StackingAction()
+{
+  // nothing to see here
+}
+
+G4ClassificationOfNewTrack EAS_StackingAction::
+ClassifyNewTrack(const G4Track* track)
+{
+  return track->GetTotalEnergy() < ecut_ ? fKill : fUrgent;
+}
+
+// ============================================================================
+//
+// EAS_SteppingAction - Stepping action
+//
+// ============================================================================
+
+EAS_SteppingAction::
+EAS_SteppingAction(calin::air_shower::tracker::TrackVisitor* visitor)
     : G4UserSteppingAction(), visitor_(visitor)
 {
   /* nothing to see here */
 }
 
-EAS_Actions::~EAS_Actions()
+EAS_SteppingAction::~EAS_SteppingAction()
 {
   // nothing to see here
 }
 
-void EAS_Actions::UserSteppingAction(const G4Step* the_step)
+void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
 {
   const G4StepPoint* pre_step_pt = the_step->GetPreStepPoint();
 
   double pre_step_pt_etot = pre_step_pt->GetTotalEnergy();
-  const G4ThreeVector& pre_step_pt_posn = pre_step_pt->GetPosition();
   if(pre_step_pt_etot < ecut_)
   {
     the_step->GetTrack()->SetTrackStatus(fStopAndKill);
     return;
   }
 
-  if(r2cut_ > 0)
-  {
-    if(pre_step_pt_posn.x()*pre_step_pt_posn.x()
-       + pre_step_pt_posn.y()*pre_step_pt_posn.y()
-       + pre_step_pt_posn.z()*(pre_step_pt_posn.z() + 2.0*rzero_)
-       + rzero_*rzero_ < r2cut_)
-    {
-      the_step->GetTrack()->SetTrackStatus(fStopAndKill);
-      return;     
-    }
-  }
-  else if(pre_step_pt_posn.z() < zcut_)
-  {
-    the_step->GetTrack()->SetTrackStatus(fStopAndKill);
-    return;     
-  }
-  
   calin::air_shower::tracker::Track track;
 
   const G4ParticleDefinition* pdg_info =
@@ -83,28 +142,18 @@ void EAS_Actions::UserSteppingAction(const G4Step* the_step)
   track.pdg_type = pdg_info->GetPDGEncoding();
   track.q        = pdg_info->GetPDGCharge();
   track.mass     = pdg_info->GetPDGMass()/CLHEP::MeV;
+  track.type     = pdg_to_track_type(track.pdg_type);
 
-  using calin::air_shower::tracker::ParticleType;
-  switch(track.pdg_type)
-  {
-    case 22:    track.type = ParticleType::GAMMA; break;
-    case 1:     track.type = ParticleType::ELECTRON; break;
-    case -1:    track.type = ParticleType::POSITRON; break;
-    case 13:    track.type = ParticleType::MUON; break;
-    case -13:   track.type = ParticleType::ANTI_MUON; break;
-    case 2212:  track.type = ParticleType::PROTON; break;
-    case -2212: track.type = ParticleType::ANTI_PROTON; break;
-    default:    track.type = ParticleType::OTHER; break;
-  };
-
+  const G4ThreeVector& pre_step_pt_posn = pre_step_pt->GetPosition();
   track.e0       = pre_step_pt_etot/CLHEP::MeV;
   g4vec_to_eigen(track.x0, pre_step_pt_posn, CLHEP::cm);
   g4vec_to_eigen(track.u0, pre_step_pt->GetMomentumDirection());
   track.t0       = pre_step_pt->GetGlobalTime()/CLHEP::ns;
 
   const G4StepPoint* post_step_pt = the_step->GetPostStepPoint();
+  const G4ThreeVector& post_step_pt_posn = post_step_pt->GetPosition();
   track.e1       = post_step_pt->GetTotalEnergy()/CLHEP::MeV;
-  g4vec_to_eigen(track.x1, post_step_pt->GetPosition(), CLHEP::cm);
+  g4vec_to_eigen(track.x1, post_step_pt_posn, CLHEP::cm);
   g4vec_to_eigen(track.u1, post_step_pt->GetMomentumDirection());  
   track.t1       = post_step_pt->GetGlobalTime()/CLHEP::ns;
 
@@ -114,6 +163,47 @@ void EAS_Actions::UserSteppingAction(const G4Step* the_step)
   bool kill_track = false;
   visitor_->visitTrack(track, kill_track);
   if(kill_track)the_step->GetTrack()->SetTrackStatus(fStopAndKill);
+
+  if(r2cut_ > 0)
+  {
+    if(post_step_pt_posn.x()*post_step_pt_posn.x()
+       + post_step_pt_posn.y()*post_step_pt_posn.y()
+       + post_step_pt_posn.z()*(post_step_pt_posn.z() + 2.0*rzero_)
+       + rzero_*rzero_ < r2cut_)
+    {
+      the_step->GetTrack()->SetTrackStatus(fStopAndKill);
+      return;     
+    }
+  }
+  else if(post_step_pt_posn.z() < zcut_)
+  {
+    the_step->GetTrack()->SetTrackStatus(fStopAndKill);
+    return;     
+  }  
+}
+
+// ============================================================================
+//
+// EAS_PrimaryGeneratorAction - create primary particles on demand using
+//                              supplied particle source
+//
+// ============================================================================
+
+EAS_PrimaryGeneratorAction::EAS_PrimaryGeneratorAction()
+    : G4VUserPrimaryGeneratorAction()
+{
+  // nothing to see here
+}
+      
+EAS_PrimaryGeneratorAction::~EAS_PrimaryGeneratorAction()
+{
+  delete(particle_source_);
+}
+
+void EAS_PrimaryGeneratorAction::GeneratePrimaries(G4Event* the_event)
+{
+  // this function is called at the begining of event
+  particle_source_->GeneratePrimaryVertex(the_event);
 }
 
 // ============================================================================
@@ -161,7 +251,7 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
 
   G4double world_hx = layer_side_cm_*CLHEP::cm;
   G4double world_hy = layer_side_cm_*CLHEP::cm;
-  G4double world_hz = 0.5*(ztop_of_atm_cm_-zground_cm_)*CLHEP::cm;
+  G4double world_hz = ztop_of_atm_cm_*CLHEP::cm;
   G4Box* world_box
       = new G4Box("BOX_World",
                   world_hx*(1+eps), world_hy*(1+eps), world_hz*(1+eps));
@@ -170,11 +260,9 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
   G4LogicalVolume* world_logical
       = new G4LogicalVolume(world_box, world_mat, std::string("VOL_World"));
 
-  G4double wpos_z = 0.5*(ztop_of_atm_cm_-zground_cm_)*CLHEP::cm;
-                      
   G4VPhysicalVolume* world_physical
       = new G4PVPlacement(0,                           // no rotation
-                          G4ThreeVector(0, 0, wpos_z), // translation
+                          G4ThreeVector(0, 0, 0), // translation
                           world_logical    ,           // its logical volume
                           std::string("PHY_WORLD"),    // its name
                           0,                           // its mother volume
@@ -185,28 +273,34 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
   {
     G4double density = islice.rho * CLHEP::g/CLHEP::cm3;
     std::string name {"LAYER_"};
-    name += std::to_string(islice.zb);
+    name += std::to_string(int(std::floor(islice.zb)));
     name += "_";
-    name += std::to_string(islice.zt);
+    name += std::to_string(int(std::floor(islice.zt)));
     
     G4Material* air =
         nist->BuildMaterialWithNewDensity(std::string("AIR_")+name,
                                           "G4_AIR",density);
 
-    G4double layer_hz = 0.5*(islice.zt-islice.zb)*CLHEP::cm*(1-eps);
-
+    G4double layer_hz = 0.5*(islice.zt-islice.zb)*CLHEP::cm;
+    G4double pos_z = 0.5*(islice.zt+islice.zb)*CLHEP::cm;
+    if(islice.zb-zground_cm_ < eps)
+    {
+      // Add 1mm guard to lowest layer simplify cut on z
+      layer_hz += 0.5*CLHEP::mm;
+      pos_z -= 0.5*CLHEP::mm;
+    }
+    layer_hz *= (1-eps);
+    
     G4Box* layer_box
         = new G4Box(std::string("BOX_")+name, world_hx, world_hy, layer_hz);
     
     G4LogicalVolume* layer_logical
         = new G4LogicalVolume(layer_box, air, std::string("VOL_")+name);
-
-    G4double pos_z = 0.5*(islice.zt+islice.zb)*CLHEP::cm;
   
-    G4VPhysicalVolume* layer_physical
+    G4VPhysicalVolume* layer_physical __attribute__((__unused__))
         = new G4PVPlacement(0,                          // no rotation
                             G4ThreeVector(0, 0, pos_z), // translation
-                            world_logical    ,          // its logical volume
+                            layer_logical    ,          // its logical volume
                             std::string("PHY_")+name,   // its name
                             world_logical,              // its mother volume
                             false,                      // boolean operations

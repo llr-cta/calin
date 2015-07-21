@@ -1,0 +1,21 @@
+/* 
+
+   calin/air_shower/tracker.cpp -- Stephen Fegan -- 2015-07-17
+
+   Base class for all air shower track visitors
+
+*/
+
+#include "air_shower/tracker.hpp"
+
+using namespace calin::air_shower::tracker;
+
+TrackVisitor::~TrackVisitor()
+{
+  // nothing to see here
+}
+
+void TrackVisitor::visitTrack(const Track& track, bool& kill_track)
+{
+  // default is to do nothing
+}

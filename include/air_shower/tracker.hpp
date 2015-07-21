@@ -21,7 +21,6 @@ enum class ParticleType { GAMMA, ELECTRON, POSITRON, MUON, ANTI_MUON,
     PROTON, ANTI_PROTON, OTHER };
 
 struct Track
-  
 {
   ParticleType type;     // Simplified particle type
   int pdg_type;          // PDG particle type code
@@ -47,7 +46,7 @@ class TrackVisitor
 {
  public:
   virtual ~TrackVisitor();
-  virtual void visitTrack(const Track& track, bool& kill_track) = 0;
+  virtual void visitTrack(const Track& track, bool& kill_track);
 };
 
 } } } // namespace calin::air_shower::tracker

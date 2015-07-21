@@ -18,7 +18,7 @@ Geant4ShowerGenerator(calin::air_shower::tracker::TrackVisitor* visitor,
                       unsigned num_atm_layers, double zground, double ztop,
                       VerbosityLevel verbose_level,
                       bool adopt_visitor, bool adopt_atm):
-    visitor_(visitor), adopt_visitor_(visitor),
+    visitor_(visitor), adopt_visitor_(adopt_visitor),
     atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground)
 {
   // get the pointer to the User Interface manager
@@ -59,11 +59,22 @@ Geant4ShowerGenerator(calin::air_shower::tracker::TrackVisitor* visitor,
   
   // set mandatory initialization classes
   FTFP_BERT* physlist = new FTFP_BERT(verbose_everything);
-  //physlist->SetDefaultCutValue(1*cm);
+  physlist->SetDefaultCutValue(10*CLHEP::cm);
   physlist->SetVerboseLevel(verbose_everything);
   run_manager_->SetUserInitialization(physlist);
 
-  //run_manager_->SetUserInitialization(new MyUserDetectorConstruction);
+  step_action_ = new EAS_SteppingAction(visitor_);
+  run_manager_->SetUserAction(step_action_);
+
+  gen_action_ = new EAS_PrimaryGeneratorAction();
+  run_manager_->SetUserAction(gen_action_);
+
+  EAS_FlatDetectorConstruction* detector_constructor =
+      new EAS_FlatDetectorConstruction(atm, num_atm_layers, zground, ztop);
+  run_manager_->SetUserInitialization(detector_constructor);
+  step_action_->setZminCut(zground);
+
+
   //run_manager_->SetUserInitialization(new MyUserActionInitialization);
 
   // initialize G4 kernel
@@ -86,20 +97,48 @@ Geant4ShowerGenerator::~Geant4ShowerGenerator()
 
 void Geant4ShowerGenerator::setMinimumEnergyCut(double emin_mev)
 {
-
+  step_action_->setEminCut(emin_mev);
+  if(stack_action_ == nullptr)
+  {
+    stack_action_ = new EAS_StackingAction();
+    run_manager_->SetUserAction(stack_action_);
+  }
+  stack_action_->setEminCut(emin_mev);
 }
 
 void Geant4ShowerGenerator::
-generateShower(calin::air_shower::tracker::ParticleType type,
-               double total_energy,
-               const Eigen::Vector3d& x0,
-               const Eigen::Vector3d& u0,
-               double weight)
+generateShowers(unsigned num_events,
+                calin::air_shower::tracker::ParticleType type,
+                double total_energy,
+                const Eigen::Vector3d& x0,
+                const Eigen::Vector3d& u0,
+                double weight)
 {
-  // start a run
-  int numberOfEvent = 1;
-  run_manager_->BeamOn(numberOfEvent);
-  
+  G4GeneralParticleSource* gps = new G4GeneralParticleSource();
 
+  // default particle kinematic
+  G4ParticleTable* particle_table = G4ParticleTable::GetParticleTable();
+  G4ParticleDefinition* particle
+      = particle_table->FindParticle(track_to_pdg_type(type));
+ 
+  G4ThreeVector position;
+  eigen_to_g4vec(position, x0, CLHEP::cm);
+
+  G4ThreeVector momentum_direction;
+  eigen_to_g4vec(momentum_direction, u0);
+
+  G4SingleParticleSource* sps = gps->GetCurrentSource();
+  sps->SetParticleDefinition(particle);
+  sps->GetPosDist()->SetPosDisType("Point");
+  sps->GetPosDist()->SetCentreCoords(position);
+  sps->GetAngDist()->SetAngDistType("planar");
+  sps->GetAngDist()->SetParticleMomentumDirection(momentum_direction);
+  sps->GetEneDist()->SetEnergyDisType("Mono");
+  sps->GetEneDist()->SetMonoEnergy(total_energy * CLHEP::MeV);
+
+  gen_action_->setGPS(gps);
+  
+  // start a run
+  run_manager_->BeamOn(num_events);
 }
 

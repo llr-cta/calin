@@ -26,7 +26,9 @@ class G4RunManager;
 
 namespace calin { namespace air_shower { namespace shower_generator {
 
-class EAS_Actions;
+class EAS_SteppingAction;
+class EAS_PrimaryGeneratorAction;
+class EAS_StackingAction;
 
 enum class VerbosityLevel {
   SUPPRESSED_ALL, SUPRESSED_STDOUT, NORMAL, VERBOSE_EVENT, VERBOSE_TRACKING,
@@ -45,11 +47,12 @@ class Geant4ShowerGenerator
   virtual ~Geant4ShowerGenerator();
 
   void setMinimumEnergyCut(double emin_mev);
-  void generateShower(calin::air_shower::tracker::ParticleType type,
-                      double total_energy,
-                      const Eigen::Vector3d& x0 = Eigen::Vector3d(0,0,0),
-                      const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
-                      double weight=1.0);
+  void generateShowers(unsigned num_events,
+                       calin::air_shower::tracker::ParticleType type,
+                       double total_energy,
+                       const Eigen::Vector3d& x0 = Eigen::Vector3d(0,0,0),
+                       const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
+                       double weight=1.0);
 
  protected:
   calin::air_shower::tracker::TrackVisitor* visitor_ = nullptr;
@@ -59,10 +62,12 @@ class Geant4ShowerGenerator
   double ztop_of_atm_ = 0;
   double zground_ = 0;
   
-  G4UImanager* ui_manager_   = nullptr;    // singleton - do not delete!
-  G4UIsession* ui_session_   = nullptr;    // delete me
-  G4RunManager* run_manager_ = nullptr;    // delete me
-  EAS_Actions* action_       = nullptr;    // don't delete me
+  G4UImanager* ui_manager_                = nullptr;    // don't delete me
+  G4UIsession* ui_session_                = nullptr;    // delete me
+  G4RunManager* run_manager_              = nullptr;    // delete me
+  EAS_SteppingAction* step_action_        = nullptr;    // don't delete me
+  EAS_PrimaryGeneratorAction* gen_action_ = nullptr;    // don't delete me
+  EAS_StackingAction* stack_action_       = nullptr;    // don't delete me
 }; 
 
 } } } // namespace calin::air_shower::generator

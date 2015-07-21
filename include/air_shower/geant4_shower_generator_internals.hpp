@@ -26,6 +26,7 @@
 #include <G4RunManager.hh>
 #include <G4UImanager.hh>
 #include <G4VUserPrimaryGeneratorAction.hh>
+#include <G4UserStackingAction.hh>
 #include <G4VUserDetectorConstruction.hh>
 #include <G4LogicalVolume.hh>
 #include <G4Box.hh>
@@ -34,7 +35,7 @@
 #include <G4NistManager.hh>
 #include <G4VModularPhysicsList.hh>
 #include <G4PhysListFactory.hh>
-#include <G4ParticleGun.hh>
+#include <G4GeneralParticleSource.hh>
 #include <G4VUserActionInitialization.hh>
 #include <FTFP_BERT.hh>
 #include <G4UIsession.hh>
@@ -42,29 +43,64 @@
 
 namespace calin { namespace air_shower { namespace shower_generator {
 
-class EAS_Actions: public /*G4UserTrackingAction,*/ G4UserSteppingAction 
+void g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec);
+void g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
+                    double to_units);
+void eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec);
+void eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec,
+                    double from_units);
+
+calin::air_shower::tracker::ParticleType pdg_to_track_type(G4int pdg_type);
+G4int track_to_pdg_type(calin::air_shower::tracker::ParticleType track_type);
+
+class EAS_StackingAction: public G4UserStackingAction
 {
  public:
-  EAS_Actions(calin::air_shower::tracker::TrackVisitor* visitor);
-  virtual ~EAS_Actions();
+  EAS_StackingAction();
+  virtual ~EAS_StackingAction();
 
-  //  virtual void PreUserTrackingAction(const G4Track*) override;
-  //  virtual void PostUserTrackingAction(const G4Track*) override;
+  G4ClassificationOfNewTrack ClassifyNewTrack(const G4Track*) override;
 
-  virtual void UserSteppingAction(const G4Step*) override;
+  void setEminCut(double emin_MeV) { ecut_ = emin_MeV/CLHEP::MeV; }
+
+ protected:
+  double ecut_ = 0;
+};
+
+class EAS_SteppingAction: public G4UserSteppingAction
+{
+ public:
+  EAS_SteppingAction(calin::air_shower::tracker::TrackVisitor* visitor);
+  virtual ~EAS_SteppingAction();
+
+  void UserSteppingAction(const G4Step*) override;
 
   void setEminCut(double emin_MeV) { ecut_ = emin_MeV/CLHEP::MeV; }
   void setZminCut(double zmin_cm) { zcut_ = zmin_cm/CLHEP::cm; }
   void setRminCut(double rmin_cm, double rzero_cm) {
     r2cut_ = rmin_cm*rmin_cm/CLHEP::cm/CLHEP::cm;
     rzero_ = rzero_cm/CLHEP::cm; }
-  
+
  protected:
   double ecut_ = 0;
   double zcut_ = -std::numeric_limits<double>::infinity();
   double r2cut_ = 0;
   double rzero_ = 0;
-  calin::air_shower::tracker::TrackVisitor* visitor_;
+  calin::air_shower::tracker::TrackVisitor* visitor_ = nullptr;
+};
+
+class EAS_PrimaryGeneratorAction: public G4VUserPrimaryGeneratorAction
+{
+ public:
+  EAS_PrimaryGeneratorAction();
+  virtual ~EAS_PrimaryGeneratorAction();
+
+  void GeneratePrimaries(G4Event* the_event) override;
+
+  void setGPS(G4GeneralParticleSource* particle_source) {
+    delete particle_source_; particle_source_ = particle_source; }
+ protected:
+  G4GeneralParticleSource* particle_source_ = nullptr;
 };
 
 class EAS_DetectorConstruction: public G4VUserDetectorConstruction

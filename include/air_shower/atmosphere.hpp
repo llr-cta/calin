@@ -201,6 +201,8 @@ class LayeredAtmosphere: public Atmosphere
 
   const std::vector<Level>& getLevels() const { return m_levels; }
 
+  static LayeredAtmosphere* us76();
+  
  private:
   CALIN_TYPEALIAS(Layer, LayeredAtmosphereLayer);
 
