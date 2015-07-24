@@ -8,9 +8,9 @@ package calin;
 
 message SQLOptions
 {
-  optional bool enable          = 1;
-  optional bool is_index        = 2;
-  optional bool inline_message  = 3;
+  bool enable          = 1;
+  bool is_index        = 2;
+  bool inline_message  = 3;
 };
  
 message FieldOptions
@@ -21,13 +21,13 @@ message FieldOptions
     INT_8    = 2;
   }
       
-  optional string desc                   = 1;
-  optional string units                  = 2;
-  optional Int32StorageType int32_type   = 3;
-  optional SQLOptions        sql         = 100;
+  string desc                   = 1;
+  string units                  = 2;
+  Int32StorageType int32_type   = 3;
+  SQLOptions        sql         = 100;
 };
 
 extend google.protobuf.FieldOptions {
-  optional calin.FieldOptions CFO = 50000;
+  calin.FieldOptions CFO = 50000;
 };
 

@@ -5,17 +5,17 @@
 
 cmake_minimum_required(VERSION 2.6)
 
-if(NUMPY_FIND_QUIETLY)
-  find_package(PythonInterp QUIET)
-else()
-  find_package(PythonInterp)
-  set(_numpy_out 1)
-endif()
+#if(NUMPY_FIND_QUIETLY)
+#  find_package(PythonInterp QUIET)
+#else()
+#  find_package(PythonInterp)
+#  set(_numpy_out 1)
+#endif()
 
 if (PYTHON_EXECUTABLE)
   # write a python script that finds the numpy path
   file(WRITE ${PROJECT_BINARY_DIR}/FindNumpyPath.py
-      "try: import numpy; print numpy.get_include()\nexcept:pass\n")
+      "try: import numpy; print(numpy.get_include())\nexcept: pass\n")
 
   # execute the find script
   exec_program("${PYTHON_EXECUTABLE}" ${PROJECT_BINARY_DIR}

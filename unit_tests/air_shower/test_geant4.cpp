@@ -15,7 +15,7 @@ TEST(TestGeant4, MakeUS76Atmosphere) {
 }
 
 TEST(TestGeant4, MakeGeant4Simulator) {
-  CLHEP::HepRandom::setTheSeed(time(0));
+  //CLHEP::HepRandom::setTheSeed(time(0));
   Atmosphere* atm = LayeredAtmosphere::us76();
   TrackVisitor* visitor = new TrackVisitor;
   Geant4ShowerGenerator sim(visitor, atm,
