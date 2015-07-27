@@ -23,6 +23,7 @@
 %}
 
 %template (VectorDouble) std::vector<double>;
+%template (VectorUnsigned) std::vector<unsigned>;
 
 %import "package_wide_definitions.hpp"
 

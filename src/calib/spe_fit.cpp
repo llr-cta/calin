@@ -670,8 +670,8 @@ unsigned GeneralPoissonMES::num_parameters()
 auto GeneralPoissonMES::parameters() ->
     std::vector<math::function::ParameterAxis>
 {
-  std::vector<math::function::ParameterAxis> pvec
-  { { "light_intensity", "PE", true, 0, false, 0 } };
+  std::vector<math::function::ParameterAxis> pvec;
+  pvec.push_back({ "light_intensity", "PE", true, 0, false, 0 });
   std::vector<math::function::ParameterAxis> pped { ped_pdf_->parameters() };
   for(auto& ip : pped)ip.name = std::string("ped.") + ip.name;
   pvec.insert(pvec.end(), pped.begin(), pped.end());
@@ -796,6 +796,56 @@ std::vector<double> GeneralPoissonMES::pedestal_spectrum() const
   std::vector<double> spec(nsample_);
   std::copy(ped_spec_, ped_spec_+nsample_, spec.begin());
   return spec;
+}
+
+std::vector<double> GeneralPoissonMES::
+multi_electron_spectrum_gradient(unsigned iparam) const
+{
+  if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
+    throw std::out_of_range("GeneralPoissonMES::multi_electron_spectrum_gradient: "
+                            "iparam out of range");
+  
+  return std::vector<double>(mes_grad_[iparam], mes_grad_[iparam]+nsample_); 
+}
+
+std::vector<double> GeneralPoissonMES::pedestal_spectrum_gradient(unsigned iparam) const
+{
+  if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
+    throw std::out_of_range("GeneralPoissonMES::pedestal_spectrum_gradient: "
+                            "iparam out of range");
+
+  if(iparam==0 || iparam>ped_pdf_->num_parameters())
+    return std::vector<double>(nsample_, 0.0);
+  else
+    return std::vector<double>(ped_grad_[iparam], ped_grad_[iparam]+nsample_); 
+}
+
+std::vector<double> GeneralPoissonMES::
+single_electron_spectrum_gradient(unsigned iparam) const
+{
+  if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
+    throw std::out_of_range("GeneralPoissonMES::pedestal_spectrum_gradient: "
+                            "iparam out of range");
+
+  unsigned npedpar = ped_pdf_->num_parameters();
+  if(iparam<=npedpar)return std::vector<double>(nsample_, 0.0);
+  iparam -= 1+npedpar;
+  
+  uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
+  assert(spec_buffer);
+
+  uptr_fftw_plan spec_plan = {
+    fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
+                     FFTW_HC2R, 0), fftw_destroy_plan };
+  assert(spec_plan);
+
+  std::copy(ses_grad_fft_[iparam], ses_grad_fft_[iparam]+nsample_, spec_buffer.get());
+  fftw_execute(spec_plan.get());
+  std::vector<double> spec_gradient(nsample_);
+  double norm { 1.0/double(nsample_) };
+  std::transform(spec_buffer.get(), spec_buffer.get()+nsample_, spec_gradient.begin(),
+                 [norm](double x){return x*norm;});
+  return spec_gradient;
 }
 
 std::vector<double> GeneralPoissonMES::n_electron_spectrum(unsigned n) const

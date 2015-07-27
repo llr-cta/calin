@@ -47,8 +47,8 @@ std::vector<function::ParameterAxis> GaussianPDF::parameters()
 {
   constexpr double inf = std::numeric_limits<double>::infinity();
   constexpr double tiny_val = std::numeric_limits<double>::min();
-  return { { "mean", "x-value units", false, -inf, false, inf },
-    { "rms", "x-value units", true, tiny_val, false, inf } };
+  return { { "mean", xunits_, false, -inf, false, inf },
+      { "rms", xunits_, true, tiny_val, false, inf } };
 }
 
 Eigen::VectorXd GaussianPDF::parameter_values()
@@ -86,7 +86,7 @@ bool GaussianPDF::can_calculate_parameter_hessian()
 function::DomainAxis GaussianPDF::domain_axis()
 {
   constexpr double inf = std::numeric_limits<double>::infinity();
-  return { "x-value", "x-value units", false, -inf, false, inf };
+  return { "x-value", xunits_, false, -inf, false, inf };
 }
 
 double GaussianPDF::value_1d(double x) 
@@ -351,7 +351,7 @@ unsigned LimitedExponentialPDF::num_parameters()
 
 std::vector<function::ParameterAxis> LimitedExponentialPDF::parameters()
 {
-  return { { "scale", "x-value units", limit_a_lo_>-inf, limit_a_lo_, limit_a_hi_<inf, limit_a_hi_ } };
+  return { { "scale", xunits_, limit_a_lo_>-inf, limit_a_lo_, limit_a_hi_<inf, limit_a_hi_ } };
 }
 
 Eigen::VectorXd LimitedExponentialPDF::parameter_values()
@@ -369,7 +369,7 @@ void LimitedExponentialPDF::set_parameter_values(ConstVecRef values)
 
 function::DomainAxis LimitedExponentialPDF::domain_axis()
 {
-  return { "x-value", "x-value units", xlo_>-inf, xlo_, xhi_<inf, xhi_ };
+  return { "x-value", xunits_, xlo_>-inf, xlo_, xhi_<inf, xhi_ };
 }
 
 bool LimitedExponentialPDF::can_calculate_gradient()
@@ -565,7 +565,7 @@ unsigned TwoComponentPDF::num_parameters()
 std::vector<function::ParameterAxis> TwoComponentPDF::parameters()
 {
   std::vector<function::ParameterAxis> pvec {
-    { cpt1_name_+std::string(" probability"), "1", true, 0, true, 1 } };
+    { cpt1_name_+std::string("_probability"), "1", true, 0, true, 1 } };
   std::vector<function::ParameterAxis> pdf1_pvec = pdf1_->parameters();
   for(auto& p : pdf1_pvec)p.name = cpt1_name_ + std::string(".") + p.name;
   pvec.insert(pvec.end(), pdf1_pvec.begin(), pdf1_pvec.end());

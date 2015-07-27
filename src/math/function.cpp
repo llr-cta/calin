@@ -151,7 +151,7 @@ std::vector<DomainAxis> FreezeThawFunction::domain_axes()
   std::vector<DomainAxis> return_axes(free_axes_.size());
   std::vector<DomainAxis> axes = fcn_->domain_axes();
   for(unsigned iaxis=0;iaxis<free_axes_.size();iaxis++)
-    return_axes[iaxis] = std::move(axes[free_axes_[iaxis]]);
+    return_axes[iaxis] = axes[free_axes_[iaxis]];
   return return_axes;
 }
 

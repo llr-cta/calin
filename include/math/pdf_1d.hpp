@@ -67,8 +67,8 @@ public:
 class GaussianPDF: public Parameterizable1DPDF
 {
  public:
-  GaussianPDF(double error_up = 0.5):
-      Parameterizable1DPDF(), error_up_(error_up)
+  GaussianPDF(const std::string& xunits = "x-value units", double error_up = 0.5):
+      Parameterizable1DPDF(), xunits_(xunits), error_up_(error_up)
   { /* nothing to see here */ }
   
   virtual ~GaussianPDF();
@@ -98,6 +98,7 @@ class GaussianPDF: public Parameterizable1DPDF
   void mean_and_variance(double& mean, double& var) override;
 
  protected:
+  std::string xunits_;
   double error_up_ = 0.5;
   double x0_ = 0;
   double s_ = 1;
@@ -108,8 +109,9 @@ class LimitedGaussianPDF: public GaussianPDF
  public:
   constexpr static double inf = std::numeric_limits<double>::infinity();
 
-  LimitedGaussianPDF(double xlo, double xhi, double error_up = 0.5):
-      GaussianPDF(error_up), xlo_(xlo), xhi_(xhi),
+  LimitedGaussianPDF(double xlo, double xhi, const std::string& xunits = "x-value units",
+		     double error_up = 0.5):
+      GaussianPDF(xunits, error_up), xlo_(xlo), xhi_(xhi),
       norm_gradient_(2), norm_hessian_(2,2) { set_cache(); }
   
   virtual ~LimitedGaussianPDF();
@@ -143,9 +145,10 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   constexpr static double inf = std::numeric_limits<double>::infinity();
 
   LimitedExponentialPDF(double xlo=0.0, double xhi=inf, double dx = 0,
+			const std::string& xunits = "x-value units",
                         double error_up = 0.5):
-      Parameterizable1DPDF(), error_up_(error_up),
-      xlo_(xlo), xhi_(xhi), dx_(dx) { set_cache(); }
+    Parameterizable1DPDF(), xunits_(xunits), error_up_(error_up),
+    xlo_(xlo), xhi_(xhi), dx_(dx) { set_cache(); }
   
   virtual ~LimitedExponentialPDF();
 
@@ -179,6 +182,7 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   void mean_and_variance(double& mean, double& var) override;  
  protected:
   void set_cache();
+  std::string xunits_;
   double limit_a_lo_    = -inf;
   double limit_a_hi_    = inf;
   double error_up_      = 0.5;
