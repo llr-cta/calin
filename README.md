@@ -39,8 +39,8 @@ __Calin__ is a (French) word that my three-year-old daughter says a
   reasons. First, it requires assessing the needs of the end product
   in advance, and it can be tempting to engineer the design of the
   system for a worst-case of what __might__ be needed, to avoid
-  refactoring at a later stage. However refactoring is something that
-  must avoided at all costs, rather its probability and ultimate cost
+  refactoring at a later stage. However refactoring is not something
+  that must avoided at all costs, rather its need and ultimate cost
   should be balanced against the wasted effort of producing an
   over-engineered system that is ultimately not needed. Certainly the
   design should accomodate the types of analysis that are done now,
