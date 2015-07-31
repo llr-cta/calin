@@ -725,6 +725,23 @@ TEST(TestLogQuadSpline, TestNormValues_BZero) {
   std::cout << sum*dx << '\n';
 }
 
+TEST(TestLogQuadSpline, TestNormParGrad_ANeg) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5);
+  Eigen::VectorXd p(4);
+  p << 2.0, 1.0, 2.0, 1.0;
+  pdf.set_parameter_values(p);
+  Eigen::VectorXd p_readback;
+  p_readback = pdf.parameter_values();
+  ASSERT_EQ(p, p_readback);
+  double dx = 0.001;
+  double sum = 0;
+  for(double x=-1.5; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  std::cout << sum*dx << '\n';
+}
+
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

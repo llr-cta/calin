@@ -272,10 +272,18 @@ void LogQuadraticSpline1DPDF::set_cache()
       if(a < 0)
       {
         const double s = std::sqrt(-a);
-        double I = 1.0/(M_2_SQRTPI*s)*std::exp(-SQR(b)/(4*a)+c)*
+        double F_exp = std::exp(-SQR(b)/(4*a)+c);
+        double I = 1.0/(M_2_SQRTPI*s)*F_exp*
                    (std::erf(s*(xr+b/(2*a)))-std::erf(s*(xl+b/(2*a))));
         norm_ += I;
-        //        norm_gradient += 
+        double F_exp_r = std::exp(a*SQR(xr-b/(2.0*a)));
+        double F_exp_l = std::exp(a*SQR(xl-b/(2.0*a)));
+        norm_gradient_ += (I*(SQR(b)/(4*SQR(a)) - 1.0/(2.0*a))
+                          + 1/(2.0*SQR(a))*F_exp*(F_exp_r*(xr-b/a)-F_exp_l*(xl-b/a)))
+                         * a_gradient_.col(isegment);
+        norm_gradient_ += (-I*b + F_exp*(F_exp_r - F_exp_l))/(2.0*a)
+                         * b_gradient_.col(isegment);
+        norm_gradient_(1+isegment) += I;
       }
       else if(a > 0)
       {
