@@ -17,9 +17,9 @@ include_directories(${FFTW_INCLUDES})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${FFTW_LIBRARIES} ) 
 
 ## include GSL libraries
-#find_package(GSL REQUIRED)
-#include_directories(${GSL_INCLUDE_DIRS})
-#set(EXTRA_LIBS ${EXTRA_LIBS} ${GSL_LIBRARIES} ) 
+find_package(GSL REQUIRED)
+include_directories(${GSL_INCLUDE_DIRS})
+set(EXTRA_LIBS ${EXTRA_LIBS} ${GSL_LIBRARIES} ) 
 
 #Path to a python
 set(PYTHON_EXECUTABLE /opt/local/bin/python3.4)

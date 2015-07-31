@@ -231,6 +231,7 @@ double LimitedGaussianPDF::value_gradient_and_hessian_1d(double x, double& dfdx,
 double LimitedGaussianPDF::
 value_and_parameter_gradient_1d(double x,  VecRef gradient)
 {
+  gradient.resize(2);
   if(x<xlo_ or x>=xhi_)
   {
     gradient[0] = gradient[1] = 0;
@@ -245,6 +246,8 @@ double LimitedGaussianPDF::
 value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                         MatRef hessian)
 {
+  gradient.resize(2);
+  hessian.resize(2,2);
   if(x<xlo_ or x>=xhi_)
   {
     gradient[0] = gradient[1] = 0;
@@ -431,6 +434,7 @@ value_gradient_and_hessian_1d(double x, double& dfdx, double& d2fdx2)
 double LimitedExponentialPDF::
 value_and_parameter_gradient_1d(double x,  VecRef gradient)
 {
+  gradient.resize(1);
   if(x<xlo_ or x>=xhi_)
   {
     gradient(0) = 0;
@@ -446,6 +450,8 @@ double LimitedExponentialPDF::
 value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                         MatRef hessian)
 {
+  gradient.resize(1);
+  hessian.resize(1,1);
   if(x<xlo_ or x>=xhi_)
   {
     gradient(0) = 0;

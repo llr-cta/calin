@@ -9,5 +9,5 @@ calin_proto calin_nlopt)
 add_test(TestHessian test_hessian) 
 
 add_executable(test_pdf_1d test_pdf_1d.cpp)   
-target_link_libraries(test_pdf_1d ${GTEST_BOTH_LIBRARIES} calin_math)
+target_link_libraries(test_pdf_1d ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
 add_test(TestFunction test_pdf_1d) 

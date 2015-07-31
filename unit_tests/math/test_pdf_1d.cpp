@@ -5,6 +5,7 @@
 
 #include "Eigen/Dense"
 #include "math/pdf_1d.hpp"
+#include "math/log_quadratic_spline_pdf_1d.hpp"
 
 using namespace calin::math;
 using namespace calin::math::function;
@@ -600,6 +601,128 @@ TEST(TestFreezeThaw, ParameterHessianCheck) {
     EXPECT_LE(good(1,0), 0.5);
     EXPECT_LE(good(1,1), 0.5);
   }
+}
+
+TEST(TestLogQuadSpline, TestUnnormValues) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, false);
+  Eigen::VectorXd p(4);
+  p << 0, 1.0, 2.0, 1.0;
+  pdf.set_parameter_values(p);
+  Eigen::VectorXd p_readback;
+  p_readback = pdf.parameter_values();
+  ASSERT_EQ(p, p_readback);
+  for(unsigned i=0;i<xknot.size();i++)
+    ASSERT_EQ(pdf.value_1d(xknot(i)), std::exp(p(i+1)));
+}
+
+TEST(TestLogQuadSpline, GradientCheck) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, false);
+  Eigen::VectorXd p(4);
+  p << 0, 1.0, 2.0, 1.0;
+  pdf.set_parameter_values(p);
+  Eigen::VectorXd x(1);
+  x << -1.4;
+  Eigen::VectorXd dx(1);
+  dx << 0.00001;
+  Eigen::VectorXd good(1);
+  for(x(0) = -1.4; x(0)<1.4; x(0)+=0.1)
+  {
+    EXPECT_TRUE(gradient_check(pdf, x, dx, good));
+    EXPECT_LE(good(0), 0.5);
+  }
+}
+
+TEST(TestLogQuadSpline, ParameterGradientCheck) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, false);
+
+  Eigen::VectorXd p(4);
+  p << -0.5, 1.0, 2.0, 1.5;
+  Eigen::VectorXd dp(4);
+  dp << 0.001, 0.001, 0.001, 0.001;
+
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = -1.4; x(0)<1.4; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(4);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
+  }
+}
+
+TEST(TestLogQuadSpline, TestNormValues_ANeg) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5);
+  Eigen::VectorXd p(4);
+  p << 2.0, 1.0, 2.0, 1.0;
+  pdf.set_parameter_values(p);
+  Eigen::VectorXd p_readback;
+  p_readback = pdf.parameter_values();
+  ASSERT_EQ(p, p_readback);
+  double dx = 0.001;
+  double sum = 0;
+  for(double x=-1.5; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  std::cout << sum*dx << '\n';
+}
+
+TEST(TestLogQuadSpline, TestNormValues_APos) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5);
+  Eigen::VectorXd p(4);
+  p << -1.5, 2.0, 1.0, 2.0;
+  pdf.set_parameter_values(p);
+  Eigen::VectorXd p_readback;
+  p_readback = pdf.parameter_values();
+  ASSERT_EQ(p, p_readback);
+  double dx = 0.0001;
+  double sum = 0;
+  for(double x=-1.5; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  std::cout << sum*dx << '\n';
+}
+
+TEST(TestLogQuadSpline, TestNormValues_AZero) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5);
+  Eigen::VectorXd p(4);
+  p << 1.0, 1.0, 2.0, 3.0;
+  pdf.set_parameter_values(p);
+  Eigen::VectorXd p_readback;
+  p_readback = pdf.parameter_values();
+  ASSERT_EQ(p, p_readback);
+  double dx = 0.001;
+  double sum = 0;
+  for(double x=-1.5; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  std::cout << sum*dx << '\n';
+}
+
+TEST(TestLogQuadSpline, TestNormValues_BZero) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5);
+  Eigen::VectorXd p(4);
+  p << 0.0, 1.0, 1.0, 1.0;
+  pdf.set_parameter_values(p);
+  Eigen::VectorXd p_readback;
+  p_readback = pdf.parameter_values();
+  ASSERT_EQ(p, p_readback);
+  double dx = 0.001;
+  double sum = 0;
+  for(double x=-1.5; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  std::cout << sum*dx << '\n';
 }
 
 int main(int argc, char **argv) {
