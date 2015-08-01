@@ -178,13 +178,14 @@ double LogQuadraticSpline1DPDF::value_and_parameter_gradient_1d(double x, VecRef
   gradient(isegment+1) += 1.0;
   val = norm_ * std::exp(val);
 #if 0
-  std::cout << "A: [" << 
+  std::cout << "AAA: [" 
             << a_gradient_.col(isegment).transpose() << " ] [ "
             << b_gradient_.col(isegment).transpose() << " ] [ "
             << gradient.transpose() << " ] [ "
             << norm_gradient_.transpose() << " ] \n";
-#endif 
-  gradient = (gradient + norm_gradient_)*val;
+#endif
+  gradient += norm_gradient_;
+  gradient *= val;
   return val;
 }
 
@@ -268,7 +269,9 @@ void LogQuadraticSpline1DPDF::set_cache()
       const double a = a_[isegment];
       const double b = b_[isegment];
       const double c = yknot_[isegment];
+#if 0
       std::cout << a << ' ' << b << ' ' << c << '\n';
+#endif
       if(a < 0)
       {
         const double s = std::sqrt(-a);
@@ -276,13 +279,17 @@ void LogQuadraticSpline1DPDF::set_cache()
         double I = 1.0/(M_2_SQRTPI*s)*F_exp*
                    (std::erf(s*(xr+b/(2*a)))-std::erf(s*(xl+b/(2*a))));
         norm_ += I;
-        double F_exp_r = std::exp(a*SQR(xr-b/(2.0*a)));
-        double F_exp_l = std::exp(a*SQR(xl-b/(2.0*a)));
-        norm_gradient_ += (I*(SQR(b)/(4*SQR(a)) - 1.0/(2.0*a))
-                          + 1/(2.0*SQR(a))*F_exp*(F_exp_r*(xr-b/a)-F_exp_l*(xl-b/a)))
-                         * a_gradient_.col(isegment);
-        norm_gradient_ += (-I*b + F_exp*(F_exp_r - F_exp_l))/(2.0*a)
-                         * b_gradient_.col(isegment);
+        double F_exp_r = std::exp(a*SQR(xr+b/(2.0*a)));
+        double F_exp_l = std::exp(a*SQR(xl+b/(2.0*a)));
+        norm_gradient_ +=
+            (I*(SQR(b)/(4*SQR(a)) - 1.0/(2.0*a))
+             + 1.0/(2.0*a)*F_exp*(F_exp_r*(xr-b/(2.0*a))
+                                  - F_exp_l*(xl-b/(2.0*a))))
+            * a_gradient_.col(isegment);
+        norm_gradient_ +=
+            (-I*b + F_exp*(F_exp_r - F_exp_l))/(2.0*a)
+            * b_gradient_.col(isegment);
+        // diff: 0.160144 grad: 0.150195
         norm_gradient_(1+isegment) += I;
       }
       else if(a > 0)
