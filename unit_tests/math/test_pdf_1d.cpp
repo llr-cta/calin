@@ -612,9 +612,9 @@ TEST(TestLogQuadSpline, UnnormalisedValues) {
   pdf.set_parameter_values(p);
   Eigen::VectorXd p_readback;
   p_readback = pdf.parameter_values();
-  ASSERT_EQ(p, p_readback);
+  EXPECT_EQ(p, p_readback);
   for(unsigned i=0;i<xknot.size();i++)
-    ASSERT_EQ(pdf.value_1d(xknot(i)), std::exp(p(i+1)));
+    EXPECT_EQ(pdf.value_1d(xknot(i)), std::exp(p(i+1)));
 }
 
 TEST(TestLogQuadSpline, UnnormalisedGradientCheck) {
@@ -670,11 +670,11 @@ TEST(TestLogQuadSpline, NormalisedValues_ANeg) {
   pdf.set_parameter_values(p);
   Eigen::VectorXd p_readback;
   p_readback = pdf.parameter_values();
-  ASSERT_EQ(p, p_readback);
+  EXPECT_EQ(p, p_readback);
   double dx = 0.001;
   double sum = 0;
-  for(double x=-1.5; x<1.5;x+=dx)sum += pdf.value_1d(x);
-  std::cout << sum*dx << '\n';
+  for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  EXPECT_NEAR(sum*dx, 1.0, dx);
 }
 
 TEST(TestLogQuadSpline, NormalisedValues_APos) {
@@ -686,11 +686,11 @@ TEST(TestLogQuadSpline, NormalisedValues_APos) {
   pdf.set_parameter_values(p);
   Eigen::VectorXd p_readback;
   p_readback = pdf.parameter_values();
-  ASSERT_EQ(p, p_readback);
-  double dx = 0.0001;
+  EXPECT_EQ(p, p_readback);
+  double dx = 0.001;
   double sum = 0;
-  for(double x=-1.5; x<1.5;x+=dx)sum += pdf.value_1d(x);
-  std::cout << sum*dx << '\n';
+  for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  EXPECT_NEAR(sum*dx, 1.0, dx);
 }
 
 TEST(TestLogQuadSpline, NormalisedValues_AZero) {
@@ -702,11 +702,11 @@ TEST(TestLogQuadSpline, NormalisedValues_AZero) {
   pdf.set_parameter_values(p);
   Eigen::VectorXd p_readback;
   p_readback = pdf.parameter_values();
-  ASSERT_EQ(p, p_readback);
+  EXPECT_EQ(p, p_readback);
   double dx = 0.001;
   double sum = 0;
-  for(double x=-1.5; x<1.5;x+=dx)sum += pdf.value_1d(x);
-  std::cout << sum*dx << '\n';
+  for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  EXPECT_NEAR(sum*dx, 1.0, dx);
 }
 
 TEST(TestLogQuadSpline, NormalisedValues_BZero) {
@@ -718,11 +718,11 @@ TEST(TestLogQuadSpline, NormalisedValues_BZero) {
   pdf.set_parameter_values(p);
   Eigen::VectorXd p_readback;
   p_readback = pdf.parameter_values();
-  ASSERT_EQ(p, p_readback);
+  EXPECT_EQ(p, p_readback);
   double dx = 0.001;
   double sum = 0;
-  for(double x=-1.5; x<1.5;x+=dx)sum += pdf.value_1d(x);
-  std::cout << sum*dx << '\n';
+  for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  EXPECT_NEAR(sum*dx, 1.0, dx);
 }
 
 TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_ANeg) {
@@ -732,6 +732,56 @@ TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_ANeg) {
 
   Eigen::VectorXd p(4);
   p << 2.0, 1.0, 2.0, 1.0;
+  Eigen::VectorXd dp(4);
+  dp << 0.001, 0.001, 0.001, 0.001;
+
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = -1.4; x(0)<1.4; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(4);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
+  }
+}
+
+TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_APos) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, true);
+
+  Eigen::VectorXd p(4);
+  p << -1.5, 2.0, 1.0, 2.0;
+  Eigen::VectorXd dp(4);
+  dp << 0.001, 0.001, 0.001, 0.001;
+
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = -1.4; x(0)<1.4; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(4);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
+  }
+}
+
+TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_ABZero) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, true);
+
+  Eigen::VectorXd p(4);
+  p << 0.0, 1.0, 1.0, 1.0;
   Eigen::VectorXd dp(4);
   dp << 0.001, 0.001, 0.001, 0.001;
 

@@ -216,11 +216,12 @@ unsigned LogQuadraticSpline1DPDF::find_segment(double x) const
   return std::max(1U,ix)-1;
 }
 
-namespace { inline double SQR(double x) { return x*x; } }
-
 #include <gsl/gsl_sf_dawson.h>
 
 namespace {
+
+inline double SQR(double x) { return x*x; }
+inline double CUB(double x) { return x*x*x; }
 
 double dawson(double x)
 {
@@ -272,43 +273,57 @@ void LogQuadraticSpline1DPDF::set_cache()
 #if 0
       std::cout << a << ' ' << b << ' ' << c << '\n';
 #endif
-      if(a < 0)
+      if(a == 0)
       {
-        const double s = std::sqrt(-a);
-        double F_exp = std::exp(-SQR(b)/(4*a)+c);
-        double I = 1.0/(M_2_SQRTPI*s)*F_exp*
-                   (std::erf(s*(xr+b/(2*a)))-std::erf(s*(xl+b/(2*a))));
+        if(b == 0)
+        {
+          const double F_exp = std::exp(c);
+          double I = F_exp*(xr-xl);
+          norm_ += std::exp(c)*(xr-xl);
+          norm_gradient_ +=
+              F_exp * (CUB(xr) - CUB(xl))/3 * a_gradient_.col(isegment);
+          norm_gradient_ +=
+              F_exp * (SQR(xr) - SQR(xl))/2 * b_gradient_.col(isegment);
+          norm_gradient_(1+isegment) += I;
+        }
+        else
+        {
+          norm_ += (std::exp(b*xr+c)-std::exp(b*xl+c))/b;
+        }
+      }
+      else // a!=0
+      {
+        const double F_exp = std::exp(-SQR(b)/(4*a)+c);
+        const double F_exp_r = std::exp(a*SQR(xr+b/(2*a)));
+        const double F_exp_l = std::exp(a*SQR(xl+b/(2*a)));
+
+        double I = 0;
+        if(a < 0) // negative curvature - integral is erf
+        {
+          const double s = std::sqrt(-a);
+          I = 1/(M_2_SQRTPI*s)*F_exp*
+              (std::erf(s*(xr+b/(2*a)))-std::erf(s*(xl+b/(2*a))));
+        }
+        else // positive curvature - integral is e^(x**2) dawson(x) 
+        {
+          const double s = std::sqrt(a);
+          I = 1/s*F_exp*(F_exp_r*dawson(s*(xr+b/(2*a)))
+                         - F_exp_l*dawson(s*(xl+b/(2*a))));
+        }
+
         norm_ += I;
-        double F_exp_r = std::exp(a*SQR(xr+b/(2.0*a)));
-        double F_exp_l = std::exp(a*SQR(xl+b/(2.0*a)));
         norm_gradient_ +=
-            (I*(SQR(b)/(4*SQR(a)) - 1.0/(2.0*a))
-             + 1.0/(2.0*a)*F_exp*(F_exp_r*(xr-b/(2.0*a))
-                                  - F_exp_l*(xl-b/(2.0*a))))
+            (I*(SQR(b)/(4*SQR(a)) - 1/(2*a))
+             + 1/(2*a)*F_exp*(F_exp_r*(xr-b/(2*a)) - F_exp_l*(xl-b/(2*a))))
             * a_gradient_.col(isegment);
         norm_gradient_ +=
-            (-I*b + F_exp*(F_exp_r - F_exp_l))/(2.0*a)
+            (-I*b + F_exp*(F_exp_r - F_exp_l))/(2*a)
             * b_gradient_.col(isegment);
-        // diff: 0.160144 grad: 0.150195
         norm_gradient_(1+isegment) += I;
-      }
-      else if(a > 0)
-      {
-        const double s = std::sqrt(a);
-        norm_ += 1.0/s * (exp(a*SQR(xr+b/(2*a))-SQR(b)/(4.0*a)+c)*dawson(s*(xr+b/(2*a)))
-                          - exp(a*SQR(xl+b/(2*a))-SQR(b)/(4.0*a)+c)*dawson(s*(xl+b/(2*a))));
-      }
-      else if(b == 0)
-      {
-        norm_ += std::exp(c)*(xr-xl);
-      }
-      else
-      {
-        norm_ += (std::exp(b*xr+c)-std::exp(b*xl+c))/b;
       }
     }
 
-    norm_ = 1.0/norm_;
+    norm_ = 1/norm_;
     norm_gradient_ *= -norm_;
   }
 }
