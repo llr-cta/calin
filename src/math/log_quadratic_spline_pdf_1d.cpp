@@ -273,22 +273,27 @@ void LogQuadraticSpline1DPDF::set_cache()
 #if 0
       std::cout << a << ' ' << b << ' ' << c << '\n';
 #endif
+      double I;
+      double dI_da;
+      double dI_db;
+      
       if(a == 0)
       {
         if(b == 0)
         {
           const double F_exp = std::exp(c);
-          double I = F_exp*(xr-xl);
-          norm_ += std::exp(c)*(xr-xl);
-          norm_gradient_ +=
-              F_exp * (CUB(xr) - CUB(xl))/3 * a_gradient_.col(isegment);
-          norm_gradient_ +=
-              F_exp * (SQR(xr) - SQR(xl))/2 * b_gradient_.col(isegment);
-          norm_gradient_(1+isegment) += I;
+          I = F_exp*(xr-xl);
+          dI_da = F_exp * (CUB(xr) - CUB(xl))/3;
+          dI_db = F_exp * (SQR(xr) - SQR(xl))/2;
         }
         else
         {
-          norm_ += (std::exp(b*xr+c)-std::exp(b*xl+c))/b;
+          const double F_exp_r = std::exp(b*xr+c);
+          const double F_exp_l = std::exp(b*xl+c);
+          I = (F_exp_r - F_exp_l)/b;
+          dI_da = ((b*xr*(b*xr-2)+2)*F_exp_r
+                   - (b*xl*(b*xl-2)+2)*F_exp_l)/CUB(b);
+          dI_db = ((b*xr-1)*F_exp_r - (b*xl-1)*F_exp_l)/SQR(b);
         }
       }
       else // a!=0
@@ -297,7 +302,6 @@ void LogQuadraticSpline1DPDF::set_cache()
         const double F_exp_r = std::exp(a*SQR(xr+b/(2*a)));
         const double F_exp_l = std::exp(a*SQR(xl+b/(2*a)));
 
-        double I = 0;
         if(a < 0) // negative curvature - integral is erf
         {
           const double s = std::sqrt(-a);
@@ -311,18 +315,17 @@ void LogQuadraticSpline1DPDF::set_cache()
                          - F_exp_l*dawson(s*(xl+b/(2*a))));
         }
 
-        norm_ += I;
-        norm_gradient_ +=
-            (I*(SQR(b)/(4*SQR(a)) - 1/(2*a))
-             + 1/(2*a)*F_exp*(F_exp_r*(xr-b/(2*a)) - F_exp_l*(xl-b/(2*a))))
-            * a_gradient_.col(isegment);
-        norm_gradient_ +=
-            (-I*b + F_exp*(F_exp_r - F_exp_l))/(2*a)
-            * b_gradient_.col(isegment);
-        norm_gradient_(1+isegment) += I;
+        dI_da = I*(SQR(b)/(4*SQR(a)) - 1/(2*a))
+                + 1/(2*a)*F_exp*(F_exp_r*(xr-b/(2*a)) - F_exp_l*(xl-b/(2*a)));
+        dI_db = (-I*b + F_exp*(F_exp_r - F_exp_l))/(2*a);
       }
-    }
 
+      norm_ += I;
+      norm_gradient_ += dI_da * a_gradient_.col(isegment);
+      norm_gradient_ += dI_db * b_gradient_.col(isegment);
+      norm_gradient_(1+isegment) += I;
+    }
+    
     norm_ = 1/norm_;
     norm_gradient_ *= -norm_;
   }

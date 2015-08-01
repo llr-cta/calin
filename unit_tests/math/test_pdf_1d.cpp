@@ -775,6 +775,31 @@ TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_APos) {
   }
 }
 
+TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_AZero) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, true);
+
+  Eigen::VectorXd p(4);
+  p << 1.0, 1.0, 2.0, 3.0;
+  Eigen::VectorXd dp(4);
+  dp << 0.001, 0.001, 0.001, 0.001;
+
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = -1.4; x(0)<1.4; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(4);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
+  }
+}
+
 TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_ABZero) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
