@@ -14,13 +14,18 @@
 
 namespace calin { namespace math { namespace pdf_1d {
 
+enum class ParamZeroType { SLOPE, CURVATURE };
+enum class ParamZeroLocation { LEFT, RIGHT };
+
 class LogQuadraticSpline1DPDF: public Parameterizable1DPDF
 {
 public:
   constexpr static double inf = std::numeric_limits<double>::infinity();
-
+  
   LogQuadraticSpline1DPDF(ConstVecRef xknots,
                           double xlo, double xhi, bool normalize = true,
+                          ParamZeroType p0_type = ParamZeroType::SLOPE,
+                          ParamZeroLocation p0_loc = ParamZeroLocation::LEFT,
                           const std::string& yunits = "y-value units",
                           const std::string& xunits = "x-value units",
                           double error_up = 0.5);
@@ -62,15 +67,21 @@ public:
  protected:
   unsigned find_segment(double x) const;
   void set_cache();
+  void set_spline_coeffs_left_to_right();
+  void set_spline_coeffs_right_to_left();
+  static void integral(double a, double b, double c, double xl, double xr,
+                       double& I, double& dI_da, double& dI_db);
   
-  std::string yunits_   = "y-value units";
-  std::string xunits_   = "x-value units";
-  double error_up_      = 0.5;
-  double xlo_           = 0.0;
-  double xhi_           = inf;
+  std::string yunits_       = "y-value units";
+  std::string xunits_       = "x-value units";
+  double error_up_          = 0.5;
+  double xlo_               = 0.0;
+  double xhi_               = inf;
+  ParamZeroType p0_type_    = ParamZeroType::SLOPE;
+  ParamZeroLocation p0_loc_ = ParamZeroLocation::LEFT;
 
-  unsigned nknot_       = 0;
-  double slope0_        = 0;
+  unsigned nknot_           = 0;
+  double b_or_a_zero_       = 0;
   Eigen::VectorXd xknot_; // vector of size nknot
   Eigen::VectorXd yknot_; // vector of size nknot
 
@@ -79,16 +90,11 @@ public:
   Eigen::VectorXd a_;     // vector of size nknot-1
   Eigen::VectorXd b_;     // vector of size nknot-1
 
-  Eigen::VectorXd da_dslope0_; // vector of size nknot-1
-  Eigen::VectorXd db_dslope0_; // vector of size nknot-1
-  Eigen::MatrixXd da_dyknot_;  // matrix of size nknot x nknot-1
-  Eigen::MatrixXd db_dyknot_;  // matrix of size nknot x nknot-1
-
   Eigen::MatrixXd a_gradient_; // matrix of size nknot+1 x nknot-1
   Eigen::MatrixXd b_gradient_; // matrix of size nknot+1 x nknot-1
   
-  bool normalize_       = true;
-  double norm_          = 1.0;
+  bool normalize_           = true;
+  double norm_              = 1.0;
   Eigen::VectorXd norm_gradient_; // vector of size nknot_+1;
 };
 

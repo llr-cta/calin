@@ -146,10 +146,17 @@
   if(!calin_python_to_eigen_vec($input, $1))SWIG_fail;
 }
 
+
 %typemap(argout) const Eigen::VectorXd&
 {
   // typemap(argout) const Eigen::VectorXd& -- package_wide_definitions.i
   // nothing to see here
+}
+
+%typemap(typecheck, fragment="Calin_Python_to_EigenVec", precedence=5000) const Eigen::VectorXd&
+{
+  // typemap(typecheck) const Eigen::VectorXd& -- package_wide_definitions.i
+  $1 = is_array($input) ? 1 : 0;
 }
 
 // ****************************** Eigen::VectorXd& *****************************
@@ -166,6 +173,13 @@
 {
   // typemap(argout) Eigen::VectorXd& -- package_wide_definitions.i
   if(!calin_eigen_vec_to_python($1, $input))SWIG_fail;
+}
+
+%typemap(typecheck, fragment="Calin_Python_to_EigenVec", precedence=5000)
+Eigen::VectorXd&
+{
+  // typemap(typecheck) Eigen::VectorXd& -- package_wide_definitions.i
+  $1 = is_array($input) ? 1 : 0;
 }
 
 // ************************** Eigen::VectorXd &OUTPUT **************************
@@ -200,6 +214,13 @@
   $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
   if(!$result)SWIG_fail;
   if(!calin_eigen_vec_to_python(&$1, $result))SWIG_fail;
+}
+
+%typemap(typecheck, fragment="Calin_Python_to_EigenVec", precedence=5000)
+Eigen::VectorXd
+{
+  // typemap(typecheck) Eigen::VectorXd -- package_wide_definitions.i
+  $1 = is_array($input) ? 1 : 0;
 }
 
 // =============================================================================

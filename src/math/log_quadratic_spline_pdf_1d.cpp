@@ -14,18 +14,20 @@
 using namespace calin::math::pdf_1d;
 
 LogQuadraticSpline1DPDF::
-LogQuadraticSpline1DPDF(ConstVecRef xknot, double xlo, double xhi, bool normalize,
+LogQuadraticSpline1DPDF(ConstVecRef xknot, double xlo, double xhi,
+                        bool normalize,
+                        ParamZeroType p0_type, ParamZeroLocation p0_loc,
                         const std::string& yunits, const std::string& xunits,
                         double error_up):
-    Parameterizable1DPDF(), yunits_(yunits), xunits_(xunits), error_up_(error_up),
-    xlo_(xlo), xhi_(xhi), normalize_(normalize),
-    nknot_(xknot.size()),
-    xknot_(xknot), yknot_(Eigen::VectorXd::Zero(nknot_)),
+    Parameterizable1DPDF(), yunits_(yunits), xunits_(xunits),
+    error_up_(error_up), xlo_(xlo), xhi_(xhi),
+    p0_type_(p0_type), p0_loc_(p0_loc),
+    nknot_(xknot.size()), xknot_(xknot), yknot_(Eigen::VectorXd::Zero(nknot_)),
     dx_(std::max(1U,nknot_)-1), dy_(std::max(1U,nknot_)-1),
     a_(std::max(1U,nknot_)-1), b_(std::max(1U,nknot_)-1),
     a_gradient_(nknot_+1, std::max(1U,nknot_)-1),
     b_gradient_(nknot_+1, std::max(1U,nknot_)-1),
-    norm_gradient_(Eigen::VectorXd::Zero(nknot_+1))
+    normalize_(normalize), norm_gradient_(Eigen::VectorXd::Zero(nknot_+1))
 {
   if(nknot_<2)
   {
@@ -84,7 +86,7 @@ std::vector<calin::math::function::ParameterAxis> LogQuadraticSpline1DPDF::param
 Eigen::VectorXd LogQuadraticSpline1DPDF::parameter_values()
 {
   Eigen::VectorXd p(nknot_+1);
-  p[0] = slope0_;
+  p[0] = b_or_a_zero_;
   p.tail(nknot_) = yknot_;
   return p;
 }
@@ -98,7 +100,7 @@ void LogQuadraticSpline1DPDF::set_parameter_values(ConstVecRef values)
            << " values, " << num_parameters() << " required.";
     throw(std::runtime_error(stream.str()));
   }  
-  slope0_ = values(0);
+  b_or_a_zero_ = values(0);
   yknot_ = values.tail(nknot_);
   set_cache();
 }
@@ -131,7 +133,7 @@ bool LogQuadraticSpline1DPDF::can_calculate_parameter_hessian()
 
 double LogQuadraticSpline1DPDF::value_1d(double x)
 {
-  if(x<xlo_ or x>=xhi_)return 0;
+  if(x<xlo_ or x>=xhi_ or norm_<=0.0 or !isfinite(norm_))return 0;
   unsigned isegment = find_segment(x);
   double xx = x-xknot_(isegment);
 #if 0
@@ -143,7 +145,7 @@ double LogQuadraticSpline1DPDF::value_1d(double x)
 
 double LogQuadraticSpline1DPDF::value_and_gradient_1d(double x,  double& dfdx)
 {
-  if(x<xlo_ or x>=xhi_)
+  if(x<xlo_ or x>=xhi_ or norm_<=0.0 or !isfinite(norm_))
   {
     dfdx = 0;
     return 0;
@@ -233,27 +235,8 @@ double dawson(double x)
 void LogQuadraticSpline1DPDF::set_cache()
 {
   dy_ = yknot_.tail(nknot_-1)-yknot_.head(nknot_-1);
-  b_(0) = slope0_;
-  a_(0) = (dy_(0) - dx_(0) * b_(0))/SQR(dx_(0));
 
-  b_gradient_(0,0) = 1.0;
-  a_gradient_(0,0) = -1.0/dx_(0);
-  a_gradient_(1,0) = -1.0/SQR(dx_(0));
-  a_gradient_(2,0) = 1.0/SQR(dx_(0));
-  
-  for(unsigned isegment=1; isegment<nknot_-1; isegment++)
-  {
-    double dx2 = SQR(dx_(0));
-    b_(isegment) = 2.0*dx_(isegment-1)*a_(isegment-1) + b_(isegment-1);
-    a_(isegment) = (dy_(isegment) - dx_(isegment)*b_(isegment))/dx2;
-
-    b_gradient_.col(isegment) =
-        2.0*dx_(isegment-1)*a_gradient_.col(isegment-1) + b_gradient_.col(isegment-1);
-    a_gradient_.col(isegment) =
-        -b_gradient_.col(isegment)/dx_(isegment);
-    a_gradient_(isegment+2, isegment) += 1.0/dx2;
-    a_gradient_(isegment+1, isegment) -= 1.0/dx2;
-  }
+  set_spline_coeffs_left_to_right();
 
   if(normalize_)
   {
@@ -276,50 +259,17 @@ void LogQuadraticSpline1DPDF::set_cache()
       double I;
       double dI_da;
       double dI_db;
+
+      integral(a, b, c, xl, xr, I, dI_da, dI_db);
+
+      if(!isfinite(I) or I==0)
+      {
+        std::cout << "Segment has zero norm: "
+                  << isegment << ' ' << xl << ' ' << xr << ' '
+                  <<  a << ' ' << b << ' ' << c << ' '
+                  << I << ' ' << dI_da << ' ' << dI_db <<'\n';
+      }
       
-      if(a == 0)
-      {
-        if(b == 0)
-        {
-          const double F_exp = std::exp(c);
-          I = F_exp*(xr-xl);
-          dI_da = F_exp * (CUB(xr) - CUB(xl))/3;
-          dI_db = F_exp * (SQR(xr) - SQR(xl))/2;
-        }
-        else
-        {
-          const double F_exp_r = std::exp(b*xr+c);
-          const double F_exp_l = std::exp(b*xl+c);
-          I = (F_exp_r - F_exp_l)/b;
-          dI_da = ((b*xr*(b*xr-2)+2)*F_exp_r
-                   - (b*xl*(b*xl-2)+2)*F_exp_l)/CUB(b);
-          dI_db = ((b*xr-1)*F_exp_r - (b*xl-1)*F_exp_l)/SQR(b);
-        }
-      }
-      else // a!=0
-      {
-        const double F_exp = std::exp(-SQR(b)/(4*a)+c);
-        const double F_exp_r = std::exp(a*SQR(xr+b/(2*a)));
-        const double F_exp_l = std::exp(a*SQR(xl+b/(2*a)));
-
-        if(a < 0) // negative curvature - integral is erf
-        {
-          const double s = std::sqrt(-a);
-          I = 1/(M_2_SQRTPI*s)*F_exp*
-              (std::erf(s*(xr+b/(2*a)))-std::erf(s*(xl+b/(2*a))));
-        }
-        else // positive curvature - integral is e^(x**2) dawson(x) 
-        {
-          const double s = std::sqrt(a);
-          I = 1/s*F_exp*(F_exp_r*dawson(s*(xr+b/(2*a)))
-                         - F_exp_l*dawson(s*(xl+b/(2*a))));
-        }
-
-        dI_da = I*(SQR(b)/(4*SQR(a)) - 1/(2*a))
-                + 1/(2*a)*F_exp*(F_exp_r*(xr-b/(2*a)) - F_exp_l*(xl-b/(2*a)));
-        dI_db = (-I*b + F_exp*(F_exp_r - F_exp_l))/(2*a);
-      }
-
       norm_ += I;
       norm_gradient_ += dI_da * a_gradient_.col(isegment);
       norm_gradient_ += dI_db * b_gradient_.col(isegment);
@@ -329,4 +279,110 @@ void LogQuadraticSpline1DPDF::set_cache()
     norm_ = 1/norm_;
     norm_gradient_ *= -norm_;
   }
+}
+
+void LogQuadraticSpline1DPDF::set_spline_coeffs_left_to_right()
+{
+  if(p0_type_ == ParamZeroType::SLOPE)
+  {
+    b_(0) = b_or_a_zero_;
+    a_(0) = (dy_(0) - dx_(0) * b_(0))/SQR(dx_(0));
+
+    b_gradient_(0,0) = 1.0;
+    a_gradient_(0,0) = -1.0/dx_(0);
+    a_gradient_(1,0) = -1.0/SQR(dx_(0));
+    a_gradient_(2,0) = 1.0/SQR(dx_(0));
+  }
+  else
+  {
+    a_(0) = b_or_a_zero_;
+    b_(0) = dy_(0)/dx_(0) - a_(0) * dx_(0);
+
+    a_gradient_(0,0) = 1.0;
+    b_gradient_(0,0) = -dx_(0);
+    b_gradient_(1,0) = -1.0/dx_(0);
+    b_gradient_(2,0) = 1.0/dx_(0);
+  }
+  
+  for(unsigned isegment=1; isegment<nknot_-1; isegment++)
+  {
+    double dx2 = SQR(dx_(isegment));
+    b_(isegment) = 2.0*dx_(isegment-1)*a_(isegment-1) + b_(isegment-1);
+    a_(isegment) = (dy_(isegment) - dx_(isegment)*b_(isegment))/dx2;
+
+    b_gradient_.col(isegment) =
+        2.0*dx_(isegment-1)*a_gradient_.col(isegment-1)
+        + b_gradient_.col(isegment-1);
+    a_gradient_.col(isegment) =
+        -b_gradient_.col(isegment)/dx_(isegment);
+    a_gradient_(isegment+2, isegment) += 1.0/dx2;
+    a_gradient_(isegment+1, isegment) -= 1.0/dx2;
+  }
+}
+
+void LogQuadraticSpline1DPDF::set_spline_coeffs_right_to_left()
+{
+
+}
+
+void LogQuadraticSpline1DPDF::
+integral(double a, double b, double c, double xl, double xr,
+         double& I, double& dI_da, double& dI_db)
+{
+  if(a == 0)
+  {
+    if(b == 0)
+    {
+      const double F_exp = std::exp(c);
+      I = F_exp*(xr-xl);
+      dI_da = F_exp * (CUB(xr) - CUB(xl))/3;
+      dI_db = F_exp * (SQR(xr) - SQR(xl))/2;
+    }
+    else
+    {
+      const double F_exp_r = std::exp(b*xr+c);
+      const double F_exp_l = std::exp(b*xl+c);
+      I = (F_exp_r - F_exp_l)/b;
+      dI_da = ((b*xr*(b*xr-2)+2)*F_exp_r
+               - (b*xl*(b*xl-2)+2)*F_exp_l)/CUB(b);
+      dI_db = ((b*xr-1)*F_exp_r - (b*xl-1)*F_exp_l)/SQR(b);
+    }
+  }
+  else // a!=0
+  {
+    const double F_exp = std::exp(-SQR(b)/(4*a)+c);
+    const double F_exp_r = std::exp(a*SQR(xr+b/(2*a)));
+    const double F_exp_l = std::exp(a*SQR(xl+b/(2*a)));
+    
+    if(a < 0) // negative curvature - integral is erf
+    {
+      const double s = std::sqrt(-a);
+      const double xxr = s*(xr+b/(2*a));
+      const double xxl = s*(xl+b/(2*a));
+      if(xxl>5)
+        I = 1/(M_2_SQRTPI*s)*F_exp*(std::erfc(xxl)-std::erfc(xxr));
+      else if(xxr<-5)
+        I = 1/(M_2_SQRTPI*s)*F_exp*(std::erfc(-xxr)-std::erfc(-xxl));
+      else
+        I = 1/(M_2_SQRTPI*s)*F_exp*(std::erf(xxr)-std::erf(xxl));
+      //std::cout << "DDD: " << xxl << ' ' << xxr << ' ' << erf(xxr)-erf(xxl) << ' ' << erfc(xxl)-erfc(xxr) << ' ' << erfc(-xxr)-erfc(-xxl) << ' ' << F_exp << ' ' << I << '\n';
+                 
+    }
+    else // positive curvature - integral is e^(x**2) dawson(x) 
+    {
+      const double s = std::sqrt(a);
+      I = 1/s*F_exp*(F_exp_r*dawson(s*(xr+b/(2*a)))
+                     - F_exp_l*dawson(s*(xl+b/(2*a))));
+    }
+
+    dI_da = I*(SQR(b)/(4*SQR(a)) - 1/(2*a))
+            + 1/(2*a)*F_exp*(F_exp_r*(xr-b/(2*a)) - F_exp_l*(xl-b/(2*a)));
+    dI_db = (-I*b + F_exp*(F_exp_r - F_exp_l))/(2*a);
+  }
+
+#if 0
+  std::cout << "       " << xl << ' ' << xr << ' '
+            <<  a << ' ' <<  b << ' ' << c << ' ' 
+            << I << ' ' << dI_da << ' ' << dI_db << '\n';
+#endif
 }

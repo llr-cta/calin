@@ -5,12 +5,15 @@
 
 #include <fftw3.h>
 
+#include "math/accumulator.hpp"
 #include "calib/spe_fit.hpp"
 #include "calib/pmt_model_pg.hpp"
+#include "io/log.hpp"
 
 using namespace calin::math;
 using namespace calin::calib::spe_fit;
 using namespace calin::calib::pmt_model_pg;
+using namespace calin::io::log;
 
 using calin::math::function::assign_parameters;
 
@@ -959,6 +962,7 @@ void GeneralPoissonMES::set_cache()
   unsigned ses_npar = ses_pdf_->num_parameters();
   Eigen::VectorXd ses_gradient(ses_npar);
   ses_gradient.setZero();
+  calin::math::accumulator::LikelihoodAccumulator ses_acc;
   for(unsigned isample = 0;isample<nsample_;isample++)
   {
     // The SES describes charge delivered by the PMT and is assumed be
@@ -982,8 +986,15 @@ void GeneralPoissonMES::set_cache()
       if(!isfinite(val))val = 0;
     }
     nes_fft_[0][isample] = val;
-    
+    ses_acc.accumulate(val);
   }
+
+  if(std::abs(ses_acc.total() * dx_ - 1.0) > 1e-6)
+  {
+    LOG(WARNING) << "SES normalization is significantly different from 1.0: "
+                 << ses_acc.total() * dx_;
+  }
+  
   fftw_execute(ses_plan_fwd_);
   for(unsigned ines=1;ines<nmax_;ines++)
     hcvec_scale_and_multiply(nes_fft_[ines], nes_fft_[ines-1], nes_fft_[0],

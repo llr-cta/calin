@@ -578,7 +578,7 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
     case NLOPT_FORCED_STOP:
       opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
       opt_message_ = "This should not happen";
-      assert(0);
+      break;
   }
 
   if(opt_status_ == OptimizationStatus::OPTIMIZER_FAILURE)

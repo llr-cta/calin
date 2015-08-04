@@ -22,6 +22,7 @@
 %include "typemaps.i"
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& gradient };
 %apply Eigen::MatrixXd &OUTPUT { Eigen::MatrixXd& hessian };
+%apply double &OUTPUT { double& dfdx, double& d2fdx2 }
 
 %include "math/function.hpp"
 
