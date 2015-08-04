@@ -989,7 +989,7 @@ void GeneralPoissonMES::set_cache()
     ses_acc.accumulate(val);
   }
 
-  if(std::abs(ses_acc.total() * dx_ - 1.0) > 1e-6)
+  if(std::abs(ses_acc.total() * dx_ - 1.0) > 1.0/double(nsample_))
   {
     LOG(WARNING) << "SES normalization is significantly different from 1.0: "
                  << ses_acc.total() * dx_;
