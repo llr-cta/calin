@@ -81,7 +81,7 @@ public:
   ParamZeroLocation p0_loc_ = ParamZeroLocation::LEFT;
 
   unsigned nknot_           = 0;
-  double b_or_a_zero_       = 0;
+  double param0_            = 0;
   Eigen::VectorXd xknot_; // vector of size nknot
   Eigen::VectorXd yknot_; // vector of size nknot
 

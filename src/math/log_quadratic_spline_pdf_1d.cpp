@@ -86,7 +86,7 @@ std::vector<calin::math::function::ParameterAxis> LogQuadraticSpline1DPDF::param
 Eigen::VectorXd LogQuadraticSpline1DPDF::parameter_values()
 {
   Eigen::VectorXd p(nknot_+1);
-  p[0] = b_or_a_zero_;
+  p[0] = param0_;
   p.tail(nknot_) = yknot_;
   return p;
 }
@@ -100,7 +100,7 @@ void LogQuadraticSpline1DPDF::set_parameter_values(ConstVecRef values)
            << " values, " << num_parameters() << " required.";
     throw(std::runtime_error(stream.str()));
   }  
-  b_or_a_zero_ = values(0);
+  param0_ = values(0);
   yknot_ = values.tail(nknot_);
   set_cache();
 }
@@ -236,8 +236,11 @@ void LogQuadraticSpline1DPDF::set_cache()
 {
   dy_ = yknot_.tail(nknot_-1)-yknot_.head(nknot_-1);
 
-  set_spline_coeffs_left_to_right();
-
+  if(p0_loc_ == ParamZeroLocation::RIGHT)
+    set_spline_coeffs_right_to_left();
+  else
+    set_spline_coeffs_left_to_right();
+      
   if(normalize_)
   {
     norm_ = 0;
@@ -285,7 +288,7 @@ void LogQuadraticSpline1DPDF::set_spline_coeffs_left_to_right()
 {
   if(p0_type_ == ParamZeroType::SLOPE)
   {
-    b_(0) = b_or_a_zero_;
+    b_(0) = param0_;
     a_(0) = (dy_(0) - dx_(0) * b_(0))/SQR(dx_(0));
 
     b_gradient_(0,0) = 1.0;
@@ -295,7 +298,7 @@ void LogQuadraticSpline1DPDF::set_spline_coeffs_left_to_right()
   }
   else
   {
-    a_(0) = b_or_a_zero_;
+    a_(0) = param0_;
     b_(0) = dy_(0)/dx_(0) - a_(0) * dx_(0);
 
     a_gradient_(0,0) = 1.0;
@@ -322,7 +325,45 @@ void LogQuadraticSpline1DPDF::set_spline_coeffs_left_to_right()
 
 void LogQuadraticSpline1DPDF::set_spline_coeffs_right_to_left()
 {
+  if(p0_type_ == ParamZeroType::SLOPE)
+  {
+    unsigned iseg = nknot_-2;
+    b_(iseg) = 2*dy_(iseg)/dx_(iseg) - param0_;
+    a_(iseg) = (dy_(iseg) - dx_(iseg) * b_(iseg))/SQR(dx_(iseg));
 
+    b_gradient_(0,iseg) = -1.0;
+    b_gradient_(iseg+1,iseg) -= 2.0/dx_(iseg);
+    b_gradient_(iseg+2,iseg) += 2.0/dx_(iseg);
+    a_gradient_.col(iseg) = -b_gradient_.col(iseg)/dx_(iseg);
+    a_gradient_(iseg+1,iseg) -= 1.0/SQR(dx_(iseg));
+    a_gradient_(iseg+2,iseg) += 1.0/SQR(dx_(iseg));
+  }
+  else
+  {
+    unsigned iseg = nknot_-2;
+    a_(iseg) = param0_;
+    b_(iseg) = dy_(iseg)/dx_(iseg) - a_(iseg) * dx_(iseg);
+
+    a_gradient_(0,iseg) = 1.0;
+    b_gradient_(0,iseg) = -dx_(iseg);
+    b_gradient_(iseg+1,iseg) = -1.0/dx_(iseg);
+    b_gradient_(iseg+2,iseg) = 1.0/dx_(iseg);
+  }
+  
+  for(unsigned iloop=1; iloop<nknot_-1; iloop++)
+  {
+    unsigned iseg = nknot_-2-iloop;
+    double dx2 = SQR(dx_(iseg));
+    b_(iseg) = 2*dy_(iseg)/dx_(iseg) - b_(iseg+1);
+    a_(iseg) = (dy_(iseg) - dx_(iseg) * b_(iseg))/dx2;
+
+    b_gradient_.col(iseg) = -b_gradient_.col(iseg+1);
+    b_gradient_(iseg+1,iseg) -= 2.0/dx_(iseg);
+    b_gradient_(iseg+2,iseg) += 2.0/dx_(iseg);
+    a_gradient_.col(iseg) = -b_gradient_.col(iseg)/dx_(iseg);
+    a_gradient_(iseg+1,iseg) -= 1.0/dx2;
+    a_gradient_(iseg+2,iseg) += 1.0/dx2;
+  }
 }
 
 void LogQuadraticSpline1DPDF::
