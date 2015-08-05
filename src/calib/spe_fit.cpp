@@ -992,7 +992,9 @@ void GeneralPoissonMES::set_cache()
   if(std::abs(ses_acc.total() * dx_ - 1.0) > 1.0/double(nsample_))
   {
     LOG(WARNING) << "SES normalization is significantly different from 1.0: "
-                 << ses_acc.total() * dx_;
+                 << ses_acc.total() * dx_ << '\n'
+                 << "SES parameter values : "
+                 << ses_pdf_->parameter_values().transpose();
   }
   
   fftw_execute(ses_plan_fwd_);
