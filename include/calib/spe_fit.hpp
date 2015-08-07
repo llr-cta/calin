@@ -253,6 +253,8 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   std::vector<double*> ped_grad_;
   std::vector<double*> mes_grad_;
   std::vector<fftw_plan> mes_grad_plan_rev_;
+  unsigned n_ses_norm_warning_ = 0;
+  unsigned n_max_ses_norm_warning_ = 10;
 };
 
 class SPELikelihood: public calin::math::function::MultiAxisFunction

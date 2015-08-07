@@ -9,8 +9,10 @@
 #include <cmath>
 #include <iostream>
 
+#include "math/special.hpp"
 #include "math/log_quadratic_spline_pdf_1d.hpp"
 
+using namespace calin::math::special;
 using namespace calin::math::pdf_1d;
 
 LogQuadraticSpline1DPDF::
@@ -218,20 +220,6 @@ unsigned LogQuadraticSpline1DPDF::find_segment(double x) const
   return std::max(1U,ix)-1;
 }
 
-#include <gsl/gsl_sf_dawson.h>
-
-namespace {
-
-inline double SQR(double x) { return x*x; }
-inline double CUB(double x) { return x*x*x; }
-
-double dawson(double x)
-{
-  return gsl_sf_dawson(x);
-}
-
-} // anonymous namespace
-
 void LogQuadraticSpline1DPDF::set_cache()
 {
   dy_ = yknot_.tail(nknot_-1)-yknot_.head(nknot_-1);
@@ -376,7 +364,7 @@ integral(double a, double b, double c, double xl, double xr,
     {
       const double F_exp = std::exp(c);
       I = F_exp*(xr-xl);
-      dI_da = F_exp * (CUB(xr) - CUB(xl))/3;
+      dI_da = F_exp * (CUBE(xr) - CUBE(xl))/3;
       dI_db = F_exp * (SQR(xr) - SQR(xl))/2;
     }
     else
@@ -385,40 +373,49 @@ integral(double a, double b, double c, double xl, double xr,
       const double F_exp_l = std::exp(b*xl+c);
       I = (F_exp_r - F_exp_l)/b;
       dI_da = ((b*xr*(b*xr-2)+2)*F_exp_r
-               - (b*xl*(b*xl-2)+2)*F_exp_l)/CUB(b);
+               - (b*xl*(b*xl-2)+2)*F_exp_l)/CUBE(b);
       dI_db = ((b*xr-1)*F_exp_r - (b*xl-1)*F_exp_l)/SQR(b);
     }
   }
   else // a!=0
   {
-    const double F_exp = std::exp(-SQR(b)/(4*a)+c);
-    const double F_exp_r = std::exp(a*SQR(xr+b/(2*a)));
-    const double F_exp_l = std::exp(a*SQR(xl+b/(2*a)));
-    
+    const double arg_exp = -SQR(b)/(4*a)+c;
+    const double arg_exp_r = a*SQR(xr+b/(2*a));
+    const double arg_exp_l = a*SQR(xl+b/(2*a));
+
+    const double FF_exp_r = std::exp(arg_exp + arg_exp_r);
+    const double FF_exp_l = std::exp(arg_exp + arg_exp_l);
+        
     if(a < 0) // negative curvature - integral is erf
     {
       const double s = std::sqrt(-a);
       const double xxr = s*(xr+b/(2*a));
       const double xxl = s*(xl+b/(2*a));
-      if(xxl>5)
-        I = 1/(M_2_SQRTPI*s)*F_exp*(std::erfc(xxl)-std::erfc(xxr));
+      if(xxl>20)
+        I = 1/(M_2_SQRTPI*s)*(std::exp(arg_exp + lerfc(xxl))
+                              - std::exp(arg_exp + lerfc(xxr)));
+      else if(xxr<-20)
+        I = 1/(M_2_SQRTPI*s)*(std::exp(arg_exp + lerfc(-xxr))
+                              - std::exp(arg_exp + lerfc(-xxl)));
+      else if(xxl>5)
+        I = 1/(M_2_SQRTPI*s)*std::exp(arg_exp)*(std::erfc(xxl)-std::erfc(xxr));
       else if(xxr<-5)
-        I = 1/(M_2_SQRTPI*s)*F_exp*(std::erfc(-xxr)-std::erfc(-xxl));
+        I = 1/(M_2_SQRTPI*s)*std::exp(arg_exp)*(std::erfc(-xxr)-std::erfc(-xxl));
       else
-        I = 1/(M_2_SQRTPI*s)*F_exp*(std::erf(xxr)-std::erf(xxl));
+        I = 1/(M_2_SQRTPI*s)*std::exp(arg_exp)*(std::erf(xxr)-std::erf(xxl));
       //std::cout << "DDD: " << xxl << ' ' << xxr << ' ' << erf(xxr)-erf(xxl) << ' ' << erfc(xxl)-erfc(xxr) << ' ' << erfc(-xxr)-erfc(-xxl) << ' ' << F_exp << ' ' << I << '\n';
                  
     }
     else // positive curvature - integral is e^(x**2) dawson(x) 
     {
       const double s = std::sqrt(a);
-      I = 1/s*F_exp*(F_exp_r*dawson(s*(xr+b/(2*a)))
-                     - F_exp_l*dawson(s*(xl+b/(2*a))));
+      I = 1/s*(FF_exp_r*dawson(s*(xr+b/(2*a))) -
+               FF_exp_l*dawson(s*(xl+b/(2*a))));
     }
 
     dI_da = I*(SQR(b)/(4*SQR(a)) - 1/(2*a))
-            + 1/(2*a)*F_exp*(F_exp_r*(xr-b/(2*a)) - F_exp_l*(xl-b/(2*a)));
-    dI_db = (-I*b + F_exp*(F_exp_r - F_exp_l))/(2*a);
+            + 1/(2*a)*(FF_exp_r*(xr-b/(2*a)) - FF_exp_l*(xl-b/(2*a)));
+    dI_db = (-I*b + (FF_exp_r - FF_exp_l))/(2*a);
   }
 
 #if 0

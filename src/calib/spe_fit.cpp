@@ -989,12 +989,16 @@ void GeneralPoissonMES::set_cache()
     ses_acc.accumulate(val);
   }
 
-  if(std::abs(ses_acc.total() * dx_ - 1.0) > 1.0/double(nsample_))
+  if(std::abs(ses_acc.total() * dx_ - 1.0) > 1.0/double(nsample_)
+     and n_ses_norm_warning_ < n_max_ses_norm_warning_)
   {
     LOG(WARNING) << "SES normalization is significantly different from 1.0: "
                  << ses_acc.total() * dx_ << '\n'
                  << "SES parameter values : "
                  << ses_pdf_->parameter_values().transpose();
+    n_ses_norm_warning_++;
+    if(n_ses_norm_warning_ == n_max_ses_norm_warning_)
+      LOG(WARNING) << "Further SES normalization warnings will be suppressed!";
   }
   
   fftw_execute(ses_plan_fwd_);
