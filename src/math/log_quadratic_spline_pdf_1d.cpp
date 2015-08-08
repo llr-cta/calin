@@ -17,12 +17,13 @@ using namespace calin::math::pdf_1d;
 
 LogQuadraticSpline1DPDF::
 LogQuadraticSpline1DPDF(ConstVecRef xknot, double xlo, double xhi,
-                        bool normalize,
+                        double bin_dx,
                         ParamZeroType p0_type, ParamZeroLocation p0_loc,
+                        bool normalize,
                         const std::string& yunits, const std::string& xunits,
                         double error_up):
     Parameterizable1DPDF(), yunits_(yunits), xunits_(xunits),
-    error_up_(error_up), xlo_(xlo), xhi_(xhi),
+    error_up_(error_up), xlo_(xlo), xhi_(xhi), bin_dx_(bin_dx),
     p0_type_(p0_type), p0_loc_(p0_loc),
     nknot_(xknot.size()), xknot_(xknot), yknot_(Eigen::VectorXd::Zero(nknot_)),
     dx_(std::max(1U,nknot_)-1), dy_(std::max(1U,nknot_)-1),
@@ -34,8 +35,8 @@ LogQuadraticSpline1DPDF(ConstVecRef xknot, double xlo, double xhi,
   if(nknot_<2)
   {
     std::ostringstream stream;
-    stream << "LogQuadraticSpline1DPDF - minimum of 2 knots required, " << nknot_
-           << " supplied.";
+    stream << "LogQuadraticSpline1DPDF - minimum of 2 knots required, "
+           << nknot_ << " supplied.";
     throw(std::runtime_error(stream.str()));
   }  
   
@@ -74,11 +75,21 @@ unsigned LogQuadraticSpline1DPDF::num_parameters()
   return 1+nknot_;
 }
 
-std::vector<calin::math::function::ParameterAxis> LogQuadraticSpline1DPDF::parameters()
+std::vector<calin::math::function::ParameterAxis>
+LogQuadraticSpline1DPDF::parameters()
 {
   std::vector<calin::math::function::ParameterAxis> axes;
-  axes.push_back({ std::string("dy_dx(")+std::to_string(xknot_(0))+std::string(")"),
-          yunits_+std::string("/")+xunits_, false, -inf, false, inf, 1, 0 });
+  std::string p0_name;
+  if(p0_type_ == ParamZeroType::SLOPE)p0_name = "dy_dx(";
+  else p0_name = "2d2y_dx2(";
+  if(p0_loc_ == ParamZeroLocation::RIGHT)
+    p0_name += std::to_string(xknot_(xknot_.size()-1));
+  else p0_name += std::to_string(xknot_(0));
+  p0_name += std::string(")");
+  std::string p0_denom_sq;
+  if(p0_type_ != ParamZeroType::SLOPE)p0_denom_sq = "**2";
+  axes.push_back({ p0_name, yunits_+std::string("_")+xunits_+p0_denom_sq,
+          false, -inf, false, inf, 1, 0 });
   for(unsigned iknot=0; iknot<nknot_; iknot++)
     axes.push_back({ std::string("y(")+std::to_string(xknot_(iknot))+std::string(")"),
             yunits_, false, -inf, false, inf, 1, 0 });
@@ -115,7 +126,7 @@ calin::math::function::DomainAxis LogQuadraticSpline1DPDF::domain_axis()
 
 bool LogQuadraticSpline1DPDF::can_calculate_gradient()
 {
-  return true;
+  return bin_dx_ == 0;
 }
 
 bool LogQuadraticSpline1DPDF::can_calculate_hessian()
@@ -135,14 +146,54 @@ bool LogQuadraticSpline1DPDF::can_calculate_parameter_hessian()
 
 double LogQuadraticSpline1DPDF::value_1d(double x)
 {
-  if(x<xlo_ or x>=xhi_ or norm_<=0.0 or !isfinite(norm_))return 0;
+  const double xl = std::max(x-0.5*bin_dx_, xlo_);
+  const double xr = std::min(x+0.5*bin_dx_, xhi_);
+
+  if(xr<xlo_ or xl>xhi_ or norm_<=0.0 or !isfinite(norm_))return 0;
   unsigned isegment = find_segment(x);
-  double xx = x-xknot_(isegment);
+
+  if(bin_dx_ == 0)
+  {
+    double xx = x-xknot_(isegment);
 #if 0
-  std::cout << ">> " << x << ' ' << isegment << ' ' << xx << ' ' << a_(isegment) << ' '
-            << b_(isegment) << ' ' << yknot_(isegment) << "<< ";
+    std::cout << ">> " << x << ' ' << isegment << ' ' << xx << ' '
+              << a_(isegment) << ' ' << b_(isegment) << ' '
+              << yknot_(isegment) << "<< ";
 #endif
-  return norm_*std::exp((a_(isegment)*xx+b_(isegment))*xx+yknot_(isegment));
+    return norm_*std::exp((a_(isegment)*xx+b_(isegment))*xx+yknot_(isegment));
+  }
+  else
+  {
+    double I = 0;
+    double dI_da = 0;
+    double dI_db = 0;
+    if(isegment>0 and xl<xknot_(isegment))
+    {
+      // left edge of interval crosses segment boundary
+      integral(a_(isegment-1), b_(isegment-1), yknot_(isegment-1),
+               xl-xknot_(isegment-1), dx_(isegment-1), I, dI_da, dI_db);
+      double I2 = 0;
+      integral(a_(isegment), b_(isegment), yknot_(isegment),
+               0, xr-xknot_(isegment), I2, dI_da, dI_db);
+      I += I2;
+    }
+    else if(isegment<nknot_-2 and xr>xknot_(isegment+1))
+    {
+      // right edge of interval crosses segment boundary
+      integral(a_(isegment), b_(isegment), yknot_(isegment),
+               xl-xknot_(isegment), dx_(isegment), I, dI_da, dI_db);
+      double I2 = 0;
+      integral(a_(isegment+1), b_(isegment+1), yknot_(isegment+1),
+               0, xr-xknot_(isegment+1), I2, dI_da, dI_db);
+      I += I2;
+    }
+    else
+    {
+      integral(a_(isegment), b_(isegment), yknot_(isegment),
+               xl-xknot_(isegment), xr-xknot_(isegment), I, dI_da, dI_db);
+    }
+    return norm_ * I / bin_dx_;
+  }
 }
 
 double LogQuadraticSpline1DPDF::value_and_gradient_1d(double x,  double& dfdx)
@@ -167,30 +218,94 @@ double LogQuadraticSpline1DPDF::value_gradient_and_hessian_1d(double x, double& 
   throw std::runtime_error("LogQuadraticSpline1DPDF::value_gradient_and_hessian_1d not implemented");
 }
 
-double LogQuadraticSpline1DPDF::value_and_parameter_gradient_1d(double x, VecRef gradient)
+double LogQuadraticSpline1DPDF::
+value_and_parameter_gradient_1d(double x, VecRef gradient)
 {
   gradient.resize(num_parameters());
-  if(x<xlo_ or x>=xhi_)
+
+  const double xl = std::max(x-0.5*bin_dx_, xlo_);
+  const double xr = std::min(x+0.5*bin_dx_, xhi_);
+
+  if(xr<xlo_ or xl>xhi_ or norm_<=0.0 or !isfinite(norm_))
   {
     gradient.setZero();
     return 0;
   }
+    
   unsigned isegment = find_segment(x);
-  double xx = x-xknot_(isegment);
-  double val = (a_(isegment)*xx+b_(isegment))*xx+yknot_(isegment);
-  gradient = (a_gradient_.col(isegment)*xx + b_gradient_.col(isegment))*xx;
-  gradient(isegment+1) += 1.0;
-  val = norm_ * std::exp(val);
+
+  if(bin_dx_ == 0)
+  {
+    double xx = x-xknot_(isegment);
+    double val = (a_(isegment)*xx+b_(isegment))*xx+yknot_(isegment);
+    gradient = (a_gradient_.col(isegment)*xx + b_gradient_.col(isegment))*xx;
+    gradient(isegment+1) += 1.0;
+    val = norm_ * std::exp(val);
 #if 0
-  std::cout << "AAA: [" 
-            << a_gradient_.col(isegment).transpose() << " ] [ "
-            << b_gradient_.col(isegment).transpose() << " ] [ "
-            << gradient.transpose() << " ] [ "
-            << norm_gradient_.transpose() << " ] \n";
+    std::cout << "AAA: [" 
+              << a_gradient_.col(isegment).transpose() << " ] [ "
+              << b_gradient_.col(isegment).transpose() << " ] [ "
+              << gradient.transpose() << " ] [ "
+              << norm_gradient_.transpose() << " ] \n";
 #endif
-  gradient += norm_gradient_;
-  gradient *= val;
-  return val;
+    gradient += norm_gradient_;
+    gradient *= val;
+    return val;
+  }
+  else
+  {
+    double I = 0;
+    double dI_da = 0;
+    double dI_db = 0;
+    if(isegment>0 and xl<xknot_(isegment))
+    {
+      // left edge of interval crosses segment boundary
+      integral(a_(isegment-1), b_(isegment-1), yknot_(isegment-1),
+               xl-xknot_(isegment-1), dx_(isegment-1), I, dI_da, dI_db);
+      gradient = dI_da * a_gradient_.col(isegment-1);
+      gradient += dI_db * b_gradient_.col(isegment-1);
+      gradient(isegment) += I;
+
+      double I2 = 0;
+      integral(a_(isegment), b_(isegment), yknot_(isegment),
+               0, xr-xknot_(isegment), I2, dI_da, dI_db);
+      I += I2;
+      gradient += dI_da * a_gradient_.col(isegment);
+      gradient += dI_db * b_gradient_.col(isegment);
+      gradient(1+isegment) += I2;
+    }
+    else if(isegment<nknot_-2 and xr>xknot_(isegment+1))
+    {
+      // right edge of interval crosses segment boundary
+      integral(a_(isegment), b_(isegment), yknot_(isegment),
+               xl-xknot_(isegment), dx_(isegment), I, dI_da, dI_db);
+      gradient = dI_da * a_gradient_.col(isegment);
+      gradient += dI_db * b_gradient_.col(isegment);
+      gradient(1+isegment) += I;
+
+      double I2 = 0;
+      integral(a_(isegment+1), b_(isegment+1), yknot_(isegment+1),
+               0, xr-xknot_(isegment+1), I2, dI_da, dI_db);
+      I += I2;
+      gradient += dI_da * a_gradient_.col(isegment+1);
+      gradient += dI_db * b_gradient_.col(isegment+1);
+      gradient(2+isegment) += I2;
+    }
+    else
+    {
+      integral(a_(isegment), b_(isegment), yknot_(isegment),
+               xl-xknot_(isegment), xr-xknot_(isegment), I, dI_da, dI_db);
+      gradient = dI_da * a_gradient_.col(isegment);
+      gradient += dI_db * b_gradient_.col(isegment);
+      gradient(1+isegment) += I;      
+    }
+
+    
+    gradient *= norm_/bin_dx_;
+    I *= norm_/bin_dx_;
+    gradient += norm_gradient_*I;
+    return I;
+  }
 }
 
 double LogQuadraticSpline1DPDF::

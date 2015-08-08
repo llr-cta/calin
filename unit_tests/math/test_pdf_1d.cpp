@@ -606,7 +606,7 @@ TEST(TestFreezeThaw, ParameterHessianCheck) {
 TEST(TestLogQuadSpline, UnnormalisedValues) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, false);
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, 0.0, ParamZeroType::SLOPE, ParamZeroLocation::LEFT, false);
   Eigen::VectorXd p(4);
   p << 0, 1.0, 2.0, 1.0;
   pdf.set_parameter_values(p);
@@ -620,7 +620,7 @@ TEST(TestLogQuadSpline, UnnormalisedValues) {
 TEST(TestLogQuadSpline, UnnormalisedGradientCheck) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, false);
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, 0.0, ParamZeroType::SLOPE, ParamZeroLocation::LEFT, false);
   Eigen::VectorXd p(4);
   p << 0, 1.0, 2.0, 1.0;
   pdf.set_parameter_values(p);
@@ -639,7 +639,7 @@ TEST(TestLogQuadSpline, UnnormalisedGradientCheck) {
 TEST(TestLogQuadSpline, UnnormalisedParameterGradientCheck) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, false);
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, 0.0, ParamZeroType::SLOPE, ParamZeroLocation::LEFT, false);
 
   Eigen::VectorXd p(4);
   p << -0.5, 1.0, 2.0, 1.5;
@@ -671,6 +671,10 @@ TEST(TestLogQuadSpline, NormalisedValues_ANeg) {
   Eigen::VectorXd p_readback;
   p_readback = pdf.parameter_values();
   EXPECT_EQ(p, p_readback);
+  ASSERT_EQ(pdf.a().size(), 2);
+  ASSERT_EQ(pdf.b().size(), 2);
+  ASSERT_LT(pdf.a()(0), 0);
+  ASSERT_LT(pdf.a()(1), 0);
   double dx = 0.001;
   double sum = 0;
   for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
@@ -687,6 +691,10 @@ TEST(TestLogQuadSpline, NormalisedValues_APos) {
   Eigen::VectorXd p_readback;
   p_readback = pdf.parameter_values();
   EXPECT_EQ(p, p_readback);
+  ASSERT_EQ(pdf.a().size(), 2);
+  ASSERT_EQ(pdf.b().size(), 2);
+  ASSERT_GT(pdf.a()(0), 0);
+  ASSERT_GT(pdf.a()(1), 0);
   double dx = 0.001;
   double sum = 0;
   for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
@@ -703,13 +711,17 @@ TEST(TestLogQuadSpline, NormalisedValues_AZero) {
   Eigen::VectorXd p_readback;
   p_readback = pdf.parameter_values();
   EXPECT_EQ(p, p_readback);
+  ASSERT_EQ(pdf.a().size(), 2);
+  ASSERT_EQ(pdf.b().size(), 2);
+  ASSERT_EQ(pdf.a()(0), 0);
+  ASSERT_EQ(pdf.a()(1), 0);
   double dx = 0.001;
   double sum = 0;
   for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
   EXPECT_NEAR(sum*dx, 1.0, dx);
 }
 
-TEST(TestLogQuadSpline, NormalisedValues_BZero) {
+TEST(TestLogQuadSpline, NormalisedValues_ABZero) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
   pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5);
@@ -719,6 +731,12 @@ TEST(TestLogQuadSpline, NormalisedValues_BZero) {
   Eigen::VectorXd p_readback;
   p_readback = pdf.parameter_values();
   EXPECT_EQ(p, p_readback);
+  ASSERT_EQ(pdf.a().size(), 2);
+  ASSERT_EQ(pdf.b().size(), 2);
+  ASSERT_EQ(pdf.a()(0), 0);
+  ASSERT_EQ(pdf.a()(1), 0);
+  ASSERT_EQ(pdf.b()(0), 0);
+  ASSERT_EQ(pdf.b()(1), 0);
   double dx = 0.001;
   double sum = 0;
   for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
@@ -728,7 +746,7 @@ TEST(TestLogQuadSpline, NormalisedValues_BZero) {
 TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_ANeg) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, true);
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5);
 
   Eigen::VectorXd p(4);
   p << 2.0, 1.0, 2.0, 1.0;
@@ -753,7 +771,7 @@ TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_ANeg) {
 TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_APos) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, true);
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5);
 
   Eigen::VectorXd p(4);
   p << -1.5, 2.0, 1.0, 2.0;
@@ -778,7 +796,7 @@ TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_APos) {
 TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_AZero) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, true);
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5);
 
   Eigen::VectorXd p(4);
   p << 1.0, 1.0, 2.0, 3.0;
@@ -803,7 +821,7 @@ TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_AZero) {
 TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_ABZero) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, true);
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5);
 
   Eigen::VectorXd p(4);
   p << 0.0, 1.0, 1.0, 1.0;
@@ -824,6 +842,190 @@ TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_ABZero) {
     EXPECT_LE(good(3), 0.5);
   }
 }
+
+TEST(TestLogQuadSpline, BinnedValues_ANeg) {
+  double dx = 0.001;
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, dx);
+  Eigen::VectorXd p(4);
+  p << 2.0, 1.0, 2.0, 1.0;
+  pdf.set_parameter_values(p);
+  Eigen::VectorXd p_readback;
+  p_readback = pdf.parameter_values();
+  EXPECT_EQ(p, p_readback);
+  ASSERT_EQ(pdf.a().size(), 2);
+  ASSERT_EQ(pdf.b().size(), 2);
+  ASSERT_LT(pdf.a()(0), 0);
+  ASSERT_LT(pdf.a()(1), 0);
+  double sum = 0;
+  for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  EXPECT_NEAR(sum*dx, 1.0, dx);
+}
+
+TEST(TestLogQuadSpline, BinnedValues_APos) {
+  double dx = 0.001;
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, dx);
+  Eigen::VectorXd p(4);
+  p << -1.5, 2.0, 1.0, 2.0;
+  pdf.set_parameter_values(p);
+  Eigen::VectorXd p_readback;
+  p_readback = pdf.parameter_values();
+  EXPECT_EQ(p, p_readback);
+  ASSERT_EQ(pdf.a().size(), 2);
+  ASSERT_EQ(pdf.b().size(), 2);
+  ASSERT_GT(pdf.a()(0), 0);
+  ASSERT_GT(pdf.a()(1), 0);
+  double sum = 0;
+  for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  EXPECT_NEAR(sum*dx, 1.0, dx);
+}
+
+TEST(TestLogQuadSpline, BinnedValues_AZero) {
+  double dx = 0.001;
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, dx);
+  Eigen::VectorXd p(4);
+  p << 1.0, 1.0, 2.0, 3.0;
+  pdf.set_parameter_values(p);
+  Eigen::VectorXd p_readback;
+  p_readback = pdf.parameter_values();
+  EXPECT_EQ(p, p_readback);
+  ASSERT_EQ(pdf.a().size(), 2);
+  ASSERT_EQ(pdf.b().size(), 2);
+  ASSERT_EQ(pdf.a()(0), 0);
+  ASSERT_EQ(pdf.a()(1), 0);
+  double sum = 0;
+  for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  EXPECT_NEAR(sum*dx, 1.0, dx);
+}
+
+TEST(TestLogQuadSpline, BinnedValues_ABZero) {
+  double dx = 0.001;
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, dx);
+  Eigen::VectorXd p(4);
+  p << 0.0, 1.0, 1.0, 1.0;
+  pdf.set_parameter_values(p);
+  Eigen::VectorXd p_readback;
+  p_readback = pdf.parameter_values();
+  EXPECT_EQ(p, p_readback);
+  ASSERT_EQ(pdf.a().size(), 2);
+  ASSERT_EQ(pdf.b().size(), 2);
+  ASSERT_EQ(pdf.a()(0), 0);
+  ASSERT_EQ(pdf.a()(1), 0);
+  ASSERT_EQ(pdf.b()(0), 0);
+  ASSERT_EQ(pdf.b()(1), 0);
+  double sum = 0;
+  for(double x=-1.5+dx/2; x<1.5;x+=dx)sum += pdf.value_1d(x);
+  EXPECT_NEAR(sum*dx, 1.0, dx);
+}
+
+TEST(TestLogQuadSpline, BinnedParameterGradientCheck_ANeg) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, 0.1);
+
+  Eigen::VectorXd p(4);
+  p << 2.0, 1.0, 2.0, 1.0;
+  Eigen::VectorXd dp(4);
+  dp << 0.001, 0.001, 0.001, 0.001;
+
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = -1.5; x(0)<1.5; x(0)+=0.1)
+  {
+    //std::cout << ">>>>>>>>>> x=" << x(0) << " <<<<<<<<<<<<<\n";
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(4);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
+  }
+}
+
+TEST(TestLogQuadSpline, BinnedParameterGradientCheck_APos) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, 0.1);
+
+  Eigen::VectorXd p(4);
+  p << -1.5, 2.0, 1.0, 2.0;
+  Eigen::VectorXd dp(4);
+  dp << 0.001, 0.001, 0.001, 0.001;
+
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = -1.5; x(0)<1.5; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(4);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
+  }
+}
+
+TEST(TestLogQuadSpline, BinnedParameterGradientCheck_AZero) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, 0.1);
+
+  Eigen::VectorXd p(4);
+  p << 1.0, 1.0, 2.0, 3.0;
+  Eigen::VectorXd dp(4);
+  dp << 0.001, 0.001, 0.001, 0.001;
+
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = -1.5; x(0)<1.5; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(4);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
+  }
+}
+
+TEST(TestLogQuadSpline, BinnedParameterGradientCheck_ABZero) {
+  Eigen::VectorXd xknot(3);
+  xknot << -1.0, 0.0, 1.0;
+  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, 0.1);
+
+  Eigen::VectorXd p(4);
+  p << 0.0, 1.0, 1.0, 1.0;
+  Eigen::VectorXd dp(4);
+  dp << 0.001, 0.001, 0.001, 0.001;
+
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = -1.5; x(0)<1.5; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(4);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
+  }
+}
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

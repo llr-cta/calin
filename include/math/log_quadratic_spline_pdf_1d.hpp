@@ -23,9 +23,10 @@ public:
   constexpr static double inf = std::numeric_limits<double>::infinity();
   
   LogQuadraticSpline1DPDF(ConstVecRef xknots,
-                          double xlo, double xhi, bool normalize = true,
+                          double xlo, double xhi, double bin_dx = 0.0,
                           ParamZeroType p0_type = ParamZeroType::SLOPE,
                           ParamZeroLocation p0_loc = ParamZeroLocation::LEFT,
+                          bool normalize = true,
                           const std::string& yunits = "y-value units",
                           const std::string& xunits = "x-value units",
                           double error_up = 0.5);
@@ -57,7 +58,10 @@ public:
 
   double error_up() override;
 
+  ConstVecRef a() const { return a_; }
+  ConstVecRef b() const { return b_; }
   ConstVecRef xknot() const { return xknot_; }
+  ConstVecRef yknot() const { return yknot_; }
   
   // Moments
 
@@ -77,6 +81,7 @@ public:
   double error_up_          = 0.5;
   double xlo_               = 0.0;
   double xhi_               = inf;
+  double bin_dx_            = 0.0;
   ParamZeroType p0_type_    = ParamZeroType::SLOPE;
   ParamZeroLocation p0_loc_ = ParamZeroLocation::LEFT;
 
