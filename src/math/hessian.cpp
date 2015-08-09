@@ -163,8 +163,11 @@ calculate_hessian_1st_order_dx(function::MultiAxisFunction& fcn,
     fcn.value_and_gradient(xx, grad_p);
     xx(ipar) = xn;
     fcn.value_and_gradient(xx, grad_n);
+#if 0
     std::cout << ipar << ' ' << xp << ' ' << xn << ' '
-              << "[ " << grad_p.transpose() << " ] [ " << grad_n.transpose() << "]\n";
+              << "[ " << grad_p.transpose() << " ] [ "
+              << grad_n.transpose() << "]\n";
+#endif
     xx(ipar) = x(ipar); // reset for next loop
     for(unsigned jpar=0;jpar<npar;jpar++)
       hessian(ipar,jpar) = (grad_p(jpar) - grad_n(jpar))/h2;
@@ -176,7 +179,9 @@ calculate_hessian_1st_order_dx(function::MultiAxisFunction& fcn,
       hessian(ipar,jpar) = hessian(jpar,ipar) =
                            0.5*(hessian(ipar,jpar) + hessian(jpar,ipar));
 
+#if 0
   std::cout << hessian << '\n';
+#endif
 }
 
 void hessian::
