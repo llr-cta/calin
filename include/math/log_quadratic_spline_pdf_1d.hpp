@@ -58,10 +58,14 @@ public:
 
   double error_up() override;
 
-  ConstVecRef a() const { return a_; }
-  ConstVecRef b() const { return b_; }
   ConstVecRef xknot() const { return xknot_; }
   ConstVecRef yknot() const { return yknot_; }
+  ConstVecRef a() const { return a_; }
+  ConstVecRef b() const { return b_; }
+  Eigen::VectorXd a_gradient(unsigned isegment) const;
+  Eigen::VectorXd b_gradient(unsigned isegment) const;
+  double norm() const { return norm_; }
+  ConstVecRef log_norm_gradient() const { return norm_gradient_; }
   
   // Moments
 

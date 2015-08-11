@@ -329,6 +329,31 @@ void LogQuadraticSpline1DPDF::mean_and_variance(double& mean, double& var)
   throw std::runtime_error("LogQuadraticSpline1DPDF::mean_and_variance not implemented");
 }
 
+Eigen::VectorXd LogQuadraticSpline1DPDF::a_gradient(unsigned isegment) const
+{
+  if(isegment > nknot_-2)
+  {
+    std::ostringstream stream;
+    stream << "LogQuadraticSpline1DPDF::a_gradient: isegment out of range: "
+           << isegment << " > " << nknot_-2;
+    throw(std::out_of_range(stream.str()));
+  }
+  return a_gradient_.col(isegment);
+}
+
+Eigen::VectorXd LogQuadraticSpline1DPDF::b_gradient(unsigned isegment) const
+{
+  if(isegment > nknot_-2)
+  {
+    std::ostringstream stream;
+    stream << "LogQuadraticSpline1DPDF::b_gradient: isegment out of range: "
+           << isegment << " > " << nknot_-2;
+    throw(std::out_of_range(stream.str()));
+  }
+  return b_gradient_.col(isegment);
+}
+
+
 unsigned LogQuadraticSpline1DPDF::find_segment(double x) const
 {
   unsigned ix = std::lower_bound(xknot_.data(), xknot_.data()+nknot_-1, x)-xknot_.data();
