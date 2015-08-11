@@ -811,7 +811,8 @@ multi_electron_spectrum_gradient(unsigned iparam) const
   return std::vector<double>(mes_grad_[iparam], mes_grad_[iparam]+nsample_); 
 }
 
-std::vector<double> GeneralPoissonMES::pedestal_spectrum_gradient(unsigned iparam) const
+std::vector<double> GeneralPoissonMES::
+pedestal_spectrum_gradient(unsigned iparam) const
 {
   if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
     throw std::out_of_range("GeneralPoissonMES::pedestal_spectrum_gradient: "
