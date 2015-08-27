@@ -497,7 +497,8 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
     opt_message_ = "Could not set objective function";
     return opt_status_;
   }
-  
+
+  bool xinit_inside_xlim_lo = true;
   if(!xlim_lo.empty() &&
      std::count(xlim_lo.begin(), xlim_lo.end(), neg_inf)!=xlim_lo.size())
   {
@@ -507,8 +508,12 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
       opt_message_ = "Could not set lower bounds";
       return opt_status_;
     }
+    // The STL function "equal" is badly named!!
+    xinit_inside_xlim_lo = std::equal(xopt.data(), xopt.data()+xopt.size(),
+                                      xlim_lo.begin(), std::greater_equal<double>());
   }
 
+  bool xinit_inside_xlim_hi = true;
   if(!xlim_hi.empty() &&
      std::count(xlim_hi.begin(), xlim_hi.end(), pos_inf)!=xlim_hi.size())
   {
@@ -518,6 +523,9 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
       opt_message_ = "Could not set upper bounds";
       return opt_status_;
     }
+    // The STL function "equal" is badly named!!
+    xinit_inside_xlim_hi = std::equal(xopt.data(), xopt.data()+xopt.size(),
+                                      xlim_hi.begin(), std::less_equal<double>());
   }
   
   nlopt_status = nlopt_set_initial_step(opt.get(), &stepsize.front());
@@ -568,6 +576,17 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
     case NLOPT_INVALID_ARGS:
       opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
       opt_message_ = "Invalid arguments";
+      if(!xinit_inside_xlim_lo or xinit_inside_xlim_hi)
+      {
+        opt_message_ += " (initial value exceeds ";
+        if(!xinit_inside_xlim_lo) {
+          opt_message_ += "lower";
+          if(!xinit_inside_xlim_hi)opt_message_ += " and upper";
+        } else {
+          opt_message_ += "upper";
+        }
+        opt_message_ += " limits)";
+      }
       break;
     case NLOPT_OUT_OF_MEMORY:
       opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;

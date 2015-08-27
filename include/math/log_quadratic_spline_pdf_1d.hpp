@@ -2,7 +2,7 @@
 
    calin/math/log_quadratic_spline_pdf_1d.hpp -- Stephen Fegan -- 2015-07-30
 
-   PDF base on quadratic spline in log space.
+   PDF based on quadratic spline in log space.
 
 */
 
