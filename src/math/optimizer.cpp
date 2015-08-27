@@ -110,58 +110,90 @@ void Optimizer::opt_starting(const std::string& opt_name,
   xbest_                = std_to_eigenvec(initial_values());
   progress_update_iter_ = 0;
   progress_update_time_ = 0;
-
-  // Print status message if required by verbosity
-  if(verbose_ == OptimizerVerbosityLevel::SILENT or
-     verbose_ == OptimizerVerbosityLevel::ALL_FCN_EVALS_ONLY)return;
-
-  auto L = LOG(INFO);
-  L << "Optimization using " << opt_name;
-  if(requires_gradient || requires_hessian)
-  {
-    L << " (requires: ";
-    if(requires_gradient)
-    {
-      L << "gradient";
-      if(requires_hessian)L << " and hessian)";
-      else L << ')';
-    }
-    else
-      L << "hessian)";
-  }
-  L << '\n';
-
-  L << "- stopping criteria:";
-  bool has_crit = false;
-  if(abs_tolerance() > 0) {
-    L << " dF < " << abs_tolerance(); has_crit = true; }
-  if(rel_tolerance() > 0) { if(has_crit) L << " or";
-    L << " dF/F < " << rel_tolerance(); has_crit = true; }
-  if(max_iterations() > 0) { if(has_crit) L << " or";
-    L << " N_eval > " << max_iterations(); }
-  if(max_walltime() > 0) { if(has_crit) L << " or";
-    L << " T_wall > " << max_walltime() << " sec"; }
-  L << '\n';
   
   unsigned naxis = fcn_->num_domain_axes();
   unsigned wnaxis = std::max(1U, num_digits(naxis));
   
-  L << "- function: N_dim = " << naxis;
-  if(fcn_->can_calculate_gradient() || fcn_->can_calculate_hessian())
+  // Print status message if required by verbosity
+  if(verbose_ != OptimizerVerbosityLevel::SILENT and
+     verbose_ != OptimizerVerbosityLevel::ALL_FCN_EVALS_ONLY)
   {
-    L << ", provides: ";
-    if(fcn_->can_calculate_gradient())
+    auto L = LOG(INFO);
+    L << "Optimization using " << opt_name;
+    if(requires_gradient || requires_hessian)
     {
-      L << "gradient";
-      if(fcn_->can_calculate_hessian())L << " and hessian";
+      L << " (requires: ";
+      if(requires_gradient)
+      {
+        L << "gradient";
+        if(requires_hessian)L << " and hessian)";
+        else L << ')';
+      }
+      else
+        L << "hessian)";
     }
-    else
-      L << "hessian";
+    L << '\n';
+    
+    L << "- stopping criteria:";
+    bool has_crit = false;
+    if(abs_tolerance() > 0) {
+      L << " dF < " << abs_tolerance(); has_crit = true; }
+    if(rel_tolerance() > 0) { if(has_crit) L << " or";
+      L << " dF/F < " << rel_tolerance(); has_crit = true; }
+    if(max_iterations() > 0) { if(has_crit) L << " or";
+      L << " N_eval > " << max_iterations(); }
+    if(max_walltime() > 0) { if(has_crit) L << " or";
+      L << " T_wall > " << max_walltime() << " sec"; }
+    L << '\n';
+  
+    L << "- function: N_dim = " << naxis;
+    if(fcn_->can_calculate_gradient() || fcn_->can_calculate_hessian())
+    {
+      L << ", provides: ";
+      if(fcn_->can_calculate_gradient())
+      {
+        L << "gradient";
+        if(fcn_->can_calculate_hessian())L << " and hessian";
+      }
+      else
+        L << "hessian";
+    }
+    L << '\n';
   }
-  L << '\n';
+
+  if(this->can_impose_box_constraints())
+  {
+    bool xinit_inside_xlim_lo = true;
+    // The STL function "equal" is badly named!!
+    if(xbest_.size() == lower_limit.size())
+      xinit_inside_xlim_lo = std::equal(xbest_.data(), xbest_.data()+xbest_.size(),
+                                        lower_limit.begin(), std::greater_equal<double>());
+    
+    bool xinit_inside_xlim_hi = true;
+    // The STL function "equal" is badly named!!
+    if(xbest_.size() == upper_limit.size())
+      xinit_inside_xlim_hi = std::equal(xbest_.data(), xbest_.data()+xbest_.size(),
+                                        upper_limit.begin(), std::less_equal<double>());
+    
+    if(!xinit_inside_xlim_lo or !xinit_inside_xlim_hi)
+    {
+      std::string message;
+      message += "Initial values outside ";
+      if(!xinit_inside_xlim_lo) {
+        message += "lower";
+        if(!xinit_inside_xlim_hi)message += " and upper";
+      } else {
+        message += "upper";
+      }
+      message += " limits";
+      LOG(WARNING) << message;
+    }
+  }
   
   if(verbose_ == OptimizerVerbosityLevel::SUMMARY_ONLY or
      verbose_ == OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS)return;
+
+  auto L = LOG(INFO);
 
   unsigned wname = 0;
   auto axes = fcn_->domain_axes();
@@ -171,7 +203,8 @@ void Optimizer::opt_starting(const std::string& opt_name,
   L << "List of function dimensions: \n"
     << "- " << std::left
     << std::setw(wnaxis) << "#" << ' '
-    << std::setw(wname) << "Name" << ' ';
+    << std::setw(wname) << "Name" << ' '
+    << std::setw(12) << "Init val" << ' ';
   if(this->can_impose_box_constraints())
     L << std::setw(8) << "Lo bound" << ' '
       << std::setw(8) << "Hi bound" << ' ';
@@ -180,7 +213,8 @@ void Optimizer::opt_starting(const std::string& opt_name,
   for(unsigned iaxis = 0; iaxis<axes.size(); iaxis++)
   {
     L << "- " << std::setw(wnaxis) << iaxis << ' '
-      << std::setw(wname) << axes[iaxis].name << ' ';
+      << std::setw(wname) << axes[iaxis].name << ' '
+      << std::setw(12) << xbest_[iaxis] << ' ';
     if(this->can_impose_box_constraints())
     {
       if(iaxis < lower_limit.size())

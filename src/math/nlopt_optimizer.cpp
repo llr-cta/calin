@@ -576,17 +576,6 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
     case NLOPT_INVALID_ARGS:
       opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
       opt_message_ = "Invalid arguments";
-      if(!xinit_inside_xlim_lo or xinit_inside_xlim_hi)
-      {
-        opt_message_ += " (initial value exceeds ";
-        if(!xinit_inside_xlim_lo) {
-          opt_message_ += "lower";
-          if(!xinit_inside_xlim_hi)opt_message_ += " and upper";
-        } else {
-          opt_message_ += "upper";
-        }
-        opt_message_ += " limits)";
-      }
       break;
     case NLOPT_OUT_OF_MEMORY:
       opt_status_ = OptimizationStatus::OPTIMIZER_FAILURE;
