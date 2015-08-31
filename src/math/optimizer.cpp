@@ -204,7 +204,7 @@ void Optimizer::opt_starting(const std::string& opt_name,
     << "- " << std::left
     << std::setw(wnaxis) << "#" << ' '
     << std::setw(wname) << "Name" << ' '
-    << std::setw(12) << "Init val" << ' ';
+    << std::setw(12) << "Initial val" << ' ';
   if(this->can_impose_box_constraints())
     L << std::setw(8) << "Lo bound" << ' '
       << std::setw(8) << "Hi bound" << ' ';

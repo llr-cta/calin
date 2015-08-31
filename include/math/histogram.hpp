@@ -509,7 +509,7 @@ bool BasicHistogram1D<Acc>::operator==(const BasicHistogram1D& o) const
 
 // ============================================================================
 //
-// PDF and CDF
+// CDF
 //
 // ============================================================================
 
@@ -562,6 +562,11 @@ class BinnedCDF: public BinnedData1D<double>
     set_name(hist.name());
   }
 
+#ifdef SWIG
+  BinnedCDF(const BasicHistogram1D<DefaultAccumulator>& hist):
+      BinnedCDF<DefaultAccumulator>(hist) { }
+#endif
+  
   // Getters and setters
   std::string name() const { return name_; }
   void set_name(const std::string& name) { name_=name; }
