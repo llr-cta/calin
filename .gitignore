@@ -1,5 +1,5 @@
 mybuild/
-mybuild-work/
-mybuild-home/
+mybuild-work*/
+mybuild-home*/
 .#*
 .ipynb*
