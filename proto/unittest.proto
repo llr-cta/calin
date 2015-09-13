@@ -1,0 +1,59 @@
+//-*-mode:protobuf; mode:font-lock;-*-
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.unittest;
+
+message UnitTestSimpleSubMessage {
+  int32   ssm_i32 = 1;
+}
+
+message UnitTestComplexSubMessage {
+  int32   csm_i32 = 1;
+  UnitTestSimpleSubMessage csm_ssm = 2;
+}
+
+message UnitTestInlinedSubMessage {
+  int32   ism_i32 = 1;
+  UnitTestSimpleSubMessage ism_ssm = 2 [(CFO).sql.inline_message = true];
+}
+
+message UnitTestVectorSubMessage {
+  repeated int32 vsm_vec_i32 = 1;
+  repeated UnitTestSimpleSubMessage vsm_vec_ssm  = 2;
+}
+
+message UnitTestMessage {
+  int32   i32    = 1;
+  int64   i64    = 2;
+  float   f      = 3;
+  string  s      = 4;
+  UnitTestSimpleSubMessage ssm = 5;
+  UnitTestSimpleSubMessage ssm_inline = 6 [(CFO).sql.inline_message = true];
+  UnitTestComplexSubMessage csm = 7;
+  UnitTestComplexSubMessage csm_inline = 8 [(CFO).sql.inline_message = true];
+  UnitTestInlinedSubMessage ism = 9;
+  UnitTestInlinedSubMessage ism_inline = 10 [(CFO).sql.inline_message = true];
+  UnitTestVectorSubMessage vsm = 11;
+  UnitTestVectorSubMessage vsm_inline = 12 [(CFO).sql.inline_message = true];
+
+  repeated int32   vec_i32  = 101;
+  repeated int64   vec_i64  = 102;
+  repeated float   vec_f    = 103;
+  repeated string  vec_s    = 104;
+  repeated UnitTestSimpleSubMessage vec_ssm = 105;
+  repeated UnitTestSimpleSubMessage vec_ssm_inline = 106 [(CFO).sql.inline_message = true];
+  repeated UnitTestComplexSubMessage vec_csm = 107;
+  repeated UnitTestComplexSubMessage vec_csm_inline = 108 [(CFO).sql.inline_message = true];
+  repeated UnitTestInlinedSubMessage vec_ism = 109;
+  repeated UnitTestInlinedSubMessage vec_ism_inline = 110 [(CFO).sql.inline_message = true];
+  repeated UnitTestVectorSubMessage vec_vsm = 111;
+
+  map<string, int32> map_i32 = 201;
+  map<string, UnitTestSimpleSubMessage> map_ssm = 205;
+  map<string, UnitTestComplexSubMessage> map_csm = 207;
+  map<string, UnitTestInlinedSubMessage> map_ism = 209;
+  map<string, UnitTestVectorSubMessage> map_vsm = 211;
+}

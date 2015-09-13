@@ -8,9 +8,10 @@ package calin;
 
 message SQLOptions
 {
-  bool enable          = 1;
-  bool is_index        = 2;
+  bool dont_store      = 1;
+  bool is_key          = 2;
   bool inline_message  = 3;
+  string index_name    = 4;
 };
  
 message FieldOptions
@@ -21,9 +22,10 @@ message FieldOptions
     INT_8    = 2;
   }
       
-  string desc                   = 1;
-  string units                  = 2;
-  Int32StorageType int32_type   = 3;
+  string            desc        = 1;
+  string            units       = 2;
+  Int32StorageType  int32_type  = 3;
+  bool              dont_store  = 4;
   SQLOptions        sql         = 100;
 };
 
