@@ -7,10 +7,13 @@
 */
 
 #include <deque>
+#include <stdexcept>
 
 #include "proto/calin.pb.h"
 #include "io/sql_transceiver.hpp"
+#include "io/log.hpp"
 
+using namespace calin::io::log;
 using namespace calin::io::sql_transceiver;
 using namespace google::protobuf;
 
@@ -26,14 +29,13 @@ create_tables(const std::string& table_name,
               const std::string& instance_desc,
               bool write_sql_to_log)
 {
-  SQLTable* t { make_sqltable_tree(table_name, d_data) };
-  propagate_keys(t);
-  iterate_over_tables(t, [this](const SQLTable* it){
-      std::cout << sql_create_table(it) << '\n'; });
+  SQLTable* t = make_keyed_sqltable_tree(table_name, d_data, d_key, false);
+  if(write_sql_to_log)
+    iterate_over_tables(t, [this](const SQLTable* it){
+        LOG(VERBOSE) << sql_create_table(it) << '\n'; });
   delete t;
   return true;
 }
-
 
 std::vector<std::pair<std::string,std::string> >
 SQLTransceiver::list_all_table_columns(SQLTable* t)
@@ -66,11 +68,53 @@ bool SQLTransceiver::is_single_table(const google::protobuf::Descriptor* d)
 }
 
 calin::io::sql_transceiver::SQLTransceiver::SQLTable* SQLTransceiver::
+make_keyed_sqltable_tree(const std::string& table_name,
+                         const google::protobuf::Descriptor* d_data,
+                         const google::protobuf::Descriptor* d_key,
+                         bool ignore_key_option)
+{
+  SQLTable* t { make_sqltable_tree(table_name, d_data) };
+  SQLTable* key_t { nullptr };
+  std::vector<const SQLTableField*> keys;
+  if(d_key)
+  {
+    key_t = make_extkey_tree("key", d_key);
+    keys.insert(keys.begin(), key_t->fields.begin(), key_t->fields.end());
+  }
+  propagate_keys(t, keys);
+  delete key_t;
+  return t;
+}
+
+calin::io::sql_transceiver::SQLTransceiver::SQLTable* SQLTransceiver::
 make_sqltable_tree(const std::string& table_name,
                    const google::protobuf::Descriptor* d,
-                   SQLTable* parent_table,
-                   const google::protobuf::FieldDescriptor* parent_field_d,
                    bool ignore_key_option)
+{
+  return r_make_sqltable_tree(table_name, d, nullptr, nullptr,
+                              ignore_key_option);
+}
+  
+calin::io::sql_transceiver::SQLTransceiver::SQLTable* SQLTransceiver::
+make_extkey_tree(const std::string& table_name,
+                 const google::protobuf::Descriptor* d)
+{
+  SQLTable* t =
+      r_make_sqltable_tree(table_name, d, nullptr, nullptr, true);
+  if(!t->sub_tables.empty())
+    throw std::invalid_argument(std::string("SQL key message ") +
+                                d->full_name() +
+                                std::string(" cannot have any sub tables"));
+  for(auto f : t->fields)f->field_name = user_key_name(f->field_name);
+  return t;
+}
+
+calin::io::sql_transceiver::SQLTransceiver::SQLTable* SQLTransceiver::
+r_make_sqltable_tree(const std::string& table_name,
+                     const google::protobuf::Descriptor* d,
+                     SQLTable* parent_table,
+                     const google::protobuf::FieldDescriptor* parent_field_d,
+                     bool ignore_key_option)
 {
   SQLTable* t { new SQLTable };
   t->parent_table        = parent_table;
@@ -91,8 +135,8 @@ make_sqltable_tree(const std::string& table_name,
     
     if(f->type()==FieldDescriptor::TYPE_MESSAGE)
     {
-      sub_table = make_sqltable_tree(sub_name(table_name, f->name()),
-                                     f->message_type(), t, f);
+      sub_table = r_make_sqltable_tree(sub_name(table_name, f->name()),
+                                       f->message_type(), t, f, true);
 
       if((parent_field_d and parent_field_d->is_map()) or
          (!f->is_repeated() and fopt->HasExtension(CFO) and
@@ -180,7 +224,8 @@ make_sqltable_tree(const std::string& table_name,
 
 void SQLTransceiver::prune_empty_tables(SQLTable* t)
 {
-  iterate_over_tables(t, [](SQLTable* t) { if(t->fields.empty()) {
+  iterate_over_tables(t, [](SQLTable* t) {
+      if(t->fields.empty()) {
         for(auto st : t->sub_tables) { st->parent_table = t->parent_table; }
         auto sti = std::find(t->parent_table->sub_tables.begin(),
                              t->parent_table->sub_tables.end(), t);
@@ -209,6 +254,19 @@ void SQLTransceiver::propagate_keys(SQLTable* t,
   }
   for(unsigned ikey=keys.size();ikey<t->fields.size();ikey++)
     if(t->fields[ikey]->is_key())keys.push_back(t->fields[ikey]);
+  if(keys.empty())
+  {
+    // No keys, add OID
+    SQLTableField* f { new SQLTableField };
+    enum FieldType {
+      KEY_INHERITED, KEY_USER_SUPPLIED, KEY_PROTO_DEFINED, KEY_OID,
+      KEY_LOOP_ID, KEY_MAP_KEY, POD };
+    f->table       = t;
+    f->field_type  = SQLTableField::KEY_OID;
+    f->field_name  = sub_name(t->table_name,"oid");
+    f->field_d     = nullptr;
+    keys.push_back(f);
+  }
   for(auto it : t->sub_tables)
     propagate_keys(it, keys);
 }
@@ -252,16 +310,19 @@ std::string SQLTransceiver::sql_type(const google::protobuf::FieldDescriptor* d)
   return "unknown";
 }
 
-std::string SQLTransceiver::sql_create_table(const SQLTable* t) 
+std::string SQLTransceiver::
+sql_create_table(const SQLTable* t, bool if_not_exists) 
 {
   std::ostringstream sql;
   std::vector<const SQLTableField*> keys;
-  sql << "CREATE TABLE " << sql_table_name(t->table_name) << " ( \n";
+  sql << "CREATE TABLE ";
+  if(if_not_exists)sql << "IF NOT EXISTS ";
+  sql << sql_table_name(t->table_name) << " ( \n";
   for ( auto f : t->fields )
   {
     if(f->is_key())keys.push_back(f);
     sql << "  " << sql_field_name(f->field_name) << ' ' << sql_type(f->field_d);
-    if(f != t->fields.back())sql << ',';
+    if(f != t->fields.back() or !keys.empty())sql << ',';
     if(f->field_d)
     {
       const google::protobuf::FieldOptions* fopt { &f->field_d->options() };
@@ -278,17 +339,17 @@ std::string SQLTransceiver::sql_create_table(const SQLTable* t)
     }
     sql << '\n';
   }
-  sql << ')';
   if(!keys.empty())
   {
-    sql << " PRIMARY KEY (\n";
+    sql << "  PRIMARY KEY (\n";
     for(auto f : keys)
     {
-      sql << "  " << sql_field_name(f->field_name);
+      sql << "    " << sql_field_name(f->field_name);
       if(f != keys.back())sql << ',';
       sql << '\n';
     }
-    sql << ')';
+    sql << "  )\n";
   }
+  sql << ')';
   return sql.str();
 }

@@ -1,0 +1,28 @@
+//-*-mode:protobuf; mode:font-lock;-*-
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.io;
+
+message SQLTable
+{
+  string table_name     = 1 [(CFO).sql.is_key=true,
+                             (CFO).desc='Full table name'];
+  string description    = 2 [(CFO).desc='Description of table'];  
+}
+
+message SQLTableField
+{
+  string table_name     = 1 [(CFO).sql.is_key=true,
+                             (CFO).desc='Full table name'];
+  string field_name     = 2 [(CFO).sql.is_key=true,
+                             (CFO).desc='Full field name'];
+  string sql_table_name = 3 [(CFO).desc='SQL table name'];
+  string sql_field_name = 4 [(CFO).desc='SQL field name'];
+  string description    = 5 [(CFO).desc='Description of table field'];
+  string units          = 6 [(CFO).desc='Units for data in table field'];
+  string proto_message  = 7 [(CFO).desc='Protobuf message type for this field'];
+  string proto_field    = 8 [(CFO).desc='Protobuf field name for this field'];
+}

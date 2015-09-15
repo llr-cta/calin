@@ -25,17 +25,20 @@ namespace calin { namespace io { namespace sql_transceiver {
 class SQLite3Transceiver: public SQLTransceiver
 {
  public:
-  SQLite3Transceiver(sqlite3* db): SQLTransceiver(), db_(db) { }
+  SQLite3Transceiver(const std::string& filename);
+  SQLite3Transceiver(sqlite3* db, bool inherit_db = false):
+      SQLTransceiver(), db_(db), inherit_db_(inherit_db) { }
   virtual ~SQLite3Transceiver();
 
   bool create_tables(const std::string& table_name,
                      const google::protobuf::Descriptor* d_data,
                      const google::protobuf::Descriptor* d_key = nullptr,
                      const std::string& instance_desc = "",
-                     bool log_sql = false, bool commit = true) override; 
+                     bool write_sql_to_log = false) override;
 
  private:
   sqlite3* db_;
+  bool inherit_db_;
 };
 
 } } } // namespace calin::io::sql_transceiver

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "io/sql_transceiver.hpp"
+#include "io/sqlite3_transceiver.hpp"
 #include "proto/unittest.pb.h"
 
 using namespace calin::ix::unittest;
@@ -63,7 +64,7 @@ TEST(TestSQLTransceiver, PruneEmptyTables_SomeTablesDeleted) {
   unsigned n_pruned = 0;
   xvr.iterate_over_tables(t, [&n_pruned](const SQLTransceiver::SQLTable* t) {
       n_pruned++; });
-  ASSERT_GT(n_unpruned, n_pruned);
+  ASSERT_LT(n_pruned, n_unpruned);
 }
 
 TEST(TestSQLTransceiver, MakeColumns) {
@@ -79,6 +80,18 @@ TEST(TestSQLTransceiver, MakeColumns) {
 TEST(TestSQLTransceiver, CreateTable) {
   SQLTransceiver xvr;
   xvr.create_tables("mytable", UnitTestMessage::descriptor());
+}
+
+TEST(TestSQLTransceiver, CreateTableWithKey) {
+  SQLTransceiver xvr;
+  xvr.create_tables("mytable", UnitTestMessage::descriptor(),
+                    UnitTestKey::descriptor(), "", true);
+}
+
+TEST(TestSQLite3Transceiver, CreateTableWithKey) {
+  SQLite3Transceiver xvr("test_db.sqlite");
+  xvr.create_tables("mytable", UnitTestMessage::descriptor(),
+                    UnitTestKey::descriptor(), "", true);
 }
 
 int main(int argc, char **argv) {

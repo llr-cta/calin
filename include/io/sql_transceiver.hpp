@@ -35,7 +35,6 @@ class SQLTransceiver
                 const std::string& instance_desc = "",
                 bool write_sql_to_log = false);
   
-  
   // ---------------------------------------------------------------------------
   // Utility functions
   // ---------------------------------------------------------------------------
@@ -71,12 +70,19 @@ class SQLTransceiver
   };
 
   SQLTable*
+  make_keyed_sqltable_tree(const std::string& table_name,
+                           const google::protobuf::Descriptor* d_data,
+                           const google::protobuf::Descriptor* d_key = nullptr,
+                           bool ignore_key_option = false);
+  
+  SQLTable*
   make_sqltable_tree(const std::string& table_name,
                      const google::protobuf::Descriptor* d,
-                     SQLTable* parent_table = nullptr,
-                     const google::protobuf::FieldDescriptor* parent_field_d
-                     = nullptr,
                      bool ignore_key_option = false);
+  
+  SQLTable*
+  make_extkey_tree(const std::string& table_name,
+                   const google::protobuf::Descriptor* d);
 
   void prune_empty_tables(SQLTable* t);
   
@@ -116,6 +122,13 @@ class SQLTransceiver
   
  protected:
 
+  SQLTable*
+  r_make_sqltable_tree(const std::string& table_name,
+                       const google::protobuf::Descriptor* d,
+                       SQLTable* parent_table,
+                       const google::protobuf::FieldDescriptor* parent_field_d,
+                       bool ignore_key_option);
+  
   virtual std::string user_key_name(const std::string& name);
   virtual std::string sub_name(const std::string& parent_name,
                                const std::string& name);
@@ -124,7 +137,8 @@ class SQLTransceiver
 
   virtual std::string sql_type(const google::protobuf::FieldDescriptor* d);
 
-  virtual std::string sql_create_table(const SQLTable* t);
+  virtual std::string sql_create_table(const SQLTable* t,
+                                       bool if_not_exists = false);
 };
 
 } } } // namespace calin::io::sql_transceiver

@@ -21,6 +21,11 @@ find_package(GSL REQUIRED)
 include_directories(${GSL_INCLUDE_DIRS})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${GSL_LIBRARIES} ) 
 
+## include Sqlite3 libraries
+find_package(Sqlite3 REQUIRED)
+include_directories(${SQLITE3_INCLUDE_DIR})
+set(EXTRA_LIBS ${EXTRA_LIBS} ${SQLITE3_LIBRARY} ) 
+
 #Path to a python
 set(PYTHON_EXECUTABLE /opt/local/bin/python3.4)
 set(PYTHON_INCLUDE_DIR /opt/local/Library/Frameworks/Python.framework/Versions/3.4/include/python3.4m)

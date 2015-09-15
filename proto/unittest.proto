@@ -57,3 +57,10 @@ message UnitTestMessage {
   map<string, UnitTestInlinedSubMessage> map_ism = 209;
   map<string, UnitTestVectorSubMessage> map_vsm = 211;
 }
+
+message UnitTestKey {
+  int32 user_key_i32 = 1  [(CFO).desc="An int32 key value"];
+  string user_key_string = 2  [(CFO).desc="A string key value"];
+  UnitTestSimpleSubMessage user_key_ssm = 3 [(CFO).desc="A submessage key",
+                                             (CFO).sql.inline_message = true];
+}
