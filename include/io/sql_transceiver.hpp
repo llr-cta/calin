@@ -13,6 +13,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <deque>
 
 #include <google/protobuf/descriptor.pb.h>
 
@@ -23,27 +24,28 @@ class SQLTransceiver
  public:
   virtual ~SQLTransceiver();
 
-  static bool is_single_table(const google::protobuf::Descriptor* d);
-  
+  // ---------------------------------------------------------------------------
+  // Primary interface
+  // ---------------------------------------------------------------------------
+
   virtual bool
   create_tables(const std::string& table_name,
                 const google::protobuf::Descriptor* d_data,
                 const google::protobuf::Descriptor* d_key = nullptr,
                 const std::string& instance_desc = "",
-                bool write_sql_to_log = false, bool commit = true) = 0;
-
-  static std::vector<std::pair<std::string,std::string>>
-      list_all_table_columns(const std::string& table_name,
-                             const google::protobuf::Descriptor* d);
+                bool write_sql_to_log = false);
   
- protected:
-
+  
+  // ---------------------------------------------------------------------------
+  // Utility functions
+  // ---------------------------------------------------------------------------
+  
   struct SQLTable;
   
   struct SQLTableField
   {
     enum FieldType {
-      KEY_USER_SUPPLIED, KEY_PROTO_DEFINED, KEY_OID,
+      KEY_INHERITED, KEY_USER_SUPPLIED, KEY_PROTO_DEFINED, KEY_OID,
       KEY_LOOP_ID, KEY_MAP_KEY, POD };
     SQLTable* table;
     FieldType field_type;
@@ -68,20 +70,61 @@ class SQLTransceiver
     std::vector<SQLTable*> sub_tables;
   };
 
-  static std::vector<std::pair<std::string,std::string> >
-  extract_all_table_columns(SQLTable* t);
+  SQLTable*
+  make_sqltable_tree(const std::string& table_name,
+                     const google::protobuf::Descriptor* d,
+                     SQLTable* parent_table = nullptr,
+                     const google::protobuf::FieldDescriptor* parent_field_d
+                     = nullptr,
+                     bool ignore_key_option = false);
+
+  void prune_empty_tables(SQLTable* t);
   
-  static SQLTable*
-  make_table(const std::string& table_name,
-             const google::protobuf::Descriptor* d,
-             SQLTable* parent_table = nullptr,
-             const google::protobuf::FieldDescriptor* parent_field_d
-             = nullptr);
+  void propagate_keys(SQLTable* t,
+                      std::vector<const SQLTableField*> keys = { });
   
-  static std::string key_name(const std::string& name);
-  static std::string sub_name(const std::string& parent_name,
-                              const std::string& name);
+  static bool is_single_table(const google::protobuf::Descriptor* d);
+
+  std::vector<std::pair<std::string,std::string> >
+  list_all_table_columns(SQLTable* t);
   
+  template<typename FCN> void iterate_over_tables(SQLTable* t, FCN fcn)
+  {
+    std::deque<SQLTable*> all_t;
+    all_t.push_back(t);
+    while(!all_t.empty())
+    {
+      SQLTable* it = all_t.front();
+      all_t.pop_front();
+      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
+      fcn(it);
+    }
+  }
+
+  template<typename FCN> void iterate_over_tables(const SQLTable* t, FCN fcn)
+  {
+    std::deque<const SQLTable*> all_t;
+    all_t.push_back(t);
+    while(!all_t.empty())
+    {
+      const SQLTable* it = all_t.front();
+      all_t.pop_front();
+      fcn(it);
+      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
+    }
+  } 
+  
+ protected:
+
+  virtual std::string user_key_name(const std::string& name);
+  virtual std::string sub_name(const std::string& parent_name,
+                               const std::string& name);
+  virtual std::string sql_table_name(const std::string& name);
+  virtual std::string sql_field_name(const std::string& name);
+
+  virtual std::string sql_type(const google::protobuf::FieldDescriptor* d);
+
+  virtual std::string sql_create_table(const SQLTable* t);
 };
 
 } } } // namespace calin::io::sql_transceiver

@@ -26,9 +26,9 @@ message UnitTestVectorSubMessage {
 }
 
 message UnitTestMessage {
-  int32   i32    = 1;
+  int32   i32    = 1 [(CFO).desc="An int32 value"];
   int64   i64    = 2;
-  float   f      = 3;
+  float   f      = 3 [(CFO).desc="A float value",(CFO).units="The units"];
   string  s      = 4;
   UnitTestSimpleSubMessage ssm = 5;
   UnitTestSimpleSubMessage ssm_inline = 6 [(CFO).sql.inline_message = true];
