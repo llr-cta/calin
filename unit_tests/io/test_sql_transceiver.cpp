@@ -98,7 +98,8 @@ TEST(TestSQLTransceiver, CreateTableWithKey) {
 }
 
 TEST(TestSQLite3Transceiver, CreateTableWithKey) {
-  SQLite3Transceiver xvr("test_db.sqlite");
+  SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::TRUNCATE_RW);
+  //SQLite3Transceiver xvr(":memory:", SQLite3Transceiver::TRUNCATE_RW);
   xvr.create_tables("mytable", UnitTestMessage::descriptor(),
                     UnitTestKey::descriptor(), "", true);
 }

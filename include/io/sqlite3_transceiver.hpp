@@ -25,9 +25,10 @@ namespace calin { namespace io { namespace sql_transceiver {
 class SQLite3Transceiver: public SQLTransceiver
 {
  public:
-  SQLite3Transceiver(const std::string& filename);
-  SQLite3Transceiver(sqlite3* db, bool inherit_db = false):
-      SQLTransceiver(), db_(db), inherit_db_(inherit_db) { }
+  enum OpenMode { EXISTING_OR_NEW_RW, EXISTING_RW, TRUNCATE_RW, READ_ONLY };
+  
+  SQLite3Transceiver(const std::string& filename,
+                     OpenMode open_mode = EXISTING_OR_NEW_RW);
   virtual ~SQLite3Transceiver();
 
   bool create_tables(const std::string& table_name,
@@ -38,7 +39,13 @@ class SQLite3Transceiver: public SQLTransceiver
 
  private:
   sqlite3* db_;
-  bool inherit_db_;
+  bool inherit_db_ = false;
+  OpenMode open_mode_ = EXISTING_OR_NEW_RW;
+  
+  int execute_simple_sql(const std::string& sql, bool write_sql_to_log = false,
+                         bool ignore_errors = false);
+
+  void create_calin_tables();
 };
 
 } } } // namespace calin::io::sql_transceiver

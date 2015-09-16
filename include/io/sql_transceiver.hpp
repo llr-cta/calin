@@ -24,9 +24,9 @@ class SQLTransceiver
  public:
   virtual ~SQLTransceiver();
 
-  // ---------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
   // Primary interface
-  // ---------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
 
   virtual bool
   create_tables(const std::string& table_name,
@@ -35,9 +35,9 @@ class SQLTransceiver
                 const std::string& instance_desc = "",
                 bool write_sql_to_log = false);
   
-  // ---------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
   // Utility functions
-  // ---------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
   
   struct SQLTable;
   
@@ -46,9 +46,10 @@ class SQLTransceiver
     enum FieldType {
       KEY_INHERITED, KEY_USER_SUPPLIED, KEY_PROTO_DEFINED, KEY_OID,
       KEY_LOOP_ID, KEY_MAP_KEY, POD };
-    SQLTable* table;
-    FieldType field_type;
-    std::string field_name;
+    SQLTable* table;                // Table the field belongs to
+    SQLTableField* field_origin;    // Ptr to first occurance of field (if key)
+    FieldType field_type;           // Type of field
+    std::string field_name;         // Full name of field
     const google::protobuf::FieldDescriptor* field_d;
     std::vector<const google::protobuf::FieldDescriptor*> field_d_path;
     //google::protobuf::FieldDescriptor* message;

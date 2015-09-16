@@ -176,6 +176,7 @@ r_make_sqltable_tree(const std::string& table_name,
       
       SQLTableField* tf { new SQLTableField };
       tf->table             = sub_table;
+      tf->field_origin      = tf;
       tf->field_type        = SQLTableField::POD;
       tf->field_name        = f->name();
       tf->field_d           = f;
@@ -186,6 +187,7 @@ r_make_sqltable_tree(const std::string& table_name,
     {
       SQLTableField* tf { new SQLTableField };
       tf->table             = t;
+      tf->field_origin      = tf;
       tf->field_type        = SQLTableField::POD;
       tf->field_name        = f->name();
       tf->field_d           = f;
@@ -211,6 +213,7 @@ r_make_sqltable_tree(const std::string& table_name,
     {
       SQLTableField* tf { new SQLTableField };
       tf->table             = sub_table;
+      tf->field_origin      = tf;
       tf->field_type        = SQLTableField::KEY_LOOP_ID;
       tf->field_name        = sub_name(sub_table->table_name, "loop_id");
       tf->field_d           = nullptr;
@@ -264,10 +267,11 @@ void SQLTransceiver::propagate_keys(SQLTable* t,
     enum FieldType {
       KEY_INHERITED, KEY_USER_SUPPLIED, KEY_PROTO_DEFINED, KEY_OID,
       KEY_LOOP_ID, KEY_MAP_KEY, POD };
-    f->table       = t;
-    f->field_type  = SQLTableField::KEY_OID;
-    f->field_name  = sub_name(t->table_name,"oid");
-    f->field_d     = nullptr;
+    f->table          = t;
+    f->field_origin   = f;
+    f->field_type     = SQLTableField::KEY_OID;
+    f->field_name     = sub_name(t->table_name,"oid");
+    f->field_d        = nullptr;
     keys.push_back(f);
   }
   for(auto it : t->sub_tables)
