@@ -23,7 +23,16 @@ TEST(TestSQLTransceiver, FieldTablePointers) {
       xvr.make_sqltable_tree("mytable", UnitTestMessage::descriptor());
   xvr.iterate_over_tables(t, [](const SQLTransceiver::SQLTable* t) {
       for(auto f : t->fields) { EXPECT_EQ(f->table, t); } });
-}  
+}
+
+TEST(TestSQLTransceiver, PruneEmptyTables_NoEmptyTables) {
+  SQLTransceiver xvr;
+  SQLTransceiver::SQLTable* t =
+      xvr.make_sqltable_tree("mytable", UnitTestMessage::descriptor());
+  xvr.prune_empty_tables(t);
+  xvr.iterate_over_tables(t, [](const SQLTransceiver::SQLTable* t) {
+      EXPECT_GT(t->fields.size(), 0); } );
+}
 
 TEST(TestSQLTransceiver, PruneEmptyTables_ParentChildPointers) {
   SQLTransceiver xvr;

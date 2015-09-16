@@ -226,7 +226,10 @@ void SQLTransceiver::prune_empty_tables(SQLTable* t)
 {
   iterate_over_tables(t, [](SQLTable* t) {
       if(t->fields.empty()) {
-        for(auto st : t->sub_tables) { st->parent_table = t->parent_table; }
+        for(auto st : t->sub_tables) {
+          st->parent_table = t->parent_table;
+          st->parent_field_d_path.insert(st->parent_field_d_path.begin(),
+                                         t->parent_field_d); }
         auto sti = std::find(t->parent_table->sub_tables.begin(),
                              t->parent_table->sub_tables.end(), t);
         assert(sti != t->parent_table->sub_tables.end());
@@ -303,11 +306,58 @@ std::string SQLTransceiver::sql_field_name(const std::string& name)
   return new_name;
 }
 
-std::string SQLTransceiver::sql_type(const google::protobuf::FieldDescriptor* d)
+std::string SQLTransceiver::
+sql_type(const google::protobuf::FieldDescriptor* d)
 {
-  if(!d)return "int32";
-  if(d->cpp_type_name())return d->cpp_type_name();
-  return "unknown";
+  // The base class implements MySQL types since SQLite3 is very
+  // forgiving about what it accepts as types
+  
+  if(!d)return "BIGINT UNSIGNED"; // OID or vector index
+
+  calin::FieldOptions::Int32StorageType int32_type =
+      calin::FieldOptions::INT_32;
+  const google::protobuf::FieldOptions* fopt { &d->options() };
+  if(fopt->HasExtension(CFO))
+    int32_type = fopt->GetExtension(CFO).int32_type();
+
+  switch(d->type())
+  {
+    case FieldDescriptor::TYPE_DOUBLE:   return "DOUBLE";
+    case FieldDescriptor::TYPE_FLOAT:    return "FLOAT";
+    case FieldDescriptor::TYPE_SINT64:   // fallthrough
+    case FieldDescriptor::TYPE_INT64:    return "BIGINT";
+    case FieldDescriptor::TYPE_UINT64:   return "BIGINT UNSIGNED";
+    case FieldDescriptor::TYPE_SINT32:   // fallthrough
+    case FieldDescriptor::TYPE_INT32:
+      switch(int32_type) {
+	case FieldOptions::INT_16:       return "SMALLINT";
+	case FieldOptions::INT_8:        return "TINYINT";
+	case FieldOptions::INT_32:       // fallthrough
+        default:                         return "INT";
+	};
+    case FieldDescriptor::TYPE_FIXED64:  return "BIGINT UNSIGNED";
+    case FieldDescriptor::TYPE_FIXED32:  return "INT UNSIGNED";
+    case FieldDescriptor::TYPE_BOOL:     return "BOOLEAN";
+    case FieldDescriptor::TYPE_STRING:   return "TEXT";
+    case FieldDescriptor::TYPE_BYTES:    return "BLOB";
+    case FieldDescriptor::TYPE_UINT32:
+      switch(int32_type) {
+	case FieldOptions::INT_16:       return "SMALLINT UNSIGNED";
+	case FieldOptions::INT_8:        return "TINYINT UNSIGNED";
+	case FieldOptions::INT_32:       // fall through
+        default:                         return "INT UNSIGNED";
+      }
+    case FieldDescriptor::TYPE_SFIXED64: return "BIGINT";
+    case FieldDescriptor::TYPE_SFIXED32: return "INT";
+    case FieldDescriptor::TYPE_ENUM:     return "INT";
+
+    case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
+    case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
+    default:
+      break;
+  }
+
+  assert(0);
 }
 
 std::string SQLTransceiver::

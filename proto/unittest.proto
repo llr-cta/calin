@@ -26,6 +26,12 @@ message UnitTestVectorSubMessage {
 }
 
 message UnitTestMessage {
+  enum EnumType {
+    UNKNOWN = 0;
+    STARTED = 1;
+    RUNNING = 2;
+  }
+
   int32   i32    = 1 [(CFO).desc="An int32 value"];
   int64   i64    = 2;
   float   f      = 3 [(CFO).desc="A float value",(CFO).units="The units"];
@@ -38,6 +44,24 @@ message UnitTestMessage {
   UnitTestInlinedSubMessage ism_inline = 10 [(CFO).sql.inline_message = true];
   UnitTestVectorSubMessage vsm = 11;
   UnitTestVectorSubMessage vsm_inline = 12 [(CFO).sql.inline_message = true];
+
+  double  d = 13;
+  uint32  ui32 = 14;
+  uint64  ui64 = 15;
+  sint32  si32 = 16;
+  sint64  si64 = 17;
+  fixed32 fi32 = 18;
+  fixed64 fi64 = 19;
+  sfixed32 sfi32 = 20;
+  sfixed64 sfi64 = 21;
+  bool b = 22;
+  bytes bb = 23;
+  EnumType e = 24;
+
+  uint32  ui16 = 25 [(CFO).int32_type = INT_16];
+  uint32  ui8  = 26 [(CFO).int32_type = INT_8];
+  int32   i16  = 27 [(CFO).int32_type = INT_16];
+  int32   i8   = 28 [(CFO).int32_type = INT_8];
 
   repeated int32   vec_i32  = 101;
   repeated int64   vec_i64  = 102;
