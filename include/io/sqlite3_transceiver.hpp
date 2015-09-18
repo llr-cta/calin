@@ -37,6 +37,11 @@ class SQLite3Transceiver: public SQLTransceiver
                      const std::string& instance_desc = "",
                      bool write_sql_to_log = false) override;
 
+  bool insert(const std::string& table_name,
+              const google::protobuf::Message* m_data,
+              const google::protobuf::Message* m_key,
+              bool write_sql_to_log) override;
+
  private:
   sqlite3* db_;
   bool inherit_db_ = false;

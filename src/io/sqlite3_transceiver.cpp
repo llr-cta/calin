@@ -57,6 +57,14 @@ create_tables(const std::string& table_name,
   return true;
 }
 
+bool SQLite3Transceiver::
+insert(const std::string& table_name,
+       const google::protobuf::Message* m_data,
+       const google::protobuf::Message* m_key, bool write_sql_to_log)
+{
+  
+}
+
 int SQLite3Transceiver::
 execute_simple_sql(const std::string& sql, bool write_sql_to_log,
                    bool ignore_errors)
@@ -103,3 +111,4 @@ execute_simple_sql(const std::string& sql, bool write_sql_to_log,
 
   return SQLITE_DONE;
 }
+

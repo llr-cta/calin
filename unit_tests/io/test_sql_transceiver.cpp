@@ -97,6 +97,41 @@ TEST(TestSQLTransceiver, CreateTableWithKey) {
                     UnitTestKey::descriptor(), "", true);
 }
 
+TEST(TestSQLTransceiver, Insert) {
+  SQLTransceiver xvr;
+  UnitTestMessage m_data;
+  UnitTestKey m_key;
+  m_key.set_user_key_i32(1234);
+  m_key.set_user_key_string("key string value");
+  m_key.mutable_user_key_ssm()->set_ssm_i32(2345);
+
+  m_data.set_i32(1);
+  m_data.set_i64(2);
+  m_data.set_f(3.14);
+  m_data.set_s("string4");
+  m_data.mutable_ssm()->set_ssm_i32(5111);
+  m_data.mutable_ssm_inline()->set_ssm_i32(6111);
+
+  m_data.mutable_csm()->set_csm_i32(7111);
+  m_data.mutable_csm()->mutable_csm_ssm()->set_ssm_i32(712111);
+  m_data.mutable_csm_inline()->set_csm_i32(8111);
+  m_data.mutable_csm_inline()->mutable_csm_ssm()->set_ssm_i32(812111);
+  m_data.mutable_ism()->set_ism_i32(9111);
+  m_data.mutable_ism()->mutable_ism_ssm()->set_ssm_i32(912111);
+  m_data.mutable_ism_inline()->set_ism_i32(10111);
+  m_data.mutable_ism_inline()->mutable_ism_ssm()->set_ssm_i32(1012111);
+
+#if 0
+  UnitTestInlinedSubMessage ism = 9;
+  UnitTestInlinedSubMessage ism_inline = 10 [(CFO).sql.inline_message = true];
+  UnitTestVectorSubMessage vsm = 11;
+  UnitTestVectorSubMessage vsm_inline = 12 [(CFO).sql.inline_message = true];
+#endif
+
+  
+  xvr.insert("mytable", &m_data, &m_key, true);
+}
+
 TEST(TestSQLite3Transceiver, CreateTableWithKey) {
   SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::TRUNCATE_RW);
   //SQLite3Transceiver xvr(":memory:", SQLite3Transceiver::TRUNCATE_RW);
