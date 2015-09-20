@@ -21,6 +21,9 @@ namespace calin { namespace io { namespace sql_transceiver {
 
 class SQLTransceiver
 {
+ protected:
+  class Statement;
+  
  public:
   virtual ~SQLTransceiver();
 
@@ -44,7 +47,7 @@ class SQLTransceiver
   // --------------------------------------------------------------------------
   // Utility functions
   // --------------------------------------------------------------------------
-  
+
   struct SQLTable;
   
   struct SQLTableField
@@ -75,7 +78,7 @@ class SQLTransceiver
     std::vector<const google::protobuf::FieldDescriptor*> parent_field_d_path;
     std::vector<SQLTableField*> fields;
     std::vector<SQLTable*> sub_tables;
-    void* stmt = nullptr;
+    Statement* stmt = nullptr;
   };
 
   SQLTable*
@@ -131,9 +134,40 @@ class SQLTransceiver
   
  protected:
 
-  struct Statement {
-    std::string sql;
-    std::vector<std::string> bound_values;
+  class Statement
+  {
+   public:
+    Statement(const std::string& sql);
+    virtual ~Statement();
+
+    const std::string& sql() const { return sql_; }
+    std::string bound_sql() const;
+    
+    virtual void reset();
+
+    void bind_field(unsigned ifield, const google::protobuf::Message* m,
+                    const google::protobuf::FieldDescriptor* d);
+    void bind_repeated_field(unsigned ifield, uint64_t loop_id, 
+                             const google::protobuf::Message* m,
+                             const google::protobuf::FieldDescriptor* d);
+
+    virtual void bind_int64(unsigned ifield, int64_t value);
+    virtual void bind_int32(unsigned ifield, int32_t value);
+    virtual void bind_int16(unsigned ifield, int16_t value);
+    virtual void bind_int8(unsigned ifield, int8_t value);
+    virtual void bind_uint64(unsigned ifield, uint64_t value);
+    virtual void bind_uint32(unsigned ifield, uint32_t value);
+    virtual void bind_uint16(unsigned ifield, uint16_t value);
+    virtual void bind_uint8(unsigned ifield, uint8_t value);
+    virtual void bind_float(unsigned ifield, float value);
+    virtual void bind_double(unsigned ifield, double value);
+    virtual void bind_bool(unsigned ifield, bool value);
+    virtual void bind_string(unsigned ifield, const std::string& value);
+    virtual void bind_bytes(unsigned ifield, const std::string& value);
+
+   protected:
+    std::string sql_;
+    std::vector<std::string> bound_values_;
   };
 
   SQLTable*
@@ -155,28 +189,6 @@ class SQLTransceiver
                                        bool if_not_exists = false);
   virtual std::string sql_insert(const SQLTable* t);
 
-  void bind_field(void* stmt, unsigned ifield,
-                  const google::protobuf::Message* m,
-                  const google::protobuf::FieldDescriptor* d);
-  void bind_repeated_field(void* stmt, unsigned ifield, uint64_t loop_id, 
-                           const google::protobuf::Message* m,
-                           const google::protobuf::FieldDescriptor* d);
-
-  virtual void bind_int64(void* stmt, unsigned ifield, int64_t value);
-  virtual void bind_int32(void* stmt, unsigned ifield, int32_t value);
-  virtual void bind_int16(void* stmt, unsigned ifield, int16_t value);
-  virtual void bind_int8(void* stmt, unsigned ifield, int8_t value);
-  virtual void bind_uint64(void* stmt, unsigned ifield, uint64_t value);
-  virtual void bind_uint32(void* stmt, unsigned ifield, uint32_t value);
-  virtual void bind_uint16(void* stmt, unsigned ifield, uint16_t value);
-  virtual void bind_uint8(void* stmt, unsigned ifield, uint8_t value);
-  virtual void bind_float(void* stmt, unsigned ifield, float value);
-  virtual void bind_double(void* stmt, unsigned ifield, double value);
-  virtual void bind_bool(void* stmt, unsigned ifield, bool value);
-  virtual void bind_string(void* stmt, unsigned ifield,
-                           const std::string& value);
-  virtual void bind_bytes(void* stmt, unsigned ifield,
-                          const std::string& value);
 
   virtual bool prepare_insert_statements(SQLTable* t);
   virtual bool insert_tables(SQLTable* t,
@@ -184,7 +196,7 @@ class SQLTransceiver
                              const google::protobuf::Message* m_key,
                              uint64_t parent_oid, uint64_t loop_id,
                              bool write_sql_to_log);
-  virtual bool execute_one_insert_statement(SQLTable* t);
+  virtual bool execute_one_insert_statement(SQLTable* t, uint64_t& oid);
   virtual bool finalize_insert_statements(SQLTable* t);
 };
 

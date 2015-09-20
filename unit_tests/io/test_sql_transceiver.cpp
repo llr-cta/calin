@@ -109,23 +109,35 @@ TEST(TestSQLTransceiver, Insert) {
   m_data.set_i64(2);
   m_data.set_f(3.14);
   m_data.set_s("string4");
-  m_data.mutable_ssm()->set_ssm_i32(5111);
-  m_data.mutable_ssm_inline()->set_ssm_i32(6111);
+  m_data.mutable_ssm()->set_ssm_i32(51);
+  m_data.mutable_ssm_inline()->set_ssm_i32(611);
 
-  m_data.mutable_csm()->set_csm_i32(7111);
-  m_data.mutable_csm()->mutable_csm_ssm()->set_ssm_i32(712111);
-  m_data.mutable_csm_inline()->set_csm_i32(8111);
-  m_data.mutable_csm_inline()->mutable_csm_ssm()->set_ssm_i32(812111);
-  m_data.mutable_ism()->set_ism_i32(9111);
-  m_data.mutable_ism()->mutable_ism_ssm()->set_ssm_i32(912111);
-  m_data.mutable_ism_inline()->set_ism_i32(10111);
-  m_data.mutable_ism_inline()->mutable_ism_ssm()->set_ssm_i32(1012111);
+  m_data.mutable_csm()->set_csm_i32(71);
+  m_data.mutable_csm()->mutable_csm_ssm()->set_ssm_i32(721);
+  m_data.mutable_csm_inline()->set_csm_i32(81);
+  m_data.mutable_csm_inline()->mutable_csm_ssm()->set_ssm_i32(821);
+  m_data.mutable_ism()->set_ism_i32(91);
+  m_data.mutable_ism()->mutable_ism_ssm()->set_ssm_i32(921);
+  m_data.mutable_ism_inline()->set_ism_i32(101);
+  m_data.mutable_ism_inline()->mutable_ism_ssm()->set_ssm_i32(1021);
+#if 0
+  for(unsigned i=0;i<10;i++)
+  {
+    m_data.add_vsm()->set_ssm_i32(11001+i*10);
+    m_data.add_vsm_inline()->set_ssm_i32(12001+i*10);
+  }
+#endif
+  for(unsigned i=0;i<10;i++)
+  {
+    m_data.add_vec_i32(i*1000000 + 101);
+  }
 
 #if 0
-  UnitTestInlinedSubMessage ism = 9;
-  UnitTestInlinedSubMessage ism_inline = 10 [(CFO).sql.inline_message = true];
-  UnitTestVectorSubMessage vsm = 11;
-  UnitTestVectorSubMessage vsm_inline = 12 [(CFO).sql.inline_message = true];
+    repeated int64   vec_i64  = 102;
+  repeated float   vec_f    = 103;
+  repeated string  vec_s    = 104;
+  repeated UnitTestSimpleSubMessage vec_ssm = 105;
+  repeated UnitTestSimpleSubMessage vec_ssm_inline = 106 [(CFO).sql.inline_message = true];
 #endif
 
   

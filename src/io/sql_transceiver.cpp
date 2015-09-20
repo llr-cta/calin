@@ -2,7 +2,7 @@
 
    calin/io/sql_transceiver.cpp -- Stephen Fegan -- 2015-09-08
 
-   Provides reading and writing of protobuf structures to SQLite3 databases
+   Base class for reading and writing protobuf structures to SQL databases
 
 */
 
@@ -451,165 +451,10 @@ sql_insert(const SQLTable* t)
   return sql.str();
 }
 
-void SQLTransceiver::bind_field(void* stmt, unsigned ifield,
-                                const google::protobuf::Message* m,
-                                const google::protobuf::FieldDescriptor* d)
-{
-  calin::FieldOptions::Int32StorageType int32_type =
-      calin::FieldOptions::INT_32;
-  const google::protobuf::FieldOptions* fopt { &d->options() };
-  if(fopt->HasExtension(CFO))
-    int32_type = fopt->GetExtension(CFO).int32_type();
-
-  switch(d->type())
-  {
-    case FieldDescriptor::TYPE_DOUBLE:
-      bind_double(stmt, ifield, m->GetReflection()->GetDouble(*m, d));
-      return;
-    case FieldDescriptor::TYPE_FLOAT:
-      bind_float(stmt, ifield, m->GetReflection()->GetFloat(*m, d));
-      return;
-    case FieldDescriptor::TYPE_SFIXED64: // fallthrough
-    case FieldDescriptor::TYPE_SINT64:   // fallthrough
-    case FieldDescriptor::TYPE_INT64:
-      bind_int64(stmt, ifield, m->GetReflection()->GetInt64(*m, d));
-      return;
-    case FieldDescriptor::TYPE_FIXED64:  // fallthrough
-    case FieldDescriptor::TYPE_UINT64:
-      bind_uint64(stmt, ifield, m->GetReflection()->GetUInt64(*m, d));
-      return;
-    case FieldDescriptor::TYPE_SFIXED32: // fallthrough
-    case FieldDescriptor::TYPE_SINT32:   // fallthrough
-    case FieldDescriptor::TYPE_INT32:
-      switch(int32_type) {
-	case FieldOptions::INT_16:
-          bind_int16(stmt, ifield, m->GetReflection()->GetInt32(*m, d));
-          return;
-	case FieldOptions::INT_8:
-          bind_int8(stmt, ifield, m->GetReflection()->GetInt32(*m, d));
-          return;
-	case FieldOptions::INT_32:       // fallthrough
-        default:
-          bind_int32(stmt, ifield, m->GetReflection()->GetInt32(*m, d));
-          return;
-	};
-    case FieldDescriptor::TYPE_FIXED32:
-    case FieldDescriptor::TYPE_UINT32:
-      switch(int32_type) {
-	case FieldOptions::INT_16:
-          bind_uint16(stmt, ifield, m->GetReflection()->GetUInt32(*m, d));
-          return;
-	case FieldOptions::INT_8:
-          bind_uint8(stmt, ifield, m->GetReflection()->GetUInt32(*m, d));
-          return;
-	case FieldOptions::INT_32:       // fall through
-        default:
-          bind_uint32(stmt, ifield, m->GetReflection()->GetUInt32(*m, d));
-          return;
-      }
-    case FieldDescriptor::TYPE_BOOL:
-      bind_bool(stmt, ifield, m->GetReflection()->GetBool(*m, d));
-      return;
-    case FieldDescriptor::TYPE_STRING:
-      bind_string(stmt, ifield, m->GetReflection()->GetString(*m, d));
-      return;
-    case FieldDescriptor::TYPE_BYTES:
-      bind_bytes(stmt, ifield, m->GetReflection()->GetString(*m, d));
-      return;
-    case FieldDescriptor::TYPE_ENUM:
-      bind_int32(stmt, ifield, m->GetReflection()->GetEnumValue(*m, d));
-      return;
-    case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
-    case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
-    default:
-      break;
-  }
-  assert(0);
-}
-
-void SQLTransceiver::
-bind_repeated_field(void* stmt, unsigned ifield, uint64_t loop_id, 
-                    const google::protobuf::Message* m,
-                    const google::protobuf::FieldDescriptor* d)
-{
-
-}
-
-void SQLTransceiver::bind_int64(void* stmt, unsigned ifield, int64_t value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, std::to_string(value));
-}
-
-void SQLTransceiver::bind_int32(void* stmt, unsigned ifield, int32_t value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, std::to_string(value));
-}
-
-void SQLTransceiver::bind_int16(void* stmt, unsigned ifield, int16_t value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, std::to_string(value));
-}
-
-void SQLTransceiver::bind_int8(void* stmt, unsigned ifield, int8_t value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, std::to_string(value));
-}
-
-void SQLTransceiver::bind_uint64(void* stmt, unsigned ifield, uint64_t value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, std::to_string(value));
-}
-
-void SQLTransceiver::bind_uint32(void* stmt, unsigned ifield, uint32_t value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, std::to_string(value));
-}
-
-void SQLTransceiver::bind_uint16(void* stmt, unsigned ifield, uint16_t value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, std::to_string(value));
-}
-
-void SQLTransceiver::bind_uint8(void* stmt, unsigned ifield, uint8_t value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, std::to_string(value));
-}
-
-void SQLTransceiver::bind_float(void* stmt, unsigned ifield, float value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, std::to_string(value));
-}
-
-void SQLTransceiver::bind_double(void* stmt, unsigned ifield, double value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, std::to_string(value));
-}
-
-void SQLTransceiver::bind_bool(void* stmt, unsigned ifield, bool value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, std::to_string(value));
-}
-
-void SQLTransceiver::bind_string(void* stmt, unsigned ifield,
-                                 const std::string& value)
-{
-  Statement* s = static_cast<Statement*>(stmt);
-  if(ifield >= s->bound_values.size())s->bound_values.resize(ifield+1);
-  s->bound_values[ifield] = value;
-}
-
-void SQLTransceiver::bind_bytes(void* stmt, unsigned ifield,
-                                const std::string& value)
-{
-  SQLTransceiver::bind_string(stmt, ifield, value);
-}
-
 bool SQLTransceiver::prepare_insert_statements(SQLTable* t)
 {
   iterate_over_tables(t, [this](SQLTable* t) {
-      Statement* s = new Statement;
-      s->sql = sql_insert(t);
-      t->stmt = s;
+      t->stmt = new Statement(sql_insert(t));
     });
   return true;
 }
@@ -633,8 +478,13 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
       if(f->field_d != nullptr)
       {
         for(auto d : f->field_d_path) {
-          m = &r->GetMessage(*m, d); r = m->GetReflection(); }
-        f->data = static_cast<void*>(const_cast<google::protobuf::Message*>(m));
+          if(!r->HasField(*m, d))goto next_field;
+          m = &r->GetMessage(*m, d);
+          r = m->GetReflection();
+        }
+        
+        f->data =
+            static_cast<void*>(const_cast<google::protobuf::Message*>(m));
       }
       else
       {
@@ -657,43 +507,336 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
       }
     }
 
+    f = f->field_origin;
     assert(f->data);
 
     if(f->field_d == nullptr)
-      bind_uint64(t->stmt, ifield, *static_cast<uint64_t*>(f->data));
+      t->stmt->bind_uint64(ifield, *static_cast<uint64_t*>(f->data));
     else if(f->field_d->is_repeated())
-      bind_repeated_field(t->stmt, ifield, loop_id, 
-                          static_cast<google::protobuf::Message*>(f->data),
-                          f->field_d);
+      t->stmt->bind_repeated_field(ifield, loop_id, 
+               static_cast<google::protobuf::Message*>(f->data), f->field_d);
     else
-      bind_field(t->stmt, ifield,
-                 static_cast<google::protobuf::Message*>(f->data), f->field_d);
+      t->stmt->bind_field(ifield,
+               static_cast<google::protobuf::Message*>(f->data), f->field_d);
 
+ next_field:
     ifield++;
   }
 
-  execute_one_insert_statement(t);
-      
-  return true;
+  bool good = true;
+  good &= execute_one_insert_statement(t, parent_oid);
+  if(write_sql_to_log)
+    LOG(INFO) << t->stmt->bound_sql() << " -> " << parent_oid;
+
+  for(auto st : t->sub_tables)
+  {
+    const google::protobuf::Message* m = m_data;
+    const google::protobuf::Reflection* r = m->GetReflection();
+    for(auto d : st->parent_field_d_path) {
+      if(!r->HasField(*m, d))goto next_sub_table;
+      m = &r->GetMessage(*m, d);
+      r = m->GetReflection();      
+    }
+    
+    if(st->parent_field_d->is_repeated())
+    {
+      uint64_t nloop = r->FieldSize(*m, st->parent_field_d);
+      for(uint64_t iloop = 0; iloop < nloop; iloop++)
+      {
+        const google::protobuf::Message* mi = m;
+        if(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE) {
+          mi = &r->GetRepeatedMessage(*m, st->parent_field_d, iloop);
+          r = m->GetReflection(); }
+        good &= insert_tables(st, mi, nullptr, parent_oid, iloop,
+                              write_sql_to_log);
+      }
+    }
+    else
+    {
+      assert(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE);
+      if(!r->HasField(*m, st->parent_field_d))goto next_sub_table;
+      m = &r->GetMessage(*m, st->parent_field_d);
+      r = m->GetReflection();
+      good &= insert_tables(st, m, nullptr, parent_oid, 0, write_sql_to_log);
+    }
+ next_sub_table:
+    ;
+  }
+  
+  return good;
 }
 
-bool SQLTransceiver::execute_one_insert_statement(SQLTable* t)
+bool SQLTransceiver::execute_one_insert_statement(SQLTable* t, uint64_t& oid)
 {
   auto L = LOG(INFO);
   Statement* s { static_cast<Statement*>(t->stmt) };
-  unsigned ifield = 0;
-  for(auto c : s->sql)
-  {
-    if(c=='?' and ifield<s->bound_values.size())
-      L << s->bound_values[ifield++];
-    else L << c;
-  }
   return true;
 }
 
 bool SQLTransceiver::finalize_insert_statements(SQLTable* t)
 {
   iterate_over_tables(t, [this](SQLTable* t) {
-      delete static_cast<std::string*>(t->stmt); });
+      delete t->stmt; t->stmt = nullptr; });
   return true;
+}
+
+// ============================================================================
+// ============================================================================
+//
+// SQLTransceiver::Statement
+//
+// ============================================================================
+// ============================================================================
+
+SQLTransceiver::Statement::Statement(const std::string& sql):
+    sql_(sql), bound_values_()
+{
+  // nothing to see here
+}
+
+SQLTransceiver::Statement::~Statement()
+{
+  // nothing to see here
+}
+
+std::string SQLTransceiver::Statement::bound_sql() const
+{
+  std::ostringstream L;
+  unsigned ifield = 0;
+  for(auto c : sql_)
+  {
+    if(c=='?' and ifield<bound_values_.size())
+      L << bound_values_[ifield++];
+    else L << c;
+  }
+  return L.str();
+}
+
+void SQLTransceiver::Statement::reset()
+{
+  bound_values_.clear();
+}
+
+void SQLTransceiver::Statement::
+bind_field(unsigned ifield, const google::protobuf::Message* m,
+           const google::protobuf::FieldDescriptor* d)
+{
+  calin::FieldOptions::Int32StorageType int32_type =
+      calin::FieldOptions::INT_32;
+  const google::protobuf::FieldOptions* fopt { &d->options() };
+  if(fopt->HasExtension(CFO))
+    int32_type = fopt->GetExtension(CFO).int32_type();
+
+  switch(d->type())
+  {
+    case FieldDescriptor::TYPE_DOUBLE:
+      bind_double(ifield, m->GetReflection()->GetDouble(*m, d));
+      return;
+    case FieldDescriptor::TYPE_FLOAT:
+      bind_float(ifield, m->GetReflection()->GetFloat(*m, d));
+      return;
+    case FieldDescriptor::TYPE_SFIXED64: // fallthrough
+    case FieldDescriptor::TYPE_SINT64:   // fallthrough
+    case FieldDescriptor::TYPE_INT64:
+      bind_int64(ifield, m->GetReflection()->GetInt64(*m, d));
+      return;
+    case FieldDescriptor::TYPE_FIXED64:  // fallthrough
+    case FieldDescriptor::TYPE_UINT64:
+      bind_uint64(ifield, m->GetReflection()->GetUInt64(*m, d));
+      return;
+    case FieldDescriptor::TYPE_SFIXED32: // fallthrough
+    case FieldDescriptor::TYPE_SINT32:   // fallthrough
+    case FieldDescriptor::TYPE_INT32:
+      switch(int32_type) {
+	case FieldOptions::INT_16:
+          bind_int16(ifield, m->GetReflection()->GetInt32(*m, d));
+          return;
+	case FieldOptions::INT_8:
+          bind_int8(ifield, m->GetReflection()->GetInt32(*m, d));
+          return;
+	case FieldOptions::INT_32:       // fallthrough
+        default:
+          bind_int32(ifield, m->GetReflection()->GetInt32(*m, d));
+          return;
+	};
+    case FieldDescriptor::TYPE_FIXED32:
+    case FieldDescriptor::TYPE_UINT32:
+      switch(int32_type) {
+	case FieldOptions::INT_16:
+          bind_uint16(ifield, m->GetReflection()->GetUInt32(*m, d));
+          return;
+	case FieldOptions::INT_8:
+          bind_uint8(ifield, m->GetReflection()->GetUInt32(*m, d));
+          return;
+	case FieldOptions::INT_32:       // fall through
+        default:
+          bind_uint32(ifield, m->GetReflection()->GetUInt32(*m, d));
+          return;
+      }
+    case FieldDescriptor::TYPE_BOOL:
+      bind_bool(ifield, m->GetReflection()->GetBool(*m, d));
+      return;
+    case FieldDescriptor::TYPE_STRING:
+      bind_string(ifield, m->GetReflection()->GetString(*m, d));
+      return;
+    case FieldDescriptor::TYPE_BYTES:
+      bind_bytes(ifield, m->GetReflection()->GetString(*m, d));
+      return;
+    case FieldDescriptor::TYPE_ENUM:
+      bind_int32(ifield, m->GetReflection()->GetEnumValue(*m, d));
+      return;
+    case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
+    case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
+    default:
+      break;
+  }
+  assert(0);
+}
+
+void SQLTransceiver::Statement::
+bind_repeated_field(unsigned ifield, uint64_t iloop,
+                    const google::protobuf::Message* m,
+                    const google::protobuf::FieldDescriptor* d)
+{
+  calin::FieldOptions::Int32StorageType int32_type =
+      calin::FieldOptions::INT_32;
+  const google::protobuf::FieldOptions* fopt { &d->options() };
+  if(fopt->HasExtension(CFO))
+    int32_type = fopt->GetExtension(CFO).int32_type();
+
+  switch(d->type())
+  {
+    case FieldDescriptor::TYPE_DOUBLE:
+      bind_double(ifield, m->GetReflection()->GetRepeatedDouble(*m, d, iloop));
+      return;
+    case FieldDescriptor::TYPE_FLOAT:
+      bind_float(ifield, m->GetReflection()->GetRepeatedFloat(*m, d, iloop));
+      return;
+    case FieldDescriptor::TYPE_SFIXED64: // fallthrough
+    case FieldDescriptor::TYPE_SINT64:   // fallthrough
+    case FieldDescriptor::TYPE_INT64:
+      bind_int64(ifield, m->GetReflection()->GetRepeatedInt64(*m, d, iloop));
+      return;
+    case FieldDescriptor::TYPE_FIXED64:  // fallthrough
+    case FieldDescriptor::TYPE_UINT64:
+      bind_uint64(ifield, m->GetReflection()->GetRepeatedUInt64(*m, d, iloop));
+      return;
+    case FieldDescriptor::TYPE_SFIXED32: // fallthrough
+    case FieldDescriptor::TYPE_SINT32:   // fallthrough
+    case FieldDescriptor::TYPE_INT32:
+      switch(int32_type) {
+	case FieldOptions::INT_16:
+          bind_int16(ifield, m->GetReflection()->GetRepeatedInt32(*m,d,iloop));
+          return;
+	case FieldOptions::INT_8:
+          bind_int8(ifield, m->GetReflection()->GetRepeatedInt32(*m,d,iloop));
+          return;
+	case FieldOptions::INT_32:       // fallthrough
+        default:
+          bind_int32(ifield, m->GetReflection()->GetRepeatedInt32(*m,d,iloop));
+          return;
+	};
+    case FieldDescriptor::TYPE_FIXED32:
+    case FieldDescriptor::TYPE_UINT32:
+      switch(int32_type) {
+	case FieldOptions::INT_16:
+          bind_uint16(ifield, m->GetReflection()->
+                      GetRepeatedUInt32(*m, d, iloop));
+          return;
+	case FieldOptions::INT_8:
+          bind_uint8(ifield, m->GetReflection()->
+                     GetRepeatedUInt32(*m, d, iloop));
+          return;
+	case FieldOptions::INT_32:       // fall through
+        default:
+          bind_uint32(ifield, m->GetReflection()->
+                      GetRepeatedUInt32(*m, d, iloop));
+          return;
+      }
+    case FieldDescriptor::TYPE_BOOL:
+      bind_bool(ifield, m->GetReflection()->GetRepeatedBool(*m, d, iloop));
+      return;
+    case FieldDescriptor::TYPE_STRING:
+      bind_string(ifield, m->GetReflection()->GetRepeatedString(*m, d, iloop));
+      return;
+    case FieldDescriptor::TYPE_BYTES:
+      bind_bytes(ifield, m->GetReflection()->GetRepeatedString(*m, d, iloop));
+      return;
+    case FieldDescriptor::TYPE_ENUM:
+      bind_int32(ifield, m->GetReflection()->GetRepeatedEnumValue(*m,d,iloop));
+      return;
+    case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
+    case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
+    default:
+      break;
+  }
+  assert(0);
+}
+
+void SQLTransceiver::Statement::bind_int64(unsigned ifield, int64_t value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+void SQLTransceiver::Statement::bind_int32(unsigned ifield, int32_t value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+void SQLTransceiver::Statement::bind_int16(unsigned ifield, int16_t value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+void SQLTransceiver::Statement::bind_int8(unsigned ifield, int8_t value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+void SQLTransceiver::Statement::bind_uint64(unsigned ifield, uint64_t value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+void SQLTransceiver::Statement::bind_uint32(unsigned ifield, uint32_t value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+void SQLTransceiver::Statement::bind_uint16(unsigned ifield, uint16_t value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+void SQLTransceiver::Statement::bind_uint8(unsigned ifield, uint8_t value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+void SQLTransceiver::Statement::bind_float(unsigned ifield, float value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+void SQLTransceiver::Statement::bind_double(unsigned ifield, double value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+void SQLTransceiver::Statement::bind_bool(unsigned ifield, bool value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+void SQLTransceiver::Statement::
+bind_string(unsigned ifield, const std::string& value)
+{
+  if(ifield >= bound_values_.size())bound_values_.resize(ifield+1);
+  bound_values_[ifield] = value;
+}
+
+void SQLTransceiver::Statement::
+bind_bytes(unsigned ifield, const std::string& value)
+{
+  SQLTransceiver::Statement::bind_string(ifield, value);
 }

@@ -63,6 +63,8 @@ message UnitTestMessage {
   int32   i16  = 27 [(CFO).int32_type = INT_16];
   int32   i8   = 28 [(CFO).int32_type = INT_8];
 
+  UnitTestSimpleSubMessage ssm_empty = 29;
+  
   repeated int32   vec_i32  = 101;
   repeated int64   vec_i64  = 102;
   repeated float   vec_f    = 103;
