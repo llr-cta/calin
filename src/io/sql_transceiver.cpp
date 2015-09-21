@@ -617,7 +617,7 @@ void SQLTransceiver::Statement::reset()
   bound_values_.clear();
 }
 
-void SQLTransceiver::Statement::
+bool SQLTransceiver::Statement::
 bind_field(unsigned ifield, const google::protobuf::Message* m,
            const google::protobuf::FieldDescriptor* d)
 {
@@ -630,61 +630,47 @@ bind_field(unsigned ifield, const google::protobuf::Message* m,
   switch(d->type())
   {
     case FieldDescriptor::TYPE_DOUBLE:
-      bind_double(ifield, m->GetReflection()->GetDouble(*m, d));
-      return;
+      return bind_double(ifield, m->GetReflection()->GetDouble(*m, d));
     case FieldDescriptor::TYPE_FLOAT:
-      bind_float(ifield, m->GetReflection()->GetFloat(*m, d));
-      return;
+      return bind_float(ifield, m->GetReflection()->GetFloat(*m, d));
     case FieldDescriptor::TYPE_SFIXED64: // fallthrough
     case FieldDescriptor::TYPE_SINT64:   // fallthrough
     case FieldDescriptor::TYPE_INT64:
-      bind_int64(ifield, m->GetReflection()->GetInt64(*m, d));
-      return;
+      return bind_int64(ifield, m->GetReflection()->GetInt64(*m, d));
     case FieldDescriptor::TYPE_FIXED64:  // fallthrough
     case FieldDescriptor::TYPE_UINT64:
-      bind_uint64(ifield, m->GetReflection()->GetUInt64(*m, d));
-      return;
+      return bind_uint64(ifield, m->GetReflection()->GetUInt64(*m, d));
     case FieldDescriptor::TYPE_SFIXED32: // fallthrough
     case FieldDescriptor::TYPE_SINT32:   // fallthrough
     case FieldDescriptor::TYPE_INT32:
       switch(int32_type) {
 	case FieldOptions::INT_16:
-          bind_int16(ifield, m->GetReflection()->GetInt32(*m, d));
-          return;
+          return bind_int16(ifield, m->GetReflection()->GetInt32(*m, d));
 	case FieldOptions::INT_8:
-          bind_int8(ifield, m->GetReflection()->GetInt32(*m, d));
-          return;
+          return bind_int8(ifield, m->GetReflection()->GetInt32(*m, d));
 	case FieldOptions::INT_32:       // fallthrough
         default:
-          bind_int32(ifield, m->GetReflection()->GetInt32(*m, d));
-          return;
+          return bind_int32(ifield, m->GetReflection()->GetInt32(*m, d));
 	};
     case FieldDescriptor::TYPE_FIXED32:
     case FieldDescriptor::TYPE_UINT32:
       switch(int32_type) {
 	case FieldOptions::INT_16:
-          bind_uint16(ifield, m->GetReflection()->GetUInt32(*m, d));
-          return;
+          return bind_uint16(ifield, m->GetReflection()->GetUInt32(*m, d));
 	case FieldOptions::INT_8:
-          bind_uint8(ifield, m->GetReflection()->GetUInt32(*m, d));
-          return;
+          return bind_uint8(ifield, m->GetReflection()->GetUInt32(*m, d));
 	case FieldOptions::INT_32:       // fall through
         default:
-          bind_uint32(ifield, m->GetReflection()->GetUInt32(*m, d));
-          return;
+          return bind_uint32(ifield, m->GetReflection()->GetUInt32(*m, d));
       }
     case FieldDescriptor::TYPE_BOOL:
-      bind_bool(ifield, m->GetReflection()->GetBool(*m, d));
-      return;
+      return bind_bool(ifield, m->GetReflection()->GetBool(*m, d));
     case FieldDescriptor::TYPE_STRING:
-      bind_string(ifield, m->GetReflection()->GetString(*m, d));
-      return;
+      return bind_string(ifield, m->GetReflection()->GetString(*m, d));
     case FieldDescriptor::TYPE_BYTES:
-      bind_bytes(ifield, m->GetReflection()->GetString(*m, d));
-      return;
+      return bind_bytes(ifield, m->GetReflection()->GetString(*m, d));
     case FieldDescriptor::TYPE_ENUM:
-      bind_int32(ifield, m->GetReflection()->GetEnumValue(*m, d));
-      return;
+      return bind_int32(ifield, m->GetReflection()->GetEnumValue(*m, d));
     case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
     case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
     default:
@@ -693,7 +679,7 @@ bind_field(unsigned ifield, const google::protobuf::Message* m,
   assert(0);
 }
 
-void SQLTransceiver::Statement::
+bool SQLTransceiver::Statement::
 bind_repeated_field(unsigned ifield, uint64_t iloop,
                     const google::protobuf::Message* m,
                     const google::protobuf::FieldDescriptor* d)
@@ -707,64 +693,61 @@ bind_repeated_field(unsigned ifield, uint64_t iloop,
   switch(d->type())
   {
     case FieldDescriptor::TYPE_DOUBLE:
-      bind_double(ifield, m->GetReflection()->GetRepeatedDouble(*m, d, iloop));
-      return;
+      return bind_double(ifield, m->GetReflection()->
+                         GetRepeatedDouble(*m, d, iloop));
     case FieldDescriptor::TYPE_FLOAT:
-      bind_float(ifield, m->GetReflection()->GetRepeatedFloat(*m, d, iloop));
-      return;
+      return bind_float(ifield, m->GetReflection()->
+                        GetRepeatedFloat(*m, d, iloop));
     case FieldDescriptor::TYPE_SFIXED64: // fallthrough
     case FieldDescriptor::TYPE_SINT64:   // fallthrough
     case FieldDescriptor::TYPE_INT64:
-      bind_int64(ifield, m->GetReflection()->GetRepeatedInt64(*m, d, iloop));
-      return;
+      return bind_int64(ifield, m->GetReflection()->
+                        GetRepeatedInt64(*m, d, iloop));
     case FieldDescriptor::TYPE_FIXED64:  // fallthrough
     case FieldDescriptor::TYPE_UINT64:
-      bind_uint64(ifield, m->GetReflection()->GetRepeatedUInt64(*m, d, iloop));
-      return;
+      return bind_uint64(ifield,
+                         m->GetReflection()->GetRepeatedUInt64(*m, d, iloop));
     case FieldDescriptor::TYPE_SFIXED32: // fallthrough
     case FieldDescriptor::TYPE_SINT32:   // fallthrough
     case FieldDescriptor::TYPE_INT32:
       switch(int32_type) {
 	case FieldOptions::INT_16:
-          bind_int16(ifield, m->GetReflection()->GetRepeatedInt32(*m,d,iloop));
-          return;
+          return bind_int16(ifield, m->GetReflection()->
+                            GetRepeatedInt32(*m,d,iloop));
 	case FieldOptions::INT_8:
-          bind_int8(ifield, m->GetReflection()->GetRepeatedInt32(*m,d,iloop));
-          return;
+          return bind_int8(ifield, m->GetReflection()->
+                           GetRepeatedInt32(*m,d,iloop));
 	case FieldOptions::INT_32:       // fallthrough
         default:
-          bind_int32(ifield, m->GetReflection()->GetRepeatedInt32(*m,d,iloop));
-          return;
+          return bind_int32(ifield, m->GetReflection()->
+                            GetRepeatedInt32(*m,d,iloop));
 	};
     case FieldDescriptor::TYPE_FIXED32:
     case FieldDescriptor::TYPE_UINT32:
       switch(int32_type) {
 	case FieldOptions::INT_16:
-          bind_uint16(ifield, m->GetReflection()->
-                      GetRepeatedUInt32(*m, d, iloop));
-          return;
+          return bind_uint16(ifield, m->GetReflection()->
+                             GetRepeatedUInt32(*m, d, iloop));
 	case FieldOptions::INT_8:
-          bind_uint8(ifield, m->GetReflection()->
-                     GetRepeatedUInt32(*m, d, iloop));
-          return;
+          return bind_uint8(ifield, m->GetReflection()->
+                            GetRepeatedUInt32(*m, d, iloop));
 	case FieldOptions::INT_32:       // fall through
         default:
-          bind_uint32(ifield, m->GetReflection()->
-                      GetRepeatedUInt32(*m, d, iloop));
-          return;
+          return bind_uint32(ifield, m->GetReflection()->
+                             GetRepeatedUInt32(*m, d, iloop));
       }
     case FieldDescriptor::TYPE_BOOL:
-      bind_bool(ifield, m->GetReflection()->GetRepeatedBool(*m, d, iloop));
-      return;
+      return bind_bool(ifield, m->GetReflection()->
+                       GetRepeatedBool(*m, d, iloop));
     case FieldDescriptor::TYPE_STRING:
-      bind_string(ifield, m->GetReflection()->GetRepeatedString(*m, d, iloop));
-      return;
+      return bind_string(ifield, m->GetReflection()->
+                         GetRepeatedString(*m, d, iloop));
     case FieldDescriptor::TYPE_BYTES:
-      bind_bytes(ifield, m->GetReflection()->GetRepeatedString(*m, d, iloop));
-      return;
+      return bind_bytes(ifield, m->GetReflection()->
+                        GetRepeatedString(*m, d, iloop));
     case FieldDescriptor::TYPE_ENUM:
-      bind_int32(ifield, m->GetReflection()->GetRepeatedEnumValue(*m,d,iloop));
-      return;
+      return bind_int32(ifield, m->GetReflection()->
+                        GetRepeatedEnumValue(*m,d,iloop));
     case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
     case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
     default:
@@ -773,70 +756,76 @@ bind_repeated_field(unsigned ifield, uint64_t iloop,
   assert(0);
 }
 
-void SQLTransceiver::Statement::bind_int64(unsigned ifield, int64_t value)
+bool SQLTransceiver::Statement::bind_null(unsigned ifield)
 {
-  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+  return SQLTransceiver::Statement::bind_string(ifield, "");
 }
 
-void SQLTransceiver::Statement::bind_int32(unsigned ifield, int32_t value)
+bool SQLTransceiver::Statement::bind_int64(unsigned ifield, int64_t value)
 {
-  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+  return SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
 }
 
-void SQLTransceiver::Statement::bind_int16(unsigned ifield, int16_t value)
+bool SQLTransceiver::Statement::bind_int32(unsigned ifield, int32_t value)
 {
-  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+  return SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
 }
 
-void SQLTransceiver::Statement::bind_int8(unsigned ifield, int8_t value)
+bool SQLTransceiver::Statement::bind_int16(unsigned ifield, int16_t value)
 {
-  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+  return SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
 }
 
-void SQLTransceiver::Statement::bind_uint64(unsigned ifield, uint64_t value)
+bool SQLTransceiver::Statement::bind_int8(unsigned ifield, int8_t value)
 {
-  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+  return SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
 }
 
-void SQLTransceiver::Statement::bind_uint32(unsigned ifield, uint32_t value)
+bool SQLTransceiver::Statement::bind_uint64(unsigned ifield, uint64_t value)
 {
-  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+  return SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
 }
 
-void SQLTransceiver::Statement::bind_uint16(unsigned ifield, uint16_t value)
+bool SQLTransceiver::Statement::bind_uint32(unsigned ifield, uint32_t value)
 {
-  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+  return SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
 }
 
-void SQLTransceiver::Statement::bind_uint8(unsigned ifield, uint8_t value)
+bool SQLTransceiver::Statement::bind_uint16(unsigned ifield, uint16_t value)
 {
-  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+  return SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
 }
 
-void SQLTransceiver::Statement::bind_float(unsigned ifield, float value)
+bool SQLTransceiver::Statement::bind_uint8(unsigned ifield, uint8_t value)
 {
-  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+  return SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
 }
 
-void SQLTransceiver::Statement::bind_double(unsigned ifield, double value)
+bool SQLTransceiver::Statement::bind_float(unsigned ifield, float value)
 {
-  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+  return SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
 }
 
-void SQLTransceiver::Statement::bind_bool(unsigned ifield, bool value)
+bool SQLTransceiver::Statement::bind_double(unsigned ifield, double value)
 {
-  SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+  return SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
 }
 
-void SQLTransceiver::Statement::
+bool SQLTransceiver::Statement::bind_bool(unsigned ifield, bool value)
+{
+  return SQLTransceiver::Statement::bind_string(ifield, std::to_string(value));
+}
+
+bool SQLTransceiver::Statement::
 bind_string(unsigned ifield, const std::string& value)
 {
   if(ifield >= bound_values_.size())bound_values_.resize(ifield+1);
   bound_values_[ifield] = value;
+  return true;
 }
 
-void SQLTransceiver::Statement::
+bool SQLTransceiver::Statement::
 bind_bytes(unsigned ifield, const std::string& value)
 {
-  SQLTransceiver::Statement::bind_string(ifield, value);
+  return SQLTransceiver::Statement::bind_string(ifield, value);
 }

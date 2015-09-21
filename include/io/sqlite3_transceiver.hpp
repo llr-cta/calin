@@ -42,7 +42,38 @@ class SQLite3Transceiver: public SQLTransceiver
               const google::protobuf::Message* m_key,
               bool write_sql_to_log) override;
 
- private:
+ protected:
+
+  class SQLite3Statement: public SQLTransceiver::Statement
+  {
+   public:
+    SQLite3Statement(const std::string& sql, sqlite3* db,
+                     bool bind_values_to_sql = false);
+    virtual ~ SQLite3Statement();
+
+    void reset() override;
+
+    bool bind_null(unsigned ifield) override;
+    bool bind_int64(unsigned ifield, int64_t value) override;
+    bool bind_int32(unsigned ifield, int32_t value) override;
+    bool bind_int16(unsigned ifield, int16_t value) override;
+    bool bind_int8(unsigned ifield, int8_t value) override;
+    bool bind_uint64(unsigned ifield, uint64_t value) override;
+    bool bind_uint32(unsigned ifield, uint32_t value) override;
+    bool bind_uint16(unsigned ifield, uint16_t value) override;
+    bool bind_uint8(unsigned ifield, uint8_t value) override;
+    bool bind_float(unsigned ifield, float value) override;
+    bool bind_double(unsigned ifield, double value) override;
+    bool bind_bool(unsigned ifield, bool value) override;
+    bool bind_string(unsigned ifield, const std::string& value) override;
+    bool bind_bytes(unsigned ifield, const std::string& value) override;
+
+   protected:
+    sqlite3* db_;
+    bool bind_values_to_sql_;
+    sqlite3_stmt* stmt_;
+  };
+
   sqlite3* db_;
   bool inherit_db_ = false;
   OpenMode open_mode_ = EXISTING_OR_NEW_RW;
