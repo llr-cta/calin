@@ -48,10 +48,16 @@ class SQLite3Transceiver: public SQLTransceiver
   {
    public:
     SQLite3Statement(const std::string& sql, sqlite3* db,
-                     bool bind_values_to_sql = false);
-    virtual ~ SQLite3Statement();
+                     bool make_bound_sql = false);
+    virtual ~SQLite3Statement();
+
+    unsigned num_columns() override;
+    
+    bool is_initialized() override;
+    void error_codes(int& error_num, std::string& error_msg) override;
 
     void reset() override;
+    bool step() override;
 
     bool bind_null(unsigned ifield) override;
     bool bind_int64(unsigned ifield, int64_t value) override;
@@ -69,9 +75,9 @@ class SQLite3Transceiver: public SQLTransceiver
     bool bind_bytes(unsigned ifield, const std::string& value) override;
 
    protected:
-    sqlite3* db_;
-    bool bind_values_to_sql_;
-    sqlite3_stmt* stmt_;
+    sqlite3* db_ = nullptr;
+    bool make_bound_sql_;
+    sqlite3_stmt* stmt_ = nullptr;
   };
 
   sqlite3* db_;

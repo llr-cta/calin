@@ -143,7 +143,13 @@ class SQLTransceiver
     const std::string& sql() const { return sql_; }
     std::string bound_sql() const;
     
+    virtual unsigned num_columns();
+
+    virtual bool is_initialized();
+    virtual void error_codes(int& error_num, std::string& error_msg);
+    
     virtual void reset();
+    virtual bool step();
 
     bool bind_field(unsigned ifield, const google::protobuf::Message* m,
                     const google::protobuf::FieldDescriptor* d);

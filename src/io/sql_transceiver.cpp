@@ -612,9 +612,31 @@ std::string SQLTransceiver::Statement::bound_sql() const
   return L.str();
 }
 
+unsigned SQLTransceiver::Statement::num_columns()
+{
+  return 0;
+}
+
+bool SQLTransceiver::Statement::is_initialized()
+{
+  return true;
+}
+
+void SQLTransceiver::Statement::
+error_codes(int& error_num, std::string& error_msg)
+{
+  error_num = 0;
+  error_msg = "";
+}
+
 void SQLTransceiver::Statement::reset()
 {
   bound_values_.clear();
+}
+
+bool SQLTransceiver::Statement::step()
+{
+  // nothing to see here
 }
 
 bool SQLTransceiver::Statement::

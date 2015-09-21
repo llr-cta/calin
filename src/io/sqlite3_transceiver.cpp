@@ -114,110 +114,134 @@ execute_simple_sql(const std::string& sql, bool write_sql_to_log,
 }
 
 SQLite3Transceiver::SQLite3Statement::
-SQLite3Statement(const std::string& sql, sqlite3* db, bool bind_values_to_sql):
+SQLite3Statement(const std::string& sql, sqlite3* db, bool make_bound_sql):
     SQLTransceiver::Statement(sql),
-    db_(db), bind_values_to_sql_(bind_values_to_sql)
+    db_(db), stmt_(nullptr), make_bound_sql_(make_bound_sql)
 {
-  // nothing to see here
+  sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt_, nullptr);
 }
 
 SQLite3Transceiver::SQLite3Statement::~SQLite3Statement()
 {
+  sqlite3_finalize(stmt_);
+}
 
+unsigned SQLite3Transceiver::SQLite3Statement::num_columns()
+{
+  return sqlite3_column_count(stmt_);
+}
+
+bool SQLite3Transceiver::SQLite3Statement::is_initialized()
+{
+  return stmt_ != nullptr;
+}
+
+void SQLite3Transceiver::SQLite3Statement::
+error_codes(int& error_num, std::string& error_msg)
+{
+  error_num = sqlite3_errcode(db_);
+  error_msg = sqlite3_errmsg(db_);
+}
+
+bool SQLite3Transceiver::SQLite3Statement::step()
+{
+  return sqlite3_step(stmt_) == SQLITE_OK;
 }
 
 void SQLite3Transceiver::SQLite3Statement::reset()
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::reset();
+  sqlite3_reset(stmt_);
+  sqlite3_clear_bindings(stmt_);
+  if(make_bound_sql_)SQLTransceiver::Statement::reset();
 }
 
 bool SQLite3Transceiver::SQLite3Statement::bind_null(unsigned ifield)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_null(ifield);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_null(ifield);
   return sqlite3_bind_null(stmt_, ifield+1) == SQLITE_OK;
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_int64(unsigned ifield, int64_t value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_int64(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_int64(ifield, value);
   return sqlite3_bind_int64(stmt_, ifield+1, value) == SQLITE_OK;
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_int32(unsigned ifield, int32_t value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_int32(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_int32(ifield, value);
   return sqlite3_bind_int(stmt_, ifield+1, value) == SQLITE_OK;
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_int16(unsigned ifield, int16_t value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_int16(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_int16(ifield, value);
   return sqlite3_bind_int(stmt_, ifield+1, value) == SQLITE_OK;
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_int8(unsigned ifield, int8_t value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_int8(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_int8(ifield, value);
   return sqlite3_bind_int(stmt_, ifield+1, value) == SQLITE_OK;
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_uint64(unsigned ifield, uint64_t value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_uint64(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_uint64(ifield, value);
   return sqlite3_bind_int64(stmt_, ifield+1, value) == SQLITE_OK;
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_uint32(unsigned ifield, uint32_t value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_uint32(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_uint32(ifield, value);
   return sqlite3_bind_int(stmt_, ifield+1, value) == SQLITE_OK;
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_uint16(unsigned ifield, uint16_t value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_uint16(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_uint16(ifield, value);
   return sqlite3_bind_int(stmt_, ifield+1, value) == SQLITE_OK;
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_uint8(unsigned ifield, uint8_t value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_uint8(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_uint8(ifield, value);
   return sqlite3_bind_int(stmt_, ifield+1, value) == SQLITE_OK;
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_float(unsigned ifield, float value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_float(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_float(ifield, value);
   return sqlite3_bind_double(stmt_, ifield+1, value) == SQLITE_OK;
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_double(unsigned ifield, double value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_double(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_double(ifield, value);
   return sqlite3_bind_double(stmt_, ifield+1, value) == SQLITE_OK;
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_bool(unsigned ifield, bool value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_bool(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_bool(ifield, value);
   return sqlite3_bind_int(stmt_, ifield+1, value?1:0) == SQLITE_OK;  
 }
 
 bool SQLite3Transceiver::SQLite3Statement::
 bind_string(unsigned ifield, const std::string& value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_string(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_string(ifield, value);
   int nbyte = ::strlen(value.c_str())+1;
   char* string_data = static_cast<char*>(::malloc(nbyte));
   ::memcpy(string_data, value.c_str(), nbyte);
@@ -228,7 +252,7 @@ bind_string(unsigned ifield, const std::string& value)
 bool SQLite3Transceiver::SQLite3Statement::
 bind_bytes(unsigned ifield, const std::string& value)
 {
-  if(bind_values_to_sql_)SQLTransceiver::Statement::bind_bytes(ifield, value);
+  if(make_bound_sql_)SQLTransceiver::Statement::bind_bytes(ifield, value);
   int nbyte = value.size();
   void* blob_data = ::malloc(nbyte);
   ::memcpy(blob_data, value.c_str(), nbyte);
