@@ -25,6 +25,16 @@ message UnitTestVectorSubMessage {
   repeated UnitTestSimpleSubMessage vsm_vec_ssm  = 2;
 }
 
+message UnitTestOneofSubMessage {
+  oneof oo_sm_base {
+    int32   oosm_i32                  = 991;
+    string  oosm_s                    = 992;
+    UnitTestSimpleSubMessage oosm_ssm = 993;
+    UnitTestSimpleSubMessage oosm_ssm_inline = 994 [
+        (CFO).sql.inline_message = true];
+  };
+}
+
 message UnitTestMessage {
   enum EnumType {
     UNKNOWN = 0;
@@ -82,6 +92,18 @@ message UnitTestMessage {
   map<string, UnitTestComplexSubMessage> map_csm = 207;
   map<string, UnitTestInlinedSubMessage> map_ism = 209;
   map<string, UnitTestVectorSubMessage> map_vsm = 211;
+
+  oneof oo_base {
+    int32   oo_i32                  = 301;
+    string  oo_s                    = 302;
+    UnitTestSimpleSubMessage oo_ssm = 303;
+    UnitTestSimpleSubMessage oo_ssm_inline = 304 [
+        (CFO).sql.inline_message = true];
+  };
+
+  UnitTestOneofSubMessage oosm      = 400;
+  UnitTestOneofSubMessage oosm_inline     = 401 [
+      (CFO).sql.inline_message = true];
 }
 
 message UnitTestKey {

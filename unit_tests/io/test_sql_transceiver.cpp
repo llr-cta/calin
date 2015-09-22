@@ -140,7 +140,13 @@ TEST(TestSQLTransceiver, Insert) {
   repeated UnitTestSimpleSubMessage vec_ssm_inline = 106 [(CFO).sql.inline_message = true];
 #endif
 
-  
+  m_data.set_oo_s("OO string test");
+
+
+  m_data.mutable_oosm_inline()->set_oosm_i32(1234567);
+  m_data.mutable_oosm_inline()->set_oosm_s("OO test string 2");
+  m_data.mutable_oosm_inline()->mutable_oosm_ssm_inline()->set_ssm_i32(987654);
+      
   xvr.insert("mytable", &m_data, &m_key, true);
 }
 

@@ -141,6 +141,19 @@ r_make_sqltable_tree(const std::string& table_name,
   t->table_name          = table_name;
   t->parent_field_d      = parent_field_d;
 
+  for(int ioneof = 0; ioneof<d->oneof_decl_count(); ioneof++)
+  {
+    const OneofDescriptor* oo { d->oneof_decl(ioneof) };
+    SQLTableField* tf { new SQLTableField };
+    tf->table             = t;
+    tf->field_origin      = tf;
+    tf->field_type        = SQLTableField::POD;
+    tf->field_name        = oo->name();
+    tf->oneof_d           = oo;
+    
+    t->fields.push_back(tf);
+  }
+  
   for(int ifield = 0; ifield<d->field_count(); ifield++)
   {
     const FieldDescriptor* f { d->field(ifield) };
@@ -192,7 +205,7 @@ r_make_sqltable_tree(const std::string& table_name,
       sub_table = new SQLTable;
       sub_table->parent_table    = t;
       sub_table->table_name      = sub_name(table_name,f->name());
-      sub_table->parent_field_d  = f;      
+      sub_table->parent_field_d  = f;
       
       SQLTableField* tf { new SQLTableField };
       tf->table             = sub_table;
@@ -465,6 +478,7 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
               uint64_t parent_oid, uint64_t loop_id,
               bool write_sql_to_log)
 {
+  std::map<const google::protobuf::OneofDescriptor*, uint32_t> oneof_ids;
   unsigned ifield = 0;
   for(auto f : t->fields)
   {
@@ -475,16 +489,29 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
 
     if(f->field_origin == f)
     {
+      f->data = nullptr;
+      
       if(f->field_d != nullptr)
       {
         for(auto d : f->field_d_path) {
-          if(!r->HasField(*m, d))goto next_field;
+          if(!r->HasField(*m, d))goto bind_field;
           m = &r->GetMessage(*m, d);
           r = m->GetReflection();
         }
-        
-        f->data =
-            static_cast<void*>(const_cast<google::protobuf::Message*>(m));
+        if(f->field_d->is_repeated() or r->HasField(*m, f->field_d))
+          f->data =
+              static_cast<void*>(const_cast<google::protobuf::Message*>(m));
+      }
+      else if(f->oneof_d != nullptr)
+      {
+        for(auto d : f->field_d_path) {
+          if(!r->HasField(*m, d))goto bind_field;
+          m = &r->GetMessage(*m, d);
+          r = m->GetReflection();
+        }
+        oneof_ids[f->oneof_d] = r->HasOneof(*m, f->oneof_d) ? 
+            r->GetOneofFieldDescriptor(*m, f->oneof_d)->number() : 0;
+        f->data = &oneof_ids[f->oneof_d];
       }
       else
       {
@@ -507,10 +534,13 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
       }
     }
 
-    f = f->field_origin;
-    assert(f->data);
+ bind_field:
 
-    if(f->field_d == nullptr)
+    f = f->field_origin;
+
+    if(f->data == nullptr)
+      t->stmt->bind_null(ifield);
+    else if(f->field_d == nullptr)
       t->stmt->bind_uint64(ifield, *static_cast<uint64_t*>(f->data));
     else if(f->field_d->is_repeated())
       t->stmt->bind_repeated_field(ifield, loop_id, 
@@ -519,7 +549,6 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
       t->stmt->bind_field(ifield,
                static_cast<google::protobuf::Message*>(f->data), f->field_d);
 
- next_field:
     ifield++;
   }
 
@@ -780,7 +809,7 @@ bind_repeated_field(unsigned ifield, uint64_t iloop,
 
 bool SQLTransceiver::Statement::bind_null(unsigned ifield)
 {
-  return SQLTransceiver::Statement::bind_string(ifield, "");
+  return SQLTransceiver::Statement::bind_string(ifield, "NULL");
 }
 
 bool SQLTransceiver::Statement::bind_int64(unsigned ifield, int64_t value)

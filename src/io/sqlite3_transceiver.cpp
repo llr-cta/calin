@@ -113,6 +113,14 @@ execute_simple_sql(const std::string& sql, bool write_sql_to_log,
   return SQLITE_DONE;
 }
 
+// =============================================================================
+// =============================================================================
+//
+// SQLite3Transceiver::SQLite3Statement
+//
+// =============================================================================
+// =============================================================================
+
 SQLite3Transceiver::SQLite3Statement::
 SQLite3Statement(const std::string& sql, sqlite3* db, bool make_bound_sql):
     SQLTransceiver::Statement(sql),

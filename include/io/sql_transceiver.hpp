@@ -55,15 +55,14 @@ class SQLTransceiver
     enum FieldType {
       KEY_INHERITED, KEY_USER_SUPPLIED, KEY_PROTO_DEFINED, KEY_OID,
       KEY_LOOP_ID, KEY_MAP_KEY, POD };
-    SQLTable* table = nullptr;      // Table the field belongs to
-    SQLTableField* field_origin = nullptr; // Ptr to first occurance of field (if key)
-    FieldType field_type;           // Type of field
-    std::string field_name;         // Full name of field
-    const google::protobuf::FieldDescriptor* field_d;
+    SQLTable*                                 table = nullptr;
+    SQLTableField*                            field_origin = nullptr;
+    FieldType                                 field_type;
+    std::string                               field_name;
+    const google::protobuf::FieldDescriptor*  field_d = nullptr;
     std::vector<const google::protobuf::FieldDescriptor*> field_d_path;
-    void* data = nullptr;           // Pointer to data (message or index)
-    //google::protobuf::FieldDescriptor* message;
-    //uint64_t* rowid_or_vecindex;
+    void*                                     data = nullptr;
+    const google::protobuf::OneofDescriptor*  oneof_d = nullptr;
     bool is_key() const { return field_type!=POD; }
   };
 
@@ -72,13 +71,13 @@ class SQLTransceiver
     ~SQLTable() { for(auto ifield : fields)delete ifield;
       for(auto itable : sub_tables)delete itable; }
 
-    std::string table_name;
-    SQLTable* parent_table = nullptr;
-    const google::protobuf::FieldDescriptor* parent_field_d = nullptr;
+    std::string                               table_name;
+    SQLTable*                                 parent_table = nullptr;
+    const google::protobuf::FieldDescriptor*  parent_field_d = nullptr;
     std::vector<const google::protobuf::FieldDescriptor*> parent_field_d_path;
-    std::vector<SQLTableField*> fields;
-    std::vector<SQLTable*> sub_tables;
-    Statement* stmt = nullptr;
+    std::vector<SQLTableField*>               fields;
+    std::vector<SQLTable*>                    sub_tables;
+    Statement*                                stmt = nullptr;
   };
 
   SQLTable*
