@@ -166,12 +166,17 @@ std::string SQLite3Transceiver::SQLite3Statement::error_message()
 }
 
 SQLTransceiver::Statement::StepStatus
-SQLite3Transceiver::SQLite3Statement::step(uint64_t& oid)
+SQLite3Transceiver::SQLite3Statement::step()
 {
   int retcode = sqlite3_step(stmt_);
   if(retcode == SQLITE_DONE)return Statement::OK_NO_DATA;
   else if(retcode == SQLITE_ROW)return Statement::OK_HAS_DATA;
   else return Statement::ERROR;
+}
+
+uint64_t SQLite3Transceiver::SQLite3Statement::get_oid()
+{
+  return sqlite3_last_insert_rowid(db_);
 }
 
 void SQLite3Transceiver::SQLite3Statement::reset()

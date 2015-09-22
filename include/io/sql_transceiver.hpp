@@ -39,7 +39,7 @@ class SQLTransceiver
                 bool write_sql_to_log = false);
 
   virtual bool
-  insert(const std::string& table_name,
+  insert(const std::string& table_name, uint64_t& oid,
          const google::protobuf::Message* m_data,
          const google::protobuf::Message* m_key = nullptr,
          bool write_sql_to_log = false);
@@ -151,8 +151,9 @@ class SQLTransceiver
     virtual std::string error_message();
     
     virtual void reset();
-    virtual StepStatus step(uint64_t& oid);
-
+    virtual StepStatus step();
+    virtual uint64_t get_oid();
+    
     bool bind_field(unsigned ifield, const google::protobuf::Message* m,
                     const google::protobuf::FieldDescriptor* d);
     bool bind_repeated_field(unsigned ifield, uint64_t loop_id, 
@@ -204,7 +205,8 @@ class SQLTransceiver
   virtual bool insert_tables(SQLTable* t,
                              const google::protobuf::Message* m_data,
                              const google::protobuf::Message* m_key,
-                             uint64_t parent_oid, uint64_t loop_id);
+                             uint64_t& oid, uint64_t parent_oid,
+                             uint64_t loop_id, bool ignore_errors);
   virtual bool finalize_statements(SQLTable* t);
 };
 

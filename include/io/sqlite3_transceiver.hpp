@@ -60,7 +60,8 @@ class SQLite3Transceiver: public SQLTransceiver
     std::string error_message() override;
 
     void reset() override;
-    StepStatus step(uint64_t& oid) override;
+    StepStatus step() override;
+    uint64_t get_oid() override;
 
     bool bind_null(unsigned ifield) override;
     bool bind_int64(unsigned ifield, int64_t value) override;

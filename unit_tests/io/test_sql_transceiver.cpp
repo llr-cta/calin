@@ -106,6 +106,7 @@ TEST(TestSQLite3Transceiver, CreateTableWithKey) {
 
 TEST(TestSQLite3Transceiver, Insert) {
   SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::TRUNCATE_RW);
+  //SQLite3Transceiver xvr(":memory:", SQLite3Transceiver::TRUNCATE_RW);
   xvr.create_tables("mytable", UnitTestMessage::descriptor(),
                     UnitTestKey::descriptor(), "", false);
   
@@ -152,12 +153,13 @@ TEST(TestSQLite3Transceiver, Insert) {
 
   m_data.set_oo_s("OO string test");
 
-
   m_data.mutable_oosm_inline()->set_oosm_i32(1234567);
   m_data.mutable_oosm_inline()->set_oosm_s("OO test string 2");
   m_data.mutable_oosm_inline()->mutable_oosm_ssm_inline()->set_ssm_i32(987654);
-      
-  xvr.insert("mytable", &m_data, &m_key, true);
+
+  uint64_t oid;
+  xvr.insert("mytable", oid, &m_data, &m_key, true);
+  //std::cerr << oid << '\n';
 }
 
 int main(int argc, char **argv) {

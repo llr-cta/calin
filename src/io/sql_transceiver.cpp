@@ -38,7 +38,7 @@ create_tables(const std::string& table_name,
 }
 
 bool SQLTransceiver::
-insert(const std::string& table_name,
+insert(const std::string& table_name, uint64_t& oid,
        const google::protobuf::Message* m_data,
        const google::protobuf::Message* m_key,
        bool write_sql_to_log)
@@ -47,10 +47,10 @@ insert(const std::string& table_name,
       make_keyed_sqltable_tree(table_name, m_data->GetDescriptor(),
                                m_key?m_key->GetDescriptor():nullptr, false);
   prepare_insert_statements(t, write_sql_to_log);
-  insert_tables(t, m_data, m_key, 0, 0);
+  bool success = insert_tables(t, m_data, m_key, oid, 0, 0, false);
   finalize_statements(t);
   delete t;
-  return true;
+  return success;
 }
 
 std::vector<std::pair<std::string,std::string> >
@@ -467,15 +467,15 @@ sql_insert(const SQLTable* t)
 bool SQLTransceiver::
 prepare_insert_statements(SQLTable* t, bool write_sql_to_log)
 {
-  iterate_over_tables(t, [this,write_sql_to_log](SQLTable* t) {
+  iterate_over_tables(t,[this,write_sql_to_log](SQLTable* t) {
       t->stmt = new Statement(sql_insert(t), write_sql_to_log); });
   return true;
 }
 
 bool SQLTransceiver::
 insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
-              const google::protobuf::Message* m_key,
-              uint64_t parent_oid, uint64_t loop_id)
+              const google::protobuf::Message* m_key, uint64_t& oid,
+              uint64_t parent_oid, uint64_t loop_id, bool ignore_errors)
 {
   std::map<const google::protobuf::OneofDescriptor*, uint32_t> oneof_ids;
   unsigned ifield = 0;
@@ -551,13 +551,18 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
   }
 
   bool good = true;
-  Statement::StepStatus status = t->stmt->step(parent_oid);
+  Statement::StepStatus status = t->stmt->step();
   switch(status)
   {
     case Statement::ERROR:
-      LOG(ERROR) << "INSERT statement returned error: "
-                 << t->stmt->error_message();
-      return false;
+      good = false;
+      if(!ignore_errors)
+      {
+        LOG(ERROR) << "INSERT statement returned error: "
+                   << t->stmt->error_message();
+        return false;
+      }
+      break;
     case Statement::OK_NO_DATA:
       // this is what we expect
       break;
@@ -566,8 +571,9 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
                  << t->stmt->sql();
       return false;
   }
+  oid = t->stmt->get_oid();
   t->stmt->reset();
-  
+
   for(auto st : t->sub_tables)
   {
     const google::protobuf::Message* m = m_data;
@@ -587,7 +593,9 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
         if(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE) {
           mi = &r->GetRepeatedMessage(*m, st->parent_field_d, iloop);
           r = m->GetReflection(); }
-        good &= insert_tables(st, mi, nullptr, parent_oid, iloop);
+        good &= insert_tables(st, mi, nullptr, parent_oid, oid, iloop,
+                              ignore_errors);
+        if(!ignore_errors and !good)return good;
       }
     }
     else
@@ -596,7 +604,8 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
       if(!r->HasField(*m, st->parent_field_d))goto next_sub_table;
       m = &r->GetMessage(*m, st->parent_field_d);
       r = m->GetReflection();
-      good &= insert_tables(st, m, nullptr, parent_oid, 0);
+      good &= insert_tables(st, m, nullptr, parent_oid, oid, 0, ignore_errors);
+      if(!ignore_errors and !good)return good;
     }
  next_sub_table:
     ;
@@ -671,10 +680,15 @@ void SQLTransceiver::Statement::reset()
 }
 
 SQLTransceiver::Statement::StepStatus
-SQLTransceiver::Statement::step(uint64_t& oid)
+SQLTransceiver::Statement::step()
 {
   if(write_sql_to_log_)LOG(INFO) << bound_sql();
   return SQLTransceiver::Statement::OK_NO_DATA;
+}
+
+uint64_t SQLTransceiver::Statement::get_oid()
+{
+  return 0;
 }
 
 bool SQLTransceiver::Statement::
