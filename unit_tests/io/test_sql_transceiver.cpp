@@ -97,8 +97,18 @@ TEST(TestSQLTransceiver, CreateTableWithKey) {
                     UnitTestKey::descriptor(), "", true);
 }
 
-TEST(TestSQLTransceiver, Insert) {
-  SQLTransceiver xvr;
+TEST(TestSQLite3Transceiver, CreateTableWithKey) {
+  SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::TRUNCATE_RW);
+  //SQLite3Transceiver xvr(":memory:", SQLite3Transceiver::TRUNCATE_RW);
+  xvr.create_tables("mytable", UnitTestMessage::descriptor(),
+                    UnitTestKey::descriptor(), "", true);
+}
+
+TEST(TestSQLite3Transceiver, Insert) {
+  SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::TRUNCATE_RW);
+  xvr.create_tables("mytable", UnitTestMessage::descriptor(),
+                    UnitTestKey::descriptor(), "", false);
+  
   UnitTestMessage m_data;
   UnitTestKey m_key;
   m_key.set_user_key_i32(1234);
@@ -133,7 +143,7 @@ TEST(TestSQLTransceiver, Insert) {
   }
 
 #if 0
-    repeated int64   vec_i64  = 102;
+  repeated int64   vec_i64  = 102;
   repeated float   vec_f    = 103;
   repeated string  vec_s    = 104;
   repeated UnitTestSimpleSubMessage vec_ssm = 105;
@@ -148,13 +158,6 @@ TEST(TestSQLTransceiver, Insert) {
   m_data.mutable_oosm_inline()->mutable_oosm_ssm_inline()->set_ssm_i32(987654);
       
   xvr.insert("mytable", &m_data, &m_key, true);
-}
-
-TEST(TestSQLite3Transceiver, CreateTableWithKey) {
-  SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::TRUNCATE_RW);
-  //SQLite3Transceiver xvr(":memory:", SQLite3Transceiver::TRUNCATE_RW);
-  xvr.create_tables("mytable", UnitTestMessage::descriptor(),
-                    UnitTestKey::descriptor(), "", true);
 }
 
 int main(int argc, char **argv) {

@@ -46,9 +46,9 @@ insert(const std::string& table_name,
   SQLTable* t =
       make_keyed_sqltable_tree(table_name, m_data->GetDescriptor(),
                                m_key?m_key->GetDescriptor():nullptr, false);
-  prepare_insert_statements(t);
-  insert_tables(t, m_data, m_key, 0, 0, write_sql_to_log);
-  finalize_insert_statements(t);
+  prepare_insert_statements(t, write_sql_to_log);
+  insert_tables(t, m_data, m_key, 0, 0);
+  finalize_statements(t);
   delete t;
   return true;
 }
@@ -464,19 +464,18 @@ sql_insert(const SQLTable* t)
   return sql.str();
 }
 
-bool SQLTransceiver::prepare_insert_statements(SQLTable* t)
+bool SQLTransceiver::
+prepare_insert_statements(SQLTable* t, bool write_sql_to_log)
 {
-  iterate_over_tables(t, [this](SQLTable* t) {
-      t->stmt = new Statement(sql_insert(t));
-    });
+  iterate_over_tables(t, [this,write_sql_to_log](SQLTable* t) {
+      t->stmt = new Statement(sql_insert(t), write_sql_to_log); });
   return true;
 }
 
 bool SQLTransceiver::
 insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
               const google::protobuf::Message* m_key,
-              uint64_t parent_oid, uint64_t loop_id,
-              bool write_sql_to_log)
+              uint64_t parent_oid, uint64_t loop_id)
 {
   std::map<const google::protobuf::OneofDescriptor*, uint32_t> oneof_ids;
   unsigned ifield = 0;
@@ -535,7 +534,6 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
     }
 
  bind_field:
-
     f = f->field_origin;
 
     if(f->data == nullptr)
@@ -553,10 +551,23 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
   }
 
   bool good = true;
-  good &= execute_one_insert_statement(t, parent_oid);
-  if(write_sql_to_log)
-    LOG(INFO) << t->stmt->bound_sql() << " -> " << parent_oid;
-
+  Statement::StepStatus status = t->stmt->step(parent_oid);
+  switch(status)
+  {
+    case Statement::ERROR:
+      LOG(ERROR) << "INSERT statement returned error: "
+                 << t->stmt->error_message();
+      return false;
+    case Statement::OK_NO_DATA:
+      // this is what we expect
+      break;
+    case Statement::OK_HAS_DATA:
+      LOG(ERROR) << "INSERT statement returned data" << '\n'
+                 << t->stmt->sql();
+      return false;
+  }
+  t->stmt->reset();
+  
   for(auto st : t->sub_tables)
   {
     const google::protobuf::Message* m = m_data;
@@ -576,8 +587,7 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
         if(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE) {
           mi = &r->GetRepeatedMessage(*m, st->parent_field_d, iloop);
           r = m->GetReflection(); }
-        good &= insert_tables(st, mi, nullptr, parent_oid, iloop,
-                              write_sql_to_log);
+        good &= insert_tables(st, mi, nullptr, parent_oid, iloop);
       }
     }
     else
@@ -586,7 +596,7 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
       if(!r->HasField(*m, st->parent_field_d))goto next_sub_table;
       m = &r->GetMessage(*m, st->parent_field_d);
       r = m->GetReflection();
-      good &= insert_tables(st, m, nullptr, parent_oid, 0, write_sql_to_log);
+      good &= insert_tables(st, m, nullptr, parent_oid, 0);
     }
  next_sub_table:
     ;
@@ -595,14 +605,7 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
   return good;
 }
 
-bool SQLTransceiver::execute_one_insert_statement(SQLTable* t, uint64_t& oid)
-{
-  auto L = LOG(INFO);
-  Statement* s { static_cast<Statement*>(t->stmt) };
-  return true;
-}
-
-bool SQLTransceiver::finalize_insert_statements(SQLTable* t)
+bool SQLTransceiver::finalize_statements(SQLTable* t)
 {
   iterate_over_tables(t, [this](SQLTable* t) {
       delete t->stmt; t->stmt = nullptr; });
@@ -617,8 +620,9 @@ bool SQLTransceiver::finalize_insert_statements(SQLTable* t)
 // ============================================================================
 // ============================================================================
 
-SQLTransceiver::Statement::Statement(const std::string& sql):
-    sql_(sql), bound_values_()
+SQLTransceiver::Statement::
+Statement(const std::string& sql, bool write_sql_to_log):
+    sql_(sql), write_sql_to_log_(write_sql_to_log), bound_values_()
 {
   // nothing to see here
 }
@@ -651,11 +655,14 @@ bool SQLTransceiver::Statement::is_initialized()
   return true;
 }
 
-void SQLTransceiver::Statement::
-error_codes(int& error_num, std::string& error_msg)
+int SQLTransceiver::Statement::error_code()
 {
-  error_num = 0;
-  error_msg = "";
+  return 0;
+}
+
+std::string SQLTransceiver::Statement::error_message()
+{
+  return "";
 }
 
 void SQLTransceiver::Statement::reset()
@@ -663,9 +670,11 @@ void SQLTransceiver::Statement::reset()
   bound_values_.clear();
 }
 
-bool SQLTransceiver::Statement::step()
+SQLTransceiver::Statement::StepStatus
+SQLTransceiver::Statement::step(uint64_t& oid)
 {
-  // nothing to see here
+  if(write_sql_to_log_)LOG(INFO) << bound_sql();
+  return SQLTransceiver::Statement::OK_NO_DATA;
 }
 
 bool SQLTransceiver::Statement::

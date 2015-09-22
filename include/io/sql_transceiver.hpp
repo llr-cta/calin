@@ -136,7 +136,9 @@ class SQLTransceiver
   class Statement
   {
    public:
-    Statement(const std::string& sql);
+    enum StepStatus { ERROR, OK_NO_DATA, OK_HAS_DATA };
+    
+    Statement(const std::string& sql, bool write_sql_to_log);
     virtual ~Statement();
 
     const std::string& sql() const { return sql_; }
@@ -145,10 +147,11 @@ class SQLTransceiver
     virtual unsigned num_columns();
 
     virtual bool is_initialized();
-    virtual void error_codes(int& error_num, std::string& error_msg);
+    virtual int error_code();
+    virtual std::string error_message();
     
     virtual void reset();
-    virtual bool step();
+    virtual StepStatus step(uint64_t& oid);
 
     bool bind_field(unsigned ifield, const google::protobuf::Message* m,
                     const google::protobuf::FieldDescriptor* d);
@@ -173,6 +176,7 @@ class SQLTransceiver
 
    protected:
     std::string sql_;
+    bool write_sql_to_log_;
     std::vector<std::string> bound_values_;
   };
 
@@ -196,14 +200,12 @@ class SQLTransceiver
   virtual std::string sql_insert(const SQLTable* t);
 
 
-  virtual bool prepare_insert_statements(SQLTable* t);
+  virtual bool prepare_insert_statements(SQLTable* t, bool write_sql_to_log);
   virtual bool insert_tables(SQLTable* t,
                              const google::protobuf::Message* m_data,
                              const google::protobuf::Message* m_key,
-                             uint64_t parent_oid, uint64_t loop_id,
-                             bool write_sql_to_log);
-  virtual bool execute_one_insert_statement(SQLTable* t, uint64_t& oid);
-  virtual bool finalize_insert_statements(SQLTable* t);
+                             uint64_t parent_oid, uint64_t loop_id);
+  virtual bool finalize_statements(SQLTable* t);
 };
 
 } } } // namespace calin::io::sql_transceiver

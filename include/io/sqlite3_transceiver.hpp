@@ -37,11 +37,13 @@ class SQLite3Transceiver: public SQLTransceiver
                      const std::string& instance_desc = "",
                      bool write_sql_to_log = false) override;
 
+#if 0
   bool insert(const std::string& table_name,
               const google::protobuf::Message* m_data,
               const google::protobuf::Message* m_key,
               bool write_sql_to_log) override;
-
+#endif
+  
  protected:
 
   class SQLite3Statement: public SQLTransceiver::Statement
@@ -54,10 +56,11 @@ class SQLite3Transceiver: public SQLTransceiver
     unsigned num_columns() override;
     
     bool is_initialized() override;
-    void error_codes(int& error_num, std::string& error_msg) override;
+    int error_code() override;
+    std::string error_message() override;
 
     void reset() override;
-    bool step() override;
+    StepStatus step(uint64_t& oid) override;
 
     bool bind_null(unsigned ifield) override;
     bool bind_int64(unsigned ifield, int64_t value) override;
@@ -76,7 +79,7 @@ class SQLite3Transceiver: public SQLTransceiver
 
    protected:
     sqlite3* db_ = nullptr;
-    bool make_bound_sql_;
+    bool make_bound_sql_ = false;
     sqlite3_stmt* stmt_ = nullptr;
   };
 
@@ -84,6 +87,8 @@ class SQLite3Transceiver: public SQLTransceiver
   bool inherit_db_ = false;
   OpenMode open_mode_ = EXISTING_OR_NEW_RW;
   
+  bool prepare_insert_statements(SQLTable* t, bool write_sql_to_log) override;
+
   int execute_simple_sql(const std::string& sql, bool write_sql_to_log = false,
                          bool ignore_errors = false);
 

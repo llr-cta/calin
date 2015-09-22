@@ -58,6 +58,7 @@ create_tables(const std::string& table_name,
   return true;
 }
 
+#if 0
 bool SQLite3Transceiver::
 insert(const std::string& table_name,
        const google::protobuf::Message* m_data,
@@ -65,6 +66,7 @@ insert(const std::string& table_name,
 {
   
 }
+#endif
 
 int SQLite3Transceiver::
 execute_simple_sql(const std::string& sql, bool write_sql_to_log,
@@ -113,6 +115,15 @@ execute_simple_sql(const std::string& sql, bool write_sql_to_log,
   return SQLITE_DONE;
 }
 
+bool SQLite3Transceiver::
+prepare_insert_statements(SQLTable* t, bool write_sql_to_log)
+{
+  iterate_over_tables(t, [this,write_sql_to_log](SQLTable* t) {
+      t->stmt = new SQLite3Statement(sql_insert(t), db_, write_sql_to_log); });
+  return true;
+}
+
+
 // =============================================================================
 // =============================================================================
 //
@@ -123,7 +134,7 @@ execute_simple_sql(const std::string& sql, bool write_sql_to_log,
 
 SQLite3Transceiver::SQLite3Statement::
 SQLite3Statement(const std::string& sql, sqlite3* db, bool make_bound_sql):
-    SQLTransceiver::Statement(sql),
+    SQLTransceiver::Statement(sql, make_bound_sql),
     db_(db), stmt_(nullptr), make_bound_sql_(make_bound_sql)
 {
   sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt_, nullptr);
@@ -144,16 +155,23 @@ bool SQLite3Transceiver::SQLite3Statement::is_initialized()
   return stmt_ != nullptr;
 }
 
-void SQLite3Transceiver::SQLite3Statement::
-error_codes(int& error_num, std::string& error_msg)
+int SQLite3Transceiver::SQLite3Statement::error_code()
 {
-  error_num = sqlite3_errcode(db_);
-  error_msg = sqlite3_errmsg(db_);
+  return sqlite3_errcode(db_);
 }
 
-bool SQLite3Transceiver::SQLite3Statement::step()
+std::string SQLite3Transceiver::SQLite3Statement::error_message()
 {
-  return sqlite3_step(stmt_) == SQLITE_OK;
+  return sqlite3_errmsg(db_);
+}
+
+SQLTransceiver::Statement::StepStatus
+SQLite3Transceiver::SQLite3Statement::step(uint64_t& oid)
+{
+  int retcode = sqlite3_step(stmt_);
+  if(retcode == SQLITE_DONE)return Statement::OK_NO_DATA;
+  else if(retcode == SQLITE_ROW)return Statement::OK_HAS_DATA;
+  else return Statement::ERROR;
 }
 
 void SQLite3Transceiver::SQLite3Statement::reset()
