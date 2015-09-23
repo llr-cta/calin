@@ -54,33 +54,12 @@ insert(const std::string& table_name, uint64_t& oid,
 }
 
 std::vector<std::pair<std::string,std::string> >
-SQLTransceiver::list_all_table_columns(SQLTable* t)
+SQLTransceiver::list_all_table_columns(const SQLTable* t)
 {
   std::vector<std::pair<std::string,std::string>> fields;
-  for(auto f : t->fields)
-    fields.push_back(std::make_pair(t->table_name, f->field_name));
-  for(auto st : t->sub_tables)
-  {
-    std::vector<std::pair<std::string,std::string>> sub_fields =
-        list_all_table_columns(st);
-    fields.insert(fields.end(), sub_fields.begin(), sub_fields.end());
-  }
+  iterate_over_fields(t, [&fields](const SQLTable* t, const SQLTableField* f) {
+      fields.push_back(std::make_pair(t->table_name, f->field_name)); });
   return fields;
-}
-  
-bool SQLTransceiver::is_single_table(const google::protobuf::Descriptor* d)
-{
-  for(int ifield = 0; ifield<d->field_count(); ifield++)
-  {
-    const FieldDescriptor* f { d->field(ifield) };
-    const google::protobuf::FieldOptions* fopt { &f->options() };
-    if(f->is_repeated())return false;
-    if((f->type()==FieldDescriptor::TYPE_MESSAGE) and
-       (!fopt->HasExtension(CFO) or
-        !fopt->GetExtension(CFO).sql().inline_message() or
-        !is_single_table(f->message_type())))return false;
-  }
-  return true;
 }
 
 calin::io::sql_transceiver::SQLTransceiver::SQLTable* SQLTransceiver::

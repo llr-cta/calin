@@ -145,15 +145,35 @@ TEST(TestSQLite3Transceiver, Insert) {
   for(unsigned i=0;i<10;i++)
   {
     m_data.add_vec_i32(i*1000000 + 101);
-  }
+    m_data.add_vec_i64(i*1000000 + 102);
+    m_data.add_vec_f((i*1000000 + 103)+0.1);
+    m_data.add_vec_s(std::string("string ")+std::to_string(i*1000000 + 104));
+    m_data.add_vec_ssm()->set_ssm_i32(i*1000000 + 105);
+    m_data.add_vec_ssm_inline()->set_ssm_i32(i*1000000 + 106);
 
-#if 0
-  repeated int64   vec_i64  = 102;
-  repeated float   vec_f    = 103;
-  repeated string  vec_s    = 104;
-  repeated UnitTestSimpleSubMessage vec_ssm = 105;
-  repeated UnitTestSimpleSubMessage vec_ssm_inline = 106 [(CFO).sql.inline_message = true];
-#endif
+    auto ivec_csm = m_data.add_vec_csm();
+    ivec_csm->set_csm_i32(i*1000000 + 107);
+    ivec_csm->mutable_csm_ssm()->set_ssm_i32(i*1000000 + 1107);
+
+    auto ivec_csm_inline = m_data.add_vec_csm_inline();
+    ivec_csm_inline->set_csm_i32(i*1000000 + 108);
+    ivec_csm_inline->mutable_csm_ssm()->set_ssm_i32(i*1000000 + 1108);
+
+    auto ivec_ism = m_data.add_vec_ism();
+    ivec_ism->set_ism_i32(i*1000000 + 109);
+    ivec_ism->mutable_ism_ssm()->set_ssm_i32(i*1000000 + 1109);
+
+    auto ivec_ism_inline = m_data.add_vec_ism_inline();
+    ivec_ism_inline->set_ism_i32(i*1000000 + 110);
+    ivec_ism_inline->mutable_ism_ssm()->set_ssm_i32(i*1000000 + 1110);
+
+    auto ivec_vsm = m_data.add_vec_vsm();
+    for(unsigned j=0;j<i;j++)
+    {
+      ivec_vsm->add_vsm_vec_i32(i*1000000 + j*10000 + 1111);
+      ivec_vsm->add_vsm_vec_ssm()->set_ssm_i32(i*1000000 + j*10000 + 2111);
+    }
+  }
 
   m_data.set_d(1300000.1);
   m_data.set_ui32(1400000);

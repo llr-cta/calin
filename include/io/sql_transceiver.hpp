@@ -100,10 +100,8 @@ class SQLTransceiver
   void propagate_keys(SQLTable* t,
                       std::vector<const SQLTableField*> keys = { });
   
-  static bool is_single_table(const google::protobuf::Descriptor* d);
-
   std::vector<std::pair<std::string,std::string> >
-  list_all_table_columns(SQLTable* t);
+  list_all_table_columns(const SQLTable* t);
   
   template<typename FCN> void iterate_over_tables(SQLTable* t, FCN fcn)
   {
@@ -129,6 +127,18 @@ class SQLTransceiver
       fcn(it);
       all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
     }
+  } 
+
+  template<typename FCN> void iterate_over_fields(SQLTable* t, FCN fcn)
+  {
+    iterate_over_tables(t, [&fcn](SQLTable* t) {
+        for(auto f : t->fields) { fcn(t,f); } });
+  }
+
+  template<typename FCN> void iterate_over_fields(const SQLTable* t, FCN fcn)
+  {
+    iterate_over_tables(t, [&fcn](const SQLTable* t) {
+        for(auto f : t->fields) { fcn(t,f); } });
   } 
   
  protected:
