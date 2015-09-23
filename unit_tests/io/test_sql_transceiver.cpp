@@ -81,9 +81,13 @@ TEST(TestSQLTransceiver, MakeColumns) {
   SQLTransceiver::SQLTable* t =
       xvr.make_sqltable_tree("mytable", UnitTestMessage::descriptor());
   xvr.propagate_keys(t);
-  auto tf = xvr.list_all_table_columns(t);
-  for(auto itf : tf)
-    std::cout << itf.first << ' ' << itf.second << '\n';
+
+  xvr.iterate_over_tables(t, [](const SQLTransceiver::SQLTable* t) {
+      for(auto f : t->fields) { 
+        std::cout << t->table_name << ' ' << f->field_name;
+        if(f->field_d)std::cout << ' ' << f->field_d->number();
+        std::cout << '\n';
+      } });
 }
 
 TEST(TestSQLTransceiver, CreateTable) {
@@ -151,6 +155,20 @@ TEST(TestSQLite3Transceiver, Insert) {
   repeated UnitTestSimpleSubMessage vec_ssm_inline = 106 [(CFO).sql.inline_message = true];
 #endif
 
+  m_data.set_d(1300000.1);
+  m_data.set_ui32(1400000);
+  m_data.set_ui64(1500000);
+  m_data.set_si32(1600000);
+  m_data.set_si64(1700000);
+  m_data.set_fi32(1800000);
+  m_data.set_fi64(1900000);
+  m_data.set_sfi32(200000);
+  m_data.set_sfi64(210000);
+  m_data.set_b(true);
+  m_data.set_bb("Bytes bytes bytes");
+  m_data.set_e(UnitTestMessage::RUNNING);
+
+  
   m_data.set_oo_s("OO string test");
 
   m_data.mutable_oosm_inline()->set_oosm_i32(1234567);

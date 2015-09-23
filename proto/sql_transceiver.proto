@@ -23,6 +23,7 @@ message SQLTableField
   string sql_field_name = 4 [(CFO).desc='SQL field name'];
   string description    = 5 [(CFO).desc='Description of table field'];
   string units          = 6 [(CFO).desc='Units for data in table field'];
-  string proto_message  = 7 [(CFO).desc='Protobuf message type for this field'];
-  string proto_field    = 8 [(CFO).desc='Protobuf field name for this field'];
+  string proto_message  = 7 [(CFO).desc='Protobuf message type'];
+  string proto_field    = 8 [(CFO).desc='Protobuf field name'];
+  uint32 proto_number   = 9 [(CFO).desc='Protobuf field number'];
 }

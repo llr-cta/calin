@@ -477,7 +477,31 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
               const google::protobuf::Message* m_key, uint64_t& oid,
               uint64_t parent_oid, uint64_t loop_id, bool ignore_errors)
 {
-  std::map<const google::protobuf::OneofDescriptor*, uint32_t> oneof_ids;
+  // This function is too long and complex. The basic idea is to
+  // 1 iterate through all non-inherited fields (i.e. those whose values don't
+  //   come from higher up in the tree) and place a pointer to their values in
+  //   the f->data member. If the data is:
+  //   - a protobuf field : f->data has a pointer to the appropriate message
+  //     if the field is present in the mesage, null otherwise
+  //   - a loop_id : f->data is a pointer to the uint64_t loop index
+  //   - an oid : f->data is a pointer to the parent_oid for this table
+  //   - a protobuf oneof index : the field number that is selected in the
+  //     message is stored in a map and a pointer to this value is inserted into
+  //     f->data
+  // 2 values for all fields (inherited and new) are bound to the sql statement
+  //   - non repeated protobuf fields are bound using t->stmt->bind_field
+  //   - repeated protobuf fields using t->stmt->bind_repeated_field
+  //   - non protobuf fields (oid, loop_id and oneof) using bind_uint64
+  //   - fields without f->data are bound to NULL
+  // 3 the statement is executed
+  // 4 the oid for the insert is stored in "oid" to be passed back to the caller
+  //   and on to any sub tables
+  // 5 all sub tables are processed by recursive calls to this function
+  //   - repeated sub tables are processed in a loop with loop_id passed in
+  //   - simple sub tables are called directly
+
+  std::map<const google::protobuf::OneofDescriptor*,
+           std::unique_ptr<uint64_t> > oneof_ids;
   unsigned ifield = 0;
   for(auto f : t->fields)
   {
@@ -508,9 +532,9 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
           m = &r->GetMessage(*m, d);
           r = m->GetReflection();
         }
-        oneof_ids[f->oneof_d] = r->HasOneof(*m, f->oneof_d) ? 
-            r->GetOneofFieldDescriptor(*m, f->oneof_d)->number() : 0;
-        f->data = &oneof_ids[f->oneof_d];
+        oneof_ids[f->oneof_d].reset(new uint64_t(r->HasOneof(*m, f->oneof_d) ? 
+                    r->GetOneofFieldDescriptor(*m, f->oneof_d)->number() : 0));
+        f->data = oneof_ids[f->oneof_d].get();
       }
       else
       {
