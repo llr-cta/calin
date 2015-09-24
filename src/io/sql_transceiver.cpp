@@ -479,8 +479,6 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
   //   - repeated sub tables are processed in a loop with loop_id passed in
   //   - simple sub tables are called directly
 
-  std::map<const google::protobuf::OneofDescriptor*,
-           std::unique_ptr<uint64_t> > oneof_ids;
   unsigned ifield = 0;
   for(auto f : t->fields)
   {
@@ -493,27 +491,17 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
     {
       f->data = nullptr;
       
-      if(f->field_d != nullptr)
+      if(f->field_d != nullptr or f->oneof_d != nullptr)
       {
         for(auto d : f->field_d_path) {
           if(!r->HasField(*m, d))goto bind_field;
           m = &r->GetMessage(*m, d);
           r = m->GetReflection();
         }
-        if(f->field_d->is_repeated() or r->HasField(*m, f->field_d))
+        if(f->oneof_d or f->field_d->is_repeated() or
+           r->HasField(*m, f->field_d))
           f->data =
               static_cast<void*>(const_cast<google::protobuf::Message*>(m));
-      }
-      else if(f->oneof_d != nullptr)
-      {
-        for(auto d : f->field_d_path) {
-          if(!r->HasField(*m, d))goto bind_field;
-          m = &r->GetMessage(*m, d);
-          r = m->GetReflection();
-        }
-        oneof_ids[f->oneof_d].reset(new uint64_t(r->HasOneof(*m, f->oneof_d) ? 
-                    r->GetOneofFieldDescriptor(*m, f->oneof_d)->number() : 0));
-        f->data = oneof_ids[f->oneof_d].get();
       }
       else
       {
@@ -541,6 +529,9 @@ insert_tables(SQLTable* t, const google::protobuf::Message* m_data,
 
     if(f->data == nullptr)
       t->stmt->bind_null(ifield);
+    else if(f->oneof_d != nullptr)
+      t->stmt->bind_uint64(ifield, r->HasOneof(*m, f->oneof_d) ? 
+               r->GetOneofFieldDescriptor(*m, f->oneof_d)->number() : 0);
     else if(f->field_d == nullptr)
       t->stmt->bind_uint64(ifield, *static_cast<uint64_t*>(f->data));
     else if(f->field_d->is_repeated())
