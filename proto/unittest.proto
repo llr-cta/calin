@@ -101,9 +101,10 @@ message UnitTestMessage {
         (CFO).sql.inline_message = true];
   };
 
-  UnitTestOneofSubMessage oosm      = 400;
-  UnitTestOneofSubMessage oosm_inline     = 401 [
+  UnitTestOneofSubMessage oosm              = 400;
+  UnitTestOneofSubMessage oosm_inline       = 401 [
       (CFO).sql.inline_message = true];
+  repeated UnitTestOneofSubMessage vec_oosm = 402;
 }
 
 message UnitTestKey {

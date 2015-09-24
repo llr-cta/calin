@@ -98,21 +98,21 @@ TEST(TestSQLTransceiver, CreateTable) {
 TEST(TestSQLTransceiver, CreateTableWithKey) {
   SQLTransceiver xvr;
   xvr.create_tables("mytable", UnitTestMessage::descriptor(),
-                    UnitTestKey::descriptor(), "", true);
+                    UnitTestKey::descriptor(), "Instance of mytable");
 }
 
 TEST(TestSQLite3Transceiver, CreateTableWithKey) {
   SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::TRUNCATE_RW);
   //SQLite3Transceiver xvr(":memory:", SQLite3Transceiver::TRUNCATE_RW);
   xvr.create_tables("mytable", UnitTestMessage::descriptor(),
-                    UnitTestKey::descriptor(), "", true);
+                    UnitTestKey::descriptor(), "Instance of mytable");
 }
 
 TEST(TestSQLite3Transceiver, Insert) {
   SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::TRUNCATE_RW);
   //SQLite3Transceiver xvr(":memory:", SQLite3Transceiver::TRUNCATE_RW);
   xvr.create_tables("mytable", UnitTestMessage::descriptor(),
-                    UnitTestKey::descriptor(), "", false);
+                    UnitTestKey::descriptor(), "Instance of mytable");
   
   UnitTestMessage m_data;
   UnitTestKey m_key;
@@ -173,6 +173,13 @@ TEST(TestSQLite3Transceiver, Insert) {
       ivec_vsm->add_vsm_vec_i32(i*1000000 + j*10000 + 1111);
       ivec_vsm->add_vsm_vec_ssm()->set_ssm_i32(i*1000000 + j*10000 + 2111);
     }
+
+    m_data.add_vec_oosm()->set_oosm_i32(i*1000000 + 4031);
+    m_data.add_vec_oosm()->set_oosm_s(std::string("oo string ") +
+                                      std::to_string(i*1000000 + 4032));
+    m_data.add_vec_oosm()->mutable_oosm_ssm()->set_ssm_i32(i*1000000 + 40331);
+    m_data.add_vec_oosm()->mutable_oosm_ssm_inline()->
+        set_ssm_i32(i*1000000 + 40341);
   }
 
   m_data.set_d(1300000.1);
@@ -196,7 +203,7 @@ TEST(TestSQLite3Transceiver, Insert) {
   m_data.mutable_oosm_inline()->mutable_oosm_ssm_inline()->set_ssm_i32(987654);
 
   uint64_t oid;
-  xvr.insert("mytable", oid, &m_data, &m_key, true);
+  xvr.insert("mytable", oid, &m_data, &m_key);
   //std::cerr << oid << '\n';
 }
 
