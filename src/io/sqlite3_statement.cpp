@@ -155,7 +155,7 @@ bind_string(unsigned ifield, const std::string& value)
   int nbyte = ::strlen(value.c_str())+1;
   char* string_data = static_cast<char*>(::malloc(nbyte));
   ::memcpy(string_data, value.c_str(), nbyte);
-  return sqlite3_bind_text(stmt_, ifield+1, string_data, nbyte, ::free)
+  return sqlite3_bind_text(stmt_, ifield+1, string_data, nbyte-1, ::free)
       == SQLITE_OK;
 }
 
