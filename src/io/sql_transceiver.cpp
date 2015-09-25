@@ -30,20 +30,19 @@ create_tables(const std::string& table_name,
               const std::string& instance_desc)
 {
   create_internal_tables();
-  SQLTable* t { make_keyed_sqltable_tree(table_name, d_data, d_key, false) };
-  iterate_over_tables(t, [this](SQLTable* it) {
+  std::unique_ptr<SQLTable> t {
+    make_keyed_sqltable_tree(table_name, d_data, d_key, false) };
+  iterate_over_tables(t.get(), [this](SQLTable* it) {
       it->stmt = prepare_statement(sql_create_table(it)); });
   begin_transaction();
-  bool success = r_exec_simple(t, false);
+  bool success = r_exec_simple(t.get(), false);
   if(!success)
   {
     rollback_transaction();
-    delete t;
     return success;
   }
-  insert_table_description(t, instance_desc);
+  insert_table_description(t.get(), instance_desc);
   commit_transaction();
-  delete t;
   return success;
 }
 
@@ -52,21 +51,19 @@ insert(const std::string& table_name, uint64_t& oid,
        const google::protobuf::Message* m_data,
        const google::protobuf::Message* m_key)
 {
-  SQLTable* t =
-      make_keyed_sqltable_tree(table_name, m_data->GetDescriptor(),
-                               m_key?m_key->GetDescriptor():nullptr, false);
-  iterate_over_tables(t,[this](SQLTable* it) {
+  std::unique_ptr<SQLTable> t {
+    make_keyed_sqltable_tree(table_name, m_data->GetDescriptor(),
+                             m_key?m_key->GetDescriptor():nullptr, false) };
+  iterate_over_tables(t.get(),[this](SQLTable* it) {
       it->stmt = prepare_statement(sql_insert(it)); });
   begin_transaction();
-  bool success = r_exec_insert(t, m_data, m_key, oid, 0, 0, false);
+  bool success = r_exec_insert(t.get(), m_data, m_key, oid, 0, 0, false);
   if(!success)
   {
     rollback_transaction();
-    delete t;
     return success;
   }
   commit_transaction();
-  delete t;
   return success;
 }
 
