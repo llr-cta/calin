@@ -10,6 +10,7 @@
 #include <stdexcept>
 
 #include "proto/calin.pb.h"
+#include "proto/sql_transceiver.pb.h"
 #include "io/sql_transceiver.hpp"
 #include "io/log.hpp"
 
@@ -28,10 +29,20 @@ create_tables(const std::string& table_name,
               const google::protobuf::Descriptor* d_key,
               const std::string& instance_desc)
 {
+  create_internal_tables();
   SQLTable* t { make_keyed_sqltable_tree(table_name, d_data, d_key, false) };
   iterate_over_tables(t, [this](SQLTable* it) {
       it->stmt = prepare_statement(sql_create_table(it)); });
+  begin_transaction();
   bool success = r_exec_simple(t, false);
+  if(!success)
+  {
+    rollback_transaction();
+    delete t;
+    return success;
+  }
+  insert_table_description(t, instance_desc);
+  commit_transaction();
   delete t;
   return success;
 }
@@ -46,7 +57,15 @@ insert(const std::string& table_name, uint64_t& oid,
                                m_key?m_key->GetDescriptor():nullptr, false);
   iterate_over_tables(t,[this](SQLTable* it) {
       it->stmt = prepare_statement(sql_insert(it)); });
+  begin_transaction();
   bool success = r_exec_insert(t, m_data, m_key, oid, 0, 0, false);
+  if(!success)
+  {
+    rollback_transaction();
+    delete t;
+    return success;
+  }
+  commit_transaction();
   delete t;
   return success;
 }
@@ -67,6 +86,7 @@ make_keyed_sqltable_tree(const std::string& table_name,
                          bool ignore_key_option)
 {
   SQLTable* t { make_sqltable_tree(table_name, d_data) };
+  prune_empty_tables(t);
   if(d_key)
   {
     SQLTable* key_t { make_extkey_tree("key", d_key) };
@@ -446,6 +466,21 @@ SQLStatement* SQLTransceiver::prepare_statement(const std::string& sql)
   return new SQLStatement(sql);
 }
 
+bool SQLTransceiver::begin_transaction()
+{
+  return true;
+}
+
+bool SQLTransceiver::commit_transaction()
+{
+  return true;
+}
+
+bool SQLTransceiver::rollback_transaction()
+{
+  return true;
+}
+
 bool SQLTransceiver::r_exec_simple(SQLTable* t, bool ignore_errors)
 {
   bool good = true;
@@ -649,3 +684,94 @@ bool SQLTransceiver::finalize_statements(SQLTable* t)
   return true;
 }
 
+void SQLTransceiver::create_internal_tables()
+{
+  if(internal_tables_created_)return;
+
+  // Make "SQLTable" table
+  SQLTable* tt =
+      make_keyed_sqltable_tree("calin.tables",
+                               calin::ix::io::SQLTable::descriptor(),
+                               nullptr, false);
+
+  iterate_over_tables(tt, [this](SQLTable* it) {
+      it->stmt = prepare_statement(sql_create_table(it)); });
+  r_exec_simple(tt, true);
+  finalize_statements(tt);
+  
+  // Make "SQLTableField" table
+  SQLTable* tf =
+      make_keyed_sqltable_tree("calin.table_fields",
+                               calin::ix::io::SQLTableField::descriptor(),
+                               nullptr, false);
+  iterate_over_tables(tf, [this](SQLTable* it) {
+      it->stmt = prepare_statement(sql_create_table(it)); });
+  r_exec_simple(tf, true);
+  finalize_statements(tf);
+
+  insert_table_description(tt, "calin table list");
+  insert_table_description(tf, "calin field list");
+
+  delete tt;
+  delete tf;
+  internal_tables_created_ = true;
+}
+
+void SQLTransceiver::
+insert_table_description(const SQLTable* t, const std::string& instance_desc)
+{
+  SQLTable* t_int { nullptr };
+
+  t_int =
+      make_keyed_sqltable_tree("calin.tables",
+                               calin::ix::io::SQLTable::descriptor(),
+                               nullptr, false);
+  iterate_over_tables(t_int,[this](SQLTable* it) {
+      it->stmt = prepare_statement(sql_insert(it)); });
+  iterate_over_tables(t,[this,t_int,t,instance_desc](const SQLTable* it) {
+      uint64_t oid;
+      calin::ix::io::SQLTable m;
+      m.set_base_name(t->table_name);
+      m.set_table_name(it->table_name);
+      m.set_sql_table_name(sql_table_name((it->table_name)));
+      m.set_description(instance_desc);
+      r_exec_insert(t_int, &m, nullptr, oid, 0, 0, true);
+    });
+  delete t_int;
+  
+  t_int = make_keyed_sqltable_tree("calin.table_fields",
+                                   calin::ix::io::SQLTableField::descriptor(),
+                                   nullptr, false);
+  iterate_over_tables(t_int,[this](SQLTable* it) {
+      it->stmt = prepare_statement(sql_insert(it)); });
+  iterate_over_fields(t,[this,t_int,t](const SQLTable* it,
+                                       const SQLTableField* f) {
+      uint64_t oid;
+      calin::ix::io::SQLTableField m;
+      m.set_base_name(t->table_name);
+      m.set_table_name(it->table_name);
+      m.set_field_name(f->field_name);
+      m.set_sql_table_name(sql_table_name(it->table_name));
+      m.set_sql_field_name(sql_field_name(f->field_name));
+      if(f->field_d)
+      {
+        if(f->field_d->options().HasExtension(CFO))
+        {
+          auto cfo = f->field_d->options().GetExtension(CFO);
+          m.set_description(cfo.desc());
+          m.set_units(cfo.units());
+        }
+        m.set_proto_message(f->field_d->containing_type()->full_name());
+        m.set_proto_field(f->field_d->name());
+        m.set_proto_number(f->field_d->number());
+      }
+      else if(f->oneof_d)
+      {
+        m.set_description("Field number for selected oneof");
+        m.set_proto_message(f->oneof_d->containing_type()->full_name());
+        m.set_proto_field(f->oneof_d->name());
+      }
+      r_exec_insert(t_int, &m, nullptr, oid, 0, 0, true);
+    });
+  delete t_int;
+}

@@ -150,7 +150,8 @@ class SQLTransceiver
  protected:
 
   bool write_sql_to_log_ = false;
-
+  bool internal_tables_created_ = false;
+  
   // ===========================================================================
   //
   // Private tree-related functions
@@ -190,6 +191,10 @@ class SQLTransceiver
 
   virtual SQLStatement* prepare_statement(const std::string& sql);
 
+  virtual bool begin_transaction();
+  virtual bool commit_transaction();
+  virtual bool rollback_transaction();
+  
   virtual bool r_exec_simple(SQLTable* t, bool ignore_errors);
   
   virtual bool r_exec_insert(SQLTable* t,
@@ -199,6 +204,10 @@ class SQLTransceiver
                              uint64_t loop_id, bool ignore_errors);
 
   virtual bool finalize_statements(SQLTable* t);
+
+  virtual void create_internal_tables();
+  virtual void insert_table_description(const SQLTable* t,
+                                        const std::string& instance_desc);
 };
 
 } } } // namespace calin::io::sql_transceiver

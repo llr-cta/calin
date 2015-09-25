@@ -40,8 +40,10 @@ class SQLite3Transceiver: public SQLTransceiver
   OpenMode open_mode_ = EXISTING_OR_NEW_RW;
   
   SQLStatement* prepare_statement(const std::string& sql) override;
-  
-  void create_calin_tables();
+
+  bool begin_transaction() override;
+  bool commit_transaction() override;
+  bool rollback_transaction() override;
 };
 
 } } } // namespace calin::io::sql_transceiver

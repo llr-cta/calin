@@ -94,3 +94,19 @@ SQLStatement* SQLite3Transceiver::prepare_statement(const std::string& sql)
 {
   return new SQLite3Statement(sql, db_, true);
 }
+
+bool SQLite3Transceiver::begin_transaction()
+{
+  return sqlite3_exec(db_, "BEGIN TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
+}
+
+bool SQLite3Transceiver::commit_transaction()
+{
+  return sqlite3_exec(db_, "COMMIT TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
+}
+
+bool SQLite3Transceiver::rollback_transaction()
+{
+  return
+      sqlite3_exec(db_, "ROLLBACK TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
+}
