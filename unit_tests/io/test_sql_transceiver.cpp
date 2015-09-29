@@ -207,6 +207,21 @@ TEST(TestSQLite3Transceiver, Insert) {
   //std::cerr << oid << '\n';
 }
 
+TEST(TestSQLite3Transceiver, RetreiveByOID) {
+  SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::READ_ONLY);
+  //SQLite3Transceiver xvr(":memory:", SQLite3Transceiver::TRUNCATE_RW);
+
+#if 0
+  xvr.create_tables("mytable", UnitTestMessage::descriptor(),
+                    UnitTestKey::descriptor(), "Instance of mytable");
+#endif
+  
+  UnitTestMessage m_data;
+  UnitTestKey m_key;
+
+  xvr.retrieve_by_oid("mytable", 1, &m_data, &m_key);
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

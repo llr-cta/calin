@@ -40,11 +40,24 @@ class SQLTransceiver
                 const google::protobuf::Descriptor* d_key = nullptr,
                 const std::string& instance_desc = "");
 
+  bool insert(const std::string& table_name,
+              const google::protobuf::Message* m_data,
+              const google::protobuf::Message* m_key = nullptr)
+  {
+    uint64_t unused_oid;
+    return insert(table_name, unused_oid, m_data, m_key);
+  }
+
   virtual bool
   insert(const std::string& table_name, uint64_t& oid,
          const google::protobuf::Message* m_data,
          const google::protobuf::Message* m_key = nullptr);
 
+  virtual bool
+  retrieve_by_oid(const std::string& table_name, uint64_t oid,
+                  google::protobuf::Message* m_data,
+                  google::protobuf::Message* m_key = nullptr);
+  
   // ===========================================================================
   //
   // Utility functions
@@ -56,7 +69,7 @@ class SQLTransceiver
   struct SQLTableField
   {
     enum FieldType {
-      KEY_INHERITED, KEY_USER_SUPPLIED, KEY_PROTO_DEFINED, KEY_OID,
+      KEY_INHERITED, KEY_USER_SUPPLIED, KEY_PROTO_DEFINED, KEY_PARENT_OID,
       KEY_LOOP_ID, KEY_MAP_KEY, POD };
     SQLTable*                                 table = nullptr;
     SQLTableField*                            field_origin = nullptr;
@@ -64,9 +77,50 @@ class SQLTransceiver
     std::string                               field_name;
     const google::protobuf::FieldDescriptor*  field_d = nullptr;
     std::vector<const google::protobuf::FieldDescriptor*> field_d_path;
-    void*                                     data = nullptr;
+
+    enum DataPointerType {
+      PT_NULL, PT_CONST_UINT64, PT_CONST_MESSAGE, PT_UINT64, PT_MESSAGE  };
+    
+    union DataPointer {
+      DataPointer(): p_void(nullptr) { /* nothing to see here */ }
+      void* p_void;
+      const uint64_t* p_const_uint64;
+      uint64_t* p_uint64;
+      const google::protobuf::Message* p_const_message;
+      google::protobuf::Message* p_message;
+    };
+
+    DataPointerType                           data_type = PT_NULL;
+    DataPointer                               data;
     const google::protobuf::OneofDescriptor*  oneof_d = nullptr;
+
     bool is_key() const { return field_type!=POD; }
+    bool is_inherited() const { return field_type==KEY_INHERITED or
+          field_type==KEY_PARENT_OID; }
+
+    void set_data_null() { data_type = PT_NULL; data.p_void = nullptr; }
+    void set_data_const_uint64(const uint64_t* p) {
+      data_type = PT_CONST_UINT64; data.p_const_uint64 = p; }
+    void set_data_uint64(uint64_t* p) {
+      data_type = PT_UINT64; data.p_uint64 = p; }
+    void set_data_const_message(const google::protobuf::Message* p) {
+      data_type = PT_CONST_MESSAGE; data.p_const_message = p; }
+    void set_data_message(google::protobuf::Message* p) {
+      data_type = PT_MESSAGE; data.p_message = p; }
+    
+    bool is_data_null() const { return data_type == PT_NULL; }
+     const uint64_t* data_const_uint64() const {
+      if(data_type == PT_CONST_UINT64) return data.p_const_uint64;
+      else if(data_type == PT_UINT64) return data.p_uint64;
+      else return nullptr; }
+    uint64_t* data_uint64() const {
+      return data_type == PT_UINT64 ? data.p_uint64 : nullptr; }
+    const google::protobuf::Message* data_const_message() const {
+      if(data_type == PT_CONST_MESSAGE) return data.p_const_message;
+      else if(data_type == PT_MESSAGE) return data.p_message;
+      else return nullptr; }
+    google::protobuf::Message* data_message() const {
+      return data_type == PT_MESSAGE ? data.p_message : nullptr; }
   };
 
   struct SQLTable
@@ -84,8 +138,12 @@ class SQLTransceiver
     std::vector<SQLTableField*>               fields;
     std::vector<SQLTable*>                    sub_tables;
     SQLStatement*                             stmt = nullptr;
+    bool children_need_oid() const {
+      for(auto t : sub_tables) { for(auto f : t->fields)
+          if(f->field_type == SQLTableField::KEY_PARENT_OID)return true; }
+      return false; }
   };
-
+  
   SQLTable*
   make_keyed_sqltable_tree(const std::string& table_name,
                            const google::protobuf::Descriptor* d_data,
@@ -178,11 +236,16 @@ class SQLTransceiver
   virtual std::string sql_field_name(const std::string& name);
 
   virtual std::string sql_type(const google::protobuf::FieldDescriptor* d);
-
+  virtual std::string sql_oid_column_name();
+  
   virtual std::string sql_create_table(const SQLTable* t,
                                        bool if_not_exists = false);
   virtual std::string sql_insert(const SQLTable* t);
-
+  virtual std::string sql_select(const SQLTable* t, bool select_oid = false,
+                                 bool select_inheried_keys = false);
+  virtual std::string sql_where_oid_equals();
+  virtual std::string sql_where_inherited_keys_match(const SQLTable* t);
+  
   // ===========================================================================
   //
   // Overridable prepare and execute statements
@@ -196,6 +259,16 @@ class SQLTransceiver
   virtual bool rollback_transaction();
   
   virtual bool r_exec_simple(SQLTable* t, bool ignore_errors);
+
+  void set_const_data_pointers(SQLTable* t,
+                               const google::protobuf::Message* m_data,
+                               const google::protobuf::Message* m_key,
+                               const uint64_t& parent_oid,
+                               const uint64_t& loop_id);
+
+  void bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
+                                      SQLStatement* stmt,
+                                      bool bind_inherited_keys_only = false);
   
   virtual bool r_exec_insert(SQLTable* t,
                              const google::protobuf::Message* m_data,
