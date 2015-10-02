@@ -275,16 +275,266 @@ bool SQLStatement::bind_bool(unsigned ifield, bool value)
   return SQLStatement::bind_string(ifield, std::to_string(value));
 }
 
-bool SQLStatement::
-bind_string(unsigned ifield, const std::string& value)
+bool SQLStatement::bind_string(unsigned ifield, const std::string& value)
 {
   if(ifield >= bound_values_.size())bound_values_.resize(ifield+1);
   bound_values_[ifield] = value;
   return true;
 }
 
-bool SQLStatement::
-bind_bytes(unsigned ifield, const std::string& value)
+bool SQLStatement::bind_bytes(unsigned ifield, const std::string& value)
 {
   return SQLStatement::bind_string(ifield, value);
+}
+
+bool SQLStatement::extract_field(unsigned ifield, google::protobuf::Message* m,
+                                 const google::protobuf::FieldDescriptor* d)
+{
+  calin::FieldOptions::Int32StorageType int32_type =
+      calin::FieldOptions::INT_32;
+  const google::protobuf::FieldOptions* fopt { &d->options() };
+  if(fopt->HasExtension(CFO))
+    int32_type = fopt->GetExtension(CFO).int32_type();
+
+  bool good = true;
+  switch(d->type())
+  {
+    case FieldDescriptor::TYPE_DOUBLE: {
+      auto value = extract_double(ifield, &good);
+      if(good)m->GetReflection()->SetDouble(m, d, value);
+      return good; }
+    case FieldDescriptor::TYPE_FLOAT: {
+      auto value = extract_float(ifield, &good);
+      if(good)m->GetReflection()->SetFloat(m, d, value);
+      return good; }
+    case FieldDescriptor::TYPE_SFIXED64: // fallthrough
+    case FieldDescriptor::TYPE_SINT64:   // fallthrough
+    case FieldDescriptor::TYPE_INT64: {
+      auto value = extract_int64(ifield, &good);
+      if(good)m->GetReflection()->SetInt64(m, d, value);
+      return good; }
+    case FieldDescriptor::TYPE_FIXED64:  // fallthrough
+    case FieldDescriptor::TYPE_UINT64: {
+      auto value = extract_uint64(ifield, &good);
+      if(good)m->GetReflection()->SetUInt64(m, d, value);
+      return good; }
+    case FieldDescriptor::TYPE_SFIXED32: // fallthrough
+    case FieldDescriptor::TYPE_SINT32:   // fallthrough
+    case FieldDescriptor::TYPE_INT32: 
+      switch(int32_type) {
+	case FieldOptions::INT_16: {
+          auto value = extract_int16(ifield, &good);
+          if(good)m->GetReflection()->SetInt32(m, d, value);
+          return good; }
+	case FieldOptions::INT_8: {
+          auto value = extract_int8(ifield, &good);
+          if(good)m->GetReflection()->SetInt32(m, d, value);
+          return good; }
+	case FieldOptions::INT_32:       // fallthrough
+        default: {
+          auto value = extract_int32(ifield, &good);
+          if(good)m->GetReflection()->SetInt32(m, d, value);
+          return good; }
+      };
+    case FieldDescriptor::TYPE_FIXED32:
+    case FieldDescriptor::TYPE_UINT32:
+      switch(int32_type) {
+	case FieldOptions::INT_16: {
+          auto value = extract_uint16(ifield, &good);
+          if(good)m->GetReflection()->SetUInt32(m, d, value);
+          return good; }
+	case FieldOptions::INT_8:{
+          auto value = extract_uint8(ifield, &good);
+          if(good)m->GetReflection()->SetUInt32(m, d, value);
+          return good; }
+	case FieldOptions::INT_32:       // fall through
+        default: {
+          auto value = extract_uint32(ifield, &good);
+          if(good)m->GetReflection()->SetUInt32(m, d, value);
+          return good; }
+      }
+    case FieldDescriptor::TYPE_BOOL: {
+          auto value = extract_bool(ifield, &good);
+          if(good)m->GetReflection()->SetBool(m, d, value);
+          return good; }
+    case FieldDescriptor::TYPE_STRING: {
+          auto value = extract_string(ifield, &good);
+          if(good)m->GetReflection()->SetString(m, d, value);
+          return good; }
+    case FieldDescriptor::TYPE_BYTES: {
+          auto value = extract_bytes(ifield, &good);
+          if(good)m->GetReflection()->SetString(m, d, value);
+          return good; }
+    case FieldDescriptor::TYPE_ENUM: {
+      auto value = extract_int32(ifield, &good);
+      if(good)m->GetReflection()->SetEnumValue(m, d, value);
+      return good; }
+    case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
+    case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
+    default:
+      break;
+  }
+  assert(0);
+}
+
+bool SQLStatement::
+extract_repeated_field(unsigned ifield, uint64_t loop_id, 
+                       google::protobuf::Message* m,
+                       const google::protobuf::FieldDescriptor* d)
+{
+  calin::FieldOptions::Int32StorageType int32_type =
+      calin::FieldOptions::INT_32;
+  const google::protobuf::FieldOptions* fopt { &d->options() };
+  if(fopt->HasExtension(CFO))
+    int32_type = fopt->GetExtension(CFO).int32_type();
+
+  bool good = true;
+  switch(d->type())
+  {
+    case FieldDescriptor::TYPE_DOUBLE: {
+      auto value = extract_double(ifield, &good);
+      if(good)m->GetReflection()->SetRepeatedDouble(m, d, loop_id, value);
+      return good; }
+    case FieldDescriptor::TYPE_FLOAT: {
+      auto value = extract_float(ifield, &good);
+      if(good)m->GetReflection()->SetRepeatedFloat(m, d, loop_id, value);
+      return good; }
+    case FieldDescriptor::TYPE_SFIXED64: // fallthrough
+    case FieldDescriptor::TYPE_SINT64:   // fallthrough
+    case FieldDescriptor::TYPE_INT64: {
+      auto value = extract_int64(ifield, &good);
+      if(good)m->GetReflection()->SetRepeatedInt64(m, d, loop_id, value);
+      return good; }
+    case FieldDescriptor::TYPE_FIXED64:  // fallthrough
+    case FieldDescriptor::TYPE_UINT64: {
+      auto value = extract_uint64(ifield, &good);
+      if(good)m->GetReflection()->SetRepeatedUInt64(m, d, loop_id, value);
+      return good; }
+    case FieldDescriptor::TYPE_SFIXED32: // fallthrough
+    case FieldDescriptor::TYPE_SINT32:   // fallthrough
+    case FieldDescriptor::TYPE_INT32: 
+      switch(int32_type) {
+	case FieldOptions::INT_16: {
+          auto value = extract_int16(ifield, &good);
+          if(good)m->GetReflection()->SetRepeatedInt32(m, d, loop_id, value);
+          return good; }
+	case FieldOptions::INT_8: {
+          auto value = extract_int8(ifield, &good);
+          if(good)m->GetReflection()->SetRepeatedInt32(m, d, loop_id, value);
+          return good; }
+	case FieldOptions::INT_32:       // fallthrough
+        default: {
+          auto value = extract_int32(ifield, &good);
+          if(good)m->GetReflection()->SetRepeatedInt32(m, d, loop_id, value);
+          return good; }
+      };
+    case FieldDescriptor::TYPE_FIXED32:
+    case FieldDescriptor::TYPE_UINT32:
+      switch(int32_type) {
+	case FieldOptions::INT_16: {
+          auto value = extract_uint16(ifield, &good);
+          if(good)m->GetReflection()->SetRepeatedUInt32(m, d, loop_id, value);
+          return good; }
+	case FieldOptions::INT_8:{
+          auto value = extract_uint8(ifield, &good);
+          if(good)m->GetReflection()->SetRepeatedUInt32(m, d, loop_id, value);
+          return good; }
+	case FieldOptions::INT_32:       // fall through
+        default: {
+          auto value = extract_uint32(ifield, &good);
+          if(good)m->GetReflection()->SetRepeatedUInt32(m, d, loop_id, value);
+          return good; }
+      }
+    case FieldDescriptor::TYPE_BOOL: {
+          auto value = extract_bool(ifield, &good);
+          if(good)m->GetReflection()->SetRepeatedBool(m, d, loop_id, value);
+          return good; }
+    case FieldDescriptor::TYPE_STRING: {
+          auto value = extract_string(ifield, &good);
+          if(good)m->GetReflection()->SetRepeatedString(m, d, loop_id, value);
+          return good; }
+    case FieldDescriptor::TYPE_BYTES: {
+          auto value = extract_bytes(ifield, &good);
+          if(good)m->GetReflection()->SetRepeatedString(m, d, loop_id, value);
+          return good; }
+    case FieldDescriptor::TYPE_ENUM: {
+      auto value = extract_int32(ifield, &good);
+      if(good)m->GetReflection()->SetRepeatedEnumValue(m, d, loop_id, value);
+      return good; }
+    case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
+    case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
+    default:
+      break;
+  }
+  assert(0);
+}
+
+bool SQLStatement::column_is_null(unsigned icol, bool* good)
+{
+  if(good)*good = true; return true;
+}
+
+int64_t SQLStatement::extract_int64(unsigned icol, bool* good)
+{
+  if(good)*good = true; return 0;
+}
+
+int32_t SQLStatement::extract_int32(unsigned icol, bool* good)
+{
+  if(good)*good = true; return 0;
+}
+
+int16_t SQLStatement::extract_int16(unsigned icol, bool* good)
+{
+  if(good)*good = true; return 0;
+}
+
+int8_t SQLStatement::extract_int8(unsigned icol, bool* good)
+{
+  if(good)*good = true; return 0;
+}
+
+uint64_t SQLStatement::extract_uint64(unsigned icol, bool* good)
+{
+  if(good)*good = true; return 0;
+}
+
+uint32_t SQLStatement::extract_uint32(unsigned icol, bool* good)
+{
+  if(good)*good = true; return 0;
+}
+
+uint16_t SQLStatement::extract_uint16(unsigned icol, bool* good)
+{
+  if(good)*good = true; return 0;
+}
+
+uint8_t SQLStatement::extract_uint8(unsigned icol, bool* good)
+{
+  if(good)*good = true; return 0;
+}
+
+float SQLStatement::extract_float(unsigned icol, bool* good)
+{
+  if(good)*good = true; return 0;
+}
+
+double SQLStatement::extract_double(unsigned icol, bool* good)
+{
+  if(good)*good = true; return 0;
+}
+
+bool SQLStatement::extract_bool(unsigned icol, bool* good)
+{
+  if(good)*good = true; return false;
+}
+
+std::string SQLStatement::extract_string(unsigned icol, bool* good)
+{
+  if(good)*good = true; return "";
+}
+
+std::string SQLStatement::extract_bytes(unsigned icol, bool* good)
+{
+  if(good)*good = true; return "";
 }

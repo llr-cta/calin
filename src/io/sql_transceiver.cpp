@@ -520,8 +520,7 @@ std::string SQLTransceiver::sql_oid_column_name()
 }
 
 std::string SQLTransceiver::
-sql_select(const SQLTable* t,
-           bool select_oid, bool select_inherited_keys)
+sql_select(const SQLTable* t, bool select_oid, bool select_inherited_keys)
 {
   std::ostringstream sql;
   sql << "SELECT\n";
@@ -815,6 +814,92 @@ r_exec_insert(SQLTable* t, const google::protobuf::Message* m_data,
   
   return good;
 }
+
+bool SQLTransceiver::
+r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
+              google::protobuf::Message* m_key, 
+              uint64_t& parent_oid, uint64_t& loop_id,
+              bool select_inherited_keys, bool ignore_errors)
+{
+  // On entry to this function with the statement has been executed but
+  // no data extracted
+  unsigned icol = 0;
+  bool good = true;
+
+  uint64_t my_oid = 0;
+  if(t->children_need_oid())
+  {
+    my_oid = t->stmt->extract_uint64(icol, &good);
+    if(!good and !ignore_errors)
+    {
+      LOG(ERROR) << "SELECT: could not extract OID from column 0, error: "
+                 << t->stmt->error_message() << '\n'
+                 << "SQL: " << t->stmt->bound_sql();
+      return good;
+    }
+    icol++;
+  }
+
+  std::map<const OneofDescriptor*, int> oneof_map;
+  for(auto f : t->fields)
+  {
+    if(!select_inherited_keys and f->is_inherited())continue;
+    if(t->stmt->column_is_null(icol))goto next_field;
+
+    if(f->field_d != nullptr)
+    {
+      google::protobuf::Message* m = m_data;
+      if(f->field_type == SQLTableField::KEY_USER_SUPPLIED)m = m_key;
+      assert(m);
+      const google::protobuf::Reflection* r = m->GetReflection();
+    
+      const OneofDescriptor* c_oneof = f->field_d->containing_oneof();
+      if(c_oneof != nullptr and
+         (oneof_map.find(c_oneof) == oneof_map.end() or
+          oneof_map[c_oneof] != f->field_d->number()))goto next_field;
+          
+      for(auto d : f->field_d_path)
+      {
+        m = r->MutableMessage(m, d);
+        r = m->GetReflection();
+      }
+
+      if(f->field_d->is_repeated())
+        good = t->stmt->extract_repeated_field(icol, loop_id, m, f->field_d);
+      else
+        good = t->stmt->extract_field(icol, m, f->field_d);
+    }
+    else if(f->oneof_d)
+    {
+      oneof_map[f->oneof_d] = t->stmt->extract_uint64(icol, &good);
+    }
+    else
+    {
+      switch(f->field_type)
+      {
+        case SQLTableField::KEY_PARENT_OID:
+          parent_oid = t->stmt->extract_uint64(icol, &good);
+          break;
+        case SQLTableField::KEY_LOOP_ID:
+          loop_id = t->stmt->extract_uint64(icol, &good);
+          break;
+        case SQLTableField::KEY_PROTO_DEFINED:  // handled in if clause above
+        case SQLTableField::KEY_USER_SUPPLIED:  // handled in if clause above
+        case SQLTableField::KEY_INHERITED:      // handled earlier in tree
+        case SQLTableField::KEY_MAP_KEY:        // handled in if clause above
+        case SQLTableField::POD:                // handled in if clause above
+          assert(0);
+          break;
+      }
+    }
+ next_field:
+    icol++;
+  }
+
+  
+  
+}
+
 
 bool SQLTransceiver::finalize_statements(SQLTable* t)
 {

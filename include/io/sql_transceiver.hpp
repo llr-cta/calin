@@ -276,6 +276,12 @@ class SQLTransceiver
                              uint64_t& oid, uint64_t parent_oid,
                              uint64_t loop_id, bool ignore_errors);
 
+  virtual bool r_exec_select(SQLTable* t,
+                             google::protobuf::Message* m_data,
+                             google::protobuf::Message* m_key,
+                             uint64_t& parent_oid, uint64_t& loop_id,
+                             bool select_inherited_keys, bool ignore_errors);
+  
   virtual bool finalize_statements(SQLTable* t);
 
   virtual void create_internal_tables();

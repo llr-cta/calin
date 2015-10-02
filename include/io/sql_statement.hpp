@@ -56,6 +56,27 @@ class SQLStatement
   virtual bool bind_string(unsigned ifield, const std::string& value);
   virtual bool bind_bytes(unsigned ifield, const std::string& value);
 
+  bool extract_field(unsigned icol, google::protobuf::Message* m,
+                     const google::protobuf::FieldDescriptor* d);
+  bool extract_repeated_field(unsigned icol, uint64_t loop_id, 
+                              google::protobuf::Message* m,
+                              const google::protobuf::FieldDescriptor* d);
+
+  virtual bool column_is_null(unsigned icol, bool* good = nullptr);
+  virtual int64_t extract_int64(unsigned icol, bool* good = nullptr);
+  virtual int32_t extract_int32(unsigned icol, bool* good = nullptr);
+  virtual int16_t extract_int16(unsigned icol, bool* good = nullptr);
+  virtual int8_t extract_int8(unsigned icol, bool* good = nullptr);
+  virtual uint64_t extract_uint64(unsigned icol, bool* good = nullptr);
+  virtual uint32_t extract_uint32(unsigned icol, bool* good = nullptr);
+  virtual uint16_t extract_uint16(unsigned icol, bool* good = nullptr);
+  virtual uint8_t extract_uint8(unsigned icol, bool* good = nullptr);
+  virtual float extract_float(unsigned icol, bool* good = nullptr);
+  virtual double extract_double(unsigned icol, bool* good = nullptr);
+  virtual bool extract_bool(unsigned icol, bool* good = nullptr);
+  virtual std::string extract_string(unsigned icol, bool* good = nullptr);
+  virtual std::string extract_bytes(unsigned icol, bool* good = nullptr);
+
  protected:
   std::string sql_;
   std::vector<std::string> bound_values_;

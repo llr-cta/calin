@@ -2,7 +2,7 @@
 
    calin/io/sqlite3_statement.hpp -- Stephen Fegan -- 2015-09-24
 
-   Derives SQLStatement for SQLite3 database
+   Derived SQLStatement for SQLite3 database
 
 */
 
@@ -45,6 +45,21 @@ class SQLite3Statement: public SQLStatement
   bool bind_bool(unsigned ifield, bool value) override;
   bool bind_string(unsigned ifield, const std::string& value) override;
   bool bind_bytes(unsigned ifield, const std::string& value) override;
+
+  bool column_is_null(unsigned icol, bool* good = nullptr) override;
+  int64_t extract_int64(unsigned icol, bool* good = nullptr) override;
+  int32_t extract_int32(unsigned icol, bool* good = nullptr) override;
+  int16_t extract_int16(unsigned icol, bool* good = nullptr) override;
+  int8_t extract_int8(unsigned icol, bool* good = nullptr) override;
+  uint64_t extract_uint64(unsigned icol, bool* good = nullptr) override;
+  uint32_t extract_uint32(unsigned icol, bool* good = nullptr) override;
+  uint16_t extract_uint16(unsigned icol, bool* good = nullptr) override;
+  uint8_t extract_uint8(unsigned icol, bool* good = nullptr) override;
+  float extract_float(unsigned icol, bool* good = nullptr) override;
+  double extract_double(unsigned icol, bool* good = nullptr) override;
+  bool extract_bool(unsigned icol, bool* good = nullptr) override;
+  std::string extract_string(unsigned icol, bool* good = nullptr) override;
+  std::string extract_bytes(unsigned icol, bool* good = nullptr) override;
 
  protected:
   sqlite3* db_ = nullptr;
