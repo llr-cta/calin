@@ -98,8 +98,8 @@ retrieve_by_oid(const std::string& table_name, uint64_t oid,
   t->stmt = prepare_statement(sql_select(t.get(), t->children_need_oid(), true)
                               + sql_where_oid_equals());
 
-  iterate_over_tables(t.get(),[this](SQLTable* it) { if(it->stmt==nullptr)
-        it->stmt =
+  iterate_over_tables(t.get(),[this](SQLTable* it) {
+      if(it->stmt==nullptr) it->stmt =
             prepare_statement(sql_select(it, it->children_need_oid(), false)
                               + sql_where_inherited_keys_match(it)); });
   t->stmt->bind_uint64(0,oid);
@@ -109,10 +109,12 @@ retrieve_by_oid(const std::string& table_name, uint64_t oid,
   {
     LOG(ERROR) << "SELECT statement returned error: "
                << t->stmt->error_message();
+    t->stmt->reset();
     return false;
   }
   else if(status == SQLStatement::OK_NO_DATA)
   {
+    t->stmt->reset();
     m_data->Clear();
     if(m_key)m_key->Clear();
     return false;
@@ -127,6 +129,7 @@ retrieve_by_oid(const std::string& table_name, uint64_t oid,
                 true, false);
   
   assert(t->stmt->step() == SQLStatement::OK_NO_DATA);
+  t->stmt->reset();
   
   return true;
 }
@@ -866,7 +869,6 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
   for(auto f : t->fields)
   {
     if(!select_inherited_keys and f->is_inherited())continue;
-    std::cout << f->field_name << '\n';
     if(t->stmt->column_is_null(icol))goto next_field;
     
     if(f->field_d != nullptr)
@@ -923,70 +925,97 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
   for(auto st : t->sub_tables)
   {
     unsigned nloop = 0;
-    uint64_t unused_st_parent_oid = 0; 
-    uint64_t st_loopid = 0;
-
     google::protobuf::Message* m = m_data;
     const google::protobuf::Reflection* r = m->GetReflection();
+    
     for(auto d : st->parent_field_d_path)
-    {
-      if(!field_selected(d, oneof_map))goto next_sub_table;
-      m = r->MutableMessage(m, d);
-      r = m->GetReflection();
-    }
-    
-    if(!field_selected(st->parent_field_d, oneof_map))goto next_sub_table;
-    
+      if(!field_selected(d, oneof_map))goto next_sub_table_no_reset;
+    if(!field_selected(st->parent_field_d, oneof_map))
+      goto next_sub_table_no_reset;
+
     for(auto f : st->fields)
       if(f->field_type == SQLTableField::KEY_PARENT_OID)
         f->set_data_const_uint64(&my_oid);
-
     bind_fields_from_data_pointers(st, 0, st->stmt, true);
 
     while(1)
     {
-      SQLStatement::StepStatus status = st->stmt->step();
+      uint64_t unused_st_parent_oid = 0; 
+      uint64_t st_loopid = 0;
+
+      SQLStatement::StepStatus status = st->stmt->step();    
       if(write_sql_to_log_ and nloop==0)LOG(INFO) << t->stmt->bound_sql();
-      
+            
       if(status == SQLStatement::ERROR)
       {
         if(ignore_errors)goto next_sub_table;
         LOG(ERROR) << "SELECT statement returned error: "
                    << t->stmt->error_message() << '\n'
                    << "SQL: " << t->stmt->bound_sql();
+        t->stmt->reset();
         return false;
       }
       else if(status == SQLStatement::OK_NO_DATA)
       {
         goto next_sub_table;
       }
-      else
+      else if(!st->parent_field_d->is_repeated() and nloop>0)
       {
-        if(!st->parent_field_d->is_repeated() and nloop>0)
-        {
-          if(ignore_errors)goto next_sub_table;
-          LOG(ERROR) << "SELECT statement returned multiple entries for "
-              "non-repeated field.\n"
-                     << "SQL: " << t->stmt->bound_sql();
-          return false;
-        }
+        if(ignore_errors)goto next_sub_table;
+        LOG(ERROR) << "SELECT statement returned multiple entries for "
+            "non-repeated field.\n"
+                   << "SQL: " << t->stmt->bound_sql();
+        t->stmt->reset();
+        return false;
       }
 
-       
-      if(st->parent_field_d->is_repeated())
+      if(nloop == 0)
       {
-        
+        for(auto d : st->parent_field_d_path)
+        {
+          m = r->MutableMessage(m, d);
+          r = m->GetReflection();
+        }
+      }
+       
+      if(st->parent_field_d->is_repeated() and
+         st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE)
+      {
+        int fs = r->FieldSize(*m, st->parent_field_d);
+        google::protobuf::Message* sm = r->AddMessage(m, st->parent_field_d);
+        assert(sm);
+        good &= r_exec_select(st, sm, nullptr, unused_st_parent_oid, st_loopid,
+                              false, ignore_errors);
+        if(!st->parent_field_d->is_map() and fs != st_loopid)
+        {
+          // Messages are not in correct order, must move the one we added
+          for(int ifs = fs; ifs<st_loopid; ifs++)
+            r->AddMessage(m, st->parent_field_d);
+          r->SwapElements(m, st->parent_field_d, fs, st_loopid);
+        }
       }
       else
       {
-        good &= r_exec_select(st, r->MutableMessage(m, st->parent_field_d),
-                              nullptr, unused_st_parent_oid, st_loopid,
+        google::protobuf::Message* sm = m;
+        if(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE)
+          sm = r->MutableMessage(m, st->parent_field_d);
+        good &= r_exec_select(st, sm, nullptr, unused_st_parent_oid, st_loopid,
                               false, ignore_errors);
       }
-      if(!ignore_errors and !good)return good;
+      
+      if(!ignore_errors and !good)
+      {
+        t->stmt->reset();
+        return good;
+      }
+
+      nloop++;
     }
-           
+
  next_sub_table:
+    st->stmt->reset();
+
+ next_sub_table_no_reset:
     ;
   }
   

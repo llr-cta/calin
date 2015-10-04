@@ -229,9 +229,11 @@ TEST(TestSQLite3Transceiver, RetreiveByOID) {
   UnitTestKey m_key;
 
   xvr.retrieve_by_oid("mytable", 1, &m_data, &m_key);
+
+  std::ofstream mystream("test_db_select.txt");
   std::string str;
   google::protobuf::TextFormat::PrintToString(m_data, &str);
-  std::cout << str;
+  mystream << str;
 }
 
 int main(int argc, char **argv) {
