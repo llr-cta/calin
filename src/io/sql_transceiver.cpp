@@ -970,13 +970,8 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
       }
 
       if(nloop == 0)
-      {
-        for(auto d : st->parent_field_d_path)
-        {
-          m = r->MutableMessage(m, d);
-          r = m->GetReflection();
-        }
-      }
+        for(auto d : st->parent_field_d_path) {
+          m = r->MutableMessage(m, d); r = m->GetReflection(); }
        
       if(st->parent_field_d->is_repeated() and
          st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE)
