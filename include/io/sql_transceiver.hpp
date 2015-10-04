@@ -269,6 +269,10 @@ class SQLTransceiver
   void bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
                                       SQLStatement* stmt,
                                       bool bind_inherited_keys_only = false);
+
+  bool field_selected(const google::protobuf::FieldDescriptor* f,
+                      const std::map<const google::protobuf::OneofDescriptor*,
+                                     int>& oneof_map);
   
   virtual bool r_exec_insert(SQLTable* t,
                              const google::protobuf::Message* m_data,

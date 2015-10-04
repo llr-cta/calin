@@ -121,6 +121,11 @@ retrieve_by_oid(const std::string& table_name, uint64_t oid,
   m_data->Clear();
   if(m_key)m_key->Clear();
 
+  uint64_t unused_parent_oid = 0;
+  uint64_t unused_loop_id = 0;
+  r_exec_select(t.get(), m_data, m_key, unused_parent_oid, unused_loop_id,
+                true, false);
+  
   assert(t->stmt->step() == SQLStatement::OK_NO_DATA);
   
   return true;
@@ -816,6 +821,23 @@ r_exec_insert(SQLTable* t, const google::protobuf::Message* m_data,
 }
 
 bool SQLTransceiver::
+field_selected(const google::protobuf::FieldDescriptor* f,
+               const std::map<const google::protobuf::OneofDescriptor*,
+               int>& oneof_map)
+{
+  const google::protobuf::OneofDescriptor* c_oneof = f->containing_oneof();
+#if 0
+  if(c_oneof)
+    LOG(INFO) << f->name() << ' ' << f->number() << ' '
+              << oneof_map.find(c_oneof)->second;
+#endif
+  if(c_oneof != nullptr and
+     (oneof_map.find(c_oneof) == oneof_map.end() or
+      oneof_map.find(c_oneof)->second != f->number()))return false;
+  return true;
+}
+
+bool SQLTransceiver::
 r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
               google::protobuf::Message* m_key, 
               uint64_t& parent_oid, uint64_t& loop_id,
@@ -844,25 +866,24 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
   for(auto f : t->fields)
   {
     if(!select_inherited_keys and f->is_inherited())continue;
+    std::cout << f->field_name << '\n';
     if(t->stmt->column_is_null(icol))goto next_field;
-
+    
     if(f->field_d != nullptr)
     {
       google::protobuf::Message* m = m_data;
       if(f->field_type == SQLTableField::KEY_USER_SUPPLIED)m = m_key;
       assert(m);
       const google::protobuf::Reflection* r = m->GetReflection();
-    
-      const OneofDescriptor* c_oneof = f->field_d->containing_oneof();
-      if(c_oneof != nullptr and
-         (oneof_map.find(c_oneof) == oneof_map.end() or
-          oneof_map[c_oneof] != f->field_d->number()))goto next_field;
-          
+
       for(auto d : f->field_d_path)
       {
+        if(!field_selected(d, oneof_map))goto next_field;
         m = r->MutableMessage(m, d);
         r = m->GetReflection();
       }
+
+      if(!field_selected(f->field_d, oneof_map))goto next_field;
 
       if(f->field_d->is_repeated())
         good = t->stmt->extract_repeated_field(icol, loop_id, m, f->field_d);
@@ -893,11 +914,83 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
       }
     }
  next_field:
+    if(!ignore_errors and !good)return good;
     icol++;
   }
 
+  set_const_data_pointers(t, m_data, m_key, parent_oid, loop_id);
+
+  for(auto st : t->sub_tables)
+  {
+    unsigned nloop = 0;
+    uint64_t unused_st_parent_oid = 0; 
+    uint64_t st_loopid = 0;
+
+    google::protobuf::Message* m = m_data;
+    const google::protobuf::Reflection* r = m->GetReflection();
+    for(auto d : st->parent_field_d_path)
+    {
+      if(!field_selected(d, oneof_map))goto next_sub_table;
+      m = r->MutableMessage(m, d);
+      r = m->GetReflection();
+    }
+    
+    if(!field_selected(st->parent_field_d, oneof_map))goto next_sub_table;
+    
+    for(auto f : st->fields)
+      if(f->field_type == SQLTableField::KEY_PARENT_OID)
+        f->set_data_const_uint64(&my_oid);
+
+    bind_fields_from_data_pointers(st, 0, st->stmt, true);
+
+    while(1)
+    {
+      SQLStatement::StepStatus status = st->stmt->step();
+      if(write_sql_to_log_ and nloop==0)LOG(INFO) << t->stmt->bound_sql();
+      
+      if(status == SQLStatement::ERROR)
+      {
+        if(ignore_errors)goto next_sub_table;
+        LOG(ERROR) << "SELECT statement returned error: "
+                   << t->stmt->error_message() << '\n'
+                   << "SQL: " << t->stmt->bound_sql();
+        return false;
+      }
+      else if(status == SQLStatement::OK_NO_DATA)
+      {
+        goto next_sub_table;
+      }
+      else
+      {
+        if(!st->parent_field_d->is_repeated() and nloop>0)
+        {
+          if(ignore_errors)goto next_sub_table;
+          LOG(ERROR) << "SELECT statement returned multiple entries for "
+              "non-repeated field.\n"
+                     << "SQL: " << t->stmt->bound_sql();
+          return false;
+        }
+      }
+
+       
+      if(st->parent_field_d->is_repeated())
+      {
+        
+      }
+      else
+      {
+        good &= r_exec_select(st, r->MutableMessage(m, st->parent_field_d),
+                              nullptr, unused_st_parent_oid, st_loopid,
+                              false, ignore_errors);
+      }
+      if(!ignore_errors and !good)return good;
+    }
+           
+ next_sub_table:
+    ;
+  }
   
-  
+  return good;
 }
 
 

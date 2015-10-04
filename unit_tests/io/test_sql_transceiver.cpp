@@ -1,10 +1,13 @@
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <gtest/gtest.h>
+#include <google/protobuf/text_format.h>
 
 #include "io/sql_transceiver.hpp"
 #include "io/sqlite3_transceiver.hpp"
 #include "proto/unittest.pb.h"
+#include <google/protobuf/text_format.h>
 
 using namespace calin::ix::unittest;
 using namespace calin::io::sql_transceiver;
@@ -203,6 +206,12 @@ TEST(TestSQLite3Transceiver, Insert) {
   m_data.mutable_oosm_inline()->mutable_oosm_ssm_inline()->set_ssm_i32(987654);
 
   uint64_t oid;
+
+  std::ofstream mystream("test_db_insert.txt");
+  std::string str;
+  google::protobuf::TextFormat::PrintToString(m_data, &str);
+  mystream << str;
+
   xvr.insert("mytable", oid, &m_data, &m_key);
   //std::cerr << oid << '\n';
 }
@@ -220,6 +229,9 @@ TEST(TestSQLite3Transceiver, RetreiveByOID) {
   UnitTestKey m_key;
 
   xvr.retrieve_by_oid("mytable", 1, &m_data, &m_key);
+  std::string str;
+  google::protobuf::TextFormat::PrintToString(m_data, &str);
+  std::cout << str;
 }
 
 int main(int argc, char **argv) {

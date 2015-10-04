@@ -202,7 +202,7 @@ int8_t SQLite3Statement::extract_int8(unsigned icol, bool* good)
 
 uint64_t SQLite3Statement::extract_uint64(unsigned icol, bool* good)
 {
-  if(good)*good = true; return 0;
+  if(good)*good = true;
   return sqlite3_column_int64(stmt_, icol);
 }
 
