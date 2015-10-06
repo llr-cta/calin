@@ -1,6 +1,6 @@
 /* 
 
-   calin/air_shower/atmosphere.cpp -- Stephen Fegan -- 2015-06-11
+   calin/simulation/atmosphere.cpp -- Stephen Fegan -- 2015-06-11
 
    Classes to model density and refractive index of atmosphere
 
@@ -18,10 +18,10 @@
 #include<sstream>
 #include<algorithm>
 
-#include"air_shower/atmosphere.hpp"
-#include"air_shower/atmosphere.hpp"
+#include"simulation/atmosphere.hpp"
+#include"simulation/atmosphere.hpp"
 
-using namespace calin::air_shower::atmosphere;
+using namespace calin::simulation::atmosphere;
 
 Atmosphere::~Atmosphere()
 {
@@ -221,7 +221,7 @@ LayeredAtmosphere::~LayeredAtmosphere()
   // nothing to see here
 }
 
-inline std::vector<calin::air_shower::atmosphere::LayeredAtmosphereLayer>::const_iterator
+inline std::vector<calin::simulation::atmosphere::LayeredAtmosphereLayer>::const_iterator
 LayeredAtmosphere::findZ(double z) const
 {
   std::vector<Layer>::const_iterator ilayer = m_ilayer;

@@ -1,6 +1,6 @@
 /* 
 
-   calin/air_shower/atmosphere.hpp -- Stephen Fegan -- 2015-06-11
+   calin/simulation/atmosphere.hpp -- Stephen Fegan -- 2015-06-11
 
    Classes to model density and refractive index of atmosphere
 
@@ -22,7 +22,7 @@
 // Density, rho: g/cm^3
 // Thickness, t: g/cm^2
 
-namespace calin { namespace air_shower { namespace atmosphere {
+namespace calin { namespace simulation { namespace atmosphere {
 
 #if 0
 class AtmComposition
@@ -216,4 +216,4 @@ class LayeredAtmosphere: public Atmosphere
   mutable std::vector<Layer>::const_iterator m_ilayer;
 };
 
-} } } // namespace calin::air_shower::atmosphere
+} } } // namespace calin::simulation::atmosphere

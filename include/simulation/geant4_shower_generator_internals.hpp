@@ -1,6 +1,6 @@
 /* 
 
-   calin/air_shower/geant4_shower_generator_internals.hpp 
+   calin/simulation/geant4_shower_generator_internals.hpp 
    Stephen Fegan -- 2015-07-03
 
    Internals of Geant-4 extensive air shower generator
@@ -13,8 +13,8 @@
 #include<cassert>
 #include<limits>
 
-#include"air_shower/atmosphere.hpp"
-#include"air_shower/tracker.hpp"
+#include"simulation/atmosphere.hpp"
+#include"simulation/tracker.hpp"
 #include"io/log.hpp"
 
 #include"package_wide_definitions.hpp"
@@ -41,7 +41,7 @@
 #include <G4UIsession.hh>
 #include <G4TrackStatus.hh>
 
-namespace calin { namespace air_shower { namespace shower_generator {
+namespace calin { namespace simulation { namespace shower_generator {
 
 void g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec);
 void g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
@@ -50,8 +50,8 @@ void eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec);
 void eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec,
                     double from_units);
 
-calin::air_shower::tracker::ParticleType pdg_to_track_type(G4int pdg_type);
-G4int track_to_pdg_type(calin::air_shower::tracker::ParticleType track_type);
+calin::simulation::tracker::ParticleType pdg_to_track_type(G4int pdg_type);
+G4int track_to_pdg_type(calin::simulation::tracker::ParticleType track_type);
 
 class EAS_StackingAction: public G4UserStackingAction
 {
@@ -70,7 +70,7 @@ class EAS_StackingAction: public G4UserStackingAction
 class EAS_SteppingAction: public G4UserSteppingAction
 {
  public:
-  EAS_SteppingAction(calin::air_shower::tracker::TrackVisitor* visitor);
+  EAS_SteppingAction(calin::simulation::tracker::TrackVisitor* visitor);
   virtual ~EAS_SteppingAction();
 
   void UserSteppingAction(const G4Step*) override;
@@ -86,7 +86,7 @@ class EAS_SteppingAction: public G4UserSteppingAction
   double zcut_ = -std::numeric_limits<double>::infinity();
   double r2cut_ = 0;
   double rzero_ = 0;
-  calin::air_shower::tracker::TrackVisitor* visitor_ = nullptr;
+  calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
 };
 
 class EAS_PrimaryGeneratorAction: public G4VUserPrimaryGeneratorAction
@@ -115,7 +115,7 @@ class EAS_DetectorConstruction: public G4VUserDetectorConstruction
 class EAS_FlatDetectorConstruction: public EAS_DetectorConstruction
 {
  public:
-  EAS_FlatDetectorConstruction(calin::air_shower::atmosphere::Atmosphere* atm,
+  EAS_FlatDetectorConstruction(calin::simulation::atmosphere::Atmosphere* atm,
                                unsigned num_atm_layers,
                                double zground_cm, double ztop_of_atm_cm,
                                double layer_side_cm = 1000E5 /* 1,000 km */);
@@ -123,7 +123,7 @@ class EAS_FlatDetectorConstruction: public EAS_DetectorConstruction
   G4VPhysicalVolume* Construct() override;
   void ConstructSDandField() override;
  private:
-  calin::air_shower::atmosphere::Atmosphere* atm_;
+  calin::simulation::atmosphere::Atmosphere* atm_;
   unsigned num_atm_layers_;
   double zground_cm_;
   double ztop_of_atm_cm_;
@@ -154,4 +154,4 @@ class CoutCerrLogger: public G4UIsession
 };
 
 
-} } } // namespace calin::air_shower::generator
+} } } // namespace calin::simulation::generator

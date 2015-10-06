@@ -1,14 +1,14 @@
 /* 
 
-   calin/air_shower/tracker.cpp -- Stephen Fegan -- 2015-07-17
+   calin/simulation/tracker.cpp -- Stephen Fegan -- 2015-07-17
 
    Base class for all air shower track visitors
 
 */
 
-#include "air_shower/tracker.hpp"
+#include "simulation/tracker.hpp"
 
-using namespace calin::air_shower::tracker;
+using namespace calin::simulation::tracker;
 
 TrackVisitor::~TrackVisitor()
 {

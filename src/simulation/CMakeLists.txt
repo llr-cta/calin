@@ -2,7 +2,7 @@ find_package(Geant4 REQUIRED)
 
 include(${Geant4_USE_FILE})
 
-set(CALIN_TARGET_LIBRARY calin_air_shower)
+set(CALIN_TARGET_LIBRARY calin_simulation)
 set(CALIN_SOURCES tracker.cpp atmosphere.cpp geant4_shower_generator.cpp
 		  geant4_shower_generator_internals.cpp)
 

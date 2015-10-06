@@ -1,6 +1,6 @@
 /* 
 
-   calin/air_shower/geant4_shower_generator_internals.cpp 
+   calin/simulation/geant4_shower_generator_internals.cpp 
    Stephen Fegan -- 2015-07-07
 
    Internals of Geant-4 extensive air shower generator
@@ -9,11 +9,11 @@
 
 #include<stdexcept>
 
-#include"air_shower/geant4_shower_generator_internals.hpp"
+#include"simulation/geant4_shower_generator_internals.hpp"
 
-using namespace calin::air_shower::shower_generator;
+using namespace calin::simulation::shower_generator;
 
-void calin::air_shower::shower_generator::
+void calin::simulation::shower_generator::
 g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec)
 {
   evec[0] = g4vec[0];
@@ -21,7 +21,7 @@ g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec)
   evec[2] = g4vec[2];
 }
 
-void calin::air_shower::shower_generator::
+void calin::simulation::shower_generator::
 g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
                     double to_units)
 {
@@ -30,7 +30,7 @@ g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
   evec[2] = g4vec[2]/to_units;
 }
 
-void calin::air_shower::shower_generator::
+void calin::simulation::shower_generator::
 eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec)
 {
   g4vec[0] = evec[0];
@@ -38,7 +38,7 @@ eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec)
   g4vec[2] = evec[2];
 }
 
-void calin::air_shower::shower_generator::
+void calin::simulation::shower_generator::
 eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec,
                double from_units)
 {
@@ -47,10 +47,10 @@ eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec,
   g4vec[2] = evec[2]*from_units;
 }
 
-calin::air_shower::tracker::ParticleType
-calin::air_shower::shower_generator::pdg_to_track_type(G4int pdg_type)
+calin::simulation::tracker::ParticleType
+calin::simulation::shower_generator::pdg_to_track_type(G4int pdg_type)
 {
-  using calin::air_shower::tracker::ParticleType;
+  using calin::simulation::tracker::ParticleType;
   switch(pdg_type)
   {
     case 22:    return ParticleType::GAMMA;
@@ -65,10 +65,10 @@ calin::air_shower::shower_generator::pdg_to_track_type(G4int pdg_type)
   assert(0);
 }
 
-G4int calin::air_shower::shower_generator::
-track_to_pdg_type(calin::air_shower::tracker::ParticleType track_type)
+G4int calin::simulation::shower_generator::
+track_to_pdg_type(calin::simulation::tracker::ParticleType track_type)
 {
-  using calin::air_shower::tracker::ParticleType;
+  using calin::simulation::tracker::ParticleType;
   switch(track_type)
   {
     case ParticleType::GAMMA:       return 22;
@@ -113,7 +113,7 @@ ClassifyNewTrack(const G4Track* track)
 // ============================================================================
 
 EAS_SteppingAction::
-EAS_SteppingAction(calin::air_shower::tracker::TrackVisitor* visitor)
+EAS_SteppingAction(calin::simulation::tracker::TrackVisitor* visitor)
     : G4UserSteppingAction(), visitor_(visitor)
 {
   /* nothing to see here */
@@ -135,7 +135,7 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
     return;
   }
 
-  calin::air_shower::tracker::Track track;
+  calin::simulation::tracker::Track track;
 
   const G4ParticleDefinition* pdg_info =
       the_step->GetTrack()->GetParticleDefinition();
@@ -224,7 +224,7 @@ EAS_DetectorConstruction::~EAS_DetectorConstruction()
 }
 
 EAS_FlatDetectorConstruction::
-EAS_FlatDetectorConstruction(calin::air_shower::atmosphere::Atmosphere* atm,
+EAS_FlatDetectorConstruction(calin::simulation::atmosphere::Atmosphere* atm,
                              unsigned num_atm_layers,
                              double zground_cm, double ztop_of_atm_cm,
                              double layer_side_cm)

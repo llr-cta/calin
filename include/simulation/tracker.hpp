@@ -1,6 +1,6 @@
 /* 
 
-   calin/air_shower/tracker.hpp -- Stephen Fegan -- 2015-06-23
+   calin/simulation/tracker.hpp -- Stephen Fegan -- 2015-06-23
 
    Base class for all air shower track visitors
 
@@ -15,7 +15,7 @@
 
 #include"Eigen/Core"
 
-namespace calin { namespace air_shower { namespace tracker {
+namespace calin { namespace simulation { namespace tracker {
 
 enum class ParticleType { GAMMA, ELECTRON, POSITRON, MUON, ANTI_MUON,
     PROTON, ANTI_PROTON, OTHER };
@@ -49,4 +49,4 @@ class TrackVisitor
   virtual void visitTrack(const Track& track, bool& kill_track);
 };
 
-} } } // namespace calin::air_shower::tracker
+} } } // namespace calin::simulation::tracker

@@ -1,20 +1,20 @@
 /* 
 
-   calin/air_shower/geant4_shower_generator.cpp -- Stephen Fegan -- 2015-07-02
+   calin/simulation/geant4_shower_generator.cpp -- Stephen Fegan -- 2015-07-02
 
    Class to genereate extensive air showers using Geant-4
 
 */
 
-#include "air_shower/geant4_shower_generator.hpp"
-#include "air_shower/geant4_shower_generator_internals.hpp"
+#include "simulation/geant4_shower_generator.hpp"
+#include "simulation/geant4_shower_generator_internals.hpp"
 
-using namespace calin::air_shower::shower_generator;
+using namespace calin::simulation::shower_generator;
 using namespace calin::io::log;
 
 Geant4ShowerGenerator::
-Geant4ShowerGenerator(calin::air_shower::tracker::TrackVisitor* visitor,
-                      calin::air_shower::atmosphere::Atmosphere* atm,
+Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
+                      calin::simulation::atmosphere::Atmosphere* atm,
                       unsigned num_atm_layers, double zground, double ztop,
                       VerbosityLevel verbose_level,
                       bool adopt_visitor, bool adopt_atm):
@@ -108,7 +108,7 @@ void Geant4ShowerGenerator::setMinimumEnergyCut(double emin_mev)
 
 void Geant4ShowerGenerator::
 generateShowers(unsigned num_events,
-                calin::air_shower::tracker::ParticleType type,
+                calin::simulation::tracker::ParticleType type,
                 double total_energy,
                 const Eigen::Vector3d& x0,
                 const Eigen::Vector3d& u0,
