@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 
-#include "air_shower/atmosphere.hpp"
-#include "air_shower/tracker.hpp"
-#include "air_shower/geant4_shower_generator.hpp"
+#include "simulation/atmosphere.hpp"
+#include "simulation/tracker.hpp"
+#include "simulation/geant4_shower_generator.hpp"
 
-using namespace calin::air_shower::atmosphere;
-using namespace calin::air_shower::tracker;
-using namespace calin::air_shower::shower_generator;
+using namespace calin::simulation::atmosphere;
+using namespace calin::simulation::tracker;
+using namespace calin::simulation::shower_generator;
 
 TEST(TestGeant4, MakeUS76Atmosphere) {
   Atmosphere* atm = LayeredAtmosphere::us76();

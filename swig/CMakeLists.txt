@@ -16,6 +16,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(math) 
 add_subdirectory(calib) 
-add_subdirectory(air_shower) 
+add_subdirectory(simulation) 
 
 install(FILES __init__.py DESTINATION python/calin)

@@ -6,7 +6,7 @@ add_subdirectory(gtest-1.7.0)
 include_directories(gtest-1.7.0/include)
 set(GTEST_BOTH_LIBRARIES gtest gtest_main)
 
-add_subdirectory(air_shower)   
+add_subdirectory(simulation)   
 add_subdirectory(math)   
 add_subdirectory(calib) 
 add_subdirectory(io)  
