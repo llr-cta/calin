@@ -769,22 +769,22 @@ double GeneralPoissonMES::pdf_gradient_hessian_mes(double x, VecRef gradient,
 
 double GeneralPoissonMES::ped_rms_dc()
 {
-
+  assert(false);
 }
 
 double GeneralPoissonMES::ped_zero_dc()
 {
-
+  assert(false);
 }
 
 double GeneralPoissonMES::ses_mean_dc()
 {
-  
+  assert(false);
 }
 
 double GeneralPoissonMES::ses_rms_pe()
 {
-
+  assert(false);
 }
 
 std::vector<double> GeneralPoissonMES::multi_electron_spectrum() const 

@@ -294,21 +294,21 @@ class ParameterizableToMultiAxisFunctionAdapter: public MultiAxisFunction
   ~ParameterizableToMultiAxisFunctionAdapter() { }
   unsigned num_domain_axes() override { return par_->num_parameters(); }
   std::vector<DomainAxis> domain_axes() override { return par_->parameters(); }
-  double value(ConstVecRef x) {
+  double value(ConstVecRef x) override {
     par_->set_parameter_values(x);
     return val_getter_(par_); }
-  bool can_calculate_gradient() { 
+  bool can_calculate_gradient() override { 
     return par_->can_calculate_parameter_gradient(); }
   double value_and_gradient(ConstVecRef x, VecRef gradient) {
     par_->set_parameter_values(x);
     return grad_getter_(par_, gradient); }
-  bool can_calculate_hessian() {
+  bool can_calculate_hessian() override {
     return par_->can_calculate_parameter_hessian(); }
   double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
-                                    MatRef hessian) {
+                                    MatRef hessian) override {
     par_->set_parameter_values(x);
     return hess_getter_(par_, gradient, hessian); }
-  double error_up() { return error_up_; }
+  double error_up() override { return error_up_; }
  protected:
   ParameterizableType* par_;
   PTValGetter val_getter_;
