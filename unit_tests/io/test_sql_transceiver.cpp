@@ -153,7 +153,22 @@ TEST(TestSQLite3Transceiver, Insert) {
     m_data.add_vec_s(std::string("string ")+std::to_string(i*1000000 + 104));
     m_data.add_vec_ssm()->set_ssm_i32(i*1000000 + 105);
     m_data.add_vec_ssm_inline()->set_ssm_i32(i*1000000 + 106);
+    
+    m_data.add_vec_d(i*1000000 + 113.5);
+    m_data.add_vec_ui32(i*1000000 + 114);
+    m_data.add_vec_ui64(i*1000000 + 115);
+    m_data.add_vec_si32(i*1000000 + 116);
+    m_data.add_vec_si64(i*1000000 + 117);
+    m_data.add_vec_fi32(i*1000000 + 118);
+    m_data.add_vec_fi64(i*1000000 + 119);
+    m_data.add_vec_sfi32(i*1000000 + 120);
+    m_data.add_vec_sfi64(i*1000000 + 121);
+    m_data.add_vec_b(i%2 == 0);
+    m_data.add_vec_bb(std::string("string ")+std::to_string(i*1000000 + 123));
 
+    if(i%2==0)m_data.add_vec_e(UnitTestMessage::RUNNING);
+    else m_data.add_vec_e(UnitTestMessage::STARTED);
+        
     auto ivec_csm = m_data.add_vec_csm();
     ivec_csm->set_csm_i32(i*1000000 + 107);
     ivec_csm->mutable_csm_ssm()->set_ssm_i32(i*1000000 + 1107);
@@ -183,6 +198,25 @@ TEST(TestSQLite3Transceiver, Insert) {
     m_data.add_vec_oosm()->mutable_oosm_ssm()->set_ssm_i32(i*1000000 + 40331);
     m_data.add_vec_oosm()->mutable_oosm_ssm_inline()->
         set_ssm_i32(i*1000000 + 40341);
+
+    std::string map_key = std::string("map key ")+std::to_string(i);
+    (*m_data.mutable_map_i32())[std::string("i32 ")+map_key] = i*1000000 + 201;
+    (*m_data.mutable_map_ssm())[std::string("ssm ")+map_key].
+        set_ssm_i32(i*1000000 + 202); 
+    auto &map_csm = (*m_data.mutable_map_csm())[std::string("csm ")+map_key];
+    map_csm.set_csm_i32(i*1000000 + 203); 
+    map_csm.mutable_csm_ssm()->set_ssm_i32(i*100000 + 1203);
+
+    auto &map_ism = (*m_data.mutable_map_ism())[std::string("ism ")+map_key];
+    map_ism.set_ism_i32(i*1000000 + 204); 
+    map_ism.mutable_ism_ssm()->set_ssm_i32(i*100000 + 1204); 
+
+    auto &map_vsm = (*m_data.mutable_map_vsm())[std::string("vsm ")+map_key];
+    for(unsigned j=0;j<=i;j++)
+    {
+      map_vsm.add_vsm_vec_i32(i*1000000 + j*10000 + 211);
+      map_vsm.add_vsm_vec_ssm()->set_ssm_i32(i*1000000 + j*10000 + 2211);
+    }
   }
 
   m_data.set_d(1300000.1);

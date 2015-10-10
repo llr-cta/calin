@@ -87,6 +87,19 @@ message UnitTestMessage {
   repeated UnitTestInlinedSubMessage vec_ism_inline = 110 [(CFO).sql.inline_message = true];
   repeated UnitTestVectorSubMessage vec_vsm = 111;
 
+  repeated double  vec_d = 113;
+  repeated uint32  vec_ui32 = 114;
+  repeated uint64  vec_ui64 = 115;
+  repeated sint32  vec_si32 = 116;
+  repeated sint64  vec_si64 = 117;
+  repeated fixed32 vec_fi32 = 118;
+  repeated fixed64 vec_fi64 = 119;
+  repeated sfixed32 vec_sfi32 = 120;
+  repeated sfixed64 vec_sfi64 = 121;
+  repeated bool vec_b = 122;
+  repeated bytes vec_bb = 123;
+  repeated EnumType vec_e = 124;
+
   map<string, int32> map_i32 = 201;
   map<string, UnitTestSimpleSubMessage> map_ssm = 205;
   map<string, UnitTestComplexSubMessage> map_csm = 207;
