@@ -5,7 +5,8 @@ set(PROTOBUF_IMPORT_DIRS /usr/local/include ${CMAKE_CURRENT_SOURCE_DIR})
 find_package(Protobuf REQUIRED)
 
 PROTOBUF_GENERATE_CPP(ProtoSources ProtoHeaders
-					 calin.proto sql_transceiver.proto
+					 calin.proto
+					 io_sql_transceiver.proto
 					 math_histogram.proto unittest.proto)
 
 set(PROTOBUF_INCLUDE_DIRS /usr/local/include) 

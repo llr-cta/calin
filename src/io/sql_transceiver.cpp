@@ -10,7 +10,7 @@
 #include <stdexcept>
 
 #include "proto/calin.pb.h"
-#include "proto/sql_transceiver.pb.h"
+#include "proto/io_sql_transceiver.pb.h"
 #include "io/sql_transceiver.hpp"
 #include "io/log.hpp"
 

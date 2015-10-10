@@ -299,7 +299,7 @@ class ParameterizableToMultiAxisFunctionAdapter: public MultiAxisFunction
     return val_getter_(par_); }
   bool can_calculate_gradient() override { 
     return par_->can_calculate_parameter_gradient(); }
-  double value_and_gradient(ConstVecRef x, VecRef gradient) {
+  double value_and_gradient(ConstVecRef x, VecRef gradient) override {
     par_->set_parameter_values(x);
     return grad_getter_(par_, gradient); }
   bool can_calculate_hessian() override {
