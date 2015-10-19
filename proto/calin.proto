@@ -22,11 +22,14 @@ message FieldOptions
     INT_8    = 2;
   }
       
-  string            desc        = 1;
-  string            units       = 2;
-  Int32StorageType  int32_type  = 3;
-  bool              dont_store  = 4;
-  SQLOptions        sql         = 100;
+  string            desc        = 1; // Description string
+  string            units       = 2; // Units
+  string            ref         = 3; // Reference document or URL
+  double            min_val     = 4; // Smallest allowed value as double
+  double            max_val     = 5; // Largest allowed value as double
+  Int32StorageType  int32_type  = 100;
+  bool              dont_store  = 101;
+  SQLOptions        sql         = 1000;
 };
 
 extend google.protobuf.FieldOptions {

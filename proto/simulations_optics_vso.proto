@@ -1,0 +1,374 @@
+//-*-mode:protobuf; mode:font-lock;-*-
+
+syntax = "proto3";
+
+import "calin.proto";
+import "calin_common_types.proto";
+
+package calin.ix.simulations.optics_vso;
+
+message Obscuration {
+  message Disk { 
+    double xc                           = 1
+      [(CFO).desc = "X coordinate of the center of the disk in reflector frame",
+       (CFO).units = "cm"];
+    double yc                           = 2
+      [(CFO).desc = "Y coordinate of the center of the disk in reflector frame",
+       (CFO).units = "cm";]
+    double zc                           = 3
+      [(CFO).desc = "Z coordinate of the center of the disk in reflector frame",
+       (CFO).units = "cm"];
+    double nx                           = 4
+      [(CFO).desc = "X component of the normal to the disk in reflector frame"];
+    double ny                           = 5
+      [(CFO).desc = "Y component of the normal to the disk in reflector frame"];
+    double nz                           = 6
+      [(CFO).desc = "Z component of the normal to the disk in reflector frame"];
+    double diameter                     = 7
+      [(CFO).desc = "Diameter of the disk",
+       (CFO).units = "cm"];
+    bool incoming_only                  = 8
+      [(CFO).desc = "True if photons should only be obscured only when n.u>0"];
+  };
+
+  message Tube {
+    double x1                           = 1
+      [(CFO).desc = "X coordinate center of tube at 1st end in reflector frame",
+       (CFO).units = "cm"];
+    double y1                           = 2
+      [(CFO).desc = "Y coordinate center of tube at 1st end in reflector frame",
+       (CFO).units = "cm"];
+    double z1                           = 3
+      [(CFO).desc = "Z coordinate center of tube at 1st end in reflector frame",
+       (CFO).units = "cm"];
+    double x2                           = 4
+      [(CFO).desc = "X coordinate center of tube at 2nd end in reflector frame",
+       (CFO).units = "cm"];
+    double y2                           = 5
+      [(CFO).desc = "Y coordinate center of tube at 2nd end in reflector frame",
+       (CFO).units = "cm"];
+    double z2                           = 6
+      [(CFO).desc = "Z coordinate center of tube at 2nd end in reflector frame",
+       (CFO).units = "cm"];
+    double diameter                     = 7
+      [(CFO).desc = "Cross-sectional diameter of the tube",
+       (CFO).units = "cm"];
+    bool incoming_only                  = 8
+      [(CFO).desc = "True if photons should only be obscured entering tube"];
+  };
+
+  oneof type {
+    message Disk disk                   = 1;
+    message Tube tube                   = 2;
+  }
+};
+  
+message HexArrayLayout
+{
+  uint32 num_scope_rings                = 1
+    [(CFO).desc = "Number of hexagonal rings of telescopes in the array."];
+  double scope_spacing                  = 2
+    [(CFO).desc = "Spacing between telescopes in an array. From this parameter "
+     "positions of telescopes are calculated on the hexagonal grid. Position "
+     "of telescope is defined as point of intersection of its rotation axes.",
+     (CFO).units = "cm"];
+  bool scope_labeling_parity            = 3
+    [(CFO).desc = "Telescopes are counted on a hexagonal grid in the direction "
+     "of the +x-axis when this flag is FALSE, and in the direction of the "
+     "-x-axis when it is TRUE"];
+  repeated uint32 scope_missing_list    = 4
+    [(CFO).desc = "List of the Hex IDs of the scopes missing from the array."];
+  double scope_position_dispersion_xy   = 5
+    [(CFO).desc = "Dispersion in the positioning of telescopes in each of the "
+     "horizontal directions (x and y)",
+     (CFO).units = "cm"];
+  double scope_position_dispersion_z    = 6
+    [(CFO).desc = "Dispersion in the positioning of telescopes in the "
+     "vertical direction (z)",
+     (CFO).units = "cm"];
+};
+
+message ScopePosition
+{
+  double x                              = 1
+    [(CFO).desc = "X (East-West) coordinate of scope in array frame. Positive "
+     "values are East of the origin, negative values are West.",
+     (CFO).units = "cm"];
+  double y                              = 2
+    [(CFO).desc = "Y (North-South) coordinate of scope in array frame. "
+     "Positive values are North of the origin, negative values are South.",
+     (CFO).units = "cm"];
+  double z                              = 3
+    [(CFO).desc = "Z (Up-Down) coordinate of scope in array frame. Positive "
+     "values are above the origin, negative values are below.",
+     (CFO).units = "cm"];
+};
+
+message UserDefinedArrayLayout
+{
+  repeated ScopePosition scope_positions = 1
+    [(CFO).desc = "Telescope positions within the array."];
+};
+
+message ReflectorFrameParameters
+{
+  HorizontalCoordinates altaz           = 1
+    [(CFO).desc = "Altitude and elevation of telescope"];
+  double delta_y                        = 2
+    [(CFO).desc = "Deviation from perpendicularity of elevation and azimuth "
+     "planes. Specifies rotation of the elevation axis around the y-axis of "
+     "the azimuth plane.",
+     (CFO).units = "deg"];
+  double alpha_x                        = 3
+    [(CFO).desc = "Deviation of normal to the azimuth plane (the z-axis in "
+     "the azimuth frame) the from vertical. Specifies a rotation of azimuth "
+     "frame around the x-axis of the global frame. A positive value rotates "
+     "the normal to the azimuth plane to the North. This rotation is applied "
+     "AFTER alpha_y.",
+     (CFO).units = "deg"];
+  double alpha_y                        = 4
+    [(CFO).desc = "Deviation of normal to the azimuth plane (the z-axis in "
+     "the azimuth frame) the from vertical. Specifies a rotation of azimuth "
+     "frame around the y-axis of the global frame. A positive value rotates the "
+     "normal to the azimuth plane to the East. This rotation is applied "
+     "BEFORE alpha_x.",
+     (CFO).units = "deg"];
+  double reflector_trans_x              = 5
+    [(CFO).desc = "X-component of vector from the origin of the reflector "
+     "reference frame to the intersection of rotation axes. The reflector "
+     "frame is defined by +y pointing along optical axis and +x pointing "
+     "along the horizontal to the right when looking along the optic axis "
+     "(when alpha_y=0). For example, with the optic axis (+y) pointing North, "
+     "+x points East and +z point up.",
+     (CFO).units = "cm"];
+  double reflector_trans_y              = 6
+    [(CFO).desc = "Y-component of vector from the origin of the reflector "
+     "reference frame to the intersection of rotation axes. The reflector "
+     "frame is defined by +y pointing along optical axis and +x pointing "
+     "along the horizontal to the right when looking along the optic axis "
+     "(when alpha_y=0). For example, with the optic axis (+y) pointing North, "
+     "+x points East and +z point up.",
+     (CFO).units = "cm"];
+  double reflector_trans_z              = 7
+    [(CFO).desc = "Z-component of vector from the origin of the reflector "
+     "reference frame to the intersection of rotation axes. The reflector "
+     "frame is defined by +y pointing along optical axis and +x pointing "
+     "along the horizontal to the right when looking along the optic axis "
+     "(when alpha_y=0). For example, with the optic axis (+y) pointing North, "
+     "+x points East and +z point up.",
+     (CFO).units = "cm"];
+};
+
+message ConcurrentNormalsAlignment
+{
+  double alignment_pt_x                 = 1
+    [(CFO).desc = "X coordinate of nominal alignment point in reflector "
+     "reference frame. Generally this should be zero meaning the alignment "
+     "point lies along the natural symmetry axis of the reflector.",
+     (CFO).units = "cm"];
+  double alignment_pt_y                 = 2
+    [(CFO).desc = "Y coordinate of nominal alignment point in reflector "
+     "reference frame. In a classic DC alignment mode this should be twice "
+     "the focal distance. A value of zero means the alignment point should "
+     "be calculated on the fly for each normal which allows the method be "
+     "used in modified DC designs."
+     (CFO).units = "cm"];
+  double alignment_pt_z                 = 3
+    [(CFO).desc = "Z coordinate of nominal alignment point in reflector "
+     "reference frame. Generally this should be zero meaning the alignment "
+     "point lies along the natural symmetry axis of the reflector.",
+     (CFO).units = "cm"];
+  double alignment_pt_dispersion_xz     = 4
+    [(CFO).desc = "Telescope-to-telescope dispersion of alignment point on "
+     "each of the axes perpendicular to optic axis (the X and Z axes of the "
+     "reflector frame). This parameter introduces a random systematic offset "
+     "in the alignment of all facets on a given telescope.",
+     (CFO).units = "cm"];
+  double alignment_pt_dispersion_y      = 5
+    [(CFO).desc = "Telescope-to-telescope dispersion of alignment point "
+     "parallel to the optic axis (Y axis in the reflector frame). This "
+     "parameter introduces a random systematic offset in the alignment of "
+     "all facets on a given telescope.",
+     (CFO).units = "cm"];
+};
+
+message MinimumPSFAlignment
+{
+  double object_plane                   = 1
+    [(CFO).desc = "Alignment object plane. A value of zero or inf implies "
+     "the telescope should be focussed for objects at infinity.",
+     (CFO).units = "cm"];
+  double image_pt_theta                 = 2
+    [(CFO).desc = "Focal plane alignment point from center of FoV.",
+     (CFO).units = "deg"];
+  double image_pt_phi                   = 3
+    [(CFO).desc = "Focal plane alignment point polar angle.",
+     (CFO).units = "deg"];
+};
+
+message HexDCReflectorParameters
+{
+  double curvature_radius               = 1
+    [(CFO).desc = "Radius of curvature of the reflector",
+     (CFO).units = "cm"];
+  double aperture                       = 2
+    [(CFO).desc = "Telescope aperture (diameter of reflector)",
+     (CFO).units = "cm"];
+  double optic_axis_rotation            = 3
+    [(CFO).desc = "Reflector rotation about the optical axis",
+     (CFO).units = "deg"];
+  oneof alignment
+  {
+    ConcurrentNormalsAlignment norm_align = 4
+      [(CFO).desc = "Traditional DC alignment of facet normals to a common "
+       "point."];
+    MinimumPSFAlignment psf_align       = 5
+      [(CFO).desc = "Alignment to minimize PSF for source at prescribed "
+       "distance."];
+  };
+  double alignment_image_plane          = 6
+    [(CFO).desc = "Alignment image plane to be used in MinimumPSFAlignment "
+     "(or ConcurrentNormalsAlignment if alignment_pt_y=0). A value of zero "
+     "implies the telescope should be focussed such that the image appears "
+     "on the camera plane.",
+     (CFO).units = "cm"];
+  double facet_alignment_dispersion     = 7
+    [(CFO).desc = "Dispersion of facet image centroids on the image plane.",
+     (CFO).units = "cm"];
+  
+  double facet_spacing                  = 10
+    [(CFO).desc = "Facet spacing, center-to-center distance between mirror "
+     "sites of reflector. The X and Z coordinates of the facets are on a "
+     "regular hexagonal grid, the Y coordinate put the facet onto a sphere "
+     "or radius \"curvature_radius\".",
+     (CFO).units = "cm"];
+  double facet_size                     = 11
+    [(CFO).desc = "Edge-to-edge size of a single mirror facet of the "
+     "reflector. It does not make sense to have facet_size > facet_spacing."
+     (CFO).units = "cm"];
+  double facet_focal_length             = 12
+    [(CFO).desc = "Focal length of a mirror facet."
+     (CFO).units = "cm"];
+  double facet_focal_length_dispersion  = 13
+    [(CFO).desc = "Dispersion of mirror facet focal length."
+     (CFO).units = "cm"];
+  double facet_spot_size_probability    = 14
+    [(CFO).desc = "Mean fraction of photons contained by a circle with "
+     "diameter given by the spotsize parameter below. This parameter "
+     "essentially defines what the facet_spot_size and "
+     "facet_spot_size_dispersion parameters mean. "
+     "Some typical values are given here:\n"
+    "0.39 -- Spotsize is DIAMETER of 1-sigma of distribution (2 x 1.00 sigma)\n"
+    "0.50 -- Spotsize is FWHM                                (2 x 1.77 sigma)\n"
+    "0.67 -- Spotsize DIAMETER contains 2/3 of the photons   (2 x 1.48 sigma)\n"
+    "0.85 -- Spotsize DIAMETER contains 85% of the photons   (2 x 1.95 sigma)\n"
+    "0.90 -- Spotsize DIAMETER contains 90% of the photons   (2 x 2.15 sigma)"];
+  double facet_spot_size                = 15
+    [(CFO).desc = "Mean spot size (diameter) at the focal distance of the "
+     "mirror from an infinitely narrow parallel beam of light along the "
+     "optical axis. This parameter defines the mean DIAMETER of a circle "
+     "which contains facet_spot_size_probability of the photons on a screen "
+     "at its focal length.",
+     (CFO).units = "cm"];
+  double facet_spot_size_dispersion     = 16
+    [(CFO).desc = "Facet-to-facet dispersion in facet_spot_size.",
+     (CFO).units = "cm"];
+  double facet_pos_tangent_dispersion   = 17
+    [(CFO).desc = "Facet-to-facet dispersion in positioning of the mirror "
+     "facet on axis tangential to the the reflector sphere.",
+     (CFO).units = "cm"];
+  double facet_pos_normal_dispersion    = 18
+    [(CFO).desc = "Facet-to-facet dispersion in positioning of the mirror "
+     "facet perpendicular to the reflector sphere.",
+     (CFO).units = "cm"];
+  bool facet_labeling_parity            = 19
+    [(CFO).desc = "Mirrors are counted (on the hex. grid) in the direction of "
+     "the +x-axis (east) when this flag is FALSE, and in the direction of the "
+     "-x-axis (west) when this flag is TRUE (in the reflector r.f. -- home "
+     "position of telescope."];
+  repeated uint32 facet_missing_list    = 20
+    [(CFO).desc = "List of the Hex IDs of the mirrors missing from each "
+     "telescope. If none are missing this should be empty."];
+};
+
+message FocalPlaneParameters {
+  double camera_diameter                = 1
+    [(CFO).desc = "Diameter of the camera in the focal plane.",
+     (CFO).units = "cm"];
+  double translation_x                  = 2
+    [(CFO).desc = "X coordinate of origin of focal plane reference frame "
+     "in the reflector frame.",
+     (CFO).units = "cm"];
+  double translation_y                  = 3
+    [(CFO).desc = "Y coordinate of origin of focal plane reference frame "
+     "in the reflector frame.",
+     (CFO).units = "cm"];
+  double translation_z                  = 4
+    [(CFO).desc = "Z coordinate of origin of focal plane reference frame "
+     "in the reflector frame.",
+     (CFO).units = "cm"];
+  double rotation_x                     = 5
+    [(CFO).desc = "Ideally the focal plane is in the x-z plane in the "
+     "reflector reflector frame. However it can be rotated with respect to "
+     "reflector frame if desired. Focal plane rotation around x-axis of "
+     "the reflector frame.",
+     (CFO).units = "deg"];
+  double rotation_y                     = 6
+    [(CFO).desc = "Ideally the focal plane is in the x-z plane in the "
+     "reflector reflector frame. However it can be rotated with respect to "
+     "reflector frame if desired. Focal plane rotation around y-axis of "
+     "the reflector frame.",
+     (CFO).units = "deg"];
+  double rotation_z                     = 7
+    [(CFO).desc = "Ideally the focal plane is in the x-z plane in the "
+     "reflector reflector frame. However it can be rotated with respect to "
+     "reflector frame if desired. Focal plane rotation around z-axis of "
+     "the reflector frame.",
+     (CFO).units = "deg"];
+};
+
+message HexPixelArrayParameters
+{
+  double spacing                        = 1
+    [(CFO).desc = "Spacing between centers of neighboring pixels on a "
+     "hexagonal grid.",
+     (CFO).units = "cm"];
+  double dead_space                     = 2
+    [(CFO).desc = "Dead space around edges of hexagonal cell. The edge-to-edge "
+     "diameter of the active portion of the lightcones at their entrance "
+     "aperture is diameter_outer = spacing - 2*dead_space."
+     (CFO).units = "cm"];
+  double cone_depth                     = 3
+    [(CFO).desc = "Depth of cone from entrance to exit aperture "
+     "light cones.",
+     (CFO).units = "cm"];
+  double cone_inner_diameter            = 4
+    [(CFO).desc = "The edge-to-edge diameter of the active portion of the "
+     "lightcones at their exit aperture.",
+     (CFO).units = "cm"];
+
+  bool pixel_labeling_parity            = 10
+    [(CFO).desc = "Pixels are counted on a hexagonal grid in the direction "
+     "of the +x-axis when this flag is FALSE, and in the direction of the "
+     "-x-axis when it is TRUE"];
+  unsigned hex_module_size              = 11
+    [(CFO).desc = "Number of hexagonal rings in each module. This is a "
+     "convenience parameter that simplifies specifying the list of modules "
+     "in the camera."];
+  repeated uint32 module_missing_list   = 12
+    [(CFO).desc = "List of the Hex IDs of the modules (or pixels if "
+     "hex_module_size<=1) missing from each camera. If none are missing this "
+     "should be empty."];
+};
+
+message IsotropicDCArrayParameters {
+  EarthCoordinates array_origin         = 1
+    [(CFO).desc = "Coordinates of origin of array reference frame on Earth"];
+  oneof array_layout {
+    HexArrayLayout hex_array_layout     = 2;
+    UserDefinedArrayLayout prescribed_array_layout = 3;
+  };
+  ReflectorFrameParameters reflector_frame = 4;
+  DCReflectorParameters reflector       = 5;
+  repeated Obscuration obscurations     = 6;
+};
