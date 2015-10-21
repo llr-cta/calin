@@ -8,28 +8,28 @@ package calin;
 
 message EarthCoordinates
 {
-  double latitude                 = 1
+  double latitude                       = 1
     [(CFO).desc = "Latitude of position. North positive.",
      (CFO).units = "deg", (CFO).min_val=-90, (CFO).max_val=90];
-  double longitude                = 2
+  double longitude                      = 2
     [(CFO).desc = "Longitude of position. East positive.",
      (CFO).units = "deg", (CFO).min_val=-180, (CFO).max_val=180];
-  double elevation                = 3
+  double elevation                      = 3
     [(CFO).desc = "Height of position above the reference ellipsoid,. "
                   "perpendicular to surface on ellipsoid at given latitude "
                   "and longitude. Up positive.",
      (CFO).units = "cm"];
-  string datum                    = 4 // should be an enum?
+  string datum                          = 4 // should be an enum?
     [(CFO).desc = "Datum. If not specified assume WGS84."];
 };
 
 message HorizontalCoordinates
 {
-  double altitude                 = 1
+  double altitude                       = 1
     [(CFO).desc = "Angle of point with respect to the local horizon, with"
      "horizon at 0 and zenith at +90.",
      (CFO).units = "deg", (CFO).min_val=-90, (CFO).max_val=90];
-  double aziumth                  = 2
+  double aziumth                        = 2
     [(CFO).desc = "Angle of point with respect to the local meridian, with"
      "North at 0 and East at +90.",
      (CFO).units = "deg", (CFO).min_val=0, (CFO).max_val=360];
@@ -38,38 +38,38 @@ message HorizontalCoordinates
 message EquatorialCoordinates
 {
   enum EpochTimeUnits {
-    JULIAN_YEARS             = 0;
-    BESSELIAN_YEARS          = 1; // obsolete
-    JULIAN_DATE              = 2;
-    MODIFIED_JULIAN_DATE     = 3;
+    JULIAN_YEARS                        = 0;
+    BESSELIAN_YEARS                     = 1; // obsolete
+    JULIAN_DATE                         = 2;
+    MODIFIED_JULIAN_DATE                = 3;
   };
 
-  double declination              = 1
+  double declination                    = 1
     [(CFO).desc = "Anglar distance of point from celestial equator in "
      "given epoch, positive to the North and negative to the South. Points "
      "on the celestial equator have Dec = 0, while the North celestial pole "
      "is at Dec = +90.",
      (CFO).ref = "https://en.wikipedia.org/wiki/Declination",
      (CFO).units = "deg", (CFO).min_val=-90, (CFO).max_val=90];
-  double right_ascension          = 2
+  double right_ascension                = 2
     [(CFO).desc = "Angular distance measured eastward along the celestial "
      "equator between the vernal equinox and the hour circle of the point "
      "[Wikipedia]. The vernal equinox has RA = 0, a point culminating 6 hours "
      "later has RA = +90.",
      (CFO).ref = "https://en.wikipedia.org/wiki/Right_ascension",
      (CFO).units = "deg", (CFO).min_val=0, (CFO).max_val=360];
-  double precessional_epoch       = 3
+  double precessional_epoch             = 3
     [(CFO).desc = "Reference epoch for the RA and Dec.",
      (CFO).ref = "https://en.wikipedia.org/wiki/Epoch_(astronomy)",
      (CFO).units = "epoch_units"];
-  EpochTimeUnits epoch_units      = 4
+  EpochTimeUnits epoch_units            = 4
     [(CFO).desc = "Units of precessional_epoch.",
      (CFO).ref = "https://en.wikipedia.org/wiki/Epoch_(astronomy)"];
 };
 
 message StringifiedEquatorialCoordinates
 {
-  string declination              = 1
+  string declination                    = 1
     [(CFO).desc = "Anglar distance of point from celestial equator in "
      "given epoch, positive to the North and negative to the South. Points "
      "on the celestial equator have Dec = 00:00:00, while the North celestial "
@@ -77,7 +77,7 @@ message StringifiedEquatorialCoordinates
      "[+/-]DDDdMMmSSsSSS.",
      (CFO).ref = "https://en.wikipedia.org/wiki/Declination",
      (CFO).units = "dms", (CFO).min_val=-90, (CFO).max_val=90];
-  string right_ascension          = 2
+  string right_ascension                = 2
     [(CFO).desc = "Angular distance measured eastward along the celestial "
      "equator between the vernal equinox and the hour circle of the point "
      "[Wikipedia]. The vernal equinox has RA = 00:00:00, a point culminating "
@@ -85,7 +85,7 @@ message StringifiedEquatorialCoordinates
      "HHhMMmSSsSSS.",
      (CFO).ref = "https://en.wikipedia.org/wiki/Right_ascension",
      (CFO).units = "hms", (CFO).min_val=0, (CFO).max_val=24];
-  string precessional_epoch       = 3
+  string precessional_epoch             = 3
     [(CFO).desc = "Reference epoch for the RA and Dec. Valid formats are "
      "JYYYY.YYY or YYYY.YY (Julian years), BYYYY.YY (Besselian years), "
      "DDDDDDD.DDD (Julian date), or DDDDD.DDD (Modified Julian date)",
@@ -103,8 +103,17 @@ message FlexableCelestialCoordinates
 
 message Time
 {
-  int64 epoch_ns                  = 1
+  int64 epoch_ns                        = 1
     [(CFO).desc = "Number of nanoseconds past the MET epoch of ",
      (CFO).units = "ns"];
+};
+
+message SpectralResponsePoint
+{
+  double energy                         = 1
+    [(CFO).desc = "Photon energy.",
+     (CFO).units = "eV"];
+  double response                       = 2
+    [(CFO).desc = "Response at given energy."];
 };
 
