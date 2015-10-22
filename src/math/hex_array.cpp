@@ -47,3 +47,21 @@ uv_to_hexid(int u, int v)
   return positive_ringid_segid_runid_to_hexid(ringid, segid, runid);
 }
 
+void calin::math::hex_array::
+uv_to_neighbor_uv(int u, int v,
+                  std::vector<int>& u_neighbors, std::vector<int>& v_neighbors)
+{
+  u_neighbors = { u+1, u, u-1, u-1, u, u+1 };
+  v_neighbors = { v, v+1, v+1, v, v-1, v-1 };
+}
+
+std::vector<unsigned> calin::math::hex_array::
+hexid_to_neighbor_hexids(unsigned hexid)
+{
+  int u;
+  int v;
+  hexid_to_uv(hexid,u,v);
+  return { uv_to_hexid(u+1,v), uv_to_hexid(u, v+1), uv_to_hexid(u-1, v+1),
+        uv_to_hexid(u-1,v), uv_to_hexid(u, v-1), uv_to_hexid(u+1, v-1) };
+}
+

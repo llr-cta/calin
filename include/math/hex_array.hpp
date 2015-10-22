@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <vector>
 
 namespace calin { namespace math { namespace hex_array {
 
@@ -101,6 +102,11 @@ inline unsigned uv_to_ringid(int u, int v)
 
 void hexid_to_uv(unsigned hexid, int& u, int& v);
 unsigned uv_to_hexid(int u, int v);
+
+void uv_to_neighbor_uv(int u, int v, std::vector<int>& u_neighbors,
+                       std::vector<int>& v_neighbors);
+std::vector<unsigned> hexid_to_neighbor_hexids(unsigned hexid);
+
 
 // *****************************************************************************
 //

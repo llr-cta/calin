@@ -44,6 +44,19 @@ TEST(TestHexArray, HexIDToRingIDRoot_2000Rings) {
     }
 }
 
+TEST(TestHexArray, SomeNeighbors) {
+  EXPECT_EQ(hexid_to_neighbor_hexids(0),
+            std::vector<unsigned>({1,2,3,4,5,6}));
+  EXPECT_EQ(hexid_to_neighbor_hexids(1),
+            std::vector<unsigned>({7,8,2,0,6,18}));
+  EXPECT_EQ(hexid_to_neighbor_hexids(7),
+            std::vector<unsigned>({19,20,8,1,18,36}));
+  EXPECT_EQ(hexid_to_neighbor_hexids(8),
+            std::vector<unsigned>({20,21,9,2,1,7}));
+  EXPECT_EQ(hexid_to_neighbor_hexids(113),
+            std::vector<unsigned>({80,79,112,152,153,114}));
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
