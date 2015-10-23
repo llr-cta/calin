@@ -68,14 +68,15 @@ hexid_to_neighbor_hexids(unsigned hexid)
 void calin::math::hex_array::xy_to_uv(double x, double y, int& u, int& v)
 {
   // Convert X,Y first into U,V space then round to nearest
-  // integer. That gets us close to correct answer, mapping XY to
-  // lozenge-shaped space rather than hexagon. We then correct the
-  // four regions that lie outside the hexagon assigning them to their
-  // correct neighboring cell.
+  // integer. That gets us close to correct answer, mapping XY to a
+  // lozenge-shaped space rather than hexagonal. We then correct the
+  // four regions that lie outside the hexagonal cell assigning them
+  // to their correct neighboring cell.
+  // Writer's note: see Code/Projects/CTA/Calib/Scribbles/Hex\ Test.ipynb
   double dv = y/c_vy;
   double du = x-dv*c_vx;
-  u = lround(du);
-  v = lround(dv);
+  u = std::lround(du);
+  v = std::lround(dv);
   du -= u;
   dv -= v;
   double c1 = 2*du+dv;

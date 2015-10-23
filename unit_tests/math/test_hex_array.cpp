@@ -8,7 +8,7 @@
 using namespace calin::math::hex_array;
 using namespace calin::math::hex_array::vvv;
 
-TEST(TestHexArray, HexIDToRingIDLoop_50Rings) {
+TEST(TestHexArray, HexIDToRingIDLoop_SpeedTest50Rings) {
   for(unsigned iloop = 0; iloop<3000; iloop++)
   {
     unsigned hexid = 1;
@@ -21,7 +21,7 @@ TEST(TestHexArray, HexIDToRingIDLoop_50Rings) {
   }
 }
 
-TEST(TestHexArray, HexIDToRingIDRoot_50Rings) {
+TEST(TestHexArray, HexIDToRingIDRoot_SpeedTest50Rings) {
   for(unsigned iloop = 0; iloop<3000; iloop++)
   {
     unsigned hexid = 1;
