@@ -114,33 +114,73 @@ std::vector<unsigned> hexid_to_neighbor_hexids(unsigned hexid);
 //
 // *****************************************************************************
 
-constexpr double c_ux = 1.0;
-constexpr double c_uy = 0.0;
+#define CALIN_HEX_ARRAY_SQRT3 1.73205080756887729352744634150587
+
 constexpr double c_vx = 0.5;
-constexpr double c_vy = 0.5*1.73205080756887729352744634150587;
+constexpr double c_vy = 0.5*CALIN_HEX_ARRAY_SQRT3;
 
 inline void uv_to_xy(int u, int v, double& x, double& y) 
 {
-  x = u*c_ux + v*c_vx;
-  y = u*c_uy + v*c_vy;
+  x = u + v*c_vx;
+  y = v*c_vy;
 }
 
-inline void xv_to_uv(double x, double y, int& u, int& v)
+void xy_to_uv(double x, double y, int& u, int& v);
+
+inline void xy_to_uv_with_remainder(double& x, double& y, int& u, int& v)
 {
-  
+  xy_to_uv(x, y, u, v);
+  x -= u + v*c_vx;
+  y -= v*c_vy;
 }
 
-void uv_to_xy(int u, int v, double& x, double& y,
-              bool clockwise);
-void xv_to_uv(double x, double y, int& u, int& v,
-              bool clockwise=false);
+inline void uv_to_xy(int u, int v, double& x, double& y, bool clockwise)
+{
+  uv_to_xy(u,v,x,y);
+  if(clockwise)y=-y;
+}
 
+inline void xy_to_uv(double x, double y, int& u, int& v, bool clockwise)
+{
+  if(clockwise)xy_to_uv(x, -y, u, v);
+  else xy_to_uv(x, y, u, v);
+}
 
+inline void xy_to_uv_with_remainder(double& x, double& y, int& u, int& v,
+                                    bool clockwise)
+{
+  if(clockwise)
+  {
+    double yy = -y;
+    xy_to_uv_with_remainder(x, yy, u, v);
+    y = -yy;
+  }
+  else xy_to_uv_with_remainder(x, y, u, v);
+}
 
+inline unsigned xy_to_hexid(double x, double y)
+{
+  int u;
+  int v;
+  xy_to_uv(x, y, u, v);
+  return uv_to_hexid(u,v);
+}
 
-unsigned uv_to_hexid(int u, int v);
-void hexid_to_uv(unsigned hexid, int& u, int& v);
+inline unsigned xy_to_hexid_with_remainder(double& x, double& y)
+{
+  int u;
+  int v;
+  xy_to_uv(x, y, u, v);
+  return uv_to_hexid(u,v);
+}
 
+inline void hexid_to_xy(unsigned hexid, double& x, double& y)
+{
+  int u;
+  int v;
+  hexid_to_uv(hexid, u, v);
+  uv_to_xy(u,v,x,y);
+}
 
 
 } } } // namespace calin::math::hex_array

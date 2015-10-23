@@ -65,3 +65,27 @@ hexid_to_neighbor_hexids(unsigned hexid)
         uv_to_hexid(u-1,v), uv_to_hexid(u, v-1), uv_to_hexid(u+1, v-1) };
 }
 
+void calin::math::hex_array::xy_to_uv(double x, double y, int& u, int& v)
+{
+  // Convert X,Y first into U,V space then round to nearest
+  // integer. That gets us close to correct answer, mapping XY to
+  // lozenge-shaped space rather than hexagon. We then correct the
+  // four regions that lie outside the hexagon assigning them to their
+  // correct neighboring cell.
+  double dv = y/c_vy;
+  double du = x-dv*c_vx;
+  u = lround(du);
+  v = lround(dv);
+  du -= u;
+  dv -= v;
+  double c1 = 2*du+dv;
+  double c2 = 2*dv+du;
+  double c3 = dv-du;
+  if(c3<0) {
+    if(c1>1) u++;
+    else if(c2<-1) v--;
+  } else {
+    if(c2>1) v++;
+    else if(c1<-1) u--;
+  }
+}
