@@ -166,11 +166,28 @@ inline unsigned xy_to_hexid(double x, double y)
   return uv_to_hexid(u,v);
 }
 
+
+inline unsigned xy_to_hexid(double x, double y, bool clockwise)
+{
+  int u;
+  int v;
+  xy_to_uv(x, y, u, v, clockwise);
+  return uv_to_hexid(u,v);
+}
+
 inline unsigned xy_to_hexid_with_remainder(double& x, double& y)
 {
   int u;
   int v;
-  xy_to_uv(x, y, u, v);
+  xy_to_uv_with_remainder(x, y, u, v);
+  return uv_to_hexid(u,v);
+}
+
+inline unsigned xy_to_hexid_with_remainder(double& x, double& y, bool clockwise)
+{
+  int u;
+  int v;
+  xy_to_uv_with_remainder(x, y, u, v, clockwise);
   return uv_to_hexid(u,v);
 }
 
@@ -180,6 +197,14 @@ inline void hexid_to_xy(unsigned hexid, double& x, double& y)
   int v;
   hexid_to_uv(hexid, u, v);
   uv_to_xy(u,v,x,y);
+}
+
+inline void hexid_to_xy(unsigned hexid, double& x, double& y, bool clockwise)
+{
+  int u;
+  int v;
+  hexid_to_uv(hexid, u, v);
+  uv_to_xy(u,v,x,y,clockwise);
 }
 
 
