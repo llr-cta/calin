@@ -16,15 +16,20 @@
 
 namespace calin { namespace math { namespace hex_array {
 
+// *****************************************************************************
+//
+// Reference xy <-> hex functions from Vladimir Vassiliev (March 24, 2000)
+//
+// *****************************************************************************
+
 namespace vvv {
-// Reference xy <-> hex functions (Vladimir Vassiliev, March 24, 2000)
 void xy_to_nh(double *, double *, int *);
 void nh_to_xy(int *, double *, double *);
 } // namespace vvv
 
 // *****************************************************************************
 //
-// General functions for the hex array 
+// General functions for the hex array building to UV <-> HexID and neighbors
 //
 // *****************************************************************************
 
@@ -40,8 +45,7 @@ inline unsigned positive_hexid_to_ringid_loop(unsigned hexid)
 {
   unsigned ringid = 0;
   unsigned nsites = 1;
-  unsigned dn = 6;
-  while(nsites<=hexid) { ++ringid; nsites+=dn; dn+=6; }
+  while(nsites<=hexid) { ++ringid; nsites+=6*ringid; }
   return ringid;
 }
 
@@ -107,6 +111,32 @@ void uv_to_neighbor_uv(int u, int v, std::vector<int>& u_neighbors,
                        std::vector<int>& v_neighbors);
 std::vector<unsigned> hexid_to_neighbor_hexids(unsigned hexid);
 
+// *****************************************************************************
+//
+// Cluster
+//
+// *****************************************************************************
+
+inline void cluster_uv_to_center_uv(int cluster_u, int cluster_v,
+                                    unsigned cluster_nring, int& u, int& v)
+{
+  u = (1+cluster_nring)*cluster_u - cluster_nring*cluster_v;
+  v = (1+2*cluster_nring)*cluster_v + cluster_nring*cluster_u;
+}
+
+inline void cluster_hexid_to_center_uv(unsigned cluster_hexid,
+                                       unsigned cluster_nring, int& u, int& v)
+{
+  int cluster_u;
+  int cluster_v;
+  hexid_to_uv(cluster_hexid, cluster_u, cluster_v);
+  cluster_uv_to_center_uv(cluster_u, cluster_v, cluster_nring, u, v);
+}
+
+void cluster_hexid_to_member_uv(unsigned cluster_hexid, unsigned cluster_nring,
+                                std::vector<int>& u, std::vector<int>& v);
+std::vector<unsigned> cluster_hexid_to_member_hexid(unsigned cluster_hexid,
+                                                    unsigned cluster_nring);
 
 // *****************************************************************************
 //
@@ -118,6 +148,7 @@ std::vector<unsigned> hexid_to_neighbor_hexids(unsigned hexid);
 
 constexpr double c_vx = 0.5;
 constexpr double c_vy = 0.5*CALIN_HEX_ARRAY_SQRT3;
+constexpr double c_vy_inv = 1.0/c_vy;
 
 inline void uv_to_xy(int u, int v, double& x, double& y) 
 {

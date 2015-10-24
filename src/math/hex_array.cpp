@@ -65,6 +65,58 @@ hexid_to_neighbor_hexids(unsigned hexid)
         uv_to_hexid(u-1,v), uv_to_hexid(u, v-1), uv_to_hexid(u+1, v-1) };
 }
 
+// *****************************************************************************
+//
+// Cluster
+//
+// *****************************************************************************
+
+void calin::math::hex_array::
+cluster_hexid_to_member_uv(unsigned cluster_hexid, unsigned cluster_nring,
+                           std::vector<int>& u, std::vector<int>& v)
+{
+  int cluster_u;
+  int cluster_v;
+  cluster_hexid_to_center_uv(cluster_hexid, cluster_nring,
+                             cluster_u, cluster_v);
+  unsigned nsites = ringid_to_nsites(cluster_nring);
+  u.resize(nsites);
+  v.resize(nsites);
+  for(unsigned i=0;i<nsites;i++)
+  {
+    int ui;
+    int vi;
+    hexid_to_uv(i, ui, vi);
+    u[i] = ui+cluster_u;
+    v[i] = vi+cluster_v;
+  }
+}
+
+std::vector<unsigned> calin::math::hex_array::
+cluster_hexid_to_member_hexid(unsigned cluster_hexid, unsigned cluster_nring)
+{
+  int cluster_u;
+  int cluster_v;
+  cluster_hexid_to_center_uv(cluster_hexid, cluster_nring,
+                             cluster_u, cluster_v);
+  unsigned nsites = ringid_to_nsites(cluster_nring);
+  std::vector<unsigned> hexids(nsites,0);
+  for(unsigned i=0;i<nsites;i++)
+  {
+    int ui;
+    int vi;
+    hexid_to_uv(i, ui, vi);
+    hexids[i] = uv_to_hexid(ui+cluster_u, vi+cluster_v);
+  }
+  return hexids;
+}
+
+// *****************************************************************************
+//
+// XY <-> UV
+//
+// *****************************************************************************
+
 void calin::math::hex_array::xy_to_uv(double x, double y, int& u, int& v)
 {
   // Convert X,Y first into U,V space then round to nearest
@@ -73,7 +125,7 @@ void calin::math::hex_array::xy_to_uv(double x, double y, int& u, int& v)
   // four regions that lie outside the hexagonal cell assigning them
   // to their correct neighboring cell.
   // Writer's note: see Code/Projects/CTA/Calib/Scribbles/Hex\ Test.ipynb
-  double dv = y/c_vy;
+  double dv = y*c_vy_inv;
   double du = x-dv*c_vx;
   u = std::lround(du);
   v = std::lround(dv);
