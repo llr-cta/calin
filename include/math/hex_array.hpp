@@ -35,10 +35,14 @@ void nh_to_xy(int *, double *, double *);
 
 inline unsigned positive_hexid_to_ringid_root(unsigned hexid)
 {
+  // See: http://www.codecodex.com/wiki/Calculate_an_integer_square_root
   const unsigned iarg = 1+4*(hexid-1)/3;
-  //return static_cast<unsigned>(floor((std::sqrt(iarg)-1)/2)+1);
-  //return (static_cast<unsigned>(floor(std::sqrt(iarg)))-1)/2+1;
-  return (unsigned(std::sqrt(iarg))-1)/2+1;
+  // return static_cast<unsigned>(floor((std::sqrt(iarg)-1)/2)+1);
+  // return (static_cast<unsigned>(floor(std::sqrt(iarg)))-1)/2+1;
+  // return (unsigned(std::sqrt(double(iarg)))-1)/2+1;
+  // sqrt(float) is quicker here but loses precision by iarg ~= 2^24 -
+  // you have been warned :-)
+  return (unsigned(std::sqrt(float(iarg)))-1)/2+1;
 }
 
 inline unsigned positive_hexid_to_ringid_loop(unsigned hexid)
@@ -135,6 +139,7 @@ inline void cluster_hexid_to_center_uv(unsigned cluster_hexid,
 
 void cluster_hexid_to_member_uv(unsigned cluster_hexid, unsigned cluster_nring,
                                 std::vector<int>& u, std::vector<int>& v);
+
 std::vector<unsigned> cluster_hexid_to_member_hexid(unsigned cluster_hexid,
                                                     unsigned cluster_nring);
 
