@@ -1,5 +1,6 @@
 before_install:
   - sudo add-apt-repository ppa:george-edison55/precise-backports --yes
+  - sudo add-apt-repository ppa.launchpad.net/teward/swig3.0/ubuntu trusty main 
   - sudo apt-get update -qq
   - sudo apt-get install -y swig3.0 gsl-bin libgsl0-dev libfftw3-dev cmake cmake-data
   - wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-1/protobuf-cpp-3.0.0-beta-1.tar.gz
