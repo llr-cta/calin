@@ -2,4 +2,10 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y gsl-bin
 language: cpp
-script: cmake
+script:
+  - mkdir mybuild-travis
+  - cd mybuild-travis
+  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build ..
+  - make -j2
+  - make install
+
