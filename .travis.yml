@@ -1,9 +1,7 @@
 before_install:
   - sudo add-apt-repository ppa:george-edison55/precise-backports --yes
   - sudo apt-get update -qq
-  - sudo apt-get install -y gsl-bin libfftw3-3 libfftw3-bin
-  - sudo apt-get install cmake cmake-data
-  - sudo apt-get -yq --no-install-suggests --no-install-recommends --force-yes install cmake cmake-data
+  - sudo apt-get install -y gsl-bin libfftw3-3 cmake cmake-data
   - wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-1/protobuf-cpp-3.0.0-beta-1.tar.gz
   - tar zxf protobuf-cpp-3.0.0-beta-1.tar.gz
   - cd protobuf-cpp-3.0.0-beta-1
