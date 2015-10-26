@@ -4,12 +4,12 @@ before_install:
   - sudo apt-get install -y gsl-bin libfftw3-3 cmake cmake-data
   - wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-1/protobuf-cpp-3.0.0-beta-1.tar.gz
   - tar zxf protobuf-cpp-3.0.0-beta-1.tar.gz
-  - cd protobuf-3.0.0-beta-1 && ./configure --prefix=/usr && make -j2 && sudo make install
+  - ( cd protobuf-3.0.0-beta-1 && ./configure --prefix=/usr && make -j3 && sudo make install )
 language: cpp
 script:
   - mkdir mybuild-travis
   - cd mybuild-travis
   - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build ..
-  - make -j2
+  - make -j3
   - make install
 
