@@ -22,7 +22,7 @@ include_directories(${GSL_INCLUDE_DIRS})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${GSL_LIBRARIES} ) 
 
 ## include Sqlite3 libraries
-find_package(Sqlite3 REQUIRED)
+find_package(SQLite3 REQUIRED)
 include_directories(${SQLITE3_INCLUDE_DIR})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${SQLITE3_LIBRARY} ) 
 
