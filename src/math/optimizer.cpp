@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
+#include <cmath>
 
 #include "io/log.hpp"
 #include "math/optimizer.hpp"
@@ -15,9 +16,9 @@
 using namespace calin::math::optimizer;
 using namespace calin::io::log;
 
-const double Optimizer::inf;
-const double Optimizer::pos_inf;
-const double Optimizer::neg_inf;
+constexpr double Optimizer::inf;
+constexpr double Optimizer::pos_inf;
+constexpr double Optimizer::neg_inf;
 
 Optimizer::~Optimizer()
 {
@@ -451,8 +452,9 @@ incorporate_func_gradient(ConstVecRef x, double f_val,
   // Form error matrix estimate using BFGS update method, see
   // http://en.wikipedia.org/wiki/Broyden-Fletcher-Goldfarb-Shanno_algorithm
 
-  if(!isfinite(f_val) or !std::all_of(gradient.data(), gradient.data()+npar_, 
-                                      [](const double& x){return isfinite(x);}))
+  if(!std::isfinite(f_val) or
+     !std::all_of(gradient.data(), gradient.data()+npar_, 
+                  [](const double& x){return std::isfinite(x);}))
   {
     last_good_ = false;
     return;
@@ -502,11 +504,11 @@ void BFGSErrorMatrixEstimator::
 incorporate_func_hessian(ConstVecRef x, double f_val,
                          ConstVecRef gradient, ConstMatRef hessian)
 {
-  if(!isfinite(f_val) or
+  if(!std::isfinite(f_val) or
      !std::all_of(gradient.data(), gradient.data()+npar_, 
-                  [](const double& x){return isfinite(x);}) or
+                  [](const double& x){return std::isfinite(x);}) or
      !std::all_of(hessian.data(), hessian.data()+npar_*npar_, 
-                  [](const double& x){return isfinite(x);}))
+                  [](const double& x){return std::isfinite(x);}))
   {
     last_good_ = false;
     return;

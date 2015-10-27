@@ -11,6 +11,5 @@ before_install:
   - CMAKE_CXX="g++-4.8"
 language: cpp
 script:
-  - mkdir mybuild-travis
-  - cd mybuild-travis
+  - mkdir mybuild-travis && cd mybuild-travis
   - cmake -DCMAKE_C_COMPILER=$CMAKE_CC -DCMAKE_CXX_COMPILER=$CMAKE_CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build .. && make -j3 && make install
