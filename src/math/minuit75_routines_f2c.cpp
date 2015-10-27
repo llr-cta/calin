@@ -15095,7 +15095,6 @@ L90:
     static logical noname;
     static char canswr[1];
     static logical lrewin;
-    extern logical mnunpt_(char *, ftnlen);
 
     /* Fortran I/O blocks */
     static cilist io___1179 = { 0, 0, 0, "(A,A)", 0 };
