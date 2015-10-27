@@ -12,8 +12,10 @@
 #include <cstdlib>
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 #include <limits>
 #include <exception>
+#include <stdexcept>
 
 #include "math/brent.hpp"
 
