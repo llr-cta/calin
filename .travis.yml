@@ -10,7 +10,5 @@ language: cpp
 script:
   - mkdir mybuild-travis
   - cd mybuild-travis
-  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build ..
-  - make -j3
-  - make install
+  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build .. && make -j3 && make install
 

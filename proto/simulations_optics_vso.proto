@@ -301,19 +301,25 @@ message PlaneWindowParameters {
     [(CFO).desc = "Y coordinate of origin of window front surface "
      "in the reflector frame.",
      (CFO).units = "cm"];
-  double rotation_x                     = 5
+  double rotation_x                     = 3
     [(CFO).desc = "Ideally the window plane is in the x-z plane in the "
      "reflector reflector frame. However it can be rotated with respect to "
      "reflector frame if desired. Focal plane rotation around x-axis of "
      "the reflector frame.",
      (CFO).units = "deg"];
-  double rotation_z                     = 7
+  double rotation_z                     = 4
     [(CFO).desc = "Ideally the focal plane is in the x-z plane in the "
      "reflector reflector frame. However it can be rotated with respect to "
      "reflector frame if desired. Focal plane rotation around z-axis of "
      "the reflector frame.",
      (CFO).units = "deg"];
+  repeated calin.SpectralResponsePoint transmittance = 5
+    [(CFO).desc = "Additional absorption factor applied to all photons."
+                                                       
+  double weathering_factor              = 6
+    [(CFO).desc = "Additional absorption factor applied to all photons."
                                           
+  double refractive_index               = 5
 
 message FocalPlaneParameters {
   double camera_diameter                = 1
