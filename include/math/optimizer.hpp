@@ -29,11 +29,9 @@ CALIN_TYPEALIAS(ErrorMatrixStatus, hessian::ErrorMatrixStatus);
 class Optimizer
 {
  public:
-#ifndef SWIG
   constexpr static double inf = std::numeric_limits<double>::infinity();
   constexpr static double pos_inf = inf;
   constexpr static double neg_inf = -inf;
-#endif
   
   CALIN_TYPEALIAS(VerbosityLevel, OptimizerVerbosityLevel);
 
