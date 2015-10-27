@@ -438,7 +438,7 @@ insert(const double x, const double w)
 {
   if(!std::isfinite(w))return false;
   bool x_exceeds_limits { false };
-  Acc& bin { this->bin_with_extend(x, x_exceeds_limits) };
+  Acc& bin = this->bin_with_extend(x, x_exceeds_limits);
   if(!x_exceeds_limits)
   {
     double wxx { w };
