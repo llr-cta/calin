@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <deque>
+#include <algorithm>
 #include <stdexcept>
 
 #include "proto/calin.pb.h"
