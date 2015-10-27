@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cstring>
+#include <cmath>
 
 #include "nlopt/nlopt.h"
 
@@ -651,7 +652,7 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
     throw;
   }
 
-  if(!isfinite(fcn_value))fcn_value = inf;
+  if(!std::isfinite(fcn_value))fcn_value = inf;
 
 #if 0
   if(dynamic_cast<BFGSErrorMatrixEstimator*>(err_est_.get()))
