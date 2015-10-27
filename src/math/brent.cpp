@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <cmath>
+#include <limits>
 #include <exception>
 
 #include "math/brent.hpp"

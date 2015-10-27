@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <cmath>
 #include <Eigen/Eigenvalues>
 
 #include "math/hessian.hpp"
@@ -93,7 +94,7 @@ step_size_err_up(function::MultiAxisFunction& fcn, ConstVecRef x,
   if(error_hint.size() == npar)
   {
     for(unsigned ipar=0;ipar<npar;ipar++)
-      if(isfinite(error_hint(ipar)) and error_hint(ipar)>0)
+      if(std::isfinite(error_hint(ipar)) and error_hint(ipar)>0)
         dx(ipar) = error_hint(ipar)*std::sqrt(scale*err_up_frac);
       else
         dx(ipar) = axes[ipar].scale;
