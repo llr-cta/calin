@@ -149,7 +149,7 @@ double LogQuadraticSpline1DPDF::value_1d(double x)
   const double xl = std::max(x-0.5*bin_dx_, xlo_);
   const double xr = std::min(x+0.5*bin_dx_, xhi_);
 
-  if(xr<xlo_ or xl>xhi_ or norm_<=0.0 or !isfinite(norm_))return 0;
+  if(xr<xlo_ or xl>xhi_ or norm_<=0.0 or !std::isfinite(norm_))return 0;
   unsigned isegment = find_segment(x);
 
   if(bin_dx_ == 0)
@@ -198,7 +198,7 @@ double LogQuadraticSpline1DPDF::value_1d(double x)
 
 double LogQuadraticSpline1DPDF::value_and_gradient_1d(double x,  double& dfdx)
 {
-  if(x<xlo_ or x>=xhi_ or norm_<=0.0 or !isfinite(norm_))
+  if(x<xlo_ or x>=xhi_ or norm_<=0.0 or !std::isfinite(norm_))
   {
     dfdx = 0;
     return 0;
@@ -226,7 +226,7 @@ value_and_parameter_gradient_1d(double x, VecRef gradient)
   const double xl = std::max(x-0.5*bin_dx_, xlo_);
   const double xr = std::min(x+0.5*bin_dx_, xhi_);
 
-  if(xr<xlo_ or xl>xhi_ or norm_<=0.0 or !isfinite(norm_))
+  if(xr<xlo_ or xl>xhi_ or norm_<=0.0 or !std::isfinite(norm_))
   {
     gradient.setZero();
     return 0;
@@ -393,7 +393,7 @@ void LogQuadraticSpline1DPDF::set_cache()
 
       integral(a, b, c, xl, xr, I, dI_da, dI_db);
 
-      if(!isfinite(I) or I==0)
+      if(!std::isfinite(I) or I==0)
       {
         std::cout << "Segment has zero norm: "
                   << isegment << ' ' << xl << ' ' << xr << ' '
