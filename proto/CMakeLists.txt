@@ -11,8 +11,7 @@ PROTOBUF_GENERATE_CPP(ProtoSources ProtoHeaders
 
 set(PROTOBUF_INCLUDE_DIRS /usr/local/include) 
 
-#add_library(calin_proto STATIC)
-add_library(calin_proto STATIC ${ProtoSources}) 
+add_library(calin_proto SHARED ${ProtoSources}) 
 
 include_directories(${PROTOBUF_INCLUDE_DIRS} ${CMAKE_CURRENT_BUILD_DIR}) 
 
