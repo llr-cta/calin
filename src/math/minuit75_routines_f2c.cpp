@@ -236,7 +236,7 @@ int mnsimp_(Opt_fn fcn, void* fcn_data, mn7fcb* fcb);
 int mnstat_(doublereal *fmin, doublereal *fedm, doublereal *errdef, integer *npari, integer *nparx, integer *istat, mn7fcb* fcb);
 int mnstin_(char *crdbuf, integer *ierr, ftnlen crdbuf_len, mn7fcb* fcb);
 int mntiny_(doublereal *epsp1, doublereal *epsbak, mn7fcb* fcb);
-logical mnunpt_(char *cfname, ftnlen cfname_len, mn7fcb* fcb);
+logical mnunpt_(char *cfname, ftnlen cfname_len);
 int mnvers_(char *cv, ftnlen cv_len, mn7fcb* fcb);
 int mnvert_(doublereal *a, integer *l, integer *m, integer *n, integer *ifail, mn7fcb* fcb);
 int mnwarn_(const char *copt, const char *corg, const char *cmes, ftnlen copt_len, ftnlen corg_len, ftnlen cmes_len, mn7fcb* fcb);
