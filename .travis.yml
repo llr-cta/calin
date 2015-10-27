@@ -7,9 +7,11 @@ before_install:
   - wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-1/protobuf-cpp-3.0.0-beta-1.tar.gz
   - tar zxf protobuf-cpp-3.0.0-beta-1.tar.gz
   - ( cd protobuf-3.0.0-beta-1 && ./configure --prefix=/usr && make -j3 && sudo make install )
-  - CMAKE_CC="gcc-4.8"
-  - CMAKE_CXX="g++-4.8"
+  - CC="gcc-4.8"
+  - CXX="g++-4.8"
+  - $CC -v
+  - swig -version
 language: cpp
 script:
   - mkdir mybuild-travis && cd mybuild-travis
-  - cmake -DCMAKE_C_COMPILER=$CMAKE_CC -DCMAKE_CXX_COMPILER=$CMAKE_CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build .. && make -j3 && make install
+  - cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build .. && make -j3 && make install

@@ -107,8 +107,10 @@ class GaussianPDF: public Parameterizable1DPDF
 class LimitedGaussianPDF: public GaussianPDF
 {
  public:
+#ifndef SWIG
   constexpr static double inf = std::numeric_limits<double>::infinity();
-
+#endif
+  
   LimitedGaussianPDF(double xlo, double xhi, const std::string& xunits = "x-value units",
 		     double error_up = 0.5):
       GaussianPDF(xunits, error_up), xlo_(xlo), xhi_(xhi),
@@ -142,9 +144,11 @@ protected:
 class LimitedExponentialPDF: public Parameterizable1DPDF
 {
  public:
+#ifndef SWIG
   constexpr static double inf = std::numeric_limits<double>::infinity();
-
-  LimitedExponentialPDF(double xlo=0.0, double xhi=inf, double dx = 0,
+#endif
+  
+  LimitedExponentialPDF(double xlo, double xhi, double dx = 0,
 			const std::string& xunits = "x-value units",
                         double error_up = 0.5):
     Parameterizable1DPDF(), xunits_(xunits), error_up_(error_up),
