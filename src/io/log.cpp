@@ -6,9 +6,10 @@
 
 */
 
-#include <fstream>
 #include <Python.h>
-
+#include <fstream>
+#include <cstdlib>
+#include <cstring>
 #include <sys/time.h>
 #include <time.h>
 
@@ -105,7 +106,7 @@ write_message_lines(Writer &&writer,
     unsigned n = (epos==std::string::npos ? message.size() : epos) - spos;
 
     if(timestamp_string and *timestamp_string) {
-      writer(timestamp_string, strlen(timestamp_string));
+      writer(timestamp_string, std::strlen(timestamp_string));
       writer(" ",1);
     }
     if(apply_color_string and *apply_color_string and
