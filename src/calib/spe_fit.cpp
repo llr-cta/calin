@@ -2,6 +2,7 @@
 #include <cmath>
 #include <limits>
 #include <cassert>
+#include <memory>
 
 #include <fftw3.h>
 
@@ -977,14 +978,14 @@ void GeneralPoissonMES::set_cache()
     if(calc_gradient)
     {
       val = ses_pdf_->value_and_parameter_gradient_1d(x, ses_gradient);
-      if(!isfinite(val)){ val = 0; ses_gradient.setZero(); }
+      if(!std::isfinite(val)){ val = 0; ses_gradient.setZero(); }
       for(unsigned ipar=0;ipar<ses_npar;ipar++)
         ses_grad_fft_[ipar][isample] = ses_gradient[ipar];
     }
     else
     {
       val = ses_pdf_->value_1d(x);
-      if(!isfinite(val))val = 0;
+      if(!std::isfinite(val))val = 0;
     }
     nes_fft_[0][isample] = val;
     ses_acc.accumulate(val);
@@ -1017,14 +1018,14 @@ void GeneralPoissonMES::set_cache()
     if(calc_gradient)
     {
       val = ped_pdf_->value_and_parameter_gradient_1d(x, ped_gradient);
-      if(!isfinite(val)){ val = 0; ped_gradient.setZero(); }
+      if(!std::isfinite(val)){ val = 0; ped_gradient.setZero(); }
       for(unsigned ipar=0;ipar<ped_npar;ipar++)
         ped_grad_[ipar][isample] = ped_gradient[ipar];    
     }
     else
     {
       val = ped_pdf_->value_1d(x);
-      if(!isfinite(val))val = 0;
+      if(!std::isfinite(val))val = 0;
     }
     ped_spec_[isample] = ped_fft_[isample] = val;
   }
