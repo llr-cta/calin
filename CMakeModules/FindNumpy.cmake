@@ -12,9 +12,11 @@ cmake_minimum_required(VERSION 2.6)
 #  set(_numpy_out 1)
 #endif()
 
+message(STATUS "Lacating Numpy using Python " ${PYTHON_VERSION_STRING})
+
 if (PYTHON_EXECUTABLE)
   # write a python script that finds the numpy path
-  if(PYTHON_VERSION_MAJOR >= 3)
+  if(${PYTHON_VERSION_MAJOR} GREATER "2")
     file(WRITE ${PROJECT_BINARY_DIR}/FindNumpyPath.py
         "try: import numpy; print(numpy.get_include())\nexcept: pass\n")
   else()
