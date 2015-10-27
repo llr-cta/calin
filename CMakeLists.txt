@@ -27,9 +27,9 @@ include_directories(${SQLITE3_INCLUDE_DIR})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${SQLITE3_LIBRARY} ) 
 
 #Path to a python
-set(PYTHON_EXECUTABLE /opt/local/bin/python3.4)
-set(PYTHON_INCLUDE_DIR /opt/local/Library/Frameworks/Python.framework/Versions/3.4/include/python3.4m)
-set(PYTHON_LIBRARY /opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/config-3.4m/libpython3.4.dylib)
+#set(PYTHON_EXECUTABLE /opt/local/bin/python3.4)
+#set(PYTHON_INCLUDE_DIR /opt/local/Library/Frameworks/Python.framework/Versions/3.4/include/python3.4m)
+#set(PYTHON_LIBRARY /opt/local/Library/Frameworks/Python.framework/Versions/3.4/lib/python3.4/config-3.4m/libpython3.4.dylib)
 
 find_package(PythonInterp) 
 find_package(PythonLibs) 
