@@ -5,6 +5,8 @@ __Calin__ is a calibration and analysis package for data from arrays
   is on computational accuracy and robustness. Secondary considerations
   are simplicity, speed, end-user ease-of-use and maintainability.
 
+[![Build Status](https://travis-ci.org/sfegan/calin.svg?branch=master)](https://travis-ci.org/sfegan/calin)
+  
 ### The name ###
 
 __Calin__ is a (French) word that my three-year-old daughter says a

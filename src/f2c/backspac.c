@@ -44,7 +44,10 @@ integer f_back(alist *a)
 
 	if(b->ufmt==0)
 	{	FSEEK(f,-(OFF_T)sizeof(uiolen),SEEK_CUR);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"           
 		fread((char *)&n,sizeof(uiolen),1,f);
+#pragma GCC diagnostic pop                 
 		FSEEK(f,-(OFF_T)n-2*sizeof(uiolen),SEEK_CUR);
 		return(0);
 	}
