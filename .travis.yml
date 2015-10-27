@@ -14,7 +14,3 @@ script:
   - mkdir mybuild-travis
   - cd mybuild-travis
   - cmake -DCMAKE_C_COMPILER=$CMAKE_CC -DCMAKE_CXX_COMPILER=$CMAKE_CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build .. && make -j3 && make install
-
-sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-sudo apt-get -qq update
-sudo apt-get -qq install g++-4.8
