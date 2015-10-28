@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <stdexcept>
 #include <numeric>
+#include <cmath>
 
 #include "math/function.hpp"
 
@@ -457,7 +458,7 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
   Eigen::VectorXd gradient(fcn_num_axes);
   double f0g = fcn.value_and_gradient(x, gradient);
   assert(fcn_num_axes == gradient.size());
-  if(std::abs(f0 - f0g)/std::abs(f0) > eps)
+  if(std::abs(f0 - f0g)/std::abs(f0) > eps*std::pow(10.0,max_good/0.5-1))
   {
     std::cerr << "gradient_check: function value differs: "
               << f0 << " != " << f0g << '\n';
@@ -567,7 +568,7 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
     return false;
   }
 
-  if(std::abs(f0 - f0h)/std::abs(f0) > eps)
+  if(std::abs(f0 - f0h)/std::abs(f0) > eps*std::pow(10.0,max_good/0.5-1))
   {
     std::cerr << "hessian_check: function value differs: " << f0 << " != " << f0h
               << '\n';
@@ -575,7 +576,8 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
   }
   
   for(unsigned iaxis = 0;iaxis<fcn_num_axes;iaxis++)
-    if(std::abs(g0(iaxis) - g0h(iaxis))/std::abs(g0(iaxis)) > eps)
+    if(std::abs(g0(iaxis) - g0h(iaxis))/std::abs(g0(iaxis)) >
+       eps*std::pow(10.0,max_good/0.5-1))
     {
       std::cerr << "hessian_check: gradient value differs (axis=" << iaxis
                 << "): " << g0(iaxis) << " != " << g0h(iaxis) << '\n';
