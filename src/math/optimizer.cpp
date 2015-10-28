@@ -22,7 +22,7 @@ constexpr double Optimizer::neg_inf;
 
 Optimizer::~Optimizer()
 {
-  if(my_fcn_)delete fcn_;
+  if(adopt_fcn_)delete fcn_;
 }
 
 std::vector<double> Optimizer::initial_values() const

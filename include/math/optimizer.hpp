@@ -36,7 +36,7 @@ class Optimizer
   CALIN_TYPEALIAS(VerbosityLevel, OptimizerVerbosityLevel);
 
   Optimizer(function::MultiAxisFunction* fcn, bool adopt_fcn = false):
-      fcn_(fcn), my_fcn_(adopt_fcn) { /* nothing to see here */ }
+      fcn_(fcn), adopt_fcn_(adopt_fcn) { /* nothing to see here */ }
   virtual ~Optimizer();
 
   virtual bool is_local_optimizer() = 0;
@@ -132,8 +132,8 @@ class Optimizer
   void opt_finished(OptimizationStatus status, double fopt,
                     const Eigen::VectorXd& xopt, const double* edm = nullptr);
   
-  bool my_fcn_ { false };
   function::MultiAxisFunction* fcn_  { nullptr };
+  bool adopt_fcn_ { false };
   VerbosityLevel verbose_ { VerbosityLevel::SILENT };
   std::vector<double> x0_ { };
   std::vector<double> xscale_ { };

@@ -136,6 +136,7 @@ bind_field(unsigned ifield, const google::protobuf::Message* m,
       break;
   }
   assert(0);
+  return false;
 }
 
 bool SQLStatement::

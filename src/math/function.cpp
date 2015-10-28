@@ -158,7 +158,7 @@ std::vector<DomainAxis> FreezeThawFunction::domain_axes()
 
 Eigen::VectorXd FreezeThawFunction::x_in2out(ConstVecRef x)
 {
-  if(x.size() != free_axes_.size())
+  if((unsigned)x.size() != free_axes_.size())
   {
     std::ostringstream stream;
     stream << "FreezeThawFunction - position vector has " << x.size()
@@ -273,7 +273,7 @@ Eigen::VectorXd FreezeThawFunction::parameter_values()
 
 void FreezeThawFunction::set_parameter_values(ConstVecRef values)
 {
-  if(values.size() != frozen_axes_.size())
+  if((unsigned)values.size() != frozen_axes_.size())
   {
     std::ostringstream stream;
     stream << "FreezeThawFunction - parameter vector has " << values.size()

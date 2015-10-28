@@ -234,10 +234,10 @@ class TwoComponentPDF: public Parameterizable1DPDF
  protected:
   double prob_cpt1_;
   Parameterizable1DPDF* pdf1_;
-  Parameterizable1DPDF* pdf2_;
   bool adopt_pdf1_;
-  bool adopt_pdf2_;
   std::string cpt1_name_;
+  Parameterizable1DPDF* pdf2_;
+  bool adopt_pdf2_;
   std::string cpt2_name_;
   double error_up_;
 };

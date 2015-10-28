@@ -986,7 +986,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
         if(!st->parent_field_d->is_map() and fs != st_loopid)
         {
           // Messages are not in correct order, must move the one we added
-          for(int ifs = fs; ifs<st_loopid; ifs++)
+          for(uint64_t ifs = fs; ifs<st_loopid; ifs++)
             r->AddMessage(m, st->parent_field_d);
           r->SwapElements(m, st->parent_field_d, fs, st_loopid);
         }
