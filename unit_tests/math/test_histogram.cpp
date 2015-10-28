@@ -143,13 +143,13 @@ void iterator_test(FB fbegin, FE fend, FC fival)
   ASSERT_EQ(ibin2-ibin1, -10);
 
   ibin2 += 10;
-  ASSERT_EQ(ibin1,ibin2);
+  ASSERT_EQ(ibin1->ibin(),ibin2->ibin());
   ibin2 -= 10;
-  ASSERT_EQ(fbegin(myhist),ibin2);
+  ASSERT_EQ(fbegin(myhist)->ibin(),ibin2->ibin());
   ibin2 = ibin2 + 10;
-  ASSERT_EQ(ibin1,ibin2);
+  ASSERT_EQ(ibin1->ibin(),ibin2->ibin());
   ibin2 = ibin2 - 10;
-  ASSERT_EQ(fbegin(myhist),ibin2);
+  ASSERT_EQ(fbegin(myhist)->ibin(),ibin2->ibin());
 }
 
 TEST(TestSimpleHist, Iterator) {

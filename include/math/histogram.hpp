@@ -224,7 +224,14 @@ template<typename DataBinner> class basic_bin_accessor
   CALIN_TYPEALIAS(data_binner_type, DataBinner);
   CALIN_TYPEALIAS(data_type, typename DataBinner::data_type);
                   
-  basic_bin_accessor(DataBinner& binner, int ibin): binner_{&binner},ibin_{ibin} {}
+  basic_bin_accessor(DataBinner& binner, int ibin):
+      binner_{&binner},ibin_{ibin} {}
+
+  basic_bin_accessor(const basic_bin_accessor&) = default;
+  basic_bin_accessor& operator=(const basic_bin_accessor&) = default;
+  
+  DataBinner* binner() { return binner_; }
+  int ibin() { return ibin_; }
   double dxval() const { return binner_->dxval(); }
   double xval_left() const { return binner_->xval_left(ibin_); }
   double xval_right() const { return binner_->xval_right(ibin_); }
@@ -241,7 +248,7 @@ template<typename DataBinner> class basic_bin_accessor
 template<typename DataBinner,
          typename bin_accessor = basic_bin_accessor<DataBinner> >
 class basic_iterator:
-      public std::iterator<std::random_access_iterator_tag,
+      public std::iterator<std::bidirectional_iterator_tag,
                            bin_accessor, int, bin_accessor*, bin_accessor&>,
       protected bin_accessor
 {
@@ -252,25 +259,96 @@ class basic_iterator:
   
   basic_iterator(DataBinner& data, int ibin):
       bin_accessor {data,ibin} {}
+
+  basic_iterator(const basic_iterator&) = default;
+  basic_iterator& operator=(const basic_iterator&) = default;
   
   bin_accessor* operator->() { return this; }
   bin_accessor& operator*() { return *this; }
   
-  basic_iterator& operator++() { ++this->ibin_; return *this; }
-  basic_iterator operator++(int) { basic_iterator i=*this; ++this->ibin_; return i; }
-  basic_iterator& operator--() { --this->ibin_; return *this; }
-  basic_iterator operator--(int) { basic_iterator i=*this; --this->ibin_; return i; }
-  basic_iterator& operator+=(int ibin) { this->ibin_+=ibin; return *this; }
-  basic_iterator& operator-=(int ibin) { this->ibin_-=ibin; return *this; }
-  basic_iterator operator+(int ibin) const { basic_iterator i(*this); i+=ibin; return i; }
-  basic_iterator operator-(int ibin) const { basic_iterator i(*this); i-=ibin; return i; }
-  int operator-(const basic_iterator& o) { return this->ibin_ - o.ibin_; }
-  bool operator!=(const basic_iterator& o) const { return this->ibin_ != o.ibin_; }
-  bool operator==(const basic_iterator& o) const { return this->ibin_ == o.ibin_; }
-  bool operator<(const basic_iterator& o) const { return this->ibin_ < o.ibin_; }
-  bool operator<=(const basic_iterator& o) const { return this->ibin_ <= o.ibin_; }
-  bool operator>(const basic_iterator& o) const { return this->ibin_ > o.ibin_; }
-  bool operator>=(const basic_iterator& o) const { return this->ibin_ >= o.ibin_; }
+  basic_iterator& operator++() {
+    ++this->ibin_; return *this; }
+  basic_iterator operator++(int) {
+    basic_iterator i=*this; ++this->ibin_; return i; }
+  basic_iterator& operator--() {
+    --this->ibin_; return *this; }
+  basic_iterator operator--(int) {
+    basic_iterator i=*this; --this->ibin_; return i; }
+  basic_iterator& operator+=(int ibin) {
+    this->ibin_+=ibin; return *this; }
+  basic_iterator& operator-=(int ibin) {
+    this->ibin_-=ibin; return *this; }
+  basic_iterator operator+(int ibin) const {
+    basic_iterator i(*this); i+=ibin; return i; }
+  basic_iterator operator-(int ibin) const {
+    basic_iterator i(*this); i-=ibin; return i; }
+  int operator-(const basic_iterator& o) {
+    return this->ibin_ - o.ibin_; }
+  bool operator!=(const basic_iterator& o) const {
+    return this->ibin_ != o.ibin_; }
+  bool operator==(const basic_iterator& o) const {
+    return this->ibin_ == o.ibin_; }
+  bool operator<(const basic_iterator& o) const {
+    return this->ibin_ < o.ibin_; }
+  bool operator<=(const basic_iterator& o) const {
+    return this->ibin_ <= o.ibin_; }
+  bool operator>(const basic_iterator& o) const {
+    return this->ibin_ > o.ibin_; }
+  bool operator>=(const basic_iterator& o) const {
+    return this->ibin_ >= o.ibin_; }
+};
+
+template<typename DataBinner,
+         typename bin_accessor = basic_bin_accessor<DataBinner> >
+class basic_reverse_iterator:
+      public std::iterator<std::bidirectional_iterator_tag,
+                           bin_accessor, int, bin_accessor*, bin_accessor&>,
+      protected bin_accessor
+{
+ public:
+  CALIN_TYPEALIAS(bin_accessor_type, bin_accessor);
+  CALIN_TYPEALIAS(data_binner_type, DataBinner);
+  CALIN_TYPEALIAS(data_type, typename bin_accessor::data_type);
+  
+  basic_reverse_iterator(DataBinner& data, int ibin):
+      bin_accessor {data,data.size()-ibin-1} {}
+
+  basic_reverse_iterator(const basic_reverse_iterator&) = default;
+  basic_reverse_iterator& operator=(const basic_reverse_iterator&) = default;
+  
+  bin_accessor* operator->() { return this; }
+  bin_accessor& operator*() { return *this; }
+  
+  basic_reverse_iterator& operator++() {
+    --this->ibin_; return *this; }
+  basic_reverse_iterator operator++(int) {
+    basic_reverse_iterator i=*this; --this->ibin_; return i; }
+  basic_reverse_iterator& operator--() {
+    ++this->ibin_; return *this; }
+  basic_reverse_iterator operator--(int) {
+    basic_reverse_iterator i=*this; ++this->ibin_; return i; }
+  basic_reverse_iterator& operator+=(int ibin) {
+    this->ibin_-=ibin; return *this; }
+  basic_reverse_iterator& operator-=(int ibin) {
+    this->ibin_+=ibin; return *this; }
+  basic_reverse_iterator operator+(int ibin) const {
+    basic_reverse_iterator i(*this); i+=ibin; return i; }
+  basic_reverse_iterator operator-(int ibin) const {
+    basic_reverse_iterator i(*this); i-=ibin; return i; }
+  int operator-(const basic_reverse_iterator& o) {
+    return o.ibin_ - this->ibin_; }
+  bool operator!=(const basic_reverse_iterator& o) const {
+    return this->ibin_ != o.ibin_; }
+  bool operator==(const basic_reverse_iterator& o) const {
+    return this->ibin_ == o.ibin_; }
+  bool operator<(const basic_reverse_iterator& o) const {
+    return o.ibin_ < this->ibin_; }
+  bool operator<=(const basic_reverse_iterator& o) const {
+    return o.ibin_ <= this->ibin_; }
+  bool operator>(const basic_reverse_iterator& o) const {
+    return  o.ibin_ > this->ibin_; }
+  bool operator>=(const basic_reverse_iterator& o) const {
+    return o.ibin_ >= this->ibin_; }
 };
 #endif
 
@@ -296,6 +374,7 @@ template<typename Acc> class BasicHistogram1D:
   {
    public:
     using basic_bin_accessor<BasicHistogram1D>::basic_bin_accessor;
+    bin_accessor& operator=(const bin_accessor&) = default;
     double weight() const { return this->binner_->weight(this->ibin_); }
   };
 
@@ -308,11 +387,13 @@ template<typename Acc> class BasicHistogram1D:
 
   using iterator =
       basic_iterator<BasicHistogram1D,bin_accessor>;
-  using reverse_iterator = std::reverse_iterator<iterator>;
+  using reverse_iterator =
+      basic_reverse_iterator<BasicHistogram1D,bin_accessor>;
 
   using const_iterator =
       basic_iterator<const BasicHistogram1D,const_bin_accessor>;
-  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+  using const_reverse_iterator =
+      basic_reverse_iterator<const BasicHistogram1D,const_bin_accessor>;
 #endif
   
   BasicHistogram1D(double dxval, double xval_align = 0.5,
@@ -383,17 +464,27 @@ template<typename Acc> class BasicHistogram1D:
   const const_bin_accessor accessor(int ibin) const { return const_bin_accessor{*this,ibin}; }
   
   // Iterator functions
-  iterator begin() { return iterator{*this, 0}; }
-  iterator end() { return iterator{*this, this->size()}; }
-  reverse_iterator rbegin() { return reverse_iterator{end()}; }
-  reverse_iterator rend() { return reverse_iterator{begin()}; }
+  iterator begin() {
+    return iterator{*this, 0}; }
+  iterator end() {
+    return iterator{*this, this->size()}; }
+  reverse_iterator rbegin() {
+    return reverse_iterator{*this, 0}; }
+  reverse_iterator rend() {
+    return reverse_iterator{*this, this->size()}; }
 
-  const_iterator begin() const { return const_iterator{*this, 0}; }
-  const_iterator end() const { return const_iterator{*this, this->size()}; }
-  const_iterator cbegin() const { return const_iterator{*this, 0}; }
-  const_iterator cend() const { return const_iterator{*this, this->size()}; }
-  const_reverse_iterator crbegin() const { return const_reverse_iterator{end()}; }
-  const_reverse_iterator crend() const { return const_reverse_iterator{begin()}; }
+  const_iterator begin() const {
+    return const_iterator{*this, 0}; }
+  const_iterator end() const {
+    return const_iterator{*this, this->size()}; }
+  const_iterator cbegin() const {
+    return const_iterator{*this, 0}; }
+  const_iterator cend() const {
+    return const_iterator{*this, this->size()}; }
+  const_reverse_iterator crbegin() const {
+    return const_reverse_iterator{*this, 0}; }
+  const_reverse_iterator crend() const {
+    return const_reverse_iterator{*this, this->size()}; }
 #endif
   
   // Moments
@@ -591,8 +682,8 @@ class BinnedCDF: public BinnedData1D<double>
     return ax.total();
   }
   double variance() const {
-    double mean;
-    double var;
+    double mean = 0;
+    double var = 0;
     mean_and_variance(mean, var);
     return var;
   }
@@ -681,7 +772,7 @@ class BinnedCDF: public BinnedData1D<double>
   {
     IntAcc acc;
     double cleft = 0;
-    for(auto& ibin : *this)
+    for(auto ibin : *this)
     {
       double cright = ibin.cumulative_right();
       acc.accumulate(fcn(ibin.xval_center(), (cright-cleft)/this->dxval_));
@@ -695,7 +786,7 @@ class BinnedCDF: public BinnedData1D<double>
   {
     IntAcc acc;
     double cleft = 0;
-    for(auto& ibin : *this)
+    for(auto ibin : *this)
     {
       double cright = ibin.cumulative_right();
       acc.accumulate(fcn(ibin.xval_center(), cright-cleft));
