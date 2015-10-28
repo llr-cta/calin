@@ -259,12 +259,12 @@ class MultiParameterSet: virtual public Parameterizable
   std::vector<std::pair<unsigned, ParamType*> > parameter_sets_;
 };
 
-bool gradient_check(MultiAxisFunction& fcn, ConstVecRef x, VecRef good,
-                    double eps_factor = 10.0);
+bool gradient_check_eps(MultiAxisFunction& fcn, ConstVecRef x, VecRef good,
+                        double max_good = 0.5, double eps_factor = 10.0);
 bool gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
-                    VecRef good);
+                    VecRef good, double max_good = 0.5);
 bool hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
-                   MatRef good);
+                   MatRef good, double max_good = 0.5);
 
 #ifndef SWIG
 
@@ -323,11 +323,11 @@ bool gradient_check_par(ParameterizableType& par_fcn,
                         ValGetter<ParameterizableType> val_getter,
                         GradGetter<ParameterizableType> grad_getter,
                         HessGetter<ParameterizableType> hess_getter,
-                        double error_up = 0.5)
+                        double max_good = 0.5, double error_up = 0.5)
 {
   function::ParameterizableToMultiAxisFunctionAdapter<ParameterizableType>
       fcn(&par_fcn, val_getter, grad_getter, hess_getter, error_up);
-  return function::gradient_check(fcn, p, dp, good);
+  return function::gradient_check(fcn, p, dp, good, max_good);
 }
 
 template<typename ParameterizableType>
@@ -336,11 +336,11 @@ bool hessian_check_par(ParameterizableType& par_fcn,
                        ValGetter<ParameterizableType> val_getter,
                        GradGetter<ParameterizableType> grad_getter,
                        HessGetter<ParameterizableType> hess_getter,
-                       double error_up = 0.5)
+                       double max_good = 0.5, double error_up = 0.5)
 {
   function::ParameterizableToMultiAxisFunctionAdapter<ParameterizableType>
       fcn(&par_fcn, val_getter, grad_getter, hess_getter, error_up);
-  return function::hessian_check(fcn, p, dp, good);
+  return function::hessian_check(fcn, p, dp, good, max_good);
 }
 
 #endif // ifndef SWIG

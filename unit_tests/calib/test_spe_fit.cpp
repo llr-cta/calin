@@ -109,8 +109,8 @@ mes_gradient_test(MultiElectronSpectrum* mes,
       return (mes->*hess_get_f)(xval,grad,hess); };
 
     check_ok = function::gradient_check_par(*mes, p, dp, good,
-                                            val_get, grad_get, hess_get);
-
+                                            val_get, grad_get, hess_get,
+                                            good_max);
     EXPECT_TRUE(check_ok);
     
     for(unsigned ipar=0;ipar<mes->num_parameters();ipar++)

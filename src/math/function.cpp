@@ -433,8 +433,8 @@ double PMAFReverser::value_parameter_gradient_and_hessian(ConstVecRef x,
 // *****************************************************************************
 
 bool calin::math::function::
-gradient_check(MultiAxisFunction& fcn, ConstVecRef x, VecRef good,
-               double eps_factor)
+gradient_check_eps(MultiAxisFunction& fcn, ConstVecRef x, VecRef good,
+                   double max_good, double eps_factor)
 {
   constexpr double eps = std::numeric_limits<double>::epsilon();
   constexpr double tiny_val = std::numeric_limits<double>::min();
@@ -442,12 +442,12 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, VecRef good,
   Eigen::VectorXd dx(fcn_num_axes);
   for(unsigned idx=0;idx<fcn_num_axes;idx++)
     dx[idx] = std::max((std::abs(x[idx])*eps_factor)*eps, eps_factor*tiny_val);
-  return gradient_check(fcn, x, dx, good);
+  return gradient_check(fcn, x, dx, good, max_good);
 }
 
 bool calin::math::function::
 gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
-               VecRef good)
+               VecRef good, double max_good)
 {
   constexpr double eps = std::numeric_limits<double>::epsilon();
   unsigned fcn_num_axes = fcn.num_domain_axes();
@@ -457,7 +457,12 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
   Eigen::VectorXd gradient(fcn_num_axes);
   double f0g = fcn.value_and_gradient(x, gradient);
   assert(fcn_num_axes == gradient.size());
-  if(std::abs(f0 - f0g)/std::abs(f0) > eps)return false;
+  if(std::abs(f0 - f0g)/std::abs(f0) > eps)
+  {
+    std::cerr << "gradient_check: function value differs: "
+              << f0 << " != " << f0g << '\n';
+    return false;
+  }
   good.resize(fcn_num_axes);
   for(unsigned iaxis = 0;iaxis<fcn_num_axes;iaxis++)
   {
@@ -516,7 +521,7 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
       else good(iaxis)=0.5*std::log10(theerr/(maxerr+eps)*(1.0+h+eps));
     }
 
-    if(good(iaxis) > 0.5)
+    if(good(iaxis) > max_good)
       std::cout << iaxis << ' '
                 << "diff: " << dfdx << ' '
                 << "grad: " << gradient(iaxis) << ' '
@@ -538,7 +543,7 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
 
 bool calin::math::function::
 hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
-              MatRef good)
+              MatRef good, double max_good)
 {
   constexpr double eps = std::numeric_limits<double>::epsilon();
   unsigned fcn_num_axes = fcn.num_domain_axes();
@@ -564,7 +569,8 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
 
   if(std::abs(f0 - f0h)/std::abs(f0) > eps)
   {
-    std::cerr << "hessian_check: function value differs\n";
+    std::cerr << "hessian_check: function value differs: " << f0 << " != " << f0h
+              << '\n';
     return false;
   }
   
@@ -572,7 +578,7 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
     if(std::abs(g0(iaxis) - g0h(iaxis))/std::abs(g0(iaxis)) > eps)
     {
       std::cerr << "hessian_check: gradient value differs (axis=" << iaxis
-                << ")\n";
+                << "): " << g0(iaxis) << " != " << g0h(iaxis) << '\n';
       return false;
     }
 
@@ -641,7 +647,7 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
         else good(iaxis, jaxis)=0.5*std::log10(theerr/(maxerr+eps)*(1.0+h+eps));
       }
 
-      if(good(iaxis, jaxis) > 0.5)
+      if(good(iaxis, jaxis) > max_good)
         std::cout << iaxis << ' ' << jaxis << ' '
                   << "diff: " << dgdx(jaxis) << ' '
                   << "hess: " << hessian(iaxis, jaxis) << ' '
