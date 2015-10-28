@@ -213,6 +213,7 @@ bind_repeated_field(unsigned ifield, uint64_t iloop,
       break;
   }
   assert(0);
+  return false;
 }
 
 bool SQLStatement::bind_null(unsigned ifield)
@@ -375,6 +376,7 @@ bool SQLStatement::extract_field(unsigned ifield, google::protobuf::Message* m,
       break;
   }
   assert(0);
+  return false;
 }
 
 bool SQLStatement::
@@ -390,7 +392,7 @@ extract_repeated_field(unsigned ifield, uint64_t loop_id,
 
   bool good = true;
   const google::protobuf::Reflection* r = m->GetReflection();
-  int fs = r->FieldSize(*m, d);
+  uint64_t fs = r->FieldSize(*m, d);
   switch(d->type())
   {
     case FieldDescriptor::TYPE_DOUBLE: {
@@ -479,6 +481,7 @@ extract_repeated_field(unsigned ifield, uint64_t loop_id,
       break;
   }
   assert(0);
+  return false;
 }
 
 bool SQLStatement::column_is_null(unsigned icol, bool* good)

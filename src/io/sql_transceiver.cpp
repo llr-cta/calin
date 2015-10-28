@@ -92,7 +92,6 @@ retrieve_by_oid(const std::string& table_name, uint64_t oid,
                 google::protobuf::Message* m_data,
                 google::protobuf::Message* m_key)
 {
-  bool success = true;
   std::unique_ptr<SQLTable> t {
     make_keyed_sqltable_tree(table_name, m_data->GetDescriptor(),
                              m_key?m_key->GetDescriptor():nullptr, false) };  
@@ -455,6 +454,7 @@ sql_type(const google::protobuf::FieldDescriptor* d)
   }
 
   assert(0);
+  return "UNKNOWN";
 }
 
 std::string SQLTransceiver::
@@ -978,7 +978,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
       if(st->parent_field_d->is_repeated() and
          st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE)
       {
-        int fs = r->FieldSize(*m, st->parent_field_d);
+        uint64_t fs = r->FieldSize(*m, st->parent_field_d);
         google::protobuf::Message* sm = r->AddMessage(m, st->parent_field_d);
         assert(sm);
         good &= r_exec_select(st, sm, nullptr, unused_st_parent_oid, st_loopid,

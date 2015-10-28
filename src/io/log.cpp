@@ -68,6 +68,7 @@ const char* ansi_color_string(Level level)
     case Level::INFO:     return "\x1b[37;46;97;1m";
     case Level::VERBOSE:  return "";
     case Level::DISCARD:  return "";
+    default: assert(0); return "";
   }
 }
 
@@ -83,6 +84,7 @@ const char* level_string(Level level)
     case Level::INFO:     return "INFO";
     case Level::VERBOSE:  return "";
     case Level::DISCARD:  return "";
+    default: assert(0); return "";
   }
 }
 

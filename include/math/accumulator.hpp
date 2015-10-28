@@ -61,6 +61,8 @@ private:
   value_type cor_;
 };
 
+#if 0
+
 class CascadingIntegerAccumulator
 {
  public:
@@ -85,6 +87,8 @@ class CascadingIntegerAccumulator
         
   mutable std::array<acc_type,num_accumulators> acc_ {};
 };
+
+#endif
 
 class Accumulator
 {

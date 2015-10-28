@@ -63,8 +63,8 @@ class SQLite3Statement: public SQLStatement
 
  protected:
   sqlite3* db_ = nullptr;
-  bool make_bound_sql_ = false;
   sqlite3_stmt* stmt_ = nullptr;
+  bool make_bound_sql_ = false;
 };
 
 } } } // namespace calin::io::sql_transceiver

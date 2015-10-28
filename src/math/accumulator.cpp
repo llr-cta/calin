@@ -4,6 +4,7 @@
 
 using namespace calin::math::accumulator;
 
+#if 0
 void CascadingIntegerAccumulator::accumulate(const value_type x)
 {
   uint64_t uix { *reinterpret_cast<const uint64_t*>(&x) };
@@ -22,3 +23,4 @@ auto CascadingIntegerAccumulator::total() const -> value_type
   return 0;
 }
 
+#endif
