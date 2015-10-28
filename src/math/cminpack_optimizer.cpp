@@ -236,7 +236,6 @@ int CMinpackOptimizer::
 eval_func(unsigned n, const double* x, double* grad, double* hess, int iflag)
 {
   xvec_ = Eigen::Map<const Eigen::VectorXd>(x,n);
-  double last_fbest = fbest_;
   if(iflag == 2)
   {
     fval_ = fcn_->value_gradient_and_hessian(xvec_,gvec_,hmat_);
@@ -269,6 +268,7 @@ eval_func(unsigned n, const double* x, double* grad, double* hess, int iflag)
   }
 
   assert(0);
+  return iflag;
 }
 
 double CMinpackOptimizer::edm(unsigned n)

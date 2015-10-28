@@ -102,7 +102,7 @@ void Optimizer::opt_starting(const std::string& opt_name,
 {
   // Set up common (base-class) variables used to keep track of optimization
   // progress and status
-  unsigned naxes { fcn_->num_domain_axes() };
+
   opt_status_           = OptimizationStatus::OPTIMIZER_FAILURE;
   opt_message_          = "Optimizer did not run";
   opt_start_time_       = TimeStamp::now();
@@ -166,15 +166,17 @@ void Optimizer::opt_starting(const std::string& opt_name,
   {
     bool xinit_inside_xlim_lo = true;
     // The STL function "equal" is badly named!!
-    if(xbest_.size() == lower_limit.size())
-      xinit_inside_xlim_lo = std::equal(xbest_.data(), xbest_.data()+xbest_.size(),
-                                        lower_limit.begin(), std::greater_equal<double>());
+    if((unsigned)xbest_.size() == lower_limit.size())
+      xinit_inside_xlim_lo =
+          std::equal(xbest_.data(), xbest_.data()+xbest_.size(),
+                     lower_limit.begin(), std::greater_equal<double>());
     
     bool xinit_inside_xlim_hi = true;
     // The STL function "equal" is badly named!!
-    if(xbest_.size() == upper_limit.size())
-      xinit_inside_xlim_hi = std::equal(xbest_.data(), xbest_.data()+xbest_.size(),
-                                        upper_limit.begin(), std::less_equal<double>());
+    if((unsigned)xbest_.size() == upper_limit.size())
+      xinit_inside_xlim_hi =
+          std::equal(xbest_.data(), xbest_.data()+xbest_.size(),
+                     upper_limit.begin(), std::less_equal<double>());
     
     if(!xinit_inside_xlim_lo or !xinit_inside_xlim_hi)
     {

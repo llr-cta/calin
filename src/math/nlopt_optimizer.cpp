@@ -104,6 +104,7 @@ static nlopt_algorithm name_to_algorithm(const std::string& name)
 
 #undef MATCH_ALGORITHM
 
+#if 0
 #define MATCH_ALGORITHM(x) case x: return(std::string(#x))
 
 static std::string ZZZ_algorithm_to_name(nlopt_algorithm algo)
@@ -182,7 +183,7 @@ static std::string ZZZ_algorithm_to_name(nlopt_algorithm algo)
 }
 
 #undef MATCH_ALGORITHM
-
+#endif // #if 0 around ZZZ_algorithm_to_name
 }
 
 NLOptOptimizer::
@@ -279,6 +280,7 @@ bool NLOptOptimizer::is_local_optimizer(algorithm_type algorithm)
   }
 
   assert(0);
+  return false;
 }
 
 bool NLOptOptimizer::requires_gradient(algorithm_type algorithm)
@@ -338,6 +340,7 @@ bool NLOptOptimizer::requires_gradient(algorithm_type algorithm)
   }
 
   assert(0);
+  return false;
 }
 
 bool NLOptOptimizer::requires_box_constraints(algorithm_type algorithm)
@@ -397,6 +400,7 @@ bool NLOptOptimizer::requires_box_constraints(algorithm_type algorithm)
   }
 
   assert(0);
+  return false;
 }
 
 
@@ -500,7 +504,8 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   }
 
   if(!xlim_lo.empty() &&
-     std::count(xlim_lo.begin(), xlim_lo.end(), neg_inf)!=xlim_lo.size())
+     std::count(xlim_lo.begin(), xlim_lo.end(), neg_inf) !=
+     (unsigned)xlim_lo.size())
   {
     nlopt_status = nlopt_set_lower_bounds(opt.get(), &xlim_lo.front());
     if(nlopt_status != NLOPT_SUCCESS)
@@ -511,7 +516,8 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   }
 
   if(!xlim_hi.empty() &&
-     std::count(xlim_hi.begin(), xlim_hi.end(), pos_inf)!=xlim_hi.size())
+     std::count(xlim_hi.begin(), xlim_hi.end(), pos_inf) !=
+     (unsigned)xlim_hi.size())
   {
     nlopt_status = nlopt_set_upper_bounds(opt.get(), &xlim_hi.front());
     if(nlopt_status != NLOPT_SUCCESS)
