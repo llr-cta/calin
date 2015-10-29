@@ -165,11 +165,12 @@ inline void uv_to_xy(int u, int v, double& x, double& y)
 
 void xy_to_uv(double x, double y, int& u, int& v);
 
-inline void xy_to_uv_with_remainder(double& x, double& y, int& u, int& v)
+inline void xy_to_uv_with_remainder(double& x_in_dx_out,
+                                    double& y_in_dy_out, int& u, int& v)
 {
-  xy_to_uv(x, y, u, v);
-  x -= u + v*c_vx;
-  y -= v*c_vy;
+  xy_to_uv(x_in_dx_out,  y_in_dy_out, u, v);
+  x_in_dx_out -= u + v*c_vx;
+  y_in_dy_out -= v*c_vy;
 }
 
 inline void uv_to_xy(int u, int v, double& x, double& y, bool clockwise)
@@ -184,16 +185,16 @@ inline void xy_to_uv(double x, double y, int& u, int& v, bool clockwise)
   else xy_to_uv(x, y, u, v);
 }
 
-inline void xy_to_uv_with_remainder(double& x, double& y, int& u, int& v,
-                                    bool clockwise)
+inline void xy_to_uv_with_remainder(double& x_in_dx_out, double& y_in_dy_out,
+                                    int& u, int& v, bool clockwise)
 {
   if(clockwise)
   {
-    double yy = -y;
-    xy_to_uv_with_remainder(x, yy, u, v);
-    y = -yy;
+    double yy = -y_in_dy_out;
+    xy_to_uv_with_remainder(x_in_dx_out, yy, u, v);
+    y_in_dy_out = -yy;
   }
-  else xy_to_uv_with_remainder(x, y, u, v);
+  else xy_to_uv_with_remainder(x_in_dx_out, y_in_dy_out, u, v);
 }
 
 inline unsigned xy_to_hexid(double x, double y)
@@ -212,19 +213,21 @@ inline unsigned xy_to_hexid(double x, double y, bool clockwise)
   return uv_to_hexid(u,v);
 }
 
-inline unsigned xy_to_hexid_with_remainder(double& x, double& y)
+inline unsigned xy_to_hexid_with_remainder(double& x_in_dx_out,
+                                           double& y_in_dy_out)
 {
   int u;
   int v;
-  xy_to_uv_with_remainder(x, y, u, v);
+  xy_to_uv_with_remainder(x_in_dx_out, y_in_dy_out, u, v);
   return uv_to_hexid(u,v);
 }
 
-inline unsigned xy_to_hexid_with_remainder(double& x, double& y, bool clockwise)
+inline unsigned xy_to_hexid_with_remainder(double& x_in_dx_out,
+                                           double& y_in_dy_out, bool clockwise)
 {
   int u;
   int v;
-  xy_to_uv_with_remainder(x, y, u, v, clockwise);
+  xy_to_uv_with_remainder(x_in_dx_out, y_in_dy_out, u, v, clockwise);
   return uv_to_hexid(u,v);
 }
 

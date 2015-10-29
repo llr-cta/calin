@@ -26,6 +26,7 @@
        std::vector<int>& u, std::vector<int>& v
        };
 %apply double &OUTPUT { double& x, double& y };
+%apply double &INOUT { double& x_in_dx_out, double& y_in_dy_out };
 %apply std::vector<double> &OUTPUT { std::vector<double>& x,
        std::vector<double>& y };
 
