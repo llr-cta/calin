@@ -64,16 +64,13 @@ TEST(TestHexArray, HexIDToXY_NewCodeSpeedTest) {
     for(unsigned iring=1;iring<50;iring++)
       for(unsigned ichan=0;ichan<6*iring;ichan++)
       {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"        
         double x1,y1;
-        double x2,y2;
+        //double x2,y2;
         hexid_to_xy(hexid, x1, y1, true);
-        int vvv_hexid = hexid+1;
+        //int vvv_hexid = hexid+1;
         //nh_to_xy(&vvv_hexid, &x2, &y2);
         //EXPECT_NEAR(x1,x2,1e-6);
         hexid++;
-#pragma GCC diagnostic pop
       }
   }
 }
@@ -85,16 +82,13 @@ TEST(TestHexArray, HexIDToXY_VVVCodeSpeedTest) {
     for(unsigned iring=1;iring<50;iring++)
       for(unsigned ichan=0;ichan<6*iring;ichan++)
       {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"        
-        double x1,y1;
+        //double x1,y1;
         double x2,y2;
         //hexid_to_xy(hexid, x1, y1, true);
         int vvv_hexid = hexid+1;
         nh_to_xy(&vvv_hexid, &x2, &y2);
         //EXPECT_NEAR(x1,x2,1e-6);
         hexid++;
-#pragma GCC diagnostic pop
       }
   }
 }
@@ -119,16 +113,13 @@ TEST(TestHexArray, XYToHexID_NewCodeSpeedTest) {
   for(double x=-10.005; x<10.015; x+=0.01)
     for(double y=-10.005; y<10.015; y+=0.01)
     {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
       double xx1 = x;
       double yy1 = y;
-      unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1, true);
-      double xx2 = x;
-      double yy2 = y;
-      int hexid2;
+      /* unsigned hexid = */ xy_to_hexid_with_remainder(xx1, yy1, true);
+      //double xx2 = x;
+      //double yy2 = y;
+      //int hexid2;
       //xy_to_nh(&xx2,&yy2,&hexid2);
-#pragma GCC diagnostic pop
     }
 }
 
@@ -136,16 +127,13 @@ TEST(TestHexArray, XYToHexID_VVVCodeSpeedTest) {
   for(double x=-10.005; x<10.015; x+=0.01)
     for(double y=-10.005; y<10.015; y+=0.01)
     {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-      double xx1 = x;
-      double yy1 = y;
+      //double xx1 = x;
+      //double yy1 = y;
       //unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1, true);
       double xx2 = x;
       double yy2 = y;
       int hexid2;
       xy_to_nh(&xx2,&yy2,&hexid2);
-#pragma GCC diagnostic pop
     }
 }
 
