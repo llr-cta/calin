@@ -22,10 +22,12 @@ namespace calin { namespace math { namespace hex_array {
 //
 // *****************************************************************************
 
+#ifndef SWIG
 namespace vvv {
 void xy_to_nh(double *, double *, int *);
 void nh_to_xy(int *, double *, double *);
 } // namespace vvv
+#endif
 
 // *****************************************************************************
 //
