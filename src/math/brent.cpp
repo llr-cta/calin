@@ -388,7 +388,7 @@ double local_min ( double a, double b, double t, func_base& f,
 //
 {
   double c;
-  double d;
+  double d = 0; // SJF - Added "= 0" here 2015-10-29 to suppress -Wall warning
   double e;
   double eps;
   double fu;

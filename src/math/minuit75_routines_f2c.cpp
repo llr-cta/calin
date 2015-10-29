@@ -2386,7 +2386,7 @@ L900:
     static doublereal rt, aim, tla, tlf;
     static integer kex, ipt;
     static doublereal dfda, alsb[3], flsb[3], bmin, bmax;
-    static integer inew;
+    // SJF-WALL 2015-10-29 static integer inew;
     static doublereal zmid, sdev, zdir, zlim;
     static integer iout;
     static doublereal coeff[3], aleft, ecart;
@@ -2693,7 +2693,7 @@ L460:
     ypt[ipt - 1] = fnext;
     *(unsigned char *)&chpt[ipt - 1] = *(unsigned char *)&charal[ipt - 1];
     flsb[2] = fnext;
-    inew = 3;
+    // SJF-WALL 2015-10-29 inew = 3;
 /*                now we have three points, ask how many <AIM */
     ecarmn = (d__1 = fnext - aim, abs(d__1));
     ibest = 3;
@@ -2714,7 +2714,7 @@ L460:
 	}
 /* L480: */
     }
-    inew = ibest;
+    // SJF-WALL 2015-10-29 inew = ibest;
 /*           if at least one on each side of AIM, fit a parabola */
     if (noless == 1 || noless == 2) {
 	goto L500;
@@ -7698,7 +7698,8 @@ L380:
 {
     /* Local variables */
     static integer i__, idb;
-    static doublereal piby2, epsp1, dummy, epsbak;
+    static doublereal piby2, epsp1, epsbak;
+    // SJF-WALL static doublereal dummy;
     static doublereal epstry, distnn;
 
     /* Fortran I/O blocks */

@@ -35,15 +35,15 @@ unsigned calin::math::hex_array::
 uv_to_hexid(int u, int v)
 {
   if(u==0 and v==0)return 0;
-  unsigned ringid = uv_to_ringid(u,v);
+  int ringid = uv_to_ringid(u,v);
   unsigned segid;
   unsigned runid;
-  if(u+v==ringid)       { segid=0; runid=v; }
-  else if(v==ringid)    { segid=1; runid=-u; }
-  else if(u==-ringid)   { segid=2; runid=ringid-v; }
-  else if(u+v==-ringid) { segid=3; runid=-v; }
-  else if(v==-ringid)   { segid=4; runid=u; }
-  else if(u==ringid)    { segid=5; runid=ringid+v; }
+  if(u+v==ringid)        { segid=0; runid=v; }
+  else if(v==ringid)     { segid=1; runid=-u; }
+  else if(u==-ringid)    { segid=2; runid=ringid-v; }
+  else if(u+v==-ringid)  { segid=3; runid=-v; }
+  else if(v==-ringid)    { segid=4; runid=u; }
+  else /*if(u==ringid)*/ { segid=5; runid=ringid+v; }
   return positive_ringid_segid_runid_to_hexid(ringid, segid, runid);
 }
 

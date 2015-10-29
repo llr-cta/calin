@@ -126,7 +126,7 @@ bool Minuit75Optimizer::can_impose_box_constraints()
 
 OptimizationStatus Minuit75Optimizer::minimize(VecRef xopt, double& fopt)
 {
-  constexpr auto inf = std::numeric_limits<double>::infinity();
+  //constexpr auto inf = std::numeric_limits<double>::infinity();
   mn7fcb* fcb { cast_fcb(fcb_) };
   integer error_flag;
   std::ostringstream pline;
@@ -185,18 +185,21 @@ OptimizationStatus Minuit75Optimizer::minimize(VecRef xopt, double& fopt)
               &intvar, sizeof(buffer)/sizeof(*buffer)-1, fcb);
     }
   
-  
+  return OptimizationStatus::OPTIMIZER_FAILURE;
 }
 
 ErrorMatrixStatus Minuit75Optimizer::error_matrix_estimate(MatRef error_matrix)
 {
-
+  assert(0);
+  return ErrorMatrixStatus::UNAVAILABLE;
 }
+
 ErrorMatrixStatus Minuit75Optimizer::
 calc_error_matrix_and_eigenvectors(MatRef error_matrix,
                                    VecRef eigenvalues, MatRef eigenvectors)
 {
-
+  assert(0);
+  return ErrorMatrixStatus::UNAVAILABLE;
 }
 
 int Minuit75Optimizer::do_command(const std::string& command)

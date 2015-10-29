@@ -55,12 +55,14 @@ double MultiElectronSpectrum::
 pdf_gradient_hessian_ped(double x, VecRef gradient, MatRef hessian)
 {
   assert(0);
+  return 0;
 }
 
 double MultiElectronSpectrum::
 pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
 {
   assert(0);
+  return 0;
 }
 
 bool MultiElectronSpectrum::can_calculate_parameter_hessian()
@@ -97,8 +99,8 @@ unsigned PoissonGaussianMES::num_parameters()
 std::vector<function::ParameterAxis> PoissonGaussianMES::parameters()
 {
   constexpr double tiny_val = std::numeric_limits<double>::min();
-  constexpr double phuge_val = std::numeric_limits<double>::max();
-  constexpr double nhuge_val = std::numeric_limits<double>::lowest();
+  //constexpr double phuge_val = std::numeric_limits<double>::max();
+  //constexpr double nhuge_val = std::numeric_limits<double>::lowest();
   return { { "light_intensity", "PE", true, 0, false, 0 },
     { "ped_zero", "DC", false, 0, false, 0 },
     { "ped_width", "DC", true, tiny_val, false, 0 },
@@ -771,21 +773,25 @@ double GeneralPoissonMES::pdf_gradient_hessian_mes(double x, VecRef gradient,
 double GeneralPoissonMES::ped_rms_dc()
 {
   assert(false);
+  return 0;
 }
 
 double GeneralPoissonMES::ped_zero_dc()
 {
   assert(false);
+  return 0;
 }
 
 double GeneralPoissonMES::ses_mean_dc()
 {
   assert(false);
+  return 0;
 }
 
 double GeneralPoissonMES::ses_rms_pe()
 {
   assert(false);
+  return 0;
 }
 
 std::vector<double> GeneralPoissonMES::multi_electron_spectrum() const 
@@ -806,8 +812,9 @@ std::vector<double> GeneralPoissonMES::
 multi_electron_spectrum_gradient(unsigned iparam) const
 {
   if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
-    throw std::out_of_range("GeneralPoissonMES::multi_electron_spectrum_gradient: "
-                            "iparam out of range");
+    throw std::out_of_range(
+        "GeneralPoissonMES::multi_electron_spectrum_gradient: "
+        "iparam out of range");
   
   return std::vector<double>(mes_grad_[iparam], mes_grad_[iparam]+nsample_); 
 }
@@ -844,11 +851,13 @@ single_electron_spectrum_gradient(unsigned iparam) const
                      FFTW_HC2R, 0), fftw_destroy_plan };
   assert(spec_plan);
 
-  std::copy(ses_grad_fft_[iparam], ses_grad_fft_[iparam]+nsample_, spec_buffer.get());
+  std::copy(ses_grad_fft_[iparam], ses_grad_fft_[iparam]+nsample_,
+            spec_buffer.get());
   fftw_execute(spec_plan.get());
   std::vector<double> spec_gradient(nsample_);
   double norm { 1.0/double(nsample_) };
-  std::transform(spec_buffer.get(), spec_buffer.get()+nsample_, spec_gradient.begin(),
+  std::transform(spec_buffer.get(), spec_buffer.get()+nsample_,
+                 spec_gradient.begin(),
                  [norm](double x){return x*norm;});
   return spec_gradient;
 }
@@ -946,7 +955,7 @@ extract_ses_hessian_values(ConstMatRef hessian)
 int GeneralPoissonMES::ibin(double x) const
 {
   int thebin = std::floor((x-x0_)/dx_);
-  if(thebin<0 or thebin>=nsample_)
+  if(thebin<0 or thebin>=(int)nsample_)
   {
     std::ostringstream str;
     str << "GeneralPoissonMES::ibin: x=" << x
@@ -1264,7 +1273,8 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
     if(ibin.weight())
     {
       double pdf =
-          mes_model_->pdf_gradient_hessian_mes(ibin.xval_center(), gradient, hessian);
+          mes_model_->pdf_gradient_hessian_mes(ibin.xval_center(),
+                                               gradient, hessian);
       if(pdf<=0)continue;
       acc.accumulate(std::log(pdf)*ibin.weight());
       for(unsigned ipar=0;ipar<npar_;ipar++)
@@ -1284,7 +1294,8 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
       if(ibin.weight())
       {
         double pdf =
-            mes_model_->pdf_gradient_hessian_ped(ibin.xval_center(), gradient, hessian);
+            mes_model_->pdf_gradient_hessian_ped(ibin.xval_center(),
+                                                 gradient, hessian);
         if(pdf<=0)continue;
         acc.accumulate(std::log(pdf)*ibin.weight());
         for(unsigned ipar=0;ipar<npar_;ipar++)

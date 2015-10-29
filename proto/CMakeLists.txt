@@ -17,3 +17,5 @@ include_directories(${PROTOBUF_INCLUDE_DIRS} ${CMAKE_CURRENT_BUILD_DIR})
 
 target_link_libraries(calin_proto ${PROTOBUF_LIBRARY}) 
 
+install(TARGETS calin_proto DESTINATION lib)
+
