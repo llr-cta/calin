@@ -14,9 +14,11 @@
 
 using namespace calin::math;
 
+#if 0 // UNUSED
 namespace {
 inline double SQR(double x) { return x*x; }
 }
+#endif
 
 hessian::ErrorMatrixStatus
 hessian::hessian_to_error_matrix(function::MultiAxisFunction& fcn,

@@ -90,6 +90,15 @@
     return true;
   }
 
+} // fragment("Calin_Python_to_EigenVec"
+
+%fragment("Calin_EigenVec_to_Python",
+          "header",
+          fragment="NumPy_Array_Requirements",
+          fragment="NumPy_Backward_Compatibility",
+          fragment="NumPy_Macros",
+          fragment="NumPy_Utilities")
+{
   static bool calin_eigen_vec_to_python(Eigen::VectorXd* vec,
                                         PyObject* output)
   {
@@ -134,7 +143,7 @@
     return true;
   }
 
-}
+} // fragment("Calin_EigenVec_to_Python"
 
 // *************************** const Eigen::VectorXd& **************************
 
@@ -153,7 +162,7 @@
   // nothing to see here
 }
 
-%typemap(typecheck, fragment="Calin_Python_to_EigenVec", precedence=5000) const Eigen::VectorXd&
+%typemap(typecheck, precedence=5000) const Eigen::VectorXd&
 {
   // typemap(typecheck) const Eigen::VectorXd& -- package_wide_definitions.i
   $1 = is_array($input) ? 1 : 0;
@@ -169,14 +178,13 @@
   if(!calin_python_to_eigen_vec($input, $1))SWIG_fail;
 }
 
-%typemap(argout, fragment="Calin_Python_to_EigenVec") Eigen::VectorXd&
+%typemap(argout, fragment="Calin_EigenVec_to_Python") Eigen::VectorXd&
 {
   // typemap(argout) Eigen::VectorXd& -- package_wide_definitions.i
   if(!calin_eigen_vec_to_python($1, $input))SWIG_fail;
 }
 
-%typemap(typecheck, fragment="Calin_Python_to_EigenVec", precedence=5000)
-Eigen::VectorXd&
+%typemap(typecheck, precedence=5000) Eigen::VectorXd&
 {
   // typemap(typecheck) Eigen::VectorXd& -- package_wide_definitions.i
   $1 = is_array($input) ? 1 : 0;
@@ -184,14 +192,13 @@ Eigen::VectorXd&
 
 // ************************** Eigen::VectorXd &OUTPUT **************************
 
-%typemap(in, numinputs=0, fragment="Calin_Python_to_EigenVec")
-     Eigen::VectorXd &OUTPUT (Eigen::VectorXd temp)
+%typemap(in, numinputs=0) Eigen::VectorXd &OUTPUT (Eigen::VectorXd temp)
 {
   // typemap(in) Eigen::VectorXd &OUTPUT -- package_wide_definitions.i
   $1 = &temp;
 }
 
-%typemap(argout, fragment="Calin_Python_to_EigenVec") Eigen::VectorXd &OUTPUT
+%typemap(argout, fragment="Calin_EigenVec_to_Python") Eigen::VectorXd &OUTPUT
 {
   // typemap(argout) Eigen::VectorXd &OUTPUT -- package_wide_definitions.i
   npy_intp size[1] { $1->size() };
@@ -207,7 +214,7 @@ Eigen::VectorXd&
 
 // ****************************** Eigen::VectorXd ******************************
 
-%typemap(out, fragment="Calin_Python_to_EigenVec") Eigen::VectorXd
+%typemap(out, fragment="Calin_EigenVec_to_Python") Eigen::VectorXd
 {
   // typemap(out) Eigen::VectorXd -- package_wide_definitions.i
   npy_intp size[1] { $1.size() };
@@ -216,7 +223,7 @@ Eigen::VectorXd&
   if(!calin_eigen_vec_to_python(&$1, $result))SWIG_fail;
 }
 
-%typemap(typecheck, fragment="Calin_Python_to_EigenVec", precedence=5000)
+%typemap(typecheck, precedence=5000)
 Eigen::VectorXd
 {
   // typemap(typecheck) Eigen::VectorXd -- package_wide_definitions.i
@@ -292,6 +299,16 @@ Eigen::VectorXd
     return true;
   }
 
+} // %fragment("Calin_Python_to_EigenMat"
+
+%fragment("Calin_EigenMat_to_Python",
+          "header",
+          fragment="NumPy_Array_Requirements",
+          fragment="NumPy_Backward_Compatibility",
+          fragment="NumPy_Macros",
+          fragment="NumPy_Utilities")
+{
+  
   static bool calin_eigen_mat_to_python(Eigen::MatrixXd* mat,
                                         PyObject* output)
   {
@@ -337,7 +354,7 @@ Eigen::VectorXd
     return true;
   }
 
-}
+} // %fragment("Calin_EigenMat_to_Python",
 
 // *************************** const Eigen::MatrixXd& **************************
 
@@ -365,7 +382,7 @@ Eigen::VectorXd
   if(!calin_python_to_eigen_mat($input, $1))SWIG_fail;
 }
 
-%typemap(argout, fragment="Calin_Python_to_EigenMat") Eigen::MatrixXd&
+%typemap(argout, fragment="Calin_EigenMat_to_Python") Eigen::MatrixXd&
 {
   // typemap(argout) Eigen::MatrixXd& -- package_wide_definitions.i
   if(!calin_eigen_mat_to_python($1, $input))SWIG_fail;
@@ -373,14 +390,13 @@ Eigen::VectorXd
 
 // ************************** Eigen::MatrixXd &OUTPUT **************************
 
-%typemap(in, numinputs=0, fragment="Calin_Python_to_EigenMat")
-     Eigen::MatrixXd &OUTPUT (Eigen::MatrixXd temp)
+%typemap(in, numinputs=0) Eigen::MatrixXd &OUTPUT (Eigen::MatrixXd temp)
 {
   // typemap(in) Eigen::MatrixXd &OUTPUT -- package_wide_definitions.i
   $1 = &temp;
 }
 
-%typemap(argout, fragment="Calin_Python_to_EigenMat") Eigen::MatrixXd &OUTPUT
+%typemap(argout, fragment="Calin_EigenMat_to_Python") Eigen::MatrixXd &OUTPUT
 {
   // typemap(argout) Eigen::MatrixXd &OUTPUT -- package_wide_definitions.i
   npy_intp size[1] { $1->size() };
@@ -396,7 +412,7 @@ Eigen::VectorXd
 
 // ****************************** Eigen::MatrixXd ******************************
 
-%typemap(out, fragment="Calin_Python_to_EigenMat") Eigen::MatrixXd
+%typemap(out, fragment="Calin_EigenMat_to_Python") Eigen::MatrixXd
 {
   // typemap(out) Eigen::MatrixXd -- package_wide_definitions.i
   npy_intp size[1] { $1.size() };
