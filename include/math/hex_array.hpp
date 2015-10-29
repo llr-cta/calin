@@ -202,7 +202,6 @@ inline unsigned xy_to_hexid(double x, double y)
   return uv_to_hexid(u,v);
 }
 
-
 inline unsigned xy_to_hexid(double x, double y, bool clockwise)
 {
   int u;
@@ -243,5 +242,27 @@ inline void hexid_to_xy(unsigned hexid, double& x, double& y, bool clockwise)
   uv_to_xy(u,v,x,y,clockwise);
 }
 
+inline void uv_to_vertexes_xy(int u, int v,
+                              std::vector<double>& x, std::vector<double>& y,
+                              bool clockwise = false)
+{
+  static constexpr double dx = 0.5;
+  static constexpr double dy = 0.5/CALIN_HEX_ARRAY_SQRT3;
+  double xc;
+  double yc;
+  uv_to_xy(u,v,xc,yc,clockwise);
+  x = { xc+dx, xc, xc-dx, xc-dx, xc, xc+dx };
+  y = { yc+dy, yc+2*dy, yc+dy, yc-dy, yc-2*dy, yc-dy };
+}
+
+inline void hexid_to_vertexes_xy(unsigned hexid,
+                                 std::vector<double>& x, std::vector<double>& y,
+                                 bool clockwise = false)
+{
+  int u;
+  int v;
+  hexid_to_uv(hexid, u, v);
+  uv_to_vertexes_xy(u, v, x, y, clockwise);
+}
 
 } } } // namespace calin::math::hex_array

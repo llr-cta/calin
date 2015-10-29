@@ -24,6 +24,7 @@
 
 %template (VectorDouble) std::vector<double>;
 %template (VectorUnsigned) std::vector<unsigned>;
+%template (VectorInt) std::vector<int>;
 
 %import "package_wide_definitions.hpp"
 
