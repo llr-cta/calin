@@ -135,10 +135,10 @@ void calin::math::hex_array::xy_to_uv(double x, double y, int& u, int& v)
   double c2 = 2*dv+du;
   double c3 = dv-du;
   if(c3<0) {
-    if(c1>1) u++;
+    if(c1>=1) u++;
     else if(c2<-1) v--;
   } else {
-    if(c2>1) v++;
+    if(c2>=1) v++;
     else if(c1<-1) u--;
   }
 }
