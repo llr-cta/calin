@@ -13,7 +13,7 @@ add_library(calin_proto SHARED ${ProtoSources})
 
 include_directories(${CMAKE_CURRENT_BUILD_DIR}) 
 
-target_link_libraries(calin_proto) 
+target_link_libraries(calin_proto ${PROTOBUF_LIBRARY}) 
 
 install(TARGETS calin_proto DESTINATION lib)
 
