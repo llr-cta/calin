@@ -67,7 +67,7 @@ before_script:
 script:
   - mkdir mybuild-travis
   - cd mybuild-travis
-  - cmake -DCMAKE_PREFIX_PATH=$LOCAL -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build 
+  - cmake -DCMAKE_PREFIX_PATH=$LOCAL -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build ..
   - make -j3
   - make install
   - make test
