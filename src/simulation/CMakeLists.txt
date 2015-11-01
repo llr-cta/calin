@@ -3,7 +3,7 @@ find_package(Geant4)
 set(CALIN_TARGET_LIBRARY calin_simulation)
 set(CALIN_SOURCES atmosphere.cpp)
 
-if(GEANT4_FOUND)
+if(${GEANT4_FOUND})
 	include_directories(${GEANT4_INCLUDE_DIR})
 	set(CALIN_SOURCES ${CALIN_SOURCES} tracker.cpp
 			  geant4_shower_generator.cpp
@@ -13,7 +13,7 @@ endif()
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_io ${GEANT4_LIBRARIES})
 
-if(GEANT4_FOUND)
+if(${GEANT4_FOUND})
 	target_link_libraries(${CALIN_TARGET_LIBRARY} ${GEANT4_LIBRARIES})
 endif()
 
