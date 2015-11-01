@@ -1,7 +1,6 @@
 #add_subdirectory(math)
 #add_subdirectory(common)
 
-set(PROTOBUF_IMPORT_DIRS /usr/local/include ${CMAKE_CURRENT_SOURCE_DIR})
 find_package(Protobuf REQUIRED)
 
 PROTOBUF_GENERATE_CPP(ProtoSources ProtoHeaders
@@ -9,7 +8,8 @@ PROTOBUF_GENERATE_CPP(ProtoSources ProtoHeaders
 					 io_sql_transceiver.proto
 					 math_histogram.proto unittest.proto)
 
-set(PROTOBUF_INCLUDE_DIRS /usr/local/include) 
+message(STATUS "PROTOBUF_IMPORT_DIRS: " ${PROTOBUF_IMPORT_DIRS}) 
+message(STATUS "PROTOBUF_INCLUDE_DIRS: " ${PROTOBUF_INCLUDE_DIRS}) 
 
 add_library(calin_proto SHARED ${ProtoSources}) 
 
