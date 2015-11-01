@@ -11,6 +11,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/"
 include_directories(include ${CMAKE_BINARY_DIR})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
+### include Protobuf libraries
+find_package(Protobuf REQUIRED)
+include_directories(${PROTOBUF_INCLUDE_DIRS} ${CMAKE_CURRENT_BUILD_DIR}) 
+set(EXTRA_LIBS ${EXTRA_LIBS} ${PROTOBUF_LIBRARY})
+
 ## include FFTW libraries
 find_package(FFTW REQUIRED)
 include_directories(${FFTW_INCLUDES})
