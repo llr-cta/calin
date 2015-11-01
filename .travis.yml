@@ -33,7 +33,7 @@ install:
       tar zxf swig-3.0.7.tar.gz &&
       cd swig-3.0.7 &&
       ./configure --prefix=$LOCAL --without-alllang --with-python &&
-      make -j3 > /dev/null &&
+      make -j3 &&
       make install
     ); fi 
   - |
@@ -43,7 +43,7 @@ install:
       tar zxf protobuf-cpp-3.0.0-beta-1.tar.gz &&
       cd protobuf-3.0.0-beta-1 &&
       ./configure --prefix=$LOCAL &&
-      make -j3 > /dev/null &&
+      make -j3 &&
       make install
     ); fi
   - |
@@ -55,7 +55,7 @@ install:
       mkdir mybuild &&
       cd mybuild &&
       cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$LOCAL .. &&
-      make -j3 > /dev/null &&
+      make -j3 &&
       make install
     ); fi
 
