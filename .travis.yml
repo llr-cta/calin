@@ -1,7 +1,8 @@
 env:
-  - BUILD_TYPE="Debug" NO_GEANT4=""
-  - BUILD_TYPE="Release" NO_GEANT4=""
-  - BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE" 
+  - CC="gcc-4.8" CXX="g++-4.8" BUILD_TYPE="Debug" NO_GEANT4=""
+  - CC="gcc-4.8" CXX="g++-4.8" BUILD_TYPE="Release" NO_GEANT4=""
+  - CC="gcc-4.8" CXX="g++-4.8" BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE" 
+  - CC="gcc-5" CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4=""
 
 language: cpp
 sudo: false
@@ -19,6 +20,7 @@ addons:
     - cmake-data
     - python-numpy
     - g++-4.8
+    - g++-5
 
 cache:
   directories:
@@ -27,7 +29,7 @@ cache:
 before_install:
   - CC="gcc-4.8"
   - CXX="g++-4.8"
-  - LOCAL=$HOME/local
+  - LOCAL=$HOME/local/${CC}
   - PATH=$LOCAL/bin:$PATH
 
 install:
@@ -63,7 +65,23 @@ install:
       make -j3 &&
       make install > /dev/null
     ); fi
+  - |
+    if  [ "x$NO_GEANT4" == "x" ]
+    then (
+      mkdir $HOME/geant4_data
+      cd  $HOME/geant4_data
+      wget http://geant4.cern.ch/support/source/G4PhotonEvaporation.3.1.tar.gz
+      tar zxf G4PhotonEvaporation.3.1.tar.gz
+      export G4LEVELGAMMADATA=`pwd`/PhotonEvaporation3.1
+      wget http://geant4.cern.ch/support/source/G4SAIDDATA.1.1.tar.gz
+      tar zxf G4SAIDDATA.1.1.tar.gz
+      export G4SAIDXSDATA=`pwd`/G4SAIDDATA1.1
 
+      wget http://geant4.cern.ch/support/source/G4NEUTRONXS.1.4.tar.gz
+      tar zxf G4NEUTRONXS.1.4.tar.gz
+      export G4NEUTRONXSDATA=`pwd`/G4NEUTRONXS1.4
+    ); fi
+      
 before_script:
   - swig -version
   - cmake -version
