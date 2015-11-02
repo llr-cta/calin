@@ -52,6 +52,8 @@ before_install:
 # Download and unpack Geant4 data files if necessary
 install:
   - echo $LOCAL
+  - ls -l $HOME
+  - ls -l $HOME/local
   - ls -l $LOCAL
   - ls -l $LOCAL/bin
   - |
