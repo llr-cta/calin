@@ -4,6 +4,8 @@ set(CALIN_TARGET_LIBRARY calin_simulation)
 set(CALIN_SOURCES atmosphere.cpp)
 
 if(${GEANT4_FOUND})
+	message(STATUS "GEANT4_INCLUDE_DIR: " ${GEANT4_INCLUDE_DIR}) 
+	message(STATUS "GEANT4_LIBRARY_DIR: " ${GEANT4_LIBRARY_DIR}) 
 	include_directories(${GEANT4_INCLUDE_DIR})
 	link_directories(${GEANT4_LIBRARY_DIR}) 
 	set(CALIN_SOURCES ${CALIN_SOURCES} tracker.cpp
