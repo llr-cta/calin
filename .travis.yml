@@ -51,11 +51,15 @@ before_install:
 # Build SWIG-3, protobuf-3 and Geant4-10 if not available in the cache
 # Download and unpack Geant4 data files if necessary
 install:
-  - echo $LOCAL
-  - ls -l $HOME
-  - ls -l $HOME/local
-  - ls -l $LOCAL
-  - ls -l $LOCAL/bin
+  - |
+    echo $HOME
+    if [ -d $HOME]; then ls -l $HOME ; fi
+    echo $HOME/local
+    if [ -d $HOME/local ]; then ls -l $HOME/local ; fi
+    echo $LOCAL
+    if [ -d $LOCAL ]; then ls -l $LOCAL ; fi
+    echo $LOCAL/bin
+    if [ -d $LOCAL/bin ]; then ls -l $LOCAL/bin ; fi
   - |
     if [ ! -f $LOCAL/bin/swig ];
     then (
