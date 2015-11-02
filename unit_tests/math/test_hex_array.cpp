@@ -154,6 +154,15 @@ TEST(TestHexArray, XYToHexID_ComparisonWithVVVCode) {
     }
 }
 
+TEST(TestHexArray, SomeClusterElements) {
+  EXPECT_EQ(cluster_hexid_to_member_hexid(0,1),
+            std::vector<unsigned>({0,1,2,3,4,5,6}));
+  EXPECT_EQ(cluster_hexid_to_member_hexid(1,1),
+            std::vector<unsigned>({20,38,39,21,8,7,19}));
+  EXPECT_EQ(cluster_hexid_to_member_hexid(2,1),
+            std::vector<unsigned>({23,22,42,43,24,10,9}));
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
