@@ -8,9 +8,10 @@ env:
   - BUILD_CC="gcc-5" BUILD_CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4=""
   - BUILD_CC="gcc-5" BUILD_CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE"
 
-language: cpp
-
 sudo: false
+
+language: cpp
+compiler: gcc
 
 addons:
   apt:
@@ -107,4 +108,3 @@ script:
     make -j3 &&
     make install &&
     make test
-  - ./unit_tests/simulation/test_geant4
