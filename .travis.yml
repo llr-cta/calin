@@ -1,3 +1,8 @@
+env:
+  - BUILD_TYPE="Debug" NO_GEANT4=""
+  - BUILD_TYPE="Release" NO_GEANT4=""
+  - BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4" 
+
 language: cpp
 sudo: false
 
@@ -47,7 +52,7 @@ install:
       make install
     ); fi
   - |
-    if [ ! -f $LOCAL/bin/geant4.sh ];
+    if [ "x$NO_GEANT4" == "x" -a ! -f $LOCAL/bin/geant4.sh ];
     then (
       wget http://geant4.cern.ch/support/source/geant4.10.01.p02.tar.gz &&
       tar zxf geant4.10.01.p02.tar.gz &&
@@ -67,7 +72,7 @@ before_script:
 script:
   - mkdir mybuild-travis
   - cd mybuild-travis
-  - cmake -DCMAKE_PREFIX_PATH=$LOCAL -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=build ..
+  - cmake -DCMAKE_PREFIX_PATH=$LOCAL -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=$BUILD_TYPE $NO_GEANT4 -DCMAKE_INSTALL_PREFIX=build ..
   - make -j3
   - make install
   - make test
