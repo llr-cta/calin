@@ -1,7 +1,7 @@
 env:
   - BUILD_TYPE="Debug" NO_GEANT4=""
   - BUILD_TYPE="Release" NO_GEANT4=""
-  - BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4" 
+  - BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE" 
 
 language: cpp
 sudo: false
