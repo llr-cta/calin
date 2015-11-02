@@ -1,3 +1,6 @@
+# Build script for Travis CI container-based architecture
+# Stephen Fegan - 2015-11-01
+
 env:
   - BUILD_CC="gcc-4.8" BUILD_CXX="g++-4.8" BUILD_TYPE="Debug" NO_GEANT4=""
   - BUILD_CC="gcc-4.8" BUILD_CXX="g++-4.8" BUILD_TYPE="Release" NO_GEANT4=""
@@ -6,6 +9,7 @@ env:
   - BUILD_CC="gcc-5" BUILD_CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE"
 
 language: cpp
+
 sudo: false
 
 addons:
@@ -33,6 +37,8 @@ before_install:
   - LOCAL=$HOME/local/${CC}
   - PATH=$LOCAL/bin:$PATH
 
+# Build SWIG-3, protobuf-3 and Geant4-10 if not available in the cache
+# Download and unpack Geant4 data files if necessary
 install:
   - |
     if [ ! -f $LOCAL/bin/swig ];
@@ -68,20 +74,26 @@ install:
     ); fi
   - |
     if  [ "x$NO_GEANT4" == "x" ]
-    then (
-      mkdir $HOME/geant4_data
-      cd  $HOME/geant4_data
-      wget http://geant4.cern.ch/support/source/G4PhotonEvaporation.3.1.tar.gz
-      tar zxf G4PhotonEvaporation.3.1.tar.gz
-      export G4LEVELGAMMADATA=`pwd`/PhotonEvaporation3.1
-      wget http://geant4.cern.ch/support/source/G4SAIDDATA.1.1.tar.gz
-      tar zxf G4SAIDDATA.1.1.tar.gz
-      export G4SAIDXSDATA=`pwd`/G4SAIDDATA1.1
-      wget http://geant4.cern.ch/support/source/G4NEUTRONXS.1.4.tar.gz
-      tar zxf G4NEUTRONXS.1.4.tar.gz
-      export G4NEUTRONXSDATA=`pwd`/G4NEUTRONXS1.4
-    ); fi
-      
+    then 
+      GEANT4_DATA=$HOME/geant4_data
+      (
+        mkdir $GEANT4_DATA
+        cd  $GEANT4_DATA
+        wget http://geant4.cern.ch/support/source/G4EMLOW.6.41.tar.gz
+        tar zxf G4EMLOW.6.41.tar.gz
+        wget http://geant4.cern.ch/support/source/G4PhotonEvaporation.3.1.tar.gz
+        tar zxf G4PhotonEvaporation.3.1.tar.gz
+        wget http://geant4.cern.ch/support/source/G4SAIDDATA.1.1.tar.gz
+        tar zxf G4SAIDDATA.1.1.tar.gz
+        wget http://geant4.cern.ch/support/source/G4NEUTRONXS.1.4.tar.gz
+        tar zxf G4NEUTRONXS.1.4.tar.gz
+      )
+      export G4LEDATA=$GEANT4_DATA/G4EMLOW6.41
+      export G4LEVELGAMMADATA=$GEANT4_DATA/PhotonEvaporation3.1
+      export G4SAIDXSDATA=$GEANT4_DATA/G4SAIDDATA1.1
+      export G4NEUTRONXSDATA=$GEANT4_DATA/G4NEUTRONXS1.4
+    fi
+    
 before_script:
   - swig -version
   - cmake -version
