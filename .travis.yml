@@ -17,15 +17,16 @@ matrix:
     - compiler: gcc
       env: BUILD_CC=gcc-5 BUILD_CXX=g++-5 BUILD_TYPE=Release NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
     - compiler: clang
-      env: BUILD_TYPE=Debug NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
+      env: BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 BUILD_TYPE=Debug NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
     - compiler: clang
-      env: BUILD_TYPE=Release NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
-    
+      env: BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 BUILD_TYPE=Release NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
+
 addons:
   apt:
     sources:
     - george-edison55-precise-backports
     - ubuntu-toolchain-r-test
+    - llvm-toolchain-precise-3.7
     packages:
     - gsl-bin
     - libgsl0-dev
@@ -35,6 +36,7 @@ addons:
     - python-numpy
     - g++-4.8
     - g++-5
+    - clang-3.7
 
 cache:
   directories:
