@@ -53,7 +53,7 @@ before_install:
 install:
   - |
     echo $HOME
-    if [ -d $HOME]; then ls -l $HOME ; fi
+    if [ -d $HOME ]; then ls -l $HOME ; fi
     echo $HOME/local
     if [ -d $HOME/local ]; then ls -l $HOME/local ; fi
     echo $LOCAL
