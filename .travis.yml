@@ -39,7 +39,7 @@ install:
       cd swig-3.0.7 &&
       ./configure --prefix=$LOCAL --without-alllang --with-python &&
       make -j3 &&
-      make install
+      make install > /dev/null
     ); fi 
   - |
     if [ ! -f $LOCAL/bin/protoc ];
@@ -49,7 +49,7 @@ install:
       cd protobuf-3.0.0-beta-1 &&
       ./configure --prefix=$LOCAL &&
       make -j3 &&
-      make install
+      make install > /dev/null
     ); fi
   - |
     if [ "x$NO_GEANT4" == "x" -a ! -f $LOCAL/bin/geant4.sh ];
@@ -61,7 +61,7 @@ install:
       cd mybuild &&
       cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$LOCAL .. &&
       make -j3 &&
-      make install
+      make install > /dev/null
     ); fi
 
 before_script:
