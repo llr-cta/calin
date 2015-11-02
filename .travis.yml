@@ -1,18 +1,26 @@
 # Build script for Travis CI container-based architecture
 # Stephen Fegan - 2015-11-01
 
-env:
-  - BUILD_CC="gcc-4.8" BUILD_CXX="g++-4.8" BUILD_TYPE="Debug" NO_GEANT4=""
-  - BUILD_CC="gcc-4.8" BUILD_CXX="g++-4.8" BUILD_TYPE="Release" NO_GEANT4=""
-  - BUILD_CC="gcc-4.8" BUILD_CXX="g++-4.8" BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE" 
-  - BUILD_CC="gcc-5" BUILD_CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4=""
-  - BUILD_CC="gcc-5" BUILD_CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE"
-
 sudo: false
-
 language: cpp
-compiler: gcc
 
+matrix:
+  include:
+    - compiler: gcc
+      env: BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 BUILD_TYPE=Debug NO_GEANT4=""
+    - compiler: gcc
+      env: BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 BUILD_TYPE=Release NO_GEANT4=""
+    - compiler: gcc
+      env: BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 BUILD_TYPE=Release NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
+    - compiler: gcc
+      env: BUILD_CC=gcc-5 BUILD_CXX=g++-5 BUILD_TYPE=Release NO_GEANT4=""
+    - compiler: gcc
+      env: BUILD_CC=gcc-5 BUILD_CXX=g++-5 BUILD_TYPE=Release NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
+    - compiler: clang
+      env: BUILD_TYPE=Debug NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
+    - compiler: clang
+      env: BUILD_TYPE=Release NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
+    
 addons:
   apt:
     sources:
@@ -33,8 +41,8 @@ cache:
   - $HOME/local
 
 before_install:
-  - CC=$BUILD_CC
-  - CXX=$BUILD_CXX
+  - if test -n "$BUILD_CC"; then export CC="$BUILD_CC"; fi
+  - if test -n "$BUILD_CXX"; then export CXX="$BUILD_CXX"; fi
   - LOCAL=$HOME/local/${CC}
   - PATH=$LOCAL/bin:$PATH
 
@@ -104,7 +112,11 @@ script:
   - |
     mkdir mybuild-travis &&
     cd mybuild-travis &&
-    cmake -DCMAKE_PREFIX_PATH=$LOCAL -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=$BUILD_TYPE $NO_GEANT4 -DCMAKE_INSTALL_PREFIX=build .. &&
+    cmake -DCMAKE_PREFIX_PATH=$LOCAL \
+          -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX \
+	  -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+	  $NO_GEANT4 \
+	  -DCMAKE_INSTALL_PREFIX=build .. &&
     make -j3 &&
     make install &&
     make test
