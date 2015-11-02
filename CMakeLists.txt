@@ -39,6 +39,15 @@ set(EXTRA_LIBS ${EXTRA_LIBS} ${SQLITE3_LIBRARY} )
 find_package(PythonInterp) 
 find_package(PythonLibs) 
 
+## Find Geant4
+find_package(Geant4)
+if(${GEANT4_FOUND})
+	message(STATUS "GEANT4_INCLUDE_DIR: " ${GEANT4_INCLUDE_DIR}) 
+	message(STATUS "GEANT4_LIBRARY_DIR: " ${GEANT4_LIBRARY_DIR}) 
+	include_directories(${GEANT4_INCLUDE_DIR})
+	link_directories(${GEANT4_LIBRARY_DIR}) 
+endif()
+
 add_subdirectory(proto)
 add_subdirectory(src)  
 add_subdirectory(swig)  
