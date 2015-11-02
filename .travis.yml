@@ -40,12 +40,12 @@ addons:
 
 cache:
   directories:
-  - $HOME/local
+  - $HOME/local/$BUILD_CC
 
 before_install:
   - if test -n "$BUILD_CC"; then export CC="$BUILD_CC"; fi
   - if test -n "$BUILD_CXX"; then export CXX="$BUILD_CXX"; fi
-  - LOCAL=$HOME/local/${CC}
+  - LOCAL=$HOME/local/$CC
   - PATH=$LOCAL/bin:$PATH
 
 # Build SWIG-3, protobuf-3 and Geant4-10 if not available in the cache
