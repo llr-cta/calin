@@ -1,9 +1,9 @@
 env:
-  - CC="gcc-4.8" CXX="g++-4.8" BUILD_TYPE="Debug" NO_GEANT4=""
-  - CC="gcc-4.8" CXX="g++-4.8" BUILD_TYPE="Release" NO_GEANT4=""
-  - CC="gcc-4.8" CXX="g++-4.8" BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE" 
-  - CC="gcc-5" CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4=""
-  - CC="gcc-5" CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE"
+  - BUILD_CC="gcc-4.8" BUILD_CXX="g++-4.8" BUILD_TYPE="Debug" NO_GEANT4=""
+  - BUILD_CC="gcc-4.8" BUILD_CXX="g++-4.8" BUILD_TYPE="Release" NO_GEANT4=""
+  - BUILD_CC="gcc-4.8" BUILD_CXX="g++-4.8" BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE" 
+  - BUILD_CC="gcc-5" BUILD_CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4=""
+  - BUILD_CC="gcc-5" BUILD_CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE"
 
 language: cpp
 sudo: false
@@ -28,6 +28,8 @@ cache:
   - $HOME/local
 
 before_install:
+  - CC=$BUILD_CC
+  - CXX=$BUILD_CXX
   - LOCAL=$HOME/local/${CC}
   - PATH=$LOCAL/bin:$PATH
 
