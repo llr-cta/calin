@@ -3,6 +3,7 @@ env:
   - CC="gcc-4.8" CXX="g++-4.8" BUILD_TYPE="Release" NO_GEANT4=""
   - CC="gcc-4.8" CXX="g++-4.8" BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE" 
   - CC="gcc-5" CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4=""
+  - CC="gcc-5" CXX="g++-5" BUILD_TYPE="Release" NO_GEANT4="-DNO_GEANT4:BOOLEAN=TRUE"
 
 language: cpp
 sudo: false
@@ -27,8 +28,6 @@ cache:
   - $HOME/local
 
 before_install:
-  - CC="gcc-4.8"
-  - CXX="g++-4.8"
   - LOCAL=$HOME/local/${CC}
   - PATH=$LOCAL/bin:$PATH
 
@@ -76,7 +75,6 @@ install:
       wget http://geant4.cern.ch/support/source/G4SAIDDATA.1.1.tar.gz
       tar zxf G4SAIDDATA.1.1.tar.gz
       export G4SAIDXSDATA=`pwd`/G4SAIDDATA1.1
-
       wget http://geant4.cern.ch/support/source/G4NEUTRONXS.1.4.tar.gz
       tar zxf G4NEUTRONXS.1.4.tar.gz
       export G4NEUTRONXSDATA=`pwd`/G4NEUTRONXS1.4
@@ -88,9 +86,11 @@ before_script:
   - $CC -v
 
 script:
-  - mkdir mybuild-travis
-  - cd mybuild-travis
-  - cmake -DCMAKE_PREFIX_PATH=$LOCAL -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=$BUILD_TYPE $NO_GEANT4 -DCMAKE_INSTALL_PREFIX=build ..
-  - make -j3
-  - make install
-  - make test
+  - |
+    mkdir mybuild-travis &&
+    cd mybuild-travis &&
+    cmake -DCMAKE_PREFIX_PATH=$LOCAL -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=$BUILD_TYPE $NO_GEANT4 -DCMAKE_INSTALL_PREFIX=build .. &&
+    make -j3 &&
+    make install &&
+    make test
+  - ./unit_tests/simulation/test_geant4
