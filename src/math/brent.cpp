@@ -7,6 +7,25 @@
 
    http://people.sc.fsu.edu/~jburkardt/cpp_src/brent/brent.html
 
+   The majority of this code is Copyright 2011, John Burkardt,
+   released under terms of the LGPL (unspecified version) based on the
+   original FORTRAN77 version by Richard Brent.
+
+   The remaining portions are:
+
+   Copyright 2015, Stephen Fegan <sfegan@gmail.com>
+
+   This file is part of "calin"
+   
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+    
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
 */
 
 #include <cstdlib>

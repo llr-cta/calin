@@ -1,3 +1,24 @@
+/*
+
+   calin/bin/do_spe_fit.cpp -- Stephen Fegan -- 2015-03-15
+
+   OBSOLETE driver program to do SPE gaussian fits - use Python now
+
+   Copyright 2015, Stephen Fegan <sfegan@gmail.com>
+
+   This file is part of "calin"
+   
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+    
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
 #include <string>
 #include <iostream>
 #include <iomanip>

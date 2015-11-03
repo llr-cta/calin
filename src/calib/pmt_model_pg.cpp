@@ -1,3 +1,23 @@
+// PRE-CALIN LEGACY CODE THAT DOES NOT CONFORM TO CONDING STANDARDS
+
+// PMTModelPG.cpp - Stephen Fegan - sfegan@llr.in2p3.fr - December 2013
+
+/*
+
+   Copyright 2015, Stephen Fegan <sfegan@gmail.com>
+   This file is part of "calin"
+   
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+    
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
 #include <iostream>
 #include <cmath>
 #include <algorithm>
