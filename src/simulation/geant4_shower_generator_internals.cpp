@@ -63,6 +63,7 @@ calin::simulation::shower_generator::pdg_to_track_type(G4int pdg_type)
     default:    return ParticleType::OTHER;
   };
   assert(0);
+  return ParticleType::OTHER;
 }
 
 G4int calin::simulation::shower_generator::
