@@ -292,7 +292,7 @@ TEST(TestTwoComponentPDF_ExpGauss, SetAndRecallParameters) {
   pdf_1d::LimitedGaussianPDF gauss_pdf(1.0, 9.0);
   pdf_1d::TwoComponentPDF pdf(&exp_pdf, "exp", &gauss_pdf, "gauss");
 
-  EXPECT_EQ(pdf.num_parameters(), 4);
+  EXPECT_EQ(pdf.num_parameters(), 4U);
   auto pvec = pdf.parameters();
   EXPECT_EQ(pvec[0].name, "exp_probability");
   EXPECT_EQ(pvec[1].name, "exp.scale");
@@ -406,14 +406,14 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   pdf_1d::TwoComponentPDF pdf_x(&exp_pdf, "exp", &gauss_pdf, "gauss");
   function::PMAFReverser pdf(&pdf_x);
   function::FreezeThawFunction freezer(&pdf);
-  EXPECT_EQ(freezer.num_domain_axes(), 4);
-  EXPECT_EQ(freezer.num_parameters(), 0);
+  EXPECT_EQ(freezer.num_domain_axes(), 4U);
+  EXPECT_EQ(freezer.num_parameters(), 0U);
   EXPECT_EQ(freezer.num_domain_axes(), freezer.domain_axes().size());
   EXPECT_EQ(freezer.num_parameters(), freezer.parameters().size());
   
   EXPECT_TRUE(freezer.freeze(1,50.0));
-  EXPECT_EQ(freezer.num_domain_axes(), 3);
-  EXPECT_EQ(freezer.num_parameters(), 1);
+  EXPECT_EQ(freezer.num_domain_axes(), 3U);
+  EXPECT_EQ(freezer.num_parameters(), 1U);
   EXPECT_EQ(freezer.num_domain_axes(), freezer.domain_axes().size());
   EXPECT_EQ(freezer.num_parameters(), freezer.parameters().size());
   EXPECT_EQ(freezer.free_axes(), std::vector<unsigned>({0,2,3}));
@@ -423,8 +423,8 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   EXPECT_EQ(freezer.parameter_values(), p1);
 
   EXPECT_TRUE(freezer.freeze(0,0.2));
-  EXPECT_EQ(freezer.num_domain_axes(), 2);
-  EXPECT_EQ(freezer.num_parameters(), 2);
+  EXPECT_EQ(freezer.num_domain_axes(), 2U);
+  EXPECT_EQ(freezer.num_parameters(), 2U);
   EXPECT_EQ(freezer.num_domain_axes(), freezer.domain_axes().size());
   EXPECT_EQ(freezer.num_parameters(), freezer.parameters().size());
   EXPECT_EQ(freezer.free_axes(), std::vector<unsigned>({2,3}));
@@ -434,8 +434,8 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   EXPECT_EQ(freezer.parameter_values(), p01);
 
   EXPECT_TRUE(freezer.freeze(3,35.0));
-  EXPECT_EQ(freezer.num_domain_axes(), 1);
-  EXPECT_EQ(freezer.num_parameters(), 3);
+  EXPECT_EQ(freezer.num_domain_axes(), 1U);
+  EXPECT_EQ(freezer.num_parameters(), 3U);
   EXPECT_EQ(freezer.num_domain_axes(), freezer.domain_axes().size());
   EXPECT_EQ(freezer.num_parameters(), freezer.parameters().size());
   EXPECT_EQ(freezer.free_axes(), std::vector<unsigned>({2}));
@@ -445,8 +445,8 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   EXPECT_EQ(freezer.parameter_values(), p013);
   
   EXPECT_FALSE(freezer.freeze(3,35.0));
-  EXPECT_EQ(freezer.num_domain_axes(), 1);
-  EXPECT_EQ(freezer.num_parameters(), 3);
+  EXPECT_EQ(freezer.num_domain_axes(), 1U);
+  EXPECT_EQ(freezer.num_parameters(), 3U);
   EXPECT_EQ(freezer.num_domain_axes(), freezer.domain_axes().size());
   EXPECT_EQ(freezer.num_parameters(), freezer.parameters().size());
   EXPECT_EQ(freezer.free_axes(), std::vector<unsigned>({2}));
@@ -454,8 +454,8 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   EXPECT_EQ(freezer.parameter_values(), p013);
 
   EXPECT_TRUE(freezer.freeze(2,100.0));
-  EXPECT_EQ(freezer.num_domain_axes(), 0);
-  EXPECT_EQ(freezer.num_parameters(), 4);
+  EXPECT_EQ(freezer.num_domain_axes(), 0U);
+  EXPECT_EQ(freezer.num_parameters(), 4U);
   EXPECT_EQ(freezer.num_domain_axes(), freezer.domain_axes().size());
   EXPECT_EQ(freezer.num_parameters(), freezer.parameters().size());
   EXPECT_EQ(freezer.free_axes(), std::vector<unsigned>({}));
@@ -465,8 +465,8 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   EXPECT_EQ(freezer.parameter_values(), p0123);
 
   EXPECT_TRUE(freezer.thaw(1));
-  EXPECT_EQ(freezer.num_domain_axes(), 1);
-  EXPECT_EQ(freezer.num_parameters(), 3);
+  EXPECT_EQ(freezer.num_domain_axes(), 1U);
+  EXPECT_EQ(freezer.num_parameters(), 3U);
   EXPECT_EQ(freezer.num_domain_axes(), freezer.domain_axes().size());
   EXPECT_EQ(freezer.num_parameters(), freezer.parameters().size());
   EXPECT_EQ(freezer.free_axes(), std::vector<unsigned>({1}));
@@ -476,8 +476,8 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   EXPECT_EQ(freezer.parameter_values(), p023);
 
   EXPECT_FALSE(freezer.thaw(1));
-  EXPECT_EQ(freezer.num_domain_axes(), 1);
-  EXPECT_EQ(freezer.num_parameters(), 3);
+  EXPECT_EQ(freezer.num_domain_axes(), 1U);
+  EXPECT_EQ(freezer.num_parameters(), 3U);
   EXPECT_EQ(freezer.num_domain_axes(), freezer.domain_axes().size());
   EXPECT_EQ(freezer.num_parameters(), freezer.parameters().size());
   EXPECT_EQ(freezer.free_axes(), std::vector<unsigned>({1}));
@@ -485,8 +485,8 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   EXPECT_EQ(freezer.parameter_values(), p023);
   
   EXPECT_TRUE(freezer.thaw(2));
-  EXPECT_EQ(freezer.num_domain_axes(), 2);
-  EXPECT_EQ(freezer.num_parameters(), 2);
+  EXPECT_EQ(freezer.num_domain_axes(), 2U);
+  EXPECT_EQ(freezer.num_parameters(), 2U);
   EXPECT_EQ(freezer.num_domain_axes(), freezer.domain_axes().size());
   EXPECT_EQ(freezer.num_parameters(), freezer.parameters().size());
   EXPECT_EQ(freezer.free_axes(), std::vector<unsigned>({1,2}));
@@ -496,8 +496,8 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   EXPECT_EQ(freezer.parameter_values(), p03);
 
   EXPECT_TRUE(freezer.thaw(0));
-  EXPECT_EQ(freezer.num_domain_axes(), 3);
-  EXPECT_EQ(freezer.num_parameters(), 1);
+  EXPECT_EQ(freezer.num_domain_axes(), 3U);
+  EXPECT_EQ(freezer.num_parameters(), 1U);
   EXPECT_EQ(freezer.num_domain_axes(), freezer.domain_axes().size());
   EXPECT_EQ(freezer.num_parameters(), freezer.parameters().size());
   EXPECT_EQ(freezer.free_axes(), std::vector<unsigned>({0,1,2}));

@@ -98,11 +98,12 @@ template<typename T, typename Container = std::vector<T>> class BinnedData1D
   double xval_center(int ibin) const { return (ibin+0.5)*dxval_+xval0_; }
   int ibin(double x) const { return std::floor((x-xval0_)/dxval_); }
   int ibin_and_rem(double x, double& dx) const { int ix = std::floor((x-xval0_)/dxval_); dx = x-xval_left(ix); return ix; }
-  bool has_ibin(int ibin) const { return ibin>=0 and ibin<bins_.size(); }
+  bool has_ibin(int ibin) const {
+    return ibin>=0 and (unsigned)ibin<bins_.size(); }
   bool has_xval(double x) const
   {
     if (x<xval0_)return false;
-    return ibin(x) < bins_.size();
+    return (unsigned)ibin(x) < bins_.size();
   }
   static double xalign_to_center_value(double xval, double dx)
   {

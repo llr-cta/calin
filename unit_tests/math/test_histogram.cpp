@@ -47,7 +47,7 @@ TEST(TestSimpleHist, InsertIntegersFromNTo0) {
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
       myhist.insert(N-(j+1));
-  ASSERT_EQ(myhist.size(), N);
+  ASSERT_EQ((unsigned)myhist.size(), N);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(myhist.xval_center(i), i);  
   for(unsigned i=0;i<N;++i)
@@ -60,7 +60,7 @@ TEST(TestSimpleHist, InsertIntegersFrom0ToNWithNegativeDX) {
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
       myhist.insert(j);  
-  ASSERT_EQ(myhist.size(), N);
+  ASSERT_EQ((unsigned)myhist.size(), N);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(myhist.xval_center(i), N-i-1);  
   for(unsigned i=0;i<N;++i)
@@ -73,7 +73,7 @@ TEST(TestSimpleHist, LimitedInsertIntegersFrom0ToN) {
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
       myhist.insert(j);  
-  ASSERT_EQ(myhist.size(), N-200);
+  ASSERT_EQ((unsigned)myhist.size(), N-200);
   for(unsigned i=0;i<N-200;++i)
     EXPECT_EQ(myhist.xval_center(i), i+100);  
   for(unsigned i=0;i<N-200;++i)
@@ -291,7 +291,7 @@ TEST(TestBinnedCDF, CreateFromHistogram) {
   for(unsigned i=0;i<N;++i)
     myhist.insert(i,i);
   BinnedCDF mycdf(myhist);
-  ASSERT_EQ(mycdf.size(), N);
+  ASSERT_EQ((unsigned)mycdf.size(), N);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(mycdf.xval_center(i), i);  
   for(unsigned i=0;i<N;++i)
