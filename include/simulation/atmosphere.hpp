@@ -145,7 +145,9 @@ class IsothermalAtmosphere: public Atmosphere
   double m_zs;
   double m_zmax;
   double m_nmo0;
+#if 0
   double temperature_;
+#endif
 };  
 
 struct LayeredAtmosphereLevel

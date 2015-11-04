@@ -31,12 +31,14 @@
 
 using namespace calin::math::function;
 
+#if 0
 namespace {
 
 inline static double SQR(double x) { return x*x; }
 constexpr double c_gauss_norm = 0.5*M_2_SQRTPI*M_SQRT1_2;
 
 } // anonymous namespace
+#endif
 
 Parameterizable::~Parameterizable()
 {
