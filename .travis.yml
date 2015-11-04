@@ -13,6 +13,8 @@ matrix:
     - compiler: gcc-4.8
       env: BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 BUILD_TYPE=Release NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
     - compiler: gcc-5
+      env: BUILD_CC=gcc-5 BUILD_CXX=g++-5 BUILD_TYPE=Debug NO_GEANT4=""
+    - compiler: gcc-5
       env: BUILD_CC=gcc-5 BUILD_CXX=g++-5 BUILD_TYPE=Release NO_GEANT4=""
     - compiler: gcc-5
       env: BUILD_CC=gcc-5 BUILD_CXX=g++-5 BUILD_TYPE=Release NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
@@ -20,7 +22,8 @@ matrix:
       env: BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 BUILD_TYPE=Debug NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
     - compiler: clang-3.7
       env: BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 BUILD_TYPE=Release NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
-
+    - compiler: clang-3.7
+      env: BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 BUILD_TYPE=Release NO_GEANT4=""
 addons:
   apt:
     sources:
