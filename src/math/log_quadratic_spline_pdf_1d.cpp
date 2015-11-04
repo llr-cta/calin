@@ -4,7 +4,8 @@
 
    PDF based on quadratic spline in log space.
 
-   Copyright 2015, Stephen Fegan <sfegan@gmail.com>
+   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
    

@@ -1,4 +1,28 @@
-/* -*- C -*-  (not really, but good for syntax highlighting) */
+//-*-mode:swig;-*-
+
+/* 
+
+   calin/numpy.i
+
+   SWIG interface file for NumPy
+
+   This file is copied from the NumPy distribution (tools/swig) and is
+   presumably Copyright, the NumPy Developers. The original is
+   licensed uder the 3-clause BSD license.
+
+   This file is part of "calin"
+   
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+    
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
 #ifdef SWIGPYTHON
 
 %{

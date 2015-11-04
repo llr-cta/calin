@@ -5,7 +5,8 @@
    Object oriented interface to the 1975 FORTRAN version of MINUIT
    from CERN. See http://www.adsabs.harvard.edu/abs/1975CoPhC..10..343J
 
-   Copyright 2015, Stephen Fegan <sfegan@gmail.com>
+   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
    

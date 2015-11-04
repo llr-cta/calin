@@ -9,7 +9,8 @@
    THIS FILE SHOULD NOT BE INCLUDED BY ANY CALIN HPP OR CPP FILE - IT
    IS ONLY FOR USE BY END USER CODE.
 
-   Copyright 2015, Stephen Fegan <sfegan@gmail.com>
+   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
    

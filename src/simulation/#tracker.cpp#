@@ -1,13 +1,11 @@
-//-*-mode:swig;-*-
-
 /* 
 
-   calin/math/special.i -- Stephen Fegan -- 2015-08-06
+   calin/simulation/tracker.cpp -- Stephen Fegan -- 2015-07-17
 
-   SWIG interface file for calin.math.special
+   Base class for all air shower track visitors
 
-   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   Copyright 2015, Stephen Fegan <sfegan@llr>
+   lle
 
    This file is part of "calin"
    
@@ -22,17 +20,16 @@
 
 */
 
-%module (package="calin.math") special
+#include "simulation/tracker.hpp"
 
-%{
-#include "math/special.hpp"
-#define SWIG_FILE_WITH_INIT
-  %}
+using namespace calin::simulation::tracker;
 
-%init %{
-  import_array();
-%}
+TrackVisitor::~TrackVisitor()
+{
+  // nothing to see here
+}
 
-%include "package_wide_definitions.i"
-
-%include "math/special.hpp"
+void TrackVisitor::visitTrack(const Track& track, bool& kill_track)
+{
+  // default is to do nothing
+}
