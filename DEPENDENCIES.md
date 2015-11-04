@@ -8,6 +8,8 @@ Other dependencies are shipped with the __calin__ distribution in order to make 
 
 ### Google protobuf library ###
 
+**Version:** 3.0.0-beta1
+
 ### Python and Numpy ###
 
 ### GNU scientific library (GSL) ###
@@ -22,7 +24,9 @@ Other dependencies are shipped with the __calin__ distribution in order to make 
 
 **Version:** 3.2.6
 
-**License:** MPL2 -  compatible with 
+**License:** MPL2 -  compatible with GPLv2
+
+**URL:** http://eigen.tuxfamily.org/
 
     $ bzcat eigen-3.2.6.tar.bz2 | tar xf -
     $ cd eigen-3.2.6

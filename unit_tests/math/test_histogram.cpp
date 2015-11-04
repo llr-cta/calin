@@ -34,7 +34,7 @@ TEST(TestSimpleHist, InsertIntegersFrom0ToN) {
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
       myhist.insert(j);  
-  ASSERT_EQ(myhist.size(), N);
+  ASSERT_EQ((unsigned)myhist.size(), N);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(myhist.xval_center(i), i);  
   for(unsigned i=0;i<N;++i)

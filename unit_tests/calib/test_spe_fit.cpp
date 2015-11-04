@@ -662,7 +662,7 @@ TEST(TestGeneralPoissonMES_Gauss, SetAndRecallParameters) {
   pdf_1d::GaussianPDF ped;
   pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
   GeneralPoissonMES mes(0, 1, 1025, &ses, &ped);
-  EXPECT_EQ(mes.num_parameters(), 5);
+  EXPECT_EQ(mes.num_parameters(), 5U);
   Eigen::VectorXd p(5);
   p << 1.0, 100.0, 20.0, 100.0, 35.0;
   mes.set_parameter_values(p);
@@ -780,10 +780,10 @@ TEST(TestGeneralPoissonMES_ExpGauss, Repeatability)
   }
 
   EXPECT_EQ(std::count(all_val.begin(), all_val.end(), all_val.front()),
-            all_val.size());
+            (int)all_val.size());
 
   EXPECT_EQ(std::count(all_grad.begin(), all_grad.end(), all_grad.front()),
-            all_grad.size());
+            (int)all_grad.size());
 }
   
 TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
