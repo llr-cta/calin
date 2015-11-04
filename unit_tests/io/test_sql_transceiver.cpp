@@ -56,7 +56,7 @@ TEST(TestSQLTransceiver, PruneEmptyTables_NoEmptyTables) {
       xvr.make_sqltable_tree("mytable", UnitTestMessage::descriptor());
   xvr.prune_empty_tables(t);
   xvr.iterate_over_tables(t, [](const SQLTransceiver::SQLTable* t) {
-      EXPECT_GT(t->fields.size(), 0); } );
+      EXPECT_GT(t->fields.size(), 0U); } );
 }
 
 TEST(TestSQLTransceiver, PruneEmptyTables_ParentChildPointers) {

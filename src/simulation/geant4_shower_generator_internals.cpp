@@ -97,6 +97,7 @@ track_to_pdg_type(calin::simulation::tracker::ParticleType track_type)
       throw(std::runtime_error("ParticleType::OTHER has no PDG type code"));
   };
   assert(0);
+  return 0;
 }
 
 // ============================================================================

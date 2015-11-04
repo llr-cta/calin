@@ -170,11 +170,11 @@ template<typename T, typename Container = std::vector<T>> class BinnedData1D
       }while(thebin<0);
       xval0_ = std::floor((x+xval_align_)/dxval_)*dxval_ - xval_align_;
     }
-    else if(thebin >= bins_.size())
+    else if(static_cast<unsigned>(thebin) >= bins_.size())
     {
       do {
         bins_.push_back({});
-      }while(thebin >= bins_.size());
+      }while(static_cast<unsigned>(thebin) >= bins_.size());
     }
     return bins_[thebin];
   }
