@@ -38,7 +38,7 @@
 
 #include <cmath>
 
-#include <math/vs_vec3D.hpp>
+#include <math/vs_vec3d.hpp>
 
 namespace calin { namespace math { namespace vs_physics {
 
