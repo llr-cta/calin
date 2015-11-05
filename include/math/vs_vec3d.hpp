@@ -1,8 +1,8 @@
 /* 
 
-   calin/math/vec3d.hpp -- Stephen Fegan -- 2015-11-05
+   calin/math/vs_vec3d.hpp -- Stephen Fegan -- 2015-11-05
 
-   Class for 3D vector operations. This code is derived from
+   Class for 3-vector operations. This code is derived from
    simulation code largely implemented by the author at UCLA in
    2004. It is not complient with the calin coding style.
 

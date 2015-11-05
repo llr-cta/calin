@@ -1,6 +1,6 @@
 /* 
 
-   calin/math/vs_particle.cpp -- Stephen Fegan -- 2015-11-05
+   calin/math/vs_vec3d.cpp -- Stephen Fegan -- 2015-11-05
 
    Class for 3D vector operations. This code is derived from
    simulation code largely implemented by the author at UCLA in
@@ -40,7 +40,7 @@
   \note
 */
 
-#include <math/vec3d.hpp>
+#include <math/vs_vec3d.hpp>
 
 using namespace calin::math::vs_physics;
 
