@@ -42,7 +42,7 @@
 
 #include<iostream>
 
-#include<math/vs_vec4D.hpp>
+#include<math/vs_vec4d.hpp>
 
 using namespace calin::math::vs_physics;
 
