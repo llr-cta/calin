@@ -24,6 +24,7 @@ matrix:
       env: BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 BUILD_TYPE=Release NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
     - compiler: clang-3.7
       env: BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 BUILD_TYPE=Release NO_GEANT4=""
+
 addons:
   apt:
     sources:
