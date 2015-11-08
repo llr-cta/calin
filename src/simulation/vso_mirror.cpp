@@ -29,7 +29,7 @@
 #include <vso_telescope.hpp>
 
 using namespace calin::math::vs_physics;
-using namespace calin::simulation::vso_ptics;
+using namespace calin::simulation::vs_optics;
 
 VSOMirror::VSOMirror():
   fTelescope(0), fID(0), fHexID(0), fRemoved(false), fPos(), fAlign(), 
