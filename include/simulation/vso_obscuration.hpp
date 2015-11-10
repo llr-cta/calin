@@ -49,31 +49,33 @@ class VSOObscuration
 {
  public:
   virtual ~VSOObscuration();
-  virtual bool doesObscure(const vs_physics::Particle& p_in)
+  virtual bool doesObscure(const math::vs_physics::Particle& p_in)
   {
-    vs_physics::Particle p_out;
+    math::vs_physics::Particle p_out;
     return doesObscure(p_in, p_out);
   }
-  virtual bool doesObscure(const vs_physics::Particle& p_in,
-                           vs_physics::Particle& p_out) const = 0;
+  virtual bool doesObscure(const math::vs_physics::Particle& p_in,
+                           math::vs_physics::Particle& p_out) const = 0;
 
-  virtual std::string dumpToString() const = 0;
   virtual VSOObscuration* clone() const = 0;
 
+#if 0
+  virtual std::string dumpToString() const = 0;
   static std::vector<VSOObscuration*> 
   createObsVecFromString(const std::string &str);
   static std::string 
   dumpObsVecToString(const std::vector<VSOObscuration*>& vo);
-
+  
   static bool tokenize(std::string& str, const std::string& name,
                        std::vector<std::string>& tokens);
+#endif
 };
 
 class VSODiskObscuration: public VSOObscuration
 {
  public:
-  VSODiskObscuration(const vs_physics::Vec3D& center,
-                     const vs_physics::Vec3D& normal,
+  VSODiskObscuration(const math::vs_physics::Vec3D& center,
+                     const math::vs_physics::Vec3D& normal,
                      double radius, bool incoming_only):
       VSOObscuration(), fX0(center), fN(normal), fR(radius), fD0(),
       fICO(incoming_only)
@@ -81,25 +83,28 @@ class VSODiskObscuration: public VSOObscuration
     fD0 = center*normal;
   }
   virtual ~VSODiskObscuration();
-  virtual bool doesObscure(const vs_physics::Particle& p_in,
-                           vs_physics::Particle& p_out) const;
+  bool doesObscure(const math::vs_physics::Particle& p_in,
+                   math::vs_physics::Particle& p_out) const override;
+  VSOObscuration* clone() const override;
+
+#if 0
   virtual std::string dumpToString() const;
-  virtual VSOObscuration* clone() const;
   static VSODiskObscuration* createFromString(std::string& str);
+#endif
   
  private:
-  vs_physics::Vec3D fX0;
-  vs_physics::Vec3D fN;
-  double            fR;
-  double            fD0;
-  bool              fICO;
+  math::vs_physics::Vec3D fX0;
+  math::vs_physics::Vec3D fN;
+  double                  fR;
+  double                  fD0;
+  bool                    fICO;
 };
 
 class VSOCylinderObscuration: public VSOObscuration
 {
  public:
-  VSOCylinderObscuration(const vs_physics::Vec3D& x1,
-                         const vs_physics::Vec3D& x2,
+  VSOCylinderObscuration(const math::vs_physics::Vec3D& x1,
+                         const math::vs_physics::Vec3D& x2,
                          double radius, bool incoming_only):
       VSOObscuration(), fX1(x1), fX2(x2), fR(radius), fN(), fD1(), fD2(),
       fICO(incoming_only)
@@ -112,21 +117,24 @@ class VSOCylinderObscuration: public VSOObscuration
   }
 
   virtual ~VSOCylinderObscuration();
-  virtual bool doesObscure(const vs_physics::Particle& p_in,
-                           vs_physics::Particle& p_out) const;
-  virtual std::string dumpToString() const;
-  virtual VSOObscuration* clone() const;
-  static VSOCylinderObscuration* createFromString(std::string& str);
+  bool doesObscure(const math::vs_physics::Particle& p_in,
+                   math::vs_physics::Particle& p_out) const override;
+  VSOObscuration* clone() const override;
 
+#if 0
+  virtual std::string dumpToString() const;
+  static VSOCylinderObscuration* createFromString(std::string& str);
+#endif
+  
  private:
-  vs_physics::Vec3D fX1;
-  vs_physics::Vec3D fX2;
-  double            fR;
-  vs_physics::Vec3D fN;
-  double            fD1;
-  double            fD2;
-  double            fD;
-  bool              fICO;
+  math::vs_physics::Vec3D fX1;
+  math::vs_physics::Vec3D fX2;
+  double                  fR;
+  math::vs_physics::Vec3D fN;
+  double                  fD1;
+  double                  fD2;
+  double                  fD;
+  bool                    fICO;
 };
 
 } } } // namespace calin::simulation::vs_optics
