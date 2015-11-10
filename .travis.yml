@@ -1,5 +1,5 @@
 # Build script for Travis CI container-based architecture
-# Stephen Fegan - 2015-11-01
+# Stephen Fegan - sfegan@llr.in2p3.fr - 2015-11-01
 
 sudo: false
 language: cpp
