@@ -25,8 +25,8 @@
 #include <sstream>
 #include <cassert>
 
-#include <vso_mirror.hpp>
-#include <vso_telescope.hpp>
+#include <simulation/vso_mirror.hpp>
+#include <simulation/vso_telescope.hpp>
 
 using namespace calin::math::vs_physics;
 using namespace calin::simulation::vs_optics;
@@ -40,7 +40,7 @@ VSOMirror::VSOMirror():
 
 VSOMirror::VSOMirror(const VSOTelescope* T, 
 		     unsigned ID, unsigned MHID, bool REM,
-		     const Physics::Vec3D& P, const Physics::Vec3D& A, 
+		     const math::vs_physics::Vec3D& P, const math::vs_physics::Vec3D& A, 
 		     double FL, double SS, double DF):
   fTelescope(T), fID(ID), fHexID(MHID), fRemoved(REM), fPos(P), fAlign(A), 
   fFocalLength(FL), fSpotSize(SS), fDegradingFactor(DF), fRotationVector()
@@ -72,7 +72,7 @@ void VSOMirror::calculateRotationVector()
     }
 }
 
-void VSOMirror::reflectorToMirror(Physics::Particle& p) const
+void VSOMirror::reflectorToMirror(math::vs_physics::Particle& p) const
 {
   //  std::cerr << fRotationVector << std::endl;
   // First: Translate from reflector to mirror mount point
@@ -86,7 +86,7 @@ void VSOMirror::reflectorToMirror(Physics::Particle& p) const
 #warning clean me up
 }
 
-void VSOMirror::mirrorToReflector(Physics::Particle& p) const
+void VSOMirror::mirrorToReflector(math::vs_physics::Particle& p) const
 {
 #warning Fix parity
   // First: Fix parity
@@ -97,7 +97,7 @@ void VSOMirror::mirrorToReflector(Physics::Particle& p) const
   p.TranslateOrigin(Vec4D(0,-fPos));
 }
 
-Physics::Vec3D VSOMirror::
+Vec3D VSOMirror::
 cornerInMirrorCoords(unsigned icorner, double aperture) const
 {
   static const double sin30 = 1.0/2.0;
@@ -119,7 +119,7 @@ cornerInMirrorCoords(unsigned icorner, double aperture) const
   return Vec3D(r*x, y, r*z);
 }
 
-Physics::Vec3D VSOMirror::
+Vec3D VSOMirror::
 cornerInReflectorCoords(unsigned icorner, double aperture) const
 {
   Vec3D r = cornerInMirrorCoords(icorner, aperture);
@@ -128,6 +128,7 @@ cornerInReflectorCoords(unsigned icorner, double aperture) const
   return r;
 }
 
+#if 0
 void VSOMirror::dumpShort(std::ostream& stream) const
 {
   stream
@@ -214,3 +215,4 @@ VSOMirror* VSOMirror::createFromShortDump(std::istream& stream,
 
   return mirror;
 }
+#endif

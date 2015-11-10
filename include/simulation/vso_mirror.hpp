@@ -40,8 +40,8 @@
 
 #include <iostream>
 
-#include <Vec3D.hpp>
-#include <Particle.hpp>
+#include <math/vs_vec3d.hpp>
+#include <math/vs_particle.hpp>
 
 namespace calin { namespace simulation { namespace vs_optics {
 
@@ -56,31 +56,34 @@ class VSOMirror
   // ************************************************************************
   VSOMirror();
   VSOMirror(const VSOTelescope* T, unsigned ID, unsigned MHID, bool REM,
-            const Physics::Vec3D& P, const Physics::Vec3D& A, 
+            const math::vs_physics::Vec3D& P, const math::vs_physics::Vec3D& A, 
             double FL, double SS, double DF);
   virtual ~VSOMirror();
     
   // ************************************************************************
   // Coordinate transformations
   // ************************************************************************
-  // void reflectorToMirror(Physics::Vec3D& v) const;    //!< Transform vector from reflector to mirror
-  // void mirrorToReflector(Physics::Vec3D& v) const ;   //!< Transform vector from mirror to reflector
-  void reflectorToMirror(Physics::Particle& p) const; //!< Transform particle reflector to mirror
-  void mirrorToReflector(Physics::Particle& p) const; //!< Transform particle mirror to reflector
+  // void reflectorToMirror(math::vs_physics::Vec3D& v) const;    //!< Transform vector from reflector to mirror
+  // void mirrorToReflector(math::vs_physics::Vec3D& v) const ;   //!< Transform vector from mirror to reflector
+  void reflectorToMirror(math::vs_physics::Particle& p) const; //!< Transform particle reflector to mirror
+  void mirrorToReflector(math::vs_physics::Particle& p) const; //!< Transform particle mirror to reflector
 
-  Physics::Vec3D 
+  math::vs_physics::Vec3D 
   cornerInMirrorCoords(unsigned icorner, double aperture) const;
-  Physics::Vec3D 
+  math::vs_physics::Vec3D 
   cornerInReflectorCoords(unsigned icorner, double aperture) const;
   
   // ************************************************************************
   // Dump
   // ************************************************************************
+
+#if 0
   void dumpShort(std::ostream& stream) const;
   void dump(std::ostream& stream, unsigned l=0) const;
   static VSOMirror* createFromShortDump(std::istream& stream,
                                         const VSOTelescope* T);
-
+#endif
+  
   // ************************************************************************
   // Accessors
   // ************************************************************************
@@ -88,8 +91,8 @@ class VSOMirror
   unsigned           id() const { return fID; }
   unsigned           hexID() const { return fHexID; }
   bool               removed() const { return fRemoved; }
-  const Physics::Vec3D& pos() const { return fPos; }
-  const Physics::Vec3D& align() const { return fAlign; }
+  const math::vs_physics::Vec3D& pos() const { return fPos; }
+  const math::vs_physics::Vec3D& align() const { return fAlign; }
   double             focalLength() const { return fFocalLength; }
   double             spotSize() const { return fSpotSize; }
   double             degradingFactor() const { return fDegradingFactor; }
@@ -98,7 +101,7 @@ class VSOMirror
   // Setters
   // ************************************************************************
 
-  void realign(const Physics::Vec3D& a)
+  void realign(const math::vs_physics::Vec3D& a)
   { fAlign = a/a.Norm(); calculateRotationVector(); }
   
  private:
@@ -106,13 +109,13 @@ class VSOMirror
   unsigned            fID;                //!< Sequential ID (starting at 0)
   unsigned            fHexID;             //!< Hex index on reflector
   bool                fRemoved;           //!< Mirror is removed from scope
-  Physics::Vec3D      fPos;               //!< Position
-  Physics::Vec3D      fAlign;             //!< Alignment angles
+  math::vs_physics::Vec3D      fPos;               //!< Position
+  math::vs_physics::Vec3D      fAlign;             //!< Alignment angles
   double              fFocalLength;       //!< Focal length
   double              fSpotSize;          //!< Spot size
   double              fDegradingFactor;   //!< Degrading factor of mirror
 
-  Physics::Vec3D      fRotationVector;
+  math::vs_physics::Vec3D      fRotationVector;
   void calculateRotationVector();
 };
 

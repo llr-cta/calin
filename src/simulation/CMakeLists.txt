@@ -1,5 +1,5 @@
 set(CALIN_TARGET_LIBRARY calin_simulation)
-set(CALIN_SOURCES atmosphere.cpp vso_obscuration.cpp)
+set(CALIN_SOURCES atmosphere.cpp vso_obscuration.cpp vso_mirror.cpp vso_pixel.cpp)
 
 if(GEANT4_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES} tracker.cpp
