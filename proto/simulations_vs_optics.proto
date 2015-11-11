@@ -2,7 +2,7 @@
 
 /* 
 
-   calin/proto/simulations_optics_vso.proto -- Stephen Fegan -- 2015-10-19
+   calin/proto/simulations_vs_optics.proto -- Stephen Fegan -- 2015-10-19
 
    Protobufs for defining VSO optics arrays
 
@@ -27,61 +27,88 @@ syntax = "proto3";
 import "calin.proto";
 import "calin_common_types.proto";
 
-package calin.ix.simulations.optics_vso;
+package calin.ix.simulations.vs_optics;
+
+// ============================================================================
+//
+// PARAMETERS THAT DEFINE CONCRETE ARRAY
+//
+// ============================================================================
+
+message VSOMirrorData {
+  uint32 id                             = 1;
+  uint32 hex_id                         = 2;
+  bool removed                          = 3;
+  double pos_x                          = 4;
+  double pos_y                          = 5;
+  double pos_z                          = 6;
+  double align_x                        = 7;
+  double align_y                        = 8;
+  double align_z                        = 9;
+  double focal_length                   = 10;
+  double spot_size                      = 11;
+  double degrading_factor               = 12;
+};  
+
+// ============================================================================
+//
+// PARAMETERS USED TO CONSTRUCT RANDOM ARRAY
+//
+// ============================================================================
+
+message DiskObscuration { 
+  double xc                             = 1
+    [(CFO).desc = "X coordinate of the center of the disk in reflector frame",
+     (CFO).units = "cm"];
+  double yc                             = 2
+    [(CFO).desc = "Y coordinate of the center of the disk in reflector frame",
+     (CFO).units = "cm"];
+  double zc                             = 3
+    [(CFO).desc = "Z coordinate of the center of the disk in reflector frame",
+     (CFO).units = "cm"];
+  double nx                             = 4
+    [(CFO).desc = "X component of the normal to the disk in reflector frame"];
+  double ny                             = 5
+    [(CFO).desc = "Y component of the normal to the disk in reflector frame"];
+  double nz                             = 6
+    [(CFO).desc = "Z component of the normal to the disk in reflector frame"];
+  double diameter                       = 7
+    [(CFO).desc = "Diameter of the disk",
+     (CFO).units = "cm"];
+  bool incoming_only                    = 8
+    [(CFO).desc = "True if photons should only be obscured only when u.j>0"];
+};
+
+message TubeObscuration {
+  double x1                             = 1
+    [(CFO).desc = "X coordinate center of tube at 1st end in reflector frame",
+     (CFO).units = "cm"];
+  double y1                             = 2
+    [(CFO).desc = "Y coordinate center of tube at 1st end in reflector frame",
+     (CFO).units = "cm"];
+  double z1                             = 3
+    [(CFO).desc = "Z coordinate center of tube at 1st end in reflector frame",
+     (CFO).units = "cm"];
+  double x2                             = 4
+    [(CFO).desc = "X coordinate center of tube at 2nd end in reflector frame",
+     (CFO).units = "cm"];
+  double y2                             = 5
+    [(CFO).desc = "Y coordinate center of tube at 2nd end in reflector frame",
+     (CFO).units = "cm"];
+  double z2                             = 6
+    [(CFO).desc = "Z coordinate center of tube at 2nd end in reflector frame",
+     (CFO).units = "cm"];
+  double diameter                       = 7
+    [(CFO).desc = "Cross-sectional diameter of the tube",
+     (CFO).units = "cm"];
+  bool incoming_only                    = 8
+    [(CFO).desc = "True if photons should only be obscured when u.j>0"];
+};
 
 message Obscuration {
-  message Disk { 
-    double xc                           = 1
-      [(CFO).desc = "X coordinate of the center of the disk in reflector frame",
-       (CFO).units = "cm"];
-    double yc                           = 2
-      [(CFO).desc = "Y coordinate of the center of the disk in reflector frame",
-       (CFO).units = "cm";]
-    double zc                           = 3
-      [(CFO).desc = "Z coordinate of the center of the disk in reflector frame",
-       (CFO).units = "cm"];
-    double nx                           = 4
-      [(CFO).desc = "X component of the normal to the disk in reflector frame"];
-    double ny                           = 5
-      [(CFO).desc = "Y component of the normal to the disk in reflector frame"];
-    double nz                           = 6
-      [(CFO).desc = "Z component of the normal to the disk in reflector frame"];
-    double diameter                     = 7
-      [(CFO).desc = "Diameter of the disk",
-       (CFO).units = "cm"];
-    bool incoming_only                  = 8
-      [(CFO).desc = "True if photons should only be obscured only when n.u>0"];
-  };
-
-  message Tube {
-    double x1                           = 1
-      [(CFO).desc = "X coordinate center of tube at 1st end in reflector frame",
-       (CFO).units = "cm"];
-    double y1                           = 2
-      [(CFO).desc = "Y coordinate center of tube at 1st end in reflector frame",
-       (CFO).units = "cm"];
-    double z1                           = 3
-      [(CFO).desc = "Z coordinate center of tube at 1st end in reflector frame",
-       (CFO).units = "cm"];
-    double x2                           = 4
-      [(CFO).desc = "X coordinate center of tube at 2nd end in reflector frame",
-       (CFO).units = "cm"];
-    double y2                           = 5
-      [(CFO).desc = "Y coordinate center of tube at 2nd end in reflector frame",
-       (CFO).units = "cm"];
-    double z2                           = 6
-      [(CFO).desc = "Z coordinate center of tube at 2nd end in reflector frame",
-       (CFO).units = "cm"];
-    double diameter                     = 7
-      [(CFO).desc = "Cross-sectional diameter of the tube",
-       (CFO).units = "cm"];
-    bool incoming_only                  = 8
-      [(CFO).desc = "True if photons should only be obscured entering tube"];
-  };
-
   oneof type {
-    message Disk disk                   = 1;
-    message Tube tube                   = 2;
+    DiskObscuration disk                = 1;
+    TubeObscuration tube                = 2;
   }
 };
   
@@ -193,7 +220,7 @@ message ConcurrentNormalsAlignment
      "reference frame. In a classic DC alignment mode this should be twice "
      "the focal distance. A value of zero means the alignment point should "
      "be calculated on the fly for each normal which allows the method be "
-     "used in modified DC designs."
+     "used in modified DC designs.",
      (CFO).units = "cm"];
   double alignment_pt_z                 = 3
     [(CFO).desc = "Z coordinate of nominal alignment point in reflector "
@@ -266,13 +293,13 @@ message HexDCReflectorParameters
      (CFO).units = "cm"];
   double facet_size                     = 11
     [(CFO).desc = "Edge-to-edge size of a single mirror facet of the "
-     "reflector. It does not make sense to have facet_size > facet_spacing."
+     "reflector. It does not make sense to have facet_size > facet_spacing.",
      (CFO).units = "cm"];
   double facet_focal_length             = 12
-    [(CFO).desc = "Focal length of a mirror facet."
+    [(CFO).desc = "Focal length of a mirror facet.",
      (CFO).units = "cm"];
   double facet_focal_length_dispersion  = 13
-    [(CFO).desc = "Dispersion of mirror facet focal length."
+    [(CFO).desc = "Dispersion of mirror facet focal length.",
      (CFO).units = "cm"];
   double facet_spot_size_probability    = 14
     [(CFO).desc = "Mean fraction of photons contained by a circle with "
@@ -311,12 +338,10 @@ message HexDCReflectorParameters
   repeated uint32 facet_missing_list    = 20
     [(CFO).desc = "List of the Hex IDs of the mirrors missing from each "
      "telescope. If none are missing this should be empty."];
-  
 };
 
 message PlaneWindowParameters {
-  double diameter
-  double thickness                      = 1
+  double diameter                       = 1
     [(CFO).desc = "Diameter of the window in the focal plane.",
      (CFO).units = "cm"];
   double translation_y                  = 2
@@ -336,13 +361,13 @@ message PlaneWindowParameters {
      "the reflector frame.",
      (CFO).units = "deg"];
   repeated calin.SpectralResponsePoint transmittance = 5
-    [(CFO).desc = "Additional absorption factor applied to all photons."
-                                                       
+    [(CFO).desc = "Energy dependent absorption factor."];                                                       
   double weathering_factor              = 6
-    [(CFO).desc = "Additional absorption factor applied to all photons."
+    [(CFO).desc = "Additional absorption factor applied to all photons."];
                                           
-  double refractive_index               = 5
-
+  double refractive_index               = 7;
+}
+     
 message FocalPlaneParameters {
   double camera_diameter                = 1
     [(CFO).desc = "Diameter of the camera in the focal plane.",
@@ -388,7 +413,7 @@ message HexPixelArrayParameters
   double dead_space                     = 2
     [(CFO).desc = "Dead space around edges of hexagonal cell. The edge-to-edge "
      "diameter of the active portion of the lightcones at their entrance "
-     "aperture is diameter_outer = spacing - 2*dead_space."
+     "aperture is diameter_outer = spacing - 2*dead_space.",
      (CFO).units = "cm"];
   double cone_depth                     = 3
     [(CFO).desc = "Depth of cone from entrance to exit aperture "
@@ -403,7 +428,7 @@ message HexPixelArrayParameters
     [(CFO).desc = "Pixels are counted on a hexagonal grid in the direction "
      "of the +x-axis when this flag is FALSE, and in the direction of the "
      "-x-axis when it is TRUE"];
-  unsigned hex_module_size              = 11
+  uint32 hex_module_size              = 11
     [(CFO).desc = "Number of hexagonal rings in each module. This is a "
      "convenience parameter that simplifies specifying the list of pixels "
      "in the camera."];
@@ -421,6 +446,6 @@ message IsotropicDCArrayParameters {
     UserDefinedArrayLayout prescribed_array_layout = 3;
   };
   ReflectorFrameParameters reflector_frame = 4;
-  DCReflectorParameters reflector       = 5;
+  HexDCReflectorParameters reflector    = 5;
   repeated Obscuration obscurations     = 6;
 };
