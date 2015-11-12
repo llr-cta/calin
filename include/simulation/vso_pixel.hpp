@@ -43,6 +43,7 @@
 #include <iostream>
 
 #include <math/vs_vec3d.hpp>
+#include <proto/simulation_vs_optics.pb.h>
 
 namespace calin { namespace simulation { namespace vs_optics {
 
@@ -63,6 +64,12 @@ class VSOPixel
   // ************************************************************************
   // Dump
   // ************************************************************************
+
+  void dumpToProto(ix::simulation::vs_optics::VSOPixelData& d) const;
+  static VSOPixel*
+  createFromProto(const ix::simulation::vs_optics::VSOPixelData& d,
+                  const VSOTelescope* T);
+
 #if 0
   void dumpShort(std::ostream& stream) const;
   void dump(std::ostream& stream, unsigned l=0) const;

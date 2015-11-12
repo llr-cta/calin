@@ -4,7 +4,7 @@
 PROTOBUF_GENERATE_CPP(ProtoSources ProtoHeaders
 					 calin.proto calin_common_types.proto
 					 io_sql_transceiver.proto math_histogram.proto
-					 unittest.proto simulations_vs_optics.proto )
+					 unittest.proto simulation_vs_optics.proto )
 
 message(STATUS "PROTOBUF_IMPORT_DIRS: " ${PROTOBUF_IMPORT_DIRS}) 
 message(STATUS "PROTOBUF_INCLUDE_DIRS: " ${PROTOBUF_INCLUDE_DIRS}) 

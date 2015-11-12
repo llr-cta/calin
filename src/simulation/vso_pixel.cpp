@@ -60,6 +60,33 @@ Vec3D VSOPixel::incomingSkyVectorAtZenith(double plate_scale) const
   return p;
 }
 
+void VSOPixel::dumpToProto(ix::simulation::vs_optics::VSOPixelData& d) const
+{
+  d.set_id(fID);
+  d.set_hex_id(fHexID);
+  d.set_removed(fRemoved);
+  d.set_pos_x(fPos.x);
+  d.set_pos_y(fPos.y);
+  d.set_pos_z(fPos.z);
+}
+
+VSOPixel*
+VSOPixel::createFromProto(const ix::simulation::vs_optics::VSOPixelData& d,
+                          const VSOTelescope* T)
+{
+  VSOPixel* pixel = new VSOPixel;
+
+  pixel->fTelescope       = T;
+  pixel->fID              = d.id();
+  pixel->fHexID           = d.hex_id();
+  pixel->fRemoved         = d.removed();
+  pixel->fPos.x           = d.pos_x();
+  pixel->fPos.y           = d.pos_y();
+  pixel->fPos.z           = d.pos_z();
+
+  return pixel;
+}
+
 #if 0
 void VSOPixel::dumpShort(std::ostream& stream) const
 {

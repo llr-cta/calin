@@ -128,6 +128,47 @@ cornerInReflectorCoords(unsigned icorner, double aperture) const
   return r;
 }
 
+void VSOMirror::dumpToProto(ix::simulation::vs_optics::VSOMirrorData& d) const
+{
+  d.set_id(fID);
+  d.set_hex_id(fHexID);
+  d.set_removed(fRemoved);
+  d.set_pos_x(fPos.x);
+  d.set_pos_y(fPos.y);
+  d.set_pos_z(fPos.z);
+  d.set_align_x(fAlign.x);
+  d.set_align_y(fAlign.y);
+  d.set_align_z(fAlign.z);
+  d.set_focal_length(fFocalLength);
+  d.set_spot_size(fSpotSize);
+  d.set_degrading_factor(fDegradingFactor);
+}
+
+VSOMirror* VSOMirror::
+createFromProto(const ix::simulation::vs_optics::VSOMirrorData& d,
+                const VSOTelescope* T)
+{
+  VSOMirror* mirror = new VSOMirror;
+
+  mirror->fTelescope       = T;
+  mirror->fID              = d.id();
+  mirror->fHexID           = d.hex_id();
+  mirror->fRemoved         = d.removed();
+  mirror->fPos.x           = d.pos_x();
+  mirror->fPos.y           = d.pos_y();
+  mirror->fPos.z           = d.pos_z();
+  mirror->fAlign.x         = d.align_x();
+  mirror->fAlign.y         = d.align_y();
+  mirror->fAlign.z         = d.align_z();
+  mirror->fFocalLength     = d.focal_length();
+  mirror->fSpotSize        = d.spot_size();
+  mirror->fDegradingFactor = d.degrading_factor();
+
+  mirror->calculateRotationVector();
+
+  return mirror;  
+}
+
 #if 0
 void VSOMirror::dumpShort(std::ostream& stream) const
 {
