@@ -145,6 +145,10 @@ message UnitTestMessage {
   UnitTestOneofSubMessage oosm_inline       = 401 [
       (CFO).sql.inline_message = true];
   repeated UnitTestOneofSubMessage vec_oosm = 402;
+
+  Vector3D pos = 500 [(CFO).desc="Position vector. ",
+                      (CFO).units="cm",
+                      (CFO).sql.inline_message = true];  
 }
 
 message UnitTestKey {
