@@ -54,9 +54,17 @@ create_tables(const std::string& table_name,
   std::unique_ptr<SQLTable> t {
     make_keyed_sqltable_tree(table_name, d_data, d_key, false) };
   bool success = true;
-  
-  iterate_over_tables(t.get(), [this, &success](SQLTable* it) {
-      if(success) { it->stmt = prepare_statement(sql_create_table(it));
+
+  std::map<std::string, std::string> dict0;
+  dict0 = field_dict(nullptr, dict0);
+  dict0["DESC"] = instance_desc;
+  iterate_over_tables_with_data(t.get(), dict0, [this, &success](SQLTable* it,
+                               std::map<std::string, std::string>& dict) {
+      if(success) {
+        for(auto id : it->parent_field_d_path)
+          dict = field_dict(id, dict);
+        if(it->parent_field_d)dict = field_dict(it->parent_field_d, dict);
+        it->stmt = prepare_statement(sql_create_table(it, dict));
         if(!it->stmt->is_initialized()) {
           LOG(ERROR) << "SQL error preparing CREATE TABLE: "
                      << it->stmt->error_message() << '\n'
@@ -477,13 +485,18 @@ sql_type(const google::protobuf::FieldDescriptor* d)
 }
 
 std::string SQLTransceiver::
-sql_create_table(const SQLTable* t, bool if_not_exists) 
+sql_create_table(const SQLTable* t,
+                 const std::map<std::string,std::string>& parent_dict,
+                 bool if_not_exists) 
 {
   std::ostringstream sql;
+  
   std::vector<const SQLTableField*> keys;
   sql << "CREATE TABLE ";
   if(if_not_exists)sql << "IF NOT EXISTS ";
   sql << sql_table_name(t->table_name) << " ( \n";
+  if(!parent_dict.at("DESC").empty())
+    sql << sql_comment(parent_dict.at("DESC"),0,0,false) << '\n';
   for ( auto f : t->fields )
   {
     if(f->is_key())keys.push_back(f);
@@ -491,16 +504,21 @@ sql_create_table(const SQLTable* t, bool if_not_exists)
     if(f != t->fields.back() or !keys.empty())sql << ',';
     if(f->field_d)
     {
-      const google::protobuf::FieldOptions* fopt { &f->field_d->options() };
-      if(fopt->HasExtension(CFO) and
-         (!fopt->GetExtension(CFO).desc().empty() or
-          !fopt->GetExtension(CFO).units().empty()))
+      std::map<std::string,std::string> dict = parent_dict;
+      for(auto id : f->field_d_path)
+        dict = field_dict(id, dict);
+      dict = field_dict(f->field_d, dict);
+      if(!dict["DESC"].empty() or !dict["UNITS"].empty())
       {
-        sql << " --";
-        if(!fopt->GetExtension(CFO).desc().empty())
-          sql << ' ' << fopt->GetExtension(CFO).desc();
-        if(!fopt->GetExtension(CFO).units().empty())
-          sql << " [" << fopt->GetExtension(CFO).units() << ']';
+        std::string comment;
+        if(!dict["DESC"].empty())
+        {
+          comment += dict["DESC"];
+          if(!dict["UNITS"].empty())
+            comment += " [" + dict["UNITS"] + ']';
+        }
+        else comment = "[" + dict["UNITS"] + ']';
+        sql << sql_comment(comment,1,4,true);
       }
     }
     sql << '\n';
@@ -598,6 +616,29 @@ std::string SQLTransceiver::sql_where_inherited_keys_match(const SQLTable* t)
   if(!need_and)return std::string();
   sql << '\n';  
   return sql.str();
+}
+
+std::string SQLTransceiver::
+sql_comment(const std::string& comment, unsigned first_line_indent,
+            unsigned multi_line_indent, bool newline_before_multi_line)
+{
+  if(comment.empty())return std::string();
+  std::vector<std::string> bits = split(comment,'\n');
+  if(bits.size() == 1)
+    return std::string(first_line_indent, ' ')+std::string("-- ")+bits.front();
+  std::string out;
+  if(newline_before_multi_line)out = "\n";
+  for(const auto& iline : bits)
+  {
+    if(&iline==&bits.front())
+      out += std::string(newline_before_multi_line?multi_line_indent:
+                         first_line_indent, ' ');
+    else
+      out += std::string("\n") + std::string(multi_line_indent, ' ');
+    out += "-- ";
+    out += iline;
+  }
+  return out;
 }
 
 SQLStatement* SQLTransceiver::prepare_statement(const std::string& sql)
@@ -1056,8 +1097,13 @@ void SQLTransceiver::create_internal_tables()
                                calin::ix::io::SQLTable::descriptor(),
                                nullptr, false);
 
-  iterate_over_tables(tt, [this](SQLTable* it) {
-      it->stmt = prepare_statement(sql_create_table(it)); });
+  
+  std::map<std::string, std::string> dict0;
+  dict0 = field_dict(nullptr, dict0);
+  dict0["DESC"] = "Calin table of tables";
+
+  iterate_over_tables(tt, [this,dict0](SQLTable* it) {
+      it->stmt = prepare_statement(sql_create_table(it, dict0)); });
   r_exec_simple(tt, true);
   finalize_statements(tt);
   
@@ -1066,8 +1112,11 @@ void SQLTransceiver::create_internal_tables()
       make_keyed_sqltable_tree("calin.table_fields",
                                calin::ix::io::SQLTableField::descriptor(),
                                nullptr, false);
-  iterate_over_tables(tf, [this](SQLTable* it) {
-      it->stmt = prepare_statement(sql_create_table(it)); });
+
+  dict0["DESC"] = "Calin table of table fields";
+  
+  iterate_over_tables(tf, [this,dict0](SQLTable* it) {
+      it->stmt = prepare_statement(sql_create_table(it,dict0)); });
   r_exec_simple(tf, true);
   finalize_statements(tf);
 
@@ -1085,19 +1134,28 @@ insert_table_description(const SQLTable* t, const std::string& instance_desc)
 {
   SQLTable* t_int { nullptr };
 
+  std::map<std::string, std::string> dict0;
+  dict0 = field_dict(nullptr, dict0);
+  dict0["DESC"] = instance_desc;
+
   t_int =
       make_keyed_sqltable_tree("calin.tables",
                                calin::ix::io::SQLTable::descriptor(),
                                nullptr, false);
   iterate_over_tables(t_int,[this](SQLTable* it) {
       it->stmt = prepare_statement(sql_insert(it)); });
-  iterate_over_tables(t,[this,t_int,t,instance_desc](const SQLTable* it) {
+  iterate_over_tables_with_data(t, dict0,
+        [this,t_int,t,instance_desc](const SQLTable* it,
+                                     std::map<std::string, std::string>& dict) {
+      for(auto id : it->parent_field_d_path)
+        dict = field_dict(id, dict);
+      if(it->parent_field_d)dict = field_dict(it->parent_field_d, dict);
       uint64_t oid;
       calin::ix::io::SQLTable m;
       m.set_base_name(t->table_name);
       m.set_table_name(it->table_name);
       m.set_sql_table_name(sql_table_name((it->table_name)));
-      m.set_description(instance_desc);
+      m.set_description(dict["DESC"]);
       r_exec_insert(t_int, &m, nullptr, oid, 0, 0, true);
     });
   delete t_int;
@@ -1107,8 +1165,15 @@ insert_table_description(const SQLTable* t, const std::string& instance_desc)
                                    nullptr, false);
   iterate_over_tables(t_int,[this](SQLTable* it) {
       it->stmt = prepare_statement(sql_insert(it)); });
-  iterate_over_fields(t,[this,t_int,t](const SQLTable* it,
-                                       const SQLTableField* f) {
+  iterate_over_fields_with_data(t,dict0,
+                                [this](const SQLTable* it,
+                                   std::map<std::string, std::string>& dict) {
+      for(auto id : it->parent_field_d_path)
+        dict = field_dict(id, dict);
+      if(it->parent_field_d)dict = field_dict(it->parent_field_d, dict); },
+                                [this,t_int,t](const SQLTable* it,
+                                               const SQLTableField* f,
+                               std::map<std::string, std::string> dict) {
       uint64_t oid;
       calin::ix::io::SQLTableField m;
       m.set_base_name(t->table_name);
@@ -1118,12 +1183,10 @@ insert_table_description(const SQLTable* t, const std::string& instance_desc)
       m.set_sql_field_name(sql_field_name(f->field_name));
       if(f->field_d)
       {
-        if(f->field_d->options().HasExtension(CFO))
-        {
-          auto cfo = f->field_d->options().GetExtension(CFO);
-          m.set_description(cfo.desc());
-          m.set_units(cfo.units());
-        }
+        for(auto id : f->field_d_path)dict = field_dict(id, dict);
+        dict = field_dict(f->field_d, dict);
+        m.set_description(dict["DESC"]);
+        m.set_units(dict["UNITS"]);
         m.set_proto_message(f->field_d->containing_type()->full_name());
         m.set_proto_field(f->field_d->name());
         m.set_proto_number(f->field_d->number());
@@ -1144,36 +1207,51 @@ field_dict(const google::protobuf::FieldDescriptor *d,
            const std::map<std::string, std::string>& parent_dict)
 {
   std::map<std::string, std::string> dict;
-  dict["PARENT_DESC"] = parent_dict.at("DESC");
-  dict["PARENT_UNITS"] = parent_dict.at("UNITS");
-  unsigned nsub_unit = 0;
-  for(const auto& isub_unit : split(parent_dict.at("UNITS"),','))
-    dict[std::string("PARENT_SUBUNIT_")+std::to_string(nsub_unit++)] =
-        isub_unit;
-
+  
   std::string desc;
   std::string units;
-
-  const google::protobuf::FieldOptions* fopt { &d->options() };
-  if(fopt->HasExtension(CFO))
-  {
-    if(!fopt->GetExtension(CFO).desc().empty())
-    {
-      google::protobuf::io::StringOutputStream output(&desc);
-      google::protobuf::io::Printer printer(&output, '$');
-      printer.Print(dict, fopt->GetExtension(CFO).desc().c_str());
-    }
-
-    if(!fopt->GetExtension(CFO).units().empty())
-    {
-      google::protobuf::io::StringOutputStream output(&units);
-      google::protobuf::io::Printer printer(&output, '$');
-      printer.Print(dict, fopt->GetExtension(CFO).units().c_str());
-    }
-  }
+  std::string name;
+  std::string full_name;
+  std::string number;
   
-  dict["DESC"] = desc;
-  dict["UNITS"] = units;
+  if(d != nullptr)
+  {
+    for(const auto& iparent_entry : parent_dict)
+      dict[std::string("PARENT_")+iparent_entry.first] = iparent_entry.second;
+    
+    unsigned nsub_unit = 0;
+    for(const auto& isub_unit : split(parent_dict.at("UNITS"),','))
+      dict[std::string("PARENT_SUBUNIT_")+std::to_string(nsub_unit++)] =
+          isub_unit;
+    
+    const google::protobuf::FieldOptions* fopt { &d->options() };
+    if(fopt->HasExtension(CFO))
+    {
+      if(!fopt->GetExtension(CFO).desc().empty())
+      {
+        google::protobuf::io::StringOutputStream output(&desc);
+        google::protobuf::io::Printer printer(&output, '$');
+        printer.Print(dict, fopt->GetExtension(CFO).desc().c_str());
+      }
+      
+      if(!fopt->GetExtension(CFO).units().empty())
+      {
+        google::protobuf::io::StringOutputStream output(&units);
+        google::protobuf::io::Printer printer(&output, '$');
+        printer.Print(dict, fopt->GetExtension(CFO).units().c_str());
+      }
+    }
+
+    name      = d->name();
+    full_name = d->full_name();
+    number    = std::to_string(d->number());
+  }
+
+  dict["DESC"]       = desc;
+  dict["UNITS"]      = units;
+  dict["NAME"]       = name;
+  dict["FULL_NAME"]  = full_name;
+  dict["NUMBER"]     = number;
 
   return dict;
 }

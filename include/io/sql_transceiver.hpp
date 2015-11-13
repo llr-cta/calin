@@ -207,6 +207,44 @@ class SQLTransceiver
     }
   } 
 
+  template<typename FCN, typename DATUM>
+  void iterate_over_tables_with_data(SQLTable* t, const DATUM& d0, FCN fcn)
+  {
+    std::deque<SQLTable*> all_t;
+    std::deque<DATUM> all_d;
+    all_t.push_back(t);
+    all_d.push_back(d0);
+    while(!all_t.empty())
+    {
+      SQLTable* it = all_t.front();
+      DATUM d = all_d.front();
+      all_t.pop_front();
+      all_d.pop_front();
+      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
+      fcn(it, d); // Modified d here
+      all_d.insert(all_d.begin(), it->sub_tables.size(), d);
+    }
+  }
+
+  template<typename FCN, typename DATUM>
+  void iterate_over_tables_with_data(const SQLTable* t, const DATUM& d0, FCN fcn)
+  {
+    std::deque<const SQLTable*> all_t;
+    std::deque<DATUM> all_d;
+    all_t.push_back(t);
+    all_d.push_back(d0);
+    while(!all_t.empty())
+    {
+      const SQLTable* it = all_t.front();
+      DATUM d = all_d.front();
+      all_t.pop_front();
+      all_d.pop_front();
+      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
+      fcn(it, d); // Modified d here
+      all_d.insert(all_d.begin(), it->sub_tables.size(), d);
+    }
+  }
+  
   template<typename FCN> void iterate_over_fields(SQLTable* t, FCN fcn)
   {
     iterate_over_tables(t, [&fcn](SQLTable* t) {
@@ -217,6 +255,26 @@ class SQLTransceiver
   {
     iterate_over_tables(t, [&fcn](const SQLTable* t) {
         for(auto f : t->fields) { fcn(t,f); } });
+  } 
+
+  template<typename FCN_f, typename FCN_cd, typename DATUM> void
+  iterate_over_fields_with_data(SQLTable* t, const DATUM& d0, FCN_cd fcn_cd,
+                                FCN_f fcn_f)
+  {
+    iterate_over_tables_with_data(t, d0,
+                               [&fcn_cd,&fcn_f](SQLTable* t, DATUM& d) {
+        fcn_cd(t, d); // possible change in d here
+        for(auto f : t->fields) { DATUM sd = d; fcn_f(t,f,sd); } });
+  }
+
+  template<typename FCN_f, typename FCN_cd, typename DATUM> void
+  iterate_over_fields_with_data(const SQLTable* t, const DATUM& d0,
+                                FCN_cd fcn_cd, FCN_f fcn_f)
+  {
+    iterate_over_tables_with_data(t, d0,
+                               [&fcn_cd, &fcn_f](const SQLTable* t, DATUM& d) {
+        fcn_cd(t, d); // possible change in d here
+        for(auto f : t->fields) { DATUM sd = d; fcn_f(t,f,sd); } });
   } 
   
  protected:
@@ -253,12 +311,18 @@ class SQLTransceiver
   virtual std::string sql_oid_column_name();
   
   virtual std::string sql_create_table(const SQLTable* t,
+                           const std::map<std::string,std::string>& parent_dict,
                                        bool if_not_exists = false);
   virtual std::string sql_insert(const SQLTable* t);
   virtual std::string sql_select(const SQLTable* t, bool select_oid = false,
                                  bool select_inheried_keys = false);
   virtual std::string sql_where_oid_equals();
   virtual std::string sql_where_inherited_keys_match(const SQLTable* t);
+
+  virtual std::string sql_comment(const std::string& comment,
+                                  unsigned first_line_indent = 0,
+                                  unsigned multi_line_indent = 0,
+                                  bool newline_before_multi_line = false);
   
   // ===========================================================================
   //

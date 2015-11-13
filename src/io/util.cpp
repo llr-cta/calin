@@ -26,16 +26,13 @@
 
 // Copyright 2008 Evan Teran and others under the CC license
 // From: http://stackoverflow.com/questions/236129/split-a-string-in-c
-// Compatible with GPL
 
 std::vector<std::string>& calin::io::util::
 split(const std::string &s, char delim, std::vector<std::string> &elems)
 {
   std::stringstream ss(s);
   std::string item;
-  while (std::getline(ss, item, delim)) {
-    elems.push_back(item);
-  }
+  while (std::getline(ss, item, delim)) { elems.push_back(item); }
   return elems;
 }
 

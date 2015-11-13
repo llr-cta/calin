@@ -25,11 +25,13 @@
 syntax = "proto3";
 
 import "calin.proto";
+import "calin_common_types.proto";
 
 package calin.ix.unittest;
 
 message UnitTestSimpleSubMessage {
-  int32   ssm_i32 = 1;
+  int32   ssm_i32 = 1 [(CFO).desc="$PARENT_DESC$ Integer 32 value",
+                       (CFO).units="$PARENT_UNITS$"];
 }
 
 message UnitTestComplexSubMessage {
@@ -68,8 +70,11 @@ message UnitTestMessage {
   int64   i64    = 2;
   float   f      = 3 [(CFO).desc="A float value",(CFO).units="The units"];
   string  s      = 4;
-  UnitTestSimpleSubMessage ssm = 5;
-  UnitTestSimpleSubMessage ssm_inline = 6 [(CFO).sql.inline_message = true];
+  UnitTestSimpleSubMessage ssm = 5 [(CFO).desc="Non-inline SSM. ",
+                                    (CFO).units="SSM units"];
+  UnitTestSimpleSubMessage ssm_inline = 6 [(CFO).desc="Inline SSM. ",
+                                    (CFO).units="iSSM units",
+                                    (CFO).sql.inline_message = true];
   UnitTestComplexSubMessage csm = 7;
   UnitTestComplexSubMessage csm_inline = 8 [(CFO).sql.inline_message = true];
   UnitTestInlinedSubMessage ism = 9;
@@ -77,7 +82,7 @@ message UnitTestMessage {
   UnitTestVectorSubMessage vsm = 11;
   UnitTestVectorSubMessage vsm_inline = 12 [(CFO).sql.inline_message = true];
 
-  double  d = 13;
+  double  d = 13 [(CFO).desc = "A multi-line\ndescription!"];
   uint32  ui32 = 14;
   uint64  ui64 = 15;
   sint32  si32 = 16;
