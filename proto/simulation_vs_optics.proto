@@ -42,30 +42,18 @@ message VSOMirrorData {
     [(CFO).desc = "Hexagonal grid identification number, starting at zero."];
   bool removed                          = 3
     [(CFO).desc = "True if this mirror facet has been removed."];
-  double pos_x                          = 4
-    [(CFO).desc = "X coordinate of the facet center in the reflector frame.",
-     (CFO).units = "cm" ];
-  double pos_y                          = 5
-    [(CFO).desc = "Y coordinate of the facet center in the reflector frame.",
-     (CFO).units = "cm" ];
-  double pos_z                          = 6
-    [(CFO).desc = "Z coordinate of the facet center in the reflector frame.",
-     (CFO).units = "cm" ];
-  double align_x                        = 7
-    [(CFO).desc = "X component of facet normal at center of facet in the "
-     "reflector frame." ];
-  double align_y                        = 8
-    [(CFO).desc = "Y component of facet normal at center of facet in the "
-     "reflector frame." ];
-  double align_z                        = 9
-    [(CFO).desc = "Z component of facet normal at center of facet in the "
-     "reflector frame." ];
-  double focal_length                   = 10
+  Vector3D pos                          = 4
+    [(CFO).desc = "Position of facet center in the reflector frame.",
+     (CFO).units = "cm", (CFO).sql.inline_message = true ];     
+  Vector3D align                        = 5
+    [(CFO).desc = "Facet normal at center of facet in the reflector frame.",
+     (CFO).sql.inline_message = true ];
+  double focal_length                   = 6
     [(CFO).desc = "Focal length of the facet.", (CFO).units = "cm" ];
-  double spot_size                      = 11
+  double spot_size                      = 7
     [(CFO).desc = "Diameter of the spot size on the focal plane that an on-axis "
      "\"laser beam\" would have.", (CFO).units = "cm"];
-  double degrading_factor               = 12
+  double degrading_factor               = 8
     [(CFO).desc = "Wavelength-independent degrading factor to apply at "
      "reflection"];
 };
@@ -77,15 +65,78 @@ message VSOPixelData {
     [(CFO).desc = "Hexagonal grid identification number, starting at zero."];
   bool removed                          = 3
     [(CFO).desc = "True if this pixel has been removed."];
-  double pos_x                          = 4
-    [(CFO).desc = "X coordinate of the pixel center in the camera frame.",
-     (CFO).units = "cm" ];
-  double pos_y                          = 5
-    [(CFO).desc = "Y coordinate of the pixel center in the camera frame.",
-     (CFO).units = "cm" ];
-  double pos_z                          = 6
-    [(CFO).desc = "Z coordinate of the pixel center in the camers frame.",
-     (CFO).units = "cm" ];
+  Vector3D pos                          = 4
+    [(CFO).desc = "Position of the pixel center in the camera frame.",
+     (CFO).units = "cm", (CFO).sql.inline_message = true ];
+};
+
+message VSOTelescopeData {
+  uint32 id                             = 1
+    [(CFO).desc = "Sequential telescope identification number, starting "
+     "at zero."];
+  uint32 hex_id                         = 2
+    [(CFO).desc = "Hexagonal grid identification number, starting at zero."];
+  Vector3D pos                          = 3
+    [(CFO).desc = "Position of the reflector center in the array frame.",
+     (CFO).units = "cm", (CFO).sql.inline_message = true ];
+  double delta_y                        = 4
+    [(CFO).desc = "Deviation from perpendicularity of elevation and azimuth "
+     "planes. Specifies rotation of the elevation axis around the y-axis of "
+     "the azimuth plane.",
+     (CFO).units = "deg"];
+  double alpha_x                        = 5
+    [(CFO).desc = "Deviation of normal to the azimuth plane (the z-axis in "
+     "the azimuth frame) the from vertical. Specifies a rotation of azimuth "
+     "frame around the x-axis of the global frame. A positive value rotates "
+     "the normal to the azimuth plane to the North. This rotation is applied "
+     "AFTER alpha_y.",
+     (CFO).units = "deg"];
+  double alpha_y                        = 6
+    [(CFO).desc = "Deviation of normal to the azimuth plane (the z-axis in "
+     "the azimuth frame) the from vertical. Specifies a rotation of azimuth "
+     "frame around the y-axis of the global frame. A positive value rotates the "
+     "normal to the azimuth plane to the East. This rotation is applied "
+     "BEFORE alpha_x.",
+     (CFO).units = "deg"];
+  HorizontalCoordinates altaz           = 7
+    [(CFO).desc = "Altitude and elevation of telescope. ",
+     (CFO).sql.inline_message = true];
+  Vector3D translation                  = 8
+    [(CFO).desc = "Vector from the origin of the reflector "
+     "reference frame to the intersection of rotation axes. The reflector "
+     "frame is defined by +y pointing along optical axis and +x pointing "
+     "along the horizontal to the right when looking along the optic axis "
+     "(when alpha_y=0). For example, with the optic axis (+y) pointing North, "
+     "+x points East and +z point up. ",
+     (CFO).units = "cm"];
+  
+
+  //    << VSDataConverter::toString(fCurvatureRadius) << ' '
+  //    << VSDataConverter::toString(fAperture) << ' '
+  //    << VSDataConverter::toString(fFacetSpacing) << ' '
+  //    << VSDataConverter::toString(fFacetSize) << ' '
+  //    << VSDataConverter::toString(fReflectorRotation) << ' '
+
+  //    << VSDataConverter::toString(fHexagonRingsN) << ' '
+  //    << VSDataConverter::toString(fReflectorIP) << ' '
+  //    << VSDataConverter::toString(fMirrorParity) << ' '
+  //    << VSDataConverter::toString(fFPTranslation.x) << ' '
+  //    << VSDataConverter::toString(fFPTranslation.y) << ' '
+
+  //    << VSDataConverter::toString(fFPTranslation.z) << ' '
+  //    << VSDataConverter::toString(fCameraDiameter) << ' '
+  //    << VSDataConverter::toString(fFieldOfView) << ' '
+  //    << VSDataConverter::toString(fCathodeDiameter) << ' '
+  //    << VSDataConverter::toString(fPixelSpacing) << ' '
+
+  //    << VSDataConverter::toString(fConcSurvProb) << ' '
+  //    << VSDataConverter::toString(fFPRotation.x) << ' '
+  //    << VSDataConverter::toString(fFPRotation.y) << ' '
+  //    << VSDataConverter::toString(fFPRotation.z) << ' '
+  //    << VSDataConverter::toString(fCameraIP) << ' '
+
+  //    << VSDataConverter::toString(fPixelParity) << ' '
+
 };
 
 // ============================================================================
@@ -398,7 +449,7 @@ message PlaneWindowParameters {
      "reflector frame if desired. Focal plane rotation around z-axis of "
      "the reflector frame.",
      (CFO).units = "deg"];
-  repeated calin.SpectralResponsePoint transmittance = 5
+  repeated SpectralResponsePoint transmittance = 5
     [(CFO).desc = "Energy dependent absorption factor."];                                                       
   double weathering_factor              = 6
     [(CFO).desc = "Additional absorption factor applied to all photons."];

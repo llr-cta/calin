@@ -1,6 +1,6 @@
 set(CALIN_TARGET_LIBRARY calin_io)
 set(CALIN_SOURCES log.cpp sql_statement.cpp sql_transceiver.cpp
-		  sqlite3_statement.cpp sqlite3_transceiver.cpp)
+		  sqlite3_statement.cpp sqlite3_transceiver.cpp util.cpp)
 
 include_directories(${PYTHON_INCLUDE_PATH}) 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})

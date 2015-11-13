@@ -24,6 +24,7 @@
 #include <algorithm>
 
 #include <simulation/vso_telescope.hpp>
+#include <proto/simulation_vs_optics.pb.h>
 
 using namespace calin::math::vs_physics;
 using namespace calin::simulation::vs_optics;

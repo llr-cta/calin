@@ -65,9 +65,9 @@ void VSOPixel::dumpToProto(ix::simulation::vs_optics::VSOPixelData& d) const
   d.set_id(fID);
   d.set_hex_id(fHexID);
   d.set_removed(fRemoved);
-  d.set_pos_x(fPos.x);
-  d.set_pos_y(fPos.y);
-  d.set_pos_z(fPos.z);
+  d.mutable_pos()->set_x(fPos.x);
+  d.mutable_pos()->set_y(fPos.y);
+  d.mutable_pos()->set_z(fPos.z);
 }
 
 VSOPixel*
@@ -80,9 +80,9 @@ VSOPixel::createFromProto(const ix::simulation::vs_optics::VSOPixelData& d,
   pixel->fID              = d.id();
   pixel->fHexID           = d.hex_id();
   pixel->fRemoved         = d.removed();
-  pixel->fPos.x           = d.pos_x();
-  pixel->fPos.y           = d.pos_y();
-  pixel->fPos.z           = d.pos_z();
+  pixel->fPos.x           = d.pos().x();
+  pixel->fPos.y           = d.pos().y();
+  pixel->fPos.z           = d.pos().z();
 
   return pixel;
 }

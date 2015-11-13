@@ -25,12 +25,17 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include <google/protobuf/io/printer.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+
 #include "proto/calin.pb.h"
 #include "proto/io_sql_transceiver.pb.h"
 #include "io/sql_transceiver.hpp"
 #include "io/log.hpp"
+#include "io/util.hpp"
 
 using namespace calin::io::log;
+using namespace calin::io::util;
 using namespace calin::io::sql_transceiver;
 using namespace google::protobuf;
 
@@ -1132,4 +1137,43 @@ insert_table_description(const SQLTable* t, const std::string& instance_desc)
       r_exec_insert(t_int, &m, nullptr, oid, 0, 0, true);
     });
   delete t_int;
+}
+
+std::map<std::string, std::string> SQLTransceiver::
+field_dict(const google::protobuf::FieldDescriptor *d,
+           const std::map<std::string, std::string>& parent_dict)
+{
+  std::map<std::string, std::string> dict;
+  dict["PARENT_DESC"] = parent_dict.at("DESC");
+  dict["PARENT_UNITS"] = parent_dict.at("UNITS");
+  unsigned nsub_unit = 0;
+  for(const auto& isub_unit : split(parent_dict.at("UNITS"),','))
+    dict[std::string("PARENT_SUBUNIT_")+std::to_string(nsub_unit++)] =
+        isub_unit;
+
+  std::string desc;
+  std::string units;
+
+  const google::protobuf::FieldOptions* fopt { &d->options() };
+  if(fopt->HasExtension(CFO))
+  {
+    if(!fopt->GetExtension(CFO).desc().empty())
+    {
+      google::protobuf::io::StringOutputStream output(&desc);
+      google::protobuf::io::Printer printer(&output, '$');
+      printer.Print(dict, fopt->GetExtension(CFO).desc().c_str());
+    }
+
+    if(!fopt->GetExtension(CFO).units().empty())
+    {
+      google::protobuf::io::StringOutputStream output(&units);
+      google::protobuf::io::Printer printer(&output, '$');
+      printer.Print(dict, fopt->GetExtension(CFO).units().c_str());
+    }
+  }
+  
+  dict["DESC"] = desc;
+  dict["UNITS"] = units;
+
+  return dict;
 }

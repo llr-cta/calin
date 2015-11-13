@@ -305,6 +305,10 @@ class SQLTransceiver
   virtual void create_internal_tables();
   virtual void insert_table_description(const SQLTable* t,
                                         const std::string& instance_desc);
+
+  std::map<std::string, std::string>
+  field_dict(const google::protobuf::FieldDescriptor *d,
+             const std::map<std::string, std::string>& parent_dict);
 };
 
 } } } // namespace calin::io::sql_transceiver

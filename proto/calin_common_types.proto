@@ -26,7 +26,7 @@ syntax = "proto3";
 
 import "calin.proto";
 
-package calin;
+package calin.ix;
 
 message EarthCoordinates
 {
@@ -139,3 +139,15 @@ message SpectralResponsePoint
     [(CFO).desc = "Response at given energy."];
 };
 
+message Vector3D
+{
+  double x                              = 1
+    [(CFO).desc = "$PARENT_DESC$X-coordinate.",
+     (CFO).units = "$PARENT_UNITS$"];
+  double y                              = 2
+    [(CFO).desc = "$PARENT_DESC$Y-coordinate.",
+     (CFO).units = "$PARENT_UNITS$"];
+  double z                              = 3
+    [(CFO).desc = "$PARENT_DESC$Z-coordinate.",
+     (CFO).units = "$PARENT_UNITS$"];
+};
