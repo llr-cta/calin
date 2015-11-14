@@ -70,6 +70,41 @@ message VSOPixelData {
      (CFO).units = "cm", (CFO).sql.inline_message = true ];
 };
 
+message VSODiskObscurationData { 
+  Vector3D center_pos                   = 1
+    [(CFO).desc = "Position of the center of the disk in reflector frame",
+     (CFO).units = "cm"];
+  Vector3D normal                       = 2
+    [(CFO).desc = "Normal to the disk in reflector frame",
+     (CFO).units = "normalized"];
+  double diameter                       = 3
+    [(CFO).desc = "Diameter of the disk",
+     (CFO).units = "cm"];
+  bool incoming_only                    = 4
+    [(CFO).desc = "True if photons should only be obscured only when u.j>0"];
+};
+
+message VSOTubeObscurationData {
+  Vector3D end1_pos                     = 1
+    [(CFO).desc = "Position of center of tube at 1st end in reflector frame",
+     (CFO).units = "cm"];
+  Vector3D end2_pos                     = 2
+    [(CFO).desc = "Position of center of tube at 2nd end in reflector frame",
+     (CFO).units = "cm"];
+  double diameter                       = 3
+    [(CFO).desc = "Cross-sectional diameter of the tube",
+     (CFO).units = "cm"];
+  bool incoming_only                    = 4
+    [(CFO).desc = "True if photons should only be obscured when u.j>0"];
+};
+
+message VSOObscurationData {
+  oneof type {
+    VSODiskObscurationData disk         = 1;
+    VSOTubeObscurationData tube         = 2;
+  }
+};
+
 message VSOTelescopeData {
   uint32 id                             = 1
     [(CFO).desc = "Sequential telescope identification number, starting "
@@ -94,8 +129,8 @@ message VSOTelescopeData {
   double alpha_y                        = 6
     [(CFO).desc = "Deviation of normal to the azimuth plane (the z-axis in "
      "the azimuth frame) the from vertical. Specifies a rotation of azimuth "
-     "frame around the y-axis of the global frame. A positive value rotates the "
-     "normal to the azimuth plane to the East. This rotation is applied "
+     "frame around the y-axis of the global frame. A positive value rotates "
+     "the normal to the azimuth plane to the East. This rotation is applied "
      "BEFORE alpha_x.",
      (CFO).units = "deg"];
   HorizontalCoordinates altaz           = 7
@@ -144,62 +179,6 @@ message VSOTelescopeData {
 // PARAMETERS USED TO CONSTRUCT RANDOM ARRAY
 //
 // ============================================================================
-
-message DiskObscuration { 
-  double xc                             = 1
-    [(CFO).desc = "X coordinate of the center of the disk in reflector frame",
-     (CFO).units = "cm"];
-  double yc                             = 2
-    [(CFO).desc = "Y coordinate of the center of the disk in reflector frame",
-     (CFO).units = "cm"];
-  double zc                             = 3
-    [(CFO).desc = "Z coordinate of the center of the disk in reflector frame",
-     (CFO).units = "cm"];
-  double nx                             = 4
-    [(CFO).desc = "X component of the normal to the disk in reflector frame"];
-  double ny                             = 5
-    [(CFO).desc = "Y component of the normal to the disk in reflector frame"];
-  double nz                             = 6
-    [(CFO).desc = "Z component of the normal to the disk in reflector frame"];
-  double diameter                       = 7
-    [(CFO).desc = "Diameter of the disk",
-     (CFO).units = "cm"];
-  bool incoming_only                    = 8
-    [(CFO).desc = "True if photons should only be obscured only when u.j>0"];
-};
-
-message TubeObscuration {
-  double x1                             = 1
-    [(CFO).desc = "X coordinate center of tube at 1st end in reflector frame",
-     (CFO).units = "cm"];
-  double y1                             = 2
-    [(CFO).desc = "Y coordinate center of tube at 1st end in reflector frame",
-     (CFO).units = "cm"];
-  double z1                             = 3
-    [(CFO).desc = "Z coordinate center of tube at 1st end in reflector frame",
-     (CFO).units = "cm"];
-  double x2                             = 4
-    [(CFO).desc = "X coordinate center of tube at 2nd end in reflector frame",
-     (CFO).units = "cm"];
-  double y2                             = 5
-    [(CFO).desc = "Y coordinate center of tube at 2nd end in reflector frame",
-     (CFO).units = "cm"];
-  double z2                             = 6
-    [(CFO).desc = "Z coordinate center of tube at 2nd end in reflector frame",
-     (CFO).units = "cm"];
-  double diameter                       = 7
-    [(CFO).desc = "Cross-sectional diameter of the tube",
-     (CFO).units = "cm"];
-  bool incoming_only                    = 8
-    [(CFO).desc = "True if photons should only be obscured when u.j>0"];
-};
-
-message Obscuration {
-  oneof type {
-    DiskObscuration disk                = 1;
-    TubeObscuration tube                = 2;
-  }
-};
   
 message HexArrayLayout
 {
@@ -528,13 +507,13 @@ message HexPixelArrayParameters
 };
 
 message IsotropicDCArrayParameters {
-  EarthCoordinates array_origin         = 1
+  EarthCoordinates array_origin                    = 1
     [(CFO).desc = "Coordinates of origin of array reference frame on Earth"];
   oneof array_layout {
-    HexArrayLayout hex_array_layout     = 2;
+    HexArrayLayout hex_array_layout                = 2;
     UserDefinedArrayLayout prescribed_array_layout = 3;
   };
-  ReflectorFrameParameters reflector_frame = 4;
-  HexDCReflectorParameters reflector    = 5;
-  repeated Obscuration obscurations     = 6;
+  ReflectorFrameParameters reflector_frame         = 4;
+  HexDCReflectorParameters reflector               = 5;
+  repeated VSOObscurationData obscurations         = 6;
 };
