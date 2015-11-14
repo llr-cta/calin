@@ -42,6 +42,7 @@
 
 #include <math/vs_vec3d.hpp>
 #include <math/vs_particle.hpp>
+#include <proto/simulation_vs_optics.pb.h>
 
 namespace calin { namespace simulation { namespace vs_optics {
 
@@ -59,6 +60,12 @@ class VSOObscuration
 
   virtual VSOObscuration* clone() const = 0;
 
+  virtual void
+  dumpToProto(ix::simulation::vs_optics::VSOObscurationData& d) const = 0;
+  
+  static VSOObscuration*
+  createFromProto(const ix::simulation::vs_optics::VSOObscurationData& d);
+  
 #if 0
   virtual std::string dumpToString() const = 0;
   static std::vector<VSOObscuration*> 
@@ -87,6 +94,12 @@ class VSODiskObscuration: public VSOObscuration
                    math::vs_physics::Particle& p_out) const override;
   VSOObscuration* clone() const override;
 
+  void
+  dumpToProto(ix::simulation::vs_optics::VSOObscurationData& d) const override;
+  
+  static VSOObscuration*
+  createFromProto(const ix::simulation::vs_optics::VSODiskObscurationData& d);
+
 #if 0
   virtual std::string dumpToString() const;
   static VSODiskObscuration* createFromString(std::string& str);
@@ -100,10 +113,10 @@ class VSODiskObscuration: public VSOObscuration
   bool                    fICO;
 };
 
-class VSOCylinderObscuration: public VSOObscuration
+class VSOTubeObscuration: public VSOObscuration
 {
  public:
-  VSOCylinderObscuration(const math::vs_physics::Vec3D& x1,
+  VSOTubeObscuration(const math::vs_physics::Vec3D& x1,
                          const math::vs_physics::Vec3D& x2,
                          double radius, bool incoming_only):
       VSOObscuration(), fX1(x1), fX2(x2), fR(radius), fN(), fD1(), fD2(),
@@ -116,14 +129,20 @@ class VSOCylinderObscuration: public VSOObscuration
     fD  = std::fabs(fD2-fD1);
   }
 
-  virtual ~VSOCylinderObscuration();
+  virtual ~VSOTubeObscuration();
   bool doesObscure(const math::vs_physics::Particle& p_in,
                    math::vs_physics::Particle& p_out) const override;
   VSOObscuration* clone() const override;
 
+  void
+  dumpToProto(ix::simulation::vs_optics::VSOObscurationData& d) const override;
+  
+  static VSOObscuration*
+  createFromProto(const ix::simulation::vs_optics::VSOTubeObscurationData& d);
+
 #if 0
   virtual std::string dumpToString() const;
-  static VSOCylinderObscuration* createFromString(std::string& str);
+  static VSOTubeObscuration* createFromString(std::string& str);
 #endif
   
  private:

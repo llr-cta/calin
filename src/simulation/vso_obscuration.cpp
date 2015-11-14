@@ -43,6 +43,14 @@ VSOObscuration::~VSOObscuration()
   // nothing to see here
 }
 
+VSOObscuration* VSOObscuration::
+createFromProto(const ix::simulation::vs_optics::VSOObscurationData& d)
+{
+  if(d.has_disk())return VSODiskObscuration::createFromProto(d.disk());
+  else if(d.has_tube())return VSOTubeObscuration::createFromProto(d.tube());
+  else return 0;
+}
+
 #if 0
 std::vector<VSOObscuration*> 
 VSOObscuration::createObsVecFromString(const std::string &str)
@@ -65,7 +73,7 @@ VSOObscuration::createObsVecFromString(const std::string &str)
       if(obs)v.push_back(obs);
       if(s.length() != slen)continue;
 
-      obs = VSOCylinderObscuration::createFromString(s);
+      obs = VSOTubeObscuration::createFromString(s);
       if(obs)v.push_back(obs);
       if(s.length() != slen)continue;
       
@@ -138,6 +146,28 @@ bool VSODiskObscuration::doesObscure(const Particle& p_in,
    return false;
 }
 
+void VSODiskObscuration::
+dumpToProto(ix::simulation::vs_optics::VSOObscurationData& d) const
+{
+  auto* dd = d.mutable_disk();
+  dd->mutable_center_pos()->set_x(fX0.x);
+  dd->mutable_center_pos()->set_y(fX0.y);
+  dd->mutable_center_pos()->set_z(fX0.z);
+  dd->mutable_normal()->set_x(fN.x);
+  dd->mutable_normal()->set_y(fN.y);
+  dd->mutable_normal()->set_z(fN.z);
+  dd->set_diameter(2.0*fR);
+  dd->set_incoming_only(fICO);
+}
+  
+VSOObscuration* VSODiskObscuration::
+createFromProto(const ix::simulation::vs_optics::VSODiskObscurationData& d)
+{
+  Vec3D X0 { d.center_pos().x(), d.center_pos().y(), d.center_pos().z() };
+  Vec3D N { d.normal().x(), d.normal().y(), d.normal().z() };
+  return new VSODiskObscuration(X0, N, d.diameter()/2.0, d.incoming_only());
+}
+
 #if 0
 VSODiskObscuration* VSODiskObscuration::
 createFromString(std::string& str)
@@ -187,12 +217,12 @@ VSOObscuration* VSODiskObscuration::clone() const
 }
 
 
-VSOCylinderObscuration::~VSOCylinderObscuration()
+VSOTubeObscuration::~VSOTubeObscuration()
 {
   // nothing to see here
 }
 
-bool VSOCylinderObscuration::doesObscure(const Particle& p_in,
+bool VSOTubeObscuration::doesObscure(const Particle& p_in,
 					 Particle& p_out) const
 {
   if(fICO && p_in.Velocity().y>0)return false;
@@ -231,8 +261,30 @@ bool VSOCylinderObscuration::doesObscure(const Particle& p_in,
   return false;
 }
 
+void VSOTubeObscuration::
+dumpToProto(ix::simulation::vs_optics::VSOObscurationData& d) const
+{
+  auto* dd = d.mutable_tube();
+  dd->mutable_end1_pos()->set_x(fX1.x);
+  dd->mutable_end1_pos()->set_y(fX1.y);
+  dd->mutable_end1_pos()->set_z(fX1.z);
+  dd->mutable_end2_pos()->set_x(fX2.x);
+  dd->mutable_end2_pos()->set_y(fX2.y);
+  dd->mutable_end2_pos()->set_z(fX2.z);
+  dd->set_diameter(2.0*fR);
+  dd->set_incoming_only(fICO);
+}
+  
+VSOObscuration* VSOTubeObscuration::
+createFromProto(const ix::simulation::vs_optics::VSOTubeObscurationData& d)
+{
+  Vec3D X1 { d.end1_pos().x(), d.end1_pos().y(), d.end1_pos().z() };
+  Vec3D X2 { d.end2_pos().x(), d.end2_pos().y(), d.end2_pos().z() };
+  return new VSOTubeObscuration(X1, X2, d.diameter()/2.0, d.incoming_only());
+}
+
 #if 0
-VSOCylinderObscuration* VSOCylinderObscuration::
+VSOTubeObscuration* VSOTubeObscuration::
 createFromString(std::string& str)
 {
   std::vector<std::string> tokens;
@@ -255,10 +307,10 @@ createFromString(std::string& str)
   VSDataConverter::fromString(X1.z, tokens[5]);
   VSDataConverter::fromString(r,    tokens[6]);
   VSDataConverter::fromString(ico,  tokens[7]);
-  return new VSOCylinderObscuration(X0, X1, r, ico);
+  return new VSOTubeObscuration(X0, X1, r, ico);
 }
 
-std::string VSOCylinderObscuration::dumpToString() const
+std::string VSOTubeObscuration::dumpToString() const
 {
   std::string s("TUBE(");
   s += VSDataConverter::toString(fX1.x); s += ",";
@@ -273,7 +325,7 @@ std::string VSOCylinderObscuration::dumpToString() const
 }
 #endif
 
-VSOObscuration* VSOCylinderObscuration::clone() const
+VSOObscuration* VSOTubeObscuration::clone() const
 {
-  return new VSOCylinderObscuration(*this);
+  return new VSOTubeObscuration(*this);
 }
