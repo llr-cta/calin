@@ -85,6 +85,9 @@ class Vec3D
   inline Vec3D& Reset(const Vec3D& v = Vec3D());
   inline Vec3D& Reset(double _x, double _y, double _z);
 
+  inline bool operator == ( const Vec3D& v ) const;
+  inline bool operator != ( const Vec3D& v ) const;
+  
   inline Vec3D& operator = ( const Vec3D& v );  //!<assignment
   inline Vec3D& operator += ( const Vec3D& v ); //!<assignment: addition
   inline Vec3D& operator -= ( const Vec3D& v ); //!<assignment: subtraction 
@@ -209,7 +212,17 @@ inline Vec3D& Vec3D::Reset(double _x, double _y, double _z)
   z = _z;
   return *this;
 }
-  
+
+inline bool Vec3D::operator == ( const Vec3D& v ) const
+{
+  return x==v.x && y==v.y && z==v.z;
+}
+
+inline bool Vec3D::operator != ( const Vec3D& v ) const
+{
+  return x!=v.x || y!=v.y || z!=v.z;
+}
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Assignment operator =
 inline Vec3D& Vec3D::operator = ( const Vec3D& v )
@@ -408,7 +421,7 @@ inline istream& operator >> (istream& stream,
                              calin::math::vs_physics::Vec3D& v)
 {
   char c;
-  stream >> c >> v.x >> v.y >> v.z >> c;
+  stream >> c >> v.x >> c >> v.y >> c >> v.z >> c;
   return stream;
 }
 
