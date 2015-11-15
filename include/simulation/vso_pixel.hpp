@@ -65,10 +65,10 @@ class VSOPixel
   // Dump
   // ************************************************************************
 
-  void dumpToProto(ix::simulation::vs_optics::VSOPixelData& d) const;
+  void dump_to_proto(ix::simulation::vs_optics::VSOPixelData* d) const;
   static VSOPixel*
-  createFromProto(const ix::simulation::vs_optics::VSOPixelData& d,
-                  const VSOTelescope* T);
+  create_from_proto(const ix::simulation::vs_optics::VSOPixelData& d,
+                    const VSOTelescope* T);
 
 #if 0
   void dumpShort(std::ostream& stream) const;

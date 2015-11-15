@@ -128,25 +128,21 @@ cornerInReflectorCoords(unsigned icorner, double aperture) const
   return r;
 }
 
-void VSOMirror::dumpToProto(ix::simulation::vs_optics::VSOMirrorData& d) const
+void VSOMirror::dump_to_proto(ix::simulation::vs_optics::VSOMirrorData* d) const
 {
-  d.set_id(fID);
-  d.set_hex_id(fHexID);
-  d.set_removed(fRemoved);
-  d.mutable_pos()->set_x(fPos.x);
-  d.mutable_pos()->set_y(fPos.y);
-  d.mutable_pos()->set_z(fPos.z);
-  d.mutable_align()->set_x(fAlign.x);
-  d.mutable_align()->set_y(fAlign.y);
-  d.mutable_align()->set_z(fAlign.z);
-  d.set_focal_length(fFocalLength);
-  d.set_spot_size(fSpotSize);
-  d.set_degrading_factor(fDegradingFactor);
+  d->set_id(fID);
+  d->set_hex_id(fHexID);
+  d->set_removed(fRemoved);
+  fPos.dump_to_proto(d->mutable_pos());
+  fAlign.dump_to_proto(d->mutable_align());
+  d->set_focal_length(fFocalLength);
+  d->set_spot_size(fSpotSize);
+  d->set_degrading_factor(fDegradingFactor);
 }
 
 VSOMirror* VSOMirror::
-createFromProto(const ix::simulation::vs_optics::VSOMirrorData& d,
-                const VSOTelescope* T)
+create_from_proto(const ix::simulation::vs_optics::VSOMirrorData& d,
+                  const VSOTelescope* T)
 {
   VSOMirror* mirror = new VSOMirror;
 
@@ -154,12 +150,8 @@ createFromProto(const ix::simulation::vs_optics::VSOMirrorData& d,
   mirror->fID              = d.id();
   mirror->fHexID           = d.hex_id();
   mirror->fRemoved         = d.removed();
-  mirror->fPos.x           = d.pos().x();
-  mirror->fPos.y           = d.pos().y();
-  mirror->fPos.z           = d.pos().z();
-  mirror->fAlign.x         = d.align().x();
-  mirror->fAlign.y         = d.align().y();
-  mirror->fAlign.z         = d.align().z();
+  mirror->fPos.set_from_proto(d.pos());
+  mirror->fAlign.set_from_proto(d.align());
   mirror->fFocalLength     = d.focal_length();
   mirror->fSpotSize        = d.spot_size();
   mirror->fDegradingFactor = d.degrading_factor();

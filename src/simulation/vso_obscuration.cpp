@@ -44,10 +44,10 @@ VSOObscuration::~VSOObscuration()
 }
 
 VSOObscuration* VSOObscuration::
-createFromProto(const ix::simulation::vs_optics::VSOObscurationData& d)
+create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
 {
-  if(d.has_disk())return VSODiskObscuration::createFromProto(d.disk());
-  else if(d.has_tube())return VSOTubeObscuration::createFromProto(d.tube());
+  if(d.has_disk())return VSODiskObscuration::create_from_proto(d.disk());
+  else if(d.has_tube())return VSOTubeObscuration::create_from_proto(d.tube());
   else return 0;
 }
 
@@ -147,25 +147,20 @@ bool VSODiskObscuration::doesObscure(const Particle& p_in,
 }
 
 void VSODiskObscuration::
-dumpToProto(ix::simulation::vs_optics::VSOObscurationData& d) const
+dump_to_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
 {
-  auto* dd = d.mutable_disk();
-  dd->mutable_center_pos()->set_x(fX0.x);
-  dd->mutable_center_pos()->set_y(fX0.y);
-  dd->mutable_center_pos()->set_z(fX0.z);
-  dd->mutable_normal()->set_x(fN.x);
-  dd->mutable_normal()->set_y(fN.y);
-  dd->mutable_normal()->set_z(fN.z);
+  auto* dd = d->mutable_disk();
+  fX0.dump_to_proto(dd->mutable_center_pos());
+  fN.dump_to_proto(dd->mutable_normal());
   dd->set_diameter(2.0*fR);
   dd->set_incoming_only(fICO);
 }
   
 VSOObscuration* VSODiskObscuration::
-createFromProto(const ix::simulation::vs_optics::VSODiskObscurationData& d)
+create_from_proto(const ix::simulation::vs_optics::VSODiskObscurationData& d)
 {
-  Vec3D X0 { d.center_pos().x(), d.center_pos().y(), d.center_pos().z() };
-  Vec3D N { d.normal().x(), d.normal().y(), d.normal().z() };
-  return new VSODiskObscuration(X0, N, d.diameter()/2.0, d.incoming_only());
+  return new VSODiskObscuration(d.center_pos(), d.normal(),
+                                d.diameter()/2.0, d.incoming_only());
 }
 
 #if 0
@@ -262,25 +257,20 @@ bool VSOTubeObscuration::doesObscure(const Particle& p_in,
 }
 
 void VSOTubeObscuration::
-dumpToProto(ix::simulation::vs_optics::VSOObscurationData& d) const
+dump_to_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
 {
-  auto* dd = d.mutable_tube();
-  dd->mutable_end1_pos()->set_x(fX1.x);
-  dd->mutable_end1_pos()->set_y(fX1.y);
-  dd->mutable_end1_pos()->set_z(fX1.z);
-  dd->mutable_end2_pos()->set_x(fX2.x);
-  dd->mutable_end2_pos()->set_y(fX2.y);
-  dd->mutable_end2_pos()->set_z(fX2.z);
+  auto* dd = d->mutable_tube();
+  fX1.dump_to_proto(dd->mutable_end1_pos());
+  fX2.dump_to_proto(dd->mutable_end2_pos());
   dd->set_diameter(2.0*fR);
   dd->set_incoming_only(fICO);
 }
   
 VSOObscuration* VSOTubeObscuration::
-createFromProto(const ix::simulation::vs_optics::VSOTubeObscurationData& d)
+create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d)
 {
-  Vec3D X1 { d.end1_pos().x(), d.end1_pos().y(), d.end1_pos().z() };
-  Vec3D X2 { d.end2_pos().x(), d.end2_pos().y(), d.end2_pos().z() };
-  return new VSOTubeObscuration(X1, X2, d.diameter()/2.0, d.incoming_only());
+  return new VSOTubeObscuration(d.end1_pos(), d.end2_pos(),
+                                d.diameter()/2.0, d.incoming_only());
 }
 
 #if 0

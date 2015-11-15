@@ -44,6 +44,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <proto/calin_common_types.pb.h>
 
 /*!  \class Vec3D
      \brief 3 dimensional vector class
@@ -69,6 +70,7 @@ class Vec3D
   inline Vec3D();                                   //!<default constructor
   inline Vec3D(const Vec3D& v);                     //!<copy constructor
   inline Vec3D( double _x, double _y, double _z );  //!<overloaded constructor
+  Vec3D(const ix::Vector3D& d); // construct from protobuf
   
   inline void Polar(double& r, double& theta, double& phi) const;
 
@@ -99,6 +101,9 @@ class Vec3D
 
   inline Vec3D  operator & (const Vec3D& v) const;  //!<addition of rotations
 
+  void dump_to_proto(ix::Vector3D* d) const;
+  void set_from_proto(const ix::Vector3D& d);
+  
   void Dump(std::ostream& stream = std::cout) const; //!<prints coordinates
   void DumpShort(std::ostream& stream = std::cout) const; //!<prints coordinates
 

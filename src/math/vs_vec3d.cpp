@@ -28,7 +28,7 @@
   \author   Stephen Fegan             \n
             UCLA                      \n
             sfegan@astro.ucla.edu     \n
-  \author   Maciej Nicewicz           \n
+<  \author   Maciej Nicewicz           \n
             UCLA                      \n
             nicewicz@physics.ucla.edu \n
   \author   Vladimir Vassiliev        \n
@@ -198,6 +198,25 @@ Vec3D& Vec3D::operator &= (const Vec3D& r)
       *this = axis/sinhalftheta*halftheta*2.0;
     }
   return *this;
+}
+
+Vec3D::Vec3D(const ix::Vector3D& d)
+{
+  set_from_proto(d);
+}
+
+void Vec3D::dump_to_proto(ix::Vector3D* d) const
+{
+  d->set_x(x);
+  d->set_y(y);
+  d->set_z(z);
+}
+
+void Vec3D::set_from_proto(const ix::Vector3D& d)
+{
+  x = d.x();
+  y = d.y();
+  z = d.z();
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

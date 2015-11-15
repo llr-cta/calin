@@ -61,10 +61,10 @@ class VSOObscuration
   virtual VSOObscuration* clone() const = 0;
 
   virtual void
-  dumpToProto(ix::simulation::vs_optics::VSOObscurationData& d) const = 0;
+  dump_to_proto(ix::simulation::vs_optics::VSOObscurationData* d) const = 0;
   
   static VSOObscuration*
-  createFromProto(const ix::simulation::vs_optics::VSOObscurationData& d);
+  create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d);
   
 #if 0
   virtual std::string dumpToString() const = 0;
@@ -95,10 +95,11 @@ class VSODiskObscuration: public VSOObscuration
   VSOObscuration* clone() const override;
 
   void
-  dumpToProto(ix::simulation::vs_optics::VSOObscurationData& d) const override;
+  dump_to_proto(ix::simulation::vs_optics::VSOObscurationData* d)
+      const override;
   
   static VSOObscuration*
-  createFromProto(const ix::simulation::vs_optics::VSODiskObscurationData& d);
+  create_from_proto(const ix::simulation::vs_optics::VSODiskObscurationData& d);
 
 #if 0
   virtual std::string dumpToString() const;
@@ -134,11 +135,11 @@ class VSOTubeObscuration: public VSOObscuration
                    math::vs_physics::Particle& p_out) const override;
   VSOObscuration* clone() const override;
 
-  void
-  dumpToProto(ix::simulation::vs_optics::VSOObscurationData& d) const override;
+  void dump_to_proto(ix::simulation::vs_optics::VSOObscurationData* d)
+      const override;
   
   static VSOObscuration*
-  createFromProto(const ix::simulation::vs_optics::VSOTubeObscurationData& d);
+  create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d);
 
 #if 0
   virtual std::string dumpToString() const;

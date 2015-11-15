@@ -60,19 +60,17 @@ Vec3D VSOPixel::incomingSkyVectorAtZenith(double plate_scale) const
   return p;
 }
 
-void VSOPixel::dumpToProto(ix::simulation::vs_optics::VSOPixelData& d) const
+void VSOPixel::dump_to_proto(ix::simulation::vs_optics::VSOPixelData* d) const
 {
-  d.set_id(fID);
-  d.set_hex_id(fHexID);
-  d.set_removed(fRemoved);
-  d.mutable_pos()->set_x(fPos.x);
-  d.mutable_pos()->set_y(fPos.y);
-  d.mutable_pos()->set_z(fPos.z);
+  d->set_id(fID);
+  d->set_hex_id(fHexID);
+  d->set_removed(fRemoved);
+  fPos.dump_to_proto(d->mutable_pos());
 }
 
 VSOPixel*
-VSOPixel::createFromProto(const ix::simulation::vs_optics::VSOPixelData& d,
-                          const VSOTelescope* T)
+VSOPixel::create_from_proto(const ix::simulation::vs_optics::VSOPixelData& d,
+                            const VSOTelescope* T)
 {
   VSOPixel* pixel = new VSOPixel;
 
@@ -80,9 +78,7 @@ VSOPixel::createFromProto(const ix::simulation::vs_optics::VSOPixelData& d,
   pixel->fID              = d.id();
   pixel->fHexID           = d.hex_id();
   pixel->fRemoved         = d.removed();
-  pixel->fPos.x           = d.pos().x();
-  pixel->fPos.y           = d.pos().y();
-  pixel->fPos.z           = d.pos().z();
+  pixel->fPos.set_from_proto(d.pos());
 
   return pixel;
 }

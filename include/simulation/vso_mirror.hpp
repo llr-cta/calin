@@ -78,10 +78,10 @@ class VSOMirror
   // Dump
   // ************************************************************************
 
-  void dumpToProto(ix::simulation::vs_optics::VSOMirrorData& d) const;
+  void dump_to_proto(ix::simulation::vs_optics::VSOMirrorData* d) const;
   static VSOMirror*
-  createFromProto(const ix::simulation::vs_optics::VSOMirrorData& d,
-                  const VSOTelescope* T);
+  create_from_proto(const ix::simulation::vs_optics::VSOMirrorData& d,
+                    const VSOTelescope* T);
   
 #if 0
   void dumpShort(std::ostream& stream) const;
