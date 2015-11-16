@@ -122,6 +122,11 @@ class VSOTelescope
   // ************************************************************************
   // Dump and Reload
   // ************************************************************************
+
+  void dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d);
+  static VSOTelescope*
+  create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d);
+  
 #if 0
   void dumpShort(std::ostream& stream) const;
   void dump(std::ostream& stream, unsigned l=0) const;
