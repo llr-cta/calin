@@ -45,7 +45,7 @@ VSOMirror::VSOMirror(const VSOTelescope* T,
   fTelescope(T), fID(ID), fHexID(MHID), fRemoved(REM), fPos(P), fAlign(A), 
   fFocalLength(FL), fSpotSize(SS), fDegradingFactor(DF), fRotationVector()
 {
-  if(T!=nullptr)calculateRotationVector();
+  calculateRotationVector();
 }
 
 VSOMirror::~VSOMirror()
@@ -55,6 +55,11 @@ VSOMirror::~VSOMirror()
 
 void VSOMirror::calculateRotationVector()
 {
+  if(fTelescope == nullptr){
+    fRotationVector = Vec3D(0,0,0);
+    return;
+  }
+    
   Vec3D rrot(0,-fTelescope->reflectorRotation(),0);
   Vec3D align(fAlign);
   align.Rotate(rrot);
@@ -156,7 +161,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOMirrorData& d,
   mirror->fSpotSize        = d.spot_size();
   mirror->fDegradingFactor = d.degrading_factor();
 
-  if(T)mirror->calculateRotationVector();
+  mirror->calculateRotationVector();
 
   return mirror;  
 }
