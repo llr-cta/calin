@@ -75,7 +75,8 @@ uint64_t SQLite3Statement::get_oid()
 void SQLite3Statement::reset()
 {
   sqlite3_reset(stmt_);
-  sqlite3_clear_bindings(stmt_);
+  if(sqlite3_bind_parameter_count(stmt_) > 0)
+    sqlite3_clear_bindings(stmt_);
   if(make_bound_sql_)SQLStatement::reset();
 }
 

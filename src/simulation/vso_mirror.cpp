@@ -45,7 +45,7 @@ VSOMirror::VSOMirror(const VSOTelescope* T,
   fTelescope(T), fID(ID), fHexID(MHID), fRemoved(REM), fPos(P), fAlign(A), 
   fFocalLength(FL), fSpotSize(SS), fDegradingFactor(DF), fRotationVector()
 {
-  calculateRotationVector();
+  if(T!=nullptr)calculateRotationVector();
 }
 
 VSOMirror::~VSOMirror()
@@ -156,7 +156,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOMirrorData& d,
   mirror->fSpotSize        = d.spot_size();
   mirror->fDegradingFactor = d.degrading_factor();
 
-  mirror->calculateRotationVector();
+  if(T)mirror->calculateRotationVector();
 
   return mirror;  
 }

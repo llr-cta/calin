@@ -81,6 +81,7 @@ class VSOPixel
   // Accessors
   // ************************************************************************
   const VSOTelescope* telescope() const { return fTelescope; }
+  bool                removed() const { return fRemoved; }
   unsigned            id() const { return fID; }
   unsigned            hexID() const { return fHexID; }
   const math::vs_physics::Vec3D& pos() const { return fPos; }
