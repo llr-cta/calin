@@ -105,7 +105,12 @@ class VSODiskObscuration: public VSOObscuration
   virtual std::string dumpToString() const;
   static VSODiskObscuration* createFromString(std::string& str);
 #endif
-  
+
+  const math::vs_physics::Vec3D& center_pos() const { return fX0; }
+  const math::vs_physics::Vec3D& normal() const { return fN; }
+  double diameter() const { return 2.0*fR; }
+  bool incoming_only() const { return fICO; }
+
  private:
   math::vs_physics::Vec3D fX0;
   math::vs_physics::Vec3D fN;
@@ -145,6 +150,11 @@ class VSOTubeObscuration: public VSOObscuration
   virtual std::string dumpToString() const;
   static VSOTubeObscuration* createFromString(std::string& str);
 #endif
+
+  const math::vs_physics::Vec3D& end1_pos() const { return fX1; }
+  const math::vs_physics::Vec3D& end2_pos() const { return fX2; }
+  double diameter() const { return 2.0*fR; }
+  bool incoming_only() const { return fICO; }
   
  private:
   math::vs_physics::Vec3D fX1;

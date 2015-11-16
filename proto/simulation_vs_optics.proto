@@ -43,10 +43,10 @@ message VSOMirrorData {
   bool removed                          = 3
     [(CFO).desc = "True if this mirror facet has been removed."];
   Vector3D pos                          = 4
-    [(CFO).desc = "Position of facet center in the reflector frame.",
+    [(CFO).desc = "Position of facet center in the reflector frame. ",
      (CFO).units = "cm", (CFO).sql.inline_message = true ];     
   Vector3D align                        = 5
-    [(CFO).desc = "Facet normal at center of facet in the reflector frame.",
+    [(CFO).desc = "Facet normal at center of facet in the reflector frame. ",
      (CFO).sql.inline_message = true ];
   double focal_length                   = 6
     [(CFO).desc = "Focal length of the facet.", (CFO).units = "cm" ];
@@ -66,17 +66,17 @@ message VSOPixelData {
   bool removed                          = 3
     [(CFO).desc = "True if this pixel has been removed."];
   Vector3D pos                          = 4
-    [(CFO).desc = "Position of the pixel center in the camera frame.",
+    [(CFO).desc = "Position of the pixel center in the camera frame. ",
      (CFO).units = "cm", (CFO).sql.inline_message = true ];
 };
 
 message VSODiskObscurationData { 
   Vector3D center_pos                   = 1
-    [(CFO).desc = "Position of the center of the disk in reflector frame",
-     (CFO).units = "cm"];
+    [(CFO).desc = "Position of the center of the disk in reflector frame. ",
+     (CFO).units = "cm", (CFO).sql.inline_message = true ];
   Vector3D normal                       = 2
-    [(CFO).desc = "Normal to the disk in reflector frame",
-     (CFO).units = "normalized"];
+    [(CFO).desc = "Normal to the disk in reflector frame. ",
+     (CFO).units = "normalized", (CFO).sql.inline_message = true ];
   double diameter                       = 3
     [(CFO).desc = "Diameter of the disk",
      (CFO).units = "cm"];
@@ -86,11 +86,11 @@ message VSODiskObscurationData {
 
 message VSOTubeObscurationData {
   Vector3D end1_pos                     = 1
-    [(CFO).desc = "Position of center of tube at 1st end in reflector frame",
-     (CFO).units = "cm"];
+    [(CFO).desc = "Position of center of tube at 1st end in reflector frame. ",
+     (CFO).units = "cm", (CFO).sql.inline_message = true ];
   Vector3D end2_pos                     = 2
-    [(CFO).desc = "Position of center of tube at 2nd end in reflector frame",
-     (CFO).units = "cm"];
+    [(CFO).desc = "Position of center of tube at 2nd end in reflector frame. ",
+     (CFO).units = "cm", (CFO).sql.inline_message = true ];
   double diameter                       = 3
     [(CFO).desc = "Cross-sectional diameter of the tube",
      (CFO).units = "cm"];

@@ -132,6 +132,7 @@ retrieve_by_oid(const std::string& table_name, uint64_t oid,
                               + sql_where_inherited_keys_match(it)); });
   t->stmt->bind_uint64(0,oid);
 
+  if(write_sql_to_log_)LOG(INFO) << t->stmt->bound_sql();
   SQLStatement::StepStatus status = t->stmt->step();
   if(status == SQLStatement::ERROR)
   {
@@ -377,7 +378,10 @@ void SQLTransceiver::propagate_keys(SQLTable* t,
     SQLTableField* f = new SQLTableField(*key);
     if(f->field_type == SQLTableField::KEY_PROTO_DEFINED)
       f->field_name = sub_name(key->table->table_name, f->field_name);
-    f->field_type = SQLTableField::KEY_INHERITED;
+    if(f->field_origin == nullptr)
+      f->field_origin = f;
+    else
+      f->field_type = SQLTableField::KEY_INHERITED;
     t->fields.insert(t->fields.begin(), f);
   }
   for(unsigned ikey=keys.size();ikey<t->fields.size();ikey++)
@@ -387,7 +391,7 @@ void SQLTransceiver::propagate_keys(SQLTable* t,
     // No keys, add OID
     SQLTableField* f { new SQLTableField };
     f->table          = t;
-    f->field_origin   = f;
+    f->field_origin   = nullptr; // special flag for above
     f->field_type     = SQLTableField::KEY_PARENT_OID;
     f->field_name     = sub_name(t->table_name,"oid");
     f->field_d        = nullptr;
@@ -706,17 +710,21 @@ set_const_data_pointers(SQLTable* t,
 {
   for(auto f : t->fields)
   {
-    const google::protobuf::Message* m = m_data;
-    if(f->field_type == SQLTableField::KEY_USER_SUPPLIED)m = m_key;
-    assert(m);
-    const google::protobuf::Reflection* r = m->GetReflection();
-
+#if 0
+    std::cout << f->field_name << ' ' << f->field_type << ' ' << f << ' '
+              << f->field_origin << '\n';
+#endif
     if(f->field_origin == f)
     {
       f->set_data_null();
-      
+
       if(f->field_d != nullptr or f->oneof_d != nullptr)
       {
+        const google::protobuf::Message* m = m_data;
+        if(f->field_type == SQLTableField::KEY_USER_SUPPLIED)m = m_key;
+        assert(m);
+        const google::protobuf::Reflection* r = m->GetReflection();
+
         for(auto d : f->field_d_path) {
           if(!r->HasField(*m, d))goto next_field;
           m = &r->GetMessage(*m, d);
@@ -1006,7 +1014,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
       uint64_t st_loopid = 0;
 
       SQLStatement::StepStatus status = st->stmt->step();    
-      if(write_sql_to_log_ and nloop==0)LOG(INFO) << t->stmt->bound_sql();
+      if(write_sql_to_log_ and nloop==0)LOG(INFO) << st->stmt->bound_sql();
             
       if(status == SQLStatement::ERROR)
       {
