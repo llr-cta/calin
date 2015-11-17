@@ -573,7 +573,56 @@ populateMirrorsAndPixelsRandom(const VSOArrayParameters& param,
       id++;
     }
 }
+#endif
 
+void VSOTelescope::
+dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d)
+{
+  d->set_id(fID);
+  d->set_hex_id(fTelescopeHexID);
+  fPos.dump_to_proto(d->mutable_pos());
+  d->set_delta_y(fDeltaY/M_PI*180.0);
+  d->set_alpha_x(fAlphaX/M_PI*180.0);
+  d->set_alpha_y(fAlphaY/M_PI*180.0);
+  d->mutable_alt_az()->set_altitude(fElevation/M_PI*180.0);
+  d->mutable_alt_az()->set_azimuth(fAzimuth/M_PI*180.0);
+  fTranslation.dump_to_proto(d->mutable_translation());
+  d->set_curvature_radius(fCurvatureRadius);
+  d->set_aperture(fAperture);
+  d->set_facet_spacing(fFacetSpacing);
+  d->set_facet_size(fFacetSize);
+  d->set_optic_axis_rotation(fReflectorRotation/M_PI*180.0);
+  d->set_hexagon_rings_n(fHexagonRingsN);
+  d->set_reflector_ip(fReflectorIP);
+  d->set_facet_labeling_parity(fMirrorParity);
+  fFPTranslation.dump_to_proto(d->mutable_fp_translation());
+  d->set_camera_diameter(fCameraDiameter);
+  d->set_field_of_view(fFieldOfView);
+  d->set_cathode_diameter(fCathodeDiameter);
+  d->set_pixel_spacing(fPixelSpacing);
+  d->set_conc_survival_prob(fConcSurvProb);
+  fFPRotation.dump_to_proto(d->mutable_fp_rotation());
+  d->set_camera_ip(fCameraIP);
+  d->set_pixel_labeling_parity(fPixelParity);
+
+#if 0
+  repeated VSOObscurationData obscurations = 100
+    [(CFO).desc = "Obscurations in the reflector frame."];
+  repeated VSOMirrorData mirrors        = 101
+    [(CFO).desc = "Mirror facets on the telescope."];
+  repeated VSOPixelData pixels          = 102
+    [(CFO).desc = "Pixels in the camera of the telescope."];
+#endif
+}
+
+VSOTelescope* VSOTelescope::
+create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
+{
+
+}
+
+
+#if 0
 void VSOTelescope::dumpShort(std::ostream& stream) const
 {
   stream

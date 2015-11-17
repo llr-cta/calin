@@ -51,7 +51,7 @@ message HorizontalCoordinates
     [(CFO).desc = "Angle of point with respect to the local horizon, with"
      "horizon at 0 and zenith at +90.",
      (CFO).units = "deg", (CFO).min_val=-90, (CFO).max_val=90];
-  double aziumth                        = 2
+  double azimuth                        = 2
     [(CFO).desc = "Angle of point with respect to the local meridian, with"
      "North at 0 and East at +90.",
      (CFO).units = "deg", (CFO).min_val=0, (CFO).max_val=360];
