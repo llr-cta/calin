@@ -580,8 +580,8 @@ sql_select(const SQLTable* t, bool select_oid, bool select_inherited_keys)
     sql << "  " << sql_oid_column_name();
     // Inherited key fields are always at the start, so only need test final one
     if(!t->fields.empty() and
-       (select_inherited_keys or t->fields.back()->is_inherited()))
-      sql << ",";
+       (select_inherited_keys or !t->fields.back()->is_inherited()))
+      sql << ',';
     sql << '\n';
   }
 
@@ -975,6 +975,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
           break;
         case SQLTableField::KEY_LOOP_ID:
           loop_id = t->stmt->extract_uint64(icol, &good);
+          LOG(ERROR) << t->table_name << ' ' << loop_id;
           break;
         case SQLTableField::KEY_PROTO_DEFINED:  // handled in if clause above
         case SQLTableField::KEY_USER_SUPPLIED:  // handled in if clause above
@@ -984,7 +985,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
           assert(0);
           break;
       }
-    }
+    }    
  next_field:
     if(!ignore_errors and !good)return good;
     icol++;
@@ -997,7 +998,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
     unsigned nloop = 0;
     google::protobuf::Message* m = m_data;
     const google::protobuf::Reflection* r = m->GetReflection();
-    
+
     for(auto d : st->parent_field_d_path)
       if(!field_selected(d, oneof_map))goto next_sub_table_no_reset;
     if(!field_selected(st->parent_field_d, oneof_map))

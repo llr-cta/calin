@@ -71,6 +71,7 @@ class Vec3D
   inline Vec3D(const Vec3D& v);                     //!<copy constructor
   inline Vec3D( double _x, double _y, double _z );  //!<overloaded constructor
   Vec3D(const ix::Vector3D& d); // construct from protobuf
+  Vec3D(const ix::Vector3D& d, double scale); // construct from scaled protobuf
   
   inline void Polar(double& r, double& theta, double& phi) const;
 
@@ -106,6 +107,9 @@ class Vec3D
 
   void dump_to_proto(ix::Vector3D* d) const;
   void set_from_proto(const ix::Vector3D& d);
+  
+  void dump_scaled_to_proto(ix::Vector3D* d, double scale) const;
+  void set_from_scaled_proto(const ix::Vector3D& d, double scale);
   
   void Dump(std::ostream& stream = std::cout) const; //!<prints coordinates
   void DumpShort(std::ostream& stream = std::cout) const; //!<prints coordinates

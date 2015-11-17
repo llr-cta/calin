@@ -201,11 +201,11 @@ message VSOTelescopeData {
     [(CFO).desc = "Pixels are counted (on the hex. grid) in the direction of "
      "the +x-axis when this flag is FALSE, and in the direction of the "
      "-x-axis when this flag is TRUE (in the camera r.f.)."];
-  repeated VSOObscurationData obscurations = 100
+  repeated VSOObscurationData obscuration = 100
     [(CFO).desc = "Obscurations in the reflector frame."];
-  repeated VSOMirrorData mirrors        = 101
+  repeated VSOMirrorData mirror         = 101
     [(CFO).desc = "Mirror facets on the telescope."];
-  repeated VSOPixelData pixels          = 102
+  repeated VSOPixelData pixel           = 102
     [(CFO).desc = "Pixels in the camera of the telescope."];
 };
 

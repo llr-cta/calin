@@ -382,7 +382,7 @@ populateMirrorsAndPixelsRandom(const VSOArrayParameters& param,
   unsigned id = 0;
   for(int i=0; i<num_hex_mirror_sites; i++)
     {
-      int hexid = i+1;
+      int hexid = i;
 
       if(mirrors_missing.find(hexid) != mirrors_missing.end())
 	{
@@ -540,7 +540,7 @@ populateMirrorsAndPixelsRandom(const VSOArrayParameters& param,
   id = 0;
   for(unsigned i=0; i<num_hex_pixel_sites; i++)
     {
-      int hexid = i+1;
+      int hexid = i;
 
       if(pixels_missing.find(hexid) != pixels_missing.end())
 	{
@@ -576,8 +576,9 @@ populateMirrorsAndPixelsRandom(const VSOArrayParameters& param,
 #endif
 
 void VSOTelescope::
-dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d)
+dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d) const
 {
+  d->Clear();  
   d->set_id(fID);
   d->set_hex_id(fTelescopeHexID);
   fPos.dump_to_proto(d->mutable_pos());
@@ -601,24 +602,58 @@ dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d)
   d->set_cathode_diameter(fCathodeDiameter);
   d->set_pixel_spacing(fPixelSpacing);
   d->set_conc_survival_prob(fConcSurvProb);
-  fFPRotation.dump_to_proto(d->mutable_fp_rotation());
+  fFPRotation.dump_scaled_to_proto(d->mutable_fp_rotation(), 180.0/M_PI);
   d->set_camera_ip(fCameraIP);
   d->set_pixel_labeling_parity(fPixelParity);
 
-#if 0
-  repeated VSOObscurationData obscurations = 100
-    [(CFO).desc = "Obscurations in the reflector frame."];
-  repeated VSOMirrorData mirrors        = 101
-    [(CFO).desc = "Mirror facets on the telescope."];
-  repeated VSOPixelData pixels          = 102
-    [(CFO).desc = "Pixels in the camera of the telescope."];
-#endif
+  for(auto iobs : fObscurations)
+    iobs->dump_to_proto(d->add_obscuration());
+  for(auto imir : fMirrors)
+    if(imir != nullptr)imir->dump_to_proto(d->add_mirror());
+  for(auto ipix : fPixels)
+    if(ipix != nullptr)ipix->dump_to_proto(d->add_pixel());
 }
 
 VSOTelescope* VSOTelescope::
 create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
 {
+  VSOTelescope* scope =
+      new VSOTelescope(d.id(), // TID
+                       d.hex_id(), // THID
+                       Vec3D(d.pos()), // P
+                       d.delta_y()*M_PI/180.0, // DY
+                       d.alpha_x()*M_PI/180.0, // AX
+                       d.alpha_y()*M_PI/180.0, // AY
+                       d.alt_az().altitude()*M_PI/180.0, // EL
+                       d.alt_az().azimuth()*M_PI/180.0,  // AZ
+                       Vec3D(d.translation()), // T
+                       d.curvature_radius(),  // CR
+                       d.aperture(),  // A
+                       d.facet_spacing(), // FSP
+                       d.facet_size(), // FS
+                       d.optic_axis_rotation()*M_PI/180.0, // RR
+                       d.hexagon_rings_n(), // HRN
+                       d.reflector_ip(), // RIP
+                       d.facet_labeling_parity(), // MP
+                       Vec3D(d.fp_translation()), // FPT
+                       d.camera_diameter(), // CD
+                       d.field_of_view(), // FOV
+                       d.cathode_diameter(), // D
+                       d.pixel_spacing(), // PS
+                       d.conc_survival_prob(), // CSP
+                       Vec3D(d.fp_rotation(), M_PI/180.0), // FPR
+                       d.camera_ip(), // CIP
+                       d.pixel_labeling_parity() // PP
+                       );
 
+  for(unsigned i=0; i<d.obscuration_size(); i++)
+    scope->add_obscuration(VSOObscuration::create_from_proto(d.obscuration(i)));
+  for(unsigned i=0; i<d.mirror_size(); i++)
+    scope->add_mirror(VSOMirror::create_from_proto(d.mirror(i),scope));
+  for(unsigned i=0; i<d.pixel_size(); i++)
+    scope->add_pixel(VSOPixel::create_from_proto(d.pixel(i),scope));
+
+  return scope;
 }
 
 
@@ -874,14 +909,8 @@ VSOTelescope* VSOTelescope::createFromShortDump(std::istream& stream)
 	  delete telescope;
 	  return 0;
 	}
-      
-      if(mirror->id() >= telescope->fMirrors.size())
-	telescope->fMirrors.resize(mirror->id()+1);
-      telescope->fMirrors[mirror->id()]=mirror;
-      
-      if(mirror->hexID() > telescope->fMirrorsByHexID.size())
-	telescope->fMirrorsByHexID.resize(mirror->hexID());
-      telescope->fMirrorsByHexID[mirror->hexID()-1]=mirror;
+
+      telescope->add_mirror(mirror);
     }
 
   for(unsigned i=0; i<pixels_size; i++)
@@ -892,14 +921,8 @@ VSOTelescope* VSOTelescope::createFromShortDump(std::istream& stream)
 	  delete telescope;
 	  return 0;
 	}
-      
-      if(pixel->id() >= telescope->fPixels.size())
-	telescope->fPixels.resize(pixel->id()+1);
-      telescope->fPixels[pixel->id()]=pixel;
-      
-      if(pixel->hexID() > telescope->fPixelsByHexID.size())
-	telescope->fPixelsByHexID.resize(pixel->hexID());
-      telescope->fPixelsByHexID[pixel->hexID()-1]=pixel;
+
+      telescope->add_pixel(pixel);
     }
 
   // Recalculate rotation vector

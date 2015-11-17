@@ -77,7 +77,7 @@ class VSOTelescope
                double C11, double C12, double C13, double C14, double C20,
                double C21, double C22,double C23, double C24, 
 #endif
-               const std::vector<VSOObscuration*>& OBSVEC		 
+               const std::vector<VSOObscuration*>& OBSVEC = {}
                );
   VSOTelescope(const VSOTelescope& o);
   virtual ~VSOTelescope();
@@ -92,6 +92,23 @@ class VSOTelescope
   void populateMirrorsAndPixelsRandom(const VSOArrayParameters&,
                                       RandomNumbers& rng);
 #endif
+
+  void add_obscuration(VSOObscuration* obs) {
+    fObscurations.push_back(obs); }
+  void add_mirror(VSOMirror* mirror) {
+    if(fMirrors.size()<=mirror->id())fMirrors.resize(mirror->id()+1);
+    fMirrors[mirror->id()] = mirror;
+    if(fMirrorsByHexID.size()<=mirror->hexID())
+      fMirrorsByHexID.resize(mirror->hexID()+1);
+    fMirrorsByHexID[mirror->hexID()] = mirror;
+  }
+  void add_pixel(VSOPixel* pix) {
+    if(fPixels.size()<=pix->id())fPixels.resize(pix->id()+1);
+    fPixels[pix->id()] = pix;
+    if(fPixelsByHexID.size()<=pix->hexID())
+      fPixelsByHexID.resize(pix->hexID()+1);
+    fPixelsByHexID[pix->hexID()] = pix;
+  }
   
   // ************************************************************************
   // Telescope repointing
@@ -123,7 +140,7 @@ class VSOTelescope
   // Dump and Reload
   // ************************************************************************
 
-  void dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d);
+  void dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d) const;
   static VSOTelescope*
   create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d);
   
