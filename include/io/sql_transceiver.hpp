@@ -314,8 +314,7 @@ class SQLTransceiver
                            const std::map<std::string,std::string>& parent_dict,
                                        bool if_not_exists = false);
   virtual std::string sql_insert(const SQLTable* t);
-  virtual std::string sql_select(const SQLTable* t, bool select_oid = false,
-                                 bool select_inheried_keys = false);
+  virtual std::string sql_select(const SQLTable* t, bool select_oid = false);
   virtual std::string sql_where_oid_equals();
   virtual std::string sql_where_inherited_keys_match(const SQLTable* t);
 
@@ -341,8 +340,8 @@ class SQLTransceiver
   void set_const_data_pointers(SQLTable* t,
                                const google::protobuf::Message* m_data,
                                const google::protobuf::Message* m_key,
-                               const uint64_t& parent_oid,
-                               const uint64_t& loop_id);
+                               const uint64_t* parent_oid,
+                               const uint64_t* loop_id);
 
   void bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
                                       SQLStatement* stmt,
@@ -361,8 +360,8 @@ class SQLTransceiver
   virtual bool r_exec_select(SQLTable* t,
                              google::protobuf::Message* m_data,
                              google::protobuf::Message* m_key,
-                             uint64_t& parent_oid, uint64_t& loop_id,
-                             bool select_inherited_keys, bool ignore_errors);
+                             uint64_t& loop_id,
+                             bool ignore_errors);
   
   virtual bool finalize_statements(SQLTable* t);
 

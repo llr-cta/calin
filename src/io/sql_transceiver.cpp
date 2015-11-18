@@ -123,12 +123,12 @@ retrieve_by_oid(const std::string& table_name, uint64_t oid,
     make_keyed_sqltable_tree(table_name, m_data->GetDescriptor(),
                              m_key?m_key->GetDescriptor():nullptr, false) };  
 
-  t->stmt = prepare_statement(sql_select(t.get(), t->children_need_oid(), true)
+  t->stmt = prepare_statement(sql_select(t.get(), t->children_need_oid())
                               + sql_where_oid_equals());
 
   iterate_over_tables(t.get(),[this](SQLTable* it) {
       if(it->stmt==nullptr) it->stmt =
-            prepare_statement(sql_select(it, it->children_need_oid(), false)
+            prepare_statement(sql_select(it, it->children_need_oid())
                               + sql_where_inherited_keys_match(it)); });
   t->stmt->bind_uint64(0,oid);
 
@@ -152,10 +152,8 @@ retrieve_by_oid(const std::string& table_name, uint64_t oid,
   m_data->Clear();
   if(m_key)m_key->Clear();
 
-  uint64_t unused_parent_oid = 0;
   uint64_t unused_loop_id = 0;
-  r_exec_select(t.get(), m_data, m_key, unused_parent_oid, unused_loop_id,
-                true, false);
+  r_exec_select(t.get(), m_data, m_key, unused_loop_id, false);
   
   assert(t->stmt->step() == SQLStatement::OK_NO_DATA);
   t->stmt->reset();
@@ -378,25 +376,26 @@ void SQLTransceiver::propagate_keys(SQLTable* t,
     SQLTableField* f = new SQLTableField(*key);
     if(f->field_type == SQLTableField::KEY_PROTO_DEFINED)
       f->field_name = sub_name(key->table->table_name, f->field_name);
-    if(f->field_origin == nullptr)
-      f->field_origin = f;
-    else
-      f->field_type = SQLTableField::KEY_INHERITED;
+    f->field_type = SQLTableField::KEY_INHERITED;
     t->fields.insert(t->fields.begin(), f);
   }
-  for(unsigned ikey=keys.size();ikey<t->fields.size();ikey++)
-    if(t->fields[ikey]->is_key())keys.push_back(t->fields[ikey]);
-  if(keys.empty())
+
+  if(t->parent_table != nullptr and keys.empty())
   {
-    // No keys, add OID
+    // We have a parent, but no inherited keys, so add parent OID as key
     SQLTableField* f { new SQLTableField };
     f->table          = t;
-    f->field_origin   = nullptr; // special flag for above
+    f->field_origin   = f;
     f->field_type     = SQLTableField::KEY_PARENT_OID;
-    f->field_name     = sub_name(t->table_name,"oid");
+    f->field_name     = sub_name(t->parent_table->table_name,
+                                 sql_oid_column_name());
     f->field_d        = nullptr;
-    keys.push_back(f);
+    t->fields.insert(t->fields.begin(), f);
   }
+
+  for(unsigned ikey=keys.size();ikey<t->fields.size();ikey++)
+    if(t->fields[ikey]->is_key())keys.push_back(t->fields[ikey]);
+
   for(auto it : t->sub_tables)
     propagate_keys(it, keys);
 }
@@ -567,11 +566,11 @@ sql_insert(const SQLTable* t)
 
 std::string SQLTransceiver::sql_oid_column_name()
 {
-  return "OID";
+  return "_ROWID_";
 }
 
 std::string SQLTransceiver::
-sql_select(const SQLTable* t, bool select_oid, bool select_inherited_keys)
+sql_select(const SQLTable* t, bool select_oid)
 {
   std::ostringstream sql;
   sql << "SELECT\n";
@@ -579,15 +578,14 @@ sql_select(const SQLTable* t, bool select_oid, bool select_inherited_keys)
   {
     sql << "  " << sql_oid_column_name();
     // Inherited key fields are always at the start, so only need test final one
-    if(!t->fields.empty() and
-       (select_inherited_keys or !t->fields.back()->is_inherited()))
+    if(!t->fields.empty() and !t->fields.back()->is_inherited())
       sql << ',';
     sql << '\n';
   }
 
   for ( auto f : t->fields )
   {
-    if(select_inherited_keys or !f->is_inherited())
+    if(!f->is_inherited())
     {
       sql << "  " << sql_field_name(f->field_name);
       if(f != t->fields.back())sql << ',';
@@ -705,8 +703,8 @@ void SQLTransceiver::
 set_const_data_pointers(SQLTable* t,
                         const google::protobuf::Message* m_data,
                         const google::protobuf::Message* m_key,
-                        const uint64_t& parent_oid,
-                        const uint64_t& loop_id)
+                        const uint64_t* parent_oid,
+                        const uint64_t* loop_id)
 {
   for(auto f : t->fields)
   {
@@ -716,8 +714,6 @@ set_const_data_pointers(SQLTable* t,
 #endif
     if(f->field_origin == f)
     {
-      f->set_data_null();
-
       if(f->field_d != nullptr or f->oneof_d != nullptr)
       {
         const google::protobuf::Message* m = m_data;
@@ -733,16 +729,20 @@ set_const_data_pointers(SQLTable* t,
         if(f->oneof_d or f->field_d->is_repeated() or
            r->HasField(*m, f->field_d))
           f->set_data_const_message(m);
+        else
+          f->set_data_null();
       }
       else
       {
         switch(f->field_type)
         {
           case SQLTableField::KEY_PARENT_OID:
-            f->set_data_const_uint64(&parent_oid);
+            if(parent_oid != nullptr)
+              f->set_data_const_uint64(parent_oid);
             break;
           case SQLTableField::KEY_LOOP_ID:
-            f->set_data_const_uint64(&loop_id);
+            if(loop_id != nullptr)
+              f->set_data_const_uint64(loop_id);
             break;
           case SQLTableField::KEY_PROTO_DEFINED:  // handled in if clause above
           case SQLTableField::KEY_USER_SUPPLIED:  // handled in if clause above
@@ -824,7 +824,7 @@ r_exec_insert(SQLTable* t, const google::protobuf::Message* m_data,
   //   - simple sub tables are called directly if the appropriate field is
   //     set in the message
 
-  set_const_data_pointers(t, m_data, m_key, parent_oid, loop_id);
+  set_const_data_pointers(t, m_data, m_key, &parent_oid, &loop_id);
   bind_fields_from_data_pointers(t, loop_id, t->stmt);
 
   bool good = true;
@@ -913,8 +913,8 @@ field_selected(const google::protobuf::FieldDescriptor* f,
 bool SQLTransceiver::
 r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
               google::protobuf::Message* m_key, 
-              uint64_t& parent_oid, uint64_t& loop_id,
-              bool select_inherited_keys, bool ignore_errors)
+              uint64_t& loop_id,
+              bool ignore_errors)
 {
   // On entry to this function with the statement has been executed but
   // no data extracted
@@ -938,7 +938,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
   std::map<const OneofDescriptor*, int> oneof_map;
   for(auto f : t->fields)
   {
-    if(!select_inherited_keys and f->is_inherited())continue;
+    if(f->is_inherited())continue;
     if(t->stmt->column_is_null(icol))goto next_field;
     
     if(f->field_d != nullptr)
@@ -970,19 +970,17 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
     {
       switch(f->field_type)
       {
-        case SQLTableField::KEY_PARENT_OID:
-          parent_oid = t->stmt->extract_uint64(icol, &good);
-          break;
         case SQLTableField::KEY_LOOP_ID:
           loop_id = t->stmt->extract_uint64(icol, &good);
-          LOG(ERROR) << t->table_name << ' ' << loop_id;
           break;
+        case SQLTableField::KEY_PARENT_OID:     // skipped unilaterdly above
         case SQLTableField::KEY_PROTO_DEFINED:  // handled in if clause above
         case SQLTableField::KEY_USER_SUPPLIED:  // handled in if clause above
-        case SQLTableField::KEY_INHERITED:      // handled earlier in tree
+        case SQLTableField::KEY_INHERITED:      // skipped unilaterdly above
         case SQLTableField::KEY_MAP_KEY:        // handled in if clause above
         case SQLTableField::POD:                // handled in if clause above
           assert(0);
+          throw std::logic_error("r_exec_select: invalid field type");
           break;
       }
     }    
@@ -991,7 +989,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
     icol++;
   }
 
-  set_const_data_pointers(t, m_data, m_key, parent_oid, loop_id);
+  set_const_data_pointers(t, m_data, m_key, nullptr, &loop_id);
 
   for(auto st : t->sub_tables)
   {
@@ -1011,7 +1009,6 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
 
     while(1)
     {
-      uint64_t unused_st_parent_oid = 0; 
       uint64_t st_loopid = 0;
 
       SQLStatement::StepStatus status = st->stmt->step();    
@@ -1050,8 +1047,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
         uint64_t fs = r->FieldSize(*m, st->parent_field_d);
         google::protobuf::Message* sm = r->AddMessage(m, st->parent_field_d);
         assert(sm);
-        good &= r_exec_select(st, sm, nullptr, unused_st_parent_oid, st_loopid,
-                              false, ignore_errors);
+        good &= r_exec_select(st, sm, nullptr, st_loopid, ignore_errors);
         if(!st->parent_field_d->is_map() and fs != st_loopid)
         {
           // Messages are not in correct order, must move the one we added
@@ -1065,8 +1061,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
         google::protobuf::Message* sm = m;
         if(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE)
           sm = r->MutableMessage(m, st->parent_field_d);
-        good &= r_exec_select(st, sm, nullptr, unused_st_parent_oid, st_loopid,
-                              false, ignore_errors);
+        good &= r_exec_select(st, sm, nullptr, st_loopid, ignore_errors);
       }
       
       if(!ignore_errors and !good)
