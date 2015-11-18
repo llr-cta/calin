@@ -376,25 +376,26 @@ void SQLTransceiver::propagate_keys(SQLTable* t,
     SQLTableField* f = new SQLTableField(*key);
     if(f->field_type == SQLTableField::KEY_PROTO_DEFINED)
       f->field_name = sub_name(key->table->table_name, f->field_name);
-    if(f->field_origin == nullptr)
-      f->field_origin = f;
-    else
-      f->field_type = SQLTableField::KEY_INHERITED;
+    f->field_type = SQLTableField::KEY_INHERITED;
     t->fields.insert(t->fields.begin(), f);
   }
-  for(unsigned ikey=keys.size();ikey<t->fields.size();ikey++)
-    if(t->fields[ikey]->is_key())keys.push_back(t->fields[ikey]);
-  if(keys.empty())
+
+  if(t->parent_table != nullptr and keys.empty())
   {
-    // No keys, add OID
+    // We have a parent, but no inherited keys, so add parent OID as key
     SQLTableField* f { new SQLTableField };
     f->table          = t;
-    f->field_origin   = nullptr; // special flag for above
+    f->field_origin   = f;
     f->field_type     = SQLTableField::KEY_PARENT_OID;
-    f->field_name     = sub_name(t->table_name,"oid");
+    f->field_name     = sub_name(t->parent_table->table_name,
+                                 sql_oid_column_name());
     f->field_d        = nullptr;
-    keys.push_back(f);
+    t->fields.insert(t->fields.begin(), f);
   }
+
+  for(unsigned ikey=keys.size();ikey<t->fields.size();ikey++)
+    if(t->fields[ikey]->is_key())keys.push_back(t->fields[ikey]);
+
   for(auto it : t->sub_tables)
     propagate_keys(it, keys);
 }
@@ -565,7 +566,7 @@ sql_insert(const SQLTable* t)
 
 std::string SQLTransceiver::sql_oid_column_name()
 {
-  return "OID";
+  return "_ROWID_";
 }
 
 std::string SQLTransceiver::
@@ -702,8 +703,8 @@ void SQLTransceiver::
 set_const_data_pointers(SQLTable* t,
                         const google::protobuf::Message* m_data,
                         const google::protobuf::Message* m_key,
-                        const uint64_t& parent_oid,
-                        const uint64_t& loop_id)
+                        const uint64_t* parent_oid,
+                        const uint64_t* loop_id)
 {
   for(auto f : t->fields)
   {
@@ -713,8 +714,6 @@ set_const_data_pointers(SQLTable* t,
 #endif
     if(f->field_origin == f)
     {
-      f->set_data_null();
-
       if(f->field_d != nullptr or f->oneof_d != nullptr)
       {
         const google::protobuf::Message* m = m_data;
@@ -730,16 +729,20 @@ set_const_data_pointers(SQLTable* t,
         if(f->oneof_d or f->field_d->is_repeated() or
            r->HasField(*m, f->field_d))
           f->set_data_const_message(m);
+        else
+          f->set_data_null();
       }
       else
       {
         switch(f->field_type)
         {
           case SQLTableField::KEY_PARENT_OID:
-            f->set_data_const_uint64(&parent_oid);
+            if(parent_oid != nullptr)
+              f->set_data_const_uint64(parent_oid);
             break;
           case SQLTableField::KEY_LOOP_ID:
-            f->set_data_const_uint64(&loop_id);
+            if(loop_id != nullptr)
+              f->set_data_const_uint64(loop_id);
             break;
           case SQLTableField::KEY_PROTO_DEFINED:  // handled in if clause above
           case SQLTableField::KEY_USER_SUPPLIED:  // handled in if clause above
@@ -821,7 +824,7 @@ r_exec_insert(SQLTable* t, const google::protobuf::Message* m_data,
   //   - simple sub tables are called directly if the appropriate field is
   //     set in the message
 
-  set_const_data_pointers(t, m_data, m_key, parent_oid, loop_id);
+  set_const_data_pointers(t, m_data, m_key, &parent_oid, &loop_id);
   bind_fields_from_data_pointers(t, loop_id, t->stmt);
 
   bool good = true;
@@ -969,8 +972,6 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
       {
         case SQLTableField::KEY_LOOP_ID:
           loop_id = t->stmt->extract_uint64(icol, &good);
-#warning REMOVE ME
-          //LOG(ERROR) << t->table_name << ' ' << loop_id;
           break;
         case SQLTableField::KEY_PARENT_OID:     // skipped unilaterdly above
         case SQLTableField::KEY_PROTO_DEFINED:  // handled in if clause above
@@ -988,8 +989,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
     icol++;
   }
 
-  set_const_data_pointers(t, m_data, m_key,
-                          *static_cast<uint64_t*>(nullptr), loop_id);
+  set_const_data_pointers(t, m_data, m_key, nullptr, &loop_id);
 
   for(auto st : t->sub_tables)
   {

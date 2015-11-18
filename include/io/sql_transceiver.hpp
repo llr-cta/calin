@@ -340,8 +340,8 @@ class SQLTransceiver
   void set_const_data_pointers(SQLTable* t,
                                const google::protobuf::Message* m_data,
                                const google::protobuf::Message* m_key,
-                               const uint64_t& parent_oid,
-                               const uint64_t& loop_id);
+                               const uint64_t* parent_oid,
+                               const uint64_t* loop_id);
 
   void bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
                                       SQLStatement* stmt,
