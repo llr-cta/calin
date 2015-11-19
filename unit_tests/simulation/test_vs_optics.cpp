@@ -200,16 +200,6 @@ TEST(TestVSOTelescope, StoreAndRetreive) {
   // Retreive proto from SQL DB
   VSOTelescopeData scope2_data;
   xvr.retrieve_by_oid("scope", oid, &scope2_data);
-
-#if 0
-  for(unsigned i=0;i<scope1_data.obscuration_size();i++)
-    std::cout << scope1_data.obscuration(i).has_disk() << ' '
-              << scope1_data.obscuration(i).has_tube() << '\n';
-
-  for(unsigned i=0;i<scope2_data.obscuration_size();i++)
-    std::cout << scope2_data.obscuration(i).has_disk() << ' '
-              << scope2_data.obscuration(i).has_tube() << '\n';
-#endif
   
   // Create scope from proto
   VSOTelescope* scope2 = VSOTelescope::create_from_proto(scope2_data);

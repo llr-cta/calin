@@ -912,8 +912,7 @@ field_selected(const google::protobuf::FieldDescriptor* f,
 
 bool SQLTransceiver::
 r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
-              google::protobuf::Message* m_key, 
-              uint64_t& loop_id,
+              google::protobuf::Message* m_key, uint64_t& loop_id,
               bool ignore_errors)
 {
   // On entry to this function with the statement has been executed but
