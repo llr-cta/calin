@@ -37,6 +37,8 @@
 
 */
 
+#include <stdexcept>
+
 #include <math/rng.hpp>
 
 using namespace calin::math::rng;
@@ -57,12 +59,12 @@ RNG(RNGCore* core, bool adopt_core = false):
   // nothing to see here
 }
 
-template<typename CORE> double RandomNumbers_TNG<CORE>::Normal()
+double RNG::normal()
 {
   if(m_bm_hascached)
     {
-      m_bm_hascached = false;
-      return m_bm_cachedval;
+      bm_hascached_ = false;
+      return bm_cachedval_;
     }
   else
     {
@@ -76,13 +78,195 @@ template<typename CORE> double RandomNumbers_TNG<CORE>::Normal()
 	  rsq = v1*v1 + v2*v2;
 	}while(rsq >= 1.0 || rsq == 0.0);
       const double fac = sqrt(-2.0*log(rsq)/rsq);
-      m_bm_cachedval = v1*fac;
-      m_bm_hascached = true;
+      bm_cachedval_ = v1*fac;
+      bm_hascached_ = true;
       return v2*fac;
-    } 
+    }
 }
 
+/** 
+ *  Returns a deviate distributed as a gamma distribution, i.e., a
+ *  waiting time to the i'th event in a Poisson process of unit mean.
+ *  pdf=beta^alpha * x^(alpha-1) * exp(-beta x) / Gamma(alpha)
+ */
+double RNG::gamma(double alpha, double beta)
+{
+  double oalpha = alpha;
+  if(alpha <= 0.0)throw(std::invalid_argument("RNG::gamma: negative alpha"));
+  if(alpha <= 1.0)alpha += 1.0;
+  const double a1 = alpha - 1.0/3.0;
+  const double a2 = 1./std::sqrt(9.0*a1);
+  double u;
+  double v;
+  double x,x2,x4;
+  do
+    {
+      do
+	{
+	  x = normal();
+	  v = 1.0 + a2*x;
+	}while(v<=0.0);
+      v = v*v*v;
+      u = uniform();
+      x2 = x*x;
+      x4 = x2*x2;
+    }while((u>1.0-0.331*x4)&&(std::log(u)>0.5*x2+a1*(1.0-v+std::log(v))));
+  if(alpha == oalpha)return a1*v/beta;
+  else
+    {
+      do u=uniform(); while(u==0);
+      return std::pow(u,1.0/oalpha)*a1*v/beta;
+    }
+}
 
+namespace {
+
+double lfactorial(unsigned ix)
+{
+  static const double lfa[] = {
+    0.00000000000000000, 0.00000000000000000, 0.69314718055994529,
+    1.79175946922805496, 3.17805383034794575, 4.78749174278204581,
+    6.57925121201010121, 8.52516136106541467, 10.60460290274525086,
+    12.80182748008146909, 15.10441257307551588, 17.50230784587388655,
+    19.98721449566188468, 22.55216385312342098, 25.19122118273868338,
+    27.89927138384089389, 30.67186010608067548, 33.50507345013689076,
+    36.39544520803305261, 39.33988418719949465 };
+  if(ix<sizeof(lfa)/sizeof(*lfa))return lfa[ix];
+  return std::lgamma(ix+1);
+}
+
+} // anonymous namespace
+
+/** 
+ *  Returns random deviate drawn from a Poisson distribution of mean
+ *  lambda, using CORE as a source of uniform random deviates.
+ */
+int RNG::poisson(double lambda)
+{
+  if(lambda<5.0)
+    {
+      if(lambda != poi_lambdaold_)
+	{
+	  poi_lambdaexp_ = std::exp(-lambda);
+	  poi_lambdaold_ = lambda;
+	}
+      int k = 0;
+      double t = uniform();
+      while(t>poi_lambdaexp_) { ++k; t*=uniform(); }
+      return k;
+    }
+  else
+    {
+      int k;
+      if(lambda != poi_lambdaold_)
+	{
+	  poi_lambdasrt_ = std::sqrt(lambda);
+	  poi_lambdalog_ = std::log(lambda);
+	  poi_lambdaold_ = lambda;
+	}
+      while(1)
+	{
+	  double u = 0.64*uniform();
+	  double v = -0.68 + 1.28*uniform();
+	  double u2;
+	  if(lambda>13.5)
+	    {
+	      double v2 = v*v;
+	      if(v >= 0) { if(v2 > 6.5*u*(0.64-u)*(u+0.2))continue; }
+	      else { if(v2 > 9.6*u*(0.66-u)*(u+0.07))continue; }
+
+	      k = int(std::floor(poi_lambdasrt_*(v/u)+lambda+0.5));
+	      if(k<0)continue;
+	      u2 = u*u;
+
+	      if(v >= 0){ if(v2 < 15.2*u2*(0.61-u)*(0.8-u))break; }
+	      else { if(v2 < 6.76*u2*(0.62-u)*(1.4-u))break; }
+	    }
+	  else
+	    {
+	      k = int(std::floor(poi_lambdasrt_*(v/u)+lambda+0.5));
+	      if(k<0)continue;
+	      u2 = u*u;
+	    }
+
+	  double lfact = lfactorial(k);
+	  double p = poi_lambdasrt*std::exp(-lambda + k*poi_lambdalog_ - lfact);
+	  if(u2 < p)break;
+	}
+      return k;
+    }
+  assert(0);
+  return 0;
+}
+
+/** 
+ *  Returns an integer value that is a random deviate drawn from a 
+ *  binomial distribution of n trials each of probability pp, using
+ *  CORE as a source of uniform random deviates. 
+ */
+
+int RNG::binomial(double pp, int n)
+{
+  double bnl;
+
+  const double p = (pp<=0.5 ? pp : 1.0-pp);
+  const double am = n*p;
+
+  if(n < 25)               /* Use direct method */
+    {
+      int ibnl=0;
+      for(int i=0;i<=n;i++)if(uniform()<p)++ibnl;
+      bnl = int(ibnl);
+    } 
+  else if(am < 1.0)
+    {
+      double g = std::exp(-am);
+      double t = 1.0;
+      int j;
+      for(j=0;j<=n;j++) { t *= uniform(); if(t<g)break; }
+      bnl = (j<=n?j:n);
+    } 
+  else                       /* Use rejection method */
+    {                     
+      if(n != m_bin_nold)
+	{
+	  m_bin_en    = n;
+	  m_bin_oldg  = factln(n);
+	  m_bin_nold  = n;
+	}
+
+      if (p != m_bin_pold)
+	{ 
+	  m_bin_pc    = 1.0-p;
+	  m_bin_plog  = log(p);
+	  m_bin_pclog = log(m_bin_pc);
+	  m_bin_pold  = p;
+	}
+
+      double sq=sqrt(2.0*am*m_bin_pc);
+      double t;
+      double em;
+      do 
+	{
+	  double y;
+	  do 
+	    {
+	      double angle = M_PI*uniform();
+	      y  = std::tan(angle);
+	      em = sq*y+am;
+	    }while(em<0.0 || em>=(m_bin_en+1));
+	  em = floor(em);
+	  t = 1.2*sq*(1.0+y*y)*exp(m_bin_oldg
+				   - factln(unsigned(em))
+				   - factln(unsigned(m_bin_en-em))
+				   + em*m_bin_plog
+				   + (m_bin_en-em)*m_bin_pclog);
+	}while(CORE::Double()>t);
+      bnl = em;
+    }
+  if (p != pp)bnl=n-bnl;
+  return int(bnl);
+}
 
 namespace RNGCore
 {
@@ -667,212 +851,8 @@ template<typename CORE> std::string RandomNumbers_TNG<CORE>::defaultFilename()
 // Non-uniform distributions
 // ----------------------------------------------------------------------------
 
-/** 
- *  Returns an exponentially distributed, positive, random deviate of
- *  unit mean, using CORE as the source of uniform deviates.  Waiting
- *  times between independent Poisson-random events is exponentially
- *  distributed, for example.
- */
-template<typename CORE> inline double RandomNumbers_TNG<CORE>::Exponential()
-{ 
-  double x;
-  do { x = CORE::Double(); } while(x == 0.0);
-  return -log(x);
-}
 
 
-/**
- *  Returns a deviate distributed as a gamma distribution of integer order ia, 
-  * i.e., a waiting time to the iath event in a Poisson process of unit mean 
-  * Simply a call to Gamma(ia,1.0)
-  */
-template<typename CORE> inline double RandomNumbers_TNG<CORE>::Gamma(int ia)
-{
-  return Gamma(double(ia),1.0);
-}
-
-/** 
- *  Returns a deviate distributed as a gamma distribution, i.e., a
- *  waiting time to the iath event in a Poisson process of unit mean,
- *  using CORE as the source of uniform deviates.
- *  pdf=beta^alpha * x^(alpha-1) * exp(-beta x) / Gamma(alpha)
- */
-template<typename CORE> double 
-RandomNumbers_TNG<CORE>::Gamma(double alpha, double beta)
-{
-  double oalpha = alpha;
-  if(alpha <= 0.0)throw(std::string("Bad alpha in Gamma function"));
-  if(alpha <= 1.0)alpha += 1.0;
-  const double a1 = alpha - 1.0/3.0;
-  const double a2 = 1./sqrt(9.0*a1);
-  double u;
-  double v;
-  double x,x2,x4;
-  do
-    {
-      do
-	{
-	  x = Normal();
-	  v = 1.0 + a2*x;
-	}while(v<=0.0);
-      v = v*v*v;
-      u = CORE::Double();
-      x2 = x*x;
-      x4 = x2*x2;
-    }while((u>1.0-0.331*x4)&&(log(u)>0.5*x2+a1*(1.0-v+log(v))));
-  if(alpha == oalpha)return a1*v/beta;
-  else
-    {
-      do u=Double(); while(u==0);
-      return pow(u,1.0/oalpha)*a1*v/beta;
-    }
-}
-
-/** 
- *  Returns a deviate distributed as a gamma distribution, with specified
- *  mean and standard deviation. Simply a call to Gamma(alpha,beta) with
- * 
- */
-template<typename CORE> inline double RandomNumbers_TNG<CORE>::
-GammaByMeanAndStdDev(const double mean, const double stddev)
-{
-  double a = mean*mean/stddev/stddev;
-  double b = mean/stddev/stddev;
-  return Gamma(a,b);
-}
-
-/** 
- *  Returns random deviate drawn from a Poisson distribution of mean
- *  lambda, using CORE as a source of uniform random deviates.
- */
-template<typename CORE> int RandomNumbers_TNG<CORE>::Poisson(double lambda)
-{
-  if(lambda<5.0)
-    {
-      if(lambda != m_poi_lambdaold)
-	{
-	  m_poi_lambdaexp = exp(-lambda);
-	  m_poi_lambdaold = lambda;
-	}
-      int k = 0;
-      double t = CORE::Double();
-      while(t>m_poi_lambdaexp) { ++k; t*=Double(); }
-      return k;
-    }
-  else
-    {
-      int k;
-      if(lambda != m_poi_lambdaold)
-	{
-	  m_poi_lambdasrt = sqrt(lambda);
-	  m_poi_lambdalog = log(lambda);
-	  m_poi_lambdaold = lambda;
-	}
-      while(1)
-	{
-	  double u = 0.64*CORE::Double();
-	  double v = -0.68 + 1.28*CORE::Double();
-	  double u2;
-	  if(lambda>13.5)
-	    {
-	      double v2 = v*v;
-	      if(v >= 0) { if(v2 > 6.5*u*(0.64-u)*(u+0.2))continue; }
-	      else { if(v2 > 9.6*u*(0.66-u)*(u+0.07))continue; }
-
-	      k = int(floor(m_poi_lambdasrt*(v/u)+lambda+0.5));
-	      if(k<0)continue;
-	      u2 = u*u;
-
-	      if(v >= 0){ if(v2 < 15.2*u2*(0.61-u)*(0.8-u))break; }
-	      else { if(v2 < 6.76*u2*(0.62-u)*(1.4-u))break; }
-	    }
-	  else
-	    {
-	      k = int(floor(m_poi_lambdasrt*(v/u)+lambda+0.5));
-	      if(k<0)continue;
-	      u2 = u*u;
-	    }
-
-	  double lfact = factln(k);
-	  double p = m_poi_lambdasrt*exp(-lambda + k*m_poi_lambdalog - lfact);
-	  if(u2 < p)break;
-	}
-      return k;
-    }
-  assert(0);
-}
-
-/** 
- *  Returns an integer value that is a random deviate drawn from a 
- *  binomial distribution of n trials each of probability pp, using
- *  CORE as a source of uniform random deviates. 
- */
-
-template<typename CORE> int RandomNumbers_TNG<CORE>::Binomial(double pp, int n)
-{
-  double bnl;
-
-  const double p = (pp<=0.5 ? pp : 1.0-pp);
-  const double am = n*p;
-
-  if(n < 25)               /* Use direct method */
-    {
-      bnl=0.0;
-      for(int j=1;j<=n;j++)if(CORE::Double()<p)++bnl;
-    } 
-  else if(am < 1.0)
-    {
-      double g = exp(-am);
-      double t = 1.0;
-      int j;
-      for(j=0;j<=n;j++)
-	{
-	  t *= CORE::Double();
-	  if(t<g)break;
-	}
-      bnl = (j<=n?j:n);
-    } 
-  else                       /* Use rejection method */
-    {                     
-      if(n != m_bin_nold)
-	{
-	  m_bin_en    = n;
-	  m_bin_oldg  = factln(n);
-	  m_bin_nold  = n;
-	}
-
-      if (p != m_bin_pold)
-	{ 
-	  m_bin_pc    = 1.0-p;
-	  m_bin_plog  = log(p);
-	  m_bin_pclog = log(m_bin_pc);
-	  m_bin_pold  = p;
-	}
-
-      double sq=sqrt(2.0*am*m_bin_pc);
-      double t;
-      double em;
-      do 
-	{
-	  double y;
-	  do 
-	    {
-	      double angle = M_PI*CORE::Double();
-	      y  = tan(angle);
-	      em = sq*y+am;
-	    }while(em<0.0 || em>=(m_bin_en+1));
-	  em = floor(em);
-	  t = 1.2*sq*(1.0+y*y)*exp(m_bin_oldg
-				   - factln(unsigned(em))
-				   - factln(unsigned(m_bin_en-em))
-				   + em*m_bin_plog
-				   + (m_bin_en-em)*m_bin_pclog);
-	}while(CORE::Double()>t);
-      bnl = em;
-    }
-  if (p != pp)bnl=n-bnl;
-  return int(bnl);
-}
 
 /**
  *  Returns a continuous random deviate drawn from the inverse CDF

@@ -76,21 +76,39 @@ class RNG
   double exponential(double mean) { return -mean*std::log(uniform()); }
   double normal();
   double normal(double mean, double sigma) { return mean+normal()*sigma; }
-  double gamma(int ialpha);
   double gamma(double alpha, double beta=1.0);
-  double gamma_by_mean_and_stddev(const double mean, const double stddev);
-  uint32_t poisson(double lambda);
+  double gamma_by_mean_and_sigma(const double mean, const double sigma) {
+    double b = mean/sigma/sigma;
+    return gamma(mean*b,b); }
+  int poisson(double lambda);
+  int polya(double mean, double non_poisson_sigma) {
+    return poisson(gamma_by_mean_and_sigma(mean, non_poisson_sigma)); }
   int binomial(double pp, int n);
+
+#if 0
   inline double inverse_cdf(const std::vector< Pair > &inv_cdf);
-
-  static void generate_inverse_cdf(std::vector< Pair > &cdf, unsigned nbins = 0);
-
+  static void generate_inverse_cdf(std::vector< Pair > &cdf, unsigned nbins=0);
+#endif
+  
  private:
   RNGCore core_;
   bool adopt_core_;
   
   bool bm_hascached_ = false;
-  double m_bm_cachedval_ = 0.0;
+  double bm_cachedval_ = 0.0;
+
+  // Speedup caches
+  double   poi_lambdasrt_ = 1.0;
+  double   poi_lambdalog_ = 0.0;
+  double   poi_lambdaold_ = 1.0;
+
+  int      bin_nold_      = -1;
+  double   bin_pold_      = -1;
+  double   bin_pc_        = 0.0;
+  double   bin_plog_      = 0.0;
+  double   bin_pclog_     = 0.0;
+  unsigned bin_en_        = 0;
+  double   bin_oldg_      = 0.0
 };
 
 } } } // namespace calin::math::rng
