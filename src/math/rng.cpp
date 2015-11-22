@@ -38,6 +38,7 @@
 */
 
 #include <stdexcept>
+#include <cassert>
 
 #include <math/rng.hpp>
 
@@ -48,12 +49,12 @@ RNGCore::~RNGCore()
   // nothing to see here
 }
 
-RNG::RNG(uint64_t seed = 0)
+RNG::RNG(uint64_t seed)
 {
   
 }
 
-RNG(RNGCore* core, bool adopt_core = false):
+RNG::RNG(RNGCore* core, bool adopt_core):
     core_(core), adopt_core_(adopt_core)
 {
   // nothing to see here
@@ -61,7 +62,7 @@ RNG(RNGCore* core, bool adopt_core = false):
 
 double RNG::normal()
 {
-  if(m_bm_hascached)
+  if(bm_hascached_)
     {
       bm_hascached_ = false;
       return bm_cachedval_;
@@ -73,8 +74,8 @@ double RNG::normal()
       double rsq;
       do 
 	{
-	  v1 = 2.0*CORE::Double() - 1.0; 
-	  v2 = 2.0*CORE::Double() - 1.0;
+	  v1 = 2.0*uniform() - 1.0; 
+	  v2 = 2.0*uniform() - 1.0;
 	  rsq = v1*v1 + v2*v2;
 	}while(rsq >= 1.0 || rsq == 0.0);
       const double fac = sqrt(-2.0*log(rsq)/rsq);
@@ -190,7 +191,8 @@ int RNG::poisson(double lambda)
 	    }
 
 	  double lfact = lfactorial(k);
-	  double p = poi_lambdasrt*std::exp(-lambda + k*poi_lambdalog_ - lfact);
+	  double p =
+              poi_lambdasrt_*std::exp(-lambda + k*poi_lambdalog_ - lfact);
 	  if(u2 < p)break;
 	}
       return k;
@@ -228,22 +230,22 @@ int RNG::binomial(double pp, int n)
     } 
   else                       /* Use rejection method */
     {                     
-      if(n != m_bin_nold)
+      if(n != bin_nold_)
 	{
-	  m_bin_en    = n;
-	  m_bin_oldg  = factln(n);
-	  m_bin_nold  = n;
+	  bin_en_    = n;
+	  bin_oldg_  = lfactorial(n);
+	  bin_nold_  = n;
 	}
 
-      if (p != m_bin_pold)
+      if (p != bin_pold_)
 	{ 
-	  m_bin_pc    = 1.0-p;
-	  m_bin_plog  = log(p);
-	  m_bin_pclog = log(m_bin_pc);
-	  m_bin_pold  = p;
+	  bin_pc_    = 1.0-p;
+	  bin_plog_  = std::log(p);
+	  bin_pclog_ = std::log(bin_pc_);
+	  bin_pold_  = p;
 	}
 
-      double sq=sqrt(2.0*am*m_bin_pc);
+      double sq=std::sqrt(2.0*am*bin_pc_);
       double t;
       double em;
       do 
@@ -254,20 +256,21 @@ int RNG::binomial(double pp, int n)
 	      double angle = M_PI*uniform();
 	      y  = std::tan(angle);
 	      em = sq*y+am;
-	    }while(em<0.0 || em>=(m_bin_en+1));
-	  em = floor(em);
-	  t = 1.2*sq*(1.0+y*y)*exp(m_bin_oldg
-				   - factln(unsigned(em))
-				   - factln(unsigned(m_bin_en-em))
-				   + em*m_bin_plog
-				   + (m_bin_en-em)*m_bin_pclog);
-	}while(CORE::Double()>t);
+	    }while(em<0.0 || em>=(bin_en_+1));
+	  em = std::floor(em);
+	  t = 1.2*sq*(1.0+y*y)*std::exp(bin_oldg_
+                                        - lfactorial(unsigned(em))
+                                        - lfactorial(unsigned(bin_en_-em))
+                                        + em*bin_plog_
+                                        + (bin_en_-em)*bin_pclog_);
+	}while(uniform()>t);
       bnl = em;
     }
   if (p != pp)bnl=n-bnl;
   return int(bnl);
 }
 
+#if 0
 namespace RNGCore
 {
  
@@ -916,4 +919,4 @@ template<typename T> double SimpleRNGAdapter_TNG<T>::uniform()
   return m_rng->Double();
 };
 
-#endif // ifndef RANDOMNUMBERS_TNG_HPP
+#endif

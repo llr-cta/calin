@@ -39,6 +39,9 @@
 
 #pragma once
 
+#include <cstdint>
+#include <cmath>
+
 namespace calin { namespace math { namespace rng {
 
 // Decision : should this be a template or a base class. As a base
@@ -91,13 +94,14 @@ class RNG
 #endif
   
  private:
-  RNGCore core_;
+  RNGCore* core_;
   bool adopt_core_;
   
   bool bm_hascached_ = false;
   double bm_cachedval_ = 0.0;
 
   // Speedup caches
+  double   poi_lambdaexp_ = M_E;
   double   poi_lambdasrt_ = 1.0;
   double   poi_lambdalog_ = 0.0;
   double   poi_lambdaold_ = 1.0;
@@ -108,7 +112,7 @@ class RNG
   double   bin_plog_      = 0.0;
   double   bin_pclog_     = 0.0;
   unsigned bin_en_        = 0;
-  double   bin_oldg_      = 0.0
+  double   bin_oldg_      = 0.0;
 };
 
 } } } // namespace calin::math::rng
