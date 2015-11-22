@@ -88,6 +88,9 @@ class RNG
     return poisson(gamma_by_mean_and_sigma(mean, non_poisson_sigma)); }
   int binomial(double pp, int n);
 
+  static uint32_t uint32_from_random_device();
+  static uint64_t uint64_from_random_device();
+  
 #if 0
   inline double inverse_cdf(const std::vector< Pair > &inv_cdf);
   static void generate_inverse_cdf(std::vector< Pair > &cdf, unsigned nbins=0);

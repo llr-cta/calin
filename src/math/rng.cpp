@@ -39,6 +39,7 @@
 
 #include <stdexcept>
 #include <cassert>
+#include <random>
 
 #include <math/rng.hpp>
 
@@ -49,15 +50,33 @@ RNGCore::~RNGCore()
   // nothing to see here
 }
 
-RNG::RNG(uint64_t seed)
+RNG::RNG(uint64_t seed):
+    core_(new NR3RNGCore(seed==0 ? uint64_from_random_device() : seed)),
+    adopt_core_(true)
 {
-  
+  // nothing to see here
 }
 
 RNG::RNG(RNGCore* core, bool adopt_core):
     core_(core), adopt_core_(adopt_core)
 {
   // nothing to see here
+}
+
+uint64_t RNG::uint64_from_random_device()
+{
+  std::random_device gen;
+  static_assert(sizeof(std::random_device::result_type)==sizeof(uint32_t),
+                "std::random_device::result_type is not 32 bits");
+  return uint64_t(gen())<<32 | uint64_t(gen());
+}
+
+uint32_t RNG::uint32_from_random_device()
+{
+  std::random_device gen;
+  static_assert(sizeof(std::random_device::result_type)==sizeof(uint32_t),
+                "std::random_device::result_type is not 32 bits");
+  return gen();
 }
 
 double RNG::normal()
