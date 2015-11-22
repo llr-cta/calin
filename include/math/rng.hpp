@@ -115,4 +115,50 @@ class RNG
   double   bin_oldg_      = 0.0;
 };
 
+// =============================================================================
+//
+// Specific random number generators
+//
+// =============================================================================
+
+class NR3RNGCore: public RNGCore
+{
+ public:
+  NR3RNGCore(uint64_t seed):
+      m_u(UINT64_C(0)), m_v(UINT64_C(4101842887655102017)), m_w(UINT64_C(1))
+  {
+    m_u = seed^m_v; uniform_uint64();
+    m_v = m_u; uniform_uint64();
+    m_w = m_v; uniform_uint64();
+  }
+
+  uint64_t uniform_uint64() override {
+    m_u = m_u*UINT64_C(2862933555777941757) + UINT64_C(7046029254386353087);
+    m_v ^= m_v >> 17; 
+    m_v ^= m_v << 31;
+    m_v ^= m_v >> 8;
+    m_w = 4294957665U*(m_w & 0xFFFFFFFF) + (m_w >> 32);
+    uint64_t x = m_u ^ (m_u << 21);
+    x ^= x >> 35;
+    x ^= x << 4;
+    return (x+m_v)^m_w;
+  }
+
+  uint32_t uniform_uint32() override {
+    return uint32_t(uniform_uint64()&0xFFFFFFFF);
+  }
+
+  double uniform_double() override {
+    return 5.42101086242752217E-20 * double(uniform_uint64());
+  }
+  
+  void save_to_proto() const override;
+  static RNGCore* create_from_proto();
+  
+ private:
+  uint64_t m_u;
+  uint64_t m_v;
+  uint64_t m_w;
+};
+
 } } } // namespace calin::math::rng

@@ -18,3 +18,7 @@ add_test(TestHexArray test_hex_array)
 add_executable(test_vs_vec3d test_vs_vec3d.cpp)   
 target_link_libraries(test_vs_vec3d ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
 add_test(TestVSVec3D test_vs_vec3d) 
+
+add_executable(test_rng test_rng.cpp)   
+target_link_libraries(test_rng ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
+add_test(TestVSVec3D test_rng) 

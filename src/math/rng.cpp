@@ -270,6 +270,17 @@ int RNG::binomial(double pp, int n)
   return int(bnl);
 }
 
+
+void NR3RNGCore::save_to_proto() const
+{
+
+}
+
+RNGCore* NR3RNGCore::create_from_proto()
+{
+  return 0;
+}
+
 #if 0
 namespace RNGCore
 {
@@ -356,7 +367,7 @@ namespace RNGCore
     {
       m_u = m_u*UINT64_C(2862933555777941757) + UINT64_C(7046029254386353087);
       m_v ^= m_v >> 17; 
-      m_v ^= m_v << 31;
+       m_v ^= m_v << 31;
       m_v ^= m_v >> 8;
       m_w = 4294957665U*(m_w & 0xFFFFFFFF) + (m_w >> 32);
       uint64_t x = m_u ^ (m_u << 21);
