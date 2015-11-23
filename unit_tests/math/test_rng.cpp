@@ -127,7 +127,7 @@ TEST_P(PoissonWithMean, Moments) {
       x=double(rng.poisson(mean)); });
   EXPECT_NEAR(m1, mean, 0.01*mean);
   EXPECT_NEAR(m2, mean, 0.01*mean);
-  EXPECT_NEAR(m3, mean, 0.05*mean);
+  EXPECT_NEAR(m3, mean, 0.1*mean);
 }
 
 // Make sure to test values <5 and >5 since the generator uses
