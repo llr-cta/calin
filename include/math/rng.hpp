@@ -79,10 +79,10 @@ class RNG
   double exponential(double mean) { return -mean*std::log(uniform()); }
   double normal();
   double normal(double mean, double sigma) { return mean+normal()*sigma; }
-  double gamma(double alpha, double beta=1.0);
+  double gamma_by_alpha_and_beta(double alpha, double beta);
   double gamma_by_mean_and_sigma(const double mean, const double sigma) {
-    double b = mean/sigma/sigma;
-    return gamma(mean*b,b); }
+    double b = mean/(sigma*sigma);
+    return gamma_by_alpha_and_beta(mean*b,b); }
   int poisson(double lambda);
   int polya(double mean, double non_poisson_sigma) {
     return poisson(gamma_by_mean_and_sigma(mean, non_poisson_sigma)); }

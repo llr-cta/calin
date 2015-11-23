@@ -109,7 +109,7 @@ double RNG::normal()
  *  waiting time to the i'th event in a Poisson process of unit mean.
  *  pdf=beta^alpha * x^(alpha-1) * exp(-beta x) / Gamma(alpha)
  */
-double RNG::gamma(double alpha, double beta)
+double RNG::gamma_by_alpha_and_beta(double alpha, double beta)
 {
   double oalpha = alpha;
   if(alpha <= 0.0)throw(std::invalid_argument("RNG::gamma: negative alpha"));

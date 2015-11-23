@@ -137,6 +137,54 @@ INSTANTIATE_TEST_CASE_P(TestRNG,
                         ::testing::Values(1.0, 2.0, 3.0, 4.99999, 5.0,
                                           5.00001, 10.0, 100.0));
 
+class GammaByAlphaAndBeta :
+    public testing::TestWithParam<std::pair<double,double>> {
+ public:
+};
+
+TEST_P(GammaByAlphaAndBeta, Moments) {
+  double alpha = GetParam().first;
+  double beta = GetParam().second;
+  double m1, m2, m3;
+  std::tie(m1,m2,m3) = calc_moments([alpha,beta](RNG& rng,double& x){
+      x=rng.gamma_by_alpha_and_beta(alpha,beta); });
+  EXPECT_NEAR(m1, alpha/beta, 0.01*alpha/beta/beta);
+  EXPECT_NEAR(m2, alpha/(beta*beta), 0.05*alpha/(beta*beta*beta));
+  EXPECT_NEAR(m3, 2.0*alpha/(beta*beta*beta), 0.1*alpha/(beta*beta*beta));
+}
+
+// Test alpha <1 and alpha>1
+INSTANTIATE_TEST_CASE_P(TestRNG,
+                        GammaByAlphaAndBeta,
+                        ::testing::Values(std::make_pair(0.1, 1.0),
+                                          std::make_pair(0.99999, 1.0),
+                                          std::make_pair(1.0, 1.0),
+                                          std::make_pair(1.00001, 1.0),
+                                          std::make_pair(1.0, 2.0),
+                                          std::make_pair(2.0, 1.0)));
+
+class GammaByMeanAndSigma :
+    public testing::TestWithParam<std::pair<double,double>> {
+ public:
+};
+
+TEST_P(GammaByMeanAndSigma, Moments) {
+  double mean = GetParam().first;
+  double sigma = GetParam().second;
+  double m1, m2, m3;
+  std::tie(m1,m2,m3) = calc_moments([mean,sigma](RNG& rng,double& x){
+      x=rng.gamma_by_mean_and_sigma(mean,sigma); });
+  EXPECT_NEAR(m1, mean, 0.01*mean);
+  EXPECT_NEAR(m2, sigma*sigma, 0.01*sigma*sigma);
+  EXPECT_NEAR(m3, 2.0*(sigma*sigma*sigma*sigma)/mean,
+              0.1*(sigma*sigma*sigma*sigma)/mean);
+}
+
+INSTANTIATE_TEST_CASE_P(TestRNG,
+                        GammaByMeanAndSigma,
+                        ::testing::Values(std::make_pair(1.0, 0.1),
+                                          std::make_pair(1.0, 1.0),
+                                          std::make_pair(2.0, 1.0)));
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

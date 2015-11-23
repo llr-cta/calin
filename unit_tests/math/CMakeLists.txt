@@ -21,4 +21,4 @@ add_test(TestVSVec3D test_vs_vec3d)
 
 add_executable(test_rng test_rng.cpp)   
 target_link_libraries(test_rng ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
-add_test(TestVSVec3D test_rng) 
+add_test(TestRNG test_rng) 
