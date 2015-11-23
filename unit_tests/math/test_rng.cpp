@@ -31,14 +31,15 @@
 using namespace calin::math::rng;
 
 template<typename T> std::tuple<double, double, double>
-calc_moments(const T& generator, unsigned N = 10000)
+calc_moments(const T& generator, bool print = false, unsigned N = 1000000)
 {
+  RNG rng;
   double sum_x = 0;
   double sum_xx = 0;
   double sum_xxx = 0;
   for(unsigned i=0; i<N; i++) {
     double x;
-    generator(x);
+    generator(rng,x);
     sum_x += x;
     sum_xx += x*x;
     sum_xxx += x*x*x;
@@ -46,19 +47,96 @@ calc_moments(const T& generator, unsigned N = 10000)
   double m1 = sum_x/double(N);
   double m2 = sum_xx/double(N) - m1*m1;
   double m3 = sum_xxx/double(N) - 3*sum_xx/double(N)*m1 + 2*m1*m1*m1;
+  if(print)std::cout << m1 << ' ' << m2 << ' ' << m3 << '\n';
   return std::make_tuple(m1,m2,m3);
 }
 
-TEST(TestRNG, Uniform) {
-  RNG rng;
-  auto res = calc_moments([&rng](double& x){ x=rng.uniform(); });
-  EXPECT_NEAR(std::get<0>(res), 0.5, 0.01);
-  EXPECT_NEAR(std::get<1>(res), 1.0/12.0, 0.01);
-  EXPECT_NEAR(std::get<2>(res), 0.0, 0.001);
-  std::cout << std::get<0>(res) << ' '
-            << std::get<1>(res) << ' '
-            << std::get<2>(res) << '\n';
+TEST(TestRNG, UniformMoments) {
+  double m1, m2, m3;
+  std::tie(m1,m2,m3) = calc_moments([](RNG& rng,double& x){ x=rng.uniform(); });
+  EXPECT_NEAR(m1, 0.5, 0.01);
+  EXPECT_NEAR(m2, 1.0/12.0, 0.01);
+  EXPECT_NEAR(m3, 0.0, 0.001);
 }
+
+TEST(TestRNG, ExponentialMoments) {
+  double m1, m2, m3;
+  std::tie(m1,m2,m3) = calc_moments([](RNG& rng,double& x){
+      x=rng.exponential(); });
+  EXPECT_NEAR(m1, 1.0, 0.01);
+  EXPECT_NEAR(m2, 1.0, 0.01);
+  EXPECT_NEAR(m3, 2.0, 0.05);
+}
+
+class ExponentialWithMean : public testing::TestWithParam<double> {
+ public:
+};
+
+TEST_P(ExponentialWithMean, Moments) {
+  double mean = GetParam();
+  double m1, m2, m3;
+  std::tie(m1,m2,m3) = calc_moments([mean](RNG& rng,double& x){
+      x=rng.exponential(mean); });
+  EXPECT_NEAR(m1, mean, 0.01*mean);
+  EXPECT_NEAR(m2, mean*mean, 0.01*mean*mean);
+  EXPECT_NEAR(m3, 2.0*mean*mean*mean, 0.05*mean*mean*mean);
+}
+
+INSTANTIATE_TEST_CASE_P(TestRNG,
+                        ExponentialWithMean,
+                        ::testing::Values(1.0, 2.0, 3.0));
+
+TEST(TestRNG, NormalMoments) {
+  double m1, m2, m3;
+  std::tie(m1,m2,m3) = calc_moments([](RNG& rng,double& x){
+      x=rng.normal(); });
+  EXPECT_NEAR(m1, 0.0, 0.01);
+  EXPECT_NEAR(m2, 1.0, 0.01);
+  EXPECT_NEAR(m3, 0.0, 0.05);
+}
+
+class NormalWithMeanAndSigma :
+    public testing::TestWithParam<std::pair<double,double>> {
+ public:
+};
+
+TEST_P(NormalWithMeanAndSigma, Moments) {
+  double mean = GetParam().first;
+  double sigma = GetParam().second;
+  double m1, m2, m3;
+  std::tie(m1,m2,m3) = calc_moments([mean,sigma](RNG& rng,double& x){
+      x=rng.normal(mean,sigma); });
+  EXPECT_NEAR(m1, mean, 0.01*std::abs(mean));
+  EXPECT_NEAR(m2, sigma*sigma, 0.01*sigma*sigma);
+  EXPECT_NEAR(m3, 0, 0.05*sigma*sigma*sigma);
+}
+
+INSTANTIATE_TEST_CASE_P(TestRNG,
+                        NormalWithMeanAndSigma,
+                        ::testing::Values(std::make_pair(1.0, 2.0),
+                                          std::make_pair(-1.0, 2.0)));
+
+class PoissonWithMean : public testing::TestWithParam<double> {
+ public:
+};
+
+TEST_P(PoissonWithMean, Moments) {
+  double mean = GetParam();
+  double m1, m2, m3;
+  std::tie(m1,m2,m3) = calc_moments([mean](RNG& rng,double& x){
+      x=double(rng.poisson(mean)); });
+  EXPECT_NEAR(m1, mean, 0.01*mean);
+  EXPECT_NEAR(m2, mean, 0.01*mean);
+  EXPECT_NEAR(m3, mean, 0.05*mean);
+}
+
+// Make sure to test values <5 and >5 since the generator uses
+// different algorithms for these cases
+INSTANTIATE_TEST_CASE_P(TestRNG,
+                        PoissonWithMean,
+                        ::testing::Values(1.0, 2.0, 3.0, 4.99999, 5.0,
+                                          5.00001, 10.0, 100.0));
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

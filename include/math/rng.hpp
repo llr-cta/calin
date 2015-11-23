@@ -104,7 +104,7 @@ class RNG
   double bm_cachedval_ = 0.0;
 
   // Speedup caches
-  double   poi_lambdaexp_ = M_E;
+  double   poi_lambdaexp_ = 1.0/M_E;
   double   poi_lambdasrt_ = 1.0;
   double   poi_lambdalog_ = 0.0;
   double   poi_lambdaold_ = 1.0;
