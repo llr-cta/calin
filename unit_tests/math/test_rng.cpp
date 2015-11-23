@@ -31,9 +31,11 @@
 using namespace calin::math::rng;
 
 template<typename T> std::tuple<double, double, double>
-calc_moments(const T& generator, bool print = false, unsigned N = 1000000)
+calc_moments(const T& generator, bool print = false,
+             RNGCore* core = new NR3RNGCore(RNG::uint64_from_random_device()),
+             unsigned N = 1000000)
 {
-  RNG rng;
+  RNG rng(core, true);
   double sum_x = 0;
   double sum_xx = 0;
   double sum_xxx = 0;
@@ -185,6 +187,30 @@ INSTANTIATE_TEST_CASE_P(TestRNG,
                         ::testing::Values(std::make_pair(1.0, 0.1),
                                           std::make_pair(1.0, 1.0),
                                           std::make_pair(2.0, 1.0)));
+
+class PolyaByMeanAndExcessSigma :
+    public testing::TestWithParam<std::pair<double,double>> {
+ public:
+};
+
+TEST_P(PolyaByMeanAndExcessSigma, Moments) {
+  double mean = GetParam().first;
+  double xs_sigma = GetParam().second;
+  double m1, m2, m3;
+  std::tie(m1,m2,m3) = calc_moments([mean,xs_sigma](RNG& rng,double& x){
+      x=rng.polya(mean,xs_sigma); });
+  EXPECT_NEAR(m1, mean, 0.01*mean);
+  EXPECT_NEAR(m2, mean+xs_sigma*xs_sigma, 0.01*(mean+xs_sigma*xs_sigma));
+  EXPECT_NEAR(m3, (mean+2.0*xs_sigma*xs_sigma)*(mean+xs_sigma*xs_sigma)/mean,
+              0.025*(mean+2.0*xs_sigma*xs_sigma)*(mean+xs_sigma*xs_sigma)/mean);
+}
+
+INSTANTIATE_TEST_CASE_P(TestRNG,
+                        PolyaByMeanAndExcessSigma,
+                        ::testing::Values(std::make_pair(1.0, 0.1),
+                                          std::make_pair(1.0, 1.0),
+                                          std::make_pair(2.0, 1.0),
+                                          std::make_pair(100.0, 10.0)));
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
