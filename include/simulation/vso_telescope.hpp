@@ -46,7 +46,7 @@
 
 #include <math/vs_vec3d.hpp>
 #include <math/vs_particle.hpp>
-//#include <RandomNumbers.hpp>
+#include <math/RNG.hpp>
 //#include <xytohex.hpp>
 
 //#include "VSOArrayParameters.hpp"

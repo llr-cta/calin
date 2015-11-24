@@ -30,6 +30,73 @@
 
 using namespace calin::math::rng;
 
+TEST(TestRNG, RandomDeviceFillsAllBits64) {
+  std::vector<unsigned> count(64,0);
+  for(unsigned i=0;i<100;i++)
+  {
+    uint64_t x = RNG::uint64_from_random_device();
+    for(unsigned j=0;j<64;j++) {
+      if(x&1)count[j]++; x>>=1; }
+  }
+  for(unsigned j=0;j<64;j++) {
+    EXPECT_GE(count[j], 20); EXPECT_LE(count[j], 80); }
+}
+
+TEST(TestRNG, RandomDeviceFillsAllBits32) {
+  std::vector<unsigned> count(32,0);
+  for(unsigned i=0;i<100;i++)
+  {
+    uint32_t x = RNG::uint32_from_random_device();
+    for(unsigned j=0;j<32;j++) {
+      if(x&1)count[j]++; x>>=1; }
+  }
+  for(unsigned j=0;j<32;j++) {
+    EXPECT_GE(count[j], 20); EXPECT_LE(count[j], 80); }
+}
+
+template<typename CORE> class CoreFillsAllBits : public testing::Test {
+ public:
+};
+
+TYPED_TEST_CASE_P(CoreFillsAllBits);
+
+TYPED_TEST_P(CoreFillsAllBits, Bits64)
+{
+  TypeParam core(RNG::uint64_from_random_device());
+  std::vector<unsigned> count(64,0);
+  for(unsigned i=0;i<1000000;i++)
+  {
+    uint64_t x = core.uniform_uint64();
+    for(unsigned j=0;j<64;j++) {
+      if(x&1)count[j]++; x>>=1; }
+  }
+  for(unsigned j=0;j<64;j++) {
+    EXPECT_GE(count[j], 490000) << "uint64_t bit#" << j << " set too few times";
+    EXPECT_LE(count[j], 510000) << "uint64_t bit#" << j << " set too many times";
+  }
+}
+
+TYPED_TEST_P(CoreFillsAllBits, Bits32)
+{
+  TypeParam core(RNG::uint64_from_random_device());
+  std::vector<unsigned> count(32,0);
+  for(unsigned i=0;i<1000000;i++)
+  {
+    uint32_t x = core.uniform_uint32();
+    for(unsigned j=0;j<32;j++) {
+      if(x&1)count[j]++; x>>=1; }
+  }
+  for(unsigned j=0;j<32;j++) {
+    EXPECT_GE(count[j], 490000) << "uint32_t bit#" << j << " set too few times";
+    EXPECT_LE(count[j], 510000) << "uint32_t bit#" << j << " set too many times";
+  }
+}
+
+REGISTER_TYPED_TEST_CASE_P(CoreFillsAllBits, Bits64, Bits32);
+typedef ::testing::Types<NR3RNGCore, Ranlux48RNGCore, MT19937RNGCore> CoreTypes;
+INSTANTIATE_TYPED_TEST_CASE_P(TestRNG, CoreFillsAllBits,
+                             CoreTypes);
+
 template<typename T> std::tuple<double, double, double>
 calc_moments(const T& generator, bool print = false,
              RNGCore* core = new NR3RNGCore(RNG::uint64_from_random_device()),
@@ -211,6 +278,7 @@ INSTANTIATE_TEST_CASE_P(TestRNG,
                                           std::make_pair(1.0, 1.0),
                                           std::make_pair(2.0, 1.0),
                                           std::make_pair(100.0, 10.0)));
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

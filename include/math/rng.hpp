@@ -41,6 +41,7 @@
 
 #include <cstdint>
 #include <cmath>
+#include <random>
 
 namespace calin { namespace math { namespace rng {
 
@@ -66,7 +67,8 @@ class RNGCore
 class RNG
 {
  public:
-  RNG(uint64_t seed = 0);
+  enum class CoreType { NR3, RANLUX48, MT19937_64, DEV_RANDOM };
+  RNG(uint64_t seed = 0, CoreType core_type = CoreType::NR3);
   RNG(RNGCore* core, bool adopt_core = false);
   ~RNG() { if(adopt_core_)delete core_; }
   
@@ -128,23 +130,27 @@ class NR3RNGCore: public RNGCore
 {
  public:
   NR3RNGCore(uint64_t seed):
-      m_u(UINT64_C(0)), m_v(UINT64_C(4101842887655102017)), m_w(UINT64_C(1))
+      RNGCore(), seed_(seed),
+      u_(UINT64_C(0)), v_(UINT64_C(4101842887655102017)), w_(UINT64_C(1))
   {
-    m_u = seed^m_v; uniform_uint64();
-    m_v = m_u; uniform_uint64();
-    m_w = m_v; uniform_uint64();
+    u_ = seed^v_; uniform_uint64();
+    v_ = u_; uniform_uint64();
+    w_ = v_; uniform_uint64();
+    calls_ = 0;
   }
-
+  ~NR3RNGCore();
+  
   uint64_t uniform_uint64() override {
-    m_u = m_u*UINT64_C(2862933555777941757) + UINT64_C(7046029254386353087);
-    m_v ^= m_v >> 17; 
-    m_v ^= m_v << 31;
-    m_v ^= m_v >> 8;
-    m_w = 4294957665U*(m_w & 0xFFFFFFFF) + (m_w >> 32);
-    uint64_t x = m_u ^ (m_u << 21);
+    calls_++;
+    u_ = u_*UINT64_C(2862933555777941757) + UINT64_C(7046029254386353087);
+    v_ ^= v_ >> 17; 
+    v_ ^= v_ << 31;
+    v_ ^= v_ >> 8;
+    w_ = 4294957665U*(w_ & 0xFFFFFFFF) + (w_ >> 32);
+    uint64_t x = u_ ^ (u_ << 21);
     x ^= x >> 35;
     x ^= x << 4;
-    return (x+m_v)^m_w;
+    return (x+v_)^w_;
   }
 
   uint32_t uniform_uint32() override {
@@ -159,9 +165,112 @@ class NR3RNGCore: public RNGCore
   static RNGCore* create_from_proto();
   
  private:
-  uint64_t m_u;
-  uint64_t m_v;
-  uint64_t m_w;
+  uint64_t seed_;
+  uint64_t calls_ = 0;
+  uint64_t u_;
+  uint64_t v_;
+  uint64_t w_;
 };
 
+class Ranlux48RNGCore: public RNGCore
+{
+ public:
+  Ranlux48RNGCore(uint64_t seed): RNGCore(), gen_(seed), gen_seed_(seed) { }
+  ~Ranlux48RNGCore();
+  
+  uint64_t uniform_uint64() override {
+    uint64_t res = gen_(); // res has 48 bits
+    gen_calls_++;
+    res <<= 16;
+    switch(dev_blocks_)
+    {
+      case 0:
+        dev_ = gen_();
+        gen_calls_++;
+        res |= dev_&0x000000000000FFFFULL;
+        dev_ >>= 16;
+        dev_blocks_ = 2;
+        break;
+      case 1:
+        res |= dev_&0x000000000000FFFFULL;
+        dev_blocks_ = 0;
+        break;
+      case 2:
+        res |= dev_&0x000000000000FFFFULL;
+        dev_ >>= 16;
+        dev_blocks_ = 1;
+        break;
+      default:
+        assert(0);
+    }
+    return res;
+  }
+
+  uint32_t uniform_uint32() override {
+    uint32_t res = 0;
+    switch(dev_blocks_)
+    {
+      case 0:
+        dev_ = gen_();
+        gen_calls_++;
+        res = dev_&0x00000000FFFFFFFFULL;
+        dev_ >>= 32;
+        dev_blocks_ = 1;
+        break;
+      case 1:
+        res = dev_&0x000000000000FFFFULL;
+        res <<= 16;
+        dev_ = gen_();
+        gen_calls_++;
+        res |= dev_&0x000000000000FFFFULL;
+        dev_ >>= 16;
+        dev_blocks_ = 2;
+        break;
+      case 2:
+        res = dev_&0x00000000FFFFFFFF;
+        dev_blocks_ = 0;
+        break;
+      default:
+        assert(0);
+    }
+    return res;
+  }
+
+  double uniform_double() override {
+    return 5.421001086242752217E-20 * double(uniform_uint64());
+  }
+  
+  void save_to_proto() const override;
+  static RNGCore* create_from_proto();
+  
+ private:
+  std::ranlux48 gen_;
+  uint64_t gen_seed_;
+  uint64_t gen_calls_ = 0;
+  uint_fast64_t dev_ = 0;
+  uint_fast32_t dev_blocks_ = 0;
+};
+
+class MT19937RNGCore: public RNGCore
+{
+ public:
+  MT19937RNGCore(uint64_t seed): RNGCore(), gen_(seed), gen_seed_(seed) { }
+  ~MT19937RNGCore();
+  
+  uint64_t uniform_uint64() override { gen_calls_++; return gen_(); }
+  uint32_t uniform_uint32() override { gen_calls_++;
+    return uint32_t(gen_()&0xFFFFFFFF); }
+  double uniform_double() override {
+    return 5.421001086242752217E-20 * double(uniform_uint64());
+  }
+  
+  void save_to_proto() const override;
+  static RNGCore* create_from_proto();
+  
+ private:
+  std::mt19937_64 gen_;
+  uint64_t gen_seed_;
+  uint64_t gen_calls_ = 0;
+};
+  
 } } } // namespace calin::math::rng

@@ -50,7 +50,12 @@ RNGCore::~RNGCore()
   // nothing to see here
 }
 
-RNG::RNG(uint64_t seed):
+NR3RNGCore::~NR3RNGCore()
+{
+  // nothing to see here
+}
+
+RNG::RNG(uint64_t seed, CoreType core_type):
     core_(new NR3RNGCore(seed==0 ? uint64_from_random_device() : seed)),
     adopt_core_(true)
 {
@@ -289,7 +294,6 @@ int RNG::binomial(double pp, int n)
   return int(bnl);
 }
 
-
 void NR3RNGCore::save_to_proto() const
 {
 
@@ -300,122 +304,40 @@ RNGCore* NR3RNGCore::create_from_proto()
   return 0;
 }
 
+Ranlux48RNGCore::~Ranlux48RNGCore()
+{
+  // nothing to see here
+}
+
+void Ranlux48RNGCore::save_to_proto() const
+{
+
+}
+
+RNGCore* Ranlux48RNGCore::create_from_proto()
+{
+  return 0;
+}
+
+MT19937RNGCore::~MT19937RNGCore()
+{
+  // nothing to see here
+}
+  
+void MT19937RNGCore::save_to_proto() const
+{
+  
+}
+
+RNGCore* MT19937RNGCore::create_from_proto()
+{
+
+}
+
 #if 0
 namespace RNGCore
 {
  
-  /**
-   *  Read random bytes from system random source (usually "/dev/random"). 
-   *  This can supply high quality (non-pseudo) random numbers but is 
-   *  usually VERY slow so it is advised that you only use this generator 
-   *  to produce good quality seed numbers.
-   */
-
-  class DevRandom
-  {
-  public:
-    typedef std::string Options;
-    static Options defaultOptions() { return "/dev/random"; }
-    
-    DevRandom(const std::string& filename = defaultOptions()):
-      m_file_name(filename), m_fp(fopen(filename.c_str(),"r")){ assert(m_fp); }
-    DevRandom(uint64_t unused_seed, 
-	      const std::string& filename = defaultOptions()):
-      m_file_name(filename), m_fp(fopen(filename.c_str(),"r")){ assert(m_fp); }
-    ~DevRandom() { fclose(m_fp); }
-
-    void Burn() { }
-    uint64_t UInt64() { uint64_t x; assert(fread(&x,8,1,m_fp)==1); return x; }
-    uint32_t UInt32() { uint32_t x; assert(fread(&x,4,1,m_fp)==1); return x; }
-    double Double() { return 5.42101086242752217E-20 * double(UInt64()); }
-
-    static std::string getCoreName() { return "DevRandom"; }
-
-    void saveCoreState(std::ostream& stream) const
-    {
-      stream << m_file_name << '\n';
-    }
-
-    bool loadCoreState(std::istream& stream)
-    {
-      std::string file_name;
-      if(!(stream >> file_name))return false;
-      if(file_name != m_file_name)
-	{
-	  fclose(m_fp);
-	  m_file_name = file_name;
-	  m_fp = fopen(file_name.c_str(),"r");
-	  assert(m_fp);
-	}
-      return true;
-    }
-
-    static uint64_t oneUInt64() { DevRandom rng; return rng.UInt64(); }
-    static uint64_t oneUInt32() { DevRandom rng; return rng.UInt32(); }
-    static double oneDouble() { DevRandom rng; return rng.Double(); }
-  private:
-    std::string m_file_name;
-    FILE*       m_fp;
-  };  
-
-  /**
-   *  Highest quality random number generator from Numerical Recipes 3
-   *  combines two unrelated generators to make generator with period
-   *  of ~3.1E57.
-   */
-
-  class EmptyOptions {};
-
-  class NR3Ran
-  {
-  public:
-    typedef EmptyOptions Options;
-    static Options defaultOptions() { return Options(); }
-
-    NR3Ran(uint64_t seed, const Options& opt = Options()):
-      m_u(UINT64_C(0)), m_v(UINT64_C(4101842887655102017)), m_w(UINT64_C(1))
-    {
-      m_u = seed^m_v; UInt64();
-      m_v = m_u; UInt64();
-      m_w = m_v; UInt64();
-    }
-
-    void Burn() { UInt64(); }
-
-    uint64_t UInt64()
-    {
-      m_u = m_u*UINT64_C(2862933555777941757) + UINT64_C(7046029254386353087);
-      m_v ^= m_v >> 17; 
-       m_v ^= m_v << 31;
-      m_v ^= m_v >> 8;
-      m_w = 4294957665U*(m_w & 0xFFFFFFFF) + (m_w >> 32);
-      uint64_t x = m_u ^ (m_u << 21);
-      x ^= x >> 35;
-      x ^= x << 4;
-      return (x+m_v)^m_w;
-    }
-
-    uint32_t UInt32() { return uint32_t(UInt64()); }
-    double Double() { return 5.42101086242752217E-20 * double(UInt64()); }
-
-    static std::string getCoreName() { return "NR3Ran"; }
-
-    void saveCoreState(std::ostream& stream) const
-    {
-      stream << m_u << '\n' << m_v << '\n' << m_w << '\n';
-    }
-
-    bool loadCoreState(std::istream& stream) 
-    {
-      return stream >> m_u >> m_v >> m_w;
-    }
-
-  private:
-    uint64_t m_u;
-    uint64_t m_v;
-    uint64_t m_w;
-  };
-
   /**
    *  Generator from NR3 which is recommended for everyday use. Faster than
    *  NR3Ran with period of 1.8E19.
@@ -609,79 +531,6 @@ namespace RNGCore
     int32_t ran2_iy;
     int32_t ran2_iv[RANDOMNUMBERS_NTAB];
   };
-
-  /**
-   *  RanLux 3.2 generator. A particle physics favourite. 
-   *  Copyright (C) 2005 Martin Luescher.
-   *  http://luscher.web.cern.ch/luscher/ranlux/index.html
-   *
-   *  Integer option, which must be 1 (default) or 2, specifies
-   *  "luxury" value, describing degree of residual correlation
-   *  between subsequent deviates. The default should be sufficient
-   *  for all applications.
-   */
-
-  class RanLuxV32
-  {
-  public:
-    typedef int Options;
-    static Options defaultOptions() { return 1; }
-
-    RanLuxV32(uint64_t seed, const Options& opt = Options());
-
-    void Burn() { double x; ranlxd(&x,1); }
-    double Double() { double x; ranlxd(&x,1); return x; }
-
-    static std::string getCoreName() { return "RanLuxV32"; }
-
-    void saveCoreState(std::ostream& stream) const;
-    bool loadCoreState(std::istream& stream);
-
-  private:
-    static const int BASE = 0x1000000;
-    static const int MASK = 0xffffff;
-
-    struct vec_t
-    {
-      int c1;
-      int c2;
-      int c3;
-      int c4;
-    };
-
-    struct dble_vec_t
-    {
-      vec_t c1;
-      vec_t c2;
-    };
-    
-    int pr;
-    int prm;
-    int ir;
-    int jr;
-    int is;
-    int is_old;
-    int next[96];
-    double one_bit;
-    vec_t carry;
-
-    union
-    {
-      dble_vec_t vec[12];
-      int num[96];
-    } x;
-
-    void ranlxd(double r[],int n);
-    void rlxd_init(int level,int seed);
-    int rlxd_size(void) const;
-    void rlxd_get(int state[]) const;
-    void rlxd_reset(int state[]);
-
-    void error(int no) const;
-    void update();
-    void define_constants();
-  };
-
 }
 
 // ============================================================================
@@ -711,180 +560,6 @@ interpolate(double x, const std::vector<Pair>::const_iterator& itr)
 //
 // ============================================================================
 // ============================================================================
-
-// ----------------------------------------------------------------------------
-// Constructors, destructors, and functions to load and save state
-// ----------------------------------------------------------------------------
-
-/** 
- *  Construct class from prescribed seed. Input and output of RNG state
- *  is disabled, so state will not be stored on destruction of the object.
- */
-template<typename CORE> RandomNumbers_TNG<CORE>::
-RandomNumbers_TNG(uint64_t seed, const CoreOptions& core_options): 
-  RandomNumbersBase(), 
-  CORE(seed>0?seed:RNGCore::DevRandom::oneUInt64(), core_options),
-  m_bm_hascached(false), m_bm_cachedval(),
-  m_poi_lambdaold(-1), m_poi_lambdaexp(), m_poi_lambdasrt(), m_poi_lambdalog(),
-  m_bin_nold(-1), m_bin_pold(-1), m_bin_pc(), m_bin_plog(), 
-  m_bin_pclog(), m_bin_en(), m_bin_oldg(),
-  m_file_name()
-{
-  // nothing to see here
-}
-
-/** 
- *  Construct class from a stored state file. If state file does not exist 
- *  or is incompatible with this class then the generator is constructed 
- *  with a random seed and a state file constructed. The state file is locked
- *  for the duration of the existance of the generator.
- */
-template<typename CORE> RandomNumbers_TNG<CORE>::
-RandomNumbers_TNG(const std::string& state_filename, 
-		  const CoreOptions& core_options):
-  RandomNumbersBase(), 
-  CORE(0/*RNGCore::DevRandom::oneUInt64()*/, core_options),
-  m_bm_hascached(false), m_bm_cachedval(),
-  m_poi_lambdaold(-1), m_poi_lambdaexp(), m_poi_lambdasrt(), m_poi_lambdalog(),
-  m_bin_nold(-1), m_bin_pold(-1), m_bin_pc(), m_bin_plog(), 
-  m_bin_pclog(), m_bin_en(), m_bin_oldg(),
-  m_file_name(state_filename)
-{
-  lockState(m_file_name);                     // lock the lockfile
-  if(!readState())                            // initialize seeds
-    {
-      uint64_t seed = RNGCore::DevRandom::oneUInt64();
-      std::cerr 
-	<< "RandomNumbers_TNG::readState(): could not read RNG state from file"
-	<< std::endl
-	<< "RandomNumbers_TNG::readState(): " << m_file_name << std::endl
-	<< "RandomNumbers_TNG::readState(): initializing state from seed "
-	<< seed << std::endl;
-      *(CORE*)this = CORE(seed,core_options);
-    }
-  CORE::Burn();                               // generate a random number to
-  writeState();                               // prevent repetitive crashes
-}
-
-#if 0
-/** 
- *  Construct class from a stored state file. If state file does not exist 
- *  or is incompatible with this class then the generator is constructed 
- *  with a random seed and a state file constructed. The state file is locked
- *  for the duration of the existance of the generator.
- */
-template<typename CORE> RandomNumbers_TNG<CORE>::
-RandomNumbers_TNG(const char* state_filename, const CoreOptions& core_options):
-  RandomNumbersBase(), 
-  CORE(0/*RNGCore::DevRandom::oneUInt64()*/, core_options),
-  m_bm_hascached(false), m_bm_cachedval(),
-  m_poi_lambdaold(-1), m_poi_lambdaexp(), m_poi_lambdasrt(), m_poi_lambdalog(),
-  m_bin_nold(-1), m_bin_pold(-1), m_bin_pc(), m_bin_plog(), 
-  m_bin_pclog(), m_bin_en(), m_bin_oldg(),
-  m_file_name(state_filename)
-{
-  assert(state_filename != 0);
-  lockState(m_file_name);                     // lock the lockfile
-  readState();                                // initialize seeds
-  CORE::Burn();                               // generate a random number to
-  writeState();                               // prevent repetitive crashes
-}
-#endif
-
-/**
- *  Write the RNG state and unlock the state file.
- */
-
-template<typename CORE> RandomNumbers_TNG<CORE>::~RandomNumbers_TNG()
-{
-  if(!m_file_name.empty())
-    {
-      writeState();                           // save seeds
-      unlockState();                          // unlock the lockfile
-    }
-}
-
-/**
- *  Return unique identifier string describing this class
- */
-template<typename CORE> std::string RandomNumbers_TNG<CORE>::idTag()
-{
-  return 
-    std::string("RandomNumbers_TNG<")+CORE::getCoreName()+std::string(">");
-}
-
-/**
- *  Load the generator state from a file
- */
-template<typename CORE> bool RandomNumbers_TNG<CORE>::readState()
-{
-  std::ifstream fstream(m_file_name.c_str());
-  if(fstream)
-    {
-      // Make sure state file is compatible with this class
-      std::string idtag;
-      std::getline(fstream,idtag);
-      if((idtag == idTag())&&(CORE::loadCoreState(fstream)))
-	{
-	  fstream >> m_bm_hascached
-		  >> m_bm_cachedval;
-	  return true;
-	}
-    }
-
-  return false;
-}
-
-/**
- *  Save the generator state to a file
- */
-template<typename CORE> void RandomNumbers_TNG<CORE>::writeState()
-{
-  std::ofstream fstream(m_file_name.c_str());
-  if(!fstream)
-    {
-      std::ostringstream stream;
-      stream << "RandomNumbers_TNG::writeState(): could not open " 
-	     << m_file_name << " for writing" << '\n'
-	     << "RandomNumbers_TNG::writeState(): "
-	     << strerror(errno) << '\n';
-      throw stream.str();
-    }
-
-  fstream << std::scientific
-	  << std::setprecision(std::numeric_limits<long double>::digits10)
-	  << idTag() << '\n';
-  CORE::saveCoreState(fstream);
-  fstream << m_bm_hascached << '\n'
-	  << m_bm_cachedval << '\n';
-}
-
-/**
- *  Return default state file name
- */
-template<typename CORE> std::string RandomNumbers_TNG<CORE>::defaultFilename()
-{
-  std::ostringstream stream;
-  const char* tmpdir = getenv("TMPDIR");
-  if(tmpdir)
-    {
-      stream << tmpdir;
-      if((*tmpdir!='\0')&&(tmpdir[strlen(tmpdir)-1]!='/'))stream << '/';
-    }
-  else
-    {
-      stream << "/tmp/";
-    } 
-  stream << "rng_" << CORE::getCoreName() << "_state_uid" << getuid()
-	 << ".dat";
-  return stream.str();
-}
-
-// ----------------------------------------------------------------------------
-// Non-uniform distributions
-// ----------------------------------------------------------------------------
-
-
 
 
 /**
@@ -938,15 +613,5 @@ GenerateInverseCDF(std::vector<Pair> &cdf, unsigned nbins)
 
   cdf = inv_cdf;
 }
-
-template<typename T> SimpleRNGAdapter_TNG<T>::~SimpleRNGAdapter_TNG()
-{
-  // nothing to see here
-}
-
-template<typename T> double SimpleRNGAdapter_TNG<T>::uniform()
-{
-  return m_rng->Double();
-};
 
 #endif
