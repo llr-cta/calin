@@ -88,9 +88,11 @@ class VSOTelescope
   // Create a new telescope randomly using parameters
   // ************************************************************************
 
+#if 0
   void populateMirrorsAndPixelsRandom(const VSOArrayParameters&,
                                       RandomNumbers& rng);
-
+#endif
+  
   void add_obscuration(VSOObscuration* obs) {
     fObscurations.push_back(obs); }
   void add_mirror(VSOMirror* mirror) {
