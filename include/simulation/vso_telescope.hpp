@@ -46,7 +46,7 @@
 
 #include <math/vs_vec3d.hpp>
 #include <math/vs_particle.hpp>
-#include <math/RNG.hpp>
+#include <math/rng.hpp>
 //#include <xytohex.hpp>
 
 //#include "VSOArrayParameters.hpp"
@@ -88,10 +88,8 @@ class VSOTelescope
   // Create a new telescope randomly using parameters
   // ************************************************************************
 
-#if 0
   void populateMirrorsAndPixelsRandom(const VSOArrayParameters&,
                                       RandomNumbers& rng);
-#endif
 
   void add_obscuration(VSOObscuration* obs) {
     fObscurations.push_back(obs); }
