@@ -269,7 +269,7 @@ TEST_P(PolyaByMeanAndExcessSigma, Moments) {
   EXPECT_NEAR(m1, mean, 0.01*mean);
   EXPECT_NEAR(m2, mean+xs_sigma*xs_sigma, 0.01*(mean+xs_sigma*xs_sigma));
   EXPECT_NEAR(m3, (mean+2.0*xs_sigma*xs_sigma)*(mean+xs_sigma*xs_sigma)/mean,
-              0.025*(mean+2.0*xs_sigma*xs_sigma)*(mean+xs_sigma*xs_sigma)/mean);
+              0.05*(mean+2.0*xs_sigma*xs_sigma)*(mean+xs_sigma*xs_sigma)/mean);
 }
 
 INSTANTIATE_TEST_CASE_P(TestRNG,
