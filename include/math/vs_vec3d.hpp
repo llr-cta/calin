@@ -45,7 +45,7 @@
 #include <iostream>
 #include <cmath>
 #include <proto/calin_common_types.pb.h>
-#include <math/RNG.hpp>
+#include <math/rng.hpp>
 
 /*!  \class Vec3D
      \brief 3 dimensional vector class
