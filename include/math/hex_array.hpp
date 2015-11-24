@@ -84,7 +84,7 @@ inline unsigned hexid_to_ringid(unsigned hexid)
   return positive_hexid_to_ringid(hexid);
 }
 
-constexpr inline unsigned ringid_to_nsites(unsigned ringid)
+constexpr inline unsigned ringid_to_nsites_contained(unsigned ringid)
 {
   return 3*ringid*(ringid+1)+1;
 }
@@ -94,7 +94,7 @@ positive_hexid_to_ringid_segid_runid(unsigned hexid, unsigned& ringid,
                                      unsigned& segid, unsigned& runid)
 {
   ringid = positive_hexid_to_ringid(hexid);
-  unsigned iring = hexid - ringid_to_nsites(ringid-1);
+  unsigned iring = hexid - ringid_to_nsites_contained(ringid-1);
   segid = int(iring/ringid);
   runid = iring - segid*ringid;
 }
@@ -111,7 +111,7 @@ constexpr inline unsigned
 positive_ringid_segid_runid_to_hexid(unsigned ringid, unsigned segid,
                                      unsigned runid)
 {
-  return ringid_to_nsites(ringid-1)+segid*ringid+runid;
+  return ringid_to_nsites_contained(ringid-1)+segid*ringid+runid;
 }
 
 constexpr inline unsigned
@@ -155,6 +155,15 @@ inline void cluster_hexid_to_center_uv(unsigned cluster_hexid,
   int cluster_v;
   hexid_to_uv(cluster_hexid, cluster_u, cluster_v);
   cluster_uv_to_center_uv(cluster_u, cluster_v, cluster_nring, u, v);
+}
+
+inline unsigned cluster_hexid_to_center_hexid(unsigned cluster_hexid,
+                                              unsigned cluster_nring)
+{
+  int u;
+  int v;
+  cluster_hexid_to_center_uv(cluster_hexid, cluster_nring, u, v);
+  return uv_to_hexid(u, v);
 }
 
 void cluster_hexid_to_member_uv(unsigned cluster_hexid, unsigned cluster_nring,
@@ -286,6 +295,16 @@ inline void hexid_to_vertexes_xy(unsigned hexid,
   int v;
   hexid_to_uv(hexid, u, v);
   uv_to_vertexes_xy(u, v, x, y, clockwise);
+}
+
+inline void cluster_hexid_to_center_xy(unsigned cluster_hexid,
+                                       unsigned cluster_nring,
+                                       double& x, double& y)
+{
+  int u;
+  int v;
+  cluster_hexid_to_center_uv(cluster_hexid, cluster_nring, u, v);
+  uv_to_xy(u, v, x, y);
 }
 
 } } } // namespace calin::math::hex_array

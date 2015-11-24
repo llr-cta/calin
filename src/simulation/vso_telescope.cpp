@@ -23,6 +23,7 @@
 #include <sstream>
 #include <algorithm>
 
+#include <math/hex_array.hpp>
 #include <simulation/vso_telescope.hpp>
 #include <proto/simulation_vs_optics.pb.h>
 
@@ -359,8 +360,9 @@ void VSOTelescope::reflectorToFocalPlane(Particle& p) const
 
 #if 0
 void VSOTelescope::
-populateMirrorsAndPixelsRandom(const VSOArrayParameters& param, 
-			       RandomNumbers& rng)
+populateMirrorsAndPixelsRandom(
+    const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+    math::rng::RNG& rng)
 {
   // **************************************************************************
   // Clear the MIRRORs table and repopulate it with randomly generated mirrors
@@ -370,8 +372,9 @@ populateMirrorsAndPixelsRandom(const VSOArrayParameters& param,
   Vec3D reflector_center(0, fCurvatureRadius, 0);
 
   std::set<unsigned> mirrors_missing;
-  tokenize(param.MirrorMissingList,mirrors_missing);
-
+  for(auto iid : param.reflector().facet_missing_list())
+    mirrros_missing.insert(iid);
+  
   for(std::vector<VSOMirror*>::iterator i=fMirrors.begin();
       i!=fMirrors.end(); i++)delete *i;
   fMirrors.clear();
@@ -380,20 +383,19 @@ populateMirrorsAndPixelsRandom(const VSOArrayParameters& param,
   int num_hex_mirror_sites = 3*fHexagonRingsN*(fHexagonRingsN+1)+1;
 
   unsigned id = 0;
-  for(int i=0; i<num_hex_mirror_sites; i++)
+  for(int hexid=0; hexid<num_hex_mirror_sites; hexid++)
     {
-      int hexid = i;
-
       if(mirrors_missing.find(hexid) != mirrors_missing.end())
 	{
 	  fMirrorsByHexID.push_back(0);
 	  continue; // skip mirror if on the mirring list
 	}
-
+      
       Vec3D nominal_position;
 
       // Compute the mirror's nominal position
-      nh_to_xy(&hexid, &nominal_position.x, &nominal_position.z); 
+      math::hex_array::hexid_to_xy(hexid,
+                                   nominal_position.x, nominal_position.z); 
       if(fMirrorParity)nominal_position.x=-nominal_position.x;
       nominal_position.x *= fFacetSpacing;
       nominal_position.z *= fFacetSpacing;
@@ -414,7 +416,8 @@ populateMirrorsAndPixelsRandom(const VSOArrayParameters& param,
       reflector_normal /= reflector_normal.Norm();
 
       Vec3D position(nominal_position);
-      position += reflector_normal*(rng.Normal()*param.MirrorPosNormalDisp);
+      position += reflector_normal*(rng.normal()*
+                                param.reflector().facet_pos_tangent_dispersion);
       position -= reflector_center;
       position.ScatterDirection(param.MirrorPosTangentDisp/fCurvatureRadius,rng);
       position += reflector_center;
@@ -425,14 +428,12 @@ populateMirrorsAndPixelsRandom(const VSOArrayParameters& param,
       // Get the (perturbed) alignment angle of mirror
       Vec3D alignment;
 
-      if(param.ReflectorAlignMode == 0)
+      if(param.reflector().alignment_case() == kNormAlign)
 	{
-	  Vec3D alignment_pt(param.ReflectorAlignPtX,
-			     param.ReflectorAlignPtY,
-			     param.ReflectorAlignPtY);
+          Vec3D alignment_pt(param.reflector().norm_align().alignment_pt());
 	  if(alignment_pt.y == 0)
 	    {
-	      double F = param.ReflectorAlignImagePlane;
+	      double F = param.reflector().alignment_image_plane();
 	      if(F==0)F = fFPTranslation.y;
 	      double d = (Vec3D(0,F,0)-nominal_position).Norm();
 	      alignment_pt.y = F+d;	      
@@ -443,29 +444,33 @@ populateMirrorsAndPixelsRandom(const VSOArrayParameters& param,
 	  alignment /= alignment.Norm();
 
 	  double align_disp = 
-	    param.MirrorAlignTangentDisp/alignment_pt.Norm();
+              param.reflector().facet_alignment_dispersion()/alignment_pt.Norm();
 	  alignment.ScatterDirection(align_disp,rng);
 	}
-      else
+      else if(param.reflector().alignment_case() == kPsfAlign)
 	{
 	  // Alignment to a point in the focal plane
-	  
-	  double stheta = sin(param.ReflectorFPAlignTheta);
-	  double ctheta = cos(param.ReflectorFPAlignTheta);
+
+          double theta =
+              param.reflector().psf_align().image_pt_theta()*M_PI/180.0;
+	  double stheta = sin(theta);
+	  double ctheta = cos(theta);
 	  double ttheta = stheta/ctheta;
 
-	  double sphi = sin(param.ReflectorFPAlignPhi);
-	  double cphi = cos(param.ReflectorFPAlignPhi);
+          double phi =
+              param.reflector().psf_align().image_pt_phi()*M_PI/180.0;
+	  double sphi = sin(PHI);
+	  double cphi = cos(PHI);
 
-	  double y_fp = param.ReflectorAlignImagePlane; // Image plane
+	  double y_fp = param.reflector().alignment_image_plane(); // Image plane
 	  if(y_fp==0)y_fp = fFPTranslation.y;
 	  Vec3D r_fp(y_fp*ttheta*sphi ,y_fp, -y_fp*ttheta*cphi);
 
 	  Vec3D e_in(-stheta*sphi, ctheta, stheta*cphi);
-	  if((param.ReflectorAlignObjectPlane!=0) &&
-	     (!std::isinf(param.ReflectorAlignObjectPlane)))
+	  if((param.reflector().psf_align().object_plane()) and
+	     (!std::isinf(param.reflector().psf_align().object_plane())))
 	    {
-	      double y_em = param.ReflectorAlignObjectPlane;
+	      double y_em = param.reflector().psf_align().object_plane();
 	      Vec3D emission_pt(-y_em*ttheta*sphi, y_em, y_em*ttheta*cphi);
 	      e_in = emission_pt-position;
 	      e_in /= e_in.Norm();
@@ -481,31 +486,35 @@ populateMirrorsAndPixelsRandom(const VSOArrayParameters& param,
 	  if(strot2 != 0)
 	    {
 	      double ctrot2 = e_in*e_out;
-	      double trot2 = atan2(strot2,ctrot2);
+	      double trot2 = std::atan2(strot2,ctrot2);
 	      e_rot *= 0.5*trot2/strot2;
 	      alignment.Rotate(e_rot);
 	    }
 	}
 
       double focal_length = 
-	param.MirrorFLength + rng.Normal()*param.MirrorFLengthDisp;
+          param.reflector().facet_focal_length()
+          + rng.normal()*param.reflector().facet_focal_length_dispersion()
 
       double spot_size;
-      if(param.MirrorSpotSizeDisp > 0)
-	spot_size = rng.GammaByMeanAndStdDev(param.MirrorSpotSize,
-					     param.MirrorSpotSizeDisp);
-      else spot_size = param.MirrorSpotSize;
+      if(param.reflector().facet_spot_size_dispersion() > 0)
+	spot_size = rng.gamma_by_mean_and_sigma(
+            param.reflector().facet_spot_size(),
+            param.reflector().facet_spot_size_dispersion());
+      else spot_size = param.reflector().facet_spot_size();
 
       // If param.MirrorSpotSizePhotonFraction not set -- assume FWHM
-      if((param.MirrorSpotSizePhotonFraction>0.0)&&
-	 (param.MirrorSpotSizePhotonFraction<1.0))
+      if((param.reflector().facet_spot_size_probability()>0.0)&&
+	 (param.reflector().facet_spot_size_probability()<1.0))
 	spot_size /= 
-	  2.0*sqrt(log(1.0/(1.0-param.MirrorSpotSizePhotonFraction)));
-      else spot_size /= 2.0*sqrt(log(2.0));
+            2.0*std::sqrt(std::log(1.0/(1.0-
+                         param.reflector().facet_spot_size_probability())));
+      else spot_size /= 2.0*std::sqrt(log(2.0));
       
       VSOMirror* mirror = 
 	new VSOMirror(this, id, hexid, false, position, alignment, 
-		     focal_length, spot_size, param.MirrorDegradingFactor);
+                      focal_length, spot_size,
+                      param.reflector().weathering_factor());
       
       fMirrors.push_back(mirror);
       fMirrorsByHexID.push_back(mirror);
@@ -529,49 +538,68 @@ populateMirrorsAndPixelsRandom(const VSOArrayParameters& param,
   fPixels.clear();
   fPixelsByHexID.clear();  
 
-  std::set<unsigned> pixels_missing;
-  tokenize(param.PixelMissingList,pixels_missing);
-
+  std::set<unsigned> modules_missing;
+  for(auto iid : param.pixel().module_missing_list())
+    pixels_missing.insert(iid);
+  
   unsigned num_hex_pixel_rings = 
-    unsigned(floor((fCameraDiameter/2.0)/fPixelSpacing/cos(30.0/180.0*M_PI)))+2;
+    unsigned(floor((fCameraDiameter/2.0)/fPixelSpacing/cos(30.0/180.0*M_PI)))
+      + param.pixel().hex_module_size() + 2;
   unsigned num_hex_pixel_sites = 
     3*num_hex_pixel_rings*(num_hex_pixel_rings+1)+1;
 
-  id = 0;
-  for(unsigned i=0; i<num_hex_pixel_sites; i++)
-    {
-      int hexid = i;
+  unsigned module_size = proto.pixel().hex_module_size();
+  std::set<unsigned> pixel_hexids;
+  for(auto id : math::hex_array::cluster_hexid_to_member_hexid(0, module_size))
+    pixel_hexids.insert(id);
+  unsigned module_ring_id = 1;
+  bool module_ring_in_camera = true;
+  while(module_ring_in_camera)
+  {
+    module_ring_in_camera = false;
+    for(unsigned iseg=0;iseg<6;iseg++)
+      for(unsigned irun=0;irun<module_ring_id;irun++)
+      {
+        unsigned module_id =
+            math::hex_array::
+            ringid_segid_runid_to_hexid(module_ring_id, iseg, irun);
+        if(modules_missing.find(module_id) != modules_missing.end())
+          continue;
+        double x, z;
+        math::hex_array::
+            cluster_hexid_to_center_xy(module_id, module_size, x, z);
+        x *= fPixelSpacing;
+        z *= fPixelSpacing;
+        if(std::sqrt(x*x+z*z) > fCameraDiameter/2.0)
+	  continue; // skip module if position too far out
+        module_ring_in_camera = true;
+        for(auto id : math::hex_array::
+                cluster_hexid_to_member_hexid(module_id, module_size))
+          pixel_hexids.insert(id);
+      }
+  }
 
-      if(pixels_missing.find(hexid) != pixels_missing.end())
-	{
-	  fPixelsByHexID.push_back(0);
-	  continue; // skip pixel if on the missing list
-	}
+  unsigned pixelid = 0;
+  for(auto hexid : pixel_hexids)
+  {
+    while(fPixelsByHexID.size()<hexid)fPixelsByHexID.push_back(0);
+    Vec3D nominal_position;
 
-      Vec3D nominal_position;
+    // Compute the pixel's nominal position
+    math::hex_array::hexid_to_xy(hexid, nominal_position.x, nominal_position.z);
+    if(fPixelParity)nominal_position.x = -nominal_position.x;
+    nominal_position.x *= fPixelSpacing;
+    nominal_position.z *= fPixelSpacing;
+    nominal_position.y = 0;
+    nominal_position.Rotate(fFPRotation);
 
-      // Compute the pixel's nominal position
-      nh_to_xy(&hexid, &nominal_position.x, &nominal_position.z); 
-      if(fPixelParity)nominal_position.x=-nominal_position.x;
-      nominal_position.x *= fPixelSpacing;
-      nominal_position.z *= fPixelSpacing;
-      nominal_position.y = 0;
-
-      if(nominal_position.Norm() > fCameraDiameter/2.0)
-	{
-	  fPixelsByHexID.push_back(0);
-	  continue; // skip pixel if position too far out
-	}
-
-      nominal_position.Rotate(fFPRotation);
-
-      VSOPixel* pixel = new VSOPixel(this, id, hexid, false, nominal_position);
+    VSOPixel* pixel = new VSOPixel(this, pixeld, hexid, false, nominal_position);
       
-      fPixels.push_back(pixel);
-      fPixelsByHexID.push_back(pixel);
+    fPixels.push_back(pixel);
+    fPixelsByHexID.push_back(pixel);
 
-      id++;
-    }
+    pixelid++;
+  }
 }
 #endif
 

@@ -313,30 +313,20 @@ message ReflectorFrameParameters
 
 message ConcurrentNormalsAlignment
 {
-  double alignment_pt_x                 = 1
-    [(CFO).desc = "X coordinate of nominal alignment point in reflector "
-     "reference frame. Generally this should be zero meaning the alignment "
-     "point lies along the natural symmetry axis of the reflector.",
+  Vector3D alignment_pt                 = 1
+    [(CFO).desc = "Coordinate of nominal alignment point in reflector "
+     "reference frame. In a classic DC alignment mode this should be "
+     "(0,2F,0). If the y-coordinate is zero, the alignment point is "
+     "be calculated on the fly for each facet normal which allows the method "
+     "be used in modified DC designs.",
      (CFO).units = "cm"];
-  double alignment_pt_y                 = 2
-    [(CFO).desc = "Y coordinate of nominal alignment point in reflector "
-     "reference frame. In a classic DC alignment mode this should be twice "
-     "the focal distance. A value of zero means the alignment point should "
-     "be calculated on the fly for each normal which allows the method be "
-     "used in modified DC designs.",
-     (CFO).units = "cm"];
-  double alignment_pt_z                 = 3
-    [(CFO).desc = "Z coordinate of nominal alignment point in reflector "
-     "reference frame. Generally this should be zero meaning the alignment "
-     "point lies along the natural symmetry axis of the reflector.",
-     (CFO).units = "cm"];
-  double alignment_pt_dispersion_xz     = 4
+  double alignment_pt_dispersion_xz     = 2
     [(CFO).desc = "Telescope-to-telescope dispersion of alignment point on "
      "each of the axes perpendicular to optic axis (the X and Z axes of the "
      "reflector frame). This parameter introduces a random systematic offset "
      "in the alignment of all facets on a given telescope.",
      (CFO).units = "cm"];
-  double alignment_pt_dispersion_y      = 5
+  double alignment_pt_dispersion_y      = 3
     [(CFO).desc = "Telescope-to-telescope dispersion of alignment point "
      "parallel to the optic axis (Y axis in the reflector frame). This "
      "parameter introduces a random systematic offset in the alignment of "
@@ -441,6 +431,9 @@ message HexDCReflectorParameters
   repeated uint32 facet_missing_list    = 20
     [(CFO).desc = "List of the Hex IDs of the mirrors missing from each "
      "telescope. If none are missing this should be empty."];
+  double weathering_factor              = 21
+    [(CFO).desc = "Facet absorption factor applied to all photons. A value "
+     "of 1.0 means no absorption"];
 };
 
 message PlaneWindowParameters {
@@ -551,4 +544,6 @@ message IsotropicDCArrayParameters {
   ReflectorFrameParameters reflector_frame         = 4;
   HexDCReflectorParameters reflector               = 5;
   repeated VSOObscurationData obscurations         = 6;
+  FocalPlaneParameters focal_plane                 = 7;
+  HexPixelArrayParameters pixel                    = 8;
 };

@@ -85,16 +85,15 @@ void Vec3D::Rotate( const Vec3D& axis )
   return;
 }
 
-#if 0
-void Vec3D::ScatterDirection(double dispersion, RandomNumbers& rng)
+void Vec3D::ScatterDirection(double dispersion, math::rng::RNG& rng)
 {
   if(dispersion==0)return;
   double t = Norm();
   if(t==0)return;
 
-  double phi = rng.Uniform() * M_PI;
+  double phi = rng.uniform() * 2.0*M_PI;
   //double theta = atan(dispersion*rng.Normal());
-  double theta = dispersion*sqrt(-2*log(rng.Uniform()));
+  double theta = dispersion*sqrt(-2*log(rng.uniform()));
 
   Vec3D tangent_a;
 
@@ -107,13 +106,13 @@ void Vec3D::ScatterDirection(double dispersion, RandomNumbers& rng)
   tangent_b /= tangent_b.Norm();
 
 #if 1
-  *this = (*this)*cos(theta) + (tangent_a*cos(phi)+tangent_b*sin(phi))*t*sin(theta);
+  *this = (*this)*cos(theta) +
+          (tangent_a*cos(phi)+tangent_b*sin(phi))*t*sin(theta);
 #else  
   Vec3D axis = tangent_a*cos(phi) + tangent_b*sin(phi);
   Rotate(axis*theta);
 #endif
 }
-#endif
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Operator &= of rotation composition

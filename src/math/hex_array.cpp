@@ -93,7 +93,7 @@ cluster_hexid_to_member_uv(unsigned cluster_hexid, unsigned cluster_nring,
   int cluster_v;
   cluster_hexid_to_center_uv(cluster_hexid, cluster_nring,
                              cluster_u, cluster_v);
-  unsigned nsites = ringid_to_nsites(cluster_nring);
+  unsigned nsites = ringid_to_nsites_contained(cluster_nring);
   u.resize(nsites);
   v.resize(nsites);
   for(unsigned i=0;i<nsites;i++)
@@ -113,7 +113,7 @@ cluster_hexid_to_member_hexid(unsigned cluster_hexid, unsigned cluster_nring)
   int cluster_v;
   cluster_hexid_to_center_uv(cluster_hexid, cluster_nring,
                              cluster_u, cluster_v);
-  unsigned nsites = ringid_to_nsites(cluster_nring);
+  unsigned nsites = ringid_to_nsites_contained(cluster_nring);
   std::vector<unsigned> hexids(nsites,0);
   for(unsigned i=0;i<nsites;i++)
   {

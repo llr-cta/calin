@@ -45,6 +45,7 @@
 #include <iostream>
 #include <cmath>
 #include <proto/calin_common_types.pb.h>
+#include <math/RNG.hpp>
 
 /*!  \class Vec3D
      \brief 3 dimensional vector class
@@ -57,10 +58,6 @@
 */
 
 namespace calin { namespace math {
-
-namespace random_numbers {
-class RandomNumbers;
-}
 
 namespace vs_physics {
 
@@ -81,7 +78,7 @@ class Vec3D
   inline void P();                         //!<parity transformation
   inline void Reflect(const Vec3D& norm);  //!reflect in normal
 
-  void ScatterDirection(double dispersion, random_numbers::RandomNumbers& rng);
+  void ScatterDirection(double dispersion, math::rng::RNG& rng);
 
   inline Vec3D& Reset(const Vec3D& v = Vec3D());
   inline Vec3D& Reset(double _x, double _y, double _z);
