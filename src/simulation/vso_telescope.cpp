@@ -674,11 +674,11 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
                        d.pixel_labeling_parity() // PP
                        );
 
-  for(unsigned i=0; i<d.obscuration_size(); i++)
+  for(int i=0; i<d.obscuration_size(); i++)
     scope->add_obscuration(VSOObscuration::create_from_proto(d.obscuration(i)));
-  for(unsigned i=0; i<d.mirror_size(); i++)
+  for(int i=0; i<d.mirror_size(); i++)
     scope->add_mirror(VSOMirror::create_from_proto(d.mirror(i),scope));
-  for(unsigned i=0; i<d.pixel_size(); i++)
+  for(int i=0; i<d.pixel_size(); i++)
     scope->add_pixel(VSOPixel::create_from_proto(d.pixel(i),scope));
 
   return scope;

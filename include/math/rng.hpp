@@ -43,6 +43,8 @@
 #include <cmath>
 #include <random>
 
+#include <proto/math_rng.pb.h>
+
 namespace calin { namespace math { namespace rng {
 
 // Decision : should this be a template or a base class. As a base
@@ -60,8 +62,12 @@ class RNGCore
   virtual double uniform_double() = 0;
   virtual uint64_t uniform_uint64() = 0;
   virtual uint32_t uniform_uint32() = 0;
-  virtual void save_to_proto() const = 0;
-  static RNGCore* create_from_proto();
+  virtual void save_to_proto(ix::math::rng::RNGData* proto) const = 0;
+  static RNGCore* create_from_proto(const ix::math::rng::RNGData& proto,
+                                    bool restore_state = false);
+  void uniform_by_type(uint64_t& x) { x = uniform_uint64(); }
+  void uniform_by_type(uint32_t& x) { x = uniform_uint32(); }
+  void uniform_by_type(double& x) { x = uniform_double(); }
 };
 
 class RNG
@@ -70,8 +76,12 @@ class RNG
   enum class CoreType { NR3, RANLUX48, MT19937_64, DEV_RANDOM };
   RNG(uint64_t seed = 0, CoreType core_type = CoreType::NR3);
   RNG(RNGCore* core, bool adopt_core = false);
+  RNG(const ix::math::rng::RNGData& proto, bool restore_state = false);
+
   ~RNG() { if(adopt_core_)delete core_; }
-  
+
+  void save_to_proto(ix::math::rng::RNGData* proto);
+
   double uniform_double() { return core_->uniform_double(); }
   double uniform_uint64() { return core_->uniform_uint64(); }
   double uniform_uint32() { return core_->uniform_uint32(); }
@@ -138,6 +148,8 @@ class NR3RNGCore: public RNGCore
     w_ = v_; uniform_uint64();
     calls_ = 0;
   }
+  NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto,
+             bool restore_state = false);
   ~NR3RNGCore();
   
   uint64_t uniform_uint64() override {
@@ -161,8 +173,7 @@ class NR3RNGCore: public RNGCore
     return 5.42101086242752217E-20 * double(uniform_uint64());
   }
   
-  void save_to_proto() const override;
-  static RNGCore* create_from_proto();
+  void save_to_proto(ix::math::rng::RNGData* proto) const override;
   
  private:
   uint64_t seed_;
@@ -176,6 +187,8 @@ class Ranlux48RNGCore: public RNGCore
 {
  public:
   Ranlux48RNGCore(uint64_t seed): RNGCore(), gen_(seed), gen_seed_(seed) { }
+  Ranlux48RNGCore(const ix::math::rng::Ranlux48RNGCoreData& proto,
+                  bool restore_state = false);
   ~Ranlux48RNGCore();
   
   uint64_t uniform_uint64() override {
@@ -240,8 +253,7 @@ class Ranlux48RNGCore: public RNGCore
     return 5.421001086242752217E-20 * double(uniform_uint64());
   }
   
-  void save_to_proto() const override;
-  static RNGCore* create_from_proto();
+  void save_to_proto(ix::math::rng::RNGData* proto) const override;
   
  private:
   std::ranlux48 gen_;
@@ -255,6 +267,8 @@ class MT19937RNGCore: public RNGCore
 {
  public:
   MT19937RNGCore(uint64_t seed): RNGCore(), gen_(seed), gen_seed_(seed) { }
+  MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto,
+                 bool restore_state = false);
   ~MT19937RNGCore();
   
   uint64_t uniform_uint64() override { gen_calls_++; return gen_(); }
@@ -264,8 +278,7 @@ class MT19937RNGCore: public RNGCore
     return 5.421001086242752217E-20 * double(uniform_uint64());
   }
   
-  void save_to_proto() const override;
-  static RNGCore* create_from_proto();
+  void save_to_proto(ix::math::rng::RNGData* proto) const override;
   
  private:
   std::mt19937_64 gen_;

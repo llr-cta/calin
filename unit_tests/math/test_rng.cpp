@@ -54,13 +54,13 @@ TEST(TestRNG, RandomDeviceFillsAllBits32) {
     EXPECT_GE(count[j], 20); EXPECT_LE(count[j], 80); }
 }
 
-template<typename CORE> class CoreFillsAllBits : public testing::Test {
+template<typename CORE> class CoreTests : public testing::Test {
  public:
 };
 
-TYPED_TEST_CASE_P(CoreFillsAllBits);
+TYPED_TEST_CASE_P(CoreTests);
 
-TYPED_TEST_P(CoreFillsAllBits, Bits64)
+TYPED_TEST_P(CoreTests, FillsAllBits64)
 {
   TypeParam core(RNG::uint64_from_random_device());
   std::vector<unsigned> count(64,0);
@@ -76,7 +76,7 @@ TYPED_TEST_P(CoreFillsAllBits, Bits64)
   }
 }
 
-TYPED_TEST_P(CoreFillsAllBits, Bits32)
+TYPED_TEST_P(CoreTests, FillsAllBits32)
 {
   TypeParam core(RNG::uint64_from_random_device());
   std::vector<unsigned> count(32,0);
@@ -92,10 +92,66 @@ TYPED_TEST_P(CoreFillsAllBits, Bits32)
   }
 }
 
-REGISTER_TYPED_TEST_CASE_P(CoreFillsAllBits, Bits64, Bits32);
+TYPED_TEST_P(CoreTests, SaveAndRestoreState)
+{
+  for(unsigned N=1;N<100;N++)
+  {
+    TypeParam core(RNG::uint64_from_random_device());
+    std::vector<uint64_t> data0;
+    std::vector<uint64_t> data1;
+    for(unsigned i=0;i<N;i++)
+      data0.push_back(core.uniform_uint64());
+    calin::ix::math::rng::RNGData proto;
+    core.save_to_proto(&proto);
+    for(unsigned i=0;i<N;i++)
+      data1.push_back(core.uniform_uint64());
+    RNGCore* core2 = RNGCore::create_from_proto(proto);
+    for(unsigned i=0;i<N;i++)
+      EXPECT_EQ(data0[i], core2->uniform_uint64())
+          << "Core2 mistmatch - data0[" << i << ']';
+    for(unsigned i=0;i<N;i++)
+      EXPECT_EQ(data1[i], core2->uniform_uint64())
+          << "Core2 mistmatch - data1[" << i << ']';
+    RNGCore* core3 = RNGCore::create_from_proto(proto, true);
+    for(unsigned i=0;i<N;i++)
+      EXPECT_EQ(data1[i], core3->uniform_uint64())
+          << "Core3 mistmatch - data1[" << i << ']';
+    delete core2;
+    delete core3;
+  }
+}
+
+REGISTER_TYPED_TEST_CASE_P(CoreTests, FillsAllBits64, FillsAllBits32,
+                           SaveAndRestoreState);
 typedef ::testing::Types<NR3RNGCore, Ranlux48RNGCore, MT19937RNGCore> CoreTypes;
-INSTANTIATE_TYPED_TEST_CASE_P(TestRNG, CoreFillsAllBits,
-                             CoreTypes);
+INSTANTIATE_TYPED_TEST_CASE_P(TestRNG, CoreTests, CoreTypes);
+
+TEST(TestRNG, SaveAndRestoreState)
+{
+  for(unsigned N=1;N<100;N++)
+  {
+    RNG rng;
+    std::vector<double> normal_data0;
+    std::vector<double> normal_data1;
+    for(unsigned i=0;i<N;i++)
+      normal_data0.push_back(rng.normal());
+    calin::ix::math::rng::RNGData proto;
+    rng.save_to_proto(&proto);
+    for(unsigned i=0;i<N;i++)
+      normal_data1.push_back(rng.normal());
+    RNG rng2(proto);
+    for(unsigned i=0;i<N;i++)
+      EXPECT_EQ(normal_data0[i], rng2.normal())
+          << "rng2 mistmatch - normal_data0[" << i << ']';
+    for(unsigned i=0;i<N;i++)
+      EXPECT_EQ(normal_data1[i], rng2.normal())
+          << "rng2 mistmatch - normal_data1[" << i << ']';
+    RNG rng3(proto, true);
+    for(unsigned i=0;i<N;i++)
+      EXPECT_EQ(normal_data1[i], rng3.normal())
+          << "rng3 mistmatch - data1[" << i << ']';
+  }
+}
 
 template<typename T> std::tuple<double, double, double>
 calc_moments(const T& generator, bool print = false,

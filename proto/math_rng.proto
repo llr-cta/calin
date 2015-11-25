@@ -1,0 +1,85 @@
+//-*-mode:protobuf; mode:font-lock;-*-
+
+/* 
+
+   calin/proto/math_rng.proto -- Stephen Fegan -- 2015-11-25
+
+   Protobufs for storing RNG state
+
+   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+   
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+    
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "calin_common_types.proto";
+
+package calin.ix.math.rng;
+	
+message STLRNGCoreData
+{
+  uint64 seed                           = 1
+    [(CFO).desc = "RNG seed."];
+  uint64 calls                          = 2
+    [(CFO).desc = "Number of calls to RNG to get to current state."];
+  string state                          = 3
+    [(CFO).desc = "Current RNG state, implementation dependent."];
+}
+
+message Ranlux48RNGCoreData
+{
+  uint64 seed                           = 1
+    [(CFO).desc = "RNG seed."];
+  uint64 calls                          = 2
+    [(CFO).desc = "Number of calls to RNG to get to current state."];
+  string state                          = 3
+    [(CFO).desc = "Current RNG state, implementation dependent."];
+  uint64 dev                            = 4
+    [(CFO).desc = "Saved deviate bits."];
+  uint32 dev_blocks                     = 5
+    [(CFO).desc = "Number of 16-bit blocks of deviates available in dev."];
+}
+
+message NR3RNGCoreData
+{
+  uint64 seed                           = 1
+    [(CFO).desc = "RNG seed."];
+  uint64 calls                          = 2
+    [(CFO).desc = "Number of calls to RNG to get to current state."];
+  uint64 u                              = 3
+    [(CFO).desc = "NR3 core u variable."];
+  uint64 v                              = 4
+    [(CFO).desc = "NR3 core u variable."];
+  uint64 w                              = 5
+    [(CFO).desc = "NR3 core u variable."];
+}
+
+message RNGData
+{
+  oneof core
+  {
+    Ranlux48RNGCoreData ranlux48_core   = 1
+      [(CFO).desc = "Ranlux48 core state data."];
+    STLRNGCoreData mt19937_core         = 2
+      [(CFO).desc = "MT19937 core state data."];
+    NR3RNGCoreData nr3_core             = 3
+      [(CFO).desc = "NR3 core state data."];
+  }
+  bool bm_hascached                     = 4
+    [(CFO).desc = "Box-Muller cached value available."];
+  double bm_cachedval                   = 5
+    [(CFO).desc = "Box-Muller cached value."];
+}
