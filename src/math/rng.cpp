@@ -326,7 +326,7 @@ NR3RNGCore::
 NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto, bool restore_state):
     NR3RNGCore(proto.seed())
 {
-  if(restore_state)
+  if(restore_state and proto.state_saved())
   {
     calls_ = proto.calls();
     u_ = proto.u();
@@ -344,6 +344,7 @@ void NR3RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
 {
   auto* data = proto->mutable_nr3_core();
   data->set_seed(seed_);
+  data->set_state_saved(true);
   data->set_calls(calls_);
   data->set_u(u_);
   data->set_v(v_);
@@ -355,7 +356,7 @@ Ranlux48RNGCore(const ix::math::rng::Ranlux48RNGCoreData& proto,
                 bool restore_state):
     RNGCore(), gen_(proto.seed()), gen_seed_(proto.seed())
 {
-  if(restore_state)
+  if(restore_state and proto.state_saved())
   {
     std::istringstream state(proto.state());
     state >> gen_;
@@ -375,10 +376,11 @@ void Ranlux48RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
   auto* data = proto->mutable_ranlux48_core();
   data->set_seed(gen_seed_);
   data->set_calls(gen_calls_);
+  data->set_state_saved(true);  
   std::ostringstream state;
   state << gen_;
   data->set_state(state.str());
-  data->set_dev(dev_);
+  data->set_dev(dev_blocks_>0?dev_:0ULL);
   data->set_dev_blocks(dev_blocks_);
 }
 
@@ -386,7 +388,7 @@ MT19937RNGCore::
 MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto, bool restore_state):
     RNGCore(), gen_(proto.seed()), gen_seed_(proto.seed())
 {
-  if(restore_state)
+  if(restore_state and proto.state_saved())
   {
     std::istringstream state(proto.state());
     state >> gen_;
@@ -404,6 +406,7 @@ void MT19937RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
   auto* data = proto->mutable_mt19937_core();
   data->set_seed(gen_seed_);
   data->set_calls(gen_calls_);
+  data->set_state_saved(true);
   std::ostringstream state;
   state << gen_;
   data->set_state(state.str());  

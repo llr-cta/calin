@@ -35,7 +35,11 @@ message STLRNGCoreData
     [(CFO).desc = "RNG seed."];
   uint64 calls                          = 2
     [(CFO).desc = "Number of calls to RNG to get to current state."];
-  string state                          = 3
+  bool state_saved                      = 3
+    [(CFO).desc = "True if RNG state is written. Will always be true if "
+     "the protobuf is written by the code, but should not be if the protobuf "
+     "is hand-crafted by the user."];
+  string state                          = 4
     [(CFO).desc = "Current RNG state, implementation dependent."];
 }
 
@@ -45,11 +49,15 @@ message Ranlux48RNGCoreData
     [(CFO).desc = "RNG seed."];
   uint64 calls                          = 2
     [(CFO).desc = "Number of calls to RNG to get to current state."];
-  string state                          = 3
+  bool state_saved                      = 3
+    [(CFO).desc = "True if RNG state is written. Will always be true if "
+     "the protobuf is written by the code, but should not be if the protobuf "
+     "is hand-crafted by the user."];
+  string state                          = 4
     [(CFO).desc = "Current RNG state, implementation dependent."];
-  uint64 dev                            = 4
+  uint64 dev                            = 5
     [(CFO).desc = "Saved deviate bits."];
-  uint32 dev_blocks                     = 5
+  uint32 dev_blocks                     = 6
     [(CFO).desc = "Number of 16-bit blocks of deviates available in dev."];
 }
 
@@ -59,11 +67,15 @@ message NR3RNGCoreData
     [(CFO).desc = "RNG seed."];
   uint64 calls                          = 2
     [(CFO).desc = "Number of calls to RNG to get to current state."];
-  uint64 u                              = 3
+  bool state_saved                      = 3
+    [(CFO).desc = "True if RNG state is written. Will always be true if "
+     "the protobuf is written by the code, but should not be if the protobuf "
+     "is hand-crafted by the user."];
+  uint64 u                              = 4
     [(CFO).desc = "NR3 core u variable."];
-  uint64 v                              = 4
+  uint64 v                              = 5
     [(CFO).desc = "NR3 core u variable."];
-  uint64 w                              = 5
+  uint64 w                              = 6
     [(CFO).desc = "NR3 core u variable."];
 }
 

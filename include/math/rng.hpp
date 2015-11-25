@@ -139,6 +139,8 @@ class RNG
 class NR3RNGCore: public RNGCore
 {
  public:
+  typedef calin::ix::math::rng::NR3RNGCoreData ix_core_data_type;
+  
   NR3RNGCore(uint64_t seed):
       RNGCore(), seed_(seed),
       u_(UINT64_C(0)), v_(UINT64_C(4101842887655102017)), w_(UINT64_C(1))
@@ -174,6 +176,11 @@ class NR3RNGCore: public RNGCore
   }
   
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
+
+  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
+    return proto->mutable_nr3_core(); }
+  static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
+  { return proto.nr3_core(); }
   
  private:
   uint64_t seed_;
@@ -186,6 +193,8 @@ class NR3RNGCore: public RNGCore
 class Ranlux48RNGCore: public RNGCore
 {
  public:
+  typedef calin::ix::math::rng::Ranlux48RNGCoreData ix_core_data_type;
+
   Ranlux48RNGCore(uint64_t seed): RNGCore(), gen_(seed), gen_seed_(seed) { }
   Ranlux48RNGCore(const ix::math::rng::Ranlux48RNGCoreData& proto,
                   bool restore_state = false);
@@ -255,6 +264,11 @@ class Ranlux48RNGCore: public RNGCore
   
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
   
+  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
+    return proto->mutable_ranlux48_core(); }
+  static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
+  { return proto.ranlux48_core(); }
+
  private:
   std::ranlux48 gen_;
   uint64_t gen_seed_;
@@ -266,6 +280,8 @@ class Ranlux48RNGCore: public RNGCore
 class MT19937RNGCore: public RNGCore
 {
  public:
+  typedef calin::ix::math::rng::STLRNGCoreData ix_core_data_type;
+
   MT19937RNGCore(uint64_t seed): RNGCore(), gen_(seed), gen_seed_(seed) { }
   MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto,
                  bool restore_state = false);
@@ -280,6 +296,11 @@ class MT19937RNGCore: public RNGCore
   
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
   
+  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
+    return proto->mutable_mt19937_core(); }
+  static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
+  { return proto.mt19937_core(); }
+
  private:
   std::mt19937_64 gen_;
   uint64_t gen_seed_;

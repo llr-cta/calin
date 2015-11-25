@@ -26,6 +26,9 @@
 #include <vector>
 #include <tuple>
 
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+
 #include <math/rng.hpp>
 
 using namespace calin::math::rng;
@@ -103,6 +106,10 @@ TYPED_TEST_P(CoreTests, SaveAndRestoreState)
       data0.push_back(core.uniform_uint64());
     calin::ix::math::rng::RNGData proto;
     core.save_to_proto(&proto);
+#if 0
+    google::protobuf::io::OstreamOutputStream stream(&std::cout);
+    if(N==99)google::protobuf::TextFormat::Print(proto, &stream);
+#endif    
     for(unsigned i=0;i<N;i++)
       data1.push_back(core.uniform_uint64());
     RNGCore* core2 = RNGCore::create_from_proto(proto);
@@ -121,8 +128,23 @@ TYPED_TEST_P(CoreTests, SaveAndRestoreState)
   }
 }
 
+TYPED_TEST_P(CoreTests, RestoreFromMinimumProto)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  TypeParam core(seed);
+  calin::ix::math::rng::RNGData proto;
+  TypeParam::mutable_core_data(&proto)->set_seed(seed);
+#if 0
+  google::protobuf::io::OstreamOutputStream stream(&std::cout);
+  google::protobuf::TextFormat::Print(proto, &stream);
+#endif
+  TypeParam core2(TypeParam::core_data(proto));
+  for(unsigned i=0;i<1000;i++)
+    EXPECT_EQ(core.uniform_uint64(), core2.uniform_uint64());
+}
+
 REGISTER_TYPED_TEST_CASE_P(CoreTests, FillsAllBits64, FillsAllBits32,
-                           SaveAndRestoreState);
+                           SaveAndRestoreState, RestoreFromMinimumProto);
 typedef ::testing::Types<NR3RNGCore, Ranlux48RNGCore, MT19937RNGCore> CoreTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(TestRNG, CoreTests, CoreTypes);
 
@@ -151,6 +173,17 @@ TEST(TestRNG, SaveAndRestoreState)
       EXPECT_EQ(normal_data1[i], rng3.normal())
           << "rng3 mistmatch - data1[" << i << ']';
   }
+}
+
+TEST(TestRNG, RestoreFromMinimumProto)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  RNG rng(seed);
+  calin::ix::math::rng::RNGData proto;
+  proto.mutable_nr3_core()->set_seed(seed);
+  RNG rng2(proto);
+  for(unsigned i=0;i<1000;i++)
+    EXPECT_EQ(rng.normal(), rng2.normal());
 }
 
 template<typename T> std::tuple<double, double, double>
