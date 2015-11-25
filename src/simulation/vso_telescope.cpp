@@ -31,24 +31,24 @@ using namespace calin::math::vs_physics;
 using namespace calin::simulation::vs_optics;
 
 VSOTelescope::VSOTelescope():
-  fID(), fTelescopeHexID(), fPos(), 
-  fDeltaY(), fAlphaX(), fAlphaY(),
-  fElevation(), fAzimuth(), 
-  fTranslation(), fCurvatureRadius(), fAperture(), 
-  fFacetSpacing(), fFacetSize(), 
-  fReflectorRotation(), fHexagonRingsN(),
-  fReflectorIP(), fMirrorParity(), fFPTranslation(), fCameraDiameter(),
-  fFieldOfView(), fCathodeDiameter(), fPixelSpacing(), fConcSurvProb(),
-  fFPRotation(), fCameraIP(), fPixelParity(),
+    fID(), fTelescopeHexID(), fPos(), 
+    fDeltaY(), fAlphaX(), fAlphaY(),
+    fElevation(), fAzimuth(), 
+    fTranslation(), fCurvatureRadius(), fAperture(), 
+    fFacetSpacing(), fFacetSize(), 
+    fReflectorRotation(), fHexagonRingsN(),
+    fReflectorIP(), fMirrorParity(), fFPTranslation(), fCameraDiameter(),
+    fFieldOfView(), fCathodeDiameter(), fPixelSpacing(), fConcSurvProb(),
+    fFPRotation(), fCameraIP(), fPixelParity(),
 #if 0
-  fHasSecondary(false),
-  fRefractiveIndex(), fRefractiveIndex1(), fRefractiveIndex2(), 
-  fCE1Parameter0(), fCE1Parameter2(), fCE1Parameter3(), fCE1Parameter4(), 
-  fCE1Parameter5(), fCE2Parameter0(), fCE2Parameter2(), fCE2Parameter3(),
-  fCE2Parameter4(), fCE2Parameter5(), 
+    fHasSecondary(false),
+    fRefractiveIndex(), fRefractiveIndex1(), fRefractiveIndex2(), 
+    fCE1Parameter0(), fCE1Parameter2(), fCE1Parameter3(), fCE1Parameter4(), 
+    fCE1Parameter5(), fCE2Parameter0(), fCE2Parameter2(), fCE2Parameter3(),
+    fCE2Parameter4(), fCE2Parameter5(), 
 #endif
-  fObscurations(),
-  fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), fRotationVector()
+    fObscurations(),
+    fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), fRotationVector()
 {
   calculateRotationVector();
 }
@@ -67,76 +67,76 @@ VSOTelescope(unsigned TID, unsigned THID, const Vec3D&P,
 #endif
 	     const std::vector<VSOObscuration*>& OBSVEC
 	     ):
-  fID(TID), fTelescopeHexID(THID), fPos(P),
-  fDeltaY(DY), fAlphaX(AX), fAlphaY(AY), fElevation(EL), fAzimuth(AZ), 
-  fTranslation(T), fCurvatureRadius(CR), fAperture(A), fFacetSpacing(FSP), 
-  fFacetSize(FS), fReflectorRotation(RR), 
-  fHexagonRingsN(HRN), fReflectorIP(RIP), fMirrorParity(MP), 
-  fFPTranslation(FPT),  fCameraDiameter(CD), fFieldOfView(FOV), 
-  fCathodeDiameter(D), fPixelSpacing(PS), fConcSurvProb(CSP),
-  fFPRotation(FPR), fCameraIP(CIP), fPixelParity(PP),
+    fID(TID), fTelescopeHexID(THID), fPos(P),
+    fDeltaY(DY), fAlphaX(AX), fAlphaY(AY), fElevation(EL), fAzimuth(AZ), 
+    fTranslation(T), fCurvatureRadius(CR), fAperture(A), fFacetSpacing(FSP), 
+    fFacetSize(FS), fReflectorRotation(RR), 
+    fHexagonRingsN(HRN), fReflectorIP(RIP), fMirrorParity(MP), 
+    fFPTranslation(FPT),  fCameraDiameter(CD), fFieldOfView(FOV), 
+    fCathodeDiameter(D), fPixelSpacing(PS), fConcSurvProb(CSP),
+    fFPRotation(FPR), fCameraIP(CIP), fPixelParity(PP),
 #if 0
-  fHasSecondary(SEC),
-  fRefractiveIndex(RI), fRefractiveIndex1(RI1), fRefractiveIndex2(RI2),
-  fCE1Parameter0(C10), fCE1Parameter2(C12), fCE1Parameter3(C13), 
-  fCE1Parameter4(C14), fCE1Parameter5(C15), fCE2Parameter0(C20), 
-  fCE2Parameter2(C22), fCE2Parameter3(C23), fCE2Parameter4(C24),
-  fCE2Parameter5(C25), 
+    fHasSecondary(SEC),
+    fRefractiveIndex(RI), fRefractiveIndex1(RI1), fRefractiveIndex2(RI2),
+    fCE1Parameter0(C10), fCE1Parameter2(C12), fCE1Parameter3(C13), 
+    fCE1Parameter4(C14), fCE1Parameter5(C15), fCE2Parameter0(C20), 
+    fCE2Parameter2(C22), fCE2Parameter3(C23), fCE2Parameter4(C24),
+    fCE2Parameter5(C25), 
 #endif
-  fObscurations(OBSVEC),
-  fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), fRotationVector()
+    fObscurations(OBSVEC),
+    fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), fRotationVector()
 {
   calculateRotationVector();
 }
 
 VSOTelescope::VSOTelescope(const VSOTelescope& o):
-  fID(o.fID), fTelescopeHexID(o.fTelescopeHexID),
-  fPos(o.fPos), fDeltaY(o.fDeltaY), fAlphaX(o.fAlphaX), fAlphaY(o.fAlphaY),
-  fElevation(o.fElevation), fAzimuth(o.fAzimuth), fTranslation(o.fTranslation),
-  fCurvatureRadius(o.fCurvatureRadius), fAperture(o.fAperture), 
-  fFacetSpacing(o.fFacetSpacing), fFacetSize(o.fFacetSize), 
-  fReflectorRotation(o.fReflectorRotation),
-  fHexagonRingsN(o.fHexagonRingsN),
-  fReflectorIP(o.fReflectorIP), fMirrorParity(o.fMirrorParity),
-  fFPTranslation(o.fFPTranslation), fCameraDiameter(o.fCameraDiameter),
-  fFieldOfView(o.fFieldOfView), fCathodeDiameter(o.fCathodeDiameter),
-  fPixelSpacing(o.fPixelSpacing), fConcSurvProb(o.fConcSurvProb),
-  fFPRotation(o.fFPRotation), fCameraIP(o.fCameraIP),
-  fPixelParity(o.fPixelParity), 
+    fID(o.fID), fTelescopeHexID(o.fTelescopeHexID),
+    fPos(o.fPos), fDeltaY(o.fDeltaY), fAlphaX(o.fAlphaX), fAlphaY(o.fAlphaY),
+    fElevation(o.fElevation), fAzimuth(o.fAzimuth), fTranslation(o.fTranslation),
+    fCurvatureRadius(o.fCurvatureRadius), fAperture(o.fAperture), 
+    fFacetSpacing(o.fFacetSpacing), fFacetSize(o.fFacetSize), 
+    fReflectorRotation(o.fReflectorRotation),
+    fHexagonRingsN(o.fHexagonRingsN),
+    fReflectorIP(o.fReflectorIP), fMirrorParity(o.fMirrorParity),
+    fFPTranslation(o.fFPTranslation), fCameraDiameter(o.fCameraDiameter),
+    fFieldOfView(o.fFieldOfView), fCathodeDiameter(o.fCathodeDiameter),
+    fPixelSpacing(o.fPixelSpacing), fConcSurvProb(o.fConcSurvProb),
+    fFPRotation(o.fFPRotation), fCameraIP(o.fCameraIP),
+    fPixelParity(o.fPixelParity), 
 #if 0
-  fHasSecondary(o.fHasSecondary),
-  fRefractiveIndex(o.fRefractiveIndex),
-  fRefractiveIndex1(o.fRefractiveIndex1), 
-  fRefractiveIndex2(o.fRefractiveIndex2),
-  fCE1Parameter0(o.fCE1Parameter0), fCE1Parameter2(o.fCE1Parameter2),
-  fCE1Parameter3(o.fCE1Parameter3), fCE1Parameter4(o.fCE1Parameter4),
-  fCE1Parameter5(o.fCE1Parameter5), fCE2Parameter0(o.fCE2Parameter0),
-  fCE2Parameter2(o.fCE2Parameter2), fCE2Parameter3(o.fCE2Parameter3),
-  fCE2Parameter4(o.fCE2Parameter4), fCE2Parameter5(o.fCE2Parameter5),
+    fHasSecondary(o.fHasSecondary),
+    fRefractiveIndex(o.fRefractiveIndex),
+    fRefractiveIndex1(o.fRefractiveIndex1), 
+    fRefractiveIndex2(o.fRefractiveIndex2),
+    fCE1Parameter0(o.fCE1Parameter0), fCE1Parameter2(o.fCE1Parameter2),
+    fCE1Parameter3(o.fCE1Parameter3), fCE1Parameter4(o.fCE1Parameter4),
+    fCE1Parameter5(o.fCE1Parameter5), fCE2Parameter0(o.fCE2Parameter0),
+    fCE2Parameter2(o.fCE2Parameter2), fCE2Parameter3(o.fCE2Parameter3),
+    fCE2Parameter4(o.fCE2Parameter4), fCE2Parameter5(o.fCE2Parameter5),
 #endif
-  fObscurations(),
-  fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(),
-  fRotationVector()
+    fObscurations(),
+    fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(),
+    fRotationVector()
 {
   fMirrors.resize(o.fMirrors.size());
   fMirrorsByHexID.resize(o.fMirrorsByHexID.size());
   for(std::vector<VSOMirror*>::const_iterator i=o.fMirrors.begin(); 
       i!=o.fMirrors.end(); i++)
-    {
-      VSOMirror* mirror = new VSOMirror(**i);
-      fMirrors[(*i)->id()]=mirror;
-      fMirrorsByHexID[(*i)->hexID()]=mirror;
-    }
+  {
+    VSOMirror* mirror = new VSOMirror(**i);
+    fMirrors[(*i)->id()]=mirror;
+    fMirrorsByHexID[(*i)->hexID()]=mirror;
+  }
 
   fPixels.resize(o.fPixels.size());
   fPixelsByHexID.resize(o.fPixelsByHexID.size());
   for(std::vector<VSOPixel*>::const_iterator i=o.fPixels.begin(); 
       i!=o.fPixels.end(); i++)
-    {
-      VSOPixel* pixel = new VSOPixel(**i);
-      fPixels[(*i)->id()]=pixel;
-      fPixelsByHexID[(*i)->hexID()]=pixel;
-    }
+  {
+    VSOPixel* pixel = new VSOPixel(**i);
+    fPixels[(*i)->id()]=pixel;
+    fPixelsByHexID[(*i)->hexID()]=pixel;
+  }
 
   for(std::vector<VSOObscuration*>::const_iterator i=o.fObscurations.begin();
       i!=o.fObscurations.end(); i++)fObscurations.push_back((*i)->clone());
@@ -211,11 +211,11 @@ const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
 
   for(std::vector<VSOMirror*>::const_iterator i=o.fMirrors.begin(); 
       i!=o.fMirrors.end(); i++)
-    {
-      VSOMirror* mirror = new VSOMirror(**i);
-      fMirrors[(*i)->id()]=mirror;
-      fMirrorsByHexID[(*i)->hexID()]=mirror;
-    }
+  {
+    VSOMirror* mirror = new VSOMirror(**i);
+    fMirrors[(*i)->id()]=mirror;
+    fMirrorsByHexID[(*i)->hexID()]=mirror;
+  }
 
   for(std::vector<VSOPixel*>::iterator i=fPixels.begin();
       i!=fPixels.end(); i++)delete *i;
@@ -228,11 +228,11 @@ const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
 
   for(std::vector<VSOPixel*>::const_iterator i=o.fPixels.begin(); 
       i!=o.fPixels.end(); i++)
-    {
-      VSOPixel* pixel = new VSOPixel(**i);
-      fPixels[(*i)->id()]=pixel;
-      fPixelsByHexID[(*i)->hexID()]=pixel;
-    }
+  {
+    VSOPixel* pixel = new VSOPixel(**i);
+    fPixels[(*i)->id()]=pixel;
+    fPixelsByHexID[(*i)->hexID()]=pixel;
+  }
 
   calculateRotationVector();
 
@@ -279,11 +279,11 @@ void VSOTelescope::calculateRotationVector()
 {
   // Rotation vector maps from Reflector to Global
   fRotationVector = 
-    Vec3D(1,0,0)*fElevation &
-    Vec3D(0,1,0)*fDeltaY &
-    Vec3D(0,0,-1)*fAzimuth &
-    Vec3D(0,1,0)*fAlphaX &
-    Vec3D(1,0,0)*fAlphaY;
+      Vec3D(1,0,0)*fElevation &
+      Vec3D(0,1,0)*fDeltaY &
+      Vec3D(0,0,-1)*fAzimuth &
+      Vec3D(0,1,0)*fAlphaX &
+      Vec3D(1,0,0)*fAlphaY;
 }
 
 void VSOTelescope::globalToReflector_pos(Vec3D& v) const
@@ -358,7 +358,6 @@ void VSOTelescope::reflectorToFocalPlane(Particle& p) const
 // Fill the mirrors and pixels tables up with randomly generated objects
 // ****************************************************************************
 
-#if 0
 void VSOTelescope::
 populateMirrorsAndPixelsRandom(
     const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
@@ -373,7 +372,7 @@ populateMirrorsAndPixelsRandom(
 
   std::set<unsigned> mirrors_missing;
   for(auto iid : param.reflector().facet_missing_list())
-    mirrros_missing.insert(iid);
+    mirrors_missing.insert(iid);
   
   for(std::vector<VSOMirror*>::iterator i=fMirrors.begin();
       i!=fMirrors.end(); i++)delete *i;
@@ -384,150 +383,157 @@ populateMirrorsAndPixelsRandom(
 
   unsigned id = 0;
   for(int hexid=0; hexid<num_hex_mirror_sites; hexid++)
+  {
+    if(mirrors_missing.find(hexid) != mirrors_missing.end())
     {
-      if(mirrors_missing.find(hexid) != mirrors_missing.end())
-	{
-	  fMirrorsByHexID.push_back(0);
-	  continue; // skip mirror if on the mirring list
-	}
+      fMirrorsByHexID.push_back(0);
+      continue; // skip mirror if on the mirring list
+    }
       
-      Vec3D nominal_position;
+    Vec3D nominal_position;
 
-      // Compute the mirror's nominal position
-      math::hex_array::hexid_to_xy(hexid,
-                                   nominal_position.x, nominal_position.z); 
-      if(fMirrorParity)nominal_position.x=-nominal_position.x;
-      nominal_position.x *= fFacetSpacing;
-      nominal_position.z *= fFacetSpacing;
+    // Compute the mirror's nominal position
+    math::hex_array::hexid_to_xy(hexid,
+                                 nominal_position.x, nominal_position.z); 
+    if(fMirrorParity)nominal_position.x=-nominal_position.x;
+    nominal_position.x *= fFacetSpacing;
+    nominal_position.z *= fFacetSpacing;
 
-      double X2 = nominal_position.x*nominal_position.x;
-      double Z2 = nominal_position.z*nominal_position.z;
+    double X2 = nominal_position.x*nominal_position.x;
+    double Z2 = nominal_position.z*nominal_position.z;
 
-      if( (reflector_r2 - X2 - Z2) <= 0 )
-	{
-	  fMirrorsByHexID.push_back(0);
-	  continue; // skip mirror if projected hex position too far out
-	}
+    if( (reflector_r2 - X2 - Z2) <= 0 )
+    {
+      fMirrorsByHexID.push_back(0);
+      continue; // skip mirror if projected hex position too far out
+    }
 
-      nominal_position.y = fCurvatureRadius-sqrt(reflector_c2 - X2 - Z2);
+    nominal_position.y = fCurvatureRadius-sqrt(reflector_c2 - X2 - Z2);
 
-      // Add Gaussian normal/tangenetial position error
-      Vec3D reflector_normal(reflector_center-nominal_position);
-      reflector_normal /= reflector_normal.Norm();
+    // Add Gaussian normal/tangenetial position error
+    Vec3D reflector_normal(reflector_center-nominal_position);
+    reflector_normal /= reflector_normal.Norm();
 
-      Vec3D position(nominal_position);
-      position += reflector_normal*(rng.normal()*
-                                param.reflector().facet_pos_tangent_dispersion);
-      position -= reflector_center;
-      position.ScatterDirection(param.MirrorPosTangentDisp/fCurvatureRadius,rng);
-      position += reflector_center;
+    Vec3D position(nominal_position);
+    position += reflector_normal*(rng.normal()*
+                             param.reflector().facet_pos_normal_dispersion());
+    position -= reflector_center;
+    position.ScatterDirection(param.reflector().facet_pos_tangent_dispersion()
+                              / fCurvatureRadius,rng);
+    position += reflector_center;
       
-      // Rotate by global rotation angle
-      position.Rotate(Vec3D(0,fReflectorRotation,0));
+    // Rotate by global rotation angle
+    position.Rotate(Vec3D(0,fReflectorRotation,0));
 
-      // Get the (perturbed) alignment angle of mirror
-      Vec3D alignment;
+    // Get the (perturbed) alignment angle of mirror
+    Vec3D alignment;
 
-      if(param.reflector().alignment_case() == kNormAlign)
-	{
-          Vec3D alignment_pt(param.reflector().norm_align().alignment_pt());
-	  if(alignment_pt.y == 0)
-	    {
-	      double F = param.reflector().alignment_image_plane();
-	      if(F==0)F = fFPTranslation.y;
-	      double d = (Vec3D(0,F,0)-nominal_position).Norm();
-	      alignment_pt.y = F+d;	      
-	    }
+    if(param.reflector().alignment_case() ==
+       ix::simulation::vs_optics::HexDCReflectorParameters::kNormAlign)
+    {
+      Vec3D alignment_pt(param.reflector().norm_align().alignment_pt());
+      if(alignment_pt.y == 0)
+      {
+        double F = param.reflector().alignment_image_plane();
+        if(F==0)F = fFPTranslation.y;
+        double d = (Vec3D(0,F,0)-nominal_position).Norm();
+        alignment_pt.y = F+d;	      
+      }
 
-	  // Standard DC alignment to a fixed point in space (with scatter)
-	  alignment = (alignment_pt-position);
-	  alignment /= alignment.Norm();
+      // Standard DC alignment to a fixed point in space (with scatter)
+      alignment = (alignment_pt-position);
+      alignment /= alignment.Norm();
 
-	  double align_disp = 
-              param.reflector().facet_alignment_dispersion()/alignment_pt.Norm();
-	  alignment.ScatterDirection(align_disp,rng);
-	}
-      else if(param.reflector().alignment_case() == kPsfAlign)
-	{
-	  // Alignment to a point in the focal plane
+      double align_disp = 
+          param.reflector().facet_alignment_dispersion()/alignment_pt.Norm();
+      alignment.ScatterDirection(align_disp,rng);
+    }
+    else if(param.reflector().alignment_case() ==
+            ix::simulation::vs_optics::HexDCReflectorParameters::kPsfAlign)
+    {
+      // Alignment to a point in the focal plane
 
-          double theta =
-              param.reflector().psf_align().image_pt_theta()*M_PI/180.0;
-	  double stheta = sin(theta);
-	  double ctheta = cos(theta);
-	  double ttheta = stheta/ctheta;
+      double theta =
+          param.reflector().psf_align().image_pt_theta()*M_PI/180.0;
+      double stheta = sin(theta);
+      double ctheta = cos(theta);
+      double ttheta = stheta/ctheta;
 
-          double phi =
-              param.reflector().psf_align().image_pt_phi()*M_PI/180.0;
-	  double sphi = sin(PHI);
-	  double cphi = cos(PHI);
+      double phi =
+          param.reflector().psf_align().image_pt_phi()*M_PI/180.0;
+      double sphi = sin(phi);
+      double cphi = cos(phi);
 
-	  double y_fp = param.reflector().alignment_image_plane(); // Image plane
-	  if(y_fp==0)y_fp = fFPTranslation.y;
-	  Vec3D r_fp(y_fp*ttheta*sphi ,y_fp, -y_fp*ttheta*cphi);
+      double y_fp = param.reflector().alignment_image_plane(); // Image plane
+      if(y_fp==0)y_fp = fFPTranslation.y;
+      Vec3D r_fp(y_fp*ttheta*sphi ,y_fp, -y_fp*ttheta*cphi);
 
-	  Vec3D e_in(-stheta*sphi, ctheta, stheta*cphi);
-	  if((param.reflector().psf_align().object_plane()) and
-	     (!std::isinf(param.reflector().psf_align().object_plane())))
-	    {
-	      double y_em = param.reflector().psf_align().object_plane();
-	      Vec3D emission_pt(-y_em*ttheta*sphi, y_em, y_em*ttheta*cphi);
-	      e_in = emission_pt-position;
-	      e_in /= e_in.Norm();
-	    }
+      Vec3D e_in(-stheta*sphi, ctheta, stheta*cphi);
+      if((param.reflector().psf_align().object_plane()) and
+         (!std::isinf(param.reflector().psf_align().object_plane())))
+      {
+        double y_em = param.reflector().psf_align().object_plane();
+        Vec3D emission_pt(-y_em*ttheta*sphi, y_em, y_em*ttheta*cphi);
+        e_in = emission_pt-position;
+        e_in /= e_in.Norm();
+      }
 
-	  Vec3D e_out = r_fp-position;
-	  e_out /= e_out.Norm();
+      Vec3D e_out = r_fp-position;
+      e_out /= e_out.Norm();
 
-	  alignment = e_in;
+      alignment = e_in;
 
-	  Vec3D e_rot = e_in^e_out;
-	  double strot2 = e_rot.Norm();
-	  if(strot2 != 0)
-	    {
-	      double ctrot2 = e_in*e_out;
-	      double trot2 = std::atan2(strot2,ctrot2);
-	      e_rot *= 0.5*trot2/strot2;
-	      alignment.Rotate(e_rot);
-	    }
-	}
+      Vec3D e_rot = e_in^e_out;
+      double strot2 = e_rot.Norm();
+      if(strot2 != 0)
+      {
+        double ctrot2 = e_in*e_out;
+        double trot2 = std::atan2(strot2,ctrot2);
+        e_rot *= 0.5*trot2/strot2;
+        alignment.Rotate(e_rot);
+      }
+    }
+    else
+    {
+      assert(0);
+    }
 
-      double focal_length = 
-          param.reflector().facet_focal_length()
-          + rng.normal()*param.reflector().facet_focal_length_dispersion()
+    double focal_length = 
+        param.reflector().facet_focal_length()
+        + rng.normal()*param.reflector().facet_focal_length_dispersion();
 
-      double spot_size;
-      if(param.reflector().facet_spot_size_dispersion() > 0)
-	spot_size = rng.gamma_by_mean_and_sigma(
-            param.reflector().facet_spot_size(),
-            param.reflector().facet_spot_size_dispersion());
-      else spot_size = param.reflector().facet_spot_size();
+    double spot_size;
+    if(param.reflector().facet_spot_size_dispersion() > 0)
+      spot_size = rng.gamma_by_mean_and_sigma(
+          param.reflector().facet_spot_size(),
+          param.reflector().facet_spot_size_dispersion());
+    else spot_size = param.reflector().facet_spot_size();
 
-      // If param.MirrorSpotSizePhotonFraction not set -- assume FWHM
-      if((param.reflector().facet_spot_size_probability()>0.0)&&
-	 (param.reflector().facet_spot_size_probability()<1.0))
-	spot_size /= 
-            2.0*std::sqrt(std::log(1.0/(1.0-
-                         param.reflector().facet_spot_size_probability())));
-      else spot_size /= 2.0*std::sqrt(log(2.0));
+    // If param.MirrorSpotSizePhotonFraction not set -- assume FWHM
+    if((param.reflector().facet_spot_size_probability()>0.0)&&
+       (param.reflector().facet_spot_size_probability()<1.0))
+      spot_size /= 
+          2.0*std::sqrt(std::log(1.0/(1.0-
+                          param.reflector().facet_spot_size_probability())));
+    else spot_size /= 2.0*std::sqrt(log(2.0));
       
-      VSOMirror* mirror = 
+    VSOMirror* mirror = 
 	new VSOMirror(this, id, hexid, false, position, alignment, 
                       focal_length, spot_size,
                       param.reflector().weathering_factor());
       
-      fMirrors.push_back(mirror);
-      fMirrorsByHexID.push_back(mirror);
+    fMirrors.push_back(mirror);
+    fMirrorsByHexID.push_back(mirror);
 
-      for(unsigned icorner=0;icorner<6;icorner++)
-	{
-	  Vec3D rc = mirror->cornerInReflectorCoords(icorner,fFacetSize);
-	  double r_ip = rc.Norm();
-	  fReflectorIP = std::max(fReflectorIP, 2.0*r_ip);
-	}
-
-      id++;
+    for(unsigned icorner=0;icorner<6;icorner++)
+    {
+      Vec3D rc = mirror->cornerInReflectorCoords(icorner,fFacetSize);
+      double r_ip = rc.Norm();
+      fReflectorIP = std::max(fReflectorIP, 2.0*r_ip);
     }
+
+    id++;
+  }
   
   // **************************************************************************
   // Clear the PIXELSs table and repopulate it with randomly generated pixels
@@ -540,15 +546,9 @@ populateMirrorsAndPixelsRandom(
 
   std::set<unsigned> modules_missing;
   for(auto iid : param.pixel().module_missing_list())
-    pixels_missing.insert(iid);
+    modules_missing.insert(iid);
   
-  unsigned num_hex_pixel_rings = 
-    unsigned(floor((fCameraDiameter/2.0)/fPixelSpacing/cos(30.0/180.0*M_PI)))
-      + param.pixel().hex_module_size() + 2;
-  unsigned num_hex_pixel_sites = 
-    3*num_hex_pixel_rings*(num_hex_pixel_rings+1)+1;
-
-  unsigned module_size = proto.pixel().hex_module_size();
+  unsigned module_size = param.pixel().hex_module_size();
   std::set<unsigned> pixel_hexids;
   for(auto id : math::hex_array::cluster_hexid_to_member_hexid(0, module_size))
     pixel_hexids.insert(id);
@@ -593,7 +593,8 @@ populateMirrorsAndPixelsRandom(
     nominal_position.y = 0;
     nominal_position.Rotate(fFPRotation);
 
-    VSOPixel* pixel = new VSOPixel(this, pixeld, hexid, false, nominal_position);
+    VSOPixel* pixel =
+        new VSOPixel(this, pixelid, hexid, false, nominal_position);
       
     fPixels.push_back(pixel);
     fPixelsByHexID.push_back(pixel);
@@ -601,7 +602,6 @@ populateMirrorsAndPixelsRandom(
     pixelid++;
   }
 }
-#endif
 
 void VSOTelescope::
 dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d) const
@@ -689,69 +689,69 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
 void VSOTelescope::dumpShort(std::ostream& stream) const
 {
   stream
-    << "TELESCOPE "
-    << VSDataConverter::toString(fID) << ' '
-    << VSDataConverter::toString(fTelescopeHexID) << ' '
-    << VSDataConverter::toString(fMirrors.size()) << ' '
-    << VSDataConverter::toString(fPixels.size()) << ' '
-    << VSDataConverter::toString(fPos.x) << ' '
+      << "TELESCOPE "
+      << VSDataConverter::toString(fID) << ' '
+      << VSDataConverter::toString(fTelescopeHexID) << ' '
+      << VSDataConverter::toString(fMirrors.size()) << ' '
+      << VSDataConverter::toString(fPixels.size()) << ' '
+      << VSDataConverter::toString(fPos.x) << ' '
 
-    << VSDataConverter::toString(fPos.y) << ' '
-    << VSDataConverter::toString(fPos.z) << ' '
-    << VSDataConverter::toString(fDeltaY) << ' '
-    << VSDataConverter::toString(fAlphaX) << ' '
-    << VSDataConverter::toString(fAlphaY) << ' '
+      << VSDataConverter::toString(fPos.y) << ' '
+      << VSDataConverter::toString(fPos.z) << ' '
+      << VSDataConverter::toString(fDeltaY) << ' '
+      << VSDataConverter::toString(fAlphaX) << ' '
+      << VSDataConverter::toString(fAlphaY) << ' '
 
-    << VSDataConverter::toString(fElevation) << ' '
-    << VSDataConverter::toString(fAzimuth) << ' '
-    << VSDataConverter::toString(fTranslation.x) << ' '
-    << VSDataConverter::toString(fTranslation.y) << ' '
-    << VSDataConverter::toString(fTranslation.z) << ' '
+      << VSDataConverter::toString(fElevation) << ' '
+      << VSDataConverter::toString(fAzimuth) << ' '
+      << VSDataConverter::toString(fTranslation.x) << ' '
+      << VSDataConverter::toString(fTranslation.y) << ' '
+      << VSDataConverter::toString(fTranslation.z) << ' '
 
-    << VSDataConverter::toString(fCurvatureRadius) << ' '
-    << VSDataConverter::toString(fAperture) << ' '
-    << VSDataConverter::toString(fFacetSpacing) << ' '
-    << VSDataConverter::toString(fFacetSize) << ' '
-    << VSDataConverter::toString(fReflectorRotation) << ' '
+      << VSDataConverter::toString(fCurvatureRadius) << ' '
+      << VSDataConverter::toString(fAperture) << ' '
+      << VSDataConverter::toString(fFacetSpacing) << ' '
+      << VSDataConverter::toString(fFacetSize) << ' '
+      << VSDataConverter::toString(fReflectorRotation) << ' '
 
-    << VSDataConverter::toString(fHexagonRingsN) << ' '
-    << VSDataConverter::toString(fReflectorIP) << ' '
-    << VSDataConverter::toString(fMirrorParity) << ' '
-    << VSDataConverter::toString(fFPTranslation.x) << ' '
-    << VSDataConverter::toString(fFPTranslation.y) << ' '
+      << VSDataConverter::toString(fHexagonRingsN) << ' '
+      << VSDataConverter::toString(fReflectorIP) << ' '
+      << VSDataConverter::toString(fMirrorParity) << ' '
+      << VSDataConverter::toString(fFPTranslation.x) << ' '
+      << VSDataConverter::toString(fFPTranslation.y) << ' '
 
-    << VSDataConverter::toString(fFPTranslation.z) << ' '
-    << VSDataConverter::toString(fCameraDiameter) << ' '
-    << VSDataConverter::toString(fFieldOfView) << ' '
-    << VSDataConverter::toString(fCathodeDiameter) << ' '
-    << VSDataConverter::toString(fPixelSpacing) << ' '
+      << VSDataConverter::toString(fFPTranslation.z) << ' '
+      << VSDataConverter::toString(fCameraDiameter) << ' '
+      << VSDataConverter::toString(fFieldOfView) << ' '
+      << VSDataConverter::toString(fCathodeDiameter) << ' '
+      << VSDataConverter::toString(fPixelSpacing) << ' '
 
-    << VSDataConverter::toString(fConcSurvProb) << ' '
-    << VSDataConverter::toString(fFPRotation.x) << ' '
-    << VSDataConverter::toString(fFPRotation.y) << ' '
-    << VSDataConverter::toString(fFPRotation.z) << ' '
-    << VSDataConverter::toString(fCameraIP) << ' '
+      << VSDataConverter::toString(fConcSurvProb) << ' '
+      << VSDataConverter::toString(fFPRotation.x) << ' '
+      << VSDataConverter::toString(fFPRotation.y) << ' '
+      << VSDataConverter::toString(fFPRotation.z) << ' '
+      << VSDataConverter::toString(fCameraIP) << ' '
 
-    << VSDataConverter::toString(fPixelParity) << ' '
+      << VSDataConverter::toString(fPixelParity) << ' '
 #if 0
-    << VSDataConverter::toString(fHasSecondary) << ' '
-    << VSDataConverter::toString(fRefractiveIndex) << ' '
-    << VSDataConverter::toString(fRefractiveIndex1) << ' '
-    << VSDataConverter::toString(fRefractiveIndex2) << ' '
+      << VSDataConverter::toString(fHasSecondary) << ' '
+      << VSDataConverter::toString(fRefractiveIndex) << ' '
+      << VSDataConverter::toString(fRefractiveIndex1) << ' '
+      << VSDataConverter::toString(fRefractiveIndex2) << ' '
 
-    << VSDataConverter::toString(fCE1Parameter0) << ' '
-    << VSDataConverter::toString(fCE1Parameter2) << ' '
-    << VSDataConverter::toString(fCE1Parameter3) << ' '
-    << VSDataConverter::toString(fCE1Parameter4) << ' '
-    << VSDataConverter::toString(fCE1Parameter5) << ' '
+      << VSDataConverter::toString(fCE1Parameter0) << ' '
+      << VSDataConverter::toString(fCE1Parameter2) << ' '
+      << VSDataConverter::toString(fCE1Parameter3) << ' '
+      << VSDataConverter::toString(fCE1Parameter4) << ' '
+      << VSDataConverter::toString(fCE1Parameter5) << ' '
 
-    << VSDataConverter::toString(fCE1Parameter0) << ' '
-    << VSDataConverter::toString(fCE1Parameter2) << ' '
-    << VSDataConverter::toString(fCE1Parameter3) << ' '
-    << VSDataConverter::toString(fCE1Parameter4) << ' '
-    << VSDataConverter::toString(fCE1Parameter5) 
+      << VSDataConverter::toString(fCE1Parameter0) << ' '
+      << VSDataConverter::toString(fCE1Parameter2) << ' '
+      << VSDataConverter::toString(fCE1Parameter3) << ' '
+      << VSDataConverter::toString(fCE1Parameter4) << ' '
+      << VSDataConverter::toString(fCE1Parameter5) 
 #endif
-    << std::endl;
+      << std::endl;
 
   for(std::vector<VSOMirror*> ::const_iterator i = fMirrors.begin();
       i!=fMirrors.end(); i++)
@@ -765,81 +765,81 @@ void VSOTelescope::dumpShort(std::ostream& stream) const
 void VSOTelescope::dump(std::ostream& stream, unsigned l) const
 {
   stream
-    << FDAV("Telescope ID", fID, "", 30, l) << std::endl
-    << FDAV("Telescope Hex ID", fTelescopeHexID, "", 30, l) << std::endl
-    << FDAV("Num Mirrors", fMirrors.size(), "", 30, l) << std::endl
-    << FDAV("Num Pixels", fPixels.size(), "", 30, l) << std::endl
-    << FDAV("Position X", fPos.x, "cm", 30, l) << std::endl
+      << FDAV("Telescope ID", fID, "", 30, l) << std::endl
+      << FDAV("Telescope Hex ID", fTelescopeHexID, "", 30, l) << std::endl
+      << FDAV("Num Mirrors", fMirrors.size(), "", 30, l) << std::endl
+      << FDAV("Num Pixels", fPixels.size(), "", 30, l) << std::endl
+      << FDAV("Position X", fPos.x, "cm", 30, l) << std::endl
 
-    << FDAV("Position Y", fPos.y, "cm", 30, l) << std::endl
-    << FDAV("Position Z", fPos.z, "cm", 30, l) << std::endl
-    << FDAV("Delta Y", fDeltaY, "rad", 30, l) << std::endl
-    << FDAV("Alpha X", fAlphaX, "rad", 30, l) << std::endl
-    << FDAV("Alpha Y", fAlphaY, "rad", 30, l) << std::endl
+      << FDAV("Position Y", fPos.y, "cm", 30, l) << std::endl
+      << FDAV("Position Z", fPos.z, "cm", 30, l) << std::endl
+      << FDAV("Delta Y", fDeltaY, "rad", 30, l) << std::endl
+      << FDAV("Alpha X", fAlphaX, "rad", 30, l) << std::endl
+      << FDAV("Alpha Y", fAlphaY, "rad", 30, l) << std::endl
 
-    << FDAV("Elevation", fElevation, "rad", 30, l) << std::endl
-    << FDAV("Azimuth", fAzimuth, "rad", 30, l) << std::endl
-    << FDAV("Translation X", fTranslation.x, "cm", 30, l) << std::endl
-    << FDAV("Translation Y", fTranslation.y, "cm", 30, l) << std::endl
-    << FDAV("Translation Z", fTranslation.z, "cm", 30, l) << std::endl
+      << FDAV("Elevation", fElevation, "rad", 30, l) << std::endl
+      << FDAV("Azimuth", fAzimuth, "rad", 30, l) << std::endl
+      << FDAV("Translation X", fTranslation.x, "cm", 30, l) << std::endl
+      << FDAV("Translation Y", fTranslation.y, "cm", 30, l) << std::endl
+      << FDAV("Translation Z", fTranslation.z, "cm", 30, l) << std::endl
 
-    << FDAV("Curvature Radius", fCurvatureRadius, "cm", 30, l) << std::endl
-    << FDAV("Aperture", fAperture, "cm", 30, l) << std::endl
-    << FDAV("Facet Spacing", fFacetSpacing, "cm", 30, l) << std::endl
-    << FDAV("Facet Size", fFacetSize, "cm", 30, l) << std::endl
-    << FDAV("Reflector Rotation", fReflectorRotation, "rad", 30, l) << std::endl 
+      << FDAV("Curvature Radius", fCurvatureRadius, "cm", 30, l) << std::endl
+      << FDAV("Aperture", fAperture, "cm", 30, l) << std::endl
+      << FDAV("Facet Spacing", fFacetSpacing, "cm", 30, l) << std::endl
+      << FDAV("Facet Size", fFacetSize, "cm", 30, l) << std::endl
+      << FDAV("Reflector Rotation", fReflectorRotation, "rad", 30, l) << std::endl 
 
-    << FDAV("Num Mirror Hexagon Rings", fHexagonRingsN, "", 30, l) << std::endl
-    << FDAV("Reflector IP", fReflectorIP, "cm", 30, l) << std::endl
-    << FDAV("Mirror Parity", fMirrorParity, "", 30, l) << std::endl
-    << FDAV("FP Translation X", fFPTranslation.x, "cm", 30, l) << std::endl
-    << FDAV("FP Translation Y", fFPTranslation.y, "cm", 30, l) << std::endl
+      << FDAV("Num Mirror Hexagon Rings", fHexagonRingsN, "", 30, l) << std::endl
+      << FDAV("Reflector IP", fReflectorIP, "cm", 30, l) << std::endl
+      << FDAV("Mirror Parity", fMirrorParity, "", 30, l) << std::endl
+      << FDAV("FP Translation X", fFPTranslation.x, "cm", 30, l) << std::endl
+      << FDAV("FP Translation Y", fFPTranslation.y, "cm", 30, l) << std::endl
 
-    << FDAV("FP Translation Z", fFPTranslation.z, "cm", 30, l) << std::endl
-    << FDAV("CameraDiameter", fCameraDiameter, "cm", 30, l) << std::endl
-    << FDAV("Field Of View", fFieldOfView, "deg", 30, l) << std::endl
-    << FDAV("Pixel Diameter", fCathodeDiameter, "cm", 30, l) << std::endl
-    << FDAV("Pixel Spacing", fPixelSpacing, "cm", 30, l) << std::endl
+      << FDAV("FP Translation Z", fFPTranslation.z, "cm", 30, l) << std::endl
+      << FDAV("CameraDiameter", fCameraDiameter, "cm", 30, l) << std::endl
+      << FDAV("Field Of View", fFieldOfView, "deg", 30, l) << std::endl
+      << FDAV("Pixel Diameter", fCathodeDiameter, "cm", 30, l) << std::endl
+      << FDAV("Pixel Spacing", fPixelSpacing, "cm", 30, l) << std::endl
 
-    << FDAV("Conc Surv Prob", fConcSurvProb, "", 30, l) << std::endl
-    << FDAV("FP Rotation X", fFPRotation.x, "rad", 30, l) << std::endl
-    << FDAV("FP Rotation Y", fFPRotation.y, "rad", 30, l) << std::endl
-    << FDAV("FP Rotation Z", fFPRotation.z, "rad", 30, l) << std::endl
-    << FDAV("Camera IP", fCameraIP, "cm", 30, l) << std::endl
+      << FDAV("Conc Surv Prob", fConcSurvProb, "", 30, l) << std::endl
+      << FDAV("FP Rotation X", fFPRotation.x, "rad", 30, l) << std::endl
+      << FDAV("FP Rotation Y", fFPRotation.y, "rad", 30, l) << std::endl
+      << FDAV("FP Rotation Z", fFPRotation.z, "rad", 30, l) << std::endl
+      << FDAV("Camera IP", fCameraIP, "cm", 30, l) << std::endl
 
-    << FDAV("Pixel Parity", fPixelParity, "", 30, l) << std::endl;
+      << FDAV("Pixel Parity", fPixelParity, "", 30, l) << std::endl;
 #if 0
-    << FDAV("Has Secondary", fHasSecondary, "", 30, l) << std::endl
-    << FDAV("Refractive Index", fRefractiveIndex, "", 30, l) << std::endl
-    << FDAV("Refractive Index 1", fRefractiveIndex1, "", 30, l) << std::endl
-    << FDAV("Refractive Index 2", fRefractiveIndex2, "", 30, l) << std::endl
+  << FDAV("Has Secondary", fHasSecondary, "", 30, l) << std::endl
+  << FDAV("Refractive Index", fRefractiveIndex, "", 30, l) << std::endl
+  << FDAV("Refractive Index 1", fRefractiveIndex1, "", 30, l) << std::endl
+  << FDAV("Refractive Index 2", fRefractiveIndex2, "", 30, l) << std::endl
 
-    << FDAV("CE1 Parameter 0", fCE1Parameter0, "", 30, l) << std::endl
-    << FDAV("CE1 Parameter 2", fCE1Parameter2, "", 30, l) << std::endl
-    << FDAV("CE1 Parameter 3", fCE1Parameter3, "", 30, l) << std::endl
-    << FDAV("CE1 Parameter 4", fCE1Parameter4, "", 30, l) << std::endl
-    << FDAV("CE1 Parameter 5", fCE1Parameter5, "", 30, l) << std::endl
+  << FDAV("CE1 Parameter 0", fCE1Parameter0, "", 30, l) << std::endl
+  << FDAV("CE1 Parameter 2", fCE1Parameter2, "", 30, l) << std::endl
+  << FDAV("CE1 Parameter 3", fCE1Parameter3, "", 30, l) << std::endl
+  << FDAV("CE1 Parameter 4", fCE1Parameter4, "", 30, l) << std::endl
+  << FDAV("CE1 Parameter 5", fCE1Parameter5, "", 30, l) << std::endl
 
-    << FDAV("CE2 Parameter 0", fCE1Parameter0, "", 30, l) << std::endl
-    << FDAV("CE2 Parameter 2", fCE1Parameter2, "", 30, l) << std::endl
-    << FDAV("CE2 Parameter 3", fCE1Parameter3, "", 30, l) << std::endl
-    << FDAV("CE2 Parameter 4", fCE1Parameter4, "", 30, l) << std::endl
-    << FDAV("CE2 Parameter 5", fCE1Parameter5, "", 30, l) << std::endl;
+  << FDAV("CE2 Parameter 0", fCE1Parameter0, "", 30, l) << std::endl
+  << FDAV("CE2 Parameter 2", fCE1Parameter2, "", 30, l) << std::endl
+  << FDAV("CE2 Parameter 3", fCE1Parameter3, "", 30, l) << std::endl
+  << FDAV("CE2 Parameter 4", fCE1Parameter4, "", 30, l) << std::endl
+  << FDAV("CE2 Parameter 5", fCE1Parameter5, "", 30, l) << std::endl;
 #endif
 
   for(std::vector<VSOMirror*> ::const_iterator i = fMirrors.begin();
       i!=fMirrors.end(); i++)
-    {
-      stream << std::endl;
-      (*i)->dump(stream,l+1);
-    }
+  {
+    stream << std::endl;
+    (*i)->dump(stream,l+1);
+  }
 
   for(std::vector<VSOPixel*> ::const_iterator i = fPixels.begin();
       i!=fPixels.end(); i++)
-    {
-      stream << std::endl;
-      (*i)->dump(stream,l+1);
-    }
+  {
+    stream << std::endl;
+    (*i)->dump(stream,l+1);
+  }
 }
 
 VSOTelescope* VSOTelescope::createFromShortDump(std::istream& stream)
@@ -860,98 +860,98 @@ VSOTelescope* VSOTelescope::createFromShortDump(std::istream& stream)
   unsigned pixels_size;
 
   linestream
-    >> telescope->fID
-    >> telescope->fTelescopeHexID
-    >> mirrors_size
-    >> pixels_size
-    >> telescope->fPos.x
+      >> telescope->fID
+      >> telescope->fTelescopeHexID
+      >> mirrors_size
+      >> pixels_size
+      >> telescope->fPos.x
     
-    >> telescope->fPos.y
-    >> telescope->fPos.z
-    >> telescope->fDeltaY
-    >> telescope->fAlphaX
-    >> telescope->fAlphaY
+      >> telescope->fPos.y
+      >> telescope->fPos.z
+      >> telescope->fDeltaY
+      >> telescope->fAlphaX
+      >> telescope->fAlphaY
 
-    >> telescope->fElevation
-    >> telescope->fAzimuth
-    >> telescope->fTranslation.x
-    >> telescope->fTranslation.y
-    >> telescope->fTranslation.z
+      >> telescope->fElevation
+      >> telescope->fAzimuth
+      >> telescope->fTranslation.x
+      >> telescope->fTranslation.y
+      >> telescope->fTranslation.z
 
-    >> telescope->fCurvatureRadius
-    >> telescope->fAperture
-    >> telescope->fFacetSpacing
-    >> telescope->fFacetSize
-    >> telescope->fReflectorRotation
+      >> telescope->fCurvatureRadius
+      >> telescope->fAperture
+      >> telescope->fFacetSpacing
+      >> telescope->fFacetSize
+      >> telescope->fReflectorRotation
 
-    >> telescope->fHexagonRingsN
-    >> telescope->fReflectorIP
-    >> telescope->fMirrorParity
-    >> telescope->fFPTranslation.x
-    >> telescope->fFPTranslation.y
+      >> telescope->fHexagonRingsN
+      >> telescope->fReflectorIP
+      >> telescope->fMirrorParity
+      >> telescope->fFPTranslation.x
+      >> telescope->fFPTranslation.y
 
-    >> telescope->fFPTranslation.z
-    >> telescope->fCameraDiameter
-    >> telescope->fFieldOfView
-    >> telescope->fCathodeDiameter
-    >> telescope->fPixelSpacing
+      >> telescope->fFPTranslation.z
+      >> telescope->fCameraDiameter
+      >> telescope->fFieldOfView
+      >> telescope->fCathodeDiameter
+      >> telescope->fPixelSpacing
 
-    >> telescope->fConcSurvProb
-    >> telescope->fFPRotation.x
-    >> telescope->fFPRotation.y
-    >> telescope->fFPRotation.z
-    >> telescope->fCameraIP
+      >> telescope->fConcSurvProb
+      >> telescope->fFPRotation.x
+      >> telescope->fFPRotation.y
+      >> telescope->fFPRotation.z
+      >> telescope->fCameraIP
 
-    >> telescope->fPixelParity
+      >> telescope->fPixelParity
 #if 0
-    >> telescope->fHasSecondary
-    >> telescope->fRefractiveIndex
-    >> telescope->fRefractiveIndex1
-    >> telescope->fRefractiveIndex2
+      >> telescope->fHasSecondary
+      >> telescope->fRefractiveIndex
+      >> telescope->fRefractiveIndex1
+      >> telescope->fRefractiveIndex2
 
-    >> telescope->fCE1Parameter0
-    >> telescope->fCE1Parameter2
-    >> telescope->fCE1Parameter3
-    >> telescope->fCE1Parameter4
-    >> telescope->fCE1Parameter5
+      >> telescope->fCE1Parameter0
+      >> telescope->fCE1Parameter2
+      >> telescope->fCE1Parameter3
+      >> telescope->fCE1Parameter4
+      >> telescope->fCE1Parameter5
 
-    >> telescope->fCE1Parameter0
-    >> telescope->fCE1Parameter2
-    >> telescope->fCE1Parameter3
-    >> telescope->fCE1Parameter4
-    >> telescope->fCE1Parameter5
+      >> telescope->fCE1Parameter0
+      >> telescope->fCE1Parameter2
+      >> telescope->fCE1Parameter3
+      >> telescope->fCE1Parameter4
+      >> telescope->fCE1Parameter5
 #endif
-    ;  
+      ;  
   
   if(!linestream)
+  {
+    delete telescope;
+    return 0;
+  }
+
+  for(unsigned i=0; i<mirrors_size; i++)
+  {
+    VSOMirror* mirror = VSOMirror::createFromShortDump(stream, telescope);
+    if(mirror==0)
     {
       delete telescope;
       return 0;
     }
 
-  for(unsigned i=0; i<mirrors_size; i++)
-    {
-      VSOMirror* mirror = VSOMirror::createFromShortDump(stream, telescope);
-      if(mirror==0)
-	{
-	  delete telescope;
-	  return 0;
-	}
-
-      telescope->add_mirror(mirror);
-    }
+    telescope->add_mirror(mirror);
+  }
 
   for(unsigned i=0; i<pixels_size; i++)
+  {
+    VSOPixel* pixel = VSOPixel::createFromShortDump(stream, telescope);
+    if(pixel==0)
     {
-      VSOPixel* pixel = VSOPixel::createFromShortDump(stream, telescope);
-      if(pixel==0)
-	{
-	  delete telescope;
-	  return 0;
-	}
-
-      telescope->add_pixel(pixel);
+      delete telescope;
+      return 0;
     }
+
+    telescope->add_pixel(pixel);
+  }
 
   // Recalculate rotation vector
   telescope->calculateRotationVector();
