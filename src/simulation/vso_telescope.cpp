@@ -1,6 +1,6 @@
 /* 
 
-   calin/simulation/vso_telescope.hpp -- Stephen Fegan -- 2015-11-11
+   calin/simulation/vso_telescope.cpp -- Stephen Fegan -- 2015-11-11
 
    Class for telescope, a container for obscurations, mirrors and pixels
 

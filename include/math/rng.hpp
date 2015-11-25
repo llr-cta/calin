@@ -73,12 +73,13 @@ class RNGCore
 class RNG
 {
  public:
-  enum class CoreType { NR3, RANLUX48, MT19937_64, DEV_RANDOM };
-  RNG(uint64_t seed = 0, CoreType core_type = CoreType::NR3);
+  enum class CoreType { NR3, RANLUX48, MT19937 /*, DEV_RANDOM*/ };
+  RNG(CoreType core_type = CoreType::NR3);
+  RNG(uint64_t seed, CoreType core_type = CoreType::NR3);
   RNG(RNGCore* core, bool adopt_core = false);
   RNG(const ix::math::rng::RNGData& proto, bool restore_state = false);
 
-  ~RNG() { if(adopt_core_)delete core_; }
+  ~RNG();
 
   void save_to_proto(ix::math::rng::RNGData* proto);
 
@@ -102,7 +103,10 @@ class RNG
 
   static uint32_t uint32_from_random_device();
   static uint64_t uint64_from_random_device();
-  
+
+  static uint64_t nonzero_uint64_from_random_device() { uint64_t x;
+    do { x = uint64_from_random_device(); } while(x==0ULL); return x; }
+
 #if 0
   inline double inverse_cdf(const std::vector< Pair > &inv_cdf);
   static void generate_inverse_cdf(std::vector< Pair > &cdf, unsigned nbins=0);
@@ -141,11 +145,11 @@ class NR3RNGCore: public RNGCore
  public:
   typedef calin::ix::math::rng::NR3RNGCoreData ix_core_data_type;
   
-  NR3RNGCore(uint64_t seed):
-      RNGCore(), seed_(seed),
+  NR3RNGCore(uint64_t seed = 0):
+      RNGCore(), seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
       u_(UINT64_C(0)), v_(UINT64_C(4101842887655102017)), w_(UINT64_C(1))
   {
-    u_ = seed^v_; uniform_uint64();
+    u_ = seed_^v_; uniform_uint64();
     v_ = u_; uniform_uint64();
     w_ = v_; uniform_uint64();
     calls_ = 0;
@@ -195,7 +199,10 @@ class Ranlux48RNGCore: public RNGCore
  public:
   typedef calin::ix::math::rng::Ranlux48RNGCoreData ix_core_data_type;
 
-  Ranlux48RNGCore(uint64_t seed): RNGCore(), gen_(seed), gen_seed_(seed) { }
+  Ranlux48RNGCore(uint64_t seed = 0):
+      RNGCore(),
+      gen_seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
+      gen_(gen_seed_) { }
   Ranlux48RNGCore(const ix::math::rng::Ranlux48RNGCoreData& proto,
                   bool restore_state = false);
   ~Ranlux48RNGCore();
@@ -270,8 +277,8 @@ class Ranlux48RNGCore: public RNGCore
   { return proto.ranlux48_core(); }
 
  private:
-  std::ranlux48 gen_;
   uint64_t gen_seed_;
+  std::ranlux48 gen_;
   uint64_t gen_calls_ = 0;
   uint_fast64_t dev_ = 0;
   uint_fast32_t dev_blocks_ = 0;
@@ -282,7 +289,10 @@ class MT19937RNGCore: public RNGCore
  public:
   typedef calin::ix::math::rng::STLRNGCoreData ix_core_data_type;
 
-  MT19937RNGCore(uint64_t seed): RNGCore(), gen_(seed), gen_seed_(seed) { }
+  MT19937RNGCore(uint64_t seed = 0):
+      RNGCore(),
+      gen_seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
+      gen_(gen_seed_) { }
   MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto,
                  bool restore_state = false);
   ~MT19937RNGCore();
@@ -302,8 +312,8 @@ class MT19937RNGCore: public RNGCore
   { return proto.mt19937_core(); }
 
  private:
-  std::mt19937_64 gen_;
   uint64_t gen_seed_;
+  std::mt19937_64 gen_;
   uint64_t gen_calls_ = 0;
 };
   

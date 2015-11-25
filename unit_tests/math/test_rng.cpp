@@ -95,6 +95,26 @@ TYPED_TEST_P(CoreTests, FillsAllBits32)
   }
 }
 
+TYPED_TEST_P(CoreTests, DifferentSeeds)
+{
+  TypeParam core1(1ULL);
+  TypeParam core2(2ULL);
+  unsigned nsame = 0;
+  for(unsigned i=0;i<10000;i++)
+    if(core1.uniform_uint64() == core2.uniform_uint64())nsame++;
+  EXPECT_LE(nsame,1);
+}
+
+TYPED_TEST_P(CoreTests, SameSeeds)
+{
+  TypeParam core1(1ULL);
+  TypeParam core2(1ULL);
+  unsigned ndiffer = 0;
+  for(unsigned i=0;i<10000;i++)
+    if(core1.uniform_uint64() != core2.uniform_uint64())ndiffer++;
+  EXPECT_EQ(ndiffer,0);
+}
+
 TYPED_TEST_P(CoreTests, SaveAndRestoreState)
 {
   for(unsigned N=1;N<100;N++)
@@ -128,7 +148,7 @@ TYPED_TEST_P(CoreTests, SaveAndRestoreState)
   }
 }
 
-TYPED_TEST_P(CoreTests, RestoreFromMinimumProto)
+TYPED_TEST_P(CoreTests, RestoreFromSeedOnlyProto)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   TypeParam core(seed);
@@ -144,7 +164,8 @@ TYPED_TEST_P(CoreTests, RestoreFromMinimumProto)
 }
 
 REGISTER_TYPED_TEST_CASE_P(CoreTests, FillsAllBits64, FillsAllBits32,
-                           SaveAndRestoreState, RestoreFromMinimumProto);
+                           SaveAndRestoreState, RestoreFromSeedOnlyProto,
+                           DifferentSeeds, SameSeeds);
 typedef ::testing::Types<NR3RNGCore, Ranlux48RNGCore, MT19937RNGCore> CoreTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(TestRNG, CoreTests, CoreTypes);
 
@@ -175,7 +196,22 @@ TEST(TestRNG, SaveAndRestoreState)
   }
 }
 
-TEST(TestRNG, RestoreFromMinimumProto)
+TEST(TestRNG, RestoreFromEmptyProto)
+{
+  calin::ix::math::rng::RNGData proto1;
+  RNG rng1(proto1);
+  calin::ix::math::rng::RNGData proto2;
+  rng1.save_to_proto(&proto2);
+#if 0
+  google::protobuf::io::OstreamOutputStream stream(&std::cout);
+  google::protobuf::TextFormat::Print(proto2, &stream);
+#endif
+  RNG rng2(proto2);
+  for(unsigned i=0;i<1000;i++)
+    EXPECT_EQ(rng1.normal(), rng2.normal());
+}
+
+TEST(TestRNG, RestoreFromSeedOnlyProto)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   RNG rng(seed);

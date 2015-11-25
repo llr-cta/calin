@@ -47,9 +47,8 @@
 #include <math/vs_vec3d.hpp>
 #include <math/vs_particle.hpp>
 #include <math/rng.hpp>
-//#include <xytohex.hpp>
 
-//#include "VSOArrayParameters.hpp"
+#include <proto/simulation_vs_optics.pb.h>
 #include <simulation/vso_mirror.hpp>
 #include <simulation/vso_pixel.hpp>
 #include <simulation/vso_obscuration.hpp>

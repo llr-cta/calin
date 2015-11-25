@@ -218,7 +218,9 @@ message VSOTelescopeData {
 message HexArrayLayout
 {
   uint32 num_scope_rings                = 1
-    [(CFO).desc = "Number of hexagonal rings of telescopes in the array."];
+    [(CFO).desc = "Number of hexagonal rings of telescopes in the array. A "
+     "value of 0 gives an array with one telescope; 1 gives an array with "
+     "seven telescopes, etc."];
   double scope_spacing                  = 2
     [(CFO).desc = "Spacing between telescopes in an array. From this parameter "
      "positions of telescopes are calculated on the hexagonal grid. Position "
