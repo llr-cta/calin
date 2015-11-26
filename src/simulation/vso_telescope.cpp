@@ -31,7 +31,7 @@ using namespace calin::math::vs_physics;
 using namespace calin::simulation::vs_optics;
 
 VSOTelescope::VSOTelescope():
-    fID(), fTelescopeHexID(), fPos(), 
+    fID(), /*fTelescopeHexID(),*/ fPos(), 
     fDeltaY(), fAlphaX(), fAlphaY(),
     fElevation(), fAzimuth(), 
     fTranslation(), fCurvatureRadius(), fAperture(), 
@@ -54,7 +54,7 @@ VSOTelescope::VSOTelescope():
 }
 
 VSOTelescope::
-VSOTelescope(unsigned TID, unsigned THID, const Vec3D&P, 
+VSOTelescope(unsigned TID, /*unsigned THID,*/ const Vec3D&P, 
 	     double DY, double AX, double AY, double EL, double AZ,
 	     const Vec3D& T, double CR, double A, double FSP, double FS, 
 	     double RR, unsigned HRN, double RIP, bool MP, 
@@ -67,7 +67,7 @@ VSOTelescope(unsigned TID, unsigned THID, const Vec3D&P,
 #endif
 	     const std::vector<VSOObscuration*>& OBSVEC
 	     ):
-    fID(TID), fTelescopeHexID(THID), fPos(P),
+    fID(TID), /*fTelescopeHexID(THID),*/ fPos(P),
     fDeltaY(DY), fAlphaX(AX), fAlphaY(AY), fElevation(EL), fAzimuth(AZ), 
     fTranslation(T), fCurvatureRadius(CR), fAperture(A), fFacetSpacing(FSP), 
     fFacetSize(FS), fReflectorRotation(RR), 
@@ -90,7 +90,7 @@ VSOTelescope(unsigned TID, unsigned THID, const Vec3D&P,
 }
 
 VSOTelescope::VSOTelescope(const VSOTelescope& o):
-    fID(o.fID), fTelescopeHexID(o.fTelescopeHexID),
+    fID(o.fID), /*fTelescopeHexID(o.fTelescopeHexID),*/
     fPos(o.fPos), fDeltaY(o.fDeltaY), fAlphaX(o.fAlphaX), fAlphaY(o.fAlphaY),
     fElevation(o.fElevation), fAzimuth(o.fAzimuth), fTranslation(o.fTranslation),
     fCurvatureRadius(o.fCurvatureRadius), fAperture(o.fAperture), 
@@ -158,7 +158,9 @@ VSOTelescope::~VSOTelescope()
 const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
 {
   fID                = o.fID;
+#if 0
   fTelescopeHexID    = o.fTelescopeHexID;
+#endif
   fPos               = o.fPos;
   fDeltaY            = o.fDeltaY;
   fAlphaX            = o.fAlphaX;
@@ -379,7 +381,8 @@ populateMirrorsAndPixelsRandom(
   fMirrors.clear();
   fMirrorsByHexID.clear();  
 
-  int num_hex_mirror_sites = 3*fHexagonRingsN*(fHexagonRingsN+1)+1;
+  int num_hex_mirror_sites =
+      math::hex_array::ringid_to_nsites_contained(fHexagonRingsN);
 
   unsigned id = 0;
   for(int hexid=0; hexid<num_hex_mirror_sites; hexid++)
@@ -608,7 +611,9 @@ dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d) const
 {
   d->Clear();  
   d->set_id(fID);
+#if 0
   d->set_hex_id(fTelescopeHexID);
+#endif
   fPos.dump_to_proto(d->mutable_pos());
   d->set_delta_y(fDeltaY/M_PI*180.0);
   d->set_alpha_x(fAlphaX/M_PI*180.0);
@@ -647,7 +652,9 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
 {
   VSOTelescope* scope =
       new VSOTelescope(d.id(), // TID
+#if 0
                        d.hex_id(), // THID
+#endif
                        Vec3D(d.pos()), // P
                        d.delta_y()*M_PI/180.0, // DY
                        d.alpha_x()*M_PI/180.0, // AX
@@ -691,7 +698,9 @@ void VSOTelescope::dumpShort(std::ostream& stream) const
   stream
       << "TELESCOPE "
       << VSDataConverter::toString(fID) << ' '
+#if 0
       << VSDataConverter::toString(fTelescopeHexID) << ' '
+#endif
       << VSDataConverter::toString(fMirrors.size()) << ' '
       << VSDataConverter::toString(fPixels.size()) << ' '
       << VSDataConverter::toString(fPos.x) << ' '
@@ -766,7 +775,9 @@ void VSOTelescope::dump(std::ostream& stream, unsigned l) const
 {
   stream
       << FDAV("Telescope ID", fID, "", 30, l) << std::endl
+#if 0
       << FDAV("Telescope Hex ID", fTelescopeHexID, "", 30, l) << std::endl
+#endif
       << FDAV("Num Mirrors", fMirrors.size(), "", 30, l) << std::endl
       << FDAV("Num Pixels", fPixels.size(), "", 30, l) << std::endl
       << FDAV("Position X", fPos.x, "cm", 30, l) << std::endl
@@ -861,7 +872,9 @@ VSOTelescope* VSOTelescope::createFromShortDump(std::istream& stream)
 
   linestream
       >> telescope->fID
+#if 0
       >> telescope->fTelescopeHexID
+#endif
       >> mirrors_size
       >> pixels_size
       >> telescope->fPos.x

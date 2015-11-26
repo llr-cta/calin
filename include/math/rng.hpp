@@ -105,8 +105,10 @@ class RNG
   static uint64_t uint64_from_random_device();
 
   static uint64_t nonzero_uint64_from_random_device() { uint64_t x;
-    do { x = uint64_from_random_device(); } while(x==0ULL); return x; }
-
+    do x = uint64_from_random_device(); while(x==0ULL); return x; }
+  static uint32_t nonzero_uint32_from_random_device() { uint32_t x;
+    do x = uint32_from_random_device(); while(x==0U); return x; }
+  
 #if 0
   inline double inverse_cdf(const std::vector< Pair > &inv_cdf);
   static void generate_inverse_cdf(std::vector< Pair > &cdf, unsigned nbins=0);

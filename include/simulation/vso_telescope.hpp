@@ -63,7 +63,7 @@ class VSOTelescope
 {
  public:
   VSOTelescope();
-  VSOTelescope(unsigned TID, unsigned THID, const math::vs_physics::Vec3D&P, 
+  VSOTelescope(unsigned TID, /*unsigned THID,*/ const math::vs_physics::Vec3D&P, 
                double DY, double AX, double AY, double EL, double AZ,
                const math::vs_physics::Vec3D& T, double CR, double A, 
                double FSP, double FS, double RR,
@@ -152,7 +152,9 @@ class VSOTelescope
   // ************************************************************************
 
   unsigned       id() const { return fID; }
+#if 0
   unsigned       hexID() const { return fTelescopeHexID; }
+#endif
   double         altitude() const { return fPos.z; }
   const math::vs_physics::Vec3D& pos() const { return fPos; }
   const math::vs_physics::Vec3D& position() const { return fPos; }
@@ -221,7 +223,9 @@ class VSOTelescope
   // Telescope Parameters
   // ************************************************************************
   unsigned       fID;                //!< Sequential ID (starting at 0)
+#if 0
   unsigned       fTelescopeHexID;    //!< Hex ID on the honeycomb (from 1)
+#endif
   math::vs_physics::Vec3D fPos;               //!< Position of the telescope
   double         fDeltaY;            //!< Nonorthogonality of rotation planes
   double         fAlphaX;            //!< Alignment angles(?)

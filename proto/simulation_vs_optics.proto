@@ -109,8 +109,6 @@ message VSOTelescopeData {
   uint32 id                             = 1
     [(CFO).desc = "Sequential telescope identification number, starting "
      "at zero."];
-  uint32 hex_id                         = 2
-    [(CFO).desc = "Hexagonal grid identification number, starting at zero."];
   Vector3D pos                          = 3
     [(CFO).desc = "Position of the reflector center in the array frame. ",
      (CFO).units = "cm", (CFO).sql.inline_message = true ];
@@ -242,26 +240,17 @@ message HexArrayLayout
      (CFO).units = "cm"];
 };
 
-message ScopePosition
-{
-  double x                              = 1
-    [(CFO).desc = "X (East-West) coordinate of scope in array frame. Positive "
-     "values are East of the origin, negative values are West.",
-     (CFO).units = "cm"];
-  double y                              = 2
-    [(CFO).desc = "Y (North-South) coordinate of scope in array frame. "
-     "Positive values are North of the origin, negative values are South.",
-     (CFO).units = "cm"];
-  double z                              = 3
-    [(CFO).desc = "Z (Up-Down) coordinate of scope in array frame. Positive "
-     "values are above the origin, negative values are below.",
-     (CFO).units = "cm"];
-};
-
 message UserDefinedArrayLayout
 {
-  repeated ScopePosition scope_positions = 1
-    [(CFO).desc = "Telescope positions within the array."];
+  repeated Vector3D scope_positions     = 1
+    [(CFO).desc = "Telescope positions within the array. "
+     "X : East-West coordinate of scope in array frame, positive "
+     "values are East of the origin, negative values are West. "
+     "Y : North-South coordinate of scope in array frame, positive "
+     "values are North of the origin, negative values are South. "
+     "Z : Up-Down coordinate of scope in array frame, positive "
+     "values are above the origin, negative values are below.",
+     (CFO).units = "cm"];
 };
 
 message ReflectorFrameParameters
@@ -287,30 +276,17 @@ message ReflectorFrameParameters
      "normal to the azimuth plane to the East. This rotation is applied "
      "BEFORE alpha_x.",
      (CFO).units = "deg"];
-  double reflector_trans_x              = 5
-    [(CFO).desc = "X-component of vector from the origin of the reflector "
+  Vector3D translation                  = 5
+    [(CFO).desc = "Vector from the origin of the reflector "
      "reference frame to the intersection of rotation axes. The reflector "
      "frame is defined by +y pointing along optical axis and +x pointing "
      "along the horizontal to the right when looking along the optic axis "
      "(when alpha_y=0). For example, with the optic axis (+y) pointing North, "
      "+x points East and +z point up.",
      (CFO).units = "cm"];
-  double reflector_trans_y              = 6
-    [(CFO).desc = "Y-component of vector from the origin of the reflector "
-     "reference frame to the intersection of rotation axes. The reflector "
-     "frame is defined by +y pointing along optical axis and +x pointing "
-     "along the horizontal to the right when looking along the optic axis "
-     "(when alpha_y=0). For example, with the optic axis (+y) pointing North, "
-     "+x points East and +z point up.",
-     (CFO).units = "cm"];
-  double reflector_trans_z              = 7
-    [(CFO).desc = "Z-component of vector from the origin of the reflector "
-     "reference frame to the intersection of rotation axes. The reflector "
-     "frame is defined by +y pointing along optical axis and +x pointing "
-     "along the horizontal to the right when looking along the optic axis "
-     "(when alpha_y=0). For example, with the optic axis (+y) pointing North, "
-     "+x points East and +z point up.",
-     (CFO).units = "cm"];
+  double optic_axis_rotation            = 6
+    [(CFO).desc = "Reflector rotation about the optical axis",
+     (CFO).units = "deg"];
 };
 
 message ConcurrentNormalsAlignment
@@ -356,11 +332,11 @@ message HexDCReflectorParameters
     [(CFO).desc = "Radius of curvature of the reflector",
      (CFO).units = "cm"];
   double aperture                       = 2
-    [(CFO).desc = "Telescope aperture (diameter of reflector)",
+    [(CFO).desc = "Telescope aperture (diameter of reflector). This is the "
+     "limit on the radial distance to the mirror facets from the center of the "
+     " reflector, in the X-Y plane. If zero then the number of facets is "
+     "determined only by \"facet_hex_rings\", otherwise both play a role.",
      (CFO).units = "cm"];
-  double optic_axis_rotation            = 3
-    [(CFO).desc = "Reflector rotation about the optical axis",
-     (CFO).units = "deg"];
   oneof alignment
   {
     ConcurrentNormalsAlignment norm_align = 4
@@ -379,7 +355,11 @@ message HexDCReflectorParameters
   double facet_alignment_dispersion     = 7
     [(CFO).desc = "Dispersion of facet image centroids on the image plane.",
      (CFO).units = "cm"];
-  
+
+  uint32 facet_num_hex_rings            = 9
+    [(CFO).desc = "Maximum number of hexagonal rings of mirrors. A value of "
+     "zero implies that the number of mirrors is based only on the \"aperture\" "
+     "variable. Otherwise both values play a role."];
   double facet_spacing                  = 10
     [(CFO).desc = "Facet spacing, center-to-center distance between mirror "
      "sites of reflector. The X and Z coordinates of the facets are on a "
@@ -470,34 +450,14 @@ message FocalPlaneParameters {
   double camera_diameter                = 1
     [(CFO).desc = "Diameter of the camera in the focal plane.",
      (CFO).units = "cm"];
-  double translation_x                  = 2
-    [(CFO).desc = "X coordinate of origin of focal plane reference frame "
-     "in the reflector frame.",
+  Vector3D translation                  = 2
+    [(CFO).desc = "Origin of focal plane reference frame in the reflector "
+     "frame.",
      (CFO).units = "cm"];
-  double translation_y                  = 3
-    [(CFO).desc = "Y coordinate of origin of focal plane reference frame "
-     "in the reflector frame.",
-     (CFO).units = "cm"];
-  double translation_z                  = 4
-    [(CFO).desc = "Z coordinate of origin of focal plane reference frame "
-     "in the reflector frame.",
-     (CFO).units = "cm"];
-  double rotation_x                     = 5
+  Vector3D rotation                     = 3
     [(CFO).desc = "Ideally the focal plane is in the x-z plane in the "
      "reflector reflector frame. However it can be rotated with respect to "
      "reflector frame if desired. Focal plane rotation around x-axis of "
-     "the reflector frame.",
-     (CFO).units = "deg"];
-  double rotation_y                     = 6
-    [(CFO).desc = "Ideally the focal plane is in the x-z plane in the "
-     "reflector reflector frame. However it can be rotated with respect to "
-     "reflector frame if desired. Focal plane rotation around y-axis of "
-     "the reflector frame.",
-     (CFO).units = "deg"];
-  double rotation_z                     = 7
-    [(CFO).desc = "Ideally the focal plane is in the x-z plane in the "
-     "reflector reflector frame. However it can be rotated with respect to "
-     "reflector frame if desired. Focal plane rotation around z-axis of "
      "the reflector frame.",
      (CFO).units = "deg"];
 };
@@ -521,6 +481,8 @@ message HexPixelArrayParameters
     [(CFO).desc = "The edge-to-edge diameter of the active portion of the "
      "lightcones at their exit aperture.",
      (CFO).units = "cm"];
+  double cone_survival_prob             = 5
+    [(CFO).desc = "Survival probability for photons hitting concentrator." ];
 
   bool pixel_labeling_parity            = 10
     [(CFO).desc = "Pixels are counted on a hexagonal grid in the direction "

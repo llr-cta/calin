@@ -163,9 +163,8 @@ TEST(TestVSOMirror, StoreAndRetreive) {
 }
 
 TEST(TestVSOTelescope, StoreAndRetreive) {
-  VSOTelescope scope1(1,2,{3,4,5},6,7,8,9,10,{11,12,13},14,15,16,17,18,19,
+  VSOTelescope scope1(1,/*2,*/{3,4,5},6,7,8,9,10,{11,12,13},14,15,16,17,18,19,
                       20,21,{22,23,24},25,26,27,28,29,{30,31,32},33,34);
-#if 0
   for(unsigned i=0;i<100; i++)
     scope1.add_mirror(new VSOMirror(&scope1,100000.0+i,101000.0+i,true,
                                     {103000.0+i,104000.0+i,105000.0+i},
@@ -174,7 +173,6 @@ TEST(TestVSOTelescope, StoreAndRetreive) {
   for(unsigned i=0;i<100; i++)
     scope1.add_pixel(new VSOPixel(&scope1,200000.0+i,201000.0+i,true,
                                   {203000.0+i,204000.0+i,205000.0+i}));
-#endif
   for(unsigned i=0;i<50; i++)
     scope1.add_obscuration(
         new VSOTubeObscuration({300000.0+i,301000.0+i,302000.0+i},
@@ -205,7 +203,9 @@ TEST(TestVSOTelescope, StoreAndRetreive) {
   VSOTelescope* scope2 = VSOTelescope::create_from_proto(scope2_data);
 
   EXPECT_EQ(scope1.id(), scope2->id());
+#if 0
   EXPECT_EQ(scope1.hexID(), scope2->hexID());
+#endif
   EXPECT_EQ(scope1.altitude(), scope2->altitude());
   EXPECT_EQ(scope1.pos(), scope2->pos());
   EXPECT_NEAR(scope1.deltaY(), scope2->deltaY(), sqrt_eps);

@@ -40,14 +40,16 @@
 #include <vector>
 #include <set>
 
+#include <math/hex_array.hpp>
 #include <simulation/vso_array.hpp>
 
 using namespace calin::simulation::vs_optics;
 using namespace calin::ix::simulation::vs_optics;
+using namespace calin::math::vs_physics;
 
 VSOArray::VSOArray():
-    fLatitude(), fLongitude(), fAltitude(), fSpacing(), fArrayParity(), 
-    fTelescopes(), fTelescopesByHexID()
+    fLatitude(), fLongitude(), fAltitude(), /* fSpacing(), fArrayParity(), */
+    fTelescopes() /* , fTelescopesByHexID() */
 {
   // nothing to see here
 }
@@ -62,7 +64,7 @@ VSOArray::~VSOArray()
 // General functions
 // ****************************************************************************
 
-bool VSOArray::pointTelescopes(const math::vs_physics::Vec3D& v)
+bool VSOArray::pointTelescopes(const Vec3D& v)
 {
   if(v.Norm2() == 0 )
     return false;
@@ -88,7 +90,6 @@ pointTelescopesAzEl(const double az_rad, const double el_rad)
 // Array creation 
 // ****************************************************************************
 
-#if 0
 void VSOArray::
 generateFromArrayParameters(const IsotropicDCArrayParameters& param,
                             math::rng::RNG& rng)
@@ -98,121 +99,108 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
   fLongitude   = param.array_origin().longitude()/180.0*M_PI;
   fAltitude    = param.array_origin().elevation();
 
+  std::vector<Vec3D> scope_pos;
+  
   if(param.array_layout_case() ==
      IsotropicDCArrayParameters::kHexArrayLayout)
   {
     const auto& layout = param.hex_array_layout();
-    fSpacing     = layout.scope_spacing();
-    fArrayParity = layout.scope_labeling_parity();
+    double spacing     = layout.scope_spacing();
+    bool array_parity  = layout.scope_labeling_parity();
 
-  // Telescopes
-  unsigned num_telescopes = 
-    3*param.ArrayNumTelRings*(param.ArrayNumTelRings+1)+1;
-  std::set<unsigned> scopes_missing;
-  Physics::tokenize(param.ScopeMissingList,scopes_missing);
+    unsigned num_telescopes =
+        math::hex_array::ringid_to_nsites_contained(layout.num_scope_rings());
+    std::set<unsigned> scopes_missing;
+    for(auto hexid : layout.scope_missing_list())
+      scopes_missing.insert(hexid);
 
+    for(unsigned hexid=0; hexid<num_telescopes; hexid++)
+      if(scopes_missing.find(hexid) == scopes_missing.end())
+      {
+        Vec3D pos;
+        math::hex_array::hexid_to_xy(hexid, pos.x, pos.y);
+        if(array_parity)pos.x = -pos.x;
+        pos.x  = pos.x * spacing +
+                 rng.normal() * layout.scope_position_dispersion_xy();
+        pos.y  = pos.y * spacing +
+                 rng.normal() * layout.scope_position_dispersion_xy();
+        pos.z += rng.normal() * layout.scope_position_dispersion_z();
+        scope_pos.push_back(pos);
+      }
   }
   else if(param.array_layout_case() ==
           IsotropicDCArrayParameters::kPrescribedArrayLayout)
   {
-
+    for(auto pos : param.prescribed_array_layout().scope_positions())
+      scope_pos.push_back(pos);
   }
-  
-  
-  std::vector<double> pos_north, pos_east, pos_asl;
-  VSDatumConverter< std::vector<double> >::
-    fromString(pos_north,param.ScopePosNorth.c_str());
-  VSDatumConverter< std::vector<double> >::
-    fromString(pos_east,param.ScopePosEast.c_str());
-  VSDatumConverter< std::vector<double> >::
-    fromString(pos_asl,param.ScopePosASL.c_str());
+  else
+  {
+    assert(0);
+  }
 
   // Mirrors
-  unsigned num_hex_mirror_rings = 
-    unsigned(floor(param.ReflectorApert/2.0/param.MirrorFacetSpacing/cos(30.0/180.0*M_PI)))+2;
-
+  unsigned num_hex_mirror_rings = param.reflector().facet_num_hex_rings();
+  if(param.reflector().aperture() > 0)
+  {
+    unsigned aperture_num_hex_mirror_rings = 
+        std::floor(param.reflector().aperture()/
+           (2.0*param.reflector().facet_spacing()*CALIN_HEX_ARRAY_SQRT3*0.5))+2;
+    if(aperture_num_hex_mirror_rings<num_hex_mirror_rings)
+      num_hex_mirror_rings = aperture_num_hex_mirror_rings;
+  }
+    
   // Camera
-  Vec3D CameraFPTrans(param.CameraFPTransX, param.CameraFPTransY,
-		      param.CameraFPTransZ);
+  Vec3D camera_fp_trans(param.focal_plane().translation());
 
   double FoV = 
-    2.0*atan(param.CameraDiameter/2.0/CameraFPTrans.Norm())*180.0/M_PI;
+      2.0*atan(param.focal_plane().camera_diameter()/
+               (2.0*camera_fp_trans.Norm()))*180.0/M_PI;
 
-  unsigned id = 0;
-  for(unsigned i=0; i<num_telescopes; i++)
+  for(unsigned i=0; i<scope_pos.size(); i++)
     {
-      int hexid(i+1);
-
-      if(scopes_missing.find(hexid) != scopes_missing.end())
-	{
-	  fTelescopesByHexID.push_back(0);
-	  continue;
-	}
-
       // Position
-      Vec3D pos(0,0,param.ArrayAltitude+param.ReflectorIP);
-
-      if(pos_north.size() > i && pos_east.size() > i && pos_asl.size() > i)
-	{
-	  pos.x = pos_east[i]  + rng.Normal() * param.ScopePosXYDisp;
-	  pos.y = pos_north[i] + rng.Normal() * param.ScopePosXYDisp;
-	  pos.z += pos_asl[i]  + rng.Normal() * param.ScopePosZDisp;
-	}
-      else
-	{
-	  nh_to_xy(&hexid,&pos.x,&pos.y);
-	  if(fArrayParity)pos.x = -pos.x;
-	  pos.x = pos.x * fSpacing + rng.Normal() * param.ScopePosXYDisp;
-	  pos.y = pos.y * fSpacing + rng.Normal() * param.ScopePosXYDisp;
-	  pos.z += rng.Normal() * param.ScopePosZDisp;
-	}
-
-      std::vector<VSOObscuration*> obsvec;      
-      obsvec = 
-	VSOObscuration::createObsVecFromString(param.ReflectorObscuration);
+      Vec3D pos(scope_pos[i]);
+          
+      std::vector<VSOObscuration*> obsvec;
+      for(const auto& obs : param.obscurations())
+        obsvec.push_back(VSOObscuration::create_from_proto(obs));
 
       VSOTelescope* telescope =
-	new VSOTelescope(id, hexid, pos,
-			 param.ScopeDeltaY, 
-			 param.ScopeAlphaX, param.ScopeAlphaY,
-			 param.ScopeElevation, param.ScopeAzimuth,
-			 Vec3D(param.ScopeTranslationX, 
-			       param.ScopeTranslationY, 
-			       param.ScopeTranslationZ),
-			 param.ReflectorCurvR, param.ReflectorApert,
-			 param.MirrorFacetSpacing, param.MirrorFacetSize, 
-			 param.ReflectorRot,
+	new VSOTelescope(i, pos,
+			 param.reflector_frame().delta_y()*M_PI/180.0,
+                         param.reflector_frame().alpha_x()*M_PI/180.0,
+                         param.reflector_frame().alpha_y()*M_PI/180.0,
+                         param.reflector_frame().altaz().altitude()*M_PI/180.0,
+                         param.reflector_frame().altaz().azimuth()*M_PI/180.0,
+			 param.reflector_frame().translation(),
+			 param.reflector().curvature_radius(),
+                         param.reflector().aperture(),
+			 param.reflector().facet_spacing(),
+                         param.reflector().facet_size(), 
+                        param.reflector_frame().optic_axis_rotation()*M_PI/180.0,
 			 num_hex_mirror_rings,
-			 param.ReflectorIP, param.MirrorLabelingParity,
-			 CameraFPTrans, param.CameraDiameter, FoV, 
-			 param.PixelDiameter, param.PixelSpacing, 
-			 param.PixelConcSurvProb,
-			 Vec3D(param.CameraFPRotX,param.CameraFPRotY,
-			       param.CameraFPRotZ), param.CameraIP, 
-			 param.PixelLabelingParity,
-#if 0
-			 param.SecondaryPresent,
-			 param.SecondaryRefInd, param.SecondaryRefInd1,
-			 param.SecondaryRefInd2, param.SecondaryCE10,
-			 param.SecondaryCE12, param.SecondaryCE13,
-			 param.SecondaryCE14, param.SecondaryCE15,
-			 param.SecondaryCE20, param.SecondaryCE22,
-			 param.SecondaryCE23, param.SecondaryCE24,
-			 param.SecondaryCE25,
-#endif			     
+			 0.0, /*param.reflector().reflector_ip(),*/
+                         param.reflector().facet_labeling_parity(),
+			 camera_fp_trans,
+                         param.focal_plane().camera_diameter(),
+                         FoV, 
+			 param.pixel().cone_inner_diameter(),
+                         param.pixel().spacing(), 
+			 param.pixel().cone_survival_prob(),
+			 Vec3D(param.focal_plane().rotation(), M_PI/180.0),
+                         0.0,
+			 param.pixel().pixel_labeling_parity(),
 			 obsvec
 			 );
       
       telescope->populateMirrorsAndPixelsRandom(param,rng);
       
       fTelescopes.push_back(telescope);      
-      fTelescopesByHexID.push_back(telescope);
-      id++;
     }
 
   return;
 }
-#endif
 
 #if 0
 void VSOArray::dumpShort(const std::string& filename) const
