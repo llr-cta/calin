@@ -202,6 +202,27 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
   return;
 }
 
+void VSOArray::dump_to_proto(ix::simulation::vs_optics::VSOArrayData* d) const
+{
+  d->mutable_array_origin()->set_latitude(fLatitude*180.0/M_PI);
+  d->mutable_array_origin()->set_longitude(fLongitude*180.0/M_PI);
+  d->mutable_array_origin()->set_elevation(fAltitude);
+  for(const auto* scope : fTelescopes)
+    scope->dump_to_proto(d->add_telescope());
+}
+
+VSOArray* VSOArray::
+create_from_proto(const ix::simulation::vs_optics::VSOArrayData& d)
+{
+  VSOArray* array = new VSOArray;
+  array->fLatitude  = d.array_origin().latitude()*M_PI/180.0;
+  array->fLongitude = d.array_origin().longitude()*M_PI/180.0;
+  array->fAltitude  = d.array_origin().elevation();
+  for(const auto& scope : d.telescope())
+    array->fTelescopes.push_back(VSOTelescope::create_from_proto(scope));
+  return array;
+}
+
 #if 0
 void VSOArray::dumpShort(const std::string& filename) const
 {

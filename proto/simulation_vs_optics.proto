@@ -207,6 +207,14 @@ message VSOTelescopeData {
     [(CFO).desc = "Pixels in the camera of the telescope."];
 };
 
+message VSOArrayData
+{
+  EarthCoordinates array_origin                    = 1
+    [(CFO).desc = "Coordinates of origin of array reference frame on Earth."];
+  repeated VSOTelescopeData telescope              = 2
+    [(CFO).desc = "Telescopes in array."];
+};
+
 // ============================================================================
 //
 // PARAMETERS USED TO CONSTRUCT RANDOM ARRAY

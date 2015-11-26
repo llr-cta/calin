@@ -101,6 +101,11 @@ class VSOArray
   // ************************************************************************
   // Dump
   // ************************************************************************
+
+  void dump_to_proto(ix::simulation::vs_optics::VSOArrayData* d) const;
+  static VSOArray*
+  create_from_proto(const ix::simulation::vs_optics::VSOArrayData& d);
+
 #if 0
   void dump(std::ostream& stream, unsigned l=0) const;
   void dumpShort(const std::string& filename) const;
