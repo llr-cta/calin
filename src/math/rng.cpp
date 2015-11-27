@@ -300,8 +300,8 @@ int RNG::binomial(double pp, int n)
   if(n < 25)               /* Use direct method */
     {
       int ibnl=0;
-      for(int i=0;i<=n;i++)if(uniform()<p)++ibnl;
-      bnl = int(ibnl);
+      for(int i=0;i<n;i++)if(uniform()<p)++ibnl;
+      bnl = double(ibnl);
     } 
   else if(am < 1.0)
     {

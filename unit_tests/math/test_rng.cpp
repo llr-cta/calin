@@ -404,6 +404,32 @@ INSTANTIATE_TEST_CASE_P(TestRNG,
                                           std::make_pair(2.0, 1.0),
                                           std::make_pair(100.0, 10.0)));
 
+class Binomial :
+    public testing::TestWithParam<std::pair<double,int>> {
+ public:
+};
+
+TEST_P(Binomial, Moments) {
+  double p = GetParam().first;
+  int n = GetParam().second;
+  double np = double(n)*p;
+  double m1, m2, m3;
+  std::tie(m1,m2,m3) = calc_moments([p,n](RNG& rng,double& x) {
+      x=rng.binomial(p,n); });
+  EXPECT_NEAR(m1, np, 0.01*sqrt(np*(1-p)));
+  EXPECT_NEAR(m2, np*(1-p), 0.01*(np*(1-p)));
+  EXPECT_NEAR(m3, (1-2*p)*np*(1-p),  0.05*sqrt(np*(1-p))*(np*(1-p)));
+}
+
+INSTANTIATE_TEST_CASE_P(TestRNG,
+                        Binomial,
+                        ::testing::Values(std::make_pair(0.1, 1),
+                                          std::make_pair(0.9, 1),
+                                          std::make_pair(0.1, 24),
+                                          std::make_pair(0.1, 25),
+                                          std::make_pair(0.1, 1000),
+                                          std::make_pair(0.1, 1000000)));
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
