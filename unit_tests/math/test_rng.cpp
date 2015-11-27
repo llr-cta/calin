@@ -20,6 +20,11 @@
 
 */
 
+// TODO : Come up with more systematic approach for bounds on moments. For M1
+// and M2 it shouldn't be a problem (see for example http://goo.gl/qP91oD).
+// M3 is probably more tricky - I assume this would require calculating the
+// 6th order moments.
+
 #include <iostream>
 #include <iomanip>
 #include <gtest/gtest.h>
@@ -417,7 +422,7 @@ TEST_P(Binomial, Moments) {
   std::tie(m1,m2,m3) = calc_moments([p,n](RNG& rng,double& x) {
       x=rng.binomial(p,n); });
   EXPECT_NEAR(m1, np, 0.01*sqrt(np*(1-p)));
-  EXPECT_NEAR(m2, np*(1-p), 0.01*(np*(1-p)));
+  EXPECT_NEAR(m2, np*(1-p), 0.05*(np*(1-p)));
   EXPECT_NEAR(m3, (1-2*p)*np*(1-p),  0.05*sqrt(np*(1-p))*(np*(1-p)));
 }
 
@@ -427,6 +432,8 @@ INSTANTIATE_TEST_CASE_P(TestRNG,
                                           std::make_pair(0.9, 1),
                                           std::make_pair(0.1, 24),
                                           std::make_pair(0.1, 25),
+                                          std::make_pair(0.001, 100),
+                                          std::make_pair(0.0005, 1000),
                                           std::make_pair(0.1, 1000),
                                           std::make_pair(0.1, 1000000)));
 
