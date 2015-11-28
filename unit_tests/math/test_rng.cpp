@@ -87,10 +87,11 @@ TYPED_TEST_P(CoreTests, FillsAllBits64)
 TYPED_TEST_P(CoreTests, FillsAllBits32)
 {
   TypeParam core(RNG::uint64_from_random_device());
+  RNG rng(&core, false);
   std::vector<unsigned> count(32,0);
   for(unsigned i=0;i<1000000;i++)
   {
-    uint32_t x = core.uniform_uint32();
+    uint32_t x = rng.uniform_uint32();
     for(unsigned j=0;j<32;j++) {
       if(x&1)count[j]++; x>>=1; }
   }
@@ -120,7 +121,7 @@ TYPED_TEST_P(CoreTests, SameSeeds)
   EXPECT_EQ(ndiffer,0);
 }
 
-TYPED_TEST_P(CoreTests, SaveAndRestoreState)
+TYPED_TEST_P(CoreTests, SaveAndRestoreState64)
 {
   for(unsigned N=1;N<100;N++)
   {
@@ -169,12 +170,43 @@ TYPED_TEST_P(CoreTests, RestoreFromSeedOnlyProto)
 }
 
 REGISTER_TYPED_TEST_CASE_P(CoreTests, FillsAllBits64, FillsAllBits32,
-                           SaveAndRestoreState, RestoreFromSeedOnlyProto,
+                           SaveAndRestoreState64, RestoreFromSeedOnlyProto,
                            DifferentSeeds, SameSeeds);
 typedef ::testing::Types<NR3RNGCore, Ranlux48RNGCore, MT19937RNGCore> CoreTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(TestRNG, CoreTests, CoreTypes);
 
-TEST(TestRNG, SaveAndRestoreState)
+TEST(TestRNG, SaveAndRestoreStateU32)
+{
+  for(unsigned N=1;N<100;N++)
+  {
+    RNG rng;
+    std::vector<uint32_t> data0;
+    std::vector<uint32_t> data1;
+    for(unsigned i=0;i<N;i++)
+      data0.push_back(rng.uniform_uint32());
+    calin::ix::math::rng::RNGData proto;
+    rng.save_to_proto(&proto);
+#if 0
+    google::protobuf::io::OstreamOutputStream stream(&std::cout);
+    if(N==99)google::protobuf::TextFormat::Print(proto, &stream);
+#endif    
+    for(unsigned i=0;i<N;i++)
+      data1.push_back(rng.uniform_uint32());
+    RNG rng2 = RNG(proto);
+    for(unsigned i=0;i<N;i++)
+      EXPECT_EQ(data0[i], rng2.uniform_uint32())
+          << "RNG2 mistmatch - data0[" << i << ']';
+    for(unsigned i=0;i<N;i++)
+      EXPECT_EQ(data1[i], rng2.uniform_uint32())
+          << "RNG2 mistmatch - data1[" << i << ']';
+    RNG rng3 = RNG(proto, true);
+    for(unsigned i=0;i<N;i++)
+      EXPECT_EQ(data1[i], rng3.uniform_uint32())
+          << "RNG3 mistmatch - data1[" << i << ']';
+  }
+}
+
+TEST(TestRNG, SaveAndRestoreStateBM)
 {
   for(unsigned N=1;N<100;N++)
   {

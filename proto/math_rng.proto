@@ -31,9 +31,9 @@ package calin.ix.math.rng;
 	
 message STLRNGCoreData
 {
-  uint64 seed                           = 1
+  fixed64 seed                          = 1
     [(CFO).desc = "RNG seed."];
-  uint64 calls                          = 2
+  fixed64 calls                         = 2
     [(CFO).desc = "Number of calls to RNG to get to current state."];
   bool state_saved                      = 3
     [(CFO).desc = "True if RNG state is written. Will always be true if "
@@ -45,9 +45,9 @@ message STLRNGCoreData
 
 message Ranlux48RNGCoreData
 {
-  uint64 seed                           = 1
+  fixed64 seed                          = 1
     [(CFO).desc = "RNG seed."];
-  uint64 calls                          = 2
+  fixed64 calls                         = 2
     [(CFO).desc = "Number of calls to RNG to get to current state."];
   bool state_saved                      = 3
     [(CFO).desc = "True if RNG state is written. Will always be true if "
@@ -55,7 +55,7 @@ message Ranlux48RNGCoreData
      "is hand-crafted by the user."];
   string state                          = 4
     [(CFO).desc = "Current RNG state, implementation dependent."];
-  uint64 dev                            = 5
+  fixed64 dev                           = 5
     [(CFO).desc = "Saved deviate bits."];
   uint32 dev_blocks                     = 6
     [(CFO).desc = "Number of 16-bit blocks of deviates available in dev."];
@@ -63,19 +63,19 @@ message Ranlux48RNGCoreData
 
 message NR3RNGCoreData
 {
-  uint64 seed                           = 1
+  fixed64 seed                          = 1
     [(CFO).desc = "RNG seed."];
-  uint64 calls                          = 2
+  fixed64 calls                         = 2
     [(CFO).desc = "Number of calls to RNG to get to current state."];
   bool state_saved                      = 3
     [(CFO).desc = "True if RNG state is written. Will always be true if "
      "the protobuf is written by the code, but should not be if the protobuf "
      "is hand-crafted by the user."];
-  uint64 u                              = 4
+  fixed64 u                             = 4
     [(CFO).desc = "NR3 core u variable."];
-  uint64 v                              = 5
+  fixed64 v                             = 5
     [(CFO).desc = "NR3 core u variable."];
-  uint64 w                              = 6
+  fixed64 w                             = 6
     [(CFO).desc = "NR3 core u variable."];
 }
 
@@ -91,7 +91,11 @@ message RNGData
       [(CFO).desc = "NR3 core state data."];
   }
   bool bm_hascached                     = 4
-    [(CFO).desc = "Box-Muller cached value available."];
+    [(CFO).desc = "Flag for Box-Muller cached value available."];
   double bm_cachedval                   = 5
     [(CFO).desc = "Box-Muller cached value."];
+  bool dev32_hascached                  = 6
+    [(CFO).desc = "Flag for U32 deviate value available."];
+  fixed64 dev32_cachedval               = 7
+    [(CFO).desc = "U32 cached deviate."];
 }

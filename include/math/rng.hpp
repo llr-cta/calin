@@ -59,15 +59,10 @@ class RNGCore
 {
  public:
   virtual ~RNGCore();
-  virtual double uniform_double() = 0;
   virtual uint64_t uniform_uint64() = 0;
-  virtual uint32_t uniform_uint32() = 0;
   virtual void save_to_proto(ix::math::rng::RNGData* proto) const = 0;
   static RNGCore* create_from_proto(const ix::math::rng::RNGData& proto,
                                     bool restore_state = false);
-  void uniform_by_type(uint64_t& x) { x = uniform_uint64(); }
-  void uniform_by_type(uint32_t& x) { x = uniform_uint32(); }
-  void uniform_by_type(double& x) { x = uniform_double(); }
 };
 
 class RNG
@@ -83,11 +78,38 @@ class RNG
 
   void save_to_proto(ix::math::rng::RNGData* proto);
 
-  double uniform_double() { return core_->uniform_double(); }
-  double uniform_uint64() { return core_->uniform_uint64(); }
-  double uniform_uint32() { return core_->uniform_uint32(); }
+  uint64_t uniform_uint64() { return core_->uniform_uint64(); }
+
+  uint32_t uniform_uint32() {
+    if(dev32_hascached_)
+    {
+      dev32_hascached_ = false;
+      return dev32_cachedval_&0xFFFFFFFF;
+    }
+    else
+    {
+      dev32_hascached_ = true;
+      dev32_cachedval_ = uniform_uint64();
+      uint32_t ret = dev32_cachedval_ & 0xFFFFFFFFULL;
+      dev32_cachedval_ >>= 32;
+      return ret;
+    }
+  }
+    
+  double uniform_double() {
+    return 5.42101086242752217E-20 * double(uniform_uint64());
+  }
+
+  float uniform_float() {
+    return 2.328306437e-10 * float(uniform_uint32());
+  }
+
+  void uniform_by_type(uint64_t& x) { x = uniform_uint64(); }
+  void uniform_by_type(uint32_t& x) { x = uniform_uint32(); }
+  void uniform_by_type(double& x) { x = uniform_double(); }
+  void uniform_by_type(float& x) { x = uniform_float(); }
   
-  double uniform() { return core_->uniform_double(); }
+  double uniform() { return uniform_double(); }
   double exponential() { return -std::log(uniform()); }
   double exponential(double mean) { return -mean*std::log(uniform()); }
   double normal();
@@ -117,10 +139,13 @@ class RNG
  private:
   RNGCore* core_;
   bool adopt_core_;
-  
+
+  // Cached values
   bool bm_hascached_ = false;
   double bm_cachedval_ = 0.0;
-
+  bool dev32_hascached_ = false;
+  uint64_t dev32_cachedval_ = 0;
+  
   // Speedup caches
   double   poi_lambdaexp_ = 1.0/M_E;
   double   poi_lambdasrt_ = 1.0;
@@ -171,14 +196,6 @@ class NR3RNGCore: public RNGCore
     x ^= x >> 35;
     x ^= x << 4;
     return (x+v_)^w_;
-  }
-
-  uint32_t uniform_uint32() override {
-    return uint32_t(uniform_uint64()&0xFFFFFFFF);
-  }
-
-  double uniform_double() override {
-    return 5.42101086242752217E-20 * double(uniform_uint64());
   }
   
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
@@ -236,40 +253,6 @@ class Ranlux48RNGCore: public RNGCore
     }
     return res;
   }
-
-  uint32_t uniform_uint32() override {
-    uint32_t res = 0;
-    switch(dev_blocks_)
-    {
-      case 0:
-        dev_ = gen_();
-        gen_calls_++;
-        res = dev_&0x00000000FFFFFFFFULL;
-        dev_ >>= 32;
-        dev_blocks_ = 1;
-        break;
-      case 1:
-        res = dev_&0x000000000000FFFFULL;
-        res <<= 16;
-        dev_ = gen_();
-        gen_calls_++;
-        res |= dev_&0x000000000000FFFFULL;
-        dev_ >>= 16;
-        dev_blocks_ = 2;
-        break;
-      case 2:
-        res = dev_&0x00000000FFFFFFFF;
-        dev_blocks_ = 0;
-        break;
-      default:
-        assert(0);
-    }
-    return res;
-  }
-
-  double uniform_double() override {
-    return 5.421001086242752217E-20 * double(uniform_uint64());
-  }
   
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
   
@@ -300,12 +283,7 @@ class MT19937RNGCore: public RNGCore
   ~MT19937RNGCore();
   
   uint64_t uniform_uint64() override { gen_calls_++; return gen_(); }
-  uint32_t uniform_uint32() override { gen_calls_++;
-    return uint32_t(gen_()&0xFFFFFFFF); }
-  double uniform_double() override {
-    return 5.421001086242752217E-20 * double(uniform_uint64());
-  }
-  
+
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
   
   static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {

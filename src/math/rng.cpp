@@ -112,6 +112,8 @@ RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state):
   {
     bm_hascached_ = proto.bm_hascached();
     bm_cachedval_ = proto.bm_cachedval();
+    dev32_hascached_ = proto.dev32_hascached();
+    dev32_cachedval_ = proto.dev32_cachedval();
   }
 }
 
@@ -124,7 +126,9 @@ void RNG::save_to_proto(ix::math::rng::RNGData* proto)
 {
   core_->save_to_proto(proto);
   proto->set_bm_hascached(bm_hascached_);
-  proto->set_bm_cachedval(bm_cachedval_);
+  proto->set_bm_cachedval(bm_hascached_ ? bm_cachedval_ : 0.0);
+  proto->set_dev32_hascached(dev32_hascached_);
+  proto->set_dev32_cachedval(dev32_hascached_ ? dev32_cachedval_ : 0ULL);
 }
 
 uint64_t RNG::uint64_from_random_device()
@@ -235,8 +239,14 @@ int RNG::poisson(double lambda)
 	  poi_lambdaold_ = lambda;
 	}
       int k = 0;
+#if 1
       double t = uniform();
       while(t>poi_lambdaexp_) { ++k; t*=uniform(); }
+#else
+      uint64_t ilexp = 18446744073709551616.0*poi_lambdaexp_;
+      uint64_t t = uniform_uint64();
+      while(t>ilexp) { ++k; t=(t>>32)*(uniform_uint64()>>32); }
+#endif
       return k;
     }
   else
@@ -416,7 +426,8 @@ void Ranlux48RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
 }
 
 MT19937RNGCore::
-MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto, bool restore_state):
+MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto,
+               bool restore_state):
     RNGCore(), gen_seed_(proto.seed()), gen_(gen_seed_)
 {
   if(restore_state and proto.state_saved())
