@@ -290,6 +290,15 @@ TEST(TestRNG, UniformMoments) {
   EXPECT_NEAR(m3, 0.0, 0.001);
 }
 
+TEST(TestRNG, FloatUniformMoments) {
+  double m1, m2, m3;
+  std::tie(m1,m2,m3) = calc_moments([](RNG& rng,double& x){
+      x = rng.uniform_float (); });
+  EXPECT_NEAR(m1, 0.5, 0.01);
+  EXPECT_NEAR(m2, 1.0/12.0, 0.01);
+  EXPECT_NEAR(m3, 0.0, 0.001);
+}
+
 TEST(TestRNG, ExponentialMoments) {
   double m1, m2, m3;
   std::tie(m1,m2,m3) = calc_moments([](RNG& rng,double& x){

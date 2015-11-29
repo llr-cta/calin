@@ -78,25 +78,12 @@ class VSOArray
   double latitude() const { return fLatitude; }
   double longitude() const { return fLatitude; }
   double altitude() const { return fAltitude; }
-#if 0
-  double spacing() const { return fSpacing; }
-  double arrayParity() const { return fArrayParity; }
-#endif
   
   unsigned numTelescopes() const { return fTelescopes.size(); }
-#if 0
-  unsigned numTelescopeHexSites() const { return fTelescopesByHexID.size(); }
-#endif
   
   inline const VSOTelescope* telescope(unsigned id) const;
-#if 0
-  inline const VSOTelescope* telescopeByHexID(unsigned hexID) const;
-#endif
   
   inline VSOTelescope* telescope(unsigned id);
-#if 0
-  inline VSOTelescope* telescopeByHexID(unsigned hexID);
-#endif
   
   // ************************************************************************
   // Dump
@@ -120,15 +107,8 @@ class VSOArray
   double                     fLatitude;
   double                     fLongitude;
   double                     fAltitude;
-#if 0
-  double                     fSpacing;
-  bool                       fArrayParity;
-#endif
   
   std::vector<VSOTelescope*>  fTelescopes;
-#if 0
-  std::vector<VSOTelescope*>  fTelescopesByHexID;
-#endif
 };
 
 inline const VSOTelescope* VSOArray::telescope(unsigned id) const
@@ -137,26 +117,10 @@ inline const VSOTelescope* VSOArray::telescope(unsigned id) const
   else return fTelescopes[id];
 }
 
-#if 0
-inline const VSOTelescope* VSOArray::telescopeByHexID(unsigned hexID) const
-{
-  if((hexID<1)||(hexID>fTelescopes.size()))return 0;
-  else return fTelescopes[hexID-1];
-}
-#endif
-  
 inline VSOTelescope* VSOArray::telescope(unsigned id)
 {
   if(id>=fTelescopes.size())return 0;
   else return fTelescopes[id];
 }
-
-#if 0
-inline VSOTelescope* VSOArray::telescopeByHexID(unsigned hexID)
-{
-  if((hexID<1)||(hexID>fTelescopes.size()))return 0;
-  else return fTelescopes[hexID-1];
-}
-#endif
 
 } } } // namespace calin::simulation::vs_optics

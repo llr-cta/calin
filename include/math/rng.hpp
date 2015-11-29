@@ -1,6 +1,6 @@
 /* 
 
-   calin/math/rng.cpp -- Stephen Fegan -- 2015-11-19
+   calin/math/rng.hpp -- Stephen Fegan -- 2015-11-19
 
    Random number generators. Based on RandomNumbers_TNG written
    by the author while at UCLA in 2007.
@@ -90,7 +90,7 @@ class RNG
     {
       dev32_hascached_ = true;
       dev32_cachedval_ = uniform_uint64();
-      uint32_t ret = dev32_cachedval_ & 0xFFFFFFFFULL;
+      uint32_t ret = dev32_cachedval_ & 0xFFFFFFFF;
       dev32_cachedval_ >>= 32;
       return ret;
     }
@@ -143,6 +143,7 @@ class RNG
   // Cached values
   bool bm_hascached_ = false;
   double bm_cachedval_ = 0.0;
+
   bool dev32_hascached_ = false;
   uint64_t dev32_cachedval_ = 0;
   
@@ -173,7 +174,8 @@ class NR3RNGCore: public RNGCore
   typedef calin::ix::math::rng::NR3RNGCoreData ix_core_data_type;
   
   NR3RNGCore(uint64_t seed = 0):
-      RNGCore(), seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
+      RNGCore(),
+      seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
       u_(UINT64_C(0)), v_(UINT64_C(4101842887655102017)), w_(UINT64_C(1))
   {
     u_ = seed_^v_; uniform_uint64();
