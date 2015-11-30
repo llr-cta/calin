@@ -326,7 +326,7 @@ class NR3RNGCore_AVX2: public RNGCore
   }
     
  public:
-  typedef calin::ix::math::rng::NR3RNGCoreData ix_core_data_type;
+  typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
 
   NR3RNGCore_AVX2(uint64_t seed = 0):
       RNGCore(),
@@ -343,7 +343,7 @@ class NR3RNGCore_AVX2: public RNGCore
     init(seed0, seed1, seed2, seed3);
   }
 
-  NR3RNGCore_AVX2(const ix::math::rng::STLRNGCoreData& proto,
+  NR3RNGCore_AVX2(const ix::math::rng::NR3_SIMD_RNGCoreData& proto,
                   bool restore_state = false);
 
   ~NR3RNGCore_AVX2();
@@ -353,6 +353,9 @@ class NR3RNGCore_AVX2: public RNGCore
     constexpr uint64_t CU1 = UINT64_C(2862933555777941757);
     constexpr uint64_t CU2 = UINT64_C(7046029254386353087);
 
+    // AVX2 doesn't have 64bit->64bit multiply, so instead we do
+    // three 32bit->64bit multiplies, two 64bit adds and one 64bit
+    // shift.  u*C = ( u_hi*C_lo + u_lo*C_hi ) << 32 + u_lo*C_lo
     const __m256i vec_cu1_lo = _mm256_set1_epi64x(CU1);
     const __m256i vec_cu1_hi = _mm256_set1_epi64x(CU1>>32);
     const __m256i vec_u_lo = vec_u_;
@@ -396,6 +399,7 @@ class NR3RNGCore_AVX2: public RNGCore
     return proto->mutable_nr3_avx2_core(); }
   static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
   { return proto.nr3_avx2_core(); }
+
  private:
   uint64_t seed_;
   uint64_t stream_seed0_;

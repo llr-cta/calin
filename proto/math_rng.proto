@@ -79,6 +79,28 @@ message NR3RNGCoreData
     [(CFO).desc = "NR3 core u variable."];
 }
 
+message NR3RNG_SIMD_CoreData
+{  
+  fixed64 seed                          = 1
+    [(CFO).desc = "RNG seed."];
+  fixed64 calls                         = 2
+    [(CFO).desc = "Number of calls to RNG to get to current state."];
+  bool state_saved                      = 3
+    [(CFO).desc = "True if RNG state is written. Will always be true if "
+     "the protobuf is written by the code, but should not be if the protobuf "
+     "is hand-crafted by the user."];
+  repeated fixed64 vec_u                = 4
+    [(CFO).desc = "NR3 core u variable."];
+  repeated fixed64 vec_v                = 5
+    [(CFO).desc = "NR3 core u variable."];
+  repeated fixed64 vec_w                = 6
+    [(CFO).desc = "NR3 core u variable."];
+  repeated fixed64 dev                  = 7
+    [(CFO).desc = "Saved deviates."];
+  repeated fixed64 vec_stream_seed      = 8
+    [(CFO).desc = "RNG seeds for each of the streams."];
+}
+
 message RNGData
 {
   oneof core
@@ -89,13 +111,15 @@ message RNGData
       [(CFO).desc = "MT19937 core state data."];
     NR3RNGCoreData nr3_core             = 3
       [(CFO).desc = "NR3 core state data."];
+    NR3RNG_SIMD_CoreData nr3_avx2_core  = 4
+      [(CFO).desc = "NR3 AVX2 core state data."];
   }
-  bool bm_hascached                     = 4
+  bool bm_hascached                     = 10
     [(CFO).desc = "Flag for Box-Muller cached value available."];
-  double bm_cachedval                   = 5
+  double bm_cachedval                   = 11
     [(CFO).desc = "Box-Muller cached value."];
-  bool dev32_hascached                  = 6
+  bool dev32_hascached                  = 12
     [(CFO).desc = "Flag for U32 deviate value available."];
-  fixed64 dev32_cachedval               = 7
+  fixed64 dev32_cachedval               = 13
     [(CFO).desc = "U32 cached deviate."];
 }
