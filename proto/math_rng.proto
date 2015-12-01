@@ -79,7 +79,7 @@ message NR3RNGCoreData
     [(CFO).desc = "NR3 core u variable."];
 }
 
-message NR3RNG_SIMD_CoreData
+message NR3_SIMD_RNGCoreData
 {  
   fixed64 seed                          = 1
     [(CFO).desc = "RNG seed."];
@@ -111,7 +111,7 @@ message RNGData
       [(CFO).desc = "MT19937 core state data."];
     NR3RNGCoreData nr3_core             = 3
       [(CFO).desc = "NR3 core state data."];
-    NR3RNG_SIMD_CoreData nr3_avx2_core  = 4
+    NR3_SIMD_RNGCoreData nr3_avx2_core  = 4
       [(CFO).desc = "NR3 AVX2 core state data."];
   }
   bool bm_hascached                     = 10

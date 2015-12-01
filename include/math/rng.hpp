@@ -299,8 +299,55 @@ class MT19937RNGCore: public RNGCore
   uint64_t gen_calls_ = 0;
 };
 
+template<unsigned NSTREAM>
+class NR3_EmulateSIMD_RNGCore: public RNGCore
+{
+ public:
+  typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
+
+  NR3_EmulateSIMD_RNGCore(uint64_t seed):
+      RNGCore(),
+      seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device())
+  {
+    std::mt19937_64 gen(seed_);
+    for(unsigned i=0;i<NSTREAM;i++)core_[i] = new NR3RNGCore(gen());
+  }
+
+  NR3_EmulateSIMD_RNGCore(uint64_t seeds[NSTREAM]):
+      RNGCore(), seed_(0)
+  {
+    for(unsigned i=0;i<NSTREAM;i++)core_[i] = new NR3RNGCore(seeds[i]);
+  }
+
+  NR3_EmulateSIMD_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto);
+
+  ~NR3_EmulateSIMD_RNGCore()
+  {
+    for(unsigned i=0;i<NSTREAM;i++)delete core_[i];
+  }    
+
+  uint64_t uniform_uint64() override
+  {
+    if(ndev_ < NSTREAM)
+    {
+      for(unsigned i=0;i<NSTREAM;i++)vec_dev_ = core_[i]->uniform_uint64();
+      ndev_ = 0;
+    }
+    return vec_dev_[ndev_++];
+  }
+
+  void save_to_proto(ix::math::rng::RNGData* proto) const override;
+  
+ private:
+  NR3RNGCore* core_[NSTREAM];
+  uint64_t seed_ = 0;
+  uint64_t calls_ = 0;
+  uint64_t vec_dev_[NSTREAM];
+  unsigned ndev_ = NSTREAM;
+};
+
 #if 0
-class NR3RNGCore_AVX2: public RNGCore
+class NR3_AVX2_RNGCore: public RNGCore
 {
  private:
   void init(uint64_t seed0, uint64_t seed1, uint64_t seed2, uint64_t seed3)
@@ -328,25 +375,25 @@ class NR3RNGCore_AVX2: public RNGCore
  public:
   typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
 
-  NR3RNGCore_AVX2(uint64_t seed = 0):
+  NR3_AVX2_RNGCore(uint64_t seed = 0):
       RNGCore(),
-      seed_(seed>0 ? seed : RNGCore::nonzero_uint64_from_random_device())
+      seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device())
   {
     std::mt19937_64 gen(seed_);
     init(gen(), gen(), gen(), gen());
   }
 
-  NR3RNGCore_AVX2(uint64_t seed0, uint64_t seed1,
+  NR3_AVX2_RNGCore(uint64_t seed0, uint64_t seed1,
                  uint64_t seed2, uint64_t seed3):
       RNGCore(), seed_(0)
   {
     init(seed0, seed1, seed2, seed3);
   }
 
-  NR3RNGCore_AVX2(const ix::math::rng::NR3_SIMD_RNGCoreData& proto,
+  NR3_AVX2_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto,
                   bool restore_state = false);
 
-  ~NR3RNGCore_AVX2();
+  ~NR3_AVX2_RNGCore();
 
   __m256i uniform_uivec256()
   {
