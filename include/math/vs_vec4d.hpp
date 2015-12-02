@@ -36,6 +36,8 @@
   \note
 */
 
+#pragma once
+
 #include <cmath>
 
 #include <math/vs_vec3d.hpp>
