@@ -53,6 +53,7 @@ else()
 	endif()
 endif()
 
+add_subdirectory(tools)
 add_subdirectory(proto)
 add_subdirectory(src)  
 add_subdirectory(swig)  

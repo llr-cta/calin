@@ -104,8 +104,9 @@ VSORayTracer::~VSORayTracer()
   // nothing to see here
 }
 
-const VSOPixel* VSORayTracer::trace(math::vs_physics::Particle& ray, TraceInfo& info,
-				    const VSOTelescope* scope_hint)
+const VSOPixel* VSORayTracer::
+trace(math::vs_physics::Particle& ray, TraceInfo& info,
+      const VSOTelescope* scope_hint)
 {
   // Initialize array
   info.reset();
@@ -116,7 +117,8 @@ const VSOPixel* VSORayTracer::trace(math::vs_physics::Particle& ray, TraceInfo& 
   return(scope_trace(ray,info));
 }
 
-const VSOPixel* VSORayTracer::trace(math::vs_physics::Particle& ray, TraceInfo& info)
+const VSOPixel* VSORayTracer::
+trace(math::vs_physics::Particle& ray, TraceInfo& info)
 {
   // Initialize array
   info.reset();
@@ -132,7 +134,8 @@ const VSOPixel* VSORayTracer::trace(math::vs_physics::Particle& ray, TraceInfo& 
   // Propagate to ground
   math::vs_physics::Particle ray_copy(ray);
   bool good;
-  good = ray_copy.PropagateFreeToPlane(math::vs_physics::Vec3D(0,0,1), -fArray.altitude(), true);
+  good = ray_copy.PropagateFreeToPlane(math::vs_physics::Vec3D(0,0,1),
+                                       -fArray.altitude(), true);
   if(!good)
   {
     info.status = TS_DOES_INTERSECT_GROUND;
@@ -384,8 +387,9 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
   // ****************** RAY IS NOW IN REFLECTOR COORDINATES *******************
   // **************************************************************************
 
-  info.pixel_dist = math::vs_physics::Vec3D(ray.Position().r - info.pixel->pos() -
-                                            info.scope->focalPlanePosition()).Norm();
+  info.pixel_dist =
+      math::vs_physics::Vec3D(ray.Position().r - info.pixel->pos() -
+                              info.scope->focalPlanePosition()).Norm();
 
   // Transform back to global
   info.scope->reflectorToGlobal(ray);
@@ -648,7 +652,8 @@ bool VSORayTracer::testBeam(math::vs_physics::Particle& photon,
   if(std::isinf(U))
   {
     // Parallel beam - must set sampling radius
-    math::vs_physics::Vec3D beam_dir(-sin(theta)*sin(phi) ,-cos(theta), -sin(theta)*cos(phi));
+    math::vs_physics::Vec3D
+        beam_dir(-sin(theta)*sin(phi) ,-cos(theta), -sin(theta)*cos(phi));
     math::vs_physics::Vec3D beam_cen(0, 0, 0);
     scope->reflectorToGlobal_mom(beam_dir);
     scope->reflectorToGlobal_pos(beam_cen);

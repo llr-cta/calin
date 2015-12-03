@@ -28,8 +28,8 @@ Other dependencies are shipped with the __calin__ distribution in order to make 
 
 **URL:** http://eigen.tuxfamily.org/
 
-    $ bzcat eigen-3.2.6.tar.bz2 | tar xf -
-    $ cd eigen-3.2.6
+    $ bzcat eigen-3.2.7.tar.bz2 | tar xf -
+    $ cd eigen-3.2.7
 	$ mv Eigen ~/calin/include
 	$ mv unsupported ~/calin/include/Eigen
 
