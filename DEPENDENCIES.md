@@ -22,7 +22,7 @@ Other dependencies are shipped with the __calin__ distribution in order to make 
 
 ### Eigen ###
 
-**Version:** 3.2.6
+**Version:** 3.2.7
 
 **License:** MPL2 -  compatible with GPLv2
 
