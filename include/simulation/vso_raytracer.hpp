@@ -26,11 +26,11 @@
 
   \author  Stephen Fegan               \n
            UCLA                        \n
-	   sfegan@astro.ucla.edu       \n
+           sfegan@astro.ucla.edu       \n
 
   \author  Maciej Nicewicz             \n
            UCLA                        \n
-	   nicewicz@physics.ucla.edu   \n
+           nicewicz@physics.ucla.edu   \n
 
   \date    12/05/2004
   \version 0.2
@@ -152,7 +152,8 @@ class VSORayTracer
                         const VSOTelescope* scope_hint);
     
   bool beam(math::vs_physics::Particle& photon,
-            const math::vs_physics::Vec3D& origin, const math::vs_physics::Vec3D& direction, 
+            const math::vs_physics::Vec3D& origin,
+            const math::vs_physics::Vec3D& direction, 
             double beam_start, double beam_stop, 
             double beam_radius_in, double beam_radius_out,
             double beam_angle_lo, double beam_angle_hi,
