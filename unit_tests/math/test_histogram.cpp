@@ -26,7 +26,7 @@
 using namespace calin::math;
 using namespace calin::math::histogram;
 using namespace calin::math::accumulator;
-using namespace calin::ix::math;
+using namespace calin::ix::math::histogram;
 
 TEST(TestSimpleHist, InsertIntegersFrom0ToN) {
   unsigned N { 1000 };
