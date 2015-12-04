@@ -26,7 +26,7 @@ syntax = "proto3";
 
 import "calin.proto";
 
-package calin.ix.math;
+package calin.ix.math.histogram;
 
 message Histogram1DData {
   double dxval                 = 1
