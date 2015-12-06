@@ -68,50 +68,44 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
   {
     auto* f = d->field(i);
     if(i>0)I->Print("\n");
-    if(f->message_type())
-    {
+    std::map<string, string> vars;
+    vars["name"]   = f->name();
+    vars["type"]   = f->cpp_type_name();
+    vars["index"]  = "";
+    vars["get"]    = "";
+    vars["set"]    = "set_";
 
-    }
-    else if(f->is_map())
+    if(f->is_repeated())
     {
-
+      vars["index"]  = "int index";
+      vars["set"]    = "add_";
     }
-#if 0
-    else if(f->is_enum())
+    
+    if(f->is_map())
     {
       
     }
-#endif
+    else if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
+    {
+      vars["get"]    = "mutable_";
+      vars["set"]    = "";
+      vars["type"]   = f->message_type()->full_name();
+    }
     else if(f->cpp_type_name() == std::string("string"))
     {
-      if(f->is_repeated())
-        I->Print("int $name$_size() const;\n"
-                 "const std::string& $name$(int index) const;\n"
-                 "void add_$name$(const std::string& x);\n"
-                 "void clear_$name$();\n",
-                 "name", f->name());
-      else
-        I->Print("const std::string& $name$() const;\n"
-                 "void set_$name$(const std::string& x);\n"
-                 "void clear_$name$();\n",
-                 "name", f->name());
+      vars["type"] = "const std::string&";
     }
-    else
-    {
-      if(f->is_repeated())
-        I->Print("int $name$_size() const;\n"
-                 "$type$ $name$(int index) const;\n"
-                 "void add_$name$($type$ x);\n"
-                 "void clear_$name$();\n",
-                 "type", f->cpp_type_name(),
-                 "name", f->name());
-      else
-        I->Print("$type$ $name$() const;\n"
-                 "void set_$name$($type$ x);\n"
-                 "void clear_$name$();\n",
-                 "type", f->cpp_type_name(),
-                 "name", f->name());
-    }
+
+    if(f->containing_oneof())
+      I->Print(vars, "bool has_$name$() const;\n");
+
+    if(f->is_repeated())
+      I->Print(vars, "int $name$_size() const;\n");
+
+    I->Print(vars, "$type$ $get$$name$($index$) const;\n");
+    if(!vars["set"].empty())
+      I->Print(vars, "void $set$$name$($type$ x);\n");
+    I->Print(vars, "void clear_$name$();\n");
   }
   
   I->Outdent();
