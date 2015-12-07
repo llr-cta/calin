@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <numeric>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
@@ -56,14 +57,27 @@ split(const std::string &s, char delim)
   return elems;
 }
 
+std::string join(const std::vector<std::string>& vec, const std::string& sep)
+{
+  std::string result;
+  auto it = vec.begin();
+  if (it != vec.end()) {
+    result.append(*it);
+    for(++it ; it!=vec.end(); ++it)result.append(sep).append(*it); }
+  return result;
+}
+
 string pb_to_gen_filename(string pb_filename, string extension = ".pb.i")
 {
   return pb_filename.substr(0,pb_filename.find_last_of('.')) + extension;
 }
 
 void print_includes(Printer* I, const google::protobuf::FileDescriptor * file,
-                    string directive = "#include", string extension = ".pb.h")
+                    string directive, string extension, bool auto_include)
 {
+  if(auto_include)
+    I->Print("$directive$<$file$>\n", "directive", directive, "file",
+             pb_to_gen_filename(file->name(),extension));
   for(int i=0; i<file->dependency_count(); i++)
     I->Print("$directive$<$file$>\n","directive", directive, "file",
              pb_to_gen_filename(file->dependency(i)->name(),extension));
@@ -108,7 +122,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     {
       vars["get"]    = "mutable_";
       vars["set"]    = "";
-      vars["type"]   = f->message_type()->full_name();
+      vars["type"]   = join(split(f->message_type()->full_name(),'.'),"::");
     }
     else if(f->cpp_type_name() == std::string("string"))
     {
@@ -161,7 +175,9 @@ Generate(const google::protobuf::FileDescriptor * file,
 
   I->Print("\n%{\n");
   I->Indent();
-  print_includes(I, file);
+  I->Print("#include<google/protobuf/stubs/port.h>\n");
+  I->Print("#include<google/protobuf/stubs/common.h>\n");
+  print_includes(I, file, "#include", ".pb.h", true);
   I->Print("#define SWIG_FILE_WITH_INIT\n");
   I->Outdent();
   I->Print("%}\n\n");
@@ -172,7 +188,14 @@ Generate(const google::protobuf::FileDescriptor * file,
            "\n"
            "%include \"package_wide_definitions.i\"\n\n");
 
-  print_includes(I, file, "%import", ".pb.i");
+  I->Print("%import<stdint.i>\n");
+  print_includes(I, file, "%import", ".pb.i", false);
+
+  I->Print("\n"
+           "#define int32 int32_t\n"
+           "#define uint32 uint32_t\n"
+           "#define int64 int64_t\n"
+           "#define uint64 uint64_t\n");
 
   std::vector<string> package_bits = split(file->package(), '.');
   if(!package_bits.empty())
@@ -192,11 +215,7 @@ Generate(const google::protobuf::FileDescriptor * file,
   {
     I->Print("\n");
     for(auto ibit : package_bits)I->Print("} ");
-    string colon_colon = "// namespace ";
-    for(auto ibit : package_bits) {
-      I->Print("$cc$$bit$","bit", ibit, "cc", colon_colon);
-      colon_colon = "::"; }
-    I->Print("\n");
+    I->Print("// namespace $ns$\n","ns",join(package_bits,"::"));
   }
   
   delete I;
