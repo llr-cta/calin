@@ -20,11 +20,13 @@
 
 */
 
-#include "swig_generator.hpp"
-
+#include <iostream>
+#include <sstream>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
+
+#include "swig_generator.hpp"
 
 using std::string;
 using namespace calin::tools::protoc_gen_swig;
@@ -36,6 +38,23 @@ SwigGenerator::~SwigGenerator()
 }
 
 namespace {
+
+std::vector<std::string>& 
+split(const std::string &s, char delim, std::vector<std::string> &elems)
+{
+  std::stringstream ss(s);
+  std::string item;
+  while (std::getline(ss, item, delim)) { elems.push_back(item); }
+  return elems;
+}
+
+std::vector<std::string> 
+split(const std::string &s, char delim)
+{
+  std::vector<std::string> elems;
+  split(s, delim, elems);
+  return elems;
+}
 
 string pb_to_gen_filename(string pb_filename, string extension = ".pb.i")
 {
@@ -155,12 +174,31 @@ Generate(const google::protobuf::FileDescriptor * file,
 
   print_includes(I, file, "%import", ".pb.i");
 
+  std::vector<string> package_bits = split(file->package(), '.');
+  if(!package_bits.empty())
+  {
+    I->Print("\n");
+    for(auto ibit : package_bits)I->Print("namespace $bit$ { ","bit",ibit);
+    I->Print("\n");
+  }
+  
   for(int i=0;i<file->message_type_count();i++)
   {
     I->Print("\n");
     print_message(I, file->message_type(i));
   }
-    
+
+  if(!package_bits.empty())
+  {
+    I->Print("\n");
+    for(auto ibit : package_bits)I->Print("} ");
+    string colon_colon = "// namespace ";
+    for(auto ibit : package_bits) {
+      I->Print("$cc$$bit$","bit", ibit, "cc", colon_colon);
+      colon_colon = "::"; }
+    I->Print("\n");
+  }
+  
   delete I;
   delete I_stream;
   return true;
