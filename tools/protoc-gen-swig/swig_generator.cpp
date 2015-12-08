@@ -105,39 +105,44 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     vars["name"]   = f->name();
     vars["type"]   = f->cpp_type_name();
     vars["index"]  = "";
-    vars["get"]    = "";
-    vars["set"]    = "set_";
 
-    if(f->is_repeated())
-    {
-      vars["index"]  = "int index";
-      vars["set"]    = "add_";
-    }
-    
     if(f->is_map())
     {
-      
-    }
-    else if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
-    {
-      vars["get"]    = "mutable_";
-      vars["set"]    = "";
-      vars["type"]   = join(split(f->message_type()->full_name(),'.'),"::");
-    }
-    else if(f->cpp_type_name() == std::string("string"))
-    {
-      vars["type"] = "const std::string&";
+      // This is handled in the "%extend" section later
+      continue;
     }
 
     if(f->containing_oneof())
       I->Print(vars, "bool has_$name$() const;\n");
 
     if(f->is_repeated())
+    {
       I->Print(vars, "int $name$_size() const;\n");
+      vars["index"]  = "int index";
+    }
 
-    I->Print(vars, "$type$ $get$$name$($index$) const;\n");
-    if(!vars["set"].empty())
-      I->Print(vars, "void $set$$name$($type$ x);\n");
+    if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
+    {
+      vars["type"]   = join(split(f->message_type()->full_name(),'.'),"::");  
+      I->Print(vars, "const $type$& $name$($index$) const;\n");
+      I->Print(vars, "$type$* mutable_$name$($index$);\n");
+      if(f->is_repeated())I->Print(vars, "$type$* add_$name$();\n");
+    }
+    else
+    {
+      if(f->cpp_type_name() == std::string("string"))
+        vars["type"] = "const std::string&";
+
+      I->Print(vars, "$type$ $name$($index$) const;\n");
+      if(f->is_repeated())
+      {
+        I->Print(vars, "void set_$name$($index$, $type$ x);\n");
+        I->Print(vars, "void add_$name$($type$ x);\n");
+      }        
+      else
+        I->Print(vars, "void set_$name$($type$ x);\n");
+    }
+
     I->Print(vars, "void clear_$name$();\n");
   }
   
@@ -175,8 +180,8 @@ Generate(const google::protobuf::FileDescriptor * file,
 
   I->Print("\n%{\n");
   I->Indent();
-  I->Print("#include<google/protobuf/stubs/port.h>\n");
-  I->Print("#include<google/protobuf/stubs/common.h>\n");
+   //I->Print("#include<google/protobuf/stubs/port.h>\n");
+  //I->Print("#include<google/protobuf/stubs/common.h>\n");
   print_includes(I, file, "#include", ".pb.h", true);
   I->Print("#define SWIG_FILE_WITH_INIT\n");
   I->Outdent();
