@@ -91,10 +91,23 @@ void print_includes(Printer* I, const google::protobuf::FileDescriptor * file,
 
 void print_message(Printer* I, const google::protobuf::Descriptor* d)
 {
-  I->Print("class $name$\n"
+  I->Print("class $class_name$ : public google::protobuf::Message \n"
            "{\n"
-           " public:\n",
-           "name", d->name());
+           " public:\n"
+           "  $class_name$();\n"
+           "  virtual ~$class_name$();\n"
+           "  $class_name$(const $class_name$& other);\n"
+           "  //$class_name$& operator=(const $class_name$& other);\n"
+           "  void Swap($class_name$* other);\n"
+           "\n"
+           "  static const google::protobuf::Descriptor* descriptor();\n"
+           "  static const $class_name$& default_instance();\n"
+           "\n"
+           "  //google::protobuf::Message* New() const override;\n"
+           "  void CopyFrom(const google::protobuf::Message & from) override;\n"
+           "  void MergeFrom(const google::protobuf:: Message & from) override;\n"
+           "  int SpaceUsed() const override;\n",
+           "class_name", d->name());
   I->Indent();
 
   for(int i=0;i<d->field_count();i++)
@@ -194,6 +207,7 @@ Generate(const google::protobuf::FileDescriptor * file,
            "%include \"package_wide_definitions.i\"\n\n");
 
   I->Print("%import<stdint.i>\n");
+  I->Print("%import<google_protobuf.i>\n");
   print_includes(I, file, "%import", ".pb.i", false);
 
   I->Print("\n"
