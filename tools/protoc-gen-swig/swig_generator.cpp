@@ -73,9 +73,9 @@ string pb_to_gen_filename(string pb_filename, string extension = ".pb.i")
 }
 
 void print_includes(Printer* I, const google::protobuf::FileDescriptor * file,
-                    string directive, string extension, bool auto_include)
+                    string directive, string extension, bool include_self)
 {
-  if(auto_include)
+  if(include_self)
     I->Print("$directive$<$file$>\n", "directive", directive, "file",
              pb_to_gen_filename(file->name(),extension));
   for(int i=0; i<file->dependency_count(); i++)
@@ -97,7 +97,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
            "name", d->name());
   I->Indent();
 
-  for(unsigned i=0;i<d->field_count();i++)
+  for(int i=0;i<d->field_count();i++)
   {
     auto* f = d->field(i);
     if(i>0)I->Print("\n");
@@ -174,14 +174,14 @@ Generate(const google::protobuf::FileDescriptor * file,
   }
   else
   {
-     I->Print("%module $module$\n",
-              "module", file->package());
+    I->Print("%module $module$\n",
+             "module", file->package());
   }
 
   I->Print("\n%{\n");
   I->Indent();
-   //I->Print("#include<google/protobuf/stubs/port.h>\n");
-  //I->Print("#include<google/protobuf/stubs/common.h>\n");
+  I->Print("#include<google/protobuf/message.h>\n");
+  I->Print("#include<google/protobuf/descriptor.h>\n");
   print_includes(I, file, "#include", ".pb.h", true);
   I->Print("#define SWIG_FILE_WITH_INIT\n");
   I->Outdent();
