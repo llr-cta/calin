@@ -89,36 +89,62 @@ void print_includes(Printer* I, const google::protobuf::FileDescriptor * file,
              pb_to_gen_filename(file->weak_dependency(i)->name(),extension));
 }
 
+std::string class_name(const google::protobuf::Descriptor* d)
+{
+  std::string class_name = d->name();
+  while((d = d->containing_type()))class_name = d->name() + "_" + class_name;
+  return class_name;
+}
+
 void print_message(Printer* I, const google::protobuf::Descriptor* d)
 {
-  I->Print("class $class_name$ : public google::protobuf::Message \n"
+  for(int i=0; i<d->nested_type_count(); i++)
+    print_message(I, d->nested_type(i));
+  
+  std::string the_class_name = class_name(d);
+  I->Print("\n"
+           "class $class_name$ : public google::protobuf::Message \n"
            "{\n"
            " public:\n"
            "  $class_name$();\n"
-           "  virtual ~$class_name$();\n"
+           "  ~$class_name$();\n"
            "  $class_name$(const $class_name$& other);\n"
-           "  //$class_name$& operator=(const $class_name$& other);\n"
            "  void Swap($class_name$* other);\n"
            "\n"
            "  static const google::protobuf::Descriptor* descriptor();\n"
-           "  static const $class_name$& default_instance();\n"
-           "\n"
-           "  //google::protobuf::Message* New() const override;\n"
-           "  void CopyFrom(const google::protobuf::Message & from) override;\n"
-           "  void MergeFrom(const google::protobuf:: Message & from) override;\n"
-           "  int SpaceUsed() const override;\n",
-           "class_name", d->name());
+           "  static const $class_name$& default_instance();\n",
+           //"\n"
+           //"  google::protobuf::Message* New() const override;\n"
+           //"  void CopyFrom(const google::protobuf::Message & from) override;\n"
+           //"  void MergeFrom(const google::protobuf:: Message & from) override;\n"
+           //"  int SpaceUsed() const override;\n",
+           "class_name", the_class_name);
   I->Indent();
 
+  // Typedefs for nested types
+  if(d->nested_type_count())
+  {
+    I->Print("\n");
+    for(int i=0; i<d->nested_type_count(); i++)
+      I->Print("typedef $local$ $full$;\n", "local", d->nested_type(i)->name(),
+               "full", class_name(d->nested_type(i)));
+  }
+
+  // Enums
+
+  // Oneof constants
+
+  // Fields
   for(int i=0;i<d->field_count();i++)
   {
     auto* f = d->field(i);
-    if(i>0)I->Print("\n");
+    I->Print("\n");
     std::map<string, string> vars;
     vars["name"]   = f->name();
     vars["type"]   = f->cpp_type_name();
     vars["index"]  = "";
-
+    vars["class_name"] = the_class_name;
+    
     if(f->is_map())
     {
       // This is handled in the "%extend" section later
@@ -137,6 +163,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
     {
       vars["type"]   = join(split(f->message_type()->full_name(),'.'),"::");  
+      I->Print(vars, "%rename(const_$name$) $name$($index$) const;\n");
       I->Print(vars, "const $type$& $name$($index$) const;\n");
       I->Print(vars, "$type$* mutable_$name$($index$);\n");
       if(f->is_repeated())I->Print(vars, "$type$* add_$name$();\n");
@@ -193,6 +220,10 @@ Generate(const google::protobuf::FileDescriptor * file,
 
   I->Print("\n%{\n");
   I->Indent();
+  I->Print("#include<cstdint>\n");
+  I->Print("#include<string>\n");
+  I->Print("#include<vector>\n");
+  I->Print("#include<map>\n");
   I->Print("#include<google/protobuf/message.h>\n");
   I->Print("#include<google/protobuf/descriptor.h>\n");
   print_includes(I, file, "#include", ".pb.h", true);
@@ -202,11 +233,15 @@ Generate(const google::protobuf::FileDescriptor * file,
 
   I->Print("%init %{\n"
            "  import_array();\n"
-           "%}\n"
-           "\n"
-           "%include \"package_wide_definitions.i\"\n\n");
+           "%}\n\n");
 
-  I->Print("%import<stdint.i>\n");
+  I->Print("%include<numpy.i>\n");
+  I->Print("%include<stdint.i>\n");
+  I->Print("%include<std_string.i>\n");
+  //I->Print("%include<std_vector.i>\n");
+  //I->Print("%include<std_map.i>\n");
+
+  I->Print("%import<package_wide_definitions.i>\n");
   I->Print("%import<google_protobuf.i>\n");
   print_includes(I, file, "%import", ".pb.i", false);
 
@@ -226,7 +261,6 @@ Generate(const google::protobuf::FileDescriptor * file,
   
   for(int i=0;i<file->message_type_count();i++)
   {
-    I->Print("\n");
     print_message(I, file->message_type(i));
   }
 
