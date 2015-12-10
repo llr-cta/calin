@@ -128,6 +128,25 @@ void print_fwd_decl(Printer* I, const google::protobuf::Descriptor* d)
   I->Print("class $class_name$;\n", "class_name", the_class_name);
 }
 
+std::string CamelCase(const std::string& s, bool uc_next = true)
+{
+  std::string t;
+  for(auto c : s)
+  {
+    if(c == '_')uc_next=true;
+    else if(uc_next)t += std::toupper(c), uc_next=false;
+    else t += c;
+  }
+  return t;
+}
+
+std::string ALLCAPSCase(const std::string& s)
+{
+  std::string t;
+  for(auto c : s)t += std::toupper(c);
+  return t;
+}
+
 void print_message(Printer* I, const google::protobuf::Descriptor* d)
 {
   for(int i=0; i<d->nested_type_count(); i++)
@@ -164,7 +183,29 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
 
   // Enums
 
-  // Oneof constants
+  // Oneofs
+  for(int i=0;i<d->oneof_decl_count();i++)
+  {
+    auto* oo = d->oneof_decl(i);
+    std::map<string, string> vars;
+    vars["oo_name"] = oo->name();
+    vars["oo_cc_name"] = CamelCase(oo->name());
+    vars["oo_ac_name"] = ALLCAPSCase(oo->name());
+    I->Print(vars,"\n"
+             "enum $oo_cc_name$Case {\n");
+    I->Indent();
+    for(int j=0;j<oo->field_count();j++)
+    {
+      auto* f = oo->field(j);
+      vars["field_cc_name"] = CamelCase(f->name()); 
+      vars["field_number"] = std::to_string(f->number()); 
+      I->Print(vars,"k$field_cc_name$ = $field_number$,\n");
+    }
+    I->Print(vars, "$oo_ac_name$_NOT_SET = 0\n");
+    I->Outdent();
+    I->Print(vars, "};\n\n"
+             "$oo_cc_name$Case $oo_name$_case() const;\n");
+  }
 
   // Fields
   for(int i=0;i<d->field_count();i++)
@@ -291,7 +332,7 @@ Generate(const google::protobuf::FileDescriptor * file,
     I->Print("\n");
   }
 
-  // Print forward declaration for all classes
+  // Print forward declaration for all message classes
   for(int i=0;i<file->message_type_count();i++)
   {
     if(i==0)I->Print("\n");
