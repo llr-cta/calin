@@ -104,6 +104,23 @@ std::string class_name(const google::protobuf::Descriptor* d)
   return class_name;
 }
 
+// Make the full type for an enum for use as an argument
+std::string enum_type(const google::protobuf::EnumDescriptor* d,
+                      const google::protobuf::Descriptor* d_referrer = nullptr)
+{
+  std::string enum_type = d->name();
+  const google::protobuf::Descriptor* d_sub = d->containing_type();
+  while(d_sub)
+  {
+    if(d_sub == d_referrer)return enum_type;
+    enum_type = d_sub->name() + "::" + enum_type;
+    d_sub = d_sub->containing_type();
+  }
+  if(d_referrer and d_referrer->file()->package() == d->file()->package())
+    return enum_type;
+  else return join(split(d->file()->package(),'.'), "::") + "::" + enum_type;
+}
+
 // Make the full type for a message for use as an argument
 std::string class_type(const google::protobuf::Descriptor* d,
                        const google::protobuf::Descriptor* d_referrer = nullptr)
@@ -117,7 +134,7 @@ std::string class_type(const google::protobuf::Descriptor* d,
   }
   if(d_referrer and d_referrer->file()->package() == d->file()->package())
     return class_type;
-  else return join(split(d->file()->package(),'.'), "::")+"::"+class_type;
+  else return join(split(d->file()->package(),'.'), "::") + "::" + class_type;
 }
 
 void print_fwd_decl(Printer* I, const google::protobuf::Descriptor* d)
@@ -146,6 +163,41 @@ std::string ALLCAPSCase(const std::string& s)
   for(auto c : s)t += std::toupper(c);
   return t;
 }
+
+void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
+{
+  I->Print("");
+  std::map<string, string> vars;
+  vars["enum_name"] = e->name();
+  I->Print(vars,"\n"
+           "enum $enum_name$ {\n");
+  I->Indent();
+  int jmax = 0;
+  int jmin = 0;
+  for(int j=0;j<e->value_count();j++)
+  {
+    auto* v = e->value(j);
+    if(v->number() > e->value(jmax)->number())jmax = j;
+    if(v->number() < e->value(jmin)->number())jmin = j;
+    vars["value_name"] = v->name(); 
+    vars["value_number"] = std::to_string(v->number());
+    vars["comma"] = (j==e->value_count()-1)?std::string():std::string(",");
+    I->Print(vars,"$value_name$ = $value_number$$comma$\n");
+  }
+  I->Outdent();
+  if(e->containing_type())vars["static"] = "static ";
+  else vars["static"] = "";
+  vars["min_val"] = e->value(jmin)->name();
+  vars["max_val"] = e->value(jmax)->name();
+#warning Apply output template here somehow
+  I->Print(vars, "};\n\n"
+           "$static$bool $enum_name$_IsValid(int value);\n"
+           "$static$const std::string& $enum_name$_Name(int value);\n"
+           "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$* value);\n"
+           "$static$const $enum_name$ $enum_name$_MIN = $min_val$;\n"
+           "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n"); 
+}
+
 
 void print_message(Printer* I, const google::protobuf::Descriptor* d)
 {
@@ -182,6 +234,8 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
   }
 
   // Enums
+  for(int i=0;i<d->enum_type_count(); i++)
+    print_enum(I, d->enum_type(i));
 
   // Oneofs
   for(int i=0;i<d->oneof_decl_count();i++)
@@ -243,7 +297,10 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     }
     else
     {
-      if(f->cpp_type_name() == std::string("string"))
+      if(f->type() == google::protobuf::FieldDescriptor::TYPE_ENUM)
+        vars["type"] = enum_type(f->enum_type(), d);
+      else if(f->type() == google::protobuf::FieldDescriptor::TYPE_STRING or
+              f->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
         vars["type"] = "const std::string&";
 
       I->Print(vars, "$type$ $name$($index$) const;\n");
@@ -338,6 +395,10 @@ Generate(const google::protobuf::FileDescriptor * file,
     if(i==0)I->Print("\n");
     print_fwd_decl(I, file->message_type(i));
   }
+
+  // Print enum definitions from main scope
+  for(int i=0;i<file->enum_type_count(); i++)
+    print_enum(I, file->enum_type(i));
   
   // Print classes for all messages
   for(int i=0;i<file->message_type_count();i++)
