@@ -57,14 +57,21 @@ split(const std::string &s, char delim)
   return elems;
 }
 
-std::string join(const std::vector<std::string>& vec, const std::string& sep)
+std::string join(std::vector<std::string>::const_iterator begin,
+                 std::vector<std::string>::const_iterator end,
+                 const std::string& sep)
 {
   std::string result;
-  auto it = vec.begin();
-  if (it != vec.end()) {
+  auto it = begin;
+  if (it != end) {
     result.append(*it);
-    for(++it ; it!=vec.end(); ++it)result.append(sep).append(*it); }
+    for(++it ; it!=end; ++it)result.append(sep).append(*it); }
   return result;
+}
+
+std::string join(const std::vector<std::string>& vec, const std::string& sep)
+{
+  return join(vec.cbegin(), vec.cend(), sep);
 }
 
 string pb_to_gen_filename(string pb_filename, string extension = ".pb.i")
@@ -89,11 +96,36 @@ void print_includes(Printer* I, const google::protobuf::FileDescriptor * file,
              pb_to_gen_filename(file->weak_dependency(i)->name(),extension));
 }
 
+// Make the name of the class - handling nested types
 std::string class_name(const google::protobuf::Descriptor* d)
 {
   std::string class_name = d->name();
   while((d = d->containing_type()))class_name = d->name() + "_" + class_name;
   return class_name;
+}
+
+// Make the full type for a message for use as an argument
+std::string class_type(const google::protobuf::Descriptor* d,
+                       const google::protobuf::Descriptor* d_referrer = nullptr)
+{
+  std::string class_type = d->name();
+  const google::protobuf::Descriptor* d_sub = d;
+  while((d_sub = d_sub->containing_type()))
+  {
+    if(d_sub == d_referrer)return class_type;
+    class_type = d_sub->name() + "_" + class_type;
+  }
+  if(d_referrer and d_referrer->file()->package() == d->file()->package())
+    return class_type;
+  else return join(split(d->file()->package(),'.'), "::")+"::"+class_type;
+}
+
+void print_fwd_decl(Printer* I, const google::protobuf::Descriptor* d)
+{
+  for(int i=0; i<d->nested_type_count(); i++)
+    print_fwd_decl(I, d->nested_type(i));
+  std::string the_class_name = class_name(d);
+  I->Print("class $class_name$;\n", "class_name", the_class_name);
 }
 
 void print_message(Printer* I, const google::protobuf::Descriptor* d)
@@ -162,7 +194,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
 
     if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
     {
-      vars["type"]   = join(split(f->message_type()->full_name(),'.'),"::");  
+      vars["type"]   = class_type(f->message_type(), d);
       I->Print(vars, "%rename(const_$name$) $name$($index$) const;\n");
       I->Print(vars, "const $type$& $name$($index$) const;\n");
       I->Print(vars, "$type$* mutable_$name$($index$);\n");
@@ -258,11 +290,17 @@ Generate(const google::protobuf::FileDescriptor * file,
     for(auto ibit : package_bits)I->Print("namespace $bit$ { ","bit",ibit);
     I->Print("\n");
   }
-  
+
+  // Print forward declaration for all classes
   for(int i=0;i<file->message_type_count();i++)
   {
-    print_message(I, file->message_type(i));
+    if(i==0)I->Print("\n");
+    print_fwd_decl(I, file->message_type(i));
   }
+  
+  // Print classes for all messages
+  for(int i=0;i<file->message_type_count();i++)
+    print_message(I, file->message_type(i));
 
   if(!package_bits.empty())
   {
