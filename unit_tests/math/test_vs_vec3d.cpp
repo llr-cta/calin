@@ -304,7 +304,7 @@ TEST(TestVec3D, RotationComposition) {
 
 TEST(TestVec3D, ProtoSaveAndRestore) {
   Vec3D x(1.0,2.0,3.0);
-  calin::ix::Vector3D x_data;
+  calin::ix::common_types::Vector3D x_data;
   x.dump_to_proto(&x_data);
   Vec3D y(x_data);
   EXPECT_EQ(x,y);

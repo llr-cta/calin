@@ -199,38 +199,38 @@ Vec3D& Vec3D::operator &= (const Vec3D& r)
   return *this;
 }
 
-Vec3D::Vec3D(const ix::Vector3D& d)
+Vec3D::Vec3D(const ix::common_types::Vector3D& d)
 {
   set_from_proto(d);
 }
 
-Vec3D::Vec3D(const ix::Vector3D& d, double scale)
+Vec3D::Vec3D(const ix::common_types::Vector3D& d, double scale)
 {
   set_from_scaled_proto(d,scale);
 }
 
-void Vec3D::dump_to_proto(ix::Vector3D* d) const
+void Vec3D::dump_to_proto(ix::common_types::Vector3D* d) const
 {
   d->set_x(x);
   d->set_y(y);
   d->set_z(z);
 }
 
-void Vec3D::set_from_proto(const ix::Vector3D& d)
+void Vec3D::set_from_proto(const ix::common_types::Vector3D& d)
 {
   x = d.x();
   y = d.y();
   z = d.z();
 }
 
-void Vec3D::dump_scaled_to_proto(ix::Vector3D* d, double scale) const
+void Vec3D::dump_scaled_to_proto(ix::common_types::Vector3D* d, double scale) const
 {
   d->set_x(x*scale);
   d->set_y(y*scale);
   d->set_z(z*scale);
 }
 
-void Vec3D::set_from_scaled_proto(const ix::Vector3D& d, double scale)
+void Vec3D::set_from_scaled_proto(const ix::common_types::Vector3D& d, double scale)
 {
   x = d.x()*scale;
   y = d.y()*scale;

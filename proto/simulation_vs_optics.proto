@@ -42,10 +42,10 @@ message VSOMirrorData {
     [(CFO).desc = "Hexagonal grid identification number, starting at zero."];
   bool removed                          = 3
     [(CFO).desc = "True if this mirror facet has been removed."];
-  Vector3D pos                          = 4
+  common_types.Vector3D pos             = 4
     [(CFO).desc = "Position of facet center in the reflector frame. ",
      (CFO).units = "cm", (CFO).sql.inline_message = true ];     
-  Vector3D align                        = 5
+  common_types.Vector3D align           = 5
     [(CFO).desc = "Facet normal at center of facet in the reflector frame. ",
      (CFO).sql.inline_message = true ];
   double focal_length                   = 6
@@ -65,16 +65,16 @@ message VSOPixelData {
     [(CFO).desc = "Hexagonal grid identification number, starting at zero."];
   bool removed                          = 3
     [(CFO).desc = "True if this pixel has been removed."];
-  Vector3D pos                          = 4
+  common_types.Vector3D pos             = 4
     [(CFO).desc = "Position of the pixel center in the camera frame. ",
      (CFO).units = "cm", (CFO).sql.inline_message = true ];
 };
 
 message VSODiskObscurationData { 
-  Vector3D center_pos                   = 1
+  common_types.Vector3D center_pos      = 1
     [(CFO).desc = "Position of the center of the disk in reflector frame. ",
      (CFO).units = "cm", (CFO).sql.inline_message = true ];
-  Vector3D normal                       = 2
+  common_types.Vector3D normal          = 2
     [(CFO).desc = "Normal to the disk in reflector frame. ",
      (CFO).units = "normalized", (CFO).sql.inline_message = true ];
   double diameter                       = 3
@@ -85,10 +85,10 @@ message VSODiskObscurationData {
 };
 
 message VSOTubeObscurationData {
-  Vector3D end1_pos                     = 1
+  common_types.Vector3D end1_pos        = 1
     [(CFO).desc = "Position of center of tube at 1st end in reflector frame. ",
      (CFO).units = "cm", (CFO).sql.inline_message = true ];
-  Vector3D end2_pos                     = 2
+  common_types.Vector3D end2_pos        = 2
     [(CFO).desc = "Position of center of tube at 2nd end in reflector frame. ",
      (CFO).units = "cm", (CFO).sql.inline_message = true ];
   double diameter                       = 3
@@ -109,7 +109,7 @@ message VSOTelescopeData {
   uint32 id                             = 1
     [(CFO).desc = "Sequential telescope identification number, starting "
      "at zero."];
-  Vector3D pos                          = 3
+  common_types.Vector3D pos             = 3
     [(CFO).desc = "Position of the reflector center in the array frame. ",
      (CFO).units = "cm", (CFO).sql.inline_message = true ];
   double delta_y                        = 4
@@ -131,10 +131,10 @@ message VSOTelescopeData {
      "the normal to the azimuth plane to the East. This rotation is applied "
      "BEFORE alpha_x.",
      (CFO).units = "deg"];
-  HorizontalCoordinates alt_az          = 7
+  common_types.HorizontalCoordinates alt_az = 7
     [(CFO).desc = "Altitude and elevation of telescope. ",
      (CFO).sql.inline_message = true];
-  Vector3D translation                  = 8
+  common_types.Vector3D translation     = 8
     [(CFO).desc = "Vector from the origin of the reflector "
      "reference frame to the intersection of rotation axes. The reflector "
      "frame is defined by +y pointing along optical axis and +x pointing "
@@ -171,7 +171,7 @@ message VSOTelescopeData {
      "the +x-axis (east) when this flag is FALSE, and in the direction of the "
      "-x-axis (west) when this flag is TRUE (in the reflector r.f. -- home "
      "position of telescope."];
-  Vector3D fp_translation               = 17
+  common_types.Vector3D fp_translation  = 17
     [(CFO).desc = "Vector from the origin of the reflector "
      "reference frame to the origin of the camera frame. ",
      (CFO).units = "cm", (CFO).sql.inline_message = true ];
@@ -189,7 +189,7 @@ message VSOTelescopeData {
      (CFO).units = "cm"];
   double conc_survival_prob             = 22
     [(CFO).desc = "Survival probability for photons hitting concentrator." ];
-  Vector3D fp_rotation                  = 23
+  common_types.Vector3D fp_rotation     = 23
     [(CFO).desc = "Camera rotation vector with respect to reflector frame. ",
      (CFO).units = "deg", (CFO).sql.inline_message = true ];
   double camera_ip                      = 24
@@ -209,7 +209,7 @@ message VSOTelescopeData {
 
 message VSOArrayData
 {
-  EarthCoordinates array_origin                    = 1
+  common_types.EarthCoordinates array_origin       = 1
     [(CFO).desc = "Coordinates of origin of array reference frame on Earth."];
   repeated VSOTelescopeData telescope              = 2
     [(CFO).desc = "Telescopes in array."];
@@ -250,7 +250,7 @@ message HexArrayLayout
 
 message UserDefinedArrayLayout
 {
-  repeated Vector3D scope_positions     = 1
+  repeated common_types.Vector3D scope_positions     = 1
     [(CFO).desc = "Telescope positions within the array. "
      "X : East-West coordinate of scope in array frame, positive "
      "values are East of the origin, negative values are West. "
@@ -263,7 +263,7 @@ message UserDefinedArrayLayout
 
 message ReflectorFrameParameters
 {
-  HorizontalCoordinates altaz           = 1
+  common_types.HorizontalCoordinates altaz = 1
     [(CFO).desc = "Altitude and elevation of telescope"];
   double delta_y                        = 2
     [(CFO).desc = "Deviation from perpendicularity of elevation and azimuth "
@@ -284,7 +284,7 @@ message ReflectorFrameParameters
      "normal to the azimuth plane to the East. This rotation is applied "
      "BEFORE alpha_x.",
      (CFO).units = "deg"];
-  Vector3D translation                  = 5
+  common_types.Vector3D translation     = 5
     [(CFO).desc = "Vector from the origin of the reflector "
      "reference frame to the intersection of rotation axes. The reflector "
      "frame is defined by +y pointing along optical axis and +x pointing "
@@ -299,7 +299,7 @@ message ReflectorFrameParameters
 
 message ConcurrentNormalsAlignment
 {
-  Vector3D alignment_pt                 = 1
+  common_types.Vector3D alignment_pt    = 1
     [(CFO).desc = "Coordinate of nominal alignment point in reflector "
      "reference frame. In a classic DC alignment mode this should be "
      "(0,2F,0). If the y-coordinate is zero, the alignment point is "
@@ -446,7 +446,7 @@ message PlaneWindowParameters {
      "reflector frame if desired. Focal plane rotation around z-axis of "
      "the reflector frame.",
      (CFO).units = "deg"];
-  repeated SpectralResponsePoint transmittance = 5
+  repeated common_types.SpectralResponsePoint transmittance = 5
     [(CFO).desc = "Energy dependent absorption factor."];                                                       
   double weathering_factor              = 6
     [(CFO).desc = "Additional absorption factor applied to all photons."];
@@ -458,11 +458,11 @@ message FocalPlaneParameters {
   double camera_diameter                = 1
     [(CFO).desc = "Diameter of the camera in the focal plane.",
      (CFO).units = "cm"];
-  Vector3D translation                  = 2
+  common_types.Vector3D translation     = 2
     [(CFO).desc = "Origin of focal plane reference frame in the reflector "
      "frame.",
      (CFO).units = "cm"];
-  Vector3D rotation                     = 3
+  common_types.Vector3D rotation        = 3
     [(CFO).desc = "Ideally the focal plane is in the x-z plane in the "
      "reflector reflector frame. However it can be rotated with respect to "
      "reflector frame if desired. Focal plane rotation around x-axis of "
@@ -507,7 +507,7 @@ message HexPixelArrayParameters
 };
 
 message IsotropicDCArrayParameters {
-  EarthCoordinates array_origin                    = 1
+  common_types.EarthCoordinates array_origin       = 1
     [(CFO).desc = "Coordinates of origin of array reference frame on Earth"];
   oneof array_layout {
     HexArrayLayout hex_array_layout                = 2;
