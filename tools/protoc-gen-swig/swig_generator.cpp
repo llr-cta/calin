@@ -189,11 +189,12 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
   else vars["static"] = "";
   vars["min_val"] = e->value(jmin)->name();
   vars["max_val"] = e->value(jmax)->name();
-#warning Apply output template here somehow
   I->Print(vars, "};\n\n"
            "$static$bool $enum_name$_IsValid(int value);\n"
            "$static$const std::string& $enum_name$_Name($enum_name$ value);\n"
+           "%apply int *OUTPUT { $enum_name$* value };\n"
            "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$* value);\n"
+           "%clear $enum_name$* value;\n"
            "$static$const $enum_name$ $enum_name$_MIN = $min_val$;\n"
            "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n"); 
 }
@@ -365,6 +366,7 @@ Generate(const google::protobuf::FileDescriptor * file,
            "  import_array();\n"
            "%}\n\n");
 
+  I->Print("%include<typemaps.i>\n");
   I->Print("%include<numpy.i>\n");
   I->Print("%include<stdint.i>\n");
   I->Print("%include<std_string.i>\n");
