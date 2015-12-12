@@ -24,6 +24,7 @@
 #include <sstream>
 #include <numeric>
 #include <google/protobuf/descriptor.h>
+#include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
@@ -199,11 +200,24 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
            "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n"); 
 }
 
+std::string field_type(const google::protobuf::FieldDescriptor* f,
+                       const google::protobuf::Descriptor* d)
+{
+  if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
+    return class_type(f->message_type(), d);
+  else if(f->type() == google::protobuf::FieldDescriptor::TYPE_ENUM)
+    return enum_type(f->enum_type(), d);
+  else if(f->type() == google::protobuf::FieldDescriptor::TYPE_STRING or
+          f->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
+    return "const std::string&";
+  else return f->cpp_type_name();
+}
 
 void print_message(Printer* I, const google::protobuf::Descriptor* d)
 {
   for(int i=0; i<d->nested_type_count(); i++)
-    print_message(I, d->nested_type(i));
+    if(!d->nested_type(i)->options().map_entry())
+      print_message(I, d->nested_type(i));
   
   std::string the_class_name = class_name(d);
   I->Print("\n"
@@ -269,28 +283,58 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     I->Print("\n");
     std::map<string, string> vars;
     vars["name"]   = f->name();
-    vars["type"]   = f->cpp_type_name();
+    vars["type"]   = field_type(f, d);
     vars["index"]  = "";
     vars["class_name"] = the_class_name;
     
     if(f->is_map())
     {
-      // This is handled in the "%extend" section later
+      assert(f->message_type());
+      assert(f->message_type()->field_count()==2);
+      const auto* fi = f->message_type()->field(0);
+      const auto* fv = f->message_type()->field(1);
+      vars["index"] = field_type(fi, d);
+      vars["type"] = field_type(fv, d);
+      I->Print("%extend {\n");
+      I->Indent();
+      I->Print(vars,
+               "int $name$_size() const {\n"
+               "  return($$self->$name$().size()); }\n"
+               "int $name$_key_count($index$ key) const {\n"
+               "  return($$self->$name$().count(key)); }\n");
+      if(fv->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
+      {
+        I->Print(vars,
+                 "const $type$& const_$name$($index$ key) const {\n"
+                 "  return $$self->$name$().at(key); }\n"
+                 "$type$& mutable_$name$($index$ key) {\n"
+                 "  return $$self->mutable_$name$()->at(key); }\n");        
+      }
+      else
+      {
+        I->Print(vars,
+                 "$type$ $name$($index$ key) const {\n"
+                 "  return $$self->$name$().at(key); }\n"
+                 "void set_$name$($index$ key, $type$ val) {\n"
+                 "  $$self->mutable_$name$()->at(key) = val; }\n");
+      }
+      I->Outdent();
+      I->Print("};\n");
       continue;
     }
-
-    if(f->containing_oneof())
-      I->Print(vars, "bool has_$name$() const;\n");
-
+    
     if(f->is_repeated())
     {
       I->Print(vars, "int $name$_size() const;\n");
       vars["index"]  = "int index";
     }
+    else if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
+    {
+      I->Print(vars, "bool has_$name$() const;\n");
+    }
 
     if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
     {
-      vars["type"]   = class_type(f->message_type(), d);
       I->Print(vars, "%rename(const_$name$) $name$($index$) const;\n");
       I->Print(vars, "const $type$& $name$($index$) const;\n");
       I->Print(vars, "$type$* mutable_$name$($index$);\n");
@@ -298,12 +342,6 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     }
     else
     {
-      if(f->type() == google::protobuf::FieldDescriptor::TYPE_ENUM)
-        vars["type"] = enum_type(f->enum_type(), d);
-      else if(f->type() == google::protobuf::FieldDescriptor::TYPE_STRING or
-              f->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
-        vars["type"] = "const std::string&";
-
       I->Print(vars, "$type$ $name$($index$) const;\n");
       if(f->is_repeated())
       {
