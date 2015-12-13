@@ -8,7 +8,7 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY}
-	calin_nlopt calin_cminpack calin_f2c calin_io calin_proto ${EXTRA_LIBS})
+	calin_nlopt calin_cminpack calin_f2c calin_io calin_proto_math ${EXTRA_LIBS})
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)
 

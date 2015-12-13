@@ -12,8 +12,9 @@ include_directories(include ${CMAKE_BINARY_DIR})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
 ### include Protobuf libraries
+set(PROTOBUF_IMPORT_DIRS ${PROJECT_SOURCE_DIR}/proto)
 find_package(Protobuf REQUIRED)
-include_directories(${PROTOBUF_INCLUDE_DIRS} ${CMAKE_CURRENT_BUILD_DIR}) 
+include_directories(${PROTOBUF_INCLUDE_DIRS} ${CMAKE_BINARY_DIR}/proto) 
 set(EXTRA_LIBS ${EXTRA_LIBS} ${PROTOBUF_LIBRARY})
 
 ## include FFTW libraries

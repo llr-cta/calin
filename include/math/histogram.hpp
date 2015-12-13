@@ -31,7 +31,7 @@
 #include <iterator>
 
 #include "package_wide_definitions.hpp"
-#include "proto/math_histogram.pb.h"
+#include "math/histogram.pb.h"
 #include "math/accumulator.hpp"
 
 // This class has some changes/improvements over the VERITAS ChiLA

@@ -44,7 +44,7 @@
 
 #include <iostream>
 #include <cmath>
-#include <proto/calin_common_types.pb.h>
+#include <common_types.pb.h>
 #include <math/rng.hpp>
 
 /*!  \class Vec3D

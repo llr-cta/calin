@@ -25,7 +25,7 @@
 syntax = "proto3";
 
 import "calin.proto";
-import "calin_common_types.proto";
+import "common_types.proto";
 
 package calin.ix.unittest;
 

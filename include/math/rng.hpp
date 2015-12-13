@@ -43,7 +43,7 @@
 #include <cmath>
 #include <random>
 
-#include <proto/math_rng.pb.h>
+#include <math/rng.pb.h>
 
 namespace calin { namespace math { namespace rng {
 

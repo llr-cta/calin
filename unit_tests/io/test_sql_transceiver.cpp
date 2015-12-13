@@ -28,7 +28,7 @@
 
 #include "io/sql_transceiver.hpp"
 #include "io/sqlite3_transceiver.hpp"
-#include "proto/unittest.pb.h"
+#include <unittest.pb.h>
 #include <google/protobuf/text_format.h>
 
 using namespace calin::ix::unittest;

@@ -43,7 +43,7 @@
 #include <iostream>
 
 #include <math/vs_vec3d.hpp>
-#include <proto/simulation_vs_optics.pb.h>
+#include <simulation/vs_optics.pb.h>
 
 namespace calin { namespace simulation { namespace vs_optics {
 
