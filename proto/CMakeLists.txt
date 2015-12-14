@@ -30,6 +30,9 @@ foreach (proto_interface_file ${CALIN_SWIG_PROTO})
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${output_file}.py  DESTINATION python/calin/ix)
 endforeach (proto_interface_file)
 
+######################################################################
+# SUB DIRECTORIES
+###################################################################### 
 
 add_subdirectory(math)
 add_subdirectory(simulation)
