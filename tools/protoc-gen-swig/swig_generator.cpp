@@ -36,7 +36,7 @@ using google::protobuf::io::Printer;
 
 SwigGenerator::~SwigGenerator()
 {
-
+  // nothing to see here
 }
 
 namespace {
