@@ -310,6 +310,16 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
                  "$type$& mutable_$name$($index$ key) {\n"
                  "  return $$self->mutable_$name$()->at(key); }\n");        
       }
+      else if(fv->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
+      {
+        I->Print(vars,
+                 "%extend {\n"
+                 "  void $name$($index$ key, std::string& calin_bytes_out) const {\n"
+                 "    calin_bytes_out = $$self->$name$().at(key); }\n"
+                 "  void set_$name$($index$ key, const std::string& calin_bytes_in) {\n"
+                 "    $$self->mutable_$name$()->at(key) = calin_bytes_in; }\n"
+                 "};\n");
+      }
       else
       {
         I->Print(vars,
@@ -339,6 +349,31 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       I->Print(vars, "const $type$& $name$($index$) const;\n");
       I->Print(vars, "$type$* mutable_$name$($index$);\n");
       if(f->is_repeated())I->Print(vars, "$type$* add_$name$();\n");
+    }
+    else if(f->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
+    {
+      I->Print(vars, "%extend {\n");
+      I->Indent();
+      if(f->is_repeated())
+      {
+        I->Print(vars,
+                 "void $name$($index$, std::string& calin_bytes_out) const {\n"
+                 "  calin_bytes_out = $$self->$name$(index); }\n"
+                 "void set_$name$($index$, const std::string& calin_bytes_in) {\n"
+                 "  $$self->set_$name$(index, calin_bytes_in); }\n"
+                 "void add_$name$(const std::string& calin_bytes_in) {\n"
+                 "  $$self->add_$name$(calin_bytes_in); }\n");
+      }
+      else
+      {
+        I->Print(vars,
+                 "void $name$(std::string& calin_bytes_out) const {\n"
+                 "  calin_bytes_out = $$self->$name$(); }\n"
+                 "void set_$name$(const std::string& calin_bytes_in) {\n"
+                 "  $$self->set_$name$(calin_bytes_in); }\n");
+      }
+      I->Outdent();
+      I->Print(vars, "};\n");
     }
     else
     {
@@ -411,6 +446,7 @@ Generate(const google::protobuf::FileDescriptor * file,
   //I->Print("%include<std_vector.i>\n");
   //I->Print("%include<std_map.i>\n");
 
+  I->Print("%include<calin_typemaps.i>\n");
   I->Print("%import<package_wide_definitions.i>\n");
   I->Print("%import<google_protobuf.i>\n");
   print_includes(I, file, "%import", ".pb.i", false);

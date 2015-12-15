@@ -2,9 +2,9 @@
 
 /* 
 
-   calin/package_wide_definitions.i -- Stephen Fegan -- 2015-04-21
+   calin/calin_typemaps.i -- Stephen Fegan -- 2015-12-15
 
-   SWIG interface file for calin.package_wide_definitions
+   SWIG interface file for common calin typemaps
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -22,25 +22,52 @@
 
 */
 
-%module (package="calin") package_wide_definitions
+%include "numpy.i"
+%include "std_vector.i"
+%include "std_string.i"
+%include "typemaps.i"
 
-%{
-#include <iostream>
-#include "package_wide_definitions.hpp"
-#define SWIG_FILE_WITH_INIT
-  %}
+// ==============================================================================
+//
+// Typemaps for bytes arrays
+//
+// ==============================================================================
 
-%include "calin_typemaps.i"
-
-%init %{
-  import_array();
+%typemap(in) const std::string& calin_bytes_in (std::string temp, char* bytes, Py_ssize_t len) %{
+  // typemap(in) const std::string& calin_bytes_in -- calin_typemaps.i
+  if(PyBytes_AsStringAndSize($input,&bytes,&len) == -1)SWIG_fail;
+  temp.assign(bytes, len);
+  $1 = &temp;
+%}
+%typemap(argout) const std::string& calin_bytes_in %{
+  // typemap(argout) const std::string& calin_bytes_in -- calin_typemaps.i
+  // nothing to see here
+%}
+%typemap(freearg) const std::string& calin_bytes_in %{
+  // typemap(freearg) const std::string& calin_bytes_in -- calin_typemaps.i
+  // nothing to see here
+%}
+%typemap(typecheck) const std::string& calin_bytes_in %{
+  // typemap(typecheck) const std::string& calin_bytes_in -- calin_typemaps.i
+  $1 = PyBytes_Check($input) ? 1 : 0;
 %}
 
-%template (VectorDouble) std::vector<double>;
-%template (VectorUnsigned) std::vector<unsigned>;
-%template (VectorInt) std::vector<int>;
-
-%import "package_wide_definitions.hpp"
+%typemap(in, numinputs=0) std::string & calin_bytes_out (std::string temp) %{
+  // typemap(in) std::string & calin_bytes_out -- calin_typemaps.i
+  $1 = &temp;
+%}
+%typemap(argout) std::string & calin_bytes_out %{
+  // typemap(argout) std::string & calin_bytes_out -- calin_typemaps.i
+  {
+    PyObject* temp_bytes = PyBytes_FromStringAndSize(&$1->front(), $1->size());
+    if(!temp_bytes)SWIG_fail;
+    $result = SWIG_Python_AppendOutput($result, temp_bytes);
+  }
+%}
+%typemap(freearg) const std::string & calin_bytes_out %{
+  // typemap(freearg) std::string& calin_bytes_out -- calin_typemaps.i
+  // nothing to see here
+%}
 
 // =============================================================================
 //
@@ -165,7 +192,7 @@
 %typemap(in, fragment="Calin_Python_to_EigenVec")
      const Eigen::VectorXd& (Eigen::VectorXd temp)
 {
-  // typemap(in) const Eigen::VectorXd& -- package_wide_definitions.i
+  // typemap(in) const Eigen::VectorXd& -- calin_typemaps.i
   $1 = &temp;
   if(!calin_python_to_eigen_vec($input, $1))SWIG_fail;
 }
@@ -173,13 +200,13 @@
 
 %typemap(argout) const Eigen::VectorXd&
 {
-  // typemap(argout) const Eigen::VectorXd& -- package_wide_definitions.i
+  // typemap(argout) const Eigen::VectorXd& -- calin_typemaps.i
   // nothing to see here
 }
 
 %typemap(typecheck, precedence=5000) const Eigen::VectorXd&
 {
-  // typemap(typecheck) const Eigen::VectorXd& -- package_wide_definitions.i
+  // typemap(typecheck) const Eigen::VectorXd& -- calin_typemaps.i
   $1 = is_array($input) ? 1 : 0;
 }
 
@@ -188,20 +215,20 @@
 %typemap(in, fragment="Calin_Python_to_EigenVec")
      Eigen::VectorXd& (Eigen::VectorXd temp)
 {
-  // typemap(in) Eigen::VectorXd& -- package_wide_definitions.i
+  // typemap(in) Eigen::VectorXd& -- calin_typemaps.i
   $1 = &temp;
   if(!calin_python_to_eigen_vec($input, $1))SWIG_fail;
 }
 
 %typemap(argout, fragment="Calin_EigenVec_to_Python") Eigen::VectorXd&
 {
-  // typemap(argout) Eigen::VectorXd& -- package_wide_definitions.i
+  // typemap(argout) Eigen::VectorXd& -- calin_typemaps.i
   if(!calin_eigen_vec_to_python($1, $input))SWIG_fail;
 }
 
 %typemap(typecheck, precedence=5000) Eigen::VectorXd&
 {
-  // typemap(typecheck) Eigen::VectorXd& -- package_wide_definitions.i
+  // typemap(typecheck) Eigen::VectorXd& -- calin_typemaps.i
   $1 = is_array($input) ? 1 : 0;
 }
 
@@ -209,13 +236,13 @@
 
 %typemap(in, numinputs=0) Eigen::VectorXd &OUTPUT (Eigen::VectorXd temp)
 {
-  // typemap(in) Eigen::VectorXd &OUTPUT -- package_wide_definitions.i
+  // typemap(in) Eigen::VectorXd &OUTPUT -- calin_typemaps.i
   $1 = &temp;
 }
 
 %typemap(argout, fragment="Calin_EigenVec_to_Python") Eigen::VectorXd &OUTPUT
 {
-  // typemap(argout) Eigen::VectorXd &OUTPUT -- package_wide_definitions.i
+  // typemap(argout) Eigen::VectorXd &OUTPUT -- calin_typemaps.i
   npy_intp size[1] { $1->size() };
   PyObject* temp_array = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
   if(!temp_array)SWIG_fail;
@@ -231,7 +258,7 @@
 
 %typemap(out, fragment="Calin_EigenVec_to_Python") Eigen::VectorXd
 {
-  // typemap(out) Eigen::VectorXd -- package_wide_definitions.i
+  // typemap(out) Eigen::VectorXd -- calin_typemaps.i
   npy_intp size[1] { $1.size() };
   $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
   if(!$result)SWIG_fail;
@@ -241,7 +268,7 @@
 %typemap(typecheck, precedence=5000)
 Eigen::VectorXd
 {
-  // typemap(typecheck) Eigen::VectorXd -- package_wide_definitions.i
+  // typemap(typecheck) Eigen::VectorXd -- calin_typemaps.i
   $1 = is_array($input) ? 1 : 0;
 }
 
@@ -376,14 +403,14 @@ Eigen::VectorXd
 %typemap(in, fragment="Calin_Python_to_EigenMat")
      const Eigen::MatrixXd& (Eigen::MatrixXd temp)
 {
-  // typemap(in) const Eigen::MatrixXd& -- package_wide_definitions.i
+  // typemap(in) const Eigen::MatrixXd& -- calin_typemaps.i
   $1 = &temp;
   if(!calin_python_to_eigen_mat($input, $1))SWIG_fail;
 }
 
 %typemap(argout) const Eigen::MatrixXd&
 {
-  // typemap(argout) const Eigen::MatrixXd& -- package_wide_definitions.i
+  // typemap(argout) const Eigen::MatrixXd& -- calin_typemaps.i
   // nothing to see here
 }
 
@@ -392,14 +419,14 @@ Eigen::VectorXd
 %typemap(in, fragment="Calin_Python_to_EigenMat")
      Eigen::MatrixXd& (Eigen::MatrixXd temp)
 {
-  // typemap(in) Eigen::MatrixXd& -- package_wide_definitions.i
+  // typemap(in) Eigen::MatrixXd& -- calin_typemaps.i
   $1 = &temp;
   if(!calin_python_to_eigen_mat($input, $1))SWIG_fail;
 }
 
 %typemap(argout, fragment="Calin_EigenMat_to_Python") Eigen::MatrixXd&
 {
-  // typemap(argout) Eigen::MatrixXd& -- package_wide_definitions.i
+  // typemap(argout) Eigen::MatrixXd& -- calin_typemaps.i
   if(!calin_eigen_mat_to_python($1, $input))SWIG_fail;
 }
 
@@ -407,13 +434,13 @@ Eigen::VectorXd
 
 %typemap(in, numinputs=0) Eigen::MatrixXd &OUTPUT (Eigen::MatrixXd temp)
 {
-  // typemap(in) Eigen::MatrixXd &OUTPUT -- package_wide_definitions.i
+  // typemap(in) Eigen::MatrixXd &OUTPUT -- calin_typemaps.i
   $1 = &temp;
 }
 
 %typemap(argout, fragment="Calin_EigenMat_to_Python") Eigen::MatrixXd &OUTPUT
 {
-  // typemap(argout) Eigen::MatrixXd &OUTPUT -- package_wide_definitions.i
+  // typemap(argout) Eigen::MatrixXd &OUTPUT -- calin_typemaps.i
   npy_intp size[1] { $1->size() };
   PyObject* temp_array = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
   if(!temp_array)SWIG_fail;
@@ -429,7 +456,7 @@ Eigen::VectorXd
 
 %typemap(out, fragment="Calin_EigenMat_to_Python") Eigen::MatrixXd
 {
-  // typemap(out) Eigen::MatrixXd -- package_wide_definitions.i
+  // typemap(out) Eigen::MatrixXd -- calin_typemaps.i
   npy_intp size[1] { $1.size() };
   $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
   if(!$result)SWIG_fail;

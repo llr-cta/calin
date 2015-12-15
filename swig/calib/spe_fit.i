@@ -33,8 +33,9 @@
   import_array();
 %}
 
-
-%include "package_wide_definitions.i"
+%include "numpy.i"
+%import "package_wide_definitions.i"
+%include "calin_typemaps.i"
 
 %import "math/function.i"
 %import "math/histogram.i"

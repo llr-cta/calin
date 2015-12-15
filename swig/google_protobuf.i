@@ -1,3 +1,28 @@
+//-*-mode:swig;-*-
+
+/* 
+
+   calin/google_protobuf.i -- Stephen Fegan -- 2015-12-10
+
+   SWIG interface file for supported elements from protobuf Message
+   and Descriptoy
+
+   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+   
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+    
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
 %module (package="calin") google_protobuf
 
 %{
@@ -6,7 +31,8 @@
   #define SWIG_FILE_WITH_INIT
 %}
 
-%include "package_wide_definitions.i"
+%import "package_wide_definitions.i"
+%include "calin_typemaps.i"
 
 %import<stdint.i>
 %import<std_string.i>
@@ -21,7 +47,7 @@ namespace google { namespace protobuf {
 %newobject Message::New() const;
 %nodefaultctor Message;
 %nodefaultctor Descriptor;
-   
+
 class Message
 {
  public:
@@ -40,10 +66,14 @@ class Message
   bool IsInitialized();
   int ByteSize();
 
-  bool ParseFromString(const std::string& data);
-  bool ParsePartialFromString(const std::string& data);
-  std::string SerializeAsString();
-  std::string SerializePartialAsString();
+  bool ParseFromString(const std::string& calin_bytes_in);
+  bool ParsePartialFromString(const std::string& calin_bytes_in);
+  %extend {
+    void SerializeAsString(std::string& calin_bytes_out) {
+      calin_bytes_out = $self->SerializeAsString(); }
+    void SerializePartialAsString(std::string& calin_bytes_out) {
+      calin_bytes_out = $self->SerializePartialAsString(); }
+  }
 };
 
 class Descriptor

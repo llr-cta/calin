@@ -15,4 +15,6 @@ foreach (interface_file ${CALIN_MATH_SWIG_FILES})
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${output_file}.py  DESTINATION python/calin/math)
 endforeach (interface_file)
 
+add_dependencies(_histogram _histogram_pb)
+
 install(FILES __init__.py DESTINATION python/calin/math)

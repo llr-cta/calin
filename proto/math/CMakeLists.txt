@@ -3,6 +3,7 @@ set(CALIN_SWIG_PROTO histogram.proto rng.proto)
 PROTOBUF_GENERATE_CPP(ProtoSources ProtoHeaders ${CALIN_SWIG_PROTO})
 
 set(CALIN_TARGET_LIBRARY calin_proto_math)
+set(CALIN_SWIG_INSTALL_DIR python/calin/ix/math)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${ProtoSources}) 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -26,7 +27,7 @@ foreach (proto_interface_file ${CALIN_SWIG_PROTO})
 	set_target_properties(_${output_file}_pb PROPERTIES NO_SONAME ON)
 	set_target_properties(_${output_file}_pb PROPERTIES PREFIX "")
 	target_link_libraries(_${output_file}_pb calin_proto ${CALIN_TARGET_LIBRARY} ${PYTHON_LIBRARIES} ${PROTOBUF_LIBRARY})
-	install(TARGETS _${output_file}_pb  DESTINATION python/calin/ix/math)
-	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${output_file}.py  DESTINATION python/calin/ix/math)
+	install(TARGETS _${output_file}_pb  DESTINATION ${CALIN_SWIG_INSTALL_DIR})
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${output_file}.py  DESTINATION ${CALIN_SWIG_INSTALL_DIR})
 endforeach (proto_interface_file)
 
