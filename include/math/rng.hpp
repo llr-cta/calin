@@ -61,6 +61,9 @@ class RNGCore
   virtual ~RNGCore();
   virtual uint64_t uniform_uint64() = 0;
   virtual void save_to_proto(ix::math::rng::RNGData* proto) const = 0;
+  ix::math::rng::RNGData* as_proto() const {
+    auto* proto = new ix::math::rng::RNGData;
+    save_to_proto(proto); return proto; }
   static RNGCore* create_from_proto(const ix::math::rng::RNGData& proto,
                                     bool restore_state = false);
 };
@@ -76,8 +79,12 @@ class RNG
 
   ~RNG();
 
-  void save_to_proto(ix::math::rng::RNGData* proto);
+  void save_to_proto(ix::math::rng::RNGData* proto) const;
 
+  ix::math::rng::RNGData* as_proto() const {
+    auto* proto = new ix::math::rng::RNGData;
+    save_to_proto(proto); return proto; }
+  
   uint64_t uniform_uint64() { return core_->uniform_uint64(); }
 
   uint32_t uniform_uint32() {

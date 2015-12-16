@@ -122,7 +122,7 @@ RNG::~RNG()
   if(adopt_core_)delete core_;
 }
 
-void RNG::save_to_proto(ix::math::rng::RNGData* proto)
+void RNG::save_to_proto(ix::math::rng::RNGData* proto) const
 {
   core_->save_to_proto(proto);
   proto->set_bm_hascached(bm_hascached_);

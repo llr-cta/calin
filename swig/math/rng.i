@@ -38,4 +38,7 @@
 %import "package_wide_definitions.i"
 
 %import "math/rng.pb.i"
+
+%newobject calin::math::rng::RNG::as_proto() const;
+%newobject calin::math::rng::RNGCore::as_proto() const;
 %include "math/rng.hpp"
