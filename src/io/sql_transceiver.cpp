@@ -170,7 +170,7 @@ SQLTransceiver::list_all_table_columns(const SQLTable* t)
   return fields;
 }
 
-calin::io::sql_transceiver::SQLTransceiver::SQLTable* SQLTransceiver::
+calin::io::sql_transceiver::SQLTable* SQLTransceiver::
 make_keyed_sqltable_tree(const std::string& table_name,
                          const google::protobuf::Descriptor* d_data,
                          const google::protobuf::Descriptor* d_key,
@@ -190,7 +190,7 @@ make_keyed_sqltable_tree(const std::string& table_name,
   return t;
 }
 
-calin::io::sql_transceiver::SQLTransceiver::SQLTable* SQLTransceiver::
+calin::io::sql_transceiver::SQLTable* SQLTransceiver::
 make_sqltable_tree(const std::string& table_name,
                    const google::protobuf::Descriptor* d,
                    bool ignore_key_option)
@@ -199,7 +199,7 @@ make_sqltable_tree(const std::string& table_name,
                               ignore_key_option);
 }
 
-calin::io::sql_transceiver::SQLTransceiver::SQLTable* SQLTransceiver::
+calin::io::sql_transceiver::SQLTable* SQLTransceiver::
 make_extkey_tree(const std::string& table_name,
                  const google::protobuf::Descriptor* d)
 {
@@ -217,7 +217,7 @@ make_extkey_tree(const std::string& table_name,
   return t;
 }
 
-calin::io::sql_transceiver::SQLTransceiver::SQLTable* SQLTransceiver::
+calin::io::sql_transceiver::SQLTable* SQLTransceiver::
 r_make_sqltable_tree(const std::string& table_name,
                      const google::protobuf::Descriptor* d,
                      SQLTable* parent_table,

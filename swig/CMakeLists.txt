@@ -18,6 +18,7 @@ endforeach (interface_file)
 install(FILES __init__.py DESTINATION python/calin)
 
 add_subdirectory(math) 
+add_subdirectory(io) 
 add_subdirectory(calib) 
 add_subdirectory(simulation) 
 

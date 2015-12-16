@@ -36,6 +36,86 @@
 
 namespace calin { namespace io { namespace sql_transceiver {
 
+struct SQLTable;
+
+enum DataPointerType {
+  PT_NULL, PT_CONST_UINT64, PT_CONST_MESSAGE, PT_UINT64, PT_MESSAGE  };
+    
+union DataPointer {
+  DataPointer(): p_void(nullptr) { /* nothing to see here */ }
+  void* p_void;
+  const uint64_t* p_const_uint64;
+  uint64_t* p_uint64;
+  const google::protobuf::Message* p_const_message;
+  google::protobuf::Message* p_message;
+};
+
+struct SQLTableField
+{
+  enum FieldType {
+    KEY_INHERITED, KEY_USER_SUPPLIED, KEY_PROTO_DEFINED, KEY_PARENT_OID,
+    KEY_LOOP_ID, KEY_MAP_KEY, POD };
+  SQLTable*                                 table = nullptr;
+  SQLTableField*                            field_origin = nullptr;
+  FieldType                                 field_type;
+  std::string                               field_name;
+  const google::protobuf::FieldDescriptor*  field_d = nullptr;
+  std::vector<const google::protobuf::FieldDescriptor*> field_d_path;
+  
+  DataPointerType                           data_type = PT_NULL;
+  DataPointer                               data;
+  const google::protobuf::OneofDescriptor*  oneof_d = nullptr;
+
+  bool is_key() const { return field_type!=POD; }
+  bool is_inherited() const { return field_type==KEY_INHERITED or
+        field_type==KEY_PARENT_OID; }
+
+  void set_data_null() { data_type = PT_NULL; data.p_void = nullptr; }
+  void set_data_const_uint64(const uint64_t* p) {
+    data_type = PT_CONST_UINT64; data.p_const_uint64 = p; }
+  void set_data_uint64(uint64_t* p) {
+    data_type = PT_UINT64; data.p_uint64 = p; }
+  void set_data_const_message(const google::protobuf::Message* p) {
+    data_type = PT_CONST_MESSAGE; data.p_const_message = p; }
+  void set_data_message(google::protobuf::Message* p) {
+    data_type = PT_MESSAGE; data.p_message = p; }
+    
+  bool is_data_null() const { return data_type == PT_NULL; }
+  const uint64_t* data_const_uint64() const {
+    if(data_type == PT_CONST_UINT64) return data.p_const_uint64;
+    else if(data_type == PT_UINT64) return data.p_uint64;
+    else return nullptr; }
+  uint64_t* data_uint64() const {
+    return data_type == PT_UINT64 ? data.p_uint64 : nullptr; }
+  const google::protobuf::Message* data_const_message() const {
+    if(data_type == PT_CONST_MESSAGE) return data.p_const_message;
+    else if(data_type == PT_MESSAGE) return data.p_message;
+    else return nullptr; }
+  google::protobuf::Message* data_message() const {
+    return data_type == PT_MESSAGE ? data.p_message : nullptr; }
+};
+
+struct SQLTable
+{
+  ~SQLTable() {
+    for(auto ifield : fields)delete ifield;
+    for(auto itable : sub_tables)delete itable;
+    delete stmt;
+  }
+  
+  std::string                               table_name;
+  SQLTable*                                 parent_table = nullptr;
+  const google::protobuf::FieldDescriptor*  parent_field_d = nullptr;
+  std::vector<const google::protobuf::FieldDescriptor*> parent_field_d_path;
+  std::vector<SQLTableField*>               fields;
+  std::vector<SQLTable*>                    sub_tables;
+  SQLStatement*                             stmt = nullptr;
+  bool children_need_oid() const {
+    for(auto t : sub_tables) { for(auto f : t->fields)
+        if(f->field_type == SQLTableField::KEY_PARENT_OID)return true; }
+    return false; }
+};
+
 class SQLTransceiver
 {
  public:
@@ -79,86 +159,6 @@ class SQLTransceiver
   //
   // ===========================================================================
 
-  struct SQLTable;
-  
-  struct SQLTableField
-  {
-    enum FieldType {
-      KEY_INHERITED, KEY_USER_SUPPLIED, KEY_PROTO_DEFINED, KEY_PARENT_OID,
-      KEY_LOOP_ID, KEY_MAP_KEY, POD };
-    SQLTable*                                 table = nullptr;
-    SQLTableField*                            field_origin = nullptr;
-    FieldType                                 field_type;
-    std::string                               field_name;
-    const google::protobuf::FieldDescriptor*  field_d = nullptr;
-    std::vector<const google::protobuf::FieldDescriptor*> field_d_path;
-
-    enum DataPointerType {
-      PT_NULL, PT_CONST_UINT64, PT_CONST_MESSAGE, PT_UINT64, PT_MESSAGE  };
-    
-    union DataPointer {
-      DataPointer(): p_void(nullptr) { /* nothing to see here */ }
-      void* p_void;
-      const uint64_t* p_const_uint64;
-      uint64_t* p_uint64;
-      const google::protobuf::Message* p_const_message;
-      google::protobuf::Message* p_message;
-    };
-
-    DataPointerType                           data_type = PT_NULL;
-    DataPointer                               data;
-    const google::protobuf::OneofDescriptor*  oneof_d = nullptr;
-
-    bool is_key() const { return field_type!=POD; }
-    bool is_inherited() const { return field_type==KEY_INHERITED or
-          field_type==KEY_PARENT_OID; }
-
-    void set_data_null() { data_type = PT_NULL; data.p_void = nullptr; }
-    void set_data_const_uint64(const uint64_t* p) {
-      data_type = PT_CONST_UINT64; data.p_const_uint64 = p; }
-    void set_data_uint64(uint64_t* p) {
-      data_type = PT_UINT64; data.p_uint64 = p; }
-    void set_data_const_message(const google::protobuf::Message* p) {
-      data_type = PT_CONST_MESSAGE; data.p_const_message = p; }
-    void set_data_message(google::protobuf::Message* p) {
-      data_type = PT_MESSAGE; data.p_message = p; }
-    
-    bool is_data_null() const { return data_type == PT_NULL; }
-     const uint64_t* data_const_uint64() const {
-      if(data_type == PT_CONST_UINT64) return data.p_const_uint64;
-      else if(data_type == PT_UINT64) return data.p_uint64;
-      else return nullptr; }
-    uint64_t* data_uint64() const {
-      return data_type == PT_UINT64 ? data.p_uint64 : nullptr; }
-    const google::protobuf::Message* data_const_message() const {
-      if(data_type == PT_CONST_MESSAGE) return data.p_const_message;
-      else if(data_type == PT_MESSAGE) return data.p_message;
-      else return nullptr; }
-    google::protobuf::Message* data_message() const {
-      return data_type == PT_MESSAGE ? data.p_message : nullptr; }
-  };
-
-  struct SQLTable
-  {
-    ~SQLTable() {
-      for(auto ifield : fields)delete ifield;
-      for(auto itable : sub_tables)delete itable;
-      delete stmt;
-    }
-
-    std::string                               table_name;
-    SQLTable*                                 parent_table = nullptr;
-    const google::protobuf::FieldDescriptor*  parent_field_d = nullptr;
-    std::vector<const google::protobuf::FieldDescriptor*> parent_field_d_path;
-    std::vector<SQLTableField*>               fields;
-    std::vector<SQLTable*>                    sub_tables;
-    SQLStatement*                             stmt = nullptr;
-    bool children_need_oid() const {
-      for(auto t : sub_tables) { for(auto f : t->fields)
-          if(f->field_type == SQLTableField::KEY_PARENT_OID)return true; }
-      return false; }
-  };
-  
   SQLTable*
   make_keyed_sqltable_tree(const std::string& table_name,
                            const google::protobuf::Descriptor* d_data,
