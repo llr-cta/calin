@@ -23,6 +23,7 @@
 */
 
 %include "numpy.i"
+%include "stdint.i"
 %include "std_vector.i"
 %include "std_string.i"
 %include "typemaps.i"
