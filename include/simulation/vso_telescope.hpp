@@ -125,6 +125,15 @@ class VSOTelescope
   //! Transform momentum-like vector from reflector to global
   void reflectorToGlobal_mom(math::vs_physics::Vec3D& v) const; 
 
+  //! Transform position-like vector from global to reflector
+  void focalPlaneToReflector_pos(math::vs_physics::Vec3D& v) const; 
+  //! Transform momentum-like vector from global to reflector
+  void focalPlaneToReflector_mom(math::vs_physics::Vec3D& v) const; 
+  //! Transform position-like vector from reflector to global
+  void reflectorToFocalPlane_pos(math::vs_physics::Vec3D& v) const; 
+  //! Transform momentum-like vector from reflector to global
+  void reflectorToFocalPlane_mom(math::vs_physics::Vec3D& v) const; 
+  
   //! Transform particle global to reflector
   void globalToReflector(math::vs_physics::Particle& p) const; 
   //! Transform particle reflector to global

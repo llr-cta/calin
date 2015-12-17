@@ -23,9 +23,12 @@
 #include <sstream>
 #include <algorithm>
 
+#include <io/log.hpp>
 #include <math/hex_array.hpp>
 #include <simulation/vso_telescope.hpp>
 #include <simulation/vs_optics.pb.h>
+
+using namespace calin::io::log;
 
 using namespace calin::math::vs_physics;
 using namespace calin::simulation::vs_optics;
@@ -320,6 +323,34 @@ void VSOTelescope::reflectorToGlobal_mom(Vec3D& v) const
   v.Rotate(fRotationVector);
 }
 
+void VSOTelescope::focalPlaneToReflector_pos(math::vs_physics::Vec3D& v) const
+{
+  // First: Rotate coordinate system
+  v.Rotate(fFPRotation);
+  // Second: Translate from center of Focal Plane
+  v += fFPTranslation;
+}
+
+void VSOTelescope::focalPlaneToReflector_mom(math::vs_physics::Vec3D& v) const
+{
+  // First: Rotate coordinate system
+  v.Rotate(fFPRotation);
+}
+
+void VSOTelescope::reflectorToFocalPlane_pos(math::vs_physics::Vec3D& v) const
+{
+  // First: Translate to center of Focal Plane
+  v -= fFPTranslation;
+  // Second: Rotate coordinate system
+  v.Rotate(-fFPRotation);
+}
+
+void VSOTelescope::reflectorToFocalPlane_mom(math::vs_physics::Vec3D& v) const
+{
+  // Second: Rotate coordinate system
+  v.Rotate(-fFPRotation);
+}
+
 void VSOTelescope::globalToReflector(Particle& p) const
 {
   // First: Translate from center of array to drive axes intersection
@@ -553,11 +584,16 @@ populateMirrorsAndPixelsRandom(
   
   unsigned module_size = param.pixel().hex_module_size();
   std::set<unsigned> pixel_hexids;
-  for(auto id : math::hex_array::cluster_hexid_to_member_hexid(0, module_size))
-    pixel_hexids.insert(id);
+  if(modules_missing.find(0) == modules_missing.end())
+    for(auto id : math::hex_array::cluster_hexid_to_member_hexid(0, module_size))
+      pixel_hexids.insert(id);
   unsigned module_ring_id = 1;
   bool module_ring_in_camera = true;
-  while(module_ring_in_camera)
+  if(param.pixel().module_num_hex_rings()==0 and fCameraDiameter<=0)
+    module_ring_in_camera = false;
+  while(module_ring_in_camera
+        and (param.pixel().module_num_hex_rings()==0
+             or module_ring_id<=param.pixel().module_num_hex_rings()))
   {
     module_ring_in_camera = false;
     for(unsigned iseg=0;iseg<6;iseg++)
@@ -573,13 +609,15 @@ populateMirrorsAndPixelsRandom(
             cluster_hexid_to_center_xy(module_id, module_size, x, z);
         x *= fPixelSpacing;
         z *= fPixelSpacing;
-        if(std::sqrt(x*x+z*z) > fCameraDiameter/2.0)
+        if(fCameraDiameter>0 and
+           std::sqrt(x*x+z*z)>fCameraDiameter/2.0)
 	  continue; // skip module if position too far out
         module_ring_in_camera = true;
         for(auto id : math::hex_array::
                 cluster_hexid_to_member_hexid(module_id, module_size))
           pixel_hexids.insert(id);
       }
+    module_ring_id++;
   }
 
   unsigned pixelid = 0;
