@@ -1,7 +1,7 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CALIN_MATH_SWIG_FILES function.i pdf_1d.i histogram.i optimizer.i
-			  hessian.i special.i hex_array.i rng.i)
+			  hessian.i special.i hex_array.i rng.i vs_physics.i)
 
 set_source_files_properties(${CALIN_MATH_SWIG_FILES} PROPERTIES CPLUSPLUS ON)
 #set_source_files_properties(${CALIN_MATH_SWIG_FILES} PROPERTIES SWIG_FLAGS "-importall")

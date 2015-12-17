@@ -58,6 +58,35 @@
 
 namespace calin { namespace math { namespace vs_physics {
 
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Particle Data Group list of particle mass, width and charges
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/*! \class PDGData
+  \brief Container for Particle Data Group mass and width information
+*/
+class PDGData
+{
+ public:
+  PDGData(): 
+      mcid(), name(), 
+      mass(), mass_err_lo(), mass_err_hi(),
+      width(), width_err_lo(), width_err_hi(), charge()
+  { /* nothing to see here */ }
+  
+  int mcid;                // PDG Monte Carlo ID (see PDG review)
+  std::string name;        // PDG (non-authoritative) name
+  double mass;             // ergs
+  double mass_err_lo;      // ergs
+  double mass_err_hi;      // ergs
+  double width;            // ergs
+  double width_err_lo;     // ergs
+  double width_err_hi;     // ergs
+  int charge;              // e  --  we do not handle fractional charges
+
+  inline double Lifetime() const; // resonance lifetime [s]
+};
+
 /*! \class Particle
   \brief relativistic particle class
 */
@@ -65,8 +94,6 @@ namespace calin { namespace math { namespace vs_physics {
 class Particle
 {
  public:
-  class PDGData; // Forward declaration -- see later
-  
   inline Particle();                                 //!<Construct massless particle at rest
   inline Particle(const Particle& o);                //!<Copy construct
   
@@ -143,35 +170,6 @@ class Particle
     
   void WriteParticle(std::ostream &stream);  //!<writes particle data to a stream
   bool ReadParticle(std::istream &stream);  //!<initializes the particle from a stream  
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // Particle Data Group list of particle mass, width and charges
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  /*! \class PDGData
-    \brief Container for Particle Data Group mass and width information
-  */
-  class PDGData
-  {
-   public:
-    PDGData(): 
-	mcid(), name(), 
-	mass(), mass_err_lo(), mass_err_hi(),
-	width(), width_err_lo(), width_err_hi(), charge()
-    { /* nothing to see here */ }
-
-    int mcid;                // PDG Monte Carlo ID (see PDG review)
-    std::string name;        // PDG (non-authoritative) name
-    double mass;             // ergs
-    double mass_err_lo;      // ergs
-    double mass_err_hi;      // ergs
-    double width;            // ergs
-    double width_err_lo;     // ergs
-    double width_err_hi;     // ergs
-    int charge;              // e  --  we do not handle fractional charges
-
-    inline double Lifetime() const; // resonance lifetime [s]
-  };
 
   inline static bool InitializePDGData(const std::string& filename=""); //!< Initialize PDG data
   static bool InitializePDGData(const std::string& filename,bool reinitialize); //!< Initialize or reinitialize PDG data
@@ -494,7 +492,7 @@ inline bool Particle::InitializePDGData(const std::string& filename)
   \param id: PDG MC number, see "Monte Carlo Particle Numbering Scheme"
   review in the PDG Review of Particle Physics.
 */
-inline const Particle::PDGData* Particle::GetPDGDataByID(int id)
+inline const PDGData* Particle::GetPDGDataByID(int id)
 {
   InitializePDGData();
   return s_pdgdata[id];
@@ -507,7 +505,7 @@ inline const Particle::PDGData* Particle::GetPDGDataByID(int id)
   \param id: PDG MC number, see "Monte Carlo Particle Numbering Scheme"
   review in the PDG Review of Particle Physics.
 */
-inline const Particle::PDGData* 
+inline const PDGData* 
 Particle::GetPDGDataByNameCharge(const std::string& name, int charge)
 {
   InitializePDGData();
@@ -518,7 +516,7 @@ Particle::GetPDGDataByNameCharge(const std::string& name, int charge)
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /*! Return the lifetime of the particle (resonance) in seconds
  */
-inline double Particle::PDGData::Lifetime() const
+inline double PDGData::Lifetime() const
 { 
   return calin::math::constants::cgs_hbar/width; 
 }
@@ -527,7 +525,7 @@ inline double Particle::PDGData::Lifetime() const
 
 #ifndef SWIG
 std::ostream& operator << (std::ostream& stream,
-                           const calin::math::vs_physics::Particle::PDGData& p);
+                           const calin::math::vs_physics::PDGData& p);
 std::ostream& operator << (std::ostream& stream,
                            const calin::math::vs_physics::Particle& p);
 #endif

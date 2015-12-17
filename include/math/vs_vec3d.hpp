@@ -112,7 +112,12 @@ class Vec3D
   void DumpShort(std::ostream& stream = std::cout) const; //!<prints coordinates
 
   inline Vec3D DeRotate(const Vec3D& r) const;
-    
+
+  inline Vec3D cross (const Vec3D& v) const { //!<vector product 
+    return *this ^ v; }
+  inline double dot (const Vec3D& v) const { //!<vector product 
+    return *this * v; }
+  
  public:
   double x, y, z;   //!<components
 

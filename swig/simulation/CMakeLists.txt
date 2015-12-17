@@ -1,6 +1,6 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-set(CALIN_SIMULATION_SWIG_FILES atmosphere.i)
+set(CALIN_SIMULATION_SWIG_FILES atmosphere.i vs_optics.i)
 
 set_source_files_properties(${CALIN_SIMULATION_SWIG_FILES} PROPERTIES CPLUSPLUS ON)
 #set_source_files_properties(${CALIN_SIMULATION_SWIG_FILES} PROPERTIES SWIG_FLAGS "-importall")

@@ -67,8 +67,8 @@ std::string DoubleToString( double d )
 } // anonymous namespace
 
 bool                                                      Particle::s_pdgdata_init = false;
-std::map<int, Particle::PDGData*>                         Particle::s_pdgdata;
-std::map<std::pair<std::string, int>, Particle::PDGData*> Particle::s_pdgdata_name_q;
+std::map<int, PDGData*>                         Particle::s_pdgdata;
+std::map<std::pair<std::string, int>, PDGData*> Particle::s_pdgdata_name_q;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Print vector components and vector norm in square
@@ -1095,7 +1095,7 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
 }
 
 std::ostream& operator << (std::ostream& stream,
-                           const calin::math::vs_physics::Particle::PDGData& p)
+                           const calin::math::vs_physics::PDGData& p)
 {  
   std::ostringstream s;
   s << std::setw(7) << std::right << p.mcid << ' '
@@ -1130,12 +1130,12 @@ std::ostream& operator << (std::ostream& stream,
 int main()
 {
   Particle::InitializePDGData();
-  const std::map<int, Particle::PDGData*>& table = Particle::GetPDGDataList();
-  for(std::map<int, Particle::PDGData*>::const_iterator i = table.begin(); 
+  const std::map<int, PDGData*>& table = Particle::GetPDGDataList();
+  for(std::map<int, PDGData*>::const_iterator i = table.begin(); 
       i!=table.end(); i++)std::cout << *(i->second) << std::endl;
 
-  const Particle::PDGData* e_data(Particle::GetPDGDataByID(11));
-  const Particle::PDGData* p_data(Particle::GetPDGDataByNameCharge("p",+1));
+  const PDGData* e_data(Particle::GetPDGDataByID(11));
+  const PDGData* p_data(Particle::GetPDGDataByNameCharge("p",+1));
   std::cout << std::endl << *e_data << std::endl << *p_data << std::endl << std::endl;
   
   Particle g(Vec4D(0,0,0,0), Vec3D(1,0,0), .0016021765, 0, 0);   // .001 TeV ph / +x-dir
