@@ -103,6 +103,9 @@ class Vec3D
   inline Vec3D  operator & (const Vec3D& v) const;  //!<addition of rotations
 
   void dump_to_proto(ix::common_types::Vector3D* d) const;
+  ix::common_types::Vector3D* as_proto() const {
+    auto* d = new ix::common_types::Vector3D;
+    dump_to_proto(d); return d; }
   void set_from_proto(const ix::common_types::Vector3D& d);
   
   void dump_scaled_to_proto(ix::common_types::Vector3D* d, double scale) const;
