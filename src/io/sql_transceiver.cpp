@@ -1250,11 +1250,15 @@ field_dict(const google::protobuf::FieldDescriptor *d,
     number    = std::to_string(d->number());
   }
 
-  dict["DESC"]       = desc;
-  dict["UNITS"]      = units;
-  dict["NAME"]       = name;
-  dict["FULL_NAME"]  = full_name;
-  dict["NUMBER"]     = number;
+  dict["DESC"]         = desc;
+  while(not desc.empty() and
+        (std::ispunct(desc.back()) or std::isspace(desc.back())))
+    desc.erase(desc.size()-1);
+  dict["DESC_NOPUNCT"] = desc;
+  dict["UNITS"]        = units;
+  dict["NAME"]         = name;
+  dict["FULL_NAME"]    = full_name;
+  dict["NUMBER"]       = number;
 
   return dict;
 }

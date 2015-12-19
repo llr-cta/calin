@@ -32,16 +32,15 @@ package calin.ix.iact.telescope_event;
 message ClockTime {
   uint32 clock_id                       = 1 [
       (CFO).desc = "Clock ID" ];
-  uint64 clock_time                     = 2 [
-      (CFO).desc = "Time according to the clock. Number of TAI nanoseconds "
-      "since the epoch of 2000-01-01.",
-      (CFO).units = "ns" ];
+  common_types.Time clock_time          = 2 [
+      (CFO).desc = "Time according to some clock.",
+      (CFO).inline = true];
 };
 
 message IntegratedCharges {
   repeated uint32 channel_id            = 1 [
       (CFO).desc = "IDs for channels with a charge present. If all channels in "
-      "the camera are present then this can be neglected" ];
+      "the camera are present then this can be empty." ];
   repeated fixed32 charge               = 2 [
       (CFO).desc = "Integrated charges.",
       (CFO).units = "dc"];
@@ -51,7 +50,22 @@ message IntegratedCharges {
   repeated fixed32 time_over_threshold  = 4 [
       (CFO).desc = "Time over threshold in samples.",
       (CFO).units = "samples"];
-}
+};
+
+message OneChannelWaveform {
+  repeated uint32 waveform              = 1 [
+      (CFO).desc = "Waveform for one channel.",
+      (CFO).units = "dc" ];
+};
+
+message Waveforms {
+  repeated uint32 channel_id            = 1 [
+      (CFO).desc = "IDs for channels with a waveform present. If all channels "
+      "in the camera are present then this can be empty." ];
+  repeated OneChannelWaveform waveform  = 2 [
+      (CFO).desc = "Sampled waveforms.",
+      (CFO).units = "dc" ];
+};
 
 enum TriggerType {
   SCIENCE, SOFTWARE, PERIODIC_PEDESTAL, EXTENAL_FLASHER, INTERNAL_FLASHER,

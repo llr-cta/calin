@@ -126,7 +126,8 @@ message FlexableCelestialCoordinates
 message Time
 {
   int64 epoch_ns                        = 1
-    [(CFO).desc = "Number of nanoseconds past the MET epoch of ",
+    [(CFO).desc = "$PARENT_DESC_NOPUNCT$. Number of TAI nanoseconds since the "
+     "epoch of mignight of 2000-01-01.",
      (CFO).units = "ns"];
 };
 
@@ -142,12 +143,12 @@ message SpectralResponsePoint
 message Vector3D
 {
   double x                              = 1
-    [(CFO).desc = "$PARENT_DESC$X-coordinate.",
+    [(CFO).desc = "$PARENT_DESC_NOPUNCT$. X-coordinate.",
      (CFO).units = "$PARENT_UNITS$"];
   double y                              = 2
-    [(CFO).desc = "$PARENT_DESC$Y-coordinate.",
+    [(CFO).desc = "$PARENT_DESC_NOPUNCT$. Y-coordinate.",
      (CFO).units = "$PARENT_UNITS$"];
   double z                              = 3
-    [(CFO).desc = "$PARENT_DESC$Z-coordinate.",
+    [(CFO).desc = "$PARENT_DESC_NOPUNCT$. Z-coordinate.",
      (CFO).units = "$PARENT_UNITS$"];
 };
