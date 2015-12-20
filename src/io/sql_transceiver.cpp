@@ -259,9 +259,21 @@ r_make_sqltable_tree(const std::string& table_name,
       sub_table = r_make_sqltable_tree(sub_name(table_name, f->name()),
                                        f->message_type(), t, f, true);
 
+      bool inline_message = false;
+      if(f->message_type()->options().HasExtension(CMO))
+        inline_message = f->message_type()->options().GetExtension(CMO).
+                         sql().default_inline_message();
+      if(fopt->HasExtension(CFO) and
+         fopt->GetExtension(CFO).has_sql())
+      {
+        if(fopt->GetExtension(CFO).sql().inline_message())
+          inline_message = true;
+        else if(fopt->GetExtension(CFO).sql().dont_inline_message())
+          inline_message = false;
+      }
+      
       if((parent_field_d and parent_field_d->is_map()) or
-         (!f->is_repeated() and fopt->HasExtension(CFO) and
-          fopt->GetExtension(CFO).sql().inline_message()))
+         (!f->is_repeated() and inline_message))
       {
         // Message can be inlined - so move its fields into primary table
 
@@ -1254,6 +1266,16 @@ field_dict(const google::protobuf::FieldDescriptor *d,
   while(not desc.empty() and
         (std::ispunct(desc.back()) or std::isspace(desc.back())))
     desc.erase(desc.size()-1);
+  dict["DESC_NOPUNCT"] = desc;
+  dict["DESC_PS"] = desc;
+  dict["DESC_CS"] = desc;
+  dict["DESC_SS"] = desc;
+  if(not desc.empty())
+  {
+    dict["DESC_PS"] += ". ";
+    dict["DESC_CS"] += ", ";
+    dict["DESC_SS"] += "; ";
+  }
   dict["DESC_NOPUNCT"] = desc;
   dict["UNITS"]        = units;
   dict["NAME"]         = name;

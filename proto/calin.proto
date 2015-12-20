@@ -28,33 +28,44 @@ import "google/protobuf/descriptor.proto";
 
 package calin;
 
-message SQLOptions
-{
-  bool dont_store      = 1;
-  bool is_key          = 2;
-  bool inline_message  = 3;
-  string index_name    = 4;
+message SQLFieldOptions {
+  bool dont_store                       = 1;
+  bool is_key                           = 2;
+  bool inline_message                   = 3;
+  bool dont_inline_message              = 4;
+  string index_name                     = 5;
 };
- 
-message FieldOptions
-{
+
+message SQLMessageOptions {
+  bool default_inline_message           = 1;
+}
+  
+message FieldOptions {
   enum Int32StorageType {
     INT_32   = 0;
     INT_16   = 1;
     INT_8    = 2;
   }
       
-  string            desc        = 1; // Description string
-  string            units       = 2; // Units
-  string            ref         = 3; // Reference document or URL
-  double            min_val     = 4; // Smallest allowed value as double
-  double            max_val     = 5; // Largest allowed value as double
-  Int32StorageType  int32_type  = 100;
-  bool              dont_store  = 101;
-  SQLOptions        sql         = 1000;
+  string            desc                = 1; // Description string
+  string            units               = 2; // Units
+  string            ref                 = 3; // Reference document or URL
+  double            min_val             = 4; // Smallest allowed value as double
+  double            max_val             = 5; // Largest allowed value as double
+  Int32StorageType  int32_type          = 100;
+  bool              dont_store          = 101;
+  SQLFieldOptions   sql                 = 1000;
+};
+
+message MessageOptions {
+  SQLMessageOptions sql                 = 1000;
 };
 
 extend google.protobuf.FieldOptions {
-  calin.FieldOptions CFO = 50000;
+  calin.FieldOptions CFO                = 50000;
+};
+
+extend google.protobuf.MessageOptions {
+  calin.MessageOptions CMO              = 50000;
 };
 

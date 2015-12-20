@@ -33,7 +33,7 @@ message ClockTime {
   uint32 clock_id                       = 1 [
       (CFO).desc = "Clock ID" ];
   common_types.Time clock_time          = 2 [
-      (CFO).desc = "Time according to some clock.",
+      (CFO).desc = "Time according to the clock.",
       (CFO).inline = true];
 };
 
@@ -81,7 +81,7 @@ message TelescopeEvent {
   bool array_trigger_received           = 4 [
       (CFO).desc = "Flag for whether array trigger was received." ];
   uint64 array_event_number             = 5 [
-      (CFO).desc = "Array event number or \"-1\" if not reveived." ];
+      (CFO).desc = "Array event number or \"-1\" if not received." ];
   repeated ClockTime local_clock_time   = 6 [
       (CFO).desc = "Vector of local clock times associated with event." ];
   
