@@ -50,6 +50,14 @@ message IntegratedCharges {
   repeated fixed32 time_over_threshold  = 4 [
       (CFO).desc = "Time over threshold in samples.",
       (CFO).units = "samples"];
+  repeated fixed32 window_start         = 5 [
+      (CFO).desc = "Start of integration or sampling window if different from "
+      "one channel to another.",
+      (CFO).units = "samples"];
+  repeated fixed32 window_size          = 6 [
+      (CFO).desc = "Width of integration window if different from "
+      "one channel to another.",
+      (CFO).units = "samples"];
 };
 
 message ChannelWaveform {
@@ -74,17 +82,22 @@ message DigitizedSkyImage {
   bool zero_suppression_applied         = 2 [
       (CFO).desc = "True if zero suppression has been applied, i.e. if "
       "some channels (waveforms AND charges) have been discarded by the DAQ." ];
-  IntegratedCharges channel_charges     = 3 [
+  IntegratedCharges camera_charges      = 3 [
       (CFO).desc = "Integrated charge (waveform sum) in each of the pixels "
       "retained in the event." ];
-  Waveforms channel_waveforms           = 4 [
+  Waveforms camera_waveforms            = 4 [
       (CFO).desc = "Regularly sampled waveform from each of the pixels "
       "retained in the event." ];
 };
 
+message ChannelTriggerMap {
+  repeated uint32 hit_channel_id        = 1 [
+      (CFO).desc = "Channel ID for all channels that triggered." ];
+};
+
 enum TriggerType {
-  SCIENCE, SOFTWARE, PERIODIC_PEDESTAL, EXTENAL_FLASHER, INTERNAL_FLASHER,
-    FORCED_ARRAY };
+  SCIENCE, SOFTWARE, PEDESTAL, EXTENAL_FLASHER, INTERNAL_FLASHER,
+    FORCED_BY_ARRAY };
 
 message TelescopeEvent {
   int32 telescope_id                    = 1 [
@@ -108,5 +121,8 @@ message TelescopeEvent {
   DigitizedSkyImage low_gain_image      = 102 [
       (CFO).desc = "Sky image recorded in the low-gain path of a dual-gain "
       "camera." ];
+
+  ChannelTriggerMap trigger_map         = 200 [
+      (CFO).desc = "Map of channels that triggered." ];
 };
 
