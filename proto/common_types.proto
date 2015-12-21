@@ -30,6 +30,8 @@ package calin.ix.common_types;
 
 message EarthCoordinates
 {
+  option (CMO).sql.default_inline_message = true;
+
   double latitude                       = 1
     [(CFO).desc = "Latitude of position. North positive.",
      (CFO).units = "deg", (CFO).min_val=-90, (CFO).max_val=90];
@@ -47,6 +49,8 @@ message EarthCoordinates
 
 message HorizontalCoordinates
 {
+  option (CMO).sql.default_inline_message = true;
+
   double altitude                       = 1
     [(CFO).desc = "Angle of point with respect to the local horizon, with"
      "horizon at 0 and zenith at +90.",
@@ -59,11 +63,13 @@ message HorizontalCoordinates
 
 message EquatorialCoordinates
 {
+  option (CMO).sql.default_inline_message = true;
+
   enum EpochTimeUnits {
-    JULIAN_YEARS                        = 0;
-    BESSELIAN_YEARS                     = 1; // obsolete
-    JULIAN_DATE                         = 2;
-    MODIFIED_JULIAN_DATE                = 3;
+    JULIAN_YEARS                        = 0; // e.g. 2000.0
+    BESSELIAN_YEARS                     = 1; // e.g. 1950.0 obsolete
+    JULIAN_DATE                         = 2; // e.g. 2451544.500000
+    MODIFIED_JULIAN_DATE                = 3; // e.g. 51544.0
   };
 
   double declination                    = 1
@@ -91,6 +97,8 @@ message EquatorialCoordinates
 
 message StringifiedEquatorialCoordinates
 {
+  option (CMO).sql.default_inline_message = true;
+
   string declination                    = 1
     [(CFO).desc = "Anglar distance of point from celestial equator in "
      "given epoch, positive to the North and negative to the South. Points "
@@ -125,6 +133,8 @@ message FlexableCelestialCoordinates
 
 message Time
 {
+  option (CMO).sql.default_inline_message = true;
+
   int64 epoch_ns                        = 1
     [(CFO).desc = "$PARENT_DESC_PS$Number of TAI nanoseconds since the "
      "epoch of midnight of 2000-01-01 UTC.",
