@@ -48,15 +48,15 @@ message IntegratedCharges {
       (CFO).desc = "Time of peak signal within readout window in samples.",
       (CFO).units = "samples"];
   repeated fixed32 time_over_threshold  = 4 [
-      (CFO).desc = "Time over threshold in samples.",
+      (CFO).desc = "Time-over-threshold in samples.",
       (CFO).units = "samples"];
   repeated fixed32 window_start         = 5 [
       (CFO).desc = "Start of integration or sampling window if different from "
       "one channel to another.",
       (CFO).units = "samples"];
   repeated fixed32 window_size          = 6 [
-      (CFO).desc = "Width of integration window if different from "
-      "one channel to another.",
+      (CFO).desc = "Width of integration window if different from one channel "
+      "to another.",
       (CFO).units = "samples"];
 };
 
@@ -76,16 +76,10 @@ message Waveforms {
 };
 
 message DigitizedSkyImage {
-  bool waveform_suppression_applied     = 1 [
-      (CFO).desc = "True if waveform suppression has been applied, i.e. if "
-      "some digitized waveforms have been discarded by the DAQ." ];
-  bool zero_suppression_applied         = 2 [
-      (CFO).desc = "True if zero suppression has been applied, i.e. if "
-      "some channels (waveforms AND charges) have been discarded by the DAQ." ];
-  IntegratedCharges camera_charges      = 3 [
+  IntegratedCharges camera_charges      = 1 [
       (CFO).desc = "Integrated charge (waveform sum) in each of the pixels "
       "retained in the event." ];
-  Waveforms camera_waveforms            = 4 [
+  Waveforms camera_waveforms            = 2 [
       (CFO).desc = "Regularly sampled waveform from each of the pixels "
       "retained in the event." ];
 };
@@ -98,6 +92,9 @@ message ChannelTriggerMap {
 enum TriggerType {
   SCIENCE, SOFTWARE, PEDESTAL, EXTENAL_FLASHER, INTERNAL_FLASHER,
     FORCED_BY_ARRAY };
+
+enum ImageTreatmentMode {
+  SCIENCE, PASS_THROUGH };
 
 message TelescopeEvent {
   int32 telescope_id                    = 1 [
@@ -112,7 +109,9 @@ message TelescopeEvent {
       (CFO).desc = "Array event number or \"-1\" if not received." ];
   repeated ClockTime local_clock_time   = 6 [
       (CFO).desc = "Vector of local clock times associated with event." ];
-
+  ImageTreatmentMode image_treatment    = 7 [
+      (CFO).desc = "Image treatment mode." ];
+  
   DigitizedSkyImage image               = 100 [
       (CFO).desc = "Sky image recorded in a single-gain camera." ];
   DigitizedSkyImage high_gain_image     = 101 [
@@ -123,6 +122,6 @@ message TelescopeEvent {
       "camera." ];
 
   ChannelTriggerMap trigger_map         = 200 [
-      (CFO).desc = "Map of channels that triggered." ];
+      (CFO).desc = "List of channels that triggered." ];
 };
 

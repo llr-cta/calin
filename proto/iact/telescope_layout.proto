@@ -1,0 +1,79 @@
+//-*-mode:protobuf; mode:font-lock;-*-
+
+/* 
+
+   calin/proto/telescope_layout.proto -- Stephen Fegan -- 2015-12-21
+
+   Protobufs for telescope layout
+
+   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+   
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+    
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "common_types.proto";
+
+package calin.ix.iact.telescope_layout;
+
+message ChannelLayout {
+  uint32 channel_index                  = 1 [
+      (CFO).desc = "Sequential index of channel corresponding to this pixel "
+      "in camera. This must be identical to index that this pixel has in the "
+      "telescope channel array." ];
+  int32 module_index                    = 2 [
+      (CFO).desc = "Index of the module that this channel belongs to, if "
+      "appropriate; -1 otherwise." ];
+  int32 pixel_index                     = 3 [
+      (CFO).desc = "Index of pixel that this channel corresponds to. A value "
+      "of -1 means there is no (sky facing) pixel associated with this "
+      "channel. It may, for example have an enginnering signal applied etc." ];
+  int32 pixel_grid_index                = 4 [
+      (CFO).desc = "Index of pixel withing hexagonal or square grid if the "
+      "camera follows a grid, -1 otherwise." ];
+  int32 channel_set_index               = 5 [
+      (CFO).desc = "Index of the channel-set that this channel belongs to. "
+      "This is generally used in a graded camera, which has multiple "
+      "sets different pixel types. It can also denote which of the different "
+      "engineering signals is connected to the channel." ];
+      
+  double x                              = 10 [
+      (CFO).desc = "X-position of pixel center in camera. Looking at the "
+      "camera from the center of the reflector, with the camera at zero "
+      "elevation, the X-axis corresponds to the horizontal plane, with "
+      "positive X is to the right, and the Y-axis is the vertical plane, with "
+      "positive Y up. If this channel is not connected to a real pixel "
+      "then the value should be Nan.",
+      (CFO).units = "cm" ];
+  double y                              = 11 [
+      (CFO).desc = "Y-position of pixel center in camera. Looking at the "
+      "camera from the center of the reflector, with the camera at zero "
+      "elevation, the X-axis corresponds to the horizontal plane, with "
+      "positive X is to the right, and the Y-axis is the vertical plane, with "
+      "positive Y up. If this channel is not connected to a real pixel "
+      "then the value should be Nan.",
+      (CFO).units = "cm" ];
+
+  repeated uint32 neighbour_channel_indexes = 20 [
+      (CFO).desc = "Indexes of the channels for all neigbouring pixels. "
+      "This forms a commutative relationship between the two channels." ]
+};
+
+message TelescopeLayout {
+  common_types.Vector3D position        = 1;
+  
+  repeated ChannelLayout channels       = 10;
+}
