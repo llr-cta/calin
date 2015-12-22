@@ -34,21 +34,24 @@ message ChannelLayout {
       (CFO).desc = "Sequential index of channel corresponding to this pixel "
       "in camera. This must be identical to index that this pixel has in the "
       "telescope channel array." ];
-  int32 module_index                    = 2 [
-      (CFO).desc = "Index of the module that this channel belongs to, if "
-      "appropriate; -1 otherwise." ];
-  int32 pixel_index                     = 3 [
+  int32 pixel_index                     = 2 [
       (CFO).desc = "Index of pixel that this channel corresponds to. A value "
       "of -1 means there is no (sky facing) pixel associated with this "
       "channel. It may, for example have an enginnering signal applied etc." ];
-  int32 pixel_grid_index                = 4 [
+  int32 pixel_grid_index                = 3 [
       (CFO).desc = "Index of pixel withing hexagonal or square grid if the "
       "camera follows a grid, -1 otherwise." ];
-  int32 channel_set_index               = 5 [
+  int32 channel_set_index               = 4 [
       (CFO).desc = "Index of the channel-set that this channel belongs to. "
       "This is generally used in a graded camera, which has multiple "
       "sets different pixel types. It can also denote which of the different "
       "engineering signals is connected to the channel." ];
+  int32 module_index                    = 5 [
+      (CFO).desc = "Index of the module that this channel belongs to, if "
+      "appropriate; -1 otherwise." ];
+  int32 module_channel_index            = 6 [
+      (CFO).desc = "Index of the channel within the module that it belongs to, "
+      "if appropriate; -1 otherwise." ];
       
   double x                              = 10 [
       (CFO).desc = "X-position of pixel center in camera. Looking at the "
@@ -73,7 +76,10 @@ message ChannelLayout {
 };
 
 message TelescopeLayout {
-  common_types.Vector3D position        = 1;
+  common_types.Vector3D position        = 1 [
+      (CFO).desc = "Position of the telescope relative to the center of the "
+      "array. The axes are +X, East, +Y, North, +Z, up.",
+      (CFO).units = "cm" ];
   
   repeated ChannelLayout channels       = 10;
 }
