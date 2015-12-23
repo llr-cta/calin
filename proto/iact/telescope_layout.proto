@@ -52,7 +52,7 @@ message ChannelLayout {
   int32 module_channel_index            = 6 [
       (CFO).desc = "Index of the channel within the module that it belongs to, "
       "if appropriate; -1 otherwise." ];
-      
+  
   double x                              = 10 [
       (CFO).desc = "X-position of pixel center in camera. Looking at the "
       "camera from the center of the reflector, with the camera at zero "
@@ -76,10 +76,50 @@ message ChannelLayout {
 };
 
 message TelescopeLayout {
-  common_types.Vector3D position        = 1 [
+  enum TelescopeType { NONE, HESS_CT1234, HESS_CT5, VERITAS, MAGIC, CTA_LST,
+      CTA_MST, CTA_SCT, CTA_ASTRI, CTA_GCT };
+
+  enum CameraType { TEST_BENCH,
+      HESS_CT1234, HESS_CT5, HESS_CT1234U, VERITAS, MAGIC,
+      LSTCAM, NECTARCAM, FLASHCAM, SCTCAM, ASTRI, CHEC_M, CHEC_S };
+  enum PixelGridLayout { NONE, HEX, SQUARE };
+
+  TelescopeType telescope_type          = 1 [
+      (CFO).desc = "Telescope type." ];
+  CameraType camera_type                = 2 [
+      (CFO).desc = "Camera type." ];
+  uint32 telescope_index                = 3 [
+      (CFO).desc = "Index of telescope in array." ];
+  uint32 camera_number                  = 4 [
+      (CFO).desc = "Number of camera within series" ];
+  
+  common_types.Vector3D position        = 10 [
       (CFO).desc = "Position of the telescope relative to the center of the "
       "array. The axes are +X, East, +Y, North, +Z, up.",
       (CFO).units = "cm" ];
+  double effective_focal_length         = 11 [
+      (CFO).desc = "Effective focal length of the telescope, for converting "
+      "linear dimensions on the camera plane to angles."
+      (CFO).units = "cm" ];
   
-  repeated ChannelLayout channels       = 10;
+  repeated ChannelLayout channels       = 20 [
+      (CFO).desc = "Channels in the telescope, arranged in the same order as "
+      "they appear in the data." ];
+  PixelGridLayout pixel_grid_layout     = 21 [
+      (CFO).desc = "Layout of pixels on the grid, if appropriate." ];
+  double pixel_grid_spacing             = 22 [
+      (CFO).desc = "Linear distance between pixels on the grid.",
+      (CFO).units = "cm" ];
+  double pixel_grid_rotation            = 23 [
+      (CFO).desc = "Rotation angle to align grid with pixels. This defines "
+      "a rotation matrix R, such that the position of the pixels on the "
+      "camera, y, can be calculated from the grid sites, x, as y=R*s*x + dy, "
+      "where s is the grid spacing and dy is the grid offset.",
+      (CFO).units = "deg" ];
+  double pixel_grid_offset_x            = 24 [
+      (CFO).desc = "X-offset of pixels from the grid.",
+      (CFO).units = "cm" ];
+  double pixel_grid_offset_y            = 25 [
+      (CFO).desc = "X-offset of pixels from the grid.",
+      (CFO).units = "cm" ];
 }
