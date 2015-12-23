@@ -33,8 +33,7 @@ message ClockTime {
   uint32 clock_id                       = 1 [
       (CFO).desc = "Clock ID" ];
   common_types.Time clock_time          = 2 [
-      (CFO).desc = "Time according to the clock.",
-      (CFO).inline = true];
+      (CFO).desc = "Time according to the clock." ];
 };
 
 message IntegratedCharges {
@@ -90,18 +89,25 @@ message ChannelTriggerMap {
 };
 
 enum TriggerType {
-  SCIENCE, SOFTWARE, PEDESTAL, EXTENAL_FLASHER, INTERNAL_FLASHER,
-    FORCED_BY_ARRAY };
+  TRIGGER_SCIENCE              = 0;
+  TRIGGER_SOFTWARE             = 1;
+  TRIGGER_PEDESTAL             = 2;
+  TRIGGER_EXTENAL_FLASHER      = 3;
+  TRIGGER_INTERNAL_FLASHER     = 4;
+  TRIGGER_FORCED_BY_ARRAY      = 5;
+};
 
 enum ImageTreatmentMode {
-  SCIENCE, PASS_THROUGH };
+  TREATMENT_SCIENCE            = 0;
+  TREATMENT_PASS_THROUGH       = 1;
+};
 
 message TelescopeEvent {
   int32 telescope_id                    = 1 [
       (CFO).desc = "Telescope ID." ];
   uint64 local_event_number             = 2 [
       (CFO).desc = "Local (camera) event number." ];
-  TriggerType                           = 3 [
+  TriggerType trigger_type              = 3 [
       (CFO).desc = "Trigger type." ];
   bool array_trigger_received           = 4 [
       (CFO).desc = "Flag for whether array trigger was received." ];

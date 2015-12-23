@@ -36,4 +36,5 @@ endforeach (proto_interface_file)
 
 add_subdirectory(math)
 add_subdirectory(simulation)
-add_subdirectory(io)
+add_subdirectory(io) 
+add_subdirectory(iact) 

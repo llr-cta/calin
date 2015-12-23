@@ -72,17 +72,27 @@ message ChannelLayout {
 
   repeated uint32 neighbour_channel_indexes = 20 [
       (CFO).desc = "Indexes of the channels for all neigbouring pixels. "
-      "This forms a commutative relationship between the two channels." ]
+      "This forms a commutative relationship between the two channels." ];
 };
 
 message TelescopeLayout {
-  enum TelescopeType { NONE, HESS_CT1234, HESS_CT5, VERITAS, MAGIC, CTA_LST,
-      CTA_MST, CTA_SCT, CTA_ASTRI, CTA_GCT };
+  enum TelescopeType {
+    NO_TELESCOPE                        = 0;
+    CTA_LST                             = 1;
+    CTA_MST                             = 2;
+    CTA_SCT                             = 3;
+  };
+  
+  enum CameraType {
+    NO_CAMERA                           = 0;
+    NECTARCAM_19MODULE_TESTBENCH        = 1000;
+  };
 
-  enum CameraType { TEST_BENCH,
-      HESS_CT1234, HESS_CT5, HESS_CT1234U, VERITAS, MAGIC,
-      LSTCAM, NECTARCAM, FLASHCAM, SCTCAM, ASTRI, CHEC_M, CHEC_S };
-  enum PixelGridLayout { NONE, HEX, SQUARE };
+  enum PixelGridLayout {
+    NO_GRID                             = 0;
+    HEX_GRID                            = 1;
+    SQUARE_GRID                         = 2;
+  };
 
   TelescopeType telescope_type          = 1 [
       (CFO).desc = "Telescope type." ];
@@ -99,7 +109,7 @@ message TelescopeLayout {
       (CFO).units = "cm" ];
   double effective_focal_length         = 11 [
       (CFO).desc = "Effective focal length of the telescope, for converting "
-      "linear dimensions on the camera plane to angles."
+      "linear dimensions on the camera plane to angles.",
       (CFO).units = "cm" ];
   
   repeated ChannelLayout channels       = 20 [
@@ -112,14 +122,16 @@ message TelescopeLayout {
       (CFO).units = "cm" ];
   double pixel_grid_rotation            = 23 [
       (CFO).desc = "Rotation angle to align grid with pixels. This defines "
-      "a rotation matrix R, such that the position of the pixels on the "
-      "camera, y, can be calculated from the grid sites, x, as y=R*s*x + dy, "
-      "where s is the grid spacing and dy is the grid offset.",
+      "a rotation matrix R_mat, such that the position of the pixels on the "
+      "camera, y_vec, can be calculated from the grid sites, x_vec, as "
+      "y_vec = s * R_mat * x_vec + dy_vec, "
+      "where s is the (scalar) grid spacing and dy_vec is the grid offset.",
       (CFO).units = "deg" ];
   double pixel_grid_offset_x            = 24 [
       (CFO).desc = "X-offset of pixels from the grid.",
       (CFO).units = "cm" ];
   double pixel_grid_offset_y            = 25 [
-      (CFO).desc = "X-offset of pixels from the grid.",
+      (CFO).desc = "Y-offset of pixels from the grid.",
       (CFO).units = "cm" ];
-}
+};
+
