@@ -69,7 +69,14 @@ message ChannelLayout {
       "positive Y up. If this channel is not connected to a real pixel "
       "then the value should be Nan.",
       (CFO).units = "cm" ];
-
+  double diameter                       = 12 [
+      (CFO).desc = "Diameter of circle that would fit in pixel without "
+      "overlapping any other pixels.",
+      (CFO).units = "cm" ];
+  double geometric_area                 = 13 [
+      (CFO).desc = "Geometric area of pixel.",
+      (CFO).units = "cm^2" ];
+  
   repeated uint32 neighbour_channel_indexes = 20 [
       (CFO).desc = "Indexes of the channels for all neigbouring pixels. "
       "This forms a commutative relationship between the two channels." ];
