@@ -1,4 +1,4 @@
-set(CALIN_SWIG_PROTO telescope_layout.proto telescope_event.proto)
+set(CALIN_SWIG_PROTO instrument_layout.proto telescope_event.proto)
 
 PROTOBUF_GENERATE_CPP(ProtoSources ProtoHeaders ${CALIN_SWIG_PROTO})
 
