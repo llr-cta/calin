@@ -22,14 +22,14 @@ Other dependencies are shipped with the __calin__ distribution in order to make 
 
 ### Eigen ###
 
-**Version:** 3.2.7
+**Version:** 3.3-beta1
 
 **License:** MPL2 -  compatible with GPLv2
 
 **URL:** http://eigen.tuxfamily.org/
 
-    $ bzcat eigen-3.2.7.tar.bz2 | tar xf -
-    $ cd eigen-3.2.7
+    $ bzcat eigen-3.3-beta1.tar.bz2 | tar xf -
+    $ cd eigen-3.3-beta1
 	$ mv Eigen ~/calin/include
 	$ mv unsupported ~/calin/include/Eigen
 
