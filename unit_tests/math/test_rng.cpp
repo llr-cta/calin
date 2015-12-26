@@ -79,8 +79,10 @@ TYPED_TEST_P(CoreTests, FillsAllBits64)
       if(x&1)count[j]++; x>>=1; }
   }
   for(unsigned j=0;j<64;j++) {
-    EXPECT_GE(count[j], 490000) << "uint64_t bit#" << j << " set too few times";
-    EXPECT_LE(count[j], 510000) << "uint64_t bit#" << j << " set too many times";
+    EXPECT_GE(count[j], 490000U)
+        << "uint64_t bit#" << j << " set too few times";
+    EXPECT_LE(count[j], 510000U)
+        << "uint64_t bit#" << j << " set too many times";
   }
 }
 
