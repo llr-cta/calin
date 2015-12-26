@@ -929,7 +929,7 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
   s_pdgdata_name_q.clear();
 
   // Setup input stream -- either istringstream or ifstream
-  std::auto_ptr<std::istream> stream;
+  std::unique_ptr<std::istream> stream;
 
   if(filename.length()==0)
     {

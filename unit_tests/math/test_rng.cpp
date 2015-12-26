@@ -47,7 +47,7 @@ TEST(TestRNG, RandomDeviceFillsAllBits64) {
       if(x&1)count[j]++; x>>=1; }
   }
   for(unsigned j=0;j<64;j++) {
-    EXPECT_GE(count[j], 20); EXPECT_LE(count[j], 80); }
+    EXPECT_GE(count[j], 20U); EXPECT_LE(count[j], 80U); }
 }
 
 TEST(TestRNG, RandomDeviceFillsAllBits32) {
@@ -118,7 +118,7 @@ TYPED_TEST_P(CoreTests, SameSeeds)
   unsigned ndiffer = 0;
   for(unsigned i=0;i<10000;i++)
     if(core1.uniform_uint64() != core2.uniform_uint64())ndiffer++;
-  EXPECT_EQ(ndiffer,0);
+  EXPECT_EQ(ndiffer,0U);
 }
 
 TYPED_TEST_P(CoreTests, SaveAndRestoreState64)
