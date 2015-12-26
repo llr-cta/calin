@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)  
+cmake_minimum_required(VERSION 3.0)
 project(calin)
 enable_testing()
 
@@ -14,27 +14,27 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 ### include Protobuf libraries
 set(PROTOBUF_IMPORT_DIRS ${PROJECT_SOURCE_DIR}/proto)
 find_package(Protobuf REQUIRED)
-include_directories(${PROTOBUF_INCLUDE_DIRS} ${CMAKE_BINARY_DIR}/proto) 
+include_directories(${PROTOBUF_INCLUDE_DIRS} ${CMAKE_BINARY_DIR}/proto)
 set(EXTRA_LIBS ${EXTRA_LIBS} ${PROTOBUF_LIBRARY})
 
 ## include FFTW libraries
 find_package(FFTW REQUIRED)
 include_directories(${FFTW_INCLUDES})
-set(EXTRA_LIBS ${EXTRA_LIBS} ${FFTW_LIBRARIES} ) 
+set(EXTRA_LIBS ${EXTRA_LIBS} ${FFTW_LIBRARIES} )
 
 ## include GSL libraries
 find_package(GSL REQUIRED)
 include_directories(${GSL_INCLUDE_DIRS})
-set(EXTRA_LIBS ${EXTRA_LIBS} ${GSL_LIBRARIES} ) 
+set(EXTRA_LIBS ${EXTRA_LIBS} ${GSL_LIBRARIES} )
 
 ## include Sqlite3 libraries
 find_package(SQLite3 REQUIRED)
 include_directories(${SQLITE3_INCLUDE_DIR})
-set(EXTRA_LIBS ${EXTRA_LIBS} ${SQLITE3_LIBRARY} ) 
+set(EXTRA_LIBS ${EXTRA_LIBS} ${SQLITE3_LIBRARY} )
 
 #Path to a python
 find_package(PythonInterp)
-find_package(PythonLibs) 
+find_package(PythonLibs)
 include_directories(${PYTHON_INCLUDE_PATH})
 find_package(Numpy)
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
@@ -49,17 +49,19 @@ if(NO_GEANT4)
 	message(STATUS "Skipping GEANT4 as requested")
 	SET(GEANT4_FOUND FALSE)
 else()
-       find_package(Geant4) 
+       find_package(Geant4)
        if(GEANT4_FOUND)
-		message(STATUS "GEANT4_INCLUDE_DIR: " ${GEANT4_INCLUDE_DIR}) 
-		message(STATUS "GEANT4_LIBRARY_DIR: " ${GEANT4_LIBRARY_DIR}) 
+		message(STATUS "GEANT4_INCLUDE_DIR: " ${GEANT4_INCLUDE_DIR})
+		message(STATUS "GEANT4_LIBRARY_DIR: " ${GEANT4_LIBRARY_DIR})
 		include_directories(${GEANT4_INCLUDE_DIR})
-		link_directories(${GEANT4_LIBRARY_DIR}) 
+		link_directories(${GEANT4_LIBRARY_DIR})
 	endif()
 endif()
 
 add_subdirectory(tools)
 add_subdirectory(proto)
-add_subdirectory(src)  
-add_subdirectory(swig)  
+add_subdirectory(src)
+add_subdirectory(swig)
 add_subdirectory(unit_tests)
+
+install(DIRECTORY include/ DESTINATION include)
