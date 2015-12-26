@@ -193,9 +193,7 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
   I->Print(vars, "};\n\n"
            "$static$bool $enum_name$_IsValid(int value);\n"
            "$static$const std::string& $enum_name$_Name($enum_name$ value);\n"
-           //"%apply int *OUTPUT { $enum_name$* value };\n"
-           //"$static$bool $enum_name$_Parse(const std::string& name, $enum_name$* value);\n"
-           "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$ *OUTPUT);\n"
+           "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$ *calin_init_output);\n"
            "%clear $enum_name$* value;\n"
            "$static$const $enum_name$ $enum_name$_MIN = $min_val$;\n"
            "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n"); 
