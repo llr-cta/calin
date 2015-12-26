@@ -96,8 +96,10 @@ TYPED_TEST_P(CoreTests, FillsAllBits32)
       if(x&1)count[j]++; x>>=1; }
   }
   for(unsigned j=0;j<32;j++) {
-    EXPECT_GE(count[j], 490000) << "uint32_t bit#" << j << " set too few times";
-    EXPECT_LE(count[j], 510000) << "uint32_t bit#" << j << " set too many times";
+    EXPECT_GE(count[j], 490000U)
+        << "uint32_t bit#" << j << " set too few times";
+    EXPECT_LE(count[j], 510000U)
+        << "uint32_t bit#" << j << " set too many times";
   }
 }
 
@@ -108,7 +110,7 @@ TYPED_TEST_P(CoreTests, DifferentSeeds)
   unsigned nsame = 0;
   for(unsigned i=0;i<10000;i++)
     if(core1.uniform_uint64() == core2.uniform_uint64())nsame++;
-  EXPECT_LE(nsame,1);
+  EXPECT_LE(nsame,1U);
 }
 
 TYPED_TEST_P(CoreTests, SameSeeds)

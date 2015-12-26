@@ -80,9 +80,11 @@ class VSOTelescope
                );
   VSOTelescope(const VSOTelescope& o);
   virtual ~VSOTelescope();
-    
+
+#ifndef SWIG
   const VSOTelescope& operator =(const VSOTelescope& o);
-    
+#endif
+  
   // ************************************************************************
   // Create a new telescope randomly using parameters
   // ************************************************************************
