@@ -1,6 +1,6 @@
 #add_compile_options(-DSWIG_TYPE_TABLE=calin)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}) 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CALIN_SWIG_FILES package_wide_definitions.i google_protobuf.i)
 
@@ -17,9 +17,7 @@ endforeach (interface_file)
 
 install(FILES __init__.py DESTINATION python/calin)
 
-add_subdirectory(math) 
-add_subdirectory(io) 
-add_subdirectory(calib) 
-add_subdirectory(simulation) 
-
-install(FILES __init__.py DESTINATION python/calin)
+add_subdirectory(math)
+add_subdirectory(io)
+add_subdirectory(calib)
+add_subdirectory(simulation)
