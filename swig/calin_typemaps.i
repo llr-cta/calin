@@ -35,14 +35,14 @@
 // =============================================================================
 
 %typemap(in,noblock=1,numinputs=0)
-  enum SWIGTYPE *calin_init_output ($basetype temp) {
-  // typemap(in) enum SWIGTYPE *calin_init_output -- calin_typemaps.i
+  enum SWIGTYPE *CALIN_INIT_OUTPUT ($basetype temp) {
+  // typemap(in) enum SWIGTYPE *CALIN_INIT_OUTPUT -- calin_typemaps.i
   temp = %static_cast(0,$basetype);
   $1 = &temp;
 }
 %typemap(argout,fragment=SWIG_From_frag(int),noblock=1)
-  enum SWIGTYPE *calin_init_output {
-  // typemap(argout) enum SWIGTYPE *calin_init_output -- calin_typemaps.i
+  enum SWIGTYPE *CALIN_INIT_OUTPUT {
+  // typemap(argout) enum SWIGTYPE *CALIN_INIT_OUTPUT -- calin_typemaps.i
   {
     PyObject* res_int = SWIG_From(int)(%static_cast(*$1, int));
     if(!res_int)SWIG_fail;
@@ -56,39 +56,39 @@
 //
 // =============================================================================
 
-%typemap(in) const std::string& calin_bytes_in (std::string temp, char* bytes, Py_ssize_t len) %{
-  // typemap(in) const std::string& calin_bytes_in -- calin_typemaps.i
+%typemap(in) const std::string& CALIN_BYTES_IN (std::string temp, char* bytes, Py_ssize_t len) %{
+  // typemap(in) const std::string& CALIN_BYTES_IN -- calin_typemaps.i
   if(PyBytes_AsStringAndSize($input,&bytes,&len) == -1)SWIG_fail;
   temp.assign(bytes, len);
   $1 = &temp;
 %}
-%typemap(argout) const std::string& calin_bytes_in %{
-  // typemap(argout) const std::string& calin_bytes_in -- calin_typemaps.i
+%typemap(argout) const std::string& CALIN_BYTES_IN %{
+  // typemap(argout) const std::string& CALIN_BYTES_IN -- calin_typemaps.i
   // nothing to see here
 %}
-%typemap(freearg) const std::string& calin_bytes_in %{
-  // typemap(freearg) const std::string& calin_bytes_in -- calin_typemaps.i
+%typemap(freearg) const std::string& CALIN_BYTES_IN %{
+  // typemap(freearg) const std::string& CALIN_BYTES_IN -- calin_typemaps.i
   // nothing to see here
 %}
-%typemap(typecheck) const std::string& calin_bytes_in %{
-  // typemap(typecheck) const std::string& calin_bytes_in -- calin_typemaps.i
+%typemap(typecheck) const std::string& CALIN_BYTES_IN %{
+  // typemap(typecheck) const std::string& CALIN_BYTES_IN -- calin_typemaps.i
   $1 = PyBytes_Check($input) ? 1 : 0;
 %}
 
-%typemap(in, numinputs=0) std::string & calin_bytes_out (std::string temp) %{
-  // typemap(in) std::string & calin_bytes_out -- calin_typemaps.i
+%typemap(in, numinputs=0) std::string & CALIN_BYTES_OUT (std::string temp) %{
+  // typemap(in) std::string & CALIN_BYTES_OUT -- calin_typemaps.i
   $1 = &temp;
 %}
-%typemap(argout) std::string & calin_bytes_out %{
-  // typemap(argout) std::string & calin_bytes_out -- calin_typemaps.i
+%typemap(argout) std::string & CALIN_BYTES_OUT %{
+  // typemap(argout) std::string & CALIN_BYTES_OUT -- calin_typemaps.i
   {
     PyObject* temp_bytes = PyBytes_FromStringAndSize(&$1->front(), $1->size());
     if(!temp_bytes)SWIG_fail;
     $result = SWIG_Python_AppendOutput($result, temp_bytes);
   }
 %}
-%typemap(freearg) const std::string & calin_bytes_out %{
-  // typemap(freearg) std::string& calin_bytes_out -- calin_typemaps.i
+%typemap(freearg) const std::string & CALIN_BYTES_OUT %{
+  // typemap(freearg) std::string& CALIN_BYTES_OUT -- calin_typemaps.i
   // nothing to see here
 %}
 

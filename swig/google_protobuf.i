@@ -66,13 +66,13 @@ class Message
   bool IsInitialized();
   int ByteSize();
 
-  bool ParseFromString(const std::string& calin_bytes_in);
-  bool ParsePartialFromString(const std::string& calin_bytes_in);
+  bool ParseFromString(const std::string& CALIN_BYTES_IN);
+  bool ParsePartialFromString(const std::string& CALIN_BYTES_IN);
   %extend {
-    void SerializeAsString(std::string& calin_bytes_out) {
-      calin_bytes_out = $self->SerializeAsString(); }
-    void SerializePartialAsString(std::string& calin_bytes_out) {
-      calin_bytes_out = $self->SerializePartialAsString(); }
+    void SerializeAsString(std::string& CALIN_BYTES_OUT) {
+      CALIN_BYTES_OUT = $self->SerializeAsString(); }
+    void SerializePartialAsString(std::string& CALIN_BYTES_OUT) {
+      CALIN_BYTES_OUT = $self->SerializePartialAsString(); }
   }
 };
 

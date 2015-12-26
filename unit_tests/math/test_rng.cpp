@@ -59,7 +59,7 @@ TEST(TestRNG, RandomDeviceFillsAllBits32) {
       if(x&1)count[j]++; x>>=1; }
   }
   for(unsigned j=0;j<32;j++) {
-    EXPECT_GE(count[j], 20); EXPECT_LE(count[j], 80); }
+    EXPECT_GE(count[j], 20U); EXPECT_LE(count[j], 80U); }
 }
 
 template<typename CORE> class CoreTests : public testing::Test {

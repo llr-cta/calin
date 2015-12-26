@@ -193,7 +193,7 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
   I->Print(vars, "};\n\n"
            "$static$bool $enum_name$_IsValid(int value);\n"
            "$static$const std::string& $enum_name$_Name($enum_name$ value);\n"
-           "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$ *calin_init_output);\n"
+           "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$ *CALIN_INIT_OUTPUT);\n"
            "%clear $enum_name$* value;\n"
            "$static$const $enum_name$ $enum_name$_MIN = $min_val$;\n"
            "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n"); 
@@ -313,10 +313,10 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       {
         I->Print(vars,
                  "%extend {\n"
-                 "  void $name$($index$ key, std::string& calin_bytes_out) const {\n"
-                 "    calin_bytes_out = $$self->$name$().at(key); }\n"
-                 "  void set_$name$($index$ key, const std::string& calin_bytes_in) {\n"
-                 "    $$self->mutable_$name$()->at(key) = calin_bytes_in; }\n"
+                 "  void $name$($index$ key, std::string& CALIN_BYTES_OUT) const {\n"
+                 "    CALIN_BYTES_OUT = $$self->$name$().at(key); }\n"
+                 "  void set_$name$($index$ key, const std::string& CALIN_BYTES_IN) {\n"
+                 "    $$self->mutable_$name$()->at(key) = CALIN_BYTES_IN; }\n"
                  "};\n");
       }
       else
@@ -356,20 +356,20 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       if(f->is_repeated())
       {
         I->Print(vars,
-                 "void $name$($index$, std::string& calin_bytes_out) const {\n"
-                 "  calin_bytes_out = $$self->$name$(index); }\n"
-                 "void set_$name$($index$, const std::string& calin_bytes_in) {\n"
-                 "  $$self->set_$name$(index, calin_bytes_in); }\n"
-                 "void add_$name$(const std::string& calin_bytes_in) {\n"
-                 "  $$self->add_$name$(calin_bytes_in); }\n");
+                 "void $name$($index$, std::string& CALIN_BYTES_OUT) const {\n"
+                 "  CALIN_BYTES_OUT = $$self->$name$(index); }\n"
+                 "void set_$name$($index$, const std::string& CALIN_BYTES_IN) {\n"
+                 "  $$self->set_$name$(index, CALIN_BYTES_IN); }\n"
+                 "void add_$name$(const std::string& CALIN_BYTES_IN) {\n"
+                 "  $$self->add_$name$(CALIN_BYTES_IN); }\n");
       }
       else
       {
         I->Print(vars,
-                 "void $name$(std::string& calin_bytes_out) const {\n"
-                 "  calin_bytes_out = $$self->$name$(); }\n"
-                 "void set_$name$(const std::string& calin_bytes_in) {\n"
-                 "  $$self->set_$name$(calin_bytes_in); }\n");
+                 "void $name$(std::string& CALIN_BYTES_OUT) const {\n"
+                 "  CALIN_BYTES_OUT = $$self->$name$(); }\n"
+                 "void set_$name$(const std::string& CALIN_BYTES_IN) {\n"
+                 "  $$self->set_$name$(CALIN_BYTES_IN); }\n");
       }
       I->Outdent();
       I->Print(vars, "};\n");
