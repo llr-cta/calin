@@ -28,11 +28,32 @@
 %include "std_string.i"
 %include "typemaps.i"
 
-// ==============================================================================
+// =============================================================================
+//
+// Typemaps for enums (why are these not part of SWIG?)
+//
+// =============================================================================
+
+%typemap(in,noblock=1,numinputs=0)
+  enum SWIGTYPE *OUTPUT ($basetype temp) {
+  // typemap(in) enum SWIGTYPE *OUTPUT -- calin_typemaps.i
+  temp = %static_cast(0,$basetype);
+  $1 = &temp;
+}
+%typemap(argout,fragment=SWIG_From_frag(int),noblock=1) enum SWIGTYPE *OUTPUT {
+  // typemap(argout) enum SWIGTYPE *OUTPUT -- calin_typemaps.i
+  {
+    PyObject* res_int = SWIG_From(int)(%static_cast(*$1, int));
+    if(!res_int)SWIG_fail;
+    $result = SWIG_Python_AppendOutput($result, res_int);
+  }
+}
+
+// =============================================================================
 //
 // Typemaps for bytes arrays
 //
-// ==============================================================================
+// =============================================================================
 
 %typemap(in) const std::string& calin_bytes_in (std::string temp, char* bytes, Py_ssize_t len) %{
   // typemap(in) const std::string& calin_bytes_in -- calin_typemaps.i
