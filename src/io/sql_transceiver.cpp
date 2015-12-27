@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/io/sql_transceiver.cpp -- Stephen Fegan -- 2015-09-08
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -71,7 +71,7 @@ create_tables(const std::string& table_name,
                      << "SQL: " << it->stmt->sql();
           success = false; } } });
   if(!success)return success;
-  
+
   begin_transaction();
   success = r_exec_simple(t.get(), false);
   if(!success)
@@ -121,7 +121,7 @@ retrieve_by_oid(const std::string& table_name, uint64_t oid,
 {
   std::unique_ptr<SQLTable> t {
     make_keyed_sqltable_tree(table_name, m_data->GetDescriptor(),
-                             m_key?m_key->GetDescriptor():nullptr, false) };  
+                             m_key?m_key->GetDescriptor():nullptr, false) };
 
   t->stmt = prepare_statement(sql_select(t.get(), t->children_need_oid())
                               + sql_where_oid_equals());
@@ -154,10 +154,10 @@ retrieve_by_oid(const std::string& table_name, uint64_t oid,
 
   uint64_t unused_loop_id = 0;
   r_exec_select(t.get(), m_data, m_key, unused_loop_id, false);
-  
+
   assert(t->stmt->step() == SQLStatement::OK_NO_DATA);
   t->stmt->reset();
-  
+
   return true;
 }
 
@@ -238,10 +238,10 @@ r_make_sqltable_tree(const std::string& table_name,
     tf->field_type        = SQLTableField::POD;
     tf->field_name        = oo->name();
     tf->oneof_d           = oo;
-    
+
     t->fields.push_back(tf);
   }
-  
+
   for(int ifield = 0; ifield<d->field_count(); ifield++)
   {
     const FieldDescriptor* f { d->field(ifield) };
@@ -253,7 +253,7 @@ r_make_sqltable_tree(const std::string& table_name,
       continue;
 
     SQLTable* sub_table { nullptr };
-    
+
     if(f->type()==FieldDescriptor::TYPE_MESSAGE)
     {
       sub_table = r_make_sqltable_tree(sub_name(table_name, f->name()),
@@ -271,7 +271,7 @@ r_make_sqltable_tree(const std::string& table_name,
         else if(fopt->GetExtension(CFO).sql().dont_inline_message())
           inline_message = false;
       }
-      
+
       if((parent_field_d and parent_field_d->is_map()) or
          (!f->is_repeated() and inline_message))
       {
@@ -306,7 +306,7 @@ r_make_sqltable_tree(const std::string& table_name,
       sub_table->parent_table    = t;
       sub_table->table_name      = sub_name(table_name,f->name());
       sub_table->parent_field_d  = f;
-      
+
       SQLTableField* tf { new SQLTableField };
       tf->table             = sub_table;
       tf->field_origin      = tf;
@@ -324,7 +324,7 @@ r_make_sqltable_tree(const std::string& table_name,
       tf->field_type        = SQLTableField::POD;
       tf->field_name        = f->name();
       tf->field_d           = f;
-      
+
       if(parent_table == nullptr and ignore_key_option==false and
          fopt->HasExtension(CFO) and fopt->GetExtension(CFO).sql().is_key())
         tf->field_type      = SQLTableField::KEY_PROTO_DEFINED;
@@ -334,7 +334,7 @@ r_make_sqltable_tree(const std::string& table_name,
     }
 
     assert(sub_table);
-    
+
     if(f->is_map())
     {
       sub_table->fields.front()->field_name =
@@ -370,13 +370,13 @@ void SQLTransceiver::prune_empty_tables(SQLTable* t)
                              t->parent_table->sub_tables.end(), t);
         assert(sti != t->parent_table->sub_tables.end());
         t->parent_table->sub_tables.insert(sti, t->sub_tables.begin(),
-                                           t->sub_tables.end());        
+                                           t->sub_tables.end());
         t->sub_tables.clear();
         sti = std::find(t->parent_table->sub_tables.begin(),
                         t->parent_table->sub_tables.end(), t);
         t->parent_table->sub_tables.erase(sti);
         delete t;
-      } });  
+      } });
 }
 
 void SQLTransceiver::propagate_keys(SQLTable* t,
@@ -449,7 +449,7 @@ sql_type(const google::protobuf::FieldDescriptor* d)
 {
   // The base class implements MySQL types since SQLite3 is very
   // forgiving about what it accepts as types
-  
+
   if(!d)return "BIGINT UNSIGNED"; // OID or vector index
 
   calin::FieldOptions::Int32StorageType int32_type =
@@ -502,10 +502,10 @@ sql_type(const google::protobuf::FieldDescriptor* d)
 std::string SQLTransceiver::
 sql_create_table(const SQLTable* t,
                  const std::map<std::string,std::string>& parent_dict,
-                 bool if_not_exists) 
+                 bool if_not_exists)
 {
   std::ostringstream sql;
-  
+
   std::vector<const SQLTableField*> keys;
   sql << "CREATE TABLE ";
   if(if_not_exists)sql << "IF NOT EXISTS ";
@@ -605,7 +605,7 @@ sql_select(const SQLTable* t, bool select_oid)
     }
   }
   sql << "FROM " << sql_table_name(t->table_name);
-  return sql.str();  
+  return sql.str();
 }
 
 std::string SQLTransceiver::sql_where_oid_equals()
@@ -628,7 +628,7 @@ std::string SQLTransceiver::sql_where_inherited_keys_match(const SQLTable* t)
     };
   }
   if(!need_and)return std::string();
-  sql << '\n';  
+  sql << '\n';
   return sql.str();
 }
 
@@ -789,7 +789,7 @@ bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
       {
         const google::protobuf::Message* m = f->data_const_message();
         const google::protobuf::Reflection* r = m->GetReflection();
-        stmt->bind_uint64(ifield, r->HasOneof(*m, f->oneof_d) ? 
+        stmt->bind_uint64(ifield, r->HasOneof(*m, f->oneof_d) ?
                           r->GetOneofFieldDescriptor(*m, f->oneof_d)->number() :
                           0);
       }
@@ -800,7 +800,7 @@ bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
                                   f->field_d);
       else
          stmt->bind_field(ifield,  f->data_const_message(), f->field_d);
-      
+
       ifield++;
     }
   }
@@ -871,9 +871,9 @@ r_exec_insert(SQLTable* t, const google::protobuf::Message* m_data,
     for(auto d : st->parent_field_d_path) {
       if(!r->HasField(*m, d))goto next_sub_table;
       m = &r->GetMessage(*m, d);
-      r = m->GetReflection();      
+      r = m->GetReflection();
     }
-    
+
     if(st->parent_field_d->is_repeated())
     {
       uint64_t nloop = r->FieldSize(*m, st->parent_field_d);
@@ -901,7 +901,7 @@ r_exec_insert(SQLTable* t, const google::protobuf::Message* m_data,
  next_sub_table:
     ;
   }
-  
+
   return good;
 }
 
@@ -951,7 +951,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
   {
     if(f->is_inherited())continue;
     if(t->stmt->column_is_null(icol))goto next_field;
-    
+
     if(f->field_d != nullptr)
     {
       google::protobuf::Message* m = m_data;
@@ -994,7 +994,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
           throw std::logic_error("r_exec_select: invalid field type");
           break;
       }
-    }    
+    }
  next_field:
     if(!ignore_errors and !good)return good;
     icol++;
@@ -1022,9 +1022,9 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
     {
       uint64_t st_loopid = 0;
 
-      SQLStatement::StepStatus status = st->stmt->step();    
+      SQLStatement::StepStatus status = st->stmt->step();
       if(write_sql_to_log_ and nloop==0)LOG(INFO) << st->stmt->bound_sql();
-            
+
       if(status == SQLStatement::ERROR)
       {
         if(ignore_errors)goto next_sub_table;
@@ -1051,7 +1051,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
       if(nloop == 0)
         for(auto d : st->parent_field_d_path) {
           m = r->MutableMessage(m, d); r = m->GetReflection(); }
-       
+
       if(st->parent_field_d->is_repeated() and
          st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE)
       {
@@ -1074,7 +1074,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
           sm = r->MutableMessage(m, st->parent_field_d);
         good &= r_exec_select(st, sm, nullptr, st_loopid, ignore_errors);
       }
-      
+
       if(!ignore_errors and !good)
       {
         t->stmt->reset();
@@ -1090,7 +1090,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
  next_sub_table_no_reset:
     ;
   }
-  
+
   return good;
 }
 
@@ -1109,10 +1109,10 @@ void SQLTransceiver::create_internal_tables()
   // Make "SQLTable" table
   SQLTable* tt =
       make_keyed_sqltable_tree("calin.tables",
-                               calin::ix::io::SQLTable::descriptor(),
+                               calin::ix::io::sql_transceiver::SQLTable::descriptor(),
                                nullptr, false);
 
-  
+
   std::map<std::string, std::string> dict0;
   dict0 = field_dict(nullptr, dict0);
   dict0["DESC"] = "Calin table of tables";
@@ -1121,15 +1121,15 @@ void SQLTransceiver::create_internal_tables()
       it->stmt = prepare_statement(sql_create_table(it, dict0)); });
   r_exec_simple(tt, true);
   finalize_statements(tt);
-  
+
   // Make "SQLTableField" table
   SQLTable* tf =
       make_keyed_sqltable_tree("calin.table_fields",
-                               calin::ix::io::SQLTableField::descriptor(),
+                               calin::ix::io::sql_transceiver::SQLTableField::descriptor(),
                                nullptr, false);
 
   dict0["DESC"] = "Calin table of table fields";
-  
+
   iterate_over_tables(tf, [this,dict0](SQLTable* it) {
       it->stmt = prepare_statement(sql_create_table(it,dict0)); });
   r_exec_simple(tf, true);
@@ -1140,7 +1140,7 @@ void SQLTransceiver::create_internal_tables()
 
   delete tt;
   delete tf;
-  
+
   internal_tables_created_ = true;
 }
 
@@ -1155,7 +1155,7 @@ insert_table_description(const SQLTable* t, const std::string& instance_desc)
 
   t_int =
       make_keyed_sqltable_tree("calin.tables",
-                               calin::ix::io::SQLTable::descriptor(),
+                               calin::ix::io::sql_transceiver::SQLTable::descriptor(),
                                nullptr, false);
   iterate_over_tables(t_int,[this](SQLTable* it) {
       it->stmt = prepare_statement(sql_insert(it)); });
@@ -1166,7 +1166,7 @@ insert_table_description(const SQLTable* t, const std::string& instance_desc)
         dict = field_dict(id, dict);
       if(it->parent_field_d)dict = field_dict(it->parent_field_d, dict);
       uint64_t oid;
-      calin::ix::io::SQLTable m;
+      calin::ix::io::sql_transceiver::SQLTable m;
       m.set_base_name(t->table_name);
       m.set_table_name(it->table_name);
       m.set_sql_table_name(sql_table_name((it->table_name)));
@@ -1174,9 +1174,9 @@ insert_table_description(const SQLTable* t, const std::string& instance_desc)
       r_exec_insert(t_int, &m, nullptr, oid, 0, 0, true);
     });
   delete t_int;
-  
+
   t_int = make_keyed_sqltable_tree("calin.table_fields",
-                                   calin::ix::io::SQLTableField::descriptor(),
+                                   calin::ix::io::sql_transceiver::SQLTableField::descriptor(),
                                    nullptr, false);
   iterate_over_tables(t_int,[this](SQLTable* it) {
       it->stmt = prepare_statement(sql_insert(it)); });
@@ -1190,7 +1190,7 @@ insert_table_description(const SQLTable* t, const std::string& instance_desc)
                                                const SQLTableField* f,
                                std::map<std::string, std::string> dict) {
       uint64_t oid;
-      calin::ix::io::SQLTableField m;
+      calin::ix::io::sql_transceiver::SQLTableField m;
       m.set_base_name(t->table_name);
       m.set_table_name(it->table_name);
       m.set_field_name(f->field_name);
@@ -1222,23 +1222,23 @@ field_dict(const google::protobuf::FieldDescriptor *d,
            const std::map<std::string, std::string>& parent_dict)
 {
   std::map<std::string, std::string> dict;
-  
+
   std::string desc;
   std::string units;
   std::string name;
   std::string full_name;
   std::string number;
-  
+
   if(d != nullptr)
   {
     for(const auto& iparent_entry : parent_dict)
       dict[std::string("PARENT_")+iparent_entry.first] = iparent_entry.second;
-    
+
     unsigned nsub_unit = 0;
     for(const auto& isub_unit : split(parent_dict.at("UNITS"),','))
       dict[std::string("PARENT_SUBUNIT_")+std::to_string(nsub_unit++)] =
           isub_unit;
-    
+
     const google::protobuf::FieldOptions* fopt { &d->options() };
     if(fopt->HasExtension(CFO))
     {
@@ -1248,7 +1248,7 @@ field_dict(const google::protobuf::FieldDescriptor *d,
         google::protobuf::io::Printer printer(&output, '$');
         printer.Print(dict, fopt->GetExtension(CFO).desc().c_str());
       }
-      
+
       if(!fopt->GetExtension(CFO).units().empty())
       {
         google::protobuf::io::StringOutputStream output(&units);
