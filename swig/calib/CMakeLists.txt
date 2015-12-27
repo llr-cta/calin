@@ -1,18 +1,23 @@
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+# calin/swig/calib/CMakeLists.txt -- Stephen Fegan
+#
+# Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+# LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+#
+# This file is part of "calin"
+#
+# "calin" is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License version 2 or later, as published by
+# the Free Software Foundation.
+#
+# "calin" is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_SWIG_FILES spe_fit.i)
 set(CALIN_SWIG_TARGET calib)
 
-set_source_files_properties(${CALIN_SWIG_FILES} PROPERTIES CPLUSPLUS ON)
-#set_source_files_properties(${CALIN_SWIG_FILES} PROPERTIES SWIG_FLAGS "-importall")
-
-foreach (interface_file ${CALIN_SWIG_FILES})
-	string(REPLACE ".i" "" output_file ${interface_file})
-#	message(STATUS ${interface_file} ${output_file})
-	swig_add_module(${output_file} python ${interface_file})
-	swig_link_libraries(${output_file} calin_${CALIN_SWIG_TARGET} ${PYTHON_LIBRARIES})
-	install(TARGETS ${SWIG_MODULE_${output_file}_REAL_NAME}  DESTINATION python/calin/${CALIN_SWIG_TARGET})
-	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${output_file}.py  DESTINATION python/calin/${CALIN_SWIG_TARGET})
-endforeach (interface_file)
-
-install(FILES __init__.py DESTINATION python/calin/${CALIN_SWIG_TARGET})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+make_swig_modules(calin_${CALIN_SWIG_TARGET}
+	${CALIN_SWIG_INSTALL_DIR}/${CALIN_SWIG_TARGET} ${CALIN_SWIG_FILES})
+install(FILES __init__.py
+	DESTINATION ${CALIN_SWIG_INSTALL_DIR}/${CALIN_SWIG_TARGET})
