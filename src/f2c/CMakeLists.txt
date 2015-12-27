@@ -1,3 +1,18 @@
+# calin/src/f2c/CMakeLists.txt -- Stephen Fegan
+#
+# Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+# LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+#
+# This file is part of "calin"
+#
+# "calin" is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License version 2 or later, as published by
+# the Free Software Foundation.
+#
+# "calin" is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
 include_directories(${CMAKE_SOURCE_DIR}/include/f2c)
 
 add_compile_options(-Wno-shift-op-parentheses
@@ -27,6 +42,6 @@ add_library(calin_f2c SHARED f77vers.c i77vers.c s_rnge.c abort_.c exit_.c
         uio.c util.c wref.c wrtfmt.c wsfe.c wsle.c wsne.c xwsne.c
         dtime_.c etime_.c)
 
-#// main.c getarg_.c iargc_.c pow_qq.c qbitbits.c qbitshft.c ftell64_.c 
+#// main.c getarg_.c iargc_.c pow_qq.c qbitbits.c qbitshft.c ftell64_.c
 
 install(TARGETS calin_f2c DESTINATION lib)

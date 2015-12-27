@@ -1,40 +1,55 @@
+# calin/src/nlopt/CMakeLists.txt -- Stephen Fegan
+#
+# Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+# LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+#
+# This file is part of "calin"
+#
+# "calin" is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License version 2 or later, as published by
+# the Free Software Foundation.
+#
+# "calin" is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
 include_directories(${CMAKE_SOURCE_DIR}/include/nlopt ${CMAKE_CURRENT_BINARY_DIR})
 
-INCLUDE (CheckFunctionExists) 
-INCLUDE (CheckIncludeFiles)  
-INCLUDE (CheckLibraryExists)  
-INCLUDE (CheckSymbolExists) 
-INCLUDE (CheckTypeSize) 
+INCLUDE (CheckFunctionExists)
+INCLUDE (CheckIncludeFiles)
+INCLUDE (CheckLibraryExists)
+INCLUDE (CheckSymbolExists)
+INCLUDE (CheckTypeSize)
 INCLUDE (CheckCSourceCompiles)
 
-SET(NLOPT_MAJOR_VERSION 2)  
+SET(NLOPT_MAJOR_VERSION 2)
 SET(NLOPT_MINOR_VERSION 4)
 SET(NLOPT_BUGFIX_VERSION 2)
 
-CHECK_FUNCTION_EXISTS (copysign HAVE_COPYSIGN)  
-CHECK_INCLUDE_FILES (dlfcn.h HAVE_DLFCN_H) 
+CHECK_FUNCTION_EXISTS (copysign HAVE_COPYSIGN)
+CHECK_INCLUDE_FILES (dlfcn.h HAVE_DLFCN_H)
 CHECK_INCLUDE_FILES (getopt.h HAVE_GETOPT_H)
-CHECK_FUNCTION_EXISTS (getpid HAVE_GETPID) 
+CHECK_FUNCTION_EXISTS (getpid HAVE_GETPID)
 CHECK_C_SOURCE_COMPILES("#include<sys/syscall.h>
 #include<unistd.h>
 int main() { syscall(SYS_gettid); return 0; }" HAVE_GETTID_SYSCALL)
-CHECK_FUNCTION_EXISTS (gettimeofday HAVE_GETTIMEOFDAY) 
+CHECK_FUNCTION_EXISTS (gettimeofday HAVE_GETTIMEOFDAY)
 CHECK_INCLUDE_FILES (inttypes.h HAVE_INTTYPES_H)
-CHECK_FUNCTION_EXISTS (isinf HAVE_ISINF) 
-CHECK_FUNCTION_EXISTS (isnan HAVE_ISNAN) 
+CHECK_FUNCTION_EXISTS (isinf HAVE_ISINF)
+CHECK_FUNCTION_EXISTS (isnan HAVE_ISNAN)
 CHECK_LIBRARY_EXISTS(m sin "" HAVE_LIBM)
 CHECK_INCLUDE_FILES (memory.h HAVE_MEMORY_H)
-CHECK_FUNCTION_EXISTS (qsort_r HAVE_QSORT_R) 
-CHECK_INCLUDE_FILES (stdint.h HAVE_STDINT_H) 
-CHECK_INCLUDE_FILES (stdlib.h HAVE_STDLIB_H) 
-CHECK_INCLUDE_FILES (strings.h HAVE_STRINGS_H) 
-CHECK_INCLUDE_FILES (string.h HAVE_STRING_H) 
-CHECK_INCLUDE_FILES (sys/stat.h HAVE_SYS_STAT_H) 
-CHECK_INCLUDE_FILES (sys/types.h HAVE_SYS_TYPES_H) 
-CHECK_FUNCTION_EXISTS (time HAVE_TIME) 
-CHECK_TYPE_SIZE(uint32_t HAVE_UINT32_T)  
-CHECK_TYPE_SIZE("unsigned int" SIZEOF_UNSIGNED_INT) 
-CHECK_TYPE_SIZE("unsigned long" SIZEOF_UNSIGNED_LONG) 
+CHECK_FUNCTION_EXISTS (qsort_r HAVE_QSORT_R)
+CHECK_INCLUDE_FILES (stdint.h HAVE_STDINT_H)
+CHECK_INCLUDE_FILES (stdlib.h HAVE_STDLIB_H)
+CHECK_INCLUDE_FILES (strings.h HAVE_STRINGS_H)
+CHECK_INCLUDE_FILES (string.h HAVE_STRING_H)
+CHECK_INCLUDE_FILES (sys/stat.h HAVE_SYS_STAT_H)
+CHECK_INCLUDE_FILES (sys/types.h HAVE_SYS_TYPES_H)
+CHECK_FUNCTION_EXISTS (time HAVE_TIME)
+CHECK_TYPE_SIZE(uint32_t HAVE_UINT32_T)
+CHECK_TYPE_SIZE("unsigned int" SIZEOF_UNSIGNED_INT)
+CHECK_TYPE_SIZE("unsigned long" SIZEOF_UNSIGNED_LONG)
 CHECK_C_SOURCE_COMPILES("__thread int i; int main() { return 0; }" HAVE_THREADLOCAL___THREAD)
 CHECK_C_SOURCE_COMPILES("#include<time.h>
 #include<sys/time.h>
