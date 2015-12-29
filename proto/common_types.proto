@@ -1,8 +1,8 @@
 //-*-mode:protobuf; mode:font-lock;-*-
 
-/* 
+/*
 
-   calin/proto/calin_common_types.proto -- Stephen Fegan -- 2015-10-19
+   calin/proto/common_types.proto -- Stephen Fegan -- 2015-10-19
 
    Protobufs for common types across the calin package
 
@@ -10,11 +10,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -153,7 +153,7 @@ message SpectralResponsePoint
 message Vector3D
 {
   option (CMO).sql.default_inline_message = true;
-  
+
   double x                              = 1
     [(CFO).desc = "$PARENT_DESC_PS$X-coordinate.",
      (CFO).units = "$PARENT_UNITS$"];

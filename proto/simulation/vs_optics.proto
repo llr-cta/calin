@@ -1,8 +1,8 @@
 //-*-mode:protobuf; mode:font-lock;-*-
 
-/* 
+/*
 
-   calin/proto/simulations_vs_optics.proto -- Stephen Fegan -- 2015-10-19
+   calin/proto/simulations/vs_optics.proto -- Stephen Fegan -- 2015-10-19
 
    Protobufs for defining VSO optics arrays
 
@@ -10,11 +10,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -44,7 +44,7 @@ message VSOMirrorData {
     [(CFO).desc = "True if this mirror facet has been removed."];
   common_types.Vector3D pos             = 4
     [(CFO).desc = "Position of facet center in the reflector frame. ",
-     (CFO).units = "cm" ];     
+     (CFO).units = "cm" ];
   common_types.Vector3D align           = 5
     [(CFO).desc = "Facet normal at center of facet in the reflector frame. " ];
   double focal_length                   = 6
@@ -69,7 +69,7 @@ message VSOPixelData {
      (CFO).units = "cm" ];
 };
 
-message VSODiskObscurationData { 
+message VSODiskObscurationData {
   common_types.Vector3D center_pos      = 1
     [(CFO).desc = "Position of the center of the disk in reflector frame. ",
      (CFO).units = "cm" ];
@@ -218,7 +218,7 @@ message VSOArrayData
 // PARAMETERS USED TO CONSTRUCT RANDOM ARRAY
 //
 // ============================================================================
-  
+
 message HexArrayLayout
 {
   uint32 num_scope_rings                = 1
@@ -445,13 +445,13 @@ message PlaneWindowParameters {
      "the reflector frame.",
      (CFO).units = "deg"];
   repeated common_types.SpectralResponsePoint transmittance = 5
-    [(CFO).desc = "Energy dependent absorption factor."];                                                       
+    [(CFO).desc = "Energy dependent absorption factor."];
   double weathering_factor              = 6
     [(CFO).desc = "Additional absorption factor applied to all photons."];
-                                          
+
   double refractive_index               = 7;
 }
-     
+
 message FocalPlaneParameters {
   double camera_diameter                = 1
     [(CFO).desc = "Diameter of the camera in the focal plane.",

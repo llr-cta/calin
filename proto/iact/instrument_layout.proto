@@ -2,7 +2,7 @@
 
 /*
 
-   calin/proto/telescope_layout.proto -- Stephen Fegan -- 2015-12-21
+   calin/proto/iact/telescope_layout.proto -- Stephen Fegan -- 2015-12-21
 
    Protobufs for telescope layout
 

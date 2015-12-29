@@ -2,7 +2,7 @@
 
 /*
 
-   calin/proto/io_sql_transceiver.proto -- Stephen Fegan -- 2015-10-10
+   calin/proto/io/sql_transceiver.proto -- Stephen Fegan -- 2015-10-10
 
    Protobufs for database structure tables in SQL databases
 
