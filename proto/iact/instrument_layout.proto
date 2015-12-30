@@ -94,6 +94,12 @@ message CameraLayout {
     SQUARE_GRID                         = 2;
   };
 
+  enum ADCGains {
+    SINGLE_GAIN                         = 0;
+    PARALLEL_DUAL_GAIN                  = 1;
+    SWITCHED_DUAL_GAIN                  = 2;
+  };
+
   CameraType camera_type                = 1 [
       (CFO).desc = "Camera type." ];
   uint32 camera_number                  = 2 [
@@ -120,6 +126,11 @@ message CameraLayout {
   double pixel_grid_offset_y            = 15 [
       (CFO).desc = "Y-offset of pixels from the grid.",
       (CFO).units = "cm" ];
+
+  ADCGains adc_gains                    = 20;
+  bool can_read_waveforms               = 21;
+  bool can_read_charges                 = 22;
+  bool can_read_peak_sample             = 23;
 };
 
 message TelescopeLayout {
