@@ -42,7 +42,7 @@ addons:
     - g++-5
     - clang-3.7
     - libzmq3-dev
-    - libczmq-dev
+#    - libczmq-dev <- NOT IN APT WHITE LIST
 
 cache:
   directories:
