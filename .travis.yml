@@ -41,6 +41,8 @@ addons:
     - g++-4.8
     - g++-5
     - clang-3.7
+    - libzmq3-dev
+    - libczmq-dev
 
 cache:
   directories:
@@ -73,7 +75,7 @@ install:
       ./configure --prefix=$LOCAL --without-alllang --with-python &&
       make -j3 &&
       make install > /dev/null
-    ); fi 
+    ); fi
   - |
     if [ ! -f $LOCAL/bin/protoc ];
     then (
@@ -98,7 +100,7 @@ install:
     ); fi
   - |
     if  [ "x$NO_GEANT4" == "x" ]
-    then 
+    then
       GEANT4_DATA=$HOME/geant4_data
       (
         mkdir $GEANT4_DATA
@@ -117,7 +119,7 @@ install:
       export G4SAIDXSDATA=$GEANT4_DATA/G4SAIDDATA1.1
       export G4NEUTRONXSDATA=$GEANT4_DATA/G4NEUTRONXS1.4
     fi
-    
+
 before_script:
   - swig -version
   - cmake -version

@@ -62,7 +62,7 @@ include(${SWIG_USE_FILE})
 set(CMAKE_SWIG_FLAGS -I${CMAKE_SOURCE_DIR}/swig -I${CMAKE_SOURCE_DIR}/include  -I${CMAKE_BINARY_DIR}/proto)
 
 ## Find ZeroMQ
-find_package(ZMQ)
+find_package(ZMQ REQUIRED)
 include_directories(${ZMQ_INCLUDE_DIRS})
 
 ## Find Geant4 if requested
