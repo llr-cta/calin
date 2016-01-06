@@ -101,7 +101,7 @@ install:
   - |
     if  [ "x$GEANT4" == "xTRUE" ]
     then
-      NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
+      NO_GEANT4=""
       GEANT4_DATA=$HOME/geant4_data
       (
         mkdir $GEANT4_DATA
@@ -120,7 +120,7 @@ install:
       export G4SAIDXSDATA=$GEANT4_DATA/G4SAIDDATA1.1
       export G4NEUTRONXSDATA=$GEANT4_DATA/G4NEUTRONXS1.4
     else
-      NO_GEANT4=""
+      NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
     fi
 
 before_script:
