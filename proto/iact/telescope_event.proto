@@ -60,7 +60,7 @@ message IntegratedCharges {
 };
 
 message ChannelWaveform {
-  repeated uint32 waveform              = 1 [
+  repeated uint32 samples               = 1 [
       (CFO).desc = "Waveform for one channel.",
       (CFO).units = "dc" ];
 };

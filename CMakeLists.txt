@@ -89,4 +89,4 @@ add_subdirectory(src)
 add_subdirectory(swig)
 add_subdirectory(unit_tests)
 
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/ DESTINATION include/calin)
