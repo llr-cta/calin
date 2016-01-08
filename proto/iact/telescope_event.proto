@@ -111,7 +111,7 @@ message TelescopeEvent {
       (CFO).desc = "Trigger type." ];
   bool array_trigger_received           = 4 [
       (CFO).desc = "Flag for whether array trigger was received." ];
-  uint64 array_event_number             = 5 [
+  int64 array_event_number              = 5 [
       (CFO).desc = "Array event number or \"-1\" if not received." ];
   repeated ClockTime local_clock_time   = 6 [
       (CFO).desc = "Vector of local clock times associated with event." ];
