@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/io/sql_statement.hpp -- Stephen Fegan -- 2015-09-24
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -22,9 +22,9 @@
 
 #include <sstream>
 
-#include "proto/calin.pb.h"
-#include "io/log.hpp"
-#include "io/sql_statement.hpp"
+#include <calin.pb.h>
+#include <io/log.hpp>
+#include <io/sql_statement.hpp>
 
 using namespace calin::io::log;
 using namespace calin::io::sql_transceiver;
@@ -336,7 +336,7 @@ bool SQLStatement::extract_field(unsigned ifield, google::protobuf::Message* m,
       return good; }
     case FieldDescriptor::TYPE_SFIXED32: // fallthrough
     case FieldDescriptor::TYPE_SINT32:   // fallthrough
-    case FieldDescriptor::TYPE_INT32: 
+    case FieldDescriptor::TYPE_INT32:
       switch(int32_type) {
 	case FieldOptions::INT_16: {
           auto value = extract_int16(ifield, &good);
@@ -395,7 +395,7 @@ bool SQLStatement::extract_field(unsigned ifield, google::protobuf::Message* m,
 }
 
 bool SQLStatement::
-extract_repeated_field(unsigned ifield, uint64_t loop_id, 
+extract_repeated_field(unsigned ifield, uint64_t loop_id,
                        google::protobuf::Message* m,
                        const google::protobuf::FieldDescriptor* d)
 {
@@ -441,7 +441,7 @@ extract_repeated_field(unsigned ifield, uint64_t loop_id,
 	case FieldOptions::INT_16:
           value = extract_int16(ifield, &good);
           break;
-	case FieldOptions::INT_8: 
+	case FieldOptions::INT_8:
           value = extract_int8(ifield, &good);
           break;
         case FieldOptions::INT_32:       // fallthrough

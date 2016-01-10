@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/io/sqlite3_transceiver.cpp -- Stephen Fegan -- 2015-09-08
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -23,8 +23,8 @@
 #include <unistd.h>
 #include <cstring>
 
-#include "io/log.hpp"
-#include "io/sqlite3_transceiver.hpp"
+#include <io/log.hpp>
+#include <io/sqlite3_transceiver.hpp>
 
 using namespace calin::io::log;
 using namespace calin::io::sql_transceiver;
@@ -61,7 +61,7 @@ execute_simple_sql(const std::string& sql, bool write_sql_to_log,
                    bool ignore_errors)
 {
   sqlite3_stmt* stmt { nullptr };
-  int retcode { 0 };  
+  int retcode { 0 };
 
   retcode = sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr);
   if(retcode != SQLITE_OK)
@@ -74,7 +74,7 @@ execute_simple_sql(const std::string& sql, bool write_sql_to_log,
     sqlite3_finalize(stmt);
     throw std::runtime_error(str.str());
   }
-  
+
   retcode = sqlite3_step(stmt);
   if(retcode == SQLITE_ERROR)
   {
@@ -95,7 +95,7 @@ execute_simple_sql(const std::string& sql, bool write_sql_to_log,
     throw std::runtime_error(str.str());
   }
 
-  sqlite3_finalize(stmt);      
+  sqlite3_finalize(stmt);
 
   if(write_sql_to_log)
     LOG(INFO) << sql << '\n';

@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/optimizer.cpp -- Stephen Fegan -- 2015-03-12
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -25,9 +25,9 @@
 #include <algorithm>
 #include <cmath>
 
-#include "io/log.hpp"
-#include "math/optimizer.hpp"
-#include "math/nlopt_optimizer.hpp"
+#include <io/log.hpp>
+#include <math/optimizer.hpp>
+#include <math/nlopt_optimizer.hpp>
 
 using namespace calin::math::optimizer;
 using namespace calin::io::log;
@@ -127,10 +127,10 @@ void Optimizer::opt_starting(const std::string& opt_name,
   xbest_                = std_to_eigenvec(initial_values());
   progress_update_iter_ = 0;
   progress_update_time_ = 0;
-  
+
   unsigned naxis = fcn_->num_domain_axes();
   unsigned wnaxis = std::max(1U, num_digits(naxis));
-  
+
   // Print status message if required by verbosity
   if(verbose_ != OptimizerVerbosityLevel::SILENT and
      verbose_ != OptimizerVerbosityLevel::ALL_FCN_EVALS_ONLY)
@@ -150,7 +150,7 @@ void Optimizer::opt_starting(const std::string& opt_name,
         L << "hessian)";
     }
     L << '\n';
-    
+
     L << "- stopping criteria:";
     bool has_crit = false;
     if(abs_tolerance() > 0) {
@@ -162,7 +162,7 @@ void Optimizer::opt_starting(const std::string& opt_name,
     if(max_walltime() > 0) { if(has_crit) L << " or";
       L << " T_wall > " << max_walltime() << " sec"; }
     L << '\n';
-  
+
     L << "- function: N_dim = " << naxis;
     if(fcn_->can_calculate_gradient() || fcn_->can_calculate_hessian())
     {
@@ -186,14 +186,14 @@ void Optimizer::opt_starting(const std::string& opt_name,
       xinit_inside_xlim_lo =
           std::equal(xbest_.data(), xbest_.data()+xbest_.size(),
                      lower_limit.begin(), std::greater_equal<double>());
-    
+
     bool xinit_inside_xlim_hi = true;
     // The STL function "equal" is badly named!!
     if((unsigned)xbest_.size() == upper_limit.size())
       xinit_inside_xlim_hi =
           std::equal(xbest_.data(), xbest_.data()+xbest_.size(),
                      upper_limit.begin(), std::less_equal<double>());
-    
+
     if(!xinit_inside_xlim_lo or !xinit_inside_xlim_hi)
     {
       std::string message;
@@ -208,7 +208,7 @@ void Optimizer::opt_starting(const std::string& opt_name,
       LOG(WARNING) << message;
     }
   }
-  
+
   if(verbose_ == OptimizerVerbosityLevel::SUMMARY_ONLY or
      verbose_ == OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS)return;
 
@@ -218,7 +218,7 @@ void Optimizer::opt_starting(const std::string& opt_name,
   auto axes = fcn_->domain_axes();
   for(const auto& a : axes)wname = std::max(wname, (unsigned)a.name.size());
   wname = std::min(wname, 40U);
-  
+
   L << "List of function dimensions: \n"
     << "- " << std::left
     << std::setw(wnaxis) << "#" << ' '
@@ -248,7 +248,7 @@ void Optimizer::opt_starting(const std::string& opt_name,
     if(iaxis < step_size.size())
       L << std::setw(8) << step_size[iaxis] << '\n';
     else
-      L << std::setw(8) << '-' << '\n';    
+      L << std::setw(8) << '-' << '\n';
   }
 }
 
@@ -259,7 +259,7 @@ void Optimizer::opt_progress(double fval, const Eigen::VectorXd& x,
   double flast = fbest_;
   if(iterations_ == 0 or fval < fbest_)fbest_ = fval, xbest_ = x;
   iterations_++;
-  
+
   if(iterations_ == 1)
   {
     pfval_ = 0;
@@ -275,7 +275,7 @@ void Optimizer::opt_progress(double fval, const Eigen::VectorXd& x,
     s << std::fixed << std::setprecision(pfval_) << fval;
     wfval_ = s.str().size();
   }
-  
+
   if(verbose_ == OptimizerVerbosityLevel::SILENT or
      (verbose_ == OptimizerVerbosityLevel::SUMMARY_ONLY))
     return;
@@ -290,7 +290,7 @@ void Optimizer::opt_progress(double fval, const Eigen::VectorXd& x,
     else
       return;
   }
-  
+
   auto L = LOG(VERBOSE);
 
   double edm = fbest_-flast;
@@ -302,7 +302,7 @@ void Optimizer::opt_progress(double fval, const Eigen::VectorXd& x,
     edm /= 2.0*fcn_->error_up();
   }
 #endif
-  
+
   L << std::left << std::setw(std::max(3U, num_digits(max_iterations())))
     << iterations_ << ' ';
   if(hessian)L << "2 ";
@@ -319,7 +319,7 @@ void Optimizer::opt_progress(double fval, const Eigen::VectorXd& x,
 }
 
 #if 0
-enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY, 
+enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY,
     SUMMARY_AND_PROGRESS, SUMMARY_AND_FCN_EVALS, ELEVATED, MAX };
 #endif
 
@@ -357,7 +357,7 @@ void Optimizer::opt_finished(OptimizationStatus status, double fopt,
       << disable_logging_if(edm == nullptr)
       << " (EDM: " << std::scientific << (edm==nullptr?0.0:*edm) << ")"
       << enable_logging() << '\n';
-  
+
   if(verbose_ != OptimizerVerbosityLevel::ELEVATED and
      verbose_ != OptimizerVerbosityLevel::MAX)return;
 
@@ -366,7 +366,7 @@ void Optimizer::opt_finished(OptimizationStatus status, double fopt,
   if(has_err_mat)
     has_err_mat =
         this->error_matrix_estimate(err_mat) != ErrorMatrixStatus::UNAVAILABLE;
-  
+
   auto axes = fcn_->domain_axes();
   unsigned wnaxis = std::max(1U, num_digits(axes.size()));
   unsigned wname = 0;
@@ -471,18 +471,18 @@ incorporate_func_gradient(ConstVecRef x, double f_val,
   // http://en.wikipedia.org/wiki/Broyden-Fletcher-Goldfarb-Shanno_algorithm
 
   if(!std::isfinite(f_val) or
-     !std::all_of(gradient.data(), gradient.data()+npar_, 
+     !std::all_of(gradient.data(), gradient.data()+npar_,
                   [](const double& x){return std::isfinite(x);}))
   {
     last_good_ = false;
     return;
   }
-  
+
   if(last_good_)
   {
     Eigen::VectorXd sk = x;
     sk -= xk_;
-      
+
     Eigen::VectorXd yk = gradient;
     yk -= gk_;
 
@@ -512,7 +512,7 @@ incorporate_func_gradient(ConstVecRef x, double f_val,
     //std::cout << std::scientific << std::setprecision(8) << Bk_ << "\n\n";
   }
 skip_rank1_update:
-  
+
   last_good_ = true;
   xk_ = x;
   gk_ = gradient;
@@ -523,9 +523,9 @@ incorporate_func_hessian(ConstVecRef x, double f_val,
                          ConstVecRef gradient, ConstMatRef hessian)
 {
   if(!std::isfinite(f_val) or
-     !std::all_of(gradient.data(), gradient.data()+npar_, 
+     !std::all_of(gradient.data(), gradient.data()+npar_,
                   [](const double& x){return std::isfinite(x);}) or
-     !std::all_of(hessian.data(), hessian.data()+npar_*npar_, 
+     !std::all_of(hessian.data(), hessian.data()+npar_*npar_,
                   [](const double& x){return std::isfinite(x);}))
   {
     last_good_ = false;
@@ -551,5 +551,3 @@ ErrorMatrixStatus BFGSErrorMatrixEstimator::error_matrix(MatRef error_matrix)
 #endif
   return ErrorMatrixStatus::GOOD;
 }
-
-

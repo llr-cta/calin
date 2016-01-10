@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/geant4_shower_generator.cpp -- Stephen Fegan -- 2015-07-02
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -20,8 +20,8 @@
 
 */
 
-#include "simulation/geant4_shower_generator.hpp"
-#include "simulation/geant4_shower_generator_internals.hpp"
+#include <simulation/geant4_shower_generator.hpp>
+#include <simulation/geant4_shower_generator_internals.hpp>
 
 using namespace calin::simulation::shower_generator;
 using namespace calin::io::log;
@@ -39,7 +39,7 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
   ui_manager_ = G4UImanager::GetUIpointer();
 
   // construct a session which receives G4cout/G4cerr
-  
+
   calin::io::log::Level cout_level = calin::io::log::VERBOSE;
   calin::io::log::Level cerr_level = calin::io::log::WARNING;
   G4int verbose_everything = 0;
@@ -67,10 +67,10 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
   }
   ui_session_ = new CoutCerrLogger(cout_level, cerr_level);
   ui_manager_->SetCoutDestination(ui_session_);
-  
+
   // construct the default run manager
   run_manager_ = new G4RunManager;
-  
+
   // set mandatory initialization classes
   FTFP_BERT* physlist = new FTFP_BERT(verbose_everything);
   physlist->SetDefaultCutValue(10*CLHEP::cm);
@@ -134,7 +134,7 @@ generateShowers(unsigned num_events,
   G4ParticleTable* particle_table = G4ParticleTable::GetParticleTable();
   G4ParticleDefinition* particle
       = particle_table->FindParticle(track_to_pdg_type(type));
- 
+
   G4ThreeVector position;
   eigen_to_g4vec(position, x0, CLHEP::cm);
 
@@ -151,8 +151,7 @@ generateShowers(unsigned num_events,
   sps->GetEneDist()->SetMonoEnergy(total_energy * CLHEP::MeV);
 
   gen_action_->setGPS(gps);
-  
+
   // start a run
   run_manager_->BeamOn(num_events);
 }
-

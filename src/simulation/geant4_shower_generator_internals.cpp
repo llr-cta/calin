@@ -1,6 +1,6 @@
-/* 
+/*
 
-   calin/simulation/geant4_shower_generator_internals.cpp 
+   calin/simulation/geant4_shower_generator_internals.cpp
    Stephen Fegan -- 2015-07-07
 
    Internals of Geant-4 extensive air shower generator
@@ -9,11 +9,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -23,7 +23,7 @@
 
 #include<stdexcept>
 
-#include"simulation/geant4_shower_generator_internals.hpp"
+#include <simulation/geant4_shower_generator_internals.hpp>
 
 using namespace calin::simulation::shower_generator;
 
@@ -170,12 +170,12 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
   const G4ThreeVector& post_step_pt_posn = post_step_pt->GetPosition();
   track.e1       = post_step_pt->GetTotalEnergy()/CLHEP::MeV;
   g4vec_to_eigen(track.x1, post_step_pt_posn, CLHEP::cm);
-  g4vec_to_eigen(track.u1, post_step_pt->GetMomentumDirection());  
+  g4vec_to_eigen(track.u1, post_step_pt->GetMomentumDirection());
   track.t1       = post_step_pt->GetGlobalTime()/CLHEP::ns;
 
   track.dx       = the_step->GetStepLength()/CLHEP::cm;
   track.weight   = pre_step_pt->GetWeight();
-      
+
   bool kill_track = false;
   visitor_->visitTrack(track, kill_track);
   if(kill_track)the_step->GetTrack()->SetTrackStatus(fStopAndKill);
@@ -188,14 +188,14 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
        + rzero_*rzero_ < r2cut_)
     {
       the_step->GetTrack()->SetTrackStatus(fStopAndKill);
-      return;     
+      return;
     }
   }
   else if(post_step_pt_posn.z() < zcut_)
   {
     the_step->GetTrack()->SetTrackStatus(fStopAndKill);
-    return;     
-  }  
+    return;
+  }
 }
 
 // ============================================================================
@@ -210,7 +210,7 @@ EAS_PrimaryGeneratorAction::EAS_PrimaryGeneratorAction()
 {
   // nothing to see here
 }
-      
+
 EAS_PrimaryGeneratorAction::~EAS_PrimaryGeneratorAction()
 {
   delete(particle_source_);
@@ -259,10 +259,10 @@ EAS_FlatDetectorConstruction::~EAS_FlatDetectorConstruction()
 G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
 {
   constexpr double eps = std::numeric_limits<double>::epsilon();
-  
+
   std::vector<atmosphere::AtmSlice> slices =
       atm_->make_atm_slices(num_atm_layers_, ztop_of_atm_cm_, zground_cm_);
-  
+
   G4NistManager* nist = G4NistManager::Instance();
 
   G4double world_hx = layer_side_cm_*CLHEP::cm;
@@ -292,7 +292,7 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
     name += std::to_string(int(std::floor(islice.zb)));
     name += "_";
     name += std::to_string(int(std::floor(islice.zt)));
-    
+
     G4Material* air =
         nist->BuildMaterialWithNewDensity(std::string("AIR_")+name,
                                           "G4_AIR",density);
@@ -306,13 +306,13 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
       pos_z -= 0.5*CLHEP::mm;
     }
     layer_hz *= (1-eps);
-    
+
     G4Box* layer_box
         = new G4Box(std::string("BOX_")+name, world_hx, world_hy, layer_hz);
-    
+
     G4LogicalVolume* layer_logical
         = new G4LogicalVolume(layer_box, air, std::string("VOL_")+name);
-  
+
     G4VPhysicalVolume* layer_physical __attribute__((__unused__))
         = new G4PVPlacement(0,                          // no rotation
                             G4ThreeVector(0, 0, pos_z), // translation
@@ -322,13 +322,13 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
                             false,                      // boolean operations
                             0);                         // its copy number}
   }
-  
+
   return world_physical;
 }
 
 void EAS_FlatDetectorConstruction::ConstructSDandField()
 {
-  
+
 };
 
 

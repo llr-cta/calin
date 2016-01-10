@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/hessian.cpp -- Stephen Fegan -- 2015-02-24
 
@@ -9,11 +9,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -26,8 +26,8 @@
 #include <cmath>
 #include <Eigen/Eigenvalues>
 
-#include "math/hessian.hpp"
-#include "math/brent.hpp"
+#include <math/hessian.hpp>
+#include <math/brent.hpp>
 
 using namespace calin::math;
 
@@ -246,7 +246,7 @@ calculate_hessian_2nd_order_dx(function::MultiAxisFunction& fcn,
 
     // Abromowitz & Stegun 25.3.23
     hessian(ipar,ipar) = 4.0*(vn_i - 2.0*v0 + vp_i)/(h2_i*h2_i);
-    
+
     for(unsigned jpar=0;jpar<ipar;jpar++)
     {
       double h_j { dx(jpar) };
@@ -264,7 +264,7 @@ calculate_hessian_2nd_order_dx(function::MultiAxisFunction& fcn,
 
       xx(jpar) = x(jpar); // reset for next loop
     }
-    
+
     xx(ipar) = x(ipar); // reset for next loop
   }
 }
@@ -288,4 +288,3 @@ calculate_hessian_2nd_order_err_up(function::MultiAxisFunction& fcn,
     step_size_err_up(fcn, x, error_hint, err_up_frac, tol) };
   calculate_hessian_2nd_order_dx(fcn, x, dx, hessian);
 }
-

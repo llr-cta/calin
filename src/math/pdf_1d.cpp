@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/pdf_1d.cpp -- Stephen Fegan -- 2015-04-02
 
@@ -11,11 +11,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -27,7 +27,7 @@
 #include <iomanip>
 #include <stdexcept>
 
-#include "math/pdf_1d.hpp"
+#include <math/pdf_1d.hpp>
 
 using namespace calin::math;
 using namespace calin::math::pdf_1d;
@@ -96,7 +96,7 @@ bool GaussianPDF::can_calculate_parameter_gradient()
 {
   return true;
 }
-  
+
 bool GaussianPDF::can_calculate_parameter_hessian()
 {
   return true;
@@ -108,7 +108,7 @@ function::DomainAxis GaussianPDF::domain_axis()
   return { "x-value", xunits_, false, -inf, false, inf };
 }
 
-double GaussianPDF::value_1d(double x) 
+double GaussianPDF::value_1d(double x)
 {
   const double xc = x-x0_;
   const double xs = xc/s_;
@@ -117,7 +117,7 @@ double GaussianPDF::value_1d(double x)
   //std::cout << std::setprecision(17) << x << ' ' << val << '\n';
   return val;
 }
-    
+
 double GaussianPDF::value_and_gradient_1d(double x,  double& dfdx)
 {
   const double xc = x-x0_;
@@ -219,7 +219,7 @@ double LimitedGaussianPDF::value_1d(double x)
   if(x<xlo_ or x>=xhi_)return 0;
   return norm_*GaussianPDF::value_1d(x);
 }
-    
+
 double LimitedGaussianPDF::value_and_gradient_1d(double x,  double& dfdx)
 {
   if(x<xlo_ or x>=xhi_)
@@ -255,7 +255,7 @@ value_and_parameter_gradient_1d(double x,  VecRef gradient)
   {
     gradient[0] = gradient[1] = 0;
     return 0;
-  }  
+  }
   double val = GaussianPDF::value_and_parameter_gradient_1d(x, gradient);
   gradient = norm_*gradient + val*norm_gradient_;
   return norm_*val;
@@ -272,7 +272,7 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
     gradient[0] = gradient[1] = 0;
     hessian(0,0) = hessian(0,1) = hessian(1,0) = hessian(1,1) = 0;
     return 0;
-  }  
+  }
   double val =
      GaussianPDF::value_parameter_gradient_and_hessian_1d(x, gradient, hessian);
   hessian = norm_*hessian + val*norm_hessian_;
@@ -302,7 +302,7 @@ void LimitedGaussianPDF::set_cache()
   double d2ehi_dx02  = 0.0;
   double d2ehi_ds2   = 0.0;
   double d2ehi_dx0ds = 0.0;
-  
+
   if(xhi_!=inf)
   {
     double xc = xhi_-x0_;
@@ -318,14 +318,14 @@ void LimitedGaussianPDF::set_cache()
     d2ehi_dx0ds = dehi_dx0*(xs2-1)/s_;
     d2ehi_ds2   = xs*d2ehi_dx0ds - d2ehi_dx02;
   }
-    
+
   double elo         = 0.0;
   double delo_dx0    = 0.0;
   double delo_ds     = 0.0;
   double d2elo_dx02  = 0.0;
   double d2elo_ds2   = 0.0;
   double d2elo_dx0ds = 0.0;
-  
+
   if(xlo_!=-inf)
   {
     double xc = xlo_-x0_;
@@ -479,7 +479,7 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
   }
   const double xs = x/a_;
   const double val = std::exp(-xs);
-  gradient(0) = val*(norm_gradient_ + norm_*xs/a_);  
+  gradient(0) = val*(norm_gradient_ + norm_*xs/a_);
   hessian(0,0) = val*(norm_hessian_ + 2.0*norm_gradient_*xs/a_
                       + norm_*xs*(xs - 2.0)/SQR(a_));
   return norm_*val;
@@ -505,12 +505,12 @@ void LimitedExponentialPDF::set_cache()
   double ehi         = 0.0;
   double dehi_da     = 0.0;
   double d2ehi_da2   = 0.0;
-  
+
   if(xhi_!=inf)
   {
     double xs = xhi_/a_;
     double exs = exp(-xs);
-    
+
     ehi         = exs*a_;
     dehi_da     = exs*(1.0 + xs);
     d2ehi_da2   = exs*SQR(xs)/a_;
@@ -520,16 +520,16 @@ void LimitedExponentialPDF::set_cache()
     throw std::out_of_range("LimitedExponentialPDF: scale must be strictly "
                             "positive when xhi=inf");
   }
-    
+
   double elo         = 0.0;
   double delo_da     = 0.0;
   double d2elo_da2   = 0.0;
-  
+
   if(xlo_!=-inf)
   {
     double xs = xlo_/a_;
     double exs = exp(-xs);
-    
+
     elo         = exs*a_;
     delo_da     = exs*(1.0 + xs);
     d2elo_da2   = exs*SQR(xs)/a_;
@@ -570,7 +570,7 @@ TwoComponentPDF(Parameterizable1DPDF* pdf1, const std::string& cpt1_name,
                 Parameterizable1DPDF* pdf2, const std::string& cpt2_name,
                 bool adopt_pdf1, bool adopt_pdf2, double error_up):
     Parameterizable1DPDF(),
-    pdf1_(pdf1), adopt_pdf1_(adopt_pdf1), cpt1_name_(cpt1_name), 
+    pdf1_(pdf1), adopt_pdf1_(adopt_pdf1), cpt1_name_(cpt1_name),
     pdf2_(pdf2), adopt_pdf2_(adopt_pdf2), cpt2_name_(cpt2_name),
     error_up_(error_up)
 {
@@ -586,7 +586,7 @@ unsigned TwoComponentPDF::num_parameters()
 {
   return 1 + pdf1_->num_parameters() + pdf2_->num_parameters();
 }
- 
+
 std::vector<function::ParameterAxis> TwoComponentPDF::parameters()
 {
   std::vector<function::ParameterAxis> pvec {
@@ -693,7 +693,7 @@ TwoComponentPDF::value_and_parameter_gradient_1d(double x,  VecRef gradient)
   auto grad1 = gradient.segment(1,npar1);
   auto grad2 = gradient.segment(1+npar1,npar2);
 #endif
-  
+
   double val1 = pdf1_->value_and_parameter_gradient_1d(x, grad1);
   double val2 = pdf2_->value_and_parameter_gradient_1d(x, grad2);
 
@@ -751,7 +751,7 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
   gradient.segment(1,npar1) = grad1;
   gradient.segment(1+npar1,npar2) = grad2;
 #endif
-  
+
   return prob_cpt1_*val1 + omp*val2;
 }
 

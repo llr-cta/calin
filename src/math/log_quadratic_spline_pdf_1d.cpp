@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/log_quadratic_spline_pdf_1d.cpp -- Stephen Fegan -- 2015-07-30
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -23,8 +23,8 @@
 #include <cmath>
 #include <iostream>
 
-#include "math/special.hpp"
-#include "math/log_quadratic_spline_pdf_1d.hpp"
+#include <math/special.hpp>
+#include <math/log_quadratic_spline_pdf_1d.hpp>
 
 using namespace calin::math::special;
 using namespace calin::math::pdf_1d;
@@ -52,8 +52,8 @@ LogQuadraticSpline1DPDF(ConstVecRef xknot, double xlo, double xhi,
     stream << "LogQuadraticSpline1DPDF - minimum of 2 knots required, "
            << nknot_ << " supplied.";
     throw(std::runtime_error(stream.str()));
-  }  
-  
+  }
+
   std::sort(xknot_.data(), xknot_.data()+nknot_);
   dx_ = xknot_.tail(nknot_-1) - xknot_.head(nknot_-1);
 
@@ -63,7 +63,7 @@ LogQuadraticSpline1DPDF(ConstVecRef xknot, double xlo, double xhi,
     stream << "LogQuadraticSpline1DPDF - first knot is outside limits, " << xknot_(0)
            << " < " << xlo_;
     throw(std::out_of_range(stream.str()));
-  }  
+  }
 
   if(xknot_(nknot_-1) > xhi_)
   {
@@ -71,19 +71,19 @@ LogQuadraticSpline1DPDF(ConstVecRef xknot, double xlo, double xhi,
     stream << "LogQuadraticSpline1DPDF - final knot is outside limits, " << xknot_(nknot_-1)
            << " > " << xhi_;
     throw(std::out_of_range(stream.str()));
-  }  
-  
+  }
+
   a_gradient_.setZero();
   b_gradient_.setZero();
-  
+
   set_cache();
 }
-      
+
 LogQuadraticSpline1DPDF::~LogQuadraticSpline1DPDF()
 {
   // nothing to see here
 }
-  
+
 unsigned LogQuadraticSpline1DPDF::num_parameters()
 {
   return 1+nknot_;
@@ -126,7 +126,7 @@ void LogQuadraticSpline1DPDF::set_parameter_values(ConstVecRef values)
     stream << "LogQuadraticSpline1DPDF - parameter vector has " << values.size()
            << " values, " << num_parameters() << " required.";
     throw(std::runtime_error(stream.str()));
-  }  
+  }
   param0_ = values(0);
   yknot_ = values.tail(nknot_);
   set_cache();
@@ -245,7 +245,7 @@ value_and_parameter_gradient_1d(double x, VecRef gradient)
     gradient.setZero();
     return 0;
   }
-    
+
   unsigned isegment = find_segment(x);
 
   if(bin_dx_ == 0)
@@ -256,7 +256,7 @@ value_and_parameter_gradient_1d(double x, VecRef gradient)
     gradient(isegment+1) += 1.0;
     val = norm_ * std::exp(val);
 #if 0
-    std::cout << "AAA: [" 
+    std::cout << "AAA: ["
               << a_gradient_.col(isegment).transpose() << " ] [ "
               << b_gradient_.col(isegment).transpose() << " ] [ "
               << gradient.transpose() << " ] [ "
@@ -311,10 +311,10 @@ value_and_parameter_gradient_1d(double x, VecRef gradient)
                xl-xknot_(isegment), xr-xknot_(isegment), I, dI_da, dI_db);
       gradient = dI_da * a_gradient_.col(isegment);
       gradient += dI_db * b_gradient_.col(isegment);
-      gradient(1+isegment) += I;      
+      gradient(1+isegment) += I;
     }
 
-    
+
     gradient *= norm_/bin_dx_;
     I *= norm_/bin_dx_;
     gradient += norm_gradient_*I;
@@ -325,7 +325,7 @@ value_and_parameter_gradient_1d(double x, VecRef gradient)
 double LogQuadraticSpline1DPDF::
 value_parameter_gradient_and_hessian_1d(double x, VecRef gradient, MatRef hessian)
 {
-  throw std::runtime_error("LogQuadraticSpline1DPDF::value_parameter_gradient_and_hessian_1d not implemented");  
+  throw std::runtime_error("LogQuadraticSpline1DPDF::value_parameter_gradient_and_hessian_1d not implemented");
 }
 
 double LogQuadraticSpline1DPDF::error_up()
@@ -382,7 +382,7 @@ void LogQuadraticSpline1DPDF::set_cache()
     set_spline_coeffs_right_to_left();
   else
     set_spline_coeffs_left_to_right();
-      
+
   if(normalize_)
   {
     norm_ = 0;
@@ -414,13 +414,13 @@ void LogQuadraticSpline1DPDF::set_cache()
                   <<  a << ' ' << b << ' ' << c << ' '
                   << I << ' ' << dI_da << ' ' << dI_db <<'\n';
       }
-      
+
       norm_ += I;
       norm_gradient_ += dI_da * a_gradient_.col(isegment);
       norm_gradient_ += dI_db * b_gradient_.col(isegment);
       norm_gradient_(1+isegment) += I;
     }
-    
+
     norm_ = 1/norm_;
     norm_gradient_ *= -norm_;
   }
@@ -448,7 +448,7 @@ void LogQuadraticSpline1DPDF::set_spline_coeffs_left_to_right()
     b_gradient_(1,0) = -1.0/dx_(0);
     b_gradient_(2,0) = 1.0/dx_(0);
   }
-  
+
   for(unsigned isegment=1; isegment<nknot_-1; isegment++)
   {
     double dx2 = SQR(dx_(isegment));
@@ -491,7 +491,7 @@ void LogQuadraticSpline1DPDF::set_spline_coeffs_right_to_left()
     b_gradient_(iseg+1,iseg) = -1.0/dx_(iseg);
     b_gradient_(iseg+2,iseg) = 1.0/dx_(iseg);
   }
-  
+
   for(unsigned iloop=1; iloop<nknot_-1; iloop++)
   {
     unsigned iseg = nknot_-2-iloop;
@@ -539,7 +539,7 @@ integral(double a, double b, double c, double xl, double xr,
 
     const double FF_exp_r = std::exp(arg_exp + arg_exp_r);
     const double FF_exp_l = std::exp(arg_exp + arg_exp_l);
-        
+
     if(a < 0) // negative curvature - integral is erf
     {
       const double s = std::sqrt(-a);
@@ -558,9 +558,9 @@ integral(double a, double b, double c, double xl, double xr,
       else
         I = 1/(M_2_SQRTPI*s)*std::exp(arg_exp)*(std::erf(xxr)-std::erf(xxl));
       //std::cout << "DDD: " << xxl << ' ' << xxr << ' ' << erf(xxr)-erf(xxl) << ' ' << erfc(xxl)-erfc(xxr) << ' ' << erfc(-xxr)-erfc(-xxl) << ' ' << F_exp << ' ' << I << '\n';
-                 
+
     }
-    else // positive curvature - integral is e^(x**2) dawson(x) 
+    else // positive curvature - integral is e^(x**2) dawson(x)
     {
       const double s = std::sqrt(a);
       I = 1/s*(FF_exp_r*dawson(s*(xr+b/(2*a))) -
@@ -574,7 +574,7 @@ integral(double a, double b, double c, double xl, double xr,
 
 #if 0
   std::cout << "       " << xl << ' ' << xr << ' '
-            <<  a << ' ' <<  b << ' ' << c << ' ' 
+            <<  a << ' ' <<  b << ' ' << c << ' '
             << I << ' ' << dI_da << ' ' << dI_db << '\n';
 #endif
 }

@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/io/hex_array_vvv.cpp -- Stephen Fegan -- 2015-10-21
 
@@ -14,11 +14,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -26,45 +26,45 @@
 
 */
 
-#include "math/hex_array.hpp"
+#include <math/hex_array.hpp>
 
 /* xytohex.c */
 /*
- * This set of routines provide conversion between 
+ * This set of routines provide conversion between
  * regular coordinate system (x,y) and coordinate
- * system of hexagonal cells covering all 2D space. 
- * The spacing between cells in x direction is equal 
+ * system of hexagonal cells covering all 2D space.
+ * The spacing between cells in x direction is equal
  * to 1 which is also the side to side cell size.
  * The cell in origin of (x,y) plane is cell number
  * one. The center of cell number two is at (1,0).
- * Then cells of the first hexagonal ring are numbered 
- * in clockwise direction around (x,y) origin. The center 
- * of cell number eight is at (2,0) and cells of the 
- * second hexagonal ring are numbered in clockwise 
+ * Then cells of the first hexagonal ring are numbered
+ * in clockwise direction around (x,y) origin. The center
+ * of cell number eight is at (2,0) and cells of the
+ * second hexagonal ring are numbered in clockwise
  * direction again. This numbering process is continued
  * until all 2D space is covered. There are two routines
- * available for a user. Routine  
+ * available for a user. Routine
  *
  * xy_to_nh(double *x, double *y, int *n);
  *
  * maps (x,y) coordinates onto cell number n and (x,y)
- * pair of coordinates in translated reference frame 
+ * pair of coordinates in translated reference frame
  * which has origin at the center of the cell number n.
- * Routine 
+ * Routine
  *
  * nh_to_xy(int *n, double *x, double *y);
  *
  * performs inverse transformation. Using given cell
  * number, n, it returns (x,y) coordinates of the
- * cell center. Because all cells are numbered by 
- * integers >0, n must be >0. If routine is called 
- * with negative or zero n, n value will be re-assigned 
+ * cell center. Because all cells are numbered by
+ * integers >0, n must be >0. If routine is called
+ * with negative or zero n, n value will be re-assigned
  * to 1 (origin).
  *
  * March 24, 2000
  *
  * vvv
- */ 
+ */
 
 #include <cfloat>
 
@@ -73,13 +73,13 @@ namespace {
 /* STRUCTURE DECLARATIONS */
 /*  vector structure          */
   typedef struct vec {
-     double        x;  /* x  */ 
+     double        x;  /* x  */
      double        y;  /* y */
     } vec;
 
 /*  hex coordinate structure  */
   typedef struct hex {
-     int           m;  /* radius  */ 
+     int           m;  /* radius  */
      int           j;  /* segment */
      int           l;  /* cell    */
     } hex;
@@ -106,7 +106,7 @@ double 	hex_nghbr(double x, double y, hex rsc[3])
   int    m,j=0,l;
   double r=0.,r_;
   int          i;
-  
+
   /* radius, segment, and cell */
   for(i=0;i<6;i++){
 	r_=x*es[i].x+y*es[i].y;
@@ -160,7 +160,7 @@ void hex_to_xy(hex hx, double *x, double *y)
 void xy_to_hex(double *x, double *y, hex *rsc)
 /*
  * converts (x,y) into "hex" coordinates of the cell,
- * and returns (x,y) in the reference frame in which 
+ * and returns (x,y) in the reference frame in which
  * cell center is placed in origin.
  *
  * vvv - March 24, 2000
@@ -204,7 +204,7 @@ void hex_to_nh(hex hx, int *n)
  */
 {
   *n=1+3*hx.m*(hx.m-1)+hx.m*hx.j+hx.l+1;
-  if(hx.m==0) *n=1;	
+  if(hx.m==0) *n=1;
 
   return;
 }
@@ -237,7 +237,7 @@ void nh_to_hex(int n, hex *hx)
   }while (n_<n);
   n_-=hx->m;
   hx->j--;
-  
+
   /* cell */
   hx->l=n-n_-1;
 
@@ -250,7 +250,7 @@ void calin::math::hex_array::vvv::
 xy_to_nh(double *x, double *y, int *nh)
 /*
  * converts (x,y) into hexagonal cell number,
- * and returns (x,y) in the reference frame in which 
+ * and returns (x,y) in the reference frame in which
  * cell center is placed in origin. It is assumed that
  * spacing of cells in x direction is equal to 1. Side
  * to side cell size is therefore equal to 1 too.
@@ -261,7 +261,7 @@ xy_to_nh(double *x, double *y, int *nh)
   hex rsc;
   xy_to_hex(x, y, &rsc);
   hex_to_nh(rsc, nh);
-  
+
   return;
 }
 
@@ -270,8 +270,8 @@ nh_to_xy(int *nh, double *x, double *y)
 /*
  * Converts hexagonal cell number into (x,y) coordinates.
  * Cell number must always be integer > 0. If it is <= 0,
- * it is assigned to 1.	It is assumed that spacing of cells 
- * in x direction is equal to 1. Side to side hexagonal 
+ * it is assigned to 1.	It is assumed that spacing of cells
+ * in x direction is equal to 1. Side to side hexagonal
  * cell size is therefore equal to 1 too.
  *
  * vvv - March 24, 2000

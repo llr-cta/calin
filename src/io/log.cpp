@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/io/log.hpp -- Stephen Fegan -- 2015-05-12
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -27,7 +27,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "io/log.hpp"
+#include <io/log.hpp>
 
 using namespace calin::io::log;
 
@@ -60,7 +60,7 @@ double TimeStamp::seconds_since(const TimeStamp& then)
   dt += (usec>then.usec?double(usec-then.usec):-double(then.usec-usec))*1e-6;
   return dt;
 }
-  
+
 Logger::~Logger()
 {
   //nothing to see here
@@ -107,7 +107,7 @@ const char* ansi_reset_string()
   return "\x1b[0m";
 }
 
-template <typename Writer> void 
+template <typename Writer> void
 write_message_lines(Writer &&writer,
                     const char* timestamp_string,
                     const char* this_level_string,
@@ -138,11 +138,11 @@ write_message_lines(Writer &&writer,
       writer("[",1);
       writer(this_level_string, std::strlen(this_level_string));
       writer("]",1);
-    }      
-        
+    }
+
     writer(message.c_str() + spos, n);
     writer("\n",1);
-    
+
     spos += n+1;
   }
 }
@@ -158,7 +158,7 @@ void MultiLogger::log_message(Level level, const std::string& message,
                               TimeStamp timestamp)
 {
   if(message.empty() || level==DISCARD)return;
-  
+
   lock();
 
   if(sub_loggers_.empty() and sub_streams_.empty())
@@ -168,7 +168,7 @@ void MultiLogger::log_message(Level level, const std::string& message,
     else
       nolock_add_stream(&std::cout, false, false, true);
   }
-  
+
   for(auto& sl : sub_loggers_)
   {
     try
@@ -177,7 +177,7 @@ void MultiLogger::log_message(Level level, const std::string& message,
     }
     catch(...)
     {
-      // for better or worse - ignore all errors      
+      // for better or worse - ignore all errors
     }
   }
 
@@ -185,7 +185,7 @@ void MultiLogger::log_message(Level level, const std::string& message,
   const char* this_level_string = level_string(level);
   const char* apply_color_string = ansi_color_string(level);
   const char* reset_color_string = ansi_reset_string();
-  
+
   for(auto& ss : sub_streams_)
   {
     try
@@ -202,7 +202,7 @@ void MultiLogger::log_message(Level level, const std::string& message,
       // for better or worse - ignore all errors
     }
   }
-  
+
   unlock();
 }
 
@@ -284,11 +284,11 @@ void PythonLogger::
 log_message(Level level, const std::string& message, TimeStamp timestamp)
 {
   if(message.empty() || level==DISCARD)return;
-  
+
   const char* this_level_string = level_string(level);
   const char* apply_color_string = ansi_color_string(level);
   const char* reset_color_string = ansi_reset_string();
-  
+
   if(use_stderr_)
     write_message_lines([](const char* c, unsigned n) { while(n) {
           unsigned nn = std::min(n,1000U); PySys_WriteStderr("%.*s", nn, c);
@@ -300,11 +300,10 @@ log_message(Level level, const std::string& message, TimeStamp timestamp)
           unsigned nn = std::min(n,1000U); PySys_WriteStdout("%.*s", nn, c);
           c += nn; n -= nn; } },
       nullptr, this_level_string, apply_color_string, reset_color_string,
-      message); 
+      message);
 }
 
 bool PythonLogger::is_python_initialised()
 {
   return Py_IsInitialized() != 0;
 }
-

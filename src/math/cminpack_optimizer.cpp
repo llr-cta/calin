@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/cminpack_optimizer.cpp -- Stephen Fegan -- 2015-05-21
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -24,11 +24,11 @@
 #include <iomanip>
 #include <cstring>
 
-#include "cminpack/cminpack.h"
+#include <cminpack/cminpack.h>
 
-#include "io/log.hpp"
-#include "math/cminpack_optimizer.hpp"
-#include "math/hessian.hpp"
+#include <io/log.hpp>
+#include <math/cminpack_optimizer.hpp>
+#include <math/hessian.hpp>
 
 using namespace calin::math::optimizer;
 using namespace calin::io::log;
@@ -100,7 +100,7 @@ OptimizationStatus CMinpackOptimizer::minimize(VecRef xopt, double& fopt)
   rvec_.resize(naxes*(naxes+1)/2);
   qtfvec_.resize(naxes);
   dxvec_.resize(naxes);
-  
+
   Eigen::VectorXd diag(naxes);
   int ngrad { 0 };
   int nhess { 0 };
@@ -182,7 +182,7 @@ OptimizationStatus CMinpackOptimizer::minimize(VecRef xopt, double& fopt)
 
   return opt_status_;
 }
-  
+
 ErrorMatrixStatus CMinpackOptimizer::error_matrix_estimate(MatRef error_matrix)
 {
   // Use the CMinpack QR factorization of the Hessian to calculate the
@@ -209,7 +209,7 @@ ErrorMatrixStatus CMinpackOptimizer::error_matrix_estimate(MatRef error_matrix)
   // We don't worry about enforcing positive-definiteness.
   Eigen::MatrixXd ems = (0.5*scale)*(error_matrix + error_matrix.transpose());
   error_matrix = ems;
-  
+
   return ErrorMatrixStatus::GOOD;
 }
 
@@ -245,7 +245,7 @@ cminpack_callback_hess(void *self, int n, const double* x,
   (void)ldfjac;
   return that->eval_func(n,x,grad,hess,iflag);
 }
-  
+
 int CMinpackOptimizer::
 eval_func(unsigned n, const double* x, double* grad, double* hess, int iflag)
 {
@@ -296,9 +296,8 @@ double CMinpackOptimizer::edm(unsigned n)
     unsigned ir = n-iir-1;
     const double* rr = rvec_.data() + n*(n+1)/2 - iir*(iir+1)/2 - n;
     double sum = qtfvec_(ir);
-    for(unsigned ic = ir+1; ic<n; ++ic)sum -= rr[ic]*dxvec_(ic);      
+    for(unsigned ic = ir+1; ic<n; ++ic)sum -= rr[ic]*dxvec_(ic);
         dxvec_(ir) = sum/rr[ir];
   }
   return dxvec_.transpose()*gvec_;
 }
-  

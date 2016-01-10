@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/optimizer.cpp -- Stephen Fegan -- 2015-03-12
 
@@ -6,11 +6,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -25,9 +25,9 @@
 #include <iostream>
 #include <iomanip>
 
-#include "math/minuit75_optimizer.hpp"
+#include <math/minuit75_optimizer.hpp>
 
-#include "f2c/f2c.h"
+#include <f2c/f2c.h>
 
 extern "C" {
 
@@ -53,7 +53,7 @@ extern "C" {
   void s_copy(register char *a, register const char *b, ftnlen la, ftnlen lb);
   integer i_indx(const char *a, const char *b, ftnlen la, ftnlen lb);
   integer e_wsfe(void);
-    
+
 };
 
 #define MNE 400
@@ -198,7 +198,7 @@ OptimizationStatus Minuit75Optimizer::minimize(VecRef xopt, double& fopt)
       mnpout_(&fortran_iparam, buffer, &xopt[iparam], &xerr, &xlo, &xhi,
               &intvar, sizeof(buffer)/sizeof(*buffer)-1, fcb);
     }
-  
+
   return OptimizationStatus::OPTIMIZER_FAILURE;
 }
 
@@ -219,7 +219,7 @@ calc_error_matrix_and_eigenvectors(MatRef error_matrix,
 int Minuit75Optimizer::do_command(const std::string& command)
 {
   // Pass a command string to Minuit
-  integer errorFlag = 0;  
+  integer errorFlag = 0;
   mncomd_(minuit_callback, command.c_str(), &errorFlag,
           this, command.length(), cast_fcb(fcb_));
   return errorFlag;
@@ -240,7 +240,7 @@ eval_function(long npar, double* grad, double& fcnval,
               const double* x, long& iflag)
 {
   Eigen::VectorXd xvec = Eigen::Map<const Eigen::VectorXd>(x,npar);
-  
+
   if(iflag==2)
   {
     Eigen::VectorXd gvec(npar);
@@ -255,5 +255,5 @@ eval_function(long npar, double* grad, double& fcnval,
   std::cout << fcnval;
   for(unsigned ipar=0;ipar<npar;ipar++)std::cout << ' ' << xvec(ipar);
   std::cout << '\n';
-  
+
 }

@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/nlopt_optimizer.cpp -- Stephen Fegan -- 2015-03-16
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -25,11 +25,11 @@
 #include <cstring>
 #include <cmath>
 
-#include "nlopt/nlopt.h"
+#include <nlopt/nlopt.h>
 
-#include "io/log.hpp"
-#include "math/nlopt_optimizer.hpp"
-#include "math/hessian.hpp"
+#include <io/log.hpp>
+#include <math/nlopt_optimizer.hpp>
+#include <math/hessian.hpp>
 
 using namespace calin::math::optimizer;
 using namespace calin::io::log;
@@ -131,10 +131,10 @@ static std::string ZZZ_algorithm_to_name(nlopt_algorithm algo)
     MATCH_ALGORITHM(NLOPT_GN_DIRECT_NOSCAL);
     MATCH_ALGORITHM(NLOPT_GN_DIRECT_L_NOSCAL);
     MATCH_ALGORITHM(NLOPT_GN_DIRECT_L_RAND_NOSCAL);
-  
+
     MATCH_ALGORITHM(NLOPT_GN_ORIG_DIRECT);
     MATCH_ALGORITHM(NLOPT_GN_ORIG_DIRECT_L);
-    
+
     MATCH_ALGORITHM(NLOPT_GD_STOGO);
     MATCH_ALGORITHM(NLOPT_GD_STOGO_RAND);
 
@@ -157,7 +157,7 @@ static std::string ZZZ_algorithm_to_name(nlopt_algorithm algo)
     MATCH_ALGORITHM(NLOPT_GD_MLSL);
     MATCH_ALGORITHM(NLOPT_GN_MLSL_LDS);
     MATCH_ALGORITHM(NLOPT_GD_MLSL_LDS);
-  
+
     MATCH_ALGORITHM(NLOPT_LD_MMA);
 
     MATCH_ALGORITHM(NLOPT_LN_COBYLA);
@@ -175,7 +175,7 @@ static std::string ZZZ_algorithm_to_name(nlopt_algorithm algo)
     MATCH_ALGORITHM(NLOPT_LN_BOBYQA);
 
     MATCH_ALGORITHM(NLOPT_GN_ISRES);
-    
+
     /* new variants that require local_optimizer to be set,
        not with older constants for backwards compatibility */
     MATCH_ALGORITHM(NLOPT_AUGLAG);
@@ -261,7 +261,7 @@ bool NLOptOptimizer::is_local_optimizer(algorithm_type algorithm)
     case NLOPT_G_MLSL_LDS:
     case NLOPT_GN_ESCH:
       return false;
-      
+
     case NLOPT_LD_LBFGS_NOCEDAL:
     case NLOPT_LD_LBFGS:
     case NLOPT_LN_PRAXIS:
@@ -488,10 +488,10 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   nlopt_result nlopt_status;
 
   unsigned naxes { fcn_->num_domain_axes() };
-  
+
   err_est_->reset(naxes);
   gvec_.resize(naxes);
-  
+
   std::vector<double> xlim_lo { limits_lo() };
   std::vector<double> xlim_hi { limits_hi() };
   std::vector<double> stepsize { initial_stepsize() };
@@ -540,7 +540,7 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
       return opt_status_;
     }
   }
-  
+
   nlopt_status = nlopt_set_initial_step(opt.get(), &stepsize.front());
   if(nlopt_status != NLOPT_SUCCESS)
   {
@@ -562,7 +562,7 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   }
 
   nlopt_status = nlopt_optimize(opt.get(), xopt.data(), &fopt);
-  
+
   switch(nlopt_status)
   {
     case NLOPT_SUCCESS:
@@ -614,7 +614,7 @@ OptimizationStatus NLOptOptimizer::minimize(VecRef xopt, double& fopt)
   }
 
   opt_finished(opt_status_, fbest_, xbest_);
-  
+
   return opt_status_;
 }
 
@@ -685,6 +685,6 @@ double NLOptOptimizer::eval_func(unsigned n, const double* x, double* grad)
 #endif
 
   opt_progress(fcn_value, xvec, grad?&gvec_:nullptr, nullptr);
-  
+
   return fcn_value;
 }

@@ -20,3 +20,12 @@
    General Public License for more details.
 
 */
+
+#include <io/telescope_data_source.hpp>
+
+using namespace calin::io::telescope_data_source;
+
+TelescopeDataSource::~TelescopeDataSource()
+{
+  // nothing to see here
+}

@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/atmosphere.cpp -- Stephen Fegan -- 2015-06-11
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -32,8 +32,7 @@
 #include<sstream>
 #include<algorithm>
 
-#include"simulation/atmosphere.hpp"
-#include"simulation/atmosphere.hpp"
+#include <simulation/atmosphere.hpp>
 
 using namespace calin::simulation::atmosphere;
 
@@ -47,7 +46,7 @@ std::vector<AtmSlice> Atmosphere::make_atm_slices(unsigned nslice)
   return make_atm_slices(nslice,this->top_of_atmosphere(),0);
 }
 
-std::vector<AtmSlice> Atmosphere::make_atm_slices(unsigned nslice, 
+std::vector<AtmSlice> Atmosphere::make_atm_slices(unsigned nslice,
                                                   double zmax, double zmin)
 {
   std::vector<AtmSlice> atm(nslice);
@@ -162,7 +161,7 @@ void LayeredAtmosphere::initialize()
 
   m_ztoa = m_levels.back().z;
   m_ttoa = m_levels.back().t;
-  
+
   if(m_ttoa <= 0.0)
     {
       // If the thickness at the top of the atmosphere is zero
@@ -174,7 +173,7 @@ void LayeredAtmosphere::initialize()
       if(m_levels.size()<3)
 	throw std::string("LayeredAtmosphere: A minimum of 3 levels required "
 			  "to solve for thickness.");
-      
+
       const double y2 = m_levels[m_levels.size() - 2].t;
       const double y3 = m_levels[m_levels.size() - 3].t;
       const double x1 = m_levels[m_levels.size() - 1].z;
@@ -191,7 +190,7 @@ void LayeredAtmosphere::initialize()
 	  // Newton-Ralphson to find value of H giving agreement with data
 	  if(niter-- == 0)
 	    throw std::string("LayeredAtmosphere: max number of iterations exceeded");
-	  double dfdH = 
+	  double dfdH =
 	    (den*(x3*std::exp(-x3/H)-x1*std::exp(-x1/H))
 	     - num*(x2*std::exp(-x2/H)-x1*std::exp(-x1/H)))/(den*den*H*H);
 	  H += df/dfdH;
@@ -264,9 +263,9 @@ LayeredAtmosphere::findZ(double z) const
       if(ilayer == m_layers.end())ilayer--;
     }
   }
-  
+
   //std::cout << "B: " << z << ' ' << ilayer-m_layers.begin() << ' ' << ilayer->zb << ' ' << ilayer->zt << '\n';
-  
+
   assert(ilayer<m_layers.end());
   assert(z<=ilayer->zt || ilayer==m_layers.end()-1);
   assert(ilayer->zb<z || ilayer==m_layers.begin());
@@ -316,7 +315,7 @@ double LayeredAtmosphere::top_of_atmosphere()
 
  LayeredAtmosphere* LayeredAtmosphere::us76()
 {
-  std::vector<Level> levels;  
+  std::vector<Level> levels;
   levels.push_back({ 0.0, 0.12219E-02, 0.10350E+04, 0.28232E-03 });
   levels.push_back({ 100000.0, 0.11099E-02, 0.91853E+03, 0.25634E-03 });
   levels.push_back({ 200000.0, 0.10054E-02, 0.81286E+03, 0.23214E-03 });

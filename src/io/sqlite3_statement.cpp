@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/io/sqlite3_statement.cpp -- Stephen Fegan -- 2015-09-24
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -20,8 +20,8 @@
 
 */
 
-#include "io/log.hpp"
-#include "io/sqlite3_statement.hpp"
+#include <io/log.hpp>
+#include <io/sqlite3_statement.hpp>
 
 using namespace calin::io::log;
 using namespace calin::io::sql_transceiver;
@@ -160,7 +160,7 @@ bool SQLite3Statement::
 bind_bool(unsigned ifield, bool value)
 {
   if(make_bound_sql_)SQLStatement::bind_bool(ifield, value);
-  return sqlite3_bind_int(stmt_, ifield+1, value?1:0) == SQLITE_OK;  
+  return sqlite3_bind_int(stmt_, ifield+1, value?1:0) == SQLITE_OK;
 }
 
 bool SQLite3Statement::
@@ -200,19 +200,19 @@ int64_t SQLite3Statement::extract_int64(unsigned icol, bool* good)
 int32_t SQLite3Statement::extract_int32(unsigned icol, bool* good)
 {
   if(good)*good = true;
-  return sqlite3_column_int(stmt_, icol);  
+  return sqlite3_column_int(stmt_, icol);
 }
 
 int16_t SQLite3Statement::extract_int16(unsigned icol, bool* good)
 {
   if(good)*good = true;
-  return sqlite3_column_int(stmt_, icol);  
+  return sqlite3_column_int(stmt_, icol);
 }
 
 int8_t SQLite3Statement::extract_int8(unsigned icol, bool* good)
 {
   if(good)*good = true;
-  return sqlite3_column_int(stmt_, icol);  
+  return sqlite3_column_int(stmt_, icol);
 }
 
 uint64_t SQLite3Statement::extract_uint64(unsigned icol, bool* good)
@@ -224,31 +224,31 @@ uint64_t SQLite3Statement::extract_uint64(unsigned icol, bool* good)
 uint32_t SQLite3Statement::extract_uint32(unsigned icol, bool* good)
 {
   if(good)*good = true;
-  return sqlite3_column_int(stmt_, icol);  
+  return sqlite3_column_int(stmt_, icol);
 }
 
 uint16_t SQLite3Statement::extract_uint16(unsigned icol, bool* good)
 {
   if(good)*good = true;
-  return sqlite3_column_int(stmt_, icol);  
+  return sqlite3_column_int(stmt_, icol);
 }
 
 uint8_t SQLite3Statement::extract_uint8(unsigned icol, bool* good)
 {
   if(good)*good = true;
-  return sqlite3_column_int(stmt_, icol);  
+  return sqlite3_column_int(stmt_, icol);
 }
 
 float SQLite3Statement::extract_float(unsigned icol, bool* good)
 {
   if(good)*good = true;
-  return sqlite3_column_double(stmt_, icol);  
+  return sqlite3_column_double(stmt_, icol);
 }
 
 double SQLite3Statement::extract_double(unsigned icol, bool* good)
 {
   if(good)*good = true;
-  return sqlite3_column_double(stmt_, icol);  
+  return sqlite3_column_double(stmt_, icol);
 }
 
 bool SQLite3Statement::extract_bool(unsigned icol, bool* good)

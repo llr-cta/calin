@@ -23,18 +23,15 @@
 
 #pragma once
 
-#include <string>
-#include <streambuf>
-#include <iostream>
-#include <sstream>
-#include <vector>
-
-#include <google/protobuf/descriptor.pb.h>
-
-#include "ix::iact::telescope_event.pb.h"
+#include <iact/telescope_event.pb.h>
 
 namespace calin { namespace io { namespace telescope_data_source {
 
-
+class TelescopeDataSource
+{
+public:
+  virtual ~TelescopeDataSource();
+  virtual calin::ix::iact::telescope_event::TelescopeEvent* getNextEvent() = 0;
+};
 
 } } } // namespace calin::io::telescope_data_source

@@ -28,11 +28,11 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
-#include "calin.pb.h"
-#include "io/sql_transceiver.pb.h"
-#include "io/sql_transceiver.hpp"
-#include "io/log.hpp"
-#include "io/util.hpp"
+#include <calin.pb.h>
+#include <io/sql_transceiver.pb.h>
+#include <io/sql_transceiver.hpp>
+#include <io/log.hpp>
+#include <io/util.hpp>
 
 using namespace calin::io::log;
 using namespace calin::io::util;

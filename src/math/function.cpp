@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/function.cpp -- Stephen Fegan -- 2015-02-24
 
@@ -9,11 +9,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -27,7 +27,7 @@
 #include <numeric>
 #include <cmath>
 
-#include "math/function.hpp"
+#include <math/function.hpp>
 
 using namespace calin::math::function;
 
@@ -76,14 +76,14 @@ double SingleAxisFunction::value(ConstVecRef x)
   return value_1d(x(0));
 }
 
-double SingleAxisFunction::value_and_gradient(ConstVecRef x, VecRef gradient) 
+double SingleAxisFunction::value_and_gradient(ConstVecRef x, VecRef gradient)
 {
   gradient.resize(1);
   return value_and_gradient_1d(x(0),gradient(0));
 }
 
 double SingleAxisFunction::
-value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian) 
+value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
 {
   gradient.resize(1);
   hessian.resize(1,1);
@@ -298,9 +298,9 @@ void FreezeThawFunction::set_parameter_values(ConstVecRef values)
     stream << "FreezeThawFunction - parameter vector has " << values.size()
            << " values, " << frozen_axes_.size() << " required.";
     throw(std::runtime_error(stream.str()));
-  }  
+  }
   for(unsigned iaxis=0;iaxis<frozen_axes_.size();iaxis++)
-    xfrozen_(frozen_axes_[iaxis]) = values(iaxis);  
+    xfrozen_(frozen_axes_[iaxis]) = values(iaxis);
 }
 
 bool FreezeThawFunction::can_calculate_parameter_gradient()
@@ -495,7 +495,7 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
     // zero. If the difference is larger then we return 0.5*log10(diff/maxerr).
     // Users can test this to see how bad the computation is. Values up to 0.5
     // might be OK in practice.
-    
+
     const double h = dx(iaxis);
     Eigen::VectorXd xh = x;
     xh(iaxis) = x(iaxis) + h;
@@ -573,7 +573,7 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
   Eigen::VectorXd g0(fcn_num_axes);
   double f0 = fcn.value_and_gradient(x, g0);
   assert(fcn_num_axes == g0.size());
-  
+
   Eigen::VectorXd g0h(fcn_num_axes);
   Eigen::MatrixXd hessian(fcn_num_axes,fcn_num_axes);
   double f0h = fcn.value_gradient_and_hessian(x, g0h, hessian);
@@ -593,7 +593,7 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
               << '\n';
     return false;
   }
-  
+
   for(unsigned iaxis = 0;iaxis<fcn_num_axes;iaxis++)
     if(std::abs(g0(iaxis) - g0h(iaxis))/std::abs(g0(iaxis)) >
        eps*std::pow(10.0,max_good/0.5-1))
@@ -615,7 +615,7 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
     // zero. If the difference is larger then we return 0.5*log10(diff/maxerr).
     // Users can test this to see how bad the computation is. Values up to 0.5
     // might be OK in practice.
-    
+
     const double h = dx(iaxis);
     Eigen::VectorXd xh = x;
     xh(iaxis) = x(iaxis) + h;
@@ -629,7 +629,7 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
     volatile double h2v = x(iaxis) + h;
     h2v -= (x(iaxis) - h);
     const double h2 = h2v;
-    
+
     Eigen::VectorXd dgdx = (-gm1 + gp1)/h2;
     Eigen::VectorXd theerr(fcn_num_axes);
 
@@ -646,7 +646,7 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
       const double maxerr =
           std::max({std::abs(h2d3gdx3(jaxis)),std::abs(h2d3gdx3a(jaxis)),
                   std::abs(h2d3gdx3b(jaxis))})/6.0;
-      
+
       if(theerr < eps)
       {
         good(iaxis,jaxis)=0;
@@ -688,4 +688,3 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
   }
   return true;
 }
-

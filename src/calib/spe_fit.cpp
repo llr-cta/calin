@@ -1,4 +1,4 @@
-/* 
+/*
    calin/calib/spe_fit.cpp -- Stephen Fegan -- 2015-03-01
 
    Functions to do fit to multi-electron spectrum in the "single PE"
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -27,10 +27,10 @@
 
 #include <fftw3.h>
 
-#include "math/accumulator.hpp"
-#include "calib/spe_fit.hpp"
-#include "calib/pmt_model_pg.hpp"
-#include "io/log.hpp"
+#include <math/accumulator.hpp>
+#include <calib/spe_fit.hpp>
+#include <calib/pmt_model_pg.hpp>
+#include <io/log.hpp>
 
 using namespace calin::math;
 using namespace calin::calib::spe_fit;
@@ -100,7 +100,7 @@ bool MultiElectronSpectrum::can_calculate_parameter_hessian()
 
 PoissonGaussianMES::PoissonGaussianMES(unsigned nmax, bool force_calc_hessian):
     nmax_(nmax), C1_(nmax), C2_(nmax), C3_(nmax),
-    dC1_dF_(nmax), dC1_ds_(nmax), dC1_dg_(nmax), dC1_db_(nmax), 
+    dC1_dF_(nmax), dC1_ds_(nmax), dC1_dg_(nmax), dC1_db_(nmax),
     dC2_ds_(nmax), dC2_dg_(nmax), dC2_db_(nmax), dC3_dg_(nmax),
     force_calc_hessian_(force_calc_hessian)
 {
@@ -193,7 +193,7 @@ double PoissonGaussianMES::pdf_gradient_mes(double x, VecRef gradient)
     const double dlog2 = dC1_ds_[n] - dC2_ds_[n]*xn2;
     const double dlog3 = dC1_dg_[n] - dC2_dg_[n]*xn2 + dC3_dg_[n]*xn;
     const double dlog4 = dC1_db_[n] - dC2_db_[n]*xn2;
-    
+
     agradient[0].accumulate(pdf_n*dlog0);
     agradient[1].accumulate(pdf_n*dlog1);
     agradient[2].accumulate(pdf_n*dlog2);
@@ -214,12 +214,12 @@ pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
 {
   gradient.resize(5);
   hessian.resize(5,5);
-  
+
   if(!hessian_elements_good_)calc_cached_vars(true);
 
   const double x0 = ped_zero_dc_;
   const double xc = x-x0;
-      
+
   accumulator apdf;
   accumulator agradient[5];
   accumulator ahessian[15];
@@ -259,9 +259,9 @@ pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
     // caution how extra terms are included in d2C1_dg2_ and dC3_dg2_
     const double d2ln33 = d2C1_dg2_[n] - d2C2_dg2_[n]*xn2 + d2C3_dg2_[n]*xn;
     const double d2ln34 = d2C1_dgdb_[n] - d2C2_dgdb_[n]*xn2 + d2C3_dgdb_[n]*xn;
-    
+
     const double d2ln44 = d2C1_db2_[n] - d2C2_db2_[n]*xn2;
-    
+
     ahessian[0].accumulate(pdf_n*(dln0*dln0 + d2ln00));
     ahessian[1].accumulate(pdf_n*dln0*dln1);
     ahessian[2].accumulate(pdf_n*dln0*dln2);
@@ -272,11 +272,11 @@ pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
     ahessian[6].accumulate(pdf_n*(dln1*dln2 + d2ln12));
     ahessian[7].accumulate(pdf_n*(dln1*dln3 + d2ln13));
     ahessian[8].accumulate(pdf_n*(dln1*dln4 + d2ln14));
-    
+
     ahessian[9].accumulate(pdf_n*(dln2*dln2 + d2ln22));
     ahessian[10].accumulate(pdf_n*(dln2*dln3 + d2ln23));
     ahessian[11].accumulate(pdf_n*(dln2*dln4 + d2ln24));
-    
+
     ahessian[12].accumulate(pdf_n*(dln3*dln3 + d2ln33));
     ahessian[13].accumulate(pdf_n*(dln3*dln4 + d2ln34));
 
@@ -306,7 +306,7 @@ pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
   hessian(2,2) = c_gauss_norm * ahessian[9].total();
   hessian(2,3) = c_gauss_norm * ahessian[10].total();
   hessian(2,4) = c_gauss_norm * ahessian[11].total();
-  
+
   hessian(3,0) = hessian(0,3);
   hessian(3,1) = hessian(1,3);
   hessian(3,2) = hessian(2,3);
@@ -318,8 +318,8 @@ pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
   hessian(4,2) = hessian(2,4);
   hessian(4,3) = hessian(3,4);
   hessian(4,4) = c_gauss_norm * ahessian[14].total();
-  
-  return c_gauss_norm * apdf.total();  
+
+  return c_gauss_norm * apdf.total();
 }
 
 double PoissonGaussianMES::pdf_ped(double x)
@@ -337,7 +337,7 @@ pdf_gradient_ped(double x, VecRef gradient)
   const double xc = x - ped_zero_dc_;
   const double xc2 = SQR(xc);
   const double log_pn = -(log_s_ + C2_[0]*xc2);
-  const double pdf = c_gauss_norm * std::exp(log_pn); 
+  const double pdf = c_gauss_norm * std::exp(log_pn);
 
   const double dln1 = 2.0*C2_[0]*xc;
   const double dln2 = -(1.0/ped_rms_dc_ + dC2_ds_[0]*xc2);
@@ -347,7 +347,7 @@ pdf_gradient_ped(double x, VecRef gradient)
   gradient[2] = pdf * dln2;
   gradient[3] = 0;
   gradient[4] = 0;
-  
+
   return pdf;
 }
 
@@ -362,7 +362,7 @@ pdf_gradient_hessian_ped(double x, VecRef gradient, MatRef hessian)
   const double xc = x - ped_zero_dc_;
   const double xc2 = SQR(xc);
   const double log_pn = -(log_s_ + C2_[0]*xc2);
-  const double pdf = c_gauss_norm * std::exp(log_pn); 
+  const double pdf = c_gauss_norm * std::exp(log_pn);
 
   const double dln1 = 2.0*C2_[0]*xc;
   const double dln2 = -(1.0/ped_rms_dc_ + dC2_ds_[0]*xc2);
@@ -384,10 +384,10 @@ pdf_gradient_hessian_ped(double x, VecRef gradient, MatRef hessian)
   hessian(2,1) = hessian(1,2);
   hessian(2,2) = pdf * (dln2*dln2 + 1.0/SQR(ped_rms_dc_) - d2C2_ds2_[0]*xc2);
   hessian(2,3) = hessian(2,4) = 0;
-  
+
   hessian(3,0) = hessian(3,1) = hessian(3,2) = hessian(3,3) = hessian(3,4) = 0;
   hessian(4,0) = hessian(4,1) = hessian(4,2) = hessian(4,3) = hessian(4,4) = 0;
-  
+
   return pdf;
 }
 
@@ -402,7 +402,7 @@ void PoissonGaussianMES::calc_cached_vars(bool calc_hessian)
   b2_ = SQR(b);
   g2_ = SQR(g);
   log_s_ = std::log(s);
-  
+
   const double var_n = b2_*g2_;
   const double var_s = s2_;
 
@@ -426,7 +426,7 @@ void PoissonGaussianMES::calc_cached_vars(bool calc_hessian)
     d2C3_dsdg_.resize(nmax_);
     d2C3_dgdb_.resize(nmax_);
   }
-  
+
   for(unsigned n=0; n<nmax_; n++) // always loop from n=0 here
     {
       const double dbl_n = double(n);
@@ -439,7 +439,7 @@ void PoissonGaussianMES::calc_cached_vars(bool calc_hessian)
       acc.accumulate(-F);
       acc.accumulate(-0.5*std::log(var));
       C1_[n] = acc.total();
-#else 
+#else
       C1_[n] = dbl_n*std::log(F) - F - lgamma(dbl_n+1.0) - 0.5*std::log(var);
 #endif
       C2_[n] = 0.5/var;
@@ -461,7 +461,7 @@ void PoissonGaussianMES::calc_cached_vars(bool calc_hessian)
         hessian_elements_good_ = false;
         continue;
       }
-      
+
       d2C1_dF2_[n]  = -dbl_n/SQR(F);
       d2C1_ds2_[n]  = -(1.0/var + 2.0*s*dC2_ds_[n]);
       d2C1_dg2_[n]  = -dbl_n*b2_*(1.0/var + 2.0*g*dC2_dg_[n]);
@@ -516,7 +516,7 @@ unsigned PoissonGaussianMES_HighAccuracy::num_parameters()
 }
 
 std::vector<function::ParameterAxis>
-PoissonGaussianMES_HighAccuracy::parameters()    
+PoissonGaussianMES_HighAccuracy::parameters()
 {
   return { { "light_intensity", "PE", true, 0, false, 0 },
     { "ped_zero", "DC", false, 0, false, 0 },
@@ -623,7 +623,7 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
       fftw_plan_r2r_1d(nsample_, ped_fft_, ped_fft_, FFTW_R2HC, 0);
   ses_plan_fwd_ =
       fftw_plan_r2r_1d(nsample_, nes_fft_[0], nes_fft_[0], FFTW_R2HC, 0);
-  mes_plan_rev_ = 
+  mes_plan_rev_ =
       fftw_plan_r2r_1d(nsample_, mes_spec_, mes_spec_, FFTW_HC2R, 0);
 
   if(can_calculate_parameter_gradient())
@@ -641,7 +641,7 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
           fftw_plan_r2r_1d(nsample_, ped_grad_[ipar], ped_grad_fft_[ipar],
                            FFTW_R2HC, 0);
     }
-  
+
     unsigned ses_npar = ses_pdf_->num_parameters();
     ses_grad_fft_.resize(ses_npar);
     ses_grad_plan_fwd_.resize(ses_npar);
@@ -675,11 +675,11 @@ GeneralPoissonMES::~GeneralPoissonMES()
   for(auto x : ped_grad_)fftw_free(x);
   for(auto x : ses_grad_fft_)fftw_free(x);
   for(auto x : ped_grad_fft_)fftw_free(x);
-  
+
   fftw_destroy_plan(mes_plan_rev_);
   fftw_destroy_plan(ses_plan_fwd_);
   fftw_destroy_plan(ped_plan_fwd_);
-  
+
   fftw_free(ped_fft_);
   fftw_free(ped_spec_);
   for(auto x : nes_fft_)fftw_free(x);
@@ -704,7 +704,7 @@ auto GeneralPoissonMES::parameters() ->
   pvec.insert(pvec.end(), pped.begin(), pped.end());
   std::vector<math::function::ParameterAxis> pses { ses_pdf_->parameters() };
   for(auto& ip : pses)ip.name = std::string("ses.") + ip.name;
-  pvec.insert(pvec.end(), pses.begin(), pses.end());  
+  pvec.insert(pvec.end(), pses.begin(), pses.end());
   return pvec;
 }
 
@@ -742,7 +742,7 @@ bool GeneralPoissonMES::can_calculate_parameter_hessian()
 {
   return false; // for the moment we are lazy
 }
-    
+
 double GeneralPoissonMES::pdf_ped(double x)
 {
   return std::max(ped_spec_[ibin(x)],0.0);
@@ -771,7 +771,7 @@ double GeneralPoissonMES::pdf_gradient_hessian_ped(double x, VecRef gradient,
 double GeneralPoissonMES::pdf_mes(double x)
 {
   //std::cout << x << ' ' << ibin(x) << ' ' << mes_spec_[ibin(x)] << '\n';
-  return std::max(mes_spec_[ibin(x)],0.0);  
+  return std::max(mes_spec_[ibin(x)],0.0);
 }
 
 double GeneralPoissonMES::pdf_gradient_mes(double x, VecRef gradient)
@@ -815,7 +815,7 @@ double GeneralPoissonMES::ses_rms_pe()
   return 0;
 }
 
-std::vector<double> GeneralPoissonMES::multi_electron_spectrum() const 
+std::vector<double> GeneralPoissonMES::multi_electron_spectrum() const
 {
   std::vector<double> spec(nsample_);
   std::copy(mes_spec_, mes_spec_+nsample_, spec.begin());
@@ -836,8 +836,8 @@ multi_electron_spectrum_gradient(unsigned iparam) const
     throw std::out_of_range(
         "GeneralPoissonMES::multi_electron_spectrum_gradient: "
         "iparam out of range");
-  
-  return std::vector<double>(mes_grad_[iparam], mes_grad_[iparam]+nsample_); 
+
+  return std::vector<double>(mes_grad_[iparam], mes_grad_[iparam]+nsample_);
 }
 
 std::vector<double> GeneralPoissonMES::
@@ -850,7 +850,7 @@ pedestal_spectrum_gradient(unsigned iparam) const
   if(iparam==0 || iparam>ped_pdf_->num_parameters())
     return std::vector<double>(nsample_, 0.0);
   else
-    return std::vector<double>(ped_grad_[iparam], ped_grad_[iparam]+nsample_); 
+    return std::vector<double>(ped_grad_[iparam], ped_grad_[iparam]+nsample_);
 }
 
 std::vector<double> GeneralPoissonMES::
@@ -863,7 +863,7 @@ single_electron_spectrum_gradient(unsigned iparam) const
   unsigned npedpar = ped_pdf_->num_parameters();
   if(iparam<=npedpar)return std::vector<double>(nsample_, 0.0);
   iparam -= 1+npedpar;
-  
+
   uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
   assert(spec_buffer);
 
@@ -888,7 +888,7 @@ std::vector<double> GeneralPoissonMES::n_electron_spectrum(unsigned n) const
   if(n==0 or n>nmax_)
     throw std::out_of_range("GeneralPoissonMES::n_electron_spectrum: "
                             "number of PEs out of range");
-  
+
   uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
   assert(spec_buffer);
 
@@ -920,9 +920,9 @@ std::vector<double> GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
     double scale = std::exp(-intensity_pe_);
     std::transform(ped_spec_, ped_spec_+nsample_, spec.begin(),
                    [scale](const double& x){ return x*scale; });
-    return spec;  
+    return spec;
   }
-  
+
   uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
   assert(spec_buffer);
 
@@ -938,12 +938,12 @@ std::vector<double> GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
              log_nsample) };
 
   hcvec_scale_and_multiply(spec_buffer.get(), nes_fft_[n-1], ped_fft_,
-                           poisson_factor*dx_);    
-  
+                           poisson_factor*dx_);
+
   fftw_execute(spec_plan.get());
   std::copy(spec_buffer.get(), spec_buffer.get()+nsample_, spec.begin());
   return spec;
-}  
+}
 
 Eigen::VectorXd GeneralPoissonMES::
 extract_ped_gradient_values(ConstVecRef gradient)
@@ -970,7 +970,7 @@ extract_ses_hessian_values(ConstMatRef hessian)
 {
   unsigned ped_npar = ped_pdf_->num_parameters();
   unsigned ses_npar = ses_pdf_->num_parameters();
-  return hessian.block(1+ped_npar, 1+ped_npar, ses_npar, ses_npar);  
+  return hessian.block(1+ped_npar, 1+ped_npar, ses_npar, ses_npar);
 }
 
 int GeneralPoissonMES::ibin(double x) const
@@ -989,7 +989,7 @@ int GeneralPoissonMES::ibin(double x) const
 void GeneralPoissonMES::set_cache()
 {
   // THIS FUNCTION IS TOO LONG
-  
+
   bool calc_gradient = can_calculate_parameter_gradient();
   unsigned ses_npar = ses_pdf_->num_parameters();
   Eigen::VectorXd ses_gradient(ses_npar);
@@ -1032,7 +1032,7 @@ void GeneralPoissonMES::set_cache()
     if(n_ses_norm_warning_ == n_max_ses_norm_warning_)
       LOG(WARNING) << "Further SES normalization warnings will be suppressed!";
   }
-  
+
   fftw_execute(ses_plan_fwd_);
   for(unsigned ines=1;ines<nmax_;ines++)
     hcvec_scale_and_multiply(nes_fft_[ines], nes_fft_[ines-1], nes_fft_[0],
@@ -1050,7 +1050,7 @@ void GeneralPoissonMES::set_cache()
       val = ped_pdf_->value_and_parameter_gradient_1d(x, ped_gradient);
       if(!std::isfinite(val)){ val = 0; ped_gradient.setZero(); }
       for(unsigned ipar=0;ipar<ped_npar;ipar++)
-        ped_grad_[ipar][isample] = ped_gradient[ipar];    
+        ped_grad_[ipar][isample] = ped_gradient[ipar];
     }
     else
     {
@@ -1119,10 +1119,10 @@ void GeneralPoissonMES::set_cache()
                                mes_grad_[1+ped_npar+ipar], ped_fft_, dx_);
     }
   }
-  
+
   hcvec_scale_and_multiply(mes_spec_, mes_spec_, ped_fft_, dx_);
   hcvec_scale_and_add(mes_spec_, ped_fft_,
-                      std::exp(-intensity_pe_-log_nsample));  
+                      std::exp(-intensity_pe_-log_nsample));
   fftw_execute(mes_plan_rev_);
 
   if(calc_gradient)
@@ -1226,7 +1226,7 @@ double SPELikelihood::value(ConstVecRef x)
       if(pdf<=0)continue;
       acc.accumulate(std::log(pdf)*ibin.weight());
     }
-  
+
   if(has_ped_data_)
     for(auto& ibin : ped_data_)
       if(ibin.weight())
@@ -1263,7 +1263,7 @@ double SPELikelihood::value_and_gradient(ConstVecRef x, VecRef gradient)
       for(unsigned ipar=0;ipar<npar_;ipar++)
         gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
     }
-    
+
   if(has_ped_data_)
     for(auto& ibin : ped_data_)
       if(ibin.weight())
@@ -1274,7 +1274,7 @@ double SPELikelihood::value_and_gradient(ConstVecRef x, VecRef gradient)
         for(unsigned ipar=0;ipar<npar_;ipar++)
           gradient_acc[ipar].accumulate(gradient(ipar)/pdf*ibin.weight());
       }
-  
+
   for(unsigned ipar=0;ipar<npar_;ipar++)
     gradient(ipar) = -gradient_acc[ipar].total();
   return -acc.total();
@@ -1285,7 +1285,7 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
 {
   mes_model_->set_parameter_values(x);
   gradient.resize(npar_);
-  hessian.resize(npar_,npar_);  
+  hessian.resize(npar_,npar_);
   math::accumulator::LikelihoodAccumulator acc;
   std::vector<math::accumulator::LikelihoodAccumulator> gradient_acc(npar_);
   std::vector<math::accumulator::LikelihoodAccumulator>
@@ -1309,7 +1309,7 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
           hessian_acc[itri++].accumulate(summand*ibin.weight());
         }
     }
-    
+
   if(has_ped_data_)
     for(auto& ibin : ped_data_)
       if(ibin.weight())
@@ -1330,7 +1330,7 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
             hessian_acc[iacc++].accumulate(summand*ibin.weight());
           }
       }
-  
+
   for(unsigned ipar=0;ipar<npar_;ipar++)
     gradient(ipar) = -gradient_acc[ipar].total();
 
@@ -1342,7 +1342,6 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
     for(unsigned irow=0;irow<icol;irow++)
       hessian(icol,irow) = hessian(irow,icol);
   }
-  
+
   return -acc.total();
 }
-
