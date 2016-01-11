@@ -25,7 +25,7 @@
 
 */
 
-#include "package_wide_definitions.hpp"
+#include "calin_global_definitions.hpp"
 
 #include "math/accumulator.hpp"
 #include "math/historgram.hpp"

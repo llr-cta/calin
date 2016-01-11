@@ -26,7 +26,7 @@
 #include <vector>
 #include <array>
 
-#include "package_wide_definitions.hpp"
+#include "calin_global_definitions.hpp"
 
 namespace calin { namespace math { namespace accumulator {
 

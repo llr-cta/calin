@@ -446,7 +446,7 @@ Generate(const google::protobuf::FileDescriptor * file,
   //I->Print("%include<std_map.i>\n");
 
   I->Print("%include<calin_typemaps.i>\n");
-  I->Print("%import<package_wide_definitions.i>\n");
+  I->Print("%import<calin_global_definitions.i>\n");
   I->Print("%import<google_protobuf.i>\n");
   print_includes(I, file, "%import", ".pb.i", false);
 

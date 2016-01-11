@@ -34,7 +34,7 @@
 %}
 
 %include "numpy.i"
-%import "package_wide_definitions.i"
+%import "calin_global_definitions.i"
 %include "calin_typemaps.i"
 
 %apply unsigned &OUTPUT { unsigned& ringid, unsigned& segid, unsigned& runid };

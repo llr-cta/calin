@@ -40,7 +40,7 @@
 
 %include "numpy.i"
 %include "calin_typemaps.i"
-%import "package_wide_definitions.i"
+%import "calin_global_definitions.i"
 
 %import "math/vs_physics.i"
 %import "math/rng.i"

@@ -28,7 +28,7 @@
 #include"simulation/atmosphere.hpp"
 #include"simulation/tracker.hpp"
 
-#include"package_wide_definitions.hpp"
+#include"calin_global_definitions.hpp"
 
 // Units:
 // Height, z:    cm

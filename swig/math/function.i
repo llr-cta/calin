@@ -35,7 +35,7 @@
 
 %include "numpy.i"
 %include "calin_typemaps.i"
-%import "package_wide_definitions.i"
+%import "calin_global_definitions.i"
 
 %include "typemaps.i"
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& gradient };

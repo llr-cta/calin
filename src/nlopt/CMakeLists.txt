@@ -56,7 +56,7 @@ CHECK_C_SOURCE_COMPILES("#include<time.h>
 int main() { return 0; }" TIME_WITH_SYS_TIME)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
-${CMAKE_CURRENT_BINARY_DIR}/config.h)
+  ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 add_compile_options(-Wno-deprecated-declarations)
 

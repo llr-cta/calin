@@ -30,7 +30,7 @@
 #include <limits>
 #include <iterator>
 
-#include "package_wide_definitions.hpp"
+#include "calin_global_definitions.hpp"
 #include "math/histogram.pb.h"
 #include "math/accumulator.hpp"
 

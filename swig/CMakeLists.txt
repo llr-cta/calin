@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_FILES package_wide_definitions.i google_protobuf.i)
+set(CALIN_SWIG_FILES calin_global_definitions.i google_protobuf.i)
 set(CALIN_SWIG_INSTALL_DIR python/calin)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

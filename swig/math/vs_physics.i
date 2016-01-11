@@ -37,7 +37,7 @@
 
 %include "numpy.i"
 %include "calin_typemaps.i"
-%import "package_wide_definitions.i"
+%import "calin_global_definitions.i"
 
 %import "common_types.pb.i"
 %import "math/rng.i"

@@ -29,7 +29,7 @@
 #include<vector>
 #include<cassert>
 
-#include"package_wide_definitions.hpp"
+#include"calin_global_definitions.hpp"
 
 // Units:
 // Height, z:    cm

@@ -25,7 +25,7 @@
 
 */
 
-#include "package_wide_definitions.hpp"
+#include "calin_global_definitions.hpp"
 
 #include "calib/spe_fit.hpp"
 

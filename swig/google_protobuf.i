@@ -31,7 +31,7 @@
   #define SWIG_FILE_WITH_INIT
 %}
 
-%import "package_wide_definitions.i"
+%import "calin_global_definitions.i"
 %include "calin_typemaps.i"
 
 %import<stdint.i>

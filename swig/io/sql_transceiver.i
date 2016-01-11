@@ -37,7 +37,7 @@
 %include "numpy.i"
 %include "stdint.i"
 %include "calin_typemaps.i"
-%import "package_wide_definitions.i"
+%import "calin_global_definitions.i"
 
 %ignore insert(const std::string& table_name,
                const google::protobuf::Message* m_data,

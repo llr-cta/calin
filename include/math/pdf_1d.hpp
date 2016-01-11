@@ -31,7 +31,7 @@
 
 #include <Eigen/Core>
 
-#include "package_wide_definitions.hpp"
+#include "calin_global_definitions.hpp"
 #include "function.hpp"
 
 namespace calin { namespace math { namespace pdf_1d {

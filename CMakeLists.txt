@@ -83,6 +83,7 @@ endif()
 # Add the subdirectories to the build system #
 # ========================================== #
 
+add_subdirectory(include)
 add_subdirectory(tools)
 add_subdirectory(proto)
 add_subdirectory(src)

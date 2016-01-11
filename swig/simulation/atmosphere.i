@@ -35,7 +35,7 @@
 
 %include "numpy.i"
 %include "calin_typemaps.i"
-%import "package_wide_definitions.i"
+%import "calin_global_definitions.i"
 
 %template (VectorAtmSlice) std::vector<calin::simulation::atmosphere::AtmSlice>;
 %template (VectorLayeredAtmosphereLevel) std::vector<calin::simulation::atmosphere::LayeredAtmosphereLevel>;
