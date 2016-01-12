@@ -130,8 +130,8 @@ before_script:
   - swig -version
   - cmake -version
   - $CC -v
-  - python -version
-  - python3 -version
+  - python -V
+  - python3 -V
 
 script:
   - |
