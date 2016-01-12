@@ -95,6 +95,7 @@
 /* Macros to extract array attributes.
  */
 %#if NPY_API_VERSION < 0x00000007
+%#define NPY_ARRAY_F_CONTIGUOUS             NPY_F_CONTIGUOUS 
 %#define _swig_numpy_is_array(a)            ((a) && PyArray_Check((PyArrayObject*)a))
 %#define _swig_numpy_array_type(a)          (int)(PyArray_TYPE((PyArrayObject*)a))
 %#define _swig_numpy_array_numdims(a)       (((PyArrayObject*)a)->nd)
