@@ -216,18 +216,18 @@ bool is_type_compatible_with_numpy(google::protobuf::FieldDescriptor::Type type)
 {
   switch(type)
   {
-  case google::protobuf::FieldDescriptor::TYPE_DOUBLE: // fall through
-  case google::protobuf::FieldDescriptor::TYPE_FLOAT:  // fall through
-  case google::protobuf::FieldDescriptor::TYPE_INT64:  // fall through
-  case google::protobuf::FieldDescriptor::TYPE_UINT64:  // fall through
-  case google::protobuf::FieldDescriptor::TYPE_INT32:  // fall through
-  case google::protobuf::FieldDescriptor::TYPE_FIXED64:  // fall through
-  case google::protobuf::FieldDescriptor::TYPE_FIXED32:  // fall through
-  case google::protobuf::FieldDescriptor::TYPE_UINT32:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_DOUBLE:    // fall through
+  case google::protobuf::FieldDescriptor::TYPE_FLOAT:     // fall through
+  case google::protobuf::FieldDescriptor::TYPE_INT64:     // fall through
+  case google::protobuf::FieldDescriptor::TYPE_UINT64:    // fall through
+  case google::protobuf::FieldDescriptor::TYPE_INT32:     // fall through
+  case google::protobuf::FieldDescriptor::TYPE_FIXED64:   // fall through
+  case google::protobuf::FieldDescriptor::TYPE_FIXED32:   // fall through
+  case google::protobuf::FieldDescriptor::TYPE_UINT32:    // fall through
   case google::protobuf::FieldDescriptor::TYPE_SFIXED32:  // fall through
   case google::protobuf::FieldDescriptor::TYPE_SFIXED64:  // fall through
-  case google::protobuf::FieldDescriptor::TYPE_SINT32:  // fall through
-  case google::protobuf::FieldDescriptor::TYPE_SINT64:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_SINT32:    // fall through
+  case google::protobuf::FieldDescriptor::TYPE_SINT64:    // fall through
     return true;
   default:
     return false;

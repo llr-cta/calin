@@ -96,7 +96,7 @@
  */
 %#if NPY_API_VERSION < 0x00000007
 %#define _swig_numpy_is_array(a)            ((a) && PyArray_Check((PyArrayObject*)a))
-%#define _swig_numpy_array_type(a)          (int)(Py_swig_numpy_array_type((PyArrayObject*)a))
+%#define _swig_numpy_array_type(a)          (int)(PyArray_TYPE((PyArrayObject*)a))
 %#define _swig_numpy_array_numdims(a)       (((PyArrayObject*)a)->nd)
 %#define _swig_numpy_array_dimensions(a)    (((PyArrayObject*)a)->dimensions)
 %#define _swig_numpy_array_size(a,i)        (((PyArrayObject*)a)->dimensions[i])
@@ -779,7 +779,7 @@
                                                    &is_new_object);
   if (!array || !require_dimensions(array, 1) ||
       !require_size(array, size, 1)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($2_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
 }
 %typemap(freearg)
@@ -809,7 +809,7 @@
   if (!array || !require_dimensions(array, 1) ||
       !require_size(array, size, 1)) SWIG_fail;
   $1 = (DIM_TYPE) _swig_numpy_array_size(array,0);
-  $2 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $2 = ($2_ltype) _swig_numpy_array_data(array);
 }
 %typemap(freearg)
   (DIM_TYPE DIM1, DATA_TYPE* IN_ARRAY1)
@@ -2493,7 +2493,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1    , DATA_TYPE** ARGOUTVIEWM_ARRAY1)
-  (DIM_TYPE  dim_temp, DATA_TYPE*  data_temp = NULL  )
+  (DIM_TYPE  dim_temp, $*2_ltype   data_temp = NULL  )
 {
   $1 = &dim_temp;
   $2 = &data_temp;
