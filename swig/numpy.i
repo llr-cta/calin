@@ -105,7 +105,7 @@
 %#define _swig_numpy_array_data(a)          (((PyArrayObject*)a)->data)
 %#define _swig_numpy_array_descr(a)         (((PyArrayObject*)a)->descr)
 %#define _swig_numpy_array_flags(a)         (((PyArrayObject*)a)->flags)
-%#define _swig_numpy_array_enableflags(a,f) (((PyArrayObject*)a)->flags)make = f
+%#define _swig_numpy_array_enableflags(a,f) (((PyArrayObject*)a)->flags) = f
 %#else
 %#define _swig_numpy_is_array(a)            ((a) && PyArray_Check(a))
 %#define _swig_numpy_array_type(a)          PyArray_TYPE((PyArrayObject*)a)
