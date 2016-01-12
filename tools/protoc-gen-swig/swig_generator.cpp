@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/tools/swig_generator.cpp -- Stephen Fegan -- 2015-12-03
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -41,7 +41,7 @@ SwigGenerator::~SwigGenerator()
 
 namespace {
 
-std::vector<std::string>& 
+std::vector<std::string>&
 split(const std::string &s, char delim, std::vector<std::string> &elems)
 {
   std::stringstream ss(s);
@@ -50,7 +50,7 @@ split(const std::string &s, char delim, std::vector<std::string> &elems)
   return elems;
 }
 
-std::vector<std::string> 
+std::vector<std::string>
 split(const std::string &s, char delim)
 {
   std::vector<std::string> elems;
@@ -92,7 +92,7 @@ void print_includes(Printer* I, const google::protobuf::FileDescriptor * file,
   for(int i=0; i<file->public_dependency_count(); i++)
     I->Print("$directive$<$file$>\n","directive", directive, "file",
              pb_to_gen_filename(file->public_dependency(i)->name(),extension));
-  for(int i=0; i<file->weak_dependency_count(); i++) 
+  for(int i=0; i<file->weak_dependency_count(); i++)
     I->Print("$directive$<$file$>\n","directive", directive, "file",
              pb_to_gen_filename(file->weak_dependency(i)->name(),extension));
 }
@@ -180,7 +180,7 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
     auto* v = e->value(j);
     if(v->number() > e->value(jmax)->number())jmax = j;
     if(v->number() < e->value(jmin)->number())jmin = j;
-    vars["value_name"] = v->name(); 
+    vars["value_name"] = v->name();
     vars["value_number"] = std::to_string(v->number());
     vars["comma"] = (j==e->value_count()-1)?std::string():std::string(",");
     I->Print(vars,"$value_name$ = $value_number$$comma$\n");
@@ -196,7 +196,7 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
            "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$ *CALIN_INIT_OUTPUT);\n"
            "%clear $enum_name$* value;\n"
            "$static$const $enum_name$ $enum_name$_MIN = $min_val$;\n"
-           "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n"); 
+           "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n");
 }
 
 std::string field_type(const google::protobuf::FieldDescriptor* f,
@@ -212,12 +212,36 @@ std::string field_type(const google::protobuf::FieldDescriptor* f,
   else return f->cpp_type_name();
 }
 
+bool is_type_compatible_with_numpy(google::protobuf::FieldDescriptor::Type type)
+{
+  switch(type)
+  {
+  case google::protobuf::FieldDescriptor::TYPE_DOUBLE: // fall through
+  case google::protobuf::FieldDescriptor::TYPE_FLOAT:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_INT64:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_UINT64:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_INT32:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_FIXED64:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_FIXED32:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_UINT32:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_SFIXED32:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_SFIXED64:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_SINT32:  // fall through
+  case google::protobuf::FieldDescriptor::TYPE_SINT64:  // fall through
+    return true;
+  default:
+    return false;
+  }
+  assert(0);
+  return false;
+}
+
 void print_message(Printer* I, const google::protobuf::Descriptor* d)
 {
   for(int i=0; i<d->nested_type_count(); i++)
     if(!d->nested_type(i)->options().map_entry())
       print_message(I, d->nested_type(i));
-  
+
   std::string the_class_name = class_name(d);
   I->Print("\n"
            "class $class_name$ : public google::protobuf::Message \n"
@@ -265,8 +289,8 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     for(int j=0;j<oo->field_count();j++)
     {
       auto* f = oo->field(j);
-      vars["field_cc_name"] = CamelCase(f->name()); 
-      vars["field_number"] = std::to_string(f->number()); 
+      vars["field_cc_name"] = CamelCase(f->name());
+      vars["field_number"] = std::to_string(f->number());
       I->Print(vars,"k$field_cc_name$ = $field_number$,\n");
     }
     I->Print(vars, "$oo_ac_name$_NOT_SET = 0\n");
@@ -285,7 +309,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     vars["type"]   = field_type(f, d);
     vars["index"]  = "";
     vars["class_name"] = the_class_name;
-    
+
     if(f->is_map())
     {
       assert(f->message_type());
@@ -307,7 +331,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
                  "const $type$& const_$name$($index$ key) const {\n"
                  "  return $$self->$name$().at(key); }\n"
                  "$type$& mutable_$name$($index$ key) {\n"
-                 "  return $$self->mutable_$name$()->at(key); }\n");        
+                 "  return $$self->mutable_$name$()->at(key); }\n");
       }
       else if(fv->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
       {
@@ -331,7 +355,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       I->Print("};\n");
       continue;
     }
-    
+
     if(f->is_repeated())
     {
       I->Print(vars, "int $name$_size() const;\n");
@@ -344,9 +368,10 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
 
     if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
     {
-      I->Print(vars, "%rename(const_$name$) $name$($index$) const;\n");
-      I->Print(vars, "const $type$& $name$($index$) const;\n");
-      I->Print(vars, "$type$* mutable_$name$($index$);\n");
+      I->Print(vars,
+               "%rename(const_$name$) $name$($index$) const;\n"
+               "const $type$& $name$($index$) const;\n"
+               "$type$* mutable_$name$($index$);\n");
       if(f->is_repeated())I->Print(vars, "$type$* add_$name$();\n");
     }
     else if(f->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
@@ -381,14 +406,34 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       {
         I->Print(vars, "void set_$name$($index$, $type$ x);\n");
         I->Print(vars, "void add_$name$($type$ x);\n");
-      }        
+        if(is_type_compatible_with_numpy(f->type()))
+        {
+          I->Print("%extend {\n");
+          I->Indent();
+          I->Print(vars,
+                   "void set_$name$_from_array(intptr_t DIM1, $type$* IN_ARRAY1) {\n"
+                   "  auto* array = $$self->mutable_$name$();\n"
+                   "  if(array->size()>DIM1)array->Truncate(DIM1);\n"
+                   "  for(int i=0;i<array->size();i++)array->Set(i,IN_ARRAY1[i]);\n"
+                   "  while(array->size()<DIM1)array->Add(IN_ARRAY1[array->size()]);\n"
+                   "}\n"
+                   "void $name$_as_array(intptr_t* DIM1, $type$** ARGOUTVIEWM_ARRAY1) {\n"
+                   "  const auto& array = $$self->$name$();\n"
+                   "  *DIM1 = array.size();\n"
+                   "  *ARGOUTVIEWM_ARRAY1 = ($type$*)malloc(*DIM1 * sizeof($type$));\n"
+                   "  std::copy(array.begin(), array.end(), *ARGOUTVIEWM_ARRAY1);\n"
+                   "};\n");
+          I->Outdent();
+          I->Print("};\n");
+        }
+      }
       else
         I->Print(vars, "void set_$name$($type$ x);\n");
     }
 
     I->Print(vars, "void clear_$name$();\n");
   }
-  
+
   I->Outdent();
   I->Print("};\n");
 }
@@ -406,7 +451,7 @@ Generate(const google::protobuf::FileDescriptor * file,
 
   I->Print("// Auto-generated from \"$file$\". "
            "Do not edit by hand.\n\n","file",file->name());
-  
+
   std::map<string,string> vars;
   if(file->package().find('.') != string::npos)
   {
@@ -474,7 +519,7 @@ Generate(const google::protobuf::FileDescriptor * file,
   // Print enum definitions from main scope
   for(int i=0;i<file->enum_type_count(); i++)
     print_enum(I, file->enum_type(i));
-  
+
   // Print classes for all messages
   for(int i=0;i<file->message_type_count();i++)
     print_message(I, file->message_type(i));
@@ -485,7 +530,7 @@ Generate(const google::protobuf::FileDescriptor * file,
     for(auto ibit : package_bits)I->Print("} ");
     I->Print("// namespace $ns$\n","ns",join(package_bits,"::"));
   }
-  
+
   delete I;
   delete I_stream;
   return true;

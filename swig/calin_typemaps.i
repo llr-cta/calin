@@ -1,6 +1,6 @@
 //-*-mode:swig;-*-
 
-/* 
+/*
 
    calin/calin_typemaps.i -- Stephen Fegan -- 2015-12-15
 
@@ -10,11 +10,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -110,7 +110,7 @@
   {
     const int typecode = NPY_DOUBLE;
 
-    if(!is_array(input))
+    if(!_swig_numpy_is_array(input))
       {
         const char* desired_type = typecode_string(typecode);
         const char* actual_type  = pytype_string(input);
@@ -120,19 +120,19 @@
                      actual_type);
         return false;
       }
-    
+
     PyArrayObject* in_array = (PyArrayObject*) input;
 
-    if(PyArray_NDIM(in_array) > 1)
+    if(_swig_numpy_array_numdims(in_array) > 1)
     {
       PyErr_Format(PyExc_TypeError,
                    "Array must have 1 dimension. "
                    "Given array has %d dimensions",
-                   PyArray_NDIM(in_array));
+                   _swig_numpy_array_numdims(in_array));
       return false;
     }
-    
-    if(PyArray_NDIM(in_array)==0 or PyArray_DIM(in_array, 0)==0)
+
+    if(_swig_numpy_array_numdims(in_array)==0 or PyArray_DIM(in_array, 0)==0)
     {
       *vec = Eigen::VectorXd();
       return true;
@@ -144,7 +144,7 @@
     PyArrayObject* out_array = (PyArrayObject*)
         PyArray_SimpleNewFromData(1, size, typecode, vec->data());
     if(out_array == nullptr)return false;
-        
+
     if(PyArray_CopyInto(out_array, in_array) != 0)
       {
         Py_DECREF(out_array);
@@ -169,7 +169,7 @@
   {
     const int typecode = NPY_DOUBLE;
 
-    if(!is_array(output))
+    if(!_swig_numpy_is_array(output))
       {
         const char* desired_type = typecode_string(typecode);
         const char* actual_type  = pytype_string(output);
@@ -195,7 +195,7 @@
       {
         // Do we need to call Py_DECREF on returned val??
         Py_DECREF(in_array);
-        return false;  
+        return false;
       }
 
     if(PyArray_CopyInto(out_array, in_array) != 0)
@@ -230,7 +230,7 @@
 %typemap(typecheck, precedence=5000) const Eigen::VectorXd&
 {
   // typemap(typecheck) const Eigen::VectorXd& -- calin_typemaps.i
-  $1 = is_array($input) ? 1 : 0;
+  $1 = _swig_numpy_is_array($input) ? 1 : 0;
 }
 
 // ****************************** Eigen::VectorXd& *****************************
@@ -252,7 +252,7 @@
 %typemap(typecheck, precedence=5000) Eigen::VectorXd&
 {
   // typemap(typecheck) Eigen::VectorXd& -- calin_typemaps.i
-  $1 = is_array($input) ? 1 : 0;
+  $1 = _swig_numpy_is_array($input) ? 1 : 0;
 }
 
 // ************************** Eigen::VectorXd &OUTPUT **************************
@@ -292,7 +292,7 @@
 Eigen::VectorXd
 {
   // typemap(typecheck) Eigen::VectorXd -- calin_typemaps.i
-  $1 = is_array($input) ? 1 : 0;
+  $1 = _swig_numpy_is_array($input) ? 1 : 0;
 }
 
 // =============================================================================
@@ -313,7 +313,7 @@ Eigen::VectorXd
   {
     const int typecode = NPY_DOUBLE;
 
-    if(!is_array(input))
+    if(!_swig_numpy_is_array(input))
       {
         const char* desired_type = typecode_string(typecode);
         const char* actual_type  = pytype_string(input);
@@ -323,37 +323,37 @@ Eigen::VectorXd
                      actual_type);
         return false;
       }
-    
+
     PyArrayObject* in_array = (PyArrayObject*) input;
 
-    if(PyArray_NDIM(in_array) > 2)
+    if(_swig_numpy_array_numdims(in_array) > 2)
     {
       PyErr_Format(PyExc_TypeError,
                    "Array must have at most 2 dimensions. "
                    "Given array has %d dimensions",
-                   PyArray_NDIM(in_array));
+                   _swig_numpy_array_numdims(in_array));
       return false;
     }
-    
-    if(PyArray_NDIM(in_array)==0 or PyArray_DIM(in_array, 0)==0 or
-       (PyArray_NDIM(in_array)==2 and PyArray_DIM(in_array, 1)==0))
+
+    if(_swig_numpy_array_numdims(in_array)==0 or PyArray_DIM(in_array, 0)==0 or
+       (_swig_numpy_array_numdims(in_array)==2 and PyArray_DIM(in_array, 1)==0))
     {
       *mat = Eigen::MatrixXd();
       return true;
     }
 
     npy_intp size[2] = { PyArray_DIM(in_array, 0), 1 };
-    if(PyArray_NDIM(in_array)==2)
-      size[1] = array_size(in_array,1);
+    if(_swig_numpy_array_numdims(in_array)==2)
+      size[1] = _swig_numpy_array_size(in_array,1);
 
     mat->resize(size[0], size[1]);
-    
+
     PyArrayObject* out_array = (PyArrayObject*)
-        PyArray_New(&PyArray_Type, PyArray_NDIM(in_array), size, typecode,
+        PyArray_New(&PyArray_Type, _swig_numpy_array_numdims(in_array), size, typecode,
                     NULL, mat->data(), 0, NPY_ARRAY_FARRAY, NULL);
-    
+
     if(out_array == nullptr)return false;
-        
+
     if(PyArray_CopyInto(out_array, in_array) != 0)
       {
         Py_DECREF(out_array);
@@ -373,13 +373,13 @@ Eigen::VectorXd
           fragment="NumPy_Macros",
           fragment="NumPy_Utilities")
 {
-  
+
   static bool calin_eigen_mat_to_python(Eigen::MatrixXd* mat,
                                         PyObject* output)
   {
     const int typecode = NPY_DOUBLE;
 
-    if(!is_array(output))
+    if(!_swig_numpy_is_array(output))
       {
         const char* desired_type = typecode_string(typecode);
         const char* actual_type  = pytype_string(output);
@@ -398,7 +398,7 @@ Eigen::VectorXd
       {
         return false;
       }
-    
+
     PyArrayObject* out_array = (PyArrayObject*) output;
 
     PyArray_Dims dims = { size, 2 };
@@ -406,7 +406,7 @@ Eigen::VectorXd
       {
         // Do we need to call Py_DECREF on returned val??
         Py_DECREF(in_array);
-        return false;  
+        return false;
       }
 
     if(PyArray_CopyInto(out_array, in_array) != 0)
@@ -506,7 +506,7 @@ Eigen::VectorXd
       !require_size(array, size, 1)) SWIG_fail;
   eigenmap =
       new Eigen::Map<const Eigen::VectorXd>((const double*)array_data(array),
-                                            array_size(array,0));
+                                            _swig_numpy_array_size(array,0));
   $1 = new $*1_ltype(*eigenmap);
 }
 
