@@ -43,8 +43,8 @@
 %template (VectorFloat)      std::vector<float>;
 %template (VectorUInt32)     std::vector<uint32_t>;
 %template (VectorInt32)      std::vector<int32_t>;
-%template (VectorUInt64)     std::vector<uint64_t>;
-%template (VectorInt64)      std::vector<int64_t>;
+//%template (VectorUInt64)     std::vector<uint64_t>;
+//%template (VectorInt64)      std::vector<int64_t>;
 %template (VectorBool)       std::vector<bool>;
 %template (VectorString)     std::vector<std::string>;
 
