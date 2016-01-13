@@ -404,20 +404,20 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       I->Print(vars, "$type$ $name$($index$) const;\n");
       if(f->is_repeated())
       {
-        I->Print(vars, "void set_$name$($index$, $type$ x);\n");
-        I->Print(vars, "void add_$name$($type$ x);\n");
+        I->Print(vars, "void set_$name$($index$, $type$ INPUT);\n");
+        I->Print(vars, "void add_$name$($type$ INPUT);\n");
         if(is_type_compatible_with_numpy(f->type()))
         {
           I->Print("%extend {\n");
           I->Indent();
           I->Print(vars,
-                   "void set_$name$_from_array(intptr_t DIM1, $type$* IN_ARRAY1) {\n"
+                   "void set_$name$(intptr_t DIM1, $type$* IN_ARRAY1) {\n"
                    "  auto* array = $$self->mutable_$name$();\n"
                    "  if(array->size()>DIM1)array->Truncate(DIM1);\n"
                    "  for(int i=0;i<array->size();i++)array->Set(i,IN_ARRAY1[i]);\n"
                    "  while(array->size()<DIM1)array->Add(IN_ARRAY1[array->size()]);\n"
                    "}\n"
-                   "void $name$_as_array(intptr_t* DIM1, $type$** ARGOUTVIEWM_ARRAY1) {\n"
+                   "void $name$(intptr_t* DIM1, $type$** ARGOUTVIEWM_ARRAY1) {\n"
                    "  const auto& array = $$self->$name$();\n"
                    "  *DIM1 = array.size();\n"
                    "  *ARGOUTVIEWM_ARRAY1 = ($type$*)malloc(*DIM1 * sizeof($type$));\n"
@@ -426,9 +426,27 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
           I->Outdent();
           I->Print("};\n");
         }
+        else if(f->type() == google::protobuf::FieldDescriptor::TYPE_STRING)
+        {
+          I->Print("%extend {\n");
+          I->Indent();
+          I->Print(vars,
+                   "void set_$name$(const std::vector<std::string>& INPUT) {\n"
+                   "  $$self->clear_$name$();\n"
+                   "  for(const auto& s : INPUT)$$self->add_$name$(s);\n"
+                   "}\n"
+                   "void $name$(std::vector<std::string> &OUTPUT) {\n"
+                   "  const auto& array = $$self->$name$();\n"
+                   "  OUTPUT.resize(array.size());\n"
+                   "  std::copy(array.begin(), array.end(), OUTPUT.begin());\n"
+                   "};\n");
+          I->Outdent();
+          I->Print("};\n");
+
+        }
       }
       else
-        I->Print(vars, "void set_$name$($type$ x);\n");
+        I->Print(vars, "void set_$name$($type$ INPUT);\n");
     }
 
     I->Print(vars, "void clear_$name$();\n");

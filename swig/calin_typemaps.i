@@ -132,13 +132,13 @@
       return false;
     }
 
-    if(_swig_numpy_array_numdims(in_array)==0 or PyArray_DIM(in_array, 0)==0)
+    if(_swig_numpy_array_numdims(in_array)==0 or _swig_numpy_array_size(in_array, 0)==0)
     {
       *vec = Eigen::VectorXd();
       return true;
     }
 
-    npy_intp size[1] = { PyArray_DIM(in_array, 0) };
+    npy_intp size[1] = { _swig_numpy_array_size(in_array, 0) };
     vec->resize(size[0]);
 
     PyArrayObject* out_array = (PyArrayObject*)
@@ -335,14 +335,14 @@ Eigen::VectorXd
       return false;
     }
 
-    if(_swig_numpy_array_numdims(in_array)==0 or PyArray_DIM(in_array, 0)==0 or
-       (_swig_numpy_array_numdims(in_array)==2 and PyArray_DIM(in_array, 1)==0))
+    if(_swig_numpy_array_numdims(in_array)==0 or _swig_numpy_array_size(in_array, 0)==0 or
+       (_swig_numpy_array_numdims(in_array)==2 and _swig_numpy_array_size(in_array, 1)==0))
     {
       *mat = Eigen::MatrixXd();
       return true;
     }
 
-    npy_intp size[2] = { PyArray_DIM(in_array, 0), 1 };
+    npy_intp size[2] = { _swig_numpy_array_size(in_array, 0), 1 };
     if(_swig_numpy_array_numdims(in_array)==2)
       size[1] = _swig_numpy_array_size(in_array,1);
 

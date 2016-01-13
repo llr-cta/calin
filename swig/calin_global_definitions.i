@@ -30,14 +30,22 @@
 #define SWIG_FILE_WITH_INIT
   %}
 
+%include <std_vector.i>
+%include <std_string.i>
+%include <stdint.i>
 %include "calin_typemaps.i"
 
 %init %{
   import_array();
 %}
 
-%template (VectorDouble) std::vector<double>;
-%template (VectorUnsigned) std::vector<unsigned>;
-%template (VectorInt) std::vector<int>;
+%template (VectorDouble)     std::vector<double>;
+%template (VectorFloat)      std::vector<float>;
+%template (VectorUInt32)     std::vector<uint32_t>;
+%template (VectorInt32)      std::vector<int32_t>;
+%template (VectorUInt64)     std::vector<uint64_t>;
+%template (VectorInt64)      std::vector<int64_t>;
+%template (VectorBool)       std::vector<bool>;
+%template (VectorString)     std::vector<std::string>;
 
 %import "calin_global_definitions.hpp"
