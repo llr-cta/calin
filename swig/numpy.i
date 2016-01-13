@@ -7,8 +7,13 @@
    SWIG interface file for NumPy
 
    This file is copied from the NumPy distribution (tools/swig) and is
-   presumably Copyright, the NumPy Developers. The original is
-   licensed uder the 3-clause BSD license.
+   Copyright 2005-2015, the NumPy Developers (see notice below). The original
+   is licensed uder the 3-clause BSD license.
+
+   My changes to the original file are,
+
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
 
@@ -74,9 +79,10 @@
 %fragment("NumPy_Backward_Compatibility", "header")
 {
 %#if NPY_API_VERSION < 0x00000007
-%#define NPY_ARRAY_DEFAULT NPY_DEFAULT
-%#define NPY_ARRAY_FARRAY  NPY_FARRAY
-%#define NPY_FORTRANORDER  NPY_FORTRAN
+%#define NPY_ARRAY_DEFAULT      NPY_DEFAULT
+%#define NPY_ARRAY_FARRAY       NPY_FARRAY
+%#define NPY_FORTRANORDER       NPY_FORTRAN
+%#define NPY_ARRAY_F_CONTIGUOUS NPY_F_CONTIGUOUS
 %#endif
 }
 
@@ -95,7 +101,6 @@
 /* Macros to extract array attributes.
  */
 %#if NPY_API_VERSION < 0x00000007
-%#define NPY_ARRAY_F_CONTIGUOUS             NPY_F_CONTIGUOUS 
 %#define _swig_numpy_is_array(a)            ((a) && PyArray_Check((PyArrayObject*)a))
 %#define _swig_numpy_array_type(a)          (int)(PyArray_TYPE((PyArrayObject*)a))
 %#define _swig_numpy_array_numdims(a)       (((PyArrayObject*)a)->nd)
@@ -865,7 +870,7 @@
                                                    &is_new_object);
   if (!array || !require_dimensions(array, 2) ||
       !require_size(array, size, 2)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
 }
@@ -897,7 +902,7 @@
       !require_size(array, size, 2)) SWIG_fail;
   $1 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
-  $3 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $3 = ($3_ltype) _swig_numpy_array_data(array);
 }
 %typemap(freearg)
   (DIM_TYPE DIM1, DIM_TYPE DIM2, DATA_TYPE* IN_ARRAY2)
@@ -925,7 +930,7 @@
                                                 &is_new_object);
   if (!array || !require_dimensions(array, 2) ||
       !require_size(array, size, 2) || !require_fortran(array)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
 }
@@ -957,7 +962,7 @@
       !require_size(array, size, 2) || !require_fortran(array)) SWIG_fail;
   $1 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
-  $3 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $3 = ($3_ltype) _swig_numpy_array_data(array);
 }
 %typemap(freearg)
   (DIM_TYPE DIM1, DIM_TYPE DIM2, DATA_TYPE* IN_FARRAY2)
@@ -1013,7 +1018,7 @@
                                                    &is_new_object);
   if (!array || !require_dimensions(array, 3) ||
       !require_size(array, size, 3)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,2);
@@ -1129,7 +1134,7 @@
   $1 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,2);
-  $4 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $4 = ($4_ltype) _swig_numpy_array_data(array);
 }
 %typemap(freearg)
   (DIM_TYPE DIM1, DIM_TYPE DIM2, DIM_TYPE DIM3, DATA_TYPE* IN_ARRAY3)
@@ -1157,7 +1162,7 @@
                                                 &is_new_object);
   if (!array || !require_dimensions(array, 3) ||
       !require_size(array, size, 3) | !require_fortran(array)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,2);
@@ -1192,7 +1197,7 @@
   $1 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,2);
-  $4 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $4 = ($4_ltype) _swig_numpy_array_data(array);
 }
 %typemap(freearg)
   (DIM_TYPE DIM1, DIM_TYPE DIM2, DIM_TYPE DIM3, DATA_TYPE* IN_FARRAY3)
@@ -1247,7 +1252,7 @@
                                                    &is_new_object);
   if (!array || !require_dimensions(array, 4) ||
       !require_size(array, size, 4)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,2);
@@ -1367,7 +1372,7 @@
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,2);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,3);
-  $5 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $5 = ($5_ltype) _swig_numpy_array_data(array);
 }
 %typemap(freearg)
   (DIM_TYPE DIM1, DIM_TYPE DIM2, DIM_TYPE DIM3, DIM_TYPE DIM4, DATA_TYPE* IN_ARRAY4)
@@ -1395,7 +1400,7 @@
                                                 &is_new_object);
   if (!array || !require_dimensions(array, 4) ||
       !require_size(array, size, 4) | !require_fortran(array)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,2);
@@ -1431,7 +1436,7 @@
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,2);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,3);
-  $5 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $5 = ($5_ltype) _swig_numpy_array_data(array);
 }
 %typemap(freearg)
   (DIM_TYPE DIM1, DIM_TYPE DIM2, DIM_TYPE DIM3, DIM_TYPE DIM4, DATA_TYPE* IN_FARRAY4)
@@ -1482,7 +1487,7 @@
   array = obj_to_array_no_conversion($input, DATA_TYPECODE);
   if (!array || !require_dimensions(array,1) || !require_contiguous(array)
       || !require_native(array)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = 1;
   for (i=0; i < _swig_numpy_array_numdims(array); ++i) $2 *= _swig_numpy_array_size(array,i);
 }
@@ -1506,7 +1511,7 @@
       || !require_native(array)) SWIG_fail;
   $1 = 1;
   for (i=0; i < _swig_numpy_array_numdims(array); ++i) $1 *= _swig_numpy_array_size(array,i);
-  $2 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $2 = ($2_ltype) _swig_numpy_array_data(array);
 }
 
 /* Typemap suite for (DATA_TYPE INPLACE_ARRAY2[ANY][ANY])
@@ -1547,7 +1552,7 @@
   array = obj_to_array_no_conversion($input, DATA_TYPECODE);
   if (!array || !require_dimensions(array,2) || !require_contiguous(array)
       || !require_native(array)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
 }
@@ -1571,7 +1576,7 @@
       !require_native(array)) SWIG_fail;
   $1 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
-  $3 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $3 = ($3_ltype) _swig_numpy_array_data(array);
 }
 
 /* Typemap suite for (DATA_TYPE* INPLACE_FARRAY2, DIM_TYPE DIM1, DIM_TYPE DIM2)
@@ -1591,7 +1596,7 @@
   array = obj_to_array_no_conversion($input, DATA_TYPECODE);
   if (!array || !require_dimensions(array,2) || !require_contiguous(array)
       || !require_native(array) || !require_fortran(array)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
 }
@@ -1615,7 +1620,7 @@
       !require_native(array) || !require_fortran(array)) SWIG_fail;
   $1 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
-  $3 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $3 = ($3_ltype) _swig_numpy_array_data(array);
 }
 
 /* Typemap suite for (DATA_TYPE INPLACE_ARRAY3[ANY][ANY][ANY])
@@ -1657,7 +1662,7 @@
   array = obj_to_array_no_conversion($input, DATA_TYPECODE);
   if (!array || !require_dimensions(array,3) || !require_contiguous(array) ||
       !require_native(array)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,2);
@@ -1750,7 +1755,7 @@
   $1 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,2);
-  $4 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $4 = ($4_ltype) _swig_numpy_array_data(array);
 }
 
 /* Typemap suite for (DATA_TYPE* INPLACE_FARRAY3, DIM_TYPE DIM1, DIM_TYPE DIM2,
@@ -1771,7 +1776,7 @@
   array = obj_to_array_no_conversion($input, DATA_TYPECODE);
   if (!array || !require_dimensions(array,3) || !require_contiguous(array) ||
       !require_native(array) || !require_fortran(array)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,2);
@@ -1798,7 +1803,7 @@
   $1 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,2);
-  $4 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $4 = ($4_ltype) _swig_numpy_array_data(array);
 }
 
 /* Typemap suite for (DATA_TYPE INPLACE_ARRAY4[ANY][ANY][ANY][ANY])
@@ -1840,7 +1845,7 @@
   array = obj_to_array_no_conversion($input, DATA_TYPECODE);
   if (!array || !require_dimensions(array,4) || !require_contiguous(array) ||
       !require_native(array)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,2);
@@ -1937,7 +1942,7 @@
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,2);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,3);
-  $5 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $5 = ($5_ltype) _swig_numpy_array_data(array);
 }
 
 /* Typemap suite for (DATA_TYPE* INPLACE_FARRAY4, DIM_TYPE DIM1, DIM_TYPE DIM2,
@@ -1958,7 +1963,7 @@
   array = obj_to_array_no_conversion($input, DATA_TYPECODE);
   if (!array || !require_dimensions(array,4) || !require_contiguous(array) ||
       !require_native(array) || !require_fortran(array)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,0);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,2);
@@ -1987,7 +1992,7 @@
   $2 = (DIM_TYPE) _swig_numpy_array_size(array,1);
   $3 = (DIM_TYPE) _swig_numpy_array_size(array,2);
   $4 = (DIM_TYPE) _swig_numpy_array_size(array,3);
-  $5 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $5 = ($5_ltype) _swig_numpy_array_data(array);
 }
 
 /*************************/
@@ -2032,7 +2037,7 @@
   dims[0] = (npy_intp) $2;
   array = PyArray_SimpleNew(1, dims, DATA_TYPECODE);
   if (!array) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
 }
 %typemap(argout)
   (DATA_TYPE* ARGOUT_ARRAY1, DIM_TYPE DIM1)
@@ -2060,7 +2065,7 @@
   dims[0] = (npy_intp) $1;
   array = PyArray_SimpleNew(1, dims, DATA_TYPECODE);
   if (!array) SWIG_fail;
-  $2 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $2 = ($2_ltype) _swig_numpy_array_data(array);
 }
 %typemap(argout)
   (DIM_TYPE DIM1, DATA_TYPE* ARGOUT_ARRAY1)
@@ -2130,7 +2135,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEW_ARRAY1, DIM_TYPE* DIM1    )
-  (DATA_TYPE*  data_temp = NULL , DIM_TYPE  dim_temp)
+  ($*1_ltype   data_temp = NULL , DIM_TYPE  dim_temp)
 {
   $1 = &data_temp;
   $2 = &dim_temp;
@@ -2151,7 +2156,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1    , DATA_TYPE** ARGOUTVIEW_ARRAY1)
-  (DIM_TYPE  dim_temp, DATA_TYPE*  data_temp = NULL )
+  (DIM_TYPE  dim_temp, $*2_ltype   data_temp = NULL )
 {
   $1 = &dim_temp;
   $2 = &data_temp;
@@ -2172,7 +2177,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEW_ARRAY2, DIM_TYPE* DIM1     , DIM_TYPE* DIM2     )
-  (DATA_TYPE*  data_temp = NULL , DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp)
+  ($*1_ltype   data_temp = NULL , DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2194,7 +2199,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1     , DIM_TYPE* DIM2     , DATA_TYPE** ARGOUTVIEW_ARRAY2)
-  (DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp, DATA_TYPE*  data_temp = NULL )
+  (DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp, $*3_ltype   data_temp = NULL )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2216,7 +2221,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEW_FARRAY2, DIM_TYPE* DIM1     , DIM_TYPE* DIM2     )
-  (DATA_TYPE*  data_temp = NULL  , DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp)
+  ($*1_ltype   data_temp = NULL  , DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2238,7 +2243,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1     , DIM_TYPE* DIM2     , DATA_TYPE** ARGOUTVIEW_FARRAY2)
-  (DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp, DATA_TYPE*  data_temp = NULL  )
+  (DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp, $*3_ltype   data_temp = NULL  )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2261,7 +2266,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEW_ARRAY3, DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    )
-  (DATA_TYPE* data_temp = NULL  , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp)
+  ($*1_ltype   data_temp = NULL , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2285,7 +2290,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1, DIM_TYPE* DIM2, DIM_TYPE* DIM3, DATA_TYPE** ARGOUTVIEW_ARRAY3)
-  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DATA_TYPE* data_temp = NULL)
+  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, $*4_ltype data_temp = NULL)
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2309,7 +2314,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEW_FARRAY3, DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    )
-  (DATA_TYPE* data_temp = NULL   , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp)
+  ($*1_ltype   data_temp = NULL  , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2333,7 +2338,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DATA_TYPE** ARGOUTVIEW_FARRAY3)
-  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DATA_TYPE* data_temp = NULL   )
+  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, $*4_ltype   data_temp = NULL   )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2357,7 +2362,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEW_ARRAY4, DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    )
-  (DATA_TYPE* data_temp = NULL  , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
+  ($*1_ltype   data_temp = NULL , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2382,7 +2387,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    , DATA_TYPE** ARGOUTVIEW_ARRAY4)
-  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, DATA_TYPE* data_temp = NULL  )
+  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, $*5_ltype   data_temp = NULL  )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2407,7 +2412,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEW_FARRAY4, DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    )
-  (DATA_TYPE* data_temp = NULL   , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
+  ($*1_ltype   data_temp = NULL  , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2432,7 +2437,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    , DATA_TYPE** ARGOUTVIEW_FARRAY4)
-  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, DATA_TYPE* data_temp = NULL   )
+  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, $*5_ltype   data_temp = NULL   )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2460,7 +2465,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEWM_ARRAY1, DIM_TYPE* DIM1    )
-  (DATA_TYPE*  data_temp = NULL  , DIM_TYPE  dim_temp)
+  ($*1_ltype   data_temp = NULL  , DIM_TYPE  dim_temp)
 {
   $1 = &data_temp;
   $2 = &dim_temp;
@@ -2528,7 +2533,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEWM_ARRAY2, DIM_TYPE* DIM1     , DIM_TYPE* DIM2     )
-  (DATA_TYPE*  data_temp = NULL  , DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp)
+  ($*1_ltype   data_temp = NULL  , DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2563,7 +2568,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1     , DIM_TYPE* DIM2     , DATA_TYPE** ARGOUTVIEWM_ARRAY2)
-  (DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp, DATA_TYPE*  data_temp = NULL  )
+  (DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp, $*3_ltype   data_temp = NULL  )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2598,7 +2603,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEWM_FARRAY2, DIM_TYPE* DIM1     , DIM_TYPE* DIM2     )
-  (DATA_TYPE*  data_temp = NULL   , DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp)
+  ($*1_ltype   data_temp = NULL   , DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2633,7 +2638,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1     , DIM_TYPE* DIM2     , DATA_TYPE** ARGOUTVIEWM_FARRAY2)
-  (DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp, DATA_TYPE*  data_temp = NULL   )
+  (DIM_TYPE  dim1_temp, DIM_TYPE  dim2_temp, $*3_ltype   data_temp = NULL   )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2669,7 +2674,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEWM_ARRAY3, DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    )
-  (DATA_TYPE* data_temp = NULL   , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp)
+  ($*1_ltype   data_temp = NULL   , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2706,7 +2711,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DATA_TYPE** ARGOUTVIEWM_ARRAY3)
-  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DATA_TYPE* data_temp = NULL   )
+  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, $*4_ltype   data_temp = NULL   )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2743,7 +2748,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEWM_FARRAY3, DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    )
-  (DATA_TYPE* data_temp = NULL    , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp)
+  ($*1_ltype   data_temp = NULL   , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2780,7 +2785,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DATA_TYPE** ARGOUTVIEWM_FARRAY3)
-  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DATA_TYPE* data_temp = NULL    )
+  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, $*4_ltype   data_temp = NULL    )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2817,7 +2822,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEWM_ARRAY4, DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    )
-  (DATA_TYPE* data_temp = NULL   , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
+  ($*1_ltype   data_temp = NULL  , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2855,7 +2860,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    , DATA_TYPE** ARGOUTVIEWM_ARRAY4)
-  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, DATA_TYPE* data_temp = NULL   )
+  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, $*5_ltype   data_temp = NULL   )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2893,7 +2898,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEWM_FARRAY4, DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    )
-  (DATA_TYPE* data_temp = NULL    , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
+  ($*1_ltype   data_temp = NULL   , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -2931,7 +2936,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    , DATA_TYPE** ARGOUTVIEWM_FARRAY4)
-  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, DATA_TYPE* data_temp = NULL    )
+  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, $*5_ltype   data_temp = NULL    )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -2969,7 +2974,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEWM_ARRAY4, DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    )
-  (DATA_TYPE* data_temp = NULL   , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
+  ($*1_ltype   data_temp = NULL  , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -3007,7 +3012,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    , DATA_TYPE** ARGOUTVIEWM_ARRAY4)
-  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, DATA_TYPE* data_temp = NULL   )
+  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, $*5_ltype   data_temp = NULL   )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -3045,7 +3050,7 @@
  */
 %typemap(in,numinputs=0)
   (DATA_TYPE** ARGOUTVIEWM_FARRAY4, DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    )
-  (DATA_TYPE* data_temp = NULL    , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
+  ($*1_ltype   data_temp = NULL   , DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp)
 {
   $1 = &data_temp;
   $2 = &dim1_temp;
@@ -3083,7 +3088,7 @@
  */
 %typemap(in,numinputs=0)
   (DIM_TYPE* DIM1    , DIM_TYPE* DIM2    , DIM_TYPE* DIM3    , DIM_TYPE* DIM4    , DATA_TYPE** ARGOUTVIEWM_FARRAY4)
-  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, DATA_TYPE* data_temp = NULL    )
+  (DIM_TYPE dim1_temp, DIM_TYPE dim2_temp, DIM_TYPE dim3_temp, DIM_TYPE dim4_temp, $*5_ltype   data_temp = NULL    )
 {
   $1 = &dim1_temp;
   $2 = &dim2_temp;
@@ -3137,7 +3142,7 @@
   array = obj_to_array_no_conversion($input, DATA_TYPECODE);
   if (!array || !require_c_or_f_contiguous(array)
       || !require_native(array)) SWIG_fail;
-  $1 = (DATA_TYPE*) _swig_numpy_array_data(array);
+  $1 = ($1_ltype) _swig_numpy_array_data(array);
   $2 = 1;
   for (i=0; i < _swig_numpy_array_numdims(array); ++i) $2 *= _swig_numpy_array_size(array,i);
 }
