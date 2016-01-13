@@ -1,0 +1,36 @@
+/*
+
+   calin/proto/io/nectarcam_data_source.proto -- Stephen Fegan -- 2016-01-13
+
+   Protobufs for configuration of NectarCamZFITSDataSource
+
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.io.nectarcam_data_source;
+
+message NectarCamZFITSDataSourceConfig {
+  uint32 num_events_max                = 1 [
+    (CFO).desc = "Limit number of events provided by source." ];
+
+  uint32 demand_nsample                = 2 [
+    (CFO).desc = "Override number of samples per event stored in file. Zero "
+      "means we use value from file."];
+};

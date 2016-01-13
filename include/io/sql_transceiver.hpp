@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/io/sql_transceiver.hpp -- Stephen Fegan -- 2015-09-08
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -32,7 +32,7 @@
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
 
-#include "io/sql_statement.hpp"
+#include <io/sql_statement.hpp>
 
 namespace calin { namespace io { namespace sql_transceiver {
 
@@ -40,7 +40,7 @@ struct SQLTable;
 
 enum DataPointerType {
   PT_NULL, PT_CONST_UINT64, PT_CONST_MESSAGE, PT_UINT64, PT_MESSAGE  };
-    
+
 union DataPointer {
   DataPointer(): p_void(nullptr) { /* nothing to see here */ }
   void* p_void;
@@ -61,7 +61,7 @@ struct SQLTableField
   std::string                               field_name;
   const google::protobuf::FieldDescriptor*  field_d = nullptr;
   std::vector<const google::protobuf::FieldDescriptor*> field_d_path;
-  
+
   DataPointerType                           data_type = PT_NULL;
   DataPointer                               data;
   const google::protobuf::OneofDescriptor*  oneof_d = nullptr;
@@ -79,7 +79,7 @@ struct SQLTableField
     data_type = PT_CONST_MESSAGE; data.p_const_message = p; }
   void set_data_message(google::protobuf::Message* p) {
     data_type = PT_MESSAGE; data.p_message = p; }
-    
+
   bool is_data_null() const { return data_type == PT_NULL; }
   const uint64_t* data_const_uint64() const {
     if(data_type == PT_CONST_UINT64) return data.p_const_uint64;
@@ -102,7 +102,7 @@ struct SQLTable
     for(auto itable : sub_tables)delete itable;
     delete stmt;
   }
-  
+
   std::string                               table_name;
   SQLTable*                                 parent_table = nullptr;
   const google::protobuf::FieldDescriptor*  parent_field_d = nullptr;
@@ -152,7 +152,7 @@ class SQLTransceiver
   retrieve_by_oid(const std::string& table_name, uint64_t oid,
                   google::protobuf::Message* m_data,
                   google::protobuf::Message* m_key = nullptr);
-  
+
   // ===========================================================================
   //
   // Utility functions
@@ -164,24 +164,24 @@ class SQLTransceiver
                            const google::protobuf::Descriptor* d_data,
                            const google::protobuf::Descriptor* d_key = nullptr,
                            bool ignore_key_option = false);
-  
+
   SQLTable*
   make_sqltable_tree(const std::string& table_name,
                      const google::protobuf::Descriptor* d,
                      bool ignore_key_option = false);
-  
+
   SQLTable*
   make_extkey_tree(const std::string& table_name,
                    const google::protobuf::Descriptor* d);
 
   void prune_empty_tables(SQLTable* t);
-  
+
   void propagate_keys(SQLTable* t,
                       std::vector<const SQLTableField*> keys = { });
-  
+
   std::vector<std::pair<std::string,std::string> >
   list_all_table_columns(const SQLTable* t);
-  
+
   template<typename FCN> void iterate_over_tables(SQLTable* t, FCN fcn)
   {
     std::deque<SQLTable*> all_t;
@@ -206,7 +206,7 @@ class SQLTransceiver
       fcn(it);
       all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
     }
-  } 
+  }
 
   template<typename FCN, typename DATUM>
   void iterate_over_tables_with_data(SQLTable* t, const DATUM& d0, FCN fcn)
@@ -245,7 +245,7 @@ class SQLTransceiver
       all_d.insert(all_d.begin(), it->sub_tables.size(), d);
     }
   }
-  
+
   template<typename FCN> void iterate_over_fields(SQLTable* t, FCN fcn)
   {
     iterate_over_tables(t, [&fcn](SQLTable* t) {
@@ -256,7 +256,7 @@ class SQLTransceiver
   {
     iterate_over_tables(t, [&fcn](const SQLTable* t) {
         for(auto f : t->fields) { fcn(t,f); } });
-  } 
+  }
 
   template<typename FCN_f, typename FCN_cd, typename DATUM> void
   iterate_over_fields_with_data(SQLTable* t, const DATUM& d0, FCN_cd fcn_cd,
@@ -276,19 +276,19 @@ class SQLTransceiver
                                [&fcn_cd, &fcn_f](const SQLTable* t, DATUM& d) {
         fcn_cd(t, d); // possible change in d here
         for(auto f : t->fields) { DATUM sd = d; fcn_f(t,f,sd); } });
-  } 
-  
+  }
+
  protected:
 
   bool write_sql_to_log_ = false;
   bool internal_tables_created_ = false;
-  
+
   // ===========================================================================
   //
   // Private tree-related functions
   //
   // ===========================================================================
-  
+
   SQLTable*
   r_make_sqltable_tree(const std::string& table_name,
                        const google::protobuf::Descriptor* d,
@@ -301,7 +301,7 @@ class SQLTransceiver
   // Overridable member functions to create SQL strings
   //
   // ===========================================================================
-  
+
   virtual std::string user_key_name(const std::string& name);
   virtual std::string sub_name(const std::string& parent_name,
                                const std::string& name);
@@ -310,7 +310,7 @@ class SQLTransceiver
 
   virtual std::string sql_type(const google::protobuf::FieldDescriptor* d);
   virtual std::string sql_oid_column_name();
-  
+
   virtual std::string sql_create_table(const SQLTable* t,
                            const std::map<std::string,std::string>& parent_dict,
                                        bool if_not_exists = false);
@@ -323,7 +323,7 @@ class SQLTransceiver
                                   unsigned first_line_indent = 0,
                                   unsigned multi_line_indent = 0,
                                   bool newline_before_multi_line = false);
-  
+
   // ===========================================================================
   //
   // Overridable prepare and execute statements
@@ -335,7 +335,7 @@ class SQLTransceiver
   virtual bool begin_transaction();
   virtual bool commit_transaction();
   virtual bool rollback_transaction();
-  
+
   virtual bool r_exec_simple(SQLTable* t, bool ignore_errors);
 
   void set_const_data_pointers(SQLTable* t,
@@ -351,7 +351,7 @@ class SQLTransceiver
   bool field_selected(const google::protobuf::FieldDescriptor* f,
                       const std::map<const google::protobuf::OneofDescriptor*,
                                      int>& oneof_map);
-  
+
   virtual bool r_exec_insert(SQLTable* t,
                              const google::protobuf::Message* m_data,
                              const google::protobuf::Message* m_key,
@@ -363,7 +363,7 @@ class SQLTransceiver
                              google::protobuf::Message* m_key,
                              uint64_t& loop_id,
                              bool ignore_errors);
-  
+
   virtual bool finalize_statements(SQLTable* t);
 
   virtual void create_internal_tables();
