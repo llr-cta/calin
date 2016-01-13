@@ -23,7 +23,7 @@ enable_testing()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
 
-include_directories(include ${CMAKE_BINARY_DIR})
+include_directories(include ${CMAKE_BINARY_DIR}/include)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
 ### Find Protobuf libraries and set protobuf base path
@@ -65,7 +65,15 @@ set(CMAKE_SWIG_FLAGS -I${CMAKE_SOURCE_DIR}/swig -I${CMAKE_SOURCE_DIR}/include  -
 find_package(ZMQ REQUIRED)
 include_directories(${ZMQ_INCLUDE_DIRS})
 
+## Find the CTA CamerasToACTL package
+SET(CALIN_HAVE_CTA_CAMERASTOACTL FALSE)
+find_package(CTA_CamerasToACTL)
+if(CTA_CAMERASTOACTL_FOUND)
+	SET(CALIN_HAVE_CTA_CAMERASTOACTL TRUE)
+endif()
+
 ## Find Geant4 if requested
+SET(CALIN_HAVE_GEANT4 FALSE)
 if(NO_GEANT4)
 	message(STATUS "Skipping GEANT4 as requested")
 	SET(GEANT4_FOUND FALSE)
@@ -76,6 +84,7 @@ else()
 		message(STATUS "GEANT4_LIBRARY_DIR: " ${GEANT4_LIBRARY_DIR})
 		include_directories(${GEANT4_INCLUDE_DIR})
 		link_directories(${GEANT4_LIBRARY_DIR})
+		SET(CALIN_HAVE_GEANT4 TRUE)
 	endif()
 endif()
 

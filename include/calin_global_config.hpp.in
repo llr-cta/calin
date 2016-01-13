@@ -1,10 +1,10 @@
 /*
 
-   calin/calin_global_config.hpp -- Stephen Fegan -- 2015-04-16
+   calin/calin_global_config.hpp.in -- Stephen Fegan -- 2016-01-11
 
    Defines for configuration options
 
-   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
@@ -20,4 +20,21 @@
 
 */
 
+/*
+
+   calin/calin_global_config.hpp
+
+   Generated automatically from calin_global_config.hpp.in by CMake.
+
+ */
+
 #pragma once
+
+// CALIN_HAVE_GEANT4
+// Flags conditional compilation of GEANT4-specific code
+#cmakedefine CALIN_HAVE_GEANT4 1
+
+// CALIN_HAVE_CTA_CAMERASTOACTL
+// Flags conditional compilation of code depending on (proprietary)
+// CTA CamerasToACTL package
+#cmakedefine CALIN_HAVE_CTA_CAMERASTOACTL 1

@@ -24,9 +24,12 @@
 
 #include <string>
 
+#include <calin_global_config.hpp>
 #include <io/telescope_data_source.hpp>
 
 namespace calin { namespace io { namespace nectarcam_data_source {
+
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
 class NectarCamZFITSDataSource:
   public calin::io::telescope_data_source::TelescopeDataSource
@@ -39,5 +42,7 @@ private:
   std::string filename_;
   unsigned next_event_index_ = 0;
 };
+
+#endif // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
 } } } // namespace calin::io::nectarcam_data_source

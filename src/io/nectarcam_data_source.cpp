@@ -20,8 +20,12 @@
 
 */
 
+#include <io/nectarcam_data_source.hpp>
+
 using namespace calin::io::nectarcam_data_source;
 using namespace calin::ix::iact::telescope_event;
+
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
 NectarCamZFITSDataSource::NectarCamZFITSDataSource(const std::string& filename):
   calin::io::telescope_data_source::TelescopeDataSource(),
@@ -86,3 +90,5 @@ TelescopeEvent* NectarCamZFITSDataSource::getNextEvent()
   }
 
 }
+
+#endif // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
