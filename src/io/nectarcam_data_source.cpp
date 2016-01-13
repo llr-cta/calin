@@ -22,13 +22,13 @@
 
 #include <io/nectarcam_data_source.hpp>
 
-#include <ProtobufIFits.h>
-#include <L0.pb.h>
-
 using namespace calin::io::nectarcam_data_source;
 using namespace calin::ix::iact::telescope_event;
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+
+#include <ProtobufIFits.h>
+#include <L0.pb.h>
 
 NectarCamZFITSDataSource::NectarCamZFITSDataSource(const std::string& filename):
   calin::io::telescope_data_source::TelescopeDataSource(),
