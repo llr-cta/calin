@@ -20,3 +20,9 @@ add_executable(do_spe_expgauss_fit do_spe_expgauss_fit)
 target_link_libraries(do_spe_expgauss_fit calin_calib calin_math calin_proto calin_nlopt ${EXTRA_LIBS})
 
 install(TARGETS do_spe_fit do_spe_expgauss_fit DESTINATION bin)
+
+if(CTA_CAMERASTOACTL_FOUND)
+	add_executable(dump_nectar_zfits dump_nectar_zfits)
+  target_link_libraries(dump_nectar_zfits calin_io)
+  install(TARGETS dump_nectar_zfits DESTINATION bin)
+endif()

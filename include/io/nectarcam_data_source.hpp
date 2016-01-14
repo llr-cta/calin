@@ -34,6 +34,9 @@
 namespace ACTL { namespace IO {
   class ProtobufIFits;
 } } // namespace ACTL::IO
+namespace DataModel {
+  class PixelsChannel;
+} // namespace DataModel
 #endif // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
 namespace calin { namespace io { namespace nectarcam_data_source {
@@ -44,16 +47,22 @@ class NectarCamZFITSDataSource:
   public calin::io::telescope_data_source::TelescopeDataSource
 {
 public:
-  CALIN_TYPEALIAS(config_type, calin::ix::io::nectarcam_data_source::NectarCamZFITSDataSourceConfig);
+  CALIN_TYPEALIAS(config_type,
+    calin::ix::io::nectarcam_data_source::NectarCamZFITSDataSourceConfig);
 
   NectarCamZFITSDataSource(const std::string& filename);
   virtual ~NectarCamZFITSDataSource();
+
   void set_config(const config_type& config) { config_.CopyFrom(config); }
   const config_type& config() const { return config_; }
-  config_type* config() { return &config_; }
+  config_type* mutable_config() { return &config_; }
 
   calin::ix::iact::telescope_event::TelescopeEvent* getNextEvent() override;
+
 private:
+  void copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
+    calin::ix::iact::telescope_event::DigitizedSkyImage* calin_image);
+
   std::string filename_;
   ACTL::IO::ProtobufIFits* zfits_ = nullptr;
   config_type config_;

@@ -135,9 +135,10 @@ message Time
 {
   option (CMO).sql.default_inline_message = true;
 
-  int64 epoch_ns                        = 1
-    [(CFO).desc = "$PARENT_DESC_PS$Number of TAI nanoseconds since the "
-     "epoch of midnight of 2000-01-01 UTC.",
+  int64 time_ns                         = 1
+    [(CFO).desc = "$PARENT_DESC_PS$. If time is absolute then this should be "
+       "the number of TAI nanoseconds since the epoch of midnight of "
+       "2000-01-01 UTC.",
      (CFO).units = "ns"];
 };
 
