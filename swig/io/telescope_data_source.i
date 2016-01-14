@@ -1,10 +1,8 @@
-//-*-mode:swig;-*-
-
 /*
 
-   calin/io/sql_transceiver.i -- Stephen Fegan -- 2015-12-15
+   calin/io/telescope_data_source.i -- Stephen Fegan -- 2016-01-14
 
-   SWIG interface file for calin.io.sql_transceiver
+   SWIG interface file for calin.io.telescope_data_source
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -22,11 +20,12 @@
 
 */
 
-%module (package="calin.io") sql_transceiver
+
+%module (package="calin.io") telescope_data_source
 
 %{
-#include "io/sql_transceiver.hpp"
-#include "io/sqlite3_transceiver.hpp"
+#include "io/telescope_data_source.hpp"
+#include "io/nectarcam_data_source.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -37,15 +36,11 @@
 %include "numpy.i"
 %include "stdint.i"
 %include "calin_typemaps.i"
+
 %import "calin_global_definitions.i"
 
-%ignore insert(const std::string& table_name,
-               const google::protobuf::Message* m_data,
-               const google::protobuf::Message* m_key = nullptr);
+%newobject calin::io::telescope_data_source::TelescopeDataSource::getNextEvent();
+%newobject calin::io::nectarcam_data_source::NectarCamZFITSDataSource::getNextEvent();
 
-%apply uint64_t &OUTPUT { uint64_t& oid };
-
-%include "io/sql_statement.hpp"
-%include "io/sql_transceiver.hpp"
-%include "io/sqlite3_statement.hpp"
-%include "io/sqlite3_transceiver.hpp"
+%include "io/telescope_data_source.hpp"
+%include "io/nectarcam_data_source.hpp"
