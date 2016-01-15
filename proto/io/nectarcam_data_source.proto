@@ -29,7 +29,8 @@ package calin.ix.io.nectarcam_data_source;
 message NectarCamZFITSDataSourceConfig {
   uint32 next_event_index              = 1 [
     (CFO).desc = "Index of next event to read, starting at zero. Can be used "
-      "to provide random access to events which is not supported by the API." ];
+      "to provide random access to events which is not supported directly by "
+      "the DataSource API." ];
 
   uint32 num_events_max                = 2 [
     (CFO).desc = "Limit number of events provided by source. The data source "

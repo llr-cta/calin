@@ -48,8 +48,15 @@ public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::io::nectarcam_data_source::NectarCamZFITSDataSourceConfig);
 
-  NectarCamZFITSDataSource(const std::string& filename);
+  NectarCamZFITSDataSource(const std::string& filename,
+    const config_type& config = config_type::default_instance());
   virtual ~NectarCamZFITSDataSource();
+
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+  static bool can_read_cta_zfits_data() { return true; }
+#else // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+  static bool can_read_cta_zfits_data() { return false; }
+#endif /// #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
   void set_config(const config_type& config) { config_.CopyFrom(config); }
   const config_type& config() const { return config_; }
@@ -57,15 +64,15 @@ public:
 
   calin::ix::iact::telescope_event::TelescopeEvent* getNextEvent() override;
 
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 private:
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
   void copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
     calin::ix::iact::telescope_event::DigitizedSkyImage* calin_image);
 
   std::string filename_;
   ACTL::IO::ProtobufIFits* zfits_ = nullptr;
-  config_type config_;
 #endif // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+  config_type config_;
 };
 
 } } } // namespace calin::io::nectarcam_data_source

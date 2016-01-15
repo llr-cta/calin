@@ -33,9 +33,10 @@ using namespace calin::ix::iact::telescope_event;
 #include <L0.pb.h>
 
 NectarCamZFITSDataSource::
-NectarCamZFITSDataSource(const std::string& filename):
+NectarCamZFITSDataSource(const std::string& filename,
+    const config_type& config):
   calin::io::telescope_data_source::TelescopeDataSource(),
-  filename_(filename)
+  filename_(filename), config_(config)
 {
   zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str());
 }
@@ -164,8 +165,10 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
 #else // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
 NectarCamZFITSDataSource::
-NectarCamZFITSDataSource(const std::string& filename):
-  calin::io::telescope_data_source::TelescopeDataSource()
+NectarCamZFITSDataSource(const std::string& filename,
+    const config_type& config):):
+  calin::io::telescope_data_source::TelescopeDataSource(),
+  config_(config)
 {
   // nothing to see here
 }
