@@ -97,8 +97,7 @@ TelescopeEvent* NectarCamZFITSDataSource::getNextEvent()
     auto& cta_counters = cta_event->cameracounters();
     assert(cta_counters.has_counters());
     assert(cta_counters.counters().type() == DataModel::AnyArray::U16);
-    assert(cta_counters.counters().data().size()%sizeof(NectarCounters)
-      == 0);
+    assert(cta_counters.counters().data().size()%sizeof(NectarCounters) == 0);
     unsigned nmod =
       cta_counters.counters().data().size()/sizeof(NectarCounters);
     const auto* mod_counter = reinterpret_cast<const NectarCounters*>(
@@ -158,7 +157,6 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
       reinterpret_cast<const uint16_t*>(&cta_q.gains().data().front());
     for(unsigned ipix=0;ipix<npix;ipix++)
       calin_q_image->add_charge(*cta_q_data++);
-
   }
 }
 
