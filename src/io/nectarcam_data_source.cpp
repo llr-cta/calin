@@ -180,8 +180,8 @@ NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
 
 TelescopeEvent* NectarCamZFITSDataSource::getNextEvent()
 {
-  throw(std::logic_error("NectarCamZFITSDataSource::getNextEvent(): calin "
-    "compiled without ZFits support."))
+  throw std::logic_error("NectarCamZFITSDataSource::getNextEvent(): calin "
+    "compiled without ZFits support.");
   return nullptr;
 }
 
