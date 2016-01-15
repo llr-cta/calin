@@ -48,8 +48,9 @@ NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
 TelescopeEvent* NectarCamZFITSDataSource::getNextEvent()
 {
   if(zfits_ == nullptr)return nullptr;
-  if(next_event_index_ >= zfits_->getNumMessagesInTable() or
-    (config_.num_events_max() and next_event_index_>=config_.num_events_max()))
+  if(config_.next_event_index() >= zfits_->getNumMessagesInTable() or
+     (config_.num_events_max() and
+      config_.next_event_index() >= config_.num_events_max()))
   {
     delete zfits_;
     zfits_ = nullptr;
@@ -57,9 +58,11 @@ TelescopeEvent* NectarCamZFITSDataSource::getNextEvent()
   }
 
   const auto* cta_event =
-    zfits_->readTypedMessage<DataModel::CameraEvent>(next_event_index_+1);
-  assert(cta_event);
-  ++next_event_index_;
+    zfits_->readTypedMessage<DataModel::CameraEvent>(
+      config_.next_event_index()+1);
+  config_.set_next_event_index(config_.next_event_index()+1);
+  assert(cta_event); // what to do here?
+  if(cta_event == nullptr)return nullptr;
 
   auto* calin_event = new TelescopeEvent;
   calin_event->set_telescope_id(cta_event->telescopeid());

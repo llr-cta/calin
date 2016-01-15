@@ -65,7 +65,6 @@ private:
   std::string filename_;
   ACTL::IO::ProtobufIFits* zfits_ = nullptr;
   config_type config_;
-  unsigned next_event_index_ = 0;
 #endif // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 };
 
