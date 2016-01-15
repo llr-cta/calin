@@ -100,4 +100,24 @@ private:
   bool adopt_downstream_ = false;
 };
 
+class FileInStream final: public PacketInStream
+{
+public:
+  FileInStream(const std::string& filename);
+  virtual ~FileInStream();
+  bool getPacket(std::string& packet_out) override;
+private:
+  PacketInStream* upstream_ = nullptr;
+};
+
+class FileOutStream final: public PacketOutStream
+{
+public:
+  FileOutStream(const std::string& filename);
+  virtual ~FileOutStream();
+  bool putPacket(const std::string& packet) override;
+private:
+  PacketOutStream* downstream_ = nullptr;
+};
+
 } } } // namespace calin::io::packet_stream
