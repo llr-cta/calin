@@ -166,7 +166,7 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
 
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
-    const config_type& config):):
+    const config_type& config):
   calin::io::telescope_data_source::TelescopeDataSource(),
   config_(config)
 {
