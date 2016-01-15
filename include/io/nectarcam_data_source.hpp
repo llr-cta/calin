@@ -41,8 +41,6 @@ namespace DataModel {
 
 namespace calin { namespace io { namespace nectarcam_data_source {
 
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
-
 class NectarCamZFITSDataSource:
   public calin::io::telescope_data_source::TelescopeDataSource
 {
@@ -59,6 +57,7 @@ public:
 
   calin::ix::iact::telescope_event::TelescopeEvent* getNextEvent() override;
 
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 private:
   void copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
     calin::ix::iact::telescope_event::DigitizedSkyImage* calin_image);
@@ -67,8 +66,7 @@ private:
   ACTL::IO::ProtobufIFits* zfits_ = nullptr;
   config_type config_;
   unsigned next_event_index_ = 0;
-};
-
 #endif // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+};
 
 } } } // namespace calin::io::nectarcam_data_source

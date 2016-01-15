@@ -20,6 +20,8 @@
 
 */
 
+#include <stdexcept>
+
 #include <io/nectarcam_data_source.hpp>
 
 using namespace calin::io::nectarcam_data_source;
@@ -154,6 +156,27 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
       calin_q_image->add_charge(*cta_q_data++);
 
   }
+}
+
+#else // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+
+NectarCamZFITSDataSource::
+NectarCamZFITSDataSource(const std::string& filename):
+  calin::io::telescope_data_source::TelescopeDataSource()
+{
+  // nothing to see here
+}
+
+NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
+{
+  // nothing to see here
+}
+
+TelescopeEvent* NectarCamZFITSDataSource::getNextEvent()
+{
+  throw(std::logic_error("NectarCamZFITSDataSource::getNextEvent(): calin "
+    "compiled without ZFits support."))
+  return nullptr;
 }
 
 #endif // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
