@@ -46,7 +46,7 @@ NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
   delete zfits_;
 }
 
-TelescopeEvent* NectarCamZFITSDataSource::getNextEvent()
+TelescopeEvent* NectarCamZFITSDataSource::getNext()
 {
   if(zfits_ == nullptr)return nullptr;
   if(config_.next_event_index() >= zfits_->getNumMessagesInTable() or
@@ -176,9 +176,9 @@ NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
   // nothing to see here
 }
 
-TelescopeEvent* NectarCamZFITSDataSource::getNextEvent()
+TelescopeEvent* NectarCamZFITSDataSource::getNext()
 {
-  throw std::logic_error("NectarCamZFITSDataSource::getNextEvent(): calin "
+  throw std::logic_error("NectarCamZFITSDataSource::getNext(): calin "
     "compiled without ZFits support.");
   return nullptr;
 }

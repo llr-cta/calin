@@ -62,7 +62,7 @@ public:
   const config_type& config() const { return config_; }
   config_type* mutable_config() { return &config_; }
 
-  calin::ix::iact::telescope_event::TelescopeEvent* getNextEvent() override;
+  calin::ix::iact::telescope_event::TelescopeEvent* getNext() override;
 
 private:
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL

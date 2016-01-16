@@ -25,6 +25,9 @@
 
 #include <string>
 
+#include <calin_global_definitions.hpp>
+#include <io/packet_stream.pb.h>
+
 namespace google { namespace protobuf { namespace io {
   class ZeroCopyInputStream;
   class CodedInputStream;
@@ -48,13 +51,13 @@ public:
   virtual bool putPacket(const std::string& packet) = 0;
 };
 
-class ZeroCopyCodedPacketInStream final: public PacketInStream
+class FramedZeroCopyPacketInStream final: public PacketInStream
 {
 public:
-  ZeroCopyCodedPacketInStream(
+  FramedZeroCopyPacketInStream(
     google::protobuf::io::ZeroCopyInputStream* instream,
     bool adopt_instream = false);
-  virtual ~ZeroCopyCodedPacketInStream();
+  virtual ~FramedZeroCopyPacketInStream();
   bool getPacket(std::string& packet_out) override;
 private:
   google::protobuf::io::ZeroCopyInputStream* instream_ = nullptr;
@@ -62,13 +65,13 @@ private:
   google::protobuf::io::CodedInputStream* coded_instream_ = nullptr;
 };
 
-class ZeroCopyCodedPacketOutStream final : public PacketOutStream
+class FramedZeroCopyPacketOutStream final : public PacketOutStream
 {
 public:
-  ZeroCopyCodedPacketOutStream(
+  FramedZeroCopyPacketOutStream(
     google::protobuf::io::ZeroCopyOutputStream* outstream,
     bool adopt_outstream = false);
-  ~ZeroCopyCodedPacketOutStream();
+  ~FramedZeroCopyPacketOutStream();
   bool putPacket(const std::string& packet) override;
 private:
   google::protobuf::io::ZeroCopyOutputStream* outstream_ = nullptr;
@@ -79,42 +82,56 @@ private:
 class CompressedPacketInStream final: public PacketInStream
 {
 public:
+  CALIN_TYPEALIAS(config_type,
+    ix::io::packet_stream::CompressedPacketInStreamOptions);
   CompressedPacketInStream(PacketInStream* upstream,
+    const config_type& config = config_type::default_instance(),
     bool adopt_upstream = false);
   virtual ~CompressedPacketInStream();
   bool getPacket(std::string& packet_out) override;
 private:
   PacketInStream* upstream_;
   bool adopt_upstream_ = false;
+  config_type config_;
 };
 
 class CompressedPacketOutStream final: public PacketOutStream
 {
 public:
+  CALIN_TYPEALIAS(config_type,
+    ix::io::packet_stream::CompressedPacketOutStreamOptions);
   CompressedPacketOutStream(PacketOutStream* downstream,
+    const config_type& config = config_type::default_instance(),
     bool adopt_downstream = false);
   virtual ~CompressedPacketOutStream();
   bool putPacket(const std::string& packet) override;
 private:
   PacketOutStream* downstream_;
   bool adopt_downstream_ = false;
+  config_type config_;
 };
 
-class FilePacketInStream final: public PacketInStream
+class FramedFilePacketInStream final: public PacketInStream
 {
 public:
-  FilePacketInStream(const std::string& filename);
-  virtual ~FilePacketInStream();
+  CALIN_TYPEALIAS(config_type,
+    ix::io::packet_stream::CompressedPacketInStreamOptions);
+  FramedFilePacketInStream(const std::string& filename,
+    const config_type& config = config_type::default_instance());
+  virtual ~FramedFilePacketInStream();
   bool getPacket(std::string& packet_out) override;
 private:
   PacketInStream* upstream_ = nullptr;
 };
 
-class FilePacketOutStream final: public PacketOutStream
+class FramedFilePacketOutStream final: public PacketOutStream
 {
 public:
-  FilePacketOutStream(const std::string& filename, bool append = false);
-  virtual ~FilePacketOutStream();
+  CALIN_TYPEALIAS(config_type,
+    ix::io::packet_stream::CompressedPacketOutStreamOptions);
+  FramedFilePacketOutStream(const std::string& filename, bool append = false,
+    const config_type& config = config_type::default_instance());
+  virtual ~FramedFilePacketOutStream();
   bool putPacket(const std::string& packet) override;
 private:
   PacketOutStream* downstream_ = nullptr;

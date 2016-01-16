@@ -23,24 +23,25 @@
 #pragma once
 
 #include <io/packet_stream.hpp>
+#include <io/packet_stream.pb.h>
 
 namespace calin { namespace io { namespace data_source {
 
 template<typename T> class DataSource
 {
 public:
-  virtual ~DataSource();
+  virtual ~DataSource() { }
   virtual T* getNext() = 0;
 };
 
 template<typename T> class DataSink
 {
 public:
-  virtual ~DataSink();
+  virtual ~DataSink() { }
   virtual bool putNext(T* d) = 0;
 };
 
-template<typename T> class ProtobufPacketDataSource: public DataSource<T>
+template<typename T> class ProtobufPacketStreamDataSource: public DataSource<T>
 {
 public:
   ProtobufPacketStreamDataSource(
@@ -61,7 +62,7 @@ private:
   bool adopt_stream_;
 };
 
-template<typename T> class ProtobufPacketDataSink: public DataSink<T>
+template<typename T> class ProtobufPacketStreamDataSink: public DataSink<T>
 {
 public:
   ProtobufPacketStreamDataSink(
@@ -71,10 +72,40 @@ public:
   virtual ~ProtobufPacketStreamDataSink() {
     if(adopt_stream_)delete(stream_); }
   bool putNext(T* d) override {
-    return stream_->putPacket(d->SerializeAsString(); }
+    return stream_->putPacket(d->SerializeAsString()); }
 private:
-  calin::io::packet_stream::PacketInStream* stream_ = nullptr;
+  calin::io::packet_stream::PacketOutStream* stream_ = nullptr;
   bool adopt_stream_;
+};
+
+template<typename T> class ProtobufFileDataSource: public DataSource<T>
+{
+public:
+  CALIN_TYPEALIAS(config_type,
+    ix::io::packet_stream::CompressedPacketInStreamOptions);
+  ProtobufFileDataSource(const std::string& filename,
+    const config_type& config = config_type::default_instance()):
+    DataSource<T>(),
+    source_(new packet_stream::FramedFilePacketInStream(filename, config)) { }
+  virtual ~ProtobufFileDataSource() { delete source_; }
+  T* getNext() override { return source_->getNext(); }
+private:
+  ProtobufPacketStreamDataSource<T>* source_ = nullptr;
+};
+
+template<typename T> class ProtobufFileDataSink: public DataSink<T>
+{
+public:
+  CALIN_TYPEALIAS(config_type,
+    ix::io::packet_stream::CompressedPacketOutStreamOptions);
+  ProtobufFileDataSink(const std::string& filename, bool append = false,
+    const config_type& config = config_type::default_instance()):
+    DataSink<T>(),
+    sink_(new packet_stream::FramedFilePacketOutStream(filename,append,config)) { }
+  virtual ~ProtobufFileDataSink() { delete sink_; }
+  bool putNext(T* d) override { return sink_->putNext(); }
+private:
+  ProtobufPacketStreamDataSink<T>* sink_ = nullptr;
 };
 
 } } } // namespace calin::io::data_source

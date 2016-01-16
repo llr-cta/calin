@@ -25,7 +25,30 @@
 
 using namespace calin::io::telescope_data_source;
 
+#if 0
+template class calin::io::data_source::DataSource<
+  calin::ix::iact::telescope_event::TelescopeEvent>;
+#endif
+
 TelescopeDataSource::~TelescopeDataSource()
 {
   // nothing to see here
+}
+
+RawFileTelescopeDataSource::
+RawFileTelescopeDataSource(const std::string& filename):
+  TelescopeDataSource()
+{
+
+}
+
+RawFileTelescopeDataSource::~RawFileTelescopeDataSource()
+{
+
+}
+
+calin::ix::iact::telescope_event::TelescopeEvent*
+RawFileTelescopeDataSource::getNext()
+{
+  
 }

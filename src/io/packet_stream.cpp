@@ -75,21 +75,21 @@ bool copy_stream(ZeroCopyOutputStream& stream_out,
 
 } // anonymous namespace
 
-ZeroCopyCodedPacketInStream::
-ZeroCopyCodedPacketInStream(ZeroCopyInputStream* instream, bool adopt_instream):
+FramedZeroCopyPacketInStream::
+FramedZeroCopyPacketInStream(ZeroCopyInputStream* instream, bool adopt_instream):
   PacketInStream(), instream_(instream), adopt_instream_(adopt_instream),
   coded_instream_(new CodedInputStream(instream))
 {
   // nothing to see here
 }
 
-ZeroCopyCodedPacketInStream::~ZeroCopyCodedPacketInStream()
+FramedZeroCopyPacketInStream::~FramedZeroCopyPacketInStream()
 {
   delete coded_instream_;
   if(adopt_instream_)delete instream_;
 }
 
-bool ZeroCopyCodedPacketInStream::getPacket(std::string& packet_out)
+bool FramedZeroCopyPacketInStream::getPacket(std::string& packet_out)
 {
   uint32_t packet_size = 0;
   packet_out.clear();
@@ -98,8 +98,8 @@ bool ZeroCopyCodedPacketInStream::getPacket(std::string& packet_out)
       packet_out.size() == packet_size;
 }
 
-ZeroCopyCodedPacketOutStream::
-ZeroCopyCodedPacketOutStream(ZeroCopyOutputStream* outstream,
+FramedZeroCopyPacketOutStream::
+FramedZeroCopyPacketOutStream(ZeroCopyOutputStream* outstream,
     bool adopt_outstream):
   PacketOutStream(), outstream_(outstream), adopt_outstream_(adopt_outstream),
   coded_outstream_(new CodedOutputStream(outstream))
@@ -107,13 +107,13 @@ ZeroCopyCodedPacketOutStream(ZeroCopyOutputStream* outstream,
   // nothing to see here
 }
 
-ZeroCopyCodedPacketOutStream::~ZeroCopyCodedPacketOutStream()
+FramedZeroCopyPacketOutStream::~FramedZeroCopyPacketOutStream()
 {
   delete coded_outstream_;
   if(adopt_outstream_)delete outstream_;
 }
 
-bool ZeroCopyCodedPacketOutStream::putPacket(const std::string& packet)
+bool FramedZeroCopyPacketOutStream::putPacket(const std::string& packet)
 {
   coded_outstream_->WriteLittleEndian32(packet.size());
   coded_outstream_->WriteString(packet);
@@ -121,8 +121,10 @@ bool ZeroCopyCodedPacketOutStream::putPacket(const std::string& packet)
 }
 
 CompressedPacketInStream::
-CompressedPacketInStream(PacketInStream* upstream, bool adopt_upstream):
-  PacketInStream(), upstream_(upstream), adopt_upstream_(adopt_upstream)
+CompressedPacketInStream(PacketInStream* upstream, const config_type& config,
+  bool adopt_upstream):
+  PacketInStream(), upstream_(upstream), adopt_upstream_(adopt_upstream),
+  config_(config)
 {
   // nothing to see here
 }
@@ -134,6 +136,7 @@ CompressedPacketInStream::~CompressedPacketInStream()
 
 bool CompressedPacketInStream::getPacket(std::string& packet_out)
 {
+  if(!config_.use_compression())return upstream_->getPacket(packet_out);
   packet_out.clear();
   std::string packet_in;
   if(!upstream_->getPacket(packet_in))return false;;
@@ -145,7 +148,10 @@ bool CompressedPacketInStream::getPacket(std::string& packet_out)
 }
 
 CompressedPacketOutStream::
-CompressedPacketOutStream(PacketOutStream* downstream, bool adopt_downstream)
+CompressedPacketOutStream(PacketOutStream* downstream,
+  const config_type& config, bool adopt_downstream):
+  PacketOutStream(), downstream_(downstream),
+  adopt_downstream_(adopt_downstream), config_(config)
 {
   // nothing to see here
 }
@@ -157,54 +163,55 @@ CompressedPacketOutStream::~CompressedPacketOutStream()
 
 bool CompressedPacketOutStream::putPacket(const std::string& packet)
 {
+  if(!config_.use_compression())return downstream_->putPacket(packet);
   ArrayInputStream stream_in(packet.data(), packet.size());
-  std::string string_out;
+  std::string packet_out;
   if(true)
   {
-    StringOutputStream zstream_out(&string_out);
+    StringOutputStream zstream_out(&packet_out);
     GzipOutputStream stream_out(&zstream_out);
     if(!copy_stream(stream_out, stream_in))return false;
   }
-  return downstream_->putPacket(string_out);
+  return downstream_->putPacket(packet_out);
 }
 
-FilePacketInStream::FilePacketInStream(const std::string& filename):
-  PacketInStream()
+FramedFilePacketInStream::FramedFilePacketInStream(const std::string& filename,
+  const config_type& config): PacketInStream()
 {
   int fd = open(filename.c_str(), O_RDONLY);
   if(fd==-1)return;
   auto* filestream = new FileInputStream(fd);
   filestream->SetCloseOnDelete(true);
-  upstream_ = new ZeroCopyCodedPacketInStream(filestream, true);
+  upstream_ = new FramedZeroCopyPacketInStream(filestream, true);
 }
 
-FilePacketInStream::~FilePacketInStream()
+FramedFilePacketInStream::~FramedFilePacketInStream()
 {
   delete upstream_;
 }
 
-bool FilePacketInStream::getPacket(std::string& packet_out)
+bool FramedFilePacketInStream::getPacket(std::string& packet_out)
 {
   if(!upstream_)return false;
   return upstream_->getPacket(packet_out);
 }
 
-FilePacketOutStream::FilePacketOutStream(const std::string& filename,
-  bool append): PacketOutStream()
+FramedFilePacketOutStream::FramedFilePacketOutStream(const std::string& filename,
+  bool append, const config_type& config): PacketOutStream()
 {
   int fd = open(filename.c_str(), O_WRONLY|append?O_APPEND:(O_CREAT|O_TRUNC));
   if(fd==-1)return;
   auto* filestream = new FileOutputStream(fd);
   filestream->SetCloseOnDelete(true);
-  downstream_ = new ZeroCopyCodedPacketOutStream(filestream, true);
+  downstream_ = new FramedZeroCopyPacketOutStream(filestream, true);
 }
 
-FilePacketOutStream::~FilePacketOutStream()
+FramedFilePacketOutStream::~FramedFilePacketOutStream()
 {
   delete downstream_;
 }
 
-bool FilePacketOutStream::putPacket(const std::string& packet)
+bool FramedFilePacketOutStream::putPacket(const std::string& packet)
 {
   if(!downstream_)return false;
   return downstream_->putPacket(packet);

@@ -23,15 +23,26 @@
 
 #pragma once
 
+#include <io/data_source.hpp>
 #include <iact/telescope_event.pb.h>
 
 namespace calin { namespace io { namespace telescope_data_source {
 
-class TelescopeDataSource
+class TelescopeDataSource:
+  public calin::io::data_source::DataSource<
+    calin::ix::iact::telescope_event::TelescopeEvent>
 {
 public:
   virtual ~TelescopeDataSource();
-  virtual calin::ix::iact::telescope_event::TelescopeEvent* getNextEvent() = 0;
+  virtual calin::ix::iact::telescope_event::TelescopeEvent* getNext() = 0;
+};
+
+class RawFileTelescopeDataSource final : public TelescopeDataSource 
+{
+public:
+  RawFileTelescopeDataSource(const std::string& filename);
+  ~RawFileTelescopeDataSource();
+  calin::ix::iact::telescope_event::TelescopeEvent* getNext() override;
 };
 
 } } } // namespace calin::io::telescope_data_source

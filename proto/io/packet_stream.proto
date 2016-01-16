@@ -1,0 +1,84 @@
+/*
+
+   calin/proto/io/source_config.proto -- Stephen Fegan -- 2016-01-16
+
+   Configuration options for sources/sinks and for packet streams
+
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.io.packet_stream;
+
+message CompressedPacketInStreamOptions
+{
+  enum Format {
+    FORMAT_AUTO = 0;
+    FORMAT_GZIP = 1;
+    FORMAT_ZLIB = 2;
+  };
+
+  bool use_compression                  = 1 [
+    (CFO).desc = "Apply decompression to the stream." ];
+
+  Format format                         = 2 [
+    (CFO).desc = "Decompression algoritom to apply to the stream." ];
+};
+
+message CompressedPacketOutStreamOptions
+{
+  enum Format {
+    FORMAT_GZIP = 0;
+    FORMAT_ZLIB = 1;
+  };
+
+  enum Level {
+    DEFAULT_LEVEL   = 0;
+    NO_COMPRESSION  = 1;
+    LEVEL1          = 2;
+    LEVEL2          = 3;
+    LEVEL3          = 4;
+    LEVEL4          = 5;
+    LEVEL5          = 6;
+    LEVEL6          = 7;
+    LEVEL7          = 8;
+    LEVEL8          = 9;
+    MAX_COMPRESSION = 10;
+  };
+
+  enum Strategy {
+    STRATEGY_Z_DEFAULT_STRATEGY = 0;
+    STRATEGY_Z_FILTERED         = 1;
+    STRATEGY_Z_HUFFMAN_ONLY     = 2;
+    STRATEGY_Z_RLE              = 3;
+    STRATEGY_Z_FIXED            = 4;
+  };
+
+  bool use_compression                  = 1 [
+    (CFO).desc = "Apply compression to the stream." ];
+
+  Format format                         = 2 [
+    (CFO).desc = "Compression format." ];
+
+  Level compression_level               = 3 [
+    (CFO).desc = "The compression level to apply." ];
+
+  Strategy compression_strategy         = 4 [
+    (CFO).desc = "The compression strategy to use." ];
+};

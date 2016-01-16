@@ -60,7 +60,7 @@ int main(int argc, char **argv)
   }
 
   google::protobuf::io::OstreamOutputStream stream(&std::cout);
-  while(auto* event = source.getNextEvent())
+  while(auto* event = source.getNext())
   {
     google::protobuf::TextFormat::Print(*event, &stream);
     delete event;

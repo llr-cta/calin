@@ -41,8 +41,8 @@
 %import "io/nectarcam_data_source.pb.i"
 %import "iact/telescope_event.pb.i"
 
-%newobject calin::io::telescope_data_source::TelescopeDataSource::getNextEvent();
-%newobject calin::io::nectarcam_data_source::NectarCamZFITSDataSource::getNextEvent();
+%newobject calin::io::telescope_data_source::TelescopeDataSource::getNext();
+%newobject calin::io::nectarcam_data_source::NectarCamZFITSDataSource::getNext();
 
 %include "io/telescope_data_source.hpp"
 %include "io/nectarcam_data_source.hpp"
