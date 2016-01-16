@@ -37,12 +37,14 @@ public:
   virtual calin::ix::iact::telescope_event::TelescopeEvent* getNext() = 0;
 };
 
-class RawFileTelescopeDataSource final public TelescopeDataSource 
+class RawFileTelescopeDataSource : public TelescopeDataSource 
 {
 public:
   RawFileTelescopeDataSource(const std::string& filename);
   ~RawFileTelescopeDataSource();
   calin::ix::iact::telescope_event::TelescopeEvent* getNext() override;
+private:
+  void PacketInStream* instream_;
 };
 
 } } } // namespace calin::io::telescope_data_source
