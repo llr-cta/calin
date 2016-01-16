@@ -21,6 +21,10 @@
 
 */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/gzip_stream.h>
@@ -90,7 +94,8 @@ bool ZeroCopyCodedPacketInStream::getPacket(std::string& packet_out)
   uint32_t packet_size = 0;
   packet_out.clear();
   return coded_instream_->ReadLittleEndian32(&packet_size) and
-    coded_instream_->ReadString(&packet_out, packet_size);
+    coded_instream_->ReadString(&packet_out, packet_size) and
+      packet_out.size() == packet_size;
 }
 
 ZeroCopyCodedPacketOutStream::
@@ -161,4 +166,46 @@ bool CompressedPacketOutStream::putPacket(const std::string& packet)
     if(!copy_stream(stream_out, stream_in))return false;
   }
   return downstream_->putPacket(string_out);
+}
+
+FilePacketInStream::FilePacketInStream(const std::string& filename):
+  PacketInStream()
+{
+  int fd = open(filename.c_str(), O_RDONLY);
+  if(fd==-1)return;
+  auto* filestream = new FileInputStream(fd);
+  filestream->SetCloseOnDelete(true);
+  upstream_ = new ZeroCopyCodedPacketInStream(filestream, true);
+}
+
+FilePacketInStream::~FilePacketInStream()
+{
+  delete upstream_;
+}
+
+bool FilePacketInStream::getPacket(std::string& packet_out)
+{
+  if(!upstream_)return false;
+  return upstream_->getPacket(packet_out);
+}
+
+FilePacketOutStream::FilePacketOutStream(const std::string& filename,
+  bool append): PacketOutStream()
+{
+  int fd = open(filename.c_str(), O_WRONLY|append?O_APPEND:(O_CREAT|O_TRUNC));
+  if(fd==-1)return;
+  auto* filestream = new FileOutputStream(fd);
+  filestream->SetCloseOnDelete(true);
+  downstream_ = new ZeroCopyCodedPacketOutStream(filestream, true);
+}
+
+FilePacketOutStream::~FilePacketOutStream()
+{
+  delete downstream_;
+}
+
+bool FilePacketOutStream::putPacket(const std::string& packet)
+{
+  if(!downstream_)return false;
+  return downstream_->putPacket(packet);
 }

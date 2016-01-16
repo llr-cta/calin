@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <io/packet_stream.hpp>
+
 namespace calin { namespace io { namespace data_source {
 
 template<typename T> class DataSource
@@ -38,18 +40,41 @@ public:
   virtual bool putNext(T* d) = 0;
 };
 
-template<typename T> class ProtobufPacketDataSource
+template<typename T> class ProtobufPacketDataSource: public DataSource<T>
 {
 public:
-  virtual ~ProtobufStreamDataSource();
-  virtual T* getNext() = 0;
+  ProtobufPacketStreamDataSource(
+    calin::io::packet_stream::PacketInStream* stream, bool adopt_stream=false):
+    DataSource<T>(), stream_(stream), adopt_stream_(adopt_stream)
+    { /* nothing to see here */ }
+  virtual ~ProtobufPacketStreamDataSource() {
+    if(adopt_stream_)delete(stream_); }
+  T* getNext() override {
+    std::string serialized_d;
+    if(!stream_->getPacket(serialized_d))return nullptr;
+    T* d = new T;
+    if(!d->ParseFromString(serialized_d)){ delete d; return nullptr; }
+    return d;
+  }
+private:
+  calin::io::packet_stream::PacketInStream* stream_ = nullptr;
+  bool adopt_stream_;
 };
 
-template<typename T> class ProtobufPacketDataSink
+template<typename T> class ProtobufPacketDataSink: public DataSink<T>
 {
 public:
-  virtual ~ProtobufStreamDataSink();
-  virtual bool getNext(T* d) = 0;
+  ProtobufPacketStreamDataSink(
+    calin::io::packet_stream::PacketOutStream* stream, bool adopt_stream=false):
+    DataSink<T>(), stream_(stream), adopt_stream_(adopt_stream)
+    { /* nothing to see here */ }
+  virtual ~ProtobufPacketStreamDataSink() {
+    if(adopt_stream_)delete(stream_); }
+  bool putNext(T* d) override {
+    return stream_->putPacket(d->SerializeAsString(); }
+private:
+  calin::io::packet_stream::PacketInStream* stream_ = nullptr;
+  bool adopt_stream_;
 };
 
 } } } // namespace calin::io::data_source

@@ -100,21 +100,21 @@ private:
   bool adopt_downstream_ = false;
 };
 
-class FileInStream final: public PacketInStream
+class FilePacketInStream final: public PacketInStream
 {
 public:
-  FileInStream(const std::string& filename);
-  virtual ~FileInStream();
+  FilePacketInStream(const std::string& filename);
+  virtual ~FilePacketInStream();
   bool getPacket(std::string& packet_out) override;
 private:
   PacketInStream* upstream_ = nullptr;
 };
 
-class FileOutStream final: public PacketOutStream
+class FilePacketOutStream final: public PacketOutStream
 {
 public:
-  FileOutStream(const std::string& filename);
-  virtual ~FileOutStream();
+  FilePacketOutStream(const std::string& filename, bool append = false);
+  virtual ~FilePacketOutStream();
   bool putPacket(const std::string& packet) override;
 private:
   PacketOutStream* downstream_ = nullptr;
