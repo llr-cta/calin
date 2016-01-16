@@ -37,7 +37,7 @@ public:
   virtual calin::ix::iact::telescope_event::TelescopeEvent* getNext() = 0;
 };
 
-class RawFileTelescopeDataSource final : public TelescopeDataSource 
+class RawFileTelescopeDataSource final public TelescopeDataSource 
 {
 public:
   RawFileTelescopeDataSource(const std::string& filename);
