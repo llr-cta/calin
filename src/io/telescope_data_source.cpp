@@ -21,34 +21,16 @@
 
 */
 
+//#define CALIN_TELESCOPE_DATA_SOURCE_NO_EXTERN
 #include <io/telescope_data_source.hpp>
 
 using namespace calin::io::telescope_data_source;
 
-#if 0
 template class calin::io::data_source::DataSource<
   calin::ix::iact::telescope_event::TelescopeEvent>;
-#endif
-
-TelescopeDataSource::~TelescopeDataSource()
-{
-  // nothing to see here
-}
-
-RawFileTelescopeDataSource::
-RawFileTelescopeDataSource(const std::string& filename):
-  TelescopeDataSource()
-{
-
-}
-
-RawFileTelescopeDataSource::~RawFileTelescopeDataSource()
-{
-
-}
-
-calin::ix::iact::telescope_event::TelescopeEvent*
-RawFileTelescopeDataSource::getNext()
-{
-  
-}
+template class calin::io::data_source::ProtobufFileDataSource<
+  calin::ix::iact::telescope_event::TelescopeEvent>;
+template class calin::io::data_source::DataSink<
+  calin::ix::iact::telescope_event::TelescopeEvent>;
+template class calin::io::data_source::ProtobufFileDataSink<
+  calin::ix::iact::telescope_event::TelescopeEvent>;

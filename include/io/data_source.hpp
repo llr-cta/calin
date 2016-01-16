@@ -85,8 +85,12 @@ public:
     ix::io::packet_stream::CompressedPacketInStreamOptions);
   ProtobufFileDataSource(const std::string& filename,
     const config_type& config = config_type::default_instance()):
-    DataSource<T>(),
-    source_(new packet_stream::FramedFilePacketInStream(filename, config)) { }
+    DataSource<T>()
+  {
+    auto* stream =
+      new packet_stream::FramedFilePacketInStream(filename, config);
+    source_ = new ProtobufPacketStreamDataSource<T>(stream, true);
+  }
   virtual ~ProtobufFileDataSource() { delete source_; }
   T* getNext() override { return source_->getNext(); }
 private:
@@ -100,10 +104,14 @@ public:
     ix::io::packet_stream::CompressedPacketOutStreamOptions);
   ProtobufFileDataSink(const std::string& filename, bool append = false,
     const config_type& config = config_type::default_instance()):
-    DataSink<T>(),
-    sink_(new packet_stream::FramedFilePacketOutStream(filename,append,config)) { }
+    DataSink<T>()
+  {
+    auto* stream =
+      new packet_stream::FramedFilePacketOutStream(filename, append, config);
+    sink_ = new ProtobufPacketStreamDataSink<T>(stream, true);
+  }
   virtual ~ProtobufFileDataSink() { delete sink_; }
-  bool putNext(T* d) override { return sink_->putNext(); }
+  bool putNext(T* d) override { return sink_->putNext(d); }
 private:
   ProtobufPacketStreamDataSink<T>* sink_ = nullptr;
 };

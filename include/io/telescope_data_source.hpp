@@ -23,28 +23,37 @@
 
 #pragma once
 
+#include <calin_global_definitions.hpp>
 #include <io/data_source.hpp>
 #include <iact/telescope_event.pb.h>
 
 namespace calin { namespace io { namespace telescope_data_source {
 
-class TelescopeDataSource:
-  public calin::io::data_source::DataSource<
-    calin::ix::iact::telescope_event::TelescopeEvent>
-{
-public:
-  virtual ~TelescopeDataSource();
-  virtual calin::ix::iact::telescope_event::TelescopeEvent* getNext() = 0;
-};
+CALIN_TYPEALIAS(TelescopeDataSource,
+  calin::io::data_source::DataSource<
+    calin::ix::iact::telescope_event::TelescopeEvent>);
 
-class RawFileTelescopeDataSource : public TelescopeDataSource 
-{
-public:
-  RawFileTelescopeDataSource(const std::string& filename);
-  ~RawFileTelescopeDataSource();
-  calin::ix::iact::telescope_event::TelescopeEvent* getNext() override;
-private:
-  void PacketInStream* instream_;
-};
+CALIN_TYPEALIAS(FileTelescopeDataSource,
+  calin::io::data_source::ProtobufFileDataSource<
+    calin::ix::iact::telescope_event::TelescopeEvent>);
+
+CALIN_TYPEALIAS(TelescopeDataSink,
+  calin::io::data_source::DataSink<
+    calin::ix::iact::telescope_event::TelescopeEvent>);
+
+CALIN_TYPEALIAS(FileTelescopeDataSink,
+  calin::io::data_source::ProtobufFileDataSink<
+    calin::ix::iact::telescope_event::TelescopeEvent>);
 
 } } } // namespace calin::io::telescope_data_source
+
+#ifndef CALIN_TELESCOPE_DATA_SOURCE_NO_EXTERN
+extern template class calin::io::data_source::DataSource<
+  calin::ix::iact::telescope_event::TelescopeEvent>;
+extern template class calin::io::data_source::ProtobufFileDataSource<
+  calin::ix::iact::telescope_event::TelescopeEvent>;
+extern template class calin::io::data_source::DataSink<
+  calin::ix::iact::telescope_event::TelescopeEvent>;
+extern template class calin::io::data_source::ProtobufFileDataSink<
+  calin::ix::iact::telescope_event::TelescopeEvent>;
+#endif // #ifdef CALIN_TELESCOPE_DATA_SOURCE_NO_EXTERN
