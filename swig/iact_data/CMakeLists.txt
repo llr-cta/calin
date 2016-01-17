@@ -1,4 +1,4 @@
-# calin/src/CMakeLists.txt -- Stephen Fegan
+# calin/swig/io/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -13,12 +13,11 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_subdirectory(io)
-add_subdirectory(nlopt)
-add_subdirectory(cminpack)
-add_subdirectory(f2c)
-add_subdirectory(math)
-add_subdirectory(simulation)
-add_subdirectory(iact_data)
-add_subdirectory(calib)
-add_subdirectory(bin)
+set(CALIN_SWIG_FILES telescope_data_source.i)
+set(CALIN_SWIG_TARGET iact_data)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+make_swig_modules(calin_${CALIN_SWIG_TARGET}
+	${CALIN_SWIG_INSTALL_DIR}/${CALIN_SWIG_TARGET} ${CALIN_SWIG_FILES})
+install(FILES __init__.py
+	DESTINATION ${CALIN_SWIG_INSTALL_DIR}/${CALIN_SWIG_TARGET})

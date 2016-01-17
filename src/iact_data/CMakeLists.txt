@@ -1,4 +1,4 @@
-# calin/src/CMakeLists.txt -- Stephen Fegan
+# calin/src/io/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -13,12 +13,16 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_subdirectory(io)
-add_subdirectory(nlopt)
-add_subdirectory(cminpack)
-add_subdirectory(f2c)
-add_subdirectory(math)
-add_subdirectory(simulation)
-add_subdirectory(iact_data)
-add_subdirectory(calib)
-add_subdirectory(bin)
+set(CALIN_TARGET_LIBRARY calin_iact_data)
+set(CALIN_SOURCES telescope_data_source.cpp nectarcam_data_source.cpp)
+
+add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
+target_link_libraries(${CALIN_TARGET_LIBRARY}
+	calin_proto_io calin_proto_iact_data calin_io)
+
+if(CTA_CAMERASTOACTL_FOUND)
+	include_directories(${CTA_CAMERASTOACTL_INCLUDE_DIRS})
+	target_link_libraries(${CALIN_TARGET_LIBRARY} ${CTA_CAMERASTOACTL_LIBRARIES})
+endif()
+
+install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)

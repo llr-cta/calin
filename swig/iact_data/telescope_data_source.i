@@ -1,6 +1,6 @@
 /*
 
-   calin/io/telescope_data_source.i -- Stephen Fegan -- 2016-01-14
+   calin/iact_data/telescope_data_source.i -- Stephen Fegan -- 2016-01-14
 
    SWIG interface file for calin.io.telescope_data_source
 
@@ -21,11 +21,11 @@
 */
 
 
-%module (package="calin.io") telescope_data_source
+%module (package="calin.iact_data") telescope_data_source
 
 %{
-#include "io/telescope_data_source.hpp"
-#include "io/nectarcam_data_source.hpp"
+#include "iact_data/telescope_data_source.hpp"
+#include "iact_data/nectarcam_data_source.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -38,29 +38,29 @@
 %include "calin_typemaps.i"
 
 %import "calin_global_definitions.i"
-%import "io/nectarcam_data_source.pb.i"
-%import "iact/telescope_event.pb.i"
+%import "iact_data/nectarcam_data_source.pb.i"
+%import "iact_data/telescope_event.pb.i"
 
-%newobject calin::io::telescope_data_source::TelescopeDataSource::getNext();
-%newobject calin::io::nectarcam_data_source::NectarCamZFITSDataSource::getNext();
+%newobject calin::iact_data::telescope_data_source::TelescopeDataSource::getNext();
+%newobject calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource::getNext();
 
 %import "io/data_source.hpp"
 
 %template(TelescopeDataSource)
   calin::io::data_source::DataSource<
-    calin::ix::iact::telescope_event::TelescopeEvent>;
+    calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
 %template(FileTelescopeDataSource)
   calin::io::data_source::ProtobufFileDataSource<
-    calin::ix::iact::telescope_event::TelescopeEvent>;
+    calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
 %template(TelescopeDataSink)
   calin::io::data_source::DataSink<
-    calin::ix::iact::telescope_event::TelescopeEvent>;
+    calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
 %template(FileTelescopeDataSink)
   calin::io::data_source::ProtobufFileDataSink<
-    calin::ix::iact::telescope_event::TelescopeEvent>;
+    calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
-%include "io/telescope_data_source.hpp"
-%include "io/nectarcam_data_source.hpp"
+%include "iact_data/telescope_data_source.hpp"
+%include "iact_data/nectarcam_data_source.hpp"

@@ -1,9 +1,9 @@
 /*
 
-   calin/io/telescope_data_source.cpp -- Stephen Fegan -- 2016-01-08
+   calin/iact_data/telescope_data_source.cpp -- Stephen Fegan -- 2016-01-08
 
    A supplier of single telescope data, for example:
-   ix::iact::telescope_event::TelescopeEvent
+   ix::iact_data::telescope_event::TelescopeEvent
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -22,15 +22,15 @@
 */
 
 //#define CALIN_TELESCOPE_DATA_SOURCE_NO_EXTERN
-#include <io/telescope_data_source.hpp>
+#include <iact_data/telescope_data_source.hpp>
 
-using namespace calin::io::telescope_data_source;
+using namespace calin::iact_data::telescope_data_source;
 
 template class calin::io::data_source::DataSource<
-  calin::ix::iact::telescope_event::TelescopeEvent>;
+  calin::ix::iact_data::telescope_event::TelescopeEvent>;
 template class calin::io::data_source::ProtobufFileDataSource<
-  calin::ix::iact::telescope_event::TelescopeEvent>;
+  calin::ix::iact_data::telescope_event::TelescopeEvent>;
 template class calin::io::data_source::DataSink<
-  calin::ix::iact::telescope_event::TelescopeEvent>;
+  calin::ix::iact_data::telescope_event::TelescopeEvent>;
 template class calin::io::data_source::ProtobufFileDataSink<
-  calin::ix::iact::telescope_event::TelescopeEvent>;
+  calin::ix::iact_data::telescope_event::TelescopeEvent>;

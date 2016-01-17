@@ -71,5 +71,5 @@ make_proto_swig_modules(${CALIN_TARGET_LIBRARY} ${CALIN_SWIG_INSTALL_DIR}
 add_subdirectory(math)
 add_subdirectory(simulation)
 add_subdirectory(io)
-add_subdirectory(iact)
+add_subdirectory(iact_data)
 add_subdirectory(diagnostics)

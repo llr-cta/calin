@@ -25,11 +25,11 @@
 #include <cstdlib>
 #include <cassert>
 
-#include <io/telescope_data_source.hpp>
-#include <io/nectarcam_data_source.hpp>
+#include <iact_data/telescope_data_source.hpp>
+#include <iact_data/nectarcam_data_source.hpp>
 
-using namespace calin::io::telescope_data_source;
-using namespace calin::io::nectarcam_data_source;
+using namespace calin::iact_data::telescope_data_source;
+using namespace calin::iact_data::nectarcam_data_source;
 
 int main(int argc, char **argv)
 {

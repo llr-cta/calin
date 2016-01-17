@@ -15,17 +15,12 @@
 
 set(CALIN_TARGET_LIBRARY calin_io)
 set(CALIN_SOURCES log.cpp sql_statement.cpp sql_transceiver.cpp
-		sqlite3_statement.cpp sqlite3_transceiver.cpp util.cpp data_source.cpp
-	telescope_data_source.cpp nectarcam_data_source.cpp packet_stream.cpp)
+	sqlite3_statement.cpp sqlite3_transceiver.cpp util.cpp data_source.cpp
+	packet_stream.cpp)
 
 include_directories(${PYTHON_INCLUDE_PATH})
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
-target_link_libraries(${CALIN_TARGET_LIBRARY} calin_proto_io calin_proto_iact
+target_link_libraries(${CALIN_TARGET_LIBRARY} calin_proto_io
 	${SQLITE3_LIBRARY} ${PYTHON_LIBRARIES})
-
-if(CTA_CAMERASTOACTL_FOUND)
-	include_directories(${CTA_CAMERASTOACTL_INCLUDE_DIRS})
-	target_link_libraries(${CALIN_TARGET_LIBRARY} ${CTA_CAMERASTOACTL_LIBRARIES})
-endif()
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)

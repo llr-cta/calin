@@ -2,7 +2,7 @@
 
 /*
 
-   calin/proto/iact/telescope_event.proto -- Stephen Fegan -- 2015-12-19
+   calin/proto/iact_data/telescope_event.proto -- Stephen Fegan -- 2015-12-19
 
    Protobufs for defining single-telescope event
 
@@ -27,7 +27,7 @@ syntax = "proto3";
 import "calin.proto";
 import "common_types.proto";
 
-package calin.ix.iact.telescope_event;
+package calin.ix.iact_data.telescope_event;
 
 message ClockTime {
   uint32 clock_id                       = 1 [

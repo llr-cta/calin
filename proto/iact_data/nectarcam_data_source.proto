@@ -1,6 +1,6 @@
 /*
 
-   calin/proto/io/nectarcam_data_source.proto -- Stephen Fegan -- 2016-01-13
+   calin/proto/iact_data/nectarcam_data_source.proto -- Stephen Fegan -- 2016-01-13
 
    Protobufs for configuration of NectarCamZFITSDataSource
 
@@ -24,7 +24,7 @@ syntax = "proto3";
 
 import "calin.proto";
 
-package calin.ix.io.nectarcam_data_source;
+package calin.ix.iact_data.nectarcam_data_source;
 
 message NectarCamZFITSDataSourceConfig {
   uint32 next_event_index              = 1 [

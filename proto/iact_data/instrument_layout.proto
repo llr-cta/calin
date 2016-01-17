@@ -2,7 +2,7 @@
 
 /*
 
-   calin/proto/iact/telescope_layout.proto -- Stephen Fegan -- 2015-12-21
+   calin/proto/iact_data/telescope_layout.proto -- Stephen Fegan -- 2015-12-21
 
    Protobufs for telescope layout
 
@@ -27,7 +27,7 @@ syntax = "proto3";
 import "calin.proto";
 import "common_types.proto";
 
-package calin.ix.iact.instrument_layout;
+package calin.ix.iact_data.instrument_layout;
 
 message ChannelLayout {
   uint32 channel_index                  = 1 [

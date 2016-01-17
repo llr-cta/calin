@@ -28,9 +28,9 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
-#include <io/nectarcam_data_source.hpp>
+#include <iact_data/nectarcam_data_source.hpp>
 
-using namespace calin::io::nectarcam_data_source;
+using namespace calin::iact_data::nectarcam_data_source;
 
 int main(int argc, char **argv)
 {

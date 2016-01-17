@@ -1,6 +1,6 @@
 /*
 
-   calin/io/nectarcam_data_source.cpp -- Stephen Fegan -- 2016-01-11
+   calin/iact_data/nectarcam_data_source.cpp -- Stephen Fegan -- 2016-01-11
 
    A supplier of single telescope data from NectarCam DAQ data files
 
@@ -22,10 +22,10 @@
 
 #include <stdexcept>
 
-#include <io/nectarcam_data_source.hpp>
+#include <iact_data/nectarcam_data_source.hpp>
 
-using namespace calin::io::nectarcam_data_source;
-using namespace calin::ix::iact::telescope_event;
+using namespace calin::iact_data::nectarcam_data_source;
+using namespace calin::ix::iact_data::telescope_event;
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
@@ -35,7 +35,7 @@ using namespace calin::ix::iact::telescope_event;
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
     const config_type& config):
-  calin::io::telescope_data_source::TelescopeDataSource(),
+  calin::iact_data::telescope_data_source::TelescopeDataSource(),
   filename_(filename), config_(config)
 {
   zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str());
@@ -123,7 +123,7 @@ TelescopeEvent* NectarCamZFITSDataSource::getNext()
 
 void NectarCamZFITSDataSource::
 copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
-  calin::ix::iact::telescope_event::DigitizedSkyImage* calin_image)
+  calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image)
 {
   if(cta_image.has_waveforms())
   {
@@ -165,7 +165,7 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
     const config_type& config):
-  calin::io::telescope_data_source::TelescopeDataSource(),
+  calin::iact_data::telescope_data_source::TelescopeDataSource(),
   config_(config)
 {
   // nothing to see here
