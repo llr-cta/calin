@@ -47,6 +47,7 @@ CALIN_TYPEALIAS(FileTelescopeDataSink,
 
 } } } // namespace calin::io::telescope_data_source
 
+#ifndef SWIG
 #ifndef CALIN_TELESCOPE_DATA_SOURCE_NO_EXTERN
 extern template class calin::io::data_source::DataSource<
   calin::ix::iact::telescope_event::TelescopeEvent>;
@@ -57,3 +58,4 @@ extern template class calin::io::data_source::DataSink<
 extern template class calin::io::data_source::ProtobufFileDataSink<
   calin::ix::iact::telescope_event::TelescopeEvent>;
 #endif // #ifdef CALIN_TELESCOPE_DATA_SOURCE_NO_EXTERN
+#endif

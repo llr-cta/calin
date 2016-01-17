@@ -93,6 +93,8 @@ public:
   }
   virtual ~ProtobufFileDataSource() { delete source_; }
   T* getNext() override { return source_->getNext(); }
+  static config_type default_options() {
+    return config_type::default_instance(); }
 private:
   ProtobufPacketStreamDataSource<T>* source_ = nullptr;
 };
@@ -112,6 +114,8 @@ public:
   }
   virtual ~ProtobufFileDataSink() { delete sink_; }
   bool putNext(T* d) override { return sink_->putNext(d); }
+  static config_type default_options() {
+    return config_type::default_instance(); }
 private:
   ProtobufPacketStreamDataSink<T>* sink_ = nullptr;
 };

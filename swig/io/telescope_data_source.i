@@ -44,5 +44,23 @@
 %newobject calin::io::telescope_data_source::TelescopeDataSource::getNext();
 %newobject calin::io::nectarcam_data_source::NectarCamZFITSDataSource::getNext();
 
+%import "io/data_source.hpp"
+
+%template(TelescopeDataSource)
+  calin::io::data_source::DataSource<
+    calin::ix::iact::telescope_event::TelescopeEvent>;
+
+%template(FileTelescopeDataSource)
+  calin::io::data_source::ProtobufFileDataSource<
+    calin::ix::iact::telescope_event::TelescopeEvent>;
+
+%template(TelescopeDataSink)
+  calin::io::data_source::DataSink<
+    calin::ix::iact::telescope_event::TelescopeEvent>;
+
+%template(FileTelescopeDataSink)
+  calin::io::data_source::ProtobufFileDataSink<
+    calin::ix::iact::telescope_event::TelescopeEvent>;
+
 %include "io/telescope_data_source.hpp"
 %include "io/nectarcam_data_source.hpp"

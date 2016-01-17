@@ -31,9 +31,11 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 
+#include <io/log.hpp>
 #include <io/packet_stream.hpp>
 
 using namespace google::protobuf::io;
+using namespace calin::io::log;
 using namespace calin::io::packet_stream;
 
 PacketInStream::~PacketInStream()
@@ -144,6 +146,7 @@ bool CompressedPacketInStream::getPacket(std::string& packet_out)
   GzipInputStream stream_in(&zstream_in);
   StringOutputStream stream_out(&packet_out);
   if(!copy_stream(stream_out, stream_in))return false;
+  if(stream_in.ZlibErrorCode() < 0)return false;
   return true;
 }
 
@@ -171,6 +174,7 @@ bool CompressedPacketOutStream::putPacket(const std::string& packet)
     StringOutputStream zstream_out(&packet_out);
     GzipOutputStream stream_out(&zstream_out);
     if(!copy_stream(stream_out, stream_in))return false;
+    if(stream_out.ZlibErrorCode() < 0)return false;
   }
   return downstream_->putPacket(packet_out);
 }
@@ -183,6 +187,8 @@ FramedFilePacketInStream::FramedFilePacketInStream(const std::string& filename,
   auto* filestream = new FileInputStream(fd);
   filestream->SetCloseOnDelete(true);
   upstream_ = new FramedZeroCopyPacketInStream(filestream, true);
+  if(config.use_compression())upstream_ =
+    new CompressedPacketInStream(upstream_, config, true);
 }
 
 FramedFilePacketInStream::~FramedFilePacketInStream()
@@ -199,11 +205,14 @@ bool FramedFilePacketInStream::getPacket(std::string& packet_out)
 FramedFilePacketOutStream::FramedFilePacketOutStream(const std::string& filename,
   bool append, const config_type& config): PacketOutStream()
 {
-  int fd = open(filename.c_str(), O_WRONLY|append?O_APPEND:(O_CREAT|O_TRUNC));
-  if(fd==-1)return;
+  constexpr int mode = S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH;
+  int fd = open(filename.c_str(), O_WRONLY|O_CREAT|(append?O_APPEND:O_TRUNC), mode);
+  if(fd==-1){ LOG(ERROR) << "Could not open " << filename << " for writing"; return;}
   auto* filestream = new FileOutputStream(fd);
   filestream->SetCloseOnDelete(true);
   downstream_ = new FramedZeroCopyPacketOutStream(filestream, true);
+  if(config.use_compression())downstream_ =
+    new CompressedPacketOutStream(downstream_, config, true);
 }
 
 FramedFilePacketOutStream::~FramedFilePacketOutStream()
