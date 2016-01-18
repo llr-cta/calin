@@ -37,5 +37,6 @@ install(FILES __init__.py DESTINATION ${CALIN_SWIG_INSTALL_DIR})
 
 add_subdirectory(math)
 add_subdirectory(io)
+add_subdirectory(iact_data)
 add_subdirectory(calib)
 add_subdirectory(simulation)
