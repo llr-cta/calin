@@ -89,9 +89,9 @@ TelescopeEvent* NectarCamZFITSDataSource::getNext()
       uint16_t bunch_counter;
       uint16_t event_counter;
       uint32_t ts1;
+      uint16_t ts2_empty;
       uint8_t  ts2_bunch;
       uint8_t  ts2_event;
-      uint16_t ts2_empty;
     }__attribute__((packed));
 
     auto& cta_counters = cta_event->cameracounters();
@@ -104,15 +104,30 @@ TelescopeEvent* NectarCamZFITSDataSource::getNext()
       &cta_counters.counters().data().front());
     for(unsigned imod=0;imod<nmod;imod++)
     {
+#define add_counter(mod,id,val) \
+      { \
+        auto* counter = calin_event->add_module_counter(); \
+        counter->set_module_id(mod); \
+        counter->set_counter_id(id); \
+        counter->set_value(val); \
+      }
+      add_counter(imod, 0, mod_counter->global_event_counter);
+      add_counter(imod, 1, mod_counter->bunch_counter);
+      add_counter(imod, 2, mod_counter->event_counter);
+      add_counter(imod, 3, mod_counter->ts1);
+      add_counter(imod, 4, mod_counter->ts2_bunch);
+      add_counter(imod, 5, mod_counter->ts2_event);
+
 #define ts2_decode(x) ((x)&0xF0?((x)&0xC0?((x)&0x80?0:1):((x)&0x20?2:3)):\
                                 ((x)&0x0C?((x)&0x08?4:5):((x)&0x02?6:7)))
       int ts2_bunch = ts2_decode(mod_counter->ts2_bunch);
       int ts2_event = ts2_decode(mod_counter->ts2_event);
       int64_t time_ns = mod_counter->bunch_counter*1000000000LL
         + mod_counter->ts1*8LL + ts2_event - ts2_bunch;
-      auto* clock = calin_event->add_local_clock_time();
-      clock->set_clock_id(imod);
-      clock->mutable_clock_time()->set_time_ns(time_ns);
+      auto* clock = calin_event->add_module_time();
+      clock->set_module_id(imod);
+      clock->set_clock_id(0);
+      clock->mutable_time()->set_time_ns(time_ns);
       mod_counter++;
     }
   }
