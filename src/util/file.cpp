@@ -129,6 +129,10 @@ void file::expand_filename(std::string& filename)
   	  if(pwd)filename.replace(0,ipos,pwd->pw_dir);
   	}
   }
+  else if(filename.size()>1 and filename[0]=='\\' and filename[1]=='~')
+  {
+    filename.replace(0,2,"~");
+  }
 }
 
 unsigned file::extract_number_from_filename(const std::string& filename)
