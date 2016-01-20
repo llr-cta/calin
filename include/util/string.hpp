@@ -34,4 +34,10 @@ split(const std::string &s, char delim, std::vector<std::string> &elems);
 
 std::vector<std::string> split(const std::string &s, char delim);
 
+std::string join(std::vector<std::string>::const_iterator begin,
+                 std::vector<std::string>::const_iterator end,
+                 const std::string& sep);
+                 
+std::string join(const std::vector<std::string>& vec, const std::string& sep);
+
 } } } // namespace calin::util::string

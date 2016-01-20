@@ -43,3 +43,22 @@ split(const std::string &s, char delim)
   split(s, delim, elems);
   return elems;
 }
+
+std::string calin::util::string::
+join(std::vector<std::string>::const_iterator begin,
+     std::vector<std::string>::const_iterator end,
+     const std::string& sep)
+{
+  std::string result;
+  auto it = begin;
+  if (it != end) {
+    result.append(*it);
+    for(++it ; it!=end; ++it)result.append(sep).append(*it); }
+  return result;
+}
+
+std::string calin::util::string::
+join(const std::vector<std::string>& vec, const std::string& sep)
+{
+  return join(vec.cbegin(), vec.cend(), sep);
+}

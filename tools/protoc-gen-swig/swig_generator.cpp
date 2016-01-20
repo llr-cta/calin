@@ -28,9 +28,11 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
+#include <util/string.hpp>
 #include "swig_generator.hpp"
 
 using std::string;
+using namespace calin::util::string;
 using namespace calin::tools::protoc_gen_swig;
 using google::protobuf::io::Printer;
 
@@ -40,40 +42,6 @@ SwigGenerator::~SwigGenerator()
 }
 
 namespace {
-
-std::vector<std::string>&
-split(const std::string &s, char delim, std::vector<std::string> &elems)
-{
-  std::stringstream ss(s);
-  std::string item;
-  while (std::getline(ss, item, delim)) { elems.push_back(item); }
-  return elems;
-}
-
-std::vector<std::string>
-split(const std::string &s, char delim)
-{
-  std::vector<std::string> elems;
-  split(s, delim, elems);
-  return elems;
-}
-
-std::string join(std::vector<std::string>::const_iterator begin,
-                 std::vector<std::string>::const_iterator end,
-                 const std::string& sep)
-{
-  std::string result;
-  auto it = begin;
-  if (it != end) {
-    result.append(*it);
-    for(++it ; it!=end; ++it)result.append(sep).append(*it); }
-  return result;
-}
-
-std::string join(const std::vector<std::string>& vec, const std::string& sep)
-{
-  return join(vec.cbegin(), vec.cend(), sep);
-}
 
 string pb_to_gen_filename(string pb_filename, string extension = ".pb.i")
 {
