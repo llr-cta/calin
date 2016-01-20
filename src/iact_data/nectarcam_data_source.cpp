@@ -49,14 +49,8 @@ NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
 TelescopeEvent* NectarCamZFITSDataSource::getNext()
 {
   if(zfits_ == nullptr)return nullptr;
-  if(config_.next_event_index() >= zfits_->getNumMessagesInTable() or
-     (config_.num_events_max() and
-      config_.next_event_index() >= config_.num_events_max()))
-  {
-    delete zfits_;
-    zfits_ = nullptr;
+  if(config_.next_event_index() >= zfits_->getNumMessagesInTable())
     return nullptr;
-  }
 
   const auto* cta_event =
     zfits_->readTypedMessage<DataModel::CameraEvent>(
@@ -130,6 +124,13 @@ TelescopeEvent* NectarCamZFITSDataSource::getNext()
       clock->mutable_time()->set_time_ns(time_ns);
       mod_counter++;
     }
+  }
+
+  if(auto num_events_left = config_.num_events_max())
+  {
+    if(num_events_left == 1)
+      config_.set_next_event_index(zfits_->getNumMessagesInTable());
+    config_.set_num_events_max(num_events_left-1);
   }
 
   delete cta_event;

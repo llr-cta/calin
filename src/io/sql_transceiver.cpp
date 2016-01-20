@@ -32,10 +32,10 @@
 #include <io/sql_transceiver.pb.h>
 #include <io/sql_transceiver.hpp>
 #include <io/log.hpp>
-#include <io/util.hpp>
+#include <util/string.hpp>
 
 using namespace calin::io::log;
-using namespace calin::io::util;
+using namespace calin::util::string;
 using namespace calin::io::sql_transceiver;
 using namespace google::protobuf;
 
