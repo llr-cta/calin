@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdexcept>
 
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/io/coded_stream.h>
@@ -95,9 +96,15 @@ bool FramedZeroCopyPacketInStream::getPacket(std::string& packet_out)
 {
   uint32_t packet_size = 0;
   packet_out.clear();
-  return coded_instream_->ReadLittleEndian32(&packet_size) and
-    coded_instream_->ReadString(&packet_out, packet_size) and
-      packet_out.size() == packet_size;
+  if(!coded_instream_->ReadLittleEndian32(&packet_size))
+    return false; // Must assume EOF since API does not distinguish errors
+  if(!coded_instream_->ReadString(&packet_out, packet_size))
+    throw std::runtime_error("Error reading input stream.");
+  if(packet_out.size()!=packet_size)
+    throw std::runtime_error("Packet framing error: expected "
+      + std::to_string(packet_size) + " bytes, got "
+      + std::to_string(packet_out.size()) + " bytes.");
+  return true;
 }
 
 FramedZeroCopyPacketOutStream::
@@ -118,8 +125,12 @@ FramedZeroCopyPacketOutStream::~FramedZeroCopyPacketOutStream()
 bool FramedZeroCopyPacketOutStream::putPacket(const std::string& packet)
 {
   coded_outstream_->WriteLittleEndian32(packet.size());
+  if(coded_outstream_->HadError())return false;
   coded_outstream_->WriteString(packet);
-  return !coded_outstream_->HadError();
+  if(coded_outstream_->HadError())
+    throw std::runtime_error("Could not write packet data, "
+      "framing likely inconsistent.");
+  return true;
 }
 
 CompressedPacketInStream::
