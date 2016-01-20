@@ -29,6 +29,8 @@
 using namespace calin::iact_data::nectarcam_data_source;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::io::log;
+using calin::util::file::is_file;
+using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
@@ -43,6 +45,10 @@ NectarCamZFITSDataSource(const std::string& filename,
   filename_(filename), config_(config)
 {
   expand_filename(filename_);
+  if(!is_file(filename_))
+    throw std::runtime_error(std::string("No such file: ")+filename_);
+  if(!is_readable(filename_))
+    throw std::runtime_error(std::string("File not readable: ")+filename_);
   zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str());
 }
 
@@ -53,7 +59,8 @@ NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
 
 TelescopeEvent* NectarCamZFITSDataSource::getNext()
 {
-  if(zfits_ == nullptr)return nullptr;
+  if(zfits_ == nullptr)
+    throw std::runtime_error(std::string("File not open: ")+filename_);
   if(config_.next_event_index() >= zfits_->getNumMessagesInTable())
     return nullptr;
 
