@@ -1,6 +1,6 @@
 //-*-mode:swig;-*-
 
-/* 
+/*
 
    calin/google_protobuf.i -- Stephen Fegan -- 2015-12-10
 
@@ -11,11 +11,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -31,8 +31,12 @@
   #define SWIG_FILE_WITH_INIT
 %}
 
-%import "calin_global_definitions.i"
+%init %{
+  import_array();
+%}
+
 %include "calin_typemaps.i"
+%import "calin_global_definitions.i"
 
 %import<stdint.i>
 %import<std_string.i>
@@ -82,5 +86,5 @@ class Descriptor
   ~Descriptor();
   std::string name() const;
 };
-   
+
 } }

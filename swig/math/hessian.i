@@ -1,6 +1,6 @@
 //-*-mode:swig;-*-
 
-/* 
+/*
 
    calin/math/hessian.i -- Stephen Fegan -- 2015-04-27
 
@@ -10,11 +10,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -34,8 +34,9 @@
 %}
 
 %include "numpy.i"
-%import "calin_global_definitions.i"
+
 %include "calin_typemaps.i"
+%import "calin_global_definitions.i"
 
 %import "math/function.i"
 

@@ -30,10 +30,11 @@
 #define SWIG_FILE_WITH_INIT
   %}
 
+%include "calin_typemaps.i"
+
 %include <std_vector.i>
 %include <std_string.i>
 %include <stdint.i>
-%include "calin_typemaps.i"
 
 %init %{
   import_array();

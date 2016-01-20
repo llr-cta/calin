@@ -27,6 +27,15 @@
 %include "std_vector.i"
 %include "std_string.i"
 %include "typemaps.i"
+%include "exception.i"
+
+%exception {
+  try {
+    $action
+  } catch (const std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what());
+  }
+}
 
 // =============================================================================
 //
