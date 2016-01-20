@@ -22,10 +22,14 @@
 
 #include <stdexcept>
 
+#include <io/log.hpp>
+#include <util/file.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
 
 using namespace calin::iact_data::nectarcam_data_source;
 using namespace calin::ix::iact_data::telescope_event;
+using namespace calin::io::log;
+using calin::util::file::expand_filename;
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
@@ -38,6 +42,7 @@ NectarCamZFITSDataSource(const std::string& filename,
   calin::iact_data::telescope_data_source::TelescopeDataSource(),
   filename_(filename), config_(config)
 {
+  expand_filename(filename_);
   zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str());
 }
 
