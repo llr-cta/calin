@@ -27,52 +27,80 @@
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
 #include <iact_data/nectarcam_data_source.pb.h>
-#include <iact_data/telescope_data_source.hpp>
+#include <iact_data/zfits_data_source.hpp>
 
-// Forward declaration of ACTL::IO::ProtobufIFits
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
-namespace ACTL { namespace IO {
-  class ProtobufIFits;
-} } // namespace ACTL::IO
+// FWD declaration of ACTL elements
 namespace DataModel {
   class PixelsChannel;
-} // namespace DataModel
-#endif // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+}
 
 namespace calin { namespace iact_data { namespace nectarcam_data_source {
 
-class NectarCamZFITSDataSource:
-  public calin::iact_data::telescope_data_source::TelescopeDataSource
+class NectarCamCameraEventDecoder:
+  public zfits_data_source::CTACameraEventDecoder
 {
 public:
-  CALIN_TYPEALIAS(config_type,
-    calin::ix::iact_data::nectarcam_data_source::NectarCamZFITSDataSourceConfig);
+  CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
+    nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
-  NectarCamZFITSDataSource(const std::string& filename,
-    const config_type& config = config_type::default_instance());
-  virtual ~NectarCamZFITSDataSource();
-
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
-  static bool can_read_cta_zfits_data() { return true; }
-#else // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
-  static bool can_read_cta_zfits_data() { return false; }
-#endif /// #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+  NectarCamCameraEventDecoder(const config_type& config = default_config()):
+    zfits_data_source::CTACameraEventDecoder(), config_(config) { }
 
   void set_config(const config_type& config) { config_.CopyFrom(config); }
   const config_type& config() const { return config_; }
   config_type* mutable_config() { return &config_; }
+  static config_type default_config() {
+    return config_type::default_instance(); }
 
-  calin::ix::iact_data::telescope_event::TelescopeEvent* getNext() override;
+  virtual ~NectarCamCameraEventDecoder();
+  virtual calin::ix::iact_data::telescope_event::TelescopeEvent*
+    decode(const DataModel::CameraEvent* cta_event) override;
 
+  private:
+    void copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
+      calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image);
+
+    config_type config_;
+};
+
+class NectarCamZFITSDataSource:
+  public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource
+{
+public:
+  CALIN_TYPEALIAS(decoder_config_type,
+    NectarCamCameraEventDecoder::config_type);
+  CALIN_TYPEALIAS(reader_config_type,
+    zfits_data_source::ZFITSDataSource::config_type);
+
+  void set_decoder_config(const decoder_config_type& config) {
+    decoder_->set_config(config); }
+  const decoder_config_type& decoder_config() const {
+    return decoder_->config(); }
+  decoder_config_type* mutable_decoder_config() {
+    return decoder_->mutable_config(); }
+  static decoder_config_type default_decoder_config() {
+    return decoder_config_type::default_instance(); }
+
+  void set_reader_config(const reader_config_type& config) {
+    reader_->set_config(config); }
+  const reader_config_type& reader_config() const {
+    return reader_->config(); }
+  reader_config_type* mutable_reader_config() {
+    return reader_->mutable_config(); }
+  static reader_config_type default_reader_config() {
+    return reader_config_type::default_instance(); }
+
+  NectarCamZFITSDataSource(const std::string& filename,
+    const decoder_config_type& decoder_config = default_decoder_config(),
+    const reader_config_type& reader_config = default_reader_config());
+  virtual ~NectarCamZFITSDataSource();
+
+  calin::ix::iact_data::telescope_event::TelescopeEvent* get_next() override;
+  uint64_t size() override;
+  void set_next_index(uint64_t next_index) override;
 private:
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
-  void copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
-    calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image);
-
-  std::string filename_;
-  ACTL::IO::ProtobufIFits* zfits_ = nullptr;
-#endif // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
-  config_type config_;
+  NectarCamCameraEventDecoder* decoder_;
+  zfits_data_source::ZFITSDataSource* reader_;
 };
 
 } } } // namespace calin::iact_data::nectarcam_data_source

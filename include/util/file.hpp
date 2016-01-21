@@ -61,7 +61,7 @@ bool can_write_file(const std::string& filename);
 // directory of the current or specified user
 void expand_filename_in_place(std::string& filename);
 
-std::string expand_filename(const std::string& filename)
+inline std::string expand_filename(const std::string& filename)
 {
   std::string filename_out(filename);
   expand_filename_in_place(filename_out);

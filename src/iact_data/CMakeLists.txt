@@ -14,7 +14,11 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_TARGET_LIBRARY calin_iact_data)
-set(CALIN_SOURCES telescope_data_source.cpp nectarcam_data_source.cpp)
+set(CALIN_SOURCES telescope_data_source.cpp)
+if(CTA_CAMERASTOACTL_FOUND)
+	set(CALIN_SOURCES ${CALIN_SOURCES} zfits_data_source.cpp
+		nectarcam_data_source.cpp)
+endif()
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY}

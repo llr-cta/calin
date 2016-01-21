@@ -31,14 +31,23 @@ template<typename T> class DataSource
 {
 public:
   virtual ~DataSource() { }
-  virtual T* getNext() = 0;
+  virtual T* get_next() = 0;
+};
+
+template<typename T> class RandomAccessDataSource: public DataSource<T>
+{
+public:
+  virtual ~RandomAccessDataSource() { }
+  virtual T* get_next() = 0;
+  virtual uint64_t size() = 0;
+  virtual void set_next_index(uint64_t next_index) = 0;
 };
 
 template<typename T> class DataSink
 {
 public:
   virtual ~DataSink() { }
-  virtual bool putNext(T* d) = 0;
+  virtual bool put_next(T* d) = 0;
 };
 
 template<typename T> class ProtobufPacketStreamDataSource: public DataSource<T>
@@ -50,9 +59,9 @@ public:
     { /* nothing to see here */ }
   virtual ~ProtobufPacketStreamDataSource() {
     if(adopt_stream_)delete(stream_); }
-  T* getNext() override {
+  T* get_next() override {
     std::string serialized_d;
-    if(!stream_->getPacket(serialized_d))return nullptr;
+    if(!stream_->get_packet(serialized_d))return nullptr;
     T* d = new T;
     if(!d->ParseFromString(serialized_d)){ delete d; return nullptr; }
     return d;
@@ -71,8 +80,8 @@ public:
     { /* nothing to see here */ }
   virtual ~ProtobufPacketStreamDataSink() {
     if(adopt_stream_)delete(stream_); }
-  bool putNext(T* d) override {
-    return stream_->putPacket(d->SerializeAsString()); }
+  bool put_next(T* d) override {
+    return stream_->put_packet(d->SerializeAsString()); }
 private:
   calin::io::packet_stream::PacketOutStream* stream_ = nullptr;
   bool adopt_stream_;
@@ -92,7 +101,7 @@ public:
     source_ = new ProtobufPacketStreamDataSource<T>(stream, true);
   }
   virtual ~ProtobufFileDataSource() { delete source_; }
-  T* getNext() override { return source_->getNext(); }
+  T* get_next() override { return source_->get_next(); }
   static config_type default_options() {
     return config_type::default_instance(); }
 private:
@@ -113,7 +122,7 @@ public:
     sink_ = new ProtobufPacketStreamDataSink<T>(stream, true);
   }
   virtual ~ProtobufFileDataSink() { delete sink_; }
-  bool putNext(T* d) override { return sink_->putNext(d); }
+  bool put_next(T* d) override { return sink_->put_next(d); }
   static config_type default_options() {
     return config_type::default_instance(); }
 private:

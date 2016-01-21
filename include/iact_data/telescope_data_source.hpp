@@ -33,7 +33,11 @@ CALIN_TYPEALIAS(TelescopeDataSource,
   calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>);
 
-CALIN_TYPEALIAS(FileTelescopeDataSource,
+CALIN_TYPEALIAS(TelescopeRandomAccessDataSource,
+  calin::io::data_source::RandomAccessDataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>);
+
+CALIN_TYPEALIAS(RawFileTelescopeDataSource,
   calin::io::data_source::ProtobufFileDataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>);
 
@@ -41,15 +45,19 @@ CALIN_TYPEALIAS(TelescopeDataSink,
   calin::io::data_source::DataSink<
     calin::ix::iact_data::telescope_event::TelescopeEvent>);
 
-CALIN_TYPEALIAS(FileTelescopeDataSink,
+CALIN_TYPEALIAS(RawFileTelescopeDataSink,
   calin::io::data_source::ProtobufFileDataSink<
     calin::ix::iact_data::telescope_event::TelescopeEvent>);
+
+
 
 } } } // namespace calin::iact_data::telescope_data_source
 
 #ifndef SWIG
 #ifndef CALIN_TELESCOPE_DATA_SOURCE_NO_EXTERN
 extern template class calin::io::data_source::DataSource<
+  calin::ix::iact_data::telescope_event::TelescopeEvent>;
+extern template class calin::io::data_source::RandomAccessDataSource<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
 extern template class calin::io::data_source::ProtobufFileDataSource<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;

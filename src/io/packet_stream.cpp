@@ -92,7 +92,7 @@ FramedZeroCopyPacketInStream::~FramedZeroCopyPacketInStream()
   if(adopt_instream_)delete instream_;
 }
 
-bool FramedZeroCopyPacketInStream::getPacket(std::string& packet_out)
+bool FramedZeroCopyPacketInStream::get_packet(std::string& packet_out)
 {
   uint32_t packet_size = 0;
   packet_out.clear();
@@ -122,7 +122,7 @@ FramedZeroCopyPacketOutStream::~FramedZeroCopyPacketOutStream()
   if(adopt_outstream_)delete outstream_;
 }
 
-bool FramedZeroCopyPacketOutStream::putPacket(const std::string& packet)
+bool FramedZeroCopyPacketOutStream::put_packet(const std::string& packet)
 {
   coded_outstream_->WriteLittleEndian32(packet.size());
   if(coded_outstream_->HadError())return false;
@@ -147,12 +147,12 @@ CompressedPacketInStream::~CompressedPacketInStream()
   if(adopt_upstream_)delete upstream_;
 }
 
-bool CompressedPacketInStream::getPacket(std::string& packet_out)
+bool CompressedPacketInStream::get_packet(std::string& packet_out)
 {
-  if(!config_.use_compression())return upstream_->getPacket(packet_out);
+  if(!config_.use_compression())return upstream_->get_packet(packet_out);
   packet_out.clear();
   std::string packet_in;
-  if(!upstream_->getPacket(packet_in))return false;;
+  if(!upstream_->get_packet(packet_in))return false;;
   ArrayInputStream zstream_in(packet_in.data(), packet_in.size());
   GzipInputStream stream_in(&zstream_in);
   bool copy_good = true;
@@ -183,9 +183,9 @@ CompressedPacketOutStream::~CompressedPacketOutStream()
   if(adopt_downstream_)delete downstream_;
 }
 
-bool CompressedPacketOutStream::putPacket(const std::string& packet)
+bool CompressedPacketOutStream::put_packet(const std::string& packet)
 {
-  if(!config_.use_compression())return downstream_->putPacket(packet);
+  if(!config_.use_compression())return downstream_->put_packet(packet);
   ArrayInputStream stream_in(packet.data(), packet.size());
   std::string packet_out;
   StringOutputStream zstream_out(&packet_out);
@@ -197,7 +197,7 @@ bool CompressedPacketOutStream::putPacket(const std::string& packet)
       stream_out.ZlibErrorMessage());
   if(!copy_good)
     throw std::runtime_error("Error writing to decompression stream.");
-  return downstream_->putPacket(packet_out);
+  return downstream_->put_packet(packet_out);
 }
 
 FramedFilePacketInStream::FramedFilePacketInStream(const std::string& filename,
@@ -218,10 +218,10 @@ FramedFilePacketInStream::~FramedFilePacketInStream()
   delete upstream_;
 }
 
-bool FramedFilePacketInStream::getPacket(std::string& packet_out)
+bool FramedFilePacketInStream::get_packet(std::string& packet_out)
 {
   if(!upstream_)throw std::runtime_error("File is not open");
-  return upstream_->getPacket(packet_out);
+  return upstream_->get_packet(packet_out);
 }
 
 FramedFilePacketOutStream::FramedFilePacketOutStream(const std::string& filename,
@@ -243,8 +243,8 @@ FramedFilePacketOutStream::~FramedFilePacketOutStream()
   delete downstream_;
 }
 
-bool FramedFilePacketOutStream::putPacket(const std::string& packet)
+bool FramedFilePacketOutStream::put_packet(const std::string& packet)
 {
   if(!downstream_)throw std::runtime_error("File is not open");
-  return downstream_->putPacket(packet);
+  return downstream_->put_packet(packet);
 }

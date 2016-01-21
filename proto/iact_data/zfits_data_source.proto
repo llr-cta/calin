@@ -1,0 +1,39 @@
+/*
+
+   calin/proto/iact_data/zfits_data_source.proto -- Stephen Fegan -- 2016-01-21
+
+   Protobufs for configuration of ZFITSDataSource
+
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.iact_data.zfits_data_source;
+
+message ZFITSDataSourceConfig {
+  uint32 next_event_index              = 1 [
+    (CFO).desc = "Index of next event to read, starting at zero. Can be used "
+      "to provide random access to events which is not supported directly by "
+      "the DataSource API." ];
+
+  uint32 num_events_max                = 2 [
+    (CFO).desc = "Limit number of events provided by source. The data source "
+      "will stop delivering events and close the file when trying to deliver "
+      "an event with index next_event_index >= num_events_max."];
+};

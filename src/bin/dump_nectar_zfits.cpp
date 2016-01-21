@@ -49,18 +49,18 @@ int main(int argc, char **argv)
 
   if(argc)
   {
-    source.mutable_config()->set_demand_nsample(std::atoi(*argv));
+    source.mutable_decoder_config()->set_demand_nsample(std::atoi(*argv));
     argv++,argc--;
   }
 
   if(argc)
   {
-    source.mutable_config()->set_num_events_max(std::atoi(*argv));
+    source.mutable_reader_config()->set_num_events_max(std::atoi(*argv));
     argv++,argc--;
   }
 
   google::protobuf::io::OstreamOutputStream stream(&std::cout);
-  while(auto* event = source.getNext())
+  while(auto* event = source.get_next())
   {
     google::protobuf::TextFormat::Print(*event, &stream);
     delete event;

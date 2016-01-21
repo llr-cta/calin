@@ -25,50 +25,24 @@
 #include <io/log.hpp>
 #include <util/file.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
+#include <iact_data/zfits_data_source.hpp>
 
 using namespace calin::iact_data::nectarcam_data_source;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::io::log;
-using calin::util::file::is_file;
-using calin::util::file::is_readable;
-using calin::util::file::expand_filename;
-
-#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+using calin::iact_data::zfits_data_source::ZFITSDataSource;
 
 #include <ProtobufIFits.h>
 #include <L0.pb.h>
 
-NectarCamZFITSDataSource::
-NectarCamZFITSDataSource(const std::string& filename,
-    const config_type& config):
-  calin::iact_data::telescope_data_source::TelescopeDataSource(),
-  filename_(expand_filename(filename)), config_(config)
+NectarCamCameraEventDecoder::~NectarCamCameraEventDecoder()
 {
-  if(!is_file(filename_))
-    throw std::runtime_error(std::string("No such file: ")+filename_);
-  if(!is_readable(filename_))
-    throw std::runtime_error(std::string("File not readable: ")+filename_);
-  zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str());
+  // nothing to see here
 }
 
-NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
+calin::ix::iact_data::telescope_event::TelescopeEvent*
+NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
 {
-  delete zfits_;
-}
-
-TelescopeEvent* NectarCamZFITSDataSource::getNext()
-{
-  if(zfits_ == nullptr)
-    throw std::runtime_error(std::string("File not open: ")+filename_);
-  if(config_.next_event_index() >= zfits_->getNumMessagesInTable())
-    return nullptr;
-
-  const auto* cta_event =
-    zfits_->readTypedMessage<DataModel::CameraEvent>(
-      config_.next_event_index()+1);
-  config_.set_next_event_index(config_.next_event_index()+1);
-  if(cta_event == nullptr)throw runtime_error("ZFits reader returned NULL");
-
   auto* calin_event = new TelescopeEvent;
   calin_event->set_telescope_id(cta_event->telescopeid());
   calin_event->set_local_event_number(cta_event->eventnumber());
@@ -136,18 +110,10 @@ TelescopeEvent* NectarCamZFITSDataSource::getNext()
     }
   }
 
-  if(auto num_events_left = config_.num_events_max())
-  {
-    if(num_events_left == 1)
-      config_.set_next_event_index(zfits_->getNumMessagesInTable());
-    config_.set_num_events_max(num_events_left-1);
-  }
-
-  delete cta_event;
   return calin_event;
 }
 
-void NectarCamZFITSDataSource::
+void NectarCamCameraEventDecoder::
 copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
   calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image)
 {
@@ -160,6 +126,7 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
     unsigned nsample = config_.demand_nsample();
     if(nsample == 0)nsample = cta_wf.num_samples();
     assert(cta_wf.samples().data().size() % (sizeof(uint16_t)*nsample) == 0);
+    calin_wf_image->set_num_samples_per_channel(nsample);
     unsigned npix = cta_wf.samples().data().size()/(sizeof(uint16_t)*nsample);
     const uint16_t* cta_wf_data =
       reinterpret_cast<const uint16_t*>(&cta_wf.samples().data().front());
@@ -186,27 +153,35 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
   }
 }
 
-#else // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
-
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
-    const config_type& config):
-  calin::iact_data::telescope_data_source::TelescopeDataSource(),
-  config_(config)
+  const decoder_config_type& decoder_config,
+  const reader_config_type& reader_config):
+  calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource(),
+  decoder_(new NectarCamCameraEventDecoder(decoder_config)),
+  reader_(new ZFITSDataSource(filename, decoder_, false, reader_config))
 {
   // nothing to see here
 }
 
 NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
 {
-  // nothing to see here
+  delete reader_;
+  delete decoder_;
 }
 
-TelescopeEvent* NectarCamZFITSDataSource::getNext()
+calin::ix::iact_data::telescope_event::TelescopeEvent*
+NectarCamZFITSDataSource::get_next()
 {
-  throw std::logic_error("NectarCamZFITSDataSource::getNext(): calin "
-    "compiled without ZFits support.");
-  return nullptr;
+  return reader_->get_next();
 }
 
-#endif // #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+uint64_t NectarCamZFITSDataSource::size()
+{
+  return reader_->size();
+}
+
+void NectarCamZFITSDataSource::set_next_index(uint64_t next_index)
+{
+  reader_->set_next_index(next_index);
+}

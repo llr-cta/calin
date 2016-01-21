@@ -52,24 +52,24 @@ int main(int argc, char **argv)
 
   if(argc)
   {
-    source.mutable_config()->set_demand_nsample(std::atoi(*argv));
+    source.mutable_decoder_config()->set_demand_nsample(std::atoi(*argv));
     argv++,argc--;
   }
 
   if(argc)
   {
-    source.mutable_config()->set_num_events_max(std::atoi(*argv));
+    source.mutable_reader_config()->set_num_events_max(std::atoi(*argv));
     argv++,argc--;
   }
 
-  FileTelescopeDataSink::config_type config;
+  RawFileTelescopeDataSink::config_type config;
   //config.set_use_compression(true);
-  FileTelescopeDataSink sink(out_filename,false,config);
+  RawFileTelescopeDataSink sink(out_filename,false,config);
 
   unsigned nevent = 0;
-  while(auto* event = source.getNext())
+  while(auto* event = source.get_next())
   {
-    sink.putNext(event);
+    sink.put_next(event);
     nevent++;
   }
   std::cout << "Copied " << nevent << " events\n";
