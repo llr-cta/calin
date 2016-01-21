@@ -104,13 +104,12 @@ bool file::can_write_file(const std::string& filename)
   return false;
 }
 
-void file::expand_filename(std::string& filename)
+void file::expand_filename_in_place(std::string& filename)
 {
   /* Do leading tilde expansion, replace with home directory */
   if((!filename.empty())&&(filename[0]=='~'))
   {
-    unsigned ipos = 1;
-    while((ipos!=filename.length())&&(filename[ipos]!='/'))ipos++;
+    unsigned ipos = filename.find('/',1);
     std::string user = filename.substr(1,ipos-1);
     if(user.empty())
 	  {

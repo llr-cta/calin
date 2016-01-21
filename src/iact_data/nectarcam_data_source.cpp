@@ -42,9 +42,8 @@ NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
     const config_type& config):
   calin::iact_data::telescope_data_source::TelescopeDataSource(),
-  filename_(filename), config_(config)
+  filename_(expand_filename(filename)), config_(config)
 {
-  expand_filename(filename_);
   if(!is_file(filename_))
     throw std::runtime_error(std::string("No such file: ")+filename_);
   if(!is_readable(filename_))
@@ -68,8 +67,7 @@ TelescopeEvent* NectarCamZFITSDataSource::getNext()
     zfits_->readTypedMessage<DataModel::CameraEvent>(
       config_.next_event_index()+1);
   config_.set_next_event_index(config_.next_event_index()+1);
-  assert(cta_event); // what to do here?
-  if(cta_event == nullptr)return nullptr;
+  if(cta_event == nullptr)throw runtime_error("ZFits reader returned NULL");
 
   auto* calin_event = new TelescopeEvent;
   calin_event->set_telescope_id(cta_event->telescopeid());

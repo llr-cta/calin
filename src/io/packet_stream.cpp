@@ -155,9 +155,17 @@ bool CompressedPacketInStream::getPacket(std::string& packet_out)
   if(!upstream_->getPacket(packet_in))return false;;
   ArrayInputStream zstream_in(packet_in.data(), packet_in.size());
   GzipInputStream stream_in(&zstream_in);
-  StringOutputStream stream_out(&packet_out);
-  if(!copy_stream(stream_out, stream_in))return false;
-  if(stream_in.ZlibErrorCode() < 0)return false;
+  bool copy_good = true;
+  if(true)
+  {
+    StringOutputStream stream_out(&packet_out);
+    copy_good = copy_stream(stream_out, stream_in);
+  }
+  if(stream_in.ZlibErrorCode() < 0)
+    throw std::runtime_error(std::string("Zlib decompression error: ") +
+      stream_in.ZlibErrorMessage());
+  if(!copy_good)
+    throw std::runtime_error("Error writing to string stream.");
   return true;
 }
 
@@ -180,13 +188,15 @@ bool CompressedPacketOutStream::putPacket(const std::string& packet)
   if(!config_.use_compression())return downstream_->putPacket(packet);
   ArrayInputStream stream_in(packet.data(), packet.size());
   std::string packet_out;
-  if(true)
-  {
-    StringOutputStream zstream_out(&packet_out);
-    GzipOutputStream stream_out(&zstream_out);
-    if(!copy_stream(stream_out, stream_in))return false;
-    if(stream_out.ZlibErrorCode() < 0)return false;
-  }
+  StringOutputStream zstream_out(&packet_out);
+  GzipOutputStream stream_out(&zstream_out);
+  bool copy_good = copy_stream(stream_out, stream_in);
+  stream_out.Flush();
+  if(stream_out.ZlibErrorCode() < 0)
+    throw std::runtime_error(std::string("Zlib decompression error: ") +
+      stream_out.ZlibErrorMessage());
+  if(!copy_good)
+    throw std::runtime_error("Error writing to decompression stream.");
   return downstream_->putPacket(packet_out);
 }
 
@@ -194,7 +204,8 @@ FramedFilePacketInStream::FramedFilePacketInStream(const std::string& filename,
   const config_type& config): PacketInStream()
 {
   int fd = open(filename.c_str(), O_RDONLY);
-  if(fd==-1)return;
+  if(fd==-1)throw std::runtime_error(std::string("Error opening \"") +
+    filename + "\": " + std::strerror(errno));
   auto* filestream = new FileInputStream(fd);
   filestream->SetCloseOnDelete(true);
   upstream_ = new FramedZeroCopyPacketInStream(filestream, true);
@@ -209,7 +220,7 @@ FramedFilePacketInStream::~FramedFilePacketInStream()
 
 bool FramedFilePacketInStream::getPacket(std::string& packet_out)
 {
-  if(!upstream_)return false;
+  if(!upstream_)throw std::runtime_error("File is not open");
   return upstream_->getPacket(packet_out);
 }
 
@@ -218,7 +229,8 @@ FramedFilePacketOutStream::FramedFilePacketOutStream(const std::string& filename
 {
   constexpr int mode = S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH;
   int fd = open(filename.c_str(), O_WRONLY|O_CREAT|(append?O_APPEND:O_TRUNC), mode);
-  if(fd==-1){ LOG(ERROR) << "Could not open " << filename << " for writing"; return;}
+  if(fd==-1)throw std::runtime_error(std::string("Error opening \"") +
+    filename + "\" for writing: " + std::strerror(errno));
   auto* filestream = new FileOutputStream(fd);
   filestream->SetCloseOnDelete(true);
   downstream_ = new FramedZeroCopyPacketOutStream(filestream, true);
@@ -233,6 +245,6 @@ FramedFilePacketOutStream::~FramedFilePacketOutStream()
 
 bool FramedFilePacketOutStream::putPacket(const std::string& packet)
 {
-  if(!downstream_)return false;
+  if(!downstream_)throw std::runtime_error("File is not open");
   return downstream_->putPacket(packet);
 }

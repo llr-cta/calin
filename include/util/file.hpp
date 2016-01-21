@@ -59,7 +59,14 @@ bool can_write_file(const std::string& filename);
 
 //! Expand the leading tilde in the filename, replacing it with the home
 // directory of the current or specified user
-void expand_filename(std::string& filename);
+void expand_filename_in_place(std::string& filename);
+
+std::string expand_filename(const std::string& filename)
+{
+  std::string filename_out(filename);
+  expand_filename_in_place(filename_out);
+  return filename_out;
+}
 
 //! Extract the longest positive number from the filename portion
 // of a path/file specification. For example,
