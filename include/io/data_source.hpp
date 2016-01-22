@@ -30,6 +30,7 @@ namespace calin { namespace io { namespace data_source {
 template<typename T> class DataSource
 {
 public:
+  CALIN_TYPEALIAS(data_type, T);
   virtual ~DataSource() { }
   virtual T* get_next() = 0;
 };
@@ -37,6 +38,7 @@ public:
 template<typename T> class RandomAccessDataSource: public DataSource<T>
 {
 public:
+  CALIN_TYPEALIAS(data_type, T);
   virtual ~RandomAccessDataSource() { }
   virtual T* get_next() = 0;
   virtual uint64_t size() = 0;
@@ -46,9 +48,17 @@ public:
 template<typename T> class DataSink
 {
 public:
+  CALIN_TYPEALIAS(data_type, T);
   virtual ~DataSink() { }
   virtual bool put_next(T* d) = 0;
 };
+
+// *****************************************************************************
+//
+// ProtobufPacketStreamDataSource/Sink : transform a PacketIn/OutStream into a
+// DataSource/Sink for protobufs using protobuf (de)serealisation
+//
+// *****************************************************************************
 
 template<typename T> class ProtobufPacketStreamDataSource: public DataSource<T>
 {
@@ -86,6 +96,13 @@ private:
   calin::io::packet_stream::PacketOutStream* stream_ = nullptr;
   bool adopt_stream_;
 };
+
+// *****************************************************************************
+//
+// ProtobufFileDataSource/Sink : specialize ProtobufPacketStreamDataSource/Sink
+// using FramedFilePacketIn/OutStream, mainly for convenience of construction
+//
+// *****************************************************************************
 
 template<typename T> class ProtobufFileDataSource: public DataSource<T>
 {
@@ -128,5 +145,76 @@ public:
 private:
   ProtobufPacketStreamDataSink<T>* sink_ = nullptr;
 };
+
+// *****************************************************************************
+//
+// ChaninedFile(RandomAccess)DataSource - chain a number of file-based
+// (RandomAccess)DataSource together
+//
+// *****************************************************************************
+
+template<typename DST> class FileOpener
+{
+public:
+  virtual ~FileOpener() { }
+  virtual DST* open(const std::string& filename) = 0;
+};
+
+template<typename DST> class BasicChainedFileDataSource: public DST
+{
+public:
+  CALIN_TYPEALIAS(data_type, typename DST::data_type);
+
+  BasicChainedFileDataSource(const std::vector<std::string>& filenames,
+    FileOpener<DST>* opener, bool adopt_opener = false):
+    DST(), opener_(opener), adopt_opener_(adopt_opener), filenames_(filenames),
+    current_filename_(filenames_.begin())
+    {
+      open_file();
+    }
+
+  ~BasicChainedFileDataSource()
+  {
+    if(adopt_opener_)delete opener_;
+    delete source_;
+  }
+
+  data_type* get_next() override
+  {
+    while(current_filename_ != filenames_.end())
+    {
+      if(data_type* next = source_->get_next())return next;
+      current_filename_++;
+      open_file();
+    }
+    return nullptr;
+  }
+
+  std::string current_file() {
+    return current_filename_ != filenames_.end() ? std::string() :
+      *current_filename_;
+  }
+
+protected:
+  void open_file()
+  {
+    if(source_)delete source_;
+    if(current_filename_ == filenames_.end())source_ = nullptr;
+    else {
+      source_ = opener_->open(*current_filename_);
+      if(source_ == nullptr)throw std::runtime_error("Could not open file " +
+        filenames_.front());  // in case opener doesn't throw its own exception
+    }
+  }
+
+  FileOpener<DST>* opener_ = nullptr;
+  bool adopt_opener_ = false;
+  std::vector<std::string> filenames_;
+  std::vector<std::string>::iterator current_filename_;
+  DST* source_ = nullptr;
+};
+
+template<typename T> using ChainedFileDataSource =
+  BasicChainedFileDataSource<DataSource<T> >;
 
 } } } // namespace calin::io::data_source

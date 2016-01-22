@@ -129,7 +129,7 @@ bool FramedZeroCopyPacketOutStream::put_packet(const std::string& packet)
   coded_outstream_->WriteString(packet);
   if(coded_outstream_->HadError())
     throw std::runtime_error("Could not write packet data, "
-      "framing likely inconsistent.");
+      "framing on output stream will be incorrect from this point.");
   return true;
 }
 
