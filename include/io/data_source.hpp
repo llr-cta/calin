@@ -157,27 +157,46 @@ private:
 //
 // *****************************************************************************
 
-template<typename DST> class FileOpener
+template<typename DST> class DataSourceOpener
 {
 public:
-  virtual ~FileOpener() { }
-  virtual DST* open(const std::string& filename) = 0;
+  virtual ~DataSourceOpener() { }
+  virtual unsigned num_sources() = 0;
+  virtual DST* open(unsigned isource) = 0;
 };
 
-template<typename DST> class BasicChainedFileDataSource: public DST
+template<typename DST> class FileOpener: public DataSourceOpener<DST>
+{
+public:
+  FileOpener(const std::vector<std::string>& filenames):
+    DataSourceOpener<DST>(), filenames_(filenames) { /* nothing to see here */ }
+  virtual ~FileOpener() { /* nothing to see here */ }
+  unsigned num_sources() override { return filenames_.size(); }
+  DST* open(unsigned isource) override {
+    if(isource<filenames_.size())return open_filename(filenames_[isource]);
+    return nullptr;
+  }
+  std::string filename(unsigned isource) {
+    if(isource<filenames_.size())return filenames_[isource];
+    return {};
+  }
+  virtual DST* open_filename(const std::string& filename) = 0;
+protected:
+  std::vector<std::string> filenames_;
+};
+
+template<typename DST> class BasicChainedDataSource: public DST
 {
 public:
   CALIN_TYPEALIAS(data_type, typename DST::data_type);
 
-  BasicChainedFileDataSource(const std::vector<std::string>& filenames,
-    FileOpener<DST>* opener, bool adopt_opener = false):
-    DST(), opener_(opener), adopt_opener_(adopt_opener), filenames_(filenames),
-    current_filename_(filenames_.begin())
+  BasicChainedDataSource(FileOpener<DST>* opener, bool adopt_opener = false):
+    DST(), opener_(opener), adopt_opener_(adopt_opener)
     {
       open_file();
     }
 
-  ~BasicChainedFileDataSource()
+  ~BasicChainedDataSource()
   {
     if(adopt_opener_)delete opener_;
     delete source_;
@@ -185,110 +204,113 @@ public:
 
   data_type* get_next() override
   {
-    while(current_filename_ != filenames_.end())
+    while(isource_ < opener_->num_sources())
     {
       if(data_type* next = source_->get_next())return next;
-      current_filename_++;
+      ++isource_;
       open_file();
     }
     return nullptr;
   }
 
-  std::string current_file() {
-    return current_filename_ != filenames_.end() ? std::string() :
-      *current_filename_;
-  }
+  unsigned source_index() const { return isource_; }
 
 protected:
   virtual void open_file()
   {
     if(source_)delete source_;
     source_ = nullptr;
-    if(current_filename_ != filenames_.end())
+    if(isource_ < opener_->num_sources())
     {
-      source_ = opener_->open(*current_filename_);
-      if(source_ == nullptr)throw std::runtime_error("Could not open file " +
-        *current_filename_);  // in case opener doesn't throw its own exception
+      source_ = opener_->open(isource_);
+      // Throw exception if opener doesn't throw its own
+      if(source_ == nullptr)throw std::runtime_error("Could not open source " +
+        std::to_string(isource_));
     }
   }
 
   FileOpener<DST>* opener_ = nullptr;
   bool adopt_opener_ = false;
-  std::vector<std::string> filenames_;
-  std::vector<std::string>::iterator current_filename_;
+  unsigned isource_ = 0;
   DST* source_ = nullptr;
 };
 
-template<typename T> using ChainedFileDataSource =
-  BasicChainedFileDataSource<DataSource<T> >;
+template<typename T> using ChainedDataSource =
+  BasicChainedDataSource<DataSource<T> >;
 
-template<typename RADST> class BasicChaninedFileRandomAccessDataSource:
-  public BasicChainedFileDataSource<RADST>
+template<typename RADST> class BasicChaninedRandomAccessDataSource:
+  public BasicChainedDataSource<RADST>
 {
 public:
   CALIN_TYPEALIAS(data_type, typename RADST::data_type);
 
-  BasicChaninedFileRandomAccessDataSource(
-    const std::vector<std::string>& filenames,
-    FileOpener<RADST>* opener, bool adopt_opener = false):
-    BasicChainedFileDataSource<RADST>(filenames, opener, adopt_opener)
+  BasicChaninedRandomAccessDataSource(FileOpener<RADST>* opener,
+    bool adopt_opener = false):
+    BasicChainedDataSource<RADST>(opener, adopt_opener)
   {
     // Base class can't call virtual open_file function so we complete it
-    if(source_ and chained_file_index_.empty())
-      add_source_index(source_);
+    if(source_)add_source_index(source_);
   }
 
-  virtual ~BasicChaninedFileRandomAccessDataSource() {
+  virtual ~BasicChaninedRandomAccessDataSource() {
     /* nothing to see here */ }
 
   virtual uint64_t size() override
   {
-    for(auto i = filenames_.begin()+chained_file_index_.size();
-        i != filenames_.end(); i++)
+    for(unsigned i = chained_file_index_.size(); i<source_->num_sources(); i++)
     {
-      std::unique_ptr<RADST> source(opener_->open(*i));
+      std::unique_ptr<RADST> source(opener_->open(i));
       // Throw exception in case opener doesn't do so itself
-      if(!source)throw std::runtime_error("Could not open file " + *i);
+      if(!source)throw std::runtime_error("Could not open file " +
+        std::to_string(i));
       add_source_index(source);
     }
 
-    if(chained_file_index_.empty())return 0;
-    else return chained_file_index_.back();
+    if(opener_->num_sources())return chained_file_index_.back();
+    else return 0;
   }
 
   void set_next_index(uint64_t next_index) override
   {
-    for(auto i = filenames_.begin()+chained_file_index_.size();
-        i != filenames_.end() and (chained_file_index_.empty() or
-        chained_file_index_.back() < next_index); i++)
+    if(opener_->num_sources() == 0)return;
+
+    if(next_index < chained_file_index_.back())
     {
-      std::unique_ptr<RADST> source(opener_->open(*i));
-      // Throw exception in case opener doesn't do so itself
-      if(!source)throw std::runtime_error("Could not open file " + *i);
-      add_source_index(source.get());
+      // next_index belongs to one of the files we have already indexed
+      auto file_index = std::upper_bound(chained_file_index_.begin(),
+        chained_file_index_.begin(), next_index);
+      unsigned new_isource = int(file_index-chained_file_index_.begin());
+      if(new_isource != isource_)
+      {
+        isource_ = new_isource;
+        BasicChainedDataSource<RADST>::open_file();
+      }
+      if(isource_ == 0)
+        source_->set_next_index(next_index);
+      else
+        source_->set_next_index(next_index - chained_file_index_[isource_]);
     }
 
-    auto file_index = std::upper_bound(chained_file_index_.begin(),
-      chained_file_index_.begin(), next_index);
-    auto file_shift = (file_index-chained_file_index_.begin()) -
-      (current_filename_-filenames_.begin());
-    if(file_shift != 0)
+    while(isource_<opener_->num_sources() and
+      chained_file_index_.back()<=next_index)
     {
-      current_filename_ += file_shift;
-      BasicChainedFileDataSource<RADST>::open_file();
+      ++isource_;
+      open_file();
     }
 
-    if(file_index == chained_file_index_.begin())
-      source_->set_next_index(next_index);
-    else
-      source_->set_next_index(next_index - *--file_index);
+    if(source_)
+    {
+      if(isource_ == 0)
+        source_->set_next_index(next_index);
+      else
+        source_->set_next_index(next_index - chained_file_index_[isource_]);
+    }
   }
 
 private:
-  using BasicChainedFileDataSource<RADST>::source_;
-  using BasicChainedFileDataSource<RADST>::filenames_;
-  using BasicChainedFileDataSource<RADST>::current_filename_;
-  using BasicChainedFileDataSource<RADST>::opener_;
+  using BasicChainedDataSource<RADST>::source_;
+  using BasicChainedDataSource<RADST>::isource_;
+  using BasicChainedDataSource<RADST>::opener_;
 
   void add_source_index(RADST* source)
   {
@@ -300,9 +322,8 @@ private:
 
   virtual void open_file()
   {
-    BasicChainedFileDataSource<RADST>::open_file();
-    if(source_ and
-       current_filename_-filenames_.begin()>=chained_file_index_.size())
+    BasicChainedDataSource<RADST>::open_file();
+    if(source_ and isource_ >= chained_file_index_.size())
     {
       add_source_index(source_);
     }
