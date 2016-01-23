@@ -22,6 +22,10 @@
 
 #pragma once
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 #include <io/packet_stream.hpp>
 #include <io/packet_stream.pb.h>
 
@@ -196,14 +200,15 @@ public:
   }
 
 protected:
-  void open_file()
+  virtual void open_file()
   {
     if(source_)delete source_;
-    if(current_filename_ == filenames_.end())source_ = nullptr;
-    else {
+    source_ = nullptr;
+    if(current_filename_ != filenames_.end())
+    {
       source_ = opener_->open(*current_filename_);
       if(source_ == nullptr)throw std::runtime_error("Could not open file " +
-        filenames_.front());  // in case opener doesn't throw its own exception
+        *current_filename_);  // in case opener doesn't throw its own exception
     }
   }
 
@@ -216,5 +221,94 @@ protected:
 
 template<typename T> using ChainedFileDataSource =
   BasicChainedFileDataSource<DataSource<T> >;
+
+template<typename RADST> class BasicChaninedFileRandomAccessDataSource:
+  public BasicChainedFileDataSource<RADST>
+{
+public:
+  CALIN_TYPEALIAS(data_type, typename RADST::data_type);
+
+  BasicChaninedFileRandomAccessDataSource(
+    const std::vector<std::string>& filenames,
+    FileOpener<RADST>* opener, bool adopt_opener = false):
+    BasicChainedFileDataSource<RADST>(filenames, opener, adopt_opener)
+  {
+    // Base class can't call virtual open_file function so we complete it
+    if(source_ and chained_file_index_.empty())
+      add_source_index(source_);
+  }
+
+  virtual ~BasicChaninedFileRandomAccessDataSource() {
+    /* nothing to see here */ }
+
+  virtual uint64_t size() override
+  {
+    for(auto i = filenames_.begin()+chained_file_index_.size();
+        i != filenames_.end(); i++)
+    {
+      std::unique_ptr<RADST> source(opener_->open(*i));
+      // Throw exception in case opener doesn't do so itself
+      if(!source)throw std::runtime_error("Could not open file " + *i);
+      add_source_index(source);
+    }
+
+    if(chained_file_index_.empty())return 0;
+    else return chained_file_index_.back();
+  }
+
+  void set_next_index(uint64_t next_index) override
+  {
+    for(auto i = filenames_.begin()+chained_file_index_.size();
+        i != filenames_.end() and (chained_file_index_.empty() or
+        chained_file_index_.back() < next_index); i++)
+    {
+      std::unique_ptr<RADST> source(opener_->open(*i));
+      // Throw exception in case opener doesn't do so itself
+      if(!source)throw std::runtime_error("Could not open file " + *i);
+      add_source_index(source.get());
+    }
+
+    auto file_index = std::upper_bound(chained_file_index_.begin(),
+      chained_file_index_.begin(), next_index);
+    auto file_shift = (file_index-chained_file_index_.begin()) -
+      (current_filename_-filenames_.begin());
+    if(file_shift != 0)
+    {
+      current_filename_ += file_shift;
+      BasicChainedFileDataSource<RADST>::open_file();
+    }
+
+    if(file_index == chained_file_index_.begin())
+      source_->set_next_index(next_index);
+    else
+      source_->set_next_index(next_index - *--file_index);
+  }
+
+private:
+  using BasicChainedFileDataSource<RADST>::source_;
+  using BasicChainedFileDataSource<RADST>::filenames_;
+  using BasicChainedFileDataSource<RADST>::current_filename_;
+  using BasicChainedFileDataSource<RADST>::opener_;
+
+  void add_source_index(RADST* source)
+  {
+    if(chained_file_index_.empty())
+      chained_file_index_.push_back(source->size());
+    else
+      chained_file_index_.push_back(source->size()+chained_file_index_.back());
+  }
+
+  virtual void open_file()
+  {
+    BasicChainedFileDataSource<RADST>::open_file();
+    if(source_ and
+       current_filename_-filenames_.begin()>=chained_file_index_.size())
+    {
+      add_source_index(source_);
+    }
+  }
+
+  std::vector<uint64_t> chained_file_index_;
+};
 
 } } } // namespace calin::io::data_source
