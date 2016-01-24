@@ -55,7 +55,7 @@ template<typename T> class DataSink
 public:
   CALIN_TYPEALIAS(data_type, T);
   virtual ~DataSink() { }
-  virtual bool put_next(T* d) = 0;
+  virtual bool put_next(T* data, bool adopt_data = false) = 0;
 };
 
 // *****************************************************************************
@@ -95,8 +95,9 @@ public:
     { /* nothing to see here */ }
   virtual ~ProtobufPacketStreamDataSink() {
     if(adopt_stream_)delete(stream_); }
-  bool put_next(T* d) override { std::unique_ptr<T> dd(d);
-    return stream_->put_packet(dd->SerializeAsString()); }
+  bool put_next(T* data, bool adopt_data = false) override {
+    std::unique_ptr<T> data_guard(adopt_data ? data : nullptr);
+    return stream_->put_packet(data->SerializeAsString()); }
 private:
   calin::io::packet_stream::PacketOutStream* stream_ = nullptr;
   bool adopt_stream_;
@@ -144,7 +145,8 @@ public:
     sink_ = new ProtobufPacketStreamDataSink<T>(stream, true);
   }
   virtual ~ProtobufFileDataSink() { delete sink_; }
-  bool put_next(T* d) override { return sink_->put_next(d); }
+  bool put_next(T* data, bool adopt_data = false) override {
+    return sink_->put_next(data, adopt_data); }
   static config_type default_options() {
     return config_type::default_instance(); }
 private:

@@ -176,7 +176,7 @@ TEST(TestProtobufFile, WriteAndRead) {
     UnitTestIntegerDataSource src(N,0);
     ProtobufFileDataSink<UnitTestSimpleSubMessage>
       file_out("unittest.proto_raw");
-    for(unsigned i=0;i<N;i++)file_out.put_next(src.get_next());
+    for(unsigned i=0;i<N;i++)file_out.put_next(src.get_next(), true);
   }
 
   ProtobufFileDataSource<UnitTestSimpleSubMessage>

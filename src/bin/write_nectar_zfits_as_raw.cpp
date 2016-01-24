@@ -69,7 +69,7 @@ int main(int argc, char **argv)
   unsigned nevent = 0;
   while(auto* event = source.get_next())
   {
-    sink.put_next(event);
+    sink.put_next(event, true);
     nevent++;
   }
   std::cout << "Copied " << nevent << " events\n";
