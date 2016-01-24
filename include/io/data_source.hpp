@@ -160,6 +160,7 @@ private:
 template<typename DST> class DataSourceOpener
 {
 public:
+  CALIN_TYPEALIAS(data_source_type, DST);
   virtual ~DataSourceOpener() { }
   virtual unsigned num_sources() = 0;
   virtual DST* open(unsigned isource) = 0;
@@ -168,6 +169,8 @@ public:
 template<typename DST> class FileOpener: public DataSourceOpener<DST>
 {
 public:
+  using DataSourceOpener<DST>::data_source_type;
+
   FileOpener(const std::vector<std::string>& filenames):
     DataSourceOpener<DST>(), filenames_(filenames) { /* nothing to see here */ }
   virtual ~FileOpener() { /* nothing to see here */ }
