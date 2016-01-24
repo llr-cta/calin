@@ -31,13 +31,13 @@
 using namespace calin::ix::unittest;
 using namespace calin::io::data_source;
 
-class UnitTestIntegerDataSource:
-  public RandomAccessDataSource<UnitTestSimpleSubMessage>
+using UTSSM_RADS = RandomAccessDataSource<UnitTestSimpleSubMessage>;
+
+class UnitTestIntegerDataSource: public UTSSM_RADS
 {
 public:
   UnitTestIntegerDataSource(unsigned count, int32_t start = 0):
-    RandomAccessDataSource<UnitTestSimpleSubMessage>(),
-    count_(count), start_(start) { }
+    UTSSM_RADS(), count_(count), start_(start) { }
   ~UnitTestIntegerDataSource() { }
   UnitTestSimpleSubMessage* get_next() override {
     if(index_>=count_)return nullptr;
@@ -55,14 +55,12 @@ private:
   int32_t start_ = 0;
 };
 
-class UnitTestDataSourceOpener:
-  public DataSourceOpener<RandomAccessDataSource<UnitTestSimpleSubMessage> >
+class UnitTestDataSourceOpener: public DataSourceOpener<UTSSM_RADS>
 {
 public:
-  using DataSourceOpener<RandomAccessDataSource<UnitTestSimpleSubMessage> >::data_source_type;
+  using DataSourceOpener<UTSSM_RADS>::data_source_type;
   UnitTestDataSourceOpener(unsigned nsource, unsigned count = 10000):
-    DataSourceOpener<RandomAccessDataSource<UnitTestSimpleSubMessage> >(),
-    nsource_(nsource), count_(count) { }
+    DataSourceOpener<UTSSM_RADS>(), nsource_(nsource), count_(count) { }
   ~UnitTestDataSourceOpener() { }
   unsigned num_sources() override {
     return nsource_;
@@ -129,6 +127,46 @@ TEST(TestDataSourceOpener, Sequential) {
   }
   ASSERT_EQ(opener.open(M), nullptr);
   ASSERT_EQ(opener.open(M+1), nullptr);
+}
+
+TEST(TestChainedRandomAccessDataSource, Sequental) {
+  unsigned N = 1000;
+  unsigned M = 100;
+  UnitTestDataSourceOpener opener(M,N);
+  BasicChaninedRandomAccessDataSource<UTSSM_RADS> src(&opener, false);
+  for(unsigned i=0;i<N*M;i++)
+  {
+    auto* m = src.get_next();
+    ASSERT_NE(m, nullptr);
+    EXPECT_EQ(m->ssm_i32(), int32_t(i));
+    delete m;
+  }
+  ASSERT_EQ(src.get_next(), nullptr);
+  ASSERT_EQ(src.get_next(), nullptr);
+}
+
+TEST(TestChainedRandomAccessDataSource, RandomAccess) {
+  unsigned N = 1000;
+  unsigned M = 100;
+  for(unsigned j=0; j<100; j++)
+  {
+    UnitTestDataSourceOpener opener(M,N);
+    BasicChaninedRandomAccessDataSource<UTSSM_RADS> src(&opener, false);
+
+    for(unsigned i=0;i<N*M;i++)
+    {
+      unsigned index = random()%((11*N*M)/10);
+      src.set_next_index(index);
+      auto* m = src.get_next();
+      if(index>=N*M) {
+        ASSERT_EQ(m, nullptr);
+      } else {
+        ASSERT_NE(m, nullptr);
+        EXPECT_EQ(m->ssm_i32(), int32_t(index));
+        delete m;
+      }
+    }
+  }
 }
 
 int main(int argc, char **argv) {

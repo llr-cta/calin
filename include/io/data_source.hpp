@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -193,7 +194,8 @@ template<typename DST> class BasicChainedDataSource: public DST
 public:
   CALIN_TYPEALIAS(data_type, typename DST::data_type);
 
-  BasicChainedDataSource(FileOpener<DST>* opener, bool adopt_opener = false):
+  BasicChainedDataSource(DataSourceOpener<DST>* opener,
+    bool adopt_opener = false):
     DST(), opener_(opener), adopt_opener_(adopt_opener)
     {
       open_file();
@@ -232,7 +234,7 @@ protected:
     }
   }
 
-  FileOpener<DST>* opener_ = nullptr;
+  DataSourceOpener<DST>* opener_ = nullptr;
   bool adopt_opener_ = false;
   unsigned isource_ = 0;
   DST* source_ = nullptr;
@@ -247,7 +249,7 @@ template<typename RADST> class BasicChaninedRandomAccessDataSource:
 public:
   CALIN_TYPEALIAS(data_type, typename RADST::data_type);
 
-  BasicChaninedRandomAccessDataSource(FileOpener<RADST>* opener,
+  BasicChaninedRandomAccessDataSource(DataSourceOpener<RADST>* opener,
     bool adopt_opener = false):
     BasicChainedDataSource<RADST>(opener, adopt_opener)
   {
@@ -260,13 +262,13 @@ public:
 
   virtual uint64_t size() override
   {
-    for(unsigned i = chained_file_index_.size(); i<source_->num_sources(); i++)
+    for(unsigned i = chained_file_index_.size(); i<opener_->num_sources(); i++)
     {
       std::unique_ptr<RADST> source(opener_->open(i));
       // Throw exception in case opener doesn't do so itself
       if(!source)throw std::runtime_error("Could not open file " +
         std::to_string(i));
-      add_source_index(source);
+      add_source_index(source.get());
     }
 
     if(opener_->num_sources())return chained_file_index_.back();
@@ -281,24 +283,22 @@ public:
     {
       // next_index belongs to one of the files we have already indexed
       auto file_index = std::upper_bound(chained_file_index_.begin(),
-        chained_file_index_.begin(), next_index);
+        chained_file_index_.end(), next_index);
       unsigned new_isource = int(file_index-chained_file_index_.begin());
       if(new_isource != isource_)
       {
         isource_ = new_isource;
         BasicChainedDataSource<RADST>::open_file();
       }
-      if(isource_ == 0)
-        source_->set_next_index(next_index);
-      else
-        source_->set_next_index(next_index - chained_file_index_[isource_]);
     }
-
-    while(isource_<opener_->num_sources() and
-      chained_file_index_.back()<=next_index)
+    else
     {
-      ++isource_;
-      open_file();
+      while(isource_<opener_->num_sources() and
+        chained_file_index_.back()<=next_index)
+      {
+        ++isource_;
+        open_file();
+      }
     }
 
     if(source_)
@@ -306,7 +306,7 @@ public:
       if(isource_ == 0)
         source_->set_next_index(next_index);
       else
-        source_->set_next_index(next_index - chained_file_index_[isource_]);
+        source_->set_next_index(next_index - chained_file_index_[isource_-1]);
     }
   }
 
@@ -323,7 +323,7 @@ private:
       chained_file_index_.push_back(source->size()+chained_file_index_.back());
   }
 
-  virtual void open_file()
+  void open_file() override
   {
     BasicChainedDataSource<RADST>::open_file();
     if(source_ and isource_ >= chained_file_index_.size())
