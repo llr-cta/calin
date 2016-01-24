@@ -95,8 +95,8 @@ public:
     { /* nothing to see here */ }
   virtual ~ProtobufPacketStreamDataSink() {
     if(adopt_stream_)delete(stream_); }
-  bool put_next(T* d) override {
-    return stream_->put_packet(d->SerializeAsString()); }
+  bool put_next(T* d) override { std::unique_ptr<T> dd(d);
+    return stream_->put_packet(dd->SerializeAsString()); }
 private:
   calin::io::packet_stream::PacketOutStream* stream_ = nullptr;
   bool adopt_stream_;

@@ -148,7 +148,7 @@ TEST(TestChainedRandomAccessDataSource, Sequental) {
 TEST(TestChainedRandomAccessDataSource, RandomAccess) {
   unsigned N = 1000;
   unsigned M = 100;
-  for(unsigned j=0; j<100; j++)
+  for(unsigned j=0; j<10; j++)
   {
     UnitTestDataSourceOpener opener(M,N);
     BasicChaninedRandomAccessDataSource<UTSSM_RADS> src(&opener, false);
@@ -168,6 +168,30 @@ TEST(TestChainedRandomAccessDataSource, RandomAccess) {
     }
   }
 }
+
+TEST(TestProtobufFile, WriteAndRead) {
+  unsigned N = 1000;
+  if(1)
+  {
+    UnitTestIntegerDataSource src(N,0);
+    ProtobufFileDataSink<UnitTestSimpleSubMessage>
+      file_out("unittest.proto_raw");
+    for(unsigned i=0;i<N;i++)file_out.put_next(src.get_next());
+  }
+
+  ProtobufFileDataSource<UnitTestSimpleSubMessage>
+    file_in("unittest.proto_raw");
+  for(unsigned i=0;i<N;i++)
+  {
+    auto* m = file_in.get_next();
+    ASSERT_NE(m, nullptr);
+    EXPECT_EQ(m->ssm_i32(), int32_t(i));
+    delete m;
+  }
+  ASSERT_EQ(file_in.get_next(), nullptr);
+  ASSERT_EQ(file_in.get_next(), nullptr);
+}
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
