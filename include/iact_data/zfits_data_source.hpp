@@ -40,31 +40,34 @@ namespace DataModel {
 
 namespace calin { namespace iact_data { namespace zfits_data_source {
 
+using calin::io::data_source::DataSourceOpener;
+using calin::io::data_source::BasicChaninedRandomAccessDataSource;
+using calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource;
+using calin::ix::iact_data::telescope_event::TelescopeEvent;
+
 class CTACameraEventDecoder
 {
 public:
   virtual ~CTACameraEventDecoder();
-  virtual calin::ix::iact_data::telescope_event::TelescopeEvent*
-    decode(const DataModel::CameraEvent* cta_event) = 0;
+  virtual TelescopeEvent* decode(const DataModel::CameraEvent* cta_event) = 0;
 };
 
-class ZFITSDataSource:
-  public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource
+class ZFITSSingleFileDataSource: public TelescopeRandomAccessDataSource
 {
 public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
-  ZFITSDataSource(const std::string& filename,
+  ZFITSSingleFileDataSource(const std::string& filename,
     CTACameraEventDecoder* decoder, bool adopt_decoder = false,
     const config_type& config = config_type::default_instance());
-  virtual ~ZFITSDataSource();
+  virtual ~ZFITSSingleFileDataSource();
 
   void set_config(const config_type& config) { config_.CopyFrom(config); }
   const config_type& config() const { return config_; }
   config_type* mutable_config() { return &config_; }
 
-  calin::ix::iact_data::telescope_event::TelescopeEvent* get_next() override;
+  TelescopeEvent* get_next() override;
   uint64_t size() override;
   void set_next_index(uint64_t next_index) override;
 
@@ -74,6 +77,33 @@ private:
   config_type config_;
   CTACameraEventDecoder* decoder_ = nullptr;
   bool adopt_decoder_ = false;
+};
+
+class ZFitsDataSourceOpener:
+  public DataSourceOpener<TelescopeRandomAccessDataSource>
+{
+public:
+  CALIN_TYPEALIAS(data_source_type, TelescopeRandomAccessDataSource);
+  ZFitsDataSourceOpener(std::string filename,
+    CTACameraEventDecoder* decoder, bool adopt_decoder = false,
+    const std::string& extension = ".fits.fz");
+  virtual ~ZFitsDataSourceOpener();
+  unsigned num_sources() override;
+  TelescopeRandomAccessDataSource* open(unsigned isource) override;
+private:
+  std::vector<std::string> filenames_;
+  CTACameraEventDecoder* decoder_ = nullptr;
+  bool adopt_decoder_ = false;
+};
+
+class ZFITSDataSource:
+  public BasicChaninedRandomAccessDataSource<TelescopeRandomAccessDataSource>
+{
+public:
+  ZFITSDataSource(const std::string& filename,
+    CTACameraEventDecoder* decoder, bool adopt_decoder = false,
+    const std::string& extension = ".fits.fz");
+  virtual ~ZFITSDataSource();
 };
 
 } } } // namespace calin::iact_data::nectarcam_data_source

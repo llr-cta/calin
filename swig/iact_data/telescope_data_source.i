@@ -41,9 +41,11 @@
 %import "iact_data/nectarcam_data_source.pb.i"
 %import "iact_data/telescope_event.pb.i"
 
-%newobject calin::iact_data::telescope_data_source::TelescopeDataSource::get_next();
-%newobject calin::iact_data::zfits_data_source::NectarCamZFITSDataSource::get_next();
-%newobject calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource::get_next();
+%newobject get_next();
+//%newobject calin::iact_data::telescope_data_source::TelescopeDataSource::get_next();
+//%newobject calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource::get_next();
+//%newobject calin::iact_data::zfits_data_source::ZFITSSingleFileDataSource::get_next();
+//%newobject calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource::get_next();
 
 %import "io/data_source.hpp"
 

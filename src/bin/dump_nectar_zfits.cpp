@@ -53,9 +53,10 @@ int main(int argc, char **argv)
     argv++,argc--;
   }
 
+  unsigned max_events = 0;
   if(argc)
   {
-    source.mutable_reader_config()->set_num_events_max(std::atoi(*argv));
+    max_events = std::atoi(*argv);
     argv++,argc--;
   }
 
@@ -64,5 +65,7 @@ int main(int argc, char **argv)
   {
     google::protobuf::TextFormat::Print(*event, &stream);
     delete event;
+    if(max_events==1)break;
+    else if(max_events)--max_events;
   }
 }

@@ -42,8 +42,8 @@ CTACameraEventDecoder::~CTACameraEventDecoder()
   // nothing to see here
 }
 
-ZFITSDataSource::
-ZFITSDataSource(const std::string& filename,
+ZFITSSingleFileDataSource::
+ZFITSSingleFileDataSource(const std::string& filename,
     CTACameraEventDecoder* decoder, bool adopt_decoder,
     const config_type& config):
   calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource(),
@@ -57,13 +57,13 @@ ZFITSDataSource(const std::string& filename,
   zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str());
 }
 
-ZFITSDataSource::~ZFITSDataSource()
+ZFITSSingleFileDataSource::~ZFITSSingleFileDataSource()
 {
   delete zfits_;
   if(adopt_decoder_)delete decoder_;
 }
 
-TelescopeEvent* ZFITSDataSource::get_next()
+TelescopeEvent* ZFITSSingleFileDataSource::get_next()
 {
   if(zfits_ == nullptr)
     throw std::runtime_error(std::string("File not open: ")+filename_);
@@ -87,12 +87,69 @@ TelescopeEvent* ZFITSDataSource::get_next()
   return decoder_->decode(cta_event.get());
 }
 
-uint64_t ZFITSDataSource::size()
+uint64_t ZFITSSingleFileDataSource::size()
 {
   return zfits_->getNumMessagesInTable();
 }
 
-void ZFITSDataSource::set_next_index(uint64_t next_index)
+void ZFITSSingleFileDataSource::set_next_index(uint64_t next_index)
 {
   config_.set_next_event_index(next_index);
+}
+
+ZFitsDataSourceOpener::ZFitsDataSourceOpener(std::string filename,
+  CTACameraEventDecoder* decoder, bool adopt_decoder,
+  const std::string& extension):
+  DataSourceOpener<TelescopeRandomAccessDataSource>(),
+  decoder_(decoder), adopt_decoder_(adopt_decoder)
+{
+  if(is_file(filename))
+  {
+    filenames_.push_back(filename);
+    return;
+  }
+
+  if(filename.size() > extension.size()
+      and filename.rfind(extension) == filename.size()-extension.size())
+  {
+    filename = filename.substr(0, filename.size()-extension.size());
+  }
+  else if(is_file(filename+extension))
+  {
+    filenames_.push_back(filename+extension);
+    return;
+  }
+
+  for(unsigned i=1; is_file(filename+"."+std::to_string(i)+extension); i++)
+    filenames_.push_back(filename+"."+std::to_string(i)+extension);
+}
+
+ZFitsDataSourceOpener::~ZFitsDataSourceOpener()
+{
+  if(adopt_decoder_)delete decoder_;
+}
+
+unsigned ZFitsDataSourceOpener::num_sources()
+{
+  return filenames_.size();
+}
+
+TelescopeRandomAccessDataSource* ZFitsDataSourceOpener::open(unsigned isource)
+{
+  if(isource >= filenames_.size())return nullptr;
+  return new ZFITSSingleFileDataSource(filenames_[isource], decoder_, false);
+}
+
+ZFITSDataSource::ZFITSDataSource(const std::string& filename,
+  CTACameraEventDecoder* decoder, bool adopt_decoder,
+  const std::string& extension):
+  BasicChaninedRandomAccessDataSource<TelescopeRandomAccessDataSource>(
+    new ZFitsDataSourceOpener(filename,decoder,adopt_decoder,extension), true)
+{
+  // nothing to see here
+}
+
+ZFITSDataSource::~ZFITSDataSource()
+{
+  // nothing to see here
 }

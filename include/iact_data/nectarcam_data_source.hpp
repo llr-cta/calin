@@ -64,13 +64,11 @@ public:
 };
 
 class NectarCamZFITSDataSource:
-  public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource
+  public calin::iact_data::zfits_data_source::ZFITSDataSource
 {
 public:
   CALIN_TYPEALIAS(decoder_config_type,
     NectarCamCameraEventDecoder::config_type);
-  CALIN_TYPEALIAS(reader_config_type,
-    zfits_data_source::ZFITSDataSource::config_type);
 
   void set_decoder_config(const decoder_config_type& config) {
     decoder_->set_config(config); }
@@ -81,26 +79,12 @@ public:
   static decoder_config_type default_decoder_config() {
     return decoder_config_type::default_instance(); }
 
-  void set_reader_config(const reader_config_type& config) {
-    reader_->set_config(config); }
-  const reader_config_type& reader_config() const {
-    return reader_->config(); }
-  reader_config_type* mutable_reader_config() {
-    return reader_->mutable_config(); }
-  static reader_config_type default_reader_config() {
-    return reader_config_type::default_instance(); }
-
   NectarCamZFITSDataSource(const std::string& filename,
     const decoder_config_type& decoder_config = default_decoder_config(),
-    const reader_config_type& reader_config = default_reader_config());
+    const std::string& extension = ".fits.fz");
   virtual ~NectarCamZFITSDataSource();
-
-  calin::ix::iact_data::telescope_event::TelescopeEvent* get_next() override;
-  uint64_t size() override;
-  void set_next_index(uint64_t next_index) override;
 private:
   NectarCamCameraEventDecoder* decoder_;
-  zfits_data_source::ZFITSDataSource* reader_;
 };
 
 } } } // namespace calin::iact_data::nectarcam_data_source

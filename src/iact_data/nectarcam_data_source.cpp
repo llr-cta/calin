@@ -30,7 +30,7 @@
 using namespace calin::iact_data::nectarcam_data_source;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::io::log;
-using calin::iact_data::zfits_data_source::ZFITSDataSource;
+using calin::iact_data::zfits_data_source::ZFITSSingleFileDataSource;
 
 #include <ProtobufIFits.h>
 #include <L0.pb.h>
@@ -156,32 +156,15 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
   const decoder_config_type& decoder_config,
-  const reader_config_type& reader_config):
-  calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource(),
-  decoder_(new NectarCamCameraEventDecoder(decoder_config)),
-  reader_(new ZFITSDataSource(filename, decoder_, false, reader_config))
+  const std::string& extension):
+  calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
+    decoder_ = new NectarCamCameraEventDecoder(decoder_config), false,
+    extension)
 {
   // nothing to see here
 }
 
 NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
 {
-  delete reader_;
   delete decoder_;
-}
-
-calin::ix::iact_data::telescope_event::TelescopeEvent*
-NectarCamZFITSDataSource::get_next()
-{
-  return reader_->get_next();
-}
-
-uint64_t NectarCamZFITSDataSource::size()
-{
-  return reader_->size();
-}
-
-void NectarCamZFITSDataSource::set_next_index(uint64_t next_index)
-{
-  reader_->set_next_index(next_index);
 }

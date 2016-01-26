@@ -312,7 +312,7 @@ public:
     }
   }
 
-private:
+protected:
   using BasicChainedDataSource<RADST>::source_;
   using BasicChainedDataSource<RADST>::isource_;
   using BasicChainedDataSource<RADST>::opener_;
