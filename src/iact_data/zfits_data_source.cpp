@@ -100,7 +100,7 @@ void ZFITSSingleFileDataSource::set_next_index(uint64_t next_index)
 ZFitsDataSourceOpener::ZFitsDataSourceOpener(std::string filename,
   CTACameraEventDecoder* decoder, bool adopt_decoder,
   const std::string& extension):
-  DataSourceOpener<TelescopeRandomAccessDataSource>(),
+  DataSourceOpener<calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>(),
   decoder_(decoder), adopt_decoder_(adopt_decoder)
 {
   if(is_file(filename))
@@ -134,7 +134,8 @@ unsigned ZFitsDataSourceOpener::num_sources()
   return filenames_.size();
 }
 
-TelescopeRandomAccessDataSource* ZFitsDataSourceOpener::open(unsigned isource)
+calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource*
+ZFitsDataSourceOpener::open(unsigned isource)
 {
   if(isource >= filenames_.size())return nullptr;
   return new ZFITSSingleFileDataSource(filenames_[isource], decoder_, false);
@@ -143,7 +144,7 @@ TelescopeRandomAccessDataSource* ZFitsDataSourceOpener::open(unsigned isource)
 ZFITSDataSource::ZFITSDataSource(const std::string& filename,
   CTACameraEventDecoder* decoder, bool adopt_decoder,
   const std::string& extension):
-  BasicChaninedRandomAccessDataSource<TelescopeRandomAccessDataSource>(
+  BasicChaninedRandomAccessDataSource<calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>(
     new ZFitsDataSourceOpener(filename,decoder,adopt_decoder,extension), true)
 {
   // nothing to see here
