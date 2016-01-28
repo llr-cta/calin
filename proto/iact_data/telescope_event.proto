@@ -29,36 +29,32 @@ import "common_types.proto";
 
 package calin.ix.iact_data.telescope_event;
 
-message CameraClockTime {
+message Clock {
   int32 clock_id                        = 1 [
-    (CFO).desc = "Clock ID within camera" ];
+    (CFO).desc = "Clock ID." ];
   common_types.Time time                = 2 [
     (CFO).desc = "Time according to the clock." ];
 };
 
-message ModuleClockTime {
+message ModuleClocks {
   int32 module_id                       = 1 [
     (CFO).desc = "Module ID within camera." ];
-  int32 clock_id                        = 2 [
-    (CFO).desc = "Clock ID within module" ];
-  common_types.Time time                = 3 [
-    (CFO).desc = "Time according to the clock." ];
+  repeated Clock clock                  = 2 [
+    (CFO).desc = "Clock data." ];
 };
 
-message CameraCounter {
+message Counter {
   int32 counter_id                      = 1 [
-    (CFO).desc = "Counter ID within camera." ];
+    (CFO).desc = "Counter ID." ];
   int64 value                           = 2 [
     (CFO).desc = "Value of counter." ];
 };
 
-message ModuleCounter {
+message ModuleCounters {
   int32 module_id                       = 1 [
     (CFO).desc = "Module ID within camera." ];
-  int32 counter_id                      = 2 [
-    (CFO).desc = "Counter ID within module." ];
-  int64 value                           = 3 [
-    (CFO).desc = "Value of counter." ];
+  repeated Counter counter              = 2 [
+    (CFO).desc = "Counter data." ];
 };
 
 message IntegratedCharges {
@@ -142,13 +138,13 @@ message TelescopeEvent {
     (CFO).desc = "Flag for whether array trigger was received." ];
   int64 array_event_number              = 5 [
     (CFO).desc = "Array event number or \"-1\" if not received." ];
-  repeated CameraClockTime camera_time  = 6 [
+  repeated Clock camera_clock           = 6 [
     (CFO).desc = "Vector of camera clock times associated with event." ];
-  repeated ModuleClockTime module_time  = 7 [
+  repeated ModuleClocks module_clock    = 7 [
     (CFO).desc = "Vector of camera clock times associated with event." ];
-  repeated CameraCounter camera_counter = 8 [
+  repeated Counter camera_counter       = 8 [
     (CFO).desc = "Vector of camera counter values associated with event." ];
-  repeated ModuleCounter module_counter = 9 [
+  repeated ModuleCounters module_counter = 9 [
     (CFO).desc = "Vector of module counter values associated with event." ];
 
   ImageTreatmentMode image_treatment    = 99 [

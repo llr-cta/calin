@@ -82,19 +82,20 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       &cta_counters.counters().data().front());
     for(unsigned imod=0;imod<nmod;imod++)
     {
-#define add_counter(mod,id,val) \
+      auto* module_counters = calin_event->add_module_counter();
+      module_counters->set_module_id(imod);
+#define add_counter(id,val) \
       { \
-        auto* counter = calin_event->add_module_counter(); \
-        counter->set_module_id(mod); \
+        auto* counter = module_counters->add_counter(); \
         counter->set_counter_id(id); \
         counter->set_value(val); \
       }
-      add_counter(imod, 0, mod_counter->global_event_counter);
-      add_counter(imod, 1, mod_counter->bunch_counter);
-      add_counter(imod, 2, mod_counter->event_counter);
-      add_counter(imod, 3, mod_counter->ts1);
-      add_counter(imod, 4, mod_counter->ts2_bunch);
-      add_counter(imod, 5, mod_counter->ts2_event);
+      add_counter(0, mod_counter->global_event_counter);
+      add_counter(1, mod_counter->bunch_counter);
+      add_counter(2, mod_counter->event_counter);
+      add_counter(3, mod_counter->ts1);
+      add_counter(4, mod_counter->ts2_bunch);
+      add_counter(5, mod_counter->ts2_event);
 
 #define ts2_decode(x) ((x)&0xF0?((x)&0xC0?((x)&0x80?0:1):((x)&0x20?2:3)):\
                                 ((x)&0x0C?((x)&0x08?4:5):((x)&0x02?6:7)))
@@ -102,8 +103,9 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       int ts2_event = ts2_decode(mod_counter->ts2_event);
       int64_t time_ns = mod_counter->bunch_counter*1000000000LL
         + mod_counter->ts1*8LL + ts2_event - ts2_bunch;
-      auto* clock = calin_event->add_module_time();
-      clock->set_module_id(imod);
+      auto* module_clocks = calin_event->add_module_clock();
+      module_clocks->set_module_id(imod);
+      auto* clock = module_clocks->add_clock();
       clock->set_clock_id(0);
       clock->mutable_time()->set_time_ns(time_ns);
       mod_counter++;
