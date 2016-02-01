@@ -165,7 +165,7 @@ void MultiLogger::log_message(Level level, const std::string& message,
 {
   if(message.empty() || level==DISCARD)return;
 
-  lock();
+  lockable_.lock();
 
   if(sub_loggers_.empty() and sub_streams_.empty())
   {
@@ -209,22 +209,22 @@ void MultiLogger::log_message(Level level, const std::string& message,
     }
   }
 
-  unlock();
+  lockable_.unlock();
 }
 
 void MultiLogger::add_logger(Logger* logger, bool adopt_logger)
 {
-  lock();
+  lockable_.lock();
   nolock_add_logger(logger, adopt_logger);
-  unlock();
+  lockable_.unlock();
 }
 
 void MultiLogger::add_stream(std::ostream* stream, bool adopt_stream,
                              bool apply_timestamp, bool use_colors)
 {
-  lock();
+  lockable_.lock();
   nolock_add_stream(stream, adopt_stream, apply_timestamp, use_colors);
-  unlock();
+  lockable_.unlock();
 }
 
 void MultiLogger::nolock_add_logger(Logger* logger, bool adopt_logger)
@@ -269,16 +269,6 @@ bool MultiLogger::add_file(const std::string filename,
     delete stream;
     return false;
   }
-}
-
-void MultiLogger::lock()
-{
-
-}
-
-void MultiLogger::unlock()
-{
-
 }
 
 PythonLogger::~PythonLogger()

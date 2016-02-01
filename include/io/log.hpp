@@ -27,6 +27,8 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <mutex>
+#include <util/spinlock.hpp>
 
 namespace calin { namespace io { namespace log {
 
@@ -69,8 +71,6 @@ class MultiLogger: public Logger
                 bool apply_timestamp = false, bool use_colors = false);
 
  protected:
-  void lock();
-  void unlock();
 
   void nolock_add_logger(Logger* logger, bool adopt_logger);
   void nolock_add_stream(std::ostream* stream, bool adopt_stream,
@@ -102,6 +102,8 @@ class MultiLogger: public Logger
 
   std::vector<sub_logger> sub_loggers_;
   std::vector<sub_stream> sub_streams_;
+  std::mutex lockable_;
+  //util::spinlock::Spinlock lockable_;
 };
 
 inline MultiLogger* default_logger()
