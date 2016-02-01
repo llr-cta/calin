@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <atomic>
+
 namespace calin { namespace util { namespace spinlock {
 
 #if defined(__i386__) || defined(__x86_64__) || \
