@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/io/log.hpp -- Stephen Fegan -- 2015-05-12
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -60,12 +60,14 @@ class MultiLogger: public Logger
   void add_stream(std::ostream* stream, bool adopt_stream = false,
                   bool apply_timestamp = false, bool use_colors = false);
 
+  void clear_all_loggers_and_streams();
+
   void add_cout(bool apply_timestamp = false, bool use_colors = false);
   void add_cerr(bool apply_timestamp = false, bool use_colors = false);
   void add_clog(bool apply_timestamp = false, bool use_colors = false);
   bool add_file(const std::string filename,
                 bool apply_timestamp = false, bool use_colors = false);
-  
+
  protected:
   void lock();
   void unlock();
@@ -74,26 +76,28 @@ class MultiLogger: public Logger
   void nolock_add_stream(std::ostream* stream, bool adopt_stream,
                            bool apply_timestamp, bool use_colors);
 
-  
+
   class sub_logger
   {
    public:
-    sub_logger(Logger* logger_, bool adopt_logger_):
-        logger(logger_), adopt_logger(adopt_logger_) { }
-    Logger* logger = nullptr;
-    bool adopt_logger = false;
+    sub_logger(Logger* logger, bool adopt_logger):
+        logger_(logger), adopt_logger_(adopt_logger) { }
+    ~sub_logger() { if(adopt_logger_)delete logger_; }
+    Logger* logger_ = nullptr;
+    bool adopt_logger_ = false;
   };
-    
+
   struct sub_stream
   {
-    sub_stream(std::ostream* stream_, bool adopt_stream_, bool apply_timestamp_,
-               bool use_colors_):
-        stream(stream_), adopt_stream(adopt_stream_),
-        apply_timestamp(apply_timestamp_), use_colors(use_colors_) { }
-    std::ostream* stream = nullptr;
-    bool adopt_stream = false;
-    bool apply_timestamp = false;
-    bool use_colors = false;
+    sub_stream(std::ostream* stream, bool adopt_stream, bool apply_timestamp,
+               bool use_colors):
+        stream_(stream), adopt_stream_(adopt_stream),
+        apply_timestamp_(apply_timestamp), use_colors_(use_colors) { }
+    ~sub_stream() { if(adopt_stream_)delete stream_; }
+    std::ostream* stream_ = nullptr;
+    bool adopt_stream_ = false;
+    bool apply_timestamp_ = false;
+    bool use_colors_ = false;
   };
 
   std::vector<sub_logger> sub_loggers_;
@@ -204,7 +208,7 @@ class VaporStream
 };
 
 inline LoggerStream LOG(Level level, Logger* logger = default_logger())
-{  
+{
   return LoggerStream(logger, level);
 }
 
@@ -212,14 +216,14 @@ inline LoggerStream LOG(Level level, Logger* logger = default_logger())
 template<typename Streamer>
 const char* printv(Streamer& streamer, const char* format)
 {
-  
+
 }
 
 template<typename Streamer, typename T>
 const char* printv(Streamer& streamer, const char* format, const T& x)
 {
   std::ostringstream str;
-  
+
   while(*format)
   {
     if(*format == '%')
@@ -256,4 +260,3 @@ inline unsigned num_digits(unsigned x)
 }
 
 } } } // namespace calin::io::log
-

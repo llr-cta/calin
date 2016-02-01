@@ -154,6 +154,12 @@ MultiLogger::~MultiLogger()
   //nothing to see here
 }
 
+void MultiLogger::clear_all_loggers_and_streams()
+{
+  sub_loggers_.clear();
+  sub_streams_.clear();
+}
+
 void MultiLogger::log_message(Level level, const std::string& message,
                               TimeStamp timestamp)
 {
@@ -173,7 +179,7 @@ void MultiLogger::log_message(Level level, const std::string& message,
   {
     try
     {
-      sl.logger->log_message(level, message, timestamp);
+      sl.logger_->log_message(level, message, timestamp);
     }
     catch(...)
     {
@@ -190,11 +196,11 @@ void MultiLogger::log_message(Level level, const std::string& message,
   {
     try
     {
-      std::ostream* stream { ss.stream };
+      std::ostream* stream { ss.stream_ };
       write_message_lines([stream](const char* c, unsigned n) {
           stream->write(c,n); },
-        ss.apply_timestamp?timestamp_string.c_str():nullptr, this_level_string,
-        ss.use_colors?apply_color_string:nullptr, reset_color_string,
+        ss.apply_timestamp_?timestamp_string.c_str():nullptr, this_level_string,
+        ss.use_colors_?apply_color_string:nullptr, reset_color_string,
         message);
     }
     catch(...)
