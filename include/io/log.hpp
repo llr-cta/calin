@@ -60,15 +60,15 @@ class MultiLogger: public Logger
 
   void add_logger(Logger* logger, bool adopt_logger = false);
   void add_stream(std::ostream* stream, bool adopt_stream = false,
-                  bool apply_timestamp = false, bool use_colors = false);
+                  bool apply_timestamp = true, bool use_colors = false);
 
   void clear_all_loggers_and_streams();
 
-  void add_cout(bool apply_timestamp = false, bool use_colors = false);
-  void add_cerr(bool apply_timestamp = false, bool use_colors = false);
-  void add_clog(bool apply_timestamp = false, bool use_colors = false);
+  void add_cout(bool apply_timestamp = true, bool use_colors = true);
+  void add_cerr(bool apply_timestamp = true, bool use_colors = true);
+  void add_clog(bool apply_timestamp = true, bool use_colors = true);
   bool add_file(const std::string filename,
-                bool apply_timestamp = false, bool use_colors = false);
+                bool apply_timestamp = true, bool use_colors = false);
 
  protected:
 
@@ -80,8 +80,19 @@ class MultiLogger: public Logger
   class sub_logger
   {
    public:
+    sub_logger(const sub_logger&) = delete;
+    sub_logger& operator=(const sub_logger&) = delete;
     sub_logger(Logger* logger, bool adopt_logger):
         logger_(logger), adopt_logger_(adopt_logger) { }
+    sub_logger(sub_logger&& o) {
+      std::swap(logger_, o.logger_);
+      adopt_logger_ = o.adopt_logger_;
+    }
+    sub_logger& operator=(sub_logger&& o) {
+      std::swap(logger_, o.logger_);
+      adopt_logger_ = o.adopt_logger_;
+      return *this;
+    }
     ~sub_logger() { if(adopt_logger_)delete logger_; }
     Logger* logger_ = nullptr;
     bool adopt_logger_ = false;
@@ -89,10 +100,25 @@ class MultiLogger: public Logger
 
   struct sub_stream
   {
+    sub_stream(const sub_stream&) = delete;
+    sub_stream& operator=(const sub_stream&) = delete;
     sub_stream(std::ostream* stream, bool adopt_stream, bool apply_timestamp,
                bool use_colors):
         stream_(stream), adopt_stream_(adopt_stream),
         apply_timestamp_(apply_timestamp), use_colors_(use_colors) { }
+    sub_stream(sub_stream&& o) {
+      std::swap(stream_, o.stream_);
+      adopt_stream_ = o.adopt_stream_;
+      apply_timestamp_ = o.apply_timestamp_;
+      use_colors_ = o.use_colors_;
+    }
+    sub_stream& operator=(sub_stream&& o) {
+      std::swap(stream_, o.stream_);
+      adopt_stream_ = o.adopt_stream_;
+      apply_timestamp_ = o.apply_timestamp_;
+      use_colors_ = o.use_colors_;
+      return *this;
+    }
     ~sub_stream() { if(adopt_stream_)delete stream_; }
     std::ostream* stream_ = nullptr;
     bool adopt_stream_ = false;
@@ -104,6 +130,7 @@ class MultiLogger: public Logger
   std::vector<sub_stream> sub_streams_;
   std::mutex lockable_;
   //util::spinlock::Spinlock lockable_;
+  //util::spinlock::Nulllock lockable_;
 };
 
 inline MultiLogger* default_logger()

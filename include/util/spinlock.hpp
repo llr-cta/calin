@@ -48,6 +48,13 @@ class Spinlock
   std::atomic_flag locked = ATOMIC_FLAG_INIT ;
 };
 
+class Nulllock
+{
+ public:
+  inline void lock() { }
+  inline void unlock() { }
+};
+
 #undef SPINWAIT
 
 } } } // namespace calin::util::spinlock

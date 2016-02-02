@@ -36,7 +36,7 @@ std::string TimeStamp::string() const
   time_t ts = time_t(sec);
   struct tm the_tm;
   localtime_r(&ts, &the_tm);
-  char buffer[] = "1999-12-31 23:59:59";
+  char buffer[] = "1999-12-31T23:59:59";
   strftime(buffer, sizeof(buffer)-1, "%Y-%m-%dT%H:%M:%S", &the_tm);
   std::string str(buffer);
   uint32_t ms = usec/1000;
@@ -137,7 +137,7 @@ write_message_lines(Writer &&writer,
     else if(this_level_string and *this_level_string) {
       writer("[",1);
       writer(this_level_string, std::strlen(this_level_string));
-      writer("]",1);
+      writer("] ",2);
     }
 
     writer(message.c_str() + spos, n);
@@ -165,14 +165,14 @@ void MultiLogger::log_message(Level level, const std::string& message,
 {
   if(message.empty() || level==DISCARD)return;
 
-  lockable_.lock();
+  std::lock_guard<decltype(lockable_)> lockable_guard(lockable_);
 
   if(sub_loggers_.empty() and sub_streams_.empty())
   {
     if(PythonLogger::is_python_initialised())
       nolock_add_logger(new PythonLogger, true);
     else
-      nolock_add_stream(&std::cout, false, false, true);
+      nolock_add_stream(&std::cout, false, true, true);
   }
 
   for(auto& sl : sub_loggers_)
@@ -208,36 +208,31 @@ void MultiLogger::log_message(Level level, const std::string& message,
       // for better or worse - ignore all errors
     }
   }
-
-  lockable_.unlock();
 }
 
 void MultiLogger::add_logger(Logger* logger, bool adopt_logger)
 {
-  lockable_.lock();
+  std::lock_guard<decltype(lockable_)> lockable_guard(lockable_);
   nolock_add_logger(logger, adopt_logger);
-  lockable_.unlock();
 }
 
 void MultiLogger::add_stream(std::ostream* stream, bool adopt_stream,
                              bool apply_timestamp, bool use_colors)
 {
-  lockable_.lock();
+  std::lock_guard<decltype(lockable_)> lockable_guard(lockable_);
   nolock_add_stream(stream, adopt_stream, apply_timestamp, use_colors);
-  lockable_.unlock();
 }
 
 void MultiLogger::nolock_add_logger(Logger* logger, bool adopt_logger)
 {
-  sub_logger sl { logger, adopt_logger };
-  sub_loggers_.push_back(sl);
+  sub_loggers_.emplace_back(logger, adopt_logger);
 }
 
 void MultiLogger::nolock_add_stream(std::ostream* stream, bool adopt_stream,
                                       bool apply_timestamp, bool use_colors)
 {
-  sub_stream ss = { stream, adopt_stream, apply_timestamp, use_colors };
-  sub_streams_.push_back(ss);
+  sub_streams_.emplace_back(stream, adopt_stream,
+    apply_timestamp, use_colors);
 }
 
 void MultiLogger::add_cout(bool apply_timestamp, bool use_colors)

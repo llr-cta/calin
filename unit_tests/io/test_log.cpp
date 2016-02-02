@@ -21,7 +21,9 @@
 */
 
 #include <iostream>
+#include <fstream>
 #include <iomanip>
+#include <thread>
 #include <gtest/gtest.h>
 
 #include "io/log.hpp"
@@ -40,6 +42,25 @@ TEST(TestLog, WriteStream) {
   LOG(VERBOSE) << "Unfinished line";
   LOG(VERBOSE) << "Second unfinished line";
   LOG(VERBOSE) << "Unfinished multi-line\n   hello";
+}
+
+void hammer_log(unsigned id)
+{
+  for(unsigned i=0;i<10000;i++)
+    LOG(INFO) << "The quick red fox jumped over the lazy brown dog. " << id;
+}
+
+TEST(TestLog, MultiThreaded) {
+  default_logger()->clear_all_loggers_and_streams();
+  default_logger()->add_file("testlog.txt", false, false);
+  std::vector<std::thread> threads;
+  for(unsigned i=0;i<10;i++)threads.emplace_back(hammer_log, i);
+  for(auto& i : threads)i.join();
+  default_logger()->clear_all_loggers_and_streams();
+  std::ifstream stream("testlog.txt");
+  std::string line;
+  while(std::getline(stream, line))
+    ASSERT_EQ(line.size(), 58) << "Unexpected line size: " << line;
 }
 
 int main(int argc, char **argv) {
