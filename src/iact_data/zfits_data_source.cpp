@@ -105,23 +105,30 @@ ZFitsDataSourceOpener::ZFitsDataSourceOpener(std::string filename,
 {
   if(is_file(filename))
   {
-    filenames_.push_back(filename);
+    filenames_.emplace_back(filename);
     return;
   }
 
-  if(filename.size() > extension.size()
-      and filename.rfind(extension) == filename.size()-extension.size())
+  if(filename.size() > extension.size() and
+    filename.rfind(extension) == filename.size()-extension.size())
   {
     filename = filename.substr(0, filename.size()-extension.size());
   }
   else if(is_file(filename+extension))
   {
-    filenames_.push_back(filename+extension);
+    filenames_.emplace_back(filename+extension);
     return;
   }
 
-  for(unsigned i=1; is_file(filename+"."+std::to_string(i)+extension); i++)
-    filenames_.push_back(filename+"."+std::to_string(i)+extension);
+  for(unsigned i=1; true; ++i)
+  {
+    std::string filename_i { filename+"."+std::to_string(i)+extension };
+    if(not is_file(filename_i))break;
+    filenames_.emplace_back(filename_i);
+  }
+
+  if(filenames_.empty())
+    throw(std::runtime_error("File not found: "+filename));
 }
 
 ZFitsDataSourceOpener::~ZFitsDataSourceOpener()

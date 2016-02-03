@@ -21,6 +21,7 @@
 */
 
 #include <stdexcept>
+#include <string>
 
 #include <io/log.hpp>
 #include <util/file.hpp>
@@ -54,13 +55,14 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
 
   if(cta_event->has_higain())
     copy_single_gain_image(cta_event->higain(),
-      calin_event->mutable_high_gain_image());
+      calin_event->mutable_high_gain_image(), "high");
 
   if(cta_event->has_logain())
     copy_single_gain_image(cta_event->logain(),
-      calin_event->mutable_low_gain_image());
+      calin_event->mutable_low_gain_image(), "low");
 
-  if(cta_event->has_cameracounters())
+  if(cta_event->has_cameracounters() and
+    cta_event->cameracounters().has_counters())
   {
     struct NectarCounters {
       uint32_t global_event_counter;
@@ -72,14 +74,18 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       uint8_t  ts2_event;
     }__attribute__((packed));
 
-    auto& cta_counters = cta_event->cameracounters();
-    assert(cta_counters.has_counters());
-    assert(cta_counters.counters().type() == DataModel::AnyArray::U16);
-    assert(cta_counters.counters().data().size()%sizeof(NectarCounters) == 0);
+    const auto& cta_counters = cta_event->cameracounters().counters();
+#if 0
+    if(cta_counters.type() != DataModel::AnyArray::U16)
+      throw std::runtime_error("Camera counters type not U16");
+#endif
+    if(cta_counters.data().size()%sizeof(NectarCounters) != 0)
+      throw std::runtime_error("Camera counters data array not integral "
+        "multiple of expected structure size.");
     unsigned nmod =
-      cta_counters.counters().data().size()/sizeof(NectarCounters);
-    const auto* mod_counter = reinterpret_cast<const NectarCounters*>(
-      &cta_counters.counters().data().front());
+      cta_counters.data().size()/sizeof(NectarCounters);
+    const auto* mod_counter =
+      reinterpret_cast<const NectarCounters*>(&cta_counters.data().front());
     for(unsigned imod=0;imod<nmod;imod++)
     {
       auto* module_counters = calin_event->add_module_counter();
@@ -117,21 +123,29 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
 
 void NectarCamCameraEventDecoder::
 copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
-  calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image)
+  calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
+  const std::string& which_gain)
 {
-  if(cta_image.has_waveforms())
+  if(cta_image.has_waveforms() and cta_image.waveforms().has_samples())
   {
-    const auto& cta_wf = cta_image.waveforms();
+    const auto& cta_wf = cta_image.waveforms().samples();
     auto* calin_wf_image = calin_image->mutable_camera_waveforms();
-    assert(cta_wf.has_samples());
-    assert(cta_wf.samples().type() == DataModel::AnyArray::U16);
+#if 0
+    if(cta_wf.type() != DataModel::AnyArray::U16)
+      throw std::runtime_error("Waveform data type not U16 in " +
+        which_gain + " channel.");
+#endif
     unsigned nsample = config_.demand_nsample();
-    if(nsample == 0)nsample = cta_wf.num_samples();
-    assert(cta_wf.samples().data().size() % (sizeof(uint16_t)*nsample) == 0);
+    if(nsample == 0)nsample = cta_image.waveforms().num_samples();
+    if(nsample == 0)throw std::runtime_error("Number of samples is zero in "
+      + which_gain + " channel.");
+    if(cta_wf.data().size() % (sizeof(uint16_t)*nsample) != 0)
+      throw std::runtime_error("Waveform data array for " + which_gain +
+        " gain channel not integral multiple of nsample uint16.");
     calin_wf_image->set_num_samples_per_channel(nsample);
-    unsigned npix = cta_wf.samples().data().size()/(sizeof(uint16_t)*nsample);
+    unsigned npix = cta_wf.data().size()/(sizeof(uint16_t)*nsample);
     const uint16_t* cta_wf_data =
-      reinterpret_cast<const uint16_t*>(&cta_wf.samples().data().front());
+      reinterpret_cast<const uint16_t*>(&cta_wf.data().front());
     for(unsigned ipix=0;ipix<npix;ipix++)
     {
       auto* calin_wf = calin_wf_image->add_waveform();
@@ -140,16 +154,21 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
     }
   }
 
-  if(cta_image.has_integrals())
+  if(cta_image.has_integrals() and cta_image.integrals().has_gains())
   {
-    const auto& cta_q = cta_image.integrals();
+    const auto& cta_q = cta_image.integrals().gains();
     auto* calin_q_image = calin_image->mutable_camera_charges();
-    assert(cta_q.has_gains());
-    assert(cta_q.gains().type() == DataModel::AnyArray::U16);
-    assert(cta_q.gains().data().size() % sizeof(uint16_t) == 0);
-    unsigned npix = cta_q.gains().data().size()/sizeof(uint16_t);
+#if 0
+    if(cta_q.type() != DataModel::AnyArray::U16)
+      throw std::runtime_error("Integral data type not U16 in " +
+        which_gain + " channel.");
+#endif
+    if(cta_q.data().size() % sizeof(uint16_t) != 0)
+      throw std::runtime_error("Charge data array for " + which_gain +
+        " gain channel not integral multiple of uint16.");
+    unsigned npix = cta_q.data().size()/sizeof(uint16_t);
     const uint16_t* cta_q_data =
-      reinterpret_cast<const uint16_t*>(&cta_q.gains().data().front());
+      reinterpret_cast<const uint16_t*>(&cta_q.data().front());
     for(unsigned ipix=0;ipix<npix;ipix++)
       calin_q_image->add_charge(*cta_q_data++);
   }

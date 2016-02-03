@@ -58,7 +58,8 @@ public:
 
   private:
     void copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
-      calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image);
+      calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
+      const std::string& which_gain);
 
     config_type config_;
 };
