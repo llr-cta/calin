@@ -34,4 +34,6 @@ message ZFITSDataSourceConfig {
   string extension                      = 2 [
     (CFO).desc = "Standard extension for ZFits filenames, used for building "
       "chained data file names." ];
+  bool log_on_file_open                 = 3 [
+    (CFO).desc = "Send a message to the log when opening a file." ];
 };

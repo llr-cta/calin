@@ -68,26 +68,6 @@ private:
   uint64_t next_event_index_ = 0;
 };
 
-class ZFitsDataSourceOpener:
-  public calin::io::data_source::DataSourceOpener<
-    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>
-{
-public:
-  CALIN_TYPEALIAS(data_source_type,
-    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource);
-  ZFitsDataSourceOpener(std::string filename,
-    CTACameraEventDecoder* decoder, bool adopt_decoder = false,
-    const std::string& extension = ".fits.fz");
-  virtual ~ZFitsDataSourceOpener();
-  unsigned num_sources() override;
-  calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource*
-    open(unsigned isource) override;
-private:
-  std::vector<std::string> filenames_;
-  CTACameraEventDecoder* decoder_ = nullptr;
-  bool adopt_decoder_ = false;
-};
-
 class ZFITSDataSource:
   public calin::io::data_source::BasicChaninedRandomAccessDataSource<
     calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>
@@ -119,5 +99,28 @@ private:
 #endif
   config_type config_;
 };
+
+class ZFitsDataSourceOpener:
+  public calin::io::data_source::DataSourceOpener<
+    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>
+{
+public:
+  CALIN_TYPEALIAS(data_source_type,
+    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource);
+  ZFitsDataSourceOpener(std::string filename,
+    CTACameraEventDecoder* decoder, bool adopt_decoder = false,
+    const ZFITSDataSource::config_type& config =
+      ZFITSDataSource::default_config());
+  virtual ~ZFitsDataSourceOpener();
+  unsigned num_sources() override;
+  calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource*
+    open(unsigned isource) override;
+private:
+  std::vector<std::string> filenames_;
+  CTACameraEventDecoder* decoder_ = nullptr;
+  bool adopt_decoder_ = false;
+  ZFITSDataSource::config_type config_;
+};
+
 
 } } } // namespace calin::iact_data::nectarcam_data_source

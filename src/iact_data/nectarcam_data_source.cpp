@@ -178,6 +178,16 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
 
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
+  const config_type& config):
+  calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
+    decoder_ = new NectarCamCameraEventDecoder, false,
+    config)
+{
+  // nothing to see here
+}
+
+NectarCamZFITSDataSource::
+NectarCamZFITSDataSource(const std::string& filename,
   const decoder_config_type& decoder_config, const config_type& config):
   calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
     decoder_ = new NectarCamCameraEventDecoder(decoder_config), false,

@@ -38,8 +38,9 @@
 %include "calin_typemaps.i"
 
 %import "calin_global_definitions.i"
-%import "iact_data/nectarcam_data_source.pb.i"
 %import "iact_data/telescope_event.pb.i"
+%import "iact_data/zfits_data_source.pb.i"
+%import "iact_data/nectarcam_data_source.pb.i"
 
 %newobject get_next();
 //%newobject calin::iact_data::telescope_data_source::TelescopeDataSource::get_next();
