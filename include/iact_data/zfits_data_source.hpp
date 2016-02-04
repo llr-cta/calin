@@ -52,17 +52,9 @@ class ZFITSSingleFileDataSource: public
   calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource
 {
 public:
-  CALIN_TYPEALIAS(config_type,
-    calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
-
   ZFITSSingleFileDataSource(const std::string& filename,
-    CTACameraEventDecoder* decoder, bool adopt_decoder = false,
-    const config_type& config = config_type::default_instance());
+    CTACameraEventDecoder* decoder, bool adopt_decoder = false);
   virtual ~ZFITSSingleFileDataSource();
-
-  void set_config(const config_type& config) { config_.CopyFrom(config); }
-  const config_type& config() const { return config_; }
-  config_type* mutable_config() { return &config_; }
 
   calin::ix::iact_data::telescope_event::TelescopeEvent* get_next() override;
   uint64_t size() override;
@@ -71,9 +63,9 @@ public:
 private:
   std::string filename_;
   ACTL::IO::ProtobufIFits* zfits_ = nullptr;
-  config_type config_;
   CTACameraEventDecoder* decoder_ = nullptr;
   bool adopt_decoder_ = false;
+  uint64_t next_event_index_ = 0;
 };
 
 class ZFitsDataSourceOpener:
@@ -101,10 +93,31 @@ class ZFITSDataSource:
     calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>
 {
 public:
+  CALIN_TYPEALIAS(config_type,
+    calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
+
   ZFITSDataSource(const std::string& filename,
     CTACameraEventDecoder* decoder, bool adopt_decoder = false,
-    const std::string& extension = ".fits.fz");
+    const config_type& config = default_config());
   virtual ~ZFITSDataSource();
+
+  static const config_type& default_config() { return default_config_.x; }
+  static config_type* new_default_config() {
+    return new config_type(default_config()); }
+  const config_type& config() const { return config_; }
+
+private:
+#ifndef SWIG
+  // Purpose is to set the extension to our default value in the static member
+  class config_helper
+  {
+  public:
+    config_helper() { x.set_extension(".fits.fz"); }
+    config_type x;
+  };
+  static config_helper default_config_;
+#endif
+  config_type config_;
 };
 
 } } } // namespace calin::iact_data::nectarcam_data_source

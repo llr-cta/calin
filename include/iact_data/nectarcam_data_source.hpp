@@ -82,7 +82,7 @@ public:
 
   NectarCamZFITSDataSource(const std::string& filename,
     const decoder_config_type& decoder_config = default_decoder_config(),
-    const std::string& extension = ".fits.fz");
+    const config_type& config = default_config());
   virtual ~NectarCamZFITSDataSource();
 private:
   NectarCamCameraEventDecoder* decoder_;

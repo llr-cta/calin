@@ -36,6 +36,8 @@ using calin::iact_data::zfits_data_source::ZFITSSingleFileDataSource;
 #include <ProtobufIFits.h>
 #include <L0.pb.h>
 
+#define TEST_ANYARRAY_TYPES 0
+
 NectarCamCameraEventDecoder::~NectarCamCameraEventDecoder()
 {
   // nothing to see here
@@ -75,7 +77,7 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
     }__attribute__((packed));
 
     const auto& cta_counters = cta_event->cameracounters().counters();
-#if 0
+#if TEST_ANYARRAY_TYPES
     if(cta_counters.type() != DataModel::AnyArray::U16)
       throw std::runtime_error("Camera counters type not U16");
 #endif
@@ -130,9 +132,9 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
   {
     const auto& cta_wf = cta_image.waveforms().samples();
     auto* calin_wf_image = calin_image->mutable_camera_waveforms();
-#if 0
+#if TEST_ANYARRAY_TYPES
     if(cta_wf.type() != DataModel::AnyArray::U16)
-      throw std::runtime_error("Waveform data type not U16 in " +
+      throw std::runtime_error("Waveform data type not uint16 in " +
         which_gain + " channel.");
 #endif
     unsigned nsample = config_.demand_nsample();
@@ -158,9 +160,9 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
   {
     const auto& cta_q = cta_image.integrals().gains();
     auto* calin_q_image = calin_image->mutable_camera_charges();
-#if 0
+#if TEST_ANYARRAY_TYPES
     if(cta_q.type() != DataModel::AnyArray::U16)
-      throw std::runtime_error("Integral data type not U16 in " +
+      throw std::runtime_error("Integral data type not uint16 in " +
         which_gain + " channel.");
 #endif
     if(cta_q.data().size() % sizeof(uint16_t) != 0)
@@ -176,11 +178,10 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
 
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
-  const decoder_config_type& decoder_config,
-  const std::string& extension):
+  const decoder_config_type& decoder_config, const config_type& config):
   calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
     decoder_ = new NectarCamCameraEventDecoder(decoder_config), false,
-    extension)
+    config)
 {
   // nothing to see here
 }
