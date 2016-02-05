@@ -142,7 +142,7 @@ ZFitsDataSourceOpener::open(unsigned isource)
   return new ZFITSSingleFileDataSource(filenames_[isource], decoder_, false);
 }
 
-ZFITSDataSource::config_helper ZFITSDataSource::default_config_;
+//ZFITSDataSource::config_helper ZFITSDataSource::default_config_;
 
 ZFITSDataSource::ZFITSDataSource(const std::string& filename,
   CTACameraEventDecoder* decoder, bool adopt_decoder,

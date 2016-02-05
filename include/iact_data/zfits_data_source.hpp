@@ -81,22 +81,16 @@ public:
     const config_type& config = default_config());
   virtual ~ZFITSDataSource();
 
-  static const config_type& default_config() { return default_config_.x; }
+  static config_type default_config() {
+    config_type config = config_type::default_instance();
+    config.set_extension(".fits.fz");
+    return config;
+  }
   static config_type* new_default_config() {
     return new config_type(default_config()); }
   const config_type& config() const { return config_; }
 
 private:
-#ifndef SWIG
-  // Purpose is to set the extension to our default value in the static member
-  class config_helper
-  {
-  public:
-    config_helper() { x.set_extension(".fits.fz"); }
-    config_type x;
-  };
-  static config_helper default_config_;
-#endif
   config_type config_;
 };
 
