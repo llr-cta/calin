@@ -86,8 +86,6 @@ public:
     config.set_extension(".fits.fz");
     return config;
   }
-  static config_type* new_default_config() {
-    return new config_type(default_config()); }
   const config_type& config() const { return config_; }
 
 private:
