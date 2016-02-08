@@ -76,7 +76,7 @@ public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
-  ZFITSDataSource(const std::string& filename,
+  ZFITSDataSource(const std::string& filename, bool exact_filename_only,
     CTACameraEventDecoder* decoder, bool adopt_decoder = false,
     const config_type& config = default_config());
   virtual ~ZFITSDataSource();
@@ -99,7 +99,7 @@ class ZFitsDataSourceOpener:
 public:
   CALIN_TYPEALIAS(data_source_type,
     calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource);
-  ZFitsDataSourceOpener(std::string filename,
+  ZFitsDataSourceOpener(std::string filename, bool exact_filename_only,
     CTACameraEventDecoder* decoder, bool adopt_decoder = false,
     const ZFITSDataSource::config_type& config =
       ZFITSDataSource::default_config());

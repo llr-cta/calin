@@ -87,6 +87,7 @@ void ZFITSSingleFileDataSource::set_next_index(uint64_t next_index)
 }
 
 ZFitsDataSourceOpener::ZFitsDataSourceOpener(std::string filename,
+  bool exact_filename_only,
   CTACameraEventDecoder* decoder, bool adopt_decoder,
   const ZFITSDataSource::config_type& config):
   DataSourceOpener<calin::iact_data::
@@ -96,7 +97,10 @@ ZFitsDataSourceOpener::ZFitsDataSourceOpener(std::string filename,
   if(is_file(filename))
   {
     filenames_.emplace_back(filename);
-    return;
+  }
+  else if(exact_filename_only)
+  {
+    throw(std::runtime_error("File not found: "+ filename));
   }
 
   std::string extension = config_.extension();
@@ -108,7 +112,6 @@ ZFitsDataSourceOpener::ZFitsDataSourceOpener(std::string filename,
   else if(is_file(filename+extension))
   {
     filenames_.emplace_back(filename+extension);
-    return;
   }
 
   for(unsigned i=1; true; ++i)
@@ -145,11 +148,13 @@ ZFitsDataSourceOpener::open(unsigned isource)
 //ZFITSDataSource::config_helper ZFITSDataSource::default_config_;
 
 ZFITSDataSource::ZFITSDataSource(const std::string& filename,
+  bool exact_filename_only,
   CTACameraEventDecoder* decoder, bool adopt_decoder,
   const config_type& config):
   BasicChaninedRandomAccessDataSource<calin::iact_data::
       telescope_data_source::TelescopeRandomAccessDataSource>(
-    new ZFitsDataSourceOpener(filename,decoder,adopt_decoder, config), true),
+    new ZFitsDataSourceOpener(filename, exact_filename_only, decoder,
+      adopt_decoder, config), true),
   config_(config)
 {
   // nothing to see here

@@ -83,6 +83,9 @@ public:
   NectarCamZFITSDataSource(const std::string& filename,
     const config_type& config);
   NectarCamZFITSDataSource(const std::string& filename,
+    bool exact_filename_only, const config_type& config);
+  NectarCamZFITSDataSource(const std::string& filename,
+    bool exact_filename_only = false,
     const decoder_config_type& decoder_config = default_decoder_config(),
     const config_type& config = default_config());
   virtual ~NectarCamZFITSDataSource();

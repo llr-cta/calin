@@ -71,8 +71,8 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       uint16_t bunch_counter;
       uint16_t event_counter;
       uint32_t ts1;
-      uint8_t  ts2_bunch;
       uint8_t  ts2_event;
+      uint8_t  ts2_bunch;
       uint16_t ts2_empty;
     }__attribute__((packed));
 
@@ -104,7 +104,7 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       add_counter(3, mod_counter->ts1);
       add_counter(4, mod_counter->ts2_bunch);
       add_counter(5, mod_counter->ts2_event);
-      add_counter(5, mod_counter->ts2_empty);
+      add_counter(6, mod_counter->ts2_empty);
 
 #define ts2_decode(x) ((x)&0xF0?((x)&0xC0?((x)&0x80?0:1):((x)&0x20?2:3)):\
                                 ((x)&0x0C?((x)&0x08?4:5):((x)&0x02?6:7)))
@@ -180,7 +180,7 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
   const config_type& config):
-  calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
+  calin::iact_data::zfits_data_source::ZFITSDataSource(filename, false,
     decoder_ = new NectarCamCameraEventDecoder, false,
     config)
 {
@@ -189,8 +189,19 @@ NectarCamZFITSDataSource(const std::string& filename,
 
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
+  bool exact_filename_only, const config_type& config):
+  calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
+    exact_filename_only, decoder_ = new NectarCamCameraEventDecoder, false,
+    config)
+{
+  // nothing to see here
+}
+
+NectarCamZFITSDataSource::
+NectarCamZFITSDataSource(const std::string& filename, bool exact_filename_only,
   const decoder_config_type& decoder_config, const config_type& config):
   calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
+    exact_filename_only,
     decoder_ = new NectarCamCameraEventDecoder(decoder_config), false,
     config)
 {
