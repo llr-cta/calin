@@ -20,16 +20,8 @@ set(CALIN_PROTO_INSTALL_DIR proto)
 
 message(STATUS "PROTOBUF_IMPORT_DIRS: " ${PROTOBUF_IMPORT_DIRS})
 message(STATUS "PROTOBUF_INCLUDE_DIRS: " ${PROTOBUF_INCLUDE_DIRS})
+message(STATUS "PROTOBUF_LIBRARY: " ${PROTOBUF_LIBRARY})
 
-PROTOBUF_GENERATE_CPP(ProtoSources ProtoHeaders
-					 calin.proto ${CALIN_SWIG_PROTO})
-
-add_library(${CALIN_TARGET_LIBRARY} SHARED ${ProtoSources})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY})
-install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)
-install(FILES calin.proto DESTINATION proto)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/calin.pb.h DESTINATION proto/${CALIN_PACKAGE})
 install(FILES __init__.py DESTINATION ${CALIN_SWIG_INSTALL_DIR})
 
 ######################################################################
@@ -47,13 +39,17 @@ macro(make_proto_modules arg_proto_library arg_proto_install_dir)
 	endforeach (proto_interface_file)
 	add_library(${arg_proto_library} SHARED ${proto_cxx})
 	include_directories(${CMAKE_CURRENT_BINARY_DIR})
-	target_link_libraries(${arg_proto_library} calin_proto ${PROTOBUF_LIBRARY})
+	if(${arg_proto_library} STREQUAL "calin_proto")
+		target_link_libraries(${arg_proto_library} ${PROTOBUF_LIBRARY})
+	else()
+		target_link_libraries(${arg_proto_library} calin_proto ${PROTOBUF_LIBRARY})
+	endif()
 	install(TARGETS ${arg_proto_library} DESTINATION lib)
 	install(FILES ${proto_interface_file} DESTINATION ${arg_proto_install_dir})
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.h DESTINATION ${arg_proto_install_dir})
 endmacro()
 
-macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir arg_proto_install_dir)
+macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
 	foreach (proto_interface_file ${ARGN})
 		string(REPLACE ".proto" "" base_name ${proto_interface_file})
   	set(interface_file ${base_name}.pb.i)
@@ -70,8 +66,8 @@ macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir arg_proto_i
 		target_link_libraries(_${base_name}_pb calin_proto ${arg_proto_library} ${PYTHON_LIBRARIES} ${PROTOBUF_LIBRARY})
 		install(TARGETS _${base_name}_pb  DESTINATION ${arg_swig_install_dir})
 		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.py  DESTINATION ${arg_swig_install_dir})
-		install(FILES ${proto_interface_file} DESTINATION ${arg_proto_install_dir})
-		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.h DESTINATION ${arg_proto_install_dir})
+#		install(FILES ${proto_interface_file} DESTINATION ${arg_proto_install_dir})
+#		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.h DESTINATION ${arg_proto_install_dir})
 	endforeach (proto_interface_file)
 endmacro()
 
@@ -79,8 +75,10 @@ endmacro()
 # GENERATE SWIG INTERFACE FILES
 ######################################################################
 
+make_proto_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PROTO_INSTALL_DIR}
+	calin.proto ${CALIN_SWIG_PROTO})
 make_proto_swig_modules(${CALIN_TARGET_LIBRARY} ${CALIN_SWIG_INSTALL_DIR}
-		${CALIN_PROTO_INSTALL_DIR} ${CALIN_SWIG_PROTO})
+		${CALIN_SWIG_PROTO})
 
 ######################################################################
 # SUB DIRECTORIES
