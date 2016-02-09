@@ -23,6 +23,7 @@
 syntax = "proto3";
 
 import "calin.proto";
+import "math/histogram.proto";
 //import "common_types.proto";
 
 package calin.ix.diagnostics.waveform;
@@ -51,7 +52,9 @@ message WaveformPSD {
 
 message WaveformDiagnostics {
   WaveformMean mean                    = 1 [
-    (CFO).desc = "Mean PSD of waveform." ];
+    (CFO).desc = "Mean and RMS of waveform." ];
   WaveformPSD psd                      = 2 [
-    (CFO).desc = "Variance in PSD of waveform." ];
+    (CFO).desc = "Mean and RMS of waveform PSD." ];
+  math.histogram.Histogram1DData mean_pulse_time = 3 [
+    (CFO).desc = "Mean pulse time from start of waveform." ];
 };

@@ -36,16 +36,34 @@ install(FILES __init__.py DESTINATION ${CALIN_SWIG_INSTALL_DIR})
 # MACRO TO GENERATE SWIG INTERFACE FILES
 ######################################################################
 
+macro(make_proto_modules arg_proto_library arg_proto_install_dir)
+	set(proto_cxx "")
+	foreach (proto_interface_file ${ARGN})
+		string(REPLACE ".proto" "" base_name ${proto_interface_file})
+		add_custom_command(OUTPUT ${base_name}.pb.cc
+			COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I${PROTOBUF_IMPORT_DIRS} --cpp_out=${CMAKE_BINARY_DIR}/proto ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
+			DEPENDS ${proto_interface_file})
+		set(proto_cxx ${proto_cxx} ${base_name}.pb.cc)
+	endforeach (proto_interface_file)
+	add_library(${arg_proto_library} SHARED ${proto_cxx})
+	include_directories(${CMAKE_CURRENT_BINARY_DIR})
+	target_link_libraries(${arg_proto_library} calin_proto ${PROTOBUF_LIBRARY})
+	install(TARGETS ${arg_proto_library} DESTINATION lib)
+	install(FILES ${proto_interface_file} DESTINATION ${arg_proto_install_dir})
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.h DESTINATION ${arg_proto_install_dir})
+endmacro()
+
 macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir arg_proto_install_dir)
 	foreach (proto_interface_file ${ARGN})
 		string(REPLACE ".proto" "" base_name ${proto_interface_file})
   	set(interface_file ${base_name}.pb.i)
 		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${interface_file}
-			COMMAND protoc --plugin=protoc-gen-swig=${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig --swig_out=${CMAKE_BINARY_DIR}/proto -I${PROTOBUF_IMPORT_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
+			COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --plugin=protoc-gen-swig=${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig --swig_out=${CMAKE_BINARY_DIR}/proto -I${PROTOBUF_IMPORT_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
 		  DEPENDS ${proto_interface_file} ${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig)
 		add_custom_command(OUTPUT ${base_name}.pb_wrap.cxx
 		  COMMAND ${SWIG_EXECUTABLE} ${CMAKE_SWIG_FLAGS} -interface _${base_name}_pb  -c++ -python ${interface_file}
 		  DEPENDS ${interface_file})
+		include_directories(${CMAKE_CURRENT_BINARY_DIR})
 		add_library(_${base_name}_pb MODULE ${base_name}.pb_wrap.cxx)
 		set_target_properties(_${base_name}_pb PROPERTIES NO_SONAME ON)
 		set_target_properties(_${base_name}_pb PROPERTIES PREFIX "")
