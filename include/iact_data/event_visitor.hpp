@@ -36,12 +36,12 @@ public:
   virtual ~TelescopeEventVisitor();
 
   virtual bool visit_telescope_event(
-    ix::iact_data::telescope_event::TelescopeEvent* event);
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event);
   virtual bool leave_telescope_event();
 
   virtual bool visit_waveform(unsigned ichan,
-    ix::iact_data::telescope_event::ChannelWaveform* high_gain,
-    ix::iact_data::telescope_event::ChannelWaveform* low_gain);
+    calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain);
 };
 
 } } } // namespace calin::iact_data::event_visitor

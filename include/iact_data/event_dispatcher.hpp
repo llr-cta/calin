@@ -37,15 +37,19 @@ class TelescopeEventDispatcher
 public:
   TelescopeEventDispatcher();
   ~TelescopeEventDispatcher();
-  void add_visitor(event_visitor::TelescopeEventVisitor* visitor,
+  void add_visitor(
+    calin::iact_data::event_visitor::TelescopeEventVisitor* visitor,
     bool adopt_visitor = false);
-  void accept(ix::iact_data::telescope_event::TelescopeEvent* event);
+  void accept(
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event);
   void accept_from_src(
-    iact_data::telescope_data_source::TelescopeDataSource* src,
+    calin::iact_data::telescope_data_source::TelescopeDataSource* src,
     unsigned num_event_max = 0);
 private:
-  std::vector<event_visitor::TelescopeEventVisitor*> adopted_visitors_;
-  std::vector<event_visitor::TelescopeEventVisitor*> visitors_;
+  std::vector<calin::iact_data::event_visitor::TelescopeEventVisitor*>
+    adopted_visitors_;
+  std::vector<calin::iact_data::event_visitor::TelescopeEventVisitor*>
+    visitors_;
 };
 
 } } } // namespace calin::iact_data::event_dispatcher

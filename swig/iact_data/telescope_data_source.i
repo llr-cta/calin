@@ -20,7 +20,6 @@
 
 */
 
-
 %module (package="calin.iact_data") telescope_data_source
 
 %{

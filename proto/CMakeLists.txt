@@ -22,10 +22,8 @@ message(STATUS "PROTOBUF_IMPORT_DIRS: " ${PROTOBUF_IMPORT_DIRS})
 message(STATUS "PROTOBUF_INCLUDE_DIRS: " ${PROTOBUF_INCLUDE_DIRS})
 message(STATUS "PROTOBUF_LIBRARY: " ${PROTOBUF_LIBRARY})
 
-install(FILES __init__.py DESTINATION ${CALIN_SWIG_INSTALL_DIR})
-
 ######################################################################
-# MACRO TO GENERATE SWIG INTERFACE FILES
+# MACRO TO GENERATE PROTOBUF C++ AND SWIG FILES AND COMPILE THEM
 ######################################################################
 
 macro(make_proto_modules arg_proto_library arg_proto_install_dir)
@@ -66,8 +64,7 @@ macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
 		target_link_libraries(_${base_name}_pb calin_proto ${arg_proto_library} ${PYTHON_LIBRARIES} ${PROTOBUF_LIBRARY})
 		install(TARGETS _${base_name}_pb  DESTINATION ${arg_swig_install_dir})
 		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.py  DESTINATION ${arg_swig_install_dir})
-#		install(FILES ${proto_interface_file} DESTINATION ${arg_proto_install_dir})
-#		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.h DESTINATION ${arg_proto_install_dir})
+		install(FILES __init__.py DESTINATION ${arg_swig_install_dir})
 	endforeach (proto_interface_file)
 endmacro()
 
