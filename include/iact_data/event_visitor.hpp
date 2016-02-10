@@ -26,18 +26,22 @@
 
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
-#include <telescope_event.pb.h>
+#include <iact_data/telescope_event.pb.h>
 
 namespace calin { namespace iact_data { namespace event_visitor {
 
-class TelescopeEventVisitor {
+class TelescopeEventVisitor
+{
+public:
   virtual ~TelescopeEventVisitor();
 
   virtual bool visit_telescope_event(
     ix::iact_data::telescope_event::TelescopeEvent* event);
   virtual bool leave_telescope_event();
 
-  virtual bool visit_channel();
+  virtual bool visit_waveform(unsigned ichan,
+    ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+    ix::iact_data::telescope_event::ChannelWaveform* low_gain);
 };
 
 } } } // namespace calin::iact_data::event_visitor

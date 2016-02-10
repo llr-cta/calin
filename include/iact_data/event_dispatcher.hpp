@@ -31,5 +31,15 @@
 
 namespace calin { namespace iact_data { namespace event_dispatcher {
 
+class TelescopeEventDispatcher
+{
+public:
+  TelescopeEventDispatcher();
+  ~TelescopeEventDispatcher();
+  void accept(ix::iact_data::telescope_event::TelescopeEvent* event);
+  void accept_from_src(
+    iact_data::telescope_data_source::TelescopeDataSource* src,
+    unsigned num_event_max = 0);
+};
 
 } } } // namespace calin::iact_data::event_dispatcher

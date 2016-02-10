@@ -14,7 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_TARGET_LIBRARY calin_iact_data)
-set(CALIN_SOURCES telescope_data_source.cpp)
+set(CALIN_SOURCES telescope_data_source.cpp event_dispatcher)
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES} zfits_data_source.cpp
 		nectarcam_data_source.cpp)

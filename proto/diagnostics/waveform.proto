@@ -29,32 +29,34 @@ import "math/histogram.proto";
 package calin.ix.diagnostics.waveform;
 
 message WaveformMean {
-  uint32 num_entries                   = 1 [
+  uint32 num_entries                                       = 1 [
     (CFO).desc = "Number of waveforms accumulated in the stats." ];
-  double sampling_period               = 2 [
+  double sampling_period                                   = 2 [
     (CFO).desc = "Time between each sample of waveform.", (CFO).units = "ns" ];
-  repeated double waveform_mean        = 3 [
+  repeated double waveform_mean                            = 3 [
     (CFO).desc = "Mean waveform." ];
-  repeated double waveform_rms         = 4 [
+  repeated double waveform_rms                             = 4 [
     (CFO).desc = "RMS of waveform." ];
 };
 
 message WaveformPSD {
-  uint32 num_entries                   = 1 [
+  uint32 num_entries                                       = 1 [
     (CFO).desc = "Number of waveforms accumulated in the stats." ];
-  double sampling_frequency            = 2 [
+  double sampling_frequency                                = 2 [
     (CFO).desc = "Sampling frequency.", (CFO).units = "GHz" ];
-  repeated double psd_mean             = 3 [
+  repeated double psd_mean                                 = 3 [
     (CFO).desc = "Mean waveform." ];
-  repeated double psd_rms              = 4 [
+  repeated double psd_rms                                  = 4 [
     (CFO).desc = "RMS of waveform." ];
 };
 
 message WaveformDiagnostics {
-  WaveformMean mean                    = 1 [
+  WaveformMean mean                                        = 1 [
     (CFO).desc = "Mean and RMS of waveform." ];
-  WaveformPSD psd                      = 2 [
+  WaveformPSD psd                                          = 2 [
     (CFO).desc = "Mean and RMS of waveform PSD." ];
-  math.histogram.Histogram1DData mean_pulse_time = 3 [
+  math.histogram.Histogram1DData mean_pulse_time           = 3 [
     (CFO).desc = "Mean pulse time from start of waveform." ];
+  math.histogram.Histogram1DData rms_pulse_time            = 4 [
+    (CFO).desc = "RMS pulse time." ];
 };
