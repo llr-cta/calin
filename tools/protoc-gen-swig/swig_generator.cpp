@@ -421,7 +421,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
           "  $$self->set_$name$(index, INPUT); }\n");
         if(is_type_compatible_with_numpy(f->type()))
           I->Print(vars,
-            "void set_$name$(intptr_t DIM1, const $type$* IN_ARRAY1) {\n"
+            "void set_$name$(intptr_t DIM1, $type$* IN_ARRAY1) {\n"
             "  auto* array = $$self->mutable_$name$();\n"
             "  if(array->size()>DIM1)array->Truncate(DIM1);\n"
             "  for(int i=0;i<array->size();i++)array->Set(i,IN_ARRAY1[i]);\n"
