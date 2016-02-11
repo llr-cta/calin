@@ -331,15 +331,15 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Indent();
         I->Print(vars,
           "const $type$& const_$name$(int index) const {\n"
-          "  if(index<0 || index>$$self->$name$_size())\n"
+          "  if(index<0 || index>=$$self->$name$_size())\n"
           "    throw std::range_error(\"Index out of range\");\n"
           "  return $$self->$name$(index); }\n"
           "$type$* mutable_$name$(int index) {\n"
-          "  if(index<0 || index>$$self->$name$_size())\n"
+          "  if(index<0 || index>=$$self->$name$_size())\n"
           "    throw std::range_error(\"Index out of range\");\n"
           "  return $$self->mutable_$name$(index); }\n"
           "$type$* $name$(int index) {\n"
-          "  if(index<0 || index>$$self->$name$_size())\n"
+          "  if(index<0 || index>=$$self->$name$_size())\n"
           "    throw std::range_error(\"Index out of range\");\n"
           "  return $$self->mutable_$name$(index); }\n");
         I->Outdent();
@@ -352,11 +352,11 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Indent();
         I->Print(vars,
           "void $name$(int index, std::string& CALIN_BYTES_OUT) const {\n"
-          "  if(index<0 || index>$$self->$name$_size())\n"
+          "  if(index<0 || index>=$$self->$name$_size())\n"
           "    throw std::range_error(\"Index out of range\");\n"
           "  CALIN_BYTES_OUT = $$self->$name$(index); }\n"
           "void set_$name$(int index, const std::string& CALIN_BYTES_IN) {\n"
-          "  if(index<0 || index>$$self->$name$_size())\n"
+          "  if(index<0 || index>=$$self->$name$_size())\n"
           "    throw std::range_error(\"Index out of range\");\n"
           "  $$self->set_$name$(index, CALIN_BYTES_IN); }\n"
           "void add_$name$(const std::string& CALIN_BYTES_IN) {\n"
@@ -370,11 +370,11 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Indent();
         I->Print(vars,
           "std::string $name$(int index) const {\n"
-          "  if(index<0 || index>$$self->$name$_size())\n"
+          "  if(index<0 || index>=$$self->$name$_size())\n"
           "    throw std::range_error(\"Index out of range\");\n"
           "  return $$self->$name$(index); }\n"
           "void set_$name$(int index, const std::string& INPUT) {\n"
-          "  if(index<0 || index>$$self->$name$_size())\n"
+          "  if(index<0 || index>=$$self->$name$_size())\n"
           "    throw std::range_error(\"Index out of range\");\n"
           "  $$self->set_$name$(index, INPUT); }\n"
           "void $name$(std::vector<std::string> &OUTPUT) {\n"
@@ -396,11 +396,11 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Indent();
         I->Print(vars,
           "$type$ $name$(int index) const {\n"
-          "  if(index<0 || index>$$self->$name$_size())\n"
+          "  if(index<0 || index>=$$self->$name$_size())\n"
           "    throw std::range_error(\"Index out of range\");\n"
           "  return $$self->$name$(index); }\n"
           "void set_$name$(int index, $type$ INPUT) {\n"
-          "  if(index<0 || index>$$self->$name$_size())\n"
+          "  if(index<0 || index>=$$self->$name$_size())\n"
           "    throw std::range_error(\"Index out of range\");\n"
           "  $$self->set_$name$(index, INPUT); }\n");
         if(is_type_compatible_with_numpy(f->type()))
