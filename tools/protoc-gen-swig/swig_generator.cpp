@@ -135,11 +135,11 @@ string ALLCAPSCASE(const string& s)
 
 void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
 {
-  I->Print("");
   std::map<string, string> vars;
   vars["enum_name"] = e->name();
-  I->Print(vars,"\n"
-           "enum $enum_name$ {\n");
+  I->Print(vars,
+    "\n"
+    "enum $enum_name$ {\n");
   I->Indent();
   int jmax = 0;
   int jmin = 0;
@@ -159,12 +159,12 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
   vars["min_val"] = e->value(jmin)->name();
   vars["max_val"] = e->value(jmax)->name();
   I->Print(vars, "};\n\n"
-           "$static$bool $enum_name$_IsValid(int value);\n"
-           "$static$const std::string& $enum_name$_Name($enum_name$ value);\n"
-           "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$ *CALIN_INIT_OUTPUT);\n"
-           "%clear $enum_name$* value;\n"
-           "$static$const $enum_name$ $enum_name$_MIN = $min_val$;\n"
-           "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n");
+    "$static$bool $enum_name$_IsValid(int value);\n"
+    "$static$const std::string& $enum_name$_Name($enum_name$ value);\n"
+    "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$ *CALIN_INIT_OUTPUT);\n"
+    "%clear $enum_name$* value;\n"
+    "$static$const $enum_name$ $enum_name$_MIN = $min_val$;\n"
+    "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n");
 }
 
 string field_type(const google::protobuf::FieldDescriptor* f,
@@ -222,18 +222,19 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       print_message(I, d->nested_type(i));
 
   string the_class_name = class_name(d);
-  I->Print("\n"
-           "class $class_name$ : public google::protobuf::Message \n"
-           "{\n"
-           " public:\n"
-           "  $class_name$();\n"
-           "  ~$class_name$();\n"
-           "  $class_name$(const $class_name$& other);\n"
-           "  void Swap($class_name$* other);\n"
-           "\n"
-           "  static const google::protobuf::Descriptor* descriptor();\n"
-           "  static const $class_name$& default_instance();\n",
-           "class_name", the_class_name);
+  I->Print(
+    "\n"
+    "class $class_name$ : public google::protobuf::Message \n"
+    "{\n"
+    " public:\n"
+    "  $class_name$();\n"
+    "  ~$class_name$();\n"
+    "  $class_name$(const $class_name$& other);\n"
+    "  void Swap($class_name$* other);\n"
+    "\n"
+    "  static const google::protobuf::Descriptor* descriptor();\n"
+    "  static const $class_name$& default_instance();\n",
+    "class_name", the_class_name);
   I->Indent();
 
   // Typedefs for nested types
@@ -275,8 +276,9 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     }
     I->Print(vars, "$oo_ac_name$_NOT_SET = 0\n");
     I->Outdent();
-    I->Print(vars, "};\n\n"
-             "$oo_cc_name$Case $oo_name$_case() const;\n");
+    I->Print(vars,
+      "};\n\n"
+      "$oo_cc_name$Case $oo_name$_case() const;\n");
   }
 
   // Fields
