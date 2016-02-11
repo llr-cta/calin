@@ -331,16 +331,13 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Indent();
         I->Print(vars,
           "const $type$& const_$name$(int index) const {\n"
-          "  if(index<0 || index>=$$self->$name$_size())\n"
-          "    throw std::range_error(\"Index out of range\");\n"
+          "  verify_range(index, $$self->$name$_size());\n"
           "  return $$self->$name$(index); }\n"
           "$type$* mutable_$name$(int index) {\n"
-          "  if(index<0 || index>=$$self->$name$_size())\n"
-          "    throw std::range_error(\"Index out of range\");\n"
+          "  verify_range(index, $$self->$name$_size());\n"
           "  return $$self->mutable_$name$(index); }\n"
           "$type$* $name$(int index) {\n"
-          "  if(index<0 || index>=$$self->$name$_size())\n"
-          "    throw std::range_error(\"Index out of range\");\n"
+          "  verify_range(index, $$self->$name$_size());\n"
           "  return $$self->mutable_$name$(index); }\n");
         I->Outdent();
         I->Print("};\n");
@@ -352,12 +349,10 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Indent();
         I->Print(vars,
           "void $name$(int index, std::string& CALIN_BYTES_OUT) const {\n"
-          "  if(index<0 || index>=$$self->$name$_size())\n"
-          "    throw std::range_error(\"Index out of range\");\n"
+          "  verify_range(index, $$self->$name$_size());\n"
           "  CALIN_BYTES_OUT = $$self->$name$(index); }\n"
           "void set_$name$(int index, const std::string& CALIN_BYTES_IN) {\n"
-          "  if(index<0 || index>=$$self->$name$_size())\n"
-          "    throw std::range_error(\"Index out of range\");\n"
+          "  verify_range(index, $$self->$name$_size());\n"
           "  $$self->set_$name$(index, CALIN_BYTES_IN); }\n"
           "void add_$name$(const std::string& CALIN_BYTES_IN) {\n"
           "  $$self->add_$name$(CALIN_BYTES_IN); }\n");
@@ -370,12 +365,10 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Indent();
         I->Print(vars,
           "std::string $name$(int index) const {\n"
-          "  if(index<0 || index>=$$self->$name$_size())\n"
-          "    throw std::range_error(\"Index out of range\");\n"
+          "  verify_range(index, $$self->$name$_size());\n"
           "  return $$self->$name$(index); }\n"
           "void set_$name$(int index, const std::string& INPUT) {\n"
-          "  if(index<0 || index>=$$self->$name$_size())\n"
-          "    throw std::range_error(\"Index out of range\");\n"
+          "  verify_range(index, $$self->$name$_size());\n"
           "  $$self->set_$name$(index, INPUT); }\n"
           "void $name$(std::vector<std::string> &OUTPUT) {\n"
           "  const auto& array = $$self->$name$();\n"
@@ -396,12 +389,10 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Indent();
         I->Print(vars,
           "$type$ $name$(int index) const {\n"
-          "  if(index<0 || index>=$$self->$name$_size())\n"
-          "    throw std::range_error(\"Index out of range\");\n"
+          "  verify_range(index, $$self->$name$_size());\n"
           "  return $$self->$name$(index); }\n"
           "void set_$name$(int index, $type$ INPUT) {\n"
-          "  if(index<0 || index>=$$self->$name$_size())\n"
-          "    throw std::range_error(\"Index out of range\");\n"
+          "  verify_range(index, $$self->$name$_size());\n"
           "  $$self->set_$name$(index, INPUT); }\n");
         if(is_type_compatible_with_numpy(f->type()))
           I->Print(vars,
@@ -491,14 +482,24 @@ Generate(const google::protobuf::FileDescriptor * file,
 
   I->Print("\n%{\n");
   I->Indent();
-  I->Print("#include<cstdint>\n");
-  I->Print("#include<string>\n");
-  I->Print("#include<vector>\n");
-  I->Print("#include<map>\n");
-  I->Print("#include<google/protobuf/message.h>\n");
-  I->Print("#include<google/protobuf/descriptor.h>\n");
+  I->Print(
+    "#include<cstdint>\n"
+    "#include<string>\n"
+    "#include<vector>\n"
+    "#include<map>\n"
+    "#include<stdexcept>\n"
+    "#include<google/protobuf/message.h>\n"
+    "#include<google/protobuf/descriptor.h>\n");
   print_includes(I, file, "#include", ".pb.h", true);
-  I->Print("#define SWIG_FILE_WITH_INIT\n");
+  I->Print("\n#define SWIG_FILE_WITH_INIT\n\n");
+  I->Print(
+    "namespace {\n"
+    "  void verify_range(int index, int size) __attribute__((unused));\n\n"
+    "  void verify_range(int index, int size) {\n"
+    "    if(index<0)throw std::range_error(\"Index must be positive\");\n"
+    "    else if(index>=size)throw std::range_error(\"Index out of range: \"\n"
+    "      + std::to_string(index) + \" >= \" + std::to_string(size)); }\n"
+    "} // private namespace\n");
   I->Outdent();
   I->Print("%}\n\n");
 
