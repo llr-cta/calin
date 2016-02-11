@@ -1,6 +1,6 @@
 /*
 
-   calin/tools/swig_generator.cpp -- Stephen Fegan -- 2015-12-03
+   calin/tools/protoc_gen_swig/swig_generator.cpp -- Stephen Fegan -- 2015-12-03
 
    Code generator for SWIG interface files
 
@@ -126,7 +126,7 @@ std::string CamelCase(const std::string& s, bool uc_next = true)
   return t;
 }
 
-std::string ALLCAPSCase(const std::string& s)
+std::string ALLCAPSCASE(const std::string& s)
 {
   std::string t;
   for(auto c : s)t += std::toupper(c);
@@ -250,7 +250,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     std::map<string, string> vars;
     vars["oo_name"] = oo->name();
     vars["oo_cc_name"] = CamelCase(oo->name());
-    vars["oo_ac_name"] = ALLCAPSCase(oo->name());
+    vars["oo_ac_name"] = ALLCAPSCASE(oo->name());
     I->Print(vars,"\n"
              "enum $oo_cc_name$Case {\n");
     I->Indent();
@@ -289,132 +289,169 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       I->Print("%extend {\n");
       I->Indent();
       I->Print(vars,
-               "int $name$_size() const {\n"
-               "  return($$self->$name$().size()); }\n"
-               "int $name$_key_count($index$ key) const {\n"
-               "  return($$self->$name$().count(key)); }\n");
+        "int $name$_size() const {\n"
+        "  return($$self->$name$().size()); }\n"
+        "int $name$_key_count($index$ key) const {\n"
+        "  return($$self->$name$().count(key)); }\n");
       if(fv->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
       {
         I->Print(vars,
-                 "const $type$& const_$name$($index$ key) const {\n"
-                 "  return $$self->$name$().at(key); }\n"
-                 "$type$& mutable_$name$($index$ key) {\n"
-                 "  return $$self->mutable_$name$()->at(key); }\n");
+          "const $type$& const_$name$($index$ key) const {\n"
+          "  return $$self->$name$().at(key); }\n"
+          "$type$& mutable_$name$($index$ key) {\n"
+          "  return $$self->mutable_$name$()->at(key); }\n");
       }
       else if(fv->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
       {
         I->Print(vars,
-                 "%extend {\n"
-                 "  void $name$($index$ key, std::string& CALIN_BYTES_OUT) const {\n"
-                 "    CALIN_BYTES_OUT = $$self->$name$().at(key); }\n"
-                 "  void set_$name$($index$ key, const std::string& CALIN_BYTES_IN) {\n"
-                 "    $$self->mutable_$name$()->at(key) = CALIN_BYTES_IN; }\n"
-                 "};\n");
+          "%extend {\n"
+          "  void $name$($index$ key, std::string& CALIN_BYTES_OUT) const {\n"
+          "    CALIN_BYTES_OUT = $$self->$name$().at(key); }\n"
+          "  void set_$name$($index$ key, const std::string& CALIN_BYTES_IN) {\n"
+          "    $$self->mutable_$name$()->at(key) = CALIN_BYTES_IN; }\n"
+          "};\n");
       }
       else
       {
         I->Print(vars,
-                 "$type$ $name$($index$ key) const {\n"
-                 "  return $$self->$name$().at(key); }\n"
-                 "void set_$name$($index$ key, $type$ val) {\n"
-                 "  $$self->mutable_$name$()->at(key) = val; }\n");
+          "$type$ $name$($index$ key) const {\n"
+          "  return $$self->$name$().at(key); }\n"
+          "void set_$name$($index$ key, $type$ val) {\n"
+          "  $$self->mutable_$name$()->at(key) = val; }\n");
       }
       I->Outdent();
       I->Print("};\n");
-      continue;
     }
-
-    if(f->is_repeated())
+    else if(f->is_repeated())
     {
       I->Print(vars, "int $name$_size() const;\n");
-      vars["index"]  = "int index";
-    }
-    else if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
-    {
-      I->Print(vars, "bool has_$name$() const;\n");
-    }
-
-    if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
-    {
-      I->Print(vars,
-               "%rename(const_$name$) $name$($index$) const;\n"
-               "const $type$& $name$($index$) const;\n"
-               "$type$* mutable_$name$($index$);\n");
-      if(f->is_repeated())I->Print(vars, "$type$* add_$name$();\n");
-    }
-    else if(f->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
-    {
-      I->Print(vars, "%extend {\n");
-      I->Indent();
-      if(f->is_repeated())
+      if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
       {
+        I->Print("%extend {\n");
+        I->Indent();
         I->Print(vars,
-                 "void $name$($index$, std::string& CALIN_BYTES_OUT) const {\n"
-                 "  CALIN_BYTES_OUT = $$self->$name$(index); }\n"
-                 "void set_$name$($index$, const std::string& CALIN_BYTES_IN) {\n"
-                 "  $$self->set_$name$(index, CALIN_BYTES_IN); }\n"
-                 "void add_$name$(const std::string& CALIN_BYTES_IN) {\n"
-                 "  $$self->add_$name$(CALIN_BYTES_IN); }\n");
+          "const $type$& const_$name$(int index) const {\n"
+          "  if(index<0 || index>$$self->$name$_size())\n"
+          "    throw std::range_error(\"Index out of range\");\n"
+          "  return $$self->$name$(index); }\n"
+          "$type$* mutable_$name$(int index) {\n"
+          "  if(index<0 || index>$$self->$name$_size())\n"
+          "    throw std::range_error(\"Index out of range\");\n"
+          "  return $$self->mutable_$name$(index); }\n"
+          "$type$* $name$(int index) {\n"
+          "  if(index<0 || index>$$self->$name$_size())\n"
+          "    throw std::range_error(\"Index out of range\");\n"
+          "  return $$self->mutable_$name$(index); }\n");
+        I->Outdent();
+        I->Print("};\n");
+        I->Print(vars, "$type$* add_$name$();\n");
       }
-      else
+      else if(f->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
       {
+        I->Print("%extend {\n");
+        I->Indent();
         I->Print(vars,
-                 "void $name$(std::string& CALIN_BYTES_OUT) const {\n"
-                 "  CALIN_BYTES_OUT = $$self->$name$(); }\n"
-                 "void set_$name$(const std::string& CALIN_BYTES_IN) {\n"
-                 "  $$self->set_$name$(CALIN_BYTES_IN); }\n");
+          "void $name$(int index, std::string& CALIN_BYTES_OUT) const {\n"
+          "  if(index<0 || index>$$self->$name$_size())\n"
+          "    throw std::range_error(\"Index out of range\");\n"
+          "  CALIN_BYTES_OUT = $$self->$name$(index); }\n"
+          "void set_$name$(int index, const std::string& CALIN_BYTES_IN) {\n"
+          "  if(index<0 || index>$$self->$name$_size())\n"
+          "    throw std::range_error(\"Index out of range\");\n"
+          "  $$self->set_$name$(index, CALIN_BYTES_IN); }\n"
+          "void add_$name$(const std::string& CALIN_BYTES_IN) {\n"
+          "  $$self->add_$name$(CALIN_BYTES_IN); }\n");
+        I->Outdent();
+        I->Print("};\n");
       }
-      I->Outdent();
-      I->Print(vars, "};\n");
-    }
-    else
-    {
-      I->Print(vars, "$type$ $name$($index$) const;\n");
-      if(f->is_repeated())
+      else if(f->type() == google::protobuf::FieldDescriptor::TYPE_STRING)
       {
-        I->Print(vars, "void set_$name$($index$, $type$ INPUT);\n");
+        I->Print("%extend {\n");
+        I->Indent();
+        I->Print(vars,
+          "std::string $name$(int index) const {\n"
+          "  if(index<0 || index>$$self->$name$_size())\n"
+          "    throw std::range_error(\"Index out of range\");\n"
+          "  return $$self->$name$(index); }\n"
+          "void set_$name$(int index, const std::string& INPUT) {\n"
+          "  if(index<0 || index>$$self->$name$_size())\n"
+          "    throw std::range_error(\"Index out of range\");\n"
+          "  $$self->set_$name$(index, INPUT); }\n"
+          "void $name$(std::vector<std::string> &OUTPUT) {\n"
+          "  const auto& array = $$self->$name$();\n"
+          "  OUTPUT.resize(array.size());\n"
+          "  std::copy(array.begin(), array.end(), OUTPUT.begin());\n"
+          "};\n"
+          "void set_$name$(const std::vector<std::string>& INPUT) {\n"
+          "  $$self->clear_$name$();\n"
+          "  for(const auto& s : INPUT)$$self->add_$name$(s);\n"
+          "}\n");
+        I->Outdent();
+        I->Print("};\n");
         I->Print(vars, "void add_$name$($type$ INPUT);\n");
-        if(is_type_compatible_with_numpy(f->type()))
-        {
-          I->Print("%extend {\n");
-          I->Indent();
-          I->Print(vars,
-                   "void set_$name$(intptr_t DIM1, $type$* IN_ARRAY1) {\n"
-                   "  auto* array = $$self->mutable_$name$();\n"
-                   "  if(array->size()>DIM1)array->Truncate(DIM1);\n"
-                   "  for(int i=0;i<array->size();i++)array->Set(i,IN_ARRAY1[i]);\n"
-                   "  while(array->size()<DIM1)array->Add(IN_ARRAY1[array->size()]);\n"
-                   "}\n"
-                   "void $name$(intptr_t* DIM1, $type$** ARGOUTVIEWM_ARRAY1) {\n"
-                   "  const auto& array = $$self->$name$();\n"
-                   "  *DIM1 = array.size();\n"
-                   "  *ARGOUTVIEWM_ARRAY1 = ($type$*)malloc(*DIM1 * sizeof($type$));\n"
-                   "  std::copy(array.begin(), array.end(), *ARGOUTVIEWM_ARRAY1);\n"
-                   "};\n");
-          I->Outdent();
-          I->Print("};\n");
-        }
-        else if(f->type() == google::protobuf::FieldDescriptor::TYPE_STRING)
-        {
-          I->Print("%extend {\n");
-          I->Indent();
-          I->Print(vars,
-                   "void set_$name$(const std::vector<std::string>& INPUT) {\n"
-                   "  $$self->clear_$name$();\n"
-                   "  for(const auto& s : INPUT)$$self->add_$name$(s);\n"
-                   "}\n"
-                   "void $name$(std::vector<std::string> &OUTPUT) {\n"
-                   "  const auto& array = $$self->$name$();\n"
-                   "  OUTPUT.resize(array.size());\n"
-                   "  std::copy(array.begin(), array.end(), OUTPUT.begin());\n"
-                   "};\n");
-          I->Outdent();
-          I->Print("};\n");
-
-        }
       }
       else
-        I->Print(vars, "void set_$name$($type$ INPUT);\n");
+      {
+        I->Print("%extend {\n");
+        I->Indent();
+        I->Print(vars,
+          "$type$ $name$(int index) const {\n"
+          "  if(index<0 || index>$$self->$name$_size())\n"
+          "    throw std::range_error(\"Index out of range\");\n"
+          "  return $$self->$name$(index); }\n"
+          "void set_$name$(int index, $type$ INPUT) {\n"
+          "  if(index<0 || index>$$self->$name$_size())\n"
+          "    throw std::range_error(\"Index out of range\");\n"
+          "  $$self->set_$name$(index, INPUT); }\n");
+        if(is_type_compatible_with_numpy(f->type()))
+          I->Print(vars,
+            "void set_$name$(intptr_t DIM1, $type$* IN_ARRAY1) {\n"
+            "  auto* array = $$self->mutable_$name$();\n"
+            "  if(array->size()>DIM1)array->Truncate(DIM1);\n"
+            "  for(int i=0;i<array->size();i++)array->Set(i,IN_ARRAY1[i]);\n"
+            "  while(array->size()<DIM1)array->Add(IN_ARRAY1[array->size()]);\n"
+            "}\n"
+            "void $name$(intptr_t* DIM1, $type$** ARGOUTVIEWM_ARRAY1) {\n"
+            "  const auto& array = $$self->$name$();\n"
+            "  *DIM1 = array.size();\n"
+            "  *ARGOUTVIEWM_ARRAY1 = ($type$*)malloc(*DIM1 * sizeof($type$));\n"
+            "  std::copy(array.begin(), array.end(), *ARGOUTVIEWM_ARRAY1);\n"
+            "};\n");
+        I->Outdent();
+        I->Print("};\n");
+        I->Print(vars, "void add_$name$($type$ INPUT);\n");
+      }
+    }
+    else // not is_map and not is_repeated
+    {
+      if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
+      {
+        I->Print(vars,
+          "bool has_$name$() const;\n"
+          "%extend {\n"
+          "  const $type$& const_$name$() { return $$self->$name$(); }\n"
+          "  $type$* $name$() { return $$self->mutable_$name$(); }\n"
+          "}\n"
+          "$type$* mutable_$name$();\n");
+      }
+      else if(f->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
+      {
+        I->Print(vars, "%extend {\n");
+        I->Indent();
+        I->Print(vars,
+          "void $name$(std::string& CALIN_BYTES_OUT) const {\n"
+          "  CALIN_BYTES_OUT = $$self->$name$(); }\n"
+          "void set_$name$(const std::string& CALIN_BYTES_IN) {\n"
+          "  $$self->set_$name$(CALIN_BYTES_IN); }\n");
+        I->Outdent();
+        I->Print(vars, "};\n");
+      }
+      else
+      {
+        I->Print(vars,
+          "$type$ $name$() const;\n"
+          "void set_$name$($type$ INPUT);\n");
+      }
     }
 
     I->Print(vars, "void clear_$name$();\n");
