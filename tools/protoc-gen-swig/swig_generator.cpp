@@ -168,7 +168,7 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
 }
 
 std::string field_type(const google::protobuf::FieldDescriptor* f,
-                       const google::protobuf::Descriptor* d)
+  const google::protobuf::Descriptor* d)
 {
   if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
     return class_type(f->message_type(), d);
@@ -176,8 +176,19 @@ std::string field_type(const google::protobuf::FieldDescriptor* f,
     return enum_type(f->enum_type(), d);
   else if(f->type() == google::protobuf::FieldDescriptor::TYPE_STRING or
           f->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
-    return "const std::string&";
+    return "std::string";
   else return f->cpp_type_name();
+}
+
+std::string field_type_const_in(const google::protobuf::FieldDescriptor* f,
+  const google::protobuf::Descriptor* d)
+{
+  if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
+    return "const " + class_type(f->message_type(), d) + "*";
+  else if(f->type() == google::protobuf::FieldDescriptor::TYPE_STRING or
+     f->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
+    return "const std::string&";
+  else return field_type(f,d);
 }
 
 bool is_type_compatible_with_numpy(google::protobuf::FieldDescriptor::Type type)
@@ -233,10 +244,16 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
   // Typedefs for nested types
   if(d->nested_type_count())
   {
-    I->Print("\n");
     for(int i=0; i<d->nested_type_count(); i++)
-      I->Print("typedef $local$ $full$;\n", "local", d->nested_type(i)->name(),
-               "full", class_name(d->nested_type(i)));
+      if(!d->nested_type(i)->options().map_entry())
+      {
+        I->Print("\n");
+        break;
+      }
+    for(int i=0; i<d->nested_type_count(); i++)
+      if(!d->nested_type(i)->options().map_entry())
+        I->Print("typedef $local$ $full$;\n", "local", d->nested_type(i)->name(),
+                "full", class_name(d->nested_type(i)));
   }
 
   // Enums
@@ -273,9 +290,9 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     auto* f = d->field(i);
     I->Print("\n");
     std::map<string, string> vars;
-    vars["name"]   = f->name();
-    vars["type"]   = field_type(f, d);
-    vars["index"]  = "";
+    vars["name"]       = f->name();
+    vars["type"]       = field_type(f, d);
+    vars["type_in"]    = field_type_const_in(f, d);
     vars["class_name"] = the_class_name;
 
     if(f->is_map())
@@ -284,39 +301,47 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       assert(f->message_type()->field_count()==2);
       const auto* fi = f->message_type()->field(0);
       const auto* fv = f->message_type()->field(1);
-      vars["index"] = field_type(fi, d);
+      vars["key_type"] = field_type(fi, d);
+      vars["key_type_in"] = field_type_const_in(fi, d);
       vars["type"] = field_type(fv, d);
+      vars["type_in"] = field_type_const_in(fv, d);
       I->Print("%extend {\n");
       I->Indent();
       I->Print(vars,
         "int $name$_size() const {\n"
-        "  return($$self->$name$().size()); }\n"
-        "int $name$_key_count($index$ key) const {\n"
-        "  return($$self->$name$().count(key)); }\n");
+        "  return $$self->$name$().size(); }\n"
+        "bool $name$_has_key($key_type_in$ key) const {\n"
+        "  return $$self->$name$().count(key)>0; }\n"
+        "std::vector<$key_type$> $name$_keys() const {\n"
+        "  std::vector<$key_type$> keys;\n"
+        "  for(const auto& i : $$self->$name$())keys.emplace_back(i.first);\n"
+        "  return keys; }\n");
       if(fv->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
       {
         I->Print(vars,
-          "const $type$& const_$name$($index$ key) const {\n"
+          "const $type$& const_$name$($key_type_in$ key) const {\n"
           "  return $$self->$name$().at(key); }\n"
-          "$type$& mutable_$name$($index$ key) {\n"
+          "$type$& mutable_$name$($key_type_in$ key) {\n"
+          "  return $$self->mutable_$name$()->at(key); }\n"
+          "$type$& $name$($key_type_in$ key) {\n"
           "  return $$self->mutable_$name$()->at(key); }\n");
       }
       else if(fv->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
       {
         I->Print(vars,
           "%extend {\n"
-          "  void $name$($index$ key, std::string& CALIN_BYTES_OUT) const {\n"
+          "  void $name$($key_type_in$ key, std::string& CALIN_BYTES_OUT) const {\n"
           "    CALIN_BYTES_OUT = $$self->$name$().at(key); }\n"
-          "  void set_$name$($index$ key, const std::string& CALIN_BYTES_IN) {\n"
+          "  void set_$name$($key_type_in$ key, const std::string& CALIN_BYTES_IN) {\n"
           "    $$self->mutable_$name$()->at(key) = CALIN_BYTES_IN; }\n"
           "};\n");
       }
-      else
+      else // POD type
       {
         I->Print(vars,
-          "$type$ $name$($index$ key) const {\n"
+          "$type$ $name$($key_type_in$ key) const {\n"
           "  return $$self->$name$().at(key); }\n"
-          "void set_$name$($index$ key, $type$ val) {\n"
+          "void set_$name$($key_type_in$ key, $type_in$ val) {\n"
           "  $$self->mutable_$name$()->at(key) = val; }\n");
       }
       I->Outdent();
@@ -381,9 +406,9 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
           "}\n");
         I->Outdent();
         I->Print("};\n");
-        I->Print(vars, "void add_$name$($type$ INPUT);\n");
+        I->Print(vars, "void add_$name$(const std::string& INPUT);\n");
       }
-      else
+      else // POD type
       {
         I->Print("%extend {\n");
         I->Indent();
@@ -391,12 +416,12 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
           "$type$ $name$(int index) const {\n"
           "  verify_range(index, $$self->$name$_size());\n"
           "  return $$self->$name$(index); }\n"
-          "void set_$name$(int index, $type$ INPUT) {\n"
+          "void set_$name$(int index, $type_in$ INPUT) {\n"
           "  verify_range(index, $$self->$name$_size());\n"
           "  $$self->set_$name$(index, INPUT); }\n");
         if(is_type_compatible_with_numpy(f->type()))
           I->Print(vars,
-            "void set_$name$(intptr_t DIM1, $type$* IN_ARRAY1) {\n"
+            "void set_$name$(intptr_t DIM1, const $type$* IN_ARRAY1) {\n"
             "  auto* array = $$self->mutable_$name$();\n"
             "  if(array->size()>DIM1)array->Truncate(DIM1);\n"
             "  for(int i=0;i<array->size();i++)array->Set(i,IN_ARRAY1[i]);\n"
@@ -410,7 +435,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
             "};\n");
         I->Outdent();
         I->Print("};\n");
-        I->Print(vars, "void add_$name$($type$ INPUT);\n");
+        I->Print(vars, "void add_$name$($type_in$ INPUT);\n");
       }
     }
     else // not is_map and not is_repeated
@@ -420,8 +445,10 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Print(vars,
           "bool has_$name$() const;\n"
           "%extend {\n"
-          "  const $type$& const_$name$() { return $$self->$name$(); }\n"
-          "  $type$* $name$() { return $$self->mutable_$name$(); }\n"
+          "  const $type$& const_$name$() { \n"
+          "    return $$self->$name$(); }\n"
+          "  $type$* $name$() {\n"
+          "    return $$self->mutable_$name$(); }\n"
           "}\n"
           "$type$* mutable_$name$();\n");
       }
@@ -437,11 +464,11 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Outdent();
         I->Print(vars, "};\n");
       }
-      else
+      else // string or POD type
       {
         I->Print(vars,
           "$type$ $name$() const;\n"
-          "void set_$name$($type$ INPUT);\n");
+          "void set_$name$($type_in$ INPUT);\n");
       }
     }
 
