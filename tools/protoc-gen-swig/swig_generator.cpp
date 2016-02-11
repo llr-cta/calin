@@ -66,18 +66,18 @@ void print_includes(Printer* I, const google::protobuf::FileDescriptor * file,
 }
 
 // Make the name of the class - handling nested types
-std::string class_name(const google::protobuf::Descriptor* d)
+string class_name(const google::protobuf::Descriptor* d)
 {
-  std::string class_name = d->name();
+  string class_name = d->name();
   while((d = d->containing_type()))class_name = d->name() + "_" + class_name;
   return class_name;
 }
 
 // Make the full type for an enum for use as an argument
-std::string enum_type(const google::protobuf::EnumDescriptor* d,
-                      const google::protobuf::Descriptor* d_referrer = nullptr)
+string enum_type(const google::protobuf::EnumDescriptor* d,
+  const google::protobuf::Descriptor* d_referrer = nullptr)
 {
-  std::string enum_type = d->name();
+  string enum_type = d->name();
   const google::protobuf::Descriptor* d_sub = d->containing_type();
   while(d_sub)
   {
@@ -91,10 +91,10 @@ std::string enum_type(const google::protobuf::EnumDescriptor* d,
 }
 
 // Make the full type for a message for use as an argument
-std::string class_type(const google::protobuf::Descriptor* d,
-                       const google::protobuf::Descriptor* d_referrer = nullptr)
+string class_type(const google::protobuf::Descriptor* d,
+  const google::protobuf::Descriptor* d_referrer = nullptr)
 {
-  std::string class_type = d->name();
+  string class_type = d->name();
   const google::protobuf::Descriptor* d_sub = d;
   while((d_sub = d_sub->containing_type()))
   {
@@ -110,13 +110,13 @@ void print_fwd_decl(Printer* I, const google::protobuf::Descriptor* d)
 {
   for(int i=0; i<d->nested_type_count(); i++)
     print_fwd_decl(I, d->nested_type(i));
-  std::string the_class_name = class_name(d);
+  string the_class_name = class_name(d);
   I->Print("class $class_name$;\n", "class_name", the_class_name);
 }
 
-std::string CamelCase(const std::string& s, bool uc_next = true)
+string CamelCase(const string& s, bool uc_next = true)
 {
-  std::string t;
+  string t;
   for(auto c : s)
   {
     if(c == '_')uc_next=true;
@@ -126,9 +126,9 @@ std::string CamelCase(const std::string& s, bool uc_next = true)
   return t;
 }
 
-std::string ALLCAPSCASE(const std::string& s)
+string ALLCAPSCASE(const string& s)
 {
-  std::string t;
+  string t;
   for(auto c : s)t += std::toupper(c);
   return t;
 }
@@ -150,7 +150,7 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
     if(v->number() < e->value(jmin)->number())jmin = j;
     vars["value_name"] = v->name();
     vars["value_number"] = std::to_string(v->number());
-    vars["comma"] = (j==e->value_count()-1)?std::string():std::string(",");
+    vars["comma"] = (j==e->value_count()-1)?string():string(",");
     I->Print(vars,"$value_name$ = $value_number$$comma$\n");
   }
   I->Outdent();
@@ -167,7 +167,7 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
            "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n");
 }
 
-std::string field_type(const google::protobuf::FieldDescriptor* f,
+string field_type(const google::protobuf::FieldDescriptor* f,
   const google::protobuf::Descriptor* d)
 {
   if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
@@ -180,7 +180,7 @@ std::string field_type(const google::protobuf::FieldDescriptor* f,
   else return f->cpp_type_name();
 }
 
-std::string field_type_const_in(const google::protobuf::FieldDescriptor* f,
+string field_type_const_in(const google::protobuf::FieldDescriptor* f,
   const google::protobuf::Descriptor* d)
 {
   if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
@@ -221,7 +221,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     if(!d->nested_type(i)->options().map_entry())
       print_message(I, d->nested_type(i));
 
-  std::string the_class_name = class_name(d);
+  string the_class_name = class_name(d);
   I->Print("\n"
            "class $class_name$ : public google::protobuf::Message \n"
            "{\n"
