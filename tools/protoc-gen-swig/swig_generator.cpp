@@ -233,11 +233,6 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
            "\n"
            "  static const google::protobuf::Descriptor* descriptor();\n"
            "  static const $class_name$& default_instance();\n",
-           //"\n"
-           //"  google::protobuf::Message* New() const override;\n"
-           //"  void CopyFrom(const google::protobuf::Message & from) override;\n"
-           //"  void MergeFrom(const google::protobuf:: Message & from) override;\n"
-           //"  int SpaceUsed() const override;\n",
            "class_name", the_class_name);
   I->Indent();
 
@@ -288,12 +283,17 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
   for(int i=0;i<d->field_count();i++)
   {
     auto* f = d->field(i);
-    I->Print("\n");
+
     std::map<string, string> vars;
+    vars["id"]         = std::to_string(f->index());
     vars["name"]       = f->name();
     vars["type"]       = field_type(f, d);
     vars["type_in"]    = field_type_const_in(f, d);
     vars["class_name"] = the_class_name;
+
+    I->Print(vars,
+      "\n"
+      "// Field: $name$ = $id$ [$type$]\n");
 
     if(f->is_map())
     {
