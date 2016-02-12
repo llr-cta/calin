@@ -440,17 +440,21 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Print(vars, "void add_$name$($type_in$ INPUT);\n");
       }
     }
-    else // not is_map and not is_repeated
+    else // Is a singular type
     {
       if(f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE)
       {
         I->Print(vars,
           "bool has_$name$() const;\n"
-          "%extend {\n"
-          "  const $type$& const_$name$() { \n"
-          "    return $$self->$name$(); }\n"
-          "  $type$* $name$() {\n"
-          "    return $$self->mutable_$name$(); }\n"
+          "%extend {\n");
+        I->Indent();
+        I->Print(vars,
+          "const $type$& const_$name$() { \n"
+          "  return $$self->$name$(); }\n"
+          "$type$* $name$() {\n"
+          "  return $$self->mutable_$name$(); }\n");
+        I->Outdent();
+        I->Print(vars,
           "}\n"
           "$type$* mutable_$name$();\n");
       }
@@ -477,6 +481,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     I->Print(vars, "void clear_$name$();\n");
   }
 
+  // End of class
   I->Outdent();
   I->Print("};\n");
 }
