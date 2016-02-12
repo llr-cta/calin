@@ -22,7 +22,8 @@
 
 */
 
-%include "swigarch.i"
+#define SWIGWORDSIZE64
+
 %include "stdint.i"
 %include "numpy.i"
 %include "std_vector.i"
