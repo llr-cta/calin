@@ -24,7 +24,7 @@ enable_testing()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
 
 include_directories(include ${CMAKE_BINARY_DIR}/include)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -m64")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
 ### Find Protobuf libraries and set protobuf base path
 set(PROTOBUF_IMPORT_DIRS ${PROJECT_SOURCE_DIR}/proto)
