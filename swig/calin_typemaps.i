@@ -22,7 +22,7 @@
 
 */
 
-#define SWIGWORDSIZE64
+//#define SWIGWORDSIZE64
 
 %include "stdint.i"
 %include "numpy.i"

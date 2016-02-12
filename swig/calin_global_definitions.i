@@ -42,10 +42,20 @@
 
 %template (VectorDouble)     std::vector<double>;
 %template (VectorFloat)      std::vector<float>;
-%template (VectorUInt32)     std::vector<uint32_t>;
-%template (VectorInt32)      std::vector<int32_t>;
-%template (VectorUInt64)     std::vector<uint64_t>;
-%template (VectorInt64)      std::vector<int64_t>;
+%template (VectorChar)       std::vector<char>;
+%template (VectorUChar)      std::vector<unsigned char>;
+%template (VectorShort)      std::vector<short>;
+%template (VectorUShort)     std::vector<unsigned short>;
+%template (VectorInt)        std::vector<int>;
+%template (VectorUInt)       std::vector<unsigned int>;
+%template (VectorLong)       std::vector<long>;
+%template (VectorULong)      std::vector<unsigned long>;
+%template (VectorLongLong)   std::vector<long long>;
+%template (VectorULongLong)  std::vector<unsigned long long>;
+//%template (VectorUInt32)     std::vector<uint32_t>;
+//%template (VectorInt32)      std::vector<int32_t>;
+//%template (VectorUInt64)     std::vector<uint64_t>;
+//%template (VectorInt64)      std::vector<int64_t>;
 %template (VectorBool)       std::vector<bool>;
 %template (VectorString)     std::vector<std::string>;
 
