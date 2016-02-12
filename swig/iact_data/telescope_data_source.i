@@ -32,11 +32,11 @@
   import_array();
 %}
 
-%include "numpy.i"
-%include "stdint.i"
+//%include "numpy.i"
+//%include "stdint.i"
 %include "calin_typemaps.i"
-
 %import "calin_global_definitions.i"
+
 %import "iact_data/telescope_event.pb.i"
 %import "iact_data/zfits_data_source.pb.i"
 %import "iact_data/nectarcam_data_source.pb.i"

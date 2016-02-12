@@ -22,8 +22,9 @@
 
 */
 
-%include "numpy.i"
+%include "swigarch.i"
 %include "stdint.i"
+%include "numpy.i"
 %include "std_vector.i"
 %include "std_string.i"
 %include "typemaps.i"
