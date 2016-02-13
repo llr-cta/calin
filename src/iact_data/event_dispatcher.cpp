@@ -97,6 +97,7 @@ accept_from_src(TelescopeDataSource* src, unsigned num_event_max)
   while(TelescopeEvent* event = src->get_next())
   {
     accept(event);
+    delete event;
     if(num_event_max and not --num_event_max)break;
   }
 }
