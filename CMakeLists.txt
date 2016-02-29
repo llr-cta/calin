@@ -59,7 +59,7 @@ include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
 ## Find SWIG and set SWIG include paths to "swig", "include" and "proto"
 find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
-set(CMAKE_SWIG_FLAGS -I${CMAKE_SOURCE_DIR}/swig -I${CMAKE_SOURCE_DIR}/include  -I${CMAKE_BINARY_DIR}/proto)
+set(CMAKE_SWIG_FLAGS -I${CMAKE_SOURCE_DIR}/swig -I${CMAKE_SOURCE_DIR}/include -I${CMAKE_BINARY_DIR}/proto)
 
 ## Find ZeroMQ
 find_package(ZMQ REQUIRED)

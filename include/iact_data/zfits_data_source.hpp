@@ -26,6 +26,7 @@
 
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
+#include <io/chained_data_source.hpp>
 #include <iact_data/zfits_data_source.pb.h>
 #include <iact_data/telescope_data_source.hpp>
 

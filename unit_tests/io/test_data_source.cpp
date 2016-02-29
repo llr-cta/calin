@@ -26,6 +26,7 @@
 #include <gtest/gtest.h>
 
 #include <io/data_source.hpp>
+#include <io/chained_data_source.hpp>
 #include <unittest.pb.h>
 
 using namespace calin::ix::unittest;
