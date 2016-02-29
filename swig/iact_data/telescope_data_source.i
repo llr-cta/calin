@@ -48,6 +48,7 @@
 //%newobject calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource::get_next();
 
 %import "io/data_source.hpp"
+%import "io/chained_data_source.hpp"
 
 %template(TelescopeDataSource)
   calin::io::data_source::DataSource<
