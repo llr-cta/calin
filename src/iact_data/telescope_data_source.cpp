@@ -28,10 +28,15 @@ using namespace calin::iact_data::telescope_data_source;
 
 template class calin::io::data_source::DataSource<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
-  template class calin::io::data_source::RandomAccessDataSource<
-    calin::ix::iact_data::telescope_event::TelescopeEvent>;
+template class calin::io::data_source::RandomAccessDataSource<
+  calin::ix::iact_data::telescope_event::TelescopeEvent>;
 template class calin::io::data_source::ProtobufFileDataSource<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
+template class calin::io::data_source::BufferedDataSource<
+  calin::ix::iact_data::telescope_event::TelescopeEvent>;
+template class calin::io::data_source::MultiThreadDataSourceBuffer<
+  calin::ix::iact_data::telescope_event::TelescopeEvent>;
+
 template class calin::io::data_source::DataSink<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
 template class calin::io::data_source::ProtobufFileDataSink<
