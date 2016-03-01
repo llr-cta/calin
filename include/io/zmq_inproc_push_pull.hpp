@@ -44,9 +44,8 @@ public:
   ZMQPuller(void* zmq_ctx, const std::string& endpoint, int buffer_size = 100);
   bool pull(void* data, unsigned buffer_size, unsigned& bytes_received,
      bool dont_wait = false);
-  bool pull(void* data, unsigned buffer_size, bool dont_wait = false) {
-    unsigned bytes_received_ignored = 0;
-    return pull(data, buffer_size, bytes_received_ignored, dont_wait); }
+  bool pull_assert_size(void* data, unsigned buffer_size,
+      bool dont_wait = false);
 private:
   std::unique_ptr<void,int(*)(void*)> socket_;
 };

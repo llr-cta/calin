@@ -97,6 +97,18 @@ bool ZMQPuller::pull(void* data, unsigned buffer_size, unsigned& bytes_received,
   return true;
 }
 
+bool ZMQPuller::pull_assert_size(void* data, unsigned buffer_size,
+  bool dont_wait)
+{
+  unsigned bytes_received = 0;
+  bool good = pull(data, buffer_size, bytes_received, dont_wait);
+  if(good and bytes_received != buffer_size)
+    throw std::runtime_error(std::string("ZMQPuller: received unexpected "
+      "number of bytes: ") + std::to_string(bytes_received) + " != "
+      + std::to_string(buffer_size));
+  return good;
+}
+
 ZMQInprocPushPull::ZMQInprocPushPull()
 {
   my_zmq_ctx_ = zmq_ctx_ = zmq_ctx_new();

@@ -26,6 +26,7 @@
 #include <gtest/gtest.h>
 
 #include <io/data_source.hpp>
+#include <io/buffered_data_source.hpp>
 #include <io/chained_data_source.hpp>
 #include <unittest.pb.h>
 
@@ -193,6 +194,23 @@ TEST(TestProtobufFile, WriteAndRead) {
   ASSERT_EQ(file_in.get_next(), nullptr);
 }
 
+TEST(TestBufferedIntegerDataSource, Sequential) {
+  unsigned N = 1000;
+  UnitTestIntegerDataSource src(N,0);
+  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src);
+  auto* bsrc = buffer.new_data_source(N/10);
+
+  for(unsigned i=0;i<N;i++)
+  {
+    auto* m = bsrc->get_next();
+    ASSERT_NE(m, nullptr);
+    EXPECT_EQ(m->ssm_i32(), int32_t(i));
+    delete m;
+  }
+  auto* m = src.get_next();
+  ASSERT_EQ(m, nullptr);
+  delete bsrc;
+}
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
