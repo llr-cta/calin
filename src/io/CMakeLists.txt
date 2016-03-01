@@ -16,11 +16,11 @@
 set(CALIN_TARGET_LIBRARY calin_io)
 set(CALIN_SOURCES log.cpp sql_statement.cpp sql_transceiver.cpp
 	sqlite3_statement.cpp sqlite3_transceiver.cpp data_source.cpp
-	packet_stream.cpp)
+  packet_stream.cpp zmq_inproc_push_pull.cpp)
 
 include_directories(${PYTHON_INCLUDE_PATH})
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_util calin_proto_io
-	${SQLITE3_LIBRARY} ${PYTHON_LIBRARIES})
+  ${SQLITE3_LIBRARY} ${PYTHON_LIBRARIES} ${ZMQ_LIBRARIES})
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)
