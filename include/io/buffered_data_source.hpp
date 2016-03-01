@@ -34,10 +34,7 @@ namespace calin { namespace io { namespace data_source {
 
 template<typename T> inline T* safe_downcast(void* p)
 {
-  // This trick comes from somewhere in the protobuf source code. In a
-  // production build the dynamic_cast is optimized out and are left
-  // only with the fast static_cast
-  assert(dynamic_cast<T*>(p));
+  // Not really safe at all!
   return static_cast<T*>(p);
 }
 
