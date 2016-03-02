@@ -145,5 +145,5 @@ script:
           -DCMAKE_INSTALL_PREFIX=build .. &&
     make -j3 &&
     make install &&
-    #make test
-    ./unit_tests/io/test_data_source --gtest_filter=\*TestBufferedIntegerDataSource\*
+    make test
+    #./unit_tests/io/test_data_source --gtest_filter=\*TestBufferedIntegerDataSource\*

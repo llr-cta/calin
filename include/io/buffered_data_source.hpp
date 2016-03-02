@@ -48,9 +48,8 @@ public:
   BufferedDataSource(const BufferedDataSource&) = delete;
   BufferedDataSource& operator=(const BufferedDataSource&) = delete;
 
-  BufferedDataSource(zmq_inproc::ZMQPuller* puller,
-    std::atomic<bool>& reader_stopping): DataSource<T>(), puller_(puller),
-    reader_stopping_(reader_stopping)
+  BufferedDataSource(zmq_inproc::ZMQPuller* puller):
+    DataSource<T>(), puller_(puller)
   {
     // nothing to see here
   }
@@ -64,14 +63,11 @@ public:
   {
     void* ptr = nullptr;
     puller_->pull_assert_size(&ptr, sizeof(ptr));
-//    puller_->pull_assert_size(&ptr, sizeof(ptr), reader_stopping_);
-//    log::LOG(log::INFO) << "Source: " << safe_downcast<T>(ptr);
     return safe_downcast<T>(ptr);
   }
 
 private:
   zmq_inproc::ZMQPuller* puller_ = nullptr;
-  std::atomic<bool>& reader_stopping_;
 };
 
 template<typename T> class MultiThreadDataSourceBuffer
@@ -102,7 +98,7 @@ public:
   }
 
   BufferedDataSource<T>* new_data_source(unsigned buffer_size) {
-    return new BufferedDataSource<T>(zmq_->new_puller(), stop_buffering_); }
+    return new BufferedDataSource<T>(zmq_->new_puller()); }
 
   void stop_buffering() { stop_buffering_ = true; }
 
@@ -113,14 +109,17 @@ private:
     reader_active_ = true;
     while(reader_active_)
     {
-      // The reader stays active until the ZMQ context is deleted in the
+      // The reader stays active until the ZMQ context is closed in the
       // desctructor. However it stops getting data from the supplied source
-      // when requested by the user.
+      // when requested by the user. After this it just delivers "nullptr".
+      // This simplifies the implementation of the BufferedDataSource which
+      // otherwise has a problem either potentially getting blocked or missing
+      // a data item.
       T* p = nullptr;
       if(!stop_buffering_)p = source_->get_next();
       if(!pusher->push(&p, sizeof(p)))
       {
-        // only occurs if context closed
+        // Only occurs when context is closed
         delete p;
         reader_active_ = false;
       }
