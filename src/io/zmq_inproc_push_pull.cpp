@@ -27,7 +27,7 @@
 using namespace calin::io::zmq_inproc;
 
 ZMQPusher::ZMQPusher(void* zmq_ctx, const std::string& endpoint,
-  int buffer_size):
+  int buffer_size, ZMQBindOrConnect bind_or_connect):
   socket_(zmq_socket(zmq_ctx, ZMQ_PUSH), &zmq_close)
 {
   // Open the socket
@@ -44,12 +44,23 @@ ZMQPusher::ZMQPusher(void* zmq_ctx, const std::string& endpoint,
         + zmq_strerror(errno));
   }
 
-  // Connect socket to endpoint
-  if(zmq_connect(socket_.get(), endpoint.c_str()) < 0)
-    throw std::runtime_error(
-      std::string("ZMQPusher: error connecting socket: ")
-      + endpoint + "\n"
-      + "ZMQPusher: " + zmq_strerror(errno));
+  // Bind oe connect socket to endpoint
+  if(bind_or_connect == ZMQBindOrConnect::BIND)
+  {
+    if(zmq_bind(socket_.get(), endpoint.c_str()) < 0)
+      throw std::runtime_error(
+        std::string("ZMQPusher: error binding socket endpoint : ")
+          + endpoint + "\n" +
+          + "ZMQPusher: " + zmq_strerror(errno));
+  }
+  else
+  {
+    if(zmq_connect(socket_.get(), endpoint.c_str()) < 0)
+      throw std::runtime_error(
+        std::string("ZMQPusher: error connecting socket: ")
+        + endpoint + "\n"
+        + "ZMQPusher: " + zmq_strerror(errno));
+  }
 }
 
 bool ZMQPusher::push(void* data, unsigned size, bool dont_wait)
@@ -64,7 +75,7 @@ bool ZMQPusher::push(void* data, unsigned size, bool dont_wait)
 }
 
 ZMQPuller::ZMQPuller(void* zmq_ctx, const std::string& endpoint,
-  int buffer_size):
+  int buffer_size, ZMQBindOrConnect bind_or_connect):
   socket_(zmq_socket(zmq_ctx, ZMQ_PULL), &zmq_close)
 {
   // Open the socket
@@ -81,14 +92,23 @@ ZMQPuller::ZMQPuller(void* zmq_ctx, const std::string& endpoint,
         + zmq_strerror(errno));
   }
 
-  // Connect socket to endpoint
-  if(zmq_bind(socket_.get(), endpoint.c_str()) < 0)
-    throw std::runtime_error(
-      std::string("ZMQPuller: error binding socket endpoint : ")
-        + endpoint + "\n" +
+  // Bind oe connect socket to endpoint
+  if(bind_or_connect == ZMQBindOrConnect::BIND)
+  {
+    if(zmq_bind(socket_.get(), endpoint.c_str()) < 0)
+      throw std::runtime_error(
+        std::string("ZMQPuller: error binding socket endpoint : ")
+          + endpoint + "\n" +
+          + "ZMQPuller: " + zmq_strerror(errno));
+  }
+  else
+  {
+    if(zmq_connect(socket_.get(), endpoint.c_str()) < 0)
+      throw std::runtime_error(
+        std::string("ZMQPuller: error connecting socket: ")
+        + endpoint + "\n"
         + "ZMQPuller: " + zmq_strerror(errno));
-
-
+  }
 }
 
 bool ZMQPuller::pull(void* data, unsigned buffer_size, unsigned& bytes_received,

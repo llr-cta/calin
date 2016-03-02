@@ -29,10 +29,13 @@
 
 namespace calin { namespace io { namespace zmq_inproc {
 
+enum class ZMQBindOrConnect { BIND, CONNECT };
+
 class ZMQPusher
 {
 public:
-  ZMQPusher(void* zmq_ctx, const std::string& endpoint, int buffer_size = 100);
+  ZMQPusher(void* zmq_ctx, const std::string& endpoint, int buffer_size = 100,
+    ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::BIND);
   bool push(void* data, unsigned size, bool dont_wait = false);
 private:
   std::unique_ptr<void,int(*)(void*)> socket_;
@@ -41,7 +44,8 @@ private:
 class ZMQPuller
 {
 public:
-  ZMQPuller(void* zmq_ctx, const std::string& endpoint, int buffer_size = 100);
+  ZMQPuller(void* zmq_ctx, const std::string& endpoint, int buffer_size = 100,
+    ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::CONNECT);
   bool pull(void* data, unsigned buffer_size, unsigned& bytes_received,
      bool dont_wait = false);
   bool pull_assert_size(void* data, unsigned buffer_size,

@@ -49,8 +49,8 @@ public:
   BufferedDataSource& operator=(const BufferedDataSource&) = delete;
 
   BufferedDataSource(zmq_inproc::ZMQPuller* puller,
-    std::atomic<bool>& reader_loop_finished): DataSource<T>(), puller_(puller),
-    reader_loop_finished_(reader_loop_finished)
+    std::atomic<bool>& reader_active): DataSource<T>(), puller_(puller),
+    reader_active_(reader_active)
   {
     // nothing to see here
   }
@@ -63,14 +63,14 @@ public:
   T* get_next() override
   {
     void* ptr = nullptr;
-    puller_->pull_assert_size(&ptr, sizeof(ptr), reader_loop_finished_);
+    puller_->pull_assert_size(&ptr, sizeof(ptr), !reader_active_);
 //    log::LOG(log::INFO) << "Source: " << safe_downcast<T>(ptr);
     return safe_downcast<T>(ptr);
   }
 
 private:
   zmq_inproc::ZMQPuller* puller_ = nullptr;
-  std::atomic<bool>& reader_loop_finished_;
+  std::atomic<bool>& reader_active_;
 };
 
 template<typename T> class MultiThreadDataSourceBuffer
@@ -87,7 +87,7 @@ public:
     reader_thread_(
       new std::thread(&MultiThreadDataSourceBuffer::reader_loop, this))
   {
-    // nothing to see here
+    while(!reader_active_){ CALIN_SPINWAIT(); }
   }
 
   ~MultiThreadDataSourceBuffer()
@@ -100,7 +100,7 @@ public:
   }
 
   BufferedDataSource<T>* new_data_source(unsigned buffer_size) {
-    return new BufferedDataSource<T>(zmq_->new_puller(), reader_loop_finished_); }
+    return new BufferedDataSource<T>(zmq_->new_puller(), reader_active_); }
 
   void stop_buffering() { stop_buffering_ = true; }
 
@@ -108,18 +108,19 @@ private:
   void reader_loop()
   {
     std::unique_ptr<zmq_inproc::ZMQPusher> pusher { zmq_->new_pusher() };
+    reader_active_ = true;
     while(!stop_buffering_)
     {
       T* p = source_->get_next();
       if(!pusher->push(&p, sizeof(p)))delete p; // only fails if context closed
     }
-    reader_loop_finished_ = true;
+    reader_active_ = false;
   }
 
   DataSource<T>* source_ { nullptr };
   bool adopt_source_ { false };
   std::atomic<bool> stop_buffering_ { false };
-  std::atomic<bool> reader_loop_finished_ { false };
+  std::atomic<bool> reader_active_ { false };
   zmq_inproc::ZMQInprocPushPull* zmq_ = nullptr;
   std::thread* reader_thread_ = nullptr;
 };
