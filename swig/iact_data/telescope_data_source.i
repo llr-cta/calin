@@ -25,6 +25,7 @@
 %{
 #include "iact_data/telescope_data_source.hpp"
 #include "iact_data/nectarcam_data_source.hpp"
+using namespace calin::io;
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -70,7 +71,19 @@
   calin::io::data_source::ProtobufFileDataSink<
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
+%include "io/buffered_data_source.hpp"
+
+%template(BufferedTelescopeDataSource)
+  calin::io::data_source::BufferedDataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>;
+
+%template(MultiThreadTelescopeDataSourceBuffer)
+  calin::io::data_source::MultiThreadDataSourceBuffer<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>;
+
 %include "iact_data/telescope_data_source.hpp"
+
+%newobject new_data_source(unsigned buffer_size);
 
 %template(DataSourceOpenerTelescopeRandomAccessDataSource)
   calin::io::data_source::DataSourceOpener<

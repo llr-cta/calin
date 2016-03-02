@@ -60,7 +60,7 @@ TEST(TestLog, MultiThreaded) {
   std::ifstream stream("testlog.txt");
   std::string line;
   while(std::getline(stream, line))
-    ASSERT_EQ(line.size(), 58) << "Unexpected line size: " << line;
+    ASSERT_EQ(line.size(), 58U) << "Unexpected line size: " << line;
 }
 
 int main(int argc, char **argv) {
