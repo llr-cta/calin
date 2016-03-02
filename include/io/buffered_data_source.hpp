@@ -27,6 +27,7 @@
 #include <thread>
 #include <cassert>
 
+#include <util/spinlock.hpp>
 #include <io/log.hpp>
 #include <io/data_source.hpp>
 #include <io/zmq_inproc_push_pull.hpp>
@@ -46,7 +47,7 @@ public:
 
   BufferedDataSource(const BufferedDataSource&) = delete;
   BufferedDataSource& operator=(const BufferedDataSource&) = delete;
-  
+
   BufferedDataSource(zmq_inproc::ZMQPuller* puller,
     std::atomic<bool>& reader_loop_finished): DataSource<T>(), puller_(puller),
     reader_loop_finished_(reader_loop_finished)
@@ -82,7 +83,9 @@ public:
 
   MultiThreadDataSourceBuffer(DataSource<T>* source, bool adopt_source = false):
     source_(source), adopt_source_(adopt_source),
-    reader_thread_(&MultiThreadDataSourceBuffer::reader_loop, this)
+    zmq_(new zmq_inproc::ZMQInprocPushPull),
+    reader_thread_(
+      new std::thread(&MultiThreadDataSourceBuffer::reader_loop, this))
   {
     // nothing to see here
   }
@@ -90,28 +93,25 @@ public:
   ~MultiThreadDataSourceBuffer()
   {
     stop_buffering_ = true;
-    std::unique_ptr<zmq_inproc::ZMQPuller> puller { zmq_.new_puller() };
-    void* ptr = nullptr;
-    while(puller->pull_assert_size(&ptr, sizeof(ptr), reader_loop_finished_))
-      delete safe_downcast<T>(ptr);
-    reader_thread_.join();
+    delete zmq_;
+    reader_thread_->join();
+    delete reader_thread_;
     if(adopt_source_)delete source_;
   }
 
   BufferedDataSource<T>* new_data_source(unsigned buffer_size) {
-    return new BufferedDataSource<T>(zmq_.new_puller(), reader_loop_finished_); }
+    return new BufferedDataSource<T>(zmq_->new_puller(), reader_loop_finished_); }
 
   void stop_buffering() { stop_buffering_ = true; }
 
 private:
   void reader_loop()
   {
-    std::unique_ptr<zmq_inproc::ZMQPusher> pusher { zmq_.new_pusher() };
+    std::unique_ptr<zmq_inproc::ZMQPusher> pusher { zmq_->new_pusher() };
     while(!stop_buffering_)
     {
       T* p = source_->get_next();
-      pusher->push(&p, sizeof(p));
-//      log::LOG(log::INFO) << "Reader: " << p;
+      if(!pusher->push(&p, sizeof(p)))delete p; // only fails if context closed
     }
     reader_loop_finished_ = true;
   }
@@ -120,8 +120,8 @@ private:
   bool adopt_source_ { false };
   std::atomic<bool> stop_buffering_ { false };
   std::atomic<bool> reader_loop_finished_ { false };
-  zmq_inproc::ZMQInprocPushPull zmq_;
-  std::thread reader_thread_;
+  zmq_inproc::ZMQInprocPushPull* zmq_ = nullptr;
+  std::thread* reader_thread_ = nullptr;
 };
 
 } } } // namespace calin::io::data_source

@@ -207,7 +207,7 @@ TEST(TestBufferedIntegerDataSource, Sequential) {
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
     delete m;
   }
-  auto* m = src.get_next();
+  auto* m = bsrc->get_next();
   ASSERT_EQ(m, nullptr);
   delete bsrc;
 }

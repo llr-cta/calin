@@ -46,7 +46,7 @@ bool ZMQPusher::push(void* data, unsigned size, bool dont_wait)
 {
   if(zmq_send(socket_.get(), data, size, dont_wait ? ZMQ_DONTWAIT : 0) < 0)
   {
-    if(dont_wait and errno == EAGAIN)return false;
+    if((dont_wait and errno == EAGAIN) or errno == ETERM)return false;
     throw std::runtime_error(std::string("ZMQPusher: error sending data: ")
       + zmq_strerror(errno));
   }
@@ -89,7 +89,7 @@ bool ZMQPuller::pull(void* data, unsigned buffer_size, unsigned& bytes_received,
   if(nbytes < 0)
   {
     bytes_received = 0;
-    if(dont_wait and errno == EAGAIN)return false;
+    if((dont_wait and errno == EAGAIN) or errno == ETERM)return false;
     throw std::runtime_error(std::string("ZMQPuller: error receiving data: ")
       + zmq_strerror(errno));
   }

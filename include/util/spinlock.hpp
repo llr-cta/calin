@@ -28,16 +28,16 @@ namespace calin { namespace util { namespace spinlock {
 
 #if defined(__i386__) || defined(__x86_64__) || \
     defined(__amd64__) || defined(__ia64__)
-#define SPINWAIT()  do { __asm __volatile("pause"); } while (0)
+#define CALIN_SPINWAIT()  do { __asm __volatile("pause"); } while (0)
 #else
-#define SPINWAIT()  do { /* nothing */ } while (0)
+#define CALIN_SPINWAIT()  do { /* nothing */ } while (0)
 #endif
 
 class Spinlock
 {
  public:
   inline void lock() {
-    while (locked.test_and_set(std::memory_order_acquire)) { SPINWAIT(); }
+    while (locked.test_and_set(std::memory_order_acquire)) { CALIN_SPINWAIT(); }
   }
 
   inline void unlock() {
@@ -54,7 +54,5 @@ class Nulllock
   inline void lock() { }
   inline void unlock() { }
 };
-
-#undef SPINWAIT
 
 } } } // namespace calin::util::spinlock
