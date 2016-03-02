@@ -32,7 +32,7 @@ namespace calin { namespace io { namespace zmq_inproc {
 class ZMQPusher
 {
 public:
-  ZMQPusher(void* zmq_ctx, const std::string& endpoint);
+  ZMQPusher(void* zmq_ctx, const std::string& endpoint, int buffer_size = 100);
   bool push(void* data, unsigned size, bool dont_wait = false);
 private:
   std::unique_ptr<void,int(*)(void*)> socket_;
@@ -53,7 +53,7 @@ private:
 class ZMQInprocPushPull
 {
 public:
-  ZMQInprocPushPull();
+  ZMQInprocPushPull(unsigned buffer_size = 100);
   ~ZMQInprocPushPull();
 
   ZMQPuller* new_puller();
@@ -64,6 +64,7 @@ public:
   std::string address();
 
 private:
+  unsigned buffer_size_ = 100;
   void* my_zmq_ctx_ = nullptr;
   void* zmq_ctx_ = nullptr;
   unsigned address_index_ = 0;

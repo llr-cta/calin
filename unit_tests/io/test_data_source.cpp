@@ -25,11 +25,13 @@
 #include <iomanip>
 #include <gtest/gtest.h>
 
+#include <io/log.hpp>
 #include <io/data_source.hpp>
 #include <io/buffered_data_source.hpp>
 #include <io/chained_data_source.hpp>
 #include <unittest.pb.h>
 
+using namespace calin::io::log;
 using namespace calin::ix::unittest;
 using namespace calin::io::data_source;
 
@@ -210,6 +212,34 @@ TEST(TestBufferedIntegerDataSource, Sequential) {
   auto* m = bsrc->get_next();
   ASSERT_EQ(m, nullptr);
   delete bsrc;
+}
+
+TEST(TestBufferedIntegerDataSource, SequentialWithStop) {
+  unsigned N = 1000;
+  UnitTestIntegerDataSource src(N,0);
+  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src);
+  auto* bsrc = buffer.new_data_source(10);
+
+  unsigned i=0;
+  for(i=0;i<N/2;i++)
+  {
+    auto* m = bsrc->get_next();
+    ASSERT_NE(m, nullptr);
+    EXPECT_EQ(m->ssm_i32(), int32_t(i));
+    delete m;
+  }
+  buffer.stop_buffering();
+  while(auto* m = bsrc->get_next())
+  {
+    EXPECT_EQ(m->ssm_i32(), int32_t(i));
+    delete m;
+    i++;
+  }
+  delete bsrc;
+  auto* m = src.get_next();
+  ASSERT_NE(m, nullptr);
+  EXPECT_EQ(m->ssm_i32(), int32_t(i));
+  delete m;
 }
 
 int main(int argc, char **argv) {

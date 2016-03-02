@@ -26,13 +26,23 @@
 
 using namespace calin::io::zmq_inproc;
 
-ZMQPusher::ZMQPusher(void* zmq_ctx, const std::string& endpoint):
+ZMQPusher::ZMQPusher(void* zmq_ctx, const std::string& endpoint,
+  int buffer_size):
   socket_(zmq_socket(zmq_ctx, ZMQ_PUSH), &zmq_close)
 {
   // Open the socket
   if(!socket_)
     throw std::runtime_error(std::string("ZMQPusher: error creating socket: ")
       + zmq_strerror(errno));
+
+  // Set the buffer size
+  if(buffer_size > 0)
+  {
+    if(zmq_setsockopt(socket_.get(), ZMQ_SNDHWM,
+        &buffer_size, sizeof(buffer_size)) < 0)
+      throw std::runtime_error(std::string("ZMQPusher: error setting buffer size: ")
+        + zmq_strerror(errno));
+  }
 
   // Connect socket to endpoint
   if(zmq_connect(socket_.get(), endpoint.c_str()) < 0)
@@ -109,9 +119,10 @@ bool ZMQPuller::pull_assert_size(void* data, unsigned buffer_size,
   return good;
 }
 
-ZMQInprocPushPull::ZMQInprocPushPull()
+ZMQInprocPushPull::ZMQInprocPushPull(unsigned buffer_size):
+  buffer_size_(buffer_size), my_zmq_ctx_(zmq_ctx_new()), zmq_ctx_(my_zmq_ctx_)
 {
-  my_zmq_ctx_ = zmq_ctx_ = zmq_ctx_new();
+  // nothing to see here
 }
 
 ZMQInprocPushPull::~ZMQInprocPushPull()
@@ -121,12 +132,12 @@ ZMQInprocPushPull::~ZMQInprocPushPull()
 
 ZMQPuller* ZMQInprocPushPull::new_puller()
 {
-  return new ZMQPuller(zmq_ctx(), address());
+  return new ZMQPuller(zmq_ctx(), address(), buffer_size_);
 }
 
 ZMQPusher* ZMQInprocPushPull::new_pusher()
 {
-  return new ZMQPusher(zmq_ctx(), address());
+  return new ZMQPusher(zmq_ctx(), address(), buffer_size_);
 }
 
 std::string ZMQInprocPushPull::address()
