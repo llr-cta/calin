@@ -40,14 +40,16 @@ using UTSSM_RADS = RandomAccessDataSource<UnitTestSimpleSubMessage>;
 class UnitTestIntegerDataSource: public UTSSM_RADS
 {
 public:
-  UnitTestIntegerDataSource(unsigned count, int32_t start = 0):
-    UTSSM_RADS(), count_(count), start_(start) { }
+  UnitTestIntegerDataSource(unsigned count, int32_t start = 0,
+    unsigned delay = 0):
+    UTSSM_RADS(), count_(count), start_(start), delay_(delay) { }
   ~UnitTestIntegerDataSource() { }
   UnitTestSimpleSubMessage* get_next() override {
     if(index_>=count_)return nullptr;
     UnitTestSimpleSubMessage* m = new UnitTestSimpleSubMessage;
     m->set_ssm_i32(start_ + int32_t(index_));
     ++index_;
+    if(delay_)std::this_thread::sleep_for(std::chrono::microseconds(delay_));
     return m;
   }
   uint64_t size() override { return count_; }
@@ -57,6 +59,7 @@ private:
   unsigned index_ = 0;
   unsigned count_ = 0;
   int32_t start_ = 0;
+  unsigned delay_ = 0;
 };
 
 class UnitTestDataSourceOpener: public DataSourceOpener<UTSSM_RADS>
@@ -239,6 +242,68 @@ TEST(TestBufferedIntegerDataSource, SequentialWithStop) {
   auto* m = src.get_next();
   ASSERT_NE(m, nullptr);
   EXPECT_EQ(m->ssm_i32(), int32_t(i));
+  delete m;
+}
+
+TEST(TestBufferedIntegerDataSource, MultiThreaded) {
+  unsigned N = 10000;
+  unsigned delay = 100;
+  UnitTestIntegerDataSource src(N,0);
+  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src);
+
+  std::vector<unsigned> ids(N);
+  std::vector<std::thread> threads;
+
+  for(unsigned ithread=0;ithread<10;ithread++)
+    threads.emplace_back([&buffer,&ids,ithread,delay](){
+      auto* bsrc = buffer.new_data_source(10);
+      int last_index = -1;
+      while(auto* m = bsrc->get_next())
+      {
+        EXPECT_GT(m->ssm_i32(), last_index);
+        last_index = m->ssm_i32();
+        ids[last_index] = ithread+1;
+        delete m;
+        if(delay)std::this_thread::sleep_for(std::chrono::microseconds(delay));
+      }
+      delete bsrc;
+    });
+  for(auto& i : threads)i.join();
+
+  for(unsigned i=0;i<N;i++)EXPECT_GT(ids[i],0);
+}
+
+TEST(TestBufferedIntegerDataSource, MultiThreadedWithStop) {
+  unsigned N = 10000;
+  unsigned delay = 100;
+  UnitTestIntegerDataSource src(N,0);
+  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src);
+
+  std::vector<unsigned> ids(N);
+  std::vector<std::thread> threads;
+
+  for(unsigned ithread=0;ithread<10;ithread++)
+    threads.emplace_back([&buffer,&ids,ithread,delay](){
+      auto* bsrc = buffer.new_data_source(10);
+      int last_index = -1;
+      while(auto* m = bsrc->get_next())
+      {
+        EXPECT_GT(m->ssm_i32(), last_index);
+        last_index = m->ssm_i32();
+        ids[last_index] = ithread+1;
+        delete m;
+        if(delay)std::this_thread::sleep_for(std::chrono::microseconds(delay));
+      }
+      delete bsrc;
+    });
+  buffer.stop_buffering();
+  for(auto& i : threads)i.join();
+
+  auto* m = src.get_next();
+  unsigned i = 0;
+  if(m != nullptr)
+    for(;i<unsigned(m->ssm_i32());i++)EXPECT_GT(ids[i],0) << "With: i=" << i;
+  for(;i<N;i++)EXPECT_EQ(ids[i],0) << "With: i=" << i;
   delete m;
 }
 
