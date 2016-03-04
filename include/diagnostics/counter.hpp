@@ -37,8 +37,10 @@ public:
   bool visit_telescope_event(
     calin:: ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
+  calin::ix::diagnostics::counter::EventCounterDiagnosticsData& event_data() {
+    return event_data_; }
 private:
-  uint64_t last_event_number_ = 0;
+  uint64_t next_event_number_ = 0;
   calin::ix::diagnostics::counter::EventCounterDiagnosticsData event_data_;
 };
 

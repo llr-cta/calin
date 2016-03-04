@@ -20,8 +20,10 @@
 
 */
 
+#include <io/log.hpp>
 #include <diagnostics/counter.hpp>
 
+using namespace calin::io::log;
 using namespace calin::diagnostics::counter;
 
 CounterDiagnostics::CounterDiagnostics(): TelescopeEventVisitor()
@@ -38,6 +40,8 @@ bool CounterDiagnostics::visit_telescope_event(
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   event_data_.set_num_events(event_data_.num_events()+1);
-  while(last_event_number_ < event->local_event_number())
-    event_data_.add_missing_event_number(last_event_number_);
+  while(next_event_number_ < event->local_event_number())
+    event_data_.add_missing_event_number(next_event_number_++);
+  next_event_number_++;
+  return true;
 }
