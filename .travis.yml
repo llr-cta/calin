@@ -146,4 +146,3 @@ script:
     make -j3 &&
     make install &&
     make test
-    #./unit_tests/io/test_data_source --gtest_filter=\*TestBufferedIntegerDataSource\*
