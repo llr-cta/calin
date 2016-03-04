@@ -1,1 +1,1 @@
-all = ["waveform"]
+all = ["waveform","counter"]

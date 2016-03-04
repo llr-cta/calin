@@ -91,6 +91,8 @@ public:
   ~MultiThreadDataSourceBuffer()
   {
     stop_buffering_ = true;
+    // This closes the ZMQ context prompting all readers and the writer to
+    // unblock. It must happen before the join to the reader thread.
     delete zmq_;
     reader_thread_->join();
     delete reader_thread_;

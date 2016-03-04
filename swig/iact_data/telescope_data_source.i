@@ -73,6 +73,8 @@ using namespace calin::io;
 
 %include "io/buffered_data_source.hpp"
 
+%newobject new_data_source(unsigned buffer_size);
+
 %template(BufferedTelescopeDataSource)
   calin::io::data_source::BufferedDataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
@@ -83,19 +85,24 @@ using namespace calin::io;
 
 %include "iact_data/telescope_data_source.hpp"
 
-%newobject new_data_source(unsigned buffer_size);
-
 %template(DataSourceOpenerTelescopeRandomAccessDataSource)
   calin::io::data_source::DataSourceOpener<
-    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>;
+    calin::io::data_source::RandomAccessDataSource<
+      calin::ix::iact_data::telescope_event::TelescopeEvent> >;
+//    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>;
 
 %template(BasicChainedDataSourceTelescopeRandomAccessDataSource)
   calin::io::data_source::BasicChainedDataSource<
-    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>;
+    calin::io::data_source::RandomAccessDataSource<
+      calin::ix::iact_data::telescope_event::TelescopeEvent> >;
+//    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>;
 
 %template(BasicChaninedRandomAccessDataSourceTelescopeRandomAccessDataSource)
   calin::io::data_source::BasicChaninedRandomAccessDataSource<
-    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>;
+    calin::io::data_source::RandomAccessDataSource<
+      calin::ix::iact_data::telescope_event::TelescopeEvent> >;
+//  calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>;
 
 %include "iact_data/zfits_data_source.hpp"
+
 %include "iact_data/nectarcam_data_source.hpp"

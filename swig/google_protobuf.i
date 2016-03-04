@@ -5,7 +5,7 @@
    calin/google_protobuf.i -- Stephen Fegan -- 2015-12-10
 
    SWIG interface file for supported elements from protobuf Message
-   and Descriptoy
+   and Descriptor
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay

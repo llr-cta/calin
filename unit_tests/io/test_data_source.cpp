@@ -200,6 +200,7 @@ TEST(TestProtobufFile, WriteAndRead) {
 }
 
 TEST(TestBufferedIntegerDataSource, Sequential) {
+  // Test that data packets all arrive in correct order
   unsigned N = 1000;
   UnitTestIntegerDataSource src(N,0);
   MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src);
@@ -218,6 +219,7 @@ TEST(TestBufferedIntegerDataSource, Sequential) {
 }
 
 TEST(TestBufferedIntegerDataSource, SequentialWithStop) {
+  // Test that no data packets are lost when stop is called
   unsigned N = 1000;
   UnitTestIntegerDataSource src(N,0);
   MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src);
@@ -246,6 +248,7 @@ TEST(TestBufferedIntegerDataSource, SequentialWithStop) {
 }
 
 TEST(TestBufferedIntegerDataSource, MultiThreaded) {
+  // Test that all data packets arrive, and that they come in order
   unsigned N = 10000;
   unsigned delay = 100;
   UnitTestIntegerDataSource src(N,0);
@@ -274,6 +277,7 @@ TEST(TestBufferedIntegerDataSource, MultiThreaded) {
 }
 
 TEST(TestBufferedIntegerDataSource, MultiThreadedWithStop) {
+  // Test that no packets are lost in multi threaded scenario
   unsigned N = 10000;
   unsigned delay = 100;
   UnitTestIntegerDataSource src(N,0);

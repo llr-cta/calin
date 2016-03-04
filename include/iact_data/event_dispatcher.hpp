@@ -43,7 +43,8 @@ public:
   void accept(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
   void accept_from_src(
-    calin::iact_data::telescope_data_source::TelescopeDataSource* src,
+    calin::io::data_source::DataSource<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
     unsigned num_event_max = 0);
 private:
   std::vector<calin::iact_data::event_visitor::TelescopeEventVisitor*>

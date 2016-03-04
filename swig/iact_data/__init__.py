@@ -1,1 +1,1 @@
-__all__ = ["telescope_data_source"]
+__all__ = ["telescope_data_source","event_dispatcher"]

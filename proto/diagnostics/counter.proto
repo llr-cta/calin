@@ -1,8 +1,8 @@
 /*
 
-   calin/diagnostics/waveform_diagnostics.hpp -- Stephen Fegan -- 2016-02-10
+   calin/proto/diagnostics/counter.proto -- Stephen Fegan -- 2016-03-04
 
-   Waveform diagnostics visitor
+   Protobufs for counter diagnostics
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -20,10 +20,17 @@
 
 */
 
-#pragma once
+syntax = "proto3";
 
-namespace calin { namespace diagnostics { namespace waveform_diagnostics {
+import "calin.proto";
+import "math/histogram.proto";
+//import "common_types.proto";
 
+package calin.ix.diagnostics.counter;
 
-
-} } } /// namespace calin::diagnostics::waveform_diagnostics
+message EventCounterDiagnosticsData {
+  uint64 num_events                                        = 1 [
+    (CFO).desc = "Number of events found." ];
+  repeated uint64 missing_event_number                     = 2 [
+    (CFO).desc = "List of missing event numbers." ];
+};
