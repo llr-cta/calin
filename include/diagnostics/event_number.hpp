@@ -41,11 +41,34 @@ public:
   SequentialEventNumberGlitchDetectorData& glitch_data() {
     return glitch_data_; }
 
-private:
+protected:
   bool test_local_event_number_ = false;
   int64_t last_event_number_ = -1;
   calin::ix::diagnostics::event_number::
-  SequentialEventNumberGlitchDetectorData glitch_data_;
+    SequentialEventNumberGlitchDetectorData glitch_data_;
 };
+
+class CountersEventNumberGlitchDetector:
+  public iact_data::event_visitor::TelescopeEventVisitor
+{
+public:
+  CountersEventNumberGlitchDetector(unsigned counter_index = 0);
+  virtual ~CountersEventNumberGlitchDetector();
+
+  bool visit_telescope_event(
+    calin:: ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  calin::ix::diagnostics::event_number::
+  CountersEventNumberGlitchDetectorData& glitch_data() {
+    return glitch_data_; }
+
+protected:
+  unsigned counter_index_ = 0;
+  int64_t local_event_num_diff_ = 0;
+  std::vector<int64_t> counters_event_num_diff_;
+  calin::ix::diagnostics::event_number::
+    CountersEventNumberGlitchDetectorData glitch_data_;
+};
+
 
 } } } /// namespace calin::diagnostics::event_number

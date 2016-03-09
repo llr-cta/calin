@@ -44,4 +44,4 @@ private:
   calin::ix::diagnostics::counter::EventCounterDiagnosticsData event_data_;
 };
 
-} } } /// namespace calin::diagnostics::counter_diagnostics
+} } } /// namespace calin::diagnostics::counter
