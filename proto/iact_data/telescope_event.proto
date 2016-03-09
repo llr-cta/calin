@@ -128,23 +128,25 @@ enum ImageTreatmentMode {
 };
 
 message TelescopeEvent {
-  int32 telescope_id                    = 1 [
+  uint64 source_event_index             = 1 [
+    (CFO).desc = "Index of the event relative to the source." ];
+  int32 telescope_id                    = 2 [
     (CFO).desc = "Telescope ID." ];
-  uint64 local_event_number             = 2 [
+  int64 local_event_number              = 3 [
     (CFO).desc = "Local (camera) event number." ];
-  TriggerType trigger_type              = 3 [
+  TriggerType trigger_type              = 4 [
     (CFO).desc = "Trigger type." ];
-  bool array_trigger_received           = 4 [
+  bool array_trigger_received           = 5 [
     (CFO).desc = "Flag for whether array trigger was received." ];
-  int64 array_event_number              = 5 [
+  int64 array_event_number              = 6 [
     (CFO).desc = "Array event number or \"-1\" if not received." ];
-  repeated Clock camera_clock           = 6 [
+  repeated Clock camera_clock           = 20 [
     (CFO).desc = "Vector of camera clock times associated with event." ];
-  repeated ModuleClocks module_clock    = 7 [
+  repeated ModuleClocks module_clock    = 21 [
     (CFO).desc = "Vector of camera clock times associated with event." ];
-  repeated Counter camera_counter       = 8 [
+  repeated Counter camera_counter       = 30 [
     (CFO).desc = "Vector of camera counter values associated with event." ];
-  repeated ModuleCounters module_counter = 9 [
+  repeated ModuleCounters module_counter = 31 [
     (CFO).desc = "Vector of module counter values associated with event." ];
 
   ImageTreatmentMode image_treatment    = 99 [

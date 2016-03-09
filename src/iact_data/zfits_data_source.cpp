@@ -73,7 +73,9 @@ TelescopeEvent* ZFITSSingleFileDataSource::get_next()
 
   if(!cta_event)throw runtime_error("ZFits reader returned NULL");
 
-  return decoder_->decode(cta_event.get());
+  TelescopeEvent* event = decoder_->decode(cta_event.get());
+  if(event)event->set_source_event_index(next_event_index_-1);
+  return event;
 }
 
 uint64_t ZFITSSingleFileDataSource::size()
@@ -163,4 +165,16 @@ ZFITSDataSource::ZFITSDataSource(const std::string& filename,
 ZFITSDataSource::~ZFITSDataSource()
 {
   // nothing to see here
+}
+
+calin::ix::iact_data::telescope_event::TelescopeEvent*
+ZFITSDataSource::get_next()
+{
+  calin::ix::iact_data::telescope_event::TelescopeEvent*  event =
+    BasicChaninedRandomAccessDataSource<calin::iact_data::
+      telescope_data_source::TelescopeRandomAccessDataSource>::get_next();
+  if(event and isource_)
+    event->set_source_event_index(event->source_event_index() +
+      chained_file_index_[isource_-1]);
+  return event;
 }

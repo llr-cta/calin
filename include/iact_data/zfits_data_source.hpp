@@ -82,6 +82,8 @@ public:
     const config_type& config = default_config());
   virtual ~ZFITSDataSource();
 
+  calin::ix::iact_data::telescope_event::TelescopeEvent* get_next() override;
+
   static config_type default_config() {
     config_type config = config_type::default_instance();
     config.set_extension(".fits.fz");
