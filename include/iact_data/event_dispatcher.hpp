@@ -42,10 +42,14 @@ public:
     bool adopt_visitor = false);
   void accept(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
+  void accept_all_from_src(
+    calin::io::data_source::DataSource<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
+    unsigned log_frequency = 0, bool use_buffered_reader = true);
   void accept_from_src(
     calin::io::data_source::DataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
-    unsigned num_event_max = 0);
+    unsigned log_frequency = 0, unsigned num_event_max = 0);
 private:
   std::vector<calin::iact_data::event_visitor::TelescopeEventVisitor*>
     adopted_visitors_;

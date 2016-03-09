@@ -27,6 +27,23 @@
 
 namespace calin { namespace diagnostics { namespace counter {
 
+class ModulePresentVisitor:
+  public iact_data::event_visitor::TelescopeEventVisitor
+{
+public:
+  ModulePresentVisitor();
+  virtual ~ModulePresentVisitor();
+
+  bool visit_telescope_event(
+    calin:: ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  calin::ix::diagnostics::counter::ModulePresentVisitorData& module_data() {
+    return module_data_; }
+protected:
+  uint64_t next_event_number_ = 0;
+  calin::ix::diagnostics::counter::ModulePresentVisitorData module_data_;
+};
+
 class CounterDiagnostics:
   public iact_data::event_visitor::TelescopeEventVisitor
 {

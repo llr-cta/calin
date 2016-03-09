@@ -63,6 +63,22 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
     copy_single_gain_image(cta_event->logain(),
       calin_event->mutable_low_gain_image(), "low");
 
+  if(cta_event->has_drawerstatus() and
+    cta_event->drawerstatus().has_status())
+  {
+    const auto& cta_status = cta_event->drawerstatus().status();
+#if TEST_ANYARRAY_TYPES
+    if(cta_status.type() != DataModel::AnyArray::U8)
+      throw std::runtime_error("Camera status type not U8");
+#endif
+    unsigned nmod =
+      cta_status.data().size();
+    const auto* mod_status =
+      reinterpret_cast<const uint8_t*>(&cta_status.data().front());
+    for(unsigned imod=0;imod<nmod;imod++)
+      calin_event->add_module_present(*(mod_status++)&0x01);
+  }
+
   if(cta_event->has_cameracounters() and
     cta_event->cameracounters().has_counters())
   {

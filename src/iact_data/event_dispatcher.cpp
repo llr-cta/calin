@@ -20,8 +20,10 @@
 
 */
 
+#include <io/log.hpp>
 #include <iact_data/event_dispatcher.hpp>
 
+using namespace calin::io::log;
 using namespace calin::iact_data::event_dispatcher;
 using namespace calin::iact_data::telescope_data_source;
 using namespace calin::ix::iact_data::telescope_event;
@@ -91,13 +93,32 @@ void TelescopeEventDispatcher::accept(TelescopeEvent* event)
   for(auto ivisitor : visitors_)ivisitor->leave_telescope_event();
 }
 
-void TelescopeEventDispatcher::
-accept_from_src(TelescopeDataSource* src, unsigned num_event_max)
+void TelescopeEventDispatcher::accept_all_from_src(
+  calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
+  unsigned log_frequency, bool use_buffered_reader)
 {
+  if(!use_buffered_reader)return accept_from_src(src,log_frequency);
+  std::unique_ptr<MultiThreadTelescopeDataSourceBuffer> buffer {
+    new MultiThreadTelescopeDataSourceBuffer(src) };
+  std::unique_ptr<BufferedTelescopeDataSource> bsrc {
+    buffer->new_data_source(100) };
+  accept_from_src(bsrc.get(),log_frequency);
+  bsrc.reset();
+}
+
+void TelescopeEventDispatcher::
+accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
+  unsigned num_event_max)
+{
+  uint64_t ndispatched = 0;
   while(TelescopeEvent* event = src->get_next())
   {
     accept(event);
     delete event;
+    ++ndispatched;
+    if(log_frequency and ndispatched % log_frequency == 0)
+      LOG(INFO) << "Dispatched " << ndispatched << " events";
     if(num_event_max and not --num_event_max)break;
   }
 }

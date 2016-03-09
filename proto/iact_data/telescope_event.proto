@@ -140,6 +140,11 @@ message TelescopeEvent {
     (CFO).desc = "Flag for whether array trigger was received." ];
   int64 array_event_number              = 6 [
     (CFO).desc = "Array event number or \"-1\" if not received." ];
+
+  repeated bool module_present          = 10 [
+    (CFO).desc = "Vector indicating presence of module in data in "
+      "this event." ];
+
   repeated Clock camera_clock           = 20 [
     (CFO).desc = "Vector of camera clock times associated with event." ];
   repeated ModuleClocks module_clock    = 21 [
