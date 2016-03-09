@@ -1,6 +1,6 @@
 //-*-mode:protobuf; mode:font-lock;-*-
 
-/* 
+/*
 
    calin/proto/unittest.proto -- Stephen Fegan -- 2015-09-13
 
@@ -10,11 +10,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -59,6 +59,11 @@ message UnitTestOneofSubMessage {
   };
 }
 
+enum BaseEnumType {
+  HELLO = 0;
+  WORLD = 1;
+}
+
 message UnitTestMessage {
   enum EnumType {
     UNKNOWN = 0;
@@ -101,7 +106,7 @@ message UnitTestMessage {
   int32   i8   = 28 [(CFO).int32_type = INT_8];
 
   UnitTestSimpleSubMessage ssm_empty = 29;
-  
+
   repeated int32   vec_i32  = 101;
   repeated int64   vec_i64  = 102;
   repeated float   vec_f    = 103;
@@ -147,7 +152,7 @@ message UnitTestMessage {
   repeated UnitTestOneofSubMessage vec_oosm = 402;
 
   common_types.Vector3D pos = 500 [(CFO).desc="Position vector. ",
-                      (CFO).units="cm"];  
+                      (CFO).units="cm"];
 }
 
 message UnitTestKey {

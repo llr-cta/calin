@@ -183,8 +183,7 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
   I->Print(vars, "};\n\n"
     "$static$bool $enum_name$_IsValid(int value);\n"
     "$static$const std::string& $enum_name$_Name($enum_name$ value);\n"
-    "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$ *CALIN_INIT_OUTPUT);\n"
-    "%clear $enum_name$* value;\n"
+    "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$ *CALIN_INT_OUTPUT);\n"
     "$static$const $enum_name$ $enum_name$_MIN = $min_val$;\n"
     "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n");
 }
@@ -270,8 +269,9 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       }
     for(int i=0; i<d->nested_type_count(); i++)
       if(!d->nested_type(i)->options().map_entry())
-        I->Print("typedef $local$ $full$;\n", "local", d->nested_type(i)->name(),
-                "full", class_name(d->nested_type(i)));
+        I->Print("typedef $local$ $full$;\n",
+          "local", d->nested_type(i)->name(),
+          "full", class_name(d->nested_type(i)));
   }
 
   // Enums
@@ -393,26 +393,23 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
           "  const auto& array = $$self->$name$();\n"
           "  OUTPUT.resize(array.size());\n"
           "  std::transform(array.begin(), array.end(), OUTPUT.begin(),\n"
-          "     std::addressof<const $scoped_type$>);\n"
+          "    std::addressof<const $scoped_type$>);\n"
           "}\n"
           "void mutable_$name$(std::vector<$type$*> &OUTPUT) {\n"
           "  auto* array = $$self->mutable_$name$();\n"
           "  OUTPUT.resize(array->size());\n"
           "  std::transform(array->begin(), array->end(), OUTPUT.begin(),\n"
-          "     std::addressof<$scoped_type$>);\n"
+          "    std::addressof<$scoped_type$>);\n"
           "}\n"
           "void $name$(std::vector<$type$*> &OUTPUT) {\n"
           "  auto* array = $$self->mutable_$name$();\n"
           "  OUTPUT.resize(array->size());\n"
           "  std::transform(array->begin(), array->end(), OUTPUT.begin(),\n"
-          "     std::addressof<$scoped_type$>);\n"
-#if 0
+          "    std::addressof<$scoped_type$>);\n"
           "}\n"
           "void set_$name$(const std::vector<$type$*>& INPUT) {\n"
           "  $$self->clear_$name$();\n"
-          "  const auto* array = $$self->mutable_$name$();\n"
-          "  for(const auto* m : INPUT)array->$$self->add_$name$(m);\n"
-#endif
+          "  for(const auto* m : INPUT)$$self->add_$name$()->MergeFrom(*m);\n"
           "}\n");
         I->Outdent();
         I->Print("};\n");
@@ -600,11 +597,14 @@ Generate(const google::protobuf::FileDescriptor * file,
   I->Print("\n#define SWIG_FILE_WITH_INIT\n\n");
   I->Print(
     "namespace {\n"
-    "  void verify_range(int index, int size) __attribute__((unused));\n\n"
-    "  void verify_range(int index, int size) {\n"
-    "    if(index<0)throw std::range_error(\"Index must be positive\");\n"
+    "  void verify_range(int& index, int size) __attribute__((unused));\n\n"
+    "  void verify_range(int& index, int size) {\n"
+    "    assert(size>=0);\n"
+    "    if(index<-size)throw std::range_error(\"Index out of range: \"\n"
+    "      + std::to_string(index) + \" < -\" + std::to_string(size));\n"
     "    else if(index>=size)throw std::range_error(\"Index out of range: \"\n"
-    "      + std::to_string(index) + \" >= \" + std::to_string(size)); }\n"
+    "      + std::to_string(index) + \" >= \" + std::to_string(size));\n"
+    "    else if(index<0)index += size; }\n"
     "} // private namespace\n");
   I->Outdent();
   I->Print("%}\n\n");
