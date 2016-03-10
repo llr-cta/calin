@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_FILES counter.i event_number.i)
+set(CALIN_SWIG_FILES counter.i module.i event_number.i)
 set(CALIN_SWIG_TARGET diagnostics)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

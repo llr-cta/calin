@@ -141,9 +141,13 @@ message TelescopeEvent {
   int64 array_event_number              = 6 [
     (CFO).desc = "Array event number or \"-1\" if not received." ];
 
-  repeated bool module_present          = 10 [
-    (CFO).desc = "Vector indicating presence of module in data in "
-      "this event." ];
+  repeated int32 module_index           = 10 [
+    (CFO).desc = "Index of each expected module in event, or -1 if module "
+      "is not present in this event." ];
+  repeated int32 module_id              = 11 [
+    (CFO).desc = "Module id of each module present in the event ordered by "
+      "its index in the data. For each module present in the event we are "
+      "guarenteed that module_id[module_index[id]]=id."];
 
   repeated Clock camera_clock           = 20 [
     (CFO).desc = "Vector of camera clock times associated with event." ];

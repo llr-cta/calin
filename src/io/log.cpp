@@ -280,7 +280,7 @@ log_message(Level level, const std::string& message, TimeStamp timestamp)
   const char* apply_color_string = ansi_color_string(level);
   const char* reset_color_string = ansi_reset_string();
 
-#if 0
+#if 1
   /* Would seem like we should get the GIL before calling the write but
      this seems to block if we're calling from a different (non Python)
      thread. Best to just leave it for now */
@@ -301,7 +301,7 @@ log_message(Level level, const std::string& message, TimeStamp timestamp)
       nullptr, this_level_string, apply_color_string, reset_color_string,
       message);
 
-#if 0
+#if 1
   /* Release the thread. No Python API allowed beyond this point. */
   PyGILState_Release(gstate);
 #endif

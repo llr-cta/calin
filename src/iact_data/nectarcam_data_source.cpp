@@ -75,8 +75,18 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       cta_status.data().size();
     const auto* mod_status =
       reinterpret_cast<const uint8_t*>(&cta_status.data().front());
-    for(unsigned imod=0;imod<nmod;imod++)
-      calin_event->add_module_present(*(mod_status++)&0x01);
+    for(unsigned imod=0, mod_index=0;imod<nmod;imod++)
+    {
+      if(*(mod_status++)&0x01)
+      {
+        calin_event->add_module_index(mod_index);
+        calin_event->add_module_id(imod);
+      }
+      else
+      {
+        calin_event->add_module_index(-1);
+      }
+    }
   }
 
   if(cta_event->has_cameracounters() and

@@ -28,13 +28,6 @@ import "math/histogram.proto";
 
 package calin.ix.diagnostics.counter;
 
-message ModulePresentVisitorData {
-  uint64 num_events                                        = 1 [
-    (CFO).desc = "Number of events found." ];
-  repeated uint64 num_events_module_present                = 2 [
-    (CFO).desc = "Number of events for which module is present." ];
-};
-
 message EventCounterDiagnosticsData {
   uint64 num_events                                        = 1 [
     (CFO).desc = "Number of events found." ];

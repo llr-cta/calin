@@ -26,30 +26,6 @@
 using namespace calin::io::log;
 using namespace calin::diagnostics::counter;
 
-ModulePresentVisitor::ModulePresentVisitor(): TelescopeEventVisitor()
-{
-  // nothing to see here
-}
-
-ModulePresentVisitor::~ModulePresentVisitor()
-{
-  // nothing to see here
-}
-
-bool ModulePresentVisitor::visit_telescope_event(
-    calin:: ix::iact_data::telescope_event::TelescopeEvent* event)
-{
-  module_data_.set_num_events(module_data_.num_events()+1);
-  while(module_data_.num_events_module_present_size() <
-      event->module_present_size())
-    module_data_.add_num_events_module_present(0);
-  for(unsigned imod=0;imod<event->module_present_size();imod++)
-    if(event->module_present(imod))
-      module_data_.set_num_events_module_present(imod,
-        module_data_.num_events_module_present(imod)+1);
-  return true;
-}
-
 CounterDiagnostics::CounterDiagnostics(): TelescopeEventVisitor()
 {
   // nothing to see here
