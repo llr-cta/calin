@@ -1,8 +1,8 @@
 /*
 
-   calin/diagnostics/counter.hpp -- Stephen Fegan -- 2016-03-04
+   calin/diagnostics/module.hpp -- Stephen Fegan -- 2016-03-10
 
-   Counter diagnostics visitor
+   Module diagnostics visitor
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -22,26 +22,26 @@
 
 #pragma once
 
-#include <diagnostics/counter.pb.h>
+#include <diagnostics/module.pb.h>
 #include <iact_data/event_visitor.hpp>
 
-namespace calin { namespace diagnostics { namespace counter {
+namespace calin { namespace diagnostics { namespace module {
 
-class CounterDiagnostics:
+class ModulePresentVisitor:
   public iact_data::event_visitor::TelescopeEventVisitor
 {
 public:
-  CounterDiagnostics();
-  virtual ~CounterDiagnostics();
+  ModulePresentVisitor();
+  virtual ~ModulePresentVisitor();
 
   bool visit_telescope_event(
     calin:: ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
-  calin::ix::diagnostics::counter::EventCounterDiagnosticsData& event_data() {
-    return event_data_; }
-private:
+  calin::ix::diagnostics::module::ModulePresentVisitorData& module_data() {
+    return module_data_; }
+protected:
   uint64_t next_event_number_ = 0;
-  calin::ix::diagnostics::counter::EventCounterDiagnosticsData event_data_;
+  calin::ix::diagnostics::module::ModulePresentVisitorData module_data_;
 };
 
-} } } /// namespace calin::diagnostics::counter
+} } } /// namespace calin::diagnostics::module

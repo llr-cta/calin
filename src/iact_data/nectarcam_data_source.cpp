@@ -63,6 +63,32 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
     copy_single_gain_image(cta_event->logain(),
       calin_event->mutable_low_gain_image(), "low");
 
+  if(cta_event->has_drawerstatus() and
+    cta_event->drawerstatus().has_status())
+  {
+    const auto& cta_status = cta_event->drawerstatus().status();
+#if TEST_ANYARRAY_TYPES
+    if(cta_status.type() != DataModel::AnyArray::U8)
+      throw std::runtime_error("Camera status type not U8");
+#endif
+    unsigned nmod =
+      cta_status.data().size();
+    const auto* mod_status =
+      reinterpret_cast<const uint8_t*>(&cta_status.data().front());
+    for(unsigned imod=0, mod_index=0;imod<nmod;imod++)
+    {
+      if(*(mod_status++)&0x01)
+      {
+        calin_event->add_module_index(mod_index);
+        calin_event->add_module_id(imod);
+      }
+      else
+      {
+        calin_event->add_module_index(-1);
+      }
+    }
+  }
+
   if(cta_event->has_cameracounters() and
     cta_event->cameracounters().has_counters())
   {
@@ -88,8 +114,10 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       cta_counters.data().size()/sizeof(NectarCounters);
     const auto* mod_counter =
       reinterpret_cast<const NectarCounters*>(&cta_counters.data().front());
-    for(unsigned imod=0;imod<nmod;imod++)
+    for(unsigned imod=0;imod<nmod;imod++, mod_counter++)
     {
+      if(imod < calin_event->module_index_size() and
+        calin_event->module_index(imod) == -1)continue;
       auto* module_counters = calin_event->add_module_counter();
       module_counters->set_module_id(imod);
 #define add_counter(id,val) \
@@ -117,7 +145,6 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       auto* clock = module_clocks->add_clock();
       clock->set_clock_id(0);
       clock->mutable_time()->set_time_ns(time_ns);
-      mod_counter++;
     }
   }
 

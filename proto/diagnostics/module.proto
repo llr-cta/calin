@@ -1,0 +1,50 @@
+/*
+
+   calin/proto/diagnostics/module.proto -- Stephen Fegan -- 2016-03-04
+
+   Protobufs for module diagnostics
+
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "math/histogram.proto";
+//import "common_types.proto";
+
+package calin.ix.diagnostics.module;
+
+message ModuleMissingRange {
+  uint64 first_source_index                                = 1 [
+    (CFO).desc = "First source index for which module is missing." ];
+  uint64 last_source_index                                 = 2 [
+    (CFO).desc = "Last source index for which module is missing." ];
+};
+
+message ModuleMissingHistory {
+  repeated ModuleMissingRange range                        = 1 [
+    (CFO).desc = "All ranges in the data for which this module is missing." ];
+};
+
+message ModulePresentVisitorData {
+  uint64 num_events                                        = 1 [
+    (CFO).desc = "Number of events found." ];
+  repeated uint64 module_missing_num_events                = 2 [
+    (CFO).desc = "Number of events for which module is present." ];
+  repeated ModuleMissingHistory module_missing_history     = 3 [
+    (CFO).desc = "Module missing history for all modules." ];
+};

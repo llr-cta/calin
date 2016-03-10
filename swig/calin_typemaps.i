@@ -46,14 +46,14 @@
 // =============================================================================
 
 %typemap(in,noblock=1,numinputs=0)
-  enum SWIGTYPE *CALIN_INIT_OUTPUT ($basetype temp) {
-  // typemap(in) enum SWIGTYPE *CALIN_INIT_OUTPUT -- calin_typemaps.i
+  enum SWIGTYPE *CALIN_INT_OUTPUT ($basetype temp) {
+  // typemap(in) enum SWIGTYPE *CALIN_INT_OUTPUT -- calin_typemaps.i
   temp = %static_cast(0,$basetype);
   $1 = &temp;
 }
 %typemap(argout,fragment=SWIG_From_frag(int),noblock=1)
-  enum SWIGTYPE *CALIN_INIT_OUTPUT {
-  // typemap(argout) enum SWIGTYPE *CALIN_INIT_OUTPUT -- calin_typemaps.i
+  enum SWIGTYPE *CALIN_INT_OUTPUT {
+  // typemap(argout) enum SWIGTYPE *CALIN_INT_OUTPUT -- calin_typemaps.i
   {
     PyObject* res_int = SWIG_From(int)(%static_cast(*$1, int));
     if(!res_int)SWIG_fail;

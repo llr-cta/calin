@@ -280,6 +280,14 @@ log_message(Level level, const std::string& message, TimeStamp timestamp)
   const char* apply_color_string = ansi_color_string(level);
   const char* reset_color_string = ansi_reset_string();
 
+#if 1
+  /* Would seem like we should get the GIL before calling the write but
+     this seems to block if we're calling from a different (non Python)
+     thread. Best to just leave it for now */
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+#endif
+
   if(use_stderr_)
     write_message_lines([](const char* c, unsigned n) { while(n) {
           unsigned nn = std::min(n,1000U); PySys_WriteStderr("%.*s", nn, c);
@@ -292,6 +300,11 @@ log_message(Level level, const std::string& message, TimeStamp timestamp)
           c += nn; n -= nn; } },
       nullptr, this_level_string, apply_color_string, reset_color_string,
       message);
+
+#if 1
+  /* Release the thread. No Python API allowed beyond this point. */
+  PyGILState_Release(gstate);
+#endif
 }
 
 bool PythonLogger::is_python_initialised()

@@ -1,0 +1,59 @@
+/*
+
+   calin/proto/diagnostics/event_number.proto -- Stephen Fegan -- 2016-03-09
+
+   Protobufs for event number diagnostics
+
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+//import "math/histogram.proto";
+//import "common_types.proto";
+
+package calin.ix.diagnostics.event_number;
+
+message SequentialEventNumberGlitch {
+  uint64 source_event_index                                = 1 [
+    (CFO).desc = "Index of the event relative to the source." ];
+  int64 event_number                                       = 2 [
+    (CFO).desc = "Event number." ];
+  int64 last_event_number                                  = 3 [
+    (CFO).desc = "Last event number." ];
+};
+
+message SequentialEventNumberGlitchDetectorData {
+  repeated SequentialEventNumberGlitch glitch              = 1 [
+    (CFO).desc = "List of missing event numbers." ];
+};
+
+message CountersEventNumberGlitch {
+  uint64 source_event_index                                = 1 [
+    (CFO).desc = "Index of the event relative to the source." ];
+  int64 delta_event_number                                 = 2 [
+    (CFO).desc = "Difference between local event number "
+      "and file index." ];
+  repeated int64 delta_counters_event_number               = 3 [
+    (CFO).desc = "Difference between counters event number "
+      "and file index." ];
+};
+
+message CountersEventNumberGlitchDetectorData {
+  repeated CountersEventNumberGlitch glitch                = 1 [
+    (CFO).desc = "List of event number glitches." ];
+};

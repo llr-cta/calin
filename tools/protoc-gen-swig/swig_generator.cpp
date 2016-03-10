@@ -48,6 +48,28 @@ string pb_to_gen_filename(string pb_filename, string extension = ".pb.i")
   return pb_filename.substr(0,pb_filename.find_last_of('.')) + extension;
 }
 
+void print_open_namespace(Printer* I,
+  const google::protobuf::FileDescriptor * file)
+{
+  std::vector<string> package_bits = split(file->package(), '.');
+  if(!package_bits.empty())
+  {
+    for(auto ibit : package_bits)I->Print("namespace $bit$ { ","bit",ibit);
+    I->Print("\n");
+  }
+}
+
+void print_close_namespace(Printer* I,
+  const google::protobuf::FileDescriptor * file)
+{
+  std::vector<string> package_bits = split(file->package(), '.');
+  if(!package_bits.empty())
+  {
+    for(auto ibit : package_bits)I->Print("} ");
+    I->Print("// namespace $ns$\n","ns",join(package_bits,"::"));
+  }
+}
+
 void print_includes(Printer* I, const google::protobuf::FileDescriptor * file,
                     string directive, string extension, bool include_self)
 {
@@ -161,8 +183,7 @@ void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
   I->Print(vars, "};\n\n"
     "$static$bool $enum_name$_IsValid(int value);\n"
     "$static$const std::string& $enum_name$_Name($enum_name$ value);\n"
-    "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$ *CALIN_INIT_OUTPUT);\n"
-    "%clear $enum_name$* value;\n"
+    "$static$bool $enum_name$_Parse(const std::string& name, $enum_name$ *CALIN_INT_OUTPUT);\n"
     "$static$const $enum_name$ $enum_name$_MIN = $min_val$;\n"
     "$static$const $enum_name$ $enum_name$_MAX = $max_val$;\n");
 }
@@ -248,8 +269,9 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       }
     for(int i=0; i<d->nested_type_count(); i++)
       if(!d->nested_type(i)->options().map_entry())
-        I->Print("typedef $local$ $full$;\n", "local", d->nested_type(i)->name(),
-                "full", class_name(d->nested_type(i)));
+        I->Print("typedef $local$ $full$;\n",
+          "local", d->nested_type(i)->name(),
+          "full", class_name(d->nested_type(i)));
   }
 
   // Enums
@@ -287,11 +309,12 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     auto* f = d->field(i);
 
     std::map<string, string> vars;
-    vars["id"]         = std::to_string(f->index());
-    vars["name"]       = f->name();
-    vars["type"]       = field_type(f, d);
-    vars["type_in"]    = field_type_const_in(f, d);
-    vars["class_name"] = the_class_name;
+    vars["id"]          = std::to_string(f->index());
+    vars["name"]        = f->name();
+    vars["type"]        = field_type(f, d);
+    vars["type_in"]     = field_type_const_in(f, d);
+    vars["class_name"]  = the_class_name;
+    vars["scoped_type"] = field_type(f, nullptr);
 
     I->Print(vars,
       "\n"
@@ -365,7 +388,29 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
           "  return $$self->mutable_$name$(index); }\n"
           "$type$* $name$(int index) {\n"
           "  verify_range(index, $$self->$name$_size());\n"
-          "  return $$self->mutable_$name$(index); }\n");
+          "  return $$self->mutable_$name$(index); }\n"
+          "void const_$name$(std::vector<const $type$*> &OUTPUT) {\n"
+          "  const auto& array = $$self->$name$();\n"
+          "  OUTPUT.resize(array.size());\n"
+          "  std::transform(array.begin(), array.end(), OUTPUT.begin(),\n"
+          "    std::addressof<const $scoped_type$>);\n"
+          "}\n"
+          "void mutable_$name$(std::vector<$type$*> &OUTPUT) {\n"
+          "  auto* array = $$self->mutable_$name$();\n"
+          "  OUTPUT.resize(array->size());\n"
+          "  std::transform(array->begin(), array->end(), OUTPUT.begin(),\n"
+          "    std::addressof<$scoped_type$>);\n"
+          "}\n"
+          "void $name$(std::vector<$type$*> &OUTPUT) {\n"
+          "  auto* array = $$self->mutable_$name$();\n"
+          "  OUTPUT.resize(array->size());\n"
+          "  std::transform(array->begin(), array->end(), OUTPUT.begin(),\n"
+          "    std::addressof<$scoped_type$>);\n"
+          "}\n"
+          "void set_$name$(const std::vector<$type$*>& INPUT) {\n"
+          "  $$self->clear_$name$();\n"
+          "  for(const auto* m : INPUT)$$self->add_$name$()->MergeFrom(*m);\n"
+          "}\n");
         I->Outdent();
         I->Print("};\n");
         I->Print(vars, "$type$* add_$name$();\n");
@@ -484,6 +529,30 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
   // End of class
   I->Outdent();
   I->Print("};\n");
+
+  I->Print("\n");
+  print_close_namespace(I,d->file());
+
+  string package_name = d->file()->package();
+  for(size_t ifind = package_name.find_first_of('.'); ifind != string::npos;
+      ifind = package_name.find_first_of('.', ifind+=2))
+    package_name.replace(ifind, 1, "::");
+
+  string package_name_cc = d->file()->package();
+  for(size_t ifind = package_name_cc.find_first_of('.'); ifind != string::npos;
+      ifind = package_name_cc.find_first_of('.', ifind))
+    package_name_cc[ifind++] = '_';
+
+  I->Print(
+    "\n"
+    "%template(Vector_$package_name_cc$_$class_name$)\n"
+    "  std::vector<$package_name$::$class_name$*>;\n",
+    "package_name", package_name,
+    "package_name_cc", CamelCase(package_name_cc),
+    "class_name", the_class_name);
+
+  I->Print("\n");
+  print_open_namespace(I,d->file());
 }
 
 } // anonymous namespace
@@ -528,11 +597,14 @@ Generate(const google::protobuf::FileDescriptor * file,
   I->Print("\n#define SWIG_FILE_WITH_INIT\n\n");
   I->Print(
     "namespace {\n"
-    "  void verify_range(int index, int size) __attribute__((unused));\n\n"
-    "  void verify_range(int index, int size) {\n"
-    "    if(index<0)throw std::range_error(\"Index must be positive\");\n"
+    "  void verify_range(int& index, int size) __attribute__((unused));\n\n"
+    "  void verify_range(int& index, int size) {\n"
+    "    assert(size>=0);\n"
+    "    if(index<-size)throw std::range_error(\"Index out of range: \"\n"
+    "      + std::to_string(index) + \" < -\" + std::to_string(size));\n"
     "    else if(index>=size)throw std::range_error(\"Index out of range: \"\n"
-    "      + std::to_string(index) + \" >= \" + std::to_string(size)); }\n"
+    "      + std::to_string(index) + \" >= \" + std::to_string(size));\n"
+    "    else if(index<0)index += size; }\n"
     "} // private namespace\n");
   I->Outdent();
   I->Print("%}\n\n");
@@ -560,13 +632,9 @@ Generate(const google::protobuf::FileDescriptor * file,
            "#define int64 int64_t\n"
            "#define uint64 uint64_t\n");
 
-  std::vector<string> package_bits = split(file->package(), '.');
-  if(!package_bits.empty())
-  {
-    I->Print("\n");
-    for(auto ibit : package_bits)I->Print("namespace $bit$ { ","bit",ibit);
-    I->Print("\n");
-  }
+  // Print open namespace
+  I->Print("\n");
+  print_open_namespace(I, file);
 
   // Print forward declaration for all message classes
   for(int i=0;i<file->message_type_count();i++)
@@ -583,12 +651,9 @@ Generate(const google::protobuf::FileDescriptor * file,
   for(int i=0;i<file->message_type_count();i++)
     print_message(I, file->message_type(i));
 
-  if(!package_bits.empty())
-  {
-    I->Print("\n");
-    for(auto ibit : package_bits)I->Print("} ");
-    I->Print("// namespace $ns$\n","ns",join(package_bits,"::"));
-  }
+  // Print close namespace
+  I->Print("\n");
+  print_close_namespace(I, file);
 
   delete I;
   delete I_stream;
