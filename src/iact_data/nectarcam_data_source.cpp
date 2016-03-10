@@ -114,8 +114,10 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       cta_counters.data().size()/sizeof(NectarCounters);
     const auto* mod_counter =
       reinterpret_cast<const NectarCounters*>(&cta_counters.data().front());
-    for(unsigned imod=0;imod<nmod;imod++)
+    for(unsigned imod=0;imod<nmod;imod++, mod_counter++)
     {
+      if(imod < calin_event->module_index_size() and
+        calin_event->module_index(imod) == -1)continue;
       auto* module_counters = calin_event->add_module_counter();
       module_counters->set_module_id(imod);
 #define add_counter(id,val) \
@@ -143,7 +145,6 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       auto* clock = module_clocks->add_clock();
       clock->set_clock_id(0);
       clock->mutable_time()->set_time_ns(time_ns);
-      mod_counter++;
     }
   }
 

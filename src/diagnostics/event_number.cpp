@@ -75,17 +75,22 @@ bool CountersEventNumberGlitchDetector::visit_telescope_event(
   auto index = event->source_event_index();
   bool found_glitch = false;
   if(event->local_event_number() != index+local_event_num_diff_)
-    local_event_num_diff_ = event->local_event_number()-index,
-    found_glitch = true;
-  for(unsigned imod=0; imod!=event->module_counter_size(); imod++)
   {
-    const auto& mod = event->module_counter(imod);
+    local_event_num_diff_ = event->local_event_number()-index;
+    found_glitch = true;
+  }
+  for(unsigned imodctr=0; imodctr!=event->module_counter_size(); imodctr++)
+  {
+    const auto& mod = event->module_counter(imodctr);
+    unsigned imod = mod.module_id();
     if(mod.counter_size()<counter_index_)continue;
     if(mod.counter(counter_index_).value() !=
-        index+counters_event_num_diff_[imod])
+      index+counters_event_num_diff_[imod])
+    {
       counters_event_num_diff_[imod] =
-        mod.counter(counter_index_).value()-index,
-    found_glitch = true;
+        mod.counter(counter_index_).value()-index;
+      found_glitch = true;
+    }
   }
   if(found_glitch)
   {
