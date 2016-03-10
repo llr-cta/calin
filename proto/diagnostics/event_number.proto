@@ -51,6 +51,8 @@ message CountersEventNumberGlitch {
   repeated int64 delta_counters_event_number               = 3 [
     (CFO).desc = "Difference between counters event number "
       "and file index." ];
+  repeated bool source_event_has_module                    = 4 [
+    (CFO).desc = "Event has module data." ];
 };
 
 message CountersEventNumberGlitchDetectorData {

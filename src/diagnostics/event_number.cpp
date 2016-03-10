@@ -99,6 +99,8 @@ bool CountersEventNumberGlitchDetector::visit_telescope_event(
     glitch->set_delta_event_number(local_event_num_diff_);
     for(auto diff : counters_event_num_diff_)
       glitch->add_delta_counters_event_number(diff);
+    for(auto mod_index : event->module_index())
+      glitch->add_source_event_has_module(mod_index != -1);
   }
   return true;
 }

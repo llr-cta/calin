@@ -22,6 +22,8 @@
 
 #include <vector>
 #include <string>
+#include <sstream>
+#include <iomanip>
 
 namespace calin { namespace util { namespace string {
 
@@ -37,7 +39,23 @@ std::vector<std::string> split(const std::string &s, char delim);
 std::string join(std::vector<std::string>::const_iterator begin,
                  std::vector<std::string>::const_iterator end,
                  const std::string& sep);
-                 
+
 std::string join(const std::vector<std::string>& vec, const std::string& sep);
+
+// http://stackoverflow.com/questions/7276826/c-format-number-with-commas
+
+template<class T>
+std::string to_string_with_commas(T value, unsigned precision = 2)
+{
+  struct Numpunct: public std::numpunct<char>{
+  protected:
+    virtual char do_thousands_sep() const{return ',';}
+    virtual std::string do_grouping() const{return "\03";}
+  };
+  std::stringstream ss;
+  ss.imbue({std::locale(), new Numpunct});
+  ss << std::setprecision(precision) << std::fixed << value;
+  return ss.str();
+}
 
 } } } // namespace calin::util::string
