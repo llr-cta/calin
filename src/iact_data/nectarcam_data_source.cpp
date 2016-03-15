@@ -99,7 +99,6 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       const auto& cta_q = cta_event->logain().integrals().gains();
       nmod = cta_q.data().size()/sizeof(uint16_t)/7;
     }
-
   }
   calin_event->set_all_modules_present(all_modules_present);
 
@@ -183,6 +182,15 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
   }
 
   return calin_event;
+}
+
+calin::ix::iact_data::instrument_run_configuration::
+  InstrumentRunConfiguration* NectarCamCameraEventDecoder::decode_run_config(
+    const DataModel::CameraRunHeader* cta_run_header,
+    const DataModel::CameraEvent* cta_event)
+{
+
+  return nullptr;
 }
 
 void NectarCamCameraEventDecoder::

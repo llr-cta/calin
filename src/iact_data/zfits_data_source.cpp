@@ -29,6 +29,7 @@
 
 using namespace calin::iact_data::zfits_data_source;
 using namespace calin::ix::iact_data::telescope_event;
+using namespace calin::ix::iact_data::instrument_run_configuration;
 using namespace calin::io::log;
 using calin::util::file::is_file;
 using calin::util::file::is_readable;
@@ -45,7 +46,8 @@ CTACameraEventDecoder::~CTACameraEventDecoder()
 ZFITSSingleFileDataSource::
 ZFITSSingleFileDataSource(const std::string& filename,
     CTACameraEventDecoder* decoder, bool adopt_decoder):
-  calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource(),
+  calin::iact_data::telescope_data_source::
+    TelescopeRandomAccessDataSourceWithRunConfig(),
   filename_(expand_filename(filename)), decoder_(decoder),
   adopt_decoder_(adopt_decoder)
 {
@@ -86,6 +88,14 @@ uint64_t ZFITSSingleFileDataSource::size()
 void ZFITSSingleFileDataSource::set_next_index(uint64_t next_index)
 {
   next_event_index_ = next_index;
+}
+
+InstrumentRunConfiguration* ZFITSSingleFileDataSource::get_run_configuration()
+{
+  if(!run_config_)return nullptr;
+  auto* run_config = new InstrumentRunConfiguration();
+  run_config->CopyFrom(*run_config_);
+  return run_config;
 }
 
 ZFitsDataSourceOpener::ZFitsDataSourceOpener(std::string filename,

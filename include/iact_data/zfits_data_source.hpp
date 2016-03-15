@@ -37,6 +37,7 @@ namespace ACTL { namespace IO {
 } } // namespace ACTL::IO
 namespace DataModel {
   class CameraEvent;
+  class CameraRunHeader;
 } // namespace DataModel
 
 namespace calin { namespace iact_data { namespace zfits_data_source {
@@ -47,10 +48,14 @@ public:
   virtual ~CTACameraEventDecoder();
   virtual calin::ix::iact_data::telescope_event::TelescopeEvent*
     decode(const DataModel::CameraEvent* cta_event) = 0;
+  virtual calin::ix::iact_data::instrument_run_configuration::
+    InstrumentRunConfiguration* decode_run_config(
+      const DataModel::CameraRunHeader* cta_run_header,
+      const DataModel::CameraEvent* cta_event) = 0;
 };
 
-class ZFITSSingleFileDataSource: public
-  calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource
+class ZFITSSingleFileDataSource:
+  public telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig
 {
 public:
   ZFITSSingleFileDataSource(const std::string& filename,
@@ -61,12 +66,17 @@ public:
   uint64_t size() override;
   void set_next_index(uint64_t next_index) override;
 
+  calin::ix::iact_data::instrument_run_configuration::
+    InstrumentRunConfiguration* get_run_configuration() override;
+
 private:
   std::string filename_;
   ACTL::IO::ProtobufIFits* zfits_ = nullptr;
   CTACameraEventDecoder* decoder_ = nullptr;
   bool adopt_decoder_ = false;
   uint64_t next_event_index_ = 0;
+  calin::ix::iact_data::instrument_run_configuration::
+    InstrumentRunConfiguration* run_config_ = nullptr;
 };
 
 class ZFITSDataSource:
