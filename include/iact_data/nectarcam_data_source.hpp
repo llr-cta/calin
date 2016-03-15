@@ -57,7 +57,9 @@ public:
     decode(const DataModel::CameraEvent* cta_event) override;
 
 private:
-  void copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
+  void copy_single_gain_image(const DataModel::CameraEvent* cta_event,
+    const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+    const DataModel::PixelsChannel& cta_image,
     calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
     const std::string& which_gain);
 

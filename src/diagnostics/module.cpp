@@ -41,6 +41,7 @@ bool ModulePresentVisitor::visit_telescope_event(
 {
   auto index = event->source_event_index();
   module_data_.set_num_events(module_data_.num_events()+1);
+  if(event->all_modules_present())return true;
   while(module_data_.module_missing_num_events_size() <
       event->module_index_size())
   {

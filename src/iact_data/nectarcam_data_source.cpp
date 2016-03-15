@@ -55,14 +55,7 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
   //calin_event->local_clock_time
   calin_event->set_image_treatment(TREATMENT_SCIENCE);
 
-  if(cta_event->has_higain())
-    copy_single_gain_image(cta_event->higain(),
-      calin_event->mutable_high_gain_image(), "high");
-
-  if(cta_event->has_logain())
-    copy_single_gain_image(cta_event->logain(),
-      calin_event->mutable_low_gain_image(), "low");
-
+  bool all_modules_present = true;
   if(cta_event->has_drawerstatus() and
     cta_event->drawerstatus().has_status())
   {
@@ -85,9 +78,50 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
       else
       {
         calin_event->add_module_index(-1);
+        all_modules_present = false;
       }
     }
   }
+  else
+  {
+    unsigned nmod = 0;
+    if(cta_event->has_higain() and
+      cta_event->higain().has_integrals() and
+      cta_event->higain().integrals().has_gains())
+    {
+      const auto& cta_q = cta_event->higain().integrals().gains();
+      nmod = cta_q.data().size()/sizeof(uint16_t)/7;
+    }
+    else if(cta_event->has_logain() and
+      cta_event->logain().has_integrals() and
+      cta_event->logain().integrals().has_gains())
+    {
+      const auto& cta_q = cta_event->logain().integrals().gains();
+      nmod = cta_q.data().size()/sizeof(uint16_t)/7;
+    }
+
+  }
+  calin_event->set_all_modules_present(all_modules_present);
+
+  // ==========================================================================
+  //
+  // TRANSFER IMAGE DATA
+  //
+  // ==========================================================================
+
+  if(cta_event->has_higain())
+    copy_single_gain_image(cta_event, calin_event, cta_event->higain(),
+      calin_event->mutable_high_gain_image(), "high");
+
+  if(cta_event->has_logain())
+    copy_single_gain_image(cta_event, calin_event, cta_event->logain(),
+      calin_event->mutable_low_gain_image(), "low");
+
+  // ==========================================================================
+  //
+  // DECODE NECTARCAM COUNTERS
+  //
+  // ==========================================================================
 
   if(cta_event->has_cameracounters() and
     cta_event->cameracounters().has_counters())
@@ -152,7 +186,9 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
 }
 
 void NectarCamCameraEventDecoder::
-copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
+copy_single_gain_image(const DataModel::CameraEvent* cta_event,
+  const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+  const DataModel::PixelsChannel& cta_image,
   calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
   const std::string& which_gain)
 {
@@ -176,12 +212,26 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
     unsigned npix = cta_wf.data().size()/(sizeof(uint16_t)*nsample);
     const uint16_t* cta_wf_data =
       reinterpret_cast<const uint16_t*>(&cta_wf.data().front());
+    bool all_channels_present = true;
     for(unsigned ipix=0;ipix<npix;ipix++)
     {
-      auto* calin_wf = calin_wf_image->add_waveform();
-      for(unsigned isample=0;isample<nsample;isample++)
-        calin_wf->add_samples(*cta_wf_data++);
+      if(calin_event->module_index(ipix/7) == -1)
+      {
+        all_channels_present = false;
+        calin_wf_image->add_channel_index(-1);
+        cta_wf_data += nsample;
+      }
+      else
+      {
+        calin_wf_image->add_channel_index(calin_wf_image->channel_id_size());
+        calin_wf_image->add_channel_id(ipix);
+        auto* calin_samp = calin_wf_image->add_waveform()->mutable_samples();
+        calin_samp->Reserve(nsample);
+        for(unsigned isample=0;isample<nsample;isample++)
+          calin_samp->Add(*cta_wf_data++);
+      }
     }
+    calin_wf_image->set_all_channels_present(all_channels_present);
   }
 
   if(cta_image.has_integrals() and cta_image.integrals().has_gains())
@@ -199,8 +249,22 @@ copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
     unsigned npix = cta_q.data().size()/sizeof(uint16_t);
     const uint16_t* cta_q_data =
       reinterpret_cast<const uint16_t*>(&cta_q.data().front());
-    for(unsigned ipix=0;ipix<npix;ipix++)
-      calin_q_image->add_charge(*cta_q_data++);
+    bool all_channels_present = true;
+    for(unsigned ipix=0;ipix<npix;ipix++, cta_q_data++)
+    {
+      if(calin_event->module_index(ipix/7) == -1)
+      {
+        calin_q_image->add_channel_index(-1);
+        all_channels_present = false;
+      }
+      else
+      {
+        calin_q_image->add_channel_index(calin_q_image->channel_id_size());
+        calin_q_image->add_channel_id(ipix);
+        calin_q_image->add_charge(*cta_q_data);
+      }
+    }
+    calin_q_image->set_all_channels_present(all_channels_present);
   }
 }
 
