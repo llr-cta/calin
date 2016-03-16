@@ -40,7 +40,7 @@ public:
   calin::ix::diagnostics::module::ModulePresentVisitorData& module_data() {
     return module_data_; }
 protected:
-  uint64_t next_event_number_ = 0;
+  int64_t next_event_number_ = 0;
   calin::ix::diagnostics::module::ModulePresentVisitorData module_data_;
 };
 

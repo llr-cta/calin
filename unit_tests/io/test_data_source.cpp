@@ -273,7 +273,7 @@ TEST(TestBufferedIntegerDataSource, MultiThreaded) {
     });
   for(auto& i : threads)i.join();
 
-  for(unsigned i=0;i<N;i++)EXPECT_GT(ids[i],0);
+  for(unsigned i=0;i<N;i++)EXPECT_GT(ids[i],0U);
 }
 
 TEST(TestBufferedIntegerDataSource, MultiThreadedWithStop) {
@@ -307,7 +307,7 @@ TEST(TestBufferedIntegerDataSource, MultiThreadedWithStop) {
   unsigned i = 0;
   if(m != nullptr)
     for(;i<unsigned(m->ssm_i32());i++)EXPECT_GT(ids[i],0) << "With: i=" << i;
-  for(;i<N;i++)EXPECT_EQ(ids[i],0) << "With: i=" << i;
+  for(;i<N;i++)EXPECT_EQ(ids[i],0U) << "With: i=" << i;
   delete m;
 }
 

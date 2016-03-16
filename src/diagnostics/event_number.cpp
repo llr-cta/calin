@@ -72,7 +72,7 @@ bool CountersEventNumberGlitchDetector::visit_telescope_event(
 {
   if(event->module_counter_size() > counters_event_num_diff_.size())
     counters_event_num_diff_.resize(event->module_counter_size());
-  auto index = event->source_event_index();
+  int64_t index = event->source_event_index();
   bool found_glitch = false;
   if(event->local_event_number() != index+local_event_num_diff_)
   {
