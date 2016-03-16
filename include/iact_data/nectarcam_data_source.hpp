@@ -66,7 +66,9 @@ private:
     const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     const DataModel::PixelsChannel& cta_image,
     calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
-    const std::string& which_gain);
+    const std::string& which_gain) const;
+
+  unsigned get_nmod_from_event(const DataModel::CameraEvent* cta_event) const;
 
   config_type config_;
 };

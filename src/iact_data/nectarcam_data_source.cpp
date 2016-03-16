@@ -30,6 +30,7 @@
 
 using namespace calin::iact_data::nectarcam_data_source;
 using namespace calin::ix::iact_data::telescope_event;
+using namespace calin::ix::iact_data::instrument_run_configuration;
 using namespace calin::io::log;
 using calin::iact_data::zfits_data_source::ZFITSSingleFileDataSource;
 
@@ -184,13 +185,54 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
   return calin_event;
 }
 
-calin::ix::iact_data::instrument_run_configuration::
-  InstrumentRunConfiguration* NectarCamCameraEventDecoder::decode_run_config(
-    const DataModel::CameraRunHeader* cta_run_header,
-    const DataModel::CameraEvent* cta_event)
+InstrumentRunConfiguration* NectarCamCameraEventDecoder::decode_run_config(
+  const DataModel::CameraRunHeader* cta_run_header,
+  const DataModel::CameraEvent* cta_event)
 {
+  auto* calin_run_config = new InstrumentRunConfiguration;
+  if(cta_run_header)
+  {
+#if 0
+    calin_run_config->set_run_number(cta_run_header->runnumber());
+    calin_run_config->set_run_start_time(
+      make_time_mjd_ns(cta_run_header->datemjd(), cta_run_header->timenanosec());
+    calin_run_config->set_num_samples(cta_run_header->numtraces());
+#endif
+  }
 
-  return nullptr;
+  unsigned nmod = 0;
+  if(cta_run_header)
+  {
+
+  }
+  if(nmod==0 and cta_event)
+  {
+    nmod = get_nmod_from_event(cta_event);
+  }
+
+  for(unsigned imod=0;imod<nmod;imod++)
+  {
+    calin_run_config->add_configured_module_id(imod);
+    calin_run_config->add_configured_module_index(imod);
+    for(unsigned ipix=0; ipix<7; ipix++)
+    {
+      calin_run_config->add_configured_channel_id(imod*7+ipix);
+      calin_run_config->add_configured_channel_index(imod*7+ipix);
+    }
+  }
+
+  unsigned nsample = config_.demand_nsample();
+  if(nsample == 0 and cta_run_header)
+    nsample = cta_run_header->numtraces();
+  if(nsample == 0 and cta_event->has_logain() and
+      cta_event->logain().has_waveforms())
+    nsample = cta_event->logain().waveforms().num_samples();
+  if(nsample == 0 and cta_event->has_higain() and
+      cta_event->higain().has_waveforms())
+    nsample = cta_event->higain().waveforms().num_samples();
+  calin_run_config->set_num_samples(nsample);
+
+  return calin_run_config;
 }
 
 void NectarCamCameraEventDecoder::
@@ -198,7 +240,7 @@ copy_single_gain_image(const DataModel::CameraEvent* cta_event,
   const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   const DataModel::PixelsChannel& cta_image,
   calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
-  const std::string& which_gain)
+  const std::string& which_gain) const
 {
   if(cta_image.has_waveforms() and cta_image.waveforms().has_samples())
   {
@@ -274,6 +316,81 @@ copy_single_gain_image(const DataModel::CameraEvent* cta_event,
     }
     calin_q_image->set_all_channels_present(all_channels_present);
   }
+}
+
+unsigned NectarCamCameraEventDecoder::
+get_nmod_from_event(const DataModel::CameraEvent* cta_event) const
+{
+  unsigned nmod = 0;
+  if(cta_event->has_drawerstatus() and
+    cta_event->drawerstatus().has_status())
+  {
+    const auto& cta_status = cta_event->drawerstatus().status();
+#if TEST_ANYARRAY_TYPES
+    if(cta_status.type() != DataModel::AnyArray::U8)
+      throw std::runtime_error("Camera status type not U8");
+#endif
+    nmod = cta_status.data().size();
+  }
+  else if(cta_event->has_higain() and cta_event->higain().has_integrals()
+    and cta_event->higain().integrals().has_gains())
+  {
+    const auto& cta_q = cta_event->higain().integrals().gains();
+#if TEST_ANYARRAY_TYPES
+    if(cta_q.type() != DataModel::AnyArray::U16)
+      throw std::runtime_error("Integral data type not uint16 in "
+        "high gain channel.");
+#endif
+    nmod = cta_q.data().size()/sizeof(uint16_t)/7;
+  }
+  else if(cta_event->has_logain() and cta_event->logain().has_integrals()
+   and cta_event->logain().integrals().has_gains())
+  {
+    const auto& cta_q = cta_event->logain().integrals().gains();
+#if TEST_ANYARRAY_TYPES
+    if(cta_q.type() != DataModel::AnyArray::U16)
+      throw std::runtime_error("Integral data type not uint16 in "
+        "low gain channel.");
+#endif
+    nmod = cta_q.data().size()/sizeof(uint16_t)/7;
+  }
+  else if(cta_event->has_higain() and cta_event->higain().has_waveforms()
+    and cta_event->higain().waveforms().has_samples())
+  {
+    const auto& cta_wf = cta_event->higain().waveforms().samples();
+#if TEST_ANYARRAY_TYPES
+    if(cta_wf.type() != DataModel::AnyArray::U16)
+      throw std::runtime_error("Waveform data type not uint16 in " +
+        "high gain channel.");
+#endif
+    unsigned nsample = config_.demand_nsample();
+    if(nsample == 0)nsample = cta_event->higain().waveforms().num_samples();
+    if(nsample == 0)throw std::runtime_error("Number of samples is zero in "
+      "high gain channel.");
+    if(cta_wf.data().size() % (sizeof(uint16_t)*nsample) != 0)
+      throw std::runtime_error("Waveform data array for high gain "
+        "channel not integral multiple of nsample uint16.");
+    nmod = cta_wf.data().size()/(sizeof(uint16_t)*nsample*7);
+  }
+  else if(cta_event->has_logain() and cta_event->logain().has_waveforms()
+    and cta_event->logain().waveforms().has_samples())
+  {
+    const auto& cta_wf = cta_event->logain().waveforms().samples();
+#if TEST_ANYARRAY_TYPES
+    if(cta_wf.type() != DataModel::AnyArray::U16)
+      throw std::runtime_error("Waveform data type not uint16 in " +
+        "low gain channel.");
+#endif
+    unsigned nsample = config_.demand_nsample();
+    if(nsample == 0)nsample = cta_event->logain().waveforms().num_samples();
+    if(nsample == 0)throw std::runtime_error("Number of samples is zero in "
+      "low gain channel.");
+    if(cta_wf.data().size() % (sizeof(uint16_t)*nsample) != 0)
+      throw std::runtime_error("Waveform data array for low gain "
+        "channel not integral multiple of nsample uint16.");
+    nmod = cta_wf.data().size()/(sizeof(uint16_t)*nsample*7);
+  }
+  return nmod;
 }
 
 NectarCamZFITSDataSource::

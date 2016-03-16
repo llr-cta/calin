@@ -27,13 +27,13 @@ import "calin.proto";
 package calin.ix.iact_data.zfits_data_source;
 
 message ZFITSDataSourceConfig {
-  uint32 limit_event_index              = 1 [
-    (CFO).desc = "Limit number of events provided by source. The data source "
-      "will stop delivering events and close the file when trying to deliver "
-      "an event with index next_event_index >= num_events_max."];
-  string extension                      = 2 [
+  string extension                                         = 1 [
     (CFO).desc = "Standard extension for ZFits filenames, used for building "
       "chained data file names." ];
-  bool log_on_file_open                 = 3 [
+  bool log_on_file_open                                    = 2 [
     (CFO).desc = "Send a message to the log when opening a file." ];
+  bool dont_read_run_header                                = 3 [
+    (CFO).desc = "Don't read the run header." ];
+  bool ignore_run_header_errors                            = 4 [
+    (CFO).desc = "Don't log missing run header." ];
 };
