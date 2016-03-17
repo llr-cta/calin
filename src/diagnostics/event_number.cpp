@@ -56,7 +56,7 @@ bool SequentialEventNumberGlitchDetector::visit_telescope_event(
 }
 
 CountersEventNumberGlitchDetector::
-CountersEventNumberGlitchDetector(unsigned counter_index):
+CountersEventNumberGlitchDetector(int counter_index):
   TelescopeEventVisitor(), counter_index_(counter_index)
 {
   // nothing to see here
@@ -72,14 +72,14 @@ bool CountersEventNumberGlitchDetector::visit_telescope_event(
 {
   if(event->module_counter_size() > counters_event_num_diff_.size())
     counters_event_num_diff_.resize(event->module_counter_size());
-  auto index = event->source_event_index();
+  int64_t index = event->source_event_index();
   bool found_glitch = false;
   if(event->local_event_number() != index+local_event_num_diff_)
   {
     local_event_num_diff_ = event->local_event_number()-index;
     found_glitch = true;
   }
-  for(unsigned imodctr=0; imodctr!=event->module_counter_size(); imodctr++)
+  for(int imodctr=0; imodctr!=event->module_counter_size(); imodctr++)
   {
     const auto& mod = event->module_counter(imodctr);
     unsigned imod = mod.module_id();
@@ -99,6 +99,8 @@ bool CountersEventNumberGlitchDetector::visit_telescope_event(
     glitch->set_delta_event_number(local_event_num_diff_);
     for(auto diff : counters_event_num_diff_)
       glitch->add_delta_counters_event_number(diff);
+    for(auto mod_index : event->module_index())
+      glitch->add_source_event_has_module(mod_index != -1);
   }
   return true;
 }

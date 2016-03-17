@@ -24,6 +24,19 @@
 
 namespace calin { namespace diagnostics { namespace waveform {
 
+class WaveformStatsVisitor
+{
+public:
+  WaveformStatsVisitor();
+  
+  virtual ~WaveformStatsVisitor();
 
+  bool visit_telescope_event(
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
-} } } /// namespace calin::diagnostics::waveform_diagnostics
+  bool visit_waveform(unsigned ichan,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain) override;
+};
+
+} } } // namespace calin::diagnostics::waveform_diagnostics

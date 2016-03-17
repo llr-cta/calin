@@ -41,3 +41,9 @@ template class calin::io::data_source::DataSink<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
 template class calin::io::data_source::ProtobufFileDataSink<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
+
+TelescopeRandomAccessDataSourceWithRunConfig::
+~TelescopeRandomAccessDataSourceWithRunConfig()
+{
+  // nothing to see here
+}

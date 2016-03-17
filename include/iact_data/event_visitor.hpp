@@ -26,6 +26,7 @@
 
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
+#include <iact_data/telescope_run_configuration.pb.h>
 #include <iact_data/telescope_event.pb.h>
 
 namespace calin { namespace iact_data { namespace event_visitor {
@@ -34,6 +35,13 @@ class TelescopeEventVisitor
 {
 public:
   virtual ~TelescopeEventVisitor();
+
+  virtual bool demand_waveforms();
+
+  virtual bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config);
+  virtual bool leave_telescope_run();
 
   virtual bool visit_telescope_event(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);

@@ -20,9 +20,13 @@
 
 */
 
+#include <chrono>
+
+#include <util/string.hpp>
 #include <io/log.hpp>
 #include <iact_data/event_dispatcher.hpp>
 
+using namespace calin::util::string;
 using namespace calin::io::log;
 using namespace calin::iact_data::event_dispatcher;
 using namespace calin::iact_data::telescope_data_source;
@@ -111,14 +115,29 @@ void TelescopeEventDispatcher::
 accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
   unsigned num_event_max)
 {
+  using namespace std::chrono;
   uint64_t ndispatched = 0;
+  auto start_time = system_clock::now();
   while(TelescopeEvent* event = src->get_next())
   {
     accept(event);
     delete event;
     ++ndispatched;
     if(log_frequency and ndispatched % log_frequency == 0)
-      LOG(INFO) << "Dispatched " << ndispatched << " events";
+    {
+      auto dt = system_clock::now() - start_time;
+      LOG(INFO) << "Dispatched "
+        << to_string_with_commas(ndispatched) << " events in "
+        << to_string_with_commas(duration_cast<seconds>(dt).count()) << " sec";
+    }
     if(num_event_max and not --num_event_max)break;
+  }
+  if(log_frequency and ndispatched % log_frequency != 0)
+  {
+    auto dt = system_clock::now() - start_time;
+    LOG(INFO) << "Dispatched "
+      << to_string_with_commas(ndispatched) << " events in "
+      << to_string_with_commas(duration_cast<seconds>(dt).count())
+      << " sec (finished)";
   }
 }

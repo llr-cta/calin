@@ -39,10 +39,12 @@ using namespace calin::io;
 %import "calin_global_definitions.i"
 
 %import "iact_data/telescope_event.pb.i"
+%import "iact_data/telescope_run_configuration.pb.i"
 %import "iact_data/zfits_data_source.pb.i"
 %import "iact_data/nectarcam_data_source.pb.i"
 
 %newobject get_next();
+%newobject get_run_configuration();
 //%newobject calin::iact_data::telescope_data_source::TelescopeDataSource::get_next();
 //%newobject calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource::get_next();
 //%newobject calin::iact_data::zfits_data_source::ZFITSSingleFileDataSource::get_next();
@@ -95,13 +97,24 @@ using namespace calin::io;
   calin::io::data_source::BasicChainedDataSource<
     calin::io::data_source::RandomAccessDataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent> >;
-//    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>;
 
-%template(BasicChaninedRandomAccessDataSourceTelescopeRandomAccessDataSource)
-  calin::io::data_source::BasicChaninedRandomAccessDataSource<
+%template(BasicChainedRandomAccessDataSourceTelescopeRandomAccessDataSource)
+  calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::io::data_source::RandomAccessDataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent> >;
-//  calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource>;
+
+%template(DataSourceOpenerTelescopeRandomAccessDataSourceWithRunConfig)
+  calin::io::data_source::DataSourceOpener<
+    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>;
+
+%template(BasicChainedDataSourceTelescopeRandomAccessDataSourceWithRunConfig)
+  calin::io::data_source::BasicChainedDataSource<
+    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>;
+
+%template(BasicChainedRandomAccessDataSourceTelescopeRandomAccessDataSourceWithRunConfig)
+  calin::io::data_source::BasicChainedRandomAccessDataSource<
+    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>;
+
 
 %include "iact_data/zfits_data_source.hpp"
 

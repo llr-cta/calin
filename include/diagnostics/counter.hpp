@@ -40,7 +40,7 @@ public:
   calin::ix::diagnostics::counter::EventCounterDiagnosticsData& event_data() {
     return event_data_; }
 private:
-  uint64_t next_event_number_ = 0;
+  int64_t next_event_number_ = 0;
   calin::ix::diagnostics::counter::EventCounterDiagnosticsData event_data_;
 };
 

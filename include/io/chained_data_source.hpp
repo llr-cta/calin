@@ -112,13 +112,13 @@ protected:
 template<typename T> using ChainedDataSource =
   BasicChainedDataSource<DataSource<T> >;
 
-template<typename RADST> class BasicChaninedRandomAccessDataSource:
+template<typename RADST> class BasicChainedRandomAccessDataSource:
   public BasicChainedDataSource<RADST>
 {
 public:
   CALIN_TYPEALIAS(data_type, typename RADST::data_type);
 
-  BasicChaninedRandomAccessDataSource(DataSourceOpener<RADST>* opener,
+  BasicChainedRandomAccessDataSource(DataSourceOpener<RADST>* opener,
     bool adopt_opener = false):
     BasicChainedDataSource<RADST>(opener, adopt_opener)
   {
@@ -126,7 +126,7 @@ public:
     if(source_)add_source_index(source_);
   }
 
-  virtual ~BasicChaninedRandomAccessDataSource() {
+  virtual ~BasicChainedRandomAccessDataSource() {
     /* nothing to see here */ }
 
   virtual uint64_t size() override

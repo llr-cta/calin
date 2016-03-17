@@ -58,23 +58,29 @@ message ModuleCounters {
 };
 
 message IntegratedCharges {
-  repeated uint32 channel_id            = 1 [ packed=true,
+  bool all_channels_present             = 1 [
+    (CFO).desc = "True if waveforms for all channels are present. In this case "
+      "the channel_index and channel_id arrays are permitted to be empty." ];
+  repeated int32 channel_index          = 2 [ packed=true,
+    (CFO).desc = "Indexes within the image for all channels in the camera, or "
+      "-1 if the the channel is not present." ];
+  repeated int32 channel_id             = 3 [ packed=true,
     (CFO).desc = "IDs for channels with a charge present. If all channels in "
       "the camera are present then this can be empty." ];
-  repeated uint32 charge                = 2 [ packed=true,
+  repeated uint32 charge                = 4 [ packed=true,
     (CFO).desc = "Integrated charges.",
     (CFO).units = "dc"];
-  repeated uint32 peak_sample           = 3 [ packed=true,
+  repeated uint32 peak_sample           = 5 [ packed=true,
     (CFO).desc = "Time of peak signal within readout window in samples.",
     (CFO).units = "samples"];
-  repeated uint32 time_over_threshold   = 4 [ packed=true,
+  repeated uint32 time_over_threshold   = 6 [ packed=true,
     (CFO).desc = "Time-over-threshold in samples.",
     (CFO).units = "samples"];
-  repeated uint32 window_start          = 5 [ packed=true,
+  repeated uint32 window_start          = 7 [ packed=true,
     (CFO).desc = "Start of integration or sampling window if different from "
       "one channel to another.",
     (CFO).units = "samples"];
-  repeated uint32 window_size           = 6 [ packed=true,
+  repeated uint32 window_size           = 8 [ packed=true,
     (CFO).desc = "Width of integration window if different from one channel "
       "to another.",
     (CFO).units = "samples"];
@@ -87,13 +93,19 @@ message ChannelWaveform {
 };
 
 message Waveforms {
-  repeated uint32 channel_id            = 1 [ packed=true,
-    (CFO).desc = "IDs for channels with a waveform present. If all channels "
-    "in the camera are present then this can be empty." ];
-  repeated ChannelWaveform waveform     = 2 [
+  bool all_channels_present             = 1 [
+    (CFO).desc = "True if waveforms for all channels are present. In this case "
+      "the channel_index and channel_id arrays are permitted to be empty." ];
+  repeated int32 channel_index          = 2 [ packed=true,
+    (CFO).desc = "Indexes within the image for all channels in the camera, or "
+      "-1 if the the channel is not present." ];
+  repeated int32 channel_id             = 3 [ packed=true,
+    (CFO).desc = "IDs for channels with a charge present. If all channels in "
+      "the camera are present then this can be empty." ];
+  repeated ChannelWaveform waveform     = 5 [
     (CFO).desc = "Sampled waveforms.",
     (CFO).units = "dc" ];
-  uint32 num_samples_per_channel        = 3 [
+  uint32 num_samples_per_channel        = 6 [
     (CFO).desc = "Number of samples per channel if this is constant per event, "
       "zero otherwise.",
     (CFO).units = "samples" ];
@@ -141,10 +153,12 @@ message TelescopeEvent {
   int64 array_event_number              = 6 [
     (CFO).desc = "Array event number or \"-1\" if not received." ];
 
-  repeated int32 module_index           = 10 [
+  bool all_modules_present              = 10 [
+    (CFO).desc = "True if all modules are present in the image." ];
+  repeated int32 module_index           = 11 [
     (CFO).desc = "Index of each expected module in event, or -1 if module "
       "is not present in this event." ];
-  repeated int32 module_id              = 11 [
+  repeated int32 module_id              = 12 [
     (CFO).desc = "Module id of each module present in the event ordered by "
       "its index in the data. For each module present in the event we are "
       "guarenteed that module_id[module_index[id]]=id."];

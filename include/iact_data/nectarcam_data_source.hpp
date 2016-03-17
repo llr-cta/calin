@@ -53,13 +53,22 @@ public:
     return config_type::default_instance(); }
 
   virtual ~NectarCamCameraEventDecoder();
-  virtual calin::ix::iact_data::telescope_event::TelescopeEvent*
+  calin::ix::iact_data::telescope_event::TelescopeEvent*
     decode(const DataModel::CameraEvent* cta_event) override;
 
+  calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* decode_run_config(
+      const DataModel::CameraRunHeader* cta_run_header,
+      const DataModel::CameraEvent* cta_event) override;
+
 private:
-  void copy_single_gain_image(const DataModel::PixelsChannel& cta_image,
+  void copy_single_gain_image(const DataModel::CameraEvent* cta_event,
+    const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+    const DataModel::PixelsChannel& cta_image,
     calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
-    const std::string& which_gain);
+    const std::string& which_gain) const;
+
+  unsigned get_nmod_from_event(const DataModel::CameraEvent* cta_event) const;
 
   config_type config_;
 };

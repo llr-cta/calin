@@ -23,7 +23,7 @@
 syntax = "proto3";
 
 import "calin.proto";
-import "math/histogram.proto";
+//import "math/histogram.proto";
 //import "common_types.proto";
 
 package calin.ix.diagnostics.module;

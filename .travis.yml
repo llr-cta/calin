@@ -7,36 +7,36 @@ language: cpp
 matrix:
   include:
     - compiler: gcc-4.8
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=TRUE
     - compiler: gcc-4.8
-      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
+      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=FALSE
     - compiler: gcc-4.8
-      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=FALSE
     - compiler: gcc-5
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=TRUE
     - compiler: gcc-5
-      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=FALSE
     - compiler: gcc-5
-      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=FALSE
     - compiler: clang-3.7
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=TRUE
     - compiler: clang-3.7
-      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
+      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=FALSE
     - compiler: clang-3.7
-      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=FALSE
 
 addons:
   apt:
     sources:
-    - george-edison55-precise-backports
+#    - george-edison55-precise-backports
     - ubuntu-toolchain-r-test
     - llvm-toolchain-precise-3.7
     packages:
     - gsl-bin
     - libgsl0-dev
     - libfftw3-dev
-    - cmake
-    - cmake-data
+#    - cmake
+#    - cmake-data
     - python-numpy
     - g++-4.8
     - g++-5
@@ -70,11 +70,29 @@ install:
     echo $LOCAL/bin
     if [ -d $LOCAL/bin ]; then ls -l $LOCAL/bin ; fi
   - |
+    if [ ! -f $LOCAL/bin/cmake ];
+    then (
+      if [ "x$CACHE_REBUILD" != "xTRUE" ]
+      then
+        exit 1
+      fi
+      wget --no-check-certificate https://cmake.org/files/v3.4/cmake-3.4.3.tar.gz
+      tar zxf cmake-3.4.3.tar.gz
+      cd cmake-3.4.3
+      ./bootstrap  --parallel=3 --prefix=$LOCAL
+      make -j3
+      make install
+    ); fi
+  - |
     if [ ! -f $LOCAL/bin/swig ];
     then (
-      wget http://sourceforge.net/projects/swig/files/swig/swig-3.0.7/swig-3.0.7.tar.gz &&
-      tar zxf swig-3.0.7.tar.gz &&
-      cd swig-3.0.7 &&
+      if [ "x$CACHE_REBUILD" != "xTRUE" ]
+      then
+        exit 1
+      fi
+      wget http://sourceforge.net/projects/swig/files/swig/swig-3.0.8/swig-3.0.8.tar.gz &&
+      tar zxf swig-3.0.8.tar.gz &&
+      cd swig-3.0.8 &&
       ./configure --prefix=$LOCAL --without-alllang --with-python &&
       make -j3 &&
       make install > /dev/null
@@ -82,6 +100,10 @@ install:
   - |
     if [ ! -f $LOCAL/bin/protoc ];
     then (
+      if [ "x$CACHE_REBUILD" != "xTRUE" ]
+      then
+        exit 1
+      fi
       wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-2/protobuf-cpp-3.0.0-beta-2.tar.gz &&
       tar zxf protobuf-cpp-3.0.0-beta-2.tar.gz &&
       cd protobuf-3.0.0-beta-2 &&
@@ -92,9 +114,13 @@ install:
   - |
     if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh ];
     then (
-      wget http://geant4.cern.ch/support/source/geant4.10.01.p02.tar.gz &&
-      tar zxf geant4.10.01.p02.tar.gz &&
-      cd geant4.10.01.p02 &&
+      if [ "x$CACHE_REBUILD" != "xTRUE" ]
+      then
+        exit 1
+      fi
+      wget http://geant4.cern.ch/support/source/geant4.10.02.p01.tar.gz &&
+      tar zxf geant4.10.02.p01.tar.gz &&
+      cd geant4.10.02.p01 &&
       mkdir mybuild &&
       cd mybuild &&
       cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$LOCAL .. &&
@@ -105,23 +131,32 @@ install:
     if [ "x$GEANT4" == "xTRUE" ]
     then
       NO_GEANT4=""
+      export G4LEDATA=6.48
+      export G4LEVELGAMMADATA=3.2
+      export G4SAIDXSDATA=1.1
+      export G4NEUTRONXSDATA=1.4
+      export G4ENSDFSTATEDATA=1.2.1
       GEANT4_DATA=$HOME/geant4_data
       (
         mkdir $GEANT4_DATA
         cd  $GEANT4_DATA
-        wget http://geant4.cern.ch/support/source/G4EMLOW.6.41.tar.gz
-        tar zxf G4EMLOW.6.41.tar.gz
-        wget http://geant4.cern.ch/support/source/G4PhotonEvaporation.3.1.tar.gz
-        tar zxf G4PhotonEvaporation.3.1.tar.gz
-        wget http://geant4.cern.ch/support/source/G4SAIDDATA.1.1.tar.gz
-        tar zxf G4SAIDDATA.1.1.tar.gz
-        wget http://geant4.cern.ch/support/source/G4NEUTRONXS.1.4.tar.gz
-        tar zxf G4NEUTRONXS.1.4.tar.gz
+        wget http://geant4.cern.ch/support/source/G4EMLOW.${G4LEDATA}.tar.gz
+        tar zxf G4EMLOW.${G4LEDATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/G4PhotonEvaporation.${G4LEVELGAMMADATA}.tar.gz
+        tar zxf G4PhotonEvaporation.${G4LEVELGAMMADATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/G4SAIDDATA.${G4SAIDXSDATA}.tar.gz
+        tar zxf G4SAIDDATA.${G4SAIDXSDATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/G4NEUTRONXS.${G4NEUTRONXSDATA}.tar.gz
+        tar zxf G4NEUTRONXS.${G4NEUTRONXSDATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/G4ENSDFSTATE.${G4ENSDFSTATEDATA}.tar.gz
+        # Note this data file actually seems to be a tar, not a tgz
+        tar xf G4ENSDFSTATE.${G4ENSDFSTATEDATA}.tar.gz
       )
-      export G4LEDATA=$GEANT4_DATA/G4EMLOW6.41
-      export G4LEVELGAMMADATA=$GEANT4_DATA/PhotonEvaporation3.1
-      export G4SAIDXSDATA=$GEANT4_DATA/G4SAIDDATA1.1
-      export G4NEUTRONXSDATA=$GEANT4_DATA/G4NEUTRONXS1.4
+      export G4LEDATA=$GEANT4_DATA/G4EMLOW${G4LEDATA}
+      export G4LEVELGAMMADATA=$GEANT4_DATA/G4PhotonEvaporation${G4LEVELGAMMADATA}
+      export G4SAIDXSDATA=$GEANT4_DATA/G4SAIDDATA${G4SAIDXSDATA}
+      export G4NEUTRONXSDATA=$GEANT4_DATA/G4NEUTRONXS${G4NEUTRONXSDATA}
+      export G4ENSDFSTATEDATA=$GEANT4_DATA/G4ENSDFSTATE${G4ENSDFSTATEDATA}
     else
       NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
     fi
@@ -146,3 +181,4 @@ script:
     make -j3 &&
     make install &&
     make test
+    #./unit_tests/simulation/test_geant4
