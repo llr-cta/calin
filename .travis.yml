@@ -131,32 +131,32 @@ install:
     if [ "x$GEANT4" == "xTRUE" ]
     then
       NO_GEANT4=""
-      export G4LEDATA=G4EMLOW.6.48
-      export G4LEVELGAMMADATA=G4PhotonEvaporation.3.2
-      export G4SAIDXSDATA=G4SAIDDATA.1.1
-      export G4NEUTRONXSDATA=G4NEUTRONXS.1.4
-      export G4ENSDFSTATEDATA=G4ENSDFSTATE.1.2.1
+      export G4LEDATA=6.48
+      export G4LEVELGAMMADATA=3.2
+      export G4SAIDXSDATA=1.1
+      export G4NEUTRONXSDATA=1.4
+      export G4ENSDFSTATEDATA=1.2.1
       GEANT4_DATA=$HOME/geant4_data
       (
         mkdir $GEANT4_DATA
         cd  $GEANT4_DATA
-        wget http://geant4.cern.ch/support/source/${G4LEDATA}.tar.gz
-        tar zxf ${G4LEDATA}.tar.gz
-        wget http://geant4.cern.ch/support/source/${G4LEVELGAMMADATA}.tar.gz
-        tar zxf ${G4LEVELGAMMADATA}.tar.gz
-        wget http://geant4.cern.ch/support/source/${G4SAIDXSDATA}.tar.gz
-        tar zxf ${G4SAIDXSDATA}.tar.gz
-        wget http://geant4.cern.ch/support/source/${G4NEUTRONXSDATA}.tar.gz
-        tar zxf ${G4NEUTRONXSDATA}.tar.gz
-        wget http://geant4.cern.ch/support/source/${G4ENSDFSTATEDATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/G4EMLOW.${G4LEDATA}.tar.gz
+        tar zxf G4EMLOW.${G4LEDATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/G4PhotonEvaporation.${G4LEVELGAMMADATA}.tar.gz
+        tar zxf G4PhotonEvaporation.${G4LEVELGAMMADATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/G4SAIDDATA.${G4SAIDXSDATA}.tar.gz
+        tar zxf G4SAIDDATA.${G4SAIDXSDATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/G4NEUTRONXS.${G4NEUTRONXSDATA}.tar.gz
+        tar zxf $G4NEUTRONXS.{G4NEUTRONXSDATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/G4ENSDFSTATE.${G4ENSDFSTATEDATA}.tar.gz
         # Note this data dile actually seems to be a tar file, not a tgz
-        tar xf ${G4ENSDFSTATEDATA}.tar.gz
+        tar xf G4ENSDFSTATE.${G4ENSDFSTATEDATA}.tar.gz
       )
-      export G4LEDATA=$GEANT4_DATA/$G4LEDATA
-      export G4LEVELGAMMADATA=$GEANT4_DATA/$G4LEVELGAMMADATA
-      export G4SAIDXSDATA=$GEANT4_DATA/$G4SAIDXSDATA
-      export G4NEUTRONXSDATA=$GEANT4_DATA/$G4NEUTRONXSDATA
-      export G4ENSDFSTATEDATA=$GEANT4_DATA/$G4ENSDFSTATEDATA
+      export G4LEDATA=$GEANT4_DATA/G4EMLOW${G4LEDATA}
+      export G4LEVELGAMMADATA=$GEANT4_DATA/G4PhotonEvaporation${G4LEVELGAMMADATA}
+      export G4SAIDXSDATA=$GEANT4_DATA/G4SAIDDATA${G4SAIDXSDATA}
+      export G4NEUTRONXSDATA=$GEANT4_DATA/G4NEUTRONXS${G4NEUTRONXSDATA}
+      export G4ENSDFSTATEDATA=$GEANT4_DATA/G4ENSDFSTATE${G4ENSDFSTATEDATA}
     else
       NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
     fi
