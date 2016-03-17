@@ -76,7 +76,7 @@ install:
       then
         exit 1
       fi
-      wget http://cmake.org/files/v3.4/cmake-3.4.3.tar.gz
+      wget --no-check-certificate http://cmake.org/files/v3.4/cmake-3.4.3.tar.gz
       tar zxvf cmake-3.4.3.tar.gz
       cd cmake-3.4.3
       ./configure --prefix=$LOCAL
