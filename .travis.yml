@@ -7,23 +7,23 @@ language: cpp
 matrix:
   include:
     - compiler: gcc-4.8
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=TRUE
     - compiler: gcc-4.8
-      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
+      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=FALSE
     - compiler: gcc-4.8
-      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=FALSE
     - compiler: gcc-5
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=TRUE
     - compiler: gcc-5
-      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=FALSE
     - compiler: gcc-5
-      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=FALSE
     - compiler: clang-3.7
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=TRUE
     - compiler: clang-3.7
-      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
+      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=FALSE
     - compiler: clang-3.7
-      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=FALSE
 
 addons:
   apt:
@@ -70,7 +70,7 @@ install:
     echo $LOCAL/bin
     if [ -d $LOCAL/bin ]; then ls -l $LOCAL/bin ; fi
   - |
-    if [ ! -f $LOCAL/bin/swig ];
+    if [ ! -f $LOCAL/bin/swig -a x"$CACHE_REBUILD" == "xTRUE" ];
     then (
       wget http://sourceforge.net/projects/swig/files/swig/swig-3.0.8/swig-3.0.8.tar.gz &&
       tar zxf swig-3.0.8.tar.gz &&
@@ -80,7 +80,7 @@ install:
       make install > /dev/null
     ); fi
   - |
-    if [ ! -f $LOCAL/bin/protoc ];
+    if [ ! -f $LOCAL/bin/protoc -a x"$CACHE_REBUILD" == "xTRUE" ];
     then (
       wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-2/protobuf-cpp-3.0.0-beta-2.tar.gz &&
       tar zxf protobuf-cpp-3.0.0-beta-2.tar.gz &&
@@ -90,11 +90,11 @@ install:
       make install > /dev/null
     ); fi
   - |
-    if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh ];
+    if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh -a x"$CACHE_REBUILD" == "xTRUE" ];
     then (
       wget http://geant4.cern.ch/support/source/geant4.10.02.p01.tar.gz &&
-      tar zxf geant4.10.01.p02.tar.gz &&
-      cd geant4.10.01.p02 &&
+      tar zxf geant4.10.02.p01.tar.gz &&
+      cd geant4.10.02.p01 &&
       mkdir mybuild &&
       cd mybuild &&
       cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$LOCAL .. &&
