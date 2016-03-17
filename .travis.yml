@@ -72,7 +72,7 @@ install:
   - |
     if [ ! -f $LOCAL/bin/cmake ];
     then (
-      if [ "$CACHE_REBUILD" != "xTRUE" ]
+      if [ "x$CACHE_REBUILD" != "xTRUE" ]
       then
         exit(1)
       fi
@@ -81,12 +81,12 @@ install:
       cd cmake-3.4.3
       ./configure --prefix=$LOCAL
       make -j3
-      make install 
+      make install
     ); fi
   - |
     if [ ! -f $LOCAL/bin/swig ];
     then (
-      if [ "$CACHE_REBUILD" != "xTRUE" ]
+      if [ "x$CACHE_REBUILD" != "xTRUE" ]
       then
         exit(1)
       fi
@@ -100,7 +100,7 @@ install:
   - |
     if [ ! -f $LOCAL/bin/protoc ];
     then (
-      if [ "$CACHE_REBUILD" != "xTRUE" ]
+      if [ "x$CACHE_REBUILD" != "xTRUE" ]
       then
         exit(1)
       fi
@@ -114,7 +114,7 @@ install:
   - |
     if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh ];
     then (
-      if [ "$CACHE_REBUILD" != "xTRUE" ]
+      if [ "x$CACHE_REBUILD" != "xTRUE" ]
       then
         exit(1)
       fi
