@@ -31,6 +31,7 @@ using namespace calin::io::log;
 using namespace calin::iact_data::event_dispatcher;
 using namespace calin::iact_data::telescope_data_source;
 using namespace calin::ix::iact_data::telescope_event;
+using namespace calin::ix::iact_data::telescope_run_configuration;
 
 TelescopeEventDispatcher::TelescopeEventDispatcher()
 {
@@ -46,52 +47,74 @@ void TelescopeEventDispatcher::
 add_visitor(event_visitor::TelescopeEventVisitor* visitor, bool adopt_visitor)
 {
   visitors_.emplace_back(visitor);
+  if(visitor->demand_waveforms())wf_visitors_.emplace_back(visitor);
   if(adopt_visitor)adopted_visitors_.emplace_back(visitor);
 }
 
-void TelescopeEventDispatcher::accept(TelescopeEvent* event)
+void TelescopeEventDispatcher::
+process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
+  unsigned log_frequency)
+{
+  TelescopeRunConfiguration* run_config = src->get_run_configuration();
+  accept_run_configuration(run_config);
+  accept_all_from_src(src, log_frequency, true);
+  leave_run();
+  merge_results();
+}
+
+void TelescopeEventDispatcher::
+accept_run_configuration(TelescopeRunConfiguration* run_config)
+{
+  for(auto ivisitor : visitors_)ivisitor->visit_telescope_run(run_config);
+}
+
+void TelescopeEventDispatcher::accept_event(TelescopeEvent* event)
 {
   for(auto ivisitor : visitors_)ivisitor->visit_telescope_event(event);
 
-  Waveforms* hg_wf = nullptr;
-  if(event->has_high_gain_image() and
-    event->high_gain_image().has_camera_waveforms())
+  if(!wf_visitors_.empty())
   {
-    hg_wf = event->mutable_high_gain_image()->mutable_camera_waveforms();
-    assert(hg_wf->channel_id_size() == 0 or
-      hg_wf->channel_id_size() == hg_wf->waveform_size());
-  }
+    Waveforms* hg_wf = nullptr;
+    if(event->has_high_gain_image() and
+      event->high_gain_image().has_camera_waveforms())
+    {
+      hg_wf = event->mutable_high_gain_image()->mutable_camera_waveforms();
+      assert(hg_wf->channel_id_size() == 0 or
+        hg_wf->channel_id_size() == hg_wf->waveform_size());
+    }
 
-  Waveforms* lg_wf = nullptr;
-  if(event->has_low_gain_image() and
-    event->low_gain_image().has_camera_waveforms())
-  {
-    lg_wf = event->mutable_low_gain_image()->mutable_camera_waveforms();
-    assert(lg_wf->channel_id_size() == 0 or
-      lg_wf->channel_id_size() == lg_wf->waveform_size());
-  }
+    Waveforms* lg_wf = nullptr;
+    if(event->has_low_gain_image() and
+      event->low_gain_image().has_camera_waveforms())
+    {
+      lg_wf = event->mutable_low_gain_image()->mutable_camera_waveforms();
+      assert(lg_wf->channel_id_size() == 0 or
+        lg_wf->channel_id_size() == lg_wf->waveform_size());
+    }
 
-  int hg_iwf = 0;
-  int lg_iwf = 0;
+    int hg_iwf = 0;
+    int lg_iwf = 0;
 
-  while((!hg_wf or hg_iwf<hg_wf->waveform_size()) or
-        (!lg_wf or lg_iwf<lg_wf->waveform_size()))
-  {
-    int hg_ichan = hg_iwf;
-    if(hg_wf and hg_iwf<hg_wf->channel_id_size())
-      hg_ichan = hg_wf->channel_id(hg_iwf);
-    int lg_ichan = lg_iwf;
-    if(lg_wf and lg_iwf<lg_wf->channel_id_size())
-      lg_ichan = lg_wf->channel_id(lg_iwf);
-    int ichan = std::min(hg_ichan, lg_ichan);
-    ChannelWaveform* hg_wf_ptr = nullptr;
-    if(hg_wf and hg_iwf<hg_wf->waveform_size() and ichan==hg_ichan)
-      hg_wf_ptr = hg_wf->mutable_waveform(hg_iwf++);
-    ChannelWaveform* lg_wf_ptr = nullptr;
-    if(lg_wf and lg_iwf<lg_wf->waveform_size() and ichan==lg_ichan)
-      lg_wf_ptr = lg_wf->mutable_waveform(lg_iwf++);
-    for(auto ivisitor : visitors_)
-      ivisitor->visit_waveform(ichan, hg_wf_ptr, lg_wf_ptr);
+    while((!hg_wf or hg_iwf<hg_wf->waveform_size()) or
+          (!lg_wf or lg_iwf<lg_wf->waveform_size()))
+    {
+      int hg_ichan = hg_iwf;
+      if(hg_wf and hg_iwf<hg_wf->channel_id_size())
+        hg_ichan = hg_wf->channel_id(hg_iwf);
+      int lg_ichan = lg_iwf;
+      if(lg_wf and lg_iwf<lg_wf->channel_id_size())
+        lg_ichan = lg_wf->channel_id(lg_iwf);
+      int ichan = std::min(hg_ichan, lg_ichan);
+      ChannelWaveform* hg_wf_ptr = nullptr;
+      if(hg_wf and hg_iwf<hg_wf->waveform_size() and ichan==hg_ichan)
+        hg_wf_ptr = hg_wf->mutable_waveform(hg_iwf++);
+      ChannelWaveform* lg_wf_ptr = nullptr;
+      if(lg_wf and lg_iwf<lg_wf->waveform_size() and ichan==lg_ichan)
+        lg_wf_ptr = lg_wf->mutable_waveform(lg_iwf++);
+
+      for(auto ivisitor : wf_visitors_)
+        ivisitor->visit_waveform(ichan, hg_wf_ptr, lg_wf_ptr);
+    }
   }
 
   for(auto ivisitor : visitors_)ivisitor->leave_telescope_event();
@@ -120,7 +143,7 @@ accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
   auto start_time = system_clock::now();
   while(TelescopeEvent* event = src->get_next())
   {
-    accept(event);
+    accept_event(event);
     delete event;
     ++ndispatched;
     if(log_frequency and ndispatched % log_frequency == 0)
@@ -140,4 +163,14 @@ accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
       << to_string_with_commas(duration_cast<seconds>(dt).count())
       << " sec (finished)";
   }
+}
+
+void TelescopeEventDispatcher::leave_run()
+{
+  for(auto ivisitor : visitors_)ivisitor->leave_telescope_run();
+}
+
+void TelescopeEventDispatcher::merge_results()
+{
+  for(auto ivisitor : visitors_)ivisitor->merge_results();
 }
