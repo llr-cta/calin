@@ -56,7 +56,7 @@ bool SequentialEventNumberGlitchDetector::visit_telescope_event(
 }
 
 CountersEventNumberGlitchDetector::
-CountersEventNumberGlitchDetector(unsigned counter_index):
+CountersEventNumberGlitchDetector(int counter_index):
   TelescopeEventVisitor(), counter_index_(counter_index)
 {
   // nothing to see here
@@ -79,7 +79,7 @@ bool CountersEventNumberGlitchDetector::visit_telescope_event(
     local_event_num_diff_ = event->local_event_number()-index;
     found_glitch = true;
   }
-  for(unsigned imodctr=0; imodctr!=event->module_counter_size(); imodctr++)
+  for(int imodctr=0; imodctr!=event->module_counter_size(); imodctr++)
   {
     const auto& mod = event->module_counter(imodctr);
     unsigned imod = mod.module_id();

@@ -31,7 +31,7 @@ package calin.ix.iact_data.instrument_run_configuration;
 message InstrumentRunConfiguration {
   uint32 run_number                                        = 1 [
     (CFO).desc = "Run number." ];
-  int64 run_start_time                                     = 2 [
+  common_types.Time run_start_time                         = 2 [
     (CFO).desc = "Start date and time of run." ];
   repeated int32 configured_channel_index                  = 11 [
     (CFO).desc = "Index within list of configured channels for each channel "

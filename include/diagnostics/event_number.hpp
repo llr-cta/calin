@@ -52,7 +52,7 @@ class CountersEventNumberGlitchDetector:
   public iact_data::event_visitor::TelescopeEventVisitor
 {
 public:
-  CountersEventNumberGlitchDetector(unsigned counter_index = 0);
+  CountersEventNumberGlitchDetector(int counter_index = 0);
   virtual ~CountersEventNumberGlitchDetector();
 
   bool visit_telescope_event(
@@ -63,7 +63,7 @@ public:
     return glitch_data_; }
 
 protected:
-  unsigned counter_index_ = 0;
+  int counter_index_ = 0;
   int64_t local_event_num_diff_ = 0;
   std::vector<int64_t> counters_event_num_diff_;
   calin::ix::diagnostics::event_number::

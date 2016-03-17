@@ -48,7 +48,7 @@ bool ModulePresentVisitor::visit_telescope_event(
     module_data_.add_module_missing_num_events(0);
     module_data_.add_module_missing_history();
   }
-  for(unsigned imod=0;imod<event->module_index_size();imod++)
+  for(int imod=0;imod<event->module_index_size();imod++)
     if(event->module_index(imod) == -1)
     {
       auto* hist = module_data_.mutable_module_missing_history(imod);
