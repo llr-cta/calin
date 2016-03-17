@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/vso_raytracer.cpp -- Stephen Fegan -- 2015-11-30
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -57,7 +57,7 @@ void VSOTraceInfo::reset()
 
 std::ostream& VSOTraceInfo::write(std::ostream& stream, bool cpu) const
 {
-  stream 
+  stream
       << status << ' '                                                    // $1  --  AWK column
       << ground_x << ' '                                                  // $2
       << ground_y << ' '                                                  // $3
@@ -142,8 +142,8 @@ trace(math::vs_physics::Particle& ray, TraceInfo& info)
     return 0;
   }
 
-#warning Need to implement a real algorithm for finding which telescope was hit
-  
+//#warning Need to implement a real algorithm for finding which telescope was hit
+
   // Array is assumed to be hexagonal use VVV look-up function to find site
   info.ground_x = ray_copy.Position().r.x;
   info.ground_y = ray_copy.Position().r.y;
@@ -159,7 +159,7 @@ trace(math::vs_physics::Particle& ray, TraceInfo& info)
     return 0;
   }
 
-#if 0 
+#if 0
   // Propagate to reflector impact sphere -- test whether ray can hit scope
   // This probably does not speed things up much as the propagation to
   // the reflector (two steps down) does a similar thing
@@ -176,7 +176,7 @@ trace(math::vs_physics::Particle& ray, TraceInfo& info)
   return(scope_trace(ray,info));
 }
 
-const VSOPixel* 
+const VSOPixel*
 VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
 {
   bool good;
@@ -207,7 +207,7 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
 
   // Propagate to intersection with the reflector sphere
   good = ray.PropagateFreeToSphere(math::vs_physics::Vec3D(0,info.scope->curvatureRadius(),0),
-				   info.scope->curvatureRadius(), 
+				   info.scope->curvatureRadius(),
 				   math::vs_physics::Particle::IP_LATEST,
                                    false /* true */);
   if(!good)
@@ -233,8 +233,8 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
                       xy_to_hexid_with_remainder(info.hex_reflec_dx, info.hex_reflec_dz);
   if(info.scope->mirrorParity())
     info.hex_reflec_dx = -info.hex_reflec_dx; // Reverse parity if required
-  
-  // Find mirror - searching neighbors if desired  
+
+  // Find mirror - searching neighbors if desired
   good = findMirror(ray, info);
   if(!good)
   {
@@ -258,8 +258,8 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
     return 0;
   }
 
-  // Check to see if photon is absorbed at the mirror. Would be faster to 
-  // do this check before the edge check, but this way gets info.status 
+  // Check to see if photon is absorbed at the mirror. Would be faster to
+  // do this check before the edge check, but this way gets info.status
   // correct .. is this important ?
   if(fRNG.uniform() > info.mirror->degradingFactor())
   {
@@ -277,15 +277,15 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
   // Scatter the normal to account for the spot size ot the focal length of the
   // radius. The spot size is given as the DIAMETER at the focal distance.
   // Must divide by 2.0 (for reflection)
-  info.mirror_normal_dispersion = 
+  info.mirror_normal_dispersion =
       info.mirror->spotSize()/2.0/info.mirror->focalLength();
 
   info.mirror_scattered = info.mirror_normal;
   info.mirror_scattered.ScatterDirection(info.mirror_normal_dispersion,fRNG);
- 
+
   // Reflect ray
   ray.Reflect(info.mirror_scattered);
-  
+
   // Back to reflector coordinates
   info.mirror->mirrorToReflector(ray);
 
@@ -363,11 +363,11 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
     return 0;
   }
 
-  info.pixel_dist = 
-      sqrt(info.fplane_dx*info.fplane_dx + info.fplane_dz*info.fplane_dz) * 
+  info.pixel_dist =
+      sqrt(info.fplane_dx*info.fplane_dx + info.fplane_dz*info.fplane_dz) *
       info.scope->pixelSpacing();
 
-  info.concentrator_hit = 
+  info.concentrator_hit =
       (info.pixel_dist > info.scope->cathodeDiameter()/2.0);
   if(info.concentrator_hit)
   {
@@ -397,7 +397,7 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
   // **************************************************************************
   // ******************** RAY IS NOW IN GLOBAL COORDINATES ********************
   // **************************************************************************
-    
+
   info.status = TS_PE_GENERATED;
   return info.pixel;
 }
@@ -438,7 +438,7 @@ bool VSORayTracer::findMirror(math::vs_physics::Particle& ray, TraceInfo& info)
   int hex_u0 = 0;
   int hex_v0 = 0;
   if(nsearch > 1)math::hex_array::hexid_to_uv(hex_i0, hex_u0, hex_v0);
-  
+
   for(unsigned isearch = 0; isearch<nsearch; isearch++)
   {
     int test_hexid;
@@ -475,7 +475,7 @@ bool VSORayTracer::findMirror(math::vs_physics::Particle& ray, TraceInfo& info)
 
     // Propagate to intersection with the mirror sphere
     double mirror_radius = test_mirror->focalLength()*2.0;
-    math::vs_physics::Vec3D mirror_center = 
+    math::vs_physics::Vec3D mirror_center =
 	test_mirror->pos() + test_mirror->align()*mirror_radius;
 
     math::vs_physics::Particle test_ray(ray_in);
@@ -507,7 +507,7 @@ bool VSORayTracer::findMirror(math::vs_physics::Particle& ray, TraceInfo& info)
       info.mirror_y  = test_mirror_y;
       info.mirror_z  = test_mirror_z;
     }
-      
+
     // Check if ray impacted beyond the edge of this mirror
     static const double cos60 = 1.0/2.0;
     static const double sin60 = sqrt(3.0)/2.0;
@@ -522,7 +522,7 @@ bool VSORayTracer::findMirror(math::vs_physics::Particle& ray, TraceInfo& info)
       if(isearch==0)info.status = TS_MISSED_MIRROR_EDGE;
       continue;
     }
-  
+
     // We have a good ray that impinges on a mirror - test that it hits
     // earlier than previously found one (if any)
     if((isearch>0)
@@ -545,8 +545,8 @@ bool VSORayTracer::findMirror(math::vs_physics::Particle& ray, TraceInfo& info)
 
 bool VSORayTracer::beam(math::vs_physics::Particle& photon,
                         const math::vs_physics::Vec3D& origin,
-                        const math::vs_physics::Vec3D& direction, 
-                        double beam_start, double beam_stop, 
+                        const math::vs_physics::Vec3D& direction,
+                        double beam_start, double beam_stop,
                         double beam_radius_in, double beam_radius_out,
                         double beam_angle_lo, double beam_angle_hi,
                         double lambda_nm)
@@ -601,7 +601,7 @@ bool VSORayTracer::beam(math::vs_physics::Particle& photon,
 #if 1
     d_hat = d_hat*costheta
             + (tangent_a*cos(phi)+tangent_b*sin(phi))*sin(theta);
-#else  
+#else
     math::vs_physics::Vec3D axis = tangent_a*cos(phi) + tangent_b*sin(phi);
     d_hat.Rotate(axis*theta);
 #endif
@@ -625,9 +625,9 @@ bool VSORayTracer::laserBeam(math::vs_physics::Particle& photon,
 }
 
 bool VSORayTracer::fanBeam(math::vs_physics::Particle& photon,
-                           const math::vs_physics::Vec3D& origin, 
-                           const math::vs_physics::Vec3D& direction, 
-                           double half_angle_spread, 
+                           const math::vs_physics::Vec3D& origin,
+                           const math::vs_physics::Vec3D& direction,
+                           double half_angle_spread,
                            double lambda_nm)
 {
   return beam(photon, origin, direction, 0, 0, 0, 0, 0, half_angle_spread,
@@ -635,12 +635,12 @@ bool VSORayTracer::fanBeam(math::vs_physics::Particle& photon,
 }
 
 bool VSORayTracer::muonBeam(math::vs_physics::Particle& photon,
-                            const math::vs_physics::Vec3D& origin, 
-                            const math::vs_physics::Vec3D& direction, 
-                            double muon_travel_distance, double opening_angle, 
+                            const math::vs_physics::Vec3D& origin,
+                            const math::vs_physics::Vec3D& direction,
+                            double muon_travel_distance, double opening_angle,
                             double lambda_nm)
 {
-  return beam(photon, origin, direction, 0, muon_travel_distance, 0, 0, 
+  return beam(photon, origin, direction, 0, muon_travel_distance, 0, 0,
 	      opening_angle, opening_angle, lambda_nm);
 }
 
@@ -658,7 +658,7 @@ bool VSORayTracer::testBeam(math::vs_physics::Particle& photon,
     scope->reflectorToGlobal_mom(beam_dir);
     scope->reflectorToGlobal_pos(beam_cen);
     return laserBeam(photon, beam_cen, beam_dir, -
-                     2.0*scope->focalPlanePosition().y, 
+                     2.0*scope->focalPlanePosition().y,
                      0.5*scope->reflectorIP(), lambda_nm);
   }
   else
@@ -670,7 +670,7 @@ bool VSORayTracer::testBeam(math::vs_physics::Particle& photon,
     math::vs_physics::Vec3D beam_dir(beam_cen*(-1.0/dist));
     scope->reflectorToGlobal_mom(beam_dir);
     scope->reflectorToGlobal_pos(beam_cen);
-    return fanBeam(photon, beam_cen, beam_dir, 
+    return fanBeam(photon, beam_cen, beam_dir,
                    asin(0.5*scope->reflectorIP()/dist), lambda_nm);
   }
 }
@@ -686,7 +686,7 @@ void VSORayTracer::calcPSF(class VSOPSFInfo& psf, const VSOTelescope* scope,
   std::vector<double> x;
   std::vector<double> y;
   std::vector<double> t;
-  std::vector<double> r2;  
+  std::vector<double> r2;
   x.reserve(nsim);
   y.reserve(nsim);
   t.reserve(nsim);
@@ -751,7 +751,7 @@ void VSORayTracer::calcPSF(class VSOPSFInfo& psf, const VSOTelescope* scope,
   std::sort(x.begin(), x.end());
   std::sort(y.begin(), y.end());
   std::sort(t.begin(), t.end());
-  
+
   unsigned imed = x.size()/2;
   psf.median_tan  = x[imed];
   psf.median_sag  = y[imed];

@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/vso_mirror.cpp -- Stephen Fegan -- 2015-11-05
 
@@ -10,11 +10,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -32,17 +32,17 @@ using namespace calin::math::vs_physics;
 using namespace calin::simulation::vs_optics;
 
 VSOMirror::VSOMirror():
-  fTelescope(0), fID(0), fHexID(0), fRemoved(false), fPos(), fAlign(), 
+  fTelescope(0), fID(0), fHexID(0), fRemoved(false), fPos(), fAlign(),
   fFocalLength(0), fSpotSize(0), fDegradingFactor(0), fRotationVector()
 {
   // nothing to see here
 }
 
-VSOMirror::VSOMirror(const VSOTelescope* T, 
+VSOMirror::VSOMirror(const VSOTelescope* T,
 		     unsigned ID, unsigned MHID, bool REM,
-		     const math::vs_physics::Vec3D& P, const math::vs_physics::Vec3D& A, 
+		     const math::vs_physics::Vec3D& P, const math::vs_physics::Vec3D& A,
 		     double FL, double SS, double DF):
-  fTelescope(T), fID(ID), fHexID(MHID), fRemoved(REM), fPos(P), fAlign(A), 
+  fTelescope(T), fID(ID), fHexID(MHID), fRemoved(REM), fPos(P), fAlign(A),
   fFocalLength(FL), fSpotSize(SS), fDegradingFactor(DF), fRotationVector()
 {
   calculateRotationVector();
@@ -59,7 +59,7 @@ void VSOMirror::calculateRotationVector()
     fRotationVector = Vec3D(0,0,0);
     return;
   }
-    
+
   Vec3D rrot(0,-fTelescope->reflectorRotation(),0);
   Vec3D align(fAlign);
   align.Rotate(rrot);
@@ -69,7 +69,7 @@ void VSOMirror::calculateRotationVector()
     {
       fRotationVector = rrot;
     }
-  else 
+  else
     {
       double costheta = align*Vec3D(0,1,0);
       normalize *= atan(sintheta/costheta)/sintheta;
@@ -88,12 +88,12 @@ void VSOMirror::reflectorToMirror(math::vs_physics::Particle& p) const
   // if(fTelescope->mirrorParity())mom3.x=-mom3.x;
   //  std::cout << "A: " << p.Momenta().r << ' ' << fRotationVector << ' ';
   //  std::cout << p.Momenta().r << std::endl;
-#warning clean me up
+//#warning clean me up
 }
 
 void VSOMirror::mirrorToReflector(math::vs_physics::Particle& p) const
 {
-#warning Fix parity
+//#warning Fix parity
   // First: Fix parity
   // if(fTelescope->mirrorParity())v.x=-v.x;
   // Second: Rotate coordinate system back to the reflector
@@ -107,7 +107,7 @@ cornerInMirrorCoords(unsigned icorner, double aperture) const
 {
   static const double sin30 = 1.0/2.0;
   static const double cos30 = sqrt(3.0)/2.0;
-  
+
   double r = aperture/cos30/2.0;
   double x;
   double z;
@@ -163,7 +163,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOMirrorData& d,
 
   mirror->calculateRotationVector();
 
-  return mirror;  
+  return mirror;
 }
 
 #if 0
