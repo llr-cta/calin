@@ -74,7 +74,7 @@ install:
     then (
       if [ "x$CACHE_REBUILD" != "xTRUE" ]
       then
-        exit(1)
+        exit 1
       fi
       wget http://cmake.org/files/v3.4/cmake-3.4.3.tar.gz
       tar zxvf cmake-3.4.3.tar.gz
@@ -88,7 +88,7 @@ install:
     then (
       if [ "x$CACHE_REBUILD" != "xTRUE" ]
       then
-        exit(1)
+        exit 1
       fi
       wget http://sourceforge.net/projects/swig/files/swig/swig-3.0.8/swig-3.0.8.tar.gz &&
       tar zxf swig-3.0.8.tar.gz &&
@@ -102,7 +102,7 @@ install:
     then (
       if [ "x$CACHE_REBUILD" != "xTRUE" ]
       then
-        exit(1)
+        exit 1
       fi
       wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-2/protobuf-cpp-3.0.0-beta-2.tar.gz &&
       tar zxf protobuf-cpp-3.0.0-beta-2.tar.gz &&
@@ -116,7 +116,7 @@ install:
     then (
       if [ "x$CACHE_REBUILD" != "xTRUE" ]
       then
-        exit(1)
+        exit 1
       fi
       wget http://geant4.cern.ch/support/source/geant4.10.02.p01.tar.gz &&
       tar zxf geant4.10.02.p01.tar.gz &&
