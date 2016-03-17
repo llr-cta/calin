@@ -149,7 +149,7 @@ install:
         wget http://geant4.cern.ch/support/source/G4NEUTRONXS.${G4NEUTRONXSDATA}.tar.gz
         tar zxf G4NEUTRONXS.${G4NEUTRONXSDATA}.tar.gz
         wget http://geant4.cern.ch/support/source/G4ENSDFSTATE.${G4ENSDFSTATEDATA}.tar.gz
-        # Note this data dile actually seems to be a tar file, not a tgz
+        # Note this data file actually seems to be a tar, not a tgz
         tar xf G4ENSDFSTATE.${G4ENSDFSTATEDATA}.tar.gz
       )
       export G4LEDATA=$GEANT4_DATA/G4EMLOW${G4LEDATA}
@@ -181,4 +181,4 @@ script:
     make -j3 &&
     make install &&
     make test
-    ./unit_tests/simulation/test_geant4
+    #./unit_tests/simulation/test_geant4
