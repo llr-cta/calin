@@ -72,9 +72,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/swig ];
     then (
-      wget http://sourceforge.net/projects/swig/files/swig/swig-3.0.7/swig-3.0.7.tar.gz &&
-      tar zxf swig-3.0.7.tar.gz &&
-      cd swig-3.0.7 &&
+      wget http://sourceforge.net/projects/swig/files/swig/swig-3.0.8/swig-3.0.8.tar.gz &&
+      tar zxf swig-3.0.8.tar.gz &&
+      cd swig-3.0.8 &&
       ./configure --prefix=$LOCAL --without-alllang --with-python &&
       make -j3 &&
       make install > /dev/null
@@ -92,7 +92,7 @@ install:
   - |
     if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh ];
     then (
-      wget http://geant4.cern.ch/support/source/geant4.10.01.p02.tar.gz &&
+      wget http://geant4.cern.ch/support/source/geant4.10.02.p01.tar.gz &&
       tar zxf geant4.10.01.p02.tar.gz &&
       cd geant4.10.01.p02 &&
       mkdir mybuild &&
@@ -105,23 +105,27 @@ install:
     if [ "x$GEANT4" == "xTRUE" ]
     then
       NO_GEANT4=""
+      export G4LEDATA=G4EMLOW6.48
+      export G4LEVELGAMMADATA=PhotonEvaporation3.2
+      export G4SAIDXSDATA=G4SAIDDATA1.1
+      export G4NEUTRONXSDATA=G4NEUTRONXS1.4
       GEANT4_DATA=$HOME/geant4_data
       (
         mkdir $GEANT4_DATA
         cd  $GEANT4_DATA
-        wget http://geant4.cern.ch/support/source/G4EMLOW.6.41.tar.gz
-        tar zxf G4EMLOW.6.41.tar.gz
-        wget http://geant4.cern.ch/support/source/G4PhotonEvaporation.3.1.tar.gz
-        tar zxf G4PhotonEvaporation.3.1.tar.gz
-        wget http://geant4.cern.ch/support/source/G4SAIDDATA.1.1.tar.gz
-        tar zxf G4SAIDDATA.1.1.tar.gz
-        wget http://geant4.cern.ch/support/source/G4NEUTRONXS.1.4.tar.gz
-        tar zxf G4NEUTRONXS.1.4.tar.gz
+        wget http://geant4.cern.ch/support/source/${G4LEDATA}.tar.gz
+        tar zxf ${G4LEDATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/${G4LEVELGAMMADATA}.tar.gz
+        tar zxf ${G4LEVELGAMMADATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/${G4SAIDXSDATA}.tar.gz
+        tar zxf ${G4SAIDXSDATA}.tar.gz
+        wget http://geant4.cern.ch/support/source/${G4NEUTRONXSDATA}.tar.gz
+        tar zxf ${G4NEUTRONXSDATA}.tar.gz
       )
-      export G4LEDATA=$GEANT4_DATA/G4EMLOW6.41
-      export G4LEVELGAMMADATA=$GEANT4_DATA/PhotonEvaporation3.1
-      export G4SAIDXSDATA=$GEANT4_DATA/G4SAIDDATA1.1
-      export G4NEUTRONXSDATA=$GEANT4_DATA/G4NEUTRONXS1.4
+      export G4LEDATA=$GEANT4_DATA/$G4LEDATA
+      export G4LEVELGAMMADATA=$GEANT4_DATA/$G4LEVELGAMMADATA
+      export G4SAIDXSDATA=$GEANT4_DATA/$G4SAIDXSDATA
+      export G4NEUTRONXSDATA=$GEANT4_DATA/$G4NEUTRONXSDATA
     else
       NO_GEANT4=-DNO_GEANT4:BOOLEAN=TRUE
     fi
