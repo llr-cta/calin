@@ -147,7 +147,7 @@ install:
         wget http://geant4.cern.ch/support/source/G4SAIDDATA.${G4SAIDXSDATA}.tar.gz
         tar zxf G4SAIDDATA.${G4SAIDXSDATA}.tar.gz
         wget http://geant4.cern.ch/support/source/G4NEUTRONXS.${G4NEUTRONXSDATA}.tar.gz
-        tar zxf $G4NEUTRONXS.{G4NEUTRONXSDATA}.tar.gz
+        tar zxf G4NEUTRONXS.${G4NEUTRONXSDATA}.tar.gz
         wget http://geant4.cern.ch/support/source/G4ENSDFSTATE.${G4ENSDFSTATEDATA}.tar.gz
         # Note this data dile actually seems to be a tar file, not a tgz
         tar xf G4ENSDFSTATE.${G4ENSDFSTATEDATA}.tar.gz
