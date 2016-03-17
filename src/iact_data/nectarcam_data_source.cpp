@@ -30,7 +30,7 @@
 
 using namespace calin::iact_data::nectarcam_data_source;
 using namespace calin::ix::iact_data::telescope_event;
-using namespace calin::ix::iact_data::instrument_run_configuration;
+using namespace calin::ix::iact_data::telescope_run_configuration;
 using namespace calin::io::log;
 using calin::iact_data::zfits_data_source::ZFITSSingleFileDataSource;
 
@@ -185,11 +185,11 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
   return calin_event;
 }
 
-InstrumentRunConfiguration* NectarCamCameraEventDecoder::decode_run_config(
+TelescopeRunConfiguration* NectarCamCameraEventDecoder::decode_run_config(
   const DataModel::CameraRunHeader* cta_run_header,
   const DataModel::CameraEvent* cta_event)
 {
-  auto* calin_run_config = new InstrumentRunConfiguration;
+  auto* calin_run_config = new TelescopeRunConfiguration;
   if(cta_run_header)
   {
 #if 0

@@ -27,7 +27,7 @@
 #include <io/data_source.hpp>
 #include <io/buffered_data_source.hpp>
 #include <iact_data/telescope_event.pb.h>
-#include <iact_data/instrument_run_configuration.pb.h>
+#include <iact_data/telescope_run_configuration.pb.h>
 
 namespace calin { namespace iact_data { namespace telescope_data_source {
 
@@ -69,8 +69,8 @@ public:
       calin::ix::iact_data::telescope_event::TelescopeEvent>() {
     /* nothing to see here */ }
   virtual ~TelescopeRandomAccessDataSourceWithRunConfig();
-  virtual calin::ix::iact_data::instrument_run_configuration::
-    InstrumentRunConfiguration* get_run_configuration() = 0;
+  virtual calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* get_run_configuration() = 0;
 };
 
 } } } // namespace calin::iact_data::telescope_data_source

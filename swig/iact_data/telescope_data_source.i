@@ -39,7 +39,7 @@ using namespace calin::io;
 %import "calin_global_definitions.i"
 
 %import "iact_data/telescope_event.pb.i"
-%import "iact_data/instrument_run_configuration.pb.i"
+%import "iact_data/telescope_run_configuration.pb.i"
 %import "iact_data/zfits_data_source.pb.i"
 %import "iact_data/nectarcam_data_source.pb.i"
 

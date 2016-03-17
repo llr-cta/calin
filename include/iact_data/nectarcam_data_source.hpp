@@ -56,8 +56,8 @@ public:
   calin::ix::iact_data::telescope_event::TelescopeEvent*
     decode(const DataModel::CameraEvent* cta_event) override;
 
-  calin::ix::iact_data::instrument_run_configuration::
-    InstrumentRunConfiguration* decode_run_config(
+  calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* decode_run_config(
       const DataModel::CameraRunHeader* cta_run_header,
       const DataModel::CameraEvent* cta_event) override;
 

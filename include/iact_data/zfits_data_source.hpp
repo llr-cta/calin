@@ -48,8 +48,8 @@ public:
   virtual ~CTACameraEventDecoder();
   virtual calin::ix::iact_data::telescope_event::TelescopeEvent*
     decode(const DataModel::CameraEvent* cta_event) = 0;
-  virtual calin::ix::iact_data::instrument_run_configuration::
-    InstrumentRunConfiguration* decode_run_config(
+  virtual calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* decode_run_config(
       const DataModel::CameraRunHeader* cta_run_header,
       const DataModel::CameraEvent* cta_event) = 0;
 };
@@ -70,8 +70,8 @@ public:
   uint64_t size() override;
   void set_next_index(uint64_t next_index) override;
 
-  calin::ix::iact_data::instrument_run_configuration::
-    InstrumentRunConfiguration* get_run_configuration() override;
+  calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* get_run_configuration() override;
 
   static config_type default_config();
 
@@ -81,8 +81,8 @@ private:
   CTACameraEventDecoder* decoder_ = nullptr;
   bool adopt_decoder_ = false;
   uint64_t next_event_index_ = 0;
-  calin::ix::iact_data::instrument_run_configuration::
-    InstrumentRunConfiguration* run_config_ = nullptr;
+  calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* run_config_ = nullptr;
 };
 
 class ZFITSDataSource:
@@ -101,8 +101,8 @@ public:
 
   calin::ix::iact_data::telescope_event::TelescopeEvent* get_next() override;
 
-  calin::ix::iact_data::instrument_run_configuration::
-    InstrumentRunConfiguration* get_run_configuration() override;
+  calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* get_run_configuration() override;
 
   static config_type default_config() {
     config_type config = config_type::default_instance();
@@ -113,8 +113,8 @@ public:
 
 private:
   config_type config_;
-  calin::ix::iact_data::instrument_run_configuration::
-    InstrumentRunConfiguration* run_config_ = nullptr;
+  calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* run_config_ = nullptr;
 };
 
 class ZFitsDataSourceOpener:

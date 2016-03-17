@@ -1,6 +1,6 @@
 /*
 
-   calin/proto/iact_data/instrument_run_configuration.proto
+   calin/proto/iact_data/telescope_run_configuration.proto
                                                 -- Stephen Fegan -- 2016-03-14
 
    Protobufs for run-wise instrument configuration
@@ -26,9 +26,9 @@ syntax = "proto3";
 import "calin.proto";
 import "common_types.proto";
 
-package calin.ix.iact_data.instrument_run_configuration;
+package calin.ix.iact_data.telescope_run_configuration;
 
-message InstrumentRunConfiguration {
+message TelescopeRunConfiguration {
   uint32 run_number                                        = 1 [
     (CFO).desc = "Run number." ];
   common_types.Time run_start_time                         = 2 [

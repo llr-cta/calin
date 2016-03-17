@@ -24,10 +24,27 @@
 
 using namespace calin::iact_data::event_visitor;
 using namespace calin::ix::iact_data::telescope_event;
+using namespace calin::ix::iact_data::telescope_run_configuration;
 
 TelescopeEventVisitor::~TelescopeEventVisitor()
 {
   // nothing to see here
+}
+
+bool TelescopeEventVisitor::demand_waveforms()
+{
+  return true;
+}
+
+bool TelescopeEventVisitor::
+visit_telescope_run(const TelescopeRunConfiguration* run_config)
+{
+  return true;
+}
+
+bool TelescopeEventVisitor::leave_telescope_run()
+{
+  return true;
 }
 
 bool TelescopeEventVisitor::visit_telescope_event(TelescopeEvent* event)

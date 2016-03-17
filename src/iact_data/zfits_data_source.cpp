@@ -29,7 +29,7 @@
 
 using namespace calin::iact_data::zfits_data_source;
 using namespace calin::ix::iact_data::telescope_event;
-using namespace calin::ix::iact_data::instrument_run_configuration;
+using namespace calin::ix::iact_data::telescope_run_configuration;
 using namespace calin::io::log;
 using calin::util::file::is_file;
 using calin::util::file::is_readable;
@@ -121,10 +121,10 @@ void ZFITSSingleFileDataSource::set_next_index(uint64_t next_index)
   next_event_index_ = next_index;
 }
 
-InstrumentRunConfiguration* ZFITSSingleFileDataSource::get_run_configuration()
+TelescopeRunConfiguration* ZFITSSingleFileDataSource::get_run_configuration()
 {
   if(!run_config_)return nullptr;
-  auto* run_config = new InstrumentRunConfiguration();
+  auto* run_config = new TelescopeRunConfiguration();
   run_config->CopyFrom(*run_config_);
   return run_config;
 }
@@ -224,11 +224,11 @@ ZFITSDataSource::get_next()
   return event;
 }
 
-calin::ix::iact_data::instrument_run_configuration::
-InstrumentRunConfiguration* ZFITSDataSource::get_run_configuration()
+calin::ix::iact_data::telescope_run_configuration::
+TelescopeRunConfiguration* ZFITSDataSource::get_run_configuration()
 {
   if(!run_config_)return nullptr;
-  auto* run_config = new InstrumentRunConfiguration();
+  auto* run_config = new TelescopeRunConfiguration();
   run_config->CopyFrom(*run_config_);
   return run_config;
 }
