@@ -79,7 +79,7 @@ install:
       wget --no-check-certificate https://cmake.org/files/v3.4/cmake-3.4.3.tar.gz
       tar zxf cmake-3.4.3.tar.gz
       cd cmake-3.4.3
-      ./configure --prefix=$LOCAL
+      ./bootstrap  --parallel=3 --prefix=$LOCAL
       make -j3
       make install
     ); fi
@@ -175,4 +175,5 @@ script:
           -DCMAKE_INSTALL_PREFIX=build .. &&
     make -j3 &&
     make install &&
+    ./unit_tests/simulations/test_geant4
     make test
