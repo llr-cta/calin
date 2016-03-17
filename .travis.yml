@@ -175,5 +175,5 @@ script:
           -DCMAKE_INSTALL_PREFIX=build .. &&
     make -j3 &&
     make install &&
-    ./unit_tests/simulations/test_geant4
     make test
+    ./unit_tests/simulation/test_geant4
