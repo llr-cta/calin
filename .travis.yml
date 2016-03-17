@@ -131,11 +131,11 @@ install:
     if [ "x$GEANT4" == "xTRUE" ]
     then
       NO_GEANT4=""
-      export G4LEDATA=G4EMLOW6.48
-      export G4LEVELGAMMADATA=PhotonEvaporation3.2
-      export G4SAIDXSDATA=G4SAIDDATA1.1
-      export G4NEUTRONXSDATA=G4NEUTRONXS1.4
-      export G4ENSDFSTATEDATA=G4ENSDFSTATE1.2.1
+      export G4LEDATA=G4EMLOW.6.48
+      export G4LEVELGAMMADATA=PhotonEvaporation.3.2
+      export G4SAIDXSDATA=G4SAIDDATA.1.1
+      export G4NEUTRONXSDATA=G4NEUTRONXS.1.4
+      export G4ENSDFSTATEDATA=G4ENSDFSTATE.1.2.1
       GEANT4_DATA=$HOME/geant4_data
       (
         mkdir $GEANT4_DATA
