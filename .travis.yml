@@ -81,7 +81,7 @@ install:
       cd cmake-3.4.3
       ./bootstrap  --parallel=3 --prefix=$LOCAL
       make -j3
-      make install
+      make install > /dev/null
     ); fi
   - |
     if [ ! -f $LOCAL/bin/swig ];
