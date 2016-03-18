@@ -36,6 +36,38 @@ WaveformStatsVisitor::~WaveformStatsVisitor()
   // nothing to see here
 }
 
+bool WaveformStatsVisitor::demand_waveforms()
+{
+  return true;
+}
+
+bool WaveformStatsVisitor::is_parallelizable()
+{
+  return true;
+}
+
+TelescopeEventVisitor* new_sub_visitor()
+{
+  auto* sub_visitor = new TelescopeEventVisitor;
+  sub_visitor_->parent_ = this;
+  sub_visitor_->wf_results_.CopyFrom(wf_results_);
+  return sub_visitor_;
+}
+
+bool visit_telescope_run(
+  const calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* run_config)
+{
+  wf_results_.Clear();
+  //wf_results_.
+  return true;
+}
+
+bool leave_telescope_run()
+{
+  return true;
+}
+
 bool WaveformStatsVisitor::visit_telescope_event(
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
@@ -45,6 +77,11 @@ bool WaveformStatsVisitor::visit_telescope_event(
 bool WaveformStatsVisitor::visit_waveform(unsigned ichan,
   calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
   calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
+{
+
+}
+
+bool WaveformStatsVisitor::merge_results()
 {
 
 }

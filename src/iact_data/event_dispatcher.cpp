@@ -70,7 +70,7 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
     visitors_.clear();
     wf_visitors_.clear();
     std::vector<TelescopeEventDispatcher*> sub_dispatchers;
-    for(unsigned ithread=0;ithread<nthread;ithread++)
+    for(int ithread=0;ithread<nthread;ithread++)
       sub_dispatchers.emplace_back(new TelescopeEventDispatcher);
     for(auto* v : visitors)
     {
@@ -98,7 +98,11 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
     accept_all_from_src(src, log_frequency, true, sink);
     for(auto& i : threads)i.join();
     delete sink;
-    for(auto* d : sub_dispatchers)d->merge_results();
+    for(auto* d : sub_dispatchers)
+    {
+      d->merge_results();
+      delete d;
+    }
     visitors_.clear();
     wf_visitors_.clear();
     for(auto* v : visitors)add_visitor(v, false);

@@ -36,6 +36,18 @@ CounterDiagnostics::~CounterDiagnostics()
   // nothing to see here
 }
 
+bool CounterDiagnostics::demand_waveforms()
+{
+  return false;
+}
+
+bool CounterDiagnostics::visit_telescope_run(
+  const calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* run_config)
+{
+  return true;
+}
+
 bool CounterDiagnostics::visit_telescope_event(
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {

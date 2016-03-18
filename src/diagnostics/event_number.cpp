@@ -39,6 +39,11 @@ SequentialEventNumberGlitchDetector::~SequentialEventNumberGlitchDetector()
   // nothing to see here
 }
 
+bool SequentialEventNumberGlitchDetector::demand_waveforms()
+{
+  return false;
+}
+
 bool SequentialEventNumberGlitchDetector::visit_telescope_event(
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
@@ -65,6 +70,18 @@ CountersEventNumberGlitchDetector(int counter_index):
 CountersEventNumberGlitchDetector::~CountersEventNumberGlitchDetector()
 {
   // nothing to see here
+}
+
+bool CountersEventNumberGlitchDetector::demand_waveforms()
+{
+  return false;
+}
+
+bool CountersEventNumberGlitchDetector::visit_telescope_run(
+  const calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* run_config)
+{
+  return true;
 }
 
 bool CountersEventNumberGlitchDetector::visit_telescope_event(
