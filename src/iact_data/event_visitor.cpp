@@ -43,9 +43,10 @@ bool TelescopeEventVisitor::is_parallelizable()
   return false;
 }
 
-TelescopeEventVisitor* TelescopeEventVisitor::clone()
+TelescopeEventVisitor* TelescopeEventVisitor::new_sub_visitor()
 {
-  throw std::runtime_error("TelescopeEventVisitor: cloning not implemented for this class");
+  throw std::runtime_error("TelescopeEventVisitor: parallel sub workers not "
+    "implemented.");
   return nullptr;
 }
 

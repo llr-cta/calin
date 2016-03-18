@@ -38,7 +38,7 @@ public:
 
   virtual bool demand_waveforms();
   virtual bool is_parallelizable();
-  virtual TelescopeEventVisitor* clone();
+  virtual TelescopeEventVisitor* new_sub_visitor();
 
   virtual bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::

@@ -25,6 +25,7 @@
 #include <util/string.hpp>
 #include <io/log.hpp>
 #include <iact_data/event_dispatcher.hpp>
+#include <io/one_to_n_data_source.hpp>
 
 using namespace calin::util::string;
 using namespace calin::io::log;
@@ -53,13 +54,56 @@ add_visitor(event_visitor::TelescopeEventVisitor* visitor, bool adopt_visitor)
 
 void TelescopeEventDispatcher::
 process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
-  unsigned log_frequency)
+  unsigned log_frequency, int nthread)
 {
   TelescopeRunConfiguration* run_config = src->get_run_configuration();
   accept_run_configuration(run_config);
-  accept_all_from_src(src, log_frequency, true);
+  if(nthread <= 0 or std::none_of(visitors_.begin(), visitors_.end(),
+    [](event_visitor::TelescopeEventVisitor* v){
+      return v->is_parallelizable(); }))
+  {
+    accept_all_from_src(src, log_frequency, nthread==0);
+  }
+  else
+  {
+    auto visitors = visitors_;
+    visitors_.clear();
+    wf_visitors_.clear();
+    std::vector<TelescopeEventDispatcher*> sub_dispatchers;
+    for(unsigned ithread=0;ithread<nthread;ithread++)
+      sub_dispatchers.emplace_back(new TelescopeEventDispatcher);
+    for(auto* v : visitors)
+    {
+      if(v->is_parallelizable())
+        for(auto* d : sub_dispatchers)
+          d->add_visitor(v->new_sub_visitor(), true);
+      else
+        add_visitor(v, false);
+    }
+    auto* sink = new io::data_source::OneToNDataSink<TelescopeEvent>;
+    std::vector<std::thread> threads;
+    // Go go gadget threads
+    for(auto* d : sub_dispatchers)
+    {
+      threads.emplace_back([d,sink](){
+        auto* bsrc = sink->new_data_source();
+        while(TelescopeEvent* event = bsrc->get_next())
+        {
+          d->accept_event(event);
+          delete event;
+        }
+        delete bsrc;
+      });
+    }
+    accept_all_from_src(src, log_frequency, true, sink);
+    for(auto& i : threads)i.join();
+    delete sink;
+    for(auto* d : sub_dispatchers)d->merge_results();
+    visitors_.clear();
+    wf_visitors_.clear();
+    for(auto* v : visitors)add_visitor(v, false);
+  }
   leave_run();
-  merge_results();
 }
 
 void TelescopeEventDispatcher::
@@ -123,20 +167,23 @@ void TelescopeEventDispatcher::accept_event(TelescopeEvent* event)
 void TelescopeEventDispatcher::accept_all_from_src(
   calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
-  unsigned log_frequency, bool use_buffered_reader)
+  unsigned log_frequency, bool use_buffered_reader,
+  calin::io::data_source::DataSink<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>* sink)
 {
-  if(!use_buffered_reader)return accept_from_src(src,log_frequency);
+  if(!use_buffered_reader)return do_accept_from_src(src,log_frequency,sink);
   std::unique_ptr<MultiThreadTelescopeDataSourceBuffer> buffer {
     new MultiThreadTelescopeDataSourceBuffer(src) };
   std::unique_ptr<BufferedTelescopeDataSource> bsrc {
-    buffer->new_data_source(100) };
-  accept_from_src(bsrc.get(),log_frequency);
+    buffer->new_data_source() };
+  do_accept_from_src(bsrc.get(),log_frequency, sink);
   bsrc.reset();
 }
 
 void TelescopeEventDispatcher::
-accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
-  unsigned num_event_max)
+do_accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
+  calin::io::data_source::DataSink<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>* sink)
 {
   using namespace std::chrono;
   uint64_t ndispatched = 0;
@@ -144,7 +191,8 @@ accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
   while(TelescopeEvent* event = src->get_next())
   {
     accept_event(event);
-    delete event;
+    if(sink)sink->put_next(event, true);
+    else delete event;
     ++ndispatched;
     if(log_frequency and ndispatched % log_frequency == 0)
     {
@@ -153,7 +201,7 @@ accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
         << to_string_with_commas(ndispatched) << " events in "
         << to_string_with_commas(duration_cast<seconds>(dt).count()) << " sec";
     }
-    if(num_event_max and not --num_event_max)break;
+    //if(num_event_max and not --num_event_max)break;
   }
   if(log_frequency and ndispatched % log_frequency != 0)
   {

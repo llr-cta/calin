@@ -75,7 +75,7 @@ using namespace calin::io;
 
 %include "io/buffered_data_source.hpp"
 
-%newobject new_data_source(unsigned buffer_size);
+%newobject new_data_source();
 
 %template(BufferedTelescopeDataSource)
   calin::io::data_source::BufferedDataSource<

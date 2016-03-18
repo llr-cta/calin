@@ -38,6 +38,7 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%newobject new_sub_visitor();
 %include "iact_data/event_visitor.hpp"
 
 %thread; // Release Pyhjon GIL for all functions here (since some use threads)
