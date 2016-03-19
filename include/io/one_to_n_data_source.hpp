@@ -65,6 +65,12 @@ public:
     return good;
   }
 
+  bool put_nullptr(bool no_wait = true)
+  {
+    T* data = nullptr;
+    return pusher_->push(&data, sizeof(data), no_wait);
+  }
+
 protected:
   zmq_inproc::ZMQInprocPushPull* zmq_ = nullptr;
   zmq_inproc::ZMQPusher* pusher_ = nullptr;

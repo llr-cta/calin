@@ -80,12 +80,16 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
       else
         add_visitor(v, false);
     }
+
     auto* sink = new io::data_source::OneToNDataSink<TelescopeEvent>;
     std::vector<std::thread> threads;
+    std::atomic<unsigned> threads_active { 0 };
     // Go go gadget threads
     for(auto* d : sub_dispatchers)
     {
-      threads.emplace_back([d,sink](){
+      d->accept_run_configuration(run_config);
+      threads_active++;
+      threads.emplace_back([d,sink,&threads_active](){
         auto* bsrc = sink->new_data_source();
         while(TelescopeEvent* event = bsrc->get_next())
         {
@@ -93,13 +97,23 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
           delete event;
         }
         delete bsrc;
+        threads_active--;
       });
     }
+
     accept_all_from_src(src, log_frequency, true, sink);
+
+    while(threads_active)
+    {
+      sink->put_nullptr();
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
+    }
+
     for(auto& i : threads)i.join();
     delete sink;
     for(auto* d : sub_dispatchers)
     {
+      d->leave_run();
       d->merge_results();
       delete d;
     }
