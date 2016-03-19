@@ -26,7 +26,7 @@
 using namespace calin::io::log;
 using namespace calin::diagnostics::waveform;
 
-WaveformStatsVisitor::WaveformStatsVisitor()
+WaveformStatsVisitor::WaveformStatsVisitor(): TelescopeEventVisitor()
 {
   // nothing to see here
 }
@@ -46,24 +46,34 @@ bool WaveformStatsVisitor::is_parallelizable()
   return true;
 }
 
-TelescopeEventVisitor* new_sub_visitor()
+WaveformStatsVisitor* WaveformStatsVisitor::new_sub_visitor()
 {
-  auto* sub_visitor = new TelescopeEventVisitor;
-  sub_visitor_->parent_ = this;
-  sub_visitor_->wf_results_.CopyFrom(wf_results_);
-  return sub_visitor_;
+  auto* sub_visitor = new WaveformStatsVisitor;
+  sub_visitor->parent_ = this;
+  return sub_visitor;
 }
 
-bool visit_telescope_run(
+bool WaveformStatsVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* run_config)
 {
-  wf_results_.Clear();
-  //wf_results_.
+  results_.Clear();
+  unsigned N = run_config->num_samples();
+  for(int ichan = 0; ichan < run_config->configured_channel_id_size(); ichan++)
+  {
+    auto* hg_wf = results_.add_high_gain();
+    hg_wf->mutable_sum()->Resize(N,0);
+    hg_wf->mutable_sum_squared()->Resize(N,0);
+    hg_wf->mutable_sum_product()->Resize(N*(N-1)/2,0);
+    auto* lg_wf = results_.add_low_gain();
+    lg_wf->mutable_sum()->Resize(N,0);
+    lg_wf->mutable_sum_squared()->Resize(N,0);
+    lg_wf->mutable_sum_product()->Resize(N*(N-1)/2,0);
+  }
   return true;
 }
 
-bool leave_telescope_run()
+bool WaveformStatsVisitor::leave_telescope_run()
 {
   return true;
 }

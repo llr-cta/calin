@@ -22,11 +22,13 @@
 
 #pragma once
 
-#include <ix/diagnostics/waveform.pb.h>
+#include <iact_data/event_visitor.hpp>
+#include <diagnostics/waveform.pb.h>
 
 namespace calin { namespace diagnostics { namespace waveform {
 
-class WaveformStatsVisitor
+class WaveformStatsVisitor:
+  public iact_data::event_visitor::TelescopeEventVisitor
 {
 public:
   WaveformStatsVisitor();
@@ -35,7 +37,7 @@ public:
 
   bool demand_waveforms() override;
   bool is_parallelizable() override;
-  TelescopeEventVisitor* new_sub_visitor() override;
+  WaveformStatsVisitor* new_sub_visitor() override;
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::
@@ -53,7 +55,7 @@ public:
 
 protected:
   WaveformStatsVisitor* parent_ = nullptr;
-  calin::ix::diagnostics::waveform::WaveformRawStats wf_results_;
+  calin::ix::diagnostics::waveform::CameraWaveformRawStats results_;
 };
 
 } } } // namespace calin::diagnostics::waveform_diagnostics
