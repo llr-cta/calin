@@ -31,7 +31,7 @@ class WaveformStatsVisitor:
   public iact_data::event_visitor::TelescopeEventVisitor
 {
 public:
-  WaveformStatsVisitor();
+  WaveformStatsVisitor(bool calculate_covariance = true);
 
   virtual ~WaveformStatsVisitor();
 
@@ -56,6 +56,9 @@ public:
 protected:
   WaveformStatsVisitor* parent_ = nullptr;
   calin::ix::diagnostics::waveform::CameraWaveformRawStats results_;
+  const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
+    run_config_ = nullptr;
+  bool calculate_covariance_ = false;
 };
 
 } } } // namespace calin::diagnostics::waveform_diagnostics

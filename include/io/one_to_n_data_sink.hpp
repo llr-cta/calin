@@ -1,6 +1,6 @@
 /*
 
-   calin/io/one_to_n_data_source.hpp -- Stephen Fegan -- 2016-03-18
+   calin/io/one_to_n_data_sink.hpp -- Stephen Fegan -- 2016-03-18
 
    A data sink that passes events to one of N data sources
 
