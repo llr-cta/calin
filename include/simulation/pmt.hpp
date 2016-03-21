@@ -36,7 +36,7 @@ class SignalSource
 public:
   virtual ~SignalSource();
   virtual double rv() = 0;
-  virtual void rvs(std::vector<double>& n, unsigned size = 1);
+  virtual Eigen::VectorXd rvs(unsigned size = 1);
 };
 
 class PMTSimPolya: public SignalSource
@@ -49,8 +49,8 @@ public:
   //virtual void rvs(std::vector<double>& n, unsigned size = 1);
 
   // Slow function to calculate PMF using Prescott (1965).
-  Eigen::VectorXd calc_pmf(bool log_progress = false,
-    double precision = 0.0001) const;
+  Eigen::VectorXd calc_pmf(double precision = 0.0001,
+    bool log_progress = false) const;
 
   double stage_gain(unsigned istage) const;
   double total_gain() const { return total_gain_; }

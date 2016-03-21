@@ -38,11 +38,11 @@ SignalSource::~SignalSource()
   // nothing to see here
 }
 
-void SignalSource::rvs(std::vector<double>& n, unsigned size)
+Eigen::VectorXd SignalSource::rvs(unsigned size)
 {
-  if(size==0)size = n.size();
-  else n.resize(size);
+  Eigen::VectorXd n(size);
   for(unsigned irv=0;irv<size;irv++)n[irv] = rv();
+  return n;
 }
 
 calin::ix::simulation::pmt::PMTSimAbbreviatedConfig PMTSimPolya::cta_model_1()
@@ -65,20 +65,17 @@ calin::ix::simulation::pmt::PMTSimAbbreviatedConfig PMTSimPolya::cta_model_2()
 calin::ix::simulation::pmt::PMTSimAbbreviatedConfig PMTSimPolya::cta_model_3()
 {
   auto config = cta_model_2();
-  config.set_stage_0_gain(9.1);
-  config.set_stage_0_prob_skip(0.1);
+   config.set_stage_0_prob_skip(0.1);
   return config;
 }
-
 
 PMTSimPolya::
 PMTSimPolya(const calin::ix::simulation::pmt::PMTSimAbbreviatedConfig& config,
     math::rng::RNG* rng):
-  SignalSource(),
-  rng_(rng), my_rng_(0), napprox_limit_(50)
+  SignalSource(), rng_(rng), my_rng_(0), napprox_limit_(50)
 {
   if(config.num_stage()==0)
-    throw std::runtime_error("PMTSimPolya: number of stages must be positive");
+    throw std::runtime_error("PMTSimPolya: number of stages must be positive.");
 
   if(rng==nullptr)rng_ = my_rng_ = new RNG();
   rng_->save_to_proto(config_.mutable_rng_config());
@@ -207,7 +204,7 @@ do_over:
 // Prescott may not have known about it.
 
 Eigen::VectorXd PMTSimPolya::
-calc_pmf(bool log_progress, double precision) const
+calc_pmf(double precision, bool log_progress) const
 {
   std::vector<double> pk(2);
   pk[0] = 0;

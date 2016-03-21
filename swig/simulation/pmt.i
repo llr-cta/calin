@@ -1,5 +1,3 @@
-/-*-mode:swig;-*-
-
 /*
 
    calin/simulation/pmt.i -- Stephen Fegan -- 2016-03-21
