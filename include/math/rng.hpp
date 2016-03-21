@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/rng.hpp -- Stephen Fegan -- 2015-11-19
 
@@ -9,11 +9,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -57,7 +57,7 @@ namespace calin { namespace math { namespace rng {
 
 class RNGCore
 {
- public:
+public:
   virtual ~RNGCore();
   virtual uint64_t uniform_uint64() = 0;
   virtual void save_to_proto(ix::math::rng::RNGData* proto) const = 0;
@@ -70,7 +70,7 @@ class RNGCore
 
 class RNG
 {
- public:
+public:
   enum class CoreType { NR3, RANLUX48, MT19937 /*, DEV_RANDOM*/ };
   RNG(CoreType core_type = CoreType::NR3);
   RNG(uint64_t seed, CoreType core_type = CoreType::NR3);
@@ -84,7 +84,7 @@ class RNG
   ix::math::rng::RNGData* as_proto() const {
     auto* proto = new ix::math::rng::RNGData;
     save_to_proto(proto); return proto; }
-  
+
   uint64_t uniform_uint64() { return core_->uniform_uint64(); }
 
   uint32_t uniform_uint32() {
@@ -102,7 +102,7 @@ class RNG
       return ret;
     }
   }
-    
+
   double uniform_double() {
     return 5.42101086242752217E-20 * double(uniform_uint64());
   }
@@ -115,7 +115,7 @@ class RNG
   void uniform_by_type(uint32_t& x) { x = uniform_uint32(); }
   void uniform_by_type(double& x) { x = uniform_double(); }
   void uniform_by_type(float& x) { x = uniform_float(); }
-  
+
   double uniform() { return uniform_double(); }
   double exponential() { return -std::log(uniform()); }
   double exponential(double mean) { return -mean*std::log(uniform()); }
@@ -137,13 +137,13 @@ class RNG
     do x = uint64_from_random_device(); while(x==0ULL); return x; }
   static uint32_t nonzero_uint32_from_random_device() { uint32_t x;
     do x = uint32_from_random_device(); while(x==0U); return x; }
-  
+
 #if 0
   inline double inverse_cdf(const std::vector< Pair > &inv_cdf);
   static void generate_inverse_cdf(std::vector< Pair > &cdf, unsigned nbins=0);
 #endif
-  
- private:
+
+private:
   RNGCore* core_;
   bool adopt_core_;
 
@@ -153,7 +153,7 @@ class RNG
 
   bool dev32_hascached_ = false;
   uint64_t dev32_cachedval_ = 0;
-  
+
   // Speedup caches
   double   poi_lambdaexp_ = 1.0/M_E;
   double   poi_lambdasrt_ = 1.0;
@@ -179,7 +179,7 @@ class NR3RNGCore: public RNGCore
 {
  public:
   typedef calin::ix::math::rng::NR3RNGCoreData ix_core_data_type;
-  
+
   NR3RNGCore(uint64_t seed = 0):
       RNGCore(),
       seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
@@ -193,11 +193,11 @@ class NR3RNGCore: public RNGCore
   NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto,
              bool restore_state = false);
   ~NR3RNGCore();
-  
+
   uint64_t uniform_uint64() override {
     calls_++;
     u_ = u_*UINT64_C(2862933555777941757) + UINT64_C(7046029254386353087);
-    v_ ^= v_ >> 17; 
+    v_ ^= v_ >> 17;
     v_ ^= v_ << 31;
     v_ ^= v_ >> 8;
     w_ = 4294957665U*(w_ & 0xFFFFFFFF) + (w_ >> 32);
@@ -206,14 +206,14 @@ class NR3RNGCore: public RNGCore
     x ^= x << 4;
     return (x+v_)^w_;
   }
-  
+
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
 
   static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
     return proto->mutable_nr3_core(); }
   static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
   { return proto.nr3_core(); }
-  
+
  private:
   uint64_t seed_;
   uint64_t calls_ = 0;
@@ -234,7 +234,7 @@ class Ranlux48RNGCore: public RNGCore
   Ranlux48RNGCore(const ix::math::rng::Ranlux48RNGCoreData& proto,
                   bool restore_state = false);
   ~Ranlux48RNGCore();
-  
+
   uint64_t uniform_uint64() override {
     uint64_t res = gen_(); // res has 48 bits
     gen_calls_++;
@@ -262,9 +262,9 @@ class Ranlux48RNGCore: public RNGCore
     }
     return res;
   }
-  
+
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
-  
+
   static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
     return proto->mutable_ranlux48_core(); }
   static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
@@ -290,11 +290,11 @@ class MT19937RNGCore: public RNGCore
   MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto,
                  bool restore_state = false);
   ~MT19937RNGCore();
-  
+
   uint64_t uniform_uint64() override { gen_calls_++; return gen_(); }
 
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
-  
+
   static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
     return proto->mutable_mt19937_core(); }
   static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
@@ -331,7 +331,7 @@ class NR3_EmulateSIMD_RNGCore: public RNGCore
   ~NR3_EmulateSIMD_RNGCore()
   {
     for(unsigned i=0;i<NSTREAM;i++)delete core_[i];
-  }    
+  }
 
   uint64_t uniform_uint64() override
   {
@@ -344,7 +344,7 @@ class NR3_EmulateSIMD_RNGCore: public RNGCore
   }
 
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
-  
+
  private:
   NR3RNGCore* core_[NSTREAM];
   uint64_t seed_ = 0;
@@ -363,13 +363,13 @@ class NR3_AVX2_RNGCore: public RNGCore
     stream_seed1_ = seed1;
     stream_seed2_ = seed2;
     stream_seed3_ = seed3;
-    
+
     vec_u_ = _mm256_setzero_si256();
     vec_v_ = _mm256_set1_epi64x(UINT64_C(4101842887655102017));
     vec_w_ = _mm256_set1_epi64x(UINT64_C(1));
 
     __m256i vec_seed = _mm256_set_epi64x(seed0,seed1,seed2,seed3);
-    
+
     vec_u_ = _mm256_xor_si256(vec_v_, vec_seed);
     uniform_uivec256();
     vec_v_ = vec_u_;
@@ -378,7 +378,7 @@ class NR3_AVX2_RNGCore: public RNGCore
     uniform_uivec256();
     calls_ = 0;
   }
-    
+
  public:
   typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
 
@@ -436,7 +436,7 @@ class NR3_AVX2_RNGCore: public RNGCore
 
     return _mm256_xor_si256(_mm256_add_epi64(vec_x, vec_v_), vec_w_);
   }
-  
+
   uint64_t uniform_uint64() override
   {
     if(ndev_ == 0)
@@ -448,7 +448,7 @@ class NR3_AVX2_RNGCore: public RNGCore
   }
 
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
-  
+
   static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
     return proto->mutable_nr3_avx2_core(); }
   static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)

@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <Eigen/Core>
 #include <math/rng.hpp>
 #include <simulation/pmt.pb.h>
 
@@ -41,23 +42,33 @@ public:
 class PMTSimPolya: public SignalSource
 {
 public:
-  PMTSimPolya(const ix::simulation::pmt::PMTSimAbbreviatedConfig& config,
+  PMTSimPolya(const calin::ix::simulation::pmt::PMTSimAbbreviatedConfig& config,
 	  math::rng::RNG* rng = nullptr);
   virtual ~PMTSimPolya();
   virtual double rv();
   //virtual void rvs(std::vector<double>& n, unsigned size = 1);
-  void calc_pmf(std::vector<double>& p, double precision = 0.0001) const;
-  double stage_gain(unsigned istage) const;
-  double total_gain() const { return m_total_gain; }
-  double p0() const { return m_p0; }
-  RandomNumbers* rng() { return m_rng; }
-  void set_rng(RandomNumbers* rng) { delete m_my_rng; m_my_rng=0; m_rng=rng; }
 
-  ix::simulation::pmt::PMTSimAbbreviatedConfig default_config();
+  // Slow function to calculate PMF using Prescott (1965).
+  Eigen::VectorXd calc_pmf(bool log_progress = false,
+    double precision = 0.0001) const;
+
+  double stage_gain(unsigned istage) const;
+  double total_gain() const { return total_gain_; }
+  double p0() const { return p0_; }
+
+  math::rng::RNG* rng() { return rng_; }
+  void set_rng(math::rng::RNG* rng) { delete my_rng_; my_rng_=0; rng_=rng; }
+
+  static calin::ix::simulation::pmt::PMTSimAbbreviatedConfig cta_model_1();
+  static calin::ix::simulation::pmt::PMTSimAbbreviatedConfig cta_model_2();
+  static calin::ix::simulation::pmt::PMTSimAbbreviatedConfig cta_model_3();
+
 private:
-  std::vector<ix::simulation::pmt::PMTSimConfig> config_;
-  RandomNumbers*                                 rng_;
-  RandomNumbers*                                 my_rng_;
+  calin::ix::simulation::pmt::PMTSimConfig       config_;
+  std::vector<double>                            gauss_a_;
+  std::vector<double>                            gauss_b_;
+  math::rng::RNG*                                rng_;
+  math::rng::RNG*                                my_rng_;
   unsigned                                       napprox_limit_;
   double                                         p0_;
   double                                         total_gain_;

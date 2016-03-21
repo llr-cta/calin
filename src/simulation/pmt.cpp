@@ -20,13 +20,18 @@
 
 */
 
+#include <algorithm>
 #include <cmath>
 #include <cassert>
+#include <calin_global_definitions.hpp>
 #include <simulation/pmt.hpp>
 #include <math/special.hpp>
+#include <io/log.hpp>
 
 using namespace calin::simulation::pmt;
-using calin::math::special::SQR
+using calin::math::special::SQR;
+using calin::math::rng::RNG;
+using namespace calin::io::log;
 
 SignalSource::~SignalSource()
 {
@@ -40,136 +45,157 @@ void SignalSource::rvs(std::vector<double>& n, unsigned size)
   for(unsigned irv=0;irv<size;irv++)n[irv] = rv();
 }
 
-ix::simulation::pmt::PMTSimAbbreviatedConfig PMTSimPolya::default_config()
+calin::ix::simulation::pmt::PMTSimAbbreviatedConfig PMTSimPolya::cta_model_1()
 {
-  ix::simulation::pmt::PMTSimAbbreviatedConfig config;
-  config.set_num_stages(7);
-  config.set_total_gain(4E4);
-  config.set_stage_1_gain(8);
+  calin::ix::simulation::pmt::PMTSimAbbreviatedConfig config;
+  config.set_num_stage(7);
+  config.set_total_gain(4.0E4);
+  config.set_stage_0_gain(10.0);
   config.set_suppress_zero(true);
   return config;
 }
 
-PMTSimPolya::
-PMTSimPolya(unsigned nstage, double total_gain,
-	    double s1_gain, double s1_gain_rms_frac, double s1_pskip,
-	    double sn_gain_rms_frac, double sn_pskip,
-	    bool suppress_zero, bool signal_in_pe,
-	    RandomNumbers* rng):
-  SignalSource(),
-  m_stages(nstage), m_rng(rng), m_my_rng(0), m_napprox_limit(50),
-  m_suppress_zero(suppress_zero), m_signal_in_pe(signal_in_pe)
+calin::ix::simulation::pmt::PMTSimAbbreviatedConfig PMTSimPolya::cta_model_2()
 {
-  if(nstage==0)throw std::string("PMTSimPolya: nstages must be positive");
+  auto config = cta_model_1();
+  config.set_stage_0_gain_rms_frac(0.30);
+  return config;
+}
 
-  if(rng==0)
-    m_rng = m_my_rng = new RandomNumbers(RandomNumbers::defaultFilename());
+calin::ix::simulation::pmt::PMTSimAbbreviatedConfig PMTSimPolya::cta_model_3()
+{
+  auto config = cta_model_2();
+  config.set_stage_0_gain(9.1);
+  config.set_stage_0_prob_skip(0.1);
+  return config;
+}
 
-  m_stages[0].gain_mean                  = s1_gain;
+
+PMTSimPolya::
+PMTSimPolya(const calin::ix::simulation::pmt::PMTSimAbbreviatedConfig& config,
+    math::rng::RNG* rng):
+  SignalSource(),
+  rng_(rng), my_rng_(0), napprox_limit_(50)
+{
+  if(config.num_stage()==0)
+    throw std::runtime_error("PMTSimPolya: number of stages must be positive");
+
+  if(rng==nullptr)rng_ = my_rng_ = new RNG();
+  rng_->save_to_proto(config_.mutable_rng_config());
+
+  config_.set_suppress_zero(config.suppress_zero());
+  config_.set_signal_in_pe(config.signal_in_pe());
+  auto* stage_0 = config_.add_stage();
+  stage_0->set_gain_mean(config.stage_0_gain());
 #if 0
   // Must decide what definition of s1_gain should be - either gain of
   // the dynode, or the average of the number of electrons entering
   // second stage (including skips)
-  m_stages[0].gain_mean                  = (s1_gain-s1_pskip)/(1.0-s1_pskip);
+  stage_0->set_gain_mean((s1_gain-s1_pskip)/(1.0-s1_pskip));
 #endif
-  m_stages[0].pskip                      = s1_pskip;
-  if(s1_gain_rms_frac>0)
-    {
-      m_stages[0].gain_rms_frac          = s1_gain_rms_frac;
-      m_stages[0].gauss_a                = 1.0/SQR(s1_gain_rms_frac);
-      m_stages[0].gauss_b                = m_stages[0].gauss_a/m_stages[0].gain_mean;
-    }
+  stage_0->set_prob_skip(config.stage_0_prob_skip());
 
-  double s2_mean_n0 = s1_pskip + m_stages[0].gain_mean*(1.0-s1_pskip);
-  double sn_gain = std::pow(total_gain/s2_mean_n0,1.0/double(nstage-1));
-  sn_gain = (sn_gain - sn_pskip)/(1.0 - sn_pskip);
-  for(unsigned istage=1; istage<nstage; istage++)
-    {
-      m_stages[istage].gain_mean         = sn_gain;
-      m_stages[istage].pskip             = sn_pskip;
-      if(sn_gain_rms_frac>0)
-	{
-	  m_stages[istage].gain_rms_frac = sn_gain_rms_frac;
-	  m_stages[istage].gauss_a       = 1.0/SQR(sn_gain_rms_frac);
-	  m_stages[istage].gauss_b       = m_stages[istage].gauss_a/sn_gain;
-	}
-    }
+  if(config.stage_0_gain_rms_frac()>0)
+  {
+    stage_0->set_gain_rms_frac(config.stage_0_gain_rms_frac());
+    gauss_a_.emplace_back(1.0/SQR(stage_0->gain_rms_frac()));
+    gauss_b_.emplace_back(gauss_a_.back()/stage_0->gain_mean());
+  }
 
-  m_total_gain = 1;
-  m_p0         = 0;
-  for(unsigned istage=0; istage<m_stages.size(); istage++)
+  double s2_mean_n0 =
+    stage_0->prob_skip() + stage_0->gain_mean()*(1.0-stage_0->prob_skip());
+  double sn_gain = std::pow(config.total_gain()/s2_mean_n0,
+    1.0/double(config.num_stage()-1));
+  sn_gain = (sn_gain - config.stage_n_prob_skip())/(1.0 - config.stage_n_prob_skip());
+  for(unsigned istage=1; istage<config.num_stage(); istage++)
+  {
+    auto* stage_n = config_.add_stage();
+    stage_n->set_gain_mean(sn_gain);
+    stage_n->set_prob_skip(config.stage_n_prob_skip());
+    if(config.stage_n_gain_rms_frac()>0)
     {
-      m_total_gain *= stageGain(istage);
-
-      // This little mess of code implements the calculation of p0
-      // from Prescott (1965) to account for the suppressed zeros in
-      // the calculation of the total gain
-      const PMTSimStage& stage(m_stages[m_stages.size()-istage-1]);
-      double p0_last = m_p0;
-      double mu      = stage.gain_mean;
-      double b       = SQR(stage.gain_rms_frac);
-      double bmu     = b*mu;
-      double C1      = 1.0 + bmu*(1.0-p0_last);
-      if(b == 0)
-	m_p0 = std::exp(mu*(p0_last-1.0));
-      else
-	m_p0 = pow(C1,-1.0/b);
-      m_p0 = m_p0*(1.0-stage.pskip) + p0_last*stage.pskip;
+      stage_n->set_gain_rms_frac(config.stage_n_gain_rms_frac());
+      gauss_a_.emplace_back(1.0/SQR(stage_n->gain_rms_frac()));
+      gauss_b_.emplace_back(gauss_a_.back()/stage_n->gain_mean());
     }
-  if(m_suppress_zero)
-    m_total_gain /= 1.0-m_p0;
+  }
+
+  total_gain_ = 1;
+  p0_         = 0;
+  for(unsigned istage=0; istage<config_.stage_size(); istage++)
+  {
+    total_gain_ *= stage_gain(istage);
+
+    // This little mess of code implements the calculation of p0
+    // from Prescott (1965) to account for the suppressed zeros in
+    // the calculation of the total gain
+    const auto& stage = config_.stage(config_.stage_size() - istage - 1);
+    double p0_last = p0_;
+    double mu      = stage.gain_mean();
+    double b       = SQR(stage.gain_rms_frac());
+    double bmu     = b*mu;
+    double C1      = 1.0 + bmu*(1.0-p0_last);
+    if(b == 0)
+      p0_ = std::exp(mu*(p0_last-1.0));
+    else
+      p0_ = pow(C1,-1.0/b);
+    p0_ = p0_*(1.0-stage.prob_skip()) + p0_last*stage.prob_skip();
+  }
+  if(config_.suppress_zero())
+    total_gain_ /= 1.0-p0_;
 }
 
-double PMTSimPolya::stageGain(unsigned istage) const
+double PMTSimPolya::stage_gain(unsigned istage) const
 {
-  const PMTSimStage& stage(m_stages[istage]);
-  double mu      = stage.gain_mean;
-  return mu*(1.0-stage.pskip) + stage.pskip;
+  const auto& stage = config_.stage(istage);
+  double mu      = stage.gain_mean();
+  return mu*(1.0-stage.prob_skip()) + stage.prob_skip();
 }
 
 PMTSimPolya::~PMTSimPolya()
 {
-  delete m_my_rng;
+  delete my_rng_;
 }
 
 double PMTSimPolya::rv()
 {
   unsigned n;
- do_over:
+do_over:
   n = 1;
-  for(unsigned istage=0; istage<m_stages.size(); istage++)
-    {
-      const PMTSimStage& stage(m_stages[istage]);
-      unsigned n_in = n;
+  for(unsigned istage=0; istage<config_.stage_size(); istage++)
+  {
+    const auto& stage = config_.stage(istage);
+    unsigned n_in = n;
 
-      if(stage.pskip>0)
-	{
-	  n = m_rng->Binomial(stage.pskip, n_in);
-	  n_in -= n;
-	  if(n_in == 0)continue;
-	}
-      else n = 0;
+    if(stage.prob_skip() > 0)
+  	{
+  	  n = rng_->binomial(stage.prob_skip(), n_in);
+  	  n_in -= n;
+  	  if(n_in == 0)continue;
+  	}
+    else n = 0;
 
-      double nmean = 0;
-      if(stage.gain_rms_frac>0)
-	{
-	  if(n_in > m_napprox_limit)
-	    nmean = m_rng->Gamma(double(n_in)*stage.gauss_a,
-				 stage.gauss_b);
-	  else
-	    for(unsigned in_in = 0; in_in<n_in;in_in++)
-	      nmean += m_rng->Gamma(stage.gauss_a,stage.gauss_b);
-	}
-      else nmean = double(n_in)*stage.gain_mean;
-      n += m_rng->Poisson(nmean);
+    double nmean = 0;
+    if(stage.gain_rms_frac()>0)
+  	{
+  	  if(n_in > napprox_limit_)
+  	    nmean = rng_->gamma_by_alpha_and_beta(double(n_in)*gauss_a_[istage],
+  				 gauss_b_[istage]);
+  	  else
+  	    for(unsigned in_in = 0; in_in<n_in;in_in++)
+  	      nmean +=
+            rng_->gamma_by_alpha_and_beta(gauss_a_[istage],gauss_b_[istage]);
+  	}
+    else nmean = double(n_in)*stage.gain_mean();
+    n += rng_->poisson(nmean);
 
-      if(n==0)
-	{
-	  if(m_suppress_zero)goto do_over;
-	  else return 0.0;
-	}
-    }
-  if(m_signal_in_pe)return double(n)/m_total_gain;
+    if(n==0)
+  	{
+  	  if(config_.suppress_zero())goto do_over;
+  	  else return 0.0;
+  	}
+  }
+  if(config_.signal_in_pe())return double(n)/total_gain_;
   else return double(n);
 }
 
@@ -180,70 +206,78 @@ double PMTSimPolya::rv()
 // faster. Interestingly the FFT was "rediscovered" in ~1965, so
 // Prescott may not have known about it.
 
-void PMTSimPolya::
-pmf(std::vector<double>& pk, double precision) const
+Eigen::VectorXd PMTSimPolya::
+calc_pmf(bool log_progress, double precision) const
 {
-  pk.resize(2);
+  std::vector<double> pk(2);
   pk[0] = 0;
   pk[1] = 1;
-  for(unsigned ik=0;ik<m_stages.size();ik++)
+  for(unsigned ik=0;ik<config_.stage_size();ik++)
+  {
+    const auto& stage(config_.stage(config_.stage_size()-ik-1));
+
+    std::vector<double> pkmo(pk);
+
+    double mu      = stage.gain_mean();
+    double b       = SQR(stage.gain_rms_frac());
+    double bmu     = b*mu;
+    double bmo     = b-1.0;
+    double C1      = 1.0 + bmu*(1.0-pkmo[0]);
+    double pcutoff = 1.0 - precision*((ik==config_.stage_size()-1)?0.1:1.0);
+    double psum;
+
+    pk.resize(1);
+    pk.reserve(pkmo.size()*5*int(ceil(mu)));
+    if(b == 0)
+      pk[0] = std::exp(mu*(pkmo[0]-1.0));
+    else
+      pk[0] = pow(C1,-1.0/b);
+    psum = pk[0];
+
+    if(log_progress)LOG(INFO) << ik << ' ' << psum;
+    for(unsigned ix=1;psum<pcutoff;ix++)
+  	{
+  	  //std::cout << "- " << ix << ' ' << psum << '\n';
+  	  double pkx = 0;
+  	  for(unsigned ii=ix-std::min(ix,unsigned(pkmo.size()-1));ii<ix;ii++)
+  	    {
+  	      //	      std::cout << "-- " <<  ii << '\n';
+  	      //	      if(ix-ii < pkmo.size())
+      		pkx += pk[ii]*pkmo[ix-ii]*(double(ix)+double(ii)*bmo);
+  	    }
+  	  pkx *= mu/double(ix)/C1;
+  	  psum += pkx;
+  	  pk.push_back(pkx);
+  	  if(pkx/psum < 1e-10)break;
+  	}
+
+    if(log_progress)
     {
-      const PMTSimStage& stage(m_stages[m_stages.size()-ik-1]);
-
-      std::vector<double> pkmo(pk);
-
-      double mu      = stage.gain_mean;
-      double b       = SQR(stage.gain_rms_frac);
-      double bmu     = b*mu;
-      double bmo     = b-1.0;
-      double C1      = 1.0 + bmu*(1.0-pkmo[0]);
-      double pcutoff = 1.0 - precision*((ik==m_stages.size()-1)?0.1:1.0);
-      double psum;
-
-      pk.resize(1);
-      pk.reserve(pkmo.size()*5*int(ceil(mu)));
-      if(b == 0)
-	pk[0] = std::exp(mu*(pkmo[0]-1.0));
-      else
-	pk[0] = pow(C1,-1.0/b);
-      psum = pk[0];
-
-      std::cout << ik << ' ' << psum << '\n';
-      for(unsigned ix=1;psum<pcutoff;ix++)
-	{
-	  //std::cout << "- " << ix << ' ' << psum << '\n';
-	  double pkx = 0;
-	  for(unsigned ii=ix-std::min(ix,unsigned(pkmo.size()-1));ii<ix;ii++)
-	    {
-	      //	      std::cout << "-- " <<  ii << '\n';
-	      //	      if(ix-ii < pkmo.size())
-		pkx += pk[ii]*pkmo[ix-ii]*(double(ix)+double(ii)*bmo);
-	    }
-	  pkx *= mu/double(ix)/C1;
-	  psum += pkx;
-	  pk.push_back(pkx);
-	  if(pkx/psum < 1e-10)break;
-	}
-      std::cout << "-- " << psum;
-      for(unsigned ix=0;ix<std::min(m_stages.size()+1,pk.size());ix++)
-	std::cout << ' ' << pk[ix];
-      std::cout << '\n';
-
-      if(stage.pskip>0)
-	{
-	  for(unsigned ix=0;ix<pk.size();ix++)
-	    pk[ix] *= (1.0-stage.pskip)/psum;
-	  for(unsigned ix=0;ix<std::min(pkmo.size(),pk.size());ix++)
-	    pk[ix] += stage.pskip*pkmo[ix];
-	}
-      else
-	{
-	  for(unsigned ix=0;ix<pk.size();ix++)
-	    pk[ix] /= psum;
-	}
+      auto log_info = LOG(INFO);
+      log_info << "-- " << psum;
+      for(unsigned ix=0;ix<std::min(unsigned(config_.stage_size()+1),
+          unsigned(pk.size()));ix++)
+        log_info << ' ' << pk[ix];
     }
+
+    if(stage.prob_skip()>0)
+  	{
+  	  for(unsigned ix=0;ix<pk.size();ix++)
+  	    pk[ix] *= (1.0-stage.prob_skip())/psum;
+  	  for(unsigned ix=0;ix<std::min(pkmo.size(),pk.size());ix++)
+  	    pk[ix] += stage.prob_skip()*pkmo[ix];
+  	}
+    else
+  	{
+  	  for(unsigned ix=0;ix<pk.size();ix++)
+  	    pk[ix] /= psum;
+  	}
+  }
+
+  return std_to_eigenvec(pk);
 }
 
+#if 0
 // =============================================================================
 //
 // PMTSimInvCDF
@@ -401,3 +435,4 @@ void MultiPESpectrum::rvs_ped(std::vector<double>& x, unsigned size)
   else x.resize(size);
   for(unsigned irv=0;irv<size;irv++)x[irv]=rv_ped();
 }
+#endif
