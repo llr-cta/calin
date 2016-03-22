@@ -96,35 +96,39 @@ protected:
   std::vector<std::pair<double,double>>          inv_cdf_;
 };
 
-#if 0
-
 class MultiPESpectrum: public SignalSource
 {
 public:
   MultiPESpectrum(SignalSource* pmt,
-		  double signal_mean, double pedestal_rms,
-		  double signal_rms_frac = 0.0, double pedestal_mean = 0.0,
-		  double quantization = 0.0, RandomNumbers* rng = 0);
+    const calin::ix::simulation::pmt::MultiPESpectrumConfig& config,
+    math::rng::RNG* rng = nullptr);
   virtual ~MultiPESpectrum();
+
   virtual double rv();
-  void rv_xnm(double& x, unsigned& n, double& m);
-  void rvs_xnm(std::vector<double>& x, std::vector<unsigned>& n,
-	       std::vector<double>& m, unsigned size=1);
-  double rv_ped();
-  void rvs_ped(std::vector<double>& x, unsigned size = 1);
-  RandomNumbers* rng() { return m_rng; }
-  void setRNG(RandomNumbers* rng) { delete m_my_rng; m_my_rng=0; m_rng=rng; }
-private:
-  SignalSource*            m_pmt;
-  RandomNumbers*           m_rng;
-  RandomNumbers*           m_my_rng;
-  double                   m_signal_mean;
-  double                   m_signal_rms_frac;
-  double                   m_signal_gamma_a;
-  double                   m_signal_gamma_b;
-  double                   m_pedestal_rms;
-  double                   m_pedestal_mean;
-  double                   m_quantization;
-};
+#ifdef SWIG
+%apply double &OUTPUT { double &x };
+%apply double &OUTPUT { double &m };
+%apply unsigned &OUTPUT { unsigned &n };
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& x };
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& m };
+%apply Eigen::VectorXi &OUTPUT { Eigen::VectorXd& n };
 #endif
+  void rv_xnm(double& x, int& n, double& m);
+  void rvs_xnm(VecRef x, IntVecRef n, VecRef m, unsigned size=1);
+
+  double rv_ped();
+  Eigen::VectorXd rvs_ped(unsigned size = 1);
+
+  math::rng::RNG* rng() { return rng_; }
+  void set_rng(math::rng::RNG* rng) { delete my_rng_; my_rng_=0; rng_=rng; }
+
+private:
+  SignalSource*                                     pmt_;
+  math::rng::RNG*                                   rng_;
+  math::rng::RNG*                                   my_rng_;
+  calin::ix::simulation::pmt::MultiPESpectrumConfig config_;
+  double                                            signal_gamma_a_;
+  double                                            signal_gamma_b_;
+};
+
 } } } // namespace calin::simulation::pmt

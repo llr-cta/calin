@@ -81,3 +81,17 @@ message PMTSimPMF  {
   bool signal_in_pe                                        = 3 [
     (CFO).desc = "Rescale output into PE by dividing by mean gain." ];
 };
+
+message MultiPESpectrumConfig {
+  double signal_mean                                       = 1 [
+    (CFO).desc = "Mean signal intensity.", (CFO).units = "PE" ];
+  double signal_rms_frac                                   = 2 [
+    (CFO).desc = "Non-Poisson RMS component as a fraction of "
+      "the signal mean." ];
+  double pedestal_mean                                     = 3 [
+    (CFO).desc = "Mean pedestal.", (CFO).units = "DC" ];
+  double pedestal_rms                                      = 4 [
+    (CFO).desc = "Pedestal RMS.", (CFO).units = "DC" ];
+  double quantization                                      = 5 [
+    (CFO).desc = "Quantization of the digtizer.", (CFO).units = "PE/DC" ];
+};

@@ -45,9 +45,9 @@ SignalSource::~SignalSource()
 
 Eigen::VectorXd SignalSource::rvs(unsigned size)
 {
-  Eigen::VectorXd n(size);
-  for(unsigned irv=0;irv<size;irv++)n[irv] = rv();
-  return n;
+  Eigen::VectorXd x(size);
+  for(unsigned irv=0;irv<size;irv++)x[irv] = rv();
+  return x;
 }
 
 calin::ix::simulation::pmt::PMTSimAbbreviatedConfig PMTSimPolya::cta_model_1()
@@ -372,7 +372,6 @@ save_inv_cdf_to_file(const std::string& filename,
       << std::to_string(inv_cdf_[iy].second) <<  '\n';
 }
 
-#if 0
 // =============================================================================
 //
 // MultiPESpectrum
@@ -381,55 +380,48 @@ save_inv_cdf_to_file(const std::string& filename,
 
 MultiPESpectrum::
 MultiPESpectrum(SignalSource* pmt,
-		double signal_mean, double pedestal_rms,
-		double signal_rms_frac,  double pedestal_mean,
-		double quantization, RandomNumbers* rng):
-  SignalSource(),  m_pmt(pmt), m_rng(rng), m_my_rng(0),
-  m_signal_mean(signal_mean), m_signal_rms_frac(signal_rms_frac),
-  m_signal_gamma_a(), m_signal_gamma_b(),
-  m_pedestal_rms(pedestal_rms), m_pedestal_mean(pedestal_mean),
-  m_quantization(quantization)
+    const calin::ix::simulation::pmt::MultiPESpectrumConfig& config,
+    math::rng::RNG* rng):
+  SignalSource(),  pmt_(pmt), rng_(rng), my_rng_(0),
+  signal_gamma_a_(), signal_gamma_b_()
 {
-  if(rng==0)
-    m_rng = m_my_rng = new RandomNumbers(RandomNumbers::defaultFilename());
-  if(signal_rms_frac>0)
+  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG();
+  if(config_.signal_rms_frac()>0)
     {
-      m_signal_gamma_a = 1.0/SQR(signal_rms_frac);
-      m_signal_gamma_b = m_signal_gamma_a/signal_mean;
+      signal_gamma_a_ = 1.0/SQR(config_.signal_rms_frac());
+      signal_gamma_b_ = signal_gamma_a_/config_.signal_mean();
     }
 }
 
 MultiPESpectrum::~MultiPESpectrum()
 {
-  delete m_my_rng;
+  delete my_rng_;
 }
 
 double MultiPESpectrum::rv()
 {
   double x;
   double npe_mean;
-  unsigned npe;
+  int npe;
   rv_xnm(x,npe,npe_mean);
   return x;
 }
 
-void MultiPESpectrum::rv_xnm(double& x, unsigned& n, double& m)
+void MultiPESpectrum::rv_xnm(double& x, int& n, double& m)
 {
-  x = m_rng->Normal()*m_pedestal_rms + m_pedestal_mean;
-  if(m_signal_rms_frac>0)
-    m = m_rng->Gamma(m_signal_gamma_a,m_signal_gamma_b);
+  x = rng_->normal()*config_.pedestal_rms() + config_.pedestal_mean();
+  if(config_.signal_rms_frac()>0)
+    m = rng_->gamma_by_alpha_and_beta(signal_gamma_a_,signal_gamma_b_);
   else
-    m = m_signal_mean;
-  n = m_rng->Poisson(m);
-  for(unsigned ipe=0;ipe<n;ipe++)x += m_pmt->rv();
+    m = config_.signal_mean();
+  n = rng_->poisson(m);
+  for(unsigned ipe=0;ipe<n;ipe++)x += pmt_->rv();
 }
 
 void MultiPESpectrum::
-rvs_xnm(std::vector<double>& x, std::vector<unsigned>& n,
-	std::vector<double>& m, unsigned size)
+rvs_xnm(VecRef x, IntVecRef n, VecRef m, unsigned size)
 {
-  if(size==0)size = x.size();
-  else x.resize(size);
+  x.resize(size);
   n.resize(size);
   m.resize(size);
   for(unsigned irv=0;irv<size;irv++)rv_xnm(x[irv],n[irv],m[irv]);
@@ -437,13 +429,12 @@ rvs_xnm(std::vector<double>& x, std::vector<unsigned>& n,
 
 double MultiPESpectrum::rv_ped()
 {
-  return m_rng->Normal()*m_pedestal_rms + m_pedestal_mean;
+  return rng_->normal()*config_.pedestal_rms() + config_.pedestal_mean();
 }
 
-void MultiPESpectrum::rvs_ped(std::vector<double>& x, unsigned size)
+Eigen::VectorXd MultiPESpectrum::rvs_ped(unsigned size)
 {
-  if(size==0)size = x.size();
-  else x.resize(size);
+  Eigen::VectorXd x(size);
   for(unsigned irv=0;irv<size;irv++)x[irv]=rv_ped();
+  return x;
 }
-#endif
