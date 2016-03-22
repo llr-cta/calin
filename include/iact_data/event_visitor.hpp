@@ -37,6 +37,8 @@ public:
   virtual ~TelescopeEventVisitor();
 
   virtual bool demand_waveforms();
+  virtual bool is_parallelizable();
+  virtual TelescopeEventVisitor* new_sub_visitor();
 
   virtual bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::
@@ -50,6 +52,8 @@ public:
   virtual bool visit_waveform(unsigned ichan,
     calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
     calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain);
+
+  virtual bool merge_results();
 };
 
 } } } // namespace calin::iact_data::event_visitor

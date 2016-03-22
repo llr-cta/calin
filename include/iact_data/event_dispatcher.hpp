@@ -37,24 +37,45 @@ class TelescopeEventDispatcher
 public:
   TelescopeEventDispatcher();
   ~TelescopeEventDispatcher();
+
   void add_visitor(
     calin::iact_data::event_visitor::TelescopeEventVisitor* visitor,
     bool adopt_visitor = false);
-  void accept(
+
+  void process_run(calin::iact_data::telescope_data_source::
+    TelescopeRandomAccessDataSourceWithRunConfig* src,
+    unsigned log_frequency = 0, int nthread = 0);
+
+  // These functions allow events to be passed on to the visitors - they
+  // are not meant to be called directly as the visiors expect them to be
+  // called in a specific order. They are liable to be made private.
+  void accept_run_configuration(calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration* run_config);
+  void accept_event(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
   void accept_all_from_src(
     calin::io::data_source::DataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
-    unsigned log_frequency = 0, bool use_buffered_reader = true);
-  void accept_from_src(
+    unsigned log_frequency = 0, bool use_buffered_reader = true,
+    calin::io::data_source::DataSink<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>* sink = nullptr);
+  void leave_run();
+  void merge_results();
+
+private:
+  void do_accept_from_src(
     calin::io::data_source::DataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
-    unsigned log_frequency = 0, unsigned num_event_max = 0);
-private:
+    unsigned log_frequency,
+    calin::io::data_source::DataSink<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>* sink);
+
   std::vector<calin::iact_data::event_visitor::TelescopeEventVisitor*>
     adopted_visitors_;
   std::vector<calin::iact_data::event_visitor::TelescopeEventVisitor*>
     visitors_;
+  std::vector<calin::iact_data::event_visitor::TelescopeEventVisitor*>
+    wf_visitors_;
 };
 
 } } } // namespace calin::iact_data::event_dispatcher

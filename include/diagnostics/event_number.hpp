@@ -34,6 +34,8 @@ public:
   SequentialEventNumberGlitchDetector(bool test_local_event_number = false);
   virtual ~SequentialEventNumberGlitchDetector();
 
+  bool demand_waveforms() override;
+
   bool visit_telescope_event(
     calin:: ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
@@ -54,6 +56,12 @@ class CountersEventNumberGlitchDetector:
 public:
   CountersEventNumberGlitchDetector(int counter_index = 0);
   virtual ~CountersEventNumberGlitchDetector();
+
+  bool demand_waveforms() override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config) override;
 
   bool visit_telescope_event(
     calin:: ix::iact_data::telescope_event::TelescopeEvent* event) override;

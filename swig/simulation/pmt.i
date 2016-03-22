@@ -1,10 +1,10 @@
 /*
 
-   calin/iact_data/event_dispatcher.i -- Stephen Fegan -- 2016-02-10
+   calin/simulation/pmt.i -- Stephen Fegan -- 2016-03-21
 
-   SWIG interface file for calin event dispatcher and visitor
+   SWIG interface file for PMT simulation
 
-   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
@@ -20,12 +20,10 @@
 
 */
 
-%module (package="calin.iact_data", threads="1") event_dispatcher
-%nothread;
+%module (package="calin.simulation") pmt
 
 %{
-#include "iact_data/event_visitor.hpp"
-#include "iact_data/event_dispatcher.hpp"
+#include "simulation/pmt.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -34,13 +32,10 @@
 %}
 
 //%include "numpy.i"
-//%include "stdint.i"
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%newobject new_sub_visitor();
-%include "iact_data/event_visitor.hpp"
+%import "math/rng.i"
+%import "simulation/pmt.pb.i"
 
-%thread; // Release Pyhjon GIL for all functions here (since some use threads)
-%include "iact_data/event_dispatcher.hpp"
-%nothread;
+%include "simulation/pmt.hpp"

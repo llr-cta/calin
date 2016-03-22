@@ -78,9 +78,10 @@ public:
   MultiThreadDataSourceBuffer(const MultiThreadDataSourceBuffer&) = delete;
   MultiThreadDataSourceBuffer& operator=(const MultiThreadDataSourceBuffer&) = delete;
 
-  MultiThreadDataSourceBuffer(DataSource<T>* source, bool adopt_source = false):
+  MultiThreadDataSourceBuffer(DataSource<T>* source, unsigned buffer_size = 100,
+      bool adopt_source = false):
     source_(source), adopt_source_(adopt_source),
-    zmq_(new zmq_inproc::ZMQInprocPushPull),
+    zmq_(new zmq_inproc::ZMQInprocPushPull(buffer_size)),
     reader_thread_(
       new std::thread(&MultiThreadDataSourceBuffer::reader_loop, this))
   {
@@ -99,7 +100,7 @@ public:
     if(adopt_source_)delete source_;
   }
 
-  BufferedDataSource<T>* new_data_source(unsigned buffer_size) {
+  BufferedDataSource<T>* new_data_source() {
     return new BufferedDataSource<T>(zmq_->new_puller()); }
 
   void stop_buffering() { stop_buffering_ = true; }

@@ -13,11 +13,12 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_PROTO vs_optics.proto)
+set(CALIN_SWIG_PROTO vs_optics.proto pmt.proto)
 set(CALIN_PACKAGE simulation)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 
 make_proto_modules(${CALIN_TARGET_LIBRARY}
 	${CALIN_PROTO_INSTALL_DIR}/${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})
+target_link_libraries(${CALIN_TARGET_LIBRARY} calin_proto_math)
 make_proto_swig_modules(${CALIN_TARGET_LIBRARY}
 		${CALIN_SWIG_INSTALL_DIR}/${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})

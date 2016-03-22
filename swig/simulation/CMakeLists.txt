@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_FILES atmosphere.i vs_optics.i)
+set(CALIN_SWIG_FILES atmosphere.i vs_optics.i pmt.i)
 set(CALIN_SWIG_TARGET simulation)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

@@ -203,8 +203,8 @@ TEST(TestBufferedIntegerDataSource, Sequential) {
   // Test that data packets all arrive in correct order
   unsigned N = 1000;
   UnitTestIntegerDataSource src(N,0);
-  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src);
-  auto* bsrc = buffer.new_data_source(N/10);
+  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src, N/10);
+  auto* bsrc = buffer.new_data_source();
 
   for(unsigned i=0;i<N;i++)
   {
@@ -222,8 +222,8 @@ TEST(TestBufferedIntegerDataSource, SequentialWithStop) {
   // Test that no data packets are lost when stop is called
   unsigned N = 1000;
   UnitTestIntegerDataSource src(N,0);
-  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src);
-  auto* bsrc = buffer.new_data_source(10);
+  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src,10);
+  auto* bsrc = buffer.new_data_source();
 
   unsigned i=0;
   for(i=0;i<N/2;i++)
@@ -252,14 +252,14 @@ TEST(TestBufferedIntegerDataSource, MultiThreaded) {
   unsigned N = 10000;
   unsigned delay = 100;
   UnitTestIntegerDataSource src(N,0);
-  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src);
+  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src,10);
 
   std::vector<unsigned> ids(N);
   std::vector<std::thread> threads;
 
   for(unsigned ithread=0;ithread<10;ithread++)
     threads.emplace_back([&buffer,&ids,ithread,delay](){
-      auto* bsrc = buffer.new_data_source(10);
+      auto* bsrc = buffer.new_data_source();
       int last_index = -1;
       while(auto* m = bsrc->get_next())
       {
@@ -281,14 +281,14 @@ TEST(TestBufferedIntegerDataSource, MultiThreadedWithStop) {
   unsigned N = 10000;
   unsigned delay = 100;
   UnitTestIntegerDataSource src(N,0);
-  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src);
+  MultiThreadDataSourceBuffer<UnitTestSimpleSubMessage> buffer(&src,10);
 
   std::vector<unsigned> ids(N);
   std::vector<std::thread> threads;
 
   for(unsigned ithread=0;ithread<10;ithread++)
     threads.emplace_back([&buffer,&ids,ithread,delay](){
-      auto* bsrc = buffer.new_data_source(10);
+      auto* bsrc = buffer.new_data_source();
       int last_index = -1;
       while(auto* m = bsrc->get_next())
       {

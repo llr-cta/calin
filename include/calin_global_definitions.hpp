@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/calin_global_definitions.hpp -- Stephen Fegan -- 2015-04-16
 
@@ -35,17 +35,15 @@ namespace calin {
 
 //#define CALIN_USE_EIGEN_REF
 
-#ifdef CALIN_USE_EIGEN_REF
-CALIN_TYPEALIAS(VecRef, Eigen::Ref<Eigen::VectorXd>);
-CALIN_TYPEALIAS(ConstVecRef, const Eigen::Ref<const Eigen::VectorXd>&);
-CALIN_TYPEALIAS(MatRef, Eigen::Ref<Eigen::MatrixXd>);
-CALIN_TYPEALIAS(ConstMatRef, const Eigen::Ref<const Eigen::MatrixXd>&);
-#else
 CALIN_TYPEALIAS(VecRef, Eigen::VectorXd&);
 CALIN_TYPEALIAS(MatRef, Eigen::MatrixXd&);
 CALIN_TYPEALIAS(ConstVecRef, const Eigen::VectorXd&);
 CALIN_TYPEALIAS(ConstMatRef, const Eigen::MatrixXd&);
-#endif
+
+CALIN_TYPEALIAS(IntVecRef, Eigen::VectorXi&);
+CALIN_TYPEALIAS(IntMatRef, Eigen::MatrixXi&);
+CALIN_TYPEALIAS(ConstIntVecRef, const Eigen::VectorXi&);
+CALIN_TYPEALIAS(ConstIntMatRef, const Eigen::MatrixXi&);
 
 inline std::vector<double> eigen_to_stdvec(const Eigen::VectorXd& x)
 {
@@ -55,6 +53,16 @@ inline std::vector<double> eigen_to_stdvec(const Eigen::VectorXd& x)
 inline Eigen::VectorXd std_to_eigenvec(const std::vector<double> &x)
 {
   return Eigen::Map<const Eigen::VectorXd>(&x.front(), x.size());
+}
+
+inline std::vector<int> eigen_to_stdvec(const Eigen::VectorXi& x)
+{
+  return std::vector<int>(x.data(), x.data()+x.size());
+}
+
+inline Eigen::VectorXi std_to_eigenvec(const std::vector<int> &x)
+{
+  return Eigen::Map<const Eigen::VectorXi>(&x.front(), x.size());
 }
 
 }; // namespace calin

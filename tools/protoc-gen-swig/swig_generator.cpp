@@ -155,6 +155,13 @@ string ALLCAPSCASE(const string& s)
   return t;
 }
 
+string allsmallcase(const string& s)
+{
+  string t;
+  for(auto c : s)t += std::tolower(c);
+  return t;
+}
+
 void print_enum(Printer* I, const google::protobuf::EnumDescriptor* e)
 {
   std::map<string, string> vars;
@@ -310,7 +317,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
 
     std::map<string, string> vars;
     vars["id"]          = std::to_string(f->index());
-    vars["name"]        = f->name();
+    vars["name"]        = allsmallcase(f->name());
     vars["type"]        = field_type(f, d);
     vars["type_in"]     = field_type_const_in(f, d);
     vars["class_name"]  = the_class_name;

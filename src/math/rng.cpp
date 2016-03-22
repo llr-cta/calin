@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/rng.cpp -- Stephen Fegan -- 2015-11-19
 
@@ -9,11 +9,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -150,29 +150,29 @@ uint32_t RNG::uint32_from_random_device()
 double RNG::normal()
 {
   if(bm_hascached_)
-    {
-      bm_hascached_ = false;
-      return bm_cachedval_;
-    }
+  {
+    bm_hascached_ = false;
+    return bm_cachedval_;
+  }
   else
-    {
-      double v1;
-      double v2;
-      double rsq;
-      do 
-	{
-	  v1 = 2.0*uniform() - 1.0; 
-	  v2 = 2.0*uniform() - 1.0;
-	  rsq = v1*v1 + v2*v2;
-	}while(rsq >= 1.0 || rsq == 0.0);
-      const double fac = sqrt(-2.0*log(rsq)/rsq);
-      bm_cachedval_ = v1*fac;
-      bm_hascached_ = true;
-      return v2*fac;
-    }
+  {
+    double v1;
+    double v2;
+    double rsq;
+    do
+  	{
+  	  v1 = 2.0*uniform() - 1.0;
+  	  v2 = 2.0*uniform() - 1.0;
+  	  rsq = v1*v1 + v2*v2;
+  	}while(rsq >= 1.0 || rsq == 0.0);
+    const double fac = sqrt(-2.0*log(rsq)/rsq);
+    bm_cachedval_ = v1*fac;
+    bm_hascached_ = true;
+    return v2*fac;
+  }
 }
 
-/** 
+/**
  *  Returns a deviate distributed as a gamma distribution, i.e., a
  *  waiting time to the i'th event in a Poisson process of unit mean.
  *  pdf=beta^alpha * x^(alpha-1) * exp(-beta x) / Gamma(alpha)
@@ -188,23 +188,23 @@ double RNG::gamma_by_alpha_and_beta(double alpha, double beta)
   double v;
   double x,x2,x4;
   do
-    {
-      do
-	{
-	  x = normal();
-	  v = 1.0 + a2*x;
-	}while(v<=0.0);
-      v = v*v*v;
-      u = uniform();
-      x2 = x*x;
-      x4 = x2*x2;
-    }while((u>1.0-0.331*x4)&&(std::log(u)>0.5*x2+a1*(1.0-v+std::log(v))));
+  {
+    do
+  	{
+  	  x = normal();
+  	  v = 1.0 + a2*x;
+  	}while(v<=0.0);
+    v = v*v*v;
+    u = uniform();
+    x2 = x*x;
+    x4 = x2*x2;
+  }while((u>1.0-0.331*x4)&&(std::log(u)>0.5*x2+a1*(1.0-v+std::log(v))));
   if(alpha == oalpha)return a1*v/beta;
   else
-    {
-      do u=uniform(); while(u==0);
-      return std::pow(u,1.0/oalpha)*a1*v/beta;
-    }
+  {
+    do u=uniform(); while(u==0);
+    return std::pow(u,1.0/oalpha)*a1*v/beta;
+  }
 }
 
 namespace {
@@ -225,45 +225,45 @@ double lfactorial(unsigned ix)
 
 } // anonymous namespace
 
-/** 
+/**
  *  Returns random deviate drawn from a Poisson distribution of mean
  *  lambda, using CORE as a source of uniform random deviates.
  */
 int RNG::poisson(double lambda)
 {
   if(lambda<5.0)
-    {
-      if(lambda != poi_lambdaold_)
-	{
-	  poi_lambdaexp_ = std::exp(-lambda);
-	  poi_lambdaold_ = lambda;
-	}
-      int k = 0;
+  {
+    if(lambda != poi_lambdaold_)
+  	{
+  	  poi_lambdaexp_ = std::exp(-lambda);
+  	  poi_lambdaold_ = lambda;
+  	}
+    int k = 0;
 #if 1
-      double t = uniform();
-      while(t>poi_lambdaexp_) { ++k; t*=uniform(); }
+    double t = uniform();
+    while(t>poi_lambdaexp_) { ++k; t*=uniform(); }
 #else
-      uint64_t ilexp = 18446744073709551616.0*poi_lambdaexp_;
-      uint64_t t = uniform_uint64();
-      while(t>ilexp) { ++k; t=(t>>32)*(uniform_uint64()>>32); }
+    uint64_t ilexp = 18446744073709551616.0*poi_lambdaexp_;
+    uint64_t t = uniform_uint64();
+    while(t>ilexp) { ++k; t=(t>>32)*(uniform_uint64()>>32); }
 #endif
-      return k;
-    }
+    return k;
+  }
   else
-    {
-      int k;
-      if(lambda != poi_lambdaold_)
-	{
-	  poi_lambdasrt_ = std::sqrt(lambda);
-	  poi_lambdalog_ = std::log(lambda);
-	  poi_lambdaold_ = lambda;
-	}
-      while(1)
-	{
-	  double u = 0.64*uniform();
-	  double v = -0.68 + 1.28*uniform();
-	  double u2;
-	  if(lambda>13.5)
+  {
+    int k;
+    if(lambda != poi_lambdaold_)
+  	{
+  	  poi_lambdasrt_ = std::sqrt(lambda);
+  	  poi_lambdalog_ = std::log(lambda);
+  	  poi_lambdaold_ = lambda;
+  	}
+    while(1)
+  	{
+  	  double u = 0.64*uniform();
+  	  double v = -0.68 + 1.28*uniform();
+  	  double u2;
+  	  if(lambda>13.5)
 	    {
 	      double v2 = v*v;
 	      if(v >= 0) { if(v2 > 6.5*u*(0.64-u)*(u+0.2))continue; }
@@ -276,28 +276,28 @@ int RNG::poisson(double lambda)
 	      if(v >= 0){ if(v2 < 15.2*u2*(0.61-u)*(0.8-u))break; }
 	      else { if(v2 < 6.76*u2*(0.62-u)*(1.4-u))break; }
 	    }
-	  else
+  	  else
 	    {
 	      k = int(std::floor(poi_lambdasrt_*(v/u)+lambda+0.5));
 	      if(k<0)continue;
 	      u2 = u*u;
 	    }
 
-	  double lfact = lfactorial(k);
-	  double p =
-              poi_lambdasrt_*std::exp(-lambda + k*poi_lambdalog_ - lfact);
-	  if(u2 < p)break;
-	}
-      return k;
-    }
+  	  double lfact = lfactorial(k);
+  	  double p =
+        poi_lambdasrt_*std::exp(-lambda + k*poi_lambdalog_ - lfact);
+  	  if(u2 < p)break;
+  	}
+    return k;
+  }
   assert(0);
   return 0;
 }
 
-/** 
- *  Returns an integer value that is a random deviate drawn from a 
+/**
+ *  Returns an integer value that is a random deviate drawn from a
  *  binomial distribution of n trials each of probability pp, using
- *  CORE as a source of uniform random deviates. 
+ *  CORE as a source of uniform random deviates.
  */
 
 int RNG::binomial(double pp, int n)
@@ -308,60 +308,136 @@ int RNG::binomial(double pp, int n)
   const double am = n*p;
 
   if(n < 25)               /* Use direct method */
-    {
-      int ibnl=0;
-      for(int i=0;i<n;i++)if(uniform()<p)++ibnl;
-      bnl = double(ibnl);
-    } 
+  {
+    int ibnl=0;
+    for(int i=0;i<n;i++)if(uniform()<p)++ibnl;
+    bnl = double(ibnl);
+  }
   else if(am < 1.0)
-    {
-      double g = std::exp(-am);
-      double t = 1.0;
-      int j;
-      for(j=0;j<=n;j++) { t *= uniform(); if(t<g)break; }
-      bnl = (j<=n?j:n);
-    } 
+  {
+    double g = std::exp(-am);
+    double t = 1.0;
+    int j;
+    for(j=0;j<=n;j++) { t *= uniform(); if(t<g)break; }
+    bnl = (j<=n?j:n);
+  }
   else                       /* Use rejection method */
-    {                     
-      if(n != bin_nold_)
-	{
-	  bin_en_    = n;
-	  bin_oldg_  = lfactorial(n);
-	  bin_nold_  = n;
-	}
+  {
+    if(n != bin_nold_)
+  	{
+  	  bin_en_    = n;
+  	  bin_oldg_  = lfactorial(n);
+  	  bin_nold_  = n;
+  	}
 
-      if (p != bin_pold_)
-	{ 
-	  bin_pc_    = 1.0-p;
-	  bin_plog_  = std::log(p);
-	  bin_pclog_ = std::log(bin_pc_);
-	  bin_pold_  = p;
-	}
+    if (p != bin_pold_)
+  	{
+  	  bin_pc_    = 1.0-p;
+  	  bin_plog_  = std::log(p);
+  	  bin_pclog_ = std::log(bin_pc_);
+  	  bin_pold_  = p;
+  	}
 
-      double sq=std::sqrt(2.0*am*bin_pc_);
-      double t;
-      double em;
-      do 
-	{
-	  double y;
-	  do 
+    double sq=std::sqrt(2.0*am*bin_pc_);
+    double t;
+    double em;
+    do
+  	{
+  	  double y;
+  	  do
 	    {
 	      double angle = M_PI*uniform();
 	      y  = std::tan(angle);
 	      em = sq*y+am;
 	    }while(em<0.0 || em>=(bin_en_+1));
-	  em = std::floor(em);
-	  t = 1.2*sq*(1.0+y*y)*std::exp(bin_oldg_
-                                        - lfactorial(unsigned(em))
-                                        - lfactorial(unsigned(bin_en_-em))
-                                        + em*bin_plog_
-                                        + (bin_en_-em)*bin_pclog_);
-	}while(uniform()>t);
-      bnl = em;
-    }
+  	  em = std::floor(em);
+  	  t = 1.2*sq*(1.0+y*y)*std::exp(bin_oldg_
+                                    - lfactorial(unsigned(em))
+                                    - lfactorial(unsigned(bin_en_-em))
+                                    + em*bin_plog_
+                                    + (bin_en_-em)*bin_pclog_);
+  	}while(uniform()>t);
+    bnl = em;
+  }
   if (p != pp)bnl=n-bnl;
   return int(bnl);
 }
+
+namespace {
+
+/**
+ *  Performs a linear interpolation at the coordinate x using two
+ *  points along a vector of pairs.
+ */
+inline double interpolate(double x,
+  const std::vector<std::pair<double,double>>::const_iterator& itr)
+{
+  return (itr-1)->second +
+    (x-(itr-1)->first)*((itr)->second-(itr-1)->second)/
+    ((itr)->first-(itr-1)->first);
+}
+
+} // anonympus namespace
+
+/**
+ *  Returns a continuous random deviate drawn from the inverse CDF
+ *  provided in the argument.  Note that this function assumes that
+ *  the inverse CDF has equidistant steps in cumulative probability.
+ */
+double RNG::inverse_cdf(const std::vector<std::pair<double,double>> &inv_cdf)
+{
+  double x = uniform();
+  unsigned i = (unsigned)ceil(x*(double)(inv_cdf.size()-1));
+  return interpolate(x,inv_cdf.begin()+i);
+}
+
+/**
+ *  Overwrites the CDF provided in the argument with its inverse.  The
+ *  second argument specifies the number of equidistant bins in
+ *  cumulative probability that will be generated. The first entry
+ *  should be zero, and the last should be one.
+ */
+void RNG::generate_inverse_cdf(std::vector<std::pair<double,double>> &cdf,
+  unsigned nbins)
+{
+  if(nbins == 0)
+    nbins = cdf.size();
+
+  for(auto itr = cdf.begin(); itr != cdf.end(); ++itr)
+    *itr = std::make_pair(itr->second,itr->first);
+
+  std::remove_reference<decltype(cdf)>::type inv_cdf;
+  auto itr = cdf.cbegin()+1;
+
+  for(unsigned i = 0; i < nbins; i++)
+  {
+    double x;
+
+    if(i==0)
+      x = 0.0;
+    else if(i == nbins-1)
+      x = 1.0;
+    else
+      x = (double)i/(double)(nbins-1);
+
+    while(x > itr->first && itr+1 != cdf.end())
+      itr++;
+
+    inv_cdf.emplace_back(x,interpolate(x,itr));
+  }
+
+  cdf = inv_cdf;
+}
+
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// CORES
+//
+// *****************************************************************************
+// *****************************************************************************
+
 
 NR3RNGCore::
 NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto, bool restore_state):
@@ -417,7 +493,7 @@ void Ranlux48RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
   auto* data = proto->mutable_ranlux48_core();
   data->set_seed(gen_seed_);
   data->set_calls(gen_calls_);
-  data->set_state_saved(true);  
+  data->set_state_saved(true);
   std::ostringstream state;
   state << gen_;
   data->set_state(state.str());
@@ -428,7 +504,7 @@ void Ranlux48RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
 MT19937RNGCore::
 MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto,
                bool restore_state):
-    RNGCore(), gen_seed_(proto.seed()), gen_(gen_seed_)
+  RNGCore(), gen_seed_(proto.seed()), gen_(gen_seed_)
 {
   if(restore_state and proto.state_saved())
   {
@@ -442,7 +518,7 @@ MT19937RNGCore::~MT19937RNGCore()
 {
   // nothing to see here
 }
-  
+
 void MT19937RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
 {
   auto* data = proto->mutable_mt19937_core();
@@ -451,7 +527,7 @@ void MT19937RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
   data->set_state_saved(true);
   std::ostringstream state;
   state << gen_;
-  data->set_state(state.str());  
+  data->set_state(state.str());
 }
 
 #if 0
@@ -474,7 +550,7 @@ void MT19937RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
 
 namespace RNGCore
 {
- 
+
   /**
    *  Generator from NR3 which is recommended for everyday use. Faster than
    *  NR3Ran with period of 1.8E19.
@@ -486,8 +562,8 @@ namespace RNGCore
     typedef EmptyOptions Options;
     static Options defaultOptions() { return Options(); }
 
-    NR3Ranq1(uint64_t seed, const Options& opt = Options()): 
-      m_v(UINT64_C(4101842887655102017)) 
+    NR3Ranq1(uint64_t seed, const Options& opt = Options()):
+      m_v(UINT64_C(4101842887655102017))
     {
       m_v ^= seed;
       m_v = UInt64();
@@ -502,7 +578,7 @@ namespace RNGCore
       m_v ^= m_v>>4;
       return m_v*UINT64_C(2685821657736338717);
     }
-    
+
     uint32_t UInt32() { return uint32_t(UInt64()); }
     double Double() { return 5.42101086242752217E-20 * double(UInt64()); }
 
@@ -544,7 +620,7 @@ namespace RNGCore
       m_w = 4294957665U*(m_w & 0xFFFFFFFF) + (m_w >> 32);
       return m_v^m_w;
     }
-    
+
     uint32_t UInt32() { return uint32_t(UInt64()); }
     double Double() { return 5.42101086242752217E-20 * double(UInt64()); }
 
@@ -555,7 +631,7 @@ namespace RNGCore
       stream << m_v << '\n' << m_w << '\n';
     }
 
-    bool loadCoreState(std::istream& stream) 
+    bool loadCoreState(std::istream& stream)
     {
       return stream >> m_v >> m_w;
     }
@@ -587,8 +663,8 @@ namespace RNGCore
 
     void Burn() { Double(); }
 
-    double Double() 
-    { 
+    double Double()
+    {
       if(++m_inext==55)m_inext=0;
       if(++m_inextp==55)m_inextp=0;
       m_dd = m_dtab[m_inext]-m_dtab[m_inextp];
@@ -604,7 +680,7 @@ namespace RNGCore
       stream << m_dd << '\n' << m_inext << '\n' << m_inextp << '\n';
     }
 
-    bool loadCoreState(std::istream& stream) 
+    bool loadCoreState(std::istream& stream)
     {
       double dtab[55];
       double dd;
@@ -646,11 +722,11 @@ namespace RNGCore
 
     void saveCoreState(std::ostream& stream) const;
     bool loadCoreState(std::istream& stream);
-      
+
   private:
     double ran2();
     void ran2_init(int32_t);
-    
+
     static const unsigned RANDOMNUMBERS_NTAB = 32;
 
     static const int32_t RAN2_A1=40014;
@@ -678,17 +754,6 @@ namespace RNGCore
 // ============================================================================
 // ============================================================================
 
-/**
- *  Performs a linear interpolation at the coordinate x using two
- *  points along a vector of pairs.
- */ 
-inline double RandomNumbersBase::
-interpolate(double x, const std::vector<Pair>::const_iterator& itr)
-{
-  return (itr-1)->second + 
-    (x-(itr-1)->first)*((itr)->second-(itr-1)->second)/
-    ((itr)->first-(itr-1)->first);
-}
 
 // ============================================================================
 // ============================================================================
@@ -697,58 +762,5 @@ interpolate(double x, const std::vector<Pair>::const_iterator& itr)
 //
 // ============================================================================
 // ============================================================================
-
-
-/**
- *  Returns a continuous random deviate drawn from the inverse CDF
- *  provided in the argument.  Note that this function assumes that
- *  the inverse CDF has equidistant steps in cumulative probability.
- */
-template<typename CORE> inline double RandomNumbers_TNG<CORE>::
-InverseCDF(const std::vector<Pair> &inv_cdf)
-{
-  double x = CORE::Double();
-  unsigned i = (unsigned)ceil(x*(double)(inv_cdf.size()-1));
-  return interpolate(x,inv_cdf.begin()+i);
-}
-
-/**
- *  Overwrites the CDF provided in the argument with its inverse.  The
- *  second argument specifies the number of equidistant bins in
- *  cumulative probability that will be generated. The first entry
- *  should be zero, and the last should be one.
- */
-template<typename CORE> void RandomNumbers_TNG<CORE>::
-GenerateInverseCDF(std::vector<Pair> &cdf, unsigned nbins)
-{
-  if(nbins == 0)
-    nbins = cdf.size();
-
-  for(std::vector<Pair>::iterator itr = cdf.begin();
-      itr != cdf.end(); ++itr)
-    *itr = std::make_pair(itr->second,itr->first);
-
-  std::vector<Pair> inv_cdf;
-  std::vector<Pair>::const_iterator itr = cdf.begin()+1;
-
-  for(unsigned i = 0; i < nbins; i++) 
-    {
-      double x;
-
-      if(i==0)
-	x = 0.0;
-      else if(i == nbins-1)
-	x = 1.0;
-      else
-	x = (double)i/(double)(nbins-1);
-
-      while(x > itr->first && itr+1 != cdf.end())
-	itr++;
-
-      inv_cdf.push_back(Pair(x,interpolate(x,itr)));
-    }
-
-  cdf = inv_cdf;
-}
 
 #endif

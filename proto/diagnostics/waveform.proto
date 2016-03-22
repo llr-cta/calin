@@ -28,6 +28,28 @@ import "math/histogram.proto";
 
 package calin.ix.diagnostics.waveform;
 
+message WaveformRawStats {
+  uint32 channel_id                                        = 1 [
+    (CFO).desc = "Channel id." ];
+  uint32 num_entries                                       = 2 [
+    (CFO).desc = "Number of waveforms accumulated in the stats." ];
+  repeated int64 sum                                       = 11 [
+    (CFO).desc = "Sum over all events of each waveform sample." ];
+  repeated int64 sum_squared                               = 12 [
+    (CFO).desc = "Sum over all events of each waveform sample squared." ];
+  repeated int64 sum_product                               = 13 [
+    (CFO).desc = "Sum over all events of each waveform sample by all others. "
+      "This corresponds to the off-diagnonal elements of the covariance "
+      "matrix." ];
+};
+
+message CameraWaveformRawStats {
+  repeated WaveformRawStats high_gain                      = 1 [
+    (CFO).desc = "Raw waveform stats for all high gain channels." ];
+  repeated WaveformRawStats low_gain                       = 2 [
+    (CFO).desc = "Raw waveform stats for all low gain channels." ];
+};
+
 message WaveformMean {
   uint32 num_entries                                       = 1 [
     (CFO).desc = "Number of waveforms accumulated in the stats." ];

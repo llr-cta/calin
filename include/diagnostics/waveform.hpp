@@ -22,14 +22,27 @@
 
 #pragma once
 
+#include <iact_data/event_visitor.hpp>
+#include <diagnostics/waveform.pb.h>
+
 namespace calin { namespace diagnostics { namespace waveform {
 
-class WaveformStatsVisitor
+class WaveformStatsVisitor:
+  public iact_data::event_visitor::TelescopeEventVisitor
 {
 public:
-  WaveformStatsVisitor();
-  
+  WaveformStatsVisitor(bool calculate_covariance = true);
+
   virtual ~WaveformStatsVisitor();
+
+  bool demand_waveforms() override;
+  bool is_parallelizable() override;
+  WaveformStatsVisitor* new_sub_visitor() override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config) override;
+  bool leave_telescope_run() override;
 
   bool visit_telescope_event(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
@@ -37,6 +50,15 @@ public:
   bool visit_waveform(unsigned ichan,
     calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
     calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain) override;
+
+  bool merge_results() override;
+
+protected:
+  WaveformStatsVisitor* parent_ = nullptr;
+  calin::ix::diagnostics::waveform::CameraWaveformRawStats results_;
+  const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
+    run_config_ = nullptr;
+  bool calculate_covariance_ = false;
 };
 
 } } } // namespace calin::diagnostics::waveform_diagnostics

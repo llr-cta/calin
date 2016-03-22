@@ -20,6 +20,8 @@
 
 */
 
+#include <stdexcept>
+
 #include <iact_data/event_visitor.hpp>
 
 using namespace calin::iact_data::event_visitor;
@@ -34,6 +36,18 @@ TelescopeEventVisitor::~TelescopeEventVisitor()
 bool TelescopeEventVisitor::demand_waveforms()
 {
   return true;
+}
+
+bool TelescopeEventVisitor::is_parallelizable()
+{
+  return false;
+}
+
+TelescopeEventVisitor* TelescopeEventVisitor::new_sub_visitor()
+{
+  throw std::runtime_error("TelescopeEventVisitor: parallel sub workers not "
+    "implemented.");
+  return nullptr;
 }
 
 bool TelescopeEventVisitor::
@@ -59,6 +73,11 @@ bool TelescopeEventVisitor::leave_telescope_event()
 
 bool TelescopeEventVisitor::visit_waveform(unsigned ichan,
     ChannelWaveform* high_gain, ChannelWaveform* low_gain)
+{
+  return true;
+}
+
+bool TelescopeEventVisitor::merge_results()
 {
   return true;
 }
