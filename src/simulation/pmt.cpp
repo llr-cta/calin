@@ -23,6 +23,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cassert>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <cctype>
+
 #include <calin_global_definitions.hpp>
 #include <simulation/pmt.hpp>
 #include <math/special.hpp>
@@ -203,8 +208,8 @@ do_over:
 // faster. Interestingly the FFT was "rediscovered" in ~1965, so
 // Prescott may not have known about it.
 
-Eigen::VectorXd PMTSimPolya::
-calc_pmf(double precision, bool log_progress) const
+calin::ix::simulation::pmt::PMTSimPMF
+PMTSimPolya::calc_pmf(double precision, bool log_progress) const
 {
   std::vector<double> pk(2);
   pk[0] = 0;
@@ -231,7 +236,6 @@ calc_pmf(double precision, bool log_progress) const
       pk[0] = pow(C1,-1.0/b);
     psum = pk[0];
 
-    if(log_progress)LOG(INFO) << ik << ' ' << psum;
     for(unsigned ix=1;psum<pcutoff;ix++)
   	{
   	  //std::cout << "- " << ix << ' ' << psum << '\n';
@@ -248,15 +252,6 @@ calc_pmf(double precision, bool log_progress) const
   	  if(pkx/psum < 1e-10)break;
   	}
 
-    if(log_progress)
-    {
-      auto log_info = LOG(INFO);
-      log_info << "-- " << psum;
-      for(unsigned ix=0;ix<std::min(unsigned(config_.stage_size()+1),
-          unsigned(pk.size()));ix++)
-        log_info << ' ' << pk[ix];
-    }
-
     if(stage.prob_skip()>0)
   	{
   	  for(unsigned ix=0;ix<pk.size();ix++)
@@ -269,96 +264,115 @@ calc_pmf(double precision, bool log_progress) const
   	  for(unsigned ix=0;ix<pk.size();ix++)
   	    pk[ix] /= psum;
   	}
+
+    if(log_progress)
+    {
+      double pn = 0;
+      double pnn = 0;
+      unsigned ix0 = config_.suppress_zero() ? 1 : 0;
+      double psum0 = config_.suppress_zero() ? (psum-pk[0]) : psum;
+      for(unsigned ix=ix0;ix<pk.size();ix++)
+        pn += double(ix)*pk[ix], pnn += SQR(double(ix))*pk[ix];
+      LOG(INFO) << "Stage " << config_.stage_size()-ik << ", p0=" << pk[0]
+        << ", <x>=" << pn/psum0
+        << " res(x)=" << sqrt(pnn*psum0/SQR(pn)-1);
+    }
+
   }
 
-  return std_to_eigenvec(pk);
+  calin::ix::simulation::pmt::PMTSimPMF OUTPUT;
+  OUTPUT.set_suppress_zero(config_.suppress_zero());
+  OUTPUT.set_signal_in_pe(config_.signal_in_pe());
+  OUTPUT.mutable_pn()->Resize(pk.size(),0);
+  std::copy(pk.begin(), pk.end(), OUTPUT.mutable_pn()->begin());
+  return OUTPUT;
 }
 
-#if 0
 // =============================================================================
 //
 // PMTSimInvCDF
 //
 // =============================================================================
 
-PMTSimInvCDF::PMTSimInvCDF(RandomNumbers* rng):
-  SignalSource(), m_rng(rng), m_my_rng(0)
+PMTSimInvCDF::PMTSimInvCDF(const calin::ix::simulation::pmt::PMTSimPMF& cmf,
+    unsigned npoint, math::rng::RNG* rng):
+  SignalSource(), rng_(rng), my_rng_(nullptr)
 {
-  if(rng==0)
-    m_rng = m_my_rng = new RandomNumbers(RandomNumbers::defaultFilename());
-}
+  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG();
 
-PMTSimInvCDF::~PMTSimInvCDF()
-{
-  delete m_my_rng;
-}
-
-double PMTSimInvCDF::rv()
-{
-  return m_rng->InverseCDF(m_inv_cdf);
-}
-
-void PMTSimInvCDF::
-setInvCDFFromPMTPMF(const std::vector<double>& y, double gain,
-		    bool suppress_zero, unsigned npoint)
-{
-  double iy0 = 0;
-  if(suppress_zero)iy0 = 1;
-  m_inv_cdf.resize(y.size() + 1 - iy0);
+  int iy0 = 0;
+  if(cmf.suppress_zero())iy0 = 1;
+  inv_cdf_.resize(cmf.pn_size() + 1 - iy0);
   double ysum = 0;
-  for(unsigned iy=iy0;iy<y.size();iy++)ysum += y[iy];
+  double ynsum = 0;
+  for(int iy=iy0;iy<cmf.pn_size();iy++)
+    ysum += cmf.pn(iy), ynsum += double(iy)*cmf.pn(iy);
+  double gain = cmf.signal_in_pe() ? (ysum/ynsum) : 1.0;
   double ycumsum = 0;
-  m_inv_cdf[0] = std::make_pair<double,double>((double(iy0)-0.5)/gain,0.0);
-  for(unsigned iy=iy0;iy<y.size();iy++)
-    {
-      ycumsum += y[iy];
-      m_inv_cdf[iy + 1 - iy0] =
-	std::make_pair<double,double>((double(iy)+0.5)/gain,ycumsum/ysum);
-    }
+  inv_cdf_[0] = std::make_pair<double,double>((double(iy0)-0.5)*gain,0.0);
+  for(int iy=iy0;iy<cmf.pn_size();iy++)
+  {
+    ycumsum += cmf.pn(iy);
+    inv_cdf_[iy + 1 - iy0] =
+      std::make_pair<double,double>((double(iy)+0.5)*gain,ycumsum/ysum);
+  }
 #if 0
   for(unsigned iy=0;iy<10;iy++)
     std::cout << m_inv_cdf[iy].first << ' ' << m_inv_cdf[iy].second << '\n';
 #endif
-  m_rng->GenerateInverseCDF(m_inv_cdf, npoint);
+  rng_->generate_inverse_cdf(inv_cdf_, npoint);
 }
 
-void PMTSimInvCDF::
-setInvCDFFromFile(const std::string& filename)
+PMTSimInvCDF::PMTSimInvCDF(const std::string& filename, math::rng::RNG* rng):
+  SignalSource(), rng_(rng), my_rng_(nullptr)
 {
+  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG();
   std::ifstream s(filename.c_str());
-  if(!s)throw std::string("PMTSimInvCDF::setInvCDFFromFile: Could not open file: ")+filename;
-  m_inv_cdf.clear();
+  if(!s)throw std::runtime_error(
+    std::string("PMTSimInvCDF: Could not open file: ")+filename);
   std::string line;
   std::getline(s,line);
   while(s)
-    {
-      unsigned ic=0;
-      while(ic<line.size() && isspace(line[ic]))ic++;
-      if(ic==line.size())goto next_line;
-      if(line[ic] == '#')goto next_line;
-      double x,y;
-      if(std::istringstream(line) >> x >> y)
-	m_inv_cdf.push_back(std::make_pair<double,double>(x,y));
-    next_line:
-      std::getline(s,line);
-    }
+  {
+    unsigned ic=0;
+    while(ic<line.size() && isspace(line[ic]))ic++;
+    if(ic==line.size())goto next_line;
+    if(line[ic] == '#')goto next_line;
+    double x,y;
+    if(std::istringstream(line) >> x >> y)
+    inv_cdf_.emplace_back(x,y);
+  next_line:
+    std::getline(s,line);
+  }
+}
+
+PMTSimInvCDF::~PMTSimInvCDF()
+{
+  delete my_rng_;
+}
+
+double PMTSimInvCDF::rv()
+{
+  return rng_->inverse_cdf(inv_cdf_);
 }
 
 void PMTSimInvCDF::
-saveInvCDFToFile(const std::string& filename,
-		 const std::string& comment) const
+save_inv_cdf_to_file(const std::string& filename,
+  const std::string& comment) const
 {
   std::ofstream s(filename.c_str());
-  if(!s)throw std::string("PMTSimInvCDF::saveInvCDFToFile: Could not open file: ")+filename;
+  if(!s)throw std::runtime_error(
+    std::string("PMTSimInvCDF: Could not open file: ")+filename);
   time_t rawtime;
   time (&rawtime);
   s << "# Inverse CDF written " << ctime(&rawtime);
   if(!comment.empty())s << "# " << comment << '\n';
-  for(unsigned iy=0;iy<m_inv_cdf.size();iy++)
-    s << VERITAS::VSDataConverter::toString(m_inv_cdf[iy].first) << ' '
-      << VERITAS::VSDataConverter::toString(m_inv_cdf[iy].second) <<  '\n';
+  for(unsigned iy=0;iy<inv_cdf_.size();iy++)
+    s << std::to_string(inv_cdf_[iy].first) << ' '
+      << std::to_string(inv_cdf_[iy].second) <<  '\n';
 }
 
+#if 0
 // =============================================================================
 //
 // MultiPESpectrum

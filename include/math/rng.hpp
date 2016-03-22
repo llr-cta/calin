@@ -42,7 +42,9 @@
 #include <cstdint>
 #include <cmath>
 #include <random>
+#include <utility>
 
+#include <calin_global_definitions.hpp>
 #include <math/rng.pb.h>
 
 namespace calin { namespace math { namespace rng {
@@ -138,10 +140,9 @@ public:
   static uint32_t nonzero_uint32_from_random_device() { uint32_t x;
     do x = uint32_from_random_device(); while(x==0U); return x; }
 
-#if 0
-  inline double inverse_cdf(const std::vector< Pair > &inv_cdf);
-  static void generate_inverse_cdf(std::vector< Pair > &cdf, unsigned nbins=0);
-#endif
+  double inverse_cdf(const std::vector<std::pair<double,double>> &inv_cdf);
+  static void generate_inverse_cdf(std::vector<std::pair<double,double>> &cdf,
+    unsigned nbins=0);
 
 private:
   RNGCore* core_;

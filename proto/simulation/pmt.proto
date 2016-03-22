@@ -55,20 +55,29 @@ message PMTSimAbbreviatedConfig {
     (CFO).desc = "Number of gain stages (dynodes)." ];
   double total_gain                                        = 2 [
     (CFO).desc = "Total gain of the PMT, including zero-charge events." ];
-  double stage_0_gain                                       = 3 [
+  double stage_0_gain                                      = 3 [
     (CFO).desc = "Mean gain of first stage." ];
-  double stage_0_gain_rms_frac                              = 4 [
+  double stage_0_gain_rms_frac                             = 4 [
     (CFO).desc = "Additional non-Poisson RMS of first stage as "
       "fraction of mean." ];
-  double stage_0_prob_skip                                  = 5 [
+  double stage_0_prob_skip                                 = 5 [
     (CFO).desc = "Probability of skipping first stage." ];
-  double stage_n_gain_rms_frac                              = 6 [
+  double stage_n_gain_rms_frac                             = 6 [
     (CFO).desc = "Additional non-Poisson RMS of latter stages (n>0) as "
       "fraction of mean." ];
-  double stage_n_prob_skip                                  = 7 [
+  double stage_n_prob_skip                                 = 7 [
     (CFO).desc = "Probability of skipping latter stages (n>0)." ];
   bool suppress_zero                                       = 8 [
     (CFO).desc = "Suppress events with zero charge." ];
   bool signal_in_pe                                        = 9 [
+    (CFO).desc = "Rescale output into PE by dividing by mean gain." ];
+};
+
+message PMTSimPMF  {
+  repeated double pn                                       = 1 [
+    (CFO).desc = "Probability mass function in electrons." ];
+  bool suppress_zero                                       = 2 [
+    (CFO).desc = "Suppress events with zero charge." ];
+  bool signal_in_pe                                        = 3 [
     (CFO).desc = "Rescale output into PE by dividing by mean gain." ];
 };

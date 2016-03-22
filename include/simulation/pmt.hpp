@@ -49,7 +49,7 @@ public:
   //virtual void rvs(std::vector<double>& n, unsigned size = 1);
 
   // Slow function to calculate PMF using Prescott (1965).
-  Eigen::VectorXd calc_pmf(double precision = 0.0001,
+  calin::ix::simulation::pmt::PMTSimPMF calc_pmf(double precision = 0.0001,
     bool log_progress = false) const;
 
   double stage_gain(unsigned istage) const;
@@ -63,7 +63,7 @@ public:
   static calin::ix::simulation::pmt::PMTSimAbbreviatedConfig cta_model_2();
   static calin::ix::simulation::pmt::PMTSimAbbreviatedConfig cta_model_3();
 
-private:
+protected:
   calin::ix::simulation::pmt::PMTSimConfig       config_;
   std::vector<double>                            gauss_a_;
   std::vector<double>                            gauss_b_;
@@ -74,25 +74,29 @@ private:
   double                                         total_gain_;
 };
 
-#if 0
 class PMTSimInvCDF: public SignalSource
 {
 public:
-  PMTSimInvCDF(RandomNumbers* rng = 0);
+  PMTSimInvCDF(const calin::ix::simulation::pmt::PMTSimPMF& cmf,
+    unsigned npoint = 0, math::rng::RNG* rng = nullptr);
+  PMTSimInvCDF(const std::string& filename, math::rng::RNG* rng = nullptr);
+
   virtual ~PMTSimInvCDF();
   virtual double rv();
-  void setInvCDFFromPMTPMF(const std::vector<double>& y, double gain = 1.0,
-			   bool suppress_zero = true, unsigned npoint = 0);
-  void setInvCDFFromFile(const std::string& filename);
-  void saveInvCDFToFile(const std::string& filename,
+
+  void save_inv_cdf_to_file(const std::string& filename,
 			const std::string& comment = "") const;
-  RandomNumbers* rng() { return m_rng; }
-  void setRNG(RandomNumbers* rng) { delete m_my_rng; m_my_rng=0; m_rng=rng; }
-private:
-  RandomNumbers*           m_rng;
-  RandomNumbers*           m_my_rng;
-  std::vector<std::pair<double,double> > m_inv_cdf;
+
+  math::rng::RNG* rng() { return rng_; }
+  void set_rng(math::rng::RNG* rng) { delete my_rng_; my_rng_=0; rng_=rng; }
+
+protected:
+  math::rng::RNG*                                rng_;
+  math::rng::RNG*                                my_rng_;
+  std::vector<std::pair<double,double>>          inv_cdf_;
 };
+
+#if 0
 
 class MultiPESpectrum: public SignalSource
 {
