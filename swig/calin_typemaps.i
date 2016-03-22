@@ -622,7 +622,7 @@ Eigen::VectorXd
 {
   // typemap(in) const Eigen::VectorXi& -- calin_typemaps.i
   $1 = &temp;
-  if(!calin_python_to_eigen_vec($input, $1))SWIG_fail;
+  if(!calin_python_to_eigen_int_vec($input, $1))SWIG_fail;
 }
 
 
@@ -645,7 +645,7 @@ Eigen::VectorXd
 {
   // typemap(in) Eigen::VectorXi& -- calin_typemaps.i
   $1 = &temp;
-  if(!calin_python_to_eigen_vec($input, $1))SWIG_fail;
+  if(!calin_python_to_eigen_int_vec($input, $1))SWIG_fail;
 }
 
 %typemap(argout, fragment="Calin_EigenIntVec_to_Python") Eigen::VectorXi&

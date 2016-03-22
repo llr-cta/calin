@@ -127,8 +127,8 @@ private:
   math::rng::RNG*                                   rng_;
   math::rng::RNG*                                   my_rng_;
   calin::ix::simulation::pmt::MultiPESpectrumConfig config_;
-  double                                            signal_gamma_a_;
-  double                                            signal_gamma_b_;
+  double                                            signal_gamma_a_ = 0;
+  double                                            signal_gamma_b_ = 0;
 };
 
 } } } // namespace calin::simulation::pmt

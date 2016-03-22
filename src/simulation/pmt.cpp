@@ -382,7 +382,7 @@ MultiPESpectrum::
 MultiPESpectrum(SignalSource* pmt,
     const calin::ix::simulation::pmt::MultiPESpectrumConfig& config,
     math::rng::RNG* rng):
-  SignalSource(),  pmt_(pmt), rng_(rng), my_rng_(0),
+  SignalSource(),  pmt_(pmt), rng_(rng), my_rng_(0), config_(config),
   signal_gamma_a_(), signal_gamma_b_()
 {
   if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG();
