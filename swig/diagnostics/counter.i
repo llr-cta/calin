@@ -37,5 +37,5 @@
 %import "calin_global_definitions.i"
 
 %import "iact_data/event_dispatcher.i"
-%include "diagnostics/counter.pb.i"
+%import "diagnostics/counter.pb.i"
 %include "diagnostics/counter.hpp"

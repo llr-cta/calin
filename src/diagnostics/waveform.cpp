@@ -61,7 +61,7 @@ bool WaveformStatsVisitor::visit_telescope_run(
   run_config_ = run_config;
   results_.Clear();
   unsigned N = run_config->num_samples();
-  for(int ichan = 0; ichan < run_config->configured_channel_id_size(); ichan++)
+  for(int ichan = 0; ichan<run_config->configured_channel_id_size(); ichan++)
   {
     auto* hg_wf = results_.add_high_gain();
     hg_wf->mutable_sum()->Resize(N,0);
@@ -87,16 +87,81 @@ bool WaveformStatsVisitor::visit_telescope_event(
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   // nothing to see here
+  return true;
 }
 
 bool WaveformStatsVisitor::visit_waveform(unsigned ichan,
   calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
   calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
 {
+  const int index = run_config_->configured_channel_index(ichan);
+  if(high_gain)
+    process_one_waveform(high_gain, results_.mutable_high_gain(index));
+  if(low_gain)
+    process_one_waveform(low_gain, results_.mutable_low_gain(index));
+  return true;
+}
 
+void WaveformStatsVisitor::
+process_one_waveform(
+  const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
+  ix::diagnostics::waveform::WaveformRawStats* stat)
+{
+  const unsigned nsample = run_config_->num_samples();
+  assert(wf->samples_size() == int(nsample));
+  const uint32_t* sample = wf->samples().data();
+  stat->set_num_entries(stat->num_entries()+1);
+  uint64_t* sum = stat->mutable_sum()->mutable_data();
+  for(unsigned isample=0; isample<nsample; isample++)
+    sum[isample] += sample[isample];
+  uint64_t* sum_squared = stat->mutable_sum_squared()->mutable_data();
+  for(unsigned isample=0; isample<nsample; isample++)
+    sum_squared[isample] += sample[isample] * sample[isample];
+  if(calculate_covariance_)
+  {
+    uint64_t* sum_product = stat->mutable_sum_product()->mutable_data();
+    const uint32_t* sample_j = sample;
+    unsigned msample = nsample;
+    for(unsigned isample=0; isample<nsample; isample++)
+    {
+      uint32_t sample_i = *sample_j;
+      ++sample_j;
+      --msample;
+      for(unsigned jsample=0; jsample<msample; jsample++)
+        sum_product[jsample] += sample_i * sample_j[jsample];
+      sum_product += msample;
+    }
+  }
 }
 
 bool WaveformStatsVisitor::merge_results()
 {
+  if(parent_)
+  {
+    assert(results_.high_gain_size() == parent_->results_.high_gain_size());
+    assert(results_.low_gain_size() == parent_->results_.low_gain_size());
+    for(int ichan=0; ichan<results_.high_gain_size(); ichan++)
+      merge_one_gain(&results_.high_gain(ichan),
+        parent_->results_.mutable_high_gain(ichan));
+    for(int ichan=0; ichan<results_.low_gain_size(); ichan++)
+      merge_one_gain(&results_.low_gain(ichan),
+        parent_->results_.mutable_low_gain(ichan));
+  }
+  return true;
+}
 
+void WaveformStatsVisitor::merge_one_gain(
+  const ix::diagnostics::waveform::WaveformRawStats* from,
+  ix::diagnostics::waveform::WaveformRawStats* to)
+{
+  assert(to->sum_size() == from->sum_size());
+  assert(to->sum_squared_size() == from->sum_squared_size());
+  assert(to->sum_product_size() == from->sum_product_size());
+  to->set_num_entries(to->num_entries() + from->num_entries());
+  for(int i=0; i<from->sum_size(); i++)
+    to->set_sum(i,to->sum(i) + from->sum(i));
+  for(int i=0; i<from->sum_squared_size(); i++)
+    to->set_sum_squared(i,to->sum_squared(i) + from->sum_squared(i));
+  for(int i=0; i<from->sum_product_size(); i++)
+    to->set_sum_product(i,to->sum_product(i) + from->sum_product(i));
 }
