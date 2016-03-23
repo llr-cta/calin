@@ -109,18 +109,18 @@ process_one_waveform(
 {
   const unsigned nsample = run_config_->num_samples();
   assert(wf->samples_size() == int(nsample));
-  const uint32_t* sample = wf->samples().data();
+  const auto* sample = wf->samples().data();
   stat->set_num_entries(stat->num_entries()+1);
-  uint64_t* sum = stat->mutable_sum()->mutable_data();
+  auto* sum = stat->mutable_sum()->mutable_data();
   for(unsigned isample=0; isample<nsample; isample++)
     sum[isample] += sample[isample];
-  uint64_t* sum_squared = stat->mutable_sum_squared()->mutable_data();
+  auto* sum_squared = stat->mutable_sum_squared()->mutable_data();
   for(unsigned isample=0; isample<nsample; isample++)
     sum_squared[isample] += sample[isample] * sample[isample];
   if(calculate_covariance_)
   {
-    uint64_t* sum_product = stat->mutable_sum_product()->mutable_data();
-    const uint32_t* sample_j = sample;
+    auto* sum_product = stat->mutable_sum_product()->mutable_data();
+    const auto* sample_j = sample;
     unsigned msample = nsample;
     for(unsigned isample=0; isample<nsample; isample++)
     {
