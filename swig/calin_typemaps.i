@@ -511,7 +511,8 @@ Eigen::VectorXd
           fragment="NumPy_Macros",
           fragment="NumPy_Utilities")
 {
-  static bool calin_python_to_eigen_int_vec(PyObject* input, Eigen::VectorXi* vec)
+  static bool calin_python_to_eigen_int_vec(PyObject* input,
+    Eigen::VectorXi* vec)
   {
     const int typecode = NPY_INT;
 
@@ -537,7 +538,8 @@ Eigen::VectorXd
       return false;
     }
 
-    if(_swig_numpy_array_numdims(in_array)==0 or _swig_numpy_array_size(in_array, 0)==0)
+    if(_swig_numpy_array_numdims(in_array)==0 or
+       _swig_numpy_array_size(in_array, 0)==0)
     {
       *vec = Eigen::VectorXi();
       return true;
@@ -570,7 +572,7 @@ Eigen::VectorXd
           fragment="NumPy_Utilities")
 {
   static bool calin_eigen_int_vec_to_python(Eigen::VectorXi* vec,
-                                        PyObject* output)
+    PyObject* output)
   {
     const int typecode = NPY_INT;
 
@@ -672,7 +674,7 @@ Eigen::VectorXd
 {
   // typemap(argout) Eigen::VectorXi &OUTPUT -- calin_typemaps.i
   npy_intp size[1] { $1->size() };
-  PyObject* temp_array = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
+  PyObject* temp_array = PyArray_EMPTY(1, size, NPY_INT, 0);
   if(!temp_array)SWIG_fail;
   if(!calin_eigen_int_vec_to_python($1, temp_array))
   {
@@ -688,13 +690,12 @@ Eigen::VectorXd
 {
   // typemap(out) Eigen::VectorXi -- calin_typemaps.i
   npy_intp size[1] { $1.size() };
-  $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
+  $result = PyArray_EMPTY(1, size, NPY_INT, 0);
   if(!$result)SWIG_fail;
   if(!calin_eigen_int_vec_to_python(&$1, $result))SWIG_fail;
 }
 
-%typemap(typecheck, precedence=5000)
-Eigen::VectorXi
+%typemap(typecheck, precedence=5000) Eigen::VectorXi
 {
   // typemap(typecheck) Eigen::VectorXi -- calin_typemaps.i
   $1 = _swig_numpy_is_array($input) ? 1 : 0;

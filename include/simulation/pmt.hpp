@@ -105,14 +105,6 @@ public:
   virtual ~MultiPESpectrum();
 
   virtual double rv();
-#ifdef SWIG
-%apply double &OUTPUT { double &x };
-%apply double &OUTPUT { double &m };
-%apply unsigned &OUTPUT { unsigned &n };
-%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& x };
-%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& m };
-%apply Eigen::VectorXi &OUTPUT { Eigen::VectorXd& n };
-#endif
   void rv_xnm(double& x, int& n, double& m);
   void rvs_xnm(VecRef x, IntVecRef n, VecRef m, unsigned size=1);
 
