@@ -146,27 +146,30 @@ ZFitsDataSourceOpener::ZFitsDataSourceOpener(std::string filename,
     throw(std::runtime_error("File not found: "+ filename));
   }
 
-  std::string extension = config_.extension();
-  if(filename.size() > extension.size() and
-    filename.rfind(extension) == filename.size()-extension.size())
+  if(!exact_filename_only)
   {
-    filename = filename.substr(0, filename.size()-extension.size());
-  }
-  else if(is_file(filename+extension))
-  {
-    filenames_.emplace_back(filename+extension);
-  }
+    std::string extension = config_.extension();
+    if(filename.size() > extension.size() and
+      filename.rfind(extension) == filename.size()-extension.size())
+    {
+      filename = filename.substr(0, filename.size()-extension.size());
+    }
+    else if(is_file(filename+extension))
+    {
+      filenames_.emplace_back(filename+extension);
+    }
 
-  for(unsigned i=1; true; ++i)
-  {
-    std::string filename_i { filename+"."+std::to_string(i)+extension };
-    if(not is_file(filename_i))break;
-    filenames_.emplace_back(filename_i);
-  }
+    for(unsigned i=1; true; ++i)
+    {
+      std::string filename_i { filename+"."+std::to_string(i)+extension };
+      if(not is_file(filename_i))break;
+      filenames_.emplace_back(filename_i);
+    }
 
-  if(filenames_.empty())
-    throw(std::runtime_error("File not found: "+ filename+extension
-      + " and " + filename+".1"+extension));
+    if(filenames_.empty())
+      throw(std::runtime_error("File not found: "+ filename+extension
+        + " and " + filename+".1"+extension));
+  }
 }
 
 ZFitsDataSourceOpener::~ZFitsDataSourceOpener()
