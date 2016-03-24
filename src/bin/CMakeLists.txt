@@ -14,10 +14,10 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 add_executable(do_spe_fit do_spe_fit)
-target_link_libraries(do_spe_fit calin_calib calin_math calin_proto calin_nlopt ${EXTRA_LIBS})
+target_link_libraries(do_spe_fit calin_calib calin_math calin_proto calin_nlopt)
 
 add_executable(do_spe_expgauss_fit do_spe_expgauss_fit)
-target_link_libraries(do_spe_expgauss_fit calin_calib calin_math calin_proto calin_nlopt ${EXTRA_LIBS})
+target_link_libraries(do_spe_expgauss_fit calin_calib calin_math calin_proto calin_nlopt)
 
 install(TARGETS do_spe_fit do_spe_expgauss_fit DESTINATION bin)
 
