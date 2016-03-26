@@ -38,4 +38,18 @@
 %import "math/rng.i"
 %import "simulation/pmt.pb.i"
 
+%apply double &OUTPUT { double& x };
+%apply double &OUTPUT { double& m };
+%apply int &OUTPUT { int& n };
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& x };
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& m };
+%apply Eigen::VectorXi &OUTPUT { Eigen::VectorXi& n };
+
 %include "simulation/pmt.hpp"
+
+%clear double& x;
+%clear double& m;
+%clear int& n;
+%clear Eigen::VectorXd& x;
+%clear Eigen::VectorXd& m;
+%clear Eigen::VectorXi& n;

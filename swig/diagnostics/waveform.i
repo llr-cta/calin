@@ -1,8 +1,8 @@
 /*
 
-   calin/diagnostics/module.i -- Stephen Fegan -- 2016-03-04
+   calin/diagnostics/waveform.i -- Stephen Fegan -- 2016-03-23
 
-   SWIG interface file for calin module diagnostics
+   SWIG interface file for calin waveform diagnostics
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -20,10 +20,10 @@
 
 */
 
-%module (package="calin.diagnostics") module
+%module (package="calin.diagnostics") waveform
 
 %{
-#include "diagnostics/module.hpp"
+#include "diagnostics/waveform.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -37,5 +37,5 @@
 %import "calin_global_definitions.i"
 
 %import "iact_data/event_dispatcher.i"
-%import "diagnostics/module.pb.i"
-%include "diagnostics/module.hpp"
+%import "diagnostics/waveform.pb.i"
+%include "diagnostics/waveform.hpp"

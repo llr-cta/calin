@@ -53,7 +53,20 @@ public:
 
   bool merge_results() override;
 
+  calin::ix::diagnostics::waveform::CameraWaveformRawStats results()
+  {
+    return results_;
+  }
+  
 protected:
+  void process_one_waveform(
+    const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
+    ix::diagnostics::waveform::WaveformRawStats* stat);
+
+  void merge_one_gain(
+    const ix::diagnostics::waveform::WaveformRawStats* from,
+    ix::diagnostics::waveform::WaveformRawStats* to);
+
   WaveformStatsVisitor* parent_ = nullptr;
   calin::ix::diagnostics::waveform::CameraWaveformRawStats results_;
   const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
