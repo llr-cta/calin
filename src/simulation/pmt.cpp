@@ -124,7 +124,7 @@ PMTSimPolya(const calin::ix::simulation::pmt::PMTSimAbbreviatedConfig& config,
 
   total_gain_ = 1;
   p0_         = 0;
-  for(unsigned istage=0; istage<config_.stage_size(); istage++)
+  for(int istage=0; istage<config_.stage_size(); istage++)
   {
     total_gain_ *= stage_gain(istage);
 
@@ -164,7 +164,7 @@ double PMTSimPolya::rv()
   unsigned n;
 do_over:
   n = 1;
-  for(unsigned istage=0; istage<config_.stage_size(); istage++)
+  for(int istage=0; istage<config_.stage_size(); istage++)
   {
     const auto& stage = config_.stage(istage);
     unsigned n_in = n;
@@ -214,7 +214,7 @@ PMTSimPolya::calc_pmf(double precision, bool log_progress) const
   std::vector<double> pk(2);
   pk[0] = 0;
   pk[1] = 1;
-  for(unsigned ik=0;ik<config_.stage_size();ik++)
+  for(int ik=0;ik<config_.stage_size();ik++)
   {
     const auto& stage(config_.stage(config_.stage_size()-ik-1));
 
@@ -415,7 +415,7 @@ void MultiPESpectrum::rv_xnm(double& x, int& n, double& m)
   else
     m = config_.signal_mean();
   n = rng_->poisson(m);
-  for(unsigned ipe=0;ipe<n;ipe++)x += pmt_->rv();
+  for(int ipe=0;ipe<n;ipe++)x += pmt_->rv();
 }
 
 void MultiPESpectrum::

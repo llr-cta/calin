@@ -33,11 +33,24 @@ message WaveformRawStats {
     (CFO).desc = "Channel id." ];
   uint32 num_entries                                       = 2 [
     (CFO).desc = "Number of waveforms accumulated in the stats." ];
-  repeated uint64 sum                                       = 11 [
+  repeated uint64 sum                                      = 11 [
     (CFO).desc = "Sum over all events of each waveform sample." ];
-  repeated uint64 sum_squared                               = 12 [
+  repeated uint64 sum_squared                              = 12 [
     (CFO).desc = "Sum over all events of each waveform sample squared." ];
-  repeated uint64 sum_product                               = 13 [
+  repeated uint64 sum_product                              = 13 [
+    (CFO).desc = "Sum over all events of each waveform sample by all others. "
+      "This corresponds to the off-diagnonal elements of the covariance "
+      "matrix." ];
+};
+
+message PartialWaveformRawStats {
+  uint32 num_entries                                       = 2 [
+    (CFO).desc = "Number of waveforms accumulated in the stats." ];
+  repeated uint32 sum                                      = 11 [
+    (CFO).desc = "Sum over all events of each waveform sample." ];
+  repeated uint32 sum_squared                              = 12 [
+    (CFO).desc = "Sum over all events of each waveform sample squared." ];
+  repeated uint32 sum_product                              = 13 [
     (CFO).desc = "Sum over all events of each waveform sample by all others. "
       "This corresponds to the off-diagnonal elements of the covariance "
       "matrix." ];
@@ -47,6 +60,13 @@ message CameraWaveformRawStats {
   repeated WaveformRawStats high_gain                      = 1 [
     (CFO).desc = "Raw waveform stats for all high gain channels." ];
   repeated WaveformRawStats low_gain                       = 2 [
+    (CFO).desc = "Raw waveform stats for all low gain channels." ];
+};
+
+message PartialCameraWaveformRawStats {
+  repeated PartialWaveformRawStats high_gain               = 1 [
+    (CFO).desc = "Raw waveform stats for all high gain channels." ];
+  repeated PartialWaveformRawStats low_gain                = 2 [
     (CFO).desc = "Raw waveform stats for all low gain channels." ];
 };
 

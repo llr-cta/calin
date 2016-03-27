@@ -1,4 +1,4 @@
-/*
+  /*
 
    calin/diagnostics/waveform.hpp -- Stephen Fegan -- 2016-02-10
 
@@ -57,18 +57,32 @@ public:
   {
     return results_;
   }
-  
+
+  static Eigen::VectorXd waveform_mean(
+    const ix::diagnostics::waveform::WaveformRawStats* stat);
+  static Eigen::VectorXd waveform_var(
+    const ix::diagnostics::waveform::WaveformRawStats* stat);
+  static Eigen::MatrixXd waveform_cov(
+    const ix::diagnostics::waveform::WaveformRawStats* stat);
+
 protected:
   void process_one_waveform(
     const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
-    ix::diagnostics::waveform::WaveformRawStats* stat);
+    ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
+    ix::diagnostics::waveform::WaveformRawStats* r_stat);
 
   void merge_one_gain(
     const ix::diagnostics::waveform::WaveformRawStats* from,
     ix::diagnostics::waveform::WaveformRawStats* to);
 
+  void merge_partial(
+    ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
+    ix::diagnostics::waveform::WaveformRawStats* r_stat);
+
   WaveformStatsVisitor* parent_ = nullptr;
   calin::ix::diagnostics::waveform::CameraWaveformRawStats results_;
+  calin::ix::diagnostics::waveform::PartialCameraWaveformRawStats partial_;
+  unsigned partial_max_num_entries_ = 256;
   const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
     run_config_ = nullptr;
   bool calculate_covariance_ = false;

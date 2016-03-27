@@ -361,22 +361,22 @@ r_make_sqltable_tree(const std::string& table_name,
 void SQLTransceiver::prune_empty_tables(SQLTable* t)
 {
   iterate_over_tables(t, [](SQLTable* t) {
-      if(t->fields.empty()) {
-        for(auto st : t->sub_tables) {
-          st->parent_table = t->parent_table;
-          st->parent_field_d_path.insert(st->parent_field_d_path.begin(),
-                                         t->parent_field_d); }
-        auto sti = std::find(t->parent_table->sub_tables.begin(),
-                             t->parent_table->sub_tables.end(), t);
-        assert(sti != t->parent_table->sub_tables.end());
-        t->parent_table->sub_tables.insert(sti, t->sub_tables.begin(),
-                                           t->sub_tables.end());
-        t->sub_tables.clear();
-        sti = std::find(t->parent_table->sub_tables.begin(),
-                        t->parent_table->sub_tables.end(), t);
-        t->parent_table->sub_tables.erase(sti);
-        delete t;
-      } });
+    if(t->fields.empty() and t->parent_table!=nullptr) {
+      for(auto st : t->sub_tables) {
+        st->parent_table = t->parent_table;
+        st->parent_field_d_path.insert(st->parent_field_d_path.begin(),
+                                       t->parent_field_d); }
+      auto sti = std::find(t->parent_table->sub_tables.begin(),
+                           t->parent_table->sub_tables.end(), t);
+      assert(sti != t->parent_table->sub_tables.end());
+      t->parent_table->sub_tables.insert(sti, t->sub_tables.begin(),
+                                         t->sub_tables.end());
+      t->sub_tables.clear();
+      sti = std::find(t->parent_table->sub_tables.begin(),
+                      t->parent_table->sub_tables.end(), t);
+      t->parent_table->sub_tables.erase(sti);
+      delete t;
+    } });
 }
 
 void SQLTransceiver::propagate_keys(SQLTable* t,
@@ -549,6 +549,8 @@ sql_create_table(const SQLTable* t,
     }
     sql << "  )\n";
   }
+  if(t->fields.empty())
+    sql << "  `.empty_field` INTEGER\n";
   sql << ')';
   return sql.str();
 }
@@ -565,6 +567,7 @@ sql_insert(const SQLTable* t)
     if(f != t->fields.back() or !keys.empty())sql << ',';
     sql << '\n';
   }
+  if(t->fields.empty())sql << "  `.empty_field`\n";
   sql << ") VALUES (\n";
   for ( auto f : t->fields )
   {
@@ -572,6 +575,8 @@ sql_insert(const SQLTable* t)
     if(f != t->fields.back() or !keys.empty())sql << ',';
     sql << '\n';
   }
+  if(t->fields.empty())
+    sql << "  12939" << sql_comment("The essential supply",0,0,false) << '\n';
   sql << ')';
   return sql.str();
 }
