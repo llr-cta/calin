@@ -1,1 +1,1 @@
-__all__ = ["atmosphere", "vs_optics"]
+__all__ = ["atmosphere", "vs_optics", "pmt"]
