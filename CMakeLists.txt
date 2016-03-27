@@ -21,14 +21,15 @@ enable_testing()
 # Find the various libraries and packages that calin depends on #
 # ============================================================= #
 
+## Use CMake policy to specify complete library path
 cmake_policy(SET CMP0060 NEW)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
 
 include_directories(include ${CMAKE_BINARY_DIR}/include)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -std=c++11 -Wall")
 
-### Find Protobuf libraries and set protobuf base path
+## Find Protobuf libraries and set protobuf base path
 set(PROTOBUF_IMPORT_DIRS ${PROJECT_SOURCE_DIR}/proto)
 find_package(Protobuf REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS} ${CMAKE_BINARY_DIR}/proto)
