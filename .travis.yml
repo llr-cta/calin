@@ -179,6 +179,6 @@ script:
           $NO_GEANT4 \
           -DCMAKE_INSTALL_PREFIX=build .. &&
     make -j3 &&
-    make install &&
+    make install | tail &&
     make test
     #./unit_tests/simulation/test_geant4
