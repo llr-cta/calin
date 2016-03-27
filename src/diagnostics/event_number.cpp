@@ -87,7 +87,7 @@ bool CountersEventNumberGlitchDetector::visit_telescope_run(
 bool CountersEventNumberGlitchDetector::visit_telescope_event(
     calin:: ix::iact_data::telescope_event::TelescopeEvent* event)
 {
-  if(event->module_counter_size() > counters_event_num_diff_.size())
+  if(event->module_counter_size() > int(counters_event_num_diff_.size()))
     counters_event_num_diff_.resize(event->module_counter_size());
   int64_t index = event->source_event_index();
   bool found_glitch = false;
