@@ -196,7 +196,7 @@ template<typename T1, typename T2>
 void transfer_partial_array(T1* to, T2* from)
 {
   int n = from->size();
-  assert(to.size() == n);
+  assert(to->size() == n);
   auto* to_data = to->mutable_data();
   auto* from_data = from->mutable_data();
   for(int i=0; i<n; i++)to_data[i] += from_data[i];
