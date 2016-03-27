@@ -575,7 +575,8 @@ sql_insert(const SQLTable* t)
     if(f != t->fields.back() or !keys.empty())sql << ',';
     sql << '\n';
   }
-  if(t->fields.empty())sql << "  0\n";
+  if(t->fields.empty())
+    sql << "  12939" << sql_comment("The essential supply",0,0,false) << '\n';
   sql << ')';
   return sql.str();
 }
