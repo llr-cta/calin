@@ -140,7 +140,8 @@ protected:
   const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
     run_config_ = nullptr;
   double* fftw_data_ = nullptr;
-  fftw_plan fftw_plan_ = nullptr;
+  fftw_plan fftw_plan_fwd_ = nullptr;
+  fftw_plan fftw_plan_bwd_ = nullptr;
 };
 
 } } } // namespace calin::diagnostics::waveform_diagnostics

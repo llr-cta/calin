@@ -21,10 +21,12 @@
 */
 
 #include <math/special.hpp>
+#include <math/fftw_util.hpp>
 #include <io/log.hpp>
 #include <diagnostics/waveform.hpp>
 
 using calin::math::special::SQR;
+using namespace calin::math::fftw_util;
 using namespace calin::io::log;
 using namespace calin::diagnostics::waveform;
 
@@ -65,17 +67,25 @@ bool WaveformPSDVisitor::visit_telescope_run(
   unsigned nsample = run_config->num_samples();
   fftw_data_ = fftw_alloc_real(nsample);
   assert(fftw_data_);
-  fftw_plan_ = fftw_plan_r2r_1d(nsample, fftw_data_, fftw_data_, FFTW_R2HC, 0);
-  assert(fftw_plan_);
+  fftw_plan_fwd_ =
+    fftw_plan_r2r_1d(nsample, fftw_data_, fftw_data_, FFTW_R2HC, 0);
+  assert(fftw_plan_fwd_);
+  fftw_plan_bwd_ =
+    fftw_plan_r2r_1d(nsample, fftw_data_, fftw_data_, FFTW_HC2R, 0);
+  assert(fftw_plan_bwd_);
   unsigned nfreq = 1 + nsample/2; // 1->1 2->2 3->2 4->3 5->3 etc
   for(int ichan = 0; ichan<run_config->configured_channel_id_size(); ichan++)
   {
     auto* hg_wf = results_.add_high_gain();
-    hg_wf->mutable_sum()->Resize(nfreq,0);
-    hg_wf->mutable_sum_squared()->Resize(nfreq,0);
+    hg_wf->mutable_psd_sum()->Resize(nfreq,0);
+    hg_wf->mutable_psd_sum_squared()->Resize(nfreq,0);
+    hg_wf->mutable_corr_sum()->Resize(nsample,0);
+    hg_wf->mutable_corr_sum_squared()->Resize(nsample,0);
     auto* lg_wf = results_.add_low_gain();
-    lg_wf->mutable_sum()->Resize(nfreq,0);
-    lg_wf->mutable_sum_squared()->Resize(nfreq,0);
+    lg_wf->mutable_psd_sum()->Resize(nfreq,0);
+    lg_wf->mutable_psd_sum_squared()->Resize(nfreq,0);
+    lg_wf->mutable_corr_sum()->Resize(nsample,0);
+    lg_wf->mutable_corr_sum_squared()->Resize(nsample,0);
   }
   return true;
 }
@@ -83,8 +93,10 @@ bool WaveformPSDVisitor::visit_telescope_run(
 bool WaveformPSDVisitor::leave_telescope_run()
 {
   run_config_ = nullptr;
-  fftw_destroy_plan(fftw_plan_);
-  fftw_plan_ = nullptr;
+  fftw_destroy_plan(fftw_plan_bwd_);
+  fftw_plan_bwd_ = nullptr;
+  fftw_destroy_plan(fftw_plan_fwd_);
+  fftw_plan_fwd_ = nullptr;
   fftw_free(fftw_data_);
   fftw_data_ = nullptr;
   return true;
@@ -118,28 +130,36 @@ process_one_waveform(
   assert(wf->samples_size() == int(nsample));
   psd->set_num_entries(psd->num_entries()+1);
   const auto* sample = wf->samples().data();
-  auto* sum = psd->mutable_sum()->mutable_data();
-  auto* sum_squared = psd->mutable_sum_squared()->mutable_data();
+  auto* psd_sum = psd->mutable_psd_sum()->mutable_data();
+  auto* psd_sum_squared = psd->mutable_psd_sum_squared()->mutable_data();
   std::transform(sample, sample+nsample, fftw_data_, [](decltype(*sample) x) {
     return double(x); });
-  fftw_execute(fftw_plan_);
+  fftw_execute(fftw_plan_fwd_);
   const double* ri = fftw_data_;
   const double* ci = fftw_data_ + nsample-1;
   double psdi = SQR(*ri++);
-  (*sum++) += psdi;
-  (*sum_squared++) += SQR(psdi);
+  (*psd_sum++) += psdi;
+  (*psd_sum_squared++) += SQR(psdi);
   while(ri < ci)
   {
     psdi = SQR(*ri++) + SQR(*ci--);
-    (*sum++) += psdi;
-    (*sum_squared++) += SQR(psdi);
+    (*psd_sum++) += psdi;
+    (*psd_sum_squared++) += SQR(psdi);
   }
   if(ri==ci)
   {
     double psdi = SQR(*ri);
-    *sum += psdi;
-    *sum_squared += SQR(psdi);
+    *psd_sum += psdi;
+    *psd_sum_squared += SQR(psdi);
   }
+  hcvec_scale_and_multiply(fftw_data_, fftw_data_, fftw_data_, nsample);
+  fftw_execute(fftw_plan_bwd_);
+  auto* corr_sum = psd->mutable_corr_sum()->mutable_data();
+  for(unsigned isample=0; isample<nsample; isample++)
+    corr_sum[isample] += fftw_data_[isample];
+  auto* corr_sum_squared = psd->mutable_corr_sum_squared()->mutable_data();
+  for(unsigned isample=0; isample<nsample; isample++)
+    corr_sum_squared[isample] += fftw_data_[isample] * fftw_data_[isample];
 }
 
 bool WaveformPSDVisitor::merge_results()
@@ -162,34 +182,34 @@ void WaveformPSDVisitor::merge_one_gain(
   const ix::diagnostics::waveform::WaveformRawPSD* from,
   ix::diagnostics::waveform::WaveformRawPSD* to)
 {
-  assert(to->sum_size() == from->sum_size());
-  assert(to->sum_squared_size() == from->sum_squared_size());
+  assert(to->psd_sum_size() == from->psd_sum_size());
+  assert(to->psd_sum_squared_size() == from->psd_sum_squared_size());
   to->set_num_entries(to->num_entries() + from->num_entries());
-  for(int i=0; i<from->sum_size(); i++)
-    to->set_sum(i,to->sum(i) + from->sum(i));
-  for(int i=0; i<from->sum_squared_size(); i++)
-    to->set_sum_squared(i,to->sum_squared(i) + from->sum_squared(i));
+  for(int i=0; i<from->psd_sum_size(); i++)
+    to->set_psd_sum(i,to->psd_sum(i) + from->psd_sum(i));
+  for(int i=0; i<from->psd_sum_squared_size(); i++)
+    to->set_psd_sum_squared(i,to->psd_sum_squared(i) + from->psd_sum_squared(i));
 }
 
 Eigen::VectorXd WaveformPSDVisitor::psd_mean(
   const ix::diagnostics::waveform::WaveformRawPSD* stat)
 {
-  const int N = stat->sum_size();
+  const int N = stat->psd_sum_size();
   Eigen::VectorXd m(N);
   const double one_over_n = 1.0/double(stat->num_entries());
   for(int i=0; i<N; i++)
-    m(i) = double(stat->sum(i)) * one_over_n;
+    m(i) = double(stat->psd_sum(i)) * one_over_n;
   return m;
 }
 
 Eigen::VectorXd WaveformPSDVisitor::psd_var(
   const ix::diagnostics::waveform::WaveformRawPSD* stat)
 {
-  const int N = stat->sum_size();
+  const int N = stat->psd_sum_size();
   Eigen::VectorXd v(N);
   const double one_over_n = 1.0/double(stat->num_entries());
   for(int i=0; i<N; i++)
-    v(i) = double(stat->sum_squared(i)) * one_over_n
-      - SQR(double(stat->sum(i)) * one_over_n);
+    v(i) = double(stat->psd_sum_squared(i)) * one_over_n
+      - SQR(double(stat->psd_sum(i)) * one_over_n);
   return v;
 }

@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/calib/spe_fit.hpp -- Stephen Fegan -- 2015-03-01
 
@@ -9,11 +9,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -56,7 +56,7 @@ class MultiElectronSpectrum: public calin::math::function::Parameterizable
   virtual double ped_zero_dc() = 0;
   virtual double ses_mean_dc() = 0;
   virtual double ses_rms_pe() = 0;
-  
+
   bool can_calculate_parameter_hessian() override;
 };
 
@@ -96,7 +96,7 @@ class PoissonGaussianMES: public MultiElectronSpectrum
   CALIN_TYPEALIAS(accumulator, calin::math::accumulator::LikelihoodAccumulator);
 
   void calc_cached_vars(bool calc_hessian = false);
-  
+
   unsigned nmax_       = 10;
   unsigned nmin_       = 0;
   double intensity_pe_ = 1.0;
@@ -109,7 +109,7 @@ class PoissonGaussianMES: public MultiElectronSpectrum
   double s2_;
   double g2_;
   double log_s_;
-  
+
   std::vector<double> C1_;
   std::vector<double> C2_;
   std::vector<double> C3_;
@@ -125,7 +125,7 @@ class PoissonGaussianMES: public MultiElectronSpectrum
 
   bool force_calc_hessian_ = false;
   bool hessian_elements_good_ = false;
-  
+
   std::vector<double> d2C1_dF2_;
   std::vector<double> d2C1_ds2_;
   std::vector<double> d2C1_dg2_;
@@ -226,7 +226,7 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   std::vector<double> all_ped_x() const { std::vector<double> x(nsample_);
     for(unsigned i=0;i<nsample_;i++) x[i] = ped_x(i); return x; }
   std::vector<double> all_mes_x() const { return all_ped_x(); }
-  
+
   std::vector<double> multi_electron_spectrum() const;
   std::vector<double> pedestal_spectrum() const;
   std::vector<double> n_electron_spectrum(unsigned n) const; // 1<=n<=nmax_
@@ -235,21 +235,17 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   std::vector<double> mes_n_electron_cpt(unsigned n) const; // 0<=n<=nmax_
 
   std::vector<double> multi_electron_spectrum_gradient(unsigned iparam) const;
-  std::vector<double> pedestal_spectrum_gradient(unsigned iparam) const;  
+  std::vector<double> pedestal_spectrum_gradient(unsigned iparam) const;
   std::vector<double> single_electron_spectrum_gradient(unsigned iparam) const;
 
   Eigen::VectorXd extract_ped_gradient_values(ConstVecRef gradient);
   Eigen::VectorXd extract_ses_gradient_values(ConstVecRef gradient);
   Eigen::MatrixXd extract_ped_hessian_values(ConstMatRef hessian);
   Eigen::MatrixXd extract_ses_hessian_values(ConstMatRef hessian);
-  
- protected:  
+
+ protected:
   int ibin(double x) const;
   void set_cache();
-  void hcvec_scale_and_multiply(double* ovec, const double* ivec1,
-                                const double* ivec2, double scale = 1.0) const;
-  void hcvec_scale_and_add(double* ovec, const double* ivec, double scale)
-      const;
   
   SingleElectronSpectrum* ses_pdf_;
   calin::math::pdf_1d::Parameterizable1DPDF* ped_pdf_;
@@ -298,7 +294,7 @@ class SPELikelihood: public calin::math::function::MultiAxisFunction
   double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
                                     MatRef hessian) override;
   double error_up() override { return 0.5; }
-  
+
  private:
   MultiElectronSpectrum* mes_model_;
   unsigned npar_;
