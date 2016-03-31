@@ -19,6 +19,6 @@ set(CALIN_SOURCES counter.cpp module.cpp event_number.cpp waveform.cpp
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_proto_diagnostics
-calin_iact_data calin_math ${FFTW_LIBRARIES})
+  calin_iact_data calin_math ${FFTW_LIBRARIES})
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)

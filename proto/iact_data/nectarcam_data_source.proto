@@ -27,7 +27,9 @@ import "calin.proto";
 package calin.ix.iact_data.nectarcam_data_source;
 
 message NectarCamCameraEventDecoderConfig {
-  uint32 demand_nsample                = 1 [
+  uint32 demand_nsample                                    = 1 [
     (CFO).desc = "Override number of samples per event stored in file. Zero "
       "means we use value from file."];
+  bool exchange_gain_channels                              = 2 [
+    (CFO).desc = "Exchange high and low gains from NectarCam ZFits file." ];
 };
