@@ -23,14 +23,16 @@
 syntax = "proto3";
 
 import "calin.proto";
-//import "math/histogram.proto";
+import "math/histogram.proto";
 //import "common_types.proto";
 
 package calin.ix.diagnostics.counter;
 
-message EventCounterDiagnosticsData {
-  uint64 num_events                                        = 1 [
-    (CFO).desc = "Number of events found." ];
-  repeated uint64 missing_event_number                     = 2 [
-    (CFO).desc = "List of missing event numbers." ];
+message CounterDeltaTDiagnosticsModuleData {
+  calin.ix.math.histogram.Histogram1DData delta_t          = 1 [
+    (CFO).desc = "Histogram of delta-t values." ];
+  repeated int64 negative_count_indexes                    = 2 [
+    (CFO).desc = "Index of event indexes where counter is negative." ];
+  repeated int64 negative_count_values                     = 3 [
+    (CFO).desc = "Negative count values." ];
 };
