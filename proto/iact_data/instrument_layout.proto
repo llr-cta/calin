@@ -89,7 +89,7 @@ message ModuleLayout {
 message CameraLayout {
   enum CameraType {
     NO_CAMERA                                              = 0;
-    NECTARCAM_TESTBENCH                                    = 1000;
+    NECTARCAM_TESTBENCH_19CHANNEL                          = 1000;
   };
 
   enum PixelGridLayout {
@@ -136,7 +136,7 @@ message CameraLayout {
 
   uint32 channels_per_modules                              = 20 [
     (CFO).desc = "Number of channels per module." ];
-  ModuleLayout module                                      = 21 [
+  repeated ModuleLayout module                             = 21 [
     (CFO).desc = "Layout of each module." ];
 
   ADCGains adc_gains                                       = 30;
