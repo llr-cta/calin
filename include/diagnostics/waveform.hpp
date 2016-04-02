@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <fftw3.h>
+
 #include <iact_data/event_visitor.hpp>
 #include <diagnostics/waveform.pb.h>
 
@@ -86,6 +88,60 @@ protected:
   const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
     run_config_ = nullptr;
   bool calculate_covariance_ = false;
+};
+
+class WaveformPSDVisitor:
+  public iact_data::event_visitor::TelescopeEventVisitor
+{
+public:
+  WaveformPSDVisitor();
+
+  virtual ~WaveformPSDVisitor();
+
+  bool demand_waveforms() override;
+  bool is_parallelizable() override;
+  WaveformPSDVisitor* new_sub_visitor() override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config) override;
+  bool leave_telescope_run() override;
+
+  bool visit_telescope_event(
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  bool visit_waveform(unsigned ichan,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain) override;
+
+  bool merge_results() override;
+
+  calin::ix::diagnostics::waveform::CameraWaveformRawPSD results()
+  {
+    return results_;
+  }
+
+  static Eigen::VectorXd psd_mean(
+    const ix::diagnostics::waveform::WaveformRawPSD* stat);
+  static Eigen::VectorXd psd_var(
+    const ix::diagnostics::waveform::WaveformRawPSD* stat);
+
+protected:
+  void process_one_waveform(
+    const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
+    ix::diagnostics::waveform::WaveformRawPSD* psd);
+
+  void merge_one_gain(
+    const ix::diagnostics::waveform::WaveformRawPSD* from,
+    ix::diagnostics::waveform::WaveformRawPSD* to);
+
+  WaveformPSDVisitor* parent_ = nullptr;
+  calin::ix::diagnostics::waveform::CameraWaveformRawPSD results_;
+  const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
+    run_config_ = nullptr;
+  double* fftw_data_ = nullptr;
+  fftw_plan fftw_plan_fwd_ = nullptr;
+  fftw_plan fftw_plan_bwd_ = nullptr;
 };
 
 } } } // namespace calin::diagnostics::waveform_diagnostics

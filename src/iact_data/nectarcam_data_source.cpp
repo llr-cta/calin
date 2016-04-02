@@ -109,13 +109,26 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
   //
   // ==========================================================================
 
-  if(cta_event->has_higain())
-    copy_single_gain_image(cta_event, calin_event, cta_event->higain(),
-      calin_event->mutable_high_gain_image(), "high");
+  if(config_.exchange_gain_channels())
+  {
+    if(cta_event->has_higain())
+      copy_single_gain_image(cta_event, calin_event, cta_event->higain(),
+        calin_event->mutable_low_gain_image(), "high");
 
-  if(cta_event->has_logain())
-    copy_single_gain_image(cta_event, calin_event, cta_event->logain(),
-      calin_event->mutable_low_gain_image(), "low");
+    if(cta_event->has_logain())
+      copy_single_gain_image(cta_event, calin_event, cta_event->logain(),
+        calin_event->mutable_high_gain_image(), "low");
+  }
+  else
+  {
+    if(cta_event->has_higain())
+      copy_single_gain_image(cta_event, calin_event, cta_event->higain(),
+        calin_event->mutable_high_gain_image(), "high");
+
+    if(cta_event->has_logain())
+      copy_single_gain_image(cta_event, calin_event, cta_event->logain(),
+        calin_event->mutable_low_gain_image(), "low");
+  }
 
   // ==========================================================================
   //
@@ -395,9 +408,9 @@ get_nmod_from_event(const DataModel::CameraEvent* cta_event) const
 
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
-  const config_type& config):
-  calin::iact_data::zfits_data_source::ZFITSDataSource(filename, false,
-    decoder_ = new NectarCamCameraEventDecoder, false,
+  const config_type& config, const decoder_config_type& decoder_config):
+  calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
+    decoder_ = new NectarCamCameraEventDecoder(decoder_config), false,
     config)
 {
   // nothing to see here
@@ -405,21 +418,8 @@ NectarCamZFITSDataSource(const std::string& filename,
 
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
-  bool exact_filename_only, const config_type& config):
-  calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
-    exact_filename_only, decoder_ = new NectarCamCameraEventDecoder, false,
-    config)
-{
-  // nothing to see here
-}
-
-NectarCamZFITSDataSource::
-NectarCamZFITSDataSource(const std::string& filename, bool exact_filename_only,
   const decoder_config_type& decoder_config, const config_type& config):
-  calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
-    exact_filename_only,
-    decoder_ = new NectarCamCameraEventDecoder(decoder_config), false,
-    config)
+    NectarCamZFITSDataSource(filename, config, decoder_config)
 {
   // nothing to see here
 }

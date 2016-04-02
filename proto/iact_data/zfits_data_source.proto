@@ -32,8 +32,10 @@ message ZFITSDataSourceConfig {
       "chained data file names." ];
   bool log_on_file_open                                    = 2 [
     (CFO).desc = "Send a message to the log when opening a file." ];
-  bool dont_read_run_header                                = 3 [
+  bool exact_filename_only                                 = 3 [
+    (CFO).desc = "Only try to open file with given (exact) filename." ];
+  bool dont_read_run_header                                = 11 [
     (CFO).desc = "Don't read the run header." ];
-  bool ignore_run_header_errors                            = 4 [
+  bool ignore_run_header_errors                            = 12 [
     (CFO).desc = "Don't log missing run header." ];
 };

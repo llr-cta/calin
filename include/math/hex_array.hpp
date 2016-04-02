@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/io/hex_array.hpp -- Stephen Fegan -- 2015-10-21
 
@@ -13,11 +13,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -141,36 +141,52 @@ std::vector<unsigned> hexid_to_neighbor_hexids(unsigned hexid);
 //
 // *****************************************************************************
 
-inline void cluster_uv_to_center_uv(int cluster_u, int cluster_v,
-                                    unsigned cluster_nring, int& u, int& v)
+inline void cluster_uv_to_center_uv_A(int cluster_u, int cluster_v,
+                                      unsigned cluster_nring, int& u, int& v)
 {
   u = (1+cluster_nring)*cluster_u - cluster_nring*cluster_v;
   v = (1+2*cluster_nring)*cluster_v + cluster_nring*cluster_u;
 }
 
+inline void cluster_uv_to_center_uv_B(int cluster_u, int cluster_v,
+                                      unsigned cluster_nring, int& u, int& v)
+{
+  u = cluster_nring*cluster_u - (1+cluster_nring)*cluster_v;
+  v = (1+2*cluster_nring)*cluster_v + (1+cluster_nring)*cluster_u;
+}
+
+inline void cluster_uv_to_center_uv(int cluster_u, int cluster_v,
+            unsigned cluster_nring, int& u, int& v, bool use_a_config = true)
+{
+  if(use_a_config)
+    cluster_uv_to_center_uv_A(cluster_u, cluster_v, cluster_nring, u, v);
+  else
+    cluster_uv_to_center_uv_B(cluster_u, cluster_v, cluster_nring, u, v);
+}
+
 inline void cluster_hexid_to_center_uv(unsigned cluster_hexid,
-                                       unsigned cluster_nring, int& u, int& v)
+         unsigned cluster_nring, int& u, int& v, bool use_a_config = true)
 {
   int cluster_u;
   int cluster_v;
   hexid_to_uv(cluster_hexid, cluster_u, cluster_v);
-  cluster_uv_to_center_uv(cluster_u, cluster_v, cluster_nring, u, v);
+  cluster_uv_to_center_uv(cluster_u, cluster_v, cluster_nring, u, v, use_a_config);
 }
 
 inline unsigned cluster_hexid_to_center_hexid(unsigned cluster_hexid,
-                                              unsigned cluster_nring)
+                    unsigned cluster_nring, bool use_a_config = true)
 {
   int u;
   int v;
-  cluster_hexid_to_center_uv(cluster_hexid, cluster_nring, u, v);
+  cluster_hexid_to_center_uv(cluster_hexid, cluster_nring, u, v, use_a_config);
   return uv_to_hexid(u, v);
 }
 
 void cluster_hexid_to_member_uv(unsigned cluster_hexid, unsigned cluster_nring,
-                                std::vector<int>& u, std::vector<int>& v);
+  std::vector<int>& u, std::vector<int>& v, bool use_a_config = true);
 
 std::vector<unsigned> cluster_hexid_to_member_hexid(unsigned cluster_hexid,
-                                                    unsigned cluster_nring);
+  unsigned cluster_nring, bool use_a_config = true);
 
 // *****************************************************************************
 //
@@ -184,7 +200,7 @@ constexpr double c_vx = 0.5;
 constexpr double c_vy = 0.5*CALIN_HEX_ARRAY_SQRT3;
 constexpr double c_vy_inv = 1.0/c_vy;
 
-inline void uv_to_xy(int u, int v, double& x, double& y) 
+inline void uv_to_xy(int u, int v, double& x, double& y)
 {
   x = u + v*c_vx;
   y = v*c_vy;

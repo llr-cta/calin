@@ -576,7 +576,7 @@ sql_insert(const SQLTable* t)
     sql << '\n';
   }
   if(t->fields.empty())
-    sql << "  12939" << sql_comment("The essential supply",0,0,false) << '\n';
+    sql << "  12939" << sql_comment("The essential supply",1,0,false) << '\n';
   sql << ')';
   return sql.str();
 }

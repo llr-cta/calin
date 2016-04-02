@@ -26,34 +26,30 @@
 using namespace calin::io::log;
 using namespace calin::diagnostics::counter;
 
-CounterDiagnostics::CounterDiagnostics(): TelescopeEventVisitor()
+CounterDeltaTDiagnostics::CounterDeltaTDiagnostics(): TelescopeEventVisitor()
 {
   // nothing to see here
 }
 
-CounterDiagnostics::~CounterDiagnostics()
+CounterDeltaTDiagnostics::~CounterDeltaTDiagnostics()
 {
   // nothing to see here
 }
 
-bool CounterDiagnostics::demand_waveforms()
+bool CounterDeltaTDiagnostics::demand_waveforms()
 {
   return false;
 }
 
-bool CounterDiagnostics::visit_telescope_run(
+bool CounterDeltaTDiagnostics::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* run_config)
 {
   return true;
 }
 
-bool CounterDiagnostics::visit_telescope_event(
+bool CounterDeltaTDiagnostics::visit_telescope_event(
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
-  event_data_.set_num_events(event_data_.num_events()+1);
-  while(next_event_number_ < event->local_event_number())
-    event_data_.add_missing_event_number(next_event_number_++);
-  next_event_number_++;
   return true;
 }

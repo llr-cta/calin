@@ -27,12 +27,14 @@
 
 #include <fftw3.h>
 
+#include <math/fftw_util.hpp>
 #include <math/accumulator.hpp>
 #include <calib/spe_fit.hpp>
 #include <calib/pmt_model_pg.hpp>
 #include <io/log.hpp>
 
 using namespace calin::math;
+using namespace calin::math::fftw_util;
 using namespace calin::calib::spe_fit;
 using namespace calin::calib::pmt_model_pg;
 using namespace calin::io::log;
@@ -938,7 +940,7 @@ std::vector<double> GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
              log_nsample) };
 
   hcvec_scale_and_multiply(spec_buffer.get(), nes_fft_[n-1], ped_fft_,
-                           poisson_factor*dx_);
+                           nsample_, poisson_factor*dx_);
 
   fftw_execute(spec_plan.get());
   std::copy(spec_buffer.get(), spec_buffer.get()+nsample_, spec.begin());
@@ -1036,7 +1038,7 @@ void GeneralPoissonMES::set_cache()
   fftw_execute(ses_plan_fwd_);
   for(unsigned ines=1;ines<nmax_;ines++)
     hcvec_scale_and_multiply(nes_fft_[ines], nes_fft_[ines-1], nes_fft_[0],
-                             dx_);
+                             nsample_, dx_);
 
   unsigned ped_npar = ped_pdf_->num_parameters();
   Eigen::VectorXd ped_gradient(ped_npar);
@@ -1082,97 +1084,51 @@ void GeneralPoissonMES::set_cache()
     double poisson_factor {
       std::exp(dbl_n*log_intensity - intensity_pe_ - lgamma(dbl_n+1.0) -
                log_nsample) };
-    hcvec_scale_and_add(mes_spec_, nes_fft_[ines], poisson_factor);
+    hcvec_scale_and_add(mes_spec_, nes_fft_[ines], nsample_, poisson_factor);
 
     if(calc_gradient)
     {
-      hcvec_scale_and_add(mes_grad_[0], nes_fft_[ines],
+      hcvec_scale_and_add(mes_grad_[0], nes_fft_[ines], nsample_,
                           poisson_factor*(dbl_n/intensity_pe_ - 1.0));
       if(ines>0)
         for(unsigned ipar=0;ipar<ses_npar;ipar++)
           hcvec_scale_and_add(mes_grad_[1+ped_npar+ipar], nes_fft_[ines-1],
-                              dbl_n*poisson_factor);
+                              nsample_, dbl_n*poisson_factor);
     }
   }
 
   if(calc_gradient)
   {
-    hcvec_scale_and_multiply(mes_grad_[0], mes_grad_[0], ped_fft_, dx_);
-    hcvec_scale_and_add(mes_grad_[0], ped_fft_,
+    hcvec_scale_and_multiply(mes_grad_[0], mes_grad_[0], ped_fft_, nsample_,
+                        dx_);
+    hcvec_scale_and_add(mes_grad_[0], ped_fft_, nsample_,
                         -std::exp(-intensity_pe_-log_nsample));
     for(unsigned ipar=0;ipar<ped_npar;ipar++)
     {
       hcvec_scale_and_multiply(mes_grad_[1+ipar], mes_spec_,
-                               ped_grad_fft_[ipar], dx_);
-      hcvec_scale_and_add(mes_grad_[1+ipar], ped_grad_fft_[ipar],
-                          std::exp(-intensity_pe_-log_nsample));
+        ped_grad_fft_[ipar], nsample_, dx_);
+      hcvec_scale_and_add(mes_grad_[1+ipar], ped_grad_fft_[ipar], nsample_,
+        std::exp(-intensity_pe_-log_nsample));
     }
     for(unsigned ipar=0;ipar<ses_npar;ipar++)
     {
       hcvec_scale_and_multiply(mes_grad_[1+ped_npar+ipar],
-                               mes_grad_[1+ped_npar+ipar],
-                               ses_grad_fft_[ipar], dx_);
+        mes_grad_[1+ped_npar+ipar], ses_grad_fft_[ipar], nsample_, dx_);
       hcvec_scale_and_add(mes_grad_[1+ped_npar+ipar], ses_grad_fft_[ipar],
-                          std::exp(log_intensity -intensity_pe_ -
-                                   log_nsample));
+        nsample_, std::exp(log_intensity -intensity_pe_ - log_nsample));
       hcvec_scale_and_multiply(mes_grad_[1+ped_npar+ipar],
-                               mes_grad_[1+ped_npar+ipar], ped_fft_, dx_);
+        mes_grad_[1+ped_npar+ipar], ped_fft_, nsample_, dx_);
     }
   }
 
-  hcvec_scale_and_multiply(mes_spec_, mes_spec_, ped_fft_, dx_);
-  hcvec_scale_and_add(mes_spec_, ped_fft_,
+  hcvec_scale_and_multiply(mes_spec_, mes_spec_, ped_fft_, nsample_, dx_);
+  hcvec_scale_and_add(mes_spec_, ped_fft_, nsample_,
                       std::exp(-intensity_pe_-log_nsample));
   fftw_execute(mes_plan_rev_);
 
   if(calc_gradient)
     for(unsigned ipar=0;ipar<mes_npar;ipar++)
       fftw_execute(mes_grad_plan_rev_[ipar]);
-}
-
-void GeneralPoissonMES::
-hcvec_scale_and_multiply(double* ovec, const double* ivec1,
-                         const double* ivec2, double scale) const
-{
-  double *ro = ovec;
-  double *co = ovec + nsample_-1;
-  const double *ri1 = ivec1;
-  const double *ci1 = ivec1 + nsample_-1;
-  const double *ri2 = ivec2;
-  const double *ci2 = ivec2 + nsample_-1;
-
-  (*ro++) = (*ri1++) * (*ri2++) * scale;
-  if(ro==ri1 or ro==ri2)
-  {
-    while(ro < co)
-    {
-      double vri1 = *ri1++;
-      double vci1 = *ci1--;
-      double vri2 = *ri2++;
-      double vci2 = *ci2--;
-      (*ro++) = (vri1*vri2 - vci1*vci2)*scale;
-      (*co--) = (vri1*vci2 + vci1*vri2)*scale;
-    }
-   }
-  else
-  {
-    while(ro < co)
-    {
-      (*ro++) = ((*ri1)*(*ri2) - (*ci1)*(*ci2)) * scale;
-      (*co--) = ((*ri1++)*(*ci2--) + (*ci1--)*(*ri2++)) * scale;
-    }
-  }
-  if(ro==co)(*ro) = (*ri1) * (*ri2) * scale;
-}
-
-void GeneralPoissonMES::
-hcvec_scale_and_add(double* ovec, const double* ivec, double scale) const
-{
-  double *ro = ovec;
-  double *re = ovec + nsample_;
-  const double *ri = ivec;
-  while(ro<re)
-    *(ro++) += *(ri++)*scale;
 }
 
 // ============================================================================

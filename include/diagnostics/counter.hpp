@@ -27,12 +27,12 @@
 
 namespace calin { namespace diagnostics { namespace counter {
 
-class CounterDiagnostics:
+class CounterDeltaTDiagnostics:
   public iact_data::event_visitor::TelescopeEventVisitor
 {
 public:
-  CounterDiagnostics();
-  virtual ~CounterDiagnostics();
+  CounterDeltaTDiagnostics();
+  virtual ~CounterDeltaTDiagnostics();
 
   bool demand_waveforms() override;
 
@@ -43,11 +43,13 @@ public:
   bool visit_telescope_event(
     calin:: ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
-  calin::ix::diagnostics::counter::EventCounterDiagnosticsData& event_data() {
-    return event_data_; }
+  calin::ix::diagnostics::counter::CounterDeltaTDiagnosticsModuleData results() {
+    return results_; }
 private:
   int64_t next_event_number_ = 0;
-  calin::ix::diagnostics::counter::EventCounterDiagnosticsData event_data_;
+  calin::ix::diagnostics::counter::CounterDeltaTDiagnosticsModuleData results_;
 };
+
+
 
 } } } /// namespace calin::diagnostics::counter
