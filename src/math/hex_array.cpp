@@ -22,11 +22,12 @@
 */
 
 #include <cassert>
+#include <iostream>
 
 #include <math/hex_array.hpp>
 
 void calin::math::hex_array::
-hexid_to_uv(unsigned hexid, int& u, int& v)
+hexid_to_uv_ccw(unsigned hexid, int& u, int& v)
 {
   if(hexid==0) { u = v = 0; return; }
   unsigned ringid;
@@ -45,20 +46,78 @@ hexid_to_uv(unsigned hexid, int& u, int& v)
   }
 }
 
-unsigned calin::math::hex_array::
-uv_to_hexid(int u, int v)
+unsigned calin::math::hex_array::uv_to_hexid_ccw(int u, int v)
 {
   if(u==0 and v==0)return 0;
   int ringid = uv_to_ringid(u,v);
   unsigned segid;
   unsigned runid;
-  if(u+v==ringid)        { segid=0; runid=v; }
-  else if(v==ringid)     { segid=1; runid=-u; }
-  else if(u==-ringid)    { segid=2; runid=ringid-v; }
-  else if(u+v==-ringid)  { segid=3; runid=-v; }
-  else if(v==-ringid)    { segid=4; runid=u; }
-  else /*if(u==ringid)*/ { segid=5; runid=ringid+v; }
+  int upv = u+v;
+  if(upv==ringid and v!=ringid)         { segid=0; runid=v; }
+  else if(v==ringid and u!=-ringid)     { segid=1; runid=-u; }
+  else if(u==-ringid and upv!=-ringid)  { segid=2; runid=ringid-v; }
+  else if(u+v==-ringid and v!=-ringid)  { segid=3; runid=-v; }
+  else if(v==-ringid and u!=ringid)     { segid=4; runid=u; }
+  else /*if(u==ringid and upv!=ringid)*/{ segid=5; runid=ringid+v; }
+#if 0
+  std::cout << u << ' ' << v << ' '
+    << ringid << ' ' << segid << ' ' <<  runid << '\n';
+#endif
+  assert(runid < ringid);
   return positive_ringid_segid_runid_to_hexid(ringid, segid, runid);
+}
+
+void calin::math::hex_array::
+hexid_to_uv_cw(unsigned hexid, int& u, int& v)
+{
+#if 0 // This code is correct but it's not worth maintaining two versions
+  if(hexid==0) { u = v = 0; return; }
+  unsigned ringid;
+  unsigned segid;
+  unsigned runid;
+  positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+  switch(segid)
+  {
+    case 0: u = ringid;        v = -runid;        break;
+    case 1: u = ringid-runid;  v = -ringid;       break;
+    case 2: u = -runid;        v = -ringid+runid; break;
+    case 3: u = -ringid;       v = runid;         break;
+    case 4: u = -ringid+runid; v = ringid;        break;
+    case 5: u = runid;         v = ringid-runid;  break;
+    default: assert(0);
+  }
+#else
+  hexid_to_uv_ccw(hexid, u, v);
+  u += v;
+  v = -v;
+#endif
+}
+
+unsigned calin::math::hex_array::uv_to_hexid_cw(int u, int v)
+{
+#if 0 // This code is correct but it's not worth maintaining two versions
+  if(u==0 and v==0)return 0;
+  int ringid = uv_to_ringid(u,v);
+  unsigned segid;
+  unsigned runid;
+  int upv = u+v;
+  if(u==ringid and v!=-ringid)          { segid=0; runid=-v; }
+  else if(v==-ringid and upv!=-ringid)  { segid=1; runid=ringid-u; }
+  else if(upv==-ringid and u!=-ringid)  { segid=2; runid=-u; }
+  else if(u==-ringid and v!=ringid)     { segid=3; runid=v; }
+  else if(v==ringid and upv!=ringid)    { segid=4; runid=ringid+u; }
+  else /*if(upv==ringid and u!=ringid)*/{ segid=5; runid=u; }
+#if 0
+  std::cout << u << ' ' << v << ' '
+    << ringid << ' ' << segid << ' ' <<  runid << '\n';
+#endif
+  assert(runid < ringid);
+  return positive_ringid_segid_runid_to_hexid(ringid, segid, runid);
+#else
+  u += v;
+  v = -v;
+  return uv_to_hexid_ccw(u, v);
+#endif
 }
 
 void calin::math::hex_array::
