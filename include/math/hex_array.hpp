@@ -407,15 +407,17 @@ inline void uv_to_vertexes_xy_trans(int u, int v,
   std::vector<double>& x, std::vector<double>& y,
   double crot, double srot, double scale, double dx = 0, double dy = 0)
 {
-  static constexpr double vcdx = 0.5;
-  static constexpr double vcdy = 0.5/CALIN_HEX_ARRAY_SQRT3;
-  const double vdx = scale*(vcdx*crot - vcdy*srot);
-  const double vdy = scale*(vcdy*crot + vcdx*srot);
+  static constexpr double vdx = 0.5;
+  static constexpr double vdy = 0.5/CALIN_HEX_ARRAY_SQRT3;
+  const double cvdx = scale*vdx*crot;
+  const double svdx = scale*vdx*srot;
+  const double cvdy = scale*vdy*crot;
+  const double svdy = scale*vdy*srot;
   double xc;
   double yc;
   uv_to_xy_trans(u, v, xc, yc, crot, srot, scale, dx, dy);
-  x = { xc+vdx, xc, xc-vdx, xc-vdx, xc, xc+vdx };
-  y = { yc+vdy, yc+2*vdy, yc+vdy, yc-vdy, yc-2*vdy, yc-vdy };
+  x = { xc+cvdx-svdy, xc-2*svdy, xc-cvdx-svdy, xc-cvdx+svdy, xc+2*svdy, xc+cvdx+svdy };
+  y = { yc+svdx+cvdy, yc+2*cvdy, yc-svdx+cvdy, yc-svdx-cvdy, yc-2*cvdy, yc+svdx-cvdy };
 }
 
 inline void hexid_to_vertexes_xy_trans(unsigned hexid,
