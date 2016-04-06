@@ -27,6 +27,9 @@ namespace calin { namespace math { namespace fftw_util {
 void hcvec_scale_and_multiply(double* ovec, const double* ivec1,
   const double* ivec2, unsigned nsample, double scale = 1.0);
 
+void hcvec_scale_and_multiply_conj(double* ovec, const double* ivec1,
+  const double* ivec2_conj, unsigned nsample, double scale = 1.0);
+
 void hcvec_scale_and_add(double* ovec, const double* ivec, unsigned nsample,
   double scale = 1.0);
 

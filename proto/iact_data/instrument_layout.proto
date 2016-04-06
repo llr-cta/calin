@@ -89,6 +89,7 @@ message ModuleLayout {
 message CameraLayout {
   enum CameraType {
     NO_CAMERA                                              = 0;
+    NECTARCAM                                              = 10;
     NECTARCAM_TESTBENCH_19CHANNEL                          = 1000;
   };
 
@@ -124,13 +125,17 @@ message CameraLayout {
       "y_vec = s * R_mat * x_vec + dy_vec, "
       "where s is the (scalar) grid spacing and dy_vec is the grid offset.",
     (CFO).units = "deg" ];
-  double pixel_grid_offset_x                               = 14 [
+  double pixel_grid_cos_rotation                           = 14 [
+    (CFO).desc = "Cosine of the angle pixel_grid_rotation." ];
+  double pixel_grid_sin_rotation                           = 15 [
+    (CFO).desc = "Sine of the angle pixel_grid_rotation." ];
+  double pixel_grid_offset_x                               = 16 [
     (CFO).desc = "X-offset of pixels from the grid.",
     (CFO).units = "cm" ];
-  double pixel_grid_offset_y                               = 15 [
+  double pixel_grid_offset_y                               = 17 [
     (CFO).desc = "Y-offset of pixels from the grid.",
     (CFO).units = "cm" ];
-  double pixel_grid_geometric_area                         = 16 [
+  double pixel_grid_geometric_area                         = 18 [
     (CFO).desc = "Nominal size of pixel in grid.",
     (CFO).units = "cm^2" ];
 
@@ -148,43 +153,43 @@ message CameraLayout {
 
 message TelescopeLayout {
   enum TelescopeType {
-    NO_TELESCOPE                        = 0;
-    CTA_LST                             = 1;
-    CTA_MST                             = 2;
-    CTA_SCT                             = 3;
+    NO_TELESCOPE                                           = 0;
+    CTA_LST                                                = 1;
+    CTA_MST                                                = 2;
+    CTA_SCT                                                = 3;
   };
 
-  TelescopeType telescope_type          = 1 [
+  TelescopeType telescope_type                             = 1 [
     (CFO).desc = "Telescope type." ];
-  uint32 telescope_index                = 2 [
+  uint32 telescope_index                                   = 2 [
     (CFO).desc = "Index of telescope in array." ];
 
-  common_types.Vector3D position        = 10 [
+  common_types.Vector3D position                           = 10 [
     (CFO).desc = "Position of the telescope relative to the center of the "
       "array. The axes are +X, East, +Y, North, +Z, up.",
     (CFO).units = "cm" ];
-  double effective_focal_length         = 11 [
+  double effective_focal_length                            = 11 [
     (CFO).desc = "Effective focal length of the telescope, for converting "
       "linear dimensions on the camera plane to angles.",
     (CFO).units = "cm" ];
 
-  CameraLayout camera                  = 100 [
+  CameraLayout camera                                      = 100 [
     (CFO).desc = "Camera layout." ];
 };
 
 message ArrayLayout {
   enum ArrayType {
-    NO_ARRAY                           = 0;
-    CTA_NORTH                          = 1;
-    CTA_SOUTH                          = 2;
+    NO_ARRAY                                               = 0;
+    CTA_NORTH                                              = 1;
+    CTA_SOUTH                                              = 2;
   };
 
-  ArrayType array_type                 = 1 [
+  ArrayType array_type                                     = 1 [
     (CFO).desc = "Array type." ];
 
   calin.ix.common_types.EarthCoordinates array_origin = 10 [
     (CFO).desc = "Position of array on the Earth." ];
 
-  repeated TelescopeLayout telescopes  = 100 [
+  repeated TelescopeLayout telescopes                      = 100 [
     (CFO).desc = "Telescope layouts." ];
 }

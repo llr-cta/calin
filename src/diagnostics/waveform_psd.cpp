@@ -152,7 +152,7 @@ process_one_waveform(
     *psd_sum += psdi;
     *psd_sum_squared += SQR(psdi);
   }
-  hcvec_scale_and_multiply(fftw_data_, fftw_data_, fftw_data_, nsample);
+  hcvec_scale_and_multiply_conj(fftw_data_, fftw_data_, fftw_data_, nsample);
   fftw_execute(fftw_plan_bwd_);
   auto* corr_sum = psd->mutable_corr_sum()->mutable_data();
   for(unsigned isample=0; isample<nsample; isample++)
@@ -189,6 +189,10 @@ void WaveformPSDVisitor::merge_one_gain(
     to->set_psd_sum(i,to->psd_sum(i) + from->psd_sum(i));
   for(int i=0; i<from->psd_sum_squared_size(); i++)
     to->set_psd_sum_squared(i,to->psd_sum_squared(i) + from->psd_sum_squared(i));
+  for(int i=0; i<from->corr_sum_size(); i++)
+    to->set_corr_sum(i,to->corr_sum(i) + from->corr_sum(i));
+  for(int i=0; i<from->corr_sum_squared_size(); i++)
+    to->set_corr_sum_squared(i,to->corr_sum_squared(i) + from->corr_sum_squared(i));
 }
 
 Eigen::VectorXd WaveformPSDVisitor::psd_mean(
