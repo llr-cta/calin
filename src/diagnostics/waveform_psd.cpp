@@ -263,8 +263,8 @@ Eigen::VectorXd WaveformPSDVisitor::corr_mean_centered(
   Eigen::VectorXd m(N);
   h.resize(N);
   int iz = (N-1)/2;
-  for(int i=iz; i<N; i++)h(i) = i, m(i) = mp(i-iz);
-  for(int i=0;i<iz; i++)h(i) = i-iz, m(i) = mp(N-i-1);
+  for(int i=iz; i<N; i++)h(i) = i-iz, m(i) = mp(i-iz);
+  for(int i=0;i<iz; i++)h(i) = i-iz, m(i) = mp(N+i-iz);
   return m;
 }
 
