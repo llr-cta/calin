@@ -126,6 +126,17 @@ public:
   static Eigen::VectorXd psd_var(
     const ix::diagnostics::waveform::WaveformRawPSD* stat);
 
+  static Eigen::VectorXd corr_mean(
+    const ix::diagnostics::waveform::WaveformRawPSD* psd_stat,
+    const ix::diagnostics::waveform::WaveformRawStats* trace_stat);
+  static Eigen::VectorXd corr_mean_centered(
+    const ix::diagnostics::waveform::WaveformRawPSD* stat,
+    const ix::diagnostics::waveform::WaveformRawStats* trace_stat,
+    Eigen::VectorXd& h);
+  static Eigen::VectorXd corr_var(
+    const ix::diagnostics::waveform::WaveformRawPSD* stat,
+    const ix::diagnostics::waveform::WaveformRawStats* trace_stat);
+
 protected:
   void process_one_waveform(
     const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
