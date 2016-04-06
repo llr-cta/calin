@@ -85,8 +85,8 @@ hcvec_scale_and_multiply_conj(double* ovec, const double* ivec1,
   {
     while(ro < co)
     {
-      (*ro++) = ((*ri1)*(*ri2) - (*ci1)*(*ci2)) * scale;
-      (*co--) = ((*ri1++)*(*ci2--) + (*ci1--)*(*ri2++)) * scale;
+      (*ro++) = ((*ri1)*(*ri2) + (*ci1)*(*ci2)) * scale;
+      (*co--) = ((*ci1--)*(*ri2++) - (*ri1++)*(*ci2--)) * scale;
     }
   }
   if(ro==co)(*ro) = (*ri1) * (*ri2) * scale;
