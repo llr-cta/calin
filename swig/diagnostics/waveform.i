@@ -38,4 +38,5 @@
 
 %import "iact_data/event_dispatcher.i"
 %import "diagnostics/waveform.pb.i"
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& h };
 %include "diagnostics/waveform.hpp"

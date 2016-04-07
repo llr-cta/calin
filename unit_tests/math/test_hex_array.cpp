@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/unit_tests/math/test_hex_array.cpp -- Stephen Fegan -- 2015-10-21
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -128,7 +128,7 @@ TEST(TestHexArray, HexIDToXY_ComparisonWithVVVCode) {
       EXPECT_NEAR(x1,x2,1e-6);
       EXPECT_NEAR(y1,y2,1e-6);
       hexid++;
-    }  
+    }
 }
 
 TEST(TestHexArray, XYToHexID_NewCodeSpeedTest) {
@@ -176,13 +176,59 @@ TEST(TestHexArray, XYToHexID_ComparisonWithVVVCode) {
     }
 }
 
-TEST(TestHexArray, SomeClusterElements) {
-  EXPECT_EQ(cluster_hexid_to_member_hexid(0,1),
-            std::vector<unsigned>({0,1,2,3,4,5,6}));
-  EXPECT_EQ(cluster_hexid_to_member_hexid(1,1),
-            std::vector<unsigned>({20,38,39,21,8,7,19}));
-  EXPECT_EQ(cluster_hexid_to_member_hexid(2,1),
-            std::vector<unsigned>({23,22,42,43,24,10,9}));
+TEST(TestHexArray, HexIDToFromRingSegRun_APriori) {
+  unsigned hexid=1;
+  for(unsigned iring=1;iring<100;iring++)
+    for(unsigned iseg=0;iseg<6;iseg++)
+      for(unsigned irun=0;irun<iring;irun++)
+      {
+        ASSERT_EQ(hexid,
+          positive_ringid_segid_runid_to_hexid(iring, iseg, irun)) <<
+            iring << ' ' << iseg << ' ' << irun;
+        unsigned ringid = 0;
+        unsigned segid = 0;
+        unsigned runid = 0;
+        positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+        ASSERT_EQ(iring, ringid);
+        ASSERT_EQ(iseg, segid);
+        ASSERT_EQ(irun, runid);
+        hexid++;
+      }
+}
+
+TEST(TestHexArray, HexIDToFromRingSegRun_EQ) {
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    unsigned ringid = 0;
+    unsigned segid = 0;
+    unsigned runid = 0;
+    positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+    ASSERT_EQ(hexid,
+      positive_ringid_segid_runid_to_hexid(ringid, segid, runid))
+        << ringid << ' ' << segid << ' ' << runid;
+  }
+}
+
+TEST(TestHexArray, HexIDToFromUV_CW_EQ) {
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    int u = 0;
+    int v = 0;
+    hexid_to_uv_cw(hexid, u, v);
+    ASSERT_EQ(hexid, uv_to_hexid_cw(u, v))
+      << hexid << ' ' << u << ' ' << v;
+  }
+}
+
+TEST(TestHexArray, HexIDToFromUV_CCW_EQ) {
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    int u = 0;
+    int v = 0;
+    hexid_to_uv_ccw(hexid, u, v);
+    ASSERT_EQ(hexid, uv_to_hexid_ccw(u, v))
+      << hexid << ' ' << u << ' ' << v;
+  }
 }
 
 int main(int argc, char **argv) {

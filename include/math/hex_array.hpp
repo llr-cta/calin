@@ -128,8 +128,33 @@ inline unsigned uv_to_ringid(int u, int v)
             std::abs(u+v)}));
 }
 
-void hexid_to_uv(unsigned hexid, int& u, int& v);
-unsigned uv_to_hexid(int u, int v);
+void hexid_to_uv_ccw(unsigned hexid, int& u, int& v);
+unsigned uv_to_hexid_ccw(int u, int v);
+
+void hexid_to_uv_cw(unsigned hexid, int& u, int& v);
+unsigned uv_to_hexid_cw(int u, int v);
+
+inline void hexid_to_uv(unsigned hexid, int& u, int& v)
+{
+  hexid_to_uv_ccw(hexid, u, v);
+}
+
+inline unsigned uv_to_hexid(int u, int v)
+{
+  return uv_to_hexid_ccw(u,v);
+}
+
+inline void hexid_to_uv(unsigned hexid, int& u, int& v, bool clockwise)
+{
+  if(clockwise)hexid_to_uv_cw(hexid, u, v);
+  else hexid_to_uv_ccw(hexid, u, v);
+}
+
+inline unsigned uv_to_hexid(int u, int v, bool clockwise)
+{
+  if(clockwise)return uv_to_hexid_cw(u, v);
+  else return uv_to_hexid_ccw(u, v);
+}
 
 void uv_to_neighbor_uv(int u, int v, std::vector<int>& u_neighbors,
                        std::vector<int>& v_neighbors);
@@ -200,6 +225,8 @@ constexpr double c_vx = 0.5;
 constexpr double c_vy = 0.5*CALIN_HEX_ARRAY_SQRT3;
 constexpr double c_vy_inv = 1.0/c_vy;
 
+// XY <-> UV without rotation matrix
+
 inline void uv_to_xy(int u, int v, double& x, double& y)
 {
   x = u + v*c_vx;
@@ -216,43 +243,47 @@ inline void xy_to_uv_with_remainder(double& x_in_dx_out,
   y_in_dy_out -= v*c_vy;
 }
 
-inline void uv_to_xy(int u, int v, double& x, double& y, bool clockwise)
+// XY <-> UV with (shear-free) affine transformation
+
+inline void uv_to_xy_trans(int u, int v, double& x, double& y,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
 {
   uv_to_xy(u,v,x,y);
-  if(clockwise)y=-y;
+  double xx = x*crot - y*srot;
+  y = scale * (y*crot + x*srot) + dy;
+  x = scale * xx + dy;
 }
 
-inline void xy_to_uv(double x, double y, int& u, int& v, bool clockwise)
+inline void xy_trans_to_uv(double x, double y, int& u, int& v,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
 {
-  if(clockwise)xy_to_uv(x, -y, u, v);
-  else xy_to_uv(x, y, u, v);
+  x = (x - dx)/scale;
+  y = (y - dy)/scale;
+  double xx = x*crot + y*srot;
+  y = y*crot - x*srot;
+  xy_to_uv(xx,y,u,v);
 }
 
-inline void xy_to_uv_with_remainder(double& x_in_dx_out, double& y_in_dy_out,
-                                    int& u, int& v, bool clockwise)
+inline void xy_trans_to_uv_with_remainder(double& x_in_dx_out,
+  double& y_in_dy_out, int& u, int& v,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
 {
-  if(clockwise)
-  {
-    double yy = -y_in_dy_out;
-    xy_to_uv_with_remainder(x_in_dx_out, yy, u, v);
-    y_in_dy_out = -yy;
-  }
-  else xy_to_uv_with_remainder(x_in_dx_out, y_in_dy_out, u, v);
+  x_in_dx_out = (x_in_dx_out - dx)/scale;
+  y_in_dy_out = (y_in_dy_out - dy)/scale;
+  double xx = x_in_dx_out*crot + y_in_dy_out*srot;
+  y_in_dy_out = y_in_dy_out*crot - x_in_dx_out*srot;
+  xy_to_uv_with_remainder(xx,  y_in_dy_out, u, v);
+  x_in_dx_out = scale * (xx*crot - y_in_dy_out*srot); // do not add dx
+  y_in_dy_out = scale * (y_in_dy_out*crot + xx*srot); // do not add dy
 }
+
+// XY <-> HEXID without rotation
 
 inline unsigned xy_to_hexid(double x, double y)
 {
   int u;
   int v;
   xy_to_uv(x, y, u, v);
-  return uv_to_hexid(u,v);
-}
-
-inline unsigned xy_to_hexid(double x, double y, bool clockwise)
-{
-  int u;
-  int v;
-  xy_to_uv(x, y, u, v, clockwise);
   return uv_to_hexid(u,v);
 }
 
@@ -270,8 +301,8 @@ inline unsigned xy_to_hexid_with_remainder(double& x_in_dx_out,
 {
   int u;
   int v;
-  xy_to_uv_with_remainder(x_in_dx_out, y_in_dy_out, u, v, clockwise);
-  return uv_to_hexid(u,v);
+  xy_to_uv_with_remainder(x_in_dx_out, y_in_dy_out, u, v);
+  return uv_to_hexid(u, v, clockwise);
 }
 
 inline void hexid_to_xy(unsigned hexid, double& x, double& y)
@@ -286,19 +317,18 @@ inline void hexid_to_xy(unsigned hexid, double& x, double& y, bool clockwise)
 {
   int u;
   int v;
-  hexid_to_uv(hexid, u, v);
-  uv_to_xy(u,v,x,y,clockwise);
+  hexid_to_uv(hexid, u, v, clockwise);
+  uv_to_xy(u, v, x, y);
 }
 
 inline void uv_to_vertexes_xy(int u, int v,
-                              std::vector<double>& x, std::vector<double>& y,
-                              bool clockwise = false)
+                              std::vector<double>& x, std::vector<double>& y)
 {
   static constexpr double dx = 0.5;
   static constexpr double dy = 0.5/CALIN_HEX_ARRAY_SQRT3;
   double xc;
   double yc;
-  uv_to_xy(u,v,xc,yc,clockwise);
+  uv_to_xy(u,v,xc,yc);
   x = { xc+dx, xc, xc-dx, xc-dx, xc, xc+dx };
   y = { yc+dy, yc+2*dy, yc+dy, yc-dy, yc-2*dy, yc-dy };
 }
@@ -309,18 +339,105 @@ inline void hexid_to_vertexes_xy(unsigned hexid,
 {
   int u;
   int v;
-  hexid_to_uv(hexid, u, v);
-  uv_to_vertexes_xy(u, v, x, y, clockwise);
+  hexid_to_uv(hexid, u, v, clockwise);
+  uv_to_vertexes_xy(u, v, x, y);
 }
 
-inline void cluster_hexid_to_center_xy(unsigned cluster_hexid,
-                                       unsigned cluster_nring,
-                                       double& x, double& y)
+// XY <-> HEXID with (shear-free) affine transformation
+
+inline unsigned xy_trans_to_hexid(double x, double y,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
 {
   int u;
   int v;
-  cluster_hexid_to_center_uv(cluster_hexid, cluster_nring, u, v);
-  uv_to_xy(u, v, x, y);
+  xy_trans_to_uv(x, y, u, v, crot, srot, scale, dx, dy);
+  return uv_to_hexid(u, v);
+}
+
+inline unsigned xy_trans_to_hexid(double x, double y, bool clockwise,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
+{
+  int u;
+  int v;
+  xy_trans_to_uv(x, y, u, v, crot, srot, scale, dx, dy);
+  return uv_to_hexid(u, v, clockwise);
+}
+
+inline unsigned xy_trans_to_hexid_with_remainder(double& x_in_dx_out,
+  double& y_in_dy_out,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
+{
+  int u;
+  int v;
+  xy_trans_to_uv_with_remainder(x_in_dx_out, y_in_dy_out, u, v,
+    crot, srot, scale, dx, dy);
+  return uv_to_hexid(u, v);
+}
+
+inline unsigned xy_trans_to_hexid_with_remainder(double& x_in_dx_out,
+  double& y_in_dy_out, bool clockwise,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
+{
+  int u;
+  int v;
+  xy_trans_to_uv_with_remainder(x_in_dx_out, y_in_dy_out, u, v,
+    crot, srot, scale, dx, dy);
+  return uv_to_hexid(u, v, clockwise);
+}
+
+inline void hexid_to_xy_trans(unsigned hexid, double& x, double& y,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
+{
+  int u;
+  int v;
+  hexid_to_uv(hexid, u, v);
+  uv_to_xy_trans(u, v, x, y, crot, srot, scale, dx, dy);
+}
+
+inline void hexid_to_xy_trans(unsigned hexid, double& x, double& y, bool clockwise,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
+{
+  int u;
+  int v;
+  hexid_to_uv(hexid, u, v, clockwise);
+  uv_to_xy_trans(u, v, x, y, crot, srot, scale, dx, dy);
+}
+
+inline void uv_to_vertexes_xy_trans(int u, int v,
+  std::vector<double>& x, std::vector<double>& y,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
+{
+  static constexpr double vdx = 0.5;
+  static constexpr double vdy = 0.5/CALIN_HEX_ARRAY_SQRT3;
+  const double cvdx = scale*vdx*crot;
+  const double svdx = scale*vdx*srot;
+  const double cvdy = scale*vdy*crot;
+  const double svdy = scale*vdy*srot;
+  double xc;
+  double yc;
+  uv_to_xy_trans(u, v, xc, yc, crot, srot, scale, dx, dy);
+  x = { xc+cvdx-svdy, xc-2*svdy, xc-cvdx-svdy, xc-cvdx+svdy, xc+2*svdy, xc+cvdx+svdy };
+  y = { yc+svdx+cvdy, yc+2*cvdy, yc-svdx+cvdy, yc-svdx-cvdy, yc-2*cvdy, yc+svdx-cvdy };
+}
+
+inline void hexid_to_vertexes_xy_trans(unsigned hexid,
+  std::vector<double>& x, std::vector<double>& y,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
+{
+  int u;
+  int v;
+  hexid_to_uv(hexid, u, v);
+  uv_to_vertexes_xy_trans(u, v, x, y, crot, srot, scale, dx, dy);
+}
+
+inline void hexid_to_vertexes_xy_trans(unsigned hexid,
+  std::vector<double>& x, std::vector<double>& y, bool clockwise,
+  double crot, double srot, double scale, double dx = 0, double dy = 0)
+{
+  int u;
+  int v;
+  hexid_to_uv(hexid, u, v, clockwise);
+  uv_to_vertexes_xy_trans(u, v, x, y, crot, srot, scale, dx, dy);
 }
 
 } } } // namespace calin::math::hex_array

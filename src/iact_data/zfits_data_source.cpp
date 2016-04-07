@@ -152,11 +152,20 @@ ZFitsDataSourceOpener::ZFitsDataSourceOpener(std::string filename,
       filename.rfind(extension) == filename.size()-extension.size())
     {
       filename = filename.substr(0, filename.size()-extension.size());
+
+      if(!is_file(filename+".1"+extension) and
+          filename.size() > 2 and filename.rfind(".0") == filename.size()-2)
+        filename = filename.substr(0, filename.size()-2);
     }
     else if(is_file(filename+extension))
     {
       filenames_.emplace_back(filename+extension);
     }
+    else if(is_file(filename+".0"+extension))
+    {
+      filenames_.emplace_back(filename+".0"+extension);
+    }
+
 
     for(unsigned i=1; true; ++i)
     {

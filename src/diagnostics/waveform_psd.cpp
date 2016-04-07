@@ -152,7 +152,7 @@ process_one_waveform(
     *psd_sum += psdi;
     *psd_sum_squared += SQR(psdi);
   }
-  hcvec_scale_and_multiply(fftw_data_, fftw_data_, fftw_data_, nsample);
+  hcvec_scale_and_multiply_conj(fftw_data_, fftw_data_, fftw_data_, nsample);
   fftw_execute(fftw_plan_bwd_);
   auto* corr_sum = psd->mutable_corr_sum()->mutable_data();
   for(unsigned isample=0; isample<nsample; isample++)
@@ -189,6 +189,10 @@ void WaveformPSDVisitor::merge_one_gain(
     to->set_psd_sum(i,to->psd_sum(i) + from->psd_sum(i));
   for(int i=0; i<from->psd_sum_squared_size(); i++)
     to->set_psd_sum_squared(i,to->psd_sum_squared(i) + from->psd_sum_squared(i));
+  for(int i=0; i<from->corr_sum_size(); i++)
+    to->set_corr_sum(i,to->corr_sum(i) + from->corr_sum(i));
+  for(int i=0; i<from->corr_sum_squared_size(); i++)
+    to->set_corr_sum_squared(i,to->corr_sum_squared(i) + from->corr_sum_squared(i));
 }
 
 Eigen::VectorXd WaveformPSDVisitor::psd_mean(
@@ -198,7 +202,7 @@ Eigen::VectorXd WaveformPSDVisitor::psd_mean(
   Eigen::VectorXd m(N);
   const double one_over_n = 1.0/double(stat->num_entries());
   for(int i=0; i<N; i++)
-    m(i) = double(stat->psd_sum(i)) * one_over_n;
+    m(i) = stat->psd_sum(i) * one_over_n;
   return m;
 }
 
@@ -210,6 +214,69 @@ Eigen::VectorXd WaveformPSDVisitor::psd_var(
   const double one_over_n = 1.0/double(stat->num_entries());
   for(int i=0; i<N; i++)
     v(i) = double(stat->psd_sum_squared(i)) * one_over_n
-      - SQR(double(stat->psd_sum(i)) * one_over_n);
+      - SQR(stat->psd_sum(i) * one_over_n);
+  return v;
+}
+
+Eigen::VectorXd WaveformPSDVisitor::corr_mean(
+  const ix::diagnostics::waveform::WaveformRawPSD* psd_stat,
+  const ix::diagnostics::waveform::WaveformRawStats* trace_stat)
+{
+  const int N = psd_stat->corr_sum_size();
+  assert(trace_stat->sum_size() == N);
+
+  Eigen::VectorXd m = WaveformStatsVisitor::waveform_mean(trace_stat);
+
+  auto* fftw_data = fftw_alloc_real(N);
+  assert(fftw_data);
+  auto fftw_plan_fwd =
+    fftw_plan_r2r_1d(N, fftw_data, fftw_data, FFTW_R2HC, 0);
+  assert(fftw_plan_fwd);
+  auto fftw_plan_bwd =
+    fftw_plan_r2r_1d(N, fftw_data, fftw_data, FFTW_HC2R, 0);
+  assert(fftw_plan_bwd);
+
+  std::copy(m.data(), m.data() + N, fftw_data);
+  fftw_execute(fftw_plan_fwd);
+  hcvec_scale_and_multiply_conj(fftw_data, fftw_data, fftw_data, N);
+  fftw_execute(fftw_plan_bwd);
+
+  const double one_over_n = 1.0/double(trace_stat->num_entries());
+  const double dbl_N = double(N);
+  for(int i=0; i<N; i++)
+    m(i) = (psd_stat->corr_sum(i)*one_over_n - fftw_data[i])/dbl_N;
+
+  fftw_destroy_plan(fftw_plan_bwd);
+  fftw_destroy_plan(fftw_plan_fwd);
+  fftw_free(fftw_data);
+
+  return m;
+}
+
+Eigen::VectorXd WaveformPSDVisitor::corr_mean_centered(
+  const ix::diagnostics::waveform::WaveformRawPSD* psd_stat,
+  const ix::diagnostics::waveform::WaveformRawStats* trace_stat,
+  Eigen::VectorXd& h)
+{
+  Eigen::VectorXd mp = WaveformPSDVisitor::corr_mean(psd_stat, trace_stat);
+  int N = mp.size();
+  Eigen::VectorXd m(N);
+  h.resize(N);
+  int iz = (N-1)/2;
+  for(int i=iz; i<N; i++)h(i) = i-iz, m(i) = mp(i-iz);
+  for(int i=0;i<iz; i++)h(i) = i-iz, m(i) = mp(N+i-iz);
+  return m;
+}
+
+Eigen::VectorXd WaveformPSDVisitor::corr_var(
+  const ix::diagnostics::waveform::WaveformRawPSD* psd_stat,
+  const ix::diagnostics::waveform::WaveformRawStats* trace_stat)
+{
+  const int N = psd_stat->corr_sum_size();
+  Eigen::VectorXd v(N);
+  const double one_over_n = 1.0/double(psd_stat->num_entries());
+  for(int i=0; i<N; i++)
+    v(i) = double(psd_stat->corr_sum_squared(i)) * one_over_n
+      - SQR(psd_stat->corr_sum(i) * one_over_n);
   return v;
 }
