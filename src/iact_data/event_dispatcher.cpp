@@ -21,6 +21,7 @@
 */
 
 #include <chrono>
+#include <type_traits>
 
 #include <util/string.hpp>
 #include <io/log.hpp>
@@ -208,26 +209,28 @@ do_accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
   auto start_time = system_clock::now();
   while(TelescopeEvent* event = src->get_next())
   {
-    accept_event(event);
-    if(sink)sink->put_next(event, true);
-    else delete event;
-    ++ndispatched;
-    if(log_frequency and ndispatched % log_frequency == 0)
+    if(log_frequency and ndispatched and ndispatched % log_frequency == 0)
     {
       auto dt = system_clock::now() - start_time;
       LOG(INFO) << "Dispatched "
         << to_string_with_commas(ndispatched) << " events in "
         << to_string_with_commas(duration_cast<seconds>(dt).count()) << " sec";
     }
+
+    accept_event(event);
+    if(sink)sink->put_next(event, true);
+    else delete event;
+    ++ndispatched;
     //if(num_event_max and not --num_event_max)break;
   }
-  if(log_frequency and ndispatched % log_frequency != 0)
+  if(log_frequency)
   {
     auto dt = system_clock::now() - start_time;
     LOG(INFO) << "Dispatched "
-      << to_string_with_commas(ndispatched) << " events in "
-      << to_string_with_commas(duration_cast<seconds>(dt).count())
-      << " sec (finished)";
+        << to_string_with_commas(ndispatched) << " events in "
+        << to_string_with_commas(duration_cast<seconds>(dt).count())
+        << " sec, " << duration_cast<microseconds>(dt).count()/ndispatched
+        << " us/event (finished)";
   }
 }
 
