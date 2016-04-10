@@ -155,4 +155,62 @@ protected:
   fftw_plan fftw_plan_bwd_ = nullptr;
 };
 
+class IntegratedWaveformStatsVisitor:
+  public iact_data::event_visitor::TelescopeEventVisitor
+{
+public:
+  IntegratedWaveformStatsVisitor(bool calculate_covariance = true);
+
+  virtual ~IntegratedWaveformStatsVisitor();
+
+  bool demand_waveforms() override;
+  bool is_parallelizable() override;
+  IntegratedWaveformStatsVisitor* new_sub_visitor() override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config) override;
+  bool leave_telescope_run() override;
+
+  bool visit_telescope_event(
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  bool visit_waveform(unsigned ichan,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain) override;
+
+  bool merge_results() override;
+
+  calin::ix::diagnostics::waveform::CameraIntegratedWaveformRawStats results()
+  {
+    return results_;
+  }
+
+  static Eigen::MatrixXd camera_cov(
+    const ix::diagnostics::waveform::OneGainIntegratedWaveformRawStats* stat);
+
+protected:
+#if 0
+  void process_one_waveform(
+    const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
+    ix::diagnostics::waveform::WaveformRawStats* r_stat);
+
+  void merge_one_gain(
+    const ix::diagnostics::waveform::WaveformRawStats* from,
+    ix::diagnostics::waveform::WaveformRawStats* to);
+    #endif
+
+  std::vector<int> high_gain_mask_;
+  std::vector<int32_t> high_gain_signal_;
+  std::vector<int> low_gain_mask_;
+  std::vector<int32_t> low_gain_signal_;
+
+  IntegratedWaveformStatsVisitor* parent_ = nullptr;
+  calin::ix::diagnostics::waveform::CameraIntegratedWaveformRawStats results_;
+  const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
+    run_config_ = nullptr;
+  bool calculate_covariance_ = false;
+};
+
+
 } } } // namespace calin::diagnostics::waveform_diagnostics
