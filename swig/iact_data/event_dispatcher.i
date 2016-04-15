@@ -26,6 +26,9 @@
 %{
 #include "iact_data/event_visitor.hpp"
 #include "iact_data/event_dispatcher.hpp"
+#include "iact_data/functional_event_visitor.hpp"
+//using namespace calin::iact_data::event_visitor;
+//using namespace calin::iact_data::event_dispatcher;
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -38,8 +41,11 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%newobject new_sub_visitor();
+%newobject new_sub_visitor(
+  const std::map<calin::iact_data::event_visitorTelescopeEventVisitor*,
+    calin::iact_data::event_visitorTelescopeEventVisitor*>& antecedent_visitors);
 %include "iact_data/event_visitor.hpp"
+#%include "iact_data/functional_event_visitor.hpp"
 
 %thread; // Release Pyhjon GIL for all functions here (since some use threads)
 %include "iact_data/event_dispatcher.hpp"

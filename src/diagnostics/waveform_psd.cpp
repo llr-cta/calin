@@ -51,7 +51,9 @@ bool WaveformPSDVisitor::is_parallelizable()
   return true;
 }
 
-WaveformPSDVisitor* WaveformPSDVisitor::new_sub_visitor()
+WaveformPSDVisitor* WaveformPSDVisitor::new_sub_visitor(
+  const std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>&
+    antecedent_visitors)
 {
   auto* sub_visitor = new WaveformPSDVisitor;
   sub_visitor->parent_ = this;

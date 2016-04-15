@@ -34,6 +34,7 @@ using namespace calin::iact_data::event_dispatcher;
 using namespace calin::iact_data::telescope_data_source;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::ix::iact_data::telescope_run_configuration;
+using calin::iact_data::event_visitor::TelescopeEventVisitor;
 
 TelescopeEventDispatcher::TelescopeEventDispatcher()
 {
@@ -46,7 +47,7 @@ TelescopeEventDispatcher::~TelescopeEventDispatcher()
 }
 
 void TelescopeEventDispatcher::
-add_visitor(event_visitor::TelescopeEventVisitor* visitor, bool adopt_visitor)
+add_visitor(TelescopeEventVisitor* visitor, bool adopt_visitor)
 {
   visitors_.emplace_back(visitor);
   if(visitor->demand_waveforms())wf_visitors_.emplace_back(visitor);
@@ -60,8 +61,7 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
   TelescopeRunConfiguration* run_config = src->get_run_configuration();
   accept_run_configuration(run_config);
   if(nthread <= 0 or std::none_of(visitors_.begin(), visitors_.end(),
-    [](event_visitor::TelescopeEventVisitor* v){
-      return v->is_parallelizable(); }))
+    [](TelescopeEventVisitor* v){ return v->is_parallelizable(); }))
   {
     accept_all_from_src(src, log_frequency, nthread==0);
   }
@@ -73,14 +73,21 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
     std::vector<TelescopeEventDispatcher*> sub_dispatchers;
     for(int ithread=0;ithread<nthread;ithread++)
       sub_dispatchers.emplace_back(new TelescopeEventDispatcher);
-    for(auto* v : visitors)
+    for(auto* d : sub_dispatchers)
     {
-      if(v->is_parallelizable())
-        for(auto* d : sub_dispatchers)
-          d->add_visitor(v->new_sub_visitor(), true);
-      else
-        add_visitor(v, false);
+      std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>
+        antecedent_visitors;
+      for(auto* v : visitors)
+        if(v->is_parallelizable())
+        {
+          TelescopeEventVisitor* sv = v->new_sub_visitor(antecedent_visitors);
+          d->add_visitor(sv, true);
+          antecedent_visitors[v] = sv;
+        }
     }
+    for(auto* v : visitors)
+      if(!v->is_parallelizable())
+        add_visitor(v, false);
 
     auto* sink = new io::data_source::OneToNDataSink<TelescopeEvent>;
     std::vector<std::thread> threads;

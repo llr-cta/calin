@@ -27,41 +27,58 @@
 
 using calin::math::special::SQR;
 using namespace calin::diagnostics::waveform;
+using calin::iact_data::functional_event_visitor::
+  DualValueInt32FunctionalTelescopeEventVisitor;
+using calin::ix::diagnostics::waveform::
+  FunctionalWaveformStatsVisitorConfig;
 
-IntegratedWaveformStatsVisitor::
-IntegratedWaveformStatsVisitor(bool calculate_covariance):
-  TelescopeEventVisitor(), calculate_covariance_(calculate_covariance)
+FunctionalWaveformStatsVisitor::
+FunctionalWaveformStatsVisitor(
+    DualValueInt32FunctionalTelescopeEventVisitor* value_supplier,
+    const FunctionalWaveformStatsVisitorConfig& config):
+  TelescopeEventVisitor(), value_supplier_(value_supplier), config_(config)
 {
   // nothing to see here
 }
 
-IntegratedWaveformStatsVisitor::~IntegratedWaveformStatsVisitor()
+FunctionalWaveformStatsVisitor::~FunctionalWaveformStatsVisitor()
 {
   // nothing to see here
 }
 
-bool IntegratedWaveformStatsVisitor::demand_waveforms()
+bool FunctionalWaveformStatsVisitor::demand_waveforms()
 {
   return true;
 }
 
-bool IntegratedWaveformStatsVisitor::is_parallelizable()
+bool FunctionalWaveformStatsVisitor::is_parallelizable()
 {
   return true;
 }
 
-IntegratedWaveformStatsVisitor* IntegratedWaveformStatsVisitor::new_sub_visitor()
+FunctionalWaveformStatsVisitor*
+FunctionalWaveformStatsVisitor::new_sub_visitor(
+  const std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>&
+    antecedent_visitors)
 {
-  auto* sub_visitor = new IntegratedWaveformStatsVisitor;
+  auto i_sub_value_supplier = antecedent_visitors.find(value_supplier_);
+  if(i_sub_value_supplier == antecedent_visitors.end())
+    throw std::logic_error("No thread specific value suppler!");
+  auto* sub_value_supplier =
+    dynamic_cast<DualValueInt32FunctionalTelescopeEventVisitor*>(
+      i_sub_value_supplier->second);
+  auto* sub_visitor =
+    new FunctionalWaveformStatsVisitor(sub_value_supplier, config_);
   sub_visitor->parent_ = this;
   return sub_visitor;
 }
 
-bool IntegratedWaveformStatsVisitor::visit_telescope_run(
+bool FunctionalWaveformStatsVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* run_config)
 {
   run_config_ = run_config;
+
   results_.Clear();
 
   int nchan = run_config_->configured_channel_id_size();
@@ -89,13 +106,13 @@ bool IntegratedWaveformStatsVisitor::visit_telescope_run(
   return true;
 }
 
-bool IntegratedWaveformStatsVisitor::leave_telescope_run()
+bool FunctionalWaveformStatsVisitor::leave_telescope_run()
 {
   run_config_ = nullptr;
   return true;
 }
 
-bool IntegratedWaveformStatsVisitor::visit_telescope_event(
+bool FunctionalWaveformStatsVisitor::visit_telescope_event(
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   for(auto& ichan : high_gain_mask_)ichan = 0;
@@ -103,30 +120,78 @@ bool IntegratedWaveformStatsVisitor::visit_telescope_event(
   return true;
 }
 
-bool IntegratedWaveformStatsVisitor::visit_waveform(unsigned ichan,
+bool FunctionalWaveformStatsVisitor::leave_telescope_event()
+{
+  if(results_.has_high_gain())
+    process_one_gain(high_gain_mask_, high_gain_signal_,
+      results_.mutable_high_gain());
+  if(results_.has_low_gain())
+    process_one_gain(low_gain_mask_, low_gain_signal_,
+      results_.mutable_low_gain());
+  return true;
+}
+
+bool FunctionalWaveformStatsVisitor::visit_waveform(unsigned ichan,
   calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
   calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
 {
   const int index = run_config_->configured_channel_index(ichan);
-#if 0
-  if(high_gain)
-    process_one_waveform(high_gain, results_.mutable_high_gain(index));
-  if(low_gain)
-    process_one_waveform(low_gain, results_.mutable_low_gain(index));
-#endif
+  if(high_gain) {
+    high_gain_mask_[index] = 1;
+    high_gain_signal_[index] = value_supplier_->high_gain_value();
+  }
+  if(low_gain) {
+    low_gain_mask_[index] = 1;
+    low_gain_signal_[index] = value_supplier_->low_gain_value();
+  }
   return true;
 }
 
-#if 0
-void IntegratedWaveformStatsVisitor::
-process_one_waveform(
+void FunctionalWaveformStatsVisitor::visit_one_waveform(
   const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
-  ix::diagnostics::waveform::WaveformRawPSD* psd)
+  unsigned index, std::vector<int>& mask, std::vector<int32_t>& signal)
 {
+  mask[index] = 1;
 }
-#endif
 
-bool IntegratedWaveformStatsVisitor::merge_results()
+void FunctionalWaveformStatsVisitor::process_one_gain(
+  const std::vector<int>& mask,
+  const std::vector<int32_t>& signal,
+  calin::ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stats)
+{
+  auto* num_sum = stats->mutable_num_sum_entries()->mutable_data();
+  auto* sum = stats->mutable_sum()->mutable_data();
+  auto* sum_squared = stats->mutable_sum_squared()->mutable_data();
+  const unsigned nchan = mask.size();
+  for(unsigned ichan=0; ichan<nchan; ichan++)
+    if(mask[ichan])
+    {
+      auto si = signal[ichan];
+      num_sum[ichan]++;
+      sum[ichan] += si;
+      sum_squared[ichan] += SQR(si);
+    }
+
+  if(config_.calculate_covariance())
+  {
+    auto* num_sum_product =
+      stats->mutable_num_sum_product_entries()->mutable_data();
+    auto* sum_product = stats->mutable_sum_product()->mutable_data();
+    for(unsigned ichan=0; ichan<nchan; ichan++)
+      if(mask[ichan])
+      {
+        auto si = signal[ichan];
+        for(unsigned jchan=ichan+1; jchan<nchan; jchan++)
+          if(mask[jchan])
+          {
+            num_sum_product[ichan]++;
+            sum_product[ichan] += si*signal[jchan];
+          }
+      }
+    }
+}
+
+bool FunctionalWaveformStatsVisitor::merge_results()
 {
   if(parent_)
   {
@@ -144,11 +209,11 @@ bool IntegratedWaveformStatsVisitor::merge_results()
   return true;
 }
 
-#if 0
-void IntegratedWaveformStatsVisitor::merge_one_gain(
-  const ix::diagnostics::waveform::WaveformRawPSD* from,
-  ix::diagnostics::waveform::WaveformRawPSD* to)
+void FunctionalWaveformStatsVisitor::merge_one_gain(
+  const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* from,
+  ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* to)
 {
+#if 0
   assert(to->psd_sum_size() == from->psd_sum_size());
   assert(to->psd_sum_squared_size() == from->psd_sum_squared_size());
   to->set_num_entries(to->num_entries() + from->num_entries());
@@ -160,5 +225,11 @@ void IntegratedWaveformStatsVisitor::merge_one_gain(
     to->set_corr_sum(i,to->corr_sum(i) + from->corr_sum(i));
   for(int i=0; i<from->corr_sum_squared_size(); i++)
     to->set_corr_sum_squared(i,to->corr_sum_squared(i) + from->corr_sum_squared(i));
-}
 #endif
+}
+
+Eigen::MatrixXd FunctionalWaveformStatsVisitor::camera_cov(
+  const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stat)
+{
+
+}

@@ -25,6 +25,7 @@
 #include <fftw3.h>
 
 #include <iact_data/event_visitor.hpp>
+#include <iact_data/functional_event_visitor.hpp>
 #include <diagnostics/waveform.pb.h>
 
 namespace calin { namespace diagnostics { namespace waveform {
@@ -39,7 +40,10 @@ public:
 
   bool demand_waveforms() override;
   bool is_parallelizable() override;
-  WaveformStatsVisitor* new_sub_visitor() override;
+  WaveformStatsVisitor* new_sub_visitor(
+    const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+        calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+      antecedent_visitors) override;
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::
@@ -100,7 +104,10 @@ public:
 
   bool demand_waveforms() override;
   bool is_parallelizable() override;
-  WaveformPSDVisitor* new_sub_visitor() override;
+  WaveformPSDVisitor* new_sub_visitor(
+    const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+        calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+      antecedent_visitors) override;
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::
@@ -155,17 +162,24 @@ protected:
   fftw_plan fftw_plan_bwd_ = nullptr;
 };
 
-class IntegratedWaveformStatsVisitor:
+class FunctionalWaveformStatsVisitor:
   public iact_data::event_visitor::TelescopeEventVisitor
 {
 public:
-  IntegratedWaveformStatsVisitor(bool calculate_covariance = true);
+  FunctionalWaveformStatsVisitor(
+    calin::iact_data::functional_event_visitor::
+      DualValueInt32FunctionalTelescopeEventVisitor* value_supplier,
+    const calin::ix::diagnostics::waveform::
+      FunctionalWaveformStatsVisitorConfig& config = default_config());
 
-  virtual ~IntegratedWaveformStatsVisitor();
+  virtual ~FunctionalWaveformStatsVisitor();
 
   bool demand_waveforms() override;
   bool is_parallelizable() override;
-  IntegratedWaveformStatsVisitor* new_sub_visitor() override;
+  FunctionalWaveformStatsVisitor* new_sub_visitor(
+    const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+        calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+      antecedent_visitors) override;
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::
@@ -174,6 +188,7 @@ public:
 
   bool visit_telescope_event(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+  bool leave_telescope_event() override;
 
   bool visit_waveform(unsigned ichan,
     calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
@@ -181,32 +196,46 @@ public:
 
   bool merge_results() override;
 
-  calin::ix::diagnostics::waveform::CameraIntegratedWaveformRawStats results()
+  calin::ix::diagnostics::waveform::CameraIntFunctionalWaveformRawStats results()
   {
     return results_;
   }
 
   static Eigen::MatrixXd camera_cov(
-    const ix::diagnostics::waveform::OneGainIntegratedWaveformRawStats* stat);
+    const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stat);
+
+  static calin::ix::diagnostics::waveform::FunctionalWaveformStatsVisitorConfig
+  default_config()
+  {
+    calin::ix::diagnostics::waveform::FunctionalWaveformStatsVisitorConfig cfg;
+    return cfg;
+  }
 
 protected:
-#if 0
-  void process_one_waveform(
+  void visit_one_waveform(
     const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
-    ix::diagnostics::waveform::WaveformRawStats* r_stat);
+    unsigned index, std::vector<int>& mask, std::vector<int32_t>& signal);
+
+  void process_one_gain(const std::vector<int>& mask,
+    const std::vector<int32_t>& signal,
+    calin::ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stats);
 
   void merge_one_gain(
-    const ix::diagnostics::waveform::WaveformRawStats* from,
-    ix::diagnostics::waveform::WaveformRawStats* to);
-    #endif
+    const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* from,
+    ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* to);
+
+  calin::iact_data::functional_event_visitor::
+    DualValueInt32FunctionalTelescopeEventVisitor* value_supplier_;
+  calin::ix::diagnostics::waveform::
+    FunctionalWaveformStatsVisitorConfig config_;
 
   std::vector<int> high_gain_mask_;
   std::vector<int32_t> high_gain_signal_;
   std::vector<int> low_gain_mask_;
   std::vector<int32_t> low_gain_signal_;
 
-  IntegratedWaveformStatsVisitor* parent_ = nullptr;
-  calin::ix::diagnostics::waveform::CameraIntegratedWaveformRawStats results_;
+  FunctionalWaveformStatsVisitor* parent_ = nullptr;
+  calin::ix::diagnostics::waveform::CameraIntFunctionalWaveformRawStats results_;
   const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
     run_config_ = nullptr;
   bool calculate_covariance_ = false;
