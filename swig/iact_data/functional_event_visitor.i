@@ -1,8 +1,8 @@
 /*
 
-   calin/diagnostics/waveform.i -- Stephen Fegan -- 2016-03-23
+   calin/iact_data/event_dispatcher.i -- Stephen Fegan -- 2016-02-10
 
-   SWIG interface file for calin waveform diagnostics
+   SWIG interface file for calin event dispatcher and visitor
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -20,10 +20,10 @@
 
 */
 
-%module (package="calin.diagnostics") waveform
+%module (package="calin.iact_data", threads="1") functional_event_visitor
 
 %{
-#include "diagnostics/waveform.hpp"
+#include "iact_data/functional_event_visitor.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -36,8 +36,5 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%import "iact_data/event_dispatcher.i"
-%import "iact_data/functional_event_visitor.i"
-%import "diagnostics/waveform.pb.i"
-%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& h };
-%include "diagnostics/waveform.hpp"
+%import "event_dispatcher.i"
+%include "iact_data/functional_event_visitor.hpp"

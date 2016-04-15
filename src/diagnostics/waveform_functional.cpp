@@ -195,16 +195,12 @@ bool FunctionalWaveformStatsVisitor::merge_results()
 {
   if(parent_)
   {
-#if 0
-    assert(results_.high_gain_size() == parent_->results_.high_gain_size());
-    assert(results_.low_gain_size() == parent_->results_.low_gain_size());
-    for(int ichan=0; ichan<results_.high_gain_size(); ichan++)
-      merge_one_gain(&results_.high_gain(ichan),
-        parent_->results_.mutable_high_gain(ichan));
-    for(int ichan=0; ichan<results_.low_gain_size(); ichan++)
-      merge_one_gain(&results_.low_gain(ichan),
-        parent_->results_.mutable_low_gain(ichan));
-#endif
+    if(results_.has_high_gain())
+      merge_one_gain(&results_.high_gain(),
+        parent_->results_.mutable_high_gain());
+    if(results_.has_low_gain())
+      merge_one_gain(&results_.low_gain(),
+        parent_->results_.mutable_low_gain());
   }
   return true;
 }
@@ -213,19 +209,25 @@ void FunctionalWaveformStatsVisitor::merge_one_gain(
   const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* from,
   ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* to)
 {
-#if 0
-  assert(to->psd_sum_size() == from->psd_sum_size());
-  assert(to->psd_sum_squared_size() == from->psd_sum_squared_size());
-  to->set_num_entries(to->num_entries() + from->num_entries());
-  for(int i=0; i<from->psd_sum_size(); i++)
-    to->set_psd_sum(i,to->psd_sum(i) + from->psd_sum(i));
-  for(int i=0; i<from->psd_sum_squared_size(); i++)
-    to->set_psd_sum_squared(i,to->psd_sum_squared(i) + from->psd_sum_squared(i));
-  for(int i=0; i<from->corr_sum_size(); i++)
-    to->set_corr_sum(i,to->corr_sum(i) + from->corr_sum(i));
-  for(int i=0; i<from->corr_sum_squared_size(); i++)
-    to->set_corr_sum_squared(i,to->corr_sum_squared(i) + from->corr_sum_squared(i));
-#endif
+  assert(to->num_sum_entries_size() == from->num_sum_entries_size());
+  assert(to->sum_size() == from->sum_size());
+  assert(to->sum_squared_size() == from->sum_squared_size());
+  assert(to->num_sum_product_entries_size() ==
+    from->num_sum_product_entries_size());
+  assert(to->sum_product_size() == from->sum_product_size());
+
+  for(int i=0; i<from->num_sum_entries_size(); i++)
+    to->set_num_sum_entries(i,
+      to->num_sum_entries(i) + from->num_sum_entries(i));
+  for(int i=0; i<from->sum_size(); i++)
+    to->set_sum(i, to->sum(i) + from->sum(i));
+  for(int i=0; i<from->sum_squared_size(); i++)
+    to->set_sum_squared(i, to->sum_squared(i) + from->sum_squared(i));
+  for(int i=0; i<from->num_sum_product_entries_size(); i++)
+    to->set_num_sum_product_entries(i,
+      to->num_sum_product_entries(i) + from->num_sum_product_entries(i));
+  for(int i=0; i<from->sum_product_size(); i++)
+    to->set_sum_product(i, to->sum_product(i) + from->sum_product(i));
 }
 
 Eigen::MatrixXd FunctionalWaveformStatsVisitor::camera_cov(

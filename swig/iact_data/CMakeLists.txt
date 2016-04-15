@@ -13,7 +13,8 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_FILES telescope_data_source.i event_dispatcher.i)
+set(CALIN_SWIG_FILES telescope_data_source.i event_dispatcher.i
+	functional_event_visitor.i)
 set(CALIN_SWIG_TARGET iact_data)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
