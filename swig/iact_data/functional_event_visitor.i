@@ -37,4 +37,5 @@
 %import "calin_global_definitions.i"
 
 %import "event_dispatcher.i"
+%import "iact_data/functional_event_visitor.pb.i"
 %include "iact_data/functional_event_visitor.hpp"
