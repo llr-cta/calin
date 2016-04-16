@@ -201,13 +201,20 @@ public:
     return results_;
   }
 
-  static Eigen::MatrixXd camera_cov(
+  static Eigen::VectorXd channel_mean(
+    const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stat);
+
+  static Eigen::VectorXd channel_var(
+    const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stat);
+
+  static Eigen::MatrixXd channel_cov(
     const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stat);
 
   static calin::ix::diagnostics::waveform::FunctionalWaveformStatsVisitorConfig
   default_config()
   {
     calin::ix::diagnostics::waveform::FunctionalWaveformStatsVisitorConfig cfg;
+    cfg.set_calculate_covariance(true);
     return cfg;
   }
 

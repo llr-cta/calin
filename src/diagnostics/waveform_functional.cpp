@@ -177,16 +177,18 @@ void FunctionalWaveformStatsVisitor::process_one_gain(
     auto* num_sum_product =
       stats->mutable_num_sum_product_entries()->mutable_data();
     auto* sum_product = stats->mutable_sum_product()->mutable_data();
+    unsigned idx = 0;
     for(unsigned ichan=0; ichan<nchan; ichan++)
       if(mask[ichan])
       {
         auto si = signal[ichan];
-        for(unsigned jchan=ichan+1; jchan<nchan; jchan++)
+        for(unsigned jchan=ichan+1; jchan<nchan; jchan++, idx++)
           if(mask[jchan])
           {
-            num_sum_product[ichan]++;
-            sum_product[ichan] += si*signal[jchan];
+            num_sum_product[idx]++;
+            sum_product[idx] += si*signal[jchan];
           }
+
       }
     }
 }
@@ -230,8 +232,54 @@ void FunctionalWaveformStatsVisitor::merge_one_gain(
     to->set_sum_product(i, to->sum_product(i) + from->sum_product(i));
 }
 
-Eigen::MatrixXd FunctionalWaveformStatsVisitor::camera_cov(
+Eigen::VectorXd FunctionalWaveformStatsVisitor::channel_mean(
   const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stat)
 {
+  const int N = stat->sum_size();
+  assert(N == stat->num_sum_entries_size());
+  Eigen::VectorXd m(N);
+  for(int i=0; i<N; i++)
+    m(i) = double(stat->sum(i)) / double(stat->num_sum_entries(i));
+  return m;
+}
 
+Eigen::VectorXd FunctionalWaveformStatsVisitor::channel_var(
+  const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stat)
+{
+  const int N = stat->sum_size();
+  assert(N == stat->sum_squared_size());
+  assert(N == stat->num_sum_entries_size());
+  Eigen::VectorXd v(N);
+  for(int i=0; i<N; i++)
+    v(i) = double(stat->sum_squared(i)) / double(stat->num_sum_entries(i))
+      - SQR(double(stat->sum(i)) / double(stat->num_sum_entries(i)));
+  return v;
+}
+
+Eigen::MatrixXd FunctionalWaveformStatsVisitor::channel_cov(
+  const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stat)
+{
+  const int N = stat->sum_size();
+  assert(N == stat->sum_squared_size());
+  assert(N == stat->num_sum_entries_size());
+  assert(N*(N-1)/2 == stat->sum_product_size());
+  assert(N*(N-1)/2 == stat->num_sum_product_entries_size());
+
+  Eigen::MatrixXd c(N,N);
+  for(int i=0; i<N; i++)
+    c(i,i) = double(stat->sum_squared(i)) / double(stat->num_sum_entries(i))
+      - SQR(double(stat->sum(i)) / double(stat->num_sum_entries(i)));
+  for(int i=0; i<N; i++)
+    for(int j=i+1; j<N; j++)
+    {
+      int idx = N*(N-1)/2-(N-i)*(N-i-1)/2 + j - i - 1;
+      double cij =
+        double(stat->sum_product(idx)) /
+          double(stat->num_sum_product_entries(idx))
+        - double(stat->sum(i))*double(stat->sum(j)) /
+          (double(stat->num_sum_entries(i))*double(stat->num_sum_entries(j)));
+      c(i,j) = cij;
+      c(j,i) = cij;
+    }
+  return c;
 }
