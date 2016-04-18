@@ -94,4 +94,29 @@ private:
   int32_t low_gain_value_ = 0;
 };
 
+class DifferencingFunctionalTelescopeEventVisitor:
+  public DualValueInt32FunctionalTelescopeEventVisitor
+{
+public:
+  DifferencingFunctionalTelescopeEventVisitor(
+    DualValueInt32FunctionalTelescopeEventVisitor* sig_value_supplier,
+    DualValueInt32FunctionalTelescopeEventVisitor* bkg_value_supplier);
+  virtual ~DifferencingFunctionalTelescopeEventVisitor();
+
+  bool demand_waveforms() override;
+  bool is_parallelizable() override;
+
+  DifferencingFunctionalTelescopeEventVisitor* new_sub_visitor(
+    const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+        calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+      antecedent_visitors) override;
+
+  int32_t low_gain_value() override;
+  int32_t high_gain_value() override;
+
+private:
+  DualValueInt32FunctionalTelescopeEventVisitor* sig_value_supplier_;
+  DualValueInt32FunctionalTelescopeEventVisitor* bkg_value_supplier_;
+};
+
 } } } // namespace calin::iact_data::functional_event_visitor

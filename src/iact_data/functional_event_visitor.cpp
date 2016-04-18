@@ -114,3 +114,66 @@ int32_t FixedWindowSumFunctionalTelescopeEventVisitor::high_gain_value()
 {
   return high_gain_value_;
 }
+
+
+DifferencingFunctionalTelescopeEventVisitor::
+DifferencingFunctionalTelescopeEventVisitor(
+    DualValueInt32FunctionalTelescopeEventVisitor* sig_value_supplier,
+    DualValueInt32FunctionalTelescopeEventVisitor* bkg_value_supplier):
+  DualValueInt32FunctionalTelescopeEventVisitor(),
+  sig_value_supplier_(sig_value_supplier), bkg_value_supplier_(bkg_value_supplier)
+{
+  // nothing to see here
+}
+
+DifferencingFunctionalTelescopeEventVisitor::
+~DifferencingFunctionalTelescopeEventVisitor()
+{
+  // nothing to see here
+}
+
+bool DifferencingFunctionalTelescopeEventVisitor::demand_waveforms()
+{
+  return false;
+}
+
+bool DifferencingFunctionalTelescopeEventVisitor::is_parallelizable()
+{
+  return true;
+}
+
+DifferencingFunctionalTelescopeEventVisitor*
+DifferencingFunctionalTelescopeEventVisitor::new_sub_visitor(
+  const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+    calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+  antecedent_visitors)
+{
+  auto i_sig_value_supplier = antecedent_visitors.find(sig_value_supplier_);
+  if(i_sig_value_supplier == antecedent_visitors.end())
+    throw std::logic_error("No thread specific value suppler for signal!");
+  auto* sig_value_supplier =
+    dynamic_cast<DualValueInt32FunctionalTelescopeEventVisitor*>(
+      i_sig_value_supplier->second);
+  auto i_bkg_value_supplier = antecedent_visitors.find(bkg_value_supplier_);
+  if(i_bkg_value_supplier == antecedent_visitors.end())
+    throw std::logic_error("No thread specific value suppler for background!");
+  auto* bkg_value_supplier =
+    dynamic_cast<DualValueInt32FunctionalTelescopeEventVisitor*>(
+      i_bkg_value_supplier->second);
+  auto* sub_visitor =
+    new DifferencingFunctionalTelescopeEventVisitor(sig_value_supplier,
+      bkg_value_supplier);
+  return sub_visitor;
+}
+
+int32_t DifferencingFunctionalTelescopeEventVisitor::low_gain_value()
+{
+  return sig_value_supplier_->low_gain_value() -
+    bkg_value_supplier_->low_gain_value();
+}
+
+int32_t DifferencingFunctionalTelescopeEventVisitor::high_gain_value()
+{
+  return sig_value_supplier_->high_gain_value() -
+    bkg_value_supplier_->high_gain_value();
+}

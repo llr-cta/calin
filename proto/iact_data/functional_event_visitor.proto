@@ -27,8 +27,8 @@ import "calin.proto";
 package calin.ix.iact_data.functional_event_visitor;
 
 message FixedWindowSumFunctionalTelescopeEventVisitorConfig {
-  int32 integration_0                                     = 1 [
+  int32 integration_0                                      = 1 [
     (CFO).desc = "Start of integration window in samples." ];
-  uint32 integration_n                                    = 2 [
+  uint32 integration_n                                     = 2 [
     (CFO).desc = "Size of integration window in samples." ];
 };
