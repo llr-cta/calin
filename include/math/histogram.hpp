@@ -546,6 +546,9 @@ template<typename Acc> class BasicHistogram1D:
   std::string weight_units_;
 };
 
+void merge_histogram1d_data(calin::ix::math::histogram::Histogram1DData* to,
+  const calin::ix::math::histogram::Histogram1DData& from);
+
 template<typename Acc> bool BasicHistogram1D<Acc>::
 insert(const double x, const double w)
 {
@@ -600,6 +603,7 @@ dump_as_proto(calin::ix::math::histogram::Histogram1DData* data) const
   data->set_weight_units(weight_units_);
   return data;
 }
+
 
 template<typename Acc>
 bool BasicHistogram1D<Acc>::operator==(const BasicHistogram1D& o) const
