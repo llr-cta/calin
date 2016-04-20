@@ -322,6 +322,36 @@ TEST(TestBinnedCDF, Stats) {
   ASSERT_LE(std::abs(swxx - (dN-1)*(2.0*dN-1.0)/6.0),1e-6);
 }
 
+TEST(TestMergeHistProto, NonOverlap) {
+  SimpleHist hist_lo {1.0};
+  SimpleHist hist_hi {1.0};
+  hist_lo.insert_vec({1,2,3});
+  hist_hi.insert_vec({11,12,13});
+  Histogram1DData* hist_data_lo = hist_lo.dump_as_proto();
+  Histogram1DData* hist_data_hi = hist_hi.dump_as_proto();
+  Histogram1DData hist_data_merged;
+  merge_histogram1d_data(&hist_data_merged, *hist_data_lo);
+  merge_histogram1d_data(&hist_data_merged, *hist_data_hi);
+  std::cout << hist_data_merged.DebugString();
+  delete hist_data_lo;
+  delete hist_data_hi;
+}
+
+TEST(TestMergeHistProto, Overlap) {
+  SimpleHist hist_lo {1.0};
+  SimpleHist hist_hi {1.0};
+  hist_lo.insert_vec({1,2,3,4,5,6});
+  hist_hi.insert_vec({4,5,6,7,8,9});
+  Histogram1DData* hist_data_lo = hist_lo.dump_as_proto();
+  Histogram1DData* hist_data_hi = hist_hi.dump_as_proto();
+  Histogram1DData hist_data_merged;
+  merge_histogram1d_data(&hist_data_merged, *hist_data_lo);
+  merge_histogram1d_data(&hist_data_merged, *hist_data_hi);
+  std::cout << hist_data_merged.DebugString();
+  delete hist_data_lo;
+  delete hist_data_hi;
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
