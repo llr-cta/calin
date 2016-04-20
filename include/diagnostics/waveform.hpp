@@ -225,7 +225,7 @@ protected:
     unsigned index, std::vector<int>& mask, std::vector<int32_t>& signal);
 
   void process_one_gain(const std::vector<int>& mask,
-    const std::vector<int32_t>& signal,
+      const std::vector<int32_t>& signal,
     std::vector<calin::math::histogram::SimpleHist>& hist,
     calin::ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stats);
 

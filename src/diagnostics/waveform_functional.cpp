@@ -26,6 +26,7 @@
 #include <diagnostics/waveform.hpp>
 
 using calin::math::special::SQR;
+using namespace calin::io::log;
 using namespace calin::diagnostics::waveform;
 using calin::iact_data::functional_event_visitor::
   DualValueInt32FunctionalTelescopeEventVisitor;
@@ -120,12 +121,18 @@ bool FunctionalWaveformStatsVisitor::visit_telescope_run(
 
 bool FunctionalWaveformStatsVisitor::leave_telescope_run()
 {
-  for(unsigned ichan=0; ichan<high_gain_hist_.size(); ichan++)
-    high_gain_hist_[ichan].dump_as_proto(
-      results_.mutable_high_gain()->mutable_value_hist(ichan));
-  for(unsigned ichan=0; ichan<low_gain_hist_.size(); ichan++)
-    low_gain_hist_[ichan].dump_as_proto(
-      results_.mutable_low_gain()->mutable_value_hist(ichan));
+  for(unsigned ichan=0; ichan<high_gain_hist_.size(); ichan++) {
+    auto* hist = high_gain_hist_[ichan].dump_as_proto();
+    calin::math::histogram::merge_histogram1d_data(
+      results_.mutable_high_gain()->mutable_value_hist(ichan), *hist);
+    delete hist;
+  }
+  for(unsigned ichan=0; ichan<low_gain_hist_.size(); ichan++) {
+    auto* hist = low_gain_hist_[ichan].dump_as_proto();
+    calin::math::histogram::merge_histogram1d_data(
+      results_.mutable_low_gain()->mutable_value_hist(ichan), *hist);
+    delete hist;
+  }
   run_config_ = nullptr;
   return true;
 }
@@ -207,7 +214,6 @@ void FunctionalWaveformStatsVisitor::process_one_gain(
             num_sum_product[idx]++;
             sum_product[idx] += si*signal[jchan];
           }
-
       }
     }
 }
