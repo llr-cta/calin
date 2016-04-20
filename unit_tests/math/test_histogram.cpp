@@ -332,6 +332,7 @@ TEST(TestMergeHistProto, NonOverlap) {
   Histogram1DData hist_data_merged;
   merge_histogram1d_data(&hist_data_merged, *hist_data_lo);
   merge_histogram1d_data(&hist_data_merged, *hist_data_hi);
+  
   std::cout << hist_data_merged.DebugString();
   delete hist_data_lo;
   delete hist_data_hi;

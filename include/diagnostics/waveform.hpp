@@ -27,6 +27,7 @@
 #include <iact_data/event_visitor.hpp>
 #include <iact_data/functional_event_visitor.hpp>
 #include <diagnostics/waveform.pb.h>
+#include <math/histogram.hpp>
 
 namespace calin { namespace diagnostics { namespace waveform {
 
@@ -225,6 +226,7 @@ protected:
 
   void process_one_gain(const std::vector<int>& mask,
     const std::vector<int32_t>& signal,
+    std::vector<calin::math::histogram::SimpleHist>& hist,
     calin::ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stats);
 
   void merge_one_gain(
@@ -240,6 +242,9 @@ protected:
   std::vector<int32_t> high_gain_signal_;
   std::vector<int> low_gain_mask_;
   std::vector<int32_t> low_gain_signal_;
+
+  std::vector<calin::math::histogram::SimpleHist> high_gain_hist_;
+  std::vector<calin::math::histogram::SimpleHist> low_gain_hist_;
 
   FunctionalWaveformStatsVisitor* parent_ = nullptr;
   calin::ix::diagnostics::waveform::CameraIntFunctionalWaveformRawStats results_;

@@ -1,8 +1,8 @@
 /*
 
-   calin/iact_data/event_dispatcher.i -- Stephen Fegan -- 2016-02-10
+   calin/iact_data/functional_event_visitor.i -- Stephen Fegan -- 2016-04-16
 
-   SWIG interface file for calin event dispatcher and visitor
+   SWIG interface file for functioal event visitor
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay

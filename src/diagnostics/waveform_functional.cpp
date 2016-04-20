@@ -87,27 +87,45 @@ bool FunctionalWaveformStatsVisitor::visit_telescope_run(
 
   high_gain_mask_.resize(nchan);
   high_gain_signal_.resize(nchan);
+  high_gain_hist_.clear();
+  for(unsigned ichan=0; ichan<nchan; ichan++)
+    high_gain_hist_.emplace_back(1,0.5,
+      std::string("Channel ")+std::to_string(ichan)+" (high gain)","","events");
+
   auto* hg_results = results_.mutable_high_gain();
   hg_results->mutable_num_sum_entries()->Resize(nchan,0);
   hg_results->mutable_num_sum_product_entries()->Resize(nchan*(nchan-1)/2,0);
   hg_results->mutable_sum()->Resize(nchan,0);
   hg_results->mutable_sum_squared()->Resize(nchan,0);
   hg_results->mutable_sum_product()->Resize(nchan*(nchan-1)/2,0);
+  for(unsigned ichan=0; ichan<nchan; ichan++)hg_results->add_value_hist();
 
   low_gain_mask_.resize(nchan);
   low_gain_signal_.resize(nchan);
+  low_gain_hist_.clear();
+  for(unsigned ichan=0; ichan<nchan; ichan++)
+    low_gain_hist_.emplace_back(1,0.5,
+      std::string("Channel ")+std::to_string(ichan)+" (low gain)","","events");
+
   auto* lg_results = results_.mutable_low_gain();
   lg_results->mutable_num_sum_entries()->Resize(nchan,0);
   lg_results->mutable_num_sum_product_entries()->Resize(nchan*(nchan-1)/2,0);
   lg_results->mutable_sum()->Resize(nchan,0);
   lg_results->mutable_sum_squared()->Resize(nchan,0);
   lg_results->mutable_sum_product()->Resize(nchan*(nchan-1)/2,0);
+  for(unsigned ichan=0; ichan<nchan; ichan++)lg_results->add_value_hist();
 
   return true;
 }
 
 bool FunctionalWaveformStatsVisitor::leave_telescope_run()
 {
+  for(unsigned ichan=0; ichan<high_gain_hist_.size(); ichan++)
+    high_gain_hist_[ichan].dump_as_proto(
+      results_.mutable_high_gain()->mutable_value_hist(ichan));
+  for(unsigned ichan=0; ichan<low_gain_hist_.size(); ichan++)
+    low_gain_hist_[ichan].dump_as_proto(
+      results_.mutable_low_gain()->mutable_value_hist(ichan));
   run_config_ = nullptr;
   return true;
 }
@@ -123,10 +141,10 @@ bool FunctionalWaveformStatsVisitor::visit_telescope_event(
 bool FunctionalWaveformStatsVisitor::leave_telescope_event()
 {
   if(results_.has_high_gain())
-    process_one_gain(high_gain_mask_, high_gain_signal_,
+    process_one_gain(high_gain_mask_, high_gain_signal_, high_gain_hist_,
       results_.mutable_high_gain());
   if(results_.has_low_gain())
-    process_one_gain(low_gain_mask_, low_gain_signal_,
+    process_one_gain(low_gain_mask_, low_gain_signal_, low_gain_hist_,
       results_.mutable_low_gain());
   return true;
 }
@@ -155,8 +173,8 @@ void FunctionalWaveformStatsVisitor::visit_one_waveform(
 }
 
 void FunctionalWaveformStatsVisitor::process_one_gain(
-  const std::vector<int>& mask,
-  const std::vector<int32_t>& signal,
+  const std::vector<int>& mask, const std::vector<int32_t>& signal,
+  std::vector<calin::math::histogram::SimpleHist>& hist,
   calin::ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stats)
 {
   auto* num_sum = stats->mutable_num_sum_entries()->mutable_data();
@@ -170,6 +188,7 @@ void FunctionalWaveformStatsVisitor::process_one_gain(
       num_sum[ichan]++;
       sum[ichan] += si;
       sum_squared[ichan] += SQR(si);
+      hist[ichan].insert(double(si));
     }
 
   if(config_.calculate_covariance())
@@ -217,6 +236,7 @@ void FunctionalWaveformStatsVisitor::merge_one_gain(
   assert(to->num_sum_product_entries_size() ==
     from->num_sum_product_entries_size());
   assert(to->sum_product_size() == from->sum_product_size());
+  assert(to->value_hist_size() == from->value_hist_size());
 
   for(int i=0; i<from->num_sum_entries_size(); i++)
     to->set_num_sum_entries(i,
@@ -230,6 +250,9 @@ void FunctionalWaveformStatsVisitor::merge_one_gain(
       to->num_sum_product_entries(i) + from->num_sum_product_entries(i));
   for(int i=0; i<from->sum_product_size(); i++)
     to->set_sum_product(i, to->sum_product(i) + from->sum_product(i));
+  for(int i=0; i<from->value_hist_size(); i++)
+    calin::math::histogram::merge_histogram1d_data(to->mutable_value_hist(i),
+      from->value_hist(i));
 }
 
 Eigen::VectorXd FunctionalWaveformStatsVisitor::channel_mean(
