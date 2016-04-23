@@ -21,6 +21,7 @@
 */
 
 #include <chrono>
+#include <type_traits>
 
 #include <util/string.hpp>
 #include <io/log.hpp>
@@ -33,6 +34,7 @@ using namespace calin::iact_data::event_dispatcher;
 using namespace calin::iact_data::telescope_data_source;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::ix::iact_data::telescope_run_configuration;
+using calin::iact_data::event_visitor::TelescopeEventVisitor;
 
 TelescopeEventDispatcher::TelescopeEventDispatcher()
 {
@@ -45,7 +47,7 @@ TelescopeEventDispatcher::~TelescopeEventDispatcher()
 }
 
 void TelescopeEventDispatcher::
-add_visitor(event_visitor::TelescopeEventVisitor* visitor, bool adopt_visitor)
+add_visitor(TelescopeEventVisitor* visitor, bool adopt_visitor)
 {
   visitors_.emplace_back(visitor);
   if(visitor->demand_waveforms())wf_visitors_.emplace_back(visitor);
@@ -59,8 +61,7 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
   TelescopeRunConfiguration* run_config = src->get_run_configuration();
   accept_run_configuration(run_config);
   if(nthread <= 0 or std::none_of(visitors_.begin(), visitors_.end(),
-    [](event_visitor::TelescopeEventVisitor* v){
-      return v->is_parallelizable(); }))
+    [](TelescopeEventVisitor* v){ return v->is_parallelizable(); }))
   {
     accept_all_from_src(src, log_frequency, nthread==0);
   }
@@ -72,14 +73,21 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
     std::vector<TelescopeEventDispatcher*> sub_dispatchers;
     for(int ithread=0;ithread<nthread;ithread++)
       sub_dispatchers.emplace_back(new TelescopeEventDispatcher);
-    for(auto* v : visitors)
+    for(auto* d : sub_dispatchers)
     {
-      if(v->is_parallelizable())
-        for(auto* d : sub_dispatchers)
-          d->add_visitor(v->new_sub_visitor(), true);
-      else
-        add_visitor(v, false);
+      std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>
+        antecedent_visitors;
+      for(auto* v : visitors)
+        if(v->is_parallelizable())
+        {
+          TelescopeEventVisitor* sv = v->new_sub_visitor(antecedent_visitors);
+          d->add_visitor(sv, true);
+          antecedent_visitors[v] = sv;
+        }
     }
+    for(auto* v : visitors)
+      if(!v->is_parallelizable())
+        add_visitor(v, false);
 
     auto* sink = new io::data_source::OneToNDataSink<TelescopeEvent>;
     std::vector<std::thread> threads;
@@ -208,26 +216,28 @@ do_accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
   auto start_time = system_clock::now();
   while(TelescopeEvent* event = src->get_next())
   {
-    accept_event(event);
-    if(sink)sink->put_next(event, true);
-    else delete event;
-    ++ndispatched;
-    if(log_frequency and ndispatched % log_frequency == 0)
+    if(log_frequency and ndispatched and ndispatched % log_frequency == 0)
     {
       auto dt = system_clock::now() - start_time;
       LOG(INFO) << "Dispatched "
         << to_string_with_commas(ndispatched) << " events in "
         << to_string_with_commas(duration_cast<seconds>(dt).count()) << " sec";
     }
+
+    accept_event(event);
+    if(sink)sink->put_next(event, true);
+    else delete event;
+    ++ndispatched;
     //if(num_event_max and not --num_event_max)break;
   }
-  if(log_frequency and ndispatched % log_frequency != 0)
+  if(log_frequency)
   {
     auto dt = system_clock::now() - start_time;
     LOG(INFO) << "Dispatched "
       << to_string_with_commas(ndispatched) << " events in "
-      << to_string_with_commas(duration_cast<seconds>(dt).count())
-      << " sec (finished)";
+      << to_string_with_commas(duration_cast<seconds>(dt).count()) << " sec, "
+      << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
+      << " us/event (finished)";
   }
 }
 

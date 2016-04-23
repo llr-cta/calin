@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/unit_tests/math/test_histogram.cpp -- Stephen Fegan -- 2015-03-15
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -33,10 +33,10 @@ TEST(TestSimpleHist, InsertIntegersFrom0ToN) {
   SimpleHist myhist {1.0};
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
-      myhist.insert(j);  
+      myhist.insert(j);
   ASSERT_EQ((unsigned)myhist.size(), N);
   for(unsigned i=0;i<N;++i)
-    EXPECT_EQ(myhist.xval_center(i), i);  
+    EXPECT_EQ(myhist.xval_center(i), i);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(myhist.weight(i), i+1);
 }
@@ -49,7 +49,7 @@ TEST(TestSimpleHist, InsertIntegersFromNTo0) {
       myhist.insert(N-(j+1));
   ASSERT_EQ((unsigned)myhist.size(), N);
   for(unsigned i=0;i<N;++i)
-    EXPECT_EQ(myhist.xval_center(i), i);  
+    EXPECT_EQ(myhist.xval_center(i), i);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(myhist.weight(i), N-i);
 }
@@ -59,10 +59,10 @@ TEST(TestSimpleHist, InsertIntegersFrom0ToNWithNegativeDX) {
   SimpleHist myhist {-1.0};
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
-      myhist.insert(j);  
+      myhist.insert(j);
   ASSERT_EQ((unsigned)myhist.size(), N);
   for(unsigned i=0;i<N;++i)
-    EXPECT_EQ(myhist.xval_center(i), N-i-1);  
+    EXPECT_EQ(myhist.xval_center(i), N-i-1);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(myhist.weight(i), N-i);
 }
@@ -72,10 +72,10 @@ TEST(TestSimpleHist, LimitedInsertIntegersFrom0ToN) {
   SimpleHist myhist {1.0,99.5,899.5};
   for(unsigned i=0;i<N;++i)
     for(unsigned j=i;j<N;++j)
-      myhist.insert(j);  
+      myhist.insert(j);
   ASSERT_EQ((unsigned)myhist.size(), N-200);
   for(unsigned i=0;i<N-200;++i)
-    EXPECT_EQ(myhist.xval_center(i), i+100);  
+    EXPECT_EQ(myhist.xval_center(i), i+100);
   for(unsigned i=0;i<N-200;++i)
     EXPECT_EQ(myhist.weight(i), i+101);
   EXPECT_TRUE(myhist.is_limited());
@@ -124,7 +124,7 @@ void iterator_test(FB fbegin, FE fend, FC fival)
   i=N;
   for(auto ibin = fend(myhist); ibin!=fbegin(myhist); )
     EXPECT_EQ((--ibin)->weight(), fival(--i,N));
-  
+
   // Test post decrement
   i=N;
   for(auto ibin = fend(myhist); ibin!=fbegin(myhist); )
@@ -258,7 +258,7 @@ TEST(TestSimpleHist, CopyAndEquality) {
   myhist2.set_name("Hello there");
   ASSERT_FALSE(myhist == myhist2);
 }
-  
+
 TEST(TestSimpleHist, ToAndFromProtobuf) {
   unsigned N { 300 };
   SimpleHist myhist {1.0,99.5,199.5};
@@ -266,7 +266,7 @@ TEST(TestSimpleHist, ToAndFromProtobuf) {
   myhist.set_name("Test histogram");
   myhist.set_xval_units("xval units");
   myhist.set_weight_units("weight units");
-  Histogram1DData* hist_data = myhist.getData();
+  Histogram1DData* hist_data = myhist.dump_as_proto();
   SimpleHist myhist2(*hist_data);
   ASSERT_EQ(myhist,myhist2);
   //std::cout << hist_data->DebugString();
@@ -277,7 +277,7 @@ TEST(TestSimpleHist, KahanToAndFromProtobuf) {
   unsigned N { 10000 };
   BasicHistogram1D<KahanAccumulator> myhist {1.0};
   for(unsigned i=0;i<N;++i)myhist.insert(i,i);
-  Histogram1DData* hist_data = myhist.getData();
+  Histogram1DData* hist_data = myhist.dump_as_proto();
   BasicHistogram1D<KahanAccumulator> myhist2(*hist_data);
   // THIS COULD FAIL IN GENERAL AS CORRECTIONS AREN'T STORED IN THE
   // PROTOBUF DATA - IT SHOULD BE OK WITH THE VALUES USED HERE
@@ -293,7 +293,7 @@ TEST(TestBinnedCDF, CreateFromHistogram) {
   BinnedCDF mycdf(myhist);
   ASSERT_EQ((unsigned)mycdf.size(), N);
   for(unsigned i=0;i<N;++i)
-    EXPECT_EQ(mycdf.xval_center(i), i);  
+    EXPECT_EQ(mycdf.xval_center(i), i);
   for(unsigned i=0;i<N;++i)
     EXPECT_EQ(mycdf.cumulative_right(i), double(i*(i+1)/2)/double(N*(N-1)/2));
 }
@@ -320,6 +320,37 @@ TEST(TestBinnedCDF, Stats) {
   mycdf.moments2(swx,swxx);
   ASSERT_LE(std::abs(swx - (dN-1.0)/2.0),1e-6);
   ASSERT_LE(std::abs(swxx - (dN-1)*(2.0*dN-1.0)/6.0),1e-6);
+}
+
+TEST(TestMergeHistProto, NonOverlap) {
+  SimpleHist hist_lo {1.0};
+  SimpleHist hist_hi {1.0};
+  hist_lo.insert_vec({1,2,3});
+  hist_hi.insert_vec({11,12,13});
+  Histogram1DData* hist_data_lo = hist_lo.dump_as_proto();
+  Histogram1DData* hist_data_hi = hist_hi.dump_as_proto();
+  Histogram1DData hist_data_merged;
+  merge_histogram1d_data(&hist_data_merged, *hist_data_lo);
+  merge_histogram1d_data(&hist_data_merged, *hist_data_hi);
+  
+  std::cout << hist_data_merged.DebugString();
+  delete hist_data_lo;
+  delete hist_data_hi;
+}
+
+TEST(TestMergeHistProto, Overlap) {
+  SimpleHist hist_lo {1.0};
+  SimpleHist hist_hi {1.0};
+  hist_lo.insert_vec({1,2,3,4,5,6});
+  hist_hi.insert_vec({4,5,6,7,8,9});
+  Histogram1DData* hist_data_lo = hist_lo.dump_as_proto();
+  Histogram1DData* hist_data_hi = hist_hi.dump_as_proto();
+  Histogram1DData hist_data_merged;
+  merge_histogram1d_data(&hist_data_merged, *hist_data_lo);
+  merge_histogram1d_data(&hist_data_merged, *hist_data_hi);
+  std::cout << hist_data_merged.DebugString();
+  delete hist_data_lo;
+  delete hist_data_hi;
 }
 
 int main(int argc, char **argv) {

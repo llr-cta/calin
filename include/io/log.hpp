@@ -196,6 +196,16 @@ class LoggerStream
       logger_->log_message(level_, message_->str());
     delete message_;
   }
+  void flush()
+  {
+    if(!message_->str().empty())
+      logger_->log_message(level_, message_->str());
+    message_->str(std::string());
+  }
+  bool empty() const
+  {
+    return message_->str().empty();
+  }
   template<typename T> LoggerStream& operator<< (const T& t)
   {
     if(enabled_)*message_ << t;

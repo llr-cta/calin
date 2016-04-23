@@ -43,7 +43,9 @@ bool TelescopeEventVisitor::is_parallelizable()
   return false;
 }
 
-TelescopeEventVisitor* TelescopeEventVisitor::new_sub_visitor()
+TelescopeEventVisitor* TelescopeEventVisitor::new_sub_visitor(
+  const std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>&
+    antecedent_visitors)
 {
   throw std::runtime_error("TelescopeEventVisitor: parallel sub workers not "
     "implemented.");

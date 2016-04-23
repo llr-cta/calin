@@ -49,7 +49,10 @@ bool WaveformStatsVisitor::is_parallelizable()
   return true;
 }
 
-WaveformStatsVisitor* WaveformStatsVisitor::new_sub_visitor()
+WaveformStatsVisitor* WaveformStatsVisitor::new_sub_visitor(
+  const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+      calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+    antecedent_visitors)
 {
   auto* sub_visitor = new WaveformStatsVisitor;
   sub_visitor->parent_ = this;
