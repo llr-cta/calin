@@ -21,8 +21,11 @@
 
 */
 
+#include <algorithm>
+
 #include <io/log.hpp>
 #include <math/special.hpp>
+#include <math/covariance_calc.hpp>
 #include <diagnostics/waveform.hpp>
 
 using calin::math::special::SQR;
@@ -32,6 +35,7 @@ using calin::iact_data::functional_event_visitor::
   DualValueInt32FunctionalTelescopeEventVisitor;
 using calin::ix::diagnostics::waveform::
   FunctionalWaveformStatsVisitorConfig;
+using calin::math::covariance_calc::cov_i64_gen;
 
 FunctionalWaveformStatsVisitor::
 FunctionalWaveformStatsVisitor(
@@ -215,6 +219,10 @@ void FunctionalWaveformStatsVisitor::process_one_gain(
             sum_product[idx] += si*signal[jchan];
           }
       }
+      else
+      {
+        idx += nchan - ichan - 1;
+      }
     }
 }
 
@@ -296,17 +304,31 @@ Eigen::MatrixXd FunctionalWaveformStatsVisitor::channel_cov(
 
   Eigen::MatrixXd c(N,N);
   for(int i=0; i<N; i++)
+#if 0
     c(i,i) = double(stat->sum_squared(i)) / double(stat->num_sum_entries(i))
       - SQR(double(stat->sum(i)) / double(stat->num_sum_entries(i)));
+#else
+    c(i,i) = cov_i64_gen(stat->sum_squared(i), stat->num_sum_entries(i),
+      stat->sum(i), stat->num_sum_entries(i),
+      stat->sum(i), stat->num_sum_entries(i));
+#endif
+  int idx = 0;
   for(int i=0; i<N; i++)
-    for(int j=i+1; j<N; j++)
+    for(int j=i+1; j<N; j++, idx++)
     {
-      int idx = N*(N-1)/2-(N-i)*(N-i-1)/2 + j - i - 1;
+//      int idx = N*(N-1)/2-(N-i)*(N-i-1)/2 + j - i - 1;
+#if 0
       double cij =
         double(stat->sum_product(idx)) /
           double(stat->num_sum_product_entries(idx))
         - double(stat->sum(i))*double(stat->sum(j)) /
           (double(stat->num_sum_entries(i))*double(stat->num_sum_entries(j)));
+#else
+      double cij =
+        cov_i64_gen(stat->sum_product(idx), stat->num_sum_product_entries(idx),
+          stat->sum(i), stat->num_sum_entries(i),
+          stat->sum(j), stat->num_sum_entries(j));
+#endif
       c(i,j) = cij;
       c(j,i) = cij;
     }
