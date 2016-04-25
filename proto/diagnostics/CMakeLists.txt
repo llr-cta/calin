@@ -13,7 +13,8 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_PROTO waveform.proto module.proto counter.proto event_number.proto)
+set(CALIN_SWIG_PROTO waveform.proto module.proto counter.proto
+event_number.proto functional.proto)
 set(CALIN_PACKAGE diagnostics)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 

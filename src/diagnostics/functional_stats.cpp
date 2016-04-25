@@ -1,8 +1,8 @@
 /*
 
-   calin/diagnostics/waveform_integrated.cpp -- Stephen Fegan -- 2016-05-10
+   calin/diagnostics/functional_stats.cpp -- Stephen Fegan -- 2016-05-10
 
-   Waveform diagnostics visitor - integrated stats with histo and
+   Functional diagnostics visitor - integrated stats with histo and
    cross-channel covariance
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
@@ -26,43 +26,43 @@
 #include <io/log.hpp>
 #include <math/special.hpp>
 #include <math/covariance_calc.hpp>
-#include <diagnostics/waveform.hpp>
+#include <diagnostics/functional.hpp>
 
 using calin::math::special::SQR;
 using namespace calin::io::log;
-using namespace calin::diagnostics::waveform;
+using namespace calin::diagnostics::functional;
 using calin::iact_data::functional_event_visitor::
   DualValueInt32FunctionalTelescopeEventVisitor;
-using calin::ix::diagnostics::waveform::
-  FunctionalWaveformStatsVisitorConfig;
+using calin::ix::diagnostics::functional::
+  FunctionalStatsVisitorConfig;
 using calin::math::covariance_calc::cov_i64_gen;
 
-FunctionalWaveformStatsVisitor::
-FunctionalWaveformStatsVisitor(
+FunctionalStatsVisitor::
+FunctionalStatsVisitor(
     DualValueInt32FunctionalTelescopeEventVisitor* value_supplier,
-    const FunctionalWaveformStatsVisitorConfig& config):
+    const FunctionalStatsVisitorConfig& config):
   TelescopeEventVisitor(), value_supplier_(value_supplier), config_(config)
 {
   // nothing to see here
 }
 
-FunctionalWaveformStatsVisitor::~FunctionalWaveformStatsVisitor()
+FunctionalStatsVisitor::~FunctionalStatsVisitor()
 {
   // nothing to see here
 }
 
-bool FunctionalWaveformStatsVisitor::demand_waveforms()
+bool FunctionalStatsVisitor::demand_waveforms()
 {
   return true;
 }
 
-bool FunctionalWaveformStatsVisitor::is_parallelizable()
+bool FunctionalStatsVisitor::is_parallelizable()
 {
   return true;
 }
 
-FunctionalWaveformStatsVisitor*
-FunctionalWaveformStatsVisitor::new_sub_visitor(
+FunctionalStatsVisitor*
+FunctionalStatsVisitor::new_sub_visitor(
   const std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>&
     antecedent_visitors)
 {
@@ -73,12 +73,12 @@ FunctionalWaveformStatsVisitor::new_sub_visitor(
     dynamic_cast<DualValueInt32FunctionalTelescopeEventVisitor*>(
       i_sub_value_supplier->second);
   auto* sub_visitor =
-    new FunctionalWaveformStatsVisitor(sub_value_supplier, config_);
+    new FunctionalStatsVisitor(sub_value_supplier, config_);
   sub_visitor->parent_ = this;
   return sub_visitor;
 }
 
-bool FunctionalWaveformStatsVisitor::visit_telescope_run(
+bool FunctionalStatsVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* run_config)
 {
@@ -123,7 +123,7 @@ bool FunctionalWaveformStatsVisitor::visit_telescope_run(
   return true;
 }
 
-bool FunctionalWaveformStatsVisitor::leave_telescope_run()
+bool FunctionalStatsVisitor::leave_telescope_run()
 {
   for(unsigned ichan=0; ichan<high_gain_hist_.size(); ichan++) {
     auto* hist = high_gain_hist_[ichan].dump_as_proto();
@@ -141,7 +141,7 @@ bool FunctionalWaveformStatsVisitor::leave_telescope_run()
   return true;
 }
 
-bool FunctionalWaveformStatsVisitor::visit_telescope_event(
+bool FunctionalStatsVisitor::visit_telescope_event(
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   for(auto& ichan : high_gain_mask_)ichan = 0;
@@ -149,7 +149,7 @@ bool FunctionalWaveformStatsVisitor::visit_telescope_event(
   return true;
 }
 
-bool FunctionalWaveformStatsVisitor::leave_telescope_event()
+bool FunctionalStatsVisitor::leave_telescope_event()
 {
   if(results_.has_high_gain())
     process_one_gain(high_gain_mask_, high_gain_signal_, high_gain_hist_,
@@ -160,7 +160,7 @@ bool FunctionalWaveformStatsVisitor::leave_telescope_event()
   return true;
 }
 
-bool FunctionalWaveformStatsVisitor::visit_waveform(unsigned ichan,
+bool FunctionalStatsVisitor::visit_waveform(unsigned ichan,
   calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
   calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
 {
@@ -176,17 +176,17 @@ bool FunctionalWaveformStatsVisitor::visit_waveform(unsigned ichan,
   return true;
 }
 
-void FunctionalWaveformStatsVisitor::visit_one_waveform(
+void FunctionalStatsVisitor::visit_one_waveform(
   const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
   unsigned index, std::vector<int>& mask, std::vector<int32_t>& signal)
 {
   mask[index] = 1;
 }
 
-void FunctionalWaveformStatsVisitor::process_one_gain(
+void FunctionalStatsVisitor::process_one_gain(
   const std::vector<int>& mask, const std::vector<int32_t>& signal,
   std::vector<calin::math::histogram::SimpleHist>& hist,
-  calin::ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stats)
+  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats* stats)
 {
   auto* num_sum = stats->mutable_num_sum_entries()->mutable_data();
   auto* sum = stats->mutable_sum()->mutable_data();
@@ -226,7 +226,7 @@ void FunctionalWaveformStatsVisitor::process_one_gain(
     }
 }
 
-bool FunctionalWaveformStatsVisitor::merge_results()
+bool FunctionalStatsVisitor::merge_results()
 {
   if(parent_)
   {
@@ -240,9 +240,9 @@ bool FunctionalWaveformStatsVisitor::merge_results()
   return true;
 }
 
-void FunctionalWaveformStatsVisitor::merge_one_gain(
-  const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* from,
-  ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* to)
+void FunctionalStatsVisitor::merge_one_gain(
+  const ix::diagnostics::functional::OneGainIntFunctionalRawStats* from,
+  ix::diagnostics::functional::OneGainIntFunctionalRawStats* to)
 {
   assert(to->num_sum_entries_size() == from->num_sum_entries_size());
   assert(to->sum_size() == from->sum_size());
@@ -269,8 +269,8 @@ void FunctionalWaveformStatsVisitor::merge_one_gain(
       from->value_hist(i));
 }
 
-Eigen::VectorXd FunctionalWaveformStatsVisitor::channel_mean(
-  const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stat)
+Eigen::VectorXd FunctionalStatsVisitor::channel_mean(
+  const ix::diagnostics::functional::OneGainIntFunctionalRawStats* stat)
 {
   const int N = stat->sum_size();
   assert(N == stat->num_sum_entries_size());
@@ -280,8 +280,8 @@ Eigen::VectorXd FunctionalWaveformStatsVisitor::channel_mean(
   return m;
 }
 
-Eigen::VectorXd FunctionalWaveformStatsVisitor::channel_var(
-  const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stat)
+Eigen::VectorXd FunctionalStatsVisitor::channel_var(
+  const ix::diagnostics::functional::OneGainIntFunctionalRawStats* stat)
 {
   const int N = stat->sum_size();
   assert(N == stat->sum_squared_size());
@@ -293,8 +293,8 @@ Eigen::VectorXd FunctionalWaveformStatsVisitor::channel_var(
   return v;
 }
 
-Eigen::MatrixXd FunctionalWaveformStatsVisitor::channel_cov(
-  const ix::diagnostics::waveform::OneGainIntFunctionalWaveformRawStats* stat)
+Eigen::MatrixXd FunctionalStatsVisitor::channel_cov(
+  const ix::diagnostics::functional::OneGainIntFunctionalRawStats* stat)
 {
   const int N = stat->sum_size();
   assert(N == stat->sum_squared_size());
