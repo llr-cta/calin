@@ -22,6 +22,7 @@
 
 #include <stdexcept>
 #include <memory>
+#include <cctype>
 
 #include <io/log.hpp>
 #include <util/file.hpp>
@@ -137,46 +138,37 @@ ZFitsDataSourceOpener::ZFitsDataSourceOpener(std::string filename,
   decoder_(decoder), adopt_decoder_(adopt_decoder), config_(config)
 {
   if(is_file(filename))
-  {
     filenames_.emplace_back(filename);
-  }
-  else if(config_.exact_filename_only())
+  else
+    throw(std::runtime_error("File not found: " + filename));
+
+  if(not config_.exact_filename_only())
   {
-    throw(std::runtime_error("File not found: "+ filename));
-  }
-
-  if(!config_.exact_filename_only())
-  {
-    std::string extension = config_.extension();
-    if(filename.size() > extension.size() and
-      filename.rfind(extension) == filename.size()-extension.size())
+    const std::string extension = config_.extension();
+    auto ifind = filename.rfind(extension);
+    if(ifind == filename.size()-extension.size())
     {
-      filename = filename.substr(0, filename.size()-extension.size());
+      filename = filename.substr(0, ifind);
 
-      if(!is_file(filename+".1"+extension) and
-          filename.size() > 2 and filename.rfind(".0") == filename.size()-2)
-        filename = filename.substr(0, filename.size()-2);
-    }
-    else if(is_file(filename+extension))
-    {
-      filenames_.emplace_back(filename+extension);
-    }
-    else if(is_file(filename+".0"+extension))
-    {
-      filenames_.emplace_back(filename+".0"+extension);
-    }
+      unsigned istart = 0;
+      if(not is_file(filename+".1"+extension))
+      {
+        ifind = filename.rfind('.');
+        if(ifind != std::string::npos and
+          std::all_of(filename.begin() + ifind + 1, filename.end(), ::isdigit))
+        {
+          istart = std::stoi(filename.substr(ifind + 1));
+          filename = filename.substr(0, ifind);
+        }
+      }
 
-
-    for(unsigned i=1; true; ++i)
-    {
-      std::string filename_i { filename+"."+std::to_string(i)+extension };
-      if(not is_file(filename_i))break;
-      filenames_.emplace_back(filename_i);
+      for(unsigned i=istart+1; true; ++i)
+      {
+        std::string filename_i { filename+"."+std::to_string(i)+extension };
+        if(not is_file(filename_i))break;
+        filenames_.emplace_back(filename_i);
+      }
     }
-
-    if(filenames_.empty())
-      throw(std::runtime_error("File not found: "+ filename+extension
-        + " and " + filename+".1"+extension));
   }
 }
 

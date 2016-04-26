@@ -1,0 +1,62 @@
+/*
+
+   calin/proto/diagnostics/functional.proto -- Stephen Fegan -- 2015-12-19
+
+   Protobufs for functional diagnostics
+
+   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "math/histogram.proto";
+//import "common_types.proto";
+
+package calin.ix.diagnostics.functional;
+
+message OneGainIntFunctionalRawStats {
+  repeated uint32 num_sum_entries                          = 1 [
+    (CFO).desc = "Number of waveforms accumulated in the sum and sum_squared "
+      "stats." ];
+  repeated uint32 num_sum_product_entries                  = 2 [
+    (CFO).desc = "Number of waveforms accumulated in the sum_product stats." ];
+  repeated int64 sum                                      = 11 [
+    (CFO).desc = "Sum over all events of functional value for each channel." ];
+  repeated int64 sum_squared                              = 12 [
+    (CFO).desc = "Sum over all events of functional value for each channel "
+      "squared." ];
+  repeated int64 sum_product                              = 13 [
+    (CFO).desc = "Sum over all events of product of functional value for each "
+      "channel by all others. This corresponds to the off-diagnonal elements "
+      "of the covariance matrix." ];
+  repeated math.histogram.Histogram1DData value_hist      = 21 [
+    (CFO).desc = "Histogram of functional value for each channel." ];
+};
+
+message CameraIntFunctionalRawStats {
+  repeated uint32 channel_id                               = 1 [
+    (CFO).desc = "Channel id." ];
+  OneGainIntFunctionalRawStats high_gain              = 11 [
+    (CFO).desc = "Integrated stats for high gain channels." ];
+  OneGainIntFunctionalRawStats low_gain               = 12 [
+    (CFO).desc = "Integrated stats for low gain channels." ];
+};
+
+message FunctionalStatsVisitorConfig {
+  bool calculate_covariance                                = 1 [
+    (CFO).desc = "Calculate channel-to-channel covariance matrix." ];
+};

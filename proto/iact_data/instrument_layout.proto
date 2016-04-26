@@ -149,6 +149,9 @@ message CameraLayout {
   bool can_read_waveforms                                  = 32;
   bool can_read_charges                                    = 33;
   bool can_read_peak_sample                                = 34;
+
+  map<int32, string> module_counter_id_to_name             = 40;
+  map<string, int32> module_counter_name_to_id             = 41;
 };
 
 message TelescopeLayout {
