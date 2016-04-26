@@ -354,9 +354,9 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
           "const $type$& const_$name$($key_type_in$ key) const {\n"
           "  return $$self->$name$().at(key); }\n"
           "$type$& mutable_$name$($key_type_in$ key) {\n"
-          "  return $$self->mutable_$name$()->at(key); }\n"
+          "  return (*$$self->mutable_$name$())[key]; }\n"
           "$type$& $name$($key_type_in$ key) {\n"
-          "  return $$self->mutable_$name$()->at(key); }\n");
+          "  return (*$$self->mutable_$name$())[key]; }\n");
       }
       else if(fv->type() == google::protobuf::FieldDescriptor::TYPE_BYTES)
       {
@@ -365,7 +365,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
           "  void $name$($key_type_in$ key, std::string& CALIN_BYTES_OUT) const {\n"
           "    CALIN_BYTES_OUT = $$self->$name$().at(key); }\n"
           "  void set_$name$($key_type_in$ key, const std::string& CALIN_BYTES_IN) {\n"
-          "    $$self->mutable_$name$()->at(key) = CALIN_BYTES_IN; }\n"
+          "    (*$$self->mutable_$name$())[key] = CALIN_BYTES_IN; }\n"
           "};\n");
       }
       else // POD type
@@ -374,7 +374,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
           "$type$ $name$($key_type_in$ key) const {\n"
           "  return $$self->$name$().at(key); }\n"
           "void set_$name$($key_type_in$ key, $type_in$ val) {\n"
-          "  $$self->mutable_$name$()->at(key) = val; }\n");
+          "  (*$$self->mutable_$name$())[key] = val; }\n");
       }
       I->Outdent();
       I->Print("};\n");
