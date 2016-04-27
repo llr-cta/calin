@@ -888,7 +888,8 @@ r_exec_insert(SQLTable* t, const google::protobuf::Message* m_data,
         if(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE) {
           mi = &r->GetRepeatedMessage(*m, st->parent_field_d, iloop);
           r = m->GetReflection(); }
-        good &= r_exec_insert(st, mi, nullptr, parent_oid, oid, iloop,
+        uint64_t unused_sub_table_oid = 0;
+        good &= r_exec_insert(st, mi, nullptr, unused_sub_table_oid, oid, iloop,
                               ignore_errors);
         if(!ignore_errors and !good)return good;
       }
@@ -899,7 +900,8 @@ r_exec_insert(SQLTable* t, const google::protobuf::Message* m_data,
       if(!r->HasField(*m, st->parent_field_d))goto next_sub_table;
       m = &r->GetMessage(*m, st->parent_field_d);
       r = m->GetReflection();
-      good &= r_exec_insert(st, m, nullptr, parent_oid, oid, 0,
+      uint64_t unused_sub_table_oid = 0;
+      good &= r_exec_insert(st, m, nullptr, unused_sub_table_oid, oid, 0,
                             ignore_errors);
       if(!ignore_errors and !good)return good;
     }
