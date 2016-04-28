@@ -162,7 +162,8 @@ ZFitsDataSourceOpener::ZFitsDataSourceOpener(std::string filename,
         }
       }
 
-      for(unsigned i=istart+1; true; ++i)
+      for(unsigned i=istart+1; config_.max_file_fragments()==0 or
+        filenames_.size()<config_.max_file_fragments() ; ++i)
       {
         std::string filename_i { filename+"."+std::to_string(i)+extension };
         if(not is_file(filename_i))break;

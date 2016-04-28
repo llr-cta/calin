@@ -34,6 +34,9 @@ message ZFITSDataSourceConfig {
     (CFO).desc = "Send a message to the log when opening a file." ];
   bool exact_filename_only                                 = 3 [
     (CFO).desc = "Only try to open file with given (exact) filename." ];
+  uint32 max_file_fragments                                = 4 [
+    (CFO).desc = "Maximum number of file fragments to open. Zero means open "
+      "all fragments found." ];
   bool dont_read_run_header                                = 11 [
     (CFO).desc = "Don't read the run header." ];
   bool ignore_run_header_errors                            = 12 [
