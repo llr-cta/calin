@@ -43,6 +43,11 @@
                const google::protobuf::Message* m_data,
                const google::protobuf::Message* m_key = nullptr);
 
+%ignore create_tables_and_insert(const std::string& table_name,
+              const google::protobuf::Message* m_data,
+              const google::protobuf::Message* m_key = nullptr,
+              const std::string& instance_desc = "");
+
 %apply uint64_t &OUTPUT { uint64_t& oid };
 
 %include "io/sql_statement.hpp"
