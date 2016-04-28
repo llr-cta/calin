@@ -76,7 +76,7 @@ bool FixedWindowSumFunctionalTelescopeEventVisitor::visit_telescope_run(
       + std::to_string(run_config->num_samples()));
 
   if(config_.integration_0() < -int(run_config->num_samples()-window_n_)
-      or config_.integration_0() > run_config->num_samples()-window_n_)
+      or config_.integration_0() > int(run_config->num_samples()-window_n_))
     throw std::out_of_range("FixedWindowSumFunctionalTelescopeEventVisitor: "
       "requested window start "
       + std::to_string(config_.integration_0())
