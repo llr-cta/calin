@@ -22,6 +22,7 @@ target_link_libraries(do_spe_expgauss_fit calin_calib calin_math calin_proto cal
 install(TARGETS do_spe_fit do_spe_expgauss_fit DESTINATION bin)
 
 if(CTA_CAMERASTOACTL_FOUND)
+	include_directories(${CTA_CAMERASTOACTL_INCLUDE_DIRS})
 	add_executable(dump_nectar_zfits dump_nectar_zfits)
   target_link_libraries(dump_nectar_zfits calin_iact_data)
   install(TARGETS dump_nectar_zfits DESTINATION bin)

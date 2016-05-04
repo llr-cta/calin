@@ -117,6 +117,11 @@ uint64_t ZFITSSingleFileDataSource::size()
   return zfits_->getNumMessagesInTable();
 }
 
+uint64_t ZFITSSingleFileDataSource::next_index()
+{
+  return next_event_index_;
+}
+
 void ZFITSSingleFileDataSource::set_next_index(uint64_t next_index)
 {
   next_event_index_ = next_index;
@@ -220,7 +225,8 @@ ZFITSDataSource::get_next()
 {
   calin::ix::iact_data::telescope_event::TelescopeEvent* event =
     BasicChainedRandomAccessDataSource<calin::iact_data::
-      telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>::get_next();
+      telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>::
+    get_next();
   if(event and isource_)
     event->set_source_event_index(event->source_event_index() +
       chained_file_index_[isource_-1]);

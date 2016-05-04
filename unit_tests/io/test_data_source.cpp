@@ -53,6 +53,7 @@ public:
     return m;
   }
   uint64_t size() override { return count_; }
+  uint64_t next_index() override { return index_; }
   void set_next_index(uint64_t index) override {
     index_ = std::min(count_, unsigned(index)); }
 private:

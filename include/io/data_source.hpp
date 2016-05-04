@@ -47,6 +47,7 @@ public:
   virtual ~RandomAccessDataSource() { }
   virtual T* get_next() = 0;
   virtual uint64_t size() = 0;
+  virtual uint64_t next_index() = 0;
   virtual void set_next_index(uint64_t next_index) = 0;
 };
 

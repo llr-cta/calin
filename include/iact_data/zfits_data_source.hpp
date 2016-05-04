@@ -27,18 +27,9 @@
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
 #include <io/chained_data_source.hpp>
+#include <iact_data/zfits_actl_data_source.hpp>
 #include <iact_data/zfits_data_source.pb.h>
 #include <iact_data/telescope_data_source.hpp>
-
-// Forward declaration of ACTL::IO::ProtobufIFits
-
-namespace ACTL { namespace IO {
-  class ProtobufIFits;
-} } // namespace ACTL::IO
-namespace DataModel {
-  class CameraEvent;
-  class CameraRunHeader;
-} // namespace DataModel
 
 namespace calin { namespace iact_data { namespace zfits_data_source {
 
@@ -68,6 +59,7 @@ public:
 
   calin::ix::iact_data::telescope_event::TelescopeEvent* get_next() override;
   uint64_t size() override;
+  uint64_t next_index() override;
   void set_next_index(uint64_t next_index) override;
 
   calin::ix::iact_data::telescope_run_configuration::

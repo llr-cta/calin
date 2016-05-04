@@ -144,6 +144,19 @@ public:
     else return 0;
   }
 
+  uint64_t next_index() override
+  {
+    if(source_)
+    {
+      if(isource_ == 0)
+        return source_->next_index();
+      else
+        return source_->next_index() + chained_file_index_[isource_-1];
+    }
+    else
+      return chained_file_index_.back();
+  }
+
   void set_next_index(uint64_t next_index) override
   {
     if(opener_->num_sources() == 0)return;

@@ -119,6 +119,8 @@ protected:
   bool calculate_covariance_ = false;
 };
 
+#if 0
+
 class FunctionalCaptureVisitor:
   public iact_data::event_visitor::TelescopeEventVisitor
 {
@@ -198,5 +200,7 @@ protected:
     run_config_ = nullptr;
   bool calculate_covariance_ = false;
 };
+
+#endif
 
 } } } // namespace calin::diagnostics::functional_diagnostics

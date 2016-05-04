@@ -17,6 +17,10 @@ set(CALIN_SWIG_FILES telescope_data_source.i event_dispatcher.i
 	functional_event_visitor.i)
 set(CALIN_SWIG_TARGET iact_data)
 
+if(CTA_CAMERASTOACTL_FOUND)
+	include_directories(${CTA_CAMERASTOACTL_INCLUDE_DIRS})
+endif()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 make_swig_modules(calin_${CALIN_SWIG_TARGET}
 	${CALIN_SWIG_INSTALL_DIR}/${CALIN_SWIG_TARGET} ${CALIN_SWIG_FILES})
