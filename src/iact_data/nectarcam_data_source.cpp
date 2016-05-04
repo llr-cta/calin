@@ -32,7 +32,6 @@ using namespace calin::iact_data::nectarcam_data_source;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::ix::iact_data::telescope_run_configuration;
 using namespace calin::io::log;
-using calin::iact_data::zfits_data_source::ZFITSSingleFileDataSource;
 
 #include <ProtobufIFits.h>
 #include <L0.pb.h>
