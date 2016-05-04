@@ -37,6 +37,7 @@ using namespace calin::io;
 //%include "numpy.i"
 //%include "stdint.i"
 %include "calin_typemaps.i"
+%include "calin_global_config.hpp"
 %import "calin_global_definitions.i"
 
 %import "iact_data/telescope_event.pb.i"
