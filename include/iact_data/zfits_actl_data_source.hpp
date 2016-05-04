@@ -28,13 +28,14 @@
 #include <calin_global_config.hpp>
 #include <io/data_source.hpp>
 #include <io/chained_data_source.hpp>
-#include <ProtobufIFits.h>
-#include <L0.pb.h>
 #include <iact_data/zfits_data_source.pb.h>
 
-namespace calin { namespace iact_data { namespace zfits_actl_data_source {
-
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+
+#include <ProtobufIFits.h>
+#include <L0.pb.h>
+
+namespace calin { namespace iact_data { namespace zfits_actl_data_source {
 
 CALIN_TYPEALIAS(ACTLRandomAccessDataSource,
   calin::io::data_source::RandomAccessDataSource<DataModel::CameraEvent>);
@@ -154,6 +155,6 @@ private:
   ZFITSACTLDataSource::config_type config_;
 };
 
-#endif
-
 } } } // namespace calin::iact_data::zfits_actl_data_source
+
+#endif
