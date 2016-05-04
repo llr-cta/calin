@@ -33,6 +33,8 @@
 
 namespace calin { namespace iact_data { namespace zfits_data_source {
 
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+
 class CTACameraEventDecoder
 {
 public:
@@ -81,4 +83,5 @@ private:
     TelescopeRunConfiguration* run_config_ = nullptr;
 };
 
+#endif
 } } } // namespace calin::iact_data::nectarcam_data_source

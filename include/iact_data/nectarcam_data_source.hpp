@@ -29,12 +29,9 @@
 #include <iact_data/nectarcam_data_source.pb.h>
 #include <iact_data/zfits_data_source.hpp>
 
-// FWD declaration of ACTL elements
-namespace DataModel {
-  class PixelsChannel;
-}
-
 namespace calin { namespace iact_data { namespace nectarcam_data_source {
+
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
 class NectarCamCameraEventDecoder:
   public zfits_data_source::CTACameraEventDecoder
@@ -99,5 +96,7 @@ public:
 private:
   NectarCamCameraEventDecoder* decoder_;
 };
+
+#endif
 
 } } } // namespace calin::iact_data::nectarcam_data_source

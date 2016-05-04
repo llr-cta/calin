@@ -34,6 +34,8 @@
 
 namespace calin { namespace iact_data { namespace zfits_actl_data_source {
 
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+
 CALIN_TYPEALIAS(ACTLRandomAccessDataSource,
   calin::io::data_source::RandomAccessDataSource<DataModel::CameraEvent>);
 
@@ -151,5 +153,7 @@ private:
   std::vector<std::string> filenames_;
   ZFITSACTLDataSource::config_type config_;
 };
+
+#endif
 
 } } } // namespace calin::iact_data::zfits_actl_data_source

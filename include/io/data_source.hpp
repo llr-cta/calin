@@ -38,6 +38,7 @@ public:
   CALIN_TYPEALIAS(data_type, T);
   virtual ~DataSource() { }
   virtual T* get_next() = 0;
+  //virtual T* get_next(google::protobuf::Arena** arena = nullptr) = 0;
 };
 
 template<typename T> class RandomAccessDataSource: public DataSource<T>
@@ -45,7 +46,7 @@ template<typename T> class RandomAccessDataSource: public DataSource<T>
 public:
   CALIN_TYPEALIAS(data_type, T);
   virtual ~RandomAccessDataSource() { }
-  virtual T* get_next() = 0;
+  virtual T* get_next() override = 0;
   virtual uint64_t size() = 0;
   virtual uint64_t next_index() = 0;
   virtual void set_next_index(uint64_t next_index) = 0;

@@ -23,8 +23,9 @@
 %module (package="calin.iact_data") telescope_data_source
 
 %{
-#include "iact_data/telescope_data_source.hpp"
-#include "iact_data/nectarcam_data_source.hpp"
+#include <calin_global_config.hpp>
+#include <iact_data/telescope_data_source.hpp>
+#include <iact_data/nectarcam_data_source.hpp>
 using namespace calin::io;
 #define SWIG_FILE_WITH_INIT
   %}
