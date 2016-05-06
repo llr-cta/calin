@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <io/log.hpp>
 #include <io/data_source.hpp>
 
 namespace calin { namespace io { namespace data_source {
@@ -64,11 +65,11 @@ public:
   CALIN_TYPEALIAS(data_type, typename DST::data_type);
 
   BasicChainedDataSource(DataSourceOpener<DST>* opener,
-    bool adopt_opener = false):
+      bool adopt_opener = false):
     DST(), opener_(opener), adopt_opener_(adopt_opener)
-    {
-      open_file();
-    }
+  {
+    open_file();
+  }
 
   ~BasicChainedDataSource()
   {

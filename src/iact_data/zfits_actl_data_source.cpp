@@ -110,7 +110,7 @@ void ZFITSSingleFileACTLDataSource::set_next_index(uint64_t next_index)
 {
   if(zfits_ == nullptr)next_event_index_ = 0;
   else next_event_index_ =
-    std::max(next_index, uint64_t(zfits_->getNumMessagesInTable()));
+    std::min(next_index, uint64_t(zfits_->getNumMessagesInTable()));
 }
 
 DataModel::CameraRunHeader* ZFITSSingleFileACTLDataSource::get_run_header()

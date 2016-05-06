@@ -55,8 +55,7 @@ class ZFITSDataSource:
 {
 public:
   CALIN_TYPEALIAS(config_type,
-    calin::iact_data::zfits_actl_data_source::
-      ZFITSACTLDataSource::config_type);
+    calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
   ZFITSDataSource(const std::string& filename,
     CTACameraEventDecoder* decoder, bool adopt_decoder = false,
@@ -75,7 +74,6 @@ public:
 
   static config_type default_config() {
     return zfits_actl_data_source::ZFITSACTLDataSource::default_config(); }
-  const config_type& config() const { return actl_zfits_->config(); }
 
 private:
   CTACameraEventDecoder* decoder_;
