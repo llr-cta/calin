@@ -68,10 +68,13 @@ int main(int argc, char **argv)
   RawFileTelescopeDataSink sink(out_filename,false,config);
 
   unsigned nevent = 0;
-  while(auto* event = source.get_next())
+  uint64_t seq_index;
+  google::protobuf::Arena* arena = nullptr;
+  while(auto* event = source.get_next(seq_index, &arena))
   {
-    sink.put_next(event, true);
+    sink.put_next(event, seq_index, arena, true);
     nevent++;
+    arena = nullptr;
     if(max_events==1)break;
     else if(max_events)--max_events;
   }

@@ -51,7 +51,7 @@ public:
   // called in a specific order. They are liable to be made private.
   void accept_run_configuration(calin::ix::iact_data::
     telescope_run_configuration::TelescopeRunConfiguration* run_config);
-  void accept_event(
+  void accept_event(uint64_t seq_index, 
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
   void accept_all_from_src(
     calin::io::data_source::DataSource<

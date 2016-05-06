@@ -40,7 +40,7 @@ public:
     const calin::ix::iact_data::telescope_run_configuration::
       TelescopeRunConfiguration* run_config) override;
 
-  bool visit_telescope_event(
+  bool visit_telescope_event(uint64_t seq_index,
     calin:: ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
   calin::ix::diagnostics::module::ModulePresentVisitorData& module_data() {

@@ -471,20 +471,20 @@ sql_type(const google::protobuf::FieldDescriptor* d)
     case FieldDescriptor::TYPE_SINT32:   // fallthrough
     case FieldDescriptor::TYPE_INT32:
       switch(int32_type) {
-	case FieldOptions::INT_16:       return "SMALLINT";
-	case FieldOptions::INT_8:        return "TINYINT";
-	case FieldOptions::INT_32:       // fallthrough
+      	case FieldOptions::INT_16:       return "SMALLINT";
+      	case FieldOptions::INT_8:        return "TINYINT";
+      	case FieldOptions::INT_32:       // fallthrough
         default:                         return "INT";
-	};
+      };
     case FieldDescriptor::TYPE_BOOL:     return "BOOLEAN";
     case FieldDescriptor::TYPE_STRING:   return "TEXT";
     case FieldDescriptor::TYPE_BYTES:    return "BLOB";
     case FieldDescriptor::TYPE_FIXED32:  // fall through
     case FieldDescriptor::TYPE_UINT32:
       switch(int32_type) {
-	case FieldOptions::INT_16:       return "SMALLINT UNSIGNED";
-	case FieldOptions::INT_8:        return "TINYINT UNSIGNED";
-	case FieldOptions::INT_32:       // fall through
+      	case FieldOptions::INT_16:       return "SMALLINT UNSIGNED";
+      	case FieldOptions::INT_8:        return "TINYINT UNSIGNED";
+      	case FieldOptions::INT_32:       // fall through
         default:                         return "INT UNSIGNED";
       }
     case FieldDescriptor::TYPE_ENUM:     return "INT";
@@ -905,7 +905,7 @@ r_exec_insert(SQLTable* t, const google::protobuf::Message* m_data,
                             ignore_errors);
       if(!ignore_errors and !good)return good;
     }
- next_sub_table:
+  next_sub_table:
     ;
   }
 
@@ -1091,10 +1091,10 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
       nloop++;
     }
 
- next_sub_table:
+  next_sub_table:
     st->stmt->reset();
 
- next_sub_table_no_reset:
+  next_sub_table_no_reset:
     ;
   }
 
@@ -1115,9 +1115,9 @@ void SQLTransceiver::create_internal_tables()
 
   // Make "SQLTable" table
   SQLTable* tt =
-      make_keyed_sqltable_tree("calin.tables",
-                               calin::ix::io::sql_transceiver::SQLTable::descriptor(),
-                               nullptr, false);
+    make_keyed_sqltable_tree("calin.tables",
+               calin::ix::io::sql_transceiver::SQLTable::descriptor(),
+               nullptr, false);
 
 
   std::map<std::string, std::string> dict0;
@@ -1131,9 +1131,9 @@ void SQLTransceiver::create_internal_tables()
 
   // Make "SQLTableField" table
   SQLTable* tf =
-      make_keyed_sqltable_tree("calin.table_fields",
-                               calin::ix::io::sql_transceiver::SQLTableField::descriptor(),
-                               nullptr, false);
+    make_keyed_sqltable_tree("calin.table_fields",
+               calin::ix::io::sql_transceiver::SQLTableField::descriptor(),
+               nullptr, false);
 
   dict0["DESC"] = "Calin table of table fields";
 
@@ -1161,14 +1161,14 @@ insert_table_description(const SQLTable* t, const std::string& instance_desc)
   dict0["DESC"] = instance_desc;
 
   t_int =
-      make_keyed_sqltable_tree("calin.tables",
-                               calin::ix::io::sql_transceiver::SQLTable::descriptor(),
-                               nullptr, false);
+    make_keyed_sqltable_tree("calin.tables",
+                 calin::ix::io::sql_transceiver::SQLTable::descriptor(),
+                 nullptr, false);
   iterate_over_tables(t_int,[this](SQLTable* it) {
       it->stmt = prepare_statement(sql_insert(it)); });
   iterate_over_tables_with_data(t, dict0,
         [this,t_int,t,instance_desc](const SQLTable* it,
-                                     std::map<std::string, std::string>& dict) {
+                             std::map<std::string, std::string>& dict) {
       for(auto id : it->parent_field_d_path)
         dict = field_dict(id, dict);
       if(it->parent_field_d)dict = field_dict(it->parent_field_d, dict);
@@ -1183,8 +1183,8 @@ insert_table_description(const SQLTable* t, const std::string& instance_desc)
   delete t_int;
 
   t_int = make_keyed_sqltable_tree("calin.table_fields",
-                                   calin::ix::io::sql_transceiver::SQLTableField::descriptor(),
-                                   nullptr, false);
+                 calin::ix::io::sql_transceiver::SQLTableField::descriptor(),
+                 nullptr, false);
   iterate_over_tables(t_int,[this](SQLTable* it) {
       it->stmt = prepare_statement(sql_insert(it)); });
   iterate_over_fields_with_data(t,dict0,

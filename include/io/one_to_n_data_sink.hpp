@@ -57,18 +57,23 @@ public:
   BufferedDataSource<T>* new_data_source() {
     return new BufferedDataSource<T>(zmq_->new_puller()); }
 
-  bool put_next(T* data, bool adopt_data = false)
+  bool put_next(T* data, uint64_t seq_index,
+    google::protobuf::Arena* arena = nullptr, bool adopt_data = false)
   {
     assert(adopt_data);
-    bool good = pusher_->push(&data, sizeof(data));
-    if(!good)delete data;
+    Payload<T> payload { data, arena, seq_index };
+    bool good = pusher_->push(&payload, sizeof(payload));
+    if(!good) {
+      if(arena)delete arena;
+      else delete data;
+    }
     return good;
   }
 
   bool put_nullptr(bool no_wait = true)
   {
-    T* data = nullptr;
-    return pusher_->push(&data, sizeof(data), no_wait);
+    Payload<T> payload = { nullptr, nullptr, 0 };
+    return pusher_->push(&payload, sizeof(payload), no_wait);
   }
 
 protected:

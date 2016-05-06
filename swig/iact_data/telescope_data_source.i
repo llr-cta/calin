@@ -23,8 +23,9 @@
 %module (package="calin.iact_data") telescope_data_source
 
 %{
-#include "iact_data/telescope_data_source.hpp"
-#include "iact_data/nectarcam_data_source.hpp"
+#include <calin_global_config.hpp>
+#include <iact_data/telescope_data_source.hpp>
+#include <iact_data/nectarcam_data_source.hpp>
 using namespace calin::io;
 #define SWIG_FILE_WITH_INIT
   %}
@@ -36,6 +37,7 @@ using namespace calin::io;
 //%include "numpy.i"
 //%include "stdint.i"
 %include "calin_typemaps.i"
+%include "calin_global_config.hpp"
 %import "calin_global_definitions.i"
 
 %import "iact_data/telescope_event.pb.i"
@@ -43,7 +45,9 @@ using namespace calin::io;
 %import "iact_data/zfits_data_source.pb.i"
 %import "iact_data/nectarcam_data_source.pb.i"
 
-%newobject get_next();
+%apply uint64_t&OUTPUT { uint64_t& seq_index_out };
+%newobject get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr);
 %newobject get_run_configuration();
 //%newobject calin::iact_data::telescope_data_source::TelescopeDataSource::get_next();
 //%newobject calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource::get_next();

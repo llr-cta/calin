@@ -61,7 +61,8 @@ int main(int argc, char **argv)
   }
 
   google::protobuf::io::OstreamOutputStream stream(&std::cout);
-  while(auto* event = source.get_next())
+  uint64_t seq_index;
+  while(auto* event = source.get_next(seq_index))
   {
     google::protobuf::TextFormat::Print(*event, &stream);
     delete event;

@@ -34,6 +34,17 @@
 
 namespace calin { namespace io { namespace data_source {
 
+template<typename T> struct Payload
+{
+public:
+  Payload(T* ptr_ = nullptr, google::protobuf::Arena* arena_ = nullptr ,
+    uint64_t seq_index_ = 0):
+    ptr(ptr_), arena(arena_), seq_index(seq_index_) { }
+  T* ptr = nullptr;
+  google::protobuf::Arena* arena = nullptr;
+  uint64_t seq_index = 0;
+};
+
 template<typename T> inline T* safe_downcast(void* p)
 {
   // Not really safe at all!
@@ -59,14 +70,50 @@ public:
     delete puller_;
   }
 
-  T* get_next() override
+  T* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override
   {
-    void* ptr = nullptr;
-    puller_->pull_assert_size(&ptr, sizeof(ptr));
-    return safe_downcast<T>(ptr);
+    Payload<T> payload;
+    puller_->pull_assert_size(&payload, sizeof(payload));
+    if(payload.ptr == nullptr) {
+      assert(payload.arena == nullptr);
+      return nullptr;
+    }
+    seq_index_out = payload.seq_index;
+    if(arena == nullptr)
+    {
+      if(payload.arena == nullptr)return payload.ptr;
+      if(!warning_sent_) {
+        io::log::LOG(io::log::WARNING) << "BufferedDataSource: "
+          "arena not accepted, performing expensive copy";
+        warning_sent_ = true;
+      }
+      T* data = new T(*payload.ptr);
+      delete payload.arena;
+      return data;
+    }
+    else if(*arena == nullptr)
+    {
+      *arena = payload.arena;
+      return payload.ptr;
+    }
+    else
+    {
+      if(!warning_sent_) {
+        io::log::LOG(io::log::WARNING) << "BufferedDataSource: "
+          "pre-assigned arena, performing expensive copy";
+        warning_sent_ = true;
+      }
+      T* data = google::protobuf::Arena::CreateMessage<T>(*arena);
+      data->CopyFrom(*payload.ptr);
+      if(payload.arena)delete payload.arena;
+      else delete payload.ptr;
+      return data;
+    }
   }
 
 private:
+  bool warning_sent_ = false;
   zmq_inproc::ZMQPuller* puller_ = nullptr;
 };
 
@@ -118,12 +165,14 @@ private:
       // This simplifies the implementation of the BufferedDataSource which
       // otherwise has a problem either potentially getting blocked or missing
       // a data item.
-      T* p = nullptr;
-      if(!stop_buffering_)p = source_->get_next();
-      if(!pusher->push(&p, sizeof(p)))
+      Payload<T> payload;
+      if(!stop_buffering_)
+        payload.ptr = source_->get_next(payload.seq_index, &payload.arena);
+      if(!pusher->push(&payload, sizeof(payload)))
       {
         // Only occurs when context is closed
-        delete p;
+        if(payload.arena)delete payload.arena;
+        else delete payload.ptr;
         reader_active_ = false;
       }
     }

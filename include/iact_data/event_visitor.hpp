@@ -40,7 +40,7 @@ public:
   virtual bool is_parallelizable();
   virtual TelescopeEventVisitor* new_sub_visitor(
     const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
-        calin::iact_data::event_visitor::TelescopeEventVisitor*>& 
+        calin::iact_data::event_visitor::TelescopeEventVisitor*>&
       antecedent_visitors = { });
 
   virtual bool visit_telescope_run(
@@ -48,7 +48,7 @@ public:
       TelescopeRunConfiguration* run_config);
   virtual bool leave_telescope_run();
 
-  virtual bool visit_telescope_event(
+  virtual bool visit_telescope_event(uint64_t seq_index, 
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
   virtual bool leave_telescope_event();
 

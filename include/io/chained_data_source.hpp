@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <io/log.hpp>
 #include <io/data_source.hpp>
 
 namespace calin { namespace io { namespace data_source {
@@ -64,11 +65,11 @@ public:
   CALIN_TYPEALIAS(data_type, typename DST::data_type);
 
   BasicChainedDataSource(DataSourceOpener<DST>* opener,
-    bool adopt_opener = false):
+      bool adopt_opener = false):
     DST(), opener_(opener), adopt_opener_(adopt_opener)
-    {
-      open_file();
-    }
+  {
+    open_file();
+  }
 
   ~BasicChainedDataSource()
   {
@@ -76,11 +77,18 @@ public:
     delete source_;
   }
 
-  data_type* get_next() override
+  data_type* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override
   {
+    uint64_t unused_index = 0;
     while(isource_ < opener_->num_sources())
     {
-      if(data_type* next = source_->get_next())return next;
+      if(data_type* next = source_->get_next(unused_index, arena))
+      {
+        seq_index_out = seq_index_;
+        ++seq_index_;
+        return next;
+      }
       ++isource_;
       open_file();
     }
@@ -107,6 +115,7 @@ protected:
   bool adopt_opener_ = false;
   unsigned isource_ = 0;
   DST* source_ = nullptr;
+  uint64_t seq_index_ = 0;
 };
 
 template<typename T> using ChainedDataSource =
@@ -172,6 +181,7 @@ public:
 
     if(source_)
     {
+      seq_index_ = next_index;
       if(isource_ == 0)
         source_->set_next_index(next_index);
       else
@@ -183,6 +193,7 @@ protected:
   using BasicChainedDataSource<RADST>::source_;
   using BasicChainedDataSource<RADST>::isource_;
   using BasicChainedDataSource<RADST>::opener_;
+  using BasicChainedDataSource<RADST>::seq_index_;
 
   void add_source_index(RADST* source)
   {

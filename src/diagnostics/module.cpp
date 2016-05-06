@@ -48,7 +48,7 @@ bool ModulePresentVisitor::visit_telescope_run(
   return true;
 }
 
-bool ModulePresentVisitor::visit_telescope_event(
+bool ModulePresentVisitor::visit_telescope_event(uint64_t seq_index,
     calin:: ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   auto index = event->source_event_index();

@@ -48,7 +48,7 @@ bool CounterDeltaTDiagnostics::visit_telescope_run(
   return true;
 }
 
-bool CounterDeltaTDiagnostics::visit_telescope_event(
+bool CounterDeltaTDiagnostics::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   return true;

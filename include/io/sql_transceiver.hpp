@@ -143,6 +143,27 @@ class SQLTransceiver
     return insert(table_name, unused_oid, m_data, m_key);
   }
 
+  bool create_tables_and_insert(const std::string& table_name,
+              const google::protobuf::Message* m_data,
+              const google::protobuf::Message* m_key = nullptr,
+              const std::string& instance_desc = "")
+  {
+    if(!this->create_tables(table_name, m_data->GetDescriptor(),
+      m_key?m_key->GetDescriptor():nullptr, instance_desc))return false;
+    uint64_t unused_oid;
+    return this->insert(table_name, unused_oid, m_data, m_key);
+  }
+
+  bool create_tables_and_insert(const std::string& table_name, uint64_t& oid,
+              const google::protobuf::Message* m_data,
+              const google::protobuf::Message* m_key = nullptr,
+              const std::string& instance_desc = "")
+  {
+    if(!this->create_tables(table_name, m_data->GetDescriptor(),
+      m_key?m_key->GetDescriptor():nullptr, instance_desc))return false;
+    return this->insert(table_name, oid, m_data, m_key);
+  }
+
   virtual bool
   insert(const std::string& table_name, uint64_t& oid,
          const google::protobuf::Message* m_data,

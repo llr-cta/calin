@@ -168,7 +168,7 @@ template<typename T, typename Container = std::vector<T>> class BinnedData1D
     if(thebin < 0)
     {
       do {
-        bins_.push_front({});
+        bins_.emplace_front();
         ++thebin;
       }while(thebin<0);
       xval0_ = std::floor((x+xval_align_)/dxval_)*dxval_ - xval_align_;
@@ -176,7 +176,7 @@ template<typename T, typename Container = std::vector<T>> class BinnedData1D
     else if(static_cast<unsigned>(thebin) >= bins_.size())
     {
       do {
-        bins_.push_back({});
+        bins_.emplace_back();
       }while(static_cast<unsigned>(thebin) >= bins_.size());
     }
     return bins_[thebin];
@@ -198,12 +198,12 @@ template<typename T, typename Container = std::vector<T>> class BinnedData1D
   {
     if(bins_.empty())
     {
-      bins_.push_back({});
+      bins_.emplace_back();
       xval0_ = std::floor((x+xval_align_)/dxval_)*dxval_ - xval_align_;
       return bins_.front();
     }
     int thebin { ibin(x) };
-    while(thebin<=bins_.size())bins_.push_back({});
+    while(thebin<=bins_.size())bins_.emplace_back();
     return bins_[thebin];
   }
 
@@ -672,7 +672,7 @@ class BinnedCDF: public BinnedData1D<double>
     for(const auto& ibin : hist)
     {
       cumsum.accumulate(ibin.weight());
-      this->bins_.push_back(cumsum.total());
+      this->bins_.emplace_back(cumsum.total());
     }
     double total_weight = cumsum.total();
     for(auto& ibin : this->bins_)ibin /= total_weight;

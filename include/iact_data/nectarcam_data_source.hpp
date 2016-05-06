@@ -29,12 +29,9 @@
 #include <iact_data/nectarcam_data_source.pb.h>
 #include <iact_data/zfits_data_source.hpp>
 
-// FWD declaration of ACTL elements
-namespace DataModel {
-  class PixelsChannel;
-}
-
 namespace calin { namespace iact_data { namespace nectarcam_data_source {
+
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
 class NectarCamCameraEventDecoder:
   public zfits_data_source::CTACameraEventDecoder
@@ -53,13 +50,16 @@ public:
     return config_type::default_instance(); }
 
   virtual ~NectarCamCameraEventDecoder();
-  calin::ix::iact_data::telescope_event::TelescopeEvent*
-    decode(const DataModel::CameraEvent* cta_event) override;
 
-  calin::ix::iact_data::telescope_run_configuration::
-    TelescopeRunConfiguration* decode_run_config(
-      const DataModel::CameraRunHeader* cta_run_header,
-      const DataModel::CameraEvent* cta_event) override;
+  bool decode(
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+    const DataModel::CameraEvent* cta_event) override;
+
+  bool decode_run_config(
+    calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config,
+    const DataModel::CameraRunHeader* cta_run_header,
+    const DataModel::CameraEvent* cta_event) override;
 
 private:
   void copy_single_gain_image(const DataModel::CameraEvent* cta_event,
@@ -99,5 +99,7 @@ public:
 private:
   NectarCamCameraEventDecoder* decoder_;
 };
+
+#endif
 
 } } } // namespace calin::iact_data::nectarcam_data_source

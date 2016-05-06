@@ -93,7 +93,7 @@ bool FunctionalStatsVisitor::visit_telescope_run(
   high_gain_mask_.resize(nchan);
   high_gain_signal_.resize(nchan);
   high_gain_hist_.clear();
-  for(unsigned ichan=0; ichan<nchan; ichan++)
+  for(int ichan=0; ichan<nchan; ichan++)
     high_gain_hist_.emplace_back(1,0.5,
       std::string("Channel ")+std::to_string(ichan)+" (high gain)","","events");
 
@@ -103,12 +103,12 @@ bool FunctionalStatsVisitor::visit_telescope_run(
   hg_results->mutable_sum()->Resize(nchan,0);
   hg_results->mutable_sum_squared()->Resize(nchan,0);
   hg_results->mutable_sum_product()->Resize(nchan*(nchan-1)/2,0);
-  for(unsigned ichan=0; ichan<nchan; ichan++)hg_results->add_value_hist();
+  for(int ichan=0; ichan<nchan; ichan++)hg_results->add_value_hist();
 
   low_gain_mask_.resize(nchan);
   low_gain_signal_.resize(nchan);
   low_gain_hist_.clear();
-  for(unsigned ichan=0; ichan<nchan; ichan++)
+  for(int ichan=0; ichan<nchan; ichan++)
     low_gain_hist_.emplace_back(1,0.5,
       std::string("Channel ")+std::to_string(ichan)+" (low gain)","","events");
 
@@ -118,7 +118,7 @@ bool FunctionalStatsVisitor::visit_telescope_run(
   lg_results->mutable_sum()->Resize(nchan,0);
   lg_results->mutable_sum_squared()->Resize(nchan,0);
   lg_results->mutable_sum_product()->Resize(nchan*(nchan-1)/2,0);
-  for(unsigned ichan=0; ichan<nchan; ichan++)lg_results->add_value_hist();
+  for(int ichan=0; ichan<nchan; ichan++)lg_results->add_value_hist();
 
   return true;
 }
@@ -141,7 +141,7 @@ bool FunctionalStatsVisitor::leave_telescope_run()
   return true;
 }
 
-bool FunctionalStatsVisitor::visit_telescope_event(
+bool FunctionalStatsVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   for(auto& ichan : high_gain_mask_)ichan = 0;

@@ -92,14 +92,19 @@ FramedZeroCopyPacketInStream::~FramedZeroCopyPacketInStream()
   if(adopt_instream_)delete instream_;
 }
 
-bool FramedZeroCopyPacketInStream::get_packet(std::string& packet_out)
+bool FramedZeroCopyPacketInStream::
+get_packet(std::string& packet_out, uint64_t& seq_index_out)
 {
   uint32_t packet_size = 0;
   packet_out.clear();
   if(!coded_instream_->ReadLittleEndian32(&packet_size))
     return false; // Must assume EOF since API does not distinguish errors
+  google::protobuf::uint64 google_seq_index_out;
+  if(!coded_instream_->ReadLittleEndian64(&google_seq_index_out))
+    throw std::runtime_error("Error reading sequence index from input stream.");
+  seq_index_out = google_seq_index_out;
   if(!coded_instream_->ReadString(&packet_out, packet_size))
-    throw std::runtime_error("Error reading input stream.");
+    throw std::runtime_error("Error reading packet data from input stream.");
   if(packet_out.size()!=packet_size)
     throw std::runtime_error("Packet framing error: expected "
       + std::to_string(packet_size) + " bytes, got "
@@ -122,10 +127,15 @@ FramedZeroCopyPacketOutStream::~FramedZeroCopyPacketOutStream()
   if(adopt_outstream_)delete outstream_;
 }
 
-bool FramedZeroCopyPacketOutStream::put_packet(const std::string& packet)
+bool FramedZeroCopyPacketOutStream::
+put_packet(const std::string& packet, uint64_t seq_index)
 {
   coded_outstream_->WriteLittleEndian32(packet.size());
   if(coded_outstream_->HadError())return false;
+  coded_outstream_->WriteLittleEndian64(seq_index);
+  if(coded_outstream_->HadError())
+    throw std::runtime_error("Could not sequence index data, "
+      "framing on output stream will be incorrect from this point.");
   coded_outstream_->WriteString(packet);
   if(coded_outstream_->HadError())
     throw std::runtime_error("Could not write packet data, "
@@ -147,12 +157,14 @@ CompressedPacketInStream::~CompressedPacketInStream()
   if(adopt_upstream_)delete upstream_;
 }
 
-bool CompressedPacketInStream::get_packet(std::string& packet_out)
+bool CompressedPacketInStream::
+get_packet(std::string& packet_out, uint64_t& seq_index_out)
 {
-  if(!config_.use_compression())return upstream_->get_packet(packet_out);
+  if(!config_.use_compression())
+    return upstream_->get_packet(packet_out, seq_index_out);
   packet_out.clear();
   std::string packet_in;
-  if(!upstream_->get_packet(packet_in))return false;;
+  if(!upstream_->get_packet(packet_in, seq_index_out))return false;;
   ArrayInputStream zstream_in(packet_in.data(), packet_in.size());
   GzipInputStream stream_in(&zstream_in);
   bool copy_good = true;
@@ -183,9 +195,11 @@ CompressedPacketOutStream::~CompressedPacketOutStream()
   if(adopt_downstream_)delete downstream_;
 }
 
-bool CompressedPacketOutStream::put_packet(const std::string& packet)
+bool CompressedPacketOutStream::
+put_packet(const std::string& packet, uint64_t seq_index)
 {
-  if(!config_.use_compression())return downstream_->put_packet(packet);
+  if(!config_.use_compression())
+    return downstream_->put_packet(packet, seq_index);
   ArrayInputStream stream_in(packet.data(), packet.size());
   std::string packet_out;
   StringOutputStream zstream_out(&packet_out);
@@ -197,7 +211,7 @@ bool CompressedPacketOutStream::put_packet(const std::string& packet)
       stream_out.ZlibErrorMessage());
   if(!copy_good)
     throw std::runtime_error("Error writing to decompression stream.");
-  return downstream_->put_packet(packet_out);
+  return downstream_->put_packet(packet_out, seq_index);
 }
 
 FramedFilePacketInStream::FramedFilePacketInStream(const std::string& filename,
@@ -218,10 +232,11 @@ FramedFilePacketInStream::~FramedFilePacketInStream()
   delete upstream_;
 }
 
-bool FramedFilePacketInStream::get_packet(std::string& packet_out)
+bool FramedFilePacketInStream::
+get_packet(std::string& packet_out, uint64_t& seq_index_out)
 {
   if(!upstream_)throw std::runtime_error("File is not open");
-  return upstream_->get_packet(packet_out);
+  return upstream_->get_packet(packet_out, seq_index_out);
 }
 
 FramedFilePacketOutStream::FramedFilePacketOutStream(const std::string& filename,
@@ -243,8 +258,9 @@ FramedFilePacketOutStream::~FramedFilePacketOutStream()
   delete downstream_;
 }
 
-bool FramedFilePacketOutStream::put_packet(const std::string& packet)
+bool FramedFilePacketOutStream::
+put_packet(const std::string& packet, uint64_t seq_index)
 {
   if(!downstream_)throw std::runtime_error("File is not open");
-  return downstream_->put_packet(packet);
+  return downstream_->put_packet(packet, seq_index);
 }

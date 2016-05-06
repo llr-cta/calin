@@ -44,10 +44,12 @@ public:
     unsigned delay = 0):
     UTSSM_RADS(), count_(count), start_(start), delay_(delay) { }
   ~UnitTestIntegerDataSource() { }
-  UnitTestSimpleSubMessage* get_next() override {
+  UnitTestSimpleSubMessage* get_next(uint64_t& seq_index_out,
+      google::protobuf::Arena** arena = nullptr) override {
     if(index_>=count_)return nullptr;
     UnitTestSimpleSubMessage* m = new UnitTestSimpleSubMessage;
     m->set_ssm_i32(start_ + int32_t(index_));
+    seq_index_out = index_;
     ++index_;
     if(delay_)std::this_thread::sleep_for(std::chrono::microseconds(delay_));
     return m;
@@ -86,12 +88,16 @@ TEST(TestIntegerDataSource, Sequential) {
   UnitTestIntegerDataSource src(N,0);
   for(unsigned i=0;i<N;i++)
   {
-    auto* m = src.get_next();
+    uint64_t seq_index = 0;
+    auto* m = src.get_next(seq_index);
     ASSERT_NE(m, nullptr);
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
+    EXPECT_EQ(seq_index, uint64_t(i));
     delete m;
   }
-  auto* m = src.get_next();
+  uint64_t seq_index = 0;
+
+  auto* m = src.get_next(seq_index);
   ASSERT_EQ(m, nullptr);
 }
 
@@ -102,12 +108,14 @@ TEST(TestIntegerDataSource, RandomAccess) {
   {
     unsigned index = random()%((11*N)/10);
     src.set_next_index(index);
-    auto* m = src.get_next();
+    uint64_t seq_index = 0;
+    auto* m = src.get_next(seq_index);
     if(index>=N) {
       ASSERT_EQ(m, nullptr);
     } else {
       ASSERT_NE(m, nullptr);
       EXPECT_EQ(m->ssm_i32(), int32_t(index));
+      EXPECT_EQ(seq_index, uint64_t(index));
       delete m;
     }
   }
@@ -123,12 +131,14 @@ TEST(TestDataSourceOpener, Sequential) {
     auto* src = opener.open(j);
     for(unsigned i=0;i<N;++i,++n)
     {
-      auto* m = src->get_next();
+      uint64_t seq_index = 0;
+      auto* m = src->get_next(seq_index);
       ASSERT_NE(m, nullptr);
       EXPECT_EQ(m->ssm_i32(), int32_t(n));
       delete m;
     }
-    auto* m = src->get_next();
+    uint64_t seq_index = 0;
+    auto* m = src->get_next(seq_index);
     ASSERT_EQ(m, nullptr);
     delete src;
   }
@@ -143,13 +153,15 @@ TEST(TestChainedRandomAccessDataSource, Sequental) {
   BasicChainedRandomAccessDataSource<UTSSM_RADS> src(&opener, false);
   for(unsigned i=0;i<N*M;i++)
   {
-    auto* m = src.get_next();
+    uint64_t seq_index = 0;
+    auto* m = src.get_next(seq_index);
     ASSERT_NE(m, nullptr);
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
     delete m;
   }
-  ASSERT_EQ(src.get_next(), nullptr);
-  ASSERT_EQ(src.get_next(), nullptr);
+  uint64_t seq_index = 0;
+  ASSERT_EQ(src.get_next(seq_index), nullptr);
+  ASSERT_EQ(src.get_next(seq_index), nullptr);
 }
 
 TEST(TestChainedRandomAccessDataSource, RandomAccess) {
@@ -164,7 +176,8 @@ TEST(TestChainedRandomAccessDataSource, RandomAccess) {
     {
       unsigned index = random()%((11*N*M)/10);
       src.set_next_index(index);
-      auto* m = src.get_next();
+      uint64_t seq_index = 0;
+      auto* m = src.get_next(seq_index);
       if(index>=N*M) {
         ASSERT_EQ(m, nullptr);
       } else {
@@ -183,20 +196,26 @@ TEST(TestProtobufFile, WriteAndRead) {
     UnitTestIntegerDataSource src(N,0);
     ProtobufFileDataSink<UnitTestSimpleSubMessage>
       file_out("unittest.proto_raw");
-    for(unsigned i=0;i<N;i++)file_out.put_next(src.get_next(), true);
+    for(unsigned i=0;i<N;i++) {
+      uint64_t seq_index = 0;
+      auto* m = src.get_next(seq_index);
+      file_out.put_next(m, seq_index, nullptr, true);
+    }
   }
 
   ProtobufFileDataSource<UnitTestSimpleSubMessage>
     file_in("unittest.proto_raw");
   for(unsigned i=0;i<N;i++)
   {
-    auto* m = file_in.get_next();
+    uint64_t seq_index = 0;
+    auto* m = file_in.get_next(seq_index);
     ASSERT_NE(m, nullptr);
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
     delete m;
   }
-  ASSERT_EQ(file_in.get_next(), nullptr);
-  ASSERT_EQ(file_in.get_next(), nullptr);
+  uint64_t seq_index = 0;
+  ASSERT_EQ(file_in.get_next(seq_index), nullptr);
+  ASSERT_EQ(file_in.get_next(seq_index), nullptr);
 }
 
 TEST(TestBufferedIntegerDataSource, Sequential) {
@@ -208,12 +227,14 @@ TEST(TestBufferedIntegerDataSource, Sequential) {
 
   for(unsigned i=0;i<N;i++)
   {
-    auto* m = bsrc->get_next();
+    uint64_t seq_index = 0;
+    auto* m = bsrc->get_next(seq_index);
     ASSERT_NE(m, nullptr);
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
     delete m;
   }
-  auto* m = bsrc->get_next();
+  uint64_t seq_index = 0;
+  auto* m = bsrc->get_next(seq_index);
   ASSERT_EQ(m, nullptr);
   delete bsrc;
 }
@@ -228,20 +249,22 @@ TEST(TestBufferedIntegerDataSource, SequentialWithStop) {
   unsigned i=0;
   for(i=0;i<N/2;i++)
   {
-    auto* m = bsrc->get_next();
+    uint64_t seq_index = 0;
+    auto* m = bsrc->get_next(seq_index);
     ASSERT_NE(m, nullptr);
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
     delete m;
   }
   buffer.stop_buffering();
-  while(auto* m = bsrc->get_next())
+  uint64_t seq_index = 0;
+  while(auto* m = bsrc->get_next(seq_index))
   {
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
     delete m;
     i++;
   }
   delete bsrc;
-  auto* m = src.get_next();
+  auto* m = src.get_next(seq_index);
   ASSERT_NE(m, nullptr);
   EXPECT_EQ(m->ssm_i32(), int32_t(i));
   delete m;
@@ -261,7 +284,8 @@ TEST(TestBufferedIntegerDataSource, MultiThreaded) {
     threads.emplace_back([&buffer,&ids,ithread,delay](){
       auto* bsrc = buffer.new_data_source();
       int last_index = -1;
-      while(auto* m = bsrc->get_next())
+      uint64_t seq_index = 0;
+      while(auto* m = bsrc->get_next(seq_index))
       {
         EXPECT_GT(m->ssm_i32(), last_index);
         last_index = m->ssm_i32();
@@ -290,7 +314,8 @@ TEST(TestBufferedIntegerDataSource, MultiThreadedWithStop) {
     threads.emplace_back([&buffer,&ids,ithread,delay](){
       auto* bsrc = buffer.new_data_source();
       int last_index = -1;
-      while(auto* m = bsrc->get_next())
+      uint64_t seq_index = 0;
+      while(auto* m = bsrc->get_next(seq_index))
       {
         EXPECT_GT(m->ssm_i32(), last_index);
         last_index = m->ssm_i32();
@@ -303,7 +328,8 @@ TEST(TestBufferedIntegerDataSource, MultiThreadedWithStop) {
   buffer.stop_buffering();
   for(auto& i : threads)i.join();
 
-  auto* m = src.get_next();
+  uint64_t seq_index = 0;
+  auto* m = src.get_next(seq_index);
   unsigned i = 0;
   if(m != nullptr)
     for(;i<unsigned(m->ssm_i32());i++)EXPECT_GT(ids[i],0U) << "With: i=" << i;

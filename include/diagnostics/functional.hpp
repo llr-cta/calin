@@ -53,7 +53,7 @@ public:
       TelescopeRunConfiguration* run_config) override;
   bool leave_telescope_run() override;
 
-  bool visit_telescope_event(
+  bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
   bool leave_telescope_event() override;
 
@@ -118,6 +118,8 @@ protected:
     run_config_ = nullptr;
   bool calculate_covariance_ = false;
 };
+
+#if 0
 
 class FunctionalCaptureVisitor:
   public iact_data::event_visitor::TelescopeEventVisitor
@@ -198,5 +200,7 @@ protected:
     run_config_ = nullptr;
   bool calculate_covariance_ = false;
 };
+
+#endif
 
 } } } // namespace calin::diagnostics::functional_diagnostics
