@@ -45,7 +45,9 @@ using namespace calin::io;
 %import "iact_data/zfits_data_source.pb.i"
 %import "iact_data/nectarcam_data_source.pb.i"
 
-%newobject get_next();
+%apply uint64_t&OUTPUT { uint64_t& seq_index_out };
+%newobject get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr);
 %newobject get_run_configuration();
 //%newobject calin::iact_data::telescope_data_source::TelescopeDataSource::get_next();
 //%newobject calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource::get_next();

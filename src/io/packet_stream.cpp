@@ -99,8 +99,10 @@ get_packet(std::string& packet_out, uint64_t& seq_index_out)
   packet_out.clear();
   if(!coded_instream_->ReadLittleEndian32(&packet_size))
     return false; // Must assume EOF since API does not distinguish errors
-  if(!coded_instream_->ReadLittleEndian64(static_cast<google::protobuf::uint64*>(&seq_index_out)))
+  google::protobuf::uint64 google_seq_index_out;
+  if(!coded_instream_->ReadLittleEndian64(&google_seq_index_out))
     throw std::runtime_error("Error reading sequence index from input stream.");
+  seq_index_out = google_seq_index_out;
   if(!coded_instream_->ReadString(&packet_out, packet_size))
     throw std::runtime_error("Error reading packet data from input stream.");
   if(packet_out.size()!=packet_size)
