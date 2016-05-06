@@ -88,14 +88,14 @@ TEST(TestIntegerDataSource, Sequential) {
   UnitTestIntegerDataSource src(N,0);
   for(unsigned i=0;i<N;i++)
   {
-    uint64_t seq_index;
+    uint64_t seq_index = 0;
     auto* m = src.get_next(seq_index);
     ASSERT_NE(m, nullptr);
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
     EXPECT_EQ(seq_index, uint64_t(i));
     delete m;
   }
-  uint64_t seq_index;
+  uint64_t seq_index = 0;
 
   auto* m = src.get_next(seq_index);
   ASSERT_EQ(m, nullptr);
@@ -108,14 +108,14 @@ TEST(TestIntegerDataSource, RandomAccess) {
   {
     unsigned index = random()%((11*N)/10);
     src.set_next_index(index);
-    uint64_t seq_index;
+    uint64_t seq_index = 0;
     auto* m = src.get_next(seq_index);
     if(index>=N) {
       ASSERT_EQ(m, nullptr);
     } else {
       ASSERT_NE(m, nullptr);
       EXPECT_EQ(m->ssm_i32(), int32_t(index));
-      EXPECT_EQ(seq_index, int64_t(index));
+      EXPECT_EQ(seq_index, uint64_t(index));
       delete m;
     }
   }
@@ -131,13 +131,13 @@ TEST(TestDataSourceOpener, Sequential) {
     auto* src = opener.open(j);
     for(unsigned i=0;i<N;++i,++n)
     {
-      uint64_t seq_index;
+      uint64_t seq_index = 0;
       auto* m = src->get_next(seq_index);
       ASSERT_NE(m, nullptr);
       EXPECT_EQ(m->ssm_i32(), int32_t(n));
       delete m;
     }
-    uint64_t seq_index;
+    uint64_t seq_index = 0;
     auto* m = src->get_next(seq_index);
     ASSERT_EQ(m, nullptr);
     delete src;
@@ -153,13 +153,13 @@ TEST(TestChainedRandomAccessDataSource, Sequental) {
   BasicChainedRandomAccessDataSource<UTSSM_RADS> src(&opener, false);
   for(unsigned i=0;i<N*M;i++)
   {
-    uint64_t seq_index;
+    uint64_t seq_index = 0;
     auto* m = src.get_next(seq_index);
     ASSERT_NE(m, nullptr);
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
     delete m;
   }
-  uint64_t seq_index;
+  uint64_t seq_index = 0;
   ASSERT_EQ(src.get_next(seq_index), nullptr);
   ASSERT_EQ(src.get_next(seq_index), nullptr);
 }
@@ -176,7 +176,7 @@ TEST(TestChainedRandomAccessDataSource, RandomAccess) {
     {
       unsigned index = random()%((11*N*M)/10);
       src.set_next_index(index);
-      uint64_t seq_index;
+      uint64_t seq_index = 0;
       auto* m = src.get_next(seq_index);
       if(index>=N*M) {
         ASSERT_EQ(m, nullptr);
@@ -197,7 +197,7 @@ TEST(TestProtobufFile, WriteAndRead) {
     ProtobufFileDataSink<UnitTestSimpleSubMessage>
       file_out("unittest.proto_raw");
     for(unsigned i=0;i<N;i++) {
-      uint64_t seq_index;
+      uint64_t seq_index = 0;
       auto* m = src.get_next(seq_index);
       file_out.put_next(m, seq_index, nullptr, true);
     }
@@ -207,13 +207,13 @@ TEST(TestProtobufFile, WriteAndRead) {
     file_in("unittest.proto_raw");
   for(unsigned i=0;i<N;i++)
   {
-    uint64_t seq_index;
+    uint64_t seq_index = 0;
     auto* m = file_in.get_next(seq_index);
     ASSERT_NE(m, nullptr);
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
     delete m;
   }
-  uint64_t seq_index;
+  uint64_t seq_index = 0;
   ASSERT_EQ(file_in.get_next(seq_index), nullptr);
   ASSERT_EQ(file_in.get_next(seq_index), nullptr);
 }
@@ -227,13 +227,13 @@ TEST(TestBufferedIntegerDataSource, Sequential) {
 
   for(unsigned i=0;i<N;i++)
   {
-    uint64_t seq_index;
+    uint64_t seq_index = 0;
     auto* m = bsrc->get_next(seq_index);
     ASSERT_NE(m, nullptr);
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
     delete m;
   }
-  uint64_t seq_index;
+  uint64_t seq_index = 0;
   auto* m = bsrc->get_next(seq_index);
   ASSERT_EQ(m, nullptr);
   delete bsrc;
@@ -249,14 +249,14 @@ TEST(TestBufferedIntegerDataSource, SequentialWithStop) {
   unsigned i=0;
   for(i=0;i<N/2;i++)
   {
-    uint64_t seq_index;
+    uint64_t seq_index = 0;
     auto* m = bsrc->get_next(seq_index);
     ASSERT_NE(m, nullptr);
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
     delete m;
   }
   buffer.stop_buffering();
-  uint64_t seq_index;
+  uint64_t seq_index = 0;
   while(auto* m = bsrc->get_next(seq_index))
   {
     EXPECT_EQ(m->ssm_i32(), int32_t(i));
@@ -284,7 +284,7 @@ TEST(TestBufferedIntegerDataSource, MultiThreaded) {
     threads.emplace_back([&buffer,&ids,ithread,delay](){
       auto* bsrc = buffer.new_data_source();
       int last_index = -1;
-      uint64_t seq_index;
+      uint64_t seq_index = 0;
       while(auto* m = bsrc->get_next(seq_index))
       {
         EXPECT_GT(m->ssm_i32(), last_index);
@@ -314,7 +314,7 @@ TEST(TestBufferedIntegerDataSource, MultiThreadedWithStop) {
     threads.emplace_back([&buffer,&ids,ithread,delay](){
       auto* bsrc = buffer.new_data_source();
       int last_index = -1;
-      uint64_t seq_index;
+      uint64_t seq_index = 0;
       while(auto* m = bsrc->get_next(seq_index))
       {
         EXPECT_GT(m->ssm_i32(), last_index);
@@ -328,7 +328,7 @@ TEST(TestBufferedIntegerDataSource, MultiThreadedWithStop) {
   buffer.stop_buffering();
   for(auto& i : threads)i.join();
 
-  uint64_t seq_index;
+  uint64_t seq_index = 0;
   auto* m = src.get_next(seq_index);
   unsigned i = 0;
   if(m != nullptr)
