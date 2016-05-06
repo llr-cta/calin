@@ -43,10 +43,10 @@ NectarCamCameraEventDecoder::~NectarCamCameraEventDecoder()
   // nothing to see here
 }
 
-calin::ix::iact_data::telescope_event::TelescopeEvent*
-NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
+bool NectarCamCameraEventDecoder::decode(
+  calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+  const DataModel::CameraEvent* cta_event)
 {
-  auto* calin_event = new TelescopeEvent;
   calin_event->set_telescope_id(cta_event->telescopeid());
   calin_event->set_local_event_number(cta_event->eventnumber());
   calin_event->set_trigger_type(TRIGGER_SCIENCE);
@@ -194,14 +194,15 @@ NectarCamCameraEventDecoder::decode(const DataModel::CameraEvent* cta_event)
     }
   }
 
-  return calin_event;
+  return true;
 }
 
-TelescopeRunConfiguration* NectarCamCameraEventDecoder::decode_run_config(
+bool NectarCamCameraEventDecoder::decode_run_config(
+  calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* calin_run_config,
   const DataModel::CameraRunHeader* cta_run_header,
   const DataModel::CameraEvent* cta_event)
 {
-  auto* calin_run_config = new TelescopeRunConfiguration;
   if(cta_run_header)
   {
 #if 0
@@ -244,7 +245,7 @@ TelescopeRunConfiguration* NectarCamCameraEventDecoder::decode_run_config(
     nsample = cta_event->higain().waveforms().num_samples();
   calin_run_config->set_num_samples(nsample);
 
-  return calin_run_config;
+  return true;
 }
 
 void NectarCamCameraEventDecoder::

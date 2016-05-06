@@ -105,7 +105,7 @@ bool WaveformStatsVisitor::leave_telescope_run()
   return true;
 }
 
-bool WaveformStatsVisitor::visit_telescope_event(
+bool WaveformStatsVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   // nothing to see here

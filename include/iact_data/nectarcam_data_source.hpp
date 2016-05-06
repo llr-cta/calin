@@ -50,13 +50,16 @@ public:
     return config_type::default_instance(); }
 
   virtual ~NectarCamCameraEventDecoder();
-  calin::ix::iact_data::telescope_event::TelescopeEvent*
-    decode(const DataModel::CameraEvent* cta_event) override;
 
-  calin::ix::iact_data::telescope_run_configuration::
-    TelescopeRunConfiguration* decode_run_config(
-      const DataModel::CameraRunHeader* cta_run_header,
-      const DataModel::CameraEvent* cta_event) override;
+  bool decode(
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+    const DataModel::CameraEvent* cta_event) override;
+
+  bool decode_run_config(
+    calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config,
+    const DataModel::CameraRunHeader* cta_run_header,
+    const DataModel::CameraEvent* cta_event) override;
 
 private:
   void copy_single_gain_image(const DataModel::CameraEvent* cta_event,

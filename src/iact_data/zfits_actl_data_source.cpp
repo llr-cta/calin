@@ -86,12 +86,14 @@ ZFITSSingleFileACTLDataSource::default_config()
   return ZFITSACTLDataSource::default_config();
 }
 
-DataModel::CameraEvent* ZFITSSingleFileACTLDataSource::get_next()
+DataModel::CameraEvent* ZFITSSingleFileACTLDataSource::
+get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
   if(zfits_ == nullptr)
     throw std::runtime_error(std::string("File not open: ")+filename_);
   if(next_event_index_ >= zfits_->getNumMessagesInTable())return nullptr;
 
+  seq_index_out = next_event_index_;
   DataModel::CameraEvent* event {
     zfits_->readTypedMessage<DataModel::CameraEvent>(++next_event_index_) };
   if(!event)throw runtime_error("ZFits reader returned NULL");
@@ -102,11 +104,6 @@ DataModel::CameraEvent* ZFITSSingleFileACTLDataSource::get_next()
 uint64_t ZFITSSingleFileACTLDataSource::size()
 {
   return zfits_->getNumMessagesInTable();
-}
-
-uint64_t ZFITSSingleFileACTLDataSource::next_index()
-{
-  return next_event_index_;
 }
 
 void ZFITSSingleFileACTLDataSource::set_next_index(uint64_t next_index)
@@ -201,14 +198,6 @@ ZFITSACTLDataSource::ZFITSACTLDataSource(const std::string& filename,
 ZFITSACTLDataSource::~ZFITSACTLDataSource()
 {
   delete run_header_;
-}
-
-DataModel::CameraEvent* ZFITSACTLDataSource::get_next()
-{
-  DataModel::CameraEvent* event =
-  calin::io::data_source::BasicChainedRandomAccessDataSource<
-    ACTLRandomAccessDataSourceWithRunHeader>::get_next();
-  return event;
 }
 
 DataModel::CameraRunHeader* ZFITSACTLDataSource::get_run_header()

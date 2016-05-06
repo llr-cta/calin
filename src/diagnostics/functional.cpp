@@ -141,7 +141,7 @@ bool FunctionalStatsVisitor::leave_telescope_run()
   return true;
 }
 
-bool FunctionalStatsVisitor::visit_telescope_event(
+bool FunctionalStatsVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   for(auto& ichan : high_gain_mask_)ichan = 0;

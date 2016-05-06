@@ -94,9 +94,9 @@ public:
     const config_type& config = default_config());
   virtual ~ZFITSSingleFileACTLDataSource();
 
-  DataModel::CameraEvent* get_next() override;
+  DataModel::CameraEvent* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override;
   uint64_t size() override;
-  uint64_t next_index() override;
   void set_next_index(uint64_t next_index) override;
 
   DataModel::CameraRunHeader* get_run_header() override;
@@ -121,8 +121,6 @@ public:
   ZFITSACTLDataSource(const std::string& filename,
     const config_type& config = default_config());
   virtual ~ZFITSACTLDataSource();
-
-  DataModel::CameraEvent* get_next() override;
 
   DataModel::CameraRunHeader* get_run_header() override;
 

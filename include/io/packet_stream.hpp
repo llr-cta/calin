@@ -41,14 +41,14 @@ class PacketInStream
 {
 public:
   virtual ~PacketInStream();
-  virtual bool get_packet(std::string& packet_out) = 0;
+  virtual bool get_packet(std::string& packet_out, uint64_t& seq_index_out) = 0;
 };
 
 class PacketOutStream
 {
 public:
   virtual ~PacketOutStream();
-  virtual bool put_packet(const std::string& packet) = 0;
+  virtual bool put_packet(const std::string& packet, uint64_t seq_index) = 0;
 };
 
 class FramedZeroCopyPacketInStream final: public PacketInStream
@@ -58,7 +58,7 @@ public:
     google::protobuf::io::ZeroCopyInputStream* instream,
     bool adopt_instream = false);
   virtual ~FramedZeroCopyPacketInStream();
-  bool get_packet(std::string& packet_out) override;
+  bool get_packet(std::string& packet_out, uint64_t& seq_index_out) override;
 private:
   google::protobuf::io::ZeroCopyInputStream* instream_ = nullptr;
   bool adopt_instream_ = false;
@@ -72,7 +72,7 @@ public:
     google::protobuf::io::ZeroCopyOutputStream* outstream,
     bool adopt_outstream = false);
   ~FramedZeroCopyPacketOutStream();
-  bool put_packet(const std::string& packet) override;
+  bool put_packet(const std::string& packet, uint64_t seq_index) override;
 private:
   google::protobuf::io::ZeroCopyOutputStream* outstream_ = nullptr;
   bool adopt_outstream_ = false;
@@ -88,7 +88,7 @@ public:
     const config_type& config = config_type::default_instance(),
     bool adopt_upstream = false);
   virtual ~CompressedPacketInStream();
-  bool get_packet(std::string& packet_out) override;
+  bool get_packet(std::string& packet_out, uint64_t& seq_index_out) override;
 private:
   PacketInStream* upstream_;
   bool adopt_upstream_ = false;
@@ -104,7 +104,7 @@ public:
     const config_type& config = config_type::default_instance(),
     bool adopt_downstream = false);
   virtual ~CompressedPacketOutStream();
-  bool put_packet(const std::string& packet) override;
+  bool put_packet(const std::string& packet, uint64_t seq_index) override;
 private:
   PacketOutStream* downstream_;
   bool adopt_downstream_ = false;
@@ -119,7 +119,7 @@ public:
   FramedFilePacketInStream(const std::string& filename,
     const config_type& config = config_type::default_instance());
   virtual ~FramedFilePacketInStream();
-  bool get_packet(std::string& packet_out) override;
+  bool get_packet(std::string& packet_out, uint64_t& seq_index_out) override;
 private:
   PacketInStream* upstream_ = nullptr;
 };
@@ -132,7 +132,7 @@ public:
   FramedFilePacketOutStream(const std::string& filename, bool append = false,
     const config_type& config = config_type::default_instance());
   virtual ~FramedFilePacketOutStream();
-  bool put_packet(const std::string& packet) override;
+  bool put_packet(const std::string& packet, uint64_t seq_index) override;
 private:
   PacketOutStream* downstream_ = nullptr;
 };

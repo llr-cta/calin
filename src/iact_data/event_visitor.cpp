@@ -63,7 +63,8 @@ bool TelescopeEventVisitor::leave_telescope_run()
   return true;
 }
 
-bool TelescopeEventVisitor::visit_telescope_event(TelescopeEvent* event)
+bool TelescopeEventVisitor::
+visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
 {
   return true;
 }

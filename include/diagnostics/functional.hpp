@@ -53,7 +53,7 @@ public:
       TelescopeRunConfiguration* run_config) override;
   bool leave_telescope_run() override;
 
-  bool visit_telescope_event(
+  bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
   bool leave_telescope_event() override;
 

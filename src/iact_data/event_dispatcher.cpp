@@ -99,10 +99,14 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
       threads_active++;
       threads.emplace_back([d,sink,&threads_active](){
         auto* bsrc = sink->new_data_source();
-        while(TelescopeEvent* event = bsrc->get_next())
+        google::protobuf::Arena* arena = nullptr;
+        uint64_t seq_index;
+        while(TelescopeEvent* event = bsrc->get_next(seq_index, &arena))
         {
-          d->accept_event(event);
-          delete event;
+          d->accept_event(seq_index, event);
+          if(arena)delete arena;
+          else delete event;
+          arena = nullptr;
         }
         delete bsrc;
         threads_active--;
@@ -138,9 +142,11 @@ accept_run_configuration(TelescopeRunConfiguration* run_config)
   for(auto ivisitor : visitors_)ivisitor->visit_telescope_run(run_config);
 }
 
-void TelescopeEventDispatcher::accept_event(TelescopeEvent* event)
+void TelescopeEventDispatcher::
+accept_event(uint64_t seq_index, TelescopeEvent* event)
 {
-  for(auto ivisitor : visitors_)ivisitor->visit_telescope_event(event);
+  for(auto ivisitor : visitors_)
+    ivisitor->visit_telescope_event(seq_index,event);
 
   if(!wf_visitors_.empty())
   {
@@ -214,7 +220,9 @@ do_accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
   using namespace std::chrono;
   uint64_t ndispatched = 0;
   auto start_time = system_clock::now();
-  while(TelescopeEvent* event = src->get_next())
+  google::protobuf::Arena* arena = nullptr;
+  uint64_t seq_index;
+  while(TelescopeEvent* event = src->get_next(seq_index, &arena))
   {
     if(log_frequency and ndispatched and ndispatched % log_frequency == 0)
     {
@@ -224,10 +232,12 @@ do_accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
         << to_string_with_commas(duration_cast<seconds>(dt).count()) << " sec";
     }
 
-    accept_event(event);
-    if(sink)sink->put_next(event, true);
+    accept_event(seq_index, event);
+    if(sink)sink->put_next(event, seq_index, arena, true);
+    else if(arena)delete arena;
     else delete event;
     ++ndispatched;
+    arena = nullptr;
     //if(num_event_max and not --num_event_max)break;
   }
   if(log_frequency)

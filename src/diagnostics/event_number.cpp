@@ -44,7 +44,8 @@ bool SequentialEventNumberGlitchDetector::demand_waveforms()
   return false;
 }
 
-bool SequentialEventNumberGlitchDetector::visit_telescope_event(
+bool SequentialEventNumberGlitchDetector::
+visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   int64_t event_number = test_local_event_number_ ?
@@ -84,8 +85,9 @@ bool CountersEventNumberGlitchDetector::visit_telescope_run(
   return true;
 }
 
-bool CountersEventNumberGlitchDetector::visit_telescope_event(
-    calin:: ix::iact_data::telescope_event::TelescopeEvent* event)
+bool CountersEventNumberGlitchDetector::
+visit_telescope_event(uint64_t seq_index,
+  calin:: ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   if(event->module_counter_size() > int(counters_event_num_diff_.size()))
     counters_event_num_diff_.resize(event->module_counter_size());

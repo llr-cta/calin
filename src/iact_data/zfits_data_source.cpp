@@ -53,8 +53,10 @@ ZFITSDataSource::ZFITSDataSource(const std::string& filename,
   actl_zfits_ = new zfits_actl_data_source::
     ZFITSACTLDataSource(filename, config);
   actl_zfits_->set_next_index(1);
-  auto* sample_event = actl_zfits_->get_next();
-  run_config_ = decoder_->decode_run_config(actl_zfits_->get_run_header(),
+  uint64_t unused_seq_index = 0;
+  auto* sample_event = actl_zfits_->get_next(unused_seq_index);
+  run_config_ = new TelescopeRunConfiguration;
+  decoder_->decode_run_config(run_config_, actl_zfits_->get_run_header(),
     sample_event);
   delete sample_event;
   actl_zfits_->set_next_index(0);
@@ -68,14 +70,32 @@ ZFITSDataSource::~ZFITSDataSource()
 }
 
 calin::ix::iact_data::telescope_event::TelescopeEvent*
-ZFITSDataSource::get_next()
+ZFITSDataSource::get_next(uint64_t& seq_index_out,
+  google::protobuf::Arena** arena)
 {
-  auto index = actl_zfits_->next_index();
   std::unique_ptr<DataModel::CameraEvent> cta_event {
-    actl_zfits_->get_next() };
+    actl_zfits_->get_next(seq_index_out, arena) };
   if(!cta_event)return nullptr;
-  TelescopeEvent* event = decoder_->decode(cta_event.get());
-  if(event)event->set_source_event_index(index-1);
+  TelescopeEvent* event = nullptr;
+  TelescopeEvent* delete_event = nullptr;
+  google::protobuf::Arena* delete_arena = nullptr;
+  if(arena) {
+    if(!*arena)*arena = delete_arena = new google::protobuf::Arena;
+    event = google::protobuf::Arena::CreateMessage<TelescopeEvent>(*arena);
+  }
+  else event = delete_event = new TelescopeEvent;
+  if(!event)
+  {
+    delete delete_arena;
+    throw std::runtime_error("Could not allocate telescpe event");
+  }
+  if(!decoder_->decode(event, cta_event.get()))
+  {
+    delete delete_arena;
+    delete delete_event;
+    throw std::runtime_error("Could not decode ACTL event");
+  }
+  event->set_source_event_index(seq_index_out);
   return event;
 }
 
@@ -91,11 +111,6 @@ TelescopeRunConfiguration* ZFITSDataSource::get_run_configuration()
 uint64_t ZFITSDataSource::size()
 {
   return actl_zfits_->size();
-}
-
-uint64_t ZFITSDataSource::next_index()
-{
-  return actl_zfits_->next_index();
 }
 
 void ZFITSDataSource::set_next_index(uint64_t next_index)

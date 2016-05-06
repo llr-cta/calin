@@ -39,12 +39,14 @@ class CTACameraEventDecoder
 {
 public:
   virtual ~CTACameraEventDecoder();
-  virtual calin::ix::iact_data::telescope_event::TelescopeEvent*
-    decode(const DataModel::CameraEvent* cta_event) = 0;
-  virtual calin::ix::iact_data::telescope_run_configuration::
-    TelescopeRunConfiguration* decode_run_config(
-      const DataModel::CameraRunHeader* cta_run_header,
-      const DataModel::CameraEvent* cta_event) = 0;
+  virtual bool decode(
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+    const DataModel::CameraEvent* cta_event) = 0;
+  virtual bool decode_run_config(
+    calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config,
+    const DataModel::CameraRunHeader* cta_run_header,
+    const DataModel::CameraEvent* cta_event) = 0;
 };
 
 class ZFITSDataSource:
@@ -61,13 +63,14 @@ public:
     const config_type& config = default_config());
   virtual ~ZFITSDataSource();
 
-  calin::ix::iact_data::telescope_event::TelescopeEvent* get_next() override;
+  calin::ix::iact_data::telescope_event::
+  TelescopeEvent* get_next(uint64_t& seq_index_out,
+      google::protobuf::Arena** arena = nullptr) override;
 
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* get_run_configuration() override;
 
   uint64_t size() override;
-  uint64_t next_index() override;
   void set_next_index(uint64_t next_index) override;
 
   static config_type default_config() {

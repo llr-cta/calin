@@ -37,8 +37,8 @@ template<typename T> class DataSource
 public:
   CALIN_TYPEALIAS(data_type, T);
   virtual ~DataSource() { }
-  virtual T* get_next() = 0;
-  //virtual T* get_next(google::protobuf::Arena** arena = nullptr) = 0;
+  virtual T* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) = 0;
 };
 
 template<typename T> class RandomAccessDataSource: public DataSource<T>
@@ -46,9 +46,9 @@ template<typename T> class RandomAccessDataSource: public DataSource<T>
 public:
   CALIN_TYPEALIAS(data_type, T);
   virtual ~RandomAccessDataSource() { }
-  virtual T* get_next() override = 0;
+  virtual T* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override = 0;
   virtual uint64_t size() = 0;
-  virtual uint64_t next_index() = 0;
   virtual void set_next_index(uint64_t next_index) = 0;
 };
 
@@ -57,7 +57,8 @@ template<typename T> class DataSink
 public:
   CALIN_TYPEALIAS(data_type, T);
   virtual ~DataSink() { }
-  virtual bool put_next(T* data, bool adopt_data = false) = 0;
+  virtual bool put_next(T* data, uint64_t seq_index,
+    google::protobuf::Arena* arena = nullptr, bool adopt_data = false) = 0;
 };
 
 // *****************************************************************************
@@ -76,11 +77,20 @@ public:
     { /* nothing to see here */ }
   virtual ~ProtobufPacketStreamDataSource() {
     if(adopt_stream_)delete(stream_); }
-  T* get_next() override {
+  T* get_next(uint64_t& seq_index_out,
+      google::protobuf::Arena** arena = nullptr) override {
     std::string serialized_d;
-    if(!stream_->get_packet(serialized_d))return nullptr;
-    T* d = new T;
-    if(!d->ParseFromString(serialized_d)){ delete d; return nullptr; }
+    if(!stream_->get_packet(serialized_d, seq_index_out))return nullptr;
+    T* d = nullptr;
+    T* delete_d = nullptr;
+    google::protobuf::Arena* delete_arena = nullptr;
+    if(arena) {
+      if(!*arena)*arena = delete_arena = new google::protobuf::Arena;
+      d = google::protobuf::Arena::CreateMessage<T>(*arena);
+    }
+    else d = delete_d = new T;
+    if(!d->ParseFromString(serialized_d)){
+      delete delete_d; delete delete_arena; return nullptr; }
     return d;
   }
 private:
@@ -97,9 +107,16 @@ public:
     { /* nothing to see here */ }
   virtual ~ProtobufPacketStreamDataSink() {
     if(adopt_stream_)delete(stream_); }
-  bool put_next(T* data, bool adopt_data = false) override {
-    std::unique_ptr<T> data_guard(adopt_data ? data : nullptr);
-    return stream_->put_packet(data->SerializeAsString()); }
+  bool put_next(T* data, uint64_t seq_index,
+    google::protobuf::Arena* arena = nullptr, bool adopt_data = false) override
+  {
+    bool retval = stream_->put_packet(data->SerializeAsString(), seq_index);
+    if(adopt_data) {
+      if(arena)delete arena;
+      else delete data;
+    }
+    return retval;
+  }
 private:
   calin::io::packet_stream::PacketOutStream* stream_ = nullptr;
   bool adopt_stream_;
@@ -126,7 +143,9 @@ public:
     source_ = new ProtobufPacketStreamDataSource<T>(stream, true);
   }
   virtual ~ProtobufFileDataSource() { delete source_; }
-  T* get_next() override { return source_->get_next(); }
+  T* get_next(uint64_t& seq_index_out,
+      google::protobuf::Arena** arena = nullptr) override {
+    return source_->get_next(seq_index_out, arena); }
   static config_type default_options() {
     return config_type::default_instance(); }
 private:
@@ -147,8 +166,11 @@ public:
     sink_ = new ProtobufPacketStreamDataSink<T>(stream, true);
   }
   virtual ~ProtobufFileDataSink() { delete sink_; }
-  bool put_next(T* data, bool adopt_data = false) override {
-    return sink_->put_next(data, adopt_data); }
+  bool put_next(T* data, uint64_t seq_index,
+    google::protobuf::Arena* arena = nullptr, bool adopt_data = false) override
+  {
+    return sink_->put_next(data, seq_index, arena, adopt_data);
+  }
   static config_type default_options() {
     return config_type::default_instance(); }
 private:

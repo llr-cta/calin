@@ -76,11 +76,18 @@ public:
     delete source_;
   }
 
-  data_type* get_next() override
+  data_type* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override
   {
+    uint64_t unused_index = 0;
     while(isource_ < opener_->num_sources())
     {
-      if(data_type* next = source_->get_next())return next;
+      if(data_type* next = source_->get_next(unused_index, arena))
+      {
+        seq_index_out = seq_index_;
+        ++seq_index_;
+        return next;
+      }
       ++isource_;
       open_file();
     }
@@ -107,6 +114,7 @@ protected:
   bool adopt_opener_ = false;
   unsigned isource_ = 0;
   DST* source_ = nullptr;
+  uint64_t seq_index_ = 0;
 };
 
 template<typename T> using ChainedDataSource =
@@ -144,19 +152,6 @@ public:
     else return 0;
   }
 
-  uint64_t next_index() override
-  {
-    if(source_)
-    {
-      if(isource_ == 0)
-        return source_->next_index();
-      else
-        return source_->next_index() + chained_file_index_[isource_-1];
-    }
-    else
-      return chained_file_index_.back();
-  }
-
   void set_next_index(uint64_t next_index) override
   {
     if(opener_->num_sources() == 0)return;
@@ -185,6 +180,7 @@ public:
 
     if(source_)
     {
+      seq_index_ = next_index;
       if(isource_ == 0)
         source_->set_next_index(next_index);
       else
@@ -196,6 +192,7 @@ protected:
   using BasicChainedDataSource<RADST>::source_;
   using BasicChainedDataSource<RADST>::isource_;
   using BasicChainedDataSource<RADST>::opener_;
+  using BasicChainedDataSource<RADST>::seq_index_;
 
   void add_source_index(RADST* source)
   {
