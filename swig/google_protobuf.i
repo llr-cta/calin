@@ -100,13 +100,13 @@ public:
 
 %typemap(in, numinputs=0) google::protobuf::Arena** CALIN_NONNULL_ARENA_OUTPUT
   (google::protobuf::Arena* temp = nullptr) {
-    // typemap(in) google::protobuf::Arena** OUTPUT
+    // typemap(in) google::protobuf::Arena** CALIN_NONNULL_ARENA_OUTPUT - google_protobuf.i
     $1 = &temp;
 }
 
 %typemap(argout)
   google::protobuf::Arena** CALIN_NONNULL_ARENA_OUTPUT {
-    // typemap(argout) google::protobuf::Arena** OUTPUT
+    // typemap(argout) google::protobuf::Arena** CALIN_NONNULL_ARENA_OUTPUT - google_protobuf.i
     if(*$1 == nullptr) {
       PyErr_Format(PyExc_TypeError,
                    "Memory management error: no Arena returned.");
