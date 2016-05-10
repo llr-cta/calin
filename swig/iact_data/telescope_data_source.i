@@ -63,11 +63,11 @@ using namespace calin::io;
 %newobject simple_get_next();
 
 %extend calin::io::data_source::DataSource<
-  calin::ix::iact_data::telescope_event::TelescopeEvent> {
+    calin::ix::iact_data::telescope_event::TelescopeEvent> {
   calin::ix::iact_data::telescope_event::TelescopeEvent* simple_get_next()
   {
-    uint64_t seq_index = 0;
-    return $self->get_next(seq_index);
+    uint64_t unused_seq_index = 0;
+    return $self->get_next(unused_seq_index);
   }
 }
 
