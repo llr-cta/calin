@@ -486,6 +486,17 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
             "  *DIM1 = array.size();\n"
             "  *ARGOUTVIEWM_ARRAY1 = ($type$*)malloc(*DIM1 * sizeof($type$));\n"
             "  std::copy(array.begin(), array.end(), *ARGOUTVIEWM_ARRAY1);\n"
+            "};\n"
+            "void $name$_copy(intptr_t* DIM1, $type$** ARGOUTVIEWM_ARRAY1) {\n"
+            "  const auto& array = $$self->$name$();\n"
+            "  *DIM1 = array.size();\n"
+            "  *ARGOUTVIEWM_ARRAY1 = ($type$*)malloc(*DIM1 * sizeof($type$));\n"
+            "  std::copy(array.begin(), array.end(), *ARGOUTVIEWM_ARRAY1);\n"
+            "};\n"
+            "void $name$_view(intptr_t* DIM1, $type$** ARGOUTVIEW_ARRAY1) {\n"
+            "  auto* array = $$self->mutable_$name$();\n"
+            "  *DIM1 = array->size();\n"
+            "  *ARGOUTVIEW_ARRAY1 = ($type$*)array->mutable_data();\n"
             "};\n");
         I->Outdent();
         I->Print("};\n");
