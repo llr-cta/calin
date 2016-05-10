@@ -496,7 +496,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
             "void $name$_view(intptr_t* DIM1, $type$** ARGOUTVIEW_ARRAY1) {\n"
             "  auto* array = $$self->mutable_$name$();\n"
             "  *DIM1 = array->size();\n"
-            "  *ARGOUTVIEW_ARRAY1 = array->mutable_data();\n"
+            "  *ARGOUTVIEW_ARRAY1 = ($type$*)array->mutable_data();\n"
             "};\n");
         I->Outdent();
         I->Print("};\n");
