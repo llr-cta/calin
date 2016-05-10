@@ -45,14 +45,13 @@ using namespace calin::io;
 %import "iact_data/zfits_data_source.pb.i"
 %import "iact_data/nectarcam_data_source.pb.i"
 
-%apply uint64_t&OUTPUT { uint64_t& seq_index_out };
-%newobject get_next(uint64_t& seq_index_out,
-    google::protobuf::Arena** arena = nullptr);
 %newobject get_run_configuration();
-//%newobject calin::iact_data::telescope_data_source::TelescopeDataSource::get_next();
-//%newobject calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSource::get_next();
-//%newobject calin::iact_data::zfits_data_source::ZFITSSingleFileDataSource::get_next();
-//%newobject calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource::get_next();
+
+%ignore get_next(uint64_t& seq_index_out);
+
+%apply uint64_t& OUTPUT { uint64_t& seq_index_out };
+%apply google::protobuf::Arena** CALIN_NONNULL_ARENA_OUTPUT {
+  google::protobuf::Arena** arena };
 
 %import "io/data_source.hpp"
 %import "io/chained_data_source.hpp"
@@ -60,6 +59,17 @@ using namespace calin::io;
 %template(TelescopeDataSource)
   calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
+
+%newobject simple_get_next();
+
+%extend calin::io::data_source::DataSource<
+  calin::ix::iact_data::telescope_event::TelescopeEvent> {
+  calin::ix::iact_data::telescope_event::TelescopeEvent* simple_get_next()
+  {
+    uint64_t seq_index = 0;
+    return $self->get_next(seq_index);
+  }
+}
 
 %template(TelescopeRandomAccessDataSource)
   calin::io::data_source::RandomAccessDataSource<
