@@ -98,19 +98,14 @@ public:
 
 } }
 
-%typemap(in, numinputs=0) google::protobuf::Arena** CALIN_NONNULL_ARENA_OUTPUT
+%typemap(in, numinputs=0) google::protobuf::Arena** CALIN_ARENA_OUTPUT
   (google::protobuf::Arena* temp = nullptr) {
-    // typemap(in) google::protobuf::Arena** CALIN_NONNULL_ARENA_OUTPUT - google_protobuf.i
+    // typemap(in) google::protobuf::Arena** CALIN_ARENA_OUTPUT - google_protobuf.i
     $1 = &temp;
 }
 
 %typemap(argout)
-  google::protobuf::Arena** CALIN_NONNULL_ARENA_OUTPUT {
+  google::protobuf::Arena** CALIN_ARENA_OUTPUT {
     // typemap(argout) google::protobuf::Arena** CALIN_NONNULL_ARENA_OUTPUT - google_protobuf.i
-    if(result != nullptr and *$1 == nullptr) {
-      PyErr_Format(PyExc_TypeError,
-                   "Memory management error: no Arena returned.");
-      SWIG_fail;
-    }
     %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, SWIG_POINTER_OWN));
 }

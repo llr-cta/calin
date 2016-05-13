@@ -102,12 +102,12 @@ visit_telescope_event(uint64_t seq_index,
   {
     const auto& mod = event->module_counter(imodctr);
     unsigned imod = mod.module_id();
-    if(mod.counter_size()<counter_index_)continue;
-    if(mod.counter(counter_index_).value() !=
+    if(mod.counter_value_size()<counter_index_)continue;
+    if(mod.counter_value(counter_index_) !=
       index+counters_event_num_diff_[imod])
     {
       counters_event_num_diff_[imod] =
-        mod.counter(counter_index_).value()-index;
+        mod.counter_value(counter_index_)-index;
       found_glitch = true;
     }
   }

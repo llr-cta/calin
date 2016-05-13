@@ -54,8 +54,10 @@ message Counter {
 message ModuleCounters {
   int32 module_id                       = 1 [
     (CFO).desc = "Module ID within camera." ];
-  repeated Counter counter              = 2 [
-    (CFO).desc = "Counter data." ];
+  repeated int32 counter_id             = 2 [
+    (CFO).desc = "Ids of counters present." ];
+  repeated int64 counter_value          = 3 [
+    (CFO).desc = "Counter values." ];
 };
 
 message IntegratedCharges {
