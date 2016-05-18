@@ -48,10 +48,25 @@ using namespace calin::io;
 %newobject get_run_configuration();
 
 %ignore get_next(uint64_t& seq_index_out);
+%ignore get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena);
 
+%typemap(in, numinputs=0) calin::ix::iact_data::telescope_event::TelescopeEvent** CALIN_PROTOBUF_OUTPUT
+  (calin::ix::iact_data::telescope_event::TelescopeEvent* temp = nullptr) {
+    // typemap(in) calin::ix::iact_data::telescope_event::TelescopeEvent** CALIN_PROTOBUF_OUTPUT - telescope_data_source.i
+    $1 = &temp;
+}
+
+%typemap(argout)
+  calin::ix::iact_data::telescope_event::TelescopeEvent** CALIN_PROTOBUF_OUTPUT {
+    // typemap(argout) calin::ix::iact_data::telescope_event::TelescopeEvent** CALIN_PROTOBUF_OUTPUT - telescope_data_source.i
+    %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, 0));
+}
+
+%apply calin::ix::iact_data::telescope_event::TelescopeEvent** CALIN_PROTOBUF_OUTPUT {
+  calin::ix::iact_data::telescope_event::TelescopeEvent** event_out };
 %apply uint64_t& OUTPUT { uint64_t& seq_index_out };
-%apply google::protobuf::Arena** CALIN_NONNULL_ARENA_OUTPUT {
-  google::protobuf::Arena** arena };
+%apply google::protobuf::Arena** CALIN_ARENA_OUTPUT {
+  google::protobuf::Arena** arena_out };
 
 %import "io/data_source.hpp"
 %import "io/chained_data_source.hpp"
@@ -64,10 +79,21 @@ using namespace calin::io;
 
 %extend calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent> {
+
   calin::ix::iact_data::telescope_event::TelescopeEvent* simple_get_next()
   {
     uint64_t unused_seq_index = 0;
     return $self->get_next(unused_seq_index);
+  }
+
+  void get_next(uint64_t& seq_index_out,
+    calin::ix::iact_data::telescope_event::TelescopeEvent** event_out,
+    google::protobuf::Arena** arena_out)
+  {
+    seq_index_out = 0;
+    *event_out = $self->get_next(seq_index_out, arena_out);
+    if(*event_out != nullptr and *arena_out == nullptr)
+      throw std::runtime_error("Memory allocation error: no Arena returned");
   }
 }
 
