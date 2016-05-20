@@ -23,4 +23,4 @@ __calin__ is distributed under the [GPLv2](LICENSE.md).
 
 ### Wiki ###
 
-For more information please visit the [__calin__ wiki](https://github.com/llr-cta/calin/wiki]).
+For more information please visit the [__calin__ wiki](https://github.com/llr-cta/calin/wiki).
