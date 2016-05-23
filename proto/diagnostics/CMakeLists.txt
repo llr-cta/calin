@@ -14,7 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_SWIG_PROTO waveform.proto module.proto counter.proto
-event_number.proto functional.proto)
+	event_number.proto functional.proto value_capture.proto)
 set(CALIN_PACKAGE diagnostics)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 
