@@ -66,10 +66,13 @@ bool SingleFunctionalValueSupplierVisitor::visit_waveform(unsigned ichan,
 {
   if(ichan==chan_)
   {
-    if(low_gain_ and low_gain)
-      has_value_ = true, value_ = value_supplier_->low_gain_value();
-    else if(!low_gain and high_gain)
-      has_value_ = true, value_ = value_supplier_->high_gain_value();
+    if(low_gain_) {
+      if(low_gain)
+        has_value_ = true, value_ = value_supplier_->low_gain_value();
+    } else {
+      if(high_gain)
+        has_value_ = true, value_ = value_supplier_->high_gain_value();
+    }
   }
   return true;
 }

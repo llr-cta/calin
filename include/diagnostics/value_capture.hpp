@@ -58,6 +58,8 @@ public:
     if(inherit_supplier_)delete supplier_;
   }
 
+  bool demand_waveforms() override { return false; }
+
   bool leave_telescope_event() override
   {
     typename Supplier::value_type value = guard_value_;
