@@ -40,18 +40,25 @@
 %import "diagnostics/value_capture.pb.i"
 %include "diagnostics/value_capture.hpp"
 
-%template (Int32ValueSupplierVisitor)
-  calin::diagnostics::value_capture::ValueSupplierVisitor<int32_t>;
-%template (Int32SequentialValueCaptureVisitor)
+%template (IntValueSupplierVisitor)
+  calin::diagnostics::value_capture::ValueSupplierVisitor<int>;
+%template (IntSequentialValueCaptureVisitor)
   calin::diagnostics::value_capture::SequentialValueCaptureVisitor<
-    calin::diagnostics::value_capture::ValueSupplierVisitor<int32_t>,
+    calin::diagnostics::value_capture::ValueSupplierVisitor<int>,
     calin::ix::diagnostics::value_capture::CapturedInt32Values>;
 
-%template (Int64ValueSupplierVisitor)
-  calin::diagnostics::value_capture::ValueSupplierVisitor<int64_t>;
-%template (Int64SequentialValueCaptureVisitor)
+%template (LongValueSupplierVisitor)
+  calin::diagnostics::value_capture::ValueSupplierVisitor<long>;
+%template (LongSequentialValueCaptureVisitor)
   calin::diagnostics::value_capture::SequentialValueCaptureVisitor<
-    calin::diagnostics::value_capture::ValueSupplierVisitor<int64_t>,
+    calin::diagnostics::value_capture::ValueSupplierVisitor<long>,
+    calin::ix::diagnostics::value_capture::CapturedInt64Values>;
+
+%template (LongLongValueSupplierVisitor)
+  calin::diagnostics::value_capture::ValueSupplierVisitor<long long>;
+%template (LongLongSequentialValueCaptureVisitor)
+  calin::diagnostics::value_capture::SequentialValueCaptureVisitor<
+    calin::diagnostics::value_capture::ValueSupplierVisitor<long long>,
     calin::ix::diagnostics::value_capture::CapturedInt64Values>;
 
 %template (DoubleValueSupplierVisitor)
