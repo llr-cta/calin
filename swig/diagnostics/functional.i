@@ -38,5 +38,6 @@
 
 %import "iact_data/event_dispatcher.i"
 %import "iact_data/functional_event_visitor.i"
+%import "diagnostics/value_capture.i"
 %import "diagnostics/functional.pb.i"
 %include "diagnostics/functional.hpp"

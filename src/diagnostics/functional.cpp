@@ -37,6 +37,49 @@ using calin::ix::diagnostics::functional::
   FunctionalStatsVisitorConfig;
 using calin::math::covariance_calc::cov_i64_gen;
 
+SingleFunctionalValueSupplierVisitor::SingleFunctionalValueSupplierVisitor(
+    calin::iact_data::functional_event_visitor::
+      DualValueInt32FunctionalTelescopeEventVisitor* value_supplier,
+    unsigned chan, bool low_gain):
+  ValueSupplierVisitor<int32_t>(), value_supplier_(value_supplier),
+  chan_(chan), low_gain_(low_gain)
+{
+  // nothing to see here
+}
+
+SingleFunctionalValueSupplierVisitor::~SingleFunctionalValueSupplierVisitor()
+{
+  // nothing to see here
+}
+
+bool SingleFunctionalValueSupplierVisitor::
+visit_telescope_event(uint64_t seq_index,
+  calin::ix::iact_data::telescope_event::TelescopeEvent* event)
+{
+  has_value_ = false;
+  return true;
+}
+
+bool SingleFunctionalValueSupplierVisitor::visit_waveform(unsigned ichan,
+  calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+  calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
+{
+  if(ichan==chan_)
+  {
+    if(low_gain_ and low_gain)
+      has_value_ = true, value_ = value_supplier_->low_gain_value();
+    else if(!low_gain and high_gain)
+      has_value_ = true, value_ = value_supplier_->high_gain_value();
+  }
+  return true;
+}
+
+bool SingleFunctionalValueSupplierVisitor::get_value(int32_t& value)
+{
+  if(has_value_)value = value_;
+  return has_value_;
+}
+
 FunctionalStatsVisitor::
 FunctionalStatsVisitor(
     DualValueInt32FunctionalTelescopeEventVisitor* value_supplier,
