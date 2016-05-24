@@ -47,9 +47,15 @@ TelescopeEventDispatcher::~TelescopeEventDispatcher()
 }
 
 void TelescopeEventDispatcher::
-add_visitor(TelescopeEventVisitor* visitor, bool adopt_visitor)
+add_visitor(TelescopeEventVisitor* visitor,
+  VisitorExecutionMode execution_mode, bool adopt_visitor)
 {
-  visitors_.emplace_back(visitor);
+  if((execution_mode == EXECUTE_SEQUENTIAL_AND_PARALLEL or
+      execution_mode == EXECUTE_PARALLEL) and !visitor->is_parallelizable())
+    throw std::runtime_error(
+      "add_visitor: parallel execution mode requested on incompatible visitor");
+
+  visitors_.emplace_back(execution_mode, visitor);
   if(visitor->demand_waveforms())wf_visitors_.emplace_back(visitor);
   if(adopt_visitor)adopted_visitors_.emplace_back(visitor);
 }
@@ -61,7 +67,11 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
   TelescopeRunConfiguration* run_config = src->get_run_configuration();
   accept_run_configuration(run_config);
   if(nthread <= 0 or std::none_of(visitors_.begin(), visitors_.end(),
-    [](TelescopeEventVisitor* v){ return v->is_parallelizable(); }))
+    [](const std::pair<VisitorExecutionMode,TelescopeEventVisitor*>& iv)
+      { return (iv.first == EXECUTE_PARALLEL_IF_POSSIBLE or
+          iv.first == EXECUTE_SEQUENTIAL_AND_PARALLEL or
+          iv.first == EXECUTE_SEQUENTIAL_AND_PARALLEL_IF_POSSIBLE or
+          iv.first == EXECUTE_PARALLEL) and iv.second->is_parallelizable(); }))
   {
     accept_all_from_src(src, log_frequency, nthread==0);
   }
@@ -73,21 +83,49 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
     std::vector<TelescopeEventDispatcher*> sub_dispatchers;
     for(int ithread=0;ithread<nthread;ithread++)
       sub_dispatchers.emplace_back(new TelescopeEventDispatcher);
+
+    std::vector<TelescopeEventVisitor*> parallelizable_visitors;
+    for(auto iv : visitors)
+    {
+      bool add_sequential = false;
+      bool add_parallel = false;
+      auto* v = iv.second;
+      switch(iv.first)
+      {
+      case EXECUTE_PARALLEL_IF_POSSIBLE:
+        if(v->is_parallelizable())add_parallel=true;
+        else add_sequential=true;
+        break;
+      case EXECUTE_SEQUENTIAL:
+        add_sequential=true;
+        break;
+      case EXECUTE_SEQUENTIAL_AND_PARALLEL:
+        add_sequential = true;
+        add_parallel = true;
+        break;
+      case EXECUTE_SEQUENTIAL_AND_PARALLEL_IF_POSSIBLE:
+        if(v->is_parallelizable())add_parallel=true;
+        add_sequential=true;
+        break;
+      case EXECUTE_PARALLEL:
+        add_parallel = true;
+        break;
+      }
+      if(add_parallel)parallelizable_visitors.emplace_back(v);
+      if(add_sequential)add_visitor(v, EXECUTE_SEQUENTIAL, false);
+    }
+
     for(auto* d : sub_dispatchers)
     {
       std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>
         antecedent_visitors;
-      for(auto* v : visitors)
-        if(v->is_parallelizable())
-        {
-          TelescopeEventVisitor* sv = v->new_sub_visitor(antecedent_visitors);
-          d->add_visitor(sv, true);
-          antecedent_visitors[v] = sv;
-        }
+      for(auto* v : parallelizable_visitors)
+      {
+        TelescopeEventVisitor* sv = v->new_sub_visitor(antecedent_visitors);
+        d->add_visitor(sv, EXECUTE_SEQUENTIAL, true);
+        antecedent_visitors[v] = sv;
+      }
     }
-    for(auto* v : visitors)
-      if(!v->is_parallelizable())
-        add_visitor(v, false);
 
     auto* sink = new io::data_source::OneToNDataSink<TelescopeEvent>;
     std::vector<std::thread> threads;
@@ -131,7 +169,7 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
     }
     visitors_.clear();
     wf_visitors_.clear();
-    for(auto* v : visitors)add_visitor(v, false);
+    for(auto iv : visitors)add_visitor(iv.second, iv.first, false);
   }
   leave_run();
 }
@@ -139,14 +177,13 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
 void TelescopeEventDispatcher::
 accept_run_configuration(TelescopeRunConfiguration* run_config)
 {
-  for(auto ivisitor : visitors_)ivisitor->visit_telescope_run(run_config);
+  for(auto iv : visitors_)iv.second->visit_telescope_run(run_config);
 }
 
 void TelescopeEventDispatcher::
 accept_event(uint64_t seq_index, TelescopeEvent* event)
 {
-  for(auto ivisitor : visitors_)
-    ivisitor->visit_telescope_event(seq_index,event);
+  for(auto iv : visitors_)iv.second->visit_telescope_event(seq_index, event);
 
   if(!wf_visitors_.empty())
   {
@@ -193,7 +230,7 @@ accept_event(uint64_t seq_index, TelescopeEvent* event)
     }
   }
 
-  for(auto ivisitor : visitors_)ivisitor->leave_telescope_event();
+  for(auto iv : visitors_)iv.second->leave_telescope_event();
 }
 
 void TelescopeEventDispatcher::accept_all_from_src(
@@ -253,10 +290,10 @@ do_accept_from_src(TelescopeDataSource* src, unsigned log_frequency,
 
 void TelescopeEventDispatcher::leave_run()
 {
-  for(auto ivisitor : visitors_)ivisitor->leave_telescope_run();
+  for(auto iv : visitors_)iv.second->leave_telescope_run();
 }
 
 void TelescopeEventDispatcher::merge_results()
 {
-  for(auto ivisitor : visitors_)ivisitor->merge_results();
+  for(auto iv : visitors_)iv.second->merge_results();
 }
