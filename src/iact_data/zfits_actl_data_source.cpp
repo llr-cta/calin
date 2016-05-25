@@ -181,7 +181,8 @@ ZFITSACTLDataSourceOpener::open(unsigned isource)
   if(config_.log_on_file_open())
     LOG(INFO) << "Opening file: " << filenames_[isource];
   auto config = config_;
-  if(isource != 0)config.set_dont_read_run_header(true);
+  if(has_opened_file_)config.set_dont_read_run_header(true);
+  has_opened_file_ = true;
   return new ZFITSSingleFileACTLDataSource(filenames_[isource], config);
 }
 
