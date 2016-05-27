@@ -24,10 +24,35 @@
 
 #include <iact_data/event_visitor.hpp>
 #include <iact_data/functional_event_visitor.hpp>
+#include <diagnostics/value_capture.hpp>
 #include <diagnostics/functional.pb.h>
 #include <math/histogram.hpp>
 
 namespace calin { namespace diagnostics { namespace functional {
+
+class SingleFunctionalValueSupplierVisitor:
+  public calin::diagnostics::value_capture::ValueSupplierVisitor<int32_t>
+{
+public:
+  SingleFunctionalValueSupplierVisitor(
+    calin::iact_data::functional_event_visitor::
+      DualValueInt32FunctionalTelescopeEventVisitor* value_supplier,
+    unsigned chan, bool low_gain = false);
+  virtual ~SingleFunctionalValueSupplierVisitor();
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+  bool visit_waveform(unsigned ichan,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain) override;
+  bool get_value(int32_t& value) override;
+private:
+  calin::iact_data::functional_event_visitor::
+    DualValueInt32FunctionalTelescopeEventVisitor* value_supplier_;
+  unsigned chan_;
+  bool low_gain_;
+  int32_t value_;
+  bool has_value_ = false;
+};
 
 class FunctionalStatsVisitor:
   public iact_data::event_visitor::TelescopeEventVisitor

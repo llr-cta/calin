@@ -32,6 +32,14 @@
 
 namespace calin { namespace iact_data { namespace event_dispatcher {
 
+enum VisitorExecutionMode {
+  EXECUTE_PARALLEL_IF_POSSIBLE,
+  EXECUTE_SEQUENTIAL,
+  EXECUTE_SEQUENTIAL_AND_PARALLEL,
+  EXECUTE_SEQUENTIAL_AND_PARALLEL_IF_POSSIBLE,
+  EXECUTE_PARALLEL
+};
+
 class TelescopeEventDispatcher
 {
 public:
@@ -40,6 +48,7 @@ public:
 
   void add_visitor(
     calin::iact_data::event_visitor::TelescopeEventVisitor* visitor,
+    VisitorExecutionMode execution_mode = EXECUTE_PARALLEL_IF_POSSIBLE,
     bool adopt_visitor = false);
 
   void process_run(calin::iact_data::telescope_data_source::
@@ -51,7 +60,7 @@ public:
   // called in a specific order. They are liable to be made private.
   void accept_run_configuration(calin::ix::iact_data::
     telescope_run_configuration::TelescopeRunConfiguration* run_config);
-  void accept_event(uint64_t seq_index, 
+  void accept_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
   void accept_all_from_src(
     calin::io::data_source::DataSource<
@@ -72,8 +81,8 @@ private:
 
   std::vector<calin::iact_data::event_visitor::TelescopeEventVisitor*>
     adopted_visitors_;
-  std::vector<calin::iact_data::event_visitor::TelescopeEventVisitor*>
-    visitors_;
+  std::vector<std::pair<VisitorExecutionMode,
+    calin::iact_data::event_visitor::TelescopeEventVisitor*>> visitors_;
   std::vector<calin::iact_data::event_visitor::TelescopeEventVisitor*>
     wf_visitors_;
 };

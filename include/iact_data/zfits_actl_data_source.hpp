@@ -151,6 +151,7 @@ public:
 private:
   std::vector<std::string> filenames_;
   ZFITSACTLDataSource::config_type config_;
+  bool has_opened_file_ = false;
 };
 
 } } } // namespace calin::iact_data::zfits_actl_data_source
