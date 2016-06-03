@@ -50,7 +50,7 @@ public:
     supplier_(supplier), inherit_supplier_(inherit_supplier),
     guard_value_(guard_value), results_()
   {
-    // nothing to see here
+    results_.set_guard_value(guard_value_);
   }
 
   virtual ~SequentialValueCaptureVisitor()
