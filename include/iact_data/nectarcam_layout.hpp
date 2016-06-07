@@ -32,4 +32,8 @@ calin::ix::iact_data::instrument_layout::CameraLayout*
 nectarcam_19module_layout(
   calin::ix::iact_data::instrument_layout::CameraLayout* layout = nullptr);
 
+calin::ix::iact_data::instrument_layout::CameraLayout*
+nectarcam_layout(
+  calin::ix::iact_data::instrument_layout::CameraLayout* layout = nullptr);
+
 } } } // namespace calin::iact_data::nectarcam_layout
