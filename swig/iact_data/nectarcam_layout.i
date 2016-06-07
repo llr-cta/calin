@@ -38,6 +38,8 @@
 
 %newobject nectarcam_19module_layout(
   calin::ix::iact_data::instrument_layout::CameraLayout* layout = nullptr);
+%newobject nectarcam_layout(
+  calin::ix::iact_data::instrument_layout::CameraLayout* layout = nullptr);
 
 %import "iact_data/instrument_layout.pb.i"
 %include "iact_data/nectarcam_layout.hpp"

@@ -70,9 +70,11 @@ nectarcam_mod_map(unsigned nring, double radius, double spacing, double& rot)
 
   std::vector<mod_info> modvec;
   unsigned imod = 0;
-  for(unsigned iring=0; nring==0 or iring<=nring; iring++)
+  bool ring_has_module = true;
+  for(unsigned iring=0; ring_has_module and (nring==0 or iring<=nring); iring++)
   {
-    for(unsigned iringmod=0; iringmod<std::max(1U,iring*6); iringmod++)
+    bool ring_has_module = false;
+    for(unsigned iringmod=0; iringmod<std::max(1U,iring*6); iringmod++, imod++)
     {
       int uc;
       int vc;
@@ -81,10 +83,10 @@ nectarcam_mod_map(unsigned nring, double radius, double spacing, double& rot)
       double yc;
       uv_to_xy_trans(uc,vc,xc,yc,crot,srot,spacing);
       if(radius>0 and xc*xc+yc*yc > radius*radius)continue;
+      ring_has_module = true;
       int ix = (vc*2+uc*3)/7;
       double iy = -(vc+uc)+2.5*ix;
       modvec.emplace_back(imod, uc, vc, xc, yc, ix, iy);
-      imod++;
     }
   }
 
@@ -211,4 +213,15 @@ calin::iact_data::nectarcam_layout::nectarcam_19module_layout(
   auto modvec = nectarcam_mod_map(2, 0.0, spacing, rot);
   return nectarcam_general_layout(layout, modvec,
     CameraLayout::NECTARCAM_TESTBENCH_19CHANNEL, spacing, rot);
+}
+
+CameraLayout*
+calin::iact_data::nectarcam_layout::nectarcam_layout(
+  CameraLayout* layout)
+{
+  const double spacing = 5;
+  double rot = 0;
+  auto modvec = nectarcam_mod_map(9, 23.5*spacing, spacing, rot);
+  return nectarcam_general_layout(layout, modvec,
+    CameraLayout::NECTARCAM, spacing, rot);
 }
