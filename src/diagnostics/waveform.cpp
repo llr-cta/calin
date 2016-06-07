@@ -23,10 +23,12 @@
 #include <math/special.hpp>
 #include <io/log.hpp>
 #include <diagnostics/waveform.hpp>
+#include <math/covariance_calc.hpp>
 
 using calin::math::special::SQR;
 using namespace calin::io::log;
 using namespace calin::diagnostics::waveform;
+using calin::math::covariance_calc::cov_i64_gen;
 
 WaveformStatsVisitor::WaveformStatsVisitor(bool calculate_covariance):
   TelescopeEventVisitor(), calculate_covariance_(calculate_covariance)
@@ -238,10 +240,9 @@ Eigen::VectorXd WaveformStatsVisitor::waveform_var(
 {
   const int N = stat->sum_size();
   Eigen::VectorXd v(N);
-  const double one_over_n = 1.0/double(stat->num_entries());
   for(int i=0; i<N; i++)
-    v(i) = double(stat->sum_squared(i)) * one_over_n
-      - SQR(double(stat->sum(i)) * one_over_n);
+    v(i) = cov_i64_gen(stat->sum_squared(i), stat->num_entries(),
+      stat->sum(i), stat->num_entries(), stat->sum(i), stat->num_entries());
   return v;
 }
 
@@ -250,16 +251,17 @@ Eigen::MatrixXd WaveformStatsVisitor::waveform_cov(
 {
   const int N = stat->sum_size();
   Eigen::MatrixXd c(N,N);
-  const double one_over_n = 1.0/double(stat->num_entries());
   for(int i=0; i<N; i++)
-    c(i,i) = double(stat->sum_squared(i)) * one_over_n
-      - SQR(double(stat->sum(i)) * one_over_n);
+    c(i,i) = cov_i64_gen(stat->sum_squared(i), stat->num_entries(),
+      stat->sum(i), stat->num_entries(), stat->sum(i), stat->num_entries());
   for(int i=0; i<N; i++)
     for(int j=i+1; j<N; j++)
     {
       double cij =
-        (double(stat->sum_product(N*(N-1)/2-(N-i)*(N-i-1)/2 + j - i - 1))
-          - double(stat->sum(i))*double(stat->sum(j))*one_over_n) * one_over_n;
+        cov_i64_gen(stat->sum_product(N*(N-1)/2-(N-i)*(N-i-1)/2 + j - i - 1),
+          stat->num_entries(),
+          stat->sum(i), stat->num_entries(),
+          stat->sum(j), stat->num_entries());
       c(i,j) = cij;
       c(j,i) = cij;
     }
