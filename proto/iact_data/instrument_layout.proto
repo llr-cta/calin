@@ -80,6 +80,15 @@ message ChannelLayout {
   repeated uint32 neighbour_channel_indexes                = 20 [
     (CFO).desc = "Indexes of the channels for all neigbouring pixels. "
       "This forms a commutative relationship between the two channels." ];
+
+  repeated double pixel_polygon_vertex_x                   = 30 [
+    (CFO).desc = "X coordinates of the open polygon that represents the "
+      "pixel, probably a hexagon or square.",
+    (CFO).units = "cm" ];
+  repeated double pixel_polygon_vertex_y                   = 31 [
+    (CFO).desc = "Y coordinates of the open polygon that represents the "
+      "pixel, probably a hexagon or square.",
+    (CFO).units = "cm" ];
 };
 
 message ModuleLayout {

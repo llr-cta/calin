@@ -26,8 +26,7 @@
 
 #include <math/hex_array.hpp>
 
-void calin::math::hex_array::
-hexid_to_uv_ccw(unsigned hexid, int& u, int& v)
+void calin::math::hex_array::hexid_to_uv_ccw(unsigned hexid, int& u, int& v)
 {
   if(hexid==0) { u = v = 0; return; }
   unsigned ringid;
@@ -51,7 +50,7 @@ unsigned calin::math::hex_array::uv_to_hexid_ccw(int u, int v)
   if(u==0 and v==0)return 0;
   int ringid = uv_to_ringid(u,v);
   unsigned segid;
-  unsigned runid;
+  int runid;
   int upv = u+v;
   if(upv==ringid and v!=ringid)         { segid=0; runid=v; }
   else if(v==ringid and u!=-ringid)     { segid=1; runid=-u; }
@@ -63,12 +62,12 @@ unsigned calin::math::hex_array::uv_to_hexid_ccw(int u, int v)
   std::cout << u << ' ' << v << ' '
     << ringid << ' ' << segid << ' ' <<  runid << '\n';
 #endif
+  assert(runid >= 0);
   assert(runid < ringid);
   return positive_ringid_segid_runid_to_hexid(ringid, segid, runid);
 }
 
-void calin::math::hex_array::
-hexid_to_uv_cw(unsigned hexid, int& u, int& v)
+void calin::math::hex_array::hexid_to_uv_cw(unsigned hexid, int& u, int& v)
 {
 #if 0 // This code is correct but it's not worth maintaining two versions
   if(hexid==0) { u = v = 0; return; }

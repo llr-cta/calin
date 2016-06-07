@@ -25,6 +25,7 @@ syntax = "proto3";
 
 import "calin.proto";
 import "common_types.proto";
+import "iact_data/instrument_layout.proto";
 
 package calin.ix.iact_data.telescope_run_configuration;
 
@@ -41,8 +42,11 @@ message TelescopeRunConfiguration {
   repeated int32 configured_module_index                   = 21 [
     (CFO).desc = "Index within list of configured modules for each module "
       "in the camera, or -1 if module is not configued." ];
-  repeated int32 configured_module_id                      = 32 [
+  repeated int32 configured_module_id                      = 22 [
     (CFO).desc = "Id of each module configured in the run." ];
   uint32 num_samples                                       = 31 [
     (CFO).desc = "Number of samples in each trace." ];
+  calin.ix.iact_data.instrument_layout.
+      CameraLayout camera_layout                           = 101 [
+    (CFO).desc = "Camera layout." ];
 };

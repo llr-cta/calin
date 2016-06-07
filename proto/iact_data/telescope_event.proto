@@ -172,7 +172,7 @@ message TelescopeEvent {
     (CFO).desc = "Vector of camera clock times associated with event." ];
   repeated Counter camera_counter                           = 30 [
     (CFO).desc = "Vector of camera counter values associated with event." ];
-  repeated ModuleCounters module_counter                     = 31 [
+  repeated ModuleCounters module_counter                    = 31 [
     (CFO).desc = "Vector of module counter values associated with event." ];
 
   ImageTreatmentMode image_treatment                        = 99 [

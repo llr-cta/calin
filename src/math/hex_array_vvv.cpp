@@ -67,6 +67,7 @@
  */
 
 #include <cfloat>
+#include <cstdio>
 
 namespace {
 
