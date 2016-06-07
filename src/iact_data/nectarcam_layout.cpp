@@ -188,6 +188,12 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
         if(nid != grid_chan_index.end())
           c->add_neighbour_channel_indexes(nid->second);
       }
+
+      std::vector<double> vertex_x;
+      std::vector<double> vertex_y;
+      uv_to_vertexes_xy_trans(u, v, vertex_x, vertex_y, crot, srot, spacing);
+      for(auto vx : vertex_x)c->add_pixel_polygon_vertex_x(vx);
+      for(auto vy : vertex_y)c->add_pixel_polygon_vertex_y(vy);
     }
   }
 
