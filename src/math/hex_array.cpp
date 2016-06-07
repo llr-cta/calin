@@ -50,7 +50,7 @@ unsigned calin::math::hex_array::uv_to_hexid_ccw(int u, int v)
   if(u==0 and v==0)return 0;
   int ringid = uv_to_ringid(u,v);
   unsigned segid;
-  unsigned runid;
+  int runid;
   int upv = u+v;
   if(upv==ringid and v!=ringid)         { segid=0; runid=v; }
   else if(v==ringid and u!=-ringid)     { segid=1; runid=-u; }
@@ -62,6 +62,7 @@ unsigned calin::math::hex_array::uv_to_hexid_ccw(int u, int v)
   std::cout << u << ' ' << v << ' '
     << ringid << ' ' << segid << ' ' <<  runid << '\n';
 #endif
+  assert(runid >= 0);
   assert(runid < ringid);
   return positive_ringid_segid_runid_to_hexid(ringid, segid, runid);
 }
