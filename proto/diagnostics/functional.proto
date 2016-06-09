@@ -87,6 +87,8 @@ message CameraDoubleFunctionalRawStats {
 message FunctionalStatsVisitorConfig {
   bool calculate_covariance                                = 1 [
     (CFO).desc = "Calculate channel-to-channel covariance matrix." ];
+  math.histogram.Histogram1DConfig hist_config             = 11 [
+    (CFO).desc = "Configuration of histograms." ];
 };
 
 message OneChannelIntFunctionalCapturedValues {

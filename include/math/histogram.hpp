@@ -65,21 +65,26 @@ CALIN_TYPEALIAS(DefaultAccumulator,
 
 template<typename T, typename Container = std::vector<T>> class BinnedData1D
 {
- public:
+public:
   CALIN_TYPEALIAS(data_type, T);
   CALIN_TYPEALIAS(data_container_type, Container);
 
   BinnedData1D(double dxval, double xval_align = 0.5,
                const std::string& xval_units = std::string()):
       dxval_{dxval}, xval_align_{xval_align}, xval_units_{xval_units}
-  { /* nothing to see here */ }
+    { /* nothing to see here */ }
   BinnedData1D(double dxval, double xval_limit_lo, double xval_limit_hi,
                double xval_align = 0.5,
                const std::string& xval_units = std::string()):
       dxval_{dxval}, xval_align_{xval_align}, limited_{true},
       xval_limit_lo_{xval_limit_lo}, xval_limit_hi_{xval_limit_hi},
       xval_units_{xval_units}
-  { /* nothing to see here */ }
+    { /* nothing to see here */ }
+  BinnedData1D(const calin::ix::math::histogram::Histogram1DConfig& config):
+      dxval_{config.dxval()}, xval_align_{config.xval_align()},
+      limited_{config.limited()}, xval_limit_lo_{config.xval_limit_lo()},
+      xval_limit_hi_{config.xval_limit_hi()}, xval_units_{config.xval_units()}
+    { /* nothing to see here */ }
 
   // Getters and setters
   double dxval() const { return dxval_; }
@@ -117,7 +122,7 @@ template<typename T, typename Container = std::vector<T>> class BinnedData1D
   double xval_limit_lo() const { return xval_limit_lo_; }
   double xval_limit_hi() const { return xval_limit_hi_; }
 
- protected:
+protected:
   BinnedData1D(double dxval, double xval_align, double xval0,
                bool limited, double xval_limit_lo, double xval_limit_hi,
                const std::string& xval_units):
@@ -427,9 +432,13 @@ template<typename Acc> class BasicHistogram1D:
                    const std::string& weight_units = std::string()):
       Base(dxval, xval_limit_lo, xval_limit_hi, xval_align, xval_units),
       name_{name}, weight_units_{weight_units}
-  { /* nothing to see here */ }
+    { /* nothing to see here */ }
 
-  BasicHistogram1D(calin::ix::math::histogram::Histogram1DData& data);
+  BasicHistogram1D(const calin::ix::math::histogram::Histogram1DConfig& config):
+      Base{config}, name_{config.name()}, weight_units_{config.weight_units()}
+    { /* nothing to see here */ }
+
+  BasicHistogram1D(const calin::ix::math::histogram::Histogram1DData& data);
 
   // Get all data as protobuf message
   calin::ix::math::histogram::Histogram1DData*
@@ -569,7 +578,7 @@ insert(const double x, const double w)
 
 template<typename Acc>
 BasicHistogram1D<Acc>::
-BasicHistogram1D(calin::ix::math::histogram::Histogram1DData& data):
+BasicHistogram1D(const calin::ix::math::histogram::Histogram1DData& data):
     Base(data.dxval(), data.xval_align(), data.xval0(),
          &(*data.bins().begin()),&(*data.bins().end()), data.limited(),
          data.xval_limit_lo(), data.xval_limit_hi(),

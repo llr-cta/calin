@@ -93,8 +93,18 @@ visit_telescope_run(
   high_gain_signal_.resize(nchan);
   high_gain_hist_.clear();
   for(int ichan=0; ichan<nchan; ichan++)
-    high_gain_hist_.emplace_back(1,0.5,
-      std::string("Channel ")+std::to_string(ichan)+" (high gain)","","events");
+  {
+    calin::ix::math::histogram::Histogram1DConfig hist_config(
+      config_.hist_config());
+    if(hist_config.name().empty())
+      hist_config.set_name(
+        std::string("Channel ")+std::to_string(ichan)+" (high gain)");
+    else hist_config.set_name(
+      hist_config.name() + " (channel "+std::to_string(ichan)+", high gain)");
+    if(hist_config.weight_units().empty())
+      hist_config.set_weight_units("events");
+    high_gain_hist_.emplace_back(hist_config);
+  }
 
   auto* hg_results = results_.mutable_high_gain();
   hg_results->mutable_num_sum_entries()->Resize(nchan,0);
@@ -108,8 +118,18 @@ visit_telescope_run(
   low_gain_signal_.resize(nchan);
   low_gain_hist_.clear();
   for(int ichan=0; ichan<nchan; ichan++)
-    low_gain_hist_.emplace_back(1,0.5,
-      std::string("Channel ")+std::to_string(ichan)+" (low gain)","","events");
+  {
+    calin::ix::math::histogram::Histogram1DConfig hist_config(
+      config_.hist_config());
+    if(hist_config.name().empty())
+      hist_config.set_name(
+        std::string("Channel ")+std::to_string(ichan)+" (high gain)");
+    else hist_config.set_name(
+      hist_config.name() + " (channel "+std::to_string(ichan)+", high gain)");
+    if(hist_config.weight_units().empty())
+      hist_config.set_weight_units("events");
+    low_gain_hist_.emplace_back(hist_config);
+  }
 
   auto* lg_results = results_.mutable_low_gain();
   lg_results->mutable_num_sum_entries()->Resize(nchan,0);

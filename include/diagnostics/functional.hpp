@@ -101,6 +101,8 @@ public:
   {
     calin::ix::diagnostics::functional::FunctionalStatsVisitorConfig cfg;
     cfg.set_calculate_covariance(true);
+    cfg.mutable_hist_config()->set_dxval(1.0);
+    cfg.mutable_hist_config()->set_xval_align(0.5);
     return cfg;
   }
 
