@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace calin { namespace math { namespace covariance_calc {
 
 double cov_i64_gen(int64_t sij, int64_t nij,
