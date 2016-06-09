@@ -36,11 +36,28 @@ inline int64_t cov_gen(int64_t sij, int64_t nij,
   return cov_i64_gen(sij, nij, si, ni, sj, nj);
 }
 
+inline int64_t cov_gen(int64_t sij, int32_t nij,
+  int64_t si, int32_t ni, int64_t sj, int32_t nj)
+{
+  return cov_i64_gen(sij, nij, si, ni, sj, nj);
+}
+
+inline int64_t cov_gen(int32_t sij, int32_t nij,
+  int32_t si, int32_t ni, int32_t sj, int32_t nj)
+{
+  return cov_i64_gen(sij, nij, si, ni, sj, nj);
+}
+
 inline double cov_gen(double sij, int64_t nij,
   double si, int64_t ni, double sj, int64_t nj)
 {
   return cov_double_gen(sij, nij, si, ni, sj, nj);
 }
 
+inline double cov_gen(double sij, int32_t nij,
+  double si, int32_t ni, double sj, int32_t nj)
+{
+  return cov_double_gen(sij, nij, si, ni, sj, nj);
+}
 
 } } } // namespace calin::math::covariance_calc
