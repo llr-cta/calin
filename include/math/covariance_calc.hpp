@@ -42,4 +42,9 @@ inline double cov_gen(double sij, count_type nij,
   double si, count_type ni, double sj, count_type nj) {
   return cov_double_gen(sij, nij, si, ni, sj, nj); }
 
+template<typename count_type>
+inline double cov_gen(float sij, count_type nij,
+  float si, count_type ni, float sj, count_type nj) {
+  return cov_double_gen(sij, nij, si, ni, sj, nj); }
+
 } } } // namespace calin::math::covariance_calc

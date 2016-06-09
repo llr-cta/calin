@@ -96,15 +96,6 @@ public:
     return results_;
   }
 
-  static Eigen::VectorXd channel_mean(
-    const ix::diagnostics::functional::OneGainIntFunctionalRawStats* stat);
-
-  static Eigen::VectorXd channel_var(
-    const ix::diagnostics::functional::OneGainIntFunctionalRawStats* stat);
-
-  static Eigen::MatrixXd channel_cov(
-    const ix::diagnostics::functional::OneGainIntFunctionalRawStats* stat);
-
   static calin::ix::diagnostics::functional::FunctionalStatsVisitorConfig
   default_config()
   {
@@ -146,6 +137,16 @@ protected:
     run_config_ = nullptr;
   bool calculate_covariance_ = false;
 };
+
+template<typename OneGainRawStats>
+Eigen::VectorXd channel_mean(const OneGainRawStats* stat);
+
+template<typename OneGainRawStats>
+Eigen::VectorXd channel_var(const OneGainRawStats* stat);
+
+template<typename OneGainRawStats>
+Eigen::MatrixXd channel_cov(const OneGainRawStats* stat);
+
 
 } } } // namespace calin::diagnostics::functional_diagnostics
 

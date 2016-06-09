@@ -286,10 +286,8 @@ merge_one_gain(const OneGainRawStats* from, OneGainRawStats* to)
       from->value_hist(i));
 }
 
-template<typename DualGainFunctionalVisitor, typename Results>
-Eigen::VectorXd FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
-channel_mean(
-  const ix::diagnostics::functional::OneGainIntFunctionalRawStats* stat)
+template<typename OneGainRawStats>
+Eigen::VectorXd channel_mean(const OneGainRawStats* stat)
 {
   const int N = stat->sum_size();
   assert(N == stat->num_sum_entries_size());
@@ -299,10 +297,8 @@ channel_mean(
   return m;
 }
 
-template<typename DualGainFunctionalVisitor, typename Results>
-Eigen::VectorXd FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
-channel_var(
-  const ix::diagnostics::functional::OneGainIntFunctionalRawStats* stat)
+template<typename OneGainRawStats>
+Eigen::VectorXd channel_var(const OneGainRawStats* stat)
 {
   using calin::math::special::SQR;
   using calin::math::covariance_calc::cov_gen;
@@ -317,10 +313,8 @@ channel_var(
   return v;
 }
 
-template<typename DualGainFunctionalVisitor, typename Results>
-Eigen::MatrixXd FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
-channel_cov(
-  const ix::diagnostics::functional::OneGainIntFunctionalRawStats* stat)
+template<typename OneGainRawStats>
+Eigen::MatrixXd channel_cov(const OneGainRawStats* stat)
 {
   using calin::math::special::SQR;
   using calin::math::covariance_calc::cov_gen;

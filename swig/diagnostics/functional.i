@@ -53,3 +53,23 @@ calin::diagnostics::functional::FunctionalStatsVisitor<
   calin::iact_data::functional_event_visitor::
     DualGainDoubleFunctionalTelescopeEventVisitor,
   calin::ix::diagnostics::functional::CameraDoubleFunctionalRawStats>;
+
+%template(channel_mean_int)
+calin::diagnostics::functional::channel_mean<
+  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
+%template(channel_var_int)
+calin::diagnostics::functional::channel_var<
+  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
+%template(channel_cov_int)
+calin::diagnostics::functional::channel_cov<
+  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
+
+%template(channel_mean_double)
+calin::diagnostics::functional::channel_mean<
+  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
+%template(channel_var_double)
+calin::diagnostics::functional::channel_var<
+  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
+%template(channel_cov_double)
+calin::diagnostics::functional::channel_cov<
+  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;

@@ -157,17 +157,22 @@ protected:
   inline double process_one_gain(
     const calin::ix::iact_data::telescope_event::ChannelWaveform* ch_wf) const
   {
-    const auto* samples_end = ch_wf->samples().data() + ch_wf->samples_size();
-    const auto* samples_max = ch_wf->samples().data();
-    for(const auto* samples = ch_wf->samples().data() + 1;
-        samples < samples_end; samples++)
+    const auto*const samples_start = ch_wf->samples().data();
+    const auto* samples_end = samples_start + ch_wf->samples_size();
+    const auto* samples_max = samples_start;
+    for(const auto* samples = samples_start + 1;
+        samples < samples_end; ++samples)
       if(*samples > *samples_max)samples_max = samples;
-    const auto* samples_min = ch_wf->samples().data();
+    const auto* samples_min = samples_start;
     samples_end = samples_max;
-    for(const auto* samples = ch_wf->samples().data() + 1;
-        samples < samples_end; samples++)
+    for(const auto* samples = samples_start + 1;
+        samples < samples_end; ++samples)
       if(*samples < *samples_min)samples_min = samples;
-    return 0;
+    if(samples_min == samples_max)return -1;
+    double samples_mid = 0.5*(double(*samples_min)+double(*samples_max));
+    while(double(*samples_max) > samples_mid)--samples_max;
+    return (samples_max-samples_start) +
+      (samples_mid - double(*samples_max))/double(*(samples_max+1)-*samples_max);
   }
 
   double high_gain_value_ = 0.0;
