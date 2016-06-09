@@ -32,68 +32,14 @@ double cov_i64_gen(int64_t sij, int64_t nij,
 double cov_double_gen(double sij, int64_t nij,
   double si, int64_t ni, double sj, int64_t nj);
 
-inline int64_t cov_gen(int64_t sij, int64_t nij,
-  int64_t si, int64_t ni, int64_t sj, int64_t nj) {
+template<typename sum_type, typename count_type>
+inline double cov_gen(sum_type sij, count_type nij,
+  sum_type si, count_type ni, sum_type sj, count_type nj) {
   return cov_i64_gen(sij, nij, si, ni, sj, nj); }
 
-inline int64_t cov_gen(int64_t sij, int32_t nij,
-  int64_t si, int32_t ni, int64_t sj, int32_t nj) {
-  return cov_i64_gen(sij, nij, si, ni, sj, nj); }
-
-inline int64_t cov_gen(int32_t sij, int32_t nij,
-  int32_t si, int32_t ni, int32_t sj, int32_t nj) {
-  return cov_i64_gen(sij, nij, si, ni, sj, nj); }
-
-inline int64_t cov_gen(int64_t sij, uint64_t nij,
-  int64_t si, uint64_t ni, int64_t sj, uint64_t nj) {
-  return cov_i64_gen(sij, nij, si, ni, sj, nj); }
-
-inline int64_t cov_gen(int64_t sij, uint32_t nij,
-  int64_t si, uint32_t ni, int64_t sj, uint32_t nj) {
-  return cov_i64_gen(sij, nij, si, ni, sj, nj); }
-
-inline int64_t cov_gen(int32_t sij, uint32_t nij,
-  int32_t si, uint32_t ni, int32_t sj, uint32_t nj) {
-  return cov_i64_gen(sij, nij, si, ni, sj, nj); }
-  
-inline int64_t cov_gen(uint64_t sij, int64_t nij,
-  uint64_t si, int64_t ni, uint64_t sj, int64_t nj) {
-  return cov_i64_gen(sij, nij, si, ni, sj, nj); }
-
-inline int64_t cov_gen(uint64_t sij, int32_t nij,
-  uint64_t si, int32_t ni, uint64_t sj, int32_t nj) {
-  return cov_i64_gen(sij, nij, si, ni, sj, nj); }
-
-inline int64_t cov_gen(uint32_t sij, int32_t nij,
-  uint32_t si, int32_t ni, uint32_t sj, int32_t nj) {
-  return cov_i64_gen(sij, nij, si, ni, sj, nj); }
-
-inline int64_t cov_gen(uint64_t sij, uint64_t nij,
-  uint64_t si, uint64_t ni, uint64_t sj, uint64_t nj) {
-  return cov_i64_gen(sij, nij, si, ni, sj, nj); }
-
-inline int64_t cov_gen(uint64_t sij, uint32_t nij,
-  uint64_t si, uint32_t ni, uint64_t sj, uint32_t nj) {
-  return cov_i64_gen(sij, nij, si, ni, sj, nj); }
-
-inline int64_t cov_gen(uint32_t sij, uint32_t nij,
-  uint32_t si, uint32_t ni, uint32_t sj, uint32_t nj) {
-  return cov_i64_gen(sij, nij, si, ni, sj, nj); }
-
-inline double cov_gen(double sij, int64_t nij,
-  double si, int64_t ni, double sj, int64_t nj) {
-  return cov_double_gen(sij, nij, si, ni, sj, nj); }
-
-inline double cov_gen(double sij, int32_t nij,
-  double si, int32_t ni, double sj, int32_t nj) {
-  return cov_double_gen(sij, nij, si, ni, sj, nj); }
-
-inline double cov_gen(double sij, uint64_t nij,
-  double si, uint64_t ni, double sj, uint64_t nj) {
-  return cov_double_gen(sij, nij, si, ni, sj, nj); }
-
-inline double cov_gen(double sij, uint32_t nij,
-  double si, uint32_t ni, double sj, uint32_t nj) {
+template<typename count_type>
+inline double cov_gen(double sij, count_type nij,
+  double si, count_type ni, double sj, count_type nj) {
   return cov_double_gen(sij, nij, si, ni, sj, nj); }
 
 } } } // namespace calin::math::covariance_calc
