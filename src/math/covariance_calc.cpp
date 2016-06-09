@@ -24,6 +24,12 @@
 
 #include <math/covariance_calc.hpp>
 
+double calin::math::covariance_calc::cov_double_gen(double sij, int64_t nij,
+  double si, int64_t ni, double sj, int64_t nj)
+{
+  return sij/double(nij) - (si/double(ni))*(sj/double(nj));
+}
+
 double calin::math::covariance_calc::cov_i64_gen(int64_t sij, int64_t nij,
   int64_t si, int64_t ni, int64_t sj, int64_t nj)
 {

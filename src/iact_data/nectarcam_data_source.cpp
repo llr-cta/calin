@@ -27,6 +27,7 @@
 #include <util/file.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
 #include <iact_data/zfits_data_source.hpp>
+#include <iact_data/nectarcam_layout.hpp>
 
 using namespace calin::iact_data::nectarcam_data_source;
 using namespace calin::ix::iact_data::telescope_event;
@@ -206,6 +207,9 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   const DataModel::CameraRunHeader* cta_run_header,
   const DataModel::CameraEvent* cta_event)
 {
+  nectarcam_layout::nectarcam_19module_layout(
+    calin_run_config->mutable_camera_layout());
+    
   if(cta_run_header)
   {
 #if 0

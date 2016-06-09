@@ -27,4 +27,20 @@ namespace calin { namespace math { namespace covariance_calc {
 double cov_i64_gen(int64_t sij, int64_t nij,
   int64_t si, int64_t ni, int64_t sj, int64_t nj);
 
+double cov_double_gen(double sij, int64_t nij,
+  double si, int64_t ni, double sj, int64_t nj);
+
+inline int64_t cov_gen(int64_t sij, int64_t nij,
+  int64_t si, int64_t ni, int64_t sj, int64_t nj)
+{
+  return cov_i64_gen(sij, nij, si, ni, sj, nj);
+}
+
+inline double cov_gen(double sij, int64_t nij,
+  double si, int64_t ni, double sj, int64_t nj)
+{
+  return cov_double_gen(sij, nij, si, ni, sj, nj);
+}
+
+
 } } } // namespace calin::math::covariance_calc

@@ -41,3 +41,15 @@
 %import "diagnostics/value_capture.i"
 %import "diagnostics/functional.pb.i"
 %include "diagnostics/functional.hpp"
+
+%template(FunctionalIntStatsVisitor)
+calin::diagnostics::functional::FunctionalStatsVisitor<
+  calin::iact_data::functional_event_visitor::
+    DualGainInt32FunctionalTelescopeEventVisitor,
+  calin::ix::diagnostics::functional::CameraIntFunctionalRawStats>;
+
+%template(FunctionalDoubleStatsVisitor)
+calin::diagnostics::functional::FunctionalStatsVisitor<
+  calin::iact_data::functional_event_visitor::
+    DualGainDoubleFunctionalTelescopeEventVisitor,
+  calin::ix::diagnostics::functional::CameraDoubleFunctionalRawStats>;
