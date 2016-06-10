@@ -27,17 +27,28 @@
 
 namespace calin { namespace iact_data { namespace functional_event_visitor {
 
-class DualValueInt32FunctionalTelescopeEventVisitor:
+class DualGainInt32FunctionalTelescopeEventVisitor:
   public calin::iact_data::event_visitor::TelescopeEventVisitor
 {
 public:
-  virtual ~DualValueInt32FunctionalTelescopeEventVisitor();
+  CALIN_TYPEALIAS(value_type, int32_t);
+  virtual ~DualGainInt32FunctionalTelescopeEventVisitor();
   virtual int32_t low_gain_value() = 0;
   virtual int32_t high_gain_value() = 0;
 };
 
+class DualGainDoubleFunctionalTelescopeEventVisitor:
+  public calin::iact_data::event_visitor::TelescopeEventVisitor
+{
+public:
+  CALIN_TYPEALIAS(value_type, double);
+  virtual ~DualGainDoubleFunctionalTelescopeEventVisitor();
+  virtual double low_gain_value() = 0;
+  virtual double high_gain_value() = 0;
+};
+
 class FixedWindowSumFunctionalTelescopeEventVisitor:
-  public DualValueInt32FunctionalTelescopeEventVisitor
+  public DualGainInt32FunctionalTelescopeEventVisitor
 {
 public:
   FixedWindowSumFunctionalTelescopeEventVisitor(
@@ -95,12 +106,12 @@ private:
 };
 
 class DifferencingFunctionalTelescopeEventVisitor:
-  public DualValueInt32FunctionalTelescopeEventVisitor
+  public DualGainInt32FunctionalTelescopeEventVisitor
 {
 public:
   DifferencingFunctionalTelescopeEventVisitor(
-    DualValueInt32FunctionalTelescopeEventVisitor* sig_value_supplier,
-    DualValueInt32FunctionalTelescopeEventVisitor* bkg_value_supplier);
+    DualGainInt32FunctionalTelescopeEventVisitor* sig_value_supplier,
+    DualGainInt32FunctionalTelescopeEventVisitor* bkg_value_supplier);
   virtual ~DifferencingFunctionalTelescopeEventVisitor();
 
   bool demand_waveforms() override;
@@ -115,8 +126,58 @@ public:
   int32_t high_gain_value() override;
 
 private:
-  DualValueInt32FunctionalTelescopeEventVisitor* sig_value_supplier_;
-  DualValueInt32FunctionalTelescopeEventVisitor* bkg_value_supplier_;
+  DualGainInt32FunctionalTelescopeEventVisitor* sig_value_supplier_;
+  DualGainInt32FunctionalTelescopeEventVisitor* bkg_value_supplier_;
 };
+
+class NoPedestalTimingFunctionalTelescopeEventVisitor:
+  public DualGainDoubleFunctionalTelescopeEventVisitor
+{
+public:
+  NoPedestalTimingFunctionalTelescopeEventVisitor();
+  virtual ~NoPedestalTimingFunctionalTelescopeEventVisitor();
+
+  bool demand_waveforms() override;
+  bool is_parallelizable() override;
+
+  NoPedestalTimingFunctionalTelescopeEventVisitor* new_sub_visitor(
+      const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+          calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+        antecedent_visitors) override;
+
+  bool visit_waveform(unsigned ichan,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain) override;
+
+  double low_gain_value() override;
+  double high_gain_value() override;
+
+protected:
+
+  inline double process_one_gain(
+    const calin::ix::iact_data::telescope_event::ChannelWaveform* ch_wf) const
+  {
+    const auto*const samples_start = ch_wf->samples().data();
+    const auto* samples_end = samples_start + ch_wf->samples_size();
+    const auto* samples_max = samples_start;
+    for(const auto* samples = samples_start + 1;
+        samples < samples_end; ++samples)
+      if(*samples > *samples_max)samples_max = samples;
+    const auto* samples_min = samples_start;
+    samples_end = samples_max;
+    for(const auto* samples = samples_start + 1;
+        samples < samples_end; ++samples)
+      if(*samples < *samples_min)samples_min = samples;
+    if(samples_min == samples_max)return -1;
+    double samples_mid = 0.5*(double(*samples_min)+double(*samples_max));
+    while(double(*samples_max) > samples_mid)--samples_max;
+    return (samples_max-samples_start) +
+      (samples_mid - double(*samples_max))/double(*(samples_max+1)-*samples_max);
+  }
+
+  double high_gain_value_ = 0.0;
+  double low_gain_value_ = 0.0;
+};
+
 
 } } } // namespace calin::iact_data::functional_event_visitor

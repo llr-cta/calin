@@ -24,8 +24,14 @@
 
 using namespace calin::iact_data::functional_event_visitor;
 
-DualValueInt32FunctionalTelescopeEventVisitor::
-~DualValueInt32FunctionalTelescopeEventVisitor()
+DualGainInt32FunctionalTelescopeEventVisitor::
+~DualGainInt32FunctionalTelescopeEventVisitor()
+{
+  // nothing to see here
+}
+
+DualGainDoubleFunctionalTelescopeEventVisitor::
+~DualGainDoubleFunctionalTelescopeEventVisitor()
 {
   // nothing to see here
 }
@@ -34,7 +40,7 @@ FixedWindowSumFunctionalTelescopeEventVisitor::
 FixedWindowSumFunctionalTelescopeEventVisitor(
   calin::ix::iact_data::functional_event_visitor::
     FixedWindowSumFunctionalTelescopeEventVisitorConfig config):
-  DualValueInt32FunctionalTelescopeEventVisitor(), config_(config)
+  DualGainInt32FunctionalTelescopeEventVisitor(), config_(config)
 {
   // nothing to see here
 }
@@ -118,9 +124,9 @@ int32_t FixedWindowSumFunctionalTelescopeEventVisitor::high_gain_value()
 
 DifferencingFunctionalTelescopeEventVisitor::
 DifferencingFunctionalTelescopeEventVisitor(
-    DualValueInt32FunctionalTelescopeEventVisitor* sig_value_supplier,
-    DualValueInt32FunctionalTelescopeEventVisitor* bkg_value_supplier):
-  DualValueInt32FunctionalTelescopeEventVisitor(),
+    DualGainInt32FunctionalTelescopeEventVisitor* sig_value_supplier,
+    DualGainInt32FunctionalTelescopeEventVisitor* bkg_value_supplier):
+  DualGainInt32FunctionalTelescopeEventVisitor(),
   sig_value_supplier_(sig_value_supplier), bkg_value_supplier_(bkg_value_supplier)
 {
   // nothing to see here
@@ -152,13 +158,13 @@ DifferencingFunctionalTelescopeEventVisitor::new_sub_visitor(
   if(i_sig_value_supplier == antecedent_visitors.end())
     throw std::logic_error("No thread specific value suppler for signal!");
   auto* sig_value_supplier =
-    dynamic_cast<DualValueInt32FunctionalTelescopeEventVisitor*>(
+    dynamic_cast<DualGainInt32FunctionalTelescopeEventVisitor*>(
       i_sig_value_supplier->second);
   auto i_bkg_value_supplier = antecedent_visitors.find(bkg_value_supplier_);
   if(i_bkg_value_supplier == antecedent_visitors.end())
     throw std::logic_error("No thread specific value suppler for background!");
   auto* bkg_value_supplier =
-    dynamic_cast<DualValueInt32FunctionalTelescopeEventVisitor*>(
+    dynamic_cast<DualGainInt32FunctionalTelescopeEventVisitor*>(
       i_bkg_value_supplier->second);
   auto* sub_visitor =
     new DifferencingFunctionalTelescopeEventVisitor(sig_value_supplier,
@@ -176,4 +182,58 @@ int32_t DifferencingFunctionalTelescopeEventVisitor::high_gain_value()
 {
   return sig_value_supplier_->high_gain_value() -
     bkg_value_supplier_->high_gain_value();
+}
+
+NoPedestalTimingFunctionalTelescopeEventVisitor::
+NoPedestalTimingFunctionalTelescopeEventVisitor():
+  DualGainDoubleFunctionalTelescopeEventVisitor()
+{
+  // nothing to see here
+}
+
+NoPedestalTimingFunctionalTelescopeEventVisitor::
+~NoPedestalTimingFunctionalTelescopeEventVisitor()
+{
+  // nothing to see here
+}
+
+bool NoPedestalTimingFunctionalTelescopeEventVisitor::demand_waveforms()
+{
+  return true;
+}
+
+bool NoPedestalTimingFunctionalTelescopeEventVisitor::is_parallelizable()
+{
+  return true;
+}
+
+NoPedestalTimingFunctionalTelescopeEventVisitor*
+NoPedestalTimingFunctionalTelescopeEventVisitor::new_sub_visitor(
+  const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+      calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+    antecedent_visitors)
+{
+  return new NoPedestalTimingFunctionalTelescopeEventVisitor;
+}
+
+bool NoPedestalTimingFunctionalTelescopeEventVisitor::visit_waveform(
+  unsigned ichan,
+  calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+  calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
+{
+  if(high_gain)
+    high_gain_value_ = process_one_gain(high_gain);
+  if(low_gain)
+    low_gain_value_ = process_one_gain(low_gain);
+  return true;
+}
+
+double NoPedestalTimingFunctionalTelescopeEventVisitor::low_gain_value()
+{
+  return low_gain_value_;
+}
+
+double NoPedestalTimingFunctionalTelescopeEventVisitor::high_gain_value()
+{
+  return high_gain_value_;
 }

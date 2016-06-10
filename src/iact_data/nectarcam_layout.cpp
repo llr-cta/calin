@@ -73,7 +73,7 @@ nectarcam_mod_map(unsigned nring, double radius, double spacing, double& rot)
   bool ring_has_module = true;
   for(unsigned iring=0; ring_has_module and (nring==0 or iring<=nring); iring++)
   {
-    bool ring_has_module = false;
+    ring_has_module = false;
     for(unsigned iringmod=0; iringmod<std::max(1U,iring*6); iringmod++, imod++)
     {
       int uc;
