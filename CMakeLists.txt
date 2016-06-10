@@ -120,6 +120,7 @@ endif()
 # ========================================== #
 
 add_subdirectory(include)
+add_subdirectory(scripts)
 add_subdirectory(tools)
 add_subdirectory(proto)
 add_subdirectory(src)
