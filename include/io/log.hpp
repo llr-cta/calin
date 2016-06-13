@@ -29,6 +29,7 @@
 #include <vector>
 #include <mutex>
 #include <util/spinlock.hpp>
+#include <io/log.pb.h>
 
 namespace calin { namespace io { namespace log {
 
@@ -138,6 +139,17 @@ inline MultiLogger* default_logger()
   static MultiLogger s_logger;
   return &s_logger;
 }
+
+class ProtobufLogger: public Logger
+{
+  ProtobufLogger(): Logger(), log_() { }
+  virtual ~ProtobufLogger();
+  void log_message(Level level, const std::string& message,
+                   TimeStamp timestamp = TimeStamp::now()) override;
+  calin::ix::io::log::Log log_messages() { return log_; }
+ protected:
+   calin::ix::io::log::Log log_;
+};
 
 class PythonLogger: public Logger
 {
