@@ -29,6 +29,14 @@ import calin.diagnostics.module
 import calin.diagnostics.event_number
 import calin.diagnostics.delta_t
 import calin.io.sql_transceiver
+import calin.io.log
+
+py_log = calin.io.log.PythonLogger()
+py_log.this.disown()
+calin.io.log.default_logger().add_logger(py_log,True)
+proto_log = calin.io.log.ProtobufLogger()
+proto_log.this.disown()
+calin.io.log.default_logger().add_logger(proto_log,True)
 
 if(len(sys.argv) == 1):
     raise Exception('No filename supplied')
@@ -181,6 +189,7 @@ t0 = t0_stats.results()
 # Write the results
 sql = calin.io.sql_transceiver.SQLite3Transceiver(sql_file,
     calin.io.sql_transceiver.SQLite3Transceiver.TRUNCATE_RW)
+sql.create_tables_and_insert("log", proto_log.log_messages())
 sql.create_tables_and_insert("run_config", run_info)
 sql.create_tables_and_insert("psd", psd)
 sql.create_tables_and_insert("wfs", wfs)

@@ -77,7 +77,7 @@ class MultiLogger: public Logger
   void nolock_add_stream(std::ostream* stream, bool adopt_stream,
                            bool apply_timestamp, bool use_colors);
 
-
+#ifndef SWIG
   class sub_logger
   {
    public:
@@ -129,6 +129,8 @@ class MultiLogger: public Logger
 
   std::vector<sub_logger> sub_loggers_;
   std::vector<sub_stream> sub_streams_;
+#endif // ifndef SWIG
+
   std::mutex lockable_;
   //util::spinlock::Spinlock lockable_;
   //util::spinlock::Nulllock lockable_;
@@ -142,6 +144,7 @@ inline MultiLogger* default_logger()
 
 class ProtobufLogger: public Logger
 {
+public:
   ProtobufLogger(): Logger(), log_() { }
   virtual ~ProtobufLogger();
   void log_message(Level level, const std::string& message,
@@ -162,6 +165,8 @@ class PythonLogger: public Logger
  protected:
   bool use_stderr_ { false };
 };
+
+#ifndef SWIG
 
 enum class LoggerStreamEnabledState { LEAVE_AS_IS, ENABLE, DISABLE, TOGGLE };
 
@@ -262,6 +267,8 @@ inline LoggerStream LOG(Level level, Logger* logger = default_logger())
 {
   return LoggerStream(logger, level);
 }
+
+#endif // ifndef SWIG
 
 #if 0
 template<typename Streamer>
