@@ -78,15 +78,18 @@ bkg_window_sum_visitor = calin.iact_data.functional_event_visitor.\
 dispatcher.add_visitor(bkg_window_sum_visitor, \
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 
-# Background capture adapter - select channel
-bkg_capture_adapter = calin.diagnostics.functional.\
-    SingleFunctionalValueSupplierVisitor(bkg_window_sum_visitor,0)
-dispatcher.add_visitor(bkg_capture_adapter)
+bkg_capture_adapter = [None] * run_info.configured_channel_id_size();
+bkg_capture = [None] * run_info.configured_channel_id_size();
+for ichan in range(run_info.configured_channel_id_size()):
+    # Background capture adapter - select channel
+    bkg_capture_adapter[ichan] = calin.diagnostics.functional.\
+        SingleFunctionalValueSupplierVisitor(bkg_window_sum_visitor,ichan)
+    dispatcher.add_visitor(bkg_capture_adapter[ichan])
 
-# Background capture
-bkg_capture = calin.diagnostics.value_capture.\
-    IntSequentialValueCaptureVisitor(bkg_capture_adapter,0x7FFFFFFF)
-dispatcher.add_visitor(bkg_capture)
+    # Background capture
+    bkg_capture[ichan] = calin.diagnostics.value_capture.\
+        IntSequentialValueCaptureVisitor(bkg_capture_adapter[ichan],0x7FFFFFFF)
+    dispatcher.add_visitor(bkg_capture[ichan])
 
 # Signal window functional
 sig_window_sum_cfg = calin.iact_data.functional_event_visitor.\
@@ -182,7 +185,7 @@ glitch = glitch_visitor.glitch_data()
 bunch_event_glitch = bunch_event_glitch_visitor.glitch_data()
 mod_present = mod_present_visitor.module_data()
 sig_values = sig_bkg_capture.results()
-bkg_values = bkg_capture.results()
+bkg_values = bkg_capture[0].results()
 delta_t_values = delta_t_capture.results()
 t0 = t0_stats.results()
 
@@ -202,3 +205,6 @@ sql.create_tables_and_insert("sig_values", sig_values)
 sql.create_tables_and_insert("bkg_values", bkg_values)
 sql.create_tables_and_insert("delta_t_values", delta_t_values)
 sql.create_tables_and_insert("t0", t0)
+
+for ichan in range(1,len(bkg_capture)):
+    sql.insert("bkg_values", bkg_capture[ichan].results())

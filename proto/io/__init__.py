@@ -1,1 +1,1 @@
-all = ["sql_transceiver", "packet_stream"]
+all = ["sql_transceiver", "packet_stream", "log"]
