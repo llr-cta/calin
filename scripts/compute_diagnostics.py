@@ -29,6 +29,14 @@ import calin.diagnostics.module
 import calin.diagnostics.event_number
 import calin.diagnostics.delta_t
 import calin.io.sql_transceiver
+import calin.io.log
+
+py_log = calin.io.log.PythonLogger()
+py_log.this.disown()
+calin.io.log.default_logger().add_logger(py_log,True)
+proto_log = calin.io.log.ProtobufLogger()
+proto_log.this.disown()
+calin.io.log.default_logger().add_logger(proto_log,True)
 
 if(len(sys.argv) == 1):
     raise Exception('No filename supplied')
@@ -37,6 +45,14 @@ zfits_file = sys.argv[1]
 sql_file = 'diagnostics.sqlite'
 if(len(sys.argv) > 2):
     sql_file = sys.argv[2]
+
+bkg_window_start = 0
+if(len(sys.argv) > 3):
+    bkg_window_start = int(sys.argv[3])
+
+sig_window_start = 44
+if(len(sys.argv) > 4):
+    sig_window_start = int(sys.argv[4])
 
 # Open the data source
 cfg = calin.iact_data.telescope_data_source.\
@@ -55,28 +71,31 @@ dispatcher = calin.iact_data.event_dispatcher.TelescopeEventDispatcher()
 # Background window functional
 bkg_window_sum_cfg = calin.iact_data.functional_event_visitor.\
     FixedWindowSumFunctionalTelescopeEventVisitor.default_config()
-bkg_window_sum_cfg.set_integration_0(0)
+bkg_window_sum_cfg.set_integration_0(bkg_window_start)
 bkg_window_sum_cfg.set_integration_n(16)
 bkg_window_sum_visitor = calin.iact_data.functional_event_visitor.\
     FixedWindowSumFunctionalTelescopeEventVisitor(bkg_window_sum_cfg)
 dispatcher.add_visitor(bkg_window_sum_visitor, \
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 
-# Background capture adapter - select channel
-bkg_capture_adapter = calin.diagnostics.functional.\
-    SingleFunctionalValueSupplierVisitor(bkg_window_sum_visitor,0)
-dispatcher.add_visitor(bkg_capture_adapter)
+bkg_capture_adapter = [None] * run_info.configured_channel_id_size();
+bkg_capture = [None] * run_info.configured_channel_id_size();
+for ichan in range(run_info.configured_channel_id_size()):
+    # Background capture adapter - select channel
+    bkg_capture_adapter[ichan] = calin.diagnostics.functional.\
+        SingleFunctionalValueSupplierVisitor(bkg_window_sum_visitor,ichan)
+    dispatcher.add_visitor(bkg_capture_adapter[ichan])
 
-# Background capture
-bkg_capture = calin.diagnostics.value_capture.\
-    IntSequentialValueCaptureVisitor(bkg_capture_adapter,0x7FFFFFFF)
-dispatcher.add_visitor(bkg_capture)
+    # Background capture
+    bkg_capture[ichan] = calin.diagnostics.value_capture.\
+        IntSequentialValueCaptureVisitor(bkg_capture_adapter[ichan],0x7FFFFFFF)
+    dispatcher.add_visitor(bkg_capture[ichan])
 
 # Signal window functional
 sig_window_sum_cfg = calin.iact_data.functional_event_visitor.\
     FixedWindowSumFunctionalTelescopeEventVisitor.default_config()
 #sig_window_sum_cfg.set_integration_0(30)
-sig_window_sum_cfg.set_integration_0(16)
+sig_window_sum_cfg.set_integration_0(sig_window_start)
 sig_window_sum_cfg.set_integration_n(16)
 sig_window_sum_visitor = calin.iact_data.functional_event_visitor.\
     FixedWindowSumFunctionalTelescopeEventVisitor(sig_window_sum_cfg)
@@ -166,13 +185,14 @@ glitch = glitch_visitor.glitch_data()
 bunch_event_glitch = bunch_event_glitch_visitor.glitch_data()
 mod_present = mod_present_visitor.module_data()
 sig_values = sig_bkg_capture.results()
-bkg_values = bkg_capture.results()
+bkg_values = bkg_capture[0].results()
 delta_t_values = delta_t_capture.results()
 t0 = t0_stats.results()
 
 # Write the results
 sql = calin.io.sql_transceiver.SQLite3Transceiver(sql_file,
     calin.io.sql_transceiver.SQLite3Transceiver.TRUNCATE_RW)
+sql.create_tables_and_insert("log", proto_log.log_messages())
 sql.create_tables_and_insert("run_config", run_info)
 sql.create_tables_and_insert("psd", psd)
 sql.create_tables_and_insert("wfs", wfs)
@@ -185,3 +205,6 @@ sql.create_tables_and_insert("sig_values", sig_values)
 sql.create_tables_and_insert("bkg_values", bkg_values)
 sql.create_tables_and_insert("delta_t_values", delta_t_values)
 sql.create_tables_and_insert("t0", t0)
+
+for ichan in range(1,len(bkg_capture)):
+    sql.insert("bkg_values", bkg_capture[ichan].results())

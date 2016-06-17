@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_FILES sql_transceiver.i)
+set(CALIN_SWIG_FILES sql_transceiver.i log.i)
 set(CALIN_SWIG_TARGET io)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

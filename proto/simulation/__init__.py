@@ -1,1 +1,1 @@
-all = ["vs_optics"]
+all = ["pmt","vs_optics"]

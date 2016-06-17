@@ -9,15 +9,15 @@ matrix:
     - compiler: gcc-4.8
       env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=TRUE
     - compiler: gcc-4.8
-      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=FALSE
+      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=TRUE
     - compiler: gcc-4.8
-      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=FALSE
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=TRUE
     - compiler: gcc-5
       env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=TRUE
     - compiler: gcc-5
-      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=FALSE
+      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=TRUE
     - compiler: gcc-5
-      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=FALSE
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=TRUE
 ##    - compiler: clang-3.7
 ##      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=TRUE
 ##    - compiler: clang-3.7

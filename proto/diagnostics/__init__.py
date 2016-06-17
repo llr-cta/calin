@@ -1,1 +1,2 @@
-all = ["waveform","counter","event_number","module"]
+all = ["counter","event_number","functional","module","value_capture",
+    "waveform"]

@@ -266,6 +266,39 @@ bool MultiLogger::add_file(const std::string filename,
   }
 }
 
+ProtobufLogger::~ProtobufLogger()
+{
+  // nothing to see here
+}
+
+void ProtobufLogger::
+log_message(Level level, const std::string& message, TimeStamp timestamp)
+{
+  auto* m = log_.add_message();
+  switch(level)
+  {
+  case FATAL:
+    m->set_level(calin::ix::io::log::LogMessage::FATAL); break;
+  case ERROR:
+    m->set_level(calin::ix::io::log::LogMessage::ERROR); break;
+  case WARNING:
+    m->set_level(calin::ix::io::log::LogMessage::WARNING); break;
+  case INFO:
+    m->set_level(calin::ix::io::log::LogMessage::INFO); break;
+  case SUCCESS:
+    m->set_level(calin::ix::io::log::LogMessage::SUCCESS); break;
+  case FAILURE:
+    m->set_level(calin::ix::io::log::LogMessage::FAILURE); break;
+  case VERBOSE:
+    m->set_level(calin::ix::io::log::LogMessage::VERBOSE); break;
+  case DISCARD:
+    m->set_level(calin::ix::io::log::LogMessage::DISCARD); break;
+  }
+  m->set_message(message);
+  m->set_timestamp_sec(timestamp.sec);
+  m->set_timestamp_usec(timestamp.usec);
+}
+
 PythonLogger::~PythonLogger()
 {
   // nothing to see here

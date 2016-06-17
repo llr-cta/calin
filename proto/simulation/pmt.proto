@@ -87,7 +87,7 @@ message MultiPESpectrumConfig {
     (CFO).desc = "Mean signal intensity.", (CFO).units = "PE" ];
   double signal_rms_frac                                   = 2 [
     (CFO).desc = "Non-Poisson RMS component as a fraction of "
-      "the signal mean." ];
+      "the signal mean.", (CFO).units = "PE" ];
   double pedestal_mean                                     = 3 [
     (CFO).desc = "Mean pedestal.", (CFO).units = "DC" ];
   double pedestal_rms                                      = 4 [
