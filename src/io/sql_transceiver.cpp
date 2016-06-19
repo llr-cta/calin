@@ -193,16 +193,18 @@ uint64_t SQLTransceiver::count_entries_in_table(const std::string& table_name)
     throw std::logic_error("SQL count could not be extracted");
   }
 
-  assert(t->stmt->step() == SQLStatement::OK_NO_DATA);
+  assert(stmt->step() == SQLStatement::OK_NO_DATA);
 
   return entries;
 }
 
+#if 0
 std::vector<uint64_t>
 SQLTransceiver::retrieve_all_oids(const std::string& table_name)
 {
   return {};
 }
+#endif
 
 std::vector<std::pair<std::string,std::string> >
 SQLTransceiver::list_all_table_columns(const SQLTable* t)
