@@ -2,7 +2,7 @@
 
 /*
 
-   calin/numpy.i
+   calin/calin_numpy.i
 
    SWIG interface file for NumPy
 
@@ -3154,7 +3154,7 @@
  * below applies all of the typemaps above to the specified data type.
  */
 
-%include <stdint.i>
+%include "calin_stdint.i"
 
 %numpy_typemaps(signed char       , NPY_BYTE     , intptr_t)
 %numpy_typemaps(unsigned char     , NPY_UBYTE    , intptr_t)
