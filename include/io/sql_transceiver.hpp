@@ -175,10 +175,9 @@ class SQLTransceiver
                   google::protobuf::Message* m_key = nullptr);
 
   virtual uint64_t count_entries_in_table(const std::string& table_name);
-#if 0
+
   virtual std::vector<uint64_t>
   retrieve_all_oids(const std::string& table_name);
-#endif
 
   // ===========================================================================
   //
