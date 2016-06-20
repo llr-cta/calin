@@ -17,9 +17,9 @@ INCLUDE (CheckCXXSourceRuns)
 
 CHECK_CXX_SOURCE_RUNS("#include<cstdint>
 #include<cstdlib>
-template<typename T> is_long_int() { return EXIT_FAILURE; }
-template<> is_long_int<long int> { return EXIT_SUCCESS; }
-int main() { return is_long_int<int64_t>; }" CALIN_INT64_IS_LONGINT)
+template<typename T> int is_long_int() { return EXIT_FAILURE; }
+template<> int is_long_int<long int>() { return EXIT_SUCCESS; }
+int main() { return is_long_int<int64_t>(); }" CALIN_INT64_IS_LONGINT)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/calin_config.i.in
   ${CMAKE_CURRENT_BINARY_DIR}/calin_config.i)

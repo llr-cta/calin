@@ -184,4 +184,6 @@ script:
     #./unit_tests/simulation/test_geant4
 
 after_script:
+  - cat CMakeFiles/CMakeOutput.log
+  - cat CMakeFiles/CMakeError.log
   - cat swig/calin_config.i
