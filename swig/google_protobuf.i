@@ -38,7 +38,7 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%import<stdint.i>
+%import"calin_stdint.i"
 %import<std_string.i>
 
 #define int32 int32_t

@@ -38,7 +38,6 @@
   import_array();
 %}
 
-//%include "numpy.i"
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 

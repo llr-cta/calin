@@ -1,12 +1,10 @@
-//-*-mode:swig;-*-
-
 /*
 
-   calin/math/histogram.i -- Stephen Fegan -- 2015-04-23
+   calin/calin_stdint.i
 
-   SWIG interface file for calin.math.histogram
+   SWIG interface file for stdint
 
-   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
@@ -22,20 +20,5 @@
 
 */
 
-%module (package="calin.math") histogram
-
-%{
-#include "math/histogram.hpp"
-#define SWIG_FILE_WITH_INIT
-  %}
-
-%init %{
-  import_array();
-%}
-
-%include "calin_typemaps.i"
-%import "calin_global_definitions.i"
-
-%import "math/histogram.pb.i"
-
-%include "math/histogram.hpp"
+%include <calin_config.i>
+%include <stdint.i>

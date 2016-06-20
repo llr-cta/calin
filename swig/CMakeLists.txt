@@ -13,10 +13,22 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
+INCLUDE (CheckCXXSourceRuns)
+
+CHECK_CXX_SOURCE_RUNS("#include<cstdint>
+#include<cstdlib>
+template<typename T> int is_long_int() { return EXIT_FAILURE; }
+template<> int is_long_int<long int>() { return EXIT_SUCCESS; }
+int main() { return is_long_int<int64_t>(); }" CALIN_INT64_IS_LONGINT)
+
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/calin_config.i.in
+  ${CMAKE_CURRENT_BINARY_DIR}/calin_config.i)
+
 set(CALIN_SWIG_FILES calin_global_definitions.i google_protobuf.i)
 set(CALIN_SWIG_INSTALL_DIR python/calin)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+#include_directories(${CMAKE_CURRENT_BINARY_DIR}) # For calin_config.i
 
 macro(make_swig_modules arg_calin_library arg_swig_install_dir)
   foreach (interface_file ${ARGN})

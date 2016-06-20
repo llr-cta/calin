@@ -24,8 +24,8 @@
 
 //#define SWIGWORDSIZE64
 
-%include "stdint.i"
-%include "numpy.i"
+%include "calin_stdint.i"
+%include "calin_numpy.i"
 %include "std_vector.i"
 %include "std_string.i"
 %include "typemaps.i"

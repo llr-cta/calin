@@ -161,6 +161,49 @@ retrieve_by_oid(const std::string& table_name, uint64_t oid,
   return true;
 }
 
+uint64_t SQLTransceiver::count_entries_in_table(const std::string& table_name)
+{
+  std::unique_ptr<SQLStatement> stmt {
+    prepare_statement(sql_count_entries(table_name)) };
+  if(!stmt->is_initialized()) {
+    LOG(ERROR) << "SQL error preparing COUNT : "
+               << stmt->error_message() << '\n'
+               << "SQL: " << stmt->sql();
+    throw std::runtime_error("Could not prepare SQL count statement");
+  }
+
+  auto status = stmt->step();
+  if(status == SQLStatement::ERROR) {
+    LOG(ERROR) << "SQL error executing COUNT : "
+               << stmt->error_message() << '\n'
+               << "SQL: " << stmt->sql();
+    throw std::runtime_error("SQL count returned error");
+  } else if (status == SQLStatement::OK_NO_DATA) {
+    LOG(ERROR) << "SQL error executing COUNT : "
+               << stmt->error_message() << '\n'
+               << "SQL: " << stmt->sql();
+    throw std::logic_error("SQL count returned no data");
+  }
+
+  bool good = true;
+  uint64_t entries = stmt->extract_uint64(0, &good);
+  if(!good) {
+    LOG(ERROR) << "Could not extract value from SQL count\n"
+               << "SQL: " << stmt->sql();
+    throw std::logic_error("SQL count could not be extracted");
+  }
+
+  assert(stmt->step() == SQLStatement::OK_NO_DATA);
+
+  return entries;
+}
+
+std::vector<uint64_t>
+SQLTransceiver::retrieve_all_oids(const std::string& table_name)
+{
+  return {};
+}
+
 std::vector<std::pair<std::string,std::string> >
 SQLTransceiver::list_all_table_columns(const SQLTable* t)
 {
@@ -658,6 +701,13 @@ sql_comment(const std::string& comment, unsigned first_line_indent,
     out += iline;
   }
   return out;
+}
+
+std::string SQLTransceiver::sql_count_entries(const std::string& table_name)
+{
+  std::ostringstream sql;
+  sql << "SELECT COUNT(*) FROM " << sql_table_name(table_name);
+  return sql.str();
 }
 
 SQLStatement* SQLTransceiver::prepare_statement(const std::string& sql)

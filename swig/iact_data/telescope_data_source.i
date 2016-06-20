@@ -34,8 +34,6 @@ using namespace calin::io;
   import_array();
 %}
 
-//%include "numpy.i"
-//%include "stdint.i"
 %include "calin_typemaps.i"
 %include "calin_global_config.hpp"
 %import "calin_global_definitions.i"

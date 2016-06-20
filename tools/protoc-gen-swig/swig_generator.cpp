@@ -635,8 +635,8 @@ Generate(const google::protobuf::FileDescriptor * file,
   I->Print("%import<calin_global_definitions.i>\n");
 
   I->Print("%include<typemaps.i>\n");
-  I->Print("%include<numpy.i>\n");
-  I->Print("%include<stdint.i>\n");
+  I->Print("%include<calin_numpy.i>\n");
+  I->Print("%include<calin_stdint.i>\n");
   I->Print("%include<std_string.i>\n");
   //I->Print("%include<std_vector.i>\n");
   //I->Print("%include<std_map.i>\n");

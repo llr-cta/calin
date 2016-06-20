@@ -174,6 +174,11 @@ class SQLTransceiver
                   google::protobuf::Message* m_data,
                   google::protobuf::Message* m_key = nullptr);
 
+  virtual uint64_t count_entries_in_table(const std::string& table_name);
+
+  virtual std::vector<uint64_t>
+  retrieve_all_oids(const std::string& table_name);
+
   // ===========================================================================
   //
   // Utility functions
@@ -344,6 +349,8 @@ class SQLTransceiver
                                   unsigned first_line_indent = 0,
                                   unsigned multi_line_indent = 0,
                                   bool newline_before_multi_line = false);
+
+  virtual std::string sql_count_entries(const std::string& table_name);
 
   // ===========================================================================
   //
