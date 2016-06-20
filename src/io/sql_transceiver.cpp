@@ -201,7 +201,31 @@ uint64_t SQLTransceiver::count_entries_in_table(const std::string& table_name)
 std::vector<uint64_t>
 SQLTransceiver::retrieve_all_oids(const std::string& table_name)
 {
-  return {};
+  std::unique_ptr<SQLStatement> stmt {
+    prepare_statement(sql_retrieve_oids(table_name)) };
+
+  if(!stmt->is_initialized()) {
+    LOG(ERROR) << "SQL error preparing SELECT OID : "
+               << stmt->error_message() << '\n'
+               << "SQL: " << stmt->sql();
+    throw std::runtime_error("Could not prepare SQL select OID statement");
+  }
+
+  std::vector<uint64_t> oids;
+  for(auto status = stmt->step(); status == SQLStatement::OK_HAS_DATA;
+    status = stmt->step())
+  {
+    bool good = true;
+    uint64_t oid = stmt->extract_uint64(0, &good);
+    if(!good) {
+      LOG(ERROR) << "Could not extract OID from SQL select\n"
+                 << "SQL: " << stmt->sql();
+      throw std::logic_error("SQL OID could not be extracted");
+    }
+    oids.emplace_back(oid);
+  }
+
+  return oids;
 }
 
 std::vector<std::pair<std::string,std::string> >
@@ -707,6 +731,14 @@ std::string SQLTransceiver::sql_count_entries(const std::string& table_name)
 {
   std::ostringstream sql;
   sql << "SELECT COUNT(*) FROM " << sql_table_name(table_name);
+  return sql.str();
+}
+
+std::string SQLTransceiver::sql_retrieve_oids(const std::string& table_name)
+{
+  std::ostringstream sql;
+  sql << "SELECT " << sql_oid_column_name() << " FROM "
+    << sql_table_name(table_name);
   return sql.str();
 }
 
