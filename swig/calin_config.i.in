@@ -1,8 +1,8 @@
 /*
 
-   calin/calin_stdint.i
+   calin/calin_config.i.in
 
-   SWIG interface file for stdint
+   Configuration for SWIG interfaces
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -20,5 +20,16 @@
 
 */
 
-%include <calin_config.i>
-%include <stdint.i>
+/*
+
+   calin/calin_config.i
+
+   Generated automatically from calin_config.i.in by CMake.
+
+ */
+
+/* Define if int64_t is long int */
+#cmakedefine CALIN_INT64_IS_LONGINT 1
+#ifdef CALIN_INT64_IS_LONGINT
+#define SWIGWORDSIZE64
+#endif

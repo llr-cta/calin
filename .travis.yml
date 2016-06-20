@@ -181,4 +181,5 @@ script:
     make -j3 &&
     make install | tail &&
     make test
+    cat swig/config.i
     #./unit_tests/simulation/test_geant4
