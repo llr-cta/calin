@@ -212,7 +212,8 @@ SQLTransceiver::retrieve_all_oids(const std::string& table_name)
   }
 
   std::vector<uint64_t> oids;
-  for(auto status = stmt->step(); status == SQLStatement::OK_HAS_DATA;
+  SQLStatement::StepStatus status = SQLStatement::ERROR;
+  for(status = stmt->step(); status == SQLStatement::OK_HAS_DATA;
     status = stmt->step())
   {
     bool good = true;
@@ -223,6 +224,13 @@ SQLTransceiver::retrieve_all_oids(const std::string& table_name)
       throw std::logic_error("SQL OID could not be extracted");
     }
     oids.emplace_back(oid);
+  }
+
+  if(status == SQLStatement::ERROR) {
+    LOG(ERROR) << "SQL error executing SELECT OID : "
+               << stmt->error_message() << '\n'
+               << "SQL: " << stmt->sql();
+    throw std::runtime_error("SQL SELECT OID returned error");
   }
 
   return oids;
