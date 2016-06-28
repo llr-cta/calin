@@ -351,6 +351,7 @@ class SQLTransceiver
                                   bool newline_before_multi_line = false);
 
   virtual std::string sql_count_entries(const std::string& table_name);
+  virtual std::string sql_retrieve_oids(const std::string& table_name);
 
   // ===========================================================================
   //

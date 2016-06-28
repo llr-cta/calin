@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/io/sqlite3_statement.hpp -- Stephen Fegan -- 2015-09-24
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -30,13 +30,13 @@ namespace calin { namespace io { namespace sql_transceiver {
 
 class SQLite3Statement: public SQLStatement
 {
- public:
+public:
   SQLite3Statement(const std::string& sql, sqlite3* db,
                    bool make_bound_sql = false);
   virtual ~SQLite3Statement();
 
   unsigned num_columns() override;
-    
+
   bool is_initialized() override;
   int error_code() override;
   std::string error_message() override;
@@ -75,9 +75,12 @@ class SQLite3Statement: public SQLStatement
   std::string extract_string(unsigned icol, bool* good = nullptr) override;
   std::string extract_bytes(unsigned icol, bool* good = nullptr) override;
 
- protected:
+protected:
+  void set_good(unsigned icol, bool* good);
+
   sqlite3* db_ = nullptr;
   sqlite3_stmt* stmt_ = nullptr;
+  unsigned ndatacol_ = 0;
   bool make_bound_sql_ = false;
 };
 

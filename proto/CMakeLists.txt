@@ -26,6 +26,14 @@ message(STATUS "PROTOBUF_LIBRARY: " ${PROTOBUF_LIBRARY})
 # MACRO TO GENERATE PROTOBUF C++ AND SWIG FILES AND COMPILE THEM
 ######################################################################
 
+string(REPLACE " " ";" CXX_FLAGS_LIST ${CMAKE_CXX_FLAGS})
+
+execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CXX_FLAGS_LIST}
+	-I ${PROTOBUF_INCLUDE_DIRS}
+	-o ${CMAKE_BINARY_DIR}/protoc-gen-swig_dep
+	${CMAKE_SOURCE_DIR}/tools/protoc-gen-swig_dep/protoc-gen-swig_dep.cpp
+	${PROTOBUF_LIBRARY} ${PROTOBUF_PROTOC_LIBRARY})
+
 macro(make_proto_modules arg_proto_library arg_proto_install_dir)
 	set(proto_cxx "")
 	foreach (proto_interface_file ${ARGN})
@@ -51,12 +59,24 @@ macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
 	foreach (proto_interface_file ${ARGN})
 		string(REPLACE ".proto" "" base_name ${proto_interface_file})
   	set(interface_file ${base_name}.pb.i)
-		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${interface_file}
+		add_custom_command(OUTPUT ${interface_file}
 			COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --plugin=protoc-gen-swig=${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig --swig_out=${CMAKE_BINARY_DIR}/proto -I${PROTOBUF_IMPORT_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
 		  DEPENDS ${proto_interface_file} ${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig)
+	endforeach (proto_interface_file)
+	foreach (proto_interface_file ${ARGN})
+		string(REPLACE ".proto" "" base_name ${proto_interface_file})
+		set(interface_file ${base_name}.pb.i)
+		set(interface_dep ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.swig_dep)
+		execute_process(COMMAND ${PROTOBUF_PROTOC_EXECUTABLE}
+			--plugin=protoc-gen-swig_dep=${CMAKE_BINARY_DIR}/protoc-gen-swig_dep
+		  --swig_dep_out=${CMAKE_BINARY_DIR}/proto -I${PROTOBUF_IMPORT_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file})
+		file(READ ${interface_dep} SWIG_DEPS)
+		string(STRIP "${SWIG_DEPS}" SWIG_DEPS)
+		string(REGEX REPLACE "([^;]+)" "${CMAKE_BINARY_DIR}/proto/\\1" SWIG_DEPS "${SWIG_DEPS}")
+		MESSAGE(STATUS "${SWIG_DEPS}")
 		add_custom_command(OUTPUT ${base_name}.pb_wrap.cxx
 		  COMMAND ${SWIG_EXECUTABLE} ${CMAKE_SWIG_FLAGS} -interface _${base_name}_pb  -c++ -python ${interface_file}
-			DEPENDS ${interface_file} ${CMAKE_BINARY_DIR}/swig/calin_config.i)
+		DEPENDS "${interface_file};${CMAKE_BINARY_DIR}/swig/calin_config.i;${SWIG_DEPS}")
 		include_directories(${CMAKE_CURRENT_BINARY_DIR})
 		add_library(_${base_name}_pb MODULE ${base_name}.pb_wrap.cxx)
 		set_target_properties(_${base_name}_pb PROPERTIES NO_SONAME ON)

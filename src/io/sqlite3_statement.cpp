@@ -62,6 +62,7 @@ SQLStatement::StepStatus
 SQLite3Statement::step()
 {
   int retcode = sqlite3_step(stmt_);
+  ndatacol_ = sqlite3_data_count(stmt_);
   if(retcode == SQLITE_DONE)return SQLStatement::OK_NO_DATA;
   else if(retcode == SQLITE_ROW)return SQLStatement::OK_HAS_DATA;
   else return SQLStatement::ERROR;
@@ -74,6 +75,7 @@ uint64_t SQLite3Statement::get_oid()
 
 void SQLite3Statement::reset()
 {
+  ndatacol_ = 0;
   sqlite3_reset(stmt_);
   if(sqlite3_bind_parameter_count(stmt_) > 0)
     sqlite3_clear_bindings(stmt_);
@@ -187,87 +189,92 @@ bind_bytes(unsigned ifield, const std::string& value)
 
 bool SQLite3Statement::column_is_null(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_type(stmt_, icol) == SQLITE_NULL;
 }
 
 int64_t SQLite3Statement::extract_int64(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_int64(stmt_, icol);
 }
 
 int32_t SQLite3Statement::extract_int32(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_int(stmt_, icol);
 }
 
 int16_t SQLite3Statement::extract_int16(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_int(stmt_, icol);
 }
 
 int8_t SQLite3Statement::extract_int8(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_int(stmt_, icol);
 }
 
 uint64_t SQLite3Statement::extract_uint64(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_int64(stmt_, icol);
 }
 
 uint32_t SQLite3Statement::extract_uint32(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_int(stmt_, icol);
 }
 
 uint16_t SQLite3Statement::extract_uint16(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_int(stmt_, icol);
 }
 
 uint8_t SQLite3Statement::extract_uint8(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_int(stmt_, icol);
 }
 
 float SQLite3Statement::extract_float(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_double(stmt_, icol);
 }
 
 double SQLite3Statement::extract_double(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_double(stmt_, icol);
 }
 
 bool SQLite3Statement::extract_bool(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   return sqlite3_column_int(stmt_, icol) != 0;
 }
 
 std::string SQLite3Statement::extract_string(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   const char* text = (const char*) sqlite3_column_text(stmt_, icol);
   return std::string(text, sqlite3_column_bytes(stmt_, icol));
 }
 
 std::string SQLite3Statement::extract_bytes(unsigned icol, bool* good)
 {
-  if(good)*good = true;
+  set_good(icol, good);
   const char* blob = (const char*) sqlite3_column_blob(stmt_, icol);
   if(blob == nullptr)return std::string();
   return std::string(blob, sqlite3_column_bytes(stmt_, icol));
+}
+
+void SQLite3Statement::set_good(unsigned icol, bool* good)
+{
+  if(good)*good = icol<ndatacol_;
 }

@@ -70,7 +70,7 @@ calin::ix::simulation::pmt::PMTSimAbbreviatedConfig PMTSimPolya::cta_model_2()
 calin::ix::simulation::pmt::PMTSimAbbreviatedConfig PMTSimPolya::cta_model_3()
 {
   auto config = cta_model_2();
-   config.set_stage_0_prob_skip(0.1);
+  config.set_stage_0_prob_skip(0.1);
   return config;
 }
 

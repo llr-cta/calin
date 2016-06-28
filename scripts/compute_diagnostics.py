@@ -58,8 +58,8 @@ if(len(sys.argv) > 4):
 cfg = calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_config()
 #cfg.set_max_file_fragments(8)
-src = calin.iact_data.telescope_data_source.NectarCamZFITSDataSource(\
-    zfits_file, cfg)
+src = calin.iact_data.telescope_data_source.\
+    NectarCamZFITSDataSource(zfits_file, cfg)
 src.set_next_index(1)
 
 # Get the run info
@@ -104,13 +104,14 @@ dispatcher.add_visitor(sig_window_sum_visitor, \
 
 # Signal minus background functional
 sig_bkg_diff_visitor = calin.iact_data.functional_event_visitor.\
-    DifferencingFunctionalTelescopeEventVisitor(sig_window_sum_visitor, bkg_window_sum_visitor)
+    DifferencingFunctionalTelescopeEventVisitor(sig_window_sum_visitor, \
+        bkg_window_sum_visitor)
 dispatcher.add_visitor(sig_bkg_diff_visitor, \
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 
 # Signal minus background stats
-sig_bkg_stats_visitor = \
-    calin.diagnostics.functional.FunctionalIntStatsVisitor(sig_bkg_diff_visitor)
+sig_bkg_stats_visitor = calin.diagnostics.functional.\
+    FunctionalIntStatsVisitor(sig_bkg_diff_visitor)
 dispatcher.add_visitor(sig_bkg_stats_visitor)
 
 # Signal minus background capture adapter
@@ -132,8 +133,8 @@ psd_visitor = calin.diagnostics.waveform.WaveformPSDVisitor()
 dispatcher.add_visitor(psd_visitor)
 
 # Background window stats
-bkg_window_stats_visitor = \
-    calin.diagnostics.functional.FunctionalIntStatsVisitor(bkg_window_sum_visitor)
+bkg_window_stats_visitor = calin.diagnostics.functional.\
+    FunctionalIntStatsVisitor(bkg_window_sum_visitor)
 dispatcher.add_visitor(bkg_window_stats_visitor)
 
 # Glitch detection visitor
@@ -167,10 +168,12 @@ t0_calc = calin.iact_data.functional_event_visitor.\
 dispatcher.add_visitor(t0_calc)
 
 # T0 rise time stats
-t0_stats_cfg = calin.diagnostics.functional.FunctionalDoubleStatsVisitor.default_config()
+t0_stats_cfg = calin.diagnostics.functional.\
+    FunctionalDoubleStatsVisitor.default_config()
 t0_stats_cfg.hist_config().set_dxval(0.1)
 t0_stats_cfg.hist_config().set_xval_units('samples')
-t0_stats = calin.diagnostics.functional.FunctionalDoubleStatsVisitor(t0_calc, t0_stats_cfg)
+t0_stats = calin.diagnostics.functional.\
+    FunctionalDoubleStatsVisitor(t0_calc, t0_stats_cfg)
 dispatcher.add_visitor(t0_stats)
 
 # Run all the visitors
