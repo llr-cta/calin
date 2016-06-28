@@ -54,8 +54,9 @@ cache:
 before_install:
   - if test -n "$BUILD_CC"; then export CC="$BUILD_CC"; fi
   - if test -n "$BUILD_CXX"; then export CXX="$BUILD_CXX"; fi
-  - LOCAL=$HOME/local/$CC
-  - PATH=$LOCAL/bin:$PATH
+  - export LOCAL=$HOME/local/$CC
+  - export PATH=$LOCAL/bin:$PATH
+  - export LD_LIBRARY_PATH=$LOCAL/lib64:$LOCAL/lib:$LD_LIBRARY_PATH
 
 # Build SWIG-3, protobuf-3 and Geant4-10 if not available in the cache
 # Download and unpack Geant4 data files if necessary
