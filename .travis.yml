@@ -87,7 +87,7 @@ matrix:
         apt:
           sources:
           - *common_sources
-          - llvm-toolchain-precise-3.7
+          - llvm-toolchain-precise-3.8
           packages:
           - *common_packages
           - clang-3.8
