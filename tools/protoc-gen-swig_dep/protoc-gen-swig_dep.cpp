@@ -22,6 +22,13 @@
 
 #include <iostream>
 #include <string>
+#include <unistd.h>
+#include <sys/times.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <pwd.h>
+#include <cassert>
+#include <cstdlib>
 
 #include <google/protobuf/compiler/code_generator.h>
 #include <google/protobuf/compiler/plugin.h>
@@ -40,14 +47,26 @@ string pb_to_gen_filename(string pb_filename, string extension = ".pb.i")
   return pb_filename.substr(0,pb_filename.find_last_of('.')) + extension;
 }
 
-void write_dep(Printer* I, const string& dep, string& sep)
+void write_dep(Printer* I, const string& dep, string& sep,
+  const std::string & src_dir, const std::string & bin_dir)
 {
-  if(dep == "calin.proto")return;
-  if(dep == "google/protobuf/descriptor.proto")return;
-
   string cmake_sep = ";";
-  I->Print("$sep$$file$", "sep", sep, "file", pb_to_gen_filename(dep));
-  sep = cmake_sep;
+  string swig_file = pb_to_gen_filename(dep);
+
+  string test_file = src_dir + "/swig/" + swig_file;
+  if(access(test_file.c_str(),R_OK)==0) {
+    I->Print("$sep$$file$", "sep", sep, "file", test_file);
+    sep = cmake_sep;
+    return;
+  }
+
+  test_file = src_dir + "/proto/" + dep;
+  if(access(test_file.c_str(),R_OK)==0) {
+    test_file = bin_dir + "/proto/" + swig_file;
+    I->Print("$sep$$file$", "sep", sep, "file", test_file);
+    sep = cmake_sep;
+    return;
+  }
 }
 
 
@@ -58,7 +77,7 @@ class SwigDepGenerator: public google::protobuf::compiler::CodeGenerator
  public:
   virtual ~SwigDepGenerator();
   virtual bool Generate(const google::protobuf::FileDescriptor * file,
-                        const std::string & parameter,
+                        const std::string & base_dir,
                         google::protobuf::compiler::GeneratorContext *context,
                         std::string * error) const;
 };
@@ -69,7 +88,7 @@ SwigDepGenerator::~SwigDepGenerator()
 }
 
 bool SwigDepGenerator::Generate(const google::protobuf::FileDescriptor * file,
-  const std::string & parameter,
+  const std::string & parameters,
   google::protobuf::compiler::GeneratorContext *context,
   std::string * error) const
 {
@@ -77,13 +96,16 @@ bool SwigDepGenerator::Generate(const google::protobuf::FileDescriptor * file,
   Printer* I = new Printer(I_stream,'$');
 
   string sep = "";
+  auto comma = parameters.find(',');
+  string src_dir = parameters.substr(0, comma);
+  string bin_dir = parameters.substr(comma+1);
 
   for(int i=0; i<file->dependency_count(); i++)
-    write_dep(I, file->dependency(i)->name(), sep);
+    write_dep(I, file->dependency(i)->name(), sep, src_dir, bin_dir);
   for(int i=0; i<file->public_dependency_count(); i++)
-    write_dep(I, file->public_dependency(i)->name(), sep);
+    write_dep(I, file->public_dependency(i)->name(), sep, src_dir, bin_dir);
   for(int i=0; i<file->weak_dependency_count(); i++)
-    write_dep(I, file->weak_dependency(i)->name(), sep);
+    write_dep(I, file->weak_dependency(i)->name(), sep, src_dir, bin_dir);
 
   if(sep != "")I->Print("\n");
 
