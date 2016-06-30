@@ -20,8 +20,8 @@ matrix:
       env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=TRUE
 ##    - compiler: clang-3.7
 ##      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=TRUE
-##    - compiler: clang-3.7
-##      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=FALSE
+    - compiler: clang-3.7
+      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=FALSE
 ##    - compiler: clang-3.7
 ##      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=FALSE
 
