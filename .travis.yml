@@ -119,9 +119,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/cmake ];
     then (
-      wget --no-check-certificate https://cmake.org/files/v3.4/cmake-3.4.3.tar.gz
-      tar zxf cmake-3.4.3.tar.gz
-      cd cmake-3.4.3
+      wget --no-check-certificate https://cmake.org/files/v3.5/cmake-3.5.2.tar.gz
+      tar zxf cmake-3.5.2.tar.gz
+      cd cmake-3.5.2
       ./bootstrap  --parallel=3 --prefix=$LOCAL
       make -j3
       make install > /dev/null
@@ -129,9 +129,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/swig ];
     then (
-      wget http://sourceforge.net/projects/swig/files/swig/swig-3.0.8/swig-3.0.8.tar.gz &&
-      tar zxf swig-3.0.8.tar.gz &&
-      cd swig-3.0.8 &&
+      wget https://sourceforge.net/projects/swig/files/swig/swig-3.0.10/swig-3.0.10.tar.gz &&
+      tar zxf swig-3.0.10.tar.gz &&
+      cd swig-3.0.10 &&
       ./configure --prefix=$LOCAL --without-alllang --with-python &&
       make -j3 &&
       make install > /dev/null
@@ -139,9 +139,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/protoc ];
     then (
-      wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-2/protobuf-cpp-3.0.0-beta-2.tar.gz &&
-      tar zxf protobuf-cpp-3.0.0-beta-2.tar.gz &&
-      cd protobuf-3.0.0-beta-2 &&
+      wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-3/protobuf-cpp-3.0.0-beta-3.tar.gz
+      tar zxf protobuf-cpp-3.0.0-beta-3.tar.gz &&
+      cd protobuf-3.0.0-beta-3 &&
       ./configure --prefix=$LOCAL &&
       make -j3 &&
       make install > /dev/null
