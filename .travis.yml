@@ -24,8 +24,10 @@ matrix:
       env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=TRUE
       addons:
         apt:
-          sources: llvm-toolchain-precise-3.7
-          packages: clang-3.7
+          sources:
+          - llvm-toolchain-precise-3.7
+          packages:
+          - clang-3.7
 ##    - compiler: clang-3.7
 ##      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=FALSE
 
