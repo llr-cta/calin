@@ -21,7 +21,7 @@ addons:
 matrix:
   include:
     - compiler: gcc-4.8
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=TRUE
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
       addons: &gcc48_addons
         apt:
           sources:
@@ -30,15 +30,15 @@ matrix:
           - *common_packages
           - g++-4.8
 #    - compiler: gcc-4.8
-#      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=TRUE
+#      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
 #      addons:
 #        <<: *gcc48_addons
 #    - compiler: gcc-4.8
-#      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 CACHE_REBUILD=TRUE
+#      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
 #      addons:
 #        <<: *gcc48_addons
     - compiler: gcc-5
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=TRUE
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
       addons: &gcc5_addons
         apt:
           sources:
@@ -47,15 +47,24 @@ matrix:
           - *common_packages
           - g++-5
     - compiler: gcc-5
-      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=TRUE
+      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
       addons:
         <<: *gcc5_addons
     - compiler: gcc-5
-      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5 CACHE_REBUILD=TRUE
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5
       addons:
         <<: *gcc5_addons
+    - compiler: gcc-6
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-6 BUILD_CXX=g++-6
+      addons: &gcc6_addons
+        apt:
+          sources:
+          - *common_sources
+          packages:
+          - *common_packages
+          - g++-6
     - compiler: clang-3.7
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=TRUE
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
       addons: &clang37_addons
         apt:
           sources:
@@ -65,31 +74,23 @@ matrix:
           - *common_packages
           - clang-3.7
 #    - compiler: clang-3.7
-#      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=TRUE
+#      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
 #      addons:
 #        <<: *clang37_addons
 #    - compiler: clang-3.7
-#      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7 CACHE_REBUILD=FALSE
+#      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
 #      addons:
 #        <<: *clang37_addons
-
-addons:
-  apt:
-    sources:
-#    - george-edison55-precise-backports
-    - ubuntu-toolchain-r-test
-#    - llvm-toolchain-precise-3.7
-    packages:
-    - gsl-bin
-    - libgsl0-dev
-    - libfftw3-dev
-    - python-numpy
-    - g++-4.8
-    - g++-5
-    - libzmq3-dev
-    - python3
-    - python3-dev
-    - python3-numpy
+    - compiler: clang-3.8
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.8 BUILD_CXX=clang++-3.8
+      addons: &clang38_addons
+        apt:
+          sources:
+          - *common_sources
+          - llvm-toolchain-precise-3.7
+          packages:
+          - *common_packages
+          - clang-3.8
 
 cache:
   directories:
@@ -117,10 +118,6 @@ install:
   - |
     if [ ! -f $LOCAL/bin/cmake ];
     then (
-      if [ "x$CACHE_REBUILD" != "xTRUE" ]
-      then
-        exit 1
-      fi
       wget --no-check-certificate https://cmake.org/files/v3.4/cmake-3.4.3.tar.gz
       tar zxf cmake-3.4.3.tar.gz
       cd cmake-3.4.3
@@ -131,10 +128,6 @@ install:
   - |
     if [ ! -f $LOCAL/bin/swig ];
     then (
-      if [ "x$CACHE_REBUILD" != "xTRUE" ]
-      then
-        exit 1
-      fi
       wget http://sourceforge.net/projects/swig/files/swig/swig-3.0.8/swig-3.0.8.tar.gz &&
       tar zxf swig-3.0.8.tar.gz &&
       cd swig-3.0.8 &&
@@ -145,10 +138,6 @@ install:
   - |
     if [ ! -f $LOCAL/bin/protoc ];
     then (
-      if [ "x$CACHE_REBUILD" != "xTRUE" ]
-      then
-        exit 1
-      fi
       wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-2/protobuf-cpp-3.0.0-beta-2.tar.gz &&
       tar zxf protobuf-cpp-3.0.0-beta-2.tar.gz &&
       cd protobuf-3.0.0-beta-2 &&
@@ -159,10 +148,6 @@ install:
   - |
     if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh ];
     then (
-      if [ "x$CACHE_REBUILD" != "xTRUE" ]
-      then
-        exit 1
-      fi
       wget http://geant4.cern.ch/support/source/geant4.10.02.p01.tar.gz &&
       tar zxf geant4.10.02.p01.tar.gz &&
       cd geant4.10.02.p01 &&
