@@ -46,7 +46,7 @@ public:
   calin::ix::diagnostics::counter::CounterDeltaTDiagnosticsModuleData results() {
     return results_; }
 private:
-  int64_t next_event_number_ = 0;
+  //int64_t next_event_number_ = 0;
   calin::ix::diagnostics::counter::CounterDeltaTDiagnosticsModuleData results_;
 };
 

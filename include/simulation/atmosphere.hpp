@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/atmosphere.hpp -- Stephen Fegan -- 2015-06-11
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -59,7 +59,7 @@ class AtmComposition
   double frac_Ne() const { return c_Ne/norm(); }
   double frac_He() const { return c_He/norm(); }
   double frac_O3() const { return c_O3/norm(); }
-  
+
   double norm() const { return c_N2+c_O2+c_Ar+c_CO2+c_H20+c_Ne+c_He+c_O3; }
 };
 #endif
@@ -67,7 +67,7 @@ class AtmComposition
 class AtmSlice
 {
 public:
-  AtmSlice(double _v=0): zb(_v), zt(_v), tb(_v), tt(_v), rho(_v), 
+  AtmSlice(double _v=0): zb(_v), zt(_v), tb(_v), tt(_v), rho(_v),
 			 n_minus_one(_v)
 #if 0
                        , temperature(_v), pressure(_v), composition()
@@ -85,16 +85,16 @@ public:
   double pressure;
   AtmComposition composition;
 #endif
-  
+
   bool operator< (const AtmSlice& o) const { return zt < o.zt; }
 
 #ifndef SWIG
   class CmpZAsc
-  { public: bool operator() (const AtmSlice& a, const AtmSlice& b) 
+  { public: bool operator() (const AtmSlice& a, const AtmSlice& b)
     { return a.zt < b.zt; } };
-  /*  
+  /*
   class CmpTDec
-  { public: bool operator() (const AtmSlice& a, const AtmSlice& b) 
+  { public: bool operator() (const AtmSlice& a, const AtmSlice& b)
   { return b.tb < a.tb; } };*/
 #endif
 };
@@ -115,7 +115,7 @@ class Atmosphere
   virtual double propagation_time_correction(double z) = 0;
   virtual double z_for_thickness(double t) = 0;
   virtual double top_of_atmosphere() = 0;
-  std::vector<AtmSlice> make_atm_slices(unsigned nslice, 
+  std::vector<AtmSlice> make_atm_slices(unsigned nslice,
                                         double zmax, double zmin);
   std::vector<AtmSlice> make_atm_slices(unsigned nslice);
 };
@@ -124,7 +124,7 @@ class Atmosphere
 class IsothermalAtmosphere: public Atmosphere
 {
  public:
-  IsothermalAtmosphere(double rho0=1.2e-3, double zs = 8.5e5, 
+  IsothermalAtmosphere(double rho0=1.2e-3, double zs = 8.5e5,
 		       double zmax = 1.2e7, double nmo0=2.75e-4,
                        double temperature = 273.);
   virtual ~IsothermalAtmosphere();
@@ -139,14 +139,14 @@ class IsothermalAtmosphere: public Atmosphere
   double propagation_time_correction(double z) override;
   double z_for_thickness(double t) override;
   double top_of_atmosphere() override;
- private:
+private:
   double m_ttoa;
   double m_rho0;
   double m_zs;
   double m_zmax;
   double m_nmo0;
-  double temperature_;
-};  
+  //double temperature_;
+};
 
 struct LayeredAtmosphereLevel
 {
@@ -169,7 +169,7 @@ struct LayeredAtmosphereLevel
 #ifndef SWIG
 struct LayeredAtmosphereLayer
 {
-  LayeredAtmosphereLayer(double _v = 0): 
+  LayeredAtmosphereLayer(double _v = 0):
       zb(_v), zt(_v), rho0(_v), rhozs(_v), t0(_v), tzs(_v), tb(_v), tt(_v),
       nmo0(_v), nmozs(_v), ptc0(_v) { }
   double zb;
@@ -184,7 +184,7 @@ struct LayeredAtmosphereLayer
   double nmozs;
   double ptc0;
   bool operator< (const LayeredAtmosphereLayer& o) const { return zt<o.zt; }
-  
+
   class CmpTDec { public: bool operator() (const LayeredAtmosphereLayer& a,
                                            const LayeredAtmosphereLayer& b) {
     return b.tt<a.tt; } };
@@ -196,7 +196,7 @@ class LayeredAtmosphere: public Atmosphere
 {
  public:
   CALIN_TYPEALIAS(Level, LayeredAtmosphereLevel);
-  
+
   LayeredAtmosphere(const std::string& filename);
   LayeredAtmosphere(const std::vector<Level> levels);
 
@@ -216,7 +216,7 @@ class LayeredAtmosphere: public Atmosphere
   const std::vector<Level>& getLevels() const { return m_levels; }
 
   static LayeredAtmosphere* us76();
-  
+
  private:
   CALIN_TYPEALIAS(Layer, LayeredAtmosphereLayer);
 
