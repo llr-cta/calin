@@ -102,6 +102,7 @@ before_install:
   - export LOCAL=$HOME/local/$CC
   - export PATH=$LOCAL/bin:$PATH
   - export LD_LIBRARY_PATH=$LOCAL/lib64:$LOCAL/lib:$LD_LIBRARY_PATH
+  # Temporarily add this as Eigen produces a vast number of errors - 2016-06-30
   - if [ "x$BUILD_CXX" == "xg++-6" ]; then CXXFLAGS="-Wno-ignored-attributes"; fi
 
 # Build SWIG-3, protobuf-3 and Geant4-10 if not available in the cache

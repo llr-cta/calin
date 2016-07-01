@@ -222,9 +222,11 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   double mes_x(unsigned isample) const { return ped_x(isample); }
 
   std::vector<double> all_ses_x() const { std::vector<double> x(nsample_);
-    for(unsigned i=0;i<nsample_;i++) x[i] = ses_x(i); return x; }
+    for(unsigned i=0;i<nsample_;i++) x[i] = ses_x(i);
+    return x; }
   std::vector<double> all_ped_x() const { std::vector<double> x(nsample_);
-    for(unsigned i=0;i<nsample_;i++) x[i] = ped_x(i); return x; }
+    for(unsigned i=0;i<nsample_;i++) x[i] = ped_x(i);
+    return x; }
   std::vector<double> all_mes_x() const { return all_ped_x(); }
 
   std::vector<double> multi_electron_spectrum() const;
@@ -246,7 +248,7 @@ class GeneralPoissonMES: public MultiElectronSpectrum
  protected:
   int ibin(double x) const;
   void set_cache();
-  
+
   SingleElectronSpectrum* ses_pdf_;
   calin::math::pdf_1d::Parameterizable1DPDF* ped_pdf_;
   bool adopt_ses_pdf_ = false;
