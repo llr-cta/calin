@@ -118,8 +118,10 @@ protected:
   uint64_t seq_index_ = 0;
 };
 
+#ifndef SWIG
 template<typename T> using ChainedDataSource =
   BasicChainedDataSource<DataSource<T> >;
+#endif
 
 template<typename RADST> class BasicChainedRandomAccessDataSource:
   public BasicChainedDataSource<RADST>

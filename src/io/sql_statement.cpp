@@ -501,70 +501,84 @@ extract_repeated_field(unsigned ifield, uint64_t loop_id,
 
 bool SQLStatement::column_is_null(unsigned icol, bool* good)
 {
-  if(good)*good = true; return true;
+  if(good)*good = true;
+  return true;
 }
 
 int64_t SQLStatement::extract_int64(unsigned icol, bool* good)
 {
-  if(good)*good = true; return 0;
+  if(good)*good = true;
+  return 0;
 }
 
 int32_t SQLStatement::extract_int32(unsigned icol, bool* good)
 {
-  if(good)*good = true; return 0;
+  if(good)*good = true;
+  return 0;
 }
 
 int16_t SQLStatement::extract_int16(unsigned icol, bool* good)
 {
-  if(good)*good = true; return 0;
+  if(good)*good = true;
+  return 0;
 }
 
 int8_t SQLStatement::extract_int8(unsigned icol, bool* good)
 {
-  if(good)*good = true; return 0;
+  if(good)*good = true;
+  return 0;
 }
 
 uint64_t SQLStatement::extract_uint64(unsigned icol, bool* good)
 {
-  if(good)*good = true; return 0;
+  if(good)*good = true;
+  return 0;
 }
 
 uint32_t SQLStatement::extract_uint32(unsigned icol, bool* good)
 {
-  if(good)*good = true; return 0;
+  if(good)*good = true;
+  return 0;
 }
 
 uint16_t SQLStatement::extract_uint16(unsigned icol, bool* good)
 {
-  if(good)*good = true; return 0;
+  if(good)*good = true;
+  return 0;
 }
 
 uint8_t SQLStatement::extract_uint8(unsigned icol, bool* good)
 {
-  if(good)*good = true; return 0;
+  if(good)*good = true;
+  return 0;
 }
 
 float SQLStatement::extract_float(unsigned icol, bool* good)
 {
-  if(good)*good = true; return 0;
+  if(good)*good = true;
+  return 0;
 }
 
 double SQLStatement::extract_double(unsigned icol, bool* good)
 {
-  if(good)*good = true; return 0;
+  if(good)*good = true;
+  return 0;
 }
 
 bool SQLStatement::extract_bool(unsigned icol, bool* good)
 {
-  if(good)*good = true; return false;
+  if(good)*good = true;
+  return false;
 }
 
 std::string SQLStatement::extract_string(unsigned icol, bool* good)
 {
-  if(good)*good = true; return "";
+  if(good)*good = true;
+  return "";
 }
 
 std::string SQLStatement::extract_bytes(unsigned icol, bool* good)
 {
-  if(good)*good = true; return "";
+  if(good)*good = true;
+  return "";
 }

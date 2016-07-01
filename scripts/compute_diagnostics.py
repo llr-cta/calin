@@ -54,6 +54,10 @@ sig_window_start = 44
 if(len(sys.argv) > 4):
     sig_window_start = int(sys.argv[4])
 
+window_size = 16
+if(len(sys.argv) > 5):
+    window_size = int(sys.argv[5])
+
 # Open the data source
 cfg = calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_config()
@@ -72,7 +76,7 @@ dispatcher = calin.iact_data.event_dispatcher.TelescopeEventDispatcher()
 bkg_window_sum_cfg = calin.iact_data.functional_event_visitor.\
     FixedWindowSumFunctionalTelescopeEventVisitor.default_config()
 bkg_window_sum_cfg.set_integration_0(bkg_window_start)
-bkg_window_sum_cfg.set_integration_n(16)
+bkg_window_sum_cfg.set_integration_n(window_size)
 bkg_window_sum_visitor = calin.iact_data.functional_event_visitor.\
     FixedWindowSumFunctionalTelescopeEventVisitor(bkg_window_sum_cfg)
 dispatcher.add_visitor(bkg_window_sum_visitor, \
@@ -96,7 +100,7 @@ sig_window_sum_cfg = calin.iact_data.functional_event_visitor.\
     FixedWindowSumFunctionalTelescopeEventVisitor.default_config()
 #sig_window_sum_cfg.set_integration_0(30)
 sig_window_sum_cfg.set_integration_0(sig_window_start)
-sig_window_sum_cfg.set_integration_n(16)
+sig_window_sum_cfg.set_integration_n(window_size)
 sig_window_sum_visitor = calin.iact_data.functional_event_visitor.\
     FixedWindowSumFunctionalTelescopeEventVisitor(sig_window_sum_cfg)
 dispatcher.add_visitor(sig_window_sum_visitor, \

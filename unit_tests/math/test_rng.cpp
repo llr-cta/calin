@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/unit_tests/math/test_rng.cpp -- Stephen Fegan -- 2015-11-22
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -44,7 +44,8 @@ TEST(TestRNG, RandomDeviceFillsAllBits64) {
   {
     uint64_t x = RNG::uint64_from_random_device();
     for(unsigned j=0;j<64;j++) {
-      if(x&1)count[j]++; x>>=1; }
+      if(x&1)count[j]++;
+      x>>=1; }
   }
   for(unsigned j=0;j<64;j++) {
     EXPECT_GE(count[j], 20U); EXPECT_LE(count[j], 80U); }
@@ -56,7 +57,8 @@ TEST(TestRNG, RandomDeviceFillsAllBits32) {
   {
     uint32_t x = RNG::uint32_from_random_device();
     for(unsigned j=0;j<32;j++) {
-      if(x&1)count[j]++; x>>=1; }
+      if(x&1)count[j]++;
+      x>>=1; }
   }
   for(unsigned j=0;j<32;j++) {
     EXPECT_GE(count[j], 20U); EXPECT_LE(count[j], 80U); }
@@ -76,7 +78,8 @@ TYPED_TEST_P(CoreTests, FillsAllBits64)
   {
     uint64_t x = core.uniform_uint64();
     for(unsigned j=0;j<64;j++) {
-      if(x&1)count[j]++; x>>=1; }
+      if(x&1)count[j]++;
+      x>>=1; }
   }
   for(unsigned j=0;j<64;j++) {
     EXPECT_GE(count[j], 490000U)
@@ -95,7 +98,8 @@ TYPED_TEST_P(CoreTests, FillsAllBits32)
   {
     uint32_t x = rng.uniform_uint32();
     for(unsigned j=0;j<32;j++) {
-      if(x&1)count[j]++; x>>=1; }
+      if(x&1)count[j]++;
+      x>>=1; }
   }
   for(unsigned j=0;j<32;j++) {
     EXPECT_GE(count[j], 490000U)
@@ -139,7 +143,7 @@ TYPED_TEST_P(CoreTests, SaveAndRestoreState64)
 #if 0
     google::protobuf::io::OstreamOutputStream stream(&std::cout);
     if(N==99)google::protobuf::TextFormat::Print(proto, &stream);
-#endif    
+#endif
     for(unsigned i=0;i<N;i++)
       data1.push_back(core.uniform_uint64());
     RNGCore* core2 = RNGCore::create_from_proto(proto);
@@ -193,7 +197,7 @@ TEST(TestRNG, SaveAndRestoreStateU32)
 #if 0
     google::protobuf::io::OstreamOutputStream stream(&std::cout);
     if(N==99)google::protobuf::TextFormat::Print(proto, &stream);
-#endif    
+#endif
     for(unsigned i=0;i<N;i++)
       data1.push_back(rng.uniform_uint32());
     RNG rng2 = RNG(proto);
