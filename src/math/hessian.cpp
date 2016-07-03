@@ -198,6 +198,8 @@ calculate_hessian_1st_order_dx(function::MultiAxisFunction& fcn,
       h = std::min(h, fcn.domain_axes()[ipar].hi_bound - x(ipar));
     if(fcn.domain_axes()[ipar].has_lo_bound)
       h = std::min(h, x(ipar) - fcn.domain_axes()[ipar].lo_bound);
+    if(h<=0)throw std::runtime_error("calculate_hessian_1st_order_dx: "
+      "axis is at limit: " + fcn.domain_axes()[ipar].name);
     double xp { x(ipar)+h };
     double xn { x(ipar)-h };
     double h2 = { xp-xn };
@@ -262,6 +264,8 @@ calculate_hessian_2nd_order_dx(function::MultiAxisFunction& fcn,
       h_i = std::min(h_i, fcn.domain_axes()[ipar].hi_bound - x(ipar));
     if(fcn.domain_axes()[ipar].has_lo_bound)
       h_i = std::min(h_i, x(ipar) - fcn.domain_axes()[ipar].lo_bound);
+    if(h_i<=0)throw std::runtime_error("calculate_hessian_2nd_order_dx: "
+      "axis is at limit: " + fcn.domain_axes()[ipar].name);
     double xp_i { x(ipar)+h_i };
     double xn_i { x(ipar)-h_i };
     double h2_i = { xp_i-xn_i };
@@ -280,6 +284,8 @@ calculate_hessian_2nd_order_dx(function::MultiAxisFunction& fcn,
         h_j = std::min(h_j, fcn.domain_axes()[jpar].hi_bound - x(jpar));
       if(fcn.domain_axes()[ipar].has_lo_bound)
         h_j = std::min(h_j, x(jpar) - fcn.domain_axes()[jpar].lo_bound);
+      if(h_j<=0)throw std::runtime_error("calculate_hessian_2nd_order_dx: "
+        "axis is at limit: " + fcn.domain_axes()[jpar].name);
       double xp_j { x(jpar)+h_j };
       double xn_j { x(jpar)-h_j };
       double h2_j = { xp_j-xn_j };
