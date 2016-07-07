@@ -161,14 +161,15 @@ protected:
   double s_ = 1;
 };
 
-class LimitedGaussianPDF: public GaussianPDF
+class LimitedGaussianPDF: public BinnedGaussianPDF
 {
  public:
   constexpr static double inf = std::numeric_limits<double>::infinity();
 
-  LimitedGaussianPDF(double xlo, double xhi, const std::string& xunits = "x-value units",
-		     double error_up = 0.5):
-      GaussianPDF(xunits, error_up), xlo_(xlo), xhi_(xhi),
+  LimitedGaussianPDF(double xlo, double xhi, double dx = 0,
+    const std::string& xunits = "x-value units",
+    double error_up = 0.5):
+      BinnedGaussianPDF(dx, xunits, error_up), xlo_(xlo), xhi_(xhi),
       norm_gradient_(2), norm_hessian_(2,2) { set_cache(); }
 
   virtual ~LimitedGaussianPDF();

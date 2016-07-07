@@ -196,7 +196,7 @@ LimitedGaussianPDF::~LimitedGaussianPDF()
 
 function::DomainAxis LimitedGaussianPDF::domain_axis()
 {
-  function::DomainAxis a = GaussianPDF::domain_axis();
+  function::DomainAxis a = BinnedGaussianPDF::domain_axis();
   a.has_lo_bound = xlo_>-inf;
   a.lo_bound = xlo_;
   a.has_hi_bound = xhi_<inf;
@@ -206,14 +206,14 @@ function::DomainAxis LimitedGaussianPDF::domain_axis()
 
 void LimitedGaussianPDF::set_parameter_values(ConstVecRef values)
 {
-  GaussianPDF::set_parameter_values(values);
+  BinnedGaussianPDF::set_parameter_values(values);
   set_cache();
 }
 
 double LimitedGaussianPDF::value_1d(double x)
 {
   if(x<xlo_ or x>=xhi_)return 0;
-  return norm_*GaussianPDF::value_1d(x);
+  return norm_*BinnedGaussianPDF::value_1d(x);
 }
 
 double LimitedGaussianPDF::value_and_gradient_1d(double x,  double& dfdx)
@@ -223,7 +223,7 @@ double LimitedGaussianPDF::value_and_gradient_1d(double x,  double& dfdx)
     dfdx = 0;
     return 0;
   }
-  double val = norm_*GaussianPDF::value_and_gradient_1d(x, dfdx);
+  double val = norm_*BinnedGaussianPDF::value_and_gradient_1d(x, dfdx);
   dfdx *= norm_;
   return val;
 }
@@ -237,7 +237,7 @@ double LimitedGaussianPDF::value_gradient_and_hessian_1d(double x, double& dfdx,
     dfdx = 0;
     return 0;
   }
-  double val = GaussianPDF::value_gradient_and_hessian_1d(x, dfdx, d2fdx2);
+  double val = BinnedGaussianPDF::value_gradient_and_hessian_1d(x, dfdx, d2fdx2);
   dfdx *= norm_;
   d2fdx2 *= norm_;
   return norm_*val;
@@ -252,7 +252,7 @@ value_and_parameter_gradient_1d(double x,  VecRef gradient)
     gradient[0] = gradient[1] = 0;
     return 0;
   }
-  double val = GaussianPDF::value_and_parameter_gradient_1d(x, gradient);
+  double val = BinnedGaussianPDF::value_and_parameter_gradient_1d(x, gradient);
   gradient = norm_*gradient + val*norm_gradient_;
   return norm_*val;
 }
@@ -270,7 +270,7 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
     return 0;
   }
   double val =
-     GaussianPDF::value_parameter_gradient_and_hessian_1d(x, gradient, hessian);
+     BinnedGaussianPDF::value_parameter_gradient_and_hessian_1d(x, gradient, hessian);
   hessian = norm_*hessian + val*norm_hessian_;
   hessian(0,0) += 2.0*norm_gradient_[0]*gradient[0];
   hessian(0,1) += norm_gradient_[0]*gradient[1] + norm_gradient_[1]*gradient[0];

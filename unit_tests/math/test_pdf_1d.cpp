@@ -109,7 +109,7 @@ TEST(TestGaussianPDF, ParameterHessianCheck) {
 
 TEST(TestBinnedGaussianPDF, NormalisedValues) {
   Eigen::VectorXd p(2);
-  p << 3, 2; // mean, sigma
+  p << 3, 0.25; // mean, sigma
   Eigen::VectorXd dp(2);
   dp << 1e-6, 1e-6;
   double dx = 0.5;
@@ -122,7 +122,7 @@ TEST(TestBinnedGaussianPDF, NormalisedValues) {
 
 TEST(TestBinnedGaussianPDF, GradientCheck) {
   Eigen::VectorXd p(2);
-  p << 3, 2; // mean, sigma
+  p << 3, 0.25; // mean, sigma
   Eigen::VectorXd dp(2);
   dp << 1e-6, 1e-6;
   BinnedGaussianPDF pdf(0.5);
@@ -141,7 +141,7 @@ TEST(TestBinnedGaussianPDF, GradientCheck) {
 
 TEST(TestBinnedGaussianPDF, HessianCheck) {
   Eigen::VectorXd p(2);
-  p << 3, 2; // mean, sigma
+  p << 3, 0.25; // mean, sigma
   Eigen::VectorXd dp(2);
   dp << 1e-6, 1e-6;
   BinnedGaussianPDF pdf(0.5);
@@ -160,7 +160,7 @@ TEST(TestBinnedGaussianPDF, HessianCheck) {
 
 TEST(TestBinnedGaussianPDF, ParameterGradientCheck) {
   Eigen::VectorXd p(2);
-  p << 3, 2; // mean, sigma
+  p << 3, 0.25; // mean, sigma
   Eigen::VectorXd dp(2);
   dp << 1e-6, 1e-6;
   BinnedGaussianPDF pdf_x(0.5);
@@ -179,7 +179,7 @@ TEST(TestBinnedGaussianPDF, ParameterGradientCheck) {
 
 TEST(TestBinnedGaussianPDF, ParameterHessianCheck) {
   Eigen::VectorXd p(2);
-  p << 3, 2; // mean, sigma
+  p << 3, 0.25; // mean, sigma
   Eigen::VectorXd dp(2);
   dp << 1e-6, 1e-6;
   BinnedGaussianPDF pdf_x(0.5);
@@ -271,6 +271,89 @@ TEST(TestLimitedGaussianPDF, ParameterHessianCheck) {
     EXPECT_LE(good(1,1), 0.5);
   }
 }
+
+TEST(TestLimitedGaussianPDF_DX, GradientCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 2; // mean, sigma
+  Eigen::VectorXd x(1);
+  Eigen::VectorXd dx(1);
+  dx << 1e-4;
+  LimitedGaussianPDF pdf(1.0,9.0,0.5);
+  pdf.set_parameter_values(p);
+  EXPECT_EQ(p, pdf.parameter_values());
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    Eigen::VectorXd good(1);
+    EXPECT_TRUE(gradient_check(pdf, x, dx, good));
+    EXPECT_LE(good(0), 0.5);
+  }
+}
+
+TEST(TestLimitedGaussianPDF_DX, HessianCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 2; // mean, sigma
+  Eigen::VectorXd x(1);
+  Eigen::VectorXd dx(1);
+  dx << 1e-4;
+  LimitedGaussianPDF pdf(1.0,9.0,0.5);
+  pdf.set_parameter_values(p);
+  EXPECT_EQ(p, pdf.parameter_values());
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    Eigen::MatrixXd good(1,1);
+    EXPECT_TRUE(hessian_check(pdf, x, dx, good));
+    EXPECT_LE(good(0,0), 0.5);
+  }
+}
+
+TEST(TestLimitedGaussianPDF_DX, ParameterGradientCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 2; // mean, sigma
+  Eigen::VectorXd dp(2);
+  dp << 1e-6, 1e-6;
+  LimitedGaussianPDF pdf_x(1.0,9.0,0.5);
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(2);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+  }
+}
+
+TEST(TestLimitedGaussianPDF_DX, ParameterHessianCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 2; // mean, sigma
+  Eigen::VectorXd dp(2);
+  dp << 1e-6, 1e-6;
+  LimitedGaussianPDF pdf_x(1.0,9.0,0.5);
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::MatrixXd good(2,2);
+    EXPECT_TRUE(hessian_check(pdf, p, dp, good));
+    EXPECT_LE(good(0,0), 0.5);
+    EXPECT_LE(good(0,1), 0.5);
+    EXPECT_LE(good(1,0), 0.5);
+    EXPECT_LE(good(1,1), 0.5);
+  }
+}
+
+
+
+
+
+
+
+
+
 
 TEST(TestLimitedExponentialPDF, GradientCheck) {
   Eigen::VectorXd p(1);

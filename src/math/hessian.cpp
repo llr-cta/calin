@@ -139,22 +139,27 @@ step_size_err_up(function::MultiAxisFunction& fcn, ConstVecRef x,
     if(xhi > xlim)xhi=xlim;
     double fhi = f_of_x(xhi);
     int counter = 32;
+    std::cout << ipar << ' ' << dx.transpose() << '\n';
     while(fhi<0 and xhi<xlim and counter--) {
       xlo=xhi;
       flo=fhi;
       dx(ipar)*=2.0;
-      xhi=std::min(xlo+dx(ipar), xhi);
+      std::cout << ipar << ' ' << dx.transpose() << '\n';
+      xhi=std::min(xlo+dx(ipar), xlim);
       fhi = f_of_x(xhi);
     };
     if(fhi>=0)
     {
       double xtol = std::abs((xhi-xlo)/(fhi-flo))*tol*fcn.error_up();
       double xroot = brent_zero(xlo,xhi,f_of_x,flo,fhi,xtol);
-      dx(ipar) = xroot-x(ipar);
+      std::cerr << "HELLO: " << xlo << ' ' << xhi << ' ' << flo << ' ' << fhi
+        << ' ' << xtol << ' ' << xroot << ' ' << x(ipar) << '\n';
+      if(xroot == xlo)dx(ipar) = xhi-x(ipar);
+      else dx(ipar) = xroot-x(ipar);
     }
     else
     {
-      dx(ipar) = xhi-x(ipar);
+      //dx(ipar) = xhi-x(ipar);
     }
   }
   //std::cout << dx << '\n';
