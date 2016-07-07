@@ -106,11 +106,14 @@ public:
   double xval_right(int ibin) const { return (ibin+1)*dxval_+xval0_; }
   double xval_center(int ibin) const { return (ibin+0.5)*dxval_+xval0_; }
   Eigen::VectorXd all_xval_left() const { Eigen::VectorXd x(bins_.size());
-    for(int ibin=0;ibin<bins_.size();ibin++)x[ibin] = xval_left(ibin); return x; }
+    for(unsigned ibin=0;ibin<bins_.size();ibin++)x[ibin] = xval_left(ibin);
+    return x; }
   Eigen::VectorXd all_xval_right() const { Eigen::VectorXd x(bins_.size());
-    for(int ibin=0;ibin<bins_.size();ibin++)x[ibin] = xval_right(ibin); return x; }
+    for(unsigned ibin=0;ibin<bins_.size();ibin++)x[ibin] = xval_right(ibin);
+    return x; }
   Eigen::VectorXd all_xval_center() const { Eigen::VectorXd x(bins_.size());
-    for(int ibin=0;ibin<bins_.size();ibin++)x[ibin] = xval_center(ibin); return x; }
+    for(unsigned ibin=0;ibin<bins_.size();ibin++)x[ibin] = xval_center(ibin);
+    return x; }
   int ibin(double x) const { return std::floor((x-xval0_)/dxval_); }
   int ibin_and_rem(double x, double& dx) const { int ix = std::floor((x-xval0_)/dxval_); dx = x-xval_left(ix); return ix; }
   bool has_ibin(int ibin) const {
