@@ -31,6 +31,7 @@
 using namespace calin::math;
 using namespace calin::math::pdf_1d;
 using calin::math::special::SQR;
+using calin::math::special::CUBE;
 using function::assign_parameters;
 
 namespace {
@@ -143,7 +144,6 @@ double BinnedGaussianPDF::value_and_gradient_1d(double x,  double& dfdx)
     else val = erf(xsr) - erf(xsl);
     val *= 0.25/dx_2_;
     dfdx = 0.5*C_SQRT1_2PI/dx_2_/s_*(exp(-SQR(xsr))-exp(-SQR(xsl)));
-
   }
   return val;
 }
@@ -181,12 +181,29 @@ double BinnedGaussianPDF::
 value_and_parameter_gradient_1d(double x,  VecRef gradient)
 {
   const double xc = x-x0_;
-  const double xs = xc/s_;
-  const double xs2 = SQR(xs);
-  double val = C_SQRT1_2PI/s_*exp(-0.5*xs2);
-  gradient.resize(2);
-  gradient[0] = val*xs/s_; // df/dx0
-  gradient[1] = val*(xs2 - 1.0)/s_;
+  double val;
+  if(dx_2_ == 0)
+  {
+    const double xs = xc/s_;
+    const double xs2 = SQR(xs);
+    val = C_SQRT1_2PI/s_*exp(-0.5*xs2);
+    gradient.resize(2);
+    gradient[0] = val*xs/s_; // df/dx0
+    gradient[1] = val*(xs2 - 1.0)/s_;
+  }
+  else
+  {
+    const double xsr = (xc+dx_2_)/s_*M_SQRT1_2;
+    const double xsl = (xc-dx_2_)/s_*M_SQRT1_2;
+    if(xsl > 5)val = erfc(xsl) - erfc(xsr);
+    else if(xsr<-5)val = erfc(-xsr) - erfc(-xsr);
+    else val = erf(xsr) - erf(xsl);
+    const double exp_xsr2 = exp(-SQR(xsr));
+    const double exp_xsl2 = exp(-SQR(xsl));
+    val *= 0.25/dx_2_;
+    gradient[0] = -0.5*C_SQRT1_2PI/dx_2_/s_*(exp_xsr2-exp_xsl2);
+    gradient[1] = -0.25*M_2_SQRTPI/dx_2_/s_*(xsr*exp_xsr2-xsl*exp_xsl2);
+  }
   return val;
 }
 
@@ -195,16 +212,39 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                         MatRef hessian)
 {
   const double xc = x-x0_;
-  const double xs = xc/s_;
-  const double xs2 = SQR(xs);
-  double val = C_SQRT1_2PI/s_*exp(-0.5*xs2);
-  gradient.resize(2);
-  gradient[0] = val*xs/s_; // df/dx0
-  gradient[1] = val*(xs2 - 1.0)/s_;
-  hessian(0,0) = gradient[1]/s_; // val*(xs2 - 1.0)/SQR(s_);
-  hessian(0,1) = val*(xs2 - 3.0)*xs/SQR(s_);
-  hessian(1,0) = hessian(0,1);
-  hessian(1,1) = val*(SQR(xs2) - 5.0*xs2 + 2.0)/SQR(s_);
+  double val;
+  if(dx_2_ == 0)
+  {
+    const double xs = xc/s_;
+    const double xs2 = SQR(xs);
+    val = C_SQRT1_2PI/s_*exp(-0.5*xs2);
+    gradient.resize(2);
+    gradient[0] = val*xs/s_; // df/dx0
+    gradient[1] = val*(xs2 - 1.0)/s_;
+    hessian(0,0) = gradient[1]/s_; // val*(xs2 - 1.0)/SQR(s_);
+    hessian(0,1) = val*(xs2 - 3.0)*xs/SQR(s_);
+    hessian(1,0) = hessian(0,1);
+    hessian(1,1) = val*(SQR(xs2) - 5.0*xs2 + 2.0)/SQR(s_);
+  }
+  else
+  {
+    const double xsr = (xc+dx_2_)/s_*M_SQRT1_2;
+    const double xsl = (xc-dx_2_)/s_*M_SQRT1_2;
+    if(xsl > 5)val = erfc(xsl) - erfc(xsr);
+    else if(xsr<-5)val = erfc(-xsr) - erfc(-xsr);
+    else val = erf(xsr) - erf(xsl);
+    const double exp_xsr2 = exp(-SQR(xsr));
+    const double exp_xsl2 = exp(-SQR(xsl));
+    val *= 0.25/dx_2_;
+    gradient[0] = -0.5*C_SQRT1_2PI/dx_2_/s_*(exp_xsr2-exp_xsl2);
+    gradient[1] = -0.25*M_2_SQRTPI/dx_2_/s_*(xsr*exp_xsr2-xsl*exp_xsl2);
+    hessian(0,0) = gradient[1]/s_;
+    hessian(0,1) = -(gradient[0]/s_ +
+      C_SQRT1_2PI/dx_2_/SQR(s_)*(SQR(xsr)*exp_xsr2 - SQR(xsl)*exp_xsl2));
+    hessian(1,0) = hessian(0,1);
+    hessian(1,1) = -2.0*gradient[1]/s_ -
+      0.5*M_2_SQRTPI/dx_2_/SQR(s_)*(CUBE(xsr)*exp_xsr2 - CUBE(xsl)*exp_xsl2);
+  }
   return val;
 }
 
