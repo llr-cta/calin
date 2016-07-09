@@ -1032,7 +1032,7 @@ void GeneralPoissonMES::set_cache()
                  << ses_pdf_->parameter_values().transpose();
     n_ses_norm_warning_++;
     if(n_ses_norm_warning_ == n_max_ses_norm_warning_)
-      LOG(WARNING) << "Further SES normalization warnings will be suppressed!";
+      LOG(INFO) << "Further SES normalization warnings will be suppressed!";
   }
 
   fftw_execute(ses_plan_fwd_);

@@ -104,6 +104,7 @@ Eigen::VectorXd hessian::
 step_size_err_up(function::MultiAxisFunction& fcn, ConstVecRef x,
                  ConstVecRef error_hint, double err_up_frac, double tol)
 {
+  constexpr static double inf = std::numeric_limits<double>::infinity();
   const double scale { 2.0*fcn.error_up() };
   double f0 { fcn.value(x) };
   double fup { f0+fcn.error_up()*err_up_frac };
@@ -132,12 +133,35 @@ step_size_err_up(function::MultiAxisFunction& fcn, ConstVecRef x,
     double xlo = x(ipar);
     double flo = -fcn.error_up()*err_up_frac;
     double xhi = xlo + dx(ipar);
+    double xlim = inf;
+    if(fcn.domain_axes()[ipar].has_hi_bound)
+      xlim = fcn.domain_axes()[ipar].hi_bound;
+    if(xhi > xlim)xhi=xlim;
     double fhi = f_of_x(xhi);
-    while(fhi<0){
-      xlo=xhi; flo=fhi; dx(ipar)*=2.0; xhi=xlo+dx(ipar); fhi = f_of_x(xhi); };
-    double xtol = std::abs((xhi-xlo)/(fhi-flo))*tol*fcn.error_up();
-    double xroot = brent_zero(xlo,xhi,f_of_x,flo,fhi,xtol);
-    dx(ipar) = xroot-x(ipar);
+    int counter = 32;
+    while(fhi<0 and xhi<xlim and counter--) {
+      xlo=xhi;
+      flo=fhi;
+      dx(ipar)*=2.0;
+      std::cout << ipar << ' ' << dx.transpose() << '\n';
+      xhi=std::min(xlo+dx(ipar), xlim);
+      fhi = f_of_x(xhi);
+    };
+    if(fhi>=0)
+    {
+      double xtol = std::abs((xhi-xlo)/(fhi-flo))*tol*fcn.error_up();
+      double xroot = brent_zero(xlo,xhi,f_of_x,flo,fhi,xtol);
+#if 0
+      std::cerr << "HELLO: " << xlo << ' ' << xhi << ' ' << flo << ' ' << fhi
+        << ' ' << xtol << ' ' << xroot << ' ' << x(ipar) << '\n';
+#endif
+      if(xroot == xlo)dx(ipar) = xhi-x(ipar);
+      else dx(ipar) = xroot-x(ipar);
+    }
+    else
+    {
+      //dx(ipar) = xhi-x(ipar);
+    }
   }
   //std::cout << dx << '\n';
   return dx;
@@ -176,6 +200,12 @@ calculate_hessian_1st_order_dx(function::MultiAxisFunction& fcn,
   for(unsigned ipar=0;ipar<npar;ipar++)
   {
     double h { dx(ipar) };
+    if(fcn.domain_axes()[ipar].has_hi_bound)
+      h = std::min(h, fcn.domain_axes()[ipar].hi_bound - x(ipar));
+    if(fcn.domain_axes()[ipar].has_lo_bound)
+      h = std::min(h, x(ipar) - fcn.domain_axes()[ipar].lo_bound);
+    if(h<=0)throw std::runtime_error("calculate_hessian_1st_order_dx: "
+      "axis is at limit: " + fcn.domain_axes()[ipar].name);
     double xp { x(ipar)+h };
     double xn { x(ipar)-h };
     double h2 = { xp-xn };
@@ -236,6 +266,12 @@ calculate_hessian_2nd_order_dx(function::MultiAxisFunction& fcn,
   for(unsigned ipar=0;ipar<npar;ipar++)
   {
     double h_i { dx(ipar) };
+    if(fcn.domain_axes()[ipar].has_hi_bound)
+      h_i = std::min(h_i, fcn.domain_axes()[ipar].hi_bound - x(ipar));
+    if(fcn.domain_axes()[ipar].has_lo_bound)
+      h_i = std::min(h_i, x(ipar) - fcn.domain_axes()[ipar].lo_bound);
+    if(h_i<=0)throw std::runtime_error("calculate_hessian_2nd_order_dx: "
+      "axis is at limit: " + fcn.domain_axes()[ipar].name);
     double xp_i { x(ipar)+h_i };
     double xn_i { x(ipar)-h_i };
     double h2_i = { xp_i-xn_i };
@@ -250,6 +286,12 @@ calculate_hessian_2nd_order_dx(function::MultiAxisFunction& fcn,
     for(unsigned jpar=0;jpar<ipar;jpar++)
     {
       double h_j { dx(jpar) };
+      if(fcn.domain_axes()[jpar].has_hi_bound)
+        h_j = std::min(h_j, fcn.domain_axes()[jpar].hi_bound - x(jpar));
+      if(fcn.domain_axes()[ipar].has_lo_bound)
+        h_j = std::min(h_j, x(jpar) - fcn.domain_axes()[jpar].lo_bound);
+      if(h_j<=0)throw std::runtime_error("calculate_hessian_2nd_order_dx: "
+        "axis is at limit: " + fcn.domain_axes()[jpar].name);
       double xp_j { x(jpar)+h_j };
       double xn_j { x(jpar)-h_j };
       double h2_j = { xp_j-xn_j };

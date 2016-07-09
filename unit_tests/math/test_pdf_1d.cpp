@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/unit_tests/math/test_pdf_1d.cpp -- Stephen Fegan -- 2015-04-03
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -107,6 +107,97 @@ TEST(TestGaussianPDF, ParameterHessianCheck) {
   }
 }
 
+TEST(TestBinnedGaussianPDF, NormalisedValues) {
+  Eigen::VectorXd p(2);
+  p << 3, 0.25; // mean, sigma
+  Eigen::VectorXd dp(2);
+  dp << 1e-6, 1e-6;
+  double dx = 0.5;
+  BinnedGaussianPDF pdf(dx);
+  pdf.set_parameter_values(p);
+  double sum = 0;
+  for(double x=-10; x<13; x+=dx)sum += pdf.value_1d(x);
+  EXPECT_NEAR(sum*dx, 1.0, dx);
+}
+
+TEST(TestBinnedGaussianPDF, GradientCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 0.25; // mean, sigma
+  Eigen::VectorXd dp(2);
+  dp << 1e-6, 1e-6;
+  BinnedGaussianPDF pdf(0.5);
+  pdf.set_parameter_values(p);
+  EXPECT_EQ(p, pdf.parameter_values());
+  Eigen::VectorXd x(1);
+  Eigen::VectorXd dx(1);
+  dx << 1e-6;
+  for(x(0) = 10.0; x(0)<13.0; x(0)+=0.1)
+  {
+    Eigen::VectorXd good(1);
+    EXPECT_TRUE(gradient_check(pdf, x, dx, good));
+    EXPECT_LE(good(0), 0.5);
+  }
+}
+
+TEST(TestBinnedGaussianPDF, HessianCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 0.25; // mean, sigma
+  Eigen::VectorXd dp(2);
+  dp << 1e-6, 1e-6;
+  BinnedGaussianPDF pdf(0.5);
+  pdf.set_parameter_values(p);
+  EXPECT_EQ(p, pdf.parameter_values());
+  Eigen::VectorXd x(1);
+  Eigen::VectorXd dx(1);
+  dx << 1e-6;
+  for(x(0) = 10.0; x(0)<13.0; x(0)+=0.1)
+  {
+    Eigen::MatrixXd good(1,1);
+    EXPECT_TRUE(hessian_check(pdf, x, dx, good));
+    EXPECT_LE(good(0,0), 0.5);
+  }
+}
+
+TEST(TestBinnedGaussianPDF, ParameterGradientCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 0.25; // mean, sigma
+  Eigen::VectorXd dp(2);
+  dp << 1e-6, 1e-6;
+  BinnedGaussianPDF pdf_x(0.5);
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = -10.0; x(0)<13.0; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(2);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+  }
+}
+
+TEST(TestBinnedGaussianPDF, ParameterHessianCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 0.25; // mean, sigma
+  Eigen::VectorXd dp(2);
+  dp << 1e-6, 1e-6;
+  BinnedGaussianPDF pdf_x(0.5);
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::MatrixXd good(2,2);
+    EXPECT_TRUE(hessian_check(pdf, p, dp, good));
+    EXPECT_LE(good(0,0), 0.5);
+    EXPECT_LE(good(0,1), 0.5);
+    EXPECT_LE(good(1,0), 0.5);
+    EXPECT_LE(good(1,1), 0.5);
+  }
+}
+
 TEST(TestLimitedGaussianPDF, GradientCheck) {
   Eigen::VectorXd p(2);
   p << 3, 2; // mean, sigma
@@ -180,6 +271,89 @@ TEST(TestLimitedGaussianPDF, ParameterHessianCheck) {
     EXPECT_LE(good(1,1), 0.5);
   }
 }
+
+TEST(TestLimitedGaussianPDF_DX, GradientCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 2; // mean, sigma
+  Eigen::VectorXd x(1);
+  Eigen::VectorXd dx(1);
+  dx << 1e-4;
+  LimitedGaussianPDF pdf(1.0,9.0,0.5);
+  pdf.set_parameter_values(p);
+  EXPECT_EQ(p, pdf.parameter_values());
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    Eigen::VectorXd good(1);
+    EXPECT_TRUE(gradient_check(pdf, x, dx, good));
+    EXPECT_LE(good(0), 0.5);
+  }
+}
+
+TEST(TestLimitedGaussianPDF_DX, HessianCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 2; // mean, sigma
+  Eigen::VectorXd x(1);
+  Eigen::VectorXd dx(1);
+  dx << 1e-4;
+  LimitedGaussianPDF pdf(1.0,9.0,0.5);
+  pdf.set_parameter_values(p);
+  EXPECT_EQ(p, pdf.parameter_values());
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    Eigen::MatrixXd good(1,1);
+    EXPECT_TRUE(hessian_check(pdf, x, dx, good));
+    EXPECT_LE(good(0,0), 0.5);
+  }
+}
+
+TEST(TestLimitedGaussianPDF_DX, ParameterGradientCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 2; // mean, sigma
+  Eigen::VectorXd dp(2);
+  dp << 1e-6, 1e-6;
+  LimitedGaussianPDF pdf_x(1.0,9.0,0.5);
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::VectorXd good(2);
+    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+  }
+}
+
+TEST(TestLimitedGaussianPDF_DX, ParameterHessianCheck) {
+  Eigen::VectorXd p(2);
+  p << 3, 2; // mean, sigma
+  Eigen::VectorXd dp(2);
+  dp << 1e-6, 1e-6;
+  LimitedGaussianPDF pdf_x(1.0,9.0,0.5);
+  function::PMAFReverser pdf(&pdf_x);
+  Eigen::VectorXd x(1);
+  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  {
+    pdf.set_parameter_values(x);
+    EXPECT_EQ(x, pdf.parameter_values());
+    Eigen::MatrixXd good(2,2);
+    EXPECT_TRUE(hessian_check(pdf, p, dp, good));
+    EXPECT_LE(good(0,0), 0.5);
+    EXPECT_LE(good(0,1), 0.5);
+    EXPECT_LE(good(1,0), 0.5);
+    EXPECT_LE(good(1,1), 0.5);
+  }
+}
+
+
+
+
+
+
+
+
+
 
 TEST(TestLimitedExponentialPDF, GradientCheck) {
   Eigen::VectorXd p(1);
@@ -410,7 +584,7 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   EXPECT_EQ(freezer.num_parameters(), 0U);
   EXPECT_EQ(freezer.num_domain_axes(), freezer.domain_axes().size());
   EXPECT_EQ(freezer.num_parameters(), freezer.parameters().size());
-  
+
   EXPECT_TRUE(freezer.freeze(1,50.0));
   EXPECT_EQ(freezer.num_domain_axes(), 3U);
   EXPECT_EQ(freezer.num_parameters(), 1U);
@@ -443,7 +617,7 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   Eigen::VectorXd p013(3);
   p013 << 0.2, 50.0, 35.0;
   EXPECT_EQ(freezer.parameter_values(), p013);
-  
+
   EXPECT_FALSE(freezer.freeze(3,35.0));
   EXPECT_EQ(freezer.num_domain_axes(), 1U);
   EXPECT_EQ(freezer.num_parameters(), 3U);
@@ -483,7 +657,7 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   EXPECT_EQ(freezer.free_axes(), std::vector<unsigned>({1}));
   EXPECT_EQ(freezer.frozen_axes(), std::vector<unsigned>({0,2,3}));
   EXPECT_EQ(freezer.parameter_values(), p023);
-  
+
   EXPECT_TRUE(freezer.thaw(2));
   EXPECT_EQ(freezer.num_domain_axes(), 2U);
   EXPECT_EQ(freezer.num_parameters(), 2U);
@@ -518,7 +692,7 @@ TEST(TestFreezeThaw, GradientCheck) {
   function::PMAFReverser pdf(&pdf_x);
   function::FreezeThawFunction freezer(&pdf);
   freezer.freeze(1,40.0);
-  
+
   Eigen::VectorXd x(1);
   for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
   {
@@ -543,7 +717,7 @@ TEST(TestFreezeThaw, HessianCheck) {
   function::PMAFReverser pdf(&pdf_x);
   function::FreezeThawFunction freezer(&pdf);
   freezer.freeze(1,40.0);
-  
+
   Eigen::VectorXd x(1);
   for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
   {
@@ -580,7 +754,7 @@ TEST(TestFreezeThaw, ParameterGradientCheck) {
   Eigen::VectorXd p2(2);
   p2 << 0.5, 35.0;
   rev_freezer.set_parameter_values(p2);
-  
+
   Eigen::VectorXd x(1);
   for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
   {
@@ -610,7 +784,7 @@ TEST(TestFreezeThaw, ParameterHessianCheck) {
   Eigen::VectorXd p2(2);
   p2 << 0.5, 35.0;
   rev_freezer.set_parameter_values(p2);
-  
+
   Eigen::VectorXd x(1);
   for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
   {

@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/unit_tests/math/test_hessian.cpp -- Stephen Fegan -- 2015-04-24
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -53,14 +53,14 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   Eigen::VectorXd x(5);
   double f_val;
   opt.minimize(x, f_val);
-  
+
   //EXPECT_EQ(status, GSL_SUCCESS);
   EXPECT_NEAR(x[0], 0.55349337, 0.0001);
   EXPECT_NEAR(x[1], 3094.2715, 0.01);
   EXPECT_NEAR(x[2], 19.6141970, 0.001);
   EXPECT_NEAR(x[3], 89.1810077, 0.01);
-  EXPECT_NEAR(x[4], 0.32388838, 0.0001);  
- 
+  EXPECT_NEAR(x[4], 0.32388838, 0.0001);
+
   std::cout << std::fixed << std::setprecision(3);
   std::cout << x[0] << ' ' << x[1] << ' ' << x[2] << ' '
             << x[3] << ' ' << x[4] << '\n';
@@ -80,7 +80,7 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   Eigen::MatrixXd err_mat_num(5,5);
   Eigen::MatrixXd eigenvectors(5,5);
   Eigen::VectorXd eigenvalues(5);
-  
+
   hessian::hessian_to_error_matrix(like, hessian_mat_num, err_mat_num,
                                    eigenvalues, eigenvectors);
   std::cout << std::scientific << std::setprecision(8) << err_mat_num << "\n\n";
@@ -89,8 +89,9 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   Eigen::MatrixXd err_mat_est(5,5);
   opt.error_matrix_estimate(err_mat_est);
   std::cout << std::scientific << std::setprecision(8) << err_mat_est << "\n\n";
+  std::cout << "Eigen: " << err_mat_est.diagonal().array().sqrt().transpose() << "\n\n";
   Eigen::VectorXd dx =
-      hessian::step_size_err_up(like, x, err_mat_est.diagonal().array().sqrt());
+    hessian::step_size_err_up(like, x, err_mat_est.diagonal().array().sqrt());
   std::cout << "DX: " << dx.transpose() << "\n\n";
   Eigen::MatrixXd hessian_mat_num2(5,5);
   hessian::calculate_hessian_1st_order_dx(like, x, dx, hessian_mat_num2);
@@ -98,7 +99,7 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   Eigen::MatrixXd err_mat_num2(5,5);
   Eigen::MatrixXd eigenvectors2(5,5);
   Eigen::VectorXd eigenvalues2(5);
-  
+
   hessian::hessian_to_error_matrix(like, hessian_mat_num2, err_mat_num2,
                                    eigenvalues2, eigenvectors2);
   std::cout << std::scientific << std::setprecision(8) << err_mat_num2
@@ -111,7 +112,7 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   Eigen::MatrixXd err_mat_2nd(5,5);
   Eigen::MatrixXd eigenvectors3(5,5);
   Eigen::VectorXd eigenvalues3(5);
-  
+
   hessian::hessian_to_error_matrix(like, hessian_mat_2nd, err_mat_2nd,
                                    eigenvalues3, eigenvectors3);
   std::cout << std::scientific << std::setprecision(8) << err_mat_2nd
@@ -119,7 +120,7 @@ TEST(TestHessian, Minimize_NLOpt_LD_LBFGS) {
   std::cout << eigenvalues3.transpose() << "\n\n";
 
 
-  
+
   std::cout << std::sqrt(err_mat(0,0)) << ' '
             << std::sqrt(err_mat(1,1)) << ' '
             << std::sqrt(err_mat(2,2)) << ' '

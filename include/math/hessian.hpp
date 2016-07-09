@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/hessian.hpp -- Stephen Fegan -- 2015-03-23
 
@@ -9,11 +9,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -66,7 +66,7 @@ Eigen::VectorXd step_size_epsmult(ConstVecRef x, double eps_mult=100.0);
 Eigen::VectorXd step_size_err_up(function::MultiAxisFunction& fcn,
                                  ConstVecRef x,
                                  ConstVecRef error_hint = Eigen::VectorXd(),
-                                 double err_up_frac = 0.001, double tol = 0.03);
+                                 double err_up_frac = 0.001, double tol = 0.001);
 
 // Convenience function which chooses method depending on what Function
 // supports
@@ -92,7 +92,7 @@ void calculate_hessian_1st_order_eps(function::MultiAxisFunction& fcn,
 // the two-point difference formula - O(2N). The step size is chosen
 // to increase function by some fraction of "error up" from its
 // minimum position. The tol parameter sets the tolerance how much the
-// function increases. 
+// function increases.
 void calculate_hessian_1st_order_err_up(function::MultiAxisFunction& fcn,
                                      ConstVecRef x, MatRef hessian,
                                      ConstVecRef error_hint = Eigen::VectorXd(),
