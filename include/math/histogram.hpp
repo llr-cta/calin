@@ -112,7 +112,7 @@ public:
     for(int ibin=0;ibin<this->size();ibin++)x[ibin] = xval_right(ibin);
     return x; }
   Eigen::VectorXd all_xval_center() const { Eigen::VectorXd x(bins_.size());
-    for(inr ibin=0;ibin<this->size();ibin++)x[ibin] = xval_center(ibin);
+    for(int ibin=0;ibin<this->size();ibin++)x[ibin] = xval_center(ibin);
     return x; }
   int ibin(double x) const { return std::floor((x-xval0_)/dxval_); }
   int ibin_and_rem(double x, double& dx) const { int ix = std::floor((x-xval0_)/dxval_); dx = x-xval_left(ix); return ix; }
