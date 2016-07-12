@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/vs_vec3d.hpp -- Stephen Fegan -- 2015-11-05
 
@@ -10,11 +10,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -24,7 +24,7 @@
 
 /*! \file Vec3D.hpp
   Vec3D class header file
-  
+
   \author   Stephen Fegan             \n
             UCLA                      \n
 	    sfegan@astro.ucla.edu     \n
@@ -50,8 +50,8 @@
 /*!  \class Vec3D
      \brief 3 dimensional vector class
 
-     This class defines 3D vectors, set of operations 
-     in vector field, scalar and vector products, 
+     This class defines 3D vectors, set of operations
+     in vector field, scalar and vector products,
      as well as rotation, parity transformation, negation,
      and normalization.
 
@@ -69,7 +69,7 @@ class Vec3D
   inline Vec3D( double _x, double _y, double _z );  //!<overloaded constructor
   Vec3D(const ix::common_types::Vector3D& d); // construct from protobuf
   Vec3D(const ix::common_types::Vector3D& d, double scale); // construct from scaled protobuf
-  
+
   inline void Polar(double& r, double& theta, double& phi) const;
 
   inline double Norm() const;              //!<calculates norm
@@ -85,11 +85,11 @@ class Vec3D
 
   inline bool operator == ( const Vec3D& v ) const;
   inline bool operator != ( const Vec3D& v ) const;
-  
+
   inline Vec3D& operator = ( const Vec3D& v );  //!<assignment
   inline Vec3D& operator += ( const Vec3D& v ); //!<assignment: addition
-  inline Vec3D& operator -= ( const Vec3D& v ); //!<assignment: subtraction 
-  inline Vec3D& operator ^= ( const Vec3D& v ); //!<vector product  
+  inline Vec3D& operator -= ( const Vec3D& v ); //!<assignment: subtraction
+  inline Vec3D& operator ^= ( const Vec3D& v ); //!<vector product
   inline Vec3D& operator *= ( double d );       //!<assignment: multiply by scaler
   inline Vec3D& operator /= ( double d );       //!<assignment: divide by scaler
 
@@ -98,29 +98,28 @@ class Vec3D
   inline Vec3D  operator + (const Vec3D& v) const;  //!<addition
   inline Vec3D  operator - (const Vec3D& v) const;  //!<subtraction
   inline double operator * (const Vec3D& v) const;  //!<scalar product
-  inline Vec3D  operator ^ (const Vec3D& v) const;  //!<vector product  
+  inline Vec3D  operator ^ (const Vec3D& v) const;  //!<vector product
 
   inline Vec3D  operator & (const Vec3D& v) const;  //!<addition of rotations
 
-  void dump_to_proto(ix::common_types::Vector3D* d) const;
-  ix::common_types::Vector3D* as_proto() const {
-    auto* d = new ix::common_types::Vector3D;
-    dump_to_proto(d); return d; }
+  ix::common_types::Vector3D* dump_as_proto(
+    ix::common_types::Vector3D* d = nullptr) const;
   void set_from_proto(const ix::common_types::Vector3D& d);
-  
-  void dump_scaled_to_proto(ix::common_types::Vector3D* d, double scale) const;
+
+  ix::common_types::Vector3D* dump_scaled_as_proto(
+    double scale, ix::common_types::Vector3D* d = nullptr) const;
   void set_from_scaled_proto(const ix::common_types::Vector3D& d, double scale);
-  
+
   void Dump(std::ostream& stream = std::cout) const; //!<prints coordinates
   void DumpShort(std::ostream& stream = std::cout) const; //!<prints coordinates
 
   inline Vec3D DeRotate(const Vec3D& r) const;
 
-  inline Vec3D cross (const Vec3D& v) const { //!<vector product 
+  inline Vec3D cross (const Vec3D& v) const { //!<vector product
     return *this ^ v; }
-  inline double dot (const Vec3D& v) const { //!<vector product 
+  inline double dot (const Vec3D& v) const { //!<vector product
     return *this * v; }
-  
+
  public:
   double x, y, z;   //!<components
 
@@ -157,7 +156,7 @@ inline Vec3D::Vec3D( double _x, double _y, double _z ): x(_x), y(_y), z(_z)
 {
   // nothing to see here
 }
-  
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Method for vector norm
 /// \param _r: r
@@ -176,7 +175,7 @@ inline double Vec3D::Norm() const
 {
   return sqrt(x*x + y*y + z*z);
 }
-  
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Method for vector norm in square
 inline double Vec3D::Norm2() const
@@ -251,7 +250,7 @@ inline Vec3D& Vec3D::operator += ( const Vec3D& v )
   z += v.z;
   return *this;
 }
-  
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Assignment operator -=
 inline Vec3D& Vec3D::operator -= ( const Vec3D& v )
@@ -265,8 +264,8 @@ inline Vec3D& Vec3D::operator -= ( const Vec3D& v )
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Assignment operator ^= vector multiplication
 /// \param v: vector
-/*! \note 
-  Normally ^ operator is a bitwise exclusive OR, which 
+/*! \note
+  Normally ^ operator is a bitwise exclusive OR, which
   has precedence lower than * / and even lower than + -.
   Thus it is executed last if no brackets are used.
   Exmp: r=7.5*a+l*b-c*m+2*b^c=(7.5*a+l*b-c*m+2*b)^c
@@ -281,7 +280,7 @@ inline Vec3D& Vec3D::operator ^= ( const Vec3D& v )
   *this=temp;
   return *this;
 }
-  
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Assignment operator *= scalar multiplication
 /// \param d: scalar
@@ -303,7 +302,7 @@ inline Vec3D& Vec3D::operator /= ( double d )
   z /= d;
   return *this;
 }
-  
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Operator +
 inline Vec3D Vec3D::operator + ( const Vec3D& v ) const
@@ -326,11 +325,11 @@ inline double Vec3D::operator * ( const Vec3D& v ) const
 {
   return x*v.x + y*v.y + z*v.z;
 }
-  
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Operator ^ of vector product
-/*! \note 
-  Normally ^ operator is a bitwise exclusive OR, which 
+/*! \note
+  Normally ^ operator is a bitwise exclusive OR, which
   has precedence lower than * / and even lower than + -.
   Thus it is executed last if no brackets are used.
   Exmp: r=7.5*a+l*b-c*m+2*b^c=(7.5*a+l*b-c*m+2*b)^c
@@ -345,12 +344,12 @@ inline Vec3D Vec3D::operator ^ ( const Vec3D& v ) const
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Operator & of rotation composition
-/*! \note 
+/*! \note
   Composition is opposite to the sense of matrix
   multiplication. If r=r1&r2 then rotation r1 happens
   first, followed by r2
-  
-  Normally & operator is a bitwise exclusive AND, which 
+
+  Normally & operator is a bitwise exclusive AND, which
   has precedence lower than * / and even lower than + -.
   Thus it is executed last if no brackets are used.
   Exmp: r=7.5*a+l*b-c*m+2*b^c=(7.5*a+l*b-c*m+2*b)^c
@@ -368,7 +367,7 @@ inline Vec3D Vec3D::operator & ( const Vec3D& v ) const
 /// vector
 inline Vec3D Vec3D::DeRotate(const Vec3D& r) const
 {
-  Vec3D temp(*this); 
+  Vec3D temp(*this);
   double norm;
   double theta;
   double phi;
@@ -385,7 +384,7 @@ inline Vec3D operator * ( double d, const Vec3D& v )
   Vec3D temp(d*v.x, d*v.y, d*v.z );
   return temp;
 }
-  
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Operator * for right scalar multiplication
 inline Vec3D operator * ( const Vec3D& v, double d )
@@ -393,7 +392,7 @@ inline Vec3D operator * ( const Vec3D& v, double d )
   Vec3D temp( v.x*d, v.y*d, v.z*d );
   return temp;
 }
-  
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Operator * for right scalar division
 inline Vec3D operator / ( const Vec3D& v, double d )
@@ -423,7 +422,7 @@ inline ostream& operator << (ostream& stream,
   v.DumpShort(stream);
   return stream;
 }
-  
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Stream extraction
 inline istream& operator >> (istream& stream,

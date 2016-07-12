@@ -133,16 +133,19 @@ cornerInReflectorCoords(unsigned icorner, double aperture) const
   return r;
 }
 
-void VSOMirror::dump_to_proto(ix::simulation::vs_optics::VSOMirrorData* d) const
+calin::ix::simulation::vs_optics::VSOMirrorData*
+VSOMirror::dump_as_proto(ix::simulation::vs_optics::VSOMirrorData* d) const
 {
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOMirrorData;
   d->set_id(fID);
   d->set_hex_id(fHexID);
   d->set_removed(fRemoved);
-  fPos.dump_to_proto(d->mutable_pos());
-  fAlign.dump_to_proto(d->mutable_align());
+  fPos.dump_as_proto(d->mutable_pos());
+  fAlign.dump_as_proto(d->mutable_align());
   d->set_focal_length(fFocalLength);
   d->set_spot_size(fSpotSize);
   d->set_degrading_factor(fDegradingFactor);
+  return d;
 }
 
 VSOMirror* VSOMirror::

@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/vso_array.cpp -- Stephen Fegan -- 2015-11-25
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -87,7 +87,7 @@ pointTelescopesAzEl(const double az_rad, const double el_rad)
 }
 
 // ****************************************************************************
-// Array creation 
+// Array creation
 // ****************************************************************************
 
 void VSOArray::
@@ -100,7 +100,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
   fAltitude    = param.array_origin().elevation();
 
   std::vector<Vec3D> scope_pos;
-  
+
   if(param.array_layout_case() ==
      IsotropicDCArrayParameters::kHexArrayLayout)
   {
@@ -143,17 +143,17 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
   unsigned num_hex_mirror_rings = param.reflector().facet_num_hex_rings();
   if(param.reflector().aperture() > 0)
   {
-    unsigned aperture_num_hex_mirror_rings = 
+    unsigned aperture_num_hex_mirror_rings =
         std::floor(param.reflector().aperture()/
            (2.0*param.reflector().facet_spacing()*CALIN_HEX_ARRAY_SQRT3*0.5))+2;
     if(aperture_num_hex_mirror_rings<num_hex_mirror_rings)
       num_hex_mirror_rings = aperture_num_hex_mirror_rings;
   }
-    
+
   // Camera
   Vec3D camera_fp_trans(param.focal_plane().translation());
 
-  double FoV = 
+  double FoV =
       2.0*atan(param.focal_plane().camera_diameter()/
                (2.0*camera_fp_trans.Norm()))*180.0/M_PI;
 
@@ -161,7 +161,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
     {
       // Position
       Vec3D pos(scope_pos[i]);
-          
+
       std::vector<VSOObscuration*> obsvec;
       for(const auto& obs : param.obscurations())
         obsvec.push_back(VSOObscuration::create_from_proto(obs));
@@ -177,38 +177,41 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
 			 param.reflector().curvature_radius(),
                          param.reflector().aperture(),
 			 param.reflector().facet_spacing(),
-                         param.reflector().facet_size(), 
+                         param.reflector().facet_size(),
                         param.reflector_frame().optic_axis_rotation()*M_PI/180.0,
 			 num_hex_mirror_rings,
 			 0.0, /*param.reflector().reflector_ip(),*/
                          param.reflector().facet_labeling_parity(),
 			 camera_fp_trans,
                          param.focal_plane().camera_diameter(),
-                         FoV, 
+                         FoV,
 			 param.pixel().cone_inner_diameter(),
-                         param.pixel().spacing(), 
+                         param.pixel().spacing(),
 			 param.pixel().cone_survival_prob(),
 			 Vec3D(param.focal_plane().rotation(), M_PI/180.0),
                          0.0,
 			 param.pixel().pixel_labeling_parity(),
 			 obsvec
 			 );
-      
+
       telescope->populateMirrorsAndPixelsRandom(param,rng);
-      
-      fTelescopes.push_back(telescope);      
+
+      fTelescopes.push_back(telescope);
     }
 
   return;
 }
 
-void VSOArray::dump_to_proto(ix::simulation::vs_optics::VSOArrayData* d) const
+calin::ix::simulation::vs_optics::VSOArrayData* VSOArray::
+dump_as_proto(calin::ix::simulation::vs_optics::VSOArrayData* d) const
 {
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOArrayData;
   d->mutable_array_origin()->set_latitude(fLatitude*180.0/M_PI);
   d->mutable_array_origin()->set_longitude(fLongitude*180.0/M_PI);
   d->mutable_array_origin()->set_elevation(fAltitude);
   for(const auto* scope : fTelescopes)
-    scope->dump_to_proto(d->add_telescope());
+    scope->dump_as_proto(d->add_telescope());
+  return d;
 }
 
 VSOArray* VSOArray::
@@ -232,7 +235,7 @@ void VSOArray::dumpShort(const std::string& filename) const
 
 void VSOArray::dumpShort(std::ostream& stream) const
 {
-  stream 
+  stream
     << "ARRAY "
     << VSDataConverter::toString(fTelescopes.size()) << ' '
     << VSDataConverter::toString(fSpacing) << ' '
@@ -240,7 +243,7 @@ void VSOArray::dumpShort(std::ostream& stream) const
     << VSDataConverter::toString(fLongitude) << ' '
     << VSDataConverter::toString(fAltitude) << ' '
     << VSDataConverter::toString(fArrayParity) << std::endl;
-  
+
   for(std::vector<VSOTelescope*> ::const_iterator i = fTelescopes.begin();
       i!=fTelescopes.end(); i++)
     (*i)->dumpShort(stream);
@@ -291,7 +294,7 @@ bool VSOArray::readFromShortDump(std::istream& stream)
     >> fLongitude
     >> fAltitude
     >> fArrayParity;
-  
+
   for(unsigned i=0; i<telescopes_size; i++)
     {
       VSOTelescope* telescope = VSOTelescope::createFromShortDump(stream);
@@ -302,11 +305,11 @@ bool VSOArray::readFromShortDump(std::istream& stream)
 	  delete telescope;
 	  return false;
 	}
-      
+
       if(telescope->id() >= fTelescopes.size())
 	fTelescopes.resize(telescope->id()+1);
       fTelescopes[telescope->id()]=telescope;
-      
+
       if(telescope->hexID() > fTelescopesByHexID.size())
 	fTelescopesByHexID.resize(telescope->hexID());
       fTelescopesByHexID[telescope->hexID()-1]=telescope;
@@ -317,7 +320,7 @@ bool VSOArray::readFromShortDump(std::istream& stream)
 #endif
 
 #ifdef TEST_MAIN
-  
+
 #include <fstream>
 
 int main(int argc, char** argv)
@@ -345,7 +348,7 @@ int main(int argc, char** argv)
   array.writeToDatabase(&db);
 
   ArrayParameters param2;
-  param2.readFromDatabase(&db);  
+  param2.readFromDatabase(&db);
   param2.writeToArrayINIFile("array2.ini");
 
   VSOArray array2;
@@ -360,7 +363,7 @@ int main(int argc, char** argv)
 
 
 #ifdef TEST_MAIN_2
-  
+
 #include <fstream>
 
 int main(int argc, char** argv)

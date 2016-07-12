@@ -476,7 +476,7 @@ bool VSORayTracer::findMirror(math::vs_physics::Particle& ray, TraceInfo& info)
     // Propagate to intersection with the mirror sphere
     double mirror_radius = test_mirror->focalLength()*2.0;
     math::vs_physics::Vec3D mirror_center =
-	test_mirror->pos() + test_mirror->align()*mirror_radius;
+	    test_mirror->pos() + test_mirror->align()*mirror_radius;
 
     math::vs_physics::Particle test_ray(ray_in);
     bool good;
@@ -704,6 +704,8 @@ void VSORayTracer::calcPSF(class VSOPSFInfo& psf, const VSOTelescope* scope,
   {
     testBeam(ph, scope, theta, phi, U);
     trace(ph, info, scope);
+    info.write(std::cerr);
+    std::cerr << std::endl;
     if(!info.rayHitFocalPlane())continue;
     double _x = -PS*(cphi*info.fplane_z+sphi*info.fplane_x);
     double _y = -PS*(cphi*info.fplane_x-sphi*info.fplane_z);

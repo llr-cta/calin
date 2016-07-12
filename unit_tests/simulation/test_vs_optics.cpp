@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/unit_tests/io/test_vs_optics.cpp -- Stephen Fegan -- 2015-09-16
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -43,7 +43,7 @@ TEST(TestVSOObscuration, StoreAndRetreive_Tube) {
   // Create tube obscuration and dump to proto
   VSOTubeObscuration obs1({1,2,3},{4,5,6},7,true);
   VSOObscurationData obs1_data;
-  obs1.dump_to_proto(&obs1_data);
+  obs1.dump_as_proto(&obs1_data);
 
   // Store proto in SQL DB
   SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::TRUNCATE_RW);
@@ -60,7 +60,7 @@ TEST(TestVSOObscuration, StoreAndRetreive_Tube) {
   // Create obscuration from proto
   VSOObscuration* obs2_base = VSOObscuration::create_from_proto(obs2_data);
   VSOTubeObscuration* obs2 = dynamic_cast<VSOTubeObscuration*>(obs2_base);
-  
+
   ASSERT_NE(obs2, nullptr);
   EXPECT_EQ(obs1.end1_pos(), obs2->end1_pos());
   EXPECT_EQ(obs1.end2_pos(), obs2->end2_pos());
@@ -74,7 +74,7 @@ TEST(TestVSOObscuration, StoreAndRetreive_Disk) {
   // Create tube obscuration and dump to proto
   VSODiskObscuration obs1({11,12,13},{14,15,16},17,true);
   VSOObscurationData obs1_data;
-  obs1.dump_to_proto(&obs1_data);
+  obs1.dump_as_proto(&obs1_data);
 
   // Store proto in SQL DB
   SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::EXISTING_RW);
@@ -91,7 +91,7 @@ TEST(TestVSOObscuration, StoreAndRetreive_Disk) {
   // Create obscuration from proto
   VSOObscuration* obs2_base = VSOObscuration::create_from_proto(obs2_data);
   VSODiskObscuration* obs2 = dynamic_cast<VSODiskObscuration*>(obs2_base);
-  
+
   ASSERT_NE(obs2, nullptr);
   EXPECT_EQ(obs1.center_pos(), obs2->center_pos());
   EXPECT_EQ(obs1.normal(), obs2->normal());
@@ -105,7 +105,7 @@ TEST(TestVSOPixel, StoreAndRetreive) {
   // Create pixel and dump to proto
   VSOPixel pix1(nullptr,201,202,false,{203,204,205});
   VSOPixelData pix1_data;
-  pix1.dump_to_proto(&pix1_data);
+  pix1.dump_as_proto(&pix1_data);
 
   // Store proto in SQL DB
   SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::EXISTING_RW);
@@ -133,7 +133,7 @@ TEST(TestVSOPixel, StoreAndRetreive) {
 TEST(TestVSOMirror, StoreAndRetreive) {
   VSOMirror mir1(nullptr,301,302,true,{303,304,305},{306,307,308},309,310,311);
   VSOMirrorData mir1_data;
-  mir1.dump_to_proto(&mir1_data);
+  mir1.dump_as_proto(&mir1_data);
 
   // Store proto in SQL DB
   SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::EXISTING_RW);
@@ -183,9 +183,9 @@ TEST(TestVSOTelescope, StoreAndRetreive) {
         new VSODiskObscuration({300000.0+i,301000.0+i,302000.0+i},
                                {303000.0+i,304000.0+i,305000.0+i},
                                307000+i,true));
-  
+
   VSOTelescopeData scope1_data;
-  scope1.dump_to_proto(&scope1_data);
+  scope1.dump_as_proto(&scope1_data);
 
   // Store proto in SQL DB
   SQLite3Transceiver xvr("test_db.sqlite", SQLite3Transceiver::EXISTING_RW);
@@ -198,7 +198,7 @@ TEST(TestVSOTelescope, StoreAndRetreive) {
   // Retreive proto from SQL DB
   VSOTelescopeData scope2_data;
   xvr.retrieve_by_oid("scope", oid, &scope2_data);
-  
+
   // Create scope from proto
   VSOTelescope* scope2 = VSOTelescope::create_from_proto(scope2_data);
 
@@ -226,7 +226,7 @@ TEST(TestVSOTelescope, StoreAndRetreive) {
   EXPECT_EQ(scope1.mirrorHexRings(), scope2->mirrorHexRings());
   EXPECT_EQ(scope1.reflectorIP(), scope2->reflectorIP());
   EXPECT_EQ(scope1.mirrorParity(), scope2->mirrorParity());
-  
+
   EXPECT_EQ(scope1.focalPlanePosition(), scope2->focalPlanePosition());
   EXPECT_EQ(scope1.cameraDiameter(), scope2->cameraDiameter());
   EXPECT_EQ(scope1.fov(), scope2->fov());
@@ -250,7 +250,7 @@ TEST(TestVSOTelescope, StoreAndRetreive) {
 
   delete scope2;
 }
- 
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

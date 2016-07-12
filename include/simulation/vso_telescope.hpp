@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/vso_telescope.hpp -- Stephen Fegan -- 2015-11-09
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -63,18 +63,18 @@ class VSOTelescope
 {
  public:
   VSOTelescope();
-  VSOTelescope(unsigned TID, /*unsigned THID,*/ const math::vs_physics::Vec3D&P, 
+  VSOTelescope(unsigned TID, /*unsigned THID,*/ const math::vs_physics::Vec3D&P,
                double DY, double AX, double AY, double EL, double AZ,
-               const math::vs_physics::Vec3D& T, double CR, double A, 
+               const math::vs_physics::Vec3D& T, double CR, double A,
                double FSP, double FS, double RR,
-               unsigned HRN, double RIP, bool MP, 
+               unsigned HRN, double RIP, bool MP,
                const math::vs_physics::Vec3D& FPT, double CD, double FOV, double D,
-               double PS, double CSP, const math::vs_physics::Vec3D& FPR, 
+               double PS, double CSP, const math::vs_physics::Vec3D& FPR,
                double CIP, bool PP,
 #if 0
-               bool SEC, double RI, double RI1, double RI2, double C10, 
+               bool SEC, double RI, double RI1, double RI2, double C10,
                double C11, double C12, double C13, double C14, double C20,
-               double C21, double C22,double C23, double C24, 
+               double C21, double C22,double C23, double C24,
 #endif
                const std::vector<VSOObscuration*>& OBSVEC = {}
                );
@@ -84,7 +84,7 @@ class VSOTelescope
 #ifndef SWIG
   const VSOTelescope& operator =(const VSOTelescope& o);
 #endif
-  
+
   // ************************************************************************
   // Create a new telescope randomly using parameters
   // ************************************************************************
@@ -92,7 +92,7 @@ class VSOTelescope
   void populateMirrorsAndPixelsRandom(
       const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
       math::rng::RNG& rng);
-  
+
   void add_obscuration(VSOObscuration* obs) {
     fObscurations.push_back(obs); }
   void add_mirror(VSOMirror* mirror) {
@@ -109,50 +109,56 @@ class VSOTelescope
       fPixelsByHexID.resize(pix->hexID()+1);
     fPixelsByHexID[pix->hexID()] = pix;
   }
-  
+
   // ************************************************************************
   // Telescope repointing
   // ************************************************************************
-  
-  //! Points telescope along axis 
-  bool pointTelescope(const math::vs_physics::Vec3D& v); 
+
+  //! Points telescope along axis
+  bool pointTelescope(const math::vs_physics::Vec3D& v);
   bool pointTelescopeAzEl(const double az_rad, const double el_rad);
-  
-  //! Transform position-like vector from global to reflector
-  void globalToReflector_pos(math::vs_physics::Vec3D& v) const; 
-  //! Transform momentum-like vector from global to reflector
-  void globalToReflector_mom(math::vs_physics::Vec3D& v) const; 
-  //! Transform position-like vector from reflector to global
-  void reflectorToGlobal_pos(math::vs_physics::Vec3D& v) const; 
-  //! Transform momentum-like vector from reflector to global
-  void reflectorToGlobal_mom(math::vs_physics::Vec3D& v) const; 
 
   //! Transform position-like vector from global to reflector
-  void focalPlaneToReflector_pos(math::vs_physics::Vec3D& v) const; 
+  void globalToReflector_pos(math::vs_physics::Vec3D& v) const;
   //! Transform momentum-like vector from global to reflector
-  void focalPlaneToReflector_mom(math::vs_physics::Vec3D& v) const; 
+  void globalToReflector_mom(math::vs_physics::Vec3D& v) const;
   //! Transform position-like vector from reflector to global
-  void reflectorToFocalPlane_pos(math::vs_physics::Vec3D& v) const; 
+  void reflectorToGlobal_pos(math::vs_physics::Vec3D& v) const;
   //! Transform momentum-like vector from reflector to global
-  void reflectorToFocalPlane_mom(math::vs_physics::Vec3D& v) const; 
-  
+  void reflectorToGlobal_mom(math::vs_physics::Vec3D& v) const;
+
+  //! Transform position-like vector from global to reflector
+  void focalPlaneToReflector_pos(math::vs_physics::Vec3D& v) const;
+  //! Transform momentum-like vector from global to reflector
+  void focalPlaneToReflector_mom(math::vs_physics::Vec3D& v) const;
+  //! Transform position-like vector from reflector to global
+  void reflectorToFocalPlane_pos(math::vs_physics::Vec3D& v) const;
+  //! Transform momentum-like vector from reflector to global
+  void reflectorToFocalPlane_mom(math::vs_physics::Vec3D& v) const;
+
   //! Transform particle global to reflector
-  void globalToReflector(math::vs_physics::Particle& p) const; 
+  void globalToReflector(math::vs_physics::Particle& p) const;
   //! Transform particle reflector to global
-  void reflectorToGlobal(math::vs_physics::Particle& p) const; 
+  void reflectorToGlobal(math::vs_physics::Particle& p) const;
   //! Transform from focal plane to reflector
-  void focalPlaneToReflector(math::vs_physics::Particle& p) const; 
+  void focalPlaneToReflector(math::vs_physics::Particle& p) const;
   //! Transform from reflector to focal plane
-  void reflectorToFocalPlane(math::vs_physics::Particle& p) const; 
-  
+  void reflectorToFocalPlane(math::vs_physics::Particle& p) const;
+
   // ************************************************************************
   // Dump and Reload
   // ************************************************************************
 
-  void dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d) const;
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOTelescopeData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOTelescopeData* d = nullptr) const;
+#else
+  calin::ix::simulation::vs_optics::VSOTelescopeData* dump_as_proto() const;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const;
+#endif
   static VSOTelescope*
   create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d);
-  
+
 #if 0
   void dumpShort(std::ostream& stream) const;
   void dump(std::ostream& stream, unsigned l=0) const;
@@ -170,12 +176,12 @@ class VSOTelescope
   const math::vs_physics::Vec3D& pos() const { return fPos; }
   const math::vs_physics::Vec3D& position() const { return fPos; }
   double         deltaY() const { return fDeltaY; }
-  double         alphaX() const { return fAlphaX; } 
+  double         alphaX() const { return fAlphaX; }
   double         alphaY() const { return fAlphaY; }
   double         azimuth() const { return fAzimuth; }
   double         elevation() const { return fElevation; }
   math::vs_physics::Vec3D opticalAxis() const;
-    
+
   const math::vs_physics::Vec3D& translation() const { return fTranslation; }
   double         curvatureRadius() const { return fCurvatureRadius; }
   double         aperture() const { return fAperture; }
@@ -185,7 +191,7 @@ class VSOTelescope
   unsigned       mirrorHexRings() const { return fHexagonRingsN; }
   double         reflectorIP() const { return fReflectorIP; }
   bool           mirrorParity() const { return fMirrorParity; }
-    
+
   const math::vs_physics::Vec3D& focalPlanePosition() const { return fFPTranslation; }
   double         cameraDiameter() const { return fCameraDiameter; }
   double         fov() const { return fFieldOfView; }
@@ -195,7 +201,7 @@ class VSOTelescope
   const math::vs_physics::Vec3D& focalPlaneRotion() const { return fFPRotation; }
   double         cameraIP() const { return fCameraIP; }
   bool           pixelParity() const { return fPixelParity; }
-    
+
 #if 0
   bool           hasSecondary() const { return fHasSecondary; }
   double         refractiveIndex() const { return fRefractiveIndex; }
@@ -217,18 +223,18 @@ class VSOTelescope
 
   unsigned       numMirrors() const { return fMirrors.size(); }
   unsigned       numMirrorHexSites() const { return fMirrorsByHexID.size(); }
-    
+
   unsigned       numPixels() const { return fPixels.size(); }
   unsigned       numPixelHexSites() const { return fPixelsByHexID.size(); }
-    
-  inline const VSOObscuration* obscuration(unsigned id) const;    
+
+  inline const VSOObscuration* obscuration(unsigned id) const;
 
   inline const VSOMirror* mirror(unsigned id) const;
   inline const VSOMirror* mirrorByHexID(unsigned hexID) const;
-    
+
   inline const VSOPixel* pixel(unsigned id) const;
   inline const VSOPixel* pixelByHexID(unsigned hexID) const;
-    
+
  private:
   // ************************************************************************
   // Telescope Parameters
@@ -243,7 +249,7 @@ class VSOTelescope
   double         fAlphaY;            //!< Alignment angles(?)
   double         fElevation;         //!< Elevation of the telescope -- angle to the x-y plane
   double         fAzimuth;           //!< Azimuthal position -- angle made in the x-y plane with the y axis
-  
+
   // ************************************************************************
   // Reflector Parameters
   // ************************************************************************
@@ -254,25 +260,25 @@ class VSOTelescope
   double         fFacetSize;         //!< Spacing between mirrors
   double         fReflectorRotation; //!< Rotation about the axis of reflector
   unsigned       fHexagonRingsN;     //!< Number of hexagon rings of mirrors
-  double         fReflectorIP;       //!< Diameter of sphere embedding reflector 
+  double         fReflectorIP;       //!< Diameter of sphere embedding reflector
   bool           fMirrorParity;      //!< Parity for counting mirrors; 1 => counting toward +x-axis
   //!  in reflector r.f.; -1 => counting toward -x-axis
-    
+
   // ************************************************************************
   // Camera Parameters
   // ************************************************************************
-  math::vs_physics::Vec3D fFPTranslation;     
+  math::vs_physics::Vec3D fFPTranslation;
   double         fCameraDiameter;    //!< Dependent on the field of view
   double         fFieldOfView;       //!< Field of view
   double         fCathodeDiameter;   //!< Diameter of photocathode
   double         fPixelSpacing;      //!< Spacing of pixels
   double         fConcSurvProb;      //!< Pixel properties; probability of survival
-  math::vs_physics::Vec3D fFPRotation; 
+  math::vs_physics::Vec3D fFPRotation;
   double         fCameraIP;
   bool           fPixelParity;       //!< Parity for counting pixels; 1 => counting toward +x-axis
   //!  in reflector r.f.; -1 => counting toward -x-axis
 
-#if 0    
+#if 0
   // ************************************************************************
   // Secondary Optics Parameters
   // ************************************************************************
@@ -295,19 +301,19 @@ class VSOTelescope
   // ************************************************************************
   // Mirrors and Pixel data
   // ************************************************************************
-    
+
   std::vector<VSOObscuration*>  fObscurations;
   std::vector<VSOMirror*>       fMirrors;
   std::vector<VSOMirror*>       fMirrorsByHexID;
   std::vector<VSOPixel*>        fPixels;
   std::vector<VSOPixel*>        fPixelsByHexID;
-    
+
   // ************************************************************************
   // Precalculated rotation vector -- not stored in DB
   // ************************************************************************
-    
+
   math::vs_physics::Vec3D fRotationVector;  //!<the pre-calculated rotation vector
-    
+
   void calculateRotationVector();
 };
 
@@ -316,30 +322,29 @@ inline const VSOObscuration* VSOTelescope::obscuration(unsigned id) const
   if(id>=fObscurations.size())return 0;
   else return fObscurations[id];
 }
-  
+
 inline const VSOMirror* VSOTelescope::mirror(unsigned id) const
 {
   if(id>=fMirrors.size())return 0;
   else return fMirrors[id];
 }
-  
+
 inline const VSOMirror* VSOTelescope::mirrorByHexID(unsigned hexID) const
 {
-  if((hexID<1)||(hexID>fMirrorsByHexID.size()))return 0;
-  else return fMirrorsByHexID[hexID-1];
+  if(hexID>=fMirrorsByHexID.size())return 0;
+  else return fMirrorsByHexID[hexID];
 }
-  
+
 inline const VSOPixel* VSOTelescope::pixel(unsigned id) const
 {
   if(id>fPixels.size())return 0;
   else return fPixels[id];
 }
-  
+
 inline const VSOPixel* VSOTelescope::pixelByHexID(unsigned hexID) const
 {
-  if((hexID<1)||(hexID>fPixelsByHexID.size()))return 0;
-  else return fPixelsByHexID[hexID-1];
+  if(hexID>=fPixelsByHexID.size())return 0;
+  else return fPixelsByHexID[hexID];
 }
 
 } } } // namespace calin::simulation::vs_optics
-

@@ -645,21 +645,23 @@ populateMirrorsAndPixelsRandom(
   }
 }
 
-void VSOTelescope::
-dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d) const
+calin::ix::simulation::vs_optics::VSOTelescopeData* VSOTelescope::
+dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const
 {
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOTelescopeData;
+
   d->Clear();
   d->set_id(fID);
 #if 0
   d->set_hex_id(fTelescopeHexID);
 #endif
-  fPos.dump_to_proto(d->mutable_pos());
+  fPos.dump_as_proto(d->mutable_pos());
   d->set_delta_y(fDeltaY/M_PI*180.0);
   d->set_alpha_x(fAlphaX/M_PI*180.0);
   d->set_alpha_y(fAlphaY/M_PI*180.0);
   d->mutable_alt_az()->set_altitude(fElevation/M_PI*180.0);
   d->mutable_alt_az()->set_azimuth(fAzimuth/M_PI*180.0);
-  fTranslation.dump_to_proto(d->mutable_translation());
+  fTranslation.dump_as_proto(d->mutable_translation());
   d->set_curvature_radius(fCurvatureRadius);
   d->set_aperture(fAperture);
   d->set_facet_spacing(fFacetSpacing);
@@ -668,22 +670,24 @@ dump_to_proto(ix::simulation::vs_optics::VSOTelescopeData* d) const
   d->set_hexagon_rings_n(fHexagonRingsN);
   d->set_reflector_ip(fReflectorIP);
   d->set_facet_labeling_parity(fMirrorParity);
-  fFPTranslation.dump_to_proto(d->mutable_fp_translation());
+  fFPTranslation.dump_as_proto(d->mutable_fp_translation());
   d->set_camera_diameter(fCameraDiameter);
   d->set_field_of_view(fFieldOfView);
   d->set_cathode_diameter(fCathodeDiameter);
   d->set_pixel_spacing(fPixelSpacing);
   d->set_conc_survival_prob(fConcSurvProb);
-  fFPRotation.dump_scaled_to_proto(d->mutable_fp_rotation(), 180.0/M_PI);
+  fFPRotation.dump_scaled_as_proto(180.0/M_PI, d->mutable_fp_rotation());
   d->set_camera_ip(fCameraIP);
   d->set_pixel_labeling_parity(fPixelParity);
 
   for(auto iobs : fObscurations)
-    iobs->dump_to_proto(d->add_obscuration());
+    iobs->dump_as_proto(d->add_obscuration());
   for(auto imir : fMirrors)
-    if(imir != nullptr)imir->dump_to_proto(d->add_mirror());
+    if(imir != nullptr)imir->dump_as_proto(d->add_mirror());
   for(auto ipix : fPixels)
-    if(ipix != nullptr)ipix->dump_to_proto(d->add_pixel());
+    if(ipix != nullptr)ipix->dump_as_proto(d->add_pixel());
+
+  return d;
 }
 
 VSOTelescope* VSOTelescope::

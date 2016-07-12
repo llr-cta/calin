@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/unit_tests/math/test_vs_vec3d.cpp -- Stephen Fegan -- 2015-11-15
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -48,27 +48,27 @@ TEST(TestVec3D, BasicMathematicalOperations) {
   EXPECT_NE(a, Vec3D(10,21,30));
   EXPECT_NE(a, Vec3D(10,20,31));
   EXPECT_EQ(b, Vec3D(1,2,3));
-  
+
   EXPECT_EQ(a.Norm2(), 1400.0);
   EXPECT_EQ(b.Norm2(), 14.0);
-  
+
   EXPECT_EQ(a.Norm(), std::sqrt(1400.0));
   EXPECT_EQ(b.Norm(), std::sqrt(14.0));
 
   EXPECT_EQ(a+=b, Vec3D(11,22,33));
   EXPECT_EQ(a, Vec3D(11,22,33));
   EXPECT_EQ(b, Vec3D(1,2,3));
-      
+
   EXPECT_EQ(a-=b, Vec3D(10,20,30));
   EXPECT_EQ(a, Vec3D(10,20,30));
   EXPECT_EQ(b, Vec3D(1,2,3));
 
   EXPECT_EQ(a*=1.5, Vec3D(15,30,45));
   EXPECT_EQ(a, Vec3D(15,30,45));
-  
+
   EXPECT_EQ(a/=1.5, Vec3D(10,20,30));
   EXPECT_EQ(a, Vec3D(10,20,30));
- 
+
   EXPECT_EQ(a.Reset(), Vec3D(0,0,0));
   EXPECT_EQ(a, Vec3D(0,0,0));
   EXPECT_EQ(b.Reset(), Vec3D(0,0,0));
@@ -80,7 +80,7 @@ TEST(TestVec3D, BasicMathematicalOperations) {
   EXPECT_EQ(a, Vec3D(0,1,0));
   EXPECT_EQ(a.Reset(0,0,1), Vec3D(0,0,1));
   EXPECT_EQ(a, Vec3D(0,0,1));
-  
+
   EXPECT_EQ(a.Reset(1,0,0), Vec3D(1,0,0));
   EXPECT_EQ(b.Reset(0,0,M_PI/2), Vec3D(0,0,M_PI/2));
   a.Rotate(b);
@@ -108,7 +108,7 @@ TEST(TestVec3D, BasicMathematicalOperations) {
   EXPECT_EQ(a.Reset(1,-2,3), Vec3D(1,-2,3));
   a.P();
   EXPECT_EQ(a, Vec3D(-1,2,-3));
-  
+
   EXPECT_EQ(a.Reset(1,0,0), Vec3D(1,0,0));
   EXPECT_EQ(b.Reset(1,0,0), Vec3D(1,0,0));
   EXPECT_EQ(a^=b, Vec3D(0,0,0));
@@ -138,7 +138,7 @@ TEST(TestVec3D, BasicMathematicalOperations) {
   EXPECT_EQ(a, Vec3D());
   EXPECT_EQ(b, Vec3D(1,0,0));
   EXPECT_EQ(c, Vec3D(1,0,0));
-  
+
   a=Vec3D(1,0,0);
   b=Vec3D(1,-1,0);
   EXPECT_EQ(c=a+b, Vec3D(2,-1,0));
@@ -150,11 +150,11 @@ TEST(TestVec3D, BasicMathematicalOperations) {
   EXPECT_EQ(a, Vec3D(1,0,0));
   EXPECT_EQ(b, Vec3D(1,-1,0));
   EXPECT_EQ(c, Vec3D(0,1,0));
-  
+
   EXPECT_EQ(a*b, 1);
   EXPECT_EQ(a, Vec3D(1,0,0));
   EXPECT_EQ(b, Vec3D(1,-1,0));
-  
+
   EXPECT_EQ(Vec3D(3,4,5)*Vec3D(2,0,0), 6);
   EXPECT_EQ(Vec3D(3,4,5)*Vec3D(0,3,0), 12);
   EXPECT_EQ(Vec3D(3,4,5)*Vec3D(0,0,4), 20);
@@ -178,7 +178,7 @@ TEST(TestVec3D, BasicMathematicalOperations) {
   EXPECT_EQ(Vec3D(3,4,5)+Vec3D(2,0,4), Vec3D(5, 4, 9));
   EXPECT_EQ(Vec3D(3,4,5)+Vec3D(0,3,4), Vec3D(3, 7, 9));
   EXPECT_EQ(Vec3D(3,4,5)+Vec3D(2,3,4), Vec3D(5, 7, 9));
-  
+
   EXPECT_EQ(Vec3D(3,4,5)-Vec3D(2,0,0), Vec3D(1, 4, 5));
   EXPECT_EQ(Vec3D(3,4,5)-Vec3D(0,3,0), Vec3D(3, 1, 5));
   EXPECT_EQ(Vec3D(3,4,5)-Vec3D(0,0,4), Vec3D(3, 4, 1));
@@ -186,7 +186,7 @@ TEST(TestVec3D, BasicMathematicalOperations) {
   EXPECT_EQ(Vec3D(3,4,5)-Vec3D(2,0,4), Vec3D(1, 4, 1));
   EXPECT_EQ(Vec3D(3,4,5)-Vec3D(0,3,4), Vec3D(3, 1, 1));
   EXPECT_EQ(Vec3D(3,4,5)-Vec3D(2,3,4), Vec3D(1, 1, 1));
-  
+
   EXPECT_EQ(-Vec3D(3,4,5), Vec3D(-3,-4,-5));
   EXPECT_EQ(1.5*Vec3D(3,4,5), Vec3D(4.5,6,7.5));
   EXPECT_EQ(Vec3D(3,4,5)*1.5, Vec3D(4.5,6,7.5));
@@ -228,26 +228,26 @@ TEST(TestVec3D, BasicMathematicalOperations) {
 	      R.push_back(r);
 	      Rc.push_back(rc);
 	    }
-	  
+
 	  a.Rotate(rc);
 
 	  Vec3D c(a-b);
 	  double residual = c.Norm();
 	  if(residual>max_residual)max_residual=residual;
 	  mean_residual+=residual;
-	  
+
 #if 0
 	  if(residual>1e-14)
 	    {
 	      for(unsigned i=0; i<R.size(); i++)
-		std::cout << R[i].Norm() 
+		std::cout << R[i].Norm()
 			  << ' '  << R[i] << ' ' << Rc[i] << std::endl;
 	      std::cout << a << ' ' << b << ' ' << c << std::endl;
 	    }
 #endif
 	}
 
-      std::cout << nrot << " rotations: mean residual: " 
+      std::cout << nrot << " rotations: mean residual: "
 		<< mean_residual/1000.0
 		<< " max residual: " << max_residual << std::endl;
     }
@@ -305,8 +305,7 @@ TEST(TestVec3D, RotationComposition) {
 TEST(TestVec3D, ProtoSaveAndRestore) {
   Vec3D x(1.0,2.0,3.0);
   calin::ix::common_types::Vector3D x_data;
-  x.dump_to_proto(&x_data);
+  x.dump_as_proto(&x_data);
   Vec3D y(x_data);
   EXPECT_EQ(x,y);
 }
-

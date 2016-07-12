@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/vso_pixel.hpp -- Stephen Fegan -- 2015-11-10
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -48,7 +48,7 @@
 namespace calin { namespace simulation { namespace vs_optics {
 
 class VSOTelescope;
-  
+
 //! Class for an individual pixel in the camera
 class VSOPixel
 {
@@ -60,12 +60,19 @@ class VSOPixel
   VSOPixel(const VSOTelescope* T, unsigned PID, unsigned PHID, bool REM,
            const math::vs_physics::Vec3D& P);
   virtual ~VSOPixel();
-        
+
   // ************************************************************************
   // Dump
   // ************************************************************************
 
-  void dump_to_proto(ix::simulation::vs_optics::VSOPixelData* d) const;
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOPixelData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOPixelData* d = nullptr) const;
+#else
+  calin::ix::simulation::vs_optics::VSOPixelData* dump_as_proto() const;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOPixelData* d) const;
+#endif
+
   static VSOPixel*
   create_from_proto(const ix::simulation::vs_optics::VSOPixelData& d,
                     const VSOTelescope* T);
@@ -76,7 +83,7 @@ class VSOPixel
   static VSOPixel* createFromShortDump(std::istream& stream,
                                        const VSOTelescope* T);
 #endif
-  
+
   // ************************************************************************
   // Accessors
   // ************************************************************************
@@ -86,11 +93,11 @@ class VSOPixel
   unsigned            hexID() const { return fHexID; }
   const math::vs_physics::Vec3D& pos() const { return fPos; }
 
-  math::vs_physics::Vec3D      incomingSkyVectorAtZenith(double plate_scale=1.0) 
+  math::vs_physics::Vec3D      incomingSkyVectorAtZenith(double plate_scale=1.0)
       const;
-    
+
  private:
-  const VSOTelescope* fTelescope;         //!< Telescope 
+  const VSOTelescope* fTelescope;         //!< Telescope
   unsigned            fID;                //!< Hex ID
   unsigned            fHexID;             //!< Hex ID
   bool                fRemoved;           //!< Pixel removed from camera

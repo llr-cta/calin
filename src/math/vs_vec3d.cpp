@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/vs_vec3d.cpp -- Stephen Fegan -- 2015-11-05
 
@@ -10,11 +10,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -24,7 +24,7 @@
 
 /*! \file vec3D.cpp
   vec3D class implementation file
-  
+
   \author   Stephen Fegan             \n
             UCLA                      \n
             sfegan@astro.ucla.edu     \n
@@ -46,10 +46,10 @@ using namespace calin::math::vs_physics;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Method for vector rotation around axis vector.
-/// \param axis: axis of rotation vector [rad] 
-/*! \note 
-  The modulus of rotation angle is equal to the axis 
-  norm and is given in radians. The rotation of e_x 
+/// \param axis: axis of rotation vector [rad]
+/*! \note
+  The modulus of rotation angle is equal to the axis
+  norm and is given in radians. The rotation of e_x
   around e_z by PI/2 is equal to e_y.
 */
 void Vec3D::Rotate( const Vec3D& axis )
@@ -62,7 +62,7 @@ void Vec3D::Rotate( const Vec3D& axis )
 
   double par   = (*this)*e_axis;
   Vec3D p_axis = (*this)-par*e_axis;
-  
+
 #if 0
   double per   = p_axis.Norm();
 
@@ -71,17 +71,17 @@ void Vec3D::Rotate( const Vec3D& axis )
       // vector is parallel to rotation axis
       return ;
     }
-  else 
+  else
     {
       p_axis=p_axis/per;
     }
-  
+
   *this=par*e_axis+cos(angle)*per*p_axis+sin(angle)*per*(e_axis^p_axis);
 #else
   // "Rotation Formula" -- see Goldstein chap 4
   *this = par*e_axis + cos(angle)*p_axis + sin(angle)*(e_axis^p_axis);
 #endif
-  
+
   return;
 }
 
@@ -101,14 +101,14 @@ void Vec3D::ScatterDirection(double dispersion, math::rng::RNG& rng)
   else if(fabs(y)<=fabs(z))tangent_a = (*this)^Vec3D(0,1,0);
   else tangent_a = (*this)^Vec3D(0,0,1);
   tangent_a /= tangent_a.Norm();
-  
+
   Vec3D tangent_b((*this)^tangent_a);
   tangent_b /= tangent_b.Norm();
 
 #if 1
   *this = (*this)*cos(theta) +
           (tangent_a*cos(phi)+tangent_b*sin(phi))*t*sin(theta);
-#else  
+#else
   Vec3D axis = tangent_a*cos(phi) + tangent_b*sin(phi);
   Rotate(axis*theta);
 #endif
@@ -116,9 +116,9 @@ void Vec3D::ScatterDirection(double dispersion, math::rng::RNG& rng)
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Operator &= of rotation composition
-/*! \note 
+/*! \note
   Composition is opposite to the sense of matrix
-  multiplication. The composition r=r1&r2 is equivalent to 
+  multiplication. The composition r=r1&r2 is equivalent to
   a rotation first by r1 then by r2.
 
   For example, for two rotations r1 and r2, and for any vector p
@@ -130,19 +130,19 @@ void Vec3D::ScatterDirection(double dispersion, math::rng::RNG& rng)
   Vec3D r=r1&r2;
 
   p.Rotate(r1);   \/  is equivalent to p.Rotate(r)
-  p.Rotate(r2);   /\ 
+  p.Rotate(r2);   /\
 */
 
-/* 
+/*
    Composition algorithm comes from consideration of rotation
    as 2-spinors... i.e. write the both rotations in terms of Pauli
    matrices, multiply and then compare terms. See any QM book or
    Goldstein chap 4.
 
-   $\mathbold{R_1} = \mathbold{1} \cos\theta_1 / 2 + 
+   $\mathbold{R_1} = \mathbold{1} \cos\theta_1 / 2 +
     \hat{n}_1 . \vec{\mathbold{sigma}} \sin\theta_1 / 2 $
 
-   $\mathbold{R_2} = \mathbold{1} \cos\theta_2 / 2 + 
+   $\mathbold{R_2} = \mathbold{1} \cos\theta_2 / 2 +
     \hat{n}_2 . \vec{\mathbold{sigma}} \sin\theta_2 / 2 $
 
     Multiply the matrices using the following, collect terms
@@ -181,19 +181,19 @@ Vec3D& Vec3D::operator &= (const Vec3D& r)
 
       Vec3D r1_hat = R1/r1_theta;
       Vec3D r2_hat = R2/r2_theta;
-      
-      double coshalftheta = 
-	cos_half_r1*cos_half_r2-
-	sin_half_r1*sin_half_r2*(r1_hat*r2_hat);
-      
+
+      double coshalftheta =
+	      cos_half_r1*cos_half_r2-
+	      sin_half_r1*sin_half_r2*(r1_hat*r2_hat);
+
       Vec3D axis(r1_hat*sin_half_r1*cos_half_r2+
-		 r2_hat*sin_half_r2*cos_half_r1-
-		 (r1_hat^r2_hat)*sin_half_r1*sin_half_r2);
-      
+		    r2_hat*sin_half_r2*cos_half_r1-
+		      (r1_hat^r2_hat)*sin_half_r1*sin_half_r2);
+
       double sinhalftheta = axis.Norm();
-      
+
       double halftheta=atan(sinhalftheta/coshalftheta);
-  
+
       *this = axis/sinhalftheta*halftheta*2.0;
     }
   return *this;
@@ -209,11 +209,14 @@ Vec3D::Vec3D(const ix::common_types::Vector3D& d, double scale)
   set_from_scaled_proto(d,scale);
 }
 
-void Vec3D::dump_to_proto(ix::common_types::Vector3D* d) const
+calin::ix::common_types::Vector3D* Vec3D::
+dump_as_proto(ix::common_types::Vector3D* d) const
 {
+  if(d == nullptr)d = new ix::common_types::Vector3D;
   d->set_x(x);
   d->set_y(y);
   d->set_z(z);
+  return d;
 }
 
 void Vec3D::set_from_proto(const ix::common_types::Vector3D& d)
@@ -223,11 +226,14 @@ void Vec3D::set_from_proto(const ix::common_types::Vector3D& d)
   z = d.z();
 }
 
-void Vec3D::dump_scaled_to_proto(ix::common_types::Vector3D* d, double scale) const
+calin::ix::common_types::Vector3D* Vec3D::
+dump_scaled_as_proto(double scale, ix::common_types::Vector3D* d) const
 {
+  if(d == nullptr)d = new ix::common_types::Vector3D;
   d->set_x(x*scale);
   d->set_y(y*scale);
   d->set_z(z*scale);
+  return d;
 }
 
 void Vec3D::set_from_scaled_proto(const ix::common_types::Vector3D& d, double scale)
@@ -278,7 +284,7 @@ int main()
 	    << "b.Norm2():" << b.Norm2() << std::endl;
   std::cout << "a.Norm():" << a.Norm() << "  "
 	    << "b.Norm():" << b.Norm() << std::endl;
-  
+
   std::cout << "a+=b: " << (a+=b) << std::endl;
   std::cout << "a:" << a << " b:" << b << std::endl << std::endl;
 
@@ -309,7 +315,7 @@ int main()
   std::cout << "a.Rotate(b)" << std::endl;
   a.Rotate(b);
   std::cout << "a:" << a << " b:" << b << std::endl << std::endl;
-  
+
   std::cout << "a.Reset(0,0,1): " << a.Reset(0,0,1) << std::endl;
   std::cout << "b.Reset(0,0,pi/4): " << b.Reset(0,0,M_PI/2) << std::endl;
   std::cout << "a:" << a << " b:" << b << std::endl;
@@ -341,8 +347,8 @@ int main()
 
   std::cout << "c=b=a=():" << (c=b=a=Vec3D()) << std::endl;
   std::cout << "a:" << a << " b:" << b << " c:" << c << std::endl << std::endl;
-  
-  std::cout << "c=b=(a=())+(1,0,0)):" 
+
+  std::cout << "c=b=(a=())+(1,0,0)):"
 	    << (c=b=(a=Vec3D())+Vec3D(1,0,0)) << std::endl;
   std::cout << "a:" << a << " b:" << b << " c:" << c << std::endl << std::endl;
 
@@ -350,10 +356,10 @@ int main()
   std::cout << "b=(1,-1,0):" << (b=Vec3D(1,-1,0)) << std::endl;
   std::cout << "c=a+b:" << (c=a+b) << std::endl;
   std::cout << "a:" << a << " b:" << b << " c:" << c << std::endl << std::endl;
-  
+
   std::cout << "c=a-b:" << (c=a-b) << std::endl;
   std::cout << "a:" << a << " b:" << b << " c:" << c << std::endl << std::endl;
- 
+
   std::cout << "a*b:" << (a*b) << std::endl;
   std::cout << "a:" << a << " b:" << b << " c:" << c << std::endl << std::endl;
 
@@ -383,7 +389,7 @@ int main()
   std::cout << "(3,4,5)+(0,3,4): " << (Vec3D(3,4,5)+Vec3D(0,3,4)) << std::endl;
   std::cout << "(3,4,5)+(2,3,4): " << (Vec3D(3,4,5)+Vec3D(2,3,4)) << std::endl;
   std::cout << std::endl;
-  
+
   std::cout << "(3,4,5)-(2,0,0): " << (Vec3D(3,4,5)-Vec3D(2,0,0)) << std::endl;
   std::cout << "(3,4,5)-(0,3,0): " << (Vec3D(3,4,5)-Vec3D(0,3,0)) << std::endl;
   std::cout << "(3,4,5)-(0,0,4): " << (Vec3D(3,4,5)-Vec3D(0,0,4)) << std::endl;
@@ -392,7 +398,7 @@ int main()
   std::cout << "(3,4,5)-(0,3,4): " << (Vec3D(3,4,5)-Vec3D(0,3,4)) << std::endl;
   std::cout << "(3,4,5)-(2,3,4): " << (Vec3D(3,4,5)-Vec3D(2,3,4)) << std::endl;
   std::cout << std::endl;
-  
+
   std::cout << "-(3,4,5): " << (-Vec3D(3,4,5)) << std::endl;
   std::cout << "1.5*(3,4,5): " << (1.5*Vec3D(3,4,5)) << std::endl;
   std::cout << "(3,4,5)*1.5: " << (Vec3D(3,4,5)*1.5) << std::endl;
@@ -434,30 +440,30 @@ int main()
 	      R.push_back(r);
 	      Rc.push_back(rc);
 	    }
-	  
+
 	  a.Rotate(rc);
 
 	  Vec3D c(a-b);
 	  double residual = c.Norm();
 	  if(residual>max_residual)max_residual=residual;
 	  mean_residual+=residual;
-	  
+
 #if 0
 	  if(residual>1e-14)
 	    {
 	      for(unsigned i=0; i<R.size(); i++)
-		std::cout << R[i].Norm() 
+		std::cout << R[i].Norm()
 			  << ' '  << R[i] << ' ' << Rc[i] << std::endl;
 	      std::cout << a << ' ' << b << ' ' << c << std::endl;
 	    }
 #endif
 	}
 
-      std::cout << nrot << " rotations: mean residual: " 
+      std::cout << nrot << " rotations: mean residual: "
 		<< mean_residual/1000.0
 		<< " max residual: " << max_residual << std::endl;
     }
-  
+
   Vec3D r1=M_PI/2*Vec3D(1,0,0);
   Vec3D r2=M_PI/2*Vec3D(0,1,0);
   Vec3D rc = r1 & r2;
@@ -481,4 +487,3 @@ int main()
 }
 
 #endif // TESTMAIN
-

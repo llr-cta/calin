@@ -46,6 +46,9 @@
 
 %import "simulation/vs_optics.pb.i"
 
+%newobject *::dump_as_proto() const;
+%newobject *::create_from_proto;
+
 %include "simulation/vso_pixel.hpp"
 %include "simulation/vso_mirror.hpp"
 %include "simulation/vso_obscuration.hpp"
