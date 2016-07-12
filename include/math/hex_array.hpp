@@ -251,7 +251,7 @@ inline void uv_to_xy_trans(int u, int v, double& x, double& y,
   uv_to_xy(u,v,x,y);
   double xx = x*crot - y*srot;
   y = scale * (y*crot + x*srot) + dy;
-  x = scale * xx + dy;
+  x = scale * xx + dx;
 }
 
 inline void xy_trans_to_uv(double x, double y, int& u, int& v,
