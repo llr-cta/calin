@@ -185,15 +185,18 @@ message VSOTelescopeData {
   double pixel_spacing                  = 21
     [(CFO).desc = "Spacing between pixels on the focal plane.",
      (CFO).units = "cm"];
-  double conc_survival_prob             = 22
+  double pixel_rotation                 = 22
+    [(CFO).desc = "Pixel rotation about the normal to the focal plane.",
+     (CFO).units = "deg"];
+  double conc_survival_prob             = 23
     [(CFO).desc = "Survival probability for photons hitting concentrator." ];
-  common_types.Vector3D fp_rotation     = 23
+  common_types.Vector3D fp_rotation     = 24
     [(CFO).desc = "Camera rotation vector with respect to reflector frame. ",
      (CFO).units = "deg" ];
-  double camera_ip                      = 24
+  double camera_ip                      = 25
     [(CFO).desc = "Diameter of sphere embedding camera.",
      (CFO).units = "cm"];
-  bool pixel_labeling_parity            = 25
+  bool pixel_labeling_parity            = 26
     [(CFO).desc = "Pixels are counted (on the hex. grid) in the direction of "
      "the +x-axis when this flag is FALSE, and in the direction of the "
      "-x-axis when this flag is TRUE (in the camera r.f.)."];
@@ -489,20 +492,23 @@ message HexPixelArrayParameters
      (CFO).units = "cm"];
   double cone_survival_prob             = 5
     [(CFO).desc = "Survival probability for photons hitting concentrator." ];
-
-  bool pixel_labeling_parity            = 10
+  double grid_rotation                  = 6
+    [(CFO).desc = "Rotation angle between pixels and nominal hexagonal grid.",
+     (CFO).units = "deg"];
+  bool pixel_labeling_parity            = 7
     [(CFO).desc = "Pixels are counted on a hexagonal grid in the direction "
      "of the +x-axis when this flag is FALSE, and in the direction of the "
      "-x-axis when it is TRUE"];
-  uint32 hex_module_size                = 11
+
+  uint32 hex_module_size                = 10
     [(CFO).desc = "Number of hexagonal rings in each module. This is a "
      "convenience parameter that simplifies specifying the list of pixels "
      "in the camera."];
-  uint32 module_num_hex_rings           = 12
+  uint32 module_num_hex_rings           = 11
     [(CFO).desc = "Number of hexagonal rings of module in the camera. This can "
      "be left zero and the camera will be filled with modules up to "
      "\"camera_diameter\"."];
-  repeated uint32 module_missing_list   = 13
+  repeated uint32 module_missing_list   = 12
     [(CFO).desc = "List of the Hex IDs of the modules (or pixels if "
      "hex_module_size<=1) missing from each camera. If none are missing this "
      "should be empty."];

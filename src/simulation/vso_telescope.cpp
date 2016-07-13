@@ -39,9 +39,12 @@ VSOTelescope::VSOTelescope():
     fElevation(), fAzimuth(),
     fTranslation(), fCurvatureRadius(), fAperture(),
     fFacetSpacing(), fFacetSize(),
-    fReflectorRotation(), fHexagonRingsN(),
+    fReflectorRotation(), fCosReflectorRotation(1.0), fSinReflectorRotation(),
+    fHexagonRingsN(),
     fReflectorIP(), fMirrorParity(), fFPTranslation(), fCameraDiameter(),
-    fFieldOfView(), fCathodeDiameter(), fPixelSpacing(), fConcSurvProb(),
+    fFieldOfView(), fCathodeDiameter(), fPixelSpacing(), fPixelRotation(),
+    fCosPixelRotation(1.0), fSinPixelRotation(0.0),
+    fConcSurvProb(),
     fFPRotation(), fCameraIP(), fPixelParity(),
 #if 0
     fHasSecondary(false),
@@ -61,7 +64,7 @@ VSOTelescope(unsigned TID, /*unsigned THID,*/ const Vec3D&P,
 	     double DY, double AX, double AY, double EL, double AZ,
 	     const Vec3D& T, double CR, double A, double FSP, double FS,
 	     double RR, unsigned HRN, double RIP, bool MP,
-	     const Vec3D& FPT, double CD, double FOV, double D, double PS,
+	     const Vec3D& FPT, double CD, double FOV, double D, double PS, double PR,
 	     double CSP, const Vec3D& FPR, double CIP, bool PP,
 #if 0
 	     bool SEC, double RI, double RI1, double RI2, double C10,
@@ -74,9 +77,12 @@ VSOTelescope(unsigned TID, /*unsigned THID,*/ const Vec3D&P,
     fDeltaY(DY), fAlphaX(AX), fAlphaY(AY), fElevation(EL), fAzimuth(AZ),
     fTranslation(T), fCurvatureRadius(CR), fAperture(A), fFacetSpacing(FSP),
     fFacetSize(FS), fReflectorRotation(RR),
+    fCosReflectorRotation(std::cos(RR)), fSinReflectorRotation(std::sin(RR)),
     fHexagonRingsN(HRN), fReflectorIP(RIP), fMirrorParity(MP),
     fFPTranslation(FPT),  fCameraDiameter(CD), fFieldOfView(FOV),
-    fCathodeDiameter(D), fPixelSpacing(PS), fConcSurvProb(CSP),
+    fCathodeDiameter(D), fPixelSpacing(PS), fPixelRotation(PR),
+    fCosPixelRotation(std::cos(PR)), fSinPixelRotation(std::sin(PR)),
+    fConcSurvProb(CSP),
     fFPRotation(FPR), fCameraIP(CIP), fPixelParity(PP),
 #if 0
     fHasSecondary(SEC),
@@ -99,11 +105,16 @@ VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fCurvatureRadius(o.fCurvatureRadius), fAperture(o.fAperture),
     fFacetSpacing(o.fFacetSpacing), fFacetSize(o.fFacetSize),
     fReflectorRotation(o.fReflectorRotation),
+    fCosReflectorRotation(o.fCosReflectorRotation),
+    fSinReflectorRotation(o.fSinReflectorRotation),
     fHexagonRingsN(o.fHexagonRingsN),
     fReflectorIP(o.fReflectorIP), fMirrorParity(o.fMirrorParity),
     fFPTranslation(o.fFPTranslation), fCameraDiameter(o.fCameraDiameter),
     fFieldOfView(o.fFieldOfView), fCathodeDiameter(o.fCathodeDiameter),
-    fPixelSpacing(o.fPixelSpacing), fConcSurvProb(o.fConcSurvProb),
+    fPixelSpacing(o.fPixelSpacing), fPixelRotation(o.fPixelRotation),
+    fCosPixelRotation(o.fCosPixelRotation),
+    fSinPixelRotation(o.fSinPixelRotation),
+    fConcSurvProb(o.fConcSurvProb),
     fFPRotation(o.fFPRotation), fCameraIP(o.fCameraIP),
     fPixelParity(o.fPixelParity),
 #if 0
@@ -176,6 +187,8 @@ const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
   fFacetSpacing      = o.fFacetSpacing;
   fFacetSize         = o.fFacetSize;
   fReflectorRotation = o.fReflectorRotation;
+  fCosReflectorRotation = o.fCosReflectorRotation;
+  fSinReflectorRotation = o.fSinReflectorRotation;
   fHexagonRingsN     = o.fHexagonRingsN;
   fReflectorIP       = o.fReflectorIP;
   fMirrorParity      = o.fMirrorParity;
@@ -184,6 +197,9 @@ const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
   fFieldOfView       = o.fFieldOfView;
   fCathodeDiameter   = o.fCathodeDiameter;
   fPixelSpacing      = o.fPixelSpacing;
+  fPixelRotation     = o.fPixelRotation;
+  fCosPixelRotation  = o.fCosPixelRotation;
+  fSinPixelRotation  = o.fSinPixelRotation;
   fConcSurvProb      = o.fConcSurvProb;
   fFPRotation        = o.fFPRotation;
   fCameraIP          = o.fCameraIP;
@@ -415,6 +431,9 @@ populateMirrorsAndPixelsRandom(
   int num_hex_mirror_sites =
       math::hex_array::ringid_to_nsites_contained(fHexagonRingsN);
 
+  double cos_reflector_rot = cosReflectorRotation();
+  double sin_reflector_rot = sinReflectorRotation();
+
   unsigned id = 0;
   for(int hexid=0; hexid<num_hex_mirror_sites; hexid++)
   {
@@ -427,11 +446,9 @@ populateMirrorsAndPixelsRandom(
     Vec3D nominal_position;
 
     // Compute the mirror's nominal position
-    math::hex_array::hexid_to_xy(hexid,
-                                 nominal_position.x, nominal_position.z);
-    if(fMirrorParity)nominal_position.x=-nominal_position.x;
-    nominal_position.x *= fFacetSpacing;
-    nominal_position.z *= fFacetSpacing;
+    math::hex_array::hexid_to_xy_trans(hexid,
+        nominal_position.x, nominal_position.z, fMirrorParity,
+        cos_reflector_rot, sin_reflector_rot, fFacetSpacing);
 
     double X2 = nominal_position.x*nominal_position.x;
     double Z2 = nominal_position.z*nominal_position.z;
@@ -455,9 +472,6 @@ populateMirrorsAndPixelsRandom(
     position.ScatterDirection(param.reflector().facet_pos_tangent_dispersion()
                               / fCurvatureRadius,rng);
     position += reflector_center;
-
-    // Rotate by global rotation angle
-    position.Rotate(Vec3D(0,fReflectorRotation,0));
 
     // Get the (perturbed) alignment angle of mirror
     Vec3D alignment;
@@ -552,7 +566,7 @@ populateMirrorsAndPixelsRandom(
     else spot_size /= 2.0*std::sqrt(log(2.0));
 
     VSOMirror* mirror =
-	new VSOMirror(this, id, hexid, false, position, alignment,
+	    new VSOMirror(this, id, hexid, false, position, alignment,
                       focal_length, spot_size,
                       param.reflector().weathering_factor());
 
@@ -570,7 +584,7 @@ populateMirrorsAndPixelsRandom(
   }
 
   // **************************************************************************
-  // Clear the PIXELSs table and repopulate it with randomly generated pixels
+  // Clear the PIXELSs table and repopulate it
   // **************************************************************************
 
   for(std::vector<VSOPixel*>::iterator i=fPixels.begin();
@@ -608,19 +622,19 @@ populateMirrorsAndPixelsRandom(
         math::hex_array::cluster_hexid_to_center_uv(module_id, module_size, u, v);
         double x, z;
         math::hex_array::uv_to_xy(u, v, x, z);
-        x *= fPixelSpacing;
-        z *= fPixelSpacing;
         if(fCameraDiameter>0 and
-           std::sqrt(x*x+z*z)>fCameraDiameter/2.0)
-	  continue; // skip module if position too far out
+            std::sqrt(x*x+z*z)*fPixelSpacing>fCameraDiameter/2.0)
+	        continue; // skip module if position too far out
         module_ring_in_camera = true;
         for(auto id : math::hex_array::
-                cluster_hexid_to_member_hexid(module_id, module_size))
+            cluster_hexid_to_member_hexid(module_id, module_size))
           pixel_hexids.insert(id);
       }
     module_ring_id++;
   }
 
+  double cos_fp_rot = fCosPixelRotation;
+  double sin_fp_rot = fSinPixelRotation;
   unsigned pixelid = 0;
   for(auto hexid : pixel_hexids)
   {
@@ -628,10 +642,9 @@ populateMirrorsAndPixelsRandom(
     Vec3D nominal_position;
 
     // Compute the pixel's nominal position
-    math::hex_array::hexid_to_xy(hexid, nominal_position.x, nominal_position.z);
-    if(fPixelParity)nominal_position.x = -nominal_position.x;
-    nominal_position.x *= fPixelSpacing;
-    nominal_position.z *= fPixelSpacing;
+    math::hex_array::hexid_to_xy_trans(hexid,
+      nominal_position.x, nominal_position.z, fPixelParity,
+      cos_fp_rot, sin_fp_rot, fPixelSpacing);
     nominal_position.y = 0;
     nominal_position.Rotate(fFPRotation);
 
@@ -675,6 +688,7 @@ dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const
   d->set_field_of_view(fFieldOfView);
   d->set_cathode_diameter(fCathodeDiameter);
   d->set_pixel_spacing(fPixelSpacing);
+  d->set_pixel_rotation(fPixelRotation/M_PI*180.0);
   d->set_conc_survival_prob(fConcSurvProb);
   fFPRotation.dump_scaled_as_proto(180.0/M_PI, d->mutable_fp_rotation());
   d->set_camera_ip(fCameraIP);
@@ -718,6 +732,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
                        d.field_of_view(), // FOV
                        d.cathode_diameter(), // D
                        d.pixel_spacing(), // PS
+                       d.pixel_rotation()*M_PI/180.0, // PR
                        d.conc_survival_prob(), // CSP
                        Vec3D(d.fp_rotation(), M_PI/180.0), // FPR
                        d.camera_ip(), // CIP

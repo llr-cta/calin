@@ -167,32 +167,33 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
         obsvec.push_back(VSOObscuration::create_from_proto(obs));
 
       VSOTelescope* telescope =
-	new VSOTelescope(i, pos,
-			 param.reflector_frame().delta_y()*M_PI/180.0,
-                         param.reflector_frame().alpha_x()*M_PI/180.0,
-                         param.reflector_frame().alpha_y()*M_PI/180.0,
-                         param.reflector_frame().altaz().altitude()*M_PI/180.0,
-                         param.reflector_frame().altaz().azimuth()*M_PI/180.0,
-			 param.reflector_frame().translation(),
-			 param.reflector().curvature_radius(),
-                         param.reflector().aperture(),
-			 param.reflector().facet_spacing(),
-                         param.reflector().facet_size(),
-                        param.reflector_frame().optic_axis_rotation()*M_PI/180.0,
-			 num_hex_mirror_rings,
-			 0.0, /*param.reflector().reflector_ip(),*/
-                         param.reflector().facet_labeling_parity(),
-			 camera_fp_trans,
-                         param.focal_plane().camera_diameter(),
-                         FoV,
-			 param.pixel().cone_inner_diameter(),
-                         param.pixel().spacing(),
-			 param.pixel().cone_survival_prob(),
-			 Vec3D(param.focal_plane().rotation(), M_PI/180.0),
-                         0.0,
-			 param.pixel().pixel_labeling_parity(),
-			 obsvec
-			 );
+      	new VSOTelescope(i, pos,
+      			 param.reflector_frame().delta_y()*M_PI/180.0,
+             param.reflector_frame().alpha_x()*M_PI/180.0,
+             param.reflector_frame().alpha_y()*M_PI/180.0,
+             param.reflector_frame().altaz().altitude()*M_PI/180.0,
+             param.reflector_frame().altaz().azimuth()*M_PI/180.0,
+      			 param.reflector_frame().translation(),
+      			 param.reflector().curvature_radius(),
+             param.reflector().aperture(),
+             param.reflector().facet_spacing(),
+             param.reflector().facet_size(),
+             param.reflector_frame().optic_axis_rotation()*M_PI/180.0,
+             num_hex_mirror_rings,
+             0.0, /*param.reflector().reflector_ip(),*/
+             param.reflector().facet_labeling_parity(),
+	           camera_fp_trans,
+             param.focal_plane().camera_diameter(),
+             FoV,
+             param.pixel().cone_inner_diameter(),
+             param.pixel().spacing(),
+             param.pixel().grid_rotation()*M_PI/180.0,
+             param.pixel().cone_survival_prob(),
+             Vec3D(param.focal_plane().rotation(), M_PI/180.0),
+             0.0,
+             param.pixel().pixel_labeling_parity(),
+	           obsvec
+		         );
 
       telescope->populateMirrorsAndPixelsRandom(param,rng);
 

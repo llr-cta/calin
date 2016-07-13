@@ -69,7 +69,7 @@ class VSOTelescope
                double FSP, double FS, double RR,
                unsigned HRN, double RIP, bool MP,
                const math::vs_physics::Vec3D& FPT, double CD, double FOV, double D,
-               double PS, double CSP, const math::vs_physics::Vec3D& FPR,
+               double PS, double PR, double CSP, const math::vs_physics::Vec3D& FPR,
                double CIP, bool PP,
 #if 0
                bool SEC, double RI, double RI1, double RI2, double C10,
@@ -188,6 +188,8 @@ class VSOTelescope
   double         facetSpacing() const { return  fFacetSpacing; }
   double         facetSize() const { return  fFacetSize; }
   double         reflectorRotation() const { return fReflectorRotation; }
+  double         cosReflectorRotation() const { return fCosReflectorRotation; }
+  double         sinReflectorRotation() const { return fSinReflectorRotation; }
   unsigned       mirrorHexRings() const { return fHexagonRingsN; }
   double         reflectorIP() const { return fReflectorIP; }
   bool           mirrorParity() const { return fMirrorParity; }
@@ -197,6 +199,9 @@ class VSOTelescope
   double         fov() const { return fFieldOfView; }
   double         cathodeDiameter() const { return fCathodeDiameter; }
   double         pixelSpacing() const { return fPixelSpacing; }
+  double         pixelRotation() const { return fPixelRotation; }
+  double         cosPixelRotation() const { return fCosPixelRotation; }
+  double         sinPixelRotation() const { return fSinPixelRotation; }
   double         concentratorSurvivalProb() const { return fConcSurvProb; }
   const math::vs_physics::Vec3D& focalPlaneRotion() const { return fFPRotation; }
   double         cameraIP() const { return fCameraIP; }
@@ -259,6 +264,8 @@ class VSOTelescope
   double         fFacetSpacing;      //!< Size of mirror
   double         fFacetSize;         //!< Spacing between mirrors
   double         fReflectorRotation; //!< Rotation about the axis of reflector
+  double         fCosReflectorRotation; //!< Rotation about the axis of reflector
+  double         fSinReflectorRotation; //!< Rotation about the axis of reflector
   unsigned       fHexagonRingsN;     //!< Number of hexagon rings of mirrors
   double         fReflectorIP;       //!< Diameter of sphere embedding reflector
   bool           fMirrorParity;      //!< Parity for counting mirrors; 1 => counting toward +x-axis
@@ -272,6 +279,10 @@ class VSOTelescope
   double         fFieldOfView;       //!< Field of view
   double         fCathodeDiameter;   //!< Diameter of photocathode
   double         fPixelSpacing;      //!< Spacing of pixels
+  double         fPixelRotation;     //!< Rotation angle of pixels wrt grid [rad]
+  double         fCosPixelRotation;  //!< Cos rotation angle of pixels wrt grid
+  double         fSinPixelRotation;  //!< Sin rotation angle of pixels wrt grid
+
   double         fConcSurvProb;      //!< Pixel properties; probability of survival
   math::vs_physics::Vec3D fFPRotation;
   double         fCameraIP;

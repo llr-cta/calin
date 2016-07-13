@@ -55,7 +55,7 @@ void VSOTraceInfo::reset()
   *this = VSOTraceInfo();
 }
 
-std::ostream& VSOTraceInfo::write(std::ostream& stream, bool cpu) const
+std::ostream& VSOTraceInfo::write(std::ostream& stream, bool cpu, bool eol) const
 {
   stream
       << status << ' '                                                    // $1  --  AWK column
@@ -65,12 +65,10 @@ std::ostream& VSOTraceInfo::write(std::ostream& stream, bool cpu) const
       << ground_dy << ' '                                                 // $5
       << scope_id << ' '                                                  // $6
       << scope_id << ' '                                                  // $7
-      << reflec_x*(scope&&cpu?scope->facetSpacing():1.0) << ' '           // $8
-      << reflec_z*(scope&&cpu?scope->facetSpacing():1.0) << ' '           // $9
-      << hex_reflec_x*(scope&&cpu?scope->facetSpacing():1.0) << ' '       // $10
-      << hex_reflec_z*(scope&&cpu?scope->facetSpacing():1.0) << ' '       // $11
-      << hex_reflec_dx*(scope&&cpu?scope->facetSpacing():1.0) << ' '      // $12
-      << hex_reflec_dz*(scope&&cpu?scope->facetSpacing():1.0) << ' '      // $13
+      << reflec_x << ' '                                                  // $8
+      << reflec_z << ' '                                                  // $9
+      << reflec_dx << ' '                                                 // $12
+      << reflec_dz << ' '                                                 // $13
       << mirror_hexid << ' '                                              // $14
       << ( mirror ? mirror->hexID() : 0 ) << ' '                          // $15
       << mirror_x << ' '                                                  // $16
@@ -89,6 +87,7 @@ std::ostream& VSOTraceInfo::write(std::ostream& stream, bool cpu) const
       << ( pixel ? pixel->hexID() : 0 ) << ' '                            // $37
       << pixel_dist*(scope&&cpu?scope->pixelSpacing():1.0) << ' '         // $38
       << concentrator_hit;                                                // $39
+  if(eol)stream << '\n';
   return stream;
 }
 
@@ -217,22 +216,15 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
   }
 
   // Assume mirrors on hexagonal grid - use hex_array routines to find which hit
-  double tx = ray.Position().r.x / info.scope->facetSpacing();
-  double tz = ray.Position().r.z / info.scope->facetSpacing();
-  info.reflec_x     = tx;
-  info.reflec_z     = tz;
-  double costheta = cos(info.scope->reflectorRotation());
-  double sintheta = sin(info.scope->reflectorRotation());
-  info.hex_reflec_x = tx*costheta - tz*sintheta;  // Align with hex grid in dir of
-  info.hex_reflec_z = tz*costheta + tx*sintheta;  // Vec3D(0,-reflectorRotation,0)
-  info.hex_reflec_dx = info.hex_reflec_x;
-  info.hex_reflec_dz = info.hex_reflec_z;
-  if(info.scope->mirrorParity())
-    info.hex_reflec_dx = -info.hex_reflec_dx; // Reverse parity if required
-  info.mirror_hexid = math::hex_array::
-                      xy_to_hexid_with_remainder(info.hex_reflec_dx, info.hex_reflec_dz);
-  if(info.scope->mirrorParity())
-    info.hex_reflec_dx = -info.hex_reflec_dx; // Reverse parity if required
+  info.reflec_x     = ray.Position().r.x;
+  info.reflec_z     = ray.Position().r.z;
+  info.reflec_dx    = info.reflec_x;
+  info.reflec_dz    = info.reflec_z;
+  info.mirror_hexid =
+    math::hex_array::xy_trans_to_hexid_with_remainder(
+      info.reflec_dx, info.reflec_dz, info.scope->mirrorParity(),
+      info.scope->cosReflectorRotation(), info.scope->sinReflectorRotation(),
+      info.scope->facetSpacing());
 
   // Find mirror - searching neighbors if desired
   good = findMirror(ray, info);
@@ -342,16 +334,17 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
     return 0;
   }
 
-  info.fplane_x = ray.Position().r.x / info.scope->pixelSpacing();
-  info.fplane_z = ray.Position().r.z / info.scope->pixelSpacing();
+  info.fplane_x = ray.Position().r.x;
+  info.fplane_z = ray.Position().r.z;
   info.fplane_dx = info.fplane_x;
   info.fplane_dz = info.fplane_z;
   info.fplane_t = ray.Position().r0 / math::constants::cgs_c;
-  if(info.scope->pixelParity())info.fplane_dx = -info.fplane_dx;
 
-  info.pixel_hexid = math::hex_array::
-                     xy_to_hexid_with_remainder(info.fplane_dx, info.fplane_dz);
-  if(info.scope->pixelParity())info.fplane_dx = -info.fplane_dx;
+  info.pixel_hexid =
+    math::hex_array::xy_trans_to_hexid_with_remainder(
+      info.fplane_dx, info.fplane_dz, info.scope->pixelParity(),
+      info.scope->cosPixelRotation(), info.scope->sinPixelRotation(),
+      info.scope->pixelSpacing());
 
   // Find pixel (if there is a real pixel at that site)
   info.pixel = info.scope->pixelByHexID(info.pixel_hexid);
@@ -364,8 +357,7 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
   }
 
   info.pixel_dist =
-      sqrt(info.fplane_dx*info.fplane_dx + info.fplane_dz*info.fplane_dz) *
-      info.scope->pixelSpacing();
+    sqrt(info.fplane_dx*info.fplane_dx + info.fplane_dz*info.fplane_dz);
 
   info.concentrator_hit =
       (info.pixel_dist > info.scope->cathodeDiameter()/2.0);
@@ -481,7 +473,7 @@ bool VSORayTracer::findMirror(math::vs_physics::Particle& ray, TraceInfo& info)
     math::vs_physics::Particle test_ray(ray_in);
     bool good;
     good = test_ray.PropagateFreeToSphere(mirror_center, mirror_radius,
-                                          math::vs_physics::Particle::IP_LATEST, true);
+                                math::vs_physics::Particle::IP_LATEST, true);
     if(isearch==0)ray = test_ray;
     if(!good)
     {

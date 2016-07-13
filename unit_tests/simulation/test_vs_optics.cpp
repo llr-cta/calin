@@ -164,7 +164,7 @@ TEST(TestVSOMirror, StoreAndRetreive) {
 
 TEST(TestVSOTelescope, StoreAndRetreive) {
   VSOTelescope scope1(1,/*2,*/{3,4,5},6,7,8,9,10,{11,12,13},14,15,16,17,18,19,
-                      20,21,{22,23,24},25,26,27,28,29,{30,31,32},33,34);
+                      20,21,{22,23,24},25,26,27,28,29,30,{31,32,33},34,35);
   for(unsigned i=0;i<100; i++)
     scope1.add_mirror(new VSOMirror(&scope1,100000.0+i,101000.0+i,true,
                                     {103000.0+i,104000.0+i,105000.0+i},
