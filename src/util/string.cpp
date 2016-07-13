@@ -62,3 +62,18 @@ join(const std::vector<std::string>& vec, const std::string& sep)
 {
   return join(vec.cbegin(), vec.cend(), sep);
 }
+
+std::string calin::util::string::string_escape(const std::string& s_in)
+{
+  std::string s_out;
+  for(auto c : s_in) {
+    if(c=='\t') { s_out += "\\t"; }
+    else if(c=='\n') { s_out += "\\n"; }
+    else if(c=='\r') { s_out += "\\r"; }
+    else if(c=='\r') { s_out += "\\r"; }
+    else if(c=='\\') { s_out += "\\\\"; }
+    else if(c=='"') { s_out += "\\\""; }
+    else s_out += c;
+  }
+  return s_out;
+}
