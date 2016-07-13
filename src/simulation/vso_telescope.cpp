@@ -415,9 +415,12 @@ populateMirrorsAndPixelsRandom(
   // **************************************************************************
   // Clear the MIRRORs table and repopulate it with randomly generated mirrors
   // **************************************************************************
-  double reflector_r2 = fAperture*fAperture/4.0;
-  double reflector_c2 = fCurvatureRadius*fCurvatureRadius;
+  const double reflector_r2 = fAperture*fAperture/4.0;
+  const double reflector_c2 = fCurvatureRadius*fCurvatureRadius;
   Vec3D reflector_center(0, fCurvatureRadius, 0);
+
+  const double cos_reflector_rot = cosReflectorRotation();
+  const double sin_reflector_rot = sinReflectorRotation();
 
   std::set<unsigned> mirrors_missing;
   for(auto iid : param.reflector().facet_missing_list())
@@ -428,11 +431,34 @@ populateMirrorsAndPixelsRandom(
   fMirrors.clear();
   fMirrorsByHexID.clear();
 
-  int num_hex_mirror_sites =
-      math::hex_array::ringid_to_nsites_contained(fHexagonRingsN);
+  int num_hex_rings = fHexagonRingsN;
+  if(num_hex_rings <= 0)
+  {
+    num_hex_rings = -1;
+    bool has_mirror = true;
+    while(has_mirror)
+    {
+      ++num_hex_rings;
+      has_mirror = false;
+      for(unsigned irun=0;irun<(num_hex_rings+1);irun++)
+      {
+        auto hexid = math::hex_array::
+          positive_ringid_segid_runid_to_hexid(num_hex_rings+1,0,irun);
+        double x;
+        double z;
+        math::hex_array::hexid_to_xy_trans(hexid, x, z, fMirrorParity,
+          cos_reflector_rot, sin_reflector_rot, fFacetSpacing);
+        if(x*x+z*z <= reflector_r2)
+        {
+          has_mirror = true;
+          break;
+        }
+      }
+    }
+  }
 
-  double cos_reflector_rot = cosReflectorRotation();
-  double sin_reflector_rot = sinReflectorRotation();
+  int num_hex_mirror_sites =
+      math::hex_array::ringid_to_nsites_contained(num_hex_rings);
 
   unsigned id = 0;
   for(int hexid=0; hexid<num_hex_mirror_sites; hexid++)
