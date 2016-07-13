@@ -553,20 +553,22 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       if(!fopt->GetExtension(calin::CFO).desc().empty())
       {
         vars["desc"] = string_escape(fopt->GetExtension(calin::CFO).desc());
-        I->Print(vars, "std::string $name$_desc() { return \"$desc$\"; }\n");
+        I->Print(vars,
+          "static std::string $name$_desc() { return \"$desc$\"; }\n");
       }
 
       if(!fopt->GetExtension(calin::CFO).units().empty())
       {
         vars["units"] = string_escape(fopt->GetExtension(calin::CFO).units());
-        I->Print(vars, "std::string $name$_units() { return \"$units$\"; }\n");
+        I->Print(vars,
+          "static std::string $name$_units() { return \"$units$\"; }\n");
       }
     }
 
     if(vars.find("desc") == vars.end())
-      I->Print(vars, "void $name$_desc() { }\n");
+      I->Print(vars, "static void $name$_desc() { }\n");
     if(vars.find("units") == vars.end())
-      I->Print(vars, "void $name$_units() { }\n");
+      I->Print(vars, "static void $name$_units() { }\n");
 
     I->Outdent();
     I->Print(vars, "};\n");
