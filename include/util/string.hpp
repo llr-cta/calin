@@ -58,4 +58,6 @@ std::string to_string_with_commas(T value, unsigned precision = 2)
   return ss.str();
 }
 
+std::string string_escape(const std::string& s_in);
+
 } } } // namespace calin::util::string

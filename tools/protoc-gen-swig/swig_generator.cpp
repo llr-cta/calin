@@ -29,6 +29,7 @@
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
 #include <util/string.hpp>
+#include <calin.pb.h>
 #include "swig_generator.hpp"
 
 using std::string;
@@ -542,6 +543,35 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     }
 
     I->Print(vars, "void clear_$name$();\n");
+
+    I->Print("%extend {\n");
+    I->Indent();
+
+    const google::protobuf::FieldOptions* fopt { &f->options() };
+    if(fopt->HasExtension(calin::CFO))
+    {
+      if(!fopt->GetExtension(calin::CFO).desc().empty())
+      {
+        vars["desc"] = string_escape(fopt->GetExtension(calin::CFO).desc());
+        I->Print(vars,
+          "static std::string $name$_desc() { return \"$desc$\"; }\n");
+      }
+
+      if(!fopt->GetExtension(calin::CFO).units().empty())
+      {
+        vars["units"] = string_escape(fopt->GetExtension(calin::CFO).units());
+        I->Print(vars,
+          "static std::string $name$_units() { return \"$units$\"; }\n");
+      }
+    }
+
+    if(vars.find("desc") == vars.end())
+      I->Print(vars, "static void $name$_desc() { }\n");
+    if(vars.find("units") == vars.end())
+      I->Print(vars, "static void $name$_units() { }\n");
+
+    I->Outdent();
+    I->Print(vars, "};\n");
   }
 
   // End of class

@@ -24,8 +24,10 @@
 #include<stdexcept>
 
 #include <simulation/geant4_shower_generator_internals.hpp>
+#include <io/log.hpp>
 
 using namespace calin::simulation::shower_generator;
+using namespace calin::io::log;
 
 void calin::simulation::shower_generator::
 g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec)
@@ -177,7 +179,7 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
   track.weight   = pre_step_pt->GetWeight();
 
   bool kill_track = false;
-  visitor_->visitTrack(track, kill_track);
+  visitor_->visit_track(track, kill_track);
   if(kill_track)the_step->GetTrack()->SetTrackStatus(fStopAndKill);
 
   if(r2cut_ > 0)
@@ -331,6 +333,57 @@ void EAS_FlatDetectorConstruction::ConstructSDandField()
 
 };
 
+// ============================================================================
+//
+// EAS_UserEventAction - send visit_event and leave_event messages
+//
+// ============================================================================
+
+
+EAS_UserEventAction::
+EAS_UserEventAction(calin::simulation::tracker::TrackVisitor* visitor):
+  G4UserEventAction(), visitor_(visitor)
+{
+  // nothing to see here
+}
+
+EAS_UserEventAction::~EAS_UserEventAction()
+{
+  // nothing to see here
+}
+
+void EAS_UserEventAction::BeginOfEventAction(const G4Event *anEvent)
+{
+  calin::simulation::tracker::Event event;
+
+  assert(anEvent->GetNumberOfPrimaryVertex() == 1);
+  const auto* vertex = anEvent->GetPrimaryVertex(0);
+  assert(vertex->GetNumberOfParticle() == 1);
+  const auto* primary = vertex->GetPrimary(0);
+
+  const auto* pdg_info = primary->GetG4code();
+  event.pdg_type = pdg_info->GetPDGEncoding();
+  event.q        = pdg_info->GetPDGCharge();
+  event.mass     = pdg_info->GetPDGMass()/CLHEP::MeV;
+  event.type     = pdg_to_track_type(event.pdg_type);
+
+  const auto posn = vertex->GetPosition();
+  event.e0       = primary->GetTotalEnergy()/CLHEP::MeV;
+  g4vec_to_eigen(event.x0, posn, CLHEP::cm);
+  g4vec_to_eigen(event.u0, primary->GetMomentum());
+  event.t0       = 0; // pre_step_pt->GetGlobalTime()/CLHEP::ns;
+
+  event.weight   = vertex->GetWeight();
+
+  bool kill_event = false;
+  visitor_->visit_event(event, kill_event);
+  if(kill_event)fpEventManager->AbortCurrentEvent();
+}
+
+void EAS_UserEventAction::EndOfEventAction(const G4Event *anEvent)
+{
+  visitor_->leave_event();
+}
 
 // ============================================================================
 //

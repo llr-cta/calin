@@ -1,6 +1,6 @@
-/* 
+/*
 
-   calin/simulation/geant4_shower_generator_internals.hpp 
+   calin/simulation/geant4_shower_generator_internals.hpp
    Stephen Fegan -- 2015-07-03
 
    Internals of Geant-4 extensive air shower generator
@@ -9,11 +9,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -51,6 +51,7 @@
 #include <G4PhysListFactory.hh>
 #include <G4GeneralParticleSource.hh>
 #include <G4VUserActionInitialization.hh>
+#include <G4UserEventAction.hh>
 #include <FTFP_BERT.hh>
 #include <G4UIsession.hh>
 #include <G4TrackStatus.hh>
@@ -142,6 +143,17 @@ class EAS_FlatDetectorConstruction: public EAS_DetectorConstruction
   double zground_cm_;
   double ztop_of_atm_cm_;
   double layer_side_cm_;
+};
+
+class EAS_UserEventAction: public G4UserEventAction
+{
+public:
+  EAS_UserEventAction(calin::simulation::tracker::TrackVisitor* visitor);
+  virtual ~EAS_UserEventAction();
+  void BeginOfEventAction(const G4Event *anEvent) override;
+  void EndOfEventAction(const G4Event *anEvent) override;
+private:
+  calin::simulation::tracker::TrackVisitor* visitor_;
 };
 
 class CoutCerrLogger: public G4UIsession

@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/vso_obscuration.cpp -- Stephen Fegan -- 2015-11-09
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -52,7 +52,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
 }
 
 #if 0
-std::vector<VSOObscuration*> 
+std::vector<VSOObscuration*>
 VSOObscuration::createObsVecFromString(const std::string &str)
 {
   std::vector<VSOObscuration*> v;
@@ -76,7 +76,7 @@ VSOObscuration::createObsVecFromString(const std::string &str)
       obs = VSOTubeObscuration::createFromString(s);
       if(obs)v.push_back(obs);
       if(s.length() != slen)continue;
-      
+
       std::string err("Unknown obscuration type: ");
       err += s;
       std::cerr << err << '\n';
@@ -85,9 +85,9 @@ VSOObscuration::createObsVecFromString(const std::string &str)
   return v;
 }
 
-std::string 
+std::string
 VSOObscuration::dumpObsVecToString(const std::vector<VSOObscuration*>& vo)
-{  
+{
   std::string s;
   for(unsigned i=0;i<vo.size();i++)
     {
@@ -146,16 +146,18 @@ bool VSODiskObscuration::doesObscure(const Particle& p_in,
    return false;
 }
 
-void VSODiskObscuration::
-dump_to_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
+calin::ix::simulation::vs_optics::VSOObscurationData* VSODiskObscuration::
+dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
 {
+  if(d == nullptr)d = new ix::simulation::vs_optics::VSOObscurationData;
   auto* dd = d->mutable_disk();
-  fX0.dump_to_proto(dd->mutable_center_pos());
-  fN.dump_to_proto(dd->mutable_normal());
+  fX0.dump_as_proto(dd->mutable_center_pos());
+  fN.dump_as_proto(dd->mutable_normal());
   dd->set_diameter(2.0*fR);
   dd->set_incoming_only(fICO);
+  return d;
 }
-  
+
 VSOObscuration* VSODiskObscuration::
 create_from_proto(const ix::simulation::vs_optics::VSODiskObscurationData& d)
 {
@@ -231,7 +233,7 @@ bool VSOTubeObscuration::doesObscure(const Particle& p_in,
   static std::ofstream stream;
   if(iprint==0)stream.open("test.dat",std::ofstream::out|std::ofstream::true);
   if(ipo!=Particle::IPO_NONE && iprint<1000)
-    { 
+    {
       if(iprint==0)stream.open("test.dat",std::ofstream::out|std::ofstream::trunc);
       stream << ipo << ' ' << p_in.Position() << ' '
 	     << p_out.Position().r << ' ' << p_out.Position().r*fN << ' '
@@ -246,26 +248,28 @@ bool VSOTubeObscuration::doesObscure(const Particle& p_in,
       double Dc = p_out.Position().r*fN;
       if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
       if(ipo == Particle::IPO_SECOND)return false;
-      ipo = 
+      ipo =
 	p_out.PropagateFreeToCylinder(fX1, fN, fR, Particle::IP_LATEST, false);
       if(ipo != Particle::IPO_SECOND)return false;
       Dc = p_out.Position().r*fN;
       if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
     }
-  
+
   return false;
 }
 
-void VSOTubeObscuration::
-dump_to_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
+calin::ix::simulation::vs_optics::VSOObscurationData* VSOTubeObscuration::
+dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
 {
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
   auto* dd = d->mutable_tube();
-  fX1.dump_to_proto(dd->mutable_end1_pos());
-  fX2.dump_to_proto(dd->mutable_end2_pos());
+  fX1.dump_as_proto(dd->mutable_end1_pos());
+  fX2.dump_as_proto(dd->mutable_end2_pos());
   dd->set_diameter(2.0*fR);
   dd->set_incoming_only(fICO);
+  return d;
 }
-  
+
 VSOObscuration* VSOTubeObscuration::
 create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d)
 {

@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/vso_array.hpp -- Stephen Fegan -- 2015-11-25
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -58,14 +58,14 @@ class VSOArray
  public:
   VSOArray();
   virtual ~VSOArray();
-    
+
   // ************************************************************************
   // Create a new array randomly using parameters
   // ************************************************************************
   void generateFromArrayParameters(
       const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
       math::rng::RNG& rng);
-    
+
   // ************************************************************************
   // Other stuff
   // ************************************************************************
@@ -78,18 +78,24 @@ class VSOArray
   double latitude() const { return fLatitude; }
   double longitude() const { return fLatitude; }
   double altitude() const { return fAltitude; }
-  
+
   unsigned numTelescopes() const { return fTelescopes.size(); }
-  
+
   inline const VSOTelescope* telescope(unsigned id) const;
-  
+
   inline VSOTelescope* telescope(unsigned id);
-  
+
   // ************************************************************************
   // Dump
   // ************************************************************************
 
-  void dump_to_proto(ix::simulation::vs_optics::VSOArrayData* d) const;
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOArrayData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOArrayData* d = nullptr) const;
+#else
+  calin::ix::simulation::vs_optics::VSOArrayData* dump_as_proto() const;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOArrayData* d) const;
+#endif
   static VSOArray*
   create_from_proto(const ix::simulation::vs_optics::VSOArrayData& d);
 
@@ -102,12 +108,12 @@ class VSOArray
   bool readFromShortDump(std::istream& stream);
   bool readFromShortDump(const std::string& filename);
 #endif
-  
+
  private:
   double                     fLatitude;
   double                     fLongitude;
   double                     fAltitude;
-  
+
   std::vector<VSOTelescope*>  fTelescopes;
 };
 

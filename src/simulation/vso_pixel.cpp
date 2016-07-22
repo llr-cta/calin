@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/vso_pixel.cpp -- Stephen Fegan -- 2015-11-10
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -35,7 +35,7 @@ VSOPixel::VSOPixel():
   // nothing to see here
 }
 
-VSOPixel::VSOPixel(const VSOTelescope* T, 
+VSOPixel::VSOPixel(const VSOTelescope* T,
 		   unsigned PID, unsigned PHID, bool REM,
 		   const Vec3D& P):
   fTelescope(T), fID(PID), fHexID(PHID), fRemoved(REM), fPos(P)
@@ -60,12 +60,15 @@ Vec3D VSOPixel::incomingSkyVectorAtZenith(double plate_scale) const
   return p;
 }
 
-void VSOPixel::dump_to_proto(ix::simulation::vs_optics::VSOPixelData* d) const
+calin::ix::simulation::vs_optics::VSOPixelData*
+VSOPixel::dump_as_proto(calin::ix::simulation::vs_optics::VSOPixelData* d) const
 {
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOPixelData;
   d->set_id(fID);
   d->set_hex_id(fHexID);
   d->set_removed(fRemoved);
-  fPos.dump_to_proto(d->mutable_pos());
+  fPos.dump_as_proto(d->mutable_pos());
+  return d;
 }
 
 VSOPixel*
@@ -149,4 +152,3 @@ VSOPixel* VSOPixel::createFromShortDump(std::istream& stream,
   return pixel;
 }
 #endif
-

@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/vso_raytracer.hpp -- Stephen Fegan -- 2015-11-30
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -46,7 +46,7 @@
 #include <simulation/vso_array.hpp>
 
 namespace calin { namespace simulation { namespace vs_optics {
-  
+
 enum VSOTraceStatus { TS_NONE,                               // 0
                       TS_DOES_INTERSECT_GROUND,              // 1
                       TS_NO_SCOPE,                           // 2
@@ -66,7 +66,7 @@ enum VSOTraceStatus { TS_NONE,                               // 0
 
 class VSOTraceInfo
 {
- public:					
+ public:
   const VSOArray*     array;
   VSOTraceStatus      status;
   double              ground_x;
@@ -77,10 +77,14 @@ class VSOTraceInfo
   const VSOTelescope* scope;
   double              reflec_x;
   double              reflec_z;
+  double              reflec_dx;
+  double              reflec_dz;
+#if 0
   double              hex_reflec_x;
   double              hex_reflec_z;
   double              hex_reflec_dx;
   double              hex_reflec_dz;
+#endif
   int                 mirror_hexid_nominal;
   int                 mirror_hexid;
   const VSOMirror*    mirror;
@@ -102,21 +106,22 @@ class VSOTraceInfo
   bool                concentrator_hit;
   unsigned            obscuration_id;
   const VSOObscuration* obscuration;
-  
+
   void reset();
   std::ostream& write(std::ostream& stream = std::cout,
-                      bool convert_to_physical_units=false) const;
-    
-  bool rayWasReflected() const 
+                      bool convert_to_physical_units = true,
+                      bool end_of_line = true) const;
+
+  bool rayWasReflected() const
   { return (int)status >= (int)TS_TRAVELLING_AWAY_FROM_FOCAL_PLANE; }
-  bool rayHitFocalPlane() const 
+  bool rayHitFocalPlane() const
   { return (int)status >= (int)TS_NO_PIXEL; }
-    
+
 };
 
 class VSOPSFInfo
 {
- public:					
+ public:
   unsigned            nhit;
   std::vector<double> r_tan;
   std::vector<double> r_sag;
@@ -133,47 +138,47 @@ class VSOPSFInfo
   double              median_t;
   double              r80;
   double              t80;
-  
+
   void reset() { *this = VSOPSFInfo(); }
 };
 
 class VSORayTracer
 {
  public:
-  VSORayTracer(const VSOArray& array, math::rng::RNG& rng): 
+  VSORayTracer(const VSOArray& array, math::rng::RNG& rng):
       fArray(array), fRNG(rng) { }
   virtual ~VSORayTracer();
-  
+
   typedef VSOTraceStatus Status;
   typedef VSOTraceInfo TraceInfo;
-    
+
   const VSOPixel* trace(math::vs_physics::Particle& ray, TraceInfo& info);
   const VSOPixel* trace(math::vs_physics::Particle& ray, TraceInfo& info,
                         const VSOTelescope* scope_hint);
-    
+
   bool beam(math::vs_physics::Particle& photon,
             const math::vs_physics::Vec3D& origin,
-            const math::vs_physics::Vec3D& direction, 
-            double beam_start, double beam_stop, 
+            const math::vs_physics::Vec3D& direction,
+            double beam_start, double beam_stop,
             double beam_radius_in, double beam_radius_out,
             double beam_angle_lo, double beam_angle_hi,
             double lambda_nm = 400);
-    
-  bool laserBeam(math::vs_physics::Particle& photon, 
+
+  bool laserBeam(math::vs_physics::Particle& photon,
                  const math::vs_physics::Vec3D& center,
-                 const math::vs_physics::Vec3D& direction, 
+                 const math::vs_physics::Vec3D& direction,
                  double d0, double sampling_radius,
                  double lambda_nm = 400);
-    
+
   bool fanBeam(math::vs_physics::Particle& photon,
-               const math::vs_physics::Vec3D& origin, 
-               const math::vs_physics::Vec3D& direction, 
+               const math::vs_physics::Vec3D& origin,
+               const math::vs_physics::Vec3D& direction,
                double half_angle_spread, double lambda_nm = 400);
-    
+
   bool muonBeam(math::vs_physics::Particle& photon,
-                const math::vs_physics::Vec3D& origin, 
-                const math::vs_physics::Vec3D& direction, 
-                double muon_travel_distance, double opening_angle, 
+                const math::vs_physics::Vec3D& origin,
+                const math::vs_physics::Vec3D& direction,
+                double muon_travel_distance, double opening_angle,
                 double lambda_nm = 400);
 
   bool testBeam(math::vs_physics::Particle& photon,
@@ -186,7 +191,7 @@ class VSORayTracer
                double theta, double phi = 0,
                double U = std::numeric_limits<double>::infinity(),
                unsigned nsim = 1000000, bool save_image = false);
-  
+
  private:
   bool findMirror(math::vs_physics::Particle& ray, TraceInfo& info);
 
@@ -196,9 +201,9 @@ class VSORayTracer
   const VSOPixel* scope_trace(math::vs_physics::Particle& ray,
                               TraceInfo& info);
 };
-  
+
 #ifndef SWIG
-std::ostream& operator <<(std::ostream& stream, 
+std::ostream& operator <<(std::ostream& stream,
                           const VSORayTracer::TraceInfo& o);
 #endif
 

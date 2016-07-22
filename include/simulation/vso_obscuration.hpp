@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/vso_obscuration.hpp -- Stephen Fegan -- 2015-11-09
 
@@ -10,11 +10,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -60,19 +60,24 @@ class VSOObscuration
 
   virtual VSOObscuration* clone() const = 0;
 
-  virtual void
-  dump_to_proto(ix::simulation::vs_optics::VSOObscurationData* d) const = 0;
-  
+#ifndef SWIG
+  virtual calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const = 0;
+#else
+  virtual calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const = 0;
+  virtual void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const = 0;
+#endif
+
   static VSOObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d);
-  
+
 #if 0
   virtual std::string dumpToString() const = 0;
-  static std::vector<VSOObscuration*> 
+  static std::vector<VSOObscuration*>
   createObsVecFromString(const std::string &str);
-  static std::string 
+  static std::string
   dumpObsVecToString(const std::vector<VSOObscuration*>& vo);
-  
+
   static bool tokenize(std::string& str, const std::string& name,
                        std::vector<std::string>& tokens);
 #endif
@@ -94,10 +99,14 @@ class VSODiskObscuration: public VSOObscuration
                    math::vs_physics::Particle& p_out) const override;
   VSOObscuration* clone() const override;
 
-  void
-  dump_to_proto(ix::simulation::vs_optics::VSOObscurationData* d)
-      const override;
-  
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
   static VSOObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSODiskObscurationData& d);
 
@@ -127,7 +136,7 @@ class VSOTubeObscuration: public VSOObscuration
                          double radius, bool incoming_only):
       VSOObscuration(), fX1(x1), fX2(x2), fR(radius), fN(), fD1(), fD2(),
       fICO(incoming_only)
-  { 
+  {
     fN = x2-x1;
     fN /= fN.Norm();
     fD1 = fN*x1;
@@ -140,9 +149,14 @@ class VSOTubeObscuration: public VSOObscuration
                    math::vs_physics::Particle& p_out) const override;
   VSOObscuration* clone() const override;
 
-  void dump_to_proto(ix::simulation::vs_optics::VSOObscurationData* d)
-      const override;
-  
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
   static VSOObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d);
 
@@ -155,7 +169,7 @@ class VSOTubeObscuration: public VSOObscuration
   const math::vs_physics::Vec3D& end2_pos() const { return fX2; }
   double diameter() const { return 2.0*fR; }
   bool incoming_only() const { return fICO; }
-  
+
  private:
   math::vs_physics::Vec3D fX1;
   math::vs_physics::Vec3D fX2;
@@ -168,4 +182,3 @@ class VSOTubeObscuration: public VSOObscuration
 };
 
 } } } // namespace calin::simulation::vs_optics
-
