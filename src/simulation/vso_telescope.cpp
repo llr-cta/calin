@@ -440,7 +440,7 @@ populateMirrorsAndPixelsRandom(
     {
       ++num_hex_rings;
       has_mirror = false;
-      for(unsigned irun=0;irun<(num_hex_rings+1);irun++)
+      for(int irun=0;irun<(num_hex_rings+1);irun++)
       {
         auto hexid = math::hex_array::
           positive_ringid_segid_runid_to_hexid(num_hex_rings+1,0,irun);
