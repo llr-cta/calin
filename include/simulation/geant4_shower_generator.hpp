@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/simulation/geant4_shower_generator.hpp -- Stephen Fegan -- 2015-06-23
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -43,6 +43,7 @@ namespace calin { namespace simulation { namespace shower_generator {
 class EAS_SteppingAction;
 class EAS_PrimaryGeneratorAction;
 class EAS_StackingAction;
+class EAS_UserEventAction;
 
 enum class VerbosityLevel {
   SUPPRESSED_ALL, SUPRESSED_STDOUT, NORMAL, VERBOSE_EVENT, VERBOSE_TRACKING,
@@ -75,13 +76,14 @@ class Geant4ShowerGenerator
   bool adopt_atm_ = false;
   double ztop_of_atm_ = 0;
   double zground_ = 0;
-  
+
   G4UImanager* ui_manager_                = nullptr;    // don't delete me
   G4UIsession* ui_session_                = nullptr;    // delete me
   G4RunManager* run_manager_              = nullptr;    // delete me
   EAS_SteppingAction* step_action_        = nullptr;    // don't delete me
   EAS_PrimaryGeneratorAction* gen_action_ = nullptr;    // don't delete me
   EAS_StackingAction* stack_action_       = nullptr;    // don't delete me
-}; 
+  EAS_UserEventAction* event_action_      = nullptr;    // don't delete me
+};
 
 } } } // namespace calin::simulation::generator

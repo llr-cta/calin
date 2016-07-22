@@ -29,7 +29,17 @@ TrackVisitor::~TrackVisitor()
   // nothing to see here
 }
 
-void TrackVisitor::visitTrack(const Track& track, bool& kill_track)
+void TrackVisitor::visit_event(const Event& event, bool& kill_event)
+{
+  // default is to do nothing
+}
+
+void TrackVisitor::visit_track(const Track& track, bool& kill_track)
+{
+  // default is to do nothing
+}
+
+void TrackVisitor::leave_event()
 {
   // default is to do nothing
 }

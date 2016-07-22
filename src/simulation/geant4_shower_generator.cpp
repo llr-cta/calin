@@ -77,6 +77,9 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
   physlist->SetVerboseLevel(verbose_everything);
   run_manager_->SetUserInitialization(physlist);
 
+  event_action_ = new EAS_UserEventAction(visitor_);
+  run_manager_->SetUserAction(event_action_);
+
   step_action_ = new EAS_SteppingAction(visitor_);
   run_manager_->SetUserAction(step_action_);
 
