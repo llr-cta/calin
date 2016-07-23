@@ -36,6 +36,8 @@ enum class ParticleType { GAMMA, ELECTRON, POSITRON, MUON, ANTI_MUON,
 
 struct Event
 {
+  int event_id;
+  
   ParticleType type;     // Simplified particle type
   int pdg_type;          // PDG particle type code
   double q;              // PDG particle charge          [e]

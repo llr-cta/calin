@@ -355,6 +355,7 @@ EAS_UserEventAction::~EAS_UserEventAction()
 void EAS_UserEventAction::BeginOfEventAction(const G4Event *anEvent)
 {
   calin::simulation::tracker::Event event;
+  event.event_id = anEvent->GetEventID();
 
   assert(anEvent->GetNumberOfPrimaryVertex() == 1);
   const auto* vertex = anEvent->GetPrimaryVertex(0);
@@ -370,7 +371,7 @@ void EAS_UserEventAction::BeginOfEventAction(const G4Event *anEvent)
   const auto posn = vertex->GetPosition();
   event.e0       = primary->GetTotalEnergy()/CLHEP::MeV;
   g4vec_to_eigen(event.x0, posn, CLHEP::cm);
-  g4vec_to_eigen(event.u0, primary->GetMomentum());
+  g4vec_to_eigen(event.u0, primary->GetMomentumDirection());
   event.t0       = 0; // pre_step_pt->GetGlobalTime()/CLHEP::ns;
 
   event.weight   = vertex->GetWeight();
