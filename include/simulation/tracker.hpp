@@ -37,7 +37,7 @@ enum class ParticleType { GAMMA, ELECTRON, POSITRON, MUON, ANTI_MUON,
 struct Event
 {
   int event_id;
-  
+
   ParticleType type;     // Simplified particle type
   int pdg_type;          // PDG particle type code
   double q;              // PDG particle charge          [e]
@@ -48,7 +48,7 @@ struct Event
   double e0;             // Total energy at start of evt [MeV]
   double t0;             // Time at start of event       [ns]
 
-  double weight;         // Track weighting for thinning
+  double weight;         // Event weighting for thinning
 };
 
 struct Track
