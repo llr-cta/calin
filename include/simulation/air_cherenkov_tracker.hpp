@@ -37,15 +37,25 @@ using calin::simulation::tracker::Event;
 
 struct AirCherenkovTrack
 {
-  double sin2_thetac;    // Sine^2 of emission angle     [1]
-  double sin_thetac;     // Sine of emssion angle        [1]
-  double cos_thetac;     // Cosine of emission angle     [1]
-  double yield_density;  // Cherenkov photon density     [ph/eV]
-  double n;              // Refracive index              [1]
-  double gamma;          // Particle gamma               [1]
-  Eigen::Vector3d x0;    // Position of start of track   [cm]
-  Eigen::Vector3d u;     // Direction of propogation     [1]
-  double ustep;          // Track length                 [cm]
+  double sin2_thetac;      // Sine^2 of emission angle     [1]
+  double sin_thetac;       // Sine of emssion angle        [1]
+  double cos_thetac;       // Cosine of emission angle     [1]
+  double yield_density;    // Cherenkov photon density     [ph/eV]
+  double n;                // Refracive index              [1]
+  double gamma;            // Particle gamma               [1]
+
+  Eigen::Vector3d x0;      // Position of start of track   [cm]
+  double e0;               // Total energy at start of trk [MeV]
+  double t0;               // Time at start of track       [ns]
+
+  Eigen::Vector3d dx_hat;  // Unit vector from x0 to x1    [1]
+  double dx;               // Step length                  [cm]
+  double de;               // Change in energy             [MeV]
+  double dt;               // Time step                    [ns]
+
+  // Track from underlying simulator - this could be split by AirCherenkov
+  // code if it is too long, i.e. if theta_c changes significantly along
+  // the track
   const calin::simulation::tracker::Track* particle_track;
 };
 

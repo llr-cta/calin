@@ -70,6 +70,8 @@ struct Track
 
   Eigen::Vector3d dx_hat;  // Unit vector from x0 to x1    [1]
   double dx;               // Step length                  [cm]
+  double de;               // Change in energy             [MeV]
+  double dt;               // Time step                    [ns]
 
   double weight;           // Track weighting for thinning
 };
