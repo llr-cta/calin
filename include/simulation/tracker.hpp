@@ -53,24 +53,25 @@ struct Event
 
 struct Track
 {
-  ParticleType type;     // Simplified particle type
-  int pdg_type;          // PDG particle type code
-  double q;              // PDG particle charge          [e]
-  double mass;           // PDG particle rest mass       [MeV]
+  ParticleType type;       // Simplified particle type
+  int pdg_type;            // PDG particle type code
+  double q;                // PDG particle charge          [e]
+  double mass;             // PDG particle rest mass       [MeV]
 
-  Eigen::Vector3d x0;    // Position of start of track   [cm]
-  Eigen::Vector3d u0;    // Direction of start of track  [1]
-  double e0;             // Total energy at start of trk [MeV]
-  double t0;             // Time at start of track       [ns]
+  Eigen::Vector3d x0;      // Position of start of track   [cm]
+  Eigen::Vector3d u0;      // Direction at start of track  [1]
+  double e0;               // Total energy at start of trk [MeV]
+  double t0;               // Time at start of track       [ns]
 
-  Eigen::Vector3d x1;    // Position of end of track     [cm]
-  Eigen::Vector3d u1;    // Direction of end of track    [1]
-  double e1;             // Total energy at end of track [MeV]
-  double t1;             // Time at end of track         [ns]
+  Eigen::Vector3d x1;      // Position of end of track     [cm]
+  Eigen::Vector3d u1;      // Direction at end of track    [1]
+  double e1;               // Total energy at end of track [MeV]
+  double t1;               // Time at end of track         [ns]
 
-  double dx;             // Step length                  [cm]
+  Eigen::Vector3d dx_hat;  // Unit vector from x0 to x1    [1]
+  double dx;               // Step length                  [cm]
 
-  double weight;         // Track weighting for thinning
+  double weight;           // Track weighting for thinning
 };
 
 class TrackVisitor

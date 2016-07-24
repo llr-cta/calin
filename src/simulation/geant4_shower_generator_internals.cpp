@@ -175,6 +175,7 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
   g4vec_to_eigen(track.u1, post_step_pt->GetMomentumDirection());
   track.t1       = post_step_pt->GetGlobalTime()/CLHEP::ns;
 
+  track.dx_hat   = (track.x1-track.x0).normalized();
   track.dx       = the_step->GetStepLength()/CLHEP::cm;
   track.weight   = pre_step_pt->GetWeight();
 
