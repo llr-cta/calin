@@ -47,7 +47,7 @@ struct AirCherenkovTrack
   double cos_thetac;       // Cosine of emission angle          [1]
   double yield_density;    // Cherenkov photon density          [ph/eV]
   double n;                // Refracive index                   [1]
-  double gamma;            // Particle gamma                    [1]
+  double gamma_sq;         // Particle gamma                    [1]
 
   Eigen::Vector3d x0;      // Position of start of track        [cm]
   double e0;               // Total energy at start of trk      [MeV]
