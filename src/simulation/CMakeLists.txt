@@ -16,7 +16,7 @@
 set(CALIN_TARGET_LIBRARY calin_simulation)
 set(CALIN_SOURCES atmosphere.cpp vso_obscuration.cpp vso_mirror.cpp
 	  vso_pixel.cpp vso_telescope.cpp vso_array.cpp vso_raytracer.cpp
-		pmt.cpp air_cherenkov_tracker.cpp tracker.cpp)
+	pmt.cpp air_cherenkov_tracker.cpp iact_array_tracker.cpp tracker.cpp)
 
 if(GEANT4_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES}

@@ -73,7 +73,8 @@ class AirCherenkovTrackVisitor
 public:
   virtual ~AirCherenkovTrackVisitor();
   virtual void visit_event(const Event& event, bool& kill_event);
-  virtual void visit_cherenkov_track(const AirCherenkovTrack& track, bool& kill_track);
+  virtual void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
+    bool& kill_track);
   virtual void leave_event();
 };
 
