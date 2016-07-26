@@ -26,10 +26,10 @@
 #include <simulation/geant4_shower_generator_internals.hpp>
 #include <io/log.hpp>
 
-using namespace calin::simulation::shower_generator;
+using namespace calin::simulation::geant4_shower_generator;
 using namespace calin::io::log;
 
-void calin::simulation::shower_generator::
+void calin::simulation::geant4_shower_generator::
 g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec)
 {
   evec[0] = g4vec[0];
@@ -37,7 +37,7 @@ g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec)
   evec[2] = g4vec[2];
 }
 
-void calin::simulation::shower_generator::
+void calin::simulation::geant4_shower_generator::
 g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
                     double to_units)
 {
@@ -46,7 +46,7 @@ g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
   evec[2] = g4vec[2]/to_units;
 }
 
-void calin::simulation::shower_generator::
+void calin::simulation::geant4_shower_generator::
 eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec)
 {
   g4vec[0] = evec[0];
@@ -54,7 +54,7 @@ eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec)
   g4vec[2] = evec[2];
 }
 
-void calin::simulation::shower_generator::
+void calin::simulation::geant4_shower_generator::
 eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec,
                double from_units)
 {
@@ -64,7 +64,7 @@ eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec,
 }
 
 calin::simulation::tracker::ParticleType
-calin::simulation::shower_generator::pdg_to_track_type(G4int pdg_type)
+calin::simulation::geant4_shower_generator::pdg_to_track_type(G4int pdg_type)
 {
   using calin::simulation::tracker::ParticleType;
   switch(pdg_type)
@@ -82,7 +82,7 @@ calin::simulation::shower_generator::pdg_to_track_type(G4int pdg_type)
   return ParticleType::OTHER;
 }
 
-G4int calin::simulation::shower_generator::
+G4int calin::simulation::geant4_shower_generator::
 track_to_pdg_type(calin::simulation::tracker::ParticleType track_type)
 {
   using calin::simulation::tracker::ParticleType;

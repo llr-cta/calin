@@ -56,7 +56,7 @@
 #include <G4UIsession.hh>
 #include <G4TrackStatus.hh>
 
-namespace calin { namespace simulation { namespace shower_generator {
+namespace calin { namespace simulation { namespace geant4_shower_generator {
 
 void g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec);
 void g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
