@@ -69,7 +69,7 @@ visit_track(const Track& track, bool& kill_track)
   if(track.dx <= dx_max_)return visitor_->visit_track(track, kill_track);
 
   // Otherwise ...
-  Track subtrack { track };
+  Track subtrack = track;
   double dx_sum = 0;
 
   subtrack.dx = dx_max_;
@@ -91,8 +91,7 @@ visit_track(const Track& track, bool& kill_track)
       subtrack.de = subtrack.e1 - subtrack.e0;
       subtrack.dt = subtrack.t1 - subtrack.t0;
 
-      visitor_->visit_track(subtrack, kill_track);
-      return;
+      return visitor_->visit_track(subtrack, kill_track);
     }
     else
     {
