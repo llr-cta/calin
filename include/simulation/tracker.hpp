@@ -78,11 +78,27 @@ struct Track
 
 class TrackVisitor
 {
- public:
+public:
   virtual ~TrackVisitor();
   virtual void visit_event(const Event& event, bool& kill_event);
   virtual void visit_track(const Track& track, bool& kill_track);
   virtual void leave_event();
 };
+
+class LengthLimitingTrackVisitor: public TrackVisitor
+{
+public:
+  LengthLimitingTrackVisitor(TrackVisitor* visitor, double dx_max,
+    bool adopt_visitor = false);
+  virtual ~LengthLimitingTrackVisitor();
+  void visit_event(const Event& event, bool& kill_event) override;
+  void visit_track(const Track& track, bool& kill_track) override;
+  void leave_event() override;
+private:
+  TrackVisitor* visitor_ = nullptr;
+  bool adopt_visitor_ = false;
+  double dx_max_ = 0;
+};
+
 
 } } } // namespace calin::simulation::tracker
