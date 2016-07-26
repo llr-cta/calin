@@ -136,7 +136,7 @@ generate_showers(unsigned num_events,
   // default particle kinematic
   G4ParticleTable* particle_table = G4ParticleTable::GetParticleTable();
   G4ParticleDefinition* particle
-      = particle_table->FindParticle(track_to_pdg_type(type));
+      = particle_table->FindParticle(particle_type_to_pdg_type(type));
 
   G4ThreeVector position;
   eigen_to_g4vec(position, x0, CLHEP::cm);

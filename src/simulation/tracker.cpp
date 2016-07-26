@@ -20,9 +20,92 @@
 
 */
 
+#include <cassert>
 #include <simulation/tracker.hpp>
 
 using namespace calin::simulation::tracker;
+
+calin::simulation::tracker::ParticleType
+calin::simulation::tracker::pdg_type_to_particle_type(int pdg_type)
+{
+  switch(pdg_type)
+  {
+    case 22:    return ParticleType::GAMMA;
+    case 1:     return ParticleType::ELECTRON;
+    case -1:    return ParticleType::POSITRON;
+    case 13:    return ParticleType::MUON;
+    case -13:   return ParticleType::ANTI_MUON;
+    case 2212:  return ParticleType::PROTON;
+    case -2212: return ParticleType::ANTI_PROTON;
+    default:    return ParticleType::OTHER;
+  };
+  assert(0);
+  return ParticleType::OTHER;
+}
+
+int calin::simulation::tracker::
+particle_type_to_pdg_type(calin::simulation::tracker::ParticleType track_type)
+{
+  switch(track_type)
+  {
+    case ParticleType::GAMMA:       return 22;
+    case ParticleType::ELECTRON:    return 1;
+    case ParticleType::POSITRON:    return -1;
+    case ParticleType::MUON:        return 13;
+    case ParticleType::ANTI_MUON:   return -13;
+    case ParticleType::PROTON:      return 2212;
+    case ParticleType::ANTI_PROTON: return -2212;
+    case ParticleType::OTHER:
+      throw(std::runtime_error("ParticleType::OTHER has no PDG type code"));
+  };
+  assert(0);
+  return 0;
+}
+
+double calin::simulation::tracker::
+particle_type_to_mass(ParticleType track_type)
+{
+  switch(track_type)
+  {
+    case ParticleType::GAMMA:
+      return 0.0;
+    case ParticleType::ELECTRON:
+    case ParticleType::POSITRON:
+      return 0.510998928;
+    case ParticleType::MUON:
+    case ParticleType::ANTI_MUON:
+      return 105.6583715;
+    case ParticleType::PROTON:
+    case ParticleType::ANTI_PROTON:
+      return 938.262046;
+    case ParticleType::OTHER:
+      throw(std::runtime_error("ParticleType::OTHER has no mass"));
+  };
+  assert(0);
+  return 0;
+}
+
+double calin::simulation::tracker::
+particle_type_to_charge(ParticleType track_type)
+{
+  switch(track_type)
+  {
+  case ParticleType::GAMMA:
+    return 0.0;
+  case ParticleType::ELECTRON:
+  case ParticleType::MUON:
+  case ParticleType::ANTI_PROTON:
+    return -1.0;
+  case ParticleType::POSITRON:
+  case ParticleType::ANTI_MUON:
+  case ParticleType::PROTON:
+    return 1.0;
+  case ParticleType::OTHER:
+    throw(std::runtime_error("ParticleType::OTHER has no charge"));
+  };
+  assert(0);
+  return 0;
+}
 
 TrackVisitor::~TrackVisitor()
 {

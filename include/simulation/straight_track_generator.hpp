@@ -53,6 +53,7 @@ class StraightTrackGenerator
   calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
   double zground_ = 0;
+  int event_id_ = 0;
 };
 
 } } } // namespace calin::simulation::straight_track_generator

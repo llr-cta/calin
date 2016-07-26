@@ -65,9 +65,6 @@ void eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec);
 void eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec,
                     double from_units);
 
-calin::simulation::tracker::ParticleType pdg_to_track_type(G4int pdg_type);
-G4int track_to_pdg_type(calin::simulation::tracker::ParticleType track_type);
-
 class EAS_StackingAction: public G4UserStackingAction
 {
  public:

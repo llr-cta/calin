@@ -63,45 +63,6 @@ eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec,
   g4vec[2] = evec[2]*from_units;
 }
 
-calin::simulation::tracker::ParticleType
-calin::simulation::geant4_shower_generator::pdg_to_track_type(G4int pdg_type)
-{
-  using calin::simulation::tracker::ParticleType;
-  switch(pdg_type)
-  {
-    case 22:    return ParticleType::GAMMA;
-    case 1:     return ParticleType::ELECTRON;
-    case -1:    return ParticleType::POSITRON;
-    case 13:    return ParticleType::MUON;
-    case -13:   return ParticleType::ANTI_MUON;
-    case 2212:  return ParticleType::PROTON;
-    case -2212: return ParticleType::ANTI_PROTON;
-    default:    return ParticleType::OTHER;
-  };
-  assert(0);
-  return ParticleType::OTHER;
-}
-
-G4int calin::simulation::geant4_shower_generator::
-track_to_pdg_type(calin::simulation::tracker::ParticleType track_type)
-{
-  using calin::simulation::tracker::ParticleType;
-  switch(track_type)
-  {
-    case ParticleType::GAMMA:       return 22;
-    case ParticleType::ELECTRON:    return 1;
-    case ParticleType::POSITRON:    return -1;
-    case ParticleType::MUON:        return 13;
-    case ParticleType::ANTI_MUON:   return -13;
-    case ParticleType::PROTON:      return 2212;
-    case ParticleType::ANTI_PROTON: return -2212;
-    case ParticleType::OTHER:
-      throw(std::runtime_error("ParticleType::OTHER has no PDG type code"));
-  };
-  assert(0);
-  return 0;
-}
-
 // ============================================================================
 //
 // EAS_SteppingAction - Stacking action - kill low energy particles
@@ -160,7 +121,7 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
   track.pdg_type = pdg_info->GetPDGEncoding();
   track.q        = pdg_info->GetPDGCharge();
   track.mass     = pdg_info->GetPDGMass()/CLHEP::MeV;
-  track.type     = pdg_to_track_type(track.pdg_type);
+  track.type     = tracker::pdg_type_to_particle_type(track.pdg_type);
 
   const G4ThreeVector& pre_step_pt_posn = pre_step_pt->GetPosition();
   track.e0       = pre_step_pt_etot/CLHEP::MeV;
@@ -370,7 +331,7 @@ void EAS_UserEventAction::BeginOfEventAction(const G4Event *anEvent)
   event.pdg_type = pdg_info->GetPDGEncoding();
   event.q        = pdg_info->GetPDGCharge();
   event.mass     = pdg_info->GetPDGMass()/CLHEP::MeV;
-  event.type     = pdg_to_track_type(event.pdg_type);
+  event.type     = tracker::pdg_type_to_particle_type(event.pdg_type);
 
   const auto posn = vertex->GetPosition();
   event.e0       = primary->GetTotalEnergy()/CLHEP::MeV;
