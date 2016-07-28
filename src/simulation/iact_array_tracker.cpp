@@ -60,6 +60,8 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
 
   for(auto& isphere : spheres_)
   {
+    // Author's note : see Calin notebook for sphere / cone intersection
+    
     Eigen::Vector3d rx = isphere.r0 - CT.x_mid;
     double rx2  = rx.squaredNorm();
     double rxu  = rx.dot(CT.dx_hat); // note bad naming of dx_hat
@@ -76,7 +78,7 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
       hit.rxu        = rxu;
       hit.rxv        = rxv;
       hit.dmin       = std::numeric_limits<double>::quiet_NaN();
-      hit.cos_phimax = -1;
+      hit.cos_phimax = -1.0;
       hit.phimax     = M_PI;
       isphere.processor->process_hit(hit);
       continue;
@@ -88,6 +90,7 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
     double cos_phimax = (sqrt(rx2_minus_r2) - CT.cos_thetac*rxu) /
       (CT.sin_thetac*rxv);
 
+    // This covers cases where the sphere intersects the "reverse" cone
     if(cos_phimax < 1.0)
     {
       IACTDetectorSphereHit hit;
@@ -96,8 +99,16 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
       hit.rxu        = rxu;
       hit.rxv        = rxv;
       hit.dmin       = dmin;
-      hit.cos_phimax = std::min(cos_phimax, -1.0);
-      hit.phimax     = std::acos(cos_phimax);
+      if(cos_phimax <= -1.0)
+      {
+        hit.cos_phimax = -1.0;
+        hit.phimax     = M_PI;
+      }
+      else
+      {
+        hit.cos_phimax = cos_phimax;
+        hit.phimax     = std::acos(cos_phimax);
+      }
       isphere.processor->process_hit(hit);
       continue;
     }
