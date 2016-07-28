@@ -44,6 +44,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <calin_global_definitions.hpp>
 #include <common_types.pb.h>
 #include <math/rng.hpp>
 
@@ -69,6 +70,8 @@ class Vec3D
   inline Vec3D( double _x, double _y, double _z );  //!<overloaded constructor
   Vec3D(const ix::common_types::Vector3D& d); // construct from protobuf
   Vec3D(const ix::common_types::Vector3D& d, double scale); // construct from scaled protobuf
+  inline Vec3D(const Eigen::Vector3d& v); // construct from Eigen vector
+  inline Vec3D(const Eigen::Vector3d& v, double scale); // construct from Eigen vector
 
   inline void Polar(double& r, double& theta, double& phi) const;
 
@@ -101,6 +104,8 @@ class Vec3D
   inline Vec3D  operator ^ (const Vec3D& v) const;  //!<vector product
 
   inline Vec3D  operator & (const Vec3D& v) const;  //!<addition of rotations
+
+  inline operator Eigen::Vector3d() const;
 
   ix::common_types::Vector3D* dump_as_proto(
     ix::common_types::Vector3D* d = nullptr) const;
@@ -155,6 +160,22 @@ inline Vec3D::Vec3D(const Vec3D& o): x(o.x), y(o.y), z(o.z)
 inline Vec3D::Vec3D( double _x, double _y, double _z ): x(_x), y(_y), z(_z)
 {
   // nothing to see here
+}
+
+inline Vec3D::Vec3D(const Eigen::Vector3d& v): x(v(0)), y(v(1)), z(v(2))
+{
+  // nothing to see here
+}
+
+inline Vec3D::Vec3D(const Eigen::Vector3d& v, double scale):
+  x(v(0)*scale), y(v(1)*scale), z(v(2)*scale)
+{
+  // nothing to see here
+}
+
+inline Vec3D::operator Eigen::Vector3d() const
+{
+  return Eigen::Vector3d(x, y, z);
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
