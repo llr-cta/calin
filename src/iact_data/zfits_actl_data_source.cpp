@@ -59,7 +59,7 @@ ZFITSSingleFileACTLDataSource(const std::string& filename,
     {
       std::unique_ptr<ACTL::IO::ProtobufIFits> rh_zfits {
         new ACTL::IO::ProtobufIFits(filename_.c_str(), "RunHeader") };
-      run_header_ = zfits_->readTypedMessage<DataModel::CameraRunHeader>(1);
+      //run_header_ = zfits_->readTypedMessage<DataModel::CameraRunHeader>(1);
     }
     catch(...)
     {
