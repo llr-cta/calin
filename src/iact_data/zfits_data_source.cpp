@@ -54,11 +54,12 @@ ZFITSDataSource::ZFITSDataSource(const std::string& filename,
     ZFITSACTLDataSource(filename, config);
   actl_zfits_->set_next_index(1);
   uint64_t unused_seq_index = 0;
-  auto* sample_event = actl_zfits_->get_next(unused_seq_index);
+  auto* actl_sample_event = actl_zfits_->get_next(unused_seq_index);
+  auto* actl_run_header = actl_zfits_->get_run_header();
   run_config_ = new TelescopeRunConfiguration;
-  decoder_->decode_run_config(run_config_, actl_zfits_->get_run_header(),
-    sample_event);
-  delete sample_event;
+  decoder_->decode_run_config(run_config_, actl_run_header, actl_sample_event);
+  delete actl_run_header;
+  delete actl_sample_event;
   actl_zfits_->set_next_index(0);
 }
 

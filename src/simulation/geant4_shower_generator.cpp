@@ -23,7 +23,7 @@
 #include <simulation/geant4_shower_generator.hpp>
 #include <simulation/geant4_shower_generator_internals.hpp>
 
-using namespace calin::simulation::shower_generator;
+using namespace calin::simulation::geant4_shower_generator;
 using namespace calin::io::log;
 
 Geant4ShowerGenerator::
@@ -112,7 +112,7 @@ Geant4ShowerGenerator::~Geant4ShowerGenerator()
   delete ui_session_;
 }
 
-void Geant4ShowerGenerator::setMinimumEnergyCut(double emin_mev)
+void Geant4ShowerGenerator::set_minimum_energy_cut(double emin_mev)
 {
   step_action_->setEminCut(emin_mev);
   if(stack_action_ == nullptr)
@@ -124,7 +124,7 @@ void Geant4ShowerGenerator::setMinimumEnergyCut(double emin_mev)
 }
 
 void Geant4ShowerGenerator::
-generateShowers(unsigned num_events,
+generate_showers(unsigned num_events,
                 calin::simulation::tracker::ParticleType type,
                 double total_energy,
                 const Eigen::Vector3d& x0,
@@ -136,7 +136,7 @@ generateShowers(unsigned num_events,
   // default particle kinematic
   G4ParticleTable* particle_table = G4ParticleTable::GetParticleTable();
   G4ParticleDefinition* particle
-      = particle_table->FindParticle(track_to_pdg_type(type));
+      = particle_table->FindParticle(particle_type_to_pdg_type(type));
 
   G4ThreeVector position;
   eigen_to_g4vec(position, x0, CLHEP::cm);

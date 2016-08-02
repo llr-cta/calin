@@ -34,8 +34,15 @@ namespace calin { namespace simulation { namespace tracker {
 enum class ParticleType { GAMMA, ELECTRON, POSITRON, MUON, ANTI_MUON,
     PROTON, ANTI_PROTON, OTHER };
 
+ParticleType pdg_type_to_particle_type(int pdg_type);
+int particle_type_to_pdg_type(ParticleType track_type);
+double particle_type_to_mass(ParticleType track_type);
+double particle_type_to_charge(ParticleType track_type);
+
 struct Event
 {
+  int event_id;
+
   ParticleType type;     // Simplified particle type
   int pdg_type;          // PDG particle type code
   double q;              // PDG particle charge          [e]
@@ -46,38 +53,57 @@ struct Event
   double e0;             // Total energy at start of evt [MeV]
   double t0;             // Time at start of event       [ns]
 
-  double weight;         // Track weighting for thinning
+  double weight;         // Event weighting for thinning
 };
 
 struct Track
 {
-  ParticleType type;     // Simplified particle type
-  int pdg_type;          // PDG particle type code
-  double q;              // PDG particle charge          [e]
-  double mass;           // PDG particle rest mass       [MeV]
+  ParticleType type;       // Simplified particle type
+  int pdg_type;            // PDG particle type code
+  double q;                // PDG particle charge          [e]
+  double mass;             // PDG particle rest mass       [MeV]
 
-  Eigen::Vector3d x0;    // Position of start of track   [cm]
-  Eigen::Vector3d u0;    // Direction of start of track  [1]
-  double e0;             // Total energy at start of trk [MeV]
-  double t0;             // Time at start of track       [ns]
+  Eigen::Vector3d x0;      // Position of start of track   [cm]
+  Eigen::Vector3d u0;      // Direction at start of track  [1]
+  double e0;               // Total energy at start of trk [MeV]
+  double t0;               // Time at start of track       [ns]
 
-  Eigen::Vector3d x1;    // Position of end of track     [cm]
-  Eigen::Vector3d u1;    // Direction of end of track    [1]
-  double e1;             // Total energy at end of track [MeV]
-  double t1;             // Time at end of track         [ns]
+  Eigen::Vector3d x1;      // Position of end of track     [cm]
+  Eigen::Vector3d u1;      // Direction at end of track    [1]
+  double e1;               // Total energy at end of track [MeV]
+  double t1;               // Time at end of track         [ns]
 
-  double dx;             // Step length                  [cm]
+  Eigen::Vector3d dx_hat;  // Unit vector from x0 to x1    [1]
+  double dx;               // Step length                  [cm]
+  double de;               // Change in energy             [MeV]
+  double dt;               // Time step                    [ns]
 
-  double weight;         // Track weighting for thinning
+  double weight;           // Track weighting for thinning
 };
 
 class TrackVisitor
 {
- public:
+public:
   virtual ~TrackVisitor();
   virtual void visit_event(const Event& event, bool& kill_event);
   virtual void visit_track(const Track& track, bool& kill_track);
   virtual void leave_event();
 };
+
+class LengthLimitingTrackVisitor: public TrackVisitor
+{
+public:
+  LengthLimitingTrackVisitor(TrackVisitor* visitor, double dx_max,
+    bool adopt_visitor = false);
+  virtual ~LengthLimitingTrackVisitor();
+  void visit_event(const Event& event, bool& kill_event) override;
+  void visit_track(const Track& track, bool& kill_track) override;
+  void leave_event() override;
+private:
+  TrackVisitor* visitor_ = nullptr;
+  bool adopt_visitor_ = false;
+  double dx_max_ = 0;
+};
+
 
 } } } // namespace calin::simulation::tracker

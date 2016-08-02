@@ -38,7 +38,7 @@ class G4UImanager;
 class G4UIsession;
 class G4RunManager;
 
-namespace calin { namespace simulation { namespace shower_generator {
+namespace calin { namespace simulation { namespace geant4_shower_generator {
 
 class EAS_SteppingAction;
 class EAS_PrimaryGeneratorAction;
@@ -61,13 +61,13 @@ class Geant4ShowerGenerator
                         bool adopt_atm = false);
   virtual ~Geant4ShowerGenerator();
 
-  void setMinimumEnergyCut(double emin_mev);
-  void generateShowers(unsigned num_events,
-                       calin::simulation::tracker::ParticleType type,
-                       double total_energy,
-                       const Eigen::Vector3d& x0 = Eigen::Vector3d(0,0,0),
-                       const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
-                       double weight=1.0);
+  void set_minimum_energy_cut(double emin_mev);
+  void generate_showers(unsigned num_events,
+                        calin::simulation::tracker::ParticleType type,
+                        double total_energy,
+                        const Eigen::Vector3d& x0 = Eigen::Vector3d(0,0,0),
+                        const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
+                        double weight=1.0);
 
  protected:
   calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;

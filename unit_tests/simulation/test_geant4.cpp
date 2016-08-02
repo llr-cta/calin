@@ -28,7 +28,7 @@
 
 using namespace calin::simulation::atmosphere;
 using namespace calin::simulation::tracker;
-using namespace calin::simulation::shower_generator;
+using namespace calin::simulation::geant4_shower_generator;
 
 TEST(TestGeant4, MakeUS76Atmosphere) {
   Atmosphere* atm = LayeredAtmosphere::us76();
@@ -45,8 +45,8 @@ TEST(TestGeant4, MakeGeant4Simulator) {
                             //VerbosityLevel::SUPRESSED_STDOUT);
                             //VerbosityLevel::NORMAL);
                             VerbosityLevel::VERBOSE_EVERYTHING);
-  sim.setMinimumEnergyCut(20); // MeV
-  sim.generateShowers(100, ParticleType::MUON, 1e6,
+  sim.set_minimum_energy_cut(20); // MeV
+  sim.generate_showers(100, ParticleType::MUON, 1e6,
                       Eigen::Vector3d(0, 0, atm->top_of_atmosphere()));
   delete(visitor);
   delete(atm);

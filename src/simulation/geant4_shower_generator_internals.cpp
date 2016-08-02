@@ -26,10 +26,10 @@
 #include <simulation/geant4_shower_generator_internals.hpp>
 #include <io/log.hpp>
 
-using namespace calin::simulation::shower_generator;
+using namespace calin::simulation::geant4_shower_generator;
 using namespace calin::io::log;
 
-void calin::simulation::shower_generator::
+void calin::simulation::geant4_shower_generator::
 g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec)
 {
   evec[0] = g4vec[0];
@@ -37,7 +37,7 @@ g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec)
   evec[2] = g4vec[2];
 }
 
-void calin::simulation::shower_generator::
+void calin::simulation::geant4_shower_generator::
 g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
                     double to_units)
 {
@@ -46,7 +46,7 @@ g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec,
   evec[2] = g4vec[2]/to_units;
 }
 
-void calin::simulation::shower_generator::
+void calin::simulation::geant4_shower_generator::
 eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec)
 {
   g4vec[0] = evec[0];
@@ -54,52 +54,13 @@ eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec)
   g4vec[2] = evec[2];
 }
 
-void calin::simulation::shower_generator::
+void calin::simulation::geant4_shower_generator::
 eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec,
                double from_units)
 {
   g4vec[0] = evec[0]*from_units;
   g4vec[1] = evec[1]*from_units;
   g4vec[2] = evec[2]*from_units;
-}
-
-calin::simulation::tracker::ParticleType
-calin::simulation::shower_generator::pdg_to_track_type(G4int pdg_type)
-{
-  using calin::simulation::tracker::ParticleType;
-  switch(pdg_type)
-  {
-    case 22:    return ParticleType::GAMMA;
-    case 1:     return ParticleType::ELECTRON;
-    case -1:    return ParticleType::POSITRON;
-    case 13:    return ParticleType::MUON;
-    case -13:   return ParticleType::ANTI_MUON;
-    case 2212:  return ParticleType::PROTON;
-    case -2212: return ParticleType::ANTI_PROTON;
-    default:    return ParticleType::OTHER;
-  };
-  assert(0);
-  return ParticleType::OTHER;
-}
-
-G4int calin::simulation::shower_generator::
-track_to_pdg_type(calin::simulation::tracker::ParticleType track_type)
-{
-  using calin::simulation::tracker::ParticleType;
-  switch(track_type)
-  {
-    case ParticleType::GAMMA:       return 22;
-    case ParticleType::ELECTRON:    return 1;
-    case ParticleType::POSITRON:    return -1;
-    case ParticleType::MUON:        return 13;
-    case ParticleType::ANTI_MUON:   return -13;
-    case ParticleType::PROTON:      return 2212;
-    case ParticleType::ANTI_PROTON: return -2212;
-    case ParticleType::OTHER:
-      throw(std::runtime_error("ParticleType::OTHER has no PDG type code"));
-  };
-  assert(0);
-  return 0;
 }
 
 // ============================================================================
@@ -160,7 +121,7 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
   track.pdg_type = pdg_info->GetPDGEncoding();
   track.q        = pdg_info->GetPDGCharge();
   track.mass     = pdg_info->GetPDGMass()/CLHEP::MeV;
-  track.type     = pdg_to_track_type(track.pdg_type);
+  track.type     = tracker::pdg_type_to_particle_type(track.pdg_type);
 
   const G4ThreeVector& pre_step_pt_posn = pre_step_pt->GetPosition();
   track.e0       = pre_step_pt_etot/CLHEP::MeV;
@@ -175,7 +136,11 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
   g4vec_to_eigen(track.u1, post_step_pt->GetMomentumDirection());
   track.t1       = post_step_pt->GetGlobalTime()/CLHEP::ns;
 
-  track.dx       = the_step->GetStepLength()/CLHEP::cm;
+  track.dx_hat   = track.x1 - track.x0;
+  track.dx       = track.dx_hat.norm();
+  track.dx_hat/=track.dx;
+  track.de       = track.e1 - track.e0;
+  track.dt       = track.t1 - track.t0;
   track.weight   = pre_step_pt->GetWeight();
 
   bool kill_track = false;
@@ -355,6 +320,7 @@ EAS_UserEventAction::~EAS_UserEventAction()
 void EAS_UserEventAction::BeginOfEventAction(const G4Event *anEvent)
 {
   calin::simulation::tracker::Event event;
+  event.event_id = anEvent->GetEventID();
 
   assert(anEvent->GetNumberOfPrimaryVertex() == 1);
   const auto* vertex = anEvent->GetPrimaryVertex(0);
@@ -365,12 +331,12 @@ void EAS_UserEventAction::BeginOfEventAction(const G4Event *anEvent)
   event.pdg_type = pdg_info->GetPDGEncoding();
   event.q        = pdg_info->GetPDGCharge();
   event.mass     = pdg_info->GetPDGMass()/CLHEP::MeV;
-  event.type     = pdg_to_track_type(event.pdg_type);
+  event.type     = tracker::pdg_type_to_particle_type(event.pdg_type);
 
   const auto posn = vertex->GetPosition();
   event.e0       = primary->GetTotalEnergy()/CLHEP::MeV;
   g4vec_to_eigen(event.x0, posn, CLHEP::cm);
-  g4vec_to_eigen(event.u0, primary->GetMomentum());
+  g4vec_to_eigen(event.u0, primary->GetMomentumDirection());
   event.t0       = 0; // pre_step_pt->GetGlobalTime()/CLHEP::ns;
 
   event.weight   = vertex->GetWeight();
