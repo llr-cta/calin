@@ -52,10 +52,20 @@ ZFITSDataSource::ZFITSDataSource(const std::string& filename,
 {
   actl_zfits_ = new zfits_actl_data_source::
     ZFITSACTLDataSource(filename, config);
-  actl_zfits_->set_next_index(1);
-  uint64_t unused_seq_index = 0;
-  auto* actl_sample_event = actl_zfits_->get_next(unused_seq_index);
-  auto* actl_run_header = actl_zfits_->get_run_header();
+  DataModel::CameraEvent* actl_sample_event = nullptr;
+  DataModel::CameraRunHeader* actl_run_header = nullptr;
+  try {
+    actl_zfits_->set_next_index(1);
+    uint64_t unused_seq_index = 0;
+    actl_sample_event = actl_zfits_->get_next(unused_seq_index);
+  } catch(...) {
+    // ignore errors that occur reading sample event;
+  }
+  try {
+    actl_run_header = actl_zfits_->get_run_header();
+  } catch(...) {
+    // ignore errors that occur reading run header
+  }
   run_config_ = new TelescopeRunConfiguration;
   decoder_->decode_run_config(run_config_, actl_run_header, actl_sample_event);
   delete actl_run_header;
