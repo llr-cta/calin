@@ -58,9 +58,9 @@ ZFITSSingleFileACTLDataSource(const std::string& filename,
     try
     {
       std::unique_ptr<ACTL::IO::ProtobufIFits> rh_zfits {
-        new ACTL::IO::ProtobufIFits(filename_.c_str(),
-          "RunHeader", DataModel::CameraRunHeader::descriptor()) };
-      run_header_ = zfits_->readTypedMessage<DataModel::CameraRunHeader>(1);
+        new ACTL::IO::ProtobufIFits(filename_.c_str(), "RunHeader") };
+      run_header_ = rh_zfits->readTypedMessage<DataModel::CameraRunHeader>(1);
+      //LOG(INFO) << run_header_->DebugString();
     }
     catch(...)
     {
@@ -71,7 +71,7 @@ ZFITSSingleFileACTLDataSource(const std::string& filename,
     }
   }
 
-  zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str());
+  zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str(), "Events");
 }
 
 ZFITSSingleFileACTLDataSource::~ZFITSSingleFileACTLDataSource()
