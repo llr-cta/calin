@@ -172,10 +172,12 @@ bool NectarCamCameraEventDecoder::decode(
         module_counters->add_counter_id(id); \
         module_counters->add_counter_value(val); \
       }
-//        auto* counter = module_counters->add_counter(); \
-//        counter->set_counter_id(id); \
-//        counter->set_value(val); \
-//      }
+#if 0
+        auto* counter = module_counters->add_counter(); \
+        counter->set_counter_id(id); \
+        counter->set_value(val); \
+      }
+#endif
       add_counter(0, mod_counter->global_event_counter);
       add_counter(1, mod_counter->bunch_counter);
       add_counter(2, mod_counter->event_counter);

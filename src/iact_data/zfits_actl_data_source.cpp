@@ -71,7 +71,7 @@ ZFITSSingleFileACTLDataSource(const std::string& filename,
     }
   }
 
-  zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str());
+  zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str(), "Events");
 }
 
 ZFITSSingleFileACTLDataSource::~ZFITSSingleFileACTLDataSource()
