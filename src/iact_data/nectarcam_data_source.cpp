@@ -209,7 +209,7 @@ bool NectarCamCameraEventDecoder::decode_run_config(
 {
   nectarcam_layout::nectarcam_19module_layout(
     calin_run_config->mutable_camera_layout());
-    
+
   if(cta_run_header)
   {
 #if 0
@@ -244,10 +244,10 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   unsigned nsample = config_.demand_nsample();
   if(nsample == 0 and cta_run_header)
     nsample = cta_run_header->numtraces();
-  if(nsample == 0 and cta_event->has_logain() and
+  if(nsample == 0 and cta_event and cta_event->has_logain() and
       cta_event->logain().has_waveforms())
     nsample = cta_event->logain().waveforms().num_samples();
-  if(nsample == 0 and cta_event->has_higain() and
+  if(nsample == 0 and cta_event and cta_event->has_higain() and
       cta_event->higain().has_waveforms())
     nsample = cta_event->higain().waveforms().num_samples();
   calin_run_config->set_num_samples(nsample);
