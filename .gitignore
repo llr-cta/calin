@@ -1,6 +1,5 @@
-mybuild/
-mybuild-work*/
-mybuild-home*/
+/build/
+/mybuild*/
 .#*
 #*#
 .ipynb_checkpoints/
