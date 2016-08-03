@@ -75,7 +75,21 @@ ZFITSSingleFileACTLDataSource(const std::string& filename,
     }
   }
 
-  zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str(), "Events");
+  zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str(), "Events",
+    DataModel::CameraEvent::descriptor());
+  if(zfits_->eof() && !zfits_->bad())
+    throw std::runtime_error("ZFits file " + filename_ + " has no Events table");
+
+  try
+  {
+    zfits_->CheckIfFileIsConsistent(false);
+  }
+  catch (exception& e)
+  {
+    LOG(WARNING) << "ZFits file " + filename_ +
+      " seems to be broken, attempting to repair.";
+    zfits_->CheckIfFileIsConsistent(true);
+  }
 }
 
 ZFITSSingleFileACTLDataSource::~ZFITSSingleFileACTLDataSource()
