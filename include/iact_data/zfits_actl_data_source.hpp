@@ -91,7 +91,7 @@ public:
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
   ZFITSSingleFileACTLDataSource(const std::string& filename,
-    const config_type& config = default_config());
+    config_type config = default_config());
   virtual ~ZFITSSingleFileACTLDataSource();
 
   DataModel::CameraEvent* get_next(uint64_t& seq_index_out,
@@ -125,10 +125,7 @@ public:
   DataModel::CameraRunHeader* get_run_header() override;
 
   static config_type default_config() {
-    config_type config = config_type::default_instance();
-    config.set_extension(".fits.fz");
-    return config;
-  }
+    return ZFITSSingleFileACTLDataSource::default_config(); }
   const config_type& config() const { return config_; }
 
 private:
