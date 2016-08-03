@@ -61,7 +61,9 @@ ZFITSSingleFileACTLDataSource(const std::string& filename,
         DataModel::CameraRunHeader::descriptor());
       if(rh_zfits.eof() && !rh_zfits.bad())
         throw std::runtime_error("ZFits reader found no RunHeader");
+#if 0
       rh_zfits.CheckIfFileIsConsistent(false);
+#endif
       if(rh_zfits.getNumMessagesInTable() > 0)
         run_header_ = rh_zfits.readTypedMessage<DataModel::CameraRunHeader>(1);
       //LOG(INFO) << run_header_->DebugString();
@@ -79,7 +81,7 @@ ZFITSSingleFileACTLDataSource(const std::string& filename,
     DataModel::CameraEvent::descriptor());
   if(zfits_->eof() && !zfits_->bad())
     throw std::runtime_error("ZFits file " + filename_ + " has no Events table");
-
+#if 0
   try
   {
     zfits_->CheckIfFileIsConsistent(false);
@@ -90,6 +92,7 @@ ZFITSSingleFileACTLDataSource(const std::string& filename,
       " seems to be broken, attempting to repair.";
     zfits_->CheckIfFileIsConsistent(true);
   }
+#endif
 }
 
 ZFITSSingleFileACTLDataSource::~ZFITSSingleFileACTLDataSource()
