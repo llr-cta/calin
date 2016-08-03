@@ -42,12 +42,21 @@ ACTLRandomAccessDataSourceWithRunHeader::
   // nothing to see here
 }
 
+namespace {
+  static std::string default_run_header_table_name("RunHeader");
+  static std::string default_events_table_name("Events");
+} // anonymous namespace
+
 ZFITSSingleFileACTLDataSource::
-ZFITSSingleFileACTLDataSource(const std::string& filename,
-    const config_type& config):
+ZFITSSingleFileACTLDataSource(const std::string& filename, config_type config):
   ACTLRandomAccessDataSourceWithRunHeader(),
   filename_(expand_filename(filename))
 {
+  if(config.run_header_table_name().empty())
+    config.set_run_header_table_name(default_run_header_table_name);
+  if(config.events_table_name().empty())
+    config.set_events_table_name(default_events_table_name);
+
   if(!is_file(filename_))
     throw std::runtime_error(std::string("No such file: ")+filename_);
   if(!is_readable(filename_))
@@ -57,13 +66,28 @@ ZFITSSingleFileACTLDataSource(const std::string& filename,
   {
     try
     {
-      ACTL::IO::ProtobufIFits rh_zfits(filename_.c_str(), "RunHeader",
+      ACTL::IO::ProtobufIFits rh_zfits(filename_.c_str(),
+        config.run_header_table_name(),
         DataModel::CameraRunHeader::descriptor());
       if(rh_zfits.eof() && !rh_zfits.bad())
-        throw std::runtime_error("ZFits reader found no RunHeader");
-#if 0
-      rh_zfits.CheckIfFileIsConsistent(false);
-#endif
+        throw std::runtime_error("ZFits reader found no table:" +
+          config.run_header_table_name());
+      if(config.verify_file_after_open() or config.repair_broken_file())
+      {
+        try
+        {
+          rh_zfits.CheckIfFileIsConsistent(false);
+        }
+        catch (exception& e)
+        {
+          if(config.repair_broken_file())
+          {
+            LOG(WARNING) << "ZFits file " + filename_ +
+              ": integrity verification failed, attempting to repair.";
+            rh_zfits.CheckIfFileIsConsistent(true);
+          }
+        }
+      }
       if(rh_zfits.getNumMessagesInTable() > 0)
         run_header_ = rh_zfits.readTypedMessage<DataModel::CameraRunHeader>(1);
       //LOG(INFO) << run_header_->DebugString();
@@ -72,27 +96,32 @@ ZFITSSingleFileACTLDataSource(const std::string& filename,
     {
       if(!config.ignore_run_header_errors())
         LOG(WARNING)
-          << "ZFITSSingleFileACTLDataSource: Could not read RunHeader from "
+          << "ZFITSSingleFileACTLDataSource: Could not read run header from "
           << filename_;
     }
   }
 
-  zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str(), "Events",
-    DataModel::CameraEvent::descriptor());
+  zfits_ = new ACTL::IO::ProtobufIFits(filename_.c_str(),
+    config.events_table_name(), DataModel::CameraEvent::descriptor());
   if(zfits_->eof() && !zfits_->bad())
-    throw std::runtime_error("ZFits file " + filename_ + " has no Events table");
-#if 0
-  try
+    throw std::runtime_error("ZFits file " + filename_ + " has no table: " +
+      config.events_table_name());
+  if(config.verify_file_after_open() or config.repair_broken_file())
   {
-    zfits_->CheckIfFileIsConsistent(false);
+    try
+    {
+      zfits_->CheckIfFileIsConsistent(false);
+    }
+    catch (exception& e)
+    {
+      if(config.repair_broken_file())
+      {
+        LOG(WARNING) << "ZFits file " + filename_ +
+          ": integrity verification failed, attempting to repair.";
+        zfits_->CheckIfFileIsConsistent(true);
+      }
+    }
   }
-  catch (exception& e)
-  {
-    LOG(WARNING) << "ZFits file " + filename_ +
-      " seems to be broken, attempting to repair.";
-    zfits_->CheckIfFileIsConsistent(true);
-  }
-#endif
 }
 
 ZFITSSingleFileACTLDataSource::~ZFITSSingleFileACTLDataSource()
@@ -104,7 +133,11 @@ ZFITSSingleFileACTLDataSource::~ZFITSSingleFileACTLDataSource()
 ZFITSSingleFileACTLDataSource::config_type
 ZFITSSingleFileACTLDataSource::default_config()
 {
-  return ZFITSACTLDataSource::default_config();
+  config_type config = config_type::default_instance();
+  config.set_extension(".fits.fz");
+  config.set_run_header_table_name(default_run_header_table_name);
+  config.set_events_table_name(default_events_table_name);
+  return config;
 }
 
 DataModel::CameraEvent* ZFITSSingleFileACTLDataSource::
