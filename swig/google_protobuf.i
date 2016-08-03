@@ -28,6 +28,7 @@
 %{
   #include<google/protobuf/message.h>
   #include<google/protobuf/descriptor.h>
+  #include<google/protobuf/util/json_util.h>
   #define SWIG_FILE_WITH_INIT
 %}
 
@@ -78,6 +79,24 @@ class Message
       CALIN_BYTES_OUT = $self->SerializeAsString(); }
     void SerializePartialAsString(std::string& CALIN_BYTES_OUT) {
       CALIN_BYTES_OUT = $self->SerializePartialAsString(); }
+  }
+
+  %extend {
+    std::string SerializeAsJSON(bool include_empty_fields = false) {
+      google::protobuf::util::JsonPrintOptions opt;
+      opt.add_whitespace = true;
+      opt.always_print_primitive_fields = include_empty_fields;
+      std::string s;
+      google::protobuf::util::MessageToJsonString(*$self, &s, opt);
+      return s;
+    }
+
+    bool ParseFromJSON(const std::string& s,
+        bool ignore_unknown_fields = false) {
+      google::protobuf::util::JsonParseOptions opt;
+      opt.ignore_unknown_fields = ignore_unknown_fields;
+      return JsonStringToMessage(s, $self, opt).ok();
+    }
   }
 };
 
