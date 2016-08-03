@@ -140,9 +140,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/protoc ];
     then (
-      wget https://github.com/google/protobuf/releases/download/v3.0.0-beta-3/protobuf-cpp-3.0.0-beta-3.tar.gz
-      tar zxf protobuf-cpp-3.0.0-beta-3.tar.gz &&
-      cd protobuf-3.0.0-beta-3 &&
+      wget https://github.com/google/protobuf/releases/download/v3.0.0/protobuf-cpp-3.0.0.tar.gz &&
+      tar zxf protobuf-cpp-3.0.0.tar.gz &&
+      cd protobuf-3.0.0 &&
       ./configure --prefix=$LOCAL &&
       make -j3 &&
       make install > /dev/null
