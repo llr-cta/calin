@@ -1,0 +1,42 @@
+/*
+
+   calin/proto/iact_data/spe_fit.proto -- Stephen Fegan -- 2016-08-06
+
+   Protobufs for configuration of SPE fitter
+
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.calib.spe_fit;
+
+message GeneralPoissonMESConfig {
+  uint32 num_pe_convolutions                               = 1 [
+    (CFO).desc = "Number of photo-electron convolutions to include in the "
+      "PDF." ];
+  bool include_on_off_ped_shift                            = 2 [
+    (CFO).desc = "Include parameter to allow on and off pedestal distributions "
+      "to be shifted." ];
+  uint32 max_ses_norm_warning                              = 10 [
+    (CFO).desc = "Maximum number of SES normalization warnings, or zero to "
+      "always issue warnings."];
+  double ses_norm_warning_threshold                        = 11 [
+    (CFO).desc = "Threshold difference of SES normalization from unity "
+      "before issuing warning. This value is multiplied by 1/nsample."];
+};

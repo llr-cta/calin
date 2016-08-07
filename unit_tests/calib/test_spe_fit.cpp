@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/unit_tests/calib/test_spe_fit.cpp -- Stephen Fegan -- 2015-03-15
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -63,9 +63,9 @@ TEST(TestPoissonGaussianMES, PDFEqualityWithLegacyCode_Ped) {
   params <<  1.0, 0.1, 0.2, 1.0, 0.45;
   pg_mes1.set_parameter_values(params);
   pg_mes2.set_parameter_values(params);
-  
+
   Eigen::VectorXd gradient(5);
-  
+
   for(double x=-1.0;x<1.001;x+=0.01)
   {
     EXPECT_NEAR(pg_mes1.pdf_ped(x),pg_mes2.pdf_ped(x),pg_mes2.pdf_ped(x)*1e-8);
@@ -86,7 +86,7 @@ TEST(TestPoissonGaussianMES, PDFEqualityWithLegacyCode_MES) {
   pg_mes2.set_parameter_values(params);
 
   Eigen::VectorXd gradient(5);
-  
+
   for(double x=-1.0;x<10.001;x+=0.01)
   {
     EXPECT_NEAR(pg_mes1.pdf_mes(x),pg_mes2.pdf_mes(x),pg_mes2.pdf_mes(x)*1e-8);
@@ -134,7 +134,7 @@ mes_gradient_test(MultiElectronSpectrum* mes,
                                             val_get, grad_get, hess_get,
                                             good_max);
     EXPECT_TRUE(check_ok);
-    
+
     for(unsigned ipar=0;ipar<mes->num_parameters();ipar++)
       if(good(ipar)>good_max)
       {
@@ -145,7 +145,7 @@ mes_gradient_test(MultiElectronSpectrum* mes,
       EXPECT_LE(good(ipar),good_max);
   }
 }
-                       
+
 } // anonymous namespace
 
 TEST(TestPoissonGaussianMES, GradientCheck_PED)
@@ -235,7 +235,7 @@ mes_hessian_test(MultiElectronSpectrum* mes,
       for(unsigned jpar=0;jpar<5;jpar++)EXPECT_LE(good(ipar,jpar), good_max);
   }
 }
-                       
+
 } // anonymous namespace
 
 TEST(TestPoissonGaussianMES, HessianCheck_PED)
@@ -274,7 +274,7 @@ TEST(TestSPELikelihood, KarkarPG_GradientCheck) {
   Eigen::VectorXd dx(5);
   dx << 1e-7, 1e-7, 1e-7, 1e-7, 1e-7;
   Eigen::VectorXd good(5);
-  
+
   bool check_ok = function::gradient_check(like, x, dx, good);
   EXPECT_TRUE(check_ok);
   for(unsigned ipar=0;ipar<5;ipar++)EXPECT_LE(good(ipar),0.5);
@@ -292,7 +292,7 @@ TEST(TestSPELikelihood, KarkarPG_HessianCheck) {
   Eigen::VectorXd dx(5);
   dx << 1e-7, 1e-7, 1e-7, 1e-7, 1e-7;
   Eigen::MatrixXd good(5,5);
-  
+
   bool check_ok = function::hessian_check(like, x, dx, good);
   EXPECT_TRUE(check_ok);
   for(unsigned ipar=0;ipar<5;ipar++)
@@ -311,7 +311,7 @@ TEST(TestSPELikelihood, KarkarPG_GradientCheck_WithPed) {
   Eigen::VectorXd dx(5);
   dx << 1e-7, 1e-7, 1e-7, 1e-7, 1e-7;
   Eigen::VectorXd good(5);
-  
+
   bool check_ok = function::gradient_check(like, x, dx, good);
   EXPECT_TRUE(check_ok);
   for(unsigned ipar=0;ipar<5;ipar++)EXPECT_LE(good(ipar),0.5);
@@ -381,7 +381,7 @@ TEST(TestSPELikelihood, Minimize_GSL_Simplex)
   PoissonGaussianMES mes_model(20);
   SPELikelihood like(mes_model, mes_hist);
 
-  const gsl_multimin_fminimizer_type *T = 
+  const gsl_multimin_fminimizer_type *T =
     gsl_multimin_fminimizer_nmsimplex2;
   gsl_multimin_fminimizer *s = NULL;
   gsl_vector *ss,*x;
@@ -419,8 +419,8 @@ TEST(TestSPELikelihood, Minimize_GSL_Simplex)
     {
       iter++;
       status = gsl_multimin_fminimizer_iterate(s);
-      
-      if (status) 
+
+      if (status)
         break;
 
       size = gsl_multimin_fminimizer_size (s);
@@ -432,13 +432,13 @@ TEST(TestSPELikelihood, Minimize_GSL_Simplex)
           printf ("converged to minimum at\n");
         }
 
-      printf ("%5lu %10.8f %10.4f %10.7f %10.7f %10.8f f() = %7.3f size = %.3f\n", 
+      printf ("%5lu %10.8f %10.4f %10.7f %10.7f %10.8f f() = %7.3f size = %.3f\n",
               iter,
->              gsl_vector_get (s->x, 0), 
-              gsl_vector_get (s->x, 1), 
-              gsl_vector_get (s->x, 2), 
-              gsl_vector_get (s->x, 3), 
-              gsl_vector_get (s->x, 4), 
+>              gsl_vector_get (s->x, 0),
+              gsl_vector_get (s->x, 1),
+              gsl_vector_get (s->x, 2),
+              gsl_vector_get (s->x, 3),
+              gsl_vector_get (s->x, 4),
               s->fval, size);
 #endif
     }
@@ -450,7 +450,7 @@ TEST(TestSPELikelihood, Minimize_GSL_Simplex)
   EXPECT_NEAR(s->x->data[2], 19.6141970, 0.001);
   EXPECT_NEAR(s->x->data[3], 89.1810077, 0.01);
   EXPECT_NEAR(s->x->data[4], 0.32388838, 0.0001);
-  
+
   gsl_vector_free(x);
   gsl_vector_free(ss);
   gsl_multimin_fminimizer_free (s);
@@ -501,23 +501,23 @@ TEST(TestSPELikelihood, Minimize_GSL_BFGS2)
   {
     iter++;
     status = gsl_multimin_fdfminimizer_iterate (s);
-    
+
     if (status)
       break;
-    
+
     status = gsl_multimin_test_gradient (s->gradient, 0.1);
 
 #if 0
     if (status == GSL_SUCCESS)
       printf ("Minimum found at:\n");
-    
-    printf ("%5lu %10.8f %10.4f %10.7f %10.7f %10.8f f() = %7.3f\n", 
+
+    printf ("%5lu %10.8f %10.4f %10.7f %10.7f %10.8f f() = %7.3f\n",
             iter,
-            gsl_vector_get (s->x, 0), 
-            gsl_vector_get (s->x, 1), 
-            gsl_vector_get (s->x, 2), 
-            gsl_vector_get (s->x, 3), 
-            gsl_vector_get (s->x, 4), 
+            gsl_vector_get (s->x, 0),
+            gsl_vector_get (s->x, 1),
+            gsl_vector_get (s->x, 2),
+            gsl_vector_get (s->x, 3),
+            gsl_vector_get (s->x, 4),
             s->f);
 #endif
   }
@@ -529,7 +529,7 @@ TEST(TestSPELikelihood, Minimize_GSL_BFGS2)
   EXPECT_NEAR(s->x->data[2], 19.6141970, 0.001);
   EXPECT_NEAR(s->x->data[3], 89.1810077, 0.01);
   EXPECT_NEAR(s->x->data[4], 0.32388838, 0.0001);
-  
+
   gsl_multimin_fdfminimizer_free (s);
   gsl_vector_free (x);
 }
@@ -552,14 +552,14 @@ TEST(TestSPELikelihood, Optimize_NLOpt)
   Eigen::VectorXd x_opt(5);
   double f_val;
   opt.minimize(x_opt, f_val);
-  
+
   //EXPECT_EQ(status, GSL_SUCCESS);
   EXPECT_NEAR(x_opt[0], 0.55349337, 0.0001);
   EXPECT_NEAR(x_opt[1], 3094.2715, 0.01);
   EXPECT_NEAR(x_opt[2], 19.6141970, 0.001);
   EXPECT_NEAR(x_opt[3], 89.1810077, 0.01);
-  EXPECT_NEAR(x_opt[4], 0.32388838, 0.0001);  
- 
+  EXPECT_NEAR(x_opt[4], 0.32388838, 0.0001);
+
   std::cout << std::fixed << std::setprecision(3);
   std::cout << x_opt[0] << ' ' << x_opt[1] << ' ' << x_opt[2] << ' '
             << x_opt[3] << ' ' << x_opt[4] << '\n';
@@ -595,14 +595,14 @@ TEST(TestSPELikelihood, Optimize_CMinpack)
   Eigen::VectorXd x_opt(5);
   double f_val;
   opt.minimize(x_opt, f_val);
-  
+
   //EXPECT_EQ(status, GSL_SUCCESS);
   EXPECT_NEAR(x_opt[0], 0.55349337, 0.0001);
   EXPECT_NEAR(x_opt[1], 3094.2715, 0.01);
   EXPECT_NEAR(x_opt[2], 19.6141970, 0.001);
   EXPECT_NEAR(x_opt[3], 89.1810077, 0.01);
-  EXPECT_NEAR(x_opt[4], 0.32388838, 0.0001);  
- 
+  EXPECT_NEAR(x_opt[4], 0.32388838, 0.0001);
+
   std::cout << f_val << ' ' << std::fixed << std::setprecision(3);
   std::cout << x_opt[0] << ' ' << x_opt[1] << ' ' << x_opt[2] << ' '
             << x_opt[3] << ' ' << x_opt[4] << '\n';
@@ -636,7 +636,7 @@ TEST(TestSPELikelihood, Minimize_Minuit75)
   EXPECT_NEAR(x[1], 3094.2715, 0.01);
   EXPECT_NEAR(x[2], 19.6141970, 0.001);
   EXPECT_NEAR(x[3], 89.1810077, 0.01);
-  EXPECT_NEAR(x[4], 0.32388838, 0.0001);  
+  EXPECT_NEAR(x[4], 0.32388838, 0.0001);
 
   std::cout << x[0] << ' ' << x[1] << ' ' << x[2] << ' '
             << x[3] << ' ' << x[4] << '\n';
@@ -656,7 +656,7 @@ TEST(TestSPELikelihood, Minimize_Minuit75)
 }
 
 #endif
-  
+
 
 TEST(TestGeneralPoissonMES_Gauss, SetAndRecallParameters) {
   pdf_1d::GaussianPDF ped;
@@ -728,7 +728,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
   std::vector<double> three_es_spec = mes_model.n_electron_spectrum(3);
   for(unsigned i=0;i<mes_spec.size();i++)
     file << mes_spec[i] << ' ' << ped_spec[i] << ' '
-         << one_es_spec[i] << ' ' << two_es_spec[i] << ' ' 
+         << one_es_spec[i] << ' ' << two_es_spec[i] << ' '
          << three_es_spec[i] << ' ' << '\n';
 }
 
@@ -785,7 +785,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, Repeatability)
   EXPECT_EQ(std::count(all_grad.begin(), all_grad.end(), all_grad.front()),
             (int)all_grad.size());
 }
-  
+
 TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
 {
   double inf = std::numeric_limits<double>::infinity();
@@ -824,12 +824,12 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   }
   catch(const nlopt::roundoff_limited& x)
   {
-    std::cout << "Caught: nlopt::roundoff_limited: " << x.what() << '\n'; 
+    std::cout << "Caught: nlopt::roundoff_limited: " << x.what() << '\n';
     throw;
   }
   catch(const std::runtime_error& x)
   {
-    std::cout << "Caught: runtime_error: " << x.what() << '\n'; 
+    std::cout << "Caught: runtime_error: " << x.what() << '\n';
     throw;
   }
 
@@ -855,6 +855,75 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
          << zero_es_cpt[i] << ' ' << one_es_cpt[i] << ' '
          << two_es_cpt[i] << ' ' << three_es_cpt[i] << ' ' << '\n';
 #endif
+}
+
+TEST(TestGeneralPoissonMES_GaussWithShift, SetAndRecallParameters) {
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+  auto opt = GeneralPoissonMES::default_config();
+  opt.set_include_on_off_ped_shift(true);
+  GeneralPoissonMES mes(0, 1, 1025, &ses, &ped, opt);
+  EXPECT_EQ(mes.num_parameters(), 6U);
+  Eigen::VectorXd p(6);
+  p << 1.0, -10.0, 100.0, 20.0, 100.0, 35.0;
+  mes.set_parameter_values(p);
+  EXPECT_EQ(mes.parameter_values(), p);
+  std::vector<double> ped_spec = mes.pedestal_spectrum();
+  std::vector<double> off_spec = mes.off_pedestal_spectrum();
+  double ped_sum_w = 0;
+  double ped_sum_wx = 0;
+  for(unsigned i=0; i<ped_spec.size(); i++)
+    ped_sum_w += ped_spec[i], ped_sum_wx += ped_spec[i] * (double(i)+0.5);
+  double off_sum_w = 0;
+  double off_sum_wx = 0;
+  for(unsigned i=0; i<ped_spec.size(); i++)
+    off_sum_w += off_spec[i], off_sum_wx += off_spec[i] * (double(i)+0.5);
+  std::cout << ped_sum_wx/ped_sum_w << ' ' << off_sum_wx/off_sum_w << '\n';
+  Eigen::VectorXd grad(6);
+  mes.pdf_gradient_mes(10.0, grad);
+  std::cout << grad.transpose() << '\n';
+  mes.pdf_gradient_ped(10.0, grad);
+  std::cout << grad.transpose() << '\n';
+}
+
+TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_MES)
+{
+  double inf = std::numeric_limits<double>::infinity();
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
+  exp_pdf.limit_scale(0.1, inf);
+  pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
+  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  auto opt = GeneralPoissonMES::default_config();
+  opt.set_include_on_off_ped_shift(true);
+  GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped,opt);
+  double dp1 = 1e-7;
+  mes_gradient_test(&mes_model,
+                    &MultiElectronSpectrum::pdf_mes,
+                    &MultiElectronSpectrum::pdf_gradient_mes,
+                    &MultiElectronSpectrum::pdf_gradient_hessian_mes,
+                    { 1.123, 10.0, 0.100000, 0.2, 0.3, 0.2, 1.321, 0.35 },
+                    { dp1, dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 0.5);
+}
+
+TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_PED)
+{
+  double inf = std::numeric_limits<double>::infinity();
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
+  exp_pdf.limit_scale(0.1, inf);
+  pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
+  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  auto opt = GeneralPoissonMES::default_config();
+  opt.set_include_on_off_ped_shift(true);
+  GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped,opt);
+  double dp1 = 1e-7;
+  mes_gradient_test(&mes_model,
+                    &MultiElectronSpectrum::pdf_ped,
+                    &MultiElectronSpectrum::pdf_gradient_ped,
+                    &MultiElectronSpectrum::pdf_gradient_hessian_ped,
+                    { 1.123, 10.0, 0.100000, 0.2, 0.3, 0.2, 1.321, 0.35 },
+                    { dp1, dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 0.5);
 }
 
 int main(int argc, char **argv) {
