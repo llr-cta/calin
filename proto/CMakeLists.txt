@@ -76,7 +76,7 @@ macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
 #		MESSAGE(STATUS "${SWIG_DEPS}")
 		add_custom_command(OUTPUT ${base_name}.pb_wrap.cxx
 		  COMMAND ${SWIG_EXECUTABLE} ${CMAKE_SWIG_FLAGS} -interface _${base_name}_pb  -c++ -python ${interface_file}
-		DEPENDS "${interface_file};${CMAKE_BINARY_DIR}/swig/calin_config.i;${SWIG_DEPS}")
+			DEPENDS "${interface_file};${CMAKE_BINARY_DIR}/swig/calin_config.i;${SWIG_DEPS}")
 		include_directories(${CMAKE_CURRENT_BINARY_DIR})
 		add_library(_${base_name}_pb MODULE ${base_name}.pb_wrap.cxx)
 		set_target_properties(_${base_name}_pb PROPERTIES NO_SONAME ON)

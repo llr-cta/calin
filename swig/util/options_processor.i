@@ -1,13 +1,11 @@
 /*
 
-   calin/util/string_to_protobuf.hpp -- Stephen Fegan -- 2016-08-10
+   calin/simulation/pmt.i -- Stephen Fegan -- 2016-03-21
 
-   String to and from protobuf
+   SWIG interface file for PMT simulation
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
-
-   Based on original, copyright 2006, Stephen Fegan, see notice below
 
    This file is part of "calin"
 
@@ -22,17 +20,18 @@
 
 */
 
-#pragma once
+%module (package="calin.util") options_processor
 
-#include <string>
+%{
+#include "util/options_processor.hpp"
+#define SWIG_FILE_WITH_INIT
+  %}
 
-#include <google/protobuf/message.h>
-#include <google/protobuf/descriptor.h>
+%init %{
+  import_array();
+%}
 
-namespace calin { namespace util { namespace string_to_protobuf {
+%include "calin_typemaps.i"
+%import "calin_global_definitions.i"
 
-bool string_to_protobuf_field(const std::string& s,
-  google::protobuf::Message* m, const google::protobuf::FieldDescriptor* f,
-  const std::vector<const google::protobuf::FieldDescriptor*>& f_path = {});
-
-} } } // namespace calin::util::string_to_protobuf
+%include "util/options_processor.hpp"

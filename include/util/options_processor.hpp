@@ -40,6 +40,7 @@ public:
   void process_arguments(const std::vector<std::string>& args);
   void process_arguments(int argc, char** argv);
   bool has_unknown_options() { return not unknown_options_.empty(); }
+  const std::string& program_name() { return program_name_; }
   const std::vector<std::string>& unknown_options() { return unknown_options_; }
   const std::vector<std::string>& problem_options() { return problem_options_; }
   const std::vector<std::string>& arguments() { return arguments_; }
@@ -47,8 +48,10 @@ public:
 
 protected:
   OptionStatus process_one_argument(google::protobuf::Message* m,
-    const std::string& key, bool has_val, const std::string& val);
+    const std::string& key, bool has_val, const std::string& val,
+    std::vector<const google::protobuf::FieldDescriptor*> f_path = {});
 
+  std::string program_name_;
   std::vector<std::string> unknown_options_;
   std::vector<std::string> problem_options_;
   std::vector<std::string> arguments_;

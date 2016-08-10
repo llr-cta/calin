@@ -25,6 +25,7 @@
 #include <google/protobuf/descriptor.h>
 
 #include <util/options_processor.hpp>
+#include <util/string_to_protobuf.hpp>
 
 using namespace calin::util::options_processor;
 
@@ -37,10 +38,17 @@ OptionsProcessor(google::protobuf::Message* message):
 
 void OptionsProcessor::process_arguments(const std::vector<std::string>& args)
 {
+  bool has_program_name = false;
   bool processing = true;
-  for(auto iarg: args)
+  for(const auto& iarg: args)
   {
-    if(not processing){
+    if(not has_program_name) {
+      program_name_ = iarg;
+      has_program_name = true;
+      continue;
+    }
+
+    if(not processing) {
       arguments_.emplace_back(iarg);
       continue;
     }
@@ -125,7 +133,7 @@ void OptionsProcessor::process_arguments(const std::vector<std::string>& args)
 
 void OptionsProcessor::process_arguments(int argc, char** argv)
 {
-  process_arguments(std::vector<std::string>(argv+1,argv+argc));
+  process_arguments(std::vector<std::string>(argv,argv+argc));
 }
 
 std::string OptionsProcessor::usage()
@@ -135,7 +143,8 @@ std::string OptionsProcessor::usage()
 
 OptionStatus OptionsProcessor::
 process_one_argument(google::protobuf::Message* m,
-  const std::string& key, bool has_val, const std::string& val)
+  const std::string& key, bool has_val, const std::string& val,
+  std::vector<const google::protobuf::FieldDescriptor*> f_path)
 {
   std::string::size_type ifind = key.find_first_of('.');
   std::string field_name;
@@ -146,7 +155,9 @@ process_one_argument(google::protobuf::Message* m,
 
   if(field_name.empty())return OptionStatus::NOT_FOUND;
 
-  const google::protobuf::Descriptor* d = m->GetDescriptor();
+  const google::protobuf::Descriptor* d = nullptr;
+  if(f_path.empty())d = m->GetDescriptor();
+  else d = f_path.back()->message_type();
   assert(d);
 
   const google::protobuf::FieldDescriptor* f = d->FindFieldByName(field_name);
@@ -158,14 +169,15 @@ process_one_argument(google::protobuf::Message* m,
       return OptionStatus::NOT_FOUND; // Repeated messages not handled
     if(ifind == std::string::npos)
       return OptionStatus::NOT_FOUND; // Must have a sub-message field_name
-
-    const google::protobuf::Reflection* r = m->GetReflection();
-    google::protobuf::Message* sub_m = r->MutableMessage(m, f);
-    return process_one_argument(sub_m, key.substr(ifind+1), has_val, val);
+    f_path.push_back(f);
+    return process_one_argument(m, key.substr(ifind+1), has_val, val, f_path);
   } else {
     // Repeated or singular POD type
-
+    if(string_to_protobuf::string_to_protobuf_field(val, m, f, f_path))
+      return OptionStatus::OK;
+    else
+      return OptionStatus::COULD_NOT_CONVERT_VALUE;
   }
-
-
+  assert(0);
+  return OptionStatus::NOT_FOUND;
 }

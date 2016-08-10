@@ -20,4 +20,6 @@ set(CALIN_SOURCES string.cpp file.cpp options_processor.cpp
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY})
 
-install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)
+add_library(${CALIN_TARGET_LIBRARY}_lite SHARED string.cpp)
+
+install(TARGETS ${CALIN_TARGET_LIBRARY} ${CALIN_TARGET_LIBRARY}_lite DESTINATION lib)
