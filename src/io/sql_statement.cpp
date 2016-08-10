@@ -102,52 +102,52 @@ bind_field(unsigned ifield, const google::protobuf::Message* m,
 
   switch(d->type())
   {
-    case FieldDescriptor::TYPE_DOUBLE:
-      return bind_double(ifield, m->GetReflection()->GetDouble(*m, d));
-    case FieldDescriptor::TYPE_FLOAT:
-      return bind_float(ifield, m->GetReflection()->GetFloat(*m, d));
-    case FieldDescriptor::TYPE_SFIXED64: // fallthrough
-    case FieldDescriptor::TYPE_SINT64:   // fallthrough
-    case FieldDescriptor::TYPE_INT64:
-      return bind_int64(ifield, m->GetReflection()->GetInt64(*m, d));
-    case FieldDescriptor::TYPE_FIXED64:  // fallthrough
-    case FieldDescriptor::TYPE_UINT64:
-      return bind_uint64(ifield, m->GetReflection()->GetUInt64(*m, d));
-    case FieldDescriptor::TYPE_SFIXED32: // fallthrough
-    case FieldDescriptor::TYPE_SINT32:   // fallthrough
-    case FieldDescriptor::TYPE_INT32:
-      switch(int32_type) {
-	case FieldOptions::INT_16:
-          return bind_int16(ifield, m->GetReflection()->GetInt32(*m, d));
-	case FieldOptions::INT_8:
-          return bind_int8(ifield, m->GetReflection()->GetInt32(*m, d));
-	case FieldOptions::INT_32:       // fallthrough
-        default:
-          return bind_int32(ifield, m->GetReflection()->GetInt32(*m, d));
-	};
-    case FieldDescriptor::TYPE_FIXED32:
-    case FieldDescriptor::TYPE_UINT32:
-      switch(int32_type) {
-	case FieldOptions::INT_16:
-          return bind_uint16(ifield, m->GetReflection()->GetUInt32(*m, d));
-	case FieldOptions::INT_8:
-          return bind_uint8(ifield, m->GetReflection()->GetUInt32(*m, d));
-	case FieldOptions::INT_32:       // fall through
-        default:
-          return bind_uint32(ifield, m->GetReflection()->GetUInt32(*m, d));
-      }
-    case FieldDescriptor::TYPE_BOOL:
-      return bind_bool(ifield, m->GetReflection()->GetBool(*m, d));
-    case FieldDescriptor::TYPE_STRING:
-      return bind_string(ifield, m->GetReflection()->GetString(*m, d));
-    case FieldDescriptor::TYPE_BYTES:
-      return bind_bytes(ifield, m->GetReflection()->GetString(*m, d));
-    case FieldDescriptor::TYPE_ENUM:
-      return bind_int32(ifield, m->GetReflection()->GetEnumValue(*m, d));
-    case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
-    case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
+  case FieldDescriptor::TYPE_DOUBLE:
+    return bind_double(ifield, m->GetReflection()->GetDouble(*m, d));
+  case FieldDescriptor::TYPE_FLOAT:
+    return bind_float(ifield, m->GetReflection()->GetFloat(*m, d));
+  case FieldDescriptor::TYPE_SFIXED64: // fallthrough
+  case FieldDescriptor::TYPE_SINT64:   // fallthrough
+  case FieldDescriptor::TYPE_INT64:
+    return bind_int64(ifield, m->GetReflection()->GetInt64(*m, d));
+  case FieldDescriptor::TYPE_FIXED64:  // fallthrough
+  case FieldDescriptor::TYPE_UINT64:
+    return bind_uint64(ifield, m->GetReflection()->GetUInt64(*m, d));
+  case FieldDescriptor::TYPE_SFIXED32: // fallthrough
+  case FieldDescriptor::TYPE_SINT32:   // fallthrough
+  case FieldDescriptor::TYPE_INT32:
+    switch(int32_type) {
+  	case FieldOptions::INT_16:
+            return bind_int16(ifield, m->GetReflection()->GetInt32(*m, d));
+  	case FieldOptions::INT_8:
+            return bind_int8(ifield, m->GetReflection()->GetInt32(*m, d));
+  	case FieldOptions::INT_32:       // fallthrough
+          default:
+            return bind_int32(ifield, m->GetReflection()->GetInt32(*m, d));
+  	};
+  case FieldDescriptor::TYPE_FIXED32:
+  case FieldDescriptor::TYPE_UINT32:
+    switch(int32_type) {
+  	case FieldOptions::INT_16:
+      return bind_uint16(ifield, m->GetReflection()->GetUInt32(*m, d));
+  	case FieldOptions::INT_8:
+      return bind_uint8(ifield, m->GetReflection()->GetUInt32(*m, d));
+  	case FieldOptions::INT_32:       // fall through
     default:
-      break;
+      return bind_uint32(ifield, m->GetReflection()->GetUInt32(*m, d));
+    }
+  case FieldDescriptor::TYPE_BOOL:
+    return bind_bool(ifield, m->GetReflection()->GetBool(*m, d));
+  case FieldDescriptor::TYPE_STRING:
+    return bind_string(ifield, m->GetReflection()->GetString(*m, d));
+  case FieldDescriptor::TYPE_BYTES:
+    return bind_bytes(ifield, m->GetReflection()->GetString(*m, d));
+  case FieldDescriptor::TYPE_ENUM:
+    return bind_int32(ifield, m->GetReflection()->GetEnumValue(*m, d));
+  case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
+  case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
+  default:
+    break;
   }
   assert(0);
   return false;
@@ -166,66 +166,66 @@ bind_repeated_field(unsigned ifield, uint64_t iloop,
 
   switch(d->type())
   {
-    case FieldDescriptor::TYPE_DOUBLE:
-      return bind_double(ifield, m->GetReflection()->
-                         GetRepeatedDouble(*m, d, iloop));
-    case FieldDescriptor::TYPE_FLOAT:
-      return bind_float(ifield, m->GetReflection()->
-                        GetRepeatedFloat(*m, d, iloop));
-    case FieldDescriptor::TYPE_SFIXED64: // fallthrough
-    case FieldDescriptor::TYPE_SINT64:   // fallthrough
-    case FieldDescriptor::TYPE_INT64:
-      return bind_int64(ifield, m->GetReflection()->
-                        GetRepeatedInt64(*m, d, iloop));
-    case FieldDescriptor::TYPE_FIXED64:  // fallthrough
-    case FieldDescriptor::TYPE_UINT64:
-      return bind_uint64(ifield,
-                         m->GetReflection()->GetRepeatedUInt64(*m, d, iloop));
-    case FieldDescriptor::TYPE_SFIXED32: // fallthrough
-    case FieldDescriptor::TYPE_SINT32:   // fallthrough
-    case FieldDescriptor::TYPE_INT32:
-      switch(int32_type) {
-	case FieldOptions::INT_16:
-          return bind_int16(ifield, m->GetReflection()->
-                            GetRepeatedInt32(*m,d,iloop));
-	case FieldOptions::INT_8:
-          return bind_int8(ifield, m->GetReflection()->
-                           GetRepeatedInt32(*m,d,iloop));
-	case FieldOptions::INT_32:       // fallthrough
-        default:
-          return bind_int32(ifield, m->GetReflection()->
-                            GetRepeatedInt32(*m,d,iloop));
-	};
-    case FieldDescriptor::TYPE_FIXED32:
-    case FieldDescriptor::TYPE_UINT32:
-      switch(int32_type) {
-	case FieldOptions::INT_16:
-          return bind_uint16(ifield, m->GetReflection()->
-                             GetRepeatedUInt32(*m, d, iloop));
-	case FieldOptions::INT_8:
-          return bind_uint8(ifield, m->GetReflection()->
-                            GetRepeatedUInt32(*m, d, iloop));
-	case FieldOptions::INT_32:       // fall through
-        default:
-          return bind_uint32(ifield, m->GetReflection()->
-                             GetRepeatedUInt32(*m, d, iloop));
-      }
-    case FieldDescriptor::TYPE_BOOL:
-      return bind_bool(ifield, m->GetReflection()->
-                       GetRepeatedBool(*m, d, iloop));
-    case FieldDescriptor::TYPE_STRING:
-      return bind_string(ifield, m->GetReflection()->
-                         GetRepeatedString(*m, d, iloop));
-    case FieldDescriptor::TYPE_BYTES:
-      return bind_bytes(ifield, m->GetReflection()->
-                        GetRepeatedString(*m, d, iloop));
-    case FieldDescriptor::TYPE_ENUM:
-      return bind_int32(ifield, m->GetReflection()->
-                        GetRepeatedEnumValue(*m,d,iloop));
-    case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
-    case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
-    default:
-      break;
+  case FieldDescriptor::TYPE_DOUBLE:
+    return bind_double(ifield, m->GetReflection()->
+                       GetRepeatedDouble(*m, d, iloop));
+  case FieldDescriptor::TYPE_FLOAT:
+    return bind_float(ifield, m->GetReflection()->
+                      GetRepeatedFloat(*m, d, iloop));
+  case FieldDescriptor::TYPE_SFIXED64: // fallthrough
+  case FieldDescriptor::TYPE_SINT64:   // fallthrough
+  case FieldDescriptor::TYPE_INT64:
+    return bind_int64(ifield, m->GetReflection()->
+                      GetRepeatedInt64(*m, d, iloop));
+  case FieldDescriptor::TYPE_FIXED64:  // fallthrough
+  case FieldDescriptor::TYPE_UINT64:
+    return bind_uint64(ifield,
+                       m->GetReflection()->GetRepeatedUInt64(*m, d, iloop));
+  case FieldDescriptor::TYPE_SFIXED32: // fallthrough
+  case FieldDescriptor::TYPE_SINT32:   // fallthrough
+  case FieldDescriptor::TYPE_INT32:
+    switch(int32_type) {
+  	case FieldOptions::INT_16:
+            return bind_int16(ifield, m->GetReflection()->
+                              GetRepeatedInt32(*m,d,iloop));
+  	case FieldOptions::INT_8:
+            return bind_int8(ifield, m->GetReflection()->
+                             GetRepeatedInt32(*m,d,iloop));
+  	case FieldOptions::INT_32:       // fallthrough
+          default:
+            return bind_int32(ifield, m->GetReflection()->
+                              GetRepeatedInt32(*m,d,iloop));
+    };
+  case FieldDescriptor::TYPE_FIXED32:
+  case FieldDescriptor::TYPE_UINT32:
+    switch(int32_type) {
+  	case FieldOptions::INT_16:
+            return bind_uint16(ifield, m->GetReflection()->
+                               GetRepeatedUInt32(*m, d, iloop));
+  	case FieldOptions::INT_8:
+            return bind_uint8(ifield, m->GetReflection()->
+                              GetRepeatedUInt32(*m, d, iloop));
+  	case FieldOptions::INT_32:       // fall through
+          default:
+            return bind_uint32(ifield, m->GetReflection()->
+                               GetRepeatedUInt32(*m, d, iloop));
+    }
+  case FieldDescriptor::TYPE_BOOL:
+    return bind_bool(ifield, m->GetReflection()->
+                     GetRepeatedBool(*m, d, iloop));
+  case FieldDescriptor::TYPE_STRING:
+    return bind_string(ifield, m->GetReflection()->
+                       GetRepeatedString(*m, d, iloop));
+  case FieldDescriptor::TYPE_BYTES:
+    return bind_bytes(ifield, m->GetReflection()->
+                      GetRepeatedString(*m, d, iloop));
+  case FieldDescriptor::TYPE_ENUM:
+    return bind_int32(ifield, m->GetReflection()->
+                      GetRepeatedEnumValue(*m,d,iloop));
+  case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
+  case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
+  default:
+    break;
   }
   assert(0);
   return false;
