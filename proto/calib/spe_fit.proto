@@ -1,6 +1,6 @@
 /*
 
-   calin/proto/iact_data/spe_fit.proto -- Stephen Fegan -- 2016-08-06
+   calin/proto/calib/spe_fit.proto -- Stephen Fegan -- 2016-08-06
 
    Protobufs for configuration of SPE fitter
 

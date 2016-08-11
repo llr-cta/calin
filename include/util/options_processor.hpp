@@ -37,8 +37,14 @@ class OptionsProcessor
 {
 public:
   OptionsProcessor(google::protobuf::Message* message);
-  void process_arguments(const std::vector<std::string>& args);
-  void process_arguments(int argc, char** argv);
+  void load_json_cfg(const std::string& json_file_name);
+  void save_json_cfg(const std::string& json_file_name);
+  void process_arguments(const std::vector<std::string>& args,
+    const std::string& load_cfg_opt = {},
+    bool first_arg_is_program_name = true);
+  void process_arguments(int argc, char** argv,
+    const std::string& load_cfg_opt = {},
+    bool first_arg_is_program_name = true);
   bool has_unknown_options() { return not unknown_options_.empty(); }
   const std::string& program_name() { return program_name_; }
   const std::vector<std::string>& unknown_options() { return unknown_options_; }

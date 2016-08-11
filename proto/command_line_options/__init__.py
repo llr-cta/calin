@@ -1,0 +1,1 @@
+all = ["compute_diagnostics"]

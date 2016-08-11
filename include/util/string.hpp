@@ -65,7 +65,7 @@ template<typename T> bool from_string(const std::string& s, T& x)
 {
   std::istringstream stream(s);
   stream >> x;
-  return stream.good();
+  return stream.eof();
 }
 
 template<typename T> bool from_string(const std::string& s, std::vector<T>& x)

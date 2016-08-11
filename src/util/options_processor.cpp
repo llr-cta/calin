@@ -22,10 +22,11 @@
 
 */
 
-#include <google/protobuf/descriptor.h>
+#include <sstream>
 
 #include <util/options_processor.hpp>
 #include <util/string_to_protobuf.hpp>
+#include <util/file.hpp>
 
 using namespace calin::util::options_processor;
 
@@ -36,15 +37,46 @@ OptionsProcessor(google::protobuf::Message* message):
   default_message_->CopyFrom(*message);
 }
 
-void OptionsProcessor::process_arguments(const std::vector<std::string>& args)
+void OptionsProcessor::load_json_cfg(const std::string& json_file_name)
 {
-  bool has_program_name = false;
+  calin::util::file::load_protobuf_from_json_file(json_file_name, message_);
+}
+
+void OptionsProcessor::save_json_cfg(const std::string& json_file_name)
+{
+  calin::util::file::save_protobuf_to_json_file(json_file_name, message_);
+}
+
+void OptionsProcessor::process_arguments(const std::vector<std::string>& args,
+  const std::string& load_cfg_opt, bool first_arg_is_program_name)
+{
+
+  if(not load_cfg_opt.empty())
+  {
+    bool arg_is_program_name = first_arg_is_program_name;
+    for(const auto& iarg: args)
+    {
+      if(arg_is_program_name) {
+        arg_is_program_name = false;
+        continue;
+      }
+      if(iarg=="--")break;
+      if(iarg.size()>=load_cfg_opt.size()+2 and
+          iarg.substr(0,load_cfg_opt.size()+2) == "-"+load_cfg_opt+"=")
+        load_json_cfg(iarg.substr(load_cfg_opt.size()+2));
+      else if(iarg.size()>=load_cfg_opt.size()+3 and
+          iarg.substr(0,load_cfg_opt.size()+3) == "--"+load_cfg_opt+"=")
+        load_json_cfg(iarg.substr(load_cfg_opt.size()+3));
+    }
+  }
+
+  bool arg_is_program_name = first_arg_is_program_name;
   bool processing = true;
   for(const auto& iarg: args)
   {
-    if(not has_program_name) {
+    if(arg_is_program_name) {
       program_name_ = iarg;
-      has_program_name = true;
+      arg_is_program_name = false;
       continue;
     }
 
@@ -131,14 +163,17 @@ void OptionsProcessor::process_arguments(const std::vector<std::string>& args)
   }
 }
 
-void OptionsProcessor::process_arguments(int argc, char** argv)
+void OptionsProcessor::
+process_arguments(int argc, char** argv, const std::string& load_cfg_opt,
+  bool first_arg_is_program_name)
 {
-  process_arguments(std::vector<std::string>(argv,argv+argc));
+  process_arguments(std::vector<std::string>(argv,argv+argc),
+    load_cfg_opt, first_arg_is_program_name);
 }
 
 std::string OptionsProcessor::usage()
 {
-
+  return {};
 }
 
 OptionStatus OptionsProcessor::

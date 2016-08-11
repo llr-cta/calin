@@ -37,6 +37,7 @@
 #pragma once
 
 #include <string>
+#include <google/protobuf/message.h>
 
 namespace calin { namespace util { namespace file {
 
@@ -77,5 +78,20 @@ unsigned extract_number_from_filename(const std::string& filename);
 // unsigned integer. For example passing: filename="?.root" and n=12345
 // would result in filename being returned as "12345.root"
 void replace_question_with_number(std::string& filename, unsigned n);
+
+void save_protobuf_to_json_file(const std::string& filename,
+  const google::protobuf::Message* message);
+inline void save_protobuf_to_json_file(const google::protobuf::Message* message,
+    const std::string& filename) {
+  save_protobuf_to_json_file(filename, message);
+}
+
+void load_protobuf_from_json_file(const std::string& filename,
+  google::protobuf::Message* message);
+inline void load_protobuf_from_json_file(google::protobuf::Message* message,
+    const std::string& filename) {
+  load_protobuf_from_json_file(filename, message);
+}
+
 
 } } } // namespace calin::util::file
