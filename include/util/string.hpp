@@ -80,6 +80,22 @@ template<typename T> bool from_string(const std::string& s, std::vector<T>& x)
   }
 }
 
+template<typename T> std::string to_string(const T& x)
+{
+  return std::to_string(x);
+}
+
+template<typename T> std::string to_string(const std::vector<T>& x)
+{
+  std::string s;
+  for(const auto& ix : x)
+  {
+    if(!s.empty())s += ",";
+    s += ix;
+  }
+  return s;
+}
+
 #define CALIN_DEFINE_T_FROM_STRING(T, fn) \
 inline T fn(const std::string& s, bool* good = nullptr) \
 { \
@@ -102,5 +118,7 @@ CALIN_DEFINE_T_FROM_STRING(float, float_from_string)
 CALIN_DEFINE_T_FROM_STRING(double, double_from_string)
 
 #undef CALIN_DEFINE_T_FROM_STRING
+
+
 
 } } } // namespace calin::util::string

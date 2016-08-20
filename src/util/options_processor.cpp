@@ -30,45 +30,186 @@
 
 using namespace calin::util::options_processor;
 
-OptionsProcessor::
-OptionsProcessor(google::protobuf::Message* message):
-  default_message_(message->New()), message_(message)
+OptionHandler::~OptionHandler()
 {
+  // nothing to see here
+}
+
+// ============================================================================
+// ============================================================================
+
+// ProtobufOptionHandler
+
+// ============================================================================
+// ============================================================================
+
+ProtobufOptionHandler::
+ProtobufOptionHandler(google::protobuf::Message* message):
+  OptionHandler(), default_message_(message->New()), message_(message)
+{
+  assert(message);
   default_message_->CopyFrom(*message);
 }
 
-void OptionsProcessor::load_json_cfg(const std::string& json_file_name)
+ProtobufOptionHandler::~ProtobufOptionHandler()
+{
+  delete default_message_;
+}
+
+OptionHandlerResult ProtobufOptionHandler::
+handle_option(const std::string& key, bool has_val, const std::string& val)
+{
+  std::vector<const google::protobuf::FieldDescriptor*> f_path;
+
+  const google::protobuf::Descriptor* d = message_->GetDescriptor();
+  assert(d);
+
+  std::string::size_type istart = 0;
+  while(istart < key.size())
+  {
+    std::string::size_type ifind = key.find_first_of('.', istart);
+
+    std::string field_name;
+    if(ifind == std::string::npos)
+      field_name = key.substr(istart);
+    else
+      field_name = key.substr(istart,ifind);
+
+    if(field_name.empty())return OptionHandlerResult::UNKNOWN_OPTION;
+
+    const google::protobuf::FieldDescriptor* f = d->FindFieldByName(field_name);
+    if(f == nullptr)return OptionHandlerResult::UNKNOWN_OPTION;
+
+    if(f->message_type() != nullptr) {
+      // Sub-message type
+      if(f->is_repeated()) // Repeated messages not handled
+        return OptionHandlerResult::UNKNOWN_OPTION;
+      if(ifind == std::string::npos) // No sub-field specified
+        return OptionHandlerResult::UNKNOWN_OPTION;
+      f_path.push_back(f);
+      d = f->message_type();
+      istart = ifind+1;
+    } else {
+      if(ifind != std::string::npos) // More sub-fields specified - oops
+        return OptionHandlerResult::UNKNOWN_OPTION;
+      // Repeated or singular POD type
+      if(string_to_protobuf::string_to_protobuf_field(val, message_, f, f_path))
+        return OptionHandlerResult::EXCLUSIVE_OPTION_OK;
+      else
+        return OptionHandlerResult::EXCLUSIVE_OPTION_INVALID_VALUE;
+    }
+  }
+  assert(0);
+  return OptionHandlerResult::UNKNOWN_OPTION;
+}
+
+std::vector<OptionSpec> ProtobufOptionHandler::list_options()
+{
+  return r_list_options("", default_message_);
+}
+
+void ProtobufOptionHandler::load_json_cfg(const std::string& json_file_name)
 {
   calin::util::file::load_protobuf_from_json_file(json_file_name, message_);
 }
 
-void OptionsProcessor::save_json_cfg(const std::string& json_file_name)
+void ProtobufOptionHandler::save_json_cfg(const std::string& json_file_name)
 {
   calin::util::file::save_protobuf_to_json_file(json_file_name, message_);
 }
 
-void OptionsProcessor::process_arguments(const std::vector<std::string>& args,
-  const std::string& load_cfg_opt, bool first_arg_is_program_name)
+std::vector<OptionSpec> ProtobufOptionHandler::
+r_list_options(const std::string& prefix, const google::protobuf::Message* m)
 {
-
-  if(not load_cfg_opt.empty())
+  std::vector<OptionSpec> options;
+  const google::protobuf::Descriptor* d = m->GetDescriptor();
+  const google::protobuf::Reflection* r = m->GetReflection();
+  int nfield = d->field_count();
+  for(int ifield=0; ifield<nfield; ifield++)
   {
-    bool arg_is_program_name = first_arg_is_program_name;
-    for(const auto& iarg: args)
+    const google::protobuf::FieldDescriptor* f = d->field(ifield);
+    if(f->message_type() != nullptr)
     {
-      if(arg_is_program_name) {
-        arg_is_program_name = false;
-        continue;
-      }
-      if(iarg=="--")break;
-      if(iarg.size()>=load_cfg_opt.size()+2 and
-          iarg.substr(0,load_cfg_opt.size()+2) == "-"+load_cfg_opt+"=")
-        load_json_cfg(iarg.substr(load_cfg_opt.size()+2));
-      else if(iarg.size()>=load_cfg_opt.size()+3 and
-          iarg.substr(0,load_cfg_opt.size()+3) == "--"+load_cfg_opt+"=")
-        load_json_cfg(iarg.substr(load_cfg_opt.size()+3));
+      // Sub-message type
+      if(f->is_repeated())continue; // Repeated messages not handled
+      std::vector<OptionSpec> sub_opt =
+        r_list_options(prefix+f->name()+".", &r->GetMessage(*m, f));
+    }
+    else
+    {
+      OptionSpec o;
+      o.name           = prefix+f->name();
+      o.is_exclusive   = true;
+      o.takes_value    = true;
+      o.requires_value = true;
+      o.value_type     = f->cpp_type_name();
+
+      std::string value_default;
+      std::string value_units;
+      std::string description;
     }
   }
+  return options;
+}
+
+// ============================================================================
+// ============================================================================
+
+// OptionsProcessor
+
+// ============================================================================
+// ============================================================================
+
+OptionsProcessor::OptionsProcessor()
+{
+  // nothing to see here
+}
+
+OptionsProcessor::OptionsProcessor(google::protobuf::Message* message):
+  priority_protobuf_handler_(new ProtobufOptionHandler(message))
+{
+  add_option_handler(priority_protobuf_handler_, true);
+}
+
+OptionsProcessor::~OptionsProcessor()
+{
+  for(auto* ihandler : adopted_handlers_)delete ihandler;
+}
+
+void OptionsProcessor::
+add_option_handler(OptionHandler* handler, bool adopt_handler)
+{
+  handlers_.emplace_back(handler);
+  if(adopt_handler)adopted_handlers_.emplace_back(handler);
+}
+
+#if 0
+void OptionsProcessor::load_json_cfg(const std::string& json_file_name)
+{
+  assert(priority_protobuf_handler_);
+  priority_protobuf_handler_->load_json_cfg(json_file_name);
+}
+
+void OptionsProcessor::save_json_cfg(const std::string& json_file_name)
+{
+  assert(priority_protobuf_handler_);
+  priority_protobuf_handler_->save_json_cfg(json_file_name);
+}
+#endif
+
+struct OptionDetails
+{
+  std::string arg;
+  std::string key;
+  bool has_val;
+  std::string val;
+  OptionHandlerResult status;
+};
+
+void OptionsProcessor::process_arguments(const std::vector<std::string>& args,
+  bool first_arg_is_program_name)
+{
+  std::vector<OptionDetails> options;
 
   bool arg_is_program_name = first_arg_is_program_name;
   bool processing = true;
@@ -113,9 +254,12 @@ void OptionsProcessor::process_arguments(const std::vector<std::string>& args,
         }
       }
 
+      OptionDetails option {
+        iarg, "", false, "", OptionHandlerResult::UNKNOWN_OPTION };
+
       if(not std::isalpha(iarg[ikey]) and iarg[ikey]!='_') {
         // Pass weird non-protobuf valid names to user to handle
-        unknown_options_.emplace_back(iarg);
+        option.status = OptionHandlerResult::INVALID_OPTION_NAME;
         continue;
       }
 
@@ -125,94 +269,104 @@ void OptionsProcessor::process_arguments(const std::vector<std::string>& args,
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "1234567890_.", ikey+1);
 
-      std::string key;
-      std::string val;
-      bool has_val = false;
       if(ifind == std::string::npos) {
-        key = iarg.substr(ikey);
+        option.key = iarg.substr(ikey);
       } else if (iarg[ifind] == '=') {
-        key = iarg.substr(ikey, ifind-ikey);
+        option.key = iarg.substr(ikey, ifind-ikey);
         if(ifind < iarg.size()-1) {
-          has_val = true;
-          val = iarg.substr(ifind+1);
+          option.has_val = true;
+          option.val = iarg.substr(ifind+1);
         }
       } else {
         // Weird non-protobuf character found, pass argument to user to handle
-        unknown_options_.emplace_back(iarg);
+        option.status = OptionHandlerResult::INVALID_OPTION_NAME;
         continue;
       }
 
-      switch(process_one_argument(message_, key, has_val, val))
-      {
-      case OptionStatus::OK:
-        // Yay!
-        break;
-      case OptionStatus::NOT_FOUND:
-        unknown_options_.emplace_back(iarg);
-        break;
-      case OptionStatus::COULD_NOT_CONVERT_VALUE:
-        problem_options_.emplace_back(iarg);
-        break;
-      }
-    }
+      options.emplace_back(std::move(option));
+    } // if(iarg[0] == '-')
     else
     {
       arguments_.emplace_back(iarg);
       continue;
     }
+  } // for(const auto& iarg: args)
+
+  for(auto* ihandler : handlers_)
+    for(auto& ioption : options)
+    {
+      switch(ioption.status)
+      {
+      case OptionHandlerResult::UNKNOWN_OPTION:
+      case OptionHandlerResult::SHARED_OPTION_OK:
+      case OptionHandlerResult::SHARED_OPTION_INVALID_VALUE:
+        // OK to continue processing this option through the handler
+        break;
+      case OptionHandlerResult::TERMINATE_PROCESSING:
+        assert(0);
+        // Fall through to continue
+      case OptionHandlerResult::EXCLUSIVE_OPTION_OK:
+      case OptionHandlerResult::EXCLUSIVE_OPTION_INVALID_VALUE:
+      case OptionHandlerResult::INVALID_OPTION_NAME:
+        // Skip this option
+        continue;
+      }
+
+      OptionHandlerResult result =
+        ihandler->handle_option(ioption.key, ioption.has_val, ioption.val);
+
+      switch(result)
+      {
+      case OptionHandlerResult::INVALID_OPTION_NAME:
+      case OptionHandlerResult::UNKNOWN_OPTION:
+        // Leave the status as it was
+        break;
+      case OptionHandlerResult::EXCLUSIVE_OPTION_OK:
+      case OptionHandlerResult::EXCLUSIVE_OPTION_INVALID_VALUE:
+      case OptionHandlerResult::SHARED_OPTION_OK:
+      case OptionHandlerResult::SHARED_OPTION_INVALID_VALUE:
+        ioption.status = result;
+        break;
+      case OptionHandlerResult::TERMINATE_PROCESSING:
+        goto terminate_processing;
+      }
+    }
+
+terminate_processing:
+  for(auto& ioption : options)
+  {
+    switch(ioption.status)
+    {
+    case OptionHandlerResult::INVALID_OPTION_NAME:
+    case OptionHandlerResult::UNKNOWN_OPTION:
+      unknown_options_.emplace_back(ioption.arg);
+      break;
+    case OptionHandlerResult::SHARED_OPTION_INVALID_VALUE:
+    case OptionHandlerResult::EXCLUSIVE_OPTION_INVALID_VALUE:
+      problem_options_.emplace_back(ioption.arg);
+      break;
+    case OptionHandlerResult::TERMINATE_PROCESSING:
+      assert(0);
+    case OptionHandlerResult::SHARED_OPTION_OK:
+    case OptionHandlerResult::EXCLUSIVE_OPTION_OK:
+      break;
+    }
   }
 }
 
 void OptionsProcessor::
-process_arguments(int argc, char** argv, const std::string& load_cfg_opt,
-  bool first_arg_is_program_name)
+process_arguments(int argc, char** argv, bool first_arg_is_program_name)
 {
   process_arguments(std::vector<std::string>(argv,argv+argc),
-    load_cfg_opt, first_arg_is_program_name);
+    first_arg_is_program_name);
+}
+
+std::vector<OptionSpec> OptionsProcessor::list_options()
+{
+  return {};
 }
 
 std::string OptionsProcessor::usage()
 {
   return {};
-}
-
-OptionStatus OptionsProcessor::
-process_one_argument(google::protobuf::Message* m,
-  const std::string& key, bool has_val, const std::string& val,
-  std::vector<const google::protobuf::FieldDescriptor*> f_path)
-{
-  std::string::size_type ifind = key.find_first_of('.');
-  std::string field_name;
-  if(ifind == std::string::npos)
-    field_name = key;
-  else
-    field_name = key.substr(0,ifind);
-
-  if(field_name.empty())return OptionStatus::NOT_FOUND;
-
-  const google::protobuf::Descriptor* d = nullptr;
-  if(f_path.empty())d = m->GetDescriptor();
-  else d = f_path.back()->message_type();
-  assert(d);
-
-  const google::protobuf::FieldDescriptor* f = d->FindFieldByName(field_name);
-  if(f == nullptr)return OptionStatus::NOT_FOUND;
-
-  if(f->message_type() != nullptr) {
-    // Sub-message type
-    if(f->is_repeated())
-      return OptionStatus::NOT_FOUND; // Repeated messages not handled
-    if(ifind == std::string::npos)
-      return OptionStatus::NOT_FOUND; // Must have a sub-message field_name
-    f_path.push_back(f);
-    return process_one_argument(m, key.substr(ifind+1), has_val, val, f_path);
-  } else {
-    // Repeated or singular POD type
-    if(string_to_protobuf::string_to_protobuf_field(val, m, f, f_path))
-      return OptionStatus::OK;
-    else
-      return OptionStatus::COULD_NOT_CONVERT_VALUE;
-  }
-  assert(0);
-  return OptionStatus::NOT_FOUND;
 }

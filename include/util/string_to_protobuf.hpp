@@ -35,4 +35,9 @@ bool string_to_protobuf_field(const std::string& s,
   google::protobuf::Message* m, const google::protobuf::FieldDescriptor* f,
   const std::vector<const google::protobuf::FieldDescriptor*>& f_path = {});
 
+void protobuf_field_to_string(std::string& s,
+  const google::protobuf::Message* m,
+  const google::protobuf::FieldDescriptor* f,
+  const std::vector<const google::protobuf::FieldDescriptor*>& f_path = {});
+
 } } } // namespace calin::util::string_to_protobuf

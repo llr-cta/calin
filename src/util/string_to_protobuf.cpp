@@ -27,9 +27,17 @@
 
 using namespace calin::util::string;
 
+// =============================================================================
+// =============================================================================
+//
+// String to Protobuf
+//
+// =============================================================================
+// =============================================================================
+
 namespace {
 
-#define HANDLE_SCALAR(HandleType, type)           \
+#define SET_SCALAR(HandleType, type)              \
 {                                                 \
   type x;                                         \
   good_conversion = from_string(s, x);            \
@@ -54,31 +62,31 @@ bool set_scalar_protobuf_field(const std::string& s,
   switch(f->type())
   {
   case google::protobuf::FieldDescriptor::TYPE_DOUBLE:
-    HANDLE_SCALAR(SetDouble, double);
+    SET_SCALAR(SetDouble, double);
     break;
   case google::protobuf::FieldDescriptor::TYPE_FLOAT:
-    HANDLE_SCALAR(SetFloat, float);
+    SET_SCALAR(SetFloat, float);
     break;
   case google::protobuf::FieldDescriptor::TYPE_SFIXED64: // fallthrough
   case google::protobuf::FieldDescriptor::TYPE_SINT64:   // fallthrough
   case google::protobuf::FieldDescriptor::TYPE_INT64:
-    HANDLE_SCALAR(SetInt64, int64_t);
+    SET_SCALAR(SetInt64, int64_t);
     break;
   case google::protobuf::FieldDescriptor::TYPE_FIXED64:  // fallthrough
   case google::protobuf::FieldDescriptor::TYPE_UINT64:
-    HANDLE_SCALAR(SetUInt64, uint64_t);
+    SET_SCALAR(SetUInt64, uint64_t);
     break;
   case google::protobuf::FieldDescriptor::TYPE_SFIXED32: // fallthrough
   case google::protobuf::FieldDescriptor::TYPE_SINT32:   // fallthrough
   case google::protobuf::FieldDescriptor::TYPE_INT32:
-    HANDLE_SCALAR(SetInt32, int32_t);
+    SET_SCALAR(SetInt32, int32_t);
     break;
   case google::protobuf::FieldDescriptor::TYPE_FIXED32:
   case google::protobuf::FieldDescriptor::TYPE_UINT32:
-    HANDLE_SCALAR(SetUInt32, uint32_t);
+    SET_SCALAR(SetUInt32, uint32_t);
     break;
   case google::protobuf::FieldDescriptor::TYPE_BOOL:
-    HANDLE_SCALAR(SetBool, bool);
+    SET_SCALAR(SetBool, bool);
     break;
   case google::protobuf::FieldDescriptor::TYPE_STRING:
     for(const auto* if_path : f_path) {
@@ -88,6 +96,7 @@ bool set_scalar_protobuf_field(const std::string& s,
       assert(r);
     }
     r->SetString(m, f, s);
+    good_conversion = true;
     break;
   case google::protobuf::FieldDescriptor::TYPE_BYTES:
     for(const auto* if_path : f_path) {
@@ -97,6 +106,7 @@ bool set_scalar_protobuf_field(const std::string& s,
       assert(r);
     }
     r->SetString(m, f, s);
+    good_conversion = true;
     break;
   case google::protobuf::FieldDescriptor::TYPE_ENUM:
     {
@@ -133,31 +143,31 @@ bool add_scalar_protobuf_field(const std::string& s,
   switch(f->type())
   {
   case google::protobuf::FieldDescriptor::TYPE_DOUBLE:
-    HANDLE_SCALAR(AddDouble, double);
+    SET_SCALAR(AddDouble, double);
     break;
   case google::protobuf::FieldDescriptor::TYPE_FLOAT:
-    HANDLE_SCALAR(AddFloat, float);
+    SET_SCALAR(AddFloat, float);
     break;
   case google::protobuf::FieldDescriptor::TYPE_SFIXED64: // fallthrough
   case google::protobuf::FieldDescriptor::TYPE_SINT64:   // fallthrough
   case google::protobuf::FieldDescriptor::TYPE_INT64:
-    HANDLE_SCALAR(AddInt64, int64_t);
+    SET_SCALAR(AddInt64, int64_t);
     break;
   case google::protobuf::FieldDescriptor::TYPE_FIXED64:  // fallthrough
   case google::protobuf::FieldDescriptor::TYPE_UINT64:
-    HANDLE_SCALAR(AddUInt64, uint64_t);
+    SET_SCALAR(AddUInt64, uint64_t);
     break;
   case google::protobuf::FieldDescriptor::TYPE_SFIXED32: // fallthrough
   case google::protobuf::FieldDescriptor::TYPE_SINT32:   // fallthrough
   case google::protobuf::FieldDescriptor::TYPE_INT32:
-    HANDLE_SCALAR(AddInt32, int32_t);
+    SET_SCALAR(AddInt32, int32_t);
     break;
   case google::protobuf::FieldDescriptor::TYPE_FIXED32:
   case google::protobuf::FieldDescriptor::TYPE_UINT32:
-    HANDLE_SCALAR(AddUInt32, uint32_t);
+    SET_SCALAR(AddUInt32, uint32_t);
     break;
   case google::protobuf::FieldDescriptor::TYPE_BOOL:
-    HANDLE_SCALAR(AddBool, bool);
+    SET_SCALAR(AddBool, bool);
     break;
   case google::protobuf::FieldDescriptor::TYPE_STRING:
     for(const auto* if_path : f_path) {
@@ -167,6 +177,7 @@ bool add_scalar_protobuf_field(const std::string& s,
       assert(r);
     }
     r->AddString(m, f, s);
+    good_conversion = true;
     break;
   case google::protobuf::FieldDescriptor::TYPE_BYTES:
     for(const auto* if_path : f_path) {
@@ -176,6 +187,7 @@ bool add_scalar_protobuf_field(const std::string& s,
       assert(r);
     }
     r->AddString(m, f, s);
+    good_conversion = true;
     break;
   case google::protobuf::FieldDescriptor::TYPE_ENUM:
     {
@@ -227,4 +239,115 @@ string_to_protobuf_field(const std::string& s,
     return its_all_good;
   }
   else return set_scalar_protobuf_field(s, m, f, f_path);
+}
+
+// =============================================================================
+// =============================================================================
+//
+// Protobuf to String
+//
+// =============================================================================
+// =============================================================================
+
+namespace {
+
+#define GET_SCALAR(HandleType, type)              \
+{                                                 \
+  for(const auto* if_path : f_path) {             \
+    m = &r->GetMessage(*m, if_path);              \
+    assert(m);                                    \
+    r = m->GetReflection();                       \
+    assert(r);                                    \
+  }                                               \
+  type x = r->HandleType(*m, f);                  \
+  s = to_string(x);                               \
+}
+
+void get_scalar_protobuf_field(std::string& s,
+  const google::protobuf::Message* m,
+  const google::protobuf::FieldDescriptor* f,
+  const std::vector<const google::protobuf::FieldDescriptor*>& f_path = {})
+{
+  const google::protobuf::Reflection* r = m->GetReflection();
+  assert(r);
+  switch(f->type())
+  {
+  case google::protobuf::FieldDescriptor::TYPE_DOUBLE:
+    GET_SCALAR(GetDouble, double);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_FLOAT:
+    GET_SCALAR(GetFloat, float);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_SFIXED64: // fallthrough
+  case google::protobuf::FieldDescriptor::TYPE_SINT64:   // fallthrough
+  case google::protobuf::FieldDescriptor::TYPE_INT64:
+    GET_SCALAR(GetInt64, int64_t);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_FIXED64:  // fallthrough
+  case google::protobuf::FieldDescriptor::TYPE_UINT64:
+    GET_SCALAR(GetUInt64, uint64_t);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_SFIXED32: // fallthrough
+  case google::protobuf::FieldDescriptor::TYPE_SINT32:   // fallthrough
+  case google::protobuf::FieldDescriptor::TYPE_INT32:
+    GET_SCALAR(GetInt32, int32_t);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_FIXED32:
+  case google::protobuf::FieldDescriptor::TYPE_UINT32:
+    GET_SCALAR(GetUInt32, uint32_t);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_BOOL:
+    GET_SCALAR(GetBool, bool);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_STRING:
+    for(const auto* if_path : f_path) {
+      m = &r->GetMessage(*m, if_path);
+      assert(m);
+      r = m->GetReflection();
+      assert(r);
+    }
+    s = r->GetString(*m, f);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_BYTES:
+    for(const auto* if_path : f_path) {
+      m = &r->GetMessage(*m, if_path);
+      assert(m);
+      r = m->GetReflection();
+      assert(r);
+    }
+    r->GetString(*m, f);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_ENUM:
+    {
+      for(const auto* if_path : f_path) {
+        m = &r->GetMessage(*m, if_path);
+        assert(m);
+        r = m->GetReflection();
+        assert(r);
+      }
+      const google::protobuf::EnumValueDescriptor* evd = r->GetEnum(*m, f);
+      assert(evd);
+      s = evd->name();
+    }
+  case google::protobuf::FieldDescriptor::TYPE_MESSAGE:
+  case google::protobuf::FieldDescriptor::TYPE_GROUP:
+  default:
+    assert(0);
+    break;
+  }
+}
+
+} // anonmymous namespace
+
+void calin::util::string_to_protobuf::
+protobuf_field_to_string(std::string& s,
+  const google::protobuf::Message* m,
+  const google::protobuf::FieldDescriptor* f,
+  const std::vector<const google::protobuf::FieldDescriptor*>& f_path)
+{
+  if(f->is_repeated())
+  {
+
+  }
+  else return get_scalar_protobuf_field(s, m, f, f_path);
 }
