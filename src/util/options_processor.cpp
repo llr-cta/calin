@@ -132,8 +132,9 @@ r_list_options(const std::string& prefix, const google::protobuf::Message* m)
     {
       // Sub-message type
       if(f->is_repeated())continue; // Repeated messages not handled
-      std::vector<OptionSpec> sub_opt =
+      std::vector<OptionSpec> sub_options =
         r_list_options(prefix+f->name()+".", &r->GetMessage(*m, f));
+      options.insert(options.end(), sub_options.begin(), sub_options.end());
     }
     else
     {
@@ -143,10 +144,10 @@ r_list_options(const std::string& prefix, const google::protobuf::Message* m)
       o.takes_value    = true;
       o.requires_value = true;
       o.value_type     = f->cpp_type_name();
-
-      std::string value_default;
-      std::string value_units;
-      std::string description;
+      string_to_protobuf::protobuf_field_to_string(o.value_default, m, f);
+      o.value_units    = "";
+      o.description    = "";
+      options.emplace_back(o);
     }
   }
   return options;
@@ -363,7 +364,13 @@ process_arguments(int argc, char** argv, bool first_arg_is_program_name)
 
 std::vector<OptionSpec> OptionsProcessor::list_options()
 {
-  return {};
+  std::vector<OptionSpec> options;
+  for(auto* ihandler : handlers_)
+  {
+    std::vector<OptionSpec> sub_options = ihandler->list_options();
+    options.insert(options.end(), sub_options.begin(), sub_options.end());
+  }
+  return options;
 }
 
 std::string OptionsProcessor::usage()

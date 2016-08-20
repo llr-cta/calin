@@ -263,6 +263,18 @@ namespace {
   s = to_string(x);                               \
 }
 
+#define GET_VECTOR(HandleType, type)              \
+{                                                 \
+  for(const auto* if_path : f_path) {             \
+    m = &r->GetMessage(*m, if_path);              \
+    assert(m);                                    \
+    r = m->GetReflection();                       \
+    assert(r);                                    \
+  }                                               \
+  type x = r->HandleType(*m, f, ielement);        \
+  s = to_string(x);                               \
+}
+
 void get_scalar_protobuf_field(std::string& s,
   const google::protobuf::Message* m,
   const google::protobuf::FieldDescriptor* f,
@@ -337,6 +349,81 @@ void get_scalar_protobuf_field(std::string& s,
   }
 }
 
+void get_vector_protobuf_field(std::string& s,
+  const google::protobuf::Message* m,
+  const google::protobuf::FieldDescriptor* f, int ielement,
+  const std::vector<const google::protobuf::FieldDescriptor*>& f_path = {})
+{
+  const google::protobuf::Reflection* r = m->GetReflection();
+  assert(r);
+  switch(f->type())
+  {
+  case google::protobuf::FieldDescriptor::TYPE_DOUBLE:
+    GET_VECTOR(GetRepeatedDouble, double);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_FLOAT:
+    GET_VECTOR(GetRepeatedFloat, float);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_SFIXED64: // fallthrough
+  case google::protobuf::FieldDescriptor::TYPE_SINT64:   // fallthrough
+  case google::protobuf::FieldDescriptor::TYPE_INT64:
+    GET_VECTOR(GetRepeatedInt64, int64_t);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_FIXED64:  // fallthrough
+  case google::protobuf::FieldDescriptor::TYPE_UINT64:
+    GET_VECTOR(GetRepeatedUInt64, uint64_t);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_SFIXED32: // fallthrough
+  case google::protobuf::FieldDescriptor::TYPE_SINT32:   // fallthrough
+  case google::protobuf::FieldDescriptor::TYPE_INT32:
+    GET_VECTOR(GetRepeatedInt32, int32_t);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_FIXED32:
+  case google::protobuf::FieldDescriptor::TYPE_UINT32:
+    GET_VECTOR(GetRepeatedUInt32, uint32_t);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_BOOL:
+    GET_VECTOR(GetRepeatedBool, bool);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_STRING:
+    for(const auto* if_path : f_path) {
+      m = &r->GetMessage(*m, if_path);
+      assert(m);
+      r = m->GetReflection();
+      assert(r);
+    }
+    s = r->GetRepeatedString(*m, f, ielement);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_BYTES:
+    for(const auto* if_path : f_path) {
+      m = &r->GetMessage(*m, if_path);
+      assert(m);
+      r = m->GetReflection();
+      assert(r);
+    }
+    r->GetRepeatedString(*m, f, ielement);
+    break;
+  case google::protobuf::FieldDescriptor::TYPE_ENUM:
+    {
+      for(const auto* if_path : f_path) {
+        m = &r->GetMessage(*m, if_path);
+        assert(m);
+        r = m->GetReflection();
+        assert(r);
+      }
+      const google::protobuf::EnumValueDescriptor* evd =
+        r->GetRepeatedEnum(*m, f, ielement);
+      assert(evd);
+      s = evd->name();
+    }
+  case google::protobuf::FieldDescriptor::TYPE_MESSAGE:
+  case google::protobuf::FieldDescriptor::TYPE_GROUP:
+  default:
+    assert(0);
+    break;
+  }
+}
+
 } // anonmymous namespace
 
 void calin::util::string_to_protobuf::
@@ -347,7 +434,22 @@ protobuf_field_to_string(std::string& s,
 {
   if(f->is_repeated())
   {
-
+    const google::protobuf::Reflection* r = m->GetReflection();
+    for(const auto* if_path : f_path) {
+      m = &r->GetMessage(*m, if_path);
+      assert(m);
+      r = m->GetReflection();
+      assert(r);
+    }
+    s.clear();
+    int nelement = r->FieldSize(*m, f);
+    for(int ielement=0; ielement<nelement; ielement++)
+    {
+      if(ielement)s += ",";
+      std::string is;
+      get_vector_protobuf_field(is, m, f, ielement);
+      s += is;
+    }
   }
   else return get_scalar_protobuf_field(s, m, f, f_path);
 }

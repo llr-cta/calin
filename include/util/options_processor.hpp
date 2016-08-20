@@ -54,6 +54,12 @@ struct OptionSpec
   std::string description;
 };
 
+#ifdef SWIG
+} } } // namespace calin::util::options_processor
+%template (Vector_OptionsProcessor_OptionSpec) std::vector<calin::util::options_processor::OptionSpec>;
+namespace calin { namespace util { namespace options_processor {
+#endif
+
 class OptionHandler
 {
 public:
