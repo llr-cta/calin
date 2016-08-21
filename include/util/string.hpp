@@ -64,7 +64,7 @@ std::string string_escape(const std::string& s_in);
 template<typename T> bool from_string(const std::string& s, T& x)
 {
   std::istringstream stream(s);
-  stream >> x;
+  stream >> std::boolalpha >> x;
   return stream.eof();
 }
 
@@ -82,7 +82,9 @@ template<typename T> bool from_string(const std::string& s, std::vector<T>& x)
 
 template<typename T> std::string to_string(const T& x)
 {
-  return std::to_string(x);
+  std::ostringstream stream;
+  stream << std::boolalpha << x;
+  return stream.str();
 }
 
 template<typename T> std::string to_string(const std::vector<T>& x)

@@ -23,7 +23,9 @@
 */
 
 #include <sstream>
+#include <google/protobuf/descriptor.pb.h>
 
+#include <calin.pb.h>
 #include <util/options_processor.hpp>
 #include <util/string_to_protobuf.hpp>
 #include <util/file.hpp>
@@ -93,6 +95,24 @@ handle_option(const std::string& key, bool has_val, const std::string& val)
       if(ifind != std::string::npos) // More sub-fields specified - oops
         return OptionHandlerResult::UNKNOWN_OPTION;
       // Repeated or singular POD type
+      if(not has_val) {
+        if(not f->is_repeated() and
+            f->type() == google::protobuf::FieldDescriptor::TYPE_BOOL) {
+          // As a special case, singular boolean types don't need a value
+          google::protobuf::Message* m = message_;
+          const google::protobuf::Reflection* r = m->GetReflection();
+          for(const auto* if_path : f_path) {
+            m = r->MutableMessage(m, if_path);
+            assert(m);
+            r = m->GetReflection();
+            assert(r);
+          }
+          r->SetBool(m, f, true);
+          return OptionHandlerResult::EXCLUSIVE_OPTION_OK;
+        } else {
+          return OptionHandlerResult::EXCLUSIVE_OPTION_INVALID_VALUE;
+        }
+      }
       if(string_to_protobuf::string_to_protobuf_field(val, message_, f, f_path))
         return OptionHandlerResult::EXCLUSIVE_OPTION_OK;
       else
@@ -139,14 +159,61 @@ r_list_options(const std::string& prefix, const google::protobuf::Message* m)
     else
     {
       OptionSpec o;
-      o.name           = prefix+f->name();
-      o.is_exclusive   = true;
-      o.takes_value    = true;
-      o.requires_value = true;
-      o.value_type     = f->cpp_type_name();
+      o.name             = prefix+f->name();
+      o.is_exclusive     = true;
+      o.takes_value      = true;
+      switch(f->type())
+      {
+      case google::protobuf::FieldDescriptor::TYPE_DOUBLE:   // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_FLOAT:    // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_SFIXED64: // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_SINT64:   // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_INT64:    // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_FIXED64:  // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_UINT64:   // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_SFIXED32: // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_SINT32:   // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_INT32:    // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_FIXED32:  // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_UINT32:   // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_STRING:   // fallthrough
+      case google::protobuf::FieldDescriptor::TYPE_BYTES:
+        o.requires_value = true;
+        o.value_type     = f->cpp_type_name();
+        break;
+      case google::protobuf::FieldDescriptor::TYPE_BOOL:
+        o.requires_value = false;
+        o.value_type     = "{true,false}";
+        break;
+      case google::protobuf::FieldDescriptor::TYPE_ENUM:
+        o.requires_value = true;
+        {
+          std::string vals = "{";
+          const google::protobuf::EnumDescriptor* ed = f->enum_type();
+          assert(ed);
+          for(int ivalue=0; ivalue<ed->value_count(); ivalue++) {
+            if(ivalue) vals += ",";
+            vals += ed->value(ivalue)->name();
+          }
+          vals += "}";
+          o.value_type    = vals;
+        }
+        break;
+      case google::protobuf::FieldDescriptor::TYPE_MESSAGE:
+      case google::protobuf::FieldDescriptor::TYPE_GROUP:
+      default:
+        assert(0);
+        break;
+      }
       string_to_protobuf::protobuf_field_to_string(o.value_default, m, f);
-      o.value_units    = "";
-      o.description    = "";
+      o.value_units      = "";
+      o.description      = "";
+      const google::protobuf::FieldOptions* fopt { &f->options() };
+      if(fopt->HasExtension(CFO))
+      {
+        o.description    = fopt->GetExtension(CFO).desc();
+        o.value_units    = fopt->GetExtension(CFO).units();
+      }
       options.emplace_back(o);
     }
   }

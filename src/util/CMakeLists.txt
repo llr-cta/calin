@@ -18,7 +18,7 @@ set(CALIN_SOURCES string.cpp file.cpp options_processor.cpp
   string_to_protobuf.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
-target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY})
+target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY} calin_proto)
 
 add_library(${CALIN_TARGET_LIBRARY}_lite SHARED string.cpp)
 
