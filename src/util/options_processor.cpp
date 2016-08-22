@@ -182,7 +182,7 @@ r_list_options(const std::string& prefix, const google::protobuf::Message* m)
         o.value_type     = f->cpp_type_name();
         break;
       case google::protobuf::FieldDescriptor::TYPE_BOOL:
-        o.requires_value = false;
+        o.requires_value = f->is_repeated(); // Singular bools are special
         o.value_type     = "{true,false}";
         break;
       case google::protobuf::FieldDescriptor::TYPE_ENUM:
@@ -205,6 +205,8 @@ r_list_options(const std::string& prefix, const google::protobuf::Message* m)
         assert(0);
         break;
       }
+      if(f->is_repeated())
+        o.value_type = std::string("vector<")+o.value_type+">";
       string_to_protobuf::protobuf_field_to_string(o.value_default, m, f);
       o.value_units      = "";
       o.description      = "";
