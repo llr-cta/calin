@@ -148,7 +148,7 @@ public:
   const std::vector<std::string>& problem_options() { return problem_options_; }
   const std::vector<std::string>& arguments() { return arguments_; }
   std::vector<OptionSpec> list_options();
-  std::string usage();
+  std::string usage(unsigned width = 80);
 
 protected:
   ProtobufOptionHandler* priority_protobuf_handler_ = nullptr;

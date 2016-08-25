@@ -442,7 +442,13 @@ std::vector<OptionSpec> OptionsProcessor::list_options()
   return options;
 }
 
-std::string OptionsProcessor::usage()
+std::string OptionsProcessor::usage(unsigned width)
 {
+  std::string s;
+  std::vector<OptionSpec> options = list_options();
+  for(auto ioption : options)
+  {
+    
+  }
   return {};
 }
