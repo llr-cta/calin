@@ -37,13 +37,18 @@ namespace calin { namespace simulation { namespace iact_array_tracker {
 struct IACTDetectorSphereHit
 {
   Eigen::Vector3d x0;    // Position of particle at emisson
+  Eigen::Vector3d rx;    // Vector from x0 to r0 (r0-x0)
   Eigen::Vector3d u;     // Unit vector along motion of particle at emisson
-  //Eigen::Vector3d v;     // Unit vector prependicular to u from x0 to r0
-  double rxu;            //
-  double rxv;            //
+  Eigen::Vector3d v;     // Unit vector prependicular to u from x0 to r0
+  Eigen::Vector3d w;     // Third unit vector such that u cross v = w
+  double rx2;            // (r0-x0)^2
+  double rxu;            // Component of r0-x0 along u
+  double rxv;            // Component of r0-x0 along v
   double dmin;           //
   double cos_phimax;     //
   double phimax;         //
+
+  const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack* cherenkov_track;
 };
 
 class IACTDetectorSphereHitProcessor
