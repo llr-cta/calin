@@ -25,18 +25,25 @@
 #pragma once
 
 #include <simulation/vso_array.hpp>
+#include <simulation/vso_raytracer.hpp>
 #include <simulation/iact_array_tracker.hpp>
 
 namespace calin { namespace simulation { namespace quadrature_iact_array_integration {
 
-class VSO_IACTDetectorSphereHitProcessor: public IACTDetectorSphereHitProcessor
+class VSO_QuadratureIACTArrayIntegrationHitVisitor;
+
+class VSO_IACTDetectorSphereHitProcessor:
+  public calin::simulation::iact_array_tracker::IACTDetectorSphereHitProcessor
 {
 public:
   VSO_IACTDetectorSphereHitProcessor(
+    VSO_QuadratureIACTArrayIntegrationHitVisitor* quadrature,
     calin::simulation::vs_optics::VSOTelescope* scope);
   virtual ~VSO_IACTDetectorSphereHitProcessor();
-  virtual void process_hit(const IACTDetectorSphereHit& hit);
+  virtual void process_hit(
+    const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit);
 private:
+  VSO_QuadratureIACTArrayIntegrationHitVisitor* quadrature_ = nullptr;
   calin::simulation::vs_optics::VSOTelescope* scope_ = nullptr;
 };
 
@@ -44,8 +51,8 @@ class VSO_QuadratureIACTArrayIntegrationHitVisitor:
   public calin::simulation::iact_array_tracker::HitIACTVisitor
 {
 public:
-  VSO_QuadratureIACTArrayIntegrationHitVisitor(
-    calin::simulation::vs_optics::VSOArray* array, adopt_array = false);
+  VSO_QuadratureIACTArrayIntegrationHitVisitor(double step_size,
+    calin::simulation::vs_optics::VSOArray* array, bool adopt_array = false);
   ~VSO_QuadratureIACTArrayIntegrationHitVisitor();
   std::vector<calin::simulation::iact_array_tracker::IACTDetectorSphere> spheres() override;
   void visit_event(const calin::simulation::tracker::Event& event,
@@ -55,9 +62,21 @@ public:
     bool& kill_track) override;
   void leave_cherenkov_track() override;
   void leave_event() override;
-private:
+protected:
+  friend class VSO_IACTDetectorSphereHitProcessor;
+
+  void process_test_ray(
+    const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
+    calin::simulation::vs_optics::VSOTelescope* scope,
+    double cos_phi, double sin_phi, double dphi);
+  void process_hit(
+    const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
+    calin::simulation::vs_optics::VSOTelescope* scope);
+
+  double step_size_;
   calin::simulation::vs_optics::VSOArray* array_ = nullptr;
   bool adopt_array_ = false;
+  calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
 };
 
 } } } // namespace calin::simulation::quadrature_iact_array_integration

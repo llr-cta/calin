@@ -29,6 +29,21 @@
 using namespace calin::simulation::iact_array_tracker;
 using calin::math::special::SQR;
 
+IACTDetectorSphereHitProcessor::~IACTDetectorSphereHitProcessor()
+{
+  // nothing to see here
+}
+
+HitIACTVisitor::~HitIACTVisitor()
+{
+  // nothing to see here
+}
+
+void HitIACTVisitor::leave_cherenkov_track()
+{
+  // nothing to see here  
+}
+
 IACTDetectorSphereAirCherenkovTrackVisitor::
 IACTDetectorSphereAirCherenkovTrackVisitor(HitIACTVisitor* visitor,
     bool adopt_visitor):
@@ -75,13 +90,10 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
 
     if(hit.rxv == 0.0)
     {
-      if(std::abs(hit.u(2)) < 0.95)
-      {
+      if(std::abs(hit.u(2)) < 0.95) {
         hit.v             = Eigen::Vector3d(-hit.u(1),hit.u(0),0.0)/
           sqrt(SQR(hit.u(0))+SQR(hit.u(1)));
-      }
-      else
-      {
+      } else {
         hit.v             = Eigen::Vector3d(-hit.u(2),0.0,hit.u(0))/
           sqrt(SQR(hit.u(0))+SQR(hit.u(2)));
       }
