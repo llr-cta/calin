@@ -26,7 +26,6 @@ ENV CC=gcc-5 CXX=g++-5
 ADD / /build/calin/
 
 RUN cd /build/calin &&                                             \
-    ls -l &&\
     mkdir mybuild &&                                               \
     cd mybuild &&                                                  \
     cmake -DCMAKE_BUILD_TYPE=Release                               \
