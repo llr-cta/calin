@@ -29,7 +29,9 @@ RUN cd /build/calin &&                                             \
     mkdir mybuild &&                                               \
     cd mybuild &&                                                  \
     cmake -DCMAKE_BUILD_TYPE=Release                               \
-          -DCMAKE_INSTALL_PREFIX=/usr .. &&                        \
+          -DCMAKE_INSTALL_PREFIX=/usr                              \
+          -DCALIN_PYTHON_BASE_DIR=lib/python3.5                    \
+          .. &&                                                    \
     make -j2 &&                                                    \
     make install &&                                                \
     cd / &&                                                        \

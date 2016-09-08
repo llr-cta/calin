@@ -15,7 +15,7 @@
 
 set(CALIN_SWIG_PROTO common_types.proto unittest.proto)
 set(CALIN_TARGET_LIBRARY calin_proto)
-set(CALIN_SWIG_INSTALL_DIR python/calin/ix)
+set(CALIN_SWIG_INSTALL_DIR ${CALIN_PYTHON_BASE_DIR}/calin/ix)
 set(CALIN_PROTO_INSTALL_DIR proto)
 
 message(STATUS "PROTOBUF_IMPORT_DIRS: " ${PROTOBUF_IMPORT_DIRS})
