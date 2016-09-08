@@ -110,16 +110,21 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::leave_event()
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
   const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
   calin::simulation::vs_optics::VSOTelescope* scope,
-  double cos_phi, double sin_phi, double dphi)
+  double cos_phi, double sin_phi, double weight)
 {
   Eigen::Vector3d p_hat = hit.u * hit.cherenkov_track->cos_thetac +
     (hit.v * cos_phi + hit.w * sin_phi)*hit.cherenkov_track->sin_thetac;
 
-  math::vs_physics::Particle ray;
+  math::vs_physics::Vec4D r0 { hit.cherenkov_track->t_mid,
+    hit.cherenkov_track->x_mid };
+  math::vs_physics::Vec4D p0 { 1, p_hat };
+  math::vs_physics::Particle ray { r0, p0, 0 };
   VSOTraceInfo trace_info;
   const VSOPixel* pixel = ray_tracer_->trace(ray, trace_info, scope);
 
-
+  if(trace_info.status==TS_PE_GENERATED and pixel!=nullptr) {
+    //m_visitor->process_pe(pixel->id(), ray.Position().r0, weight);
+  }
 }
 
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_hit(
@@ -135,7 +140,8 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_hit(
   const double sin_dphi = std::sin(dphi);
   double cos_phi = 1.0;
   double sin_phi = 0.0;
-  for(unsigned i=0; i<n ; i++)
+  unsigned n_half = (n+1)/2;
+  for(unsigned i=0; i<n_half ; i++)
   {
     if(i==0) {
       process_test_ray(hit, scope, cos_phi, sin_phi, dphi);

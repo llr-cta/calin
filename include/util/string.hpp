@@ -78,6 +78,7 @@ template<typename T> bool from_string(const std::string& s, std::vector<T>& x)
     all_good &= from_string(ibit, ix);
     x.emplace_back(ix);
   }
+  return all_good;
 }
 
 template<typename T> std::string to_string(const T& x)
