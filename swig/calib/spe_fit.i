@@ -39,4 +39,5 @@
 %import "math/function.i"
 %import "math/histogram.i"
 
+%import "calib/spe_fit.pb.i"
 %include "calib/spe_fit.hpp"

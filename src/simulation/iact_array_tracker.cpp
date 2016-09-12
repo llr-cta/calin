@@ -21,12 +21,28 @@
 */
 
 #include <limits>
+#include <Eigen/Dense>
 
 #include <simulation/iact_array_tracker.hpp>
 #include <math/special.hpp>
 
 using namespace calin::simulation::iact_array_tracker;
 using calin::math::special::SQR;
+
+IACTDetectorSphereHitProcessor::~IACTDetectorSphereHitProcessor()
+{
+  // nothing to see here
+}
+
+HitIACTVisitor::~HitIACTVisitor()
+{
+  // nothing to see here
+}
+
+void HitIACTVisitor::leave_cherenkov_track()
+{
+  // nothing to see here  
+}
 
 IACTDetectorSphereAirCherenkovTrackVisitor::
 IACTDetectorSphereAirCherenkovTrackVisitor(HitIACTVisitor* visitor,
@@ -61,54 +77,67 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
   for(auto& isphere : spheres_)
   {
     // Author's note : see Calin notebook for sphere / cone intersection
-    
-    Eigen::Vector3d rx = isphere.r0 - CT.x_mid;
-    double rx2  = rx.squaredNorm();
-    double rxu  = rx.dot(CT.dx_hat); // note bad naming of dx_hat
-    double rxu2 = SQR(rxu);
-    double rxv = std::sqrt(std::max(rx2 - rxu2, 0.0));
 
-    double rx2_minus_r2 = rx2 - isphere.radius_sq;
+    IACTDetectorSphereHit hit;
+    hit.x0                = CT.x_mid;
+    hit.rx                = isphere.r0 - CT.x_mid;
+    hit.u                 = CT.dx_hat;
+
+    hit.rx2               = hit.rx.squaredNorm();
+    hit.rxu               = hit.rx.dot(CT.dx_hat); // note bad naming of dx_hat
+    double rxu2 = SQR(hit.rxu);
+    hit.rxv               = std::sqrt(std::max(hit.rx2 - rxu2, 0.0));;
+
+    if(hit.rxv == 0.0)
+    {
+      if(std::abs(hit.u(2)) < 0.95) {
+        hit.v             = Eigen::Vector3d(-hit.u(1),hit.u(0),0.0)/
+          sqrt(SQR(hit.u(0))+SQR(hit.u(1)));
+      } else {
+        hit.v             = Eigen::Vector3d(-hit.u(2),0.0,hit.u(0))/
+          sqrt(SQR(hit.u(0))+SQR(hit.u(2)));
+      }
+    }
+    else
+    {
+      hit.v               = (hit.rx - hit.rxu*hit.u)*(1.0/hit.rxv);
+    }
+    hit.w                 = hit.u.cross(hit.v);
+
+    double rx2_minus_r2 = hit.rx2 - isphere.radius_sq;
 
     if(rx2_minus_r2 < 0) // Particle is inside detector sphere - always hit!
     {
       IACTDetectorSphereHit hit;
-      hit.x0         = CT.x_mid;
-      hit.u          = CT.dx_hat;
-      hit.rxu        = rxu;
-      hit.rxv        = rxv;
-      hit.dmin       = std::numeric_limits<double>::quiet_NaN();
-      hit.cos_phimax = -1.0;
-      hit.phimax     = M_PI;
+      hit.dmin            = std::numeric_limits<double>::quiet_NaN();
+      hit.cos_phimax      = -1.0;
+      hit.phimax          = M_PI;
+      hit.cherenkov_track = &CT;
       isphere.processor->process_hit(hit);
       continue;
     }
 
-    double dmin = CT.cos_thetac*rxv - CT.sin_thetac*rxu;
-    if(SQR(dmin) > isphere.radius_sq)continue; // Cone misses sphere
+    hit.dmin = CT.cos_thetac*hit.rxv - CT.sin_thetac*hit.rxu;
+    if(SQR(hit.dmin) > isphere.radius_sq)continue; // Cone misses sphere
 
-    double cos_phimax = (sqrt(rx2_minus_r2) - CT.cos_thetac*rxu) /
-      (CT.sin_thetac*rxv);
+    double cos_phimax = (sqrt(rx2_minus_r2) - CT.cos_thetac*hit.rxu) /
+      (CT.sin_thetac*hit.rxv);
 
-    // This covers cases where the sphere intersects the "reverse" cone
+    // This guards against cases where the sphere intersects the "reverse" cone
     if(cos_phimax < 1.0)
     {
       IACTDetectorSphereHit hit;
-      hit.x0         = CT.x_mid;
-      hit.u          = CT.dx_hat;
-      hit.rxu        = rxu;
-      hit.rxv        = rxv;
-      hit.dmin       = dmin;
       if(cos_phimax <= -1.0)
       {
-        hit.cos_phimax = -1.0;
-        hit.phimax     = M_PI;
+        hit.cos_phimax    = -1.0;
+        hit.phimax        = M_PI;
       }
       else
       {
-        hit.cos_phimax = cos_phimax;
-        hit.phimax     = std::acos(cos_phimax);
+        hit.cos_phimax    = cos_phimax;
+        hit.phimax        = std::acos(cos_phimax);
       }
+      hit.cherenkov_track = &CT;
       isphere.processor->process_hit(hit);
       continue;
     }

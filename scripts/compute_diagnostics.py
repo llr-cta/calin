@@ -62,8 +62,13 @@ if(len(sys.argv) > 5):
 cfg = calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_config()
 #cfg.set_max_file_fragments(8)
+
+dcfg = calin.iact_data.telescope_data_source.\
+    NectarCamZFITSDataSource.default_decoder_config()
+dcfg.set_exchange_gain_channels(True);
+
 src = calin.iact_data.telescope_data_source.\
-    NectarCamZFITSDataSource(zfits_file, cfg)
+    NectarCamZFITSDataSource(zfits_file, cfg, dcfg)
 src.set_next_index(1)
 
 # Get the run info
@@ -81,6 +86,11 @@ bkg_window_sum_visitor = calin.iact_data.functional_event_visitor.\
     FixedWindowSumFunctionalTelescopeEventVisitor(bkg_window_sum_cfg)
 dispatcher.add_visitor(bkg_window_sum_visitor, \
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
+
+# Background window stats
+bkg_window_stats_visitor = calin.diagnostics.functional.\
+    FunctionalIntStatsVisitor(bkg_window_sum_visitor)
+dispatcher.add_visitor(bkg_window_stats_visitor)
 
 bkg_capture_adapter = [None] * run_info.configured_channel_id_size();
 bkg_capture = [None] * run_info.configured_channel_id_size();
@@ -105,6 +115,11 @@ sig_window_sum_visitor = calin.iact_data.functional_event_visitor.\
     FixedWindowSumFunctionalTelescopeEventVisitor(sig_window_sum_cfg)
 dispatcher.add_visitor(sig_window_sum_visitor, \
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
+
+# Raw signal window stats
+sig_window_stats_visitor = calin.diagnostics.functional.\
+    FunctionalIntStatsVisitor(sig_window_sum_visitor)
+dispatcher.add_visitor(sig_window_stats_visitor)
 
 # Signal minus background functional
 sig_bkg_diff_visitor = calin.iact_data.functional_event_visitor.\
@@ -135,11 +150,6 @@ dispatcher.add_visitor(waveform_visitor)
 # Waveform PSD stats
 psd_visitor = calin.diagnostics.waveform.WaveformPSDVisitor()
 dispatcher.add_visitor(psd_visitor)
-
-# Background window stats
-bkg_window_stats_visitor = calin.diagnostics.functional.\
-    FunctionalIntStatsVisitor(bkg_window_sum_visitor)
-dispatcher.add_visitor(bkg_window_stats_visitor)
 
 # Glitch detection visitor
 glitch_visitor = \
@@ -187,6 +197,7 @@ dispatcher.process_run(src,100000,3)
 psd = psd_visitor.results()
 wfs = waveform_visitor.results()
 bkg = bkg_window_stats_visitor.results()
+sig_raw = sig_window_stats_visitor.results()
 sig = sig_bkg_stats_visitor.results()
 glitch = glitch_visitor.glitch_data()
 bunch_event_glitch = bunch_event_glitch_visitor.glitch_data()
@@ -204,6 +215,7 @@ sql.create_tables_and_insert("run_config", run_info)
 sql.create_tables_and_insert("psd", psd)
 sql.create_tables_and_insert("wfs", wfs)
 sql.create_tables_and_insert("bkg", bkg)
+sql.create_tables_and_insert("sig_raw", sig_raw)
 sql.create_tables_and_insert("sig", sig)
 sql.create_tables_and_insert("glitch_event", glitch)
 sql.create_tables_and_insert("glitch_bunch_event", bunch_event_glitch)

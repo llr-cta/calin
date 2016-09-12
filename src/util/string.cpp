@@ -77,3 +77,11 @@ std::string calin::util::string::string_escape(const std::string& s_in)
   }
   return s_out;
 }
+
+#if 0
+std::string calin::util::string::to_string(const bool& x)
+{
+  if(x)return "true";
+  else return "false";
+}
+#endif

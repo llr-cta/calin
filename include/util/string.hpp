@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <string>
+#include <cstdint>
 #include <sstream>
 #include <iomanip>
 
@@ -59,5 +60,68 @@ std::string to_string_with_commas(T value, unsigned precision = 2)
 }
 
 std::string string_escape(const std::string& s_in);
+
+template<typename T> bool from_string(const std::string& s, T& x)
+{
+  std::istringstream stream(s);
+  stream >> std::boolalpha >> x;
+  return stream.eof();
+}
+
+template<typename T> bool from_string(const std::string& s, std::vector<T>& x)
+{
+  bool all_good = true;
+  std::vector<std::string> bits = split(s, ',');
+  for(auto ibit : bits)
+  {
+    T ix;
+    all_good &= from_string(ibit, ix);
+    x.emplace_back(ix);
+  }
+  return all_good;
+}
+
+template<typename T> std::string to_string(const T& x)
+{
+  std::ostringstream stream;
+  stream << std::boolalpha << x;
+  return stream.str();
+}
+
+template<typename T> std::string to_string(const std::vector<T>& x)
+{
+  std::string s;
+  for(const auto& ix : x)
+  {
+    if(!s.empty())s += ",";
+    s += ix;
+  }
+  return s;
+}
+
+#define CALIN_DEFINE_T_FROM_STRING(T, fn) \
+inline T fn(const std::string& s, bool* good = nullptr) \
+{ \
+  T t; \
+  bool is_good =  from_string(s, t); \
+  if(good) *good = is_good; \
+  return t; \
+}
+
+CALIN_DEFINE_T_FROM_STRING(bool, bool_from_string)
+CALIN_DEFINE_T_FROM_STRING(int8_t, int8_from_string)
+CALIN_DEFINE_T_FROM_STRING(uint8_t, uint8_from_string)
+CALIN_DEFINE_T_FROM_STRING(int16_t, int16_from_string)
+CALIN_DEFINE_T_FROM_STRING(uint16_t, uint16_from_string)
+CALIN_DEFINE_T_FROM_STRING(int32_t, int32_from_string)
+CALIN_DEFINE_T_FROM_STRING(uint32_t, uint32_from_string)
+CALIN_DEFINE_T_FROM_STRING(int64_t, int64_from_string)
+CALIN_DEFINE_T_FROM_STRING(uint64_t, uint64_from_string)
+CALIN_DEFINE_T_FROM_STRING(float, float_from_string)
+CALIN_DEFINE_T_FROM_STRING(double, double_from_string)
+
+#undef CALIN_DEFINE_T_FROM_STRING
+
+
 
 } } } // namespace calin::util::string

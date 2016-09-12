@@ -22,7 +22,7 @@ namespace Eigen {
   * the return type of MatrixBase::operator<<, and most of the time this is the only
   * way it is used.
   *
-  * \sa \ref MatrixBaseCommaInitRef "MatrixBase::operator<<", CommaInitializer::finished()
+  * \sa \blank \ref MatrixBaseCommaInitRef "MatrixBase::operator<<", CommaInitializer::finished()
   */
 template<typename XprType>
 struct CommaInitializer
@@ -80,8 +80,11 @@ struct CommaInitializer
   EIGEN_DEVICE_FUNC
   CommaInitializer& operator,(const DenseBase<OtherDerived>& other)
   {
-    if(other.cols()==0 || other.rows()==0)
+    if(other.rows()==0)
+    {
+      m_col += other.cols();
       return *this;
+    }
     if (m_col==m_xpr.cols())
     {
       m_row+=m_currentBlockRows;
@@ -90,7 +93,7 @@ struct CommaInitializer
       eigen_assert(m_row+m_currentBlockRows<=m_xpr.rows()
         && "Too many rows passed to comma initializer (operator<<)");
     }
-    eigen_assert(m_col<m_xpr.cols()
+    eigen_assert((m_col<m_xpr.cols() || (m_xpr.cols()==0 && m_col==0))
       && "Too many coefficients passed to comma initializer (operator<<)");
     eigen_assert(m_currentBlockRows==other.rows());
     if (OtherDerived::SizeAtCompileTime != Dynamic)

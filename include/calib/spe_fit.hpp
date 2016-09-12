@@ -33,6 +33,7 @@
 #include "math/function.hpp"
 #include "math/pdf_1d.hpp"
 #include "math/histogram.hpp"
+#include <calib/spe_fit.pb.h>
 
 namespace calin { namespace calib { namespace spe_fit {
 
@@ -181,15 +182,20 @@ class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
 class GeneralPoissonMES: public MultiElectronSpectrum
 {
  public:
+   CALIN_TYPEALIAS(config_type, calin::ix::calib::
+     spe_fit::GeneralPoissonMESConfig);
+
   GeneralPoissonMES(double x0, double dx, unsigned npoint,
                     SingleElectronSpectrum* ses,
                     calin::math::pdf_1d::Parameterizable1DPDF* ped,
-                    unsigned nmax = 10,
+                    calin::ix::calib::spe_fit::GeneralPoissonMESConfig config =
+                      default_config(),
                     bool adopt_ses = false, bool adopt_ped = false);
 
   virtual ~GeneralPoissonMES();
 
   unsigned num_parameters() override;
+  unsigned num_intrinsic_parameters();
   std::vector<calin::math::function::ParameterAxis> parameters() override;
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
@@ -214,7 +220,7 @@ class GeneralPoissonMES: public MultiElectronSpectrum
 
   double x0() const { return x0_; }
   double dx() const { return dx_; }
-  double num_electrons_in_model() const { return nmax_; }
+  double num_electrons_in_model() const { return config_.num_pe_convolutions(); }
 
   double ses_x(unsigned isample) const { return (0.5+double(isample))*dx_; }
   double ped_x(unsigned isample) const {
@@ -231,19 +237,36 @@ class GeneralPoissonMES: public MultiElectronSpectrum
 
   std::vector<double> multi_electron_spectrum() const;
   std::vector<double> pedestal_spectrum() const;
-  std::vector<double> n_electron_spectrum(unsigned n) const; // 1<=n<=nmax_
+  std::vector<double> off_pedestal_spectrum() const;
+  std::vector<double> n_electron_spectrum(unsigned n) const; // 1<=n<=config_.num_pe_convolutions()
   std::vector<double> single_electron_spectrum() const {
     return  n_electron_spectrum(1); }
-  std::vector<double> mes_n_electron_cpt(unsigned n) const; // 0<=n<=nmax_
+  std::vector<double> mes_n_electron_cpt(unsigned n) const; // 0<=n<=config_.num_pe_convolutions()
 
   std::vector<double> multi_electron_spectrum_gradient(unsigned iparam) const;
   std::vector<double> pedestal_spectrum_gradient(unsigned iparam) const;
+  std::vector<double> off_pedestal_spectrum_gradient(unsigned iparam) const;
   std::vector<double> single_electron_spectrum_gradient(unsigned iparam) const;
 
   Eigen::VectorXd extract_ped_gradient_values(ConstVecRef gradient);
   Eigen::VectorXd extract_ses_gradient_values(ConstVecRef gradient);
   Eigen::MatrixXd extract_ped_hessian_values(ConstMatRef hessian);
   Eigen::MatrixXd extract_ses_hessian_values(ConstMatRef hessian);
+
+  unsigned iparam_light_intensity() const { return 0; }
+  unsigned iparam_off_ped_shift() const {
+    assert(config_.include_on_off_ped_shift());
+    return 1;
+  }
+  unsigned iparam_ped() const {
+    if(config_.include_on_off_ped_shift())return 2;
+    else return 1;
+  }
+  unsigned iparam_ses() const {
+    return iparam_ped() + ped_pdf_->num_parameters();
+  }
+
+  static calin::ix::calib::spe_fit::GeneralPoissonMESConfig default_config();
 
  protected:
   int ibin(double x) const;
@@ -253,13 +276,16 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   calin::math::pdf_1d::Parameterizable1DPDF* ped_pdf_;
   bool adopt_ses_pdf_ = false;
   bool adopt_ped_pdf_ = false;
-  unsigned nmax_ = 10;
+  calin::ix::calib::spe_fit::GeneralPoissonMESConfig config_ = default_config();
   double intensity_pe_ = 1.0;
+  double off_ped_shift_dc_ = 0.0;
 
   double x0_ = 0;
   double dx_ = 0;
   unsigned nsample_ = 0;
   double* ped_spec_ = nullptr;
+  double* off_spec_ = nullptr;
+  double* off_dfdx_ = nullptr;
   double* ped_fft_ = nullptr;
   std::vector<double*> nes_fft_;
   double* mes_spec_ = nullptr;
@@ -271,10 +297,10 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   std::vector<fftw_plan> ped_grad_plan_fwd_;
   std::vector<fftw_plan> ses_grad_plan_fwd_;
   std::vector<double*> ped_grad_;
+  std::vector<double*> off_grad_;
   std::vector<double*> mes_grad_;
   std::vector<fftw_plan> mes_grad_plan_rev_;
   unsigned n_ses_norm_warning_ = 0;
-  unsigned n_max_ses_norm_warning_ = 10;
 };
 
 class SPELikelihood: public calin::math::function::MultiAxisFunction

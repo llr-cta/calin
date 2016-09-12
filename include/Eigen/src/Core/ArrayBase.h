@@ -52,8 +52,6 @@ template<typename Derived> class ArrayBase
     typedef typename NumTraits<Scalar>::Real RealScalar;
 
     typedef DenseBase<Derived> Base;
-    using Base::operator*;
-    using Base::operator/;
     using Base::RowsAtCompileTime;
     using Base::ColsAtCompileTime;
     using Base::SizeAtCompileTime;
@@ -103,7 +101,7 @@ template<typename Derived> class ArrayBase
     /** Special case of the template operator=, in order to prevent the compiler
       * from generating a default operator= (issue hit with g++ 4.1)
       */
-    EIGEN_DEVICE_FUNC
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
     Derived& operator=(const ArrayBase& other)
     {
       internal::call_assignment(derived(), other.derived());
@@ -112,28 +110,28 @@ template<typename Derived> class ArrayBase
     
     /** Set all the entries to \a value.
       * \sa DenseBase::setConstant(), DenseBase::fill() */
-    EIGEN_DEVICE_FUNC
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
     Derived& operator=(const Scalar &value)
     { Base::setConstant(value); return derived(); }
 
-    EIGEN_DEVICE_FUNC
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
     Derived& operator+=(const Scalar& scalar);
-    EIGEN_DEVICE_FUNC
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
     Derived& operator-=(const Scalar& scalar);
 
     template<typename OtherDerived>
-    EIGEN_DEVICE_FUNC
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
     Derived& operator+=(const ArrayBase<OtherDerived>& other);
     template<typename OtherDerived>
-    EIGEN_DEVICE_FUNC
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
     Derived& operator-=(const ArrayBase<OtherDerived>& other);
 
     template<typename OtherDerived>
-    EIGEN_DEVICE_FUNC
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
     Derived& operator*=(const ArrayBase<OtherDerived>& other);
 
     template<typename OtherDerived>
-    EIGEN_DEVICE_FUNC
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
     Derived& operator/=(const ArrayBase<OtherDerived>& other);
 
   public:
@@ -178,7 +176,7 @@ template<typename OtherDerived>
 EIGEN_STRONG_INLINE Derived &
 ArrayBase<Derived>::operator-=(const ArrayBase<OtherDerived> &other)
 {
-  call_assignment(derived(), other.derived(), internal::sub_assign_op<Scalar>());
+  call_assignment(derived(), other.derived(), internal::sub_assign_op<Scalar,typename OtherDerived::Scalar>());
   return derived();
 }
 
@@ -191,7 +189,7 @@ template<typename OtherDerived>
 EIGEN_STRONG_INLINE Derived &
 ArrayBase<Derived>::operator+=(const ArrayBase<OtherDerived>& other)
 {
-  call_assignment(derived(), other.derived(), internal::add_assign_op<Scalar>());
+  call_assignment(derived(), other.derived(), internal::add_assign_op<Scalar,typename OtherDerived::Scalar>());
   return derived();
 }
 
@@ -217,7 +215,7 @@ template<typename OtherDerived>
 EIGEN_STRONG_INLINE Derived &
 ArrayBase<Derived>::operator/=(const ArrayBase<OtherDerived>& other)
 {
-  call_assignment(derived(), other.derived(), internal::div_assign_op<Scalar>());
+  call_assignment(derived(), other.derived(), internal::div_assign_op<Scalar,typename OtherDerived::Scalar>());
   return derived();
 }
 

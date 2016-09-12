@@ -14,9 +14,12 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_TARGET_LIBRARY calin_util)
-set(CALIN_SOURCES string.cpp file.cpp)
+set(CALIN_SOURCES string.cpp file.cpp options_processor.cpp
+  string_to_protobuf.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
-#target_link_libraries(${CALIN_TARGET_LIBRARY} calin_xxx)
+target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY} calin_proto)
 
-install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)
+add_library(${CALIN_TARGET_LIBRARY}_lite SHARED string.cpp)
+
+install(TARGETS ${CALIN_TARGET_LIBRARY} ${CALIN_TARGET_LIBRARY}_lite DESTINATION lib)

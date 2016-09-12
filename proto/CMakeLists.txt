@@ -15,7 +15,7 @@
 
 set(CALIN_SWIG_PROTO common_types.proto unittest.proto)
 set(CALIN_TARGET_LIBRARY calin_proto)
-set(CALIN_SWIG_INSTALL_DIR python/calin/ix)
+set(CALIN_SWIG_INSTALL_DIR ${CALIN_PYTHON_BASE_DIR}/calin/ix)
 set(CALIN_PROTO_INSTALL_DIR proto)
 
 message(STATUS "PROTOBUF_IMPORT_DIRS: " ${PROTOBUF_IMPORT_DIRS})
@@ -76,7 +76,7 @@ macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
 #		MESSAGE(STATUS "${SWIG_DEPS}")
 		add_custom_command(OUTPUT ${base_name}.pb_wrap.cxx
 		  COMMAND ${SWIG_EXECUTABLE} ${CMAKE_SWIG_FLAGS} -interface _${base_name}_pb  -c++ -python ${interface_file}
-		DEPENDS "${interface_file};${CMAKE_BINARY_DIR}/swig/calin_config.i;${SWIG_DEPS}")
+			DEPENDS "${interface_file};${CMAKE_BINARY_DIR}/swig/calin_config.i;${SWIG_DEPS}")
 		include_directories(${CMAKE_CURRENT_BINARY_DIR})
 		add_library(_${base_name}_pb MODULE ${base_name}.pb_wrap.cxx)
 		set_target_properties(_${base_name}_pb PROPERTIES NO_SONAME ON)
@@ -106,3 +106,5 @@ add_subdirectory(simulation)
 add_subdirectory(io)
 add_subdirectory(iact_data)
 add_subdirectory(diagnostics)
+add_subdirectory(calib)
+add_subdirectory(command_line_options)
