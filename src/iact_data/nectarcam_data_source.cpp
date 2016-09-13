@@ -167,7 +167,7 @@ bool NectarCamCameraEventDecoder::decode(
         calin_event->module_index(imod) == -1)continue;
       auto* module_counters = calin_event->add_module_counter();
       module_counters->set_module_id(imod);
-#define add_counter(id,val) \
+#define add_mod_counter(id,val) \
       { \
         module_counters->add_counter_id(id); \
         module_counters->add_counter_value(val); \
@@ -178,13 +178,13 @@ bool NectarCamCameraEventDecoder::decode(
         counter->set_value(val); \
       }
 #endif
-      add_counter(0, mod_counter->global_event_counter);
-      add_counter(1, mod_counter->bunch_counter);
-      add_counter(2, mod_counter->event_counter);
-      add_counter(3, mod_counter->ts1);
-      add_counter(4, mod_counter->ts2_bunch);
-      add_counter(5, mod_counter->ts2_event);
-      add_counter(6, mod_counter->ts2_empty);
+      add_mod_counter(0, mod_counter->global_event_counter);
+      add_mod_counter(1, mod_counter->bunch_counter);
+      add_mod_counter(2, mod_counter->event_counter);
+      add_mod_counter(3, mod_counter->ts1);
+      add_mod_counter(4, mod_counter->ts2_bunch);
+      add_mod_counter(5, mod_counter->ts2_event);
+      add_mod_counter(6, mod_counter->ts2_empty);
 
 #define ts2_decode(x) ((x)&0xF0?((x)&0xC0?((x)&0x80?0:1):((x)&0x20?2:3)):\
                                 ((x)&0x0C?((x)&0x08?4:5):((x)&0x02?6:7)))
@@ -198,6 +198,47 @@ bool NectarCamCameraEventDecoder::decode(
       clock->set_clock_id(0);
       clock->mutable_time()->set_time_ns(time_ns);
     }
+  }
+
+  // ==========================================================================
+  //
+  // DECODE NECTARCAM CDTS DATA MESSAGE
+  //
+  // ==========================================================================
+
+  if(cta_event->uctsdatapresence() and cta_event->has_uctsdata() and
+    cta_event->uctsdata().has_data())
+  {
+    struct CDTSMessageData {
+      uint32_t event_counter;
+      uint32_t pps_counter;
+      uint32_t clock_counter;
+      uint64_t ucts_timestamp;
+      uint64_t camera_timestamp;
+      uint8_t trigger_type;
+      uint8_t white_rabbit_status;
+      uint8_t arbitrary_information;
+    } __attribute__((__packed__));
+
+    const auto& cta_cdts_data = cta_event->uctsdata().data();
+#if TEST_ANYARRAY_TYPES
+    if(cta_cdts_data.type() != DataModel::AnyArray::U32)
+      throw std::runtime_error("CDTS counters type not U32");
+#endif
+    if(cta_cdts_data.data().size() != sizeof(CDTSMessageData))
+      throw std::runtime_error("CDTS data array not expected size");
+    const auto* cdts_data =
+      reinterpret_cast<const CDTSMessageData*>(&cta_cdts_data.data().front());
+
+    auto* calin_cdts_data = calin_event->mutable_cdts_data();
+    calin_cdts_data->set_event_counter(cdts_data->event_counter);
+    calin_cdts_data->set_pps_counter(cdts_data->pps_counter);
+    calin_cdts_data->set_clock_counter(cdts_data->clock_counter);
+    calin_cdts_data->set_ucts_timestamp(cdts_data->ucts_timestamp);
+    calin_cdts_data->set_camera_timestamp(cdts_data->camera_timestamp);
+    calin_cdts_data->set_trigger_type(cdts_data->trigger_type);
+    calin_cdts_data->set_white_rabbit_status(cdts_data->white_rabbit_status);
+    calin_cdts_data->set_arbitrary_information(cdts_data->arbitrary_information);
   }
 
   return true;

@@ -129,17 +129,33 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
   layout->set_can_read_waveforms(true);
   layout->set_can_read_charges(true);
   layout->set_can_read_peak_sample(false);
-  auto& map_id_to_name = *layout->mutable_module_counter_id_to_name();
-  map_id_to_name[0] = "global_event_counter";
-  map_id_to_name[1] = "bunch_counter";
-  map_id_to_name[2] = "event_counter";
-  map_id_to_name[3] = "ts1";
-  map_id_to_name[4] = "ts2_bunch";
-  map_id_to_name[5] = "ts2_event";
-  map_id_to_name[6] = "ts2_empty";
+
+  auto& mod_ctr_id_to_name = *layout->mutable_module_counter_id_to_name();
+  mod_ctr_id_to_name[0] = "global_event_counter";
+  mod_ctr_id_to_name[1] = "bunch_counter";
+  mod_ctr_id_to_name[2] = "event_counter";
+  mod_ctr_id_to_name[3] = "ts1";
+  mod_ctr_id_to_name[4] = "ts2_bunch";
+  mod_ctr_id_to_name[5] = "ts2_event";
+  mod_ctr_id_to_name[6] = "ts2_empty";
   for(auto&& i : layout->module_counter_id_to_name()) {
     (*layout->mutable_module_counter_name_to_id())[i.second] = i.first;
   }
+
+#if 0 // Obsolete as CDTS has its own structure type
+  auto& cam_ctr_id_to_name = *layout->mutable_camera_counter_id_to_name();
+  cam_ctr_id_to_name[0] = "cdts_event_counter";
+  cam_ctr_id_to_name[1] = "cdts_pps_counter";
+  cam_ctr_id_to_name[2] = "cdts_clock_counter";
+  cam_ctr_id_to_name[3] = "cdts_ucts_timestamp_ns";
+  cam_ctr_id_to_name[4] = "cdts_camera_timestamp_ns";
+  cam_ctr_id_to_name[5] = "cdts_trigger_type";
+  cam_ctr_id_to_name[6] = "cdts_white_rabbit_status";
+  cam_ctr_id_to_name[7] = "cdts_arbitrary_information";
+  for(auto&& i : layout->camera_counter_id_to_name()) {
+    (*layout->mutable_camera_counter_name_to_id())[i.second] = i.first;
+  }
+#endif
 
   //const unsigned modchanmap[] = { 3, 0, 6, 5, 4, 2, 1 };
   const unsigned gridchanmap[] = { 1, 6, 5, 0, 4, 3, 2 };
