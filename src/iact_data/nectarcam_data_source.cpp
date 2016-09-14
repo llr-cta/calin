@@ -165,6 +165,7 @@ bool NectarCamCameraEventDecoder::decode(
     {
       if(imod < calin_event->module_index_size() and
         calin_event->module_index(imod) == -1)continue;
+
       auto* module_counters = calin_event->add_module_counter();
       module_counters->set_module_id(imod);
 #define add_mod_counter(id,val) \
@@ -172,12 +173,6 @@ bool NectarCamCameraEventDecoder::decode(
         module_counters->add_counter_id(id); \
         module_counters->add_counter_value(val); \
       }
-#if 0
-        auto* counter = module_counters->add_counter(); \
-        counter->set_counter_id(id); \
-        counter->set_value(val); \
-      }
-#endif
       add_mod_counter(0, mod_counter->global_event_counter);
       add_mod_counter(1, mod_counter->bunch_counter);
       add_mod_counter(2, mod_counter->event_counter);
@@ -185,6 +180,16 @@ bool NectarCamCameraEventDecoder::decode(
       add_mod_counter(4, mod_counter->ts2_bunch);
       add_mod_counter(5, mod_counter->ts2_event);
       add_mod_counter(6, mod_counter->ts2_empty);
+
+      auto* module_data = calin_event->add_module_data()->mutable_nectarcam();
+      module_data->set_module_id(imod);
+      module_data->set_global_event_counter(mod_counter->global_event_counter);
+      module_data->set_bunch_counter(mod_counter->bunch_counter);
+      module_data->set_event_counter(mod_counter->event_counter);
+      module_data->set_ts1(mod_counter->ts1);
+      module_data->set_ts2_bunch(mod_counter->ts2_bunch);
+      module_data->set_ts2_event(mod_counter->ts2_event);
+      module_data->set_ts2_empty(mod_counter->ts2_empty);
 
 #define ts2_decode(x) ((x)&0xF0?((x)&0xC0?((x)&0x80?0:1):((x)&0x20?2:3)):\
                                 ((x)&0x0C?((x)&0x08?4:5):((x)&0x02?6:7)))
