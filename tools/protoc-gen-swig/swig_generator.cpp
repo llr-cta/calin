@@ -267,7 +267,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     "  %extend {\n"
     "    $class_name$* Clone() const {\n"
     "      $class_type$* the_clone = $$self->New();\n"
-    "      the_clone->CopyFrom(*$$self); return the_clone; }\n"
+    "      the_clone->MergeFrom(*$$self); return the_clone; }\n"
     "  }\n"
     "  void Swap($class_name$* other);\n"
     "\n"
