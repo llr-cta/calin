@@ -253,12 +253,15 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
   string the_class_name = class_name(d);
   I->Print(
     "\n"
+    "%newobject $class_name$::New() const;\n"
+    "\n"
     "class $class_name$ : public google::protobuf::Message \n"
     "{\n"
     " public:\n"
     "  $class_name$();\n"
     "  ~$class_name$();\n"
     "  $class_name$(const $class_name$& other);\n"
+    "  $class_name$* New() const;\n"
     "  void Swap($class_name$* other);\n"
     "\n"
     "  static const google::protobuf::Descriptor* descriptor();\n"
