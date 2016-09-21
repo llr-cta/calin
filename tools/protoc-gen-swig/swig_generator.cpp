@@ -251,7 +251,11 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       print_message(I, d->nested_type(i));
 
   string the_class_name = class_name(d);
+  string the_class_type = class_type(d);
   I->Print(
+    "\n"
+    "%newobject $class_name$::New() const;\n"
+    "%newobject $class_name$::Clone() const;\n"
     "\n"
     "class $class_name$ : public google::protobuf::Message \n"
     "{\n"
@@ -259,11 +263,18 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     "  $class_name$();\n"
     "  ~$class_name$();\n"
     "  $class_name$(const $class_name$& other);\n"
+    "  $class_name$* New() const;\n"
+    "  %extend {\n"
+    "    $class_name$* Clone() const {\n"
+    "      $class_type$* the_clone = $$self->New();\n"
+    "      the_clone->MergeFrom(*$$self); return the_clone; }\n"
+    "  }\n"
     "  void Swap($class_name$* other);\n"
     "\n"
     "  static const google::protobuf::Descriptor* descriptor();\n"
     "  static const $class_name$& default_instance();\n",
-    "class_name", the_class_name);
+    "class_name", the_class_name,
+    "class_type", the_class_type);
   I->Indent();
 
   // Typedefs for nested types

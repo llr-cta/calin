@@ -49,7 +49,7 @@
 
 namespace google { namespace protobuf {
 
-%newobject Message::New() const;
+//%newobject Message::New() const;
 %nodefaultctor Message;
 %nodefaultctor Descriptor;
 %nodefaultctor Arena;
@@ -60,7 +60,7 @@ class Message
   //Message();
   ~Message();
 
-  google::protobuf::Message* New() const;
+  //google::protobuf::Message* New() const;
   void CopyFrom(const Message & from);
   void MergeFrom(const Message & from);
   int SpaceUsed() const;
