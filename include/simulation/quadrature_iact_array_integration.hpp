@@ -30,6 +30,14 @@
 
 namespace calin { namespace simulation { namespace quadrature_iact_array_integration {
 
+class QuadratureIACTArrayPEProcessor
+{
+public:
+  virtual ~QuadratureIACTArrayPEProcessor();
+  virtual void process_pe(unsigned scope_id, unsigned pixel_id, double t0,
+    double pe_weight) = 0;
+};
+
 class VSO_QuadratureIACTArrayIntegrationHitVisitor;
 
 class VSO_IACTDetectorSphereHitProcessor:
@@ -51,8 +59,10 @@ class VSO_QuadratureIACTArrayIntegrationHitVisitor:
   public calin::simulation::iact_array_tracker::HitIACTVisitor
 {
 public:
-  VSO_QuadratureIACTArrayIntegrationHitVisitor(double step_size,
-    calin::simulation::vs_optics::VSOArray* array, bool adopt_array = false);
+  VSO_QuadratureIACTArrayIntegrationHitVisitor(double test_ray_spacing,
+    calin::simulation::vs_optics::VSOArray* array,
+    QuadratureIACTArrayPEProcessor* visitor,
+    bool adopt_array = false, bool adopt_visitor = false);
   ~VSO_QuadratureIACTArrayIntegrationHitVisitor();
   std::vector<calin::simulation::iact_array_tracker::IACTDetectorSphere> spheres() override;
   void visit_event(const calin::simulation::tracker::Event& event,
@@ -73,9 +83,11 @@ protected:
     const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
     calin::simulation::vs_optics::VSOTelescope* scope);
 
-  double step_size_;
+  double test_ray_spacing_;
   calin::simulation::vs_optics::VSOArray* array_ = nullptr;
   bool adopt_array_ = false;
+  QuadratureIACTArrayPEProcessor* visitor_ = nullptr;
+  bool adopt_visitor_ = false;
   calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
 };
 

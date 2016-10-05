@@ -57,10 +57,14 @@ process_hit(
 
 
 VSO_QuadratureIACTArrayIntegrationHitVisitor::
-VSO_QuadratureIACTArrayIntegrationHitVisitor(double step_size,
-    calin::simulation::vs_optics::VSOArray* array, bool adopt_array):
+VSO_QuadratureIACTArrayIntegrationHitVisitor(double test_ray_spacing,
+    calin::simulation::vs_optics::VSOArray* array,
+    QuadratureIACTArrayPEProcessor* visitor,
+    bool adopt_array, bool adopt_visitor):
   calin::simulation::iact_array_tracker::HitIACTVisitor(),
-  step_size_(step_size), array_(array), adopt_array_(adopt_array)
+  test_ray_spacing_(test_ray_spacing),
+  array_(array), adopt_array_(adopt_array),
+  visitor_(visitor), adopt_visitor_(adopt_visitor)
 {
   // nothing to see here
 }
@@ -69,6 +73,7 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::
 ~VSO_QuadratureIACTArrayIntegrationHitVisitor()
 {
   if(adopt_array_)delete array_;
+  if(adopt_visitor_)delete visitor_;
 }
 
 std::vector<IACTDetectorSphere>
@@ -123,7 +128,7 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
   const VSOPixel* pixel = ray_tracer_->trace(ray, trace_info, scope);
 
   if(trace_info.status==TS_PE_GENERATED and pixel!=nullptr) {
-    //m_visitor->process_pe(pixel->id(), ray.Position().r0, weight);
+    visitor_->process_pe(scope->id(), pixel->id(), ray.Position().r0, weight);
   }
 }
 
@@ -131,7 +136,7 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_hit(
   const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
   calin::simulation::vs_optics::VSOTelescope* scope)
 {
-  double dphi = step_size_*hit.cherenkov_track->cos_thetac /
+  double dphi = test_ray_spacing_*hit.cherenkov_track->cos_thetac /
     (2.0*M_PI*hit.rxu*hit.cherenkov_track->sin_thetac);
   unsigned n = std::floor(2.0*hit.phimax / dphi);
   if(n%2 == 0)++n; // always choose odd number of integration Points
@@ -141,13 +146,15 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_hit(
   double cos_phi = 1.0;
   double sin_phi = 0.0;
   unsigned n_half = (n+1)/2;
+  double weight = dphi/(2.0*M_PI)*hit.cherenkov_track->yield_density;
+  // Adapt weight for track length / QE / number of cone reflections etc...
   for(unsigned i=0; i<n_half ; i++)
   {
     if(i==0) {
-      process_test_ray(hit, scope, cos_phi, sin_phi, dphi);
+      process_test_ray(hit, scope, cos_phi, sin_phi, weight);
     } else {
-      process_test_ray(hit, scope, cos_phi, sin_phi, dphi);
-      process_test_ray(hit, scope, cos_phi, -sin_phi, dphi);
+      process_test_ray(hit, scope, cos_phi, sin_phi, weight);
+      process_test_ray(hit, scope, cos_phi, -sin_phi, weight);
     }
     const double sin_phi_ = sin_phi * cos_dphi + cos_phi * sin_dphi;
     const double cos_phi_ = cos_phi * cos_dphi - sin_phi * sin_dphi;
