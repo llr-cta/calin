@@ -35,6 +35,55 @@ using calin::simulation::iact_array_tracker::IACTDetectorSphere;
 using namespace calin::simulation::vs_optics;
 //using namespace calin::math::vs_physics;
 
+QuadratureIACTArrayPEProcessor::~QuadratureIACTArrayPEProcessor()
+{
+  // nothing to see here
+}
+
+SimpleImagePEProcessor::
+SimpleImagePEProcessor(unsigned nscope, unsigned npix):
+  QuadratureIACTArrayPEProcessor(), images_(nscope, std::vector<double>(npix))
+{
+  // nothing to see here
+}
+
+SimpleImagePEProcessor::
+SimpleImagePEProcessor(const std::vector<unsigned> npix):
+  QuadratureIACTArrayPEProcessor(), images_()
+{
+  for(auto inpix : npix)images_.emplace_back(inpix);
+}
+
+SimpleImagePEProcessor::~SimpleImagePEProcessor()
+{
+  // nothing to see here
+}
+
+void SimpleImagePEProcessor::
+process_pe(unsigned scope_id, unsigned pixel_id, double t0, double pe_weight)
+{
+  if(scope_id < images_.size())
+    throw std::out_of_range("SimpleImagePEProcessor::process_pe: scope_id out "
+      "of range");
+  if(pixel_id < images_[scope_id].size())
+    throw std::out_of_range("SimpleImagePEProcessor::process_pe: pixel_id out "
+      "of range");
+  images_[scope_id][pixel_id] += pe_weight;
+}
+
+const std::vector<double> SimpleImagePEProcessor::scope_image(unsigned iscope)
+{
+  if(iscope < images_.size())
+    throw std::out_of_range("SimpleImagePEProcessor::scope_image: iscope out "
+      "of range");
+  return images_[iscope];
+}
+
+void SimpleImagePEProcessor::clear_all_images()
+{
+  for(auto& image : images_)std::fill(image.begin(), image.end(), 0.0);
+}
+
 VSO_IACTDetectorSphereHitProcessor::VSO_IACTDetectorSphereHitProcessor(
     VSO_QuadratureIACTArrayIntegrationHitVisitor* quadrature,
     calin::simulation::vs_optics::VSOTelescope* scope):
@@ -139,7 +188,7 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_hit(
   double dphi = test_ray_spacing_*hit.cherenkov_track->cos_thetac /
     (2.0*M_PI*hit.rxu*hit.cherenkov_track->sin_thetac);
   unsigned n = std::floor(2.0*hit.phimax / dphi);
-  if(n%2 == 0)++n; // always choose odd number of integration Points
+  if(n%2 == 0)++n; // always choose odd number of integration points
   dphi = 2.0*hit.phimax/double(n);
   const double cos_dphi = std::cos(dphi);
   const double sin_dphi = std::sin(dphi);

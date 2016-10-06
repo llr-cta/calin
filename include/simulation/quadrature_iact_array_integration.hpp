@@ -38,6 +38,20 @@ public:
     double pe_weight) = 0;
 };
 
+class SimpleImagePEProcessor: public QuadratureIACTArrayPEProcessor
+{
+public:
+  SimpleImagePEProcessor(unsigned nscope, unsigned npix);
+  SimpleImagePEProcessor(const std::vector<unsigned> npix);
+  virtual ~SimpleImagePEProcessor();
+  void process_pe(unsigned scope_id, unsigned pixel_id, double t0,
+    double pe_weight) override;
+  const std::vector<double> scope_image(unsigned iscope);
+  void clear_all_images();
+private:
+  std::vector<std::vector<double>> images_;
+};
+
 class VSO_QuadratureIACTArrayIntegrationHitVisitor;
 
 class VSO_IACTDetectorSphereHitProcessor:
