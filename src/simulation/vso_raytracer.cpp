@@ -109,7 +109,7 @@ trace(math::vs_physics::Particle& ray, TraceInfo& info,
 {
   // Initialize array
   info.reset();
-  info.array = &fArray;
+  info.array = fArray;
 
   info.scope = scope_hint;
 
@@ -121,7 +121,7 @@ trace(math::vs_physics::Particle& ray, TraceInfo& info)
 {
   // Initialize array
   info.reset();
-  info.array = &fArray;
+  info.array = fArray;
 
   // Require photon to be down going
   if(ray.Momenta().r.z>0)
@@ -134,7 +134,7 @@ trace(math::vs_physics::Particle& ray, TraceInfo& info)
   math::vs_physics::Particle ray_copy(ray);
   bool good;
   good = ray_copy.PropagateFreeToPlane(math::vs_physics::Vec3D(0,0,1),
-                                       -fArray.altitude(), true);
+                                       -fArray->altitude(), true);
   if(!good)
   {
     info.status = TS_DOES_INTERSECT_GROUND;
@@ -151,7 +151,7 @@ trace(math::vs_physics::Particle& ray, TraceInfo& info)
   info.scope_id  = 0;
 
   // Find telescope (if there is a real telescope at that site)
-  info.scope = fArray.telescope(info.scope_id);
+  info.scope = fArray->telescope(info.scope_id);
   if(info.scope==0)
   {
     info.status = TS_NO_SCOPE;
@@ -205,10 +205,11 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
   }
 
   // Propagate to intersection with the reflector sphere
-  good = ray.PropagateFreeToSphere(math::vs_physics::Vec3D(0,info.scope->curvatureRadius(),0),
-				   info.scope->curvatureRadius(),
-				   math::vs_physics::Particle::IP_LATEST,
-                                   false /* true */);
+  good = ray.PropagateFreeToSphere(
+    math::vs_physics::Vec3D(0,info.scope->curvatureRadius(),0),
+	  info.scope->curvatureRadius(),
+    math::vs_physics::Particle::IP_LATEST,
+    false /* true */);
   if(!good)
   {
     info.status = TS_MISSED_REFLECTOR_SPHERE;
@@ -253,7 +254,7 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
   // Check to see if photon is absorbed at the mirror. Would be faster to
   // do this check before the edge check, but this way gets info.status
   // correct .. is this important ?
-  if(fRNG.uniform() > info.mirror->degradingFactor())
+  if(fRNG->uniform() > info.mirror->degradingFactor())
   {
     info.status = TS_ABSORBED_AT_MIRROR;
     info.mirror->mirrorToReflector(ray);
@@ -273,7 +274,7 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
       info.mirror->spotSize()/2.0/info.mirror->focalLength();
 
   info.mirror_scattered = info.mirror_normal;
-  info.mirror_scattered.ScatterDirection(info.mirror_normal_dispersion,fRNG);
+  info.mirror_scattered.ScatterDirection(info.mirror_normal_dispersion,*fRNG);
 
   // Reflect ray
   ray.Reflect(info.mirror_scattered);
@@ -363,7 +364,7 @@ VSORayTracer::scope_trace(math::vs_physics::Particle& ray, TraceInfo& info)
       (info.pixel_dist > info.scope->cathodeDiameter()/2.0);
   if(info.concentrator_hit)
   {
-    if(fRNG.uniform() > info.scope->concentratorSurvivalProb())
+    if(fRNG->uniform() > info.scope->concentratorSurvivalProb())
     {
       info.status = TS_ABSORBED_AT_CONCENTRATOR;
       info.scope->focalPlaneToReflector(ray);
@@ -565,16 +566,16 @@ bool VSORayTracer::beam(math::vs_physics::Particle& photon,
   // SAMPLE PHOTON EMISSION POINT FROM BEAM LENGTH
   if(beam_stop != beam_start)
   {
-    emission_point += d_hat*((beam_stop-beam_start)*fRNG.uniform());
+    emission_point += d_hat*((beam_stop-beam_start)*fRNG->uniform());
   }
 
   // SAMPLE PHOTON EMISSION POINT FROM BEAM AREA
   if((beam_radius_in != 0)||(beam_radius_out != 0))
   {
-    double theta = 2.0*M_PI*fRNG.uniform();
+    double theta = 2.0*M_PI*fRNG->uniform();
     double rho2 = beam_radius_in*beam_radius_in;
     if(beam_radius_in != beam_radius_out)
-      rho2 += (beam_radius_out*beam_radius_out-rho2) * fRNG.uniform();
+      rho2 += (beam_radius_out*beam_radius_out-rho2) * fRNG->uniform();
     double rho = sqrt(rho2);
     emission_point += tangent_a*rho*cos(theta) + tangent_b*rho*sin(theta);
   }
@@ -583,13 +584,13 @@ bool VSORayTracer::beam(math::vs_physics::Particle& photon,
   double costheta = cos(beam_angle_lo);
   if(beam_angle_lo != beam_angle_hi)
   {
-    costheta += fRNG.uniform() * (cos(beam_angle_hi)-costheta);
+    costheta += fRNG->uniform() * (cos(beam_angle_hi)-costheta);
   }
   double theta = acos(costheta);
 
   if(theta != 0)
   {
-    double phi = fRNG.uniform() * 2.0*math::constants::num_pi;
+    double phi = fRNG->uniform() * 2.0*math::constants::num_pi;
 #if 1
     d_hat = d_hat*costheta
             + (tangent_a*cos(phi)+tangent_b*sin(phi))*sin(theta);

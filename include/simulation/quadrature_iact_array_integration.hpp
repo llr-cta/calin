@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <math/rng.hpp>
 #include <simulation/vso_array.hpp>
 #include <simulation/vso_raytracer.hpp>
 #include <simulation/iact_array_tracker.hpp>
@@ -76,7 +77,9 @@ public:
   VSO_QuadratureIACTArrayIntegrationHitVisitor(double test_ray_spacing,
     calin::simulation::vs_optics::VSOArray* array,
     QuadratureIACTArrayPEProcessor* visitor,
-    bool adopt_array = false, bool adopt_visitor = false);
+    calin::math::rng::RNG* rng = nullptr,
+    bool adopt_array = false, bool adopt_visitor = false,
+    bool adopt_rng = false);
   ~VSO_QuadratureIACTArrayIntegrationHitVisitor();
   std::vector<calin::simulation::iact_array_tracker::IACTDetectorSphere> spheres() override;
   void visit_event(const calin::simulation::tracker::Event& event,
@@ -102,6 +105,8 @@ protected:
   bool adopt_array_ = false;
   QuadratureIACTArrayPEProcessor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
+  calin::math::rng::RNG* rng_ = nullptr;
+  bool adopt_rng_ = false;
   calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
 };
 

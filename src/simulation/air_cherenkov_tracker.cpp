@@ -31,7 +31,9 @@
 
 #include <math/special.hpp>
 #include <simulation/air_cherenkov_tracker.hpp>
+#include <io/log.hpp>
 
+using namespace calin::io::log;
 using namespace calin::simulation::air_cherenkov_tracker;
 using calin::math::special::SQR;
 

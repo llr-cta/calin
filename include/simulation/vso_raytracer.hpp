@@ -145,8 +145,10 @@ class VSOPSFInfo
 class VSORayTracer
 {
  public:
-  VSORayTracer(const VSOArray& array, math::rng::RNG& rng):
-      fArray(array), fRNG(rng) { }
+  VSORayTracer(const VSOArray* array, math::rng::RNG* rng):
+    fArray(array), fRNG(rng) { /* nothing to see here */ }
+  VSORayTracer(math::rng::RNG* rng, const VSOArray* array = nullptr):
+    fArray(array), fRNG(rng) { /* nothing to see here */ }
   virtual ~VSORayTracer();
 
   typedef VSOTraceStatus Status;
@@ -195,8 +197,8 @@ class VSORayTracer
  private:
   bool findMirror(math::vs_physics::Particle& ray, TraceInfo& info);
 
-  const VSOArray&          fArray;
-  math::rng::RNG&          fRNG;
+  const VSOArray*          fArray;
+  math::rng::RNG*          fRNG;
 
   const VSOPixel* scope_trace(math::vs_physics::Particle& ray,
                               TraceInfo& info);

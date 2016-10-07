@@ -28,8 +28,10 @@
 #include <simulation/quadrature_iact_array_integration.hpp>
 #include <math/special.hpp>
 #include <math/vs_particle.hpp>
+#include <io/log.hpp>
 
 using namespace calin::simulation::quadrature_iact_array_integration;
+using namespace calin::io::log;
 using calin::math::special::SQR;
 using calin::simulation::iact_array_tracker::IACTDetectorSphere;
 using namespace calin::simulation::vs_optics;
@@ -110,11 +112,15 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::
 VSO_QuadratureIACTArrayIntegrationHitVisitor(double test_ray_spacing,
     calin::simulation::vs_optics::VSOArray* array,
     QuadratureIACTArrayPEProcessor* visitor,
-    bool adopt_array, bool adopt_visitor):
+    calin::math::rng::RNG* rng,
+    bool adopt_array, bool adopt_visitor, bool adopt_rng):
   calin::simulation::iact_array_tracker::HitIACTVisitor(),
   test_ray_spacing_(test_ray_spacing),
   array_(array), adopt_array_(adopt_array),
-  visitor_(visitor), adopt_visitor_(adopt_visitor)
+  visitor_(visitor), adopt_visitor_(adopt_visitor),
+  rng_(rng ? rng : new calin::math::rng::RNG),
+  adopt_rng_(rng ? true : adopt_rng),
+  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_))
 {
   // nothing to see here
 }
@@ -124,6 +130,8 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::
 {
   if(adopt_array_)delete array_;
   if(adopt_visitor_)delete visitor_;
+  delete ray_tracer_;
+  if(adopt_rng_)delete rng_;
 }
 
 std::vector<IACTDetectorSphere>
@@ -176,6 +184,19 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
   math::vs_physics::Particle ray { r0, p0, 0 };
   VSOTraceInfo trace_info;
   const VSOPixel* pixel = ray_tracer_->trace(ray, trace_info, scope);
+
+#if 0
+  if(sin_phi==0) {
+    LOG(INFO) << trace_info.status << ' ' << trace_info.mirror_hexid << ' '
+      << ray.Position().r << ' ' << p_hat.norm() << " [ "
+      << hit.u.transpose() << " ] [ "
+      << hit.v.transpose() << "] [ "
+      << hit.w.transpose() << "] " << hit.cherenkov_track->cos_thetac << ' '
+      << hit.cherenkov_track->sin_thetac;
+
+
+  }
+#endif
 
   if(trace_info.status==TS_PE_GENERATED and pixel!=nullptr) {
     visitor_->process_pe(scope->id(), pixel->id(), ray.Position().r0, weight);
