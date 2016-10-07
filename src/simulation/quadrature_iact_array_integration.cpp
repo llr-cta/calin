@@ -51,6 +51,7 @@ SimpleImagePEProcessor::
 SimpleImagePEProcessor(const std::vector<unsigned> npix):
   QuadratureIACTArrayPEProcessor(), images_()
 {
+
   for(auto inpix : npix)images_.emplace_back(inpix);
 }
 
@@ -62,10 +63,10 @@ SimpleImagePEProcessor::~SimpleImagePEProcessor()
 void SimpleImagePEProcessor::
 process_pe(unsigned scope_id, unsigned pixel_id, double t0, double pe_weight)
 {
-  if(scope_id < images_.size())
+  if(scope_id >= images_.size())
     throw std::out_of_range("SimpleImagePEProcessor::process_pe: scope_id out "
       "of range");
-  if(pixel_id < images_[scope_id].size())
+  if(pixel_id >= images_[scope_id].size())
     throw std::out_of_range("SimpleImagePEProcessor::process_pe: pixel_id out "
       "of range");
   images_[scope_id][pixel_id] += pe_weight;
@@ -73,7 +74,7 @@ process_pe(unsigned scope_id, unsigned pixel_id, double t0, double pe_weight)
 
 const std::vector<double> SimpleImagePEProcessor::scope_image(unsigned iscope)
 {
-  if(iscope < images_.size())
+  if(iscope >= images_.size())
     throw std::out_of_range("SimpleImagePEProcessor::scope_image: iscope out "
       "of range");
   return images_[iscope];
@@ -132,7 +133,7 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::spheres()
   for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++)
   {
     auto* scope = array_->telescope(iscope);
-    s.emplace_back(scope->pos(), scope->curvatureRadius(),
+    s.emplace_back(scope->pos(), SQR(scope->curvatureRadius()),
       new VSO_IACTDetectorSphereHitProcessor(this, scope));
   }
   return s;
