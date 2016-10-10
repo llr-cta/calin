@@ -35,8 +35,15 @@ class QuadratureIACTArrayPEProcessor
 {
 public:
   virtual ~QuadratureIACTArrayPEProcessor();
-  virtual void process_pe(unsigned scope_id, unsigned pixel_id, double t0,
-    double pe_weight) = 0;
+  virtual void visit_event(const calin::simulation::tracker::Event& event,
+    bool& kill_event);
+  virtual void visit_cherenkov_track(
+    const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
+    bool& kill_track);
+  virtual void process_pe(unsigned scope_id, unsigned pixel_id,
+    double x, double y, double t0, double pe_weight);
+  virtual void leave_cherenkov_track();
+  virtual void leave_event();
 };
 
 class SimpleImagePEProcessor: public QuadratureIACTArrayPEProcessor
@@ -45,9 +52,11 @@ public:
   SimpleImagePEProcessor(unsigned nscope, unsigned npix);
   SimpleImagePEProcessor(const std::vector<unsigned> npix);
   virtual ~SimpleImagePEProcessor();
-  void process_pe(unsigned scope_id, unsigned pixel_id, double t0,
-    double pe_weight) override;
-  const std::vector<double> scope_image(unsigned iscope);
+  void visit_event(const calin::simulation::tracker::Event& event,
+    bool& kill_event) override;
+  void process_pe(unsigned scope_id, unsigned pixel_id,
+    double x, double y, double t0, double pe_weight) override;
+  const std::vector<double> scope_image(unsigned iscope) const;
   void clear_all_images();
 private:
   std::vector<std::vector<double>> images_;
@@ -89,6 +98,10 @@ public:
     bool& kill_track) override;
   void leave_cherenkov_track() override;
   void leave_event() override;
+
+  unsigned num_hit(unsigned iscope) const;
+  unsigned num_miss(unsigned iscope) const;
+
 protected:
   friend class VSO_IACTDetectorSphereHitProcessor;
 
@@ -108,6 +121,8 @@ protected:
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
   calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
+  std::vector<unsigned> num_hit_;
+  std::vector<unsigned> num_miss_;
 };
 
 } } } // namespace calin::simulation::quadrature_iact_array_integration

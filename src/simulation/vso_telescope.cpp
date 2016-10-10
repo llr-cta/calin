@@ -602,6 +602,7 @@ populateMirrorsAndPixelsRandom(
     for(unsigned icorner=0;icorner<6;icorner++)
     {
       Vec3D rc = mirror->cornerInReflectorCoords(icorner,fFacetSize);
+      rc -= fTranslation;
       double r_ip = rc.Norm();
       fReflectorIP = std::max(fReflectorIP, 2.0*r_ip);
     }

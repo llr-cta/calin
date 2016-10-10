@@ -68,23 +68,18 @@ struct IACTDetectorSphere
   IACTDetectorSphereHitProcessor* processor; // Hit processor for this detector
 };
 
-class HitIACTVisitor:
-  public calin::simulation::air_cherenkov_tracker::AirCherenkovTrackVisitor
+class HitIACTVisitor
 {
 public:
   virtual ~HitIACTVisitor();
   virtual std::vector<IACTDetectorSphere> spheres() = 0;
-#if 0
-  void visit_event(const calin::simulation::tracker::Event& event,
-    bool& kill_event) override;
-  void visit_cherenkov_track(
+  virtual void visit_event(const calin::simulation::tracker::Event& event,
+    bool& kill_event);
+  virtual void visit_cherenkov_track(
     const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
-    bool& kill_track) override;
-#endif
+    bool& kill_track);
   virtual void leave_cherenkov_track();
-#if 0
-  void leave_event() override;
-#endif
+  virtual void leave_event();
 };
 
 class IACTDetectorSphereAirCherenkovTrackVisitor:

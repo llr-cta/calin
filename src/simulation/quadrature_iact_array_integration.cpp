@@ -42,9 +42,40 @@ QuadratureIACTArrayPEProcessor::~QuadratureIACTArrayPEProcessor()
   // nothing to see here
 }
 
+void QuadratureIACTArrayPEProcessor::visit_event(
+  const calin::simulation::tracker::Event& event,
+  bool& kill_event)
+{
+  // nothing to see here
+}
+
+void QuadratureIACTArrayPEProcessor::visit_cherenkov_track(
+  const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
+  bool& kill_track)
+{
+  // nothing to see here
+}
+
+void QuadratureIACTArrayPEProcessor::process_pe(unsigned scope_id,
+  unsigned pixel_id, double x, double y, double t0, double pe_weight)
+{
+  // nothing to see here
+}
+
+void QuadratureIACTArrayPEProcessor::leave_cherenkov_track()
+{
+  // nothing to see here
+}
+
+void QuadratureIACTArrayPEProcessor::leave_event()
+{
+  // nothing to see here
+}
+
 SimpleImagePEProcessor::
 SimpleImagePEProcessor(unsigned nscope, unsigned npix):
-  QuadratureIACTArrayPEProcessor(), images_(nscope, std::vector<double>(npix))
+  QuadratureIACTArrayPEProcessor(),
+  images_(nscope, std::vector<double>(npix))
 {
   // nothing to see here
 }
@@ -53,7 +84,6 @@ SimpleImagePEProcessor::
 SimpleImagePEProcessor(const std::vector<unsigned> npix):
   QuadratureIACTArrayPEProcessor(), images_()
 {
-
   for(auto inpix : npix)images_.emplace_back(inpix);
 }
 
@@ -62,8 +92,15 @@ SimpleImagePEProcessor::~SimpleImagePEProcessor()
   // nothing to see here
 }
 
+void SimpleImagePEProcessor::visit_event(
+  const calin::simulation::tracker::Event& event, bool& kill_event)
+{
+  clear_all_images();
+}
+
 void SimpleImagePEProcessor::
-process_pe(unsigned scope_id, unsigned pixel_id, double t0, double pe_weight)
+process_pe(unsigned scope_id, unsigned pixel_id, double x, double y,
+  double t0, double pe_weight)
 {
   if(scope_id >= images_.size())
     throw std::out_of_range("SimpleImagePEProcessor::process_pe: scope_id out "
@@ -74,7 +111,8 @@ process_pe(unsigned scope_id, unsigned pixel_id, double t0, double pe_weight)
   images_[scope_id][pixel_id] += pe_weight;
 }
 
-const std::vector<double> SimpleImagePEProcessor::scope_image(unsigned iscope)
+const std::vector<double>
+SimpleImagePEProcessor::scope_image(unsigned iscope) const
 {
   if(iscope >= images_.size())
     throw std::out_of_range("SimpleImagePEProcessor::scope_image: iscope out "
@@ -120,7 +158,8 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor(double test_ray_spacing,
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   rng_(rng ? rng : new calin::math::rng::RNG),
   adopt_rng_(rng ? true : adopt_rng),
-  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_))
+  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_)),
+  num_hit_(array_->numTelescopes()), num_miss_(array_->numTelescopes())
 {
   // nothing to see here
 }
@@ -141,7 +180,7 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::spheres()
   for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++)
   {
     auto* scope = array_->telescope(iscope);
-    s.emplace_back(scope->pos(), SQR(scope->curvatureRadius()),
+    s.emplace_back(scope->pos(), SQR(0.5*scope->reflectorIP()),
       new VSO_IACTDetectorSphereHitProcessor(this, scope));
   }
   return s;
@@ -150,24 +189,46 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::spheres()
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
-  // nothing to see here
+  std::fill(num_hit_.begin(), num_hit_.end(), 0);
+  std::fill(num_miss_.begin(), num_miss_.end(), 0);
+  visitor_->visit_event(event, kill_event);
 }
 
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::visit_cherenkov_track(
   const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
   bool& kill_track)
 {
-  // nothing to see here
+  visitor_->visit_cherenkov_track(cherenkov_track, kill_track);
 }
 
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::leave_cherenkov_track()
 {
-  // nothing to see here
+  visitor_->leave_cherenkov_track();
 }
 
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::leave_event()
 {
-  // nothing to see here
+  visitor_->leave_event();
+}
+
+unsigned
+VSO_QuadratureIACTArrayIntegrationHitVisitor::num_hit(unsigned iscope) const
+{
+  if(iscope >= num_hit_.size())
+    throw std::out_of_range(
+      "VSO_QuadratureIACTArrayIntegrationHitVisitor::num_hit: iscope out "
+      "of range");
+  return num_hit_[iscope];
+}
+
+unsigned
+VSO_QuadratureIACTArrayIntegrationHitVisitor::num_miss(unsigned iscope) const
+{
+  if(iscope >= num_miss_.size())
+    throw std::out_of_range(
+      "VSO_QuadratureIACTArrayIntegrationHitVisitor::num_miss: iscope out "
+      "of range");
+  return num_miss_[iscope];
 }
 
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
@@ -193,13 +254,15 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
       << hit.v.transpose() << "] [ "
       << hit.w.transpose() << "] " << hit.cherenkov_track->cos_thetac << ' '
       << hit.cherenkov_track->sin_thetac;
-
-
   }
 #endif
 
   if(trace_info.status==TS_PE_GENERATED and pixel!=nullptr) {
-    visitor_->process_pe(scope->id(), pixel->id(), ray.Position().r0, weight);
+    num_hit_[scope->id()]++;
+    visitor_->process_pe(scope->id(), pixel->id(),
+      ray.Position().r.x, ray.Position().r.z, ray.Position().r0, weight);
+  } else {
+    num_miss_[scope->id()]++;
   }
 }
 

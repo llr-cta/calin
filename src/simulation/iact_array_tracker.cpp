@@ -41,7 +41,25 @@ HitIACTVisitor::~HitIACTVisitor()
   // nothing to see here
 }
 
+void HitIACTVisitor::visit_event(const calin::simulation::tracker::Event& event,
+  bool& kill_event)
+{
+  // nothing to see here
+}
+
+void HitIACTVisitor::visit_cherenkov_track(
+  const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
+  bool& kill_track)
+{
+  // nothing to see here
+}
+
 void HitIACTVisitor::leave_cherenkov_track()
+{
+  // nothing to see here
+}
+
+void HitIACTVisitor::leave_event()
 {
   // nothing to see here
 }
