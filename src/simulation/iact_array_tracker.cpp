@@ -21,6 +21,7 @@
 */
 
 #include <limits>
+#include <cmath>
 #include <Eigen/Dense>
 
 #include <io/log.hpp>
@@ -113,9 +114,9 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
     double rxu2 = SQR(hit.rxu);
     hit.rxv               = std::sqrt(std::max(hit.rx2 - rxu2, 0.0));;
 
-    if(hit.rxv == 0.0)
+    if(hit.rxv < 0.1)
     {
-      if(std::abs(hit.u(2)) < 0.95) {
+      if(std::abs(hit.u(2)) < 0.1) {
         hit.v             = Eigen::Vector3d(-hit.u(1),hit.u(0),0.0)/
           sqrt(SQR(hit.u(0))+SQR(hit.u(1)));
       } else {

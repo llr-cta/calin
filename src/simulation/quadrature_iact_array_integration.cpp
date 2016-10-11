@@ -37,6 +37,8 @@ using calin::simulation::iact_array_tracker::IACTDetectorSphere;
 using namespace calin::simulation::vs_optics;
 //using namespace calin::math::vs_physics;
 
+//#define ENABLE_RAYTRACER_STATUS
+
 QuadratureIACTArrayPEProcessor::~QuadratureIACTArrayPEProcessor()
 {
   // nothing to see here
@@ -159,7 +161,8 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor(double test_ray_spacing,
   rng_(rng ? rng : new calin::math::rng::RNG),
   adopt_rng_(rng ? true : adopt_rng),
   ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_)),
-  num_hit_(array_->numTelescopes()), num_miss_(array_->numTelescopes())
+  num_hit_(array_->numTelescopes()), num_miss_(array_->numTelescopes()),
+  ray_tracer_status_(array_->numTelescopes())
 {
   // nothing to see here
 }
@@ -231,6 +234,19 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::num_miss(unsigned iscope) const
   return num_miss_[iscope];
 }
 
+const std::vector<unsigned> VSO_QuadratureIACTArrayIntegrationHitVisitor::
+raytracer_status(unsigned iscope) const
+{
+  if(iscope >= ray_tracer_status_.size())
+    throw std::out_of_range("iscope out of range");
+
+#ifdef ENABLE_RAYTRACER_STATUS
+  return ray_tracer_status_[iscope];
+#else
+  throw std::runtime_error("Ray tracer status not enabled at compile time");
+#endif
+}
+
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
   const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
   calin::simulation::vs_optics::VSOTelescope* scope,
@@ -257,6 +273,12 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
   }
 #endif
 
+#ifdef ENABLE_RAYTRACER_STATUS
+  if(trace_info.status >= ray_tracer_status_[scope->id()].size())
+    ray_tracer_status_[scope->id()].resize(trace_info.status+1);
+  ray_tracer_status_[scope->id()][trace_info.status]++;
+#endif
+
   if(trace_info.status==TS_PE_GENERATED and pixel!=nullptr) {
     num_hit_[scope->id()]++;
     visitor_->process_pe(scope->id(), pixel->id(),
@@ -271,7 +293,7 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_hit(
   calin::simulation::vs_optics::VSOTelescope* scope)
 {
   double dphi = test_ray_spacing_*hit.cherenkov_track->cos_thetac /
-    (2.0*M_PI*hit.rxu*hit.cherenkov_track->sin_thetac);
+    std::abs(2.0*M_PI*hit.rxu*hit.cherenkov_track->sin_thetac);
   unsigned n = std::floor(2.0*hit.phimax / dphi);
   if(n%2 == 0)++n; // always choose odd number of integration points
   dphi = 2.0*hit.phimax/double(n);
@@ -282,6 +304,14 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_hit(
   unsigned n_half = (n+1)/2;
   double weight = dphi/(2.0*M_PI)*hit.cherenkov_track->yield_density;
   // Adapt weight for track length / QE / number of cone reflections etc...
+
+#if 0
+  LOG(INFO) << hit.x0.transpose() << ' '
+    << "[ " << hit.u.dot(hit.u) << ' ' << hit.u.dot(hit.v) << ' ' << hit.u.dot(hit.w) << " ], "
+    << "[ " << hit.v.dot(hit.u) << ' ' << hit.v.dot(hit.v) << ' ' << hit.v.dot(hit.w) << " ], "
+    << "[ " << hit.w.dot(hit.u) << ' ' << hit.w.dot(hit.v) << ' ' << hit.w.dot(hit.w) << " ]";
+#endif
+
   for(unsigned i=0; i<n_half ; i++)
   {
     if(i==0) {

@@ -101,7 +101,7 @@ public:
 
   unsigned num_hit(unsigned iscope) const;
   unsigned num_miss(unsigned iscope) const;
-
+  const std::vector<unsigned> raytracer_status(unsigned iscope) const;
 protected:
   friend class VSO_IACTDetectorSphereHitProcessor;
 
@@ -123,6 +123,7 @@ protected:
   calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
   std::vector<unsigned> num_hit_;
   std::vector<unsigned> num_miss_;
+  std::vector<std::vector<unsigned>> ray_tracer_status_;
 };
 
 } } } // namespace calin::simulation::quadrature_iact_array_integration

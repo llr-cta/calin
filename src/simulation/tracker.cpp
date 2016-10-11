@@ -129,8 +129,9 @@ void TrackVisitor::leave_event()
 
 
 LengthLimitingTrackVisitor::LengthLimitingTrackVisitor(TrackVisitor* visitor,
-    double dx_max, bool adopt_visitor): TrackVisitor(),
-  visitor_(visitor), adopt_visitor_(adopt_visitor), dx_max_(dx_max)
+    double dx_max, double z_max, bool adopt_visitor): TrackVisitor(),
+  visitor_(visitor), adopt_visitor_(adopt_visitor),
+  dx_max_(dx_max), z_max_(z_max)
 {
   // nothing to see here
 }
@@ -149,51 +150,49 @@ visit_event(const Event& event, bool& kill_event)
 void LengthLimitingTrackVisitor::
 visit_track(const Track& track, bool& kill_track)
 {
-  if(track.dx <= dx_max_)return visitor_->visit_track(track, kill_track);
+  if(track.dx <= dx_max_ or track.x1[2] > z_max_)
+    return visitor_->visit_track(track, kill_track);
 
   // Otherwise ...
   Track subtrack = track;
-  double dx_sum = 0;
 
-  subtrack.dx = dx_max_;
-  subtrack.de = track.de * dx_max_/track.dx;
-  subtrack.dt = track.dt * dx_max_/track.dx;
+  double dbl_n = std::ceil(track.dx / dx_max_);
+  unsigned n_subtrack = dbl_n;
+  double norm = 1.0/dbl_n;
 
-  Eigen::Vector3d du = (track.u1 - track.u0) * dx_max_/track.dx;
+  subtrack.dx = track.dx * norm;
+  subtrack.de = track.de * norm;
+  subtrack.dt = track.dt * norm;
 
-  while(dx_sum<track.dx)
+  Eigen::Vector3d du = (track.u1 - track.u0) * norm;
+
+  subtrack.x0 = track.x0;
+  subtrack.u0 = track.u0;
+  subtrack.e0 = track.e0;
+  subtrack.t0 = track.t0;
+
+  for(unsigned i_subtrack=1; i_subtrack<n_subtrack; i_subtrack++)
   {
-    dx_sum += subtrack.dx;
-    if(dx_sum >= track.dx)
-    {
-      subtrack.x1 = track.x1;
-      subtrack.u1 = track.u1;
-      subtrack.e1 = track.e1;
-      subtrack.t1 = track.t1;
-      subtrack.dx = (subtrack.x1 - subtrack.x0).norm();
-      subtrack.de = subtrack.e1 - subtrack.e0;
-      subtrack.dt = subtrack.t1 - subtrack.t0;
+    subtrack.x1 = track.x0 + (i_subtrack*subtrack.dx) * subtrack.dx_hat;
+    subtrack.u1 = track.u0 + i_subtrack*du;
+    subtrack.u1.normalize();
+    subtrack.e1 = track.e0 + i_subtrack*subtrack.de;
+    subtrack.t1 = track.t0 + i_subtrack*subtrack.dt;
 
-      return visitor_->visit_track(subtrack, kill_track);
-    }
-    else
-    {
-      subtrack.x1 = subtrack.x0 + subtrack.dx * subtrack.dx_hat;
-      subtrack.u1 = subtrack.u0 + du;
-      subtrack.u1.normalize();
-      subtrack.e1 = subtrack.e0 + subtrack.de;
-      subtrack.t1 = subtrack.t0 + subtrack.dt;
+    visitor_->visit_track(subtrack, kill_track);
+    if(kill_track)return;
 
-      visitor_->visit_track(subtrack, kill_track);
-      if(kill_track)return;
-
-      subtrack.x0 = subtrack.x1;
-      subtrack.u0 = subtrack.u1;
-      subtrack.e0 = subtrack.e1;
-      subtrack.t0 = subtrack.t1;
-    }
+    subtrack.x0 = subtrack.x1;
+    subtrack.u0 = subtrack.u1;
+    subtrack.e0 = subtrack.e1;
+    subtrack.t0 = subtrack.t1;
   }
-  assert(0);
+
+  subtrack.x1 = track.x1;
+  subtrack.u1 = track.u1;
+  subtrack.e1 = track.e1;
+  subtrack.t1 = track.t1;
+  return visitor_->visit_track(subtrack, kill_track);
 }
 
 void LengthLimitingTrackVisitor::leave_event()
