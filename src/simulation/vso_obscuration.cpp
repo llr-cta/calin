@@ -158,7 +158,7 @@ dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
   return d;
 }
 
-VSOObscuration* VSODiskObscuration::
+VSODiskObscuration* VSODiskObscuration::
 create_from_proto(const ix::simulation::vs_optics::VSODiskObscurationData& d)
 {
   return new VSODiskObscuration(d.center_pos(), d.normal(),
@@ -208,7 +208,7 @@ std::string VSODiskObscuration::dumpToString() const
 }
 #endif
 
-VSOObscuration* VSODiskObscuration::clone() const
+VSODiskObscuration* VSODiskObscuration::clone() const
 {
   return new VSODiskObscuration(*this);
 }
@@ -270,7 +270,7 @@ dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
   return d;
 }
 
-VSOObscuration* VSOTubeObscuration::
+VSOTubeObscuration* VSOTubeObscuration::
 create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d)
 {
   return new VSOTubeObscuration(d.end1_pos(), d.end2_pos(),
@@ -319,7 +319,38 @@ std::string VSOTubeObscuration::dumpToString() const
 }
 #endif
 
-VSOObscuration* VSOTubeObscuration::clone() const
+VSOTubeObscuration* VSOTubeObscuration::clone() const
 {
   return new VSOTubeObscuration(*this);
+}
+
+
+VSOAlignedBoxObscuration::~VSOAlignedBoxObscuration()
+{
+  // nothing to see here
+}
+
+bool VSOAlignedBoxObscuration::doesObscure(
+  const math::vs_physics::Particle& p_in,
+  math::vs_physics::Particle& p_out) const
+{
+
+}
+
+VSOAlignedBoxObscuration* VSOAlignedBoxObscuration::clone() const
+{
+  return new VSOAlignedBoxObscuration(*this);
+}
+
+calin::ix::simulation::vs_optics::VSOObscurationData*
+VSOAlignedBoxObscuration::dump_as_proto(
+  calin::ix::simulation::vs_optics::VSOObscurationData* d) const
+{
+  
+}
+
+VSOAlignedBoxObscuration* VSOAlignedBoxObscuration::
+create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d)
+{
+
 }
