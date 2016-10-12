@@ -341,27 +341,28 @@ bool VSOAlignedBoxObscuration::doesObscure(
   // See: https://tavianator.com/fast-branchless-raybounding-box-intersections/
   // and: https://tavianator.com/fast-branchless-raybounding-box-intersections-part-2-nans/
 
-  p_out = p_in;
+  if(incoming_only_ && p_in.Velocity().y>0)return false;
 
   // Normalized direction vector
-  Vec3D v_hat = p_out.Velocity() / p_out.Velocity().Norm();
+  Vec3D v_hat = p_in.Velocity() / p_in.Velocity().Norm();
 
-  const double tx1 = (min_corner_.x - p_out.Position().r.x)/v_hat.x;
-  const double tx2 = (max_corner_.x - p_out.Position().r.x)/v_hat.x;
+  const double tx1 = (min_corner_.x - p_in.Position().r.x)/v_hat.x;
+  const double tx2 = (max_corner_.x - p_in.Position().r.x)/v_hat.x;
   double tmin = std::min(tx1, tx2);
   double tmax = std::max(tx1, tx2);
 
-  const double ty1 = (min_corner_.y - p_out.Position().r.y)/v_hat.y;
-  const double ty2 = (max_corner_.y - p_out.Position().r.y)/v_hat.y;
+  const double ty1 = (min_corner_.y - p_in.Position().r.y)/v_hat.y;
+  const double ty2 = (max_corner_.y - p_in.Position().r.y)/v_hat.y;
   tmin = std::max(tmin, std::min(std::min(ty1, ty2), tmax));
   tmax = std::min(tmax, std::max(std::max(ty1, ty2), tmin));
 
-  const double tz1 = (min_corner_.z - p_out.Position().r.z)/v_hat.z;
-  const double tz2 = (max_corner_.z - p_out.Position().r.z)/v_hat.z;
+  const double tz1 = (min_corner_.z - p_in.Position().r.z)/v_hat.z;
+  const double tz2 = (max_corner_.z - p_in.Position().r.z)/v_hat.z;
   tmin = std::max(tmin, std::min(std::min(tz1, tz2), tmax));
   tmax = std::min(tmax, std::max(std::max(tz1, tz2), tmin));
 
   if(tmax > std::max(tmin, 0.0)) {
+    p_out = p_in;
     if(tmin > 0)p_out.PropagateFree(tmin);
     return true;
   }
