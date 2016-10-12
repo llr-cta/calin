@@ -48,7 +48,11 @@ create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
 {
   if(d.has_disk())return VSODiskObscuration::create_from_proto(d.disk());
   else if(d.has_tube())return VSOTubeObscuration::create_from_proto(d.tube());
-  else return 0;
+  else if(d.has_aligned_box())return VSOAlignedBoxObscuration::create_from_proto(d.aligned_box());
+  else {
+    throw std::runtime_error("VSOObscuration::create_from_proto: unknown obscuration type");
+    return 0;
+  }
 }
 
 #if 0
@@ -249,7 +253,7 @@ bool VSOTubeObscuration::doesObscure(const Particle& p_in,
       if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
       if(ipo == Particle::IPO_SECOND)return false;
       ipo =
-	p_out.PropagateFreeToCylinder(fX1, fN, fR, Particle::IP_LATEST, false);
+	      p_out.PropagateFreeToCylinder(fX1, fN, fR, Particle::IP_LATEST, false);
       if(ipo != Particle::IPO_SECOND)return false;
       Dc = p_out.Position().r*fN;
       if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
@@ -334,7 +338,43 @@ bool VSOAlignedBoxObscuration::doesObscure(
   const math::vs_physics::Particle& p_in,
   math::vs_physics::Particle& p_out) const
 {
+  // See: https://tavianator.com/fast-branchless-raybounding-box-intersections/
+  
+  p_out = p_in;
 
+  // Normalized direction vector
+  Vec3D v_hat = p_out.Velocity() / p_out.Velocity().Norm();
+
+  double tmin = -std::numeric_limits<double>::infinity();
+  double tmax =  std::numeric_limits<double>::infinity();
+
+  if(v_hat.x != 0.0) {
+    double tx1 = (min_corner_.x - p_out.Position().r.x)/v_hat.x;
+    double tx2 = (max_corner_.x - p_out.Position().r.x)/v_hat.x;
+    tmin = std::max(tmin, std::min(tx1, tx2));
+    tmax = std::min(tmax, std::max(tx1, tx2));
+  }
+
+  if(v_hat.y != 0.0) {
+    double ty1 = (min_corner_.y - p_out.Position().r.y)/v_hat.y;
+    double ty2 = (max_corner_.y - p_out.Position().r.y)/v_hat.y;
+    tmin = std::max(tmin, std::min(ty1, ty2));
+    tmax = std::min(tmax, std::max(ty1, ty2));
+  }
+
+  if(v_hat.z != 0.0) {
+    double tz1 = (min_corner_.z - p_out.Position().r.z)/v_hat.z;
+    double tz2 = (max_corner_.z - p_out.Position().r.z)/v_hat.z;
+    tmin = std::max(tmin, std::min(tz1, tz2));
+    tmax = std::min(tmax, std::max(tz1, tz2));
+  }
+
+  if(tmax >= tmin and tmax > 0) {
+    if(tmin > 0)p_out.PropagateFree(tmin);
+    return true;
+  }
+
+  return false;
 }
 
 VSOAlignedBoxObscuration* VSOAlignedBoxObscuration::clone() const
@@ -346,11 +386,17 @@ calin::ix::simulation::vs_optics::VSOObscurationData*
 VSOAlignedBoxObscuration::dump_as_proto(
   calin::ix::simulation::vs_optics::VSOObscurationData* d) const
 {
-  
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
+  auto* dd = d->mutable_aligned_box();
+  max_corner_.dump_as_proto(dd->mutable_max_corner());
+  min_corner_.dump_as_proto(dd->mutable_min_corner());
+  dd->set_incoming_only(incoming_only_);
+  return d;
 }
 
-VSOAlignedBoxObscuration* VSOAlignedBoxObscuration::
-create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d)
+VSOAlignedBoxObscuration* VSOAlignedBoxObscuration::create_from_proto(
+  const ix::simulation::vs_optics::VSOAlignedBoxObscurationData& d)
 {
-
+  return new VSOAlignedBoxObscuration(d.max_corner(), d.min_corner(),
+    d.incoming_only());
 }

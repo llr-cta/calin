@@ -206,8 +206,8 @@ class VSOAlignedBoxObscuration: public VSOObscuration
   void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
 #endif
 
-  static VSOAlignedBoxObscuration*
-  create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d);
+  static VSOAlignedBoxObscuration* create_from_proto(
+    const ix::simulation::vs_optics::VSOAlignedBoxObscurationData& d);
 
   const math::vs_physics::Vec3D& max_corner() const { return max_corner_; }
   const math::vs_physics::Vec3D& min_corner() const { return min_corner_; }
