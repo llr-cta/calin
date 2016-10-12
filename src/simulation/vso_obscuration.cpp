@@ -339,37 +339,29 @@ bool VSOAlignedBoxObscuration::doesObscure(
   math::vs_physics::Particle& p_out) const
 {
   // See: https://tavianator.com/fast-branchless-raybounding-box-intersections/
-  
+  // and: https://tavianator.com/fast-branchless-raybounding-box-intersections-part-2-nans/
+
   p_out = p_in;
 
   // Normalized direction vector
   Vec3D v_hat = p_out.Velocity() / p_out.Velocity().Norm();
 
-  double tmin = -std::numeric_limits<double>::infinity();
-  double tmax =  std::numeric_limits<double>::infinity();
+  const double tx1 = (min_corner_.x - p_out.Position().r.x)/v_hat.x;
+  const double tx2 = (max_corner_.x - p_out.Position().r.x)/v_hat.x;
+  double tmin = std::min(tx1, tx2);
+  double tmax = std::max(tx1, tx2);
 
-  if(v_hat.x != 0.0) {
-    double tx1 = (min_corner_.x - p_out.Position().r.x)/v_hat.x;
-    double tx2 = (max_corner_.x - p_out.Position().r.x)/v_hat.x;
-    tmin = std::max(tmin, std::min(tx1, tx2));
-    tmax = std::min(tmax, std::max(tx1, tx2));
-  }
+  const double ty1 = (min_corner_.y - p_out.Position().r.y)/v_hat.y;
+  const double ty2 = (max_corner_.y - p_out.Position().r.y)/v_hat.y;
+  tmin = std::max(tmin, std::min(std::min(ty1, ty2), tmax));
+  tmax = std::min(tmax, std::max(std::max(ty1, ty2), tmin));
 
-  if(v_hat.y != 0.0) {
-    double ty1 = (min_corner_.y - p_out.Position().r.y)/v_hat.y;
-    double ty2 = (max_corner_.y - p_out.Position().r.y)/v_hat.y;
-    tmin = std::max(tmin, std::min(ty1, ty2));
-    tmax = std::min(tmax, std::max(ty1, ty2));
-  }
+  const double tz1 = (min_corner_.z - p_out.Position().r.z)/v_hat.z;
+  const double tz2 = (max_corner_.z - p_out.Position().r.z)/v_hat.z;
+  tmin = std::max(tmin, std::min(std::min(tz1, tz2), tmax));
+  tmax = std::min(tmax, std::max(std::max(tz1, tz2), tmin));
 
-  if(v_hat.z != 0.0) {
-    double tz1 = (min_corner_.z - p_out.Position().r.z)/v_hat.z;
-    double tz2 = (max_corner_.z - p_out.Position().r.z)/v_hat.z;
-    tmin = std::max(tmin, std::min(tz1, tz2));
-    tmax = std::min(tmax, std::max(tz1, tz2));
-  }
-
-  if(tmax >= tmin and tmax > 0) {
+  if(tmax > std::max(tmin, 0.0)) {
     if(tmin > 0)p_out.PropagateFree(tmin);
     return true;
   }
