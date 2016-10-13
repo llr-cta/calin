@@ -133,6 +133,20 @@ public:
   double xval_limit_lo() const { return xval_limit_lo_; }
   double xval_limit_hi() const { return xval_limit_hi_; }
 
+  void trim_zeros() {
+    if(bins_.empty())return;
+    unsigned istart = 0;
+    for(auto i=bins_.begin(); i!=bins_.end(); ++i, ++istart)
+      if(*i != T())break;
+    unsigned iend = bins_.size();
+    for(auto i=bins_.end(); i!=bins_.begin(); --iend)
+      if(*(--i) != T())break;
+    xval0_ = xval_left(istart);
+    Container c;
+    while(istart != iend)c.emplace_back(bins_[istart++]);
+    bins_ = std::move(c);
+  }
+
 protected:
   BinnedData1D(double dxval, double xval_align, double xval0,
                bool limited, double xval_limit_lo, double xval_limit_hi,

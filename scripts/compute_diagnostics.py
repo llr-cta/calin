@@ -116,6 +116,19 @@ sig_window_sum_visitor = calin.iact_data.functional_event_visitor.\
 dispatcher.add_visitor(sig_window_sum_visitor, \
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 
+sig_capture_adapter = [None] * run_info.configured_channel_id_size();
+sig_capture = [None] * run_info.configured_channel_id_size();
+for ichan in range(run_info.configured_channel_id_size()):
+    # Signal capture adapter - select channel
+    sig_capture_adapter[ichan] = calin.diagnostics.functional.\
+        SingleFunctionalValueSupplierVisitor(sig_window_sum_visitor,ichan)
+    dispatcher.add_visitor(sig_capture_adapter[ichan])
+
+    # Signal capture
+    sig_capture[ichan] = calin.diagnostics.value_capture.\
+        IntSequentialValueCaptureVisitor(sig_capture_adapter[ichan],0x7FFFFFFF)
+    dispatcher.add_visitor(sig_capture[ichan])
+
 # Raw signal window stats
 sig_window_stats_visitor = calin.diagnostics.functional.\
     FunctionalIntStatsVisitor(sig_window_sum_visitor)
@@ -134,14 +147,14 @@ sig_bkg_stats_visitor = calin.diagnostics.functional.\
 dispatcher.add_visitor(sig_bkg_stats_visitor)
 
 # Signal minus background capture adapter
-sig_bkg_capture_adapter = calin.diagnostics.functional.\
-    SingleFunctionalValueSupplierVisitor(sig_bkg_diff_visitor,0)
-dispatcher.add_visitor(sig_bkg_capture_adapter)
+#sig_bkg_capture_adapter = calin.diagnostics.functional.\
+#    SingleFunctionalValueSupplierVisitor(sig_bkg_diff_visitor,0)
+#dispatcher.add_visitor(sig_bkg_capture_adapter)
 
 # Signal minus background capture
-sig_bkg_capture = calin.diagnostics.value_capture.\
-    IntSequentialValueCaptureVisitor(sig_bkg_capture_adapter,0x7FFFFFFF)
-dispatcher.add_visitor(sig_bkg_capture)
+#sig_bkg_capture = calin.diagnostics.value_capture.\
+#    IntSequentialValueCaptureVisitor(sig_bkg_capture_adapter,0x7FFFFFFF)
+#dispatcher.add_visitor(sig_bkg_capture)
 
 # Waveform stats
 waveform_visitor = calin.diagnostics.waveform.WaveformStatsVisitor()
@@ -202,7 +215,7 @@ sig = sig_bkg_stats_visitor.results()
 glitch = glitch_visitor.glitch_data()
 bunch_event_glitch = bunch_event_glitch_visitor.glitch_data()
 mod_present = mod_present_visitor.module_data()
-sig_values = sig_bkg_capture.results()
+sig_values = sig_capture[0].results()
 bkg_values = bkg_capture[0].results()
 delta_t_values = delta_t_capture.results()
 t0 = t0_stats.results()
@@ -226,4 +239,5 @@ sql.create_tables_and_insert("delta_t_values", delta_t_values)
 sql.create_tables_and_insert("t0", t0)
 
 for ichan in range(1,len(bkg_capture)):
+    sql.insert("sig_values", sig_capture[ichan].results())
     sql.insert("bkg_values", bkg_capture[ichan].results())

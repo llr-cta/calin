@@ -97,7 +97,7 @@ class VSODiskObscuration: public VSOObscuration
   virtual ~VSODiskObscuration();
   bool doesObscure(const math::vs_physics::Particle& p_in,
                    math::vs_physics::Particle& p_out) const override;
-  VSOObscuration* clone() const override;
+  VSODiskObscuration* clone() const override;
 
 #ifndef SWIG
   calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
@@ -107,7 +107,7 @@ class VSODiskObscuration: public VSOObscuration
   void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
 #endif
 
-  static VSOObscuration*
+  static VSODiskObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSODiskObscurationData& d);
 
 #if 0
@@ -147,7 +147,7 @@ class VSOTubeObscuration: public VSOObscuration
   virtual ~VSOTubeObscuration();
   bool doesObscure(const math::vs_physics::Particle& p_in,
                    math::vs_physics::Particle& p_out) const override;
-  VSOObscuration* clone() const override;
+  VSOTubeObscuration* clone() const override;
 
 #ifndef SWIG
   calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
@@ -157,7 +157,7 @@ class VSOTubeObscuration: public VSOObscuration
   void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
 #endif
 
-  static VSOObscuration*
+  static VSOTubeObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d);
 
 #if 0
@@ -179,6 +179,44 @@ class VSOTubeObscuration: public VSOObscuration
   double                  fD2;
   double                  fD;
   bool                    fICO;
+};
+
+class VSOAlignedBoxObscuration: public VSOObscuration
+{
+ public:
+  VSOAlignedBoxObscuration(const math::vs_physics::Vec3D& max_corner,
+                           const math::vs_physics::Vec3D& min_corner,
+                           bool incoming_only):
+      VSOObscuration(), min_corner_(min_corner), max_corner_(max_corner),
+      incoming_only_(incoming_only)
+  {
+    // nothing to see here
+  }
+
+  virtual ~VSOAlignedBoxObscuration();
+  bool doesObscure(const math::vs_physics::Particle& p_in,
+                   math::vs_physics::Particle& p_out) const override;
+  VSOAlignedBoxObscuration* clone() const override;
+
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
+  static VSOAlignedBoxObscuration* create_from_proto(
+    const ix::simulation::vs_optics::VSOAlignedBoxObscurationData& d);
+
+  const math::vs_physics::Vec3D& max_corner() const { return max_corner_; }
+  const math::vs_physics::Vec3D& min_corner() const { return min_corner_; }
+  bool incoming_only() const { return incoming_only_; }
+
+ private:
+  math::vs_physics::Vec3D min_corner_;
+  math::vs_physics::Vec3D max_corner_;
+  bool                    incoming_only_;
 };
 
 } } } // namespace calin::simulation::vs_optics

@@ -559,6 +559,7 @@ void GeneralPoissonMES::set_cache()
     std::abs(ses_acc.total() * dx_ - 1.0) >
       config_.ses_norm_warning_threshold()/double(nsample_))
   {
+    // The owls are not what they seem
     LOG(WARNING) << "SES normalization is significantly different from 1.0: "
                  << ses_acc.total() * dx_ << '\n'
                  << "SES parameter values : "

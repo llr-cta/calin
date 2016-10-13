@@ -21,11 +21,14 @@
 */
 
 #include <limits>
+#include <cmath>
 #include <Eigen/Dense>
 
+#include <io/log.hpp>
 #include <simulation/iact_array_tracker.hpp>
 #include <math/special.hpp>
 
+using namespace calin::io::log;
 using namespace calin::simulation::iact_array_tracker;
 using calin::math::special::SQR;
 
@@ -39,9 +42,27 @@ HitIACTVisitor::~HitIACTVisitor()
   // nothing to see here
 }
 
+void HitIACTVisitor::visit_event(const calin::simulation::tracker::Event& event,
+  bool& kill_event)
+{
+  // nothing to see here
+}
+
+void HitIACTVisitor::visit_cherenkov_track(
+  const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
+  bool& kill_track)
+{
+  // nothing to see here
+}
+
 void HitIACTVisitor::leave_cherenkov_track()
 {
-  // nothing to see here  
+  // nothing to see here
+}
+
+void HitIACTVisitor::leave_event()
+{
+  // nothing to see here
 }
 
 IACTDetectorSphereAirCherenkovTrackVisitor::
@@ -52,6 +73,11 @@ IACTDetectorSphereAirCherenkovTrackVisitor(HitIACTVisitor* visitor,
   spheres_(visitor->spheres())
 {
   // nothing to see here
+#if 0
+  for(auto sphere : spheres_)
+    LOG(INFO) << "Sphere: [ " << sphere.r0.transpose() << "] "
+      << sphere.radius_sq;
+#endif
 }
 
 IACTDetectorSphereAirCherenkovTrackVisitor::
@@ -88,9 +114,9 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
     double rxu2 = SQR(hit.rxu);
     hit.rxv               = std::sqrt(std::max(hit.rx2 - rxu2, 0.0));;
 
-    if(hit.rxv == 0.0)
+    if(hit.rxv < 0.1)
     {
-      if(std::abs(hit.u(2)) < 0.95) {
+      if(std::abs(hit.u(2)) < 0.1) {
         hit.v             = Eigen::Vector3d(-hit.u(1),hit.u(0),0.0)/
           sqrt(SQR(hit.u(0))+SQR(hit.u(1)));
       } else {
@@ -108,25 +134,47 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
 
     if(rx2_minus_r2 < 0) // Particle is inside detector sphere - always hit!
     {
-      IACTDetectorSphereHit hit;
       hit.dmin            = std::numeric_limits<double>::quiet_NaN();
       hit.cos_phimax      = -1.0;
       hit.phimax          = M_PI;
       hit.cherenkov_track = &CT;
+  #if 0
+      LOG(INFO) << "1 " << hit.rxv << ' ' << hit.rxu << " [ "
+        << hit.u.transpose() << " ] [ "
+        << hit.v.transpose() << "] [ "
+        << hit.w.transpose() << "] " << rx2_minus_r2
+        << '\n';
+  #endif
       isphere.processor->process_hit(hit);
       continue;
     }
 
     hit.dmin = CT.cos_thetac*hit.rxv - CT.sin_thetac*hit.rxu;
-    if(SQR(hit.dmin) > isphere.radius_sq)continue; // Cone misses sphere
+    if(SQR(hit.dmin) > isphere.radius_sq) {
+#if 0
+      LOG(INFO) << "2 " << hit.rxv << ' ' << hit.rxu << " [ "
+        << hit.u.transpose() << " ] [ "
+        << hit.v.transpose() << "] [ "
+        << hit.w.transpose() << "] " << rx2_minus_r2 << ' '
+        << hit.dmin << '\n';
+#endif
+      continue; // Cone misses sphere
+    }
 
     double cos_phimax = (sqrt(rx2_minus_r2) - CT.cos_thetac*hit.rxu) /
       (CT.sin_thetac*hit.rxv);
 
+#if 0
+    LOG(INFO) << "3 " << hit.rxv << ' ' << hit.rxu << " [ "
+      << hit.u.transpose() << " ] [ "
+      << hit.v.transpose() << "] [ "
+      << hit.w.transpose() << "] " << rx2_minus_r2 << ' '
+      << hit.dmin << ' ' << cos_phimax << '\n';
+#endif
+
     // This guards against cases where the sphere intersects the "reverse" cone
     if(cos_phimax < 1.0)
     {
-      IACTDetectorSphereHit hit;
       if(cos_phimax <= -1.0)
       {
         hit.cos_phimax    = -1.0;

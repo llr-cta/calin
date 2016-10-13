@@ -57,17 +57,17 @@ std::vector<AtmSlice> Atmosphere::make_atm_slices(unsigned nslice,
 
   double z = zmin;
   for(unsigned islice=0;islice<nslice;islice++)
-    {
-      AtmSlice& s(atm[islice]);
-      double t = dt * double(nslice-islice)/double(nslice);
-      s.zb = z;
-      s.tb = t;
-      t = dt * double(nslice-islice-1)/double(nslice);
-      z = this->z_for_thickness(t+tmin);
-      s.zt = z;
-      s.tt = t;
-      s.rho = (s.tb-s.tt)/(s.zt-s.zb);
-    }
+  {
+    AtmSlice& s(atm[islice]);
+    double t = dt * double(nslice-islice)/double(nslice);
+    s.zb = z;
+    s.tb = t;
+    t = dt * double(nslice-islice-1)/double(nslice);
+    z = this->z_for_thickness(t+tmin);
+    s.zt = z;
+    s.tt = t;
+    s.rho = (s.tb-s.tt)/(s.zt-s.zb);
+  }
 
   return atm;
 }
@@ -133,16 +133,16 @@ LayeredAtmosphere::LayeredAtmosphere(const std::string& filename):
 
   std::string line;
   while(std::getline(stream, line))
-    {
-      unsigned ichar=0;
-      while(isspace(line[ichar]))ichar++;
-      if(line[ichar] == '#')continue;
-      std::istringstream lstream(line);
-      Level l;
-      lstream >> l.z >> l.rho >> l.t >> l.nmo;
-      l.z *= 1e5;
-      m_levels.push_back(l);
-    }
+  {
+    unsigned ichar=0;
+    while(isspace(line[ichar]))ichar++;
+    if(line[ichar] == '#')continue;
+    std::istringstream lstream(line);
+    Level l;
+    lstream >> l.z >> l.rho >> l.t >> l.nmo;
+    l.z *= 1e5;
+    m_levels.push_back(l);
+  }
   initialize();
 }
 
@@ -163,69 +163,69 @@ void LayeredAtmosphere::initialize()
   m_ttoa = m_levels.back().t;
 
   if(m_ttoa <= 0.0)
+  {
+    // If the thickness at the top of the atmosphere is zero
+    // (i.e. the thickness from infinity to that point has been
+    // subtracted) then solve for the thickness there by assuming
+    // that the scale height between the final three levels is
+    // constant
+
+    if(m_levels.size()<3)
+      throw std::string("LayeredAtmosphere: A minimum of 3 levels required "
+		    "to solve for thickness.");
+
+    const double y2 = m_levels[m_levels.size() - 2].t;
+    const double y3 = m_levels[m_levels.size() - 3].t;
+    const double x1 = m_levels[m_levels.size() - 1].z;
+    const double x2 = m_levels[m_levels.size() - 2].z;
+    const double x3 = m_levels[m_levels.size() - 3].z;
+
+    double H = (x2-x3)/(std::log(y3)-std::log(y2)); // initial guess
+    double num = std::exp(-x3/H)-std::exp(-x1/H);
+    double den = std::exp(-x2/H)-std::exp(-x1/H);
+    double df = y3/y2 - num/den;
+    unsigned niter = 10;
+    while(std::fabs(df)/(y3/y2) > 1e-8)
     {
-      // If the thickness at the top of the atmosphere is zero
-      // (i.e. the thickness from infinity to that point has been
-      // subtracted) then solve for the thickness there by assuming
-      // that the scale height between the final three levels is
-      // constant
-
-      if(m_levels.size()<3)
-	throw std::string("LayeredAtmosphere: A minimum of 3 levels required "
-			  "to solve for thickness.");
-
-      const double y2 = m_levels[m_levels.size() - 2].t;
-      const double y3 = m_levels[m_levels.size() - 3].t;
-      const double x1 = m_levels[m_levels.size() - 1].z;
-      const double x2 = m_levels[m_levels.size() - 2].z;
-      const double x3 = m_levels[m_levels.size() - 3].z;
-
-      double H = (x2-x3)/(std::log(y3)-std::log(y2)); // initial guess
-      double num = std::exp(-x3/H)-std::exp(-x1/H);
-      double den = std::exp(-x2/H)-std::exp(-x1/H);
-      double df = y3/y2 - num/den;
-      unsigned niter = 10;
-      while(std::fabs(df)/(y3/y2) > 1e-8)
-	{
-	  // Newton-Ralphson to find value of H giving agreement with data
-	  if(niter-- == 0)
-	    throw std::string("LayeredAtmosphere: max number of iterations exceeded");
-	  double dfdH =
-	    (den*(x3*std::exp(-x3/H)-x1*std::exp(-x1/H))
-	     - num*(x2*std::exp(-x2/H)-x1*std::exp(-x1/H)))/(den*den*H*H);
-	  H += df/dfdH;
-	  num = std::exp(-x3/H)-std::exp(-x1/H);
-	  den = std::exp(-x2/H)-std::exp(-x1/H);
-	  df = y3/y2 - num/den;
-	}
-
-      double t0 = y3/(std::exp(-x3/H)-std::exp(-x1/H));
-      m_ttoa = t0*std::exp(-x1/H);
-
-      for(unsigned ilevel=0;ilevel<m_levels.size();ilevel++)
-	m_levels[ilevel].t += m_ttoa;
+      // Newton-Ralphson to find value of H giving agreement with data
+      if(niter-- == 0)
+        throw std::string("LayeredAtmosphere: max number of iterations exceeded");
+      double dfdH =
+        (den*(x3*std::exp(-x3/H)-x1*std::exp(-x1/H))
+         - num*(x2*std::exp(-x2/H)-x1*std::exp(-x1/H)))/(den*den*H*H);
+      H += df/dfdH;
+      num = std::exp(-x3/H)-std::exp(-x1/H);
+      den = std::exp(-x2/H)-std::exp(-x1/H);
+      df = y3/y2 - num/den;
     }
+
+    double t0 = y3/(std::exp(-x3/H)-std::exp(-x1/H));
+    m_ttoa = t0*std::exp(-x1/H);
+
+    for(unsigned ilevel=0;ilevel<m_levels.size();ilevel++)
+      m_levels[ilevel].t += m_ttoa;
+  }
 
   double ptc = 0;
   for(unsigned ilayer=0;ilayer<m_layers.size();ilayer++)
-    {
-      Layer& layer(m_layers[ilayer]);
-      const Level& t(m_levels[ilayer+1]);
-      const Level& b(m_levels[ilayer]);
-      layer.zb    = b.z;
-      layer.zt    = t.z;
-      layer.rhozs = -(t.z-b.z)/(std::log(t.rho)-std::log(b.rho));
-      layer.rho0  = b.rho/std::exp(-b.z/layer.rhozs);
-      layer.tzs   = -(t.z-b.z)/(std::log(t.t)-std::log(b.t));
-      layer.t0    = b.t/std::exp(-b.z/layer.tzs);
-      layer.tb    = b.t;
-      layer.tt    = t.t;
-      layer.nmozs = -(t.z-b.z)/(std::log(t.nmo)-std::log(b.nmo));
-      layer.nmo0  = b.nmo/std::exp(-b.z/layer.nmozs);
-      ptc += layer.nmozs*layer.nmo0*std::exp(-b.z/layer.nmozs);
-      layer.ptc0   = ptc;
-      ptc -= layer.nmozs*layer.nmo0*std::exp(-t.z/layer.nmozs);
-    }
+  {
+    Layer& layer(m_layers[ilayer]);
+    const Level& t(m_levels[ilayer+1]);
+    const Level& b(m_levels[ilayer]);
+    layer.zb    = b.z;
+    layer.zt    = t.z;
+    layer.rhozs = -(t.z-b.z)/(std::log(t.rho)-std::log(b.rho));
+    layer.rho0  = b.rho/std::exp(-b.z/layer.rhozs);
+    layer.tzs   = -(t.z-b.z)/(std::log(t.t)-std::log(b.t));
+    layer.t0    = b.t/std::exp(-b.z/layer.tzs);
+    layer.tb    = b.t;
+    layer.tt    = t.t;
+    layer.nmozs = -(t.z-b.z)/(std::log(t.nmo)-std::log(b.nmo));
+    layer.nmo0  = b.nmo/std::exp(-b.z/layer.nmozs);
+    ptc += layer.nmozs*layer.nmo0*std::exp(-b.z/layer.nmozs);
+    layer.ptc0   = ptc;
+    ptc -= layer.nmozs*layer.nmo0*std::exp(-t.z/layer.nmozs);
+  }
   m_ilayer = m_layers.end()-1;
 }
 
@@ -296,7 +296,7 @@ double LayeredAtmosphere::propagation_time_correction(double z)
 {
   auto ilayer = findZ(z);
   return ilayer->ptc0 -
-      ilayer->nmozs * ilayer->nmo0 * std::exp(-z/ilayer->nmozs);
+    ilayer->nmozs * ilayer->nmo0 * std::exp(-z/ilayer->nmozs);
 }
 
 double LayeredAtmosphere::z_for_thickness(double t)
@@ -313,7 +313,7 @@ double LayeredAtmosphere::top_of_atmosphere()
   return m_ztoa;
 }
 
- LayeredAtmosphere* LayeredAtmosphere::us76()
+LayeredAtmosphere* LayeredAtmosphere::us76()
 {
   std::vector<Level> levels;
   levels.push_back({ 0.0, 0.12219E-02, 0.10350E+04, 0.28232E-03 });

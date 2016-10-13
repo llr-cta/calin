@@ -94,6 +94,7 @@ class LengthLimitingTrackVisitor: public TrackVisitor
 {
 public:
   LengthLimitingTrackVisitor(TrackVisitor* visitor, double dx_max,
+    double z_max = std::numeric_limits<double>::infinity(),
     bool adopt_visitor = false);
   virtual ~LengthLimitingTrackVisitor();
   void visit_event(const Event& event, bool& kill_event) override;
@@ -103,6 +104,7 @@ private:
   TrackVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
   double dx_max_ = 0;
+  double z_max_ = std::numeric_limits<double>::infinity();
 };
 
 
