@@ -323,59 +323,61 @@ PropagateFreeToSphere(const Vec3D& center, double radius,
 
   IPOut ipo = IPO_NONE;
   switch(ip)
-    {
-    case IP_CLOSEST:
-      if(time_reversal_ok)
-	if(fabs(t1)<fabs(t2))ipo=IPO_FIRST;
-	else ipo=IPO_SECOND;
-      else
-	if(t1>=0)ipo=IPO_FIRST;
-	else if(t2>=0)ipo=IPO_SECOND;
-	else return IPO_NONE;
-      break;
-
-    case IP_FARTHEST:
-      if(time_reversal_ok)
-	if(fabs(t1)<fabs(t2))ipo=IPO_SECOND;
-	else ipo=IPO_FIRST;
-      else
-	if(t2>=0)ipo=IPO_SECOND;
-	else return IPO_NONE;
-      break;
-
-    case IP_NEXT:
-      if(t1>0)ipo=IPO_SECOND;
-      else if(t2>0)ipo=IPO_SECOND;
+  {
+  case IP_CLOSEST:
+    if(time_reversal_ok) {
+      if(fabs(t1)<fabs(t2))ipo=IPO_FIRST;
+      else ipo=IPO_SECOND;
+    } else {
+      if(t1>=0)ipo=IPO_FIRST;
+      else if(t2>=0)ipo=IPO_SECOND;
       else return IPO_NONE;
-      break;
+    }
+    break;
 
-    case IP_PREVIOUS:
-      if(!time_reversal_ok)return IPO_NONE;
-      else if(t2<0)ipo=IPO_SECOND;
-      else if(t1<0)ipo=IPO_FIRST;
+  case IP_FARTHEST:
+    if(time_reversal_ok) {
+      if(fabs(t1)<fabs(t2))ipo=IPO_SECOND;
+      else ipo=IPO_FIRST;
+    } else {
+      if(t2>=0)ipo=IPO_SECOND;
       else return IPO_NONE;
-      break;
+    }
+    break;
 
-    case IP_EARLIEST:
-      if((time_reversal_ok)||(t1>=0))ipo=IPO_FIRST;
-      else return IPO_NONE;
+  case IP_NEXT:
+    if(t1>0)ipo=IPO_SECOND;
+    else if(t2>0)ipo=IPO_SECOND;
+    else return IPO_NONE;
+    break;
 
-    case IP_LATEST:
-      if((time_reversal_ok)||(t2>=0))ipo=IPO_SECOND;
-      else return IPO_NONE;
-    };
+  case IP_PREVIOUS:
+    if(!time_reversal_ok)return IPO_NONE;
+    else if(t2<0)ipo=IPO_SECOND;
+    else if(t1<0)ipo=IPO_FIRST;
+    else return IPO_NONE;
+    break;
+
+  case IP_EARLIEST:
+    if((time_reversal_ok)||(t1>=0))ipo=IPO_FIRST;
+    else return IPO_NONE;
+
+  case IP_LATEST:
+    if((time_reversal_ok)||(t2>=0))ipo=IPO_SECOND;
+    else return IPO_NONE;
+  };
 
   switch(ipo)
-    {
-    case IPO_FIRST:
-      time = t1;
-      break;
-    case IPO_SECOND:
-      time = t2;
-      break;
-    case IPO_NONE:
-      assert(0);
-    }
+  {
+  case IPO_FIRST:
+    time = t1;
+    break;
+  case IPO_SECOND:
+    time = t2;
+    break;
+  case IPO_NONE:
+    assert(0);
+  }
 
   PropagateFree(time);
 
