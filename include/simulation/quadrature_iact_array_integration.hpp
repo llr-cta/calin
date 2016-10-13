@@ -28,6 +28,7 @@
 #include <simulation/vso_array.hpp>
 #include <simulation/vso_raytracer.hpp>
 #include <simulation/iact_array_tracker.hpp>
+#include <simulation/tracker.pb.h>
 
 namespace calin { namespace simulation { namespace quadrature_iact_array_integration {
 
@@ -83,7 +84,8 @@ class VSO_QuadratureIACTArrayIntegrationHitVisitor:
   public calin::simulation::iact_array_tracker::HitIACTVisitor
 {
 public:
-  VSO_QuadratureIACTArrayIntegrationHitVisitor(double test_ray_spacing,
+  VSO_QuadratureIACTArrayIntegrationHitVisitor(
+    const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
     calin::simulation::vs_optics::VSOArray* array,
     QuadratureIACTArrayPEProcessor* visitor,
     calin::math::rng::RNG* rng = nullptr,
@@ -113,7 +115,8 @@ protected:
     const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
     calin::simulation::vs_optics::VSOTelescope* scope);
 
-  double test_ray_spacing_;
+  double ray_spacing_linear_;
+  double ray_spacing_angular_;
   calin::simulation::vs_optics::VSOArray* array_ = nullptr;
   bool adopt_array_ = false;
   QuadratureIACTArrayPEProcessor* visitor_ = nullptr;

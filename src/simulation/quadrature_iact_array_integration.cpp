@@ -149,13 +149,15 @@ process_hit(
 
 
 VSO_QuadratureIACTArrayIntegrationHitVisitor::
-VSO_QuadratureIACTArrayIntegrationHitVisitor(double test_ray_spacing,
+VSO_QuadratureIACTArrayIntegrationHitVisitor(
+    const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
     calin::simulation::vs_optics::VSOArray* array,
     QuadratureIACTArrayPEProcessor* visitor,
     calin::math::rng::RNG* rng,
     bool adopt_array, bool adopt_visitor, bool adopt_rng):
   calin::simulation::iact_array_tracker::HitIACTVisitor(),
-  test_ray_spacing_(test_ray_spacing),
+  ray_spacing_linear_(config.ray_spacing_linear()),
+  ray_spacing_angular_(config.ray_spacing_angular() / 180.0 * M_PI),
   array_(array), adopt_array_(adopt_array),
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   rng_(rng ? rng : new calin::math::rng::RNG),
@@ -292,8 +294,12 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_hit(
   const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
   calin::simulation::vs_optics::VSOTelescope* scope)
 {
-  double dphi = test_ray_spacing_*hit.cherenkov_track->cos_thetac /
-    std::abs(2.0*M_PI*hit.rxu*hit.cherenkov_track->sin_thetac);
+  double dphi = std::numeric_limits<double>::infinity();
+  if(ray_spacing_linear_ > 0)
+    dphi = ray_spacing_linear_*hit.cherenkov_track->cos_thetac /
+      std::abs(2.0*M_PI*hit.rxu*hit.cherenkov_track->sin_thetac);
+  if(ray_spacing_angular_ > 0)
+    dphi = std::min(dphi, ray_spacing_angular_);
   unsigned n = std::floor(2.0*hit.phimax / dphi);
   if(n%2 == 0)++n; // always choose odd number of integration points
   dphi = 2.0*hit.phimax/double(n);

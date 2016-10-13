@@ -42,7 +42,7 @@
 
 %import "simulation/atmosphere.i"
 %import "simulation/vs_optics.i"
-
+%import "simulation/tracker.pb.i"
 //%newobject *::dump_as_proto() const;
 //%newobject *::create_from_proto;
 
