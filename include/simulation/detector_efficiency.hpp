@@ -35,7 +35,7 @@
 #include <cmath>
 #include <tuple>
 
-#include <math/interpolation_1D.hpp>
+#include <math/interpolation_1d.hpp>
 
 namespace calin { namespace simulation { namespace detector_efficiency {
 
