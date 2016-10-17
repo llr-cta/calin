@@ -116,6 +116,7 @@ public:
     }
   }
 
+#ifndef SWIG
   class BinAddOp {
     public: T operator() (double x, const T& y1, const T& y2) { return y1+y2; }
   };
@@ -142,6 +143,7 @@ public:
   class UnExpOp {
     public: T operator() (double x, const T& y) { return std::exp(y); }
   };
+#endif
 
   void insert(double x, const T& y)
   {

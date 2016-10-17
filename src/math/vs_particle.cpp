@@ -66,7 +66,7 @@ std::string DoubleToString( double d )
 
 } // anonymous namespace
 
-bool                                                      Particle::s_pdgdata_init = false;
+bool                                            Particle::s_pdgdata_init = false;
 std::map<int, PDGData*>                         Particle::s_pdgdata;
 std::map<std::pair<std::string, int>, PDGData*> Particle::s_pdgdata_name_q;
 

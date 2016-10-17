@@ -112,15 +112,16 @@ inline yield_t operator* (const yield_t& a, const yield_t& b)
 #endif
 
 #ifdef SWIG
-%template(InterpLinear1DDouble) Interpolation1D<double, LinearInterpolator<double> >;
-%template(InterpLinear1DYieldT) Interpolation1D<yield_t, LinearInterpolator<yield_t> >;
+//} } }
+//%template(InterpLinear1DYieldT) calin::math::interpolation_1d::Interpolation1D<yield_t, calin::math::interpolation_1d::LinearInterpolator<yield_t> >;
+//namespace calin { namespace simulation { namespace detector_efficiency {
 #endif
 
-class TelescopeEfficiency: public math::interpolation_1d::InterpLinear1D
+class TelescopeEfficiency: public calin::math::interpolation_1d::InterpLinear1D
 {
 public:
   TelescopeEfficiency();
-  void scaleEff(const math::interpolation_1d::InterpLinear1D& eff);
+  void scaleEff(const calin::math::interpolation_1d::InterpLinear1D& eff);
   void scaleEffFromFile(const std::string& filename,
 			double lambda0_nm=180.0, double dlambda_nm=5.0);
 };
@@ -161,7 +162,7 @@ public:
 #endif
 
 class ACTIntegratedLightYield:
-  public math::interpolation_1d::Interpolation1D<yield_t, math::interpolation_1d::LinearInterpolator<yield_t> >
+  public calin::math::interpolation_1d::Interpolation1D<yield_t, calin::math::interpolation_1d::LinearInterpolator<yield_t> >
   //public Interpolation1D<yield_t, ExpInterpolator<yield_t> >
   //public Interpolation1D<yield_t, ACTILYInterpolator>
 {
@@ -177,12 +178,12 @@ class AtmosphericAbsorption
 {
 public:
   AtmosphericAbsorption(const std::string& filename, double spacing_km=1.0);
-  math::interpolation_1d::InterpLinear1D absorptionForAltitude(double h) const;
+  calin::math::interpolation_1d::InterpLinear1D absorptionForAltitude(double h) const;
   ACTIntegratedLightYield integrateYield(double h0, double w0,
 					 const TelescopeEfficiency& eff);
 private:
   std::vector<double>         m_e_ev;
-  std::vector<math::interpolation_1d::InterpLinear1D> m_absorption;
+  std::vector<calin::math::interpolation_1d::InterpLinear1D> m_absorption;
 };
 
 } } } // namespace calin::simulation::detector_efficiency
