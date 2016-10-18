@@ -35,10 +35,12 @@
 #include <sstream>
 #include <string>
 
+#include <io/log.hpp>
 #include <math/special.hpp>
 #include <simulation/detector_efficiency.hpp>
 
 using calin::math::special::SQR;
+using namespace calin::io::log;
 using namespace calin::simulation::detector_efficiency;
 using namespace calin::math::interpolation_1d;
 
@@ -171,7 +173,32 @@ void TelescopeEfficiency::scaleEff(const InterpLinear1D& eff)
 }
 
 void TelescopeEfficiency::
-scaleEffFromFile(const std::string& filename,
+scaleEffFromFile(const std::string& filename)
+{
+  std::ifstream stream(filename.c_str());
+  std::string line;
+  std::getline(stream,line);
+  while((line.empty() or line[0] == '#') and stream)std::getline(stream,line);
+  if(!stream)return;
+  InterpLinear1D eff_fn;
+  do
+  {
+    double lambda;
+    double eff;
+    std::istringstream lstream(line);
+    lstream >> lambda >> eff;
+    LOG(INFO) << lambda << ' ' << eff;
+    if(lstream) {
+      double e = EV_NM / lambda;
+      eff_fn.insert(e, eff);
+    }
+    std::getline(stream,line);
+  }while(stream);
+  scaleEff(eff_fn);
+}
+
+void TelescopeEfficiency::
+scaleEffFromOldStyleFile(const std::string& filename,
 		 double lambda0_nm, double dlambda_nm)
 {
   std::ifstream stream(filename.c_str());
