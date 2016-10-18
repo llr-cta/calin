@@ -187,7 +187,7 @@ scaleEffFromFile(const std::string& filename)
     double eff;
     std::istringstream lstream(line);
     lstream >> lambda >> eff;
-    LOG(INFO) << lambda << ' ' << eff;
+    //LOG(INFO) << lambda << ' ' << eff;
     if(lstream) {
       double e = EV_NM / lambda;
       eff_fn.insert(e, eff);
