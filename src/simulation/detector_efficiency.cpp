@@ -179,6 +179,10 @@ next_header_line:
 
 InterpLinear1D AtmosphericAbsorption::absorptionForAltitude(double h) const
 {
+  if(h < absorption_.front().xi(0))
+    throw std::out_of_range("Altitude " + std::to_string(h) +
+      " below lowest level available (" +
+      std::to_string(absorption_.front().xi(0)) + ")");
   InterpLinear1D abs;
   for(unsigned ie=0;ie<e_ev_.size();ie++)
     abs.insert(e_ev_[ie], absorption_[ie](h));
