@@ -37,9 +37,12 @@
 
 #include <io/log.hpp>
 #include <math/special.hpp>
+#include <util/string.hpp>
 #include <simulation/detector_efficiency.hpp>
 
 using calin::math::special::SQR;
+using calin::util::string::chomp;
+using calin::util::string::from_string;
 using namespace calin::io::log;
 using namespace calin::simulation::detector_efficiency;
 using namespace calin::math::interpolation_1d;
@@ -51,7 +54,8 @@ using namespace calin::math::interpolation_1d;
 // ----------------------------------------------------------------------------
 
 AtmosphericAbsorption::
-AtmosphericAbsorption(const std::string& filename, double spacing_km)
+AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
+    double ground_level_km, double spacing_km)
 {
   std::ifstream stream(filename.c_str());
   std::string line;
@@ -67,8 +71,8 @@ AtmosphericAbsorption(const std::string& filename, double spacing_km)
       std::istringstream lstream(line);
       if(e)
       {
-        m_e_ev.push_back(e);
-        m_absorption.push_back(abs);
+        e_ev_.push_back(e);
+        absorption_.push_back(abs);
       }
       double lambda;
       lstream >> lambda;
@@ -92,16 +96,92 @@ AtmosphericAbsorption(const std::string& filename, double spacing_km)
   }
   if(e)
   {
-    m_e_ev.push_back(e);
-    m_absorption.push_back(abs);
+    e_ev_.push_back(e);
+    absorption_.push_back(abs);
+  }
+}
+
+AtmosphericAbsorption::AtmosphericAbsorption(const std::string& filename,
+  std::vector<double> levels_cm)
+{
+  std::ifstream stream(filename.c_str());
+  std::string line;
+
+  std::getline(stream,line);
+
+  while(levels_cm.empty() and stream)
+  {
+    std::istringstream line_stream(line);
+    std::string token;
+    line_stream >> token;
+    if(token.empty()) {
+      // Empty line : move on to next line
+      goto next_header_line;
+    } else if(token[0]=='#') {
+      // Comment line : look for pattern of H2= and H1= and import levels
+      line_stream >> token;
+      if(token != "H2=")goto next_header_line;
+      double h_km;
+      if(not (line_stream >> h_km))goto next_header_line;
+      levels_cm.emplace_back(h_km * 1.0e5);
+      line_stream >> token;
+      if(token == ",")line_stream >> token;
+      LOG(INFO) << token;
+      if(token != "H1=")goto next_header_line;
+      while(line_stream >> h_km)
+        levels_cm.emplace_back(h_km * 1.0e5);
+    } else {
+      // Start of data : break and process data below
+      break;
+    }
+next_header_line:
+    std::getline(stream,line);
+  }
+
+  if(levels_cm.size() < 2) {
+    throw std::runtime_error("Must have 2 or more levels in absorption file: "+
+      filename);
+  }
+
+  while(stream)
+  {
+    std::istringstream line_stream(line);
+    std::string token;
+    line_stream >> token;
+    if(not token.empty())
+    {
+      double lambda;
+      if(!from_string(token, lambda)) {
+        throw std::runtime_error("Could not extract wavelength from line : " +
+          line);
+      }
+      double e;
+      e = EV_NM/lambda;
+
+      auto ilevel = levels_cm.begin();
+      InterpLinear1D abs;
+      abs.insert(*ilevel, 0.0);
+      for(++ilevel; ilevel!=levels_cm.end(); ++ilevel)
+      {
+        double a;
+        if(not(line_stream >> a))
+          throw std::runtime_error("Insuffient entries for lambda="
+            + std::to_string(lambda));
+        abs.insert(*ilevel, a);
+      }
+
+      e_ev_.emplace_back(e);
+      absorption_.emplace_back(abs);
+    }
+    std::getline(stream,line);
   }
 }
 
 InterpLinear1D AtmosphericAbsorption::absorptionForAltitude(double h) const
 {
   InterpLinear1D abs;
-  for(unsigned ie=0;ie<m_e_ev.size();ie++)
-    abs.insert(m_e_ev[ie], m_absorption[ie](h));
+  for(unsigned ie=0;ie<e_ev_.size();ie++)
+    abs.insert(e_ev_[ie], absorption_[ie](h));
   return abs;
 }
 
@@ -113,9 +193,9 @@ integrateYield(double h0, double w0, const TelescopeEfficiency& eff)
 
 #if 1
   bool obslevel = false;
-  for(unsigned ih=0;ih<m_absorption.front().nXY();ih++)
+  for(unsigned ih=0;ih<absorption_.front().nXY();ih++)
   {
-    double h = m_absorption.front().xi(ih);
+    double h = absorption_.front().xi(ih);
     if(h==h0 && !obslevel)
     {
       obslevel = true;
@@ -127,17 +207,17 @@ integrateYield(double h0, double w0, const TelescopeEfficiency& eff)
       obslevel = true;
     }
 #else
-  for(double h=m_absorption.front().xmin();
-      h<m_absorption.front().xmax(); h+=10000)
+  for(double h=absorption_.front().xmin();
+      h<absorption_.front().xmax(); h+=10000)
   {
 #endif
     InterpLinear1D Y0;
     InterpLinear1D Y1;
     InterpLinear1D Y2;
-    for(unsigned ie=0;ie<m_e_ev.size();ie++)
+    for(unsigned ie=0;ie<e_ev_.size();ie++)
   	{
-  	  double e = m_e_ev[ie];
-  	  double mfp = std::fabs(m_absorption[ie](h)-abs0(e));
+  	  double e = e_ev_[ie];
+  	  double mfp = std::fabs(absorption_[ie](h)-abs0(e));
   	  double abs = std::exp(-mfp/w0);
   	  Y0.insert(e, abs);
   	  Y1.insert(e, mfp/(w0*w0)*abs);
@@ -156,6 +236,11 @@ integrateYield(double h0, double w0, const TelescopeEfficiency& eff)
     yield.insert(h, y);
   }
   return yield;
+}
+
+std::vector<double> AtmosphericAbsorption::levels_cm() const
+{
+  return absorption_.front().all_xi();
 }
 
 // ----------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 /*
 
-   calin/io/until.cpp -- Stephen Fegan -- 2015-11-13
+   calin/util/string.cpp -- Stephen Fegan -- 2015-11-13
 
    Various IO related utility functions
 
@@ -76,6 +76,16 @@ std::string calin::util::string::string_escape(const std::string& s_in)
     else s_out += c;
   }
   return s_out;
+}
+
+std::string calin::util::string::chomp(const std::string& s_in)
+{
+  std::string::size_type ifind = s_in.find_first_not_of(" \t");
+  if(ifind == std::string::npos) {
+    return std::string();
+  } else {
+    return s_in.substr(ifind);
+  }
 }
 
 #if 0

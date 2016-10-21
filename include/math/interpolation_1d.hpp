@@ -154,9 +154,15 @@ public:
   void clear() { m_xy.clear(); }
 
   size_type nXY() const { return m_xy.size(); }
-  const xy_type& xyi(size_type ixy) { return m_xy[ixy]; }
-  const double& xi(size_type ixy) { return m_xy[ixy].first; }
-  const T& yi(size_type ixy) { return m_xy[ixy].second; }
+  const xy_type& xyi(size_type ixy) const { return m_xy[ixy]; }
+  const double& xi(size_type ixy) const { return m_xy[ixy].first; }
+  const T& yi(size_type ixy) const { return m_xy[ixy].second; }
+
+  std::vector<double> all_xi() const {
+    std::vector<double> vxi;
+    for(auto ixy : m_xy)vxi.emplace_back(ixy.first);
+    return vxi;
+  }
 
   double xmin() const { return m_xy.front().first; }
   double xmax() const { return m_xy.back().first; }

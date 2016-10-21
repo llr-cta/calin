@@ -175,16 +175,23 @@ private:
   double m_w0;
 };
 
+struct OldStyleAtmObsFlag { };
+
 class AtmosphericAbsorption
 {
 public:
-  AtmosphericAbsorption(const std::string& filename, double spacing_km=1.0);
+  AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
+    double ground_level_km = 0.0, double spacing_km=1.0);
+  AtmosphericAbsorption(const std::string& filename,
+    std::vector<double> levels_cm = {});
   calin::math::interpolation_1d::InterpLinear1D absorptionForAltitude(double h) const;
   ACTIntegratedLightYield integrateYield(double h0, double w0,
 					 const TelescopeEfficiency& eff);
+  const std::vector<double>& energy_ev() const { return e_ev_; }
+  std::vector<double> levels_cm() const;
 private:
-  std::vector<double>         m_e_ev;
-  std::vector<calin::math::interpolation_1d::InterpLinear1D> m_absorption;
+  std::vector<double>                                        e_ev_;
+  std::vector<calin::math::interpolation_1d::InterpLinear1D> absorption_;
 };
 
 } } } // namespace calin::simulation::detector_efficiency
