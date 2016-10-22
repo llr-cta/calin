@@ -88,6 +88,8 @@ template<typename T> std::string to_string(const T& x)
   return stream.str();
 }
 
+std::string chomp(const std::string& s_in);
+
 template<typename T> std::string to_string(const std::vector<T>& x)
 {
   std::string s;

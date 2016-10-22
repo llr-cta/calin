@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/vs_particle.cpp -- Stephen Fegan -- 2015-11-05
 
@@ -10,11 +10,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -30,7 +30,7 @@
   \author   Stephen Fegan             \n
             UCLA                      \n
             sfegan@astro.ucla.edu     \n
-  
+
   \author   Vladimir Vassiliev        \n
             UCLA                      \n
 	    vvv@astro.ucla.edu        \n
@@ -66,7 +66,7 @@ std::string DoubleToString( double d )
 
 } // anonymous namespace
 
-bool                                                      Particle::s_pdgdata_init = false;
+bool                                            Particle::s_pdgdata_init = false;
 std::map<int, PDGData*>                         Particle::s_pdgdata;
 std::map<std::pair<std::string, int>, PDGData*> Particle::s_pdgdata_name_q;
 
@@ -119,7 +119,7 @@ void Particle::Dump(std::ostream& stream)
      d/dt(pc)=(1/sec) q e(1 Volt) (c/1 cm/sec)^2 1e-8 [v/c x B/(1 Gauss)]
      d/dt(pc)=(1/sec) q E0 [v/c x B/(1 Gauss)]
      where E0= e (1 Volt) (c/1 cm/sec)^2 1e-8, and c=2.997924576e+10 cm/s
- 
+
      e (1 Volt) = 1.6021892e-19 Joule = 1.6021892e-12 erg
      E0 = 1.6021892e-12 erg (2.997924576e+10)^2 1e-8=
         = 1.6021892 (2.997924576)^2 erg = 14.399758 erg
@@ -153,12 +153,12 @@ bool Particle::PropagateBField(double dist, const Vec3D& B)
 {
   double b=B.Norm();
 
-  // wDc -- frequency of gyration divided by c 
+  // wDc -- frequency of gyration divided by c
 #ifdef B_EQUATION_VVV
   double wDc = 1./ 2.997924576e+10   // 1/sec / c
              * charge                // q
              * (14.399758/p.r0)      // E0/(1 erg) * (1 erg)/E
-             * b;                    // |B|/ (1 gauss)                   
+             * b;                    // |B|/ (1 gauss)
 #endif
 
 #ifdef B_EQUATION_CONSTANTS
@@ -191,7 +191,7 @@ bool Particle::PropagateBField(double dist, const Vec3D& B)
   double prm=(beta*B_hat);
   Vec3D beta_par=prm*B_hat;
   Vec3D beta_per=beta-beta_par;
-  if( beta_per.Norm2() == 0 )        // magnetic field is parallel          
+  if( beta_per.Norm2() == 0 )        // magnetic field is parallel
     return PropagateFree(dist);      // to particle's velocity vector
 
   Vec3D beta_rem=beta_per^B_hat;
@@ -207,15 +207,15 @@ bool Particle::PropagateBField(double dist, const Vec3D& B)
   return true;
 }
 
-/* This routine actually propagates the particle from its current position 
-   to the point of intersection of its trajectory with the plane (future and 
-   past intersections). The plane is specified by a normal (a,b,c) and a real 
+/* This routine actually propagates the particle from its current position
+   to the point of intersection of its trajectory with the plane (future and
+   past intersections). The plane is specified by a normal (a,b,c) and a real
    number d s.t. for any point (x,y,z) we have ax+by+cz+d = 0; */
 
 bool Particle::PropagateFreeToPlane(const Vec3D& normal, double d, bool time_reversal_ok)
 {
   // Direction of particle velocity
-  Vec3D v_hat = p.r / p.r.Norm(); 
+  Vec3D v_hat = p.r / p.r.Norm();
 
   // Rationalized normal (should probably be the case already)
   Vec3D n_hat = normal / normal.Norm();
@@ -228,7 +228,7 @@ bool Particle::PropagateFreeToPlane(const Vec3D& normal, double d, bool time_rev
   // which goes through the particle's current position
 
   double plane_sep = -d - r.r*normal;
-      
+
   // Distance the particle must travel to reach the plane i.e.
   // n_hat * vhat = cos( theta ) = plane_dist / propagation_dist
   double propagation_dist = plane_sep / n_hat_dot_v_hat;
@@ -240,11 +240,11 @@ bool Particle::PropagateFreeToPlane(const Vec3D& normal, double d, bool time_rev
 }
 
 //! Propagates free particle to the closest approach with line
-bool Particle::PropagateFreeToPointClosestApproach(const Vec3D& r0, 
+bool Particle::PropagateFreeToPointClosestApproach(const Vec3D& r0,
 						   bool time_reversal_ok)
 {
   // Direction of particle velocity
-  Vec3D v_hat = p.r / p.r.Norm(); 
+  Vec3D v_hat = p.r / p.r.Norm();
 
   // Distance the particle must travel to reach the closest approach
   double propagation_dist = (r.r-r0)*v_hat;
@@ -258,11 +258,11 @@ bool Particle::PropagateFreeToPointClosestApproach(const Vec3D& r0,
 
 //! Propagates free particle to the closest approach with line
 bool Particle::PropagateFreeToLineClosestApproach(const Vec3D& normal,
-						  const Vec3D& r0, 
+						  const Vec3D& r0,
 						  bool time_reversal_ok)
 {
   // Direction of particle velocity
-  Vec3D v_hat = p.r / p.r.Norm(); 
+  Vec3D v_hat = p.r / p.r.Norm();
 
   // Rationalized normal (should probably be the case already)
   Vec3D n_hat = normal / normal.Norm();
@@ -277,7 +277,7 @@ bool Particle::PropagateFreeToLineClosestApproach(const Vec3D& normal,
   // note: propagation_dist < 0 means particle has passed the plane already
   if((propagation_dist<0)&&(!time_reversal_ok))return false;
 
-  return PropagateFree(propagation_dist);  
+  return PropagateFree(propagation_dist);
 }
 
 /*! Propagates the particle to either the closer or farther intersection
@@ -285,100 +285,102 @@ bool Particle::PropagateFreeToLineClosestApproach(const Vec3D& normal,
     \param center Vector containing position of center of the sphere
     \param radius Radius of the sphere
     \param ip Desired point of intersection
-    \param time_reversal_ok Allow particle to propagate back in time if 
+    \param time_reversal_ok Allow particle to propagate back in time if
            intersection requires it
 */
 
 Particle::IPOut Particle::
-PropagateFreeToSphere(const Vec3D& center, double radius, 
-		      Particle::IntersectionPoint ip, 
+PropagateFreeToSphere(const Vec3D& center, double radius,
+		      Particle::IntersectionPoint ip,
 		      bool time_reversal_ok)
 {
   Vec3D v_hat = p.r / p.r.Norm();  // Normalized direction vector
   Vec3D r_i = r.r;                 // Current (initial) position of particle
-  
+
   // Vector from here to center of circle
   Vec3D to_center = center - r_i;
 
   // Distance^2 along particle trajectory to closest approach with center
-  double prop_dist = v_hat * to_center; 
+  double prop_dist = v_hat * to_center;
   double prop_dist_2 = prop_dist * prop_dist;
-  
+
   // Distance^2 to closest approach with center along tangent (negative inside)
   double tangent_dist_2 = to_center.Norm2() - radius*radius;
-  
+
   if( prop_dist_2 < tangent_dist_2 )   //no intersection
     return IPO_NONE;
-  
+
   //time of first intersection
-  double t1 = prop_dist - sqrt(prop_dist_2 - tangent_dist_2);  
+  double t1 = prop_dist - sqrt(prop_dist_2 - tangent_dist_2);
   //time of second intersection (t2>t1)
-  double t2 = prop_dist + sqrt(prop_dist_2 - tangent_dist_2);  
+  double t2 = prop_dist + sqrt(prop_dist_2 - tangent_dist_2);
 
   double time = 0;
 
   // Select which intersection point to go to depending on what we were
-  // asked to do and whether we can move back in time... otherwise do not 
+  // asked to do and whether we can move back in time... otherwise do not
   // propagate
 
   IPOut ipo = IPO_NONE;
   switch(ip)
-    {
-    case IP_CLOSEST:
-      if(time_reversal_ok)
-	if(fabs(t1)<fabs(t2))ipo=IPO_FIRST;
-	else ipo=IPO_SECOND;
-      else
-	if(t1>=0)ipo=IPO_FIRST;
-	else if(t2>=0)ipo=IPO_SECOND;
-	else return IPO_NONE;
-      break;
-      
-    case IP_FARTHEST:
-      if(time_reversal_ok)
-	if(fabs(t1)<fabs(t2))ipo=IPO_SECOND;
-	else ipo=IPO_FIRST;
-      else
-	if(t2>=0)ipo=IPO_SECOND;
-	else return IPO_NONE;
-      break;
+  {
+  case IP_CLOSEST:
+    if(time_reversal_ok) {
+      if(fabs(t1)<fabs(t2))ipo=IPO_FIRST;
+      else ipo=IPO_SECOND;
+    } else {
+      if(t1>=0)ipo=IPO_FIRST;
+      else if(t2>=0)ipo=IPO_SECOND;
+      else return IPO_NONE;
+    }
+    break;
 
-    case IP_NEXT:
-      if(t1>0)ipo=IPO_SECOND;
-      else if(t2>0)ipo=IPO_SECOND;
+  case IP_FARTHEST:
+    if(time_reversal_ok) {
+      if(fabs(t1)<fabs(t2))ipo=IPO_SECOND;
+      else ipo=IPO_FIRST;
+    } else {
+      if(t2>=0)ipo=IPO_SECOND;
       else return IPO_NONE;
-      break;
-      
-    case IP_PREVIOUS:
-      if(!time_reversal_ok)return IPO_NONE;
-      else if(t2<0)ipo=IPO_SECOND;
-      else if(t1<0)ipo=IPO_FIRST;
-      else return IPO_NONE;
-      break;
-      
-    case IP_EARLIEST:
-      if((time_reversal_ok)||(t1>=0))ipo=IPO_FIRST;
-      else return IPO_NONE;
+    }
+    break;
 
-    case IP_LATEST:
-      if((time_reversal_ok)||(t2>=0))ipo=IPO_SECOND;
-      else return IPO_NONE;
-    };
+  case IP_NEXT:
+    if(t1>0)ipo=IPO_SECOND;
+    else if(t2>0)ipo=IPO_SECOND;
+    else return IPO_NONE;
+    break;
+
+  case IP_PREVIOUS:
+    if(!time_reversal_ok)return IPO_NONE;
+    else if(t2<0)ipo=IPO_SECOND;
+    else if(t1<0)ipo=IPO_FIRST;
+    else return IPO_NONE;
+    break;
+
+  case IP_EARLIEST:
+    if((time_reversal_ok)||(t1>=0))ipo=IPO_FIRST;
+    else return IPO_NONE;
+
+  case IP_LATEST:
+    if((time_reversal_ok)||(t2>=0))ipo=IPO_SECOND;
+    else return IPO_NONE;
+  };
 
   switch(ipo)
-    {
-    case IPO_FIRST:
-      time = t1;
-      break;
-    case IPO_SECOND:
-      time = t2;
-      break;
-    case IPO_NONE:
-      assert(0);
-    }
+  {
+  case IPO_FIRST:
+    time = t1;
+    break;
+  case IPO_SECOND:
+    time = t2;
+    break;
+  case IPO_NONE:
+    assert(0);
+  }
 
   PropagateFree(time);
- 
+
   // Since v_hat is of unit length, time corresponds to distance to
   // the intersection
 
@@ -391,13 +393,13 @@ PropagateFreeToSphere(const Vec3D& center, double radius,
     \param normal Vector describing axis of cylinder
     \param radius Radius of the cylinder
     \param ip Desired point of intersection
-    \param time_reversal_ok Allow particle to propagate back in time if 
+    \param time_reversal_ok Allow particle to propagate back in time if
            intersection requires it
 */
 
 Particle::IPOut Particle::
-PropagateFreeToCylinder(const Vec3D& center, const Vec3D& normal, 
-			double radius, 
+PropagateFreeToCylinder(const Vec3D& center, const Vec3D& normal,
+			double radius,
 			IntersectionPoint ip,
 			bool time_reversal_ok)
 {
@@ -434,67 +436,69 @@ PropagateFreeToCylinder(const Vec3D& center, const Vec3D& normal,
   double time = 0;
 
   // Select which intersection point to go to depending on what we were
-  // asked to do and whether we can move back in time... otherwise do not 
+  // asked to do and whether we can move back in time... otherwise do not
   // propagate
 
   IPOut ipo = IPO_NONE;
   switch(ip)
-    {
-    case IP_CLOSEST:
-      if(time_reversal_ok)
-	if(fabs(t1)<fabs(t2))ipo=IPO_FIRST;
-	else ipo=IPO_SECOND;
-      else
-	if(t1>=0)ipo=IPO_FIRST;
-	else if(t2>=0)ipo=IPO_SECOND;
-	else return IPO_NONE;
-      break;
-      
-    case IP_FARTHEST:
-      if(time_reversal_ok)
-	if(fabs(t1)<fabs(t2))ipo=IPO_SECOND;
-	else ipo=IPO_FIRST;
-      else
-	if(t2>=0)ipo=IPO_SECOND;
-	else return IPO_NONE;
-      break;
+  {
+  case IP_CLOSEST:
+    if(time_reversal_ok) {
+      if(fabs(t1)<fabs(t2))ipo=IPO_FIRST;
+    	else ipo=IPO_SECOND;
+    } else {
+      if(t1>=0)ipo=IPO_FIRST;
+	    else if(t2>=0)ipo=IPO_SECOND;
+	    else return IPO_NONE;
+    }
+    break;
 
-    case IP_NEXT:
-      if(t1>0)ipo=IPO_FIRST;
-      else if(t2>0)ipo=IPO_SECOND;
+  case IP_FARTHEST:
+    if(time_reversal_ok) {
+      if(fabs(t1)<fabs(t2))ipo=IPO_SECOND;
+      else ipo=IPO_FIRST;
+    } else {
+      if(t2>=0)ipo=IPO_SECOND;
       else return IPO_NONE;
-      break;
-      
-    case IP_PREVIOUS:
-      if(!time_reversal_ok)return IPO_NONE;
-      else if(t2<0)ipo=IPO_SECOND;
-      else if(t1<0)ipo=IPO_FIRST;
-      else return IPO_NONE;
-      break;
-      
-    case IP_EARLIEST:
-      if((time_reversal_ok)||(t1>=0))ipo=IPO_FIRST;
-      else return IPO_NONE;
+    }
+    break;
 
-    case IP_LATEST:
-      if((time_reversal_ok)||(t2>=0))ipo=IPO_SECOND;
-      else return IPO_NONE;
-    };
+  case IP_NEXT:
+    if(t1>0)ipo=IPO_FIRST;
+    else if(t2>0)ipo=IPO_SECOND;
+    else return IPO_NONE;
+    break;
+
+  case IP_PREVIOUS:
+    if(!time_reversal_ok)return IPO_NONE;
+    else if(t2<0)ipo=IPO_SECOND;
+    else if(t1<0)ipo=IPO_FIRST;
+    else return IPO_NONE;
+    break;
+
+  case IP_EARLIEST:
+    if((time_reversal_ok)||(t1>=0))ipo=IPO_FIRST;
+    else return IPO_NONE;
+
+  case IP_LATEST:
+    if((time_reversal_ok)||(t2>=0))ipo=IPO_SECOND;
+    else return IPO_NONE;
+  };
 
   switch(ipo)
-    {
-    case IPO_FIRST:
-      time = t1;
-      break;
-    case IPO_SECOND:
-      time = t2;
-      break;
-    case IPO_NONE:
-      assert(0);
-    }
+  {
+  case IPO_FIRST:
+    time = t1;
+    break;
+  case IPO_SECOND:
+    time = t2;
+    break;
+  case IPO_NONE:
+    assert(0);
+  }
 
   PropagateFree(time);
- 
+
   // Since v_hat is of unit length, time corresponds to distance to
   // the intersection
 
@@ -502,7 +506,7 @@ PropagateFreeToCylinder(const Vec3D& center, const Vec3D& normal,
 }
 
 
-/*** Writes all particle data members into a given stream; 
+/*** Writes all particle data members into a given stream;
      the individual entries are separated by spaces, and each
      particle in the stream is on one line **********************/
 void Particle::WriteParticle(std::ostream& stream)
@@ -904,7 +908,7 @@ static std::string PDGDataTable2002 =
   be in the format of the computer readable data tables from the Particle
   Data Group (PDG). At time of writing the 2002 table was available from
   http://pdg.lbl.gov/rpp/mcdata/mass_width_02.mc.
-  
+
   \param filename: File to read the particle information from. If the
   filename is not supplied then the 2002 list, which is compiled into
   the library, is used.
@@ -923,9 +927,9 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
   for(std::map<int, PDGData*>::iterator i=s_pdgdata.begin();
       i!=s_pdgdata.end();i++)
     delete i->second;
-  
+
   s_pdgdata_init = false;
-  s_pdgdata.clear();  
+  s_pdgdata.clear();
   s_pdgdata_name_q.clear();
 
   // Setup input stream -- either istringstream or ifstream
@@ -968,17 +972,17 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
 	  break;
 	};
     }
-  
+
   // Loop through M-Lines, matching corresponding W-Line and extracting data
   for(std::vector<std::string>::iterator i=m_lines.begin(); i!=m_lines.end(); i++)
     {
       std::string m_line = *i;
       std::string w_line = w_lines[m_line.substr(1,32)];
-      
+
       std::istringstream str_mcids(m_line.substr(1,32));
       std::istringstream str_mass(m_line.substr(34,33));
       std::istringstream str_name_charge(m_line.substr(68,21));
-      
+
       double mass;
       double mass_err_lo;
       double mass_err_hi;
@@ -989,7 +993,7 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
 		    << std::endl << m_line << std::endl;
 	  continue;
 	}
-      
+
       double width = -1;
       double width_err_lo = 0;
       double width_err_hi = 0;
@@ -999,7 +1003,7 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
 	  if(filename.length() != 0) // only print warning when reading external file
 	    std::cerr << "No width for particle: " << m_line << std::endl;
 	}
-      else 
+      else
 	{
 	  std::istringstream str_width(w_line.substr(34,33));
 	  if(!(str_width >> width >> width_err_hi >> width_err_lo))
@@ -1010,7 +1014,7 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
 	      continue;
 	    }
 	}
-      
+
       std::string name;
       std::string charges;
       if(!(str_name_charge >> name >> charges))
@@ -1020,14 +1024,14 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
 		    << std::endl << m_line << std::endl << w_line << std::endl;
 	  continue;
 	}
-	
+
       // The PDG table allows multiple (four) particles per table
       // entry, each differing only by charge, (e.g. Delta -,0,+,++ on
       // one line). Each has a different MC ID number and charge but
       // the same mass and width. So loop through the IDs on each
       // line, extrating the charge and make a new PDGData entry for
       // each
-  
+
       unsigned charge_index=0;
       int id;
       while(str_mcids >> id)
@@ -1060,7 +1064,7 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
 		  break;
 		}
 	    }
-	  
+
 	  if(!charge_good)
 	    {
 	      std::cerr << "Particle::InitialisePDGData: Parse error" << std::endl
@@ -1070,10 +1074,10 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
 	      w_line.clear();
 	      continue;
 	    }
-	  
+
 	  PDGData* particle = new PDGData;
 	  constexpr double cgs_eV = calin::math::constants::cgs_eV;
-          
+
 	  particle->mcid         = id;
 	  particle->name         = name;
 	  particle->mass         = mass         * cgs_eV*1e9;
@@ -1083,7 +1087,7 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
 	  particle->width_err_lo = width_err_lo * cgs_eV*1e9;
 	  particle->width_err_hi = width_err_hi * cgs_eV*1e9;
 	  particle->charge       = charge;
-	  
+
 	  s_pdgdata[id]=particle;
           std::pair<std::string, int> key(name,charge);
 	  s_pdgdata_name_q[key]  = particle;
@@ -1096,7 +1100,7 @@ bool Particle::InitializePDGData(const std::string& filename, bool reinitialize)
 
 std::ostream& operator << (std::ostream& stream,
                            const calin::math::vs_physics::PDGData& p)
-{  
+{
   std::ostringstream s;
   s << std::setw(7) << std::right << p.mcid << ' '
     << std::setw(15) << std::left << p.name << ' ' << std::showpos
@@ -1116,10 +1120,10 @@ std::ostream& operator << (std::ostream& stream,
                            const calin::math::vs_physics::Particle& p)
 {
   std::ostringstream s;
-  s << p.Position() << ' ' 
-    << std::scientific << std::setprecision(8) << p.Momenta() << ' ' 
-    << std::setprecision(8) << p.p4_p4() << ' ' 
-    << p.MassSquared() << ' ' 
+  s << p.Position() << ' '
+    << std::scientific << std::setprecision(8) << p.Momenta() << ' '
+    << std::setprecision(8) << p.p4_p4() << ' '
+    << p.MassSquared() << ' '
     << std::fixed << std::setprecision(0) << std::showpos << p.Charge();
   stream << s.str();
   return stream;
@@ -1131,17 +1135,17 @@ int main()
 {
   Particle::InitializePDGData();
   const std::map<int, PDGData*>& table = Particle::GetPDGDataList();
-  for(std::map<int, PDGData*>::const_iterator i = table.begin(); 
+  for(std::map<int, PDGData*>::const_iterator i = table.begin();
       i!=table.end(); i++)std::cout << *(i->second) << std::endl;
 
   const PDGData* e_data(Particle::GetPDGDataByID(11));
   const PDGData* p_data(Particle::GetPDGDataByNameCharge("p",+1));
   std::cout << std::endl << *e_data << std::endl << *p_data << std::endl << std::endl;
-  
+
   Particle g(Vec4D(0,0,0,0), Vec3D(1,0,0), .0016021765, 0, 0);   // .001 TeV ph / +x-dir
   Particle e(Vec4D(0,0,0,0), Vec3D(1,0,0), .0016021765, e_data); // .001 TeV e- / +x-dir
   Particle p(Vec4D(0,0,0,0), Vec3D(1,0,0), .0016021765, p_data); // .001 TeV p+ / +x-dir
-  
+
   std::cout << g << std::endl
 	    << e << std::endl
 	    << p << std::endl << std::endl;
@@ -1167,9 +1171,9 @@ int main()
       g.PropagateFree(1);
       e.PropagateFree(1);
       p.PropagateFree(1);
-      
+
       std::ostringstream s;
-      s << std::fixed << std::setprecision(6) 
+      s << std::fixed << std::setprecision(6)
 	<< g.Position() << ' ' << e.Position() << ' ' << p.Position();
       std::cout << s.str() << std::endl;
     }
@@ -1189,9 +1193,9 @@ int main()
       g.PropagateBField(1,Vec3D(0,0,1)*100000);
       e.PropagateBField(1,Vec3D(0,0,1)*100000);
       p.PropagateBField(1,Vec3D(0,0,1)*100000);
-      
+
       std::ostringstream s;
-      s << std::fixed << std::setprecision(6) 
+      s << std::fixed << std::setprecision(6)
 	<< g.Position() << ' ' << e.Position() << ' ' << p.Position();
       std::cout << s.str() << std::endl;
     }
@@ -1207,7 +1211,7 @@ int main()
       for(int x=0;x<11;x++)
 	{
 	  Particle ray(Vec4D(0,double(x-5),double(y-5),0), Vec4D(1,0,0,1), 0);
-	  
+
 	  ray.PropagateFreeToPlane(normal,100,true);
 	  std::ostringstream s;
 	  s << std::fixed << std::setprecision(1) << std::setw(5) << ray.Position().r.z;
