@@ -26,9 +26,9 @@
 #include <vector>
 #include <limits>
 
-#include "math/vs_vec3d.hpp"
+#include "math/vs_vec3d_obsolete.hpp"
 
-using namespace calin::math::vs_physics;
+using namespace calin::math::vs_physics::obsolete;
 
 double sqrt_eps = std::sqrt(std::numeric_limits<double>::epsilon());
 

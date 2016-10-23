@@ -42,7 +42,7 @@
 
 #include <iostream>
 
-#include <math/vs_vec3d.hpp>
+#include <Eigen/Dense>
 #include <simulation/vs_optics.pb.h>
 
 namespace calin { namespace simulation { namespace vs_optics {
@@ -58,7 +58,7 @@ class VSOPixel
   // ************************************************************************
   VSOPixel();     //!<default constructor
   VSOPixel(const VSOTelescope* T, unsigned PID, unsigned PHID, bool REM,
-           const math::vs_physics::Vec3D& P);
+           const Eigen::Vector3d& P);
   virtual ~VSOPixel();
 
   // ************************************************************************
@@ -77,31 +77,23 @@ class VSOPixel
   create_from_proto(const ix::simulation::vs_optics::VSOPixelData& d,
                     const VSOTelescope* T);
 
-#if 0
-  void dumpShort(std::ostream& stream) const;
-  void dump(std::ostream& stream, unsigned l=0) const;
-  static VSOPixel* createFromShortDump(std::istream& stream,
-                                       const VSOTelescope* T);
-#endif
-
   // ************************************************************************
   // Accessors
   // ************************************************************************
-  const VSOTelescope* telescope() const { return fTelescope; }
-  bool                removed() const { return fRemoved; }
-  unsigned            id() const { return fID; }
-  unsigned            hexID() const { return fHexID; }
-  const math::vs_physics::Vec3D& pos() const { return fPos; }
+  const VSOTelescope*    telescope() const { return fTelescope; }
+  bool                   removed() const { return fRemoved; }
+  unsigned               id() const { return fID; }
+  unsigned               hexID() const { return fHexID; }
+  const Eigen::Vector3d& pos() const { return fPos; }
 
-  math::vs_physics::Vec3D      incomingSkyVectorAtZenith(double plate_scale=1.0)
-      const;
+  Eigen::Vector3d incomingSkyVectorAtZenith(double plate_scale=1.0) const;
 
  private:
-  const VSOTelescope* fTelescope;         //!< Telescope
-  unsigned            fID;                //!< Hex ID
-  unsigned            fHexID;             //!< Hex ID
-  bool                fRemoved;           //!< Pixel removed from camera
-  math::vs_physics::Vec3D      fPos;               //!< Position
+  const VSOTelescope*  fTelescope;         //!< Telescope
+  unsigned             fID;                //!< Sequential ID
+  unsigned             fHexID;             //!< Hex ID
+  bool                 fRemoved;           //!< Pixel removed from camera
+  Eigen::Vector3d      fPos;               //!< Position
 };
 
 } } } // namespace calin::simulation::vs_optics

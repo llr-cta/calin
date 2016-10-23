@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_FILES atmosphere.i vs_optics.i pmt.i tracker.i
+set(CALIN_SWIG_FILES atmosphere.i pmt.i #tracker.i vs_optics.i
 	detector_efficiency.i)
 set(CALIN_SWIG_TARGET simulation)
 
