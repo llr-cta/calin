@@ -41,16 +41,24 @@ public:
       double energy = 0): pos_(pos), dir_(dir), ct_(time*cgs_c), energy_(energy) {
     /* nothing to see here */ }
 
+#ifndef SWIG
   Eigen::Vector3d& position() { return pos_; }
   Eigen::Vector3d& direction() { return dir_; }
   double& ct() { return ct_; }
   double& energy() { return energy_; }
+#endif
 
   const Eigen::Vector3d& position() const { return pos_; }
   const Eigen::Vector3d& direction() const { return dir_; }
   double ct() const { return ct_; }
   double time() const { return ct_/cgs_c; }
   double energy() const { return energy_; }
+
+  void set_position(const Eigen::Vector3d& pos) { pos_ = pos; }
+  void set_direction(const Eigen::Vector3d& dir) { dir_ = dir; }
+  void set_ct(double ct) {  ct_ = ct; }
+  void set_time(double t) { ct_ = t*cgs_c; }
+  void set_energy(double e) { energy_ = e; }
 
   void translate_origin(const Eigen::Vector3d& origin) { pos_ -= origin; }
   void untranslate_origin(const Eigen::Vector3d& origin) { pos_ += origin; }
