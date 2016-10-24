@@ -40,7 +40,7 @@
 
 #include <iostream>
 
-//#include <math/vs_particle.hpp>
+#include <math/ray.hpp>
 #include <Eigen/Dense>
 #include <simulation/vs_optics.pb.h>
 
@@ -64,12 +64,12 @@ class VSOMirror
   // ************************************************************************
   // Coordinate transformations
   // ************************************************************************
+#if 0
   void reflectorToMirror(Eigen::Vector3d& v) const;    //!< Transform vector from reflector to mirror
   void mirrorToReflector(Eigen::Vector3d& v) const ;   //!< Transform vector from mirror to reflector
-#if 0
-  void reflectorToMirror(math::vs_physics::Particle& p) const; //!< Transform particle reflector to mirror
-  void mirrorToReflector(math::vs_physics::Particle& p) const; //!< Transform particle mirror to reflector
 #endif
+  void reflectorToMirror(math::ray::Ray& r) const; //!< Transform ray reflector to mirror
+  void mirrorToReflector(math::ray::Ray& r) const; //!< Transform ray mirror to reflector
 
   Eigen::Vector3d cornerInMirrorCoords(unsigned icorner, double aperture) const;
   Eigen::Vector3d cornerInReflectorCoords(unsigned icorner, double aperture) const;
@@ -108,7 +108,7 @@ class VSOMirror
   // ************************************************************************
 
   void realign(const Eigen::Vector3d& a)
-  { fAlign = a/a.norm(); calculateRotationVector(); }
+  { fAlign = a.normalized(); calculateRotationVector(); }
 
  private:
   const VSOTelescope*  fTelescope;         //!< Telescope

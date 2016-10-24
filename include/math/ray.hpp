@@ -33,6 +33,34 @@ namespace calin { namespace math { namespace ray {
 class Ray
 {
 public:
+  Ray() { /* nothing to see here */ }
+  Ray(const Eigen::Vector3d& pos, const Eigen::Vector3d& dir, double time = 0,
+      double energy = 0): pos_(pos), dir_(dir), time_(time), energy_(energy) {
+    /* nothing to see here */ }
+
+  Eigen::Vector3d& position() { return pos_; }
+  Eigen::Vector3d& direction() { return dir_; }
+  double& time() { return time_; }
+  double& energy() { return energy_; }
+
+  const Eigen::Vector3d& position() const { return pos_; }
+  const Eigen::Vector3d& direction() const { return dir_; }
+  double time() const { return time_; }
+  double energy() const { return energy_; }
+
+  void translate_origin(const Eigen::Vector3d& origin) { pos_ -= origin; }
+  void untranslate_origin(const Eigen::Vector3d& origin) { pos_ += origin; }
+
+  void rotate(const Eigen::Matrix3d& rot) {
+    pos_ = rot * pos_; dir_ = rot * dir_; }
+  void derotate(const Eigen::Matrix3d& rot) {
+    pos_ = rot.transpose() * pos_; dir_ = rot.transpose() * dir_; }
+
+private:
+  Eigen::Vector3d pos_ = Eigen::Vector3d::Zero();
+  Eigen::Vector3d dir_ = Eigen::Vector3d::Zero();
+  double time_ = 0;
+  double energy_ = 0;
 };
 
 } } } // namespace calin::math::ray
