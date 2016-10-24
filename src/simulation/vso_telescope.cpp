@@ -35,7 +35,7 @@ using namespace calin::simulation::vs_optics;
 using calin::math::special::SQR;
 
 VSOTelescope::VSOTelescope():
-    fID(), /*fTelescopeHexID(),*/ fPos(),
+    fID(), fPos(),
     fDeltaY(), fAlphaX(), fAlphaY(),
     fElevation(), fAzimuth(),
     fTranslation(), fCurvatureRadius(), fAperture(),
@@ -50,11 +50,12 @@ VSOTelescope::VSOTelescope():
     fObscurations(),
     fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), fRotationVector()
 {
+  calculateFPRotationMatrix();
   calculateRotationVector();
 }
 
 VSOTelescope::
-VSOTelescope(unsigned TID, /*unsigned THID,*/ const Eigen::Vector3d&P,
+VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
 	     double DY, double AX, double AY, double EL, double AZ,
 	     const Eigen::Vector3d& T, double CR, double A, double FSP, double FS,
 	     double RR, unsigned HRN, double RIP, bool MP,
@@ -77,11 +78,12 @@ VSOTelescope(unsigned TID, /*unsigned THID,*/ const Eigen::Vector3d&P,
     fObscurations(OBSVEC),
     fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), fRotationVector()
 {
+  calculateFPRotationMatrix();
   calculateRotationVector();
 }
 
 VSOTelescope::VSOTelescope(const VSOTelescope& o):
-    fID(o.fID), /*fTelescopeHexID(o.fTelescopeHexID),*/
+    fID(o.fID),
     fPos(o.fPos), fDeltaY(o.fDeltaY), fAlphaX(o.fAlphaX), fAlphaY(o.fAlphaY),
     fElevation(o.fElevation), fAzimuth(o.fAzimuth), fTranslation(o.fTranslation),
     fCurvatureRadius(o.fCurvatureRadius), fAperture(o.fAperture),
@@ -144,9 +146,6 @@ VSOTelescope::~VSOTelescope()
 const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
 {
   fID                = o.fID;
-#if 0
-  fTelescopeHexID    = o.fTelescopeHexID;
-#endif
   fPos               = o.fPos;
   fDeltaY            = o.fDeltaY;
   fAlphaX            = o.fAlphaX;

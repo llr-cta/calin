@@ -44,10 +44,9 @@
 #include <string>
 #include <vector>
 
-#include <math/vs_vec3d.hpp>
-#include <math/vs_particle.hpp>
 #include <math/rng.hpp>
 
+#include <Eigen/Dense>
 #include <simulation/vs_optics.pb.h>
 #include <simulation/vso_telescope.hpp>
 
@@ -70,13 +69,13 @@ class VSOArray
   // Other stuff
   // ************************************************************************
   bool pointTelescopesAzEl(const double az_rad, const double el_rad);
-  bool pointTelescopes(const math::vs_physics::Vec3D& v);
+  bool pointTelescopes(const Eigen::Vector3d& v);
 
   // ************************************************************************
   // Accessors
   // ************************************************************************
   double latitude() const { return fLatitude; }
-  double longitude() const { return fLatitude; }
+  double longitude() const { return fLongitude; }
   double altitude() const { return fAltitude; }
 
   unsigned numTelescopes() const { return fTelescopes.size(); }
