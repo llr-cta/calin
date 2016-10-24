@@ -71,17 +71,6 @@ class VSOObscuration
 
   static VSOObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d);
-
-#if 0
-  virtual std::string dumpToString() const = 0;
-  static std::vector<VSOObscuration*>
-  createObsVecFromString(const std::string &str);
-  static std::string
-  dumpObsVecToString(const std::vector<VSOObscuration*>& vo);
-
-  static bool tokenize(std::string& str, const std::string& name,
-                       std::vector<std::string>& tokens);
-#endif
 };
 
 class VSODiskObscuration: public VSOObscuration
@@ -110,11 +99,6 @@ class VSODiskObscuration: public VSOObscuration
 
   static VSODiskObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSODiskObscurationData& d);
-
-#if 0
-  virtual std::string dumpToString() const;
-  static VSODiskObscuration* createFromString(std::string& str);
-#endif
 
   const Eigen::Vector3d& center_pos() const { return fX0; }
   const Eigen::Vector3d& normal() const { return fN; }
@@ -159,11 +143,6 @@ class VSOTubeObscuration: public VSOObscuration
 
   static VSOTubeObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d);
-
-#if 0
-  virtual std::string dumpToString() const;
-  static VSOTubeObscuration* createFromString(std::string& str);
-#endif
 
   const Eigen::Vector3d& end1_pos() const { return fX1; }
   const Eigen::Vector3d& end2_pos() const { return fX2; }

@@ -49,16 +49,18 @@ inline Eigen::Vector3d from_proto(const calin::ix::common_types::Vector3D& d) {
   return v;
 }
 
-calin::ix::common_types::Vector3D* dump_scaled_as_proto(const Eigen::Vector3d& v,
+calin::ix::common_types::Vector3D* dump_as_scaled_proto(const Eigen::Vector3d& v,
   double scale, calin::ix::common_types::Vector3D* d = nullptr);
 
 void set_from_scaled_proto(Eigen::Vector3d& v,
   const calin::ix::common_types::Vector3D& d, double scale);
 
-inline Eigen::Vector3d from_proto(const calin::ix::common_types::Vector3D& d, double scale) {
+inline Eigen::Vector3d from_scaled_proto(const calin::ix::common_types::Vector3D& d, double scale) {
   Eigen::Vector3d v;
   set_from_scaled_proto(v, d, scale);
   return v;
 }
+
+void scatter_direction(Eigen::Vector3d& v, double dispersion, math::rng::RNG& rng);
 
 } } } // namespace calin::math::vector3d_util

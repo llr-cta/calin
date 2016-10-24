@@ -131,7 +131,6 @@ class VSOTelescope
   //! Transform momentum-like vector from reflector to global
   void reflectorToFocalPlane_mom(Eigen::Vector3d& v) const;
 
-#if 0
   //! Transform particle global to reflector
   void globalToReflector(calin::math::ray::Ray& r) const;
   //! Transform particle reflector to global
@@ -140,7 +139,6 @@ class VSOTelescope
   void focalPlaneToReflector(calin::math::ray::Ray& r) const;
   //! Transform from reflector to focal plane
   void reflectorToFocalPlane(calin::math::ray::Ray& r) const;
-#endif
 
   // ************************************************************************
   // Dump and Reload
@@ -272,8 +270,10 @@ class VSOTelescope
   // Precalculated rotation vector -- not stored in DB
   // ************************************************************************
 
+  Eigen::Matrix3d fFPRotationMatrix;
   Eigen::Matrix3d fRotationVector;  //!<the pre-calculated rotation vector
 
+  void calculateFPRotationMatrix();
   void calculateRotationVector();
 };
 

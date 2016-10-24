@@ -32,10 +32,11 @@
   \note
 */
 
-#include <math/vs_particle.hpp>
+#include <math/vector3d_util.hpp>
+#include <math/ray.hpp>
 #include <simulation/vso_obscuration.hpp>
 
-using namespace calin::math::vs_physics;
+using namespace calin::math::ray;
 using namespace calin::simulation::vs_optics;
 
 VSOObscuration::~VSOObscuration()
@@ -55,98 +56,17 @@ create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
   }
 }
 
-#if 0
-std::vector<VSOObscuration*>
-VSOObscuration::createObsVecFromString(const std::string &str)
-{
-  std::vector<VSOObscuration*> v;
-  std::string s(str);
-  while(!s.empty())
-    {
-      size_t slen = s.length();
-
-      if(s[0] == ',' || s[0] == ' ')
-	{
-	  s = s.substr(1);
-	  continue;
-	}
-
-      VSOObscuration* obs = 0;
-
-      obs = VSODiskObscuration::createFromString(s);
-      if(obs)v.push_back(obs);
-      if(s.length() != slen)continue;
-
-      obs = VSOTubeObscuration::createFromString(s);
-      if(obs)v.push_back(obs);
-      if(s.length() != slen)continue;
-
-      std::string err("Unknown obscuration type: ");
-      err += s;
-      std::cerr << err << '\n';
-      throw(err);
-    }
-  return v;
-}
-
-std::string
-VSOObscuration::dumpObsVecToString(const std::vector<VSOObscuration*>& vo)
-{
-  std::string s;
-  for(unsigned i=0;i<vo.size();i++)
-    {
-      if(i)s += ",";
-      s += vo[i]->dumpToString();
-    }
-  return s;
-}
-
-bool VSOObscuration::tokenize(std::string& str, const std::string& name,
-			      std::vector<std::string>& tokens)
-{
-  if(str.substr(0,name.length()) != name)return false;
-  if(str[name.length()] != '(')return false;
-  size_t iend = str.find(')', name.length()+1);
-  if(iend == std::string::npos)
-    {
-      std::cerr << "Closing parenthesis not found: " << str << '\n';
-      str = std::string();
-      return false;
-    }
-  std::string data_str = str.substr(name.length()+1,iend-name.length()-1);
-  str = str.substr(iend+1);
-
-  tokens.clear();
-  while(!data_str.empty())
-    {
-      iend = data_str.find(',');
-      if(iend == std::string::npos)
-	{
-	  tokens.push_back(data_str);
-	  break;
-	}
-      else
-	{
-	  tokens.push_back(data_str.substr(0,iend));
-	  data_str = data_str.substr(iend+1);
-	}
-    }
-  return true;
-}
-#endif
-
 VSODiskObscuration::~VSODiskObscuration()
 {
   // nothing to see here
 }
 
-bool VSODiskObscuration::doesObscure(const Particle& p_in,
-				    Particle& p_out) const
+bool VSODiskObscuration::doesObscure(const Ray& r_in, Ray& r_out) const
 {
-  if(fICO && p_in.Velocity().y>0)return false;
-  p_out = p_in;
-  if(p_out.PropagateFreeToPlane(fN, -fD0, false)
-     && (p_out.Position().r-fX0).Norm()<=fR) return true;
+  if(fICO && r_in.direction().y()>0)return false;
+  r_out = r_in;
+  if(r_out.propagate_to_plane(fN, -fD0, false)
+     && (r_out.position()-fX0).norm()<=fR) return true;
    return false;
 }
 
@@ -155,8 +75,8 @@ dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
 {
   if(d == nullptr)d = new ix::simulation::vs_optics::VSOObscurationData;
   auto* dd = d->mutable_disk();
-  fX0.dump_as_proto(dd->mutable_center_pos());
-  fN.dump_as_proto(dd->mutable_normal());
+  calin::math::vector3d_util::dump_as_proto(fX0, dd->mutable_center_pos());
+  calin::math::vector3d_util::dump_as_proto(fN, dd->mutable_normal());
   dd->set_diameter(2.0*fR);
   dd->set_incoming_only(fICO);
   return d;
@@ -165,52 +85,11 @@ dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
 VSODiskObscuration* VSODiskObscuration::
 create_from_proto(const ix::simulation::vs_optics::VSODiskObscurationData& d)
 {
-  return new VSODiskObscuration(d.center_pos(), d.normal(),
-                                d.diameter()/2.0, d.incoming_only());
+  return new VSODiskObscuration(
+    calin::math::vector3d_util::from_proto(d.center_pos()),
+    calin::math::vector3d_util::from_proto(d.normal()),
+    d.diameter()/2.0, d.incoming_only());
 }
-
-#if 0
-VSODiskObscuration* VSODiskObscuration::
-createFromString(std::string& str)
-{
-  std::vector<std::string> tokens;
-  if(!tokenize(str,"DISK",tokens))return 0;
-  if(tokens.size() != 8)
-    {
-      std::cerr << "DISK: need exactly 8 arguments (" << tokens.size()
-		<< "found) - skipping\n";
-      return 0;
-    }
-
-  Vec3D X0;
-  Vec3D N;
-  double r;
-  bool ico;
-  VSDataConverter::fromString(X0.x, tokens[0]);
-  VSDataConverter::fromString(X0.y, tokens[1]);
-  VSDataConverter::fromString(X0.z, tokens[2]);
-  VSDataConverter::fromString(N.x,  tokens[3]);
-  VSDataConverter::fromString(N.y,  tokens[4]);
-  VSDataConverter::fromString(N.z,  tokens[5]);
-  VSDataConverter::fromString(r,    tokens[6]);
-  VSDataConverter::fromString(ico,  tokens[7]);
-  return new VSODiskObscuration(X0, N, r, ico);
-}
-
-std::string VSODiskObscuration::dumpToString() const
-{
-  std::string s = "DISK(";
-  s += VSDataConverter::toString(fX0.x); s += ",";
-  s += VSDataConverter::toString(fX0.y); s += ",";
-  s += VSDataConverter::toString(fX0.z); s += ",";
-  s += VSDataConverter::toString(fN.x); s += ",";
-  s += VSDataConverter::toString(fN.y); s += ",";
-  s += VSDataConverter::toString(fN.z); s += ",";
-  s += VSDataConverter::toString(fR); s += ",";
-  s += VSDataConverter::toString(fICO); s += ")";
-  return s;
-}
-#endif
 
 VSODiskObscuration* VSODiskObscuration::clone() const
 {
@@ -223,41 +102,24 @@ VSOTubeObscuration::~VSOTubeObscuration()
   // nothing to see here
 }
 
-bool VSOTubeObscuration::doesObscure(const Particle& p_in,
-					 Particle& p_out) const
+bool VSOTubeObscuration::doesObscure(const Ray& r_in, Ray& r_out) const
 {
-  if(fICO && p_in.Velocity().y>0)return false;
+  if(fICO && r_in.direction().y()>0)return false;
 
-  p_out = p_in;
-  Particle::IPOut ipo;
-  ipo = p_out.PropagateFreeToCylinder(fX1, fN, fR, Particle::IP_NEXT, false);
+  r_out = r_in;
+  Ray::IPOut ipo;
+  ipo = r_out.propagate_to_cylinder(fX1, fN, fR, Ray::IP_NEXT, false);
 
-#if 0
-  static unsigned iprint=0;
-  static std::ofstream stream;
-  if(iprint==0)stream.open("test.dat",std::ofstream::out|std::ofstream::true);
-  if(ipo!=Particle::IPO_NONE && iprint<1000)
-    {
-      if(iprint==0)stream.open("test.dat",std::ofstream::out|std::ofstream::trunc);
-      stream << ipo << ' ' << p_in.Position() << ' '
-	     << p_out.Position().r << ' ' << p_out.Position().r*fN << ' '
-	     << fD1 << ' ' << fD2 << '\n';
-      iprint++;
-      if(iprint==1000)stream.close();
-    }
-#endif
-
-  if(ipo != Particle::IPO_NONE)
-    {
-      double Dc = p_out.Position().r*fN;
-      if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
-      if(ipo == Particle::IPO_SECOND)return false;
-      ipo =
-	      p_out.PropagateFreeToCylinder(fX1, fN, fR, Particle::IP_LATEST, false);
-      if(ipo != Particle::IPO_SECOND)return false;
-      Dc = p_out.Position().r*fN;
-      if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
-    }
+  if(ipo != Ray::IPO_NONE)
+  {
+    double Dc = r_out.position().dot(fN);
+    if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
+    if(ipo == Ray::IPO_SECOND)return false;
+    ipo = r_out.propagate_to_cylinder(fX1, fN, fR, Ray::IP_LATEST, false);
+    if(ipo != Ray::IPO_SECOND)return false;
+    Dc = r_out.position().dot(fN);
+    if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
+  }
 
   return false;
 }
@@ -267,8 +129,8 @@ dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
 {
   if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
   auto* dd = d->mutable_tube();
-  fX1.dump_as_proto(dd->mutable_end1_pos());
-  fX2.dump_as_proto(dd->mutable_end2_pos());
+  calin::math::vector3d_util::dump_as_proto(fX1, dd->mutable_end1_pos());
+  calin::math::vector3d_util::dump_as_proto(fX2, dd->mutable_end2_pos());
   dd->set_diameter(2.0*fR);
   dd->set_incoming_only(fICO);
   return d;
@@ -277,93 +139,55 @@ dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
 VSOTubeObscuration* VSOTubeObscuration::
 create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d)
 {
-  return new VSOTubeObscuration(d.end1_pos(), d.end2_pos(),
-                                d.diameter()/2.0, d.incoming_only());
+  return new VSOTubeObscuration(
+    calin::math::vector3d_util::from_proto(d.end1_pos()),
+    calin::math::vector3d_util::from_proto(d.end2_pos()),
+    d.diameter()/2.0, d.incoming_only());
 }
-
-#if 0
-VSOTubeObscuration* VSOTubeObscuration::
-createFromString(std::string& str)
-{
-  std::vector<std::string> tokens;
-  if(!tokenize(str,"TUBE",tokens))return 0;
-  if(tokens.size() != 8)
-    {
-      std::cerr << "TUBE: need exactly 8 arguments (" << tokens.size()
-		<< "found)\n";
-      return 0;
-    }
-  Vec3D X0;
-  Vec3D X1;
-  double r;
-  bool ico;
-  VSDataConverter::fromString(X0.x, tokens[0]);
-  VSDataConverter::fromString(X0.y, tokens[1]);
-  VSDataConverter::fromString(X0.z, tokens[2]);
-  VSDataConverter::fromString(X1.x, tokens[3]);
-  VSDataConverter::fromString(X1.y, tokens[4]);
-  VSDataConverter::fromString(X1.z, tokens[5]);
-  VSDataConverter::fromString(r,    tokens[6]);
-  VSDataConverter::fromString(ico,  tokens[7]);
-  return new VSOTubeObscuration(X0, X1, r, ico);
-}
-
-std::string VSOTubeObscuration::dumpToString() const
-{
-  std::string s("TUBE(");
-  s += VSDataConverter::toString(fX1.x); s += ",";
-  s += VSDataConverter::toString(fX1.y); s += ",";
-  s += VSDataConverter::toString(fX1.z); s += ",";
-  s += VSDataConverter::toString(fX2.x); s += ",";
-  s += VSDataConverter::toString(fX2.y); s += ",";
-  s += VSDataConverter::toString(fX2.z); s += ",";
-  s += VSDataConverter::toString(fR); s += ",";
-  s += VSDataConverter::toString(fICO); s += ")";
-  return s;
-}
-#endif
 
 VSOTubeObscuration* VSOTubeObscuration::clone() const
 {
   return new VSOTubeObscuration(*this);
 }
 
-
 VSOAlignedBoxObscuration::~VSOAlignedBoxObscuration()
 {
   // nothing to see here
 }
 
-bool VSOAlignedBoxObscuration::doesObscure(
-  const math::vs_physics::Particle& p_in,
-  math::vs_physics::Particle& p_out) const
+bool VSOAlignedBoxObscuration::doesObscure(const Ray& r_in, Ray& r_out) const
 {
   // See: https://tavianator.com/fast-branchless-raybounding-box-intersections/
   // and: https://tavianator.com/fast-branchless-raybounding-box-intersections-part-2-nans/
 
-  if(incoming_only_ && p_in.Velocity().y>0)return false;
+  if(incoming_only_ && r_in.direction().y()>0)return false;
 
   // Normalized direction vector
-  Vec3D v_hat = p_in.Velocity() / p_in.Velocity().Norm();
+  const double vx = 1.0 / r_in.direction().x();
+  const double vy = 1.0 / r_in.direction().y();
+  const double vz = 1.0 / r_in.direction().z();
 
-  const double tx1 = (min_corner_.x - p_in.Position().r.x)/v_hat.x;
-  const double tx2 = (max_corner_.x - p_in.Position().r.x)/v_hat.x;
+  Eigen::Vector3d min_rel = min_corner_ - r_in.position();
+  Eigen::Vector3d max_rel = min_corner_ - r_in.position();
+
+  const double tx1 = min_rel.x() * vx;
+  const double tx2 = max_rel.x() * vx;
   double tmin = std::min(tx1, tx2);
   double tmax = std::max(tx1, tx2);
 
-  const double ty1 = (min_corner_.y - p_in.Position().r.y)/v_hat.y;
-  const double ty2 = (max_corner_.y - p_in.Position().r.y)/v_hat.y;
+  const double ty1 = min_rel.y() * vy;
+  const double ty2 = max_rel.y() * vy;
   tmin = std::max(tmin, std::min(std::min(ty1, ty2), tmax));
   tmax = std::min(tmax, std::max(std::max(ty1, ty2), tmin));
 
-  const double tz1 = (min_corner_.z - p_in.Position().r.z)/v_hat.z;
-  const double tz2 = (max_corner_.z - p_in.Position().r.z)/v_hat.z;
+  const double tz1 = min_rel.z() * vz;
+  const double tz2 = max_rel.z() * vz;
   tmin = std::max(tmin, std::min(std::min(tz1, tz2), tmax));
   tmax = std::min(tmax, std::max(std::max(tz1, tz2), tmin));
 
   if(tmax > std::max(tmin, 0.0)) {
-    p_out = p_in;
-    if(tmin > 0)p_out.PropagateFree(tmin);
+    r_out = r_in;
+    if(tmin > 0)r_out.propagate_dist(tmin);
     return true;
   }
 
@@ -381,8 +205,8 @@ VSOAlignedBoxObscuration::dump_as_proto(
 {
   if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
   auto* dd = d->mutable_aligned_box();
-  max_corner_.dump_as_proto(dd->mutable_max_corner());
-  min_corner_.dump_as_proto(dd->mutable_min_corner());
+  calin::math::vector3d_util::dump_as_proto(max_corner_, dd->mutable_max_corner());
+  calin::math::vector3d_util::dump_as_proto(min_corner_, dd->mutable_min_corner());
   dd->set_incoming_only(incoming_only_);
   return d;
 }
@@ -390,6 +214,8 @@ VSOAlignedBoxObscuration::dump_as_proto(
 VSOAlignedBoxObscuration* VSOAlignedBoxObscuration::create_from_proto(
   const ix::simulation::vs_optics::VSOAlignedBoxObscurationData& d)
 {
-  return new VSOAlignedBoxObscuration(d.max_corner(), d.min_corner(),
+  return new VSOAlignedBoxObscuration(
+    calin::math::vector3d_util::from_proto(d.max_corner()),
+    calin::math::vector3d_util::from_proto(d.min_corner()),
     d.incoming_only());
 }
