@@ -60,8 +60,12 @@ public:
   void derotate(const Eigen::Matrix3d& rot) {
     pos_ = rot.transpose() * pos_; dir_ = rot.transpose() * dir_; }
 
+  void reflect(const Eigen::Vector3d& surface_norm) {
+    dir_ -= surface_norm * (2.0*(dir_.dot(surface_norm)));
+  }
+
   //! Propagate free particle fixed distance
-  inline void propagate_dist(double dist, double n = 1.0) {
+  void propagate_dist(double dist, double n = 1.0) {
     pos_ += dir_ * dist;
     ct_  += dist * n;
   }
