@@ -168,7 +168,7 @@ bool VSOAlignedBoxObscuration::doesObscure(const Ray& r_in, Ray& r_out) const
   const double vz = 1.0 / r_in.direction().z();
 
   Eigen::Vector3d min_rel = min_corner_ - r_in.position();
-  Eigen::Vector3d max_rel = min_corner_ - r_in.position();
+  Eigen::Vector3d max_rel = max_corner_ - r_in.position();
 
   const double tx1 = min_rel.x() * vx;
   const double tx2 = max_rel.x() * vx;
