@@ -31,7 +31,9 @@
 
 namespace calin { namespace math { namespace ray {
 
+#ifndef SWIG_FILE_WITH_INIT
 using calin::math::constants::cgs_c;
+#endif
 
 class Ray
 {

@@ -18,8 +18,8 @@ set(CALIN_SOURCES atmosphere.cpp pmt.cpp
 	vso_pixel.cpp vso_mirror.cpp vso_obscuration.cpp vso_telescope.cpp
   vso_array.cpp vso_raytracer.cpp
 	air_cherenkov_tracker.cpp iact_array_tracker.cpp tracker.cpp
-  straight_track_generator.cpp
-#  quadrature_iact_array_integration.cpp
+  straight_track_generator.cpp quadrature_iact_array_integration.cpp
+ 	vso_quadrature_iact_array_integration.cpp
   detector_efficiency.cpp)
 
 if(GEANT4_FOUND)

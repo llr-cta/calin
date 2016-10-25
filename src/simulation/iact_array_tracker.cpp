@@ -22,8 +22,9 @@
 
 #include <limits>
 #include <cmath>
-#include <Eigen/Dense>
 
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <io/log.hpp>
 #include <simulation/iact_array_tracker.hpp>
 #include <math/special.hpp>
@@ -129,6 +130,9 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
       hit.v               = (hit.rx - hit.rxu*hit.u)*(1.0/hit.rxv);
     }
     hit.w                 = hit.u.cross(hit.v);
+
+    hit.rot              << hit.u, hit.v, hit.w;
+
 
     double rx2_minus_r2 = hit.rx2 - isphere.radius_sq;
 

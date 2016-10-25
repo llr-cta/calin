@@ -30,6 +30,7 @@
 #include "simulation/air_cherenkov_tracker.hpp"
 #include "simulation/iact_array_tracker.hpp"
 #include "simulation/quadrature_iact_array_integration.hpp"
+#include "simulation/vso_quadrature_iact_array_integration.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -51,3 +52,4 @@
 %include "simulation/air_cherenkov_tracker.hpp"
 %include "simulation/iact_array_tracker.hpp"
 %include "simulation/quadrature_iact_array_integration.hpp"
+%include "simulation/vso_quadrature_iact_array_integration.hpp"
