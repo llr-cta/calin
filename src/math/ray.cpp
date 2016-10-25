@@ -96,6 +96,7 @@ bool Ray::propagate_to_standard_sphere_2nd_interaction(double radius,
   bool time_reversal_ok, double n)
 {
   Eigen::Vector3d pos_rel(pos_.x(), pos_.y()-radius, pos_.z());
+  // double a = 1.0
   double b_2 = pos_rel.dot(dir_);
   double c = pos_rel.squaredNorm() - SQR(radius);
 
@@ -111,7 +112,7 @@ bool Ray::propagate_to_standard_sphere_2nd_interaction(double radius,
     time = c/q;
   }
 
-  if(time_reversal_ok or time>0) {
+  if(time_reversal_ok or time>=0) {
     propagate_dist(time, n);
     return true;
   }

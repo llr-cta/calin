@@ -48,7 +48,7 @@ VSOTelescope::VSOTelescope():
     fConcSurvProb(),
     fFPRotation(), fCameraIP(), fPixelParity(),
     fObscurations(),
-    fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), fRotationVector()
+    fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), fRotationMatrix()
 {
   calculateFPRotationMatrix();
   calculateRotationVector();
@@ -76,7 +76,7 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
     fConcSurvProb(CSP),
     fFPRotation(FPR), fCameraIP(CIP), fPixelParity(PP),
     fObscurations(OBSVEC),
-    fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), fRotationVector()
+    fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), fRotationMatrix()
 {
   calculateFPRotationMatrix();
   calculateRotationVector();
@@ -103,7 +103,7 @@ VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fPixelParity(o.fPixelParity),
     fObscurations(),
     fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(),
-    fRotationVector()
+    fRotationMatrix()
 {
   fMirrors.resize(o.fMirrors.size());
   fMirrorsByHexID.resize(o.fMirrorsByHexID.size());
@@ -260,22 +260,34 @@ bool VSOTelescope::pointTelescopeAzEl(const double az_rad, const double el_rad)
 
 void VSOTelescope::calculateFPRotationMatrix()
 {
-  fFPRotationMatrix = Eigen::AngleAxisd(fFPRotation.norm(),
-    fFPRotation.normalized()).toRotationMatrix();
+  double fp_rot_norm = fFPRotation.norm();
+  if(std::fabs(fp_rot_norm) > 0)
+  {
+    fHasFPRotation = false;
+    fFPRotationMatrix = Eigen::Matrix3d::Identity();
+    fFPRotationMatrixInv = Eigen::Matrix3d::Identity();
+  }
+  else
+  {
+    fHasFPRotation = false;
+    fFPRotationMatrix = Eigen::AngleAxisd(fp_rot_norm,
+      fFPRotation.normalized()).toRotationMatrix();
+    fFPRotationMatrixInv = fFPRotationMatrix.transpose();
+  }
 }
 
 void VSOTelescope::calculateRotationVector()
 {
   // Rotation vector maps from Reflector to Global
-  fRotationVector =
+  fRotationMatrix =
     Eigen::AngleAxisd(fAlphaY,     Eigen::Vector3d::UnitX()) *
     Eigen::AngleAxisd(fAlphaX,     Eigen::Vector3d::UnitY()) *
     Eigen::AngleAxisd(-fAzimuth,   Eigen::Vector3d::UnitZ()) *
     Eigen::AngleAxisd(fDeltaY,     Eigen::Vector3d::UnitY()) *
     Eigen::AngleAxisd(fElevation,  Eigen::Vector3d::UnitX());
-
+  fRotationMatrixInv = fRotationMatrix.transpose();
 #if 0
-  fRotationVector =
+  fRotationMatrix =
       Eigen::Vector3d(1,0,0)*fElevation &
       Eigen::Vector3d(0,1,0)*fDeltaY &
       Eigen::Vector3d(0,0,-1)*fAzimuth &
@@ -289,7 +301,7 @@ void VSOTelescope::globalToReflector_pos(Eigen::Vector3d& v) const
   // First: Translate from center of array to drive axes intersection
   v -= fPos;
   // Second: Rotate coordinate system to reflector orientation
-  v = fRotationVector.transpose() * v;
+  v = fRotationMatrixInv * v;
   // Third: Translate from intersection of drive axes to reflector
   v += fTranslation;
 }
@@ -297,7 +309,7 @@ void VSOTelescope::globalToReflector_pos(Eigen::Vector3d& v) const
 void VSOTelescope::globalToReflector_mom(Eigen::Vector3d& v) const
 {
   // Rotate coordinate system to reflector orientation
-  v = fRotationVector.transpose() * v;
+  v = fRotationMatrixInv * v;
 }
 
 void VSOTelescope::reflectorToGlobal_pos(Eigen::Vector3d& v) const
@@ -305,7 +317,7 @@ void VSOTelescope::reflectorToGlobal_pos(Eigen::Vector3d& v) const
   // First: Translate from reflector to intersection of drive axes
   v -= fTranslation;
   // Second: Rotate coordinate system to ground based
-  v = fRotationVector * v;
+  v = fRotationMatrix * v;
   // Third: Translate from drive axes intersection to center of array
   v += fPos;
 }
@@ -313,13 +325,13 @@ void VSOTelescope::reflectorToGlobal_pos(Eigen::Vector3d& v) const
 void VSOTelescope::reflectorToGlobal_mom(Eigen::Vector3d& v) const
 {
   // Rotate coordinate system to ground based
-  v = fRotationVector * v;
+  v = fRotationMatrix * v;
 }
 
 void VSOTelescope::focalPlaneToReflector_pos(Eigen::Vector3d& v) const
 {
   // First: Rotate coordinate system
-  v = fFPRotationMatrix * v;
+  if(fHasFPRotation) v = fFPRotationMatrix * v;
   // Second: Translate from center of Focal Plane
   v += fFPTranslation;
 }
@@ -327,7 +339,7 @@ void VSOTelescope::focalPlaneToReflector_pos(Eigen::Vector3d& v) const
 void VSOTelescope::focalPlaneToReflector_mom(Eigen::Vector3d& v) const
 {
   // First: Rotate coordinate system
-  v = fFPRotationMatrix * v;
+  if(fHasFPRotation) v = fFPRotationMatrix * v;
 }
 
 void VSOTelescope::reflectorToFocalPlane_pos(Eigen::Vector3d& v) const
@@ -335,13 +347,13 @@ void VSOTelescope::reflectorToFocalPlane_pos(Eigen::Vector3d& v) const
   // First: Translate to center of Focal Plane
   v -= fFPTranslation;
   // Second: Rotate coordinate system
-  v = fFPRotationMatrix.transpose() * v;
+  if(fHasFPRotation) v = fFPRotationMatrixInv * v;
 }
 
 void VSOTelescope::reflectorToFocalPlane_mom(Eigen::Vector3d& v) const
 {
   // Second: Rotate coordinate system
-  v = fFPRotationMatrix.transpose() * v;
+  if(fHasFPRotation) v = fFPRotationMatrixInv * v;
 }
 
 void VSOTelescope::globalToReflector(math::ray::Ray& r) const
@@ -349,7 +361,7 @@ void VSOTelescope::globalToReflector(math::ray::Ray& r) const
   // First: Translate from center of array to drive axes intersection
   r.translate_origin(fPos);
   // Second: Rotate coordinate system to reflector orientation
-  r.derotate(fRotationVector);
+  r.rotate(fRotationMatrixInv);
   // Third: Translate from intersection of drive axes to reflector
   r.untranslate_origin(fTranslation);
 }
@@ -359,7 +371,7 @@ void VSOTelescope::reflectorToGlobal(math::ray::Ray& r) const
   // First: Translate from reflector to intersection of drive axes
   r.translate_origin(fTranslation);
   // Second: Rotate coordinate system to ground based
-  r.rotate(fRotationVector);
+  r.rotate(fRotationMatrix);
   // Third: Translate from drive axes intersection to center of array
   r.untranslate_origin(fPos);
 }
@@ -367,7 +379,7 @@ void VSOTelescope::reflectorToGlobal(math::ray::Ray& r) const
 void VSOTelescope::focalPlaneToReflector(math::ray::Ray& r) const
 {
   // First: Rotate coordinate system
-  r.rotate(fFPRotationMatrix);
+  if(fHasFPRotation) r.rotate(fFPRotationMatrix);
   // Second: Translate from center of Focal Plane
   r.untranslate_origin(fFPTranslation);
 }
@@ -377,7 +389,7 @@ void VSOTelescope::reflectorToFocalPlane(math::ray::Ray& r) const
   // First: Translate to center of Focal Plane
   r.translate_origin(fFPTranslation);
   // Second: Rotate coordinate system
-  r.derotate(fFPRotationMatrix);
+  if(fHasFPRotation)r.rotate(fFPRotationMatrixInv);
 }
 
 // ****************************************************************************

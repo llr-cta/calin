@@ -190,7 +190,7 @@ class VSOTelescope
   double                 cosPixelRotation() const { return fCosPixelRotation; }
   double                 sinPixelRotation() const { return fSinPixelRotation; }
   double                 concentratorSurvivalProb() const { return fConcSurvProb; }
-  const Eigen::Vector3d& focalPlaneRotion() const { return fFPRotation; }
+  const Eigen::Vector3d& focalPlaneRotation() const { return fFPRotation; }
   double                 cameraIP() const { return fCameraIP; }
   bool                   pixelParity() const { return fPixelParity; }
 
@@ -270,8 +270,12 @@ class VSOTelescope
   // Precalculated rotation vector -- not stored in DB
   // ************************************************************************
 
+  bool fHasFPRotation = false;
   Eigen::Matrix3d fFPRotationMatrix;
-  Eigen::Matrix3d fRotationVector;  //!<the pre-calculated rotation vector
+  Eigen::Matrix3d fFPRotationMatrixInv;
+
+  Eigen::Matrix3d fRotationMatrix;  //!<the pre-calculated rotation vector
+  Eigen::Matrix3d fRotationMatrixInv;
 
   void calculateFPRotationMatrix();
   void calculateRotationVector();

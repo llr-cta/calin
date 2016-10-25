@@ -201,10 +201,8 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   }
 
   // Propagate to intersection with the reflector sphere
-  good = ray.propagate_to_sphere(
-    Eigen::Vector3d(0,info.scope->curvatureRadius(),0),
-	  info.scope->curvatureRadius(),
-    math::ray::Ray::IP_LATEST,
+  good = ray.propagate_to_standard_sphere_2nd_interaction(
+    info.scope->curvatureRadius(),
     false /* true */);
 
   if(!good)
@@ -411,8 +409,8 @@ bool VSORayTracer::findMirror(math::ray::Ray& ray, TraceInfo& info)
   // ****************** RAY STARTS IN REFLECTOR COORDINATES *******************
   // **************************************************************************
 
-  const static unsigned search_radius = 0;
-  const static unsigned nsearch = 3*search_radius*(search_radius+1)+1;
+  constexpr unsigned search_radius = 0;
+  constexpr unsigned nsearch = 3*search_radius*(search_radius+1)+1;
 
   math::ray::Ray ray_in(ray);
 
@@ -466,29 +464,25 @@ bool VSORayTracer::findMirror(math::ray::Ray& ray, TraceInfo& info)
       continue;
     }
 
+    // Convert to mirror coordinates
+    math::ray::Ray test_ray(ray_in);
+    test_mirror->reflectorToMirror(test_ray);
+
+    // **********************************************************************
+    // ****************** RAY IS NOW IN MIRROR COORDINATES ******************
+    // **********************************************************************
+
     // Propagate to intersection with the mirror sphere
     double mirror_radius = test_mirror->focalLength()*2.0;
-    Eigen::Vector3d mirror_center =
-	    test_mirror->pos() + test_mirror->align()*mirror_radius;
 
-    math::ray::Ray test_ray(ray_in);
     bool good;
-    good = test_ray.propagate_to_sphere(mirror_center, mirror_radius,
-                                math::ray::Ray::IP_LATEST, true);
-    if(isearch==0)ray = test_ray;
+    good = test_ray.
+      propagate_to_standard_sphere_2nd_interaction(mirror_radius, true);
     if(!good)
     {
       if(isearch==0)info.status = TS_MISSED_MIRROR_SPHERE;
       continue;
     }
-
-    // Convert to mirror coordinates
-    test_mirror->reflectorToMirror(test_ray);
-    if(isearch==0)ray = test_ray;
-
-    // **********************************************************************
-    // ****************** RAY IS NOW IN MIRROR COORDINATES ******************
-    // **********************************************************************
 
     double test_mirror_x = test_ray.position().x();
     double test_mirror_y = test_ray.position().y();
@@ -503,7 +497,7 @@ bool VSORayTracer::findMirror(math::ray::Ray& ray, TraceInfo& info)
 
     // Check if ray impacted beyond the edge of this mirror
     static const double cos60 = 1.0/2.0;
-    static const double sin60 = sqrt(3.0)/2.0;
+    static const double sin60 = std::sqrt(3.0)/2.0;
     double edge = info.scope->facetSize()/2.0;
     double x_0 = test_mirror_x;
     double x_pos60 = cos60*test_mirror_x - sin60*test_mirror_z;
@@ -530,6 +524,8 @@ bool VSORayTracer::findMirror(math::ray::Ray& ray, TraceInfo& info)
       info.mirror_z     = test_mirror_z;
       ray               = test_ray;
     }
+
+    if(isearch == 0)ray = test_ray;
     impinging_ray_found = true;
   }
 
