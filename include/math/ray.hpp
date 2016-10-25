@@ -31,7 +31,7 @@
 
 namespace calin { namespace math { namespace ray {
 
-#ifndef SWIG_FILE_WITH_INIT
+#ifndef SWIG
 using calin::math::constants::cgs_c;
 #endif
 
@@ -98,6 +98,9 @@ public:
                            IP_EARLIEST, IP_LATEST };
 
   enum IPOut { IPO_NONE, IPO_FIRST, IPO_SECOND };
+
+  bool propagate_to_standard_sphere_2nd_interaction(double radius,
+    bool time_reversal_ok = true, double n = 1.0);
 
   IPOut propagate_to_sphere(const Eigen::Vector3d& center, double radius,
     IntersectionPoint ip = IP_CLOSEST, bool time_reversal_ok = true,

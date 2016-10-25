@@ -24,8 +24,10 @@
 
 #include <math/ray.hpp>
 #include <math/special.hpp>
+#include <io/log.hpp>
 
 using namespace calin::math::ray;
+using namespace calin::io::log;
 using calin::math::special::SQR;
 
 //! Propagates free particle to the given plane
@@ -88,6 +90,33 @@ bool Ray::propagate_to_line_closest_approach(const Eigen::Vector3d& normal,
 
   propagate_dist(propagation_dist, n);
   return true;
+}
+
+bool Ray::propagate_to_standard_sphere_2nd_interaction(double radius,
+  bool time_reversal_ok, double n)
+{
+  Eigen::Vector3d pos_rel(pos_.x(), pos_.y()-radius, pos_.z());
+  double b_2 = pos_rel.dot(dir_);
+  double c = pos_rel.squaredNorm() - SQR(radius);
+
+  double disc_4 = SQR(b_2)-c;
+  if(disc_4 < 0)return false;
+
+  double time;
+  if(b_2<0.0) {
+    const double q = -(b_2-std::sqrt(disc_4));
+    time = q;
+  } else {
+    const double q = -(b_2+std::sqrt(disc_4));
+    time = c/q;
+  }
+
+  if(time_reversal_ok or time>0) {
+    propagate_dist(time, n);
+    return true;
+  }
+
+  return false;
 }
 
 Ray::IPOut Ray::propagate_to_sphere(const Eigen::Vector3d& center, double radius,
