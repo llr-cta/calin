@@ -28,7 +28,7 @@
 #include <simulation/quadrature_iact_array_integration.hpp>
 #include <simulation/vso_quadrature_iact_array_integration.hpp>
 #include <math/special.hpp>
-#include <math/RAY.hpp>
+#include <math/ray.hpp>
 #include <io/log.hpp>
 
 using namespace calin::simulation::quadrature_iact_array_integration;
