@@ -68,7 +68,7 @@ public:
   void derotate(const Eigen::Matrix3d& rot) {
     pos_ = rot.transpose() * pos_; dir_ = rot.transpose() * dir_; }
 
-  void reflect(const Eigen::Vector3d& surface_norm) {
+  void reflect_from_surface(const Eigen::Vector3d& surface_norm) {
     dir_ -= surface_norm * (2.0*(dir_.dot(surface_norm)));
   }
 

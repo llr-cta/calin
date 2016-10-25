@@ -14,7 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_SWIG_FILES function.i pdf_1d.i histogram.i optimizer.i
-	hessian.i special.i hex_array.i rng.i ray.i # vs_physics.i
+	hessian.i special.i hex_array.i rng.i ray.i vector3d_util.i # vs_physics.i
  	interpolation_1d.i)
 set(CALIN_SWIG_TARGET math)
 

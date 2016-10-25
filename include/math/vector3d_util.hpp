@@ -31,11 +31,18 @@
 
 namespace calin { namespace math { namespace vector3d_util {
 
-inline void reflect_from_surface(Eigen::Vector3d& v, const Eigen::Vector3d& surface_norm)
+inline Eigen::Vector3d rotate_angle_axis(const Eigen::Vector3d& v,
+  double angle, const Eigen::Vector3d& axis)
+{
+  return Eigen::AngleAxisd(angle, axis) * v;
+}
+
+inline Eigen::Vector3d reflect_from_surface(const Eigen::Vector3d& v,
+    const Eigen::Vector3d& surface_norm)
 {
   assert(fabs(surface_norm.norm() - 1.0) < 1e-6);
   const double mag = 2.0*v.dot(surface_norm);
-  v -= surface_norm * mag;
+  return v - surface_norm * mag;
 }
 
 calin::ix::common_types::Vector3D* dump_as_proto(const Eigen::Vector3d& v,

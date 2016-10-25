@@ -276,7 +276,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
     info.mirror_normal_dispersion,*fRNG);
 
   // Reflect ray
-  ray.reflect(info.mirror_scattered);
+  ray.reflect_from_surface(info.mirror_scattered);
 
   // Back to reflector coordinates
   info.mirror->mirrorToReflector(ray);
