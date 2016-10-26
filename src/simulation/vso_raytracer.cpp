@@ -315,8 +315,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   if(!good)
   {
     info.status = TS_TRAVELLING_AWAY_FROM_FOCAL_PLANE;
-    info.scope->focalPlaneToReflector(ray);
-    info.scope->reflectorToGlobal(ray);
+    info.scope->focalPlaneToGlobal(ray);
     return 0;
   }
 
@@ -348,8 +347,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   if(info.pixel==0)
   {
     info.status = TS_NO_PIXEL;
-    info.scope->focalPlaneToReflector(ray);
-    info.scope->reflectorToGlobal(ray);
+    info.scope->focalPlaneToGlobal(ray);
     return 0;
   }
 
@@ -364,25 +362,13 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
       fRNG->uniform() > info.scope->concentratorSurvivalProb())
     {
       info.status = TS_ABSORBED_AT_CONCENTRATOR;
-      info.scope->focalPlaneToReflector(ray);
-      info.scope->reflectorToGlobal(ray);
+      info.scope->focalPlaneToGlobal(ray);
       return 0;
     }
   }
 
-  // Translate to reflector coordinates
-  info.scope->focalPlaneToReflector(ray);
-
-  // **************************************************************************
-  // ****************** RAY IS NOW IN REFLECTOR COORDINATES *******************
-  // **************************************************************************
-
-  info.pixel_dist =
-    Eigen::Vector3d(ray.position() - info.pixel->pos() -
-                              info.scope->focalPlanePosition()).norm();
-
-  // Transform back to global
-  info.scope->reflectorToGlobal(ray);
+  // Translate to global coordinates
+  info.scope->focalPlaneToGlobal(ray);
 
   // **************************************************************************
   // ******************** RAY IS NOW IN GLOBAL COORDINATES ********************
@@ -495,15 +481,17 @@ bool VSORayTracer::findMirror(math::ray::Ray& ray, TraceInfo& info)
     }
 
     // Check if ray impacted beyond the edge of this mirror
-    static const double cos60 = 1.0/2.0;
-    static const double sin60 = std::sqrt(3.0)/2.0;
-    double edge = info.scope->facetSize()/2.0;
-    double x_0 = test_mirror_x;
-    double x_pos60 = cos60*test_mirror_x - sin60*test_mirror_z;
-    double x_neg60 = cos60*test_mirror_x + sin60*test_mirror_z;
+    constexpr double cos60 = 0.5;
+    constexpr double sin60 = 0.5*CALIN_HEX_ARRAY_SQRT3;
+    const double edge = 0.5*info.scope->facetSize();
 
-    if((x_0>edge)||(x_0<-edge)||(x_pos60>edge)||(x_pos60<-edge)||
-       (x_neg60>edge)||(x_neg60<-edge))
+    const double x_pos60 = std::fabs(cos60*test_mirror_x - sin60*test_mirror_z);
+    const double x_neg60 = std::fabs(cos60*test_mirror_x + sin60*test_mirror_z);
+
+    double xmax = std::max(x_neg60, x_pos60);
+    xmax = std::max(xmax, std::fabs(test_mirror_x));
+
+    if(xmax > edge)
     {
       if(isearch==0)info.status = TS_MISSED_MIRROR_EDGE;
       continue;
@@ -631,10 +619,10 @@ bool VSORayTracer::testBeam(math::ray::Ray& photon,
     Eigen::Vector3d
         beam_dir(-sin(theta)*sin(phi) ,-cos(theta), -sin(theta)*cos(phi));
     Eigen::Vector3d beam_cen(0, 0, 0);
-    scope->reflectorToGlobal_mom(beam_dir);
-    scope->reflectorToGlobal_pos(beam_cen);
-    return laserBeam(photon, beam_cen, beam_dir, -
-                     2.0*scope->focalPlanePosition().y(),
+    math::ray::Ray ray(beam_cen, beam_dir);
+    scope->reflectorToGlobal(ray);
+    return laserBeam(photon, ray.position(), ray.direction(),
+                     -2.0*scope->focalPlanePosition().y(),
                      0.5*scope->reflectorIP(), energy_ev);
   }
   else
@@ -644,9 +632,9 @@ bool VSORayTracer::testBeam(math::ray::Ray& photon,
         beam_cen(Utantheta*sin(phi), U, Utantheta*cos(phi));
     double dist = beam_cen.norm();
     Eigen::Vector3d beam_dir(beam_cen*(-1.0/dist));
-    scope->reflectorToGlobal_mom(beam_dir);
-    scope->reflectorToGlobal_pos(beam_cen);
-    return fanBeam(photon, beam_cen, beam_dir,
+    math::ray::Ray ray(beam_cen, beam_dir);
+    scope->reflectorToGlobal(ray);
+    return fanBeam(photon, ray.position(), ray.direction(),
                    asin(0.5*scope->reflectorIP()/dist), energy_ev);
   }
 }

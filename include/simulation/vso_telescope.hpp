@@ -113,32 +113,16 @@ class VSOTelescope
   bool pointTelescope(const Eigen::Vector3d& v);
   bool pointTelescopeAzEl(const double az_rad, const double el_rad);
 
-  //! Transform position-like vector from global to reflector
-  void globalToReflector_pos(Eigen::Vector3d& v) const;
-  //! Transform momentum-like vector from global to reflector
-  void globalToReflector_mom(Eigen::Vector3d& v) const;
-  //! Transform position-like vector from reflector to global
-  void reflectorToGlobal_pos(Eigen::Vector3d& v) const;
-  //! Transform momentum-like vector from reflector to global
-  void reflectorToGlobal_mom(Eigen::Vector3d& v) const;
-
-  //! Transform position-like vector from global to reflector
-  void focalPlaneToReflector_pos(Eigen::Vector3d& v) const;
-  //! Transform momentum-like vector from global to reflector
-  void focalPlaneToReflector_mom(Eigen::Vector3d& v) const;
-  //! Transform position-like vector from reflector to global
-  void reflectorToFocalPlane_pos(Eigen::Vector3d& v) const;
-  //! Transform momentum-like vector from reflector to global
-  void reflectorToFocalPlane_mom(Eigen::Vector3d& v) const;
-
   //! Transform particle global to reflector
-  void globalToReflector(calin::math::ray::Ray& r) const;
+  inline void globalToReflector(calin::math::ray::Ray& r) const;
   //! Transform particle reflector to global
-  void reflectorToGlobal(calin::math::ray::Ray& r) const;
+  inline void reflectorToGlobal(calin::math::ray::Ray& r) const;
   //! Transform from focal plane to reflector
-  void focalPlaneToReflector(calin::math::ray::Ray& r) const;
+  inline void focalPlaneToReflector(calin::math::ray::Ray& r) const;
   //! Transform from reflector to focal plane
-  void reflectorToFocalPlane(calin::math::ray::Ray& r) const;
+  inline void reflectorToFocalPlane(calin::math::ray::Ray& r) const;
+  //! Transform directly from focal plane to global
+  inline void focalPlaneToGlobal(calin::math::ray::Ray& r) const;
 
   // ************************************************************************
   // Dump and Reload
@@ -271,11 +255,15 @@ class VSOTelescope
   // ************************************************************************
 
   bool fHasFPRotation = false;
-  Eigen::Matrix3d fFPRotationMatrix;
-  Eigen::Matrix3d fFPRotationMatrixInv;
+  Eigen::Matrix3d rot_camera_to_reflector_;
+  Eigen::Matrix3d rot_reflector_to_camera_;
 
-  Eigen::Matrix3d fRotationMatrix;  //!<the pre-calculated rotation vector
-  Eigen::Matrix3d fRotationMatrixInv;
+  Eigen::Matrix3d rot_reflector_to_global_;  //!<the pre-calculated rotation vector
+  Eigen::Matrix3d rot_global_to_reflector_;
+  Eigen::Vector3d off_global_to_reflector_;
+
+  Eigen::Matrix3d rot_camera_to_global_;
+  Eigen::Vector3d off_global_to_camera_;
 
   void calculateFPRotationMatrix();
   void calculateRotationVector();
@@ -309,6 +297,45 @@ inline const VSOPixel* VSOTelescope::pixelByHexID(unsigned hexID) const
 {
   if(hexID>=fPixelsByHexID.size())return 0;
   else return fPixelsByHexID[hexID];
+}
+
+inline void VSOTelescope::globalToReflector(calin::math::ray::Ray& r) const
+{
+  // First: Translate from global directly to reflector
+  r.translate_origin(off_global_to_reflector_);
+  // Second: Rotate coordinate system to reflector orientation
+  r.rotate(rot_global_to_reflector_);
+}
+
+inline void VSOTelescope::reflectorToGlobal(calin::math::ray::Ray& r) const
+{
+  // First: Rotate coordinate system to ground based
+  r.rotate(rot_reflector_to_global_);
+  // Second: Translate from drive axes intersection to center of array
+  r.untranslate_origin(off_global_to_reflector_);
+}
+
+inline void VSOTelescope::focalPlaneToReflector(calin::math::ray::Ray& r) const
+{
+  // First: Rotate coordinate system
+  if(fHasFPRotation) r.rotate(rot_camera_to_reflector_);
+  // Second: Translate from center of Focal Plane
+  r.untranslate_origin(fFPTranslation);
+}
+
+inline void VSOTelescope::reflectorToFocalPlane(calin::math::ray::Ray& r) const
+{
+  // First: Translate to center of Focal Plane
+  r.translate_origin(fFPTranslation);
+  // Second: Rotate coordinate system
+  if(fHasFPRotation)r.rotate(rot_reflector_to_camera_);
+}
+
+//! Transform directly from focal plane to global
+inline void VSOTelescope::focalPlaneToGlobal(calin::math::ray::Ray& r) const
+{
+  r.rotate(rot_camera_to_global_);
+  r.untranslate_origin(off_global_to_camera_);
 }
 
 } } } // namespace calin::simulation::vs_optics
