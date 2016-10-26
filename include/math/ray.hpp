@@ -99,8 +99,20 @@ public:
 
   enum IPOut { IPO_NONE, IPO_FIRST, IPO_SECOND };
 
+  bool propagate_to_standard_sphere_2nd_interaction_fwd_bwd(double radius,
+    double n = 1.0);
+
+  bool propagate_to_standard_sphere_2nd_interaction_fwd_only(double radius,
+    double n = 1.0);
+
   bool propagate_to_standard_sphere_2nd_interaction(double radius,
-    bool time_reversal_ok = true, double n = 1.0);
+    bool time_reversal_ok = true, double n = 1.0)
+  {
+    if(time_reversal_ok)
+      return propagate_to_standard_sphere_2nd_interaction_fwd_bwd(radius, n);
+    else
+      return propagate_to_standard_sphere_2nd_interaction_fwd_only(radius, n);
+  }
 
   IPOut propagate_to_sphere(const Eigen::Vector3d& center, double radius,
     IntersectionPoint ip = IP_CLOSEST, bool time_reversal_ok = true,

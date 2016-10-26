@@ -92,17 +92,21 @@ bool Ray::propagate_to_line_closest_approach(const Eigen::Vector3d& normal,
   return true;
 }
 
-bool Ray::propagate_to_standard_sphere_2nd_interaction(double radius,
-  bool time_reversal_ok, double n)
+bool Ray::propagate_to_standard_sphere_2nd_interaction_fwd_only(double radius,
+  double n)
 {
   Eigen::Vector3d pos_rel(pos_.x(), pos_.y()-radius, pos_.z());
   // double a = 1.0
-  double b_2 = pos_rel.dot(dir_);
-  double c = pos_rel.squaredNorm() - SQR(radius);
+  const double b_2 = pos_rel.dot(dir_);
+  const double c = pos_rel.squaredNorm() - SQR(radius);
 
-  double disc_4 = SQR(b_2)-c;
+  const double disc_4 = SQR(b_2)-c;
   if(disc_4 < 0)return false;
 
+#if 0
+  // This is the "correct" way to solve the roots, as described by NR etc.
+  // But the branch is slow, so it's faster to simply use the conventional
+  // formula and accept that there may be some inaccuacy in the solution
   double time;
   if(b_2<0.0) {
     const double q = -(b_2-std::sqrt(disc_4));
@@ -111,13 +115,31 @@ bool Ray::propagate_to_standard_sphere_2nd_interaction(double radius,
     const double q = -(b_2+std::sqrt(disc_4));
     time = c/q;
   }
+#else
+  const double time = std::sqrt(disc_4) - b_2;
+#endif
 
-  if(time_reversal_ok or time>=0) {
+  if(time>0) {
     propagate_dist(time, n);
     return true;
   }
 
   return false;
+}
+
+bool Ray::propagate_to_standard_sphere_2nd_interaction_fwd_bwd(double radius,
+  double n)
+{
+  Eigen::Vector3d pos_rel(pos_.x(), pos_.y()-radius, pos_.z());
+  const double b_2 = pos_rel.dot(dir_);
+  const double c = pos_rel.squaredNorm() - SQR(radius);
+
+  const double disc_4 = SQR(b_2)-c;
+  if(disc_4 < 0)return false;
+
+  const double time = std::sqrt(disc_4) - b_2;
+  propagate_dist(time, n);
+  return true;
 }
 
 Ray::IPOut Ray::propagate_to_sphere(const Eigen::Vector3d& center, double radius,

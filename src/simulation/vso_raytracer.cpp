@@ -201,9 +201,8 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   }
 
   // Propagate to intersection with the reflector sphere
-  good = ray.propagate_to_standard_sphere_2nd_interaction(
-    info.scope->curvatureRadius(),
-    false /* true */);
+  good = ray.propagate_to_standard_sphere_2nd_interaction_fwd_only(
+    info.scope->curvatureRadius());
 
   if(!good)
   {
@@ -477,7 +476,7 @@ bool VSORayTracer::findMirror(math::ray::Ray& ray, TraceInfo& info)
 
     bool good;
     good = test_ray.
-      propagate_to_standard_sphere_2nd_interaction(mirror_radius, true);
+      propagate_to_standard_sphere_2nd_interaction_fwd_bwd(mirror_radius);
     if(!good)
     {
       if(isearch==0)info.status = TS_MISSED_MIRROR_SPHERE;
