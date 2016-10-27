@@ -41,7 +41,7 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%import "math/vs_physics.i"
+%import "math/ray.i"
 %import "math/rng.i"
 
 %import "simulation/vs_optics.pb.i"

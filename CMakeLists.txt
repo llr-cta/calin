@@ -27,7 +27,7 @@ cmake_policy(SET CMP0060 NEW)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
 
 include_directories(include ${CMAKE_BINARY_DIR}/include)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -march=native -std=c++11 -Wall")
 
 if(NOT CALIN_PYTHON_BASE_DIR)
 	set(CALIN_PYTHON_BASE_DIR "python")

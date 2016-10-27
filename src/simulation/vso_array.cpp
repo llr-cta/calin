@@ -41,11 +41,11 @@
 #include <set>
 
 #include <math/hex_array.hpp>
+#include <math/vector3d_util.hpp>
 #include <simulation/vso_array.hpp>
 
 using namespace calin::simulation::vs_optics;
 using namespace calin::ix::simulation::vs_optics;
-using namespace calin::math::vs_physics;
 
 VSOArray::VSOArray():
     fLatitude(), fLongitude(), fAltitude(), /* fSpacing(), fArrayParity(), */
@@ -64,9 +64,9 @@ VSOArray::~VSOArray()
 // General functions
 // ****************************************************************************
 
-bool VSOArray::pointTelescopes(const Vec3D& v)
+bool VSOArray::pointTelescopes(const Eigen::Vector3d& v)
 {
-  if(v.Norm2() == 0 )
+  if(v.squaredNorm() == 0)
     return false;
 
   bool good = true;
@@ -99,7 +99,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
   fLongitude   = param.array_origin().longitude()/180.0*M_PI;
   fAltitude    = param.array_origin().elevation();
 
-  std::vector<Vec3D> scope_pos;
+  std::vector<Eigen::Vector3d> scope_pos;
 
   if(param.array_layout_case() ==
      IsotropicDCArrayParameters::kHexArrayLayout)
@@ -117,14 +117,14 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
     for(unsigned hexid=0; hexid<num_telescopes; hexid++)
       if(scopes_missing.find(hexid) == scopes_missing.end())
       {
-        Vec3D pos;
-        math::hex_array::hexid_to_xy(hexid, pos.x, pos.y);
-        if(array_parity)pos.x = -pos.x;
-        pos.x  = pos.x * spacing +
-                 rng.normal() * layout.scope_position_dispersion_xy();
-        pos.y  = pos.y * spacing +
-                 rng.normal() * layout.scope_position_dispersion_xy();
-        pos.z += rng.normal() * layout.scope_position_dispersion_z();
+        Eigen::Vector3d pos;
+        math::hex_array::hexid_to_xy(hexid, pos.x(), pos.y());
+        if(array_parity)pos.x() = -pos.x();
+        pos.x()  = pos.x() * spacing +
+                   rng.normal() * layout.scope_position_dispersion_xy();
+        pos.y()  = pos.y() * spacing +
+                   rng.normal() * layout.scope_position_dispersion_xy();
+        pos.z() += rng.normal() * layout.scope_position_dispersion_z();
         scope_pos.push_back(pos);
       }
   }
@@ -132,7 +132,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
           IsotropicDCArrayParameters::kPrescribedArrayLayout)
   {
     for(auto pos : param.prescribed_array_layout().scope_positions())
-      scope_pos.push_back(pos);
+      scope_pos.emplace_back(calin::math::vector3d_util::from_proto(pos));
   }
   else
   {
@@ -151,16 +151,17 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
   }
 
   // Camera
-  Vec3D camera_fp_trans(param.focal_plane().translation());
+  Eigen::Vector3d camera_fp_trans(
+    calin::math::vector3d_util::from_proto(param.focal_plane().translation()));
 
   double FoV =
       2.0*atan(param.focal_plane().camera_diameter()/
-               (2.0*camera_fp_trans.Norm()))*180.0/M_PI;
+               (2.0*camera_fp_trans.norm()))*180.0/M_PI;
 
   for(unsigned i=0; i<scope_pos.size(); i++)
     {
       // Position
-      Vec3D pos(scope_pos[i]);
+      Eigen::Vector3d pos(scope_pos[i]);
 
       std::vector<VSOObscuration*> obsvec;
       for(const auto& obs : param.obscurations())
@@ -173,14 +174,14 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
              param.reflector_frame().alpha_y()*M_PI/180.0,
              param.reflector_frame().altaz().altitude()*M_PI/180.0,
              param.reflector_frame().altaz().azimuth()*M_PI/180.0,
-      			 param.reflector_frame().translation(),
+      			 calin::math::vector3d_util::from_proto(param.reflector_frame().translation()),
       			 param.reflector().curvature_radius(),
              param.reflector().aperture(),
              param.reflector().facet_spacing(),
              param.reflector().facet_size(),
              param.reflector_frame().optic_axis_rotation()*M_PI/180.0,
              num_hex_mirror_rings,
-             0.0, /*param.reflector().reflector_ip(),*/
+             0.0, Eigen::Vector3d::Zero(), /*param.reflector().reflector_ip(),*/
              param.reflector().facet_labeling_parity(),
 	           camera_fp_trans,
              param.focal_plane().camera_diameter(),
@@ -189,7 +190,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
              param.pixel().spacing(),
              param.pixel().grid_rotation()*M_PI/180.0,
              param.pixel().cone_survival_prob(),
-             Vec3D(param.focal_plane().rotation(), M_PI/180.0),
+             calin::math::vector3d_util::from_scaled_proto(param.focal_plane().rotation(), M_PI/180.0),
              0.0,
              param.pixel().pixel_labeling_parity(),
 	           obsvec
@@ -226,166 +227,3 @@ create_from_proto(const ix::simulation::vs_optics::VSOArrayData& d)
     array->fTelescopes.push_back(VSOTelescope::create_from_proto(scope));
   return array;
 }
-
-#if 0
-void VSOArray::dumpShort(const std::string& filename) const
-{
-  std::ofstream stream(filename.c_str());
-  if(stream.good())dumpShort(stream);
-}
-
-void VSOArray::dumpShort(std::ostream& stream) const
-{
-  stream
-    << "ARRAY "
-    << VSDataConverter::toString(fTelescopes.size()) << ' '
-    << VSDataConverter::toString(fSpacing) << ' '
-    << VSDataConverter::toString(fLatitude) << ' '
-    << VSDataConverter::toString(fLongitude) << ' '
-    << VSDataConverter::toString(fAltitude) << ' '
-    << VSDataConverter::toString(fArrayParity) << std::endl;
-
-  for(std::vector<VSOTelescope*> ::const_iterator i = fTelescopes.begin();
-      i!=fTelescopes.end(); i++)
-    (*i)->dumpShort(stream);
-}
-
-void VSOArray::dump(std::ostream& stream, unsigned l) const
-{
-  stream << FDAV("Num telescopes", fTelescopes.size(), "", 30, l) << std::endl
-	 << FDAV("Telescope spacing", fSpacing, "cm", 30, l) << std::endl
-	 << FDAV("Latitude", fLatitude, "rad", 30, l) << std::endl
-	 << FDAV("Longitude", fLongitude, "rad", 30, l) << std::endl
-	 << FDAV("Altitude", fAltitude, "cm", 30, l) << std::endl
-	 << FDAV("Array Parity", fArrayParity, "", 30, l) << std::endl;
-
-  for(std::vector<VSOTelescope*> ::const_iterator i = fTelescopes.begin();
-      i!=fTelescopes.end(); i++)
-    {
-      stream << std::endl;
-      (*i)->dump(stream,l+1);
-    }
-}
-
-bool VSOArray::readFromShortDump(const std::string& filename)
-{
-  std::ifstream stream(filename.c_str());
-  if(stream.good())return readFromShortDump(stream);
-  else return false;
-}
-
-bool VSOArray::readFromShortDump(std::istream& stream)
-{
-  std::string line;
-  std::getline(stream,line);
-  if(line.empty())return false;
-
-  std::istringstream linestream(line);
-
-  std::string keyword;
-  linestream >> keyword;
-  if(keyword!=std::string("ARRAY"))return false;
-
-  unsigned telescopes_size;
-
-  linestream
-    >> telescopes_size
-    >> fSpacing
-    >> fLatitude
-    >> fLongitude
-    >> fAltitude
-    >> fArrayParity;
-
-  for(unsigned i=0; i<telescopes_size; i++)
-    {
-      VSOTelescope* telescope = VSOTelescope::createFromShortDump(stream);
-      if(telescope==0)
-	{
-	  for(std::vector<VSOTelescope*>::iterator itel = fTelescopes.begin();
-	      itel!=fTelescopes.end(); itel++)delete *itel;
-	  delete telescope;
-	  return false;
-	}
-
-      if(telescope->id() >= fTelescopes.size())
-	fTelescopes.resize(telescope->id()+1);
-      fTelescopes[telescope->id()]=telescope;
-
-      if(telescope->hexID() > fTelescopesByHexID.size())
-	fTelescopesByHexID.resize(telescope->hexID());
-      fTelescopesByHexID[telescope->hexID()-1]=telescope;
-    }
-
-  return true;
-}
-#endif
-
-#ifdef TEST_MAIN
-
-#include <fstream>
-
-int main(int argc, char** argv)
-{
-  RandomNumbers rng("random.seeds");
-
-  ArrayParameters param;
-  param.readFromArrayINIFile("array.ini");
-  param.writeToArrayINIFile("array1.ini");
-
-  VSOArray array;
-  array.generateFromArrayParameters(param, rng);
-
-  std::ofstream f1("array1.txt");
-  array.dump(f1);
-
-  Database db("array",true,false,false);
-  ArrayParameters::createSimulationParametersTable(&db);
-  VSOArray::createArrayTable(&db);
-  VSOTelescope::createTelescopeTable(&db);
-  VSOMirror::createMirrorTable(&db);
-  VSOPixel::createPixelTable(&db);
-
-  param.writeToDatabase(&db);
-  array.writeToDatabase(&db);
-
-  ArrayParameters param2;
-  param2.readFromDatabase(&db);
-  param2.writeToArrayINIFile("array2.ini");
-
-  VSOArray array2;
-  array2.readFromDatabase(&db);
-
-  std::ofstream f2("array2.txt");
-  array2.dump(f2);
-}
-
-#endif
-
-
-
-#ifdef TEST_MAIN_2
-
-#include <fstream>
-
-int main(int argc, char** argv)
-{
-  RandomNumbers rng("random.seeds");
-
-  ArrayParameters param;
-  param.readFromArrayINIFile("array.ini");
-
-  VSOArray array;
-  array.generateFromArrayParameters(param, rng);
-
-  for(unsigned t=0; t< array.numTelescopes(); t++)
-    for(unsigned m=0; m<array.telescope(t)->numMirrors(); m++)
-      {
-	Vec3D a(array.telescope(t)->mirror(m)->pos()+
-		array.telescope(t)->mirror(m)->align());
-	std::cout << a << ' ';
-	array.telescope(t)->mirror(m)->reflectorToMirror(a);
-	std::cout << a << std::endl;
-      }
-}
-
-#endif

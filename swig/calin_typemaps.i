@@ -231,6 +231,14 @@
   if(!calin_python_to_eigen_vec($input, $1))SWIG_fail;
 }
 
+%typemap(out, fragment="Calin_EigenVec_to_Python") const Eigen::VectorXd&
+{
+  // typemap(out) const Eigen::VectorXd& -- calin_typemaps.i
+  npy_intp size[1] { $1->size() };
+  $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
+  if(!$result)SWIG_fail;
+  if(!calin_eigen_vec_to_python($1, $result))SWIG_fail;
+}
 
 %typemap(argout) const Eigen::VectorXd&
 {
@@ -442,6 +450,15 @@ Eigen::VectorXd
   if(!calin_python_to_eigen_mat($input, $1))SWIG_fail;
 }
 
+%typemap(out, fragment="Calin_EigenMat_to_Python") const Eigen::MatrixXd&
+{
+  // typemap(out) const Eigen::MatrixXd& -- calin_typemaps.i
+  npy_intp size[1] { $1->size() };
+  $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
+  if(!$result)SWIG_fail;
+  if(!calin_eigen_mat_to_python($1, $result))SWIG_fail;
+}
+
 %typemap(argout) const Eigen::MatrixXd&
 {
   // typemap(argout) const Eigen::MatrixXd& -- calin_typemaps.i
@@ -627,6 +644,14 @@ Eigen::VectorXd
   if(!calin_python_to_eigen_int_vec($input, $1))SWIG_fail;
 }
 
+%typemap(out, fragment="Calin_EigenIntVec_to_Python") const Eigen::VectorXi&
+{
+  // typemap(out) const Eigen::VectorXi& -- calin_typemaps.i
+  npy_intp size[1] { $1->size() };
+  $result = PyArray_EMPTY(1, size, NPY_INT, 0);
+  if(!$result)SWIG_fail;
+  if(!calin_eigen_int_vec_to_python($1, $result))SWIG_fail;
+}
 
 %typemap(argout) const Eigen::VectorXi&
 {
@@ -832,6 +857,14 @@ Eigen::VectorXd
   if(!calin_python_to_eigen_vec3($input, $1))SWIG_fail;
 }
 
+%typemap(out, fragment="Calin_EigenVec3_to_Python") const Eigen::Vector3d&
+{
+  // typemap(out) const Eigen::Vector3d& -- calin_typemaps.i
+  npy_intp size[1] { 3 };
+  $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
+  if(!$result)SWIG_fail;
+  if(!calin_eigen_vec3_to_python($1, $result))SWIG_fail;
+}
 
 %typemap(argout) const Eigen::Vector3d&
 {
