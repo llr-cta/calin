@@ -440,7 +440,7 @@ bool VSORayTracer::findMirror(math::ray::Ray& ray, TraceInfo& info)
 
     if(test_mirror==0)
     {
-      if(isearch==0)info.status = TS_MIRROR_REMOVED;
+      if(isearch==0)info.status = TS_NO_MIRROR;
       continue;
     }
 
