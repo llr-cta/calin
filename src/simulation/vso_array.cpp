@@ -181,7 +181,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
              param.reflector().facet_size(),
              param.reflector_frame().optic_axis_rotation()*M_PI/180.0,
              num_hex_mirror_rings,
-             0.0, /*param.reflector().reflector_ip(),*/
+             0.0, Eigen::Vector3d::Zero(), /*param.reflector().reflector_ip(),*/
              param.reflector().facet_labeling_parity(),
 	           camera_fp_trans,
              param.focal_plane().camera_diameter(),

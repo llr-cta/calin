@@ -37,7 +37,7 @@ using calin::math::special::SQR;
 using calin::simulation::iact_array_tracker::IACTDetectorSphere;
 using namespace calin::simulation::vs_optics;
 
-//#define ENABLE_RAYTRACER_STATUS
+#define ENABLE_RAYTRACER_STATUS
 
 VSO_IACTDetectorSphereHitProcessor::VSO_IACTDetectorSphereHitProcessor(
     VSO_QuadratureIACTArrayIntegrationHitVisitor* quadrature,
@@ -97,7 +97,9 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::spheres()
   for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++)
   {
     auto* scope = array_->telescope(iscope);
-    s.emplace_back(scope->pos(), SQR(0.5*scope->reflectorIP()),
+    Eigen::Vector3d sphere_center = scope->reflectorIPCenter();
+    scope->reflectorToGlobal_pos(sphere_center);
+    s.emplace_back(sphere_center, SQR(0.5*scope->reflectorIP()),
       new VSO_IACTDetectorSphereHitProcessor(this, scope));
   }
   return s;

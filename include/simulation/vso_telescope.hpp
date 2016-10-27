@@ -67,7 +67,7 @@ class VSOTelescope
                double DY, double AX, double AY, double EL, double AZ,
                const Eigen::Vector3d& T, double CR, double A,
                double FSP, double FS, double RR,
-               unsigned HRN, double RIP, bool MP,
+               unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
                const Eigen::Vector3d& FPT, double CD, double FOV, double D,
                double PS, double PR, double CSP, const Eigen::Vector3d& FPR,
                double CIP, bool PP,
@@ -112,6 +112,28 @@ class VSOTelescope
   //! Points telescope along axis
   bool pointTelescope(const Eigen::Vector3d& v);
   bool pointTelescopeAzEl(const double az_rad, const double el_rad);
+
+  //! Transform particle global to reflector
+  inline void globalToReflector_pos(Eigen::Vector3d& v) const;
+  //! Transform particle reflector to global
+  inline void reflectorToGlobal_pos(Eigen::Vector3d& v) const;
+  //! Transform from focal plane to reflector
+  inline void focalPlaneToReflector_pos(Eigen::Vector3d& v) const;
+  //! Transform from reflector to focal plane
+  inline void reflectorToFocalPlane_pos(Eigen::Vector3d& v) const;
+  //! Transform directly from focal plane to global
+  inline void focalPlaneToGlobal_pos(Eigen::Vector3d& v) const;
+
+  //! Transform particle global to reflector
+  inline void globalToReflector_mom(Eigen::Vector3d& v) const;
+  //! Transform particle reflector to global
+  inline void reflectorToGlobal_mom(Eigen::Vector3d& v) const;
+  //! Transform from focal plane to reflector
+  inline void focalPlaneToReflector_mom(Eigen::Vector3d& v) const;
+  //! Transform from reflector to focal plane
+  inline void reflectorToFocalPlane_mom(Eigen::Vector3d& v) const;
+  //! Transform directly from focal plane to global
+  inline void focalPlaneToGlobal_mom(Eigen::Vector3d& v) const;
 
   //! Transform particle global to reflector
   inline void globalToReflector(calin::math::ray::Ray& r) const;
@@ -163,6 +185,7 @@ class VSOTelescope
   double                 sinReflectorRotation() const { return fSinReflectorRotation; }
   unsigned               mirrorHexRings() const { return fHexagonRingsN; }
   double                 reflectorIP() const { return fReflectorIP; }
+  const Eigen::Vector3d& reflectorIPCenter() const { return fReflectorIPCenter; }
   bool                   mirrorParity() const { return fMirrorParity; }
 
   const Eigen::Vector3d& focalPlanePosition() const { return fFPTranslation; }
@@ -218,7 +241,8 @@ class VSOTelescope
   double          fCosReflectorRotation; //!< Rotation about the axis of reflector
   double          fSinReflectorRotation; //!< Rotation about the axis of reflector
   unsigned        fHexagonRingsN;     //!< Number of hexagon rings of mirrors
-  double          fReflectorIP;       //!< Diameter of sphere embedding reflector
+  double          fReflectorIP;       //!< Diameter of minimum sphere embedding reflector
+  Eigen::Vector3d fReflectorIPCenter; //!< Center of minimum sphere embedding reflector in reflector r.f.
   bool            fMirrorParity;      //!< Parity for counting mirrors; 1 => counting toward +x-axis
   //!  in reflector r.f.; -1 => counting toward -x-axis
 
@@ -297,6 +321,79 @@ inline const VSOPixel* VSOTelescope::pixelByHexID(unsigned hexID) const
 {
   if(hexID>=fPixelsByHexID.size())return 0;
   else return fPixelsByHexID[hexID];
+}
+
+//! Transform particle global to reflector
+inline void VSOTelescope::globalToReflector_pos(Eigen::Vector3d& v) const
+{
+  // First: Translate from global directly to reflector
+  v -= off_global_to_reflector_;
+  // Second: Rotate coordinate system to reflector orientation
+  v = rot_global_to_reflector_ * v;
+}
+
+//! Transform particle reflector to global
+inline void VSOTelescope::reflectorToGlobal_pos(Eigen::Vector3d& v) const
+{
+  // First: Rotate coordinate system to ground based
+  v = rot_reflector_to_global_ * v;
+  // Second: Translate from drive axes intersection to center of array
+  v += off_global_to_reflector_;
+}
+
+//! Transform from focal plane to reflector
+inline void VSOTelescope::focalPlaneToReflector_pos(Eigen::Vector3d& v) const
+{
+  // First: Rotate coordinate system
+  if(fHasFPRotation) v = rot_camera_to_reflector_ * v;
+  // Second: Translate from center of Focal Plane
+  v += fFPTranslation;
+}
+
+//! Transform from reflector to focal plane
+inline void VSOTelescope::reflectorToFocalPlane_pos(Eigen::Vector3d& v) const
+{
+  // First: Translate to center of Focal Plane
+  v -= fFPTranslation;
+  // Second: Rotate coordinate system
+  if(fHasFPRotation) v = rot_reflector_to_camera_ * v;
+}
+
+//! Transform directly from focal plane to global
+inline void VSOTelescope::focalPlaneToGlobal_pos(Eigen::Vector3d& v) const
+{
+  v = rot_camera_to_global_ * v;
+  v += off_global_to_camera_;
+}
+
+//! Transform particle global to reflector
+inline void VSOTelescope::globalToReflector_mom(Eigen::Vector3d& v) const
+{
+  v = rot_global_to_reflector_ * v;
+}
+
+//! Transform particle reflector to global
+inline void VSOTelescope::reflectorToGlobal_mom(Eigen::Vector3d& v) const
+{
+  v = rot_reflector_to_global_ * v;
+}
+
+//! Transform from focal plane to reflector
+inline void VSOTelescope::focalPlaneToReflector_mom(Eigen::Vector3d& v) const
+{
+  if(fHasFPRotation) v = rot_camera_to_reflector_ * v;
+}
+
+//! Transform from reflector to focal plane
+inline void VSOTelescope::reflectorToFocalPlane_mom(Eigen::Vector3d& v) const
+{
+  if(fHasFPRotation) v = rot_reflector_to_camera_ * v;
+}
+
+//! Transform directly from focal plane to global
+inline void VSOTelescope::focalPlaneToGlobal_mom(Eigen::Vector3d& v) const
+{
+  v = rot_camera_to_global_ * v;
 }
 
 inline void VSOTelescope::globalToReflector(calin::math::ray::Ray& r) const

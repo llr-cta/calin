@@ -41,8 +41,8 @@ VSOTelescope::VSOTelescope():
     fTranslation(), fCurvatureRadius(), fAperture(),
     fFacetSpacing(), fFacetSize(),
     fReflectorRotation(), fCosReflectorRotation(1.0), fSinReflectorRotation(),
-    fHexagonRingsN(),
-    fReflectorIP(), fMirrorParity(), fFPTranslation(), fCameraDiameter(),
+    fHexagonRingsN(), fReflectorIP(), fReflectorIPCenter(),
+    fMirrorParity(), fFPTranslation(), fCameraDiameter(),
     fFieldOfView(), fCathodeDiameter(), fPixelSpacing(), fPixelRotation(),
     fCosPixelRotation(1.0), fSinPixelRotation(0.0),
     fConcSurvProb(),
@@ -58,7 +58,7 @@ VSOTelescope::
 VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
 	     double DY, double AX, double AY, double EL, double AZ,
 	     const Eigen::Vector3d& T, double CR, double A, double FSP, double FS,
-	     double RR, unsigned HRN, double RIP, bool MP,
+	     double RR, unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
 	     const Eigen::Vector3d& FPT, double CD, double FOV,
        double D, double PS, double PR,
 	     double CSP, const Eigen::Vector3d& FPR, double CIP, bool PP,
@@ -69,7 +69,7 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
     fTranslation(T), fCurvatureRadius(CR), fAperture(A), fFacetSpacing(FSP),
     fFacetSize(FS), fReflectorRotation(RR),
     fCosReflectorRotation(std::cos(RR)), fSinReflectorRotation(std::sin(RR)),
-    fHexagonRingsN(HRN), fReflectorIP(RIP), fMirrorParity(MP),
+    fHexagonRingsN(HRN), fReflectorIP(RIP), fReflectorIPCenter(RIPC), fMirrorParity(MP),
     fFPTranslation(FPT),  fCameraDiameter(CD), fFieldOfView(FOV),
     fCathodeDiameter(D), fPixelSpacing(PS), fPixelRotation(PR),
     fCosPixelRotation(std::cos(PR)), fSinPixelRotation(std::sin(PR)),
@@ -92,7 +92,8 @@ VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fCosReflectorRotation(o.fCosReflectorRotation),
     fSinReflectorRotation(o.fSinReflectorRotation),
     fHexagonRingsN(o.fHexagonRingsN),
-    fReflectorIP(o.fReflectorIP), fMirrorParity(o.fMirrorParity),
+    fReflectorIP(o.fReflectorIP), fReflectorIPCenter(o.fReflectorIPCenter),
+    fMirrorParity(o.fMirrorParity),
     fFPTranslation(o.fFPTranslation), fCameraDiameter(o.fCameraDiameter),
     fFieldOfView(o.fFieldOfView), fCathodeDiameter(o.fCathodeDiameter),
     fPixelSpacing(o.fPixelSpacing), fPixelRotation(o.fPixelRotation),
@@ -162,6 +163,7 @@ const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
   fSinReflectorRotation = o.fSinReflectorRotation;
   fHexagonRingsN     = o.fHexagonRingsN;
   fReflectorIP       = o.fReflectorIP;
+  fReflectorIPCenter = o.fReflectorIPCenter;
   fMirrorParity      = o.fMirrorParity;
   fFPTranslation     = o.fFPTranslation;
   fCameraDiameter    = o.fCameraDiameter;
@@ -499,9 +501,12 @@ populateMirrorsAndPixelsRandom(
     for(unsigned icorner=0;icorner<6;icorner++)
     {
       Eigen::Vector3d rc = mirror->cornerInReflectorCoords(icorner,fFacetSize);
-      rc -= fTranslation;
-      double r_ip = rc.norm();
-      fReflectorIP = std::max(fReflectorIP, 2.0*r_ip);
+      double d_ip = 2.0*std::sqrt(SQR(rc.x()) + SQR(rc.z()));
+      if(d_ip > fReflectorIP)
+      {
+        fReflectorIP = d_ip;
+        fReflectorIPCenter = Eigen::Vector3d(0,rc.y(),0);
+      }
     }
 
     id++;
@@ -603,6 +608,7 @@ dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const
   d->set_optic_axis_rotation(fReflectorRotation/M_PI*180.0);
   d->set_hexagon_rings_n(fHexagonRingsN);
   d->set_reflector_ip(fReflectorIP);
+  calin::math::vector3d_util::dump_as_proto(fReflectorIPCenter, d->mutable_reflector_ip_center());
   d->set_facet_labeling_parity(fMirrorParity);
   calin::math::vector3d_util::dump_as_proto(fFPTranslation, d->mutable_fp_translation());
   d->set_camera_diameter(fCameraDiameter);
@@ -644,6 +650,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
     d.optic_axis_rotation()*M_PI/180.0, // RR
     d.hexagon_rings_n(), // HRN
     d.reflector_ip(), // RIP
+    calin::math::vector3d_util::from_proto(d.reflector_ip_center()), // RIPC
     d.facet_labeling_parity(), // MP
     calin::math::vector3d_util::from_proto(d.fp_translation()), // FPT
     d.camera_diameter(), // CD

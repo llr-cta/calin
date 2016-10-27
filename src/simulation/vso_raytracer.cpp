@@ -206,6 +206,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
 
   if(!good)
   {
+    info.scope->reflectorToGlobal(ray);
     info.status = TS_MISSED_REFLECTOR_SPHERE;
     return 0;
   }
