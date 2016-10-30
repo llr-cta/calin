@@ -39,6 +39,136 @@ using namespace calin::simulation::vs_optics;
 
 #define ENABLE_RAYTRACER_STATUS
 
+VSOQuadratureIACTArrayTraceProcessor::~VSOQuadratureIACTArrayTraceProcessor()
+{
+  // nothing to see here
+}
+
+void VSOQuadratureIACTArrayTraceProcessor::
+visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
+{
+  // nothing to see here
+}
+
+void VSOQuadratureIACTArrayTraceProcessor::visit_cherenkov_track(
+  const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
+  bool& kill_track)
+{
+  // nothing to see here
+}
+
+void VSOQuadratureIACTArrayTraceProcessor::process_trace(unsigned scope_id,
+  const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
+{
+  // nothing to see here
+}
+
+void VSOQuadratureIACTArrayTraceProcessor::leave_cherenkov_track()
+{
+  // nothing to see here
+}
+
+void VSOQuadratureIACTArrayTraceProcessor::leave_event()
+{
+  // nothing to see here
+}
+
+VSOTraceMultiProcessor::~VSOTraceMultiProcessor()
+{
+  for(auto* ivisitor : adopted_visitors_)delete ivisitor;
+}
+
+void VSOTraceMultiProcessor::
+add_trace_visitor(VSOQuadratureIACTArrayTraceProcessor* visitor,
+  bool adopt_visitor)
+{
+  visitors_.emplace_back(visitor);
+  if(adopt_visitor)adopted_visitors_.emplace_back(visitor);
+}
+
+void VSOTraceMultiProcessor::
+add_pe_visitor(QuadratureIACTArrayPEProcessor* pe_visitor,
+  bool adopt_pe_visitor)
+{
+  add_trace_visitor(new VSOTraceToPEAdaptor(pe_visitor, adopt_pe_visitor), true);
+}
+
+void VSOTraceMultiProcessor::
+visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
+{
+  for(auto* ivisitor : visitors_) {
+    ivisitor->visit_event(event, kill_event);
+    if(kill_event)break;
+  }
+}
+
+void VSOTraceMultiProcessor::visit_cherenkov_track(
+  const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
+  bool& kill_track)
+{
+  for(auto* ivisitor : visitors_) {
+    ivisitor->visit_cherenkov_track(cherenkov_track, kill_track);
+    if(kill_track)break;
+  }
+}
+
+void VSOTraceMultiProcessor::process_trace(unsigned scope_id,
+  const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
+{
+  for(auto* ivisitor : visitors_)
+    ivisitor->process_trace(scope_id, trace, pe_weight);
+}
+
+void VSOTraceMultiProcessor::leave_cherenkov_track()
+{
+  for(auto* ivisitor : visitors_)
+    ivisitor->leave_cherenkov_track();
+}
+
+void VSOTraceMultiProcessor::leave_event()
+{
+  for(auto* ivisitor : visitors_)
+    ivisitor->leave_event();
+}
+
+VSOTraceToPEAdaptor::~VSOTraceToPEAdaptor()
+{
+  if(adopt_pe_visitor_)delete pe_visitor_;
+}
+
+void VSOTraceToPEAdaptor::
+visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
+{
+  pe_visitor_->visit_event(event, kill_event);
+}
+
+void VSOTraceToPEAdaptor::visit_cherenkov_track(
+  const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
+  bool& kill_track)
+{
+  pe_visitor_->visit_cherenkov_track(cherenkov_track, kill_track);
+}
+
+void VSOTraceToPEAdaptor::process_trace(unsigned scope_id,
+  const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
+{
+  if(trace.status==TS_PE_GENERATED) {
+    assert(trace.pixel != nullptr);
+    pe_visitor_->process_pe(scope_id, trace.pixel->id(),
+      trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
+  }
+}
+
+void VSOTraceToPEAdaptor::leave_cherenkov_track()
+{
+  pe_visitor_->leave_cherenkov_track();
+}
+
+void VSOTraceToPEAdaptor::leave_event()
+{
+  pe_visitor_->leave_event();
+}
+
 VSO_IACTDetectorSphereHitProcessor::VSO_IACTDetectorSphereHitProcessor(
     VSO_QuadratureIACTArrayIntegrationHitVisitor* quadrature,
     calin::simulation::vs_optics::VSOTelescope* scope):
@@ -59,6 +189,55 @@ process_hit(
   quadrature_->process_hit(hit, scope_);
 }
 
+VSOTraceStatusProcessor::~VSOTraceStatusProcessor()
+{
+  // nothing to see here
+}
+
+void VSOTraceStatusProcessor::
+visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
+{
+  if(reset_on_each_event_)
+    for(auto& istatus : ray_tracer_status_)
+      std::fill(istatus.begin(), istatus.end(), 0);
+}
+
+void VSOTraceStatusProcessor::process_trace(unsigned scope_id,
+  const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
+{
+  if(scope_id > ray_tracer_status_.size())
+    ray_tracer_status_.resize(scope_id+1);
+  if(trace.status >= ray_tracer_status_[scope_id].size())
+      ray_tracer_status_[scope_id].resize(trace.status+1);
+  ray_tracer_status_[scope_id][trace.status]++;
+}
+
+const std::vector<unsigned>
+VSOTraceStatusProcessor::raytracer_status(unsigned iscope) const
+{
+  if(iscope >= ray_tracer_status_.size())
+    throw std::out_of_range("iscope out of range");
+  return ray_tracer_status_[iscope];
+}
+
+VSO_QuadratureIACTArrayIntegrationHitVisitor::
+VSO_QuadratureIACTArrayIntegrationHitVisitor(
+    const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
+    calin::simulation::vs_optics::VSOArray* array,
+    VSOQuadratureIACTArrayTraceProcessor* visitor,
+    calin::math::rng::RNG* rng,
+    bool adopt_array, bool adopt_visitor, bool adopt_rng):
+  calin::simulation::iact_array_tracker::HitIACTVisitor(),
+  ray_spacing_linear_(config.ray_spacing_linear()),
+  ray_spacing_angular_(config.ray_spacing_angular() / 180.0 * M_PI),
+  array_(array), adopt_array_(adopt_array),
+  visitor_(visitor), adopt_visitor_(adopt_visitor),
+  rng_(rng ? rng : new calin::math::rng::RNG),
+  adopt_rng_(rng ? true : adopt_rng),
+  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_))
+{
+  // nothing to see here
+}
 
 VSO_QuadratureIACTArrayIntegrationHitVisitor::
 VSO_QuadratureIACTArrayIntegrationHitVisitor(
@@ -71,14 +250,11 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor(
   ray_spacing_linear_(config.ray_spacing_linear()),
   ray_spacing_angular_(config.ray_spacing_angular() / 180.0 * M_PI),
   array_(array), adopt_array_(adopt_array),
-  visitor_(visitor), adopt_visitor_(adopt_visitor),
   rng_(rng ? rng : new calin::math::rng::RNG),
   adopt_rng_(rng ? true : adopt_rng),
-  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_)),
-  num_hit_(array_->numTelescopes()), num_miss_(array_->numTelescopes()),
-  ray_tracer_status_(array_->numTelescopes())
+  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_))
 {
-  // nothing to see here
+  add_pe_visitor(visitor);
 }
 
 VSO_QuadratureIACTArrayIntegrationHitVisitor::
@@ -88,6 +264,29 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::
   if(adopt_visitor_)delete visitor_;
   delete ray_tracer_;
   if(adopt_rng_)delete rng_;
+}
+
+void VSO_QuadratureIACTArrayIntegrationHitVisitor::
+add_trace_visitor(VSOQuadratureIACTArrayTraceProcessor* visitor, bool adopt_visitor)
+{
+  if(visitor_ == nullptr) {
+    visitor_ = visitor;
+    adopt_visitor_ = adopt_visitor;
+  } else {
+    if(multi_visitor_ == nullptr) {
+      multi_visitor_ = new VSOTraceMultiProcessor;
+      multi_visitor_->add_trace_visitor(visitor_, adopt_visitor_);
+      visitor_ = multi_visitor_;
+      adopt_visitor_ = true;
+    }
+    multi_visitor_->add_trace_visitor(visitor, adopt_visitor);
+  }
+}
+
+void VSO_QuadratureIACTArrayIntegrationHitVisitor::
+add_pe_visitor(QuadratureIACTArrayPEProcessor* visitor, bool adopt_visitor)
+{
+  add_trace_visitor(new VSOTraceToPEAdaptor(visitor, adopt_visitor), true);
 }
 
 std::vector<IACTDetectorSphere>
@@ -108,8 +307,6 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::spheres()
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
-  std::fill(num_hit_.begin(), num_hit_.end(), 0);
-  std::fill(num_miss_.begin(), num_miss_.end(), 0);
   visitor_->visit_event(event, kill_event);
 }
 
@@ -128,39 +325,6 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::leave_cherenkov_track()
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::leave_event()
 {
   visitor_->leave_event();
-}
-
-unsigned
-VSO_QuadratureIACTArrayIntegrationHitVisitor::num_hit(unsigned iscope) const
-{
-  if(iscope >= num_hit_.size())
-    throw std::out_of_range(
-      "VSO_QuadratureIACTArrayIntegrationHitVisitor::num_hit: iscope out "
-      "of range");
-  return num_hit_[iscope];
-}
-
-unsigned
-VSO_QuadratureIACTArrayIntegrationHitVisitor::num_miss(unsigned iscope) const
-{
-  if(iscope >= num_miss_.size())
-    throw std::out_of_range(
-      "VSO_QuadratureIACTArrayIntegrationHitVisitor::num_miss: iscope out "
-      "of range");
-  return num_miss_[iscope];
-}
-
-const std::vector<unsigned> VSO_QuadratureIACTArrayIntegrationHitVisitor::
-raytracer_status(unsigned iscope) const
-{
-  if(iscope >= ray_tracer_status_.size())
-    throw std::out_of_range("iscope out of range");
-
-#ifdef ENABLE_RAYTRACER_STATUS
-  return ray_tracer_status_[iscope];
-#else
-  throw std::runtime_error("Ray tracer status not enabled at compile time");
-#endif
 }
 
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
@@ -190,19 +354,7 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
   }
 #endif
 
-#ifdef ENABLE_RAYTRACER_STATUS
-  if(trace_info.status >= ray_tracer_status_[scope->id()].size())
-    ray_tracer_status_[scope->id()].resize(trace_info.status+1);
-  ray_tracer_status_[scope->id()][trace_info.status]++;
-#endif
-
-  if(trace_info.status==TS_PE_GENERATED and pixel!=nullptr) {
-    num_hit_[scope->id()]++;
-    visitor_->process_pe(scope->id(), pixel->id(),
-      ray.position().x(), ray.position().z(), ray.time(), weight);
-  } else {
-    num_miss_[scope->id()]++;
-  }
+  visitor_->process_trace(scope->id(), trace_info, weight);
 }
 
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_hit(
