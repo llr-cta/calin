@@ -208,7 +208,7 @@ void VSOTraceStatusProcessor::process_trace(unsigned scope_id,
   if(scope_id > ray_tracer_status_.size())
     ray_tracer_status_.resize(scope_id+1);
   if(trace.status >= ray_tracer_status_[scope_id].size())
-      ray_tracer_status_[scope_id].resize(trace.status+1);
+    ray_tracer_status_[scope_id].resize(trace.status+1);
   ray_tracer_status_[scope_id][trace.status]++;
 }
 
@@ -218,6 +218,28 @@ VSOTraceStatusProcessor::raytracer_status(unsigned iscope) const
   if(iscope >= ray_tracer_status_.size())
     throw std::out_of_range("iscope out of range");
   return ray_tracer_status_[iscope];
+}
+
+VSOScopeDiagnosticTraceProcessor::~VSOScopeDiagnosticTraceProcessor()
+{
+  // nothing to see here
+}
+void VSOScopeDiagnosticTraceProcessor::
+visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
+{
+  reflec_x_.clear();
+  reflec_z_.clear();
+}
+
+void VSOScopeDiagnosticTraceProcessor::process_trace(unsigned scope_id,
+  const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
+{
+  if(scope_id != iscope_)return;
+  if(trace.rayWasReflected()) {
+    reflec_x_.emplace_back(trace.reflec_x);
+    reflec_z_.emplace_back(trace.reflec_z);
+    reflec_w_.emplace_back(pe_weight);
+  }
 }
 
 VSO_QuadratureIACTArrayIntegrationHitVisitor::

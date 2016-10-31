@@ -113,6 +113,30 @@ private:
   std::vector<std::vector<unsigned>> ray_tracer_status_;
 };
 
+class VSOScopeDiagnosticTraceProcessor:
+  public VSOQuadratureIACTArrayTraceProcessor
+{
+public:
+  VSOScopeDiagnosticTraceProcessor(unsigned iscope = 0):
+      VSOQuadratureIACTArrayTraceProcessor(), iscope_(iscope) {
+    // nothing to see here
+  }
+  virtual ~VSOScopeDiagnosticTraceProcessor();
+  void visit_event(const calin::simulation::tracker::Event& event,
+    bool& kill_event) override;
+  void process_trace(unsigned scope_id,
+    const calin::simulation::vs_optics::VSOTraceInfo& trace,
+    double pe_weight) override;
+  const std::vector<double>& reflec_x() const { return reflec_x_; }
+  const std::vector<double>& reflec_z() const { return reflec_z_; }
+  const std::vector<double>& reflec_w() const { return reflec_w_; }
+private:
+  unsigned iscope_;
+  std::vector<double> reflec_x_;
+  std::vector<double> reflec_z_;
+  std::vector<double> reflec_w_;
+};
+
 class VSO_QuadratureIACTArrayIntegrationHitVisitor;
 
 class VSO_IACTDetectorSphereHitProcessor:
