@@ -82,10 +82,11 @@ std::ostream& VSOTraceInfo::write(std::ostream& stream, bool cpu, bool eol) cons
       << fplane_dx*(scope&&cpu?scope->pixelSpacing():1.0) << ' '          // $33
       << fplane_dz*(scope&&cpu?scope->pixelSpacing():1.0) << ' '          // $34
       << fplane_t << ' '                                                  // $35
-      << pixel_hexid << ' '                                               // $36
-      << ( pixel ? pixel->hexID() : 0 ) << ' '                            // $37
-      << pixel_dist*(scope&&cpu?scope->pixelSpacing():1.0) << ' '         // $38
-      << concentrator_hit;                                                // $39
+      << fplane_uy << ' '                                                  // $36
+      << pixel_hexid << ' '                                               // $37
+      << ( pixel ? pixel->hexID() : 0 ) << ' '                            // $38
+      << pixel_dist*(scope&&cpu?scope->pixelSpacing():1.0) << ' '         // $39
+      << concentrator_hit;                                                // $40
   if(eol)stream << '\n';
   return stream;
 }
@@ -336,6 +337,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   info.fplane_dx = info.fplane_x;
   info.fplane_dz = info.fplane_z;
   info.fplane_t = ray.ct() / math::constants::cgs_c;
+  info.fplane_uy = ray.direction().y();
 
   info.pixel_hexid =
     math::hex_array::xy_trans_to_hexid_with_remainder(

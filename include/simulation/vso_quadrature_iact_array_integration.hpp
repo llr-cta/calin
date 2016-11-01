@@ -27,6 +27,7 @@
 #include <math/rng.hpp>
 #include <simulation/vso_array.hpp>
 #include <simulation/vso_raytracer.hpp>
+#include <simulation/detector_efficiency.hpp>
 #include <simulation/quadrature_iact_array_integration.hpp>
 
 namespace calin { namespace simulation { namespace quadrature_iact_array_integration {
@@ -191,6 +192,12 @@ public:
   void leave_cherenkov_track() override;
   void leave_event() override;
 
+  void set_detection_efficiencies(
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+    double w0,
+    const calin::math::interpolation_1d::InterpLinear1D& cone_efficiency = { 1.0 });
+
 protected:
   friend class VSO_IACTDetectorSphereHitProcessor;
 
@@ -212,6 +219,9 @@ protected:
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
   calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
+  std::vector<calin::simulation::detector_efficiency::ACTEffectiveBandwidth>
+    effective_bandwidth_;
+  calin::math::interpolation_1d::InterpLinear1D cone_efficiency_;
 };
 
 } } } // namespace calin::simulation::quadrature_iact_array_integration

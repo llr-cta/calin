@@ -42,6 +42,7 @@
 %import "calin_global_definitions.i"
 
 %import "simulation/atmosphere.i"
+%import "simulation/detector_efficiency.i"
 %import "simulation/vs_optics.i"
 %import "simulation/tracker.pb.i"
 //%newobject *::dump_as_proto() const;

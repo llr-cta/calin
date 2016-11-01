@@ -3,7 +3,7 @@
    calin/simulation/detector_efficiency.cpp -- Stephen Fegan -- 2016-10-15
 
    Classes to do 1D linear or exponential interpolation over detector efficiency
-   and Cherenkov yield tables.
+   and Cherenkov bandwidth tables.
 
    Originally from EGS5 ACT code, see header below.
 
@@ -189,11 +189,11 @@ InterpLinear1D AtmosphericAbsorption::absorptionForAltitude(double h) const
   return abs;
 }
 
-ACTIntegratedLightYield AtmosphericAbsorption::
-integrateYield(double h0, double w0, const TelescopeEfficiency& eff)
+ACTEffectiveBandwidth AtmosphericAbsorption::
+integrateBandwidth(double h0, double w0, const DetectionEfficiency& eff) const
 {
   InterpLinear1D abs0 = absorptionForAltitude(h0);
-  ACTIntegratedLightYield yield(w0);
+  ACTEffectiveBandwidth bandwidth(w0);
 
 #if 1
   bool obslevel = false;
@@ -231,15 +231,15 @@ integrateYield(double h0, double w0, const TelescopeEfficiency& eff)
     Y1 *= eff;
     Y2 *= eff;
 
-    yield_t y(Y0.integrate(), Y1.integrate(), Y2.integrate());
+    bandwidth_t y(Y0.integrate(), Y1.integrate(), Y2.integrate());
 #ifdef ACT_LIGHT_YIELD_TAYLOR_SERIES_IN_LOG
     y.dn_dw   = y.dn_dw/y.n;
     y.d2n_dw2 = y.d2n_dw2/y.n - 0.5*SQR(y.dn_dw);
     y.n       = std::log(y.n);
 #endif
-    yield.insert(h, y);
+    bandwidth.insert(h, y);
   }
-  return yield;
+  return bandwidth;
 }
 
 std::vector<double> AtmosphericAbsorption::levels_cm() const
@@ -248,23 +248,26 @@ std::vector<double> AtmosphericAbsorption::levels_cm() const
 }
 
 // ----------------------------------------------------------------------------
-// TelescopeEfficiency
+// DetectionEfficiency
 // ----------------------------------------------------------------------------
 
-TelescopeEfficiency::TelescopeEfficiency(): InterpLinear1D(1.0)
+DetectionEfficiency::DetectionEfficiency(): InterpLinear1D(1.0)
 {
   // nothing to see here
 }
 
-void TelescopeEfficiency::scaleEff(const InterpLinear1D& eff)
+void DetectionEfficiency::scaleEff(const InterpLinear1D& eff)
 {
   *static_cast<InterpLinear1D*>(this) *= eff;
 }
 
-void TelescopeEfficiency::
+void DetectionEfficiency::
 scaleEffFromFile(const std::string& filename)
 {
   std::ifstream stream(filename.c_str());
+  if(!stream.good())
+    throw std::runtime_error("Could not open: "+filename);
+
   std::string line;
   std::getline(stream,line);
   while((line.empty() or line[0] == '#') and stream)std::getline(stream,line);
@@ -286,7 +289,7 @@ scaleEffFromFile(const std::string& filename)
   scaleEff(eff_fn);
 }
 
-void TelescopeEfficiency::
+void DetectionEfficiency::
 scaleEffFromOldStyleFile(const std::string& filename,
 		 double lambda0_nm, double dlambda_nm)
 {
@@ -308,18 +311,18 @@ scaleEffFromOldStyleFile(const std::string& filename,
 }
 
 // ----------------------------------------------------------------------------
-// ACTIntegratedLightYield
+// ACTEffectiveBandwidth
 // ----------------------------------------------------------------------------
 
-ACTIntegratedLightYield::ACTIntegratedLightYield(double w0)
+ACTEffectiveBandwidth::ACTEffectiveBandwidth(double w0)
   : Interpolation1D(), m_w0(w0)
 {
   // nothing to see here
 }
 
-double ACTIntegratedLightYield::yield(double h, double w) const
+double ACTEffectiveBandwidth::bandwidth(double h, double w) const
 {
-  yield_t _y = y(h);
+  bandwidth_t _y = y(h);
   double dw = w-m_w0;
 #ifdef ACT_LIGHT_YIELD_TAYLOR_SERIES_IN_LOG
   return std::exp(_y.n + dw*(_y.dn_dw + _y.d2n_dw2*dw));

@@ -326,6 +326,21 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::spheres()
   return s;
 }
 
+void VSO_QuadratureIACTArrayIntegrationHitVisitor::set_detection_efficiencies(
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+  double w0,
+  const calin::math::interpolation_1d::InterpLinear1D& cone_efficiency)
+{
+  effective_bandwidth_.clear();
+  for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++) {
+    auto* scope = array_->telescope(iscope);
+    effective_bandwidth_.emplace_back(atmospheric_absorption.integrateBandwidth(
+      scope->position().z(), std::fabs(w0), detector_efficiency));
+  }
+  cone_efficiency_ = cone_efficiency;
+}
+
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
@@ -354,6 +369,8 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
   calin::simulation::vs_optics::VSOTelescope* scope,
   double cos_phi, double sin_phi, double weight)
 {
+  const unsigned iscope = scope->id();
+
   Eigen::Vector3d p_hat = hit.rot *
     Eigen::Vector3d(hit.cherenkov_track->cos_thetac,
       hit.cherenkov_track->sin_thetac * cos_phi,
@@ -362,8 +379,19 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
   calin::math::ray::Ray ray { hit.cherenkov_track->x_mid, p_hat,
     hit.cherenkov_track->t_mid };
 
+  double z0 = ray.position().z();
+  double w = p_hat.z();
+
   VSOTraceInfo trace_info;
-  const VSOPixel* pixel = ray_tracer_->trace(ray, trace_info, scope);
+  ray_tracer_->trace(ray, trace_info, scope);
+
+  if(iscope < effective_bandwidth_.size()) {
+    weight *= effective_bandwidth_[iscope].bandwidth(z0, std::fabs(w));
+#if 1
+    if(trace_info.rayHitFocalPlane())
+      weight *= cone_efficiency_.y(trace_info.fplane_uy);
+#endif
+  }
 
 #if 0
   if(sin_phi==0) {
@@ -376,9 +404,10 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
   }
 #endif
 
-  visitor_->process_trace(scope->id(), trace_info, weight);
+  visitor_->process_trace(iscope, trace_info, weight);
 }
 
+// This function should eventually be moved to a base class
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_hit(
   const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
   calin::simulation::vs_optics::VSOTelescope* scope)
