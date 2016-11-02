@@ -126,7 +126,6 @@ AtmosphericAbsorption::AtmosphericAbsorption(const std::string& filename,
       levels_cm.emplace_back(h_km * 1.0e5);
       line_stream >> token;
       if(token == ",")line_stream >> token;
-      LOG(INFO) << token;
       if(token != "H1=")goto next_header_line;
       while(line_stream >> h_km)
         levels_cm.emplace_back(h_km * 1.0e5);
