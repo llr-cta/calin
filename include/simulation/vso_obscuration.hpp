@@ -40,8 +40,9 @@
 #include <string>
 #include <vector>
 
-#include <math/vs_vec3d.hpp>
-#include <math/vs_particle.hpp>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <math/ray.hpp>
 #include <simulation/vs_optics.pb.h>
 
 namespace calin { namespace simulation { namespace vs_optics {
@@ -50,13 +51,13 @@ class VSOObscuration
 {
  public:
   virtual ~VSOObscuration();
-  virtual bool doesObscure(const math::vs_physics::Particle& p_in)
+  virtual bool doesObscure(const calin::math::ray::Ray& p_in)
   {
-    math::vs_physics::Particle p_out;
+    calin::math::ray::Ray p_out;
     return doesObscure(p_in, p_out);
   }
-  virtual bool doesObscure(const math::vs_physics::Particle& p_in,
-                           math::vs_physics::Particle& p_out) const = 0;
+  virtual bool doesObscure(const calin::math::ray::Ray& p_in,
+                           calin::math::ray::Ray& p_out) const = 0;
 
   virtual VSOObscuration* clone() const = 0;
 
@@ -70,33 +71,22 @@ class VSOObscuration
 
   static VSOObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d);
-
-#if 0
-  virtual std::string dumpToString() const = 0;
-  static std::vector<VSOObscuration*>
-  createObsVecFromString(const std::string &str);
-  static std::string
-  dumpObsVecToString(const std::vector<VSOObscuration*>& vo);
-
-  static bool tokenize(std::string& str, const std::string& name,
-                       std::vector<std::string>& tokens);
-#endif
 };
 
 class VSODiskObscuration: public VSOObscuration
 {
  public:
-  VSODiskObscuration(const math::vs_physics::Vec3D& center,
-                     const math::vs_physics::Vec3D& normal,
+  VSODiskObscuration(const Eigen::Vector3d& center,
+                     const Eigen::Vector3d& normal,
                      double radius, bool incoming_only):
       VSOObscuration(), fX0(center), fN(normal), fR(radius), fD0(),
       fICO(incoming_only)
   {
-    fD0 = center*normal;
+    fD0 = center.dot(normal);
   }
   virtual ~VSODiskObscuration();
-  bool doesObscure(const math::vs_physics::Particle& p_in,
-                   math::vs_physics::Particle& p_out) const override;
+  bool doesObscure(const calin::math::ray::Ray& p_in,
+                   calin::math::ray::Ray& p_out) const override;
   VSODiskObscuration* clone() const override;
 
 #ifndef SWIG
@@ -110,19 +100,14 @@ class VSODiskObscuration: public VSOObscuration
   static VSODiskObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSODiskObscurationData& d);
 
-#if 0
-  virtual std::string dumpToString() const;
-  static VSODiskObscuration* createFromString(std::string& str);
-#endif
-
-  const math::vs_physics::Vec3D& center_pos() const { return fX0; }
-  const math::vs_physics::Vec3D& normal() const { return fN; }
+  const Eigen::Vector3d& center_pos() const { return fX0; }
+  const Eigen::Vector3d& normal() const { return fN; }
   double diameter() const { return 2.0*fR; }
   bool incoming_only() const { return fICO; }
 
  private:
-  math::vs_physics::Vec3D fX0;
-  math::vs_physics::Vec3D fN;
+  Eigen::Vector3d fX0;
+  Eigen::Vector3d fN;
   double                  fR;
   double                  fD0;
   bool                    fICO;
@@ -131,22 +116,21 @@ class VSODiskObscuration: public VSOObscuration
 class VSOTubeObscuration: public VSOObscuration
 {
  public:
-  VSOTubeObscuration(const math::vs_physics::Vec3D& x1,
-                         const math::vs_physics::Vec3D& x2,
-                         double radius, bool incoming_only):
+  VSOTubeObscuration(const Eigen::Vector3d& x1, const Eigen::Vector3d& x2,
+                     double radius, bool incoming_only):
       VSOObscuration(), fX1(x1), fX2(x2), fR(radius), fN(), fD1(), fD2(),
       fICO(incoming_only)
   {
     fN = x2-x1;
-    fN /= fN.Norm();
-    fD1 = fN*x1;
-    fD2 = fN*x2;
+    fN.normalize();
+    fD1 = fN.dot(x1);
+    fD2 = fN.dot(x2);
     fD  = std::fabs(fD2-fD1);
   }
 
   virtual ~VSOTubeObscuration();
-  bool doesObscure(const math::vs_physics::Particle& p_in,
-                   math::vs_physics::Particle& p_out) const override;
+  bool doesObscure(const calin::math::ray::Ray& p_in,
+                   calin::math::ray::Ray& p_out) const override;
   VSOTubeObscuration* clone() const override;
 
 #ifndef SWIG
@@ -160,21 +144,16 @@ class VSOTubeObscuration: public VSOObscuration
   static VSOTubeObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d);
 
-#if 0
-  virtual std::string dumpToString() const;
-  static VSOTubeObscuration* createFromString(std::string& str);
-#endif
-
-  const math::vs_physics::Vec3D& end1_pos() const { return fX1; }
-  const math::vs_physics::Vec3D& end2_pos() const { return fX2; }
+  const Eigen::Vector3d& end1_pos() const { return fX1; }
+  const Eigen::Vector3d& end2_pos() const { return fX2; }
   double diameter() const { return 2.0*fR; }
   bool incoming_only() const { return fICO; }
 
  private:
-  math::vs_physics::Vec3D fX1;
-  math::vs_physics::Vec3D fX2;
+  Eigen::Vector3d         fX1;
+  Eigen::Vector3d         fX2;
   double                  fR;
-  math::vs_physics::Vec3D fN;
+  Eigen::Vector3d         fN;
   double                  fD1;
   double                  fD2;
   double                  fD;
@@ -184,8 +163,8 @@ class VSOTubeObscuration: public VSOObscuration
 class VSOAlignedBoxObscuration: public VSOObscuration
 {
  public:
-  VSOAlignedBoxObscuration(const math::vs_physics::Vec3D& max_corner,
-                           const math::vs_physics::Vec3D& min_corner,
+  VSOAlignedBoxObscuration(const Eigen::Vector3d& max_corner,
+                           const Eigen::Vector3d& min_corner,
                            bool incoming_only):
       VSOObscuration(), min_corner_(min_corner), max_corner_(max_corner),
       incoming_only_(incoming_only)
@@ -194,8 +173,8 @@ class VSOAlignedBoxObscuration: public VSOObscuration
   }
 
   virtual ~VSOAlignedBoxObscuration();
-  bool doesObscure(const math::vs_physics::Particle& p_in,
-                   math::vs_physics::Particle& p_out) const override;
+  bool doesObscure(const calin::math::ray::Ray& p_in,
+                   calin::math::ray::Ray& p_out) const override;
   VSOAlignedBoxObscuration* clone() const override;
 
 #ifndef SWIG
@@ -209,13 +188,13 @@ class VSOAlignedBoxObscuration: public VSOObscuration
   static VSOAlignedBoxObscuration* create_from_proto(
     const ix::simulation::vs_optics::VSOAlignedBoxObscurationData& d);
 
-  const math::vs_physics::Vec3D& max_corner() const { return max_corner_; }
-  const math::vs_physics::Vec3D& min_corner() const { return min_corner_; }
+  const Eigen::Vector3d& max_corner() const { return max_corner_; }
+  const Eigen::Vector3d& min_corner() const { return min_corner_; }
   bool incoming_only() const { return incoming_only_; }
 
  private:
-  math::vs_physics::Vec3D min_corner_;
-  math::vs_physics::Vec3D max_corner_;
+  Eigen::Vector3d         min_corner_;
+  Eigen::Vector3d         max_corner_;
   bool                    incoming_only_;
 };
 

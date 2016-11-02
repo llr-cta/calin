@@ -78,7 +78,7 @@ ZFITSSingleFileACTLDataSource(const std::string& filename, config_type config):
         {
           rh_zfits.CheckIfFileIsConsistent(false);
         }
-        catch (exception& e)
+        catch (std::exception& e)
         {
           if(config.repair_broken_file())
           {
@@ -112,7 +112,7 @@ ZFITSSingleFileACTLDataSource(const std::string& filename, config_type config):
     {
       zfits_->CheckIfFileIsConsistent(false);
     }
-    catch (exception& e)
+    catch (std::exception& e)
     {
       if(config.repair_broken_file())
       {
@@ -150,7 +150,7 @@ get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
   seq_index_out = next_event_index_;
   DataModel::CameraEvent* event {
     zfits_->readTypedMessage<DataModel::CameraEvent>(++next_event_index_) };
-  if(!event)throw runtime_error("ZFits reader returned NULL");
+  if(!event)throw std::runtime_error("ZFits reader returned NULL");
 
   return event;
 }

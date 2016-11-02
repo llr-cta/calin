@@ -1,6 +1,6 @@
 /*
 
-   calin/math/vs_vec3d.cpp -- Stephen Fegan -- 2015-11-05
+   calin/math/vs_vec3d_obsolete.cpp -- Stephen Fegan -- 2015-11-05
 
    Class for 3D vector operations. This code is derived from
    simulation code largely implemented by the author at UCLA in
@@ -40,9 +40,9 @@
   \note
 */
 
-#include <math/vs_vec3d.hpp>
+#include <math/vs_vec3d_obsolete.hpp>
 
-using namespace calin::math::vs_physics;
+using namespace calin::math::vs_physics::obsolete;
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Method for vector rotation around axis vector.

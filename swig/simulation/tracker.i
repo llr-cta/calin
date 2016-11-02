@@ -30,6 +30,7 @@
 #include "simulation/air_cherenkov_tracker.hpp"
 #include "simulation/iact_array_tracker.hpp"
 #include "simulation/quadrature_iact_array_integration.hpp"
+#include "simulation/vso_quadrature_iact_array_integration.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -41,6 +42,7 @@
 %import "calin_global_definitions.i"
 
 %import "simulation/atmosphere.i"
+%import "simulation/detector_efficiency.i"
 %import "simulation/vs_optics.i"
 %import "simulation/tracker.pb.i"
 //%newobject *::dump_as_proto() const;
@@ -51,3 +53,4 @@
 %include "simulation/air_cherenkov_tracker.hpp"
 %include "simulation/iact_array_tracker.hpp"
 %include "simulation/quadrature_iact_array_integration.hpp"
+%include "simulation/vso_quadrature_iact_array_integration.hpp"

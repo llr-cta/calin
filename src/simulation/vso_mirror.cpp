@@ -25,10 +25,10 @@
 #include <sstream>
 #include <cassert>
 
+#include <math/vector3d_util.hpp>
 #include <simulation/vso_mirror.hpp>
 #include <simulation/vso_telescope.hpp>
 
-using namespace calin::math::vs_physics;
 using namespace calin::simulation::vs_optics;
 
 VSOMirror::VSOMirror():
@@ -40,7 +40,7 @@ VSOMirror::VSOMirror():
 
 VSOMirror::VSOMirror(const VSOTelescope* T,
 		     unsigned ID, unsigned MHID, bool REM,
-		     const math::vs_physics::Vec3D& P, const math::vs_physics::Vec3D& A,
+		     const Eigen::Vector3d& P, const Eigen::Vector3d& A,
 		     double FL, double SS, double DF):
   fTelescope(T), fID(ID), fHexID(MHID), fRemoved(REM), fPos(P), fAlign(A),
   fFocalLength(FL), fSpotSize(SS), fDegradingFactor(DF), fRotationVector()
@@ -55,15 +55,30 @@ VSOMirror::~VSOMirror()
 
 void VSOMirror::calculateRotationVector()
 {
-  if(fTelescope == nullptr){
-    fRotationVector = Vec3D(0,0,0);
+  if(fTelescope == nullptr) {
+    fRotationVector = Eigen::Matrix3d::Identity();
     return;
   }
 
-  Vec3D rrot(0,-fTelescope->reflectorRotation(),0);
-  Vec3D align(fAlign);
+  Eigen::Matrix3d rrot =
+    Eigen::AngleAxisd(-fTelescope->reflectorRotation(), Eigen::Vector3d::UnitY()).toRotationMatrix();
+  Eigen::Vector3d align = rrot * fAlign;
+  Eigen::Vector3d normalize = align.cross(Eigen::Vector3d::UnitY());
+  double sintheta = normalize.norm();
+  if(sintheta == 0) {
+    fRotationVector = rrot;
+  } else {
+    double costheta = align.y(); // align.dot(Eigen::Vector3d::UnitY());
+    normalize.normalize();
+    fRotationVector =
+      Eigen::AngleAxisd(std::atan(sintheta/costheta), normalize) * rrot;
+  }
+
+#if 0
+  Eigen::Vector3d rrot(0,-fTelescope->reflectorRotation(),0);
+  Eigen::Vector3d align(fAlign);
   align.Rotate(rrot);
-  Vec3D normalize = align^Vec3D(0,1,0);
+  Eigen::Vector3d normalize = align^Eigen::Vector3d(0,1,0);
   double sintheta = normalize.Norm();
   if(sintheta == 0)
     {
@@ -71,38 +86,31 @@ void VSOMirror::calculateRotationVector()
     }
   else
     {
-      double costheta = align*Vec3D(0,1,0);
+      double costheta = align*Eigen::Vector3d(0,1,0);
       normalize *= atan(sintheta/costheta)/sintheta;
       fRotationVector = rrot & normalize;
     }
+#endif
 }
 
-void VSOMirror::reflectorToMirror(math::vs_physics::Particle& p) const
+void VSOMirror::reflectorToMirror(math::ray::Ray& r) const
 {
   //  std::cerr << fRotationVector << std::endl;
   // First: Translate from reflector to mirror mount point
-  p.TranslateOrigin(Vec4D(0,fPos));
+  r.translate_origin(fPos);
   // Second: Rotate coordinate system so mirror normal is y-axis
-  p.Rotate(fRotationVector);
-  // Third: Fix parity
-  // if(fTelescope->mirrorParity())mom3.x=-mom3.x;
-  //  std::cout << "A: " << p.Momenta().r << ' ' << fRotationVector << ' ';
-  //  std::cout << p.Momenta().r << std::endl;
-//#warning clean me up
+  r.rotate(fRotationVector);
 }
 
-void VSOMirror::mirrorToReflector(math::vs_physics::Particle& p) const
+void VSOMirror::mirrorToReflector(math::ray::Ray& r) const
 {
-//#warning Fix parity
-  // First: Fix parity
-  // if(fTelescope->mirrorParity())v.x=-v.x;
-  // Second: Rotate coordinate system back to the reflector
-  p.Rotate(-fRotationVector);
+  // First: Rotate coordinate system back to the reflector
+  r.derotate(fRotationVector);
   // Third: Translate from mirror mount point to the reflector
-  p.TranslateOrigin(Vec4D(0,-fPos));
+  r.untranslate_origin(fPos);
 }
 
-Vec3D VSOMirror::
+Eigen::Vector3d VSOMirror::
 cornerInMirrorCoords(unsigned icorner, double aperture) const
 {
   static const double sin30 = 1.0/2.0;
@@ -112,23 +120,23 @@ cornerInMirrorCoords(unsigned icorner, double aperture) const
   double x;
   double z;
   switch(icorner%6)
-    {
-    case 0: x =  cos30; z =  sin30; break;
-    case 1: x =    0.0; z =    1.0; break;
-    case 2: x = -cos30; z =  sin30; break;
-    case 3: x = -cos30; z = -sin30; break;
-    case 4: x =    0.0; z =   -1.0; break;
-    case 5: x =  cos30; z = -sin30; break;
-    }
+  {
+  case 0: x =  cos30; z =  sin30; break;
+  case 1: x =    0.0; z =    1.0; break;
+  case 2: x = -cos30; z =  sin30; break;
+  case 3: x = -cos30; z = -sin30; break;
+  case 4: x =    0.0; z =   -1.0; break;
+  case 5: x =  cos30; z = -sin30; break;
+  }
   double y = 2.0*fFocalLength-std::sqrt(4.0*fFocalLength*fFocalLength-r*r);
-  return Vec3D(r*x, y, r*z);
+  return Eigen::Vector3d(r*x, y, r*z);
 }
 
-Vec3D VSOMirror::
+Eigen::Vector3d VSOMirror::
 cornerInReflectorCoords(unsigned icorner, double aperture) const
 {
-  Vec3D r = cornerInMirrorCoords(icorner, aperture);
-  r.Rotate(-fRotationVector);
+  Eigen::Vector3d r = cornerInMirrorCoords(icorner, aperture);
+  r = fRotationVector.transpose() * r;
   r += fPos;
   return r;
 }
@@ -140,8 +148,8 @@ VSOMirror::dump_as_proto(ix::simulation::vs_optics::VSOMirrorData* d) const
   d->set_id(fID);
   d->set_hex_id(fHexID);
   d->set_removed(fRemoved);
-  fPos.dump_as_proto(d->mutable_pos());
-  fAlign.dump_as_proto(d->mutable_align());
+  calin::math::vector3d_util::dump_as_proto(fPos,d->mutable_pos());
+  calin::math::vector3d_util::dump_as_proto(fAlign,d->mutable_align());
   d->set_focal_length(fFocalLength);
   d->set_spot_size(fSpotSize);
   d->set_degrading_factor(fDegradingFactor);
@@ -158,8 +166,8 @@ create_from_proto(const ix::simulation::vs_optics::VSOMirrorData& d,
   mirror->fID              = d.id();
   mirror->fHexID           = d.hex_id();
   mirror->fRemoved         = d.removed();
-  mirror->fPos.set_from_proto(d.pos());
-  mirror->fAlign.set_from_proto(d.align());
+  calin::math::vector3d_util::set_from_proto(mirror->fPos, d.pos());
+  calin::math::vector3d_util::set_from_proto(mirror->fAlign, d.align());
   mirror->fFocalLength     = d.focal_length();
   mirror->fSpotSize        = d.spot_size();
   mirror->fDegradingFactor = d.degrading_factor();
@@ -168,92 +176,3 @@ create_from_proto(const ix::simulation::vs_optics::VSOMirrorData& d,
 
   return mirror;
 }
-
-#if 0
-void VSOMirror::dumpShort(std::ostream& stream) const
-{
-  stream
-    << "MIRROR "
-    << VSDataConverter::toString(fTelescope->id()) << ' '
-    << VSDataConverter::toString(fID) << ' '
-    << VSDataConverter::toString(fHexID) << ' '
-    << VSDataConverter::toString(fRemoved) << ' '
-    << VSDataConverter::toString(fPos.x) << ' '
-
-    << VSDataConverter::toString(fPos.y) << ' '
-    << VSDataConverter::toString(fPos.z) << ' '
-    << VSDataConverter::toString(fAlign.x) << ' '
-    << VSDataConverter::toString(fAlign.y) << ' '
-    << VSDataConverter::toString(fAlign.z) << ' '
-
-    << VSDataConverter::toString(fFocalLength) << ' '
-    << VSDataConverter::toString(fSpotSize) << ' '
-    << VSDataConverter::toString(fDegradingFactor) << std::endl;
-}
-
-void VSOMirror::dump(std::ostream& stream, unsigned l) const
-{
-  stream
-    << FDAV("Telescope ID", fTelescope->id(), "", 30, l) << std::endl
-    << FDAV("Mirror ID", fID, "", 30, l) << std::endl
-    << FDAV("Mirror Hex ID", fHexID, "", 30, l) << std::endl
-    << FDAV("Removed", fRemoved, "", 30, l) << std::endl
-    << FDAV("Position X", fPos.x, "", 30, l) << std::endl
-
-    << FDAV("Position Y", fPos.y, "", 30, l) << std::endl
-    << FDAV("Position Z", fPos.z, "", 30, l) << std::endl
-    << FDAV("AlignmentX", fAlign.x, "", 30, l) << std::endl
-    << FDAV("AlignmentY", fAlign.y, "", 30, l) << std::endl
-    << FDAV("AlignmentZ", fAlign.z, "", 30, l) << std::endl
-
-    << FDAV("FocalLength", fFocalLength, "", 30, l) << std::endl
-    << FDAV("SpotSize", fSpotSize, "", 30, l) << std::endl
-    << FDAV("DegradingFactor", fDegradingFactor, "", 30, l) << std::endl;
-}
-
-VSOMirror* VSOMirror::createFromShortDump(std::istream& stream,
-					  const VSOTelescope* T)
-{
-  std::string line;
-  std::getline(stream,line);
-  if(line.empty())return 0;
-
-  std::istringstream linestream(line);
-
-  VSOMirror* mirror = new VSOMirror;
-  mirror->fTelescope=T;
-
-  std::string keyword;
-  linestream >> keyword;
-  assert(keyword==std::string("MIRROR"));
-
-  unsigned TID;
-
-  linestream
-    >> TID
-    >> mirror->fID
-    >> mirror->fHexID
-    >> mirror->fRemoved
-    >> mirror->fPos.x
-
-    >> mirror->fPos.y
-    >> mirror->fPos.z
-    >> mirror->fAlign.x
-    >> mirror->fAlign.y
-    >> mirror->fAlign.z
-
-    >> mirror->fFocalLength
-    >> mirror->fSpotSize
-    >> mirror->fDegradingFactor;
-
-  if(!linestream)
-    {
-      delete mirror;
-      return 0;
-    }
-
-  mirror->calculateRotationVector();
-
-  return mirror;
-}
-#endif

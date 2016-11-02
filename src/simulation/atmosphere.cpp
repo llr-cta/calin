@@ -41,6 +41,13 @@ Atmosphere::~Atmosphere()
   // nothing to see here
 }
 
+void Atmosphere::cherenkov_parameters(double z,
+  double& n_minus_one, double& propagation_ct_correction)
+{
+  n_minus_one = this->n_minus_one(z);
+  propagation_ct_correction = this->propagation_ct_correction(z);
+}
+
 std::vector<AtmSlice> Atmosphere::make_atm_slices(unsigned nslice)
 {
   return make_atm_slices(nslice,this->top_of_atmosphere(),0);
@@ -105,7 +112,7 @@ double IsothermalAtmosphere::n_minus_one(double z)
   return m_nmo0*std::exp(-z/m_zs);
 }
 
-double IsothermalAtmosphere::propagation_time_correction(double z)
+double IsothermalAtmosphere::propagation_ct_correction(double z)
 {
   return m_zs*m_nmo0*(1.0-exp(-z/m_zs));
 }
@@ -292,11 +299,19 @@ double LayeredAtmosphere::n_minus_one(double z)
   return ilayer->nmo0 * std::exp(-z/ilayer->nmozs);
 }
 
-double LayeredAtmosphere::propagation_time_correction(double z)
+double LayeredAtmosphere::propagation_ct_correction(double z)
 {
   auto ilayer = findZ(z);
   return ilayer->ptc0 -
     ilayer->nmozs * ilayer->nmo0 * std::exp(-z/ilayer->nmozs);
+}
+
+void LayeredAtmosphere::cherenkov_parameters(double z,
+  double& n_minus_one, double& propagation_ct_correction)
+{
+  auto ilayer = findZ(z);
+  n_minus_one = ilayer->nmo0 * std::exp(-z/ilayer->nmozs);
+  propagation_ct_correction = ilayer->ptc0 - ilayer->nmozs * n_minus_one;
 }
 
 double LayeredAtmosphere::z_for_thickness(double t)

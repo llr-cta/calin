@@ -25,19 +25,19 @@
 
 #include <simulation/vso_pixel.hpp>
 #include <simulation/vso_telescope.hpp>
+#include <math/vector3d_util.hpp>
 
-using namespace calin::math::vs_physics;
 using namespace calin::simulation::vs_optics;
 
 VSOPixel::VSOPixel():
-  fTelescope(0), fID(0), fHexID(0), fRemoved(false), fPos()
+  fTelescope(0), fID(0), fHexID(0), fRemoved(false), fPos(0,0,0)
 {
   // nothing to see here
 }
 
 VSOPixel::VSOPixel(const VSOTelescope* T,
 		   unsigned PID, unsigned PHID, bool REM,
-		   const Vec3D& P):
+		   const Eigen::Vector3d& P):
   fTelescope(T), fID(PID), fHexID(PHID), fRemoved(REM), fPos(P)
 {
   // nothing to see here
@@ -48,14 +48,14 @@ VSOPixel::~VSOPixel()
   // nothing to see here
 }
 
-Vec3D VSOPixel::incomingSkyVectorAtZenith(double plate_scale) const
+Eigen::Vector3d VSOPixel::incomingSkyVectorAtZenith(double plate_scale) const
 {
-  double x = fPos.x*plate_scale;
-  double y = -fPos.z*plate_scale;
-  double z = -(fTelescope->focalPlanePosition().y+fPos.y);
+  double x = fPos.x()*plate_scale;
+  double y = -fPos.z()*plate_scale;
+  double z = -(fTelescope->focalPlanePosition().y()+fPos.y());
 
-  Vec3D p(x,y,z);
-  p/=p.Norm();
+  Eigen::Vector3d p(x,y,z);
+  p.normalize();
 
   return p;
 }
@@ -67,7 +67,7 @@ VSOPixel::dump_as_proto(calin::ix::simulation::vs_optics::VSOPixelData* d) const
   d->set_id(fID);
   d->set_hex_id(fHexID);
   d->set_removed(fRemoved);
-  fPos.dump_as_proto(d->mutable_pos());
+  calin::math::vector3d_util::dump_as_proto(fPos,d->mutable_pos());
   return d;
 }
 
@@ -81,74 +81,7 @@ VSOPixel::create_from_proto(const ix::simulation::vs_optics::VSOPixelData& d,
   pixel->fID              = d.id();
   pixel->fHexID           = d.hex_id();
   pixel->fRemoved         = d.removed();
-  pixel->fPos.set_from_proto(d.pos());
+  calin::math::vector3d_util::set_from_proto(pixel->fPos,d.pos());
 
   return pixel;
 }
-
-#if 0
-void VSOPixel::dumpShort(std::ostream& stream) const
-{
-  stream
-    << "PIXEL "
-
-    << VSDataConverter::toString(fTelescope->id()) << ' '
-    << VSDataConverter::toString(fID) << ' '
-    << VSDataConverter::toString(fHexID) << ' '
-    << VSDataConverter::toString(fRemoved) << ' '
-    << VSDataConverter::toString(fPos.x) << ' '
-
-    << VSDataConverter::toString(fPos.y) << ' '
-    << VSDataConverter::toString(fPos.z) << std::endl;
-}
-
-void VSOPixel::dump(std::ostream& stream, unsigned l) const
-{
-  stream
-    << FDAV("Telescope ID", fTelescope->id(), "", 30, l) << std::endl
-    << FDAV("Pixel ID", fID, "", 30, l) << std::endl
-    << FDAV("Pixel Hex ID", fHexID, "", 30, l) << std::endl
-    << FDAV("Removed", fRemoved, "", 30, l) << std::endl
-    << FDAV("Position X", fPos.x, "", 30, l) << std::endl
-
-    << FDAV("Position Y", fPos.y, "", 30, l) << std::endl
-    << FDAV("Position Z", fPos.z, "", 30, l) << std::endl;
-}
-
-VSOPixel* VSOPixel::createFromShortDump(std::istream& stream,
-					  const VSOTelescope* T)
-{
-  std::string line;
-  std::getline(stream,line);
-  if(line.empty())return 0;
-
-  std::istringstream linestream(line);
-
-  VSOPixel* pixel = new VSOPixel;
-  pixel->fTelescope=T;
-
-  std::string keyword;
-  linestream >> keyword;
-  assert(keyword==std::string("PIXEL"));
-
-  unsigned TID;
-
-  linestream
-    >> TID
-    >> pixel->fID
-    >> pixel->fHexID
-    >> pixel->fRemoved
-    >> pixel->fPos.x
-
-    >> pixel->fPos.y
-    >> pixel->fPos.z;
-
-  if(!linestream)
-    {
-      delete pixel;
-      return 0;
-    }
-
-  return pixel;
-}
-#endif

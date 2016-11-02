@@ -91,7 +91,10 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   cherenkov.e_mid          = cherenkov.e0 + 0.5*cherenkov.de;
   cherenkov.t_mid          = cherenkov.t0 + 0.5*cherenkov.dt;
 
-  cherenkov.n              = 1.0 + atm_->n_minus_one(cherenkov.x_mid(2));
+  atm_->cherenkov_parameters(cherenkov.x_mid(2),
+    cherenkov.n, cherenkov.propagation_delay);
+  cherenkov.n             += 1.0;
+
   const double g2 = SQR(cherenkov.e_mid/track.mass); // gamma^2
   cherenkov.gamma_sq       = g2;
   const double b2 = 1.0 - 1.0/g2;                    // beta^2

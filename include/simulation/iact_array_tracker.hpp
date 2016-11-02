@@ -40,6 +40,7 @@ struct IACTDetectorSphereHit
   Eigen::Vector3d u;     // Unit vector along motion of particle at emisson
   Eigen::Vector3d v;     // Unit vector perpendicular to u from x0 to r0
   Eigen::Vector3d w;     // Third unit vector such that u cross v = w
+  Eigen::Matrix3d rot;   // Matrix that maps x,y,z onto u,v,w
   double rx2;            // (r0-x0)^2
   double rxu;            // Component of r0-x0 along u
   double rxv;            // Component of r0-x0 along v

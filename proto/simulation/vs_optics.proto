@@ -174,41 +174,44 @@ message VSOTelescopeData {
   uint32 hexagon_rings_n                                   = 14
     [(CFO).desc = "Number of hexagaonal rings of mirror facets." ];
   double reflector_ip                                      = 15
-    [(CFO).desc = "Diameter of sphere embedding reflector.",
+    [(CFO).desc = "Diameter of minimum sphere embedding reflector.",
      (CFO).units = "cm"];
-  bool facet_labeling_parity                               = 16
+ common_types.Vector3D reflector_ip_center                 = 16
+   [(CFO).desc = "Center of minimum sphere embedding reflector in reflector r.f.",
+    (CFO).units = "cm"];
+  bool facet_labeling_parity                               = 17
     [(CFO).desc = "Mirrors are counted (on the hex. grid) in the direction of "
      "the +x-axis (east) when this flag is FALSE, and in the direction of the "
      "-x-axis (west) when this flag is TRUE (in the reflector r.f. -- home "
      "position of telescope."];
-  common_types.Vector3D fp_translation                     = 17
+  common_types.Vector3D fp_translation                     = 18
     [(CFO).desc = "Vector from the origin of the reflector "
      "reference frame to the origin of the camera frame. ",
      (CFO).units = "cm" ];
-  double camera_diameter                                   = 18
+  double camera_diameter                                   = 19
     [(CFO).desc = "Diameter of camera.",
      (CFO).units = "cm"];
-  double field_of_view                                     = 19
+  double field_of_view                                     = 20
     [(CFO).desc = "Diameter of field of view.",
      (CFO).units = "deg"];
-  double cathode_diameter                                  = 20
+  double cathode_diameter                                  = 21
     [(CFO).desc = "Diameter of cathode of the PMT.",
      (CFO).units = "cm"];
-  double pixel_spacing                                     = 21
+  double pixel_spacing                                     = 22
     [(CFO).desc = "Spacing between pixels on the focal plane.",
      (CFO).units = "cm"];
-  double pixel_rotation                                    = 22
+  double pixel_rotation                                    = 23
     [(CFO).desc = "Pixel rotation about the normal to the focal plane.",
      (CFO).units = "deg"];
-  double conc_survival_prob                                = 23
+  double conc_survival_prob                                = 24
     [(CFO).desc = "Survival probability for photons hitting concentrator." ];
-  common_types.Vector3D fp_rotation                        = 24
+  common_types.Vector3D fp_rotation                        = 25
     [(CFO).desc = "Camera rotation vector with respect to reflector frame. ",
      (CFO).units = "deg" ];
-  double camera_ip                                         = 25
+  double camera_ip                                         = 26
     [(CFO).desc = "Diameter of sphere embedding camera.",
      (CFO).units = "cm"];
-  bool pixel_labeling_parity                               = 26
+  bool pixel_labeling_parity                               = 27
     [(CFO).desc = "Pixels are counted (on the hex. grid) in the direction of "
      "the +x-axis when this flag is FALSE, and in the direction of the "
      "-x-axis when this flag is TRUE (in the camera r.f.)."];

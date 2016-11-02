@@ -1,6 +1,6 @@
 /*
 
-   calin/math/vs_vec3d.hpp -- Stephen Fegan -- 2015-11-05
+   calin/math/vs_vec3d_obsolete.hpp -- Stephen Fegan -- 2015-11-05
 
    Class for 3-vector operations. This code is derived from
    simulation code largely implemented by the author at UCLA in
@@ -60,7 +60,7 @@
 
 namespace calin { namespace math {
 
-namespace vs_physics {
+namespace vs_physics { namespace obsolete {
 
 class Vec3D
 {
@@ -430,7 +430,7 @@ inline Vec3D operator - ( const Vec3D& v )
   return temp;
 }
 
-} } } // namespace calin::math::vs_physics
+} } } } // namespace calin::math::vs_physics::obsolete
 
 #ifndef SWIG
 namespace std {
@@ -438,7 +438,7 @@ namespace std {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Stream insertion
 inline ostream& operator << (ostream& stream,
-                             const calin::math::vs_physics::Vec3D& v)
+                             const calin::math::vs_physics::obsolete::Vec3D& v)
 {
   v.DumpShort(stream);
   return stream;
@@ -447,7 +447,7 @@ inline ostream& operator << (ostream& stream,
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /// Stream extraction
 inline istream& operator >> (istream& stream,
-                             calin::math::vs_physics::Vec3D& v)
+                             calin::math::vs_physics::obsolete::Vec3D& v)
 {
   char c;
   stream >> c >> v.x >> c >> v.y >> c >> v.z >> c;

@@ -44,8 +44,8 @@
 #include <string>
 #include <vector>
 
-#include <math/vs_vec3d.hpp>
-#include <math/vs_particle.hpp>
+#include <Eigen/Dense>
+//#include <math/vs_particle.hpp>
 #include <math/rng.hpp>
 
 #include <simulation/vs_optics.pb.h>
@@ -63,19 +63,14 @@ class VSOTelescope
 {
  public:
   VSOTelescope();
-  VSOTelescope(unsigned TID, /*unsigned THID,*/ const math::vs_physics::Vec3D&P,
+  VSOTelescope(unsigned TID, /*unsigned THID,*/ const Eigen::Vector3d&P,
                double DY, double AX, double AY, double EL, double AZ,
-               const math::vs_physics::Vec3D& T, double CR, double A,
+               const Eigen::Vector3d& T, double CR, double A,
                double FSP, double FS, double RR,
-               unsigned HRN, double RIP, bool MP,
-               const math::vs_physics::Vec3D& FPT, double CD, double FOV, double D,
-               double PS, double PR, double CSP, const math::vs_physics::Vec3D& FPR,
+               unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
+               const Eigen::Vector3d& FPT, double CD, double FOV, double D,
+               double PS, double PR, double CSP, const Eigen::Vector3d& FPR,
                double CIP, bool PP,
-#if 0
-               bool SEC, double RI, double RI1, double RI2, double C10,
-               double C11, double C12, double C13, double C14, double C20,
-               double C21, double C22,double C23, double C24,
-#endif
                const std::vector<VSOObscuration*>& OBSVEC = {}
                );
   VSOTelescope(const VSOTelescope& o);
@@ -115,35 +110,41 @@ class VSOTelescope
   // ************************************************************************
 
   //! Points telescope along axis
-  bool pointTelescope(const math::vs_physics::Vec3D& v);
+  bool pointTelescope(const Eigen::Vector3d& v);
   bool pointTelescopeAzEl(const double az_rad, const double el_rad);
 
-  //! Transform position-like vector from global to reflector
-  void globalToReflector_pos(math::vs_physics::Vec3D& v) const;
-  //! Transform momentum-like vector from global to reflector
-  void globalToReflector_mom(math::vs_physics::Vec3D& v) const;
-  //! Transform position-like vector from reflector to global
-  void reflectorToGlobal_pos(math::vs_physics::Vec3D& v) const;
-  //! Transform momentum-like vector from reflector to global
-  void reflectorToGlobal_mom(math::vs_physics::Vec3D& v) const;
-
-  //! Transform position-like vector from global to reflector
-  void focalPlaneToReflector_pos(math::vs_physics::Vec3D& v) const;
-  //! Transform momentum-like vector from global to reflector
-  void focalPlaneToReflector_mom(math::vs_physics::Vec3D& v) const;
-  //! Transform position-like vector from reflector to global
-  void reflectorToFocalPlane_pos(math::vs_physics::Vec3D& v) const;
-  //! Transform momentum-like vector from reflector to global
-  void reflectorToFocalPlane_mom(math::vs_physics::Vec3D& v) const;
+  //! Transform particle global to reflector
+  inline void globalToReflector_pos(Eigen::Vector3d& v) const;
+  //! Transform particle reflector to global
+  inline void reflectorToGlobal_pos(Eigen::Vector3d& v) const;
+  //! Transform from focal plane to reflector
+  inline void focalPlaneToReflector_pos(Eigen::Vector3d& v) const;
+  //! Transform from reflector to focal plane
+  inline void reflectorToFocalPlane_pos(Eigen::Vector3d& v) const;
+  //! Transform directly from focal plane to global
+  inline void focalPlaneToGlobal_pos(Eigen::Vector3d& v) const;
 
   //! Transform particle global to reflector
-  void globalToReflector(math::vs_physics::Particle& p) const;
+  inline void globalToReflector_mom(Eigen::Vector3d& v) const;
   //! Transform particle reflector to global
-  void reflectorToGlobal(math::vs_physics::Particle& p) const;
+  inline void reflectorToGlobal_mom(Eigen::Vector3d& v) const;
   //! Transform from focal plane to reflector
-  void focalPlaneToReflector(math::vs_physics::Particle& p) const;
+  inline void focalPlaneToReflector_mom(Eigen::Vector3d& v) const;
   //! Transform from reflector to focal plane
-  void reflectorToFocalPlane(math::vs_physics::Particle& p) const;
+  inline void reflectorToFocalPlane_mom(Eigen::Vector3d& v) const;
+  //! Transform directly from focal plane to global
+  inline void focalPlaneToGlobal_mom(Eigen::Vector3d& v) const;
+
+  //! Transform particle global to reflector
+  inline void globalToReflector(calin::math::ray::Ray& r) const;
+  //! Transform particle reflector to global
+  inline void reflectorToGlobal(calin::math::ray::Ray& r) const;
+  //! Transform from focal plane to reflector
+  inline void focalPlaneToReflector(calin::math::ray::Ray& r) const;
+  //! Transform from reflector to focal plane
+  inline void reflectorToFocalPlane(calin::math::ray::Ray& r) const;
+  //! Transform directly from focal plane to global
+  inline void focalPlaneToGlobal(calin::math::ray::Ray& r) const;
 
   // ************************************************************************
   // Dump and Reload
@@ -159,78 +160,54 @@ class VSOTelescope
   static VSOTelescope*
   create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d);
 
-#if 0
-  void dumpShort(std::ostream& stream) const;
-  void dump(std::ostream& stream, unsigned l=0) const;
-  static VSOTelescope* createFromShortDump(std::istream& stream);
-#endif
   // ************************************************************************
   // Accessors
   // ************************************************************************
 
-  unsigned       id() const { return fID; }
-#if 0
-  unsigned       hexID() const { return fTelescopeHexID; }
-#endif
-  double         altitude() const { return fPos.z; }
-  const math::vs_physics::Vec3D& pos() const { return fPos; }
-  const math::vs_physics::Vec3D& position() const { return fPos; }
-  double         deltaY() const { return fDeltaY; }
-  double         alphaX() const { return fAlphaX; }
-  double         alphaY() const { return fAlphaY; }
-  double         azimuth() const { return fAzimuth; }
-  double         elevation() const { return fElevation; }
-  math::vs_physics::Vec3D opticalAxis() const;
+  unsigned               id() const { return fID; }
+  double                 altitude() const { return fPos.z(); }
+  const Eigen::Vector3d& pos() const { return fPos; }
+  const Eigen::Vector3d& position() const { return fPos; }
+  double                 deltaY() const { return fDeltaY; }
+  double                 alphaX() const { return fAlphaX; }
+  double                 alphaY() const { return fAlphaY; }
+  double                 azimuth() const { return fAzimuth; }
+  double                 elevation() const { return fElevation; }
+  Eigen::Vector3d        opticalAxis() const;
 
-  const math::vs_physics::Vec3D& translation() const { return fTranslation; }
-  double         curvatureRadius() const { return fCurvatureRadius; }
-  double         aperture() const { return fAperture; }
-  double         facetSpacing() const { return  fFacetSpacing; }
-  double         facetSize() const { return  fFacetSize; }
-  double         reflectorRotation() const { return fReflectorRotation; }
-  double         cosReflectorRotation() const { return fCosReflectorRotation; }
-  double         sinReflectorRotation() const { return fSinReflectorRotation; }
-  unsigned       mirrorHexRings() const { return fHexagonRingsN; }
-  double         reflectorIP() const { return fReflectorIP; }
-  bool           mirrorParity() const { return fMirrorParity; }
+  const Eigen::Vector3d& translation() const { return fTranslation; }
+  double                 curvatureRadius() const { return fCurvatureRadius; }
+  double                 aperture() const { return fAperture; }
+  double                 facetSpacing() const { return  fFacetSpacing; }
+  double                 facetSize() const { return  fFacetSize; }
+  double                 reflectorRotation() const { return fReflectorRotation; }
+  double                 cosReflectorRotation() const { return fCosReflectorRotation; }
+  double                 sinReflectorRotation() const { return fSinReflectorRotation; }
+  unsigned               mirrorHexRings() const { return fHexagonRingsN; }
+  double                 reflectorIP() const { return fReflectorIP; }
+  const Eigen::Vector3d& reflectorIPCenter() const { return fReflectorIPCenter; }
+  bool                   mirrorParity() const { return fMirrorParity; }
 
-  const math::vs_physics::Vec3D& focalPlanePosition() const { return fFPTranslation; }
-  double         cameraDiameter() const { return fCameraDiameter; }
-  double         fov() const { return fFieldOfView; }
-  double         cathodeDiameter() const { return fCathodeDiameter; }
-  double         pixelSpacing() const { return fPixelSpacing; }
-  double         pixelRotation() const { return fPixelRotation; }
-  double         cosPixelRotation() const { return fCosPixelRotation; }
-  double         sinPixelRotation() const { return fSinPixelRotation; }
-  double         concentratorSurvivalProb() const { return fConcSurvProb; }
-  const math::vs_physics::Vec3D& focalPlaneRotion() const { return fFPRotation; }
-  double         cameraIP() const { return fCameraIP; }
-  bool           pixelParity() const { return fPixelParity; }
+  const Eigen::Vector3d& focalPlanePosition() const { return fFPTranslation; }
+  double                 cameraDiameter() const { return fCameraDiameter; }
+  double                 fov() const { return fFieldOfView; }
+  double                 cathodeDiameter() const { return fCathodeDiameter; }
+  double                 pixelSpacing() const { return fPixelSpacing; }
+  double                 pixelRotation() const { return fPixelRotation; }
+  double                 cosPixelRotation() const { return fCosPixelRotation; }
+  double                 sinPixelRotation() const { return fSinPixelRotation; }
+  double                 concentratorSurvivalProb() const { return fConcSurvProb; }
+  const Eigen::Vector3d& focalPlaneRotation() const { return fFPRotation; }
+  double                 cameraIP() const { return fCameraIP; }
+  bool                   pixelParity() const { return fPixelParity; }
 
-#if 0
-  bool           hasSecondary() const { return fHasSecondary; }
-  double         refractiveIndex() const { return fRefractiveIndex; }
-  double         refractiveIndex1() const { return fRefractiveIndex1; }
-  double         refractiveIndex2() const { return fRefractiveIndex2; }
-  double         ce1Parameter0() const { return fCE1Parameter0; }
-  double         ce1Parameter2() const { return fCE1Parameter2; }
-  double         ce1Parameter3() const { return fCE1Parameter3; }
-  double         ce1Parameter4() const { return fCE1Parameter4; }
-  double         ce1Parameter5() const { return fCE1Parameter5; }
-  double         ce2Parameter0() const { return fCE2Parameter0; }
-  double         ce2Parameter2() const { return fCE2Parameter2; }
-  double         ce2Parameter3() const { return fCE2Parameter3; }
-  double         ce2Parameter4() const { return fCE2Parameter4; }
-  double         ce2Parameter5() const { return fCE2Parameter5; }
-#endif
+  unsigned               numObscurations() const { return fObscurations.size(); }
 
-  unsigned       numObscurations() const { return fObscurations.size(); }
+  unsigned               numMirrors() const { return fMirrors.size(); }
+  unsigned               numMirrorHexSites() const { return fMirrorsByHexID.size(); }
 
-  unsigned       numMirrors() const { return fMirrors.size(); }
-  unsigned       numMirrorHexSites() const { return fMirrorsByHexID.size(); }
-
-  unsigned       numPixels() const { return fPixels.size(); }
-  unsigned       numPixelHexSites() const { return fPixelsByHexID.size(); }
+  unsigned               numPixels() const { return fPixels.size(); }
+  unsigned               numPixelHexSites() const { return fPixelsByHexID.size(); }
 
   inline const VSOObscuration* obscuration(unsigned id) const;
 
@@ -244,70 +221,48 @@ class VSOTelescope
   // ************************************************************************
   // Telescope Parameters
   // ************************************************************************
-  unsigned       fID;                //!< Sequential ID (starting at 0)
-#if 0
-  unsigned       fTelescopeHexID;    //!< Hex ID on the honeycomb (from 1)
-#endif
-  math::vs_physics::Vec3D fPos;               //!< Position of the telescope
-  double         fDeltaY;            //!< Nonorthogonality of rotation planes
-  double         fAlphaX;            //!< Alignment angles(?)
-  double         fAlphaY;            //!< Alignment angles(?)
-  double         fElevation;         //!< Elevation of the telescope -- angle to the x-y plane
-  double         fAzimuth;           //!< Azimuthal position -- angle made in the x-y plane with the y axis
+  unsigned        fID;                //!< Sequential ID (starting at 0)
+  Eigen::Vector3d fPos;               //!< Position of the telescope
+  double          fDeltaY;            //!< Nonorthogonality of rotation planes
+  double          fAlphaX;            //!< Alignment angles(?)
+  double          fAlphaY;            //!< Alignment angles(?)
+  double          fElevation;         //!< Elevation of the telescope -- angle to the x-y plane
+  double          fAzimuth;           //!< Azimuthal position -- angle made in the x-y plane with the y axis
 
   // ************************************************************************
   // Reflector Parameters
   // ************************************************************************
-  math::vs_physics::Vec3D fTranslation;       //!< Vector in reflector r.f. to the intersection of the rotation axes
-  double         fCurvatureRadius;   //!< Radius of curvature of reflector
-  double         fAperture;          //!< Diameter of projection of reflector onto a plane
-  double         fFacetSpacing;      //!< Size of mirror
-  double         fFacetSize;         //!< Spacing between mirrors
-  double         fReflectorRotation; //!< Rotation about the axis of reflector
-  double         fCosReflectorRotation; //!< Rotation about the axis of reflector
-  double         fSinReflectorRotation; //!< Rotation about the axis of reflector
-  unsigned       fHexagonRingsN;     //!< Number of hexagon rings of mirrors
-  double         fReflectorIP;       //!< Diameter of sphere embedding reflector
-  bool           fMirrorParity;      //!< Parity for counting mirrors; 1 => counting toward +x-axis
+  Eigen::Vector3d fTranslation;       //!< Vector in reflector r.f. to the intersection of the rotation axes
+  double          fCurvatureRadius;   //!< Radius of curvature of reflector
+  double          fAperture;          //!< Diameter of projection of reflector onto a plane
+  double          fFacetSpacing;      //!< Size of mirror
+  double          fFacetSize;         //!< Spacing between mirrors
+  double          fReflectorRotation; //!< Rotation about the axis of reflector
+  double          fCosReflectorRotation; //!< Rotation about the axis of reflector
+  double          fSinReflectorRotation; //!< Rotation about the axis of reflector
+  unsigned        fHexagonRingsN;     //!< Number of hexagon rings of mirrors
+  double          fReflectorIP;       //!< Diameter of minimum sphere embedding reflector
+  Eigen::Vector3d fReflectorIPCenter; //!< Center of minimum sphere embedding reflector in reflector r.f.
+  bool            fMirrorParity;      //!< Parity for counting mirrors; 1 => counting toward +x-axis
   //!  in reflector r.f.; -1 => counting toward -x-axis
 
   // ************************************************************************
   // Camera Parameters
   // ************************************************************************
-  math::vs_physics::Vec3D fFPTranslation;
-  double         fCameraDiameter;    //!< Dependent on the field of view
-  double         fFieldOfView;       //!< Field of view
-  double         fCathodeDiameter;   //!< Diameter of photocathode
-  double         fPixelSpacing;      //!< Spacing of pixels
-  double         fPixelRotation;     //!< Rotation angle of pixels wrt grid [rad]
-  double         fCosPixelRotation;  //!< Cos rotation angle of pixels wrt grid
-  double         fSinPixelRotation;  //!< Sin rotation angle of pixels wrt grid
+  Eigen::Vector3d fFPTranslation;
+  double          fCameraDiameter;    //!< Dependent on the field of view
+  double          fFieldOfView;       //!< Field of view
+  double          fCathodeDiameter;   //!< Diameter of photocathode
+  double          fPixelSpacing;      //!< Spacing of pixels
+  double          fPixelRotation;     //!< Rotation angle of pixels wrt grid [rad]
+  double          fCosPixelRotation;  //!< Cos rotation angle of pixels wrt grid
+  double          fSinPixelRotation;  //!< Sin rotation angle of pixels wrt grid
 
-  double         fConcSurvProb;      //!< Pixel properties; probability of survival
-  math::vs_physics::Vec3D fFPRotation;
-  double         fCameraIP;
-  bool           fPixelParity;       //!< Parity for counting pixels; 1 => counting toward +x-axis
+  double          fConcSurvProb;      //!< Pixel properties; probability of survival
+  Eigen::Vector3d fFPRotation;
+  double          fCameraIP;
+  bool            fPixelParity;       //!< Parity for counting pixels; 1 => counting toward +x-axis
   //!  in reflector r.f.; -1 => counting toward -x-axis
-
-#if 0
-  // ************************************************************************
-  // Secondary Optics Parameters
-  // ************************************************************************
-  bool           fHasSecondary;
-  double         fRefractiveIndex;   //!<secondary optics parameters
-  double         fRefractiveIndex1;  //!<secondary optics parameters
-  double         fRefractiveIndex2;  //!<secondary optics parameters
-  double         fCE1Parameter0;
-  double         fCE1Parameter2;
-  double         fCE1Parameter3;
-  double         fCE1Parameter4;
-  double         fCE1Parameter5;
-  double         fCE2Parameter0;
-  double         fCE2Parameter2;
-  double         fCE2Parameter3;
-  double         fCE2Parameter4;
-  double         fCE2Parameter5;
-#endif
 
   // ************************************************************************
   // Mirrors and Pixel data
@@ -323,8 +278,18 @@ class VSOTelescope
   // Precalculated rotation vector -- not stored in DB
   // ************************************************************************
 
-  math::vs_physics::Vec3D fRotationVector;  //!<the pre-calculated rotation vector
+  bool fHasFPRotation = false;
+  Eigen::Matrix3d rot_camera_to_reflector_;
+  Eigen::Matrix3d rot_reflector_to_camera_;
 
+  Eigen::Matrix3d rot_reflector_to_global_;  //!<the pre-calculated rotation vector
+  Eigen::Matrix3d rot_global_to_reflector_;
+  Eigen::Vector3d off_global_to_reflector_;
+
+  Eigen::Matrix3d rot_camera_to_global_;
+  Eigen::Vector3d off_global_to_camera_;
+
+  void calculateFPRotationMatrix();
   void calculateRotationVector();
 };
 
@@ -356,6 +321,118 @@ inline const VSOPixel* VSOTelescope::pixelByHexID(unsigned hexID) const
 {
   if(hexID>=fPixelsByHexID.size())return 0;
   else return fPixelsByHexID[hexID];
+}
+
+//! Transform particle global to reflector
+inline void VSOTelescope::globalToReflector_pos(Eigen::Vector3d& v) const
+{
+  // First: Translate from global directly to reflector
+  v -= off_global_to_reflector_;
+  // Second: Rotate coordinate system to reflector orientation
+  v = rot_global_to_reflector_ * v;
+}
+
+//! Transform particle reflector to global
+inline void VSOTelescope::reflectorToGlobal_pos(Eigen::Vector3d& v) const
+{
+  // First: Rotate coordinate system to ground based
+  v = rot_reflector_to_global_ * v;
+  // Second: Translate from drive axes intersection to center of array
+  v += off_global_to_reflector_;
+}
+
+//! Transform from focal plane to reflector
+inline void VSOTelescope::focalPlaneToReflector_pos(Eigen::Vector3d& v) const
+{
+  // First: Rotate coordinate system
+  if(fHasFPRotation) v = rot_camera_to_reflector_ * v;
+  // Second: Translate from center of Focal Plane
+  v += fFPTranslation;
+}
+
+//! Transform from reflector to focal plane
+inline void VSOTelescope::reflectorToFocalPlane_pos(Eigen::Vector3d& v) const
+{
+  // First: Translate to center of Focal Plane
+  v -= fFPTranslation;
+  // Second: Rotate coordinate system
+  if(fHasFPRotation) v = rot_reflector_to_camera_ * v;
+}
+
+//! Transform directly from focal plane to global
+inline void VSOTelescope::focalPlaneToGlobal_pos(Eigen::Vector3d& v) const
+{
+  v = rot_camera_to_global_ * v;
+  v += off_global_to_camera_;
+}
+
+//! Transform particle global to reflector
+inline void VSOTelescope::globalToReflector_mom(Eigen::Vector3d& v) const
+{
+  v = rot_global_to_reflector_ * v;
+}
+
+//! Transform particle reflector to global
+inline void VSOTelescope::reflectorToGlobal_mom(Eigen::Vector3d& v) const
+{
+  v = rot_reflector_to_global_ * v;
+}
+
+//! Transform from focal plane to reflector
+inline void VSOTelescope::focalPlaneToReflector_mom(Eigen::Vector3d& v) const
+{
+  if(fHasFPRotation) v = rot_camera_to_reflector_ * v;
+}
+
+//! Transform from reflector to focal plane
+inline void VSOTelescope::reflectorToFocalPlane_mom(Eigen::Vector3d& v) const
+{
+  if(fHasFPRotation) v = rot_reflector_to_camera_ * v;
+}
+
+//! Transform directly from focal plane to global
+inline void VSOTelescope::focalPlaneToGlobal_mom(Eigen::Vector3d& v) const
+{
+  v = rot_camera_to_global_ * v;
+}
+
+inline void VSOTelescope::globalToReflector(calin::math::ray::Ray& r) const
+{
+  // First: Translate from global directly to reflector
+  r.translate_origin(off_global_to_reflector_);
+  // Second: Rotate coordinate system to reflector orientation
+  r.rotate(rot_global_to_reflector_);
+}
+
+inline void VSOTelescope::reflectorToGlobal(calin::math::ray::Ray& r) const
+{
+  // First: Rotate coordinate system to ground based
+  r.rotate(rot_reflector_to_global_);
+  // Second: Translate from drive axes intersection to center of array
+  r.untranslate_origin(off_global_to_reflector_);
+}
+
+inline void VSOTelescope::focalPlaneToReflector(calin::math::ray::Ray& r) const
+{
+  // First: Rotate coordinate system
+  if(fHasFPRotation) r.rotate(rot_camera_to_reflector_);
+  // Second: Translate from center of Focal Plane
+  r.untranslate_origin(fFPTranslation);
+}
+
+inline void VSOTelescope::reflectorToFocalPlane(calin::math::ray::Ray& r) const
+{
+  // First: Translate to center of Focal Plane
+  r.translate_origin(fFPTranslation);
+  // Second: Rotate coordinate system
+  if(fHasFPRotation)r.rotate(rot_reflector_to_camera_);
+}
+
+//! Transform directly from focal plane to global
+inline void VSOTelescope::focalPlaneToGlobal(calin::math::ray::Ray& r) const
+{
+  r.rotate(rot_camera_to_global_);
+  r.untranslate_origin(off_global_to_camera_);
 }
 
 } } } // namespace calin::simulation::vs_optics

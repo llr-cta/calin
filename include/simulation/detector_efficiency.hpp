@@ -3,7 +3,7 @@
    calin/simulation/detector_efficiency.hpp -- Stephen Fegan -- 2016-10-14
 
    Classes to do 1D linear or exponential interpolation over detector efficiency
-   and Cherenkov yield tables.
+   and Cherenkov bandwidth tables.
 
    Originally from EGS5 ACT code, see header below.
 
@@ -39,88 +39,98 @@
 
 namespace calin { namespace simulation { namespace detector_efficiency {
 
-struct CherenkovYieldTaylorCoefficients
+struct CherenkovBandwidthTaylorCoefficients
 {
-  CherenkovYieldTaylorCoefficients() { /* nothing to see here */ }
-  CherenkovYieldTaylorCoefficients(double n_, double dn_dw_, double d2n_dw2_):
+  CherenkovBandwidthTaylorCoefficients() { /* nothing to see here */ }
+  CherenkovBandwidthTaylorCoefficients(double n_, double dn_dw_, double d2n_dw2_):
     n(n_), dn_dw(dn_dw_), d2n_dw2(d2n_dw2_) { /* nothing to see here */ }
 
   double n         = 0;
   double dn_dw     = 0;
   double d2n_dw2   = 0;
 
-  CherenkovYieldTaylorCoefficients&
-  operator+= (const CherenkovYieldTaylorCoefficients o) {
+  CherenkovBandwidthTaylorCoefficients&
+  operator+= (const CherenkovBandwidthTaylorCoefficients o) {
     n         += o.n;
     dn_dw     += o.dn_dw;
     d2n_dw2   += o.d2n_dw2;
     return *this;
   }
 
-  CherenkovYieldTaylorCoefficients&
-  operator-= (const CherenkovYieldTaylorCoefficients o) {
+  CherenkovBandwidthTaylorCoefficients&
+  operator-= (const CherenkovBandwidthTaylorCoefficients o) {
     n         -= o.n;
     dn_dw     -= o.dn_dw;
     d2n_dw2   -= o.d2n_dw2;
     return *this;
   }
 
-  CherenkovYieldTaylorCoefficients& operator*= (double c) {
+  CherenkovBandwidthTaylorCoefficients&
+  operator*= (const CherenkovBandwidthTaylorCoefficients o) {
+    n         *= o.n;
+    dn_dw     *= o.dn_dw;
+    d2n_dw2   *= o.d2n_dw2;
+    return *this;
+  }
+
+  CherenkovBandwidthTaylorCoefficients&
+  operator/= (const CherenkovBandwidthTaylorCoefficients o) {
+    n         /= o.n;
+    dn_dw     /= o.dn_dw;
+    d2n_dw2   /= o.d2n_dw2;
+    return *this;
+  }
+
+  CherenkovBandwidthTaylorCoefficients& operator*= (double c) {
     n         *= c;
     dn_dw     *= c;
     d2n_dw2   *= c;
     return *this;
   }
 
-  CherenkovYieldTaylorCoefficients
-  operator+ (const CherenkovYieldTaylorCoefficients o) const {
-    CherenkovYieldTaylorCoefficients r(*this);
+  CherenkovBandwidthTaylorCoefficients
+  operator+ (const CherenkovBandwidthTaylorCoefficients o) const {
+    CherenkovBandwidthTaylorCoefficients r(*this);
     r += o;
     return r;
   }
 
-  CherenkovYieldTaylorCoefficients
-  operator- (const CherenkovYieldTaylorCoefficients o) const {
-    CherenkovYieldTaylorCoefficients r(*this);
+  CherenkovBandwidthTaylorCoefficients
+  operator- (const CherenkovBandwidthTaylorCoefficients o) const {
+    CherenkovBandwidthTaylorCoefficients r(*this);
     r -= o;
     return r;
   }
 
-  CherenkovYieldTaylorCoefficients operator* (double c) const {
-    CherenkovYieldTaylorCoefficients r(*this);
+  CherenkovBandwidthTaylorCoefficients operator* (double c) const {
+    CherenkovBandwidthTaylorCoefficients r(*this);
     r *= c;
     return r;
   }
 
-  bool operator< (const CherenkovYieldTaylorCoefficients o) const {
+  bool operator< (const CherenkovBandwidthTaylorCoefficients o) const {
     return false; // All coefficients equal in sort
   }
 };
 
-typedef CherenkovYieldTaylorCoefficients yield_t;
+typedef CherenkovBandwidthTaylorCoefficients bandwidth_t;
 
-#if 0
-inline yield_t operator/ (const yield_t& a, const yield_t& b)
+inline bandwidth_t operator/ (bandwidth_t a, const bandwidth_t& b)
 {
-  return yield_t(a.first/b.first, a.second/b.second, a.third/b.third);
+  a /= b;
+  return a;
 }
 
-inline yield_t operator* (const yield_t& a, const yield_t& b)
+inline bandwidth_t operator* (bandwidth_t a, const bandwidth_t& b)
 {
-  return yield_t(a.first*b.first, a.second*b.second, a.third*b.third);
+  a *= b;
+  return a;
 }
-#endif
 
-#ifdef SWIG
-//} } }
-//%template(InterpLinear1DYieldT) calin::math::interpolation_1d::Interpolation1D<yield_t, calin::math::interpolation_1d::LinearInterpolator<yield_t> >;
-//namespace calin { namespace simulation { namespace detector_efficiency {
-#endif
-
-class TelescopeEfficiency: public calin::math::interpolation_1d::InterpLinear1D
+class DetectionEfficiency: public calin::math::interpolation_1d::InterpLinear1D
 {
 public:
-  TelescopeEfficiency();
+  DetectionEfficiency();
   void scaleEff(const calin::math::interpolation_1d::InterpLinear1D& eff);
   void scaleEffFromFile(const std::string& filename);
   void scaleEffFromOldStyleFile(const std::string& filename,
@@ -135,21 +145,21 @@ private:
   typedef ExpInterpolator<double> EXP;
   typedef LinearInterpolator<double> LIN;
 public:
-  inline yield_t interpolate(double x,
-			     double x0, const yield_t& y0,
-			     double x1, const yield_t& y1) const
+  inline bandwidth_t interpolate(double x,
+			     double x0, const bandwidth_t& y0,
+			     double x1, const bandwidth_t& y1) const
   {
-    yield_t y;
+    bandwidth_t y;
     y.first  = EXP::interpolate(x, x0, y0.first,  x1, y1.first);
     y.second = LIN::interpolate(x, x0, y0.second, x1, y1.second);
     y.third  = LIN::interpolate(x, x0, y0.third,  x1, y1.third);
     return y;
   }
 
-  inline yield_t integrate(double x0, const yield_t& y0,
-			   double x1, const yield_t& y1) const
+  inline bandwidth_t integrate(double x0, const bandwidth_t& y0,
+			   double x1, const bandwidth_t& y1) const
   {
-    yield_t y;
+    bandwidth_t y;
     y.first  = EXP::integrate(x0, y0.first,  x1, y1.first);
     y.second = LIN::integrate(x0, y0.second, x1, y1.second);
     y.third  = LIN::integrate(x0, y0.third,  x1, y1.third);
@@ -158,18 +168,31 @@ public:
 };
 
 #ifdef SWIG
-%template(Interp1DACT) Interpolation1D<yield_t, ACTILYInterpolator>;
+%template(Interp1DACT) Interpolation1D<bandwidth_t, ACTILYInterpolator>;
 #endif
 #endif
 
-class ACTIntegratedLightYield:
-  public calin::math::interpolation_1d::Interpolation1D<yield_t, calin::math::interpolation_1d::LinearInterpolator<yield_t> >
-  //public Interpolation1D<yield_t, ExpInterpolator<yield_t> >
-  //public Interpolation1D<yield_t, ACTILYInterpolator>
+#ifdef SWIG
+} } }
+%template(LinearInterpolatorBandwidthT)
+  calin::math::interpolation_1d::LinearInterpolator<
+    calin::simulation::detector_efficiency::bandwidth_t>;
+%template(InterpLinear1DBandwidthT)
+  calin::math::interpolation_1d::Interpolation1D<
+    calin::simulation::detector_efficiency::bandwidth_t,
+    calin::math::interpolation_1d::LinearInterpolator<
+      calin::simulation::detector_efficiency::bandwidth_t> >;
+namespace calin { namespace simulation { namespace detector_efficiency {
+#endif
+
+class ACTEffectiveBandwidth:
+  public calin::math::interpolation_1d::Interpolation1D<bandwidth_t, calin::math::interpolation_1d::LinearInterpolator<bandwidth_t> >
+  //public Interpolation1D<bandwidth_t, ExpInterpolator<bandwidth_t> >
+  //public Interpolation1D<bandwidth_t, ACTILYInterpolator>
 {
 public:
-  ACTIntegratedLightYield(double w0=0);
-  double yield(double h, double w) const;
+  ACTEffectiveBandwidth(double w0=0);
+  double bandwidth(double h, double w) const;
   double w0() const { return m_w0; }
 private:
   double m_w0;
@@ -185,8 +208,8 @@ public:
   AtmosphericAbsorption(const std::string& filename,
     std::vector<double> levels_cm = {});
   calin::math::interpolation_1d::InterpLinear1D absorptionForAltitude(double h) const;
-  ACTIntegratedLightYield integrateYield(double h0, double w0,
-					 const TelescopeEfficiency& eff);
+  ACTEffectiveBandwidth integrateBandwidth(double h0, double w0,
+    const DetectionEfficiency& eff) const;
   const std::vector<double>& energy_ev() const { return e_ev_; }
   std::vector<double> levels_cm() const;
 private:

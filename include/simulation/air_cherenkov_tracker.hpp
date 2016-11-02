@@ -42,25 +42,26 @@ constexpr double YIELD_CONST = 369.81020849958;
 
 struct AirCherenkovTrack
 {
-  double sin2_thetac;      // Sine^2 of emission angle          [1]
-  double sin_thetac;       // Sine of emssion angle             [1]
-  double cos_thetac;       // Cosine of emission angle          [1]
-  double yield_density;    // Cherenkov photon density          [ph/eV]
-  double n;                // Refracive index                   [1]
-  double gamma_sq;         // Particle gamma                    [1]
+  double sin2_thetac;       // Sine^2 of emission angle          [1]
+  double sin_thetac;        // Sine of emssion angle             [1]
+  double cos_thetac;        // Cosine of emission angle          [1]
+  double yield_density;     // Cherenkov photon density          [ph/eV]
+  double n;                 // Refracive index                   [1]
+  double propagation_delay; // Vertical propagation delay in ct  [cm]
+  double gamma_sq;          // Particle gamma squared            [1]
 
-  Eigen::Vector3d x0;      // Position of start of track        [cm]
-  double e0;               // Total energy at start of trk      [MeV]
-  double t0;               // Time at start of track            [ns]
+  Eigen::Vector3d x0;       // Position of start of track        [cm]
+  double e0;                // Total energy at start of trk      [MeV]
+  double t0;                // Time at start of track            [ns]
 
-  Eigen::Vector3d x_mid;   // Position of "middle" of track     [cm]
-  double e_mid;            // Total energy at "middle" of trk   [MeV]
-  double t_mid;            // Time at "middle" of track         [ns]
+  Eigen::Vector3d x_mid;    // Position of "middle" of track     [cm]
+  double e_mid;             // Total energy at "middle" of trk   [MeV]
+  double t_mid;             // Time at "middle" of track         [ns]
 
-  Eigen::Vector3d dx_hat;  // Unit vector from x0 to x1         [1]
-  double dx;               // Step length                       [cm]
-  double de;               // Change in energy                  [MeV]
-  double dt;               // Time step                         [ns]
+  Eigen::Vector3d dx_hat;   // Unit vector from x0 to x1         [1]
+  double dx;                // Step length                       [cm]
+  double de;                // Change in energy                  [MeV]
+  double dt;                // Time step                         [ns]
 
   // Track from underlying simulator - this could be split by AirCherenkov
   // code if it is too long, i.e. if theta_c changes significantly along

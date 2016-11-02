@@ -39,9 +39,7 @@
 
 #pragma once
 
-#include <math/vs_vec3d.hpp>
-#include <math/vs_vec4d.hpp>
-#include <math/vs_particle.hpp>
+#include <math/ray.hpp>
 #include <math/rng.hpp>
 #include <simulation/vso_array.hpp>
 
@@ -91,15 +89,16 @@ class VSOTraceInfo
   double              mirror_x;
   double              mirror_y;
   double              mirror_z;
-  math::vs_physics::Vec3D   mirror_normal;
+  Eigen::Vector3d     mirror_normal;
   double              mirror_normal_dispersion;
-  math::vs_physics::Vec3D   mirror_scattered;
+  Eigen::Vector3d     mirror_scattered;
   double              mirror_reflection_angle;
   double              fplane_x;
   double              fplane_z;
   double              fplane_dx;
   double              fplane_dz;
   double              fplane_t;
+  double              fplane_uy;     // y-axis directional cosine at FP
   int                 pixel_hexid;
   const VSOPixel*     pixel;
   double              pixel_dist;
@@ -154,40 +153,40 @@ class VSORayTracer
   typedef VSOTraceStatus Status;
   typedef VSOTraceInfo TraceInfo;
 
-  const VSOPixel* trace(math::vs_physics::Particle& ray, TraceInfo& info);
-  const VSOPixel* trace(math::vs_physics::Particle& ray, TraceInfo& info,
+  const VSOPixel* trace(math::ray::Ray& ray, TraceInfo& info);
+  const VSOPixel* trace(math::ray::Ray& ray, TraceInfo& info,
                         const VSOTelescope* scope_hint);
 
-  bool beam(math::vs_physics::Particle& photon,
-            const math::vs_physics::Vec3D& origin,
-            const math::vs_physics::Vec3D& direction,
+  bool beam(math::ray::Ray& photon,
+            const Eigen::Vector3d& origin,
+            const Eigen::Vector3d& direction,
             double beam_start, double beam_stop,
             double beam_radius_in, double beam_radius_out,
             double beam_angle_lo, double beam_angle_hi,
-            double lambda_nm = 400);
+            double energy_ev = 3.1 /* 400 nm */);
 
-  bool laserBeam(math::vs_physics::Particle& photon,
-                 const math::vs_physics::Vec3D& center,
-                 const math::vs_physics::Vec3D& direction,
+  bool laserBeam(math::ray::Ray& photon,
+                 const Eigen::Vector3d& center,
+                 const Eigen::Vector3d& direction,
                  double d0, double sampling_radius,
-                 double lambda_nm = 400);
+                 double energy_ev = 3.1 /* 400 nm */);
 
-  bool fanBeam(math::vs_physics::Particle& photon,
-               const math::vs_physics::Vec3D& origin,
-               const math::vs_physics::Vec3D& direction,
-               double half_angle_spread, double lambda_nm = 400);
+  bool fanBeam(math::ray::Ray& photon,
+               const Eigen::Vector3d& origin,
+               const Eigen::Vector3d& direction,
+               double half_angle_spread, double energy_ev = 3.1 /* 400 nm */);
 
-  bool muonBeam(math::vs_physics::Particle& photon,
-                const math::vs_physics::Vec3D& origin,
-                const math::vs_physics::Vec3D& direction,
+  bool muonBeam(math::ray::Ray& photon,
+                const Eigen::Vector3d& origin,
+                const Eigen::Vector3d& direction,
                 double muon_travel_distance, double opening_angle,
-                double lambda_nm = 400);
+                double energy_ev = 3.1 /* 400 nm */);
 
-  bool testBeam(math::vs_physics::Particle& photon,
+  bool testBeam(math::ray::Ray& photon,
                 const VSOTelescope* scope,
                 double theta, double phi = 0,
                 double U = std::numeric_limits<double>::infinity(),
-                double lambda_nm = 400);
+                double energy_ev = 3.1 /* 400 nm */);
 
   void calcPSF(class VSOPSFInfo& psf, const VSOTelescope* scope,
                double theta, double phi = 0,
@@ -195,18 +194,17 @@ class VSORayTracer
                unsigned nsim = 1000000, bool save_image = false);
 
  private:
-  bool findMirror(math::vs_physics::Particle& ray, TraceInfo& info);
+  bool findMirror(math::ray::Ray& ray, TraceInfo& info);
 
   const VSOArray*          fArray;
   math::rng::RNG*          fRNG;
 
-  const VSOPixel* scope_trace(math::vs_physics::Particle& ray,
+  const VSOPixel* scope_trace(math::ray::Ray& ray,
                               TraceInfo& info);
 };
 
 #ifndef SWIG
-std::ostream& operator <<(std::ostream& stream,
-                          const VSORayTracer::TraceInfo& o);
+std::ostream& operator <<(std::ostream& stream, const VSORayTracer::TraceInfo& o);
 #endif
 
 } } } // namespace calin::simulations::vs_optics
