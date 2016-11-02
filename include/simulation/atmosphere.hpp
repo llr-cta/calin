@@ -107,12 +107,14 @@ class Atmosphere
   virtual double rho(double z) = 0;
   virtual double thickness(double z) = 0;
   virtual double n_minus_one(double z) = 0;
+  virtual void cherenkov_parameters(double z,
+    double& n_minus_one, double& propagation_ct_correction);
 #if 0
   virtual double pressure(double z) = 0;
   virtual double temperature(double z) = 0;
   virtual AtmComposition composition(double z) = 0;
 #endif
-  virtual double propagation_time_correction(double z) = 0;
+  virtual double propagation_ct_correction(double z) = 0;
   virtual double z_for_thickness(double t) = 0;
   virtual double top_of_atmosphere() = 0;
   std::vector<AtmSlice> make_atm_slices(unsigned nslice,
@@ -136,7 +138,7 @@ class IsothermalAtmosphere: public Atmosphere
   double temperature(double z) override;
   AtmComposition composition(double z) override;
 #endif
-  double propagation_time_correction(double z) override;
+  double propagation_ct_correction(double z) override;
   double z_for_thickness(double t) override;
   double top_of_atmosphere() override;
 private:
@@ -209,7 +211,9 @@ class LayeredAtmosphere: public Atmosphere
   double temperature(double z) override;
   AtmComposition composition(double z) override;
 #endif
-  double propagation_time_correction(double z) override;
+  double propagation_ct_correction(double z) override;
+  void cherenkov_parameters(double z,
+    double& n_minus_one, double& propagation_ct_correction) override;
   double z_for_thickness(double t) override;
   double top_of_atmosphere() override;
 

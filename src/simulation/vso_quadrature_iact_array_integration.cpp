@@ -387,10 +387,8 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
 
   if(iscope < effective_bandwidth_.size()) {
     weight *= effective_bandwidth_[iscope].bandwidth(z0, std::fabs(w));
-#if 1
     if(trace_info.rayHitFocalPlane())
       weight *= cone_efficiency_.y(trace_info.fplane_uy);
-#endif
   }
 
 #if 0
