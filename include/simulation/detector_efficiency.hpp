@@ -65,6 +65,22 @@ struct CherenkovBandwidthTaylorCoefficients
     return *this;
   }
 
+  CherenkovBandwidthTaylorCoefficients&
+  operator*= (const CherenkovBandwidthTaylorCoefficients o) {
+    n         *= o.n;
+    dn_dw     *= o.dn_dw;
+    d2n_dw2   *= o.d2n_dw2;
+    return *this;
+  }
+
+  CherenkovBandwidthTaylorCoefficients&
+  operator/= (const CherenkovBandwidthTaylorCoefficients o) {
+    n         /= o.n;
+    dn_dw     /= o.dn_dw;
+    d2n_dw2   /= o.d2n_dw2;
+    return *this;
+  }
+
   CherenkovBandwidthTaylorCoefficients& operator*= (double c) {
     n         *= c;
     dn_dw     *= c;
@@ -99,23 +115,17 @@ struct CherenkovBandwidthTaylorCoefficients
 
 typedef CherenkovBandwidthTaylorCoefficients bandwidth_t;
 
-#if 0
-inline bandwidth_t operator/ (const bandwidth_t& a, const bandwidth_t& b)
+inline bandwidth_t operator/ (bandwidth_t a, const bandwidth_t& b)
 {
-  return bandwidth_t(a.first/b.first, a.second/b.second, a.third/b.third);
+  a /= b;
+  return a;
 }
 
-inline bandwidth_t operator* (const bandwidth_t& a, const bandwidth_t& b)
+inline bandwidth_t operator* (bandwidth_t a, const bandwidth_t& b)
 {
-  return bandwidth_t(a.first*b.first, a.second*b.second, a.third*b.third);
+  a *= b;
+  return a;
 }
-#endif
-
-#ifdef SWIG
-//} } }
-//%template(InterpLinear1DBandwidthT) calin::math::interpolation_1d::Interpolation1D<bandwidth_t, calin::math::interpolation_1d::LinearInterpolator<bandwidth_t> >;
-//namespace calin { namespace simulation { namespace detector_efficiency {
-#endif
 
 class DetectionEfficiency: public calin::math::interpolation_1d::InterpLinear1D
 {
@@ -160,6 +170,19 @@ public:
 #ifdef SWIG
 %template(Interp1DACT) Interpolation1D<bandwidth_t, ACTILYInterpolator>;
 #endif
+#endif
+
+#ifdef SWIG
+} } }
+%template(LinearInterpolatorBandwidthT)
+  calin::math::interpolation_1d::LinearInterpolator<
+    calin::simulation::detector_efficiency::bandwidth_t>;
+%template(InterpLinear1DBandwidthT)
+  calin::math::interpolation_1d::Interpolation1D<
+    calin::simulation::detector_efficiency::bandwidth_t,
+    calin::math::interpolation_1d::LinearInterpolator<
+      calin::simulation::detector_efficiency::bandwidth_t> >;
+namespace calin { namespace simulation { namespace detector_efficiency {
 #endif
 
 class ACTEffectiveBandwidth:
