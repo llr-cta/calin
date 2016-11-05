@@ -263,28 +263,10 @@ void DetectionEfficiency::scaleEff(const InterpLinear1D& eff)
 void DetectionEfficiency::
 scaleEffFromFile(const std::string& filename)
 {
-  std::ifstream stream(filename.c_str());
-  if(!stream.good())
-    throw std::runtime_error("Could not open: "+filename);
-
-  std::string line;
-  std::getline(stream,line);
-  while((line.empty() or line[0] == '#') and stream)std::getline(stream,line);
-  if(!stream)return;
   InterpLinear1D eff_fn;
-  do
-  {
-    double lambda;
-    double eff;
-    std::istringstream lstream(line);
-    lstream >> lambda >> eff;
-    //LOG(INFO) << lambda << ' ' << eff;
-    if(lstream) {
-      double e = EV_NM / lambda;
-      eff_fn.insert(e, eff);
-    }
-    std::getline(stream,line);
-  }while(stream);
+  eff_fn.insert_from_2column_file_with_filter(filename,
+    [](double& lambda_in_e_out, double& eff) {
+      lambda_in_e_out = EV_NM / lambda_in_e_out; return true; });
   scaleEff(eff_fn);
 }
 
@@ -307,6 +289,24 @@ scaleEffFromOldStyleFile(const std::string& filename,
     stream >> eff;
   }
   scaleEff(eff_fn);
+}
+
+// ----------------------------------------------------------------------------
+// AngularEfficiency
+// ----------------------------------------------------------------------------
+
+AngularEfficiency::AngularEfficiency(double const_eff):
+  InterpLinear1D(const_eff)
+{
+  // nothing to see here
+}
+
+AngularEfficiency::AngularEfficiency(const std::string& filename):
+  InterpLinear1D(1.0)
+{
+  this->insert_from_2column_file_with_filter(filename,
+    [](double& theta_in_w_out, double& eff) {
+      theta_in_w_out = std::cos(theta_in_w_out/180.0*M_PI); return true; });
 }
 
 // ----------------------------------------------------------------------------

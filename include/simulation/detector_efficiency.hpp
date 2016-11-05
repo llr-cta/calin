@@ -134,7 +134,14 @@ public:
   void scaleEff(const calin::math::interpolation_1d::InterpLinear1D& eff);
   void scaleEffFromFile(const std::string& filename);
   void scaleEffFromOldStyleFile(const std::string& filename,
-			double lambda0_nm=180.0, double dlambda_nm=5.0);
+		double lambda0_nm=180.0, double dlambda_nm=5.0);
+};
+
+class AngularEfficiency: public calin::math::interpolation_1d::InterpLinear1D
+{
+public:
+  AngularEfficiency(double const_eff = 1.0);
+  AngularEfficiency(const std::string& filename);
 };
 
 #if 0

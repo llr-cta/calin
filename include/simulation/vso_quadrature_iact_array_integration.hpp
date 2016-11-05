@@ -196,7 +196,7 @@ public:
     const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
     const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
     double w0,
-    const calin::math::interpolation_1d::InterpLinear1D& cone_efficiency = { 1.0 });
+    const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency = { 1.0 });
 
 protected:
   friend class VSO_IACTDetectorSphereHitProcessor;
