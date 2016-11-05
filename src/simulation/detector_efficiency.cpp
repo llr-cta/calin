@@ -260,6 +260,11 @@ void DetectionEfficiency::scaleEff(const InterpLinear1D& eff)
   *static_cast<InterpLinear1D*>(this) *= eff;
 }
 
+void DetectionEfficiency::scaleEffByConst(double c)
+{
+  *static_cast<InterpLinear1D*>(this) *= c;
+}
+
 void DetectionEfficiency::
 scaleEffFromFile(const std::string& filename)
 {

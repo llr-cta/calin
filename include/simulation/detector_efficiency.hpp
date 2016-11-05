@@ -132,6 +132,7 @@ class DetectionEfficiency: public calin::math::interpolation_1d::InterpLinear1D
 public:
   DetectionEfficiency();
   void scaleEff(const calin::math::interpolation_1d::InterpLinear1D& eff);
+  void scaleEffByConst(double c);
   void scaleEffFromFile(const std::string& filename);
   void scaleEffFromOldStyleFile(const std::string& filename,
 		double lambda0_nm=180.0, double dlambda_nm=5.0);
