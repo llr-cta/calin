@@ -1,6 +1,6 @@
-# calin/src/CMakeLists.txt -- Stephen Fegan
+# calin/src/provenance/CMakeLists.txt -- Stephen Fegan
 #
-# Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+# Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 #
 # This file is part of "calin"
@@ -13,15 +13,11 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_subdirectory(util)
-add_subdirectory(io)
-add_subdirectory(nlopt)
-add_subdirectory(cminpack)
-add_subdirectory(f2c)
-add_subdirectory(math)
-add_subdirectory(simulation)
-add_subdirectory(iact_data)
-add_subdirectory(diagnostics)
-add_subdirectory(calib)
-add_subdirectory(provenance)
-add_subdirectory(bin)
+set(CALIN_TARGET_LIBRARY calin_provenance)
+set(CALIN_SOURCES system_info.cpp)
+
+add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
+target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY}
+  calin_proto_provenance calin_proto)
+
+install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)

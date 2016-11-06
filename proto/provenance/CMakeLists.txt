@@ -1,4 +1,4 @@
-# calin/src/CMakeLists.txt -- Stephen Fegan
+# calin/proto/iact_data/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -13,15 +13,11 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_subdirectory(util)
-add_subdirectory(io)
-add_subdirectory(nlopt)
-add_subdirectory(cminpack)
-add_subdirectory(f2c)
-add_subdirectory(math)
-add_subdirectory(simulation)
-add_subdirectory(iact_data)
-add_subdirectory(diagnostics)
-add_subdirectory(calib)
-add_subdirectory(provenance)
-add_subdirectory(bin)
+set(CALIN_SWIG_PROTO system_info.proto)
+set(CALIN_PACKAGE provenance)
+set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
+
+make_proto_modules(${CALIN_TARGET_LIBRARY}
+	${CALIN_PROTO_INSTALL_DIR}/${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})
+make_proto_swig_modules(${CALIN_TARGET_LIBRARY}
+		${CALIN_SWIG_INSTALL_DIR}/${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})

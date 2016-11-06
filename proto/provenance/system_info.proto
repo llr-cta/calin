@@ -1,0 +1,76 @@
+/*
+
+   calin/proto/provenance/system_info.proto -- Stephen Fegan -- 2016-11-06
+
+   Protobufs for build-time and run-time system information
+
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+//import "common_types.proto";
+
+package calin.ix.provenance.system_info;
+
+message BuildInfo {
+  string install_prefix                                    = 1 [
+    (CFO).desc = "Prefix for calin install directory from CMake "
+      "variable CMAKE_INSTALL_PREFIX." ];
+
+  string build_system                                      = 100 [
+    (CFO).desc = "Build system (i.e. operating system) type from CMake "
+      "variable CMAKE_SYSTEM."];
+
+  string build_type                                        = 101 [
+    (CFO).desc = "Build system operating system type from CMake "
+      "variable CMAKE_BUILD_TYPE." ];
+
+  string build_c_compiler_id                               = 102 [
+    (CFO).desc = "Build system C compiler ID from CMake "
+      "variable CMAKE_C_COMPILER_ID." ];
+
+  string build_cxx_compiler_id                             = 103 [
+    (CFO).desc = "Build system C++ compiler ID from CMake "
+      "variable CMAKE_C_COMPILER_ID." ];
+
+  string build_system_fqdn                                 = 104 [
+    (CFO).desc = "Fully qualified domain name of build system host from "
+      "CMake." ];
+
+  string build_system_user                                 = 105 [
+    (CFO).desc = "User running build from environment variable $USER." ];
+
+  string build_date                                        = 106 [
+    (CFO).desc = "Date of build." ];
+
+  string git_origin_url                                    = 201 [
+    (CFO).desc = "URL of git origin." ];
+
+  string git_branch                                        = 202 [
+    (CFO).desc = "Name of git branch." ];
+
+  string git_commit_sha1                                   = 203 [
+    (CFO).desc = "SHA1 checksum of latest HEAD commit." ];
+
+  string git_commit_date                                   = 204 [
+    (CFO).desc = "Date of latest HEAD commit." ];
+
+  string git_repo_status                                   = 205 [
+    (CFO).desc = "Status of git repo at time of configuration: "
+      "\"clean\" or \"dirty\"." ];
+};

@@ -1,8 +1,8 @@
 /*
 
-   calin/util/options_processor.i -- Stephen Fegan -- 2016-03-21
+   calin/simulation/pmt.i -- Stephen Fegan -- 2016-03-21
 
-   SWIG interface file for options processor
+   SWIG interface file for PMT simulation
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -20,10 +20,10 @@
 
 */
 
-%module (package="calin.util") options_processor
+%module (package="calin.provenance") system_info
 
 %{
-#include "util/options_processor.hpp"
+#include "provenance/system_info.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -34,4 +34,5 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%include "util/options_processor.hpp"
+%import "provenance/system_info.pb.i"
+%include "provenance/system_info.hpp"

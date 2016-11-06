@@ -1,6 +1,6 @@
-# calin/src/CMakeLists.txt -- Stephen Fegan
+# calin/swig/util/CMakeLists.txt -- Stephen Fegan
 #
-# Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+# Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 #
 # This file is part of "calin"
@@ -13,15 +13,11 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_subdirectory(util)
-add_subdirectory(io)
-add_subdirectory(nlopt)
-add_subdirectory(cminpack)
-add_subdirectory(f2c)
-add_subdirectory(math)
-add_subdirectory(simulation)
-add_subdirectory(iact_data)
-add_subdirectory(diagnostics)
-add_subdirectory(calib)
-add_subdirectory(provenance)
-add_subdirectory(bin)
+set(CALIN_SWIG_FILES system_info.i)
+set(CALIN_SWIG_TARGET provenance)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+make_swig_modules(calin_${CALIN_SWIG_TARGET}
+	${CALIN_SWIG_INSTALL_DIR}/${CALIN_SWIG_TARGET} ${CALIN_SWIG_FILES})
+install(FILES __init__.py
+	DESTINATION ${CALIN_SWIG_INSTALL_DIR}/${CALIN_SWIG_TARGET})
