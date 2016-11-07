@@ -101,7 +101,7 @@ endmacro()
 make_proto_modules(${CALIN_TARGET_LIBRARY} ""
 	calin.proto ${CALIN_SWIG_PROTO})
 make_proto_swig_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PROTO_SWIG_INSTALL_DIR}
-		${CALIN_SWIG_PROTO})
+	${CALIN_SWIG_PROTO})
 
 ######################################################################
 # SUB DIRECTORIES
