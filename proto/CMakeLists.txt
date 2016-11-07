@@ -15,8 +15,7 @@
 
 set(CALIN_SWIG_PROTO common_types.proto unittest.proto)
 set(CALIN_TARGET_LIBRARY calin_proto)
-set(CALIN_SWIG_INSTALL_DIR ${CALIN_PYTHON_BASE_DIR}/calin/ix)
-set(CALIN_PROTO_INSTALL_DIR proto)
+set(CALIN_PROTO_SWIG_INSTALL_DIR ${CALIN_PYTHON_INSTALL_DIR}/ix)
 
 message(STATUS "PROTOBUF_IMPORT_DIRS: " ${PROTOBUF_IMPORT_DIRS})
 message(STATUS "PROTOBUF_INCLUDE_DIRS: " ${PROTOBUF_INCLUDE_DIRS})
@@ -50,7 +49,7 @@ macro(make_proto_modules arg_proto_library arg_proto_install_dir)
 	else()
 		target_link_libraries(${arg_proto_library} calin_proto ${PROTOBUF_LIBRARY})
 	endif()
-	install(TARGETS ${arg_proto_library} DESTINATION lib)
+	install(TARGETS ${arg_proto_library} DESTINATION ${CALIN_LIB_INSTALL_DIR})
 	install(FILES ${proto_interface_file} DESTINATION ${arg_proto_install_dir})
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.h DESTINATION ${arg_proto_install_dir})
 endmacro()
@@ -92,9 +91,9 @@ endmacro()
 # GENERATE SWIG INTERFACE FILES
 ######################################################################
 
-make_proto_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PROTO_INSTALL_DIR}
+make_proto_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PROTO_HEADER_INSTALL_DIR}
 	calin.proto ${CALIN_SWIG_PROTO})
-make_proto_swig_modules(${CALIN_TARGET_LIBRARY} ${CALIN_SWIG_INSTALL_DIR}
+make_proto_swig_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PROTO_SWIG_INSTALL_DIR}
 		${CALIN_SWIG_PROTO})
 
 ######################################################################

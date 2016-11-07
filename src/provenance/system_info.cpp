@@ -32,6 +32,14 @@ calin::ix::provenance::system_info::BuildInfo* new_build_info()
   calin::ix::provenance::system_info::BuildInfo* info =
     new calin::ix::provenance::system_info::BuildInfo;
   info->set_install_prefix(CALIN_BUILD_INSTALL_PREFIX);
+
+  info->set_proto_install_dir(CALIN_PROTO_INSTALL_DIR);
+  info->set_proto_header_install_dir(CALIN_PROTO_HEADER_INSTALL_DIR);
+  info->set_data_install_dir(CALIN_DATA_INSTALL_DIR);
+  info->set_lib_install_dir(CALIN_LIB_INSTALL_DIR);
+  info->set_bin_install_dir(CALIN_BIN_INSTALL_DIR);
+  info->set_header_install_dir(CALIN_HEADER_INSTALL_DIR);
+  info->set_python_install_dir(CALIN_PYTHON_INSTALL_DIR);
   info->set_build_system(CALIN_BUILD_SYSTEM);
   info->set_build_type(CALIN_BUILD_TYPE);
   info->set_build_c_compiler_id(CALIN_BUILD_C_COMPILER_ID);

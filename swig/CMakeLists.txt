@@ -25,7 +25,7 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/calin_config.i.in
   ${CMAKE_CURRENT_BINARY_DIR}/calin_config.i)
 
 set(CALIN_SWIG_FILES calin_global_definitions.i google_protobuf.i)
-set(CALIN_SWIG_INSTALL_DIR ${CALIN_PYTHON_BASE_DIR}/calin)
+set(CALIN_SWIG_INSTALL_DIR ${CALIN_PYTHON_INSTALL_DIR})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #include_directories(${CMAKE_CURRENT_BINARY_DIR}) # For calin_config.i

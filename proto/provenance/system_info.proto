@@ -32,6 +32,27 @@ message BuildInfo {
     (CFO).desc = "Prefix for calin install directory from CMake "
       "variable CMAKE_INSTALL_PREFIX." ];
 
+  string proto_install_dir                                 = 2 [
+    (CFO).desc = "Installation directory for protobuf definitions files." ];
+
+  string proto_header_install_dir                          = 3 [
+    (CFO).desc = "Installation directory for protobuf header files." ];
+
+  string data_install_dir                                  = 4 [
+    (CFO).desc = "Installation directory for data files." ];
+
+  string lib_install_dir                                   = 5 [
+    (CFO).desc = "Installation directory for libraries." ];
+
+  string bin_install_dir                                   = 6 [
+    (CFO).desc = "Installation directory for binaries and scripts." ];
+
+  string header_install_dir                                = 7 [
+    (CFO).desc = "Installation directory for header files." ];
+
+  string python_install_dir                                = 8 [
+    (CFO).desc = "Installation directory for python files." ];
+
   string build_system                                      = 100 [
     (CFO).desc = "Build system (i.e. operating system) type from CMake "
       "variable CMAKE_SYSTEM."];

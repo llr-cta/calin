@@ -29,9 +29,33 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/"
 include_directories(include ${CMAKE_BINARY_DIR}/include)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -std=c++11 -Wall")
 
-if(NOT CALIN_PYTHON_BASE_DIR)
-	set(CALIN_PYTHON_BASE_DIR "python")
+if(NOT CALIN_PYTHON_SUB_DIR)
+	set(CALIN_PYTHON_SUB_DIR "python")
 endif()
+
+if(NOT CALIN_SHARE_SUB_DIR)
+	set(CALIN_SHARE_SUB_DIR "share")
+endif()
+
+if(NOT CALIN_INCLUDE_SUB_DIR)
+	set(CALIN_INCLUDE_SUB_DIR "include")
+endif()
+
+if(NOT CALIN_LIB_SUB_DIR)
+	set(CALIN_LIB_SUB_DIR "lib")
+endif()
+
+if(NOT CALIN_BIN_SUB_DIR)
+	set(CALIN_BIN_SUB_DIR "bin")
+endif()
+
+set(CALIN_PROTO_INSTALL_DIR ${CALIN_SHARE_SUB_DIR}/calin/proto)
+set(CALIN_PROTO_HEADER_INSTALL_DIR ${CALIN_INCLUDE_SUB_DIR}/calin/proto)
+set(CALIN_DATA_INSTALL_DIR ${CALIN_SHARE_SUB_DIR}/calin/data)
+set(CALIN_LIB_INSTALL_DIR ${CALIN_LIB_SUB_DIR})
+set(CALIN_BIN_INSTALL_DIR ${CALIN_BIN_SUB_DIR})
+set(CALIN_HEADER_INSTALL_DIR ${CALIN_INCLUDE_SUB_DIR}/calin)
+set(CALIN_PYTHON_INSTALL_DIR ${CALIN_PYTHON_SUB_DIR}/calin)
 
 ## Find Protobuf libraries and set protobuf base path
 set(PROTOBUF_IMPORT_DIRS ${PROJECT_SOURCE_DIR}/proto)
@@ -131,4 +155,4 @@ add_subdirectory(src)
 add_subdirectory(swig)
 add_subdirectory(unit_tests)
 
-install(DIRECTORY include/ DESTINATION include/calin)
+install(DIRECTORY include/ DESTINATION ${CALIN_HEADER_INSTALL_DIR})

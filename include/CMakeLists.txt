@@ -60,5 +60,5 @@ ENDIF()
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/calin_global_config.hpp.in
   ${CMAKE_CURRENT_BINARY_DIR}/calin_global_config.hpp)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/calin_global_config.hpp
-  DESTINATION include/calin)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/calin_global_config.hpp
+  DESTINATION ${CALIN_HEADER_INSTALL_DIR})
