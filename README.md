@@ -19,7 +19,9 @@ __calin__ is a (French) word that my three-year-old daughter says a
 
 ### License ###
 
-__calin__ is distributed under the [GPLv2](LICENSE.md).
+__calin__ is distributed under the [GPLv2](LICENSE.md) license.
+Certain data files can be copied under the terms of the
+[CC-BY-SA-4.0](data/LICENSE.md) license.
 
 ### Wiki ###
 
