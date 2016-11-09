@@ -250,9 +250,16 @@ std::vector<double> AtmosphericAbsorption::levels_cm() const
 // DetectionEfficiency
 // ----------------------------------------------------------------------------
 
-DetectionEfficiency::DetectionEfficiency(): InterpLinear1D(1.0)
+DetectionEfficiency::DetectionEfficiency(double const_eff):
+  InterpLinear1D(const_eff)
 {
   // nothing to see here
+}
+
+DetectionEfficiency::DetectionEfficiency(const std::string& filename):
+  InterpLinear1D(1.0)
+{
+  scaleEffFromFile(filename);
 }
 
 void DetectionEfficiency::scaleEff(const InterpLinear1D& eff)

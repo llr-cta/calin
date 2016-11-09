@@ -130,7 +130,8 @@ inline bandwidth_t operator* (bandwidth_t a, const bandwidth_t& b)
 class DetectionEfficiency: public calin::math::interpolation_1d::InterpLinear1D
 {
 public:
-  DetectionEfficiency();
+  DetectionEfficiency(double const_eff = 1.0);
+  DetectionEfficiency(const std::string& filename);
   void scaleEff(const calin::math::interpolation_1d::InterpLinear1D& eff);
   void scaleEffByConst(double c);
   void scaleEffFromFile(const std::string& filename);
