@@ -30,7 +30,7 @@ set (cminpack_hdrs
 include_directories(${CMAKE_SOURCE_DIR}/include/cminpack)
 add_library (calin_cminpack SHARED ${cminpack_srcs})
 
-install(TARGETS calin_cminpack DESTINATION lib)
+install(TARGETS calin_cminpack DESTINATION ${CALIN_LIB_INSTALL_DIR})
 
 #install (TARGETS cminpack
  #  LIBRARY DESTINATION ${CMINPACK_LIB_INSTALL_DIR} COMPONENT library

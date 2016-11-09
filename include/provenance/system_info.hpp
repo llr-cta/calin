@@ -1,8 +1,8 @@
 /*
 
-   calin/util/options_processor.i -- Stephen Fegan -- 2016-03-21
+   calin/provenance/system_info.hpp -- Stephen Fegan -- 2017-11-06
 
-   SWIG interface file for options processor
+   Provenance information about build-time and run-time system environment
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -20,18 +20,12 @@
 
 */
 
-%module (package="calin.util") options_processor
+#pragma once
 
-%{
-#include "util/options_processor.hpp"
-#define SWIG_FILE_WITH_INIT
-  %}
+#include <provenance/system_info.pb.h>
 
-%init %{
-  import_array();
-%}
+namespace calin { namespace provenance { namespace system_info {
 
-%include "calin_typemaps.i"
-%import "calin_global_definitions.i"
+const calin::ix::provenance::system_info::BuildInfo* build_info();
 
-%include "util/options_processor.hpp"
+} } } // namespace calin::provenance::system

@@ -330,7 +330,7 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::set_detection_efficiencies(
   const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
   const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
   double w0,
-  const calin::math::interpolation_1d::InterpLinear1D& cone_efficiency)
+  const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
 {
   effective_bandwidth_.clear();
   for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++) {

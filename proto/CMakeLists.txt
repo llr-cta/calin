@@ -15,8 +15,7 @@
 
 set(CALIN_SWIG_PROTO common_types.proto unittest.proto)
 set(CALIN_TARGET_LIBRARY calin_proto)
-set(CALIN_SWIG_INSTALL_DIR ${CALIN_PYTHON_BASE_DIR}/calin/ix)
-set(CALIN_PROTO_INSTALL_DIR proto)
+set(CALIN_PROTO_SWIG_INSTALL_DIR ${CALIN_PYTHON_INSTALL_DIR}/ix)
 
 message(STATUS "PROTOBUF_IMPORT_DIRS: " ${PROTOBUF_IMPORT_DIRS})
 message(STATUS "PROTOBUF_INCLUDE_DIRS: " ${PROTOBUF_INCLUDE_DIRS})
@@ -34,7 +33,14 @@ execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CXX_FLAGS_LIST}
 	${CMAKE_SOURCE_DIR}/tools/protoc-gen-swig_dep/protoc-gen-swig_dep.cpp
 	${PROTOBUF_LIBRARY} ${PROTOBUF_PROTOC_LIBRARY})
 
-macro(make_proto_modules arg_proto_library arg_proto_install_dir)
+macro(make_proto_modules arg_proto_library arg_package)
+	if("${arg_package}" STREQUAL "")
+		set(proto_install_dir ${CALIN_PROTO_INSTALL_DIR})
+		set(proto_header_install_dir ${CALIN_PROTO_HEADER_INSTALL_DIR})
+	else()
+		set(proto_install_dir ${CALIN_PROTO_INSTALL_DIR}/${arg_package})
+		set(proto_header_install_dir ${CALIN_PROTO_HEADER_INSTALL_DIR}/${arg_package})
+	endif()
 	set(proto_cxx "")
 	foreach (proto_interface_file ${ARGN})
 		string(REPLACE ".proto" "" base_name ${proto_interface_file})
@@ -42,6 +48,7 @@ macro(make_proto_modules arg_proto_library arg_proto_install_dir)
 			COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I${PROTOBUF_IMPORT_DIRS} --cpp_out=${CMAKE_BINARY_DIR}/proto ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
 			DEPENDS ${proto_interface_file})
 		set(proto_cxx ${proto_cxx} ${base_name}.pb.cc)
+		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.h DESTINATION ${proto_header_install_dir})
 	endforeach (proto_interface_file)
 	add_library(${arg_proto_library} SHARED ${proto_cxx})
 	include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -50,9 +57,8 @@ macro(make_proto_modules arg_proto_library arg_proto_install_dir)
 	else()
 		target_link_libraries(${arg_proto_library} calin_proto ${PROTOBUF_LIBRARY})
 	endif()
-	install(TARGETS ${arg_proto_library} DESTINATION lib)
-	install(FILES ${proto_interface_file} DESTINATION ${arg_proto_install_dir})
-	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.h DESTINATION ${arg_proto_install_dir})
+	install(TARGETS ${arg_proto_library} DESTINATION ${CALIN_LIB_INSTALL_DIR})
+	install(FILES ${ARGN} DESTINATION ${proto_install_dir})
 endmacro()
 
 macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
@@ -92,10 +98,10 @@ endmacro()
 # GENERATE SWIG INTERFACE FILES
 ######################################################################
 
-make_proto_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PROTO_INSTALL_DIR}
+make_proto_modules(${CALIN_TARGET_LIBRARY} ""
 	calin.proto ${CALIN_SWIG_PROTO})
-make_proto_swig_modules(${CALIN_TARGET_LIBRARY} ${CALIN_SWIG_INSTALL_DIR}
-		${CALIN_SWIG_PROTO})
+make_proto_swig_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PROTO_SWIG_INSTALL_DIR}
+	${CALIN_SWIG_PROTO})
 
 ######################################################################
 # SUB DIRECTORIES
@@ -104,6 +110,7 @@ make_proto_swig_modules(${CALIN_TARGET_LIBRARY} ${CALIN_SWIG_INSTALL_DIR}
 add_subdirectory(math)
 add_subdirectory(simulation)
 add_subdirectory(io)
+add_subdirectory(provenance)
 add_subdirectory(iact_data)
 add_subdirectory(diagnostics)
 add_subdirectory(calib)

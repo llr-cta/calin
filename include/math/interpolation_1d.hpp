@@ -30,6 +30,9 @@
 
 #include <cmath>
 #include <cassert>
+#include <iostream>
+#include <sstream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <algorithm>
@@ -264,6 +267,41 @@ public:
   Interpolation1D operator/ (const Interpolation1D& o) {
     return Interpolation1D(*this, o, BinDivOp());
   }
+
+#ifndef SWIG
+  template<typename XYFilter>
+  void insert_from_2column_file_with_filter(const std::string& filename,
+    const XYFilter& xy_filter)
+  {
+    std::ifstream stream(filename.c_str());
+    if(!stream.good())
+      throw std::runtime_error("Could not open: "+filename);
+
+    std::string line;
+    std::getline(stream,line);
+    while((line.empty() or line[0] == '#') and stream)std::getline(stream,line);
+    if(!stream)return;
+    do
+    {
+      double x;
+      double y;
+      std::istringstream lstream(line);
+      lstream >> x >> y;
+      if(lstream) {
+        if(xy_filter(x,y)) {
+          m_xy.emplace_back(x, y); }
+      }
+      std::getline(stream,line);
+    }while(stream);
+    std::sort(m_xy.begin(), m_xy.end());
+  }
+
+  void insert_from_2column_file(const std::string& filename)
+  {
+    insert_from_2column_file(filename,
+      [](double& x, T&y) { /* null transform & filter */ return true; });
+  }
+#endif
 
 private:
   Interpolator m_interp;

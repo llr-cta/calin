@@ -27,11 +27,35 @@ cmake_policy(SET CMP0060 NEW)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
 
 include_directories(include ${CMAKE_BINARY_DIR}/include)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -march=native -std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -std=c++11 -Wall")
 
-if(NOT CALIN_PYTHON_BASE_DIR)
-	set(CALIN_PYTHON_BASE_DIR "python")
+if(NOT CALIN_PYTHON_SUB_DIR)
+	set(CALIN_PYTHON_SUB_DIR "python")
 endif()
+
+if(NOT CALIN_SHARE_SUB_DIR)
+	set(CALIN_SHARE_SUB_DIR "share")
+endif()
+
+if(NOT CALIN_INCLUDE_SUB_DIR)
+	set(CALIN_INCLUDE_SUB_DIR "include")
+endif()
+
+if(NOT CALIN_LIB_SUB_DIR)
+	set(CALIN_LIB_SUB_DIR "lib")
+endif()
+
+if(NOT CALIN_BIN_SUB_DIR)
+	set(CALIN_BIN_SUB_DIR "bin")
+endif()
+
+set(CALIN_PROTO_INSTALL_DIR ${CALIN_SHARE_SUB_DIR}/calin/proto)
+set(CALIN_PROTO_HEADER_INSTALL_DIR ${CALIN_INCLUDE_SUB_DIR}/calin/proto)
+set(CALIN_DATA_INSTALL_DIR ${CALIN_SHARE_SUB_DIR}/calin/data)
+set(CALIN_LIB_INSTALL_DIR ${CALIN_LIB_SUB_DIR})
+set(CALIN_BIN_INSTALL_DIR ${CALIN_BIN_SUB_DIR})
+set(CALIN_HEADER_INSTALL_DIR ${CALIN_INCLUDE_SUB_DIR}/calin)
+set(CALIN_PYTHON_INSTALL_DIR ${CALIN_PYTHON_SUB_DIR}/calin)
 
 ## Find Protobuf libraries and set protobuf base path
 set(PROTOBUF_IMPORT_DIRS ${PROJECT_SOURCE_DIR}/proto)
@@ -73,17 +97,17 @@ find_package(ZMQ REQUIRED)
 include_directories(${ZMQ_INCLUDE_DIRS})
 
 ## Find the CTA CamerasToACTL package
-SET(CALIN_HAVE_CTA_CAMERASTOACTL FALSE)
+set(CALIN_HAVE_CTA_CAMERASTOACTL FALSE)
 find_package(CTA_CamerasToACTL)
 if(CTA_CAMERASTOACTL_FOUND)
-	SET(CALIN_HAVE_CTA_CAMERASTOACTL TRUE)
+	set(CALIN_HAVE_CTA_CAMERASTOACTL TRUE)
 endif()
 
 ## Find Geant4 if requested
 SET(CALIN_HAVE_GEANT4 FALSE)
 if(NO_GEANT4)
 	message(STATUS "Skipping GEANT4 as requested")
-	SET(GEANT4_FOUND FALSE)
+	set(GEANT4_FOUND FALSE)
 else()
 	find_package(Geant4)
 	if(GEANT4_FOUND)
@@ -91,33 +115,9 @@ else()
 		message(STATUS "GEANT4_LIBRARY_DIR: " ${GEANT4_LIBRARY_DIR})
 		include_directories(${GEANT4_INCLUDE_DIR})
 		link_directories(${GEANT4_LIBRARY_DIR})
-		SET(CALIN_HAVE_GEANT4 TRUE)
+		set(CALIN_HAVE_GEANT4 TRUE)
 	endif()
 endif()
-
-# ================================================ #
-# See: https://cmake.org/Wiki/CMake_RPATH_handling #
-# ================================================ #
-
-# use, i.e. don't skip the full RPATH for the build tree
-#SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-
-# when building, don't use the install RPATH already
-# (but later on when installing)
-#SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-
-#SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-
-# add the automatically determined parts of the RPATH
-# which point to directories outside the build tree to the install RPATH
-#SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-#MESSAGE(${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES})
-# the RPATH to be used when installing, but only if it's not a system directory
-#LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-#IF("${isSystemDir}" STREQUAL "-1")
-#	SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-#ENDIF("${isSystemDir}" STREQUAL "-1")
 
 # ========================================== #
 # Add the subdirectories to the build system #
@@ -131,4 +131,5 @@ add_subdirectory(src)
 add_subdirectory(swig)
 add_subdirectory(unit_tests)
 
-install(DIRECTORY include/ DESTINATION include/calin)
+install(DIRECTORY include/ DESTINATION ${CALIN_HEADER_INSTALL_DIR})
+install(DIRECTORY data/ DESTINATION ${CALIN_DATA_INSTALL_DIR})

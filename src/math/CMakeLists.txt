@@ -31,4 +31,4 @@ target_link_libraries(${CALIN_TARGET_LIBRARY}
 set_source_files_properties(minuit75_optimizer.cpp
 	COMPILE_FLAGS -Wno-unused-function)
 
-install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION lib)
+install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION ${CALIN_LIB_INSTALL_DIR})

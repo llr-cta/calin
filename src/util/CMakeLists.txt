@@ -1,4 +1,4 @@
-# calin/src/until/CMakeLists.txt -- Stephen Fegan
+# calin/src/util/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -22,4 +22,4 @@ target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY} calin_proto)
 
 add_library(${CALIN_TARGET_LIBRARY}_lite SHARED string.cpp)
 
-install(TARGETS ${CALIN_TARGET_LIBRARY} ${CALIN_TARGET_LIBRARY}_lite DESTINATION lib)
+install(TARGETS ${CALIN_TARGET_LIBRARY} ${CALIN_TARGET_LIBRARY}_lite DESTINATION ${CALIN_LIB_INSTALL_DIR})

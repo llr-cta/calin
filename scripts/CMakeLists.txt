@@ -13,4 +13,4 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-install(PROGRAMS compute_diagnostics.py DESTINATION bin)
+install(PROGRAMS compute_diagnostics.py DESTINATION ${CALIN_BIN_INSTALL_DIR})

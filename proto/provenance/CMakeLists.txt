@@ -1,4 +1,4 @@
-# calin/src/calib/CMakeLists.txt -- Stephen Fegan
+# calin/proto/iact_data/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -13,9 +13,10 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_library(calin_calib SHARED spe_fit.cpp spe_fit_poisson_gaussian.cpp
-  spe_fit_general_poisson.cpp pmt_model_pg.cpp)
-target_link_libraries(calin_calib calin_math calin_proto_calib)
-target_link_libraries(calin_calib ${FFTW_LIBRARIES} ${EXTRA_LIBS})
+set(CALIN_SWIG_PROTO system_info.proto)
+set(CALIN_PACKAGE provenance)
+set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 
-install(TARGETS calin_calib DESTINATION ${CALIN_LIB_INSTALL_DIR})
+make_proto_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})
+make_proto_swig_modules(${CALIN_TARGET_LIBRARY}
+		${CALIN_PROTO_SWIG_INSTALL_DIR}/${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})

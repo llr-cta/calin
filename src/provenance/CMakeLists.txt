@@ -1,6 +1,6 @@
-# calin/src/calib/CMakeLists.txt -- Stephen Fegan
+# calin/src/provenance/CMakeLists.txt -- Stephen Fegan
 #
-# Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+# Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 #
 # This file is part of "calin"
@@ -13,9 +13,11 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_library(calin_calib SHARED spe_fit.cpp spe_fit_poisson_gaussian.cpp
-  spe_fit_general_poisson.cpp pmt_model_pg.cpp)
-target_link_libraries(calin_calib calin_math calin_proto_calib)
-target_link_libraries(calin_calib ${FFTW_LIBRARIES} ${EXTRA_LIBS})
+set(CALIN_TARGET_LIBRARY calin_provenance)
+set(CALIN_SOURCES system_info.cpp)
 
-install(TARGETS calin_calib DESTINATION ${CALIN_LIB_INSTALL_DIR})
+add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
+target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY}
+  calin_proto_provenance calin_proto)
+
+install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION ${CALIN_LIB_INSTALL_DIR})

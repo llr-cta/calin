@@ -1,0 +1,70 @@
+# File: data/simulation/CTA-LST_lightguide_eff.dat
+# Provinance: Konrad Bernlohr's CTA PROD-3 sim_telarray package (retrieved 2016-11-08)
+# - URL: https://www.mpi-hd.mpg.de/hfm/CTA/MC/Software/corsika_simtelarray_2016-06-30.tar.gz
+#   -> sim_telarray_config.tar.gz
+#   -> sim_telarray/cfg/CTA/CTA-LST_lightguide_eff.dat
+# Copyright notice: data/copyright/bernlohr_simtelarray_copyright.txt
+# License: CC-BY-SA-4.0
+
+# Measured efficiency of LST light guides with aluminized mylar sheet,
+# using a blue LED light source and R11920 PMT with LST pre-amps and oscilloscope.
+# Provided by Akira Okumura, Jan. 12, 2015.
+# Using the following input data:
+#  I_mask = Integrated pulse charge measured with a hexagonal mask (25 mm diameter, flat-to-flat).
+#  A_mask = Geometrical area of the mask.
+#  I_guide = Integrated pulse charge measured with a light guide (50 mm diameter, flat-to-flat).
+#  A_guide = Geometrical area of the light guide entrance.
+#  T_guide = I_guide/I_mask x A_mask/A_guide
+#  or actually: I_guide(theta)/I_mask(0.) * A_mask/(A_guide*cos(theta))
+
+# theta  T_guide
+ 0.00 0.842891
+ 1.00 0.842094
+ 2.00 0.843807
+ 3.00 0.845919
+ 4.00 0.848906
+ 5.00 0.850091
+ 6.00 0.854186
+ 7.00 0.857692
+ 8.00 0.863303
+ 9.00 0.868044
+10.00 0.871433
+11.00 0.874917
+12.00 0.880457
+13.00 0.883573
+14.00 0.889308
+15.00 0.892281
+16.00 0.898358
+17.00 0.904443
+18.00 0.912238
+19.00 0.918602
+20.00 0.925243
+21.00 0.933667
+22.00 0.944368
+23.00 0.953777
+24.00 0.960320
+25.00 0.961507
+26.00 0.958263
+27.00 0.946322
+28.00 0.923887
+29.00 0.856514
+30.00 0.727743
+31.00 0.561754
+32.00 0.392851
+33.00 0.221832
+34.00 0.110032
+35.00 0.046658
+36.00 0.019743
+37.00 0.011215
+38.00 0.008820
+39.00 0.008297
+40.00 0.007971
+41.00 0.007646
+42.00 0.007415
+43.00 0.006990
+44.00 0.006711
+45.00 0.006388
+46.00 0.000000
+47.00 0.000000
+48.00 0.000000
+49.00 0.000000
