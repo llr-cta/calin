@@ -147,6 +147,7 @@ LayeredAtmosphere::LayeredAtmosphere(const std::string& filename):
     std::istringstream lstream(line);
     Level l;
     lstream >> l.z >> l.rho >> l.t >> l.nmo;
+    if(!lstream)continue;
     l.z *= 1e5;
     m_levels.push_back(l);
   }
