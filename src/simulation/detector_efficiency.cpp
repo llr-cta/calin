@@ -321,6 +321,23 @@ AngularEfficiency::AngularEfficiency(const std::string& filename):
       theta_in_w_out = std::cos(theta_in_w_out/180.0*M_PI); return true; });
 }
 
+void AngularEfficiency::scaleEff(const InterpLinear1D& eff)
+{
+  *static_cast<InterpLinear1D*>(this) *= eff;
+}
+
+void AngularEfficiency::scaleEffByConst(double c)
+{
+  *static_cast<InterpLinear1D*>(this) *= c;
+}
+
+void AngularEfficiency::
+scaleEffFromFile(const std::string& filename)
+{
+  AngularEfficiency eff(filename);
+  scaleEff(eff);
+}
+
 // ----------------------------------------------------------------------------
 // ACTEffectiveBandwidth
 // ----------------------------------------------------------------------------

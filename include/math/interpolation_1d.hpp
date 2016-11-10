@@ -167,6 +167,12 @@ public:
     return vxi;
   }
 
+  std::vector<T> all_yi() const {
+    std::vector<T> vyi;
+    for(auto ixy : m_xy)vyi.emplace_back(ixy.second);
+    return vyi;
+  }
+
   double xmin() const { return m_xy.front().first; }
   double xmax() const { return m_xy.back().first; }
 

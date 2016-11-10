@@ -144,6 +144,9 @@ class AngularEfficiency: public calin::math::interpolation_1d::InterpLinear1D
 public:
   AngularEfficiency(double const_eff = 1.0);
   AngularEfficiency(const std::string& filename);
+  void scaleEff(const calin::math::interpolation_1d::InterpLinear1D& eff);
+  void scaleEffByConst(double c);
+  void scaleEffFromFile(const std::string& filename);
 };
 
 #if 0
