@@ -620,8 +620,9 @@ bool VSORayTracer::testBeam(math::ray::Ray& photon,
   {
     // Parallel beam - must set sampling radius
     Eigen::Vector3d
-        beam_dir(-sin(theta)*sin(phi) ,-cos(theta), -sin(theta)*cos(phi));
-    Eigen::Vector3d beam_cen = scope->reflectorIPCenter();
+      beam_dir(-sin(theta)*sin(phi) ,-cos(theta), -sin(theta)*cos(phi));
+    Eigen::Vector3d beam_cen(0.0,0.0,0.0);
+    beam_cen += scope->reflectorIPCenter();
     math::ray::Ray ray(beam_cen, beam_dir);
     scope->reflectorToGlobal(ray);
     return laserBeam(photon, ray.position(), ray.direction(),
@@ -634,8 +635,8 @@ bool VSORayTracer::testBeam(math::ray::Ray& photon,
     Eigen::Vector3d
         beam_cen(Utantheta*sin(phi), U, Utantheta*cos(phi));
     double dist = beam_cen.norm();
-    beam_cen += scope->reflectorIPCenter();
     Eigen::Vector3d beam_dir(beam_cen*(-1.0/dist));
+    beam_cen += scope->reflectorIPCenter();
     math::ray::Ray ray(beam_cen, beam_dir);
     scope->reflectorToGlobal(ray);
     return fanBeam(photon, ray.position(), ray.direction(),
