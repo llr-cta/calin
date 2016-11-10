@@ -176,7 +176,7 @@ next_header_line:
   }
 }
 
-InterpLinear1D AtmosphericAbsorption::absorptionForAltitude(double h) const
+InterpLinear1D AtmosphericAbsorption::opticalDepthForAltitude(double h) const
 {
   if(h < absorption_.front().xi(0))
     throw std::out_of_range("Altitude " + std::to_string(h) +
@@ -191,7 +191,7 @@ InterpLinear1D AtmosphericAbsorption::absorptionForAltitude(double h) const
 ACTEffectiveBandwidth AtmosphericAbsorption::
 integrateBandwidth(double h0, double w0, const DetectionEfficiency& eff) const
 {
-  InterpLinear1D abs0 = absorptionForAltitude(h0);
+  InterpLinear1D abs0 = opticalDepthForAltitude(h0);
   ACTEffectiveBandwidth bandwidth(w0);
 
 #if 1

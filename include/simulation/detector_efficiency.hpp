@@ -219,7 +219,7 @@ public:
     double ground_level_km = 0.0, double spacing_km=1.0);
   AtmosphericAbsorption(const std::string& filename,
     std::vector<double> levels_cm = {});
-  calin::math::interpolation_1d::InterpLinear1D absorptionForAltitude(double h) const;
+  calin::math::interpolation_1d::InterpLinear1D opticalDepthForAltitude(double h) const;
   ACTEffectiveBandwidth integrateBandwidth(double h0, double w0,
     const DetectionEfficiency& eff) const;
   const std::vector<double>& energy_ev() const { return e_ev_; }
