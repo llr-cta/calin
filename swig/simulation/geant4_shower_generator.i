@@ -23,7 +23,7 @@
 %module (package="calin.simulation") geant4_shower_generator
 
 %{
-#include <G4Exception.hh>
+//#include <G4Exception.hh>
 #include "simulation/tracker.hpp"
 #include "simulation/straight_track_generator.hpp"
 #include "simulation/air_cherenkov_tracker.hpp"
@@ -41,6 +41,7 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+/*
 %exception {
   try {
     $action
@@ -50,6 +51,7 @@
     SWIG_exception(SWIG_RuntimeError, e.what());
   }
 }
+*/
 
 %import "simulation/atmosphere.i"
 %import "simulation/tracker.i"
