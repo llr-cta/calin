@@ -74,6 +74,8 @@ visit_event(const Event& event, bool& kill_event)
 void AirCherenkovParameterCalculatorTrackVisitor::
 visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 {
+  if(track.q == 0)return; // it's store policy: no charge = no radiation
+
   AirCherenkovTrack cherenkov;
 
   cherenkov.particle_track = &track;
