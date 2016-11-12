@@ -176,7 +176,7 @@ next_header_line:
   }
 }
 
-InterpLinear1D AtmosphericAbsorption::absorptionForAltitude(double h) const
+InterpLinear1D AtmosphericAbsorption::opticalDepthForAltitude(double h) const
 {
   if(h < absorption_.front().xi(0))
     throw std::out_of_range("Altitude " + std::to_string(h) +
@@ -191,7 +191,7 @@ InterpLinear1D AtmosphericAbsorption::absorptionForAltitude(double h) const
 ACTEffectiveBandwidth AtmosphericAbsorption::
 integrateBandwidth(double h0, double w0, const DetectionEfficiency& eff) const
 {
-  InterpLinear1D abs0 = absorptionForAltitude(h0);
+  InterpLinear1D abs0 = opticalDepthForAltitude(h0);
   ACTEffectiveBandwidth bandwidth(w0);
 
 #if 1
@@ -319,6 +319,23 @@ AngularEfficiency::AngularEfficiency(const std::string& filename):
   this->insert_from_2column_file_with_filter(filename,
     [](double& theta_in_w_out, double& eff) {
       theta_in_w_out = std::cos(theta_in_w_out/180.0*M_PI); return true; });
+}
+
+void AngularEfficiency::scaleEff(const InterpLinear1D& eff)
+{
+  *static_cast<InterpLinear1D*>(this) *= eff;
+}
+
+void AngularEfficiency::scaleEffByConst(double c)
+{
+  *static_cast<InterpLinear1D*>(this) *= c;
+}
+
+void AngularEfficiency::
+scaleEffFromFile(const std::string& filename)
+{
+  AngularEfficiency eff(filename);
+  scaleEff(eff);
 }
 
 // ----------------------------------------------------------------------------

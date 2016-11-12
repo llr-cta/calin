@@ -34,16 +34,20 @@
 // Height, z:    cm
 // Energy, e:    MeV
 
+#ifndef SWIG
 class G4UImanager;
 class G4UIsession;
 class G4RunManager;
+#endif
 
 namespace calin { namespace simulation { namespace geant4_shower_generator {
 
+#ifndef SWIG
 class EAS_SteppingAction;
 class EAS_PrimaryGeneratorAction;
 class EAS_StackingAction;
 class EAS_UserEventAction;
+#endif
 
 enum class VerbosityLevel {
   SUPPRESSED_ALL, SUPRESSED_STDOUT, NORMAL, VERBOSE_EVENT, VERBOSE_TRACKING,
