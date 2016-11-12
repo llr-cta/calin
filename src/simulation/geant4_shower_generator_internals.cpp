@@ -25,6 +25,7 @@
 
 #include <simulation/geant4_shower_generator_internals.hpp>
 #include <io/log.hpp>
+#include <math/geometry.hpp>
 
 using namespace calin::simulation::geant4_shower_generator;
 using namespace calin::io::log;
@@ -92,8 +93,10 @@ ClassifyNewTrack(const G4Track* track)
 // ============================================================================
 
 EAS_SteppingAction::
-EAS_SteppingAction(calin::simulation::tracker::TrackVisitor* visitor)
-    : G4UserSteppingAction(), visitor_(visitor)
+EAS_SteppingAction(calin::simulation::tracker::TrackVisitor* visitor,
+    EAS_DetectorConstruction* detector_geometry):
+  G4UserSteppingAction(), visitor_(visitor),
+  detector_geometry_(detector_geometry)
 {
   /* nothing to see here */
 }
@@ -147,18 +150,8 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
   visitor_->visit_track(track, kill_track);
   if(kill_track)the_step->GetTrack()->SetTrackStatus(fStopAndKill);
 
-  if(r2cut_ > 0)
-  {
-    if(post_step_pt_posn.x()*post_step_pt_posn.x()
-       + post_step_pt_posn.y()*post_step_pt_posn.y()
-       + post_step_pt_posn.z()*(post_step_pt_posn.z() + 2.0*rzero_)
-       + rzero_*rzero_ < r2cut_)
-    {
-      the_step->GetTrack()->SetTrackStatus(fStopAndKill);
-      return;
-    }
-  }
-  else if(post_step_pt_posn.z() < zcut_)
+  if(detector_geometry_ and
+    not detector_geometry_->ray_intersects_detector(track.x1, track.u1))
   {
     the_step->GetTrack()->SetTrackStatus(fStopAndKill);
     return;
@@ -213,7 +206,9 @@ EAS_FlatDetectorConstruction(calin::simulation::atmosphere::Atmosphere* atm,
                              double layer_side_cm)
     : EAS_DetectorConstruction(), atm_(atm), num_atm_layers_(num_atm_layers),
       zground_cm_(zground_cm), ztop_of_atm_cm_(ztop_of_atm_cm),
-      layer_side_cm_(layer_side_cm)
+      layer_side_cm_(layer_side_cm),
+      min_corner_(-layer_side_cm, -layer_side_cm, zground_cm),
+      max_corner_( layer_side_cm,  layer_side_cm, ztop_of_atm_cm)
 {
   // nothing to see here
 }
@@ -293,10 +288,17 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
   return world_physical;
 }
 
+bool EAS_FlatDetectorConstruction::
+ray_intersects_detector(const Eigen::Vector3d& pos, const Eigen::Vector3d& dir)
+{
+  return calin::math::geometry::
+    box_has_future_intersection(min_corner_,max_corner_,pos,dir);
+}
+
 void EAS_FlatDetectorConstruction::ConstructSDandField()
 {
 
-};
+}
 
 // ============================================================================
 //

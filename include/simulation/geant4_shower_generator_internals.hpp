@@ -29,9 +29,12 @@
 
 #include"simulation/atmosphere.hpp"
 #include"simulation/tracker.hpp"
+#include"math/special.hpp"
 #include"io/log.hpp"
 
 #include"calin_global_definitions.hpp"
+
+using calin::math::special::SQR;
 
 // Units:
 // Height, z:    cm
@@ -79,26 +82,23 @@ class EAS_StackingAction: public G4UserStackingAction
   double ecut_ = 0;
 };
 
+class EAS_DetectorConstruction;
+
 class EAS_SteppingAction: public G4UserSteppingAction
 {
  public:
-  EAS_SteppingAction(calin::simulation::tracker::TrackVisitor* visitor);
+  EAS_SteppingAction(calin::simulation::tracker::TrackVisitor* visitor,
+    EAS_DetectorConstruction* detector_geometry = nullptr);
   virtual ~EAS_SteppingAction();
 
   void UserSteppingAction(const G4Step*) override;
 
   void setEminCut(double emin_MeV) { ecut_ = emin_MeV/CLHEP::MeV; }
-  void setZminCut(double zmin_cm) { zcut_ = zmin_cm/CLHEP::cm; }
-  void setRminCut(double rmin_cm, double rzero_cm) {
-    r2cut_ = rmin_cm*rmin_cm/CLHEP::cm/CLHEP::cm;
-    rzero_ = rzero_cm/CLHEP::cm; }
 
  protected:
-  double ecut_ = 0;
-  double zcut_ = -std::numeric_limits<double>::infinity();
-  double r2cut_ = 0;
-  double rzero_ = 0;
+  double ecut_  = 0;
   calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
+  EAS_DetectorConstruction* detector_geometry_ = nullptr;
 };
 
 class EAS_PrimaryGeneratorAction: public G4VUserPrimaryGeneratorAction
@@ -122,24 +122,30 @@ class EAS_DetectorConstruction: public G4VUserDetectorConstruction
   virtual ~EAS_DetectorConstruction();
   G4VPhysicalVolume* Construct() override = 0;
   void ConstructSDandField() override = 0;
+  virtual bool ray_intersects_detector(const Eigen::Vector3d& pos,
+    const Eigen::Vector3d& dir) = 0;
 };
 
 class EAS_FlatDetectorConstruction: public EAS_DetectorConstruction
 {
- public:
+public:
   EAS_FlatDetectorConstruction(calin::simulation::atmosphere::Atmosphere* atm,
                                unsigned num_atm_layers,
                                double zground_cm, double ztop_of_atm_cm,
-                               double layer_side_cm = 1000E5 /* 1,000 km */);
+                               double layer_side_cm = 100E5 /* 100 km */);
   virtual ~EAS_FlatDetectorConstruction();
   G4VPhysicalVolume* Construct() override;
   void ConstructSDandField() override;
- private:
+  bool ray_intersects_detector(const Eigen::Vector3d& pos,
+    const Eigen::Vector3d& dir) override;
+private:
   calin::simulation::atmosphere::Atmosphere* atm_;
   unsigned num_atm_layers_;
   double zground_cm_;
   double ztop_of_atm_cm_;
   double layer_side_cm_;
+  Eigen::Vector3d min_corner_;
+  Eigen::Vector3d max_corner_;
 };
 
 class EAS_UserEventAction: public G4UserEventAction

@@ -77,20 +77,18 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
   physlist->SetVerboseLevel(verbose_everything);
   run_manager_->SetUserInitialization(physlist);
 
+  EAS_FlatDetectorConstruction* detector_constructor =
+      new EAS_FlatDetectorConstruction(atm, num_atm_layers, zground, ztop);
+  run_manager_->SetUserInitialization(detector_constructor);
+
   event_action_ = new EAS_UserEventAction(visitor_);
   run_manager_->SetUserAction(event_action_);
 
-  step_action_ = new EAS_SteppingAction(visitor_);
+  step_action_ = new EAS_SteppingAction(visitor_, detector_constructor);
   run_manager_->SetUserAction(step_action_);
 
   gen_action_ = new EAS_PrimaryGeneratorAction();
   run_manager_->SetUserAction(gen_action_);
-
-  EAS_FlatDetectorConstruction* detector_constructor =
-      new EAS_FlatDetectorConstruction(atm, num_atm_layers, zground, ztop);
-  run_manager_->SetUserInitialization(detector_constructor);
-  step_action_->setZminCut(zground);
-
 
   //run_manager_->SetUserInitialization(new MyUserActionInitialization);
 
