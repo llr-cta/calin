@@ -62,11 +62,11 @@ VSODiskObscuration::~VSODiskObscuration()
   // nothing to see here
 }
 
-bool VSODiskObscuration::doesObscure(const Ray& r_in, Ray& r_out) const
+bool VSODiskObscuration::doesObscure(const Ray& r_in, Ray& r_out, double n) const
 {
   if(fICO && r_in.direction().y()>0)return false;
   r_out = r_in;
-  if(r_out.propagate_to_plane(fN, -fD0, false)
+  if(r_out.propagate_to_plane(fN, -fD0, false, n)
      && (r_out.position()-fX0).norm()<=fR) return true;
    return false;
 }
@@ -103,20 +103,20 @@ VSOTubeObscuration::~VSOTubeObscuration()
   // nothing to see here
 }
 
-bool VSOTubeObscuration::doesObscure(const Ray& r_in, Ray& r_out) const
+bool VSOTubeObscuration::doesObscure(const Ray& r_in, Ray& r_out, double n) const
 {
   if(fICO && r_in.direction().y()>0)return false;
 
   r_out = r_in;
   Ray::IPOut ipo;
-  ipo = r_out.propagate_to_cylinder(fX1, fN, fR, Ray::IP_NEXT, false);
+  ipo = r_out.propagate_to_cylinder(fX1, fN, fR, Ray::IP_NEXT, false, n);
 
   if(ipo != Ray::IPO_NONE)
   {
     double Dc = r_out.position().dot(fN);
     if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
     if(ipo == Ray::IPO_SECOND)return false;
-    ipo = r_out.propagate_to_cylinder(fX1, fN, fR, Ray::IP_LATEST, false);
+    ipo = r_out.propagate_to_cylinder(fX1, fN, fR, Ray::IP_LATEST, false, n);
     if(ipo != Ray::IPO_SECOND)return false;
     Dc = r_out.position().dot(fN);
     if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
@@ -156,7 +156,8 @@ VSOAlignedBoxObscuration::~VSOAlignedBoxObscuration()
   // nothing to see here
 }
 
-bool VSOAlignedBoxObscuration::doesObscure(const Ray& r_in, Ray& r_out) const
+bool VSOAlignedBoxObscuration::
+doesObscure(const Ray& r_in, Ray& r_out, double n) const
 {
   if(incoming_only_ && r_in.direction().y()>0)return false;
 
@@ -166,7 +167,7 @@ bool VSOAlignedBoxObscuration::doesObscure(const Ray& r_in, Ray& r_out) const
     min_corner_, max_corner_, r_in.position(), r_in.direction()))
   {
     r_out = r_in;
-    if(tmin > 0)r_out.propagate_dist(tmin);
+    if(tmin > 0)r_out.propagate_dist(tmin, n);
     return true;
   }
 

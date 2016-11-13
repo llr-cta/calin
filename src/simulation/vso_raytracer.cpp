@@ -176,6 +176,7 @@ const VSOPixel*
 VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
 {
   bool good;
+  double ref_index = 1.0;
 
   // Transform to reflector co-ordinate system
   info.scope->globalToReflector(ray);
@@ -194,7 +195,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   for(unsigned iobs=0;iobs<nobs;iobs++)
   {
     math::ray::Ray r_out;
-    if(info.scope->obscuration(iobs)->doesObscure(ray, r_out))
+    if(info.scope->obscuration(iobs)->doesObscure(ray, r_out, ref_index))
     {
       if((obs_ihit==nobs)||(r_out.ct()<obs_time))
         obs_ihit = iobs, obs_time = r_out.ct();
@@ -203,7 +204,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
 
   // Propagate to intersection with the reflector sphere
   good = ray.propagate_to_standard_sphere_2nd_interaction_fwd_only(
-    info.scope->curvatureRadius());
+    info.scope->curvatureRadius(), ref_index);
 
   if(!good)
   {
@@ -224,7 +225,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
       info.scope->facetSpacing());
 
   // Find mirror - searching neighbors if desired
-  good = findMirror(ray, info);
+  good = findMirror(ray, info, ref_index);
   if(!good)
   {
     // info.status should be set appropriately by findMirror
@@ -294,7 +295,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   for(unsigned iobs=0;iobs<nobs;iobs++)
   {
     math::ray::Ray r_out;
-    if(info.scope->obscuration(iobs)->doesObscure(ray, r_out))
+    if(info.scope->obscuration(iobs)->doesObscure(ray, r_out, ref_index))
     {
       if((obs_ihit==nobs)||(r_out.ct()<obs_time))
         obs_ihit = iobs, obs_time = r_out.ct();
@@ -313,7 +314,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   // **************************************************************************
 
   // Propagate back to camera plane
-  good = ray.propagate_to_plane(Eigen::Vector3d::UnitY(),0,false);
+  good = ray.propagate_to_plane(Eigen::Vector3d::UnitY(),0,false,ref_index);
   if(!good)
   {
     info.status = TS_TRAVELLING_AWAY_FROM_FOCAL_PLANE;
@@ -391,7 +392,8 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
 // coordinates, in the case where no mirror is encountered, where
 // false is returned
 
-bool VSORayTracer::findMirror(math::ray::Ray& ray, TraceInfo& info)
+bool VSORayTracer::
+findMirror(math::ray::Ray& ray, TraceInfo& info, double ref_index)
 {
   // **************************************************************************
   // ****************** RAY STARTS IN REFLECTOR COORDINATES *******************
@@ -465,7 +467,7 @@ bool VSORayTracer::findMirror(math::ray::Ray& ray, TraceInfo& info)
 
     bool good;
     good = test_ray.
-      propagate_to_standard_sphere_2nd_interaction_fwd_bwd(mirror_radius);
+      propagate_to_standard_sphere_2nd_interaction_fwd_bwd(mirror_radius, ref_index);
     if(!good)
     {
       if(isearch==0)info.status = TS_MISSED_MIRROR_SPHERE;
