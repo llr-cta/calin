@@ -20,10 +20,14 @@
 
 */
 
+#include <sys/time.h>
+#include <iostream>
 #include <cassert>
 #include <simulation/tracker.hpp>
+#include <io/log.hpp>
 
 using namespace calin::simulation::tracker;
+using namespace calin::io::log;
 
 calin::simulation::tracker::ParticleType
 calin::simulation::tracker::pdg_type_to_particle_type(int pdg_type)
@@ -127,6 +131,48 @@ void TrackVisitor::leave_event()
   // default is to do nothing
 }
 
+VectorTrackVisitor::~VectorTrackVisitor()
+{
+  for(auto* ivisitor : adopted_visitors_)delete ivisitor;
+}
+
+void VectorTrackVisitor::visit_event(const Event& event, bool& kill_event)
+{
+  for(auto* ivisitor : visitors_)
+  {
+    bool ikill_event = false;
+    ivisitor->visit_event(event, ikill_event);
+    kill_event |= ikill_event;
+  }
+}
+
+void VectorTrackVisitor::visit_track(const Track& track, bool& kill_track)
+{
+  for(auto* ivisitor : visitors_)
+  {
+    bool ikill_track = false;
+    ivisitor->visit_track(track, ikill_track);
+    kill_track |= ikill_track;
+  }
+}
+
+void VectorTrackVisitor::leave_event()
+{
+  for(auto* ivisitor : visitors_)ivisitor->leave_event();
+}
+
+void VectorTrackVisitor::add_visitor(TrackVisitor* visitor, bool adopt_visitor)
+{
+  visitors_.emplace_back(visitor);
+  if(adopt_visitor)adopted_visitors_.emplace_back(visitor);
+}
+
+void VectorTrackVisitor::
+add_visitor_at_front(TrackVisitor* visitor, bool adopt_visitor)
+{
+  visitors_.insert(visitors_.begin(), visitor);
+  if(adopt_visitor)adopted_visitors_.insert(adopted_visitors_.begin(), visitor);
+}
 
 LengthLimitingTrackVisitor::LengthLimitingTrackVisitor(TrackVisitor* visitor,
     double dx_max, double z_max, bool adopt_visitor): TrackVisitor(),
@@ -198,4 +244,121 @@ visit_track(const Track& track, bool& kill_track)
 void LengthLimitingTrackVisitor::leave_event()
 {
   visitor_->leave_event();
+}
+
+TimeLimitingTrackVisitor::
+TimeLimitingTrackVisitor(double t_max_sec): TrackVisitor(),
+  t_event_max_(t_max_sec * 1000000000.0)
+{
+  // nothing to see here
+}
+
+TimeLimitingTrackVisitor::~TimeLimitingTrackVisitor()
+{
+  // nothing to see here
+}
+
+void TimeLimitingTrackVisitor::
+visit_event(const Event& event, bool& kill_event)
+{
+  t_event_start_ = get_time();
+  do_kill_track_ = false;
+  num_track_since_check_ = 0;
+}
+
+void TimeLimitingTrackVisitor::
+visit_track(const Track& track, bool& kill_track)
+{
+restart:
+  if(do_kill_track_)
+  {
+    LOG(INFO)
+      << int(track.type) << ' '
+      << track.pdg_type << ' '
+      << track.q << ' '
+      << track.mass << ' '
+      << "[ " << track.x0.transpose() << " ] "
+      << "[ " << track.u0.transpose() << " ] "
+      << track.e0 << ' '
+      << track.t0 << ' '
+      << "[ " << track.dx_hat.transpose() << " ] "
+      << track.dx << ' '
+      << track.de << ' '
+      << track.dt << '\n';
+    kill_track = true;
+    return;
+  }
+
+  if(num_track_since_check_ >= num_track_before_check_)
+  {
+    uint64_t t_now = get_time();
+    if(t_now - t_event_start_ > t_event_max_) {
+      do_kill_track_ = true;
+      LOG(WARNING) << "Event time limit exceeded, remaining tracks will be printed.";
+      goto restart;
+    }
+    num_track_since_check_ = 0;
+  }
+  else
+  {
+    ++num_track_since_check_;
+  }
+}
+
+uint64_t TimeLimitingTrackVisitor::get_time()
+{
+  struct timeval tv;
+  ::gettimeofday(&tv, nullptr);
+  uint64_t t = uint64_t(tv.tv_sec)*1000000000 + uint64_t(tv.tv_usec)*1000;
+  return t;
+};
+
+DebugStatsTrackVisitor::DebugStatsTrackVisitor()
+{
+  // nothing to see here
+}
+
+DebugStatsTrackVisitor::~DebugStatsTrackVisitor()
+{
+  // nothing to see here
+}
+
+void DebugStatsTrackVisitor::visit_event(const Event& event, bool& kill_event)
+{
+  stats_.clear();
+}
+
+void DebugStatsTrackVisitor::visit_track(const Track& track, bool& kill_track)
+{
+  TrackStats& stats { stats_[track.pdg_type] };
+  if(track.dx == 0)++stats.track_length_zero;
+  else stats.track_length_hist.insert(std::log10(track.dx));
+}
+
+std::vector<int> DebugStatsTrackVisitor::particle_pdg_types() const
+{
+  std::vector<int> pdg_types;
+  for(const auto& istat : stats_)pdg_types.emplace_back(istat.first);
+  return pdg_types;
+}
+
+unsigned DebugStatsTrackVisitor::track_length_zero(int pdg_type) const
+{
+  return find_stats(pdg_type).track_length_zero;
+}
+
+const calin::math::histogram::SimpleHist&
+DebugStatsTrackVisitor::track_length_log_hist(int pdg_type) const
+{
+  return find_stats(pdg_type).track_length_hist;
+}
+
+const DebugStatsTrackVisitor::TrackStats&
+DebugStatsTrackVisitor::find_stats(int pdg_type) const
+{
+  auto ifind = stats_.find(pdg_type);
+  if(ifind == stats_.end())
+    throw std::out_of_range("Statistics for particle type not found: " +
+      std::to_string(pdg_type));
+  return ifind->second;
 }
