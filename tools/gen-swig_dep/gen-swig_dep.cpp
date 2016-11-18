@@ -109,7 +109,7 @@ int main(int argc, char** argv)
   string bindir(*argv);
   argv++, argc--;
 
-  std::ifstream stream(swigname);
+  std::ifstream stream(swigname.c_str());
   if(!stream.good())
   {
     std::cerr <<
@@ -117,7 +117,7 @@ int main(int argc, char** argv)
     exit(EXIT_FAILURE);
   }
 
-  std::ofstream depstream(gen_filename(swigname, srcdir, bindir));
+  std::ofstream depstream(gen_filename(swigname, srcdir, bindir).c_str());
 
   string line;
   string sep;
