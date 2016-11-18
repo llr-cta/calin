@@ -330,7 +330,7 @@ void DebugStatsTrackVisitor::visit_event(const Event& event, bool& kill_event)
 
 void DebugStatsTrackVisitor::visit_track(const Track& track, bool& kill_track)
 {
-  TrackStats& stats { stats_[track.pdg_type] };
+  TrackStats& stats = stats_[track.pdg_type];
   if(track.dx == 0)++stats.track_length_zero;
   else stats.track_length_hist.insert(std::log10(track.dx));
 }
