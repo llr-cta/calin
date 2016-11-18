@@ -22,6 +22,7 @@
 */
 
 #include<stdexcept>
+#include<G4GeometryManager.hh>
 
 #include <simulation/geant4_shower_generator_internals.hpp>
 #include <io/log.hpp>
@@ -83,7 +84,11 @@ EAS_StackingAction::~EAS_StackingAction()
 G4ClassificationOfNewTrack EAS_StackingAction::
 ClassifyNewTrack(const G4Track* track)
 {
-  return track->GetTotalEnergy() < ecut_ ? fKill : fUrgent;
+  const G4ParticleDefinition* pdg_info = track->GetParticleDefinition();
+  if(apply_kinetic_energy_cut(pdg_info->GetPDGEncoding()))
+    return track->GetKineticEnergy() < ecut_ ? fKill : fUrgent;
+  else
+    return track->GetTotalEnergy() < ecut_ ? fKill : fUrgent;
 }
 
 // ============================================================================
@@ -111,16 +116,28 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
   const G4StepPoint* pre_step_pt = the_step->GetPreStepPoint();
 
   double pre_step_pt_etot = pre_step_pt->GetTotalEnergy();
-  if(pre_step_pt_etot < ecut_)
+
+  const G4ParticleDefinition* pdg_info =
+      the_step->GetTrack()->GetParticleDefinition();
+
+  if(apply_kinetic_energy_cut(pdg_info->GetPDGEncoding()))
   {
-    the_step->GetTrack()->SetTrackStatus(fStopAndKill);
-    return;
+    if(pre_step_pt->GetKineticEnergy() < ecut_) {
+      the_step->GetTrack()->SetTrackStatus(fStopAndKill);
+      return;
+    }
+  }
+  else
+  {
+    if(pre_step_pt_etot < ecut_)
+    {
+      the_step->GetTrack()->SetTrackStatus(fStopAndKill);
+      return;
+    }
   }
 
   calin::simulation::tracker::Track track;
 
-  const G4ParticleDefinition* pdg_info =
-      the_step->GetTrack()->GetParticleDefinition();
   track.pdg_type = pdg_info->GetPDGEncoding();
   track.q        = pdg_info->GetPDGCharge();
   track.mass     = pdg_info->GetPDGMass()/CLHEP::MeV;
@@ -230,6 +247,10 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
   G4double world_hx = layer_side_cm_*CLHEP::cm;
   G4double world_hy = layer_side_cm_*CLHEP::cm;
   G4double world_hz = ztop_of_atm_cm_*CLHEP::cm;
+
+  G4GeometryManager::GetInstance()->SetWorldMaximumExtent(
+    std::max({world_hx, world_hy, world_hz}));
+
   G4Box* world_box
       = new G4Box("BOX_World",
                   world_hx*(1+eps), world_hy*(1+eps), world_hz*(1+eps));
@@ -261,6 +282,7 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
 
     G4double layer_hz = 0.5*(islice.zt-islice.zb)*CLHEP::cm;
     G4double pos_z = 0.5*(islice.zt+islice.zb)*CLHEP::cm;
+#if 0
     if(islice.zb-zground_cm_ < eps)
     {
       // Add 1mm guard to lowest layer simplify cut on z
@@ -268,7 +290,9 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
       pos_z -= 0.5*CLHEP::mm;
     }
     layer_hz *= (1-eps);
-
+#else
+    //layer_hz -= 0.5*CLHEP::mm;
+#endif
     G4Box* layer_box
         = new G4Box(std::string("BOX_")+name, world_hx, world_hy, layer_hz);
 
