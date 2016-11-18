@@ -31,6 +31,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <cerrno>
 
 using namespace std;
 
