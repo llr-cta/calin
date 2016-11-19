@@ -163,6 +163,14 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
   track.dt       = track.t1 - track.t0;
   track.weight   = pre_step_pt->GetWeight();
 
+#if 0
+  static int nprint=0;
+  if(nprint<100 and pdg_info->GetPDGEncoding()==2112) {
+    LOG(INFO) << pre_step_pt->GetKineticEnergy() << ' ' << track.dx;
+    ++nprint;
+  }
+#endif
+
   bool kill_track = false;
   visitor_->visit_track(track, kill_track);
   if(kill_track)the_step->GetTrack()->SetTrackStatus(fStopAndKill);
