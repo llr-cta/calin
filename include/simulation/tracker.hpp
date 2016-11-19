@@ -27,7 +27,11 @@
 // Height, z:    cm
 // Energy, e:    MeV
 
+#include<vector>
+#include<map>
+
 #include"Eigen/Core"
+#include"math/histogram.hpp"
 
 namespace calin { namespace simulation { namespace tracker {
 
@@ -90,6 +94,21 @@ public:
   virtual void leave_event();
 };
 
+class VectorTrackVisitor: public TrackVisitor
+{
+public:
+  VectorTrackVisitor() : TrackVisitor() { /* nothing to see here */ }
+  virtual ~VectorTrackVisitor();
+  virtual void visit_event(const Event& event, bool& kill_event);
+  virtual void visit_track(const Track& track, bool& kill_track);
+  virtual void leave_event();
+  void add_visitor(TrackVisitor* visitor, bool adopt_visitor = false);
+  void add_visitor_at_front(TrackVisitor* visitor, bool adopt_visitor = false);
+protected:
+  std::vector<TrackVisitor*> visitors_;
+  std::vector<TrackVisitor*> adopted_visitors_;
+};
+
 class LengthLimitingTrackVisitor: public TrackVisitor
 {
 public:
@@ -107,5 +126,41 @@ private:
   double z_max_ = std::numeric_limits<double>::infinity();
 };
 
+class TimeLimitingTrackVisitor: public TrackVisitor
+{
+public:
+  TimeLimitingTrackVisitor(double t_max_sec = 60.0);
+  virtual ~TimeLimitingTrackVisitor();
+  void visit_event(const Event& event, bool& kill_event) override;
+  void visit_track(const Track& track, bool& kill_track) override;
+private:
+  static uint64_t get_time();
+  uint64_t t_event_max_ = 60000000000;
+  uint64_t t_event_start_ = 0;
+  bool do_kill_track_ = false;
+  unsigned num_track_since_check_ = 0;
+  unsigned num_track_before_check_ = 1000000;
+};
+
+class DebugStatsTrackVisitor: public TrackVisitor
+{
+public:
+  DebugStatsTrackVisitor();
+  virtual ~DebugStatsTrackVisitor();
+  virtual void visit_event(const Event& event, bool& kill_event);
+  virtual void visit_track(const Track& track, bool& kill_track);
+  std::vector<int> particle_pdg_types() const;
+  unsigned track_length_zero(int pdg_type) const;
+  const calin::math::histogram::SimpleHist& track_length_log_hist(int pdg_type) const;
+private:
+  struct TrackStats
+  {
+    unsigned track_length_zero = { 0 };
+    calin::math::histogram::SimpleHist track_length_hist = { 0.1 };
+  };
+  const TrackStats& find_stats(int pdg_type) const;
+
+  std::map<int, TrackStats> stats_;
+};
 
 } } } // namespace calin::simulation::tracker

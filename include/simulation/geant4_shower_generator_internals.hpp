@@ -68,6 +68,14 @@ void eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec);
 void eigen_to_g4vec(G4ThreeVector& g4vec, const Eigen::Vector3d& evec,
                     double from_units);
 
+inline bool apply_kinetic_energy_cut(int pdg_type)
+{
+  return pdg_type==11 // electron
+      or pdg_type==2212 // proton
+      or pdg_type==2112 // neutron
+      ;
+}
+
 class EAS_StackingAction: public G4UserStackingAction
 {
  public:

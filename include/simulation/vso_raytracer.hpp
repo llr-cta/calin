@@ -194,7 +194,7 @@ class VSORayTracer
                unsigned nsim = 1000000, bool save_image = false);
 
  private:
-  bool findMirror(math::ray::Ray& ray, TraceInfo& info);
+  bool findMirror(math::ray::Ray& ray, TraceInfo& info, double ref_index);
 
   const VSOArray*          fArray;
   math::rng::RNG*          fRNG;

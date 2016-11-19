@@ -35,6 +35,7 @@
 #include <math/vector3d_util.hpp>
 #include <math/ray.hpp>
 #include <simulation/vso_obscuration.hpp>
+#include <math/geometry.hpp>
 
 using namespace calin::math::ray;
 using namespace calin::simulation::vs_optics;
@@ -61,11 +62,11 @@ VSODiskObscuration::~VSODiskObscuration()
   // nothing to see here
 }
 
-bool VSODiskObscuration::doesObscure(const Ray& r_in, Ray& r_out) const
+bool VSODiskObscuration::doesObscure(const Ray& r_in, Ray& r_out, double n) const
 {
   if(fICO && r_in.direction().y()>0)return false;
   r_out = r_in;
-  if(r_out.propagate_to_plane(fN, -fD0, false)
+  if(r_out.propagate_to_plane(fN, -fD0, false, n)
      && (r_out.position()-fX0).norm()<=fR) return true;
    return false;
 }
@@ -102,20 +103,20 @@ VSOTubeObscuration::~VSOTubeObscuration()
   // nothing to see here
 }
 
-bool VSOTubeObscuration::doesObscure(const Ray& r_in, Ray& r_out) const
+bool VSOTubeObscuration::doesObscure(const Ray& r_in, Ray& r_out, double n) const
 {
   if(fICO && r_in.direction().y()>0)return false;
 
   r_out = r_in;
   Ray::IPOut ipo;
-  ipo = r_out.propagate_to_cylinder(fX1, fN, fR, Ray::IP_NEXT, false);
+  ipo = r_out.propagate_to_cylinder(fX1, fN, fR, Ray::IP_NEXT, false, n);
 
   if(ipo != Ray::IPO_NONE)
   {
     double Dc = r_out.position().dot(fN);
     if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
     if(ipo == Ray::IPO_SECOND)return false;
-    ipo = r_out.propagate_to_cylinder(fX1, fN, fR, Ray::IP_LATEST, false);
+    ipo = r_out.propagate_to_cylinder(fX1, fN, fR, Ray::IP_LATEST, false, n);
     if(ipo != Ray::IPO_SECOND)return false;
     Dc = r_out.position().dot(fN);
     if((std::fabs(Dc-fD1)<=fD)&&(std::fabs(Dc-fD2)<=fD))return true;
@@ -155,39 +156,18 @@ VSOAlignedBoxObscuration::~VSOAlignedBoxObscuration()
   // nothing to see here
 }
 
-bool VSOAlignedBoxObscuration::doesObscure(const Ray& r_in, Ray& r_out) const
+bool VSOAlignedBoxObscuration::
+doesObscure(const Ray& r_in, Ray& r_out, double n) const
 {
-  // See: https://tavianator.com/fast-branchless-raybounding-box-intersections/
-  // and: https://tavianator.com/fast-branchless-raybounding-box-intersections-part-2-nans/
-
   if(incoming_only_ && r_in.direction().y()>0)return false;
 
-  // Normalized direction vector
-  const double vx = 1.0 / r_in.direction().x();
-  const double vy = 1.0 / r_in.direction().y();
-  const double vz = 1.0 / r_in.direction().z();
-
-  Eigen::Vector3d min_rel = min_corner_ - r_in.position();
-  Eigen::Vector3d max_rel = max_corner_ - r_in.position();
-
-  const double tx1 = min_rel.x() * vx;
-  const double tx2 = max_rel.x() * vx;
-  double tmin = std::min(tx1, tx2);
-  double tmax = std::max(tx1, tx2);
-
-  const double ty1 = min_rel.y() * vy;
-  const double ty2 = max_rel.y() * vy;
-  tmin = std::max(tmin, std::min(std::min(ty1, ty2), tmax));
-  tmax = std::min(tmax, std::max(std::max(ty1, ty2), tmin));
-
-  const double tz1 = min_rel.z() * vz;
-  const double tz2 = max_rel.z() * vz;
-  tmin = std::max(tmin, std::min(std::min(tz1, tz2), tmax));
-  tmax = std::min(tmax, std::max(std::max(tz1, tz2), tmin));
-
-  if(tmax > std::max(tmin, 0.0)) {
+  double tmin;
+  double tmax;
+  if(calin::math::geometry::box_has_future_intersection(tmin, tmax,
+    min_corner_, max_corner_, r_in.position(), r_in.direction()))
+  {
     r_out = r_in;
-    if(tmin > 0)r_out.propagate_dist(tmin);
+    if(tmin > 0)r_out.propagate_dist(tmin, n);
     return true;
   }
 

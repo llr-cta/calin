@@ -51,13 +51,8 @@ class VSOObscuration
 {
  public:
   virtual ~VSOObscuration();
-  virtual bool doesObscure(const calin::math::ray::Ray& p_in)
-  {
-    calin::math::ray::Ray p_out;
-    return doesObscure(p_in, p_out);
-  }
   virtual bool doesObscure(const calin::math::ray::Ray& p_in,
-                           calin::math::ray::Ray& p_out) const = 0;
+                           calin::math::ray::Ray& p_out, double n) const = 0;
 
   virtual VSOObscuration* clone() const = 0;
 
@@ -86,7 +81,7 @@ class VSODiskObscuration: public VSOObscuration
   }
   virtual ~VSODiskObscuration();
   bool doesObscure(const calin::math::ray::Ray& p_in,
-                   calin::math::ray::Ray& p_out) const override;
+                   calin::math::ray::Ray& p_out, double n) const override;
   VSODiskObscuration* clone() const override;
 
 #ifndef SWIG
@@ -130,7 +125,7 @@ class VSOTubeObscuration: public VSOObscuration
 
   virtual ~VSOTubeObscuration();
   bool doesObscure(const calin::math::ray::Ray& p_in,
-                   calin::math::ray::Ray& p_out) const override;
+                   calin::math::ray::Ray& p_out, double n) const override;
   VSOTubeObscuration* clone() const override;
 
 #ifndef SWIG
@@ -174,7 +169,7 @@ class VSOAlignedBoxObscuration: public VSOObscuration
 
   virtual ~VSOAlignedBoxObscuration();
   bool doesObscure(const calin::math::ray::Ray& p_in,
-                   calin::math::ray::Ray& p_out) const override;
+                   calin::math::ray::Ray& p_out, double n) const override;
   VSOAlignedBoxObscuration* clone() const override;
 
 #ifndef SWIG
