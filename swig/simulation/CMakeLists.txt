@@ -14,7 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_SWIG_FILES atmosphere.i pmt.i vs_optics.i tracker.i
-	detector_efficiency.i)
+	detector_efficiency.i world_magnetic_model.i)
 
 if(GEANT4_FOUND)
 	set(CALIN_SWIG_FILES ${CALIN_SWIG_FILES} geant4_shower_generator.i)
