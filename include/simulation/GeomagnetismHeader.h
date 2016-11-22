@@ -40,7 +40,6 @@
  *
  */
 
-
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE
 #endif
@@ -54,6 +53,10 @@
 #ifndef GEOMAGHEADER_H
 #define GEOMAGHEADER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+ 
 #define READONLYMODE "r"
 #define MAXLINELENGTH (1024)
 #define NOOFPARAMS (15)
@@ -268,10 +271,6 @@ enum YYYYMMDD {
 /*Prototypes */
 
 /*Functions that should be Magnetic Model member functions*/
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*Wrapper Functions*/
 int MAG_Geomag(MAGtype_Ellipsoid Ellip,
