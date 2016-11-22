@@ -2128,7 +2128,7 @@ void MAG_PrintEMMFormat(const char *filename, const char *filenameSV, MAGtype_Ma
     return;
 } /*MAG_PrintEMMFormat*/
 
-void MAG_PrintSHDFFormat(const char *filename, MAGtype_MagneticModel *(*MagneticModel)[], int epochs)
+void MAG_PrintSHDFFormat(const char *filename, MAGtype_MagneticModel **MagneticModel, int epochs)
 {
     	int i, n, m, index, epochRange;
 	FILE *SHDF_file;
@@ -2136,18 +2136,18 @@ void MAG_PrintSHDFFormat(const char *filename, MAGtype_MagneticModel *(*Magnetic
 	/*lines = (int)(UFM_DEGREE / 2.0 * (UFM_DEGREE + 3));*/
 	for(i = 0; i < epochs; i++)
 	{
-            if(i < epochs - 1) epochRange = (*MagneticModel)[i+1]->epoch - (*MagneticModel)[i]->epoch;
-            else epochRange = (*MagneticModel)[i]->epoch - (*MagneticModel)[i-1]->epoch;
+            if(i < epochs - 1) epochRange = MagneticModel[i+1]->epoch - MagneticModel[i]->epoch;
+            else epochRange = MagneticModel[i]->epoch - MagneticModel[i-1]->epoch;
             fprintf(SHDF_file, "%%SHDF 16695 Definitive Geomagnetic Reference Field Model Coefficient File\n");
-		fprintf(SHDF_file, "%%ModelName: %s\n", (*MagneticModel)[i]->ModelName);
+		fprintf(SHDF_file, "%%ModelName: %s\n", MagneticModel[i]->ModelName);
 		fprintf(SHDF_file, "%%Publisher: International Association of Geomagnetism and Aeronomy (IAGA), Working Group V-Mod\n");
 		fprintf(SHDF_file, "%%ReleaseDate: Some Number\n");
 		fprintf(SHDF_file, "%%DataCutOFF: Some Other Number\n");
-		fprintf(SHDF_file, "%%ModelStartYear: %d\n", (int)(*MagneticModel)[i]->epoch);
-		fprintf(SHDF_file, "%%ModelEndYear: %d\n", (int)(*MagneticModel)[i]->epoch+epochRange);
-		fprintf(SHDF_file, "%%Epoch: %.0f\n", (*MagneticModel)[i]->epoch);
-		fprintf(SHDF_file, "%%IntStaticDeg: %d\n", (*MagneticModel)[i]->nMax);
-		fprintf(SHDF_file, "%%IntSecVarDeg: %d\n", (*MagneticModel)[i]->nMaxSecVar);
+		fprintf(SHDF_file, "%%ModelStartYear: %d\n", (int)MagneticModel[i]->epoch);
+		fprintf(SHDF_file, "%%ModelEndYear: %d\n", (int)MagneticModel[i]->epoch+epochRange);
+		fprintf(SHDF_file, "%%Epoch: %.0f\n", MagneticModel[i]->epoch);
+		fprintf(SHDF_file, "%%IntStaticDeg: %d\n", MagneticModel[i]->nMax);
+		fprintf(SHDF_file, "%%IntSecVarDeg: %d\n", MagneticModel[i]->nMaxSecVar);
 		fprintf(SHDF_file, "%%ExtStaticDeg: 0\n");
 		fprintf(SHDF_file, "%%ExtSecVarDeg: 0\n");
 		fprintf(SHDF_file, "%%Normalization: Schmidt semi-normailized\n");
@@ -2157,7 +2157,7 @@ void MAG_PrintSHDFFormat(const char *filename, MAGtype_MagneticModel *(*Magnetic
 		fprintf(SHDF_file, "#\n#\n#\n#\n# I/E, n, m, Gnm, Hnm, SV-Gnm, SV-Hnm\n#\n");
 		n = 1;
 		m = 0;
-		for(n = 1; n <= (*MagneticModel)[i]->nMax; n++)
+		for(n = 1; n <= MagneticModel[i]->nMax; n++)
 		{
 			for(m = 0; m <= n; m++)
 			{
@@ -2165,16 +2165,16 @@ void MAG_PrintSHDFFormat(const char *filename, MAGtype_MagneticModel *(*Magnetic
 				if(i < epochs - 1)
 				{
 					if(m != 0)
-						fprintf(SHDF_file, "I,%d,%d,%f,%f,%f,%f\n", n, m, (*MagneticModel)[i]->Main_Field_Coeff_G[index], (*MagneticModel)[i]->Main_Field_Coeff_H[index], (*MagneticModel)[i]->Secular_Var_Coeff_G[index], (*MagneticModel)[i]->Secular_Var_Coeff_H[index]);
+						fprintf(SHDF_file, "I,%d,%d,%f,%f,%f,%f\n", n, m, MagneticModel[i]->Main_Field_Coeff_G[index], MagneticModel[i]->Main_Field_Coeff_H[index], MagneticModel[i]->Secular_Var_Coeff_G[index], MagneticModel[i]->Secular_Var_Coeff_H[index]);
 					else
-						fprintf(SHDF_file, "I,%d,%d,%f,,%f,\n", n, m, (*MagneticModel)[i]->Main_Field_Coeff_G[index], (*MagneticModel)[i]->Secular_Var_Coeff_G[index]);
+						fprintf(SHDF_file, "I,%d,%d,%f,,%f,\n", n, m, MagneticModel[i]->Main_Field_Coeff_G[index], MagneticModel[i]->Secular_Var_Coeff_G[index]);
 				}
 				else
 				{
 					if(m != 0)
-						fprintf(SHDF_file, "I,%d,%d,%f,%f,%f,%f\n", n, m, (*MagneticModel)[i]->Main_Field_Coeff_G[index], (*MagneticModel)[i]->Main_Field_Coeff_H[index], (*MagneticModel)[i]->Secular_Var_Coeff_G[index], (*MagneticModel)[i]->Secular_Var_Coeff_H[index]);
+						fprintf(SHDF_file, "I,%d,%d,%f,%f,%f,%f\n", n, m, MagneticModel[i]->Main_Field_Coeff_G[index], MagneticModel[i]->Main_Field_Coeff_H[index], MagneticModel[i]->Secular_Var_Coeff_G[index], MagneticModel[i]->Secular_Var_Coeff_H[index]);
 					else
-						fprintf(SHDF_file, "I,%d,%d,%f,,%f,\n", n, m, (*MagneticModel)[i]->Main_Field_Coeff_G[index], (*MagneticModel)[i]->Secular_Var_Coeff_G[index]);
+						fprintf(SHDF_file, "I,%d,%d,%f,,%f,\n", n, m, MagneticModel[i]->Main_Field_Coeff_G[index], MagneticModel[i]->Secular_Var_Coeff_G[index]);
 				}
 			}
 		}

@@ -56,7 +56,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
- 
+
 #define READONLYMODE "r"
 #define MAXLINELENGTH (1024)
 #define NOOFPARAMS (15)
@@ -371,7 +371,7 @@ void MAG_PrintWMMFormat(const char *filename, MAGtype_MagneticModel *MagneticMod
 
 void MAG_PrintEMMFormat(const char *filename, const char *filenameSV, MAGtype_MagneticModel *MagneticModel);
 
-void MAG_PrintSHDFFormat(const char *filename, MAGtype_MagneticModel *(*MagneticModel)[], int epochs);
+void MAG_PrintSHDFFormat(const char *filename, MAGtype_MagneticModel **MagneticModel, int epochs);
 
 int MAG_readMagneticModel(const char *filename, MAGtype_MagneticModel *MagneticModel);
 
