@@ -568,7 +568,7 @@ int MAG_robustReadMagneticModel_Large(const char *filename, const char *filename
     if(MODELFILE == 0) {
         return 0;
     }
-    (void) fgets(line, MAXLINELENGTH, MODELFILE);
+    if(fgets(line, MAXLINELENGTH, MODELFILE) == NULL) { }
     do
     {
         if(NULL == fgets(line, MAXLINELENGTH, MODELFILE))
@@ -583,7 +583,7 @@ int MAG_robustReadMagneticModel_Large(const char *filename, const char *filename
         return 0;
     }
     n = 0;
-    fgets(line, MAXLINELENGTH, MODELFILE);
+    if(fgets(line, MAXLINELENGTH, MODELFILE) == NULL) { }
     do
     {
         if(NULL == fgets(line, MAXLINELENGTH, MODELFILE))
