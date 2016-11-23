@@ -1590,17 +1590,18 @@ CALLS : none
         case 1:/* Horizontal Field strength low */
             printf("\nWarning: The Horizontal Field strength at this location is only %f\n", value);
             printf("	Compass readings have large uncertainties in areas where H\n	is smaller than 5000 nT\n");
-            printf("Press enter to continue...\n");
-            fgets(ans, 20, stdin);
+//            printf("Press enter to continue...\n");
+//            fgets(ans, 20, stdin);
             break;
         case 2:/* Horizontal Field strength very low */
             printf("\nWarning: The Horizontal Field strength at this location is only %f\n", value);
             printf("	Compass readings have VERY LARGE uncertainties in areas where\n	where H is smaller than 1000 nT\n");
-            printf("Press enter to continue...\n");
-            fgets(ans, 20, stdin);
+//            printf("Press enter to continue...\n");
+//            fgets(ans, 20, stdin);
             break;
         case 3:/* Elevation outside the recommended range */
             printf("\nWarning: The value you have entered of %f km for the elevation is outside of the recommended range.\n Elevations above -10.0 km are recommended for accurate results. \n", value);
+#if 0
             while(1)
             {
                 printf("\nPlease press 'C' to continue, 'G' to get new data or 'X' to exit...\n");
@@ -1620,6 +1621,7 @@ CALLS : none
                         break;
                 }
             }
+#endif
             break;
 
         case 4:/*Date outside the recommended range*/
@@ -1633,6 +1635,7 @@ CALLS : none
             printf("	Web: http://www.ngdc.noaa.gov/Geomagnetic/WMM/DoDWMM.shtml\n");
             printf("\n VALID RANGE  = %d - %d\n", (int) MagneticModel->epoch, (int) MagneticModel->CoefficientFileEndDate);
             printf(" TIME   = %f\n", value);
+#if 0
             while(1)
             {
                 printf("\nPlease press 'C' to continue, 'N' to enter new data or 'X' to exit...\n");
@@ -1652,6 +1655,7 @@ CALLS : none
                         break;
                 }
             }
+#endif
             break;
     }
     return 2;
@@ -2220,12 +2224,21 @@ int MAG_readMagneticModel(const char *filename, MAGtype_MagneticModel * Magnetic
     MagneticModel->Main_Field_Coeff_G[0] = 0.0;
     MagneticModel->Secular_Var_Coeff_H[0] = 0.0;
     MagneticModel->Secular_Var_Coeff_G[0] = 0.0;
-    fgets(c_str, 80, MAG_COF_File);
+    if(fgets(c_str, 80, MAG_COF_File) == NULL)
+    {
+      MAG_Error(20);
+      fclose(MAG_COF_File);
+      return FALSE;
+    }
     sscanf(c_str, "%lf%s", &epoch, MagneticModel->ModelName);
     MagneticModel->epoch = epoch;
     while(EOF_Flag == 0)
     {
-        fgets(c_str, 80, MAG_COF_File);
+        if(fgets(c_str, 80, MAG_COF_File) == NULL)
+        {
+          EOF_Flag = 1;
+          break;
+        }
         /* CHECK FOR LAST LINE IN FILE */
         for(i = 0; i < 4 && (c_str[i] != '\0'); i++)
         {
@@ -2289,16 +2302,31 @@ int MAG_readMagneticModel_Large(const char *filename, const char *filenameSV, MA
     MagneticModel->Main_Field_Coeff_G[0] = 0.0;
     MagneticModel->Secular_Var_Coeff_H[0] = 0.0;
     MagneticModel->Secular_Var_Coeff_G[0] = 0.0;
-    fgets(c_str, 80, MAG_COF_File);
+    if(fgets(c_str, 80, MAG_COF_File) == NULL)
+    {
+      MAG_Error(20);
+      fclose(MAG_COF_File);
+      return FALSE;
+    }
     sscanf(c_str, "%lf%s", &epoch, MagneticModel->ModelName);
     MagneticModel->epoch = epoch;
     a = CALCULATE_NUMTERMS(MagneticModel->nMaxSecVar);
     b = CALCULATE_NUMTERMS(MagneticModel->nMax);
     for(i = 0; i < a; i++)
     {
-        fgets(c_str, 80, MAG_COF_File);
+        if(fgets(c_str, 80, MAG_COF_File) == NULL)
+        {
+          fclose(MAG_COF_File);
+          fclose(MAG_COFSV_File);
+          return FALSE;
+        }
         sscanf(c_str, "%d%d%lf%lf", &n, &m, &gnm, &hnm);
-        fgets(c_str2, 80, MAG_COFSV_File);
+        if(fgets(c_str2, 80, MAG_COFSV_File) == NULL)
+        {
+          fclose(MAG_COF_File);
+          fclose(MAG_COFSV_File);
+          return FALSE;
+        }
         sscanf(c_str2, "%d%d%lf%lf", &n, &m, &dgnm, &dhnm);
         if(m <= n)
         {
@@ -2311,7 +2339,12 @@ int MAG_readMagneticModel_Large(const char *filename, const char *filenameSV, MA
     }
     for(i = a; i < b; i++)
     {
-        fgets(c_str, 80, MAG_COF_File);
+        if(fgets(c_str, 80, MAG_COF_File) == NULL)
+        {
+          fclose(MAG_COF_File);
+          fclose(MAG_COFSV_File);
+          return FALSE;
+        }
         sscanf(c_str, "%d%d%lf%lf", &n, &m, &gnm, &hnm);
         if(m <= n)
         {
