@@ -310,6 +310,7 @@ int MAG_SetDefaults(MAGtype_Ellipsoid *Ellip, MAGtype_Geoid *Geoid);
 
 void MAG_Error(int control);
 
+#if 0
 char MAG_GeomagIntroduction_WMM(MAGtype_MagneticModel *MagneticModel, char *VersionDate);
 
 char MAG_GeomagIntroduction_EMM(MAGtype_MagneticModel *MagneticModel, char *VersionDate);
@@ -344,6 +345,7 @@ void MAG_PrintUserData(MAGtype_GeoMagneticElements GeomagElements,
 int MAG_ValidateDMSstringlat(char *input, char *Error);
 
 int MAG_ValidateDMSstringlong(char *input, char *Error);
+#endif
 
 int MAG_Warnings(int control, double value, MAGtype_MagneticModel *MagneticModel);
 

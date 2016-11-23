@@ -620,7 +620,9 @@ int MAG_robustReadMagModels(const char *filename, MAGtype_MagneticModel **magnet
     if(MODELFILE == 0) {
         return 0;
     }
-    fgets(line, MAXLINELENGTH, MODELFILE);
+    if(fgets(line, MAXLINELENGTH, MODELFILE) == NULL) {
+      return 0;
+    }
     if(line[0] == '%')
         MAG_readMagneticModel_SHDF(filename, magneticmodels, array_size);
     else if(array_size == 1)
@@ -735,6 +737,8 @@ CALLS : none
             break;
     }
 } /*MAG_Error*/
+
+#if 0
 
 char MAG_GeomagIntroduction_EMM(MAGtype_MagneticModel *MagneticModel, char* VersionDate)
 {
@@ -1564,6 +1568,8 @@ CALLS : none
     return TRUE;
 } /*MAG_ValidateDMSstringlong*/
 
+#endif
+
 int MAG_Warnings(int control, double value, MAGtype_MagneticModel *MagneticModel)
 
 /*Return value 0 means end program, Return value 1 means get new data, Return value 2 means continue.
@@ -1652,7 +1658,6 @@ CALLS : none
 } /*MAG_Warnings*/
 
 /*End of User Interface functions*/
-
 
 /******************************************************************************
  ********************************Memory and File Processing********************
