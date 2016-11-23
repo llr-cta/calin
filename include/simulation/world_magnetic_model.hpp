@@ -32,14 +32,14 @@ struct WMM_Internals;
 }
 
 #ifdef SWIG
-%apply Eigen::Vector3d &OUTPUT { Eigen::Vector3d& field_nT };
+//%apply Eigen::Vector3d &OUTPUT { Eigen::Vector3d& field_nT };
 #endif
 
 class FieldVsElevation
 {
 public:
   virtual ~FieldVsElevation();
-  virtual void field_nT(double ellipsoid_elevation_cm, Eigen::Vector3d& field_nT) = 0;
+  virtual Eigen::Vector3d field_nT(double ellipsoid_elevation_cm) = 0;
 };
 
 class WMM;
@@ -50,7 +50,7 @@ public:
   WMM_FieldVsElevation(WMM* wmm, double latitude_deg,
     double longitude_deg_pos_east);
   virtual ~WMM_FieldVsElevation();
-  void field_nT(double ellipsoid_elevation_cm, Eigen::Vector3d& field_nT) override;
+  Eigen::Vector3d field_nT(double ellipsoid_elevation_cm) override;
 private:
   WMM* wmm_;
   double latitude_deg_;
@@ -62,8 +62,8 @@ class WMM
 public:
   WMM(const std::string& cof_file = default_cof_file(), double date = 0);
   ~WMM();
-  void field_nT(double latitude_deg, double longitude_deg_pos_east,
-    double ellipsoid_elevation_cm, Eigen::Vector3d& field_nT);
+  Eigen::Vector3d field_nT(double latitude_deg, double longitude_deg_pos_east,
+    double ellipsoid_elevation_cm);
   static std::string default_cof_file();
   WMM_FieldVsElevation field_vs_elevation(double latitude_deg,
     double longitude_deg_pos_east);

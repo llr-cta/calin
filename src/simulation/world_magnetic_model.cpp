@@ -47,11 +47,10 @@ WMM_FieldVsElevation::~WMM_FieldVsElevation()
   // nothing to see here
 }
 
-void WMM_FieldVsElevation::
-field_nT(double ellipsoid_elevation_cm, Eigen::Vector3d& field_nT)
+Eigen::Vector3d WMM_FieldVsElevation::field_nT(double ellipsoid_elevation_cm)
 {
-  wmm_->field_nT(latitude_deg_, longitude_deg_pos_east_, ellipsoid_elevation_cm,
-    field_nT);
+  return wmm_->field_nT(latitude_deg_, longitude_deg_pos_east_,
+    ellipsoid_elevation_cm);
 }
 
 namespace calin { namespace simulation { namespace world_magnetic_model { namespace internal {
@@ -105,8 +104,8 @@ WMM::~WMM()
   MAG_FreeMagneticModelMemory(mag_->magnetic_models[0]);
 }
 
-void WMM::field_nT(double latitude_deg, double longitude_deg_pos_east,
-  double ellipsoid_elevation_cm, Eigen::Vector3d& field_nT)
+Eigen::Vector3d WMM::field_nT(double latitude_deg, double longitude_deg_pos_east,
+  double ellipsoid_elevation_cm)
 {
   MAGtype_CoordGeodetic coord_geodetic;
   coord_geodetic.lambda               = longitude_deg_pos_east;
@@ -122,9 +121,11 @@ void WMM::field_nT(double latitude_deg, double longitude_deg_pos_east,
   MAG_Geomag(mag_->ellipsoid, coord_spherical, coord_geodetic,
     mag_->timed_magnetic_model, &geo_magnetic_elements); /* Computes the geoMagnetic field elements and their time change*/
 
-  field_nT.x() = geo_magnetic_elements.Y; /*6. Eastern component of the magnetic field vector*/
-  field_nT.y() = geo_magnetic_elements.X; /*5. Northern component of the magnetic field vector*/
-  field_nT.z() = -geo_magnetic_elements.Z; /*7. Downward component of the magnetic field vector*/
+  return {
+    geo_magnetic_elements.Y, /*6. Eastern component of the magnetic field vector*/
+    geo_magnetic_elements.X, /*5. Northern component of the magnetic field vector*/
+    -geo_magnetic_elements.Z /*7. Downward component of the magnetic field vector*/
+  };
 }
 
 WMM_FieldVsElevation WMM::field_vs_elevation(double latitude_deg,

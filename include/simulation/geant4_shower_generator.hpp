@@ -27,6 +27,7 @@
 
 #include"simulation/atmosphere.hpp"
 #include"simulation/tracker.hpp"
+#include"simulation/world_magnetic_model.hpp"
 
 #include"calin_global_definitions.hpp"
 
@@ -59,10 +60,22 @@ class Geant4ShowerGenerator
   Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                         calin::simulation::atmosphere::Atmosphere* atm,
                         unsigned num_atm_layers, double zground, double ztop,
+                        calin::simulation::world_magnetic_model::FieldVsElevation* bfield = nullptr,
                         VerbosityLevel verbose_level =
                         VerbosityLevel::SUPRESSED_STDOUT,
                         bool adopt_visitor = false,
-                        bool adopt_atm = false);
+                        bool adopt_atm = false,
+                        bool adopt_bfield = false);
+  Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
+                        calin::simulation::atmosphere::Atmosphere* atm,
+                        unsigned num_atm_layers, double zground, double ztop,
+                        VerbosityLevel verbose_level,
+                        calin::simulation::world_magnetic_model::FieldVsElevation* bfield = nullptr,
+                        bool adopt_visitor = false,
+                        bool adopt_atm = false,
+                        bool adopt_bfield = false):
+    Geant4ShowerGenerator(visitor, atm, num_atm_layers, zground, ztop, bfield,
+      verbose_level, adopt_visitor, adopt_atm, adopt_bfield) { }
   virtual ~Geant4ShowerGenerator();
 
   void set_minimum_energy_cut(double emin_mev);
@@ -80,6 +93,8 @@ class Geant4ShowerGenerator
   bool adopt_atm_ = false;
   double ztop_of_atm_ = 0;
   double zground_ = 0;
+  calin::simulation::world_magnetic_model::FieldVsElevation* bfield_ = nullptr;
+  bool adopt_bfield_ = false;
 
   G4UImanager* ui_manager_                = nullptr;    // don't delete me
   G4UIsession* ui_session_                = nullptr;    // delete me

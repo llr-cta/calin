@@ -26,11 +26,13 @@
 #include<vector>
 #include<cassert>
 #include<limits>
+#include<map>
 
 #include"simulation/atmosphere.hpp"
 #include"simulation/tracker.hpp"
 #include"math/special.hpp"
 #include"io/log.hpp"
+#include"simulation/world_magnetic_model.hpp"
 
 #include"calin_global_definitions.hpp"
 
@@ -138,9 +140,16 @@ class EAS_FlatDetectorConstruction: public EAS_DetectorConstruction
 {
 public:
   EAS_FlatDetectorConstruction(calin::simulation::atmosphere::Atmosphere* atm,
-                               unsigned num_atm_layers,
-                               double zground_cm, double ztop_of_atm_cm,
-                               double layer_side_cm = 100E5 /* 100 km */);
+      unsigned num_atm_layers, double zground_cm, double ztop_of_atm_cm,
+      double layer_side_cm = 100E5,
+      calin::simulation::world_magnetic_model::FieldVsElevation* bfield=nullptr);
+  EAS_FlatDetectorConstruction(calin::simulation::atmosphere::Atmosphere* atm,
+      unsigned num_atm_layers, double zground_cm, double ztop_of_atm_cm,
+      calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
+      double layer_side_cm = 100E5):
+    EAS_FlatDetectorConstruction(atm, num_atm_layers, zground_cm, ztop_of_atm_cm,
+      layer_side_cm, bfield) { /* nothing to see here */ }
+
   virtual ~EAS_FlatDetectorConstruction();
   G4VPhysicalVolume* Construct() override;
   void ConstructSDandField() override;
@@ -154,6 +163,8 @@ private:
   double layer_side_cm_;
   Eigen::Vector3d min_corner_;
   Eigen::Vector3d max_corner_;
+  calin::simulation::world_magnetic_model::FieldVsElevation* bfield_;
+  std::map<G4LogicalVolume*, G4ThreeVector> logical_bfield_;
 };
 
 class EAS_UserEventAction: public G4UserEventAction

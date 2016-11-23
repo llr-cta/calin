@@ -30,10 +30,12 @@ Geant4ShowerGenerator::
 Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                       calin::simulation::atmosphere::Atmosphere* atm,
                       unsigned num_atm_layers, double zground, double ztop,
+                      calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
                       VerbosityLevel verbose_level,
-                      bool adopt_visitor, bool adopt_atm):
+                      bool adopt_visitor, bool adopt_atm, bool adopt_bfield):
     visitor_(visitor), adopt_visitor_(adopt_visitor),
-    atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground)
+    atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground),
+    bfield_(bfield), adopt_bfield_(adopt_bfield)
 {
   // get the pointer to the User Interface manager
   ui_manager_ = G4UImanager::GetUIpointer();
@@ -78,7 +80,7 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
   run_manager_->SetUserInitialization(physlist);
 
   EAS_FlatDetectorConstruction* detector_constructor =
-      new EAS_FlatDetectorConstruction(atm, num_atm_layers, zground, ztop);
+      new EAS_FlatDetectorConstruction(atm, num_atm_layers, zground, ztop, bfield);
   run_manager_->SetUserInitialization(detector_constructor);
 
   event_action_ = new EAS_UserEventAction(visitor_);
