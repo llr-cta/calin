@@ -2,7 +2,7 @@
 
    calin/simulation/geant4_shower_generator.hpp -- Stephen Fegan -- 2015-06-23
 
-   Class to genereate extensive air showers using Geant-4
+   Class to generate extensive air showers using Geant-4
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
