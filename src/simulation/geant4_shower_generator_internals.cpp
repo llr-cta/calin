@@ -406,6 +406,32 @@ void EAS_UserEventAction::EndOfEventAction(const G4Event *anEvent)
 
 // ============================================================================
 //
+// EAS_ExceptionHandler - stop Geant4 from aborting, rather send C++ exception
+//
+// ============================================================================
+
+EAS_ExceptionHandler::EAS_ExceptionHandler(): G4ExceptionHandler()
+{
+  // nothing to see here
+}
+
+EAS_ExceptionHandler::~EAS_ExceptionHandler()
+{
+  // nothing to see here
+}
+
+G4bool EAS_ExceptionHandler::Notify(const char* originOfException,
+  const char *exceptionCode, G4ExceptionSeverity severity,
+  const char * description)
+{
+  G4bool abort = G4ExceptionHandler::Notify(originOfException, exceptionCode,
+    severity, description);
+  if(abort)throw std::runtime_error("Geant4 exception");
+  return abort;
+}
+
+// ============================================================================
+//
 // CoutCerrLogger - send Geant4 messages to the log system
 //
 // ============================================================================

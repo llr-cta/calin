@@ -20,6 +20,8 @@
 
 */
 
+#include <G4StateManager.hh>
+
 #include <simulation/geant4_shower_generator.hpp>
 #include <simulation/geant4_shower_generator_internals.hpp>
 
@@ -67,11 +69,21 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
       verbose_event = 1;
       break;
   }
-  ui_session_ = new CoutCerrLogger(cout_level, cerr_level);
-  ui_manager_->SetCoutDestination(ui_session_);
 
   // construct the default run manager
   run_manager_ = new G4RunManager;
+
+  // ---------------------------------------------------------------------------
+  // This should be done before the run manager is constrcuted but we must wait
+  // until the run manager doesn't trash our choice of Exception handler
+
+  // set the UI through the logger
+  ui_session_ = new CoutCerrLogger(cout_level, cerr_level);
+  ui_manager_->SetCoutDestination(ui_session_);
+
+  // construct exception handler that avoids abort
+  exception_handler_ = new EAS_ExceptionHandler();
+  // ---------------------------------------------------------------------------
 
   // set mandatory initialization classes
   FTFP_BERT* physlist = new FTFP_BERT(verbose_everything);
@@ -110,6 +122,7 @@ Geant4ShowerGenerator::~Geant4ShowerGenerator()
 {
   delete run_manager_;
   delete ui_session_;
+  delete exception_handler_;
 }
 
 void Geant4ShowerGenerator::set_minimum_energy_cut(double emin_mev)

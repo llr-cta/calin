@@ -60,6 +60,7 @@ using calin::math::special::SQR;
 #include <FTFP_BERT.hh>
 #include <G4UIsession.hh>
 #include <G4TrackStatus.hh>
+#include <G4ExceptionHandler.hh>
 
 namespace calin { namespace simulation { namespace geant4_shower_generator {
 
@@ -80,7 +81,7 @@ inline bool apply_kinetic_energy_cut(int pdg_type)
 
 class EAS_StackingAction: public G4UserStackingAction
 {
- public:
+public:
   EAS_StackingAction();
   virtual ~EAS_StackingAction();
 
@@ -88,7 +89,7 @@ class EAS_StackingAction: public G4UserStackingAction
 
   void setEminCut(double emin_MeV) { ecut_ = emin_MeV/CLHEP::MeV; }
 
- protected:
+protected:
   double ecut_ = 0;
 };
 
@@ -96,7 +97,7 @@ class EAS_DetectorConstruction;
 
 class EAS_SteppingAction: public G4UserSteppingAction
 {
- public:
+public:
   EAS_SteppingAction(calin::simulation::tracker::TrackVisitor* visitor,
     EAS_DetectorConstruction* detector_geometry = nullptr);
   virtual ~EAS_SteppingAction();
@@ -105,7 +106,7 @@ class EAS_SteppingAction: public G4UserSteppingAction
 
   void setEminCut(double emin_MeV) { ecut_ = emin_MeV/CLHEP::MeV; }
 
- protected:
+protected:
   double ecut_  = 0;
   calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
   EAS_DetectorConstruction* detector_geometry_ = nullptr;
@@ -113,7 +114,7 @@ class EAS_SteppingAction: public G4UserSteppingAction
 
 class EAS_PrimaryGeneratorAction: public G4VUserPrimaryGeneratorAction
 {
- public:
+public:
   EAS_PrimaryGeneratorAction();
   virtual ~EAS_PrimaryGeneratorAction();
 
@@ -121,13 +122,13 @@ class EAS_PrimaryGeneratorAction: public G4VUserPrimaryGeneratorAction
 
   void setGPS(G4GeneralParticleSource* particle_source) {
     delete particle_source_; particle_source_ = particle_source; }
- protected:
+protected:
   G4GeneralParticleSource* particle_source_ = nullptr;
 };
 
 class EAS_DetectorConstruction: public G4VUserDetectorConstruction
 {
- public:
+public:
   EAS_DetectorConstruction();
   virtual ~EAS_DetectorConstruction();
   G4VPhysicalVolume* Construct() override = 0;
@@ -178,9 +179,18 @@ private:
   calin::simulation::tracker::TrackVisitor* visitor_;
 };
 
+class EAS_ExceptionHandler: public G4ExceptionHandler
+{
+public:
+  EAS_ExceptionHandler();
+  virtual ~EAS_ExceptionHandler();
+  G4bool Notify(const char* originOfException, const char *exceptionCode,
+    G4ExceptionSeverity severity, const char * description) override;
+};
+
 class CoutCerrLogger: public G4UIsession
 {
- public:
+public:
   CoutCerrLogger(calin::io::log::Level cout_level = calin::io::log::VERBOSE,
                  calin::io::log::Level cerr_level = calin::io::log::WARNING,
                  calin::io::log::Logger* cout_logger =
@@ -192,7 +202,7 @@ class CoutCerrLogger: public G4UIsession
   virtual ~CoutCerrLogger();
   G4int ReceiveG4cout(const G4String& cout_string) override;
   G4int ReceiveG4cerr(const G4String& cerr_string) override;
- protected:
+protected:
   calin::io::log::Level cout_level_;
   calin::io::log::Level cerr_level_;
   calin::io::log::Logger* cout_logger_;

@@ -39,6 +39,7 @@
 class G4UImanager;
 class G4UIsession;
 class G4RunManager;
+class G4VExceptionHandler;
 #endif
 
 namespace calin { namespace simulation { namespace geant4_shower_generator {
@@ -103,6 +104,7 @@ class Geant4ShowerGenerator
   EAS_PrimaryGeneratorAction* gen_action_ = nullptr;    // don't delete me
   EAS_StackingAction* stack_action_       = nullptr;    // don't delete me
   EAS_UserEventAction* event_action_      = nullptr;    // don't delete me
+  G4VExceptionHandler* exception_handler_ = nullptr;    // delete me
 };
 
 } } } // namespace calin::simulation::generator
