@@ -22,6 +22,7 @@
 
 #include <G4StateManager.hh>
 
+#include <math/rng.hpp>
 #include <simulation/geant4_shower_generator.hpp>
 #include <simulation/geant4_shower_generator_internals.hpp>
 
@@ -33,12 +34,15 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                       calin::simulation::atmosphere::Atmosphere* atm,
                       unsigned num_atm_layers, double zground, double ztop,
                       calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
-                      VerbosityLevel verbose_level,
+                      VerbosityLevel verbose_level, uint32_t seed,
                       bool adopt_visitor, bool adopt_atm, bool adopt_bfield):
     visitor_(visitor), adopt_visitor_(adopt_visitor),
     atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground),
-    bfield_(bfield), adopt_bfield_(adopt_bfield)
+    bfield_(bfield), adopt_bfield_(adopt_bfield), seed_(seed)
 {
+  while(seed_ == 0)seed_ = calin::math::rng::RNG::uint32_from_random_device();
+  CLHEP::HepRandom::setTheSeed(seed_);
+
   // get the pointer to the User Interface manager
   ui_manager_ = G4UImanager::GetUIpointer();
 

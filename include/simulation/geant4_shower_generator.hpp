@@ -63,7 +63,7 @@ class Geant4ShowerGenerator
                         unsigned num_atm_layers, double zground, double ztop,
                         calin::simulation::world_magnetic_model::FieldVsElevation* bfield = nullptr,
                         VerbosityLevel verbose_level =
-                        VerbosityLevel::SUPRESSED_STDOUT,
+                        VerbosityLevel::SUPRESSED_STDOUT, uint32_t seed = 0,
                         bool adopt_visitor = false,
                         bool adopt_atm = false,
                         bool adopt_bfield = false);
@@ -72,11 +72,12 @@ class Geant4ShowerGenerator
                         unsigned num_atm_layers, double zground, double ztop,
                         VerbosityLevel verbose_level,
                         calin::simulation::world_magnetic_model::FieldVsElevation* bfield = nullptr,
+                        uint32_t seed = 0,
                         bool adopt_visitor = false,
                         bool adopt_atm = false,
                         bool adopt_bfield = false):
     Geant4ShowerGenerator(visitor, atm, num_atm_layers, zground, ztop, bfield,
-      verbose_level, adopt_visitor, adopt_atm, adopt_bfield) { }
+      verbose_level, seed, adopt_visitor, adopt_atm, adopt_bfield) { }
   virtual ~Geant4ShowerGenerator();
 
   void set_minimum_energy_cut(double emin_mev);
@@ -87,6 +88,8 @@ class Geant4ShowerGenerator
                         const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
                         double weight=1.0);
 
+  uint32_t random_seed() const { return seed_; }
+
  protected:
   calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
@@ -96,6 +99,7 @@ class Geant4ShowerGenerator
   double zground_ = 0;
   calin::simulation::world_magnetic_model::FieldVsElevation* bfield_ = nullptr;
   bool adopt_bfield_ = false;
+  uint32_t seed_ = 0;
 
   G4UImanager* ui_manager_                = nullptr;    // don't delete me
   G4UIsession* ui_session_                = nullptr;    // delete me
