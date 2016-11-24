@@ -438,3 +438,41 @@ Eigen::VectorXd MultiPESpectrum::rvs_ped(unsigned size)
   for(unsigned irv=0;irv<size;irv++)x[irv]=rv_ped();
   return x;
 }
+
+PoissonSignalSim::PoissonSignalSim(SignalSource* pmt,
+    const calin::ix::simulation::pmt::PoissonSignalSimConfig& config,
+    math::rng::RNG* rng):
+  pmt_(pmt), rng_(rng), my_rng_(0), config_(config)
+{
+  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG();
+}
+
+PoissonSignalSim::~PoissonSignalSim()
+{
+  // nothing to see here
+}
+
+double PoissonSignalSim::rv(double lambda)
+{
+  double x = 0;
+  if(config_.pedestal_rms())x = rng_->normal()*config_.pedestal_rms();
+  x += config_.pedestal_mean();
+  int npe = rng_->poisson(lambda);
+  for(int ipe=0;ipe<npe;ipe++)x += pmt_->rv();
+  return x;
+}
+
+Eigen::VectorXd PoissonSignalSim::rvs(double lambda, unsigned size)
+{
+  Eigen::VectorXd x(size);
+  for(unsigned irv=0;irv<size;irv++)x[irv]=rv(lambda);
+  return x;
+}
+
+Eigen::VectorXd PoissonSignalSim::rvs(const Eigen::VectorXd& lambdas)
+{
+  unsigned size = lambdas.size();
+  Eigen::VectorXd x(size);
+  for(unsigned irv=0;irv<size;irv++)x[irv]=rv(lambdas[irv]);
+  return x;
+}

@@ -123,4 +123,26 @@ private:
   double                                            signal_gamma_b_ = 0;
 };
 
+class PoissonSignalSim
+{
+public:
+  PoissonSignalSim(SignalSource* pmt,
+    const calin::ix::simulation::pmt::PoissonSignalSimConfig& config,
+    math::rng::RNG* rng = nullptr);
+  virtual ~PoissonSignalSim();
+
+  double rv(double lambda);
+  Eigen::VectorXd rvs(double lambda, unsigned size);
+  Eigen::VectorXd rvs(const Eigen::VectorXd& lambdas);
+
+  math::rng::RNG* rng() { return rng_; }
+  void set_rng(math::rng::RNG* rng) { delete my_rng_; my_rng_=0; rng_=rng; }
+
+private:
+  SignalSource*                                      pmt_;
+  math::rng::RNG*                                    rng_;
+  math::rng::RNG*                                    my_rng_;
+  calin::ix::simulation::pmt::PoissonSignalSimConfig config_;
+};
+
 } } } // namespace calin::simulation::pmt
