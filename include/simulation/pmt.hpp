@@ -138,6 +138,9 @@ public:
   math::rng::RNG* rng() { return rng_; }
   void set_rng(math::rng::RNG* rng) { delete my_rng_; my_rng_=0; rng_=rng; }
 
+  double pedestal_mean() const { return config_.pedestal_mean(); }
+  double pedestal_rms() const { return config_.pedestal_rms(); }
+
 private:
   SignalSource*                                      pmt_;
   math::rng::RNG*                                    rng_;

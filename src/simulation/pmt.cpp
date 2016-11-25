@@ -449,7 +449,7 @@ PoissonSignalSim::PoissonSignalSim(SignalSource* pmt,
 
 PoissonSignalSim::~PoissonSignalSim()
 {
-  // nothing to see here
+  delete my_rng_;
 }
 
 double PoissonSignalSim::rv(double lambda)
