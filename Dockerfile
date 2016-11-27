@@ -30,7 +30,7 @@ RUN cd /build/calin &&                                             \
     cd mybuild &&                                                  \
     cmake -DCMAKE_BUILD_TYPE=Release                               \
           -DCMAKE_INSTALL_PREFIX=/usr                              \
-          -DCALIN_PYTHON_SUB_DIR=lib/python3.5                    \
+          -DCALIN_PYTHON_SUB_DIR=lib/python3.5                     \
           .. &&                                                    \
     make -j2 &&                                                    \
     make install &&                                                \
