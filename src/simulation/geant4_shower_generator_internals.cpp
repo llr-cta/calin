@@ -23,6 +23,9 @@
 
 #include<stdexcept>
 #include<G4GeometryManager.hh>
+#include<G4UniformMagField.hh>
+#include<G4AutoDelete.hh>
+#include<G4FieldManager.hh>
 
 #include <simulation/geant4_shower_generator_internals.hpp>
 #include <io/log.hpp>
@@ -226,14 +229,15 @@ EAS_DetectorConstruction::~EAS_DetectorConstruction()
 
 EAS_FlatDetectorConstruction::
 EAS_FlatDetectorConstruction(calin::simulation::atmosphere::Atmosphere* atm,
-                             unsigned num_atm_layers,
-                             double zground_cm, double ztop_of_atm_cm,
-                             double layer_side_cm)
+  unsigned num_atm_layers, double zground_cm, double ztop_of_atm_cm,
+  double layer_side_cm,
+  calin::simulation::world_magnetic_model::FieldVsElevation* bfield)
     : EAS_DetectorConstruction(), atm_(atm), num_atm_layers_(num_atm_layers),
       zground_cm_(zground_cm), ztop_of_atm_cm_(ztop_of_atm_cm),
       layer_side_cm_(layer_side_cm),
       min_corner_(-layer_side_cm, -layer_side_cm, zground_cm),
-      max_corner_( layer_side_cm,  layer_side_cm, ztop_of_atm_cm)
+      max_corner_( layer_side_cm,  layer_side_cm, ztop_of_atm_cm),
+      bfield_(bfield)
 {
   // nothing to see here
 }
@@ -307,6 +311,10 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
     G4LogicalVolume* layer_logical
         = new G4LogicalVolume(layer_box, air, std::string("VOL_")+name);
 
+    if(bfield_)
+      eigen_to_g4vec(logical_bfield_[layer_logical],
+        bfield_->field_nT(pos_z), 1e-9*CLHEP::tesla);
+
     G4VPhysicalVolume* layer_physical __attribute__((__unused__))
         = new G4PVPlacement(0,                          // no rotation
                             G4ThreeVector(0, 0, pos_z), // translation
@@ -320,16 +328,27 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
   return world_physical;
 }
 
+void EAS_FlatDetectorConstruction::ConstructSDandField()
+{
+  for(auto& ilogical_bfield : logical_bfield_)
+  {
+    auto* mag_field = new G4UniformMagField(ilogical_bfield.second);
+    auto* field_mgr = new G4FieldManager();
+    field_mgr->SetDetectorField(mag_field);
+    field_mgr->CreateChordFinder(mag_field);
+    G4bool force_to_all_daughters = true;
+    ilogical_bfield.first->SetFieldManager(field_mgr, force_to_all_daughters);
+    // Register the field and its manager for deleting
+    G4AutoDelete::Register(mag_field);
+    G4AutoDelete::Register(field_mgr);
+  }
+}
+
 bool EAS_FlatDetectorConstruction::
 ray_intersects_detector(const Eigen::Vector3d& pos, const Eigen::Vector3d& dir)
 {
   return calin::math::geometry::
     box_has_future_intersection(min_corner_,max_corner_,pos,dir);
-}
-
-void EAS_FlatDetectorConstruction::ConstructSDandField()
-{
-
 }
 
 // ============================================================================
@@ -383,6 +402,32 @@ void EAS_UserEventAction::BeginOfEventAction(const G4Event *anEvent)
 void EAS_UserEventAction::EndOfEventAction(const G4Event *anEvent)
 {
   visitor_->leave_event();
+}
+
+// ============================================================================
+//
+// EAS_ExceptionHandler - stop Geant4 from aborting, rather send C++ exception
+//
+// ============================================================================
+
+EAS_ExceptionHandler::EAS_ExceptionHandler(): G4ExceptionHandler()
+{
+  // nothing to see here
+}
+
+EAS_ExceptionHandler::~EAS_ExceptionHandler()
+{
+  // nothing to see here
+}
+
+G4bool EAS_ExceptionHandler::Notify(const char* originOfException,
+  const char *exceptionCode, G4ExceptionSeverity severity,
+  const char * description)
+{
+  G4bool abort = G4ExceptionHandler::Notify(originOfException, exceptionCode,
+    severity, description);
+  if(abort)throw std::runtime_error("Geant4 exception");
+  return abort;
 }
 
 // ============================================================================

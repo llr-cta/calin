@@ -2,7 +2,7 @@
 
    calin/simulation/geant4_shower_generator.cpp -- Stephen Fegan -- 2015-07-02
 
-   Class to genereate extensive air showers using Geant-4
+   Class to generate extensive air showers using Geant-4
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -20,6 +20,9 @@
 
 */
 
+#include <G4StateManager.hh>
+
+#include <math/rng.hpp>
 #include <simulation/geant4_shower_generator.hpp>
 #include <simulation/geant4_shower_generator_internals.hpp>
 
@@ -30,11 +33,16 @@ Geant4ShowerGenerator::
 Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                       calin::simulation::atmosphere::Atmosphere* atm,
                       unsigned num_atm_layers, double zground, double ztop,
-                      VerbosityLevel verbose_level,
-                      bool adopt_visitor, bool adopt_atm):
+                      calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
+                      VerbosityLevel verbose_level, uint32_t seed,
+                      bool adopt_visitor, bool adopt_atm, bool adopt_bfield):
     visitor_(visitor), adopt_visitor_(adopt_visitor),
-    atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground)
+    atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground),
+    bfield_(bfield), adopt_bfield_(adopt_bfield), seed_(seed)
 {
+  while(seed_ == 0)seed_ = calin::math::rng::RNG::uint32_from_random_device();
+  CLHEP::HepRandom::setTheSeed(seed_);
+
   // get the pointer to the User Interface manager
   ui_manager_ = G4UImanager::GetUIpointer();
 
@@ -65,11 +73,21 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
       verbose_event = 1;
       break;
   }
-  ui_session_ = new CoutCerrLogger(cout_level, cerr_level);
-  ui_manager_->SetCoutDestination(ui_session_);
 
   // construct the default run manager
   run_manager_ = new G4RunManager;
+
+  // ---------------------------------------------------------------------------
+  // This should be done before the run manager is constrcuted but we must wait
+  // until the run manager doesn't trash our choice of Exception handler
+
+  // set the UI through the logger
+  ui_session_ = new CoutCerrLogger(cout_level, cerr_level);
+  ui_manager_->SetCoutDestination(ui_session_);
+
+  // construct exception handler that avoids abort
+  exception_handler_ = new EAS_ExceptionHandler();
+  // ---------------------------------------------------------------------------
 
   // set mandatory initialization classes
   FTFP_BERT* physlist = new FTFP_BERT(verbose_everything);
@@ -78,7 +96,7 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
   run_manager_->SetUserInitialization(physlist);
 
   EAS_FlatDetectorConstruction* detector_constructor =
-      new EAS_FlatDetectorConstruction(atm, num_atm_layers, zground, ztop);
+      new EAS_FlatDetectorConstruction(atm, num_atm_layers, zground, ztop, bfield);
   run_manager_->SetUserInitialization(detector_constructor);
 
   event_action_ = new EAS_UserEventAction(visitor_);
@@ -108,6 +126,7 @@ Geant4ShowerGenerator::~Geant4ShowerGenerator()
 {
   delete run_manager_;
   delete ui_session_;
+  delete exception_handler_;
 }
 
 void Geant4ShowerGenerator::set_minimum_energy_cut(double emin_mev)

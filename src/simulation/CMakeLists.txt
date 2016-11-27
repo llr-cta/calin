@@ -20,7 +20,8 @@ set(CALIN_SOURCES atmosphere.cpp pmt.cpp
 	air_cherenkov_tracker.cpp iact_array_tracker.cpp tracker.cpp
   straight_track_generator.cpp quadrature_iact_array_integration.cpp
  	vso_quadrature_iact_array_integration.cpp
-  detector_efficiency.cpp)
+	detector_efficiency.cpp world_magnetic_model.cpp
+	GeomagnetismLibrary.c)
 
 if(GEANT4_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES}
@@ -30,7 +31,7 @@ endif()
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_io calin_math
-	calin_proto_simulation)
+	calin_proto_simulation calin_provenance)
 
 if(GEANT4_FOUND)
 	target_link_libraries(${CALIN_TARGET_LIBRARY} ${GEANT4_LIBRARIES})

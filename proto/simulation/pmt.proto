@@ -95,3 +95,10 @@ message MultiPESpectrumConfig {
   double quantization                                      = 5 [
     (CFO).desc = "Quantization of the digtizer.", (CFO).units = "PE/DC" ];
 };
+
+message PoissonSignalSimConfig {
+  double pedestal_mean                                     = 1 [
+    (CFO).desc = "Mean pedestal.", (CFO).units = "DC" ];
+  double pedestal_rms                                      = 2 [
+    (CFO).desc = "Pedestal RMS.", (CFO).units = "DC" ];
+};
