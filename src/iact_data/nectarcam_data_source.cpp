@@ -165,7 +165,7 @@ bool NectarCamCameraEventDecoder::decode(
       reinterpret_cast<const NectarCounters*>(&cta_counters.data().front());
     for(unsigned imod=0;imod<nmod;imod++, mod_counter++)
     {
-      if(imod < calin_event->module_index_size() and
+      if(imod < static_cast<unsigned>(calin_event->module_index_size()) and
         calin_event->module_index(imod) == -1)continue;
 
       auto* module_counters = calin_event->add_module_counter();
