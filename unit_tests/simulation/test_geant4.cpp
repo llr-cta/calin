@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/unit_tests/simulation/test_geant4.cpp -- Stephen Fegan -- 2015-10-06
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -41,7 +41,7 @@ TEST(TestGeant4, MakeGeant4Simulator) {
   Atmosphere* atm = LayeredAtmosphere::us76();
   TrackVisitor* visitor = new TrackVisitor;
   Geant4ShowerGenerator sim(visitor, atm,
-                            100, 0, atm->top_of_atmosphere(),
+                            100, 0, atm->top_of_atmosphere(), nullptr,
                             //VerbosityLevel::SUPRESSED_STDOUT);
                             //VerbosityLevel::NORMAL);
                             VerbosityLevel::VERBOSE_EVERYTHING);

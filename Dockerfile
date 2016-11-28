@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-FROM llrcta/calin-docker-base:ubuntu16.04_v1.6
+FROM llrcta/calin-docker-base:ubuntu16.04_v1.7
 
 MAINTAINER sfegan@llr.in2p3.fr
 
@@ -30,7 +30,7 @@ RUN cd /build/calin &&                                             \
     cd mybuild &&                                                  \
     cmake -DCMAKE_BUILD_TYPE=Release                               \
           -DCMAKE_INSTALL_PREFIX=/usr                              \
-          -DCALIN_PYTHON_SUB_DIR=lib/python3.5                    \
+          -DCALIN_PYTHON_SUB_DIR=lib/python3.5                     \
           .. &&                                                    \
     make -j2 &&                                                    \
     make install &&                                                \

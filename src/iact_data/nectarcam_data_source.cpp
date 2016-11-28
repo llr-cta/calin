@@ -85,6 +85,7 @@ bool NectarCamCameraEventDecoder::decode(
   }
   else
   {
+#if 0 // Is this needed?
     unsigned nmod = 0;
     if(cta_event->has_higain() and
       cta_event->higain().has_integrals() and
@@ -100,6 +101,7 @@ bool NectarCamCameraEventDecoder::decode(
       const auto& cta_q = cta_event->logain().integrals().gains();
       nmod = cta_q.data().size()/sizeof(uint16_t)/7;
     }
+#endif
   }
   calin_event->set_all_modules_present(all_modules_present);
 
@@ -163,7 +165,7 @@ bool NectarCamCameraEventDecoder::decode(
       reinterpret_cast<const NectarCounters*>(&cta_counters.data().front());
     for(unsigned imod=0;imod<nmod;imod++, mod_counter++)
     {
-      if(imod < calin_event->module_index_size() and
+      if(imod < static_cast<unsigned>(calin_event->module_index_size()) and
         calin_event->module_index(imod) == -1)continue;
 
       auto* module_counters = calin_event->add_module_counter();
