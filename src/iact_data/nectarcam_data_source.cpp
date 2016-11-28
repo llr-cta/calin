@@ -85,6 +85,7 @@ bool NectarCamCameraEventDecoder::decode(
   }
   else
   {
+#if 0 // Is this needed?
     unsigned nmod = 0;
     if(cta_event->has_higain() and
       cta_event->higain().has_integrals() and
@@ -100,6 +101,7 @@ bool NectarCamCameraEventDecoder::decode(
       const auto& cta_q = cta_event->logain().integrals().gains();
       nmod = cta_q.data().size()/sizeof(uint16_t)/7;
     }
+#endif
   }
   calin_event->set_all_modules_present(all_modules_present);
 

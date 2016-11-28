@@ -67,6 +67,7 @@ class Geant4ShowerGenerator
                         bool adopt_visitor = false,
                         bool adopt_atm = false,
                         bool adopt_bfield = false);
+#if 0
   Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                         calin::simulation::atmosphere::Atmosphere* atm,
                         unsigned num_atm_layers, double zground, double ztop,
@@ -78,6 +79,7 @@ class Geant4ShowerGenerator
                         bool adopt_bfield = false):
     Geant4ShowerGenerator(visitor, atm, num_atm_layers, zground, ztop, bfield,
       verbose_level, seed, adopt_visitor, adopt_atm, adopt_bfield) { }
+#endif
   virtual ~Geant4ShowerGenerator();
 
   void set_minimum_energy_cut(double emin_mev);
