@@ -35,8 +35,8 @@ calin::simulation::tracker::pdg_type_to_particle_type(int pdg_type)
   switch(pdg_type)
   {
     case 22:    return ParticleType::GAMMA;
-    case 1:     return ParticleType::ELECTRON;
-    case -1:    return ParticleType::POSITRON;
+    case 11:    return ParticleType::ELECTRON;
+    case -11:   return ParticleType::POSITRON;
     case 13:    return ParticleType::MUON;
     case -13:   return ParticleType::ANTI_MUON;
     case 2212:  return ParticleType::PROTON;
@@ -53,8 +53,8 @@ particle_type_to_pdg_type(calin::simulation::tracker::ParticleType track_type)
   switch(track_type)
   {
     case ParticleType::GAMMA:       return 22;
-    case ParticleType::ELECTRON:    return 1;
-    case ParticleType::POSITRON:    return -1;
+    case ParticleType::ELECTRON:    return 11;
+    case ParticleType::POSITRON:    return -11;
     case ParticleType::MUON:        return 13;
     case ParticleType::ANTI_MUON:   return -13;
     case ParticleType::PROTON:      return 2212;
