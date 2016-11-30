@@ -120,9 +120,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/cmake ];
     then (
-      wget --no-check-certificate https://cmake.org/files/v3.6/cmake-3.6.2.tar.gz &&
-      tar zxf cmake-3.6.2.tar.gz &&
-      cd cmake-3.6.2 &&
+      wget --no-check-certificate https://cmake.org/files/v3.7/cmake-3.7.0.tar.gz &&
+      tar zxf cmake-3.7.0.tar.gz &&
+      cd cmake-3.7.0 &&
       ./bootstrap  --parallel=3 --prefix=$LOCAL &&
       make -j3 &&
       make install > /dev/null
@@ -214,7 +214,7 @@ script:
     make -j3 &&
     make install | tail &&
     make test
-    #cat include/calin_global_config.hpp 
+    #cat include/calin_global_config.hpp
 
 #after_failure:
 #  - cat CMakeFiles/CMakeError.log
