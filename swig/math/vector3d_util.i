@@ -41,4 +41,6 @@
 //%newobject calin::math::rng::RNG::as_proto() const;
 //%newobject calin::math::rng::RNGCore::as_proto() const;
 
+%apply Eigen::Vector3d &INOUT { Eigen::Vector3d& v };
+
 %include "math/vector3d_util.hpp"
