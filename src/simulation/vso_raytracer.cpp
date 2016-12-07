@@ -267,9 +267,9 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
 
   // Scatter the normal to account for the spot size ot the focal length of the
   // radius. The spot size is given as the DIAMETER at the focal distance.
-  // Must divide by 2.0 (for reflection)
+  // Must divide by 2 (for reflection) and another 2 for diameter -> radius
   info.mirror_normal_dispersion =
-      info.mirror->spotSize()/2.0/info.mirror->focalLength();
+    0.25*info.mirror->spotSize()/info.mirror->focalLength();
 
   info.mirror_scattered = info.mirror_normal;
   calin::math::vector3d_util::scatter_direction(info.mirror_scattered,

@@ -65,7 +65,7 @@ scatter_direction(Eigen::Vector3d& v, double dispersion, math::rng::RNG& rng)
   if(dispersion<=0)return;
 
   const double phi = rng.uniform() * 2.0*M_PI;
-  const double theta = dispersion*sqrt(-2*log(rng.uniform()));
+  const double theta = dispersion*std::sqrt(-2.0*std::log(rng.uniform()));
   const double sin_theta = std::sin(theta);
 
   v = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(), v) *
