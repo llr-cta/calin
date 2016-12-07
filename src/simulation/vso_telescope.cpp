@@ -483,12 +483,16 @@ populateMirrorsAndPixelsRandom(
     else spot_size = param.reflector().facet_spot_size();
 
     // If param.MirrorSpotSizePhotonFraction not set -- assume FWHM
+    // ... spot_size comes in as diameter at some fraction, goes out as
+    //     diameter that corresponds to dispersion
     if((param.reflector().facet_spot_size_probability()>0.0)&&
        (param.reflector().facet_spot_size_probability()<1.0))
-      spot_size /=
-          2.0*std::sqrt(std::log(1.0/(1.0-
+      spot_size =
+        spot_size/std::sqrt(2.0*std::log(1.0/(1.0-
                           param.reflector().facet_spot_size_probability())));
-    else spot_size /= 2.0*std::sqrt(log(2.0));
+    else
+      spot_size =
+        spot_size/std::sqrt(2.0*log(2.0));
 
     VSOMirror* mirror =
 	    new VSOMirror(this, id, hexid, false, position, alignment,
