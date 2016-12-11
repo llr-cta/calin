@@ -53,13 +53,13 @@ CTACameraEventDecoder::~CTACameraEventDecoder()
 ZFITSSingleFileDataSource::
 ZFITSSingleFileDataSource(calin::iact_data::zfits_actl_data_source::
       ZFITSSingleFileACTLDataSource* actl_zfits,
-    CTACameraEventDecoder* decoder, bool adopt_decoder,
-    const config_type& config, bool adopt_actl_zfits):
+    bool dont_decode_run_configuration,
+    CTACameraEventDecoder* decoder, bool adopt_decoder, bool adopt_actl_zfits):
   TelescopeRandomAccessDataSourceWithRunConfig(),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
   actl_zfits_(actl_zfits), adopt_actl_zfits_(adopt_actl_zfits)
 {
-  if(!config.dont_read_run_header())
+  if(not dont_decode_run_configuration)
   {
     DataModel::CameraEvent* actl_sample_event = nullptr;
     DataModel::CameraRunHeader* actl_run_header = nullptr;
@@ -88,8 +88,8 @@ ZFITSSingleFileDataSource(const std::string& filename,
     CTACameraEventDecoder* decoder, bool adopt_decoder,
     const config_type& config):
   ZFITSSingleFileDataSource(new calin::iact_data::zfits_actl_data_source::
-    ZFITSSingleFileACTLDataSource(filename, config), decoder, adopt_decoder,
-    config, true)
+    ZFITSSingleFileACTLDataSource(filename, config), false,
+    decoder, adopt_decoder, true)
 {
   // nothing to see here
 }
@@ -218,7 +218,6 @@ ZFITSSingleFileDataSource* ZFITSDataSourceOpener::open(unsigned isource)
 {
   auto* zfits_actl = zfits_actl_opener_->open(isource);
   if(zfits_actl == nullptr)return nullptr;
-  auto config = config_;
-  if(zfits_actl_opener_->has_opened_file())config.set_dont_read_run_header(true);
-  return new ZFITSSingleFileDataSource(zfits_actl, decoder_, false, config, true);
+  return new ZFITSSingleFileDataSource(zfits_actl,
+    zfits_actl_opener_->has_opened_file(), decoder_, false, true);
 }

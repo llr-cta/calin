@@ -59,8 +59,8 @@ public:
 
   ZFITSSingleFileDataSource(calin::iact_data::zfits_actl_data_source::
       ZFITSSingleFileACTLDataSource* actl_zfits,
+    bool dont_decode_run_configuration,
     CTACameraEventDecoder* decoder, bool adopt_decoder = false,
-    const config_type& config = default_config(),
     bool adopt_actl_zfits = false);
 
   ZFITSSingleFileDataSource(const std::string& filename,
@@ -69,8 +69,7 @@ public:
   virtual ~ZFITSSingleFileDataSource();
 
   calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
-    uint64_t& seq_index_out,
-    google::protobuf::Arena** arena = nullptr) override;
+    uint64_t& seq_index_out, google::protobuf::Arena** arena = nullptr) override;
   uint64_t size() override;
   void set_next_index(uint64_t next_index) override;
 
