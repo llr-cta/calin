@@ -216,8 +216,9 @@ unsigned ZFITSDataSourceOpener::num_sources()
 
 ZFITSSingleFileDataSource* ZFITSDataSourceOpener::open(unsigned isource)
 {
+  bool suppress_run_config = zfits_actl_opener_->has_opened_file();
   auto* zfits_actl = zfits_actl_opener_->open(isource);
   if(zfits_actl == nullptr)return nullptr;
-  return new ZFITSSingleFileDataSource(zfits_actl,
-    zfits_actl_opener_->has_opened_file(), decoder_, false, true);
+  return new ZFITSSingleFileDataSource(zfits_actl, suppress_run_config,
+     decoder_, false, true);
 }
