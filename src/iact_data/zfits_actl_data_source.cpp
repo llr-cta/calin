@@ -265,7 +265,7 @@ unsigned ZFITSACTLDataSourceOpener::num_sources()
 }
 
 calin::iact_data::zfits_actl_data_source::
-ACTLRandomAccessDataSourceWithRunHeader*
+ZFITSSingleFileACTLDataSource*
 ZFITSACTLDataSourceOpener::open(unsigned isource)
 {
   if(isource >= filenames_.size())return nullptr;
