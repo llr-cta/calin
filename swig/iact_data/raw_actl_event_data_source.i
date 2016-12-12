@@ -23,6 +23,9 @@
 %module (package="calin.iact_data") raw_actl_event_data_source
 
 %{
+#include <ProtobufIFits.h>
+#include <L0.pb.h>
+#include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
 #include <common_types.pb.h>
 #include <iact_data/telescope_event.pb.h>
