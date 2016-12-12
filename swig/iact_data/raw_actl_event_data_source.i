@@ -82,8 +82,7 @@ class CameraRunHeader: public google::protobuf::Message { };
 
 %newobject simple_get_next();
 
-%extend calin::io::data_source::DataSource<
-    DataModel::CameraEvent> {
+%extend calin::io::data_source::DataSource<DataModel::CameraEvent> {
 
   DataModel::CameraEvent* simple_get_next()
   {
@@ -92,8 +91,7 @@ class CameraRunHeader: public google::protobuf::Message { };
   }
 
 #if 0
-  void get_next(uint64_t& seq_index_out,
-    DataModel::CameraEvent** event_out,
+  void get_next(uint64_t& seq_index_out, DataModel::CameraEvent** event_out,
     google::protobuf::Arena** arena_out)
   {
     seq_index_out = 0;
@@ -108,6 +106,7 @@ class CameraRunHeader: public google::protobuf::Message { };
     *event_out = $self->get_next(seq_index_out);
   }
 #endif
+
 }
 
 %newobject get_run_header();
