@@ -14,7 +14,10 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_SWIG_FILES telescope_data_source.i event_dispatcher.i
-	functional_event_visitor.i nectarcam_layout.i raw_actl_event_data_source.i)
+	functional_event_visitor.i nectarcam_layout.i)
+if(CTA_CAMERASTOACTL_FOUND)
+	set(CALIN_SWIG_FILES ${CALIN_SWIG_FILES} raw_actl_event_data_source.i)
+endif()
 set(CALIN_SWIG_TARGET iact_data)
 
 if(CTA_CAMERASTOACTL_FOUND)
