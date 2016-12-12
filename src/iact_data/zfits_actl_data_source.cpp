@@ -89,8 +89,13 @@ ZFITSSingleFileACTLDataSource(const std::string& filename, config_type config):
         }
       }
       if(rh_zfits.getNumMessagesInTable() > 0)
-        run_header_ = rh_zfits.readTypedMessage<DataModel::CameraRunHeader>(1);
-      //LOG(INFO) << run_header_->DebugString();
+      {
+        DataModel::CameraRunHeader* run_header =
+          rh_zfits.readTypedMessage<DataModel::CameraRunHeader>(1);
+        run_header_ = new DataModel::CameraRunHeader(*run_header);
+        rh_zfits.recycleMessage(run_header);
+        //LOG(INFO) << run_header_->DebugString();
+      }
     }
     catch(...)
     {
@@ -140,8 +145,8 @@ ZFITSSingleFileACTLDataSource::default_config()
   return config;
 }
 
-DataModel::CameraEvent* ZFITSSingleFileACTLDataSource::
-get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
+DataModel::CameraEvent*
+ZFITSSingleFileACTLDataSource::borrow_next_event(uint64_t& seq_index_out)
 {
   if(zfits_ == nullptr)
     throw std::runtime_error(std::string("File not open: ")+filename_);
@@ -153,6 +158,38 @@ get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
   if(!event)throw std::runtime_error("ZFits reader returned NULL");
 
   return event;
+}
+
+void ZFITSSingleFileACTLDataSource::
+release_borrowed_event(DataModel::CameraEvent* event)
+{
+  zfits_->recycleMessage(event);
+}
+
+DataModel::CameraEvent* ZFITSSingleFileACTLDataSource::
+get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
+{
+  DataModel::CameraEvent* event = borrow_next_event(seq_index_out);
+  if(event == nullptr)return nullptr;
+
+  DataModel::CameraEvent* event_copy = nullptr;
+#if 0
+  if(arena) {
+    if(!*arena)*arena = new google::protobuf::Arena;
+    event_copy =
+      google::protobuf::Arena::CreateMessage<DataModel::CameraEvent>(*arena);
+  }
+  else event_copy = new DataModel::CameraEvent;
+#else
+  if(arena && *arena)
+    throw std::runtime_error("ZFITSSingleFileACTLDataSource::get_next: "
+      " pre-allocated arena not supported.");
+  event_copy = new DataModel::CameraEvent;
+#endif
+  event_copy->CopyFrom(*event);
+  release_borrowed_event(event);
+
+  return event_copy;
 }
 
 uint64_t ZFITSSingleFileACTLDataSource::size()
@@ -228,7 +265,7 @@ unsigned ZFITSACTLDataSourceOpener::num_sources()
 }
 
 calin::iact_data::zfits_actl_data_source::
-ACTLRandomAccessDataSourceWithRunHeader*
+ZFITSSingleFileACTLDataSource*
 ZFITSACTLDataSourceOpener::open(unsigned isource)
 {
   if(isource >= filenames_.size())return nullptr;

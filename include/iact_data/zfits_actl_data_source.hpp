@@ -94,6 +94,9 @@ public:
     config_type config = default_config());
   virtual ~ZFITSSingleFileACTLDataSource();
 
+  DataModel::CameraEvent* borrow_next_event(uint64_t& seq_index_out);
+  void release_borrowed_event(DataModel::CameraEvent* event);
+
   DataModel::CameraEvent* get_next(uint64_t& seq_index_out,
     google::protobuf::Arena** arena = nullptr) override;
   uint64_t size() override;
@@ -144,7 +147,8 @@ public:
       ZFITSACTLDataSource::default_config());
   virtual ~ZFITSACTLDataSourceOpener();
   unsigned num_sources() override;
-  ACTLRandomAccessDataSourceWithRunHeader* open(unsigned isource) override;
+  ZFITSSingleFileACTLDataSource* open(unsigned isource) override;
+  bool has_opened_file() { return has_opened_file_; }
 private:
   std::vector<std::string> filenames_;
   ZFITSACTLDataSource::config_type config_;
