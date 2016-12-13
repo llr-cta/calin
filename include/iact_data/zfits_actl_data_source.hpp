@@ -71,6 +71,10 @@ CALIN_TYPEALIAS(ACTLRandomAccessDataSourceOpener,
 } } } // namespace calin::iact_data::zfits_actl_data_source
 
 #ifdef SWIG
+%template(ACTChainedDataSourceWithRunHeader)
+  calin::io::data_source::BasicChainedDataSource<
+    calin::iact_data::zfits_actl_data_source::
+      ACTLRandomAccessDataSourceWithRunHeader>;
 %template(ACTLChainedRandomAccessDataSourceWithRunHeader)
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::zfits_actl_data_source::

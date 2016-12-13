@@ -199,7 +199,7 @@ message ArrayLayout {
   ArrayType array_type                                     = 1 [
     (CFO).desc = "Array type." ];
 
-  calin.ix.common_types.EarthCoordinates array_origin = 10 [
+  calin.ix.common_types.EarthCoordinates array_origin      = 10 [
     (CFO).desc = "Position of array on the Earth." ];
 
   repeated TelescopeLayout telescopes                      = 100 [
