@@ -32,6 +32,7 @@
 using namespace calin::iact_data::nectarcam_data_source;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::ix::iact_data::telescope_run_configuration;
+using namespace calin::ix::iact_data::nectarcam_data_source;
 using namespace calin::io::log;
 
 #include <ProtobufIFits.h>
@@ -257,8 +258,19 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   const DataModel::CameraRunHeader* cta_run_header,
   const DataModel::CameraEvent* cta_event)
 {
-  nectarcam_layout::nectarcam_19module_layout(
-    calin_run_config->mutable_camera_layout());
+  switch(config_.camera_type())
+  {
+  case NectarCamCameraEventDecoderConfig::NECTARCAM:
+    nectarcam_layout::nectarcam_layout(
+      calin_run_config->mutable_camera_layout());
+    break;
+  case NectarCamCameraEventDecoderConfig::AUTOMATIC:
+  case NectarCamCameraEventDecoderConfig::NECTARCAM_TESTBENCH_19CHANNEL:
+  default:
+    nectarcam_layout::nectarcam_19module_layout(
+      calin_run_config->mutable_camera_layout());
+    break;
+  }
 
   if(cta_run_header)
   {
