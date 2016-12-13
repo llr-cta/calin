@@ -271,23 +271,47 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   }
 
   unsigned nmod = 0;
+  std::set<unsigned> config_mod_id;
   if(cta_run_header)
   {
-
+    // what to do here
   }
   if(nmod==0 and cta_event)
   {
     nmod = get_nmod_from_event(cta_event);
+    for(unsigned imod=0;imod<nmod;imod++)config_mod_id.insert(imod);
+  }
+  unsigned nmod_camera = calin_run_config->camera_layout().module_size();
+  if(config_.demand_configured_module_id_size() != 0)
+  {
+    if(config_.demand_configured_module_id_size() != nmod)
+      throw std::runtime_error("NectarCamCameraEventDecoder::decode_run_config: "
+        "Demand module list size must equal number of modules in data.");
+    config_mod_id.clear();
+    for(unsigned imod=0;imod<nmod;imod++) {
+      unsigned mod_id = config_.demand_configured_module_id(imod);
+      if(mod_id >= nmod_camera)
+        throw std::runtime_error("NectarCamCameraEventDecoder::decode_run_config: "
+          "Demand module id out of range: " + std::to_string(mod_id) + " >= " +
+          std::to_string(nmod_camera));
+      config_mod_id.insert(mod_id);
+    }
   }
 
-  for(unsigned imod=0;imod<nmod;imod++)
+  for(unsigned mod_id=0, mod_index=0; mod_id<nmod_camera; mod_id++)
   {
-    calin_run_config->add_configured_module_id(imod);
-    calin_run_config->add_configured_module_index(imod);
-    for(unsigned ipix=0; ipix<7; ipix++)
-    {
-      calin_run_config->add_configured_channel_id(imod*7+ipix);
-      calin_run_config->add_configured_channel_index(imod*7+ipix);
+    if(config_mod_id.find(mod_id) == config_mod_id.end()) {
+      calin_run_config->add_configured_module_index(-1);
+      for(unsigned ipix=0; ipix<7; ipix++)
+        calin_run_config->add_configured_channel_index(-1);
+    } else {
+      calin_run_config->add_configured_module_id(mod_id);
+      calin_run_config->add_configured_module_index(mod_index);
+      for(unsigned ipix=0; ipix<7; ipix++) {
+        calin_run_config->add_configured_channel_id(mod_id*7+ipix);
+        calin_run_config->add_configured_channel_index(mod_index*7+ipix);
+      }
+      ++mod_index;
     }
   }
 
