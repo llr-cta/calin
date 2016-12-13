@@ -270,7 +270,7 @@ bool NectarCamCameraEventDecoder::decode_run_config(
 #endif
   }
 
-  unsigned nmod = 0;
+  int nmod = 0;
   std::set<unsigned> config_mod_id;
   if(cta_run_header)
   {
