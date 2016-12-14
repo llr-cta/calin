@@ -120,9 +120,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/cmake ];
     then (
-      wget --no-check-certificate https://cmake.org/files/v3.7/cmake-3.7.0.tar.gz &&
-      tar zxf cmake-3.7.0.tar.gz &&
-      cd cmake-3.7.0 &&
+      wget --no-check-certificate https://cmake.org/files/v3.7/cmake-3.7.1.tar.gz &&
+      tar zxf cmake-3.7.1.tar.gz &&
+      cd cmake-3.7.1 &&
       ./bootstrap  --parallel=3 --prefix=$LOCAL &&
       make -j3 &&
       make install > /dev/null
@@ -150,9 +150,9 @@ install:
   - |
     if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh ];
     then (
-      wget http://geant4.cern.ch/support/source/geant4.10.02.p02.tar.gz &&
-      tar zxf geant4.10.02.p02.tar.gz &&
-      cd geant4.10.02.p02 &&
+      wget http://geant4.cern.ch/support/source/geant4.10.03.tar.gz &&
+      tar zxf geant4.10.03.tar.gz &&
+      cd geant4.10.03 &&
       mkdir mybuild &&
       cd mybuild &&
       cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$LOCAL .. &&
@@ -163,11 +163,11 @@ install:
     if [ "x$GEANT4" == "xTRUE" ]
     then
       NO_GEANT4=""
-      export G4LEDATA=6.48
-      export G4LEVELGAMMADATA=3.2
+      export G4LEDATA=6.50
+      export G4LEVELGAMMADATA=4.3
       export G4SAIDXSDATA=1.1
       export G4NEUTRONXSDATA=1.4
-      export G4ENSDFSTATEDATA=1.2.3
+      export G4ENSDFSTATEDATA=2.1
       GEANT4_DATA=$HOME/geant4_data
       (
         mkdir $GEANT4_DATA
