@@ -20,23 +20,23 @@ addons:
 
 matrix:
   include:
-    - compiler: gcc-4.8
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
-      addons: &gcc48_addons
+    - compiler: gcc-4.9
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-4.9 BUILD_CXX=g++-4.9
+      addons: &gcc49_addons
         apt:
           sources:
           - *common_sources
           packages:
           - *common_packages
-          - g++-4.8
-#    - compiler: gcc-4.8
-#      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
+          - g++-4.9
+#    - compiler: gcc-4.9
+#      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.9 BUILD_CXX=g++-4.9
 #      addons:
-#        <<: *gcc48_addons
-#    - compiler: gcc-4.8
-#      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8
+#        <<: *gcc49_addons
+#    - compiler: gcc-4.9
+#      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.9 BUILD_CXX=g++-4.9
 #      addons:
-#        <<: *gcc48_addons
+#        <<: *gcc49_addons
     - compiler: gcc-5
       env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
       addons: &gcc5_addons
@@ -120,9 +120,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/cmake ];
     then (
-      wget --no-check-certificate https://cmake.org/files/v3.7/cmake-3.7.0.tar.gz &&
-      tar zxf cmake-3.7.0.tar.gz &&
-      cd cmake-3.7.0 &&
+      wget --no-check-certificate https://cmake.org/files/v3.7/cmake-3.7.1.tar.gz &&
+      tar zxf cmake-3.7.1.tar.gz &&
+      cd cmake-3.7.1 &&
       ./bootstrap  --parallel=3 --prefix=$LOCAL &&
       make -j3 &&
       make install > /dev/null
@@ -150,9 +150,9 @@ install:
   - |
     if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh ];
     then (
-      wget http://geant4.cern.ch/support/source/geant4.10.02.p02.tar.gz &&
-      tar zxf geant4.10.02.p02.tar.gz &&
-      cd geant4.10.02.p02 &&
+      wget http://geant4.cern.ch/support/source/geant4.10.03.tar.gz &&
+      tar zxf geant4.10.03.tar.gz &&
+      cd geant4.10.03 &&
       mkdir mybuild &&
       cd mybuild &&
       cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$LOCAL .. &&
@@ -163,11 +163,11 @@ install:
     if [ "x$GEANT4" == "xTRUE" ]
     then
       NO_GEANT4=""
-      export G4LEDATA=6.48
-      export G4LEVELGAMMADATA=3.2
+      export G4LEDATA=6.50
+      export G4LEVELGAMMADATA=4.3
       export G4SAIDXSDATA=1.1
       export G4NEUTRONXSDATA=1.4
-      export G4ENSDFSTATEDATA=1.2.3
+      export G4ENSDFSTATEDATA=2.1
       GEANT4_DATA=$HOME/geant4_data
       (
         mkdir $GEANT4_DATA
@@ -181,8 +181,7 @@ install:
         wget http://geant4.cern.ch/support/source/G4NEUTRONXS.${G4NEUTRONXSDATA}.tar.gz
         tar zxf G4NEUTRONXS.${G4NEUTRONXSDATA}.tar.gz
         wget http://geant4.cern.ch/support/source/G4ENSDFSTATE.${G4ENSDFSTATEDATA}.tar.gz
-        # Note this data file actually seems to be a tar, not a tgz
-        tar xf G4ENSDFSTATE.${G4ENSDFSTATEDATA}.tar.gz
+        tar zxf G4ENSDFSTATE.${G4ENSDFSTATEDATA}.tar.gz
       )
       export G4LEDATA=$GEANT4_DATA/G4EMLOW${G4LEDATA}
       export G4LEVELGAMMADATA=$GEANT4_DATA/G4PhotonEvaporation${G4LEVELGAMMADATA}

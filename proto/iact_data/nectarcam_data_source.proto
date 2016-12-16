@@ -27,7 +27,15 @@ import "calin.proto";
 package calin.ix.iact_data.nectarcam_data_source;
 
 message NectarCamCameraEventDecoderConfig {
-  bool exchange_gain_channels                              = 1 [
+  enum CameraType {
+    AUTOMATIC                                              = 0;
+    NECTARCAM                                              = 1;
+    NECTARCAM_TESTBENCH_19CHANNEL                          = 2;
+  };
+
+  CameraType camera_type                                   = 1 [
+    (CFO).desc = "Camera type." ];
+  bool exchange_gain_channels                              = 2 [
     (CFO).desc = "Exchange high and low gains from NectarCam ZFits file." ];
   uint32 demand_nsample                                    = 100 [
     (CFO).desc = "Override number of samples per event stored in file. Zero "
