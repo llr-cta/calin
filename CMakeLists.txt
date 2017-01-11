@@ -84,11 +84,6 @@ find_package(PythonInterp REQUIRED)
 find_package(PythonLibs REQUIRED)
 include_directories(${PYTHON_INCLUDE_PATH})
 
-## Find CHEALPix libraries
-find_package(CHEALPix REQUIRED)
-include_directories(${CHEALPIX_INCLUDE_DIR})
-set(EXTRA_LIBS ${EXTRA_LIBS} ${CHEALPIX_LIBRARIES} )
-
 ## Find Numpy since we use numpy arrays here
 find_package(Numpy)
 include_directories(${PYTHON_NUMPY_INCLUDE_DIR})
