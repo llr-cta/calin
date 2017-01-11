@@ -98,8 +98,8 @@ public:
     config_type config = default_config());
   virtual ~ZFITSSingleFileACTLDataSource();
 
-  DataModel::CameraEvent* borrow_next_event(uint64_t& seq_index_out);
-  void release_borrowed_event(DataModel::CameraEvent* event);
+  const DataModel::CameraEvent* borrow_next_event(uint64_t& seq_index_out);
+  void release_borrowed_event(const DataModel::CameraEvent* event);
 
   DataModel::CameraEvent* get_next(uint64_t& seq_index_out,
     google::protobuf::Arena** arena = nullptr) override;
