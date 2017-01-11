@@ -21,13 +21,26 @@
 
 */
 
+#include <cmath>
 #include <chealpix.h>
-
+#include <math/special.hpp>
 #include <math/healpix_array.hpp>
+
+using calin::math::special::SQR;
 
 unsigned calin::math::healpix_array::npixel(unsigned nside)
 {
   return nside2npix(nside);
+}
+
+double calin::math::healpix_array::cell_dimension(unsigned nside)
+{
+  return std::sqrt(4*M_PI/double(npixel(nside)));
+}
+
+unsigned calin::math::healpix_array::nside_for_cell_dimension(double dimension)
+{
+  return std::ceil(std::sqrt(4*M_PI/SQR(dimension)/12.0));
 }
 
 void calin::math::healpix_array::pixid_to_vec(unsigned nside, unsigned pixid,
@@ -50,4 +63,32 @@ void calin::math::healpix_array::pixid_to_ang(unsigned nside, unsigned pixid,
   double& theta, double& phi)
 {
   pix2ang_ring(nside, pixid, &theta, &phi);
+}
+
+unsigned calin::math::healpix_array::vec_to_pixid(unsigned nside,
+  const Eigen::Vector3d& vec)
+{
+  long pixid;
+  vec2pix_ring(nside, vec.data(), &pixid);
+  return pixid;
+}
+
+unsigned calin::math::healpix_array::xyz_to_pixid(unsigned nside,
+  double x, double y, double z)
+{
+  double vec[3];
+  vec[0] = x;
+  vec[1] = y;
+  vec[2] = z;
+  long pixid;
+  vec2pix_ring(nside, vec, &pixid);
+  return pixid;
+}
+
+unsigned calin::math::healpix_array::ang_to_pixid(unsigned nside,
+  double theta, double phi)
+{
+  long pixid;
+  ang2pix_ring(nside, theta, phi, &pixid);
+  return pixid;
 }

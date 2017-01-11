@@ -34,8 +34,15 @@ namespace calin { namespace math { namespace healpix_array {
 // *****************************************************************************
 
 unsigned npixel(unsigned nside);
+double cell_dimension(unsigned nside);
+unsigned nside_for_cell_dimension(double dimension);
+
 void pixid_to_vec(unsigned nside, unsigned pixid, Eigen::Vector3d& vec);
 void pixid_to_xyz(unsigned nside, unsigned pixid, double& x, double& y, double& z);
 void pixid_to_ang(unsigned nside, unsigned pixid, double& theta, double& phi);
+
+unsigned vec_to_pixid(unsigned nside, const Eigen::Vector3d& vec);
+unsigned xyz_to_pixid(unsigned nside, double x, double y, double z);
+unsigned ang_to_pixid(unsigned nside, double theta, double phi);
 
 } } } // namespace calin::math::healpix_array
