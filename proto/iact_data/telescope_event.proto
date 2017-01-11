@@ -124,6 +124,41 @@ message CDTSData {
     (CFO).desc = "Optional field for camera specific information." ];
 };
 
+message TIBData {
+  uint32 event_counter                                     = 1 [
+    (CFO).desc = "Event counter, increased after each trigger." ];
+  uint32 pps_counter                                       = 2 [
+    (CFO).desc = "Counter for the PPS pulses received by the camera "
+      "from the UCTS since the last UCTS counter reset.",
+      (CFO).units = "s" ];
+  uint32 clock_counter                                      = 3 [
+    (CFO).desc = "Counter for the (10MHz) clock cycles of the clock received "
+      "by the camera from the UCTS; reset after each PPS.",
+    (CFO).units = "us" ];
+  uint32 stereo_pattern                                     = 4 [
+    (CFO).desc = "Stereo bit pattern (9 bits)." ];
+
+  bool mono_trigger                                         = 10 [
+    (CFO).desc = "Mono trigger type bit set." ];
+  bool stereo_trigger                                       = 11 [
+    (CFO).desc = "Stereo trigger type bit set." ];
+  bool external_calibration_trigger                         = 12 [
+    (CFO).desc = "External calibration trigger type bit set." ];
+  bool internal_calibration_trigger                         = 13 [
+    (CFO).desc = "Internal calibration trigger type bit set." ];
+  bool ucts_aux_trigger                                     = 14 [
+    (CFO).desc = "UCTS auxiliary trigger type bit set." ];
+  bool pedestal_trigger                                     = 15 [
+    (CFO).desc = "Pedestal trigger type bit set." ];
+  bool slow_control_trigger                                 = 16 [
+    (CFO).desc = "Slow control trigger type bit set." ];
+  bool busy_trigger                                         = 17 [
+    (CFO).desc = "Busy trigger type bit set." ];
+
+  uint32 spare_bits                                         = 20 [
+    (CFO).desc = "Unused bits." ];
+};
+
 message IntegratedCharges {
   bool all_channels_present                                 = 1 [
     (CFO).desc = "True if waveforms for all channels are present. In this case "
@@ -235,6 +270,8 @@ message TelescopeEvent {
   repeated ModuleClocks module_clock                        = 21 [
     (CFO).desc = "Vector of camera clock times associated with event." ];
 
+  TIBData tib_data                                          = 30 [
+    (CFO).desc = "Raw TIB data values for this event." ];
   CDTSData cdts_data                                        = 31 [
     (CFO).desc = "Raw CDTS data values for this event." ];
   repeated CameraSpecificModuleData module_data             = 32 [
