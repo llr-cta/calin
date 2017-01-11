@@ -150,7 +150,7 @@ install:
   - |
     if [ ! -f $LOCAL/lib/libchealpix.a ];
     then (
-      wget wget http://downloads.sourceforge.net/project/healpix/Healpix_3.31/Healpix_3.31_2016Aug26.tar.gz &&
+      wget http://downloads.sourceforge.net/project/healpix/Healpix_3.31/Healpix_3.31_2016Aug26.tar.gz &&
       tar zxf Healpix_3.31_2016Aug26.tar.gz &&
       cd Healpix_3.31 &&
       $(CC) -O2 -Wall -I src/C/subs -c src/C/subs/chealpix.c &&
