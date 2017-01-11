@@ -22,7 +22,7 @@
 */
 
 #include <cmath>
-#include <chealpix.h>
+#include <chealpix/chealpix.h>
 #include <math/special.hpp>
 #include <math/healpix_array.hpp>
 

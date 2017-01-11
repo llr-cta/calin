@@ -1,6 +1,6 @@
-# calin/src/CMakeLists.txt -- Stephen Fegan
+# calin/src/cminpack/CMakeLists.txt -- Stephen Fegan
 #
-# Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+# Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 #
 # This file is part of "calin"
@@ -13,16 +13,9 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_subdirectory(util)
-add_subdirectory(io)
-add_subdirectory(nlopt)
-add_subdirectory(cminpack)
-add_subdirectory(chealpix)
-add_subdirectory(f2c)
-add_subdirectory(math)
-add_subdirectory(simulation)
-add_subdirectory(iact_data)
-add_subdirectory(diagnostics)
-add_subdirectory(calib)
-add_subdirectory(provenance)
-add_subdirectory(bin)
+set (chealpix_srcs chealpix.c)
+
+include_directories(${CMAKE_SOURCE_DIR}/include/chealpix)
+add_library (calin_chealpix SHARED ${chealpix_srcs})
+
+install(TARGETS calin_chealpix DESTINATION ${CALIN_LIB_INSTALL_DIR})

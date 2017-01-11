@@ -147,19 +147,19 @@ install:
       make -j3 &&
       make install > /dev/null
     ); fi
-  - |
-    if [ ! -f $LOCAL/lib/libchealpix.a ];
-    then (
-      wget http://downloads.sourceforge.net/project/healpix/Healpix_3.31/Healpix_3.31_2016Aug26.tar.gz &&
-      tar zxf Healpix_3.31_2016Aug26.tar.gz &&
-      cd Healpix_3.31 &&
-      $CC -fPIC -O2 -Wall -I src/C/subs -c src/C/subs/chealpix.c &&
-      ar -rsv libchealpix.a chealpix.o &&
-      install -d $LOCAL/lib &&
-      install -d $LOCAL/include &&
-      install src/C/subs/chealpix.h $LOCAL/include &&
-      install libchealpix.a $LOCAL/lib
-    ); fi
+  # - |
+  #   if [ ! -f $LOCAL/lib/libchealpix.a ];
+  #   then (
+  #     wget http://downloads.sourceforge.net/project/healpix/Healpix_3.31/Healpix_3.31_2016Aug26.tar.gz &&
+  #     tar zxf Healpix_3.31_2016Aug26.tar.gz &&
+  #     cd Healpix_3.31 &&
+  #     $CC -fPIC -O2 -Wall -I src/C/subs -c src/C/subs/chealpix.c &&
+  #     ar -rsv libchealpix.a chealpix.o &&
+  #     install -d $LOCAL/lib &&
+  #     install -d $LOCAL/include &&
+  #     install src/C/subs/chealpix.h $LOCAL/include &&
+  #     install libchealpix.a $LOCAL/lib
+  #   ); fi
   - |
     if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh ];
     then (
