@@ -145,7 +145,7 @@ ZFITSSingleFileACTLDataSource::default_config()
   return config;
 }
 
-DataModel::CameraEvent*
+const DataModel::CameraEvent*
 ZFITSSingleFileACTLDataSource::borrow_next_event(uint64_t& seq_index_out)
 {
   if(zfits_ == nullptr)
@@ -153,23 +153,23 @@ ZFITSSingleFileACTLDataSource::borrow_next_event(uint64_t& seq_index_out)
   if(next_event_index_ >= zfits_->getNumMessagesInTable())return nullptr;
 
   seq_index_out = next_event_index_;
-  DataModel::CameraEvent* event {
-    zfits_->readTypedMessage<DataModel::CameraEvent>(++next_event_index_) };
+  const DataModel::CameraEvent* event {
+    zfits_->borrowTypedMessage<DataModel::CameraEvent>(++next_event_index_) };
   if(!event)throw std::runtime_error("ZFits reader returned NULL");
 
   return event;
 }
 
 void ZFITSSingleFileACTLDataSource::
-release_borrowed_event(DataModel::CameraEvent* event)
+release_borrowed_event(const DataModel::CameraEvent* event)
 {
-  zfits_->recycleMessage(event);
+  zfits_->returnBorrowedMessage(event);
 }
 
 DataModel::CameraEvent* ZFITSSingleFileACTLDataSource::
 get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
-  DataModel::CameraEvent* event = borrow_next_event(seq_index_out);
+  const DataModel::CameraEvent* event = borrow_next_event(seq_index_out);
   if(event == nullptr)return nullptr;
 
   DataModel::CameraEvent* event_copy = nullptr;

@@ -249,6 +249,71 @@ bool NectarCamCameraEventDecoder::decode(
     calin_cdts_data->set_arbitrary_information(cdts_data->arbitrary_information);
   }
 
+  // ==========================================================================
+  //
+  // DECODE NECTARCAM TIB DATA MESSAGE
+  //
+  // ==========================================================================
+
+  if(cta_event->tibdatapresence() and cta_event->has_tibdata() and
+    cta_event->tibdata().has_data())
+  {
+    // No of bits            Data
+    // 95 - 64 (32 bits)     Event Counter
+    // 63 - 48 (16 bits)     PPS Counter
+    // 47 - 24 (24 bits)     10 MHz Counter
+    // 23 - 17 (7 bits)      Zeros
+    // 16 - 8 (9 bits)       Stereo Pattern
+    // 7 - 0 (8 bits)        Trigger Type
+    //
+    // Inside the trigger type byte, the meaning of each bit is:
+    //
+    // Bit   Meaning
+    // 0     Mono
+    // 1     Stereo
+    // 2     Calibration
+    // 3     Single Photo-electron
+    // 4     Auxiliary trigger from UCTS
+    // 5     Pedestal
+    // 6     Slow Control
+    // 7     Busy
+
+    struct TIBMessageData {
+      uint32_t event_counter;
+      uint16_t pps_counter;
+      uint16_t clock_counter_lo16;
+      uint8_t  clock_counter_hi8;
+      uint16_t stereo_pattern;
+      uint8_t  trigger_type;
+    } __attribute__((__packed__));
+
+    const auto& cta_tib_data = cta_event->tibdata().data();
+#if TEST_ANYARRAY_TYPES
+    if(tib_data.type() != DataModel::AnyArray::U8)
+      throw std::runtime_error("TIB type not U8");
+#endif
+    if(cta_tib_data.data().size() != sizeof(TIBMessageData))
+      throw std::runtime_error("TIB data array not expected size");
+    const auto* tib_data =
+      reinterpret_cast<const TIBMessageData*>(&cta_tib_data.data().front());
+
+    auto* calin_tib_data = calin_event->mutable_tib_data();
+    calin_tib_data->set_event_counter(tib_data->event_counter);
+    calin_tib_data->set_pps_counter(tib_data->pps_counter);
+    calin_tib_data->set_clock_counter(tib_data->clock_counter_lo16
+      + (tib_data->clock_counter_hi8<<16) );
+    calin_tib_data->set_stereo_pattern(tib_data->stereo_pattern&0x0001FFFF);
+    calin_tib_data->set_mono_trigger(tib_data->trigger_type & 0x01);
+    calin_tib_data->set_stereo_trigger(tib_data->trigger_type & 0x02);
+    calin_tib_data->set_external_calibration_trigger(tib_data->trigger_type & 0x04);
+    calin_tib_data->set_internal_calibration_trigger(tib_data->trigger_type & 0x08);
+    calin_tib_data->set_ucts_aux_trigger(tib_data->trigger_type & 0x10);
+    calin_tib_data->set_pedestal_trigger(tib_data->trigger_type & 0x20);
+    calin_tib_data->set_slow_control_trigger(tib_data->trigger_type & 0x40);
+    calin_tib_data->set_busy_trigger(tib_data->trigger_type & 0x80);
+    calin_tib_data->set_spare_bits(tib_data->stereo_pattern>>9);
+  }
+
   return true;
 }
 

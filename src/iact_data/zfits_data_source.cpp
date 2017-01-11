@@ -61,8 +61,8 @@ ZFITSSingleFileDataSource(calin::iact_data::zfits_actl_data_source::
 {
   if(not dont_decode_run_configuration)
   {
-    DataModel::CameraEvent* actl_sample_event = nullptr;
-    DataModel::CameraRunHeader* actl_run_header = nullptr;
+    const DataModel::CameraEvent* actl_sample_event = nullptr;
+    const DataModel::CameraRunHeader* actl_run_header = nullptr;
     try {
       actl_zfits_->set_next_index(0);
       uint64_t unused_seq_index = 0;
@@ -105,7 +105,7 @@ calin::ix::iact_data::telescope_event::TelescopeEvent*
 ZFITSSingleFileDataSource::get_next(
   uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
-  DataModel::CameraEvent* cta_event =
+  const DataModel::CameraEvent* cta_event =
     actl_zfits_->borrow_next_event(seq_index_out);
   if(!cta_event)return nullptr;
   TelescopeEvent* event = nullptr;
