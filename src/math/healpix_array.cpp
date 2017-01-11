@@ -30,7 +30,7 @@ using calin::math::special::SQR;
 
 unsigned calin::math::healpix_array::npixel(unsigned nside)
 {
-  return nside2npix(nside);
+  return nside2npix(nside); // =12*SQR(nside);
 }
 
 double calin::math::healpix_array::cell_dimension(unsigned nside)
