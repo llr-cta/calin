@@ -33,9 +33,14 @@ unsigned calin::math::healpix_array::npixel(unsigned nside)
   return nside2npix64(nside); // =12*SQR(nside);
 }
 
+double calin::math::healpix_array::cell_area(unsigned nside)
+{
+  return 4.0*M_PI/double(npixel(nside));
+}
+
 double calin::math::healpix_array::cell_dimension(unsigned nside)
 {
-  return std::sqrt(4*M_PI/double(npixel(nside)));
+  return std::sqrt(cell_area(nside));
 }
 
 unsigned calin::math::healpix_array::nside_for_cell_dimension(double dimension)
