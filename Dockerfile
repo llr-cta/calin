@@ -37,4 +37,4 @@ RUN cd /build/calin &&                                             \
     cd / &&                                                        \
     rm -rf /build
 
-CMD [ jupyter-notebook ]
+CMD [ /usr/local/bin/jupyter-notebook ]
