@@ -34,6 +34,7 @@ namespace calin { namespace math { namespace healpix_array {
 // *****************************************************************************
 
 unsigned npixel(unsigned nside);
+double cell_area(unsigned nside);
 double cell_dimension(unsigned nside);
 unsigned nside_for_cell_dimension(double dimension);
 
