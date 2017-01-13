@@ -1,9 +1,9 @@
 /*
 
-   calin/io/hex_array.cpp -- Stephen Fegan -- 2015-10-21
+   calin/math/healpix_array.cpp -- Stephen Fegan -- 2017-01-10
 
-   Collection of functions which translate between hexagonal and Cartesian
-   geometries, and provide other useful calculations for hex grids.
+   Collection of functions which translate between HEALPix and Cartesian
+   geometries, and provide other useful calculations for HEALPix grids.
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -31,6 +31,29 @@ using calin::math::special::SQR;
 unsigned calin::math::healpix_array::npixel(unsigned nside)
 {
   return nside2npix64(nside); // =12*SQR(nside);
+}
+
+unsigned calin::math::healpix_array::
+npixel_in_ring(unsigned nside, unsigned ringid)
+{
+  unsigned nring = 4*nside-1;
+  assert(ringid < nring);
+  return 4*std::min(nside, std::min(ringid+1, nring-ringid));
+  // if(ringid < nside)return 4*(ringid+1);
+  // else if(ringid < nring-nside)return 4*nside;
+  // else return 4*(nring - ringid);
+}
+
+unsigned calin::math::healpix_array::
+npixel_contained_by_ring(unsigned nside, unsigned ringid)
+{
+  unsigned nring = 4*nside-1;
+  assert(ringid < nring);
+  unsigned npixpolar_2 = nside*(nside+1);
+  unsigned ringid_conj = nring-ringid;
+  return 2*(std::min((ringid+1)*(ringid+2), npixpolar_2)
+    + 2*(std::min(std::max(nside, ringid+1), nring-nside) - nside)*nside
+    + (npixpolar_2-std::min((ringid_conj-1)*ringid_conj, npixpolar_2)));
 }
 
 double calin::math::healpix_array::cell_area(unsigned nside)
