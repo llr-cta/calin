@@ -20,6 +20,8 @@
 
 */
 
+#pragma once
+
 #include<vector>
 
 namespace calin { namespace calib { namespace pmt_model_pg {
