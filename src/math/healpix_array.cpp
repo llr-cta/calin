@@ -56,6 +56,23 @@ npixel_contained_by_ring(unsigned nside, unsigned ringid)
     + (npixpolar_2-std::min((ringid_conj-1)*ringid_conj, npixpolar_2)));
 }
 
+unsigned calin::math::healpix_array::
+pixid_to_ringid(unsigned nside, unsigned pixid)
+{
+  assert(pixid < npixel(nside));
+  unsigned npixpolar = nside*(nside+1)/2;
+  pixid /= 4;
+  // In the formula below sqrt(1+8*(pixid+0.5))=sqrt(5+8*pixid)
+  if(pixid < npixpolar)
+    return unsigned(0.5*(std::sqrt(float(5+8*pixid))-1.0));
+  pixid -= npixpolar;
+  if(pixid < (2*nside-1)*nside)
+    return nside + pixid/nside;
+  pixid -= (2*nside-1)*nside;
+  pixid = npixpolar-pixid-1;
+  return 4*nside - 2 - unsigned(0.5*(std::sqrt(float(5+8*pixid))-1.0));
+}
+
 double calin::math::healpix_array::cell_area(unsigned nside)
 {
   return 4.0*M_PI/double(npixel(nside));

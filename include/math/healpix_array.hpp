@@ -37,6 +37,7 @@ unsigned npixel(unsigned nside);
 unsigned nring(unsigned nside) { return 4*nside-1; }
 unsigned npixel_in_ring(unsigned nside, unsigned ringid);
 unsigned npixel_contained_by_ring(unsigned nside, unsigned ringid);
+unsigned pixid_to_ringid(unsigned nside, unsigned pixid);
 
 double cell_area(unsigned nside);
 double cell_dimension(unsigned nside);
