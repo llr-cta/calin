@@ -20,6 +20,7 @@
 
 */
 
+#include <stdexcept>
 #include <simulation/pe_processor.hpp>
 
 using namespace calin::simulation::pe_processor;
