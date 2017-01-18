@@ -87,10 +87,10 @@ public:
   virtual ~VSORayProcessor();
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
     detector_spheres() override;
-  virtual void start_processing();
-  virtual void process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
-    double pe_weight);
-  virtual void finish_processing();
+  void start_processing() override;
+  void process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
+    double pe_weight) override;
+  void finish_processing() override;
   void add_fp_hit_trace_visitor(VSOFPHitTraceVisitor* visitor,
     bool adopt_visitor=false);
   void add_pe_visitor(calin::simulation::pe_processor::PEProcessor* visitor,

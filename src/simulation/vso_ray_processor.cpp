@@ -20,14 +20,11 @@
 
 */
 
+#include <math/special.hpp>
 #include <simulation/vso_ray_processor.hpp>
 
 using namespace calin::simulation::vso_ray_processor;
-
-namespace {
-
-
-} // anonymous namespace
+using calin::math::special::SQR;
 
 VSOFPHitTraceVisitor::~VSOFPHitTraceVisitor()
 {
@@ -160,10 +157,18 @@ VSORayProcessor::~VSORayProcessor()
   if(adopt_rng_)delete rng_;
 }
 
-std::vector<calin::simulation::ray_processorRayProcessorDetectorSphere>
+std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
 VSORayProcessor::detector_spheres()
 {
-  return {};
+  std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> s;
+  for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++)
+  {
+    auto* scope = array_->telescope(iscope);
+    Eigen::Vector3d sphere_center = scope->reflectorIPCenter();
+    scope->reflectorToGlobal_pos(sphere_center);
+    s.emplace_back(sphere_center, SQR(0.5*scope->reflectorIP()));
+  }
+  return s;
 }
 
 void VSORayProcessor::start_processing()
