@@ -85,6 +85,8 @@ public:
     calin::math::rng::RNG* rng,
     bool adopt_array, bool adopt_visitor, bool adopt_rng);
   virtual ~VSORayProcessor();
+  std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
+    detector_spheres() override;
   virtual void start_processing();
   virtual void process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
     double pe_weight);

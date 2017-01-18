@@ -29,6 +29,11 @@ RayProcessor::~RayProcessor()
   // nothing to see here
 }
 
+std::vector<RayProcessorDetectorSphere> RayProcessor::detector_spheres()
+{
+  return {};
+}
+
 void RayProcessor::start_processing()
 {
   // nothing to see here

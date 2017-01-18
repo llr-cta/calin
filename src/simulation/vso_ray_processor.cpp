@@ -160,6 +160,12 @@ VSORayProcessor::~VSORayProcessor()
   if(adopt_rng_)delete rng_;
 }
 
+std::vector<calin::simulation::ray_processorRayProcessorDetectorSphere>
+VSORayProcessor::detector_spheres()
+{
+  return {};
+}
+
 void VSORayProcessor::start_processing()
 {
   visitor_->start_processing();

@@ -22,14 +22,24 @@
 
 #pragma once
 
+#include <vector>
 #include <math/ray.hpp>
 
 namespace calin { namespace simulation { namespace ray_processor {
+
+struct RayProcessorDetectorSphere
+{
+  RayProcessorDetectorSphere(const Eigen::Vector3d& r0_, double radius_sq_):
+      r0(r0_), radius_sq(radius_sq_) { /* nothing to see here */ }
+  Eigen::Vector3d r0;                        // Center of detector sphere [cm]
+  double radius_sq;                          // Squared radius of sphere  [cm^2]
+};
 
 class RayProcessor
 {
 public:
   virtual ~RayProcessor();
+  virtual std::vector<RayProcessorDetectorSphere> detector_spheres();
   virtual void start_processing();
   virtual void process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
     double pe_weight);
