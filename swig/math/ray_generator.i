@@ -40,11 +40,12 @@
 %import "math/rng.i"
 %import "math/ray.i"
 
-//%newobject calin::math::rng::RNG::as_proto() const;
-//%newobject calin::math::rng::RNGCore::as_proto() const;
-
 %apply Eigen::Vector3d &OUTPUT { Eigen::Vector3d& pos };
 %apply double &OUTPUT { double& weight };
-
 %include "math/position_generator.hpp"
+
+%apply double &OUTPUT { double& theta };
+%apply double &OUTPUT { double& phi };
+%apply Eigen::Vector3d &OUTPUT { Eigen::Vector3d& dir };
+%apply Eigen::Matrix3d &OUTPUT { Eigen::Matrix3d& trans_mat };
 %include "math/direction_generator.hpp"

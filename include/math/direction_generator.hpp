@@ -56,21 +56,21 @@ protected:
   bool adopt_rng_ = false;
 };
 
-#if 0
-class HexGridPlanePositionGenerator: public PositionGenerator
+class HEALPixDirectionGenerator: public DirectionGenerator
 {
 public:
-  HexGridPlanePositionGenerator(double r_max, double dx = 1.0,
+  HEALPixDirectionGenerator(double theta_max, unsigned nside,
     bool scale_weight_by_area = true, double base_weight = 1.0);
-  virtual ~HexGridPlanePositionGenerator();
+  virtual ~HEALPixDirectionGenerator();
   void reset() override;
-  bool next(Eigen::Vector3d& pos, double& weight) override;
+  bool next_as_theta_phi(double& theta, double& phi, double& weight) override;
+  bool next_as_vector(Eigen::Vector3d& dir, double& weight) override;
+  bool next_as_matrix(Eigen::Matrix3d& trans_mat, double& weight) override;
 protected:
-  unsigned hexid_ = 0;
-  double r2_max_ = 0.0;
-  double dx_ = 1.0;
+  unsigned pixid_ = 0;
+  double cos_theta_max_ = 1.0;
+  unsigned nside_ = 1;
   double weight_ = 1.0;
 };
-#endif
 
 } } } // namespace calin::math::position_generator

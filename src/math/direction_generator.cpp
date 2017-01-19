@@ -56,8 +56,9 @@ bool DirectionGenerator::next_as_matrix(Eigen::Matrix3d& trans_mat, double& weig
   if(this->next_as_theta_phi(theta,phi,weight))
   {
     trans_mat =
-      Eigen::AngleAxisd(theta, Eigen::Vector3d::UnitX()) *
-      Eigen::AngleAxisd(phi,   Eigen::Vector3d::UnitZ());
+      Eigen::AngleAxisd(phi,   Eigen::Vector3d::UnitZ()) *
+      Eigen::AngleAxisd(theta, Eigen::Vector3d::UnitY());
+
     return true;
   }
   return false;
@@ -94,52 +95,64 @@ next_as_theta_phi(double& theta, double& phi, double& weight)
   return true;
 }
 
-#if 0
-HexGridPlanePositionGenerator::
-HexGridPlanePositionGenerator(double r_max, double dx,
+HEALPixDirectionGenerator::
+HEALPixDirectionGenerator(double theta_max, unsigned nside,
     bool scale_weight_by_area, double base_weight):
-  PositionGenerator(),
-  r2_max_(SQR(r_max)), dx_(dx), weight_(base_weight)
+  DirectionGenerator(), cos_theta_max_(std::cos(theta_max)), nside_(nside),
+  weight_(base_weight)
 {
-  if(scale_weight_by_area)weight_ *= calin::math::hex_array::cell_area(dx);
+  if(scale_weight_by_area)
+    weight_ *= calin::math::healpix_array::cell_area(nside);
 }
 
-HexGridPlanePositionGenerator::~HexGridPlanePositionGenerator()
+HEALPixDirectionGenerator::~HEALPixDirectionGenerator()
 {
   // nothing to see here
 }
 
-void HexGridPlanePositionGenerator::reset()
+void HEALPixDirectionGenerator::reset()
 {
-  hexid_ = 0;
+  pixid_ = 0;
 }
 
-bool HexGridPlanePositionGenerator::next(Eigen::Vector3d& pos, double& weight)
+bool HEALPixDirectionGenerator::
+next_as_theta_phi(double& theta, double& phi, double& weight)
 {
-  double r2_last = 0;
-  bool increasing = true;
-  unsigned hexid = hexid_;
-  while(true)
-  {
-    double x;
-    double y;
-    calin::math::hex_array::hexid_to_xy(hexid++, x, y);
-    double r2 = x*x+y*y;
-    if(r2 <= r2_max_) {
-      pos.x() = x;
-      pos.y() = y;
-      pos.z() = 0;
-      weight = weight_;
-      hexid_ = hexid;
-      return true;
-    } else if(r2 >= r2_last) {
-      if(!increasing)return false;
-    } else {
-      increasing = false;
-    }
-    r2_last = r2;
-    /* try again at next hex site! */
-  }
-  return false;
+  double x,y,z;
+  calin::math::healpix_array::pixid_to_xyz(nside_, pixid_, x, y, z);
+  if(z < cos_theta_max_)return false;
+  ++pixid_;
+  phi = std::atan2(y,x);
+  theta = std::atan2(std::sqrt(x*x+y*y),z);
+  weight = weight_;
+  return true;
 }
-#endif
+
+bool HEALPixDirectionGenerator::
+next_as_vector(Eigen::Vector3d& dir, double& weight)
+{
+  double x,y,z;
+  calin::math::healpix_array::pixid_to_xyz(nside_, pixid_, x, y, z);
+  if(z < cos_theta_max_)return false;
+  ++pixid_;
+  dir << x, y, z;
+  weight = weight_;
+  return true;
+}
+
+bool HEALPixDirectionGenerator::
+next_as_matrix(Eigen::Matrix3d& trans_mat, double& weight)
+{
+  double x,y,z;
+  calin::math::healpix_array::pixid_to_xyz(nside_, pixid_, x, y, z);
+  if(z < cos_theta_max_)return false;
+  ++pixid_;
+  double st = std::sqrt(x*x+y*y);
+  double sp = y/st;
+  double cp = x/st;
+  trans_mat << z*cp, -sp, x,
+               z*sp,  cp, y,
+                -st,   0, z;
+  weight = weight_;
+  return true;
+}
