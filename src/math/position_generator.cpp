@@ -87,7 +87,8 @@ void HexGridPlanePositionGenerator::reset()
 
 bool HexGridPlanePositionGenerator::next(Eigen::Vector3d& x, double& weight)
 {
-  double r2_last = std::numeric_limits<double>::infinity();
+  double r2_last = 0;
+  bool increasing = true;
   unsigned hexid = hexid_;
   while(true)
   {
@@ -103,9 +104,12 @@ bool HexGridPlanePositionGenerator::next(Eigen::Vector3d& x, double& weight)
       hexid_ = hexid;
       return true;
     } else if(r2 >= r2_last) {
-      return false;
+      if(!increasing)return false;
+    } else {
+    . increasing = false;
     }
-    /* else : try again at next hex site! */
+    r2_last = r2;
+    /* try again at next hex site! */
   }
   return false;
 }
