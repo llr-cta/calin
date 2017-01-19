@@ -145,14 +145,14 @@
 %typemap(in, fragment="Calin_Python_to_EigenIntVec")
      const Eigen::VectorXi& (Eigen::VectorXi temp)
 {
-  // typemap(in) const Eigen::VectorXi& -- calin_typemaps.i
+  // typemap(in) const Eigen::VectorXi& -- calin_typemap_vectorxi.i
   $1 = &temp;
   if(!calin_python_to_eigen_int_vec($input, $1))SWIG_fail;
 }
 
 %typemap(out, fragment="Calin_EigenIntVec_to_Python") const Eigen::VectorXi&
 {
-  // typemap(out) const Eigen::VectorXi& -- calin_typemaps.i
+  // typemap(out) const Eigen::VectorXi& -- calin_typemap_vectorxi.i
   npy_intp size[1] { $1->size() };
   $result = PyArray_EMPTY(1, size, NPY_INT, 0);
   if(!$result)SWIG_fail;
@@ -161,13 +161,13 @@
 
 %typemap(argout) const Eigen::VectorXi&
 {
-  // typemap(argout) const Eigen::VectorXi& -- calin_typemaps.i
+  // typemap(argout) const Eigen::VectorXi& -- calin_typemap_vectorxi.i
   // nothing to see here
 }
 
 %typemap(typecheck, precedence=5000) const Eigen::VectorXi&
 {
-  // typemap(typecheck) const Eigen::VectorXi& -- calin_typemaps.i
+  // typemap(typecheck) const Eigen::VectorXi& -- calin_typemap_vectorxi.i
   $1 = _swig_numpy_is_array($input) ? 1 : 0;
 }
 
@@ -176,20 +176,20 @@
 %typemap(in, fragment="Calin_Python_to_EigenIntVec")
      Eigen::VectorXi& (Eigen::VectorXi temp)
 {
-  // typemap(in) Eigen::VectorXi& -- calin_typemaps.i
+  // typemap(in) Eigen::VectorXi& -- calin_typemap_vectorxi.i
   $1 = &temp;
   if(!calin_python_to_eigen_int_vec($input, $1))SWIG_fail;
 }
 
 %typemap(argout, fragment="Calin_EigenIntVec_to_Python") Eigen::VectorXi&
 {
-  // typemap(argout) Eigen::VectorXi& -- calin_typemaps.i
+  // typemap(argout) Eigen::VectorXi& -- calin_typemap_vectorxi.i
   if(!calin_eigen_int_vec_to_python($1, $input))SWIG_fail;
 }
 
 %typemap(typecheck, precedence=5000) Eigen::VectorXi&
 {
-  // typemap(typecheck) Eigen::VectorXi& -- calin_typemaps.i
+  // typemap(typecheck) Eigen::VectorXi& -- calin_typemap_vectorxi.i
   $1 = _swig_numpy_is_array($input) ? 1 : 0;
 }
 
@@ -197,13 +197,13 @@
 
 %typemap(in, numinputs=0) Eigen::VectorXi &OUTPUT (Eigen::VectorXi temp)
 {
-  // typemap(in) Eigen::VectorXi &OUTPUT -- calin_typemaps.i
+  // typemap(in) Eigen::VectorXi &OUTPUT -- calin_typemap_vectorxi.i
   $1 = &temp;
 }
 
 %typemap(argout, fragment="Calin_EigenIntVec_to_Python") Eigen::VectorXi &OUTPUT
 {
-  // typemap(argout) Eigen::VectorXi &OUTPUT -- calin_typemaps.i
+  // typemap(argout) Eigen::VectorXi &OUTPUT -- calin_typemap_vectorxi.i
   npy_intp size[1] { $1->size() };
   PyObject* temp_array = PyArray_EMPTY(1, size, NPY_INT, 0);
   if(!temp_array)SWIG_fail;
@@ -219,7 +219,7 @@
 
 %typemap(out, fragment="Calin_EigenIntVec_to_Python") Eigen::VectorXi
 {
-  // typemap(out) Eigen::VectorXi -- calin_typemaps.i
+  // typemap(out) Eigen::VectorXi -- calin_typemap_vectorxi.i
   npy_intp size[1] { $1.size() };
   $result = PyArray_EMPTY(1, size, NPY_INT, 0);
   if(!$result)SWIG_fail;
@@ -228,6 +228,6 @@
 
 %typemap(typecheck, precedence=5000) Eigen::VectorXi
 {
-  // typemap(typecheck) Eigen::VectorXi -- calin_typemaps.i
+  // typemap(typecheck) Eigen::VectorXi -- calin_typemap_vectorxi.i
   $1 = _swig_numpy_is_array($input) ? 1 : 0;
 }

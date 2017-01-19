@@ -151,14 +151,14 @@
 %typemap(in, fragment="Calin_Python_to_EigenMat3")
      const Eigen::Matrix3d& (Eigen::Matrix3d temp)
 {
-  // typemap(in) const Eigen::Matrix3d& -- calin_typemaps.i
+  // typemap(in) const Eigen::Matrix3d& -- calin_typemap_matrix3d.i
   $1 = &temp;
   if(!calin_python_to_eigen_mat3($input, $1))SWIG_fail;
 }
 
 %typemap(out, fragment="Calin_EigenMat3_to_Python") const Eigen::Matrix3d&
 {
-  // typemap(out) const Eigen::Matrix3d& -- calin_typemaps.i
+  // typemap(out) const Eigen::Matrix3d& -- calin_typemap_matrix3d.i
   npy_intp size[1] { 3 };
   $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
   if(!$result)SWIG_fail;
@@ -167,13 +167,13 @@
 
 %typemap(argout) const Eigen::Matrix3d&
 {
-  // typemap(argout) const Eigen::Matrix3d& -- calin_typemaps.i
+  // typemap(argout) const Eigen::Matrix3d& -- calin_typemap_matrix3d.i
   // nothing to see here
 }
 
 %typemap(typecheck, precedence=5000) const Eigen::Matrix3d&
 {
-  // typemap(typecheck) const Eigen::Matrix3d& -- calin_typemaps.i
+  // typemap(typecheck) const Eigen::Matrix3d& -- calin_typemap_matrix3d.i
   $1 = _swig_numpy_is_array($input) ? 1 : 0;
 }
 
@@ -182,20 +182,20 @@
 %typemap(in, fragment="Calin_Python_to_EigenMat3")
      Eigen::Matrix3d& (Eigen::Matrix3d temp)
 {
-  // typemap(in) Eigen::Matrix3d& -- calin_typemaps.i
+  // typemap(in) Eigen::Matrix3d& -- calin_typemap_matrix3d.i
   $1 = &temp;
   if(!calin_python_to_eigen_mat3($input, $1))SWIG_fail;
 }
 
 %typemap(argout, fragment="Calin_EigenMat3_to_Python") Eigen::Matrix3d&
 {
-  // typemap(argout) Eigen::Matrix3d& -- calin_typemaps.i
+  // typemap(argout) Eigen::Matrix3d& -- calin_typemap_matrix3d.i
   if(!calin_eigen_mat3_to_python($1, $input))SWIG_fail;
 }
 
 %typemap(typecheck, precedence=5000) Eigen::Matrix3d&
 {
-  // typemap(typecheck) Eigen::Matrix3d& -- calin_typemaps.i
+  // typemap(typecheck) Eigen::Matrix3d& -- calin_typemap_matrix3d.i
   $1 = _swig_numpy_is_array($input) ? 1 : 0;
 }
 
@@ -203,13 +203,13 @@
 
 %typemap(in, numinputs=0) Eigen::Matrix3d &OUTPUT (Eigen::Matrix3d temp)
 {
-  // typemap(in) Eigen::Matrix3d &OUTPUT -- calin_typemaps.i
+  // typemap(in) Eigen::Matrix3d &OUTPUT -- calin_typemap_matrix3d.i
   $1 = &temp;
 }
 
 %typemap(argout, fragment="Calin_EigenMat3_to_Python") Eigen::Matrix3d &OUTPUT
 {
-  // typemap(argout) Eigen::Matrix3d &OUTPUT -- calin_typemaps.i
+  // typemap(argout) Eigen::Matrix3d &OUTPUT -- calin_typemap_matrix3d.i
   npy_intp size[1] { $1->size() };
   PyObject* temp_array = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
   if(!temp_array)SWIG_fail;
@@ -226,14 +226,14 @@
 %typemap(in, fragment="Calin_Python_to_EigenMat3")
   Eigen::Matrix3d &INOUT (Eigen::Matrix3d temp)
 {
-  // typemap(in) const Eigen::Matrix3d &INOUT -- calin_typemaps.i
+  // typemap(in) const Eigen::Matrix3d &INOUT -- calin_typemap_matrix3d.i
   $1 = &temp;
   if(!calin_python_to_eigen_mat3($input, $1))SWIG_fail;
 }
 
 %typemap(argout, fragment="Calin_EigenMat3_to_Python") Eigen::Matrix3d &INOUT
 {
-  // typemap(argout) Eigen::Matrix3d &INOUT -- calin_typemaps.i
+  // typemap(argout) Eigen::Matrix3d &INOUT -- calin_typemap_matrix3d.i
   npy_intp size[1] { $1->size() };
   PyObject* temp_array = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
   if(!temp_array)SWIG_fail;
@@ -249,7 +249,7 @@
 
 %typemap(out, fragment="Calin_EigenMat3_to_Python") Eigen::Matrix3d
 {
-  // typemap(out) Eigen::Matrix3d -- calin_typemaps.i
+  // typemap(out) Eigen::Matrix3d -- calin_typemap_matrix3d.i
   npy_intp size[1] { $1.size() };
   $result = PyArray_EMPTY(1, size, NPY_DOUBLE, 0);
   if(!$result)SWIG_fail;
@@ -258,6 +258,6 @@
 
 %typemap(typecheck, precedence=5000) Eigen::Matrix3d
 {
-  // typemap(typecheck) Eigen::Matrix3d -- calin_typemaps.i
+  // typemap(typecheck) Eigen::Matrix3d -- calin_typemap_matrix3d.i
   $1 = _swig_numpy_is_array($input) ? 1 : 0;
 }
