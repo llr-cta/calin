@@ -85,16 +85,25 @@ public:
     calin::math::rng::RNG* rng,
     bool adopt_array, bool adopt_visitor, bool adopt_rng);
   virtual ~VSORayProcessor();
+
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
     detector_spheres() override;
   void start_processing() override;
   void process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
     double pe_weight) override;
   void finish_processing() override;
+
   void add_fp_hit_trace_visitor(VSOFPHitTraceVisitor* visitor,
     bool adopt_visitor=false);
   void add_pe_visitor(calin::simulation::pe_processor::PEProcessor* visitor,
-    bool adopt_visitor=false);
+    bool process_pes_without_pixel = false,  bool adopt_visitor=false);
+
+  void set_detection_efficiencies(
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+    double w0,
+    const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency = { 1.0 });
+
 private:
   calin::simulation::vs_optics::VSOArray* array_ = nullptr;
   bool adopt_array_ = false;

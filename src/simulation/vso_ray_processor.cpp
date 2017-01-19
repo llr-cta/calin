@@ -233,3 +233,18 @@ void VSORayProcessor::add_pe_visitor(
   add_fp_hit_trace_visitor(new VSOFPHitTraceVisitor2PEProcessorAdapter(visitor,
       process_pes_without_pixel, adopt_visitor), true);
 }
+
+void VSORayProcessor::set_detection_efficiencies(
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+  double w0,
+  const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
+{
+  effective_bandwidth_.clear();
+  for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++) {
+    auto* scope = array_->telescope(iscope);
+    effective_bandwidth_.emplace_back(atmospheric_absorption.integrateBandwidth(
+      scope->position().z(), std::fabs(w0), detector_efficiency));
+  }
+  cone_efficiency_ = cone_efficiency;
+}
