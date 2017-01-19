@@ -21,6 +21,7 @@
 */
 
 #include <cmath>
+#include <limits>
 #include <math/position_generator.hpp>
 #include <math/hex_array.hpp>
 #include <math/special.hpp>
@@ -39,7 +40,7 @@ MCPlanePositionGenerator::MCPlanePositionGenerator(double r_max, unsigned nray,
   nray_(nray), r2_max_(SQR(r_max)), weight_(base_weight),
   rng_(rng), adopt_rng_(adopt_rng)
 {
-  if(scale_weight_by_area and nray>0)weight_ *= 4.0*M_PI/double(nray);
+  if(scale_weight_by_area)weight_ *= 4.0*M_PI/double(nray);
 }
 
 MCPlanePositionGenerator::~MCPlanePositionGenerator()
@@ -54,7 +55,7 @@ void MCPlanePositionGenerator::reset()
 
 bool MCPlanePositionGenerator::next(Eigen::Vector3d& x, double& weight)
 {
-  if(iray_ >= nray_ and nray > 0)return false;
+  if(iray_ == nray_)return false;
   double r = std::sqrt(rng_.uniform() * r2_max_);
   double phi = rng_.uniform() * 2.0*M_PI;
   x.x() = r*cos(phi);
@@ -86,8 +87,25 @@ void HexGridPlanePositionGenerator::reset()
 
 bool HexGridPlanePositionGenerator::next(Eigen::Vector3d& x, double& weight)
 {
-
-  weight = weight_;
-  ++iray_;
-  return true;
+  double r2_last = std::numeric_limits<double>::infinity();
+  unsigned hexid = hexid_;
+  while(true)
+  {
+    double x;
+    double y;
+    calin::math::hex_array::hexid_to_xy(hexid++, x, y);
+    double r2 = x*x+y*y;
+    if(r2 <= r2_max) {
+      x.x() = x;
+      x.y() = y;
+      x.z() = 0;
+      weight = weight_;
+      hexid_ = hexid;
+      return true;
+    } else if(r2 >= r2_last) {
+      return false;
+    }
+    /* else : try again at next hex site! */
+  }
+  return false;
 }
