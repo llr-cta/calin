@@ -32,10 +32,10 @@ class PositionGenerator
 public:
   virtual ~PositionGenerator();
   virtual void reset() = 0;
-  virtual bool next(Eigen::Vector3d& x, double& weight) = 0;
+  virtual bool next(Eigen::Vector3d& pos, double& weight) = 0;
 };
 
-class MCPlanePositionGenerator
+class MCPlanePositionGenerator: public PositionGenerator
 {
 public:
   MCPlanePositionGenerator(double r_max, unsigned nray,
@@ -43,30 +43,30 @@ public:
     bool scale_weight_by_area = true, double base_weight = 1.0,
     bool adopt_rng = false);
   virtual ~MCPlanePositionGenerator();
-  void reset() overide;
-  bool next(Eigen::Vector3d& x, double& weight) override;
+  void reset() override;
+  bool next(Eigen::Vector3d& pos, double& weight) override;
 protected:
   unsigned iray_ = 0;
   unsigned nray_ = 0;
-  double r_max_ = 0.0;
+  double r2_max_ = 0.0;
   double weight_ = 1.0;
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
 };
 
-class HexGridPlanePositionGenerator
+class HexGridPlanePositionGenerator: public PositionGenerator
 {
 public:
   HexGridPlanePositionGenerator(double r_max, double dx = 1.0,
     bool scale_weight_by_area = true, double base_weight = 1.0);
   virtual ~HexGridPlanePositionGenerator();
-  void reset() overide;
-  bool next(Eigen::Vector3d& x, double& weight) override;
+  void reset() override;
+  bool next(Eigen::Vector3d& pos, double& weight) override;
 protected:
   unsigned hexid_ = 0;
   double r2_max_ = 0.0;
   double dx_ = 1.0;
-  double weight_ = 1.0
+  double weight_ = 1.0;
 };
 
 } } } // namespace calin::math::position_generator
