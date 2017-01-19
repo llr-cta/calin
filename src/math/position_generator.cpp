@@ -41,7 +41,7 @@ MCPlanePositionGenerator::MCPlanePositionGenerator(double r_max, unsigned nray,
   nray_(nray), r2_max_(SQR(r_max)), weight_(base_weight),
   rng_(rng), adopt_rng_(adopt_rng)
 {
-  if(scale_weight_by_area)weight_ *= 4.0*M_PI/double(nray);
+  if(scale_weight_by_area)weight_ *= M_PI*SQR(r_max)/double(nray);
 }
 
 MCPlanePositionGenerator::~MCPlanePositionGenerator()
