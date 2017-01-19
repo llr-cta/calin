@@ -26,6 +26,7 @@
 
 %{
 #include "math/position_generator.hpp"
+#include "math/direction_generator.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -46,3 +47,4 @@
 %apply double &OUTPUT { double& weight };
 
 %include "math/position_generator.hpp"
+%include "math/direction_generator.hpp"

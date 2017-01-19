@@ -1,8 +1,8 @@
 /*
 
-   calin/math/position_generator.cpp -- Stephen Fegan -- 2017-01-18
+   calin/math/direction_generator.cpp -- Stephen Fegan -- 2017-01-19
 
-   Geanerate positions in space using some algorithm.
+   Geanerate directions in space using some algorithm.
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -22,51 +22,79 @@
 
 #include <cmath>
 #include <limits>
-#include <math/position_generator.hpp>
-#include <math/hex_array.hpp>
+#include <math/direction_generator.hpp>
+#include <math/healpix_array.hpp>
 #include <math/special.hpp>
 
-using namespace calin::math::position_generator;
+using namespace calin::math::direction_generator;
 using calin::math::special::SQR;
 
-PositionGenerator::~PositionGenerator()
+DirectionGenerator::~DirectionGenerator()
 {
   // nothing to see here
 }
 
-MCPlanePositionGenerator::MCPlanePositionGenerator(double r_max, unsigned nray,
-    calin::math::rng::RNG* rng, bool scale_weight_by_area, double base_weight,
-    bool adopt_rng):
-  PositionGenerator(),
-  nray_(nray), r2_max_(SQR(r_max)), weight_(base_weight),
-  rng_(rng), adopt_rng_(adopt_rng)
+bool DirectionGenerator::next_as_vector(Eigen::Vector3d& dir, double& weight)
 {
-  if(scale_weight_by_area)weight_ *= M_PI*SQR(r_max)/double(nray);
+  double theta;
+  double phi;
+  if(this->next_as_theta_phi(theta,phi,weight))
+  {
+    double sin_theta = std::sin(theta);
+    dir.x() = sin_theta * std::cos(phi);
+    dir.y() = sin_theta * std::sin(phi);
+    dir.z() = std::cos(theta);
+    return true;
+  }
+  return false;
 }
 
-MCPlanePositionGenerator::~MCPlanePositionGenerator()
+bool DirectionGenerator::next_as_matrix(Eigen::Matrix3d& trans_mat, double& weight)
+{
+  double theta;
+  double phi;
+  if(this->next_as_theta_phi(theta,phi,weight))
+  {
+    trans_mat =
+      Eigen::AngleAxisd(theta, Eigen::Vector3d::UnitX()) *
+      Eigen::AngleAxisd(phi,   Eigen::Vector3d::UnitZ());
+    return true;
+  }
+  return false;
+}
+
+MCSphereDirectionGenerator::
+MCSphereDirectionGenerator(double theta_max, unsigned nray,
+    calin::math::rng::RNG* rng, bool scale_weight_by_area, double base_weight,
+    bool adopt_rng):
+  DirectionGenerator(), nray_(nray), cos_theta_max_(std::cos(theta_max)),
+  weight_(base_weight), rng_(rng), adopt_rng_(adopt_rng)
+{
+  if(scale_weight_by_area)weight_ *= 2*M_PI*(1.0-cos_theta_max_)/double(nray);
+}
+
+MCSphereDirectionGenerator::~MCSphereDirectionGenerator()
 {
   if(adopt_rng_)delete rng_;
 }
 
-void MCPlanePositionGenerator::reset()
+void MCSphereDirectionGenerator::reset()
 {
   iray_ = 0;
 }
 
-bool MCPlanePositionGenerator::next(Eigen::Vector3d& pos, double& weight)
+bool MCSphereDirectionGenerator::
+next_as_theta_phi(double& theta, double& phi, double& weight)
 {
   if(iray_ == nray_)return false;
-  double r = std::sqrt(rng_->uniform() * r2_max_);
-  double phi = rng_->uniform() * 2.0*M_PI;
-  pos.x() = r*cos(phi);
-  pos.y() = r*sin(phi);
-  pos.z() = 0;
+  theta = std::acos(1.0 - rng_->uniform()*(1.0-cos_theta_max_));
+  phi = rng_->uniform() * 2.0*M_PI;
   weight = weight_;
   ++iray_;
   return true;
 }
 
+#if 0
 HexGridPlanePositionGenerator::
 HexGridPlanePositionGenerator(double r_max, double dx,
     bool scale_weight_by_area, double base_weight):
@@ -114,3 +142,4 @@ bool HexGridPlanePositionGenerator::next(Eigen::Vector3d& pos, double& weight)
   }
   return false;
 }
+#endif

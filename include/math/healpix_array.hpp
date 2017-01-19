@@ -34,7 +34,7 @@ namespace calin { namespace math { namespace healpix_array {
 // *****************************************************************************
 
 unsigned npixel(unsigned nside);
-unsigned nring(unsigned nside) { return 4*nside-1; }
+inline unsigned nring(unsigned nside) { return 4*nside-1; }
 unsigned npixel_in_ring(unsigned nside, unsigned ringid);
 unsigned npixel_contained_by_ring(unsigned nside, unsigned ringid);
 unsigned pixid_to_ringid(unsigned nside, unsigned pixid);
