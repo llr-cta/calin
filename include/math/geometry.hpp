@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <algorithm>
+#include <Eigen/Dense>
+
 namespace calin { namespace math { namespace geometry {
 
 inline bool box_has_future_intersection(double& tmin, double& tmax,
@@ -64,6 +67,23 @@ inline bool box_has_future_intersection(
   double tmin;
   double tmax;
   return box_has_future_intersection(tmin,tmax,min_corner,max_corner,pos,dir);
+}
+
+inline void rotation_theta_phi(Eigen::Matrix3d& m,
+  const double ct, const double st, const double cp, const double sp)
+{
+  m << ct*cp, -sp, st*cp,
+       ct*sp,  cp, st*sp,
+         -sp,   0,    ct;
+}
+
+inline void rotation_theta_phi(Eigen::Matrix3d& m, double theta, double phi)
+{
+  const double ct = std::cos(theta);
+  const double st = std::sin(theta);
+  const double cp = std::cos(phi);
+  const double sp = std::sin(phi);
+  return rotation_theta_phi(m, ct, st, cp, sp);
 }
 
 } } } // namespace calin::math::geometry
