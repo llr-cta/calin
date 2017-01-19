@@ -26,6 +26,7 @@
 #include <math/hex_array.hpp>
 #include <math/special.hpp>
 
+using namespace calin::math::position_generator;
 using calin::math::special::SQR;
 
 PositionGenerator::~PositionGenerator()
@@ -53,14 +54,14 @@ void MCPlanePositionGenerator::reset()
   iray_ = 0;
 }
 
-bool MCPlanePositionGenerator::next(Eigen::Vector3d& x, double& weight)
+bool MCPlanePositionGenerator::next(Eigen::Vector3d& pos, double& weight)
 {
   if(iray_ == nray_)return false;
-  double r = std::sqrt(rng_.uniform() * r2_max_);
-  double phi = rng_.uniform() * 2.0*M_PI;
-  x.x() = r*cos(phi);
-  x.y() = r*sin(phi);
-  x.z() = 0;
+  double r = std::sqrt(rng_->uniform() * r2_max_);
+  double phi = rng_->uniform() * 2.0*M_PI;
+  pos.x() = r*cos(phi);
+  pos.y() = r*sin(phi);
+  pos.z() = 0;
   weight = weight_;
   ++iray_;
   return true;
@@ -70,7 +71,7 @@ HexGridPlanePositionGenerator::
 HexGridPlanePositionGenerator(double r_max, double dx,
     bool scale_weight_by_area, double base_weight):
   PositionGenerator(),
-  r2_max_(SQR(r_max)), weight_(base_weight), dx_(dx)
+  r2_max_(SQR(r_max)), dx_(dx), weight_(base_weight)
 {
   if(scale_weight_by_area)weight_ *= calin::math::hex_array::cell_area(dx);
 }
@@ -82,10 +83,10 @@ HexGridPlanePositionGenerator::~HexGridPlanePositionGenerator()
 
 void HexGridPlanePositionGenerator::reset()
 {
-  hex_id = 0;
+  hexid_ = 0;
 }
 
-bool HexGridPlanePositionGenerator::next(Eigen::Vector3d& x, double& weight)
+bool HexGridPlanePositionGenerator::next(Eigen::Vector3d& pos, double& weight)
 {
   double r2_last = 0;
   bool increasing = true;
@@ -96,17 +97,17 @@ bool HexGridPlanePositionGenerator::next(Eigen::Vector3d& x, double& weight)
     double y;
     calin::math::hex_array::hexid_to_xy(hexid++, x, y);
     double r2 = x*x+y*y;
-    if(r2 <= r2_max) {
-      x.x() = x;
-      x.y() = y;
-      x.z() = 0;
+    if(r2 <= r2_max_) {
+      pos.x() = x;
+      pos.y() = y;
+      pos.z() = 0;
       weight = weight_;
       hexid_ = hexid;
       return true;
     } else if(r2 >= r2_last) {
       if(!increasing)return false;
     } else {
-    . increasing = false;
+      increasing = false;
     }
     r2_last = r2;
     /* try again at next hex site! */

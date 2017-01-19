@@ -228,8 +228,8 @@ void VSORayProcessor::add_fp_hit_trace_visitor(VSOFPHitTraceVisitor* visitor,
 
 void VSORayProcessor::add_pe_visitor(
   calin::simulation::pe_processor::PEProcessor* visitor,
-  bool adopt_visitor)
+  bool process_pes_without_pixel, bool adopt_visitor)
 {
-  add_fp_hit_trace_visitor(
-    new VSOFPHitTraceVisitor2PEProcessorAdapter(visitor, adopt_visitor));
+  add_fp_hit_trace_visitor(new VSOFPHitTraceVisitor2PEProcessorAdapter(visitor,
+      process_pes_without_pixel, adopt_visitor), true);
 }
