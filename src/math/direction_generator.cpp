@@ -25,6 +25,7 @@
 #include <math/direction_generator.hpp>
 #include <math/healpix_array.hpp>
 #include <math/special.hpp>
+#include <math/geometry.hpp>
 
 using namespace calin::math::direction_generator;
 using calin::math::special::SQR;
@@ -147,12 +148,7 @@ next_as_matrix(Eigen::Matrix3d& trans_mat, double& weight)
   calin::math::healpix_array::pixid_to_xyz(nside_, pixid_, x, y, z);
   if(z < cos_theta_max_)return false;
   ++pixid_;
-  double st = std::sqrt(x*x+y*y);
-  double sp = y/st;
-  double cp = x/st;
-  trans_mat << z*cp, -sp, x,
-               z*sp,  cp, y,
-                -st,   0, z;
+  calin::math::geometry::rotation_z_to_xyz(trans_mat, x, y, z);
   weight = weight_;
   return true;
 }
