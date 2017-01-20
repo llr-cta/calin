@@ -114,3 +114,42 @@ bool HexGridPlanePositionGenerator::next(Eigen::Vector3d& pos, double& weight)
   }
   return false;
 }
+
+TransformedPositionGenerator::
+TransformedPositionGenerator(const Eigen::Vector3d& post_rot_shift,
+    const Eigen::Matrix3d& rot, const Eigen::Vector3d& pre_rot_shift,
+    PositionGenerator* gen, bool adopt_gen):
+  PositionGenerator(), gen_(gen), adopt_gen_(adopt_gen), rot_(rot),
+  post_rot_shift_(rot*pre_rot_shift + post_rot_shift)
+{
+  // nothing to see here
+}
+
+TransformedPositionGenerator::
+TransformedPositionGenerator(const Eigen::Vector3d& post_rot_shift,
+    const Eigen::Matrix3d& rot, PositionGenerator* gen, bool adopt_gen):
+  TransformedPositionGenerator(post_rot_shift, rot, Eigen::Vector3d::Zero(),
+    gen, adopt_gen)
+{
+  // nothing to see here
+}
+
+TransformedPositionGenerator::~TransformedPositionGenerator()
+{
+  if(adopt_gen_)delete gen_;
+}
+
+void TransformedPositionGenerator::reset()
+{
+  gen_->reset();
+}
+
+bool TransformedPositionGenerator::next(Eigen::Vector3d& pos, double& weight)
+{
+  if(gen_->next(pos, weight)) {
+    pos = rot_ * pos + post_rot_shift_;
+    return true;
+  } else {
+    return false;
+  }
+}

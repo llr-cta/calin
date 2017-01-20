@@ -50,21 +50,6 @@ bool DirectionGenerator::next_as_vector(Eigen::Vector3d& dir, double& weight)
   return false;
 }
 
-bool DirectionGenerator::next_as_matrix(Eigen::Matrix3d& trans_mat, double& weight)
-{
-  double theta;
-  double phi;
-  if(this->next_as_theta_phi(theta,phi,weight))
-  {
-    trans_mat =
-      Eigen::AngleAxisd(phi,   Eigen::Vector3d::UnitZ()) *
-      Eigen::AngleAxisd(theta, Eigen::Vector3d::UnitY());
-
-    return true;
-  }
-  return false;
-}
-
 MCSphereDirectionGenerator::
 MCSphereDirectionGenerator(double theta_max, unsigned nray,
     calin::math::rng::RNG* rng, bool scale_weight_by_area, double base_weight,
@@ -141,14 +126,45 @@ next_as_vector(Eigen::Vector3d& dir, double& weight)
   return true;
 }
 
-bool HEALPixDirectionGenerator::
-next_as_matrix(Eigen::Matrix3d& trans_mat, double& weight)
+TransformedDirectionGenerator::
+TransformedDirectionGenerator(const Eigen::Matrix3d& rot,
+    DirectionGenerator* gen, bool adopt_gen):
+  DirectionGenerator(), gen_(gen), adopt_gen_(adopt_gen), rot_(rot)
 {
-  double x,y,z;
-  calin::math::healpix_array::pixid_to_xyz(nside_, pixid_, x, y, z);
-  if(z < cos_theta_max_)return false;
-  ++pixid_;
-  calin::math::geometry::rotation_z_to_xyz(trans_mat, x, y, z);
-  weight = weight_;
-  return true;
+  // nothing to see here
+}
+
+TransformedDirectionGenerator::~TransformedDirectionGenerator()
+{
+  if(adopt_gen_)delete gen_;
+}
+
+void TransformedDirectionGenerator::reset()
+{
+  gen_->reset();
+}
+
+bool TransformedDirectionGenerator::
+next_as_theta_phi(double& theta, double& phi, double& weight)
+{
+  Eigen::Vector3d dir;
+  if(gen_->next_as_vector(dir, weight)) {
+    dir = rot_ * dir;
+    phi = std::atan2(dir.y(),dir.x());
+    theta = std::atan2(std::sqrt(SQR(dir.x())+SQR(dir.y())),dir.z());
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool TransformedDirectionGenerator::
+next_as_vector(Eigen::Vector3d& dir, double& weight)
+{
+  if(gen_->next_as_vector(dir, weight)) {
+    dir = rot_ * dir;
+    return true;
+  } else {
+    return false;
+  }
 }

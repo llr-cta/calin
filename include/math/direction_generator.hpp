@@ -34,7 +34,6 @@ public:
   virtual void reset() = 0;
   virtual bool next_as_theta_phi(double& theta, double& phi, double& weight) = 0;
   virtual bool next_as_vector(Eigen::Vector3d& dir, double& weight);
-  virtual bool next_as_matrix(Eigen::Matrix3d& trans_mat, double& weight);
 };
 
 class MCSphereDirectionGenerator: public DirectionGenerator
@@ -65,12 +64,26 @@ public:
   void reset() override;
   bool next_as_theta_phi(double& theta, double& phi, double& weight) override;
   bool next_as_vector(Eigen::Vector3d& dir, double& weight) override;
-  bool next_as_matrix(Eigen::Matrix3d& trans_mat, double& weight) override;
 protected:
   unsigned pixid_ = 0;
   double cos_theta_max_ = 1.0;
   unsigned nside_ = 1;
   double weight_ = 1.0;
+};
+
+class TransformedDirectionGenerator: public DirectionGenerator
+{
+public:
+  TransformedDirectionGenerator(const Eigen::Matrix3d& rot,
+    DirectionGenerator* gen, bool adopt_gen = false);
+  virtual ~TransformedDirectionGenerator();
+  void reset() override;
+  bool next_as_theta_phi(double& theta, double& phi, double& weight) override;
+  bool next_as_vector(Eigen::Vector3d& dir, double& weight) override;
+protected:
+  DirectionGenerator* gen_ = nullptr;
+  bool adopt_gen_ = false;
+  Eigen::Matrix3d rot_ = Eigen::Matrix3d::Identity();
 };
 
 } } } // namespace calin::math::position_generator
