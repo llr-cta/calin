@@ -27,6 +27,7 @@
 %{
 #include "math/position_generator.hpp"
 #include "math/direction_generator.hpp"
+#include "math/ray_generator.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -49,3 +50,5 @@
 %apply Eigen::Vector3d &OUTPUT { Eigen::Vector3d& dir };
 %apply Eigen::Matrix3d &OUTPUT { Eigen::Matrix3d& trans_mat };
 %include "math/direction_generator.hpp"
+
+%include "math/ray_generator.hpp"

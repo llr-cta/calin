@@ -72,10 +72,10 @@ protected:
 class TransformedPositionGenerator: public PositionGenerator
 {
 public:
-  TransformedPositionGenerator(const Eigen::Vector3d& post_rot_shift,
-    const Eigen::Matrix3d& rot, const Eigen::Vector3d& pre_rot_shift,
+  TransformedPositionGenerator(const Eigen::Vector3d& shift_post_rot,
+    const Eigen::Matrix3d& rot, const Eigen::Vector3d& shift_pre_rot,
     PositionGenerator* gen, bool adopt_gen = false);
-  TransformedPositionGenerator(const Eigen::Vector3d& post_rot_shift,
+  TransformedPositionGenerator(const Eigen::Vector3d& shift_post_rot,
     const Eigen::Matrix3d& rot, PositionGenerator* gen, bool adopt_gen = false);
   virtual ~TransformedPositionGenerator();
   void reset() override;
@@ -84,7 +84,7 @@ protected:
   PositionGenerator* gen_ = nullptr;
   bool adopt_gen_ = false;
   Eigen::Matrix3d rot_ = Eigen::Matrix3d::Identity();
-  Eigen::Vector3d post_rot_shift_ = Eigen::Vector3d::Zero();
+  Eigen::Vector3d shift_post_rot_ = Eigen::Vector3d::Zero();
 };
 
 } } } // namespace calin::math::position_generator

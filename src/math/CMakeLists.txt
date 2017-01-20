@@ -23,7 +23,7 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 	special.cpp hex_array.cpp hex_array_vvv.cpp vector3d_util.cpp ray.cpp
 	#vs_vec3d_obsolete.cpp# vs_vec4d_obsolete.cpp vs_particle_obsolete.cpp
 	rng.cpp fftw_util.cpp healpix_array.cpp position_generator.cpp
-	direction_generator.cpp)
+	direction_generator.cpp ray_generator.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY}
