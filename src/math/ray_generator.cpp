@@ -75,6 +75,7 @@ do_over:
   weight *= dir_weight_;
   ray.position()  = rot_ * ray.position() + shift_post_rot_;
   ray.direction() = rot_.col(2);
+  ray.ct() = 0;
   return true;
 }
 

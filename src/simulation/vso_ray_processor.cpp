@@ -26,6 +26,9 @@
 using namespace calin::simulation::vso_ray_processor;
 using calin::math::special::SQR;
 
+#include <io/log.hpp>
+using namespace calin::io::log;
+
 VSOFPHitTraceVisitor::~VSOFPHitTraceVisitor()
 {
   // nothing to see here
@@ -196,13 +199,11 @@ void VSORayProcessor::process_ray(unsigned scope_id,
   }
 
 #if 0
-  if(sin_phi==0) {
+  static unsigned counter = 0;
+  if(counter++<10) {
     LOG(INFO) << trace_info.status << ' ' << trace_info.mirror_hexid << ' '
-      << ray.Position().r << ' ' << p_hat.norm() << " [ "
-      << hit.u.transpose() << " ] [ "
-      << hit.v.transpose() << "] [ "
-      << hit.w.transpose() << "] " << hit.cherenkov_track->cos_thetac << ' '
-      << hit.cherenkov_track->sin_thetac;
+      << trace_info.reflec_x << ' ' << trace_info.reflec_z << ' '
+      << trace_info.reflec_dx << ' ' << trace_info.reflec_dz;
   }
 #endif
 

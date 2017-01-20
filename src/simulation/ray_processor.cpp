@@ -20,8 +20,10 @@
 
 */
 
+#include <io/log.hpp>
 #include <simulation/ray_processor.hpp>
 
+using namespace calin::io::log;
 using namespace calin::simulation::ray_processor;
 
 RayProcessor::~RayProcessor()
@@ -48,4 +50,23 @@ void RayProcessor::process_ray(unsigned scope_id,
 void RayProcessor::finish_processing()
 {
   // nothing to see here
+}
+
+unsigned RayProcessor::process_all_from_ray_generator(
+  calin::math::ray_generator::RayGenerator* gen, unsigned scope_id)
+{
+  unsigned n = 0;
+  calin::math::ray::Ray ray;
+  double weight;
+  this->start_processing();
+  while(gen->next(ray, weight)) {
+#if 0
+    if(n<10)LOG(INFO) << "[ "<< ray.position().transpose() << " ] [ "
+                      << ray.direction().transpose() << " ]";
+#endif
+    ++n;
+    this->process_ray(scope_id, ray, weight);
+  }
+  this->finish_processing();
+  return n;
 }

@@ -79,11 +79,13 @@ class VSORayProcessor: public calin::simulation::ray_processor::RayProcessor
 public:
   VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
     VSOFPHitTraceVisitor* visitor, calin::math::rng::RNG* rng,
-    bool adopt_array, bool adopt_visitor, bool adopt_rng);
+    bool adopt_array = false, bool adopt_visitor = false,
+    bool adopt_rng = false);
   VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
     calin::simulation::pe_processor::PEProcessor* visitor,
     calin::math::rng::RNG* rng,
-    bool adopt_array, bool adopt_visitor, bool adopt_rng);
+    bool adopt_array = false, bool adopt_visitor = false,
+    bool adopt_rng = false);
   virtual ~VSORayProcessor();
 
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
@@ -115,7 +117,7 @@ private:
   calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
   std::vector<calin::simulation::detector_efficiency::ACTEffectiveBandwidth>
     effective_bandwidth_;
-  calin::math::interpolation_1d::InterpLinear1D cone_efficiency_;
+  calin::math::interpolation_1d::InterpLinear1D cone_efficiency_ = { 1 };
 };
 
 } } } // namespace calin::simulation::ray_processor

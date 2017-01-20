@@ -38,6 +38,9 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%import "math/ray.i"
+%import "math/ray_generator.i"
+
 %include "simulation/pe_processor.hpp"
 %include "simulation/ray_processor.hpp"
 %include "simulation/vso_ray_processor.hpp"

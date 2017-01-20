@@ -25,6 +25,9 @@
 
 using namespace calin::simulation::pe_processor;
 
+#include <io/log.hpp>
+using namespace calin::io::log;
+
 PEProcessor::~PEProcessor()
 {
   // nothing to see here
@@ -75,6 +78,13 @@ void SimpleImagePEProcessor::
 process_pe(unsigned scope_id, int pixel_id, double x, double y,
   double t0, double pe_weight)
 {
+#if 0
+  static unsigned counter = 0;
+  if(counter++ < 10)
+    LOG(INFO) << scope_id << ' ' << pixel_id << ' ' << x << ' ' << y << ' '
+              << t0 << ' ' << pe_weight;
+#endif
+
   if(pixel_id<0)return;
   if(scope_id >= images_.size())
     throw std::out_of_range("SimpleImagePEProcessor::process_pe: scope_id out "

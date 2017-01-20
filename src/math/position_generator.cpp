@@ -96,6 +96,8 @@ bool HexGridPlanePositionGenerator::next(Eigen::Vector3d& pos, double& weight)
     double x;
     double y;
     calin::math::hex_array::hexid_to_xy(hexid++, x, y);
+    x *= dx_;
+    y *= dx_;
     double r2 = x*x+y*y;
     if(r2 <= r2_max_) {
       pos.x() = x;

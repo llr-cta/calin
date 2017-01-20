@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <math/ray.hpp>
+#include <math/ray_generator.hpp>
 
 namespace calin { namespace simulation { namespace ray_processor {
 
@@ -44,6 +45,8 @@ public:
   virtual void process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
     double pe_weight);
   virtual void finish_processing();
+  unsigned process_all_from_ray_generator(
+    calin::math::ray_generator::RayGenerator* gen, unsigned scope_id = 0);
 };
 
 } } } // namespace calin::simulation::ray_processor
