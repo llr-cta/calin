@@ -76,6 +76,7 @@ void VSOFPHitTraceVisitor2PEProcessorAdapter::
 process_fp_hit_trace(unsigned scope_id,
   const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
 {
+  if(not trace.rayHitFocalPlane())return;
   if(trace.pixel != nullptr) {
     visitor_->process_pe(scope_id, trace.pixel->id(),
       trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
@@ -190,13 +191,13 @@ void VSORayProcessor::process_ray(unsigned scope_id,
   vs_optics::VSOTraceInfo trace_info;
   ray_tracer_->trace(ray_copy, trace_info, scope);
 
+
   if(scope_id < effective_bandwidth_.size()) {
     pe_weight *= effective_bandwidth_[scope_id].bandwidth(z0, std::fabs(w));
   }
 
-  if(trace_info.rayHitFocalPlane()) {
+  if(trace_info.rayHitFocalPlane())
     pe_weight *= cone_efficiency_.y(trace_info.fplane_uy);
-  }
 
 #if 0
   static unsigned counter = 0;
