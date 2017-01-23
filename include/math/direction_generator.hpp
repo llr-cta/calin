@@ -36,6 +36,22 @@ public:
   virtual bool next_as_vector(Eigen::Vector3d& dir, double& weight);
 };
 
+class SingleDirectionGenerator: public DirectionGenerator
+{
+public:
+  SingleDirectionGenerator(double theta = 0, double phi = 0,
+    double base_weight = 1.0);
+  SingleDirectionGenerator(const Eigen::Vector3d& dir, double base_weight = 1.0);
+  virtual ~SingleDirectionGenerator();
+  void reset() override;
+  bool next_as_theta_phi(double& theta, double& phi, double& weight) override;
+private:
+  double theta_ = 0.0;
+  double phi_ = 0.0;
+  double weight_ = 1.0;
+  bool direction_generated_ = false;
+};
+
 class MCSphereDirectionGenerator: public DirectionGenerator
 {
 public:

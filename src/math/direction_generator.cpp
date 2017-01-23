@@ -50,6 +50,43 @@ bool DirectionGenerator::next_as_vector(Eigen::Vector3d& dir, double& weight)
   return false;
 }
 
+SingleDirectionGenerator::
+SingleDirectionGenerator(double theta, double phi, double base_weight):
+  DirectionGenerator(), theta_(theta), phi_(phi), weight_(base_weight)
+{
+  // nothing to see here
+}
+
+SingleDirectionGenerator::
+SingleDirectionGenerator(const Eigen::Vector3d& dir, double base_weight):
+  DirectionGenerator(),
+  theta_(std::atan2(std::sqrt(SQR(dir.x())+SQR(dir.y())),dir.z())),
+  phi_(std::atan2(dir.y(),dir.x())), weight_(base_weight)
+{
+  // nothing to see here
+}
+
+SingleDirectionGenerator::~SingleDirectionGenerator()
+{
+  // nothing to see here
+}
+
+void SingleDirectionGenerator::reset()
+{
+  direction_generated_ = false;
+}
+
+bool SingleDirectionGenerator::
+next_as_theta_phi(double& theta, double& phi, double& weight)
+{
+  if(direction_generated_)return false;
+  theta = theta_;
+  phi = phi_;
+  weight = weight_;
+  direction_generated_ = true;
+  return true;
+}
+
 MCSphereDirectionGenerator::
 MCSphereDirectionGenerator(double theta_max, unsigned nray,
     calin::math::rng::RNG* rng, bool scale_weight_by_area, double base_weight,
