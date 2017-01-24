@@ -54,4 +54,26 @@ private:
   std::vector<std::vector<double>> images_;
 };
 
+#if 0
+class TelescopePSFCalcPEProcessor: public PEProcessor
+{
+public:
+  TelescopePSFCalcPEProcessor(unsigned iscope = 0, bool auto_clear = true);
+  virtual ~TelescopePSFCalcPEProcessor();
+  void start_processing() override;
+  void process_pe(unsigned scope_id, int pixel_id,
+    double x, double y, double t0, double pe_weight) override;
+  void reset();
+private:
+  bool auto_clear_ = false;
+  unsigned iscope_ = 0;
+  double sum_w_ = 0
+  double sum_wx_ = 0
+  double sum_wy_ = 0
+  double sum_wxx_ = 0
+  double sum_wxy_ = 0
+  double sum_wyy_ = 0
+};
+#endif
+
 } } } // namespace calin::simulation::pe_processor

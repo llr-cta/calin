@@ -52,11 +52,9 @@ void VSOTracedRayVisitor::finish_processing()
 
 VSOTracedRayVisitor2PEProcessorAdapter::
 VSOTracedRayVisitor2PEProcessorAdapter(
-    calin::simulation::pe_processor::PEProcessor* visitor,
-    bool process_pes_without_pixel, bool adopt_visitor):
+    calin::simulation::pe_processor::PEProcessor* visitor, bool adopt_visitor):
   VSOTracedRayVisitor(),
-  visitor_(visitor), adopt_visitor_(adopt_visitor),
-  process_pes_without_pixel_(process_pes_without_pixel)
+  visitor_(visitor), adopt_visitor_(adopt_visitor)
 {
   // nothing to see here
 }
@@ -80,7 +78,7 @@ process_traced_ray(unsigned scope_id,
   if(trace.pixel != nullptr) {
     visitor_->process_pe(scope_id, trace.pixel->id(),
       trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
-  } else if(process_pes_without_pixel_) {
+  } else {
     visitor_->process_pe(scope_id, -1,
       trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
   }
@@ -141,11 +139,11 @@ VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
 
 VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
     calin::simulation::pe_processor::PEProcessor* visitor,
-    calin::math::rng::RNG* rng, bool process_pes_without_pixel,
+    calin::math::rng::RNG* rng,
     bool adopt_array, bool adopt_visitor, bool adopt_rng):
   calin::simulation::ray_processor::RayProcessor(),
   array_(array), adopt_array_(adopt_array),
-  visitor_(new VSOTracedRayVisitor2PEProcessorAdapter(visitor, process_pes_without_pixel, adopt_visitor)),
+  visitor_(new VSOTracedRayVisitor2PEProcessorAdapter(visitor, adopt_visitor)),
   adopt_visitor_(true),
   rng_(rng ? rng : new calin::math::rng::RNG),
   adopt_rng_(rng ? true : adopt_rng),
@@ -229,11 +227,10 @@ void VSORayProcessor::add_fp_hit_trace_visitor(VSOTracedRayVisitor* visitor,
 }
 
 void VSORayProcessor::add_pe_visitor(
-  calin::simulation::pe_processor::PEProcessor* visitor,
-  bool process_pes_without_pixel, bool adopt_visitor)
+  calin::simulation::pe_processor::PEProcessor* visitor, bool adopt_visitor)
 {
   add_fp_hit_trace_visitor(new VSOTracedRayVisitor2PEProcessorAdapter(visitor,
-      process_pes_without_pixel, adopt_visitor), true);
+    adopt_visitor), true);
 }
 
 void VSORayProcessor::set_detection_efficiencies(

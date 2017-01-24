@@ -62,7 +62,7 @@ class VSOTracedRayVisitor2PEProcessorAdapter: public VSOTracedRayVisitor
 public:
   VSOTracedRayVisitor2PEProcessorAdapter(
     calin::simulation::pe_processor::PEProcessor* visitor,
-    bool process_pes_without_pixel = false, bool adopt_visitor = false);
+    bool adopt_visitor = false);
   virtual ~VSOTracedRayVisitor2PEProcessorAdapter();
   void start_processing() override;
   void process_traced_ray(unsigned scope_id,
@@ -71,7 +71,6 @@ public:
 private:
   calin::simulation::pe_processor::PEProcessor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
-  bool process_pes_without_pixel_ = false;
 };
 
 class VSORayProcessor: public calin::simulation::ray_processor::RayProcessor
@@ -83,7 +82,7 @@ public:
     bool adopt_rng = false);
   VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
     calin::simulation::pe_processor::PEProcessor* visitor,
-    calin::math::rng::RNG* rng, bool process_pes_without_pixel = false,
+    calin::math::rng::RNG* rng,
     bool adopt_array = false, bool adopt_visitor = false,
     bool adopt_rng = false);
   virtual ~VSORayProcessor();
@@ -98,7 +97,7 @@ public:
   void add_fp_hit_trace_visitor(VSOTracedRayVisitor* visitor,
     bool adopt_visitor=false);
   void add_pe_visitor(calin::simulation::pe_processor::PEProcessor* visitor,
-    bool process_pes_without_pixel = false,  bool adopt_visitor=false);
+    bool adopt_visitor=false);
 
   void set_detection_efficiencies(
     const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
