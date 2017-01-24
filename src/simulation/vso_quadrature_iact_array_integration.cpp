@@ -94,7 +94,7 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::
 VSO_QuadratureIACTArrayIntegrationHitVisitor(
     const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
     calin::simulation::vs_optics::VSOArray* array,
-    calin::simulation::vso_ray_processor::VSOFPHitTraceVisitor* visitor,
+    calin::simulation::vso_ray_processor::VSOTracedRayVisitor* visitor,
     calin::math::rng::RNG* rng,
     bool adopt_array, bool adopt_visitor, bool adopt_rng):
   QuadratureIACTArrayIntegrationHitVisitor(config,
@@ -125,7 +125,7 @@ VSO_QuadratureIACTArrayIntegrationHitVisitor::
 }
 
 void VSO_QuadratureIACTArrayIntegrationHitVisitor::add_fp_hit_trace_visitor(
-  calin::simulation::vso_ray_processor::VSOFPHitTraceVisitor* visitor,
+  calin::simulation::vso_ray_processor::VSOTracedRayVisitor* visitor,
   bool adopt_visitor)
 {
   dynamic_cast<VSORayProcessor*>(visitor_)

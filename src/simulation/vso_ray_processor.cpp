@@ -29,50 +29,50 @@ using calin::math::special::SQR;
 #include <io/log.hpp>
 using namespace calin::io::log;
 
-VSOFPHitTraceVisitor::~VSOFPHitTraceVisitor()
+VSOTracedRayVisitor::~VSOTracedRayVisitor()
 {
   // nothing to see here
 }
 
-void VSOFPHitTraceVisitor::start_processing()
+void VSOTracedRayVisitor::start_processing()
 {
   // nothing to see here
 }
 
-void VSOFPHitTraceVisitor::process_traced_ray(unsigned scope_id,
+void VSOTracedRayVisitor::process_traced_ray(unsigned scope_id,
   const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
 {
   // nothing to see here
 }
 
-void VSOFPHitTraceVisitor::finish_processing()
+void VSOTracedRayVisitor::finish_processing()
 {
   // nothing to see here
 }
 
-VSOFPHitTraceVisitor2PEProcessorAdapter::
-VSOFPHitTraceVisitor2PEProcessorAdapter(
+VSOTracedRayVisitor2PEProcessorAdapter::
+VSOTracedRayVisitor2PEProcessorAdapter(
     calin::simulation::pe_processor::PEProcessor* visitor,
     bool process_pes_without_pixel, bool adopt_visitor):
-  VSOFPHitTraceVisitor(),
+  VSOTracedRayVisitor(),
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   process_pes_without_pixel_(process_pes_without_pixel)
 {
   // nothing to see here
 }
 
-VSOFPHitTraceVisitor2PEProcessorAdapter::
-~VSOFPHitTraceVisitor2PEProcessorAdapter()
+VSOTracedRayVisitor2PEProcessorAdapter::
+~VSOTracedRayVisitor2PEProcessorAdapter()
 {
   if(adopt_visitor_)delete visitor_;
 }
 
-void VSOFPHitTraceVisitor2PEProcessorAdapter::start_processing()
+void VSOTracedRayVisitor2PEProcessorAdapter::start_processing()
 {
   visitor_->start_processing();
 }
 
-void VSOFPHitTraceVisitor2PEProcessorAdapter::
+void VSOTracedRayVisitor2PEProcessorAdapter::
 process_traced_ray(unsigned scope_id,
   const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
 {
@@ -86,40 +86,40 @@ process_traced_ray(unsigned scope_id,
   }
 }
 
-void VSOFPHitTraceVisitor2PEProcessorAdapter::finish_processing()
+void VSOTracedRayVisitor2PEProcessorAdapter::finish_processing()
 {
   visitor_->finish_processing();
 }
 
-VSOMultiFPHitTraceVisitor::VSOMultiFPHitTraceVisitor():
-  VSOFPHitTraceVisitor(), visitors_()
+VSOMultiTracedRayVisitor::VSOMultiTracedRayVisitor():
+  VSOTracedRayVisitor(), visitors_()
 {
   // nothing to see here
 }
 
-VSOMultiFPHitTraceVisitor::~VSOMultiFPHitTraceVisitor()
+VSOMultiTracedRayVisitor::~VSOMultiTracedRayVisitor()
 {
   for(auto* ivisitor : adopted_visitors_)delete ivisitor;
 }
 
-void VSOMultiFPHitTraceVisitor::start_processing()
+void VSOMultiTracedRayVisitor::start_processing()
 {
   for(auto* ivisitor : visitors_)ivisitor->start_processing();
 }
 
-void VSOMultiFPHitTraceVisitor::process_traced_ray(unsigned scope_id,
+void VSOMultiTracedRayVisitor::process_traced_ray(unsigned scope_id,
   const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
 {
   for(auto* ivisitor : visitors_)
     ivisitor->process_traced_ray(scope_id, trace, pe_weight);
 }
 
-void VSOMultiFPHitTraceVisitor::finish_processing()
+void VSOMultiTracedRayVisitor::finish_processing()
 {
   for(auto* ivisitor : visitors_)ivisitor->finish_processing();
 }
 
-void VSOMultiFPHitTraceVisitor::add_visitor(VSOFPHitTraceVisitor* visitor,
+void VSOMultiTracedRayVisitor::add_visitor(VSOTracedRayVisitor* visitor,
   bool adopt_visitor)
 {
   visitors_.push_back(visitor);
@@ -127,7 +127,7 @@ void VSOMultiFPHitTraceVisitor::add_visitor(VSOFPHitTraceVisitor* visitor,
 }
 
 VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
-    VSOFPHitTraceVisitor* visitor, calin::math::rng::RNG* rng,
+    VSOTracedRayVisitor* visitor, calin::math::rng::RNG* rng,
     bool adopt_array, bool adopt_visitor, bool adopt_rng):
   calin::simulation::ray_processor::RayProcessor(),
   array_(array), adopt_array_(adopt_array),
@@ -141,11 +141,11 @@ VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
 
 VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
     calin::simulation::pe_processor::PEProcessor* visitor,
-    calin::math::rng::RNG* rng,
+    calin::math::rng::RNG* rng, bool process_pes_without_pixel,
     bool adopt_array, bool adopt_visitor, bool adopt_rng):
   calin::simulation::ray_processor::RayProcessor(),
   array_(array), adopt_array_(adopt_array),
-  visitor_(new VSOFPHitTraceVisitor2PEProcessorAdapter(visitor, adopt_visitor)),
+  visitor_(new VSOTracedRayVisitor2PEProcessorAdapter(visitor, process_pes_without_pixel, adopt_visitor)),
   adopt_visitor_(true),
   rng_(rng ? rng : new calin::math::rng::RNG),
   adopt_rng_(rng ? true : adopt_rng),
@@ -216,11 +216,11 @@ void VSORayProcessor::finish_processing()
   visitor_->finish_processing();
 }
 
-void VSORayProcessor::add_fp_hit_trace_visitor(VSOFPHitTraceVisitor* visitor,
+void VSORayProcessor::add_fp_hit_trace_visitor(VSOTracedRayVisitor* visitor,
   bool adopt_visitor)
 {
   if(multi_visitor_ == nullptr) {
-    multi_visitor_ = new VSOMultiFPHitTraceVisitor;
+    multi_visitor_ = new VSOMultiTracedRayVisitor;
     multi_visitor_->add_visitor(visitor_, adopt_visitor_);
     visitor_ = multi_visitor_;
     adopt_visitor_ = true;
@@ -232,7 +232,7 @@ void VSORayProcessor::add_pe_visitor(
   calin::simulation::pe_processor::PEProcessor* visitor,
   bool process_pes_without_pixel, bool adopt_visitor)
 {
-  add_fp_hit_trace_visitor(new VSOFPHitTraceVisitor2PEProcessorAdapter(visitor,
+  add_fp_hit_trace_visitor(new VSOTracedRayVisitor2PEProcessorAdapter(visitor,
       process_pes_without_pixel, adopt_visitor), true);
 }
 

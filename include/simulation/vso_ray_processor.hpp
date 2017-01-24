@@ -32,38 +32,38 @@
 
 namespace calin { namespace simulation { namespace vso_ray_processor {
 
-class VSOFPHitTraceVisitor
+class VSOTracedRayVisitor
 {
 public:
-  virtual ~VSOFPHitTraceVisitor();
+  virtual ~VSOTracedRayVisitor();
   virtual void start_processing();
   virtual void process_traced_ray(unsigned scope_id,
     const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight);
   virtual void finish_processing();
 };
 
-class VSOMultiFPHitTraceVisitor: public VSOFPHitTraceVisitor
+class VSOMultiTracedRayVisitor: public VSOTracedRayVisitor
 {
 public:
-  VSOMultiFPHitTraceVisitor();
-  virtual ~VSOMultiFPHitTraceVisitor();
+  VSOMultiTracedRayVisitor();
+  virtual ~VSOMultiTracedRayVisitor();
   void start_processing() override;
   void process_traced_ray(unsigned scope_id,
     const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight) override;
   void finish_processing() override;
-  void add_visitor(VSOFPHitTraceVisitor* visitor, bool adopt_visitor);
+  void add_visitor(VSOTracedRayVisitor* visitor, bool adopt_visitor);
 private:
-  std::vector<VSOFPHitTraceVisitor*> visitors_;
-  std::vector<VSOFPHitTraceVisitor*> adopted_visitors_;
+  std::vector<VSOTracedRayVisitor*> visitors_;
+  std::vector<VSOTracedRayVisitor*> adopted_visitors_;
 };
 
-class VSOFPHitTraceVisitor2PEProcessorAdapter: public VSOFPHitTraceVisitor
+class VSOTracedRayVisitor2PEProcessorAdapter: public VSOTracedRayVisitor
 {
 public:
-  VSOFPHitTraceVisitor2PEProcessorAdapter(
+  VSOTracedRayVisitor2PEProcessorAdapter(
     calin::simulation::pe_processor::PEProcessor* visitor,
     bool process_pes_without_pixel = false, bool adopt_visitor = false);
-  virtual ~VSOFPHitTraceVisitor2PEProcessorAdapter();
+  virtual ~VSOTracedRayVisitor2PEProcessorAdapter();
   void start_processing() override;
   void process_traced_ray(unsigned scope_id,
     const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight) override;
@@ -78,12 +78,12 @@ class VSORayProcessor: public calin::simulation::ray_processor::RayProcessor
 {
 public:
   VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
-    VSOFPHitTraceVisitor* visitor, calin::math::rng::RNG* rng,
+    VSOTracedRayVisitor* visitor, calin::math::rng::RNG* rng,
     bool adopt_array = false, bool adopt_visitor = false,
     bool adopt_rng = false);
   VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
     calin::simulation::pe_processor::PEProcessor* visitor,
-    calin::math::rng::RNG* rng,
+    calin::math::rng::RNG* rng, bool process_pes_without_pixel = false,
     bool adopt_array = false, bool adopt_visitor = false,
     bool adopt_rng = false);
   virtual ~VSORayProcessor();
@@ -95,7 +95,7 @@ public:
     double pe_weight) override;
   void finish_processing() override;
 
-  void add_fp_hit_trace_visitor(VSOFPHitTraceVisitor* visitor,
+  void add_fp_hit_trace_visitor(VSOTracedRayVisitor* visitor,
     bool adopt_visitor=false);
   void add_pe_visitor(calin::simulation::pe_processor::PEProcessor* visitor,
     bool process_pes_without_pixel = false,  bool adopt_visitor=false);
@@ -109,9 +109,9 @@ public:
 private:
   calin::simulation::vs_optics::VSOArray* array_ = nullptr;
   bool adopt_array_ = false;
-  VSOFPHitTraceVisitor* visitor_ = nullptr;
+  VSOTracedRayVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
-  VSOMultiFPHitTraceVisitor* multi_visitor_ = nullptr;
+  VSOMultiTracedRayVisitor* multi_visitor_ = nullptr;
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
   calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;

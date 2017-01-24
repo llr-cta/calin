@@ -81,7 +81,7 @@ public:
   VSO_QuadratureIACTArrayIntegrationHitVisitor(
     const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
     calin::simulation::vs_optics::VSOArray* array,
-    calin::simulation::vso_ray_processor::VSOFPHitTraceVisitor* visitor,
+    calin::simulation::vso_ray_processor::VSOTracedRayVisitor* visitor,
     calin::math::rng::RNG* rng = nullptr,
     bool adopt_array = false, bool adopt_visitor = false,
     bool adopt_rng = false);
@@ -95,12 +95,12 @@ public:
   ~VSO_QuadratureIACTArrayIntegrationHitVisitor();
 
   void add_fp_hit_trace_visitor(
-    calin::simulation::vso_ray_processor::VSOFPHitTraceVisitor* visitor,
+    calin::simulation::vso_ray_processor::VSOTracedRayVisitor* visitor,
     bool adopt_visitor = false);
   void add_pe_visitor(calin::simulation::pe_processor::PEProcessor* visitor,
     bool adopt_visitor = false);
   void add_visitor(
-    calin::simulation::vso_ray_processor::VSOFPHitTraceVisitor* visitor,
+    calin::simulation::vso_ray_processor::VSOTracedRayVisitor* visitor,
     bool adopt_visitor = false) { add_fp_hit_trace_visitor(visitor,adopt_visitor); }
   void add_visitor(calin::simulation::pe_processor::PEProcessor* visitor,
     bool adopt_visitor = false) { add_pe_visitor(visitor,adopt_visitor); }
