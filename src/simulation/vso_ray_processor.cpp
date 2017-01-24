@@ -39,7 +39,7 @@ void VSOFPHitTraceVisitor::start_processing()
   // nothing to see here
 }
 
-void VSOFPHitTraceVisitor::process_fp_hit_trace(unsigned scope_id,
+void VSOFPHitTraceVisitor::process_traced_ray(unsigned scope_id,
   const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
 {
   // nothing to see here
@@ -73,7 +73,7 @@ void VSOFPHitTraceVisitor2PEProcessorAdapter::start_processing()
 }
 
 void VSOFPHitTraceVisitor2PEProcessorAdapter::
-process_fp_hit_trace(unsigned scope_id,
+process_traced_ray(unsigned scope_id,
   const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
 {
   if(not trace.rayHitFocalPlane())return;
@@ -107,11 +107,11 @@ void VSOMultiFPHitTraceVisitor::start_processing()
   for(auto* ivisitor : visitors_)ivisitor->start_processing();
 }
 
-void VSOMultiFPHitTraceVisitor::process_fp_hit_trace(unsigned scope_id,
+void VSOMultiFPHitTraceVisitor::process_traced_ray(unsigned scope_id,
   const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
 {
   for(auto* ivisitor : visitors_)
-    ivisitor->process_fp_hit_trace(scope_id, trace, pe_weight);
+    ivisitor->process_traced_ray(scope_id, trace, pe_weight);
 }
 
 void VSOMultiFPHitTraceVisitor::finish_processing()
@@ -208,7 +208,7 @@ void VSORayProcessor::process_ray(unsigned scope_id,
   }
 #endif
 
-  visitor_->process_fp_hit_trace(scope_id, trace_info, pe_weight);
+  visitor_->process_traced_ray(scope_id, trace_info, pe_weight);
 }
 
 void VSORayProcessor::finish_processing()

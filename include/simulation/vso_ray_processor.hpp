@@ -37,7 +37,7 @@ class VSOFPHitTraceVisitor
 public:
   virtual ~VSOFPHitTraceVisitor();
   virtual void start_processing();
-  virtual void process_fp_hit_trace(unsigned scope_id,
+  virtual void process_traced_ray(unsigned scope_id,
     const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight);
   virtual void finish_processing();
 };
@@ -48,7 +48,7 @@ public:
   VSOMultiFPHitTraceVisitor();
   virtual ~VSOMultiFPHitTraceVisitor();
   void start_processing() override;
-  void process_fp_hit_trace(unsigned scope_id,
+  void process_traced_ray(unsigned scope_id,
     const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight) override;
   void finish_processing() override;
   void add_visitor(VSOFPHitTraceVisitor* visitor, bool adopt_visitor);
@@ -65,7 +65,7 @@ public:
     bool process_pes_without_pixel = false, bool adopt_visitor = false);
   virtual ~VSOFPHitTraceVisitor2PEProcessorAdapter();
   void start_processing() override;
-  void process_fp_hit_trace(unsigned scope_id,
+  void process_traced_ray(unsigned scope_id,
     const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight) override;
   void finish_processing() override;
 private:
