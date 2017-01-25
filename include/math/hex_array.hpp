@@ -225,6 +225,11 @@ constexpr double c_vx = 0.5;
 constexpr double c_vy = 0.5*CALIN_HEX_ARRAY_SQRT3;
 constexpr double c_vy_inv = 1.0/c_vy;
 
+inline double cell_area(double scale = 1.0)
+{
+  return 0.5*CALIN_HEX_ARRAY_SQRT3*scale*scale;
+}
+
 // XY <-> UV without rotation matrix
 
 inline void uv_to_xy(int u, int v, double& x, double& y)

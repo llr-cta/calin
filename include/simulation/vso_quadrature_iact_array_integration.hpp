@@ -24,77 +24,12 @@
 
 #pragma once
 
-#include <math/rng.hpp>
-#include <simulation/vso_array.hpp>
-#include <simulation/vso_raytracer.hpp>
-#include <simulation/detector_efficiency.hpp>
+#include <simulation/vso_ray_processor.hpp>
 #include <simulation/quadrature_iact_array_integration.hpp>
 
-namespace calin { namespace simulation { namespace quadrature_iact_array_integration {
+namespace calin { namespace simulation { namespace vso_quadrature_iact_array_integration {
 
-class VSOQuadratureIACTArrayTraceProcessor
-{
-public:
-  virtual ~VSOQuadratureIACTArrayTraceProcessor();
-  virtual void visit_event(const calin::simulation::tracker::Event& event,
-    bool& kill_event);
-  virtual void visit_cherenkov_track(
-    const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
-    bool& kill_track);
-  virtual void process_trace(unsigned scope_id,
-    const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight);
-  virtual void leave_cherenkov_track();
-  virtual void leave_event();
-};
-
-class VSOTraceMultiProcessor: public VSOQuadratureIACTArrayTraceProcessor
-{
-public:
-  VSOTraceMultiProcessor(): VSOQuadratureIACTArrayTraceProcessor() {
-    // nothing to see here
-  }
-  virtual ~VSOTraceMultiProcessor();
-  void add_trace_visitor(VSOQuadratureIACTArrayTraceProcessor* visitor,
-    bool adopt_visitor = false);
-  void add_pe_visitor(QuadratureIACTArrayPEProcessor* pe_visitor,
-    bool adopt_pe_visitor = false);
-  void visit_event(const calin::simulation::tracker::Event& event,
-    bool& kill_event) override;
-  void visit_cherenkov_track(
-    const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
-    bool& kill_track) override;
-  void process_trace(unsigned scope_id,
-    const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight) override;
-  void leave_cherenkov_track() override;
-  void leave_event() override;
-private:
-  std::vector<VSOQuadratureIACTArrayTraceProcessor*> visitors_;
-  std::vector<VSOQuadratureIACTArrayTraceProcessor*> adopted_visitors_;
-};
-
-class VSOTraceToPEAdaptor: public VSOQuadratureIACTArrayTraceProcessor
-{
-public:
-  VSOTraceToPEAdaptor(QuadratureIACTArrayPEProcessor* pe_visitor,
-      bool adopt_pe_visitor = false): VSOQuadratureIACTArrayTraceProcessor(),
-    pe_visitor_(pe_visitor), adopt_pe_visitor_(adopt_pe_visitor) {
-    // nothing to see here
-  }
-  virtual ~VSOTraceToPEAdaptor();
-  void visit_event(const calin::simulation::tracker::Event& event,
-    bool& kill_event) override;
-  void visit_cherenkov_track(
-    const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
-    bool& kill_track) override;
-  void process_trace(unsigned scope_id,
-    const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight) override;
-  void leave_cherenkov_track() override;
-  void leave_event() override;
-private:
-  QuadratureIACTArrayPEProcessor* pe_visitor_ = nullptr;
-  bool adopt_pe_visitor_ = false;
-};
-
+#if 0
 class VSOTraceStatusProcessor: public VSOQuadratureIACTArrayTraceProcessor
 {
 public:
@@ -137,91 +72,44 @@ private:
   std::vector<double> reflec_z_;
   std::vector<double> reflec_w_;
 };
-
-class VSO_QuadratureIACTArrayIntegrationHitVisitor;
-
-class VSO_IACTDetectorSphereHitProcessor:
-  public calin::simulation::iact_array_tracker::IACTDetectorSphereHitProcessor
-{
-public:
-  VSO_IACTDetectorSphereHitProcessor(
-    VSO_QuadratureIACTArrayIntegrationHitVisitor* quadrature,
-    calin::simulation::vs_optics::VSOTelescope* scope);
-  virtual ~VSO_IACTDetectorSphereHitProcessor();
-  virtual void process_hit(
-    const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit);
-private:
-  VSO_QuadratureIACTArrayIntegrationHitVisitor* quadrature_ = nullptr;
-  calin::simulation::vs_optics::VSOTelescope* scope_ = nullptr;
-};
+#endif
 
 class VSO_QuadratureIACTArrayIntegrationHitVisitor:
-  public calin::simulation::iact_array_tracker::HitIACTVisitor
+  public calin::simulation::quadrature_iact_array_integration::QuadratureIACTArrayIntegrationHitVisitor
 {
 public:
   VSO_QuadratureIACTArrayIntegrationHitVisitor(
     const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
     calin::simulation::vs_optics::VSOArray* array,
-    VSOQuadratureIACTArrayTraceProcessor* visitor,
+    calin::simulation::vso_ray_processor::VSOTracedRayVisitor* visitor,
     calin::math::rng::RNG* rng = nullptr,
     bool adopt_array = false, bool adopt_visitor = false,
     bool adopt_rng = false);
   VSO_QuadratureIACTArrayIntegrationHitVisitor(
     const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
     calin::simulation::vs_optics::VSOArray* array,
-    QuadratureIACTArrayPEProcessor* visitor,
+    calin::simulation::pe_processor::PEProcessor* visitor,
     calin::math::rng::RNG* rng = nullptr,
     bool adopt_array = false, bool adopt_visitor = false,
     bool adopt_rng = false);
   ~VSO_QuadratureIACTArrayIntegrationHitVisitor();
-  void add_trace_visitor(VSOQuadratureIACTArrayTraceProcessor* visitor,
-    bool adopt_visitor = false);
-  void add_pe_visitor(QuadratureIACTArrayPEProcessor* visitor,
-    bool adopt_visitor = false);
-  void add_visitor(VSOQuadratureIACTArrayTraceProcessor* visitor,
-    bool adopt_visitor = false) { add_trace_visitor(visitor,adopt_visitor); }
-  void add_visitor(QuadratureIACTArrayPEProcessor* visitor,
-    bool adopt_visitor = false) { add_pe_visitor(visitor,adopt_visitor); }
 
-  std::vector<calin::simulation::iact_array_tracker::IACTDetectorSphere> spheres() override;
-  void visit_event(const calin::simulation::tracker::Event& event,
-    bool& kill_event) override;
-  void visit_cherenkov_track(
-    const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
-    bool& kill_track) override;
-  void leave_cherenkov_track() override;
-  void leave_event() override;
+  void add_fp_hit_trace_visitor(
+    calin::simulation::vso_ray_processor::VSOTracedRayVisitor* visitor,
+    bool adopt_visitor = false);
+  void add_pe_visitor(calin::simulation::pe_processor::PEProcessor* visitor,
+    bool adopt_visitor = false);
+  void add_visitor(
+    calin::simulation::vso_ray_processor::VSOTracedRayVisitor* visitor,
+    bool adopt_visitor = false) { add_fp_hit_trace_visitor(visitor,adopt_visitor); }
+  void add_visitor(calin::simulation::pe_processor::PEProcessor* visitor,
+    bool adopt_visitor = false) { add_pe_visitor(visitor,adopt_visitor); }
 
   void set_detection_efficiencies(
     const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
     const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
     double w0,
     const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency = { 1.0 });
-
-protected:
-  friend class VSO_IACTDetectorSphereHitProcessor;
-
-  void process_test_ray(
-    const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
-    calin::simulation::vs_optics::VSOTelescope* scope,
-    double cos_phi, double sin_phi, double dphi);
-  void process_hit(
-    const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
-    calin::simulation::vs_optics::VSOTelescope* scope);
-
-  double ray_spacing_linear_;
-  double ray_spacing_angular_;
-  calin::simulation::vs_optics::VSOArray* array_ = nullptr;
-  bool adopt_array_ = false;
-  VSOQuadratureIACTArrayTraceProcessor* visitor_ = nullptr;
-  bool adopt_visitor_ = false;
-  VSOTraceMultiProcessor* multi_visitor_ = nullptr;
-  calin::math::rng::RNG* rng_ = nullptr;
-  bool adopt_rng_ = false;
-  calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
-  std::vector<calin::simulation::detector_efficiency::ACTEffectiveBandwidth>
-    effective_bandwidth_;
-  calin::math::interpolation_1d::InterpLinear1D cone_efficiency_;
 };
 
 } } } // namespace calin::simulation::quadrature_iact_array_integration

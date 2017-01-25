@@ -1,9 +1,9 @@
 /*
 
-   calin/io/hex_array.cpp -- Stephen Fegan -- 2015-10-21
+   calin/math/healpix_array.cpp -- Stephen Fegan -- 2017-01-10
 
-   Collection of functions which translate between hexagonal and Cartesian
-   geometries, and provide other useful calculations for hex grids.
+   Collection of functions which translate between HEALPix and Cartesian
+   geometries, and provide other useful calculations for HEALPix grids.
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -30,12 +30,57 @@ using calin::math::special::SQR;
 
 unsigned calin::math::healpix_array::npixel(unsigned nside)
 {
-  return nside2npix(nside); // =12*SQR(nside);
+  return nside2npix64(nside); // =12*SQR(nside);
+}
+
+unsigned calin::math::healpix_array::
+npixel_in_ring(unsigned nside, unsigned ringid)
+{
+  unsigned nring = 4*nside-1;
+  assert(ringid < nring);
+  return 4*std::min(nside, std::min(ringid+1, nring-ringid));
+  // if(ringid < nside)return 4*(ringid+1);
+  // else if(ringid < nring-nside)return 4*nside;
+  // else return 4*(nring - ringid);
+}
+
+unsigned calin::math::healpix_array::
+npixel_contained_by_ring(unsigned nside, unsigned ringid)
+{
+  unsigned nring = 4*nside-1;
+  assert(ringid < nring);
+  unsigned npixpolar_2 = nside*(nside+1);
+  unsigned ringid_conj = nring-ringid;
+  return 2*(std::min((ringid+1)*(ringid+2), npixpolar_2)
+    + 2*(std::min(std::max(nside, ringid+1), nring-nside) - nside)*nside
+    + (npixpolar_2-std::min((ringid_conj-1)*ringid_conj, npixpolar_2)));
+}
+
+unsigned calin::math::healpix_array::
+pixid_to_ringid(unsigned nside, unsigned pixid)
+{
+  assert(pixid < npixel(nside));
+  unsigned npixpolar = nside*(nside+1)/2;
+  pixid /= 4;
+  // In the formula below sqrt(1+8*(pixid+0.5))=sqrt(5+8*pixid)
+  if(pixid < npixpolar)
+    return unsigned(0.5*(std::sqrt(float(5+8*pixid))-1.0));
+  pixid -= npixpolar;
+  if(pixid < (2*nside-1)*nside)
+    return nside + pixid/nside;
+  pixid -= (2*nside-1)*nside;
+  pixid = npixpolar-pixid-1;
+  return 4*nside - 2 - unsigned(0.5*(std::sqrt(float(5+8*pixid))-1.0));
+}
+
+double calin::math::healpix_array::cell_area(unsigned nside)
+{
+  return 4.0*M_PI/double(npixel(nside));
 }
 
 double calin::math::healpix_array::cell_dimension(unsigned nside)
 {
-  return std::sqrt(4*M_PI/double(npixel(nside)));
+  return std::sqrt(cell_area(nside));
 }
 
 unsigned calin::math::healpix_array::nside_for_cell_dimension(double dimension)
@@ -46,14 +91,14 @@ unsigned calin::math::healpix_array::nside_for_cell_dimension(double dimension)
 void calin::math::healpix_array::pixid_to_vec(unsigned nside, unsigned pixid,
   Eigen::Vector3d& vec)
 {
-  pix2vec_ring(nside, pixid, vec.data());
+  pix2vec_ring64(nside, pixid, vec.data());
 }
 
 void calin::math::healpix_array::pixid_to_xyz(unsigned nside, unsigned pixid,
   double& x, double& y, double& z)
 {
   double vec[3];
-  pix2vec_ring(nside, pixid, vec);
+  pix2vec_ring64(nside, pixid, vec);
   x = vec[0];
   y = vec[1];
   z = vec[2];
@@ -62,14 +107,14 @@ void calin::math::healpix_array::pixid_to_xyz(unsigned nside, unsigned pixid,
 void calin::math::healpix_array::pixid_to_ang(unsigned nside, unsigned pixid,
   double& theta, double& phi)
 {
-  pix2ang_ring(nside, pixid, &theta, &phi);
+  pix2ang_ring64(nside, pixid, &theta, &phi);
 }
 
 unsigned calin::math::healpix_array::vec_to_pixid(unsigned nside,
   const Eigen::Vector3d& vec)
 {
-  long pixid;
-  vec2pix_ring(nside, vec.data(), &pixid);
+  int64_t pixid;
+  vec2pix_ring64(nside, vec.data(), &pixid);
   return pixid;
 }
 
@@ -80,15 +125,15 @@ unsigned calin::math::healpix_array::xyz_to_pixid(unsigned nside,
   vec[0] = x;
   vec[1] = y;
   vec[2] = z;
-  long pixid;
-  vec2pix_ring(nside, vec, &pixid);
+  int64_t pixid;
+  vec2pix_ring64(nside, vec, &pixid);
   return pixid;
 }
 
 unsigned calin::math::healpix_array::ang_to_pixid(unsigned nside,
   double theta, double phi)
 {
-  long pixid;
-  ang2pix_ring(nside, theta, phi, &pixid);
+  int64_t pixid;
+  ang2pix_ring64(nside, theta, phi, &pixid);
   return pixid;
 }

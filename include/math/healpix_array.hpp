@@ -1,6 +1,6 @@
 /*
 
-   calin/io/healpix_array.hpp -- Stephen Fegan -- 2017-01-10
+   calin/math/healpix_array.hpp -- Stephen Fegan -- 2017-01-10
 
    Collection of functions which translate between HEALPix and Cartesian
    geometries, and provide other useful calculations for HEALPix grids.
@@ -34,6 +34,12 @@ namespace calin { namespace math { namespace healpix_array {
 // *****************************************************************************
 
 unsigned npixel(unsigned nside);
+inline unsigned nring(unsigned nside) { return 4*nside-1; }
+unsigned npixel_in_ring(unsigned nside, unsigned ringid);
+unsigned npixel_contained_by_ring(unsigned nside, unsigned ringid);
+unsigned pixid_to_ringid(unsigned nside, unsigned pixid);
+
+double cell_area(unsigned nside);
 double cell_dimension(unsigned nside);
 unsigned nside_for_cell_dimension(double dimension);
 

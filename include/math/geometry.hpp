@@ -2,7 +2,9 @@
 
    calin/math/geometry.hpp -- Stephen Fegan -- 2016-11-12
 
-   Misc geometrical functions
+   Misc geometrical functions :
+   - Box intersections
+   - Rotation matrix for angles
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -21,6 +23,9 @@
 */
 
 #pragma once
+
+#include <algorithm>
+#include <Eigen/Dense>
 
 namespace calin { namespace math { namespace geometry {
 
@@ -65,5 +70,79 @@ inline bool box_has_future_intersection(
   double tmax;
   return box_has_future_intersection(tmin,tmax,min_corner,max_corner,pos,dir);
 }
+
+inline void rotation_theta_phi(Eigen::Matrix3d& m,
+  const double ct, const double st, const double cp, const double sp)
+{
+  m << ct*cp, -sp, st*cp,
+       ct*sp,  cp, st*sp,
+         -sp,   0,    ct;
+}
+
+inline void rotation_theta_phi(Eigen::Matrix3d& m, double theta, double phi)
+{
+  const double ct = std::cos(theta);
+  const double st = std::sin(theta);
+  const double cp = std::cos(phi);
+  const double sp = std::sin(phi);
+  return rotation_theta_phi(m, ct, st, cp, sp);
+}
+
+inline void rotation_z_to_xyz(Eigen::Matrix3d& m,
+  const double x, const double y, const double z)
+{
+  double st = std::sqrt(x*x+y*y);
+  if(st == 0.0) {
+    m.setIdentity();
+  } else {
+    double sp = y/st;
+    double cp = x/st;
+    m << z*cp, -sp, x,
+         z*sp,  cp, y,
+          -st,   0, z;
+  }
+}
+
+inline void rotation_z_to_vec(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+{
+  return rotation_z_to_xyz(m, v.x(), v.y(), v.z());
+}
+
+#ifndef SWIG
+
+// -----------------------------------------------------------------------------
+// Skip in SWIG as templates map above functions in equivalents of these
+// -----------------------------------------------------------------------------
+
+inline Eigen::Matrix3d rotation_theta_phi(
+  const double ct, const double st, const double cp, const double sp)
+{
+  Eigen::Matrix3d m;
+  rotation_theta_phi(m, ct, st, cp, sp);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_theta_phi(double theta, double phi)
+{
+  Eigen::Matrix3d m;
+  rotation_theta_phi(m, theta, phi);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_z_to_xyz(
+  const double x, const double y, const double z)
+{
+  Eigen::Matrix3d m;
+  rotation_z_to_xyz(m, x, y, z);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_z_to_vec(const Eigen::Vector3d v)
+{
+  Eigen::Matrix3d m;
+  rotation_z_to_vec(m, v);
+  return m;
+}
+#endif
 
 } } } // namespace calin::math::geometry

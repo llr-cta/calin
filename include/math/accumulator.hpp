@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/accumulator.hpp -- Stephen Fegan -- 2015-02-10
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -88,7 +88,7 @@ class CascadingIntegerAccumulator
   value_type total() const;
   std::vector<value_type> corrections() const;
   operator value_type() const { return total(); }
-  
+
  private:
   using acc_type = int64_t;
 
@@ -98,7 +98,7 @@ class CascadingIntegerAccumulator
 
   static constexpr uint64_t mantissa_mask { (uint64_t{1}<<mantissa_digits)-1 };
   static constexpr uint64_t exponent_mask { (uint64_t{1}<<exponent_digits)-1 };
-        
+
   mutable std::array<acc_type,num_accumulators> acc_ {};
 };
 
@@ -126,6 +126,7 @@ private:
   Acc acc_;
 };
 
+CALIN_TYPEALIAS(RecommendedAccumulator, KahanAccumulator);
 CALIN_TYPEALIAS(LikelihoodAccumulator, KahanAccumulator);
 
 } } } // namespace calin::math::accumulator

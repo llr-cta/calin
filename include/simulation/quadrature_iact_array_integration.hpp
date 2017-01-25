@@ -25,6 +25,7 @@
 #pragma once
 
 #include <simulation/iact_array_tracker.hpp>
+#include <simulation/ray_processor.hpp>
 #include <simulation/tracker.pb.h>
 
 namespace calin { namespace simulation { namespace quadrature_iact_array_integration {
@@ -44,20 +45,51 @@ public:
   virtual void leave_event();
 };
 
-class SimpleImagePEProcessor: public QuadratureIACTArrayPEProcessor
+class QuadratureIACTArrayIntegrationHitVisitor;
+
+class QuadratureIACTDetectorSphereHitProcessor:
+  public calin::simulation::iact_array_tracker::IACTDetectorSphereHitProcessor
 {
 public:
-  SimpleImagePEProcessor(unsigned nscope, unsigned npix);
-  SimpleImagePEProcessor(const std::vector<unsigned> npix);
-  virtual ~SimpleImagePEProcessor();
+  QuadratureIACTDetectorSphereHitProcessor(
+    QuadratureIACTArrayIntegrationHitVisitor* quadrature, unsigned scope_id);
+  virtual ~QuadratureIACTDetectorSphereHitProcessor();
+  virtual void process_hit(
+    const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit);
+private:
+  QuadratureIACTArrayIntegrationHitVisitor* quadrature_ = nullptr;
+  unsigned scope_id_ = 0;
+};
+
+class QuadratureIACTArrayIntegrationHitVisitor:
+  public calin::simulation::iact_array_tracker::HitIACTVisitor
+{
+public:
+  QuadratureIACTArrayIntegrationHitVisitor(
+    const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
+    calin::simulation::ray_processor::RayProcessor* visitor,
+    bool adopt_visitor = false);
+  ~QuadratureIACTArrayIntegrationHitVisitor();
+
+  std::vector<calin::simulation::iact_array_tracker::IACTDetectorSphere> spheres() override;
   void visit_event(const calin::simulation::tracker::Event& event,
     bool& kill_event) override;
-  void process_pe(unsigned scope_id, unsigned pixel_id,
-    double x, double y, double t0, double pe_weight) override;
-  const std::vector<double> scope_image(unsigned iscope) const;
-  void clear_all_images();
-private:
-  std::vector<std::vector<double>> images_;
+  void leave_event() override;
+
+protected:
+  friend class QuadratureIACTDetectorSphereHitProcessor;
+  
+  void process_test_ray(
+    const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
+    unsigned scope_id, double cos_phi, double sin_phi, double dphi);
+  void process_hit_sphere(
+    const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
+    unsigned scope_id);
+
+  double ray_spacing_linear_;
+  double ray_spacing_angular_;
+  calin::simulation::ray_processor::RayProcessor* visitor_ = nullptr;
+  bool adopt_visitor_ = false;
 };
 
 } } } // namespace calin::simulation::quadrature_iact_array_integration
