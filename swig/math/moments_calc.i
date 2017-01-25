@@ -1,10 +1,8 @@
-//-*-mode:swig;-*-
-
 /*
 
-   calin/simulation/ray_processor.i -- Stephen Fegan -- 2017-01-19
+   calin/math/moments_calc.i -- Stephen Fegan -- 2017-01-25
 
-   SWIG interface file for calin.simulation.ray_processor
+   SWIG interface file for calin.math.moments_calc
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -22,12 +20,10 @@
 
 */
 
-%module (package="calin.simulation") ray_processor
+%module (package="calin.math") moments_calc
 
 %{
-#include "simulation/pe_processor.hpp"
-#include "simulation/ray_processor.hpp"
-#include "simulation/vso_ray_processor.hpp"
+#include "math/moments_calc.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -38,10 +34,4 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%import "math/ray.i"
-%import "math/ray_generator.i"
-%import "math/moments_calc.i"
-
-%include "simulation/pe_processor.hpp"
-%include "simulation/ray_processor.hpp"
-%include "simulation/vso_ray_processor.hpp"
+%include "math/moments_calc.hpp"

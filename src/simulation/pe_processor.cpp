@@ -108,3 +108,26 @@ void SimpleImagePEProcessor::clear_all_images()
 {
   for(auto& image : images_)std::fill(image.begin(), image.end(), 0.0);
 }
+
+TelescopePSFCalcPEProcessor::
+TelescopePSFCalcPEProcessor(unsigned iscope, bool auto_clear): PEProcessor(),
+  auto_clear_(auto_clear), iscope_(iscope), mom_()
+{
+  // nothing to see here
+}
+
+TelescopePSFCalcPEProcessor::~TelescopePSFCalcPEProcessor()
+{
+  // nothing to see here
+}
+
+void TelescopePSFCalcPEProcessor::start_processing()
+{
+  if(auto_clear_)clear();
+}
+
+void TelescopePSFCalcPEProcessor::process_pe(unsigned scope_id, int pixel_id,
+  double x, double y, double t0, double pe_weight)
+{
+  if(scope_id == iscope_)mom_.accumulate(x, y, pe_weight);
+}

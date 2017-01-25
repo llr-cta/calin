@@ -131,7 +131,7 @@ VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
   array_(array), adopt_array_(adopt_array),
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   rng_(rng ? rng : new calin::math::rng::RNG),
-  adopt_rng_(rng ? true : adopt_rng),
+  adopt_rng_(rng ? adopt_rng : true),
   ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_))
 {
   // nothing to see hee
@@ -146,7 +146,7 @@ VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
   visitor_(new VSOTracedRayVisitor2PEProcessorAdapter(visitor, adopt_visitor)),
   adopt_visitor_(true),
   rng_(rng ? rng : new calin::math::rng::RNG),
-  adopt_rng_(rng ? true : adopt_rng),
+  adopt_rng_(rng ? adopt_rng : true),
   ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_))
 {
   // nothing to see here
