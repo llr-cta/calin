@@ -42,9 +42,9 @@ class SimpleImagePEProcessor: public PEProcessor
 {
 public:
   SimpleImagePEProcessor(unsigned nscope, unsigned npix,
-    bool auto_clear = false);
+    bool auto_clear = true);
   SimpleImagePEProcessor(const std::vector<unsigned> npix,
-    bool auto_clear = false);
+    bool auto_clear = true);
   virtual ~SimpleImagePEProcessor();
   void start_processing() override;
   void process_pe(unsigned scope_id, int pixel_id,
