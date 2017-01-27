@@ -77,12 +77,12 @@ class VSORayProcessor: public calin::simulation::ray_processor::RayProcessor
 {
 public:
   VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
-    VSOTracedRayVisitor* visitor, calin::math::rng::RNG* rng,
+    VSOTracedRayVisitor* visitor, calin::math::rng::RNG* rng = nullptr,
     bool adopt_array = false, bool adopt_visitor = false,
     bool adopt_rng = false);
   VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
     calin::simulation::pe_processor::PEProcessor* visitor,
-    calin::math::rng::RNG* rng,
+    calin::math::rng::RNG* rng = nullptr,
     bool adopt_array = false, bool adopt_visitor = false,
     bool adopt_rng = false);
   virtual ~VSORayProcessor();
