@@ -25,6 +25,7 @@
 #include <vector>
 #include <math/ray.hpp>
 #include <math/ray_generator.hpp>
+#include <simulation/pe_processor.hpp>
 
 namespace calin { namespace simulation { namespace ray_processor {
 
@@ -47,6 +48,42 @@ public:
   virtual void finish_processing();
   unsigned process_all_from_ray_generator(
     calin::math::ray_generator::RayGenerator* gen, unsigned scope_id = 0);
+};
+
+class FederatedPEProcessor: public calin::simulation::pe_processor::PEProcessor
+{
+public:
+  FederatedPEProcessor(calin::simulation::pe_processor::PEProcessor* pe_processor,
+    unsigned scope_id_base);
+  virtual ~FederatedPEProcessor();
+  void start_processing() override;
+  void process_pe(unsigned scope_id, int pixel_id,
+    double x, double y, double t0, double pe_weight) override;
+  void finish_processing() override;
+protected:
+  unsigned scope_id_base_ = 0;
+  calin::simulation::pe_processor::PEProcessor* pe_processor_ = nullptr;
+};
+
+class FederatedRayProcessor: public RayProcessor
+{
+public:
+  FederatedRayProcessor();
+  virtual ~FederatedRayProcessor();
+  std::vector<RayProcessorDetectorSphere> detector_spheres() override;
+  void start_processing() override;
+  void process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
+    double pe_weight) override;
+  void finish_processing() override;
+  void add_processor(RayProcessor* processor, bool adopt_processor);
+  FederatedPEProcessor* add_processor_and_pe_visitor(
+    RayProcessor* ray_processor,
+    calin::simulation::pe_processor::PEProcessor* pe_processor,
+    bool adopt_ray_processor);
+protected:
+  std::vector<RayProcessor*> processors_;
+  std::vector<unsigned> nsphere_;
+  std::vector<RayProcessor*> adopted_processors_;
 };
 
 } } } // namespace calin::simulation::ray_processor
