@@ -104,7 +104,7 @@ void FederatedPEProcessor::finish_processing()
 
 FederatedRayProcessor::FederatedRayProcessor(): RayProcessor()
 {
-
+  // nothing to see here
 }
 
 FederatedRayProcessor::~FederatedRayProcessor()
