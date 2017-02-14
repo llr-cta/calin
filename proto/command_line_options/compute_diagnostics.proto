@@ -30,10 +30,28 @@ import "iact_data/nectarcam_data_source.proto";
 package calin.ix.command_line_options.compute_diagnostics;
 
 message Options {
-  uint32 window_size = 1;
-  int32 bkg_window_start = 2;
+  string o                                                 = 1 [
+    (CFO).desc = "SQLite3 output file name." ];
 
-  calin.ix.iact_data.zfits_data_source.ZFITSDataSourceConfig zfits = 100;
+  uint32 window_size                                       = 2 [
+    (CFO).desc = "Integration window size.", (CFO).units="samples" ];
+  int32 sig_window_start                                   = 3 [
+    (CFO).desc = "Start of signal integration window from "
+      "start of trace.", (CFO).units="samples" ];
+  int32 bkg_window_start                                   = 4 [
+    (CFO).desc = "Start of background integration window from "
+      "start of trace.", (CFO).units="samples" ];
 
-  calin.ix.iact_data.nectarcam_data_source.NectarCamCameraEventDecoderConfig decoder = 101;
+  bool capture_all_channels                                = 10 [
+    (CFO).desc = "Capture signal and background values for all events from "
+      "all channels." ];
+  repeated uint32 capture_channels                         = 11 [
+    (CFO).desc = "Capture signal and background values for all events from "
+      "selected channels." ];
+
+  calin.ix.iact_data.zfits_data_source.ZFITSDataSourceConfig zfits = 100 [
+    (CFO).desc = "ZFits reader configuration." ];
+
+  calin.ix.iact_data.nectarcam_data_source.NectarCamCameraEventDecoderConfig decoder = 101 [
+    (CFO).desc = "NectarCam decoder configuration." ];
 };

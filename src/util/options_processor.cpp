@@ -29,6 +29,7 @@
 #include <util/options_processor.hpp>
 #include <util/string_to_protobuf.hpp>
 #include <util/file.hpp>
+#include <util/string.hpp>
 
 using namespace calin::util::options_processor;
 
@@ -444,11 +445,50 @@ std::vector<OptionSpec> OptionsProcessor::list_options()
 
 std::string OptionsProcessor::usage(unsigned width)
 {
-  std::string s;
+  constexpr unsigned indent = 4;
+  constexpr unsigned max1ln = 40;
+  std::string usage_string;
   std::vector<OptionSpec> options = list_options();
   for(auto ioption : options)
   {
-    
+    std::string s;
+    s += '-';
+    s += ioption.name;
+    if(ioption.takes_value) {
+      //if(not ioption.requires_value)s += '[';
+      s += '=';
+      if(ioption.value_type=="string" or ioption.value_type=="bytes")s += '"';
+      s += ioption.value_default;
+      if(ioption.value_type=="string" or ioption.value_type=="bytes")s += '"';
+      //if(!ioption.requires_value)s += ']';
+      if(not ioption.value_units.empty()) {
+        s += " [";
+        s += ioption.value_units;
+        s += "]";
+      }
+      s += " (";
+      s += ioption.value_type;
+      s += ")";
+    }
+
+    if(not ioption.description.empty()) {
+      if(s.size() < max1ln and max1ln < width) {
+        std::string desc =
+          calin::util::string::reflow(ioption.description, width-max1ln);
+        if(desc.find('\n') == std::string::npos) {
+          s += std::string(max1ln-s.size(), ' ');
+          s += desc;
+          goto finish_option;
+        }
+      }
+
+      s += "\n";
+      s += calin::util::string::reflow(ioption.description, width, indent);
+    }
+
+finish_option:
+    s += "\n\n";
+    usage_string += s;
   }
-  return {};
+  return usage_string;
 }

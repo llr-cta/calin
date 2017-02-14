@@ -43,6 +43,12 @@ std::string join(std::vector<std::string>::const_iterator begin,
 
 std::string join(const std::vector<std::string>& vec, const std::string& sep);
 
+std::string chomp(const std::string& s_in);
+
+std::string string_escape(const std::string& s_in);
+
+std::string reflow(const std::string& s_in, unsigned width=80, unsigned indent=0);
+
 // http://stackoverflow.com/questions/7276826/c-format-number-with-commas
 
 template<class T>
@@ -58,8 +64,6 @@ std::string to_string_with_commas(T value, unsigned precision = 2)
   ss << std::setprecision(precision) << std::fixed << value;
   return ss.str();
 }
-
-std::string string_escape(const std::string& s_in);
 
 template<typename T> bool from_string(const std::string& s, T& x)
 {
@@ -88,8 +92,6 @@ template<typename T> std::string to_string(const T& x)
   return stream.str();
 }
 
-std::string chomp(const std::string& s_in);
-
 template<typename T> std::string to_string(const std::vector<T>& x)
 {
   std::string s;
@@ -105,7 +107,7 @@ template<typename T> std::string to_string(const std::vector<T>& x)
 inline T fn(const std::string& s, bool* good = nullptr) \
 { \
   T t; \
-  bool is_good =  from_string(s, t); \
+  bool is_good = from_string(s, t); \
   if(good) *good = is_good; \
   return t; \
 }

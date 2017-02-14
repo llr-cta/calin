@@ -88,6 +88,40 @@ std::string calin::util::string::chomp(const std::string& s_in)
   }
 }
 
+std::string calin::util::string::reflow(const std::string& s_in,
+  unsigned width, unsigned indent)
+{
+  std::string text;
+  std::string line;
+  std::string word;
+  for(auto ichar : s_in) {
+    switch(ichar) {
+    case ' ':
+    case '\t':
+    case '\n':
+      if(not word.empty()) {
+        if(line.empty())line += word;
+        else {
+          if(line.size() + word.size() + 1 + indent > width) {
+            if(not text.empty())text += '\n';
+            text += std::string(indent, ' ');
+            text += line;
+            line.clear();
+          }
+          line += ' ';
+          line += word;
+        }
+        word.clear();
+      }
+      break;
+    default:
+      word += ichar;
+      break;
+    }
+  }
+  return text;
+}
+
 #if 0
 std::string calin::util::string::to_string(const bool& x)
 {
