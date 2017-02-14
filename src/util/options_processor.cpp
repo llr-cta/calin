@@ -451,6 +451,8 @@ std::string OptionsProcessor::usage(unsigned width)
   std::vector<OptionSpec> options = list_options();
   for(auto ioption : options)
   {
+    if(not usage_string.empty())usage_string += "\n\n";
+
     std::string s;
     s += '-';
     s += ioption.name;
@@ -487,7 +489,6 @@ std::string OptionsProcessor::usage(unsigned width)
     }
 
 finish_option:
-    s += "\n\n";
     usage_string += s;
   }
   return usage_string;

@@ -88,6 +88,33 @@ std::string calin::util::string::chomp(const std::string& s_in)
   }
 }
 
+namespace {
+
+void reflow_line_to_text(std::string& text, std::string& line, unsigned indent)
+{
+  if(not text.empty())text += '\n';
+  text += std::string(indent, ' ');
+  text += line;
+  line.clear();
+}
+
+void reflow_word_to_line(std::string& text, std::string& line,
+  std::string& word, unsigned width, unsigned indent)
+{
+  if(line.empty())line += word;
+  else {
+    if(line.size() + word.size() + 1 + indent > width) {
+      reflow_line_to_text(text, line, indent);
+    } else {
+      line += ' ';
+    }
+    line += word;
+  }
+  word.clear();
+}
+
+} // anonymous namespace
+
 std::string calin::util::string::reflow(const std::string& s_in,
   unsigned width, unsigned indent)
 {
@@ -99,27 +126,15 @@ std::string calin::util::string::reflow(const std::string& s_in,
     case ' ':
     case '\t':
     case '\n':
-      if(not word.empty()) {
-        if(line.empty())line += word;
-        else {
-          if(line.size() + word.size() + 1 + indent > width) {
-            if(not text.empty())text += '\n';
-            text += std::string(indent, ' ');
-            text += line;
-            line.clear();
-          } else {
-            line += ' ';
-          }
-          line += word;
-        }
-        word.clear();
-      }
+      if(not word.empty())reflow_word_to_line(text, line, word, width, indent);
       break;
     default:
       word += ichar;
       break;
     }
   }
+  if(not word.empty())reflow_word_to_line(text, line, word, width, indent);
+  if(not line.empty())reflow_line_to_text(text, line, indent);
   return text;
 }
 
