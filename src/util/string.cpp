@@ -107,8 +107,9 @@ std::string calin::util::string::reflow(const std::string& s_in,
             text += std::string(indent, ' ');
             text += line;
             line.clear();
+          } else {
+            line += ' ';
           }
-          line += ' ';
           line += word;
         }
         word.clear();
