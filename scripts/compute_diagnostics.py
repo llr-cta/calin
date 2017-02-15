@@ -51,14 +51,22 @@ opt.mutable_decoder().CopyFrom(calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_decoder_config())
 opt.mutable_decoder().set_exchange_gain_channels(True);
 
-opt_proc = calin.util.options_processor.OptionsProcessor(opt);
+opt_proc = calin.util.options_processor.OptionsProcessor(opt, True);
 opt_proc.process_arguments(sys.argv)
 
+if(opt_proc.help_requested()):
+    print('Usage:',opt_proc.program_name(),'[options] zfits_file_name\n')
+    print('Options:\n')
+    print(opt_proc.usage())
+    exit(0)
+
 if(len(opt_proc.arguments()) != 1):
-    raise Exception('No filename supplied')
-zfits_file = opt_proc.arguments()[0]
+    print('No filename supplied! Use "-help" option to get usage information.')
+    exit(1)
 
 print(opt.DebugString())
+
+zfits_file         = opt_proc.arguments()[0]
 
 sql_file           = opt.o();
 bkg_window_start   = opt.bkg_window_start()
@@ -230,6 +238,7 @@ t0 = t0_stats.results()
 # Write the results
 sql = calin.io.sql_transceiver.SQLite3Transceiver(sql_file,
     calin.io.sql_transceiver.SQLite3Transceiver.TRUNCATE_RW)
+sql.create_tables_and_insert("command_line_options", opt)
 sql.create_tables_and_insert("log", proto_log.log_messages())
 sql.create_tables_and_insert("run_config", run_info)
 sql.create_tables_and_insert("psd", psd)

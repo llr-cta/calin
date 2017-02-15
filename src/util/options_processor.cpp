@@ -41,6 +41,49 @@ OptionHandler::~OptionHandler()
 // ============================================================================
 // ============================================================================
 
+// SimpleOptionHandler
+
+// ============================================================================
+// ============================================================================
+
+SimpleOptionHandler::~SimpleOptionHandler()
+{
+  // nothing to see here
+}
+
+OptionHandlerResult SimpleOptionHandler::handle_option(const std::string& key,
+  bool has_val, const std::string& val)
+{
+  if(key != key_ and key != alt_key_)
+    return OptionHandlerResult::UNKNOWN_OPTION;
+  if(has_val)
+    return OptionHandlerResult::KNOWN_OPTION_HAS_INVALID_VALUE;
+  option_handled_ = true;
+  return OptionHandlerResult::OPTION_OK;
+}
+
+std::vector<OptionSpec> SimpleOptionHandler::list_options()
+{
+  std::vector<OptionSpec> options;
+  OptionSpec o;
+  o.name           = key_;
+  o.takes_value    = false;
+  o.requires_value = false;
+  o.value_type     = "";
+  o.value_default  = "";
+  o.value_units    = "";
+  o.description    = description_;
+  options.emplace_back(o);
+  if(not alt_key_.empty()) {
+    o.name         = alt_key_;
+    options.emplace_back(o);
+  }
+  return options;
+}
+
+// ============================================================================
+// ============================================================================
+
 // ProtobufOptionHandler
 
 // ============================================================================
@@ -109,15 +152,15 @@ handle_option(const std::string& key, bool has_val, const std::string& val)
             assert(r);
           }
           r->SetBool(m, f, true);
-          return OptionHandlerResult::EXCLUSIVE_OPTION_OK;
+          return OptionHandlerResult::OPTION_OK;
         } else {
-          return OptionHandlerResult::EXCLUSIVE_OPTION_INVALID_VALUE;
+          return OptionHandlerResult::KNOWN_OPTION_HAS_INVALID_VALUE;
         }
       }
       if(string_to_protobuf::string_to_protobuf_field(val, message_, f, f_path))
-        return OptionHandlerResult::EXCLUSIVE_OPTION_OK;
+        return OptionHandlerResult::OPTION_OK;
       else
-        return OptionHandlerResult::EXCLUSIVE_OPTION_INVALID_VALUE;
+        return OptionHandlerResult::KNOWN_OPTION_HAS_INVALID_VALUE;
     }
   }
   assert(0);
@@ -161,7 +204,6 @@ r_list_options(const std::string& prefix, const google::protobuf::Message* m)
     {
       OptionSpec o;
       o.name             = prefix+f->name();
-      o.is_exclusive     = true;
       o.takes_value      = true;
       switch(f->type())
       {
@@ -236,9 +278,14 @@ OptionsProcessor::OptionsProcessor()
   // nothing to see here
 }
 
-OptionsProcessor::OptionsProcessor(google::protobuf::Message* message):
-  priority_protobuf_handler_(new ProtobufOptionHandler(message))
+OptionsProcessor::OptionsProcessor(google::protobuf::Message* message,
+  bool add_help_option):
+    priority_protobuf_handler_(new ProtobufOptionHandler(message))
 {
+  if(add_help_option) {
+    help_handler_ = new SimpleOptionHandler("h", "help", "Print help message.");
+    add_option_handler(help_handler_, true);
+  }
   add_option_handler(priority_protobuf_handler_, true);
 }
 
@@ -364,20 +411,19 @@ void OptionsProcessor::process_arguments(const std::vector<std::string>& args,
   } // for(const auto& iarg: args)
 
   for(auto* ihandler : handlers_)
+  {
     for(auto& ioption : options)
     {
       switch(ioption.status)
       {
       case OptionHandlerResult::UNKNOWN_OPTION:
-      case OptionHandlerResult::SHARED_OPTION_OK:
-      case OptionHandlerResult::SHARED_OPTION_INVALID_VALUE:
-        // OK to continue processing this option through the handler
+        // OK to continue processing this option through this handler
         break;
       case OptionHandlerResult::TERMINATE_PROCESSING:
         assert(0);
         // Fall through to continue
-      case OptionHandlerResult::EXCLUSIVE_OPTION_OK:
-      case OptionHandlerResult::EXCLUSIVE_OPTION_INVALID_VALUE:
+      case OptionHandlerResult::OPTION_OK:
+      case OptionHandlerResult::KNOWN_OPTION_HAS_INVALID_VALUE:
       case OptionHandlerResult::INVALID_OPTION_NAME:
         // Skip this option
         continue;
@@ -392,16 +438,15 @@ void OptionsProcessor::process_arguments(const std::vector<std::string>& args,
       case OptionHandlerResult::UNKNOWN_OPTION:
         // Leave the status as it was
         break;
-      case OptionHandlerResult::EXCLUSIVE_OPTION_OK:
-      case OptionHandlerResult::EXCLUSIVE_OPTION_INVALID_VALUE:
-      case OptionHandlerResult::SHARED_OPTION_OK:
-      case OptionHandlerResult::SHARED_OPTION_INVALID_VALUE:
+      case OptionHandlerResult::OPTION_OK:
+      case OptionHandlerResult::KNOWN_OPTION_HAS_INVALID_VALUE:
         ioption.status = result;
         break;
       case OptionHandlerResult::TERMINATE_PROCESSING:
         goto terminate_processing;
       }
     }
+  }
 
 terminate_processing:
   for(auto& ioption : options)
@@ -412,14 +457,12 @@ terminate_processing:
     case OptionHandlerResult::UNKNOWN_OPTION:
       unknown_options_.emplace_back(ioption.arg);
       break;
-    case OptionHandlerResult::SHARED_OPTION_INVALID_VALUE:
-    case OptionHandlerResult::EXCLUSIVE_OPTION_INVALID_VALUE:
+    case OptionHandlerResult::KNOWN_OPTION_HAS_INVALID_VALUE:
       problem_options_.emplace_back(ioption.arg);
       break;
     case OptionHandlerResult::TERMINATE_PROCESSING:
       assert(0);
-    case OptionHandlerResult::SHARED_OPTION_OK:
-    case OptionHandlerResult::EXCLUSIVE_OPTION_OK:
+    case OptionHandlerResult::OPTION_OK:
       break;
     }
   }
@@ -445,8 +488,9 @@ std::vector<OptionSpec> OptionsProcessor::list_options()
 
 std::string OptionsProcessor::usage(unsigned width)
 {
-  constexpr unsigned indent = 4;
-  constexpr unsigned min1ln = 40;
+  constexpr unsigned indent   = 4;
+  constexpr unsigned l1maxopt = 42;
+  constexpr unsigned l1indent = 45;
   std::string usage_string;
   std::vector<OptionSpec> options = list_options();
   for(auto ioption : options)
@@ -474,11 +518,11 @@ std::string OptionsProcessor::usage(unsigned width)
     }
 
     if(not ioption.description.empty()) {
-      if(s.size() < min1ln and min1ln < width) {
+      if(s.size() <= l1maxopt and l1indent < width) {
         std::string desc =
           calin::util::string::reflow(ioption.description,
-            width, indent, width-min1ln, 0);
-        s += std::string(min1ln-s.size(), ' ');
+            width, indent, width-l1indent, 0);
+        s += std::string(l1indent-s.size(), ' ');
         s += desc;
       } else {
         s += "\n";

@@ -34,20 +34,24 @@ message Options {
     (CFO).desc = "SQLite3 output file name." ];
 
   uint32 window_size                                       = 2 [
-    (CFO).desc = "Integration window size.", (CFO).units="samples" ];
+    (CFO).desc = "Size of integration windows.", (CFO).units="samples" ];
   int32 sig_window_start                                   = 3 [
-    (CFO).desc = "Start of signal integration window from "
-      "start of trace.", (CFO).units="samples" ];
+    (CFO).desc = "Offset of signal integration window from start of trace. "
+      "Positive values specify offset of start of window from start of trace, "
+      "negative values specify offset of end of window from end of trace.",
+    (CFO).units="samples" ];
   int32 bkg_window_start                                   = 4 [
-    (CFO).desc = "Start of background integration window from "
-      "start of trace.", (CFO).units="samples" ];
+    (CFO).desc = "Offset of background integration window from start of trace. "
+      "See \"sig_window_start\" for more details.",
+    (CFO).units="samples" ];
 
   bool capture_all_channels                                = 10 [
     (CFO).desc = "Capture signal and background values for all events from "
       "all channels." ];
   repeated uint32 capture_channels                         = 11 [
     (CFO).desc = "Capture signal and background values for all events from "
-      "selected channels." ];
+      "selected channels, given as comma separated list. This is overridden "
+      "by the \"capture_all_channels\" option." ];
 
   calin.ix.iact_data.zfits_data_source.ZFITSDataSourceConfig zfits = 100 [
     (CFO).desc = "ZFits reader configuration." ];
