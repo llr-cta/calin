@@ -47,7 +47,14 @@ std::string chomp(const std::string& s_in);
 
 std::string string_escape(const std::string& s_in);
 
-std::string reflow(const std::string& s_in, unsigned width=80, unsigned indent=0);
+std::string reflow(const std::string& s_in, unsigned width, unsigned indent,
+  unsigned line1_width, unsigned line1_indent);
+
+inline std::string reflow(const std::string& s_in,
+  unsigned width=80, unsigned indent=0)
+{
+  return reflow(s_in, width, indent, width, indent);
+}
 
 // http://stackoverflow.com/questions/7276826/c-format-number-with-commas
 

@@ -446,7 +446,7 @@ std::vector<OptionSpec> OptionsProcessor::list_options()
 std::string OptionsProcessor::usage(unsigned width)
 {
   constexpr unsigned indent = 4;
-  constexpr unsigned max1ln = 40;
+  constexpr unsigned min1ln = 40;
   std::string usage_string;
   std::vector<OptionSpec> options = list_options();
   for(auto ioption : options)
@@ -474,21 +474,18 @@ std::string OptionsProcessor::usage(unsigned width)
     }
 
     if(not ioption.description.empty()) {
-      if(s.size() < max1ln and max1ln < width) {
+      if(s.size() < min1ln and min1ln < width) {
         std::string desc =
-          calin::util::string::reflow(ioption.description, width-max1ln);
-        if(desc.find('\n') == std::string::npos) {
-          s += std::string(max1ln-s.size(), ' ');
-          s += desc;
-          goto finish_option;
-        }
+          calin::util::string::reflow(ioption.description,
+            width, indent, width-min1ln, 0);
+        s += std::string(min1ln-s.size(), ' ');
+        s += desc;
+      } else {
+        s += "\n";
+        s += calin::util::string::reflow(ioption.description, width, indent);
       }
-
-      s += "\n";
-      s += calin::util::string::reflow(ioption.description, width, indent);
     }
 
-finish_option:
     usage_string += s;
   }
   return usage_string;
