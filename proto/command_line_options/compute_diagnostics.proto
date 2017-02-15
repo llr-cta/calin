@@ -53,6 +53,9 @@ message Options {
       "selected channels, given as comma separated list. This is overridden "
       "by the \"capture_all_channels\" option." ];
 
+  uint32 nthread                                           = 20 [
+    (CFO).desc = "Number of computation threads" ];
+
   calin.ix.iact_data.zfits_data_source.ZFITSDataSourceConfig zfits = 100 [
     (CFO).desc = "ZFits reader configuration." ];
 

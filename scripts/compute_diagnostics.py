@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # calin/scripts/compute_diagnostics.py -- Stephen Fegan - 2016-06-10
 #
@@ -45,6 +45,7 @@ opt.set_o('diagnostics.sqlite')
 opt.set_window_size(16)
 opt.set_sig_window_start(44)
 opt.set_bkg_window_start(0)
+opt.set_nthread(4)
 opt.mutable_zfits().CopyFrom(calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_config())
 opt.mutable_decoder().CopyFrom(calin.iact_data.telescope_data_source.\
@@ -221,7 +222,7 @@ t0_stats = calin.diagnostics.functional.\
 dispatcher.add_visitor(t0_stats)
 
 # Run all the visitors
-dispatcher.process_run(src,100000,3)
+dispatcher.process_run(src,100000,opt.nthread())
 
 # Get the results
 psd = psd_visitor.results()
