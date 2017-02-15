@@ -489,8 +489,8 @@ std::vector<OptionSpec> OptionsProcessor::list_options()
 std::string OptionsProcessor::usage(unsigned width)
 {
   constexpr unsigned indent   = 4;
-  constexpr unsigned l1maxopt = 42;
-  constexpr unsigned l1indent = 45;
+  constexpr unsigned l1maxopt = 40;
+  constexpr unsigned l1indent = 43;
   std::string usage_string;
   std::vector<OptionSpec> options = list_options();
   for(auto ioption : options)
@@ -527,7 +527,7 @@ std::string OptionsProcessor::usage(unsigned width)
           s += desc;
         } else {
           s += "\n";
-          s += calin::util::string::reflow(ioption.description, width, indent);          
+          s += calin::util::string::reflow(ioption.description, width, indent);
         }
       } else {
         s += "\n";
