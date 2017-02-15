@@ -65,6 +65,19 @@ if(len(opt_proc.arguments()) != 1):
     print('No filename supplied! Use "-help" option to get usage information.')
     exit(1)
 
+if(len(opt_proc.unknown_options()) != 0):
+    print('Unknown options given. Use "-help" option to get usage information.\n')
+    for o in opt_proc.unknown_options():
+        print("  \"%s\""%o)
+    exit(1)
+
+if(len(opt_proc.problem_options()) != 0):
+    print('Problems with option values (unexpected, incorrect type, etc.).')
+    print('Use "-help" option to get usage information.\n')
+    for o in opt_proc.problem_options():
+        print("  \"%s\""%o)
+    exit(1)
+
 #print(opt.DebugString())
 
 zfits_file         = opt_proc.arguments()[0]
