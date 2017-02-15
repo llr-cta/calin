@@ -518,7 +518,7 @@ std::string OptionsProcessor::usage(unsigned width)
     }
 
     if(not ioption.description.empty()) {
-      if(s.size() <= l1maxopt and l1indent < width) {
+      if(s.size() <= l1maxopt and l1indent <= width) {
         std::string desc =
           calin::util::string::reflow(ioption.description,
             width, indent, width-l1indent, 0);
