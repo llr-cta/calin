@@ -65,7 +65,7 @@ if(len(opt_proc.arguments()) != 1):
     print('No filename supplied! Use "-help" option to get usage information.')
     exit(1)
 
-print(opt.DebugString())
+#print(opt.DebugString())
 
 zfits_file         = opt_proc.arguments()[0]
 
