@@ -47,8 +47,17 @@ std::string chomp(const std::string& s_in);
 
 std::string string_escape(const std::string& s_in);
 
-std::string reflow(const std::string& s_in, unsigned width, unsigned indent,
-  unsigned line1_width, unsigned line1_indent);
+std::string reflow(const std::string& s_in,
+  unsigned width, const std::string& indent,
+  unsigned line1_width, const std::string& line1_indent);
+
+inline std::string reflow(const std::string& s_in,
+  unsigned width, unsigned indent,
+  unsigned line1_width, unsigned line1_indent)
+{
+  return reflow(s_in, width, std::string(indent, ' '),
+            line1_width, std::string(line1_indent, ' '));
+}
 
 inline std::string reflow(const std::string& s_in,
   unsigned width=80, unsigned indent=0)

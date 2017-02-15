@@ -90,21 +90,22 @@ std::string calin::util::string::chomp(const std::string& s_in)
 
 namespace {
 
-void reflow_line_to_text(std::string& text, std::string& line, unsigned indent)
+void reflow_line_to_text(std::string& text, std::string& line,
+  const std::string& indent)
 {
   if(not text.empty())text += '\n';
-  text += std::string(indent, ' ');
+  text += indent;
   text += line;
   line.clear();
 }
 
 bool reflow_word_to_line(std::string& text, std::string& line,
-  std::string& word, unsigned width, unsigned indent)
+  std::string& word, unsigned width, const std::string& indent)
 {
   bool new_line = false;
   if(line.empty())line += word;
   else {
-    if(line.size() + word.size() + 1 + indent > width) {
+    if(line.size() + word.size() + 1 + indent.size() > width) {
       reflow_line_to_text(text, line, indent);
       new_line = true;
     } else {
@@ -119,10 +120,11 @@ bool reflow_word_to_line(std::string& text, std::string& line,
 } // anonymous namespace
 
 std::string calin::util::string::reflow(const std::string& s_in,
-  unsigned width, unsigned indent, unsigned line1_width, unsigned line1_indent)
+  unsigned width, const std::string& indent,
+  unsigned line1_width, const std::string& line1_indent)
 {
   unsigned line_width = line1_width;
-  unsigned line_indent = line1_indent;
+  const std::string* line_indent = &line1_indent;
   std::string text;
   std::string line;
   std::string word;
@@ -134,19 +136,19 @@ std::string calin::util::string::reflow(const std::string& s_in,
     case '\t':
       newline = false;
       if(not word.empty())
-        reflow_word_to_line(text, line, word, line_width, line_indent);
+        reflow_word_to_line(text, line, word, line_width, *line_indent);
       if(emptyline)
         line += ' ';
       break;
     case '\n':
       if(not word.empty())
-        reflow_word_to_line(text, line, word, line_width, line_indent);
+        reflow_word_to_line(text, line, word, line_width, *line_indent);
       if(newline) {
         if(not emptyline) {
           if(not line.empty())
-            reflow_line_to_text(text, line, line_indent);
+            reflow_line_to_text(text, line, *line_indent);
           text += '\n';
-          emptyline = true;          
+          emptyline = true;
         }
       }
       newline = true;
@@ -157,12 +159,12 @@ std::string calin::util::string::reflow(const std::string& s_in,
       word += ichar;
       break;
     }
-    if(not text.empty())line_width = width, line_indent = indent;
+    if(not text.empty())line_width = width, line_indent = &indent;
   }
   if(not word.empty())
-    reflow_word_to_line(text, line, word, line_width, line_indent);
+    reflow_word_to_line(text, line, word, line_width, *line_indent);
   if(not line.empty())
-    reflow_line_to_text(text, line, line_indent);
+    reflow_line_to_text(text, line, *line_indent);
   return text;
 }
 

@@ -522,8 +522,13 @@ std::string OptionsProcessor::usage(unsigned width)
         std::string desc =
           calin::util::string::reflow(ioption.description,
             width, indent, width-l1indent, 0);
-        s += std::string(l1indent-s.size(), ' ');
-        s += desc;
+        if(desc.find('\n') == std::string::npos) {
+          s += std::string(l1indent-s.size(), ' ');
+          s += desc;
+        } else {
+          s += "\n";
+          s += calin::util::string::reflow(ioption.description, width, indent);          
+        }
       } else {
         s += "\n";
         s += calin::util::string::reflow(ioption.description, width, indent);
