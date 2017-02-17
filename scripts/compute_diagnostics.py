@@ -72,7 +72,7 @@ if(len(opt_proc.unknown_options()) != 0):
     exit(1)
 
 if(len(opt_proc.problem_options()) != 0):
-    print('Problems with option values (unexpected, incorrect type, etc.).')
+    print('Problems with option values (unexpected, missing, incorrect type, etc.).')
     print('Use "-help" option to get usage information.\n')
     for o in opt_proc.problem_options():
         print("  \"%s\""%o)

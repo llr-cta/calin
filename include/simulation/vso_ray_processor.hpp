@@ -105,6 +105,15 @@ public:
     double w0,
     const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency = { 1.0 });
 
+  void set_detector_response_without_atmospheric_absorption(
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency);
+  void set_detector_and_atmosphere_response(
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+    double w0);
+  void set_cone_angular_response(
+    const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency);
+
 private:
   calin::simulation::vs_optics::VSOArray* array_ = nullptr;
   bool adopt_array_ = false;
@@ -116,6 +125,7 @@ private:
   calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
   std::vector<calin::simulation::detector_efficiency::ACTEffectiveBandwidth>
     effective_bandwidth_;
+  double integrated_detector_response_ = 1.0;
   calin::math::interpolation_1d::InterpLinear1D cone_efficiency_ = { 1 };
 };
 

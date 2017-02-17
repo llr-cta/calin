@@ -190,9 +190,10 @@ void VSORayProcessor::process_ray(unsigned scope_id,
   ray_tracer_->trace(ray_copy, trace_info, scope);
 
 
-  if(scope_id < effective_bandwidth_.size()) {
+  if(scope_id < effective_bandwidth_.size())
     pe_weight *= effective_bandwidth_[scope_id].bandwidth(z0, std::fabs(w));
-  }
+  else
+    pe_weight *= integrated_detector_response_;
 
   if(trace_info.rayHitFocalPlane())
     pe_weight *= cone_efficiency_.y(trace_info.fplane_uy);
@@ -233,6 +234,33 @@ void VSORayProcessor::add_pe_visitor(
     adopt_visitor), true);
 }
 
+void VSORayProcessor::set_detector_response_without_atmospheric_absorption(
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency)
+{
+  effective_bandwidth_.clear();
+  integrated_detector_response_ = detector_efficiency.integrate();
+}
+
+void VSORayProcessor::set_detector_and_atmosphere_response(
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+  double w0)
+{
+  integrated_detector_response_ = 1.0;
+  effective_bandwidth_.clear();
+  for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++) {
+    auto* scope = array_->telescope(iscope);
+    effective_bandwidth_.emplace_back(atmospheric_absorption.integrateBandwidth(
+      scope->position().z(), std::fabs(w0), detector_efficiency));
+  }
+}
+
+void VSORayProcessor::set_cone_angular_response(
+  const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
+{
+  cone_efficiency_ = cone_efficiency;
+}
+
 void VSORayProcessor::set_detection_efficiencies(
   const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
   const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
@@ -240,6 +268,7 @@ void VSORayProcessor::set_detection_efficiencies(
   const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
 {
   effective_bandwidth_.clear();
+  integrated_detector_response_ = 1.0;
   for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++) {
     auto* scope = array_->telescope(iscope);
     effective_bandwidth_.emplace_back(atmospheric_absorption.integrateBandwidth(
