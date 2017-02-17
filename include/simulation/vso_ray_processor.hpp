@@ -125,7 +125,7 @@ private:
   calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
   std::vector<calin::simulation::detector_efficiency::ACTEffectiveBandwidth>
     effective_bandwidth_;
-  double integrated_detector_response_ = 1.0;
+  double detector_bandwidth_ = 1.0;
   calin::math::interpolation_1d::InterpLinear1D cone_efficiency_ = { 1 };
 };
 
