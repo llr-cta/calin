@@ -28,12 +28,12 @@
 
 using calin::math::special::SQR;
 
-unsigned calin::math::healpix_array::npixel(unsigned nside)
+uint64_t calin::math::healpix_array::npixel(unsigned nside)
 {
   return nside2npix64(nside); // =12*SQR(nside);
 }
 
-unsigned calin::math::healpix_array::
+uint64_t calin::math::healpix_array::
 npixel_in_ring(unsigned nside, unsigned ringid)
 {
   unsigned nring = 4*nside-1;
@@ -44,7 +44,7 @@ npixel_in_ring(unsigned nside, unsigned ringid)
   // else return 4*(nring - ringid);
 }
 
-unsigned calin::math::healpix_array::
+uint64_t calin::math::healpix_array::
 npixel_contained_by_ring(unsigned nside, unsigned ringid)
 {
   unsigned nring = 4*nside-1;
@@ -56,8 +56,8 @@ npixel_contained_by_ring(unsigned nside, unsigned ringid)
     + (npixpolar_2-std::min((ringid_conj-1)*ringid_conj, npixpolar_2)));
 }
 
-unsigned calin::math::healpix_array::
-pixid_to_ringid(unsigned nside, unsigned pixid)
+uint64_t calin::math::healpix_array::
+pixid_to_ringid(unsigned nside, uint64_t pixid)
 {
   assert(pixid < npixel(nside));
   unsigned npixpolar = nside*(nside+1)/2;
@@ -88,13 +88,13 @@ unsigned calin::math::healpix_array::nside_for_cell_dimension(double dimension)
   return std::ceil(std::sqrt(4*M_PI/SQR(dimension)/12.0));
 }
 
-void calin::math::healpix_array::pixid_to_vec(unsigned nside, unsigned pixid,
+void calin::math::healpix_array::pixid_to_vec(unsigned nside, uint64_t pixid,
   Eigen::Vector3d& vec)
 {
   pix2vec_ring64(nside, pixid, vec.data());
 }
 
-void calin::math::healpix_array::pixid_to_xyz(unsigned nside, unsigned pixid,
+void calin::math::healpix_array::pixid_to_xyz(unsigned nside, uint64_t pixid,
   double& x, double& y, double& z)
 {
   double vec[3];
@@ -104,13 +104,13 @@ void calin::math::healpix_array::pixid_to_xyz(unsigned nside, unsigned pixid,
   z = vec[2];
 }
 
-void calin::math::healpix_array::pixid_to_ang(unsigned nside, unsigned pixid,
+void calin::math::healpix_array::pixid_to_ang(unsigned nside, uint64_t pixid,
   double& theta, double& phi)
 {
   pix2ang_ring64(nside, pixid, &theta, &phi);
 }
 
-unsigned calin::math::healpix_array::vec_to_pixid(unsigned nside,
+uint64_t calin::math::healpix_array::vec_to_pixid(unsigned nside,
   const Eigen::Vector3d& vec)
 {
   int64_t pixid;
@@ -118,7 +118,7 @@ unsigned calin::math::healpix_array::vec_to_pixid(unsigned nside,
   return pixid;
 }
 
-unsigned calin::math::healpix_array::xyz_to_pixid(unsigned nside,
+uint64_t calin::math::healpix_array::xyz_to_pixid(unsigned nside,
   double x, double y, double z)
 {
   double vec[3];
@@ -130,7 +130,7 @@ unsigned calin::math::healpix_array::xyz_to_pixid(unsigned nside,
   return pixid;
 }
 
-unsigned calin::math::healpix_array::ang_to_pixid(unsigned nside,
+uint64_t calin::math::healpix_array::ang_to_pixid(unsigned nside,
   double theta, double phi)
 {
   int64_t pixid;
