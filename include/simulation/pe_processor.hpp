@@ -24,6 +24,7 @@
 
 #include <vector>
 
+#include <math/accumulator.hpp>
 #include <math/moments_calc.hpp>
 
 namespace calin { namespace simulation { namespace pe_processor {
@@ -53,7 +54,7 @@ public:
   void clear_all_images();
 private:
   bool auto_clear_ = false;
-  std::vector<std::vector<double>> images_;
+  std::vector<std::vector<calin::math::accumulator::RecommendedAccumulator>> images_;
 };
 
 class TelescopePSFCalcPEProcessor: public PEProcessor

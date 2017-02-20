@@ -21,6 +21,7 @@
 */
 
 #include <stdexcept>
+#include <algorithm>
 #include <simulation/pe_processor.hpp>
 
 using namespace calin::simulation::pe_processor;
@@ -52,7 +53,7 @@ void PEProcessor::finish_processing()
 SimpleImagePEProcessor::
 SimpleImagePEProcessor(unsigned nscope, unsigned npix, bool auto_clear):
   PEProcessor(), auto_clear_(auto_clear),
-  images_(nscope, std::vector<double>(npix))
+  images_(nscope, std::vector<calin::math::accumulator::RecommendedAccumulator>(npix))
 {
   // nothing to see here
 }
@@ -92,7 +93,7 @@ process_pe(unsigned scope_id, int pixel_id, double x, double y,
   if(pixel_id >= images_[scope_id].size())
     throw std::out_of_range("SimpleImagePEProcessor::process_pe: pixel_id out "
       "of range");
-  images_[scope_id][pixel_id] += pe_weight;
+  images_[scope_id][pixel_id].accumulate(pe_weight);
 }
 
 const std::vector<double>
@@ -101,12 +102,18 @@ SimpleImagePEProcessor::scope_image(unsigned iscope) const
   if(iscope >= images_.size())
     throw std::out_of_range("SimpleImagePEProcessor::scope_image: iscope out "
       "of range");
-  return images_[iscope];
+  std::vector<double> image(images_[iscope].size());
+  std::transform(images_[iscope].begin(), images_[iscope].end(), image.begin(),
+    [](const calin::math::accumulator::RecommendedAccumulator& acc){
+      return acc.total();});
+  return image;
 }
 
 void SimpleImagePEProcessor::clear_all_images()
 {
-  for(auto& image : images_)std::fill(image.begin(), image.end(), 0.0);
+  for(auto& image : images_)
+    std::for_each(image.begin(), image.end(),
+      [](calin::math::accumulator::RecommendedAccumulator& acc){ acc.reset(); });
 }
 
 TelescopePSFCalcPEProcessor::
