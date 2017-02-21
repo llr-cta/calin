@@ -53,8 +53,9 @@ public:
   const std::vector<double> scope_image(unsigned iscope) const;
   void clear_all_images();
 private:
+  CALIN_TYPEALIAS(Accumulator, calin::math::accumulator::RecommendedAccumulator);
   bool auto_clear_ = false;
-  std::vector<std::vector<calin::math::accumulator::RecommendedAccumulator>> images_;
+  std::vector<std::vector<Accumulator>> images_;
 };
 
 class TelescopePSFCalcPEProcessor: public PEProcessor

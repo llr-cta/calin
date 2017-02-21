@@ -53,7 +53,7 @@ void PEProcessor::finish_processing()
 SimpleImagePEProcessor::
 SimpleImagePEProcessor(unsigned nscope, unsigned npix, bool auto_clear):
   PEProcessor(), auto_clear_(auto_clear),
-  images_(nscope, std::vector<calin::math::accumulator::RecommendedAccumulator>(npix))
+  images_(nscope, std::vector<Accumulator>(npix))
 {
   // nothing to see here
 }
@@ -104,8 +104,7 @@ SimpleImagePEProcessor::scope_image(unsigned iscope) const
       "of range");
   std::vector<double> image(images_[iscope].size());
   std::transform(images_[iscope].begin(), images_[iscope].end(), image.begin(),
-    [](const calin::math::accumulator::RecommendedAccumulator& acc){
-      return acc.total();});
+    [](const Accumulator& acc){ return acc.total(); });
   return image;
 }
 
@@ -113,7 +112,7 @@ void SimpleImagePEProcessor::clear_all_images()
 {
   for(auto& image : images_)
     std::for_each(image.begin(), image.end(),
-      [](calin::math::accumulator::RecommendedAccumulator& acc){ acc.reset(); });
+      [](Accumulator& acc){ acc.reset(); });
 }
 
 TelescopePSFCalcPEProcessor::
