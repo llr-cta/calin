@@ -137,3 +137,28 @@ void TelescopePSFCalcPEProcessor::process_pe(unsigned scope_id, int pixel_id,
 {
   if(scope_id == iscope_)mom_.accumulate(x, y, pe_weight);
 }
+
+TelescopePSFCalcThirdMomentPEProcessor::
+TelescopePSFCalcThirdMomentPEProcessor(unsigned iscope, bool auto_clear):
+  PEProcessor(), auto_clear_(auto_clear), iscope_(iscope), mom_()
+{
+  // nothing to see here
+}
+
+TelescopePSFCalcThirdMomentPEProcessor::
+~TelescopePSFCalcThirdMomentPEProcessor()
+{
+  // nothing to see here
+}
+
+void TelescopePSFCalcThirdMomentPEProcessor::start_processing()
+{
+  if(auto_clear_)clear();
+}
+
+void TelescopePSFCalcThirdMomentPEProcessor::
+process_pe(unsigned scope_id, int pixel_id,
+  double x, double y, double t0, double pe_weight)
+{
+  if(scope_id == iscope_)mom_.accumulate(x, y, pe_weight);
+}

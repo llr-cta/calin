@@ -74,4 +74,20 @@ private:
   calin::math::moments_calc::SecondMomentsCalc2D mom_;
 };
 
+class TelescopePSFCalcThirdMomentPEProcessor: public PEProcessor
+{
+public:
+  TelescopePSFCalcThirdMomentPEProcessor(unsigned iscope = 0, bool auto_clear = true);
+  virtual ~TelescopePSFCalcThirdMomentPEProcessor();
+  void start_processing() override;
+  void process_pe(unsigned scope_id, int pixel_id,
+    double x, double y, double t0, double pe_weight) override;
+  void clear() { mom_.reset(); }
+  const calin::math::moments_calc::ThirdMomentsCalc2D mom() { return mom_; }
+private:
+  bool auto_clear_ = false;
+  unsigned iscope_ = 0;
+  calin::math::moments_calc::ThirdMomentsCalc2D mom_;
+};
+
 } } } // namespace calin::simulation::pe_processor
