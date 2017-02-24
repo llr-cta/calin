@@ -33,19 +33,16 @@
 namespace calin { namespace util { namespace options_processor {
 
 enum class OptionHandlerResult {
-  UNKNOWN_OPTION,
-  EXCLUSIVE_OPTION_OK,
-  SHARED_OPTION_OK,
   INVALID_OPTION_NAME,
-  EXCLUSIVE_OPTION_INVALID_VALUE,
-  SHARED_OPTION_INVALID_VALUE,
+  UNKNOWN_OPTION,
+  OPTION_OK,
+  KNOWN_OPTION_HAS_INVALID_VALUE,
   TERMINATE_PROCESSING
 };
 
 struct OptionSpec
 {
   std::string name;
-  bool is_exclusive;
   bool takes_value;
   bool requires_value;
   std::string value_type;
@@ -69,32 +66,27 @@ public:
   virtual std::vector<OptionSpec> list_options() = 0;
 };
 
-#if 0
 class SimpleOptionHandler: public OptionHandler
 {
 public:
-  SimpleOptionHandler(): OptionHandler() { /* nothing to see here */ }
-  SimpleOptionHandler(const std::string& key,
-      OptionHandlerResult result = OptionHandlerResult::EXCLUSIVE_OPTION_OK):
-    OptionHandler() { known_keys_[key] = result; }
-  SimpleOptionHandler(std::map<std::string, OptionHandlerResult> known_keys):
-    OptionHandler(), known_keys_(known_keys) { /* nothing to see here */ }
+  SimpleOptionHandler(const std::string& key, const std::string& help_text):
+    OptionHandler(), key_(key), description_(help_text)
+  { /* nothing to see here */ }
+  SimpleOptionHandler(const std::string& key, const std::string& alt_key,
+      const std::string& help_text):
+    OptionHandler(), key_(key), alt_key_(alt_key), description_(help_text)
+  { /* nothing to see here */ }
   virtual ~SimpleOptionHandler();
   OptionHandlerResult handle_option(const std::string& key,
     bool has_val, const std::string& val) override;
   std::vector<OptionSpec> list_options() override;
-  bool was_option_handled() { return !keys_.empty(); }
-  unsigned number_of_options_handled() { return keys_.size(); }
-  const std::vector<std::string>& keys() const { return keys_; }
-  const std::vector<bool> has_vals() const { return has_vals_; }
-  const std::vector<std::string> vals() const { return vals_; }
+  bool was_option_handled() { return option_handled_; }
 protected:
-  std::map<std::string, OptionHandlerResult> known_keys_;
-  std::vector<std::string> keys_;
-  std::vector<bool> has_vals_;
-  std::vector<std::string> vals_;
+  std::string key_;
+  std::string alt_key_;
+  std::string description_;
+  bool option_handled_ = false;
 };
-#endif
 
 class ProtobufOptionHandler: public OptionHandler
 {
@@ -135,7 +127,8 @@ class OptionsProcessor
 {
 public:
   OptionsProcessor();
-  OptionsProcessor(google::protobuf::Message* message);
+  OptionsProcessor(google::protobuf::Message* message,
+    bool add_help_option = false);
   ~OptionsProcessor();
   void add_option_handler(OptionHandler* handler, bool adopt_handler = false);
   void process_arguments(const std::vector<std::string>& args,
@@ -149,11 +142,14 @@ public:
   const std::vector<std::string>& arguments() { return arguments_; }
   std::vector<OptionSpec> list_options();
   std::string usage(unsigned width = 80);
+  bool help_requested() { return help_handler_ != nullptr
+    and help_handler_->was_option_handled(); }
 
 protected:
   ProtobufOptionHandler* priority_protobuf_handler_ = nullptr;
   std::vector<OptionHandler*> handlers_;
   std::vector<OptionHandler*> adopted_handlers_;
+  SimpleOptionHandler* help_handler_ = nullptr;
 
   std::string program_name_;
   std::vector<std::string> unknown_options_;

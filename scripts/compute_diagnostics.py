@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # calin/scripts/compute_diagnostics.py -- Stephen Fegan - 2016-06-10
 #
@@ -30,6 +30,8 @@ import calin.diagnostics.event_number
 import calin.diagnostics.delta_t
 import calin.io.sql_transceiver
 import calin.io.log
+import calin.util.options_processor
+import calin.ix.command_line_options.compute_diagnostics
 
 py_log = calin.io.log.PythonLogger()
 py_log.this.disown()
@@ -38,38 +40,59 @@ proto_log = calin.io.log.ProtobufLogger()
 proto_log.this.disown()
 calin.io.log.default_logger().add_logger(proto_log,True)
 
-if(len(sys.argv) == 1):
-    raise Exception('No filename supplied')
-zfits_file = sys.argv[1]
+opt = calin.ix.command_line_options.compute_diagnostics.Options()
+opt.set_o('diagnostics.sqlite')
+opt.set_window_size(16)
+opt.set_sig_window_start(44)
+opt.set_bkg_window_start(0)
+opt.set_nthread(4)
+opt.mutable_zfits().CopyFrom(calin.iact_data.telescope_data_source.\
+    NectarCamZFITSDataSource.default_config())
+opt.mutable_decoder().CopyFrom(calin.iact_data.telescope_data_source.\
+    NectarCamZFITSDataSource.default_decoder_config())
+opt.mutable_decoder().set_exchange_gain_channels(True);
 
-sql_file = 'diagnostics.sqlite'
-if(len(sys.argv) > 2):
-    sql_file = sys.argv[2]
+opt_proc = calin.util.options_processor.OptionsProcessor(opt, True);
+opt_proc.process_arguments(sys.argv)
 
-bkg_window_start = 0
-if(len(sys.argv) > 3):
-    bkg_window_start = int(sys.argv[3])
+if(opt_proc.help_requested()):
+    print('Usage:',opt_proc.program_name(),'[options] zfits_file_name\n')
+    print('Options:\n')
+    print(opt_proc.usage())
+    exit(0)
 
-sig_window_start = 44
-if(len(sys.argv) > 4):
-    sig_window_start = int(sys.argv[4])
+if(len(opt_proc.arguments()) != 1):
+    print('No filename supplied! Use "-help" option to get usage information.')
+    exit(1)
 
-window_size = 16
-if(len(sys.argv) > 5):
-    window_size = int(sys.argv[5])
+if(len(opt_proc.unknown_options()) != 0):
+    print('Unknown options given. Use "-help" option to get usage information.\n')
+    for o in opt_proc.unknown_options():
+        print("  \"%s\""%o)
+    exit(1)
+
+if(len(opt_proc.problem_options()) != 0):
+    print('Problems with option values (unexpected, missing, incorrect type, etc.).')
+    print('Use "-help" option to get usage information.\n')
+    for o in opt_proc.problem_options():
+        print("  \"%s\""%o)
+    exit(1)
+
+#print(opt.DebugString())
+
+zfits_file         = opt_proc.arguments()[0]
+
+sql_file           = opt.o();
+bkg_window_start   = opt.bkg_window_start()
+sig_window_start   = opt.sig_window_start()
+window_size        = opt.window_size()
+cfg                = opt.zfits()
+dcfg               = opt.decoder()
 
 # Open the data source
-cfg = calin.iact_data.telescope_data_source.\
-    NectarCamZFITSDataSource.default_config()
-#cfg.set_max_file_fragments(8)
-
-dcfg = calin.iact_data.telescope_data_source.\
-    NectarCamZFITSDataSource.default_decoder_config()
-dcfg.set_exchange_gain_channels(True);
-
 src = calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource(zfits_file, cfg, dcfg)
-src.set_next_index(1)
+#src.set_next_index(1)
 
 # Get the run info
 run_info = src.get_run_configuration()
@@ -92,9 +115,17 @@ bkg_window_stats_visitor = calin.diagnostics.functional.\
     FunctionalIntStatsVisitor(bkg_window_sum_visitor)
 dispatcher.add_visitor(bkg_window_stats_visitor)
 
-bkg_capture_adapter = [None] * run_info.configured_channel_id_size();
-bkg_capture = [None] * run_info.configured_channel_id_size();
-for ichan in range(run_info.configured_channel_id_size()):
+capture_channels = []
+if(opt.capture_all_channels()):
+    for ichan in range(run_info.configured_channel_id_size()):
+        capture_channels.append(ichan)
+else:
+    for ichan in opt.capture_channels():
+        capture_channels.append(int(ichan))
+
+bkg_capture_adapter = [None] * len(capture_channels)
+bkg_capture = [None] * len(capture_channels)
+for ichan in capture_channels:
     # Background capture adapter - select channel
     bkg_capture_adapter[ichan] = calin.diagnostics.functional.\
         SingleFunctionalValueSupplierVisitor(bkg_window_sum_visitor,ichan)
@@ -116,9 +147,9 @@ sig_window_sum_visitor = calin.iact_data.functional_event_visitor.\
 dispatcher.add_visitor(sig_window_sum_visitor, \
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 
-sig_capture_adapter = [None] * run_info.configured_channel_id_size();
-sig_capture = [None] * run_info.configured_channel_id_size();
-for ichan in range(run_info.configured_channel_id_size()):
+sig_capture_adapter = [None] * len(capture_channels)
+sig_capture = [None] * len(capture_channels)
+for ichan in capture_channels:
     # Signal capture adapter - select channel
     sig_capture_adapter[ichan] = calin.diagnostics.functional.\
         SingleFunctionalValueSupplierVisitor(sig_window_sum_visitor,ichan)
@@ -204,7 +235,7 @@ t0_stats = calin.diagnostics.functional.\
 dispatcher.add_visitor(t0_stats)
 
 # Run all the visitors
-dispatcher.process_run(src,100000,3)
+dispatcher.process_run(src,100000,opt.nthread())
 
 # Get the results
 psd = psd_visitor.results()
@@ -215,14 +246,13 @@ sig = sig_bkg_stats_visitor.results()
 glitch = glitch_visitor.glitch_data()
 bunch_event_glitch = bunch_event_glitch_visitor.glitch_data()
 mod_present = mod_present_visitor.module_data()
-sig_values = sig_capture[0].results()
-bkg_values = bkg_capture[0].results()
 delta_t_values = delta_t_capture.results()
 t0 = t0_stats.results()
 
 # Write the results
 sql = calin.io.sql_transceiver.SQLite3Transceiver(sql_file,
     calin.io.sql_transceiver.SQLite3Transceiver.TRUNCATE_RW)
+sql.create_tables_and_insert("command_line_options", opt)
 sql.create_tables_and_insert("log", proto_log.log_messages())
 sql.create_tables_and_insert("run_config", run_info)
 sql.create_tables_and_insert("psd", psd)
@@ -233,11 +263,13 @@ sql.create_tables_and_insert("sig", sig)
 sql.create_tables_and_insert("glitch_event", glitch)
 sql.create_tables_and_insert("glitch_bunch_event", bunch_event_glitch)
 sql.create_tables_and_insert("mod_present", mod_present)
-sql.create_tables_and_insert("sig_values", sig_values)
-sql.create_tables_and_insert("bkg_values", bkg_values)
 sql.create_tables_and_insert("delta_t_values", delta_t_values)
 sql.create_tables_and_insert("t0", t0)
 
-for ichan in range(1,len(bkg_capture)):
-    sql.insert("sig_values", sig_capture[ichan].results())
-    sql.insert("bkg_values", bkg_capture[ichan].results())
+if(len(bkg_capture) > 0):
+    sql.create_tables_and_insert("sig_values", sig_capture[0].results())
+    sql.create_tables_and_insert("bkg_values", bkg_capture[0].results())
+
+    for ichan in range(1,len(bkg_capture)):
+        sql.insert("sig_values", sig_capture[ichan].results())
+        sql.insert("bkg_values", bkg_capture[ichan].results())

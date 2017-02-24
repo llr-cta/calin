@@ -80,8 +80,8 @@ include_directories(${SQLITE3_INCLUDE_DIR})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${SQLITE3_LIBRARY} )
 
 ## Find Python interpreter and libraries
-find_package(PythonInterp REQUIRED)
-find_package(PythonLibs REQUIRED)
+find_package(PythonInterp 3 REQUIRED)
+find_package(PythonLibs 3 REQUIRED)
 include_directories(${PYTHON_INCLUDE_PATH})
 
 ## Find Numpy since we use numpy arrays here

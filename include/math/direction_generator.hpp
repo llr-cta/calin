@@ -81,7 +81,7 @@ public:
   bool next_as_theta_phi(double& theta, double& phi, double& weight) override;
   bool next_as_vector(Eigen::Vector3d& dir, double& weight) override;
 protected:
-  unsigned pixid_ = 0;
+  uint64_t pixid_ = 0;
   double cos_theta_max_ = 1.0;
   unsigned nside_ = 1;
   double weight_ = 1.0;

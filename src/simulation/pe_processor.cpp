@@ -21,6 +21,7 @@
 */
 
 #include <stdexcept>
+#include <algorithm>
 #include <simulation/pe_processor.hpp>
 
 using namespace calin::simulation::pe_processor;
@@ -52,7 +53,7 @@ void PEProcessor::finish_processing()
 SimpleImagePEProcessor::
 SimpleImagePEProcessor(unsigned nscope, unsigned npix, bool auto_clear):
   PEProcessor(), auto_clear_(auto_clear),
-  images_(nscope, std::vector<double>(npix))
+  images_(nscope, std::vector<Accumulator>(npix))
 {
   // nothing to see here
 }
@@ -92,7 +93,7 @@ process_pe(unsigned scope_id, int pixel_id, double x, double y,
   if(pixel_id >= images_[scope_id].size())
     throw std::out_of_range("SimpleImagePEProcessor::process_pe: pixel_id out "
       "of range");
-  images_[scope_id][pixel_id] += pe_weight;
+  images_[scope_id][pixel_id].accumulate(pe_weight);
 }
 
 const std::vector<double>
@@ -101,12 +102,17 @@ SimpleImagePEProcessor::scope_image(unsigned iscope) const
   if(iscope >= images_.size())
     throw std::out_of_range("SimpleImagePEProcessor::scope_image: iscope out "
       "of range");
-  return images_[iscope];
+  std::vector<double> image(images_[iscope].size());
+  std::transform(images_[iscope].begin(), images_[iscope].end(), image.begin(),
+    [](const Accumulator& acc){ return acc.total(); });
+  return image;
 }
 
 void SimpleImagePEProcessor::clear_all_images()
 {
-  for(auto& image : images_)std::fill(image.begin(), image.end(), 0.0);
+  for(auto& image : images_)
+    std::for_each(image.begin(), image.end(),
+      [](Accumulator& acc){ acc.reset(); });
 }
 
 TelescopePSFCalcPEProcessor::
@@ -127,6 +133,31 @@ void TelescopePSFCalcPEProcessor::start_processing()
 }
 
 void TelescopePSFCalcPEProcessor::process_pe(unsigned scope_id, int pixel_id,
+  double x, double y, double t0, double pe_weight)
+{
+  if(scope_id == iscope_)mom_.accumulate(x, y, pe_weight);
+}
+
+TelescopePSFCalcThirdMomentPEProcessor::
+TelescopePSFCalcThirdMomentPEProcessor(unsigned iscope, bool auto_clear):
+  PEProcessor(), auto_clear_(auto_clear), iscope_(iscope), mom_()
+{
+  // nothing to see here
+}
+
+TelescopePSFCalcThirdMomentPEProcessor::
+~TelescopePSFCalcThirdMomentPEProcessor()
+{
+  // nothing to see here
+}
+
+void TelescopePSFCalcThirdMomentPEProcessor::start_processing()
+{
+  if(auto_clear_)clear();
+}
+
+void TelescopePSFCalcThirdMomentPEProcessor::
+process_pe(unsigned scope_id, int pixel_id,
   double x, double y, double t0, double pe_weight)
 {
   if(scope_id == iscope_)mom_.accumulate(x, y, pe_weight);

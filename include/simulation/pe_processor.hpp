@@ -24,6 +24,7 @@
 
 #include <vector>
 
+#include <math/accumulator.hpp>
 #include <math/moments_calc.hpp>
 
 namespace calin { namespace simulation { namespace pe_processor {
@@ -52,8 +53,9 @@ public:
   const std::vector<double> scope_image(unsigned iscope) const;
   void clear_all_images();
 private:
+  CALIN_TYPEALIAS(Accumulator, calin::math::accumulator::RecommendedAccumulator);
   bool auto_clear_ = false;
-  std::vector<std::vector<double>> images_;
+  std::vector<std::vector<Accumulator>> images_;
 };
 
 class TelescopePSFCalcPEProcessor: public PEProcessor
@@ -70,6 +72,22 @@ private:
   bool auto_clear_ = false;
   unsigned iscope_ = 0;
   calin::math::moments_calc::SecondMomentsCalc2D mom_;
+};
+
+class TelescopePSFCalcThirdMomentPEProcessor: public PEProcessor
+{
+public:
+  TelescopePSFCalcThirdMomentPEProcessor(unsigned iscope = 0, bool auto_clear = true);
+  virtual ~TelescopePSFCalcThirdMomentPEProcessor();
+  void start_processing() override;
+  void process_pe(unsigned scope_id, int pixel_id,
+    double x, double y, double t0, double pe_weight) override;
+  void clear() { mom_.reset(); }
+  const calin::math::moments_calc::ThirdMomentsCalc2D mom() { return mom_; }
+private:
+  bool auto_clear_ = false;
+  unsigned iscope_ = 0;
+  calin::math::moments_calc::ThirdMomentsCalc2D mom_;
 };
 
 } } } // namespace calin::simulation::pe_processor

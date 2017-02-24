@@ -33,22 +33,22 @@ namespace calin { namespace math { namespace healpix_array {
 //
 // *****************************************************************************
 
-unsigned npixel(unsigned nside);
+uint64_t npixel(unsigned nside);
 inline unsigned nring(unsigned nside) { return 4*nside-1; }
-unsigned npixel_in_ring(unsigned nside, unsigned ringid);
-unsigned npixel_contained_by_ring(unsigned nside, unsigned ringid);
-unsigned pixid_to_ringid(unsigned nside, unsigned pixid);
+uint64_t npixel_in_ring(unsigned nside, unsigned ringid);
+uint64_t npixel_contained_by_ring(unsigned nside, unsigned ringid);
+uint64_t pixid_to_ringid(unsigned nside, uint64_t pixid);
 
 double cell_area(unsigned nside);
 double cell_dimension(unsigned nside);
 unsigned nside_for_cell_dimension(double dimension);
 
-void pixid_to_vec(unsigned nside, unsigned pixid, Eigen::Vector3d& vec);
-void pixid_to_xyz(unsigned nside, unsigned pixid, double& x, double& y, double& z);
-void pixid_to_ang(unsigned nside, unsigned pixid, double& theta, double& phi);
+void pixid_to_vec(unsigned nside, uint64_t pixid, Eigen::Vector3d& vec);
+void pixid_to_xyz(unsigned nside, uint64_t pixid, double& x, double& y, double& z);
+void pixid_to_ang(unsigned nside, uint64_t pixid, double& theta, double& phi);
 
-unsigned vec_to_pixid(unsigned nside, const Eigen::Vector3d& vec);
-unsigned xyz_to_pixid(unsigned nside, double x, double y, double z);
-unsigned ang_to_pixid(unsigned nside, double theta, double phi);
+uint64_t vec_to_pixid(unsigned nside, const Eigen::Vector3d& vec);
+uint64_t xyz_to_pixid(unsigned nside, double x, double y, double z);
+uint64_t ang_to_pixid(unsigned nside, double theta, double phi);
 
 } } } // namespace calin::math::healpix_array

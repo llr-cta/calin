@@ -43,5 +43,6 @@
 %import "math/moments_calc.i"
 
 %include "simulation/pe_processor.hpp"
+%newobject *::add_processor_and_pe_visitor;
 %include "simulation/ray_processor.hpp"
 %include "simulation/vso_ray_processor.hpp"
