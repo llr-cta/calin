@@ -29,6 +29,11 @@ import "iact_data/instrument_layout.proto";
 
 package calin.ix.iact_data.telescope_run_configuration;
 
+enum SerializedRawHeaderType {
+  SERIALIZED_RAW_HEADER_NONE                               = 0;
+  SERIALIZED_RAW_HEADER_ACTL_PROTOBUF                      = 1;
+};
+
 message TelescopeRunConfiguration {
   uint32 run_number                                        = 1 [
     (CFO).desc = "Run number." ];
@@ -49,4 +54,9 @@ message TelescopeRunConfiguration {
   calin.ix.iact_data.instrument_layout.
       CameraLayout camera_layout                           = 101 [
     (CFO).desc = "Camera layout." ];
+
+  SerializedRawHeaderType serialized_raw_header_type        = 998 [
+    (CFO).desc = "Flag describing type of serialized raw header data included." ];
+  bytes serialized_raw_header                               = 999 [
+    (CFO).desc = "Serialized raw header." ];
 };

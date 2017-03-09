@@ -228,17 +228,22 @@ message ChannelTriggerMap {
 };
 
 enum TriggerType {
-  TRIGGER_SCIENCE              = 0;
-  TRIGGER_SOFTWARE             = 1;
-  TRIGGER_PEDESTAL             = 2;
-  TRIGGER_EXTENAL_FLASHER      = 3;
-  TRIGGER_INTERNAL_FLASHER     = 4;
-  TRIGGER_FORCED_BY_ARRAY      = 5;
+  TRIGGER_SCIENCE               = 0;
+  TRIGGER_SOFTWARE              = 1;
+  TRIGGER_PEDESTAL              = 2;
+  TRIGGER_EXTENAL_FLASHER       = 3;
+  TRIGGER_INTERNAL_FLASHER      = 4;
+  TRIGGER_FORCED_BY_ARRAY       = 5;
 };
 
 enum ImageTreatmentMode {
-  TREATMENT_SCIENCE            = 0;
-  TREATMENT_PASS_THROUGH       = 1;
+  TREATMENT_SCIENCE             = 0;
+  TREATMENT_PASS_THROUGH        = 1;
+};
+
+enum SerializedRawEventType {
+  SERIALIZED_RAW_EVENT_NONE                                 = 0;
+  SERIALIZED_RAW_EVENT_ACTL_PROTOBUF                        = 1;
 };
 
 message TelescopeEvent {
@@ -292,5 +297,10 @@ message TelescopeEvent {
       "camera." ];
 
   ChannelTriggerMap trigger_map                             = 200 [
-      (CFO).desc = "List of channels that triggered." ];
+    (CFO).desc = "List of channels that triggered." ];
+
+  SerializedRawEventType serialized_raw_event_type          = 998 [
+    (CFO).desc = "Flag describing type of serialized raw event data included." ];
+  bytes serialized_raw_event                                = 999 [
+    (CFO).desc = "Serialized raw event." ];
 };
