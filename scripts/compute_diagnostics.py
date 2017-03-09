@@ -31,7 +31,7 @@ import calin.diagnostics.delta_t
 import calin.io.sql_transceiver
 import calin.io.log
 import calin.util.options_processor
-import calin.ix.command_line_options.compute_diagnostics
+import calin.ix.scripts.compute_diagnostics
 
 py_log = calin.io.log.PythonLogger()
 py_log.this.disown()
@@ -46,6 +46,7 @@ opt.set_window_size(16)
 opt.set_sig_window_start(44)
 opt.set_bkg_window_start(0)
 opt.set_nthread(4)
+opt.set_db_results_table_name('diagnostics_results')
 opt.mutable_zfits().CopyFrom(calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_config())
 opt.mutable_decoder().CopyFrom(calin.iact_data.telescope_data_source.\
