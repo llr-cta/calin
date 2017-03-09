@@ -150,7 +150,7 @@ install:
   - |
     if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh ];
     then (
-      wget http://geant4.cern.ch/support/source/geant4.10.03.tar.gz &&
+      wget http://geant4.cern.ch/support/source/geant4.10.03.p01.tar.gz &&
       tar zxf geant4.10.03.p01.tar.gz &&
       cd geant4.10.03.p01 &&
       mkdir mybuild &&
