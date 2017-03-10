@@ -58,5 +58,5 @@ message TelescopeRunConfiguration {
   SerializedRawHeaderType serialized_raw_header_type        = 998 [
     (CFO).desc = "Flag describing type of serialized raw header data included." ];
   bytes serialized_raw_header                               = 999 [
-    (CFO).desc = "Serialized raw header." ];
+    (CFO).desc = "Serialized raw header.", (CFO).sql.dont_store = true ];
 };

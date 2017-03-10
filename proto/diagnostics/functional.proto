@@ -34,16 +34,16 @@ message OneGainIntFunctionalRawStats {
       "stats." ];
   repeated uint32 num_sum_product_entries                  = 2 [
     (CFO).desc = "Number of waveforms accumulated in the sum_product stats." ];
-  repeated int64 sum                                      = 11 [
+  repeated int64 sum                                       = 11 [
     (CFO).desc = "Sum over all events of functional value for each channel." ];
-  repeated int64 sum_squared                              = 12 [
+  repeated int64 sum_squared                               = 12 [
     (CFO).desc = "Sum over all events of functional value for each channel "
       "squared." ];
-  repeated int64 sum_product                              = 13 [
+  repeated int64 sum_product                               = 13 [
     (CFO).desc = "Sum over all events of product of functional value for each "
       "channel by all others. This corresponds to the off-diagnonal elements "
       "of the covariance matrix." ];
-  repeated math.histogram.Histogram1DData value_hist      = 21 [
+  repeated math.histogram.Histogram1DData value_hist       = 21 [
     (CFO).desc = "Histogram of functional value for each channel." ];
 };
 

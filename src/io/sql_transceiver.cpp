@@ -440,7 +440,9 @@ void SQLTransceiver::prune_empty_tables(SQLTable* t)
       for(auto st : t->sub_tables) {
         st->parent_table = t->parent_table;
         st->parent_field_d_path.insert(st->parent_field_d_path.begin(),
-                                       t->parent_field_d); }
+          t->parent_field_d);
+        st->parent_field_d_path.insert(st->parent_field_d_path.begin(),
+          t->parent_field_d_path.begin(), t->parent_field_d_path.end()); }
       auto sti = std::find(t->parent_table->sub_tables.begin(),
                            t->parent_table->sub_tables.end(), t);
       assert(sti != t->parent_table->sub_tables.end());
@@ -816,7 +818,7 @@ set_const_data_pointers(SQLTable* t,
   for(auto f : t->fields)
   {
 #if 0
-    std::cout << f->field_name << ' ' << f->field_type << ' ' << f << ' '
+    LOG(INFO) << f->field_name << ' ' << f->field_type << ' ' << f << ' '
               << f->field_origin << '\n';
 #endif
     if(f->field_origin == f)
@@ -874,6 +876,7 @@ bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
   unsigned ifield = 0;
   for(auto f : t->fields)
   {
+    //LOG(INFO) << t->table_name << " -> " << f->field_name;
     if(!bind_inherited_keys_only or f->is_inherited())
     {
       f = f->field_origin;
@@ -977,7 +980,7 @@ r_exec_insert(SQLTable* t, const google::protobuf::Message* m_data,
         const google::protobuf::Message* mi = m;
         if(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE) {
           mi = &r->GetRepeatedMessage(*m, st->parent_field_d, iloop);
-          r = m->GetReflection(); }
+          r = mi->GetReflection(); }
         uint64_t unused_sub_table_oid = 0;
         good &= r_exec_insert(st, mi, nullptr, unused_sub_table_oid, oid, iloop,
                               ignore_errors);

@@ -302,5 +302,5 @@ message TelescopeEvent {
   SerializedRawEventType serialized_raw_event_type          = 998 [
     (CFO).desc = "Flag describing type of serialized raw event data included." ];
   bytes serialized_raw_event                                = 999 [
-    (CFO).desc = "Serialized raw event." ];
+    (CFO).desc = "Serialized raw event.", (CFO).sql.dont_store = true ];
 };

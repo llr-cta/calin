@@ -40,7 +40,7 @@ proto_log = calin.io.log.ProtobufLogger()
 proto_log.this.disown()
 calin.io.log.default_logger().add_logger(proto_log,True)
 
-opt = calin.ix.command_line_options.compute_diagnostics.Options()
+opt = calin.ix.scripts.compute_diagnostics.CommandLineOptions()
 opt.set_o('diagnostics.sqlite')
 opt.set_window_size(16)
 opt.set_sig_window_start(44)
@@ -239,11 +239,24 @@ dispatcher.add_visitor(t0_stats)
 dispatcher.process_run(src,100000,opt.nthread())
 
 # Get the results
-psd = psd_visitor.results()
-wfs = waveform_visitor.results()
-bkg = bkg_window_stats_visitor.results()
-sig_raw = sig_window_stats_visitor.results()
-sig = sig_bkg_stats_visitor.results()
+results = calin.ix.scripts.compute_diagnostics.Results()
+# results.mutable_command_line_options().CopyFrom(opt)
+# results.mutable_log().CopyFrom(proto_log.log_messages())
+# results.mutable_run_config().CopyFrom(run_info)
+# for ichan in capture_channels:
+#     results.add_captured_channel_ids(ichan)
+# results.mutable_sig_stats().CopyFrom(sig_window_stats_visitor.results())
+# results.mutable_bkg_stats().CopyFrom(bkg_window_stats_visitor.results())
+# results.mutable_sig_minus_bkg_stats().CopyFrom(sig_bkg_stats_visitor.results())
+# for isig_capture in sig_capture:
+#     results.add_captured_sig_values().CopyFrom(isig_capture.results())
+# for ibkg_capture in bkg_capture:
+#     results.add_captured_bkg_values().CopyFrom(ibkg_capture.results())
+# results.mutable_t0_stats().CopyFrom(t0_stats.results())
+# results.mutable_waveform_stats().CopyFrom(waveform_visitor.results())
+# results.mutable_waveform_psd().CopyFrom(psd_visitor.results())
+
+
 glitch = glitch_visitor.glitch_data()
 bunch_event_glitch = bunch_event_glitch_visitor.glitch_data()
 mod_present = mod_present_visitor.module_data()
@@ -253,24 +266,12 @@ t0 = t0_stats.results()
 # Write the results
 sql = calin.io.sql_transceiver.SQLite3Transceiver(sql_file,
     calin.io.sql_transceiver.SQLite3Transceiver.TRUNCATE_RW)
-sql.create_tables_and_insert("command_line_options", opt)
-sql.create_tables_and_insert("log", proto_log.log_messages())
-sql.create_tables_and_insert("run_config", run_info)
-sql.create_tables_and_insert("psd", psd)
-sql.create_tables_and_insert("wfs", wfs)
-sql.create_tables_and_insert("bkg", bkg)
-sql.create_tables_and_insert("sig_raw", sig_raw)
-sql.create_tables_and_insert("sig", sig)
+sql.create_tables(opt.db_results_table_name(), results.descriptor())
+sql.insert(opt.db_results_table_name(), results)
+
+#sql.create_tables_and_insert(opt.db_results_table_name(), results)
+
 sql.create_tables_and_insert("glitch_event", glitch)
 sql.create_tables_and_insert("glitch_bunch_event", bunch_event_glitch)
 sql.create_tables_and_insert("mod_present", mod_present)
 sql.create_tables_and_insert("delta_t_values", delta_t_values)
-sql.create_tables_and_insert("t0", t0)
-
-if(len(bkg_capture) > 0):
-    sql.create_tables_and_insert("sig_values", sig_capture[0].results())
-    sql.create_tables_and_insert("bkg_values", bkg_capture[0].results())
-
-    for ichan in range(1,len(bkg_capture)):
-        sql.insert("sig_values", sig_capture[ichan].results())
-        sql.insert("bkg_values", bkg_capture[ichan].results())
