@@ -979,8 +979,7 @@ r_exec_insert(SQLTable* t, const google::protobuf::Message* m_data,
       {
         const google::protobuf::Message* mi = m;
         if(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE) {
-          mi = &r->GetRepeatedMessage(*m, st->parent_field_d, iloop);
-          r = mi->GetReflection(); }
+          mi = &r->GetRepeatedMessage(*m, st->parent_field_d, iloop); }
         uint64_t unused_sub_table_oid = 0;
         good &= r_exec_insert(st, mi, nullptr, unused_sub_table_oid, oid, iloop,
                               ignore_errors);
