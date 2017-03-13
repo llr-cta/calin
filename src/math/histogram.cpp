@@ -42,8 +42,8 @@ void merge_histogram1d_data(calin::ix::math::histogram::Histogram1DData* to,
     if(to->bins_size()) // If "to" has data we must merge
     {
       double xval0 = std::min(to->xval0(), from.xval0());
-      int to_offset = int((to->xval0() - xval0)/to.dxval);
-      int from_offset = int((from.xval0() - xval0)/to.dxval);
+      int to_offset = int((to->xval0() - xval0)/to->dxval());
+      int from_offset = int((from.xval0() - xval0)/to->dxval());
       int to_n = to->bins_size();
       int N = std::max(to_n + to_offset, from.bins_size() + from_offset);
       to->mutable_bins()->Resize(N,0);
