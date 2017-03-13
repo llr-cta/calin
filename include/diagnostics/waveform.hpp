@@ -71,6 +71,8 @@ public:
     const ix::diagnostics::waveform::WaveformRawStats* stat);
   static Eigen::MatrixXd waveform_cov(
     const ix::diagnostics::waveform::WaveformRawStats* stat);
+  static Eigen::MatrixXd waveform_cov_frac(
+    const ix::diagnostics::waveform::WaveformRawStats* stat);
 
 protected:
   void process_one_waveform(
