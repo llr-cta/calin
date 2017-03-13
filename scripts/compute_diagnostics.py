@@ -43,7 +43,7 @@ calin.io.log.default_logger().add_logger(proto_log,True)
 opt = calin.ix.scripts.compute_diagnostics.CommandLineOptions()
 opt.set_o('diagnostics.sqlite')
 opt.set_window_size(16)
-opt.set_sig_window_start(44)
+opt.set_sig_window_start(24)
 opt.set_bkg_window_start(0)
 opt.set_nthread(4)
 opt.set_db_results_table_name('diagnostics_results')
@@ -240,21 +240,21 @@ dispatcher.process_run(src,100000,opt.nthread())
 
 # Get the results
 results = calin.ix.scripts.compute_diagnostics.Results()
-# results.mutable_command_line_options().CopyFrom(opt)
-# results.mutable_log().CopyFrom(proto_log.log_messages())
-# results.mutable_run_config().CopyFrom(run_info)
-# for ichan in capture_channels:
-#     results.add_captured_channel_ids(ichan)
-# results.mutable_sig_stats().CopyFrom(sig_window_stats_visitor.results())
-# results.mutable_bkg_stats().CopyFrom(bkg_window_stats_visitor.results())
-# results.mutable_sig_minus_bkg_stats().CopyFrom(sig_bkg_stats_visitor.results())
-# for isig_capture in sig_capture:
-#     results.add_captured_sig_values().CopyFrom(isig_capture.results())
-# for ibkg_capture in bkg_capture:
-#     results.add_captured_bkg_values().CopyFrom(ibkg_capture.results())
-# results.mutable_t0_stats().CopyFrom(t0_stats.results())
-# results.mutable_waveform_stats().CopyFrom(waveform_visitor.results())
-# results.mutable_waveform_psd().CopyFrom(psd_visitor.results())
+results.mutable_command_line_options().CopyFrom(opt)
+results.mutable_log().CopyFrom(proto_log.log_messages())
+results.mutable_run_config().CopyFrom(run_info)
+for ichan in capture_channels:
+    results.add_captured_channel_ids(ichan)
+results.mutable_sig_stats().CopyFrom(sig_window_stats_visitor.results())
+results.mutable_bkg_stats().CopyFrom(bkg_window_stats_visitor.results())
+results.mutable_sig_minus_bkg_stats().CopyFrom(sig_bkg_stats_visitor.results())
+for isig_capture in sig_capture:
+    results.add_captured_sig_values().CopyFrom(isig_capture.results())
+for ibkg_capture in bkg_capture:
+    results.add_captured_bkg_values().CopyFrom(ibkg_capture.results())
+results.mutable_t0_stats().CopyFrom(t0_stats.results())
+results.mutable_waveform_stats().CopyFrom(waveform_visitor.results())
+results.mutable_waveform_psd().CopyFrom(psd_visitor.results())
 
 
 glitch = glitch_visitor.glitch_data()
