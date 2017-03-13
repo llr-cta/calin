@@ -363,4 +363,19 @@ Eigen::MatrixXd channel_cov(const OneGainRawStats* stat)
   return c;
 }
 
+template<typename OneGainRawStats>
+Eigen::MatrixXd channel_cov_frac(const OneGainRawStats* stat)
+{
+  Eigen::MatrixXd c = channel_cov(stat);
+  const int N = stat->sum_size();
+  for(int i=0; i<N; i++) {
+    double scale = 1.0/std::sqrt(c(i,i));
+    for(int j=0; j<N; j++){
+      c(i,j) *= scale;
+      c(j,i) *= scale;
+    }
+  }
+  return c;
+}
+
 } } } // namespace calin::diagnostics::functional_diagnostics

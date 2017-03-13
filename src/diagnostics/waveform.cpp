@@ -267,3 +267,18 @@ Eigen::MatrixXd WaveformStatsVisitor::waveform_cov(
     }
   return c;
 }
+
+Eigen::MatrixXd WaveformStatsVisitor::waveform_cov_frac(
+  const ix::diagnostics::waveform::WaveformRawStats* stat)
+{
+  Eigen::MatrixXd c = waveform_cov(stat);
+  const int N = stat->sum_size();
+  for(int i=0; i<N; i++) {
+    double scale = 1.0/std::sqrt(c(i,i));
+    for(int j=0; j<N; j++){
+      c(i,j) *= scale;
+      c(j,i) *= scale;
+    }
+  }
+  return c;
+}
