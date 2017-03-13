@@ -79,8 +79,31 @@ create_tables(const std::string& table_name,
     rollback_transaction();
     return success;
   }
+
+  finalize_statements(t.get());
+  success = true;
+  iterate_over_tables(t.get(), [this, &success](SQLTable* it) {
+      if(success) {
+        std::string sql = sql_create_index(it);
+        if(not sql.empty())
+        {
+          it->stmt = prepare_statement(sql);
+          if(!it->stmt->is_initialized()) {
+            LOG(ERROR) << "SQL error preparing CREATE INDEX: "
+                      << it->stmt->error_message() << '\n'
+                      << "SQL: " << it->stmt->sql();
+            success = false; } } } });
+  if(!success)return success;
+  success = r_exec_simple(t.get(), false);
+  if(!success)
+  {
+    rollback_transaction();
+    return success;
+  }
+
   insert_table_description(t.get(), instance_desc);
   commit_transaction();
+
   return success;
 }
 
@@ -582,18 +605,18 @@ sql_create_table(const SQLTable* t,
                  bool if_not_exists)
 {
   std::ostringstream sql;
-
-  std::vector<const SQLTableField*> keys;
   sql << "CREATE TABLE ";
   if(if_not_exists)sql << "IF NOT EXISTS ";
   sql << sql_table_name(t->table_name) << " ( \n";
   if(!parent_dict.at("DESC").empty())
     sql << sql_comment(parent_dict.at("DESC"),0,0,false) << '\n';
+  sql << "  " << sql_field_name(sql_oid_column_name()) << "INTEGER PRIMARY KEY";
+  if(!t->fields.empty())sql << ',';
+  sql << '\n';
   for ( auto f : t->fields )
   {
-    if(f->is_key())keys.push_back(f);
     sql << "  " << sql_field_name(f->field_name) << ' ' << sql_type(f->field_d);
-    if(f != t->fields.back() or !keys.empty())sql << ',';
+    if(f != t->fields.back())sql << ',';
     if(f->field_d)
     {
       std::map<std::string,std::string> dict = parent_dict;
@@ -615,20 +638,29 @@ sql_create_table(const SQLTable* t,
     }
     sql << '\n';
   }
-  if(!keys.empty())
+  sql << ")";
+  return sql.str();
+}
+
+std::string SQLTransceiver::
+sql_create_index(const SQLTable* t, bool if_not_exists)
+{
+  std::vector<const SQLTableField*> keys;
+  for ( auto f : t->fields )
+    if(f->is_key())keys.push_back(f);
+  if(keys.empty())return {};
+  std::ostringstream sql;
+  sql << "CREATE UNIQUE INDEX ";
+  if(if_not_exists)sql << "IF NOT EXISTS ";
+  sql << sql_table_name(t->table_name + "$index") << "\n";
+  sql << "  ON " << sql_table_name(t->table_name) << " (\n";
+  for(auto f : keys)
   {
-    sql << "  PRIMARY KEY (\n";
-    for(auto f : keys)
-    {
-      sql << "    " << sql_field_name(f->field_name);
-      if(f != keys.back())sql << ',';
-      sql << '\n';
-    }
-    sql << "  )\n";
+    sql << "    " << sql_field_name(f->field_name);
+    if(f != keys.back())sql << ',';
+    sql << '\n';
   }
-  if(t->fields.empty())
-    sql << "  `.empty_field` INTEGER\n";
-  sql << ')';
+  sql << "  )\n";
   return sql.str();
 }
 
@@ -636,24 +668,25 @@ std::string SQLTransceiver::
 sql_insert(const SQLTable* t)
 {
   std::ostringstream sql;
-  std::vector<const SQLTableField*> keys;
-  sql << "INSERT INTO " << sql_table_name(t->table_name) << " (\n";
+  sql << "INSERT INTO " << sql_table_name(t->table_name);
+  if(t->fields.empty()) {
+    sql << " DEFAULT VALUES\n";
+    return sql.str();
+  }
+  sql << " (\n";
   for ( auto f : t->fields )
   {
     sql << "  " << sql_field_name(f->field_name);
-    if(f != t->fields.back() or !keys.empty())sql << ',';
+    if(f != t->fields.back())sql << ',';
     sql << '\n';
   }
-  if(t->fields.empty())sql << "  `.empty_field`\n";
   sql << ") VALUES (\n";
   for ( auto f : t->fields )
   {
     sql << "  ?";
-    if(f != t->fields.back() or !keys.empty())sql << ',';
+    if(f != t->fields.back())sql << ',';
     sql << '\n';
   }
-  if(t->fields.empty())
-    sql << "  12939" << sql_comment("The essential supply",1,0,false) << '\n';
   sql << ')';
   return sql.str();
 }
@@ -775,30 +808,32 @@ bool SQLTransceiver::rollback_transaction()
 bool SQLTransceiver::r_exec_simple(SQLTable* t, bool ignore_errors)
 {
   bool good = true;
-  SQLStatement::StepStatus status = t->stmt->step();
-  if(write_sql_to_log_)LOG(INFO) << t->stmt->bound_sql();
-  switch(status)
+  if(t->stmt != nullptr)
   {
-    case SQLStatement::ERROR:
-      good = false;
-      if(!ignore_errors)
-      {
-        LOG(ERROR) << "SQL statement returned error: "
-                   << t->stmt->error_message() << '\n'
+    SQLStatement::StepStatus status = t->stmt->step();
+    if(write_sql_to_log_)LOG(INFO) << t->stmt->bound_sql();
+    switch(status)
+    {
+      case SQLStatement::ERROR:
+        good = false;
+        if(!ignore_errors)
+        {
+          LOG(ERROR) << "SQL statement returned error: "
+                     << t->stmt->error_message() << '\n'
+                     << "SQL: " << t->stmt->sql();
+          return good;
+        }
+        break;
+      case SQLStatement::OK_NO_DATA:
+        // this is what we expect
+        break;
+      case SQLStatement::OK_HAS_DATA:
+        LOG(ERROR) << "Simple SQL statement returned data" << '\n'
                    << "SQL: " << t->stmt->sql();
-        return good;
-      }
-      break;
-    case SQLStatement::OK_NO_DATA:
-      // this is what we expect
-      break;
-    case SQLStatement::OK_HAS_DATA:
-      LOG(ERROR) << "Simple SQL statement returned data" << '\n'
-                 << "SQL: " << t->stmt->sql();
-      return false;
+        return false;
+    }
+    t->stmt->reset();
   }
-  t->stmt->reset();
-
   for(auto st : t->sub_tables)
   {
     good &= r_exec_simple(st, ignore_errors);
@@ -1221,6 +1256,11 @@ void SQLTransceiver::create_internal_tables()
   r_exec_simple(tt, true);
   finalize_statements(tt);
 
+  iterate_over_tables(tt, [this,dict0](SQLTable* it) {
+      it->stmt = prepare_statement(sql_create_index(it)); });
+  r_exec_simple(tt, true);
+  finalize_statements(tt);
+
   // Make "SQLTableField" table
   SQLTable* tf =
     make_keyed_sqltable_tree("calin.table_fields",
@@ -1231,6 +1271,11 @@ void SQLTransceiver::create_internal_tables()
 
   iterate_over_tables(tf, [this,dict0](SQLTable* it) {
       it->stmt = prepare_statement(sql_create_table(it,dict0)); });
+  r_exec_simple(tf, true);
+  finalize_statements(tf);
+
+  iterate_over_tables(tf, [this,dict0](SQLTable* it) {
+      it->stmt = prepare_statement(sql_create_index(it)); });
   r_exec_simple(tf, true);
   finalize_statements(tf);
 
