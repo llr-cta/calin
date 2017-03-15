@@ -302,8 +302,7 @@ merge_one_gain(const OneGainRawStats* from, OneGainRawStats* to)
   for(int i=0; i<from->sum_product_size(); i++)
     to->set_sum_product(i, to->sum_product(i) + from->sum_product(i));
   for(int i=0; i<from->value_hist_size(); i++)
-    calin::math::histogram::merge_histogram1d_data(to->mutable_value_hist(i),
-      from->value_hist(i));
+    to->mutable_value_hist(i)->IntegrateFrom(from->value_hist(i));
 }
 
 template<typename OneGainRawStats>

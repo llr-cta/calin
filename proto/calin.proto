@@ -49,10 +49,10 @@ message FieldOptions {
 
   enum AutomaticMessageIntegrationFunctionAlgorithm {
     DEFAULT              = 0;  // Default : SUM_TO_TARGET for numeric types. VECTOR_APPEND for strings.
-    IGNORE_FIELD         = 1;  // Field should not be copied to target
-    REPLACE_TARGET       = 2;  // Overwrite target field
-    SUM_TO_TARGET        = 3;  // Numeric scalars, vectors, maps : numeric sum of values to target
-    VECTOR_APPEND        = 4;  // Vectors, strings : append values to end
+    IGNORE               = 1;  // Field should not be copied to target
+    REPLACE              = 2;  // Overwrite target field
+    SUM                  = 3;  // Numeric scalars, vectors, maps : numeric sum of values to target
+    APPEND               = 4;  // Vectors, strings : append values to end
   }
 
   string            desc                = 1; // Description string
