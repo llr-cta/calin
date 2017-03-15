@@ -165,34 +165,8 @@ process_one_waveform(
 
 bool WaveformStatsVisitor::merge_results()
 {
-  if(parent_)
-  {
-    assert(results_.high_gain_size() == parent_->results_.high_gain_size());
-    assert(results_.low_gain_size() == parent_->results_.low_gain_size());
-    for(int ichan=0; ichan<results_.high_gain_size(); ichan++)
-      merge_one_gain(&results_.high_gain(ichan),
-        parent_->results_.mutable_high_gain(ichan));
-    for(int ichan=0; ichan<results_.low_gain_size(); ichan++)
-      merge_one_gain(&results_.low_gain(ichan),
-        parent_->results_.mutable_low_gain(ichan));
-  }
+  if(parent_)parent_->results_.IntegrateFrom(results_);
   return true;
-}
-
-void WaveformStatsVisitor::merge_one_gain(
-  const ix::diagnostics::waveform::WaveformRawStats* from,
-  ix::diagnostics::waveform::WaveformRawStats* to)
-{
-  assert(to->sum_size() == from->sum_size());
-  assert(to->sum_squared_size() == from->sum_squared_size());
-  assert(to->sum_product_size() == from->sum_product_size());
-  to->set_num_entries(to->num_entries() + from->num_entries());
-  for(int i=0; i<from->sum_size(); i++)
-    to->set_sum(i,to->sum(i) + from->sum(i));
-  for(int i=0; i<from->sum_squared_size(); i++)
-    to->set_sum_squared(i,to->sum_squared(i) + from->sum_squared(i));
-  for(int i=0; i<from->sum_product_size(); i++)
-    to->set_sum_product(i,to->sum_product(i) + from->sum_product(i));
 }
 
 namespace {

@@ -80,10 +80,6 @@ protected:
     ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
     ix::diagnostics::waveform::WaveformRawStats* r_stat);
 
-  void merge_one_gain(
-    const ix::diagnostics::waveform::WaveformRawStats* from,
-    ix::diagnostics::waveform::WaveformRawStats* to);
-
   void merge_partial(
     ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
     ix::diagnostics::waveform::WaveformRawStats* r_stat);

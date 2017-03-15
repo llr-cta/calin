@@ -29,6 +29,8 @@ import "math/histogram.proto";
 package calin.ix.diagnostics.waveform;
 
 message WaveformRawStats {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
   uint32 num_entries                                       = 1 [
     (CFO).desc = "Number of waveforms accumulated in the stats." ];
   repeated uint64 sum                                      = 11 [
@@ -42,6 +44,8 @@ message WaveformRawStats {
 };
 
 message CameraWaveformRawStats {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
   repeated uint32 channel_id                               = 1 [
     (CFO).desc = "Channel id." ];
   repeated WaveformRawStats high_gain                      = 11 [
