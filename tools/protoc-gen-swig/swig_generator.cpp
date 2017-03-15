@@ -275,6 +275,15 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     "  static const $class_name$& default_instance();\n",
     "class_name", the_class_name,
     "class_type", the_class_type);
+
+  const google::protobuf::MessageOptions* mopt = &d->options();
+  const calin::MessageOptions* cmo = &mopt->GetExtension(calin::CMO);
+  if(cmo->message_integration_function() != calin::MessageOptions::MIF_NONE)
+    I->Print(
+      "\n"
+      "  void IntegrateFrom(const $class_name$& from);\n",
+      "class_name", the_class_name);
+
   I->Indent();
 
   // Typedefs for nested types
