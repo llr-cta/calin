@@ -289,6 +289,77 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
         break;
       }
     }
+  } else if(f->is_map()) {
+    const auto* fv = f->message_type()->field(1);
+    if(is_numeric_type(fv->type())) {
+      switch(cfo->integration_algorithm()) {
+      case calin::FieldOptions::DEFAULT:
+      case calin::FieldOptions::SUM:
+        printer.Print(
+          "for(auto i=from.$name$().begin(); i!=from.$name$().end(); i++) {\n"
+          "  auto ithis = this->$name$().find(i->first);\n"
+          "  if(ithis != this->$name$().end())(*this->mutable_$name$())[i->first] = ithis->second + i->second;\n"
+          "  else (*this->mutable_$name$())[i->first] = i->second;\n"
+          "}\n",
+          "name", f->name());
+        field_handled = true;
+        break;
+      case calin::FieldOptions::REPLACE:
+        printer.Print("this->clear_$name();\n", "name", f->name());
+        // Fall through
+      case calin::FieldOptions::APPEND:
+        printer.Print(
+          "for(auto i=from.$name$().begin(); i!=from.$name$().end(); i++)"
+          "  (*this->mutable_$name$())[i->first] = i->second;\n",
+          "name", f->name());
+        field_handled = true;
+        break;
+      default:
+        break;
+      }
+    } else if(is_string_type(fv->type()) or is_non_numeric_scalar_type(fv->type())) {
+      switch(cfo->integration_algorithm()) {
+      case calin::FieldOptions::REPLACE:
+        printer.Print("this->clear_$name();\n", "name", f->name());
+        // Fall through
+      case calin::FieldOptions::DEFAULT:
+      case calin::FieldOptions::APPEND:
+        printer.Print(
+          "for(auto i=from.$name$().begin(); i!=from.$name$().end(); i++)"
+          "  (*this->mutable_$name$())[i->first] = i->second;\n",
+          "name", f->name());
+        field_handled = true;
+        break;
+      default:
+        break;
+      }
+    } else if (fv->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
+      switch(cfo->integration_algorithm()) {
+      case calin::FieldOptions::DEFAULT:
+      case calin::FieldOptions::INTEGRATE:
+        printer.Print(
+          "for(auto i=from.$name$().begin(); i!=from.$name$().end(); i++) {\n"
+          "  auto ithis = this->$name$().find(i->first);\n"
+          "  if(ithis != this->$name$().end())(*this->mutable_$name$())[i->first].IntegrateFrom(i->second);\n"
+          "  else (*this->mutable_$name$())[i->first].MergeFrom(i->second);\n"
+          "}\n",
+          "name", f->name());
+        field_handled = true;
+        break;
+      case calin::FieldOptions::REPLACE:
+        printer.Print("this->clear_$name();\n", "name", f->name());
+        // Fall through
+      case calin::FieldOptions::MERGE:
+        printer.Print(
+          "for(auto i=from.$name$().begin(); i!=from.$name$().end(); i++)\n"
+          "  (*this->mutable_$name$())[i->first].MergeFrom(i->second);\n",
+          "name", f->name());
+        field_handled = true;
+        break;
+      default:
+        break;
+      }
+    }
   } else {
     *error = "Unhandled field type : "+f->name();
     return false;

@@ -162,3 +162,15 @@ message UnitTestKey {
   UnitTestSimpleSubMessage user_key_ssm = 3 [(CFO).desc="A submessage key",
                                              (CFO).sql.inline_message = true];
 }
+
+message UnitTestMIFSubMessage {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+  int32 i = 1;
+}
+
+message UnitTestMIF {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+  map<int32,int32> map_test_int = 1;
+  map<int32,string> map_test_string = 2;
+  map<int32,UnitTestMIFSubMessage> map_test_message = 3;
+}
