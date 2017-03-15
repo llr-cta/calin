@@ -111,11 +111,17 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
 {
   const google::protobuf::FieldOptions* fopt = &f->options();
   const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+
+  if(cfo->integration_algorithm() == calin::FieldOptions::IGNORE)return true;
+
+  if(f->containing_oneof()) {
+    printer.Print("if(from.has_$name$()) {\n", "name", f->name());
+    printer.Indent();
+  }
+  bool field_handled = false;
   if(is_numeric_type(f->type())) {
     if(f->is_repeated()) {
       switch(cfo->integration_algorithm()) {
-      case calin::FieldOptions::IGNORE:
-        break;
       case calin::FieldOptions::DEFAULT:
       case calin::FieldOptions::SUM:
         printer.Print(
@@ -123,6 +129,7 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
           "  if(i<this->$name$_size())this->set_$name$(i, this->$name$(i)+from.$name$(i));\n"
           "  else this->add_$name$(from.$name$(i));\n"
           "}\n", "name", f->name());
+        field_handled = true;
         break;
       case calin::FieldOptions::REPLACE:
         printer.Print("this->clear_$name();\n", "name", f->name());
@@ -131,49 +138,31 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
         printer.Print(
           "for(int i=0; i<from.$name$_size(); i++)\n"
           "  this->add_$name$(from.$name$(i));\n", "name", f->name());
+        field_handled = true;
         break;
-      case calin::FieldOptions::INTEGRATE:
-        *error = "Cannot select INTEGRATE algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::MERGE:
-        *error = "Cannot select MERGE algorithm for field: "+f->name();
-        return false;
       default:
-        assert(false);
         break;
       }
     } else { // if(f->is_repeated()) {
       switch(cfo->integration_algorithm()) {
-      case calin::FieldOptions::IGNORE:
-        break;
       case calin::FieldOptions::DEFAULT:
       case calin::FieldOptions::SUM:
         printer.Print(
           "this->set_$name$(this->$name$()+from.$name$());\n", "name", f->name());
+        field_handled = true;
         break;
       case calin::FieldOptions::REPLACE:
         printer.Print(
           "this->set_$name$(from.$name$());\n", "name", f->name());
+        field_handled = true;
         break;
-      case calin::FieldOptions::APPEND:
-        *error = "Cannot select APPEND algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::INTEGRATE:
-        *error = "Cannot select INTEGRATE algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::MERGE:
-        *error = "Cannot select MERGE algorithm for field: "+f->name();
-        return false;
       default:
-        assert(false);
         break;
       }
     }
   } else if(is_string_type(f->type())) {
     if(f->is_repeated()) {
       switch(cfo->integration_algorithm()) {
-      case calin::FieldOptions::IGNORE:
-        break;
       case calin::FieldOptions::DEFAULT:
       case calin::FieldOptions::REPLACE:
         printer.Print("this->clear_$name();\n", "name", f->name());
@@ -182,52 +171,31 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
         printer.Print(
           "for(int i=0; i<from.$name$_size(); i++)\n"
           "  this->add_$name$(from.$name$(i));\n", "name", f->name());
+        field_handled = true;
         break;
-      case calin::FieldOptions::SUM:
-        *error = "Cannot select SUM algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::INTEGRATE:
-        *error = "Cannot select INTEGRATE algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::MERGE:
-        *error = "Cannot select MERGE algorithm for field: "+f->name();
-        return false;
       default:
-        assert(false);
         break;
       }
     } else { // if(f->is_repeated()) {
       switch(cfo->integration_algorithm()) {
-      case calin::FieldOptions::IGNORE:
-        break;
       case calin::FieldOptions::DEFAULT:
       case calin::FieldOptions::REPLACE:
         printer.Print(
           "this->set_$name$(from.$name$());\n", "name", f->name());
+        field_handled = true;
         break;
       case calin::FieldOptions::APPEND:
         printer.Print(
           "this->set_$name$(this->$name$()+from.$name$());\n", "name", f->name());
+        field_handled = true;
         break;
-      case calin::FieldOptions::SUM:
-        *error = "Cannot select SUM algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::INTEGRATE:
-        *error = "Cannot select INTEGRATE algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::MERGE:
-        *error = "Cannot select MERGE algorithm for field: "+f->name();
-        return false;
       default:
-        assert(false);
         break;
       }
     }
   } else if(is_non_numeric_scalar_type(f->type())) {
     if(f->is_repeated()) {
       switch(cfo->integration_algorithm()) {
-      case calin::FieldOptions::IGNORE:
-        break;
       case calin::FieldOptions::DEFAULT:
       case calin::FieldOptions::REPLACE:
         printer.Print("this->clear_$name();\n", "name", f->name());
@@ -236,43 +204,20 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
         printer.Print(
           "for(int i=0; i<from.$name$_size(); i++)\n"
           "  this->add_$name$(from.$name$(i));\n", "name", f->name());
+        field_handled = true;
         break;
-      case calin::FieldOptions::SUM:
-        *error = "Cannot select SUM algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::INTEGRATE:
-        *error = "Cannot select INTEGRATE algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::MERGE:
-        *error = "Cannot select MERGE algorithm for field: "+f->name();
-        return false;
       default:
-        assert(false);
         break;
       }
     } else { // if(f->is_repeated()) {
       switch(cfo->integration_algorithm()) {
-      case calin::FieldOptions::IGNORE:
-        break;
       case calin::FieldOptions::DEFAULT:
       case calin::FieldOptions::REPLACE:
         printer.Print(
           "this->set_$name$(from.$name$());\n", "name", f->name());
+        field_handled = true;
         break;
-      case calin::FieldOptions::APPEND:
-        *error = "Cannot select APPEND algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::SUM:
-        *error = "Cannot select SUM algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::INTEGRATE:
-        *error = "Cannot select INTEGRATE algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::MERGE:
-        *error = "Cannot select MERGE algorithm for field: "+f->name();
-        return false;
       default:
-        assert(false);
         break;
       }
     }
@@ -280,8 +225,6 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
           f->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
     if(f->is_repeated()) {
       switch(cfo->integration_algorithm()) {
-      case calin::FieldOptions::IGNORE:
-        break;
       case calin::FieldOptions::DEFAULT:
       case calin::FieldOptions::INTEGRATE:
         printer.Print(
@@ -289,6 +232,7 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
           "  if(i<this->$name$_size())this->mutable_$name$(i)->IntegrateFrom(from.$name$(i));\n"
           "  else this->add_$name$()->MergeFrom(from.$name$(i));\n"
           "}\n", "name", f->name());
+        field_handled = true;
         break;
       case calin::FieldOptions::MERGE:
         printer.Print(
@@ -296,6 +240,7 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
           "  if(i<this->$name$_size())this->mutable_$name$(i)->MergeFrom(from.$name$(i));\n"
           "  else this->add_$name$()->MergeFrom(from.$name$(i));\n"
           "}\n", "name", f->name());
+        field_handled = true;
         break;
       case calin::FieldOptions::REPLACE:
         printer.Print("this->clear_$name();\n", "name", f->name());
@@ -304,52 +249,83 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
         printer.Print(
           "for(int i=0; i<from.$name$_size(); i++)\n"
           "  this->add_$name$()->MergeFrom(from.$name$(i));\n", "name", f->name());
+        field_handled = true;
         break;
-      case calin::FieldOptions::SUM:
-        *error = "Cannot select SUM algorithm for field: "+f->name();
-        return false;
       default:
-        assert(false);
         break;
       }
     } else { // if(f->is_repeated()) {
       switch(cfo->integration_algorithm()) {
-      case calin::FieldOptions::IGNORE:
-        break;
       case calin::FieldOptions::DEFAULT:
       case calin::FieldOptions::INTEGRATE:
-        printer.Print("if(from.has_$name$()) {\n", "name", f->name());
-        printer.Indent();
+        if(not f->containing_oneof()) {
+          printer.Print("if(from.has_$name$()) {\n", "name", f->name());
+          printer.Indent();
+        }
         printer.Print(
           "this->mutable_$name$()->IntegrateFrom(from.$name$());\n", "name", f->name());
-        printer.Outdent();
-        printer.Print("}\n");
+        if(not f->containing_oneof()) {
+          printer.Outdent();
+          printer.Print("}\n");
+        }
+        field_handled = true;
         break;
       case calin::FieldOptions::REPLACE:
         printer.Print("clear_$name$();\n", "name", f->name());
       case calin::FieldOptions::MERGE:
-        printer.Print("if(from.has_$name$()) {\n", "name", f->name());
-        printer.Indent();
+        if(not f->containing_oneof()) {
+          printer.Print("if(from.has_$name$()) {\n", "name", f->name());
+          printer.Indent();
+        }
         printer.Print(
           "this->mutable_$name$()->MergeFrom(from.$name$());\n", "name", f->name());
-        printer.Outdent();
-        printer.Print("}\n");
+        if(not f->containing_oneof()) {
+          printer.Outdent();
+          printer.Print("}\n");
+        }
+        field_handled = true;
         break;
-      case calin::FieldOptions::APPEND:
-        *error = "Cannot select APPEND algorithm for field: "+f->name();
-        return false;
-      case calin::FieldOptions::SUM:
-        *error = "Cannot select SUM algorithm for field: "+f->name();
-        return false;
       default:
-        assert(false);
         break;
       }
     }
   } else {
-    assert(0);
-    *error = "Unhandled field type "+std::to_string(f->type());
+    *error = "Unhandled field type : "+f->name();
     return false;
+  }
+
+  if(not field_handled) {
+    switch(cfo->integration_algorithm()) {
+    case calin::FieldOptions::IGNORE:
+      *error = "Cannot select IGNORE algorithm for field: "+f->name();
+      return false;
+    case calin::FieldOptions::DEFAULT:
+      *error = "Cannot select DEFAULT algorithm for field: "+f->name();
+      return false;
+    case calin::FieldOptions::REPLACE:
+      *error = "Cannot select REPLACE algorithm for field: "+f->name();
+      return false;
+    case calin::FieldOptions::APPEND:
+      *error = "Cannot select APPEND algorithm for field: "+f->name();
+      return false;
+    case calin::FieldOptions::SUM:
+      *error = "Cannot select SUM algorithm for field: "+f->name();
+      return false;
+    case calin::FieldOptions::INTEGRATE:
+      *error = "Cannot select INTEGRATE algorithm for field: "+f->name();
+      return false;
+    case calin::FieldOptions::MERGE:
+      *error = "Cannot select MERGE algorithm for field: "+f->name();
+      return false;
+    default:
+      *error = "Unknown algorithm for field: "+f->name();
+      return false;
+    }
+  }
+
+  if(f->containing_oneof()) {
+    printer.Outdent();
+    printer.Print("}\n");
   }
   return true;
 }
