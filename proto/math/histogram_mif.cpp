@@ -20,6 +20,8 @@
 
 */
 
+#include <algorithm>
+
 #include "math/histogram.pb.h"
 
 void calin::ix::math::histogram::Histogram1DData::IntegrateFrom(
