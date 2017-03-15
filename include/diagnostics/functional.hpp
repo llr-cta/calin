@@ -118,9 +118,6 @@ protected:
     std::vector<calin::math::histogram::SimpleHist>& hist,
     OneGainRawStats* stats);
 
-  template<typename OneGainRawStats>
-  void merge_one_gain(const OneGainRawStats* from, OneGainRawStats* to);
-
   DualGainFunctionalVisitor* value_supplier_;
   calin::ix::diagnostics::functional::
     FunctionalStatsVisitorConfig config_;

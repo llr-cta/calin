@@ -264,45 +264,8 @@ template<typename DualGainFunctionalVisitor, typename Results>
 bool FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
 merge_results()
 {
-  if(parent_)
-  {
-    if(results_.has_high_gain())
-      merge_one_gain(&results_.high_gain(),
-        parent_->results_.mutable_high_gain());
-    if(results_.has_low_gain())
-      merge_one_gain(&results_.low_gain(),
-        parent_->results_.mutable_low_gain());
-  }
+  if(parent_)parent_->results_.IntegrateFrom(results_);
   return true;
-}
-
-template<typename DualGainFunctionalVisitor, typename Results>
-template<typename OneGainRawStats>
-void FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
-merge_one_gain(const OneGainRawStats* from, OneGainRawStats* to)
-{
-  assert(to->num_sum_entries_size() == from->num_sum_entries_size());
-  assert(to->sum_size() == from->sum_size());
-  assert(to->sum_squared_size() == from->sum_squared_size());
-  assert(to->num_sum_product_entries_size() ==
-    from->num_sum_product_entries_size());
-  assert(to->sum_product_size() == from->sum_product_size());
-  assert(to->value_hist_size() == from->value_hist_size());
-
-  for(int i=0; i<from->num_sum_entries_size(); i++)
-    to->set_num_sum_entries(i,
-      to->num_sum_entries(i) + from->num_sum_entries(i));
-  for(int i=0; i<from->sum_size(); i++)
-    to->set_sum(i, to->sum(i) + from->sum(i));
-  for(int i=0; i<from->sum_squared_size(); i++)
-    to->set_sum_squared(i, to->sum_squared(i) + from->sum_squared(i));
-  for(int i=0; i<from->num_sum_product_entries_size(); i++)
-    to->set_num_sum_product_entries(i,
-      to->num_sum_product_entries(i) + from->num_sum_product_entries(i));
-  for(int i=0; i<from->sum_product_size(); i++)
-    to->set_sum_product(i, to->sum_product(i) + from->sum_product(i));
-  for(int i=0; i<from->value_hist_size(); i++)
-    to->mutable_value_hist(i)->IntegrateFrom(from->value_hist(i));
 }
 
 template<typename OneGainRawStats>
