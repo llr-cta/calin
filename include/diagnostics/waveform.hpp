@@ -148,10 +148,6 @@ protected:
     const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
     ix::diagnostics::waveform::WaveformRawPSD* psd);
 
-  void merge_one_gain(
-    const ix::diagnostics::waveform::WaveformRawPSD* from,
-    ix::diagnostics::waveform::WaveformRawPSD* to);
-
   WaveformPSDVisitor* parent_ = nullptr;
   calin::ix::diagnostics::waveform::CameraWaveformRawPSD results_;
   const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
