@@ -148,14 +148,12 @@ leave_telescope_run()
 {
   for(unsigned ichan=0; ichan<high_gain_hist_.size(); ichan++) {
     auto* hist = high_gain_hist_[ichan].dump_as_proto();
-    calin::math::histogram::merge_histogram1d_data(
-      results_.mutable_high_gain()->mutable_value_hist(ichan), *hist);
+    results_.mutable_high_gain()->mutable_value_hist(ichan)->IntegrateFrom(*hist);
     delete hist;
   }
   for(unsigned ichan=0; ichan<low_gain_hist_.size(); ichan++) {
     auto* hist = low_gain_hist_[ichan].dump_as_proto();
-    calin::math::histogram::merge_histogram1d_data(
-      results_.mutable_low_gain()->mutable_value_hist(ichan), *hist);
+    results_.mutable_low_gain()->mutable_value_hist(ichan)->IntegrateFrom(*hist);
     delete hist;
   }
   run_config_ = nullptr;
