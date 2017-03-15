@@ -309,7 +309,7 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
         // Fall through
       case calin::FieldOptions::APPEND:
         printer.Print(
-          "for(auto i=from.$name$().begin(); i!=from.$name$().end(); i++)"
+          "for(auto i=from.$name$().begin(); i!=from.$name$().end(); i++)\n"
           "  (*this->mutable_$name$())[i->first] = i->second;\n",
           "name", f->name());
         field_handled = true;
@@ -325,7 +325,7 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
       case calin::FieldOptions::DEFAULT:
       case calin::FieldOptions::APPEND:
         printer.Print(
-          "for(auto i=from.$name$().begin(); i!=from.$name$().end(); i++)"
+          "for(auto i=from.$name$().begin(); i!=from.$name$().end(); i++)\n"
           "  (*this->mutable_$name$())[i->first] = i->second;\n",
           "name", f->name());
         field_handled = true;
