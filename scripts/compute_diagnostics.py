@@ -198,12 +198,12 @@ dispatcher.add_visitor(psd_visitor)
 
 # Glitch detection visitor
 glitch_visitor = \
-    calin.diagnostics.event_number.CountersEventNumberGlitchDetector()
+    calin.diagnostics.event_number.ModulesSequentialNumberGlitchDetector()
 dispatcher.add_visitor(glitch_visitor)
 
 # Bunch event number detection visitor
 bunch_event_glitch_visitor = \
-    calin.diagnostics.event_number.CountersEventNumberGlitchDetector(2)
+    calin.diagnostics.event_number.ModulesSequentialNumberGlitchDetector(2)
 dispatcher.add_visitor(bunch_event_glitch_visitor)
 
 # Module present visitor
