@@ -372,7 +372,7 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   if(nmod==0 and cta_event)
   {
     nmod = get_nmod_from_event(cta_event);
-    for(unsigned imod=0;imod<nmod;imod++)config_mod_id.insert(imod);
+    for(int imod=0;imod<nmod;imod++)config_mod_id.insert(imod);
   }
   unsigned nmod_camera = calin_run_config->camera_layout().module_size();
   if(config_.demand_configured_module_id_size() != 0)
