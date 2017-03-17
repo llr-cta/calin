@@ -61,6 +61,9 @@ calin::diagnostics::functional::channel_var<
 %template(channel_cov_int)
 calin::diagnostics::functional::channel_cov<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
+%template(channel_cov_frac_int)
+calin::diagnostics::functional::channel_cov_frac<
+  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
 
 %template(channel_mean_double)
 calin::diagnostics::functional::channel_mean<
@@ -70,4 +73,7 @@ calin::diagnostics::functional::channel_var<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
 %template(channel_cov_double)
 calin::diagnostics::functional::channel_cov<
+  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
+%template(channel_cov_frac_double)
+calin::diagnostics::functional::channel_cov_frac<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
