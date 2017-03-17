@@ -189,7 +189,7 @@ visit_waveform(unsigned ichan,
   calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
   calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
 {
-  const int index = run_config_->configured_channel_index(ichan);
+  const int index = ichan; // run_config_->configured_channel_index(ichan);
   if(high_gain) {
     high_gain_mask_[index] = 1;
     high_gain_signal_[index] = value_supplier_->high_gain_value();
