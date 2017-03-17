@@ -118,7 +118,7 @@ bool WaveformStatsVisitor::visit_waveform(unsigned ichan,
   calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
   calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
 {
-  const int index = run_config_->configured_channel_index(ichan);
+  const int index = ichan; //run_config_->configured_channel_index(ichan);
   if(high_gain)
     process_one_waveform(high_gain, partial_.mutable_high_gain(index),
       results_.mutable_high_gain(index));
