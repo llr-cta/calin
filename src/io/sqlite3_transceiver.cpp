@@ -25,16 +25,18 @@
 
 #include <io/log.hpp>
 #include <io/sqlite3_transceiver.hpp>
+#include <util/file.hpp>
 
 using namespace calin::io::log;
 using namespace calin::io::sql_transceiver;
 
 SQLite3Transceiver::
-SQLite3Transceiver(const std::string& filename, OpenMode open_mode,
+SQLite3Transceiver(const std::string& filename_in, OpenMode open_mode,
                    bool write_sql_to_log):
     SQLTransceiver(write_sql_to_log),
     db_(), inherit_db_(), open_mode_(open_mode)
 {
+  std::string filename = calin::util::file::expand_filename(filename_in);
   if(open_mode == TRUNCATE_RW and filename.front() != ':' and
      filename.back() != ':')unlink(filename.c_str());
   int flags { 0 };
