@@ -1,0 +1,60 @@
+# Measured efficiency of MST light guides with Aluminium protected coating
+# Average of efficiency measured at 325, 390, 420, 440, 480 and 517nm on IPAG test benc
+# Provided by Pierre-Olivier Petrucci, March 17, 2017.
+# Using the following input data:
+#  I_mask = Integrated pulse charge measured with a hexagonal mask (24.4 mm diameter, flat-to-flat).
+#  A_mask = Geometrical area of the mask.
+#  I_guide = Integrated pulse charge measured with a light guide (49 mm diameter, flat-to-flat).
+#  A_guide = Geometrical area of the light guide entrance.
+#  T_guide = I_guide/I_mask x A_mask/A_guide
+#  or actually: I_guide(theta)/I_mask(0.) * A_mask/(A_guide*cos(theta))
+
+# theta  T_guide
+      0.00000     0.894173
+      1.00000     0.893440
+      2.00000     0.893724
+      3.00000     0.894670
+      4.00000     0.896434
+      5.00000     0.898476
+      6.00000     0.901365
+      7.00000     0.904743
+      8.00000     0.908640
+      9.00000     0.912871
+      10.0000     0.916556
+      11.0000     0.921080
+      12.0000     0.925556
+      13.0000     0.930535
+      14.0000     0.935396
+      15.0000     0.940076
+      16.0000     0.944405
+      17.0000     0.948288
+      18.0000     0.951482
+      19.0000     0.954645
+      20.0000     0.956956
+      21.0000     0.958225
+      22.0000     0.960761
+      23.0000     0.959617
+      24.0000     0.948766
+      25.0000     0.919607
+      26.0000     0.867079
+      27.0000     0.781661
+      28.0000     0.639214
+      29.0000     0.455064
+      30.0000     0.332340
+      31.0000     0.219875
+      32.0000     0.139003
+      33.0000     0.0832331
+      34.0000     0.0454220
+      35.0000     0.0226000
+      36.0000     0.00781752
+      37.0000     0.00109618
+      38.0000     0.000229092
+      39.0000     0.0
+      40.0000     0.0
+#      39.0000    -0.000197863
+#      40.0000    -0.000533395
+#      41.0000    -0.000813289
+#      42.0000    -0.00107284
+#      43.0000    -0.00126547
+#      44.0000    -0.00148278
+#      45.0000    -0.00163694
