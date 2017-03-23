@@ -130,6 +130,9 @@ protected:
   std::vector<calin::math::histogram::SimpleHist> high_gain_hist_;
   std::vector<calin::math::histogram::SimpleHist> low_gain_hist_;
 
+  calin::math::histogram::SimpleHist high_gain_mean_hist_;
+  calin::math::histogram::SimpleHist low_gain_mean_hist_;
+
   FunctionalStatsVisitor* parent_ = nullptr;
   Results results_;
   const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*

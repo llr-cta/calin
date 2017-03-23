@@ -21,6 +21,8 @@
 
 */
 
+#include <type_traits>
+
 #include <math/special.hpp>
 #include <math/covariance_calc.hpp>
 
@@ -31,7 +33,9 @@ FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
 FunctionalStatsVisitor(
     DualGainFunctionalVisitor* value_supplier,
     const ix::diagnostics::functional::FunctionalStatsVisitorConfig& config):
-  TelescopeEventVisitor(), value_supplier_(value_supplier), config_(config)
+  TelescopeEventVisitor(), value_supplier_(value_supplier), config_(config),
+  high_gain_mean_hist_(config.hist_config()),
+  low_gain_mean_hist_(config.hist_config())
 {
   // nothing to see here
 }
@@ -92,6 +96,7 @@ visit_telescope_run(
   high_gain_mask_.resize(nchan);
   high_gain_signal_.resize(nchan);
   high_gain_hist_.clear();
+  high_gain_mean_hist_.clear();
   for(int ichan=0; ichan<nchan; ichan++)
   {
     calin::ix::math::histogram::Histogram1DConfig hist_config(
@@ -117,6 +122,7 @@ visit_telescope_run(
   low_gain_mask_.resize(nchan);
   low_gain_signal_.resize(nchan);
   low_gain_hist_.clear();
+  low_gain_mean_hist_.clear();
   for(int ichan=0; ichan<nchan; ichan++)
   {
     calin::ix::math::histogram::Histogram1DConfig hist_config(
@@ -151,9 +157,19 @@ leave_telescope_run()
     results_.mutable_high_gain()->mutable_value_hist(ichan)->IntegrateFrom(*hist);
     delete hist;
   }
+  {
+    auto* hist = high_gain_mean_hist_.dump_as_proto();
+    results_.mutable_high_gain()->mutable_mean_hist()->IntegrateFrom(*hist);
+    delete hist;
+  }
   for(unsigned ichan=0; ichan<low_gain_hist_.size(); ichan++) {
     auto* hist = low_gain_hist_[ichan].dump_as_proto();
     results_.mutable_low_gain()->mutable_value_hist(ichan)->IntegrateFrom(*hist);
+    delete hist;
+  }
+  {
+    auto* hist = low_gain_mean_hist_.dump_as_proto();
+    results_.mutable_low_gain()->mutable_mean_hist()->IntegrateFrom(*hist);
     delete hist;
   }
   run_config_ = nullptr;
@@ -224,6 +240,8 @@ process_one_gain(const std::vector<int>& mask,
   auto* sum = stats->mutable_sum()->mutable_data();
   auto* sum_squared = stats->mutable_sum_squared()->mutable_data();
   const unsigned nchan = mask.size();
+  unsigned nmean = 0;
+  typename std::remove_reference<decltype(*sum)>::type mean_sum = 0;
   for(unsigned ichan=0; ichan<nchan; ichan++)
     if(mask[ichan])
     {
@@ -232,7 +250,16 @@ process_one_gain(const std::vector<int>& mask,
       sum[ichan] += si;
       sum_squared[ichan] += SQR(si);
       hist[ichan].insert(double(si));
+      nmean++;
+      mean_sum += si;
     }
+
+  if(nmean) {
+    double mean = double(mean_sum)/double(nmean);
+    stats->set_num_sum_mean_entries(stats->num_sum_mean_entries() + 1);
+    stats->set_sum_mean(stats->sum_mean() + mean);
+    stats->set_sum_mean_squared(stats->sum_mean_squared() + SQR(mean));
+  }
 
   if(config_.calculate_covariance())
   {
