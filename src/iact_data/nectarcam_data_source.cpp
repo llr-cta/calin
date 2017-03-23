@@ -381,7 +381,7 @@ bool NectarCamCameraEventDecoder::decode_run_config(
       throw std::runtime_error("NectarCamCameraEventDecoder::decode_run_config: "
         "Demand module list size must equal number of modules in data.");
     config_mod_id.clear();
-    for(unsigned imod=0;imod<nmod;imod++) {
+    for(int imod=0;imod<nmod;imod++) {
       unsigned mod_id = config_.demand_configured_module_id(imod);
       if(mod_id >= nmod_camera)
         throw std::runtime_error("NectarCamCameraEventDecoder::decode_run_config: "
