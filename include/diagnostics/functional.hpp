@@ -107,15 +107,11 @@ public:
   }
 
 protected:
-  void visit_one_waveform(
-    const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
-    unsigned index, std::vector<int>& mask,
-    std::vector<functional_value_type>& signal);
-
   template<typename OneGainRawStats>
   void process_one_gain(const std::vector<int>& mask,
     const std::vector<functional_value_type>& signal,
     std::vector<calin::math::histogram::SimpleHist>& hist,
+    calin::math::histogram::SimpleHist& mean_hist,
     OneGainRawStats* stats);
 
   DualGainFunctionalVisitor* value_supplier_;

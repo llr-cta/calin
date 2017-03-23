@@ -192,10 +192,10 @@ leave_telescope_event()
 {
   if(results_.has_high_gain())
     process_one_gain(high_gain_mask_, high_gain_signal_, high_gain_hist_,
-      results_.mutable_high_gain());
+      high_gain_mean_hist_, results_.mutable_high_gain());
   if(results_.has_low_gain())
     process_one_gain(low_gain_mask_, low_gain_signal_, low_gain_hist_,
-      results_.mutable_low_gain());
+      low_gain_mean_hist_, results_.mutable_low_gain());
   return true;
 }
 
@@ -218,21 +218,12 @@ visit_waveform(unsigned ichan,
 }
 
 template<typename DualGainFunctionalVisitor, typename Results>
-void FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
-visit_one_waveform(
-  const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
-  unsigned index, std::vector<int>& mask,
-  std::vector<functional_value_type>& signal)
-{
-  mask[index] = 1;
-}
-
-template<typename DualGainFunctionalVisitor, typename Results>
 template<typename OneGainRawStats>
 void FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
 process_one_gain(const std::vector<int>& mask,
   const std::vector<functional_value_type>& signal,
   std::vector<calin::math::histogram::SimpleHist>& hist,
+  calin::math::histogram::SimpleHist& mean_hist,
   OneGainRawStats* stats)
 {
   using calin::math::special::SQR;
@@ -259,6 +250,7 @@ process_one_gain(const std::vector<int>& mask,
     stats->set_num_sum_mean_entries(stats->num_sum_mean_entries() + 1);
     stats->set_sum_mean(stats->sum_mean() + mean);
     stats->set_sum_mean_squared(stats->sum_mean_squared() + SQR(mean));
+    mean_hist.insert(mean);
   }
 
   if(config_.calculate_covariance())
