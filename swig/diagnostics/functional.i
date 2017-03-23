@@ -64,6 +64,12 @@ calin::diagnostics::functional::channel_cov<
 %template(channel_cov_frac_int)
 calin::diagnostics::functional::channel_cov_frac<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
+%template(mean_of_mean_over_channels_int)
+calin::diagnostics::functional::mean_of_mean_over_channels<
+  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
+%template(var_of_mean_over_channels_int)
+calin::diagnostics::functional::var_of_mean_over_channels<
+  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
 
 %template(channel_mean_double)
 calin::diagnostics::functional::channel_mean<
@@ -76,4 +82,10 @@ calin::diagnostics::functional::channel_cov<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
 %template(channel_cov_frac_double)
 calin::diagnostics::functional::channel_cov_frac<
+  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
+%template(mean_of_mean_over_channels_double)
+calin::diagnostics::functional::mean_of_mean_over_channels<
+  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
+%template(var_of_mean_over_channels_double)
+calin::diagnostics::functional::var_of_mean_over_channels<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;

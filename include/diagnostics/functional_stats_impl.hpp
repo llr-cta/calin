@@ -387,4 +387,19 @@ Eigen::MatrixXd channel_cov_frac(const OneGainRawStats* stat)
   return c;
 }
 
+template<typename OneGainRawStats>
+double mean_of_mean_over_channels(const OneGainRawStats* stat)
+{
+  return stat->sum_mean() / double(stat->num_sum_mean_entries());
+}
+
+template<typename OneGainRawStats>
+double var_of_mean_over_channels(const OneGainRawStats* stat)
+{
+  using calin::math::covariance_calc::cov_gen;  
+  return cov_gen(stat->sum_mean_squared(), stat->num_sum_mean_entries(),
+    stat->sum_mean(), stat->num_sum_mean_entries(),
+    stat->sum_mean(), stat->num_sum_mean_entries());
+}
+
 } } } // namespace calin::diagnostics::functional_diagnostics

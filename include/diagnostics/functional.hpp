@@ -148,6 +148,12 @@ Eigen::MatrixXd channel_cov(const OneGainRawStats* stat);
 template<typename OneGainRawStats>
 Eigen::MatrixXd channel_cov_frac(const OneGainRawStats* stat);
 
+template<typename OneGainRawStats>
+double mean_of_mean_over_channels(const OneGainRawStats* stat);
+
+template<typename OneGainRawStats>
+double var_of_mean_over_channels(const OneGainRawStats* stat);
+
 } } } // namespace calin::diagnostics::functional_diagnostics
 
 #include <diagnostics/functional_stats_impl.hpp>

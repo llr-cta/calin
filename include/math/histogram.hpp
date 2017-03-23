@@ -89,7 +89,9 @@ public:
     { /* nothing to see here */ }
 
   BinnedData1D(const BinnedData1D& o) = default;
+#ifndef SWIG
   BinnedData1D& operator=(const BinnedData1D& o) = default;
+#endif
 
   // Getters and setters
   double dxval() const { return dxval_; }
@@ -469,7 +471,9 @@ template<typename Acc> class BasicHistogram1D:
   BasicHistogram1D(const calin::ix::math::histogram::Histogram1DData& data);
 
   BasicHistogram1D(const BasicHistogram1D& o) = default;
+#ifndef SWIG
   BasicHistogram1D& operator=(const BasicHistogram1D& o) = default;
+#endif
 
   // Get all data as protobuf message
   calin::ix::math::histogram::Histogram1DData*
