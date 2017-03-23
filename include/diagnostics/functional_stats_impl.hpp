@@ -93,10 +93,25 @@ visit_telescope_run(
   for(auto chan_id : run_config_->configured_channel_id())
     results_.add_channel_id(chan_id);
 
+  calin::ix::math::histogram::Histogram1DConfig hg_mean_hist_config(
+    config_.hist_config());
+  if(hg_mean_hist_config.name().empty())
+    hg_mean_hist_config.set_name("Mean (high gain)");
+  else hg_mean_hist_config.set_name(
+    hg_mean_hist_config.name() + " (mean high gain)");
+  if(hg_mean_hist_config.weight_units().empty())
+    hg_mean_hist_config.set_weight_units("events");
+  if(config_.mean_hist_dxval_multiplier() == 0.0)
+    hg_mean_hist_config.set_dxval(hg_mean_hist_config.dxval()
+      / std::sqrt(nchan));
+  else
+    hg_mean_hist_config.set_dxval(hg_mean_hist_config.dxval()
+      * config_.mean_hist_dxval_multiplier());
+  high_gain_mean_hist_ = calin::math::histogram::SimpleHist(hg_mean_hist_config);
+
   high_gain_mask_.resize(nchan);
   high_gain_signal_.resize(nchan);
   high_gain_hist_.clear();
-  high_gain_mean_hist_.clear();
   for(int ichan=0; ichan<nchan; ichan++)
   {
     calin::ix::math::histogram::Histogram1DConfig hist_config(
@@ -119,19 +134,34 @@ visit_telescope_run(
   hg_results->mutable_sum_product()->Resize(nchan*(nchan-1)/2,0);
   for(int ichan=0; ichan<nchan; ichan++)hg_results->add_value_hist();
 
+  calin::ix::math::histogram::Histogram1DConfig lg_mean_hist_config(
+    config_.hist_config());
+  if(lg_mean_hist_config.name().empty())
+    lg_mean_hist_config.set_name("Mean (low gain)");
+  else lg_mean_hist_config.set_name(
+    lg_mean_hist_config.name() + " (mean low gain)");
+  if(lg_mean_hist_config.weight_units().empty())
+    lg_mean_hist_config.set_weight_units("events");
+  if(config_.mean_hist_dxval_multiplier() == 0.0)
+    lg_mean_hist_config.set_dxval(lg_mean_hist_config.dxval()
+      / std::sqrt(nchan));
+  else
+    lg_mean_hist_config.set_dxval(lg_mean_hist_config.dxval()
+      * config_.mean_hist_dxval_multiplier());
+  low_gain_mean_hist_ = calin::math::histogram::SimpleHist(lg_mean_hist_config);
+
   low_gain_mask_.resize(nchan);
   low_gain_signal_.resize(nchan);
   low_gain_hist_.clear();
-  low_gain_mean_hist_.clear();
   for(int ichan=0; ichan<nchan; ichan++)
   {
     calin::ix::math::histogram::Histogram1DConfig hist_config(
       config_.hist_config());
     if(hist_config.name().empty())
       hist_config.set_name(
-        std::string("Channel ")+std::to_string(ichan)+" (high gain)");
+        std::string("Channel ")+std::to_string(ichan)+" (low gain)");
     else hist_config.set_name(
-      hist_config.name() + " (channel "+std::to_string(ichan)+", high gain)");
+      hist_config.name() + " (channel "+std::to_string(ichan)+", low gain)");
     if(hist_config.weight_units().empty())
       hist_config.set_weight_units("events");
     low_gain_hist_.emplace_back(hist_config);

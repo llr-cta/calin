@@ -88,6 +88,9 @@ public:
       xval_limit_hi_{config.xval_limit_hi()}, xval_units_{config.xval_units()}
     { /* nothing to see here */ }
 
+  BinnedData1D(const BinnedData1D& o) = default;
+  BinnedData1D& operator=(const BinnedData1D& o) = default;
+
   // Getters and setters
   double dxval() const { return dxval_; }
   double xval_align() const { return xval_align_; }
@@ -464,6 +467,9 @@ template<typename Acc> class BasicHistogram1D:
     { /* nothing to see here */ }
 
   BasicHistogram1D(const calin::ix::math::histogram::Histogram1DData& data);
+
+  BasicHistogram1D(const BasicHistogram1D& o) = default;
+  BasicHistogram1D& operator=(const BasicHistogram1D& o) = default;
 
   // Get all data as protobuf message
   calin::ix::math::histogram::Histogram1DData*
