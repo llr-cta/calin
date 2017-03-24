@@ -23,6 +23,8 @@
 
 #include <type_traits>
 
+#include <Eigen/LU>
+
 #include <math/special.hpp>
 #include <math/covariance_calc.hpp>
 
@@ -396,10 +398,29 @@ double mean_of_mean_over_channels(const OneGainRawStats* stat)
 template<typename OneGainRawStats>
 double var_of_mean_over_channels(const OneGainRawStats* stat)
 {
-  using calin::math::covariance_calc::cov_gen;  
+  using calin::math::covariance_calc::cov_gen;
   return cov_gen(stat->sum_mean_squared(), stat->num_sum_mean_entries(),
     stat->sum_mean(), stat->num_sum_mean_entries(),
     stat->sum_mean(), stat->num_sum_mean_entries());
+}
+
+template<typename OneGainRawStats>
+Eigen::VectorXd channel_independent_and_common_var(const OneGainRawStats* stat,
+  double& common_variance_out)
+{
+  using calin::math::special::SQR;
+  const int N = stat->sum_size();
+  Eigen::MatrixXd M = Eigen::MatrixXd::Identity(N+1,N+1);
+  M.block(0,N,N,1) = Eigen::MatrixXd::Ones(N,1);
+  M.block(N,0,1,N) = Eigen::MatrixXd::Ones(1,N);
+  M(N,N) = SQR(double(N));
+  Eigen::VectorXd V(N+1);
+  V.head(N) = channel_var(stat);
+  V(N) = var_of_mean_over_channels(stat) * SQR(double(N));
+  V = M.inverse() * V;
+  Eigen::VectorXd var = V.head(N);
+  common_variance_out = V[N];
+  return var;
 }
 
 } } } // namespace calin::diagnostics::functional_diagnostics

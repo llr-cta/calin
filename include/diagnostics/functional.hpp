@@ -154,6 +154,10 @@ double mean_of_mean_over_channels(const OneGainRawStats* stat);
 template<typename OneGainRawStats>
 double var_of_mean_over_channels(const OneGainRawStats* stat);
 
+template<typename OneGainRawStats>
+Eigen::VectorXd channel_independent_and_common_var(const OneGainRawStats* stat,
+  double& common_variance_out);
+
 } } } // namespace calin::diagnostics::functional_diagnostics
 
 #include <diagnostics/functional_stats_impl.hpp>

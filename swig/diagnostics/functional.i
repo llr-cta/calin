@@ -38,6 +38,9 @@
 %import "iact_data/functional_event_visitor.i"
 %import "diagnostics/value_capture.i"
 %import "diagnostics/functional.pb.i"
+
+%apply double &OUTPUT { double& common_variance_out };
+
 %include "diagnostics/functional.hpp"
 
 %template(FunctionalIntStatsVisitor)
@@ -70,6 +73,9 @@ calin::diagnostics::functional::mean_of_mean_over_channels<
 %template(var_of_mean_over_channels_int)
 calin::diagnostics::functional::var_of_mean_over_channels<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
+%template(channel_independent_and_common_var_int)
+calin::diagnostics::functional::channel_independent_and_common_var<
+  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
 
 %template(channel_mean_double)
 calin::diagnostics::functional::channel_mean<
@@ -88,4 +94,7 @@ calin::diagnostics::functional::mean_of_mean_over_channels<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
 %template(var_of_mean_over_channels_double)
 calin::diagnostics::functional::var_of_mean_over_channels<
+  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
+%template(channel_independent_and_common_var_double)
+calin::diagnostics::functional::channel_independent_and_common_var<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
