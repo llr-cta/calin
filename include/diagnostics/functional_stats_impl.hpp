@@ -405,8 +405,8 @@ double var_of_mean_over_channels(const OneGainRawStats* stat)
 }
 
 template<typename OneGainRawStats>
-Eigen::VectorXd channel_independent_and_common_var(const OneGainRawStats* stat,
-  double& common_variance_out)
+Eigen::VectorXd decompose_channel_independent_and_common_var(
+  const OneGainRawStats* stat, double& common_variance_out)
 {
   using calin::math::special::SQR;
   const int N = stat->sum_size();
@@ -418,9 +418,8 @@ Eigen::VectorXd channel_independent_and_common_var(const OneGainRawStats* stat,
   V.head(N) = channel_var(stat);
   V(N) = var_of_mean_over_channels(stat) * SQR(double(N));
   V = M.inverse() * V;
-  Eigen::VectorXd var = V.head(N);
   common_variance_out = V[N];
-  return var;
+  return V.head(N);
 }
 
 } } } // namespace calin::diagnostics::functional_diagnostics
