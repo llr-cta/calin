@@ -73,7 +73,7 @@ calin::diagnostics::functional::mean_of_mean_over_channels<
 %template(var_of_mean_over_channels_int)
 calin::diagnostics::functional::var_of_mean_over_channels<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(decompose_channel_independent_and_common_varint)
+%template(decompose_channel_independent_and_common_var_int)
 calin::diagnostics::functional::decompose_channel_independent_and_common_var<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
 
