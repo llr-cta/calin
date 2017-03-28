@@ -28,9 +28,9 @@
 namespace calin {
 
 #ifndef SWIG
-#define CALIN_TYPEALIAS(A,B) using A = B
+#define CALIN_TYPEALIAS(A,B...) using A = B
 #else
-#define CALIN_TYPEALIAS(A,B) typedef B A
+#define CALIN_TYPEALIAS(A,B...) typedef B A
 #endif
 
 //#define CALIN_USE_EIGEN_REF
