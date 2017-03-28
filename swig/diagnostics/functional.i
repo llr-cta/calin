@@ -55,58 +55,31 @@ calin::diagnostics::functional::FunctionalStatsVisitor<
     DualGainDoubleFunctionalTelescopeEventVisitor,
   calin::ix::diagnostics::functional::CameraDoubleFunctionalRawStats>;
 
-%template(channel_mean)
-calin::diagnostics::functional::channel_mean<
-  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(channel_var)
-calin::diagnostics::functional::channel_var<
-  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(channel_cov)
-calin::diagnostics::functional::channel_cov<
-  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(channel_cov_frac)
-calin::diagnostics::functional::channel_cov_frac<
-  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(mean_of_mean_over_channels)
-calin::diagnostics::functional::mean_of_mean_over_channels<
-  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(var_of_mean_over_channels)
-calin::diagnostics::functional::var_of_mean_over_channels<
-  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(decompose_channel_independent_and_common_var)
-calin::diagnostics::functional::decompose_channel_independent_and_common_var<
-  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(channel_high_to_low_gain_cov)
-  calin::diagnostics::functional::channel_high_to_low_gain_cov<
-    calin::ix::diagnostics::functional::CameraIntFunctionalRawStats>;
-%template(channel_high_to_low_gain_cov_frac)
-  calin::diagnostics::functional::channel_high_to_low_gain_cov_frac<
-    calin::ix::diagnostics::functional::CameraIntFunctionalRawStats>;
+%define ONEGAIN_TEMPLATE_WRAP(function)
+%template(function)
+  calin::diagnostics::functional:: ## function ##<
+    calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
+%template(function)
+  calin::diagnostics::functional:: ## function ##<
+    calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
+%enddef
 
-%template(channel_mean)
-calin::diagnostics::functional::channel_mean<
-  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(channel_var)
-calin::diagnostics::functional::channel_var<
-  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(channel_cov)
-calin::diagnostics::functional::channel_cov<
-  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(channel_cov_frac)
-calin::diagnostics::functional::channel_cov_frac<
-  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(mean_of_mean_over_channels)
-calin::diagnostics::functional::mean_of_mean_over_channels<
-  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(var_of_mean_over_channels)
-calin::diagnostics::functional::var_of_mean_over_channels<
-  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(decompose_channel_independent_and_common_var)
-calin::diagnostics::functional::decompose_channel_independent_and_common_var<
-  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(channel_high_to_low_gain_cov)
-  calin::diagnostics::functional::channel_high_to_low_gain_cov<
+%define DUALGAIN_TEMPLATE_WRAP(function)
+%template(function)
+  calin::diagnostics::functional:: ## function ##<
+    calin::ix::diagnostics::functional::CameraIntFunctionalRawStats>;
+%template(function)
+  calin::diagnostics::functional:: ## function ##<
     calin::ix::diagnostics::functional::CameraDoubleFunctionalRawStats>;
-%template(channel_high_to_low_gain_cov_frac)
-  calin::diagnostics::functional::channel_high_to_low_gain_cov_frac<
-    calin::ix::diagnostics::functional::CameraDoubleFunctionalRawStats>;
+%enddef
+
+ONEGAIN_TEMPLATE_WRAP(channel_mean)
+ONEGAIN_TEMPLATE_WRAP(channel_var)
+ONEGAIN_TEMPLATE_WRAP(channel_cov)
+ONEGAIN_TEMPLATE_WRAP(channel_cov_frac)
+ONEGAIN_TEMPLATE_WRAP(mean_of_mean_over_channels)
+ONEGAIN_TEMPLATE_WRAP(var_of_mean_over_channels)
+ONEGAIN_TEMPLATE_WRAP(decompose_channel_independent_and_common_var)
+
+DUALGAIN_TEMPLATE_WRAP(channel_high_to_low_gain_cov)
+DUALGAIN_TEMPLATE_WRAP(channel_high_to_low_gain_cov_frac)
