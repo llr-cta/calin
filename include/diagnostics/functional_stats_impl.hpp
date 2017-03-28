@@ -23,6 +23,7 @@
 
 #include <type_traits>
 
+#include <Eigen/Dense>
 #include <Eigen/LU>
 
 #include <math/special.hpp>
@@ -177,6 +178,9 @@ visit_telescope_run(
   lg_results->mutable_sum_product()->Resize(nchan*(nchan-1)/2,0);
   for(int ichan=0; ichan<nchan; ichan++)lg_results->add_value_hist();
 
+  results_.mutable_num_sum_high_low_gain_product_entries()->Resize(nchan,0);
+  results_.mutable_sum_high_low_gain_product()->Resize(nchan,0);
+
   return true;
 }
 
@@ -228,6 +232,20 @@ leave_telescope_event()
   if(results_.has_low_gain())
     process_one_gain(low_gain_mask_, low_gain_signal_, low_gain_hist_,
       low_gain_mean_hist_, results_.mutable_low_gain());
+  if(results_.has_high_gain() and results_.has_low_gain())
+  {
+    auto* num_sum = results_.mutable_num_sum_high_low_gain_product_entries()->mutable_data();
+    auto* sum = results_.mutable_sum_high_low_gain_product()->mutable_data();
+    const unsigned nchan = std::min(high_gain_mask_.size(), low_gain_mask_.size());
+    for(unsigned ichan=0; ichan<nchan; ichan++)
+      if(high_gain_mask_[ichan] and low_gain_mask_[ichan])
+      {
+        auto si = high_gain_signal_[ichan] * low_gain_signal_[ichan];
+        num_sum[ichan]++;
+        sum[ichan] += si;
+      }
+  }
+
   return true;
 }
 
@@ -387,6 +405,37 @@ Eigen::MatrixXd channel_cov_frac(const OneGainRawStats* stat)
     }
   }
   return c;
+}
+
+template<typename DualGainRawStats>
+Eigen::VectorXd channel_high_to_low_gain_cov(const DualGainRawStats* stat)
+{
+  using calin::math::special::SQR;
+  using calin::math::covariance_calc::cov_gen;
+  const int N = stat->num_sum_high_low_gain_product_entries_size();
+  assert(N == stat->sum_high_low_gain_product_size());
+  assert(stat->has_high_gain());
+  assert(N == stat->high_gain().num_sum_entries_size());
+  assert(N == stat->high_gain().sum_size());
+  assert(stat->has_low_gain());
+  assert(N == stat->low_gain().num_sum_entries_size());
+  assert(N == stat->low_gain().sum_size());
+  Eigen::VectorXd v(N);
+  for(int i=0; i<N; i++)
+    v(i) = cov_gen(stat->sum_high_low_gain_product(i),
+      stat->num_sum_high_low_gain_product_entries(i),
+      stat->high_gain().sum(i), stat->high_gain().num_sum_entries(i),
+      stat->low_gain().sum(i), stat->low_gain().num_sum_entries(i));
+  return v;
+}
+
+template<typename DualGainRawStats>
+Eigen::VectorXd channel_high_to_low_gain_cov_frac(const DualGainRawStats* stat)
+{
+  Eigen::VectorXd v = channel_high_to_low_gain_cov(stat);
+  v = v.array() / channel_var(&stat->high_gain()).array().sqrt();
+  v = v.array() / channel_var(&stat->low_gain()).array().sqrt();
+  return v;
 }
 
 template<typename OneGainRawStats>

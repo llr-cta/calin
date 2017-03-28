@@ -66,6 +66,11 @@ message CameraIntFunctionalRawStats {
     (CFO).desc = "Integrated stats for high gain channels." ];
   OneGainIntFunctionalRawStats low_gain                    = 12 [
     (CFO).desc = "Integrated stats for low gain channels." ];
+  repeated uint32 num_sum_high_low_gain_product_entries    = 21 [
+    (CFO).desc = "Number of waveforms accumulated in the sum_product stats." ];
+  repeated int64 sum_high_low_gain_product                 = 22 [
+    (CFO).desc = "Sum over all events of product of functional values for high "
+      "and low gain channels." ];
 };
 
 message OneGainDoubleFunctionalRawStats {
@@ -106,6 +111,11 @@ message CameraDoubleFunctionalRawStats {
     (CFO).desc = "Integrated stats for high gain channels." ];
   OneGainDoubleFunctionalRawStats low_gain                 = 12 [
     (CFO).desc = "Integrated stats for low gain channels." ];
+  repeated uint32 num_sum_high_low_gain_product_entries    = 21 [
+    (CFO).desc = "Number of waveforms accumulated in the sum_product stats." ];
+  repeated double sum_high_low_gain_product                = 22 [
+    (CFO).desc = "Sum over all events of product of functional values for high "
+      "and low gain channels." ];
 };
 
 message FunctionalStatsVisitorConfig {

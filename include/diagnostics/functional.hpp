@@ -148,6 +148,12 @@ Eigen::MatrixXd channel_cov(const OneGainRawStats* stat);
 template<typename OneGainRawStats>
 Eigen::MatrixXd channel_cov_frac(const OneGainRawStats* stat);
 
+template<typename DualGainRawStats>
+Eigen::VectorXd channel_high_to_low_gain_cov(const DualGainRawStats* stat);
+
+template<typename DualGainRawStats>
+Eigen::VectorXd channel_high_to_low_gain_cov_frac(const DualGainRawStats* stat);
+
 template<typename OneGainRawStats>
 double mean_of_mean_over_channels(const OneGainRawStats* stat);
 

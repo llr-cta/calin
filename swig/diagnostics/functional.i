@@ -55,46 +55,58 @@ calin::diagnostics::functional::FunctionalStatsVisitor<
     DualGainDoubleFunctionalTelescopeEventVisitor,
   calin::ix::diagnostics::functional::CameraDoubleFunctionalRawStats>;
 
-%template(channel_mean_int)
+%template(channel_mean)
 calin::diagnostics::functional::channel_mean<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(channel_var_int)
+%template(channel_var)
 calin::diagnostics::functional::channel_var<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(channel_cov_int)
+%template(channel_cov)
 calin::diagnostics::functional::channel_cov<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(channel_cov_frac_int)
+%template(channel_cov_frac)
 calin::diagnostics::functional::channel_cov_frac<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(mean_of_mean_over_channels_int)
+%template(mean_of_mean_over_channels)
 calin::diagnostics::functional::mean_of_mean_over_channels<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(var_of_mean_over_channels_int)
+%template(var_of_mean_over_channels)
 calin::diagnostics::functional::var_of_mean_over_channels<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(decompose_channel_independent_and_common_var_int)
+%template(decompose_channel_independent_and_common_var)
 calin::diagnostics::functional::decompose_channel_independent_and_common_var<
   calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
+%template(channel_high_to_low_gain_cov)
+  calin::diagnostics::functional::channel_high_to_low_gain_cov<
+    calin::ix::diagnostics::functional::CameraIntFunctionalRawStats>;
+%template(channel_high_to_low_gain_cov_frac)
+  calin::diagnostics::functional::channel_high_to_low_gain_cov_frac<
+    calin::ix::diagnostics::functional::CameraIntFunctionalRawStats>;
 
-%template(channel_mean_double)
+%template(channel_mean)
 calin::diagnostics::functional::channel_mean<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(channel_var_double)
+%template(channel_var)
 calin::diagnostics::functional::channel_var<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(channel_cov_double)
+%template(channel_cov)
 calin::diagnostics::functional::channel_cov<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(channel_cov_frac_double)
+%template(channel_cov_frac)
 calin::diagnostics::functional::channel_cov_frac<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(mean_of_mean_over_channels_double)
+%template(mean_of_mean_over_channels)
 calin::diagnostics::functional::mean_of_mean_over_channels<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(var_of_mean_over_channels_double)
+%template(var_of_mean_over_channels)
 calin::diagnostics::functional::var_of_mean_over_channels<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(decompose_channel_independent_and_common_var_double)
+%template(decompose_channel_independent_and_common_var)
 calin::diagnostics::functional::decompose_channel_independent_and_common_var<
   calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
+%template(channel_high_to_low_gain_cov)
+  calin::diagnostics::functional::channel_high_to_low_gain_cov<
+    calin::ix::diagnostics::functional::CameraDoubleFunctionalRawStats>;
+%template(channel_high_to_low_gain_cov_frac)
+  calin::diagnostics::functional::channel_high_to_low_gain_cov_frac<
+    calin::ix::diagnostics::functional::CameraDoubleFunctionalRawStats>;
