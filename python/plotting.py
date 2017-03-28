@@ -47,3 +47,9 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
     if cbar_label is not None:
         cbar.set_label(cbar_label)
     return pc
+
+def plot_histogram(h, *args):
+    hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
+    hy = h.bins_view()
+    so = plt.step(hx,hy, where='post', *args)
+    return so
