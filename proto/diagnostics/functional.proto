@@ -123,7 +123,7 @@ message FunctionalStatsVisitorConfig {
     (CFO).desc = "Calculate channel-to-channel covariance matrix." ];
   math.histogram.Histogram1DConfig hist_config             = 11 [
     (CFO).desc = "Configuration of histograms." ];
-  double mean_hist_dxval_multiplier                     = 12 [
+  double mean_hist_dxval_multiplier                        = 12 [
     (CFO).desc = "Multiplier to apply to bin size of mean histogram. A "
       "value of zero implies a multiplier of 1/sqrt(N_chan)." ];
 };
