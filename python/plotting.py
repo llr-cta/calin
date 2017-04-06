@@ -19,6 +19,8 @@ import matplotlib.pyplot as plt
 import matplotlib.collections
 import numpy as np
 
+import calin.math.histogram
+
 def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = None,
         cbar_label = None):
     if(configured_channels is not None and len(configured_channels) != len(pix_data)):
@@ -49,7 +51,13 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
     return pc
 
 def plot_histogram(h, *args):
-    hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
-    hy = h.bins_view()
+    if type(h) is calin.math.histogram.SimpleHist:
+        hx = h.all_xval_left()
+        hy = h.all_weight()
+    elif type(h) is calin.ix.math.histogram.Histogram1DData:
+        hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
+        hy = h.bins_view()
+    else:
+        raise Exception('Unknown histogram type: '+type(h))
     so = plt.step(hx,hy, where='post', *args)
     return so

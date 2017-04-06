@@ -98,7 +98,10 @@ message Results {
       "event for all configured channels." ];
 
   calin.ix.diagnostics.functional.CameraDoubleFunctionalRawStats t0_stats = 21 [
-    (CFO).desc = "Statistics of pulse time for each channel." ];
+    (CFO).desc = "Statistics of pulse start time for each channel." ];
+  repeated calin.ix.diagnostics.value_capture.CapturedDoubleValues captured_t0_values = 22 [
+    (CFO).desc = "Values of pulse start time for every event for all "
+      "configured channels." ];
 
   calin.ix.diagnostics.waveform.CameraWaveformRawStats waveform_stats = 31 [
     (CFO).desc = "Statistics of the waveform: mean and RMS of trace and "

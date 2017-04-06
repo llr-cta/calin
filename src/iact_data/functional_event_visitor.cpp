@@ -24,18 +24,6 @@
 
 using namespace calin::iact_data::functional_event_visitor;
 
-DualGainInt32FunctionalTelescopeEventVisitor::
-~DualGainInt32FunctionalTelescopeEventVisitor()
-{
-  // nothing to see here
-}
-
-DualGainDoubleFunctionalTelescopeEventVisitor::
-~DualGainDoubleFunctionalTelescopeEventVisitor()
-{
-  // nothing to see here
-}
-
 FixedWindowSumFunctionalTelescopeEventVisitor::
 FixedWindowSumFunctionalTelescopeEventVisitor(
   calin::ix::iact_data::functional_event_visitor::

@@ -129,7 +129,7 @@ bkg_capture = [None] * len(capture_channels)
 for ichan in capture_channels:
     # Background capture adapter - select channel
     bkg_capture_adapter[ichan] = calin.diagnostics.functional.\
-        SingleFunctionalValueSupplierVisitor(bkg_window_sum_visitor,ichan)
+        SingleInt32FunctionalValueSupplierVisitor(bkg_window_sum_visitor,ichan)
     dispatcher.add_visitor(bkg_capture_adapter[ichan])
 
     # Background capture
@@ -153,7 +153,7 @@ sig_capture = [None] * len(capture_channels)
 for ichan in capture_channels:
     # Signal capture adapter - select channel
     sig_capture_adapter[ichan] = calin.diagnostics.functional.\
-        SingleFunctionalValueSupplierVisitor(sig_window_sum_visitor,ichan)
+        SingleInt32FunctionalValueSupplierVisitor(sig_window_sum_visitor,ichan)
     dispatcher.add_visitor(sig_capture_adapter[ichan])
 
     # Signal capture
@@ -180,7 +180,7 @@ dispatcher.add_visitor(sig_bkg_stats_visitor)
 
 # Signal minus background capture adapter
 #sig_bkg_capture_adapter = calin.diagnostics.functional.\
-#    SingleFunctionalValueSupplierVisitor(sig_bkg_diff_visitor,0)
+#    SingleInt32FunctionalValueSupplierVisitor(sig_bkg_diff_visitor,0)
 #dispatcher.add_visitor(sig_bkg_capture_adapter)
 
 # Signal minus background capture
@@ -235,6 +235,20 @@ t0_stats = calin.diagnostics.functional.\
     FunctionalDoubleStatsVisitor(t0_calc, t0_stats_cfg)
 dispatcher.add_visitor(t0_stats)
 
+# T0 capture values
+t0_capture_adapter = [None] * len(capture_channels)
+t0_capture = [None] * len(capture_channels)
+for ichan in capture_channels:
+    # T0 capture adapter - select channel
+    t0_capture_adapter[ichan] = calin.diagnostics.functional.\
+        SingleDoubleFunctionalValueSupplierVisitor(t0_calc,ichan)
+    dispatcher.add_visitor(t0_capture_adapter[ichan])
+
+    # T0 capture
+    t0_capture[ichan] = calin.diagnostics.value_capture.\
+        DoubleSequentialValueCaptureVisitor(t0_capture_adapter[ichan],numpy.nan)
+    dispatcher.add_visitor(t0_capture[ichan])
+
 # Run all the visitors
 dispatcher.process_run(src,100000,opt.nthread())
 
@@ -253,6 +267,8 @@ for isig_capture in sig_capture:
 for ibkg_capture in bkg_capture:
     results.add_captured_bkg_values().CopyFrom(ibkg_capture.results())
 results.mutable_t0_stats().CopyFrom(t0_stats.results())
+for it0_capture in t0_capture:
+    results.add_captured_t0_values().CopyFrom(it0_capture.results())
 results.mutable_waveform_stats().CopyFrom(waveform_visitor.results())
 results.mutable_waveform_psd().CopyFrom(psd_visitor.results())
 
