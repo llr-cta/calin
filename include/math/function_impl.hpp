@@ -20,109 +20,171 @@
 
 */
 
-#include <numeric>
-
 namespace calin { namespace math { namespace function {
 
 template<typename ParameterizableBaseType>
-FrozenParameterizable<ParameterizableBaseType>::
-FrozenParameterizable(ParameterizableBaseType* p, bool adopt_p):
-  ParameterizableBaseType(), p_(p), adopt_p_(adopt_p),
-  free_params_(p->num_parameters()), frozen_params_(),
-  values_frozen_(p->num_parameters())
+ReducedSpaceParameterizable<ParameterizableBaseType>::~ReducedSpaceParameterizable()
 {
-  std::iota(free_params_.begin(), free_params_.end(), 0);
+  // nothing to see here
 }
 
 template<typename ParameterizableBaseType>
-FrozenParameterizable<ParameterizableBaseType>::~FrozenParameterizable()
+unsigned ReducedSpaceParameterizable<ParameterizableBaseType>::num_parameters()
 {
-  if(adopt_p_)delete p_;
-}
-
-template<typename ParameterizableBaseType>
-unsigned FrozenParameterizable<ParameterizableBaseType>::num_parameters()
-{
-  return free_params_.size();
+  return subspace_params_.size();
 }
 
 template<typename ParameterizableBaseType> std::vector<ParameterAxis>
-FrozenParameterizable<ParameterizableBaseType>::parameters()
+ReducedSpaceParameterizable<ParameterizableBaseType>::parameters()
 {
-  std::vector<ParameterAxis> return_parameters(free_params_.size());
-  std::vector<ParameterAxis> axes = p_->parameters();
-  for(unsigned iparam=0;iparam<free_params_.size();iparam++)
-    return_parameters[iparam] = axes[free_params_[iparam]];
+  std::vector<ParameterAxis> return_parameters(subspace_params_.size());
+  std::vector<ParameterAxis> axes = ParameterizableBaseType::parameters();
+  for(unsigned iparam=0;iparam<subspace_params_.size();iparam++)
+    return_parameters[iparam] = axes[subspace_params_[iparam]];
   return return_parameters;
-
 }
 
 template<typename ParameterizableBaseType> Eigen::VectorXd
-FrozenParameterizable<ParameterizableBaseType>::parameter_values()
+ReducedSpaceParameterizable<ParameterizableBaseType>::parameter_values()
 {
-  return original_param_vec_to_modified(p_->parameter_values());
+  return original_param_vec_to_subspace(
+    ParameterizableBaseType::parametersparameter_values());
 }
 
 template<typename ParameterizableBaseType> void
-FrozenParameterizable<ParameterizableBaseType>::set_parameter_values(ConstVecRef values)
+ReducedSpaceParameterizable<ParameterizableBaseType>::set_parameter_values(ConstVecRef values)
 {
-  p_->set_parameter_values(modified_param_vec_to_original(values));
+  ParameterizableBaseType::
+    set_parameter_values(subspace_param_vec_to_original(values));
 }
 
 template<typename ParameterizableBaseType> bool
-FrozenParameterizable<ParameterizableBaseType>::can_calculate_parameter_gradient()
+ReducedSpaceParameterizable<ParameterizableBaseType>::
+remove_parameter_from_subspace(unsigned iparam, double value)
 {
-  return p_->can_calculate_parameter_gradient();
-}
-
-template<typename ParameterizableBaseType> bool
-FrozenParameterizable<ParameterizableBaseType>::can_calculate_parameter_hessian()
-{
-  return p_->can_calculate_parameter_hessian();
-}
-
-template<typename ParameterizableBaseType> bool
-FrozenParameterizable<ParameterizableBaseType>::freeze_parameter(unsigned iparam, double value)
-{
-  values_frozen_(iparam) = value;
-  auto index = std::lower_bound(free_params_.begin(), free_params_.end(), iparam);
-  if(index == free_params_.end() or *index != iparam)return false;
-  free_params_.erase(index);
-  index = std::lower_bound(frozen_params_.begin(), frozen_params_.end(), iparam);
-  frozen_params_.insert(index, iparam);
+  removed_param_values_(iparam) = value;
+  auto index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), iparam);
+  if(index == subspace_params_.end() or *index != iparam)return false;
+  subspace_params_.erase(index);
+  index = std::lower_bound(removed_params_.begin(), removed_params_.end(), iparam);
+  removed_params_.insert(index, iparam);
   return true;
 }
 
 template<typename ParameterizableBaseType> bool
-FrozenParameterizable<ParameterizableBaseType>::thaw_parameter(unsigned iparam)
+ReducedSpaceParameterizable<ParameterizableBaseType>::replace_parameter(unsigned iparam)
 {
   auto index =
-      std::lower_bound(frozen_params_.begin(), frozen_params_.end(), iparam);
-  if(index == frozen_params_.end() or *index != iparam)return false;
-  frozen_params_.erase(index);
-  index = std::lower_bound(free_params_.begin(), free_params_.end(), iparam);
-  free_params_.insert(index, iparam);
+      std::lower_bound(removed_params_.begin(), removed_params_.end(), iparam);
+  if(index == removed_params_.end() or *index != iparam)return false;
+  removed_params_.erase(index);
+  index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), iparam);
+  subspace_params_.insert(index, iparam);
   return true;
 }
 
 template<typename ParameterizableBaseType> Eigen::VectorXd
-FrozenParameterizable<ParameterizableBaseType>::modified_param_vec_to_original(ConstVecRef values)
+ReducedSpaceParameterizable<ParameterizableBaseType>::subspace_param_vec_to_original(ConstVecRef values)
 {
-  assert(values.size() == free_params_.size());
-  Eigen::VectorXd o_vec = values_frozen_;
-  for(unsigned iparam=0; iparam!=free_params_.size(); iparam++)
-    o_vec[free_params_[iparam]] = values[iparam];
+  assert(values.size() == subspace_params_.size());
+  Eigen::VectorXd o_vec = removed_param_values_;
+  for(unsigned iparam=0; iparam!=subspace_params_.size(); iparam++)
+    o_vec[subspace_params_[iparam]] = values[iparam];
   return o_vec;
 }
 
 template<typename ParameterizableBaseType> Eigen::VectorXd
-FrozenParameterizable<ParameterizableBaseType>::original_param_vec_to_modified(ConstVecRef values)
+ReducedSpaceParameterizable<ParameterizableBaseType>::original_param_vec_to_subspace(ConstVecRef values)
 {
-  assert(values.size() == free_params_.size()+frozen_params_.size());
-  Eigen::VectorXd m_vec(free_params_.size());
-  for(unsigned iparam=0; iparam!=free_params_.size(); iparam++)
-    m_vec[iparam] = values[free_params_[iparam]];
+  assert(values.size() == subspace_params_.size()+removed_params_.size());
+  Eigen::VectorXd m_vec(subspace_params_.size());
+  for(unsigned iparam=0; iparam!=subspace_params_.size(); iparam++)
+    m_vec[iparam] = values[subspace_params_[iparam]];
   return m_vec;
+}
+
+template<typename ParameterizableBaseType> Eigen::VectorXd
+ReducedSpaceParameterizable<ParameterizableBaseType>::original_param_grad_to_subspace(ConstVecRef grad)
+{
+  assert(grad.size() == subspace_params_.size()+removed_params_.size());
+  Eigen::VectorXd subspace_grad(subspace_params_.size());
+  for(unsigned iparam=0; iparam!=subspace_params_.size(); iparam++)
+    subspace_grad[iparam] = grad[subspace_params_[iparam]];
+  return subspace_grad;
+}
+
+template<typename ParameterizableBaseType> Eigen::MatrixXd
+ReducedSpaceParameterizable<ParameterizableBaseType>::original_param_hess_to_subspace(ConstMatRef hess)
+{
+  assert(hess.rows() == subspace_params_.size()+removed_params_.size());
+  assert(hess.cols() == subspace_params_.size()+removed_params_.size());
+  Eigen::MatrixXd subspace_hess(subspace_params_.size(),this->subspace_params_.size());
+  for(unsigned iparam=0; iparam!=subspace_params_.size(); iparam++)
+    for(unsigned jparam=0; jparam!=subspace_params_.size(); jparam++)
+      subspace_hess(iparam,jparam) = hess(subspace_params_[iparam],subspace_params_[jparam]);
+  return subspace_hess;
+}
+
+template<typename ParameterizableBaseType>
+ReducedSpaceParameterizableMultiAxisFunction<ParameterizableBaseType>::
+~ReducedSpaceParameterizableMultiAxisFunction()
+{
+  // nothing to see here
+}
+
+template<typename ParameterizableBaseType>
+double ReducedSpaceParameterizableMultiAxisFunction<ParameterizableBaseType>::
+value_and_parameter_gradient(ConstVecRef x, VecRef gradient)
+{
+  Eigen::VectorXd orig_grad(this->subspace_params_.size() + this->removed_params_.size());
+  double val = ParameterizableBaseType::value_and_parameter_gradient(x, orig_grad);
+  gradient = this->original_param_grad_to_subspace(orig_grad);
+  return val;
+}
+
+template<typename ParameterizableBaseType>
+double ReducedSpaceParameterizableMultiAxisFunction<ParameterizableBaseType>::
+value_parameter_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
+{
+  Eigen::VectorXd orig_grad(this->subspace_params_.size() + this->removed_params_.size());
+  Eigen::MatrixXd orig_hess(this->subspace_params_.size() + this->removed_params_.size(),
+    this->subspace_params_.size() + this->removed_params_.size());
+  double val = ParameterizableBaseType::
+    value_and_parameter_gradient_and_hessian(x, orig_grad, orig_hess);
+  gradient = this->original_param_grad_to_subspace(orig_grad);
+  hessian = this->original_param_hess_to_subspace(orig_hess);
+  return val;
+}
+
+template<typename ParameterizableBaseType>
+ReducedSpaceParameterizableSingleAxisFunction<ParameterizableBaseType>::
+~ReducedSpaceParameterizableSingleAxisFunction()
+{
+  // nothing to see here
+}
+
+template<typename ParameterizableBaseType> double
+ReducedSpaceParameterizableSingleAxisFunction<ParameterizableBaseType>::
+value_and_parameter_gradient_1d(double x, VecRef gradient)
+{
+  Eigen::VectorXd orig_grad(this->subspace_params_.size() + this->removed_params_.size());
+  double val = ParameterizableBaseType::value_and_parameter_gradient_1d(x, orig_grad);
+  gradient = this->original_param_grad_to_subspace(orig_grad);
+  return val;
+}
+
+template<typename ParameterizableBaseType> double
+ReducedSpaceParameterizableSingleAxisFunction<ParameterizableBaseType>::
+value_parameter_gradient_and_hessian_1d(double x, VecRef gradient, MatRef hessian)
+{
+  Eigen::VectorXd orig_grad(this->subspace_params_.size() + this->removed_params_.size());
+  Eigen::MatrixXd orig_hess(this->subspace_params_.size() + this->removed_params_.size(),
+    this->subspace_params_.size() + this->removed_params_.size());
+  double val = ParameterizableBaseType::
+    value_and_parameter_gradient_and_hessian_1d(x, orig_grad, orig_hess);
+  gradient = this->original_param_grad_to_subspace(orig_grad);
+  hessian = this->original_param_hess_to_subspace(orig_hess);
+  return val;
 }
 
 } } } // namespace calin::math::function

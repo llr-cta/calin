@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include <numeric>
 
 #include <Eigen/Core>
 
@@ -165,37 +166,71 @@ class ParameterizableSingleAxisFunction:
 };
 
 template<typename ParameterizableBaseType>
-class FrozenParameterizable: public ParameterizableBaseType
+class ReducedSpaceParameterizable: public ParameterizableBaseType
 {
 public:
-  FrozenParameterizable(ParameterizableBaseType* p, bool adopt_p);
-  virtual ~FrozenParameterizable();
+  template<typename ... Args> ReducedSpaceParameterizable(Args && ... args):
+    ParameterizableBaseType(std::forward<Args>(args)...),
+    subspace_params_(ParameterizableBaseType::num_parameters()),
+    removed_params_(),
+    removed_param_values_(ParameterizableBaseType::num_parameters())
+  {
+    std::iota(subspace_params_.begin(), subspace_params_.end(), 0);
+  }
+  //ReducedSpaceParameterizable(ParameterizableBaseType* p, bool adopt_p);
+  virtual ~ReducedSpaceParameterizable();
   unsigned num_parameters() override;
   virtual std::vector<ParameterAxis> parameters() override;
   virtual Eigen::VectorXd parameter_values() override;
   virtual void set_parameter_values(ConstVecRef values) override;
-  virtual bool can_calculate_parameter_gradient() override;
-  virtual bool can_calculate_parameter_hessian() override;
+  //virtual bool can_calculate_parameter_gradient() override;
+  //virtual bool can_calculate_parameter_hessian() override;
 
-  ParameterizableBaseType* parameterizable() { return p_; }
-  bool freeze_parameter(unsigned iparam, double value);
-  bool thaw_parameter(unsigned iparam);
-  const std::vector<unsigned>& free_parameters() const { return free_params_; }
-  const std::vector<unsigned>& frozen_parameters() const { return frozen_params_; }
-  unsigned index_of_free_parameter(unsigned iparam) const {
-    return free_params_.at(iparam); }
-  unsigned index_of_frozen_parameter(unsigned iparam) const {
-    return frozen_params_.at(iparam); }
+  bool remove_parameter_from_subspace(unsigned iparam, double value);
+  bool replace_parameter(unsigned iparam);
+  const std::vector<unsigned>& subspace_parameters() const { return subspace_params_; }
+  const std::vector<unsigned>& removed_parameters() const { return removed_params_; }
+  unsigned index_of_subspace_parameter(unsigned iparam) const {
+    return subspace_params_.at(iparam); }
+  unsigned index_of_removed_parameter(unsigned iparam) const {
+    return removed_params_.at(iparam); }
 
-  Eigen::VectorXd modified_param_vec_to_original(ConstVecRef values);
-  Eigen::VectorXd original_param_vec_to_modified(ConstVecRef values);
+  Eigen::VectorXd subspace_param_vec_to_original(ConstVecRef values);
+  Eigen::VectorXd original_param_vec_to_subspace(ConstVecRef values);
+  Eigen::VectorXd original_param_grad_to_subspace(ConstVecRef grad);
+  Eigen::MatrixXd original_param_hess_to_subspace(ConstMatRef hess);
 
 protected:
-  ParameterizableBaseType* p_;
-  bool adopt_p_ = false;
-  std::vector<unsigned> free_params_;
-  std::vector<unsigned> frozen_params_;
-  Eigen::VectorXd values_frozen_;
+  std::vector<unsigned> subspace_params_;
+  std::vector<unsigned> removed_params_;
+  Eigen::VectorXd removed_param_values_;
+};
+
+template<typename ParameterizableBaseType>
+class ReducedSpaceParameterizableMultiAxisFunction:
+  public ReducedSpaceParameterizable<ParameterizableBaseType>
+{
+public:
+  using ReducedSpaceParameterizable<ParameterizableBaseType>::ReducedSpaceParameterizable;
+
+  virtual ~ReducedSpaceParameterizableMultiAxisFunction();
+  double value_and_parameter_gradient(ConstVecRef x, VecRef gradient) override;
+  double value_parameter_gradient_and_hessian(ConstVecRef x,
+    VecRef gradient, MatRef hessian) override;
+};
+
+template<typename ParameterizableBaseType>
+class ReducedSpaceParameterizableSingleAxisFunction:
+  public ReducedSpaceParameterizable<ParameterizableBaseType>
+{
+public:
+  using ReducedSpaceParameterizable<ParameterizableBaseType>::ReducedSpaceParameterizable;
+
+  virtual ~ReducedSpaceParameterizableSingleAxisFunction();
+
+  double value_and_parameter_gradient_1d(double x, VecRef gradient) override;
+  double value_parameter_gradient_and_hessian_1d(double x,
+    VecRef gradient, MatRef hessian) override;
 };
 
 class FreezeThawFunction: public ParameterizableMultiAxisFunction
