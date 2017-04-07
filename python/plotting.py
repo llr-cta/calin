@@ -50,7 +50,7 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
         cbar.set_label(cbar_label)
     return pc
 
-def plot_histogram(h, *args):
+def plot_histogram(h, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
@@ -59,5 +59,5 @@ def plot_histogram(h, *args):
         hy = h.bins_view()
     else:
         raise Exception('Unknown histogram type: '+type(h))
-    so = plt.step(hx,hy, where='post', *args)
+    so = plt.step(hx,hy, where='post', *args, **nargs)
     return so
