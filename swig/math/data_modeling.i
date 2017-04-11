@@ -1,8 +1,8 @@
 /*
 
-   calin/math/likelihood.i -- Stephen Fegan -- 2017-04-07
+   calin/math/data_modeling.i -- Stephen Fegan -- 2017-04-07
 
-   Likelihood functions for various data types
+   Data modeling functions for various data types
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -20,10 +20,10 @@
 
 */
 
-%module (package="calin.math") likelihood
+%module (package="calin.math") data_modeling
 
 %{
-#include "math/likelihood.hpp"
+#include "math/data_modeling.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -38,10 +38,16 @@
 %import "math/function.i"
 %import "math/histogram.i"
 
-%include "math/likelihood.hpp"
+%include "math/data_modeling.hpp"
 
-%extend calin::math::likelihood::IID1DValueLikelihoodFunction {
-  %template(IID1DValueLikelihoodFunction) IID1DValueLikelihoodFunction<
+%extend calin::math::data_modeling::IID1DDataLikelihoodFunction {
+  %template(IID1DDataLikelihoodFunction) IID1DDataLikelihoodFunction<
+    calin::math::histogram::BasicHistogram1D<
+      calin::math::histogram::DefaultAccumulator>>;
+}
+
+%extend calin::math::data_modeling::IID1DDataChi2Function {
+  %template(IID1DDataChi2Function) IID1DDataChi2Function<
     calin::math::histogram::BasicHistogram1D<
       calin::math::histogram::DefaultAccumulator>>;
 }
