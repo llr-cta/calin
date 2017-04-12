@@ -118,7 +118,7 @@ bool WaveformStatsVisitor::visit_waveform(unsigned ichan,
   calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
   calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
 {
-  const int index = run_config_->configured_channel_index(ichan);
+  const int index = ichan; //run_config_->configured_channel_index(ichan);
   if(high_gain)
     process_one_waveform(high_gain, partial_.mutable_high_gain(index),
       results_.mutable_high_gain(index));
@@ -165,34 +165,8 @@ process_one_waveform(
 
 bool WaveformStatsVisitor::merge_results()
 {
-  if(parent_)
-  {
-    assert(results_.high_gain_size() == parent_->results_.high_gain_size());
-    assert(results_.low_gain_size() == parent_->results_.low_gain_size());
-    for(int ichan=0; ichan<results_.high_gain_size(); ichan++)
-      merge_one_gain(&results_.high_gain(ichan),
-        parent_->results_.mutable_high_gain(ichan));
-    for(int ichan=0; ichan<results_.low_gain_size(); ichan++)
-      merge_one_gain(&results_.low_gain(ichan),
-        parent_->results_.mutable_low_gain(ichan));
-  }
+  if(parent_)parent_->results_.IntegrateFrom(results_);
   return true;
-}
-
-void WaveformStatsVisitor::merge_one_gain(
-  const ix::diagnostics::waveform::WaveformRawStats* from,
-  ix::diagnostics::waveform::WaveformRawStats* to)
-{
-  assert(to->sum_size() == from->sum_size());
-  assert(to->sum_squared_size() == from->sum_squared_size());
-  assert(to->sum_product_size() == from->sum_product_size());
-  to->set_num_entries(to->num_entries() + from->num_entries());
-  for(int i=0; i<from->sum_size(); i++)
-    to->set_sum(i,to->sum(i) + from->sum(i));
-  for(int i=0; i<from->sum_squared_size(); i++)
-    to->set_sum_squared(i,to->sum_squared(i) + from->sum_squared(i));
-  for(int i=0; i<from->sum_product_size(); i++)
-    to->set_sum_product(i,to->sum_product(i) + from->sum_product(i));
 }
 
 namespace {
@@ -265,5 +239,20 @@ Eigen::MatrixXd WaveformStatsVisitor::waveform_cov(
       c(i,j) = cij;
       c(j,i) = cij;
     }
+  return c;
+}
+
+Eigen::MatrixXd WaveformStatsVisitor::waveform_cov_frac(
+  const ix::diagnostics::waveform::WaveformRawStats* stat)
+{
+  Eigen::MatrixXd c = waveform_cov(stat);
+  const int N = stat->sum_size();
+  for(int i=0; i<N; i++) {
+    double scale = 1.0/std::sqrt(c(i,i));
+    for(int j=0; j<N; j++){
+      c(i,j) *= scale;
+      c(j,i) *= scale;
+    }
+  }
   return c;
 }

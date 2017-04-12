@@ -27,25 +27,31 @@
 
 namespace calin { namespace iact_data { namespace functional_event_visitor {
 
-class DualGainInt32FunctionalTelescopeEventVisitor:
+template<typename T> class BasicDualGainFunctionalTelescopeEventVisitor:
   public calin::iact_data::event_visitor::TelescopeEventVisitor
 {
 public:
-  CALIN_TYPEALIAS(value_type, int32_t);
-  virtual ~DualGainInt32FunctionalTelescopeEventVisitor();
-  virtual int32_t low_gain_value() = 0;
-  virtual int32_t high_gain_value() = 0;
+  CALIN_TYPEALIAS(value_type, T);
+  virtual ~BasicDualGainFunctionalTelescopeEventVisitor() {
+    // nothing to see here
+  }
+  virtual T low_gain_value() = 0;
+  virtual T high_gain_value() = 0;
 };
 
-class DualGainDoubleFunctionalTelescopeEventVisitor:
-  public calin::iact_data::event_visitor::TelescopeEventVisitor
-{
-public:
-  CALIN_TYPEALIAS(value_type, double);
-  virtual ~DualGainDoubleFunctionalTelescopeEventVisitor();
-  virtual double low_gain_value() = 0;
-  virtual double high_gain_value() = 0;
-};
+CALIN_TYPEALIAS(DualGainInt32FunctionalTelescopeEventVisitor,
+  BasicDualGainFunctionalTelescopeEventVisitor<int32_t>);
+CALIN_TYPEALIAS(DualGainDoubleFunctionalTelescopeEventVisitor,
+  BasicDualGainFunctionalTelescopeEventVisitor<double>);
+
+#ifdef SWIG
+} } } // namespace calin::iact_data::functional_event_visitor
+%template(DualGainInt32FunctionalTelescopeEventVisitor)
+  calin::iact_data::functional_event_visitor::BasicDualGainFunctionalTelescopeEventVisitor<int32_t>;
+%template(DualGainDoubleFunctionalTelescopeEventVisitor)
+  calin::iact_data::functional_event_visitor::BasicDualGainFunctionalTelescopeEventVisitor<double>;
+namespace calin { namespace iact_data { namespace functional_event_visitor {
+#endif
 
 class FixedWindowSumFunctionalTelescopeEventVisitor:
   public DualGainInt32FunctionalTelescopeEventVisitor

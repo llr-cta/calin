@@ -1,6 +1,7 @@
-# calin/tools/protoc-gen-swig/CMakeLists.txt -- Stephen Fegan
+# calin/tools/protoc-gen-calin-cpp-extensions/CMakeLists.txt -- Stephen Fegan
+#																														2017-03-14
 #
-# Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+# Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 #
 # This file is part of "calin"
@@ -13,11 +14,12 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_executable(protoc-gen-swig protoc-gen-swig.cpp swig_generator.cpp)
+add_executable(protoc-gen-calin-cpp-extensions protoc-gen-calin-cpp-extensions.cpp
+	calin_cpp_extensions_generator.cpp)
 
 include_directories(${CMAKE_CURRENT_BUILD_DIR})
 
-target_link_libraries(protoc-gen-swig calin_proto_base calin_util_lite
-	 ${PROTOBUF_LIBRARY} ${PROTOBUF_PROTOC_LIBRARIES})
+target_link_libraries(protoc-gen-calin-cpp-extensions calin_util_lite
+	${PROTOBUF_LIBRARY} calin_proto_base ${PROTOBUF_PROTOC_LIBRARIES})
 
-install(TARGETS protoc-gen-swig DESTINATION ${CALIN_BIN_INSTALL_DIR})
+install(TARGETS protoc-gen-calin-cpp-extensions DESTINATION ${CALIN_BIN_INSTALL_DIR})

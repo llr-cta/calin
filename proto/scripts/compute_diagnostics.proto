@@ -1,0 +1,119 @@
+/*
+
+   calin/proto/scripts/compute_diagnostics.proto
+                                        -- Stephen Fegan -- 2016-08-10
+
+   Protobufs for command line options abnd results of compute_diagnostics.py
+
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "io/log.proto";
+import "iact_data/zfits_data_source.proto";
+import "iact_data/nectarcam_data_source.proto";
+import "iact_data/telescope_run_configuration.proto";
+import "diagnostics/functional.proto";
+import "diagnostics/value_capture.proto";
+import "diagnostics/waveform.proto";
+
+package calin.ix.scripts.compute_diagnostics;
+
+message CommandLineOptions {
+  string o                                                 = 1 [
+    (CFO).desc = "SQLite3 output file name." ];
+
+  uint32 window_size                                       = 10 [
+    (CFO).desc = "Size of integration windows.", (CFO).units="samples" ];
+  int32 sig_window_start                                   = 11 [
+    (CFO).desc = "Offset of signal integration window from start of trace. "
+      "Positive values specify offset of start of window from start of trace, "
+      "negative values specify offset of end of window from end of trace.",
+    (CFO).units="samples" ];
+  int32 bkg_window_start                                   = 12 [
+    (CFO).desc = "Offset of background integration window from start of trace. "
+      "See \"sig_window_start\" for more details.",
+    (CFO).units="samples" ];
+
+  bool capture_all_channels                                = 20 [
+    (CFO).desc = "Capture signal and background values for all events from "
+      "all channels." ];
+  repeated uint32 capture_channels                         = 21 [
+    (CFO).desc = "Capture signal and background values for all events from "
+      "selected channels, given as comma separated list. This is overridden "
+      "by the \"capture_all_channels\" option." ];
+
+  int32 nthread                                            = 30 [
+    (CFO).desc = "Number of computation threads. A value of -1 disables "
+      "threading completely." ];
+  string db_results_table_name                             = 31 [
+    (CFO).desc = "Table name of results structure in database." ];
+
+  calin.ix.iact_data.zfits_data_source.ZFITSDataSourceConfig zfits = 100 [
+    (CFO).desc = "ZFits reader configuration." ];
+
+  calin.ix.iact_data.nectarcam_data_source.NectarCamCameraEventDecoderConfig decoder = 101 [
+    (CFO).desc = "NectarCam decoder configuration." ];
+};
+
+message Results {
+  CommandLineOptions command_line_options                  = 1 [
+    (CFO).desc = "Command line options passed to script." ];
+  calin.ix.io.log.Log log                                  = 2 [
+    (CFO).desc = "Log messages from run." ];
+  calin.ix.iact_data.telescope_run_configuration.TelescopeRunConfiguration run_config = 3 [
+    (CFO).desc = "Run configuration." ];
+  repeated int32 captured_channel_ids                      = 10 [
+    (CFO).desc = "IDs of all captured channels." ];
+
+  calin.ix.diagnostics.functional.CameraIntFunctionalRawStats sig_stats = 11 [
+    (CFO).desc = "Statistics of integrated charge from \"signal\" region "
+      "for each channel." ];
+  calin.ix.diagnostics.functional.CameraIntFunctionalRawStats bkg_stats = 12 [
+    (CFO).desc = "Statistics of integrated charge from \"background\" region "
+      "for each channel." ];
+  calin.ix.diagnostics.functional.CameraIntFunctionalRawStats sig_minus_bkg_stats = 13 [
+    (CFO).desc = "Statistics of difference between integrated charge from "
+      "\"signal\" and \"background\" regions for each channel." ];
+  repeated calin.ix.diagnostics.value_capture.CapturedInt32Values captured_sig_values = 14 [
+    (CFO).desc = "Values of integrated charge from \"signal\" region for every "
+      "event for all configured channels." ];
+  repeated calin.ix.diagnostics.value_capture.CapturedInt32Values captured_bkg_values = 15 [
+    (CFO).desc = "Values of integrated charge from \"background\" region for every "
+      "event for all configured channels." ];
+
+  calin.ix.diagnostics.functional.CameraDoubleFunctionalRawStats t0_stats = 21 [
+    (CFO).desc = "Statistics of pulse start time for each channel." ];
+  repeated calin.ix.diagnostics.value_capture.CapturedDoubleValues captured_t0_values = 22 [
+    (CFO).desc = "Values of pulse start time for every event for all "
+      "configured channels." ];
+
+  calin.ix.diagnostics.waveform.CameraWaveformRawStats waveform_stats = 31 [
+    (CFO).desc = "Statistics of the waveform: mean and RMS of trace and "
+      "covariance between samples." ];
+  calin.ix.diagnostics.waveform.CameraWaveformRawPSD waveform_psd = 32 [
+    (CFO).desc = "Statistics of power spectral density of the waveform." ];
+
+
+  // glitch = glitch_visitor.glitch_data()
+  // bunch_event_glitch = bunch_event_glitch_visitor.glitch_data()
+  // mod_present = mod_present_visitor.module_data()
+  // delta_t_values = delta_t_capture.results()
+
+
+};

@@ -50,6 +50,8 @@ message Histogram1DConfig {
 };
 
 message Histogram1DData {
+  option (CMO).message_integration_function = MIF_USER_GENERATED;
+
   double dxval                          = 1
     [(CFO).desc = "Bin width", (CFO).units = "xval-units" ];
   double xval_align                     = 2

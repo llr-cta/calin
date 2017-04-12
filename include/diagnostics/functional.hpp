@@ -30,29 +30,73 @@
 
 namespace calin { namespace diagnostics { namespace functional {
 
-class SingleFunctionalValueSupplierVisitor:
-  public calin::diagnostics::value_capture::ValueSupplierVisitor<int32_t>
+template<typename T>
+class BasicSingleFunctionalValueSupplierVisitor:
+  public calin::diagnostics::value_capture::ValueSupplierVisitor<T>
 {
 public:
-  SingleFunctionalValueSupplierVisitor(
-    calin::iact_data::functional_event_visitor::
-      DualGainInt32FunctionalTelescopeEventVisitor* value_supplier,
-    unsigned chan, bool low_gain = false);
-  virtual ~SingleFunctionalValueSupplierVisitor();
+  CALIN_TYPEALIAS(value_type, T);
+  CALIN_TYPEALIAS(value_supplier_visitor_type, \
+    calin::iact_data::functional_event_visitor::\
+      BasicDualGainFunctionalTelescopeEventVisitor<T>);
+  BasicSingleFunctionalValueSupplierVisitor(
+      value_supplier_visitor_type* value_supplier,
+      unsigned chan, bool low_gain = false):
+    calin::diagnostics::value_capture::ValueSupplierVisitor<T>(),
+    value_supplier_(value_supplier), chan_(chan), low_gain_(low_gain)
+  {
+    /* nothing to see here */
+  }
+  virtual ~BasicSingleFunctionalValueSupplierVisitor()
+  {
+    /* nothing to see here */
+  }
   bool visit_telescope_event(uint64_t seq_index,
-    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override
+  {
+    has_value_ = false;
+    return true;
+  }
   bool visit_waveform(unsigned ichan,
     calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
-    calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain) override;
-  bool get_value(int32_t& value) override;
+    calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain) override
+  {
+    if(ichan==chan_)
+    {
+      if(low_gain_) {
+        if(low_gain)
+          has_value_ = true, value_ = value_supplier_->low_gain_value();
+      } else {
+        if(high_gain)
+          has_value_ = true, value_ = value_supplier_->high_gain_value();
+      }
+    }
+    return true;
+  }
+  bool get_value(value_type& value) override
+  {
+    if(has_value_)value = value_;
+    return has_value_;
+  }
 private:
-  calin::iact_data::functional_event_visitor::
-    DualGainInt32FunctionalTelescopeEventVisitor* value_supplier_;
+  value_supplier_visitor_type* value_supplier_;
   unsigned chan_;
   bool low_gain_;
-  int32_t value_;
+  value_type value_;
   bool has_value_ = false;
 };
+
+#ifndef SWIG
+CALIN_TYPEALIAS(SingleInt32FunctionalValueSupplierVisitor,
+  BasicSingleFunctionalValueSupplierVisitor<int32_t>);
+CALIN_TYPEALIAS(SingleDoubleFunctionalValueSupplierVisitor,
+  BasicSingleFunctionalValueSupplierVisitor<double>);
+#else
+%template(SingleInt32FunctionalValueSupplierVisitor)
+  BasicSingleFunctionalValueSupplierVisitor<int32_t>;
+%template(SingleDoubleFunctionalValueSupplierVisitor)
+  BasicSingleFunctionalValueSupplierVisitor<double>;
+#endif
 
 template<typename DualGainFunctionalVisitor, typename Results>
 class FunctionalStatsVisitor:
@@ -107,19 +151,12 @@ public:
   }
 
 protected:
-  void visit_one_waveform(
-    const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
-    unsigned index, std::vector<int>& mask,
-    std::vector<functional_value_type>& signal);
-
   template<typename OneGainRawStats>
   void process_one_gain(const std::vector<int>& mask,
     const std::vector<functional_value_type>& signal,
     std::vector<calin::math::histogram::SimpleHist>& hist,
+    calin::math::histogram::SimpleHist& mean_hist,
     OneGainRawStats* stats);
-
-  template<typename OneGainRawStats>
-  void merge_one_gain(const OneGainRawStats* from, OneGainRawStats* to);
 
   DualGainFunctionalVisitor* value_supplier_;
   calin::ix::diagnostics::functional::
@@ -132,6 +169,9 @@ protected:
 
   std::vector<calin::math::histogram::SimpleHist> high_gain_hist_;
   std::vector<calin::math::histogram::SimpleHist> low_gain_hist_;
+
+  calin::math::histogram::SimpleHist high_gain_mean_hist_;
+  calin::math::histogram::SimpleHist low_gain_mean_hist_;
 
   FunctionalStatsVisitor* parent_ = nullptr;
   Results results_;
@@ -149,6 +189,24 @@ Eigen::VectorXd channel_var(const OneGainRawStats* stat);
 template<typename OneGainRawStats>
 Eigen::MatrixXd channel_cov(const OneGainRawStats* stat);
 
+template<typename OneGainRawStats>
+Eigen::MatrixXd channel_cov_frac(const OneGainRawStats* stat);
+
+template<typename DualGainRawStats>
+Eigen::VectorXd channel_high_to_low_gain_cov(const DualGainRawStats* stat);
+
+template<typename DualGainRawStats>
+Eigen::VectorXd channel_high_to_low_gain_cov_frac(const DualGainRawStats* stat);
+
+template<typename OneGainRawStats>
+double mean_of_mean_over_channels(const OneGainRawStats* stat);
+
+template<typename OneGainRawStats>
+double var_of_mean_over_channels(const OneGainRawStats* stat);
+
+template<typename OneGainRawStats>
+Eigen::VectorXd decompose_channel_independent_and_common_var(
+  const OneGainRawStats* stat, double& common_variance_out);
 
 } } } // namespace calin::diagnostics::functional_diagnostics
 
@@ -156,6 +214,14 @@ Eigen::MatrixXd channel_cov(const OneGainRawStats* stat);
 
 #ifndef SWIG
 #ifndef CALIN_DIAGNOSTICS_FUNCTIONAL_NO_EXTERN
+
+extern template
+class calin::diagnostics::functional::
+  BasicSingleFunctionalValueSupplierVisitor<int32_t>;
+
+extern template
+class calin::diagnostics::functional::
+  BasicSingleFunctionalValueSupplierVisitor<double>;
 
 extern template
 class calin::diagnostics::functional::FunctionalStatsVisitor<

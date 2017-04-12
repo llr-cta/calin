@@ -88,6 +88,11 @@ public:
       xval_limit_hi_{config.xval_limit_hi()}, xval_units_{config.xval_units()}
     { /* nothing to see here */ }
 
+  BinnedData1D(const BinnedData1D& o) = default;
+#ifndef SWIG
+  BinnedData1D& operator=(const BinnedData1D& o) = default;
+#endif
+
   // Getters and setters
   double dxval() const { return dxval_; }
   double xval_align() const { return xval_align_; }
@@ -465,6 +470,11 @@ template<typename Acc> class BasicHistogram1D:
 
   BasicHistogram1D(const calin::ix::math::histogram::Histogram1DData& data);
 
+  BasicHistogram1D(const BasicHistogram1D& o) = default;
+#ifndef SWIG
+  BasicHistogram1D& operator=(const BasicHistogram1D& o) = default;
+#endif
+
   // Get all data as protobuf message
   calin::ix::math::histogram::Histogram1DData*
     dump_as_proto(calin::ix::math::histogram::Histogram1DData* data = nullptr)
@@ -582,9 +592,6 @@ template<typename Acc> class BasicHistogram1D:
   std::string name_;
   std::string weight_units_;
 };
-
-void merge_histogram1d_data(calin::ix::math::histogram::Histogram1DData* to,
-  const calin::ix::math::histogram::Histogram1DData& from);
 
 template<typename Acc> bool BasicHistogram1D<Acc>::
 insert(const double x, const double w)

@@ -21,6 +21,11 @@
 
 */
 
+#include <type_traits>
+
+#include <Eigen/Dense>
+#include <Eigen/LU>
+
 #include <math/special.hpp>
 #include <math/covariance_calc.hpp>
 
@@ -31,7 +36,9 @@ FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
 FunctionalStatsVisitor(
     DualGainFunctionalVisitor* value_supplier,
     const ix::diagnostics::functional::FunctionalStatsVisitorConfig& config):
-  TelescopeEventVisitor(), value_supplier_(value_supplier), config_(config)
+  TelescopeEventVisitor(), value_supplier_(value_supplier), config_(config),
+  high_gain_mean_hist_(config.hist_config()),
+  low_gain_mean_hist_(config.hist_config())
 {
   // nothing to see here
 }
@@ -89,6 +96,22 @@ visit_telescope_run(
   for(auto chan_id : run_config_->configured_channel_id())
     results_.add_channel_id(chan_id);
 
+  calin::ix::math::histogram::Histogram1DConfig hg_mean_hist_config(
+    config_.hist_config());
+  if(hg_mean_hist_config.name().empty())
+    hg_mean_hist_config.set_name("Mean (high gain)");
+  else hg_mean_hist_config.set_name(
+    hg_mean_hist_config.name() + " (mean high gain)");
+  if(hg_mean_hist_config.weight_units().empty())
+    hg_mean_hist_config.set_weight_units("events");
+  if(config_.mean_hist_dxval_multiplier() == 0.0)
+    hg_mean_hist_config.set_dxval(hg_mean_hist_config.dxval()
+      / std::sqrt(nchan));
+  else
+    hg_mean_hist_config.set_dxval(hg_mean_hist_config.dxval()
+      * config_.mean_hist_dxval_multiplier());
+  high_gain_mean_hist_ = calin::math::histogram::SimpleHist(hg_mean_hist_config);
+
   high_gain_mask_.resize(nchan);
   high_gain_signal_.resize(nchan);
   high_gain_hist_.clear();
@@ -114,6 +137,22 @@ visit_telescope_run(
   hg_results->mutable_sum_product()->Resize(nchan*(nchan-1)/2,0);
   for(int ichan=0; ichan<nchan; ichan++)hg_results->add_value_hist();
 
+  calin::ix::math::histogram::Histogram1DConfig lg_mean_hist_config(
+    config_.hist_config());
+  if(lg_mean_hist_config.name().empty())
+    lg_mean_hist_config.set_name("Mean (low gain)");
+  else lg_mean_hist_config.set_name(
+    lg_mean_hist_config.name() + " (mean low gain)");
+  if(lg_mean_hist_config.weight_units().empty())
+    lg_mean_hist_config.set_weight_units("events");
+  if(config_.mean_hist_dxval_multiplier() == 0.0)
+    lg_mean_hist_config.set_dxval(lg_mean_hist_config.dxval()
+      / std::sqrt(nchan));
+  else
+    lg_mean_hist_config.set_dxval(lg_mean_hist_config.dxval()
+      * config_.mean_hist_dxval_multiplier());
+  low_gain_mean_hist_ = calin::math::histogram::SimpleHist(lg_mean_hist_config);
+
   low_gain_mask_.resize(nchan);
   low_gain_signal_.resize(nchan);
   low_gain_hist_.clear();
@@ -123,9 +162,9 @@ visit_telescope_run(
       config_.hist_config());
     if(hist_config.name().empty())
       hist_config.set_name(
-        std::string("Channel ")+std::to_string(ichan)+" (high gain)");
+        std::string("Channel ")+std::to_string(ichan)+" (low gain)");
     else hist_config.set_name(
-      hist_config.name() + " (channel "+std::to_string(ichan)+", high gain)");
+      hist_config.name() + " (channel "+std::to_string(ichan)+", low gain)");
     if(hist_config.weight_units().empty())
       hist_config.set_weight_units("events");
     low_gain_hist_.emplace_back(hist_config);
@@ -139,6 +178,9 @@ visit_telescope_run(
   lg_results->mutable_sum_product()->Resize(nchan*(nchan-1)/2,0);
   for(int ichan=0; ichan<nchan; ichan++)lg_results->add_value_hist();
 
+  results_.mutable_num_sum_high_low_gain_product_entries()->Resize(nchan,0);
+  results_.mutable_sum_high_low_gain_product()->Resize(nchan,0);
+
   return true;
 }
 
@@ -148,14 +190,22 @@ leave_telescope_run()
 {
   for(unsigned ichan=0; ichan<high_gain_hist_.size(); ichan++) {
     auto* hist = high_gain_hist_[ichan].dump_as_proto();
-    calin::math::histogram::merge_histogram1d_data(
-      results_.mutable_high_gain()->mutable_value_hist(ichan), *hist);
+    results_.mutable_high_gain()->mutable_value_hist(ichan)->IntegrateFrom(*hist);
+    delete hist;
+  }
+  {
+    auto* hist = high_gain_mean_hist_.dump_as_proto();
+    results_.mutable_high_gain()->mutable_mean_hist()->IntegrateFrom(*hist);
     delete hist;
   }
   for(unsigned ichan=0; ichan<low_gain_hist_.size(); ichan++) {
     auto* hist = low_gain_hist_[ichan].dump_as_proto();
-    calin::math::histogram::merge_histogram1d_data(
-      results_.mutable_low_gain()->mutable_value_hist(ichan), *hist);
+    results_.mutable_low_gain()->mutable_value_hist(ichan)->IntegrateFrom(*hist);
+    delete hist;
+  }
+  {
+    auto* hist = low_gain_mean_hist_.dump_as_proto();
+    results_.mutable_low_gain()->mutable_mean_hist()->IntegrateFrom(*hist);
     delete hist;
   }
   run_config_ = nullptr;
@@ -178,10 +228,24 @@ leave_telescope_event()
 {
   if(results_.has_high_gain())
     process_one_gain(high_gain_mask_, high_gain_signal_, high_gain_hist_,
-      results_.mutable_high_gain());
+      high_gain_mean_hist_, results_.mutable_high_gain());
   if(results_.has_low_gain())
     process_one_gain(low_gain_mask_, low_gain_signal_, low_gain_hist_,
-      results_.mutable_low_gain());
+      low_gain_mean_hist_, results_.mutable_low_gain());
+  if(results_.has_high_gain() and results_.has_low_gain())
+  {
+    auto* num_sum = results_.mutable_num_sum_high_low_gain_product_entries()->mutable_data();
+    auto* sum = results_.mutable_sum_high_low_gain_product()->mutable_data();
+    const unsigned nchan = std::min(high_gain_mask_.size(), low_gain_mask_.size());
+    for(unsigned ichan=0; ichan<nchan; ichan++)
+      if(high_gain_mask_[ichan] and low_gain_mask_[ichan])
+      {
+        auto si = high_gain_signal_[ichan] * low_gain_signal_[ichan];
+        num_sum[ichan]++;
+        sum[ichan] += si;
+      }
+  }
+
   return true;
 }
 
@@ -191,7 +255,7 @@ visit_waveform(unsigned ichan,
   calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
   calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
 {
-  const int index = run_config_->configured_channel_index(ichan);
+  const int index = ichan; // run_config_->configured_channel_index(ichan);
   if(high_gain) {
     high_gain_mask_[index] = 1;
     high_gain_signal_[index] = value_supplier_->high_gain_value();
@@ -204,21 +268,12 @@ visit_waveform(unsigned ichan,
 }
 
 template<typename DualGainFunctionalVisitor, typename Results>
-void FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
-visit_one_waveform(
-  const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
-  unsigned index, std::vector<int>& mask,
-  std::vector<functional_value_type>& signal)
-{
-  mask[index] = 1;
-}
-
-template<typename DualGainFunctionalVisitor, typename Results>
 template<typename OneGainRawStats>
 void FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
 process_one_gain(const std::vector<int>& mask,
   const std::vector<functional_value_type>& signal,
   std::vector<calin::math::histogram::SimpleHist>& hist,
+  calin::math::histogram::SimpleHist& mean_hist,
   OneGainRawStats* stats)
 {
   using calin::math::special::SQR;
@@ -226,6 +281,8 @@ process_one_gain(const std::vector<int>& mask,
   auto* sum = stats->mutable_sum()->mutable_data();
   auto* sum_squared = stats->mutable_sum_squared()->mutable_data();
   const unsigned nchan = mask.size();
+  unsigned nmean = 0;
+  typename std::remove_reference<decltype(*sum)>::type mean_sum = 0;
   for(unsigned ichan=0; ichan<nchan; ichan++)
     if(mask[ichan])
     {
@@ -234,7 +291,17 @@ process_one_gain(const std::vector<int>& mask,
       sum[ichan] += si;
       sum_squared[ichan] += SQR(si);
       hist[ichan].insert(double(si));
+      nmean++;
+      mean_sum += si;
     }
+
+  if(nmean) {
+    double mean = double(mean_sum)/double(nmean);
+    stats->set_num_sum_mean_entries(stats->num_sum_mean_entries() + 1);
+    stats->set_sum_mean(stats->sum_mean() + mean);
+    stats->set_sum_mean_squared(stats->sum_mean_squared() + SQR(mean));
+    mean_hist.insert(mean);
+  }
 
   if(config_.calculate_covariance())
   {
@@ -264,46 +331,8 @@ template<typename DualGainFunctionalVisitor, typename Results>
 bool FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
 merge_results()
 {
-  if(parent_)
-  {
-    if(results_.has_high_gain())
-      merge_one_gain(&results_.high_gain(),
-        parent_->results_.mutable_high_gain());
-    if(results_.has_low_gain())
-      merge_one_gain(&results_.low_gain(),
-        parent_->results_.mutable_low_gain());
-  }
+  if(parent_)parent_->results_.IntegrateFrom(results_);
   return true;
-}
-
-template<typename DualGainFunctionalVisitor, typename Results>
-template<typename OneGainRawStats>
-void FunctionalStatsVisitor<DualGainFunctionalVisitor, Results>::
-merge_one_gain(const OneGainRawStats* from, OneGainRawStats* to)
-{
-  assert(to->num_sum_entries_size() == from->num_sum_entries_size());
-  assert(to->sum_size() == from->sum_size());
-  assert(to->sum_squared_size() == from->sum_squared_size());
-  assert(to->num_sum_product_entries_size() ==
-    from->num_sum_product_entries_size());
-  assert(to->sum_product_size() == from->sum_product_size());
-  assert(to->value_hist_size() == from->value_hist_size());
-
-  for(int i=0; i<from->num_sum_entries_size(); i++)
-    to->set_num_sum_entries(i,
-      to->num_sum_entries(i) + from->num_sum_entries(i));
-  for(int i=0; i<from->sum_size(); i++)
-    to->set_sum(i, to->sum(i) + from->sum(i));
-  for(int i=0; i<from->sum_squared_size(); i++)
-    to->set_sum_squared(i, to->sum_squared(i) + from->sum_squared(i));
-  for(int i=0; i<from->num_sum_product_entries_size(); i++)
-    to->set_num_sum_product_entries(i,
-      to->num_sum_product_entries(i) + from->num_sum_product_entries(i));
-  for(int i=0; i<from->sum_product_size(); i++)
-    to->set_sum_product(i, to->sum_product(i) + from->sum_product(i));
-  for(int i=0; i<from->value_hist_size(); i++)
-    calin::math::histogram::merge_histogram1d_data(to->mutable_value_hist(i),
-      from->value_hist(i));
 }
 
 template<typename OneGainRawStats>
@@ -361,6 +390,85 @@ Eigen::MatrixXd channel_cov(const OneGainRawStats* stat)
       c(j,i) = cij;
     }
   return c;
+}
+
+template<typename OneGainRawStats>
+Eigen::MatrixXd channel_cov_frac(const OneGainRawStats* stat)
+{
+  Eigen::MatrixXd c = channel_cov(stat);
+  const int N = stat->sum_size();
+  for(int i=0; i<N; i++) {
+    double scale = 1.0/std::sqrt(c(i,i));
+    for(int j=0; j<N; j++){
+      c(i,j) *= scale;
+      c(j,i) *= scale;
+    }
+  }
+  return c;
+}
+
+template<typename DualGainRawStats>
+Eigen::VectorXd channel_high_to_low_gain_cov(const DualGainRawStats* stat)
+{
+  using calin::math::special::SQR;
+  using calin::math::covariance_calc::cov_gen;
+  const int N = stat->num_sum_high_low_gain_product_entries_size();
+  assert(N == stat->sum_high_low_gain_product_size());
+  assert(stat->has_high_gain());
+  assert(N == stat->high_gain().num_sum_entries_size());
+  assert(N == stat->high_gain().sum_size());
+  assert(stat->has_low_gain());
+  assert(N == stat->low_gain().num_sum_entries_size());
+  assert(N == stat->low_gain().sum_size());
+  Eigen::VectorXd v(N);
+  for(int i=0; i<N; i++)
+    v(i) = cov_gen(stat->sum_high_low_gain_product(i),
+      stat->num_sum_high_low_gain_product_entries(i),
+      stat->high_gain().sum(i), stat->high_gain().num_sum_entries(i),
+      stat->low_gain().sum(i), stat->low_gain().num_sum_entries(i));
+  return v;
+}
+
+template<typename DualGainRawStats>
+Eigen::VectorXd channel_high_to_low_gain_cov_frac(const DualGainRawStats* stat)
+{
+  Eigen::VectorXd v = channel_high_to_low_gain_cov(stat);
+  v = v.array() / channel_var(&stat->high_gain()).array().sqrt();
+  v = v.array() / channel_var(&stat->low_gain()).array().sqrt();
+  return v;
+}
+
+template<typename OneGainRawStats>
+double mean_of_mean_over_channels(const OneGainRawStats* stat)
+{
+  return stat->sum_mean() / double(stat->num_sum_mean_entries());
+}
+
+template<typename OneGainRawStats>
+double var_of_mean_over_channels(const OneGainRawStats* stat)
+{
+  using calin::math::covariance_calc::cov_gen;
+  return cov_gen(stat->sum_mean_squared(), stat->num_sum_mean_entries(),
+    stat->sum_mean(), stat->num_sum_mean_entries(),
+    stat->sum_mean(), stat->num_sum_mean_entries());
+}
+
+template<typename OneGainRawStats>
+Eigen::VectorXd decompose_channel_independent_and_common_var(
+  const OneGainRawStats* stat, double& common_variance_out)
+{
+  using calin::math::special::SQR;
+  const int N = stat->sum_size();
+  Eigen::MatrixXd M = Eigen::MatrixXd::Identity(N+1,N+1);
+  M.block(0,N,N,1) = Eigen::MatrixXd::Ones(N,1);
+  M.block(N,0,1,N) = Eigen::MatrixXd::Ones(1,N);
+  M(N,N) = SQR(double(N));
+  Eigen::VectorXd V(N+1);
+  V.head(N) = channel_var(stat);
+  V(N) = var_of_mean_over_channels(stat) * SQR(double(N));
+  V = M.inverse() * V;
+  common_variance_out = V[N];
+  return V.head(N);
 }
 
 } } } // namespace calin::diagnostics::functional_diagnostics

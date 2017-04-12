@@ -1,0 +1,60 @@
+# Measured efficiency of MST light guides with Aluminium protected coating
+# Average of efficiency measured at 325, 390, 420, 440, 480 and 517nm on IPAG test benc
+# Provided by Pierre-Olivier Petrucci, March 17, 2017.
+# Using the following input data:
+#  I_mask = Integrated pulse charge measured with a hexagonal mask (24.4 mm diameter, flat-to-flat).
+#  A_mask = Geometrical area of the mask.
+#  I_guide = Integrated pulse charge measured with a light guide (49 mm diameter, flat-to-flat).
+#  A_guide = Geometrical area of the light guide entrance.
+#  T_guide = I_guide/I_mask x A_mask/A_guide
+#  or actually: I_guide(theta)/I_mask(0.) * A_mask/(A_guide*cos(theta))
+
+# theta  T_guide
+      0.00000     0.861860
+      1.00000     0.861828
+      2.00000     0.862652
+      3.00000     0.864272
+      4.00000     0.866691
+      5.00000     0.869361
+      6.00000     0.872486
+      7.00000     0.876203
+      8.00000     0.880113
+      9.00000     0.884171
+      10.0000     0.888284
+      11.0000     0.892365
+      12.0000     0.896792
+      13.0000     0.900890
+      14.0000     0.903587
+      15.0000     0.905673
+      16.0000     0.907169
+      17.0000     0.908158
+      18.0000     0.909574
+      19.0000     0.910624
+      20.0000     0.910693
+      21.0000     0.907927
+      22.0000     0.899763
+      23.0000     0.883586
+      24.0000     0.853653
+      25.0000     0.801900
+      26.0000     0.720764
+      27.0000     0.613409
+      28.0000     0.472447
+      29.0000     0.339697
+      30.0000     0.243131
+      31.0000     0.156862
+      32.0000     0.0948039
+      33.0000     0.0532074
+      34.0000     0.0284877
+      35.0000     0.0124160
+      36.0000     0.00380625
+      37.0000     0.000846734
+      38.0000     0.000289127
+      39.0000     0.0
+      40.0000     0.0
+#      39.0000    -9.12273e-05
+#      40.0000    -0.000383966
+#      41.0000    -0.000657588
+#      42.0000    -0.000868584
+#      43.0000    -0.00117216
+#      44.0000    -0.00133763
+#      45.0000    -0.00149009

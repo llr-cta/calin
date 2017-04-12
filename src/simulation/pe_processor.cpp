@@ -90,7 +90,7 @@ process_pe(unsigned scope_id, int pixel_id, double x, double y,
   if(scope_id >= images_.size())
     throw std::out_of_range("SimpleImagePEProcessor::process_pe: scope_id out "
       "of range");
-  if(pixel_id >= images_[scope_id].size())
+  if(unsigned(pixel_id) >= images_[scope_id].size())
     throw std::out_of_range("SimpleImagePEProcessor::process_pe: pixel_id out "
       "of range");
   images_[scope_id][pixel_id].accumulate(pe_weight);

@@ -27,12 +27,12 @@
 
 namespace calin { namespace diagnostics { namespace event_number {
 
-class SequentialEventNumberGlitchDetector:
+class SequentialNumberGlitchDetector:
   public iact_data::event_visitor::TelescopeEventVisitor
 {
 public:
-  SequentialEventNumberGlitchDetector(bool test_local_event_number = false);
-  virtual ~SequentialEventNumberGlitchDetector();
+  SequentialNumberGlitchDetector(bool test_local_event_number = false);
+  virtual ~SequentialNumberGlitchDetector();
 
   bool demand_waveforms() override;
 
@@ -40,22 +40,22 @@ public:
     calin:: ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
   calin::ix::diagnostics::event_number::
-  SequentialEventNumberGlitchDetectorData& glitch_data() {
+  SequentialNumberGlitchDetectorData& glitch_data() {
     return glitch_data_; }
 
 protected:
   bool test_local_event_number_ = false;
   int64_t last_event_number_ = -1;
   calin::ix::diagnostics::event_number::
-    SequentialEventNumberGlitchDetectorData glitch_data_;
+    SequentialNumberGlitchDetectorData glitch_data_;
 };
 
-class CountersEventNumberGlitchDetector:
+class ModulesSequentialNumberGlitchDetector:
   public iact_data::event_visitor::TelescopeEventVisitor
 {
 public:
-  CountersEventNumberGlitchDetector(int counter_index = 0);
-  virtual ~CountersEventNumberGlitchDetector();
+  ModulesSequentialNumberGlitchDetector(int counter_index = 0);
+  virtual ~ModulesSequentialNumberGlitchDetector();
 
   bool demand_waveforms() override;
 
@@ -67,7 +67,7 @@ public:
     calin:: ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
   calin::ix::diagnostics::event_number::
-  CountersEventNumberGlitchDetectorData& glitch_data() {
+  ModulesSequentialNumberGlitchDetectorData& glitch_data() {
     return glitch_data_; }
 
 protected:
@@ -75,7 +75,7 @@ protected:
   int64_t local_event_num_diff_ = 0;
   std::vector<int64_t> counters_event_num_diff_;
   calin::ix::diagnostics::event_number::
-    CountersEventNumberGlitchDetectorData glitch_data_;
+    ModulesSequentialNumberGlitchDetectorData glitch_data_;
 };
 
 

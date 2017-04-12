@@ -27,24 +27,24 @@ using namespace calin::io::log;
 using namespace calin::diagnostics::event_number;
 using namespace calin::ix::diagnostics::event_number;
 
-SequentialEventNumberGlitchDetector::
-SequentialEventNumberGlitchDetector(bool test_local_event_number):
+SequentialNumberGlitchDetector::
+SequentialNumberGlitchDetector(bool test_local_event_number):
   TelescopeEventVisitor(), test_local_event_number_(test_local_event_number)
 {
   // nothing to see here
 }
 
-SequentialEventNumberGlitchDetector::~SequentialEventNumberGlitchDetector()
+SequentialNumberGlitchDetector::~SequentialNumberGlitchDetector()
 {
   // nothing to see here
 }
 
-bool SequentialEventNumberGlitchDetector::demand_waveforms()
+bool SequentialNumberGlitchDetector::demand_waveforms()
 {
   return false;
 }
 
-bool SequentialEventNumberGlitchDetector::
+bool SequentialNumberGlitchDetector::
 visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
@@ -54,38 +54,38 @@ visit_telescope_event(uint64_t seq_index,
   {
     auto* glitch = glitch_data_.add_glitch();
     glitch->set_source_event_index(event->source_event_index());
-    glitch->set_event_number(event_number);
-    glitch->set_last_event_number(last_event_number_);
+    glitch->set_sequence_number(event_number);
+    glitch->set_last_sequence_number(last_event_number_);
   }
   last_event_number_ = event_number;
   return true;
 }
 
-CountersEventNumberGlitchDetector::
-CountersEventNumberGlitchDetector(int counter_index):
+ModulesSequentialNumberGlitchDetector::
+ModulesSequentialNumberGlitchDetector(int counter_index):
   TelescopeEventVisitor(), counter_index_(counter_index)
 {
   // nothing to see here
 }
 
-CountersEventNumberGlitchDetector::~CountersEventNumberGlitchDetector()
+ModulesSequentialNumberGlitchDetector::~ModulesSequentialNumberGlitchDetector()
 {
   // nothing to see here
 }
 
-bool CountersEventNumberGlitchDetector::demand_waveforms()
+bool ModulesSequentialNumberGlitchDetector::demand_waveforms()
 {
   return false;
 }
 
-bool CountersEventNumberGlitchDetector::visit_telescope_run(
+bool ModulesSequentialNumberGlitchDetector::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* run_config)
 {
   return true;
 }
 
-bool CountersEventNumberGlitchDetector::
+bool ModulesSequentialNumberGlitchDetector::
 visit_telescope_event(uint64_t seq_index,
   calin:: ix::iact_data::telescope_event::TelescopeEvent* event)
 {

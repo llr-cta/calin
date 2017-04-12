@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/function.hpp -- Stephen Fegan -- 2015-02-24
 
@@ -9,11 +9,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include <numeric>
 
 #include <Eigen/Core>
 
@@ -46,7 +47,7 @@ struct ParameterAxis
       has_lo_bound(_has_lo_bound), lo_bound(_lo_bound),
       has_hi_bound(_has_hi_bound), hi_bound(_hi_bound),
       scale(_scale), initial_value(_initial_value)
-  { /* nothing to see here */ } 
+  { /* nothing to see here */ }
 
   std::string name;
   std::string units;
@@ -113,7 +114,7 @@ class MultiAxisFunction
   virtual bool can_calculate_hessian() = 0;
   virtual double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
                                             MatRef hessian) = 0;
-  virtual double error_up() = 0;  
+  virtual double error_up() = 0;
 };
 
 class SingleAxisFunction: virtual public MultiAxisFunction
@@ -164,6 +165,74 @@ class ParameterizableSingleAxisFunction:
                                       VecRef gradient, MatRef hessian) override;
 };
 
+template<typename ParameterizableBaseType>
+class ReducedSpaceParameterizable: public ParameterizableBaseType
+{
+public:
+  template<typename ... Args> ReducedSpaceParameterizable(Args && ... args):
+    ParameterizableBaseType(std::forward<Args>(args)...),
+    subspace_params_(ParameterizableBaseType::num_parameters()),
+    removed_params_(),
+    removed_param_values_(ParameterizableBaseType::num_parameters())
+  {
+    std::iota(subspace_params_.begin(), subspace_params_.end(), 0);
+  }
+  //ReducedSpaceParameterizable(ParameterizableBaseType* p, bool adopt_p);
+  virtual ~ReducedSpaceParameterizable();
+  unsigned num_parameters() override;
+  virtual std::vector<ParameterAxis> parameters() override;
+  virtual Eigen::VectorXd parameter_values() override;
+  virtual void set_parameter_values(ConstVecRef values) override;
+  //virtual bool can_calculate_parameter_gradient() override;
+  //virtual bool can_calculate_parameter_hessian() override;
+
+  bool remove_parameter_from_subspace(unsigned iparam, double value);
+  bool replace_parameter(unsigned iparam);
+  const std::vector<unsigned>& subspace_parameters() const { return subspace_params_; }
+  const std::vector<unsigned>& removed_parameters() const { return removed_params_; }
+  unsigned index_of_subspace_parameter(unsigned iparam) const {
+    return subspace_params_.at(iparam); }
+  unsigned index_of_removed_parameter(unsigned iparam) const {
+    return removed_params_.at(iparam); }
+
+  Eigen::VectorXd subspace_param_vec_to_original(ConstVecRef values);
+  Eigen::VectorXd original_param_vec_to_subspace(ConstVecRef values);
+  Eigen::VectorXd original_param_grad_to_subspace(ConstVecRef grad);
+  Eigen::MatrixXd original_param_hess_to_subspace(ConstMatRef hess);
+
+protected:
+  std::vector<unsigned> subspace_params_;
+  std::vector<unsigned> removed_params_;
+  Eigen::VectorXd removed_param_values_;
+};
+
+template<typename ParameterizableBaseType>
+class ReducedSpaceParameterizableMultiAxisFunction:
+  public ReducedSpaceParameterizable<ParameterizableBaseType>
+{
+public:
+  using ReducedSpaceParameterizable<ParameterizableBaseType>::ReducedSpaceParameterizable;
+
+  virtual ~ReducedSpaceParameterizableMultiAxisFunction();
+  double value_and_parameter_gradient(ConstVecRef x, VecRef gradient) override;
+  double value_parameter_gradient_and_hessian(ConstVecRef x,
+    VecRef gradient, MatRef hessian) override;
+};
+
+template<typename ParameterizableBaseType>
+class ReducedSpaceParameterizableSingleAxisFunction:
+  public ReducedSpaceParameterizable<ParameterizableBaseType>
+{
+public:
+  using ReducedSpaceParameterizable<ParameterizableBaseType>::ReducedSpaceParameterizable;
+
+  virtual ~ReducedSpaceParameterizableSingleAxisFunction();
+
+  double value_and_parameter_gradient_1d(double x, VecRef gradient) override;
+  double value_parameter_gradient_and_hessian_1d(double x,
+    VecRef gradient, MatRef hessian) override;
+};
+
 class FreezeThawFunction: public ParameterizableMultiAxisFunction
 {
  public:
@@ -181,7 +250,7 @@ class FreezeThawFunction: public ParameterizableMultiAxisFunction
     return frozen_axes_.at(iparam); }
 
   Eigen::VectorXd x_in2out(ConstVecRef x);
-  
+
   // Function interface
   unsigned num_domain_axes() override;
   std::vector<DomainAxis> domain_axes() override;
@@ -288,7 +357,7 @@ template<typename ParameterizableType> using GradGetter =
     std::function<double(ParameterizableType*, VecRef)>;
 template<typename ParameterizableType> using HessGetter =
     std::function<double(ParameterizableType*, VecRef, MatRef)>;
-    
+
 template<typename ParameterizableType>
 class ParameterizableToMultiAxisFunctionAdapter: public MultiAxisFunction
 {
@@ -311,7 +380,7 @@ class ParameterizableToMultiAxisFunctionAdapter: public MultiAxisFunction
   double value(ConstVecRef x) override {
     par_->set_parameter_values(x);
     return val_getter_(par_); }
-  bool can_calculate_gradient() override { 
+  bool can_calculate_gradient() override {
     return par_->can_calculate_parameter_gradient(); }
   double value_and_gradient(ConstVecRef x, VecRef gradient) override {
     par_->set_parameter_values(x);
@@ -360,3 +429,5 @@ bool hessian_check_par(ParameterizableType& par_fcn,
 #endif // ifndef SWIG
 
 } } } // namespace calin::math::function
+
+#include "function_impl.hpp"

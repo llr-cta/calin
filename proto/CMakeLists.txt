@@ -42,23 +42,30 @@ macro(make_proto_modules arg_proto_library arg_package)
 		set(proto_header_install_dir ${CALIN_PROTO_HEADER_INSTALL_DIR}/${arg_package})
 	endif()
 	set(proto_cxx "")
+	set(proto_proto "")
 	foreach (proto_interface_file ${ARGN})
-		string(REPLACE ".proto" "" base_name ${proto_interface_file})
-		add_custom_command(OUTPUT ${base_name}.pb.cc
-			COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I${PROTOBUF_IMPORT_DIRS} --cpp_out=${CMAKE_BINARY_DIR}/proto ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
-			DEPENDS ${proto_interface_file})
-		set(proto_cxx ${proto_cxx} ${base_name}.pb.cc)
-		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.h DESTINATION ${proto_header_install_dir})
+		get_filename_component(file_ext ${proto_interface_file} EXT)
+		if("${file_ext}" STREQUAL ".proto")
+			string(REPLACE ".proto" "" base_name ${proto_interface_file})
+			add_custom_command(OUTPUT ${base_name}.pb.cc ${base_name}.pb.h
+				COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I${PROTOBUF_IMPORT_DIRS} --cpp_out=${CMAKE_BINARY_DIR}/proto --plugin=protoc-gen-calin-cpp-extensions=${CMAKE_BINARY_DIR}/tools/protoc-gen-calin-cpp-extensions/protoc-gen-calin-cpp-extensions --calin-cpp-extensions_out=${CMAKE_BINARY_DIR}/proto ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
+				DEPENDS ${proto_interface_file} ${CMAKE_BINARY_DIR}/tools/protoc-gen-calin-cpp-extensions/protoc-gen-calin-cpp-extensions)
+			set(proto_cxx ${proto_cxx} ${base_name}.pb.cc)
+			set(proto_proto ${proto_proto} ${proto_interface_file})
+			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.h DESTINATION ${proto_header_install_dir})
+		else()
+			set(proto_cxx ${proto_cxx} ${proto_interface_file})
+		endif()
 	endforeach (proto_interface_file)
 	add_library(${arg_proto_library} SHARED ${proto_cxx})
 	include_directories(${CMAKE_CURRENT_BINARY_DIR})
 	if(${arg_proto_library} STREQUAL "calin_proto")
-		target_link_libraries(${arg_proto_library} ${PROTOBUF_LIBRARY})
+		target_link_libraries(${arg_proto_library} calin_proto_base ${PROTOBUF_LIBRARY})
 	else()
 		target_link_libraries(${arg_proto_library} calin_proto ${PROTOBUF_LIBRARY})
 	endif()
 	install(TARGETS ${arg_proto_library} DESTINATION ${CALIN_LIB_INSTALL_DIR})
-	install(FILES ${ARGN} DESTINATION ${proto_install_dir})
+	install(FILES ${proto_proto} DESTINATION ${proto_install_dir})
 endmacro()
 
 macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
@@ -98,8 +105,18 @@ endmacro()
 # GENERATE SWIG INTERFACE FILES
 ######################################################################
 
+add_custom_command(OUTPUT calin.pb.cc calin.pb.h
+	COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I${PROTOBUF_IMPORT_DIRS} --cpp_out=${CMAKE_BINARY_DIR}/proto ${CMAKE_CURRENT_SOURCE_DIR}/calin.proto
+	DEPENDS calin.proto)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/calin.pb.h DESTINATION ${CALIN_PROTO_HEADER_INSTALL_DIR})
+install(FILES calin.proto DESTINATION ${CALIN_PROTO_INSTALL_DIR})
+add_library(calin_proto_base SHARED calin.pb.cc)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(calin_proto_base ${PROTOBUF_LIBRARY})
+install(TARGETS calin_proto_base DESTINATION ${CALIN_LIB_INSTALL_DIR})
+
 make_proto_modules(${CALIN_TARGET_LIBRARY} ""
-	calin.proto ${CALIN_SWIG_PROTO})
+	${CALIN_SWIG_PROTO})
 make_proto_swig_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PROTO_SWIG_INSTALL_DIR}
 	${CALIN_SWIG_PROTO})
 
@@ -114,4 +131,4 @@ add_subdirectory(provenance)
 add_subdirectory(iact_data)
 add_subdirectory(diagnostics)
 add_subdirectory(calib)
-add_subdirectory(command_line_options)
+add_subdirectory(scripts)

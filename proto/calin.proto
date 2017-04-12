@@ -1,6 +1,6 @@
 //-*-mode:protobuf; mode:font-lock;-*-
 
-/* 
+/*
 
    calin/proto/calin.proto -- Stephen Fegan -- 2015-06-11
 
@@ -10,11 +10,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -39,14 +39,24 @@ message SQLFieldOptions {
 message SQLMessageOptions {
   bool default_inline_message           = 1;
 }
-  
+
 message FieldOptions {
   enum Int32StorageType {
     INT_32   = 0;
     INT_16   = 1;
     INT_8    = 2;
   }
-      
+
+  enum AutomaticMessageIntegrationFunctionAlgorithm {
+    DEFAULT              = 0;  // Default : SUM for numeric types; REPLACE for strings; INTEGRATE for messages
+    IGNORE               = 1;  // Field should not be copied to target
+    REPLACE              = 2;  // Overwrite target field
+    SUM                  = 3;  // Numeric scalars, vectors, maps : numeric sum of values to target
+    APPEND               = 4;  // Vectors, strings : append values to end
+    INTEGRATE            = 5;  // Integrate sub-messages
+    MERGE                = 6;  // Merge sub-messages
+  }
+
   string            desc                = 1; // Description string
   string            units               = 2; // Units
   string            ref                 = 3; // Reference document or URL
@@ -54,10 +64,18 @@ message FieldOptions {
   double            max_val             = 5; // Largest allowed value as double
   Int32StorageType  int32_type          = 100;
   bool              dont_store          = 101;
+  AutomaticMessageIntegrationFunctionAlgorithm integration_algorithm = 200;
   SQLFieldOptions   sql                 = 1000;
 };
 
 message MessageOptions {
+  enum MessageIntegrationFunction {
+    MIF_NONE            = 0;
+    MIF_USER_GENERATED  = 1;
+    MIF_AUTOMATIC       = 2;
+  }
+
+  MessageIntegrationFunction message_integration_function = 200;
   SQLMessageOptions sql                 = 1000;
 };
 
@@ -68,4 +86,3 @@ extend google.protobuf.FieldOptions {
 extend google.protobuf.MessageOptions {
   calin.MessageOptions CMO              = 50000;
 };
-

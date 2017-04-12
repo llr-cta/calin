@@ -71,16 +71,14 @@ public:
     const ix::diagnostics::waveform::WaveformRawStats* stat);
   static Eigen::MatrixXd waveform_cov(
     const ix::diagnostics::waveform::WaveformRawStats* stat);
+  static Eigen::MatrixXd waveform_cov_frac(
+    const ix::diagnostics::waveform::WaveformRawStats* stat);
 
 protected:
   void process_one_waveform(
     const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
     ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
     ix::diagnostics::waveform::WaveformRawStats* r_stat);
-
-  void merge_one_gain(
-    const ix::diagnostics::waveform::WaveformRawStats* from,
-    ix::diagnostics::waveform::WaveformRawStats* to);
 
   void merge_partial(
     ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
@@ -149,10 +147,6 @@ protected:
   void process_one_waveform(
     const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
     ix::diagnostics::waveform::WaveformRawPSD* psd);
-
-  void merge_one_gain(
-    const ix::diagnostics::waveform::WaveformRawPSD* from,
-    ix::diagnostics::waveform::WaveformRawPSD* to);
 
   WaveformPSDVisitor* parent_ = nullptr;
   calin::ix::diagnostics::waveform::CameraWaveformRawPSD results_;

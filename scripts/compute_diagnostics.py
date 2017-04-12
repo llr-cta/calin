@@ -31,7 +31,7 @@ import calin.diagnostics.delta_t
 import calin.io.sql_transceiver
 import calin.io.log
 import calin.util.options_processor
-import calin.ix.command_line_options.compute_diagnostics
+import calin.ix.scripts.compute_diagnostics
 
 py_log = calin.io.log.PythonLogger()
 py_log.this.disown()
@@ -40,12 +40,13 @@ proto_log = calin.io.log.ProtobufLogger()
 proto_log.this.disown()
 calin.io.log.default_logger().add_logger(proto_log,True)
 
-opt = calin.ix.command_line_options.compute_diagnostics.Options()
+opt = calin.ix.scripts.compute_diagnostics.CommandLineOptions()
 opt.set_o('diagnostics.sqlite')
 opt.set_window_size(16)
-opt.set_sig_window_start(44)
+opt.set_sig_window_start(24)
 opt.set_bkg_window_start(0)
 opt.set_nthread(4)
+opt.set_db_results_table_name('diagnostics_results')
 opt.mutable_zfits().CopyFrom(calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_config())
 opt.mutable_decoder().CopyFrom(calin.iact_data.telescope_data_source.\
@@ -128,7 +129,7 @@ bkg_capture = [None] * len(capture_channels)
 for ichan in capture_channels:
     # Background capture adapter - select channel
     bkg_capture_adapter[ichan] = calin.diagnostics.functional.\
-        SingleFunctionalValueSupplierVisitor(bkg_window_sum_visitor,ichan)
+        SingleInt32FunctionalValueSupplierVisitor(bkg_window_sum_visitor,ichan)
     dispatcher.add_visitor(bkg_capture_adapter[ichan])
 
     # Background capture
@@ -152,7 +153,7 @@ sig_capture = [None] * len(capture_channels)
 for ichan in capture_channels:
     # Signal capture adapter - select channel
     sig_capture_adapter[ichan] = calin.diagnostics.functional.\
-        SingleFunctionalValueSupplierVisitor(sig_window_sum_visitor,ichan)
+        SingleInt32FunctionalValueSupplierVisitor(sig_window_sum_visitor,ichan)
     dispatcher.add_visitor(sig_capture_adapter[ichan])
 
     # Signal capture
@@ -179,7 +180,7 @@ dispatcher.add_visitor(sig_bkg_stats_visitor)
 
 # Signal minus background capture adapter
 #sig_bkg_capture_adapter = calin.diagnostics.functional.\
-#    SingleFunctionalValueSupplierVisitor(sig_bkg_diff_visitor,0)
+#    SingleInt32FunctionalValueSupplierVisitor(sig_bkg_diff_visitor,0)
 #dispatcher.add_visitor(sig_bkg_capture_adapter)
 
 # Signal minus background capture
@@ -197,12 +198,12 @@ dispatcher.add_visitor(psd_visitor)
 
 # Glitch detection visitor
 glitch_visitor = \
-    calin.diagnostics.event_number.CountersEventNumberGlitchDetector()
+    calin.diagnostics.event_number.ModulesSequentialNumberGlitchDetector()
 dispatcher.add_visitor(glitch_visitor)
 
 # Bunch event number detection visitor
 bunch_event_glitch_visitor = \
-    calin.diagnostics.event_number.CountersEventNumberGlitchDetector(2)
+    calin.diagnostics.event_number.ModulesSequentialNumberGlitchDetector(2)
 dispatcher.add_visitor(bunch_event_glitch_visitor)
 
 # Module present visitor
@@ -223,7 +224,8 @@ dispatcher.add_visitor(delta_t_capture)
 # T0 rise time functional
 t0_calc = calin.iact_data.functional_event_visitor.\
     NoPedestalTimingFunctionalTelescopeEventVisitor()
-dispatcher.add_visitor(t0_calc)
+dispatcher.add_visitor(t0_calc, 
+    calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 
 # T0 rise time stats
 t0_stats_cfg = calin.diagnostics.functional.\
@@ -234,15 +236,43 @@ t0_stats = calin.diagnostics.functional.\
     FunctionalDoubleStatsVisitor(t0_calc, t0_stats_cfg)
 dispatcher.add_visitor(t0_stats)
 
+# T0 capture values
+t0_capture_adapter = [None] * len(capture_channels)
+t0_capture = [None] * len(capture_channels)
+for ichan in capture_channels:
+    # T0 capture adapter - select channel
+    t0_capture_adapter[ichan] = calin.diagnostics.functional.\
+        SingleDoubleFunctionalValueSupplierVisitor(t0_calc,ichan)
+    dispatcher.add_visitor(t0_capture_adapter[ichan])
+
+    # T0 capture
+    t0_capture[ichan] = calin.diagnostics.value_capture.\
+        DoubleSequentialValueCaptureVisitor(t0_capture_adapter[ichan],numpy.nan)
+    dispatcher.add_visitor(t0_capture[ichan])
+
 # Run all the visitors
 dispatcher.process_run(src,100000,opt.nthread())
 
 # Get the results
-psd = psd_visitor.results()
-wfs = waveform_visitor.results()
-bkg = bkg_window_stats_visitor.results()
-sig_raw = sig_window_stats_visitor.results()
-sig = sig_bkg_stats_visitor.results()
+results = calin.ix.scripts.compute_diagnostics.Results()
+results.mutable_command_line_options().CopyFrom(opt)
+results.mutable_log().CopyFrom(proto_log.log_messages())
+results.mutable_run_config().CopyFrom(run_info)
+for ichan in capture_channels:
+    results.add_captured_channel_ids(ichan)
+results.mutable_sig_stats().CopyFrom(sig_window_stats_visitor.results())
+results.mutable_bkg_stats().CopyFrom(bkg_window_stats_visitor.results())
+results.mutable_sig_minus_bkg_stats().CopyFrom(sig_bkg_stats_visitor.results())
+for isig_capture in sig_capture:
+    results.add_captured_sig_values().CopyFrom(isig_capture.results())
+for ibkg_capture in bkg_capture:
+    results.add_captured_bkg_values().CopyFrom(ibkg_capture.results())
+results.mutable_t0_stats().CopyFrom(t0_stats.results())
+for it0_capture in t0_capture:
+    results.add_captured_t0_values().CopyFrom(it0_capture.results())
+results.mutable_waveform_stats().CopyFrom(waveform_visitor.results())
+results.mutable_waveform_psd().CopyFrom(psd_visitor.results())
+
 glitch = glitch_visitor.glitch_data()
 bunch_event_glitch = bunch_event_glitch_visitor.glitch_data()
 mod_present = mod_present_visitor.module_data()
@@ -252,24 +282,12 @@ t0 = t0_stats.results()
 # Write the results
 sql = calin.io.sql_transceiver.SQLite3Transceiver(sql_file,
     calin.io.sql_transceiver.SQLite3Transceiver.TRUNCATE_RW)
-sql.create_tables_and_insert("command_line_options", opt)
-sql.create_tables_and_insert("log", proto_log.log_messages())
-sql.create_tables_and_insert("run_config", run_info)
-sql.create_tables_and_insert("psd", psd)
-sql.create_tables_and_insert("wfs", wfs)
-sql.create_tables_and_insert("bkg", bkg)
-sql.create_tables_and_insert("sig_raw", sig_raw)
-sql.create_tables_and_insert("sig", sig)
+sql.create_tables(opt.db_results_table_name(), results.descriptor())
+sql.insert(opt.db_results_table_name(), results)
+
+#sql.create_tables_and_insert(opt.db_results_table_name(), results)
+
 sql.create_tables_and_insert("glitch_event", glitch)
 sql.create_tables_and_insert("glitch_bunch_event", bunch_event_glitch)
 sql.create_tables_and_insert("mod_present", mod_present)
 sql.create_tables_and_insert("delta_t_values", delta_t_values)
-sql.create_tables_and_insert("t0", t0)
-
-if(len(bkg_capture) > 0):
-    sql.create_tables_and_insert("sig_values", sig_capture[0].results())
-    sql.create_tables_and_insert("bkg_values", bkg_capture[0].results())
-
-    for ichan in range(1,len(bkg_capture)):
-        sql.insert("sig_values", sig_capture[ichan].results())
-        sql.insert("bkg_values", bkg_capture[ichan].results())

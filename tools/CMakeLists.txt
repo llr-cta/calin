@@ -14,3 +14,4 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 add_subdirectory(protoc-gen-swig)
+add_subdirectory(protoc-gen-calin-cpp-extensions)

@@ -38,6 +38,9 @@
 %import "iact_data/functional_event_visitor.i"
 %import "diagnostics/value_capture.i"
 %import "diagnostics/functional.pb.i"
+
+%apply double &OUTPUT { double& common_variance_out };
+
 %include "diagnostics/functional.hpp"
 
 %template(FunctionalIntStatsVisitor)
@@ -52,22 +55,31 @@ calin::diagnostics::functional::FunctionalStatsVisitor<
     DualGainDoubleFunctionalTelescopeEventVisitor,
   calin::ix::diagnostics::functional::CameraDoubleFunctionalRawStats>;
 
-%template(channel_mean_int)
-calin::diagnostics::functional::channel_mean<
-  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(channel_var_int)
-calin::diagnostics::functional::channel_var<
-  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
-%template(channel_cov_int)
-calin::diagnostics::functional::channel_cov<
-  calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
+%define ONEGAIN_TEMPLATE_WRAP(function)
+%template(function)
+  calin::diagnostics::functional:: ## function ##<
+    calin::ix::diagnostics::functional::OneGainIntFunctionalRawStats>;
+%template(function)
+  calin::diagnostics::functional:: ## function ##<
+    calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
+%enddef
 
-%template(channel_mean_double)
-calin::diagnostics::functional::channel_mean<
-  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(channel_var_double)
-calin::diagnostics::functional::channel_var<
-  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
-%template(channel_cov_double)
-calin::diagnostics::functional::channel_cov<
-  calin::ix::diagnostics::functional::OneGainDoubleFunctionalRawStats>;
+%define DUALGAIN_TEMPLATE_WRAP(function)
+%template(function)
+  calin::diagnostics::functional:: ## function ##<
+    calin::ix::diagnostics::functional::CameraIntFunctionalRawStats>;
+%template(function)
+  calin::diagnostics::functional:: ## function ##<
+    calin::ix::diagnostics::functional::CameraDoubleFunctionalRawStats>;
+%enddef
+
+ONEGAIN_TEMPLATE_WRAP(channel_mean)
+ONEGAIN_TEMPLATE_WRAP(channel_var)
+ONEGAIN_TEMPLATE_WRAP(channel_cov)
+ONEGAIN_TEMPLATE_WRAP(channel_cov_frac)
+ONEGAIN_TEMPLATE_WRAP(mean_of_mean_over_channels)
+ONEGAIN_TEMPLATE_WRAP(var_of_mean_over_channels)
+ONEGAIN_TEMPLATE_WRAP(decompose_channel_independent_and_common_var)
+
+DUALGAIN_TEMPLATE_WRAP(channel_high_to_low_gain_cov)
+DUALGAIN_TEMPLATE_WRAP(channel_high_to_low_gain_cov_frac)

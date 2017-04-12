@@ -37,6 +37,8 @@ message NectarCamCameraEventDecoderConfig {
     (CFO).desc = "Camera type." ];
   bool exchange_gain_channels                              = 2 [
     (CFO).desc = "Exchange high and low gains from NectarCam ZFits file." ];
+  bool include_serialized_raw_data                         = 3 [
+    (CFO).desc = "Include serialized raw ACTL protobuf header and event data." ];
   uint32 demand_nsample                                    = 100 [
     (CFO).desc = "Override number of samples per event stored in file. Zero "
       "means we use value from file."];

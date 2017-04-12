@@ -28,21 +28,21 @@ import "calin.proto";
 
 package calin.ix.diagnostics.event_number;
 
-message SequentialEventNumberGlitch {
+message SequentialNumberGlitch {
   uint64 source_event_index                                = 1 [
     (CFO).desc = "Index of the event relative to the source." ];
-  int64 event_number                                       = 2 [
-    (CFO).desc = "Event number." ];
-  int64 last_event_number                                  = 3 [
-    (CFO).desc = "Last event number." ];
+  int64 sequence_number                                    = 2 [
+    (CFO).desc = "Current sequence number." ];
+  int64 last_sequence_number                               = 3 [
+    (CFO).desc = "Last sequence number." ];
 };
 
-message SequentialEventNumberGlitchDetectorData {
-  repeated SequentialEventNumberGlitch glitch              = 1 [
-    (CFO).desc = "List of missing event numbers." ];
+message SequentialNumberGlitchDetectorData {
+  repeated SequentialNumberGlitch glitch                   = 1 [
+    (CFO).desc = "List of missing or out-of-sequence numbers." ];
 };
 
-message CountersEventNumberGlitch {
+message ModulesSequentialNumberGlitch {
   uint64 source_event_index                                = 1 [
     (CFO).desc = "Index of the event relative to the source." ];
   int64 delta_event_number                                 = 2 [
@@ -55,7 +55,7 @@ message CountersEventNumberGlitch {
     (CFO).desc = "Event has module data." ];
 };
 
-message CountersEventNumberGlitchDetectorData {
-  repeated CountersEventNumberGlitch glitch                = 1 [
+message ModulesSequentialNumberGlitchDetectorData {
+  repeated ModulesSequentialNumberGlitch glitch            = 1 [
     (CFO).desc = "List of event number glitches." ];
 };

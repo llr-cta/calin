@@ -1,10 +1,10 @@
 /*
 
-   calin/math/histogram.cpp -- Stephen Fegan -- 2015-02-16
+   calin/tools/protoc-gen-calin-cpp-extensions/protoc-gen-calin-cpp-extensions.cpp -- Stephen Fegan -- 2017-04-14
 
-   Simple histogramming classes
+   Procobuf compiler plugin for generating CPP extensions
 
-   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
@@ -20,11 +20,10 @@
 
 */
 
-#include <math/accumulator.hpp>
-#include <math/histogram.hpp>
+#include <google/protobuf/compiler/plugin.h>
+#include "calin_cpp_extensions_generator.hpp"
 
-namespace calin { namespace math { namespace histogram {
-
-template class BasicHistogram1D<accumulator::SimpleAccumulator>;
-
-} } } // namespace calin::math::histogram
+int main(int argc, char** argv) {
+  calin::tools::calin_cpp_extensions_generator::CalinCppExtensionsGenerator generator;
+  return google::protobuf::compiler::PluginMain(argc, argv, &generator);
+}

@@ -115,7 +115,7 @@ bool WaveformPSDVisitor::visit_waveform(unsigned ichan,
   calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
   calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
 {
-  const int index = run_config_->configured_channel_index(ichan);
+  const int index = ichan; // run_config_->configured_channel_index(ichan);
   if(high_gain)
     process_one_waveform(high_gain, results_.mutable_high_gain(index));
   if(low_gain)
@@ -166,35 +166,8 @@ process_one_waveform(
 
 bool WaveformPSDVisitor::merge_results()
 {
-  if(parent_)
-  {
-    assert(results_.high_gain_size() == parent_->results_.high_gain_size());
-    assert(results_.low_gain_size() == parent_->results_.low_gain_size());
-    for(int ichan=0; ichan<results_.high_gain_size(); ichan++)
-      merge_one_gain(&results_.high_gain(ichan),
-        parent_->results_.mutable_high_gain(ichan));
-    for(int ichan=0; ichan<results_.low_gain_size(); ichan++)
-      merge_one_gain(&results_.low_gain(ichan),
-        parent_->results_.mutable_low_gain(ichan));
-  }
+  if(parent_)parent_->results_.IntegrateFrom(results_);
   return true;
-}
-
-void WaveformPSDVisitor::merge_one_gain(
-  const ix::diagnostics::waveform::WaveformRawPSD* from,
-  ix::diagnostics::waveform::WaveformRawPSD* to)
-{
-  assert(to->psd_sum_size() == from->psd_sum_size());
-  assert(to->psd_sum_squared_size() == from->psd_sum_squared_size());
-  to->set_num_entries(to->num_entries() + from->num_entries());
-  for(int i=0; i<from->psd_sum_size(); i++)
-    to->set_psd_sum(i,to->psd_sum(i) + from->psd_sum(i));
-  for(int i=0; i<from->psd_sum_squared_size(); i++)
-    to->set_psd_sum_squared(i,to->psd_sum_squared(i) + from->psd_sum_squared(i));
-  for(int i=0; i<from->corr_sum_size(); i++)
-    to->set_corr_sum(i,to->corr_sum(i) + from->corr_sum(i));
-  for(int i=0; i<from->corr_sum_squared_size(); i++)
-    to->set_corr_sum_squared(i,to->corr_sum_squared(i) + from->corr_sum_squared(i));
 }
 
 Eigen::VectorXd WaveformPSDVisitor::psd_mean(

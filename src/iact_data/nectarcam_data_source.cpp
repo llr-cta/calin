@@ -314,6 +314,22 @@ bool NectarCamCameraEventDecoder::decode(
     calin_tib_data->set_spare_bits(tib_data->stereo_pattern>>9);
   }
 
+  // ==========================================================================
+  //
+  // SERIALIZE RAW DATA
+  //
+  // ==========================================================================
+
+  if(config_.include_serialized_raw_data())
+  {
+    calin_event->set_serialized_raw_event_type(
+      SerializedRawEventType::SERIALIZED_RAW_EVENT_ACTL_PROTOBUF);
+    cta_event->SerializeToString(calin_event->mutable_serialized_raw_event());
+  } else {
+    calin_event->set_serialized_raw_event_type(
+      SerializedRawEventType::SERIALIZED_RAW_EVENT_NONE);
+  }
+
   return true;
 }
 
@@ -356,7 +372,7 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   if(nmod==0 and cta_event)
   {
     nmod = get_nmod_from_event(cta_event);
-    for(unsigned imod=0;imod<nmod;imod++)config_mod_id.insert(imod);
+    for(int imod=0;imod<nmod;imod++)config_mod_id.insert(imod);
   }
   unsigned nmod_camera = calin_run_config->camera_layout().module_size();
   if(config_.demand_configured_module_id_size() != 0)
@@ -365,7 +381,7 @@ bool NectarCamCameraEventDecoder::decode_run_config(
       throw std::runtime_error("NectarCamCameraEventDecoder::decode_run_config: "
         "Demand module list size must equal number of modules in data.");
     config_mod_id.clear();
-    for(unsigned imod=0;imod<nmod;imod++) {
+    for(int imod=0;imod<nmod;imod++) {
       unsigned mod_id = config_.demand_configured_module_id(imod);
       if(mod_id >= nmod_camera)
         throw std::runtime_error("NectarCamCameraEventDecoder::decode_run_config: "
@@ -402,6 +418,22 @@ bool NectarCamCameraEventDecoder::decode_run_config(
       cta_event->higain().has_waveforms())
     nsample = cta_event->higain().waveforms().num_samples();
   calin_run_config->set_num_samples(nsample);
+
+  // ==========================================================================
+  //
+  // SERIALIZE RAW DATA
+  //
+  // ==========================================================================
+
+  if(cta_run_header and config_.include_serialized_raw_data())
+  {
+    calin_run_config->set_serialized_raw_header_type(
+      SerializedRawHeaderType::SERIALIZED_RAW_HEADER_ACTL_PROTOBUF);
+    cta_run_header->SerializeToString(calin_run_config->mutable_serialized_raw_header());
+  } else {
+    calin_run_config->set_serialized_raw_header_type(
+      SerializedRawHeaderType::SERIALIZED_RAW_HEADER_NONE);
+  }
 
   return true;
 }

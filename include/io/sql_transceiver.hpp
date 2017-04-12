@@ -340,6 +340,8 @@ class SQLTransceiver
   virtual std::string sql_create_table(const SQLTable* t,
                            const std::map<std::string,std::string>& parent_dict,
                                        bool if_not_exists = false);
+  virtual std::string sql_create_index(const SQLTable* t,
+                                       bool if_not_exists = false);
   virtual std::string sql_insert(const SQLTable* t);
   virtual std::string sql_select(const SQLTable* t, bool select_oid = false);
   virtual std::string sql_where_oid_equals();
