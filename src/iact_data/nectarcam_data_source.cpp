@@ -58,10 +58,10 @@ bool NectarCamCameraEventDecoder::decode(
   calin_event->set_image_treatment(TREATMENT_SCIENCE);
 
   bool all_modules_present = true;
-  if(cta_event->has_drawerstatus() and
-    cta_event->drawerstatus().has_status())
+  if(cta_event->has_modulestatus() and
+    cta_event->modulestatus().has_status())
   {
-    const auto& cta_status = cta_event->drawerstatus().status();
+    const auto& cta_status = cta_event->modulestatus().status();
 #if TEST_ANYARRAY_TYPES
     if(cta_status.type() != DataModel::AnyArray::U8)
       throw std::runtime_error("Camera status type not U8");
@@ -525,10 +525,10 @@ unsigned NectarCamCameraEventDecoder::
 get_nmod_from_event(const DataModel::CameraEvent* cta_event) const
 {
   unsigned nmod = 0;
-  if(cta_event->has_drawerstatus() and
-    cta_event->drawerstatus().has_status())
+  if(cta_event->has_modulestatus() and
+    cta_event->modulestatus().has_status())
   {
-    const auto& cta_status = cta_event->drawerstatus().status();
+    const auto& cta_status = cta_event->modulestatus().status();
 #if TEST_ANYARRAY_TYPES
     if(cta_status.type() != DataModel::AnyArray::U8)
       throw std::runtime_error("Camera status type not U8");
