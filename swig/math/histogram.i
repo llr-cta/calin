@@ -1,5 +1,3 @@
-//-*-mode:swig;-*-
-
 /*
 
    calin/math/histogram.i -- Stephen Fegan -- 2015-04-23
