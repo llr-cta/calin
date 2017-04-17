@@ -38,10 +38,17 @@
 %import "math/function.i"
 %import "math/histogram.i"
 
+%include "math/m_estimate.hpp"
 %include "math/data_modeling.hpp"
 
 %extend calin::math::data_modeling::IID1DDataLikelihoodFunction {
   %template(IID1DDataLikelihoodFunction) IID1DDataLikelihoodFunction<
+    calin::math::histogram::BasicHistogram1D<
+      calin::math::histogram::DefaultAccumulator>>;
+}
+
+%extend calin::math::data_modeling::IID1DDataMEstimateLikelihoodFunction {
+  %template(IID1DDataMEstimateLikelihoodFunction) IID1DDataMEstimateLikelihoodFunction<
     calin::math::histogram::BasicHistogram1D<
       calin::math::histogram::DefaultAccumulator>>;
 }

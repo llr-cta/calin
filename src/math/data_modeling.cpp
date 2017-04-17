@@ -216,7 +216,7 @@ double IID1DDataMEstimateLikelihoodFunction::value_and_gradient(ConstVecRef x, V
     }
   }
   for(unsigned ipar=0;ipar<npar_;ipar++)
-    gradient(ipar) = gradient_acc[ipar].total();
+    gradient(ipar) = -gradient_acc[ipar].total();
   return acc.total();
 }
 
@@ -266,13 +266,13 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
   }
 
   for(unsigned ipar=0;ipar<npar_;ipar++)
-    gradient(ipar) = gradient_acc[ipar].total();
+    gradient(ipar) = -gradient_acc[ipar].total();
 
   unsigned iacc = 0;
   for(unsigned icol=0;icol<npar_;icol++)
   {
     for(unsigned irow=icol;irow<npar_;irow++)
-      hessian(icol,irow) = hessian_acc[iacc++].total();
+      hessian(icol,irow) = -hessian_acc[iacc++].total();
     for(unsigned irow=0;irow<icol;irow++)
       hessian(icol,irow) = hessian(irow,icol);
   }
