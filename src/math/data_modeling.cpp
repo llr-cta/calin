@@ -148,6 +148,140 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
 
 // -----------------------------------------------------------------------------
 //
+// M-Estimate version of Likelihood function fitter
+//
+// -----------------------------------------------------------------------------
+
+IID1DDataMEstimateLikelihoodFunction::~IID1DDataMEstimateLikelihoodFunction()
+{
+  if(adopt_pdf_)delete pdf_;
+  if(adopt_rho_)delete rho_;
+}
+
+unsigned IID1DDataMEstimateLikelihoodFunction::num_domain_axes()
+{
+  return pdf_->num_parameters();
+}
+
+std::vector<calin::math::function::DomainAxis> IID1DDataMEstimateLikelihoodFunction::domain_axes()
+{
+  return pdf_->parameters();
+}
+
+double IID1DDataMEstimateLikelihoodFunction::value(ConstVecRef x)
+{
+  assert(x.size() == 1);
+  pdf_->set_parameter_values(x);
+  math::accumulator::LikelihoodAccumulator acc;
+  unsigned nx = x_.size();
+  for(unsigned ix=0; ix<nx; ix++)
+  {
+    const double w = w_[ix];
+    if(w>0)
+    {
+      double pdf = pdf_->value_1d(x_[ix]);
+      if(pdf<=0)continue;
+      acc.accumulate(rho_->value_1d(-std::log(pdf))*w);
+    }
+  }
+  return acc.total();
+}
+
+bool IID1DDataMEstimateLikelihoodFunction::can_calculate_gradient()
+{
+  return pdf_->can_calculate_parameter_gradient() and
+    rho_->can_calculate_gradient();
+}
+
+double IID1DDataMEstimateLikelihoodFunction::value_and_gradient(ConstVecRef x, VecRef gradient)
+{
+  assert(x.size() == 1);
+  pdf_->set_parameter_values(x);
+  gradient.resize(npar_);
+  math::accumulator::LikelihoodAccumulator acc;
+  std::vector<math::accumulator::LikelihoodAccumulator> gradient_acc(npar_);
+  unsigned nx = x_.size();
+  for(unsigned ix=0; ix<nx; ix++)
+  {
+    const double w = w_[ix];
+    if(w>0)
+    {
+      double pdf = pdf_->value_and_parameter_gradient_1d(x_[ix], gradient);
+      if(pdf<=0)continue;
+      double drho_dx;
+      double rho = rho_->value_and_gradient_1d(-std::log(pdf), drho_dx);
+      acc.accumulate(rho*w);
+      for(unsigned ipar=0;ipar<npar_;ipar++)
+        gradient_acc[ipar].accumulate(drho_dx*gradient(ipar)/pdf*w);
+    }
+  }
+  for(unsigned ipar=0;ipar<npar_;ipar++)
+    gradient(ipar) = gradient_acc[ipar].total();
+  return acc.total();
+}
+
+bool IID1DDataMEstimateLikelihoodFunction::can_calculate_hessian()
+{
+  return pdf_->can_calculate_parameter_hessian() and
+    rho_->can_calculate_hessian();
+}
+
+double IID1DDataMEstimateLikelihoodFunction::
+value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
+{
+  assert(x.size() == 1);
+
+  pdf_->set_parameter_values(x);
+  gradient.resize(npar_);
+  hessian.resize(npar_,npar_);
+  math::accumulator::LikelihoodAccumulator acc;
+  std::vector<math::accumulator::LikelihoodAccumulator> gradient_acc(npar_);
+  std::vector<math::accumulator::LikelihoodAccumulator>
+      hessian_acc(npar_*(npar_+1)/2);
+  unsigned nx = x_.size();
+  for(unsigned ix=0; ix<nx; ix++)
+  {
+    const double w = w_[ix];
+    if(w>0)
+    {
+      double pdf = pdf_->value_parameter_gradient_and_hessian_1d(x_[ix],
+        gradient, hessian);
+      if(pdf<=0)continue;
+      double drho_dx;
+      double d2rho_dx2;
+      double rho = rho_->value_gradient_and_hessian_1d(-std::log(pdf), drho_dx, d2rho_dx2);
+      acc.accumulate(rho*w);
+      for(unsigned ipar=0;ipar<npar_;ipar++)
+        gradient_acc[ipar].accumulate(drho_dx*gradient(ipar)/pdf*w);
+
+      unsigned itri = 0;
+      for(unsigned icol=0;icol<npar_;icol++)
+        for(unsigned irow=icol;irow<npar_;irow++)
+        {
+          double summand = (drho_dx*hessian(icol,irow)
+            + (d2rho_dx2 - drho_dx)*gradient[icol]*gradient[irow]/pdf)/pdf;
+          hessian_acc[itri++].accumulate(summand*w);
+        }
+    }
+  }
+
+  for(unsigned ipar=0;ipar<npar_;ipar++)
+    gradient(ipar) = gradient_acc[ipar].total();
+
+  unsigned iacc = 0;
+  for(unsigned icol=0;icol<npar_;icol++)
+  {
+    for(unsigned irow=icol;irow<npar_;irow++)
+      hessian(icol,irow) = hessian_acc[iacc++].total();
+    for(unsigned irow=0;irow<icol;irow++)
+      hessian(icol,irow) = hessian(irow,icol);
+  }
+
+  return acc.total();
+}
+
+// -----------------------------------------------------------------------------
+//
 // Chi-squared version of fitter
 //
 // -----------------------------------------------------------------------------
