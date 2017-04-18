@@ -83,3 +83,43 @@ value_gradient_and_hessian_1d(double x, double& dfdx, double& d2fdx2)
   d2fdx2 = -0.5*D2_/(R2*R);
   return 0.5*(x+C_-R);
 }
+
+ModifiedHyperbolicLikelihoodRhoFunction::
+ModifiedHyperbolicLikelihoodRhoFunction(double asymptotic_value, double turnover_scale):
+  LikelihoodRhoFunction(),
+  D2_(SQR(turnover_scale)), C_(std::sqrt(SQR(asymptotic_value) - D2_)),
+  scale_(1.0/(1.0 + C_/std::sqrt(SQR(C_)+D2_))), offset_(std::sqrt(SQR(C_)+D2_))
+{
+  // nothing to see here
+}
+
+ModifiedHyperbolicLikelihoodRhoFunction::~ModifiedHyperbolicLikelihoodRhoFunction()
+{
+  // nothing to see here
+}
+
+double ModifiedHyperbolicLikelihoodRhoFunction::value_1d(double x)
+{
+
+  double R2 = SQR(x-C_) + D2_;
+  double R = std::sqrt(R2);
+  return scale_*(x-R+offset_);
+}
+
+double ModifiedHyperbolicLikelihoodRhoFunction::value_and_gradient_1d(double x, double& dfdx)
+{
+  double R2 = SQR(x-C_) + D2_;
+  double R = std::sqrt(R2);
+  dfdx = scale_*(1 - (x-C_)/R);
+  return scale_*(x-R+offset_);
+}
+
+double ModifiedHyperbolicLikelihoodRhoFunction::
+value_gradient_and_hessian_1d(double x, double& dfdx, double& d2fdx2)
+{
+  double R2 = SQR(x-C_) + D2_;
+  double R = std::sqrt(R2);
+  dfdx = scale_*(1 - (x-C_)/R);
+  d2fdx2 = -scale_*D2_/(R2*R);
+  return scale_*(x-R+offset_);
+}

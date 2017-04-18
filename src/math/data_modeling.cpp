@@ -259,7 +259,7 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
         for(unsigned irow=icol;irow<npar_;irow++)
         {
           double summand = (drho_dx*hessian(icol,irow)
-            + (d2rho_dx2 - drho_dx)*gradient[icol]*gradient[irow]/pdf)/pdf;
+            - (d2rho_dx2 + drho_dx)*gradient[icol]*gradient[irow]/pdf)/pdf;
           hessian_acc[itri++].accumulate(summand*w);
         }
     }
@@ -389,7 +389,7 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
       gradient_acc[0].accumulate(2.0*diff*pdf/w);
       for(unsigned ipar=0;ipar<npar_;ipar++)
         gradient_acc[ipar+1].accumulate(2.0*diff*norm_*pdf_gradient(ipar)/w);
-      hessian_acc[0].accumulate(2.0*pdf/w);
+      hessian_acc[0].accumulate(2.0*pdf*pdf/w);
       for(unsigned ipar=0;ipar<npar_;ipar++)
         hessian_acc[ipar+1].accumulate(2.0*(pdf*norm_+diff)*pdf_gradient(ipar)/w);
       unsigned itri = npar_+1;

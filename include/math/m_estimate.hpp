@@ -55,4 +55,20 @@ protected:
   double D2_;
 };
 
+class ModifiedHyperbolicLikelihoodRhoFunction: public LikelihoodRhoFunction
+{
+public:
+  ModifiedHyperbolicLikelihoodRhoFunction(double asymptotic_value, double turnover_scale);
+  virtual ~ModifiedHyperbolicLikelihoodRhoFunction();
+  double value_1d(double x) override;
+  double value_and_gradient_1d(double x,  double& dfdx) override;
+  double value_gradient_and_hessian_1d(double x, double& dfdx,
+                                       double& d2fdx2) override;
+protected:
+  double D2_;
+  double C_;
+  double scale_;
+  double offset_;
+};
+
 } } } // namespace calin::math::m_estimate
