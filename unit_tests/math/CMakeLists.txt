@@ -26,6 +26,10 @@ add_executable(test_pdf_1d test_pdf_1d.cpp)
 target_link_libraries(test_pdf_1d ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
 add_test(TestPDF1D test_pdf_1d)
 
+add_executable(test_m_estimate test_m_estimate.cpp)
+target_link_libraries(test_m_estimate ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
+add_test(TestMEstimate test_m_estimate)
+
 add_executable(test_data_modeling test_data_modeling.cpp)
 target_link_libraries(test_data_modeling ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
 add_test(TestDataModeling test_pdf_1d)
