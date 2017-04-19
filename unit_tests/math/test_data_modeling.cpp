@@ -133,3 +133,104 @@ TEST(TestChi2, HessianCheck) {
     }
   }
 }
+
+TEST(TestMEstimateWithNULL, GradientCheck) {
+  SimpleHist hist(1.0);
+  RNG rng(12345);
+  for(unsigned i=0; i<10000; i++)
+    hist.insert(rng.normal()*10.0 + 100.0);
+  BinnedGaussianPDF gaussian(1.0);
+  NullLikelihoodRhoFunction rho;
+  IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
+  Eigen::VectorXd x(2);
+  Eigen::VectorXd dx(2);
+  dx << 0.00001, 0.000001;
+  for(x(0) = 80.0; x(0)<120.0; x(0)+=1.0) {
+    for(x(1) = 8.0; x(1)<12.0; x(1)+=0.1) {
+      Eigen::VectorXd good(2);
+      EXPECT_TRUE(gradient_check(cost_fn, x, dx, good, maxgood));
+      EXPECT_LE(good(0), maxgood);
+      EXPECT_LE(good(1), maxgood);
+    }
+  }
+}
+
+TEST(TestMEstimateWithNULL, HessianCheck) {
+  SimpleHist hist(1.0);
+  RNG rng(12345);
+  for(unsigned i=0; i<10000; i++)
+    hist.insert(rng.normal()*10.0 + 100.0);
+  BinnedGaussianPDF gaussian(1.0);
+  NullLikelihoodRhoFunction rho;
+  IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
+  Eigen::VectorXd x(2);
+  Eigen::VectorXd dx(2);
+  dx << 0.00001, 0.000001;
+  for(x(0) = 80.0; x(0)<120.0; x(0)+=1.0) {
+    for(x(1) = 8.0; x(1)<12.0; x(1)+=0.1) {
+      Eigen::MatrixXd good(2,2);
+      EXPECT_TRUE(hessian_check(cost_fn, x, dx, good, maxgood));
+      EXPECT_LE(good(0,0), maxgood);
+      EXPECT_LE(good(0,1), maxgood);
+      EXPECT_LE(good(1,0), maxgood);
+      EXPECT_LE(good(1,1), maxgood);
+    }
+  }
+}
+
+TEST(TestMEstimateWithHyperbolic, GradientCheck) {
+  SimpleHist hist(1.0);
+  RNG rng(12345);
+  for(unsigned i=0; i<10000; i++)
+    hist.insert(rng.normal()*10.0 + 100.0);
+  BinnedGaussianPDF gaussian(1.0);
+  for(double C = 0; C < 10; C += 2) {
+    for(double D = 0.1; D < 2; D += 0.2) {
+      HyperbolicLikelihoodRhoFunction rho(C,D);
+      IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
+      Eigen::VectorXd x(2);
+      Eigen::VectorXd dx(2);
+      dx << 0.0001, 0.00001;
+      for(x(0) = 80.0; x(0)<120.0; x(0)+=2.0) {
+        for(x(1) = 8.0; x(1)<12.0; x(1)+=0.2) {
+          Eigen::VectorXd good(2);
+          EXPECT_TRUE(gradient_check(cost_fn, x, dx, good, maxgood));
+          EXPECT_LE(good(0), maxgood);
+          EXPECT_LE(good(1), maxgood);
+        }
+      }
+    }
+  }
+}
+
+TEST(TestMEstimateWithHyperbolic, HessianCheck) {
+  SimpleHist hist(1.0);
+  RNG rng(12345);
+  for(unsigned i=0; i<10000; i++)
+    hist.insert(rng.normal()*10.0 + 100.0);
+  BinnedGaussianPDF gaussian(1.0);
+  for(double C = 0; C < 10; C += 2) {
+    for(double D = 0.1; D < 2; D += 0.2) {
+      HyperbolicLikelihoodRhoFunction rho(C,D);
+      IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
+      Eigen::VectorXd x(2);
+      Eigen::VectorXd dx(2);
+      dx << 0.0001, 0.00001;
+      for(x(0) = 80.0; x(0)<120.0; x(0)+=2.0) {
+        for(x(1) = 8.0; x(1)<12.0; x(1)+=0.2) {
+          Eigen::MatrixXd good(2,2);
+          EXPECT_TRUE(hessian_check(cost_fn, x, dx, good, maxgood));
+          EXPECT_LE(good(0,0), maxgood);
+          EXPECT_LE(good(0,1), maxgood);
+          EXPECT_LE(good(1,0), maxgood);
+          EXPECT_LE(good(1,1), maxgood);
+        }
+      }
+    }
+  }
+}
+
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

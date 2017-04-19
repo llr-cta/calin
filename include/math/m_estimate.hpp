@@ -41,6 +41,17 @@ public:
   double error_up() override { return 0.0; }
 };
 
+class NullLikelihoodRhoFunction: public LikelihoodRhoFunction
+{
+public:
+  NullLikelihoodRhoFunction();
+  virtual ~NullLikelihoodRhoFunction();
+  double value_1d(double x) override;
+  double value_and_gradient_1d(double x,  double& dfdx) override;
+  double value_gradient_and_hessian_1d(double x, double& dfdx,
+                                       double& d2fdx2) override;
+};
+
 class HyperbolicLikelihoodRhoFunction: public LikelihoodRhoFunction
 {
 public:

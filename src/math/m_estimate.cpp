@@ -47,6 +47,35 @@ bool LikelihoodRhoFunction::can_calculate_hessian()
   return true;
 }
 
+NullLikelihoodRhoFunction::NullLikelihoodRhoFunction(): LikelihoodRhoFunction()
+{
+  // nothing to see here
+}
+
+NullLikelihoodRhoFunction::~NullLikelihoodRhoFunction()
+{
+  // nothing to see here
+}
+
+double NullLikelihoodRhoFunction::value_1d(double x)
+{
+  return x;
+}
+
+double NullLikelihoodRhoFunction::value_and_gradient_1d(double x, double& dfdx)
+{
+  dfdx = 1;
+  return x;
+}
+
+double NullLikelihoodRhoFunction::
+value_gradient_and_hessian_1d(double x, double& dfdx, double& d2fdx2)
+{
+  d2fdx2 = 0;
+  dfdx = 1;
+  return x;
+}
+
 HyperbolicLikelihoodRhoFunction::
 HyperbolicLikelihoodRhoFunction(double asymptotic_value, double turnover_scale):
   LikelihoodRhoFunction(), C_(asymptotic_value), D2_(SQR(turnover_scale))
