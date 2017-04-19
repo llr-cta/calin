@@ -57,8 +57,6 @@ class MultiElectronSpectrum: public calin::math::function::Parameterizable
   virtual double ped_zero_dc() = 0;
   virtual double ses_mean_dc() = 0;
   virtual double ses_rms_pe() = 0;
-
-  bool can_calculate_parameter_hessian() override;
 };
 
 class PoissonGaussianMES: public MultiElectronSpectrum
@@ -330,5 +328,46 @@ class SPELikelihood: public calin::math::function::MultiAxisFunction
   bool has_ped_data_ { false };
   const calin::math::histogram::SimpleHist ped_data_;
 };
+
+#ifndef SWIG
+
+class MESSigAdapter : public Parameterizable1DPDF
+{
+public:
+  MESSigAdapter(MultiElectronSpectrum* mes);
+  virtual ~MESSigAdapter();
+
+  // Reiterate functions from ParameterizableSingleAxisFunction
+
+  unsigned num_parameters() override;
+  std::vector<function::ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+
+  function::DomainAxis domain_axis() override;
+
+  bool can_calculate_gradient() override;
+  bool can_calculate_hessian() override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  double value_1d(double x) override;
+  double value_and_gradient_1d(double x,  double& dfdx) override;
+  double value_gradient_and_hessian_1d(double x, double& dfdx,
+                            double& d2fdx2) override;
+  double value_and_parameter_gradient_1d(double x,
+                                         VecRef gradient) override;
+  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                              MatRef hessian) override;
+
+  double error_up() override;
+
+  bool can_calculate_mean_and_variance() override;
+  void mean_and_variance(double& mean, double& var) override;
+protected:
+  MultiElectronSpectrum* mes_ = nullptr;
+};
+
+#endif
 
 } } } // namespace calin::calib::spe_fit
