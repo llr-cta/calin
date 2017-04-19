@@ -230,7 +230,6 @@ protected:
   unsigned npar_ = 0;
   std::vector<double> x_;
   std::vector<double> w_;
-  double norm_ = 0;
 };
 
 
