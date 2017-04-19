@@ -156,6 +156,7 @@ class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
   bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
 
   double pdf_mes(double x) override;
   double pdf_ped(double x) override;
@@ -331,7 +332,7 @@ class SPELikelihood: public calin::math::function::MultiAxisFunction
 
 #ifndef SWIG
 
-class MESSigAdapter : public Parameterizable1DPDF
+class MESSigAdapter : public calin::math::pdf_1d::Parameterizable1DPDF
 {
 public:
   MESSigAdapter(MultiElectronSpectrum* mes);
@@ -340,11 +341,11 @@ public:
   // Reiterate functions from ParameterizableSingleAxisFunction
 
   unsigned num_parameters() override;
-  std::vector<function::ParameterAxis> parameters() override;
+  std::vector<calin::math::function::ParameterAxis> parameters() override;
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
 
-  function::DomainAxis domain_axis() override;
+  calin::math::function::DomainAxis domain_axis() override;
 
   bool can_calculate_gradient() override;
   bool can_calculate_hessian() override;

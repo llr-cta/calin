@@ -502,6 +502,11 @@ bool PoissonGaussianMES_HighAccuracy::can_calculate_parameter_gradient()
   return true;
 }
 
+bool PoissonGaussianMES_HighAccuracy::can_calculate_parameter_hessian()
+{
+  return false;
+}
+
 double PoissonGaussianMES_HighAccuracy::pdf_mes(double x)
 {
   return std::exp(PMTModelPG::logL_multi_pe(x, intensity_pe_, 1.0,

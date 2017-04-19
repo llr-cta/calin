@@ -72,11 +72,6 @@ pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
   return 0;
 }
 
-bool MultiElectronSpectrum::can_calculate_parameter_hessian()
-{
-  return false;
-}
-
 // ============================================================================
 //
 // SPELikelihood -- calculate likelihood for optimizer
