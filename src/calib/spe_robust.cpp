@@ -31,7 +31,7 @@
 using namespace calin::calib::spe_fit;
 using calin::math::special::SQR;
 using calin::math::function::assign_parameters;
-using calin::calib::spe_fit;
+using namespace calin::calib::spe_fit;
 
 MESSigAdapter::MESSigAdapter(MultiElectronSpectrum* mes):
   Parameterizable1DPDF(), mes_(mes)
@@ -46,10 +46,10 @@ MESSigAdapter::~MESSigAdapter()
 
 unsigned MESSigAdapter::num_parameters()
 {
-  return mes_->num_parameters()
+  return mes_->num_parameters();
 }
 
-std::vector<function::ParameterAxis> MESSigAdapter::parameters()
+std::vector<calin::math::function::ParameterAxis> MESSigAdapter::parameters()
 {
   return mes_->parameters();
 }
@@ -64,7 +64,7 @@ void MESSigAdapter::set_parameter_values(ConstVecRef values)
   // do nothing
 }
 
-function::DomainAxis MESSigAdapter::domain_axis()
+calin::math::function::DomainAxis MESSigAdapter::domain_axis()
 {
   return { "charge", "", false, 0, false, 0 };
 }
@@ -79,22 +79,85 @@ bool MESSigAdapter::can_calculate_hessian()
   return false;
 }
 
-bool can_calculate_parameter_gradient() override;
-bool can_calculate_parameter_hessian() override;
+bool MESSigAdapter::can_calculate_parameter_gradient()
+{
+  return mes_->can_calculate_parameter_gradient();
+}
 
-  double value_1d(double x) override;
-  double value_and_gradient_1d(double x,  double& dfdx) override;
-  double value_gradient_and_hessian_1d(double x, double& dfdx,
-                            double& d2fdx2) override;
-  double value_and_parameter_gradient_1d(double x,
-                                         VecRef gradient) override;
-  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
-                                              MatRef hessian) override;
+bool MESSigAdapter::can_calculate_parameter_hessian()
+{
+  return mes_->can_calculate_parameter_hessian();
+}
 
-  double error_up() override;
+double MESSigAdapter::value_and_gradient_1d(double x,  double& dfdx)
+{
+  assert(0);
+  dfdx = 0;
+  return 0;
+}
 
-  bool can_calculate_mean_and_variance() override;
-  void mean_and_variance(double& mean, double& var) override;
-protected:
-  MultiElectronSpectrum* mes_ = nullptr;
-};
+double MESSigAdapter::
+value_gradient_and_hessian_1d(double x, double& dfdx, double& d2fdx2)
+{
+  assert(0);
+  d2fdx2 = 0;
+  dfdx = 0;
+  return 0;
+}
+
+double MESSigAdapter::value_1d(double x)
+{
+  return mes_->pdf_mes(x);
+}
+
+double MESSigAdapter::
+value_and_parameter_gradient_1d(double x, VecRef gradient)
+{
+  return mes_->pdf_gradient_mes(x, gradient);
+}
+
+double MESSigAdapter::
+value_parameter_gradient_and_hessian_1d(double x, VecRef gradient, MatRef hessian)
+{
+  return mes_->pdf_gradient_hessian_mes(x, gradient, hessian);
+}
+
+double MESSigAdapter::error_up()
+{
+  return 0;
+}
+
+bool MESSigAdapter::can_calculate_mean_and_variance()
+{
+  return false;
+}
+
+void MESSigAdapter::mean_and_variance(double& mean, double& var)
+{
+  assert(0);
+  mean = 0;
+  var = 0;
+  return;
+}
+
+MESPedAdapter::~MESPedAdapter()
+{
+  // nothing to see here
+}
+
+double MESPedAdapter::value_1d(double x)
+{
+  return mes_->pdf_ped(x);
+}
+
+double MESPedAdapter::
+value_and_parameter_gradient_1d(double x, VecRef gradient)
+{
+  return mes_->pdf_gradient_ped(x, gradient);
+}
+
+double MESPedAdapter::
+value_parameter_gradient_and_hessian_1d(double x, VecRef gradient, MatRef hessian)
+{
+  return mes_->pdf_gradient_hessian_ped(x, gradient, hessian);
+}

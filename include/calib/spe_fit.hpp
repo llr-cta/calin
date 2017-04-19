@@ -46,11 +46,11 @@ class MultiElectronSpectrum: public calin::math::function::Parameterizable
   virtual double pdf_ped(double x) = 0;
   virtual double pdf_gradient_ped(double x, VecRef gradient) = 0;
   virtual double pdf_gradient_hessian_ped(double x, VecRef gradient,
-                                        MatRef hessian);
+                                        MatRef hessian) = 0;
   virtual double pdf_mes(double x) = 0;
   virtual double pdf_gradient_mes(double x, VecRef gradient) = 0;
   virtual double pdf_gradient_hessian_mes(double x, VecRef gradient,
-                                        MatRef hessian);
+                                        MatRef hessian) = 0;
 
   virtual double intensity_pe() = 0;
   virtual double ped_rms_dc() = 0;
@@ -162,6 +162,10 @@ class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
   double pdf_ped(double x) override;
   double pdf_gradient_mes(double x, VecRef gradient) override;
   double pdf_gradient_ped(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_mes(double x, VecRef gradient,
+                                MatRef hessian) override;
+  double pdf_gradient_hessian_ped(double x, VecRef gradient,
+                                MatRef hessian) override;
 
   double intensity_pe() override { return intensity_pe_; };
   double ped_rms_dc() override { return ped_rms_dc_; }
@@ -367,6 +371,19 @@ public:
   void mean_and_variance(double& mean, double& var) override;
 protected:
   MultiElectronSpectrum* mes_ = nullptr;
+};
+
+class MESPedAdapter : public MESSigAdapter
+{
+public:
+  using MESSigAdapter::MESSigAdapter;
+  virtual ~MESPedAdapter();
+
+  double value_1d(double x) override;
+  double value_and_parameter_gradient_1d(double x,
+                                         VecRef gradient) override;
+  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                              MatRef hessian) override;
 };
 
 #endif

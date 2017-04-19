@@ -57,21 +57,6 @@ MultiElectronSpectrum::~MultiElectronSpectrum()
   // nothing to see here
 }
 
-
-double MultiElectronSpectrum::
-pdf_gradient_hessian_ped(double x, VecRef gradient, MatRef hessian)
-{
-  assert(0);
-  return 0;
-}
-
-double MultiElectronSpectrum::
-pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
-{
-  assert(0);
-  return 0;
-}
-
 // ============================================================================
 //
 // SPELikelihood -- calculate likelihood for optimizer
