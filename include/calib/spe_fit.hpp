@@ -33,7 +33,9 @@
 #include "math/function.hpp"
 #include "math/pdf_1d.hpp"
 #include "math/histogram.hpp"
-#include <calib/spe_fit.pb.h>
+#include "math/m_estimate.hpp"
+#include "math/data_modeling.hpp"
+#include "calib/spe_fit.pb.h"
 
 namespace calin { namespace calib { namespace spe_fit {
 
@@ -334,58 +336,37 @@ class SPELikelihood: public calin::math::function::MultiAxisFunction
   const calin::math::histogram::SimpleHist ped_data_;
 };
 
-#ifndef SWIG
-
-class MESSigAdapter : public calin::math::pdf_1d::Parameterizable1DPDF
+class SPERobust: public calin::math::function::MultiAxisFunction
 {
-public:
-  MESSigAdapter(MultiElectronSpectrum* mes);
-  virtual ~MESSigAdapter();
+ public:
+  SPERobust(MultiElectronSpectrum& mes_model,
+    const calin::math::histogram::SimpleHist& mes_data,
+    calin::math::m_estimate::LikelihoodRhoFunction* rho = nullptr, bool adopt_rho = false);
+  SPERobust(MultiElectronSpectrum& mes_model,
+    const calin::math::histogram::SimpleHist& mes_data,
+    const calin::math::histogram::SimpleHist& ped_data,
+    calin::math::m_estimate::LikelihoodRhoFunction* rho = nullptr, bool adopt_rho = false);
+  virtual ~SPERobust();
 
-  // Reiterate functions from ParameterizableSingleAxisFunction
-
-  unsigned num_parameters() override;
-  std::vector<calin::math::function::ParameterAxis> parameters() override;
-  Eigen::VectorXd parameter_values() override;
-  void set_parameter_values(ConstVecRef values) override;
-
-  calin::math::function::DomainAxis domain_axis() override;
-
+  unsigned num_domain_axes() override;
+  std::vector<calin::math::function::DomainAxis> domain_axes() override;
+  double value(ConstVecRef x) override;
   bool can_calculate_gradient() override;
+  double value_and_gradient(ConstVecRef x, VecRef gradient) override;
   bool can_calculate_hessian() override;
-  bool can_calculate_parameter_gradient() override;
-  bool can_calculate_parameter_hessian() override;
+  double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
+                                    MatRef hessian) override;
+  double error_up() override { return 0.5; }
 
-  double value_1d(double x) override;
-  double value_and_gradient_1d(double x,  double& dfdx) override;
-  double value_gradient_and_hessian_1d(double x, double& dfdx,
-                            double& d2fdx2) override;
-  double value_and_parameter_gradient_1d(double x,
-                                         VecRef gradient) override;
-  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
-                                              MatRef hessian) override;
-
-  double error_up() override;
-
-  bool can_calculate_mean_and_variance() override;
-  void mean_and_variance(double& mean, double& var) override;
-protected:
-  MultiElectronSpectrum* mes_ = nullptr;
+ private:
+  MultiElectronSpectrum* mes_model_;
+  unsigned npar_;
+  calin::math::m_estimate::LikelihoodRhoFunction* rho_ = nullptr;
+  bool adopt_rho_ = false;
+  calin::math::data_modeling::IID1DDataMEstimateLikelihoodFunction* mes_cost_ = nullptr;
+  calin::math::data_modeling::IID1DDataMEstimateLikelihoodFunction* ped_cost_ = nullptr;
 };
 
-class MESPedAdapter : public MESSigAdapter
-{
-public:
-  using MESSigAdapter::MESSigAdapter;
-  virtual ~MESPedAdapter();
 
-  double value_1d(double x) override;
-  double value_and_parameter_gradient_1d(double x,
-                                         VecRef gradient) override;
-  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
-                                              MatRef hessian) override;
-};
-
-#endif
 
 } } } // namespace calin::calib::spe_fit
