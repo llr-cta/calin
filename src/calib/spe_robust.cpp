@@ -236,8 +236,8 @@ SPERobust::SPERobust(MultiElectronSpectrum& mes_model,
   mes_model_(&mes_model), npar_(mes_model_->num_parameters()),
   rho_(rho==nullptr ? new NullLikelihoodRhoFunction() : rho),
   adopt_rho_(rho==nullptr ? true : adopt_rho),
-  mes_cost_(new IID1DDataMEstimateLikelihoodFunction(new MESPedAdapter(mes_model_)),
-    rho_, mes_data, true, false)
+  mes_cost_(new IID1DDataMEstimateLikelihoodFunction(new MESSigAdapter(mes_model_),
+    rho_, mes_data, true, false))
 {
   // nothing to see here
 }
@@ -250,10 +250,10 @@ SPERobust::SPERobust(MultiElectronSpectrum& mes_model,
   mes_model_(&mes_model), npar_(mes_model_->num_parameters()),
   rho_(rho==nullptr ? new NullLikelihoodRhoFunction() : rho),
   adopt_rho_(rho==nullptr ? true : adopt_rho),
-  mes_cost_(new IID1DDataMEstimateLikelihoodFunction(new MESPedAdapter(mes_model_)),
-    rho_, mes_data, true, false),
-  ped_cost_(new IID1DDataMEstimateLikelihoodFunction(new MESPedAdapter(mes_model_)),
-    rho_, ped_data, true, false)
+  mes_cost_(new IID1DDataMEstimateLikelihoodFunction(new MESSigAdapter(mes_model_),
+    rho_, mes_data, true, false)),
+  ped_cost_(new IID1DDataMEstimateLikelihoodFunction(new MESPedAdapter(mes_model_),
+    rho_, ped_data, true, false))
 {
   // nothing to see here
 }
@@ -267,35 +267,60 @@ SPERobust::~SPERobust()
 
 unsigned SPERobust::num_domain_axes()
 {
-
+  return mes_model_->num_parameters();
 }
 
 std::vector<calin::math::function::DomainAxis> SPERobust::domain_axes()
 {
-
+  return mes_model_->parameters();
 }
 
 double SPERobust::value(ConstVecRef x)
 {
-
+  mes_model_->set_parameter_values(x);
+  double value = mes_cost_->value(x);
+  if(ped_cost_)value += ped_cost_->value(x);
+  return value;
 }
 
 bool SPERobust::can_calculate_gradient()
 {
-
+  return mes_cost_->can_calculate_gradient() and
+    (ped_cost_ == nullptr or ped_cost_->can_calculate_gradient());
 }
 
 double SPERobust::value_and_gradient(ConstVecRef x, VecRef gradient)
 {
-
+  mes_model_->set_parameter_values(x);
+  gradient.resize(npar_);
+  double value = mes_cost_->value_and_gradient(x, gradient);
+  if(ped_cost_) {
+    Eigen::VectorXd ped_gradient(npar_);
+    value = ped_cost_->value_and_gradient(x, ped_gradient);
+    gradient += ped_gradient;
+  }
+  return value;
 }
 
 bool SPERobust::can_calculate_hessian()
 {
-
+  return mes_cost_->can_calculate_hessian() and
+    (ped_cost_ == nullptr or ped_cost_->can_calculate_hessian());
 }
+
 double SPERobust::
 value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
 {
-
+  mes_model_->set_parameter_values(x);
+  gradient.resize(npar_);
+  hessian.resize(npar_, npar_);
+  double value = mes_cost_->value_gradient_and_hessian(x, gradient, hessian);
+  if(ped_cost_) {
+    Eigen::VectorXd ped_gradient(npar_);
+    Eigen::MatrixXd ped_hessian(npar_,npar_);
+    value = ped_cost_->value_gradient_and_hessian(x, ped_gradient, ped_hessian);
+    gradient += ped_gradient;
+    hessian += ped_hessian;
+  }
+  return value;
 }
