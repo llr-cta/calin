@@ -76,13 +76,14 @@ unsigned PoissonGaussianMES::num_parameters()
 std::vector<function::ParameterAxis> PoissonGaussianMES::parameters()
 {
   constexpr double tiny_val = std::numeric_limits<double>::min();
+  constexpr double inf = std::numeric_limits<double>::infinity();
   //constexpr double phuge_val = std::numeric_limits<double>::max();
   //constexpr double nhuge_val = std::numeric_limits<double>::lowest();
-  return { { "light_intensity", "PE", true, 0, false, 0 },
-    { "ped_zero", "DC", false, 0, false, 0 },
-    { "ped_width", "DC", true, tiny_val, false, 0 },
-    { "gain", "DC/PE", false, 0, false, 0 }, // can be negative
-    { "ses_width", "PE", true, tiny_val, false, 0 }
+  return { { "light_intensity", "PE", true, 0, false, inf },
+    { "ped_zero", "DC", false, -inf, false, inf },
+    { "ped_width", "DC", true, tiny_val, false, inf },
+    { "gain", "DC/PE", false, -inf, false, inf }, // can be negative
+    { "ses_width", "PE", true, tiny_val, false, inf }
   };
 }
 
@@ -500,6 +501,25 @@ set_parameter_values(ConstVecRef values)
 bool PoissonGaussianMES_HighAccuracy::can_calculate_parameter_gradient()
 {
   return true;
+}
+
+bool PoissonGaussianMES_HighAccuracy::can_calculate_parameter_hessian()
+{
+  return false;
+}
+
+double PoissonGaussianMES_HighAccuracy::
+pdf_gradient_hessian_ped(double x, VecRef gradient, MatRef hessian)
+{
+  assert(0);
+  return 0;
+}
+
+double PoissonGaussianMES_HighAccuracy::
+pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
+{
+  assert(0);
+  return 0;
 }
 
 double PoissonGaussianMES_HighAccuracy::pdf_mes(double x)

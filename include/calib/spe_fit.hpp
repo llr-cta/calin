@@ -33,7 +33,9 @@
 #include "math/function.hpp"
 #include "math/pdf_1d.hpp"
 #include "math/histogram.hpp"
-#include <calib/spe_fit.pb.h>
+#include "math/m_estimate.hpp"
+#include "math/data_modeling.hpp"
+#include "calib/spe_fit.pb.h"
 
 namespace calin { namespace calib { namespace spe_fit {
 
@@ -46,19 +48,17 @@ class MultiElectronSpectrum: public calin::math::function::Parameterizable
   virtual double pdf_ped(double x) = 0;
   virtual double pdf_gradient_ped(double x, VecRef gradient) = 0;
   virtual double pdf_gradient_hessian_ped(double x, VecRef gradient,
-                                        MatRef hessian);
+                                        MatRef hessian) = 0;
   virtual double pdf_mes(double x) = 0;
   virtual double pdf_gradient_mes(double x, VecRef gradient) = 0;
   virtual double pdf_gradient_hessian_mes(double x, VecRef gradient,
-                                        MatRef hessian);
+                                        MatRef hessian) = 0;
 
   virtual double intensity_pe() = 0;
   virtual double ped_rms_dc() = 0;
   virtual double ped_zero_dc() = 0;
   virtual double ses_mean_dc() = 0;
   virtual double ses_rms_pe() = 0;
-
-  bool can_calculate_parameter_hessian() override;
 };
 
 class PoissonGaussianMES: public MultiElectronSpectrum
@@ -158,11 +158,16 @@ class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
   Eigen::VectorXd parameter_values() override;
   void set_parameter_values(ConstVecRef values) override;
   bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
 
   double pdf_mes(double x) override;
   double pdf_ped(double x) override;
   double pdf_gradient_mes(double x, VecRef gradient) override;
   double pdf_gradient_ped(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_mes(double x, VecRef gradient,
+                                MatRef hessian) override;
+  double pdf_gradient_hessian_ped(double x, VecRef gradient,
+                                MatRef hessian) override;
 
   double intensity_pe() override { return intensity_pe_; };
   double ped_rms_dc() override { return ped_rms_dc_; }
@@ -330,5 +335,38 @@ class SPELikelihood: public calin::math::function::MultiAxisFunction
   bool has_ped_data_ { false };
   const calin::math::histogram::SimpleHist ped_data_;
 };
+
+class SPERobust: public calin::math::function::MultiAxisFunction
+{
+ public:
+  SPERobust(MultiElectronSpectrum& mes_model,
+    const calin::math::histogram::SimpleHist& mes_data,
+    calin::math::m_estimate::LikelihoodRhoFunction* rho = nullptr, bool adopt_rho = false);
+  SPERobust(MultiElectronSpectrum& mes_model,
+    const calin::math::histogram::SimpleHist& mes_data,
+    const calin::math::histogram::SimpleHist& ped_data,
+    calin::math::m_estimate::LikelihoodRhoFunction* rho = nullptr, bool adopt_rho = false);
+  virtual ~SPERobust();
+
+  unsigned num_domain_axes() override;
+  std::vector<calin::math::function::DomainAxis> domain_axes() override;
+  double value(ConstVecRef x) override;
+  bool can_calculate_gradient() override;
+  double value_and_gradient(ConstVecRef x, VecRef gradient) override;
+  bool can_calculate_hessian() override;
+  double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
+                                    MatRef hessian) override;
+  double error_up() override { return 0.5; }
+
+ private:
+  MultiElectronSpectrum* mes_model_;
+  unsigned npar_;
+  calin::math::m_estimate::LikelihoodRhoFunction* rho_ = nullptr;
+  bool adopt_rho_ = false;
+  calin::math::data_modeling::IID1DDataMEstimateLikelihoodFunction* mes_cost_ = nullptr;
+  calin::math::data_modeling::IID1DDataMEstimateLikelihoodFunction* ped_cost_ = nullptr;
+};
+
+
 
 } } } // namespace calin::calib::spe_fit

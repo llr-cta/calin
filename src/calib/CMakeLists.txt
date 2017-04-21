@@ -14,7 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 add_library(calin_calib SHARED spe_fit.cpp spe_fit_poisson_gaussian.cpp
-  spe_fit_general_poisson.cpp pmt_model_pg.cpp)
+  spe_fit_general_poisson.cpp spe_robust.cpp pmt_model_pg.cpp)
 target_link_libraries(calin_calib calin_math calin_proto_calib)
 target_link_libraries(calin_calib ${FFTW_LIBRARIES} ${EXTRA_LIBS})
 

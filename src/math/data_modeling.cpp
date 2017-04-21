@@ -44,7 +44,6 @@ std::vector<calin::math::function::DomainAxis> IID1DDataLikelihoodFunction::doma
 
 double IID1DDataLikelihoodFunction::value(ConstVecRef x)
 {
-  assert(x.size() == 1);
   pdf_->set_parameter_values(x);
   math::accumulator::LikelihoodAccumulator acc;
   unsigned nx = x_.size();
@@ -68,7 +67,6 @@ bool IID1DDataLikelihoodFunction::can_calculate_gradient()
 
 double IID1DDataLikelihoodFunction::value_and_gradient(ConstVecRef x, VecRef gradient)
 {
-  assert(x.size() == 1);
   pdf_->set_parameter_values(x);
   gradient.resize(npar_);
   math::accumulator::LikelihoodAccumulator acc;
@@ -99,8 +97,6 @@ bool IID1DDataLikelihoodFunction::can_calculate_hessian()
 double IID1DDataLikelihoodFunction::
 value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
 {
-  assert(x.size() == 1);
-
   pdf_->set_parameter_values(x);
   gradient.resize(npar_);
   hessian.resize(npar_,npar_);
@@ -148,6 +144,136 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
 
 // -----------------------------------------------------------------------------
 //
+// M-Estimate version of Likelihood function fitter
+//
+// -----------------------------------------------------------------------------
+
+IID1DDataMEstimateLikelihoodFunction::~IID1DDataMEstimateLikelihoodFunction()
+{
+  if(adopt_pdf_)delete pdf_;
+  if(adopt_rho_)delete rho_;
+}
+
+unsigned IID1DDataMEstimateLikelihoodFunction::num_domain_axes()
+{
+  return pdf_->num_parameters();
+}
+
+std::vector<calin::math::function::DomainAxis> IID1DDataMEstimateLikelihoodFunction::domain_axes()
+{
+  return pdf_->parameters();
+}
+
+double IID1DDataMEstimateLikelihoodFunction::value(ConstVecRef x)
+{
+  pdf_->set_parameter_values(x);
+  math::accumulator::LikelihoodAccumulator acc;
+  unsigned nx = x_.size();
+  for(unsigned ix=0; ix<nx; ix++)
+  {
+    const double w = w_[ix];
+    if(w>0)
+    {
+      double pdf = pdf_->value_1d(x_[ix]);
+      if(pdf<=0)continue;
+      acc.accumulate(rho_->value_1d(-std::log(pdf))*w);
+    }
+  }
+  return acc.total();
+}
+
+bool IID1DDataMEstimateLikelihoodFunction::can_calculate_gradient()
+{
+  return pdf_->can_calculate_parameter_gradient() and
+    rho_->can_calculate_gradient();
+}
+
+double IID1DDataMEstimateLikelihoodFunction::value_and_gradient(ConstVecRef x, VecRef gradient)
+{
+  pdf_->set_parameter_values(x);
+  gradient.resize(npar_);
+  math::accumulator::LikelihoodAccumulator acc;
+  std::vector<math::accumulator::LikelihoodAccumulator> gradient_acc(npar_);
+  unsigned nx = x_.size();
+  for(unsigned ix=0; ix<nx; ix++)
+  {
+    const double w = w_[ix];
+    if(w>0)
+    {
+      double pdf = pdf_->value_and_parameter_gradient_1d(x_[ix], gradient);
+      if(pdf<=0)continue;
+      double drho_dx;
+      double rho = rho_->value_and_gradient_1d(-std::log(pdf), drho_dx);
+      acc.accumulate(rho*w);
+      for(unsigned ipar=0;ipar<npar_;ipar++)
+        gradient_acc[ipar].accumulate(drho_dx*gradient(ipar)/pdf*w);
+    }
+  }
+  for(unsigned ipar=0;ipar<npar_;ipar++)
+    gradient(ipar) = -gradient_acc[ipar].total();
+  return acc.total();
+}
+
+bool IID1DDataMEstimateLikelihoodFunction::can_calculate_hessian()
+{
+  return pdf_->can_calculate_parameter_hessian() and
+    rho_->can_calculate_hessian();
+}
+
+double IID1DDataMEstimateLikelihoodFunction::
+value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
+{
+  pdf_->set_parameter_values(x);
+  gradient.resize(npar_);
+  hessian.resize(npar_,npar_);
+  math::accumulator::LikelihoodAccumulator acc;
+  std::vector<math::accumulator::LikelihoodAccumulator> gradient_acc(npar_);
+  std::vector<math::accumulator::LikelihoodAccumulator>
+      hessian_acc(npar_*(npar_+1)/2);
+  unsigned nx = x_.size();
+  for(unsigned ix=0; ix<nx; ix++)
+  {
+    const double w = w_[ix];
+    if(w>0)
+    {
+      double pdf = pdf_->value_parameter_gradient_and_hessian_1d(x_[ix],
+        gradient, hessian);
+      if(pdf<=0)continue;
+      double drho_dx;
+      double d2rho_dx2;
+      double rho = rho_->value_gradient_and_hessian_1d(-std::log(pdf), drho_dx, d2rho_dx2);
+      acc.accumulate(rho*w);
+      for(unsigned ipar=0;ipar<npar_;ipar++)
+        gradient_acc[ipar].accumulate(drho_dx*gradient(ipar)/pdf*w);
+
+      unsigned itri = 0;
+      for(unsigned icol=0;icol<npar_;icol++)
+        for(unsigned irow=icol;irow<npar_;irow++)
+        {
+          double summand = (drho_dx*hessian(icol,irow)
+            - (d2rho_dx2 + drho_dx)*gradient[icol]*gradient[irow]/pdf)/pdf;
+          hessian_acc[itri++].accumulate(summand*w);
+        }
+    }
+  }
+
+  for(unsigned ipar=0;ipar<npar_;ipar++)
+    gradient(ipar) = -gradient_acc[ipar].total();
+
+  unsigned iacc = 0;
+  for(unsigned icol=0;icol<npar_;icol++)
+  {
+    for(unsigned irow=icol;irow<npar_;irow++)
+      hessian(icol,irow) = -hessian_acc[iacc++].total();
+    for(unsigned irow=0;irow<icol;irow++)
+      hessian(icol,irow) = hessian(irow,icol);
+  }
+
+  return acc.total();
+}
+
+// -----------------------------------------------------------------------------
+//
 // Chi-squared version of fitter
 //
 // -----------------------------------------------------------------------------
@@ -171,8 +297,8 @@ std::vector<calin::math::function::DomainAxis> IID1DDataChi2Function::domain_axe
 
 double IID1DDataChi2Function::value(ConstVecRef x)
 {
-  assert(x.size() == 1);
-  function::assign_parameters(x.data(), norm_);
+  double norm;
+  function::assign_parameters(x.data(), norm);
   pdf_->set_parameter_values(x.segment(1,npar_));
   math::accumulator::LikelihoodAccumulator acc;
   unsigned nx = x_.size();
@@ -182,7 +308,7 @@ double IID1DDataChi2Function::value(ConstVecRef x)
     if(w>0)
     {
       double pdf = pdf_->value_1d(x_[ix]);
-      acc.accumulate(SQR(norm_*pdf-w)/w);
+      acc.accumulate(SQR(norm*pdf-w)/w);
     }
   }
   return acc.total();
@@ -195,8 +321,8 @@ bool IID1DDataChi2Function::can_calculate_gradient()
 
 double IID1DDataChi2Function::value_and_gradient(ConstVecRef x, VecRef gradient)
 {
-  assert(x.size() == 1);
-  function::assign_parameters(x.data(), norm_);
+  double norm;
+  function::assign_parameters(x.data(), norm);
   pdf_->set_parameter_values(x.segment(1,npar_));
   gradient.resize(npar_+1);
   math::accumulator::LikelihoodAccumulator acc;
@@ -209,11 +335,11 @@ double IID1DDataChi2Function::value_and_gradient(ConstVecRef x, VecRef gradient)
     if(w>0)
     {
       double pdf = pdf_->value_and_parameter_gradient_1d(x_[ix], pdf_gradient);
-      double diff = norm_*pdf-w;
+      double diff = norm*pdf-w;
       acc.accumulate(SQR(diff)/w);
       gradient_acc[0].accumulate(2.0*diff*pdf/w);
       for(unsigned ipar=0;ipar<npar_;ipar++)
-        gradient_acc[ipar+1].accumulate(2*diff*norm_*pdf_gradient(ipar)/w);
+        gradient_acc[ipar+1].accumulate(2*diff*norm*pdf_gradient(ipar)/w);
     }
   }
   for(unsigned ipar=0;ipar<npar_+1;ipar++)
@@ -229,8 +355,8 @@ bool IID1DDataChi2Function::can_calculate_hessian()
 double IID1DDataChi2Function::
 value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
 {
-  assert(x.size() == 1);
-  function::assign_parameters(x.data(), norm_);
+  double norm;
+  function::assign_parameters(x.data(), norm);
   pdf_->set_parameter_values(x.segment(1,npar_));
   gradient.resize(npar_+1);
   hessian.resize(npar_+1, npar_+1);
@@ -250,20 +376,20 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
     {
       double pdf = pdf_->value_parameter_gradient_and_hessian_1d(x_[ix],
         pdf_gradient, pdf_hessian);
-      double diff = norm_*pdf-w;
+      double diff = norm*pdf-w;
       acc.accumulate(SQR(diff)/w);
       gradient_acc[0].accumulate(2.0*diff*pdf/w);
       for(unsigned ipar=0;ipar<npar_;ipar++)
-        gradient_acc[ipar+1].accumulate(2.0*diff*norm_*pdf_gradient(ipar)/w);
-      hessian_acc[0].accumulate(2.0*pdf/w);
+        gradient_acc[ipar+1].accumulate(2.0*diff*norm*pdf_gradient(ipar)/w);
+      hessian_acc[0].accumulate(2.0*pdf*pdf/w);
       for(unsigned ipar=0;ipar<npar_;ipar++)
-        hessian_acc[ipar+1].accumulate(2.0*(pdf*norm_+diff)*pdf_gradient(ipar)/w);
+        hessian_acc[ipar+1].accumulate(2.0*(pdf*norm+diff)*pdf_gradient(ipar)/w);
       unsigned itri = npar_+1;
       for(unsigned ipar=0;ipar<npar_;ipar++)
         for(unsigned jpar=ipar;jpar<npar_;jpar++)
         {
-          double summand = 2*norm_*(diff*pdf_hessian(ipar,jpar)
-            + norm_*pdf_gradient(ipar)*pdf_gradient(jpar))/w;
+          double summand = 2*norm*(diff*pdf_hessian(ipar,jpar)
+            + norm*pdf_gradient(ipar)*pdf_gradient(jpar))/w;
           hessian_acc[itri++].accumulate(summand);
         }
     }
