@@ -172,8 +172,10 @@ unsigned GeneralPoissonMES::num_intrinsic_parameters()
 auto GeneralPoissonMES::parameters() ->
     std::vector<math::function::ParameterAxis>
 {
+  //constexpr double tiny_val = std::numeric_limits<double>::min();
+  constexpr double inf = std::numeric_limits<double>::infinity();
   std::vector<math::function::ParameterAxis> pvec;
-  pvec.push_back({ "light_intensity", "PE", true, 0, false, 0 });
+  pvec.push_back({ "light_intensity", "PE", true, 0, false, inf });
   if(config_.include_on_off_ped_shift())
     pvec.push_back({ "off_ped_shift", "DC", false, 0, false, 0 });
   std::vector<math::function::ParameterAxis> pped { ped_pdf_->parameters() };
