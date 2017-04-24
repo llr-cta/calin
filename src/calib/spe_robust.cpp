@@ -296,7 +296,7 @@ double SPERobust::value_and_gradient(ConstVecRef x, VecRef gradient)
   double value = mes_cost_->value_and_gradient(x, gradient);
   if(ped_cost_) {
     Eigen::VectorXd ped_gradient(npar_);
-    value = ped_cost_->value_and_gradient(x, ped_gradient);
+    value += ped_cost_->value_and_gradient(x, ped_gradient);
     gradient += ped_gradient;
   }
   return value;
@@ -318,7 +318,7 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
   if(ped_cost_) {
     Eigen::VectorXd ped_gradient(npar_);
     Eigen::MatrixXd ped_hessian(npar_,npar_);
-    value = ped_cost_->value_gradient_and_hessian(x, ped_gradient, ped_hessian);
+    value += ped_cost_->value_gradient_and_hessian(x, ped_gradient, ped_hessian);
     gradient += ped_gradient;
     hessian += ped_hessian;
   }
