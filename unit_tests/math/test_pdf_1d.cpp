@@ -387,23 +387,19 @@ TEST(TestTwoComponent1DPDF_ExpGauss, SetAndRecallParameters) {
   EXPECT_EQ(pdf.parameter_values(), p);
 }
 
-#if 0
 TEST(TestTwoComponent1DPDF_ExpGauss, GradientCheck) {
   pdf_1d::LimitedExponentialPDF exp_pdf(1.0, 9.0);
   pdf_1d::LimitedGaussianPDF gauss_pdf(1.0, 9.0);
   pdf_1d::TwoComponent1DPDF pdf(&exp_pdf, "exp", &gauss_pdf, "gauss");
   Eigen::VectorXd p(4);
   p << 0.5, 40.0, 100.0, 35.0;
-  Eigen::VectorXd x(1);
-  Eigen::VectorXd dx(1);
-  dx << 1e-6;
   pdf.set_parameter_values(p);
   EXPECT_EQ(p, pdf.parameter_values());
-  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  for(double x = 0; x<10.0; x+=0.1)
   {
-    Eigen::VectorXd good(1);
-    EXPECT_TRUE(gradient_check(pdf, x, dx, good));
-    EXPECT_LE(good(0), 0.5);
+    double good;
+    EXPECT_TRUE(gradient_check(pdf, x, 1e-6, good));
+    EXPECT_LE(good, 0.5);
   }
 }
 
@@ -413,35 +409,28 @@ TEST(TestTwoComponent1DPDF_ExpGauss, HessianCheck) {
   pdf_1d::TwoComponent1DPDF pdf(&exp_pdf, "exp", &gauss_pdf, "gauss");
   Eigen::VectorXd p(4);
   p << 0.5, 40.0, 100.0, 35.0;
-  Eigen::VectorXd x(1);
-  Eigen::VectorXd dx(1);
-  dx << 1e-6;
   pdf.set_parameter_values(p);
   EXPECT_EQ(p, pdf.parameter_values());
-  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  for(double x = 0; x<10.0; x+=0.1)
   {
-    Eigen::MatrixXd good(1,1);
-    EXPECT_TRUE(hessian_check(pdf, x, dx, good));
-    EXPECT_LE(good(0,0), 0.5);
+    double good;
+    EXPECT_TRUE(hessian_check(pdf, x, 1e-6, good));
+    EXPECT_LE(good, 0.5);
   }
 }
 
 TEST(TestTwoComponent1DPDF_ExpGauss, ParameterGradientCheck) {
   pdf_1d::LimitedExponentialPDF exp_pdf(1.0, 9.0);
   pdf_1d::LimitedGaussianPDF gauss_pdf(1.0, 9.0);
-  pdf_1d::TwoComponent1DPDF pdf_x(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF pdf(&exp_pdf, "exp", &gauss_pdf, "gauss");
   Eigen::VectorXd p(4);
   p << 0.5, 40.0, 100.0, 35.0;
   Eigen::VectorXd dp(4);
   dp << 1e-6, 1e-6, 1e-6, 1e-6;
-  function::PMAFReverser pdf(&pdf_x);
-  Eigen::VectorXd x(1);
-  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  for(double x = 0; x<10.0; x+=0.1)
   {
-    pdf.set_parameter_values(x);
-    EXPECT_EQ(x, pdf.parameter_values());
     Eigen::VectorXd good(4);
-    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
     EXPECT_LE(good(0), 0.5);
     EXPECT_LE(good(1), 0.5);
     EXPECT_LE(good(2), 0.5);
@@ -452,19 +441,15 @@ TEST(TestTwoComponent1DPDF_ExpGauss, ParameterGradientCheck) {
 TEST(TestTwoComponent1DPDF_ExpGauss, ParameterHessianCheck) {
   pdf_1d::LimitedExponentialPDF exp_pdf(1.0, 9.0);
   pdf_1d::LimitedGaussianPDF gauss_pdf(1.0, 9.0);
-  pdf_1d::TwoComponent1DPDF pdf_x(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF pdf(&exp_pdf, "exp", &gauss_pdf, "gauss");
   Eigen::VectorXd p(4);
   p << 0.5, 40.0, 100.0, 35.0;
   Eigen::VectorXd dp(4);
   dp << 1e-6, 1e-6, 1e-6, 1e-6;
-  function::PMAFReverser pdf(&pdf_x);
-  Eigen::VectorXd x(1);
-  for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
+  for(double x = 0; x<10.0; x+=0.1)
   {
-    pdf.set_parameter_values(x);
-    EXPECT_EQ(x, pdf.parameter_values());
     Eigen::MatrixXd good(4,4);
-    EXPECT_TRUE(hessian_check(pdf, p, dp, good));
+    EXPECT_TRUE(hessian_check_par(pdf, x, p, dp, good));
     EXPECT_LE(good(0,0), 0.5);
     EXPECT_LE(good(0,1), 0.5);
     EXPECT_LE(good(0,2), 0.5);
@@ -488,7 +473,8 @@ TEST(TestFreezeThaw, FreezeAndThaw) {
   pdf_1d::LimitedExponentialPDF exp_pdf(1.0, 9.0);
   pdf_1d::LimitedGaussianPDF gauss_pdf(1.0, 9.0);
   pdf_1d::TwoComponent1DPDF pdf_x(&exp_pdf, "exp", &gauss_pdf, "gauss");
-  function::PMAFReverser pdf(&pdf_x);
+  SingleToParameterizableMultiAxisFunctionAdapter maf(&pdf_x);
+  function::PMAFReverser pdf(&maf);
   function::FreezeThawFunction freezer(&pdf);
   EXPECT_EQ(freezer.num_domain_axes(), 4U);
   EXPECT_EQ(freezer.num_parameters(), 0U);
@@ -599,10 +585,10 @@ TEST(TestFreezeThaw, GradientCheck) {
   p << 0.5, 100.0, 35.0;
   Eigen::VectorXd dp(3);
   dp << 1e-6, 1e-6, 1e-6;
-  function::PMAFReverser pdf(&pdf_x);
+  SingleToParameterizableMultiAxisFunctionAdapter maf(&pdf_x);
+  function::PMAFReverser pdf(&maf);
   function::FreezeThawFunction freezer(&pdf);
   freezer.freeze(1,40.0);
-
   Eigen::VectorXd x(1);
   for(x(0) = 0; x(0)<10.0; x(0)+=0.1)
   {
@@ -624,7 +610,8 @@ TEST(TestFreezeThaw, HessianCheck) {
   p << 0.5, 100.0, 35.0;
   Eigen::VectorXd dp(3);
   dp << 1e-6, 1e-6, 1e-6;
-  function::PMAFReverser pdf(&pdf_x);
+  SingleToParameterizableMultiAxisFunctionAdapter maf(&pdf_x);
+  function::PMAFReverser pdf(&maf);
   function::FreezeThawFunction freezer(&pdf);
   freezer.freeze(1,40.0);
 
@@ -655,7 +642,8 @@ TEST(TestFreezeThaw, ParameterGradientCheck) {
   p << 40, 100.0;
   Eigen::VectorXd dp(2);
   dp << 1e-6, 1e-6;
-  function::PMAFReverser pdf(&pdf_x);
+  SingleToParameterizableMultiAxisFunctionAdapter maf(&pdf_x);
+  function::PMAFReverser pdf(&maf);
   function::FreezeThawFunction freezer(&pdf);
   freezer.freeze(1,40.0);
   freezer.freeze(2,100.0);
@@ -685,7 +673,8 @@ TEST(TestFreezeThaw, ParameterHessianCheck) {
   p << 40, 100.0;
   Eigen::VectorXd dp(2);
   dp << 1e-6, 1e-6;
-  function::PMAFReverser pdf(&pdf_x);
+  SingleToParameterizableMultiAxisFunctionAdapter maf(&pdf_x);
+  function::PMAFReverser pdf(&maf);
   function::FreezeThawFunction freezer(&pdf);
   freezer.freeze(1,40.0);
   freezer.freeze(2,100.0);
@@ -730,36 +719,28 @@ TEST(TestLogQuadSpline, UnnormalisedGradientCheck) {
   Eigen::VectorXd p(4);
   p << 0, 1.0, 2.0, 1.0;
   pdf.set_parameter_values(p);
-  Eigen::VectorXd x(1);
-  x << -1.4;
-  Eigen::VectorXd dx(1);
-  dx << 0.00001;
-  Eigen::VectorXd good(1);
-  for(x(0) = -1.4; x(0)<1.4; x(0)+=0.1)
+  for(double x=-1.4; x<1.4; x+=0.1)
   {
-    EXPECT_TRUE(gradient_check(pdf, x, dx, good));
-    EXPECT_LE(good(0), 0.5);
+    double good;
+    EXPECT_TRUE(gradient_check(pdf, x, 0.00001, good));
+    EXPECT_LE(good, 0.5);
   }
 }
 
 TEST(TestLogQuadSpline, UnnormalisedParameterGradientCheck) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, 0.0, ParamZeroType::SLOPE, ParamZeroLocation::LEFT, false);
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, 0.0, ParamZeroType::SLOPE, ParamZeroLocation::LEFT, false);
 
   Eigen::VectorXd p(4);
   p << -0.5, 1.0, 2.0, 1.5;
   Eigen::VectorXd dp(4);
   dp << 0.001, 0.001, 0.001, 0.001;
 
-  function::PMAFReverser pdf(&pdf_x);
-  Eigen::VectorXd x(1);
-  for(x(0) = -1.4; x(0)<1.4; x(0)+=0.1)
+  for(double x=-1.4; x<1.4; x+=0.1)
   {
-    pdf.set_parameter_values(x);
-    EXPECT_EQ(x, pdf.parameter_values());
     Eigen::VectorXd good(4);
-    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
     EXPECT_LE(good(0), 0.5);
     EXPECT_LE(good(1), 0.5);
     EXPECT_LE(good(2), 0.5);
@@ -852,21 +833,17 @@ TEST(TestLogQuadSpline, NormalisedValues_ABZero) {
 TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_ANeg) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5);
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5);
 
   Eigen::VectorXd p(4);
   p << 2.0, 1.0, 2.0, 1.0;
   Eigen::VectorXd dp(4);
   dp << 0.001, 0.001, 0.001, 0.001;
 
-  function::PMAFReverser pdf(&pdf_x);
-  Eigen::VectorXd x(1);
-  for(x(0) = -1.4; x(0)<1.4; x(0)+=0.1)
+  for(double x=-1.4; x<1.4; x+=0.1)
   {
-    pdf.set_parameter_values(x);
-    EXPECT_EQ(x, pdf.parameter_values());
     Eigen::VectorXd good(4);
-    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
     EXPECT_LE(good(0), 0.5);
     EXPECT_LE(good(1), 0.5);
     EXPECT_LE(good(2), 0.5);
@@ -877,21 +854,17 @@ TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_ANeg) {
 TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_APos) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5);
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5);
 
   Eigen::VectorXd p(4);
   p << -1.5, 2.0, 1.0, 2.0;
   Eigen::VectorXd dp(4);
   dp << 0.001, 0.001, 0.001, 0.001;
 
-  function::PMAFReverser pdf(&pdf_x);
-  Eigen::VectorXd x(1);
-  for(x(0) = -1.4; x(0)<1.4; x(0)+=0.1)
+  for(double x=-1.4; x<1.4; x+=0.1)
   {
-    pdf.set_parameter_values(x);
-    EXPECT_EQ(x, pdf.parameter_values());
     Eigen::VectorXd good(4);
-    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
     EXPECT_LE(good(0), 0.5);
     EXPECT_LE(good(1), 0.5);
     EXPECT_LE(good(2), 0.5);
@@ -902,21 +875,17 @@ TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_APos) {
 TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_AZero) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5);
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5);
 
   Eigen::VectorXd p(4);
   p << 1.0, 1.0, 2.0, 3.0;
   Eigen::VectorXd dp(4);
   dp << 0.001, 0.001, 0.001, 0.001;
 
-  function::PMAFReverser pdf(&pdf_x);
-  Eigen::VectorXd x(1);
-  for(x(0) = -1.4; x(0)<1.4; x(0)+=0.1)
+  for(double x=-1.4; x<1.4; x+=0.1)
   {
-    pdf.set_parameter_values(x);
-    EXPECT_EQ(x, pdf.parameter_values());
     Eigen::VectorXd good(4);
-    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
     EXPECT_LE(good(0), 0.5);
     EXPECT_LE(good(1), 0.5);
     EXPECT_LE(good(2), 0.5);
@@ -927,21 +896,17 @@ TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_AZero) {
 TEST(TestLogQuadSpline, NormalisedParameterGradientCheck_ABZero) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5);
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5);
 
   Eigen::VectorXd p(4);
   p << 0.0, 1.0, 1.0, 1.0;
   Eigen::VectorXd dp(4);
   dp << 0.001, 0.001, 0.001, 0.001;
 
-  function::PMAFReverser pdf(&pdf_x);
-  Eigen::VectorXd x(1);
-  for(x(0) = -1.4; x(0)<1.4; x(0)+=0.1)
+  for(double x=-1.4; x<1.4; x+=0.1)
   {
-    pdf.set_parameter_values(x);
-    EXPECT_EQ(x, pdf.parameter_values());
     Eigen::VectorXd good(4);
-    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
     EXPECT_LE(good(0), 0.5);
     EXPECT_LE(good(1), 0.5);
     EXPECT_LE(good(2), 0.5);
@@ -1034,22 +999,17 @@ TEST(TestLogQuadSpline, BinnedValues_ABZero) {
 TEST(TestLogQuadSpline, BinnedParameterGradientCheck_ANeg) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, 0.1);
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, 0.1);
 
   Eigen::VectorXd p(4);
   p << 2.0, 1.0, 2.0, 1.0;
   Eigen::VectorXd dp(4);
   dp << 0.001, 0.001, 0.001, 0.001;
 
-  function::PMAFReverser pdf(&pdf_x);
-  Eigen::VectorXd x(1);
-  for(x(0) = -1.5; x(0)<1.5; x(0)+=0.1)
+  for(double x=-1.5; x<1.5; x+=0.1)
   {
-    //std::cout << ">>>>>>>>>> x=" << x(0) << " <<<<<<<<<<<<<\n";
-    pdf.set_parameter_values(x);
-    EXPECT_EQ(x, pdf.parameter_values());
     Eigen::VectorXd good(4);
-    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
     EXPECT_LE(good(0), 0.5);
     EXPECT_LE(good(1), 0.5);
     EXPECT_LE(good(2), 0.5);
@@ -1060,21 +1020,17 @@ TEST(TestLogQuadSpline, BinnedParameterGradientCheck_ANeg) {
 TEST(TestLogQuadSpline, BinnedParameterGradientCheck_APos) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, 0.1);
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, 0.1);
 
   Eigen::VectorXd p(4);
   p << -1.5, 2.0, 1.0, 2.0;
   Eigen::VectorXd dp(4);
   dp << 0.001, 0.001, 0.001, 0.001;
 
-  function::PMAFReverser pdf(&pdf_x);
-  Eigen::VectorXd x(1);
-  for(x(0) = -1.5; x(0)<1.5; x(0)+=0.1)
+  for(double x=-1.5; x<1.5; x+=0.1)
   {
-    pdf.set_parameter_values(x);
-    EXPECT_EQ(x, pdf.parameter_values());
     Eigen::VectorXd good(4);
-    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
     EXPECT_LE(good(0), 0.5);
     EXPECT_LE(good(1), 0.5);
     EXPECT_LE(good(2), 0.5);
@@ -1085,21 +1041,17 @@ TEST(TestLogQuadSpline, BinnedParameterGradientCheck_APos) {
 TEST(TestLogQuadSpline, BinnedParameterGradientCheck_AZero) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, 0.1);
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, 0.1);
 
   Eigen::VectorXd p(4);
   p << 1.0, 1.0, 2.0, 3.0;
   Eigen::VectorXd dp(4);
   dp << 0.001, 0.001, 0.001, 0.001;
 
-  function::PMAFReverser pdf(&pdf_x);
-  Eigen::VectorXd x(1);
-  for(x(0) = -1.5; x(0)<1.5; x(0)+=0.1)
+  for(double x=-1.5; x<1.5; x+=0.1)
   {
-    pdf.set_parameter_values(x);
-    EXPECT_EQ(x, pdf.parameter_values());
     Eigen::VectorXd good(4);
-    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
     EXPECT_LE(good(0), 0.5);
     EXPECT_LE(good(1), 0.5);
     EXPECT_LE(good(2), 0.5);
@@ -1110,28 +1062,23 @@ TEST(TestLogQuadSpline, BinnedParameterGradientCheck_AZero) {
 TEST(TestLogQuadSpline, BinnedParameterGradientCheck_ABZero) {
   Eigen::VectorXd xknot(3);
   xknot << -1.0, 0.0, 1.0;
-  pdf_1d::LogQuadraticSpline1DPDF pdf_x(xknot, -1.5, 1.5, 0.1);
+  pdf_1d::LogQuadraticSpline1DPDF pdf(xknot, -1.5, 1.5, 0.1);
 
   Eigen::VectorXd p(4);
   p << 0.0, 1.0, 1.0, 1.0;
   Eigen::VectorXd dp(4);
   dp << 0.001, 0.001, 0.001, 0.001;
 
-  function::PMAFReverser pdf(&pdf_x);
-  Eigen::VectorXd x(1);
-  for(x(0) = -1.5; x(0)<1.5; x(0)+=0.1)
+  for(double x=-1.5; x<1.5; x+=0.1)
   {
-    pdf.set_parameter_values(x);
-    EXPECT_EQ(x, pdf.parameter_values());
     Eigen::VectorXd good(4);
-    EXPECT_TRUE(gradient_check(pdf, p, dp, good));
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
     EXPECT_LE(good(0), 0.5);
     EXPECT_LE(good(1), 0.5);
     EXPECT_LE(good(2), 0.5);
     EXPECT_LE(good(3), 0.5);
   }
 }
-#endif
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
