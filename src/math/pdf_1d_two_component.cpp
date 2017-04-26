@@ -35,33 +35,32 @@ using function::assign_parameters;
 
 // ============================================================================
 //
-// TwoComponentPDF
+// TwoComponent1DPDF
 //
 // ============================================================================
 
-TwoComponentPDF::
-TwoComponentPDF(Parameterizable1DPDF* pdf1, const std::string& cpt1_name,
+TwoComponent1DPDF::
+TwoComponent1DPDF(Parameterizable1DPDF* pdf1, const std::string& cpt1_name,
                 Parameterizable1DPDF* pdf2, const std::string& cpt2_name,
-                bool adopt_pdf1, bool adopt_pdf2, double error_up):
+                bool adopt_pdf1, bool adopt_pdf2):
     Parameterizable1DPDF(),
     pdf1_(pdf1), adopt_pdf1_(adopt_pdf1), cpt1_name_(cpt1_name),
-    pdf2_(pdf2), adopt_pdf2_(adopt_pdf2), cpt2_name_(cpt2_name),
-    error_up_(error_up)
+    pdf2_(pdf2), adopt_pdf2_(adopt_pdf2), cpt2_name_(cpt2_name)
 {
   // nothing to see here
 }
 
-TwoComponentPDF::~TwoComponentPDF()
+TwoComponent1DPDF::~TwoComponent1DPDF()
 {
   // nothing to see here
 }
 
-unsigned TwoComponentPDF::num_parameters()
+unsigned TwoComponent1DPDF::num_parameters()
 {
   return 1 + pdf1_->num_parameters() + pdf2_->num_parameters();
 }
 
-std::vector<function::ParameterAxis> TwoComponentPDF::parameters()
+std::vector<function::ParameterAxis> TwoComponent1DPDF::parameters()
 {
   std::vector<function::ParameterAxis> pvec {
     { cpt1_name_+std::string("_probability"), "1", true, 0, true, 1 } };
@@ -74,7 +73,7 @@ std::vector<function::ParameterAxis> TwoComponentPDF::parameters()
   return pvec;
 }
 
-Eigen::VectorXd TwoComponentPDF::parameter_values()
+Eigen::VectorXd TwoComponent1DPDF::parameter_values()
 {
   Eigen::VectorXd param(num_parameters());
   param[0] = prob_cpt1_;
@@ -86,7 +85,7 @@ Eigen::VectorXd TwoComponentPDF::parameter_values()
   return param;
 }
 
-void TwoComponentPDF::set_parameter_values(ConstVecRef values)
+void TwoComponent1DPDF::set_parameter_values(ConstVecRef values)
 {
   assign_parameters(values, prob_cpt1_);
   unsigned num_cpt1_params = pdf1_->num_parameters();
@@ -95,40 +94,40 @@ void TwoComponentPDF::set_parameter_values(ConstVecRef values)
                                              pdf2_->num_parameters()));
 }
 
-function::DomainAxis TwoComponentPDF::domain_axis()
+function::DomainAxis TwoComponent1DPDF::domain_axis()
 {
   return pdf1_->domain_axis();
 }
 
-bool TwoComponentPDF::can_calculate_gradient()
+bool TwoComponent1DPDF::can_calculate_gradient()
 {
   return pdf1_->can_calculate_gradient() and pdf2_->can_calculate_gradient();
 }
 
-bool TwoComponentPDF::can_calculate_hessian()
+bool TwoComponent1DPDF::can_calculate_hessian()
 {
   return pdf1_->can_calculate_hessian() and pdf2_->can_calculate_hessian();
 }
 
-bool TwoComponentPDF::can_calculate_parameter_gradient()
+bool TwoComponent1DPDF::can_calculate_parameter_gradient()
 {
   return pdf1_->can_calculate_parameter_gradient() and
       pdf2_->can_calculate_parameter_gradient();
 }
 
-bool TwoComponentPDF::can_calculate_parameter_hessian()
+bool TwoComponent1DPDF::can_calculate_parameter_hessian()
 {
   return pdf1_->can_calculate_parameter_hessian() and
       pdf2_->can_calculate_parameter_hessian();
 }
 
-double TwoComponentPDF::value_1d(double x)
+double TwoComponent1DPDF::value_1d(double x)
 {
   //std::cout << pdf1_->value_1d(x) << ' ' << pdf2_->value_1d(x) << '\n';
   return prob_cpt1_*pdf1_->value_1d(x) + (1.0-prob_cpt1_)*pdf2_->value_1d(x);
 }
 
-double TwoComponentPDF::value_and_gradient_1d(double x,  double& dfdx)
+double TwoComponent1DPDF::value_and_gradient_1d(double x,  double& dfdx)
 {
   double dfdx1;
   double dfdx2;
@@ -138,7 +137,7 @@ double TwoComponentPDF::value_and_gradient_1d(double x,  double& dfdx)
   return val;
 }
 
-double TwoComponentPDF::value_gradient_and_hessian_1d(double x, double& dfdx,
+double TwoComponent1DPDF::value_gradient_and_hessian_1d(double x, double& dfdx,
                                            double& d2fdx2)
 {
   double dfdx1;
@@ -153,7 +152,7 @@ double TwoComponentPDF::value_gradient_and_hessian_1d(double x, double& dfdx,
 }
 
 double
-TwoComponentPDF::value_and_parameter_gradient_1d(double x,  VecRef gradient)
+TwoComponent1DPDF::value_and_parameter_gradient_1d(double x,  VecRef gradient)
 {
   const double omp = 1.0-prob_cpt1_;
   const unsigned npar1 = pdf1_->num_parameters();
@@ -181,7 +180,7 @@ TwoComponentPDF::value_and_parameter_gradient_1d(double x,  VecRef gradient)
   return prob_cpt1_*val1 + omp*val2;
 }
 
-double TwoComponentPDF::
+double TwoComponent1DPDF::
 value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                         MatRef hessian)
 {
@@ -227,19 +226,4 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
 #endif
 
   return prob_cpt1_*val1 + omp*val2;
-}
-
-double TwoComponentPDF::error_up()
-{
-  return error_up_;
-}
-
-bool TwoComponentPDF::can_calculate_mean_and_variance()
-{
-  return false;
-}
-
-void TwoComponentPDF::mean_and_variance(double& mean, double& var)
-{
-  assert(0);
 }

@@ -37,6 +37,9 @@
 %import "calin_global_definitions.i"
 
 %include "typemaps.i"
+
+%import "pattern/delegation.hpp"
+
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& gradient };
 %apply Eigen::MatrixXd &OUTPUT { Eigen::MatrixXd& hessian };
 %apply double &OUTPUT { double& dfdx, double& d2fdx2 }
@@ -44,3 +47,22 @@
 %include "math/function.hpp"
 
 %template (VectorParameterAxis) std::vector<calin::math::function::ParameterAxis>;
+
+%template (DelegatorSingleAxisFunction)
+  calin::pattern::delegation::Delegator<
+    calin::math::function::SingleAxisFunction>;
+%template (DelegatorParameterizableMultiAxisFunction)
+  calin::pattern::delegation::Delegator<
+    calin::math::function::ParameterizableSingleAxisFunction>;
+%template (BasicParameterizableDelegator_ParameterizableSingleAxisFunction)
+  calin::math::function::BasicParameterizableDelegator<
+    calin::math::function::ParameterizableSingleAxisFunction>;
+%template (SingleToMultiAxisFunctionAdapter)
+  calin::math::function::BasicSingleToMultiAxisFunctionAdapter<
+    calin::math::function::SingleAxisFunction>;
+%template (SingleToMultiAxisFunctionAdapter_ParameterizableSingleAxisFunction)
+  calin::math::function::BasicSingleToMultiAxisFunctionAdapter<
+    calin::math::function::ParameterizableSingleAxisFunction>;
+%template (SingleToParameterizableMultiAxisFunctionAdapter)
+  calin::math::function::BasicSingleToParameterizableMultiAxisFunctionAdapter<
+    calin::math::function::ParameterizableSingleAxisFunction>;

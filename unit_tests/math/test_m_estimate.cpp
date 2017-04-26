@@ -38,13 +38,10 @@ TEST(TestHyperbolicLikelihoodRhoFunction, GradientCheck) {
   for(double C = 0; C < 10; C += 1) {
     for(double D = 0.1; D < 2; D += 0.1) {
       HyperbolicLikelihoodRhoFunction rho(C,D);
-      Eigen::VectorXd x(1);
-      Eigen::VectorXd dx(1);
-      dx << 0.001;
-      for(x(0) = -10.0; x(0)<20.0; x(0)+=0.1) {
-        Eigen::VectorXd good(1);
-        EXPECT_TRUE(gradient_check(rho, x, dx, good, maxgood));
-        EXPECT_LE(good(0), maxgood);
+      for(double x = -10.0; x<20.0; x+=0.1) {
+        double good;
+        EXPECT_TRUE(gradient_check(rho, x, 0.001, good, maxgood));
+        EXPECT_LE(good, maxgood);
       }
     }
   }
@@ -54,13 +51,10 @@ TEST(TestHyperbolicLikelihoodRhoFunction, HessianCheck) {
   for(double C = 0; C < 10; C += 1) {
     for(double D = 0.1; D < 2; D += 0.1) {
       HyperbolicLikelihoodRhoFunction rho(C,D);
-      Eigen::VectorXd x(1);
-      Eigen::VectorXd dx(1);
-      dx << 0.001;
-      for(x(0) = -10.0; x(0)<20.0; x(0)+=0.1) {
-        Eigen::MatrixXd good(1,1);
-        EXPECT_TRUE(hessian_check(rho, x, dx, good, maxgood));
-        EXPECT_LE(good(0,0), maxgood);
+      for(double x = -10.0; x<20.0; x+=0.1) {
+        double good;
+        EXPECT_TRUE(hessian_check(rho, x, 0.001, good, maxgood));
+        EXPECT_LE(good, maxgood);
       }
     }
   }
@@ -94,14 +88,10 @@ TEST(TestModifiedHyperbolicLikelihoodRhoFunction, GradientCheck) {
   for(double C = 1; C < 10; C += 1) {
     for(double D = 0.1; D < std::min(C,2.0); D += 0.1) {
       ModifiedHyperbolicLikelihoodRhoFunction rho(C,D);
-      Eigen::VectorXd x(1);
-      Eigen::VectorXd dx(1);
-      dx << 0.001;
-      for(x(0) = -10.0; x(0)<20.0; x(0)+=0.1) {
-        //std::cout << C << ' ' << D << ' ' << x(0) << '\n';
-        Eigen::VectorXd good(1);
-        EXPECT_TRUE(gradient_check(rho, x, dx, good, maxgood));
-        EXPECT_LE(good(0), maxgood);
+      for(double x = -10.0; x<20.0; x+=0.1) {
+        double good;
+        EXPECT_TRUE(gradient_check(rho, x, 0.001, good, maxgood));
+        EXPECT_LE(good, maxgood);
       }
     }
   }
@@ -111,14 +101,10 @@ TEST(TestModifiedHyperbolicLikelihoodRhoFunction, HessianCheck) {
   for(double C = 1; C < 10; C += 1) {
     for(double D = 0.1; D < std::min(C,2.0); D += 0.1) {
       ModifiedHyperbolicLikelihoodRhoFunction rho(C,D);
-      Eigen::VectorXd x(1);
-      Eigen::VectorXd dx(1);
-      dx << 0.001;
-      for(x(0) = -10.0; x(0)<20.0; x(0)+=0.1) {
-        //std::cout << C << ' ' << D << ' ' << x(0) << '\n';
-        Eigen::MatrixXd good(1,1);
-        EXPECT_TRUE(hessian_check(rho, x, dx, good, maxgood));
-        EXPECT_LE(good(0,0), maxgood);
+      for(double x = -10.0; x<20.0; x+=0.1) {
+        double good;
+        EXPECT_TRUE(hessian_check(rho, x, 0.001, good, maxgood));
+        EXPECT_LE(good, maxgood);
       }
     }
   }

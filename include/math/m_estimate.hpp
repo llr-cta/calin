@@ -38,7 +38,6 @@ public:
   double value_and_gradient_1d(double x,  double& dfdx) override = 0;
   bool can_calculate_hessian() override; // default : true
   double value_gradient_and_hessian_1d(double x, double& dfdx, double& d2fdx2) override = 0;
-  double error_up() override { return 0.0; }
 };
 
 class NullLikelihoodRhoFunction: public LikelihoodRhoFunction

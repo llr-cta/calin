@@ -67,10 +67,6 @@ public:
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                               MatRef hessian) override;
 
-  double error_up() override;
-
-  bool can_calculate_mean_and_variance() override;
-  void mean_and_variance(double& mean, double& var) override;
 protected:
   MultiElectronSpectrum* mes_ = nullptr;
 };
@@ -177,24 +173,6 @@ double MESSigAdapter::
 value_parameter_gradient_and_hessian_1d(double x, VecRef gradient, MatRef hessian)
 {
   return mes_->pdf_gradient_hessian_mes(x, gradient, hessian);
-}
-
-double MESSigAdapter::error_up()
-{
-  return 0;
-}
-
-bool MESSigAdapter::can_calculate_mean_and_variance()
-{
-  return false;
-}
-
-void MESSigAdapter::mean_and_variance(double& mean, double& var)
-{
-  assert(0);
-  mean = 0;
-  var = 0;
-  return;
 }
 
 MESPedAdapter::~MESPedAdapter()

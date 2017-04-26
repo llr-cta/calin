@@ -25,12 +25,14 @@
 
 #include <string>
 #include <vector>
+#include <stdexcept>
 #include <limits>
 #include <numeric>
 
 #include <Eigen/Core>
 
 #include "calin_global_definitions.hpp"
+#include "pattern/delegation.hpp"
 
 namespace calin { namespace math { namespace function {
 
@@ -90,6 +92,14 @@ void assign_parameters(ConstVecRef values, T& x, Params & ... params)
   assign_parameters(++values_data, params...);
 }
 
+// *****************************************************************************
+// *****************************************************************************
+
+// Base classes for parameterizable, multi-axis and single-axis functions
+
+// *****************************************************************************
+// *****************************************************************************
+
 class Parameterizable
 {
  public:
@@ -117,26 +127,20 @@ class MultiAxisFunction
   virtual double error_up() = 0;
 };
 
-class SingleAxisFunction: virtual public MultiAxisFunction
+class SingleAxisFunction
 {
  public:
   virtual ~SingleAxisFunction();
   virtual DomainAxis domain_axis() = 0;
   virtual double value_1d(double x) = 0;
+  virtual bool can_calculate_gradient() = 0;
   virtual double value_and_gradient_1d(double x,  double& dfdx) = 0;
+  virtual bool can_calculate_hessian() = 0;
   virtual double value_gradient_and_hessian_1d(double x, double& dfdx,
                                                double& d2fdx2) = 0;
-
-  // Members from MultiAxisFunction that we override
-  unsigned num_domain_axes() override;
-  std::vector<DomainAxis> domain_axes() override;
-  double value(ConstVecRef x) override;
-  double value_and_gradient(ConstVecRef x, VecRef gradient) override;
-  double value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
-                                    MatRef hessian) override;
 };
 
-class ParameterizableMultiAxisFunction: public Parameterizable,
+class ParameterizableMultiAxisFunction: virtual public Parameterizable,
                                         virtual public MultiAxisFunction
 {
  public:
@@ -147,9 +151,8 @@ class ParameterizableMultiAxisFunction: public Parameterizable,
                                          VecRef gradient, MatRef hessian) = 0;
 };
 
-class ParameterizableSingleAxisFunction:
-      public ParameterizableMultiAxisFunction,
-      public SingleAxisFunction
+class ParameterizableSingleAxisFunction: virtual public Parameterizable,
+                                         virtual public SingleAxisFunction
 {
  public:
   virtual ~ParameterizableSingleAxisFunction();
@@ -157,13 +160,116 @@ class ParameterizableSingleAxisFunction:
                                                  VecRef gradient) = 0;
   virtual double value_parameter_gradient_and_hessian_1d(double x,
                                          VecRef gradient, MatRef hessian) = 0;
-
-  // Members from ParameterizableMultiAxisFunction that we override
-  double value_and_parameter_gradient(ConstVecRef x,
-                                      VecRef gradient) override;
-  double value_parameter_gradient_and_hessian(ConstVecRef x,
-                                      VecRef gradient, MatRef hessian) override;
 };
+
+// *****************************************************************************
+// *****************************************************************************
+
+// Delegators
+
+// *****************************************************************************
+// *****************************************************************************
+
+template<typename T> class BasicParameterizableDelegator:
+  virtual public pattern::delegation::Delegator<T>,
+  virtual public Parameterizable
+{
+public:
+  BasicParameterizableDelegator(T* delegate, bool adopt_delegate = false):
+    pattern::delegation::Delegator<T>(delegate, adopt_delegate),
+    Parameterizable() {}
+  virtual ~BasicParameterizableDelegator() {}
+  unsigned num_parameters() override {
+    return this->delegate_->num_parameters(); }
+  std::vector<ParameterAxis> parameters() override {
+    return this->delegate_->parameters(); }
+  Eigen::VectorXd parameter_values() override {
+    return this->delegate_->parameter_values(); }
+  void set_parameter_values(ConstVecRef values) override {
+    this->delegate_->set_parameter_values(values); }
+  bool can_calculate_parameter_gradient() override {
+    return this->delegate_->can_calculate_parameter_gradient(); }
+  bool can_calculate_parameter_hessian() override {
+    return this->delegate_->can_calculate_parameter_hessian(); }
+protected:
+  BasicParameterizableDelegator(): pattern::delegation::Delegator<T>(),
+    Parameterizable() {}
+};
+
+#ifndef SWIG
+CALIN_TYPEALIAS(ParameterizableDelegator,
+  BasicParameterizableDelegator<Parameterizable>);
+#endif
+
+// *****************************************************************************
+// *****************************************************************************
+
+// Single-axis to multi-axis function adapter
+
+// *****************************************************************************
+// *****************************************************************************
+
+template<typename T> class BasicSingleToMultiAxisFunctionAdapter:
+  virtual public pattern::delegation::Delegator<T>,
+  virtual public MultiAxisFunction
+{
+public:
+  BasicSingleToMultiAxisFunctionAdapter(T* delegate, bool adopt_delegate = false,
+      double error_up = 0.5):
+      pattern::delegation::Delegator<T>(delegate, adopt_delegate),
+      MultiAxisFunction(), error_up_(error_up) {}
+  virtual ~BasicSingleToMultiAxisFunctionAdapter() {}
+  unsigned num_domain_axes() override { return 1; }
+  std::vector<DomainAxis> domain_axes() override {
+    return { this->delegate_->domain_axis() }; }
+  double value(ConstVecRef x) override { assert_size(x);
+    return this->delegate_->value_1d(x(0)); }
+  bool can_calculate_gradient() override {
+    return this->delegate_->can_calculate_gradient(); }
+  double value_and_gradient(ConstVecRef x, VecRef gradient) override {
+    assert_size(x); gradient.resize(1);
+    return this->delegate_->value_and_gradient_1d(x(0), gradient(0)); }
+  bool can_calculate_hessian() override {
+    return this->delegate_->can_calculate_hessian(); }
+  double value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian) override{
+    assert_size(x); gradient.resize(1); hessian.resize(1,1);
+    return this->delegate_->value_gradient_and_hessian_1d(x(0), gradient(0), hessian(0,0)); }
+  double error_up() override { return error_up_; }
+protected:
+  BasicSingleToMultiAxisFunctionAdapter(double error_up = 0.5):
+    pattern::delegation::Delegator<T>(), MultiAxisFunction(), error_up_(error_up) {}
+  void assert_size(ConstVecRef x) {
+    if(x.size() != 1)throw std::invalid_argument("Invalid vector size"); }
+  double error_up_ = 0.5;
+};
+
+template<typename T> class BasicSingleToParameterizableMultiAxisFunctionAdapter:
+  virtual public BasicSingleToMultiAxisFunctionAdapter<T>,
+  virtual public BasicParameterizableDelegator<T>,
+  virtual public ParameterizableMultiAxisFunction
+{
+public:
+  BasicSingleToParameterizableMultiAxisFunctionAdapter(T* delegate,
+      bool adopt_delegate = false, double error_up = 0.5):
+    pattern::delegation::Delegator<T>(delegate, adopt_delegate),
+    BasicSingleToMultiAxisFunctionAdapter<T>(error_up),
+    BasicParameterizableDelegator<T>(),
+    ParameterizableMultiAxisFunction() { }
+  double value_and_parameter_gradient(ConstVecRef x, VecRef gradient) override {
+    this->assert_size(x);
+    return this->delegate_->value_and_parameter_gradient_1d(x(0), gradient); }
+  double value_parameter_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian) override {
+    this->assert_size(x);
+    return this->delegate_->value_parameter_gradient_and_hessian_1d(x(0), gradient, hessian); }
+};
+
+#ifndef SWIG
+CALIN_TYPEALIAS(SingleToMultiAxisFunctionAdapter,
+  BasicSingleToMultiAxisFunctionAdapter<SingleAxisFunction>);
+CALIN_TYPEALIAS(SingleToParameterizableMultiAxisFunctionAdapter,
+  BasicSingleToParameterizableMultiAxisFunctionAdapter<ParameterizableSingleAxisFunction>);
+#endif
+
 
 template<typename ParameterizableBaseType>
 class ReducedSpaceParameterizable: public ParameterizableBaseType
@@ -293,8 +399,8 @@ class FreezeThawFunction: public ParameterizableMultiAxisFunction
 class PMAFReverser: public ParameterizableMultiAxisFunction
 {
  public:
-  PMAFReverser(ParameterizableMultiAxisFunction* fcn_deligate,
-               bool adopt_fcn_deligate = false, double error_up = 0.5);
+  PMAFReverser(ParameterizableMultiAxisFunction* fcn_delegate,
+               bool adopt_fcn_delegate = false, double error_up = 0.5);
   virtual ~PMAFReverser();
 
   // Parameterizable interface
@@ -323,8 +429,8 @@ class PMAFReverser: public ParameterizableMultiAxisFunction
                                       VecRef gradient, MatRef hessian) override;
 
  protected:
-  ParameterizableMultiAxisFunction* fcn_deligate_;
-  bool adopt_fcn_deligate_ = false;
+  ParameterizableMultiAxisFunction* fcn_delegate_;
+  bool adopt_fcn_delegate_ = false;
   double error_up_ = 0.5;
   Eigen::VectorXd x_;
 };
@@ -343,11 +449,24 @@ class MultiParameterSet: virtual public Parameterizable
 };
 
 bool gradient_check_eps(MultiAxisFunction& fcn, ConstVecRef x, VecRef good,
-                        double max_good = 0.5, double eps_factor = 10.0);
+  double max_good = 0.5, double eps_factor = 10.0);
 bool gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
-                    VecRef good, double max_good = 0.5);
+  VecRef good, double max_good = 0.5);
 bool hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
-                   MatRef good, double max_good = 0.5);
+  MatRef good, double max_good = 0.5);
+bool gradient_check_par(ParameterizableMultiAxisFunction& fcn, ConstVecRef x,
+  ConstVecRef p, ConstVecRef dp, VecRef good, double max_good = 0.5);
+bool hessian_check_par(ParameterizableMultiAxisFunction& fcn, ConstVecRef x,
+  ConstVecRef p, ConstVecRef dp, MatRef good, double max_good = 0.5);
+
+bool gradient_check(SingleAxisFunction& fcn, double x, double dx,
+  double& good, double max_good = 0.5);
+bool hessian_check(SingleAxisFunction& fcn, double x, double dx,
+  double& good, double max_good = 0.5);
+bool gradient_check_par(ParameterizableSingleAxisFunction& fcn, double x,
+  ConstVecRef p, ConstVecRef dp, VecRef good, double max_good = 0.5);
+bool hessian_check_par(ParameterizableSingleAxisFunction& fcn, double x,
+  ConstVecRef p, ConstVecRef dp, MatRef good, double max_good = 0.5);
 
 #ifndef SWIG
 

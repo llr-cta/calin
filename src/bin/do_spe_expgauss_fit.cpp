@@ -73,7 +73,7 @@ int main(int argc, char** argv)
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf,mes_hist.dxval());
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   GeneralPoissonMES mes_model(mes_hist.xval_left(0),
                               mes_hist.dxval(),
                               mes_hist.size(), &ses, &ped);

@@ -709,7 +709,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped);
   double dp1 = 1e-7;
   mes_gradient_test(&mes_model,
@@ -739,7 +739,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_PED)
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped);
   double dp1 = 1e-7;
   mes_gradient_test(&mes_model,
@@ -764,7 +764,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, Repeatability)
     pdf_1d::LimitedExponentialPDF exp_pdf(0,inf,mes_hist.dxval());
     exp_pdf.limit_scale(0.1, inf);
     pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-    pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+    pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
     GeneralPoissonMES mes_model(mes_hist.xval_left(0),
                                 mes_hist.dxval(),
                                 mes_hist.size(), &ses, &ped);
@@ -796,7 +796,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf,mes_hist.dxval());
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   GeneralPoissonMES mes_model(mes_hist.xval_left(0),
                               mes_hist.dxval(),
                               mes_hist.size(), &ses, &ped);
@@ -893,7 +893,7 @@ TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_MES)
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   auto opt = GeneralPoissonMES::default_config();
   opt.set_include_on_off_ped_shift(true);
   GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped,opt);
@@ -913,7 +913,7 @@ TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_PED)
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   auto opt = GeneralPoissonMES::default_config();
   opt.set_include_on_off_ped_shift(true);
   GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped,opt);
