@@ -39,8 +39,6 @@
 
 namespace calin { namespace calib { namespace spe_fit {
 
-CALIN_TYPEALIAS(SingleElectronSpectrum, calin::math::pdf_1d::Parameterizable1DPDF);
-
 class MultiElectronSpectrum: public calin::math::function::Parameterizable
 {
  public:
@@ -191,8 +189,8 @@ class GeneralPoissonMES: public MultiElectronSpectrum
      spe_fit::GeneralPoissonMESConfig);
 
   GeneralPoissonMES(double x0, double dx, unsigned npoint,
-                    SingleElectronSpectrum* ses,
-                    calin::math::pdf_1d::Parameterizable1DPDF* ped,
+                    calin::math::function::ParameterizableSingleAxisFunction* ses,
+                    calin::math::function::ParameterizableSingleAxisFunction* ped,
                     calin::ix::calib::spe_fit::GeneralPoissonMESConfig config =
                       default_config(),
                     bool adopt_ses = false, bool adopt_ped = false);
@@ -277,8 +275,8 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   int ibin(double x) const;
   void set_cache();
 
-  SingleElectronSpectrum* ses_pdf_;
-  calin::math::pdf_1d::Parameterizable1DPDF* ped_pdf_;
+  calin::math::function::ParameterizableSingleAxisFunction* ses_pdf_;
+  calin::math::function::ParameterizableSingleAxisFunction* ped_pdf_;
   bool adopt_ses_pdf_ = false;
   bool adopt_ped_pdf_ = false;
   calin::ix::calib::spe_fit::GeneralPoissonMESConfig config_ = default_config();

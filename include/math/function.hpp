@@ -385,10 +385,10 @@ protected:
     ParameterizableSingleAxisFunction() {}
 };
 
-#ifndef SWIG
+//#ifndef SWIG
 CALIN_TYPEALIAS(ReducedSpaceParameterizableSingleAxisFunction,
   BasicReducedSpaceParameterizableSingleAxisFunction<ParameterizableSingleAxisFunction>);
-#endif
+//#endif
 
 class FreezeThawFunction: public ParameterizableMultiAxisFunction
 {

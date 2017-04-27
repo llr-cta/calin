@@ -55,8 +55,8 @@ using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 
 GeneralPoissonMES::
 GeneralPoissonMES(double x0, double dx, unsigned npoint,
-                  SingleElectronSpectrum* ses,
-                  math::pdf_1d::Parameterizable1DPDF* ped,
+                  calin::math::function::ParameterizableSingleAxisFunction* ses,
+                  calin::math::function::ParameterizableSingleAxisFunction* ped,
                   calin::ix::calib::spe_fit::GeneralPoissonMESConfig config,
                   bool adopt_ses, bool adopt_ped):
     MultiElectronSpectrum(),

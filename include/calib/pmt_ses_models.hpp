@@ -28,8 +28,7 @@
 namespace calin { namespace calib { namespace pmt_ses_models {
 
 class TwoGaussianSES:
-  virtual public calin::math::function::ReducedSpaceParameterizableSingleAxisFunction,
-  virtual public calin::math::pdf_1d::Parameterizable1DPDF
+  public calin::math::function::ReducedSpaceParameterizableSingleAxisFunction
 {
 public:
   TwoGaussianSES(double dx = 0);
