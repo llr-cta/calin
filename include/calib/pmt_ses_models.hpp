@@ -1,8 +1,8 @@
 /*
 
-   calin/pattern/delegation.hpp -- Stephen Fegan -- 2017-04-25
+   calin/calib/pmt_ses_models.hpp -- Stephen Fegan -- 2017-04-24
 
-   Base class for objects that delegate tasks
+   PMT single-electron spectrum models
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -22,18 +22,18 @@
 
 #pragma once
 
-namespace calin { namespace pattern { namespace delegation {
+#include "math/function.hpp"
+#include "math/pdf_1d.hpp"
 
-template<typename T> class Delegator
+namespace calin { namespace calib { namespace pmt_ses_models {
+
+class TwoGaussianSES:
+  virtual public calin::math::function::ReducedSpaceParameterizableSingleAxisFunction,
+  virtual public calin::math::pdf_1d::Parameterizable1DPDF
 {
 public:
-  Delegator(T* delegate, bool adopt_delegate = false):
-    delegate_(delegate), adopt_delegate_(adopt_delegate) { }
-  virtual ~Delegator() { if(adopt_delegate_)delete delegate_; }
-  T* delegate() { return delegate_; }
-protected:
-  T* delegate_ = nullptr;
-  bool adopt_delegate_ = false;
+  TwoGaussianSES(double dx = 0);
+  virtual ~TwoGaussianSES();
 };
 
-} } } // namespace calin::pattern::delegation
+} } } // namespace calin::calib::pmt_ses_models

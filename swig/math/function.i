@@ -54,9 +54,14 @@
 %template (DelegatorParameterizableMultiAxisFunction)
   calin::pattern::delegation::Delegator<
     calin::math::function::ParameterizableSingleAxisFunction>;
+
 %template (BasicParameterizableDelegator_ParameterizableSingleAxisFunction)
   calin::math::function::BasicParameterizableDelegator<
     calin::math::function::ParameterizableSingleAxisFunction>;
+%template (BasicSingleAxisFunctionDelegator_ParameterizableSingleAxisFunction)
+  calin::math::function::BasicSingleAxisFunctionDelegator<
+    calin::math::function::ParameterizableSingleAxisFunction>;
+
 %template (SingleToMultiAxisFunctionAdapter)
   calin::math::function::BasicSingleToMultiAxisFunctionAdapter<
     calin::math::function::SingleAxisFunction>;
@@ -65,4 +70,11 @@
     calin::math::function::ParameterizableSingleAxisFunction>;
 %template (SingleToParameterizableMultiAxisFunctionAdapter)
   calin::math::function::BasicSingleToParameterizableMultiAxisFunctionAdapter<
+    calin::math::function::ParameterizableSingleAxisFunction>;
+
+%template (ReducedSpaceParameterizable_ParameterizableSingleAxisFunction)
+  calin::math::function::BasicReducedSpaceParameterizable<
+    calin::math::function::ParameterizableSingleAxisFunction>;
+%template (ReducedSpaceParameterizableSingleAxisFunction)
+  calin::math::function::BasicReducedSpaceParameterizableSingleAxisFunction<
     calin::math::function::ParameterizableSingleAxisFunction>;

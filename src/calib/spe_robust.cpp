@@ -87,7 +87,7 @@ public:
 } // anonoymous namespace
 
 MESSigAdapter::MESSigAdapter(MultiElectronSpectrum* mes):
-  Parameterizable1DPDF(), mes_(mes)
+  calin::math::pdf_1d::Parameterizable1DPDF(), mes_(mes)
 {
   // nothing to see here
 }

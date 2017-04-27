@@ -36,6 +36,7 @@
 
 namespace calin { namespace math { namespace pdf_1d {
 
+#if 0
 class Parameterizable1DPDF: public function::ParameterizableSingleAxisFunction
 {
 public:
@@ -64,6 +65,9 @@ public:
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                               MatRef hessian) override = 0;
 };
+#else
+CALIN_TYPEALIAS(Parameterizable1DPDF, function::ParameterizableSingleAxisFunction);
+#endif
 
 // *****************************************************************************
 //

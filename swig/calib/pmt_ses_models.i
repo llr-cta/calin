@@ -1,8 +1,8 @@
 /*
 
-   calin/pattern/delegation.hpp -- Stephen Fegan -- 2017-04-25
+  calin/calib/pmt_ses_models.i -- Stephen Fegan -- 2017-04-24
 
-   Base class for objects that delegate tasks
+  PMT single-electron spectrum models
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -20,20 +20,25 @@
 
 */
 
-#pragma once
+%module (package="calin.calib") pmt_ses_models
 
-namespace calin { namespace pattern { namespace delegation {
+%{
+#include "math/log_quadratic_spline_pdf_1d.hpp"
+#include "calib/pmt_ses_models.hpp"
+#define SWIG_FILE_WITH_INIT
+  %}
 
-template<typename T> class Delegator
-{
-public:
-  Delegator(T* delegate, bool adopt_delegate = false):
-    delegate_(delegate), adopt_delegate_(adopt_delegate) { }
-  virtual ~Delegator() { if(adopt_delegate_)delete delegate_; }
-  T* delegate() { return delegate_; }
-protected:
-  T* delegate_ = nullptr;
-  bool adopt_delegate_ = false;
-};
+%init %{
+  import_array();
+%}
 
-} } } // namespace calin::pattern::delegation
+%include "calin_typemaps.i"
+%import "calin_global_definitions.i"
+
+%import "math/function.i"
+%import "math/histogram.i"
+
+%import "math/function.i"
+%import "math/pdf_1d.i"
+
+%include "calib/pmt_ses_models.hpp"
