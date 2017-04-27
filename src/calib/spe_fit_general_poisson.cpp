@@ -177,7 +177,7 @@ auto GeneralPoissonMES::parameters() ->
   std::vector<math::function::ParameterAxis> pvec;
   pvec.push_back({ "light_intensity", "PE", true, 0, false, inf });
   if(config_.include_on_off_ped_shift())
-    pvec.push_back({ "off_ped_shift", "DC", false, 0, false, 0 });
+    pvec.push_back({ "off_ped_shift", "DC", false, -inf, false, inf });
   std::vector<math::function::ParameterAxis> pped { ped_pdf_->parameters() };
   for(auto& ip : pped)ip.name = std::string("ped.") + ip.name;
   pvec.insert(pvec.end(), pped.begin(), pped.end());
