@@ -57,27 +57,77 @@ BasicReducedSpaceParameterizable<T>::set_parameter_values(ConstVecRef values)
 }
 
 template<typename T> bool BasicReducedSpaceParameterizable<T>::
-remove_parameter_from_subspace(unsigned iparam, double value)
+remove_parameter_from_subspace(unsigned unmodified_index)
 {
-  removed_param_values_(iparam) = value;
-  auto index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), iparam);
-  if(index == subspace_params_.end() or *index != iparam)return false;
+  auto index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), unmodified_index);
+  if(index == subspace_params_.end() or *index != unmodified_index)return false;
+  removed_param_values_(unmodified_index) = this->parameter_values()[unmodified_index];
   subspace_params_.erase(index);
-  index = std::lower_bound(removed_params_.begin(), removed_params_.end(), iparam);
-  removed_params_.insert(index, iparam);
+  index = std::lower_bound(removed_params_.begin(), removed_params_.end(), unmodified_index);
+  removed_params_.insert(index, unmodified_index);
   return true;
 }
 
+template<typename T> bool BasicReducedSpaceParameterizable<T>::
+remove_parameter_from_subspace(const std::string& name)
+{
+  int index = this->delegate_->parameter_name_to_index(name);
+  if(index<0)return false;
+  return remove_parameter_from_subspace(unsigned(index));
+}
+
+template<typename T> bool BasicReducedSpaceParameterizable<T>::
+remove_parameter_from_subspace(unsigned unmodified_index, double value)
+{
+  removed_param_values_(unmodified_index) = value;
+  auto index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), unmodified_index);
+  if(index == subspace_params_.end() or *index != unmodified_index)return false;
+  subspace_params_.erase(index);
+  index = std::lower_bound(removed_params_.begin(), removed_params_.end(), unmodified_index);
+  removed_params_.insert(index, unmodified_index);
+  return true;
+}
+
+template<typename T> bool BasicReducedSpaceParameterizable<T>::
+remove_parameter_from_subspace(const std::string& name, double value)
+{
+  int index = this->delegate_->parameter_name_to_index(name);
+  if(index<0)return false;
+  return remove_parameter_from_subspace(unsigned(index), value);
+}
+
+template<typename T> void BasicReducedSpaceParameterizable<T>::
+remove_all_remaining_parameters_from_subspace()
+{
+  while(not subspace_params_.empty())
+    remove_parameter_from_subspace(subspace_params_.front());
+}
+
 template<typename T> bool
-BasicReducedSpaceParameterizable<T>::replace_parameter(unsigned iparam)
+BasicReducedSpaceParameterizable<T>::replace_parameter_in_subspace(unsigned unmodified_index)
 {
   auto index =
-      std::lower_bound(removed_params_.begin(), removed_params_.end(), iparam);
-  if(index == removed_params_.end() or *index != iparam)return false;
+      std::lower_bound(removed_params_.begin(), removed_params_.end(), unmodified_index);
+  if(index == removed_params_.end() or *index != unmodified_index)return false;
   removed_params_.erase(index);
-  index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), iparam);
-  subspace_params_.insert(index, iparam);
+  index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), unmodified_index);
+  subspace_params_.insert(index, unmodified_index);
   return true;
+}
+
+template<typename T> bool BasicReducedSpaceParameterizable<T>::
+replace_parameter_in_subspace(const std::string& name)
+{
+  int index = this->delegate_->parameter_name_to_index(name);
+  if(index<0)return false;
+  return replace_parameter_in_subspace(unsigned(index));
+}
+
+template<typename T> void BasicReducedSpaceParameterizable<T>::
+replace_all_parameters_in_subspace()
+{
+  while(not removed_params_.empty())
+    replace_parameter_in_subspace(removed_params_.front());
 }
 
 template<typename T> Eigen::VectorXd

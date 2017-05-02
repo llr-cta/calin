@@ -110,6 +110,7 @@ class Parameterizable
   virtual void set_parameter_values(ConstVecRef values) = 0;
   virtual bool can_calculate_parameter_gradient() = 0;
   virtual bool can_calculate_parameter_hessian() = 0;
+  int parameter_name_to_index(const std::string& name);
 };
 
 class MultiAxisFunction
@@ -339,13 +340,21 @@ public:
   Eigen::VectorXd unmodified_parameter_values() {
     return this->delegate_->parameter_values(); }
 
-  bool remove_parameter_from_subspace(unsigned iparam, double value);
-  bool replace_parameter(unsigned iparam);
+  bool remove_parameter_from_subspace(unsigned unmodified_index);
+  bool remove_parameter_from_subspace(const std::string& name);
+  bool remove_parameter_from_subspace(unsigned unmodified_index, double value);
+  bool remove_parameter_from_subspace(const std::string& name, double value);
+  void remove_all_remaining_parameters_from_subspace();
+
+  bool replace_parameter_in_subspace(unsigned unmodified_index);
+  bool replace_parameter_in_subspace(const std::string& name);
+  void replace_all_parameters_in_subspace();
+
   const std::vector<unsigned>& subspace_parameters() const { return subspace_params_; }
   const std::vector<unsigned>& removed_parameters() const { return removed_params_; }
-  unsigned index_of_subspace_parameter(unsigned iparam) const {
+  unsigned unmodified_index_of_subspace_parameter(unsigned iparam) const {
     return subspace_params_.at(iparam); }
-  unsigned index_of_removed_parameter(unsigned iparam) const {
+  unsigned unmodified_index_of_removed_parameter(unsigned iparam) const {
     return removed_params_.at(iparam); }
 
   Eigen::VectorXd subspace_param_vec_to_original(ConstVecRef values);

@@ -45,6 +45,17 @@ Parameterizable::~Parameterizable()
   // nothing to see here
 }
 
+int Parameterizable::parameter_name_to_index(const std::string& name)
+{
+  int index = 0;
+  for(const auto& ipar : this->parameters())
+  {
+    if(ipar.name == name)return index;
+    else index++;
+  }
+  return -1;
+}
+
 MultiAxisFunction::~MultiAxisFunction()
 {
   // nothing to see here
