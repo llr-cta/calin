@@ -55,7 +55,7 @@ BasicReducedSpaceParameterizable<T>::parameter_values()
 template<typename T> void
 BasicReducedSpaceParameterizable<T>::set_parameter_values(ConstVecRef values)
 {
-  if(values.size() != subspace_params_.size())
+  if(unsigned(values.size()) != subspace_params_.size())
     throw std::invalid_argument(
       std::string("Number of parameter values does not match subspace size: "
       + std::to_string(values.size()) + " != "
@@ -143,7 +143,7 @@ replace_all_parameters_in_subspace()
 template<typename T> Eigen::VectorXd
 BasicReducedSpaceParameterizable<T>::subspace_param_vec_to_original(ConstVecRef values)
 {
-  assert(values.size() == subspace_params_.size());
+  assert(unsigned(values.size()) == subspace_params_.size());
   Eigen::VectorXd o_vec = removed_param_values_;
   for(unsigned iparam=0; iparam!=subspace_params_.size(); iparam++)
     o_vec[subspace_params_[iparam]] = values[iparam];
@@ -153,7 +153,7 @@ BasicReducedSpaceParameterizable<T>::subspace_param_vec_to_original(ConstVecRef 
 template<typename T> Eigen::VectorXd
 BasicReducedSpaceParameterizable<T>::original_param_vec_to_subspace(ConstVecRef values)
 {
-  assert(values.size() == subspace_params_.size()+removed_params_.size());
+  assert(unsigned(values.size()) == subspace_params_.size()+removed_params_.size());
   Eigen::VectorXd m_vec(subspace_params_.size());
   for(unsigned iparam=0; iparam!=subspace_params_.size(); iparam++)
     m_vec[iparam] = values[subspace_params_[iparam]];
@@ -173,8 +173,8 @@ BasicReducedSpaceParameterizable<T>::original_param_grad_to_subspace(ConstVecRef
 template<typename T> Eigen::MatrixXd
 BasicReducedSpaceParameterizable<T>::original_param_hess_to_subspace(ConstMatRef hess)
 {
-  assert(hess.rows() == subspace_params_.size()+removed_params_.size());
-  assert(hess.cols() == subspace_params_.size()+removed_params_.size());
+  assert(unsigned(hess.rows()) == subspace_params_.size()+removed_params_.size());
+  assert(unsigned(hess.cols()) == subspace_params_.size()+removed_params_.size());
   Eigen::MatrixXd subspace_hess(subspace_params_.size(),this->subspace_params_.size());
   for(unsigned iparam=0; iparam!=subspace_params_.size(); iparam++)
     for(unsigned jparam=0; jparam!=subspace_params_.size(); jparam++)
