@@ -42,7 +42,7 @@ BasicReducedSpaceParameterizable<T>::parameters()
   std::vector<ParameterAxis> return_parameters(subspace_params_.size());
   std::vector<ParameterAxis> axes = this->delegate_->parameters();
   for(unsigned iparam=0;iparam<subspace_params_.size();iparam++)
-    return_parameters[iparam] = axes[subspace_params_[iparam]];
+    return_parameters[iparam] = std::move(axes[subspace_params_[iparam]]);
   return return_parameters;
 }
 
