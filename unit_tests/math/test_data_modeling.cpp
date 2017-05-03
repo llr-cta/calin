@@ -51,7 +51,7 @@ TEST(TestLikelihood, GradientCheck) {
   IID1DDataLikelihoodFunction cost_fn(&gaussian, hist);
   Eigen::VectorXd x(2);
   Eigen::VectorXd dx(2);
-  dx << 0.00001, 0.000001;
+  dx << 0.01, 0.001;
   for(x(0) = 80.0; x(0)<120.0; x(0)+=1.0) {
     for(x(1) = 8.0; x(1)<12.0; x(1)+=0.1) {
       Eigen::VectorXd good(2);
@@ -71,7 +71,7 @@ TEST(TestLikelihood, HessianCheck) {
   IID1DDataLikelihoodFunction cost_fn(&gaussian, hist);
   Eigen::VectorXd x(2);
   Eigen::VectorXd dx(2);
-  dx << 0.00001, 0.000001;
+  dx << 0.01, 0.001;
   for(x(0) = 80.0; x(0)<120.0; x(0)+=1.0) {
     for(x(1) = 8.0; x(1)<12.0; x(1)+=0.1) {
       Eigen::MatrixXd good(2,2);
@@ -144,7 +144,7 @@ TEST(TestMEstimateWithNULL, GradientCheck) {
   IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
   Eigen::VectorXd x(2);
   Eigen::VectorXd dx(2);
-  dx << 0.00001, 0.000001;
+  dx << 0.01, 0.001;
   for(x(0) = 80.0; x(0)<120.0; x(0)+=1.0) {
     for(x(1) = 8.0; x(1)<12.0; x(1)+=0.1) {
       Eigen::VectorXd good(2);
@@ -165,7 +165,7 @@ TEST(TestMEstimateWithNULL, HessianCheck) {
   IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
   Eigen::VectorXd x(2);
   Eigen::VectorXd dx(2);
-  dx << 0.00001, 0.000001;
+  dx << 0.01, 0.001;
   for(x(0) = 80.0; x(0)<120.0; x(0)+=1.0) {
     for(x(1) = 8.0; x(1)<12.0; x(1)+=0.1) {
       Eigen::MatrixXd good(2,2);
@@ -190,7 +190,7 @@ TEST(TestMEstimateWithHyperbolic, GradientCheck) {
       IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
       Eigen::VectorXd x(2);
       Eigen::VectorXd dx(2);
-      dx << 0.0001, 0.00001;
+      dx << 0.01, 0.001;
       for(x(0) = 80.0; x(0)<120.0; x(0)+=2.0) {
         for(x(1) = 8.0; x(1)<12.0; x(1)+=0.2) {
           Eigen::VectorXd good(2);
@@ -215,7 +215,7 @@ TEST(TestMEstimateWithHyperbolic, HessianCheck) {
       IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
       Eigen::VectorXd x(2);
       Eigen::VectorXd dx(2);
-      dx << 0.0001, 0.00001;
+      dx << 0.01, 0.001;
       for(x(0) = 80.0; x(0)<120.0; x(0)+=2.0) {
         for(x(1) = 8.0; x(1)<12.0; x(1)+=0.2) {
           Eigen::MatrixXd good(2,2);
