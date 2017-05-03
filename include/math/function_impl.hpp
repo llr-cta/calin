@@ -20,7 +20,7 @@
 
 */
 
-#include<io/log.hpp>
+// #include<io/log.hpp>
 
 namespace calin { namespace math { namespace function {
 
@@ -56,7 +56,8 @@ template<typename T> void
 BasicReducedSpaceParameterizable<T>::set_parameter_values(ConstVecRef values)
 {
   if(values.size() != subspace_params_.size())
-    throw std::invalid_argument(std::string("Number of parameter values does not match subspace size: "
+    throw std::invalid_argument(
+      std::string("Number of parameter values does not match subspace size: "
       + std::to_string(values.size()) + " != "
       + std::to_string(subspace_params_.size())));
   // calin::io::log::LOG(calin::io::log::INFO) << "A: " << values.transpose();
