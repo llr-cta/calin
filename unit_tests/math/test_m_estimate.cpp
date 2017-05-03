@@ -63,7 +63,7 @@ TEST(TestHyperbolicLikelihoodRhoFunction, HessianCheck) {
 #if 0
 TEST(TestLikelihood, HessianCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);

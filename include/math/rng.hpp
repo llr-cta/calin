@@ -144,6 +144,8 @@ public:
   static void generate_inverse_cdf(std::vector<std::pair<double,double>> &cdf,
     unsigned nbins=0);
 
+  static constexpr uint64_t std_test_seed = 12939; // essential supply
+
 private:
   RNGCore* core_;
   bool adopt_core_;

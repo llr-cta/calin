@@ -44,7 +44,7 @@ namespace {
 
 TEST(TestLikelihood, GradientCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -64,7 +64,7 @@ TEST(TestLikelihood, GradientCheck) {
 
 TEST(TestLikelihood, HessianCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -86,7 +86,7 @@ TEST(TestLikelihood, HessianCheck) {
 
 TEST(TestChi2, GradientCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -108,7 +108,7 @@ TEST(TestChi2, GradientCheck) {
 
 TEST(TestChi2, HessianCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -136,7 +136,7 @@ TEST(TestChi2, HessianCheck) {
 
 TEST(TestMEstimateWithNULL, GradientCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -157,7 +157,7 @@ TEST(TestMEstimateWithNULL, GradientCheck) {
 
 TEST(TestMEstimateWithNULL, HessianCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -180,7 +180,7 @@ TEST(TestMEstimateWithNULL, HessianCheck) {
 
 TEST(TestMEstimateWithHyperbolic, GradientCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -205,7 +205,7 @@ TEST(TestMEstimateWithHyperbolic, GradientCheck) {
 
 TEST(TestMEstimateWithHyperbolic, HessianCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
