@@ -128,6 +128,8 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
                            FFTW_HC2R, 0);
     }
   }
+
+  set_cache(/* force = */ true);
 }
 
 GeneralPoissonMES::~GeneralPoissonMES()
@@ -526,87 +528,98 @@ int GeneralPoissonMES::ibin(double x) const
   return thebin;
 }
 
-void GeneralPoissonMES::set_cache()
+void GeneralPoissonMES::set_cache(bool force)
 {
   // THIS FUNCTION IS TOO LONG
 
   bool calc_gradient = can_calculate_parameter_gradient();
   unsigned ses_npar = ses_pdf_->num_parameters();
-  Eigen::VectorXd ses_gradient(ses_npar);
-  ses_gradient.setZero();
-  calin::math::accumulator::LikelihoodAccumulator ses_acc;
-  for(unsigned isample = 0;isample<nsample_;isample++)
-  {
-    // The SES describes charge delivered by the PMT and is assumed be
-    // positive. Hence the function is sampled from zero here and not
-    // from x0. We could allow negative charges by using the domain
-    // axis limits to specify the minimum bound. We would need to
-    // adjust x0 to compensate for where the pedestal distribution
-    // would end up.
-    const double x = ses_x(isample); // (0.5+double(isample))*dx_;
-    double val;
-    if(calc_gradient)
-    {
-      val = ses_pdf_->value_and_parameter_gradient_1d(x, ses_gradient);
-      if(!std::isfinite(val)){ val = 0; ses_gradient.setZero(); }
-      for(unsigned ipar=0;ipar<ses_npar;ipar++)
-        ses_grad_fft_[ipar][isample] = ses_gradient[ipar];
-    }
-    else
-    {
-      val = ses_pdf_->value_1d(x);
-      if(!std::isfinite(val))val = 0;
-    }
-    nes_fft_[0][isample] = val;
-    ses_acc.accumulate(val);
-  }
 
-  if(config_.ses_norm_warning_threshold()>0 and
-    (config_.max_ses_norm_warning()==0 or
-      n_ses_norm_warning_<config_.max_ses_norm_warning()) and
-    std::abs(ses_acc.total() * dx_ - 1.0) >
-      config_.ses_norm_warning_threshold()/double(nsample_))
+  // If the SES has no paramerters then we assume it doesn't change, so no
+  // need to do the FFTs each time
+  if(ses_npar or force)
   {
-    // The owls are not what they seem
-    LOG(WARNING) << "SES normalization is significantly different from 1.0: "
-                 << ses_acc.total() * dx_ << '\n'
-                 << "SES parameter values : "
-                 << ses_pdf_->parameter_values().transpose();
-    n_ses_norm_warning_++;
-    if(n_ses_norm_warning_ == config_.ses_norm_warning_threshold())
-      LOG(INFO) << "Further SES normalization warnings will be suppressed!";
-  }
+    Eigen::VectorXd ses_gradient(ses_npar);
+    ses_gradient.setZero();
+    calin::math::accumulator::LikelihoodAccumulator ses_acc;
+    for(unsigned isample = 0;isample<nsample_;isample++)
+    {
+      // The SES describes charge delivered by the PMT and is assumed be
+      // positive. Hence the function is sampled from zero here and not
+      // from x0. We could allow negative charges by using the domain
+      // axis limits to specify the minimum bound. We would need to
+      // adjust x0 to compensate for where the pedestal distribution
+      // would end up.
+      const double x = ses_x(isample); // (0.5+double(isample))*dx_;
+      double val;
+      if(calc_gradient)
+      {
+        val = ses_pdf_->value_and_parameter_gradient_1d(x, ses_gradient);
+        if(!std::isfinite(val)){ val = 0; ses_gradient.setZero(); }
+        for(unsigned ipar=0;ipar<ses_npar;ipar++)
+          ses_grad_fft_[ipar][isample] = ses_gradient[ipar];
+      }
+      else
+      {
+        val = ses_pdf_->value_1d(x);
+        if(!std::isfinite(val))val = 0;
+      }
+      nes_fft_[0][isample] = val;
+      ses_acc.accumulate(val);
+    }
 
-  fftw_execute(ses_plan_fwd_);
-  for(unsigned ines=1;ines<config_.num_pe_convolutions();ines++)
-    hcvec_scale_and_multiply(nes_fft_[ines], nes_fft_[ines-1], nes_fft_[0],
-                             nsample_, dx_);
+    if(config_.ses_norm_warning_threshold()>0 and
+      (config_.max_ses_norm_warning()==0 or
+        n_ses_norm_warning_<config_.max_ses_norm_warning()) and
+      std::abs(ses_acc.total() * dx_ - 1.0) >
+        config_.ses_norm_warning_threshold()/double(nsample_))
+    {
+      // The owls are not what they seem
+      LOG(WARNING) << "SES normalization is significantly different from 1.0: "
+                   << ses_acc.total() * dx_ << '\n'
+                   << "SES parameter values : "
+                   << ses_pdf_->parameter_values().transpose();
+      n_ses_norm_warning_++;
+      if(n_ses_norm_warning_ == config_.ses_norm_warning_threshold())
+        LOG(INFO) << "Further SES normalization warnings will be suppressed!";
+    }
+
+    fftw_execute(ses_plan_fwd_);
+    for(unsigned ines=1;ines<config_.num_pe_convolutions();ines++)
+      hcvec_scale_and_multiply(nes_fft_[ines], nes_fft_[ines-1], nes_fft_[0],
+                               nsample_, dx_);
+  } // if(ses_npar or force)
 
   unsigned ped_npar = ped_pdf_->num_parameters();
-  Eigen::VectorXd ped_gradient(ped_npar);
-  ped_gradient.setZero();
-  for(unsigned isample = 0;isample<nsample_;isample++)
+  if(ped_npar or force)
   {
-    const double x = ped_x(isample); // x0_ + (0.5+double(isample))*dx_;
-    double val;
-    if(calc_gradient)
+    Eigen::VectorXd ped_gradient(ped_npar);
+    ped_gradient.setZero();
+    for(unsigned isample = 0;isample<nsample_;isample++)
     {
-      val = ped_pdf_->value_and_parameter_gradient_1d(x, ped_gradient);
-      if(!std::isfinite(val)){ val = 0; ped_gradient.setZero(); }
-      for(unsigned ipar=0;ipar<ped_npar;ipar++)
-        ped_grad_[ipar][isample] = ped_gradient[ipar];
+      const double x = ped_x(isample); // x0_ + (0.5+double(isample))*dx_;
+      double val;
+      if(calc_gradient)
+      {
+        val = ped_pdf_->value_and_parameter_gradient_1d(x, ped_gradient);
+        if(!std::isfinite(val)){ val = 0; ped_gradient.setZero(); }
+        for(unsigned ipar=0;ipar<ped_npar;ipar++)
+          ped_grad_[ipar][isample] = ped_gradient[ipar];
+      }
+      else
+      {
+        val = ped_pdf_->value_1d(x);
+        if(!std::isfinite(val))val = 0;
+      }
+      ped_spec_[isample] = ped_fft_[isample] = val;
     }
-    else
-    {
-      val = ped_pdf_->value_1d(x);
-      if(!std::isfinite(val))val = 0;
-    }
-    ped_spec_[isample] = ped_fft_[isample] = val;
+    fftw_execute(ped_plan_fwd_);
   }
-  fftw_execute(ped_plan_fwd_);
 
   if(config_.include_on_off_ped_shift())
   {
+    Eigen::VectorXd ped_gradient(ped_npar);
+    ped_gradient.setZero();
     for(unsigned isample = 0;isample<nsample_;isample++)
     {
       const double x = ped_x(isample) + off_ped_shift_dc_;

@@ -274,7 +274,7 @@ class GeneralPoissonMES: public MultiElectronSpectrum
 
  protected:
   int ibin(double x) const;
-  void set_cache();
+  void set_cache(bool force = false);
 
   calin::math::function::ParameterizableSingleAxisFunction* ses_pdf_;
   calin::math::function::ParameterizableSingleAxisFunction* ped_pdf_;
