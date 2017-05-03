@@ -223,33 +223,33 @@ class GeneralPoissonMES: public MultiElectronSpectrum
 
   double x0() const { return x0_; }
   double dx() const { return dx_; }
-  double num_electrons_in_model() const { return config_.num_pe_convolutions(); }
+  unsigned num_electrons_in_model() const { return config_.num_pe_convolutions(); }
 
   double ses_x(unsigned isample) const { return (0.5+double(isample))*dx_; }
   double ped_x(unsigned isample) const {
     return x0_ + (0.5+double(isample))*dx_; }
   double mes_x(unsigned isample) const { return ped_x(isample); }
 
-  std::vector<double> all_ses_x() const { std::vector<double> x(nsample_);
+  Eigen::VectorXd all_ses_x() const { Eigen::VectorXd x(nsample_);
     for(unsigned i=0;i<nsample_;i++) x[i] = ses_x(i);
     return x; }
-  std::vector<double> all_ped_x() const { std::vector<double> x(nsample_);
+  Eigen::VectorXd all_ped_x() const { Eigen::VectorXd x(nsample_);
     for(unsigned i=0;i<nsample_;i++) x[i] = ped_x(i);
     return x; }
-  std::vector<double> all_mes_x() const { return all_ped_x(); }
+  Eigen::VectorXd all_mes_x() const { return all_ped_x(); }
 
-  std::vector<double> multi_electron_spectrum() const;
-  std::vector<double> pedestal_spectrum() const;
-  std::vector<double> off_pedestal_spectrum() const;
-  std::vector<double> n_electron_spectrum(unsigned n) const; // 1<=n<=config_.num_pe_convolutions()
-  std::vector<double> single_electron_spectrum() const {
+  Eigen::VectorXd multi_electron_spectrum() const;
+  Eigen::VectorXd pedestal_spectrum() const;
+  Eigen::VectorXd off_pedestal_spectrum() const;
+  Eigen::VectorXd n_electron_spectrum(unsigned n) const; // 1<=n<=config_.num_pe_convolutions()
+  Eigen::VectorXd single_electron_spectrum() const {
     return  n_electron_spectrum(1); }
-  std::vector<double> mes_n_electron_cpt(unsigned n) const; // 0<=n<=config_.num_pe_convolutions()
+  Eigen::VectorXd mes_n_electron_cpt(unsigned n) const; // 0<=n<=config_.num_pe_convolutions()
 
-  std::vector<double> multi_electron_spectrum_gradient(unsigned iparam) const;
-  std::vector<double> pedestal_spectrum_gradient(unsigned iparam) const;
-  std::vector<double> off_pedestal_spectrum_gradient(unsigned iparam) const;
-  std::vector<double> single_electron_spectrum_gradient(unsigned iparam) const;
+  Eigen::VectorXd multi_electron_spectrum_gradient(unsigned iparam) const;
+  Eigen::VectorXd pedestal_spectrum_gradient(unsigned iparam) const;
+  Eigen::VectorXd off_pedestal_spectrum_gradient(unsigned iparam) const;
+  Eigen::VectorXd single_electron_spectrum_gradient(unsigned iparam) const;
 
   Eigen::VectorXd extract_ped_gradient_values(ConstVecRef gradient);
   Eigen::VectorXd extract_ses_gradient_values(ConstVecRef gradient);
@@ -269,6 +269,7 @@ class GeneralPoissonMES: public MultiElectronSpectrum
     return iparam_ped() + ped_pdf_->num_parameters();
   }
 
+  calin::ix::calib::spe_fit::GeneralPoissonMESConfig config() { return config_; }
   static calin::ix::calib::spe_fit::GeneralPoissonMESConfig default_config();
 
  protected:

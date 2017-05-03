@@ -720,12 +720,12 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
                     { dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 0.5);
 
   std::ofstream file("spec.dat");
-  std::vector<double> mes_spec = mes_model.multi_electron_spectrum();
-  std::vector<double> ped_spec = mes_model.pedestal_spectrum();
-  std::vector<double> one_es_spec = mes_model.n_electron_spectrum(1);
-  one_es_spec = mes_model.n_electron_spectrum(1);
-  std::vector<double> two_es_spec = mes_model.n_electron_spectrum(2);
-  std::vector<double> three_es_spec = mes_model.n_electron_spectrum(3);
+  Eigen::VectorXd mes_spec = mes_model.multi_electron_spectrum();
+  Eigen::VectorXd ped_spec = mes_model.pedestal_spectrum();
+  Eigen::VectorXd one_es_spec = mes_model.n_electron_spectrum(1);
+  //one_es_spec = mes_model.n_electron_spectrum(1);
+  Eigen::VectorXd two_es_spec = mes_model.n_electron_spectrum(2);
+  Eigen::VectorXd three_es_spec = mes_model.n_electron_spectrum(3);
   for(unsigned i=0;i<mes_spec.size();i++)
     file << mes_spec[i] << ' ' << ped_spec[i] << ' '
          << one_es_spec[i] << ' ' << two_es_spec[i] << ' '
@@ -838,15 +838,15 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   p << 1.0, 3100.0, 10.0, 0.4, 50.0, 100.0, 25.0;
   //mes_model.set_parameter_values(p);
   std::ofstream file("spec.dat");
-  std::vector<double> mes_spec = mes_model.multi_electron_spectrum();
-  std::vector<double> ped_spec = mes_model.pedestal_spectrum();
-  std::vector<double> one_es_spec = mes_model.n_electron_spectrum(1);
-  std::vector<double> two_es_spec = mes_model.n_electron_spectrum(2);
-  std::vector<double> three_es_spec = mes_model.n_electron_spectrum(3);
-  std::vector<double> zero_es_cpt = mes_model.mes_n_electron_cpt(0);
-  std::vector<double> one_es_cpt = mes_model.mes_n_electron_cpt(1);
-  std::vector<double> two_es_cpt = mes_model.mes_n_electron_cpt(2);
-  std::vector<double> three_es_cpt = mes_model.mes_n_electron_cpt(3);
+  Eigen::VectorXd mes_spec = mes_model.multi_electron_spectrum();
+  Eigen::VectorXd ped_spec = mes_model.pedestal_spectrum();
+  Eigen::VectorXd one_es_spec = mes_model.n_electron_spectrum(1);
+  Eigen::VectorXd two_es_spec = mes_model.n_electron_spectrum(2);
+  Eigen::VectorXd three_es_spec = mes_model.n_electron_spectrum(3);
+  Eigen::VectorXd zero_es_cpt = mes_model.mes_n_electron_cpt(0);
+  Eigen::VectorXd one_es_cpt = mes_model.mes_n_electron_cpt(1);
+  Eigen::VectorXd two_es_cpt = mes_model.mes_n_electron_cpt(2);
+  Eigen::VectorXd three_es_cpt = mes_model.mes_n_electron_cpt(3);
 
   for(unsigned i=0;i<mes_spec.size();i++)
     file << mes_spec[i] << ' '
@@ -868,8 +868,8 @@ TEST(TestGeneralPoissonMES_GaussWithShift, SetAndRecallParameters) {
   p << 1.0, -10.0, 100.0, 20.0, 100.0, 35.0;
   mes.set_parameter_values(p);
   EXPECT_EQ(mes.parameter_values(), p);
-  std::vector<double> ped_spec = mes.pedestal_spectrum();
-  std::vector<double> off_spec = mes.off_pedestal_spectrum();
+  Eigen::VectorXd ped_spec = mes.pedestal_spectrum();
+  Eigen::VectorXd off_spec = mes.off_pedestal_spectrum();
   double ped_sum_w = 0;
   double ped_sum_wx = 0;
   for(unsigned i=0; i<ped_spec.size(); i++)

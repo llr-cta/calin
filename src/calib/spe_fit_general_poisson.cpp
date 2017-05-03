@@ -314,29 +314,29 @@ double GeneralPoissonMES::ses_rms_pe()
   return 0;
 }
 
-std::vector<double> GeneralPoissonMES::multi_electron_spectrum() const
+Eigen::VectorXd GeneralPoissonMES::multi_electron_spectrum() const
 {
-  std::vector<double> spec(nsample_);
-  std::copy(mes_spec_, mes_spec_+nsample_, spec.begin());
+  Eigen::VectorXd spec(nsample_);
+  std::copy(mes_spec_, mes_spec_+nsample_, spec.data());
   return spec;
 }
 
-std::vector<double> GeneralPoissonMES::pedestal_spectrum() const
+Eigen::VectorXd GeneralPoissonMES::pedestal_spectrum() const
 {
-  std::vector<double> spec(nsample_);
-  std::copy(ped_spec_, ped_spec_+nsample_, spec.begin());
+  Eigen::VectorXd spec(nsample_);
+  std::copy(ped_spec_, ped_spec_+nsample_, spec.data());
   return spec;
 }
 
-std::vector<double> GeneralPoissonMES::off_pedestal_spectrum() const
+Eigen::VectorXd GeneralPoissonMES::off_pedestal_spectrum() const
 {
   if(not config_.include_on_off_ped_shift())return pedestal_spectrum();
-  std::vector<double> spec(nsample_);
-  std::copy(off_spec_, off_spec_+nsample_, spec.begin());
+  Eigen::VectorXd spec(nsample_);
+  std::copy(off_spec_, off_spec_+nsample_, spec.data());
   return spec;
 }
 
-std::vector<double> GeneralPoissonMES::
+Eigen::VectorXd GeneralPoissonMES::
 multi_electron_spectrum_gradient(unsigned iparam) const
 {
   if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
@@ -345,29 +345,32 @@ multi_electron_spectrum_gradient(unsigned iparam) const
         "iparam out of range");
 
   unsigned ipedpar = iparam_ped();
+  Eigen::VectorXd grad(nsample_);
   if(iparam == iparam_light_intensity())
-    return std::vector<double>(mes_grad_[0], mes_grad_[0]+nsample_);
+    std::copy(mes_grad_[0], mes_grad_[0]+nsample_, grad.data());
   else if(iparam>=ipedpar)
-    return std::vector<double>(mes_grad_[iparam-ipedpar+1],
-      mes_grad_[iparam-ipedpar+1]+nsample_);
+    std::copy(mes_grad_[iparam-ipedpar+1], mes_grad_[iparam-ipedpar+1]+nsample_, grad.data());
   else
-    return std::vector<double>(nsample_, 0.0);
+    grad.setZero();
+  return grad;
 }
 
-std::vector<double> GeneralPoissonMES::
+Eigen::VectorXd GeneralPoissonMES::
 pedestal_spectrum_gradient(unsigned iparam) const
 {
   if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
     throw std::out_of_range("GeneralPoissonMES::pedestal_spectrum_gradient: "
                             "iparam out of range");
 
+  Eigen::VectorXd grad(nsample_);
   if(iparam==0 || iparam>ped_pdf_->num_parameters())
-    return std::vector<double>(nsample_, 0.0);
+    grad.setZero();
   else
-    return std::vector<double>(ped_grad_[iparam-1], ped_grad_[iparam-1]+nsample_);
+    std::copy(ped_grad_[iparam-1], ped_grad_[iparam-1]+nsample_, grad.data());
+  return grad;
 }
 
-std::vector<double> GeneralPoissonMES::
+Eigen::VectorXd GeneralPoissonMES::
 off_pedestal_spectrum_gradient(unsigned iparam) const
 {
   if(not config_.include_on_off_ped_shift())
@@ -377,17 +380,18 @@ off_pedestal_spectrum_gradient(unsigned iparam) const
     throw std::out_of_range("GeneralPoissonMES::off_pedestal_spectrum_gradient: "
                             "iparam out of range");
 
+  Eigen::VectorXd grad(nsample_);
   unsigned ipedpar = iparam_ped();
   if(iparam == iparam_off_ped_shift())
-    return std::vector<double>(off_dfdx_, off_dfdx_+nsample_);
+    std::copy(off_dfdx_, off_dfdx_+nsample_, grad.data());
   else if(iparam >= ipedpar and iparam < iparam_ses())
-    return std::vector<double>(off_grad_[iparam-ipedpar],
-      off_grad_[iparam-ipedpar]+nsample_);
+    std::copy(off_grad_[iparam-ipedpar], off_grad_[iparam-ipedpar]+nsample_, grad.data());
   else
-    return std::vector<double>(nsample_, 0.0);
+    grad.setZero();
+  return grad;
 }
 
-std::vector<double> GeneralPoissonMES::
+Eigen::VectorXd GeneralPoissonMES::
 single_electron_spectrum_gradient(unsigned iparam) const
 {
   if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
@@ -395,7 +399,7 @@ single_electron_spectrum_gradient(unsigned iparam) const
                             "iparam out of range");
 
   unsigned isespar = iparam_ses();
-  if(iparam<=isespar)return std::vector<double>(nsample_, 0.0);
+  if(iparam<=isespar)return Eigen::VectorXd::Zero(nsample_);
   iparam -= isespar;
 
   uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
@@ -409,15 +413,16 @@ single_electron_spectrum_gradient(unsigned iparam) const
   std::copy(ses_grad_fft_[iparam], ses_grad_fft_[iparam]+nsample_,
             spec_buffer.get());
   fftw_execute(spec_plan.get());
-  std::vector<double> spec_gradient(nsample_);
+
+  Eigen::VectorXd spec_gradient(nsample_);
   double norm { 1.0/double(nsample_) };
   std::transform(spec_buffer.get(), spec_buffer.get()+nsample_,
-                 spec_gradient.begin(),
+                 spec_gradient.data(),
                  [norm](double x){return x*norm;});
   return spec_gradient;
 }
 
-std::vector<double> GeneralPoissonMES::n_electron_spectrum(unsigned n) const
+Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum(unsigned n) const
 {
   if(n==0 or n>config_.num_pe_convolutions())
     throw std::out_of_range("GeneralPoissonMES::n_electron_spectrum: "
@@ -433,26 +438,27 @@ std::vector<double> GeneralPoissonMES::n_electron_spectrum(unsigned n) const
 
   std::copy(nes_fft_[n-1], nes_fft_[n-1]+nsample_, spec_buffer.get());
   fftw_execute(spec_plan.get());
-  std::vector<double> spec(nsample_);
+
+  Eigen::VectorXd spec(nsample_);
   double norm { 1.0/double(nsample_) };
-  std::transform(spec_buffer.get(), spec_buffer.get()+nsample_, spec.begin(),
+  std::transform(spec_buffer.get(), spec_buffer.get()+nsample_, spec.data(),
                  [norm](double x){return x*norm;});
   return spec;
 }
 
-std::vector<double> GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
+Eigen::VectorXd GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
 {
   if(n>config_.num_pe_convolutions())
     throw std::out_of_range("GeneralPoissonMES::mes_n_electron_cpt: "
                             "number of PEs out of range");
 
-  std::vector<double> spec(nsample_);
+  Eigen::VectorXd spec(nsample_);
   double log_nsample = std::log(double(nsample_));
 
   if(n==0)
   {
     double scale = std::exp(-intensity_pe_);
-    std::transform(ped_spec_, ped_spec_+nsample_, spec.begin(),
+    std::transform(ped_spec_, ped_spec_+nsample_, spec.data(),
                    [scale](const double& x){ return x*scale; });
     return spec;
   }
@@ -475,7 +481,7 @@ std::vector<double> GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
                            nsample_, poisson_factor*dx_);
 
   fftw_execute(spec_plan.get());
-  std::copy(spec_buffer.get(), spec_buffer.get()+nsample_, spec.begin());
+  std::copy(spec_buffer.get(), spec_buffer.get()+nsample_, spec.data());
   return spec;
 }
 
