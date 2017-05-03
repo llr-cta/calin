@@ -616,7 +616,7 @@ void GeneralPoissonMES::set_cache(bool force)
       ped_spec_[isample] = ped_fft_[isample] = val;
     }
     fftw_execute(ped_plan_fwd_);
-  }
+  } // if(ped_npar or force)
 
   if(config_.include_on_off_ped_shift())
   {
