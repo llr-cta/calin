@@ -20,6 +20,8 @@
 
 */
 
+#include<io/log.hpp>
+
 namespace calin { namespace math { namespace function {
 
 template<typename T>
@@ -53,6 +55,13 @@ BasicReducedSpaceParameterizable<T>::parameter_values()
 template<typename T> void
 BasicReducedSpaceParameterizable<T>::set_parameter_values(ConstVecRef values)
 {
+  if(values.size() != subspace_params_.size())
+    throw std::invalid_argument(std::string("Number of parameter values does not match subspace size: "
+      + std::to_string(values.size()) + " != "
+      + std::to_string(subspace_params_.size())));
+  // calin::io::log::LOG(calin::io::log::INFO) << "A: " << values.transpose();
+  // calin::io::log::LOG(calin::io::log::INFO) << "B: " << removed_param_values_.transpose();
+  // calin::io::log::LOG(calin::io::log::INFO) << "C: " << subspace_param_vec_to_original(values).transpose();
   this->delegate_->set_parameter_values(subspace_param_vec_to_original(values));
 }
 
@@ -61,7 +70,7 @@ remove_parameter_from_subspace(unsigned unmodified_index)
 {
   auto index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), unmodified_index);
   if(index == subspace_params_.end() or *index != unmodified_index)return false;
-  removed_param_values_(unmodified_index) = this->parameter_values()[unmodified_index];
+  removed_param_values_(unmodified_index) = this->delegate_->parameter_values()[unmodified_index];
   subspace_params_.erase(index);
   index = std::lower_bound(removed_params_.begin(), removed_params_.end(), unmodified_index);
   removed_params_.insert(index, unmodified_index);
