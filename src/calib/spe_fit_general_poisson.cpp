@@ -590,6 +590,8 @@ void GeneralPoissonMES::set_cache(bool force)
                                nsample_, dx_);
   } // if(ses_npar or force)
 
+  // Same for PED, if it has no paramerters then we assume it doesn't change,
+  // so, again, no need to do the FFTs each time
   unsigned ped_npar = ped_pdf_->num_parameters();
   if(ped_npar or force)
   {
