@@ -448,6 +448,32 @@ Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum(unsigned n) const
   return spec;
 }
 
+Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum_with_pedestal(unsigned n) const
+{
+  if(n==0)return pedestal_spectrum();
+
+  if(n>config_.num_pe_convolutions())
+    throw std::out_of_range("GeneralPoissonMES::n_electron_spectrum_with_pedestal: "
+                            "number of PEs out of range");
+
+  uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
+  assert(spec_buffer);
+
+  uptr_fftw_plan spec_plan = {
+    fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
+                     FFTW_HC2R, 0), fftw_destroy_plan };
+  assert(spec_plan);
+
+  hcvec_scale_and_multiply(spec_buffer.get(), nes_fft_[n-1], ped_fft_,
+                           nsample_, 1.0/double(nsample_));
+
+  fftw_execute(spec_plan.get());
+
+  Eigen::VectorXd spec(nsample_);
+  std::copy(spec_buffer.get(), spec_buffer.get()+nsample_, spec.data());
+  return spec;
+}
+
 Eigen::VectorXd GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
 {
   if(n>config_.num_pe_convolutions())

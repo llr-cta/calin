@@ -1,5 +1,5 @@
 /*
-   calin/calib/spe_fit.cpp_poisson_gaussian -- Stephen Fegan -- 2015-03-01
+   calin/calib/spe_fit_poisson_gaussian.cpp -- Stephen Fegan -- 2015-03-01
 
    Functions to do fit to multi-electron spectrum in the "single PE"
    domain. Poisson-Gaussian models.
