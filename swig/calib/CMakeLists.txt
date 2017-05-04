@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_FILES spe_fit.i)
+set(CALIN_SWIG_FILES spe_fit.i pmt_ses_models.i)
 set(CALIN_SWIG_TARGET calib)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

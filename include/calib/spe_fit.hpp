@@ -39,8 +39,6 @@
 
 namespace calin { namespace calib { namespace spe_fit {
 
-CALIN_TYPEALIAS(SingleElectronSpectrum, calin::math::pdf_1d::Parameterizable1DPDF);
-
 class MultiElectronSpectrum: public calin::math::function::Parameterizable
 {
  public:
@@ -184,15 +182,17 @@ class PoissonGaussianMES_HighAccuracy: public MultiElectronSpectrum
   double ped_zero_dc_  = 0.0;
 };
 
+class FastSingleValueGeneralPoissonMES;
+
 class GeneralPoissonMES: public MultiElectronSpectrum
 {
- public:
+public:
    CALIN_TYPEALIAS(config_type, calin::ix::calib::
      spe_fit::GeneralPoissonMESConfig);
 
   GeneralPoissonMES(double x0, double dx, unsigned npoint,
-                    SingleElectronSpectrum* ses,
-                    calin::math::pdf_1d::Parameterizable1DPDF* ped,
+                    calin::math::function::ParameterizableSingleAxisFunction* ses,
+                    calin::math::function::ParameterizableSingleAxisFunction* ped,
                     calin::ix::calib::spe_fit::GeneralPoissonMESConfig config =
                       default_config(),
                     bool adopt_ses = false, bool adopt_ped = false);
@@ -225,33 +225,36 @@ class GeneralPoissonMES: public MultiElectronSpectrum
 
   double x0() const { return x0_; }
   double dx() const { return dx_; }
-  double num_electrons_in_model() const { return config_.num_pe_convolutions(); }
+  unsigned num_electrons_in_model() const { return config_.num_pe_convolutions(); }
 
   double ses_x(unsigned isample) const { return (0.5+double(isample))*dx_; }
   double ped_x(unsigned isample) const {
     return x0_ + (0.5+double(isample))*dx_; }
   double mes_x(unsigned isample) const { return ped_x(isample); }
 
-  std::vector<double> all_ses_x() const { std::vector<double> x(nsample_);
+  unsigned nsample() const { return nsample_; }
+
+  Eigen::VectorXd all_ses_x() const { Eigen::VectorXd x(nsample_);
     for(unsigned i=0;i<nsample_;i++) x[i] = ses_x(i);
     return x; }
-  std::vector<double> all_ped_x() const { std::vector<double> x(nsample_);
+  Eigen::VectorXd all_ped_x() const { Eigen::VectorXd x(nsample_);
     for(unsigned i=0;i<nsample_;i++) x[i] = ped_x(i);
     return x; }
-  std::vector<double> all_mes_x() const { return all_ped_x(); }
+  Eigen::VectorXd all_mes_x() const { return all_ped_x(); }
 
-  std::vector<double> multi_electron_spectrum() const;
-  std::vector<double> pedestal_spectrum() const;
-  std::vector<double> off_pedestal_spectrum() const;
-  std::vector<double> n_electron_spectrum(unsigned n) const; // 1<=n<=config_.num_pe_convolutions()
-  std::vector<double> single_electron_spectrum() const {
+  Eigen::VectorXd multi_electron_spectrum() const;
+  Eigen::VectorXd pedestal_spectrum() const;
+  Eigen::VectorXd off_pedestal_spectrum() const;
+  Eigen::VectorXd n_electron_spectrum(unsigned n) const; // 1<=n<=config_.num_pe_convolutions()
+  Eigen::VectorXd n_electron_spectrum_with_pedestal(unsigned n) const; // 0<=n<=config_.num_pe_convolutions()
+  Eigen::VectorXd single_electron_spectrum() const {
     return  n_electron_spectrum(1); }
-  std::vector<double> mes_n_electron_cpt(unsigned n) const; // 0<=n<=config_.num_pe_convolutions()
+  Eigen::VectorXd mes_n_electron_cpt(unsigned n) const; // 0<=n<=config_.num_pe_convolutions()
 
-  std::vector<double> multi_electron_spectrum_gradient(unsigned iparam) const;
-  std::vector<double> pedestal_spectrum_gradient(unsigned iparam) const;
-  std::vector<double> off_pedestal_spectrum_gradient(unsigned iparam) const;
-  std::vector<double> single_electron_spectrum_gradient(unsigned iparam) const;
+  Eigen::VectorXd multi_electron_spectrum_gradient(unsigned iparam) const;
+  Eigen::VectorXd pedestal_spectrum_gradient(unsigned iparam) const;
+  Eigen::VectorXd off_pedestal_spectrum_gradient(unsigned iparam) const;
+  Eigen::VectorXd single_electron_spectrum_gradient(unsigned iparam) const;
 
   Eigen::VectorXd extract_ped_gradient_values(ConstVecRef gradient);
   Eigen::VectorXd extract_ses_gradient_values(ConstVecRef gradient);
@@ -271,14 +274,17 @@ class GeneralPoissonMES: public MultiElectronSpectrum
     return iparam_ped() + ped_pdf_->num_parameters();
   }
 
+  calin::ix::calib::spe_fit::GeneralPoissonMESConfig config() { return config_; }
   static calin::ix::calib::spe_fit::GeneralPoissonMESConfig default_config();
 
- protected:
-  int ibin(double x) const;
-  void set_cache();
+protected:
+  friend class FastSingleValueGeneralPoissonMES;
 
-  SingleElectronSpectrum* ses_pdf_;
-  calin::math::pdf_1d::Parameterizable1DPDF* ped_pdf_;
+  int ibin(double x) const;
+  void set_cache(bool force = false);
+
+  calin::math::function::ParameterizableSingleAxisFunction* ses_pdf_;
+  calin::math::function::ParameterizableSingleAxisFunction* ped_pdf_;
   bool adopt_ses_pdf_ = false;
   bool adopt_ped_pdf_ = false;
   calin::ix::calib::spe_fit::GeneralPoissonMESConfig config_ = default_config();
@@ -306,6 +312,68 @@ class GeneralPoissonMES: public MultiElectronSpectrum
   std::vector<double*> mes_grad_;
   std::vector<fftw_plan> mes_grad_plan_rev_;
   unsigned n_ses_norm_warning_ = 0;
+};
+
+class FastSingleValueGeneralPoissonMES: public MultiElectronSpectrum
+{
+public:
+  FastSingleValueGeneralPoissonMES(GeneralPoissonMES* mes, bool adopt_mes = false);
+  virtual ~FastSingleValueGeneralPoissonMES();
+
+  unsigned num_parameters() override;
+  std::vector<calin::math::function::ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  double pdf_ped(double x) override;
+  double pdf_gradient_ped(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_ped(double x, VecRef gradient,
+                                MatRef hessian) override;
+
+  double pdf_mes(double x) override;
+  double pdf_gradient_mes(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_mes(double x, VecRef gradient,
+                                MatRef hessian) override;
+
+  double intensity_pe() override { return intensity_pe_; };
+  double ped_rms_dc() override;
+  double ped_zero_dc() override;
+  double ses_mean_dc() override;
+  double ses_rms_pe() override;
+
+  double x0() const { return mes_->x0(); }
+  double dx() const { return mes_->dx(); }
+  unsigned num_electrons_in_model() const { return nes_pmf_.cols(); }
+
+  double ses_x(unsigned isample) const { return mes_->ses_x(isample); }
+  double ped_x(unsigned isample) const { return mes_->ped_x(isample); }
+  double mes_x(unsigned isample) const { return mes_->mes_x(isample); }
+
+  unsigned nsample() const { return nes_pmf_.rows(); }
+
+  Eigen::VectorXd all_ses_x() const { return mes_->all_ses_x(); }
+  Eigen::VectorXd all_ped_x() const { return mes_->all_ped_x(); }
+  Eigen::VectorXd all_mes_x() const { return mes_->all_mes_x(); }
+
+  Eigen::VectorXd multi_electron_spectrum() const { return nes_pmf_*nes_weight_; }
+  Eigen::VectorXd pedestal_spectrum() const { return nes_pmf_.col(0); };
+  Eigen::VectorXd off_pedestal_spectrum() const { return ped_pmf_; }
+  Eigen::VectorXd n_electron_spectrum_with_pedestal(unsigned n) const {
+    return nes_pmf_.col(n); }
+
+  void update_from_general_mes();
+  GeneralPoissonMES* general_mes() const { return mes_; }
+
+protected:
+  GeneralPoissonMES* mes_ = nullptr;
+  bool adopt_mes_ = false;
+  double intensity_pe_ = 1.0;
+  Eigen::MatrixXd nes_pmf_;
+  Eigen::VectorXd ped_pmf_;
+  Eigen::VectorXd nes_weight_;
+  Eigen::VectorXd nes_weight_deriv_;
 };
 
 class SPELikelihood: public calin::math::function::MultiAxisFunction

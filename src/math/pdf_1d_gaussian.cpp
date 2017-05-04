@@ -167,22 +167,6 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
   return val;
 }
 
-double GaussianPDF::error_up()
-{
-  return error_up_;
-}
-
-bool GaussianPDF::can_calculate_mean_and_variance()
-{
-  return true;
-}
-
-void GaussianPDF::mean_and_variance(double& mean, double& var)
-{
-  mean = x0_;
-  var = SQR(s_);
-}
-
 // *****************************************************************************
 //
 // LimitedGaussianPDF
@@ -278,16 +262,6 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
   hessian(1,1) += 2.0*norm_gradient_[1]*gradient[1];
   gradient = norm_*gradient + val*norm_gradient_;
   return norm_*val;
-}
-
-bool LimitedGaussianPDF::can_calculate_mean_and_variance()
-{
-  return false;
-}
-
-void LimitedGaussianPDF::mean_and_variance(double& mean, double& var)
-{
-  assert(0);
 }
 
 void LimitedGaussianPDF::set_cache()

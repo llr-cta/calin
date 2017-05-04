@@ -44,14 +44,14 @@ namespace {
 
 TEST(TestLikelihood, GradientCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
   IID1DDataLikelihoodFunction cost_fn(&gaussian, hist);
   Eigen::VectorXd x(2);
   Eigen::VectorXd dx(2);
-  dx << 0.00001, 0.000001;
+  dx << 0.01, 0.001;
   for(x(0) = 80.0; x(0)<120.0; x(0)+=1.0) {
     for(x(1) = 8.0; x(1)<12.0; x(1)+=0.1) {
       Eigen::VectorXd good(2);
@@ -64,14 +64,14 @@ TEST(TestLikelihood, GradientCheck) {
 
 TEST(TestLikelihood, HessianCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
   IID1DDataLikelihoodFunction cost_fn(&gaussian, hist);
   Eigen::VectorXd x(2);
   Eigen::VectorXd dx(2);
-  dx << 0.00001, 0.000001;
+  dx << 0.01, 0.001;
   for(x(0) = 80.0; x(0)<120.0; x(0)+=1.0) {
     for(x(1) = 8.0; x(1)<12.0; x(1)+=0.1) {
       Eigen::MatrixXd good(2,2);
@@ -86,7 +86,7 @@ TEST(TestLikelihood, HessianCheck) {
 
 TEST(TestChi2, GradientCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -108,7 +108,7 @@ TEST(TestChi2, GradientCheck) {
 
 TEST(TestChi2, HessianCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -136,7 +136,7 @@ TEST(TestChi2, HessianCheck) {
 
 TEST(TestMEstimateWithNULL, GradientCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -144,7 +144,7 @@ TEST(TestMEstimateWithNULL, GradientCheck) {
   IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
   Eigen::VectorXd x(2);
   Eigen::VectorXd dx(2);
-  dx << 0.00001, 0.000001;
+  dx << 0.01, 0.001;
   for(x(0) = 80.0; x(0)<120.0; x(0)+=1.0) {
     for(x(1) = 8.0; x(1)<12.0; x(1)+=0.1) {
       Eigen::VectorXd good(2);
@@ -157,7 +157,7 @@ TEST(TestMEstimateWithNULL, GradientCheck) {
 
 TEST(TestMEstimateWithNULL, HessianCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -165,7 +165,7 @@ TEST(TestMEstimateWithNULL, HessianCheck) {
   IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
   Eigen::VectorXd x(2);
   Eigen::VectorXd dx(2);
-  dx << 0.00001, 0.000001;
+  dx << 0.01, 0.001;
   for(x(0) = 80.0; x(0)<120.0; x(0)+=1.0) {
     for(x(1) = 8.0; x(1)<12.0; x(1)+=0.1) {
       Eigen::MatrixXd good(2,2);
@@ -180,7 +180,7 @@ TEST(TestMEstimateWithNULL, HessianCheck) {
 
 TEST(TestMEstimateWithHyperbolic, GradientCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -190,7 +190,7 @@ TEST(TestMEstimateWithHyperbolic, GradientCheck) {
       IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
       Eigen::VectorXd x(2);
       Eigen::VectorXd dx(2);
-      dx << 0.0001, 0.00001;
+      dx << 0.01, 0.001;
       for(x(0) = 80.0; x(0)<120.0; x(0)+=2.0) {
         for(x(1) = 8.0; x(1)<12.0; x(1)+=0.2) {
           Eigen::VectorXd good(2);
@@ -205,7 +205,7 @@ TEST(TestMEstimateWithHyperbolic, GradientCheck) {
 
 TEST(TestMEstimateWithHyperbolic, HessianCheck) {
   SimpleHist hist(1.0);
-  RNG rng(12345);
+  RNG rng(RNG::std_test_seed);
   for(unsigned i=0; i<10000; i++)
     hist.insert(rng.normal()*10.0 + 100.0);
   BinnedGaussianPDF gaussian(1.0);
@@ -215,7 +215,7 @@ TEST(TestMEstimateWithHyperbolic, HessianCheck) {
       IID1DDataMEstimateLikelihoodFunction cost_fn(&gaussian, &rho, hist);
       Eigen::VectorXd x(2);
       Eigen::VectorXd dx(2);
-      dx << 0.0001, 0.00001;
+      dx << 0.01, 0.001;
       for(x(0) = 80.0; x(0)<120.0; x(0)+=2.0) {
         for(x(1) = 8.0; x(1)<12.0; x(1)+=0.2) {
           Eigen::MatrixXd good(2,2);

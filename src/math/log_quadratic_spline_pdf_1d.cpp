@@ -34,10 +34,9 @@ LogQuadraticSpline1DPDF(ConstVecRef xknot, double xlo, double xhi,
                         double bin_dx,
                         ParamZeroType p0_type, ParamZeroLocation p0_loc,
                         bool normalize,
-                        const std::string& yunits, const std::string& xunits,
-                        double error_up):
+                        const std::string& yunits, const std::string& xunits):
     Parameterizable1DPDF(), yunits_(yunits), xunits_(xunits),
-    error_up_(error_up), xlo_(xlo), xhi_(xhi), bin_dx_(bin_dx),
+    xlo_(xlo), xhi_(xhi), bin_dx_(bin_dx),
     p0_type_(p0_type), p0_loc_(p0_loc),
     nknot_(xknot.size()), xknot_(xknot), yknot_(Eigen::VectorXd::Zero(nknot_)),
     dx_(std::max(1U,nknot_)-1), dy_(std::max(1U,nknot_)-1),
@@ -326,21 +325,6 @@ double LogQuadraticSpline1DPDF::
 value_parameter_gradient_and_hessian_1d(double x, VecRef gradient, MatRef hessian)
 {
   throw std::runtime_error("LogQuadraticSpline1DPDF::value_parameter_gradient_and_hessian_1d not implemented");
-}
-
-double LogQuadraticSpline1DPDF::error_up()
-{
-  return error_up_;
-}
-
-bool LogQuadraticSpline1DPDF::can_calculate_mean_and_variance()
-{
-  return false;
-}
-
-void LogQuadraticSpline1DPDF::mean_and_variance(double& mean, double& var)
-{
-  throw std::runtime_error("LogQuadraticSpline1DPDF::mean_and_variance not implemented");
 }
 
 Eigen::VectorXd LogQuadraticSpline1DPDF::a_gradient(unsigned isegment) const

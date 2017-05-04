@@ -247,19 +247,3 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
   }
   return val;
 }
-
-double BinnedGaussianPDF::error_up()
-{
-  return error_up_;
-}
-
-bool BinnedGaussianPDF::can_calculate_mean_and_variance()
-{
-  return true;
-}
-
-void BinnedGaussianPDF::mean_and_variance(double& mean, double& var)
-{
-  mean = x0_;
-  var = SQR(s_);
-}

@@ -709,7 +709,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped);
   double dp1 = 1e-7;
   mes_gradient_test(&mes_model,
@@ -720,12 +720,12 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
                     { dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 0.5);
 
   std::ofstream file("spec.dat");
-  std::vector<double> mes_spec = mes_model.multi_electron_spectrum();
-  std::vector<double> ped_spec = mes_model.pedestal_spectrum();
-  std::vector<double> one_es_spec = mes_model.n_electron_spectrum(1);
-  one_es_spec = mes_model.n_electron_spectrum(1);
-  std::vector<double> two_es_spec = mes_model.n_electron_spectrum(2);
-  std::vector<double> three_es_spec = mes_model.n_electron_spectrum(3);
+  Eigen::VectorXd mes_spec = mes_model.multi_electron_spectrum();
+  Eigen::VectorXd ped_spec = mes_model.pedestal_spectrum();
+  Eigen::VectorXd one_es_spec = mes_model.n_electron_spectrum(1);
+  //one_es_spec = mes_model.n_electron_spectrum(1);
+  Eigen::VectorXd two_es_spec = mes_model.n_electron_spectrum(2);
+  Eigen::VectorXd three_es_spec = mes_model.n_electron_spectrum(3);
   for(unsigned i=0;i<mes_spec.size();i++)
     file << mes_spec[i] << ' ' << ped_spec[i] << ' '
          << one_es_spec[i] << ' ' << two_es_spec[i] << ' '
@@ -739,7 +739,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_PED)
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped);
   double dp1 = 1e-7;
   mes_gradient_test(&mes_model,
@@ -764,7 +764,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, Repeatability)
     pdf_1d::LimitedExponentialPDF exp_pdf(0,inf,mes_hist.dxval());
     exp_pdf.limit_scale(0.1, inf);
     pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-    pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+    pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
     GeneralPoissonMES mes_model(mes_hist.xval_left(0),
                                 mes_hist.dxval(),
                                 mes_hist.size(), &ses, &ped);
@@ -796,7 +796,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf,mes_hist.dxval());
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   GeneralPoissonMES mes_model(mes_hist.xval_left(0),
                               mes_hist.dxval(),
                               mes_hist.size(), &ses, &ped);
@@ -838,15 +838,15 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   p << 1.0, 3100.0, 10.0, 0.4, 50.0, 100.0, 25.0;
   //mes_model.set_parameter_values(p);
   std::ofstream file("spec.dat");
-  std::vector<double> mes_spec = mes_model.multi_electron_spectrum();
-  std::vector<double> ped_spec = mes_model.pedestal_spectrum();
-  std::vector<double> one_es_spec = mes_model.n_electron_spectrum(1);
-  std::vector<double> two_es_spec = mes_model.n_electron_spectrum(2);
-  std::vector<double> three_es_spec = mes_model.n_electron_spectrum(3);
-  std::vector<double> zero_es_cpt = mes_model.mes_n_electron_cpt(0);
-  std::vector<double> one_es_cpt = mes_model.mes_n_electron_cpt(1);
-  std::vector<double> two_es_cpt = mes_model.mes_n_electron_cpt(2);
-  std::vector<double> three_es_cpt = mes_model.mes_n_electron_cpt(3);
+  Eigen::VectorXd mes_spec = mes_model.multi_electron_spectrum();
+  Eigen::VectorXd ped_spec = mes_model.pedestal_spectrum();
+  Eigen::VectorXd one_es_spec = mes_model.n_electron_spectrum(1);
+  Eigen::VectorXd two_es_spec = mes_model.n_electron_spectrum(2);
+  Eigen::VectorXd three_es_spec = mes_model.n_electron_spectrum(3);
+  Eigen::VectorXd zero_es_cpt = mes_model.mes_n_electron_cpt(0);
+  Eigen::VectorXd one_es_cpt = mes_model.mes_n_electron_cpt(1);
+  Eigen::VectorXd two_es_cpt = mes_model.mes_n_electron_cpt(2);
+  Eigen::VectorXd three_es_cpt = mes_model.mes_n_electron_cpt(3);
 
   for(unsigned i=0;i<mes_spec.size();i++)
     file << mes_spec[i] << ' '
@@ -868,8 +868,8 @@ TEST(TestGeneralPoissonMES_GaussWithShift, SetAndRecallParameters) {
   p << 1.0, -10.0, 100.0, 20.0, 100.0, 35.0;
   mes.set_parameter_values(p);
   EXPECT_EQ(mes.parameter_values(), p);
-  std::vector<double> ped_spec = mes.pedestal_spectrum();
-  std::vector<double> off_spec = mes.off_pedestal_spectrum();
+  Eigen::VectorXd ped_spec = mes.pedestal_spectrum();
+  Eigen::VectorXd off_spec = mes.off_pedestal_spectrum();
   double ped_sum_w = 0;
   double ped_sum_wx = 0;
   for(unsigned i=0; i<ped_spec.size(); i++)
@@ -893,7 +893,7 @@ TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_MES)
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   auto opt = GeneralPoissonMES::default_config();
   opt.set_include_on_off_ped_shift(true);
   GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped,opt);
@@ -913,7 +913,7 @@ TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_PED)
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf);
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   auto opt = GeneralPoissonMES::default_config();
   opt.set_include_on_off_ped_shift(true);
   GeneralPoissonMES mes_model(-1.1,0.01,1024,&ses,&ped,opt);

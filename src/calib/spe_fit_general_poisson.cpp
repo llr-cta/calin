@@ -55,8 +55,8 @@ using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 
 GeneralPoissonMES::
 GeneralPoissonMES(double x0, double dx, unsigned npoint,
-                  SingleElectronSpectrum* ses,
-                  math::pdf_1d::Parameterizable1DPDF* ped,
+                  calin::math::function::ParameterizableSingleAxisFunction* ses,
+                  calin::math::function::ParameterizableSingleAxisFunction* ped,
                   calin::ix::calib::spe_fit::GeneralPoissonMESConfig config,
                   bool adopt_ses, bool adopt_ped):
     MultiElectronSpectrum(),
@@ -128,6 +128,8 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
                            FFTW_HC2R, 0);
     }
   }
+
+  set_cache(/* force = */ true);
 }
 
 GeneralPoissonMES::~GeneralPoissonMES()
@@ -177,7 +179,7 @@ auto GeneralPoissonMES::parameters() ->
   std::vector<math::function::ParameterAxis> pvec;
   pvec.push_back({ "light_intensity", "PE", true, 0, false, inf });
   if(config_.include_on_off_ped_shift())
-    pvec.push_back({ "off_ped_shift", "DC", false, 0, false, 0 });
+    pvec.push_back({ "off_ped_shift", "DC", false, -inf, false, inf });
   std::vector<math::function::ParameterAxis> pped { ped_pdf_->parameters() };
   for(auto& ip : pped)ip.name = std::string("ped.") + ip.name;
   pvec.insert(pvec.end(), pped.begin(), pped.end());
@@ -314,29 +316,29 @@ double GeneralPoissonMES::ses_rms_pe()
   return 0;
 }
 
-std::vector<double> GeneralPoissonMES::multi_electron_spectrum() const
+Eigen::VectorXd GeneralPoissonMES::multi_electron_spectrum() const
 {
-  std::vector<double> spec(nsample_);
-  std::copy(mes_spec_, mes_spec_+nsample_, spec.begin());
+  Eigen::VectorXd spec(nsample_);
+  std::copy(mes_spec_, mes_spec_+nsample_, spec.data());
   return spec;
 }
 
-std::vector<double> GeneralPoissonMES::pedestal_spectrum() const
+Eigen::VectorXd GeneralPoissonMES::pedestal_spectrum() const
 {
-  std::vector<double> spec(nsample_);
-  std::copy(ped_spec_, ped_spec_+nsample_, spec.begin());
+  Eigen::VectorXd spec(nsample_);
+  std::copy(ped_spec_, ped_spec_+nsample_, spec.data());
   return spec;
 }
 
-std::vector<double> GeneralPoissonMES::off_pedestal_spectrum() const
+Eigen::VectorXd GeneralPoissonMES::off_pedestal_spectrum() const
 {
   if(not config_.include_on_off_ped_shift())return pedestal_spectrum();
-  std::vector<double> spec(nsample_);
-  std::copy(off_spec_, off_spec_+nsample_, spec.begin());
+  Eigen::VectorXd spec(nsample_);
+  std::copy(off_spec_, off_spec_+nsample_, spec.data());
   return spec;
 }
 
-std::vector<double> GeneralPoissonMES::
+Eigen::VectorXd GeneralPoissonMES::
 multi_electron_spectrum_gradient(unsigned iparam) const
 {
   if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
@@ -345,29 +347,32 @@ multi_electron_spectrum_gradient(unsigned iparam) const
         "iparam out of range");
 
   unsigned ipedpar = iparam_ped();
+  Eigen::VectorXd grad(nsample_);
   if(iparam == iparam_light_intensity())
-    return std::vector<double>(mes_grad_[0], mes_grad_[0]+nsample_);
+    std::copy(mes_grad_[0], mes_grad_[0]+nsample_, grad.data());
   else if(iparam>=ipedpar)
-    return std::vector<double>(mes_grad_[iparam-ipedpar+1],
-      mes_grad_[iparam-ipedpar+1]+nsample_);
+    std::copy(mes_grad_[iparam-ipedpar+1], mes_grad_[iparam-ipedpar+1]+nsample_, grad.data());
   else
-    return std::vector<double>(nsample_, 0.0);
+    grad.setZero();
+  return grad;
 }
 
-std::vector<double> GeneralPoissonMES::
+Eigen::VectorXd GeneralPoissonMES::
 pedestal_spectrum_gradient(unsigned iparam) const
 {
   if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
     throw std::out_of_range("GeneralPoissonMES::pedestal_spectrum_gradient: "
                             "iparam out of range");
 
+  Eigen::VectorXd grad(nsample_);
   if(iparam==0 || iparam>ped_pdf_->num_parameters())
-    return std::vector<double>(nsample_, 0.0);
+    grad.setZero();
   else
-    return std::vector<double>(ped_grad_[iparam-1], ped_grad_[iparam-1]+nsample_);
+    std::copy(ped_grad_[iparam-1], ped_grad_[iparam-1]+nsample_, grad.data());
+  return grad;
 }
 
-std::vector<double> GeneralPoissonMES::
+Eigen::VectorXd GeneralPoissonMES::
 off_pedestal_spectrum_gradient(unsigned iparam) const
 {
   if(not config_.include_on_off_ped_shift())
@@ -377,17 +382,18 @@ off_pedestal_spectrum_gradient(unsigned iparam) const
     throw std::out_of_range("GeneralPoissonMES::off_pedestal_spectrum_gradient: "
                             "iparam out of range");
 
+  Eigen::VectorXd grad(nsample_);
   unsigned ipedpar = iparam_ped();
   if(iparam == iparam_off_ped_shift())
-    return std::vector<double>(off_dfdx_, off_dfdx_+nsample_);
+    std::copy(off_dfdx_, off_dfdx_+nsample_, grad.data());
   else if(iparam >= ipedpar and iparam < iparam_ses())
-    return std::vector<double>(off_grad_[iparam-ipedpar],
-      off_grad_[iparam-ipedpar]+nsample_);
+    std::copy(off_grad_[iparam-ipedpar], off_grad_[iparam-ipedpar]+nsample_, grad.data());
   else
-    return std::vector<double>(nsample_, 0.0);
+    grad.setZero();
+  return grad;
 }
 
-std::vector<double> GeneralPoissonMES::
+Eigen::VectorXd GeneralPoissonMES::
 single_electron_spectrum_gradient(unsigned iparam) const
 {
   if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
@@ -395,7 +401,7 @@ single_electron_spectrum_gradient(unsigned iparam) const
                             "iparam out of range");
 
   unsigned isespar = iparam_ses();
-  if(iparam<=isespar)return std::vector<double>(nsample_, 0.0);
+  if(iparam<=isespar)return Eigen::VectorXd::Zero(nsample_);
   iparam -= isespar;
 
   uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
@@ -409,15 +415,16 @@ single_electron_spectrum_gradient(unsigned iparam) const
   std::copy(ses_grad_fft_[iparam], ses_grad_fft_[iparam]+nsample_,
             spec_buffer.get());
   fftw_execute(spec_plan.get());
-  std::vector<double> spec_gradient(nsample_);
+
+  Eigen::VectorXd spec_gradient(nsample_);
   double norm { 1.0/double(nsample_) };
   std::transform(spec_buffer.get(), spec_buffer.get()+nsample_,
-                 spec_gradient.begin(),
+                 spec_gradient.data(),
                  [norm](double x){return x*norm;});
   return spec_gradient;
 }
 
-std::vector<double> GeneralPoissonMES::n_electron_spectrum(unsigned n) const
+Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum(unsigned n) const
 {
   if(n==0 or n>config_.num_pe_convolutions())
     throw std::out_of_range("GeneralPoissonMES::n_electron_spectrum: "
@@ -433,26 +440,53 @@ std::vector<double> GeneralPoissonMES::n_electron_spectrum(unsigned n) const
 
   std::copy(nes_fft_[n-1], nes_fft_[n-1]+nsample_, spec_buffer.get());
   fftw_execute(spec_plan.get());
-  std::vector<double> spec(nsample_);
+
+  Eigen::VectorXd spec(nsample_);
   double norm { 1.0/double(nsample_) };
-  std::transform(spec_buffer.get(), spec_buffer.get()+nsample_, spec.begin(),
+  std::transform(spec_buffer.get(), spec_buffer.get()+nsample_, spec.data(),
                  [norm](double x){return x*norm;});
   return spec;
 }
 
-std::vector<double> GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
+Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum_with_pedestal(unsigned n) const
+{
+  if(n==0)return pedestal_spectrum();
+
+  if(n>config_.num_pe_convolutions())
+    throw std::out_of_range("GeneralPoissonMES::n_electron_spectrum_with_pedestal: "
+                            "number of PEs out of range");
+
+  uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
+  assert(spec_buffer);
+
+  uptr_fftw_plan spec_plan = {
+    fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
+                     FFTW_HC2R, 0), fftw_destroy_plan };
+  assert(spec_plan);
+
+  hcvec_scale_and_multiply(spec_buffer.get(), nes_fft_[n-1], ped_fft_,
+                           nsample_, 1.0/double(nsample_));
+
+  fftw_execute(spec_plan.get());
+
+  Eigen::VectorXd spec(nsample_);
+  std::copy(spec_buffer.get(), spec_buffer.get()+nsample_, spec.data());
+  return spec;
+}
+
+Eigen::VectorXd GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
 {
   if(n>config_.num_pe_convolutions())
     throw std::out_of_range("GeneralPoissonMES::mes_n_electron_cpt: "
                             "number of PEs out of range");
 
-  std::vector<double> spec(nsample_);
+  Eigen::VectorXd spec(nsample_);
   double log_nsample = std::log(double(nsample_));
 
   if(n==0)
   {
     double scale = std::exp(-intensity_pe_);
-    std::transform(ped_spec_, ped_spec_+nsample_, spec.begin(),
+    std::transform(ped_spec_, ped_spec_+nsample_, spec.data(),
                    [scale](const double& x){ return x*scale; });
     return spec;
   }
@@ -475,7 +509,7 @@ std::vector<double> GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
                            nsample_, poisson_factor*dx_);
 
   fftw_execute(spec_plan.get());
-  std::copy(spec_buffer.get(), spec_buffer.get()+nsample_, spec.begin());
+  std::copy(spec_buffer.get(), spec_buffer.get()+nsample_, spec.data());
   return spec;
 }
 
@@ -520,87 +554,100 @@ int GeneralPoissonMES::ibin(double x) const
   return thebin;
 }
 
-void GeneralPoissonMES::set_cache()
+void GeneralPoissonMES::set_cache(bool force)
 {
   // THIS FUNCTION IS TOO LONG
 
   bool calc_gradient = can_calculate_parameter_gradient();
   unsigned ses_npar = ses_pdf_->num_parameters();
-  Eigen::VectorXd ses_gradient(ses_npar);
-  ses_gradient.setZero();
-  calin::math::accumulator::LikelihoodAccumulator ses_acc;
-  for(unsigned isample = 0;isample<nsample_;isample++)
+
+  // If the SES has no paramerters then we assume it doesn't change, so no
+  // need to do the FFTs each time
+  if(ses_npar or force)
   {
-    // The SES describes charge delivered by the PMT and is assumed be
-    // positive. Hence the function is sampled from zero here and not
-    // from x0. We could allow negative charges by using the domain
-    // axis limits to specify the minimum bound. We would need to
-    // adjust x0 to compensate for where the pedestal distribution
-    // would end up.
-    const double x = ses_x(isample); // (0.5+double(isample))*dx_;
-    double val;
-    if(calc_gradient)
+    Eigen::VectorXd ses_gradient(ses_npar);
+    ses_gradient.setZero();
+    calin::math::accumulator::LikelihoodAccumulator ses_acc;
+    for(unsigned isample = 0;isample<nsample_;isample++)
     {
-      val = ses_pdf_->value_and_parameter_gradient_1d(x, ses_gradient);
-      if(!std::isfinite(val)){ val = 0; ses_gradient.setZero(); }
-      for(unsigned ipar=0;ipar<ses_npar;ipar++)
-        ses_grad_fft_[ipar][isample] = ses_gradient[ipar];
+      // The SES describes charge delivered by the PMT and is assumed be
+      // positive. Hence the function is sampled from zero here and not
+      // from x0. We could allow negative charges by using the domain
+      // axis limits to specify the minimum bound. We would need to
+      // adjust x0 to compensate for where the pedestal distribution
+      // would end up.
+      const double x = ses_x(isample); // (0.5+double(isample))*dx_;
+      double val;
+      if(calc_gradient)
+      {
+        val = ses_pdf_->value_and_parameter_gradient_1d(x, ses_gradient);
+        if(!std::isfinite(val)){ val = 0; ses_gradient.setZero(); }
+        for(unsigned ipar=0;ipar<ses_npar;ipar++)
+          ses_grad_fft_[ipar][isample] = ses_gradient[ipar];
+      }
+      else
+      {
+        val = ses_pdf_->value_1d(x);
+        if(!std::isfinite(val))val = 0;
+      }
+      nes_fft_[0][isample] = val;
+      ses_acc.accumulate(val);
     }
-    else
+
+    if(config_.ses_norm_warning_threshold()>0 and
+      (config_.max_ses_norm_warning()==0 or
+        n_ses_norm_warning_<config_.max_ses_norm_warning()) and
+      std::abs(ses_acc.total() * dx_ - 1.0) >
+        config_.ses_norm_warning_threshold()/double(nsample_))
     {
-      val = ses_pdf_->value_1d(x);
-      if(!std::isfinite(val))val = 0;
+      // The owls are not what they seem
+      LOG(WARNING) << "SES normalization is significantly different from 1.0: "
+                   << ses_acc.total() * dx_ << '\n'
+                   << "SES parameter values : "
+                   << ses_pdf_->parameter_values().transpose();
+      n_ses_norm_warning_++;
+      if(n_ses_norm_warning_ == config_.ses_norm_warning_threshold())
+        LOG(INFO) << "Further SES normalization warnings will be suppressed!";
     }
-    nes_fft_[0][isample] = val;
-    ses_acc.accumulate(val);
-  }
 
-  if(config_.ses_norm_warning_threshold()>0 and
-    (config_.max_ses_norm_warning()==0 or
-      n_ses_norm_warning_<config_.max_ses_norm_warning()) and
-    std::abs(ses_acc.total() * dx_ - 1.0) >
-      config_.ses_norm_warning_threshold()/double(nsample_))
-  {
-    // The owls are not what they seem
-    LOG(WARNING) << "SES normalization is significantly different from 1.0: "
-                 << ses_acc.total() * dx_ << '\n'
-                 << "SES parameter values : "
-                 << ses_pdf_->parameter_values().transpose();
-    n_ses_norm_warning_++;
-    if(n_ses_norm_warning_ == config_.ses_norm_warning_threshold())
-      LOG(INFO) << "Further SES normalization warnings will be suppressed!";
-  }
+    fftw_execute(ses_plan_fwd_);
+    for(unsigned ines=1;ines<config_.num_pe_convolutions();ines++)
+      hcvec_scale_and_multiply(nes_fft_[ines], nes_fft_[ines-1], nes_fft_[0],
+                               nsample_, dx_);
+  } // if(ses_npar or force)
 
-  fftw_execute(ses_plan_fwd_);
-  for(unsigned ines=1;ines<config_.num_pe_convolutions();ines++)
-    hcvec_scale_and_multiply(nes_fft_[ines], nes_fft_[ines-1], nes_fft_[0],
-                             nsample_, dx_);
-
+  // Same for PED, if it has no paramerters then we assume it doesn't change,
+  // so, again, no need to do the FFTs each time
   unsigned ped_npar = ped_pdf_->num_parameters();
-  Eigen::VectorXd ped_gradient(ped_npar);
-  ped_gradient.setZero();
-  for(unsigned isample = 0;isample<nsample_;isample++)
+  if(ped_npar or force)
   {
-    const double x = ped_x(isample); // x0_ + (0.5+double(isample))*dx_;
-    double val;
-    if(calc_gradient)
+    Eigen::VectorXd ped_gradient(ped_npar);
+    ped_gradient.setZero();
+    for(unsigned isample = 0;isample<nsample_;isample++)
     {
-      val = ped_pdf_->value_and_parameter_gradient_1d(x, ped_gradient);
-      if(!std::isfinite(val)){ val = 0; ped_gradient.setZero(); }
-      for(unsigned ipar=0;ipar<ped_npar;ipar++)
-        ped_grad_[ipar][isample] = ped_gradient[ipar];
+      const double x = ped_x(isample); // x0_ + (0.5+double(isample))*dx_;
+      double val;
+      if(calc_gradient)
+      {
+        val = ped_pdf_->value_and_parameter_gradient_1d(x, ped_gradient);
+        if(!std::isfinite(val)){ val = 0; ped_gradient.setZero(); }
+        for(unsigned ipar=0;ipar<ped_npar;ipar++)
+          ped_grad_[ipar][isample] = ped_gradient[ipar];
+      }
+      else
+      {
+        val = ped_pdf_->value_1d(x);
+        if(!std::isfinite(val))val = 0;
+      }
+      ped_spec_[isample] = ped_fft_[isample] = val;
     }
-    else
-    {
-      val = ped_pdf_->value_1d(x);
-      if(!std::isfinite(val))val = 0;
-    }
-    ped_spec_[isample] = ped_fft_[isample] = val;
-  }
-  fftw_execute(ped_plan_fwd_);
+    fftw_execute(ped_plan_fwd_);
+  } // if(ped_npar or force)
 
   if(config_.include_on_off_ped_shift())
   {
+    Eigen::VectorXd ped_gradient(ped_npar);
+    ped_gradient.setZero();
     for(unsigned isample = 0;isample<nsample_;isample++)
     {
       const double x = ped_x(isample) + off_ped_shift_dc_;

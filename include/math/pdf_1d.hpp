@@ -36,6 +36,7 @@
 
 namespace calin { namespace math { namespace pdf_1d {
 
+#if 0
 class Parameterizable1DPDF: public function::ParameterizableSingleAxisFunction
 {
 public:
@@ -63,14 +64,10 @@ public:
                                          VecRef gradient) override = 0;
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                               MatRef hessian) override = 0;
-
-  double error_up() override = 0;
-
-  // Moments
-
-  virtual bool can_calculate_mean_and_variance() = 0;
-  virtual void mean_and_variance(double& mean, double& var) = 0;
 };
+#else
+CALIN_TYPEALIAS(Parameterizable1DPDF, function::ParameterizableSingleAxisFunction);
+#endif
 
 // *****************************************************************************
 //
@@ -81,8 +78,8 @@ public:
 class GaussianPDF: public Parameterizable1DPDF
 {
  public:
-  GaussianPDF(const std::string& xunits = "x-value units", double error_up = 0.5):
-      Parameterizable1DPDF(), xunits_(xunits), error_up_(error_up)
+  GaussianPDF(const std::string& xunits = "x-value units"):
+      Parameterizable1DPDF(), xunits_(xunits)
   { /* nothing to see here */ }
 
   virtual ~GaussianPDF();
@@ -106,14 +103,8 @@ class GaussianPDF: public Parameterizable1DPDF
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                                  MatRef hessian) override;
 
-  double error_up() override;
-
-  bool can_calculate_mean_and_variance() override;
-  void mean_and_variance(double& mean, double& var) override;
-
  protected:
   std::string xunits_;
-  double error_up_ = 0.5;
   double x0_ = 0;
   double s_ = 1;
 };
@@ -121,10 +112,9 @@ class GaussianPDF: public Parameterizable1DPDF
 class BinnedGaussianPDF: public Parameterizable1DPDF
 {
  public:
-  BinnedGaussianPDF(double dx = 0,
-        const std::string& xunits = "x-value units", double error_up = 0.5):
+  BinnedGaussianPDF(double dx = 0, const std::string& xunits = "x-value units"):
       Parameterizable1DPDF(),
-      dx_2_(0.5*dx), xunits_(xunits), error_up_(error_up)
+      dx_2_(0.5*dx), xunits_(xunits)
   { /* nothing to see here */ }
 
   virtual ~BinnedGaussianPDF();
@@ -148,15 +138,9 @@ class BinnedGaussianPDF: public Parameterizable1DPDF
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                                  MatRef hessian) override;
 
-  double error_up() override;
-
-  bool can_calculate_mean_and_variance() override;
-  void mean_and_variance(double& mean, double& var) override;
-
 protected:
   double dx_2_ = 0;
   std::string xunits_;
-  double error_up_ = 0.5;
   double x0_ = 0;
   double s_ = 1;
 };
@@ -167,9 +151,8 @@ class LimitedGaussianPDF: public BinnedGaussianPDF
   constexpr static double inf = std::numeric_limits<double>::infinity();
 
   LimitedGaussianPDF(double xlo, double xhi, double dx = 0,
-    const std::string& xunits = "x-value units",
-    double error_up = 0.5):
-      BinnedGaussianPDF(dx, xunits, error_up), xlo_(xlo), xhi_(xhi),
+    const std::string& xunits = "x-value units"):
+      BinnedGaussianPDF(dx, xunits), xlo_(xlo), xhi_(xhi),
       norm_gradient_(2), norm_hessian_(2,2) { set_cache(); }
 
   virtual ~LimitedGaussianPDF();
@@ -186,8 +169,6 @@ class LimitedGaussianPDF: public BinnedGaussianPDF
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                                  MatRef hessian) override;
 
-  bool can_calculate_mean_and_variance() override;
-  void mean_and_variance(double& mean, double& var) override;
 protected:
   void set_cache();
   double xlo_;
@@ -203,9 +184,8 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   constexpr static double inf = std::numeric_limits<double>::infinity();
 
   LimitedExponentialPDF(double xlo=0.0, double xhi=inf, double dx = 0,
-			const std::string& xunits = "x-value units",
-                        double error_up = 0.5):
-    Parameterizable1DPDF(), xunits_(xunits), error_up_(error_up),
+			const std::string& xunits = "x-value units"):
+    Parameterizable1DPDF(), xunits_(xunits),
     xlo_(xlo), xhi_(xhi), dx_(dx) { set_cache(); }
 
   virtual ~LimitedExponentialPDF();
@@ -234,16 +214,11 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                                  MatRef hessian) override;
 
-  double error_up() override;
-
-  bool can_calculate_mean_and_variance() override;
-  void mean_and_variance(double& mean, double& var) override;
  protected:
   void set_cache();
   std::string xunits_;
   double limit_a_lo_    = -inf;
   double limit_a_hi_    = inf;
-  double error_up_      = 0.5;
   double a_             = 1.0;
   double xlo_;
   double xhi_;
@@ -253,14 +228,13 @@ class LimitedExponentialPDF: public Parameterizable1DPDF
   double norm_hessian_  = 0.0;
 };
 
-class TwoComponentPDF: public Parameterizable1DPDF
+class TwoComponent1DPDF: public Parameterizable1DPDF
 {
  public:
-  TwoComponentPDF(Parameterizable1DPDF* pdf1, const std::string& cpt1_name,
+  TwoComponent1DPDF(Parameterizable1DPDF* pdf1, const std::string& cpt1_name,
                   Parameterizable1DPDF* pdf2, const std::string& cpt2_name,
-                  bool adopt_pdf1 = false, bool adopt_pdf2 = false,
-                  double error_up = 0.5);
-  virtual ~TwoComponentPDF();
+                  bool adopt_pdf1 = false, bool adopt_pdf2 = false);
+  virtual ~TwoComponent1DPDF();
 
   unsigned num_parameters() override;
   std::vector<function::ParameterAxis> parameters() override;
@@ -282,13 +256,6 @@ class TwoComponentPDF: public Parameterizable1DPDF
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                                  MatRef hessian) override;
 
-  double error_up() override;
-
-  // Moments
-
-  bool can_calculate_mean_and_variance() override;
-  void mean_and_variance(double& mean, double& var) override;
-
  protected:
   double prob_cpt1_;
   Parameterizable1DPDF* pdf1_;
@@ -297,7 +264,6 @@ class TwoComponentPDF: public Parameterizable1DPDF
   Parameterizable1DPDF* pdf2_;
   bool adopt_pdf2_;
   std::string cpt2_name_;
-  double error_up_;
 };
 
 } } } // namespace calin::math::pdf_1d

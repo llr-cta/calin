@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -40,7 +40,7 @@ using namespace calin::calib::spe_fit;
 int main(int argc, char** argv)
 {
   constexpr double inf = std::numeric_limits<double>::infinity();
-  
+
   std::string progname(*argv);
   argc--, argv++;
 
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 
   std::istream* stream = &std::cin;
   std::ifstream* fstream = nullptr;
-  
+
   if(std::string(*argv) != "-")
     stream = fstream = new std::ifstream(*argv);
   argc--, argv++;
@@ -66,14 +66,14 @@ int main(int argc, char** argv)
     mes_hist.insert(xval);
     *stream >> xval;
   }
-  
+
   delete fstream;
 
   pdf_1d::GaussianPDF ped;
   pdf_1d::LimitedExponentialPDF exp_pdf(0,inf,mes_hist.dxval());
   exp_pdf.limit_scale(0.1, inf);
   pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
-  pdf_1d::TwoComponentPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+  pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
   GeneralPoissonMES mes_model(mes_hist.xval_left(0),
                               mes_hist.dxval(),
                               mes_hist.size(), &ses, &ped);
@@ -110,15 +110,15 @@ int main(int argc, char** argv)
             << std::sqrt(0.5*err_mat(6,6)) << '\n';
 
   std::ofstream file("spec.dat");
-  std::vector<double> mes_spec = mes_model.multi_electron_spectrum();
-  std::vector<double> ped_spec = mes_model.pedestal_spectrum();
-  std::vector<double> one_es_spec = mes_model.n_electron_spectrum(1);
-  std::vector<double> two_es_spec = mes_model.n_electron_spectrum(2);
-  std::vector<double> three_es_spec = mes_model.n_electron_spectrum(3);
-  std::vector<double> zero_es_cpt = mes_model.mes_n_electron_cpt(0);
-  std::vector<double> one_es_cpt = mes_model.mes_n_electron_cpt(1);
-  std::vector<double> two_es_cpt = mes_model.mes_n_electron_cpt(2);
-  std::vector<double> three_es_cpt = mes_model.mes_n_electron_cpt(3);
+  Eigen::VectorXd mes_spec = mes_model.multi_electron_spectrum();
+  Eigen::VectorXd ped_spec = mes_model.pedestal_spectrum();
+  Eigen::VectorXd one_es_spec = mes_model.n_electron_spectrum(1);
+  Eigen::VectorXd two_es_spec = mes_model.n_electron_spectrum(2);
+  Eigen::VectorXd three_es_spec = mes_model.n_electron_spectrum(3);
+  Eigen::VectorXd zero_es_cpt = mes_model.mes_n_electron_cpt(0);
+  Eigen::VectorXd one_es_cpt = mes_model.mes_n_electron_cpt(1);
+  Eigen::VectorXd two_es_cpt = mes_model.mes_n_electron_cpt(2);
+  Eigen::VectorXd three_es_cpt = mes_model.mes_n_electron_cpt(3);
 
   for(unsigned i=0;i<mes_spec.size();i++)
     file << mes_hist.xval_left(0)+mes_hist.dxval()*(0.5+i) << ' '
@@ -126,5 +126,5 @@ int main(int argc, char** argv)
          << ped_spec[i] << ' ' << one_es_spec[i] << ' '
          << two_es_spec[i] << ' ' << three_es_spec[i] << ' '
          << zero_es_cpt[i] << ' ' << one_es_cpt[i] << ' '
-         << two_es_cpt[i] << ' ' << three_es_cpt[i] << ' ' << '\n';  
+         << two_es_cpt[i] << ' ' << three_es_cpt[i] << ' ' << '\n';
 }

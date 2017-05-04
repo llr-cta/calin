@@ -45,6 +45,17 @@ Parameterizable::~Parameterizable()
   // nothing to see here
 }
 
+int Parameterizable::parameter_name_to_index(const std::string& name)
+{
+  int index = 0;
+  for(const auto& ipar : this->parameters())
+  {
+    if(ipar.name == name)return index;
+    else index++;
+  }
+  return -1;
+}
+
 MultiAxisFunction::~MultiAxisFunction()
 {
   // nothing to see here
@@ -59,35 +70,6 @@ MultiAxisFunction::~MultiAxisFunction()
 SingleAxisFunction::~SingleAxisFunction()
 {
   // nothing to see here
-}
-
-unsigned SingleAxisFunction::num_domain_axes()
-{
-  return 1;
-}
-
-std::vector<DomainAxis> SingleAxisFunction::domain_axes()
-{
-  return { domain_axis() };
-}
-
-double SingleAxisFunction::value(ConstVecRef x)
-{
-  return value_1d(x(0));
-}
-
-double SingleAxisFunction::value_and_gradient(ConstVecRef x, VecRef gradient)
-{
-  gradient.resize(1);
-  return value_and_gradient_1d(x(0),gradient(0));
-}
-
-double SingleAxisFunction::
-value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
-{
-  gradient.resize(1);
-  hessian.resize(1,1);
-  return value_gradient_and_hessian_1d(x(0),gradient(0),hessian(0,0));
 }
 
 // *****************************************************************************
@@ -106,19 +88,6 @@ ParameterizableSingleAxisFunction::~ParameterizableSingleAxisFunction()
   // nothing to see here
 }
 
-double ParameterizableSingleAxisFunction::
-value_and_parameter_gradient(ConstVecRef x, VecRef gradient)
-{
-  return value_and_parameter_gradient_1d(x[0], gradient);
-}
-
-double ParameterizableSingleAxisFunction::
-value_parameter_gradient_and_hessian(ConstVecRef x, VecRef gradient,
-                                     MatRef hessian)
-{
-  return value_parameter_gradient_and_hessian_1d(x[0], gradient, hessian);
-}
-
 // *****************************************************************************
 //
 // FreezeThawFunction
@@ -127,7 +96,7 @@ value_parameter_gradient_and_hessian(ConstVecRef x, VecRef gradient,
 
 FreezeThawFunction::
 FreezeThawFunction(MultiAxisFunction* fcn, bool adopt_fcn):
-    MultiAxisFunction(), fcn_(fcn), adopt_fcn_(adopt_fcn),
+    ParameterizableMultiAxisFunction(), fcn_(fcn), adopt_fcn_(adopt_fcn),
     free_axes_(fcn->num_domain_axes()), frozen_axes_(),
     xfrozen_(fcn->num_domain_axes())
 {
@@ -343,28 +312,28 @@ value_parameter_gradient_and_hessian(ConstVecRef x,
 //
 // *****************************************************************************
 
-PMAFReverser::PMAFReverser(ParameterizableMultiAxisFunction* fcn_deligate,
-                           bool adopt_fcn_deligate, double error_up):
-    ParameterizableMultiAxisFunction(), fcn_deligate_(fcn_deligate),
-    adopt_fcn_deligate_(adopt_fcn_deligate), error_up_(error_up),
-    x_(fcn_deligate->num_domain_axes())
+PMAFReverser::PMAFReverser(ParameterizableMultiAxisFunction* fcn_delegate,
+                           bool adopt_fcn_delegate, double error_up):
+    ParameterizableMultiAxisFunction(), fcn_delegate_(fcn_delegate),
+    adopt_fcn_delegate_(adopt_fcn_delegate), error_up_(error_up),
+    x_(fcn_delegate->num_domain_axes())
 {
   // nothing to see here
 }
 
 PMAFReverser::~PMAFReverser()
 {
-  if(adopt_fcn_deligate_)delete fcn_deligate_;
+  if(adopt_fcn_delegate_)delete fcn_delegate_;
 }
 
 unsigned PMAFReverser::num_parameters()
 {
-  return fcn_deligate_->num_domain_axes();
+  return fcn_delegate_->num_domain_axes();
 }
 
 auto PMAFReverser::parameters() -> std::vector<function::ParameterAxis>
 {
-  return fcn_deligate_->domain_axes();
+  return fcn_delegate_->domain_axes();
 }
 
 Eigen::VectorXd PMAFReverser::parameter_values()
@@ -379,51 +348,51 @@ void PMAFReverser::set_parameter_values(ConstVecRef values)
 
 bool PMAFReverser::can_calculate_parameter_gradient()
 {
-  return fcn_deligate_->can_calculate_gradient();
+  return fcn_delegate_->can_calculate_gradient();
 }
 
 bool PMAFReverser::can_calculate_parameter_hessian()
 {
-  return fcn_deligate_->can_calculate_hessian();
+  return fcn_delegate_->can_calculate_hessian();
 }
 
 unsigned PMAFReverser::num_domain_axes()
 {
-  return fcn_deligate_->num_parameters();
+  return fcn_delegate_->num_parameters();
 }
 
 auto PMAFReverser::domain_axes() -> std::vector<function::DomainAxis>
 {
-  return fcn_deligate_->parameters();
+  return fcn_delegate_->parameters();
 }
 
 double PMAFReverser::value(ConstVecRef x)
 {
-  fcn_deligate_->set_parameter_values(x);
-  return fcn_deligate_->value(x_);
+  fcn_delegate_->set_parameter_values(x);
+  return fcn_delegate_->value(x_);
 }
 
 bool PMAFReverser::can_calculate_gradient()
 {
-  return fcn_deligate_->can_calculate_parameter_gradient();
+  return fcn_delegate_->can_calculate_parameter_gradient();
 }
 
 double PMAFReverser::value_and_gradient(ConstVecRef x, VecRef gradient)
 {
-  fcn_deligate_->set_parameter_values(x);
-  return fcn_deligate_->value_and_parameter_gradient(x_, gradient);
+  fcn_delegate_->set_parameter_values(x);
+  return fcn_delegate_->value_and_parameter_gradient(x_, gradient);
 }
 
 bool PMAFReverser::can_calculate_hessian()
 {
-  return fcn_deligate_->can_calculate_parameter_hessian();
+  return fcn_delegate_->can_calculate_parameter_hessian();
 }
 
 double PMAFReverser::value_gradient_and_hessian(ConstVecRef x, VecRef gradient,
                                                 MatRef hessian)
 {
-  fcn_deligate_->set_parameter_values(x);
-  return fcn_deligate_->value_parameter_gradient_and_hessian(x_, gradient,
+  fcn_delegate_->set_parameter_values(x);
+  return fcn_delegate_->value_parameter_gradient_and_hessian(x_, gradient,
                                                              hessian);
 }
 
@@ -435,15 +404,15 @@ double PMAFReverser::error_up()
 double PMAFReverser::value_and_parameter_gradient(ConstVecRef x,
                                                   VecRef gradient)
 {
-  fcn_deligate_->set_parameter_values(x);
-  return fcn_deligate_->value_and_gradient(x_, gradient);
+  fcn_delegate_->set_parameter_values(x);
+  return fcn_delegate_->value_and_gradient(x_, gradient);
 }
 
 double PMAFReverser::value_parameter_gradient_and_hessian(ConstVecRef x,
                                            VecRef gradient, MatRef hessian)
 {
-  fcn_deligate_->set_parameter_values(x);
-  return fcn_deligate_->value_gradient_and_hessian(x_, gradient, hessian);
+  fcn_delegate_->set_parameter_values(x);
+  return fcn_delegate_->value_gradient_and_hessian(x_, gradient, hessian);
 }
 
 // *****************************************************************************
@@ -687,4 +656,70 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
     }
   }
   return true;
+}
+
+bool calin::math::function::
+gradient_check_par(ParameterizableMultiAxisFunction& fcn, ConstVecRef x,
+  ConstVecRef p, ConstVecRef dp, VecRef good, double max_good)
+{
+  PMAFReverser fcn_r(&fcn);
+  fcn_r.set_parameter_values(x);
+  return gradient_check(fcn_r, p, dp, good, max_good);
+}
+
+bool calin::math::function::
+hessian_check_par(ParameterizableMultiAxisFunction& fcn, ConstVecRef x,
+  ConstVecRef p, ConstVecRef dp, MatRef good, double max_good)
+{
+  PMAFReverser fcn_r(&fcn);
+  fcn_r.set_parameter_values(x);
+  return hessian_check(fcn_r, p, dp, good, max_good);
+}
+
+bool calin::math::function::
+gradient_check(SingleAxisFunction& fcn, double x, double dx, double& good, double max_good)
+{
+  Eigen::VectorXd vx(1);
+  vx << x;
+  Eigen::VectorXd vdx(1);
+  vdx << dx;
+  SingleToMultiAxisFunctionAdapter maf(&fcn);
+  Eigen::VectorXd vgood(1);
+  bool result = gradient_check(maf, vx, vdx, vgood, max_good);
+  good = vgood(0);
+  return result;
+}
+
+bool calin::math::function::
+hessian_check(SingleAxisFunction& fcn, double x, double dx, double& good, double max_good)
+{
+  Eigen::VectorXd vx(1);
+  vx << x;
+  Eigen::VectorXd vdx(1);
+  vdx << dx;
+  SingleToMultiAxisFunctionAdapter maf(&fcn);
+  Eigen::MatrixXd vgood(1,1);
+  bool result = hessian_check(maf, vx, vdx, vgood, max_good);
+  good = vgood(0,0);
+  return result;
+}
+
+bool calin::math::function::
+gradient_check_par(ParameterizableSingleAxisFunction& fcn, double x,
+  ConstVecRef p, ConstVecRef dp, VecRef good, double max_good)
+{
+  Eigen::VectorXd vx(1);
+  vx << x;
+  SingleToParameterizableMultiAxisFunctionAdapter maf(&fcn);
+  return gradient_check_par(maf, vx, p, dp, good, max_good);
+}
+
+bool calin::math::function::
+hessian_check_par(ParameterizableSingleAxisFunction& fcn, double x,
+  ConstVecRef p, ConstVecRef dp, MatRef good, double max_good)
+{
+  Eigen::VectorXd vx(1);
+  vx << x;
+  SingleToParameterizableMultiAxisFunctionAdapter maf(&fcn);
+  return hessian_check_par(maf, vx, p, dp, good, max_good);
 }

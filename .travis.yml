@@ -213,7 +213,7 @@ script:
     make -j3 &&
     make install | tail &&
     make test
-    #cat include/calin_global_config.hpp
+#    ./unit_tests/math/test_data_modeling &&
 
 #after_failure:
 #  - cat CMakeFiles/CMakeError.log

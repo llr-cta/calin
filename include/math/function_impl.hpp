@@ -20,91 +20,148 @@
 
 */
 
+// #include<io/log.hpp>
+
 namespace calin { namespace math { namespace function {
 
-template<typename ParameterizableBaseType>
-ReducedSpaceParameterizable<ParameterizableBaseType>::~ReducedSpaceParameterizable()
+template<typename T>
+BasicReducedSpaceParameterizable<T>::~BasicReducedSpaceParameterizable()
 {
   // nothing to see here
 }
 
-template<typename ParameterizableBaseType>
-unsigned ReducedSpaceParameterizable<ParameterizableBaseType>::num_parameters()
+template<typename T>
+unsigned BasicReducedSpaceParameterizable<T>::num_parameters()
 {
   return subspace_params_.size();
 }
 
-template<typename ParameterizableBaseType> std::vector<ParameterAxis>
-ReducedSpaceParameterizable<ParameterizableBaseType>::parameters()
+template<typename T> std::vector<ParameterAxis>
+BasicReducedSpaceParameterizable<T>::parameters()
 {
   std::vector<ParameterAxis> return_parameters(subspace_params_.size());
-  std::vector<ParameterAxis> axes = ParameterizableBaseType::parameters();
+  std::vector<ParameterAxis> axes = this->delegate_->parameters();
   for(unsigned iparam=0;iparam<subspace_params_.size();iparam++)
-    return_parameters[iparam] = axes[subspace_params_[iparam]];
+    return_parameters[iparam] = std::move(axes[subspace_params_[iparam]]);
   return return_parameters;
 }
 
-template<typename ParameterizableBaseType> Eigen::VectorXd
-ReducedSpaceParameterizable<ParameterizableBaseType>::parameter_values()
+template<typename T> Eigen::VectorXd
+BasicReducedSpaceParameterizable<T>::parameter_values()
 {
-  return original_param_vec_to_subspace(
-    ParameterizableBaseType::parametersparameter_values());
+  return original_param_vec_to_subspace(this->delegate_->parameter_values());
 }
 
-template<typename ParameterizableBaseType> void
-ReducedSpaceParameterizable<ParameterizableBaseType>::set_parameter_values(ConstVecRef values)
+template<typename T> void
+BasicReducedSpaceParameterizable<T>::set_parameter_values(ConstVecRef values)
 {
-  ParameterizableBaseType::
-    set_parameter_values(subspace_param_vec_to_original(values));
+  if(unsigned(values.size()) != subspace_params_.size())
+    throw std::invalid_argument(
+      std::string("Number of parameter values does not match subspace size: "
+      + std::to_string(values.size()) + " != "
+      + std::to_string(subspace_params_.size())));
+  // calin::io::log::LOG(calin::io::log::INFO) << "A: " << values.transpose();
+  // calin::io::log::LOG(calin::io::log::INFO) << "B: " << removed_param_values_.transpose();
+  // calin::io::log::LOG(calin::io::log::INFO) << "C: " << subspace_param_vec_to_original(values).transpose();
+  this->delegate_->set_parameter_values(subspace_param_vec_to_original(values));
 }
 
-template<typename ParameterizableBaseType> bool
-ReducedSpaceParameterizable<ParameterizableBaseType>::
-remove_parameter_from_subspace(unsigned iparam, double value)
+template<typename T> bool BasicReducedSpaceParameterizable<T>::
+remove_parameter_from_subspace(unsigned unmodified_index)
 {
-  removed_param_values_(iparam) = value;
-  auto index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), iparam);
-  if(index == subspace_params_.end() or *index != iparam)return false;
+  auto index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), unmodified_index);
+  if(index == subspace_params_.end() or *index != unmodified_index)return false;
+  removed_param_values_(unmodified_index) = this->delegate_->parameter_values()[unmodified_index];
   subspace_params_.erase(index);
-  index = std::lower_bound(removed_params_.begin(), removed_params_.end(), iparam);
-  removed_params_.insert(index, iparam);
+  index = std::lower_bound(removed_params_.begin(), removed_params_.end(), unmodified_index);
+  removed_params_.insert(index, unmodified_index);
   return true;
 }
 
-template<typename ParameterizableBaseType> bool
-ReducedSpaceParameterizable<ParameterizableBaseType>::replace_parameter(unsigned iparam)
+template<typename T> bool BasicReducedSpaceParameterizable<T>::
+remove_parameter_from_subspace(const std::string& name)
+{
+  int index = this->delegate_->parameter_name_to_index(name);
+  if(index<0)return false;
+  return remove_parameter_from_subspace(unsigned(index));
+}
+
+template<typename T> bool BasicReducedSpaceParameterizable<T>::
+remove_parameter_from_subspace(unsigned unmodified_index, double value)
+{
+  removed_param_values_(unmodified_index) = value;
+  auto index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), unmodified_index);
+  if(index == subspace_params_.end() or *index != unmodified_index)return false;
+  subspace_params_.erase(index);
+  index = std::lower_bound(removed_params_.begin(), removed_params_.end(), unmodified_index);
+  removed_params_.insert(index, unmodified_index);
+  return true;
+}
+
+template<typename T> bool BasicReducedSpaceParameterizable<T>::
+remove_parameter_from_subspace(const std::string& name, double value)
+{
+  int index = this->delegate_->parameter_name_to_index(name);
+  if(index<0)return false;
+  return remove_parameter_from_subspace(unsigned(index), value);
+}
+
+template<typename T> void BasicReducedSpaceParameterizable<T>::
+remove_all_remaining_parameters_from_subspace()
+{
+  while(not subspace_params_.empty())
+    remove_parameter_from_subspace(subspace_params_.front());
+}
+
+template<typename T> bool
+BasicReducedSpaceParameterizable<T>::replace_parameter_in_subspace(unsigned unmodified_index)
 {
   auto index =
-      std::lower_bound(removed_params_.begin(), removed_params_.end(), iparam);
-  if(index == removed_params_.end() or *index != iparam)return false;
+      std::lower_bound(removed_params_.begin(), removed_params_.end(), unmodified_index);
+  if(index == removed_params_.end() or *index != unmodified_index)return false;
   removed_params_.erase(index);
-  index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), iparam);
-  subspace_params_.insert(index, iparam);
+  index = std::lower_bound(subspace_params_.begin(), subspace_params_.end(), unmodified_index);
+  subspace_params_.insert(index, unmodified_index);
   return true;
 }
 
-template<typename ParameterizableBaseType> Eigen::VectorXd
-ReducedSpaceParameterizable<ParameterizableBaseType>::subspace_param_vec_to_original(ConstVecRef values)
+template<typename T> bool BasicReducedSpaceParameterizable<T>::
+replace_parameter_in_subspace(const std::string& name)
 {
-  assert(values.size() == subspace_params_.size());
+  int index = this->delegate_->parameter_name_to_index(name);
+  if(index<0)return false;
+  return replace_parameter_in_subspace(unsigned(index));
+}
+
+template<typename T> void BasicReducedSpaceParameterizable<T>::
+replace_all_parameters_in_subspace()
+{
+  while(not removed_params_.empty())
+    replace_parameter_in_subspace(removed_params_.front());
+}
+
+template<typename T> Eigen::VectorXd
+BasicReducedSpaceParameterizable<T>::subspace_param_vec_to_original(ConstVecRef values)
+{
+  assert(unsigned(values.size()) == subspace_params_.size());
   Eigen::VectorXd o_vec = removed_param_values_;
   for(unsigned iparam=0; iparam!=subspace_params_.size(); iparam++)
     o_vec[subspace_params_[iparam]] = values[iparam];
   return o_vec;
 }
 
-template<typename ParameterizableBaseType> Eigen::VectorXd
-ReducedSpaceParameterizable<ParameterizableBaseType>::original_param_vec_to_subspace(ConstVecRef values)
+template<typename T> Eigen::VectorXd
+BasicReducedSpaceParameterizable<T>::original_param_vec_to_subspace(ConstVecRef values)
 {
-  assert(values.size() == subspace_params_.size()+removed_params_.size());
+  assert(unsigned(values.size()) == subspace_params_.size()+removed_params_.size());
   Eigen::VectorXd m_vec(subspace_params_.size());
   for(unsigned iparam=0; iparam!=subspace_params_.size(); iparam++)
     m_vec[iparam] = values[subspace_params_[iparam]];
   return m_vec;
 }
 
-template<typename ParameterizableBaseType> Eigen::VectorXd
-ReducedSpaceParameterizable<ParameterizableBaseType>::original_param_grad_to_subspace(ConstVecRef grad)
+template<typename T> Eigen::VectorXd
+BasicReducedSpaceParameterizable<T>::original_param_grad_to_subspace(ConstVecRef grad)
 {
   assert(grad.size() == subspace_params_.size()+removed_params_.size());
   Eigen::VectorXd subspace_grad(subspace_params_.size());
@@ -113,11 +170,11 @@ ReducedSpaceParameterizable<ParameterizableBaseType>::original_param_grad_to_sub
   return subspace_grad;
 }
 
-template<typename ParameterizableBaseType> Eigen::MatrixXd
-ReducedSpaceParameterizable<ParameterizableBaseType>::original_param_hess_to_subspace(ConstMatRef hess)
+template<typename T> Eigen::MatrixXd
+BasicReducedSpaceParameterizable<T>::original_param_hess_to_subspace(ConstMatRef hess)
 {
-  assert(hess.rows() == subspace_params_.size()+removed_params_.size());
-  assert(hess.cols() == subspace_params_.size()+removed_params_.size());
+  assert(unsigned(hess.rows()) == subspace_params_.size()+removed_params_.size());
+  assert(unsigned(hess.cols()) == subspace_params_.size()+removed_params_.size());
   Eigen::MatrixXd subspace_hess(subspace_params_.size(),this->subspace_params_.size());
   for(unsigned iparam=0; iparam!=subspace_params_.size(); iparam++)
     for(unsigned jparam=0; jparam!=subspace_params_.size(); jparam++)
@@ -125,63 +182,31 @@ ReducedSpaceParameterizable<ParameterizableBaseType>::original_param_hess_to_sub
   return subspace_hess;
 }
 
-template<typename ParameterizableBaseType>
-ReducedSpaceParameterizableMultiAxisFunction<ParameterizableBaseType>::
-~ReducedSpaceParameterizableMultiAxisFunction()
+template<typename T>
+BasicReducedSpaceParameterizableSingleAxisFunction<T>::
+~BasicReducedSpaceParameterizableSingleAxisFunction()
 {
   // nothing to see here
 }
 
-template<typename ParameterizableBaseType>
-double ReducedSpaceParameterizableMultiAxisFunction<ParameterizableBaseType>::
-value_and_parameter_gradient(ConstVecRef x, VecRef gradient)
-{
-  Eigen::VectorXd orig_grad(this->subspace_params_.size() + this->removed_params_.size());
-  double val = ParameterizableBaseType::value_and_parameter_gradient(x, orig_grad);
-  gradient = this->original_param_grad_to_subspace(orig_grad);
-  return val;
-}
-
-template<typename ParameterizableBaseType>
-double ReducedSpaceParameterizableMultiAxisFunction<ParameterizableBaseType>::
-value_parameter_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
-{
-  Eigen::VectorXd orig_grad(this->subspace_params_.size() + this->removed_params_.size());
-  Eigen::MatrixXd orig_hess(this->subspace_params_.size() + this->removed_params_.size(),
-    this->subspace_params_.size() + this->removed_params_.size());
-  double val = ParameterizableBaseType::
-    value_and_parameter_gradient_and_hessian(x, orig_grad, orig_hess);
-  gradient = this->original_param_grad_to_subspace(orig_grad);
-  hessian = this->original_param_hess_to_subspace(orig_hess);
-  return val;
-}
-
-template<typename ParameterizableBaseType>
-ReducedSpaceParameterizableSingleAxisFunction<ParameterizableBaseType>::
-~ReducedSpaceParameterizableSingleAxisFunction()
-{
-  // nothing to see here
-}
-
-template<typename ParameterizableBaseType> double
-ReducedSpaceParameterizableSingleAxisFunction<ParameterizableBaseType>::
+template<typename T>
+double BasicReducedSpaceParameterizableSingleAxisFunction<T>::
 value_and_parameter_gradient_1d(double x, VecRef gradient)
 {
   Eigen::VectorXd orig_grad(this->subspace_params_.size() + this->removed_params_.size());
-  double val = ParameterizableBaseType::value_and_parameter_gradient_1d(x, orig_grad);
+  double val = this->delegate_->value_and_parameter_gradient_1d(x, orig_grad);
   gradient = this->original_param_grad_to_subspace(orig_grad);
   return val;
 }
 
-template<typename ParameterizableBaseType> double
-ReducedSpaceParameterizableSingleAxisFunction<ParameterizableBaseType>::
+template<typename T>
+double BasicReducedSpaceParameterizableSingleAxisFunction<T>::
 value_parameter_gradient_and_hessian_1d(double x, VecRef gradient, MatRef hessian)
 {
-  Eigen::VectorXd orig_grad(this->subspace_params_.size() + this->removed_params_.size());
-  Eigen::MatrixXd orig_hess(this->subspace_params_.size() + this->removed_params_.size(),
-    this->subspace_params_.size() + this->removed_params_.size());
-  double val = ParameterizableBaseType::
-    value_and_parameter_gradient_and_hessian_1d(x, orig_grad, orig_hess);
+  unsigned norig = this->subspace_params_.size() + this->removed_params_.size();
+  Eigen::VectorXd orig_grad(norig);
+  Eigen::MatrixXd orig_hess(norig, norig);
+  double val = this->delegate_->value_parameter_gradient_and_hessian_1d(x, orig_grad, orig_hess);
   gradient = this->original_param_grad_to_subspace(orig_grad);
   hessian = this->original_param_hess_to_subspace(orig_hess);
   return val;

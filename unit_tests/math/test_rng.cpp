@@ -269,7 +269,7 @@ TEST(TestRNG, RestoreFromSeedOnlyProto)
 
 template<typename T> std::tuple<double, double, double>
 calc_moments(const T& generator, bool print = false,
-             RNGCore* core = new NR3RNGCore(12345 /*RNG::uint64_from_random_device()*/),
+             RNGCore* core = new NR3RNGCore(RNG::std_test_seed /*RNG::uint64_from_random_device()*/),
              unsigned N = 1000000)
 {
   RNG rng(core, true);

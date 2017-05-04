@@ -34,7 +34,9 @@ using namespace calin::math::pdf_1d;
 
 using function::assign_parameters;
 
+#if 0
 Parameterizable1DPDF::~Parameterizable1DPDF()
 {
   // nothing to see here
 }
+#endif

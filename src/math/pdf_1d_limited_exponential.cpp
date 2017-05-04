@@ -165,21 +165,6 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
   return norm_*val;
 }
 
-double LimitedExponentialPDF::error_up()
-{
-  return error_up_;
-}
-
-bool LimitedExponentialPDF::can_calculate_mean_and_variance()
-{
-  return false;
-}
-
-void LimitedExponentialPDF::mean_and_variance(double& mean, double& var)
-{
-  assert(0);
-}
-
 void LimitedExponentialPDF::set_cache()
 {
   double ehi         = 0.0;
