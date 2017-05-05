@@ -272,6 +272,64 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
   return acc.total();
 }
 
+template<typename F> double integrate_binned_in_extendable_window(
+  F f, calin::math::pdf_1d::Parameterizable1DPDF* pdf, double x0, double x1,
+  double dx, double norm_accuracy = 1e-6)
+{
+  calin::math::accumulator::LikelihoodAccumulator norm_acc;
+  calin::math::accumulator::LikelihoodAccumulator integrand_acc;
+  double p = std::numeric_limits<double>::infinity();
+  double x;
+  for(x=x0; x<x1; x+=dx) {
+    p = pdf->value_1d(x);
+    if(p<=0)continue;
+    norm_acc.accumulate(p);
+    integrand_acc.accumulate(f(x,p) * p);
+  }
+  double p0 = std::numeric_limits<double>::infinity();
+  double p1 = p;
+  x1 = x;
+  bool norm_target = (1.0-norm_accuracy)/dx;
+  unsigned nzero = 0;
+  while(norm_acc.total() < norm_target and nzero<100) {
+    double* pp = nullptr;
+    if(p0 > p1) {
+      x0 -= dx;
+      x = x0;
+      pp = &p0;
+    } else {
+      x1 += dx;
+      x = x1;
+      pp = &p1;
+    }
+    p = pdf->value_1d(x);
+    if(p<=0){
+      ++nzero;
+      continue;
+    }
+    norm_acc.accumulate(p);
+    integrand_acc.accumulate(f(x,p) * p);
+    nzero = 0;
+    *pp = p;
+  }
+  return integrand_acc.total();
+}
+
+double IID1DDataMEstimateLikelihoodFunction::expectation_value(ConstVecRef x)
+{
+  if(dx_ == 0)
+    throw std::runtime_error("Calculation of unbinned expectation_value not supported");
+  return integrate_binned_in_extendable_window([this](double x, double p) {
+    return rho_->value_1d(-std::log(p)); }, pdf_, x_.front(), x_.back()+0.5*dx_, dx_);
+}
+
+double IID1DDataMEstimateLikelihoodFunction::expectation_variance(ConstVecRef x)
+{
+  if(dx_ == 0)
+    throw std::runtime_error("Calculation of unbinned expectation_variance not supported");
+
+}
+
 // -----------------------------------------------------------------------------
 //
 // Chi-squared version of fitter

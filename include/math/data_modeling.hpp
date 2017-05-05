@@ -108,7 +108,7 @@ public:
     calin::math::function::MultiAxisFunction(),
     pdf_(pdf), adopt_pdf_(adopt_pdf), rho_(rho), adopt_rho_(adopt_rho),
     npar_(pdf_->num_parameters()),
-    x_(x), w_(x.size(), 1.0) {
+    x_(x), w_(x.size(), 1.0), dx_(0) {
       // nothing to see here
   }
 
@@ -118,29 +118,29 @@ public:
     calin::math::function::MultiAxisFunction(),
     pdf_(pdf), adopt_pdf_(adopt_pdf), rho_(rho), adopt_rho_(adopt_rho),
     npar_(pdf_->num_parameters()),
-    x_(calin::eigen_to_stdvec(x)), w_(x.size(), 1.0) {
+    x_(calin::eigen_to_stdvec(x)), w_(x.size(), 1.0), dx_(0) {
       // nothing to see here
   }
 
   IID1DDataMEstimateLikelihoodFunction(calin::math::pdf_1d::Parameterizable1DPDF* pdf,
       calin::math::m_estimate::LikelihoodRhoFunction* rho,
-      const std::vector<double>& x, const std::vector<double>& w,
+      const std::vector<double>& x, const std::vector<double>& w, double dx = 0,
       bool adopt_pdf = false, bool adopt_rho = false):
     calin::math::function::MultiAxisFunction(),
     pdf_(pdf), adopt_pdf_(adopt_pdf), rho_(rho), adopt_rho_(adopt_rho),
     npar_(pdf_->num_parameters()),
-    x_(x), w_(w) {
+    x_(x), w_(w), dx_(dx) {
       w_.resize(x_.size(), 1.0);
   }
 
   IID1DDataMEstimateLikelihoodFunction(calin::math::pdf_1d::Parameterizable1DPDF* pdf,
       calin::math::m_estimate::LikelihoodRhoFunction* rho,
-      const Eigen::VectorXd& x, const Eigen::VectorXd& w,
+      const Eigen::VectorXd& x, const Eigen::VectorXd& w, double dx = 0,
       bool adopt_pdf = false, bool adopt_rho = false):
     calin::math::function::MultiAxisFunction(),
     pdf_(pdf), adopt_pdf_(adopt_pdf), rho_(rho), adopt_rho_(adopt_rho),
     npar_(pdf_->num_parameters()),
-    x_(calin::eigen_to_stdvec(x)), w_(calin::eigen_to_stdvec(w)) {
+    x_(calin::eigen_to_stdvec(x)), w_(calin::eigen_to_stdvec(w)), dx_(dx) {
       w_.resize(x_.size(), 1.0);
   }
 
@@ -152,7 +152,7 @@ public:
     pdf_(pdf), adopt_pdf_(adopt_pdf), rho_(rho), adopt_rho_(adopt_rho),
     npar_(pdf_->num_parameters()),
     x_(calin::eigen_to_stdvec(hist.all_xval_center())),
-    w_(calin::eigen_to_stdvec(hist.all_weight())) {
+    w_(calin::eigen_to_stdvec(hist.all_weight())), dx_(hist.dxval()) {
       // nothing to see here
   }
 
@@ -168,6 +168,9 @@ public:
                                     MatRef hessian) override;
   double error_up() override { return 0.5; }
 
+  double expectation_value(ConstVecRef x);
+  double expectation_variance(ConstVecRef x);
+
 protected:
   calin::math::pdf_1d::Parameterizable1DPDF* pdf_ = nullptr;
   bool adopt_pdf_ = false;
@@ -176,6 +179,7 @@ protected:
   unsigned npar_ = 0;
   std::vector<double> x_;
   std::vector<double> w_;
+  double dx_ = 0;
 };
 
 
