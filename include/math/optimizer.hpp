@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/math/optimizer.hpp -- Stephen Fegan -- 2015-03-12
 
@@ -8,11 +8,11 @@
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -32,7 +32,7 @@
 
 namespace calin { namespace math { namespace optimizer {
 
-enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY, 
+enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY,
     SUMMARY_AND_PROGRESS, SUMMARY_AND_ALL_FCN_EVALS, ELEVATED, MAX };
 
 enum class OptimizationStatus { TOLERANCE_REACHED, STOPPED_AT_MAXCALLS,
@@ -46,7 +46,7 @@ class Optimizer
   constexpr static double inf = std::numeric_limits<double>::infinity();
   constexpr static double pos_inf = inf;
   constexpr static double neg_inf = -inf;
-  
+
   CALIN_TYPEALIAS(VerbosityLevel, OptimizerVerbosityLevel);
 
   Optimizer(function::MultiAxisFunction* fcn, bool adopt_fcn = false):
@@ -62,14 +62,14 @@ class Optimizer
   virtual bool can_use_gradient() = 0;
   virtual bool can_use_hessian() = 0;
   virtual bool can_impose_box_constraints() = 0;
-  
+
   virtual OptimizationStatus minimize(VecRef xopt, double& fopt) = 0;
 
   unsigned num_iterations() const { return iterations_; }
   double best_evaluation(VecRef xbest) const { xbest=xbest_; return fbest_; }
   OptimizationStatus last_minimize_status() const { return opt_status_; }
   const std::string& last_minimize_message() const { return opt_message_; }
-  
+
   virtual ErrorMatrixStatus error_matrix_estimate(MatRef error_matrix) = 0;
   virtual ErrorMatrixStatus
   calc_error_matrix_and_eigenvectors(MatRef error_matrix,
@@ -83,7 +83,7 @@ class Optimizer
         calc_error_matrix_and_eigenvectors(error_matrix, eigenvalues,
                                            eigenvectors);
   }
-  
+
   void set_verbosity_level(VerbosityLevel verbose = VerbosityLevel::SILENT) {
     verbose_=verbose; }
   VerbosityLevel verbosity_level() const { return verbose_; }
@@ -102,7 +102,7 @@ class Optimizer
 
   double step_size_scale_factor() const { return stepsize_scale_; }
   void set_step_size_scale_factor(double sss = 1.0) { stepsize_scale_ = sss; }
-  
+
   void set_initial_values(const std::vector<double>& x0 = {}) { x0_=x0; }
   void set_initial_values(ConstVecRef x0) {
     x0_.assign(x0.data(),x0.data()+x0.size()); }
@@ -112,10 +112,10 @@ class Optimizer
     xlim_lo_[ipar]=lim; }
   void set_limit_hi(unsigned ipar, double lim) {
     if(ipar>=xlim_hi_.size())xlim_hi_.resize(ipar+1, pos_inf);
-    xlim_hi_[ipar]=lim; }    
+    xlim_hi_[ipar]=lim; }
   void set_limits_lo(const std::vector<double>& xlim = {}) { xlim_lo_ = xlim; }
   void set_limits_hi(const std::vector<double>& xlim = {}) { xlim_hi_ = xlim; }
-  
+
   void clear_initial_values() { x0_.clear(); }
   void clear_scale() { xscale_.clear(); }
   void clear_limit_lo(unsigned ipar) {
@@ -135,6 +135,9 @@ class Optimizer
   static Optimizer* create_optimizer_by_name(const std::string& name,
                     function::MultiAxisFunction* fcn, bool adopt_fcn = false);
  protected:
+  bool is_near_lo_limit(unsigned iaxis, double value) const;
+  bool is_near_hi_limit(unsigned iaxis, double value) const;
+
   void opt_starting(const std::string& opt_name,
                     bool requires_gradient, bool requires_hessian,
                     const std::vector<double>& lower_limit,
@@ -145,7 +148,7 @@ class Optimizer
                     const Eigen::MatrixXd* hessian = nullptr);
   void opt_finished(OptimizationStatus status, double fopt,
                     const Eigen::VectorXd& xopt, const double* edm = nullptr);
-  
+
   function::MultiAxisFunction* fcn_  { nullptr };
   bool adopt_fcn_ { false };
   VerbosityLevel verbose_ { VerbosityLevel::SILENT };

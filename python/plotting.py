@@ -61,3 +61,15 @@ def plot_histogram(h, *args, **nargs):
         raise Exception('Unknown histogram type: '+type(h))
     so = plt.step(hx,hy, where='post', *args, **nargs)
     return so
+
+def plot_histogram_cumulative(h, *args, **nargs):
+    if type(h) is calin.math.histogram.SimpleHist:
+        hx = h.all_xval_left()
+        hy = h.all_weight()
+    elif type(h) is calin.ix.math.histogram.Histogram1DData:
+        hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
+        hy = h.bins_view()
+    else:
+        raise Exception('Unknown histogram type: '+type(h))
+    so = plt.step(hx,np.cumsum(hy), where='post', *args, **nargs)
+    return so

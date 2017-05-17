@@ -93,8 +93,8 @@ LogQuadraticSpline1DPDF::parameters()
 {
   std::vector<calin::math::function::ParameterAxis> axes;
   std::string p0_name;
-  if(p0_type_ == ParamZeroType::SLOPE)p0_name = "dy_dx(";
-  else p0_name = "2d2y_dx2(";
+  if(p0_type_ == ParamZeroType::SLOPE)p0_name = "dy/dx(";
+  else p0_name = "d^2y/2dx^2(";
   if(p0_loc_ == ParamZeroLocation::RIGHT)
     p0_name += std::to_string(xknot_(xknot_.size()-1));
   else p0_name += std::to_string(xknot_(0));

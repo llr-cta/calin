@@ -128,8 +128,11 @@ step_size_err_up(function::MultiAxisFunction& fcn, ConstVecRef x,
   for(unsigned ipar=0;ipar<npar;ipar++)
   {
     Eigen::VectorXd xx { x };
-    auto f_of_x = [ipar,&xx,&fcn,fup](double x){ //std::cout << ' ' << ipar << ' ' << x << ' ' << fcn.value(xx)-fup << '\n';
-      xx(ipar)=x; return fcn.value(xx)-fup; };
+    auto f_of_x = [ipar,&xx,&fcn,fup](double x){ xx(ipar)=x;
+#if 1
+      std::cout << "step_size_err_up C: " << ipar << ' ' << x << ' ' << fcn.value(xx)-fup << '\n';
+#endif
+      return fcn.value(xx)-fup; };
     double xlo = x(ipar);
     double flo = -fcn.error_up()*err_up_frac;
     double xhi = xlo + dx(ipar);
@@ -143,7 +146,9 @@ step_size_err_up(function::MultiAxisFunction& fcn, ConstVecRef x,
       xlo=xhi;
       flo=fhi;
       dx(ipar)*=2.0;
-      std::cout << ipar << ' ' << dx.transpose() << '\n';
+#if 1
+      std::cout << "step_size_err_up A: " << ipar << ' ' << dx.transpose() << '\n';
+#endif
       xhi=std::min(xlo+dx(ipar), xlim);
       fhi = f_of_x(xhi);
     };
@@ -151,8 +156,8 @@ step_size_err_up(function::MultiAxisFunction& fcn, ConstVecRef x,
     {
       double xtol = std::abs((xhi-xlo)/(fhi-flo))*tol*fcn.error_up();
       double xroot = brent_zero(xlo,xhi,f_of_x,flo,fhi,xtol);
-#if 0
-      std::cerr << "HELLO: " << xlo << ' ' << xhi << ' ' << flo << ' ' << fhi
+#if 1
+      std::cout << "step_size_err_up B: " << xlo << ' ' << xhi << ' ' << flo << ' ' << fhi
         << ' ' << xtol << ' ' << xroot << ' ' << x(ipar) << '\n';
 #endif
       if(xroot == xlo)dx(ipar) = xhi-x(ipar);

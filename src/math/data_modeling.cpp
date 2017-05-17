@@ -273,8 +273,8 @@ value_gradient_and_hessian(ConstVecRef x, VecRef gradient, MatRef hessian)
 }
 
 template<typename F> double integrate_binned_in_extendable_window(
-  F f, calin::math::function::ParameterizableSingleAxisFunction* pdf, double x0, double x1,
-  double dx, double norm_accuracy = 1e-6)
+  F f, calin::math::function::ParameterizableSingleAxisFunction* pdf,
+  double x0, double x1, double dx, double norm_accuracy = 1e-6)
 {
   calin::math::accumulator::LikelihoodAccumulator norm_acc;
   calin::math::accumulator::LikelihoodAccumulator integrand_acc;
@@ -305,9 +305,11 @@ template<typename F> double integrate_binned_in_extendable_window(
       pp = &p1;
     }
     *pp = std::max(pdf->value_1d(x),0.0);
+#if 0
     calin::io::log::LOG(calin::io::log::INFO) << x << ' ' << *pp << ' '
       << nzero << ' ' << std::scientific << 1.0-norm_acc.total() << ' '
       << 1.0-norm_target;
+#endif
     if(*pp==0){
       ++nzero;
       continue;
