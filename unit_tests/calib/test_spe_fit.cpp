@@ -926,6 +926,65 @@ TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_PED)
                     { dp1, dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 0.5);
 }
 
+TEST(TestFastGeneralPoissonMES_Gauss, SetAndRecallParameters) {
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+  GeneralPoissonMES mes_base(0, 1, 1025, &ses, &ped);
+  Eigen::VectorXd p_base(5);
+  p_base << 1.0, 100.0, 20.0, 100.0, 35.0;
+  mes_base.set_parameter_values(p_base);
+  FastSingleValueGeneralPoissonMES mes(&mes_base);
+  EXPECT_EQ(mes.num_parameters(), 1U);
+  Eigen::VectorXd p(1);
+  p << 1.0;
+  mes.set_parameter_values(p);
+  EXPECT_EQ(mes.parameter_values(), p);
+}
+
+TEST(TestFastGeneralPoissonMES_Gauss, GradientCheck_MES)
+{
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+  GeneralPoissonMES mes_base(0, 1, 1000, &ses, &ped);
+  Eigen::VectorXd p_base(5);
+  p_base << 1.0, 100.0, 20.0, 100.0, 35.0;
+  mes_base.set_parameter_values(p_base);
+  FastSingleValueGeneralPoissonMES mes(&mes_base);
+  EXPECT_EQ(mes.num_parameters(), 1U);
+  Eigen::VectorXd p(1);
+  p << 1.0;
+  mes.set_parameter_values(p);
+  double dp1 = 1e-7;
+  mes_gradient_test(&mes,
+                    &MultiElectronSpectrum::pdf_mes,
+                    &MultiElectronSpectrum::pdf_gradient_mes,
+                    &MultiElectronSpectrum::pdf_gradient_hessian_mes,
+                    { 1.123 },
+                    { dp1 }, 0.0005, 1.0, 0.01);
+}
+
+TEST(TestFastGeneralPoissonMES_Gauss, GradientCheck_PED)
+{
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+  GeneralPoissonMES mes_base(0, 1, 1000, &ses, &ped);
+  Eigen::VectorXd p_base(5);
+  p_base << 1.0, 100.0, 20.0, 100.0, 35.0;
+  mes_base.set_parameter_values(p_base);
+  FastSingleValueGeneralPoissonMES mes(&mes_base);
+  EXPECT_EQ(mes.num_parameters(), 1U);
+  Eigen::VectorXd p(1);
+  p << 1.0;
+  mes.set_parameter_values(p);
+  double dp1 = 1e-7;
+  mes_gradient_test(&mes,
+                    &MultiElectronSpectrum::pdf_ped,
+                    &MultiElectronSpectrum::pdf_gradient_ped,
+                    &MultiElectronSpectrum::pdf_gradient_hessian_ped,
+                    { 1.123 },
+                    { dp1 }, 0.0005, 1.0, 0.01);
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

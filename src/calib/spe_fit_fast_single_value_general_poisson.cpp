@@ -116,7 +116,9 @@ double FastSingleValueGeneralPoissonMES::pdf_ped(double x)
 
 double FastSingleValueGeneralPoissonMES::pdf_gradient_ped(double x, VecRef gradient)
 {
-  return 0;
+  gradient.resize(1);
+  gradient << 0.0;
+  return std::max(ped_pmf_[mes_->ibin(x)],0.0);
 }
 
 double FastSingleValueGeneralPoissonMES::
@@ -137,7 +139,7 @@ double FastSingleValueGeneralPoissonMES::pdf_gradient_mes(double x, VecRef gradi
   gradient.resize(1);
   auto therow = nes_pmf_.row(mes_->ibin(x));
   gradient << therow.dot(nes_weight_deriv_);
-  return therow.dot(nes_weight_);
+  return std::max(therow.dot(nes_weight_), 0.0);
 }
 
 double FastSingleValueGeneralPoissonMES::
