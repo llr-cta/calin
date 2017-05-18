@@ -212,8 +212,8 @@ script:
           -DCMAKE_INSTALL_PREFIX=build .. &&
     make -j3 &&
     make install | tail &&
-    make test
-#    ./unit_tests/math/test_data_modeling &&
+    make test &&
+    ./unit_tests/calib/test_spe_fit &&
 
 #after_failure:
 #  - cat CMakeFiles/CMakeError.log
