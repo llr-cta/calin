@@ -213,7 +213,7 @@ script:
     make -j3 &&
     make install | tail &&
     make test &&
-    ./unit_tests/calib/test_spe_fit &&
+    ./unit_tests/calib/test_spe_fit
 
 #after_failure:
 #  - cat CMakeFiles/CMakeError.log
