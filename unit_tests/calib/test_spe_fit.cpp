@@ -960,7 +960,7 @@ TEST(TestFastGeneralPoissonMES_Gauss, GradientCheck_MES)
                     &MultiElectronSpectrum::pdf_gradient_mes,
                     &MultiElectronSpectrum::pdf_gradient_hessian_mes,
                     { 1.123 },
-                    { dp1 }, 0.0005, 1.0, 0.01);
+                    { dp1 }, 0.5, 1000.0, 1.0);
 }
 
 TEST(TestFastGeneralPoissonMES_Gauss, GradientCheck_PED)
@@ -982,7 +982,7 @@ TEST(TestFastGeneralPoissonMES_Gauss, GradientCheck_PED)
                     &MultiElectronSpectrum::pdf_gradient_ped,
                     &MultiElectronSpectrum::pdf_gradient_hessian_ped,
                     { 1.123 },
-                    { dp1 }, 0.0005, 1.0, 0.01);
+                    { dp1 }, 0.5, 1000.0, 1.0, 0.6);
 }
 
 int main(int argc, char **argv) {

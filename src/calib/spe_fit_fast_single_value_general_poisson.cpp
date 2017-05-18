@@ -88,14 +88,16 @@ void FastSingleValueGeneralPoissonMES::
 set_parameter_values(ConstVecRef values)
 {
   assign_parameters(values.data(), intensity_pe_);
-  double log_intensity = std::log(intensity_pe_);
-  for(unsigned ipe=0;ipe<nes_weight_.size();ipe++)
+  //double log_intensity = std::log(intensity_pe_);
+  double weight = std::exp(-intensity_pe_);
+  nes_weight_[0] = weight;
+  nes_weight_deriv_[0] = -weight;
+  for(unsigned ipe=1;ipe<nes_weight_.size();ipe++)
   {
-    double dbl_n { double(ipe) };
-    double weight =
-      std::exp(dbl_n*log_intensity - intensity_pe_ - lgamma(dbl_n+1.0));
+    nes_weight_deriv_[ipe] = weight;
+    weight *= intensity_pe_/double(ipe);
     nes_weight_[ipe] = weight;
-    nes_weight_deriv_[ipe] = weight*(dbl_n/intensity_pe_ - 1);
+    nes_weight_deriv_[ipe] -= weight;
   }
 }
 
