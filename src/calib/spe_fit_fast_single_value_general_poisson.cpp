@@ -88,6 +88,7 @@ void FastSingleValueGeneralPoissonMES::
 set_parameter_values(ConstVecRef values)
 {
   assign_parameters(values.data(), intensity_pe_);
+#if 0
   //double log_intensity = std::log(intensity_pe_);
   double weight = std::exp(-intensity_pe_);
   nes_weight_[0] = weight;
@@ -99,6 +100,17 @@ set_parameter_values(ConstVecRef values)
     nes_weight_[ipe] = weight;
     nes_weight_deriv_[ipe] -= weight;
   }
+#else
+  double log_intensity = std::log(intensity_pe_);
+  for(unsigned ipe=0;ipe<nes_weight_.size();ipe++)
+  {
+    double dbl_n { double(ipe) };
+    double weight =
+      std::exp(dbl_n*log_intensity - intensity_pe_ - lgamma(dbl_n+1.0));
+    nes_weight_[ipe] = weight;
+    nes_weight_deriv_[ipe] = weight*(dbl_n/intensity_pe_ - 1);
+  }
+#endif
 }
 
 bool FastSingleValueGeneralPoissonMES::can_calculate_parameter_gradient()
