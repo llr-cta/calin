@@ -20,8 +20,11 @@
 
 */
 
+#include <cstdlib>
+
 #include <fftw3.h>
 
+#include <util/file.hpp>
 #include <math/fftw_util.hpp>
 
 void calin::math::fftw_util::
@@ -103,6 +106,34 @@ hcvec_scale_and_add(double* ovec, const double* ivec, unsigned nsample,
   const double *ri = ivec;
   while(ro<re)
     *(ro++) += *(ri++)*scale;
+}
+
+bool calin::math::fftw_util::load_wisdom_from_file(std::string filename)
+{
+  calin::util::file::expand_filename_in_place(filename);
+  return fftw_import_wisdom_from_filename(filename.c_str()) != 0;
+}
+
+bool calin::math::fftw_util::
+load_wisdom_from_proto(const calin::ix::math::fftw_util::FFTWWisdom& proto)
+{
+  return fftw_import_wisdom_from_string(proto.wisdom().c_str()) != 0;
+}
+
+bool calin::math::fftw_util::save_wisdom_to_file(std::string filename)
+{
+  calin::util::file::expand_filename_in_place(filename);
+  return fftw_export_wisdom_to_filename(filename.c_str()) != 0;
+}
+
+bool calin::math::fftw_util::
+save_wisdom_to_proto(calin::ix::math::fftw_util::FFTWWisdom& proto)
+{
+  char* data = fftw_export_wisdom_to_string();
+  if(!data)return false;
+  proto.set_wisdom(data);
+  std::free(data);
+  return true;
 }
 
 int calin::math::fftw_util::
