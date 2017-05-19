@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include<math/fftw_util.pb.h>
+
 namespace calin { namespace math { namespace fftw_util {
 
 void hcvec_scale_and_multiply(double* ovec, const double* ivec1,
@@ -33,5 +35,6 @@ void hcvec_scale_and_multiply_conj(double* ovec, const double* ivec1,
 void hcvec_scale_and_add(double* ovec, const double* ivec, unsigned nsample,
   double scale = 1.0);
 
+int proto_planning_enum_to_fftw_flag(calin::ix::math::fftw_util::FFTWPlanningRigor x);
 
 } } } // namespace calin::math::fftw_util

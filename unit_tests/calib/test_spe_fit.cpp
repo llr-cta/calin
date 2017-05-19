@@ -926,7 +926,7 @@ TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_PED)
                     { dp1, dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 0.5);
 }
 
-TEST(TestFastGeneralPoissonMES_Gauss, SetAndRecallParameters) {
+TEST(TestFastGeneralPoissonMES, SetAndRecallParameters) {
   pdf_1d::GaussianPDF ped;
   pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
   GeneralPoissonMES mes_base(0, 1, 1025, &ses, &ped);
@@ -941,7 +941,89 @@ TEST(TestFastGeneralPoissonMES_Gauss, SetAndRecallParameters) {
   EXPECT_EQ(mes.parameter_values(), p);
 }
 
-TEST(TestFastGeneralPoissonMES_Gauss, GradientCheck_MES)
+TEST(TestFastGeneralPoissonMES, ValueEqualityWithBase_MES) {
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+  GeneralPoissonMES mes_base(0, 1, 1000, &ses, &ped);
+  Eigen::VectorXd p_base(5);
+  p_base << 1.0, 100.0, 20.0, 100.0, 35.0;
+  mes_base.set_parameter_values(p_base);
+  FastSingleValueGeneralPoissonMES mes(&mes_base);
+  Eigen::VectorXd p(1);
+  p << 1.0;
+  mes.set_parameter_values(p);
+  for(double x=0.5; x<1000.0; x+=1.0)
+  {
+    EXPECT_NEAR(mes_base.pdf_mes(x), mes.pdf_mes(x), mes_base.pdf_mes(x)*1e-8)
+      << "x=" << x;
+  }
+}
+
+TEST(TestFastGeneralPoissonMES, ValueEqualityWithBase_PED) {
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+  GeneralPoissonMES mes_base(0, 1, 1000, &ses, &ped);
+  Eigen::VectorXd p_base(5);
+  p_base << 1.0, 100.0, 20.0, 100.0, 35.0;
+  mes_base.set_parameter_values(p_base);
+  FastSingleValueGeneralPoissonMES mes(&mes_base);
+  Eigen::VectorXd p(1);
+  p << 1.0;
+  mes.set_parameter_values(p);
+  for(double x=0.5; x<1000.0; x+=1.0)
+  {
+    EXPECT_NEAR(mes_base.pdf_ped(x), mes.pdf_ped(x), mes_base.pdf_ped(x)*1e-8)
+      << "x=" << x;
+  }
+}
+
+TEST(TestFastGeneralPoissonMES, GradientEqualityWithBase_MES) {
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+  GeneralPoissonMES mes_base(0, 1, 1000, &ses, &ped);
+  Eigen::VectorXd p_base(5);
+  p_base << 1.0, 100.0, 20.0, 100.0, 35.0;
+  mes_base.set_parameter_values(p_base);
+  FastSingleValueGeneralPoissonMES mes(&mes_base);
+  Eigen::VectorXd p(1);
+  p << 1.0;
+  mes.set_parameter_values(p);
+  Eigen::VectorXd grad_base;
+  Eigen::VectorXd grad;
+  for(double x=0.5; x<1000.0; x+=1.0)
+  {
+    EXPECT_NEAR(mes_base.pdf_gradient_mes(x, grad_base),
+      mes.pdf_gradient_mes(x, grad), mes_base.pdf_mes(x)*1e-8)
+      << "x=" << x;
+    EXPECT_NEAR(grad_base(0), grad(0), std::abs(grad(0))*1e-8)
+      << "x=" << x;
+  }
+}
+
+TEST(TestFastGeneralPoissonMES, GradientEqualityWithBase_PED) {
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+  GeneralPoissonMES mes_base(0, 1, 1000, &ses, &ped);
+  Eigen::VectorXd p_base(5);
+  p_base << 1.0, 100.0, 20.0, 100.0, 35.0;
+  mes_base.set_parameter_values(p_base);
+  FastSingleValueGeneralPoissonMES mes(&mes_base);
+  Eigen::VectorXd p(1);
+  p << 1.0;
+  mes.set_parameter_values(p);
+  Eigen::VectorXd grad_base;
+  Eigen::VectorXd grad;
+  for(double x=0.5; x<1000.0; x+=1.0)
+  {
+    EXPECT_NEAR(mes_base.pdf_gradient_ped(x, grad_base),
+      mes.pdf_gradient_ped(x, grad), mes_base.pdf_ped(x)*1e-8)
+      << "x=" << x;
+    EXPECT_NEAR(grad_base(0), grad(0), std::abs(grad(0))*1e-8)
+      << "x=" << x;
+  }
+}
+
+TEST(TestFastGeneralPoissonMES, GradientCheck_MES)
 {
   pdf_1d::GaussianPDF ped;
   pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
@@ -961,9 +1043,40 @@ TEST(TestFastGeneralPoissonMES_Gauss, GradientCheck_MES)
                     &MultiElectronSpectrum::pdf_gradient_hessian_mes,
                     { 1.123 },
                     { dp1 }, 0.5, 1000.0, 1.0);
+  std::ofstream file("nes.dat");
+  file << mes.nes_pmf_matrix();
 }
 
-TEST(TestFastGeneralPoissonMES_Gauss, GradientCheck_PED)
+TEST(TestFastGeneralPoissonMES, RepeatabilityOfGradient)
+{
+  double val0;
+  Eigen::VectorXd grad0;
+  for(unsigned iloop=0;iloop<10;iloop++)
+  {
+    pdf_1d::GaussianPDF ped;
+    pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+    GeneralPoissonMES mes_base(0, 1, 1000, &ses, &ped);
+    Eigen::VectorXd p_base(5);
+    p_base << 1.0, 100.0, 20.0, 100.0, 35.0;
+    mes_base.set_parameter_values(p_base);
+    FastSingleValueGeneralPoissonMES mes(&mes_base);
+    EXPECT_EQ(mes.num_parameters(), 1U);
+    Eigen::VectorXd p(1);
+    p << 1.0;
+    mes.set_parameter_values(p);
+    Eigen::VectorXd grad;
+    double val = mes.pdf_gradient_mes(562.5, grad);
+    if(iloop==0) {
+      val0 = val;
+      grad0 = grad;
+    } else {
+      EXPECT_EQ(val, val0);
+      EXPECT_EQ(grad, grad0);
+    }
+  }
+}
+
+TEST(TestFastGeneralPoissonMES, GradientCheck_PED)
 {
   pdf_1d::GaussianPDF ped;
   pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
@@ -982,7 +1095,46 @@ TEST(TestFastGeneralPoissonMES_Gauss, GradientCheck_PED)
                     &MultiElectronSpectrum::pdf_gradient_ped,
                     &MultiElectronSpectrum::pdf_gradient_hessian_ped,
                     { 1.123 },
-                    { dp1 }, 0.5, 1000.0, 1.0, 0.6);
+                    { dp1 }, 0.5, 1000.0, 1.0, 0.75);
+}
+
+TEST(TestFastGeneralPoissonMES, RepeatabilityOfLikelihood)
+{
+  double inf = std::numeric_limits<double>::infinity();
+  std::vector<double> all_val;
+  std::vector<Eigen::VectorXd> all_grad;
+  for(unsigned iloop=0;iloop<10;iloop++)
+  {
+    auto mes_data = karkar_data();
+    SimpleHist mes_hist(1.0);
+    for(auto idata : mes_data)mes_hist.insert(idata);
+    pdf_1d::GaussianPDF ped;
+    pdf_1d::LimitedExponentialPDF exp_pdf(0,inf,mes_hist.dxval());
+    exp_pdf.limit_scale(0.1, inf);
+    pdf_1d::LimitedGaussianPDF gauss_pdf(0,inf);
+    pdf_1d::TwoComponent1DPDF ses(&exp_pdf, "exp", &gauss_pdf, "gauss");
+    GeneralPoissonMES mes_base(mes_hist.xval_left(0),
+                                mes_hist.dxval(),
+                                mes_hist.size(), &ses, &ped);
+    Eigen::VectorXd p_base(7);
+    p_base << 0.56, 3094.7, 19.6, 0.1, 5.0, 88.9, 29.3;
+    mes_base.set_parameter_values(p_base);
+    FastSingleValueGeneralPoissonMES mes(&mes_base);
+    SPELikelihood like(mes, mes_hist);
+    Eigen::VectorXd p(1);
+    p << 0.56;
+    Eigen::VectorXd grad(1);
+    double val = like.value_and_gradient(p,grad);
+
+    all_val.push_back(val);
+    all_grad.push_back(grad);
+  }
+
+  EXPECT_EQ(std::count(all_val.begin(), all_val.end(), all_val.front()),
+            (int)all_val.size());
+
+  EXPECT_EQ(std::count(all_grad.begin(), all_grad.end(), all_grad.front()),
+            (int)all_grad.size());
 }
 
 int main(int argc, char **argv) {

@@ -20,6 +20,8 @@
 
 */
 
+#include <fftw3.h>
+
 #include <math/fftw_util.hpp>
 
 void calin::math::fftw_util::
@@ -101,4 +103,16 @@ hcvec_scale_and_add(double* ovec, const double* ivec, unsigned nsample,
   const double *ri = ivec;
   while(ro<re)
     *(ro++) += *(ri++)*scale;
+}
+
+int calin::math::fftw_util::
+proto_planning_enum_to_fftw_flag(calin::ix::math::fftw_util::FFTWPlanningRigor x)
+{
+  switch(x) {
+    case calin::ix::math::fftw_util::ESTIMATE:    return FFTW_ESTIMATE;
+    case calin::ix::math::fftw_util::MEASURE:     return FFTW_MEASURE;
+    case calin::ix::math::fftw_util::PATIENT:     return FFTW_PATIENT;
+    case calin::ix::math::fftw_util::EXHAUSTIVE:  return FFTW_EXHAUSTIVE;
+    default: throw std::invalid_argument("Unknown planning rigor type.");
+  }
 }
