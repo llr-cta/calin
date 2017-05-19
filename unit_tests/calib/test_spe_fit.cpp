@@ -1042,7 +1042,7 @@ TEST(TestFastGeneralPoissonMES, GradientCheck_MES)
                     &MultiElectronSpectrum::pdf_gradient_mes,
                     &MultiElectronSpectrum::pdf_gradient_hessian_mes,
                     { 1.123 },
-                    { dp1 }, 0.5, 1000.0, 1.0);
+                    { dp1 }, 0.5, 1000.0, 1.0, 0.75);
   std::ofstream file("nes.dat");
   file << mes.nes_pmf_matrix();
 }
