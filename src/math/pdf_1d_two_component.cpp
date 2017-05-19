@@ -87,6 +87,7 @@ Eigen::VectorXd TwoComponent1DPDF::parameter_values()
 
 void TwoComponent1DPDF::set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "TwoComponent1DPDF");
   assign_parameters(values, prob_cpt1_);
   unsigned num_cpt1_params = pdf1_->num_parameters();
   pdf1_->set_parameter_values(values.segment(1,num_cpt1_params));

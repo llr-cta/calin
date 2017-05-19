@@ -205,6 +205,7 @@ Eigen::VectorXd GeneralPoissonMES::parameter_values()
 
 void GeneralPoissonMES::set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "GeneralPoissonMES");
   assign_parameters(values.data()+iparam_light_intensity(), intensity_pe_);
   if(config_.include_on_off_ped_shift())
     assign_parameters(values.data()+iparam_off_ped_shift(), off_ped_shift_dc_);

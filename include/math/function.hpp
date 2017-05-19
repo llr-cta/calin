@@ -102,7 +102,7 @@ void assign_parameters(ConstVecRef values, T& x, Params & ... params)
 
 class Parameterizable
 {
- public:
+public:
   virtual ~Parameterizable();
   virtual unsigned num_parameters() = 0;
   virtual std::vector<ParameterAxis> parameters() = 0;
@@ -111,11 +111,21 @@ class Parameterizable
   virtual bool can_calculate_parameter_gradient() = 0;
   virtual bool can_calculate_parameter_hessian() = 0;
   int parameter_name_to_index(const std::string& name);
+
+protected:
+  void verify_set_parameter_values(ConstVecRef values, const char* class_name) {
+    if(values.size() != this->num_parameters())
+      throw std::invalid_argument(std::string(class_name)
+        + "::set_parameter_values: incorrect number of parameters, expected "
+        + std::to_string(this->num_parameters())
+        + ", got "
+        + std::to_string(values.size())); 
+  }
 };
 
 class MultiAxisFunction
 {
- public:
+public:
   virtual ~MultiAxisFunction();
   virtual unsigned num_domain_axes() = 0;
   virtual std::vector<DomainAxis> domain_axes() = 0;
@@ -130,7 +140,7 @@ class MultiAxisFunction
 
 class SingleAxisFunction
 {
- public:
+public:
   virtual ~SingleAxisFunction();
   virtual DomainAxis domain_axis() = 0;
   virtual double value_1d(double x) = 0;
@@ -144,7 +154,7 @@ class SingleAxisFunction
 class ParameterizableMultiAxisFunction: virtual public Parameterizable,
                                         virtual public MultiAxisFunction
 {
- public:
+public:
   virtual ~ParameterizableMultiAxisFunction();
   virtual double value_and_parameter_gradient(ConstVecRef x,
                                          VecRef gradient) = 0;
@@ -155,7 +165,7 @@ class ParameterizableMultiAxisFunction: virtual public Parameterizable,
 class ParameterizableSingleAxisFunction: virtual public Parameterizable,
                                          virtual public SingleAxisFunction
 {
- public:
+public:
   virtual ~ParameterizableSingleAxisFunction();
   virtual double value_and_parameter_gradient_1d(double x,
                                                  VecRef gradient) = 0;
@@ -401,7 +411,7 @@ CALIN_TYPEALIAS(ReducedSpaceParameterizableSingleAxisFunction,
 
 class FreezeThawFunction: public ParameterizableMultiAxisFunction
 {
- public:
+public:
   FreezeThawFunction(MultiAxisFunction* fcn, bool adopt_fcn=false);
   virtual ~FreezeThawFunction();
 
@@ -442,7 +452,7 @@ class FreezeThawFunction: public ParameterizableMultiAxisFunction
   double value_parameter_gradient_and_hessian(ConstVecRef x,
                                      VecRef gradient, MatRef hessian) override;
 
- protected:
+protected:
   Eigen::VectorXd gradient_out2in(ConstVecRef gradient);
   Eigen::MatrixXd hessian_out2in(ConstMatRef hessian);
 
@@ -458,7 +468,7 @@ class FreezeThawFunction: public ParameterizableMultiAxisFunction
 
 class PMAFReverser: public ParameterizableMultiAxisFunction
 {
- public:
+public:
   PMAFReverser(ParameterizableMultiAxisFunction* fcn_delegate,
                bool adopt_fcn_delegate = false, double error_up = 0.5);
   virtual ~PMAFReverser();
@@ -488,7 +498,7 @@ class PMAFReverser: public ParameterizableMultiAxisFunction
   double value_parameter_gradient_and_hessian(ConstVecRef x,
                                       VecRef gradient, MatRef hessian) override;
 
- protected:
+protected:
   ParameterizableMultiAxisFunction* fcn_delegate_;
   bool adopt_fcn_delegate_ = false;
   double error_up_ = 0.5;
@@ -498,12 +508,12 @@ class PMAFReverser: public ParameterizableMultiAxisFunction
 template<typename ParamType>
 class MultiParameterSet: virtual public Parameterizable
 {
- public:
+public:
   virtual ~MultiParameterSet() { /* nothing to see here */ }
   virtual std::vector<ParameterAxis> parameters() override;
   virtual Eigen::VectorXd parameter_values() override;
   virtual void set_parameter_values(ConstVecRef values) override;
- private:
+private:
   unsigned find_parameter_set(unsigned iparam);
   std::vector<std::pair<unsigned, ParamType*> > parameter_sets_;
 };
@@ -540,7 +550,7 @@ template<typename ParameterizableType> using HessGetter =
 template<typename ParameterizableType>
 class ParameterizableToMultiAxisFunctionAdapter: public MultiAxisFunction
 {
- public:
+public:
   using PTValGetter = ValGetter<ParameterizableType>;
   using PTGradGetter = GradGetter<ParameterizableType>;
   using PTHessGetter = HessGetter<ParameterizableType>;
@@ -571,7 +581,7 @@ class ParameterizableToMultiAxisFunctionAdapter: public MultiAxisFunction
     par_->set_parameter_values(x);
     return hess_getter_(par_, gradient, hessian); }
   double error_up() override { return error_up_; }
- protected:
+protected:
   ParameterizableType* par_;
   PTValGetter val_getter_;
   PTGradGetter grad_getter_;

@@ -65,6 +65,7 @@ Eigen::VectorXd LimitedExponentialPDF::parameter_values()
 
 void LimitedExponentialPDF::set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "LimitedExponentialPDF");
   assign_parameters(values, a_);
   set_cache();
 }

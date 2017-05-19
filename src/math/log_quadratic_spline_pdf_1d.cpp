@@ -119,13 +119,7 @@ Eigen::VectorXd LogQuadraticSpline1DPDF::parameter_values()
 
 void LogQuadraticSpline1DPDF::set_parameter_values(ConstVecRef values)
 {
-  if(values.size() != num_parameters())
-  {
-    std::ostringstream stream;
-    stream << "LogQuadraticSpline1DPDF - parameter vector has " << values.size()
-           << " values, " << num_parameters() << " required.";
-    throw(std::runtime_error(stream.str()));
-  }
+  verify_set_parameter_values(values, "LogQuadraticSpline1DPDF");
   param0_ = values(0);
   yknot_ = values.tail(nknot_);
   set_cache();

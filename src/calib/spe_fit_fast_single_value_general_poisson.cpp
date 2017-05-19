@@ -87,6 +87,7 @@ Eigen::VectorXd FastSingleValueGeneralPoissonMES::parameter_values()
 void FastSingleValueGeneralPoissonMES::
 set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "FastSingleValueGeneralPoissonMES");
   assign_parameters(values.data(), intensity_pe_);
 #if 0
   //double log_intensity = std::log(intensity_pe_);
