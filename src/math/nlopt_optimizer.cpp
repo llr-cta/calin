@@ -630,6 +630,8 @@ calc_error_matrix_and_eigenvectors(MatRef error_matrix,
   const unsigned npar { fcn_->num_domain_axes() };
   error_matrix.resize(npar,npar);
   Eigen::VectorXd error_hint;
+  if(xscale_.size() == fcn_->num_domain_axes())
+    error_hint = calin::std_to_eigenvec(xscale_);
   if(error_matrix_estimate(error_matrix) != ErrorMatrixStatus::UNAVAILABLE)
     error_hint = error_matrix.diagonal().array().sqrt();
   Eigen::MatrixXd hessian(npar,npar);

@@ -87,7 +87,21 @@ Eigen::VectorXd FastSingleValueGeneralPoissonMES::parameter_values()
 void FastSingleValueGeneralPoissonMES::
 set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "FastSingleValueGeneralPoissonMES");
   assign_parameters(values.data(), intensity_pe_);
+#if 0
+  //double log_intensity = std::log(intensity_pe_);
+  double weight = std::exp(-intensity_pe_);
+  nes_weight_[0] = weight;
+  nes_weight_deriv_[0] = -weight;
+  for(unsigned ipe=1;ipe<nes_weight_.size();ipe++)
+  {
+    nes_weight_deriv_[ipe] = weight;
+    weight *= intensity_pe_/double(ipe);
+    nes_weight_[ipe] = weight;
+    nes_weight_deriv_[ipe] -= weight;
+  }
+#else
   double log_intensity = std::log(intensity_pe_);
   for(unsigned ipe=0;ipe<nes_weight_.size();ipe++)
   {
@@ -97,6 +111,7 @@ set_parameter_values(ConstVecRef values)
     nes_weight_[ipe] = weight;
     nes_weight_deriv_[ipe] = weight*(dbl_n/intensity_pe_ - 1);
   }
+#endif
 }
 
 bool FastSingleValueGeneralPoissonMES::can_calculate_parameter_gradient()
@@ -116,7 +131,9 @@ double FastSingleValueGeneralPoissonMES::pdf_ped(double x)
 
 double FastSingleValueGeneralPoissonMES::pdf_gradient_ped(double x, VecRef gradient)
 {
-  return 0;
+  gradient.resize(1);
+  gradient << 0.0;
+  return std::max(ped_pmf_[mes_->ibin(x)],0.0);
 }
 
 double FastSingleValueGeneralPoissonMES::
@@ -137,7 +154,7 @@ double FastSingleValueGeneralPoissonMES::pdf_gradient_mes(double x, VecRef gradi
   gradient.resize(1);
   auto therow = nes_pmf_.row(mes_->ibin(x));
   gradient << therow.dot(nes_weight_deriv_);
-  return therow.dot(nes_weight_);
+  return std::max(therow.dot(nes_weight_), 0.0);
 }
 
 double FastSingleValueGeneralPoissonMES::

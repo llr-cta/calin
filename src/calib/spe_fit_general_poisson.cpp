@@ -65,6 +65,8 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
     config_(config), x0_(x0), dx_(dx), nsample_(npoint),
     nes_fft_(config.num_pe_convolutions())
 {
+  int plan_flags = proto_planning_enum_to_fftw_flag(config_.fftw_planning());
+
   ped_spec_ = fftw_alloc_real(nsample_);
   if(config_.include_on_off_ped_shift())
   {
@@ -77,11 +79,11 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
   mes_spec_ = fftw_alloc_real(nsample_);
 
   ped_plan_fwd_ =
-      fftw_plan_r2r_1d(nsample_, ped_fft_, ped_fft_, FFTW_R2HC, 0);
+      fftw_plan_r2r_1d(nsample_, ped_fft_, ped_fft_, FFTW_R2HC, plan_flags);
   ses_plan_fwd_ =
-      fftw_plan_r2r_1d(nsample_, nes_fft_[0], nes_fft_[0], FFTW_R2HC, 0);
+      fftw_plan_r2r_1d(nsample_, nes_fft_[0], nes_fft_[0], FFTW_R2HC, plan_flags);
   mes_plan_rev_ =
-      fftw_plan_r2r_1d(nsample_, mes_spec_, mes_spec_, FFTW_HC2R, 0);
+      fftw_plan_r2r_1d(nsample_, mes_spec_, mes_spec_, FFTW_HC2R, plan_flags);
 
   if(can_calculate_parameter_gradient())
   {
@@ -96,7 +98,7 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
       ped_grad_fft_[ipar] = fftw_alloc_real(nsample_);
       ped_grad_plan_fwd_[ipar] =
           fftw_plan_r2r_1d(nsample_, ped_grad_[ipar], ped_grad_fft_[ipar],
-                           FFTW_R2HC, 0);
+                           FFTW_R2HC, plan_flags);
     }
 
     if(config_.include_on_off_ped_shift())
@@ -114,7 +116,7 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
       ses_grad_fft_[ipar] = fftw_alloc_real(nsample_);
       ses_grad_plan_fwd_[ipar] =
           fftw_plan_r2r_1d(nsample_, ses_grad_fft_[ipar], ses_grad_fft_[ipar],
-                           FFTW_R2HC, 0);
+                           FFTW_R2HC, plan_flags);
     }
 
     unsigned mes_npar = 1+ses_npar+ped_npar;
@@ -125,7 +127,7 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
       mes_grad_[ipar] = fftw_alloc_real(nsample_);
       mes_grad_plan_rev_[ipar] =
           fftw_plan_r2r_1d(nsample_, mes_grad_[ipar], mes_grad_[ipar],
-                           FFTW_HC2R, 0);
+                           FFTW_HC2R, plan_flags);
     }
   }
 
@@ -205,6 +207,7 @@ Eigen::VectorXd GeneralPoissonMES::parameter_values()
 
 void GeneralPoissonMES::set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "GeneralPoissonMES");
   assign_parameters(values.data()+iparam_light_intensity(), intensity_pe_);
   if(config_.include_on_off_ped_shift())
     assign_parameters(values.data()+iparam_off_ped_shift(), off_ped_shift_dc_);
@@ -396,6 +399,8 @@ off_pedestal_spectrum_gradient(unsigned iparam) const
 Eigen::VectorXd GeneralPoissonMES::
 single_electron_spectrum_gradient(unsigned iparam) const
 {
+  int plan_flags = proto_planning_enum_to_fftw_flag(config_.fftw_planning());
+
   if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
     throw std::out_of_range("GeneralPoissonMES::pedestal_spectrum_gradient: "
                             "iparam out of range");
@@ -409,7 +414,7 @@ single_electron_spectrum_gradient(unsigned iparam) const
 
   uptr_fftw_plan spec_plan = {
     fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
-                     FFTW_HC2R, 0), fftw_destroy_plan };
+                     FFTW_HC2R, plan_flags), fftw_destroy_plan };
   assert(spec_plan);
 
   std::copy(ses_grad_fft_[iparam], ses_grad_fft_[iparam]+nsample_,
@@ -426,6 +431,8 @@ single_electron_spectrum_gradient(unsigned iparam) const
 
 Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum(unsigned n) const
 {
+  int plan_flags = proto_planning_enum_to_fftw_flag(config_.fftw_planning());
+
   if(n==0 or n>config_.num_pe_convolutions())
     throw std::out_of_range("GeneralPoissonMES::n_electron_spectrum: "
                             "number of PEs out of range");
@@ -435,7 +442,7 @@ Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum(unsigned n) const
 
   uptr_fftw_plan spec_plan = {
     fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
-                     FFTW_HC2R, 0), fftw_destroy_plan };
+                     FFTW_HC2R, plan_flags), fftw_destroy_plan };
   assert(spec_plan);
 
   std::copy(nes_fft_[n-1], nes_fft_[n-1]+nsample_, spec_buffer.get());
@@ -450,6 +457,8 @@ Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum(unsigned n) const
 
 Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum_with_pedestal(unsigned n) const
 {
+  int plan_flags = proto_planning_enum_to_fftw_flag(config_.fftw_planning());
+
   if(n==0)return pedestal_spectrum();
 
   if(n>config_.num_pe_convolutions())
@@ -461,7 +470,7 @@ Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum_with_pedestal(unsigned n)
 
   uptr_fftw_plan spec_plan = {
     fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
-                     FFTW_HC2R, 0), fftw_destroy_plan };
+                     FFTW_HC2R, plan_flags), fftw_destroy_plan };
   assert(spec_plan);
 
   hcvec_scale_and_multiply(spec_buffer.get(), nes_fft_[n-1], ped_fft_,
@@ -476,6 +485,8 @@ Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum_with_pedestal(unsigned n)
 
 Eigen::VectorXd GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
 {
+  int plan_flags = proto_planning_enum_to_fftw_flag(config_.fftw_planning());
+
   if(n>config_.num_pe_convolutions())
     throw std::out_of_range("GeneralPoissonMES::mes_n_electron_cpt: "
                             "number of PEs out of range");
@@ -496,7 +507,7 @@ Eigen::VectorXd GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
 
   uptr_fftw_plan spec_plan = {
     fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
-                     FFTW_HC2R, 0), fftw_destroy_plan };
+                     FFTW_HC2R, plan_flags), fftw_destroy_plan };
   assert(spec_plan);
 
   double log_intensity = std::log(intensity_pe_);
@@ -747,5 +758,6 @@ GeneralPoissonMES::default_config()
   config.set_num_pe_convolutions(10);
   config.set_max_ses_norm_warning(10);
   config.set_ses_norm_warning_threshold(1.0);
+  //config.set_fftw_planning(calin::ix::math::fftw_util::PATIENT);
   return config;
 }

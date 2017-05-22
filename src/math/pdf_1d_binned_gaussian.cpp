@@ -73,6 +73,7 @@ Eigen::VectorXd BinnedGaussianPDF::parameter_values()
 
 void BinnedGaussianPDF::set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "BinnedGaussianPDF");
   assign_parameters(values, x0_, s_);
 }
 

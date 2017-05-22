@@ -22,7 +22,11 @@
 
 #pragma once
 
+#include<math/fftw_util.pb.h>
+
 namespace calin { namespace math { namespace fftw_util {
+
+#ifndef SWIG
 
 void hcvec_scale_and_multiply(double* ovec, const double* ivec1,
   const double* ivec2, unsigned nsample, double scale = 1.0);
@@ -33,5 +37,14 @@ void hcvec_scale_and_multiply_conj(double* ovec, const double* ivec1,
 void hcvec_scale_and_add(double* ovec, const double* ivec, unsigned nsample,
   double scale = 1.0);
 
+#endif
+
+int proto_planning_enum_to_fftw_flag(calin::ix::math::fftw_util::FFTWPlanningRigor x);
+
+bool load_wisdom_from_file(std::string filename = "~/.calin_fft_wisdom");
+bool load_wisdom_from_proto(const calin::ix::math::fftw_util::FFTWWisdom& proto);
+
+bool save_wisdom_to_file(std::string filename = "~/.calin_fft_wisdom");
+bool save_wisdom_to_proto(calin::ix::math::fftw_util::FFTWWisdom& proto);
 
 } } } // namespace calin::math::fftw_util

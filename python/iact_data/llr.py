@@ -1,6 +1,8 @@
-# calin/proto/iact_data/CMakeLists.txt -- Stephen Fegan
+# calin/python/iact_data/llr.py -- Stephen Fegan -- 2017-05-18
 #
-# Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+# Functions for manipulating data from LLR test bench
+#
+# Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 #
 # This file is part of "calin"
@@ -13,11 +15,13 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_PROTO spe_fit.proto)
-set(CALIN_PACKAGE calib)
-set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
+import struct
+import numpy
+import calin.math.histogram
 
-make_proto_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})
-target_link_libraries(${CALIN_TARGET_LIBRARY} calin_proto_math)
-make_proto_swig_modules(${CALIN_TARGET_LIBRARY}
-	${CALIN_PROTO_SWIG_INSTALL_DIR}/${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})
+def make_lecroy_adc_hist(f, scale=1.0):
+    data = numpy.loadtxt(f, delimiter=',', skiprows=5)
+    dx = numpy.median(data[1:,0] - data[0:-1,0])/scale
+    hist = calin.math.histogram.SimpleHist(dx)
+    hist.insert_two_vec(data[:,0]/scale, data[:,1])
+    return hist

@@ -93,8 +93,8 @@ LogQuadraticSpline1DPDF::parameters()
 {
   std::vector<calin::math::function::ParameterAxis> axes;
   std::string p0_name;
-  if(p0_type_ == ParamZeroType::SLOPE)p0_name = "dy_dx(";
-  else p0_name = "2d2y_dx2(";
+  if(p0_type_ == ParamZeroType::SLOPE)p0_name = "dy/dx(";
+  else p0_name = "d^2y/2dx^2(";
   if(p0_loc_ == ParamZeroLocation::RIGHT)
     p0_name += std::to_string(xknot_(xknot_.size()-1));
   else p0_name += std::to_string(xknot_(0));
@@ -119,13 +119,7 @@ Eigen::VectorXd LogQuadraticSpline1DPDF::parameter_values()
 
 void LogQuadraticSpline1DPDF::set_parameter_values(ConstVecRef values)
 {
-  if(values.size() != num_parameters())
-  {
-    std::ostringstream stream;
-    stream << "LogQuadraticSpline1DPDF - parameter vector has " << values.size()
-           << " values, " << num_parameters() << " required.";
-    throw(std::runtime_error(stream.str()));
-  }
+  verify_set_parameter_values(values, "LogQuadraticSpline1DPDF");
   param0_ = values(0);
   yknot_ = values.tail(nknot_);
   set_cache();

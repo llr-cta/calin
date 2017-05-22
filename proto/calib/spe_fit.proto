@@ -23,6 +23,7 @@
 syntax = "proto3";
 
 import "calin.proto";
+import "math/fftw_util.proto";
 
 package calin.ix.calib.spe_fit;
 
@@ -39,4 +40,6 @@ message GeneralPoissonMESConfig {
   double ses_norm_warning_threshold                        = 11 [
     (CFO).desc = "Threshold difference of SES normalization from unity "
       "before issuing warning. This value is multiplied by 1/nsample."];
+  calin.ix.math.fftw_util.FFTWPlanningRigor fftw_planning     = 20 [
+    (CFO).desc = "FFTW planning rigor to use." ];
 };

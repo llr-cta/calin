@@ -97,6 +97,7 @@ Eigen::VectorXd PoissonGaussianMES::parameter_values()
 
 void PoissonGaussianMES::set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "PoissonGaussianMES");
   assign_parameters(values, intensity_pe_, ped_zero_dc_, ped_rms_dc_,
                     gain_dc_pe_, ses_rms_pe_);
   calc_cached_vars();
@@ -494,6 +495,7 @@ Eigen::VectorXd PoissonGaussianMES_HighAccuracy::parameter_values()
 void PoissonGaussianMES_HighAccuracy::
 set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "PoissonGaussianMES_HighAccuracy");
   assign_parameters(values, intensity_pe_, ped_zero_dc_, ped_rms_dc_,
                     gain_dc_pe_, ses_rms_pe_);
 }

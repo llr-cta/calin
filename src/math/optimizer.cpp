@@ -282,10 +282,12 @@ void Optimizer::opt_progress(double fval, const Eigen::VectorXd& x,
 
   TimeStamp ts = TimeStamp::now();
   double tss = ts.seconds_since(opt_start_time_);
-  if(verbose_ == OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS)
+  if(verbose_ == OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS or
+     verbose_ == OptimizerVerbosityLevel::ELEVATED)
   {
-    if(iterations_-progress_update_iter_ > 100 or
-       tss-progress_update_time_ > 60.0)
+    if(fbest_ < flast
+        or iterations_-progress_update_iter_ > 100
+        or tss-progress_update_time_ > 15.0)
       progress_update_iter_ = iterations_, progress_update_time_ = tss;
     else
       return;
@@ -322,6 +324,24 @@ void Optimizer::opt_progress(double fval, const Eigen::VectorXd& x,
 enum class OptimizerVerbosityLevel { SILENT, SUMMARY_ONLY, ALL_FCN_EVALS_ONLY,
     SUMMARY_AND_PROGRESS, SUMMARY_AND_FCN_EVALS, ELEVATED, MAX };
 #endif
+
+bool Optimizer::is_near_lo_limit(unsigned iaxis, double value) const
+{
+  if(iaxis >= xlim_lo_.size())return false;
+  if(iaxis < xlim_hi_.size())
+    return value <= xlim_lo_[iaxis] + (xlim_hi_[iaxis]-xlim_lo_[iaxis])*0.001;
+  else
+    return value <= xlim_lo_[iaxis] * 1.001 + std::numeric_limits<double>::epsilon() * 1000.0;
+}
+
+bool Optimizer::is_near_hi_limit(unsigned iaxis, double value) const
+{
+  if(iaxis >= xlim_hi_.size())return false;
+  if(iaxis < xlim_lo_.size())
+    return value >= xlim_hi_[iaxis] - (xlim_hi_[iaxis]-xlim_lo_[iaxis])*0.001;
+  else
+    return value >= xlim_hi_[iaxis] / 1.001 - std::numeric_limits<double>::epsilon() * 1000.0;
+}
 
 void Optimizer::opt_finished(OptimizationStatus status, double fopt,
                              const Eigen::VectorXd& xopt, const double* edm)
@@ -384,6 +404,14 @@ void Optimizer::opt_finished(OptimizationStatus status, double fopt,
       << xopt(iaxis);
     if(has_err_mat)
       L << " +/- " << std::sqrt(err_mat(iaxis,iaxis));
+    if(is_near_lo_limit(iaxis, xopt(iaxis))) {
+      L << " (near lower";
+      if(is_near_hi_limit(iaxis, xopt(iaxis)))
+        L << " and upper";
+      L << " limit)";
+    } else if(is_near_hi_limit(iaxis, xopt(iaxis))) {
+      L << " (near upper limit)";
+    }
     L << '\n';
   }
 

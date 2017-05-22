@@ -366,6 +366,9 @@ public:
   void update_from_general_mes();
   GeneralPoissonMES* general_mes() const { return mes_; }
 
+  const Eigen::MatrixXd& nes_pmf_matrix() const { return nes_pmf_; }
+  const Eigen::VectorXd& ped_pmf_vector() const { return ped_pmf_; }
+  const Eigen::VectorXd& nes_poisson_weight_vector() const { return nes_weight_; }
 protected:
   GeneralPoissonMES* mes_ = nullptr;
   bool adopt_mes_ = false;

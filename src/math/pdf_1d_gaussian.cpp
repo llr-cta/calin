@@ -75,6 +75,7 @@ Eigen::VectorXd GaussianPDF::parameter_values()
 
 void GaussianPDF::set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "GaussianPDF");
   assign_parameters(values, x0_, s_);
 }
 
@@ -190,6 +191,7 @@ function::DomainAxis LimitedGaussianPDF::domain_axis()
 
 void LimitedGaussianPDF::set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "LimitedGaussianPDF");
   BinnedGaussianPDF::set_parameter_values(values);
   set_cache();
 }

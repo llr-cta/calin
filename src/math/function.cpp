@@ -261,13 +261,7 @@ Eigen::VectorXd FreezeThawFunction::parameter_values()
 
 void FreezeThawFunction::set_parameter_values(ConstVecRef values)
 {
-  if((unsigned)values.size() != frozen_axes_.size())
-  {
-    std::ostringstream stream;
-    stream << "FreezeThawFunction - parameter vector has " << values.size()
-           << " values, " << frozen_axes_.size() << " required.";
-    throw(std::runtime_error(stream.str()));
-  }
+  verify_set_parameter_values(values, "FreezeThawFunction");
   for(unsigned iaxis=0;iaxis<frozen_axes_.size();iaxis++)
     xfrozen_(frozen_axes_[iaxis]) = values(iaxis);
 }
@@ -343,6 +337,7 @@ Eigen::VectorXd PMAFReverser::parameter_values()
 
 void PMAFReverser::set_parameter_values(ConstVecRef values)
 {
+  verify_set_parameter_values(values, "PMAFReverser");
   x_ = values;
 }
 
