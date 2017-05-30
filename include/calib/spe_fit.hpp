@@ -358,6 +358,7 @@ public:
   Eigen::VectorXd all_mes_x() const { return mes_->all_mes_x(); }
 
   Eigen::VectorXd multi_electron_spectrum() const { return nes_pmf_*nes_weight_; }
+  Eigen::VectorXd multi_electron_spectrum_gradient() const { return nes_pmf_*nes_weight_deriv_; }
   Eigen::VectorXd pedestal_spectrum() const { return nes_pmf_.col(0); };
   Eigen::VectorXd off_pedestal_spectrum() const { return ped_pmf_; }
   Eigen::VectorXd n_electron_spectrum_with_pedestal(unsigned n) const {
