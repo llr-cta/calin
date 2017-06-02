@@ -81,8 +81,7 @@ def mstn1_config(obscure_camera = True):
 
     return mst
 
-def mstn1_array(obscure_camera = True, rng = calin.math.rng.RNG()):
-    mst = calin.simulation.vs_cta.mstn1_config()
-    cta = calin.simulation.vs_optics.VSOArray()
-    cta.generateFromArrayParameters(mst, rng)
-    return cta
+def make_array(cfg, rng = calin.math.rng.RNG()):
+    array = calin.simulation.vs_optics.VSOArray()
+    array.generateFromArrayParameters(cfg, rng)
+    return array
