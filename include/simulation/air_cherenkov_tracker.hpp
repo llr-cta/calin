@@ -90,8 +90,9 @@ public:
       bool adopt_visitor = false, bool adopt_atm = false):
     calin::simulation::tracker::TrackVisitor(),
     visitor_(visitor), adopt_visitor_(adopt_visitor),
-    atm_(atm), adopt_atm_(adopt_atm) { if(cfg.enable_forced_cherenkov_angle_mode())
-      set_forced_cherenkov_angle(cfg.forced_cherenkov_angle()); }
+    atm_(atm), adopt_atm_(adopt_atm) { if(cfg.enable_forced_cherenkov_angle_mode()) {
+      enable_forced_cherenkov_angle_mode_ = true;
+      set_forced_cherenkov_angle(cfg.forced_cherenkov_angle()); } }
   virtual ~AirCherenkovParameterCalculatorTrackVisitor();
   void visit_event(const Event& event, bool& kill_event) override;
   void visit_track(const calin::simulation::tracker::Track& track,
