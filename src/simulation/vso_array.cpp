@@ -168,7 +168,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
         obsvec.push_back(VSOObscuration::create_from_proto(obs));
 
       VSOTelescope* telescope =
-      	new VSOTelescope(i, pos,
+      	new VSOTelescope(fTelescopes.size(), pos,
       			 param.reflector_frame().delta_y()*M_PI/180.0,
              param.reflector_frame().alpha_x()*M_PI/180.0,
              param.reflector_frame().alpha_y()*M_PI/180.0,
@@ -180,6 +180,8 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
              param.reflector().facet_spacing(),
              param.reflector().facet_size(),
              param.reflector_frame().optic_axis_rotation()*M_PI/180.0,
+             param.reflector_frame().facet_grid_shift_x(),
+             param.reflector_frame().facet_grid_shift_z(),
              num_hex_mirror_rings,
              0.0, Eigen::Vector3d::Zero(), /*param.reflector().reflector_ip(),*/
              param.reflector().facet_labeling_parity(),
