@@ -136,5 +136,9 @@ def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
 
 def make_array(cfg, rng = calin.math.rng.RNG()):
     array = calin.simulation.vs_optics.VSOArray()
-    array.generateFromArrayParameters(cfg, rng)
+    if(type(cfg) is list):
+        for icfg in cfg:
+            array.generateFromArrayParameters(icfg, rng)
+    else:
+        array.generateFromArrayParameters(cfg, rng)
     return array
