@@ -99,19 +99,32 @@ public:
   void add_pe_visitor(calin::simulation::pe_processor::PEProcessor* visitor,
     bool adopt_visitor=false);
 
-  void set_detection_efficiencies(
+  void set_all_detection_efficiencies(
     const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
     const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
     double w0,
     const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency = { 1.0 });
-
-  void set_detector_response_without_atmospheric_absorption(
+  void set_all_detector_response_without_atmospheric_absorption(
     const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency);
-  void set_detector_and_atmosphere_response(
+  void set_all_detector_and_atmosphere_response(
     const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
     const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
     double w0);
-  void set_cone_angular_response(
+  void set_all_cone_angular_response(
+    const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency);
+
+  void set_scope_detection_efficiencies(unsigned iscope,
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+    double w0,
+    const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency = { 1.0 });
+  void set_scope_detector_response_without_atmospheric_absorption(unsigned iscope,
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency);
+  void set_scope_detector_and_atmosphere_response(unsigned iscope,
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+    double w0);
+  void set_scope_cone_angular_response(unsigned iscope,
     const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency);
 
 private:
@@ -123,10 +136,15 @@ private:
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
   calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
-  std::vector<calin::simulation::detector_efficiency::ACTEffectiveBandwidth>
-    effective_bandwidth_;
-  double detector_bandwidth_ = 1.0;
-  calin::math::interpolation_1d::InterpLinear1D cone_efficiency_ = { 1 };
+
+  struct ScopeResponse {
+    bool has_effective_bandwidth = false;
+    calin::simulation::detector_efficiency::ACTEffectiveBandwidth effective_bandwidth = { 1.0 };
+    double detector_bandwidth = 1.0;
+    calin::math::interpolation_1d::InterpLinear1D cone_efficiency = { 1.0 };
+  };
+
+  std::vector<ScopeResponse> scope_response_;
 };
 
 } } } // namespace calin::simulation::ray_processor

@@ -105,11 +105,33 @@ public:
   void add_visitor(calin::simulation::pe_processor::PEProcessor* visitor,
     bool adopt_visitor = false) { add_pe_visitor(visitor,adopt_visitor); }
 
-  void set_detection_efficiencies(
+  void set_all_detection_efficiencies(
     const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
     const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
     double w0,
     const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency = { 1.0 });
+  void set_all_detector_response_without_atmospheric_absorption(
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency);
+  void set_all_detector_and_atmosphere_response(
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+    double w0);
+  void set_all_cone_angular_response(
+    const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency);
+
+  void set_scope_detection_efficiencies(unsigned iscope,
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+    double w0,
+    const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency = { 1.0 });
+  void set_scope_detector_response_without_atmospheric_absorption(unsigned iscope,
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency);
+  void set_scope_detector_and_atmosphere_response(unsigned iscope,
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+    double w0);
+  void set_scope_cone_angular_response(unsigned iscope,
+    const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency);
 };
 
 } } } // namespace calin::simulation::quadrature_iact_array_integration

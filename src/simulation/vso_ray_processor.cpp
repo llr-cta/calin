@@ -132,7 +132,8 @@ VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   rng_(rng ? rng : new calin::math::rng::RNG),
   adopt_rng_(rng ? adopt_rng : true),
-  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_))
+  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_)),
+  scope_response_(array->numTelescopes())
 {
   // nothing to see hee
 }
@@ -147,7 +148,8 @@ VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
   adopt_visitor_(true),
   rng_(rng ? rng : new calin::math::rng::RNG),
   adopt_rng_(rng ? adopt_rng : true),
-  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_))
+  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_)),
+  scope_response_(array->numTelescopes())
 {
   // nothing to see here
 }
@@ -189,14 +191,14 @@ void VSORayProcessor::process_ray(unsigned scope_id,
   vs_optics::VSOTraceInfo trace_info;
   ray_tracer_->trace(ray_copy, trace_info, scope);
 
-
-  if(scope_id < effective_bandwidth_.size())
-    pe_weight *= effective_bandwidth_[scope_id].bandwidth(z0, std::fabs(w));
+  const ScopeResponse& scope_response { scope_response_[scope_id] };
+  if(scope_response.has_effective_bandwidth)
+    pe_weight *= scope_response.effective_bandwidth.bandwidth(z0, std::fabs(w));
   else
-    pe_weight *= detector_bandwidth_;
+    pe_weight *= scope_response.detector_bandwidth;
 
   if(trace_info.rayHitFocalPlane())
-    pe_weight *= cone_efficiency_.y(trace_info.fplane_uy);
+    pe_weight *= scope_response.cone_efficiency.y(trace_info.fplane_uy);
 
 #if 0
   static unsigned counter = 0;
@@ -234,45 +236,94 @@ void VSORayProcessor::add_pe_visitor(
     adopt_visitor), true);
 }
 
-void VSORayProcessor::set_detector_response_without_atmospheric_absorption(
-  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency)
-{
-  effective_bandwidth_.clear();
-  detector_bandwidth_ = detector_efficiency.integrate();
-}
-
-void VSORayProcessor::set_detector_and_atmosphere_response(
-  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
-  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
-  double w0)
-{
-  detector_bandwidth_ = 1.0;
-  effective_bandwidth_.clear();
-  for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++) {
-    auto* scope = array_->telescope(iscope);
-    effective_bandwidth_.emplace_back(atmospheric_absorption.integrateBandwidth(
-      scope->position().z(), std::fabs(w0), detector_efficiency));
-  }
-}
-
-void VSORayProcessor::set_cone_angular_response(
-  const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
-{
-  cone_efficiency_ = cone_efficiency;
-}
-
-void VSORayProcessor::set_detection_efficiencies(
+void VSORayProcessor::set_all_detection_efficiencies(
   const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
   const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
   double w0,
   const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
 {
-  effective_bandwidth_.clear();
-  detector_bandwidth_ = 1.0;
-  for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++) {
-    auto* scope = array_->telescope(iscope);
-    effective_bandwidth_.emplace_back(atmospheric_absorption.integrateBandwidth(
-      scope->position().z(), std::fabs(w0), detector_efficiency));
-  }
-  cone_efficiency_ = cone_efficiency;
+  for(unsigned iscope=0; iscope<scope_response_.size(); iscope++)
+    set_scope_detection_efficiencies(iscope, detector_efficiency,
+      atmospheric_absorption, w0, cone_efficiency);
+}
+
+void VSORayProcessor::set_all_detector_response_without_atmospheric_absorption(
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency)
+{
+  for(unsigned iscope=0; iscope<scope_response_.size(); iscope++)
+    set_scope_detector_response_without_atmospheric_absorption(iscope, detector_efficiency);
+}
+
+void VSORayProcessor::set_all_detector_and_atmosphere_response(
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+  double w0)
+{
+  for(unsigned iscope=0; iscope<scope_response_.size(); iscope++)
+    set_scope_detector_and_atmosphere_response(iscope, detector_efficiency,
+      atmospheric_absorption, w0);
+}
+
+void VSORayProcessor::set_all_cone_angular_response(
+  const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
+{
+  for(unsigned iscope=0; iscope<scope_response_.size(); iscope++)
+    set_scope_cone_angular_response(iscope, cone_efficiency);
+}
+
+void VSORayProcessor::set_scope_detection_efficiencies(unsigned iscope,
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+  double w0,
+  const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
+{
+  if(iscope >= scope_response_.size())
+    throw std::out_of_range("Scope not defined: " + std::to_string(iscope));
+
+  auto* scope = array_->telescope(iscope);
+  scope_response_[iscope].has_effective_bandwidth = true;
+  scope_response_[iscope].effective_bandwidth =
+    atmospheric_absorption.integrateBandwidth(
+      scope->position().z(), std::fabs(w0), detector_efficiency);
+  scope_response_[iscope].detector_bandwidth = detector_efficiency.integrate();
+  scope_response_[iscope].cone_efficiency = cone_efficiency;
+}
+
+void VSORayProcessor::
+set_scope_detector_response_without_atmospheric_absorption(unsigned iscope,
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency)
+{
+  if(iscope >= scope_response_.size())
+    throw std::out_of_range("Scope not defined: " + std::to_string(iscope));
+
+  scope_response_[iscope].has_effective_bandwidth = false;
+  scope_response_[iscope].effective_bandwidth =
+    calin::simulation::detector_efficiency::ACTEffectiveBandwidth(1.0);
+  scope_response_[iscope].detector_bandwidth = detector_efficiency.integrate();
+}
+
+void VSORayProcessor::
+set_scope_detector_and_atmosphere_response(unsigned iscope,
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+  double w0)
+{
+  if(iscope >= scope_response_.size())
+    throw std::out_of_range("Scope not defined: " + std::to_string(iscope));
+
+  auto* scope = array_->telescope(iscope);
+  scope_response_[iscope].has_effective_bandwidth = true;
+  scope_response_[iscope].effective_bandwidth =
+    atmospheric_absorption.integrateBandwidth(
+      scope->position().z(), std::fabs(w0), detector_efficiency);
+  scope_response_[iscope].detector_bandwidth = detector_efficiency.integrate();
+}
+
+void VSORayProcessor::set_scope_cone_angular_response(unsigned iscope,
+  const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
+{
+  if(iscope >= scope_response_.size())
+    throw std::out_of_range("Scope not defined: " + std::to_string(iscope));
+
+  scope_response_[iscope].cone_efficiency = cone_efficiency;
 }
