@@ -21,6 +21,7 @@
 
 */
 
+#include <Eigen/Geometry>
 #include <simulation/bfield_track_generator.hpp>
 #include <io/log.hpp>
 #include <math/constants.hpp>
@@ -39,7 +40,7 @@ BFieldTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
     PropagationMode propagation_mode, bool adopt_visitor):
   visitor_(visitor), adopt_visitor_(adopt_visitor), bfield_(bfield_nT),
   propagation_mode_(propagation_mode), zground_or_dist_(zground_or_dist),
-  step_size_(step_size)
+  step_size_(std::abs(step_size))
 {
   // nothing to see here
 }
@@ -65,12 +66,6 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
   event.t0       = 0.0;
   event.weight   = weight;
 
-  const double gamma = track.e0/track.mass;
-  assert(gamma >= 1);
-  const double v = std::sqrt(1.0-1.0/SQR(gamma))*calin::math::constants::cgs_c;
-  const double dt = step_size_/v;
-  const double gyro = GYRO_CONST * track.q / gamma / track.mass * dt;
-
   tracker::Track track;
   track.type     = event.type;
   track.pdg_type = event.pdg_type;
@@ -81,6 +76,13 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
   track.e1       = event.e0;
   track.dx       = step_size_;
   track.de       = 0.0;
+
+  const double gamma = track.e0/track.mass;
+  assert(gamma >= 1);
+  const double v = std::sqrt(1.0-1.0/SQR(gamma))*calin::math::constants::cgs_c;
+  const double dt = step_size_/v;
+  const double gyro = GYRO_CONST * track.q / gamma / track.mass * dt;
+
   track.dt       = dt;
 
   while(num_events--)
@@ -97,12 +99,12 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
       track.u1       = event.u0;
       track.t1       = event.t0;
 
-      Eigen::Vector3d umid = u0 + 0.5*gyro*u0.cross(bfield_))
+      Eigen::Vector3d umid = u0 + 0.5*gyro*u0.cross(bfield_);
       umid.normalize();
 
       while(x.z() > zground_or_dist_)
       {
-        track.x0     = track.x1
+        track.x0     = track.x1;
         track.u0     = track.u1;
         track.t0     = track.t1;
 
@@ -111,7 +113,7 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
 
         track.dx_hat = umid;
 
-        Eigen::Vector3d umid_new = umid + gyro*umid.cross(bfield_));
+        Eigen::Vector3d umid_new = umid + gyro*umid.cross(bfield_);
         umid_new.normalize();
 
         track.u1     = 0.5*(umid + umid_new);
@@ -126,13 +128,13 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
       track.u0       = event.u0;
       track.t0       = event.t0;
 
-      Eigen::Vector3d umid = u0 - 0.5*gyro*u0.cross(bfield_))
+      Eigen::Vector3d umid = u0 - 0.5*gyro*u0.cross(bfield_);
       umid.normalize();
 
       double dist = 0;
       while(dist < zground_or_dist_)
       {
-        track.x1     = track.x0
+        track.x1     = track.x0;
         track.u1     = track.u0;
         track.t1     = track.t0;
 
@@ -141,7 +143,7 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
 
         track.dx_hat = umid;
 
-        Eigen::Vector3d umid_new = umid - gyro*umid.cross(bfield_));
+        Eigen::Vector3d umid_new = umid - gyro*umid.cross(bfield_);
         umid_new.normalize();
 
         track.u0     = 0.5*(umid + umid_new);
@@ -149,7 +151,7 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
 
         umid = umid_new;
 
-        dist += step_size;
+        dist += step_size_;
       }
 
     }

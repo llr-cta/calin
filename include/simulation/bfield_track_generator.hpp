@@ -59,7 +59,7 @@ class BFieldTrackGenerator
   bool adopt_visitor_ = false;
   Eigen::Vector3d bfield_;
   PropagationMode propagation_mode_ = FWD_TO_GROUND;
-  double zground_or_dist = 0.0;
+  double zground_or_dist_ = 0.0;
   double step_size_ = 1.0;
   int event_id_ = 0;
 };
