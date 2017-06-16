@@ -27,6 +27,7 @@
 %{
 #include "simulation/tracker.hpp"
 #include "simulation/straight_track_generator.hpp"
+#include "simulation/bfield_track_generator.hpp"
 #include "simulation/air_cherenkov_tracker.hpp"
 #include "simulation/iact_array_tracker.hpp"
 #include "simulation/quadrature_iact_array_integration.hpp"
@@ -53,6 +54,7 @@
 
 %include "simulation/tracker.hpp"
 %include "simulation/straight_track_generator.hpp"
+%include "simulation/bfield_track_generator.hpp"
 %include "simulation/air_cherenkov_tracker.hpp"
 %include "simulation/iact_array_tracker.hpp"
 %include "simulation/quadrature_iact_array_integration.hpp"
