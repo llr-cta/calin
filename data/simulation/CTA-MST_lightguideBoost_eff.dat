@@ -1,4 +1,5 @@
-# Measured efficiency of MST light guides with Aluminium protected coating
+# data/simulation/CTA-MST_lightguideBoost_eff.dat
+# Measured efficiency of MST light guides with boosted Aluminium protected coating
 # Average of efficiency measured at 325, 390, 420, 440, 480 and 517nm on IPAG test benc
 # Provided by Pierre-Olivier Petrucci, March 17, 2017.
 # Using the following input data:
