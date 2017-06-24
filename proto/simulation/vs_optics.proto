@@ -318,10 +318,10 @@ message ReflectorFrameParameters
     [(CFO).desc = "Reflector grid rotation about the optical axis.",
      (CFO).units = "deg"];
   double facet_grid_shift_x                                = 7
-    [(CFO).desc = "Refector grid shift with respect to optic axis in x.",
+    [(CFO).desc = "Reflector grid shift with respect to optic axis in x.",
      (CFO).units = "cm"];
   double facet_grid_shift_z                                = 8
-   [(CFO).desc = "Refector grid shift with respect to optic axis in z.",
+   [(CFO).desc = "Reflector grid shift with respect to optic axis in z.",
     (CFO).units = "cm"];
 };
 
@@ -407,7 +407,9 @@ message HexDCReflectorParameters
      "reflector. It does not make sense to have facet_size > facet_spacing.",
      (CFO).units = "cm"];
   double facet_focal_length                                = 12
-    [(CFO).desc = "Focal length of a mirror facet.",
+    [(CFO).desc = "Focal length of a mirror facet. A value of zero forces "
+     "the focal length of each facet to be calculated from its position on "
+     "the reflector with respect to the focal plane.",
      (CFO).units = "cm"];
   double facet_focal_length_dispersion                     = 13
     [(CFO).desc = "Dispersion of mirror facet focal length.",
