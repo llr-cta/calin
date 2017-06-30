@@ -45,6 +45,17 @@ BFieldTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
   // nothing to see here
 }
 
+BFieldTrackGenerator::
+BFieldTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
+    double zground_or_dist, double step_size,
+    PropagationMode propagation_mode, bool adopt_visitor):
+  visitor_(visitor), adopt_visitor_(adopt_visitor), bfield_(Eigen::Vector3d::Zero()),
+  propagation_mode_(propagation_mode), zground_or_dist_(zground_or_dist),
+  step_size_(std::abs(step_size))
+{
+  // nothing to see here
+}
+
 BFieldTrackGenerator::~BFieldTrackGenerator()
 {
   if(adopt_visitor_)delete visitor_;
@@ -81,7 +92,7 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
   assert(gamma >= 1);
   const double v = std::sqrt(1.0-1.0/SQR(gamma))*calin::math::constants::cgs_c;
   const double dt = step_size_/v;
-  const double gyro = GYRO_CONST * track.q / gamma / track.mass * dt;
+  const double gyro = GYRO_CONST * track.q / track.e0 * dt;
 
   track.dt       = dt;
 
@@ -102,7 +113,8 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
       Eigen::Vector3d umid = u0 + 0.5*gyro*u0.cross(bfield_);
       umid.normalize();
 
-      while(x.z() > zground_or_dist_)
+      bool kill_track = false;
+      while(x.z() > zground_or_dist_ and not kill_track)
       {
         track.x0     = track.x1;
         track.u0     = track.u1;
@@ -120,9 +132,11 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
         track.u1.normalize();
 
         umid = umid_new;
+
+        visitor_->visit_track(track, kill_track);
       }
     }
-    else
+    else // propagation_mode_ == BWD_FIXED_DISTANCE
     {
       track.x0       = event.x0;
       track.u0       = event.u0;
@@ -132,7 +146,8 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
       umid.normalize();
 
       double dist = 0;
-      while(dist < zground_or_dist_)
+      bool kill_track = false;
+      while(dist < zground_or_dist_ and not kill_track)
       {
         track.x1     = track.x0;
         track.u1     = track.u0;
@@ -152,12 +167,12 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
         umid = umid_new;
 
         dist += step_size_;
+
+        visitor_->visit_track(track, kill_track);
       }
 
     }
 
-    bool kill_track = false;
-    visitor_->visit_track(track, kill_track);
     visitor_->leave_event();
   }
 }

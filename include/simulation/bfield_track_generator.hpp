@@ -45,6 +45,10 @@ class BFieldTrackGenerator
     const Eigen::Vector3d& bfield_nT, double zground_or_dist, double step_size,
     PropagationMode propagation_mode = FWD_TO_GROUND,
     bool adopt_visitor = false);
+  BFieldTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
+    double zground_or_dist, double step_size,
+    PropagationMode propagation_mode = FWD_TO_GROUND,
+    bool adopt_visitor = false);
   virtual ~BFieldTrackGenerator();
 
   void generate_showers(unsigned num_events,
