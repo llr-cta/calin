@@ -18,7 +18,8 @@ set(CALIN_SOURCES atmosphere.cpp pmt.cpp
 	vso_pixel.cpp vso_mirror.cpp vso_obscuration.cpp vso_telescope.cpp
   vso_array.cpp vso_raytracer.cpp
 	pe_processor.cpp ray_processor.cpp vso_ray_processor.cpp
-	air_cherenkov_tracker.cpp iact_array_tracker.cpp tracker.cpp
+	air_cherenkov_tracker.cpp iact_array_tracker.cpp
+	tracker.cpp misc_trackers.cpp
   straight_track_generator.cpp quadrature_iact_array_integration.cpp
  	bfield_track_generator.cpp vso_quadrature_iact_array_integration.cpp
 	detector_efficiency.cpp world_magnetic_model.cpp

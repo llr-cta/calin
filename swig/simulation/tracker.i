@@ -26,6 +26,7 @@
 
 %{
 #include "simulation/tracker.hpp"
+#include "simulation/misc_trackers.hpp"
 #include "simulation/straight_track_generator.hpp"
 #include "simulation/bfield_track_generator.hpp"
 #include "simulation/air_cherenkov_tracker.hpp"
@@ -53,6 +54,11 @@
 //%newobject *::create_from_proto;
 
 %include "simulation/tracker.hpp"
+
+%template (VectorSimulationTrack) std::vector<calin::simulation::tracker::Event>;
+%template (VectorSimulationEvent) std::vector<calin::simulation::tracker::Track>;
+
+%include "simulation/misc_trackers.hpp"
 %include "simulation/straight_track_generator.hpp"
 %include "simulation/bfield_track_generator.hpp"
 %include "simulation/air_cherenkov_tracker.hpp"

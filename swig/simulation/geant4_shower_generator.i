@@ -25,6 +25,7 @@
 %{
 //#include <G4Exception.hh>
 #include "simulation/tracker.hpp"
+#include "simulation/misc_trackers.hpp"
 #include "simulation/straight_track_generator.hpp"
 #include "simulation/air_cherenkov_tracker.hpp"
 #include "simulation/iact_array_tracker.hpp"
