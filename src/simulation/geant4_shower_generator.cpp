@@ -35,6 +35,7 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                       unsigned num_atm_layers, double zground, double ztop,
                       calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
                       VerbosityLevel verbose_level, uint32_t seed,
+                      double default_cut_value_cm,
                       bool adopt_visitor, bool adopt_atm, bool adopt_bfield):
     visitor_(visitor), adopt_visitor_(adopt_visitor),
     atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground),
@@ -91,7 +92,7 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
 
   // set mandatory initialization classes
   FTFP_BERT* physlist = new FTFP_BERT(verbose_everything);
-  physlist->SetDefaultCutValue(10*CLHEP::cm);
+  physlist->SetDefaultCutValue(default_cut_value_cm*CLHEP::cm);
   physlist->SetVerboseLevel(verbose_everything);
   run_manager_->SetUserInitialization(physlist);
 
