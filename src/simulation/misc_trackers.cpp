@@ -252,3 +252,47 @@ visit_track(const Track& track, bool& kill_track)
       (type_filter_.empty() or type_filter_.find(track.type)!=type_filter_.end()))
     ground_tracks_.push_back(track);
 }
+
+RecordingTrackVisitor::RecordingTrackVisitor(): TrackVisitor()
+{
+  // nothing to see here
+}
+
+RecordingTrackVisitor::~RecordingTrackVisitor()
+{
+  // nothing to see here
+}
+
+void RecordingTrackVisitor::
+add_particle_type_filter(calin::simulation::tracker::ParticleType pt)
+{
+  type_filter_.insert(pt);
+}
+
+void RecordingTrackVisitor::
+visit_event(const Event& event, bool& kill_event)
+{
+  tracks_.clear();
+  event_ = event;
+}
+
+void RecordingTrackVisitor::
+visit_track(const Track& track, bool& kill_track)
+{
+  if(type_filter_.empty() or type_filter_.find(track.type)!=type_filter_.end())
+    tracks_.push_back(track);
+}
+
+void RecordingTrackVisitor::
+replay_event(calin::simulation::tracker::TrackVisitor* visitor) const
+{
+  bool kill_event = false;
+  visitor->visit_event(event_, kill_event);
+  if(!kill_event) {
+    for(const auto& track : tracks_) {
+      bool kill_track = false;
+      visitor->visit_track(track, kill_track);
+    }
+  }
+  visitor->leave_event();
+}

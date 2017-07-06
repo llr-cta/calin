@@ -95,4 +95,22 @@ private:
   std::set<calin::simulation::tracker::ParticleType> type_filter_;
 };
 
+class RecordingTrackVisitor: public calin::simulation::tracker::TrackVisitor
+{
+public:
+  RecordingTrackVisitor();
+  virtual ~RecordingTrackVisitor();
+  virtual void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event);
+  virtual void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track);
+  void add_particle_type_filter(calin::simulation::tracker::ParticleType pt);
+  calin::simulation::tracker::Event event() const { return event_; }
+  std::vector<calin::simulation::tracker::Track> tracks() const { return tracks_; }
+  void replay_event(calin::simulation::tracker::TrackVisitor* visitor) const;
+private:
+  calin::simulation::tracker::Event event_;
+  std::vector<calin::simulation::tracker::Track> tracks_;
+  std::set<calin::simulation::tracker::ParticleType> type_filter_;
+};
+
+
 } } } // namerspace calin::simulation::misc_trackers
