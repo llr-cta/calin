@@ -38,10 +38,17 @@ def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0):
     mst.mutable_array_origin().set_latitude(dms(28, 45, 47.36))
     mst.mutable_array_origin().set_longitude(dms(-17, 53, 23.93))
     mst.mutable_array_origin().set_elevation(2147 * 100.0)
-    scope = mst.mutable_prescribed_array_layout().add_scope_positions();
-    scope.set_x(scope_x)
-    scope.set_y(scope_y)
-    scope.set_z(mst.array_origin().elevation())
+    try:
+        for i in range(max(len(scope_x), len(scope_y))):
+            scope = mst.mutable_prescribed_array_layout().add_scope_positions();
+            scope.set_x(scope_x[i])
+            scope.set_y(scope_y[i])
+            scope.set_z(mst.array_origin().elevation())
+    except:
+        scope = mst.mutable_prescribed_array_layout().add_scope_positions();
+        scope.set_x(scope_x)
+        scope.set_y(scope_y)
+        scope.set_z(mst.array_origin().elevation())
     mst.mutable_reflector_frame().set_optic_axis_rotation(-90);
     dc = mst.mutable_reflector()
     dc.set_curvature_radius(1920)
@@ -88,10 +95,17 @@ def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
     lst.mutable_array_origin().set_latitude(dms(28, 45, 47.36))
     lst.mutable_array_origin().set_longitude(dms(-17, 53, 23.93))
     lst.mutable_array_origin().set_elevation(2147 * 100.0)
-    scope = lst.mutable_prescribed_array_layout().add_scope_positions();
-    scope.set_x(scope_x)
-    scope.set_y(scope_y)
-    scope.set_z(lst.array_origin().elevation())
+    try:
+        for i in range(max(len(scope_x), len(scope_y))):
+            scope = lst.mutable_prescribed_array_layout().add_scope_positions();
+            scope.set_x(scope_x[i])
+            scope.set_y(scope_y[i])
+            scope.set_z(lst.array_origin().elevation())
+    except:
+        scope = lst.mutable_prescribed_array_layout().add_scope_positions();
+        scope.set_x(scope_x)
+        scope.set_y(scope_y)
+        scope.set_z(lst.array_origin().elevation())
     lst.mutable_reflector_frame().set_optic_axis_rotation(0);
     lst.mutable_reflector_frame().set_facet_grid_shift_z(44.46)
     dc = lst.mutable_reflector()
