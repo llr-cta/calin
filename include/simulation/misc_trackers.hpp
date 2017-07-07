@@ -89,6 +89,7 @@ public:
   virtual void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track);
   void add_particle_type_filter(calin::simulation::tracker::ParticleType pt);
   std::vector<calin::simulation::tracker::Track> ground_tracks() const { return ground_tracks_; }
+  void clear_tracks() { ground_tracks_.clear(); }
 private:
   std::vector<calin::simulation::tracker::Track> ground_tracks_;
   double ground_level_cm_ = 0;
@@ -106,6 +107,7 @@ public:
   calin::simulation::tracker::Event event() const { return event_; }
   std::vector<calin::simulation::tracker::Track> tracks() const { return tracks_; }
   void replay_event(calin::simulation::tracker::TrackVisitor* visitor) const;
+  void clear_tracks() { tracks_.clear(); }
 private:
   calin::simulation::tracker::Event event_;
   std::vector<calin::simulation::tracker::Track> tracks_;
