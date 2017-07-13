@@ -98,6 +98,7 @@ matrix:
         apt:
           sources:
           - *common_sources
+          - llvm-toolchain-trusty-4.0
           packages:
           - *common_packages
           - clang-4.0
