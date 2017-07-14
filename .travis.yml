@@ -107,7 +107,7 @@ matrix:
           - libclang-3.9-dev
           - libclang1-3.9
           - libclang1-3.9-dbg
-          - libllvm-3.9v4-ocaml-dev
+          - libllvm-3.9-ocaml-dev
           - libllvm3.9v4
           - libllvm3.9v4-dbg
           - lldb-3.9
