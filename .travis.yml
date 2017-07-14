@@ -21,113 +21,74 @@ addons:
 
 matrix:
   include:
-#     - compiler: gcc-4.9
-#       env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-4.9 BUILD_CXX=g++-4.9
-#       addons: &gcc49_addons
-#         apt:
-#           sources:
-#           - *common_sources
-#           packages:
-#           - *common_packages
-#           - g++-4.9
-# #    - compiler: gcc-4.9
-# #      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.9 BUILD_CXX=g++-4.9
-# #      addons:
-# #        <<: *gcc49_addons
-# #    - compiler: gcc-4.9
-# #      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.9 BUILD_CXX=g++-4.9
-# #      addons:
-# #        <<: *gcc49_addons
-#     - compiler: gcc-5
-#       env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
-#       addons: &gcc5_addons
-#         apt:
-#           sources:
-#           - *common_sources
-#           packages:
-#           - *common_packages
-#           - g++-5
-#     - compiler: gcc-5
-#       env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
-#       addons:
-#         <<: *gcc5_addons
-#     - compiler: gcc-5
-#       env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5
-#       addons:
-#         <<: *gcc5_addons
-#     - compiler: gcc-6
-#       env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-6 BUILD_CXX=g++-6
-#       addons: &gcc6_addons
-#         apt:
-#           sources:
-#           - *common_sources
-#           packages:
-#           - *common_packages
-#           - g++-6
-    # - compiler: clang-3.7
-    #   env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
-    #   addons: &clang37_addons
-    #     apt:
-    #       sources:
-    #       - *common_sources
-    #       - llvm-toolchain-trusty-3.7
-    #       packages:
-    #       - *common_packages
-    #       - clang-3.7
-#    - compiler: clang-3.7
-#      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
-#      addons:
-#        <<: *clang37_addons
-#    - compiler: clang-3.7
-#      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
-#      addons:
-#        <<: *clang37_addons
-    # - compiler: clang-3.8
-    #   env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.8 BUILD_CXX=clang++-3.8
-    #   addons: &clang38_addons
-    #     apt:
-    #       sources:
-    #       - *common_sources
-    #       packages:
-    #       - *common_packages
-    #       - clang-3.8
-    #       - llvm-3.8-dev
-    - compiler: clang-3.9
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.9 BUILD_CXX=clang++-3.9
-      addons: &clang39_addons
+    - compiler: gcc-4.9
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-4.9 BUILD_CXX=g++-4.9
+      addons: &gcc49_addons
         apt:
           sources:
           - *common_sources
-          - llvm-toolchain-trusty
-          - llvm-toolchain-trusty-3.9
           packages:
           - *common_packages
-          - clang-3.9
-          - libclang-common-3.9-dev
-          - libclang-3.9-dev
-          - libclang1-3.9
-          - libclang1-3.9-dbg
-          - libllvm-3.9-ocaml-dev
-          - libllvm3.9v4
-          - libllvm3.9v4-dbg
-          - lldb-3.9
-          - llvm-3.9
-          - llvm-3.9-dev
-          - llvm-3.9-runtime
-          - clang-format-3.9
-          - python-clang-3.9
-          - libfuzzer-3.9-dev
-    # - compiler: clang-4.0
-    #   env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-4.0 BUILD_CXX=clang++-4.0
-    #   addons: &clang40_addons
+          - g++-4.9
+#    - compiler: gcc-4.9
+#      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-4.9 BUILD_CXX=g++-4.9
+#      addons:
+#        <<: *gcc49_addons
+#    - compiler: gcc-4.9
+#      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.9 BUILD_CXX=g++-4.9
+#      addons:
+#        <<: *gcc49_addons
+    - compiler: gcc-5
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+      addons: &gcc5_addons
+        apt:
+          sources:
+          - *common_sources
+          packages:
+          - *common_packages
+          - g++-5
+    - compiler: gcc-5
+      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+      addons:
+        <<: *gcc5_addons
+    - compiler: gcc-5
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+      addons:
+        <<: *gcc5_addons
+    - compiler: gcc-6
+      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=gcc-6 BUILD_CXX=g++-6
+      addons: &gcc6_addons
+        apt:
+          sources:
+          - *common_sources
+          packages:
+          - *common_packages
+          - g++-6
+    # - compiler: clang-3.9
+    #   env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.9 BUILD_CXX=clang++-3.9
+    #   addons: &clang39_addons
     #     apt:
     #       sources:
     #       - *common_sources
-    #       - llvm-toolchain-trusty-4.0
+    #       - llvm-toolchain-trusty
+    #       - llvm-toolchain-trusty-3.9
     #       packages:
     #       - *common_packages
-    #       - clang-4.0
-    #       - llvm-4.0-dev
+    #       - clang-3.9
+    #       - libclang-common-3.9-dev
+    #       - libclang-3.9-dev
+    #       - libclang1-3.9
+    #       - libclang1-3.9-dbg
+    #       - libllvm-3.9-ocaml-dev
+    #       - libllvm3.9v4
+    #       - libllvm3.9v4-dbg
+    #       - lldb-3.9
+    #       - llvm-3.9
+    #       - llvm-3.9-dev
+    #       - llvm-3.9-runtime
+    #       - clang-format-3.9
+    #       - python-clang-3.9
+    #       - libfuzzer-3.9-dev
 
 cache:
   directories:
