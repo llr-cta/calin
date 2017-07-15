@@ -65,7 +65,8 @@ def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0):
     dc.set_facet_spot_size_dispersion(0.5 * 0.02)
     dc.set_facet_labeling_parity(True)
     dc.set_weathering_factor(1.0)
-    for id in [1,62,67,72,77,82,87]: dc.add_facet_missing_list(id-1)
+    #for id in [1,62,67,72,77,82,87]: dc.add_facet_missing_list(id-1) # 84 mirror
+    for id in [1,67,72,82,87]: dc.add_facet_missing_list(id-1) # 84 mirror
     mst.mutable_focal_plane().set_camera_diameter(235)
     mst.mutable_focal_plane().mutable_translation().set_y(1/(1.0/dc.alignment_image_plane()-1/(10 * 1e5)))
     mst.mutable_pixel().set_spacing(5)
