@@ -156,6 +156,11 @@ generate_showers(unsigned num_events,
   G4ParticleDefinition* particle
       = particle_table->FindParticle(particle_type_to_pdg_type(type));
 
+  if(total_energy * CLHEP::MeV < particle->GetPDGMass())
+    throw std::invalid_argument(
+      "Total energy must be larger than particle rest mass ("
+      + std::to_string(particle->GetPDGMass()/CLHEP::MeV) + " MeV)");
+
   G4ThreeVector position;
   eigen_to_g4vec(position, x0, CLHEP::cm);
 
@@ -169,7 +174,7 @@ generate_showers(unsigned num_events,
   sps->GetAngDist()->SetAngDistType("planar");
   sps->GetAngDist()->SetParticleMomentumDirection(momentum_direction);
   sps->GetEneDist()->SetEnergyDisType("Mono");
-  sps->GetEneDist()->SetMonoEnergy(total_energy * CLHEP::MeV);
+  sps->GetEneDist()->SetMonoEnergy(total_energy * CLHEP::MeV - particle->GetPDGMass());
 
   gen_action_->setGPS(gps);
 
