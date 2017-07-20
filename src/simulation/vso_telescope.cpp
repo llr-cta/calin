@@ -41,6 +41,7 @@ VSOTelescope::VSOTelescope():
     fTranslation(), fCurvatureRadius(), fAperture(),
     fFacetSpacing(), fFacetSize(),
     fReflectorRotation(), fCosReflectorRotation(1.0), fSinReflectorRotation(),
+    fFacetGridShiftX(), fFacetGridShiftZ(),
     fHexagonRingsN(), fReflectorIP(), fReflectorIPCenter(),
     fMirrorParity(), fFPTranslation(), fCameraDiameter(),
     fFieldOfView(), fCathodeDiameter(), fPixelSpacing(), fPixelRotation(),
@@ -58,7 +59,8 @@ VSOTelescope::
 VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
 	     double DY, double AX, double AY, double EL, double AZ,
 	     const Eigen::Vector3d& T, double CR, double A, double FSP, double FS,
-	     double RR, unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
+	     double RR, double FGSX, double FGSZ,
+       unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
 	     const Eigen::Vector3d& FPT, double CD, double FOV,
        double D, double PS, double PR,
 	     double CSP, const Eigen::Vector3d& FPR, double CIP, bool PP,
@@ -67,8 +69,9 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
     fID(TID), /*fTelescopeHexID(THID),*/ fPos(P),
     fDeltaY(DY), fAlphaX(AX), fAlphaY(AY), fElevation(EL), fAzimuth(AZ),
     fTranslation(T), fCurvatureRadius(CR), fAperture(A), fFacetSpacing(FSP),
-    fFacetSize(FS), fReflectorRotation(RR),
-    fCosReflectorRotation(std::cos(RR)), fSinReflectorRotation(std::sin(RR)),
+    fFacetSize(FS),
+    fReflectorRotation(RR), fCosReflectorRotation(std::cos(RR)), fSinReflectorRotation(std::sin(RR)),
+    fFacetGridShiftX(FGSX), fFacetGridShiftZ(FGSZ),
     fHexagonRingsN(HRN), fReflectorIP(RIP), fReflectorIPCenter(RIPC), fMirrorParity(MP),
     fFPTranslation(FPT),  fCameraDiameter(CD), fFieldOfView(FOV),
     fCathodeDiameter(D), fPixelSpacing(PS), fPixelRotation(PR),
@@ -91,6 +94,8 @@ VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fReflectorRotation(o.fReflectorRotation),
     fCosReflectorRotation(o.fCosReflectorRotation),
     fSinReflectorRotation(o.fSinReflectorRotation),
+    fFacetGridShiftX(o.fFacetGridShiftX),
+    fFacetGridShiftZ(o.fFacetGridShiftZ),
     fHexagonRingsN(o.fHexagonRingsN),
     fReflectorIP(o.fReflectorIP), fReflectorIPCenter(o.fReflectorIPCenter),
     fMirrorParity(o.fMirrorParity),
@@ -161,6 +166,8 @@ const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
   fReflectorRotation = o.fReflectorRotation;
   fCosReflectorRotation = o.fCosReflectorRotation;
   fSinReflectorRotation = o.fSinReflectorRotation;
+  fFacetGridShiftX   = o.fFacetGridShiftX;
+  fFacetGridShiftZ   = o.fFacetGridShiftZ;
   fHexagonRingsN     = o.fHexagonRingsN;
   fReflectorIP       = o.fReflectorIP;
   fReflectorIPCenter = o.fReflectorIPCenter;
@@ -348,7 +355,8 @@ populateMirrorsAndPixelsRandom(
         double x;
         double z;
         math::hex_array::hexid_to_xy_trans(hexid, x, z, fMirrorParity,
-          cos_reflector_rot, sin_reflector_rot, fFacetSpacing);
+          cos_reflector_rot, sin_reflector_rot, fFacetSpacing,
+          facetGridShiftX(), facetGridShiftZ());
         if(SQR(x)+SQR(z) <= reflector_r2)
         {
           has_mirror = true;
@@ -375,7 +383,8 @@ populateMirrorsAndPixelsRandom(
     // Compute the mirror's nominal position
     math::hex_array::hexid_to_xy_trans(hexid,
         nominal_position.x(), nominal_position.z(), fMirrorParity,
-        cos_reflector_rot, sin_reflector_rot, fFacetSpacing);
+        cos_reflector_rot, sin_reflector_rot, fFacetSpacing,
+        facetGridShiftX(), facetGridShiftZ());
 
     double X2 = SQR(nominal_position.x());
     double Z2 = SQR(nominal_position.z());
@@ -471,9 +480,10 @@ populateMirrorsAndPixelsRandom(
       throw std::runtime_error("Unknown alignment scheme");
     }
 
-    double focal_length =
-        param.reflector().facet_focal_length()
-        + rng.normal()*param.reflector().facet_focal_length_dispersion();
+    double focal_length = param.reflector().facet_focal_length();
+    if(focal_length == 0)
+      focal_length = (nominal_position-fFPTranslation).norm();
+    focal_length += rng.normal()*param.reflector().facet_focal_length_dispersion();
 
     double spot_size;
     if(param.reflector().facet_spot_size_dispersion() > 0)
@@ -610,6 +620,8 @@ dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const
   d->set_facet_spacing(fFacetSpacing);
   d->set_facet_size(fFacetSize);
   d->set_optic_axis_rotation(fReflectorRotation/M_PI*180.0);
+  d->set_facet_grid_shift_x(fFacetGridShiftX);
+  d->set_facet_grid_shift_z(fFacetGridShiftZ);
   d->set_hexagon_rings_n(fHexagonRingsN);
   d->set_reflector_ip(fReflectorIP);
   calin::math::vector3d_util::dump_as_proto(fReflectorIPCenter, d->mutable_reflector_ip_center());
@@ -652,6 +664,8 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
     d.facet_spacing(), // FSP
     d.facet_size(), // FS
     d.optic_axis_rotation()*M_PI/180.0, // RR
+    d.facet_grid_shift_x(), // FGSX
+    d.facet_grid_shift_z(), // FGSZ
     d.hexagon_rings_n(), // HRN
     d.reflector_ip(), // RIP
     calin::math::vector3d_util::from_proto(d.reflector_ip_center()), // RIPC

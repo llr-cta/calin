@@ -140,12 +140,73 @@ void VSO_QuadratureIACTArrayIntegrationHitVisitor::add_pe_visitor(
     ->add_pe_visitor(visitor,adopt_visitor);
 }
 
-void VSO_QuadratureIACTArrayIntegrationHitVisitor::set_detection_efficiencies(
+void VSO_QuadratureIACTArrayIntegrationHitVisitor::set_all_detection_efficiencies(
   const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
   const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
   double w0,
   const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
 {
-  dynamic_cast<VSORayProcessor*>(visitor_)->set_detection_efficiencies(
-    detector_efficiency, atmospheric_absorption, w0, cone_efficiency);
+  dynamic_cast<VSORayProcessor*>(visitor_)->
+    set_all_detection_efficiencies(
+      detector_efficiency, atmospheric_absorption, w0, cone_efficiency);
+}
+
+void VSO_QuadratureIACTArrayIntegrationHitVisitor::set_all_detector_response_without_atmospheric_absorption(
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency)
+{
+  dynamic_cast<VSORayProcessor*>(visitor_)->
+    set_all_detector_response_without_atmospheric_absorption(detector_efficiency);
+}
+
+void VSO_QuadratureIACTArrayIntegrationHitVisitor::set_all_detector_and_atmosphere_response(
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+  double w0)
+{
+  dynamic_cast<VSORayProcessor*>(visitor_)->
+    set_all_detector_and_atmosphere_response(detector_efficiency, atmospheric_absorption, w0);
+}
+
+void VSO_QuadratureIACTArrayIntegrationHitVisitor::set_all_cone_angular_response(
+  const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
+{
+  dynamic_cast<VSORayProcessor*>(visitor_)->set_all_cone_angular_response(cone_efficiency);
+}
+
+void VSO_QuadratureIACTArrayIntegrationHitVisitor::
+set_scope_detection_efficiencies(unsigned iscope,
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+  double w0,
+  const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
+{
+  dynamic_cast<VSORayProcessor*>(visitor_)->
+    set_scope_detection_efficiencies(
+      iscope, detector_efficiency, atmospheric_absorption, w0, cone_efficiency);
+}
+
+void VSO_QuadratureIACTArrayIntegrationHitVisitor::
+set_scope_detector_response_without_atmospheric_absorption(unsigned iscope,
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency)
+{
+  dynamic_cast<VSORayProcessor*>(visitor_)->
+    set_scope_detector_response_without_atmospheric_absorption(iscope, detector_efficiency);
+}
+
+void VSO_QuadratureIACTArrayIntegrationHitVisitor::
+set_scope_detector_and_atmosphere_response(unsigned iscope,
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+  double w0)
+{
+  dynamic_cast<VSORayProcessor*>(visitor_)->
+    set_scope_detector_and_atmosphere_response(iscope, detector_efficiency, atmospheric_absorption, w0);
+}
+
+void VSO_QuadratureIACTArrayIntegrationHitVisitor::
+set_scope_cone_angular_response(unsigned iscope,
+  const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
+{
+  dynamic_cast<VSORayProcessor*>(visitor_)->
+    set_scope_cone_angular_response(iscope, cone_efficiency);
 }

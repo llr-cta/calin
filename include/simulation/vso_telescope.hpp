@@ -66,7 +66,7 @@ class VSOTelescope
   VSOTelescope(unsigned TID, /*unsigned THID,*/ const Eigen::Vector3d&P,
                double DY, double AX, double AY, double EL, double AZ,
                const Eigen::Vector3d& T, double CR, double A,
-               double FSP, double FS, double RR,
+               double FSP, double FS, double RR, double FGSX, double FGSY,
                unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
                const Eigen::Vector3d& FPT, double CD, double FOV, double D,
                double PS, double PR, double CSP, const Eigen::Vector3d& FPR,
@@ -181,6 +181,8 @@ class VSOTelescope
   double                 facetSpacing() const { return  fFacetSpacing; }
   double                 facetSize() const { return  fFacetSize; }
   double                 reflectorRotation() const { return fReflectorRotation; }
+  double                 facetGridShiftX() const { return fFacetGridShiftX; }
+  double                 facetGridShiftZ() const { return fFacetGridShiftZ; }
   double                 cosReflectorRotation() const { return fCosReflectorRotation; }
   double                 sinReflectorRotation() const { return fSinReflectorRotation; }
   unsigned               mirrorHexRings() const { return fHexagonRingsN; }
@@ -240,6 +242,8 @@ class VSOTelescope
   double          fReflectorRotation; //!< Rotation about the axis of reflector
   double          fCosReflectorRotation; //!< Rotation about the axis of reflector
   double          fSinReflectorRotation; //!< Rotation about the axis of reflector
+  double          fFacetGridShiftX;   //!< X-shift of facet grid with respect to refector frame
+  double          fFacetGridShiftZ;   //!< Z-shift of facet grid with respect to refector frame
   unsigned        fHexagonRingsN;     //!< Number of hexagon rings of mirrors
   double          fReflectorIP;       //!< Diameter of minimum sphere embedding reflector
   Eigen::Vector3d fReflectorIPCenter; //!< Center of minimum sphere embedding reflector in reflector r.f.

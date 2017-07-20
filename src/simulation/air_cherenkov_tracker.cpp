@@ -100,7 +100,10 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   const double g2 = SQR(cherenkov.e_mid/track.mass); // gamma^2
   cherenkov.gamma_sq       = g2;
   const double b2 = 1.0 - 1.0/g2;                    // beta^2
-  cherenkov.sin2_thetac    = 1.0 - 1.0/(b2*SQR(cherenkov.n));
+  if(enable_forced_cherenkov_angle_mode_)
+    cherenkov.sin2_thetac  = forced_sin2_thetac_;
+  else
+    cherenkov.sin2_thetac  = 1.0 - 1.0/(b2*SQR(cherenkov.n));
   if(cherenkov.sin2_thetac <= 0.0)return;
   cherenkov.yield_density  =
     YIELD_CONST*SQR(track.q)*cherenkov.sin2_thetac*cherenkov.dx;
@@ -113,4 +116,21 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 void AirCherenkovParameterCalculatorTrackVisitor::leave_event()
 {
   visitor_->leave_event();
+}
+
+void AirCherenkovParameterCalculatorTrackVisitor::
+set_forced_cherenkov_angle(double theta_c_deg)
+{
+  if(enable_forced_cherenkov_angle_mode_)
+    forced_sin2_thetac_ = SQR(std::sin(theta_c_deg/180.0*M_PI));
+  else
+    throw std::runtime_error("Forced cherenkov angle mode not enabled.");
+}
+
+calin::ix::simulation::tracker::AirCherenkovParameterCalculatorTrackVisitorConfig
+AirCherenkovParameterCalculatorTrackVisitor::default_config()
+{
+  calin::ix::simulation::tracker::AirCherenkovParameterCalculatorTrackVisitorConfig cfg;
+  cfg.set_forced_cherenkov_angle(1.2);
+  return cfg;
 }

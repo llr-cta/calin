@@ -1,6 +1,7 @@
 # Build script for Travis CI container-based architecture
 # Stephen Fegan - sfegan@llr.in2p3.fr - 2015-11-01
 
+dist: trusty
 sudo: false
 language: cpp
 
@@ -63,34 +64,31 @@ matrix:
           packages:
           - *common_packages
           - g++-6
-    - compiler: clang-3.7
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
-      addons: &clang37_addons
-        apt:
-          sources:
-          - *common_sources
-          - llvm-toolchain-precise-3.7
-          packages:
-          - *common_packages
-          - clang-3.7
-#    - compiler: clang-3.7
-#      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
-#      addons:
-#        <<: *clang37_addons
-#    - compiler: clang-3.7
-#      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-3.7 BUILD_CXX=clang++-3.7
-#      addons:
-#        <<: *clang37_addons
-    - compiler: clang-3.8
-      env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.8 BUILD_CXX=clang++-3.8
-      addons: &clang38_addons
-        apt:
-          sources:
-          - *common_sources
-          - llvm-toolchain-precise-3.8
-          packages:
-          - *common_packages
-          - clang-3.8
+    # - compiler: clang-3.9
+    #   env: BUILD_TYPE=Debug GEANT4=TRUE BUILD_CC=clang-3.9 BUILD_CXX=clang++-3.9
+    #   addons: &clang39_addons
+    #     apt:
+    #       sources:
+    #       - *common_sources
+    #       - llvm-toolchain-trusty
+    #       - llvm-toolchain-trusty-3.9
+    #       packages:
+    #       - *common_packages
+    #       - clang-3.9
+    #       - libclang-common-3.9-dev
+    #       - libclang-3.9-dev
+    #       - libclang1-3.9
+    #       - libclang1-3.9-dbg
+    #       - libllvm-3.9-ocaml-dev
+    #       - libllvm3.9v4
+    #       - libllvm3.9v4-dbg
+    #       - lldb-3.9
+    #       - llvm-3.9
+    #       - llvm-3.9-dev
+    #       - llvm-3.9-runtime
+    #       - clang-format-3.9
+    #       - python-clang-3.9
+    #       - libfuzzer-3.9-dev
 
 cache:
   directories:

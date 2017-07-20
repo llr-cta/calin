@@ -1,6 +1,6 @@
 /*
 
-   calin/math/fftw_util.i -- Stephen Fegan -- 2017-01-19
+   calin/math/fftw_util.i -- Stephen Fegan -- 2017-05-19
 
    SWIG interface file for calin.math.fftw_util
 

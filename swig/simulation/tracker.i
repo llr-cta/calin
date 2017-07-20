@@ -6,7 +6,7 @@
 
    SWIG interface file for calin.simulation.tracker
 
-   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
 
    This file is part of "calin"
@@ -26,7 +26,9 @@
 
 %{
 #include "simulation/tracker.hpp"
+#include "simulation/misc_trackers.hpp"
 #include "simulation/straight_track_generator.hpp"
+#include "simulation/bfield_track_generator.hpp"
 #include "simulation/air_cherenkov_tracker.hpp"
 #include "simulation/iact_array_tracker.hpp"
 #include "simulation/quadrature_iact_array_integration.hpp"
@@ -52,7 +54,13 @@
 //%newobject *::create_from_proto;
 
 %include "simulation/tracker.hpp"
+
+%template (VectorSimulationTrack) std::vector<calin::simulation::tracker::Event>;
+%template (VectorSimulationEvent) std::vector<calin::simulation::tracker::Track>;
+
+%include "simulation/misc_trackers.hpp"
 %include "simulation/straight_track_generator.hpp"
+%include "simulation/bfield_track_generator.hpp"
 %include "simulation/air_cherenkov_tracker.hpp"
 %include "simulation/iact_array_tracker.hpp"
 %include "simulation/quadrature_iact_array_integration.hpp"

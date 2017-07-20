@@ -31,6 +31,8 @@
 
 #include"calin_global_definitions.hpp"
 
+#include <math/special.hpp>
+
 // Units:
 // Height, z:    cm
 // Density, rho: g/cm^3
@@ -99,6 +101,18 @@ public:
 #endif
 };
 
+inline double sin2_thetac_for_gamma_sq(double g2, double n)
+{
+  const double b2 = 1.0 - 1.0/g2;                    // beta^2
+  return 1.0 - 1.0/(b2*calin::math::special::SQR(n));
+}
+
+inline double sin2_thetac_for_energy(double energy, double mass, double n)
+{
+  double g2 = calin::math::special::SQR(energy/mass); // gamma^2
+  return sin2_thetac_for_gamma_sq(g2, n);
+}
+
 // Base class for all atmospheric models
 class Atmosphere
 {
@@ -120,6 +134,13 @@ class Atmosphere
   std::vector<AtmSlice> make_atm_slices(unsigned nslice,
                                         double zmax, double zmin);
   std::vector<AtmSlice> make_atm_slices(unsigned nslice);
+
+  double sin2_thetac_for_gamma_sq(double g2, double z) {
+    return calin::simulation::atmosphere::
+      sin2_thetac_for_gamma_sq(g2, 1.0+this->n_minus_one(z)); }
+  double sin2_thetac_for_energy(double energy, double mass, double z) {
+    return calin::simulation::atmosphere::
+      sin2_thetac_for_energy(energy, mass, 1.0+this->n_minus_one(z)); }
 };
 
 // Simple (i.e. unrealistic) isothermal atmosphere

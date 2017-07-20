@@ -31,6 +31,7 @@
 
 #include"simulation/atmosphere.hpp"
 #include"simulation/tracker.hpp"
+#include"simulation/tracker.pb.h"
 
 namespace calin { namespace simulation { namespace air_cherenkov_tracker {
 
@@ -85,16 +86,24 @@ class AirCherenkovParameterCalculatorTrackVisitor:
 public:
   AirCherenkovParameterCalculatorTrackVisitor(AirCherenkovTrackVisitor* visitor,
       calin::simulation::atmosphere::Atmosphere* atm,
+      const calin::ix::simulation::tracker::AirCherenkovParameterCalculatorTrackVisitorConfig& cfg = default_config(),
       bool adopt_visitor = false, bool adopt_atm = false):
     calin::simulation::tracker::TrackVisitor(),
     visitor_(visitor), adopt_visitor_(adopt_visitor),
-    atm_(atm), adopt_atm_(adopt_atm) { /* nothing to see here */ }
+    atm_(atm), adopt_atm_(adopt_atm) { if(cfg.enable_forced_cherenkov_angle_mode()) {
+      enable_forced_cherenkov_angle_mode_ = true;
+      set_forced_cherenkov_angle(cfg.forced_cherenkov_angle()); } }
   virtual ~AirCherenkovParameterCalculatorTrackVisitor();
   void visit_event(const Event& event, bool& kill_event) override;
   void visit_track(const calin::simulation::tracker::Track& track,
     bool& kill_track) override;
   void leave_event() override;
+  static calin::ix::simulation::tracker::AirCherenkovParameterCalculatorTrackVisitorConfig default_config();
+  void set_forced_cherenkov_angle(double theta_c_deg);
+  bool is_forced_cherenkov_angle_mode_enabled() { return enable_forced_cherenkov_angle_mode_; }
 private:
+  bool enable_forced_cherenkov_angle_mode_ = false;
+  double forced_sin2_thetac_ = -1.0;
   AirCherenkovTrackVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
   calin::simulation::atmosphere::Atmosphere* atm_ = nullptr;

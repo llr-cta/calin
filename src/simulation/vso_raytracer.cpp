@@ -222,7 +222,8 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
     math::hex_array::xy_trans_to_hexid_with_remainder(
       info.reflec_dx, info.reflec_dz, info.scope->mirrorParity(),
       info.scope->cosReflectorRotation(), info.scope->sinReflectorRotation(),
-      info.scope->facetSpacing());
+      info.scope->facetSpacing(),
+      info.scope->facetGridShiftX(), info.scope->facetGridShiftZ());
 
   // Find mirror - searching neighbors if desired
   good = findMirror(ray, info, ref_index);

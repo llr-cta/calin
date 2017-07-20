@@ -35,6 +35,7 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                       unsigned num_atm_layers, double zground, double ztop,
                       calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
                       VerbosityLevel verbose_level, uint32_t seed,
+                      double default_cut_value_cm,
                       bool adopt_visitor, bool adopt_atm, bool adopt_bfield):
     visitor_(visitor), adopt_visitor_(adopt_visitor),
     atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground),
@@ -91,7 +92,7 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
 
   // set mandatory initialization classes
   FTFP_BERT* physlist = new FTFP_BERT(verbose_everything);
-  physlist->SetDefaultCutValue(10*CLHEP::cm);
+  physlist->SetDefaultCutValue(default_cut_value_cm*CLHEP::cm);
   physlist->SetVerboseLevel(verbose_everything);
   run_manager_->SetUserInitialization(physlist);
 
@@ -155,6 +156,11 @@ generate_showers(unsigned num_events,
   G4ParticleDefinition* particle
       = particle_table->FindParticle(particle_type_to_pdg_type(type));
 
+  if(total_energy * CLHEP::MeV < particle->GetPDGMass())
+    throw std::invalid_argument(
+      "Total energy must be larger than particle rest mass ("
+      + std::to_string(particle->GetPDGMass()/CLHEP::MeV) + " MeV)");
+
   G4ThreeVector position;
   eigen_to_g4vec(position, x0, CLHEP::cm);
 
@@ -168,7 +174,7 @@ generate_showers(unsigned num_events,
   sps->GetAngDist()->SetAngDistType("planar");
   sps->GetAngDist()->SetParticleMomentumDirection(momentum_direction);
   sps->GetEneDist()->SetEnergyDisType("Mono");
-  sps->GetEneDist()->SetMonoEnergy(total_energy * CLHEP::MeV);
+  sps->GetEneDist()->SetMonoEnergy(total_energy * CLHEP::MeV - particle->GetPDGMass());
 
   gen_action_->setGPS(gps);
 

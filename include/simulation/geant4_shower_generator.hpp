@@ -62,8 +62,9 @@ class Geant4ShowerGenerator
                         calin::simulation::atmosphere::Atmosphere* atm,
                         unsigned num_atm_layers, double zground, double ztop,
                         calin::simulation::world_magnetic_model::FieldVsElevation* bfield = nullptr,
-                        VerbosityLevel verbose_level =
-                        VerbosityLevel::SUPRESSED_STDOUT, uint32_t seed = 0,
+                        VerbosityLevel verbose_level = VerbosityLevel::SUPRESSED_STDOUT,
+                        uint32_t seed = 0,
+                        double default_cut_value_cm = 10.0,
                         bool adopt_visitor = false,
                         bool adopt_atm = false,
                         bool adopt_bfield = false);
