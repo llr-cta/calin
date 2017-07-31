@@ -17,6 +17,7 @@
 
 import matplotlib.pyplot as plt
 import matplotlib.collections
+import calin.math.hex_array
 import numpy as np
 
 def plot_mirrors(scope, label_hex_id=False, scale=1, scale_units='cm', ax_in=None, fs=None):
@@ -53,4 +54,44 @@ def plot_mirrors(scope, label_hex_id=False, scale=1, scale_units='cm', ax_in=Non
                 args['fontsize'] = fs
             ax.text(mirror.pos()[0]*scale, mirror.pos()[2]*scale, '%d'%(mirror.hexID()+1),\
                 ha='center',va='center',**args)
+    return pc
+
+def plot_image(scope, pix_data, cmap=None, clim=None, draw_outline=True, \
+        plate_scale=None, ax_in=None, R=None):
+    pix = []
+    idx = []
+    plate_scale = scope.pixelSpacing()*(plate_scale or 1/scope.focalPlanePosition()[1]/np.pi*180.0)
+    for pix_id in range(len(pix_data)):
+        pix_hexid = scope.pixel(pix_id).hexID()
+        vx,vy = calin.math.hex_array.hexid_to_vertexes_xy_trans(pix_hexid,
+            scope.cosPixelRotation(), scope.sinPixelRotation(), plate_scale)
+        vv = np.zeros((len(vx),2))
+        vv[:,0] = vx
+        vv[:,1] = vy
+        pix.append(plt.Polygon(vv,closed=True))
+        idx.append(pix_id)
+
+    ax = ax_in if ax_in is not None else plt.gca()
+    pc = matplotlib.collections.PatchCollection(pix, cmap=cmap or matplotlib.cm.CMRmap_r)
+    pc.set_array(np.asarray(pix_data)[idx])
+    pc.set_linewidths(0)
+    if(clim is not None):
+        pc.set_clim(clim[0],clim[1])
+    ax.add_collection(pc)
+
+    if draw_outline:
+        for pix_id in range(len(pix_data)):
+            pix_hexid = scope.pixel(pix_id).hexID()
+            vx,vy = calin.math.hex_array.hexid_to_vertexes_xy_trans(pix_hexid,
+                scope.cosPixelRotation(), scope.sinPixelRotation(), plate_scale)
+            nbr_hexids = calin.math.hex_array.hexid_to_neighbor_hexids(pix_hexid)
+            for i in range(6):
+                if(scope.pixelByHexID(nbr_hexids[i]) is None):
+                    ax.plot([vx[(i+5)%6], vx[(i+0)%6]],[vy[(i+5)%6], vy[(i+0)%6]],'#888888',lw=0.5)
+
+    ax.axis('square')
+    R = R or max(abs(np.asarray(ax.axis())))
+    if R:
+        ax.axis(np.asarray([-1,1,-1,1])*R)
+
     return pc
