@@ -57,11 +57,13 @@ def plot_mirrors(scope, label_hex_id=False, scale=1, scale_units='cm', ax_in=Non
     return pc
 
 def plot_image(scope, pix_data, cmap=None, clim=None, draw_outline=True, \
-        plate_scale=None, ax_in=None, R=None):
+        plate_scale=None, ax_in=None, R=None, zero_suppress=None):
     pix = []
     idx = []
     plate_scale = scope.pixelSpacing()*(plate_scale or 1/scope.focalPlanePosition()[1]/np.pi*180.0)
     for pix_id in range(len(pix_data)):
+        if(zero_suppress is not None and pix_data[pix_id]<=zero_suppress):
+            continue
         pix_hexid = scope.pixel(pix_id).hexID()
         vx,vy = calin.math.hex_array.hexid_to_vertexes_xy_trans(pix_hexid,
             scope.cosPixelRotation(), scope.sinPixelRotation(), plate_scale)
