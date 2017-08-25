@@ -123,7 +123,8 @@ install:
       cd cmake-3.7.2 &&
       ./bootstrap  --parallel=3 --prefix=$LOCAL &&
       make -j3 &&
-      make install > /dev/null
+      make install > /dev/null &&
+      touch $HOME/suppress_geant_build
     ); fi
   - |
     if [ ! -f $LOCAL/bin/swig ];
@@ -133,7 +134,8 @@ install:
       cd swig-3.0.12 &&
       ./configure --prefix=$LOCAL --without-alllang --with-python &&
       make -j3 &&
-      make install > /dev/null
+      make install > /dev/null &&
+      touch $HOME/suppress_geant_build
     ); fi
   - |
     if [ ! -f $LOCAL/bin/protoc ];
@@ -143,10 +145,11 @@ install:
       cd protobuf-3.2.0 &&
       ./configure --prefix=$LOCAL &&
       make -j3 &&
-      make install > /dev/null
+      make install > /dev/null &&
+      touch $HOME/suppress_geant_build
     ); fi
   - |
-    if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh ];
+    if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh -a ! -f $HOME/suppress_geant_build];
     then (
       wget http://geant4.cern.ch/support/source/geant4.10.03.p01.tar.gz &&
       tar zxf geant4.10.03.p01.tar.gz &&
