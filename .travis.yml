@@ -127,7 +127,7 @@ install:
       touch $HOME/suppress_geant_build
     ); fi
   - |
-    if [ ! -f $LOCAL/bin/swig ];
+    if [ ! -f $LOCAL/bin/swig ]
     then (
       wget https://sourceforge.net/projects/swig/files/swig/swig-3.0.12/swig-3.0.12.tar.gz &&
       tar zxf swig-3.0.12.tar.gz &&
@@ -138,7 +138,7 @@ install:
       touch $HOME/suppress_geant_build
     ); fi
   - |
-    if [ ! -f $LOCAL/bin/protoc ];
+    if [ ! -f $LOCAL/bin/protoc ]
     then (
       wget https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-cpp-3.2.0.tar.gz &&
       tar zxf protobuf-cpp-3.2.0.tar.gz &&
@@ -149,7 +149,7 @@ install:
       touch $HOME/suppress_geant_build
     ); fi
   - |
-    if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh -a ! -f $HOME/suppress_geant_build];
+    if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh -a ! -f $HOME/suppress_geant_build ]
     then (
       wget http://geant4.cern.ch/support/source/geant4.10.03.p01.tar.gz &&
       tar zxf geant4.10.03.p01.tar.gz &&
