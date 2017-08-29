@@ -84,7 +84,7 @@ namespace {
 std::vector<std::pair<unsigned,unsigned> > calin::math::general_grid::
 compute_region_boundary(const std::vector<unsigned>& region_gridids, Grid* grid)
 {
-  assert(dynamic_cast<HexGrid>(grid)); // TEMPORARY
+  assert(dynamic_cast<HexGrid*>(grid)); // TEMPORARY
 
   unsigned nnbr = grid->num_neighbours();
 
