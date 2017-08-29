@@ -1,6 +1,6 @@
 /*
 
-   calin/io/hex_array.hpp -- Stephen Fegan -- 2015-10-21
+   calin/math/hex_array.hpp -- Stephen Fegan -- 2015-10-21
 
    Collection of functions which translate between hexagonal and Cartesian
    geometries, and provide other useful calculations for hex grids.
