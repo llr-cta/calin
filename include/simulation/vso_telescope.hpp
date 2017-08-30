@@ -212,12 +212,15 @@ class VSOTelescope
   unsigned               numPixelHexSites() const { return fPixelsByHexID.size(); }
 
   inline const VSOObscuration* obscuration(unsigned id) const;
+  std::vector<VSOObscuration*> all_obscurations() { return fObscurations; }
 
   inline const VSOMirror* mirror(unsigned id) const;
   inline const VSOMirror* mirrorByHexID(unsigned hexID) const;
+  std::vector<VSOMirror*> all_mirrors() { return fMirrors; }
 
   inline const VSOPixel* pixel(unsigned id) const;
   inline const VSOPixel* pixelByHexID(unsigned hexID) const;
+  std::vector<VSOPixel*> all_pixels() { return fPixels; }
 
  private:
   // ************************************************************************

@@ -50,8 +50,12 @@
 %newobject *::create_from_proto;
 
 %include "simulation/vso_pixel.hpp"
+%template(VectorVSOPixel) std::vector<calin::simulation::vs_optics::VSOPixel*>;
 %include "simulation/vso_mirror.hpp"
+%template(VectorVSOMirror) std::vector<calin::simulation::vs_optics::VSOMirror*>;
 %include "simulation/vso_obscuration.hpp"
+%template(VectorVSOObscuration) std::vector<calin::simulation::vs_optics::VSOObscuration*>;
 %include "simulation/vso_telescope.hpp"
+%template(VectorVSOTelescope) std::vector<calin::simulation::vs_optics::VSOTelescope*>;
 %include "simulation/vso_array.hpp"
 %include "simulation/vso_raytracer.hpp"

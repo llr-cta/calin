@@ -18,6 +18,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.collections
 import calin.math.hex_array
+import calin.math.regular_grid
 import numpy as np
 
 def plot_mirrors(scope, label_hex_id=False, scale=1, scale_units='cm', ax_in=None, fs=None):
@@ -82,14 +83,12 @@ def plot_image(scope, pix_data, cmap=None, clim=None, draw_outline=True, \
     ax.add_collection(pc)
 
     if draw_outline:
-        for pix_id in range(len(pix_data)):
-            pix_hexid = scope.pixel(pix_id).hexID()
-            vx,vy = calin.math.hex_array.hexid_to_vertexes_xy_trans(pix_hexid,
-                scope.cosPixelRotation(), scope.sinPixelRotation(), plate_scale)
-            nbr_hexids = calin.math.hex_array.hexid_to_neighbor_hexids(pix_hexid)
-            for i in range(6):
-                if(scope.pixelByHexID(nbr_hexids[i]) is None):
-                    ax.plot([vx[(i+5)%6], vx[(i+0)%6]],[vy[(i+5)%6], vy[(i+0)%6]],'#888888',lw=0.5)
+        cam_hexids = list(map(lambda p: p.hexID(), scope.all_pixels()))
+        grid = calin.math.regular_grid.HexGrid(plate_scale,scope.pixelRotation())
+        for icurve in range(grid.num_bounday_curves(v)):
+            vx,vy = grid.extract_bounday_curve(v,icurve,False)
+            ax.add_patch(plt.Polygon(np.column_stack([vx, vy]),
+                                fill=False,lw=0.5,edgecolor='#888888'))
 
     ax.axis('square')
     R = R or max(abs(np.asarray(ax.axis())))

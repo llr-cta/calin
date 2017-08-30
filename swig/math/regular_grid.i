@@ -2,9 +2,9 @@
 
 /*
 
-   calin/math/general_grid.i -- Stephen Fegan -- 2017-08-28
+   calin/math/regular_grid.i -- Stephen Fegan -- 2017-08-28
 
-   SWIG interface file for calin.math.general_grid
+   SWIG interface file for calin.math.regular_grid
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
@@ -22,10 +22,10 @@
 
 */
 
-%module (package="calin.math") general_grid
+%module (package="calin.math") regular_grid
 
 %{
-#include "math/general_grid.hpp"
+#include "math/regular_grid.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -39,4 +39,4 @@
 %apply double &OUTPUT { double& x, double& y };
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& xv, Eigen::VectorXd& yv };
 
-%include "math/general_grid.hpp"
+%include "math/regular_grid.hpp"
