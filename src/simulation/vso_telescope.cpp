@@ -691,3 +691,40 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
 
   return scope;
 }
+
+calin::ix::iact_data::instrument_layout::TelescopeLayout*
+VSOTelescope::convert_to_telescope_layout(
+  calin::ix::iact_data::instrument_layout::TelescopeLayout* d) const
+{
+  if(d == nullptr)d = new calin::ix::iact_data::instrument_layout::TelescopeLayout;
+
+  d->Clear();
+
+  d->set_telescope_type(calin::ix::iact_data::instrument_layout::TelescopeLayout::NO_TELESCOPE);
+  d->set_telescope_index(fID);
+  calin::math::vector3d_util::dump_as_proto(fPos, d->mutable_position());
+  d->set_effective_focal_length(fFPTranslation.y());
+
+  auto* c = d->mutable_camera();
+
+  c->set_camera_type(calin::ix::iact_data::instrument_layout::CameraLayout::NO_CAMERA);
+  c->set_camera_number(fID);
+
+  c->set_pixel_grid_layout(calin::ix::iact_data::instrument_layout::CameraLayout::HEX_GRID);
+  c->set_pixel_grid_spacing(fPixelSpacing);
+  c->set_pixel_grid_rotation(fPixelRotation/M_PI*180.0);
+  c->set_pixel_grid_cos_rotation(fCosPixelRotation);
+  c->set_pixel_grid_sin_rotation(fSinPixelRotation);
+  c->set_pixel_grid_offset_x(fFPTranslation.x());
+  c->set_pixel_grid_offset_y(fFPTranslation.z());
+  c->set_pixel_grid_geometric_area(calin::math::hex_array::cell_area(fPixelSpacing));
+  // What do we do with : fPixelParity
+
+
+  for(const auto* ipix : fPixels)
+  {
+    auto* ch = c->add_channel();
+  }
+
+  return d;
+}

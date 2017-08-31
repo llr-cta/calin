@@ -53,6 +53,8 @@
 #include <simulation/vso_pixel.hpp>
 #include <simulation/vso_obscuration.hpp>
 
+#include <iact_data/instrument_layout.pb.h>
+
 namespace calin { namespace simulation { namespace vs_optics {
 
 /*! \class VSOTelescope
@@ -159,6 +161,19 @@ class VSOTelescope
 #endif
   static VSOTelescope*
   create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d);
+
+  // ************************************************************************
+  // Convert to IACT data TelescopeLayout type as best we can
+  // ************************************************************************
+
+#ifndef SWIG
+  calin::ix::iact_data::instrument_layout::TelescopeLayout*
+  convert_to_telescope_layout(
+    calin::ix::iact_data::instrument_layout::TelescopeLayout* d = nullptr) const;
+#else
+  calin::ix::iact_data::instrument_layout::TelescopeLayout* convert_to_telescope_layout() const;
+  void convert_to_telescope_layout(calin::ix::iact_data::instrument_layout::TelescopeLayout* d) const;
+#endif
 
   // ************************************************************************
   // Accessors

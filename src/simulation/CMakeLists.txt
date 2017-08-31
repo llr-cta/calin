@@ -33,7 +33,7 @@ endif()
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_io calin_math
-	calin_proto_simulation calin_provenance)
+	calin_proto_simulation calin_proto_iact_data calin_provenance)
 
 if(GEANT4_FOUND)
 	target_link_libraries(${CALIN_TARGET_LIBRARY} ${GEANT4_LIBRARIES})
