@@ -367,7 +367,8 @@ nmL_ungetc(x, f) int x; FILE *f;
 nmL_ungetc(int x, FILE *f)
 #endif
 {
-	f = f;	/* banish non-use warning */
+	(void)f;
+	//f = f;	/* banish non-use warning */
 	return *--nmL_next = x;
 	}
 

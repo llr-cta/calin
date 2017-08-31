@@ -73,6 +73,8 @@ static int imodulo (int v1, int v2)
 static int isqrt(int v)
   { return (int)(sqrt(v+0.5)); }
 
+#ifndef __BMI2__
+
 /* ctab[m] = (short)(
        (m&0x1 )       | ((m&0x2 ) << 7) | ((m&0x4 ) >> 1) | ((m&0x8 ) << 6)
     | ((m&0x10) >> 2) | ((m&0x20) << 5) | ((m&0x40) >> 3) | ((m&0x80) << 4)); */
@@ -97,6 +99,7 @@ X(0),X(1),X(4),X(5)
 #undef Y
 #undef Z
 };
+#endif
 
 static const int jrll[] = { 2,2,2,2,3,3,3,3,4,4,4,4 };
 static const int jpll[] = { 1,3,5,7,0,2,4,6,1,3,5,7 };
@@ -132,7 +135,7 @@ static int xyf2nest (int nside, int ix, int iy, int face_num)
   }
 static void nest2xyf (int nside, int pix, int *ix, int *iy, int *face_num)
   {
-  int npface_=nside*nside, raw;
+  int npface_=nside*nside /*, raw*/;
   *face_num = pix/npface_;
   pix &= (npface_-1);
   *ix=_pext_u32(pix,0x55555555u);
