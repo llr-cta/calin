@@ -71,7 +71,7 @@ matrix:
           sources:
           - *common_sources
           - llvm-toolchain-trusty-3.9
-         packages:
+          packages:
           - *common_packages
           - clang-3.9
 
