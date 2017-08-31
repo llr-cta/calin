@@ -76,7 +76,7 @@ matrix:
           - clang-3.9
     - compiler: clang-4.0
       env: BUILD_TYPE=Debug GEANT4=FALSE BUILD_CC=clang-4.0 BUILD_CXX=clang++-4.0
-      addons: &clang4.0_addons
+      addons: &clang40_addons
         apt:
           sources:
           - *common_sources
