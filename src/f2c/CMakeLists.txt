@@ -15,7 +15,8 @@
 
 include_directories(${CMAKE_SOURCE_DIR}/include/f2c)
 
-add_compile_options(#-Wno-shift-op-parentheses -Wno-bitwise-op-parentheses
+add_compile_options(-Wno-unknown-warning-option
+  -Wno-shift-op-parentheses -Wno-bitwise-op-parentheses
   -Wno-maybe-uninitialized -Wno-parentheses -Wno-format-extra-args)
 
 add_library(calin_f2c SHARED f77vers.c i77vers.c s_rnge.c abort_.c exit_.c

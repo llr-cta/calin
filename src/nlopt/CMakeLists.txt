@@ -59,6 +59,7 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 # Relax some of the -Wall options here
+add_compile_options(-Wno-unknown-warning-option)
 add_compile_options(-Wno-deprecated-declarations)
 add_compile_options(-Wno-self-assign)
 add_compile_options(-Wno-unused-const-variable)
