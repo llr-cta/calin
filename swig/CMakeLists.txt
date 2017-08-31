@@ -42,7 +42,12 @@ macro(make_swig_modules arg_calin_library arg_swig_install_dir)
     execute_process(COMMAND ${CMAKE_BINARY_DIR}/gen-swig_dep
 			${CMAKE_CURRENT_SOURCE_DIR}/${interface_file} ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
 		file(READ ${interface_dep} SWIG_MODULE_${base_name}_EXTRA_DEPS)
-    swig_add_module(${base_name} python ${interface_file})
+    # This could eventually be removed by advancing the minimum required CMake version
+    if (${CMAKE_VERSION} VERSION_LESS "3.8.0")
+      swig_add_module(${base_name} python ${interface_file})
+    else()
+      swig_add_library(${base_name} LANGUAGE python TYPE MODULE SOURCES ${interface_file})
+    endif()
     swig_link_libraries(${base_name} ${arg_calin_library} ${PYTHON_LIBRARIES}
       ${PROTOBUF_LIBRARIES})
     install(TARGETS ${SWIG_MODULE_${base_name}_REAL_NAME}
