@@ -26,6 +26,7 @@
 #include <io/log.hpp>
 #include <math/special.hpp>
 #include <math/hex_array.hpp>
+#include <math/regular_grid.hpp>
 #include <math/vector3d_util.hpp>
 #include <simulation/vso_telescope.hpp>
 #include <simulation/vs_optics.pb.h>
@@ -720,10 +721,35 @@ VSOTelescope::convert_to_telescope_layout(
   c->set_pixel_grid_geometric_area(calin::math::hex_array::cell_area(fPixelSpacing));
   // What do we do with : fPixelParity
 
-
+  math::regular_grid::HexGrid grid(fPixelSpacing, fPixelRotation);
   for(const auto* ipix : fPixels)
   {
     auto* ch = c->add_channel();
+    ch->set_channel_index(ipix->id());
+    ch->set_pixel_index(ipix->id());
+    ch->set_pixel_grid_index(ipix->hexID());
+    ch->set_channel_set_index(0);
+    ch->set_module_index(-1);
+    ch->set_module_channel_index(-1);
+    double x;
+    double y;
+    grid.gridid_to_xy(ipix->hexID(), x, y);
+    ch->set_x(x);
+    ch->set_y(y);
+    ch->set_diameter(fPixelSpacing);
+    ch->set_geometric_area(grid.cell_area(ipix->hexID()));
+    auto nbr = grid.gridid_to_neighbour_gridids(ipix->hexID());
+    for(auto inbr : nbr) {
+      const VSOPixel* npix = this->pixelByHexID(inbr);
+      if(npix)ch->add_neighbour_channel_indexes(npix->id());
+    }
+    Eigen::VectorXd xv;
+    Eigen::VectorXd yv;
+    grid.gridid_to_vertexes_xy(ipix->hexID(), xv, yv);
+    for(unsigned i=0; i<grid.num_neighbours(); i++)
+      ch->add_pixel_polygon_vertex_x(xv(i));
+    for(unsigned i=0; i<grid.num_neighbours(); i++)
+      ch->add_pixel_polygon_vertex_y(yv(i));
   }
 
   return d;

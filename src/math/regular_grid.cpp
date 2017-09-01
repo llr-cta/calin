@@ -146,50 +146,6 @@ void calin::math::regular_grid::Grid::extract_bounday_curve(
   }
 }
 
-// =============================================================================
-//
-// HexGrid - hexagonal grid - mostly a call into hex_array
-//
-// =============================================================================
-
-HexGrid::~HexGrid()
-{
-  // nothing to see here
-}
-
-unsigned HexGrid::num_neighbours()
-{
-  return 6;
-}
-
-void HexGrid::gridid_to_xy(unsigned gridid, double& x, double& y)
-{
-  return calin::math::hex_array::hexid_to_xy_trans(gridid, x, y,
-    ctheta_, stheta_, scale_, xoffset_, yoffset_);
-}
-
-unsigned HexGrid::xy_to_gridid(double x, double y)
-{
-  return calin::math::hex_array::xy_trans_to_hexid(x, y,
-    ctheta_, stheta_, scale_, xoffset_, yoffset_);
-}
-
-std::vector<unsigned> HexGrid::gridid_to_neighbour_gridids(unsigned gridid)
-{
-  return calin::math::hex_array::hexid_to_neighbor_hexids(gridid);
-}
-
-void HexGrid::gridid_to_vertexes_xy(unsigned gridid,
-  Eigen::VectorXd& xv, Eigen::VectorXd& yv)
-{
-  std::vector<double> sxv;
-  std::vector<double> syv;
-  calin::math::hex_array::hexid_to_vertexes_xy_trans(gridid, sxv, syv,
-    ctheta_, stheta_, scale_, xoffset_, yoffset_);
-  xv = std_to_eigenvec(sxv);
-  yv = std_to_eigenvec(syv);
-}
-
 std::vector<std::pair<unsigned,unsigned> > calin::math::regular_grid::Grid::
 compute_region_boundary(const std::vector<unsigned>& region_gridids)
 {
@@ -258,4 +214,53 @@ compute_region_boundary(const std::vector<unsigned>& region_gridids)
   }
 
   return boundary_chain;
+}
+
+// =============================================================================
+//
+// HexGrid - hexagonal grid - mostly a call into hex_array
+//
+// =============================================================================
+
+HexGrid::~HexGrid()
+{
+  // nothing to see here
+}
+
+unsigned HexGrid::num_neighbours()
+{
+  return 6;
+}
+
+void HexGrid::gridid_to_xy(unsigned gridid, double& x, double& y)
+{
+  return calin::math::hex_array::hexid_to_xy_trans(gridid, x, y,
+    ctheta_, stheta_, scale_, xoffset_, yoffset_);
+}
+
+unsigned HexGrid::xy_to_gridid(double x, double y)
+{
+  return calin::math::hex_array::xy_trans_to_hexid(x, y,
+    ctheta_, stheta_, scale_, xoffset_, yoffset_);
+}
+
+std::vector<unsigned> HexGrid::gridid_to_neighbour_gridids(unsigned gridid)
+{
+  return calin::math::hex_array::hexid_to_neighbor_hexids(gridid);
+}
+
+void HexGrid::gridid_to_vertexes_xy(unsigned gridid,
+  Eigen::VectorXd& xv, Eigen::VectorXd& yv)
+{
+  std::vector<double> sxv;
+  std::vector<double> syv;
+  calin::math::hex_array::hexid_to_vertexes_xy_trans(gridid, sxv, syv,
+    ctheta_, stheta_, scale_, xoffset_, yoffset_);
+  xv = std_to_eigenvec(sxv);
+  yv = std_to_eigenvec(syv);
+}
+
+double HexGrid::cell_area(unsigned gridid __attribute__((unused)))
+{
+  return calin::math::hex_array::cell_area(scale_);
 }

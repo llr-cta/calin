@@ -41,6 +41,7 @@ public:
   virtual std::vector<unsigned> gridid_to_neighbour_gridids(unsigned gridid) = 0;
   virtual void gridid_to_vertexes_xy(unsigned gridid,
     Eigen::VectorXd& xv, Eigen::VectorXd& yv) = 0;
+  virtual double cell_area(unsigned gridid) = 0;
 
   std::vector<std::pair<unsigned,unsigned> > compute_region_boundary(
     const std::vector<unsigned>& region_gridids);
@@ -68,6 +69,7 @@ public:
   std::vector<unsigned> gridid_to_neighbour_gridids(unsigned gridid) override;
   void gridid_to_vertexes_xy(unsigned gridid,
     Eigen::VectorXd& xv, Eigen::VectorXd& yv) override;
+  double cell_area(unsigned gridid) override;
 
 private:
   double scale_ = 1.0;
