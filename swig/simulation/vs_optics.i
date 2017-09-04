@@ -44,10 +44,12 @@
 %import "math/ray.i"
 %import "math/rng.i"
 
+%import "iact_data/instrument_layout.pb.i"
 %import "simulation/vs_optics.pb.i"
 
 %newobject *::dump_as_proto() const;
 %newobject *::create_from_proto;
+%newobject *::convert_to_telescope_layout() const;
 
 %include "simulation/vso_pixel.hpp"
 %template(VectorVSOPixel) std::vector<calin::simulation::vs_optics::VSOPixel*>;

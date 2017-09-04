@@ -20,6 +20,8 @@ import matplotlib.collections
 import numpy as np
 
 import calin.math.histogram
+import calin.ix.iact_data.instrument_layout
+import calin.math.regular_grid
 
 def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = None,
         cbar_label = None):
@@ -48,6 +50,60 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
     cbar = plt.colorbar(pc, ax=ax)
     if cbar_label is not None:
         cbar.set_label(cbar_label)
+    return pc
+
+def plot_camera_image(channel_data, camera_layout, channel_mask = None,
+        configured_channels = None, zero_suppression = None,
+        plate_scale = 1.0, R = None,
+        cmap = matplotlib.cm.CMRmap_r, axis = None, draw_outline = False,
+        pix_lw = 0, outline_lw = 0.5, outline_color = '#888888'):
+    if(channel_mask is None and zero_suppression is not None):
+        channel_mask = np.asarray(channel_data)>zero_suppression
+    if(channel_mask is not None and len(channel_mask) != len(channel_data)):
+        raise ValueError('channel_mask must either be None or have same length as channel_data')
+    if(configured_channels is not None and len(configured_channels) != len(channel_data)):
+        raise ValueError('configured_channels must either be None or have same length as pix_data')
+    pix = []
+    pix_data = []
+    pix_gridid = []
+    max_xy = 0
+    for chan_index in range(len(channel_data)):
+        chan_id = int(configured_channels[chan_index]) if configured_channels is not None else chan_index
+        chan = camera_layout.channel(chan_id)
+        if(chan.pixel_index() != -1):
+            pix_gridid.append(chan.pixel_grid_index())
+        if((channel_mask is None or channel_mask[chan_index]) and chan.pixel_index() != -1):
+            vx = chan.pixel_polygon_vertex_x_view()*plate_scale
+            vy = chan.pixel_polygon_vertex_y_view()*plate_scale
+            vv = np.column_stack([vx, vy])
+            max_xy = max(max_xy, max(abs(vx)), max(abs(vy)))
+            pix.append(plt.Polygon(vv,closed=True))
+            pix_data.append(channel_data[chan_index])
+    pc = matplotlib.collections.PatchCollection(pix, cmap=cmap)
+    pc.set_array(np.asarray(pix_data))
+    pc.set_linewidths(pix_lw)
+    axis = axis or plt.gca()
+    axis.add_collection(pc)
+
+    if draw_outline:
+        grid = None
+        if(camera_layout.pixel_grid_layout() ==
+                calin.ix.iact_data.instrument_layout.CameraLayout.HEX_GRID):
+            grid = calin.math.regular_grid.HexGrid(
+                camera_layout.pixel_grid_spacing()*plate_scale,
+                camera_layout.pixel_grid_rotation()/180.0*np.pi,
+                camera_layout.pixel_grid_offset_x()*plate_scale,
+                camera_layout.pixel_grid_offset_y()*plate_scale)
+        else:
+            raise ValueError('cannot draw outline for camera without regular grid')
+        v = grid.compute_region_boundary(pix_gridid)
+        for icurve in range(grid.num_bounday_curves(v)):
+            vx,vy = grid.extract_bounday_curve(v,icurve,False)
+            axis.add_patch(plt.Polygon(np.column_stack([vx, vy]),
+                        fill=False,lw=outline_lw,edgecolor=outline_color))
+
+    axis.axis('square')
+    axis.axis(np.asarray([-1,1,-1,1])*(R or 1.05*max_xy))
     return pc
 
 def plot_histogram(h, *args, **nargs):

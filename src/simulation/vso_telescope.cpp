@@ -746,9 +746,9 @@ VSOTelescope::convert_to_telescope_layout(
     Eigen::VectorXd xv;
     Eigen::VectorXd yv;
     grid.gridid_to_vertexes_xy(ipix->hexID(), xv, yv);
-    for(unsigned i=0; i<grid.num_neighbours(); i++)
+    for(unsigned i=0; i<xv.size(); i++)
       ch->add_pixel_polygon_vertex_x(xv(i));
-    for(unsigned i=0; i<grid.num_neighbours(); i++)
+    for(unsigned i=0; i<yv.size(); i++)
       ch->add_pixel_polygon_vertex_y(yv(i));
   }
 
