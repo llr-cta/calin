@@ -235,5 +235,7 @@ calin::simulation::vs_optics::dc_parameters_to_array_layout(
   const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
   calin::ix::iact_data::instrument_layout::ArrayLayout* d)
 {
+  if(d == nullptr)d = new calin::ix::iact_data::instrument_layout::ArrayLayout;
 
+  return d;
 }
