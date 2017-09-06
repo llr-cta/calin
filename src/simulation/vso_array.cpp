@@ -229,3 +229,11 @@ create_from_proto(const ix::simulation::vs_optics::VSOArrayData& d)
     array->fTelescopes.push_back(VSOTelescope::create_from_proto(scope));
   return array;
 }
+
+calin::ix::iact_data::instrument_layout::ArrayLayout*
+calin::simulation::vs_optics::dc_parameters_to_array_layout(
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+  calin::ix::iact_data::instrument_layout::ArrayLayout* d)
+{
+
+}

@@ -50,6 +50,8 @@
 %newobject *::dump_as_proto() const;
 %newobject *::create_from_proto;
 %newobject *::convert_to_telescope_layout() const;
+%newobject dc_parameters_to_telescope_layout;
+%newobject dc_parameters_to_array_layout;
 
 %include "simulation/vso_pixel.hpp"
 %template(VectorVSOPixel) std::vector<calin::simulation::vs_optics::VSOPixel*>;

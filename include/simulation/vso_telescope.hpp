@@ -61,6 +61,19 @@ namespace calin { namespace simulation { namespace vs_optics {
   \brief VSOTelescope class;
 */
 
+#ifndef SWIG
+calin::ix::iact_data::instrument_layout::TelescopeLayout*
+dc_parameters_to_telescope_layout(
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+  unsigned telescope_id = 0, const Eigen::Vector3d& pos = Eigen::Vector3d::Zero(),
+  calin::ix::iact_data::instrument_layout::TelescopeLayout* d = nullptr);
+#else
+calin::ix::iact_data::instrument_layout::TelescopeLayout*
+dc_parameters_to_telescope_layout(
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+  unsigned telescope_id = 0, const Eigen::Vector3d& pos = Eigen::Vector3d::Zero());
+#endif
+
 class VSOTelescope
 {
  public:
