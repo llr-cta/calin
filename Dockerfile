@@ -28,7 +28,8 @@ ADD / /build/calin/
 RUN cd /build/calin &&                                             \
     mkdir mybuild &&                                               \
     cd mybuild &&                                                  \
-    cmake -DCMAKE_BUILD_TYPE=Release                               \
+    cmake -DCALIN_BUILD_ARCH=generic                               \
+          -DCMAKE_BUILD_TYPE=Release                               \
           -DCMAKE_INSTALL_PREFIX=/usr                              \
           -DCALIN_PYTHON_SUB_DIR=lib/python3.5                     \
           .. &&                                                    \

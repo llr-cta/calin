@@ -44,14 +44,22 @@
 %import "math/ray.i"
 %import "math/rng.i"
 
+%import "iact_data/instrument_layout.pb.i"
 %import "simulation/vs_optics.pb.i"
 
 %newobject *::dump_as_proto() const;
 %newobject *::create_from_proto;
+%newobject *::convert_to_telescope_layout() const;
+%newobject dc_parameters_to_telescope_layout;
+%newobject dc_parameters_to_array_layout;
 
 %include "simulation/vso_pixel.hpp"
+%template(VectorVSOPixel) std::vector<calin::simulation::vs_optics::VSOPixel*>;
 %include "simulation/vso_mirror.hpp"
+%template(VectorVSOMirror) std::vector<calin::simulation::vs_optics::VSOMirror*>;
 %include "simulation/vso_obscuration.hpp"
+%template(VectorVSOObscuration) std::vector<calin::simulation::vs_optics::VSOObscuration*>;
 %include "simulation/vso_telescope.hpp"
+%template(VectorVSOTelescope) std::vector<calin::simulation::vs_optics::VSOTelescope*>;
 %include "simulation/vso_array.hpp"
 %include "simulation/vso_raytracer.hpp"

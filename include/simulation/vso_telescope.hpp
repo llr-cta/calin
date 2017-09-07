@@ -53,11 +53,26 @@
 #include <simulation/vso_pixel.hpp>
 #include <simulation/vso_obscuration.hpp>
 
+#include <iact_data/instrument_layout.pb.h>
+
 namespace calin { namespace simulation { namespace vs_optics {
 
 /*! \class VSOTelescope
   \brief VSOTelescope class;
 */
+
+#ifndef SWIG
+calin::ix::iact_data::instrument_layout::TelescopeLayout*
+dc_parameters_to_telescope_layout(
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+  unsigned telescope_id = 0, const Eigen::Vector3d& pos = Eigen::Vector3d::Zero(),
+  calin::ix::iact_data::instrument_layout::TelescopeLayout* d = nullptr);
+#else
+calin::ix::iact_data::instrument_layout::TelescopeLayout*
+dc_parameters_to_telescope_layout(
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+  unsigned telescope_id = 0, const Eigen::Vector3d& pos = Eigen::Vector3d::Zero());
+#endif
 
 class VSOTelescope
 {
@@ -161,6 +176,19 @@ class VSOTelescope
   create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d);
 
   // ************************************************************************
+  // Convert to IACT data TelescopeLayout type as best we can
+  // ************************************************************************
+
+#ifndef SWIG
+  calin::ix::iact_data::instrument_layout::TelescopeLayout*
+  convert_to_telescope_layout(
+    calin::ix::iact_data::instrument_layout::TelescopeLayout* d = nullptr) const;
+#else
+  calin::ix::iact_data::instrument_layout::TelescopeLayout* convert_to_telescope_layout() const;
+  void convert_to_telescope_layout(calin::ix::iact_data::instrument_layout::TelescopeLayout* d) const;
+#endif
+
+  // ************************************************************************
   // Accessors
   // ************************************************************************
 
@@ -212,12 +240,15 @@ class VSOTelescope
   unsigned               numPixelHexSites() const { return fPixelsByHexID.size(); }
 
   inline const VSOObscuration* obscuration(unsigned id) const;
+  std::vector<VSOObscuration*> all_obscurations() { return fObscurations; }
 
   inline const VSOMirror* mirror(unsigned id) const;
   inline const VSOMirror* mirrorByHexID(unsigned hexID) const;
+  std::vector<VSOMirror*> all_mirrors() { return fMirrors; }
 
   inline const VSOPixel* pixel(unsigned id) const;
   inline const VSOPixel* pixelByHexID(unsigned hexID) const;
+  std::vector<VSOPixel*> all_pixels() { return fPixels; }
 
  private:
   // ************************************************************************

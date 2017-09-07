@@ -163,7 +163,7 @@ BasicReducedSpaceParameterizable<T>::original_param_vec_to_subspace(ConstVecRef 
 template<typename T> Eigen::VectorXd
 BasicReducedSpaceParameterizable<T>::original_param_grad_to_subspace(ConstVecRef grad)
 {
-  assert(grad.size() == subspace_params_.size()+removed_params_.size());
+  assert(unsigned(grad.size()) == subspace_params_.size()+removed_params_.size());
   Eigen::VectorXd subspace_grad(subspace_params_.size());
   for(unsigned iparam=0; iparam!=subspace_params_.size(); iparam++)
     subspace_grad[iparam] = grad[subspace_params_[iparam]];

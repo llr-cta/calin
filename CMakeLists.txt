@@ -27,7 +27,19 @@ cmake_policy(SET CMP0060 NEW)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/CMakeModules/")
 
 include_directories(include ${CMAKE_BINARY_DIR}/include)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -std=c++11 -Wall")
+
+if(NOT CALIN_BUILD_ARCH)
+	set(CALIN_BUILD_ARCH "native")
+endif()
+message(STATUS "Tuning build for architecture: " ${CALIN_BUILD_ARCH})
+if(${CALIN_BUILD_ARCH} STREQUAL "generic")
+	set(CALIN_BUILD_ARCH_OPT "-mtune=${CALIN_BUILD_ARCH}")
+else()
+	set(CALIN_BUILD_ARCH_OPT "-march=${CALIN_BUILD_ARCH}")
+endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CALIN_BUILD_ARCH_OPT} -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CALIN_BUILD_ARCH_OPT} -std=c++11 -Wall")
 
 if(NOT CALIN_PYTHON_SUB_DIR)
 	set(CALIN_PYTHON_SUB_DIR "python")

@@ -48,7 +48,7 @@ f__bufadj(int n, int c)
 #endif
 {
 	unsigned int len;
-	char *nbuf, *s, *t, *te;
+	char *nbuf=NULL, *s, *t, *te;
 
 	if (f__buf == f__buf0)
 		f__buflen = 1024;

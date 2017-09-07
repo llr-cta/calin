@@ -50,7 +50,21 @@
 #include <simulation/vs_optics.pb.h>
 #include <simulation/vso_telescope.hpp>
 
+#include <iact_data/instrument_layout.pb.h>
+
 namespace calin { namespace simulation { namespace vs_optics {
+
+#ifndef SWIG
+calin::ix::iact_data::instrument_layout::ArrayLayout*
+dc_parameters_to_array_layout(
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+  calin::ix::iact_data::instrument_layout::ArrayLayout* d = nullptr);
+#else
+calin::ix::iact_data::instrument_layout::ArrayLayout*
+dc_parameters_to_array_layout(
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param);
+#endif
+
 
 class VSOArray
 {

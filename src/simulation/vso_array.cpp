@@ -229,3 +229,54 @@ create_from_proto(const ix::simulation::vs_optics::VSOArrayData& d)
     array->fTelescopes.push_back(VSOTelescope::create_from_proto(scope));
   return array;
 }
+
+calin::ix::iact_data::instrument_layout::ArrayLayout*
+calin::simulation::vs_optics::dc_parameters_to_array_layout(
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+  calin::ix::iact_data::instrument_layout::ArrayLayout* d)
+{
+  if(d == nullptr)d = new calin::ix::iact_data::instrument_layout::ArrayLayout;
+  d->set_array_type(calin::ix::iact_data::instrument_layout::ArrayLayout::NO_ARRAY);
+  *d->mutable_array_origin() = param.array_origin();
+
+  std::vector<Eigen::Vector3d> scope_pos;
+  if(param.array_layout_case() ==
+     IsotropicDCArrayParameters::kHexArrayLayout)
+  {
+    const auto& layout = param.hex_array_layout();
+    double spacing     = layout.scope_spacing();
+    bool array_parity  = layout.scope_labeling_parity();
+
+    unsigned num_telescopes =
+        math::hex_array::ringid_to_nsites_contained(layout.num_scope_rings());
+    std::set<unsigned> scopes_missing;
+    for(auto hexid : layout.scope_missing_list())
+      scopes_missing.insert(hexid);
+
+    for(unsigned hexid=0; hexid<num_telescopes; hexid++)
+      if(scopes_missing.find(hexid) == scopes_missing.end())
+      {
+        Eigen::Vector3d pos;
+        math::hex_array::hexid_to_xy(hexid, pos.x(), pos.y());
+        if(array_parity)pos.x() = -pos.x();
+        pos.x()  = pos.x() * spacing;
+        pos.y()  = pos.y() * spacing;
+        scope_pos.push_back(pos);
+      }
+  }
+  else if(param.array_layout_case() ==
+          IsotropicDCArrayParameters::kPrescribedArrayLayout)
+  {
+    for(auto pos : param.prescribed_array_layout().scope_positions())
+      scope_pos.emplace_back(calin::math::vector3d_util::from_proto(pos));
+  }
+  else
+  {
+    assert(0);
+  }
+
+  for(unsigned i=0; i<scope_pos.size(); i++)
+    dc_parameters_to_telescope_layout(param, i, scope_pos[i], d->add_telescopes());
+
+  return d;
+}

@@ -26,6 +26,7 @@
 #include <io/log.hpp>
 #include <math/special.hpp>
 #include <math/hex_array.hpp>
+#include <math/regular_grid.hpp>
 #include <math/vector3d_util.hpp>
 #include <simulation/vso_telescope.hpp>
 #include <simulation/vs_optics.pb.h>
@@ -690,4 +691,197 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
     scope->add_pixel(VSOPixel::create_from_proto(d.pixel(i),scope));
 
   return scope;
+}
+
+calin::ix::iact_data::instrument_layout::TelescopeLayout*
+VSOTelescope::convert_to_telescope_layout(
+  calin::ix::iact_data::instrument_layout::TelescopeLayout* d) const
+{
+  if(d == nullptr)d = new calin::ix::iact_data::instrument_layout::TelescopeLayout;
+
+  d->Clear();
+
+  d->set_telescope_type(calin::ix::iact_data::instrument_layout::TelescopeLayout::NO_TELESCOPE);
+  d->set_telescope_index(0);
+  calin::math::vector3d_util::dump_as_proto(fPos, d->mutable_position());
+  d->set_effective_focal_length(fFPTranslation.y());
+
+  auto* c = d->mutable_camera();
+
+  c->set_camera_type(calin::ix::iact_data::instrument_layout::CameraLayout::NO_CAMERA);
+  c->set_camera_number(fID);
+
+  c->set_pixel_grid_layout(calin::ix::iact_data::instrument_layout::CameraLayout::HEX_GRID);
+  c->set_pixel_grid_spacing(fPixelSpacing);
+  c->set_pixel_grid_rotation(fPixelRotation/M_PI*180.0);
+  c->set_pixel_grid_cos_rotation(fCosPixelRotation);
+  c->set_pixel_grid_sin_rotation(fSinPixelRotation);
+  c->set_pixel_grid_offset_x(fFPTranslation.x());
+  c->set_pixel_grid_offset_y(fFPTranslation.z());
+  c->set_pixel_grid_geometric_area(calin::math::hex_array::cell_area(fPixelSpacing));
+  // What do we do with : fPixelParity
+
+  math::regular_grid::HexGrid grid(fPixelSpacing, fPixelRotation);
+  for(const auto* ipix : fPixels)
+  {
+    auto* ch = c->add_channel();
+    ch->set_channel_index(ipix->id());
+    ch->set_pixel_index(ipix->id());
+    ch->set_pixel_grid_index(ipix->hexID());
+    ch->set_channel_set_index(0);
+    ch->set_module_index(-1);
+    ch->set_module_channel_index(-1);
+    double x;
+    double y;
+    grid.gridid_to_xy(ipix->hexID(), x, y);
+    ch->set_x(x);
+    ch->set_y(y);
+    ch->set_diameter(fPixelSpacing);
+    ch->set_geometric_area(grid.cell_area(ipix->hexID()));
+    auto nbr = grid.gridid_to_neighbour_gridids(ipix->hexID());
+    for(auto inbr : nbr) {
+      const VSOPixel* npix = this->pixelByHexID(inbr);
+      if(npix)ch->add_neighbour_channel_indexes(npix->id());
+    }
+    Eigen::VectorXd xv;
+    Eigen::VectorXd yv;
+    grid.gridid_to_vertexes_xy(ipix->hexID(), xv, yv);
+    for(unsigned i=0; i<xv.size(); i++)
+      ch->add_pixel_polygon_vertex_x(xv(i));
+    for(unsigned i=0; i<yv.size(); i++)
+      ch->add_pixel_polygon_vertex_y(yv(i));
+  }
+
+  return d;
+}
+
+calin::ix::iact_data::instrument_layout::TelescopeLayout*
+calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
+  const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
+  unsigned telescope_id, const Eigen::Vector3d& pos,
+  calin::ix::iact_data::instrument_layout::TelescopeLayout* d)
+{
+  if(d == nullptr)d = new calin::ix::iact_data::instrument_layout::TelescopeLayout;
+
+  d->Clear();
+
+  d->set_telescope_type(calin::ix::iact_data::instrument_layout::TelescopeLayout::NO_TELESCOPE);
+  d->set_telescope_index(telescope_id);
+  calin::math::vector3d_util::dump_as_proto(pos, d->mutable_position());
+  d->set_effective_focal_length(param.focal_plane().translation().y());
+
+  auto* c = d->mutable_camera();
+  c->set_camera_type(calin::ix::iact_data::instrument_layout::CameraLayout::NO_CAMERA);
+  c->set_camera_number(telescope_id);
+
+  c->set_pixel_grid_layout(
+    calin::ix::iact_data::instrument_layout::CameraLayout::HEX_GRID);
+  c->set_pixel_grid_spacing(param.pixel().spacing());
+  c->set_pixel_grid_rotation(param.pixel().grid_rotation());
+  c->set_pixel_grid_cos_rotation(std::cos(param.pixel().grid_rotation()/180.0*M_PI));
+  c->set_pixel_grid_sin_rotation(std::sin(param.pixel().grid_rotation()/180.0*M_PI));
+  c->set_pixel_grid_offset_x(param.focal_plane().translation().x());
+  c->set_pixel_grid_offset_y(param.focal_plane().translation().z());
+  c->set_pixel_grid_geometric_area(
+    calin::math::hex_array::cell_area(param.pixel().spacing()));
+
+  std::set<unsigned> modules_missing;
+  for(auto iid : param.pixel().module_missing_list())
+    modules_missing.insert(iid);
+
+  unsigned module_size = param.pixel().hex_module_size();
+  std::map<unsigned, std::pair<unsigned, unsigned> > pixel_hexids;
+  unsigned module_index = 0;
+  if(modules_missing.find(0) == modules_missing.end())
+  {
+    auto* m = c->add_module();
+    unsigned modchan_id = 0;
+    for(auto id : math::hex_array::cluster_hexid_to_member_hexid(0, module_size)) {
+      pixel_hexids[id] = std::make_pair(module_index, modchan_id);
+      m->add_channels_in_module(id); // temporarily add hexid
+      ++modchan_id;
+    }
+    ++module_index;
+  }
+  unsigned module_ring_id = 1;
+  bool module_ring_in_camera = true;
+  if(param.pixel().module_num_hex_rings()==0 and param.focal_plane().camera_diameter()<=0)
+    module_ring_in_camera = false;
+  while(module_ring_in_camera
+        and (param.pixel().module_num_hex_rings()==0
+             or module_ring_id<=param.pixel().module_num_hex_rings()))
+  {
+    module_ring_in_camera = false;
+    for(unsigned iseg=0;iseg<6;iseg++)
+      for(unsigned irun=0;irun<module_ring_id;irun++)
+      {
+        unsigned module_id =
+            math::hex_array::
+            ringid_segid_runid_to_hexid(module_ring_id, iseg, irun);
+        if(modules_missing.find(module_id) != modules_missing.end())
+          continue;
+        int u, v;
+        math::hex_array::cluster_hexid_to_center_uv(module_id, module_size, u, v);
+        double x, z;
+        math::hex_array::uv_to_xy(u, v, x, z);
+        if(param.focal_plane().camera_diameter()>0 and
+            std::sqrt(x*x+z*z)*param.pixel().spacing()>param.focal_plane().camera_diameter()/2.0)
+	        continue; // skip module if position too far out
+        module_ring_in_camera = true;
+        unsigned modchan_id = 0;
+        auto* m = c->add_module();
+        for(auto id : math::hex_array::
+            cluster_hexid_to_member_hexid(module_id, module_size)) {
+          m->add_channels_in_module(id); // temporarily add hexid
+          pixel_hexids[id] = std::make_pair(module_index, modchan_id);
+          ++modchan_id;
+        }
+        ++module_index;
+      }
+    module_ring_id++;
+  }
+
+  math::regular_grid::HexGrid grid(c->pixel_grid_spacing(),
+    c->pixel_grid_rotation()/180.0*M_PI,
+    c->pixel_grid_offset_x(), c->pixel_grid_offset_y());
+  unsigned pixelid = 0;
+  for(auto pixel : pixel_hexids)
+  {
+    unsigned hexid = pixel.first;
+    unsigned modid = pixel.second.first;
+    unsigned modchanid = pixel.second.second;
+
+    auto* ch = c->add_channel();
+    ch->set_channel_index(pixelid);
+    ch->set_pixel_index(pixelid);
+    ch->set_pixel_grid_index(hexid);
+    ch->set_channel_set_index(0);
+    ch->set_module_index(modid);
+    ch->set_module_channel_index(modchanid);
+    double x;
+    double y;
+    grid.gridid_to_xy(hexid, x, y);
+    ch->set_x(x);
+    ch->set_y(y);
+    ch->set_diameter(c->pixel_grid_spacing());
+    ch->set_geometric_area(grid.cell_area(hexid));
+    auto nbr = grid.gridid_to_neighbour_gridids(hexid);
+    for(auto inbr : nbr) {
+      auto inpix = pixel_hexids.find(inbr);
+      if(inpix != pixel_hexids.end())
+        ch->add_neighbour_channel_indexes(
+          std::distance(pixel_hexids.begin(), inpix));
+    }
+    Eigen::VectorXd xv;
+    Eigen::VectorXd yv;
+    grid.gridid_to_vertexes_xy(hexid, xv, yv);
+    for(unsigned i=0; i<xv.size(); i++)
+      ch->add_pixel_polygon_vertex_x(xv(i));
+    for(unsigned i=0; i<yv.size(); i++)
+      ch->add_pixel_polygon_vertex_y(yv(i));
+    c->mutable_module(modid)->set_channels_in_module(modchanid, pixelid);
+    pixelid++;
+  }
+
+  return d;
 }
