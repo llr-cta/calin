@@ -52,16 +52,20 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
         cbar.set_label(cbar_label)
     return pc
 
-def add_outline(axis, layout, plate_scale = 1.0,
-        outline_lw = 0.5, outline_color = '#888888'):
+def layout_to_polygon_vxy(layout, plate_scale = 1.0):
+    all_vxy = []
     ibegin = 0;
     for iend in layout.outline_polygon_vertex_index():
         vx = layout.outline_polygon_vertex_x()[ibegin:iend]*plate_scale
         vy = layout.outline_polygon_vertex_y()[ibegin:iend]*plate_scale
-        axis.add_patch(plt.Polygon(np.column_stack([vx, vy]),
-            fill=False, lw=outline_lw, edgecolor=outline_color))
-        ibegin = iend
+        all_vxy.append(np.column_stack([vx, vy]))
+    return all_vxy
 
+def add_outline(axis, layout, plate_scale = 1.0,
+        outline_lw = 0.5, outline_color = '#888888'):
+    for vxy in layout_to_polygon_vxy(layout, plate_scale):
+        axis.add_patch(plt.Polygon(vxy,
+            fill=False, lw=outline_lw, edgecolor=outline_color))
 
 def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         configured_channels = None, zero_suppression = None,
