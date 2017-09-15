@@ -92,7 +92,19 @@ message ChannelLayout {
 };
 
 message ModuleLayout {
-  repeated int32 channels_in_module                        = 1;
+  repeated int32 channels_in_module                        = 1 [
+    (CFO).desc = "List of indexes for all channels in module." ];;
+
+  repeated uint32 outline_polygon_vertex_index             = 30 [
+    (CFO).desc = "Index of end of module polygon lines." ];
+  repeated double outline_polygon_vertex_x                 = 31 [
+    (CFO).desc = "X coordinates of an open polygon that represents the "
+      "outline of the module.",
+    (CFO).units = "cm" ];
+  repeated double outline_polygon_vertex_y                 = 32 [
+    (CFO).desc = "Y coordinates of an open polygon that represents the "
+      "outline of the module.",
+    (CFO).units = "cm" ];
 };
 
 message CameraLayout {
@@ -161,6 +173,17 @@ message CameraLayout {
 
   map<int32, string> module_counter_id_to_name             = 40;
   map<string, int32> module_counter_name_to_id             = 41;
+
+  repeated uint32 outline_polygon_vertex_index             = 50 [
+    (CFO).desc = "Index of end of camera polygon lines." ];
+  repeated double outline_polygon_vertex_x                 = 51 [
+    (CFO).desc = "X coordinates of an open polygon that represents the "
+      "outline of the camera.",
+    (CFO).units = "cm" ];
+  repeated double outline_polygon_vertex_y                 = 52 [
+    (CFO).desc = "Y coordinates of an open polygon that represents the "
+      "outline of the camera.",
+    (CFO).units = "cm" ];
 };
 
 message TelescopeLayout {

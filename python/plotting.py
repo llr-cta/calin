@@ -52,6 +52,17 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
         cbar.set_label(cbar_label)
     return pc
 
+def add_outline(axis, layout, plate_scale = 1.0,
+        outline_lw = 0.5, outline_color = '#888888'):
+    ibegin = 0;
+    for iend in layout.outline_polygon_vertex_index():
+        vx = layout.outline_polygon_vertex_x()[ibegin:iend]*plate_scale
+        vy = layout.outline_polygon_vertex_y()[ibegin:iend]*plate_scale
+        axis.add_patch(plt.Polygon(np.column_stack([vx, vy]),
+            fill=False, lw=outline_lw, edgecolor=outline_color))
+        ibegin = iend
+
+
 def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         configured_channels = None, zero_suppression = None,
         plate_scale = 1.0, R = None,
@@ -86,21 +97,8 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     axis.add_collection(pc)
 
     if draw_outline:
-        grid = None
-        if(camera_layout.pixel_grid_layout() ==
-                calin.ix.iact_data.instrument_layout.CameraLayout.HEX_GRID):
-            grid = calin.math.regular_grid.HexGrid(
-                camera_layout.pixel_grid_spacing()*plate_scale,
-                camera_layout.pixel_grid_rotation()/180.0*np.pi,
-                camera_layout.pixel_grid_offset_x()*plate_scale,
-                camera_layout.pixel_grid_offset_y()*plate_scale)
-        else:
-            raise ValueError('cannot draw outline for camera without regular grid')
-        v = grid.compute_region_boundary(pix_gridid)
-        for icurve in range(grid.num_bounday_curves(v)):
-            vx,vy = grid.extract_bounday_curve(v,icurve,False)
-            axis.add_patch(plt.Polygon(np.column_stack([vx, vy]),
-                        fill=False,lw=outline_lw,edgecolor=outline_color))
+        add_outline(axis, camera_layout, plate_scale=plate_scale,
+            outline_lw=outline_lw, outline_color=outline_color)
 
     axis.axis('square')
     axis.axis(np.asarray([-1,1,-1,1])*(R or 1.05*max_xy))

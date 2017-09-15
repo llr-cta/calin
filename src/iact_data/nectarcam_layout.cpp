@@ -26,6 +26,7 @@
 
 #include <math/special.hpp>
 #include <math/hex_array.hpp>
+#include <iact_data/instrument_layout.hpp>
 #include <iact_data/nectarcam_layout.hpp>
 #include <io/log.hpp>
 
@@ -216,6 +217,7 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
     }
   }
 
+  calin::iact_data::instrument_layout::compute_camera_and_module_outlines(layout);
   return layout;
 }
 

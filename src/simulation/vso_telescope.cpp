@@ -30,6 +30,7 @@
 #include <math/vector3d_util.hpp>
 #include <simulation/vso_telescope.hpp>
 #include <simulation/vs_optics.pb.h>
+#include <iact_data/instrument_layout.hpp>
 
 using namespace calin::io::log;
 using namespace calin::simulation::vs_optics;
@@ -882,6 +883,8 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
     c->mutable_module(modid)->set_channels_in_module(modchanid, pixelid);
     pixelid++;
   }
+
+  calin::iact_data::instrument_layout::compute_camera_and_module_outlines(c);
 
   return d;
 }
