@@ -31,8 +31,8 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
     max_xy = 0
     for pix_index in range(len(pix_data)):
         pix_id = int(configured_channels[pix_index]) if configured_channels is not None else  pix_index
-        vx = camera_layout.channel(pix_id).pixel_polygon_vertex_x_view()
-        vy = camera_layout.channel(pix_id).pixel_polygon_vertex_y_view()
+        vx = camera_layout.channel(pix_id).outline_polygon_vertex_x_view()
+        vy = camera_layout.channel(pix_id).outline_polygon_vertex_y_view()
         vv = np.zeros((len(vx),2))
         vv[:,0] = vx
         vv[:,1] = vy
@@ -61,6 +61,14 @@ def layout_to_polygon_vxy(layout, plate_scale = 1.0):
         all_vxy.append(np.column_stack([vx, vy]))
     return all_vxy
 
+def layout_to_polygon(layout, plate_scale = 1.0, **args):
+    all_p = []
+    for vxy in layout_to_polygon_vxy(layout, plate_scale):
+        all_p.append(plt.Polygon(vxy, **args))
+    if len(all_p) == 1:
+        return all_p[0]
+    return all_p
+
 def add_outline(axis, layout, plate_scale = 1.0,
         outline_lw = 0.5, outline_color = '#888888'):
     for vxy in layout_to_polygon_vxy(layout, plate_scale):
@@ -88,8 +96,8 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         if(chan.pixel_index() != -1):
             pix_gridid.append(chan.pixel_grid_index())
         if((channel_mask is None or channel_mask[chan_index]) and chan.pixel_index() != -1):
-            vx = chan.pixel_polygon_vertex_x_view()*plate_scale
-            vy = chan.pixel_polygon_vertex_y_view()*plate_scale
+            vx = chan.outline_polygon_vertex_x_view()*plate_scale
+            vy = chan.outline_polygon_vertex_y_view()*plate_scale
             vv = np.column_stack([vx, vy])
             max_xy = max(max_xy, max(abs(vx)), max(abs(vy)))
             pix.append(plt.Polygon(vv,closed=True))

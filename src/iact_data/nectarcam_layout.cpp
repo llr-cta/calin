@@ -212,8 +212,9 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       std::vector<double> vertex_x;
       std::vector<double> vertex_y;
       uv_to_vertexes_xy_trans(u, v, vertex_x, vertex_y, crot, srot, spacing);
-      for(auto vx : vertex_x)c->add_pixel_polygon_vertex_x(vx);
-      for(auto vy : vertex_y)c->add_pixel_polygon_vertex_y(vy);
+      for(auto vx : vertex_x)c->add_outline_polygon_vertex_x(vx);
+      for(auto vy : vertex_y)c->add_outline_polygon_vertex_y(vy);
+      c->add_outline_polygon_vertex_index(vertex_x.size());
     }
   }
 

@@ -81,13 +81,15 @@ message ChannelLayout {
     (CFO).desc = "Indexes of the channels for all neigbouring pixels. "
       "This forms a commutative relationship between the two channels." ];
 
-  repeated double pixel_polygon_vertex_x                   = 30 [
+  repeated uint32 outline_polygon_vertex_index             = 30 [
+    (CFO).desc = "Index of end of pixel polygon lines." ];
+  repeated double outline_polygon_vertex_x                 = 31 [
     (CFO).desc = "X coordinates of an open polygon that represents the "
-      "pixel, probably a hexagon or square.",
+      "outline of the pixel.",
     (CFO).units = "cm" ];
-  repeated double pixel_polygon_vertex_y                   = 31 [
+  repeated double outline_polygon_vertex_y                 = 32 [
     (CFO).desc = "Y coordinates of an open polygon that represents the "
-      "pixel, probably a hexagon or square.",
+      "outline of the pixel.",
     (CFO).units = "cm" ];
 };
 

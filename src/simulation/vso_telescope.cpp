@@ -748,9 +748,9 @@ VSOTelescope::convert_to_telescope_layout(
     Eigen::VectorXd yv;
     grid.gridid_to_vertexes_xy(ipix->hexID(), xv, yv);
     for(unsigned i=0; i<xv.size(); i++)
-      ch->add_pixel_polygon_vertex_x(xv(i));
+      ch->add_outline_polygon_vertex_x(xv(i));
     for(unsigned i=0; i<yv.size(); i++)
-      ch->add_pixel_polygon_vertex_y(yv(i));
+      ch->add_outline_polygon_vertex_y(yv(i));
   }
 
   return d;
@@ -877,9 +877,10 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
     Eigen::VectorXd yv;
     grid.gridid_to_vertexes_xy(hexid, xv, yv);
     for(unsigned i=0; i<xv.size(); i++)
-      ch->add_pixel_polygon_vertex_x(xv(i));
+      ch->add_outline_polygon_vertex_x(xv(i));
     for(unsigned i=0; i<yv.size(); i++)
-      ch->add_pixel_polygon_vertex_y(yv(i));
+      ch->add_outline_polygon_vertex_y(yv(i));
+    ch->add_outline_polygon_vertex_index(xv.size());
     c->mutable_module(modid)->set_channels_in_module(modchanid, pixelid);
     pixelid++;
   }
