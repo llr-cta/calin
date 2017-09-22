@@ -61,13 +61,16 @@ def plot_image(scope, pix_data, cmap=None, clim=None, draw_outline=True, \
         plate_scale=None, ax_in=None, R=None, zero_suppress=None):
     pix = []
     idx = []
-    plate_scale = scope.pixelSpacing()*(plate_scale or 1/scope.focalPlanePosition()[1]/np.pi*180.0)
+    plate_scale = plate_scale or 1/scope.focalPlanePosition()[1]/np.pi*180.0
     for pix_id in range(len(pix_data)):
         if(zero_suppress is not None and pix_data[pix_id]<=zero_suppress):
             continue
         pix_hexid = scope.pixel(pix_id).hexID()
         vx,vy = calin.math.hex_array.hexid_to_vertexes_xy_trans(pix_hexid,
-            scope.cosPixelRotation(), scope.sinPixelRotation(), plate_scale)
+            scope.cosPixelRotation(), scope.sinPixelRotation(),
+            scope.pixelSpacing()*plate_scale,
+            scope.pixelGridShiftX()*plate_scale,
+            scope.pixelGridShiftZ()*plate_scale)
         vv = np.zeros((len(vx),2))
         vv[:,0] = vx
         vv[:,1] = vy
@@ -84,8 +87,9 @@ def plot_image(scope, pix_data, cmap=None, clim=None, draw_outline=True, \
 
     if draw_outline:
         cam_hexids = list(map(lambda p: p.hexID(), scope.all_pixels()))
-        grid = calin.math.regular_grid.HexGrid(plate_scale,scope.pixelRotation(),
-            scope.pixelGridShiftX(), scope.pixelGridShiftZ())
+        grid = calin.math.regular_grid.HexGrid(scope.pixelSpacing()*plate_scale,
+            scope.pixelRotation(),
+            scope.pixelGridShiftX()*plate_scale, scope.pixelGridShiftZ()*plate_scale)
         v = grid.compute_region_boundary(cam_hexids)
         for icurve in range(grid.num_bounday_curves(v)):
             vx,vy = grid.extract_bounday_curve(v,icurve,False)
