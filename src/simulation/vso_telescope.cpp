@@ -46,9 +46,9 @@ VSOTelescope::VSOTelescope():
     fFacetGridShiftX(), fFacetGridShiftZ(),
     fHexagonRingsN(), fReflectorIP(), fReflectorIPCenter(),
     fMirrorParity(), fFPTranslation(), fCameraDiameter(),
-    fFieldOfView(), fCathodeDiameter(), fPixelSpacing(), fPixelRotation(),
-    fCosPixelRotation(1.0), fSinPixelRotation(0.0),
-    fConcSurvProb(),
+    fFieldOfView(), fCathodeDiameter(), fPixelSpacing(),
+    fPixelRotation(), fCosPixelRotation(1.0), fSinPixelRotation(0.0),
+    fPixelGridShiftX(), fPixelGridShiftZ(), fConcSurvProb(),
     fFPRotation(), fCameraIP(), fPixelParity(),
     fObscurations(),
     fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), rot_reflector_to_global_()
@@ -64,7 +64,7 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
 	     double RR, double FGSX, double FGSZ,
        unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
 	     const Eigen::Vector3d& FPT, double CD, double FOV,
-       double D, double PS, double PR,
+       double D, double PS, double PR, double PGSX, double PGSZ,
 	     double CSP, const Eigen::Vector3d& FPR, double CIP, bool PP,
 	     const std::vector<VSOObscuration*>& OBSVEC
 	     ):
@@ -78,6 +78,7 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
     fFPTranslation(FPT),  fCameraDiameter(CD), fFieldOfView(FOV),
     fCathodeDiameter(D), fPixelSpacing(PS), fPixelRotation(PR),
     fCosPixelRotation(std::cos(PR)), fSinPixelRotation(std::sin(PR)),
+    fPixelGridShiftX(PGSX), fPixelGridShiftZ(PGSZ),
     fConcSurvProb(CSP),
     fFPRotation(FPR), fCameraIP(CIP), fPixelParity(PP),
     fObscurations(OBSVEC),
@@ -106,6 +107,8 @@ VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fPixelSpacing(o.fPixelSpacing), fPixelRotation(o.fPixelRotation),
     fCosPixelRotation(o.fCosPixelRotation),
     fSinPixelRotation(o.fSinPixelRotation),
+    fPixelGridShiftX(o.fPixelGridShiftX),
+    fPixelGridShiftZ(o.fPixelGridShiftZ),
     fConcSurvProb(o.fConcSurvProb),
     fFPRotation(o.fFPRotation), fCameraIP(o.fCameraIP),
     fPixelParity(o.fPixelParity),
@@ -677,6 +680,8 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
     d.field_of_view(), // FOV
     d.cathode_diameter(), // D
     d.pixel_spacing(), // PS
+    d.pixel_grid_shift_x(), // PGSX
+    d.pixel_grid_shift_z(), // PGSZ
     d.pixel_rotation()*M_PI/180.0, // PR
     d.conc_survival_prob(), // CSP
     calin::math::vector3d_util::from_scaled_proto(d.fp_rotation(), M_PI/180.0), // FPR

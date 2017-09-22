@@ -108,7 +108,6 @@ def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
         scope.set_y(scope_y)
         scope.set_z(lst.array_origin().elevation())
     lst.mutable_reflector_frame().set_optic_axis_rotation(0);
-    lst.mutable_reflector_frame().set_facet_grid_shift_z(44.46)
     dc = lst.mutable_reflector()
     dc.set_curvature_radius(5644) # Least square fit of sphere to mirror pos. Could be 5600 either
     dc.mutable_psf_align().set_object_plane(numpy.inf) # 10 * 1e5);
@@ -117,6 +116,7 @@ def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
     #dc.set_facet_num_hex_rings(8)
     dc.set_facet_spacing(154)
     dc.set_facet_size(151)
+    dc.set_facet_grid_shift_z(44.46)
     dc.set_facet_focal_length(0)
     dc.set_facet_focal_length_dispersion(10)
     dc.set_facet_spot_size_probability(0.8)

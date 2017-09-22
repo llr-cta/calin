@@ -61,6 +61,8 @@ string gen_filename(string swig_filename,
 void write_dep(std::ostream& depstream, const string& dep, string& sep,
   const string & src_dir, const string & bin_dir)
 {
+  static const string PBI = ".pb.i";
+  static const string PROTO = ".proto";
   string cmake_sep = ";";
 
   string test_file = src_dir + "/swig/" + dep;
@@ -77,11 +79,15 @@ void write_dep(std::ostream& depstream, const string& dep, string& sep,
     return;
   }
 
-  test_file = bin_dir + "/proto/" + dep;
-  if(access(test_file.c_str(),R_OK)==0) {
-    depstream << sep << test_file;
-    sep = cmake_sep;
-    return;
+  if(dep.size()>PBI.size() and
+    dep.substr(dep.size()-PBI.size(), PBI.size()) == PBI)
+  {
+    test_file = src_dir + "/proto/" + dep.substr(0, dep.size()-PBI.size()) + PROTO;
+    if(access(test_file.c_str(),R_OK)==0) {
+      depstream << sep << bin_dir + "/proto/" + dep;
+      sep = cmake_sep;
+      return;
+    }
   }
 }
 
