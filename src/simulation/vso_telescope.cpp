@@ -185,6 +185,8 @@ const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
   fPixelRotation     = o.fPixelRotation;
   fCosPixelRotation  = o.fCosPixelRotation;
   fSinPixelRotation  = o.fSinPixelRotation;
+  fPixelGridShiftX   = o.fPixelGridShiftX;
+  fPixelGridShiftZ   = o.fPixelGridShiftZ;
   fConcSurvProb      = o.fConcSurvProb;
   fFPRotation        = o.fFPRotation;
   fCameraIP          = o.fCameraIP;
@@ -569,9 +571,11 @@ populateMirrorsAndPixelsRandom(
         int u, v;
         math::hex_array::cluster_hexid_to_center_uv(module_id, module_size, u, v);
         double x, z;
-        math::hex_array::uv_to_xy(u, v, x, z);
+        math::hex_array::uv_to_xy_trans(u, v, x, z,
+          fCosPixelRotation, fSinPixelRotation, fPixelSpacing,
+          fPixelGridShiftX, fPixelGridShiftZ);
         if(fCameraDiameter>0 and
-            std::sqrt(x*x+z*z)*fPixelSpacing>fCameraDiameter/2.0)
+            std::sqrt(x*x+z*z)>fCameraDiameter/2.0)
 	        continue; // skip module if position too far out
         module_ring_in_camera = true;
         for(auto id : math::hex_array::
@@ -592,7 +596,7 @@ populateMirrorsAndPixelsRandom(
     // Compute the pixel's nominal position
     math::hex_array::hexid_to_xy_trans(hexid,
       nominal_position.x(), nominal_position.z(), fPixelParity,
-      cos_fp_rot, sin_fp_rot, fPixelSpacing);
+      cos_fp_rot, sin_fp_rot, fPixelSpacing, fPixelGridShiftX, fPixelGridShiftZ);
     nominal_position.y() = 0;
     nominal_position = rot_camera_to_reflector_ * nominal_position;
 
@@ -637,6 +641,8 @@ dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const
   d->set_cathode_diameter(fCathodeDiameter);
   d->set_pixel_spacing(fPixelSpacing);
   d->set_pixel_rotation(fPixelRotation/M_PI*180.0);
+  d->set_pixel_grid_shift_x(fPixelGridShiftX);
+  d->set_pixel_grid_shift_z(fPixelGridShiftZ);
   d->set_conc_survival_prob(fConcSurvProb);
   calin::math::vector3d_util::dump_as_scaled_proto(fFPRotation, 180.0/M_PI, d->mutable_fp_rotation());
   d->set_camera_ip(fCameraIP);
@@ -722,12 +728,13 @@ VSOTelescope::convert_to_telescope_layout(
   c->set_pixel_grid_rotation(fPixelRotation/M_PI*180.0);
   c->set_pixel_grid_cos_rotation(fCosPixelRotation);
   c->set_pixel_grid_sin_rotation(fSinPixelRotation);
-  c->set_pixel_grid_offset_x(fFPTranslation.x());
-  c->set_pixel_grid_offset_y(fFPTranslation.z());
+  c->set_pixel_grid_offset_x(fPixelGridShiftX);
+  c->set_pixel_grid_offset_y(fPixelGridShiftZ);
   c->set_pixel_grid_geometric_area(calin::math::hex_array::cell_area(fPixelSpacing));
   // What do we do with : fPixelParity
 
-  math::regular_grid::HexGrid grid(fPixelSpacing, fPixelRotation);
+  math::regular_grid::HexGrid grid(fPixelSpacing, fPixelRotation,
+    fPixelGridShiftX, fPixelGridShiftZ);
   for(const auto* ipix : fPixels)
   {
     auto* ch = c->add_channel();
@@ -786,8 +793,8 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
   c->set_pixel_grid_rotation(param.pixel().grid_rotation());
   c->set_pixel_grid_cos_rotation(std::cos(param.pixel().grid_rotation()/180.0*M_PI));
   c->set_pixel_grid_sin_rotation(std::sin(param.pixel().grid_rotation()/180.0*M_PI));
-  c->set_pixel_grid_offset_x(param.focal_plane().translation().x());
-  c->set_pixel_grid_offset_y(param.focal_plane().translation().z());
+  c->set_pixel_grid_offset_x(param.pixel().pixel_grid_shift_x());
+  c->set_pixel_grid_offset_y(param.pixel().pixel_grid_shift_z());
   c->set_pixel_grid_geometric_area(
     calin::math::hex_array::cell_area(param.pixel().spacing()));
 

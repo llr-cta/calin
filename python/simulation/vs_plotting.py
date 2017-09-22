@@ -84,7 +84,8 @@ def plot_image(scope, pix_data, cmap=None, clim=None, draw_outline=True, \
 
     if draw_outline:
         cam_hexids = list(map(lambda p: p.hexID(), scope.all_pixels()))
-        grid = calin.math.regular_grid.HexGrid(plate_scale,scope.pixelRotation())
+        grid = calin.math.regular_grid.HexGrid(plate_scale,scope.pixelRotation(),
+            scope.pixelGridShiftX(), scope.pixelGridShiftZ())
         v = grid.compute_region_boundary(cam_hexids)
         for icurve in range(grid.num_bounday_curves(v)):
             vx,vy = grid.extract_bounday_curve(v,icurve,False)
