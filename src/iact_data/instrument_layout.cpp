@@ -95,7 +95,7 @@ void calin::iact_data::instrument_layout::compute_camera_and_module_outlines(
     camera_layout->mutable_outline_polygon_vertex_x(),
     camera_layout->mutable_outline_polygon_vertex_y());
 
-  for(unsigned imodule=0; imodule<camera_layout->module_size(); imodule++)
+  for(int imodule=0; imodule<camera_layout->module_size(); imodule++)
   {
     auto* module_layout = camera_layout->mutable_module(imodule);
     std::vector<unsigned> module_grid_ids;
