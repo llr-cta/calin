@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import matplotlib.collections
 import calin.math.hex_array
 import calin.math.regular_grid
+import calin.plotting
 import numpy as np
 
 def plot_mirrors(scope, label_hex_id=False, scale=1, scale_units='cm', ax_in=None, fs=None):
@@ -59,46 +60,11 @@ def plot_mirrors(scope, label_hex_id=False, scale=1, scale_units='cm', ax_in=Non
 
 def plot_image(scope, pix_data, cmap=None, clim=None, draw_outline=True, \
         plate_scale=None, ax_in=None, R=None, zero_suppress=None):
-    pix = []
-    idx = []
-    plate_scale = plate_scale or 1/scope.focalPlanePosition()[1]/np.pi*180.0
-    for pix_id in range(len(pix_data)):
-        if(zero_suppress is not None and pix_data[pix_id]<=zero_suppress):
-            continue
-        pix_hexid = scope.pixel(pix_id).hexID()
-        vx,vy = calin.math.hex_array.hexid_to_vertexes_xy_trans(pix_hexid,
-            scope.cosPixelRotation(), scope.sinPixelRotation(),
-            scope.pixelSpacing()*plate_scale,
-            scope.pixelGridShiftX()*plate_scale,
-            scope.pixelGridShiftZ()*plate_scale)
-        vv = np.zeros((len(vx),2))
-        vv[:,0] = vx
-        vv[:,1] = vy
-        pix.append(plt.Polygon(vv,closed=True))
-        idx.append(pix_id)
-
-    ax = ax_in if ax_in is not None else plt.gca()
-    pc = matplotlib.collections.PatchCollection(pix, cmap=cmap or matplotlib.cm.CMRmap_r)
-    pc.set_array(np.asarray(pix_data)[idx])
-    pc.set_linewidths(0)
-    if(clim is not None):
-        pc.set_clim(clim[0],clim[1])
-    ax.add_collection(pc)
-
-    if draw_outline:
-        cam_hexids = list(map(lambda p: p.hexID(), scope.all_pixels()))
-        grid = calin.math.regular_grid.HexGrid(scope.pixelSpacing()*plate_scale,
-            scope.pixelRotation(),
-            scope.pixelGridShiftX()*plate_scale, scope.pixelGridShiftZ()*plate_scale)
-        v = grid.compute_region_boundary(cam_hexids)
-        for icurve in range(grid.num_bounday_curves(v)):
-            vx,vy = grid.extract_bounday_curve(v,icurve,False)
-            ax.add_patch(plt.Polygon(np.column_stack([vx, vy]),
-                                fill=False,lw=0.5,edgecolor='#888888'))
-
-    ax.axis('square')
-    R = R or max(abs(np.asarray(ax.axis())))
-    if R:
-        ax.axis(np.asarray([-1,1,-1,1])*R)
-
-    return pc
+    if type(scope) is calin.simulation.vs_optics.VSOTelescope:
+        scope = scope.convert_to_telescope_layout()
+    elif type(scope) is calin.ix.simulation.vs_optics.IsotropicDCArrayParameters:
+        scope = calin.simulation.vs_optics.dc_parameters_to_telescope_layout(scope)
+    return calin.plotting.plot_camera_image(all_res[0][3], instrument.camera(),
+                cmap=cmap, clim=clim, draw_outline=draw_outline,
+                plate_scale=plate_scale, axis=ax_in, R=R,
+                zero_suppress=zero_suppress)
