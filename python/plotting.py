@@ -77,7 +77,7 @@ def add_outline(axis, layout, plate_scale = 1.0,
 
 def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         configured_channels = None, zero_suppression = None,
-        plate_scale = 1.0, R = None,
+        plate_scale = None, R = None,
         cmap = matplotlib.cm.CMRmap_r, axis = None, draw_outline = False,
         pix_lw = 0, outline_lw = 0.5, outline_color = '#888888'):
     if(channel_mask is None and zero_suppression is not None):
@@ -90,6 +90,12 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     pix_data = []
     pix_gridid = []
     max_xy = 0
+    if plate_scale is None:
+        plate_scale = 1
+        if type(camera_layout) is calin.ix.iact_data.instrument_layout.calin.ix.iact_data.instrument_layout.TelescopeLayout:
+            plate_scale = 180/np.pi/camera_layout.effective_focal_length()
+    if type(camera_layout) is calin.ix.iact_data.instrument_layout.calin.ix.iact_data.instrument_layout.TelescopeLayout:
+        camera_layout = camera_layout.camera()
     for chan_index in range(len(channel_data)):
         chan_id = int(configured_channels[chan_index]) if configured_channels is not None else chan_index
         chan = camera_layout.channel(chan_id)
@@ -122,9 +128,11 @@ def plot_histogram(h, *args, **nargs):
         hy = h.all_weight()
     elif type(h) is calin.ix.math.histogram.Histogram1DData:
         hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
-        hy = h.bins_view()
+        hy = h.bins()
     else:
         raise Exception('Unknown histogram type: '+type(h))
+    hx = np.append(hx, hx[-1]+h.dxval())
+    hy = np.append(hy, hy[-1])
     so = plt.step(hx,hy, where='post', *args, **nargs)
     return so
 
@@ -134,8 +142,10 @@ def plot_histogram_cumulative(h, *args, **nargs):
         hy = h.all_weight()
     elif type(h) is calin.ix.math.histogram.Histogram1DData:
         hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
-        hy = h.bins_view()
+        hy = h.bins()
     else:
         raise Exception('Unknown histogram type: '+type(h))
-    so = plt.step(hx,np.cumsum(hy), where='post', *args, **nargs)
+    hx = np.append(hx, hx[-1]+h.dxval())
+    hy = np.append(0, hy)
+    so = plt.plot(hx,np.cumsum(hy), *args, **nargs)
     return so

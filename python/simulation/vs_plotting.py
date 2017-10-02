@@ -64,7 +64,10 @@ def plot_image(scope, pix_data, cmap=None, clim=None, draw_outline=True, \
         scope = scope.convert_to_telescope_layout()
     elif type(scope) is calin.ix.simulation.vs_optics.IsotropicDCArrayParameters:
         scope = calin.simulation.vs_optics.dc_parameters_to_telescope_layout(scope)
-    return calin.plotting.plot_camera_image(all_res[0][3], instrument.camera(),
-                cmap=cmap, clim=clim, draw_outline=draw_outline,
+    pc = calin.plotting.plot_camera_image(pix_data, scope,
+                cmap=cmap, draw_outline=draw_outline,
                 plate_scale=plate_scale, axis=ax_in, R=R,
-                zero_suppress=zero_suppress)
+                zero_suppression=zero_suppress)
+    if clim is not None:
+        pc.set_clim(clim)
+    return pc
