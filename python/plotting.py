@@ -122,7 +122,7 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     axis.axis(np.asarray([-1,1,-1,1])*(R or 1.05*max_xy))
     return pc
 
-def plot_histogram(h, *args, **nargs):
+def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
@@ -131,12 +131,16 @@ def plot_histogram(h, *args, **nargs):
         hy = h.bins()
     else:
         raise Exception('Unknown histogram type: '+type(h))
+    if plot_as_pdf:
+        hy /= h.sum_w()/h.dxval()
+    elif plot_as_pmf:
+        hy /= h.sum_w()
     hx = np.append(hx, hx[-1]+h.dxval())
     hy = np.append(hy, hy[-1])
     so = plt.step(hx,hy, where='post', *args, **nargs)
     return so
 
-def plot_histogram_cumulative(h, *args, **nargs):
+def plot_histogram_cumulative(h,  plot_as_pdf = False, plot_as_pmf = False, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
@@ -145,6 +149,8 @@ def plot_histogram_cumulative(h, *args, **nargs):
         hy = h.bins()
     else:
         raise Exception('Unknown histogram type: '+type(h))
+    if plot_as_pdf or plot_as_pmf:
+        hy /= h.sum_w()
     hx = np.append(hx, hx[-1]+h.dxval())
     hy = np.append(0, hy)
     so = plt.plot(hx,np.cumsum(hy), *args, **nargs)
