@@ -132,7 +132,7 @@ def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False, *args, **nargs):
     else:
         raise Exception('Unknown histogram type: '+type(h))
     if plot_as_pdf:
-        hy /= h.sum_w()/h.dxval()
+        hy /= h.sum_w()/abs(h.dxval())
     elif plot_as_pmf:
         hy /= h.sum_w()
     hx = np.append(hx, hx[-1]+h.dxval())
@@ -140,7 +140,7 @@ def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False, *args, **nargs):
     so = plt.step(hx,hy, where='post', *args, **nargs)
     return so
 
-def plot_histogram_cumulative(h,  plot_as_pdf = False, plot_as_pmf = False, *args, **nargs):
+def plot_histogram_cumulative(h, plot_as_pdf = False, plot_as_pmf = False, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
