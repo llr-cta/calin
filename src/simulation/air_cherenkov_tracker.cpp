@@ -209,8 +209,8 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
       Eigen::Matrix3d Mrot =
         Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(),
           cherenkov_track.dx_hat).toRotationMatrix();
-      ux = Mrot*Eigen::Vector3d::UnitX();
-      uy = Mrot*Eigen::Vector3d::UnitY();
+      ux = Mrot.col(0); // Mrot*Eigen::Vector3d::UnitX();
+      uy = Mrot.col(1); // Mrot*Eigen::Vector3d::UnitY();
       photon.epsilon = 0;
     }
 
