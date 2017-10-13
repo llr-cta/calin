@@ -144,8 +144,6 @@ public:
     bool& kill_track);
   virtual void leave_event();
 private:
-  void set_dX_emission() { dX_emission_ = -std::log(rng_->uniform()); }
-
   CherenkovPhotonVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
   double epsilon0_ = 1.5;

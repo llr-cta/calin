@@ -166,7 +166,7 @@ MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
   epsilon0_(epsilon0), bandwidth_(bandwidth), do_color_photons_(do_color_photons),
   rng_(rng ? rng : new calin::math::rng::RNG()), adopt_rng_(rng ? adopt_rng : true)
 {
-  set_dX_emission();
+  dX_emission_ = rng_->exponential();
 }
 
 MCCherenkovPhotonGenerator::~MCCherenkovPhotonGenerator()
@@ -200,7 +200,7 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
   while(dX_emission_ < dX_left)
   {
     dX_left -= dX_emission_;
-    set_dX_emission();
+    dX_emission_ = rng_->exponential();
 
     if(no_photon_emitted)
     {
