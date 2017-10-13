@@ -29,6 +29,7 @@
 // - implements a layered atmospheric detector
 // Stephen Fegan - sfegan@llr.in2p3.fr - September 2012
 
+#include <Eigen/Geometry>
 #include <math/special.hpp>
 #include <simulation/air_cherenkov_tracker.hpp>
 #include <io/log.hpp>
@@ -133,4 +134,94 @@ AirCherenkovParameterCalculatorTrackVisitor::default_config()
   calin::ix::simulation::tracker::AirCherenkovParameterCalculatorTrackVisitorConfig cfg;
   cfg.set_forced_cherenkov_angle(1.2);
   return cfg;
+}
+
+CherenkovPhotonVisitor::~CherenkovPhotonVisitor()
+{
+  // nothing to see here
+}
+
+void CherenkovPhotonVisitor::visit_event(const Event& event, bool& kill_event)
+{
+  // nothing to see here
+}
+
+void CherenkovPhotonVisitor::
+visit_cherenkov_photon(const CherenkovPhoton& cherenkov_photon)
+{
+  // nothing to see here
+}
+
+void CherenkovPhotonVisitor::leave_event()
+{
+  // nothing to see here
+}
+
+MCCherenkovPhotonGenerator::
+MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
+    double epsilon0, double depsilon, bool do_color_photons,
+    calin::math::rng::RNG* rng, bool adopt_visitor, bool adopt_rng):
+  visitor_(visitor), adopt_visitor_(adopt_visitor),
+  epsilon0_(epsilon0), depsilon_(depsilon), do_color_photons_(do_color_photons),
+  rng_(rng ? rng : new calin::math::rng::RNG()), adopt_rng_(rng ? adopt_rng : true)
+{
+  set_dX_emission();
+}
+
+MCCherenkovPhotonGenerator::~MCCherenkovPhotonGenerator()
+{
+  if(adopt_visitor_)delete visitor_;
+  if(adopt_rng_)delete rng_;
+}
+
+void MCCherenkovPhotonGenerator::visit_event(const Event& event, bool& kill_event)
+{
+  return visitor_->visit_event(event, kill_event);
+}
+
+void MCCherenkovPhotonGenerator::leave_event()
+{
+  return visitor_->leave_event();
+}
+
+void MCCherenkovPhotonGenerator::
+visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track)
+{
+  CherenkovPhoton photon;
+  bool no_photon_emitted = true;
+
+  const double dX_over_dx = cherenkov_track.yield_density * depsilon_;
+  const double dX_track = cherenkov_track.dx * dX_over_dx;
+
+  Eigen::Vector3d ux;
+  Eigen::Vector3d uy;
+
+  double dX_left = dX_track;
+  while(dX_emission_ < dX_left)
+  {
+    dX_left -= dX_emission_;
+    set_dX_emission();
+
+    if(no_photon_emitted)
+    {
+      no_photon_emitted = false;
+      photon.air_cherenkov_track = &cherenkov_track;
+      Eigen::Matrix3d Mrot =
+        Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(),
+          cherenkov_track.dx_hat).toRotationMatrix();
+      ux = Mrot*Eigen::Vector3d::UnitX();
+      uy = Mrot*Eigen::Vector3d::UnitY();
+      photon.epsilon = 0;
+    }
+
+    double dX_frac = 1.0 - dX_left/dX_track;
+    photon.x0 = cherenkov_track.x0 + cherenkov_track.dx_hat*cherenkov_track.dx*dX_frac;
+    double phi = 2.0*M_PI*rng_->uniform();
+    photon.u0 = cherenkov_track.cos_thetac*cherenkov_track.dx_hat +
+      cherenkov_track.sin_thetac*(std::cos(phi)*ux + std::sin(phi)*uy);
+    photon.t0 = cherenkov_track.t0 + cherenkov_track.dt*dX_frac;
+    visitor_->visit_cherenkov_photon(photon);
+    if(do_color_photons_)photon.epsilon = epsilon0_ + rng_->uniform()*depsilon_;
+  }
+  dX_emission_ -= dX_left;
 }
