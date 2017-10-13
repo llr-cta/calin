@@ -159,10 +159,10 @@ void CherenkovPhotonVisitor::leave_event()
 
 MCCherenkovPhotonGenerator::
 MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
-    double epsilon0, double depsilon, bool do_color_photons,
+    double epsilon0, double bandwidth, bool do_color_photons,
     calin::math::rng::RNG* rng, bool adopt_visitor, bool adopt_rng):
   visitor_(visitor), adopt_visitor_(adopt_visitor),
-  epsilon0_(epsilon0), depsilon_(depsilon), do_color_photons_(do_color_photons),
+  epsilon0_(epsilon0), bandwidth_(bandwidth), do_color_photons_(do_color_photons),
   rng_(rng ? rng : new calin::math::rng::RNG()), adopt_rng_(rng ? adopt_rng : true)
 {
   set_dX_emission();
@@ -190,7 +190,7 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
   CherenkovPhoton photon;
   bool no_photon_emitted = true;
 
-  const double dX_over_dx = cherenkov_track.yield_density * depsilon_;
+  const double dX_over_dx = cherenkov_track.yield_density * bandwidth_;
   const double dX_track = cherenkov_track.dx * dX_over_dx;
 
   Eigen::Vector3d ux;
@@ -221,7 +221,7 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
       cherenkov_track.sin_thetac*(std::cos(phi)*ux + std::sin(phi)*uy);
     photon.t0 = cherenkov_track.t0 + cherenkov_track.dt*dX_frac;
     visitor_->visit_cherenkov_photon(photon);
-    if(do_color_photons_)photon.epsilon = epsilon0_ + rng_->uniform()*depsilon_;
+    if(do_color_photons_)photon.epsilon = epsilon0_ + rng_->uniform()*bandwidth_;
   }
   dX_emission_ -= dX_left;
 }
