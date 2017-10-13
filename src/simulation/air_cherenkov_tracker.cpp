@@ -33,6 +33,7 @@
 #include <math/special.hpp>
 #include <simulation/air_cherenkov_tracker.hpp>
 #include <io/log.hpp>
+#include <math/geometry.hpp>
 
 using namespace calin::io::log;
 using namespace calin::simulation::air_cherenkov_tracker;
@@ -190,8 +191,7 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
   CherenkovPhoton photon;
   bool no_photon_emitted = true;
 
-  const double dX_over_dx = cherenkov_track.yield_density * bandwidth_;
-  const double dX_track = cherenkov_track.dx * dX_over_dx;
+  const double dX_track = cherenkov_track.yield_density * bandwidth_;
 
   Eigen::Vector3d ux;
   Eigen::Vector3d uy;
@@ -206,9 +206,8 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
     {
       no_photon_emitted = false;
       photon.air_cherenkov_track = &cherenkov_track;
-      Eigen::Matrix3d Mrot =
-        Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitZ(),
-          cherenkov_track.dx_hat).toRotationMatrix();
+      Eigen::Matrix3d Mrot;
+      calin::math::geometry::rotation_z_to_vec(Mrot, cherenkov_track.dx_hat);
       ux = Mrot.col(0); // Mrot*Eigen::Vector3d::UnitX();
       uy = Mrot.col(1); // Mrot*Eigen::Vector3d::UnitY();
       photon.epsilon = 0;
