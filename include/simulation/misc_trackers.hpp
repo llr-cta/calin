@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <Eigen/Dense>
 #include <simulation/tracker.pb.h>
 #include <simulation/tracker.hpp>
 #include <simulation/atmosphere.hpp>
