@@ -22,7 +22,10 @@
 
 #pragma once
 
+#include <simulation/tracker.pb.h>
 #include <simulation/tracker.hpp>
+#include <simulation/atmosphere.hpp>
+#include <simulation/air_cherenkov_tracker.hpp>
 
 namespace calin { namespace simulation { namespace misc_trackers {
 
@@ -114,5 +117,32 @@ private:
   std::set<calin::simulation::tracker::ParticleType> type_filter_;
 };
 
+class ShowerMovieProducerTrackVisitor:
+  public calin::simulation::tracker::TrackVisitor
+{
+public:
+  ShowerMovieProducerTrackVisitor(calin::simulation::atmosphere::Atmosphere* atm,
+    const calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig& config = default_config(),
+    bool adopt_atm = false);
+  virtual ~ShowerMovieProducerTrackVisitor();
+  void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
+  void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
+  void leave_event() override;
+  static calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig default_config();
+private:
+#ifndef SWIG
+  CALIN_TYPEALIAS(LineSegment, std::pair<Eigen::Vector3d,Eigen::Vector3d>);
+  struct Frame {
+    std::vector<LineSegment> gamma;
+    std::vector<LineSegment> electron;
+    std::vector<LineSegment> muon;
+    std::vector<LineSegment> other;
+    std::vector<LineSegment> cherenkov;
+  };
+  std::map<int, Frame> frames_;
+  calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig config_;
+  calin::simulation::air_cherenkov_tracker::AirCherenkovParameterCalculatorTrackVisitor* cherenkov_ = nullptr;
+#endif
+};
 
 } } } // namerspace calin::simulation::misc_trackers

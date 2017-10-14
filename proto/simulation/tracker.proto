@@ -47,3 +47,31 @@ message QuadratureIACTArrayIntegrationConfig
     [(CFO).desc = "Maximum angular spacing between test rays.",
      (CFO).units = "deg" ];
 };
+
+message ShowerMovieProducerTrackVisitorConfig
+{
+  double frame_advance_time                                = 1
+    [(CFO).desc = "Time between consecutive movie frames.",
+     (CFO).units = "ns" ];
+
+  double frame_exposure_time                               = 2
+    [(CFO).desc = "Time over which the exposure for each frame is open. Can be "
+      "longer, equal, or smaller than frame_advance_time. Zero means it should "
+      "be the same as frame_advance_time.",
+     (CFO).units = "ns" ];
+
+  bool disable_cherenkov_light                             = 10
+    [(CFO).desc = "Disable the generation of Cherenkov light tracks in "
+      "the movie." ];
+
+  AirCherenkovParameterCalculatorTrackVisitorConfig cherenkov_params = 11
+    [(CFO).desc = "Configuration of the air Cherenkov parameter generator." ];
+
+  double cherenkov_epsilon0                                = 12
+    [(CFO).desc = "Lowest energy Cherenkov photon to generate.",
+     (CFO).units = "eV" ];
+
+  double cherenkov_bandwidth                               = 13
+   [(CFO).desc = "Total bandwidth energy of Cherenkov photon to generate.",
+    (CFO).units = "eV" ];
+}

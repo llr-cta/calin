@@ -27,6 +27,7 @@
 #include <simulation/misc_trackers.hpp>
 #include <io/log.hpp>
 
+using namespace calin::simulation::air_cherenkov_tracker;
 using namespace calin::simulation::tracker;
 using namespace calin::simulation::misc_trackers;
 using namespace calin::io::log;
@@ -295,4 +296,62 @@ replay_event(calin::simulation::tracker::TrackVisitor* visitor) const
     }
   }
   visitor->leave_event();
+}
+
+// =============================================================================
+// =============================================================================
+//
+// ShowerMovieProducerTrackVisitor
+//
+// =============================================================================
+// =============================================================================
+
+ShowerMovieProducerTrackVisitor::
+ShowerMovieProducerTrackVisitor(calin::simulation::atmosphere::Atmosphere* atm,
+  const calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig& config,
+  bool adopt_atm): TrackVisitor(), config_(config)
+{
+  if(config_.disable_cherenkov_light()) {
+    if(atm and adopt_atm)delete atm;
+  } else if(atm) {
+    cherenkov_ = new calin::simulation::air_cherenkov_tracker::AirCherenkovParameterCalculatorTrackVisitor(
+      new MCCherenkovPhotonGenerator(nullptr,
+        config.cherenkov_epsilon0(), config.cherenkov_bandwidth(),
+        /* do_color_photons = */ true,
+        /* rng = */ nullptr,
+        /* adopt_visitor = */ true),
+      atm, config.cherenkov_params(),
+      /* adopt_visitor = */ true,
+      /* adopt_atm = */ adopt_atm);
+  }
+}
+
+ShowerMovieProducerTrackVisitor::~ShowerMovieProducerTrackVisitor()
+{
+  delete cherenkov_;
+}
+
+void ShowerMovieProducerTrackVisitor::
+visit_event(const Event& event, bool& kill_event)
+{
+  if(cherenkov_)cherenkov_->visit_event(event, kill_event);
+}
+
+void ShowerMovieProducerTrackVisitor::
+visit_track(const Track& track, bool& kill_track)
+{
+
+  if(cherenkov_)cherenkov_->visit_track(track, kill_track);
+}
+
+void ShowerMovieProducerTrackVisitor::leave_event()
+{
+  if(cherenkov_)cherenkov_->leave_event();
+}
+
+calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig
+ShowerMovieProducerTrackVisitor::default_config()
+{
+  calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig cfg;
+  return cfg;
 }
