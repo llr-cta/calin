@@ -123,6 +123,8 @@ class ShowerMovieProducerTrackVisitor:
   public calin::simulation::tracker::TrackVisitor
 {
 public:
+  CALIN_TYPEALIAS(LineSegment, std::pair<Eigen::Vector3d,Eigen::Vector3d>);
+
   ShowerMovieProducerTrackVisitor(calin::simulation::atmosphere::Atmosphere* atm,
     calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs = nullptr,
     const calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig& config = default_config(),
@@ -132,6 +134,44 @@ public:
   void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
   void leave_event() override;
   static calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig default_config();
+
+  int first_frame_number() const { return frames_.empty() ? 0 : frames_.begin()->first; }
+  int last_frame_number() const { return frames_.empty() ? 0 : frames_.rbegin()->first; }
+  bool has_frame(int iframe) { return frames_.find(iframe) != frames_.end(); }
+
+#define CREATE_NSEGMENT_FUNCTION(x)                  \
+  unsigned nsegment_ ## x(int iframe) const {        \
+    const auto frame = frames_.find(iframe);         \
+    if(frame == frames_.end())return 0;              \
+    return frame->second.x.size();                   \
+  }
+
+  CREATE_NSEGMENT_FUNCTION(gamma);
+  CREATE_NSEGMENT_FUNCTION(electron);
+  CREATE_NSEGMENT_FUNCTION(muon);
+  CREATE_NSEGMENT_FUNCTION(other);
+  CREATE_NSEGMENT_FUNCTION(cherenkov);
+
+#define CREATE_SEGMENT_FUNCTION(x)                                    \
+  void segment_ ## x(int iframe, unsigned isegment,                   \
+      Eigen::Vector3d& x0, Eigen::Vector3d& x1) const {               \
+    const auto frame = frames_.find(iframe);                          \
+    if(frame == frames_.end() or isegment >= frame->second.x.size())  \
+      x0 = x1 = Eigen::Vector3d::Zero();                              \
+    else                                                              \
+      x0 = frame->second.x[isegment].first,                           \
+      x1 = frame->second.x[isegment].second;                          \
+  }
+
+  CREATE_SEGMENT_FUNCTION(gamma);
+  CREATE_SEGMENT_FUNCTION(electron);
+  CREATE_SEGMENT_FUNCTION(muon);
+  CREATE_SEGMENT_FUNCTION(other);
+  CREATE_SEGMENT_FUNCTION(cherenkov);
+
+#undef CREATE_NSEGMENT_FUNCTION
+#undef CREATE_SEGMENT_FUNCTION
+
 private:
 #ifndef SWIG
   class ShowerMovieProducerCherenkovPhotonVisitor:
@@ -145,7 +185,6 @@ private:
     virtual ~ShowerMovieProducerCherenkovPhotonVisitor();
     void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
     void visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::CherenkovPhoton& cherenkov_photon) override;
-    void leave_event() override;
   private:
     ShowerMovieProducerTrackVisitor* parent_;
     calin::math::rng::RNG* rng_;
@@ -153,7 +192,6 @@ private:
     bool adopt_atm_abs_;
   };
 
-  CALIN_TYPEALIAS(LineSegment, std::pair<Eigen::Vector3d,Eigen::Vector3d>);
   struct Frame {
     std::vector<LineSegment> gamma;
     std::vector<LineSegment> electron;

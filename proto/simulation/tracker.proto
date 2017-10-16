@@ -60,6 +60,10 @@ message ShowerMovieProducerTrackVisitorConfig
       "be the same as frame_advance_time.",
      (CFO).units = "ns" ];
 
+  double max_time                                          = 3
+    [(CFO).desc = "Maximum movie frame time.",
+     (CFO).units = "ns" ];
+
   bool disable_cherenkov_light                             = 10
     [(CFO).desc = "Disable the generation of Cherenkov light tracks in "
       "the movie." ];

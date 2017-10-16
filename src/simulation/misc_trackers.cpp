@@ -338,6 +338,8 @@ ShowerMovieProducerTrackVisitor::~ShowerMovieProducerTrackVisitor()
 void ShowerMovieProducerTrackVisitor::
 visit_event(const Event& event, bool& kill_event)
 {
+  LOG(INFO) << "visit_event";
+  frames_.clear();
   if(cherenkov_)cherenkov_->visit_event(event, kill_event);
 }
 
@@ -347,7 +349,8 @@ visit_track(const Track& track, bool& kill_track)
   const double t_exposure = (config_.frame_exposure_time() > 0) ?
     config_.frame_exposure_time() : config_.frame_advance_time();
   const double t0 = track.t0;
-  const double t1 = track.t0+track.dt;
+  const double t1 = (config_.max_time() > 0) ?
+    std::min(track.t0+track.dt,config_.max_time()) : track.t0+track.dt;
   double t=track.t0;
   while(t<t1)
   {
@@ -390,6 +393,13 @@ calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig
 ShowerMovieProducerTrackVisitor::default_config()
 {
   calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig cfg;
+  cfg.set_frame_advance_time(3);
+  cfg.set_frame_exposure_time(0);
+  cfg.set_max_time(300 * 1e6);
+  *cfg.mutable_cherenkov_params() =
+    calin::simulation::air_cherenkov_tracker::AirCherenkovParameterCalculatorTrackVisitor::default_config();
+  cfg.set_cherenkov_epsilon0(1.5);
+  cfg.set_cherenkov_bandwidth(3.0);
   return cfg;
 }
 
@@ -418,12 +428,6 @@ visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::Cherenkov
 
 void ShowerMovieProducerTrackVisitor::ShowerMovieProducerCherenkovPhotonVisitor::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
-{
-
-}
-
-void ShowerMovieProducerTrackVisitor::ShowerMovieProducerCherenkovPhotonVisitor::
-leave_event()
 {
 
 }
