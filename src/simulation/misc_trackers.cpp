@@ -358,8 +358,8 @@ visit_track(const Track& track, bool& kill_track)
     double t_it = it*config_.frame_advance_time();
     double tseg0 = std::max(t,t_it);
     double tseg1 = std::min(t_it+t_exposure, t1);
-    Eigen::Vector3d x0 = track.x0 + (tseg0-t0)/track.dt * track.dx_hat;
-    Eigen::Vector3d x1 = track.x0 + (tseg1-t0)/track.dt * track.dx_hat;
+    Eigen::Vector3d x0 = track.x0 + (tseg0-t0)/track.dt * track.dx * track.dx_hat;
+    Eigen::Vector3d x1 = track.x0 + (tseg1-t0)/track.dt * track.dx * track.dx_hat;
     Frame& frame = frames_[it];
     switch(track.type) {
     case calin::simulation::tracker::ParticleType::GAMMA:
