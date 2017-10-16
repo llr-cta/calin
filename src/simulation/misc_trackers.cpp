@@ -308,19 +308,23 @@ replay_event(calin::simulation::tracker::TrackVisitor* visitor) const
 
 ShowerMovieProducerTrackVisitor::
 ShowerMovieProducerTrackVisitor(calin::simulation::atmosphere::Atmosphere* atm,
+  calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs,
   const calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig& config,
-  bool adopt_atm): TrackVisitor(), config_(config)
+  bool adopt_atm, bool adopt_atm_abs): TrackVisitor(), config_(config)
 {
   if(config_.disable_cherenkov_light()) {
     if(atm and adopt_atm)delete atm;
   } else if(atm) {
+    auto* rng = new calin::math::rng::RNG();
     cherenkov_ = new calin::simulation::air_cherenkov_tracker::AirCherenkovParameterCalculatorTrackVisitor(
-      new MCCherenkovPhotonGenerator(nullptr,
-        config.cherenkov_epsilon0(), config.cherenkov_bandwidth(),
-        /* do_color_photons = */ true,
-        /* rng = */ nullptr,
-        /* adopt_visitor = */ true),
-      atm, config.cherenkov_params(),
+      new MCCherenkovPhotonGenerator(new ShowerMovieProducerCherenkovPhotonVisitor(
+          /* parent = */ this, rng, atm_abs, adopt_atm_abs),
+        config_.cherenkov_epsilon0(), config_.cherenkov_bandwidth(),
+        /* do_color_photons = */ false,
+        /* rng = */ rng,
+        /* adopt_visitor = */ true,
+        /* adopt_rng = */ true),
+      atm, config_.cherenkov_params(),
       /* adopt_visitor = */ true,
       /* adopt_atm = */ adopt_atm);
   }
@@ -340,7 +344,40 @@ visit_event(const Event& event, bool& kill_event)
 void ShowerMovieProducerTrackVisitor::
 visit_track(const Track& track, bool& kill_track)
 {
-
+  const double t_exposure = (config_.frame_exposure_time() > 0) ?
+    config_.frame_exposure_time() : config_.frame_advance_time();
+  const double t0 = track.t0;
+  const double t1 = track.t0+track.dt;
+  double t=track.t0;
+  while(t<t1)
+  {
+    int it = int(std::floor(t/config_.frame_advance_time()));
+    double t_it = it*config_.frame_advance_time();
+    double tseg0 = std::max(t,t_it);
+    double tseg1 = std::min(t_it+t_exposure, t1);
+    Eigen::Vector3d x0 = track.x0 + (tseg0-t0)/track.dt * track.dx_hat;
+    Eigen::Vector3d x1 = track.x0 + (tseg1-t0)/track.dt * track.dx_hat;
+    Frame& frame = frames_[it];
+    switch(track.type) {
+    case calin::simulation::tracker::ParticleType::GAMMA:
+      frame.gamma.emplace_back(x0,x1);
+      break;
+    case calin::simulation::tracker::ParticleType::ELECTRON:
+    case calin::simulation::tracker::ParticleType::POSITRON:
+      frame.electron.emplace_back(x0,x1);
+      break;
+    case calin::simulation::tracker::ParticleType::MUON:
+    case calin::simulation::tracker::ParticleType::ANTI_MUON:
+      frame.muon.emplace_back(x0,x1);
+      break;
+    case calin::simulation::tracker::ParticleType::PROTON:
+    case calin::simulation::tracker::ParticleType::ANTI_PROTON:
+    case calin::simulation::tracker::ParticleType::OTHER:
+      frame.other.emplace_back(x0,x1);
+      break;
+    }
+    t = (it+1)*config_.frame_advance_time();
+  }
   if(cherenkov_)cherenkov_->visit_track(track, kill_track);
 }
 
@@ -354,4 +391,39 @@ ShowerMovieProducerTrackVisitor::default_config()
 {
   calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig cfg;
   return cfg;
+}
+
+ShowerMovieProducerTrackVisitor::ShowerMovieProducerCherenkovPhotonVisitor::
+ShowerMovieProducerCherenkovPhotonVisitor(ShowerMovieProducerTrackVisitor* parent,
+  calin::math::rng::RNG* rng,
+  calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs,
+  bool adopt_atm_abs):
+    calin::simulation::air_cherenkov_tracker::CherenkovPhotonVisitor(),
+    rng_(rng), atm_abs_(atm_abs), adopt_atm_abs_(adopt_atm_abs)
+{
+  // nothing to see here
+}
+
+ShowerMovieProducerTrackVisitor::ShowerMovieProducerCherenkovPhotonVisitor::
+~ShowerMovieProducerCherenkovPhotonVisitor()
+{
+  if(adopt_atm_abs_)delete atm_abs_;
+}
+
+void ShowerMovieProducerTrackVisitor::ShowerMovieProducerCherenkovPhotonVisitor::
+visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::CherenkovPhoton& cherenkov_photon)
+{
+
+}
+
+void ShowerMovieProducerTrackVisitor::ShowerMovieProducerCherenkovPhotonVisitor::
+visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
+{
+
+}
+
+void ShowerMovieProducerTrackVisitor::ShowerMovieProducerCherenkovPhotonVisitor::
+leave_event()
+{
+
 }

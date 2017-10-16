@@ -27,6 +27,7 @@
 #include <simulation/tracker.hpp>
 #include <simulation/atmosphere.hpp>
 #include <simulation/air_cherenkov_tracker.hpp>
+#include <simulation/detector_efficiency.hpp>
 
 namespace calin { namespace simulation { namespace misc_trackers {
 
@@ -123,8 +124,9 @@ class ShowerMovieProducerTrackVisitor:
 {
 public:
   ShowerMovieProducerTrackVisitor(calin::simulation::atmosphere::Atmosphere* atm,
+    calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs = nullptr,
     const calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig& config = default_config(),
-    bool adopt_atm = false);
+    bool adopt_atm = false, bool adopt_atm_abs = false);
   virtual ~ShowerMovieProducerTrackVisitor();
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
   void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
@@ -132,6 +134,25 @@ public:
   static calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig default_config();
 private:
 #ifndef SWIG
+  class ShowerMovieProducerCherenkovPhotonVisitor:
+    public calin::simulation::air_cherenkov_tracker::CherenkovPhotonVisitor
+  {
+  public:
+    ShowerMovieProducerCherenkovPhotonVisitor(ShowerMovieProducerTrackVisitor* parent,
+      calin::math::rng::RNG* rng,
+      calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs,
+      bool adopt_atm_abs);
+    virtual ~ShowerMovieProducerCherenkovPhotonVisitor();
+    void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
+    void visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::CherenkovPhoton& cherenkov_photon) override;
+    void leave_event() override;
+  private:
+    ShowerMovieProducerTrackVisitor* parent_;
+    calin::math::rng::RNG* rng_;
+    calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs_;
+    bool adopt_atm_abs_;
+  };
+
   CALIN_TYPEALIAS(LineSegment, std::pair<Eigen::Vector3d,Eigen::Vector3d>);
   struct Frame {
     std::vector<LineSegment> gamma;
