@@ -338,7 +338,6 @@ ShowerMovieProducerTrackVisitor::~ShowerMovieProducerTrackVisitor()
 void ShowerMovieProducerTrackVisitor::
 visit_event(const Event& event, bool& kill_event)
 {
-  LOG(INFO) << "visit_event";
   frames_.clear();
   if(cherenkov_)cherenkov_->visit_event(event, kill_event);
 }
@@ -351,10 +350,13 @@ visit_track(const Track& track, bool& kill_track)
   const double t0 = track.t0;
   const double t1 = (config_.max_time() > 0) ?
     std::min(track.t0+track.dt,config_.max_time()) : track.t0+track.dt;
+
   double t=track.t0;
+  int it = int(std::floor(t/config_.frame_advance_time()));
+  while(it*config_.frame_advance_time()+t_exposure > t)--it;
+  ++it;
   while(t<t1)
   {
-    int it = int(std::floor(t/config_.frame_advance_time()));
     double t_it = it*config_.frame_advance_time();
     double tseg0 = std::max(t,t_it);
     double tseg1 = std::min(t_it+t_exposure, t1);
@@ -379,7 +381,8 @@ visit_track(const Track& track, bool& kill_track)
       frame.other.emplace_back(x0,x1);
       break;
     }
-    t = (it+1)*config_.frame_advance_time();
+    t = std::max(track.t0, (it+1)*config_.frame_advance_time());
+    it++;
   }
   if(cherenkov_)cherenkov_->visit_track(track, kill_track);
 }
