@@ -126,6 +126,7 @@ public:
   CALIN_TYPEALIAS(LineSegment, std::pair<Eigen::Vector3d,Eigen::Vector3d>);
 
   ShowerMovieProducerTrackVisitor(calin::simulation::atmosphere::Atmosphere* atm,
+    double zground,
     calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs = nullptr,
     const calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig& config = default_config(),
     bool adopt_atm = false, bool adopt_atm_abs = false);
@@ -179,7 +180,7 @@ private:
   {
   public:
     ShowerMovieProducerCherenkovPhotonVisitor(ShowerMovieProducerTrackVisitor* parent,
-      calin::math::rng::RNG* rng,
+      calin::simulation::atmosphere::Atmosphere* atm, calin::math::rng::RNG* rng,
       calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs,
       bool adopt_atm_abs);
     virtual ~ShowerMovieProducerCherenkovPhotonVisitor();
@@ -187,9 +188,11 @@ private:
     void visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::CherenkovPhoton& cherenkov_photon) override;
   private:
     ShowerMovieProducerTrackVisitor* parent_;
+    calin::simulation::atmosphere::Atmosphere* atm_;
     calin::math::rng::RNG* rng_;
     calin::simulation::detector_efficiency::AtmosphericAbsorption* atm_abs_;
     bool adopt_atm_abs_;
+    calin::simulation::detector_efficiency::ACTEffectiveBandwidth bw_;
   };
 
   struct Frame {
@@ -201,6 +204,7 @@ private:
   };
   std::map<int, Frame> frames_;
   calin::ix::simulation::tracker::ShowerMovieProducerTrackVisitorConfig config_;
+  double zground_;
   calin::simulation::air_cherenkov_tracker::AirCherenkovParameterCalculatorTrackVisitor* cherenkov_ = nullptr;
 #endif
 };

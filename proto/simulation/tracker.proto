@@ -76,6 +76,10 @@ message ShowerMovieProducerTrackVisitorConfig
      (CFO).units = "eV" ];
 
   double cherenkov_bandwidth                               = 13
-   [(CFO).desc = "Total bandwidth energy of Cherenkov photon to generate.",
-    (CFO).units = "eV" ];
+    [(CFO).desc = "Total bandwidth energy of Cherenkov photon to generate.",
+     (CFO).units = "eV" ];
+
+  double cherenkov_yield_factor                            = 14
+    [(CFO).desc = "Scaling of Cherenkov photon yield to limit number of "
+      "photons." ];
 }
