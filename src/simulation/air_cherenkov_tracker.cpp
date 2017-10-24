@@ -76,7 +76,7 @@ visit_event(const Event& event, bool& kill_event)
 void AirCherenkovParameterCalculatorTrackVisitor::
 visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 {
-  if(track.q == 0)return; // it's store policy: no charge = no radiation
+  if(track.q == 0 or track.dx <= 0)return; // it's store policy: no charge, no track = no radiation
 
   AirCherenkovTrack cherenkov;
 
@@ -97,6 +97,7 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 
   atm_->cherenkov_parameters(cherenkov.x_mid(2),
     cherenkov.n, cherenkov.propagation_delay);
+  if(cherenkov.n<0)return;
   cherenkov.n             += 1.0;
 
   const double g2 = SQR(cherenkov.e_mid/track.mass); // gamma^2
@@ -111,6 +112,16 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
     YIELD_CONST*SQR(track.q)*cherenkov.sin2_thetac*cherenkov.dx;
   cherenkov.cos_thetac     = std::sqrt(1.0 - cherenkov.sin2_thetac);
   cherenkov.sin_thetac     = std::sqrt(cherenkov.sin2_thetac);
+
+  if(isnan(cherenkov.yield_density)) {
+    LOG(INFO) << '(' << cherenkov.x0.transpose() << ") ("
+              << cherenkov.x_mid.transpose() << ") "
+              << cherenkov.dx << ' '
+              << cherenkov.n << ' ' << cherenkov.e0 << ' '
+              << g2 << ' ' << b2 << ' '
+              << cherenkov.sin2_thetac << ' '
+              << cherenkov.yield_density;
+  }
 
   visitor_->visit_cherenkov_track(cherenkov, kill_track);
 }

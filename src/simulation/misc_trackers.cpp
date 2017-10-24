@@ -434,7 +434,7 @@ ShowerMovieProducerTrackVisitor::ShowerMovieProducerCherenkovPhotonVisitor::
 void ShowerMovieProducerTrackVisitor::ShowerMovieProducerCherenkovPhotonVisitor::
 visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::CherenkovPhoton& cherenkov_photon)
 {
-#if 1
+#if 0
   static unsigned nprint=100;
   if(nprint) {
     LOG(INFO) << cherenkov_photon.x0.transpose() << ' '
