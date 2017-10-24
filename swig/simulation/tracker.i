@@ -59,6 +59,7 @@
 %template (VectorSimulationEvent) std::vector<calin::simulation::tracker::Track>;
 
 %apply Eigen::Vector3d &OUTPUT { Eigen::Vector3d& x0, Eigen::Vector3d& x1 };
+%apply Eigen::MatrixXd &OUTPUT { Eigen::MatrixXd& x0, Eigen::MatrixXd& x1 };
 
 %include "simulation/misc_trackers.hpp"
 %include "simulation/straight_track_generator.hpp"

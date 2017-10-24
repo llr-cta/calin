@@ -170,8 +170,36 @@ public:
   CREATE_SEGMENT_FUNCTION(other);
   CREATE_SEGMENT_FUNCTION(cherenkov);
 
+#define CREATE_ALL_SEGMENTS_FUNCTION(x)                               \
+  void all_segments_ ## x(int iframe0, int iframe1,                   \
+      Eigen::MatrixXd& x0, Eigen::MatrixXd& x1) const {               \
+    unsigned nseg = 0;                                                \
+    for(int iframe=iframe0;iframe<iframe1;iframe++)                   \
+      nseg += nsegment_ ## x(iframe);                                 \
+    x0.resize(3,nseg);                                                \
+    x1.resize(3,nseg);                                                \
+    nseg = 0;                                                         \
+    for(int iframe=iframe0;iframe<iframe1;iframe++) {                 \
+      const auto frame = frames_.find(iframe);                        \
+      if(frame != frames_.end()) {                                    \
+        for(const auto& seg : frame->second.x) {                      \
+          x0.col(nseg) = seg.first;                                   \
+          x1.col(nseg) = seg.second;                                  \
+          ++nseg;                                                     \
+        }                                                             \
+      }                                                               \
+    }                                                                 \
+  }
+
+  CREATE_ALL_SEGMENTS_FUNCTION(gamma);
+  CREATE_ALL_SEGMENTS_FUNCTION(electron);
+  CREATE_ALL_SEGMENTS_FUNCTION(muon);
+  CREATE_ALL_SEGMENTS_FUNCTION(other);
+  CREATE_ALL_SEGMENTS_FUNCTION(cherenkov);
+
 #undef CREATE_NSEGMENT_FUNCTION
 #undef CREATE_SEGMENT_FUNCTION
+#undef CREATE_ALL_SEGMENTS_FUNCTION
 
 private:
 #ifndef SWIG
