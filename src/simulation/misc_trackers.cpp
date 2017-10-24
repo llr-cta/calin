@@ -452,7 +452,7 @@ visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::Cherenkov
   Eigen::Vector3d x = cherenkov_photon.x0;
   double t = cherenkov_photon.t0;
   double z1 = parent_->zground_;
-  if(atm_abs_) {
+  if(atm_abs_ and cherenkov_photon.u0.z()<0) {
     double w = std::abs(cherenkov_photon.u0.z());
     double prob = rng_->uniform();
     double survival_prob = bw_.bandwidth(x.z(), w);
@@ -472,6 +472,9 @@ visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::Cherenkov
     }
 #endif
   }
+
+  if(cherenkov_photon.u0.z()>=0 and config.max_time()<=0)
+    return; // upward going photon will travel forever, so don't track it
 
   int it = int(std::floor(t/config.frame_advance_time()));
   while(it*config.frame_advance_time()+t_exposure > t)--it;
