@@ -84,7 +84,8 @@ class VSOTelescope
                double FSP, double FS, double RR, double FGSX, double FGSY,
                unsigned HRN, double RIP, const Eigen::Vector3d& RIPC, bool MP,
                const Eigen::Vector3d& FPT, double CD, double FOV, double D,
-               double PS, double PR, double CSP, const Eigen::Vector3d& FPR,
+               double PS, double PR, double PGSX, double PGSZ,
+               double CSP, const Eigen::Vector3d& FPR,
                double CIP, bool PP,
                const std::vector<VSOObscuration*>& OBSVEC = {}
                );
@@ -226,6 +227,8 @@ class VSOTelescope
   double                 pixelRotation() const { return fPixelRotation; }
   double                 cosPixelRotation() const { return fCosPixelRotation; }
   double                 sinPixelRotation() const { return fSinPixelRotation; }
+  double                 pixelGridShiftX() const { return fPixelGridShiftX; }
+  double                 pixelGridShiftZ() const { return fPixelGridShiftZ; }
   double                 concentratorSurvivalProb() const { return fConcSurvProb; }
   const Eigen::Vector3d& focalPlaneRotation() const { return fFPRotation; }
   double                 cameraIP() const { return fCameraIP; }
@@ -292,6 +295,8 @@ class VSOTelescope
   double          fPixelRotation;     //!< Rotation angle of pixels wrt grid [rad]
   double          fCosPixelRotation;  //!< Cos rotation angle of pixels wrt grid
   double          fSinPixelRotation;  //!< Sin rotation angle of pixels wrt grid
+  double          fPixelGridShiftX;   //!< X-shift of pixel grid with respect to camera frame
+  double          fPixelGridShiftZ;   //!< Z-shift of pixel grid with respect to camera frame
 
   double          fConcSurvProb;      //!< Pixel properties; probability of survival
   Eigen::Vector3d fFPRotation;

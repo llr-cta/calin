@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <google/protobuf/repeated_field.h>
 #include <vector>
 #include <Eigen/Core>
 
@@ -63,6 +64,32 @@ inline std::vector<int> eigen_to_stdvec(const Eigen::VectorXi& x)
 inline Eigen::VectorXi std_to_eigenvec(const std::vector<int> &x)
 {
   return Eigen::Map<const Eigen::VectorXi>(&x.front(), x.size());
+}
+
+template<typename T>
+std::vector<T> protobuf_to_stdvec(const google::protobuf::RepeatedField<T>& x)
+{
+  return std::vector<T>(x.begin(), x.end());
+}
+
+template<typename T>
+std::vector<T> protobuf_to_stdvec(const google::protobuf::RepeatedField<T>* x)
+{
+  return std::vector<T>(x->begin(), x->end());
+}
+
+template<typename T> void stdvec_to_existing_protobuf(
+  google::protobuf::RepeatedField<T>& y, const std::vector<int> &x)
+{
+  y.Resize(x.size());
+  std::copy(x.begin(), x.end(), y.begin());
+}
+
+template<typename T> void stdvec_to_existing_protobuf(
+  google::protobuf::RepeatedField<T>* y, const std::vector<int> &x)
+{
+  y->Resize(x.size());
+  std::copy(x.begin(), x.end(), y->begin());
 }
 
 }; // namespace calin

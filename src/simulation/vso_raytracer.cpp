@@ -345,7 +345,8 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
     math::hex_array::xy_trans_to_hexid_with_remainder(
       info.fplane_dx, info.fplane_dz, info.scope->pixelParity(),
       info.scope->cosPixelRotation(), info.scope->sinPixelRotation(),
-      info.scope->pixelSpacing());
+      info.scope->pixelSpacing(),
+      info.scope->pixelGridShiftX(), info.scope->pixelGridShiftZ());
 
   // Find pixel (if there is a real pixel at that site)
   info.pixel = info.scope->pixelByHexID(info.pixel_hexid);

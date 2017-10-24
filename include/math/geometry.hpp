@@ -93,7 +93,13 @@ inline void rotation_z_to_xyz(Eigen::Matrix3d& m,
 {
   double st = std::sqrt(x*x+y*y);
   if(st == 0.0) {
-    m.setIdentity();
+    if(z>=0) {
+      m.setIdentity();
+    } else {
+      m << -1,  0,  0,
+            0,  1,  0,
+            0,  0, -1;
+    }
   } else {
     double sp = y/st;
     double cp = x/st;

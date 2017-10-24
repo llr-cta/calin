@@ -32,6 +32,7 @@
 #include"simulation/atmosphere.hpp"
 #include"simulation/tracker.hpp"
 #include"simulation/tracker.pb.h"
+#include"math/rng.hpp"
 
 namespace calin { namespace simulation { namespace air_cherenkov_tracker {
 
@@ -108,6 +109,49 @@ private:
   bool adopt_visitor_ = false;
   calin::simulation::atmosphere::Atmosphere* atm_ = nullptr;
   bool adopt_atm_ = false;
+};
+
+struct CherenkovPhoton
+{
+  Eigen::Vector3d x0;       // Position of photon emission              [cm]
+  Eigen::Vector3d u0;       // Direction of photon at emission          [cm]
+  double t0;                // Time at emission                         [ns]
+  double epsilon;           // Photon energy, 0 if none, or -1 for PE   [eV]
+
+  // Air Cherenkov track from underlying simulator
+  const AirCherenkovTrack* air_cherenkov_track;
+};
+
+class CherenkovPhotonVisitor
+{
+public:
+  virtual ~CherenkovPhotonVisitor();
+  virtual void visit_event(const Event& event, bool& kill_event);
+  virtual void visit_cherenkov_photon(const CherenkovPhoton& cherenkov_photon);
+  virtual void leave_event();
+};
+
+class MCCherenkovPhotonGenerator: public AirCherenkovTrackVisitor
+{
+public:
+  MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
+    double epsilon0 = 1.5, double bandwidth = 3.0, bool do_color_photons = false,
+    calin::math::rng::RNG* rng = nullptr,
+    bool adopt_visitor = false, bool adopt_rng = false);
+  virtual ~MCCherenkovPhotonGenerator();
+  virtual void visit_event(const Event& event, bool& kill_event);
+  virtual void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
+    bool& kill_track);
+  virtual void leave_event();
+private:
+  CherenkovPhotonVisitor* visitor_ = nullptr;
+  bool adopt_visitor_ = false;
+  double epsilon0_ = 1.5;
+  double bandwidth_ = 3.0;
+  bool do_color_photons_ = false;
+  calin::math::rng::RNG* rng_ = nullptr;
+  bool adopt_rng_ = false;
+  double dX_emission_ = -1;
 };
 
 } } } // namespace calin::simulation::air_cherenkov_tracker

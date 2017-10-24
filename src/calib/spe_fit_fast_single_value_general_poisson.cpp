@@ -89,6 +89,16 @@ set_parameter_values(ConstVecRef values)
 {
   verify_set_parameter_values(values, "FastSingleValueGeneralPoissonMES");
   assign_parameters(values.data(), intensity_pe_);
+  if(intensity_pe_<=0) {
+    intensity_pe_ = 0;
+    if(nes_weight_.size() > 0)
+      nes_weight_[0] = 1, nes_weight_deriv_[0] = -1;
+    if(nes_weight_.size() > 1)
+      nes_weight_[1] = 0, nes_weight_deriv_[1] = 1;
+    for(unsigned ipe=2;ipe<nes_weight_.size();ipe++)
+      nes_weight_[ipe] = 0, nes_weight_deriv_[ipe] = 0;
+    return;
+  }
 #if 0
   //double log_intensity = std::log(intensity_pe_);
   double weight = std::exp(-intensity_pe_);

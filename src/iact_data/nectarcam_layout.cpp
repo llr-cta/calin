@@ -26,6 +26,7 @@
 
 #include <math/special.hpp>
 #include <math/hex_array.hpp>
+#include <iact_data/instrument_layout.hpp>
 #include <iact_data/nectarcam_layout.hpp>
 #include <io/log.hpp>
 
@@ -211,11 +212,13 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       std::vector<double> vertex_x;
       std::vector<double> vertex_y;
       uv_to_vertexes_xy_trans(u, v, vertex_x, vertex_y, crot, srot, spacing);
-      for(auto vx : vertex_x)c->add_pixel_polygon_vertex_x(vx);
-      for(auto vy : vertex_y)c->add_pixel_polygon_vertex_y(vy);
+      for(auto vx : vertex_x)c->add_outline_polygon_vertex_x(vx);
+      for(auto vy : vertex_y)c->add_outline_polygon_vertex_y(vy);
+      c->add_outline_polygon_vertex_index(vertex_x.size());
     }
   }
 
+  calin::iact_data::instrument_layout::compute_camera_and_module_outlines(layout);
   return layout;
 }
 

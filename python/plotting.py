@@ -31,8 +31,8 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
     max_xy = 0
     for pix_index in range(len(pix_data)):
         pix_id = int(configured_channels[pix_index]) if configured_channels is not None else  pix_index
-        vx = camera_layout.channel(pix_id).pixel_polygon_vertex_x_view()
-        vy = camera_layout.channel(pix_id).pixel_polygon_vertex_y_view()
+        vx = camera_layout.channel(pix_id).outline_polygon_vertex_x_view()
+        vy = camera_layout.channel(pix_id).outline_polygon_vertex_y_view()
         vv = np.zeros((len(vx),2))
         vv[:,0] = vx
         vv[:,1] = vy
@@ -52,9 +52,32 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
         cbar.set_label(cbar_label)
     return pc
 
+def layout_to_polygon_vxy(layout, plate_scale = 1.0):
+    all_vxy = []
+    ibegin = 0;
+    for iend in layout.outline_polygon_vertex_index():
+        vx = layout.outline_polygon_vertex_x()[ibegin:iend]*plate_scale
+        vy = layout.outline_polygon_vertex_y()[ibegin:iend]*plate_scale
+        all_vxy.append(np.column_stack([vx, vy]))
+    return all_vxy
+
+def layout_to_polygon(layout, plate_scale = 1.0, **args):
+    all_p = []
+    for vxy in layout_to_polygon_vxy(layout, plate_scale):
+        all_p.append(plt.Polygon(vxy, **args))
+    if len(all_p) == 1:
+        return all_p[0]
+    return all_p
+
+def add_outline(axis, layout, plate_scale = 1.0,
+        outline_lw = 0.5, outline_color = '#888888'):
+    for vxy in layout_to_polygon_vxy(layout, plate_scale):
+        axis.add_patch(plt.Polygon(vxy,
+            fill=False, lw=outline_lw, edgecolor=outline_color))
+
 def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         configured_channels = None, zero_suppression = None,
-        plate_scale = 1.0, R = None,
+        plate_scale = None, R = None,
         cmap = matplotlib.cm.CMRmap_r, axis = None, draw_outline = False,
         pix_lw = 0, outline_lw = 0.5, outline_color = '#888888'):
     if(channel_mask is None and zero_suppression is not None):
@@ -67,14 +90,20 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     pix_data = []
     pix_gridid = []
     max_xy = 0
+    if plate_scale is None:
+        plate_scale = 1
+        if type(camera_layout) is calin.ix.iact_data.instrument_layout.calin.ix.iact_data.instrument_layout.TelescopeLayout:
+            plate_scale = 180/np.pi/camera_layout.effective_focal_length()
+    if type(camera_layout) is calin.ix.iact_data.instrument_layout.calin.ix.iact_data.instrument_layout.TelescopeLayout:
+        camera_layout = camera_layout.camera()
     for chan_index in range(len(channel_data)):
         chan_id = int(configured_channels[chan_index]) if configured_channels is not None else chan_index
         chan = camera_layout.channel(chan_id)
         if(chan.pixel_index() != -1):
             pix_gridid.append(chan.pixel_grid_index())
         if((channel_mask is None or channel_mask[chan_index]) and chan.pixel_index() != -1):
-            vx = chan.pixel_polygon_vertex_x_view()*plate_scale
-            vy = chan.pixel_polygon_vertex_y_view()*plate_scale
+            vx = chan.outline_polygon_vertex_x_view()*plate_scale
+            vy = chan.outline_polygon_vertex_y_view()*plate_scale
             vv = np.column_stack([vx, vy])
             max_xy = max(max_xy, max(abs(vx)), max(abs(vy)))
             pix.append(plt.Polygon(vv,closed=True))
@@ -86,46 +115,43 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     axis.add_collection(pc)
 
     if draw_outline:
-        grid = None
-        if(camera_layout.pixel_grid_layout() ==
-                calin.ix.iact_data.instrument_layout.CameraLayout.HEX_GRID):
-            grid = calin.math.regular_grid.HexGrid(
-                camera_layout.pixel_grid_spacing()*plate_scale,
-                camera_layout.pixel_grid_rotation()/180.0*np.pi,
-                camera_layout.pixel_grid_offset_x()*plate_scale,
-                camera_layout.pixel_grid_offset_y()*plate_scale)
-        else:
-            raise ValueError('cannot draw outline for camera without regular grid')
-        v = grid.compute_region_boundary(pix_gridid)
-        for icurve in range(grid.num_bounday_curves(v)):
-            vx,vy = grid.extract_bounday_curve(v,icurve,False)
-            axis.add_patch(plt.Polygon(np.column_stack([vx, vy]),
-                        fill=False,lw=outline_lw,edgecolor=outline_color))
+        add_outline(axis, camera_layout, plate_scale=plate_scale,
+            outline_lw=outline_lw, outline_color=outline_color)
 
     axis.axis('square')
     axis.axis(np.asarray([-1,1,-1,1])*(R or 1.05*max_xy))
     return pc
 
-def plot_histogram(h, *args, **nargs):
+def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
     elif type(h) is calin.ix.math.histogram.Histogram1DData:
         hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
-        hy = h.bins_view()
+        hy = h.bins()
     else:
         raise Exception('Unknown histogram type: '+type(h))
+    if plot_as_pdf:
+        hy /= h.sum_w()/abs(h.dxval())
+    elif plot_as_pmf:
+        hy /= h.sum_w()
+    hx = np.append(hx, hx[-1]+h.dxval())
+    hy = np.append(hy, hy[-1])
     so = plt.step(hx,hy, where='post', *args, **nargs)
     return so
 
-def plot_histogram_cumulative(h, *args, **nargs):
+def plot_histogram_cumulative(h, plot_as_pdf = False, plot_as_pmf = False, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
     elif type(h) is calin.ix.math.histogram.Histogram1DData:
         hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
-        hy = h.bins_view()
+        hy = h.bins()
     else:
         raise Exception('Unknown histogram type: '+type(h))
-    so = plt.step(hx,np.cumsum(hy), where='post', *args, **nargs)
+    if plot_as_pdf or plot_as_pmf:
+        hy /= h.sum_w()
+    hx = np.append(hx, hx[-1]+h.dxval())
+    hy = np.append(0, hy)
+    so = plt.plot(hx,np.cumsum(hy), *args, **nargs)
     return so
