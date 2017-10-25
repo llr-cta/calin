@@ -34,6 +34,7 @@
 #include <simulation/air_cherenkov_tracker.hpp>
 #include <io/log.hpp>
 #include <math/geometry.hpp>
+#include <cmath>
 
 using namespace calin::io::log;
 using namespace calin::simulation::air_cherenkov_tracker;
@@ -113,7 +114,7 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   cherenkov.cos_thetac     = std::sqrt(1.0 - cherenkov.sin2_thetac);
   cherenkov.sin_thetac     = std::sqrt(cherenkov.sin2_thetac);
 
-  if(isnan(cherenkov.yield_density)) {
+  if(std::isnan(cherenkov.yield_density)) {
     LOG(INFO) << '(' << cherenkov.x0.transpose() << ") ("
               << cherenkov.x_mid.transpose() << ") "
               << cherenkov.dx << ' '
