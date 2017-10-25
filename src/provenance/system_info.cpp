@@ -41,6 +41,7 @@ calin::ix::provenance::system_info::BuildInfo* new_build_info()
   info->set_python_install_dir(CALIN_PYTHON_INSTALL_DIR);
   info->set_build_system(CALIN_BUILD_SYSTEM);
   info->set_build_type(CALIN_BUILD_TYPE);
+  info->set_build_arch(CALIN_BUILD_ARCH);
   info->set_build_c_compiler_id(CALIN_BUILD_C_COMPILER_ID);
   info->set_build_cxx_compiler_id(CALIN_BUILD_CXX_COMPILER_ID);
   info->set_build_system_fqdn(CALIN_BUILD_SYSTEM_FQDN);
