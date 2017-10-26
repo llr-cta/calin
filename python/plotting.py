@@ -123,7 +123,7 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     return pc
 
 def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False,
-        scale = 1, offset = 0, *args, **nargs):
+        xscale = 1, xoffset = 0, yscale = 1, yoffset = 0, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
@@ -133,16 +133,16 @@ def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False,
     else:
         raise Exception('Unknown histogram type: '+type(h))
     if plot_as_pdf:
-        hy /= h.sum_w()/abs(h.dxval())
+        hy /= h.sum_w()/abs(h.dxval()*xscale)
     elif plot_as_pmf:
         hy /= h.sum_w()
-    hx = np.append(hx, hx[-1]+h.dxval())
-    hy = np.append(hy, hy[-1]) * scale + offset
+    hx = np.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
+    hy = np.append(hy, hy[-1]) * yscale + yoffset
     so = plt.step(hx,hy, where='post', *args, **nargs)
     return so
 
 def plot_histogram_cumulative(h, plot_as_pdf = False, plot_as_pmf = False,
-        scale = 1, offset = 0, *args, **nargs):
+        xscale = 1, xoffset = 0, yscale = 1, yoffset = 0, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
@@ -153,7 +153,7 @@ def plot_histogram_cumulative(h, plot_as_pdf = False, plot_as_pmf = False,
         raise Exception('Unknown histogram type: '+type(h))
     if plot_as_pdf or plot_as_pmf:
         hy /= h.sum_w()
-    hx = np.append(hx, hx[-1]+h.dxval())
-    hy = np.append(0, hy) * scale + offset
+    hx = np.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
+    hy = np.append(0, hy) * yscale + yoffset
     so = plt.plot(hx,np.cumsum(hy), *args, **nargs)
     return so
