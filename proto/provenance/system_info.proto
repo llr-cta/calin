@@ -70,7 +70,7 @@ message BuildInfo {
 
   string build_cxx_compiler_id                             = 104 [
     (CFO).desc = "Build system C++ compiler ID from CMake "
-      "variable CMAKE_C_COMPILER_ID." ];
+      "variable CMAKE_CXX_COMPILER_ID." ];
 
   string build_system_fqdn                                 = 105 [
     (CFO).desc = "Fully qualified domain name of build system host from "
