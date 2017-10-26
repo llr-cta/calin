@@ -131,7 +131,7 @@ def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False,
         hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
         hy = h.bins()
     else:
-        raise Exception('Unknown histogram type: '+type(h))
+        raise Exception('Unknown histogram type: '+str(type(h)))
     if plot_as_pdf:
         hy /= h.sum_w()/abs(h.dxval()*xscale)
     elif plot_as_pmf:
@@ -150,7 +150,7 @@ def plot_histogram_cumulative(h, plot_as_pdf = False, plot_as_pmf = False,
         hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
         hy = h.bins()
     else:
-        raise Exception('Unknown histogram type: '+type(h))
+        raise Exception('Unknown histogram type: '+str(type(h)))
     if plot_as_pdf or plot_as_pmf:
         hy /= h.sum_w()
     hx = np.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
