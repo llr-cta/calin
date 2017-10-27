@@ -196,13 +196,6 @@ calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
     info->set_cpu_has_fma4(c & bit_FMA4);
   }
 
-#if 0
-
-bool cpu_has_fma4                                        = 222 [
-  (CFO).desc = "CPU indicates that it has FMA-4 (cpuid)." ];
-
-#endif
-
   return info;
 }
 
