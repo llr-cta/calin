@@ -1,7 +1,7 @@
 # calin/swig/util/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+# LLR, Ecole Polytechnique, CNRS/IN2P3
 #
 # This file is part of "calin"
 #

@@ -5,7 +5,7 @@
    CPUID bits that may be missing from certain compiler versions
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    Based on original, copyright 2006, Stephen Fegan, see notice below
 
