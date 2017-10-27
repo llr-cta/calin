@@ -153,6 +153,9 @@ message HostAndProcessInfo {
   uint32 cpu_family                                        = 203 [
     (CFO).desc = "CPU family number (cpuid)" ];
 
+  uint32 cpu_stepping                                      = 204 [
+    (CFO).desc = "CPU stepping number (cpuid)" ];
+
   bool cpu_has_fpu                                         = 210 [
     (CFO).desc = "CPU indicates that it has FPU (cpuid)." ];
 

@@ -148,6 +148,7 @@ calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
 
     info->set_cpu_model(((a>>4)&0x0F) + ((a>>12)&0xF0));
     info->set_cpu_family(((a>>8)&0x0F) + ((a>>20)&0x0F));
+    info->set_cpu_stepping(a & 0x0F);
     info->set_cpu_has_fpu(d & 1);
     info->set_cpu_has_mmx(d & bit_MMX);
     info->set_cpu_has_sse(d & bit_SSE);
