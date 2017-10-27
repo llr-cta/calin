@@ -143,4 +143,120 @@ message HostAndProcessInfo {
   string cpu_vendor_string                                 = 200 [
     (CFO).desc = "CPU vendor string from cpuid instruction, will probably "
       "be either \"GenuineIntel\" or \"AuthenticAMD\"." ];
+
+  string cpu_processor_brand                               = 201 [
+    (CFO).desc = "CPU processor brand string (48 bytes max)" ];
+
+  uint32 cpu_model                                         = 202 [
+    (CFO).desc = "CPU model number (cpuid)" ];
+
+  uint32 cpu_family                                        = 203 [
+    (CFO).desc = "CPU family number (cpuid)" ];
+
+  bool cpu_has_fpu                                         = 210 [
+    (CFO).desc = "CPU indicates that it has FPU (cpuid)." ];
+
+  bool cpu_has_mmx                                         = 211 [
+    (CFO).desc = "CPU indicates that it has MMX (cpuid)." ];
+
+  bool cpu_has_sse                                         = 212 [
+    (CFO).desc = "CPU indicates that it has SSE (cpuid)." ];
+
+  bool cpu_has_sse2                                        = 213 [
+    (CFO).desc = "CPU indicates that it has SSE2 (cpuid)." ];
+
+  bool cpu_has_sse3                                        = 214 [
+    (CFO).desc = "CPU indicates that it has SSE3 (cpuid)." ];
+
+  bool cpu_has_ssse3                                       = 215 [
+    (CFO).desc = "CPU indicates that it has SSSE3 (cpuid)." ];
+
+  bool cpu_has_sse4_1                                      = 216 [
+    (CFO).desc = "CPU indicates that it has SSE4.1 (cpuid)." ];
+
+  bool cpu_has_sse4_2                                      = 217 [
+    (CFO).desc = "CPU indicates that it has SSE4.2 (cpuid)." ];
+
+  bool cpu_has_pclmulqdq                                   = 218 [
+    (CFO).desc = "CPU indicates that it has PCLMULQDQ (cpuid)." ];
+
+  bool cpu_has_avx                                         = 219 [
+    (CFO).desc = "CPU indicates that it has AVX (cpuid)." ];
+
+  bool cpu_has_avx2                                        = 220 [
+    (CFO).desc = "CPU indicates that it has AVX2 (cpuid)." ];
+
+  bool cpu_has_fma3                                        = 221 [
+    (CFO).desc = "CPU indicates that it has FMA-3 (cpuid)." ];
+
+  bool cpu_has_fma4                                        = 222 [
+    (CFO).desc = "CPU indicates that it has FMA-4 (cpuid)." ];
+
+  bool cpu_has_bmi1                                        = 223 [
+    (CFO).desc = "CPU indicates that it has BMI-1 (cpuid)." ];
+
+  bool cpu_has_bmi2                                        = 224 [
+    (CFO).desc = "CPU indicates that it has BMI-2 (cpuid)." ];
+
+  bool cpu_has_adx                                         = 225 [
+    (CFO).desc = "CPU indicates that it has ADX instructions (cpuid)." ];
+
+  bool cpu_has_avx512f                                     = 240 [
+    (CFO).desc = "CPU indicates that it has AVX-512 foundation (cpuid)." ];
+
+  bool cpu_has_avx512dq                                    = 241 [
+    (CFO).desc = "CPU indicates that it has AVX-512 doubleword and "
+      "quadword instructions (cpuid)." ];
+
+  bool cpu_has_avx512ifma                                  = 242 [
+    (CFO).desc = "CPU indicates that it has AVX-512 integer FMA "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512pf                                    = 243 [
+    (CFO).desc = "CPU indicates that it has AVX-512 prefetch "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512er                                    = 244 [
+    (CFO).desc = "CPU indicates that it has AVX-512 exponential and "
+      "reciprocal instructions (cpuid)." ];
+
+  bool cpu_has_avx512cd                                    = 245 [
+    (CFO).desc = "CPU indicates that it has AVX-512 conflict detection "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512bw                                    = 246 [
+    (CFO).desc = "CPU indicates that it has AVX-512 byte and word "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512vl                                    = 247 [
+    (CFO).desc = "CPU indicates that it has AVX-512 vector length "
+      "extensions (cpuid)." ];
+
+  bool cpu_has_avx512vbmi                                  = 248 [
+    (CFO).desc = "CPU indicates that it has AVX-512 vector BMI "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512vbmi2                                 = 249 [
+    (CFO).desc = "CPU indicates that it has AVX-512 vector BMI "
+      "instructions 2 (cpuid)." ];
+
+  bool cpu_has_avx512vnni                                  = 250 [
+    (CFO).desc = "CPU indicates that it has AVX-512 vector neural "
+      "network instructions (cpuid)." ];
+
+  bool cpu_has_avx512bitalg                                = 251 [
+    (CFO).desc = "CPU indicates that it has AVX-512 BITALG "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512vpopcntdq                             = 252 [
+    (CFO).desc = "CPU indicates that it has AVX-512 vector population "
+      "count D/Q (cpuid)." ];
+
+  bool cpu_has_avx512_4vnniw                               = 253 [
+    (CFO).desc = "CPU indicates that it has AVX-512 4-register neural "
+      "network instructions (cpuid)." ];
+
+  bool cpu_has_avx512_4fmaps                               = 254 [
+    (CFO).desc = "CPU indicates that it has AVX-512 4-register FMA "
+      "single-precision instructions (cpuid)." ];
 };

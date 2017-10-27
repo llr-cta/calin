@@ -25,12 +25,15 @@
 #include <unistd.h>
 #include <thread>
 #include <sys/utsname.h>
+#include <cpuid.h>
 
 #include <calin_global_config.hpp>
 #include <provenance/system_info.hpp>
 #include <io/log.hpp>
 
 extern char **environ;
+
+#include "cpuid_bits.h"
 
 namespace {
 
@@ -65,7 +68,17 @@ calin::ix::provenance::system_info::BuildInfo* new_build_info()
 calin::ix::provenance::system_info::BuildInfo* singleton_build_info_ =
   new_build_info();
 
-#include<iostream>
+bool append_4chars(std::string& t, unsigned u)
+{
+  for(unsigned i=0; i<4; ++i) {
+    char c = u & 0xFF;
+    if(c == '\0')return false;
+    t += c;
+    u >>= 8;
+  }
+  return true;
+}
+
 calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
 {
   calin::ix::provenance::system_info::HostAndProcessInfo* info =
@@ -81,6 +94,7 @@ calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
   // gethostname(hostname_buffer, 255);
   // info->set_host_name(hostname_buffer);
   info->set_hardware_concurrency(std::thread::hardware_concurrency());
+
   for(char** ienv = environ; *ienv; ++ienv) {
     std::string env(*ienv);
     auto iequals = env.find_first_of('=');
@@ -91,7 +105,7 @@ calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
     else
       (*info->mutable_environment())[env.substr(0,iequals)] = env.substr(iequals+1);
   }
-  //info->set_environ(extern char **environ
+
   struct utsname uname_info;
   ::uname(&uname_info);
   info->set_uname_sysname(uname_info.sysname);
@@ -101,11 +115,92 @@ calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
   info->set_uname_version(uname_info.version);
   info->set_uname_machine(uname_info.machine);
 
+  unsigned a,b,c,d;
+  __cpuid (0 /* vendor string */, a, b, c, d);
+
+  unsigned max_frame = a;
+  std::string vendor_string_12char;
+  append_4chars(vendor_string_12char, b) &&
+  append_4chars(vendor_string_12char, d) &&
+  append_4chars(vendor_string_12char, c);
+  info->set_cpu_vendor_string(vendor_string_12char);
+
+  __cpuid (0x80000000U /* get highest extended function support */, a, b, c, d);
+  unsigned max_eframe = a;
+  std::cerr << max_eframe;
+  if(max_eframe >= 0x80000004U)
+  {
+    std::string processor_brand_48char;
+    bool more = true;
+    for(unsigned iframe = 0x80000002; more && iframe<=0x80000004; iframe++)
+    {
+      __cpuid (iframe /* processor brand string */ , a, b, c, d);
+      more = append_4chars(processor_brand_48char, a) &&
+        append_4chars(processor_brand_48char, b) &&
+        append_4chars(processor_brand_48char, c) &&
+        append_4chars(processor_brand_48char, d);
+    }
+    info->set_cpu_processor_brand(processor_brand_48char);
+  }
+
+  if(max_frame >= 1)
+  {
+    __cpuid (1 /* Processor Info and Feature Bits */, a, b, c, d);
+
+    info->set_cpu_model((a>>4)&0x0F + (a>>12)&0xF0);
+    info->set_cpu_family((a>>4)&0x0F + (a>>16)&0x0F);
+    info->set_cpu_has_fpu(d & 1);
+    info->set_cpu_has_mmx(d & bit_MMX);
+    info->set_cpu_has_sse(d & bit_SSE);
+    info->set_cpu_has_sse2(d & bit_SSE2);
+    info->set_cpu_has_sse3(c & bit_SSE3);
+    info->set_cpu_has_ssse3(c & bit_SSSE3);
+    info->set_cpu_has_sse4_1(c & bit_SSE4_1);
+    info->set_cpu_has_sse4_2(c & bit_SSE4_2);
+    info->set_cpu_has_pclmulqdq(c & bit_PCLMUL);
+    info->set_cpu_has_avx(c & bit_AVX);
+    info->set_cpu_has_fma3(c & bit_FMA);
+  }
+
+  if(max_frame >= 7)
+  {
+    __cpuid_count (7, 0 /* Extended Features */, a, b, c, d);
+
+    info->set_cpu_has_avx2(b & bit_AVX2);
+    info->set_cpu_has_bmi1(b & bit_BMI);
+    info->set_cpu_has_bmi2(b & bit_BMI2);
+    info->set_cpu_has_adx(b & bit_ADX);
+    info->set_cpu_has_avx512f(b & bit_AVX512F);
+    info->set_cpu_has_avx512dq(b & bit_AVX512DQ);
+    info->set_cpu_has_avx512ifma(b & bit_AVX512IFMA);
+    info->set_cpu_has_avx512pf(b & bit_AVX512PF);
+    info->set_cpu_has_avx512er(b & bit_AVX512ER);
+    info->set_cpu_has_avx512cd(b & bit_AVX512CD);
+    info->set_cpu_has_avx512bw(b & bit_AVX512BW);
+    info->set_cpu_has_avx512vl(b & bit_AVX512VL);
+
+    info->set_cpu_has_avx512vbmi(c & bit_AVX512VBMI);
+    info->set_cpu_has_avx512vbmi2(c & bit_AVX512VBMI2);
+    info->set_cpu_has_avx512vnni(c & bit_AVX512VNNI);
+    info->set_cpu_has_avx512bitalg(c & bit_AVX512BITALG);
+    info->set_cpu_has_avx512vpopcntdq(c & bit_AVX512VPOPCNTDQ);
+
+    info->set_cpu_has_avx512_4vnniw(d & bit_AVX512_4VNNIW);
+    info->set_cpu_has_avx512_4fmaps(d & bit_AVX512_4FMAPS);
+  }
+
+  if(max_eframe >= 0x80000001)
+  {
+    __cpuid (0x80000001 /* Extended Processor Info and Feature Bits */, a, b, c, d);
+
+    info->set_cpu_has_fma4(c & bit_FMA4);
+  }
 
 #if 0
-    string cpu_vendor_string                                 = 100 [
-      (CFO).desc = "CPU vendor string from cpuid instruction, will probably "
-        "be either \"GenuineIntel\" or \"AuthenticAMD\"." ];
+
+bool cpu_has_fma4                                        = 222 [
+  (CFO).desc = "CPU indicates that it has FMA-4 (cpuid)." ];
+
 #endif
 
   return info;
