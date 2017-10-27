@@ -18,6 +18,6 @@ set(CALIN_SOURCES system_info.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY}
-  calin_proto_provenance calin_proto)
+  calin_io calin_proto_provenance calin_proto)
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION ${CALIN_LIB_INSTALL_DIR})

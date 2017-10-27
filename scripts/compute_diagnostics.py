@@ -224,7 +224,7 @@ dispatcher.add_visitor(delta_t_capture)
 # T0 rise time functional
 t0_calc = calin.iact_data.functional_event_visitor.\
     NoPedestalTimingFunctionalTelescopeEventVisitor()
-dispatcher.add_visitor(t0_calc, 
+dispatcher.add_visitor(t0_calc,
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 
 # T0 rise time stats
@@ -257,6 +257,8 @@ dispatcher.process_run(src,100000,opt.nthread())
 results = calin.ix.scripts.compute_diagnostics.Results()
 results.mutable_command_line_options().CopyFrom(opt)
 results.mutable_log().CopyFrom(proto_log.log_messages())
+results.mutable_build_info().CopyFrom(calin.provenance.system_info.build_info())
+results.mutable_host_info().CopyFrom(calin.provenance.system_info.host_info())
 results.mutable_run_config().CopyFrom(run_info)
 for ichan in capture_channels:
     results.add_captured_channel_ids(ichan)

@@ -28,4 +28,6 @@ namespace calin { namespace provenance { namespace system_info {
 
 const calin::ix::provenance::system_info::BuildInfo* build_info();
 
+const calin::ix::provenance::system_info::HostAndProcessInfo* host_info();
+
 } } } // namespace calin::provenance::system

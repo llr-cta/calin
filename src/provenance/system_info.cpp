@@ -22,8 +22,15 @@
 
 */
 
+#include <unistd.h>
+#include <thread>
+#include <sys/utsname.h>
+
 #include <calin_global_config.hpp>
 #include <provenance/system_info.hpp>
+#include <io/log.hpp>
+
+extern char **environ;
 
 namespace {
 
@@ -58,10 +65,65 @@ calin::ix::provenance::system_info::BuildInfo* new_build_info()
 calin::ix::provenance::system_info::BuildInfo* singleton_build_info_ =
   new_build_info();
 
+#include<iostream>
+calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
+{
+  calin::ix::provenance::system_info::HostAndProcessInfo* info =
+    new calin::ix::provenance::system_info::HostAndProcessInfo;
+  info->set_process_id(::getpid());
+  info->set_user_id(::getuid());
+  if(::getenv("USER"))info->set_user_name(::getenv("USER"));
+  calin::io::log::TimeStamp ts = calin::io::log::TimeStamp::now();
+  info->set_process_start_time_unix_sec(ts.sec);
+  info->set_process_start_time_unix_usec(ts.usec);
+  info->set_process_start_time(ts.string());
+  // char hostname_buffer[256];
+  // gethostname(hostname_buffer, 255);
+  // info->set_host_name(hostname_buffer);
+  info->set_hardware_concurrency(std::thread::hardware_concurrency());
+  for(char** ienv = environ; *ienv; ++ienv) {
+    std::string env(*ienv);
+    auto iequals = env.find_first_of('=');
+    if(iequals == std::string::npos)
+      (*info->mutable_environment())[env] = "";
+    else if(iequals == env.size()-1)
+      (*info->mutable_environment())[env.substr(0,iequals)] = "";
+    else
+      (*info->mutable_environment())[env.substr(0,iequals)] = env.substr(iequals+1);
+  }
+  //info->set_environ(extern char **environ
+  struct utsname uname_info;
+  ::uname(&uname_info);
+  info->set_uname_sysname(uname_info.sysname);
+  // info->set_uname_nodename(uname_info.nodename);
+  info->set_host_name(uname_info.nodename);
+  info->set_uname_release(uname_info.release);
+  info->set_uname_version(uname_info.version);
+  info->set_uname_machine(uname_info.machine);
+
+
+#if 0
+    string cpu_vendor_string                                 = 100 [
+      (CFO).desc = "CPU vendor string from cpuid instruction, will probably "
+        "be either \"GenuineIntel\" or \"AuthenticAMD\"." ];
+#endif
+
+  return info;
+}
+
+calin::ix::provenance::system_info::HostAndProcessInfo* singleton_host_info_ =
+  new_host_info();
+
 } // anonymous namespace
 
 const calin::ix::provenance::system_info::BuildInfo*
 calin::provenance::system_info::build_info()
 {
   return singleton_build_info_;
+}
+
+const calin::ix::provenance::system_info::HostAndProcessInfo*
+calin::provenance::system_info::host_info()
+{
+  return singleton_host_info_;
 }

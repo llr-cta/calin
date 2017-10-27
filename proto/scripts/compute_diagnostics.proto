@@ -25,6 +25,7 @@ syntax = "proto3";
 
 import "calin.proto";
 import "io/log.proto";
+import "provenance/system_info.proto";
 import "iact_data/zfits_data_source.proto";
 import "iact_data/nectarcam_data_source.proto";
 import "iact_data/telescope_run_configuration.proto";
@@ -76,7 +77,11 @@ message Results {
     (CFO).desc = "Command line options passed to script." ];
   calin.ix.io.log.Log log                                  = 2 [
     (CFO).desc = "Log messages from run." ];
-  calin.ix.iact_data.telescope_run_configuration.TelescopeRunConfiguration run_config = 3 [
+  calin.ix.provenance.system_info.BuildInfo build_info     = 3 [
+    (CFO).desc = "Build system info." ];
+  calin.ix.provenance.system_info.HostAndProcessInfo host_info = 4 [
+    (CFO).desc = "Host system and process info." ];
+  calin.ix.iact_data.telescope_run_configuration.TelescopeRunConfiguration run_config = 9 [
     (CFO).desc = "Run configuration." ];
   repeated int32 captured_channel_ids                      = 10 [
     (CFO).desc = "IDs of all captured channels." ];

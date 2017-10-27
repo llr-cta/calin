@@ -98,3 +98,49 @@ message BuildInfo {
     (CFO).desc = "Status of git repo at time of configuration: "
       "\"clean\" or \"dirty\"." ];
 };
+
+message HostAndProcessInfo {
+  uint64 process_id                                        = 1 [
+    (CFO).desc = "Process ID returned by getpid()." ];
+
+  uint64 user_id                                           = 2 [
+    (CFO).desc = "User ID returned by getuid()." ];
+
+  string user_name                                         = 3 [
+    (CFO).desc = "User name from environment variable $USER." ];
+
+  uint64 process_start_time_unix_sec                       = 4 [
+    (CFO).desc = "Start time of process from gettimeofday()." ];
+
+  uint32 process_start_time_unix_usec                      = 5 [
+    (CFO).desc = "Start time of process from gettimeofday()." ];
+
+  string process_start_time                                = 6 [
+    (CFO).desc = "Start time of process." ];
+
+  string host_name                                         = 7 [
+    (CFO).desc = "Host name from uname.nodename (or gethostname)." ];
+
+  uint32 hardware_concurrency                              = 8 [
+    (CFO).desc = "Harware conurrency returned by C++-11 "
+      "std::thread::hardware_concurrency implementation." ];
+
+  map<string, string> environment                          = 9 [
+    (CFO).desc = "Map of environment variables." ];
+
+  string uname_sysname                                     = 100 [
+    (CFO).desc = "Name of the operating system implementation from uname()." ];
+
+  string uname_release                                     = 101 [
+    (CFO).desc = "Release level of the operating system." ];
+
+  string uname_version                                     = 102 [
+    (CFO).desc = "Version level of the operating system." ];
+
+  string uname_machine                                     = 103 [
+    (CFO).desc = "Machine hardware platform." ];
+
+  string cpu_vendor_string                                 = 200 [
+    (CFO).desc = "CPU vendor string from cpuid instruction, will probably "
+      "be either \"GenuineIntel\" or \"AuthenticAMD\"." ];
+};

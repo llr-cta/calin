@@ -22,4 +22,4 @@ make_proto_swig_modules(${CALIN_TARGET_LIBRARY}
 	${CALIN_PROTO_SWIG_INSTALL_DIR}/${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})
 
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_proto_iact_data
-	calin_proto_diagnostics calin_proto_io)
+calin_proto_diagnostics calin_proto_provenance calin_proto_io)
