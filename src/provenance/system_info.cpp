@@ -127,7 +127,6 @@ calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
 
   __cpuid (0x80000000U /* get highest extended function support */, a, b, c, d);
   unsigned max_eframe = a;
-  std::cerr << max_eframe;
   if(max_eframe >= 0x80000004U)
   {
     std::string processor_brand_48char;
