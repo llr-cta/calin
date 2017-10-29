@@ -31,36 +31,6 @@
 
 using namespace calin::io::log;
 
-std::string TimeStamp::string() const
-{
-  time_t ts = time_t(sec);
-  struct tm the_tm;
-  localtime_r(&ts, &the_tm);
-  char buffer[] = "1999-12-31T23:59:59";
-  strftime(buffer, sizeof(buffer)-1, "%Y-%m-%dT%H:%M:%S", &the_tm);
-  std::string str(buffer);
-  uint32_t ms = usec/1000;
-  if(ms<10) { str += ".00"; }
-  else if(ms<100) { str += ".0"; }
-  else { str += "."; }
-  str += std::to_string(ms);
-  return str;
-}
-
-TimeStamp TimeStamp::now()
-{
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return { uint64_t(tv.tv_sec), uint32_t(tv.tv_usec) };
-}
-
-double TimeStamp::seconds_since(const TimeStamp& then)
-{
-  double dt { sec>then.sec?double(sec-then.sec):-double(then.sec-sec) };
-  dt += (usec>then.usec?double(usec-then.usec):-double(then.usec-usec))*1e-6;
-  return dt;
-}
-
 Logger::~Logger()
 {
   //nothing to see here
@@ -161,7 +131,7 @@ void MultiLogger::clear_all_loggers_and_streams()
 }
 
 void MultiLogger::log_message(Level level, const std::string& message,
-                              TimeStamp timestamp)
+  calin::util::timestamp::Timestamp timestamp)
 {
   if(message.empty() || level==DISCARD)return;
 
@@ -187,7 +157,7 @@ void MultiLogger::log_message(Level level, const std::string& message,
     }
   }
 
-  std::string timestamp_string = timestamp.string();
+  std::string timestamp_string = timestamp.as_string();
   const char* this_level_string = level_string(level);
   const char* apply_color_string = ansi_color_string(level);
   const char* reset_color_string = ansi_reset_string();
@@ -272,7 +242,8 @@ ProtobufLogger::~ProtobufLogger()
 }
 
 void ProtobufLogger::
-log_message(Level level, const std::string& message, TimeStamp timestamp)
+log_message(Level level, const std::string& message,
+  calin::util::timestamp::Timestamp timestamp)
 {
   auto* m = log_.add_message();
   switch(level)
@@ -295,8 +266,7 @@ log_message(Level level, const std::string& message, TimeStamp timestamp)
     m->set_level(calin::ix::io::log::LogMessage::DISCARD); break;
   }
   m->set_message(message);
-  m->set_timestamp_sec(timestamp.sec);
-  m->set_timestamp_usec(timestamp.usec);
+  timestamp.as_proto(m->mutable_timestamp());
 }
 
 PythonLogger::~PythonLogger()
@@ -305,7 +275,8 @@ PythonLogger::~PythonLogger()
 }
 
 void PythonLogger::
-log_message(Level level, const std::string& message, TimeStamp timestamp)
+log_message(Level level, const std::string& message,
+  calin::util::timestamp::Timestamp timestamp)
 {
   if(message.empty() || level==DISCARD)return;
 

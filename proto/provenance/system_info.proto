@@ -23,7 +23,7 @@
 syntax = "proto3";
 
 import "calin.proto";
-//import "common_types.proto";
+import "util/timestamp.proto";
 
 package calin.ix.provenance.system_info;
 
@@ -109,23 +109,18 @@ message HostAndProcessInfo {
   string user_name                                         = 3 [
     (CFO).desc = "User name from environment variable $USER." ];
 
-  uint64 process_start_time_unix_sec                       = 4 [
-    (CFO).desc = "Start time of process from gettimeofday()." ];
+  calin.ix.util.timestamp.Timestamp process_start_time     = 4 [
+    (CFO).desc = "Start time of process from gettimeofday().",
+    (CFO).sql.inline_message = true ];
 
-  uint32 process_start_time_unix_usec                      = 5 [
-    (CFO).desc = "Start time of process from gettimeofday()." ];
-
-  string process_start_time                                = 6 [
-    (CFO).desc = "Start time of process." ];
-
-  string host_name                                         = 7 [
+  string host_name                                         = 5 [
     (CFO).desc = "Host name from uname.nodename (or gethostname)." ];
 
-  uint32 hardware_concurrency                              = 8 [
+  uint32 hardware_concurrency                              = 6 [
     (CFO).desc = "Harware conurrency returned by C++-11 "
       "std::thread::hardware_concurrency implementation." ];
 
-  map<string, string> environment                          = 9 [
+  map<string, string> environment                          = 7 [
     (CFO).desc = "Map of environment variables." ];
 
   string uname_sysname                                     = 100 [

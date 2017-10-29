@@ -121,7 +121,7 @@ void Optimizer::opt_starting(const std::string& opt_name,
 
   opt_status_           = OptimizationStatus::OPTIMIZER_FAILURE;
   opt_message_          = "Optimizer did not run";
-  opt_start_time_       = TimeStamp::now();
+  opt_start_time_       = calin::util::timestamp::Timestamp::now();
   iterations_           = 0;
   fbest_                = inf;
   xbest_                = std_to_eigenvec(initial_values());
@@ -280,7 +280,7 @@ void Optimizer::opt_progress(double fval, const Eigen::VectorXd& x,
      (verbose_ == OptimizerVerbosityLevel::SUMMARY_ONLY))
     return;
 
-  TimeStamp ts = TimeStamp::now();
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
   double tss = ts.seconds_since(opt_start_time_);
   if(verbose_ == OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS or
      verbose_ == OptimizerVerbosityLevel::ELEVATED)
@@ -365,7 +365,7 @@ void Optimizer::opt_finished(OptimizationStatus status, double fopt,
       break;
   }
 
-  TimeStamp ts = TimeStamp::now();
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
   double tss = ts.seconds_since(opt_start_time_);
 
   LOG(level)

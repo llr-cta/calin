@@ -26,6 +26,7 @@
 #include <vector>
 #include <Eigen/Core>
 
+#include "util/timestamp.hpp"
 #include "io/log.hpp"
 #include "function.hpp"
 #include "hessian.hpp"
@@ -164,7 +165,7 @@ class Optimizer
 
   OptimizationStatus opt_status_ { OptimizationStatus::OPTIMIZER_FAILURE };
   std::string opt_message_ { "Live long and prosper" };
-  io::log::TimeStamp opt_start_time_;
+  calin::util::timestamp::Timestamp opt_start_time_;
   unsigned iterations_ { 0 };
   double fbest_ { inf };
   Eigen::VectorXd xbest_;

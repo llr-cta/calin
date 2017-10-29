@@ -29,27 +29,19 @@
 #include <vector>
 #include <mutex>
 #include <util/spinlock.hpp>
+#include <util/timestamp.hpp>
 #include <io/log.pb.h>
 
 namespace calin { namespace io { namespace log {
 
 enum Level { FATAL, ERROR, WARNING, INFO, SUCCESS, FAILURE, VERBOSE, DISCARD };
 
-struct TimeStamp
-{
-  std::string string() const;
-  static TimeStamp now();
-  double seconds_since(const TimeStamp& then);
-  uint64_t sec;
-  uint32_t usec;
-};
-
 class Logger
 {
  public:
   virtual ~Logger();
   virtual void log_message(Level level, const std::string& message,
-                           TimeStamp timestamp = TimeStamp::now()) = 0;
+    calin::util::timestamp::Timestamp timestamp = calin::util::timestamp::Timestamp::now()) = 0;
 };
 
 class MultiLogger: public Logger
@@ -57,7 +49,7 @@ class MultiLogger: public Logger
  public:
   virtual ~MultiLogger();
   void log_message(Level level, const std::string& message,
-                   TimeStamp timestamp = TimeStamp::now()) override;
+    calin::util::timestamp::Timestamp timestamp = calin::util::timestamp::Timestamp::now()) override;
 
   void add_logger(Logger* logger, bool adopt_logger = false);
   void add_stream(std::ostream* stream, bool adopt_stream = false,
@@ -148,7 +140,7 @@ public:
   ProtobufLogger(): Logger(), log_() { }
   virtual ~ProtobufLogger();
   void log_message(Level level, const std::string& message,
-                   TimeStamp timestamp = TimeStamp::now()) override;
+    calin::util::timestamp::Timestamp timestamp = calin::util::timestamp::Timestamp::now()) override;
   calin::ix::io::log::Log log_messages() { return log_; }
  protected:
    calin::ix::io::log::Log log_;
@@ -160,7 +152,7 @@ class PythonLogger: public Logger
   PythonLogger(bool use_stderr = false): Logger(), use_stderr_(use_stderr) { }
   virtual ~PythonLogger();
   void log_message(Level level, const std::string& message,
-                   TimeStamp timestamp = TimeStamp::now()) override;
+    calin::util::timestamp::Timestamp timestamp = calin::util::timestamp::Timestamp::now()) override;
   static bool is_python_initialised();
  protected:
   bool use_stderr_ { false };

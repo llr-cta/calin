@@ -23,6 +23,7 @@
 syntax = "proto3";
 
 import "calin.proto";
+import "util/timestamp.proto";
 
 package calin.ix.io.log;
 
@@ -36,10 +37,9 @@ message LogMessage {
                VERBOSE  = 6;
                DISCARD  = 7;
              };
-  Level level                          = 1;
-  uint64 timestamp_sec                 = 2;
-  uint32 timestamp_usec                = 3;
-  string message                       = 4;
+  Level level                              = 1;
+  calin.ix.util.timestamp.Timestamp timestamp = 2 [ (CFO).sql.inline_message = true ];
+  string message                           = 3;
 };
 
 message Log {

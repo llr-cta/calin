@@ -30,6 +30,7 @@
 #include <calin_global_config.hpp>
 #include <provenance/system_info.hpp>
 #include <io/log.hpp>
+#include <util/timestamp.hpp>
 
 extern char **environ;
 
@@ -86,10 +87,8 @@ calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
   info->set_process_id(::getpid());
   info->set_user_id(::getuid());
   if(::getenv("USER"))info->set_user_name(::getenv("USER"));
-  calin::io::log::TimeStamp ts = calin::io::log::TimeStamp::now();
-  info->set_process_start_time_unix_sec(ts.sec);
-  info->set_process_start_time_unix_usec(ts.usec);
-  info->set_process_start_time(ts.string());
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  ts.as_proto(info->mutable_process_start_time());
   // char hostname_buffer[256];
   // gethostname(hostname_buffer, 255);
   // info->set_host_name(hostname_buffer);
