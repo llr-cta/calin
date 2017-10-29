@@ -1,6 +1,6 @@
-# calin/swig/util/CMakeLists.txt -- Stephen Fegan
+# calin/proto/util/CMakeLists.txt -- Stephen Fegan
 #
-# Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+# Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
 # LLR, Ecole Polytechnique, CNRS/IN2P3
 #
 # This file is part of "calin"
@@ -13,11 +13,10 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_FILES options_processor.i timestamp.i)
-set(CALIN_SWIG_TARGET util)
+set(CALIN_SWIG_PROTO timestamp.proto)
+set(CALIN_PACKAGE util)
+set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-make_swig_modules(calin_${CALIN_SWIG_TARGET}
-	${CALIN_SWIG_INSTALL_DIR}/${CALIN_SWIG_TARGET} ${CALIN_SWIG_FILES})
-install(FILES __init__.py
-	DESTINATION ${CALIN_SWIG_INSTALL_DIR}/${CALIN_SWIG_TARGET})
+make_proto_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})
+make_proto_swig_modules(${CALIN_TARGET_LIBRARY}
+		${CALIN_PROTO_SWIG_INSTALL_DIR}/${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})

@@ -1,0 +1,37 @@
+/*
+
+   calin/proto/util/timestamp.proto -- Stephen Fegan -- 2017-10-29
+
+   A non-precision timestamp class
+
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.util.timestamp;
+
+message Timestamp {
+  uint64 unix_sec                      = 1 [
+    (CFO).desc = "Number of seconds since UNIX epoch of 1970-01-01, excluding "
+      "leap seconds." ];
+  uint32 unix_usec                     = 2 [
+    (CFO).desc = "Number of micro seconds since start of second." ];
+  string printable                     = 3 [
+    (CFO).desc = "A printable version of the timestamp." ];
+};
