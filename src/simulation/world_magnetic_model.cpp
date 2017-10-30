@@ -24,6 +24,7 @@
 #include <cerrno>
 
 #include <provenance/system_info.hpp>
+#include <provenance/chronicle.hpp>
 #include <simulation/GeomagnetismHeader.h>
 #include <simulation/EGM9615.h>
 #include <simulation/world_magnetic_model.hpp>
@@ -75,6 +76,8 @@ WMM::WMM(const std::string& cof_file, double date):
       + "\n" + strerror(errno));
   if(mag_->magnetic_models[0] == nullptr)
     throw std::runtime_error("Magnetic model is NULL");
+  calin::provenance::chronicle::register_file_open(cof_file,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
 
   if(date == 0)mag_->date = mag_->magnetic_models[0]->epoch;
   else mag_->date = date;
