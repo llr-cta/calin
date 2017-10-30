@@ -55,7 +55,7 @@ SQLite3Transceiver(const std::string& filename_in, OpenMode open_mode,
     throw std::runtime_error("Could not open: " + filename_in + "\n" +
       sqlite3_errmsg(db_));
 
-  auto access { calin::ix::provenance::chronicle::AT_READ };
+  calin::ix::provenance::chronicle::AccessType access;
   switch(open_mode) {
   case EXISTING_OR_NEW_RW:
   case EXISTING_RW:
