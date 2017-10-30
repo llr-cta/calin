@@ -1,10 +1,10 @@
 /*
 
-   calin/io/log.i -- Stephen Fegan -- 2015-12-15
+   calin/simulation/pmt.i -- Stephen Fegan -- 2016-03-21
 
-   SWIG interface file for calin.io.sql_transceiver
+   SWIG interface file for PMT simulation
 
-   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
@@ -20,10 +20,10 @@
 
 */
 
-%module (package="calin.io") log
+%module (package="calin.provenance") chronicle
 
 %{
-#include "io/log.hpp"
+#include "provenance/chronicle.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -34,5 +34,7 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%import "io/log.pb.i"
-%include "io/log.hpp"
+%import "provenance/chronicle.pb.i"
+
+%newobject *::copy_the_chronicle();
+%include "provenance/chronicle.hpp"

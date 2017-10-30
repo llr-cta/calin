@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_PROTO system_info.proto)
+set(CALIN_SWIG_PROTO system_info.proto chronicle.proto)
 set(CALIN_PACKAGE provenance)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 

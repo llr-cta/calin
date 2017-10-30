@@ -27,10 +27,10 @@
 #include <simulation/iact_array_tracker.hpp>
 #include <simulation/quadrature_iact_array_integration.hpp>
 #include <math/special.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 
 using namespace calin::simulation::quadrature_iact_array_integration;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using calin::math::special::SQR;
 using calin::simulation::iact_array_tracker::IACTDetectorSphere;
 

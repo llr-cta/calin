@@ -25,13 +25,13 @@
 
 #include <algorithm>
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <math/special.hpp>
 #include <math/covariance_calc.hpp>
 #include <diagnostics/functional.hpp>
 
 using calin::math::special::SQR;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::diagnostics::functional;
 using calin::iact_data::functional_event_visitor::
   DualGainInt32FunctionalTelescopeEventVisitor;

@@ -20,10 +20,10 @@
 
 */
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <diagnostics/event_number.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::diagnostics::event_number;
 using namespace calin::ix::diagnostics::event_number;
 

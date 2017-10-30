@@ -306,7 +306,7 @@ template<typename F> double integrate_binned_in_extendable_window(
     }
     *pp = std::max(pdf->value_1d(x),0.0);
 #if 0
-    calin::io::log::LOG(calin::io::log::INFO) << x << ' ' << *pp << ' '
+    calin::util::log::LOG(calin::util::log::INFO) << x << ' ' << *pp << ' '
       << nzero << ' ' << std::scientific << 1.0-norm_acc.total() << ' '
       << 1.0-norm_target;
 #endif

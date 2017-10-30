@@ -1,6 +1,6 @@
 /*
 
-   calin/io/log.hpp -- Stephen Fegan -- 2015-05-12
+   calin/util/log.hpp -- Stephen Fegan -- 2015-05-12
 
    Class providing logging capabilities
 
@@ -30,9 +30,9 @@
 #include <mutex>
 #include <util/spinlock.hpp>
 #include <util/timestamp.hpp>
-#include <io/log.pb.h>
+#include <util/log.pb.h>
 
-namespace calin { namespace io { namespace log {
+namespace calin { namespace util { namespace log {
 
 enum Level { FATAL, ERROR, WARNING, INFO, SUCCESS, FAILURE, VERBOSE, DISCARD };
 
@@ -141,9 +141,9 @@ public:
   virtual ~ProtobufLogger();
   void log_message(Level level, const std::string& message,
     calin::util::timestamp::Timestamp timestamp = calin::util::timestamp::Timestamp::now()) override;
-  calin::ix::io::log::Log log_messages() { return log_; }
+  calin::ix::util::log::Log log_messages() { return log_; }
  protected:
-   calin::ix::io::log::Log log_;
+   calin::ix::util::log::Log log_;
 };
 
 class PythonLogger: public Logger
@@ -309,4 +309,4 @@ inline unsigned num_digits(unsigned x)
   return n;
 }
 
-} } } // namespace calin::io::log
+} } } // namespace calin::util::log

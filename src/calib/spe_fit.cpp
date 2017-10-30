@@ -29,12 +29,12 @@
 #include <math/special.hpp>
 #include <calib/spe_fit.hpp>
 #include <calib/pmt_model_pg.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 
 using namespace calin::math;
 using namespace calin::calib::spe_fit;
 using namespace calin::calib::pmt_model_pg;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 using calin::math::special::SQR;
 using calin::math::function::assign_parameters;

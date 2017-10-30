@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <io/data_source.hpp>
 
 namespace calin { namespace io { namespace data_source {

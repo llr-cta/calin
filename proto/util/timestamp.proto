@@ -30,8 +30,8 @@ message Timestamp {
   uint64 unix_sec                      = 1 [
     (CFO).desc = "Number of seconds since UNIX epoch of 1970-01-01, excluding "
       "leap seconds." ];
-  uint32 unix_usec                     = 2 [
-    (CFO).desc = "Number of micro seconds since start of second." ];
+  uint32 unix_nsec                     = 2 [
+    (CFO).desc = "Number of nanoseconds since start of second." ];
   string printable                     = 3 [
     (CFO).desc = "A printable version of the timestamp." ];
 };

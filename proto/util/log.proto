@@ -1,6 +1,6 @@
 /*
 
-   calin/proto/io/log.proto -- Stephen Fegan -- 2016-06-13
+   calin/proto/util/log.proto -- Stephen Fegan -- 2016-06-13
 
    Log messages
 
@@ -25,7 +25,7 @@ syntax = "proto3";
 import "calin.proto";
 import "util/timestamp.proto";
 
-package calin.ix.io.log;
+package calin.ix.util.log;
 
 message LogMessage {
   enum Level { FATAL    = 0;

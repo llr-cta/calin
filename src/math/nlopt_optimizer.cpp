@@ -27,12 +27,12 @@
 
 #include <nlopt/nlopt.h>
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <math/nlopt_optimizer.hpp>
 #include <math/hessian.hpp>
 
 using namespace calin::math::optimizer;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 namespace {
 

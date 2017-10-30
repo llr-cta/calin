@@ -20,7 +20,7 @@
 
 */
 
-// #include<io/log.hpp>
+// #include<util/log.hpp>
 
 namespace calin { namespace math { namespace function {
 
@@ -60,9 +60,9 @@ BasicReducedSpaceParameterizable<T>::set_parameter_values(ConstVecRef values)
       std::string("Number of parameter values does not match subspace size: "
       + std::to_string(values.size()) + " != "
       + std::to_string(subspace_params_.size())));
-  // calin::io::log::LOG(calin::io::log::INFO) << "A: " << values.transpose();
-  // calin::io::log::LOG(calin::io::log::INFO) << "B: " << removed_param_values_.transpose();
-  // calin::io::log::LOG(calin::io::log::INFO) << "C: " << subspace_param_vec_to_original(values).transpose();
+  // calin::util::log::LOG(calin::util::log::INFO) << "A: " << values.transpose();
+  // calin::util::log::LOG(calin::util::log::INFO) << "B: " << removed_param_values_.transpose();
+  // calin::util::log::LOG(calin::util::log::INFO) << "C: " << subspace_param_vec_to_original(values).transpose();
   this->delegate_->set_parameter_values(subspace_param_vec_to_original(values));
 }
 

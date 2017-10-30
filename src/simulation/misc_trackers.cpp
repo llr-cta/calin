@@ -25,14 +25,14 @@
 #include <cassert>
 #include <simulation/tracker.hpp>
 #include <simulation/misc_trackers.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <math/brent.hpp>
 #include <math/constants.hpp>
 
 using namespace calin::simulation::air_cherenkov_tracker;
 using namespace calin::simulation::tracker;
 using namespace calin::simulation::misc_trackers;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 LengthLimitingTrackVisitor::LengthLimitingTrackVisitor(TrackVisitor* visitor,
     double dx_max, double z_max, bool adopt_visitor): TrackVisitor(),

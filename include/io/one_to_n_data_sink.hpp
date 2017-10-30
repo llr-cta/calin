@@ -27,7 +27,7 @@
 #include <cassert>
 
 #include <util/spinlock.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <io/data_source.hpp>
 #include <io/zmq_inproc_push_pull.hpp>
 #include <io/buffered_data_source.hpp>

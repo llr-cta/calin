@@ -35,7 +35,8 @@
 #include <sstream>
 #include <string>
 
-#include <io/log.hpp>
+#include <util/log.hpp>
+#include <provenance/chronicle.hpp>
 #include <math/special.hpp>
 #include <util/string.hpp>
 #include <simulation/detector_efficiency.hpp>
@@ -43,7 +44,7 @@
 using calin::math::special::SQR;
 using calin::util::string::chomp;
 using calin::util::string::from_string;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::simulation::detector_efficiency;
 using namespace calin::math::interpolation_1d;
 
@@ -58,6 +59,8 @@ AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
     double ground_level_km, double spacing_km)
 {
   std::ifstream stream(filename.c_str());
+  calin::provenance::chronicle::register_file_open(filename,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
   std::getline(stream,line); // skip first line
   double e = 0;
@@ -105,6 +108,8 @@ AtmosphericAbsorption::AtmosphericAbsorption(const std::string& filename,
   std::vector<double> levels_cm)
 {
   std::ifstream stream(filename.c_str());
+  calin::provenance::chronicle::register_file_open(filename,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
 
   std::getline(stream,line);
@@ -279,6 +284,8 @@ scaleEffFromFile(const std::string& filename)
   eff_fn.insert_from_2column_file_with_filter(filename,
     [](double& lambda_in_e_out, double& eff) {
       lambda_in_e_out = EV_NM / lambda_in_e_out; return true; });
+  calin::provenance::chronicle::register_file_open(filename,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   scaleEff(eff_fn);
 }
 
@@ -287,6 +294,8 @@ scaleEffFromOldStyleFile(const std::string& filename,
 		 double lambda0_nm, double dlambda_nm)
 {
   std::ifstream stream(filename.c_str());
+  calin::provenance::chronicle::register_file_open(filename,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   InterpLinear1D eff_fn;
   std::string line;
   std::getline(stream,line); // skip first line
@@ -319,6 +328,8 @@ AngularEfficiency::AngularEfficiency(const std::string& filename):
   this->insert_from_2column_file_with_filter(filename,
     [](double& theta_in_w_out, double& eff) {
       theta_in_w_out = std::cos(theta_in_w_out/180.0*M_PI); return true; });
+  calin::provenance::chronicle::register_file_open(filename,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
 }
 
 void AngularEfficiency::scaleEff(const InterpLinear1D& eff)

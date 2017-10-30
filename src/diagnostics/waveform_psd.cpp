@@ -22,12 +22,12 @@
 
 #include <math/special.hpp>
 #include <math/fftw_util.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <diagnostics/waveform.hpp>
 
 using calin::math::special::SQR;
 using namespace calin::math::fftw_util;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::diagnostics::waveform;
 
 WaveformPSDVisitor::WaveformPSDVisitor():

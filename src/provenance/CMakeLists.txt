@@ -14,10 +14,10 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_TARGET_LIBRARY calin_provenance)
-set(CALIN_SOURCES system_info.cpp)
+set(CALIN_SOURCES system_info.cpp chronicle.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY}
-  calin_io calin_proto_provenance calin_proto)
+  calin_util calin_proto_provenance calin_proto)
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION ${CALIN_LIB_INSTALL_DIR})

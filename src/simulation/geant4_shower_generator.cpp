@@ -27,7 +27,7 @@
 #include <simulation/geant4_shower_generator_internals.hpp>
 
 using namespace calin::simulation::geant4_shower_generator;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 Geant4ShowerGenerator::
 Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
@@ -49,18 +49,18 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
 
   // construct a session which receives G4cout/G4cerr
 
-  calin::io::log::Level cout_level = calin::io::log::VERBOSE;
-  calin::io::log::Level cerr_level = calin::io::log::WARNING;
+  calin::util::log::Level cout_level = calin::util::log::VERBOSE;
+  calin::util::log::Level cerr_level = calin::util::log::WARNING;
   G4int verbose_everything = 0;
   G4int verbose_event = 0;
   G4int verbose_track = 0;
   switch(verbose_level)
   {
     case VerbosityLevel::SUPPRESSED_ALL:
-      cerr_level = calin::io::log::DISCARD;
+      cerr_level = calin::util::log::DISCARD;
       // fall through
     case VerbosityLevel::SUPRESSED_STDOUT:
-      cout_level = calin::io::log::DISCARD;
+      cout_level = calin::util::log::DISCARD;
       break;
     case VerbosityLevel::NORMAL:
       break;

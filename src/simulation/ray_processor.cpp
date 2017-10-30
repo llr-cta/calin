@@ -20,10 +20,10 @@
 
 */
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <simulation/ray_processor.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::simulation::ray_processor;
 
 RayProcessor::~RayProcessor()

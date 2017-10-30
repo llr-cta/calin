@@ -24,7 +24,7 @@
 syntax = "proto3";
 
 import "calin.proto";
-import "io/log.proto";
+import "util/log.proto";
 import "provenance/system_info.proto";
 import "iact_data/zfits_data_source.proto";
 import "iact_data/nectarcam_data_source.proto";
@@ -75,7 +75,7 @@ message CommandLineOptions {
 message Results {
   CommandLineOptions command_line_options                  = 1 [
     (CFO).desc = "Command line options passed to script." ];
-  calin.ix.io.log.Log log                                  = 2 [
+  calin.ix.util.log.Log log                                  = 2 [
     (CFO).desc = "Log messages from run." ];
   calin.ix.provenance.system_info.BuildInfo build_info     = 3 [
     (CFO).desc = "Build system info." ];

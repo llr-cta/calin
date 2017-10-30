@@ -26,8 +26,8 @@
 
 using namespace calin::simulation::pe_processor;
 
-#include <io/log.hpp>
-using namespace calin::io::log;
+#include <util/log.hpp>
+using namespace calin::util::log;
 
 PEProcessor::~PEProcessor()
 {

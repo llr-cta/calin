@@ -26,9 +26,9 @@
 #include <thread>
 #include <gtest/gtest.h>
 
-#include "io/log.hpp"
+#include "util/log.hpp"
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 TEST(TestLog, WriteStream) {
   default_logger()->add_cerr(true,true);

@@ -23,8 +23,8 @@
 #include <math/geometry.hpp>
 #include <math/ray_generator.hpp>
 
-#include <io/log.hpp>
-using namespace calin::io::log;
+#include <util/log.hpp>
+using namespace calin::util::log;
 
 using namespace calin::math::ray_generator;
 

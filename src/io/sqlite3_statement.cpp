@@ -20,10 +20,10 @@
 
 */
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <io/sqlite3_statement.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::io::sql_transceiver;
 
 SQLite3Statement::

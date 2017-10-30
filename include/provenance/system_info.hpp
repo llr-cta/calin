@@ -26,8 +26,20 @@
 
 namespace calin { namespace provenance { namespace system_info {
 
-const calin::ix::provenance::system_info::BuildInfo* build_info();
+const calin::ix::provenance::system_info::BuildInfo* the_build_info();
+const calin::ix::provenance::system_info::HostAndProcessInfo* the_host_info();
 
-const calin::ix::provenance::system_info::HostAndProcessInfo* host_info();
+#ifndef SWIG
+calin::ix::provenance::system_info::BuildInfo*
+  copy_the_build_info(calin::ix::provenance::system_info::BuildInfo* x = nullptr);
+calin::ix::provenance::system_info::HostAndProcessInfo*
+  copy_the_host_info(calin::ix::provenance::system_info::HostAndProcessInfo* x = nullptr);
+#else
+calin::ix::provenance::system_info::BuildInfo* copy_the_build_info();
+void copy_the_build_info(calin::ix::provenance::system_info::BuildInfo* x);
+calin::ix::provenance::system_info::HostAndProcessInfo* copy_the_host_info();
+void copy_the_host_info(calin::ix::provenance::system_info::HostAndProcessInfo* x);
+#endif
+
 
 } } } // namespace calin::provenance::system

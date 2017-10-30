@@ -1,1 +1,1 @@
-__all__ = ["sql_transceiver","log"]
+__all__ = ["sql_transceiver"]

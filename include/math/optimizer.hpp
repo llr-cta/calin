@@ -27,7 +27,7 @@
 #include <Eigen/Core>
 
 #include "util/timestamp.hpp"
-#include "io/log.hpp"
+#include "util/log.hpp"
 #include "function.hpp"
 #include "hessian.hpp"
 

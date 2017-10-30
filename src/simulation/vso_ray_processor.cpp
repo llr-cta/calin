@@ -26,8 +26,8 @@
 using namespace calin::simulation::vso_ray_processor;
 using calin::math::special::SQR;
 
-#include <io/log.hpp>
-using namespace calin::io::log;
+#include <util/log.hpp>
+using namespace calin::util::log;
 
 VSOTracedRayVisitor::~VSOTracedRayVisitor()
 {

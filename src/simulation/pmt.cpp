@@ -31,12 +31,12 @@
 #include <calin_global_definitions.hpp>
 #include <simulation/pmt.hpp>
 #include <math/special.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 
 using namespace calin::simulation::pmt;
 using calin::math::special::SQR;
 using calin::math::rng::RNG;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 SignalSource::~SignalSource()
 {

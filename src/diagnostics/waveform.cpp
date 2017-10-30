@@ -21,12 +21,12 @@
 */
 
 #include <math/special.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <diagnostics/waveform.hpp>
 #include <math/covariance_calc.hpp>
 
 using calin::math::special::SQR;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::diagnostics::waveform;
 using calin::math::covariance_calc::cov_i64_gen;
 

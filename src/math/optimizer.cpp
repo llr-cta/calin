@@ -25,12 +25,12 @@
 #include <algorithm>
 #include <cmath>
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <math/optimizer.hpp>
 #include <math/nlopt_optimizer.hpp>
 
 using namespace calin::math::optimizer;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 constexpr double Optimizer::inf;
 constexpr double Optimizer::pos_inf;

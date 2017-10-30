@@ -14,14 +14,13 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_TARGET_LIBRARY calin_io)
-set(CALIN_SOURCES log.cpp sql_statement.cpp sql_transceiver.cpp
+set(CALIN_SOURCES sql_statement.cpp sql_transceiver.cpp
 	sqlite3_statement.cpp sqlite3_transceiver.cpp data_source.cpp
 	packet_stream.cpp zmq_inproc_push_pull.cpp)
 
 include_directories(${PYTHON_INCLUDE_PATH})
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
-target_link_libraries(${CALIN_TARGET_LIBRARY} calin_util calin_proto_io
-	${SQLITE3_LIBRARY} ${PYTHON_LIBRARIES} ${ZMQ_LIBRARIES}
-	${PROTOBUF_LIBRARY} -lutil)
+target_link_libraries(${CALIN_TARGET_LIBRARY} calin_util calin_provenance calin_proto_io
+	${SQLITE3_LIBRARY} ${ZMQ_LIBRARIES} ${PROTOBUF_LIBRARY} -lutil)
 
 install(TARGETS ${CALIN_TARGET_LIBRARY} DESTINATION ${CALIN_LIB_INSTALL_DIR})

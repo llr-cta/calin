@@ -35,7 +35,7 @@ std::string Timestamp::as_string() const
   char buffer[] = "1999-12-31T23:59:59";
   strftime(buffer, sizeof(buffer)-1, "%Y-%m-%dT%H:%M:%S", &the_tm);
   std::string str(buffer);
-  uint32_t ms = usec()/1000;
+  uint32_t ms = nsec()/1000000;
   if(ms<10) { str += ".00"; }
   else if(ms<100) { str += ".0"; }
   else { str += "."; }
@@ -48,21 +48,21 @@ Timestamp::as_proto(calin::ix::util::timestamp::Timestamp* x) const
 {
   if(x == nullptr)x = new calin::ix::util::timestamp::Timestamp;
   x->set_unix_sec(sec());
-  x->set_unix_usec(usec());
+  x->set_unix_nsec(nsec());
   x->set_printable(as_string());
   return x;
 }
 
 Timestamp Timestamp::now()
 {
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return { uint64_t(tv.tv_sec), uint32_t(tv.tv_usec) };
+  struct timespec tp;
+  clock_gettime(CLOCK_REALTIME, &tp);
+  return { uint64_t(tp.tv_sec), uint32_t(tp.tv_nsec) };
 }
 
 double Timestamp::seconds_since(const Timestamp& then) const
 {
   double dt { sec()>=then.sec()?double(sec()-then.sec()):-double(then.sec()-sec()) };
-  dt += (usec()>=then.usec()?double(usec()-then.usec()):-double(then.usec()-usec()))*1e-6;
+  dt += (nsec()>=then.nsec()?double(nsec()-then.nsec()):-double(then.nsec()-nsec()))*1e-9;
   return dt;
 }

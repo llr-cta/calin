@@ -136,6 +136,6 @@ WMM_FieldVsElevation WMM::field_vs_elevation(double latitude_deg,
 
 std::string WMM::default_cof_file()
 {
-  return calin::provenance::system_info::build_info()->data_install_dir()
+  return calin::provenance::system_info::the_build_info()->data_install_dir()
     + "/simulation/WMM.COF";
 }

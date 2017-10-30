@@ -20,10 +20,10 @@
 
 */
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <diagnostics/module.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::diagnostics::module;
 
 ModulePresentVisitor::ModulePresentVisitor(): TelescopeEventVisitor()

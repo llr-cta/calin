@@ -25,11 +25,11 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <simulation/iact_array_tracker.hpp>
 #include <math/special.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::simulation::iact_array_tracker;
 using calin::math::special::SQR;
 

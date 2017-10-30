@@ -24,10 +24,10 @@
 
 #include <math/ray.hpp>
 #include <math/special.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 
 using namespace calin::math::ray;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using calin::math::special::SQR;
 
 //! Propagates free particle to the given plane

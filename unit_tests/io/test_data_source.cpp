@@ -25,13 +25,13 @@
 #include <iomanip>
 #include <gtest/gtest.h>
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <io/data_source.hpp>
 #include <io/buffered_data_source.hpp>
 #include <io/chained_data_source.hpp>
 #include <unittest.pb.h>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::ix::unittest;
 using namespace calin::io::data_source;
 

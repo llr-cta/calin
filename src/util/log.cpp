@@ -1,6 +1,6 @@
 /*
 
-   calin/io/log.hpp -- Stephen Fegan -- 2015-05-12
+   calin/util/log.hpp -- Stephen Fegan -- 2015-05-12
 
    Class providing logging capabilities
 
@@ -27,9 +27,9 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 Logger::~Logger()
 {
@@ -249,21 +249,21 @@ log_message(Level level, const std::string& message,
   switch(level)
   {
   case FATAL:
-    m->set_level(calin::ix::io::log::LogMessage::FATAL); break;
+    m->set_level(calin::ix::util::log::LogMessage::FATAL); break;
   case ERROR:
-    m->set_level(calin::ix::io::log::LogMessage::ERROR); break;
+    m->set_level(calin::ix::util::log::LogMessage::ERROR); break;
   case WARNING:
-    m->set_level(calin::ix::io::log::LogMessage::WARNING); break;
+    m->set_level(calin::ix::util::log::LogMessage::WARNING); break;
   case INFO:
-    m->set_level(calin::ix::io::log::LogMessage::INFO); break;
+    m->set_level(calin::ix::util::log::LogMessage::INFO); break;
   case SUCCESS:
-    m->set_level(calin::ix::io::log::LogMessage::SUCCESS); break;
+    m->set_level(calin::ix::util::log::LogMessage::SUCCESS); break;
   case FAILURE:
-    m->set_level(calin::ix::io::log::LogMessage::FAILURE); break;
+    m->set_level(calin::ix::util::log::LogMessage::FAILURE); break;
   case VERBOSE:
-    m->set_level(calin::ix::io::log::LogMessage::VERBOSE); break;
+    m->set_level(calin::ix::util::log::LogMessage::VERBOSE); break;
   case DISCARD:
-    m->set_level(calin::ix::io::log::LogMessage::DISCARD); break;
+    m->set_level(calin::ix::util::log::LogMessage::DISCARD); break;
   }
   m->set_message(message);
   timestamp.as_proto(m->mutable_timestamp());

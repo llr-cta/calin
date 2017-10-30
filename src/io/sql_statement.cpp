@@ -23,10 +23,10 @@
 #include <sstream>
 
 #include <calin.pb.h>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <io/sql_statement.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::io::sql_transceiver;
 using namespace google::protobuf;
 

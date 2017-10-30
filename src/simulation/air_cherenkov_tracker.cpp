@@ -32,11 +32,11 @@
 #include <Eigen/Geometry>
 #include <math/special.hpp>
 #include <simulation/air_cherenkov_tracker.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <math/geometry.hpp>
 #include <cmath>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::simulation::air_cherenkov_tracker;
 using calin::math::special::SQR;
 

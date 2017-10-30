@@ -23,13 +23,15 @@
 */
 
 #include <unistd.h>
-#include <thread>
 #include <sys/utsname.h>
 #include <cpuid.h>
 
+#include <thread>
+#include <memory>
+
 #include <calin_global_config.hpp>
 #include <provenance/system_info.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <util/timestamp.hpp>
 
 extern char **environ;
@@ -66,8 +68,8 @@ calin::ix::provenance::system_info::BuildInfo* new_build_info()
   return info;
 };
 
-calin::ix::provenance::system_info::BuildInfo* singleton_build_info_ =
-  new_build_info();
+std::unique_ptr<calin::ix::provenance::system_info::BuildInfo> singleton_build_info_ {
+  new_build_info() };
 
 bool append_4chars(std::string& t, unsigned u)
 {
@@ -198,19 +200,35 @@ calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
   return info;
 }
 
-calin::ix::provenance::system_info::HostAndProcessInfo* singleton_host_info_ =
-  new_host_info();
+std::unique_ptr<calin::ix::provenance::system_info::HostAndProcessInfo> singleton_host_info_ {
+  new_host_info() };
 
 } // anonymous namespace
 
 const calin::ix::provenance::system_info::BuildInfo*
-calin::provenance::system_info::build_info()
+calin::provenance::system_info::the_build_info()
 {
-  return singleton_build_info_;
+  return singleton_build_info_.get();
 }
 
 const calin::ix::provenance::system_info::HostAndProcessInfo*
-calin::provenance::system_info::host_info()
+calin::provenance::system_info::the_host_info()
 {
-  return singleton_host_info_;
+  return singleton_host_info_.get();
+}
+
+calin::ix::provenance::system_info::BuildInfo*
+calin::provenance::system_info::copy_the_build_info(calin::ix::provenance::system_info::BuildInfo* x)
+{
+  if(x == nullptr) x = new calin::ix::provenance::system_info::BuildInfo;
+  x->CopyFrom(*calin::provenance::system_info::the_build_info());
+  return x;
+}
+
+calin::ix::provenance::system_info::HostAndProcessInfo*
+calin::provenance::system_info::copy_the_host_info(calin::ix::provenance::system_info::HostAndProcessInfo* x)
+{
+  if(x == nullptr) x = new calin::ix::provenance::system_info::HostAndProcessInfo;
+  x->CopyFrom(*calin::provenance::system_info::the_host_info());
+  return x;
 }

@@ -24,10 +24,10 @@
 #include <iostream>
 #include <cassert>
 #include <simulation/tracker.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 
 using namespace calin::simulation::tracker;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 calin::simulation::tracker::ParticleType
 calin::simulation::tracker::pdg_type_to_particle_type(int pdg_type)

@@ -23,7 +23,7 @@
 
 #include <Eigen/Geometry>
 #include <simulation/bfield_track_generator.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <math/constants.hpp>
 #include <math/special.hpp>
 

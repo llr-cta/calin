@@ -28,12 +28,12 @@
 #include <math/hex_array.hpp>
 #include <iact_data/instrument_layout.hpp>
 #include <iact_data/nectarcam_layout.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 
 using calin::math::special::SQR;
 using namespace calin::math::hex_array;
 using namespace calin::ix::iact_data::instrument_layout;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 namespace {
 

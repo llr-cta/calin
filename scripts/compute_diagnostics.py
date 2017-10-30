@@ -29,16 +29,16 @@ import calin.diagnostics.module
 import calin.diagnostics.event_number
 import calin.diagnostics.delta_t
 import calin.io.sql_transceiver
-import calin.io.log
+import calin.util.log
 import calin.util.options_processor
 import calin.ix.scripts.compute_diagnostics
 
-py_log = calin.io.log.PythonLogger()
+py_log = calin.util.log.PythonLogger()
 py_log.this.disown()
-calin.io.log.default_logger().add_logger(py_log,True)
-proto_log = calin.io.log.ProtobufLogger()
+calin.util.log.default_logger().add_logger(py_log,True)
+proto_log = calin.util.log.ProtobufLogger()
 proto_log.this.disown()
-calin.io.log.default_logger().add_logger(proto_log,True)
+calin.util.log.default_logger().add_logger(proto_log,True)
 
 opt = calin.ix.scripts.compute_diagnostics.CommandLineOptions()
 opt.set_o('diagnostics.sqlite')
