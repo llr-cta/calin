@@ -35,6 +35,7 @@ calin::provenance::anthology::get_current_anthology(calin::ix::provenance::antho
 {
   if(x == nullptr) x = new calin::ix::provenance::anthology::Anthology;
   calin::util::timestamp::Timestamp::now().as_proto(x->mutable_timestamp());
+  x->mutable_default_log()->CopyFrom(calin::util::log::default_protobuf_logger()->log_messages());
   calin::provenance::system_info::copy_the_build_info(x->mutable_build_info());
   calin::provenance::system_info::copy_the_host_info(x->mutable_host_info());
   calin::provenance::chronicle::copy_the_chronicle(x->mutable_chronicle());
