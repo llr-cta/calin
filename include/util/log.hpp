@@ -146,6 +146,8 @@ public:
    calin::ix::util::log::Log log_;
 };
 
+ProtobufLogger* default_protobuf_logger();
+
 class PythonLogger: public Logger
 {
  public:

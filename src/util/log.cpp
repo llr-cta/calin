@@ -26,6 +26,7 @@
 #include <cstring>
 #include <sys/time.h>
 #include <time.h>
+#include <memory>
 
 #include <util/log.hpp>
 
@@ -117,7 +118,14 @@ write_message_lines(Writer &&writer,
   }
 }
 
+std::unique_ptr<ProtobufLogger> default_protobuf_logger_ { new ProtobufLogger };
+
 } // anonymous namespace
+
+ProtobufLogger* calin::util::log::default_protobuf_logger()
+{
+  return default_protobuf_logger_.get();
+}
 
 MultiLogger::~MultiLogger()
 {
@@ -139,6 +147,7 @@ void MultiLogger::log_message(Level level, const std::string& message,
 
   if(sub_loggers_.empty() and sub_streams_.empty())
   {
+    nolock_add_logger(default_protobuf_logger(), false);
     if(PythonLogger::is_python_initialised())
       nolock_add_logger(new PythonLogger, true);
     else

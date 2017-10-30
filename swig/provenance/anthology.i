@@ -1,8 +1,8 @@
 /*
 
-   calin/provenance/chronicle.i -- Stephen Fegan -- 2016-03-21
+   calin/provenance/anthology.i -- Stephen Fegan -- 2017-10-30
 
-   SWIG interface file provenance chronicle
+   SWIG interface file provenance anthology
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3
@@ -20,10 +20,10 @@
 
 */
 
-%module (package="calin.provenance") chronicle
+%module (package="calin.provenance") anthology
 
 %{
-#include "provenance/chronicle.hpp"
+#include "provenance/anthology.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -34,7 +34,7 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%import "provenance/chronicle.pb.i"
+%import "provenance/anthology.pb.i"
 
-%newobject *::copy_the_chronicle();
-%include "provenance/chronicle.hpp"
+%newobject *::get_current_anthology();
+%include "provenance/anthology.hpp"

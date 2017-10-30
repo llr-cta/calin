@@ -1,0 +1,44 @@
+/*
+
+   calin/proto/provenance/anthology.proto -- Stephen Fegan -- 2017-10-30
+
+   Protobufs for anthology of all provenance system info
+
+   Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "util/timestamp.proto";
+import "util/log.proto";
+import "provenance/chronicle.proto";
+import "provenance/system_info.proto";
+
+package calin.ix.provenance.anthology;
+
+
+message Anthology
+{
+  calin.ix.util.timestamp.Timestamp timestamp              = 1
+    [ (CFO).sql.inline_message=true ];
+  calin.ix.util.log.Log default_log                        = 2;
+
+  calin.ix.provenance.system_info.BuildInfo build_info     = 10;
+  calin.ix.provenance.system_info.HostAndProcessInfo host_info  = 11;
+
+  calin.ix.provenance.chronicle.Chronicle chronicle        = 20;
+}

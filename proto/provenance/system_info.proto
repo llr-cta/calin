@@ -77,7 +77,7 @@ message BuildInfo {
       "CMake." ];
 
   string build_system_user                                 = 106 [
-    (CFO).desc = "User running build from environment variable $USER." ];
+    (CFO).desc = "User running build from environment variable USER." ];
 
   string build_date                                        = 107 [
     (CFO).desc = "Date of build." ];
@@ -107,7 +107,7 @@ message HostAndProcessInfo {
     (CFO).desc = "User ID returned by getuid()." ];
 
   string user_name                                         = 3 [
-    (CFO).desc = "User name from environment variable $USER." ];
+    (CFO).desc = "User name from environment variable USER." ];
 
   calin.ix.util.timestamp.Timestamp process_start_time     = 4 [
     (CFO).desc = "Start time of process from gettimeofday().",

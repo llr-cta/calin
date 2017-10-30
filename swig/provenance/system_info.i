@@ -1,8 +1,8 @@
 /*
 
-   calin/simulation/pmt.i -- Stephen Fegan -- 2016-03-21
+   calin/provenance/system_info.i -- Stephen Fegan -- 2016-03-21
 
-   SWIG interface file for PMT simulation
+   SWIG interface file for provenance system build and host info
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3
