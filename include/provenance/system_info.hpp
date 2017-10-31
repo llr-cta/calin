@@ -29,6 +29,11 @@ namespace calin { namespace provenance { namespace system_info {
 const calin::ix::provenance::system_info::BuildInfo* the_build_info();
 const calin::ix::provenance::system_info::HostAndProcessInfo* the_host_info();
 
+inline const calin::ix::provenance::system_info::BuildInfo* build_info() {
+  // Backward compatibility function
+  return the_build_info();
+}
+
 #ifndef SWIG
 calin::ix::provenance::system_info::BuildInfo*
   copy_the_build_info(calin::ix::provenance::system_info::BuildInfo* x = nullptr);
