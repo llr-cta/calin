@@ -5,7 +5,7 @@
    Multi-purpose PE (weight, scope, pixel & time) processor.
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -26,8 +26,8 @@
 
 using namespace calin::simulation::pe_processor;
 
-#include <io/log.hpp>
-using namespace calin::io::log;
+#include <util/log.hpp>
+using namespace calin::util::log;
 
 PEProcessor::~PEProcessor()
 {

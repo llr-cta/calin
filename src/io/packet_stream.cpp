@@ -6,7 +6,7 @@
    compressed
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -26,17 +26,18 @@
 #include <fcntl.h>
 #include <stdexcept>
 
+#include <provenance/chronicle.hpp>
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/gzip_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <io/packet_stream.hpp>
 
 using namespace google::protobuf::io;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::io::packet_stream;
 
 PacketInStream::~PacketInStream()
@@ -220,6 +221,8 @@ FramedFilePacketInStream::FramedFilePacketInStream(const std::string& filename,
   int fd = open(filename.c_str(), O_RDONLY);
   if(fd==-1)throw std::runtime_error(std::string("Error opening \"") +
     filename + "\": " + std::strerror(errno));
+  calin::provenance::chronicle::register_file_open(filename,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   auto* filestream = new FileInputStream(fd);
   filestream->SetCloseOnDelete(true);
   upstream_ = new FramedZeroCopyPacketInStream(filestream, true);
@@ -246,6 +249,9 @@ FramedFilePacketOutStream::FramedFilePacketOutStream(const std::string& filename
   int fd = open(filename.c_str(), O_WRONLY|O_CREAT|(append?O_APPEND:O_TRUNC), mode);
   if(fd==-1)throw std::runtime_error(std::string("Error opening \"") +
     filename + "\" for writing: " + std::strerror(errno));
+  calin::provenance::chronicle::register_file_open(filename,
+    append?calin::ix::provenance::chronicle::AT_WRITE:
+      calin::ix::provenance::chronicle::AT_TRUNCATE, __PRETTY_FUNCTION__);
   auto* filestream = new FileOutputStream(fd);
   filestream->SetCloseOnDelete(true);
   downstream_ = new FramedZeroCopyPacketOutStream(filestream, true);

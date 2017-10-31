@@ -5,7 +5,7 @@
    VSO ray (weight, scope, ray) processor.
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -26,8 +26,8 @@
 using namespace calin::simulation::vso_ray_processor;
 using calin::math::special::SQR;
 
-#include <io/log.hpp>
-using namespace calin::io::log;
+#include <util/log.hpp>
+using namespace calin::util::log;
 
 VSOTracedRayVisitor::~VSOTracedRayVisitor()
 {
@@ -130,7 +130,7 @@ VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
   calin::simulation::ray_processor::RayProcessor(),
   array_(array), adopt_array_(adopt_array),
   visitor_(visitor), adopt_visitor_(adopt_visitor),
-  rng_(rng ? rng : new calin::math::rng::RNG),
+  rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)),
   adopt_rng_(rng ? adopt_rng : true),
   ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_)),
   scope_response_(array->numTelescopes())
@@ -146,7 +146,7 @@ VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
   array_(array), adopt_array_(adopt_array),
   visitor_(new VSOTracedRayVisitor2PEProcessorAdapter(visitor, adopt_visitor)),
   adopt_visitor_(true),
-  rng_(rng ? rng : new calin::math::rng::RNG),
+  rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)),
   adopt_rng_(rng ? adopt_rng : true),
   ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_)),
   scope_response_(array->numTelescopes())

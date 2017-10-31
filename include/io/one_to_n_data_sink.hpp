@@ -5,7 +5,7 @@
    A data sink that passes events to one of N data sources
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -27,7 +27,7 @@
 #include <cassert>
 
 #include <util/spinlock.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <io/data_source.hpp>
 #include <io/zmq_inproc_push_pull.hpp>
 #include <io/buffered_data_source.hpp>

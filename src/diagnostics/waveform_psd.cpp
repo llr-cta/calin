@@ -5,7 +5,7 @@
    Waveform diagnostics visitor
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -22,12 +22,12 @@
 
 #include <math/special.hpp>
 #include <math/fftw_util.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <diagnostics/waveform.hpp>
 
 using calin::math::special::SQR;
 using namespace calin::math::fftw_util;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::diagnostics::waveform;
 
 WaveformPSDVisitor::WaveformPSDVisitor():

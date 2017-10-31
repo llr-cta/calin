@@ -5,7 +5,7 @@
    Class to genereate random deviates from a PMT spectrum
 
    Copyright 2014, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -31,12 +31,12 @@
 #include <calin_global_definitions.hpp>
 #include <simulation/pmt.hpp>
 #include <math/special.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 
 using namespace calin::simulation::pmt;
 using calin::math::special::SQR;
 using calin::math::rng::RNG;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 SignalSource::~SignalSource()
 {
@@ -82,7 +82,7 @@ PMTSimPolya(const calin::ix::simulation::pmt::PMTSimAbbreviatedConfig& config,
   if(config.num_stage()==0)
     throw std::runtime_error("PMTSimPolya: number of stages must be positive.");
 
-  if(rng==nullptr)rng_ = my_rng_ = new RNG();
+  if(rng==nullptr)rng_ = my_rng_ = new RNG(__PRETTY_FUNCTION__);
   rng_->save_to_proto(config_.mutable_rng_config());
 
   config_.set_suppress_zero(config.suppress_zero());
@@ -298,7 +298,7 @@ PMTSimInvCDF::PMTSimInvCDF(const calin::ix::simulation::pmt::PMTSimPMF& cmf,
     unsigned npoint, math::rng::RNG* rng):
   SignalSource(), rng_(rng), my_rng_(nullptr)
 {
-  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG();
+  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG(__PRETTY_FUNCTION__);
 
   int iy0 = 0;
   if(cmf.suppress_zero())iy0 = 1;
@@ -326,7 +326,7 @@ PMTSimInvCDF::PMTSimInvCDF(const calin::ix::simulation::pmt::PMTSimPMF& cmf,
 PMTSimInvCDF::PMTSimInvCDF(const std::string& filename, math::rng::RNG* rng):
   SignalSource(), rng_(rng), my_rng_(nullptr)
 {
-  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG();
+  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG(__PRETTY_FUNCTION__);
   std::ifstream s(filename.c_str());
   if(!s)throw std::runtime_error(
     std::string("PMTSimInvCDF: Could not open file: ")+filename);
@@ -385,7 +385,7 @@ MultiPESpectrum(SignalSource* pmt,
   SignalSource(),  pmt_(pmt), rng_(rng), my_rng_(0), config_(config),
   signal_gamma_a_(), signal_gamma_b_()
 {
-  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG();
+  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG(__PRETTY_FUNCTION__);
   if(config_.signal_rms_frac()>0)
     {
       signal_gamma_a_ = 1.0/SQR(config_.signal_rms_frac());
@@ -444,7 +444,7 @@ PoissonSignalSim::PoissonSignalSim(SignalSource* pmt,
     math::rng::RNG* rng):
   pmt_(pmt), rng_(rng), my_rng_(0), config_(config)
 {
-  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG();
+  if(rng==nullptr)rng_ = my_rng_ = new math::rng::RNG(__PRETTY_FUNCTION__);
 }
 
 PoissonSignalSim::~PoissonSignalSim()

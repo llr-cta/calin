@@ -5,10 +5,10 @@
    Air shower track visitor to calcilate Cherenkov cone parameters.
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    Certain portions are from code that is Copyright 2012, Stephen Fegan
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -32,11 +32,11 @@
 #include <Eigen/Geometry>
 #include <math/special.hpp>
 #include <simulation/air_cherenkov_tracker.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <math/geometry.hpp>
 #include <cmath>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::simulation::air_cherenkov_tracker;
 using calin::math::special::SQR;
 
@@ -176,7 +176,7 @@ MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
     calin::math::rng::RNG* rng, bool adopt_visitor, bool adopt_rng):
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   epsilon0_(epsilon0), bandwidth_(bandwidth), do_color_photons_(do_color_photons),
-  rng_(rng ? rng : new calin::math::rng::RNG()), adopt_rng_(rng ? adopt_rng : true)
+  rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)), adopt_rng_(rng ? adopt_rng : true)
 {
   dX_emission_ = rng_->exponential();
 }

@@ -5,7 +5,7 @@
    Base class for all air shower track visitors
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -24,10 +24,10 @@
 #include <iostream>
 #include <cassert>
 #include <simulation/tracker.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 
 using namespace calin::simulation::tracker;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 calin::simulation::tracker::ParticleType
 calin::simulation::tracker::pdg_type_to_particle_type(int pdg_type)

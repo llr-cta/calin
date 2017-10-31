@@ -5,7 +5,7 @@
    Defines for configuration options
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -50,6 +50,7 @@
 #define CALIN_PYTHON_INSTALL_DIR       "${CMAKE_INSTALL_PREFIX}/${CALIN_PYTHON_INSTALL_DIR}"
 #define CALIN_BUILD_SYSTEM             "${CMAKE_SYSTEM}"
 #define CALIN_BUILD_TYPE               "${CMAKE_BUILD_TYPE}"
+#define CALIN_BUILD_ARCH               "${CALIN_BUILD_ARCH}"
 #define CALIN_BUILD_C_COMPILER_ID      "${CMAKE_C_COMPILER_ID}"
 #define CALIN_BUILD_CXX_COMPILER_ID    "${CMAKE_CXX_COMPILER_ID}"
 #define CALIN_BUILD_SYSTEM_FQDN        "${CALIN_SYSTEM_FQDN}"

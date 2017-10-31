@@ -5,7 +5,7 @@
    Base class for all air shower track visitors
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -25,14 +25,14 @@
 #include <cassert>
 #include <simulation/tracker.hpp>
 #include <simulation/misc_trackers.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <math/brent.hpp>
 #include <math/constants.hpp>
 
 using namespace calin::simulation::air_cherenkov_tracker;
 using namespace calin::simulation::tracker;
 using namespace calin::simulation::misc_trackers;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 LengthLimitingTrackVisitor::LengthLimitingTrackVisitor(TrackVisitor* visitor,
     double dx_max, double z_max, bool adopt_visitor): TrackVisitor(),
@@ -317,7 +317,7 @@ ShowerMovieProducerTrackVisitor(calin::simulation::atmosphere::Atmosphere* atm,
   if(config_.disable_cherenkov_light()) {
     if(atm and adopt_atm)delete atm;
   } else if(atm) {
-    auto* rng = new calin::math::rng::RNG();
+    auto* rng = new calin::math::rng::RNG(__PRETTY_FUNCTION__);
     cherenkov_ = new calin::simulation::air_cherenkov_tracker::AirCherenkovParameterCalculatorTrackVisitor(
       new MCCherenkovPhotonGenerator(new ShowerMovieProducerCherenkovPhotonVisitor(
           /* parent = */ this, atm, rng, atm_abs, adopt_atm_abs),

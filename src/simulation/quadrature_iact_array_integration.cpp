@@ -7,7 +7,7 @@
    cone.
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -27,10 +27,10 @@
 #include <simulation/iact_array_tracker.hpp>
 #include <simulation/quadrature_iact_array_integration.hpp>
 #include <math/special.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 
 using namespace calin::simulation::quadrature_iact_array_integration;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using calin::math::special::SQR;
 using calin::simulation::iact_array_tracker::IACTDetectorSphere;
 

@@ -5,7 +5,7 @@
    Generic camera layout functions
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -29,11 +29,11 @@
 
 #include <math/regular_grid.hpp>
 #include <iact_data/instrument_layout.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 
 using namespace calin::math::regular_grid;
 using namespace calin::ix::iact_data::instrument_layout;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 calin::math::regular_grid::Grid* calin::iact_data::instrument_layout::
 make_grid_from_instrument_layout(

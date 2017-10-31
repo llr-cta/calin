@@ -5,7 +5,7 @@
    A supplier of single telescope ACTL data from ZFits data files
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -24,14 +24,15 @@
 #include <memory>
 #include <cctype>
 
-#include <io/log.hpp>
+#include <util/log.hpp>
+#include <provenance/chronicle.hpp>
 #include <util/file.hpp>
 #include <iact_data/zfits_actl_data_source.hpp>
 #include <ProtobufIFits.h>
 #include <L0.pb.h>
 
 using namespace calin::iact_data::zfits_actl_data_source;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using calin::util::file::is_file;
 using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
@@ -111,6 +112,10 @@ ZFITSSingleFileACTLDataSource(const std::string& filename, config_type config):
   if(zfits_->eof() && !zfits_->bad())
     throw std::runtime_error("ZFits file " + filename_ + " has no table: " +
       config.events_table_name());
+
+  calin::provenance::chronicle::register_file_open(filename_,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
+
   if(config.verify_file_after_open() or config.repair_broken_file())
   {
     try

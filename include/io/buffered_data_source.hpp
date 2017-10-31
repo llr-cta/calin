@@ -6,7 +6,7 @@
    making it available
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -28,7 +28,7 @@
 #include <cassert>
 
 #include <util/spinlock.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <io/data_source.hpp>
 #include <io/zmq_inproc_push_pull.hpp>
 
@@ -84,7 +84,7 @@ public:
     {
       if(payload.arena == nullptr)return payload.ptr;
       if(!warning_sent_) {
-        io::log::LOG(io::log::WARNING) << "BufferedDataSource: "
+        util::log::LOG(util::log::WARNING) << "BufferedDataSource: "
           "arena not accepted, performing expensive copy";
         warning_sent_ = true;
       }
@@ -100,7 +100,7 @@ public:
     else
     {
       if(!warning_sent_) {
-        io::log::LOG(io::log::WARNING) << "BufferedDataSource: "
+        util::log::LOG(util::log::WARNING) << "BufferedDataSource: "
           "pre-assigned arena, performing expensive copy";
         warning_sent_ = true;
       }

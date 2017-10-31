@@ -1,7 +1,7 @@
 # calin/src/util/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+# LLR, Ecole Polytechnique, CNRS/IN2P3
 #
 # This file is part of "calin"
 #
@@ -14,11 +14,12 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_TARGET_LIBRARY calin_util)
-set(CALIN_SOURCES string.cpp file.cpp options_processor.cpp
-  string_to_protobuf.cpp)
+set(CALIN_SOURCES string.cpp file.cpp log.cpp options_processor.cpp
+  string_to_protobuf.cpp timestamp.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
-target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY} calin_proto)
+target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY} calin_proto_util calin_proto
+  ${PYTHON_LIBRARIES})
 
 add_library(${CALIN_TARGET_LIBRARY}_lite SHARED string.cpp)
 

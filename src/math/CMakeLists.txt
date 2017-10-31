@@ -1,7 +1,7 @@
 # calin/src/math/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+# LLR, Ecole Polytechnique, CNRS/IN2P3
 #
 # This file is part of "calin"
 #
@@ -28,7 +28,7 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY}
-	calin_nlopt calin_cminpack calin_chealpix calin_f2c calin_io
+	calin_nlopt calin_cminpack calin_chealpix calin_f2c calin_io calin_provenance
 	calin_proto_math ${EXTRA_LIBS})
 
 set_source_files_properties(minuit75_optimizer.cpp

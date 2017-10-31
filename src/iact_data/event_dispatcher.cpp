@@ -5,7 +5,7 @@
    A dispatcher of run and event data
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -24,12 +24,12 @@
 #include <type_traits>
 
 #include <util/string.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <iact_data/event_dispatcher.hpp>
 #include <io/one_to_n_data_sink.hpp>
 
 using namespace calin::util::string;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::iact_data::event_dispatcher;
 using namespace calin::iact_data::telescope_data_source;
 using namespace calin::ix::iact_data::telescope_event;

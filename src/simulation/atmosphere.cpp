@@ -5,7 +5,7 @@
    Classes to model density and refractive index of atmosphere
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -33,6 +33,7 @@
 #include<algorithm>
 
 #include <simulation/atmosphere.hpp>
+#include <provenance/chronicle.hpp>
 
 using namespace calin::simulation::atmosphere;
 
@@ -137,7 +138,8 @@ LayeredAtmosphere::LayeredAtmosphere(const std::string& filename):
   std::ifstream stream(filename.c_str());
   if(!stream)
     throw std::string("LayeredAtmosphere: could not open: ")+filename;
-
+  calin::provenance::chronicle::register_file_open(filename,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
   while(std::getline(stream, line))
   {

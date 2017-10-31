@@ -5,7 +5,7 @@
    Protobufs for build-time and run-time system information
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -23,7 +23,7 @@
 syntax = "proto3";
 
 import "calin.proto";
-//import "common_types.proto";
+import "util/timestamp.proto";
 
 package calin.ix.provenance.system_info;
 
@@ -58,25 +58,28 @@ message BuildInfo {
       "variable CMAKE_SYSTEM."];
 
   string build_type                                        = 101 [
-    (CFO).desc = "Build system operating system type from CMake "
-      "variable CMAKE_BUILD_TYPE." ];
+    (CFO).desc = "Build system type from CMake variable CMAKE_BUILD_TYPE." ];
 
-  string build_c_compiler_id                               = 102 [
+  string build_arch                                        = 102 [
+    (CFO).desc = "Build system architecture from calin CMake "
+      "variable CALIN_BUILD_ARCH." ];
+
+  string build_c_compiler_id                               = 103 [
     (CFO).desc = "Build system C compiler ID from CMake "
       "variable CMAKE_C_COMPILER_ID." ];
 
-  string build_cxx_compiler_id                             = 103 [
+  string build_cxx_compiler_id                             = 104 [
     (CFO).desc = "Build system C++ compiler ID from CMake "
-      "variable CMAKE_C_COMPILER_ID." ];
+      "variable CMAKE_CXX_COMPILER_ID." ];
 
-  string build_system_fqdn                                 = 104 [
+  string build_system_fqdn                                 = 105 [
     (CFO).desc = "Fully qualified domain name of build system host from "
       "CMake." ];
 
-  string build_system_user                                 = 105 [
-    (CFO).desc = "User running build from environment variable $USER." ];
+  string build_system_user                                 = 106 [
+    (CFO).desc = "User running build from environment variable USER." ];
 
-  string build_date                                        = 106 [
+  string build_date                                        = 107 [
     (CFO).desc = "Date of build." ];
 
   string git_origin_url                                    = 201 [
@@ -94,4 +97,164 @@ message BuildInfo {
   string git_repo_status                                   = 205 [
     (CFO).desc = "Status of git repo at time of configuration: "
       "\"clean\" or \"dirty\"." ];
+};
+
+message HostAndProcessInfo {
+  uint64 process_id                                        = 1 [
+    (CFO).desc = "Process ID returned by getpid()." ];
+
+  uint64 user_id                                           = 2 [
+    (CFO).desc = "User ID returned by getuid()." ];
+
+  string user_name                                         = 3 [
+    (CFO).desc = "User name from environment variable USER." ];
+
+  calin.ix.util.timestamp.Timestamp process_start_time     = 4 [
+    (CFO).desc = "Start time of process from gettimeofday().",
+    (CFO).sql.inline_message = true ];
+
+  string host_name                                         = 5 [
+    (CFO).desc = "Host name from uname.nodename (or gethostname)." ];
+
+  uint32 hardware_concurrency                              = 6 [
+    (CFO).desc = "Harware conurrency returned by C++-11 "
+      "std::thread::hardware_concurrency implementation." ];
+
+  map<string, string> environment                          = 7 [
+    (CFO).desc = "Map of environment variables." ];
+
+  string uname_sysname                                     = 100 [
+    (CFO).desc = "Name of the operating system implementation from uname()." ];
+
+  string uname_release                                     = 101 [
+    (CFO).desc = "Release level of the operating system." ];
+
+  string uname_version                                     = 102 [
+    (CFO).desc = "Version level of the operating system." ];
+
+  string uname_machine                                     = 103 [
+    (CFO).desc = "Machine hardware platform." ];
+
+  string cpu_vendor_string                                 = 200 [
+    (CFO).desc = "CPU vendor string from cpuid instruction, will probably "
+      "be either \"GenuineIntel\" or \"AuthenticAMD\"." ];
+
+  string cpu_processor_brand                               = 201 [
+    (CFO).desc = "CPU processor brand string (48 bytes max)" ];
+
+  uint32 cpu_model                                         = 202 [
+    (CFO).desc = "CPU model number (cpuid)" ];
+
+  uint32 cpu_family                                        = 203 [
+    (CFO).desc = "CPU family number (cpuid)" ];
+
+  uint32 cpu_stepping                                      = 204 [
+    (CFO).desc = "CPU stepping number (cpuid)" ];
+
+  bool cpu_has_fpu                                         = 210 [
+    (CFO).desc = "CPU indicates that it has FPU (cpuid)." ];
+
+  bool cpu_has_mmx                                         = 211 [
+    (CFO).desc = "CPU indicates that it has MMX (cpuid)." ];
+
+  bool cpu_has_sse                                         = 212 [
+    (CFO).desc = "CPU indicates that it has SSE (cpuid)." ];
+
+  bool cpu_has_sse2                                        = 213 [
+    (CFO).desc = "CPU indicates that it has SSE2 (cpuid)." ];
+
+  bool cpu_has_sse3                                        = 214 [
+    (CFO).desc = "CPU indicates that it has SSE3 (cpuid)." ];
+
+  bool cpu_has_ssse3                                       = 215 [
+    (CFO).desc = "CPU indicates that it has SSSE3 (cpuid)." ];
+
+  bool cpu_has_sse4_1                                      = 216 [
+    (CFO).desc = "CPU indicates that it has SSE4.1 (cpuid)." ];
+
+  bool cpu_has_sse4_2                                      = 217 [
+    (CFO).desc = "CPU indicates that it has SSE4.2 (cpuid)." ];
+
+  bool cpu_has_pclmulqdq                                   = 218 [
+    (CFO).desc = "CPU indicates that it has PCLMULQDQ (cpuid)." ];
+
+  bool cpu_has_avx                                         = 219 [
+    (CFO).desc = "CPU indicates that it has AVX (cpuid)." ];
+
+  bool cpu_has_avx2                                        = 220 [
+    (CFO).desc = "CPU indicates that it has AVX2 (cpuid)." ];
+
+  bool cpu_has_fma3                                        = 221 [
+    (CFO).desc = "CPU indicates that it has FMA-3 (cpuid)." ];
+
+  bool cpu_has_fma4                                        = 222 [
+    (CFO).desc = "CPU indicates that it has FMA-4 (cpuid)." ];
+
+  bool cpu_has_bmi1                                        = 223 [
+    (CFO).desc = "CPU indicates that it has BMI-1 (cpuid)." ];
+
+  bool cpu_has_bmi2                                        = 224 [
+    (CFO).desc = "CPU indicates that it has BMI-2 (cpuid)." ];
+
+  bool cpu_has_adx                                         = 225 [
+    (CFO).desc = "CPU indicates that it has ADX instructions (cpuid)." ];
+
+  bool cpu_has_avx512f                                     = 240 [
+    (CFO).desc = "CPU indicates that it has AVX-512 foundation (cpuid)." ];
+
+  bool cpu_has_avx512dq                                    = 241 [
+    (CFO).desc = "CPU indicates that it has AVX-512 doubleword and "
+      "quadword instructions (cpuid)." ];
+
+  bool cpu_has_avx512ifma                                  = 242 [
+    (CFO).desc = "CPU indicates that it has AVX-512 integer FMA "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512pf                                    = 243 [
+    (CFO).desc = "CPU indicates that it has AVX-512 prefetch "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512er                                    = 244 [
+    (CFO).desc = "CPU indicates that it has AVX-512 exponential and "
+      "reciprocal instructions (cpuid)." ];
+
+  bool cpu_has_avx512cd                                    = 245 [
+    (CFO).desc = "CPU indicates that it has AVX-512 conflict detection "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512bw                                    = 246 [
+    (CFO).desc = "CPU indicates that it has AVX-512 byte and word "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512vl                                    = 247 [
+    (CFO).desc = "CPU indicates that it has AVX-512 vector length "
+      "extensions (cpuid)." ];
+
+  bool cpu_has_avx512vbmi                                  = 248 [
+    (CFO).desc = "CPU indicates that it has AVX-512 vector BMI "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512vbmi2                                 = 249 [
+    (CFO).desc = "CPU indicates that it has AVX-512 vector BMI "
+      "instructions 2 (cpuid)." ];
+
+  bool cpu_has_avx512vnni                                  = 250 [
+    (CFO).desc = "CPU indicates that it has AVX-512 vector neural "
+      "network instructions (cpuid)." ];
+
+  bool cpu_has_avx512bitalg                                = 251 [
+    (CFO).desc = "CPU indicates that it has AVX-512 BITALG "
+      "instructions (cpuid)." ];
+
+  bool cpu_has_avx512vpopcntdq                             = 252 [
+    (CFO).desc = "CPU indicates that it has AVX-512 vector population "
+      "count D/Q (cpuid)." ];
+
+  bool cpu_has_avx512_4vnniw                               = 253 [
+    (CFO).desc = "CPU indicates that it has AVX-512 4-register neural "
+      "network instructions (cpuid)." ];
+
+  bool cpu_has_avx512_4fmaps                               = 254 [
+    (CFO).desc = "CPU indicates that it has AVX-512 4-register FMA "
+      "single-precision instructions (cpuid)." ];
 };

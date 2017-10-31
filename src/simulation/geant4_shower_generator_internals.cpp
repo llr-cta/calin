@@ -6,7 +6,7 @@
    Internals of Geant-4 extensive air shower generator
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -28,11 +28,11 @@
 #include<G4FieldManager.hh>
 
 #include <simulation/geant4_shower_generator_internals.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <math/geometry.hpp>
 
 using namespace calin::simulation::geant4_shower_generator;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 void calin::simulation::geant4_shower_generator::
 g4vec_to_eigen(Eigen::Vector3d& evec, const G4ThreeVector& g4vec)
@@ -437,10 +437,10 @@ G4bool EAS_ExceptionHandler::Notify(const char* originOfException,
 // ============================================================================
 
 CoutCerrLogger::
-CoutCerrLogger(calin::io::log::Level cout_level,
-               calin::io::log::Level cerr_level,
-               calin::io::log::Logger* cout_logger,
-               calin::io::log::Logger* cerr_logger,
+CoutCerrLogger(calin::util::log::Level cout_level,
+               calin::util::log::Level cerr_level,
+               calin::util::log::Logger* cout_logger,
+               calin::util::log::Logger* cerr_logger,
                bool adopt_cout_logger,
                bool adopt_cerr_logger):
     G4UIsession(), cout_level_(cout_level), cerr_level_(cerr_level),

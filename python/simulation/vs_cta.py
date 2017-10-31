@@ -3,7 +3,7 @@
 # Functions for returning instances of VSO for CTA arrays
 #
 # Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+# LLR, Ecole Polytechnique, CNRS/IN2P3
 #
 # This file is part of "calin"
 #
@@ -149,7 +149,7 @@ def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
 
     return lst
 
-def make_array(cfg, rng = calin.math.rng.RNG()):
+def make_array(cfg, rng = calin.math.rng.RNG('calin.simulation.vs_cta.make_array')):
     array = calin.simulation.vs_optics.VSOArray()
     if(type(cfg) is list):
         for icfg in cfg:

@@ -5,7 +5,7 @@
    Provenance information about build-time and run-time system environment
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -26,6 +26,25 @@
 
 namespace calin { namespace provenance { namespace system_info {
 
-const calin::ix::provenance::system_info::BuildInfo* build_info();
+const calin::ix::provenance::system_info::BuildInfo* the_build_info();
+const calin::ix::provenance::system_info::HostAndProcessInfo* the_host_info();
+
+inline const calin::ix::provenance::system_info::BuildInfo* build_info() {
+  // Backward compatibility function
+  return the_build_info();
+}
+
+#ifndef SWIG
+calin::ix::provenance::system_info::BuildInfo*
+  copy_the_build_info(calin::ix::provenance::system_info::BuildInfo* x = nullptr);
+calin::ix::provenance::system_info::HostAndProcessInfo*
+  copy_the_host_info(calin::ix::provenance::system_info::HostAndProcessInfo* x = nullptr);
+#else
+calin::ix::provenance::system_info::BuildInfo* copy_the_build_info();
+void copy_the_build_info(calin::ix::provenance::system_info::BuildInfo* x);
+calin::ix::provenance::system_info::HostAndProcessInfo* copy_the_host_info();
+void copy_the_host_info(calin::ix::provenance::system_info::HostAndProcessInfo* x);
+#endif
+
 
 } } } // namespace calin::provenance::system

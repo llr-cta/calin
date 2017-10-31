@@ -5,7 +5,7 @@
    Class to genereate random deviates from a PMT spectrum
 
    Copyright 2014, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 

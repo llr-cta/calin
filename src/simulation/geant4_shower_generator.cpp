@@ -5,7 +5,7 @@
    Class to generate extensive air showers using Geant-4
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -25,9 +25,10 @@
 #include <math/rng.hpp>
 #include <simulation/geant4_shower_generator.hpp>
 #include <simulation/geant4_shower_generator_internals.hpp>
+#include <provenance/chronicle.hpp>
 
 using namespace calin::simulation::geant4_shower_generator;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 Geant4ShowerGenerator::
 Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
@@ -43,24 +44,26 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
 {
   while(seed_ == 0)seed_ = calin::math::rng::RNG::uint32_from_random_device();
   CLHEP::HepRandom::setTheSeed(seed_);
+  calin::provenance::chronicle::register_external_rng(seed_, "CLHEP::HepRandom",
+    __PRETTY_FUNCTION__);
 
   // get the pointer to the User Interface manager
   ui_manager_ = G4UImanager::GetUIpointer();
 
   // construct a session which receives G4cout/G4cerr
 
-  calin::io::log::Level cout_level = calin::io::log::VERBOSE;
-  calin::io::log::Level cerr_level = calin::io::log::WARNING;
+  calin::util::log::Level cout_level = calin::util::log::VERBOSE;
+  calin::util::log::Level cerr_level = calin::util::log::WARNING;
   G4int verbose_everything = 0;
   G4int verbose_event = 0;
   G4int verbose_track = 0;
   switch(verbose_level)
   {
     case VerbosityLevel::SUPPRESSED_ALL:
-      cerr_level = calin::io::log::DISCARD;
+      cerr_level = calin::util::log::DISCARD;
       // fall through
     case VerbosityLevel::SUPRESSED_STDOUT:
-      cout_level = calin::io::log::DISCARD;
+      cout_level = calin::util::log::DISCARD;
       break;
     case VerbosityLevel::NORMAL:
       break;

@@ -5,7 +5,7 @@
    A supplier of single telescope data from NectarCam DAQ data files
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -24,14 +24,14 @@
 #include <memory>
 #include <cctype>
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <util/file.hpp>
 #include <iact_data/zfits_data_source.hpp>
 
 using namespace calin::iact_data::zfits_data_source;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::ix::iact_data::telescope_run_configuration;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using calin::util::file::is_file;
 using calin::util::file::is_readable;
 using calin::util::file::expand_filename;

@@ -6,7 +6,7 @@
    Internals of Geant-4 extensive air shower generator
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -31,7 +31,7 @@
 #include"simulation/atmosphere.hpp"
 #include"simulation/tracker.hpp"
 #include"math/special.hpp"
-#include"io/log.hpp"
+#include"util/log.hpp"
 #include"simulation/world_magnetic_model.hpp"
 
 #include"calin_global_definitions.hpp"
@@ -191,22 +191,22 @@ public:
 class CoutCerrLogger: public G4UIsession
 {
 public:
-  CoutCerrLogger(calin::io::log::Level cout_level = calin::io::log::VERBOSE,
-                 calin::io::log::Level cerr_level = calin::io::log::WARNING,
-                 calin::io::log::Logger* cout_logger =
-                 calin::io::log::default_logger(),
-                 calin::io::log::Logger* cerr_logger =
-                 calin::io::log::default_logger(),
+  CoutCerrLogger(calin::util::log::Level cout_level = calin::util::log::VERBOSE,
+                 calin::util::log::Level cerr_level = calin::util::log::WARNING,
+                 calin::util::log::Logger* cout_logger =
+                 calin::util::log::default_logger(),
+                 calin::util::log::Logger* cerr_logger =
+                 calin::util::log::default_logger(),
                  bool adopt_cout_logger = false,
                  bool adopt_cerr_logger = false);
   virtual ~CoutCerrLogger();
   G4int ReceiveG4cout(const G4String& cout_string) override;
   G4int ReceiveG4cerr(const G4String& cerr_string) override;
 protected:
-  calin::io::log::Level cout_level_;
-  calin::io::log::Level cerr_level_;
-  calin::io::log::Logger* cout_logger_;
-  calin::io::log::Logger* cerr_logger_;
+  calin::util::log::Level cout_level_;
+  calin::util::log::Level cerr_level_;
+  calin::util::log::Logger* cout_logger_;
+  calin::util::log::Logger* cerr_logger_;
   bool adopt_cout_logger_;
   bool adopt_cerr_logger_;
 };

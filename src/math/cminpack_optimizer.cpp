@@ -5,7 +5,7 @@
    Interface to ANL CMinpack optimizer suite
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -26,12 +26,12 @@
 
 #include <cminpack/cminpack.h>
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <math/cminpack_optimizer.hpp>
 #include <math/hessian.hpp>
 
 using namespace calin::math::optimizer;
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 CMinpackOptimizer::
 CMinpackOptimizer(function::MultiAxisFunction* fcn, bool adopt_fcn):
@@ -274,7 +274,7 @@ eval_func(unsigned n, const double* x, double* grad, double* hess, int iflag)
     }
     if(max_walltime()>0)
     {
-      TimeStamp ts = TimeStamp::now();
+      calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
       double tss = ts.seconds_since(opt_start_time_);
       if(tss > max_walltime())return -3;
     }

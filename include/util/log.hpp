@@ -1,11 +1,11 @@
 /*
 
-   calin/io/log.hpp -- Stephen Fegan -- 2015-05-12
+   calin/util/log.hpp -- Stephen Fegan -- 2015-05-12
 
    Class providing logging capabilities
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -29,27 +29,19 @@
 #include <vector>
 #include <mutex>
 #include <util/spinlock.hpp>
-#include <io/log.pb.h>
+#include <util/timestamp.hpp>
+#include <util/log.pb.h>
 
-namespace calin { namespace io { namespace log {
+namespace calin { namespace util { namespace log {
 
 enum Level { FATAL, ERROR, WARNING, INFO, SUCCESS, FAILURE, VERBOSE, DISCARD };
-
-struct TimeStamp
-{
-  std::string string() const;
-  static TimeStamp now();
-  double seconds_since(const TimeStamp& then);
-  uint64_t sec;
-  uint32_t usec;
-};
 
 class Logger
 {
  public:
   virtual ~Logger();
   virtual void log_message(Level level, const std::string& message,
-                           TimeStamp timestamp = TimeStamp::now()) = 0;
+    calin::util::timestamp::Timestamp timestamp = calin::util::timestamp::Timestamp::now()) = 0;
 };
 
 class MultiLogger: public Logger
@@ -57,7 +49,7 @@ class MultiLogger: public Logger
  public:
   virtual ~MultiLogger();
   void log_message(Level level, const std::string& message,
-                   TimeStamp timestamp = TimeStamp::now()) override;
+    calin::util::timestamp::Timestamp timestamp = calin::util::timestamp::Timestamp::now()) override;
 
   void add_logger(Logger* logger, bool adopt_logger = false);
   void add_stream(std::ostream* stream, bool adopt_stream = false,
@@ -148,11 +140,13 @@ public:
   ProtobufLogger(): Logger(), log_() { }
   virtual ~ProtobufLogger();
   void log_message(Level level, const std::string& message,
-                   TimeStamp timestamp = TimeStamp::now()) override;
-  calin::ix::io::log::Log log_messages() { return log_; }
+    calin::util::timestamp::Timestamp timestamp = calin::util::timestamp::Timestamp::now()) override;
+  calin::ix::util::log::Log log_messages() { return log_; }
  protected:
-   calin::ix::io::log::Log log_;
+   calin::ix::util::log::Log log_;
 };
+
+ProtobufLogger* default_protobuf_logger();
 
 class PythonLogger: public Logger
 {
@@ -160,7 +154,7 @@ class PythonLogger: public Logger
   PythonLogger(bool use_stderr = false): Logger(), use_stderr_(use_stderr) { }
   virtual ~PythonLogger();
   void log_message(Level level, const std::string& message,
-                   TimeStamp timestamp = TimeStamp::now()) override;
+    calin::util::timestamp::Timestamp timestamp = calin::util::timestamp::Timestamp::now()) override;
   static bool is_python_initialised();
  protected:
   bool use_stderr_ { false };
@@ -317,4 +311,4 @@ inline unsigned num_digits(unsigned x)
   return n;
 }
 
-} } } // namespace calin::io::log
+} } } // namespace calin::util::log

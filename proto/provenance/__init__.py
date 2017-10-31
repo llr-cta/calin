@@ -1,1 +1,1 @@
-all = ["system_info"]
+all = ["system_info","chronicle","anthology"]

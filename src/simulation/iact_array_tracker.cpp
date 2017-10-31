@@ -5,7 +5,7 @@
    Base class for all air shower track visitors
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -25,11 +25,11 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <simulation/iact_array_tracker.hpp>
 #include <math/special.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::simulation::iact_array_tracker;
 using calin::math::special::SQR;
 

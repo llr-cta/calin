@@ -5,7 +5,7 @@
 # Compute diagnostics from ZFits file, saving them to SQLITE3
 #
 # Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+# LLR, Ecole Polytechnique, CNRS/IN2P3
 #
 # This file is part of "calin"
 #
@@ -29,16 +29,15 @@ import calin.diagnostics.module
 import calin.diagnostics.event_number
 import calin.diagnostics.delta_t
 import calin.io.sql_transceiver
-import calin.io.log
+import calin.util.log
+import calin.provenance.anthology
 import calin.util.options_processor
 import calin.ix.scripts.compute_diagnostics
 
-py_log = calin.io.log.PythonLogger()
+py_log = calin.util.log.PythonLogger()
 py_log.this.disown()
-calin.io.log.default_logger().add_logger(py_log,True)
-proto_log = calin.io.log.ProtobufLogger()
-proto_log.this.disown()
-calin.io.log.default_logger().add_logger(proto_log,True)
+calin.util.log.default_logger().add_logger(calin.util.log.default_protobuf_logger(),False)
+calin.util.log.default_logger().add_logger(py_log,True)
 
 opt = calin.ix.scripts.compute_diagnostics.CommandLineOptions()
 opt.set_o('diagnostics.sqlite')
@@ -224,7 +223,7 @@ dispatcher.add_visitor(delta_t_capture)
 # T0 rise time functional
 t0_calc = calin.iact_data.functional_event_visitor.\
     NoPedestalTimingFunctionalTelescopeEventVisitor()
-dispatcher.add_visitor(t0_calc, 
+dispatcher.add_visitor(t0_calc,
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 
 # T0 rise time stats
@@ -253,10 +252,14 @@ for ichan in capture_channels:
 # Run all the visitors
 dispatcher.process_run(src,100000,opt.nthread())
 
+# Open SQL file
+sql = calin.io.sql_transceiver.SQLite3Transceiver(sql_file,
+    calin.io.sql_transceiver.SQLite3Transceiver.TRUNCATE_RW)
+
 # Get the results
 results = calin.ix.scripts.compute_diagnostics.Results()
 results.mutable_command_line_options().CopyFrom(opt)
-results.mutable_log().CopyFrom(proto_log.log_messages())
+calin.provenance.anthology.get_current_anthology(results.mutable_provenance())
 results.mutable_run_config().CopyFrom(run_info)
 for ichan in capture_channels:
     results.add_captured_channel_ids(ichan)
@@ -280,8 +283,6 @@ delta_t_values = delta_t_capture.results()
 t0 = t0_stats.results()
 
 # Write the results
-sql = calin.io.sql_transceiver.SQLite3Transceiver(sql_file,
-    calin.io.sql_transceiver.SQLite3Transceiver.TRUNCATE_RW)
 sql.create_tables(opt.db_results_table_name(), results.descriptor())
 sql.insert(opt.db_results_table_name(), results)
 

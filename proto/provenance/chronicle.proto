@@ -1,0 +1,65 @@
+/*
+
+   calin/proto/provenance/chronicle.proto -- Stephen Fegan -- 2017-10-30
+
+   Protobufs for system chronicle
+
+   Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "util/timestamp.proto";
+import "math/rng.proto";
+
+package calin.ix.provenance.chronicle;
+
+enum AccessType { AT_READ      = 0;
+                  AT_WRITE     = 1;
+                  AT_TRUNCATE  = 2;
+                  AT_READWRITE = 3; }
+
+message FileIORecord
+{
+  calin.ix.util.timestamp.Timestamp timestamp              = 1
+    [ (CFO).sql.inline_message=true ];
+  AccessType access                                        = 2;
+  string file_name                                         = 3;
+  string comment                                           = 4;
+  uint64 file_size                                         = 5;
+  calin.ix.util.timestamp.Timestamp file_mtime             = 6
+    [ (CFO).sql.inline_message=true ];
+  string opened_by                                         = 7;
+}
+
+message RNGRecord
+{
+  calin.ix.util.timestamp.Timestamp timestamp              = 1
+    [ (CFO).sql.inline_message=true ];
+  oneof rng_data {
+    calin.ix.math.rng.RNGData calin_rng                    = 2;
+    calin.ix.math.rng.ExternalRNGData external_rng         = 3;
+  }
+  string comment                                           = 4;
+  string created_by                                        = 5;
+}
+
+message Chronicle
+{
+  repeated FileIORecord file_io_record                     = 1;
+  repeated RNGRecord rng_record                            = 10;
+}

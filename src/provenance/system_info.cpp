@@ -5,7 +5,7 @@
    Provenance information about build-time and run-time system environment
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    Based on original, copyright 2006, Stephen Fegan, see notice below
 
@@ -22,8 +22,21 @@
 
 */
 
+#include <unistd.h>
+#include <sys/utsname.h>
+#include <cpuid.h>
+
+#include <thread>
+#include <memory>
+
 #include <calin_global_config.hpp>
 #include <provenance/system_info.hpp>
+#include <util/log.hpp>
+#include <util/timestamp.hpp>
+
+extern char **environ;
+
+#include "cpuid_bits.h"
 
 namespace {
 
@@ -41,6 +54,7 @@ calin::ix::provenance::system_info::BuildInfo* new_build_info()
   info->set_python_install_dir(CALIN_PYTHON_INSTALL_DIR);
   info->set_build_system(CALIN_BUILD_SYSTEM);
   info->set_build_type(CALIN_BUILD_TYPE);
+  info->set_build_arch(CALIN_BUILD_ARCH);
   info->set_build_c_compiler_id(CALIN_BUILD_C_COMPILER_ID);
   info->set_build_cxx_compiler_id(CALIN_BUILD_CXX_COMPILER_ID);
   info->set_build_system_fqdn(CALIN_BUILD_SYSTEM_FQDN);
@@ -54,13 +68,167 @@ calin::ix::provenance::system_info::BuildInfo* new_build_info()
   return info;
 };
 
-calin::ix::provenance::system_info::BuildInfo* singleton_build_info_ =
-  new_build_info();
+std::unique_ptr<calin::ix::provenance::system_info::BuildInfo> singleton_build_info_ {
+  new_build_info() };
+
+bool append_4chars(std::string& t, unsigned u)
+{
+  for(unsigned i=0; i<4; ++i) {
+    char c = u & 0xFF;
+    if(c == '\0')return false;
+    t += c;
+    u >>= 8;
+  }
+  return true;
+}
+
+calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
+{
+  calin::ix::provenance::system_info::HostAndProcessInfo* info =
+    new calin::ix::provenance::system_info::HostAndProcessInfo;
+  info->set_process_id(::getpid());
+  info->set_user_id(::getuid());
+  if(::getenv("USER"))info->set_user_name(::getenv("USER"));
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  ts.as_proto(info->mutable_process_start_time());
+  // char hostname_buffer[256];
+  // gethostname(hostname_buffer, 255);
+  // info->set_host_name(hostname_buffer);
+  info->set_hardware_concurrency(std::thread::hardware_concurrency());
+
+  for(char** ienv = environ; *ienv; ++ienv) {
+    std::string env(*ienv);
+    auto iequals = env.find_first_of('=');
+    if(iequals == std::string::npos)
+      (*info->mutable_environment())[env] = "";
+    else if(iequals == env.size()-1)
+      (*info->mutable_environment())[env.substr(0,iequals)] = "";
+    else
+      (*info->mutable_environment())[env.substr(0,iequals)] = env.substr(iequals+1);
+  }
+
+  struct utsname uname_info;
+  ::uname(&uname_info);
+  info->set_uname_sysname(uname_info.sysname);
+  // info->set_uname_nodename(uname_info.nodename);
+  info->set_host_name(uname_info.nodename);
+  info->set_uname_release(uname_info.release);
+  info->set_uname_version(uname_info.version);
+  info->set_uname_machine(uname_info.machine);
+
+  unsigned a,b,c,d;
+  __cpuid (0 /* vendor string */, a, b, c, d);
+
+  unsigned max_frame = a;
+  std::string vendor_string_12char;
+  append_4chars(vendor_string_12char, b) &&
+  append_4chars(vendor_string_12char, d) &&
+  append_4chars(vendor_string_12char, c);
+  info->set_cpu_vendor_string(vendor_string_12char);
+
+  __cpuid (0x80000000U /* get highest extended function support */, a, b, c, d);
+  unsigned max_eframe = a;
+  if(max_eframe >= 0x80000004U)
+  {
+    std::string processor_brand_48char;
+    bool more = true;
+    for(unsigned iframe = 0x80000002; more && iframe<=0x80000004; iframe++)
+    {
+      __cpuid (iframe /* processor brand string */ , a, b, c, d);
+      more = append_4chars(processor_brand_48char, a) &&
+        append_4chars(processor_brand_48char, b) &&
+        append_4chars(processor_brand_48char, c) &&
+        append_4chars(processor_brand_48char, d);
+    }
+    info->set_cpu_processor_brand(processor_brand_48char);
+  }
+
+  if(max_frame >= 1)
+  {
+    __cpuid (1 /* Processor Info and Feature Bits */, a, b, c, d);
+
+    info->set_cpu_model(((a>>4)&0x0F) + ((a>>12)&0xF0));
+    info->set_cpu_family(((a>>8)&0x0F) + ((a>>20)&0x0F));
+    info->set_cpu_stepping(a & 0x0F);
+    info->set_cpu_has_fpu(d & 1);
+    info->set_cpu_has_mmx(d & bit_MMX);
+    info->set_cpu_has_sse(d & bit_SSE);
+    info->set_cpu_has_sse2(d & bit_SSE2);
+    info->set_cpu_has_sse3(c & bit_SSE3);
+    info->set_cpu_has_ssse3(c & bit_SSSE3);
+    info->set_cpu_has_sse4_1(c & bit_SSE4_1);
+    info->set_cpu_has_sse4_2(c & bit_SSE4_2);
+    info->set_cpu_has_pclmulqdq(c & bit_PCLMUL);
+    info->set_cpu_has_avx(c & bit_AVX);
+    info->set_cpu_has_fma3(c & bit_FMA);
+  }
+
+  if(max_frame >= 7)
+  {
+    __cpuid_count (7, 0 /* Extended Features */, a, b, c, d);
+
+    info->set_cpu_has_avx2(b & bit_AVX2);
+    info->set_cpu_has_bmi1(b & bit_BMI);
+    info->set_cpu_has_bmi2(b & bit_BMI2);
+    info->set_cpu_has_adx(b & bit_ADX);
+    info->set_cpu_has_avx512f(b & bit_AVX512F);
+    info->set_cpu_has_avx512dq(b & bit_AVX512DQ);
+    info->set_cpu_has_avx512ifma(b & bit_AVX512IFMA);
+    info->set_cpu_has_avx512pf(b & bit_AVX512PF);
+    info->set_cpu_has_avx512er(b & bit_AVX512ER);
+    info->set_cpu_has_avx512cd(b & bit_AVX512CD);
+    info->set_cpu_has_avx512bw(b & bit_AVX512BW);
+    info->set_cpu_has_avx512vl(b & bit_AVX512VL);
+
+    info->set_cpu_has_avx512vbmi(c & bit_AVX512VBMI);
+    info->set_cpu_has_avx512vbmi2(c & bit_AVX512VBMI2);
+    info->set_cpu_has_avx512vnni(c & bit_AVX512VNNI);
+    info->set_cpu_has_avx512bitalg(c & bit_AVX512BITALG);
+    info->set_cpu_has_avx512vpopcntdq(c & bit_AVX512VPOPCNTDQ);
+
+    info->set_cpu_has_avx512_4vnniw(d & bit_AVX512_4VNNIW);
+    info->set_cpu_has_avx512_4fmaps(d & bit_AVX512_4FMAPS);
+  }
+
+  if(max_eframe >= 0x80000001)
+  {
+    __cpuid (0x80000001 /* Extended Processor Info and Feature Bits */, a, b, c, d);
+
+    info->set_cpu_has_fma4(c & bit_FMA4);
+  }
+
+  return info;
+}
+
+std::unique_ptr<calin::ix::provenance::system_info::HostAndProcessInfo> singleton_host_info_ {
+  new_host_info() };
 
 } // anonymous namespace
 
 const calin::ix::provenance::system_info::BuildInfo*
-calin::provenance::system_info::build_info()
+calin::provenance::system_info::the_build_info()
 {
-  return singleton_build_info_;
+  return singleton_build_info_.get();
+}
+
+const calin::ix::provenance::system_info::HostAndProcessInfo*
+calin::provenance::system_info::the_host_info()
+{
+  return singleton_host_info_.get();
+}
+
+calin::ix::provenance::system_info::BuildInfo*
+calin::provenance::system_info::copy_the_build_info(calin::ix::provenance::system_info::BuildInfo* x)
+{
+  if(x == nullptr) x = new calin::ix::provenance::system_info::BuildInfo;
+  x->CopyFrom(*calin::provenance::system_info::the_build_info());
+  return x;
+}
+
+calin::ix::provenance::system_info::HostAndProcessInfo*
+calin::provenance::system_info::copy_the_host_info(calin::ix::provenance::system_info::HostAndProcessInfo* x)
+{
+  if(x == nullptr) x = new calin::ix::provenance::system_info::HostAndProcessInfo;
+  x->CopyFrom(*calin::provenance::system_info::the_host_info());
+  return x;
 }

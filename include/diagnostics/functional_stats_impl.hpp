@@ -6,7 +6,7 @@
    cross-channel covariance
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -105,8 +105,7 @@ visit_telescope_run(
   if(hg_mean_hist_config.weight_units().empty())
     hg_mean_hist_config.set_weight_units("events");
   if(config_.mean_hist_dxval_multiplier() == 0.0)
-    hg_mean_hist_config.set_dxval(hg_mean_hist_config.dxval()
-      / std::sqrt(nchan));
+    hg_mean_hist_config.set_dxval(hg_mean_hist_config.dxval() / nchan);
   else
     hg_mean_hist_config.set_dxval(hg_mean_hist_config.dxval()
       * config_.mean_hist_dxval_multiplier());
@@ -146,8 +145,7 @@ visit_telescope_run(
   if(lg_mean_hist_config.weight_units().empty())
     lg_mean_hist_config.set_weight_units("events");
   if(config_.mean_hist_dxval_multiplier() == 0.0)
-    lg_mean_hist_config.set_dxval(lg_mean_hist_config.dxval()
-      / std::sqrt(nchan));
+    lg_mean_hist_config.set_dxval(lg_mean_hist_config.dxval() / nchan);
   else
     lg_mean_hist_config.set_dxval(lg_mean_hist_config.dxval()
       * config_.mean_hist_dxval_multiplier());

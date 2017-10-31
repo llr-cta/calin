@@ -5,7 +5,7 @@
    Base class for SQL statements
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -23,10 +23,10 @@
 #include <sstream>
 
 #include <calin.pb.h>
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <io/sql_statement.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::io::sql_transceiver;
 using namespace google::protobuf;
 

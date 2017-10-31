@@ -7,7 +7,7 @@
    Protobufs for storing RNG state
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -122,4 +122,14 @@ message RNGData
     [(CFO).desc = "Flag for U32 deviate value available."];
   fixed64 dev32_cachedval               = 13
     [(CFO).desc = "U32 cached deviate."];
+}
+
+message ExternalRNGData
+{
+  fixed64 seed                          = 1
+    [(CFO).desc = "RNG seed."];
+  string rng_type                       = 2
+    [(CFO).desc = "RNG type."];
+  bytes rng_data                        = 3
+    [(CFO).desc = "RNG data."];
 }

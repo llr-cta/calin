@@ -5,7 +5,7 @@
    Unit tests for logging class
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -26,9 +26,9 @@
 #include <thread>
 #include <gtest/gtest.h>
 
-#include "io/log.hpp"
+#include "util/log.hpp"
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 
 TEST(TestLog, WriteStream) {
   default_logger()->add_cerr(true,true);

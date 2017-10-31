@@ -5,7 +5,7 @@
    Interface to the NOAA World Magnetic Model (WMM)
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -24,6 +24,7 @@
 #include <cerrno>
 
 #include <provenance/system_info.hpp>
+#include <provenance/chronicle.hpp>
 #include <simulation/GeomagnetismHeader.h>
 #include <simulation/EGM9615.h>
 #include <simulation/world_magnetic_model.hpp>
@@ -75,6 +76,8 @@ WMM::WMM(const std::string& cof_file, double date):
       + "\n" + strerror(errno));
   if(mag_->magnetic_models[0] == nullptr)
     throw std::runtime_error("Magnetic model is NULL");
+  calin::provenance::chronicle::register_file_open(cof_file,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
 
   if(date == 0)mag_->date = mag_->magnetic_models[0]->epoch;
   else mag_->date = date;
@@ -136,6 +139,6 @@ WMM_FieldVsElevation WMM::field_vs_elevation(double latitude_deg,
 
 std::string WMM::default_cof_file()
 {
-  return calin::provenance::system_info::build_info()->data_install_dir()
+  return calin::provenance::system_info::the_build_info()->data_install_dir()
     + "/simulation/WMM.COF";
 }

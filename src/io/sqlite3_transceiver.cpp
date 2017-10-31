@@ -5,7 +5,7 @@
    Provides reading and writing of protobuf structures to SQLite3 databases
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -22,12 +22,14 @@
 
 #include <unistd.h>
 #include <cstring>
+#include <stdexcept>
 
-#include <io/log.hpp>
+#include <provenance/chronicle.hpp>
+#include <util/log.hpp>
 #include <io/sqlite3_transceiver.hpp>
 #include <util/file.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::io::sql_transceiver;
 
 SQLite3Transceiver::
@@ -38,6 +40,7 @@ SQLite3Transceiver(const std::string& filename_in, OpenMode open_mode,
   std::string filename = calin::util::file::expand_filename(filename_in);
   if(open_mode == TRUNCATE_RW and filename.front() != ':' and
      filename.back() != ':')unlink(filename.c_str());
+
   int flags { 0 };
   switch(open_mode) {
     case EXISTING_OR_NEW_RW:
@@ -48,7 +51,24 @@ SQLite3Transceiver(const std::string& filename_in, OpenMode open_mode,
     case READ_ONLY:
       flags = SQLITE_OPEN_READONLY; break;
   }
-  sqlite3_open_v2(filename.c_str(), &db_, flags, NULL);
+  if(sqlite3_open_v2(filename.c_str(), &db_, flags, NULL) != SQLITE_OK)
+    throw std::runtime_error("Could not open: " + filename_in + "\n" +
+      sqlite3_errmsg(db_));
+
+  calin::ix::provenance::chronicle::AccessType access;
+  switch(open_mode) {
+  case EXISTING_OR_NEW_RW:
+  case EXISTING_RW:
+    access = calin::ix::provenance::chronicle::AT_READWRITE; break;
+  case TRUNCATE_RW:
+    access = calin::ix::provenance::chronicle::AT_TRUNCATE; break;
+  case READ_ONLY:
+  default:
+    access = calin::ix::provenance::chronicle::AT_READ; break;
+  }
+
+  calin::provenance::chronicle::register_file_open(filename, access,
+    __PRETTY_FUNCTION__);
 }
 
 SQLite3Transceiver::~SQLite3Transceiver()

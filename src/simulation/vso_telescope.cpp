@@ -5,7 +5,7 @@
    Class for telescope, a container for obscurations, mirrors and pixels
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -23,7 +23,7 @@
 #include <sstream>
 #include <algorithm>
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <math/special.hpp>
 #include <math/hex_array.hpp>
 #include <math/regular_grid.hpp>
@@ -32,7 +32,7 @@
 #include <simulation/vs_optics.pb.h>
 #include <iact_data/instrument_layout.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::simulation::vs_optics;
 using calin::math::special::SQR;
 

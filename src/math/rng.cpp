@@ -6,7 +6,7 @@
    by the author while at UCLA in 2007.
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -43,6 +43,7 @@
 #include <random>
 
 #include <math/rng.hpp>
+#include <provenance/chronicle.hpp>
 
 using namespace calin::math::rng;
 
@@ -65,7 +66,7 @@ RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGData& proto,
   }
 }
 
-RNG::RNG(CoreType core_type): core_(nullptr), adopt_core_(true)
+RNG::RNG(CoreType core_type, const std::string& created_by): core_(nullptr), adopt_core_(true)
 {
   switch(core_type) {
     case CoreType::NR3:
@@ -78,11 +79,15 @@ RNG::RNG(CoreType core_type): core_(nullptr), adopt_core_(true)
       core_ = new MT19937RNGCore;
       break;
     default:
-      assert(0);
+      throw std::invalid_argument("Unsupported RNG core type: " + std::to_string(int(core_type)));
   }
+  const ix::math::rng::RNGData* proto = this->as_proto();
+  calin::provenance::chronicle::register_calin_rng(*proto, created_by);
+  delete proto;
 }
 
-RNG::RNG(uint64_t seed, CoreType core_type): core_(nullptr), adopt_core_(true)
+RNG::RNG(uint64_t seed, CoreType core_type, const std::string& created_by):
+  core_(nullptr), adopt_core_(true)
 {
   switch(core_type) {
     case CoreType::NR3:
@@ -95,8 +100,11 @@ RNG::RNG(uint64_t seed, CoreType core_type): core_(nullptr), adopt_core_(true)
       core_ = new MT19937RNGCore(seed);
       break;
     default:
-      assert(0);
+      throw std::invalid_argument("Unsupported RNG core type: " + std::to_string(int(core_type)));
   }
+  const ix::math::rng::RNGData* proto = this->as_proto();
+  calin::provenance::chronicle::register_calin_rng(*proto, created_by);
+  delete proto;
 }
 
 RNG::RNG(RNGCore* core, bool adopt_core):
@@ -105,7 +113,7 @@ RNG::RNG(RNGCore* core, bool adopt_core):
   // nothing to see here
 }
 
-RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state):
+RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state, const std::string& created_by):
     core_(RNGCore::create_from_proto(proto, restore_state)), adopt_core_(true)
 {
   if(restore_state)
@@ -115,6 +123,9 @@ RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state):
     dev32_hascached_ = proto.dev32_hascached();
     dev32_cachedval_ = proto.dev32_cachedval();
   }
+  const ix::math::rng::RNGData* proto2 = this->as_proto();
+  calin::provenance::chronicle::register_calin_rng(*proto2, created_by);
+  delete proto2;
 }
 
 RNG::~RNG()

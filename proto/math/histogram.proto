@@ -7,7 +7,7 @@
    Protobufs for representing histograms
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -32,7 +32,7 @@ message Histogram1DConfig {
   double dxval                          = 1
     [(CFO).desc = "Bin width", (CFO).units = "xval-units" ];
   double xval_align                     = 2
-    [(CFO).desc = "Bin alignment, such that (x0 mod dx)=xalign, where x0 is "
+    [(CFO).desc = "Bin alignment, such that (x0 mod dx)=(xalign mod dx), where x0 is "
       "the x-value at the left hand side of the first (or any) bin.",
      (CFO).units = "bins" ];
   bool limited                          = 5

@@ -7,7 +7,7 @@
    be faster.
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -24,10 +24,10 @@
 
 #include <math/ray.hpp>
 #include <math/special.hpp>
-#include <io/log.hpp>
+#include <util/log.hpp>
 
 using namespace calin::math::ray;
-using namespace calin::io::log;
+using namespace calin::util::log;
 using calin::math::special::SQR;
 
 //! Propagates free particle to the given plane

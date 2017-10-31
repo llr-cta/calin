@@ -5,7 +5,7 @@
    Geanerate rays in space using some algorithm.
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -23,8 +23,8 @@
 #include <math/geometry.hpp>
 #include <math/ray_generator.hpp>
 
-#include <io/log.hpp>
-using namespace calin::io::log;
+#include <util/log.hpp>
+using namespace calin::util::log;
 
 using namespace calin::math::ray_generator;
 

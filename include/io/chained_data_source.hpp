@@ -6,7 +6,7 @@
    (RandomAccess)DataSource together
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <io/data_source.hpp>
 
 namespace calin { namespace io { namespace data_source {

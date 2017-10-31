@@ -5,7 +5,7 @@
    Base class providing interface to function optimizers (minimizers)
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -26,7 +26,8 @@
 #include <vector>
 #include <Eigen/Core>
 
-#include "io/log.hpp"
+#include "util/timestamp.hpp"
+#include "util/log.hpp"
 #include "function.hpp"
 #include "hessian.hpp"
 
@@ -164,7 +165,7 @@ class Optimizer
 
   OptimizationStatus opt_status_ { OptimizationStatus::OPTIMIZER_FAILURE };
   std::string opt_message_ { "Live long and prosper" };
-  io::log::TimeStamp opt_start_time_;
+  calin::util::timestamp::Timestamp opt_start_time_;
   unsigned iterations_ { 0 };
   double fbest_ { inf };
   Eigen::VectorXd xbest_;

@@ -5,7 +5,7 @@
    Multi-purpose ray (weight, scope, ray) processor.
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole polytechnique, CNRS/IN2P3, Universite Paris-Saclay
+   LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
 
@@ -20,10 +20,10 @@
 
 */
 
-#include <io/log.hpp>
+#include <util/log.hpp>
 #include <simulation/ray_processor.hpp>
 
-using namespace calin::io::log;
+using namespace calin::util::log;
 using namespace calin::simulation::ray_processor;
 
 RayProcessor::~RayProcessor()
