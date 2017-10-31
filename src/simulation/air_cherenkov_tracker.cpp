@@ -176,7 +176,7 @@ MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
     calin::math::rng::RNG* rng, bool adopt_visitor, bool adopt_rng):
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   epsilon0_(epsilon0), bandwidth_(bandwidth), do_color_photons_(do_color_photons),
-  rng_(rng ? rng : new calin::math::rng::RNG()), adopt_rng_(rng ? adopt_rng : true)
+  rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)), adopt_rng_(rng ? adopt_rng : true)
 {
   dX_emission_ = rng_->exponential();
 }

@@ -74,10 +74,15 @@ class RNG
 {
 public:
   enum class CoreType { NR3, RANLUX48, MT19937 /*, DEV_RANDOM*/ };
-  RNG(CoreType core_type = CoreType::NR3);
-  RNG(uint64_t seed, CoreType core_type = CoreType::NR3);
+  RNG(CoreType core_type = CoreType::NR3, const std::string& created_by = "");
+  RNG(const std::string& created_by, CoreType core_type = CoreType::NR3):
+    RNG(core_type, created_by) { /* nothing to see here */ }
+  RNG(uint64_t seed, CoreType core_type = CoreType::NR3, const std::string& created_by = "");
+  RNG(uint64_t seed, const std::string& created_by, CoreType core_type = CoreType::NR3):
+    RNG(seed, core_type, created_by) { /* nothing to see here */ }
   RNG(RNGCore* core, bool adopt_core = false);
-  RNG(const ix::math::rng::RNGData& proto, bool restore_state = false);
+  RNG(const ix::math::rng::RNGData& proto, bool restore_state = false,
+    const std::string& created_by = "");
 
   ~RNG();
 

@@ -25,6 +25,7 @@
 #include <math/rng.hpp>
 #include <simulation/geant4_shower_generator.hpp>
 #include <simulation/geant4_shower_generator_internals.hpp>
+#include <provenance/chronicle.hpp>
 
 using namespace calin::simulation::geant4_shower_generator;
 using namespace calin::util::log;
@@ -43,6 +44,8 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
 {
   while(seed_ == 0)seed_ = calin::math::rng::RNG::uint32_from_random_device();
   CLHEP::HepRandom::setTheSeed(seed_);
+  calin::provenance::chronicle::register_external_rng(seed_, "CLHEP::HepRandom",
+    __PRETTY_FUNCTION__);
 
   // get the pointer to the User Interface manager
   ui_manager_ = G4UImanager::GetUIpointer();

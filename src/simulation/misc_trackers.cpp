@@ -317,7 +317,7 @@ ShowerMovieProducerTrackVisitor(calin::simulation::atmosphere::Atmosphere* atm,
   if(config_.disable_cherenkov_light()) {
     if(atm and adopt_atm)delete atm;
   } else if(atm) {
-    auto* rng = new calin::math::rng::RNG();
+    auto* rng = new calin::math::rng::RNG(__PRETTY_FUNCTION__);
     cherenkov_ = new calin::simulation::air_cherenkov_tracker::AirCherenkovParameterCalculatorTrackVisitor(
       new MCCherenkovPhotonGenerator(new ShowerMovieProducerCherenkovPhotonVisitor(
           /* parent = */ this, atm, rng, atm_abs, adopt_atm_abs),

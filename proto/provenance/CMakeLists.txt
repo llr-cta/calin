@@ -18,6 +18,6 @@ set(CALIN_PACKAGE provenance)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 
 make_proto_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})
-target_link_libraries(${CALIN_TARGET_LIBRARY} calin_proto_util)
+target_link_libraries(${CALIN_TARGET_LIBRARY} calin_proto_util calin_proto_math)
 make_proto_swig_modules(${CALIN_TARGET_LIBRARY}
 		${CALIN_PROTO_SWIG_INSTALL_DIR}/${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})
