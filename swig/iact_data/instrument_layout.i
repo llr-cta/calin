@@ -36,5 +36,7 @@
 
 %newobject make_grid_from_instrument_layout;
 
+%apply Eigen::VectorXi &OUTPUT { Eigen::VectorXi& map };
+
 %import "iact_data/instrument_layout.pb.i"
 %include "iact_data/instrument_layout.hpp"

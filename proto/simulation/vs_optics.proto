@@ -553,6 +553,10 @@ message HexPixelArrayParameters
     [(CFO).desc = "List of the Hex IDs of the modules (or pixels if "
      "hex_module_size<=1) missing from each camera. If none are missing this "
      "should be empty."];
+  bool hex_module_layout_use_b_configuration               = 13
+    [(CFO).desc = "True if hex clustering algorithm should use \"b\" layout. "
+      "There are two ways to configure hexagonal modules, this forces use of "
+      "the second."];
 };
 
 message IsotropicDCArrayParameters {

@@ -37,17 +37,17 @@ using namespace calin::util::log;
 
 calin::math::regular_grid::Grid* calin::iact_data::instrument_layout::
 make_grid_from_instrument_layout(
-  const calin::ix::iact_data::instrument_layout::CameraLayout* camera_layout,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& camera_layout,
   double grid_plate_scale)
 {
-  switch(camera_layout->pixel_grid_layout())
+  switch(camera_layout.pixel_grid_layout())
   {
   case calin::ix::iact_data::instrument_layout::CameraLayout::HEX_GRID:
     return new calin::math::regular_grid::HexGrid(
-      camera_layout->pixel_grid_spacing()*grid_plate_scale,
-      camera_layout->pixel_grid_rotation()/180.0*M_PI,
-      camera_layout->pixel_grid_offset_x()*grid_plate_scale,
-      camera_layout->pixel_grid_offset_y()*grid_plate_scale);
+      camera_layout.pixel_grid_spacing()*grid_plate_scale,
+      camera_layout.pixel_grid_rotation()/180.0*M_PI,
+      camera_layout.pixel_grid_offset_x()*grid_plate_scale,
+      camera_layout.pixel_grid_offset_y()*grid_plate_scale);
   default:
     return nullptr;
   }
@@ -81,7 +81,7 @@ namespace {
 void calin::iact_data::instrument_layout::compute_camera_and_module_outlines(
   calin::ix::iact_data::instrument_layout::CameraLayout* camera_layout)
 {
-  auto* grid = make_grid_from_instrument_layout(camera_layout);
+  auto* grid = make_grid_from_instrument_layout(*camera_layout);
   if(grid == nullptr)
     throw std::runtime_error("compute_camera_and_module_outlines: camera must "
       "have standard grid.");
@@ -108,5 +108,28 @@ void calin::iact_data::instrument_layout::compute_camera_and_module_outlines(
       module_layout->mutable_outline_polygon_vertex_index(),
       module_layout->mutable_outline_polygon_vertex_x(),
       module_layout->mutable_outline_polygon_vertex_y());
+  }
+}
+
+void calin::iact_data::instrument_layout::map_channels_using_grid(
+  Eigen::VectorXi& map,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& from,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& to)
+{
+  std::map<unsigned, int> grid_map;
+  for(unsigned ichan=0; ichan<from.channel_size(); ichan++) {
+    auto& chan = from.channel(ichan);
+    if(chan.pixel_grid_index() >= 0)
+      grid_map[chan.pixel_grid_index()] = chan.channel_index();
+  }
+  map.resize(to.channel_size());
+  for(unsigned ichan=0; ichan<to.channel_size(); ichan++) {
+    auto& chan = to.channel(ichan);
+    if(chan.pixel_grid_index() < 0)
+      map[ichan] = -1;
+    else if(grid_map.find(chan.pixel_grid_index()) == grid_map.end())
+      map[ichan] = -1;
+    else
+      map[ichan] = grid_map[chan.pixel_grid_index()];
   }
 }

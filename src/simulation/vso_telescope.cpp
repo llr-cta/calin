@@ -547,9 +547,11 @@ populateMirrorsAndPixelsRandom(
     modules_missing.insert(iid);
 
   unsigned module_size = param.pixel().hex_module_size();
+  bool use_a_config = true;
+  if(param.pixel().hex_module_layout_use_b_configuration())use_a_config = false;
   std::set<unsigned> pixel_hexids;
   if(modules_missing.find(0) == modules_missing.end())
-    for(auto id : math::hex_array::cluster_hexid_to_member_hexid(0, module_size))
+    for(auto id : math::hex_array::cluster_hexid_to_member_hexid(0, module_size, use_a_config))
       pixel_hexids.insert(id);
   unsigned module_ring_id = 1;
   bool module_ring_in_camera = true;
@@ -569,7 +571,7 @@ populateMirrorsAndPixelsRandom(
         if(modules_missing.find(module_id) != modules_missing.end())
           continue;
         int u, v;
-        math::hex_array::cluster_hexid_to_center_uv(module_id, module_size, u, v);
+        math::hex_array::cluster_hexid_to_center_uv(module_id, module_size, u, v, use_a_config);
         double x, z;
         math::hex_array::uv_to_xy_trans(u, v, x, z,
           fCosPixelRotation, fSinPixelRotation, fPixelSpacing,
@@ -579,7 +581,7 @@ populateMirrorsAndPixelsRandom(
 	        continue; // skip module if position too far out
         module_ring_in_camera = true;
         for(auto id : math::hex_array::
-            cluster_hexid_to_member_hexid(module_id, module_size))
+            cluster_hexid_to_member_hexid(module_id, module_size, use_a_config))
           pixel_hexids.insert(id);
       }
     module_ring_id++;
@@ -803,13 +805,15 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
     modules_missing.insert(iid);
 
   unsigned module_size = param.pixel().hex_module_size();
+  bool use_a_config = true;
+  if(param.pixel().hex_module_layout_use_b_configuration())use_a_config = false;
   std::map<unsigned, std::pair<unsigned, unsigned> > pixel_hexids;
   unsigned module_index = 0;
   if(modules_missing.find(0) == modules_missing.end())
   {
     auto* m = c->add_module();
     unsigned modchan_id = 0;
-    for(auto id : math::hex_array::cluster_hexid_to_member_hexid(0, module_size)) {
+    for(auto id : math::hex_array::cluster_hexid_to_member_hexid(0, module_size, use_a_config)) {
       pixel_hexids[id] = std::make_pair(module_index, modchan_id);
       m->add_channels_in_module(id); // temporarily add hexid
       ++modchan_id;
@@ -834,7 +838,7 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
         if(modules_missing.find(module_id) != modules_missing.end())
           continue;
         int u, v;
-        math::hex_array::cluster_hexid_to_center_uv(module_id, module_size, u, v);
+        math::hex_array::cluster_hexid_to_center_uv(module_id, module_size, u, v, use_a_config);
         double x, z;
         math::hex_array::uv_to_xy(u, v, x, z);
         if(param.focal_plane().camera_diameter()>0 and
@@ -844,7 +848,7 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
         unsigned modchan_id = 0;
         auto* m = c->add_module();
         for(auto id : math::hex_array::
-            cluster_hexid_to_member_hexid(module_id, module_size)) {
+            cluster_hexid_to_member_hexid(module_id, module_size, use_a_config)) {
           m->add_channels_in_module(id); // temporarily add hexid
           pixel_hexids[id] = std::make_pair(module_index, modchan_id);
           ++modchan_id;
