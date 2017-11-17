@@ -28,12 +28,15 @@
 #include <google/protobuf/repeated_field.h>
 
 #include <math/regular_grid.hpp>
+#include <math/special.hpp>
 #include <iact_data/instrument_layout.hpp>
 #include <util/log.hpp>
 
 using namespace calin::math::regular_grid;
 using namespace calin::ix::iact_data::instrument_layout;
 using namespace calin::util::log;
+
+using calin::math::special::SQR;
 
 calin::math::regular_grid::Grid* calin::iact_data::instrument_layout::
 make_grid_from_instrument_layout(
@@ -118,13 +121,13 @@ void calin::iact_data::instrument_layout::map_channels_using_grid(
 {
   std::map<unsigned, int> grid_map;
   for(unsigned ichan=0; ichan<from.channel_size(); ichan++) {
-    auto& chan = from.channel(ichan);
+    const auto& chan = from.channel(ichan);
     if(chan.pixel_grid_index() >= 0)
       grid_map[chan.pixel_grid_index()] = chan.channel_index();
   }
   map.resize(to.channel_size());
   for(unsigned ichan=0; ichan<to.channel_size(); ichan++) {
-    auto& chan = to.channel(ichan);
+    const auto& chan = to.channel(ichan);
     if(chan.pixel_grid_index() < 0)
       map[ichan] = -1;
     else if(grid_map.find(chan.pixel_grid_index()) == grid_map.end())
@@ -132,4 +135,43 @@ void calin::iact_data::instrument_layout::map_channels_using_grid(
     else
       map[ichan] = grid_map[chan.pixel_grid_index()];
   }
+}
+
+void calin::iact_data::instrument_layout::map_channels_using_from_coordinates(
+  Eigen::VectorXi& map,
+  const std::vector<double>& from_x, const std::vector<double>& from_y,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& to,
+  double tolerance)
+{
+  tolerance *= tolerance;
+  if(from_x.size() != from_y.size())
+    throw std::runtime_error("X and Y coordinate vectors must be same size.");
+  map.resize(to.channel_size());
+  for(unsigned ichan=0; ichan<to.channel_size(); ichan++) {
+    const auto& chan = to.channel(ichan);
+    map[ichan] = -1;
+    for(unsigned jchan=0; jchan<from_x.size(); jchan++) {
+      double d2 = SQR(chan.x()-from_x[jchan])+SQR(chan.y()-from_y[jchan]);
+      if(d2 < tolerance) {
+        map[ichan] = jchan;
+        break;
+      }
+    }
+  }
+}
+
+void calin::iact_data::instrument_layout::map_channels_using_from_coordinates(
+  Eigen::VectorXi& map,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& from,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& to,
+  double tolerance)
+{
+  std::vector<double> from_x(from.channel_size());
+  std::vector<double> from_y(from.channel_size());
+  for(unsigned ichan=0; ichan<from.channel_size(); ichan++) {
+    const auto& chan = from.channel(ichan);
+    from_x[ichan] = chan.x();
+    from_y[ichan] = chan.y();
+  }
+  map_channels_using_from_coordinates(map, from_x, from_y, to, tolerance);
 }

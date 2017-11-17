@@ -43,4 +43,16 @@ void map_channels_using_grid(
   const calin::ix::iact_data::instrument_layout::CameraLayout& from,
   const calin::ix::iact_data::instrument_layout::CameraLayout& to);
 
+void map_channels_using_from_coordinates(
+  Eigen::VectorXi& map,
+  const std::vector<double>& from_x, const std::vector<double>& from_y,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& to,
+  double tolerance = 0.1);
+
+void map_channels_using_from_coordinates(
+  Eigen::VectorXi& map,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& from,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& to,
+  double tolerance = 0.1);
+
 } } } // namespace calin::iact_data::instrument_layout
