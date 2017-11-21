@@ -120,13 +120,13 @@ void calin::iact_data::instrument_layout::map_channels_using_grid(
   const calin::ix::iact_data::instrument_layout::CameraLayout& to)
 {
   std::map<unsigned, int> grid_map;
-  for(unsigned ichan=0; ichan<from.channel_size(); ichan++) {
+  for(int ichan=0; ichan<from.channel_size(); ichan++) {
     const auto& chan = from.channel(ichan);
     if(chan.pixel_grid_index() >= 0)
       grid_map[chan.pixel_grid_index()] = chan.channel_index();
   }
   map.resize(to.channel_size());
-  for(unsigned ichan=0; ichan<to.channel_size(); ichan++) {
+  for(int ichan=0; ichan<to.channel_size(); ichan++) {
     const auto& chan = to.channel(ichan);
     if(chan.pixel_grid_index() < 0)
       map[ichan] = -1;
@@ -147,10 +147,10 @@ void calin::iact_data::instrument_layout::map_channels_using_from_coordinates(
   if(from_x.size() != from_y.size())
     throw std::runtime_error("X and Y coordinate vectors must be same size.");
   map.resize(to.channel_size());
-  for(unsigned ichan=0; ichan<to.channel_size(); ichan++) {
+  for(int ichan=0; ichan<to.channel_size(); ichan++) {
     const auto& chan = to.channel(ichan);
     map[ichan] = -1;
-    for(unsigned jchan=0; jchan<from_x.size(); jchan++) {
+    for(int jchan=0; jchan<from_x.size(); jchan++) {
       double d2 = SQR(chan.x()-from_x[jchan])+SQR(chan.y()-from_y[jchan]);
       if(d2 < tolerance) {
         map[ichan] = jchan;

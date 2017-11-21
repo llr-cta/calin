@@ -41,7 +41,7 @@ public:
   calin::ix::util::timestamp::Timestamp* as_proto(calin::ix::util::timestamp::Timestamp* x = nullptr) const;
 #else
   calin::ix::util::timestamp::Timestamp* as_proto() const;
-  void as_proto(calin::ix::util::timestamp::Timestamp* x = nullptr) const;
+  void as_proto(calin::ix::util::timestamp::Timestamp* x) const;
 #endif
   static Timestamp now();
   double seconds_since(const Timestamp& then) const;
