@@ -150,7 +150,7 @@ void calin::iact_data::instrument_layout::map_channels_using_from_coordinates(
   for(int ichan=0; ichan<to.channel_size(); ichan++) {
     const auto& chan = to.channel(ichan);
     map[ichan] = -1;
-    for(int jchan=0; jchan<from_x.size(); jchan++) {
+    for(unsigned jchan=0; jchan<from_x.size(); jchan++) {
       double d2 = SQR(chan.x()-from_x[jchan])+SQR(chan.y()-from_y[jchan]);
       if(d2 < tolerance) {
         map[ichan] = jchan;
@@ -168,7 +168,7 @@ void calin::iact_data::instrument_layout::map_channels_using_from_coordinates(
 {
   std::vector<double> from_x(from.channel_size());
   std::vector<double> from_y(from.channel_size());
-  for(unsigned ichan=0; ichan<from.channel_size(); ichan++) {
+  for(int ichan=0; ichan<from.channel_size(); ichan++) {
     const auto& chan = from.channel(ichan);
     from_x[ichan] = chan.x();
     from_y[ichan] = chan.y();
