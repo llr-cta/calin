@@ -147,8 +147,8 @@ bool NectarCamCameraEventDecoder::decode(
       uint16_t bunch_counter;
       uint16_t event_counter;
       uint32_t ts1;
-      uint8_t  ts2_event;
-      uint8_t  ts2_bunch;
+      int8_t   ts2_event;
+      int8_t   ts2_bunch;
       uint16_t ts2_empty;
     }__attribute__((packed));
 
@@ -194,10 +194,14 @@ bool NectarCamCameraEventDecoder::decode(
       module_data->set_ts2_event(mod_counter->ts2_event);
       module_data->set_ts2_empty(mod_counter->ts2_empty);
 
+#if 0 // OBSOLETE version of TS2 definition
 #define ts2_decode(x) ((x)&0xF0?((x)&0xC0?((x)&0x80?0:1):((x)&0x20?2:3)):\
                                 ((x)&0x0C?((x)&0x08?4:5):((x)&0x02?6:7)))
-      int ts2_bunch = ts2_decode(mod_counter->ts2_bunch);
-      int ts2_event = ts2_decode(mod_counter->ts2_event);
+#else
+#define ts2_decode(x) int64_t(x)
+#endif
+      int64_t ts2_bunch = ts2_decode(mod_counter->ts2_bunch);
+      int64_t ts2_event = ts2_decode(mod_counter->ts2_event);
       int64_t time_ns = mod_counter->bunch_counter*1000000000LL
         + mod_counter->ts1*8LL + ts2_event - ts2_bunch;
       auto* module_clocks = calin_event->add_module_clock();
@@ -217,6 +221,7 @@ bool NectarCamCameraEventDecoder::decode(
   if(cta_event->uctsdatapresence() and cta_event->has_uctsdata() and
     cta_event->uctsdata().has_data())
   {
+    // Reference : https://forge.in2p3.fr/projects/cta/repository/entry/ACTL/ExternalDevicesCommunication/trunk/TiCkSdecode/ticks_decode.c
     struct CDTSMessageData {
       uint32_t event_counter;
       uint32_t pps_counter;
@@ -247,6 +252,12 @@ bool NectarCamCameraEventDecoder::decode(
     calin_cdts_data->set_trigger_type(cdts_data->trigger_type);
     calin_cdts_data->set_white_rabbit_status(cdts_data->white_rabbit_status);
     calin_cdts_data->set_arbitrary_information(cdts_data->arbitrary_information);
+
+    if(cdts_data->white_rabbit_status == 1) {
+      auto* calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(0);
+      calin_clock->mutable_time()->set_time_ns(cdts_data->ucts_timestamp);
+    }
   }
 
   // ==========================================================================

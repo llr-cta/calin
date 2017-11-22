@@ -73,10 +73,10 @@ message NectarCamModuleData {
       "from 1."];
   uint32 ts1                                                = 5 [
     (CFO).desc = "125MHz counter, reset by 1PPS."];
-  uint32 ts2_event                                          = 6 [
-    (CFO).desc = "1ns precision indicator for event."];
-  uint32 ts2_bunch                                          = 7 [
-    (CFO).desc = "1ns precision indicator for 1PPS arrival."];
+  int32 ts2_event                                           = 6 [
+    (CFO).desc = "2ns precision indicator for event."];
+  int32 ts2_bunch                                           = 7 [
+    (CFO).desc = "2ns precision indicator for 1PPS arrival."];
   uint32 ts2_empty                                          = 8 [
     (CFO).desc = "Empty value."];
 };
