@@ -198,12 +198,15 @@ bool NectarCamCameraEventDecoder::decode(
 #define ts2_decode(x) ((x)&0xF0?((x)&0xC0?((x)&0x80?0:1):((x)&0x20?2:3)):\
                                 ((x)&0x0C?((x)&0x08?4:5):((x)&0x02?6:7)))
 #else
-#define ts2_decode(x) int64_t(x)
+#define ts2_decode(x) int32_t(x)
 #endif
-      int64_t ts2_bunch = ts2_decode(mod_counter->ts2_bunch);
-      int64_t ts2_event = ts2_decode(mod_counter->ts2_event);
-      int64_t time_ns = mod_counter->bunch_counter*1000000000LL
-        + mod_counter->ts1*8LL + ts2_event - ts2_bunch;
+      int32_t ts2_bunch = ts2_decode(mod_counter->ts2_bunch);
+      int32_t ts2_event = ts2_decode(mod_counter->ts2_event);
+      int32_t ts = mod_counter->ts1*8 + ts2_event - ts2_bunch;
+
+      module_data->set_bunch_event_time(ts);
+
+      int64_t time_ns = mod_counter->bunch_counter*1000000000LL + ts;
       auto* module_clocks = calin_event->add_module_clock();
       module_clocks->set_module_id(imod);
       auto* clock = module_clocks->add_clock();

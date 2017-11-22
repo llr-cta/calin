@@ -79,6 +79,9 @@ message NectarCamModuleData {
     (CFO).desc = "2ns precision indicator for 1PPS arrival."];
   uint32 ts2_empty                                          = 8 [
     (CFO).desc = "Empty value."];
+  int32 bunch_event_time                                    = 9 [
+    (CFO).desc = "Time within bunch, computed by combining TS1 and TS2.",
+    (CFO).units = "ns" ];
 };
 
 message CameraSpecificModuleData {
