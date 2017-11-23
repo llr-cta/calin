@@ -330,6 +330,26 @@ bool NectarCamCameraEventDecoder::decode(
 
   // ==========================================================================
   //
+  // FIGURE OUT EVENT TIME
+  //
+  // ==========================================================================
+
+  if(calin_event->has_cdts_data()) {
+    calin_event->mutable_absolute_event_time()->set_time_ns(
+      calin_event->cdts_data().camera_timestamp());
+  } else {
+    // Now what cat? Now what?
+  }
+
+  if(calin_event->has_absolute_event_time()) {
+    if(run_start_time_ == 0)
+      run_start_time_ = calin_event->absolute_event_time().time_ns();
+    calin_event->mutable_elapsed_event_time()->set_time_ns(
+      calin_event->absolute_event_time().time_ns() - run_start_time_);
+  }
+
+  // ==========================================================================
+  //
   // SERIALIZE RAW DATA
   //
   // ==========================================================================

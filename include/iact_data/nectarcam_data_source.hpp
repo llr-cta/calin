@@ -71,6 +71,7 @@ private:
   unsigned get_nmod_from_event(const DataModel::CameraEvent* cta_event) const;
 
   config_type config_;
+  int64_t run_start_time_ = 0;
 };
 
 class NectarCamZFITSDataSource:

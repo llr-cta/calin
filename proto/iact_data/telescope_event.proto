@@ -273,10 +273,15 @@ message TelescopeEvent {
       "its index in the data. For each module present in the event we are "
       "guarenteed that module_id[module_index[id]]=id."];
 
-  repeated Clock camera_clock                               = 20 [
+  common_types.Time absolute_event_time                     = 20 [
+    (CFO).desc = "Best reconstructed absolute TAI time of event." ];
+  common_types.Time elapsed_event_time                      = 21 [
+    (CFO).desc = "Best reconstructed time of event since beginning of run." ];
+  repeated Clock camera_clock                               = 22 [
     (CFO).desc = "Vector of camera clock times associated with event." ];
-  repeated ModuleClocks module_clock                        = 21 [
+  repeated ModuleClocks module_clock                        = 23 [
     (CFO).desc = "Vector of camera clock times associated with event." ];
+
 
   TIBData tib_data                                          = 30 [
     (CFO).desc = "Raw TIB data values for this event." ];
