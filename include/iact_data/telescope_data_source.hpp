@@ -29,7 +29,7 @@
 #include <iact_data/telescope_event.pb.h>
 #include <iact_data/telescope_run_configuration.pb.h>
 
-#include "CoreMessages.pb.h"
+#include <CoreMessages.pb.h>
 
 namespace calin { namespace iact_data { namespace telescope_data_source {
 
