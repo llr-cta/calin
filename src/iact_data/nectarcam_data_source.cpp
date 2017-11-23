@@ -336,7 +336,7 @@ bool NectarCamCameraEventDecoder::decode(
 
   if(calin_event->has_cdts_data()) {
     calin_event->mutable_absolute_event_time()->set_time_ns(
-      calin_event->cdts_data().camera_timestamp());
+      calin_event->cdts_data().ucts_timestamp());
   } else {
     // Now what cat? Now what?
   }
