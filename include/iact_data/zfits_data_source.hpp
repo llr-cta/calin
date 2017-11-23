@@ -31,6 +31,10 @@
 #include <iact_data/zfits_data_source.pb.h>
 #include <iact_data/telescope_data_source.hpp>
 
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+#include <CoreMessages.pb.h>
+#endif
+
 namespace calin { namespace iact_data { namespace zfits_data_source {
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
@@ -136,6 +140,12 @@ private:
   CTACameraEventDecoder* decoder_ = nullptr;
   ZFITSDataSource::config_type config_;
 };
+
+void decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_data,
+  const DataModel::AnyArray& cta_array);
+
+void decode_tib_data(calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
+  const DataModel::AnyArray& cta_array);
 
 #endif
 } } } // namespace calin::iact_data::nectarcam_data_source

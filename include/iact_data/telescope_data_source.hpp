@@ -29,8 +29,6 @@
 #include <iact_data/telescope_event.pb.h>
 #include <iact_data/telescope_run_configuration.pb.h>
 
-#include <CoreMessages.pb.h>
-
 namespace calin { namespace iact_data { namespace telescope_data_source {
 
 CALIN_TYPEALIAS(TelescopeDataSource,
@@ -74,13 +72,6 @@ public:
   virtual calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* get_run_configuration() = 0;
 };
-
-void decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_data,
-  const DataModel::AnyArray& cta_array);
-
-void decode_tib_data(calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
-  const DataModel::AnyArray& cta_array);
-
 
 } } } // namespace calin::iact_data::telescope_data_source
 

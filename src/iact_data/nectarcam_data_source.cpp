@@ -224,7 +224,7 @@ bool NectarCamCameraEventDecoder::decode(
   if(cta_event->uctsdatapresence() and cta_event->has_uctsdata() and
     cta_event->uctsdata().has_data())
   {
-    calin::iact_data::telescope_data_source::decode_cdts_data(
+    calin::iact_data::zfits_data_source::decode_cdts_data(
       calin_event->mutable_cdts_data(), cta_event->uctsdata().data());
 
     if(calin_event->cdts_data().white_rabbit_status() == 1) {
@@ -243,7 +243,7 @@ bool NectarCamCameraEventDecoder::decode(
   if(cta_event->tibdatapresence() and cta_event->has_tibdata() and
     cta_event->tibdata().has_data())
   {
-    calin::iact_data::telescope_data_source::decode_tib_data(
+    calin::iact_data::zfits_data_source::decode_tib_data(
       calin_event->mutable_tib_data(), cta_event->tibdata().data());
   }
 
@@ -260,9 +260,7 @@ bool NectarCamCameraEventDecoder::decode(
     // Now what cat? Now what?
   }
 
-  if(calin_event->has_absolute_event_time()) {
-    if(run_start_time_ == 0)
-      run_start_time_ = calin_event->absolute_event_time().time_ns();
+  if(calin_event->has_absolute_event_time() and run_start_time_!=0) {
     calin_event->mutable_elapsed_event_time()->set_time_ns(
       calin_event->absolute_event_time().time_ns() - run_start_time_);
   }
@@ -382,7 +380,7 @@ bool NectarCamCameraEventDecoder::decode_run_config(
     cta_event->uctsdata().has_data())
   {
     calin::ix::iact_data::telescope_event::CDTSData calin_cdts_data;
-    calin::iact_data::telescope_data_source::decode_cdts_data(
+    calin::iact_data::zfits_data_source::decode_cdts_data(
       &calin_cdts_data, cta_event->uctsdata().data());
 
     if(calin_cdts_data.white_rabbit_status() == 1) {
