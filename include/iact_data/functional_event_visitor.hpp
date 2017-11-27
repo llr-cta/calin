@@ -136,17 +136,17 @@ private:
   DualGainInt32FunctionalTelescopeEventVisitor* bkg_value_supplier_;
 };
 
-class NoPedestalTimingFunctionalTelescopeEventVisitor:
+class RisetimeTimingFunctionalTelescopeEventVisitor:
   public DualGainDoubleFunctionalTelescopeEventVisitor
 {
 public:
-  NoPedestalTimingFunctionalTelescopeEventVisitor();
-  virtual ~NoPedestalTimingFunctionalTelescopeEventVisitor();
+  RisetimeTimingFunctionalTelescopeEventVisitor();
+  virtual ~RisetimeTimingFunctionalTelescopeEventVisitor();
 
   bool demand_waveforms() override;
   bool is_parallelizable() override;
 
-  NoPedestalTimingFunctionalTelescopeEventVisitor* new_sub_visitor(
+  RisetimeTimingFunctionalTelescopeEventVisitor* new_sub_visitor(
       const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
           calin::iact_data::event_visitor::TelescopeEventVisitor*>&
         antecedent_visitors) override;
@@ -183,6 +183,102 @@ protected:
 
   double high_gain_value_ = 0.0;
   double low_gain_value_ = 0.0;
+};
+
+class MeantimeTimingFunctionalTelescopeEventVisitor:
+  public DualGainDoubleFunctionalTelescopeEventVisitor
+{
+public:
+  MeantimeTimingFunctionalTelescopeEventVisitor(
+    calin::ix::iact_data::functional_event_visitor::
+      MeantimeTimingFunctionalTelescopeEventVisitorConfig config =
+        default_config());
+  virtual ~MeantimeTimingFunctionalTelescopeEventVisitor();
+
+  bool demand_waveforms() override;
+  bool is_parallelizable() override;
+
+  MeantimeTimingFunctionalTelescopeEventVisitor* new_sub_visitor(
+      const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+          calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+        antecedent_visitors) override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config) override;
+
+  bool visit_waveform(unsigned ichan,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain) override;
+
+  double low_gain_value() override;
+  double high_gain_value() override;
+
+  static calin::ix::iact_data::functional_event_visitor::
+    MeantimeTimingFunctionalTelescopeEventVisitorConfig default_config()
+  {
+    calin::ix::iact_data::functional_event_visitor::
+      MeantimeTimingFunctionalTelescopeEventVisitorConfig cfg;
+    cfg.set_pedestal_0(0);
+    cfg.set_pedestal_n(0);
+    cfg.set_signal_0(0);
+    cfg.set_signal_n(0);
+    cfg.set_pedestal_decay_constant(0.0);
+    return cfg;
+  }
+
+protected:
+
+  inline double process_one_gain(double& pedestal,
+    const calin::ix::iact_data::telescope_event::ChannelWaveform* ch_wf) const
+  {
+    const auto*const samples_start = ch_wf->samples().data();
+
+    if(ped_decay_factor_ > 0) {
+      int32_t sum = 0;
+      const auto* samples = samples_start + ped_window_0_;
+      for(unsigned i=0; i<ped_window_n_; i++)sum += *(samples++);
+      pedestal = pedestal * /* (1.0-ped_decay_factor_) */ ped_factor_A_
+        + sum * /* ped_decay_factor_/double(ped_window_n_) */ ped_factor_B_ ;
+    } else if(pedestal < 0) {
+      int32_t sum = 0;
+      const auto* samples = samples_start + ped_window_0_;
+      for(unsigned i=0; i<ped_window_n_; i++)sum += *(samples++);
+      pedestal = sum/double(ped_window_n_);
+    }
+
+    int32_t sum_tx = 0;
+    int32_t sum_x = 0;
+    const auto* samples = samples_start + sig_window_0_;
+    for(unsigned i=0; i<sig_window_n_; i++) {
+      sum_x += *samples;
+      sum_tx += *(samples++) * i;
+    }
+
+    double numerator = sum_tx - pedestal * /* ped_window_n_*(ped_window_n_-1)/2 */ sum_t_;
+    double denominator = sum_x - pedestal * sig_window_n_;
+
+    if(denominator < 0)return 0;
+    return numerator/denominator + sig_window_0_;
+  }
+
+  calin::ix::iact_data::functional_event_visitor::
+    MeantimeTimingFunctionalTelescopeEventVisitorConfig config_;
+
+  unsigned ped_window_0_ = 0;
+  unsigned ped_window_n_ = 0;
+  unsigned sig_window_0_ = 0;
+  unsigned sig_window_n_ = 0;
+  double ped_decay_factor_ = 0;
+
+  double ped_factor_A_;
+  double ped_factor_B_;
+  double sum_t_;
+
+  double high_gain_value_ = 0.0;
+  double low_gain_value_ = 0.0;
+  std::vector<double> high_gain_pedestal_;
+  std::vector<double> low_gain_pedestal_;
 };
 
 

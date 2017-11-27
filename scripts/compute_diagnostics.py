@@ -222,7 +222,7 @@ dispatcher.add_visitor(delta_t_capture)
 
 # T0 rise time functional
 t0_calc = calin.iact_data.functional_event_visitor.\
-    NoPedestalTimingFunctionalTelescopeEventVisitor()
+    RisetimeTimingFunctionalTelescopeEventVisitor()
 dispatcher.add_visitor(t0_calc,
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 
