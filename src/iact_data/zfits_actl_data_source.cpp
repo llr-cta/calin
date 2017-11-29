@@ -260,6 +260,7 @@ ZFITSACTLDataSourceOpener::ZFITSACTLDataSourceOpener(std::string filename,
         filename_i = filename + ".";
         if(i<10) filename_i += "00";
         else if(i<100) filename_i += "0";
+        else break; // no point in rechecking same file as above
         filename_i += std::to_string(i)+extension;
 
         if(not is_file(filename_i))break;
