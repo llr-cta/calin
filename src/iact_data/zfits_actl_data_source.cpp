@@ -237,7 +237,7 @@ ZFITSACTLDataSourceOpener::ZFITSACTLDataSourceOpener(std::string filename,
       filename = filename.substr(0, ifind);
 
       unsigned istart = 0;
-      if(not is_file(filename+".1"+extension))
+      if(not is_file(filename+".1"+extension) and not is_file(filename+".001"+extension))
       {
         ifind = filename.rfind('.');
         if(ifind != std::string::npos and
@@ -252,6 +252,16 @@ ZFITSACTLDataSourceOpener::ZFITSACTLDataSourceOpener(std::string filename,
         filenames_.size()<config_.max_file_fragments() ; ++i)
       {
         std::string filename_i { filename+"."+std::to_string(i)+extension };
+        if(is_file(filename_i)) {
+          filenames_.emplace_back(filename_i);
+          continue;
+        }
+
+        filename_i = filename + ".";
+        if(i<10) filename_i += "00"
+        else if(i<100) filename_i += "0";
+        filename_i += std::to_string(i)+extension;
+
         if(not is_file(filename_i))break;
         filenames_.emplace_back(filename_i);
       }
