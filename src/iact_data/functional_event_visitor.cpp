@@ -111,6 +111,74 @@ int32_t FixedWindowSumFunctionalTelescopeEventVisitor::high_gain_value()
   return high_gain_value_;
 }
 
+SlidingWindowSumFunctionalTelescopeEventVisitor::
+SlidingWindowSumFunctionalTelescopeEventVisitor(
+  calin::ix::iact_data::functional_event_visitor::
+    SlidingWindowSumFunctionalTelescopeEventVisitorConfig config):
+  DualGainInt32FunctionalTelescopeEventVisitor(), config_(config)
+{
+  // nothing to see here
+}
+
+SlidingWindowSumFunctionalTelescopeEventVisitor::
+~SlidingWindowSumFunctionalTelescopeEventVisitor()
+{
+  // nothing to see here
+}
+
+bool SlidingWindowSumFunctionalTelescopeEventVisitor::demand_waveforms()
+{
+  return true;
+}
+
+bool SlidingWindowSumFunctionalTelescopeEventVisitor::is_parallelizable()
+{
+  return true;
+}
+
+SlidingWindowSumFunctionalTelescopeEventVisitor*
+SlidingWindowSumFunctionalTelescopeEventVisitor::new_sub_visitor(
+  const std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>&
+    antecedent_visitors)
+{
+  return new SlidingWindowSumFunctionalTelescopeEventVisitor(config_);
+}
+
+bool SlidingWindowSumFunctionalTelescopeEventVisitor::visit_telescope_run(
+  const calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* run_config)
+{
+  if(config_.integration_n()==0)window_n_ = run_config->num_samples();
+  else window_n_ = config_.integration_n();
+  if(window_n_ > run_config->num_samples())
+    throw std::out_of_range("SlidingWindowSumFunctionalTelescopeEventVisitor: "
+      "requested window larger than number of samples: "
+      + std::to_string(window_n_) + ">" + std::to_string(run_config->num_samples()));
+
+  return true;
+}
+
+bool SlidingWindowSumFunctionalTelescopeEventVisitor::
+visit_waveform(unsigned ichan,
+  calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+  calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
+{
+  if(high_gain)
+    high_gain_value_ = process_one_gain(high_gain);
+  if(low_gain)
+    low_gain_value_ = process_one_gain(low_gain);
+  return true;
+}
+
+int32_t SlidingWindowSumFunctionalTelescopeEventVisitor::low_gain_value()
+{
+  return low_gain_value_;
+}
+
+int32_t SlidingWindowSumFunctionalTelescopeEventVisitor::high_gain_value()
+{
+  return high_gain_value_;
+}
 
 DifferencingFunctionalTelescopeEventVisitor::
 DifferencingFunctionalTelescopeEventVisitor(

@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <cstdlib>
+#include <numeric>
+
 #include <iact_data/event_visitor.hpp>
 #include <iact_data/functional_event_visitor.pb.h>
 
@@ -106,6 +109,66 @@ private:
   calin::ix::iact_data::functional_event_visitor::
     FixedWindowSumFunctionalTelescopeEventVisitorConfig config_;
   unsigned window_0_ = 0;
+  unsigned window_n_ = 0;
+  int32_t high_gain_value_ = 0;
+  int32_t low_gain_value_ = 0;
+};
+
+class SlidingWindowSumFunctionalTelescopeEventVisitor:
+  public DualGainInt32FunctionalTelescopeEventVisitor
+{
+public:
+  SlidingWindowSumFunctionalTelescopeEventVisitor(
+    calin::ix::iact_data::functional_event_visitor::
+      SlidingWindowSumFunctionalTelescopeEventVisitorConfig config =
+        default_config());
+  virtual ~SlidingWindowSumFunctionalTelescopeEventVisitor();
+
+  bool demand_waveforms() override;
+  bool is_parallelizable() override;
+
+  SlidingWindowSumFunctionalTelescopeEventVisitor* new_sub_visitor(
+      const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+          calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+        antecedent_visitors) override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config) override;
+
+  bool visit_waveform(unsigned ichan,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+    calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain) override;
+
+  int32_t low_gain_value() override;
+  int32_t high_gain_value() override;
+
+  static calin::ix::iact_data::functional_event_visitor::
+    SlidingWindowSumFunctionalTelescopeEventVisitorConfig default_config()
+  {
+    calin::ix::iact_data::functional_event_visitor::
+      SlidingWindowSumFunctionalTelescopeEventVisitorConfig cfg;
+    cfg.set_integration_n(0);
+    return cfg;
+  }
+
+private:
+
+  inline int32_t process_one_gain(
+    const calin::ix::iact_data::telescope_event::ChannelWaveform* ch_wf) const
+  {
+    const unsigned nsample = ch_wf->samples_size();
+    const auto* samples = ch_wf->samples().data();
+    int32_t* csum = (int32_t*)calloc(nsample, sizeof(int32_t));
+    std::partial_sum(samples, samples+nsample, csum);
+    int32_t max_sum = csum[window_n_ - 1];
+    for(unsigned i = window_n_; i<nsample; i++)
+      max_sum = std::max(max_sum, csum[i] - csum[i-window_n_]);
+    return max_sum;
+  }
+
+  calin::ix::iact_data::functional_event_visitor::
+    SlidingWindowSumFunctionalTelescopeEventVisitorConfig config_;
   unsigned window_n_ = 0;
   int32_t high_gain_value_ = 0;
   int32_t low_gain_value_ = 0;

@@ -33,6 +33,11 @@ message FixedWindowSumFunctionalTelescopeEventVisitorConfig {
     (CFO).desc = "Size of integration window in samples." ];
 };
 
+message SlidingWindowSumFunctionalTelescopeEventVisitorConfig {
+  uint32 integration_n                                     = 1 [
+    (CFO).desc = "Size of integration window in samples." ];
+};
+
 message MeantimeTimingFunctionalTelescopeEventVisitorConfig {
   int32 pedestal_0                                         = 1 [
     (CFO).desc = "Start of pedestal integration window in samples." ];
