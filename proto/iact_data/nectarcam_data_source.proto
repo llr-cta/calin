@@ -33,9 +33,15 @@ message NectarCamCameraEventDecoderConfig {
     NECTARCAM_TESTBENCH_19CHANNEL                          = 2;
   };
 
+  enum ExchangeGainMode {
+    EXCHANGE_GAIN_MODE_AUTOMATIC                           = 0;
+    EXCHANGE_GAIN_MODE_NONE                                = 1;
+    EXCHANGE_GAIN_MODE_FORCED                              = 2;
+  };
+
   CameraType camera_type                                   = 1 [
     (CFO).desc = "Camera type." ];
-  bool exchange_gain_channels                              = 2 [
+  ExchangeGainMode exchange_gain_channels                  = 2 [
     (CFO).desc = "Exchange high and low gains from NectarCam ZFits file." ];
   bool include_serialized_raw_data                         = 3 [
     (CFO).desc = "Include serialized raw ACTL protobuf header and event data." ];

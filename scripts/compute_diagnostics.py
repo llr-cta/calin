@@ -50,7 +50,7 @@ opt.mutable_zfits().CopyFrom(calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_config())
 opt.mutable_decoder().CopyFrom(calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_decoder_config())
-opt.mutable_decoder().set_exchange_gain_channels(True);
+#opt.mutable_decoder().set_exchange_gain_channels(True);
 
 opt_proc = calin.util.options_processor.OptionsProcessor(opt, True);
 opt_proc.process_arguments(sys.argv)

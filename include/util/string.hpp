@@ -140,6 +140,9 @@ CALIN_DEFINE_T_FROM_STRING(uint64_t, uint64_from_string)
 CALIN_DEFINE_T_FROM_STRING(float, float_from_string)
 CALIN_DEFINE_T_FROM_STRING(double, double_from_string)
 
+CALIN_DEFINE_T_FROM_STRING(int, int_from_string)
+CALIN_DEFINE_T_FROM_STRING(unsigned, unsigned_from_string)
+
 #undef CALIN_DEFINE_T_FROM_STRING
 
 

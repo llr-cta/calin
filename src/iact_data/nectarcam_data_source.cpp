@@ -40,6 +40,27 @@ using namespace calin::util::log;
 
 #define TEST_ANYARRAY_TYPES 0
 
+NectarCamCameraEventDecoder::NectarCamCameraEventDecoder(unsigned run_number,
+    const config_type& config):
+  zfits_data_source::CTACameraEventDecoder(), config_(config),
+  run_number_(run_number)
+{
+  switch(config.exchange_gain_channels()) {
+    case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_NONE:
+      exchange_gain_channels_ = false;
+      break;
+    case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_FORCED:
+      exchange_gain_channels_ = true;
+      break;
+    case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_AUTOMATIC:
+    default:
+      exchange_gain_channels_ = run_number>=32 and run_number<621;
+      if(exchange_gain_channels_)
+        LOG(WARNING) << "High/Low gain exchange automatically configured.";
+      break;
+  }
+}
+
 NectarCamCameraEventDecoder::~NectarCamCameraEventDecoder()
 {
   // nothing to see here
@@ -112,7 +133,7 @@ bool NectarCamCameraEventDecoder::decode(
   //
   // ==========================================================================
 
-  if(config_.exchange_gain_channels())
+  if(exchange_gain_channels_)
   {
     if(cta_event->has_higain())
       copy_single_gain_image(cta_event, calin_event, cta_event->higain(),
@@ -290,6 +311,8 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   const DataModel::CameraRunHeader* cta_run_header,
   const DataModel::CameraEvent* cta_event)
 {
+  calin_run_config->set_run_number(run_number_);
+
   switch(config_.camera_type())
   {
   case NectarCamCameraEventDecoderConfig::NECTARCAM:
@@ -570,8 +593,9 @@ NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
-    decoder_ = new NectarCamCameraEventDecoder(decoder_config), false,
-    config)
+    decoder_ = new NectarCamCameraEventDecoder(
+      calin::util::file::extract_first_number_from_filename(filename),
+      decoder_config), false, config)
 {
   // nothing to see here
 }

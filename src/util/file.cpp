@@ -47,6 +47,7 @@
 #include <google/protobuf/message.h>
 #include <google/protobuf/util/json_util.h>
 
+#include <util/string.hpp>
 #include <util/file.hpp>
 
 using namespace calin::util;
@@ -139,7 +140,7 @@ void file::expand_filename_in_place(std::string& filename)
   }
 }
 
-unsigned file::extract_number_from_filename(const std::string& filename)
+unsigned file::extract_longest_number_from_filename(const std::string& filename)
 {
   std::string::const_iterator longest_num_start = filename.begin();
 
@@ -175,6 +176,24 @@ unsigned file::extract_number_from_filename(const std::string& filename)
     n = std::atoi(std::string(longest_num_start,longest_num_end).c_str());
 
   return n;
+}
+
+unsigned file::extract_first_number_from_filename(const std::string& filename)
+{
+  std::string::const_iterator num_start = filename.begin();
+
+  for(std::string::const_iterator ichar = filename.begin();
+      ichar!=filename.end();ichar++)if(*ichar=='/')num_start=ichar;
+  if(*num_start=='/')num_start++;
+
+  while(num_start!=filename.end() and not isdigit(*num_start))++num_start;
+  if(num_start==filename.end())return 0;
+
+  std::string::const_iterator num_end = num_start;
+  ++num_end;
+  while(num_end!=filename.end() and isdigit(*num_end))++num_end;
+
+  return calin::util::string::unsigned_from_string(std::string(num_start,num_end));
 }
 
 void file::replace_question_with_number(std::string& filename, unsigned n)

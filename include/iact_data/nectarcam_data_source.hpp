@@ -40,12 +40,12 @@ public:
   CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
     nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
-  NectarCamCameraEventDecoder(const config_type& config = default_config()):
-    zfits_data_source::CTACameraEventDecoder(), config_(config) { }
+  NectarCamCameraEventDecoder(unsigned run_number = 0,
+    const config_type& config = default_config());
 
-  void set_config(const config_type& config) { config_.CopyFrom(config); }
-  const config_type& config() const { return config_; }
-  config_type* mutable_config() { return &config_; }
+  //void set_config(const config_type& config) { config_.CopyFrom(config); }
+  config_type config() const { return config_; }
+  //config_type* mutable_config() { return &config_; }
   static config_type default_config() {
     return config_type::default_instance(); }
 
@@ -71,6 +71,8 @@ private:
   unsigned get_nmod_from_event(const DataModel::CameraEvent* cta_event) const;
 
   config_type config_;
+  unsigned run_number_ = 0;
+  bool exchange_gain_channels_ = false;
   int64_t run_start_time_ = 0;
 };
 
@@ -81,12 +83,16 @@ public:
   CALIN_TYPEALIAS(decoder_config_type,
     NectarCamCameraEventDecoder::config_type);
 
+#if 0
   void set_decoder_config(const decoder_config_type& config) {
     decoder_->set_config(config); }
-  const decoder_config_type& decoder_config() const {
+#endif
+  decoder_config_type decoder_config() const {
     return decoder_->config(); }
+#if 0
   decoder_config_type* mutable_decoder_config() {
     return decoder_->mutable_config(); }
+#endif
   static decoder_config_type default_decoder_config() {
     return decoder_config_type::default_instance(); }
 
