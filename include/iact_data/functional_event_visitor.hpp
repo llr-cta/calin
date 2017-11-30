@@ -158,12 +158,21 @@ private:
     const calin::ix::iact_data::telescope_event::ChannelWaveform* ch_wf) const
   {
     const unsigned nsample = ch_wf->samples_size();
-    const auto* samples = ch_wf->samples().data();
-    int32_t* csum = (int32_t*)calloc(nsample, sizeof(int32_t));
-    std::partial_sum(samples, samples+nsample, csum);
-    int32_t max_sum = csum[window_n_ - 1];
-    for(unsigned i = window_n_; i<nsample; i++)
-      max_sum = std::max(max_sum, csum[i] - csum[i-window_n_]);
+    const auto*const samples = ch_wf->samples().data();
+    const auto*const samples_end = samples + nsample;
+
+    const auto* window_end = samples;
+    int32_t sum = *(window_end++);
+    for(unsigned i=1; i<nsample; i++)sum += *(window_end++);
+
+    int32_t max_sum = sum;
+    const auto* window_start = samples;
+    while(window_end < samples_end) {
+      sum += *(window_end++);
+      sum -= *(window_start++);
+      max_sum = std::max(max_sum, sum);
+    }
+
     return max_sum;
   }
 
