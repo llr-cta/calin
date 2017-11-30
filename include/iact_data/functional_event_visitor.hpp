@@ -163,7 +163,7 @@ private:
 
     const auto* window_end = samples;
     int32_t sum = *(window_end++);
-    for(unsigned i=1; i<nsample; i++)sum += *(window_end++);
+    for(unsigned i=1; i<window_n_; i++)sum += *(window_end++);
 
     int32_t max_sum = sum;
     const auto* window_start = samples;
