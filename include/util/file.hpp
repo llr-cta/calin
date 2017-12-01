@@ -72,7 +72,12 @@ inline std::string expand_filename(const std::string& filename)
 //! Extract the longest positive number from the filename portion
 // of a path/file specification. For example,
 // "/veritas/data/V12345_v2.cvbf" would return 12345.
-unsigned extract_number_from_filename(const std::string& filename);
+unsigned extract_longest_number_from_filename(const std::string& filename);
+
+//! Extract the first positive number from the filename portion
+// of a path/file specification. For example,
+// "/veritas/data/V12345_v2.cvbf" would return 12345.
+unsigned extract_first_number_from_filename(const std::string& filename);
 
 //! Replace the first occurance of a question mark '?' with an
 // unsigned integer. For example passing: filename="?.root" and n=12345

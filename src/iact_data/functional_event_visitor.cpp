@@ -21,7 +21,9 @@
 */
 
 #include <iact_data/functional_event_visitor.hpp>
+#include <util/log.hpp>
 
+using namespace calin::util::log;
 using namespace calin::iact_data::functional_event_visitor;
 
 FixedWindowSumFunctionalTelescopeEventVisitor::
@@ -109,6 +111,74 @@ int32_t FixedWindowSumFunctionalTelescopeEventVisitor::high_gain_value()
   return high_gain_value_;
 }
 
+SlidingWindowSumFunctionalTelescopeEventVisitor::
+SlidingWindowSumFunctionalTelescopeEventVisitor(
+  calin::ix::iact_data::functional_event_visitor::
+    SlidingWindowSumFunctionalTelescopeEventVisitorConfig config):
+  DualGainInt32FunctionalTelescopeEventVisitor(), config_(config)
+{
+  // nothing to see here
+}
+
+SlidingWindowSumFunctionalTelescopeEventVisitor::
+~SlidingWindowSumFunctionalTelescopeEventVisitor()
+{
+  // nothing to see here
+}
+
+bool SlidingWindowSumFunctionalTelescopeEventVisitor::demand_waveforms()
+{
+  return true;
+}
+
+bool SlidingWindowSumFunctionalTelescopeEventVisitor::is_parallelizable()
+{
+  return true;
+}
+
+SlidingWindowSumFunctionalTelescopeEventVisitor*
+SlidingWindowSumFunctionalTelescopeEventVisitor::new_sub_visitor(
+  const std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>&
+    antecedent_visitors)
+{
+  return new SlidingWindowSumFunctionalTelescopeEventVisitor(config_);
+}
+
+bool SlidingWindowSumFunctionalTelescopeEventVisitor::visit_telescope_run(
+  const calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* run_config)
+{
+  if(config_.integration_n()==0)window_n_ = run_config->num_samples();
+  else window_n_ = config_.integration_n();
+  if(window_n_ > run_config->num_samples())
+    throw std::out_of_range("SlidingWindowSumFunctionalTelescopeEventVisitor: "
+      "requested window larger than number of samples: "
+      + std::to_string(window_n_) + ">" + std::to_string(run_config->num_samples()));
+
+  return true;
+}
+
+bool SlidingWindowSumFunctionalTelescopeEventVisitor::
+visit_waveform(unsigned ichan,
+  calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+  calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
+{
+  if(high_gain)
+    high_gain_value_ = process_one_gain(high_gain);
+  if(low_gain)
+    low_gain_value_ = process_one_gain(low_gain);
+  return true;
+}
+
+int32_t SlidingWindowSumFunctionalTelescopeEventVisitor::low_gain_value()
+{
+  return low_gain_value_;
+}
+
+int32_t SlidingWindowSumFunctionalTelescopeEventVisitor::high_gain_value()
+{
+  return high_gain_value_;
+}
 
 DifferencingFunctionalTelescopeEventVisitor::
 DifferencingFunctionalTelescopeEventVisitor(
@@ -172,39 +242,39 @@ int32_t DifferencingFunctionalTelescopeEventVisitor::high_gain_value()
     bkg_value_supplier_->high_gain_value();
 }
 
-NoPedestalTimingFunctionalTelescopeEventVisitor::
-NoPedestalTimingFunctionalTelescopeEventVisitor():
+RisetimeTimingFunctionalTelescopeEventVisitor::
+RisetimeTimingFunctionalTelescopeEventVisitor():
   DualGainDoubleFunctionalTelescopeEventVisitor()
 {
   // nothing to see here
 }
 
-NoPedestalTimingFunctionalTelescopeEventVisitor::
-~NoPedestalTimingFunctionalTelescopeEventVisitor()
+RisetimeTimingFunctionalTelescopeEventVisitor::
+~RisetimeTimingFunctionalTelescopeEventVisitor()
 {
   // nothing to see here
 }
 
-bool NoPedestalTimingFunctionalTelescopeEventVisitor::demand_waveforms()
+bool RisetimeTimingFunctionalTelescopeEventVisitor::demand_waveforms()
 {
   return true;
 }
 
-bool NoPedestalTimingFunctionalTelescopeEventVisitor::is_parallelizable()
+bool RisetimeTimingFunctionalTelescopeEventVisitor::is_parallelizable()
 {
   return true;
 }
 
-NoPedestalTimingFunctionalTelescopeEventVisitor*
-NoPedestalTimingFunctionalTelescopeEventVisitor::new_sub_visitor(
+RisetimeTimingFunctionalTelescopeEventVisitor*
+RisetimeTimingFunctionalTelescopeEventVisitor::new_sub_visitor(
   const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
       calin::iact_data::event_visitor::TelescopeEventVisitor*>&
     antecedent_visitors)
 {
-  return new NoPedestalTimingFunctionalTelescopeEventVisitor;
+  return new RisetimeTimingFunctionalTelescopeEventVisitor;
 }
 
-bool NoPedestalTimingFunctionalTelescopeEventVisitor::visit_waveform(
+bool RisetimeTimingFunctionalTelescopeEventVisitor::visit_waveform(
   unsigned ichan,
   calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
   calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
@@ -216,12 +286,157 @@ bool NoPedestalTimingFunctionalTelescopeEventVisitor::visit_waveform(
   return true;
 }
 
-double NoPedestalTimingFunctionalTelescopeEventVisitor::low_gain_value()
+double RisetimeTimingFunctionalTelescopeEventVisitor::low_gain_value()
 {
   return low_gain_value_;
 }
 
-double NoPedestalTimingFunctionalTelescopeEventVisitor::high_gain_value()
+double RisetimeTimingFunctionalTelescopeEventVisitor::high_gain_value()
+{
+  return high_gain_value_;
+}
+
+MeantimeTimingFunctionalTelescopeEventVisitor::
+MeantimeTimingFunctionalTelescopeEventVisitor(
+  calin::ix::iact_data::functional_event_visitor::
+    MeantimeTimingFunctionalTelescopeEventVisitorConfig config):
+  DualGainDoubleFunctionalTelescopeEventVisitor(), config_(config)
+{
+  // nothing to see here
+}
+
+MeantimeTimingFunctionalTelescopeEventVisitor::
+~MeantimeTimingFunctionalTelescopeEventVisitor()
+{
+  // nothing to see here
+}
+
+bool MeantimeTimingFunctionalTelescopeEventVisitor::demand_waveforms()
+{
+  return true;
+}
+
+bool MeantimeTimingFunctionalTelescopeEventVisitor::is_parallelizable()
+{
+  return true;
+}
+
+MeantimeTimingFunctionalTelescopeEventVisitor*
+MeantimeTimingFunctionalTelescopeEventVisitor::new_sub_visitor(
+  const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+      calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+    antecedent_visitors)
+{
+  return new MeantimeTimingFunctionalTelescopeEventVisitor(config_);
+}
+
+bool MeantimeTimingFunctionalTelescopeEventVisitor::visit_telescope_run(
+  const calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* run_config)
+{
+  if(config_.pedestal_n()==0)ped_window_n_ = run_config->num_samples();
+  else ped_window_n_ = config_.pedestal_n();
+  if(ped_window_n_ > run_config->num_samples())
+    throw std::out_of_range("MeantimeTimingFunctionalTelescopeEventVisitor: "
+      "requested pedestal window larger than number of samples: "
+      + std::to_string(ped_window_n_) + ">"
+      + std::to_string(run_config->num_samples()));
+
+  if(config_.pedestal_0() < -int(run_config->num_samples()-ped_window_n_)
+      or config_.pedestal_0() > int(run_config->num_samples()-ped_window_n_))
+    throw std::out_of_range("MeantimeTimingFunctionalTelescopeEventVisitor: "
+      "requested pedestal window start "
+      + std::to_string(config_.pedestal_0())
+      + " out of allowed range: ["
+      + std::to_string(-int(run_config->num_samples()-ped_window_n_)) + ", "
+      + std::to_string(run_config->num_samples()-ped_window_n_) + "]");
+
+  if(config_.pedestal_0()<0)
+    ped_window_0_ = config_.pedestal_0() + run_config->num_samples()
+      - ped_window_n_;
+  else
+    ped_window_0_ = config_.pedestal_0();
+
+  if(config_.signal_n()==0)sig_window_n_ = run_config->num_samples();
+  else sig_window_n_ = config_.signal_n();
+  if(sig_window_n_ > run_config->num_samples())
+    throw std::out_of_range("MeantimeTimingFunctionalTelescopeEventVisitor: "
+      "requested signal window larger than number of samples: "
+      + std::to_string(sig_window_n_) + ">"
+      + std::to_string(run_config->num_samples()));
+
+  if(config_.signal_0() < -int(run_config->num_samples()-sig_window_n_)
+      or config_.signal_0() > int(run_config->num_samples()-sig_window_n_))
+    throw std::out_of_range("MeantimeTimingFunctionalTelescopeEventVisitor: "
+      "requested signal window start "
+      + std::to_string(config_.signal_0())
+      + " out of allowed range: ["
+      + std::to_string(-int(run_config->num_samples()-sig_window_n_)) + ", "
+      + std::to_string(run_config->num_samples()-sig_window_n_) + "]");
+
+  if(config_.signal_0()<0)
+    sig_window_0_ = config_.signal_0() + run_config->num_samples()
+      - sig_window_n_;
+  else
+    sig_window_0_ = config_.signal_0();
+
+  ped_decay_factor_ = config_.pedestal_decay_constant();
+
+  ped_factor_A_ = 1.0-ped_decay_factor_;
+  ped_factor_B_ = ped_decay_factor_/double(ped_window_n_);
+  sum_t_ = sig_window_n_*(sig_window_n_-1)/2;
+
+  high_gain_pedestal_.clear();
+  for(const auto& ped : config_.high_gain_pedestal())
+    if(high_gain_pedestal_.size() < run_config->configured_channel_id_size())
+      high_gain_pedestal_.push_back(ped);
+  while(high_gain_pedestal_.size() < run_config->configured_channel_id_size())
+    high_gain_pedestal_.push_back(-1);
+
+  low_gain_pedestal_.clear();
+  for(const auto& ped : config_.low_gain_pedestal())
+    if(low_gain_pedestal_.size() < run_config->configured_channel_id_size())
+      low_gain_pedestal_.push_back(ped);
+  while(low_gain_pedestal_.size() < run_config->configured_channel_id_size())
+    low_gain_pedestal_.push_back(-1);
+
+  return true;
+}
+
+bool MeantimeTimingFunctionalTelescopeEventVisitor::visit_waveform(
+  unsigned ichan,
+  calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
+  calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
+{
+  if(high_gain)
+    high_gain_value_ = process_one_gain(high_gain_pedestal_[ichan], high_gain);
+  static unsigned nprint = 10;
+  if(ichan == 0 and nprint) {
+    LOG(INFO) << ichan << ' '
+      << high_gain_pedestal_[ichan] << ' ' << high_gain_value_ << ' '
+      << ped_window_0_ << ' ' << ped_window_n_ << ' '
+      << sig_window_0_ << ' ' << sig_window_n_ << ' '
+      << ped_decay_factor_ << ' '
+      << ped_factor_A_ << ' ' << ped_factor_B_ << ' ' << sum_t_;
+
+    const auto*const samples_start = high_gain->samples().data();
+    auto xlog = LOG(INFO);
+    xlog << "->";
+    for(unsigned isamp=0;isamp<60;isamp++)
+      xlog << " " << samples_start[isamp];
+    --nprint;
+  }
+  if(low_gain)
+    low_gain_value_ = process_one_gain(low_gain_pedestal_[ichan], low_gain);
+  return true;
+}
+
+double MeantimeTimingFunctionalTelescopeEventVisitor::low_gain_value()
+{
+  return low_gain_value_;
+}
+
+double MeantimeTimingFunctionalTelescopeEventVisitor::high_gain_value()
 {
   return high_gain_value_;
 }

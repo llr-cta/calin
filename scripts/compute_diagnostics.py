@@ -50,7 +50,7 @@ opt.mutable_zfits().CopyFrom(calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_config())
 opt.mutable_decoder().CopyFrom(calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_decoder_config())
-opt.mutable_decoder().set_exchange_gain_channels(True);
+#opt.mutable_decoder().set_exchange_gain_channels(True);
 
 opt_proc = calin.util.options_processor.OptionsProcessor(opt, True);
 opt_proc.process_arguments(sys.argv)
@@ -86,6 +86,7 @@ sql_file           = opt.o();
 bkg_window_start   = opt.bkg_window_start()
 sig_window_start   = opt.sig_window_start()
 window_size        = opt.window_size()
+sig_sliding_window = opt.use_sig_sliding_window();
 cfg                = opt.zfits()
 dcfg               = opt.decoder()
 
@@ -137,13 +138,21 @@ for ichan in capture_channels:
     dispatcher.add_visitor(bkg_capture[ichan])
 
 # Signal window functional
-sig_window_sum_cfg = calin.iact_data.functional_event_visitor.\
-    FixedWindowSumFunctionalTelescopeEventVisitor.default_config()
-#sig_window_sum_cfg.set_integration_0(30)
-sig_window_sum_cfg.set_integration_0(sig_window_start)
-sig_window_sum_cfg.set_integration_n(window_size)
-sig_window_sum_visitor = calin.iact_data.functional_event_visitor.\
-    FixedWindowSumFunctionalTelescopeEventVisitor(sig_window_sum_cfg)
+if sig_sliding_window:
+    sig_window_sum_cfg = calin.iact_data.functional_event_visitor.\
+        SlidingWindowSumFunctionalTelescopeEventVisitor.default_config()
+    #sig_window_sum_cfg.set_integration_0(30)
+    sig_window_sum_cfg.set_integration_n(window_size)
+    sig_window_sum_visitor = calin.iact_data.functional_event_visitor.\
+        SlidingWindowSumFunctionalTelescopeEventVisitor(sig_window_sum_cfg)
+else:
+    sig_window_sum_cfg = calin.iact_data.functional_event_visitor.\
+        FixedWindowSumFunctionalTelescopeEventVisitor.default_config()
+    #sig_window_sum_cfg.set_integration_0(30)
+    sig_window_sum_cfg.set_integration_0(sig_window_start)
+    sig_window_sum_cfg.set_integration_n(window_size)
+    sig_window_sum_visitor = calin.iact_data.functional_event_visitor.\
+        FixedWindowSumFunctionalTelescopeEventVisitor(sig_window_sum_cfg)
 dispatcher.add_visitor(sig_window_sum_visitor, \
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 
@@ -222,7 +231,7 @@ dispatcher.add_visitor(delta_t_capture)
 
 # T0 rise time functional
 t0_calc = calin.iact_data.functional_event_visitor.\
-    NoPedestalTimingFunctionalTelescopeEventVisitor()
+    RisetimeTimingFunctionalTelescopeEventVisitor()
 dispatcher.add_visitor(t0_calc,
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 

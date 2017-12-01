@@ -49,6 +49,8 @@ message CommandLineOptions {
     (CFO).desc = "Offset of background integration window from start of trace. "
       "See \"sig_window_start\" for more details.",
     (CFO).units="samples" ];
+  bool use_sig_sliding_window                              = 13 [
+    (CFO).desc = "Use a sliding window sum for the signal integration." ];
 
   bool capture_all_channels                                = 20 [
     (CFO).desc = "Capture signal and background values for all events from "

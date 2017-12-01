@@ -32,3 +32,25 @@ message FixedWindowSumFunctionalTelescopeEventVisitorConfig {
   uint32 integration_n                                     = 2 [
     (CFO).desc = "Size of integration window in samples." ];
 };
+
+message SlidingWindowSumFunctionalTelescopeEventVisitorConfig {
+  uint32 integration_n                                     = 1 [
+    (CFO).desc = "Size of integration window in samples." ];
+};
+
+message MeantimeTimingFunctionalTelescopeEventVisitorConfig {
+  int32 pedestal_0                                         = 1 [
+    (CFO).desc = "Start of pedestal integration window in samples." ];
+  uint32 pedestal_n                                        = 2 [
+    (CFO).desc = "Size of pedestal integration window in samples." ];
+  int32 signal_0                                           = 3 [
+    (CFO).desc = "Start of signal integration window in samples." ];
+  uint32 signal_n                                          = 4 [
+    (CFO).desc = "Size of signal integration window in samples." ];
+  double pedestal_decay_constant                           = 5 [
+    (CFO).desc = "Pedestal decay constant." ];
+  repeated double high_gain_pedestal                       = 6 [
+    (CFO).desc = "High gain pedestal single-sample baseline level." ];
+  repeated double low_gain_pedestal                        = 7 [
+    (CFO).desc = "Low gain pedestal single-sample baseline level." ];
+};

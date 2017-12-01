@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <Eigen/Core>
+
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
 #include <math/regular_grid.hpp>
@@ -30,10 +32,27 @@
 namespace calin { namespace iact_data { namespace instrument_layout {
 
 calin::math::regular_grid::Grid* make_grid_from_instrument_layout(
-  const calin::ix::iact_data::instrument_layout::CameraLayout* camera_layout,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& camera_layout,
   double grid_plate_scale = 1.0);
 
 void compute_camera_and_module_outlines(
   calin::ix::iact_data::instrument_layout::CameraLayout* camera_layout);
+
+void map_channels_using_grid(
+  Eigen::VectorXi& map,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& from,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& to);
+
+void map_channels_using_from_coordinates(
+  Eigen::VectorXi& map,
+  const std::vector<double>& from_x, const std::vector<double>& from_y,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& to,
+  double tolerance = 0.1);
+
+void map_channels_using_from_coordinates(
+  Eigen::VectorXi& map,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& from,
+  const calin::ix::iact_data::instrument_layout::CameraLayout& to,
+  double tolerance = 0.1);
 
 } } } // namespace calin::iact_data::instrument_layout

@@ -140,7 +140,7 @@ message Time
   int64 time_ns                         = 1
     [(CFO).desc = "$PARENT_DESC_PS$. If time is absolute then this should be "
        "the number of TAI nanoseconds since the epoch of midnight of "
-       "2000-01-01 UTC.",
+       "1970-01-01 UTC.",
      (CFO).units = "ns"];
 };
 

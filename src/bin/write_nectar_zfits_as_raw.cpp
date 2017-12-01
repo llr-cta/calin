@@ -50,11 +50,11 @@ int main(int argc, char **argv)
 
   NectarCamZFITSDataSource source(in_filename);
 
-  if(argc)
-  {
-    source.mutable_decoder_config()->set_demand_nsample(std::atoi(*argv));
-    argv++,argc--;
-  }
+  // if(argc)
+  // {
+  //   source.mutable_decoder_config()->set_demand_nsample(std::atoi(*argv));
+  //   argv++,argc--;
+  // }
 
   unsigned max_events = 0;
   if(argc)

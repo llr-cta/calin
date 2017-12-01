@@ -40,6 +40,27 @@ using namespace calin::util::log;
 
 #define TEST_ANYARRAY_TYPES 0
 
+NectarCamCameraEventDecoder::NectarCamCameraEventDecoder(unsigned run_number,
+    const config_type& config):
+  zfits_data_source::CTACameraEventDecoder(), config_(config),
+  run_number_(run_number)
+{
+  switch(config.exchange_gain_channels()) {
+    case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_NONE:
+      exchange_gain_channels_ = false;
+      break;
+    case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_FORCED:
+      exchange_gain_channels_ = true;
+      break;
+    case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_AUTOMATIC:
+    default:
+      exchange_gain_channels_ = run_number>=32 and run_number<621;
+      if(exchange_gain_channels_)
+        LOG(WARNING) << "High/Low gain exchange automatically configured.";
+      break;
+  }
+}
+
 NectarCamCameraEventDecoder::~NectarCamCameraEventDecoder()
 {
   // nothing to see here
@@ -112,7 +133,7 @@ bool NectarCamCameraEventDecoder::decode(
   //
   // ==========================================================================
 
-  if(config_.exchange_gain_channels())
+  if(exchange_gain_channels_)
   {
     if(cta_event->has_higain())
       copy_single_gain_image(cta_event, calin_event, cta_event->higain(),
@@ -147,8 +168,8 @@ bool NectarCamCameraEventDecoder::decode(
       uint16_t bunch_counter;
       uint16_t event_counter;
       uint32_t ts1;
-      uint8_t  ts2_event;
-      uint8_t  ts2_bunch;
+      int8_t   ts2_event;
+      int8_t   ts2_bunch;
       uint16_t ts2_empty;
     }__attribute__((packed));
 
@@ -194,12 +215,19 @@ bool NectarCamCameraEventDecoder::decode(
       module_data->set_ts2_event(mod_counter->ts2_event);
       module_data->set_ts2_empty(mod_counter->ts2_empty);
 
+#if 0 // OBSOLETE version of TS2 definition
 #define ts2_decode(x) ((x)&0xF0?((x)&0xC0?((x)&0x80?0:1):((x)&0x20?2:3)):\
                                 ((x)&0x0C?((x)&0x08?4:5):((x)&0x02?6:7)))
-      int ts2_bunch = ts2_decode(mod_counter->ts2_bunch);
-      int ts2_event = ts2_decode(mod_counter->ts2_event);
-      int64_t time_ns = mod_counter->bunch_counter*1000000000LL
-        + mod_counter->ts1*8LL + ts2_event - ts2_bunch;
+#else
+#define ts2_decode(x) int32_t(x)
+#endif
+      int32_t ts2_bunch = ts2_decode(mod_counter->ts2_bunch);
+      int32_t ts2_event = ts2_decode(mod_counter->ts2_event);
+      int32_t ts = mod_counter->ts1*8 + ts2_event - ts2_bunch;
+
+      module_data->set_bunch_event_time(ts);
+
+      int64_t time_ns = mod_counter->bunch_counter*1000000000LL + ts;
       auto* module_clocks = calin_event->add_module_clock();
       module_clocks->set_module_id(imod);
       auto* clock = module_clocks->add_clock();
@@ -217,36 +245,14 @@ bool NectarCamCameraEventDecoder::decode(
   if(cta_event->uctsdatapresence() and cta_event->has_uctsdata() and
     cta_event->uctsdata().has_data())
   {
-    struct CDTSMessageData {
-      uint32_t event_counter;
-      uint32_t pps_counter;
-      uint32_t clock_counter;
-      uint64_t ucts_timestamp;
-      uint64_t camera_timestamp;
-      uint8_t trigger_type;
-      uint8_t white_rabbit_status;
-      uint8_t arbitrary_information;
-    } __attribute__((__packed__));
+    calin::iact_data::zfits_data_source::decode_cdts_data(
+      calin_event->mutable_cdts_data(), cta_event->uctsdata().data());
 
-    const auto& cta_cdts_data = cta_event->uctsdata().data();
-#if TEST_ANYARRAY_TYPES
-    if(cta_cdts_data.type() != DataModel::AnyArray::U32)
-      throw std::runtime_error("CDTS counters type not U32");
-#endif
-    if(cta_cdts_data.data().size() != sizeof(CDTSMessageData))
-      throw std::runtime_error("CDTS data array not expected size");
-    const auto* cdts_data =
-      reinterpret_cast<const CDTSMessageData*>(&cta_cdts_data.data().front());
-
-    auto* calin_cdts_data = calin_event->mutable_cdts_data();
-    calin_cdts_data->set_event_counter(cdts_data->event_counter);
-    calin_cdts_data->set_pps_counter(cdts_data->pps_counter);
-    calin_cdts_data->set_clock_counter(cdts_data->clock_counter);
-    calin_cdts_data->set_ucts_timestamp(cdts_data->ucts_timestamp);
-    calin_cdts_data->set_camera_timestamp(cdts_data->camera_timestamp);
-    calin_cdts_data->set_trigger_type(cdts_data->trigger_type);
-    calin_cdts_data->set_white_rabbit_status(cdts_data->white_rabbit_status);
-    calin_cdts_data->set_arbitrary_information(cdts_data->arbitrary_information);
+    if(calin_event->cdts_data().white_rabbit_status() == 1) {
+      auto* calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(0);
+      calin_clock->mutable_time()->set_time_ns(calin_event->cdts_data().ucts_timestamp());
+    }
   }
 
   // ==========================================================================
@@ -258,60 +264,26 @@ bool NectarCamCameraEventDecoder::decode(
   if(cta_event->tibdatapresence() and cta_event->has_tibdata() and
     cta_event->tibdata().has_data())
   {
-    // No of bits            Data
-    // 95 - 64 (32 bits)     Event Counter
-    // 63 - 48 (16 bits)     PPS Counter
-    // 47 - 24 (24 bits)     10 MHz Counter
-    // 23 - 17 (7 bits)      Zeros
-    // 16 - 8 (9 bits)       Stereo Pattern
-    // 7 - 0 (8 bits)        Trigger Type
-    //
-    // Inside the trigger type byte, the meaning of each bit is:
-    //
-    // Bit   Meaning
-    // 0     Mono
-    // 1     Stereo
-    // 2     Calibration
-    // 3     Single Photo-electron
-    // 4     Auxiliary trigger from UCTS
-    // 5     Pedestal
-    // 6     Slow Control
-    // 7     Busy
+    calin::iact_data::zfits_data_source::decode_tib_data(
+      calin_event->mutable_tib_data(), cta_event->tibdata().data());
+  }
 
-    struct TIBMessageData {
-      uint32_t event_counter;
-      uint16_t pps_counter;
-      uint16_t clock_counter_lo16;
-      uint8_t  clock_counter_hi8;
-      uint16_t stereo_pattern;
-      uint8_t  trigger_type;
-    } __attribute__((__packed__));
+  // ==========================================================================
+  //
+  // FIGURE OUT EVENT TIME
+  //
+  // ==========================================================================
 
-    const auto& cta_tib_data = cta_event->tibdata().data();
-#if TEST_ANYARRAY_TYPES
-    if(tib_data.type() != DataModel::AnyArray::U8)
-      throw std::runtime_error("TIB type not U8");
-#endif
-    if(cta_tib_data.data().size() != sizeof(TIBMessageData))
-      throw std::runtime_error("TIB data array not expected size");
-    const auto* tib_data =
-      reinterpret_cast<const TIBMessageData*>(&cta_tib_data.data().front());
+  if(calin_event->has_cdts_data()) {
+    calin_event->mutable_absolute_event_time()->set_time_ns(
+      calin_event->cdts_data().ucts_timestamp());
+  } else {
+    // Now what cat? Now what?
+  }
 
-    auto* calin_tib_data = calin_event->mutable_tib_data();
-    calin_tib_data->set_event_counter(tib_data->event_counter);
-    calin_tib_data->set_pps_counter(tib_data->pps_counter);
-    calin_tib_data->set_clock_counter(tib_data->clock_counter_lo16
-      + (tib_data->clock_counter_hi8<<16) );
-    calin_tib_data->set_stereo_pattern(tib_data->stereo_pattern&0x0001FFFF);
-    calin_tib_data->set_mono_trigger(tib_data->trigger_type & 0x01);
-    calin_tib_data->set_stereo_trigger(tib_data->trigger_type & 0x02);
-    calin_tib_data->set_external_calibration_trigger(tib_data->trigger_type & 0x04);
-    calin_tib_data->set_internal_calibration_trigger(tib_data->trigger_type & 0x08);
-    calin_tib_data->set_ucts_aux_trigger(tib_data->trigger_type & 0x10);
-    calin_tib_data->set_pedestal_trigger(tib_data->trigger_type & 0x20);
-    calin_tib_data->set_slow_control_trigger(tib_data->trigger_type & 0x40);
-    calin_tib_data->set_busy_trigger(tib_data->trigger_type & 0x80);
-    calin_tib_data->set_spare_bits(tib_data->stereo_pattern>>9);
+  if(calin_event->has_absolute_event_time() and run_start_time_!=0) {
+    calin_event->mutable_elapsed_event_time()->set_time_ns(
+      calin_event->absolute_event_time().time_ns() - run_start_time_);
   }
 
   // ==========================================================================
@@ -339,6 +311,8 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   const DataModel::CameraRunHeader* cta_run_header,
   const DataModel::CameraEvent* cta_event)
 {
+  calin_run_config->set_run_number(run_number_);
+
   switch(config_.camera_type())
   {
   case NectarCamCameraEventDecoderConfig::NECTARCAM:
@@ -418,6 +392,25 @@ bool NectarCamCameraEventDecoder::decode_run_config(
       cta_event->higain().has_waveforms())
     nsample = cta_event->higain().waveforms().num_samples();
   calin_run_config->set_num_samples(nsample);
+
+  // ==========================================================================
+  //
+  // RUN START TIME
+  //
+  // ==========================================================================
+
+  if(cta_event->uctsdatapresence() and cta_event->has_uctsdata() and
+    cta_event->uctsdata().has_data())
+  {
+    calin::ix::iact_data::telescope_event::CDTSData calin_cdts_data;
+    calin::iact_data::zfits_data_source::decode_cdts_data(
+      &calin_cdts_data, cta_event->uctsdata().data());
+
+    if(calin_cdts_data.white_rabbit_status() == 1) {
+      run_start_time_ = calin_cdts_data.ucts_timestamp();
+      calin_run_config->mutable_run_start_time()->set_time_ns(run_start_time_);
+    }
+  }
 
   // ==========================================================================
   //
@@ -600,8 +593,9 @@ NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
-    decoder_ = new NectarCamCameraEventDecoder(decoder_config), false,
-    config)
+    decoder_ = new NectarCamCameraEventDecoder(
+      calin::util::file::extract_first_number_from_filename(filename),
+      decoder_config), false, config)
 {
   // nothing to see here
 }

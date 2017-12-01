@@ -141,7 +141,8 @@ def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False,
     so = plt.step(hx,hy, where='post', *args, **nargs)
     return so
 
-def plot_histogram_cumulative(h, plot_as_pdf = False, plot_as_pmf = False,
+def plot_histogram_cumulative(h, plot_as_cdf = False, plot_as_cmf = False,
+        right_to_left = False,
         xscale = 1, xoffset = 0, yscale = 1, yoffset = 0, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
@@ -151,9 +152,14 @@ def plot_histogram_cumulative(h, plot_as_pdf = False, plot_as_pmf = False,
         hy = h.bins()
     else:
         raise Exception('Unknown histogram type: '+str(type(h)))
-    if plot_as_pdf or plot_as_pmf:
+    if plot_as_cdf or plot_as_cmf:
         hy /= h.sum_w()
     hx = np.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
-    hy = np.append(0, hy) * yscale + yoffset
-    so = plt.plot(hx,np.cumsum(hy), *args, **nargs)
+    hy = np.append(0, hy)
+    if right_to_left:
+        hy = np.sum(hy)-np.cumsum(hy)
+    else:
+        hy = np.cumsum(hy)
+    hy =  hy * yscale + yoffset
+    so = plt.plot(hx, hy, *args, **nargs)
     return so
