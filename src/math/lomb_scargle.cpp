@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <cmath>
 
+#include <provenance/system_info.hpp>
 #include <math/lomb_scargle.hpp>
 
 namespace {
@@ -67,6 +68,11 @@ Eigen::VectorXd calin::math::lomb_scargle::
 periodogram(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   double freq_lo, double freq_hi, double delta_freq)
 {
+#if defined(__AVX2__) && defined(__FMA__)
+  const auto* sysinfo = calin::provenance::system_info::the_host_info();
+  if(sysinfo->cpu_has_avx2() and sysinfo->cpu_has_fma3())
+    return periodogram_avx2(xi, ti, freq_lo, freq_hi, delta_freq);
+#endif
   return periodogram_fast(xi, ti, freq_lo, freq_hi, delta_freq);
 }
 
@@ -133,6 +139,15 @@ periodogram_fast(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   return periodogram;
 }
 
+Eigen::VectorXd calin::math::lomb_scargle::
+frequencies(const Eigen::VectorXd& periodogram, double freq_lo, double delta_freq)
+{
+  unsigned nfreq = periodogram.size();
+  Eigen::VectorXd freq(nfreq);
+  for(unsigned ifreq=0; ifreq<nfreq; ifreq++)freq[ifreq] = freq_lo + delta_freq*ifreq;
+  return freq;
+}
+
 #if defined(__AVX2__) && defined(__FMA__)
 
 #include <immintrin.h>
@@ -141,7 +156,14 @@ Eigen::VectorXd calin::math::lomb_scargle::
 periodogram_avx2(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   double freq_lo, double freq_hi, double delta_freq)
 {
+  // ===========================================================================
+  //
+  // CAUTION : No User Serviceable Parts Inside
+  //
+  // ===========================================================================
+
   validate(xi,ti);
+
   const unsigned nfreq_block = (unsigned((freq_hi-freq_lo)/delta_freq)+1)/2;
   const unsigned nfreq = nfreq_block * 2;
 
@@ -184,7 +206,7 @@ periodogram_avx2(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
 
   for(unsigned ifreq=0; ifreq<nfreq_block; ifreq++) {
 
-    __m256d CC1 = _mm256_setzero_pd(); // YMM0
+    __m256d CC1 = _mm256_setzero_pd(); // YMM0 (notional register)
     __m256d SS1 = _mm256_setzero_pd(); // YMM1
     __m256d CS1 = _mm256_setzero_pd(); // YMM2
     __m256d XC1 = _mm256_setzero_pd(); // YMM3
