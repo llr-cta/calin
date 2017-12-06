@@ -287,6 +287,8 @@ periodogram_avx2(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
     const double A2 = (xc2*ss2-xs2*cs2)/(ss2*cc2-cs2*cs2);
     const double B2 = (xs2*cc2-xc2*cs2)/(ss2*cc2-cs2*cs2);
     periodogram[ifreq*2+1] = A2*A2+B2*B2;
+
+#warning Renoralize sf and cf occasionally
   }
 
   delete[] vx;

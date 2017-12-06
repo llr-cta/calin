@@ -32,6 +32,7 @@
 #include <simulation/pmt.hpp>
 #include <math/special.hpp>
 #include <util/log.hpp>
+#include <math/fftw_util.hpp>
 
 using namespace calin::simulation::pmt;
 using calin::math::special::SQR;
@@ -475,4 +476,57 @@ Eigen::VectorXd PoissonSignalSim::rvs(const Eigen::VectorXd& lambdas)
   Eigen::VectorXd x(size);
   for(unsigned irv=0;irv<size;irv++)x[irv]=rv(lambdas[irv]);
   return x;
+}
+
+ExponentialTraceSim::
+ExponentialTraceSim(SignalSource* pmt, const Eigen::VectorXd& pmt_pulse, double rate,
+    math::rng::RNG* rng, bool adopt_pmt, bool adopt_rng):
+  pmt_(pmt), tmean_(1.0/rate), nsample_(pmt_pulse.size()),
+  pmt_pulse_fft_(fftw_alloc_real(nsample_)), trace_(fftw_alloc_real(nsample_)),
+  rng_((rng==nullptr)?new math::rng::RNG("ExponentialTraceSim") : rng),
+  adopt_pmt_(adopt_pmt), adopt_rng_((rng==nullptr)?true:adopt_pmt)
+{
+  int plan_flags = FFTW_ESTIMATE; // proto_planning_enum_to_fftw_flag(config_.fftw_planning());
+  trace_plan_fwd_ =
+    fftw_plan_r2r_1d(nsample_, trace_, trace_, FFTW_R2HC, plan_flags);
+  trace_plan_rev_ =
+    fftw_plan_r2r_1d(nsample_, trace_, trace_, FFTW_HC2R, plan_flags);
+
+  std::copy(pmt_pulse.data(), pmt_pulse.data()+nsample_, trace_);
+  fftw_execute(trace_plan_fwd_);
+  std::copy(trace_, trace_+nsample_, pmt_pulse_fft_);
+}
+
+ExponentialTraceSim::~ExponentialTraceSim()
+{
+  if(adopt_pmt_)delete pmt_;
+  if(adopt_rng_)delete rng_;
+  fftw_destroy_plan(trace_plan_fwd_);
+  fftw_destroy_plan(trace_plan_rev_);
+  fftw_free(pmt_pulse_fft_);
+  fftw_free(trace_);
+}
+
+Eigen::VectorXd ExponentialTraceSim::trace()
+{
+  double t = rng_->exponential(tmean_);
+  unsigned it = 0;
+  while(it < nsample_) {
+    double& sample = trace_[it];
+    sample = 0;
+    ++it;
+    while(it > t) {
+      sample += (pmt_ == nullptr) ? 1.0 : pmt_->rv();
+      t += rng_->exponential(tmean_);
+    }
+  }
+
+  fftw_execute(trace_plan_fwd_);
+  calin::math::fftw_util::
+    hcvec_scale_and_multiply(trace_, trace_, pmt_pulse_fft_, nsample_, 1.0/double(nsample_));
+  fftw_execute(trace_plan_rev_);
+
+  Eigen::VectorXd trace(nsample_);
+  std::copy(trace_, trace_+nsample_, trace.data());
+  return trace;
 }
