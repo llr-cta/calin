@@ -510,9 +510,16 @@ periodogram_avx2_float(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
 
 Eigen::VectorXd calin::math::lomb_scargle::
 periodogram_avx2(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
-  double freq_lo, double freq_hi, double delta_freq)
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq)
 {
-  throw std::runtime_error("AVX2 support was not available at compile time");
+  throw std::runtime_error("periodogram_avx2: AVX2 support was not available at compile time");
+}
+
+Eigen::VectorXd calin::math::lomb_scargle::
+periodogram_avx2_float(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq)
+{
+  throw std::runtime_error("periodogram_avx2_float: AVX2 support was not available at compile time");
 }
 
 #endif
