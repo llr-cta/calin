@@ -35,10 +35,13 @@ Eigen::VectorXd periodogram_slow(const Eigen::VectorXd& xi, const Eigen::VectorX
   double freq_lo, double freq_hi, double delta_freq);
 
 Eigen::VectorXd periodogram_fast(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
-  double freq_lo, double freq_hi, double delta_freq);
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq = 0);
 
 Eigen::VectorXd periodogram_avx2(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
-  double freq_lo, double freq_hi, double delta_freq);
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq = 0);
+
+Eigen::VectorXd periodogram_avx2_float(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq = 0);
 
 Eigen::VectorXd frequencies(const Eigen::VectorXd& periodogram,
   double freq_lo, double delta_freq);
