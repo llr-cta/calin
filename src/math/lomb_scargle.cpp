@@ -37,6 +37,40 @@ inline void validate(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti)
 
 } // anonymous namespace
 
+std::pair<double, double> calin::math::lomb_scargle::
+amplitudes(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti, double freq)
+{
+  validate(xi,ti);
+
+  unsigned ni = xi.size();
+  double xmean = 0;
+  for(unsigned i=0; i<ni; i++){
+    xmean += xi[i];
+  }
+  xmean /= double(ni);
+
+  const double omega = 2*M_PI*freq;
+  double CC = 0;
+  double SS = 0;
+  double CS = 0;
+  double XC = 0;
+  double XS = 0;
+  for(unsigned i=0; i<ni; i++) {
+    const double theta = omega*ti[i];
+    const double x = xi[i] - xmean;
+    const double c = std::cos(theta);
+    const double s = std::sin(theta);
+    CC += c*c;
+    SS += s*s;
+    CS += c*s;
+    XC += x*c;
+    XS += x*s;
+  }
+  const double A = (XC*SS-XS*CS)/(SS*CC-CS*CS);
+  const double B = (XS*CC-XC*CS)/(SS*CC-CS*CS);
+  return {A,B};
+}
+
 double calin::math::lomb_scargle::
 power(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti, double freq)
 {

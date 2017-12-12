@@ -26,6 +26,8 @@
 
 namespace calin { namespace math { namespace lomb_scargle {
 
+std::pair<double, double> amplitudes(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti, double freq);
+
 double power(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti, double freq);
 
 Eigen::VectorXd periodogram(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
