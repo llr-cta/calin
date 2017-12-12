@@ -184,6 +184,16 @@ periodogram_avx2(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   //
   // CAUTION : No User Serviceable Parts Inside
   //
+  // On my machine this function is twice as fast as the "_fast" version above.
+  // I think this improvement comes only from the fact that it processes two
+  // frequencies at once in the loop. The extra improvement of a factor of 4
+  // from the vector operations doesn't appear. I think this is because the
+  // compiler automatically vectorizes the "_fast" version also. This is a
+  // useful lesson ! It probably wasn't worth bothering to do an "intrisics"
+  // version. Even the additional factor of 2 could probably be achieved in
+  // "_fast" above by restructuring the loop to process two frequencies at once
+  // like here.
+  //
   // ===========================================================================
 
   validate(xi,ti);
@@ -348,6 +358,10 @@ periodogram_avx2_float(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   // ===========================================================================
   //
   // CAUTION : No User Serviceable Parts Inside
+  //
+  // On my machine this function is twice as fast as the double "_avx" version
+  // above, which can be understood since we process 8 floats at once using
+  // the vector intrinsics rather than 4 doubles.
   //
   // ===========================================================================
 
