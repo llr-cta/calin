@@ -21,6 +21,7 @@
 */
 
 #include <sstream>
+#include <algorithm>
 
 #include <util/string.hpp>
 
