@@ -110,6 +110,36 @@ bool file::can_write_file(const std::string& filename)
   return false;
 }
 
+std::string file::dirname(const std::string& filename)
+{
+  std::string::size_type iend = filename.size();
+  while(iend and filename[--iend]=='/');
+  if(iend==0 and filename[iend]=='/')return {};
+  ++iend;
+  std::string::size_type ifind = filename.rfind('/',iend);
+  if(ifind == std::string::npos)return {};
+  return filename.substr(0,ifind);
+}
+
+std::string file::basename(const std::string& filename, const std::string& suffix)
+{
+  std::string::size_type iend = filename.size();
+  while(iend and filename[--iend]=='/');
+  if(iend==0 and filename[iend]=='/')return {};
+  ++iend;
+#if 0
+  if(not suffix.empty() and iend > suffix.size() and
+      filename.substr(iend-suffix.size(), suffix.size())==suffix and
+      filename[iend-suffix.size()] != '/') {
+    iend -= suffix.size();
+  }
+#endif
+  std::string::size_type ifind = filename.rfind('/',iend);
+  if(ifind == std::string::npos)filename.substr(0,iend);
+  return filename.substr(ifind+1,iend-ifind);
+}
+
+
 void file::expand_filename_in_place(std::string& filename)
 {
   /* Do leading tilde expansion, replace with home directory */

@@ -109,6 +109,15 @@ set(CMAKE_SWIG_FLAGS -py3 -I${CMAKE_SOURCE_DIR}/swig -I${CMAKE_BINARY_DIR}/swig 
 find_package(ZMQ REQUIRED)
 include_directories(${ZMQ_INCLUDE_DIRS})
 
+## Find Xerces-C
+find_package(XercesC)
+set(CALIN_HAVE_XERCESC FALSE)
+if(XercesC_FOUND)
+	include_directories(${XercesC_INCLUDE_DIRS})
+	set(EXTRA_LIBS ${EXTRA_LIBS} ${XercesC_LIBRARIES} )
+	set(CALIN_HAVE_XERCESC TRUE)
+endif()
+
 ## Find the CTA CamerasToACTL package
 set(CALIN_HAVE_CTA_CAMERASTOACTL FALSE)
 find_package(CTA_CamerasToACTL)

@@ -47,6 +47,9 @@ std::string chomp(const std::string& s_in);
 
 std::string string_escape(const std::string& s_in);
 
+std::string to_lower(const std::string& s_in);
+std::string to_upper(const std::string& s_in);
+
 std::string reflow(const std::string& s_in,
   unsigned width, const std::string& indent,
   unsigned line1_width, const std::string& line1_indent);

@@ -88,6 +88,22 @@ std::string calin::util::string::chomp(const std::string& s_in)
   }
 }
 
+std::string calin::util::string::to_lower(const std::string& s_in)
+{
+  std::string s(s_in.size(), '\0');
+  std::transform(s_in.begin(), s_in.end(), s.begin(),
+    [](char c){ return char(std::tolower(c)); });
+  return s;
+}
+
+std::string calin::util::string::to_upper(const std::string& s_in)
+{
+  std::string s(s_in.size(), '\0');
+  std::transform(s_in.begin(), s_in.end(), s.begin(),
+    [](char c){ return char(std::toupper(c)); });
+  return s;
+}
+
 namespace {
 
 void reflow_line_to_text(std::string& text, std::string& line,

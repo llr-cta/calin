@@ -40,10 +40,10 @@ using namespace calin::util::log;
 
 #define TEST_ANYARRAY_TYPES 0
 
-NectarCamCameraEventDecoder::NectarCamCameraEventDecoder(unsigned run_number,
-    const config_type& config):
+NectarCamCameraEventDecoder::NectarCamCameraEventDecoder(
+    const std::string& filename, unsigned run_number, const config_type& config):
   zfits_data_source::CTACameraEventDecoder(), config_(config),
-  run_number_(run_number)
+  filename_(filename), run_number_(run_number)
 {
   switch(config.exchange_gain_channels()) {
     case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_NONE:
@@ -311,6 +311,7 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   const DataModel::CameraRunHeader* cta_run_header,
   const DataModel::CameraEvent* cta_event)
 {
+  calin_run_config->set_filename(filename_);
   calin_run_config->set_run_number(run_number_);
 
   switch(config_.camera_type())
@@ -593,7 +594,7 @@ NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
-    decoder_ = new NectarCamCameraEventDecoder(
+    decoder_ = new NectarCamCameraEventDecoder(filename,
       calin::util::file::extract_first_number_from_filename(filename),
       decoder_config), false, config)
 {

@@ -40,7 +40,8 @@ public:
   CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
     nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
-  NectarCamCameraEventDecoder(unsigned run_number = 0,
+  NectarCamCameraEventDecoder(const std::string& filename,
+    unsigned run_number = 0,
     const config_type& config = default_config());
 
   //void set_config(const config_type& config) { config_.CopyFrom(config); }
@@ -71,6 +72,7 @@ private:
   unsigned get_nmod_from_event(const DataModel::CameraEvent* cta_event) const;
 
   config_type config_;
+  std::string filename_;
   unsigned run_number_ = 0;
   bool exchange_gain_channels_ = false;
   int64_t run_start_time_ = 0;

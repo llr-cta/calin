@@ -26,6 +26,7 @@ syntax = "proto3";
 import "calin.proto";
 import "common_types.proto";
 import "iact_data/instrument_layout.proto";
+import "iact_data/nectarcam_module_configuration.proto";
 
 package calin.ix.iact_data.telescope_run_configuration;
 
@@ -35,9 +36,11 @@ enum SerializedRawHeaderType {
 };
 
 message TelescopeRunConfiguration {
-  uint32 run_number                                        = 1 [
+  string filename                                          = 1 [
+    (CFO).desc = "Filename of data file." ];
+  uint32 run_number                                        = 2 [
     (CFO).desc = "Run number." ];
-  common_types.Time run_start_time                         = 2 [
+  common_types.Time run_start_time                         = 3 [
     (CFO).desc = "Start date and time of run." ];
   repeated int32 configured_channel_index                  = 11 [
     (CFO).desc = "Index within list of configured channels for each channel "
@@ -54,6 +57,11 @@ message TelescopeRunConfiguration {
   calin.ix.iact_data.instrument_layout.
       CameraLayout camera_layout                           = 101 [
     (CFO).desc = "Camera layout." ];
+
+  oneof camera_specific_configuration {
+    calin.ix.iact_data.nectarcam_module_configuration.NectarCamCameraConfiguration nectarcam = 200 [
+      (CFO).desc = "NectarCam configuration elements." ];
+  }
 
   SerializedRawHeaderType serialized_raw_header_type        = 998 [
     (CFO).desc = "Flag describing type of serialized raw header data included.",

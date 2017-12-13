@@ -30,6 +30,10 @@
 
 #pragma once
 
+// CALIN_HAVE_XERCESC
+// Flags conditional compilation of XercesC-specific code
+#cmakedefine CALIN_HAVE_XERCESC 1
+
 // CALIN_HAVE_GEANT4
 // Flags conditional compilation of GEANT4-specific code
 #cmakedefine CALIN_HAVE_GEANT4 1
