@@ -141,6 +141,13 @@ std::string file::basename(const std::string& filename, const std::string& suffi
   return basename;
 }
 
+std::string file::strip_extension(const std::string& filename)
+{
+  size_t ifind = filename.rfind('.');
+  if(ifind == 0 or ifind == std::string::npos)return {};
+  return filename.substr(0,ifind);
+}
+
 void file::expand_filename_in_place(std::string& filename)
 {
   /* Do leading tilde expansion, replace with home directory */
