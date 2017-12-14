@@ -114,9 +114,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/cmake ];
     then (
-      wget --no-check-certificate https://cmake.org/files/v3.7/cmake-3.7.2.tar.gz &&
-      tar zxf cmake-3.7.2.tar.gz &&
-      cd cmake-3.7.2 &&
+      wget --no-check-certificate https://cmake.org/files/v3.9/cmake-3.9.6.tar.gz &&
+      tar zxf cmake-3.9.6.tar.gz &&
+      cd cmake-3.9.6 &&
       ./bootstrap  --parallel=3 --prefix=$LOCAL &&
       make -j3 &&
       make install > /dev/null &&
@@ -136,9 +136,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/protoc ]
     then (
-      wget https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-cpp-3.2.0.tar.gz &&
-      tar zxf protobuf-cpp-3.2.0.tar.gz &&
-      cd protobuf-3.2.0 &&
+      wget https://github.com/google/protobuf/releases/download/v3.5.0/protobuf-cpp-3.5.0.tar.gz &&
+      tar zxf protobuf-cpp-3.5.0.tar.gz &&
+      cd protobuf-3.5.0 &&
       ./configure --prefix=$LOCAL &&
       make -j3 &&
       make install > /dev/null &&
@@ -147,9 +147,9 @@ install:
   - |
     if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh -a ! -f $HOME/suppress_geant_build ]
     then (
-      wget http://geant4.cern.ch/support/source/geant4.10.03.p01.tar.gz &&
-      tar zxf geant4.10.03.p01.tar.gz &&
-      cd geant4.10.03.p01 &&
+      wget http://geant4.cern.ch/support/source/geant4.10.04.tar.gz &&
+      tar zxf geant4.10.04.tar.gz &&
+      cd geant4.10.04 &&
       mkdir mybuild &&
       cd mybuild &&
       cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$LOCAL .. &&
@@ -160,11 +160,11 @@ install:
     if [ "x$GEANT4" == "xTRUE" ]
     then
       NO_GEANT4=""
-      export G4LEDATA=6.50
-      export G4LEVELGAMMADATA=4.3.2
+      export G4LEDATA=7.3
+      export G4LEVELGAMMADATA=5.2
       export G4SAIDXSDATA=1.1
       export G4NEUTRONXSDATA=1.4
-      export G4ENSDFSTATEDATA=2.1
+      export G4ENSDFSTATEDATA=2.2
       GEANT4_DATA=$HOME/geant4_data
       (
         mkdir $GEANT4_DATA
