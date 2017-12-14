@@ -377,8 +377,10 @@ bool NectarCamCameraEventDecoder::decode_run_config(
     auto logger = LOG(WARNING);
     logger << "Could not find NectarCAM module configuration XML file, tried:\n";
     for(auto try_fn : nmc_file_tried) {
-      logger << " - " << try_fn << '\n';
+      logger << "- " << try_fn << '\n';
     }
+    logger << "Set the \"demand_nmc_xml_file\" decoder option if you wish to "
+      "specify a different file.";
   }
 
   // ---------------------------------------------------------------------------
