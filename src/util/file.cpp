@@ -43,6 +43,8 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <cstring>
+#include <libgen.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/message.h>
 #include <google/protobuf/util/json_util.h>
@@ -112,33 +114,32 @@ bool file::can_write_file(const std::string& filename)
 
 std::string file::dirname(const std::string& filename)
 {
-  std::string::size_type iend = filename.size();
-  while(iend and filename[--iend]=='/');
-  if(iend==0 and filename[iend]=='/')return {};
-  ++iend;
-  std::string::size_type ifind = filename.rfind('/',iend);
-  if(ifind == std::string::npos)return {};
-  return filename.substr(0,ifind);
+  char* cfilename = ::strdup(filename.c_str());
+  for(unsigned iend=::strlen(cfilename); iend>0 and cfilename[iend-1]=='/'; iend--)
+    cfilename[iend-1]='\0';
+  std::string dirname = ::dirname(cfilename);
+  ::free(cfilename);
+  return dirname;
 }
 
 std::string file::basename(const std::string& filename, const std::string& suffix)
 {
-  std::string::size_type iend = filename.size();
-  while(iend and filename[--iend]=='/');
-  if(iend==0 and filename[iend]=='/')return {};
-  ++iend;
-#if 0
-  if(not suffix.empty() and iend > suffix.size() and
-      filename.substr(iend-suffix.size(), suffix.size())==suffix and
-      filename[iend-suffix.size()] != '/') {
-    iend -= suffix.size();
+  char* cfilename = ::strdup(filename.c_str());
+  for(unsigned iend=::strlen(cfilename); iend>0 and cfilename[iend-1]=='/'; iend--)
+    cfilename[iend-1]='\0';
+  char* cbasename = ::basename(cfilename);
+  if(not suffix.empty()) {
+    const char* suffix_cstr = suffix.c_str();
+    unsigned cbasenamelen = ::strlen(cbasename);
+    unsigned suffixlen = ::strlen(suffix_cstr);
+    if(cbasenamelen>suffixlen and
+        strcmp(cbasename + cbasenamelen - suffixlen, suffix_cstr)==0)
+      cbasename[cbasenamelen - suffixlen] = '\0';
   }
-#endif
-  std::string::size_type ifind = filename.rfind('/',iend);
-  if(ifind == std::string::npos)filename.substr(0,iend);
-  return filename.substr(ifind+1,iend-ifind);
+  std::string basename = cbasename;
+  ::free(cfilename);
+  return basename;
 }
-
 
 void file::expand_filename_in_place(std::string& filename)
 {
