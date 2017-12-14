@@ -353,12 +353,12 @@ bool NectarCamCameraEventDecoder::decode_run_config(
     }
     std::string nmc_basename = calin::util::file::basename(filename_);
     while(not nmc_basename.empty()) {
-      std::string auto_fn = nmc_dirname + nmc_basename + config_.nmc_xml_suffix();
-      if(calin::util::file::is_readable(auto_fn)) {
-        nmc_file = auto_fn;
+      std::string test_file = nmc_dirname + nmc_basename + config_.nmc_xml_suffix();
+      if(calin::util::file::is_readable(test_file)) {
+        nmc_file = test_file;
         break;
       } else {
-        nmc_file_tried.emplace_back(auto_fn);
+        nmc_file_tried.emplace_back(test_file);
       }
       nmc_basename = calin::util::file::strip_extension(nmc_basename);
     }
