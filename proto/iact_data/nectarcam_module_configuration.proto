@@ -49,6 +49,10 @@ message NectarCamModuleConfiguration {
 };
 
 message NectarCamCameraConfiguration {
+  string nmc_source_filename                               = 1 [
+    (CFO).desc = "Filename of data source from which NMC data is derived "
+      "(the NMX xml file for example)." ];
+
   repeated NectarCamModuleConfiguration module             = 10 [
     (CFO).desc = "Configuration of modules." ];
 };

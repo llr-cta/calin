@@ -45,6 +45,12 @@ message NectarCamCameraEventDecoderConfig {
     (CFO).desc = "Exchange high and low gains from NectarCam ZFits file." ];
   bool include_serialized_raw_data                         = 3 [
     (CFO).desc = "Include serialized raw ACTL protobuf header and event data." ];
+  string demand_nmc_xml_file                               = 10 [
+    (CFO).desc = "NectarCam module configuration XML file to use, or empty "
+      "if automatic search based on data file should be tried." ];
+  string nmc_xml_suffix                                    = 11 [
+    (CFO).desc = "Suffix of NectarCam module configuration XML file for "
+      "automatic search." ];
   uint32 demand_nsample                                    = 100 [
     (CFO).desc = "Override number of samples per event stored in file. Zero "
       "means we use value from file."];

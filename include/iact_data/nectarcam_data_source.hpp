@@ -48,7 +48,10 @@ public:
   config_type config() const { return config_; }
   //config_type* mutable_config() { return &config_; }
   static config_type default_config() {
-    return config_type::default_instance(); }
+    config_type config = config_type::default_instance();
+    config.set_nmc_xml_suffix(".NMC.xml");
+    return config;
+  }
 
   virtual ~NectarCamCameraEventDecoder();
 
@@ -96,7 +99,7 @@ public:
     return decoder_->mutable_config(); }
 #endif
   static decoder_config_type default_decoder_config() {
-    return decoder_config_type::default_instance(); }
+    return NectarCamCameraEventDecoder::default_config(); }
 
   NectarCamZFITSDataSource(const std::string& filename,
     const config_type& config,

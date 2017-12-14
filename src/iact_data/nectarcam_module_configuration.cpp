@@ -108,6 +108,8 @@ calin::iact_data::nectarcam_module_configuration::decode_nmc_xml_file(
         nccc_out = nccc;
         if(nccc_out == nullptr)nccc_out = new calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration;
 
+        nccc_out->set_nmc_source_filename(filename);
+
         auto* element = doc_element->getFirstElementChild();
         while(element) {
           if(to_string(element->getTagName()) == "drawer") {
