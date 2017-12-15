@@ -44,7 +44,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstring>
-#include <libgen.h>
+
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/message.h>
 #include <google/protobuf/util/json_util.h>
@@ -52,9 +52,35 @@
 #include <util/string.hpp>
 #include <util/file.hpp>
 
+#include <libgen.h>
+
+// Some libgen.h implementations seem to typedef "basename" to point
+// elsewhere.. this undoes this on those systems so calin::util::file::basename
+// is not accidentally renamed
+
+namespace {
+
+char* system_basename(char* x) {
+  return ::basename(x);
+}
+
+char* system_dirname(char* x) {
+  return ::dirname(x);
+}
+
+} // anonymous namespace
+
+#ifdef basename
+#undef basename
+#endif
+
+#ifdef dirname
+#undef dirname
+#endif
+
 using namespace calin::util;
 
-bool file::exists(const std::string& filename)
+bool calin::util::file::exists(const std::string& filename)
 {
   if(filename.empty())return false;
   struct stat statbuf;
@@ -62,7 +88,7 @@ bool file::exists(const std::string& filename)
   return true;
 }
 
-bool file::is_file(const std::string& filename)
+bool calin::util::file::is_file(const std::string& filename)
 {
   if(filename.empty())return false;
   struct stat statbuf;
@@ -70,7 +96,7 @@ bool file::is_file(const std::string& filename)
   return S_ISREG(statbuf.st_mode);
 }
 
-bool file::is_directory(const std::string& filename)
+bool calin::util::file::is_directory(const std::string& filename)
 {
   if(filename.empty())return false;
   struct stat statbuf;
@@ -78,19 +104,19 @@ bool file::is_directory(const std::string& filename)
   return S_ISDIR(statbuf.st_mode);
 }
 
-bool file::is_readable(const std::string& filename)
+bool calin::util::file::is_readable(const std::string& filename)
 {
   if(filename.empty())return false;
   return access(filename.c_str(),R_OK)==0;
 }
 
-bool file::is_writable(const std::string& filename)
+bool calin::util::file::is_writable(const std::string& filename)
 {
   if(filename.empty())return false;
   return access(filename.c_str(),W_OK)==0;
 }
 
-bool file::can_write_file(const std::string& filename)
+bool calin::util::file::can_write_file(const std::string& filename)
 {
   if(filename.empty())return false;
 
@@ -112,22 +138,22 @@ bool file::can_write_file(const std::string& filename)
   return false;
 }
 
-std::string file::dirname(const std::string& filename)
+std::string calin::util::file::dirname(const std::string& filename)
 {
   char* cfilename = ::strdup(filename.c_str());
   for(unsigned iend=::strlen(cfilename); iend>0 and cfilename[iend-1]=='/'; iend--)
     cfilename[iend-1]='\0';
-  std::string dirname = ::dirname(cfilename);
+  std::string dirname = system_dirname(cfilename);
   ::free(cfilename);
   return dirname;
 }
 
-std::string file::basename(const std::string& filename, const std::string& suffix)
+std::string calin::util::file::basename(const std::string& filename, const std::string& suffix)
 {
   char* cfilename = ::strdup(filename.c_str());
   for(unsigned iend=::strlen(cfilename); iend>0 and cfilename[iend-1]=='/'; iend--)
     cfilename[iend-1]='\0';
-  char* cbasename = ::basename(cfilename);
+  char* cbasename = system_basename(cfilename);
   if(not suffix.empty()) {
     const char* suffix_cstr = suffix.c_str();
     unsigned cbasenamelen = ::strlen(cbasename);
@@ -141,14 +167,14 @@ std::string file::basename(const std::string& filename, const std::string& suffi
   return basename;
 }
 
-std::string file::strip_extension(const std::string& filename)
+std::string calin::util::file::strip_extension(const std::string& filename)
 {
   size_t ifind = filename.rfind('.');
   if(ifind == 0 or ifind == std::string::npos)return {};
   return filename.substr(0,ifind);
 }
 
-void file::expand_filename_in_place(std::string& filename)
+void calin::util::file::expand_filename_in_place(std::string& filename)
 {
   /* Do leading tilde expansion, replace with home directory */
   if((!filename.empty())&&(filename[0]=='~'))
@@ -178,7 +204,7 @@ void file::expand_filename_in_place(std::string& filename)
   }
 }
 
-unsigned file::extract_longest_number_from_filename(const std::string& filename)
+unsigned calin::util::file::extract_longest_number_from_filename(const std::string& filename)
 {
   std::string::const_iterator longest_num_start = filename.begin();
 
@@ -216,7 +242,7 @@ unsigned file::extract_longest_number_from_filename(const std::string& filename)
   return n;
 }
 
-unsigned file::extract_first_number_from_filename(const std::string& filename)
+unsigned calin::util::file::extract_first_number_from_filename(const std::string& filename)
 {
   std::string::const_iterator num_start = filename.begin();
 
@@ -234,14 +260,14 @@ unsigned file::extract_first_number_from_filename(const std::string& filename)
   return calin::util::string::unsigned_from_string(std::string(num_start,num_end));
 }
 
-void file::replace_question_with_number(std::string& filename, unsigned n)
+void calin::util::file::replace_question_with_number(std::string& filename, unsigned n)
 {
   std::string::size_type iquestion = filename.find('?');
   if(iquestion != filename.npos)
     filename.replace(iquestion,1, std::to_string(n));
 }
 
-void file::save_protobuf_to_json_file(const std::string& filename,
+void calin::util::file::save_protobuf_to_json_file(const std::string& filename,
   const google::protobuf::Message* message)
 {
   google::protobuf::util::JsonPrintOptions opt;
@@ -256,7 +282,7 @@ void file::save_protobuf_to_json_file(const std::string& filename,
   if(!stream)throw std::runtime_error("Error writing file: "+filename);
 }
 
-void file::load_protobuf_from_json_file(const std::string& filename,
+void calin::util::file::load_protobuf_from_json_file(const std::string& filename,
   google::protobuf::Message* message)
 {
   std::ifstream stream(filename);
