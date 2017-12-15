@@ -13,6 +13,8 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --save-temps")
+
 set(CALIN_TARGET_LIBRARY calin_math)
 set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 	pdf_1d.cpp pdf_1d_gaussian.cpp pdf_1d_limited_exponential.cpp
@@ -24,7 +26,7 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 	#vs_vec3d_obsolete.cpp# vs_vec4d_obsolete.cpp vs_particle_obsolete.cpp
 	rng.cpp fftw_util.cpp healpix_array.cpp position_generator.cpp
 	direction_generator.cpp ray_generator.cpp data_modeling.cpp m_estimate.cpp
-	regular_grid)
+	regular_grid.cpp lomb_scargle.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY}

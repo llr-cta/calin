@@ -1,0 +1,58 @@
+/*
+
+   calin/proto/iact_data/nectarcam_module_configuration.proto
+                                                -- Stephen Fegan -- 2017-12-13
+
+   Protobufs for NectarCAM module configuration information
+
+   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+//import "common_types.proto";
+
+package calin.ix.iact_data.nectarcam_module_configuration;
+
+message NectarCamModuleConfiguration {
+  int32 module_id                                          = 1 [
+    (CFO).desc = "Module number." ];
+
+  string ip_address                                        = 2 [
+    (CFO).desc = "IP address of module." ];
+
+  string mac_address                                       = 3 [
+    (CFO).desc = "MAC address of module." ];
+
+  uint32 daq_num_samples                                   = 10 [
+    (CFO).desc = "Number of samples to read out." ];
+
+  string daq_mode                                          = 11 [
+    (CFO).desc = "NectarCam DAQ mode." ];
+
+  repeated double hvpa_voltage                             = 20 [
+    (CFO).desc = "HVPA voltages for channels in modules.", (CFO).units = "volt" ];
+};
+
+message NectarCamCameraConfiguration {
+  string nmc_source_filename                               = 1 [
+    (CFO).desc = "Filename of data source from which NMC data is derived "
+      "(the NMX xml file for example)." ];
+
+  repeated NectarCamModuleConfiguration module             = 10 [
+    (CFO).desc = "Configuration of modules." ];
+};

@@ -15,7 +15,8 @@
 
 set(CALIN_SWIG_PROTO instrument_layout.proto telescope_event.proto
 	zfits_data_source.proto nectarcam_data_source.proto
-	telescope_run_configuration.proto functional_event_visitor.proto)
+	telescope_run_configuration.proto functional_event_visitor.proto
+	nectarcam_module_configuration.proto)
 set(CALIN_PACKAGE iact_data)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 

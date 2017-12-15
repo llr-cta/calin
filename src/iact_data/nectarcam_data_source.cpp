@@ -28,6 +28,7 @@
 #include <iact_data/nectarcam_data_source.hpp>
 #include <iact_data/zfits_data_source.hpp>
 #include <iact_data/nectarcam_layout.hpp>
+#include <iact_data/nectarcam_module_configuration.hpp>
 
 using namespace calin::iact_data::nectarcam_data_source;
 using namespace calin::ix::iact_data::telescope_event;
@@ -40,10 +41,10 @@ using namespace calin::util::log;
 
 #define TEST_ANYARRAY_TYPES 0
 
-NectarCamCameraEventDecoder::NectarCamCameraEventDecoder(unsigned run_number,
-    const config_type& config):
+NectarCamCameraEventDecoder::NectarCamCameraEventDecoder(
+    const std::string& filename, unsigned run_number, const config_type& config):
   zfits_data_source::CTACameraEventDecoder(), config_(config),
-  run_number_(run_number)
+  filename_(filename), run_number_(run_number)
 {
   switch(config.exchange_gain_channels()) {
     case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_NONE:
@@ -311,6 +312,7 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   const DataModel::CameraRunHeader* cta_run_header,
   const DataModel::CameraEvent* cta_event)
 {
+  calin_run_config->set_filename(filename_);
   calin_run_config->set_run_number(run_number_);
 
   switch(config_.camera_type())
@@ -326,6 +328,66 @@ bool NectarCamCameraEventDecoder::decode_run_config(
       calin_run_config->mutable_camera_layout());
     break;
   }
+
+  // ---------------------------------------------------------------------------
+  //
+  // Try to read the NectarCam module configuration XML file
+  //
+  // ---------------------------------------------------------------------------
+
+  std::vector<std::string> nmc_file_tried;
+  std::string nmc_file;
+
+  if(not config_.demand_nmc_xml_file().empty()) {
+    if(calin::util::file::is_readable(config_.demand_nmc_xml_file())) {
+      nmc_file = config_.demand_nmc_xml_file();
+    } else {
+      nmc_file_tried.emplace_back(config_.demand_nmc_xml_file());
+    }
+  } else {
+    std::string nmc_dirname = calin::util::file::dirname(filename_);
+    if(nmc_dirname == ".") {
+      nmc_dirname = "";
+    } else {
+      nmc_dirname += '/';
+    }
+    std::string nmc_basename = calin::util::file::basename(filename_);
+    while(not nmc_basename.empty()) {
+      std::string test_file = nmc_dirname + nmc_basename + config_.nmc_xml_suffix();
+      if(calin::util::file::is_readable(test_file)) {
+        nmc_file = test_file;
+        break;
+      } else {
+        nmc_file_tried.emplace_back(test_file);
+      }
+      nmc_basename = calin::util::file::strip_extension(nmc_basename);
+    }
+  }
+
+  if(not nmc_file.empty()) {
+    calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration* nccc =
+      calin::iact_data::nectarcam_module_configuration::decode_nmc_xml_file(nmc_file);
+    if(nccc) {
+      calin_run_config->mutable_nectarcam()->CopyFrom(*nccc);
+    } else {
+      LOG(WARNING) << "Could not parse NectarCAM module configuration XML file "
+        << nmc_file;
+    }
+  } else {
+    auto logger = LOG(WARNING);
+    logger << "Could not find NectarCAM module configuration XML file, tried:\n";
+    for(auto try_fn : nmc_file_tried) {
+      logger << "- " << try_fn << '\n';
+    }
+    logger << "Set the \"demand_nmc_xml_file\" decoder option if you wish to "
+      "specify a different file.";
+  }
+
+  // ---------------------------------------------------------------------------
+  //
+  // Get the list of configured modules
+  //
+  // ---------------------------------------------------------------------------
 
   if(cta_run_header)
   {
@@ -363,6 +425,17 @@ bool NectarCamCameraEventDecoder::decode_run_config(
           std::to_string(nmod_camera));
       config_mod_id.insert(mod_id);
     }
+  } else if(calin_run_config->has_nectarcam() and
+      calin_run_config->nectarcam().module_size() == nmod) {
+    config_mod_id.clear();
+    for(int imod=0; imod<nmod; imod++) {
+      unsigned mod_id = calin_run_config->nectarcam().module(imod).module_id();
+      if(mod_id >= nmod_camera)
+        throw std::runtime_error("NectarCamCameraEventDecoder::decode_run_config: "
+          "Demand module id out of range: " + std::to_string(mod_id) + " >= " +
+          std::to_string(nmod_camera));
+      config_mod_id.insert(mod_id);
+    }
   }
 
   for(unsigned mod_id=0, mod_index=0; mod_id<nmod_camera; mod_id++)
@@ -385,6 +458,13 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   unsigned nsample = config_.demand_nsample();
   if(nsample == 0 and cta_run_header)
     nsample = cta_run_header->numtraces();
+  if(nsample == 0 and calin_run_config->has_nectarcam() and
+      calin_run_config->nectarcam().module_size()>0) {
+    nsample = calin_run_config->nectarcam().module(0).daq_num_samples();
+    for(int imod=1; imod<calin_run_config->nectarcam().module_size(); imod++)
+      if(calin_run_config->nectarcam().module(imod).daq_num_samples() != nsample)
+        nsample = 0;
+  }
   if(nsample == 0 and cta_event and cta_event->has_logain() and
       cta_event->logain().has_waveforms())
     nsample = cta_event->logain().waveforms().num_samples();
@@ -593,7 +673,7 @@ NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
-    decoder_ = new NectarCamCameraEventDecoder(
+    decoder_ = new NectarCamCameraEventDecoder(filename,
       calin::util::file::extract_first_number_from_filename(filename),
       decoder_config), false, config)
 {

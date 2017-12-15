@@ -15,8 +15,9 @@
 
 set(CALIN_TARGET_LIBRARY calin_iact_data)
 set(CALIN_SOURCES telescope_data_source.cpp event_visitor.cpp
-	event_dispatcher.cpp functional_event_visitor.cpp instrument_layout.cpp 
-	nectarcam_layout.cpp)
+	event_dispatcher.cpp functional_event_visitor.cpp instrument_layout.cpp
+	nectarcam_layout.cpp nectarcam_module_configuration.cpp)
+
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES} zfits_actl_data_source.cpp
 		zfits_data_source.cpp nectarcam_data_source.cpp)
@@ -24,7 +25,7 @@ endif()
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY}
-	calin_proto_io calin_proto_iact_data calin_io calin_math)
+	calin_proto_io calin_proto_iact_data calin_io calin_math calin_util)
 
 if(CTA_CAMERASTOACTL_FOUND)
 	include_directories(${CTA_CAMERASTOACTL_INCLUDE_DIRS})

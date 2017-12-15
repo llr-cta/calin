@@ -26,6 +26,7 @@
 #include <calin_global_config.hpp>
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
+#include <iact_data/nectarcam_module_configuration.hpp>
 using namespace calin::io;
 #define SWIG_FILE_WITH_INIT
   %}
@@ -39,9 +40,13 @@ using namespace calin::io;
 %import "calin_global_definitions.i"
 
 %import "iact_data/telescope_event.pb.i"
+%import "iact_data/nectarcam_module_configuration.pb.i"
 %import "iact_data/telescope_run_configuration.pb.i"
 %import "iact_data/zfits_data_source.pb.i"
 %import "iact_data/nectarcam_data_source.pb.i"
+
+%newobject decode_nmc_xml_file(const std::string& filename);
+%include "iact_data/nectarcam_module_configuration.hpp"
 
 %newobject get_run_configuration();
 

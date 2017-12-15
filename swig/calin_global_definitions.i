@@ -56,6 +56,9 @@
 %template (VectorBool)        std::vector<bool>;
 %template (VectorString)      std::vector<std::string>;
 
+%template (PairDoubleDouble) std::pair<double,double>;
+%template (VectorPairDoubleDouble) std::vector<std::pair<double,double> >;
+
 %template (PairUnsignedUnsigned) std::pair<unsigned,unsigned>;
 %template (VectorPairUnsignedUnsigned) std::vector<std::pair<unsigned,unsigned> >;
 

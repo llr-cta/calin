@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <fftw3.h>
+
 #include <Eigen/Core>
 #include <math/rng.hpp>
 #include <simulation/pmt.pb.h>
@@ -146,6 +148,34 @@ private:
   math::rng::RNG*                                    rng_;
   math::rng::RNG*                                    my_rng_;
   calin::ix::simulation::pmt::PoissonSignalSimConfig config_;
+};
+
+class ExponentialTraceSim
+{
+public:
+  ExponentialTraceSim(const Eigen::VectorXd& pmt_pulse, double rate,
+      math::rng::RNG* rng = nullptr, bool adopt_rng = false) :
+    ExponentialTraceSim(nullptr, pmt_pulse, rate, rng, false, adopt_rng) { }
+
+  ExponentialTraceSim(SignalSource* pmt, const Eigen::VectorXd& pmt_pulse, double rate,
+      math::rng::RNG* rng = nullptr, bool adopt_pmt = false, bool adopt_rng = false);
+  ~ExponentialTraceSim();
+
+  Eigen::VectorXd trace();
+
+  double rate() const { return 1.0/tmean_; }
+  void set_rate(double rate) { tmean_ = 1.0/rate; }
+private:
+  SignalSource* pmt_;
+  double tmean_;
+  unsigned nsample_;
+  double* pmt_pulse_fft_ = nullptr;
+  double* trace_ = nullptr;
+  fftw_plan trace_plan_fwd_;
+  fftw_plan trace_plan_rev_;
+  math::rng::RNG* rng_;
+  bool adopt_pmt_ = false;
+  bool adopt_rng_ = false;
 };
 
 } } } // namespace calin::simulation::pmt
