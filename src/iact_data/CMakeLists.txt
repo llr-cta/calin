@@ -25,7 +25,7 @@ endif()
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY}
-calin_proto_io calin_proto_iact_data calin_io calin_math)
+	calin_proto_io calin_proto_iact_data calin_io calin_math calin_util)
 
 if(CTA_CAMERASTOACTL_FOUND)
 	include_directories(${CTA_CAMERASTOACTL_INCLUDE_DIRS})
