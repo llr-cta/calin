@@ -388,16 +388,16 @@ bool MeantimeTimingFunctionalTelescopeEventVisitor::visit_telescope_run(
 
   high_gain_pedestal_.clear();
   for(const auto& ped : config_.high_gain_pedestal())
-    if(high_gain_pedestal_.size() < run_config->configured_channel_id_size())
+    if(int(high_gain_pedestal_.size()) < run_config->configured_channel_id_size())
       high_gain_pedestal_.push_back(ped);
-  while(high_gain_pedestal_.size() < run_config->configured_channel_id_size())
+  while(int(high_gain_pedestal_.size()) < run_config->configured_channel_id_size())
     high_gain_pedestal_.push_back(-1);
 
   low_gain_pedestal_.clear();
   for(const auto& ped : config_.low_gain_pedestal())
-    if(low_gain_pedestal_.size() < run_config->configured_channel_id_size())
+    if(int(low_gain_pedestal_.size()) < run_config->configured_channel_id_size())
       low_gain_pedestal_.push_back(ped);
-  while(low_gain_pedestal_.size() < run_config->configured_channel_id_size())
+  while(int(low_gain_pedestal_.size()) < run_config->configured_channel_id_size())
     low_gain_pedestal_.push_back(-1);
 
   return true;
