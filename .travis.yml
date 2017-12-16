@@ -157,7 +157,7 @@ install:
       make install > /dev/null
     ); fi
   - |
-    if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh ]
+    if [ "x$GEANT4" == "xTRUE" -a -f $LOCAL/bin/geant4.sh ]
     then
       NO_GEANT4=""
       . $LOCAL/bin/geant4.sh
