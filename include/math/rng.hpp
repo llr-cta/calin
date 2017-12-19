@@ -44,6 +44,10 @@
 #include <random>
 #include <utility>
 
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
+
 #include <calin_global_definitions.hpp>
 #include <math/rng.pb.h>
 
@@ -361,10 +365,10 @@ class NR3_EmulateSIMD_RNGCore: public RNGCore
   unsigned ndev_ = NSTREAM;
 };
 
-#if 0
 class NR3_AVX2_RNGCore: public RNGCore
 {
- private:
+private:
+#if defined(__AVX2__)
   void init(uint64_t seed0, uint64_t seed1, uint64_t seed2, uint64_t seed3)
   {
     stream_seed0_ = seed0;
@@ -386,32 +390,40 @@ class NR3_AVX2_RNGCore: public RNGCore
     uniform_uivec256();
     calls_ = 0;
   }
+#endif
 
  public:
   typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
 
   NR3_AVX2_RNGCore(uint64_t seed = 0):
-      RNGCore(),
-      seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device())
+    RNGCore(), seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device())
   {
+#if defined(__AVX2__)
     std::mt19937_64 gen(seed_);
     init(gen(), gen(), gen(), gen());
+#else
+    throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
+#endif
   }
 
-  NR3_AVX2_RNGCore(uint64_t seed0, uint64_t seed1,
-                 uint64_t seed2, uint64_t seed3):
-      RNGCore(), seed_(0)
+  NR3_AVX2_RNGCore(uint64_t seed0, uint64_t seed1, uint64_t seed2, uint64_t seed3):
+    RNGCore(), seed_(0)
   {
+#if defined(__AVX2__)
     init(seed0, seed1, seed2, seed3);
+#else
+    throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
+#endif
   }
 
   NR3_AVX2_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto,
-                  bool restore_state = false);
+                   bool restore_state = false);
 
-  ~NR3_AVX2_RNGCore();
+  virtual ~NR3_AVX2_RNGCore();
 
   __m256i uniform_uivec256()
   {
+#if defined(__AVX2__)
     constexpr uint64_t CU1 = UINT64_C(2862933555777941757);
     constexpr uint64_t CU2 = UINT64_C(7046029254386353087);
 
@@ -442,17 +454,38 @@ class NR3_AVX2_RNGCore: public RNGCore
     vec_x = _mm256_xor_si256(vec_x, _mm256_srli_epi64(vec_x, 35));
     vec_x = _mm256_xor_si256(vec_x, _mm256_slli_epi64(vec_x, 4));
 
+    ++calls_;
+
     return _mm256_xor_si256(_mm256_add_epi64(vec_x, vec_v_), vec_w_);
+#else
+    throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
+#endif
+  }
+
+  __m256 uniform_psvec256()
+  {
+#if defined(__AVX2__)
+    __m256i vec_ui = uniform_uivec256();
+    __m256 vec_ps = _mm256_cvtepi32_ps(vec_ui);
+    vec_ps = _mm256_mul_ps(vec_ps, _mm256_set1_ps(2.328306437e-10));
+    return _mm256_add_ps(vec_ps, _mm256_set1_ps(0.5));
+#else
+    throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
+#endif
   }
 
   uint64_t uniform_uint64() override
   {
+#if defined(__AVX2__)
     if(ndev_ == 0)
     {
       vec_dev_ = uniform_uivec256();
       ndev_ = 4;
     }
     return reinterpret_cast<uint64_t*>(&vec_dev_)[--ndev_];
+#else
+    throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
+#endif
   }
 
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
@@ -462,19 +495,20 @@ class NR3_AVX2_RNGCore: public RNGCore
   static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
   { return proto.nr3_avx2_core(); }
 
- private:
+private:
   uint64_t seed_;
   uint64_t stream_seed0_;
   uint64_t stream_seed1_;
   uint64_t stream_seed2_;
   uint64_t stream_seed3_;
   uint64_t calls_ = 0;
+#if defined(__AVX2__)
   __m256i vec_u_;
   __m256i vec_v_;
   __m256i vec_w_;
   __m256i vec_dev_;
+#endif
   unsigned ndev_ = 0;
 };
-#endif
 
 } } } // namespace calin::math::rng
