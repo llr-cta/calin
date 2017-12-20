@@ -44,6 +44,7 @@
 
 #include <math/rng.hpp>
 #include <provenance/chronicle.hpp>
+#include <provenance/system_info.hpp>
 
 using namespace calin::math::rng;
 
@@ -541,6 +542,15 @@ void MT19937RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
   data->set_state(state.str());
 }
 
+#if defined(__AVX2__)
+void NR3_AVX2_RNGCore::test_cpu() const
+{
+  const auto* sysinfo = calin::provenance::system_info::the_host_info();
+  if(not sysinfo->cpu_has_avx2())
+    throw std::runtime_error("NR3_AVX2_RNGCore: CPU does not support AVX2 instructions.");
+}
+#endif
+
 NR3_AVX2_RNGCore::~NR3_AVX2_RNGCore()
 {
   // nothing to see here
@@ -551,6 +561,7 @@ NR3_AVX2_RNGCore::NR3_AVX2_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& pr
   RNGCore(), seed_(proto.seed())
 {
 #if defined(__AVX2__)
+  test_cpu();
   if(proto.vec_stream_seed_size() != 4)
     throw std::runtime_error("NR3_AVX2_RNGCore: saved seed vectors must have 4 elements");
   init(proto.vec_stream_seed(0), proto.vec_stream_seed(1),

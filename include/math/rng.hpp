@@ -369,8 +369,12 @@ class NR3_AVX2_RNGCore: public RNGCore
 {
 private:
 #if defined(__AVX2__)
+  void test_cpu() const;
+
   void init(uint64_t seed0, uint64_t seed1, uint64_t seed2, uint64_t seed3)
   {
+    test_cpu();
+
     stream_seed0_ = seed0;
     stream_seed1_ = seed1;
     stream_seed2_ = seed2;
