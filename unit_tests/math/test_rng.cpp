@@ -180,7 +180,12 @@ TYPED_TEST_P(CoreTests, RestoreFromSeedOnlyProto)
 REGISTER_TYPED_TEST_CASE_P(CoreTests, FillsAllBits64, FillsAllBits32,
                            SaveAndRestoreState64, RestoreFromSeedOnlyProto,
                            DifferentSeeds, SameSeeds);
-typedef ::testing::Types<NR3RNGCore, Ranlux48RNGCore, MT19937RNGCore> CoreTypes;
+
+typedef ::testing::Types<NR3RNGCore, Ranlux48RNGCore, MT19937RNGCore
+#ifdef __AVX2__
+  , NR3_AVX2_RNGCore
+#endif
+  > CoreTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(TestRNG, CoreTests, CoreTypes);
 
 TEST(TestRNG, SaveAndRestoreStateU32)
