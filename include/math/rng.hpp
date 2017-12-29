@@ -501,18 +501,18 @@ private:
 
 private:
   uint64_t seed_;
+#if defined(__AVX2__)
   uint64_t stream_seed0_;
   uint64_t stream_seed1_;
   uint64_t stream_seed2_;
   uint64_t stream_seed3_;
   uint64_t calls_ = 0;
-#if defined(__AVX2__)
   __m256i vec_u_;
   __m256i vec_v_;
   __m256i vec_w_;
   __m256i vec_dev_;
-#endif
   unsigned ndev_ = 0;
+#endif
 };
 
 } } } // namespace calin::math::rng

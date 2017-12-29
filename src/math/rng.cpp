@@ -597,13 +597,13 @@ void NR3_AVX2_RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
 {
   auto* data = proto->mutable_nr3_avx2_core();
   data->set_seed(seed_);
+#if defined(__AVX2__)
   data->set_calls(calls_);
   data->set_state_saved(true);
   data->add_vec_stream_seed(stream_seed0_);
   data->add_vec_stream_seed(stream_seed1_);
   data->add_vec_stream_seed(stream_seed2_);
   data->add_vec_stream_seed(stream_seed3_);
-#if defined(__AVX2__)
   for(unsigned i=0; i<4; i++)
     data->add_vec_u(reinterpret_cast<const uint64_t*>(&vec_u_)[i]);
   for(unsigned i=0; i<4; i++)
