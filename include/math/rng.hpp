@@ -425,9 +425,9 @@ private:
 
   virtual ~NR3_AVX2_RNGCore();
 
+#if defined(__AVX2__)
   __m256i uniform_uivec256()
   {
-#if defined(__AVX2__)
     constexpr uint64_t CU1 = UINT64_C(2862933555777941757);
     constexpr uint64_t CU2 = UINT64_C(7046029254386353087);
 
@@ -461,22 +461,16 @@ private:
     ++calls_;
 
     return _mm256_xor_si256(_mm256_add_epi64(vec_x, vec_v_), vec_w_);
-#else
-    throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
-#endif
   }
 
   __m256 uniform_psvec256()
   {
-#if defined(__AVX2__)
     __m256i vec_ui = uniform_uivec256();
     __m256 vec_ps = _mm256_cvtepi32_ps(vec_ui);
     vec_ps = _mm256_mul_ps(vec_ps, _mm256_set1_ps(2.328306437e-10));
     return _mm256_add_ps(vec_ps, _mm256_set1_ps(0.5));
-#else
-    throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
-#endif
   }
+#endif
 
   uint64_t uniform_uint64() override
   {
