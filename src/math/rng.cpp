@@ -475,6 +475,11 @@ NR3RNGCore::~NR3RNGCore()
 void NR3RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
 {
   auto* data = proto->mutable_nr3_core();
+  save_to_proto(data);
+}
+
+void NR3RNGCore::save_to_proto(ix::math::rng::NR3RNGCoreData* data) const
+{
   data->set_seed(seed_);
   data->set_state_saved(true);
   data->set_calls(calls_);
