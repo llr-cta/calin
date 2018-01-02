@@ -339,7 +339,34 @@ public:
     for(unsigned i=0;i<NSTREAM;i++)core_[i] = new NR3RNGCore(seeds[i]);
   }
 
-  NR3_EmulateSIMD_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto);
+  NR3_EmulateSIMD_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto,
+      bool restore_state = false):
+    NR3_EmulateSIMD_RNGCore(proto.seed())
+  {
+    if(restore_state and proto.state_saved() and proto.vec_stream_seed_size()!=0)
+    {
+      calls_ = proto.calls();
+      if(proto.vec_stream_seed_size() != NSTREAM)
+        throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need " +
+          std::to_string(NSTREAM) + " seeds to restore state.");
+      for(unsigned i=0; i<NSTREAM; i++)
+      {
+        calin::ix::math::rng::NR3RNGCoreData core_data;
+        core_data.set_seed(proto.vec_stream_seed(i));
+        core_data.set_calls(calls_);
+        core_data.set_state_saved(true);
+        core_data.set_u(proto.vec_u(i));
+        core_data.set_v(proto.vec_v(i));
+        core_data.set_w(proto.vec_w(i));
+        delete core_[NSTREAM-i-1];
+        core_[NSTREAM-i-1] = new NR3RNGCore(core_data, restore_state);
+      }
+      ndev_ = NSTREAM;
+      for(unsigned i=0; i<proto.dev_size(); i++) {
+        vec_dev_[--ndev_] = proto.dev(i);
+      }
+    }
+  }
 
   ~NR3_EmulateSIMD_RNGCore()
   {
@@ -348,9 +375,9 @@ public:
 
   uint64_t uniform_uint64() override
   {
-    if(ndev_ < NSTREAM)
+    if(ndev_ >= NSTREAM)
     {
-      for(unsigned i=0;i<NSTREAM;i++)vec_dev_ = core_[i]->uniform_uint64();
+      for(unsigned i=0;i<NSTREAM;i++)vec_dev_[i] = core_[i]->uniform_uint64();
       ndev_ = 0;
     }
     return vec_dev_[ndev_++];
@@ -358,21 +385,26 @@ public:
 
   void save_to_proto(ix::math::rng::RNGData* proto) const override
   {
-    auto* data = proto->mutable_nr3_simd_core();
+    auto* data = proto->mutable_nr3_simd_emu4_core();
     data->set_seed(seed_);
     data->set_calls(calls_);
     data->set_state_saved(true);
-    for(unsigned i=0;i<NSTREAM;i++)
+    for(unsigned i=NSTREAM; i>0;)
     {
       calin::ix::math::rng::NR3RNGCoreData core_data;
-      core_[i]->save_to_proto(&core_data);
+      core_[--i]->save_to_proto(&core_data);
       data->add_vec_stream_seed(core_data.seed());
       data->add_vec_u(core_data.u());
       data->add_vec_v(core_data.v());
       data->add_vec_w(core_data.w());
     }
-    for(unsigned i=ndev_; i<NSTREAM; i++)data->add_dev(vec_dev_[i]);
+    for(unsigned i=NSTREAM; i>ndev_;)data->add_dev(vec_dev_[--i]);
   }
+
+  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
+    return proto->mutable_nr3_simd_emu4_core(); }
+  static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
+  { return proto.nr3_simd_emu4_core(); }
 
 private:
   NR3RNGCore* core_[NSTREAM];

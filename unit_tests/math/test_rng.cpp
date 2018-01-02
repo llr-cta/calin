@@ -181,7 +181,8 @@ REGISTER_TYPED_TEST_CASE_P(CoreTests, FillsAllBits64, FillsAllBits32,
                            SaveAndRestoreState64, RestoreFromSeedOnlyProto,
                            DifferentSeeds, SameSeeds);
 
-typedef ::testing::Types<NR3RNGCore, Ranlux48RNGCore, MT19937RNGCore
+typedef ::testing::Types<NR3RNGCore, Ranlux48RNGCore, MT19937RNGCore,
+  NR3_EmulateSIMD_RNGCore<4>
 #ifdef __AVX2__
   , NR3_AVX2_RNGCore
 #endif

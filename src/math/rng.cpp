@@ -45,8 +45,10 @@
 #include <math/rng.hpp>
 #include <provenance/chronicle.hpp>
 #include <provenance/system_info.hpp>
+#include <util/log.hpp>
 
 using namespace calin::math::rng;
+using namespace calin::util::log;
 
 RNGCore::~RNGCore()
 {
@@ -63,9 +65,12 @@ RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGData& proto,
       return new MT19937RNGCore(proto.mt19937_core(), restore_state);
     case ix::math::rng::RNGData::kNr3Core:
       return new NR3RNGCore(proto.nr3_core(), restore_state);
+    case ix::math::rng::RNGData::kNr3SimdEmu4Core:
+      return new NR3_EmulateSIMD_RNGCore<4>(proto.nr3_simd_emu4_core(), restore_state);
     case ix::math::rng::RNGData::kNr3Avx2Core:
       return new NR3_AVX2_RNGCore(proto.nr3_avx2_core(), restore_state);
     default:
+      LOG(ERROR) << "Unrecognised RNG type case : " << proto.core_case();
       return new NR3RNGCore();
   }
 }
@@ -574,8 +579,8 @@ NR3_AVX2_RNGCore::NR3_AVX2_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& pr
     // We allow either zero of four seeds.. zero means we do "seed only" reinit
     if(proto.vec_stream_seed_size() != 4)
       throw std::runtime_error("NR3_AVX2_RNGCore: saved seed vectors must have 4 elements");
-    init(proto.vec_stream_seed(0), proto.vec_stream_seed(1),
-         proto.vec_stream_seed(2), proto.vec_stream_seed(3));
+    init(proto.vec_stream_seed(3), proto.vec_stream_seed(2),
+         proto.vec_stream_seed(1), proto.vec_stream_seed(0));
     if(restore_state and proto.state_saved())
     {
       if(proto.vec_u_size() != 4 or proto.vec_v_size() != 4 or proto.vec_w_size() != 4)
@@ -605,10 +610,10 @@ void NR3_AVX2_RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
 #if defined(__AVX2__)
   data->set_calls(calls_);
   data->set_state_saved(true);
-  data->add_vec_stream_seed(stream_seed0_);
-  data->add_vec_stream_seed(stream_seed1_);
-  data->add_vec_stream_seed(stream_seed2_);
   data->add_vec_stream_seed(stream_seed3_);
+  data->add_vec_stream_seed(stream_seed2_);
+  data->add_vec_stream_seed(stream_seed1_);
+  data->add_vec_stream_seed(stream_seed0_);
   for(unsigned i=0; i<4; i++)
     data->add_vec_u(reinterpret_cast<const uint64_t*>(&vec_u_)[i]);
   for(unsigned i=0; i<4; i++)
