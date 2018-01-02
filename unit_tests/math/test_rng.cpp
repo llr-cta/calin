@@ -257,7 +257,7 @@ TEST(TestRNG_NR3_AVX2_RNGCore, ConstructFrom_NR3_EmulateSIMD_RNGCore)
 }
 #endif
 
-TEST(TestRNG_CoreGigaSpeedTest, NR3)
+TEST(TestRNG_Core64GbitSpeedTest, NR3)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   NR3RNGCore core(seed);
@@ -267,7 +267,7 @@ TEST(TestRNG_CoreGigaSpeedTest, NR3)
 }
 
 #ifdef CALIN_HAS_NR3_AVX2_RNGCORE
-TEST(TestRNG_CoreGigaSpeedTest, NR3_AVX2)
+TEST(TestRNG_Core64GbitSpeedTest, NR3_AVX2)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   NR3_AVX2_RNGCore core(seed);
@@ -276,7 +276,7 @@ TEST(TestRNG_CoreGigaSpeedTest, NR3_AVX2)
   EXPECT_GE(core.uniform_uint64(), 0ULL);
 }
 
-TEST(TestRNG_CoreGigaSpeedTest, NR3_AVX2_vec)
+TEST(TestRNG_Core64GbitSpeedTest, NR3_AVX2_vec)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   NR3_AVX2_RNGCore core(seed);
