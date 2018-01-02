@@ -414,10 +414,14 @@ private:
   unsigned ndev_ = NSTREAM;
 };
 
+#if defined(__AVX2__)
+#define CALIN_HAS_NR3_AVX2_RNGCORE
+#endif
+
 class NR3_AVX2_RNGCore: public RNGCore
 {
 private:
-#if defined(__AVX2__)
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
   void test_cpu() const;
 
   void init(uint64_t seed0, uint64_t seed1, uint64_t seed2, uint64_t seed3)
@@ -451,7 +455,7 @@ private:
   NR3_AVX2_RNGCore(uint64_t seed = 0):
     RNGCore(), seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device())
   {
-#if defined(__AVX2__)
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
     std::mt19937_64 gen(seed_);
     init(gen(), gen(), gen(), gen());
 #else
@@ -462,7 +466,7 @@ private:
   NR3_AVX2_RNGCore(uint64_t seed0, uint64_t seed1, uint64_t seed2, uint64_t seed3):
     RNGCore(), seed_(0)
   {
-#if defined(__AVX2__)
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
     init(seed0, seed1, seed2, seed3);
 #else
     throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
@@ -474,7 +478,7 @@ private:
 
   virtual ~NR3_AVX2_RNGCore();
 
-#if defined(__AVX2__)
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
   __m256i uniform_uivec256()
   {
     constexpr uint64_t CU1 = UINT64_C(2862933555777941757);
@@ -523,7 +527,7 @@ private:
 
   uint64_t uniform_uint64() override
   {
-#if defined(__AVX2__)
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
     if(ndev_ == 0)
     {
       vec_dev_ = uniform_uivec256();
@@ -544,7 +548,7 @@ private:
 
 private:
   uint64_t seed_;
-#if defined(__AVX2__)
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
   uint64_t stream_seed0_;
   uint64_t stream_seed1_;
   uint64_t stream_seed2_;

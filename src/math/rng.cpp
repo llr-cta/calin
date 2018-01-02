@@ -555,7 +555,7 @@ void MT19937RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
   data->set_state(state.str());
 }
 
-#if defined(__AVX2__)
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
 void NR3_AVX2_RNGCore::test_cpu() const
 {
   const auto* sysinfo = calin::provenance::system_info::the_host_info();
@@ -573,7 +573,7 @@ NR3_AVX2_RNGCore::NR3_AVX2_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& pr
     bool restore_state):
   NR3_AVX2_RNGCore(proto.seed())
 {
-#if defined(__AVX2__)
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
   test_cpu();
   if(proto.vec_stream_seed_size() != 0) {
     // We allow either zero of four seeds.. zero means we do "seed only" reinit
@@ -607,7 +607,7 @@ void NR3_AVX2_RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
 {
   auto* data = proto->mutable_nr3_avx2_core();
   data->set_seed(seed_);
-#if defined(__AVX2__)
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
   data->set_calls(calls_);
   data->set_state_saved(true);
   data->add_vec_stream_seed(stream_seed3_);

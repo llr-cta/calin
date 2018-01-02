@@ -183,11 +183,109 @@ REGISTER_TYPED_TEST_CASE_P(CoreTests, FillsAllBits64, FillsAllBits32,
 
 typedef ::testing::Types<NR3RNGCore, Ranlux48RNGCore, MT19937RNGCore,
   NR3_EmulateSIMD_RNGCore<4>
-#ifdef __AVX2__
+#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
   , NR3_AVX2_RNGCore
 #endif
   > CoreTypes;
 INSTANTIATE_TYPED_TEST_CASE_P(TestRNG, CoreTests, CoreTypes);
+
+TEST(TestRNG_NR3_EmulateSIMD_RNGCore, Equals_4xNR3)
+{
+  uint64_t seeds[4];
+  for(unsigned i=0;i<4;i++)seeds[i] = RNG::uint64_from_random_device();
+  NR3_EmulateSIMD_RNGCore<4> rng_simd(seeds);
+  NR3RNGCore rng0(seeds[0]);
+  NR3RNGCore rng1(seeds[1]);
+  NR3RNGCore rng2(seeds[2]);
+  NR3RNGCore rng3(seeds[3]);
+  for(unsigned i=0;i<100000;i++)
+  {
+    EXPECT_EQ(rng_simd.uniform_uint64(), rng0.uniform_uint64())
+        << "RNG0 mistmatch - seed=" << seeds[0] << " - i=" << i;
+    EXPECT_EQ(rng_simd.uniform_uint64(), rng1.uniform_uint64())
+        << "RNG1 mistmatch - seed=" << seeds[1] << " - i=" << i;
+    EXPECT_EQ(rng_simd.uniform_uint64(), rng2.uniform_uint64())
+        << "RNG2 mistmatch - seed=" << seeds[2] << " - i=" << i;
+    EXPECT_EQ(rng_simd.uniform_uint64(), rng3.uniform_uint64())
+        << "RNG3 mistmatch - seed=" << seeds[3] << " - i=" << i;
+  }
+}
+
+#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
+TEST(TestRNG_NR3_AVX2_RNGCore, Equals_NR3_EmulateSIMD_RNGCore)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  NR3_AVX2_RNGCore rng_avx(seed);
+  NR3_EmulateSIMD_RNGCore<4> rng_simd(seed);
+  for(unsigned i=0;i<1000000;i++)
+  {
+    EXPECT_EQ(rng_avx.uniform_uint64(), rng_simd.uniform_uint64())
+        << "RNG mistmatch - seed=" << seed << " - i=" << i;
+  }
+}
+
+TEST(TestRNG_NR3_AVX2_RNGCore, RestoreTo_NR3_EmulateSIMD_RNGCore)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  for(unsigned N=0; N<100; N++) {
+    NR3_AVX2_RNGCore rng_avx(seed);
+    for(unsigned i=0;i<N;i++)rng_avx.uniform_uint64();
+    calin::ix::math::rng::RNGData proto;
+    rng_avx.save_to_proto(&proto);
+    NR3_EmulateSIMD_RNGCore<4> rng_simd(*rng_avx.mutable_core_data(&proto), true);
+    for(unsigned i=0;i<100;i++) {
+      EXPECT_EQ(rng_avx.uniform_uint64(), rng_simd.uniform_uint64())
+          << "RNG mistmatch - seed=" << seed << " N=" << N << " i=" << i;
+    }
+  }
+}
+
+TEST(TestRNG_NR3_AVX2_RNGCore, ConstructFrom_NR3_EmulateSIMD_RNGCore)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  for(unsigned N=0; N<100; N++) {
+    NR3_EmulateSIMD_RNGCore<4> rng_simd(seed);
+    for(unsigned i=0;i<N;i++)rng_simd.uniform_uint64();
+    calin::ix::math::rng::RNGData proto;
+    rng_simd.save_to_proto(&proto);
+    NR3_AVX2_RNGCore rng_avx(*rng_simd.mutable_core_data(&proto), true);
+    for(unsigned i=0;i<100;i++) {
+      EXPECT_EQ(rng_avx.uniform_uint64(), rng_simd.uniform_uint64())
+          << "RNG mistmatch - seed=" << seed << " N=" << N << " i=" << i;
+    }
+  }
+}
+#endif
+
+TEST(TestRNG_CoreGigaSpeedTest, NR3)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  NR3RNGCore core(seed);
+  for(unsigned i=0;i<1000000000;i++)
+    core.uniform_uint64();
+  EXPECT_GE(core.uniform_uint64(), 0ULL);
+}
+
+#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
+TEST(TestRNG_CoreGigaSpeedTest, NR3_AVX2)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  NR3_AVX2_RNGCore core(seed);
+  for(unsigned i=0;i<1000000000;i++)
+    core.uniform_uint64();
+  EXPECT_GE(core.uniform_uint64(), 0ULL);
+}
+
+TEST(TestRNG_CoreGigaSpeedTest, NR3_AVX2_vec)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  NR3_AVX2_RNGCore core(seed);
+  for(unsigned i=0;i<250000000;i++)
+    core.uniform_uivec256();
+  EXPECT_GE(core.uniform_uint64(), 0ULL);
+}
+
+#endif
 
 TEST(TestRNG, SaveAndRestoreStateU32)
 {
