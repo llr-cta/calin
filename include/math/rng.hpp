@@ -98,21 +98,7 @@ public:
 
   uint64_t uniform_uint64() { return core_->uniform_uint64(); }
 
-  uint32_t uniform_uint32() {
-    if(dev32_hascached_)
-    {
-      dev32_hascached_ = false;
-      return dev32_cachedval_&0xFFFFFFFF;
-    }
-    else
-    {
-      dev32_hascached_ = true;
-      dev32_cachedval_ = uniform_uint64();
-      uint32_t ret = dev32_cachedval_ & 0xFFFFFFFF;
-      dev32_cachedval_ >>= 32;
-      return ret;
-    }
-  }
+  uint32_t uniform_uint32() { return uint32_t(uniform_uint64()); }
 
   double uniform_double() {
     return 5.42101086242752217E-20 * double(uniform_uint64());
@@ -162,9 +148,6 @@ private:
   // Cached values
   bool bm_hascached_ = false;
   double bm_cachedval_ = 0.0;
-
-  bool dev32_hascached_ = false;
-  uint64_t dev32_cachedval_ = 0;
 
   // Speedup caches
   double   poi_lambdaexp_ = 1.0/M_E;

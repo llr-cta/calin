@@ -130,8 +130,6 @@ RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state, const std::str
   {
     bm_hascached_ = proto.bm_hascached();
     bm_cachedval_ = proto.bm_cachedval();
-    dev32_hascached_ = proto.dev32_hascached();
-    dev32_cachedval_ = proto.dev32_cachedval();
   }
   const ix::math::rng::RNGData* proto2 = this->as_proto();
   calin::provenance::chronicle::register_calin_rng(*proto2, created_by);
@@ -148,8 +146,6 @@ void RNG::save_to_proto(ix::math::rng::RNGData* proto) const
   core_->save_to_proto(proto);
   proto->set_bm_hascached(bm_hascached_);
   proto->set_bm_cachedval(bm_hascached_ ? bm_cachedval_ : 0.0);
-  proto->set_dev32_hascached(dev32_hascached_);
-  proto->set_dev32_cachedval(dev32_hascached_ ? dev32_cachedval_ : 0ULL);
 }
 
 uint64_t RNG::uint64_from_random_device()

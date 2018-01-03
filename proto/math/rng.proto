@@ -120,10 +120,6 @@ message RNGData
     [(CFO).desc = "Flag for Box-Muller cached value available."];
   double bm_cachedval                   = 11
     [(CFO).desc = "Box-Muller cached value."];
-  bool dev32_hascached                  = 12
-    [(CFO).desc = "Flag for U32 deviate value available."];
-  fixed64 dev32_cachedval               = 13
-    [(CFO).desc = "U32 cached deviate."];
 }
 
 message ExternalRNGData
