@@ -520,8 +520,13 @@ private:
   {
     __m256i vec_ui = uniform_uivec256();
     __m256 vec_ps = _mm256_cvtepi32_ps(vec_ui);
+#ifdef __FMA__
+    vec_ps = _mm256_fmadd_ps(vec_ps, _mm256_set1_ps(2.328306437e-10), _mm256_set1_ps(0.5));
+#else
     vec_ps = _mm256_mul_ps(vec_ps, _mm256_set1_ps(2.328306437e-10));
-    return _mm256_add_ps(vec_ps, _mm256_set1_ps(0.5));
+    vec_ps = _mm256_add_ps(vec_ps, _mm256_set1_ps(0.5));
+#endif
+    return vec_ps;
   }
 #endif
 

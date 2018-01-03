@@ -287,6 +287,28 @@ TEST(TestRNG_Core64GbitSpeedTest, NR3_AVX2_vec)
 
 #endif
 
+TEST(TestRNG_Core64GbitSpeedTest_Float, NR3)
+{
+  double sum = 0;
+  uint64_t seed = RNG::uint64_from_random_device();
+  NR3RNGCore core(seed);
+  for(unsigned i=0;i<2000000000;i++)
+    sum += 2.328306437e-10 * float(unsigned(core.uniform_uint64()));
+  EXPECT_GE(sum, 0.0);
+}
+
+#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
+TEST(TestRNG_Core64GbitSpeedTest_Float, NR3_AVX2_vec)
+{
+  __m256 sum = _mm256_setzero_ps();
+  uint64_t seed = RNG::uint64_from_random_device();
+  NR3_AVX2_RNGCore core(seed);
+  for(unsigned i=0;i<250000000;i++)
+    sum = _mm256_add_ps(sum, core.uniform_psvec256());
+  EXPECT_GE(reinterpret_cast<float*>(&sum)[0],0.0);
+}
+#endif
+
 TEST(TestRNG, SaveAndRestoreStateU32)
 {
   for(unsigned N=1;N<100;N++)
