@@ -326,27 +326,45 @@ public:
       bool restore_state = false):
     NR3_EmulateSIMD_RNGCore(proto.seed())
   {
-    if(restore_state and proto.state_saved() and proto.vec_stream_seed_size()!=0)
+    if(proto.vec_stream_seed_size()!=0)
     {
-      calls_ = proto.calls();
       if(proto.vec_stream_seed_size() != NSTREAM)
         throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need " +
           std::to_string(NSTREAM) + " seeds to restore state.");
+      if(restore_state and proto.state_saved()) {
+        calls_ = proto.calls();
+        if(proto.vec_u_size() != NSTREAM)
+          throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need " +
+            std::to_string(NSTREAM) + " u elements to restore state.");
+        if(proto.vec_v_size() != NSTREAM)
+          throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need " +
+            std::to_string(NSTREAM) + " v elements to restore state.");
+        if(proto.vec_w_size() != NSTREAM)
+          throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need " +
+            std::to_string(NSTREAM) + " w elements to restore state.");
+      }
       for(unsigned i=0; i<NSTREAM; i++)
       {
         calin::ix::math::rng::NR3RNGCoreData core_data;
         core_data.set_seed(proto.vec_stream_seed(i));
-        core_data.set_calls(calls_);
-        core_data.set_state_saved(true);
-        core_data.set_u(proto.vec_u(i));
-        core_data.set_v(proto.vec_v(i));
-        core_data.set_w(proto.vec_w(i));
+        if(restore_state and proto.state_saved()) {
+          core_data.set_calls(calls_);
+          core_data.set_state_saved(true);
+          core_data.set_u(proto.vec_u(i));
+          core_data.set_v(proto.vec_v(i));
+          core_data.set_w(proto.vec_w(i));
+        }
         delete core_[NSTREAM-i-1];
         core_[NSTREAM-i-1] = new NR3RNGCore(core_data, restore_state);
       }
       ndev_ = NSTREAM;
-      for(unsigned i=0; i<proto.dev_size(); i++) {
-        vec_dev_[--ndev_] = proto.dev(i);
+      if(restore_state and proto.state_saved()) {
+        if(proto.dev_size() > NSTREAM)
+          throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need a most " +
+            std::to_string(NSTREAM) + " saved deviates to restore state.");
+        for(unsigned i=0; i<proto.dev_size(); i++) {
+          vec_dev_[--ndev_] = proto.dev(i);
+        }
       }
     }
   }
