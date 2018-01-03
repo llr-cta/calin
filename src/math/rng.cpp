@@ -71,6 +71,7 @@ RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGData& proto,
       return new NR3_AVX2_RNGCore(proto.nr3_avx2_core(), restore_state);
     default:
       LOG(ERROR) << "Unrecognised RNG type case : " << proto.core_case();
+    case 0:
       return new NR3RNGCore();
   }
 }

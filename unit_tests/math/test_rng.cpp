@@ -255,7 +255,107 @@ TEST(TestRNG_NR3_AVX2_RNGCore, ConstructFrom_NR3_EmulateSIMD_RNGCore)
     }
   }
 }
+
+TEST(TestRNG_NR3_AVX2_RNGCore, FloatsInRange)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  NR3_AVX2_RNGCore core(seed);
+  for(unsigned i=0;i<10000000;i++)
+  {
+    __m256 vx = core.uniform_psvec256();
+    float x[8];
+    _mm256_store_ps(x, vx);
+    EXPECT_GE(x[0], 0.0) << "Float out of range: x[0]=" << x[0];
+    EXPECT_GE(x[1], 0.0) << "Float out of range: x[1]=" << x[1];
+    EXPECT_GE(x[2], 0.0) << "Float out of range: x[2]=" << x[2];
+    EXPECT_GE(x[3], 0.0) << "Float out of range: x[3]=" << x[3];
+    EXPECT_GE(x[4], 0.0) << "Float out of range: x[4]=" << x[4];
+    EXPECT_GE(x[5], 0.0) << "Float out of range: x[5]=" << x[5];
+    EXPECT_GE(x[6], 0.0) << "Float out of range: x[6]=" << x[6];
+    EXPECT_GE(x[7], 0.0) << "Float out of range: x[7]=" << x[7];
+
+    EXPECT_LE(x[0], 1.0) << "Float out of range: x[0]=" << x[0];
+    EXPECT_LE(x[1], 1.0) << "Float out of range: x[1]=" << x[1];
+    EXPECT_LE(x[2], 1.0) << "Float out of range: x[2]=" << x[2];
+    EXPECT_LE(x[3], 1.0) << "Float out of range: x[3]=" << x[3];
+    EXPECT_LE(x[4], 1.0) << "Float out of range: x[4]=" << x[4];
+    EXPECT_LE(x[5], 1.0) << "Float out of range: x[5]=" << x[5];
+    EXPECT_LE(x[6], 1.0) << "Float out of range: x[6]=" << x[6];
+    EXPECT_LE(x[7], 1.0) << "Float out of range: x[7]=" << x[7];
+  }
+}
+
+TEST(TestRNG_NR3_AVX2_RNGCore, FloatMoments)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  NR3_AVX2_RNGCore core(seed);
+  __m256 vsum_x = _mm256_setzero_ps();
+  __m256 vsum_xx = _mm256_setzero_ps();
+  __m256 vsum_xxx = _mm256_setzero_ps();
+  unsigned N = 10000000;
+  for(unsigned i=0;i<N;i++)
+  {
+    __m256 vx = core.uniform_psvec256();
+    vsum_x = _mm256_add_ps(vsum_x, vx);
+    vx = _mm256_sub_ps(vx, _mm256_set1_ps(0.5));
+    __m256 vxx = _mm256_mul_ps(vx, vx);
+    vsum_xx = _mm256_add_ps(vsum_xx, vxx);
+#ifdef __FMA__
+    vsum_xxx = _mm256_fmadd_ps(vxx, vx, vsum_xxx);
+#else
+    vsum_xxx = _mm256_add_ps(vsum_xxx, _mm256_mul_ps(vxx, vx));
 #endif
+  }
+
+  float sum_x[8];
+  _mm256_store_ps(sum_x, vsum_x);
+  float sum_xx[8];
+  _mm256_store_ps(sum_xx, vsum_xx);
+  float sum_xxx[8];
+  _mm256_store_ps(sum_xxx, vsum_xxx);
+  for(unsigned i=0;i<8;i++)
+  {
+    double m1 = sum_x[i]/double(N);
+    double m2 = sum_xx[i]/double(N);
+    double m3 = sum_xxx[i]/double(N);
+
+    EXPECT_NEAR(m1, 0.5, 0.01)
+      << "Moment M1 out of range: m1[" << i << "]=" << m1;
+    EXPECT_NEAR(m2, 1.0/12.0, 0.01)
+      << "Moment M2 out of range: m2[" << i << "]=" << m2;
+    EXPECT_NEAR(m3, 0.0, 0.001)
+      << "Moment M3 out of range: m3[" << i << "]=" << m3;
+  }
+}
+
+TEST(TestRNG_NR3_AVX2_RNGCore, FillsAllBits256)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  NR3_AVX2_RNGCore core(seed);
+  std::vector<unsigned> count(256,0);
+  unsigned N = 1000000;
+  for(unsigned i=0;i<N;i++)
+  {
+    __m256i vx = core.uniform_uivec256();
+    uint64_t x[4] __attribute__ ((aligned (32)));
+    _mm256_store_si256(reinterpret_cast<__m256i*>(x), vx);
+    for(unsigned j=0;j<4;j++) {
+      for(unsigned k=0;k<64;k++) {
+        if(x[j]&1)++count[j*64+k];
+        x[j] >>= 1;
+      }
+    }
+  }
+  for(unsigned j=0;j<256;j++) {
+    EXPECT_GE(count[j], 495000U)
+        << "__m256i bit#" << j << " set too few times";
+    EXPECT_LE(count[j], 505000U)
+        << "__m256i bit#" << j << " set too many times";
+  }
+}
+
+
+#endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
 
 TEST(TestRNG_Core64GbitSpeedTest, NR3)
 {
@@ -287,8 +387,7 @@ TEST(TestRNG_Core64GbitSpeedTest, NR3_AVX2_vec)
     sum = _mm256_add_epi64(sum, core.uniform_uivec256());
   EXPECT_GE(core.uniform_uint64(), 0ULL);
 }
-
-#endif
+#endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
 
 TEST(TestRNG_Core64GbitSpeedTest_Float, NR3)
 {
@@ -310,7 +409,7 @@ TEST(TestRNG_Core64GbitSpeedTest_Float, NR3_AVX2_vec)
     sum = _mm256_add_ps(sum, core.uniform_psvec256());
   EXPECT_GE(reinterpret_cast<float*>(&sum)[0],0.0);
 }
-#endif
+#endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
 
 TEST(TestRNG, SaveAndRestoreStateU32)
 {

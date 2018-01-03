@@ -484,6 +484,7 @@ private:
     constexpr uint64_t CU1 = UINT64_C(2862933555777941757);
     constexpr uint64_t CU2 = UINT64_C(7046029254386353087);
 
+#if 1
     // AVX2 doesn't have 64bit->64bit multiply, so instead we do
     // three 32bit->64bit multiplies, two 64bit adds and one 64bit
     // shift.  u*C = ( u_hi*C_lo + u_lo*C_hi ) << 32 + u_lo*C_lo
@@ -497,6 +498,17 @@ private:
     vec_u_ = _mm256_add_epi64(vec_u_, _mm256_mul_epu32(vec_u_lo, vec_cu1_lo));
     const __m256i vec_cu2 = _mm256_set1_epi64x(CU2);
     vec_u_ =  _mm256_add_epi64(vec_u_, vec_cu2);
+#else
+    // AVX2 doesn't have 64bit->64bit multiply, so instead we do
+    // three 32bit->64bit multiplies, two 64bit adds and one 64bit
+    // shift.  u*C = ( u_hi*C_lo + u_lo*C_hi ) << 32 + u_lo*C_lo
+    const __m256i vec_cu1 = _mm256_set1_epi64x(CU1);
+    __m256i vec_tmp = _mm256_mul_epu32(_mm256_shuffle_epi32(vec_u_, 0xB1), vec_cu1);
+    vec_tmp = _mm256_add_epi64(vec_tmp, _mm256_mul_epu32(vec_u_, _mm256_shuffle_epi32(vec_cu1, 0xB1)));
+    vec_tmp = _mm256_slli_epi64(vec_tmp, 32);
+    vec_tmp = _mm256_add_epi64(vec_tmp, _mm256_mul_epu32(vec_u_, vec_cu1));
+    vec_u_ =  _mm256_add_epi64(vec_tmp, _mm256_set1_epi64x(CU2));
+#endif
 
     vec_v_ = _mm256_xor_si256(vec_v_, _mm256_srli_epi64(vec_v_, 17));
     vec_v_ = _mm256_xor_si256(vec_v_, _mm256_slli_epi64(vec_v_, 31));
