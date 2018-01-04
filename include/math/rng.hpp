@@ -485,7 +485,7 @@ private:
     constexpr uint64_t CU1 = UINT64_C(2862933555777941757);
     constexpr uint64_t CU2 = UINT64_C(7046029254386353087);
 
-#if 1
+#if 0
     // AVX2 doesn't have 64bit->64bit multiply, so instead we do
     // three 32bit->64bit multiplies, two 64bit adds and one 64bit
     // shift.  u*C = ( u_hi*C_lo + u_lo*C_hi ) << 32 + u_lo*C_lo
@@ -529,15 +529,18 @@ private:
     return _mm256_xor_si256(_mm256_add_epi64(vec_x, vec_v_), vec_w_);
   }
 
-  __m256 uniform_psvec256()
+  // Generate 8 float deviates in the range [-0.5*scale+offset, 0.5*scale+offset)
+  // The default values therefore create deviates in the "standard" range of [0,1)
+  __m256 uniform_psvec256(const float scale = 1.0, const float offset = 0.5)
   {
     __m256i vec_ui = uniform_uivec256();
     __m256 vec_ps = _mm256_cvtepi32_ps(vec_ui);
 #ifdef __FMA__
-    vec_ps = _mm256_fmadd_ps(vec_ps, _mm256_set1_ps(2.328306437e-10), _mm256_set1_ps(0.5));
+    vec_ps = _mm256_fmadd_ps(vec_ps, _mm256_set1_ps(2.328306437e-10*scale),
+                _mm256_set1_ps(offset));
 #else
-    vec_ps = _mm256_mul_ps(vec_ps, _mm256_set1_ps(2.328306437e-10));
-    vec_ps = _mm256_add_ps(vec_ps, _mm256_set1_ps(0.5));
+    vec_ps = _mm256_mul_ps(vec_ps, _mm256_set1_ps(2.328306437e-10*scale));
+    vec_ps = _mm256_add_ps(vec_ps, _mm256_set1_ps(offset));
 #endif
     return vec_ps;
   }
