@@ -52,7 +52,7 @@ float calin::math::simd::test_cos_avx2_sincosf_domain_pi_4_poly3(const float x,
   _mm256_store_ps(c, vc);
   return c[0];
 #else
-  throw std::runtime_error("AVX2 not available at compile time")
+  throw std::runtime_error("AVX2 not available at compile time");
 #endif
 }
 
@@ -67,7 +67,7 @@ float calin::math::simd::test_sin_avx2_sincosf_domain_pi_poly3(const float x)
   _mm256_store_ps(s, vs);
   return s[0];
 #else
-  throw std::runtime_error("AVX2 not available at compile time")
+  throw std::runtime_error("AVX2 not available at compile time");
 #endif
 }
 
@@ -82,6 +82,6 @@ float calin::math::simd::test_cos_avx2_sincosf_domain_pi_poly3(const float x)
   _mm256_store_ps(c, vc);
   return c[0];
 #else
-  throw std::runtime_error("AVX2 not available at compile time")
+  throw std::runtime_error("AVX2 not available at compile time");
 #endif
 }
