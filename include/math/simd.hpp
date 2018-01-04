@@ -41,7 +41,8 @@ constexpr float _pc3=3.5445940383e-06;
 #if defined(__AVX2__) && defined(__FMA__)
 
 // AVX2 implementation of single precision floating point sin & cos functions
-// valid over the domain -pi/4 (x=-1.0) to pi/4 (x=+1.0)
+// valid over the domain -pi/4 (x=-1.0) to pi/4 (x=+1.0). Different polynomial
+// coefficients can be given if desired (for testing!)
 void avx2_sincosf_domain_pi_4_poly3(const __m256 x, __m256& s, __m256& c,
   const float ps0=_ps0, const float ps1=_ps1, const float ps2=_ps2, const float ps3=_ps3,
   const float pc0=_pc0, const float pc1=_pc1, const float pc2=_pc2, const float pc3=_pc3)
@@ -63,22 +64,22 @@ void avx2_sincosf_domain_pi_4_poly3(const __m256 x, __m256& s, __m256& c,
 
 // AVX2 implementation of single precision floating point sin & cos functions
 // valid over the domain -pi (x=-4.0) to pi (x=+4.0). No checking on the domain
-// is
+// is performed
 void avx2_sincosf_domain_pi_poly3(const __m256 x, __m256& s, __m256& c)
 {
   // xq gives integer quadrent id of argument as either -4,-2,0,2,4
-  // (the final quadrent therefore has id +/-4)
+  // (the final quadrent therefore has a split id of -4 and +4)
   __m256i xq = _mm256_cvtps_epi32(_mm256_add_ps(x,_mm256_set1_ps(0.5)));
   xq = _mm256_slli_epi32(_mm256_srli_epi32(xq,1),1);
 
-  // Argument to pi/4 domain function is residual after subtraction of quadrant
-  // id - this puts argument in domain -1.0 to 1.0
+  // Calculate argument to give to pi/4 domain sincos function above - residual
+  // after subtraction of quadrant id - this puts argument in domain -1.0 to 1.0
   __m256 xr = _mm256_sub_ps(x, _mm256_cvtepi32_ps(xq));
 
   // Call reduced domain sincos function with default polynomial arguments
   avx2_sincosf_domain_pi_4_poly3(xr, s, c);
 
-  // Blend compnents calculated with the sine and cosine polynomials based
+  // Blend components calculated with the sine and cosine polynomials based
   // on the quadrant -- we swap sin and cos based on bit#2 - swapping
   // thereby only quadrants +2 and -2
   __m256i mask = _mm256_slli_epi32(xq,30);
