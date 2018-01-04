@@ -359,10 +359,10 @@ public:
       }
       ndev_ = NSTREAM;
       if(restore_state and proto.state_saved()) {
-        if(proto.dev_size() > NSTREAM)
+        if(proto.dev_size() > int(NSTREAM))
           throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need a most " +
             std::to_string(NSTREAM) + " saved deviates to restore state.");
-        for(unsigned i=0; i<proto.dev_size(); i++) {
+        for(int i=0; i<proto.dev_size(); i++) {
           vec_dev_[--ndev_] = proto.dev(i);
         }
       }
