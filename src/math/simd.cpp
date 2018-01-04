@@ -20,6 +20,8 @@
 
 */
 
+#include <stdexcept>
+
 #include <math/simd.hpp>
 
 float calin::math::simd::test_sin_avx2_sincosf_domain_pi_4_poly3(const float x,
