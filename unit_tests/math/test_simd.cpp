@@ -36,7 +36,7 @@ using namespace calin::math::simd;
 
 constexpr unsigned N100M = 100000000;
 
-TEST(TestSIMD, SpeedTest100M_RandomSinCosScalarFloat)
+TEST(TestSIMD, SpeedTest100M_Random64SinCos32)
 {
   float sum_s = 0;
   float sum_c = 0;
@@ -59,7 +59,41 @@ TEST(TestSIMD, SpeedTest100M_RandomSinCosScalarFloat)
 }
 
 #ifdef CALIN_HAS_NR3_AVX2_RNGCORE
-TEST(TestSIMD, SpeedTest100M_RandomSinCosScalarAVX2)
+TEST(TestSIMD, SpeedTest100M_Random256SinCos32)
+{
+  float sum_s = 0;
+  float sum_c = 0;
+  uint64_t seed = calin::math::rng::RNG::uint64_from_random_device();
+  NR3_AVX2_RNGCore core(seed);
+  for(unsigned i=0;i<N100M/8;i++) {
+    float x[8] __attribute__((aligned(32)));
+    __m256 vx = core.uniform_zc_psvec256(2*M_PI);
+    _mm256_store_ps(x, vx);
+    sum_s += ::sinf(x[0]);
+    sum_c += ::cosf(x[0]);
+    sum_s += ::sinf(x[1]);
+    sum_c += ::cosf(x[1]);
+    sum_s += ::sinf(x[2]);
+    sum_c += ::cosf(x[2]);
+    sum_s += ::sinf(x[3]);
+    sum_c += ::cosf(x[3]);
+    sum_s += ::sinf(x[4]);
+    sum_c += ::cosf(x[4]);
+    sum_s += ::sinf(x[5]);
+    sum_c += ::cosf(x[5]);
+    sum_s += ::sinf(x[6]);
+    sum_c += ::cosf(x[6]);
+    sum_s += ::sinf(x[7]);
+    sum_c += ::cosf(x[7]);
+  }
+
+  EXPECT_GE(sum_s, -float(N100M));
+  EXPECT_LE(sum_s, float(N100M));
+  EXPECT_GE(sum_c, -float(N100M));
+  EXPECT_LE(sum_c, float(N100M));
+}
+
+TEST(TestSIMD, SpeedTest100M_Random256SinCos256)
 {
   __m256 sum_s = _mm256_setzero_ps();
   __m256 sum_c = _mm256_setzero_ps();
