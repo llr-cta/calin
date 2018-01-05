@@ -22,7 +22,7 @@
 
 #pragma once
 
-#if defined(__AVX2__)
+#if defined(__AVX__)
 #include <immintrin.h>
 #endif // defined(__AVX2__)
 
@@ -38,12 +38,22 @@ constexpr float _pc1=1.5854339023e-02;
 constexpr float _pc2=-3.2596461752e-04;
 constexpr float _pc3=3.5445940383e-06;
 
+#define CALIN_MM256PS_CONST(name, val) \
+static const float name[8] __attribute__((aligned(32))) = {val,val,val,val,val,val,val,val}
+
+#if defined(__AVX__)
+inline __m256 c_m256(const float (&c)[8])
+{
+  return *(const __m256 *)&c;
+}
+#endif
+
 #if defined(__AVX2__) && defined(__FMA__)
 
 // AVX2 implementation of single precision floating point sin & cos functions
 // valid over the domain -pi/4 (x=-1.0) to pi/4 (x=+1.0). Different polynomial
 // coefficients can be given if desired (for testing!)
-void avx2_sincosf_domain_pi_4_poly3(const __m256 x, __m256& s, __m256& c,
+inline void avx2_sincosf_domain_pi_4_poly3(const __m256 x, __m256& s, __m256& c,
   const float ps0=_ps0, const float ps1=_ps1, const float ps2=_ps2, const float ps3=_ps3,
   const float pc0=_pc0, const float pc1=_pc1, const float pc2=_pc2, const float pc3=_pc3)
 {
@@ -62,10 +72,38 @@ void avx2_sincosf_domain_pi_4_poly3(const __m256 x, __m256& s, __m256& c,
   c = _mm256_fmadd_ps(xx, c, _mm256_set1_ps(1.0));
 }
 
+CALIN_MM256PS_CONST(_c_m256_ps0, _ps0);
+CALIN_MM256PS_CONST(_c_m256_ps1, _ps1);
+CALIN_MM256PS_CONST(_c_m256_ps2, _ps2);
+CALIN_MM256PS_CONST(_c_m256_ps3, _ps3);
+CALIN_MM256PS_CONST(_c_m256_pc0, _pc0);
+CALIN_MM256PS_CONST(_c_m256_pc1, _pc1);
+CALIN_MM256PS_CONST(_c_m256_pc2, _pc2);
+CALIN_MM256PS_CONST(_c_m256_pc3, _pc3);
+CALIN_MM256PS_CONST(_c_m256_one, 1.0);
+
+inline void avx2_sincosf_domain_pi_4_poly3_def(const __m256 x, __m256& s, __m256& c)
+{
+  __m256 xx = _mm256_mul_ps(x,x);
+
+  s = c_m256(_c_m256_ps3);
+  s = _mm256_fmadd_ps(xx, s, c_m256(_c_m256_ps2));
+  s = _mm256_fmadd_ps(xx, s, c_m256(_c_m256_ps1));
+  s = _mm256_fmadd_ps(xx, s, c_m256(_c_m256_ps0));
+  s = _mm256_mul_ps(x, s);
+
+  c = c_m256(_c_m256_pc3);
+  c = _mm256_fmadd_ps(xx, c, c_m256(_c_m256_pc2));
+  c = _mm256_fmadd_ps(xx, c, c_m256(_c_m256_pc1));
+  c = _mm256_fmadd_ps(xx, c, c_m256(_c_m256_pc0));
+  c = _mm256_fmadd_ps(xx, c, c_m256(_c_m256_one));
+}
+
+
 // AVX2 implementation of single precision floating point sin & cos functions
 // valid over the domain -pi (x=-4.0) to pi (x=+4.0). No checking on the domain
 // is performed
-void avx2_sincosf_domain_pi_poly3(const __m256 x, __m256& s, __m256& c)
+inline void avx2_sincosf_domain_pi_poly3(const __m256 x, __m256& s, __m256& c)
 {
   // xq gives integer quadrent id of argument as either -4,-2,0,2,4
   // (the final quadrent therefore has a split id of -4 and +4)
@@ -93,7 +131,7 @@ void avx2_sincosf_domain_pi_poly3(const __m256 x, __m256& s, __m256& c)
   s = _mm256_xor_ps(xr, _mm256_castsi256_ps(mask));
 
   // For cos we must now negate for quadtants -4, 2 and 4 - this arranges
-  // for bit#3 of the quadran id to be XORd with bit#2, and then shifted into
+  // for bit#3 of the quadrant id to be XORd with bit#2, and then shifted into
   // bit#32 where we use it to flip (xor) the sign of the float
   mask = _mm256_xor_si256(_mm256_slli_epi32(xq,30), mask);
   c = _mm256_xor_ps(c, _mm256_castsi256_ps(mask));
