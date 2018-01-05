@@ -61,6 +61,9 @@ namespace calin { namespace math { namespace rng {
 // and potentially reevaluate if profiling shows this assumption is
 // wrong.
 
+constexpr float C_U32_TO_FLT = 2.328306437E-10;
+constexpr double C_U64_TO_DBL = 5.42101086242752217E-20;
+
 class RNGCore
 {
 public:
@@ -101,11 +104,11 @@ public:
   uint32_t uniform_uint32() { return uint32_t(uniform_uint64()); }
 
   double uniform_double() {
-    return 5.42101086242752217E-20 * double(uniform_uint64());
+    return C_U64_TO_DBL * double(uniform_uint64());
   }
 
   float uniform_float() {
-    return 2.328306437e-10 * float(uniform_uint32());
+    return C_U32_TO_FLT * float(uniform_uint32());
   }
 
   void uniform_by_type(uint64_t& x) { x = uniform_uint64(); }
@@ -170,6 +173,24 @@ private:
 //
 // =============================================================================
 
+constexpr uint64_t C_NR3_U_INIT = UINT64_C(0);
+constexpr uint64_t C_NR3_V_INIT = UINT64_C(4101842887655102017);
+constexpr uint64_t C_NR3_W_INIT = UINT64_C(1);
+
+constexpr uint64_t C_NR3_U_MUL = UINT64_C(2862933555777941757);
+constexpr uint64_t C_NR3_U_ADD = UINT64_C(7046029254386353087);
+
+constexpr int C_NR3_V_SHIFT1 = 17;
+constexpr int C_NR3_V_SHIFT2 = 31;
+constexpr int C_NR3_V_SHIFT3 = 8;
+
+constexpr uint64_t C_NR3_W_MUL = UINT64_C(4294957665);
+constexpr int C_NR3_W_SHIFT1 = 32;
+
+constexpr int C_NR3_X_SHIFT1 = 21;
+constexpr int C_NR3_X_SHIFT2 = 35;
+constexpr int C_NR3_X_SHIFT3 = 4;
+
 class NR3RNGCore: public RNGCore
 {
  public:
@@ -178,7 +199,7 @@ class NR3RNGCore: public RNGCore
   NR3RNGCore(uint64_t seed = 0):
       RNGCore(),
       seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
-      u_(UINT64_C(0)), v_(UINT64_C(4101842887655102017)), w_(UINT64_C(1))
+      u_(C_NR3_U_INIT), v_(C_NR3_V_INIT), w_(C_NR3_W_INIT)
   {
     u_ = seed_^v_; uniform_uint64();
     v_ = u_; uniform_uint64();
@@ -191,14 +212,14 @@ class NR3RNGCore: public RNGCore
 
   uint64_t uniform_uint64() override {
     calls_++;
-    u_ = u_*UINT64_C(2862933555777941757) + UINT64_C(7046029254386353087);
-    v_ ^= v_ >> 17;
-    v_ ^= v_ << 31;
-    v_ ^= v_ >> 8;
-    w_ = 4294957665U*(w_ & 0xFFFFFFFF) + (w_ >> 32);
-    uint64_t x = u_ ^ (u_ << 21);
-    x ^= x >> 35;
-    x ^= x << 4;
+    u_ = u_*C_NR3_U_MUL + C_NR3_U_ADD;
+    v_ ^= v_ >> C_NR3_V_SHIFT1;
+    v_ ^= v_ << C_NR3_V_SHIFT2;
+    v_ ^= v_ >> C_NR3_V_SHIFT3;
+    w_ = C_NR3_W_MUL*(w_ & 0xFFFFFFFF) + (w_ >> C_NR3_W_SHIFT1);
+    uint64_t x = u_ ^ (u_ << C_NR3_X_SHIFT1);
+    x ^= x >> C_NR3_X_SHIFT2;
+    x ^= x << C_NR3_X_SHIFT3;
     return (x+v_)^w_;
   }
 
@@ -434,9 +455,9 @@ private:
     stream_seed2_ = seed2;
     stream_seed3_ = seed3;
 
-    vec_u_ = _mm256_setzero_si256();
-    vec_v_ = _mm256_set1_epi64x(UINT64_C(4101842887655102017));
-    vec_w_ = _mm256_set1_epi64x(UINT64_C(1));
+    vec_u_ = _mm256_set1_epi64x(C_NR3_U_INIT);
+    vec_v_ = _mm256_set1_epi64x(C_NR3_V_INIT);
+    vec_w_ = _mm256_set1_epi64x(C_NR3_W_INIT);
 
     __m256i vec_seed = _mm256_set_epi64x(seed0,seed1,seed2,seed3);
 
@@ -482,47 +503,43 @@ private:
 #if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
   __m256i uniform_uivec256()
   {
-    constexpr uint64_t CU1 = UINT64_C(2862933555777941757);
-    constexpr uint64_t CU2 = UINT64_C(7046029254386353087);
-
 #if 0
     // AVX2 doesn't have 64bit->64bit multiply, so instead we do
     // three 32bit->64bit multiplies, two 64bit adds and one 64bit
     // shift.  u*C = ( u_hi*C_lo + u_lo*C_hi ) << 32 + u_lo*C_lo
-    const __m256i vec_cu1_lo = _mm256_set1_epi64x(CU1);
-    const __m256i vec_cu1_hi = _mm256_set1_epi64x(CU1>>32);
+    const __m256i vec_cu1_lo = _mm256_set1_epi64x(C_NR3_U_MUL);
+    const __m256i vec_cu1_hi = _mm256_set1_epi64x(C_NR3_U_MUL>>32);
     const __m256i vec_u_lo = vec_u_;
     const __m256i vec_u_hi = _mm256_shuffle_epi32(vec_u_, 0xB1);
     vec_u_ = _mm256_mul_epu32(vec_u_hi, vec_cu1_lo);
     vec_u_ = _mm256_add_epi64(vec_u_, _mm256_mul_epu32(vec_u_lo, vec_cu1_hi));
     vec_u_ = _mm256_slli_epi64(vec_u_, 32);
     vec_u_ = _mm256_add_epi64(vec_u_, _mm256_mul_epu32(vec_u_lo, vec_cu1_lo));
-    const __m256i vec_cu2 = _mm256_set1_epi64x(CU2);
+    const __m256i vec_cu2 = _mm256_set1_epi64x(C_NR3_U_ADD);
     vec_u_ =  _mm256_add_epi64(vec_u_, vec_cu2);
 #else
     // AVX2 doesn't have 64bit->64bit multiply, so instead we do
     // three 32bit->64bit multiplies, two 64bit adds and one 64bit
     // shift.  u*C = ( u_hi*C_lo + u_lo*C_hi ) << 32 + u_lo*C_lo
-    const __m256i vec_cu1 = _mm256_set1_epi64x(CU1);
+    const __m256i vec_cu1 = _mm256_set1_epi64x(C_NR3_U_MUL);
     __m256i vec_tmp = _mm256_mul_epu32(_mm256_shuffle_epi32(vec_u_, 0xB1), vec_cu1);
     vec_tmp = _mm256_add_epi64(vec_tmp, _mm256_mul_epu32(vec_u_, _mm256_shuffle_epi32(vec_cu1, 0xB1)));
     vec_tmp = _mm256_slli_epi64(vec_tmp, 32);
     vec_tmp = _mm256_add_epi64(vec_tmp, _mm256_mul_epu32(vec_u_, vec_cu1));
-    vec_u_ =  _mm256_add_epi64(vec_tmp, _mm256_set1_epi64x(CU2));
+    vec_u_ =  _mm256_add_epi64(vec_tmp, _mm256_set1_epi64x(C_NR3_U_ADD));
 #endif
 
-    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_srli_epi64(vec_v_, 17));
-    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_slli_epi64(vec_v_, 31));
-    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_srli_epi64(vec_v_, 8));
+    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_srli_epi64(vec_v_, C_NR3_V_SHIFT1));
+    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_slli_epi64(vec_v_, C_NR3_V_SHIFT2));
+    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_srli_epi64(vec_v_, C_NR3_V_SHIFT3));
 
-    constexpr uint64_t CW = UINT64_C(4294957665);
-    const __m256i vec_cw =  _mm256_set1_epi64x(CW);
+    const __m256i vec_cw =  _mm256_set1_epi64x(C_NR3_W_MUL);
     vec_w_ = _mm256_add_epi64(_mm256_mul_epu32(vec_w_, vec_cw),
-                              _mm256_srli_epi64(vec_w_, 32));
+                              _mm256_srli_epi64(vec_w_, C_NR3_W_SHIFT1));
 
-    __m256i vec_x =  _mm256_xor_si256(vec_u_, _mm256_slli_epi64(vec_u_, 21));
-    vec_x = _mm256_xor_si256(vec_x, _mm256_srli_epi64(vec_x, 35));
-    vec_x = _mm256_xor_si256(vec_x, _mm256_slli_epi64(vec_x, 4));
+    __m256i vec_x =  _mm256_xor_si256(vec_u_, _mm256_slli_epi64(vec_u_, C_NR3_X_SHIFT1));
+    vec_x = _mm256_xor_si256(vec_x, _mm256_srli_epi64(vec_x, C_NR3_X_SHIFT2));
+    vec_x = _mm256_xor_si256(vec_x, _mm256_slli_epi64(vec_x, C_NR3_X_SHIFT3));
 
     ++calls_;
 
@@ -536,12 +553,21 @@ private:
     __m256i vec_ui = uniform_uivec256();
     __m256 vec_ps = _mm256_cvtepi32_ps(vec_ui);
 #ifdef __FMA__
-    vec_ps = _mm256_fmadd_ps(vec_ps, _mm256_set1_ps(2.328306437e-10*scale),
+    vec_ps = _mm256_fmadd_ps(vec_ps, _mm256_set1_ps(C_U32_TO_FLT*scale),
                 _mm256_set1_ps(offset));
 #else
-    vec_ps = _mm256_mul_ps(vec_ps, _mm256_set1_ps(2.328306437e-10*scale));
+    vec_ps = _mm256_mul_ps(vec_ps, _mm256_set1_ps(C_U32_TO_FLT*scale));
     vec_ps = _mm256_add_ps(vec_ps, _mm256_set1_ps(offset));
 #endif
+    return vec_ps;
+  }
+
+  // Generate 8 "zero centered" float deviates in the range [-0.5*scale, 0.5*scale)
+  __m256 uniform_zc_psvec256(const float scale = 1.0)
+  {
+    __m256i vec_ui = uniform_uivec256();
+    __m256 vec_ps = _mm256_cvtepi32_ps(vec_ui);
+    vec_ps = _mm256_mul_ps(vec_ps, _mm256_set1_ps(C_U32_TO_FLT*scale));
     return vec_ps;
   }
 #endif
