@@ -41,3 +41,7 @@ add_test(TestHexArray test_hex_array)
 add_executable(test_rng test_rng.cpp)
 target_link_libraries(test_rng ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
 add_test(TestRNG test_rng)
+
+add_executable(test_simd test_simd.cpp)
+target_link_libraries(test_simd ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
+add_test(TestSIMD test_simd)
