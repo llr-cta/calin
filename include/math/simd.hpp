@@ -24,9 +24,131 @@
 
 #if defined(__AVX__)
 #include <immintrin.h>
-#endif // defined(__AVX2__)
+#endif // defined(__AVX__)
 
 namespace calin { namespace math { namespace simd {
+
+#if defined(__AVX__)
+#define _CALIN_DO_ONE_AVX_SWIZZLE_U16(i) \
+  tmp =  _mm256_unpackhi_epi16(*(data+i), *(data+i+1)); \
+  *(data+i) =  _mm256_unpacklo_epi16(*(data+i), *(data+i+1)); \
+  *(data+i+1) = tmp
+
+#define _CALIN_DO_ONE_AVX_SWIZZLE_U32(i) \
+  tmp =  _mm256_unpackhi_epi32(*(data+i), *(data+i+2)); \
+  *(data+i) =  _mm256_unpacklo_epi32(*(data+i), *(data+i+2)); \
+  *(data+i+2) = tmp
+
+#define _CALIN_DO_ONE_AVX_SWIZZLE_U64(i) \
+  tmp =  _mm256_unpackhi_epi64(*(data+i), *(data+i+4)); \
+  *(data+i) =  _mm256_unpacklo_epi64(*(data+i), *(data+i+4)); \
+  *(data+i+4) = tmp
+
+#define _CALIN_DO_ONE_AVX_SWIZZLE_U128(i) \
+  tmp =  _mm256_permute2x128_si256(*(data+i), *(data+i+8), 0x31); \
+  *(data+i) =  _mm256_permute2x128_si256(*(data+i), *(data+i+8), 0x20); \
+  *(data+i+8) = tmp
+
+// Swizzle a array of U16 structs (aos) to struct of U16 arrays - AVX version
+inline void avx_m256_swizzle_u16(__m256i* data)
+{
+  __m256i tmp;
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(0);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(2);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(4);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(6);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(8);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(10);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(12);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(14);
+
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(0);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(1);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(4);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(5);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(8);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(9);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(12);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(13);
+
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(0);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(1);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(2);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(3);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(8);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(9);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(10);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(11);
+
+  _CALIN_DO_ONE_AVX_SWIZZLE_U128(0);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U128(1);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U128(2);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U128(3);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U128(4);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U128(5);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U128(6);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U128(7);
+
+  std::swap(data[1], data[4]);
+  std::swap(data[3], data[6]);
+  std::swap(data[9], data[12]);
+  std::swap(data[11], data[14]);
+}
+#endif // defined(__AVX__)
+
+#if defined(__AVX2__)
+#define _CALIN_DO_ONE_AVX2_SWIZZLE_U128(i) \
+  tmp =  _mm256_permute2x128_si256(*(data+i), *(data+i+8), 0x31); \
+  *(data+i) =  _mm256_permute2x128_si256(*(data+i), *(data+i+8), 0x20); \
+  *(data+i+8) = tmp
+
+// Swizzle a array of U16 structs (aos) to struct of U16 arrays - AVX2 version
+inline void avx2_m256_swizzle_u16(__m256i* data)
+{
+  __m256i tmp;
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(0);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(2);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(4);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(6);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(8);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(10);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(12);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U16(14);
+
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(0);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(1);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(4);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(5);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(8);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(9);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(12);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U32(13);
+
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(0);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(1);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(2);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(3);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(8);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(9);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(10);
+  _CALIN_DO_ONE_AVX_SWIZZLE_U64(11);
+
+  _CALIN_DO_ONE_AVX2_SWIZZLE_U128(0);
+  _CALIN_DO_ONE_AVX2_SWIZZLE_U128(1);
+  _CALIN_DO_ONE_AVX2_SWIZZLE_U128(2);
+  _CALIN_DO_ONE_AVX2_SWIZZLE_U128(3);
+  _CALIN_DO_ONE_AVX2_SWIZZLE_U128(4);
+  _CALIN_DO_ONE_AVX2_SWIZZLE_U128(5);
+  _CALIN_DO_ONE_AVX2_SWIZZLE_U128(6);
+  _CALIN_DO_ONE_AVX2_SWIZZLE_U128(7);
+
+  std::swap(data[1], data[4]);
+  std::swap(data[3], data[6]);
+  std::swap(data[9], data[12]);
+  std::swap(data[11], data[14]);
+}
+#endif // defined(__AVX2__)
+
 
 // First fit direct
 // constexpr float _ps0=7.8539816171e-01;

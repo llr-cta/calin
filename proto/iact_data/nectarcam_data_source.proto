@@ -47,9 +47,7 @@ message NectarCamCameraEventDecoderConfig {
     (CFO).desc = "Copy the waveforms for each channel out into separete arrays. "
       "If this option is not set then the ChannelWaveform structures will not be "
       "present in the telescope event structure." ];
-  bool pack_simd_array_if_supported                        = 4 [
-    (CFO).desc = "Pack data into SIMD arrays if supported by CPU." ];
-  bool include_serialized_raw_data                         = 5 [
+  bool include_serialized_raw_data                         = 4 [
     (CFO).desc = "Include serialized raw ACTL protobuf header and event data." ];
   string demand_nmc_xml_file                               = 10 [
     (CFO).desc = "NectarCam module configuration XML file to use, or empty "

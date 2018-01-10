@@ -138,23 +138,35 @@ bool NectarCamCameraEventDecoder::decode(
 
   if(exchange_gain_channels_)
   {
-    if(cta_event->has_higain())
-      copy_single_gain_image(cta_event, calin_event, cta_event->higain(),
+    if(cta_event->has_higain()) {
+      copy_single_gain_integrals(cta_event, calin_event, cta_event->higain(),
         calin_event->mutable_low_gain_image(), "high");
+      copy_single_gain_waveforms(cta_event, calin_event, cta_event->higain(),
+        calin_event->mutable_low_gain_image(), "high");
+    }
 
-    if(cta_event->has_logain())
-      copy_single_gain_image(cta_event, calin_event, cta_event->logain(),
+    if(cta_event->has_logain()) {
+      copy_single_gain_integrals(cta_event, calin_event, cta_event->logain(),
         calin_event->mutable_high_gain_image(), "low");
+      copy_single_gain_waveforms(cta_event, calin_event, cta_event->logain(),
+        calin_event->mutable_high_gain_image(), "low");
+    }
   }
   else
   {
-    if(cta_event->has_higain())
-      copy_single_gain_image(cta_event, calin_event, cta_event->higain(),
+    if(cta_event->has_higain()) {
+      copy_single_gain_integrals(cta_event, calin_event, cta_event->higain(),
         calin_event->mutable_high_gain_image(), "high");
+      copy_single_gain_waveforms(cta_event, calin_event, cta_event->higain(),
+        calin_event->mutable_high_gain_image(), "high");
+    }
 
-    if(cta_event->has_logain())
-      copy_single_gain_image(cta_event, calin_event, cta_event->logain(),
+    if(cta_event->has_logain()) {
+      copy_single_gain_integrals(cta_event, calin_event, cta_event->logain(),
         calin_event->mutable_low_gain_image(), "low");
+      copy_single_gain_waveforms(cta_event, calin_event, cta_event->logain(),
+        calin_event->mutable_low_gain_image(), "low");
+    }
   }
 
   // ==========================================================================
@@ -514,65 +526,12 @@ bool NectarCamCameraEventDecoder::decode_run_config(
 }
 
 void NectarCamCameraEventDecoder::
-copy_single_gain_image(const DataModel::CameraEvent* cta_event,
+copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
   const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   const DataModel::PixelsChannel& cta_image,
   calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
   const std::string& which_gain) const
 {
-  if(cta_image.has_waveforms() and cta_image.waveforms().has_samples())
-  {
-    const auto& cta_wf = cta_image.waveforms().samples();
-    auto* calin_wf_image = calin_image->mutable_camera_waveforms();
-#if TEST_ANYARRAY_TYPES
-    if(cta_wf.type() != DataModel::AnyArray::U16)
-      throw std::runtime_error("Waveform data type not uint16 in " +
-        which_gain + " channel.");
-#endif
-    unsigned nsample = config_.demand_nsample();
-    if(nsample == 0)nsample = cta_image.waveforms().num_samples();
-    if(nsample == 0)throw std::runtime_error("Number of samples is zero in "
-      + which_gain + " channel.");
-    if(cta_wf.data().size() % (sizeof(uint16_t)*nsample) != 0)
-      throw std::runtime_error("Waveform data array for " + which_gain +
-        " gain channel not integral multiple of nsample uint16.");
-    calin_wf_image->set_num_samples_per_channel(nsample);
-    std::string* calin_wf_raw_data_string = calin_wf_image->mutable_raw_samples_array();
-    calin_wf_raw_data_string->resize(cta_wf.data().size());
-    uint16_t* calin_wf_raw_data =
-      reinterpret_cast<uint16_t*>(&calin_wf_raw_data_string->front());
-    unsigned npix = cta_wf.data().size()/(sizeof(uint16_t)*nsample);
-    const uint16_t* cta_wf_data =
-      reinterpret_cast<const uint16_t*>(&cta_wf.data().front());
-    bool all_channels_present = true;
-    for(unsigned ipix=0;ipix<npix;ipix++)
-    {
-      constexpr unsigned nblock_copy = 16;
-      if((ipix&(nblock_copy-1)) == 0) {
-        unsigned icount = (std::min(ipix+nblock_copy,npix) - ipix)*nsample;
-        std::copy(cta_wf_data, cta_wf_data+icount, calin_wf_raw_data);
-        calin_wf_raw_data += icount;
-      }
-
-      if(calin_event->module_index(ipix/7) == -1)
-      {
-        all_channels_present = false;
-        calin_wf_image->add_channel_index(-1);
-        cta_wf_data += nsample;
-      }
-      else
-      {
-        calin_wf_image->add_channel_index(calin_wf_image->channel_id_size());
-        calin_wf_image->add_channel_id(ipix);
-        auto* calin_samp = calin_wf_image->add_waveform()->mutable_samples();
-        calin_samp->Reserve(nsample);
-        for(unsigned isample=0;isample<nsample;isample++)
-          calin_samp->Add(*cta_wf_data++);
-      }
-    }
-    calin_wf_image->set_all_channels_present(all_channels_present);
-  }
-
   if(cta_image.has_integrals() and cta_image.integrals().has_gains())
   {
     const auto& cta_q = cta_image.integrals().gains();
@@ -604,6 +563,95 @@ copy_single_gain_image(const DataModel::CameraEvent* cta_event,
       }
     }
     calin_q_image->set_all_channels_present(all_channels_present);
+  }
+}
+
+void NectarCamCameraEventDecoder::
+copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
+  const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+  const DataModel::PixelsChannel& cta_image,
+  calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
+  const std::string& which_gain) const
+{
+  if(cta_image.has_waveforms() and cta_image.waveforms().has_samples())
+  {
+    const auto& cta_wf = cta_image.waveforms().samples();
+    auto* calin_wf_image = calin_image->mutable_camera_waveforms();
+#if TEST_ANYARRAY_TYPES
+    if(cta_wf.type() != DataModel::AnyArray::U16)
+      throw std::runtime_error("Waveform data type not uint16 in " +
+        which_gain + " channel.");
+#endif
+    unsigned nsample = config_.demand_nsample();
+    if(nsample == 0)nsample = cta_image.waveforms().num_samples();
+    if(nsample == 0)throw std::runtime_error("Number of samples is zero in "
+      + which_gain + " channel.");
+    if(cta_wf.data().size() % (sizeof(uint16_t)*nsample) != 0)
+      throw std::runtime_error("Waveform data array for " + which_gain +
+        " gain channel not integral multiple of nsample uint16.");
+    calin_wf_image->set_num_samples_per_channel(nsample);
+
+    std::string* calin_wf_raw_data_string = calin_wf_image->mutable_raw_samples_array();
+    unsigned simd_vec_size = 0;
+#if defined(__SSE2__)
+    if(calin::provenance::system_info::the_host_info()->cpu_has_sse2())simd_vec_size=128/8;
+#endif
+#if defined(__AVX__)
+    if(calin::provenance::system_info::the_host_info()->cpu_has_avx())simd_vec_size=256/8;
+#endif
+#if defined(__AVX512F__)
+    if(calin::provenance::system_info::the_host_info()->cpu_has_avx512f())simd_vec_size=512/8;
+#endif
+    calin_wf_raw_data_string->resize(cta_wf.data().size() + 2*simd_vec_size);
+    char* cp = &calin_wf_raw_data_string->front();
+    void* vp = cp;
+    std::size_t space = calin_wf_raw_data_string->size();
+    if(simd_vec_size>0) {
+      if(std::align(simd_vec_size, cta_wf.data().size(), vp, space)==nullptr)
+        throw std::runtime_error("NectarCamCameraEventDecoder: cannot align data.");
+      std::fill(cp, (char*)vp, uint8_t(0));
+      std::fill((char*)vp+cta_wf.data().size(), cp+calin_wf_raw_data_string->size(), uint8_t(0));
+    }
+    calin_wf_image->set_raw_samples_array_start((char*)vp - cp);
+    uint16_t* calin_wf_raw_data = reinterpret_cast<uint16_t*>(vp);
+
+    unsigned npix = cta_wf.data().size()/(sizeof(uint16_t)*nsample);
+    const uint16_t* cta_wf_data =
+      reinterpret_cast<const uint16_t*>(&cta_wf.data().front());
+    bool all_channels_present = true;
+    if(config_.separate_channel_waveforms())
+    {
+      for(unsigned ipix=0;ipix<npix;ipix++)
+      {
+        constexpr unsigned nblock_copy = 16;
+        if((ipix&(nblock_copy-1)) == 0) {
+          unsigned icount = (std::min(ipix+nblock_copy,npix) - ipix)*nsample;
+          std::copy(cta_wf_data, cta_wf_data+icount, calin_wf_raw_data);
+          calin_wf_raw_data += icount;
+        }
+
+        if(calin_event->module_index(ipix/7) == -1)
+        {
+          all_channels_present = false;
+          calin_wf_image->add_channel_index(-1);
+          cta_wf_data += nsample;
+        }
+        else
+        {
+          calin_wf_image->add_channel_index(calin_wf_image->channel_id_size());
+          calin_wf_image->add_channel_id(ipix);
+          auto* calin_samp = calin_wf_image->add_waveform()->mutable_samples();
+          calin_samp->Reserve(nsample);
+          for(unsigned isample=0;isample<nsample;isample++)
+            calin_samp->Add(*cta_wf_data++);
+        }
+      }
+    }
+    else
+    {
+      std::copy(cta_wf_data, cta_wf_data+npix*nsample, calin_wf_raw_data);
+    }
+    calin_wf_image->set_all_channels_present(all_channels_present);
   }
 }
 
@@ -682,127 +730,13 @@ get_nmod_from_event(const DataModel::CameraEvent* cta_event) const
   return nmod;
 }
 
-
-
-AVX2_NectarCamCameraEventDecoder::AVX2_NectarCamCameraEventDecoder(
-    const std::string& filename, unsigned run_number, const config_type& config):
-  NectarCamCameraEventDecoder(filename, run_number, config)
-{
-#ifndef __AVX2__
-  throw std::runtime_error("NectarCamCameraEventDecoder: AVX2 missing at compile time.");
-#endif
-  if(not calin::provenance::system_info::the_host_info()->cpu_has_avx2())
-    throw std::runtime_error("NectarCamCameraEventDecoder: AVX2 not supported by CPU.");
-}
-
-AVX2_NectarCamCameraEventDecoder::~AVX2_NectarCamCameraEventDecoder()
-{
-  // nothing to see here
-}
-
-
-void AVX2_NectarCamCameraEventDecoder::
-copy_single_gain_image(const DataModel::CameraEvent* cta_event,
-  const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
-  const DataModel::PixelsChannel& cta_image,
-  calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
-  const std::string& which_gain) const
-{
-  if(cta_image.has_waveforms() and cta_image.waveforms().has_samples())
-  {
-    const auto& cta_wf = cta_image.waveforms().samples();
-    auto* calin_wf_image = calin_image->mutable_camera_waveforms();
-#if TEST_ANYARRAY_TYPES
-    if(cta_wf.type() != DataModel::AnyArray::U16)
-      throw std::runtime_error("Waveform data type not uint16 in " +
-        which_gain + " channel.");
-#endif
-    unsigned nsample = config_.demand_nsample();
-    if(nsample == 0)nsample = cta_image.waveforms().num_samples();
-    if(nsample == 0)throw std::runtime_error("Number of samples is zero in "
-      + which_gain + " channel.");
-    if(cta_wf.data().size() % (sizeof(uint16_t)*nsample) != 0)
-      throw std::runtime_error("Waveform data array for " + which_gain +
-        " gain channel not integral multiple of nsample uint16.");
-    calin_wf_image->set_num_samples_per_channel(nsample);
-    std::string* calin_wf_raw_data_string = calin_wf_image->mutable_raw_samples_array();
-    calin_wf_raw_data_string->resize(cta_wf.data().size());
-    uint16_t* calin_wf_raw_data =
-      reinterpret_cast<uint16_t*>(&calin_wf_raw_data_string->front());
-    unsigned npix = cta_wf.data().size()/(sizeof(uint16_t)*nsample);
-    const uint16_t* cta_wf_data =
-      reinterpret_cast<const uint16_t*>(&cta_wf.data().front());
-    bool all_channels_present = true;
-    for(unsigned ipix=0;ipix<npix;ipix++)
-    {
-      constexpr unsigned nblock_copy = 16;
-      if((ipix&(nblock_copy-1)) == 0) {
-        unsigned icount = (std::min(ipix+nblock_copy,npix) - ipix)*nsample;
-        std::copy(cta_wf_data, cta_wf_data+icount, calin_wf_raw_data);
-        calin_wf_raw_data += icount;
-      }
-
-      if(calin_event->module_index(ipix/7) == -1)
-      {
-        all_channels_present = false;
-        calin_wf_image->add_channel_index(-1);
-        cta_wf_data += nsample;
-      }
-      else
-      {
-        calin_wf_image->add_channel_index(calin_wf_image->channel_id_size());
-        calin_wf_image->add_channel_id(ipix);
-        auto* calin_samp = calin_wf_image->add_waveform()->mutable_samples();
-        calin_samp->Reserve(nsample);
-        for(unsigned isample=0;isample<nsample;isample++)
-          calin_samp->Add(*cta_wf_data++);
-      }
-    }
-    calin_wf_image->set_all_channels_present(all_channels_present);
-  }
-
-  if(cta_image.has_integrals() and cta_image.integrals().has_gains())
-  {
-    const auto& cta_q = cta_image.integrals().gains();
-    auto* calin_q_image = calin_image->mutable_camera_charges();
-#if TEST_ANYARRAY_TYPES
-    if(cta_q.type() != DataModel::AnyArray::U16)
-      throw std::runtime_error("Integral data type not uint16 in " +
-        which_gain + " channel.");
-#endif
-    if(cta_q.data().size() % sizeof(uint16_t) != 0)
-      throw std::runtime_error("Charge data array for " + which_gain +
-        " gain channel not integral multiple of uint16.");
-    unsigned npix = cta_q.data().size()/sizeof(uint16_t);
-    const uint16_t* cta_q_data =
-      reinterpret_cast<const uint16_t*>(&cta_q.data().front());
-    bool all_channels_present = true;
-    for(unsigned ipix=0;ipix<npix;ipix++, cta_q_data++)
-    {
-      if(calin_event->module_index(ipix/7) == -1)
-      {
-        calin_q_image->add_channel_index(-1);
-        all_channels_present = false;
-      }
-      else
-      {
-        calin_q_image->add_channel_index(calin_q_image->channel_id_size());
-        calin_q_image->add_channel_id(ipix);
-        calin_q_image->add_charge(*cta_q_data);
-      }
-    }
-    calin_q_image->set_all_channels_present(all_channels_present);
-  }
-}
-
-
-
-
-
-
-
-
-
+// =============================================================================
+// =============================================================================
+//
+// NectarCamZFITSDataSource
+//
+// =============================================================================
+// =============================================================================
 
 NectarCamZFITSDataSource::
 NectarCamZFITSDataSource(const std::string& filename,
