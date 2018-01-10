@@ -50,6 +50,8 @@ public:
   static config_type default_config() {
     config_type config = config_type::default_instance();
     config.set_nmc_xml_suffix(".NMC.xml");
+    config.set_separate_channel_waveforms(true);
+    config.set_pack_simd_array_if_supported(true);
     return config;
   }
 
@@ -65,8 +67,8 @@ public:
     const DataModel::CameraRunHeader* cta_run_header,
     const DataModel::CameraEvent* cta_event) override;
 
-private:
-  void copy_single_gain_image(const DataModel::CameraEvent* cta_event,
+protected:
+  virtual void copy_single_gain_image(const DataModel::CameraEvent* cta_event,
     const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     const DataModel::PixelsChannel& cta_image,
     calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
@@ -79,6 +81,26 @@ private:
   unsigned run_number_ = 0;
   bool exchange_gain_channels_ = false;
   int64_t run_start_time_ = 0;
+};
+
+class AVX2_NectarCamCameraEventDecoder: public NectarCamCameraEventDecoder
+{
+public:
+  CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
+    nectarcam_data_source::NectarCamCameraEventDecoderConfig);
+
+  AVX2_NectarCamCameraEventDecoder(const std::string& filename,
+    unsigned run_number = 0,
+    const config_type& config = default_config());
+
+  virtual ~AVX2_NectarCamCameraEventDecoder();
+
+protected:
+  void copy_single_gain_image(const DataModel::CameraEvent* cta_event,
+    const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+    const DataModel::PixelsChannel& cta_image,
+    calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
+    const std::string& which_gain) const override;
 };
 
 class NectarCamZFITSDataSource:

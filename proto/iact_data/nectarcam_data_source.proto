@@ -43,7 +43,13 @@ message NectarCamCameraEventDecoderConfig {
     (CFO).desc = "Camera type." ];
   ExchangeGainMode exchange_gain_channels                  = 2 [
     (CFO).desc = "Exchange high and low gains from NectarCam ZFits file." ];
-  bool include_serialized_raw_data                         = 3 [
+  bool separate_channel_waveforms                          = 3 [
+    (CFO).desc = "Copy the waveforms for each channel out into separete arrays. "
+      "If this option is not set then the ChannelWaveform structures will not be "
+      "present in the telescope event structure." ];
+  bool pack_simd_array_if_supported                        = 4 [
+    (CFO).desc = "Pack data into SIMD arrays if supported by CPU." ];
+  bool include_serialized_raw_data                         = 5 [
     (CFO).desc = "Include serialized raw ACTL protobuf header and event data." ];
   string demand_nmc_xml_file                               = 10 [
     (CFO).desc = "NectarCam module configuration XML file to use, or empty "
