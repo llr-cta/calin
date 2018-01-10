@@ -28,15 +28,33 @@
 
 namespace calin { namespace math { namespace simd {
 
-constexpr float _ps0=7.8539816171e-01;
-constexpr float _ps1=-8.0745451510e-02;
-constexpr float _ps2=2.4900604274e-03;
-constexpr float _ps3=-3.5995584999e-05;
+// First fit direct
+// constexpr float _ps0=7.8539816171e-01;
+// constexpr float _ps1=-8.0745451510e-02;
+// constexpr float _ps2=2.4900604274e-03;
+// constexpr float _ps3=-3.5995584999e-05;
 
-constexpr float _pc0=-3.0842513735e-01;
-constexpr float _pc1=1.5854339023e-02;
-constexpr float _pc2=-3.2596461752e-04;
-constexpr float _pc3=3.5445940383e-06;
+// constexpr float _pc0=-3.0842513735e-01;
+// constexpr float _pc1=1.5854339023e-02;
+// constexpr float _pc2=-3.2596461752e-04;
+// constexpr float _pc3=3.5445940383e-06;
+
+// Freeze sin coefficient at pi/4
+// constexpr float _ps0=7.8539816340e-01;
+// constexpr float _ps1=-8.0745505976e-02;
+// constexpr float _ps2=2.4902556507e-03;
+// constexpr float _ps3=-3.6153601377e-05;
+
+// MINMAX
+constexpr float _ps0 = 7.8539816098e-01;
+constexpr float _ps1 = -8.0745434831e-02;
+constexpr float _ps2 = 2.4900071298e-03;
+constexpr float _ps3 = -3.5954509280e-05;
+
+constexpr float _pc0 = -3.0842513734e-01;
+constexpr float _pc1 = 1.5854338156e-02;
+constexpr float _pc2 = -3.2596140215e-04;
+constexpr float _pc3 = 3.5419672354e-06;
 
 #define CALIN_MM256PS_CONST(name, val) \
 static const float name[8] __attribute__((aligned(32))) = {val,val,val,val,val,val,val,val}
@@ -130,7 +148,7 @@ inline void avx2_sincosf_domain_pi_poly3(const __m256 x, __m256& s, __m256& c)
   mask = _mm256_slli_epi32(_mm256_srli_epi32(xq,2),31);
   s = _mm256_xor_ps(xr, _mm256_castsi256_ps(mask));
 
-  // For cos we must now negate for quadtants -4, 2 and 4 - this arranges
+  // For cos we must now negate for quadrants -4, 2 and 4 - this arranges
   // for bit#3 of the quadrant id to be XORd with bit#2, and then shifted into
   // bit#32 where we use it to flip (xor) the sign of the float
   mask = _mm256_xor_si256(_mm256_slli_epi32(xq,30), mask);
