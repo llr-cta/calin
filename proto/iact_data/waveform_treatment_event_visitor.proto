@@ -1,0 +1,49 @@
+/*
+
+   calin/proto/iact_data/waveform_treatment_event_visitor.proto -- Stephen Fegan -- 2018-01-11
+
+   Protobufs for configuration of waveform treatment event visitors
+
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.iact_data.waveform_treatment_event_visitor;
+
+message SingleGainDualWindowWaveformTreatmentEventVisitorConfig {
+  uint32 integration_n                                     = 1 [
+    (CFO).desc = "Size of integration window in samples." ];
+  uint32 bkg_integration_0                                 = 2 [
+    (CFO).desc = "Start of background integration window in samples." ];
+  uint32 sig_integration_0_default                         = 3 [
+    (CFO).desc = "Default start of signal integration window in samples, if not "
+      "overridden by per-channel setting \"sig_integration_0_chan\"." ];
+  uint32 sig_integration_0_chan                            = 4 [
+    (CFO).desc = "Start of signal integration window in samples for each channel." ];
+  repeated float pedestal                                  = 10 [
+    (CFO).desc = "Pedestal estimate for each channel, or seed for pedestal "
+      "estimation IIR filter. The pedestals are calculated from the signal in the "
+      "background integration window, B_i, as P_i=F_c*P_(i-1)+(1-F_c)*B_i/n where "
+      "P_i is the pedestal for event i and P_(i-1) the estimate for event i-1, and "
+      "n is the integration window size. This array sets P_0, the initial pedestal "
+      "estimate. If F_c=1.0 then these estimates never change. If F_c=0 these initial "
+      "estimates are of no consequence." ];
+  float pedestal_filter_constant                           = 11 [
+    (CFO).desc = "The constant for the pedestal estimate IIR filter, F_c." ];
+};
