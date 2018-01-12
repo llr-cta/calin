@@ -223,7 +223,7 @@ analyze_waveforms(const uint16_t* data, unsigned nchan, unsigned nsamp,
     }
     sig_max = win;
     isig_max = 0;
-    sum_q = bkg;
+    sum_q = win;
     while(isamp<nsamp) {
       unsigned iss = isamp-16;
       if(bkg_window_0 == iss)bkg = win;
@@ -261,7 +261,7 @@ analyze_waveforms(const uint16_t* data, unsigned nchan, unsigned nsamp,
     }
     chan_sig[ichan] = float(sig) - ped[ichan];
     chan_mean_t[ichan] =
-      (double(sum_qt) - double(bkg*nsamp*(nsamp-1)/2)/double(window_n))/
-        (double(sum_q) - double(bkg*nsamp)/double(window_n));
+      (double(window_n*sum_qt) - double(ped[ichan]*nsamp*(nsamp-1)/2))/
+        (double(window_n*sum_q) - double(ped[ichan]*nsamp));
   }
 }
