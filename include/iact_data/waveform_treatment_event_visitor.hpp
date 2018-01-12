@@ -58,9 +58,11 @@ public:
 
   // This function allows testing of the code
   static void analyze_waveforms(const uint16_t* data, unsigned nchan, unsigned nsamp,
+    unsigned window_n, int bkg_window_0, const int* sig_window_0,
     float* ped, float ped_iir_old, float ped_iir_new,
     int* chan_max_index, int* chan_max, int* chan_bkg_win_sum, int* chan_sig_win_sum,
-    int* chan_all_sum_q, int* chan_all_sum_qt, float* all_sig, float* all_mean_t);
+    int* chan_sig_max_sum, int* chan_sig_max_sum_index,
+    int* chan_all_sum_q, int* chan_all_sum_qt, float* chan_sig, float* chan_mean_t);
 
   static calin::ix::iact_data::waveform_treatment_event_visitor::
     SingleGainDualWindowWaveformTreatmentEventVisitorConfig default_config()
@@ -70,6 +72,20 @@ public:
     cfg.set_integration_n(16);
     return cfg;
   }
+
+  std::vector<float> chan_ped() const { return chan_ped_est_; };
+
+  std::vector<int> chan_max_index() const { return chan_max_index_; }
+  std::vector<int> chan_max() const { return chan_max_; }
+  std::vector<int> chan_bkg_win_sum() const { return chan_bkg_win_sum_; }
+  std::vector<int> chan_sig_win_sum() const { return chan_sig_win_sum_; }
+  std::vector<int> chan_sig_max_sum() const { return chan_sig_max_sum_; }
+  std::vector<int> chan_sig_max_sum_index() const { return chan_sig_max_sum_index_; }
+  std::vector<int> chan_all_sum_q() const { return chan_all_sum_q_; }
+  std::vector<int> chan_all_sum_qt() const { return chan_all_sum_qt_; }
+
+  std::vector<float> chan_sig() const { return chan_sig_; }
+  std::vector<float> chan_mean_t() const { return chan_mean_t_; }
 
 protected:
   calin::ix::iact_data::waveform_treatment_event_visitor::
@@ -89,11 +105,13 @@ protected:
   std::vector<int> chan_max_;
   std::vector<int> chan_bkg_win_sum_;
   std::vector<int> chan_sig_win_sum_;
+  std::vector<int> chan_sig_max_sum_;
+  std::vector<int> chan_sig_max_sum_index_;
   std::vector<int> chan_all_sum_q_;
   std::vector<int> chan_all_sum_qt_;
 
-  std::vector<float> all_sig_;
-  std::vector<float> all_mean_t_;
+  std::vector<float> chan_sig_;
+  std::vector<float> chan_mean_t_;
 };
 
 } } } // namespace calin::iact_data::event_visitor
