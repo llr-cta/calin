@@ -29,12 +29,12 @@ package calin.ix.iact_data.waveform_treatment_event_visitor;
 message SingleGainDualWindowWaveformTreatmentEventVisitorConfig {
   uint32 integration_n                                     = 1 [
     (CFO).desc = "Size of integration window in samples." ];
-  uint32 bkg_integration_0                                 = 2 [
+  int32 bkg_integration_0                                 = 2 [
     (CFO).desc = "Start of background integration window in samples." ];
-  uint32 sig_integration_0_default                         = 3 [
+  int32 sig_integration_0                                 = 3 [
     (CFO).desc = "Default start of signal integration window in samples, if not "
       "overridden by per-channel setting \"sig_integration_0_chan\"." ];
-  uint32 sig_integration_0_chan                            = 4 [
+  repeated int32 chan_sig_integration_0                   = 4 [
     (CFO).desc = "Start of signal integration window in samples for each channel." ];
   repeated float pedestal                                  = 10 [
     (CFO).desc = "Pedestal estimate for each channel, or seed for pedestal "

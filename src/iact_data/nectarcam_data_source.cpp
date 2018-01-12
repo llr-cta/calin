@@ -619,37 +619,37 @@ copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
     const uint16_t* cta_wf_data =
       reinterpret_cast<const uint16_t*>(&cta_wf.data().front());
     bool all_channels_present = true;
-    if(config_.separate_channel_waveforms())
-    {
-      for(unsigned ipix=0;ipix<npix;ipix++)
-      {
-        constexpr unsigned nblock_copy = 16;
-        if((ipix&(nblock_copy-1)) == 0) {
-          unsigned icount = (std::min(ipix+nblock_copy,npix) - ipix)*nsample;
-          std::copy(cta_wf_data, cta_wf_data+icount, calin_wf_raw_data);
-          calin_wf_raw_data += icount;
-        }
 
-        if(calin_event->module_index(ipix/7) == -1)
+    calin_wf_image->mutable_channel_index()->Reserve(npix);
+    calin_wf_image->mutable_channel_id()->Reserve(npix);
+
+    for(unsigned ipix=0;ipix<npix;ipix++)
+    {
+      constexpr unsigned nblock_copy = 16;
+      if((ipix&(nblock_copy-1)) == 0) {
+        unsigned icount = (std::min(ipix+nblock_copy,npix) - ipix)*nsample;
+        std::copy(cta_wf_data, cta_wf_data+icount, calin_wf_raw_data);
+        calin_wf_raw_data += icount;
+      }
+
+      if(calin_event->module_index(ipix/7) == -1)
+      {
+        all_channels_present = false;
+        calin_wf_image->add_channel_index(-1);
+        cta_wf_data += nsample;
+      }
+      else
+      {
+        calin_wf_image->add_channel_index(calin_wf_image->channel_id_size());
+        calin_wf_image->add_channel_id(ipix);
+        if(config_.separate_channel_waveforms())
         {
-          all_channels_present = false;
-          calin_wf_image->add_channel_index(-1);
-          cta_wf_data += nsample;
-        }
-        else
-        {
-          calin_wf_image->add_channel_index(calin_wf_image->channel_id_size());
-          calin_wf_image->add_channel_id(ipix);
           auto* calin_samp = calin_wf_image->add_waveform()->mutable_samples();
           calin_samp->Reserve(nsample);
           for(unsigned isample=0;isample<nsample;isample++)
             calin_samp->Add(*cta_wf_data++);
         }
       }
-    }
-    else
-    {
-      std::copy(cta_wf_data, cta_wf_data+npix*nsample, calin_wf_raw_data);
     }
     calin_wf_image->set_all_channels_present(all_channels_present);
   }
