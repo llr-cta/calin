@@ -204,7 +204,8 @@ analyze_waveforms(const uint16_t* data, unsigned nchan, unsigned nsamp,
   int isamp = 0;
   int samp[nsamp];
 
-  for(unsigned ichan=0;ichan<nchan;ichan++) {
+  for(unsigned ichan=0;ichan<nchan;ichan++)
+  {
     samp[0] = data[ichan*nsamp];
     imax = 0;
     max = samp[0];
