@@ -65,6 +65,16 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
   unsigned log_frequency, int nthread)
 {
   TelescopeRunConfiguration* run_config = src->get_run_configuration();
+  process_run(src, run_config, log_frequency, nthread);
+  delete run_config;
+}
+
+void TelescopeEventDispatcher::process_run(calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
+  calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  unsigned log_frequency, int nthread)
+{
   accept_run_configuration(run_config);
   if(nthread <= 0 or std::none_of(visitors_.begin(), visitors_.end(),
     [](const std::pair<VisitorExecutionMode,TelescopeEventVisitor*>& iv)

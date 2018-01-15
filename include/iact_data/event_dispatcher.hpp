@@ -55,6 +55,12 @@ public:
     TelescopeRandomAccessDataSourceWithRunConfig* src,
     unsigned log_frequency = 0, int nthread = 0);
 
+  void process_run(calin::io::data_source::DataSource<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
+    calin::ix::iact_data::
+      telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    unsigned log_frequency = 0, int nthread = 0);
+
   // These functions allow events to be passed on to the visitors - they
   // are not meant to be called directly as the visiors expect them to be
   // called in a specific order. They are liable to be made private.
