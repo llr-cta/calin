@@ -48,7 +48,7 @@ CALIN_TYPEALIAS(BufferedTelescopeDataSource,
     calin::ix::iact_data::telescope_event::TelescopeEvent>);
 
 CALIN_TYPEALIAS(MultiThreadTelescopeDataSourceBuffer,
-  calin::io::data_source::MultiThreadDataSourceBuffer<
+  calin::io::data_source::UnidirectionalDataSourcePump<
     calin::ix::iact_data::telescope_event::TelescopeEvent>);
 
 CALIN_TYPEALIAS(TelescopeDataSink,
@@ -85,7 +85,7 @@ extern template class calin::io::data_source::ProtobufFileDataSource<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
 extern template class calin::io::data_source::BufferedDataSource<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
-extern template class calin::io::data_source::MultiThreadDataSourceBuffer<
+extern template class calin::io::data_source::UnidirectionalDataSourcePump<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
 extern template class calin::io::data_source::DataSink<

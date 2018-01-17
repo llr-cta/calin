@@ -37,6 +37,8 @@
 
 namespace calin { namespace iact_data { namespace zfits_actl_data_source {
 
+CALIN_TYPEALIAS(ACTLDataSource,
+  calin::io::data_source::DataSource<DataModel::CameraEvent>);
 CALIN_TYPEALIAS(ACTLRandomAccessDataSource,
   calin::io::data_source::RandomAccessDataSource<DataModel::CameraEvent>);
 
@@ -54,7 +56,7 @@ class ACTLRandomAccessDataSourceWithRunHeader:
 {
 public:
   ACTLRandomAccessDataSourceWithRunHeader():
-    calin::io::data_source::RandomAccessDataSource<DataModel::CameraEvent>() {
+      calin::io::data_source::RandomAccessDataSource<DataModel::CameraEvent>() {
     /* nothing to see here */ }
   virtual ~ACTLRandomAccessDataSourceWithRunHeader();
   virtual DataModel::CameraRunHeader* get_run_header() = 0;

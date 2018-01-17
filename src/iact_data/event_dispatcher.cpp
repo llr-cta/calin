@@ -27,6 +27,7 @@
 #include <util/log.hpp>
 #include <iact_data/event_dispatcher.hpp>
 #include <io/one_to_n_data_sink.hpp>
+#include <util/file.hpp>
 
 using namespace calin::util::string;
 using namespace calin::util::log;
@@ -73,7 +74,7 @@ void TelescopeEventDispatcher::process_run(calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
   calin::ix::iact_data::
     telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  unsigned log_frequency, int nthread)
+  unsigned log_frequency, int nthread, bool use_buffered_reader)
 {
   accept_run_configuration(run_config);
   if(nthread <= 0 or std::none_of(visitors_.begin(), visitors_.end(),
@@ -83,7 +84,7 @@ void TelescopeEventDispatcher::process_run(calin::io::data_source::DataSource<
           iv.first == EXECUTE_SEQUENTIAL_AND_PARALLEL_IF_POSSIBLE or
           iv.first == EXECUTE_PARALLEL) and iv.second->is_parallelizable(); }))
   {
-    accept_all_from_src(src, log_frequency, nthread==0);
+    accept_all_from_src(src, log_frequency, nthread==0 and use_buffered_reader);
   }
   else
   {
@@ -161,7 +162,7 @@ void TelescopeEventDispatcher::process_run(calin::io::data_source::DataSource<
       });
     }
 
-    accept_all_from_src(src, log_frequency, true, sink);
+    accept_all_from_src(src, log_frequency, use_buffered_reader, sink);
 
     while(threads_active)
     {
@@ -182,6 +183,58 @@ void TelescopeEventDispatcher::process_run(calin::io::data_source::DataSource<
     for(auto iv : visitors)add_visitor(iv.second, iv.first, false);
   }
   leave_run();
+}
+
+void TelescopeEventDispatcher::process_nectarcam_zfits_run(
+  const std::string& filename,
+  unsigned log_frequency, int nthread,
+  const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config,
+  const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config)
+{
+  calin::iact_data::zfits_actl_data_source::
+    ZFITSACTLDataSource zfits_actl_src(filename, zfits_config);
+  calin::iact_data::nectarcam_data_source::
+    NectarCamCameraEventDecoder decoder(filename,
+      calin::util::file::extract_first_number_from_filename(filename),
+      decoder_config);
+
+  const DataModel::CameraEvent* actl_sample_event = nullptr;
+  const DataModel::CameraRunHeader* actl_run_header = nullptr;
+  try {
+    zfits_actl_src.set_next_index(0);
+    uint64_t unused_seq_index = 0;
+    actl_sample_event = zfits_actl_src.get_next(unused_seq_index);
+  } catch(...) {
+    // ignore errors that occur reading sample event;
+  }
+  try {
+    actl_run_header = zfits_actl_src.get_run_header();
+  } catch(...) {
+    // ignore errors that occur reading run header
+  }
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
+  decoder.decode_run_config(&run_config, actl_run_header, actl_sample_event);
+  delete actl_run_header;
+  delete actl_sample_event;
+  zfits_actl_src.set_next_index(0);
+
+  calin::io::data_source::UnidirectionalDataSourcePump<
+    DataModel::CameraEvent>* mt_actl_src = nullptr;
+  calin::io::data_source::BufferedDataSource<
+    DataModel::CameraEvent>* buffered_actl_src = nullptr;
+  calin::io::data_source::DataSource<
+    DataModel::CameraEvent>* actl_src = &zfits_actl_src;
+  if(nthread >= 0) {
+    mt_actl_src = new calin::io::data_source::UnidirectionalDataSourcePump<
+      DataModel::CameraEvent>(&zfits_actl_src);
+    buffered_actl_src = mt_actl_src->new_data_source();
+    actl_src = buffered_actl_src;
+  }
+  calin::iact_data::zfits_data_source::DecodedACTLDataSource src(actl_src,
+    &decoder, false, false);
+  process_run(&src, &run_config, log_frequency, nthread, false);
+  delete buffered_actl_src;
+  delete mt_actl_src;
 }
 
 void TelescopeEventDispatcher::

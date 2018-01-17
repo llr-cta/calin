@@ -45,6 +45,91 @@ public:
   uint64_t seq_index = 0;
 };
 
+template<typename T> inline T* unpack_payload(const Payload<T>& payload,
+  uint64_t& seq_index_out, google::protobuf::Arena** arena,
+  bool &warning_sent, const google::protobuf::internal::true_type&)
+{
+  if(payload.ptr == nullptr)return nullptr;
+  seq_index_out = payload.seq_index;
+  if(arena == nullptr)
+  {
+    if(payload.arena == nullptr)return payload.ptr;
+    if(!warning_sent) {
+      util::log::LOG(util::log::WARNING) << "unpack_payload: "
+        "arena not accepted, performing expensive copy";
+      warning_sent = true;
+    }
+    T* data = new T(*payload.ptr);
+    delete payload.arena;
+    return data;
+  }
+  else if(*arena == nullptr)
+  {
+    *arena = payload.arena;
+    return payload.ptr;
+  }
+  else
+  {
+    if(!warning_sent) {
+      util::log::LOG(util::log::WARNING) << "unpack_payload: "
+        "pre-assigned arena, performing expensive copy";
+      warning_sent = true;
+    }
+    T* data = google::protobuf::Arena::CreateMessage<T>(*arena);
+    data->CopyFrom(*payload.ptr);
+    if(payload.arena)delete payload.arena;
+    else delete payload.ptr;
+    return data;
+  }
+}
+
+template<typename T> inline T* unpack_payload(const Payload<T>& payload,
+  uint64_t& seq_index_out, google::protobuf::Arena** arena,
+  bool &warning_sent, const google::protobuf::internal::false_type&)
+{
+  if(payload.arena != nullptr)
+    throw std::runtime_error("unpack_payload: logic error, non-null payload arena for type that does not support arena");
+  if(arena != nullptr and *arena != nullptr)
+    throw std::runtime_error("unpack_payload: logic error, non-null user arena for type that does not support arena");
+  seq_index_out = payload.seq_index;
+  return payload.ptr;
+}
+
+template<typename T> bool pack_payload(Payload<T>& payload,
+  T* ptr, uint64_t seq_index, google::protobuf::Arena* arena, bool adopt_data,
+  const google::protobuf::internal::true_type&)
+{
+  payload.seq_index = seq_index;
+  if(adopt_data) {
+    payload.arena = arena;
+    payload.ptr = ptr;
+  } else if(ptr and arena) {
+    payload.arena = new google::protobuf::Arena;
+    T* data = google::protobuf::Arena::CreateMessage<T>(*payload.arena);
+    data->CopyFrom(*payload.ptr);
+    payload.ptr = data;
+  } else if(ptr) {
+    payload.arena = nullptr;
+    payload.ptr = new T(*ptr);
+  } else {
+    payload.arena = nullptr;
+    payload.ptr = nullptr;
+  }
+  return true;
+}
+
+template<typename T> bool pack_payload(Payload<T>& payload,
+  T* ptr, uint64_t seq_index, google::protobuf::Arena* arena, bool adopt_data,
+  const google::protobuf::internal::false_type&)
+{
+  if(arena != nullptr)
+    throw std::runtime_error("pack_payload: logic error, non-null user arena for type that does not support arena");
+  payload.arena = nullptr;
+  payload.seq_index = seq_index;
+  payload.ptr = (ptr==nullptr or adopt_data) ? ptr : new T(*ptr);
+  return true;
+}
+
 template<typename T> inline T* safe_downcast(void* p)
 {
   // Not really safe at all!
@@ -75,41 +160,8 @@ public:
   {
     Payload<T> payload;
     puller_->pull_assert_size(&payload, sizeof(payload));
-    if(payload.ptr == nullptr) {
-      assert(payload.arena == nullptr);
-      return nullptr;
-    }
-    seq_index_out = payload.seq_index;
-    if(arena == nullptr)
-    {
-      if(payload.arena == nullptr)return payload.ptr;
-      if(!warning_sent_) {
-        util::log::LOG(util::log::WARNING) << "BufferedDataSource: "
-          "arena not accepted, performing expensive copy";
-        warning_sent_ = true;
-      }
-      T* data = new T(*payload.ptr);
-      delete payload.arena;
-      return data;
-    }
-    else if(*arena == nullptr)
-    {
-      *arena = payload.arena;
-      return payload.ptr;
-    }
-    else
-    {
-      if(!warning_sent_) {
-        util::log::LOG(util::log::WARNING) << "BufferedDataSource: "
-          "pre-assigned arena, performing expensive copy";
-        warning_sent_ = true;
-      }
-      T* data = google::protobuf::Arena::CreateMessage<T>(*arena);
-      data->CopyFrom(*payload.ptr);
-      if(payload.arena)delete payload.arena;
-      else delete payload.ptr;
-      return data;
-    }
+    return unpack_payload<T>(payload, seq_index_out, arena, warning_sent_,
+      google::protobuf::Arena::is_arena_constructable<T>());
   }
 
 private:
@@ -117,26 +169,58 @@ private:
   zmq_inproc::ZMQPuller* puller_ = nullptr;
 };
 
-template<typename T> class MultiThreadDataSourceBuffer
+template<typename T> class BufferedDataSink: public DataSink<T>
+{
+public:
+  CALIN_TYPEALIAS(data_type, typename DataSink<T>::data_type);
+
+  BufferedDataSink(const BufferedDataSink&) = delete;
+  BufferedDataSink& operator=(const BufferedDataSink&) = delete;
+
+  BufferedDataSink(zmq_inproc::ZMQPusher* pusher):
+    DataSink<T>(), pusher_(pusher)
+  {
+    // nothing to see here
+  }
+
+  virtual ~BufferedDataSink()
+  {
+    delete pusher_;
+  }
+
+  bool put_next(T* data, uint64_t seq_index,
+    google::protobuf::Arena* arena = nullptr, bool adopt_data = false) override
+  {
+    Payload<T> payload;
+    if(not pack_payload<T>(payload, data, seq_index, arena,
+      google::protobuf::Arena::is_arena_constructable<T>()))return false;
+    return pusher_->push(&payload, sizeof(payload));
+  }
+
+private:
+  zmq_inproc::ZMQPusher* pusher_ = nullptr;
+};
+
+template<typename T> class UnidirectionalDataSourcePump
 {
 public:
   CALIN_TYPEALIAS(data_type, typename DataSource<T>::data_type);
 
-  MultiThreadDataSourceBuffer(const MultiThreadDataSourceBuffer&) = delete;
-  MultiThreadDataSourceBuffer& operator=(const MultiThreadDataSourceBuffer&) = delete;
+  UnidirectionalDataSourcePump(const UnidirectionalDataSourcePump&) = delete;
+  UnidirectionalDataSourcePump& operator=(const UnidirectionalDataSourcePump&) = delete;
 
-  MultiThreadDataSourceBuffer(DataSource<T>* source, unsigned buffer_size = 100,
+  UnidirectionalDataSourcePump(DataSource<T>* source, unsigned buffer_size = 100,
       bool adopt_source = false):
     source_(source), adopt_source_(adopt_source),
     zmq_(new zmq_inproc::ZMQInprocPushPull(buffer_size)),
     reader_thread_(
-      new std::thread(&MultiThreadDataSourceBuffer::reader_loop, this))
+      new std::thread(&UnidirectionalDataSourcePump::reader_loop, this))
   {
     // Wait until BIND happens
     while(!reader_active_){ CALIN_SPINWAIT(); }
   }
 
-  ~MultiThreadDataSourceBuffer()
+  ~UnidirectionalDataSourcePump()
   {
     stop_buffering_ = true;
     // This closes the ZMQ context prompting all readers and the writer to

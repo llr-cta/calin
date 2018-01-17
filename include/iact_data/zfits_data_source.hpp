@@ -53,6 +53,27 @@ public:
     const DataModel::CameraEvent* cta_event) = 0;
 };
 
+class DecodedACTLDataSource:
+  public calin::iact_data::telescope_data_source::TelescopeDataSource
+{
+public:
+  DecodedACTLDataSource(
+    calin::iact_data::zfits_actl_data_source::ACTLDataSource* actl_src,
+    CTACameraEventDecoder* decoder,
+    bool adopt_actl_src = false, bool adopt_decoder = false);
+
+  virtual ~DecodedACTLDataSource();
+
+  calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
+    uint64_t& seq_index_out, google::protobuf::Arena** arena = nullptr) override;
+
+private:
+  CTACameraEventDecoder* decoder_;
+  bool adopt_decoder_ = false;
+  calin::iact_data::zfits_actl_data_source::ACTLDataSource* actl_src_ = nullptr;
+  bool adopt_actl_src_ = false;
+};
+
 class ZFITSSingleFileDataSource:
   public calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig
@@ -148,4 +169,4 @@ void decode_tib_data(calin::ix::iact_data::telescope_event::TIBData* calin_tib_d
   const DataModel::AnyArray& cta_array);
 
 #endif
-} } } // namespace calin::iact_data::nectarcam_data_source
+} } } // namespace calin::iact_data::zfits_data_source

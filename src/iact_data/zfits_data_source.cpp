@@ -45,6 +45,59 @@ CTACameraEventDecoder::~CTACameraEventDecoder()
 }
 
 // =============================================================================
+// DecodedACTLDataSource - extract ACTL events from an ACTLDataSource and
+// decode them using a supplied decoder
+// =============================================================================
+
+DecodedACTLDataSource::DecodedACTLDataSource(
+    calin::iact_data::zfits_actl_data_source::ACTLDataSource* actl_src,
+    CTACameraEventDecoder* decoder, bool adopt_actl_src, bool adopt_decoder):
+  calin::iact_data::telescope_data_source::TelescopeDataSource(),
+  decoder_(decoder), adopt_decoder_(adopt_decoder),
+  actl_src_(actl_src), adopt_actl_src_(adopt_actl_src)
+{
+  // nothing to see here
+}
+
+DecodedACTLDataSource::~DecodedACTLDataSource()
+{
+  if(adopt_decoder_)delete decoder_;
+  if(adopt_actl_src_)delete actl_src_;
+}
+
+calin::ix::iact_data::telescope_event::TelescopeEvent*
+DecodedACTLDataSource::get_next(
+  uint64_t& seq_index_out, google::protobuf::Arena** arena)
+{
+  const DataModel::CameraEvent* cta_event = actl_src_->get_next(seq_index_out);
+  if(!cta_event)return nullptr;
+  TelescopeEvent* event = nullptr;
+  TelescopeEvent* delete_event = nullptr;
+  google::protobuf::Arena* delete_arena = nullptr;
+  if(arena) {
+    if(!*arena)*arena = delete_arena = new google::protobuf::Arena;
+    event = google::protobuf::Arena::CreateMessage<TelescopeEvent>(*arena);
+  }
+  else event = delete_event = new TelescopeEvent;
+  if(!event)
+  {
+    delete cta_event;
+    delete delete_arena;
+    throw std::runtime_error("Could not allocate telescope event");
+  }
+  if(!decoder_->decode(event, cta_event))
+  {
+    delete cta_event;
+    delete delete_arena;
+    delete delete_event;
+    throw std::runtime_error("Could not decode ACTL event");
+  }
+  event->set_source_event_index(seq_index_out);
+  delete cta_event;
+  return event;
+}
+
+// =============================================================================
 // ZFITSSingleFileDataSource - single ZFits file with decoder
 // Uses ZFITSSingleFileACTLDataSource to read events and decoder to translate
 // them.
