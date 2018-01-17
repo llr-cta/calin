@@ -222,7 +222,7 @@ TEST(TestBufferedIntegerDataSource, Sequential) {
   // Test that data packets all arrive in correct order
   unsigned N = 1000;
   UnitTestIntegerDataSource src(N,0);
-  UnidirectionalDataSourcePump<UnitTestSimpleSubMessage> buffer(&src, N/10);
+  UnidirectionalBufferedDataSourcePump<UnitTestSimpleSubMessage> buffer(&src, N/10);
   auto* bsrc = buffer.new_data_source();
 
   for(unsigned i=0;i<N;i++)
@@ -243,7 +243,7 @@ TEST(TestBufferedIntegerDataSource, SequentialWithStop) {
   // Test that no data packets are lost when stop is called
   unsigned N = 1000;
   UnitTestIntegerDataSource src(N,0);
-  UnidirectionalDataSourcePump<UnitTestSimpleSubMessage> buffer(&src,10);
+  UnidirectionalBufferedDataSourcePump<UnitTestSimpleSubMessage> buffer(&src,10);
   auto* bsrc = buffer.new_data_source();
 
   unsigned i=0;
@@ -275,7 +275,7 @@ TEST(TestBufferedIntegerDataSource, MultiThreaded) {
   unsigned N = 10000;
   unsigned delay = 100;
   UnitTestIntegerDataSource src(N,0);
-  UnidirectionalDataSourcePump<UnitTestSimpleSubMessage> buffer(&src,10);
+  UnidirectionalBufferedDataSourcePump<UnitTestSimpleSubMessage> buffer(&src,10);
 
   std::vector<unsigned> ids(N);
   std::vector<std::thread> threads;
@@ -305,7 +305,7 @@ TEST(TestBufferedIntegerDataSource, MultiThreadedWithStop) {
   unsigned N = 10000;
   unsigned delay = 100;
   UnitTestIntegerDataSource src(N,0);
-  UnidirectionalDataSourcePump<UnitTestSimpleSubMessage> buffer(&src,10);
+  UnidirectionalBufferedDataSourcePump<UnitTestSimpleSubMessage> buffer(&src,10);
 
   std::vector<unsigned> ids(N);
   std::vector<std::thread> threads;

@@ -125,7 +125,7 @@ using namespace calin::io;
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
 %template(MultiThreadTelescopeDataSourceBuffer)
-  calin::io::data_source::UnidirectionalDataSourcePump<
+  calin::io::data_source::UnidirectionalBufferedDataSourcePump<
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
 %include "iact_data/telescope_data_source.hpp"

@@ -201,26 +201,28 @@ private:
   zmq_inproc::ZMQPusher* pusher_ = nullptr;
 };
 
-template<typename T> class UnidirectionalDataSourcePump
+// Launch thread to read events from supplied DataSource, buffer them in 0MQ
+// Push/Pull socket for use by other threads
+template<typename T> class UnidirectionalBufferedDataSourcePump
 {
 public:
   CALIN_TYPEALIAS(data_type, typename DataSource<T>::data_type);
 
-  UnidirectionalDataSourcePump(const UnidirectionalDataSourcePump&) = delete;
-  UnidirectionalDataSourcePump& operator=(const UnidirectionalDataSourcePump&) = delete;
+  UnidirectionalBufferedDataSourcePump(const UnidirectionalBufferedDataSourcePump&) = delete;
+  UnidirectionalBufferedDataSourcePump& operator=(const UnidirectionalBufferedDataSourcePump&) = delete;
 
-  UnidirectionalDataSourcePump(DataSource<T>* source, unsigned buffer_size = 100,
+  UnidirectionalBufferedDataSourcePump(DataSource<T>* source, unsigned buffer_size = 100,
       bool adopt_source = false):
     source_(source), adopt_source_(adopt_source),
     zmq_(new zmq_inproc::ZMQInprocPushPull(buffer_size)),
     reader_thread_(
-      new std::thread(&UnidirectionalDataSourcePump::reader_loop, this))
+      new std::thread(&UnidirectionalBufferedDataSourcePump::reader_loop, this))
   {
     // Wait until BIND happens
     while(!reader_active_){ CALIN_SPINWAIT(); }
   }
 
-  ~UnidirectionalDataSourcePump()
+  ~UnidirectionalBufferedDataSourcePump()
   {
     stop_buffering_ = true;
     // This closes the ZMQ context prompting all readers and the writer to
@@ -268,6 +270,87 @@ private:
   std::atomic<bool> reader_active_ { false };
   zmq_inproc::ZMQInprocPushPull* zmq_ = nullptr;
   std::thread* reader_thread_ = nullptr;
+};
+
+template<typename T> class BidirectionalBufferedDataSourcePump
+{
+public:
+  CALIN_TYPEALIAS(data_type, typename DataSource<T>::data_type);
+
+  BidirectionalBufferedDataSourcePump(const BidirectionalBufferedDataSourcePump&) = delete;
+  BidirectionalBufferedDataSourcePump& operator=(const BidirectionalBufferedDataSourcePump&) = delete;
+
+  BidirectionalBufferedDataSourcePump(DataSource<T>* source, DataSink<T>* sink,
+      unsigned buffer_size = 100, bool adopt_source = false, bool adopt_sink = false):
+    source_(source), adopt_source_(adopt_source),
+    sink_(sink), adopt_sink_(adopt_sink),
+    zmq_dn_(new zmq_inproc::ZMQInprocPushPull(buffer_size)),
+    zmq_up_(new zmq_inproc::ZMQInprocPushPull(buffer_size)),
+    ventilator_thread_(
+      new std::thread(&BidirectionalBufferedDataSourcePump::ventilator_loop, this))
+  {
+    // Wait until BIND happens
+    while(!ventilator_active_){ CALIN_SPINWAIT(); }
+  }
+
+  ~BidirectionalBufferedDataSourcePump()
+  {
+    stop_ventilator_ = true;
+    // This closes the ZMQ context prompting all readers and the writer to
+    // unblock. It must happen before the join to the reader thread.
+    delete zmq_dn_;
+    delete zmq_up_;
+    ventilator_thread_->join();
+    delete ventilator_thread_;
+    if(adopt_source_)delete source_;
+    if(adopt_sink_)delete sink_;
+  }
+
+  BufferedDataSource<T>* new_data_source() {
+    return new BufferedDataSource<T>(zmq_dn_->new_puller()); }
+
+  BufferedDataSink<T>* new_data_sink() {
+    return new BufferedDataSink<T>(zmq_up_->new_pusher()); }
+
+  void stop_buffering() { stop_ventilator_ = true; }
+  void stop_ventilator() { stop_ventilator_ = true; }
+
+private:
+  void ventilator_loop()
+  {
+    std::unique_ptr<zmq_inproc::ZMQPusher> pusher { zmq_dn_->new_pusher() };
+    std::unique_ptr<zmq_inproc::ZMQPuller> puller { zmq_up_->new_puller() };
+    ventilator_active_ = true;
+    while(ventilator_active_)
+    {
+      // The reader stays active until the ZMQ context is closed in the
+      // desctructor. However it stops getting data from the supplied source
+      // when requested by the user. After this it just delivers "nullptr".
+      // This simplifies the implementation of the BufferedDataSource which
+      // otherwise has a problem either potentially getting blocked or missing
+      // a data item.
+      Payload<T> payload;
+      if(!stop_ventilator_)
+        payload.ptr = source_->get_next(payload.seq_index, &payload.arena);
+      if(!pusher->push(&payload, sizeof(payload)))
+      {
+        // Only occurs when context is closed
+        if(payload.arena)delete payload.arena;
+        else delete payload.ptr;
+        ventilator_active_ = false;
+      }
+    }
+  }
+
+  DataSource<T>* source_ { nullptr };
+  bool adopt_source_ { false };
+  DataSource<T>* sink_ { nullptr };
+  bool adopt_sink_ { false };
+  std::atomic<bool> stop_ventilator_ { false };
+  std::atomic<bool> ventilator_active_ { false };
+  zmq_inproc::ZMQInprocPushPull* zmq_dn_ = nullptr;
+  zmq_inproc::ZMQInprocPushPull* zmq_up_ = nullptr;
+  std::thread* ventilator_thread_ = nullptr;
 };
 
 } } } // namespace calin::io::data_source

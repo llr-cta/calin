@@ -218,14 +218,14 @@ void TelescopeEventDispatcher::process_nectarcam_zfits_run(
   delete actl_sample_event;
   zfits_actl_src.set_next_index(0);
 
-  calin::io::data_source::UnidirectionalDataSourcePump<
+  calin::io::data_source::UnidirectionalBufferedDataSourcePump<
     DataModel::CameraEvent>* mt_actl_src = nullptr;
   calin::io::data_source::BufferedDataSource<
     DataModel::CameraEvent>* buffered_actl_src = nullptr;
   calin::io::data_source::DataSource<
     DataModel::CameraEvent>* actl_src = &zfits_actl_src;
   if(nthread >= 0) {
-    mt_actl_src = new calin::io::data_source::UnidirectionalDataSourcePump<
+    mt_actl_src = new calin::io::data_source::UnidirectionalBufferedDataSourcePump<
       DataModel::CameraEvent>(&zfits_actl_src);
     buffered_actl_src = mt_actl_src->new_data_source();
     actl_src = buffered_actl_src;

@@ -174,6 +174,7 @@ release_borrowed_event(const DataModel::CameraEvent* event)
 DataModel::CameraEvent* ZFITSSingleFileACTLDataSource::
 get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
+  if(arena)*arena = nullptr;
   const DataModel::CameraEvent* event = borrow_next_event(seq_index_out);
   if(event == nullptr)return nullptr;
 

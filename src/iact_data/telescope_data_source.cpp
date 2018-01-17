@@ -34,7 +34,7 @@ template class calin::io::data_source::ProtobufFileDataSource<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
 template class calin::io::data_source::BufferedDataSource<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
-template class calin::io::data_source::UnidirectionalDataSourcePump<
+template class calin::io::data_source::UnidirectionalBufferedDataSourcePump<
   calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
 template class calin::io::data_source::DataSink<

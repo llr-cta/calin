@@ -70,7 +70,10 @@ DecodedACTLDataSource::get_next(
   uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
   const DataModel::CameraEvent* cta_event = actl_src_->get_next(seq_index_out);
-  if(!cta_event)return nullptr;
+  if(!cta_event) {
+    if(arena)*arena = nullptr;
+    return nullptr;
+  }
   TelescopeEvent* event = nullptr;
   TelescopeEvent* delete_event = nullptr;
   google::protobuf::Arena* delete_arena = nullptr;
@@ -160,7 +163,10 @@ ZFITSSingleFileDataSource::get_next(
 {
   const DataModel::CameraEvent* cta_event =
     actl_zfits_->borrow_next_event(seq_index_out);
-  if(!cta_event)return nullptr;
+  if(!cta_event){
+    if(arena)*arena = nullptr;
+    return nullptr;
+  }
   TelescopeEvent* event = nullptr;
   TelescopeEvent* delete_event = nullptr;
   google::protobuf::Arena* delete_arena = nullptr;
