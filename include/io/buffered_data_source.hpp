@@ -281,11 +281,13 @@ public:
   BidirectionalBufferedDataSourcePump& operator=(const BidirectionalBufferedDataSourcePump&) = delete;
 
   BidirectionalBufferedDataSourcePump(DataSource<T>* source, DataSink<T>* sink,
-      unsigned buffer_size = 100, bool adopt_source = false, bool adopt_sink = false):
+      unsigned buffer_size = 100, bool sink_unsent_data = false,
+      bool adopt_source = false, bool adopt_sink = false):
     source_(source), adopt_source_(adopt_source),
     sink_(sink), adopt_sink_(adopt_sink),
+    sink_unsent_data_(sink_unsent_data),
     zmq_dn_(new zmq_inproc::ZMQInprocPushPull(buffer_size)),
-    zmq_up_(new zmq_inproc::ZMQInprocPushPull(buffer_size)),
+    zmq_up_(new zmq_inproc::ZMQInprocPushPull(buffer_size, zmq_dn_)),
     ventilator_thread_(
       new std::thread(&BidirectionalBufferedDataSourcePump::ventilator_loop, this))
   {
@@ -298,8 +300,8 @@ public:
     stop_ventilator_ = true;
     // This closes the ZMQ context prompting all readers and the writer to
     // unblock. It must happen before the join to the reader thread.
-    delete zmq_dn_;
     delete zmq_up_;
+    delete zmq_dn_;
     ventilator_thread_->join();
     delete ventilator_thread_;
     if(adopt_source_)delete source_;
@@ -321,6 +323,8 @@ private:
     std::unique_ptr<zmq_inproc::ZMQPusher> pusher { zmq_dn_->new_pusher() };
     std::unique_ptr<zmq_inproc::ZMQPuller> puller { zmq_up_->new_puller() };
     ventilator_active_ = true;
+    Payload<T> payload_push;
+    payload_push.ptr = source_->get_next(payload_push.seq_index, &payload_push.arena);
     while(ventilator_active_)
     {
       // The reader stays active until the ZMQ context is closed in the
@@ -329,16 +333,40 @@ private:
       // This simplifies the implementation of the BufferedDataSource which
       // otherwise has a problem either potentially getting blocked or missing
       // a data item.
-      Payload<T> payload;
-      if(!stop_ventilator_)
-        payload.ptr = source_->get_next(payload.seq_index, &payload.arena);
-      if(!pusher->push(&payload, sizeof(payload)))
-      {
+      zmq_pollitem_t pollitems[] = { pusher->pollitem(), puller->pollitem() };
+      if(zmq_poll(pollitems, 2, -1) < 0) {
         // Only occurs when context is closed
-        if(payload.arena)delete payload.arena;
-        else delete payload.ptr;
         ventilator_active_ = false;
+      } else {
+        if(pollitems[1].revents) {
+          // Prioritize sata from puller - keep getting some while its available
+          Payload<T> payload_pull;
+          while(puller->pull_assert_size(&payload_pull, sizeof(payload_pull),
+              /* dont_wait= */ true)) {
+            sink_->put_next(payload_pull.ptr, payload_pull.seq_index,
+              payload_pull.arena, /* adopt_data = */ true);
+            payload_pull->ptr = nullptr;
+            payload_pull->arena = nullptr;
+          }
+        }
+        if(pollitems[0].revents) {
+          if(pusher->push(&payload_push, sizeof(payload_push))) {
+            payload_push->ptr = nullptr;
+            payload_push->arena = nullptr;
+            if(!stop_ventilator_)
+              payload_push.ptr = source_->get_next(payload_push.seq_index, &payload_push.arena);
+          } else {
+            ventilator_active_ = false;
+          }
+        }
       }
+    }
+    if(payload_push.ptr) {
+      if(sink_unsent_data_)
+        sink_->put_next(payload_push.ptr, payload_push.seq_index,
+          payload_push.arena, /* adopt_data = */ true);
+      else if(payload_push.arena)delete payload_push.arena;
+      else delete payload_push.ptr;
     }
   }
 
@@ -346,6 +374,7 @@ private:
   bool adopt_source_ { false };
   DataSource<T>* sink_ { nullptr };
   bool adopt_sink_ { false };
+  bool sink_unsent_data_ = false;
   std::atomic<bool> stop_ventilator_ { false };
   std::atomic<bool> ventilator_active_ { false };
   zmq_inproc::ZMQInprocPushPull* zmq_dn_ = nullptr;

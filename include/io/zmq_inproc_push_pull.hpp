@@ -53,7 +53,7 @@ public:
   bool pull_assert_size(void* data, unsigned buffer_size,
       bool dont_wait = false);
   void* socket() { return socket_.get(); }
-  zmq_pollitem_t pollitem() { return { socket_.get(), 0, ZMQ_POLLOUT, 0 }; }
+  zmq_pollitem_t pollitem() { return { socket_.get(), 0, ZMQ_POLLIN, 0 }; }
 private:
   std::unique_ptr<void,int(*)(void*)> socket_;
 };
