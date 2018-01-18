@@ -185,6 +185,7 @@ void TelescopeEventDispatcher::process_run(calin::io::data_source::DataSource<
   leave_run();
 }
 
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 void TelescopeEventDispatcher::process_nectarcam_zfits_run(
   const std::string& filename,
   unsigned log_frequency, int nthread,
@@ -243,6 +244,7 @@ void TelescopeEventDispatcher::process_nectarcam_zfits_run(
   delete src;
   delete pump_actl_src;
 }
+#endif // defined(CALIN_HAVE_CTA_CAMERASTOACTL)
 
 void TelescopeEventDispatcher::
 accept_run_configuration(TelescopeRunConfiguration* run_config)

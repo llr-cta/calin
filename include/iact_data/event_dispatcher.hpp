@@ -63,6 +63,7 @@ public:
     unsigned log_frequency = 0, int nthread = 0,
     bool use_buffered_reader = true);
 
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
   void process_nectarcam_zfits_run(const std::string& filename,
     unsigned log_frequency = 0, int nthread = 0,
     const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config =
@@ -87,6 +88,7 @@ public:
     return process_nectarcam_zfits_run(filename, log_frequency, nthread,
       decoder_config, zfits_config);
   }
+#endif
 
   // These functions allow events to be passed on to the visitors - they
   // are not meant to be called directly as the visiors expect them to be
