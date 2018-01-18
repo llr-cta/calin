@@ -57,8 +57,8 @@ public:
   virtual bool leave_telescope_event();
 
   // This function allows testing of the code
-  static void analyze_waveforms(const uint16_t* data, unsigned nchan, unsigned nsamp,
-    unsigned window_n, int bkg_window_0, const int* sig_window_0,
+  static void analyze_waveforms(const uint16_t* data, unsigned nchan, int nsamp,
+    int window_n, int bkg_window_0, const int* sig_window_0,
     float* ped, float ped_iir_old, float ped_iir_new,
     int* chan_max_index, int* chan_max, int* chan_bkg_win_sum, int* chan_sig_win_sum,
     int* chan_sig_max_sum, int* chan_sig_max_sum_index,

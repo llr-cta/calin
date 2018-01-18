@@ -184,8 +184,8 @@ bool SingleGainDualWindowWaveformTreatmentEventVisitor::leave_telescope_event()
 }
 
 void SingleGainDualWindowWaveformTreatmentEventVisitor::
-analyze_waveforms(const uint16_t* data, unsigned nchan, unsigned nsamp,
-  unsigned window_n, int bkg_window_0, const int* sig_window_0,
+analyze_waveforms(const uint16_t* data, unsigned nchan, int nsamp,
+  int window_n, int bkg_window_0, const int* sig_window_0,
   float* ped, float ped_iir_old, float ped_iir_new,
   int* chan_max_index, int* chan_max,
   int* chan_bkg_win_sum, int* chan_sig_win_sum,
