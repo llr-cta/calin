@@ -95,7 +95,7 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
   sig_window_0_.resize(nchan_);
   if(config_.chan_sig_integration_0_size() == 0)
     std::fill(sig_window_0_.begin(), sig_window_0_.end(), config_.sig_integration_0());
-  else if(config_.chan_sig_integration_0_size() == nchan_)
+  else if(config_.chan_sig_integration_0_size() == int(nchan_))
     std::copy(config_.chan_sig_integration_0().begin(), config_.chan_sig_integration_0().end(), sig_window_0_.begin());
   else
     throw std::out_of_range("SingleGainDualWindowWaveformTreatmentEventVisitor: "
@@ -121,7 +121,7 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
   chan_ped_est_.resize(nchan_);
   if(config_.pedestal_size() == 0)
     std::fill(chan_ped_est_.begin(), chan_ped_est_.end(), -1.0f);
-  else if(config_.pedestal_size() == nchan_)
+  else if(config_.pedestal_size() == int(nchan_))
     std::copy(config_.pedestal().begin(), config_.pedestal().end(), chan_ped_est_.begin());
   else
     throw std::out_of_range("SingleGainDualWindowWaveformTreatmentEventVisitor: "
@@ -201,7 +201,7 @@ analyze_waveforms(const uint16_t* data, unsigned nchan, unsigned nsamp,
   int sum_q = 0;
   int sum_qt = 0;
   int win = 0;
-  int isamp = 0;
+  unsigned isamp = 0;
   int samp[nsamp];
 
   for(unsigned ichan=0;ichan<nchan;ichan++)
@@ -212,7 +212,7 @@ analyze_waveforms(const uint16_t* data, unsigned nchan, unsigned nsamp,
     win = max;
     sum_qt = 0;
     for(isamp = 1;isamp<window_n;isamp++) {
-      const unsigned _samp = data[ichan*nsamp+isamp];
+      const int _samp = data[ichan*nsamp+isamp];
       samp[isamp] = _samp;
       win += _samp;
       if(_samp > max) {
@@ -225,10 +225,10 @@ analyze_waveforms(const uint16_t* data, unsigned nchan, unsigned nsamp,
     isig_max = 0;
     sum_q = win;
     while(isamp<nsamp) {
-      unsigned iss = isamp-16;
+      int iss = isamp-16;
       if(bkg_window_0 == iss)bkg = win;
       if(sig_window_0[ichan] == iss)sig = win;
-      const unsigned _samp = data[ichan*nsamp+isamp];
+      const int _samp = data[ichan*nsamp+isamp];
       samp[isamp] = _samp;
       sum_q += _samp;
       sum_qt += _samp*isamp;
