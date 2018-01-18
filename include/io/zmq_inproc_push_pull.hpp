@@ -24,6 +24,7 @@
 
 #include <string>
 #include <memory>
+#include <atomic>
 
 #include <zmq.h>
 

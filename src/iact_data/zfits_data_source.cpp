@@ -170,7 +170,6 @@ DecodedConstACTLDataSource::get_next(
   return event;
 }
 
-
 // =============================================================================
 // ZFITSSingleFileDataSource - single ZFits file with decoder
 // Uses ZFITSSingleFileACTLDataSource to read events and decoder to translate

@@ -344,40 +344,40 @@ release_borrowed_event(const DataModel::CameraEvent* event)
     delete event;
 }
 
-ZFITSACTLDataSourceBorrowAdapter::
-ZFITSACTLDataSourceBorrowAdapter(ZFITSACTLDataSource* src):
+ZFITSConstACTLDataSourceBorrowAdapter::
+ZFITSConstACTLDataSourceBorrowAdapter(ZFITSACTLDataSource* src):
   calin::io::data_source::DataSource<const DataModel::CameraEvent>(),
   src_(src)
 {
   // nothing to see here
 }
 
-ZFITSACTLDataSourceBorrowAdapter::~ZFITSACTLDataSourceBorrowAdapter()
+ZFITSConstACTLDataSourceBorrowAdapter::~ZFITSConstACTLDataSourceBorrowAdapter()
 {
   // nothing to see here
 }
 
-const DataModel::CameraEvent* ZFITSACTLDataSourceBorrowAdapter::
+const DataModel::CameraEvent* ZFITSConstACTLDataSourceBorrowAdapter::
 get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
   assert(arena==nullptr or *arena==nullptr);
   return src_->borrow_next_event(seq_index_out);
 }
 
-ZFITSACTLDataSourceReleaseAdapter::
-ZFITSACTLDataSourceReleaseAdapter(ZFITSACTLDataSource* src):
+ZFITSConstACTLDataSourceReleaseAdapter::
+ZFITSConstACTLDataSourceReleaseAdapter(ZFITSACTLDataSource* src):
   calin::io::data_source::DataSink<const DataModel::CameraEvent>(),
   src_(src)
 {
   // nothing to see here
 }
 
-ZFITSACTLDataSourceReleaseAdapter::~ZFITSACTLDataSourceReleaseAdapter()
+ZFITSConstACTLDataSourceReleaseAdapter::~ZFITSConstACTLDataSourceReleaseAdapter()
 {
   // nothing to see here
 }
 
-bool ZFITSACTLDataSourceReleaseAdapter::
+bool ZFITSConstACTLDataSourceReleaseAdapter::
 put_next(const DataModel::CameraEvent* data, uint64_t seq_index,
   google::protobuf::Arena* arena, bool adopt_data)
 {

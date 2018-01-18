@@ -203,7 +203,7 @@ void TelescopeEventDispatcher::process_nectarcam_zfits_run(
   try {
     zfits_actl_src.set_next_index(0);
     uint64_t unused_seq_index = 0;
-    actl_sample_event = zfits_actl_src.get_next(unused_seq_index);
+    actl_sample_event = zfits_actl_src.borrow_next_event(unused_seq_index);
   } catch(...) {
     // ignore errors that occur reading sample event;
   }
@@ -215,26 +215,33 @@ void TelescopeEventDispatcher::process_nectarcam_zfits_run(
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
   decoder.decode_run_config(&run_config, actl_run_header, actl_sample_event);
   delete actl_run_header;
-  delete actl_sample_event;
+  zfits_actl_src.release_borrowed_event(actl_sample_event);
   zfits_actl_src.set_next_index(0);
 
-  calin::io::data_source::UnidirectionalBufferedDataSourcePump<
-    DataModel::CameraEvent>* mt_actl_src = nullptr;
-  calin::io::data_source::BufferedDataSource<
-    DataModel::CameraEvent>* buffered_actl_src = nullptr;
-  calin::io::data_source::DataSource<
-    DataModel::CameraEvent>* actl_src = &zfits_actl_src;
-  if(nthread >= 0) {
-    mt_actl_src = new calin::io::data_source::UnidirectionalBufferedDataSourcePump<
-      DataModel::CameraEvent>(&zfits_actl_src);
-    buffered_actl_src = mt_actl_src->new_data_source();
-    actl_src = buffered_actl_src;
+  zfits_actl_data_source::ZFITSConstACTLDataSourceBorrowAdapter zfits_actl_borrow_src(&zfits_actl_src);
+  zfits_actl_data_source::ZFITSConstACTLDataSourceReleaseAdapter zfits_actl_release_sink(&zfits_actl_src);
+
+  calin::io::data_source::BidirectionalBufferedDataSourcePump<
+    const DataModel::CameraEvent>* pump_actl_src = nullptr;
+
+  calin::iact_data::zfits_data_source::DecodedConstACTLDataSource* src;
+
+  if(nthread == -1) {
+    src = new calin::iact_data::zfits_data_source::DecodedConstACTLDataSource(
+      &zfits_actl_borrow_src, &zfits_actl_release_sink, &decoder);
+  } else {
+    pump_actl_src = new calin::io::data_source::BidirectionalBufferedDataSourcePump<
+      const DataModel::CameraEvent>(&zfits_actl_borrow_src, &zfits_actl_release_sink,
+        /* buffer_size = */ 100, /* sink_unsent_data = */ true);
+    src = new calin::iact_data::zfits_data_source::DecodedConstACTLDataSource(
+      pump_actl_src->new_data_source(), pump_actl_src->new_data_sink(),
+      &decoder, /* adopt_actl_src = */ true, /* adopt_actl_sink = */ true);
   }
-  calin::iact_data::zfits_data_source::DecodedACTLDataSource src(actl_src,
-    &decoder, false, false);
-  process_run(&src, &run_config, log_frequency, nthread, false);
-  delete buffered_actl_src;
-  delete mt_actl_src;
+
+  process_run(src, &run_config, log_frequency, nthread, false);
+
+  delete src;
+  delete pump_actl_src;
 }
 
 void TelescopeEventDispatcher::

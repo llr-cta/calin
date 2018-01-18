@@ -192,7 +192,7 @@ public:
     google::protobuf::Arena* arena = nullptr, bool adopt_data = false) override
   {
     Payload<T> payload;
-    if(not pack_payload<T>(payload, data, seq_index, arena,
+    if(not pack_payload<T>(payload, data, seq_index, arena, adopt_data,
       google::protobuf::Arena::is_arena_constructable<T>()))return false;
     return pusher_->push(&payload, sizeof(payload));
   }
@@ -345,14 +345,14 @@ private:
               /* dont_wait= */ true)) {
             sink_->put_next(payload_pull.ptr, payload_pull.seq_index,
               payload_pull.arena, /* adopt_data = */ true);
-            payload_pull->ptr = nullptr;
-            payload_pull->arena = nullptr;
+            payload_pull.ptr = nullptr;
+            payload_pull.arena = nullptr;
           }
         }
         if(pollitems[1].revents) {
           if(pusher->push(&payload_push, sizeof(payload_push))) {
-            payload_push->ptr = nullptr;
-            payload_push->arena = nullptr;
+            payload_push.ptr = nullptr;
+            payload_push.arena = nullptr;
             if(!stop_ventilator_)
               payload_push.ptr = source_->get_next(payload_push.seq_index, &payload_push.arena);
           } else {
@@ -372,7 +372,7 @@ private:
 
   DataSource<T>* source_ { nullptr };
   bool adopt_source_ { false };
-  DataSource<T>* sink_ { nullptr };
+  DataSink<T>* sink_ { nullptr };
   bool adopt_sink_ { false };
   bool sink_unsent_data_ = false;
   std::atomic<bool> stop_ventilator_ { false };

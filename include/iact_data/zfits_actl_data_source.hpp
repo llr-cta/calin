@@ -171,24 +171,24 @@ private:
   bool has_opened_file_ = false;
 };
 
-class ZFITSACTLDataSourceBorrowAdapter:
+class ZFITSConstACTLDataSourceBorrowAdapter:
   public calin::io::data_source::DataSource<const DataModel::CameraEvent>
 {
 public:
-  ZFITSACTLDataSourceBorrowAdapter(ZFITSACTLDataSource* src);
-  virtual ~ZFITSACTLDataSourceBorrowAdapter();
+  ZFITSConstACTLDataSourceBorrowAdapter(ZFITSACTLDataSource* src);
+  virtual ~ZFITSConstACTLDataSourceBorrowAdapter();
   const DataModel::CameraEvent* get_next(uint64_t& seq_index_out,
     google::protobuf::Arena** arena = nullptr) override;
 private:
   ZFITSACTLDataSource* src_;
 };
 
-class ZFITSACTLDataSourceReleaseAdapter:
+class ZFITSConstACTLDataSourceReleaseAdapter:
   public calin::io::data_source::DataSink<const DataModel::CameraEvent>
 {
 public:
-  ZFITSACTLDataSourceReleaseAdapter(ZFITSACTLDataSource* src);
-  virtual ~ZFITSACTLDataSourceReleaseAdapter();
+  ZFITSConstACTLDataSourceReleaseAdapter(ZFITSACTLDataSource* src);
+  virtual ~ZFITSConstACTLDataSourceReleaseAdapter();
   bool put_next(const DataModel::CameraEvent* data, uint64_t seq_index,
     google::protobuf::Arena* arena = nullptr, bool adopt_data = false) override;
 private:
