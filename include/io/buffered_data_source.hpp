@@ -333,12 +333,12 @@ private:
       // This simplifies the implementation of the BufferedDataSource which
       // otherwise has a problem either potentially getting blocked or missing
       // a data item.
-      zmq_pollitem_t pollitems[] = { pusher->pollitem(), puller->pollitem() };
+      zmq_pollitem_t pollitems[] = { puller->pollitem(), pusher->pollitem() };
       if(zmq_poll(pollitems, 2, -1) < 0) {
         // Only occurs when context is closed
         ventilator_active_ = false;
       } else {
-        if(pollitems[1].revents) {
+        if(pollitems[0].revents) {
           // Prioritize sata from puller - keep getting some while its available
           Payload<T> payload_pull;
           while(puller->pull_assert_size(&payload_pull, sizeof(payload_pull),
@@ -349,7 +349,7 @@ private:
             payload_pull->arena = nullptr;
           }
         }
-        if(pollitems[0].revents) {
+        if(pollitems[1].revents) {
           if(pusher->push(&payload_push, sizeof(payload_push))) {
             payload_push->ptr = nullptr;
             payload_push->arena = nullptr;
@@ -365,7 +365,7 @@ private:
       if(sink_unsent_data_)
         sink_->put_next(payload_push.ptr, payload_push.seq_index,
           payload_push.arena, /* adopt_data = */ true);
-      else if(payload_push.arena)delete payload_push.arena;
+      else if(payload_push.arena)delete payload_push  .arena;
       else delete payload_push.ptr;
     }
   }

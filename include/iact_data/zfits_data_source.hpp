@@ -74,6 +74,35 @@ private:
   bool adopt_actl_src_ = false;
 };
 
+class DecodedConstACTLDataSource:
+  public calin::iact_data::telescope_data_source::TelescopeDataSource
+{
+public:
+  DecodedConstACTLDataSource(
+    calin::iact_data::zfits_actl_data_source::ConstACTLDataSource* actl_src,
+    calin::iact_data::zfits_actl_data_source::ConstACTLDataSink* actl_sink,
+    CTACameraEventDecoder* decoder,
+    bool adopt_actl_src = false, bool adopt_actl_sink = false, bool adopt_decoder = false);
+
+  DecodedConstACTLDataSource(
+    calin::iact_data::zfits_actl_data_source::ConstACTLDataSource* actl_src,
+    CTACameraEventDecoder* decoder,
+    bool adopt_actl_src = false, bool adopt_decoder = false);
+
+  virtual ~DecodedConstACTLDataSource();
+
+  calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
+    uint64_t& seq_index_out, google::protobuf::Arena** arena = nullptr) override;
+
+private:
+  CTACameraEventDecoder* decoder_;
+  bool adopt_decoder_ = false;
+  calin::iact_data::zfits_actl_data_source::ConstACTLDataSource* actl_src_ = nullptr;
+  bool adopt_actl_src_ = false;
+  calin::iact_data::zfits_actl_data_source::ConstACTLDataSink* actl_sink_ = nullptr;
+  bool adopt_actl_sink_ = false;
+};
+
 class ZFITSSingleFileDataSource:
   public calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig

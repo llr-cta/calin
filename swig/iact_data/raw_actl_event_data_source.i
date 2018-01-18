@@ -79,6 +79,10 @@ class CameraRunHeader: public google::protobuf::Message { };
 
 %template(ACTLDataSource)
   calin::io::data_source::DataSource<DataModel::CameraEvent>;
+%template(ConstACTLDataSource)
+  calin::io::data_source::DataSource<const DataModel::CameraEvent>;
+%template(ConstACTLDataSink)
+  calin::io::data_source::DataSink<const DataModel::CameraEvent>;
 
 %newobject simple_get_next();
 

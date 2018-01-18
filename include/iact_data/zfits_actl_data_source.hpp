@@ -41,6 +41,10 @@ CALIN_TYPEALIAS(ACTLDataSource,
   calin::io::data_source::DataSource<DataModel::CameraEvent>);
 CALIN_TYPEALIAS(ACTLRandomAccessDataSource,
   calin::io::data_source::RandomAccessDataSource<DataModel::CameraEvent>);
+CALIN_TYPEALIAS(ConstACTLDataSource,
+  calin::io::data_source::DataSource<const DataModel::CameraEvent>);
+CALIN_TYPEALIAS(ConstACTLDataSink,
+  calin::io::data_source::DataSink<const DataModel::CameraEvent>);
 
 } } } // namespace calin::iact_data::zfits_actl_data_source
 
@@ -60,6 +64,9 @@ public:
     /* nothing to see here */ }
   virtual ~ACTLRandomAccessDataSourceWithRunHeader();
   virtual DataModel::CameraRunHeader* get_run_header() = 0;
+
+  virtual const DataModel::CameraEvent* borrow_next_event(uint64_t& seq_index_out) = 0;
+  virtual void release_borrowed_event(const DataModel::CameraEvent* event) = 0;
 };
 
 CALIN_TYPEALIAS(ACTLChainedRandomAccessDataSourceWithRunHeader,
@@ -100,8 +107,8 @@ public:
     config_type config = default_config());
   virtual ~ZFITSSingleFileACTLDataSource();
 
-  const DataModel::CameraEvent* borrow_next_event(uint64_t& seq_index_out);
-  void release_borrowed_event(const DataModel::CameraEvent* event);
+  const DataModel::CameraEvent* borrow_next_event(uint64_t& seq_index_out) override;
+  void release_borrowed_event(const DataModel::CameraEvent* event) override;
 
   DataModel::CameraEvent* get_next(uint64_t& seq_index_out,
     google::protobuf::Arena** arena = nullptr) override;
@@ -137,6 +144,9 @@ public:
     return ZFITSSingleFileACTLDataSource::default_config(); }
   const config_type& config() const { return config_; }
 
+  const DataModel::CameraEvent* borrow_next_event(uint64_t& seq_index_out) override;
+  void release_borrowed_event(const DataModel::CameraEvent* event) override;
+
 private:
   config_type config_;
   DataModel::CameraRunHeader* run_header_ = nullptr;
@@ -159,6 +169,30 @@ private:
   std::vector<std::string> filenames_;
   ZFITSACTLDataSource::config_type config_;
   bool has_opened_file_ = false;
+};
+
+class ZFITSACTLDataSourceBorrowAdapter:
+  public calin::io::data_source::DataSource<const DataModel::CameraEvent>
+{
+public:
+  ZFITSACTLDataSourceBorrowAdapter(ZFITSACTLDataSource* src);
+  virtual ~ZFITSACTLDataSourceBorrowAdapter();
+  const DataModel::CameraEvent* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override;
+private:
+  ZFITSACTLDataSource* src_;
+};
+
+class ZFITSACTLDataSourceReleaseAdapter:
+  public calin::io::data_source::DataSink<const DataModel::CameraEvent>
+{
+public:
+  ZFITSACTLDataSourceReleaseAdapter(ZFITSACTLDataSource* src);
+  virtual ~ZFITSACTLDataSourceReleaseAdapter();
+  bool put_next(const DataModel::CameraEvent* data, uint64_t seq_index,
+    google::protobuf::Arena* arena = nullptr, bool adopt_data = false) override;
+private:
+  ZFITSACTLDataSource* src_;
 };
 
 } } } // namespace calin::iact_data::zfits_actl_data_source

@@ -100,6 +100,77 @@ DecodedACTLDataSource::get_next(
   return event;
 }
 
+DecodedConstACTLDataSource::DecodedConstACTLDataSource(
+    calin::iact_data::zfits_actl_data_source::ConstACTLDataSource* actl_src,
+    calin::iact_data::zfits_actl_data_source::ConstACTLDataSink* actl_sink,
+    CTACameraEventDecoder* decoder,
+    bool adopt_actl_src, bool adopt_actl_sink, bool adopt_decoder):
+  calin::iact_data::telescope_data_source::TelescopeDataSource(),
+  decoder_(decoder), adopt_decoder_(adopt_decoder),
+  actl_src_(actl_src), adopt_actl_src_(adopt_actl_src),
+  actl_sink_(actl_sink), adopt_actl_sink_(adopt_actl_sink)
+{
+  // nothing to see here
+}
+
+DecodedConstACTLDataSource::DecodedConstACTLDataSource(
+    calin::iact_data::zfits_actl_data_source::ConstACTLDataSource* actl_src,
+    CTACameraEventDecoder* decoder,
+    bool adopt_actl_src, bool adopt_decoder):
+  calin::iact_data::telescope_data_source::TelescopeDataSource(),
+  decoder_(decoder), adopt_decoder_(adopt_decoder),
+  actl_src_(actl_src), adopt_actl_src_(adopt_actl_src),
+  actl_sink_(nullptr), adopt_actl_sink_(false)
+{
+  // nothing to see here
+}
+
+DecodedConstACTLDataSource::~DecodedConstACTLDataSource()
+{
+  if(adopt_decoder_)delete decoder_;
+  if(adopt_actl_src_)delete actl_src_;
+  if(adopt_actl_sink_)delete actl_sink_;
+}
+
+calin::ix::iact_data::telescope_event::TelescopeEvent*
+DecodedConstACTLDataSource::get_next(
+  uint64_t& seq_index_out, google::protobuf::Arena** arena)
+{
+  const DataModel::CameraEvent* cta_event = actl_src_->get_next(seq_index_out);
+  if(!cta_event) {
+    if(arena)*arena = nullptr;
+    return nullptr;
+  }
+  TelescopeEvent* event = nullptr;
+  TelescopeEvent* delete_event = nullptr;
+  google::protobuf::Arena* delete_arena = nullptr;
+  if(arena) {
+    if(!*arena)*arena = delete_arena = new google::protobuf::Arena;
+    event = google::protobuf::Arena::CreateMessage<TelescopeEvent>(*arena);
+  }
+  else event = delete_event = new TelescopeEvent;
+  if(!event)
+  {
+    if(actl_sink_)actl_sink_->put_next(cta_event, seq_index_out, nullptr, true);
+    else delete cta_event;
+    delete delete_arena;
+    throw std::runtime_error("Could not allocate telescope event");
+  }
+  if(!decoder_->decode(event, cta_event))
+  {
+    if(actl_sink_)actl_sink_->put_next(cta_event, seq_index_out, nullptr, true);
+    else delete cta_event;
+    delete delete_arena;
+    delete delete_event;
+    throw std::runtime_error("Could not decode ACTL event");
+  }
+  event->set_source_event_index(seq_index_out);
+  if(actl_sink_)actl_sink_->put_next(cta_event, seq_index_out, nullptr, true);
+  else delete cta_event;
+  return event;
+}
+
+
 // =============================================================================
 // ZFITSSingleFileDataSource - single ZFits file with decoder
 // Uses ZFITSSingleFileACTLDataSource to read events and decoder to translate
