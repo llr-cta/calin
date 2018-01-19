@@ -38,6 +38,7 @@
 
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
+%include "calin_global_config.hpp"
 
 %newobject new_sub_visitor(
   const std::map<calin::iact_data::event_visitorTelescopeEventVisitor*,
