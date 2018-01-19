@@ -197,6 +197,16 @@ calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
     info->set_cpu_has_fma4(c & bit_FMA4);
   }
 
+  unsigned simd_vec_size = 0;
+  if(info->cpu_has_avx512f())simd_vec_size=512/8;
+  else if(info->cpu_has_avx())simd_vec_size=256/8;
+  else if(info->cpu_has_sse2())simd_vec_size=128/8;
+  else simd_vec_size = 64/8;
+  info->set_simd_vec_size(simd_vec_size);
+  unsigned log2_simd_vec_size = 0;
+  while(simd_vec_size>>=1)++log2_simd_vec_size;
+  info->set_log2_simd_vec_size(log2_simd_vec_size);
+
   return info;
 }
 

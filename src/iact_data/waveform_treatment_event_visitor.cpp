@@ -22,12 +22,16 @@
 
 #include <stdexcept>
 
+#include <util/memory.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
+#include <iact_data/waveform_treatment_event_visitor_impl.hpp>
+#include <provenance/system_info.hpp>
 
 using namespace calin::ix::iact_data::waveform_treatment_event_visitor;
 using namespace calin::iact_data::waveform_treatment_event_visitor;
 using namespace calin::ix::iact_data::telescope_run_configuration;
 using namespace calin::ix::iact_data::telescope_event;
+using calin::util::memory::safe_aligned_recalloc;
 
 SingleGainDualWindowWaveformTreatmentEventVisitor::
 SingleGainDualWindowWaveformTreatmentEventVisitor(
@@ -42,7 +46,18 @@ SingleGainDualWindowWaveformTreatmentEventVisitor(
 SingleGainDualWindowWaveformTreatmentEventVisitor::
 ~SingleGainDualWindowWaveformTreatmentEventVisitor()
 {
-  // nothing to see here
+  free(sig_window_0_);
+  free(chan_ped_est_);
+  free(chan_max_index_);
+  free(chan_max_);
+  free(chan_bkg_win_sum_);
+  free(chan_sig_win_sum_);
+  free(chan_sig_max_sum_);
+  free(chan_sig_max_sum_index_);
+  free(chan_all_sum_q_);
+  free(chan_all_sum_qt_);
+  free(chan_sig_);
+  free(chan_mean_t_);
 }
 
 bool SingleGainDualWindowWaveformTreatmentEventVisitor::demand_waveforms()
@@ -88,15 +103,17 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
   else
     bkg_window_0_ = config_.bkg_integration_0();
 
-
   nchan_ = run_config->configured_channel_id_size();
   nsamp_ = run_config->num_samples();
 
-  sig_window_0_.resize(nchan_);
+  auto* host_info = calin::provenance::system_info::the_host_info();
+
+  safe_aligned_recalloc(sig_window_0_, nchan_, host_info->log2_simd_vec_size());
+
   if(config_.chan_sig_integration_0_size() == 0)
-    std::fill(sig_window_0_.begin(), sig_window_0_.end(), config_.sig_integration_0());
+    std::fill(sig_window_0_, sig_window_0_+nchan_, config_.sig_integration_0());
   else if(config_.chan_sig_integration_0_size() == int(nchan_))
-    std::copy(config_.chan_sig_integration_0().begin(), config_.chan_sig_integration_0().end(), sig_window_0_.begin());
+    std::copy(config_.chan_sig_integration_0().begin(), config_.chan_sig_integration_0().end(), sig_window_0_);
   else
     throw std::out_of_range("SingleGainDualWindowWaveformTreatmentEventVisitor: "
       "size of chan_sig_integration_0 vector must be either zero or number of configured channels, "
@@ -118,11 +135,11 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
       sig_window_0_[ichan] += run_config->num_samples() - window_n_;
   }
 
-  chan_ped_est_.resize(nchan_);
+  safe_aligned_recalloc(chan_ped_est_, nchan_, host_info->log2_simd_vec_size());
   if(config_.pedestal_size() == 0)
-    std::fill(chan_ped_est_.begin(), chan_ped_est_.end(), -1.0f);
+    std::fill(chan_ped_est_, chan_ped_est_+nchan_, -1.0f);
   else if(config_.pedestal_size() == int(nchan_))
-    std::copy(config_.pedestal().begin(), config_.pedestal().end(), chan_ped_est_.begin());
+    std::copy(config_.pedestal().begin(), config_.pedestal().end(), chan_ped_est_);
   else
     throw std::out_of_range("SingleGainDualWindowWaveformTreatmentEventVisitor: "
       "size of pedestal vector must be either zero or number of configured channels, "
@@ -132,17 +149,17 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
   ped_iir_old_ = std::min(std::max(config_.pedestal_filter_constant(), 0.0f), 1.0f);
   ped_iir_new_ = (1.0f - ped_iir_old_);
 
-  chan_max_index_.resize(nchan_);
-  chan_max_.resize(nchan_);
-  chan_bkg_win_sum_.resize(nchan_);
-  chan_sig_win_sum_.resize(nchan_);
-  chan_sig_max_sum_.resize(nchan_);
-  chan_sig_max_sum_index_.resize(nchan_);
-  chan_all_sum_q_.resize(nchan_);
-  chan_all_sum_qt_.resize(nchan_);
+  safe_aligned_recalloc(chan_max_index_, nchan_, host_info->log2_simd_vec_size());
+  safe_aligned_recalloc(chan_max_, nchan_, host_info->log2_simd_vec_size());
+  safe_aligned_recalloc(chan_bkg_win_sum_, nchan_, host_info->log2_simd_vec_size());
+  safe_aligned_recalloc(chan_sig_win_sum_, nchan_, host_info->log2_simd_vec_size());
+  safe_aligned_recalloc(chan_sig_max_sum_, nchan_, host_info->log2_simd_vec_size());
+  safe_aligned_recalloc(chan_sig_max_sum_index_, nchan_, host_info->log2_simd_vec_size());
+  safe_aligned_recalloc(chan_all_sum_q_, nchan_, host_info->log2_simd_vec_size());
+  safe_aligned_recalloc(chan_all_sum_qt_, nchan_, host_info->log2_simd_vec_size());
 
-  chan_sig_.resize(nchan_);
-  chan_mean_t_.resize(nchan_);
+  safe_aligned_recalloc(chan_sig_, nchan_, host_info->log2_simd_vec_size());
+  safe_aligned_recalloc(chan_mean_t_, nchan_, host_info->log2_simd_vec_size());
 
   return true;
 }
@@ -169,99 +186,16 @@ visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
   const uint16_t* data = reinterpret_cast<const uint16_t*>(
     wf->raw_samples_array().data() + wf->raw_samples_array_start());
   analyze_waveforms(data, nchan_, nsamp_,
-    window_n_, bkg_window_0_, sig_window_0_.data(),
-    chan_ped_est_.data(), ped_iir_old_, ped_iir_new_,
-    chan_max_index_.data(), chan_max_.data(),
-    chan_bkg_win_sum_.data(), chan_sig_win_sum_.data(),
-    chan_sig_max_sum_.data(), chan_sig_max_sum_index_.data(),
-    chan_all_sum_q_.data(), chan_all_sum_qt_.data(), chan_sig_.data(), chan_mean_t_.data());
+    window_n_, bkg_window_0_, sig_window_0_,
+    chan_ped_est_, ped_iir_old_, ped_iir_new_,
+    chan_max_index_, chan_max_,
+    chan_bkg_win_sum_, chan_sig_win_sum_,
+    chan_sig_max_sum_, chan_sig_max_sum_index_,
+    chan_all_sum_q_, chan_all_sum_qt_, chan_sig_, chan_mean_t_);
   return true;
 }
 
 bool SingleGainDualWindowWaveformTreatmentEventVisitor::leave_telescope_event()
 {
   return true;
-}
-
-void SingleGainDualWindowWaveformTreatmentEventVisitor::
-analyze_waveforms(const uint16_t* data, unsigned nchan, int nsamp,
-  int window_n, int bkg_window_0, const int* sig_window_0,
-  float* ped, float ped_iir_old, float ped_iir_new,
-  int* chan_max_index, int* chan_max,
-  int* chan_bkg_win_sum, int* chan_sig_win_sum,
-  int* chan_sig_max_sum, int* chan_sig_max_sum_index,
-  int* chan_all_sum_q, int* chan_all_sum_qt, float* chan_sig, float* chan_mean_t)
-{
-  int imax = 0;
-  int max = 0;
-  int bkg = 0;
-  int sig = 0;
-  int sig_max = 0;
-  int isig_max = 0;
-  int sum_q = 0;
-  int sum_qt = 0;
-  int win = 0;
-  unsigned isamp = 0;
-  int samp[nsamp];
-
-  for(unsigned ichan=0;ichan<nchan;ichan++)
-  {
-    samp[0] = data[ichan*nsamp];
-    imax = 0;
-    max = samp[0];
-    win = max;
-    sum_qt = 0;
-    for(isamp = 1;isamp<window_n;isamp++) {
-      const int _samp = data[ichan*nsamp+isamp];
-      samp[isamp] = _samp;
-      win += _samp;
-      if(_samp > max) {
-        imax = isamp;
-        max = _samp;
-      }
-      sum_qt += _samp*isamp;
-    }
-    sig_max = win;
-    isig_max = 0;
-    sum_q = win;
-    while(isamp<nsamp) {
-      int iss = isamp-16;
-      if(bkg_window_0 == iss)bkg = win;
-      if(sig_window_0[ichan] == iss)sig = win;
-      const int _samp = data[ichan*nsamp+isamp];
-      samp[isamp] = _samp;
-      sum_q += _samp;
-      sum_qt += _samp*isamp;
-      win += _samp - samp[iss];
-      if(win>sig_max) {
-        sig_max = win;
-        isig_max = iss;
-      }
-      if(_samp > max) {
-        imax = isamp;
-        max = _samp;
-      }
-      ++isamp;
-    }
-    if(bkg_window_0 == nsamp-window_n)bkg = win;
-    if(sig_window_0[ichan] == nsamp-window_n)sig = win;
-
-    chan_max_index[ichan] = imax;
-    chan_max[ichan] = max;
-    chan_bkg_win_sum[ichan] = bkg;
-    chan_sig_win_sum[ichan] = sig;
-    chan_sig_max_sum[ichan] = sig_max;
-    chan_sig_max_sum_index[ichan] = isig_max;
-    chan_all_sum_q[ichan] = sum_q;
-    chan_all_sum_qt[ichan] = sum_qt;
-    if(ped[ichan] >= 0) {
-      ped[ichan] = ped_iir_old*ped[ichan] + ped_iir_new*float(bkg);
-    } else {
-      ped[ichan] = float(bkg);
-    }
-    chan_sig[ichan] = float(sig) - ped[ichan];
-    chan_mean_t[ichan] =
-      (double(window_n*sum_qt) - double(ped[ichan]*nsamp*(nsamp-1)/2))/
-        (double(window_n*sum_q) - double(ped[ichan]*nsamp));
-  }
 }

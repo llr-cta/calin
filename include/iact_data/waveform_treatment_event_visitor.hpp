@@ -56,13 +56,18 @@ public:
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
   virtual bool leave_telescope_event();
 
+#ifndef SWIG
   // This function allows testing of the code
-  static void analyze_waveforms(const uint16_t* data, unsigned nchan, int nsamp,
+  inline static void analyze_waveforms(
+    const uint16_t* __restrict__ data, unsigned nchan, int nsamp,
     int window_n, int bkg_window_0, const int* sig_window_0,
-    float* ped, float ped_iir_old, float ped_iir_new,
-    int* chan_max_index, int* chan_max, int* chan_bkg_win_sum, int* chan_sig_win_sum,
-    int* chan_sig_max_sum, int* chan_sig_max_sum_index,
-    int* chan_all_sum_q, int* chan_all_sum_qt, float* chan_sig, float* chan_mean_t);
+    float*__restrict__ ped, float ped_iir_old, float ped_iir_new,
+    int*__restrict__ chan_max_index, int*__restrict__ chan_max,
+    int*__restrict__ chan_bkg_win_sum, int* chan_sig_win_sum,
+    int*__restrict__ chan_sig_max_sum, int*__restrict__ chan_sig_max_sum_index,
+    int*__restrict__ chan_all_sum_q, int*__restrict__ chan_all_sum_qt,
+    float*__restrict__ chan_sig, float*__restrict__ chan_mean_t);
+#endif
 
   static calin::ix::iact_data::waveform_treatment_event_visitor::
     SingleGainDualWindowWaveformTreatmentEventVisitorConfig default_config()
@@ -73,21 +78,25 @@ public:
     return cfg;
   }
 
-  std::vector<float> chan_ped() const { return chan_ped_est_; };
+  std::vector<float> chan_ped() const { return make_vec(chan_ped_est_); };
 
-  std::vector<int> chan_max_index() const { return chan_max_index_; }
-  std::vector<int> chan_max() const { return chan_max_; }
-  std::vector<int> chan_bkg_win_sum() const { return chan_bkg_win_sum_; }
-  std::vector<int> chan_sig_win_sum() const { return chan_sig_win_sum_; }
-  std::vector<int> chan_sig_max_sum() const { return chan_sig_max_sum_; }
-  std::vector<int> chan_sig_max_sum_index() const { return chan_sig_max_sum_index_; }
-  std::vector<int> chan_all_sum_q() const { return chan_all_sum_q_; }
-  std::vector<int> chan_all_sum_qt() const { return chan_all_sum_qt_; }
+  std::vector<int> chan_max_index() const { return make_vec(chan_max_index_); }
+  std::vector<int> chan_max() const { return make_vec(chan_max_); }
+  std::vector<int> chan_bkg_win_sum() const { return make_vec(chan_bkg_win_sum_); }
+  std::vector<int> chan_sig_win_sum() const { return make_vec(chan_sig_win_sum_); }
+  std::vector<int> chan_sig_max_sum() const { return make_vec(chan_sig_max_sum_); }
+  std::vector<int> chan_sig_max_sum_index() const { return make_vec(chan_sig_max_sum_index_); }
+  std::vector<int> chan_all_sum_q() const { return make_vec(chan_all_sum_q_); }
+  std::vector<int> chan_all_sum_qt() const { return make_vec(chan_all_sum_qt_); }
 
-  std::vector<float> chan_sig() const { return chan_sig_; }
-  std::vector<float> chan_mean_t() const { return chan_mean_t_; }
+  std::vector<float> chan_sig() const { return make_vec(chan_sig_); }
+  std::vector<float> chan_mean_t() const { return make_vec(chan_mean_t_); }
 
 protected:
+  template<typename T> std::vector<T> make_vec(const T* ptr) const {
+    return std::vector<T>(ptr, ptr+nchan_);
+  }
+
   calin::ix::iact_data::waveform_treatment_event_visitor::
     SingleGainDualWindowWaveformTreatmentEventVisitorConfig config_;
   bool treat_high_gain_ = true;
@@ -95,23 +104,23 @@ protected:
   unsigned nsamp_ = 0;
   unsigned window_n_;
   int bkg_window_0_;
-  std::vector<int> sig_window_0_;
+  int* sig_window_0_ = nullptr;
 
-  std::vector<float> chan_ped_est_;
+  float* chan_ped_est_ = nullptr;
   float ped_iir_old_;
   float ped_iir_new_;
 
-  std::vector<int> chan_max_index_;
-  std::vector<int> chan_max_;
-  std::vector<int> chan_bkg_win_sum_;
-  std::vector<int> chan_sig_win_sum_;
-  std::vector<int> chan_sig_max_sum_;
-  std::vector<int> chan_sig_max_sum_index_;
-  std::vector<int> chan_all_sum_q_;
-  std::vector<int> chan_all_sum_qt_;
+  int* chan_max_ = nullptr;
+  int* chan_max_index_ = nullptr;
+  int* chan_bkg_win_sum_ = nullptr;
+  int* chan_sig_win_sum_ = nullptr;
+  int* chan_sig_max_sum_ = nullptr;
+  int* chan_sig_max_sum_index_ = nullptr;
+  int* chan_all_sum_q_ = nullptr;
+  int* chan_all_sum_qt_ = nullptr;
 
-  std::vector<float> chan_sig_;
-  std::vector<float> chan_mean_t_;
+  float* chan_sig_ = nullptr;
+  float* chan_mean_t_ = nullptr;
 };
 
-} } } // namespace calin::iact_data::event_visitor
+} } } // namespace calin::iact_data::waveform_treatment_event_visitor
