@@ -164,11 +164,6 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
   return true;
 }
 
-bool SingleGainDualWindowWaveformTreatmentEventVisitor::leave_telescope_run()
-{
-  return true;
-}
-
 bool SingleGainDualWindowWaveformTreatmentEventVisitor::
 visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
 {
@@ -195,7 +190,53 @@ visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
   return true;
 }
 
-bool SingleGainDualWindowWaveformTreatmentEventVisitor::leave_telescope_event()
+AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
+~AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor()
 {
+#if defined(__AVX2__) and defined(__FMA__)
+  // nothing to see here
+#else
+  throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
+#endif
+}
+
+AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor*
+AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::new_sub_visitor(
+  const std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>&
+    antecedent_visitors)
+{
+  return new AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor(config_);
+}
+
+bool AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
+visit_telescope_run(const TelescopeRunConfiguration* run_config)
+{
+  return SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config);
+}
+
+bool AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
+visit_telescope_event(uint64_t seq_index,
+  calin::ix::iact_data::telescope_event::TelescopeEvent* event)
+{
+  const Waveforms* wf = nullptr;
+  if(treat_high_gain_) {
+    if(event->has_high_gain_image() and
+        event->high_gain_image().has_camera_waveforms()) {
+      wf = &event->high_gain_image().camera_waveforms();
+    }
+  } else if(event->has_low_gain_image() and
+      event->low_gain_image().has_camera_waveforms()) {
+    wf = &event->low_gain_image().camera_waveforms();
+  }
+  if(wf == nullptr)return true;
+  const uint16_t* data = reinterpret_cast<const uint16_t*>(
+    wf->raw_samples_array().data() + wf->raw_samples_array_start());
+  avx2_analyze_waveforms(data, nchan_, nsamp_,
+    window_n_, bkg_window_0_, sig_window_0_,
+    chan_ped_est_, ped_iir_old_, ped_iir_new_,
+    chan_max_index_, chan_max_,
+    chan_bkg_win_sum_, chan_sig_win_sum_,
+    chan_sig_max_sum_, chan_sig_max_sum_index_,
+    chan_all_sum_q_, chan_all_sum_qt_, chan_sig_, chan_mean_t_);
   return true;
 }

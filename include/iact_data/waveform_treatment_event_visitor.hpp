@@ -40,21 +40,19 @@ public:
     bool treat_high_gain = true);
   virtual ~SingleGainDualWindowWaveformTreatmentEventVisitor();
 
-  virtual bool demand_waveforms();
-  virtual bool is_parallelizable();
-  virtual SingleGainDualWindowWaveformTreatmentEventVisitor* new_sub_visitor(
+  bool demand_waveforms() override;
+  bool is_parallelizable() override;
+  SingleGainDualWindowWaveformTreatmentEventVisitor* new_sub_visitor(
     const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
         calin::iact_data::event_visitor::TelescopeEventVisitor*>&
-      antecedent_visitors = { });
+      antecedent_visitors = { }) override;
 
-  virtual bool visit_telescope_run(
+  bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::
-      TelescopeRunConfiguration* run_config);
-  virtual bool leave_telescope_run();
+      TelescopeRunConfiguration* run_config) override;
 
-  virtual bool visit_telescope_event(uint64_t seq_index,
-    calin::ix::iact_data::telescope_event::TelescopeEvent* event);
-  virtual bool leave_telescope_event();
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
 #ifndef SWIG
   // This function allows testing of the code
@@ -121,6 +119,47 @@ protected:
 
   float* chan_sig_ = nullptr;
   float* chan_mean_t_ = nullptr;
+};
+
+class AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor:
+  public SingleGainDualWindowWaveformTreatmentEventVisitor
+{
+public:
+  AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor(
+      calin::ix::iact_data::waveform_treatment_event_visitor::
+        SingleGainDualWindowWaveformTreatmentEventVisitorConfig config = default_config(),
+      bool treat_high_gain = true):
+    SingleGainDualWindowWaveformTreatmentEventVisitor(config, treat_high_gain) 
+  {
+    /* nothing to see here */
+  }
+
+  virtual ~AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor();
+
+  AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor* new_sub_visitor(
+    const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
+        calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+      antecedent_visitors = { }) override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config) override;
+
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+#ifndef SWIG
+  // This function allows testing of the code
+  inline static void avx2_analyze_waveforms(
+    const uint16_t* __restrict__ data, unsigned nchan, int nsamp,
+    int window_n, int bkg_window_0, const int* sig_window_0,
+    float*__restrict__ ped, float ped_iir_old, float ped_iir_new,
+    int*__restrict__ chan_max_index, int*__restrict__ chan_max,
+    int*__restrict__ chan_bkg_win_sum, int* chan_sig_win_sum,
+    int*__restrict__ chan_sig_max_sum, int*__restrict__ chan_sig_max_sum_index,
+    int*__restrict__ chan_all_sum_q, int*__restrict__ chan_all_sum_qt,
+    float*__restrict__ chan_sig, float*__restrict__ chan_mean_t);
+#endif
 };
 
 } } } // namespace calin::iact_data::waveform_treatment_event_visitor
