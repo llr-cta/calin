@@ -31,68 +31,15 @@
 #include <math/rng.hpp>
 #include <math/simd.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
-#include <iact_data/waveform_treatment_event_visitor_impl.hpp>
 #include <provenance/system_info.hpp>
 
 using calin::math::rng::NR3_AVX2_RNGCore;
 using calin::util::memory::safe_aligned_calloc;
 using namespace calin::math::simd;
 using namespace calin::iact_data::waveform_treatment_event_visitor;
+using namespace calin::ix::iact_data::waveform_treatment_event_visitor;
 
 static constexpr unsigned NSIM_TRACEANAL = 10000;
-
-uint16_t* samples_data = nullptr;
-int* sig_window_0_ = nullptr;
-float* chan_ped_est_ = nullptr;
-int* chan_max_ = nullptr;
-int* chan_max_index_ = nullptr;
-int* chan_bkg_win_sum_ = nullptr;
-int* chan_sig_win_sum_ = nullptr;
-int* chan_sig_max_sum_ = nullptr;
-int* chan_sig_max_sum_index_ = nullptr;
-int* chan_all_sum_q_ = nullptr;
-int* chan_all_sum_qt_ = nullptr;
-float* chan_sig_ = nullptr;
-float* chan_mean_t_ = nullptr;
-
-namespace {
-
-void free_all_arrays()
-{
-  free(samples_data);
-  free(sig_window_0_);
-  free(chan_ped_est_);
-  free(chan_max_index_);
-  free(chan_max_);
-  free(chan_bkg_win_sum_);
-  free(chan_sig_win_sum_);
-  free(chan_sig_max_sum_);
-  free(chan_sig_max_sum_index_);
-  free(chan_all_sum_q_);
-  free(chan_all_sum_qt_);
-  free(chan_sig_);
-  free(chan_mean_t_);
-}
-
-void alloc_all_arrays(unsigned nchan_, unsigned nsamp_)
-{
-  auto* host_info = calin::provenance::system_info::the_host_info();
-  safe_aligned_calloc(samples_data, nchan_*nsamp_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(sig_window_0_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(chan_ped_est_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(chan_max_index_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(chan_max_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(chan_bkg_win_sum_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(chan_sig_win_sum_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(chan_sig_max_sum_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(chan_sig_max_sum_index_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(chan_all_sum_q_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(chan_all_sum_qt_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(chan_sig_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_calloc(chan_mean_t_, nchan_, host_info->log2_simd_vec_size());
-}
-
-}
 
 constexpr int nchan = 1024;
 constexpr int nsamp = 60;
@@ -101,8 +48,20 @@ constexpr int nsamp = 60;
 
 TEST(TestWaveformTreatment, TraceAnalysis)
 {
-  alloc_all_arrays(nchan, nsamp);
-  std::fill(sig_window_0_,sig_window_0_+nsamp,24);
+  SingleGainDualWindowWaveformTreatmentEventVisitorConfig config =
+    SingleGainDualWindowWaveformTreatmentEventVisitor::default_config();
+  config.set_sig_integration_0(24);
+  SingleGainDualWindowWaveformTreatmentEventVisitor wfev(config);
+
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
+  run_config.set_num_samples(nsamp);
+  for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
+  wfev.visit_telescope_run(&run_config);
+
+  auto* host_info = calin::provenance::system_info::the_host_info();
+  uint16_t* samples_data;
+  safe_aligned_calloc(samples_data, nchan*nsamp, host_info->log2_simd_vec_size());
+
   NR3_AVX2_RNGCore core(12345);
   for(unsigned iloop=0;iloop<NSIM_TRACEANAL;iloop++)
   {
@@ -112,14 +71,7 @@ TEST(TestWaveformTreatment, TraceAnalysis)
       _mm256_store_si256((__m256i*)(samples_data+i*16), x);
     }
 
-    SingleGainDualWindowWaveformTreatmentEventVisitor::
-    analyze_waveforms(samples_data, nchan, nsamp, 16, 0, sig_window_0_,
-      chan_ped_est_, 0.0, 1.0,
-      chan_max_index_, chan_max_,
-      chan_bkg_win_sum_, chan_sig_win_sum_,
-      chan_sig_max_sum_, chan_sig_max_sum_index_,
-      chan_all_sum_q_, chan_all_sum_qt_,
-      chan_sig_, chan_mean_t_);
+    wfev.scalar_analyze_waveforms(samples_data);
 
 #if 0
     if(iloop==0) {
@@ -130,13 +82,25 @@ TEST(TestWaveformTreatment, TraceAnalysis)
           << all_mean_t[ichan] << '\n';
 #endif
   }
-  free_all_arrays();
+  free(samples_data);
 }
 
 TEST(TestWaveformTreatment, AVX_TraceAnalysis)
 {
-  alloc_all_arrays(nchan, nsamp);
-  std::fill(sig_window_0_,sig_window_0_+nsamp,24);
+  SingleGainDualWindowWaveformTreatmentEventVisitorConfig config =
+    SingleGainDualWindowWaveformTreatmentEventVisitor::default_config();
+  config.set_sig_integration_0(24);
+  AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor wfev(config);
+
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
+  run_config.set_num_samples(nsamp);
+  for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
+  wfev.visit_telescope_run(&run_config);
+
+  auto* host_info = calin::provenance::system_info::the_host_info();
+  uint16_t* samples_data;
+  safe_aligned_calloc(samples_data, nchan*nsamp, host_info->log2_simd_vec_size());
+
   NR3_AVX2_RNGCore core(12345);
   for(unsigned iloop=0;iloop<NSIM_TRACEANAL;iloop++)
   {
@@ -146,14 +110,7 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis)
       _mm256_store_si256((__m256i*)(samples_data+i*16), x);
     }
 
-    AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
-    avx2_analyze_waveforms(samples_data, nchan, nsamp, 16, 0, sig_window_0_,
-      chan_ped_est_, 0.0, 1.0,
-      chan_max_index_, chan_max_,
-      chan_bkg_win_sum_, chan_sig_win_sum_,
-      chan_sig_max_sum_, chan_sig_max_sum_index_,
-      chan_all_sum_q_, chan_all_sum_qt_,
-      chan_sig_, chan_mean_t_);
+    wfev.avx2_analyze_waveforms(samples_data);
 
 #if 0
     if(iloop==0) {
@@ -164,7 +121,7 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis)
           << all_mean_t[ichan] << '\n';
 #endif
   }
-  free_all_arrays();
+  free(samples_data);
 }
 
 #endif // defined(__AVX2__) and defined(__FMA__)

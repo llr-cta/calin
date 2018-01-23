@@ -24,8 +24,8 @@
 
 #include <util/memory.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
-#include <iact_data/waveform_treatment_event_visitor_impl.hpp>
 #include <provenance/system_info.hpp>
+#include <math/simd.hpp>
 
 using namespace calin::ix::iact_data::waveform_treatment_event_visitor;
 using namespace calin::iact_data::waveform_treatment_event_visitor;
@@ -80,6 +80,8 @@ SingleGainDualWindowWaveformTreatmentEventVisitor* SingleGainDualWindowWaveformT
 bool SingleGainDualWindowWaveformTreatmentEventVisitor::
 visit_telescope_run(const TelescopeRunConfiguration* run_config)
 {
+  reconfigure(run_config->configured_channel_id_size(), run_config->num_samples());
+
   if(config_.integration_n()==0)window_n_ = run_config->num_samples();
   else window_n_ = config_.integration_n();
   if(window_n_ > run_config->num_samples())
@@ -102,13 +104,6 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
       - window_n_;
   else
     bkg_window_0_ = config_.bkg_integration_0();
-
-  nchan_ = run_config->configured_channel_id_size();
-  nsamp_ = run_config->num_samples();
-
-  auto* host_info = calin::provenance::system_info::the_host_info();
-
-  safe_aligned_recalloc(sig_window_0_, nchan_, host_info->log2_simd_vec_size());
 
   if(config_.chan_sig_integration_0_size() == 0)
     std::fill(sig_window_0_, sig_window_0_+nchan_, config_.sig_integration_0());
@@ -135,7 +130,6 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
       sig_window_0_[ichan] += run_config->num_samples() - window_n_;
   }
 
-  safe_aligned_recalloc(chan_ped_est_, nchan_, host_info->log2_simd_vec_size());
   if(config_.pedestal_size() == 0)
     std::fill(chan_ped_est_, chan_ped_est_+nchan_, -1.0f);
   else if(config_.pedestal_size() == int(nchan_))
@@ -149,19 +143,29 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
   ped_iir_old_ = std::min(std::max(config_.pedestal_filter_constant(), 0.0f), 1.0f);
   ped_iir_new_ = (1.0f - ped_iir_old_);
 
-  safe_aligned_recalloc(chan_max_index_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_recalloc(chan_max_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_recalloc(chan_bkg_win_sum_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_recalloc(chan_sig_win_sum_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_recalloc(chan_sig_max_sum_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_recalloc(chan_sig_max_sum_index_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_recalloc(chan_all_sum_q_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_recalloc(chan_all_sum_qt_, nchan_, host_info->log2_simd_vec_size());
-
-  safe_aligned_recalloc(chan_sig_, nchan_, host_info->log2_simd_vec_size());
-  safe_aligned_recalloc(chan_mean_t_, nchan_, host_info->log2_simd_vec_size());
-
   return true;
+}
+
+void SingleGainDualWindowWaveformTreatmentEventVisitor::
+reconfigure(unsigned nchan, unsigned nsamp)
+{
+  if(nchan != nchan_){
+    auto* host_info = calin::provenance::system_info::the_host_info();
+    nchan_ = nchan;
+    nsamp_ = nsamp;
+    safe_aligned_recalloc(sig_window_0_, nchan_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_ped_est_, nchan_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_max_index_, nchan_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_max_, nchan_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_bkg_win_sum_, nchan_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_sig_win_sum_, nchan_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_sig_max_sum_, nchan_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_sig_max_sum_index_, nchan_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_all_sum_q_, nchan_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_all_sum_qt_, nchan_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_sig_, nchan_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_mean_t_, nchan_, host_info->log2_simd_vec_size());
+  }
 }
 
 bool SingleGainDualWindowWaveformTreatmentEventVisitor::
@@ -180,13 +184,7 @@ visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
   if(wf == nullptr)return true;
   const uint16_t* data = reinterpret_cast<const uint16_t*>(
     wf->raw_samples_array().data() + wf->raw_samples_array_start());
-  analyze_waveforms(data, nchan_, nsamp_,
-    window_n_, bkg_window_0_, sig_window_0_,
-    chan_ped_est_, ped_iir_old_, ped_iir_new_,
-    chan_max_index_, chan_max_,
-    chan_bkg_win_sum_, chan_sig_win_sum_,
-    chan_sig_max_sum_, chan_sig_max_sum_index_,
-    chan_all_sum_q_, chan_all_sum_qt_, chan_sig_, chan_mean_t_);
+  scalar_analyze_waveforms(data);
   return true;
 }
 
@@ -231,12 +229,6 @@ visit_telescope_event(uint64_t seq_index,
   if(wf == nullptr)return true;
   const uint16_t* data = reinterpret_cast<const uint16_t*>(
     wf->raw_samples_array().data() + wf->raw_samples_array_start());
-  avx2_analyze_waveforms(data, nchan_, nsamp_,
-    window_n_, bkg_window_0_, sig_window_0_,
-    chan_ped_est_, ped_iir_old_, ped_iir_new_,
-    chan_max_index_, chan_max_,
-    chan_bkg_win_sum_, chan_sig_win_sum_,
-    chan_sig_max_sum_, chan_sig_max_sum_index_,
-    chan_all_sum_q_, chan_all_sum_qt_, chan_sig_, chan_mean_t_);
+  avx2_analyze_waveforms(data);
   return true;
 }

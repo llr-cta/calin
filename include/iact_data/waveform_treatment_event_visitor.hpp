@@ -54,19 +54,6 @@ public:
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
-#ifndef SWIG
-  // This function allows testing of the code
-  inline static void analyze_waveforms(
-    const uint16_t* __restrict__ data, unsigned nchan, int nsamp,
-    int window_n, int bkg_window_0, const int* sig_window_0,
-    float*__restrict__ ped, float ped_iir_old, float ped_iir_new,
-    int*__restrict__ chan_max_index, int*__restrict__ chan_max,
-    int*__restrict__ chan_bkg_win_sum, int* chan_sig_win_sum,
-    int*__restrict__ chan_sig_max_sum, int*__restrict__ chan_sig_max_sum_index,
-    int*__restrict__ chan_all_sum_q, int*__restrict__ chan_all_sum_qt,
-    float*__restrict__ chan_sig, float*__restrict__ chan_mean_t);
-#endif
-
   static calin::ix::iact_data::waveform_treatment_event_visitor::
     SingleGainDualWindowWaveformTreatmentEventVisitorConfig default_config()
   {
@@ -75,6 +62,12 @@ public:
     cfg.set_integration_n(16);
     return cfg;
   }
+
+#ifndef SWIG
+  // Exposed as public to facilitate testing
+  void reconfigure(unsigned nchan, unsigned nsamp);
+  void scalar_analyze_waveforms(const uint16_t* __restrict__ data);
+#endif
 
   std::vector<float> chan_ped() const { return make_vec(chan_ped_est_); };
 
@@ -91,6 +84,8 @@ public:
   std::vector<float> chan_mean_t() const { return make_vec(chan_mean_t_); }
 
 protected:
+#ifndef SWIG
+
   template<typename T> std::vector<T> make_vec(const T* ptr) const {
     return std::vector<T>(ptr, ptr+nchan_);
   }
@@ -102,23 +97,24 @@ protected:
   unsigned nsamp_ = 0;
   unsigned window_n_;
   int bkg_window_0_;
-  int* sig_window_0_ = nullptr;
+  int*__restrict__ sig_window_0_ = nullptr;
 
-  float* chan_ped_est_ = nullptr;
+  float*__restrict__ chan_ped_est_ = nullptr;
   float ped_iir_old_;
   float ped_iir_new_;
 
-  int* chan_max_ = nullptr;
-  int* chan_max_index_ = nullptr;
-  int* chan_bkg_win_sum_ = nullptr;
-  int* chan_sig_win_sum_ = nullptr;
-  int* chan_sig_max_sum_ = nullptr;
-  int* chan_sig_max_sum_index_ = nullptr;
-  int* chan_all_sum_q_ = nullptr;
-  int* chan_all_sum_qt_ = nullptr;
+  int*__restrict__ chan_max_ = nullptr;
+  int*__restrict__ chan_max_index_ = nullptr;
+  int*__restrict__ chan_bkg_win_sum_ = nullptr;
+  int*__restrict__ chan_sig_win_sum_ = nullptr;
+  int*__restrict__ chan_sig_max_sum_ = nullptr;
+  int*__restrict__ chan_sig_max_sum_index_ = nullptr;
+  int*__restrict__ chan_all_sum_q_ = nullptr;
+  int*__restrict__ chan_all_sum_qt_ = nullptr;
 
-  float* chan_sig_ = nullptr;
-  float* chan_mean_t_ = nullptr;
+  float*__restrict__ chan_sig_ = nullptr;
+  float*__restrict__ chan_mean_t_ = nullptr;
+#endif
 };
 
 class AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor:
@@ -129,7 +125,7 @@ public:
       calin::ix::iact_data::waveform_treatment_event_visitor::
         SingleGainDualWindowWaveformTreatmentEventVisitorConfig config = default_config(),
       bool treat_high_gain = true):
-    SingleGainDualWindowWaveformTreatmentEventVisitor(config, treat_high_gain) 
+    SingleGainDualWindowWaveformTreatmentEventVisitor(config, treat_high_gain)
   {
     /* nothing to see here */
   }
@@ -149,16 +145,8 @@ public:
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
 #ifndef SWIG
-  // This function allows testing of the code
-  inline static void avx2_analyze_waveforms(
-    const uint16_t* __restrict__ data, unsigned nchan, int nsamp,
-    int window_n, int bkg_window_0, const int* sig_window_0,
-    float*__restrict__ ped, float ped_iir_old, float ped_iir_new,
-    int*__restrict__ chan_max_index, int*__restrict__ chan_max,
-    int*__restrict__ chan_bkg_win_sum, int* chan_sig_win_sum,
-    int*__restrict__ chan_sig_max_sum, int*__restrict__ chan_sig_max_sum_index,
-    int*__restrict__ chan_all_sum_q, int*__restrict__ chan_all_sum_qt,
-    float*__restrict__ chan_sig, float*__restrict__ chan_mean_t);
+  void avx2_analyze_waveforms(const uint16_t* __restrict__ data);
+  void avx2_analyze_waveforms_v2(const uint16_t* __restrict__ data);
 #endif
 };
 
