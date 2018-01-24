@@ -192,7 +192,11 @@ AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
 ~AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor()
 {
 #if defined(__AVX2__) and defined(__FMA__)
-  // nothing to see here
+  delete[] samples_;
+  delete[] q_l_;
+  delete[] q_u_;
+  delete[] qt_l_;
+  delete[] qt_u_;
 #else
   throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
 #endif
@@ -209,7 +213,23 @@ AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::new_sub_visitor(
 bool AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
 visit_telescope_run(const TelescopeRunConfiguration* run_config)
 {
-  return SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config);
+  bool old_nsamp = nsamp_;
+  bool good = SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config);
+  if(nsamp_!=old_nsamp) {
+    delete[] samples_;
+    delete[] q_l_;
+    delete[] q_u_;
+    delete[] qt_l_;
+    delete[] qt_u_;
+    const unsigned nv_samp = (nsamp_+15)/16;
+    const unsigned nv_block = nv_samp*16;
+    samples_ = new __m256i[nv_block];
+    q_l_ = new __m256i[nsamp_];
+    q_u_ = new __m256i[nsamp_];
+    qt_l_ = new __m256i[nsamp_];
+    qt_u_ = new __m256i[nsamp_];
+  }
+  return good;
 }
 
 bool AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
