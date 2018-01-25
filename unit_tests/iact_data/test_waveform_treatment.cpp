@@ -81,7 +81,9 @@ TEST(TestWaveformTreatment, TraceAnalysis)
           << wfev.chan_bkg_win_sum()[ichan] << ' ' << wfev.chan_sig_win_sum()[ichan] << ' '
           << wfev.chan_all_sum_q()[ichan] << ' ' << wfev.chan_all_sum_qt()[ichan] << ' '
           << wfev.chan_ped()[ichan] << ' ' << wfev.chan_sig()[ichan] << ' '
-          << wfev.chan_mean_t()[ichan] << '\n';
+          << wfev.chan_mean_t()[ichan] << ' '
+          << wfev.chan_sig_max_sum()[ichan] << ' ' << wfev.chan_sig_max_sum_index()[ichan] << ' '
+          << '\n';
       }
     }
 #endif
@@ -124,7 +126,9 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis)
           << wfev.chan_bkg_win_sum()[ichan] << ' ' << wfev.chan_sig_win_sum()[ichan] << ' '
           << wfev.chan_all_sum_q()[ichan] << ' ' << wfev.chan_all_sum_qt()[ichan] << ' '
           << wfev.chan_ped()[ichan] << ' ' << wfev.chan_sig()[ichan] << ' '
-          << wfev.chan_mean_t()[ichan] << '\n';
+          << wfev.chan_mean_t()[ichan] << ' '
+          << wfev.chan_sig_max_sum()[ichan] << ' ' << wfev.chan_sig_max_sum_index()[ichan] << ' '
+          << '\n';
       }
     }
 #endif
@@ -167,7 +171,9 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis_V2)
           << wfev.chan_bkg_win_sum()[ichan] << ' ' << wfev.chan_sig_win_sum()[ichan] << ' '
           << wfev.chan_all_sum_q()[ichan] << ' ' << wfev.chan_all_sum_qt()[ichan] << ' '
           << wfev.chan_ped()[ichan] << ' ' << wfev.chan_sig()[ichan] << ' '
-          << wfev.chan_mean_t()[ichan] << '\n';
+          << wfev.chan_mean_t()[ichan] << ' '
+          << wfev.chan_sig_max_sum()[ichan] << ' ' << wfev.chan_sig_max_sum_index()[ichan] << ' '
+          << '\n';
       }
     }
 #endif
