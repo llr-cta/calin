@@ -226,8 +226,6 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
     safe_aligned_recalloc(qt_u_, nsamp_, host_info->log2_simd_vec_size());
 
     qt_l_[0] = qt_u_[0] = _mm256_setzero_si256();
-    std::cout << nsamp_ << ' ' << nv_samp << ' ' << nv_block << ' '
-      << samples_ << '\n';
   }
   return good;
 }
