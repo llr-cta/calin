@@ -269,7 +269,7 @@ avx2_analyze_waveforms(const uint16_t*__restrict__ data)
     _mm256_store_si256((__m256i*)chan_all_sum_qt_+iresvec+1, sum_qt_u);
 
     _mm256_store_ps(chan_sig_+iresvec*8, _mm256_sub_ps(_mm256_cvtepi32_ps(sig_l), ped_l));
-    _mm256_store_ps(chan_sig_+iresvec+8+8, _mm256_sub_ps(_mm256_cvtepi32_ps(sig_u), ped_u));
+    _mm256_store_ps(chan_sig_+iresvec*8+8, _mm256_sub_ps(_mm256_cvtepi32_ps(sig_u), ped_u));
 
     __m256 nom = _mm256_fmsub_ps(mean_t_c1, ped_l, _mm256_cvtepi32_ps(sum_qt_l));
     __m256 denom = _mm256_fmsub_ps(mean_t_c2, ped_l, _mm256_cvtepi32_ps(sum_q_l));
