@@ -219,17 +219,15 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
     auto* host_info = calin::provenance::system_info::the_host_info();
     const unsigned nv_samp = (nsamp_+15)/16;
     const unsigned nv_block = nv_samp*16;
-    nchan_ = nchan;
-    nsamp_ = nsamp;
     safe_aligned_recalloc(samples_, nv_block, host_info->log2_simd_vec_size());
     safe_aligned_recalloc(q_l_, nsamp_, host_info->log2_simd_vec_size());
     safe_aligned_recalloc(q_u_, nsamp_, host_info->log2_simd_vec_size());
     safe_aligned_recalloc(qt_l_, nsamp_, host_info->log2_simd_vec_size());
     safe_aligned_recalloc(qt_u_, nsamp_, host_info->log2_simd_vec_size());
 
-    qt_l[0] = qt_u[0] = _mm256_setzero_si256();
+    qt_l_[0] = qt_u_[0] = _mm256_setzero_si256();
     std::cout << nsamp_ << ' ' << nv_samp << ' ' << nv_block << ' '
-      << samples << '\n';
+      << samples_ << '\n';
   }
   return good;
 }
