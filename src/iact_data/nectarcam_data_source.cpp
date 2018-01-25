@@ -24,6 +24,22 @@
 #include <string>
 #include <memory>
 
+#if !defined(__clang__) and defined(__GNUC__) && __GNUC__<5
+namespace std {
+
+inline void *align( std::size_t alignment, std::size_t size,
+                void *&ptr, std::size_t &space ) {
+  std::uintptr_t pn = reinterpret_cast< std::uintptr_t >( ptr );
+  std::uintptr_t aligned = ( pn + alignment - 1 ) & - alignment;
+  std::size_t padding = aligned - pn;
+  if ( space < size + padding ) return nullptr;
+  space -= padding;
+  return ptr = reinterpret_cast< void * >( aligned );
+}
+
+}
+#endif
+
 #include <util/log.hpp>
 #include <util/file.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
