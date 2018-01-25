@@ -22,6 +22,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <memory>
 
 #include <util/log.hpp>
 #include <util/file.hpp>
