@@ -192,11 +192,11 @@ AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
 ~AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor()
 {
 #if defined(__AVX2__) and defined(__FMA__)
-  delete[] samples_;
-  delete[] q_l_;
-  delete[] q_u_;
-  delete[] qt_l_;
-  delete[] qt_u_;
+  free(samples_);
+  free(q_l_);
+  free(q_u_);
+  free(qt_l_);
+  free(qt_u_);
 #else
   throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
 #endif
@@ -216,18 +216,20 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config)
   bool old_nsamp = nsamp_;
   bool good = SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config);
   if(nsamp_!=old_nsamp) {
-    delete[] samples_;
-    delete[] q_l_;
-    delete[] q_u_;
-    delete[] qt_l_;
-    delete[] qt_u_;
+    auto* host_info = calin::provenance::system_info::the_host_info();
     const unsigned nv_samp = (nsamp_+15)/16;
     const unsigned nv_block = nv_samp*16;
-    samples_ = new __m256i[nv_block];
-    q_l_ = new __m256i[nsamp_];
-    q_u_ = new __m256i[nsamp_];
-    qt_l_ = new __m256i[nsamp_];
-    qt_u_ = new __m256i[nsamp_];
+    nchan_ = nchan;
+    nsamp_ = nsamp;
+    safe_aligned_recalloc(samples_, nv_block, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(q_l_, nsamp_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(q_u_, nsamp_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(qt_l_, nsamp_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(qt_u_, nsamp_, host_info->log2_simd_vec_size());
+
+    qt_l[0] = qt_u[0] = _mm256_setzero_si256();
+    std::cout << nsamp_ << ' ' << nv_samp << ' ' << nv_block << ' '
+      << samples << '\n';
   }
   return good;
 }

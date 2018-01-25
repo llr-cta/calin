@@ -304,25 +304,25 @@ avx2_analyze_waveforms_v2(const uint16_t*__restrict__ data)
   __m256i* qt_l = new __m256i[nsamp_];
   __m256i* qt_u = new __m256i[nsamp_];
 #endif
-  __m256i* samples = samples_;
-  __m256i* q_l = q_l_;
-  __m256i* q_u = q_u_;
-  __m256i* qt_l = qt_l_;
-  __m256i* qt_u = qt_u_;
+  __m256i*__restrict__ samples = samples_;
+  __m256i*__restrict__ q_l = q_l_;
+  __m256i*__restrict__ q_u = q_u_;
+  __m256i*__restrict__ qt_l = qt_l_;
+  __m256i*__restrict__ qt_u = qt_u_;
 
-  __m256i* sig_window_0_l = (__m256i*)sig_window_0_;
-  __m256i* sig_window_0_u = (__m256i*)sig_window_0_ + 1;
-  __m256i* chan_max_index = (__m256i*)chan_max_index_;
-  __m256i* chan_max = (__m256i*)chan_max_;
-  __m256i* chan_sig_win_sum = (__m256i*)chan_sig_win_sum_;
-  __m256i* chan_sig_max_sum = (__m256i*)chan_sig_max_sum_;
-  __m256i* chan_sig_max_sum_index = (__m256i*)chan_sig_max_sum_index_;
-  __m256i* chan_bkg_win_sum = (__m256i*)chan_bkg_win_sum_;
-  float* chan_ped_est = chan_ped_est_;
-  __m256i* chan_all_sum_q = (__m256i*)chan_all_sum_q_;
-  __m256i* chan_all_sum_qt = (__m256i*)chan_all_sum_qt_;
-  float* chan_sig = chan_sig_;
-  float* chan_mean_t = chan_mean_t_;
+  __m256i*__restrict__ sig_window_0_l = (__m256i*)sig_window_0_;
+  __m256i*__restrict__ sig_window_0_u = (__m256i*)sig_window_0_ + 1;
+  __m256i*__restrict__ chan_max_index = (__m256i*)chan_max_index_;
+  __m256i*__restrict__ chan_max = (__m256i*)chan_max_;
+  __m256i*__restrict__ chan_sig_win_sum = (__m256i*)chan_sig_win_sum_;
+  __m256i*__restrict__ chan_sig_max_sum = (__m256i*)chan_sig_max_sum_;
+  __m256i*__restrict__ chan_sig_max_sum_index = (__m256i*)chan_sig_max_sum_index_;
+  __m256i*__restrict__ chan_bkg_win_sum = (__m256i*)chan_bkg_win_sum_;
+  float*__restrict__ chan_ped_est = chan_ped_est_;
+  __m256i*__restrict__ chan_all_sum_q = (__m256i*)chan_all_sum_q_;
+  __m256i*__restrict__ chan_all_sum_qt = (__m256i*)chan_all_sum_qt_;
+  float*__restrict__ chan_sig = chan_sig_;
+  float*__restrict__ chan_mean_t = chan_mean_t_;
 
   qt_l[0] = qt_u[0] = _mm256_setzero_si256();
 
@@ -339,8 +339,8 @@ avx2_analyze_waveforms_v2(const uint16_t*__restrict__ data)
   for(unsigned iblock=0;iblock<nblock;iblock++)
   {
     const unsigned nvec = std::min(16U, nchan_-iblock*16);
-    const uint16_t* base = data + iblock*nsamp_*16;
-    __m256i* vp = samples;
+    const uint16_t*__restrict__ base = data + iblock*nsamp_*16;
+    __m256i*__restrict__ vp = samples;
     for(unsigned iv_samp=0; iv_samp<nv_samp; iv_samp++) {
       for(unsigned ivec=0; ivec<nvec; ivec++) {
         *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_samp*16 + nsamp_*ivec));
@@ -362,6 +362,16 @@ avx2_analyze_waveforms_v2(const uint16_t*__restrict__ data)
     q_l[0] = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(samples[0],0));
     q_u[0] = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(samples[0],1));
     visamp = one = _mm256_set1_epi32(1);
+#if 1
+    for(isamp=1; isamp<nsamp_; isamp++) {
+      const __m256i samp = samples[isamp];
+      q_l[isamp] = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp,0));
+      qt_l[isamp] = _mm256_mullo_epi32(visamp, q_l[isamp]);
+      q_u[isamp] = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp,1));
+      qt_u[isamp] = _mm256_mullo_epi32(visamp, q_u[isamp]);
+      visamp = _mm256_add_epi32(visamp, one);
+    }
+#else
     for(isamp=1; isamp<nsamp_; isamp++) {
       q_l[isamp] = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(samples[isamp],0));
       qt_l[isamp] = _mm256_mullo_epi32(visamp, q_l[isamp]);
@@ -369,6 +379,7 @@ avx2_analyze_waveforms_v2(const uint16_t*__restrict__ data)
       qt_u[isamp] = _mm256_mullo_epi32(visamp, q_u[isamp]);
       visamp = _mm256_add_epi32(visamp, one);
     }
+#endif
 
     __m256i win_l = q_l[0];
     __m256i win_u = q_u[0];
