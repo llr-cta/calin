@@ -181,6 +181,52 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis_V2)
   free(samples_data);
 }
 
+
+TEST(TestWaveformTreatment, AVX_TraceAnalysis_V3)
+{
+  SingleGainDualWindowWaveformTreatmentEventVisitorConfig config =
+    SingleGainDualWindowWaveformTreatmentEventVisitor::default_config();
+  config.set_sig_integration_0(24);
+  AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor wfev(config);
+
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
+  run_config.set_num_samples(nsamp);
+  for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
+  wfev.visit_telescope_run(&run_config);
+
+  auto* host_info = calin::provenance::system_info::the_host_info();
+  uint16_t* samples_data;
+  safe_aligned_calloc(samples_data, nchan*nsamp, host_info->log2_simd_vec_size());
+
+  NR3_AVX2_RNGCore core(12345);
+  for(unsigned iloop=0;iloop<NSIM_TRACEANAL;iloop++)
+  {
+    const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_store_si256((__m256i*)(samples_data+i*16), x);
+    }
+
+    wfev.avx2_analyze_waveforms_v3(samples_data);
+
+#if 0
+    if(iloop==0) {
+      for(unsigned ichan=0; ichan<32; ichan++) {
+        std::cout << ichan << ' '
+          << wfev.chan_max_index()[ichan] << ' ' << wfev.chan_max()[ichan] << ' '
+          << wfev.chan_bkg_win_sum()[ichan] << ' ' << wfev.chan_sig_win_sum()[ichan] << ' '
+          << wfev.chan_all_sum_q()[ichan] << ' ' << wfev.chan_all_sum_qt()[ichan] << ' '
+          << wfev.chan_ped()[ichan] << ' ' << wfev.chan_sig()[ichan] << ' '
+          << wfev.chan_mean_t()[ichan] << ' '
+          << wfev.chan_sig_max_sum()[ichan] << ' ' << wfev.chan_sig_max_sum_index()[ichan] << ' '
+          << '\n';
+      }
+    }
+#endif
+  }
+  free(samples_data);
+}
+
 #endif // defined(__AVX2__) and defined(__FMA__)
 
 int main(int argc, char **argv) {

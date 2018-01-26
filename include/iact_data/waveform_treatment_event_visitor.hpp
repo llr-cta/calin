@@ -147,6 +147,7 @@ public:
 #ifndef SWIG
   void avx2_analyze_waveforms(const uint16_t* __restrict__ data);
   void avx2_analyze_waveforms_v2(const uint16_t* __restrict__ data);
+  void avx2_analyze_waveforms_v3(const uint16_t* __restrict__ data);
 #endif
 
 protected:
