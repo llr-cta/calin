@@ -114,9 +114,9 @@ avx2_analyze_waveforms(const uint16_t*__restrict__ data)
 {
 #if defined(__AVX2__) and defined(__FMA__)
   const unsigned nv_samp = (nsamp_+15)/16;
-  const unsigned nv_block = nv_samp*16;
+  //const unsigned nv_block = nv_samp*16;
 
-  __m256i* samples = new __m256i[nv_block];
+  __m256i*__restrict__ samples = samples_;
 
   const __m256 mean_t_c1 = _mm256_set1_ps(float(nsamp_*(nsamp_-1)/2)/float(window_n_));
   const __m256 mean_t_c2 = _mm256_set1_ps(float(nsamp_)/float(window_n_));
@@ -282,7 +282,6 @@ avx2_analyze_waveforms(const uint16_t*__restrict__ data)
     iresvec += 2;
   }
 
-  delete[] samples;
 #else  // defined(__AVX2__) and defined(__FMA__)
   throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
 #endif // defined(__AVX2__) and defined(__FMA__)
