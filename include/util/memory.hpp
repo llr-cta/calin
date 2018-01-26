@@ -23,6 +23,7 @@
 #pragma once
 
 #include <cassert>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <memory>
@@ -31,43 +32,69 @@
 
 namespace calin { namespace util { namespace memory {
 
-template<typename T> inline T aligned_calloc(const size_t num, const size_t log2_align = 3)
+template<typename T> inline T* aligned_calloc(const size_t num, const size_t log2_align = 3)
 {
   const size_t align = 1<<log2_align;
   assert(align >= sizeof(void*));
-  void* ptr;
-  if(::posix_memalign(&ptr, align, ((num*sizeof(typename std::remove_pointer<T>::type)+align-1)>>log2_align)<<log2_align)==0)
-    return reinterpret_cast<T>(ptr);
+  void* ptr = nullptr;
+  const size_t alloc_size = ((num*sizeof(T)+align-1)>>log2_align)<<log2_align;
+//  std::cout << num << ' ' << sizeof(T) << ' ' << alloc_size << ' ' << align << ' ' << log2_align << '\n';
+  if(::posix_memalign(&ptr, align, alloc_size)==0)
+    return reinterpret_cast<T*>(ptr);
   return nullptr;
 }
 
-template<typename T> inline bool aligned_calloc(T& ptr, const size_t num, const size_t log2_align = 3)
+template<typename T> inline bool aligned_calloc(T*& ptr, const size_t num, const size_t log2_align = 3)
 {
   ptr = aligned_calloc<T>(num, log2_align);
   return ptr != nullptr;
 }
 
-template<typename T> inline bool aligned_recalloc(T& ptr, const size_t num, const size_t log2_align = 3)
+template<typename T> inline bool aligned_calloc(T*__restrict__& ptr, const size_t num, const size_t log2_align = 3)
+{
+  ptr = aligned_calloc<T>(num, log2_align);
+  return ptr != nullptr;
+}
+
+template<typename T> inline bool aligned_recalloc(T*& ptr, const size_t num, const size_t log2_align = 3)
 {
   ::free(ptr);
   ptr = aligned_calloc<T>(num, log2_align);
   return ptr != nullptr;
 }
 
-template<typename T> inline T safe_aligned_calloc(const size_t num, const size_t log2_align = 3)
+template<typename T> inline bool aligned_recalloc(T*__restrict__& ptr, const size_t num, const size_t log2_align = 3)
 {
-  T ptr = aligned_calloc<T>(num, log2_align);
+  ::free(ptr);
+  ptr = aligned_calloc<T>(num, log2_align);
+  return ptr != nullptr;
+}
+
+template<typename T> inline T* safe_aligned_calloc(const size_t num, const size_t log2_align = 3)
+{
+  T* ptr = aligned_calloc<T>(num, log2_align);
   if(ptr != nullptr)return ptr;
   throw std::runtime_error("Could not allocate array of " + std::to_string(num) +
     " elements of size " + std::to_string(sizeof(T)) + " bytes");
 }
 
-template<typename T> inline void safe_aligned_calloc(T& ptr, const size_t num, const size_t log2_align)
+template<typename T> inline void safe_aligned_calloc(T*& ptr, const size_t num, const size_t log2_align)
 {
   ptr = safe_aligned_calloc<T>(num, log2_align);
 }
 
-template<typename T> inline void safe_aligned_recalloc(T& ptr, const size_t num, const size_t log2_align)
+template<typename T> inline void safe_aligned_calloc(T*__restrict__& ptr, const size_t num, const size_t log2_align)
+{
+  ptr = safe_aligned_calloc<T>(num, log2_align);
+}
+
+template<typename T> inline void safe_aligned_recalloc(T*& ptr, const size_t num, const size_t log2_align)
+{
+  free(ptr);
+  ptr = safe_aligned_calloc<T>(num, log2_align);
+}
+
+template<typename T> inline void safe_aligned_recalloc(T*__restrict__& ptr, const size_t num, const size_t log2_align)
 {
   free(ptr);
   ptr = safe_aligned_calloc<T>(num, log2_align);
