@@ -77,7 +77,7 @@ scalar_analyze_waveforms(const uint16_t*__restrict__ data)
       win += _samp - samp[iss];
       if(win>sig_max) {
         sig_max = win;
-        isig_max = iss;
+        isig_max = iss+1;
       }
       if(_samp > max) {
         imax = isamp;
@@ -117,6 +117,9 @@ avx2_analyze_waveforms(const uint16_t*__restrict__ data)
   //const unsigned nv_block = nv_samp*16;
 
   __m256i*__restrict__ samples = samples_;
+
+  __m256i*__restrict__ sig_window_0_l = (__m256i*)sig_window_0_;
+  __m256i*__restrict__ sig_window_0_u = (__m256i*)sig_window_0_ + 1;
 
   const __m256 mean_t_c1 = _mm256_set1_ps(float(nsamp_*(nsamp_-1)/2)/float(window_n_));
   const __m256 mean_t_c2 = _mm256_set1_ps(float(nsamp_)/float(window_n_));
@@ -174,12 +177,50 @@ avx2_analyze_waveforms(const uint16_t*__restrict__ data)
 
     __m256i sig_l = win_l;
     __m256i sig_u = win_u;
-    __m256i bkg_l = win_l;
-    __m256i bkg_u = win_u;
     __m256i sum_q_l = win_l;
     __m256i sum_q_u = win_u;
 
     int iss = 0;
+    for(;iss<bkg_window_0_;++isamp)
+    {
+      visamp = _mm256_set1_epi16(isamp);
+      mask = _mm256_cmpgt_epi16(samples[isamp], max);
+      max = _mm256_blendv_epi8(max, samples[isamp], mask);
+      imax = _mm256_blendv_epi8(imax, visamp, mask);
+
+      visamp = _mm256_set1_epi32(isamp);
+
+      samp = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(samples[isamp],0));
+      win_l = _mm256_add_epi32(win_l, samp);
+      sum_q_l = _mm256_add_epi32(sum_q_l, samp);
+      sum_qt_l = _mm256_add_epi32(sum_qt_l, _mm256_mullo_epi32(visamp, samp));
+      samp = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(samples[iss],0));
+      win_l = _mm256_sub_epi32(win_l, samp);
+
+      samp = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(samples[isamp],1));
+      win_u = _mm256_add_epi32(win_u, samp);
+      sum_q_u = _mm256_add_epi32(sum_q_u, samp);
+      sum_qt_u = _mm256_add_epi32(sum_qt_u, _mm256_mullo_epi32(visamp, samp));
+      samp = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(samples[iss],1));
+      win_u = _mm256_sub_epi32(win_u, samp);
+
+      visamp = _mm256_set1_epi32(++iss);
+
+      mask = _mm256_cmpgt_epi32(win_l, sig_max_l);
+      sig_max_l = _mm256_blendv_epi8(sig_max_l, win_l, mask);
+      isig_max_l = _mm256_blendv_epi8(isig_max_l, visamp, mask);
+      mask = _mm256_cmpeq_epi32(*sig_window_0_l, visamp);
+      sig_l = _mm256_blendv_epi8(sig_l, win_l, mask);
+
+      mask = _mm256_cmpgt_epi32(win_u, sig_max_u);
+      sig_max_u = _mm256_blendv_epi8(sig_max_u, win_u, mask);
+      isig_max_u = _mm256_blendv_epi8(isig_max_u, visamp, mask);
+      mask = _mm256_cmpeq_epi32(*sig_window_0_u, visamp);
+      sig_u = _mm256_blendv_epi8(sig_u, win_u, mask);
+    }
+
+    __m256i bkg_l = win_l;
+    __m256i bkg_u = win_u;
 
     for(;isamp<nsamp_;++isamp)
     {
@@ -204,24 +245,18 @@ avx2_analyze_waveforms(const uint16_t*__restrict__ data)
       samp = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(samples[iss],1));
       win_u = _mm256_sub_epi32(win_u, samp);
 
-      ++iss;
-      if(bkg_window_0_ == iss){
-        bkg_l = win_l;
-        bkg_u = win_u;
-      }
-
-      visamp = _mm256_set1_epi32(iss);
+      visamp = _mm256_set1_epi32(++iss);
 
       mask = _mm256_cmpgt_epi32(win_l, sig_max_l);
       sig_max_l = _mm256_blendv_epi8(sig_max_l, win_l, mask);
       isig_max_l = _mm256_blendv_epi8(isig_max_l, visamp, mask);
-      mask = _mm256_cmpeq_epi32(*(__m256i*)(sig_window_0_ + iblock*16), visamp);
+      mask = _mm256_cmpeq_epi32(*sig_window_0_l, visamp);
       sig_l = _mm256_blendv_epi8(sig_l, win_l, mask);
 
       mask = _mm256_cmpgt_epi32(win_u, sig_max_u);
       sig_max_u = _mm256_blendv_epi8(sig_max_u, win_u, mask);
       isig_max_u = _mm256_blendv_epi8(isig_max_u, visamp, mask);
-      mask = _mm256_cmpeq_epi32(*(__m256i*)(sig_window_0_ + iblock*16 + 8), visamp);
+      mask = _mm256_cmpeq_epi32(*sig_window_0_u, visamp);
       sig_u = _mm256_blendv_epi8(sig_u, win_u, mask);
     }
 
@@ -278,6 +313,9 @@ avx2_analyze_waveforms(const uint16_t*__restrict__ data)
     nom = _mm256_fmsub_ps(mean_t_c1, ped_u, _mm256_cvtepi32_ps(sum_qt_u));
     denom = _mm256_fmsub_ps(mean_t_c2, ped_u, _mm256_cvtepi32_ps(sum_q_u));
     _mm256_store_ps(chan_mean_t_+iresvec*8+8, _mm256_div_ps(nom, denom));
+
+    sig_window_0_l += 2;
+    sig_window_0_u += 2;
 
     iresvec += 2;
   }
