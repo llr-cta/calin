@@ -242,3 +242,40 @@ calin::provenance::system_info::copy_the_host_info(calin::ix::provenance::system
   x->CopyFrom(*calin::provenance::system_info::the_host_info());
   return x;
 }
+
+void calin::provenance::system_info::write_system_info_to_log(calin::util::log::Level level,
+  calin::util::log::Logger* logger)
+{
+  const auto* host_info = calin::provenance::system_info::the_host_info();
+  auto L = LOG(level, logger);
+  L << host_info->uname_sysname() << " " << host_info->uname_release() << " on "
+    << host_info->cpu_processor_brand() << '\n';
+  if(host_info->cpu_has_sse()) {
+    L << "CPU has :";
+    if(host_info->cpu_has_avx512f())L << " AVX-512F";
+    if(host_info->cpu_has_avx512dq())L << "/DQ";
+    if(host_info->cpu_has_avx512ifma())L << "/IFMA";
+    if(host_info->cpu_has_avx512pf())L << "/PF";
+    if(host_info->cpu_has_avx512er())L << "/ER";
+    if(host_info->cpu_has_avx512cd())L << "/CD";
+    if(host_info->cpu_has_avx512bw())L << "/BW";
+    if(host_info->cpu_has_avx512vl())L << "/VL";
+    if(host_info->cpu_has_avx512vbmi())L << "/VBMI";
+    if(host_info->cpu_has_avx512vbmi2())L << "/VBMI2";
+    if(host_info->cpu_has_avx512vnni())L << "/VNNI";
+    if(host_info->cpu_has_avx512bitalg())L << "/BITALG";
+    if(host_info->cpu_has_avx512vpopcntdq())L << "/VPOPCNTDQ";
+    if(host_info->cpu_has_avx512_4vnniw())L << "/4VNNIW";
+    if(host_info->cpu_has_avx512_4fmaps())L << "/4FMAPS";
+    if(host_info->cpu_has_avx2())L << " AVX2";
+    if(host_info->cpu_has_avx())L << " AVX";
+    if(host_info->cpu_has_sse4_2())L << " SSE4.2";
+    if(host_info->cpu_has_sse4_1())L << " SSE4.1";
+    if(host_info->cpu_has_ssse3())L << " SSSE3";
+    if(host_info->cpu_has_sse3())L << " SSE3";
+    if(host_info->cpu_has_sse2())L << " SSE2";
+    if(host_info->cpu_has_sse())L << " SSE";
+    if(host_info->cpu_has_fma3())L << " FMA3";
+    if(host_info->cpu_has_fma4())L << " FMA4";
+  }
+}

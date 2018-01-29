@@ -34,6 +34,7 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%import "util/log.pb.i"
 %import "provenance/system_info.pb.i"
 
 %newobject *::copy_the_build_info();

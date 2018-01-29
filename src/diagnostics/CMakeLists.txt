@@ -13,6 +13,8 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --save-temps")
+
 set(CALIN_TARGET_LIBRARY calin_diagnostics)
 set(CALIN_SOURCES counter.cpp module.cpp event_number.cpp waveform.cpp
   waveform_psd.cpp functional.cpp value_capture.cpp delta_t.cpp)
