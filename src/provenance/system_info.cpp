@@ -269,13 +269,13 @@ void calin::provenance::system_info::write_system_info_to_log(calin::util::log::
     if(host_info->cpu_has_avx512_4fmaps())L << "/4FMAPS";
     if(host_info->cpu_has_avx2())L << " AVX2";
     if(host_info->cpu_has_avx())L << " AVX";
+    if(host_info->cpu_has_fma3())L << " FMA3";
+    if(host_info->cpu_has_fma4())L << " FMA4";
     if(host_info->cpu_has_sse4_2())L << " SSE4.2";
     if(host_info->cpu_has_sse4_1())L << " SSE4.1";
     if(host_info->cpu_has_ssse3())L << " SSSE3";
     if(host_info->cpu_has_sse3())L << " SSE3";
     if(host_info->cpu_has_sse2())L << " SSE2";
     if(host_info->cpu_has_sse())L << " SSE";
-    if(host_info->cpu_has_fma3())L << " FMA3";
-    if(host_info->cpu_has_fma4())L << " FMA4";
   }
 }

@@ -36,6 +36,7 @@ using namespace calin::math::simd;
 
 static constexpr uint64_t NSIM_RANDSINCOS = 100000000ULL;
 static constexpr unsigned NSIM_TRACEANAL = 10000;
+static constexpr unsigned NSIM_TRACECOV = 1000;
 
 TEST(TestSIMD, SpeedTest100M_Random64SinCos32)
 {
@@ -125,7 +126,7 @@ int all_sum_q[nchan];
 int all_sum_qt[nchan];
 float all_mean_t[nchan];
 
-TEST(TestSIMD, TraceAnalysis)
+TEST(TestTraceAnalysis, Scalar)
 {
   NR3_AVX2_RNGCore core(12345);
   uint16_t* hg = new uint16_t[nchan*nsamp];
@@ -279,7 +280,7 @@ inline void swizzle_u16(__m256i* data)
   std::swap(data[11], data[14]);
 }
 
-TEST(TestSIMD, TraceAnalysisAVX)
+TEST(TestTraceAnalysis, AVX2)
 {
   NR3_AVX2_RNGCore core(12345);
   uint16_t* hg = new uint16_t[(nchan+1)*nsamp];
@@ -434,6 +435,88 @@ TEST(TestSIMD, TraceAnalysisAVX)
   }
 
   delete[] hg;
+}
+
+uint32_t cov[nchan*nsamp*(nsamp+1)/2] __attribute__((aligned(32)));
+
+TEST(TestTraceCov, Scalar)
+{
+  NR3_AVX2_RNGCore core(12345);
+  uint16_t* hg = new uint16_t[nchan*nsamp];
+  std::fill(cov, cov+nchan*nsamp*(nsamp+1)/2, 0);
+  // uint16_t* lg = new uint16_t[nchan*nsamp];
+  for(unsigned iloop=0;iloop<NSIM_TRACECOV;iloop++)
+  {
+    const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_store_si256((__m256i*)(hg+i*16), x);
+      // x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      // _mm256_store_si256((__m256i*)(lg+i*16), x);
+    }
+
+    uint32_t*__restrict__ cov_base = cov;
+    uint16_t*__restrict__ samp_base = hg;
+    for(unsigned ichan=0;ichan<nchan;ichan++) {
+      for(unsigned isamp=0;isamp<nsamp;isamp++) {
+        const uint16_t sampi = samp_base[isamp];
+        for(unsigned jsamp=isamp;jsamp<nsamp;jsamp++) {
+          const uint16_t sampj = samp_base[jsamp];
+          *(cov_base++) += sampi * sampj;
+        }
+      }
+      samp_base += nsamp;
+    }
+  }
+}
+
+TEST(TestTraceCov, AVX2)
+{
+  NR3_AVX2_RNGCore core(12345);
+  uint16_t* hg = new uint16_t[nchan*nsamp];
+  std::fill(cov, cov+nchan*nsamp*(nsamp+1)/2, 0);
+  // uint16_t* lg = new uint16_t[nchan*nsamp];
+
+  const unsigned nv_trace = (nsamp+15)/16;
+  const unsigned nv_block = nv_trace*16;
+  __m256i* samples = new __m256i[nv_block];
+  const unsigned nblock = nchan/16;
+
+  for(unsigned iloop=0;iloop<NSIM_TRACECOV;iloop++)
+  {
+    const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_store_si256((__m256i*)(hg+i*16), x);
+      // x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      // _mm256_store_si256((__m256i*)(lg+i*16), x);
+    }
+
+    __m256i*__restrict__ cov_base = (__m256i*__restrict__)cov;
+    for(unsigned iblock=0;iblock<nblock;iblock++)
+    {
+      uint16_t* base = hg + iblock*nsamp*16;
+      __m256i* vp = samples;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples + iv_trace*16);
+      }
+      for(unsigned isamp=0;isamp<nsamp;isamp++) {
+        const __m256i sampi = samples[isamp];
+        for(unsigned jsamp=isamp;jsamp<nsamp;jsamp++) {
+          const __m256i sampj = samples[jsamp];
+          const __m256i prod_lo = _mm256_mullo_epi16(sampi, sampj);
+          const __m256i prod_hi = _mm256_mulhi_epu16(sampi, sampj);
+          *cov_base = _mm256_add_epi32(*cov_base, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+          cov_base++;
+          *cov_base = _mm256_add_epi32(*cov_base, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+          cov_base++;
+        }
+      }
+    }
+  }
 }
 
 #endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
