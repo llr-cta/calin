@@ -13,6 +13,8 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --save-temps")
+
 add_executable(test_histogram test_histogram.cpp)
 target_link_libraries(test_histogram ${GTEST_BOTH_LIBRARIES} calin_math calin_proto)
 add_test(TestHistogram test_histogram)

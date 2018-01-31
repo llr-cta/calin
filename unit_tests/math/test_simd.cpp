@@ -468,6 +468,11 @@ TEST(TestTraceCov, Scalar)
       samp_base += nsamp;
     }
   }
+  for(unsigned ichan=0;ichan<20;ichan++) {
+    for(unsigned isamp=0;isamp<5;isamp++)
+      std::cout << ' ' << cov[ichan*nsamp*(nsamp+1)/2 + isamp];
+    std::cout << '\n';
+  }
 }
 
 TEST(TestTraceCov, AVX2)
@@ -495,6 +500,7 @@ TEST(TestTraceCov, AVX2)
     __m256i*__restrict__ cov_base = (__m256i*__restrict__)cov;
     for(unsigned iblock=0;iblock<nblock;iblock++)
     {
+#if 1
       uint16_t* base = hg + iblock*nsamp*16;
       __m256i* vp = samples;
       for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
@@ -503,6 +509,7 @@ TEST(TestTraceCov, AVX2)
         }
         calin::math::simd::avx2_m256_swizzle_u16(samples + iv_trace*16);
       }
+#endif
       for(unsigned isamp=0;isamp<nsamp;isamp++) {
         const __m256i sampi = samples[isamp];
         for(unsigned jsamp=isamp;jsamp<nsamp;jsamp++) {
@@ -516,6 +523,91 @@ TEST(TestTraceCov, AVX2)
         }
       }
     }
+  }
+  for(unsigned ichan=0;ichan<20;ichan++) {
+    unsigned iblock = ichan/16;
+    unsigned irem = ichan%16;
+    for(unsigned isamp=0;isamp<5;isamp++)
+      std::cout << ' ' << cov[iblock*16*nsamp*(nsamp+1)/2 + isamp*16 + irem];
+    std::cout << '\n';
+  }
+}
+
+TEST(TestTraceCov, AVX2_Unroll)
+{
+  NR3_AVX2_RNGCore core(12345);
+  uint16_t* hg = new uint16_t[nchan*nsamp];
+  std::fill(cov, cov+nchan*nsamp*(nsamp+1)/2, 0);
+  // uint16_t* lg = new uint16_t[nchan*nsamp];
+
+  const unsigned nv_trace = (nsamp+15)/16;
+  const unsigned nv_block = nv_trace*16;
+  __m256i* samples = new __m256i[nv_block];
+  const unsigned nblock = nchan/16;
+
+  for(unsigned iloop=0;iloop<NSIM_TRACECOV;iloop++)
+  {
+    const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_store_si256((__m256i*)(hg+i*16), x);
+      // x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      // _mm256_store_si256((__m256i*)(lg+i*16), x);
+    }
+
+    __m256i*__restrict__ cov_base = (__m256i*__restrict__)cov;
+    for(unsigned iblock=0;iblock<nblock;iblock++)
+    {
+#if 1
+      uint16_t* base = hg + iblock*nsamp*16;
+      __m256i* vp = samples;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples + iv_trace*16);
+      }
+#endif
+      for(unsigned isamp=0;isamp<nsamp;isamp+=2) {
+        __m256i*__restrict__ cov_base_ipo = cov_base + nsamp - isamp;
+
+        const __m256i sampi = samples[isamp];
+
+        const __m256i prod_lo = _mm256_mullo_epi16(sampi, sampi);
+        const __m256i prod_hi = _mm256_mulhi_epu16(sampi, sampi);
+        *cov_base = _mm256_add_epi32(*cov_base, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+        cov_base++;
+        *cov_base = _mm256_add_epi32(*cov_base, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+        cov_base++;
+
+        const __m256i sampipo = samples[isamp+1];
+        for(unsigned jsamp=isamp+1;jsamp<nsamp;jsamp++) {
+          const __m256i sampj = samples[jsamp];
+
+          const __m256i prod_lo = _mm256_mullo_epi16(sampi, sampj);
+          const __m256i prod_hi = _mm256_mulhi_epu16(sampi, sampj);
+          *cov_base = _mm256_add_epi32(*cov_base, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+          cov_base++;
+          *cov_base = _mm256_add_epi32(*cov_base, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+          cov_base++;
+
+          const __m256i prod_lo1 = _mm256_mullo_epi16(sampipo, sampj);
+          const __m256i prod_hi1 = _mm256_mulhi_epu16(sampipo, sampj);
+          *cov_base_ipo = _mm256_add_epi32(*cov_base_ipo, _mm256_unpacklo_epi16(prod_lo1, prod_hi1));
+          cov_base_ipo++;
+          *cov_base_ipo = _mm256_add_epi32(*cov_base_ipo, _mm256_unpackhi_epi16(prod_lo1, prod_hi1));
+          cov_base_ipo++;
+        }
+        cov_base = cov_base_ipo;
+      }
+    }
+  }
+  for(unsigned ichan=0;ichan<20;ichan++) {
+    unsigned iblock = ichan/16;
+    unsigned irem = ichan%16;
+    for(unsigned isamp=0;isamp<5;isamp++)
+      std::cout << ' ' << cov[iblock*16*nsamp*(nsamp+1)/2 + isamp*16 + irem];
+    std::cout << '\n';
   }
 }
 
