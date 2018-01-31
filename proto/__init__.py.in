@@ -1,0 +1,1 @@
+__all__ = [ "calib", "diagnostics", "iact_data", "io", "math", "provenance", "scripts", "simulation", "util", ${CALIN_PY_INIT_SWIG_LIST} ]

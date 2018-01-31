@@ -1,1 +1,0 @@
-all = ["compute_diagnostics"]
