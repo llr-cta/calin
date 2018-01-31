@@ -606,9 +606,7 @@ NR3_AVX2_RNGCore::NR3_AVX2_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& pr
       case 4:
         vec_dev_ = _mm256_set_epi64x(proto.dev(3), proto.dev(2), proto.dev(1), proto.dev(0));
         break;
-
       }
-      vec_dev_ = _mm256_set_epi64x(proto.vec_w(3), proto.vec_w(2), proto.vec_w(1), proto.vec_w(0));
     }
   }
 #else
@@ -628,13 +626,13 @@ void NR3_AVX2_RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
   data->add_vec_stream_seed(stream_seed1_);
   data->add_vec_stream_seed(stream_seed0_);
   for(unsigned i=0; i<4; i++)
-    data->add_vec_u(reinterpret_cast<const uint64_t*>(&vec_u_)[i]);
+    data->add_vec_u(_mm256_extract_epi64(vec_u_,i));
   for(unsigned i=0; i<4; i++)
-    data->add_vec_v(reinterpret_cast<const uint64_t*>(&vec_v_)[i]);
+    data->add_vec_v(_mm256_extract_epi64(vec_v_,i));
   for(unsigned i=0; i<4; i++)
-    data->add_vec_w(reinterpret_cast<const uint64_t*>(&vec_w_)[i]);
+    data->add_vec_w(_mm256_extract_epi64(vec_w_,i));
   for(unsigned i=0; i<ndev_; i++)
-    data->add_dev(reinterpret_cast<const uint64_t*>(&vec_dev_)[i]);
+    data->add_dev(_mm256_extract_epi64(vec_dev_,i));
 #endif
 }
 

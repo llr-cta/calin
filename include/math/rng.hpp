@@ -580,7 +580,7 @@ private:
       vec_dev_ = uniform_uivec256();
       ndev_ = 4;
     }
-    return reinterpret_cast<uint64_t*>(&vec_dev_)[--ndev_];
+    return _mm256_extract_epi64(vec_dev_, --ndev_);
 #else
     throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
 #endif
