@@ -601,10 +601,10 @@ private:
   uint64_t stream_seed2_;
   uint64_t stream_seed3_;
   uint64_t calls_ = 0;
-  __m256i vec_u_;
-  __m256i vec_v_;
-  __m256i vec_w_;
-  __m256i vec_dev_;
+  __m256i __attribute__((aligned(32))) vec_u_;
+  __m256i __attribute__((aligned(32))) vec_v_;
+  __m256i __attribute__((aligned(32))) vec_w_;
+  __m256i __attribute__((aligned(32))) vec_dev_;
   unsigned ndev_ = 0;
 #endif
 };
