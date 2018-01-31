@@ -585,14 +585,30 @@ NR3_AVX2_RNGCore::NR3_AVX2_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& pr
       if(proto.dev_size() > 4)
         throw std::runtime_error("NR3_AVX2_RNGCore: saved deviate vector must have at most 4 elements");
       calls_ = proto.calls();
-      for(unsigned i=0; i<4; i++)
-        reinterpret_cast<uint64_t*>(&vec_u_)[i] = proto.vec_u(i);
-      for(unsigned i=0; i<4; i++)
-        reinterpret_cast<uint64_t*>(&vec_v_)[i] = proto.vec_v(i);
-      for(unsigned i=0; i<4; i++)
-        reinterpret_cast<uint64_t*>(&vec_w_)[i] = proto.vec_w(i);
-      for(ndev_=0; ndev_<proto.dev_size(); ndev_++)
-        reinterpret_cast<uint64_t*>(&vec_dev_)[ndev_] = proto.dev(ndev_);
+      vec_u_ = _mm256_set_epi64x(proto.vec_u(3), proto.vec_u(2), proto.vec_u(1), proto.vec_u(0));
+      vec_v_ = _mm256_set_epi64x(proto.vec_v(3), proto.vec_v(2), proto.vec_v(1), proto.vec_v(0));
+      vec_w_ = _mm256_set_epi64x(proto.vec_w(3), proto.vec_w(2), proto.vec_w(1), proto.vec_w(0));
+      ndev_ = proto.dev_size();
+      switch(ndev_) {
+      case 0:
+      default:
+        vec_dev_ = _mm256_setzero_si256();
+        break;
+      case 1:
+        vec_dev_ = _mm256_set_epi64x(0U, 0U, 0U, proto.dev(0));
+        break;
+      case 2:
+        vec_dev_ = _mm256_set_epi64x(0U, 0U, proto.dev(1), proto.dev(0));
+        break;
+      case 3:
+        vec_dev_ = _mm256_set_epi64x(0U, proto.dev(2), proto.dev(1), proto.dev(0));
+        break;
+      case 4:
+        vec_dev_ = _mm256_set_epi64x(proto.dev(3), proto.dev(2), proto.dev(1), proto.dev(0));
+        break;
+
+      }
+      vec_dev_ = _mm256_set_epi64x(proto.vec_w(3), proto.vec_w(2), proto.vec_w(1), proto.vec_w(0));
     }
   }
 #else
