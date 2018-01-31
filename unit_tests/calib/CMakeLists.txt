@@ -22,3 +22,6 @@ add_executable(test_pmt_ses_models test_pmt_ses_models.cpp)
 target_link_libraries(test_pmt_ses_models ${GTEST_BOTH_LIBRARIES} calin_calib
   calin_math ${EXTRA_LIBS})
 add_test(TestPMTSESModels test_pmt_ses_models)
+
+install(TARGETS test_spe_fit test_pmt_ses_models
+  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})

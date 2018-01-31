@@ -16,3 +16,6 @@
 add_executable(test_waveform_treatment test_waveform_treatment.cpp)
 target_link_libraries(test_waveform_treatment ${GTEST_BOTH_LIBRARIES} calin_iact_data ${EXTRA_LIBS})
 add_test(TestWaveformTreatment test_waveform_treatment)
+
+install(TARGETS test_waveform_treatment
+  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})

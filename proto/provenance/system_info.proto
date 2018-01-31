@@ -53,6 +53,9 @@ message BuildInfo {
   string python_install_dir                                = 8 [
     (CFO).desc = "Installation directory for python files." ];
 
+  string unit_test_install_dir                             = 9 [
+    (CFO).desc = "Installation directory for unit tests." ];
+
   string build_system                                      = 100 [
     (CFO).desc = "Build system (i.e. operating system) type from CMake "
       "variable CMAKE_SYSTEM."];

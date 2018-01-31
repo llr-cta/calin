@@ -52,6 +52,7 @@ calin::ix::provenance::system_info::BuildInfo* new_build_info()
   info->set_bin_install_dir(CALIN_BIN_INSTALL_DIR);
   info->set_header_install_dir(CALIN_HEADER_INSTALL_DIR);
   info->set_python_install_dir(CALIN_PYTHON_INSTALL_DIR);
+  info->set_unit_test_install_dir(CALIN_UNIT_TEST_INSTALL_DIR);
   info->set_build_system(CALIN_BUILD_SYSTEM);
   info->set_build_type(CALIN_BUILD_TYPE);
   info->set_build_arch(CALIN_BUILD_ARCH);
