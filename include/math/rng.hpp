@@ -575,12 +575,22 @@ private:
   uint64_t uniform_uint64() override
   {
 #if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
-    if(ndev_ == 0)
-    {
+    switch(ndev_) {
+    case 0:
       vec_dev_ = uniform_uivec256();
-      ndev_ = 4;
+      ndev_ = 3;
+      return _mm256_extract_epi64(vec_dev_, 3);
+    case 1:
+      ndev_ = 0;
+      return _mm256_extract_epi64(vec_dev_, 0);
+    case 2:
+      ndev_ = 1;
+      return _mm256_extract_epi64(vec_dev_, 1);
+    case 3:
+      ndev_ = 2;
+      return _mm256_extract_epi64(vec_dev_, 2);
     }
-    return _mm256_extract_epi64(vec_dev_, --ndev_);
+    throw std::runtime_error("What you talking about willis?");
 #else
     throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
 #endif
