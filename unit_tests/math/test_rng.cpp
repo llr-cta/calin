@@ -212,6 +212,28 @@ TEST(TestRNG_NR3_EmulateSIMD_RNGCore, Equals_4xNR3)
 }
 
 #ifdef CALIN_HAS_NR3_AVX2_RNGCORE
+TEST(TestRNG_NR3_AVX2_RNGCore, Equals_4xNR3)
+{
+  uint64_t seeds[4];
+  for(unsigned i=0;i<4;i++)seeds[i] = RNG::uint64_from_random_device();
+  NR3_AVX2_RNGCore rng_avx(seeds[0], seeds[1], seeds[2], seeds[3]);
+  NR3RNGCore rng0(seeds[0]);
+  NR3RNGCore rng1(seeds[1]);
+  NR3RNGCore rng2(seeds[2]);
+  NR3RNGCore rng3(seeds[3]);
+  for(unsigned i=0;i<100000;i++)
+  {
+    EXPECT_EQ(rng_avx.uniform_uint64(), rng0.uniform_uint64())
+        << "RNG0 mistmatch - seed=" << seeds[0] << " - i=" << i;
+    EXPECT_EQ(rng_avx.uniform_uint64(), rng1.uniform_uint64())
+        << "RNG1 mistmatch - seed=" << seeds[1] << " - i=" << i;
+    EXPECT_EQ(rng_avx.uniform_uint64(), rng2.uniform_uint64())
+        << "RNG2 mistmatch - seed=" << seeds[2] << " - i=" << i;
+    EXPECT_EQ(rng_avx.uniform_uint64(), rng3.uniform_uint64())
+        << "RNG3 mistmatch - seed=" << seeds[3] << " - i=" << i;
+  }
+}
+
 TEST(TestRNG_NR3_AVX2_RNGCore, Equals_NR3_EmulateSIMD_RNGCore)
 {
   uint64_t seed = RNG::uint64_from_random_device();
