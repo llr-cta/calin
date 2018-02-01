@@ -641,10 +641,10 @@ void NR3_AVX2_RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
   data->add_vec_w(_mm256_extract_epi64(vec_w_,2));
   data->add_vec_w(_mm256_extract_epi64(vec_w_,3));
 
-  if(ndev_>=0U)data->add_dev(_mm256_extract_epi64(vec_dev_,0));
-  if(ndev_>=1U)data->add_dev(_mm256_extract_epi64(vec_dev_,1));
-  if(ndev_>=2U)data->add_dev(_mm256_extract_epi64(vec_dev_,2));
-  if(ndev_>=3U)data->add_dev(_mm256_extract_epi64(vec_dev_,3));
+  if(ndev_>0U)data->add_dev(_mm256_extract_epi64(vec_dev_,0));
+  if(ndev_>1U)data->add_dev(_mm256_extract_epi64(vec_dev_,1));
+  if(ndev_>2U)data->add_dev(_mm256_extract_epi64(vec_dev_,2));
+  if(ndev_>3U)data->add_dev(_mm256_extract_epi64(vec_dev_,3));
 #endif
 }
 
