@@ -69,8 +69,9 @@ RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGData& proto,
     case ix::math::rng::RNGData::kNr3SimdEmu4Core:
       return new NR3_EmulateSIMD_RNGCore<4>(proto.nr3_simd_emu4_core(), restore_state);
     case ix::math::rng::RNGData::kNr3Avx2Core:
-      // Ugh : placement align here to overcome problem with AVX members
-      return new(calin::util::memory::aligned_calloc<NR3_AVX2_RNGCore>(1)) NR3_AVX2_RNGCore(proto.nr3_avx2_core(), restore_state);
+      // Ugh : placement new here to overcome problem with AVX members
+      // return new(calin::util::memory::aligned_calloc<NR3_AVX2_RNGCore>(1)) NR3_AVX2_RNGCore(proto.nr3_avx2_core(), restore_state);
+      return new NR3_AVX2_RNGCore(proto.nr3_avx2_core(), restore_state);
     default:
       LOG(ERROR) << "Unrecognised RNG type case : " << proto.core_case();
     case 0:

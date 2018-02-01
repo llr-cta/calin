@@ -607,6 +607,20 @@ private:
   static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
   { return proto.nr3_avx2_core(); }
 
+  static void* operator new(size_t nbytes) {
+    void* p = nullptr;
+    if(::posix_memalign(&p, 32, nbytes)==0) {
+      return p;
+    }
+    throw std::bad_alloc();
+  }
+  static void* operator new(size_t nbytes, void* p) {
+    return p;
+  }
+  static void operator delete(void *p) {
+    free(p);
+  }
+
 private:
   uint64_t seed_;
 #if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
