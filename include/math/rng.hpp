@@ -607,6 +607,7 @@ private:
   static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
   { return proto.nr3_avx2_core(); }
 
+#ifndef SWIG
   static void* operator new(size_t nbytes) {
     void* p = nullptr;
     if(::posix_memalign(&p, 32, nbytes)==0) {
@@ -620,6 +621,7 @@ private:
   static void operator delete(void *p) {
     free(p);
   }
+#endif
 
 private:
   uint64_t seed_;
