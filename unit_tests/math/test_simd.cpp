@@ -575,7 +575,7 @@ TEST(TestTraceCov, AVX2_Unroll)
       }
 #endif
       for(unsigned isamp=0;isamp<nsamp;isamp+=2) {
-        __m256i*__restrict__ cov_base_ipo = cov_base + nsamp - isamp;
+        __m256i*__restrict__ cov_base_ipo = cov_base + (nsamp - isamp)*2;
 
         const __m256i sampi = samples[isamp];
 
