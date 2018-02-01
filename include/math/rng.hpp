@@ -479,7 +479,11 @@ private:
   {
 #if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
     std::mt19937_64 gen(seed_);
-    init(gen(), gen(), gen(), gen());
+    uint64_t seed0 = gen();
+    uint64_t seed1 = gen();
+    uint64_t seed2 = gen();
+    uint64_t seed3 = gen();
+    init(seed0, seed1, seed2, seed3);
 #else
     throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
 #endif
