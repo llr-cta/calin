@@ -620,6 +620,92 @@ TEST(TestTraceCov, AVX2_Unroll)
   free(samples);
 }
 
+TEST(TestTraceCov, AVX2_2Event)
+{
+  NR3_AVX2_RNGCore core(12345);
+  uint16_t* hg1;
+  calin::util::memory::safe_aligned_calloc(hg1, nchan*nsamp);
+  uint16_t* hg2;
+  calin::util::memory::safe_aligned_calloc(hg2, nchan*nsamp);
+
+  std::fill(cov, cov+nchan*nsamp*(nsamp+1)/2, 0);
+
+  const unsigned nv_trace = (nsamp+15)/16;
+  const unsigned nv_block = nv_trace*16;
+  __m256i* samples1;
+  __m256i* samples2;
+  calin::util::memory::safe_aligned_calloc(samples1, nv_block);
+  calin::util::memory::safe_aligned_calloc(samples2, nv_block);
+  const unsigned nblock = nchan/16;
+
+  for(unsigned iloop=0;iloop<NSIM_TRACECOV/2;iloop++)
+  {
+    const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg1+i*16), x);
+    }
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg2+i*16), x);
+    }
+
+    __m256i*__restrict__ cov_base = (__m256i*__restrict__)cov;
+    for(unsigned iblock=0;iblock<nblock;iblock++)
+    {
+      uint16_t* base = hg1 + iblock*nsamp*16;
+      __m256i* vp = samples1;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples1 + iv_trace*16);
+      }
+
+      base = hg2 + iblock*nsamp*16;
+      vp = samples2;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples2 + iv_trace*16);
+      }
+
+      for(unsigned isamp=0;isamp<nsamp;isamp++) {
+        const __m256i sampi1 = samples1[isamp];
+        const __m256i sampi2 = samples2[isamp];
+        for(unsigned jsamp=isamp;jsamp<nsamp;jsamp++) {
+          __m256i sampj = samples1[jsamp];
+          __m256i prod_lo = _mm256_mullo_epi16(sampi1, sampj);
+          __m256i prod_hi = _mm256_mulhi_epu16(sampi1, sampj);
+          *cov_base = _mm256_add_epi32(*cov_base, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+          *(cov_base+1) = _mm256_add_epi32(*(cov_base+1), _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+          sampj = samples2[jsamp];
+          prod_lo = _mm256_mullo_epi16(sampi2, sampj);
+          prod_hi = _mm256_mulhi_epu16(sampi2, sampj);
+          *cov_base = _mm256_add_epi32(*cov_base, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+          *(cov_base+1) = _mm256_add_epi32(*(cov_base+1), _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+          cov_base+=2;
+        }
+      }
+    }
+  }
+  for(unsigned ichan=0;ichan<20;ichan++) {
+    unsigned iblock = ichan/16;
+    unsigned irem = ichan%16;
+    for(unsigned isamp=0;isamp<5;isamp++)
+      std::cout << ' ' << cov[iblock*16*nsamp*(nsamp+1)/2 + isamp*16 + irem];
+    std::cout << '\n';
+  }
+
+  free(hg1);
+  free(hg2);
+  free(samples1);
+  free(samples2);
+}
+
 #endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
 
 int main(int argc, char **argv) {
