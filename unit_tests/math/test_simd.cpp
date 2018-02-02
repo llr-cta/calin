@@ -893,23 +893,97 @@ TEST_P(NEvent, AVX2)
         }
       }
 
-      for(unsigned isamp=0;isamp<nsamp;isamp++)
+      if(GetParam() == 1)
       {
-        for(unsigned ievent=0; ievent<GetParam(); ievent++)
+        for(unsigned isamp=0;isamp<nsamp;isamp++)
         {
-          const __m256i sampi = samples[ievent][isamp];
-          __m256i*__restrict__ cov_element = (__m256i*__restrict__)cov_base;
-          for(unsigned jsamp=isamp;jsamp<nsamp;jsamp++) {
-            __m256i sampj = samples[ievent][jsamp];
-            __m256i prod_lo = _mm256_mullo_epi16(sampi, sampj);
-            __m256i prod_hi = _mm256_mulhi_epu16(sampi, sampj);
-            *cov_element = _mm256_add_epi32(*cov_element, _mm256_unpacklo_epi16(prod_lo, prod_hi));
-            cov_element++;
-            *cov_element = _mm256_add_epi32(*cov_element, _mm256_unpackhi_epi16(prod_lo, prod_hi));
-            cov_element++;
+          for(unsigned ievent=0; ievent<GetParam(); ievent++)
+          {
+            const __m256i sampi = samples[ievent][isamp];
+            __m256i*__restrict__ cov_element = (__m256i*__restrict__)cov_base;
+            for(unsigned jsamp=isamp;jsamp<nsamp;jsamp++) {
+              __m256i sampj = samples[ievent][jsamp];
+              __m256i prod_lo = _mm256_mullo_epi16(sampi, sampj);
+              __m256i prod_hi = _mm256_mulhi_epu16(sampi, sampj);
+              *cov_element = _mm256_add_epi32(*cov_element, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+              cov_element++;
+              *cov_element = _mm256_add_epi32(*cov_element, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+              cov_element++;
+            }
           }
+          cov_base += 2*(nsamp-isamp);
         }
-        cov_base += 2*(nsamp-isamp);
+      }
+      else if(GetParam() == 2)
+      {
+        for(unsigned isamp=0;isamp<nsamp;isamp++)
+        {
+          for(unsigned ievent=0; ievent<GetParam(); ievent+=2)
+          {
+            const __m256i sampi1 = samples[ievent][isamp];
+            const __m256i sampi2 = samples[ievent+1][isamp];
+            __m256i*__restrict__ cov_element = (__m256i*__restrict__)cov_base;
+            for(unsigned jsamp=isamp;jsamp<nsamp;jsamp++) {
+              __m256i sampj = samples[ievent][jsamp];
+              __m256i prod_lo = _mm256_mullo_epi16(sampi1, sampj);
+              __m256i prod_hi = _mm256_mulhi_epu16(sampi1, sampj);
+              *cov_element = _mm256_add_epi32(*cov_element, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+              *(cov_element+1) = _mm256_add_epi32(*(cov_element+1), _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+              sampj = samples[ievent+1][jsamp];
+              prod_lo = _mm256_mullo_epi16(sampi2, sampj);
+              prod_hi = _mm256_mulhi_epu16(sampi2, sampj);
+              *cov_element = _mm256_add_epi32(*cov_element, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+              *(cov_element+1) = _mm256_add_epi32(*(cov_element+1), _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+              cov_element += 2;
+            }
+          }
+          cov_base += 2*(nsamp-isamp);
+        }
+      }
+      else
+      {
+        for(unsigned isamp=0;isamp<nsamp;isamp++)
+        {
+          for(unsigned ievent=0; ievent<GetParam(); ievent+=2)
+          {
+            const __m256i sampi1 = samples[ievent][isamp];
+            const __m256i sampi2 = samples[ievent+1][isamp];
+            const __m256i sampi3 = samples[ievent+2][isamp];
+            const __m256i sampi4 = samples[ievent+3][isamp];
+            __m256i*__restrict__ cov_element = (__m256i*__restrict__)cov_base;
+            for(unsigned jsamp=isamp;jsamp<nsamp;jsamp++) {
+              __m256i sampj = samples[ievent][jsamp];
+              __m256i prod_lo = _mm256_mullo_epi16(sampi1, sampj);
+              __m256i prod_hi = _mm256_mulhi_epu16(sampi1, sampj);
+              *cov_element = _mm256_add_epi32(*cov_element, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+              *(cov_element+1) = _mm256_add_epi32(*(cov_element+1), _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+              sampj = samples[ievent+1][jsamp];
+              prod_lo = _mm256_mullo_epi16(sampi2, sampj);
+              prod_hi = _mm256_mulhi_epu16(sampi2, sampj);
+              *cov_element = _mm256_add_epi32(*cov_element, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+              *(cov_element+1) = _mm256_add_epi32(*(cov_element+1), _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+              sampj = samples[ievent+2][jsamp];
+              prod_lo = _mm256_mullo_epi16(sampi3, sampj);
+              prod_hi = _mm256_mulhi_epu16(sampi3, sampj);
+              *cov_element = _mm256_add_epi32(*cov_element, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+              *(cov_element+1) = _mm256_add_epi32(*(cov_element+1), _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+              sampj = samples[ievent+3][jsamp];
+              prod_lo = _mm256_mullo_epi16(sampi4, sampj);
+              prod_hi = _mm256_mulhi_epu16(sampi4, sampj);
+              *cov_element = _mm256_add_epi32(*cov_element, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+              *(cov_element+1) = _mm256_add_epi32(*(cov_element+1), _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+              cov_element += 2;
+            }
+          }
+          cov_base += 2*(nsamp-isamp);
+        }
+
       }
     }
   }
