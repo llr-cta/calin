@@ -946,7 +946,7 @@ TEST_P(NEvent, AVX2)
       {
         for(unsigned isamp=0;isamp<nsamp;isamp++)
         {
-          for(unsigned ievent=0; ievent<GetParam(); ievent+=2)
+          for(unsigned ievent=0; ievent<GetParam(); ievent+=4)
           {
             const __m256i sampi1 = samples[ievent][isamp];
             const __m256i sampi2 = samples[ievent+1][isamp];
