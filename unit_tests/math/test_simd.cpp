@@ -1151,10 +1151,18 @@ TEST(TestTraceCov, AVX2_8Event)
   free(hg2);
   free(hg3);
   free(hg4);
+  free(hg5);
+  free(hg6);
+  free(hg7);
+  free(hg8);
   free(samples1);
   free(samples2);
   free(samples3);
   free(samples4);
+  free(samples5);
+  free(samples6);
+  free(samples7);
+  free(samples8);
 }
 
 
