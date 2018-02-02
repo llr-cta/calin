@@ -732,7 +732,7 @@ TEST(TestTraceCov, AVX2_4Event)
   calin::util::memory::safe_aligned_calloc(samples4, nv_block);
   const unsigned nblock = nchan/16;
 
-  for(unsigned iloop=0;iloop<NSIM_TRACECOV/4;iloop++)
+  for(unsigned iloop=0;iloop<NSIM_TRACECOV;iloop+=4)
   {
     const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
     for(unsigned i=0;i<nchan*nsamp/16;i++) {
@@ -872,6 +872,291 @@ TEST(TestTraceCov, AVX2_4Event)
   free(samples3);
   free(samples4);
 }
+
+TEST(TestTraceCov, AVX2_8Event)
+{
+  NR3_AVX2_RNGCore core(12345);
+  uint16_t* hg1;
+  uint16_t* hg2;
+  uint16_t* hg3;
+  uint16_t* hg4;
+  uint16_t* hg5;
+  uint16_t* hg6;
+  uint16_t* hg7;
+  uint16_t* hg8;
+  calin::util::memory::safe_aligned_calloc(hg1, nchan*nsamp);
+  calin::util::memory::safe_aligned_calloc(hg2, nchan*nsamp);
+  calin::util::memory::safe_aligned_calloc(hg3, nchan*nsamp);
+  calin::util::memory::safe_aligned_calloc(hg4, nchan*nsamp);
+  calin::util::memory::safe_aligned_calloc(hg5, nchan*nsamp);
+  calin::util::memory::safe_aligned_calloc(hg6, nchan*nsamp);
+  calin::util::memory::safe_aligned_calloc(hg7, nchan*nsamp);
+  calin::util::memory::safe_aligned_calloc(hg8, nchan*nsamp);
+
+  std::fill(cov, cov+nchan*nsamp*(nsamp+1)/2, 0);
+
+  const unsigned nv_trace = (nsamp+15)/16;
+  const unsigned nv_block = nv_trace*16;
+  __m256i* samples1;
+  __m256i* samples2;
+  __m256i* samples3;
+  __m256i* samples4;
+  __m256i* samples5;
+  __m256i* samples6;
+  __m256i* samples7;
+  __m256i* samples8;
+  calin::util::memory::safe_aligned_calloc(samples1, nv_block);
+  calin::util::memory::safe_aligned_calloc(samples2, nv_block);
+  calin::util::memory::safe_aligned_calloc(samples3, nv_block);
+  calin::util::memory::safe_aligned_calloc(samples4, nv_block);
+  calin::util::memory::safe_aligned_calloc(samples5, nv_block);
+  calin::util::memory::safe_aligned_calloc(samples6, nv_block);
+  calin::util::memory::safe_aligned_calloc(samples7, nv_block);
+  calin::util::memory::safe_aligned_calloc(samples8, nv_block);
+  const unsigned nblock = nchan/16;
+
+  for(unsigned iloop=0;iloop<NSIM_TRACECOV;iloop+=8)
+  {
+    const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg1+i*16), x);
+    }
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg2+i*16), x);
+    }
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg3+i*16), x);
+    }
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg4+i*16), x);
+    }
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg5+i*16), x);
+    }
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg6+i*16), x);
+    }
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg7+i*16), x);
+    }
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg8+i*16), x);
+    }
+
+
+    __m256i*__restrict__ cov_base = (__m256i*__restrict__)cov;
+    for(unsigned iblock=0;iblock<nblock;iblock++)
+    {
+      uint16_t* base = hg1 + iblock*nsamp*16;
+      __m256i* vp = samples1;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples1 + iv_trace*16);
+      }
+
+      base = hg2 + iblock*nsamp*16;
+      vp = samples2;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples2 + iv_trace*16);
+      }
+
+      base = hg3 + iblock*nsamp*16;
+      vp = samples3;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples3 + iv_trace*16);
+      }
+
+      base = hg4 + iblock*nsamp*16;
+      vp = samples4;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples4 + iv_trace*16);
+      }
+
+      base = hg5 + iblock*nsamp*16;
+      vp = samples5;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples5 + iv_trace*16);
+      }
+
+      base = hg6 + iblock*nsamp*16;
+      vp = samples6;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples6 + iv_trace*16);
+      }
+
+      base = hg7 + iblock*nsamp*16;
+      vp = samples7;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples7 + iv_trace*16);
+      }
+
+      base = hg8 + iblock*nsamp*16;
+      vp = samples8;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples8 + iv_trace*16);
+      }
+
+      for(unsigned isamp=0;isamp<nsamp;isamp++) {
+        const __m256i sampi1 = samples1[isamp];
+        const __m256i sampi2 = samples2[isamp];
+        const __m256i sampi3 = samples3[isamp];
+        const __m256i sampi4 = samples4[isamp];
+        const __m256i sampi5 = samples5[isamp];
+        const __m256i sampi6 = samples6[isamp];
+        const __m256i sampi7 = samples7[isamp];
+        const __m256i sampi8 = samples8[isamp];
+
+        __m256i prod_lo = _mm256_mullo_epi16(sampi1, sampi1);
+        __m256i prod_hi = _mm256_mulhi_epu16(sampi1, sampi1);
+        __m256i sum_l = _mm256_unpacklo_epi16(prod_lo, prod_hi);
+        __m256i sum_u = _mm256_unpackhi_epi16(prod_lo, prod_hi);
+
+        prod_lo = _mm256_mullo_epi16(sampi2, sampi2);
+        prod_hi = _mm256_mulhi_epu16(sampi2, sampi2);
+        sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+        sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+        prod_lo = _mm256_mullo_epi16(sampi3, sampi3);
+        prod_hi = _mm256_mulhi_epu16(sampi3, sampi3);
+        sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+        sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+        prod_lo = _mm256_mullo_epi16(sampi4, sampi4);
+        prod_hi = _mm256_mulhi_epu16(sampi4, sampi4);
+        sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+        sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+        prod_lo = _mm256_mullo_epi16(sampi5, sampi5);
+        prod_hi = _mm256_mulhi_epu16(sampi5, sampi5);
+        sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+        sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+        prod_lo = _mm256_mullo_epi16(sampi6, sampi6);
+        prod_hi = _mm256_mulhi_epu16(sampi6, sampi6);
+        sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+        sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+        prod_lo = _mm256_mullo_epi16(sampi7, sampi7);
+        prod_hi = _mm256_mulhi_epu16(sampi7, sampi7);
+        sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+        sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+        prod_lo = _mm256_mullo_epi16(sampi8, sampi8);
+        prod_hi = _mm256_mulhi_epu16(sampi8, sampi8);
+        sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+        sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+        *cov_base = _mm256_add_epi32(*cov_base, sum_l);
+        cov_base++;
+        *cov_base = _mm256_add_epi32(*cov_base, sum_u);
+        cov_base++;
+
+        for(unsigned jsamp=isamp+1;jsamp<nsamp;jsamp++) {
+          __m256i sampj = samples1[jsamp];
+          prod_lo = _mm256_mullo_epi16(sampi1, sampj);
+          prod_hi = _mm256_mulhi_epu16(sampi1, sampj);
+          sum_l = _mm256_unpacklo_epi16(prod_lo, prod_hi);
+          sum_u = _mm256_unpackhi_epi16(prod_lo, prod_hi);
+
+          sampj = samples2[jsamp];
+          prod_lo = _mm256_mullo_epi16(sampi2, sampj);
+          prod_hi = _mm256_mulhi_epu16(sampi2, sampj);
+          sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+          sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+          sampj = samples3[jsamp];
+          prod_lo = _mm256_mullo_epi16(sampi3, sampj);
+          prod_hi = _mm256_mulhi_epu16(sampi3, sampj);
+          sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+          sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+          sampj = samples4[jsamp];
+          prod_lo = _mm256_mullo_epi16(sampi4, sampj);
+          prod_hi = _mm256_mulhi_epu16(sampi4, sampj);
+          sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+          sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+          sampj = samples5[jsamp];
+          prod_lo = _mm256_mullo_epi16(sampi5, sampj);
+          prod_hi = _mm256_mulhi_epu16(sampi5, sampj);
+          sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+          sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+          sampj = samples6[jsamp];
+          prod_lo = _mm256_mullo_epi16(sampi6, sampj);
+          prod_hi = _mm256_mulhi_epu16(sampi6, sampj);
+          sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+          sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+          sampj = samples7[jsamp];
+          prod_lo = _mm256_mullo_epi16(sampi7, sampj);
+          prod_hi = _mm256_mulhi_epu16(sampi7, sampj);
+          sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+          sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+          sampj = samples8[jsamp];
+          prod_lo = _mm256_mullo_epi16(sampi8, sampj);
+          prod_hi = _mm256_mulhi_epu16(sampi8, sampj);
+          sum_l = _mm256_add_epi32(sum_l, _mm256_unpacklo_epi16(prod_lo, prod_hi));
+          sum_u = _mm256_add_epi32(sum_u, _mm256_unpackhi_epi16(prod_lo, prod_hi));
+
+          *cov_base = _mm256_add_epi32(*cov_base, sum_l);
+          cov_base++;
+          *cov_base = _mm256_add_epi32(*cov_base, sum_u);
+          cov_base++;
+        }
+      }
+    }
+  }
+  for(unsigned ichan=0;ichan<20;ichan++) {
+    unsigned iblock = ichan/16;
+    unsigned irem = ichan%16;
+    for(unsigned isamp=0;isamp<5;isamp++)
+      std::cout << ' ' << cov[iblock*16*nsamp*(nsamp+1)/2 + isamp*16 + irem];
+    std::cout << '\n';
+  }
+
+  free(hg1);
+  free(hg2);
+  free(hg3);
+  free(hg4);
+  free(samples1);
+  free(samples2);
+  free(samples3);
+  free(samples4);
+}
+
 
 
 
