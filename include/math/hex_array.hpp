@@ -62,7 +62,7 @@ inline unsigned positive_hexid_to_ringid_root(unsigned hexid)
   // return (unsigned(std::sqrt(double(iarg)))-1)/2+1;
   // sqrt(float) is quicker here but loses precision by iarg ~= 2^24 -
   // you have been warned :-)
-  return (unsigned(std::sqrt(float(iarg)))-1)/2+1;
+  return (unsigned(std::sqrt(float(iarg)))+1)/2;
 }
 
 inline unsigned positive_hexid_to_ringid_loop(unsigned hexid)

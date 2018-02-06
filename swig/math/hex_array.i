@@ -26,6 +26,7 @@
 
 %{
 #include "math/hex_array.hpp"
+#include "math/hex_array_simd.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -47,4 +48,8 @@
 %apply std::vector<double> &OUTPUT { std::vector<double>& x,
        std::vector<double>& y };
 
+%apply float &OUTPUT { float& x, float& y };
+%apply float &INOUT { float& x_in_dx_out, float& y_in_dy_out };
+
 %include "math/hex_array.hpp"
+%include "math/hex_array_simd.hpp"

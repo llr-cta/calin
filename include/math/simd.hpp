@@ -179,7 +179,7 @@ constexpr float _pc2 = -3.2596140215e-04;
 constexpr float _pc3 = 3.5419672354e-06;
 
 #define CALIN_MM256PS_CONST(name, val) \
-static const float name[8] __attribute__((aligned(32))) = {val,val,val,val,val,val,val,val}
+static const float name[8] __attribute__((aligned(32))) = {(val),(val),(val),(val),(val),(val),(val),(val)}
 
 #if defined(__AVX__)
 inline __m256 c_m256(const float (&c)[8])

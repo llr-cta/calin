@@ -26,12 +26,15 @@
 #include <vector>
 
 #include "math/hex_array.hpp"
+#include "math/hex_array_simd.hpp"
 
 using namespace calin::math::hex_array;
 using namespace calin::math::hex_array::vvv;
 
+constexpr unsigned NLOOP_SPEED_TEST_50RINGS = 10000;
+
 TEST(TestHexArray, HexIDToRingIDLoop_SpeedTest50Rings) {
-  for(unsigned iloop = 0; iloop<3000; iloop++)
+  for(unsigned iloop = 0; iloop<NLOOP_SPEED_TEST_50RINGS; iloop++)
   {
     unsigned hexid = 1;
     for(unsigned iring=1;iring<50;iring++)
@@ -44,7 +47,7 @@ TEST(TestHexArray, HexIDToRingIDLoop_SpeedTest50Rings) {
 }
 
 TEST(TestHexArray, HexIDToRingIDRoot_SpeedTest50Rings) {
-  for(unsigned iloop = 0; iloop<3000; iloop++)
+  for(unsigned iloop = 0; iloop<NLOOP_SPEED_TEST_50RINGS; iloop++)
   {
     unsigned hexid = 1;
     for(unsigned iring=1;iring<50;iring++)
@@ -56,15 +59,44 @@ TEST(TestHexArray, HexIDToRingIDRoot_SpeedTest50Rings) {
   }
 }
 
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToRingIDRoot_SpeedTest50Rings) {
+  for(unsigned iloop = 0; iloop<NLOOP_SPEED_TEST_50RINGS/8; iloop++)
+  {
+    unsigned hexid = 1;
+    for(unsigned iring=1;iring<50;iring++)
+      for(unsigned ichan=0;ichan<6*iring;ichan++)
+      {
+        EXPECT_EQ(iring, test_avx2_positive_hexid_to_ringid_root(hexid));
+        hexid++;
+      }
+  }
+}
+#endif
+
 TEST(TestHexArray, HexIDToRingIDRoot_2000Rings) {
   unsigned hexid = 1;
   for(unsigned iring=1;iring<2000;iring++)
     for(unsigned ichan=0;ichan<6*iring;ichan++)
     {
-      EXPECT_EQ(iring, positive_hexid_to_ringid_root(hexid));
+      ASSERT_EQ(iring, positive_hexid_to_ringid_root(hexid))
+        << "With hexid=" << hexid;
       hexid++;
     }
 }
+
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToRingIDRoot_2000Rings) {
+  unsigned hexid = 1;
+  for(unsigned iring=1;iring<2000;iring++)
+    for(unsigned ichan=0;ichan<6*iring;ichan++)
+    {
+      ASSERT_EQ(iring, test_avx2_positive_hexid_to_ringid_root(hexid))
+        << "With hexid=" << hexid;
+      hexid++;
+    }
+}
+#endif
 
 TEST(TestHexArray, SomeNeighbors) {
   EXPECT_EQ(hexid_to_neighbor_hexids(0),
