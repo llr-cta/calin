@@ -76,8 +76,7 @@ inline __m256i avx2_positive_hexid_to_ringid_root(const __m256i hexid)
   arg = _mm256_fmadd_ps(arg, calin::math::simd::c_m256(_c_m256_one_half),
     calin::math::simd::c_m256(_c_m256_one_half));
   arg = _mm256_floor_ps(arg);
-  arg = _mm256_cvtps_epi32(arg);
-  return arg;
+  return _mm256_cvtps_epi32(arg);
 }
 
 inline __m256i avx2_positive_hexid_to_ringid(const __m256i hexid)
