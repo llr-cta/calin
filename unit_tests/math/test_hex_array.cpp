@@ -321,6 +321,28 @@ TEST(TestHexArray, RandHexIDToFromUV_CCW_EQ) {
 
 
 #if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToFromUV_CW_EQ) {
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    int u = 0;
+    int v = 0;
+    test_avx2_hexid_to_uv_cw(hexid, u, v);
+    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_cw(u, v))
+      << hexid << ' ' << u << ' ' << v;
+  }
+}
+
+TEST(TestHexArray, AVX2_HexIDToFromUV_CW_Equals_Scalar) {
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    int u = 0;
+    int v = 0;
+    hexid_to_uv_cw(hexid, u, v);
+    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_cw(u, v))
+      << hexid << ' ' << u << ' ' << v;
+  }
+}
+
 TEST(TestHexArray, AVX2_HexIDToFromUV_CCW_EQ) {
   for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV/8; iloop++)
   for(unsigned hexid=1;hexid<100000;hexid++)
@@ -328,6 +350,17 @@ TEST(TestHexArray, AVX2_HexIDToFromUV_CCW_EQ) {
     int u = 0;
     int v = 0;
     test_avx2_hexid_to_uv_ccw(hexid, u, v);
+    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_ccw(u, v))
+      << hexid << ' ' << u << ' ' << v;
+  }
+}
+
+TEST(TestHexArray, AVX2_HexIDToFromUV_CCW_Equals_Scalar) {
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    int u = 0;
+    int v = 0;
+    hexid_to_uv_ccw(hexid, u, v);
     ASSERT_EQ(hexid, test_avx2_uv_to_hexid_ccw(u, v))
       << hexid << ' ' << u << ' ' << v;
   }

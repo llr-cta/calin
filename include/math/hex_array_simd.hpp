@@ -236,6 +236,7 @@ inline void avx2_hexid_to_uv_ccw(const __m256i hexid, __m256i& u, __m256i& v)
 
 inline void avx2_hexid_to_uv_cw(const __m256i hexid, __m256i& u, __m256i& v)
 {
+#if 0 // This code is correct but it's not worth maintaining two versions
   const __m256i one = _mm256_set1_epi32(1);
   __m256i ringid = avx2_positive_hexid_to_ringid(hexid);
   __m256i iring = _mm256_sub_epi32(hexid,
@@ -271,9 +272,17 @@ inline void avx2_hexid_to_uv_cw(const __m256i hexid, __m256i& u, __m256i& v)
   const __m256i mask = _mm256_cmpeq_epi32(hexid, _mm256_setzero_si256());
   u = _mm256_andnot_si256(mask, u);
   v = _mm256_andnot_si256(mask, v);
+#else
+  // hexid_to_uv_ccw(hexid, u, v);
+  // u += v;
+  // v = -v;
+  avx2_hexid_to_uv_ccw(hexid, u, v);
+  u = _mm256_add_epi32(u, v);
+  v = _mm256_sign_epi32(v, _mm256_cmpeq_epi32(v, v));
+#endif
 }
 
-__m256i avx2_uv_to_hexid_ccw(__m256i u, __m256i v)
+__m256i avx2_uv_to_hexid_ccw(const __m256i u, const __m256i v)
 {
   // if(u==0 and v==0)return 0;
   // int ringid = uv_to_ringid(u,v);
@@ -349,6 +358,15 @@ __m256i avx2_uv_to_hexid_ccw(__m256i u, __m256i v)
   return hexid;
 }
 
+__m256i avx2_uv_to_hexid_cw(__m256i u, __m256i v)
+{
+  // u += v;
+  // v = -v;
+  // return uv_to_hexid_ccw(u, v);
+  u = _mm256_add_epi32(u, v);
+  v = _mm256_sign_epi32(v, _mm256_cmpeq_epi32(v, v));
+  return avx2_uv_to_hexid_ccw(u, v);
+}
 
 
 
@@ -683,7 +701,7 @@ unsigned test_avx2_uv_to_ringid(int u, int v);
 void test_avx2_hexid_to_uv_ccw(unsigned hexid, int& u, int& v);
 void test_avx2_hexid_to_uv_cw(unsigned hexid, int& u, int& v);
 unsigned test_avx2_uv_to_hexid_ccw(int u, int v);
-
+unsigned test_avx2_uv_to_hexid_cw(int u, int v);
 
 void test_avx2_uv_to_xy_f(int u, int v, float& x, float& y);
 void test_avx2_xy_to_uv_f(float x, float y, int& u, int& v);
