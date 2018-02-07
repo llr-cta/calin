@@ -138,13 +138,37 @@ inline void avx2_positive_hexid_to_ringid_segid_runid(
   segid = _mm256_add_epi32(segid, _mm256_and_si256(mask, one));
 }
 
-// inline void
-// hexid_to_ringid_segid_runid(unsigned hexid, unsigned& ringid,
-//                             unsigned& segid, unsigned& runid)
-// {
-//   if(hexid==0) { ringid = segid = runid = 0; return; }
-//   return positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
-// }
+inline void avx2_hexid_to_ringid_segid_runid(
+  __m256i hexid, __m256i& ringid, __m256i& segid, __m256i& runid)
+{
+  // if(hexid==0) { ringid = segid = runid = 0; return; }
+  // return positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+  avx2_positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+  const __m256i mask = _mm256_cmpeq_epi32(hexid, _mm256_setzero_si256());
+  ringid = _mm256_andnot_si256(mask, ringid);
+  segid = _mm256_andnot_si256(mask, segid);
+  runid = _mm256_andnot_si256(mask, runid);
+}
+
+inline __m256i avx2_positive_ringid_segid_runid_to_hexid(
+  __m256i ringid, __m256i segid, __m256i runid)
+{
+  // return ringid_to_nsites_contained(ringid-1)+segid*ringid+runid;
+  const __m256i one = _mm256_set1_epi32(1);
+  __m256i nsites = avx2_ringid_to_nsites_contained(_mm256_sub_epi32(ringid, one));
+  nsites = _mm256_add_epi32(nsites, _mm256_mullo_epi32(segid, ringid));
+  nsites = _mm256_add_epi32(nsites, runid);
+  return nsites;
+}
+
+inline __m256i avx2_ringid_segid_runid_to_hexid(__m256i ringid, __m256i segid, __m256i runid)
+{
+  // return (ringid==0) ? 0 :
+  //     positive_ringid_segid_runid_to_hexid(ringid, segid, runid);
+  const __m256i mask = _mm256_cmpeq_epi32(ringid, _mm256_setzero_si256());
+  return _mm256_andnot_si256(mask,
+    avx2_positive_ringid_segid_runid_to_hexid(ringid, segid, runid));
+}
 
 // *****************************************************************************
 //
@@ -467,6 +491,12 @@ unsigned test_avx2_hexid_to_ringid(unsigned hexid);
 unsigned test_avx2_ringid_to_nsites_contained(unsigned ringid);
 void test_avx2_positive_hexid_to_ringid_segid_runid(unsigned hexid,
   unsigned& ringid, unsigned& segid, unsigned& runid);
+void test_avx2_hexid_to_ringid_segid_runid(unsigned hexid,
+  unsigned& ringid, unsigned& segid, unsigned& runid);
+unsigned test_avx2_positive_ringid_segid_runid_to_hexid(
+  unsigned ringid, unsigned segid, unsigned runid);
+unsigned test_avx2_ringid_segid_runid_to_hexid(
+  unsigned ringid, unsigned segid, unsigned runid);
 
 void test_avx2_uv_to_xy_f(int u, int v, float& x, float& y);
 void test_avx2_xy_to_uv_f(float x, float y, int& u, int& v);

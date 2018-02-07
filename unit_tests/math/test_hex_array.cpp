@@ -208,6 +208,28 @@ TEST(TestHexArray, XYToHexID_ComparisonWithVVVCode) {
     }
 }
 
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToFromRingSegRun_APriori) {
+  unsigned hexid=1;
+  for(unsigned iring=1;iring<100;iring++)
+    for(unsigned iseg=0;iseg<6;iseg++)
+      for(unsigned irun=0;irun<iring;irun++)
+      {
+        ASSERT_EQ(hexid,
+          test_avx2_positive_ringid_segid_runid_to_hexid(iring, iseg, irun)) <<
+            iring << ' ' << iseg << ' ' << irun;
+        unsigned ringid = 0;
+        unsigned segid = 0;
+        unsigned runid = 0;
+        test_avx2_positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+        ASSERT_EQ(iring, ringid);
+        ASSERT_EQ(iseg, segid);
+        ASSERT_EQ(irun, runid);
+        hexid++;
+      }
+}
+#endif
+
 TEST(TestHexArray, HexIDToFromRingSegRun_APriori) {
   unsigned hexid=1;
   for(unsigned iring=1;iring<100;iring++)
@@ -240,6 +262,21 @@ TEST(TestHexArray, HexIDToFromRingSegRun_EQ) {
         << ringid << ' ' << segid << ' ' << runid;
   }
 }
+
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToFromRingSegRun_EQ) {
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    unsigned ringid = 0;
+    unsigned segid = 0;
+    unsigned runid = 0;
+    test_avx2_positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+    ASSERT_EQ(hexid,
+      test_avx2_positive_ringid_segid_runid_to_hexid(ringid, segid, runid))
+        << ringid << ' ' << segid << ' ' << runid;
+  }
+}
+#endif
 
 TEST(TestHexArray, HexIDToFromUV_CW_EQ) {
   for(unsigned hexid=1;hexid<100000;hexid++)
