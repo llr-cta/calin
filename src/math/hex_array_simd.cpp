@@ -172,6 +172,18 @@ void calin::math::hex_array::test_avx2_hexid_to_uv_cw(unsigned hexid, int& u, in
 #endif
 }
 
+unsigned calin::math::hex_array::test_avx2_uv_to_hexid_ccw(int u, int v)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  __m256i vu = _mm256_set1_epi32(u);
+  __m256i vv = _mm256_set1_epi32(v);
+  __m256i vhexid = avx2_uv_to_hexid_ccw(vu, vv);
+  return vhexid[0];
+#else
+  throw std::runtime_error("AVX2 and FMA not available at compile time");
+#endif
+}
+
 
 
 

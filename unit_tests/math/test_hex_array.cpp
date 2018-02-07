@@ -20,6 +20,7 @@
 
 */
 
+#include <random>
 #include <iostream>
 #include <iomanip>
 #include <gtest/gtest.h>
@@ -32,6 +33,7 @@ using namespace calin::math::hex_array;
 using namespace calin::math::hex_array::vvv;
 
 constexpr unsigned NLOOP_SPEED_TEST_50RINGS = 10000;
+constexpr unsigned NLOOP_HEXID_TOFROM_UV = 1000;
 
 TEST(TestHexArray, HexIDToRingIDLoop_SpeedTest50Rings) {
   for(unsigned iloop = 0; iloop<NLOOP_SPEED_TEST_50RINGS; iloop++)
@@ -290,6 +292,7 @@ TEST(TestHexArray, HexIDToFromUV_CW_EQ) {
 }
 
 TEST(TestHexArray, HexIDToFromUV_CCW_EQ) {
+  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV; iloop++)
   for(unsigned hexid=1;hexid<100000;hexid++)
   {
     int u = 0;
@@ -299,6 +302,53 @@ TEST(TestHexArray, HexIDToFromUV_CCW_EQ) {
       << hexid << ' ' << u << ' ' << v;
   }
 }
+
+TEST(TestHexArray, RandHexIDToFromUV_CCW_EQ) {
+  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV; iloop++) {
+    std::mt19937 gen(15939); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_int_distribution<> dis(0, 100000);
+    for(unsigned idev=0;idev<100000;idev++)
+    {
+      unsigned hexid = dis(gen);
+      int u = 0;
+      int v = 0;
+      hexid_to_uv_ccw(hexid, u, v);
+      ASSERT_EQ(hexid, uv_to_hexid_ccw(u, v))
+        << hexid << ' ' << u << ' ' << v;
+    }
+  }
+}
+
+
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToFromUV_CCW_EQ) {
+  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV/8; iloop++)
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    int u = 0;
+    int v = 0;
+    test_avx2_hexid_to_uv_ccw(hexid, u, v);
+    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_ccw(u, v))
+      << hexid << ' ' << u << ' ' << v;
+  }
+}
+
+TEST(TestHexArray, AVX2_RandHexIDToFromUV_CCW_EQ) {
+  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV/8; iloop++) {
+    std::mt19937 gen(15939); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_int_distribution<> dis(0, 100000);
+    for(unsigned idev=0;idev<100000;idev++)
+    {
+      unsigned hexid = dis(gen);
+      int u = 0;
+      int v = 0;
+      test_avx2_hexid_to_uv_ccw(hexid, u, v);
+      ASSERT_EQ(hexid, test_avx2_uv_to_hexid_ccw(u, v))
+        << hexid << ' ' << u << ' ' << v;
+    }
+  }
+}
+#endif
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
