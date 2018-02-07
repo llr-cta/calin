@@ -111,8 +111,8 @@ unsigned calin::math::hex_array::test_avx2_positive_ringid_segid_runid_to_hexid(
   __m256i vringid = _mm256_set1_epi32(ringid);
   __m256i vsegid = _mm256_set1_epi32(segid);
   __m256i vrunid = _mm256_set1_epi32(runid);
-  __m256i hexid = avx2_positive_ringid_segid_runid_to_hexid(vringid, vsegid, vrunid);
-  return hexid[0];
+  __m256i vhexid = avx2_positive_ringid_segid_runid_to_hexid(vringid, vsegid, vrunid);
+  return vhexid[0];
 #else
   throw std::runtime_error("AVX2 and FMA not available at compile time");
 #endif
@@ -125,8 +125,48 @@ unsigned calin::math::hex_array::test_avx2_ringid_segid_runid_to_hexid(
   __m256i vringid = _mm256_set1_epi32(ringid);
   __m256i vsegid = _mm256_set1_epi32(segid);
   __m256i vrunid = _mm256_set1_epi32(runid);
-  __m256i hexid = avx2_ringid_segid_runid_to_hexid(vringid, vsegid, vrunid);
-  return hexid[0];
+  __m256i vhexid = avx2_ringid_segid_runid_to_hexid(vringid, vsegid, vrunid);
+  return vhexid[0];
+#else
+  throw std::runtime_error("AVX2 and FMA not available at compile time");
+#endif
+}
+
+unsigned calin::math::hex_array::test_avx2_uv_to_ringid(int u, int v)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  __m256i vu = _mm256_set1_epi32(u);
+  __m256i vv = _mm256_set1_epi32(v);
+  __m256i vringid = avx2_uv_to_ringid(vu, vv);
+  return vringid[0];
+#else
+  throw std::runtime_error("AVX2 and FMA not available at compile time");
+#endif
+}
+
+void calin::math::hex_array::test_avx2_hexid_to_uv_ccw(unsigned hexid, int& u, int& v)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  __m256i vhexid = _mm256_set1_epi32(hexid);
+  __m256i vu;
+  __m256i vv;
+  avx2_hexid_to_uv_ccw(vhexid, vu, vv);
+  u = vu[0];
+  v = vv[0];
+#else
+  throw std::runtime_error("AVX2 and FMA not available at compile time");
+#endif
+}
+
+void calin::math::hex_array::test_avx2_hexid_to_uv_cw(unsigned hexid, int& u, int& v)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  __m256i vhexid = _mm256_set1_epi32(hexid);
+  __m256i vu;
+  __m256i vv;
+  avx2_hexid_to_uv_cw(vhexid, vu, vv);
+  u = vu[0];
+  v = vv[0];
 #else
   throw std::runtime_error("AVX2 and FMA not available at compile time");
 #endif

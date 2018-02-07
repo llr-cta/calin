@@ -170,6 +170,109 @@ inline __m256i avx2_ringid_segid_runid_to_hexid(__m256i ringid, __m256i segid, _
     avx2_positive_ringid_segid_runid_to_hexid(ringid, segid, runid));
 }
 
+inline __m256i avx2_uv_to_ringid(__m256i u, __m256i v)
+{
+  // return static_cast<unsigned>(std::max({std::abs(u), std::abs(v),
+  //           std::abs(u+v)}));
+  __m256i ringid = _mm256_abs_epi32(u);
+  ringid = _mm256_max_epu32(ringid, _mm256_abs_epi32(v));
+  ringid = _mm256_max_epu32(ringid, _mm256_abs_epi32(_mm256_add_epi32(u,v)));
+  return ringid;
+}
+
+inline void avx2_hexid_to_uv_ccw(__m256i hexid, __m256i& u, __m256i& v)
+{
+  // if(hexid==0) { u = v = 0; return; }
+  // unsigned ringid;
+  // unsigned segid;
+  // unsigned runid;
+  // positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+  // switch(segid)
+  // {
+  //   case 0: u = ringid-runid; v = runid;        break;
+  //   case 1: u = -runid;       v = ringid;       break;
+  //   case 2: u = -ringid;      v = ringid-runid; break;
+  //   case 3: u = runid-ringid; v = -runid;       break;
+  //   case 4: u = runid;        v = -ringid;      break;
+  //   case 5: u = ringid;       v = runid-ringid; break;
+  //   default: assert(0);
+  // }
+  const __m256i one = _mm256_set1_epi32(1);
+  __m256i ringid = avx2_positive_hexid_to_ringid(hexid);
+  __m256i iring = _mm256_sub_epi32(hexid,
+    avx2_ringid_to_nsites_contained(_mm256_sub_epi32(ringid,one)));
+
+  u = ringid;
+  v = _mm256_setzero_si256();
+
+  __m256i irun = _mm256_min_epu32(iring, ringid);
+  u = _mm256_sub_epi32(u, irun);
+  v = _mm256_add_epi32(v, irun);
+  iring = _mm256_sub_epi32(iring, irun);
+
+  irun = _mm256_min_epu32(iring, ringid);
+  u = _mm256_sub_epi32(u, irun);
+  iring = _mm256_sub_epi32(iring, irun);
+
+  irun = _mm256_min_epu32(iring, ringid);
+  v = _mm256_sub_epi32(v, irun);
+  iring = _mm256_sub_epi32(iring, irun);
+
+  irun = _mm256_min_epu32(iring, ringid);
+  u = _mm256_add_epi32(u, irun);
+  v = _mm256_sub_epi32(v, irun);
+  iring = _mm256_sub_epi32(iring, irun);
+
+  irun = _mm256_min_epu32(iring, ringid);
+  u = _mm256_add_epi32(u, irun);
+  iring = _mm256_sub_epi32(iring, irun);
+
+  v = _mm256_add_epi32(v, iring);
+
+  const __m256i mask = _mm256_cmpeq_epi32(hexid, _mm256_setzero_si256());
+  u = _mm256_andnot_si256(mask, u);
+  v = _mm256_andnot_si256(mask, v);
+}
+
+inline void avx2_hexid_to_uv_cw(__m256i hexid, __m256i& u, __m256i& v)
+{
+  const __m256i one = _mm256_set1_epi32(1);
+  __m256i ringid = avx2_positive_hexid_to_ringid(hexid);
+  __m256i iring = _mm256_sub_epi32(hexid,
+    avx2_ringid_to_nsites_contained(_mm256_sub_epi32(ringid,one)));
+
+  u = ringid;
+  v = _mm256_setzero_si256();
+
+  __m256i irun = _mm256_min_epu32(iring, ringid);
+  v = _mm256_sub_epi32(v, irun);
+  iring = _mm256_sub_epi32(iring, irun);
+
+  irun = _mm256_min_epu32(iring, ringid);
+  u = _mm256_sub_epi32(u, irun);
+  iring = _mm256_sub_epi32(iring, irun);
+
+  irun = _mm256_min_epu32(iring, ringid);
+  u = _mm256_sub_epi32(u, irun);
+  v = _mm256_add_epi32(v, irun);
+  iring = _mm256_sub_epi32(iring, irun);
+
+  irun = _mm256_min_epu32(iring, ringid);
+  v = _mm256_add_epi32(v, irun);
+  iring = _mm256_sub_epi32(iring, irun);
+
+  irun = _mm256_min_epu32(iring, ringid);
+  u = _mm256_add_epi32(u, irun);
+  iring = _mm256_sub_epi32(iring, irun);
+
+  u = _mm256_add_epi32(u, irun);
+  v = _mm256_add_epi32(v, iring);
+
+  const __m256i mask = _mm256_cmpeq_epi32(hexid, _mm256_setzero_si256());
+  u = _mm256_andnot_si256(mask, u);
+  v = _mm256_andnot_si256(mask, v);
+}
+
 // *****************************************************************************
 //
 // XY <-> UV
@@ -497,6 +600,9 @@ unsigned test_avx2_positive_ringid_segid_runid_to_hexid(
   unsigned ringid, unsigned segid, unsigned runid);
 unsigned test_avx2_ringid_segid_runid_to_hexid(
   unsigned ringid, unsigned segid, unsigned runid);
+unsigned test_avx2_uv_to_ringid(int u, int v);
+void test_avx2_hexid_to_uv_ccw(unsigned hexid, int& u, int& v);
+void test_avx2_hexid_to_uv_cw(unsigned hexid, int& u, int& v);
 
 void test_avx2_uv_to_xy_f(int u, int v, float& x, float& y);
 void test_avx2_xy_to_uv_f(float x, float y, int& u, int& v);
