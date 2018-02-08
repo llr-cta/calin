@@ -306,48 +306,53 @@ __m256i avx2_uv_to_hexid_ccw(const __m256i u, const __m256i v)
 
   // Seg ID = 0
   // if(upv==ringid and v!=ringid)         { segid=0; runid=v; }
-  __m256i here_mask =
-    _mm256_and_si256(not_found_mask, _mm256_cmpeq_epi32(upv, ringid));
+  __m256i here_mask = _mm256_cmpeq_epi32(upv, ringid);
+  hexid = _mm256_add_epi32(hexid, _mm256_and_si256(not_found_mask,
+    _mm256_blendv_epi8(ringid, v, here_mask)));
   not_found_mask = _mm256_andnot_si256(here_mask, not_found_mask);
-  hexid = _mm256_add_epi32(hexid, _mm256_or_si256(
-    _mm256_and_si256(here_mask, v),
-    _mm256_and_si256(not_found_mask, ringid)));
+  // hexid = _mm256_add_epi32(hexid, _mm256_or_si256(
+  //   _mm256_and_si256(here_mask, v),
+  //   _mm256_and_si256(not_found_mask, ringid)));
 
   // Seg ID = 1
   // else if(v==ringid and u!=-ringid)     { segid=1; runid=-u; }
-  here_mask =
-    _mm256_and_si256(not_found_mask, _mm256_cmpeq_epi32(v, ringid));
+  here_mask = _mm256_cmpeq_epi32(v, ringid);
+  hexid = _mm256_sub_epi32(hexid, _mm256_and_si256(not_found_mask,
+    _mm256_blendv_epi8(minus_ringid, u, here_mask)));
   not_found_mask = _mm256_andnot_si256(here_mask, not_found_mask);
-  hexid = _mm256_sub_epi32(hexid, _mm256_or_si256(
-    _mm256_and_si256(here_mask, u),
-    _mm256_and_si256(not_found_mask, minus_ringid)));
+  // hexid = _mm256_sub_epi32(hexid, _mm256_or_si256(
+  //   _mm256_and_si256(here_mask, u),
+  //   _mm256_and_si256(not_found_mask, minus_ringid)));
 
   // Seg ID = 2
   // else if(u==-ringid and upv!=-ringid)  { segid=2; runid=ringid-v; }
-  here_mask =
-    _mm256_and_si256(not_found_mask, _mm256_cmpeq_epi32(u, minus_ringid));
+  here_mask = _mm256_cmpeq_epi32(u, minus_ringid);
+  hexid = _mm256_sub_epi32(hexid, _mm256_and_si256(not_found_mask,
+    _mm256_blendv_epi8(minus_ringid, upv, here_mask)));
   not_found_mask = _mm256_andnot_si256(here_mask, not_found_mask);
-  hexid = _mm256_sub_epi32(hexid, _mm256_or_si256(
-    _mm256_and_si256(here_mask, upv),
-    _mm256_and_si256(not_found_mask, minus_ringid)));
+  // hexid = _mm256_sub_epi32(hexid, _mm256_or_si256(
+  //   _mm256_and_si256(here_mask, upv),
+  //   _mm256_and_si256(not_found_mask, minus_ringid)));
 
   // Seg ID = 3
   // else if(u+v==-ringid and v!=-ringid)  { segid=3; runid=-v; }
-  here_mask =
-    _mm256_and_si256(not_found_mask, _mm256_cmpeq_epi32(upv, minus_ringid));
+  here_mask = _mm256_cmpeq_epi32(upv, minus_ringid);
+  hexid = _mm256_sub_epi32(hexid, _mm256_and_si256(not_found_mask,
+    _mm256_blendv_epi8(minus_ringid, v, here_mask)));
   not_found_mask = _mm256_andnot_si256(here_mask, not_found_mask);
-  hexid = _mm256_sub_epi32(hexid, _mm256_or_si256(
-    _mm256_and_si256(here_mask, v),
-    _mm256_and_si256(not_found_mask, minus_ringid)));
+  // hexid = _mm256_sub_epi32(hexid, _mm256_or_si256(
+  //   _mm256_and_si256(here_mask, v),
+  //   _mm256_and_si256(not_found_mask, minus_ringid)));
 
   // Seg ID = 4
   // else if(v==-ringid and u!=ringid)     { segid=4; runid=u; }
-  here_mask =
-    _mm256_and_si256(not_found_mask, _mm256_cmpeq_epi32(v, minus_ringid));
+  here_mask = _mm256_cmpeq_epi32(v, minus_ringid);
+  hexid = _mm256_add_epi32(hexid, _mm256_and_si256(not_found_mask,
+    _mm256_blendv_epi8(ringid, u, here_mask)));
   not_found_mask = _mm256_andnot_si256(here_mask, not_found_mask);
-  hexid = _mm256_add_epi32(hexid, _mm256_or_si256(
-    _mm256_and_si256(here_mask, u),
-    _mm256_and_si256(not_found_mask, ringid)));
+  // hexid = _mm256_add_epi32(hexid, _mm256_or_si256(
+  //   _mm256_and_si256(here_mask, u),
+  //   _mm256_and_si256(not_found_mask, ringid)));
 
   // Seg ID = 5
   // else /*if(u==ringid and upv!=ringid)*/{ segid=5; runid=ringid+v; }
