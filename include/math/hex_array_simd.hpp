@@ -452,11 +452,11 @@ inline void avx2_xy_to_uv_f(__m256 x, __m256 y, __m256i& u, __m256i& v)
   //   else if(c1<-1) u--;
   // }
 
-  uvshift = _mm256_cvtps_epi32(_mm256_fmadd_ps(y, calin::math::simd::c_m256(_c_m256_vx), x));
+  uvshift = _mm256_cvtps_epi32(_mm256_fmadd_ps(y, calin::math::simd::c_m256(_c_m256_one_half), x));
   mask = _mm256_srai_epi32(_mm256_xor_si256(uvshift, c3), 31);
   u = _mm256_blendv_epi8(u, _mm256_add_epi32(u, uvshift), mask);
 
-  uvshift = _mm256_cvtps_epi32(_mm256_fmadd_ps(x, calin::math::simd::c_m256(_c_m256_vx), y));
+  uvshift = _mm256_cvtps_epi32(_mm256_fmadd_ps(x, calin::math::simd::c_m256(_c_m256_one_half), y));
   mask = _mm256_srai_epi32(_mm256_xor_si256(uvshift, c3), 31);
   v = _mm256_blendv_epi8(_mm256_add_epi32(v, uvshift), v, mask);
 }
@@ -662,6 +662,7 @@ void test_avx2_hexid_to_uv_cw(unsigned hexid, int& u, int& v);
 unsigned test_avx2_uv_to_hexid_ccw(int u, int v);
 unsigned test_avx2_uv_to_hexid_cw(int u, int v);
 
+
 void test_avx2_uv_to_xy_f(int u, int v, float& x, float& y);
 void test_avx2_xy_to_uv_f(float x, float y, int& u, int& v);
 void test_avx2_xy_to_uv_with_remainder_f(float& x_in_dx_out, float& y_in_dy_out,
@@ -674,6 +675,11 @@ void test_avx2_xy_trans_to_uv_with_remainder_f(float& x_in_dx_out, float& y_in_d
   int& u, int& v,
   float crot, float srot, float scale, float dx = 0, float dy = 0);
 
+unsigned test_avx2_xy_to_hexid_f(float x, float y);
+unsigned test_avx2_xy_to_hexid_with_remainder_f(float& x_in_dx_out, float& y_in_dy_out);
+unsigned test_avx2_xy_to_hexid_with_remainder_f(float& x_in_dx_out, float& y_in_dy_out, bool clockwise);
+void test_avx2_hexid_to_xy_f(unsigned hexid, float& x, float& y);
+void test_avx2_hexid_to_xy_f(unsigned hexid, float& x, float& y, bool clockwise);
 
 
 } } } // namespace calin::math::hex_array
