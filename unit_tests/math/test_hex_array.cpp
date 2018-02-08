@@ -165,6 +165,38 @@ TEST(TestHexArray, HexIDToXY_ComparisonWithVVVCode) {
     }
 }
 
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToXY_Equals_Scalar) {
+  unsigned hexid = 1;
+  for(unsigned iring=1;iring<500;iring++)
+    for(unsigned ichan=0;ichan<6*iring;ichan++)
+    {
+      double x1,y1;
+      float x2,y2;
+      hexid_to_xy(hexid, x1, y1);
+      test_avx2_hexid_to_xy_f(hexid, x2, y2);
+      EXPECT_NEAR(float(x1),x2,abs(x2)*1e-6);
+      EXPECT_NEAR(float(y1),y2,abs(y2)*1e-6);
+      hexid++;
+    }
+}
+
+TEST(TestHexArray, AVX2_HexIDToXY_CW_Equals_Scalar) {
+  unsigned hexid = 1;
+  for(unsigned iring=1;iring<500;iring++)
+    for(unsigned ichan=0;ichan<6*iring;ichan++)
+    {
+      double x1,y1;
+      float x2,y2;
+      hexid_to_xy(hexid, x1, y1, true);
+      test_avx2_hexid_to_xy_f(hexid, x2, y2, true);
+      EXPECT_NEAR(float(x1),x2,abs(x2)*1e-6);
+      EXPECT_NEAR(float(y1),y2,abs(y2)*1e-6);
+      hexid++;
+    }
+}
+#endif
+
 TEST(TestHexArray, XYToHexID_NewCodeSpeedTest) {
   for(double x=-10.005; x<10.015; x+=0.01)
     for(double y=-10.005; y<10.015; y+=0.01)
@@ -209,6 +241,84 @@ TEST(TestHexArray, XYToHexID_ComparisonWithVVVCode) {
       EXPECT_NEAR(yy1,yy2,1e-6);
     }
 }
+
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_XYToHexID_Equals_Scalar) {
+  for(double x=-10.005; x<10.015; x+=0.02)
+    for(double y=-10.005; y<10.015; y+=0.02)
+    {
+      double xx1 = x;
+      double yy1 = y;
+      unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1);
+      float xx2 = x;
+      float yy2 = y;
+      unsigned hexid2 = test_avx2_xy_to_hexid_with_remainder_f(xx2, yy2);
+      EXPECT_EQ(hexid, hexid2);
+      EXPECT_NEAR(xx1,xx2,1e-6);
+      EXPECT_NEAR(yy1,yy2,1e-6);
+    }
+}
+
+TEST(TestHexArray, AVX2_XYToHexID_CW_Equals_Scalar) {
+  for(double x=-10.005; x<10.015; x+=0.02)
+    for(double y=-10.005; y<10.015; y+=0.02)
+    {
+      double xx1 = x;
+      double yy1 = y;
+      unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1, true);
+      float xx2 = x;
+      float yy2 = y;
+      unsigned hexid2 = test_avx2_xy_to_hexid_with_remainder_f(xx2, yy2, true);
+      EXPECT_EQ(hexid, hexid2);
+      EXPECT_NEAR(xx1,xx2,1e-6);
+      EXPECT_NEAR(yy1,yy2,1e-6);
+    }
+}
+
+TEST(TestHexArray, AVX2_XYToHexID_Trans_Equals_Scalar) {
+  float dx = 0.32426534147237f;
+  float dy = 1.25432437427634f;
+  float theta = 12.21752765/180.0*M_PI;
+  float ctheta = std::cos(theta);
+  float stheta = std::sin(theta);
+  float scale = 0.9326575752f;
+  for(double x=-10.005; x<10.015; x+=0.02)
+    for(double y=-10.005; y<10.015; y+=0.02)
+    {
+      double xx1 = x;
+      double yy1 = y;
+      unsigned hexid = xy_trans_to_hexid_with_remainder(xx1, yy1, ctheta, stheta, scale, dx, dy);
+      float xx2 = x;
+      float yy2 = y;
+      unsigned hexid2 = test_avx2_xy_trans_to_hexid_with_remainder_f(xx2, yy2, ctheta, stheta, scale, dx, dy);
+      EXPECT_EQ(hexid, hexid2);
+      EXPECT_NEAR(xx1,xx2,1e-5);
+      EXPECT_NEAR(yy1,yy2,1e-5);
+    }
+}
+
+TEST(TestHexArray, AVX2_XYToHexID_CW_Trans_Equals_Scalar) {
+  float dx = 0.32426534147237f;
+  float dy = 1.25432437427634f;
+  float theta = 12.21752765/180.0*M_PI;
+  float ctheta = std::cos(theta);
+  float stheta = std::sin(theta);
+  float scale = 0.9326575752f;
+  for(double x=-10.005; x<10.015; x+=0.02)
+    for(double y=-10.005; y<10.015; y+=0.02)
+    {
+      double xx1 = x;
+      double yy1 = y;
+      unsigned hexid = xy_trans_to_hexid_with_remainder(xx1, yy1, true, ctheta, stheta, scale, dx, dy);
+      float xx2 = x;
+      float yy2 = y;
+      unsigned hexid2 = test_avx2_xy_trans_to_hexid_with_remainder_f(xx2, yy2, true, ctheta, stheta, scale, dx, dy);
+      EXPECT_EQ(hexid, hexid2);
+      EXPECT_NEAR(xx1,xx2,1e-5);
+      EXPECT_NEAR(yy1,yy2,1e-5);
+    }
+}
+#endif
 
 #if defined(__AVX2__) and defined(__FMA__)
 TEST(TestHexArray, AVX2_HexIDToFromRingSegRun_APriori) {

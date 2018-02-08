@@ -366,10 +366,108 @@ void calin::math::hex_array::
 test_avx2_hexid_to_xy_f(unsigned hexid, float& x, float& y, bool clockwise)
 {
 #if defined(__AVX2__) and defined(__FMA__)
-__m256i vhexid = _mm256_set1_epi32(hexid);
+  __m256i vhexid = _mm256_set1_epi32(hexid);
   __m256 vx;
   __m256 vy;
   avx2_hexid_to_xy_f(vhexid, vx, vy, clockwise);
+  x = vx[0];
+  y = vy[0];
+#else
+  throw std::runtime_error("AVX2 and FMA not available at compile time");
+#endif
+}
+
+unsigned calin::math::hex_array::
+test_avx2_xy_trans_to_hexid_f(float x, float y,
+  float crot, float srot, float scale, float dx, float dy)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  __m256 vx = _mm256_set1_ps(x);
+  __m256 vy = _mm256_set1_ps(y);
+  __m256i vhexid;
+  vhexid = avx2_xy_trans_to_hexid_f(vx, vy, crot, srot, scale, dx, dy);
+  return vhexid[0];
+#else
+  throw std::runtime_error("AVX2 and FMA not available at compile time");
+#endif
+}
+
+unsigned calin::math::hex_array::
+test_avx2_xy_trans_to_hexid_f(float x, float y, bool clockwise,
+  float crot, float srot, float scale, float dx, float dy)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  __m256 vx = _mm256_set1_ps(x);
+  __m256 vy = _mm256_set1_ps(y);
+  __m256i vhexid;
+  vhexid = avx2_xy_trans_to_hexid_f(vx, vy, clockwise, crot, srot, scale, dx, dy);
+  return vhexid[0];
+#else
+  throw std::runtime_error("AVX2 and FMA not available at compile time");
+#endif
+}
+
+unsigned calin::math::hex_array::
+test_avx2_xy_trans_to_hexid_with_remainder_f(float& x_in_dx_out, float& y_in_dy_out,
+  float crot, float srot, float scale, float dx, float dy)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  __m256 vx_in_dx_out = _mm256_set1_ps(x_in_dx_out);
+  __m256 vy_in_dy_out = _mm256_set1_ps(y_in_dy_out);
+  __m256i vhexid;
+  vhexid = avx2_xy_trans_to_hexid_with_remainder_f(vx_in_dx_out, vy_in_dy_out,
+    crot, srot, scale, dx, dy);
+  x_in_dx_out = vx_in_dx_out[0];
+  y_in_dy_out = vy_in_dy_out[0];
+  return vhexid[0];
+#else
+  throw std::runtime_error("AVX2 and FMA not available at compile time");
+#endif
+}
+
+unsigned calin::math::hex_array::
+test_avx2_xy_trans_to_hexid_with_remainder_f(float& x_in_dx_out, float& y_in_dy_out,
+  bool clockwise, float crot, float srot, float scale, float dx, float dy)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  __m256 vx_in_dx_out = _mm256_set1_ps(x_in_dx_out);
+  __m256 vy_in_dy_out = _mm256_set1_ps(y_in_dy_out);
+  __m256i vhexid;
+  vhexid = avx2_xy_trans_to_hexid_with_remainder_f(vx_in_dx_out, vy_in_dy_out,
+    clockwise, crot, srot, scale, dx, dy);
+  x_in_dx_out = vx_in_dx_out[0];
+  y_in_dy_out = vy_in_dy_out[0];
+  return vhexid[0];
+#else
+  throw std::runtime_error("AVX2 and FMA not available at compile time");
+#endif
+}
+
+void calin::math::hex_array::
+test_avx2_hexid_to_xy_trans_f(unsigned hexid, float& x, float& y,
+  float crot, float srot, float scale, float dx, float dy)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  __m256i vhexid = _mm256_set1_epi32(hexid);
+  __m256 vx;
+  __m256 vy;
+  avx2_hexid_to_xy_trans_f(vhexid, vx, vy, crot, srot, scale, dx, dy);
+  x = vx[0];
+  y = vy[0];
+#else
+  throw std::runtime_error("AVX2 and FMA not available at compile time");
+#endif
+}
+
+void calin::math::hex_array::
+test_avx2_hexid_to_xy_trans_f(unsigned hexid, float& x, float& y, bool clockwise,
+  float crot, float srot, float scale, float dx, float dy)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  __m256i vhexid = _mm256_set1_epi32(hexid);
+  __m256 vx;
+  __m256 vy;
+  avx2_hexid_to_xy_trans_f(vhexid, vx, vy, clockwise, crot, srot, scale, dx, dy);
   x = vx[0];
   y = vy[0];
 #else

@@ -681,5 +681,20 @@ unsigned test_avx2_xy_to_hexid_with_remainder_f(float& x_in_dx_out, float& y_in_
 void test_avx2_hexid_to_xy_f(unsigned hexid, float& x, float& y);
 void test_avx2_hexid_to_xy_f(unsigned hexid, float& x, float& y, bool clockwise);
 
+unsigned test_avx2_xy_trans_to_hexid_f(float x, float y,
+  float crot, float srot, float scale, float dx = 0, float dy = 0);
+unsigned test_avx2_xy_trans_to_hexid_f(float x, float y, bool clockwise,
+  float crot, float srot, float scale, float dx = 0, float dy = 0);
+unsigned test_avx2_xy_trans_to_hexid_with_remainder_f(float& x_in_dx_out,
+  float& y_in_dy_out,
+  float crot, float srot, float scale, float dx = 0, float dy = 0);
+unsigned test_avx2_xy_trans_to_hexid_with_remainder_f(float& x_in_dx_out,
+  float& y_in_dy_out, bool clockwise,
+  float crot, float srot, float scale, float dx = 0, float dy = 0);
+void test_avx2_hexid_to_xy_trans_f(unsigned hexid, float& x, float& y,
+  float crot, float srot, float scale, float dx = 0, float dy = 0);
+void test_avx2_hexid_to_xy_trans_f(unsigned hexid, float& x, float& y, bool clockwise,
+  float crot, float srot, float scale, float dx = 0, float dy = 0);
+
 
 } } } // namespace calin::math::hex_array
