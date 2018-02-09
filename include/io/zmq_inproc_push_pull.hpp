@@ -67,8 +67,8 @@ public:
     ZMQInprocPushPull(buffer_size, shared_ctx) { }
   ~ZMQInprocPushPull();
 
-  ZMQPuller* new_puller();
-  ZMQPusher* new_pusher();
+  ZMQPuller* new_puller(ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::CONNECT);
+  ZMQPusher* new_pusher(ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::BIND);
 
   void* zmq_ctx() { return zmq_ctx_; }
   unsigned address_index() { return address_index_; }

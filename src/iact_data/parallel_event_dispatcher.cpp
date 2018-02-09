@@ -232,10 +232,15 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   {
     threads_active++;
     threads.emplace_back([d,src_factory,&threads_active,log_frequency,start_time,&ndispatched](){
-      auto* bsrc = src_factory->new_data_source();
-      d->do_dispatcher_loop(bsrc, log_frequency, start_time, ndispatched);
-      delete bsrc;
-      threads_active--;
+      try {
+        auto* bsrc = src_factory->new_data_source();
+        d->do_dispatcher_loop(bsrc, log_frequency, start_time, ndispatched);
+        delete bsrc;
+        threads_active--;
+      } catch(const std::exception& x) {
+        util::log::LOG(util::log::FATAL) << x.what();
+        throw;
+      }
     });
   }
 

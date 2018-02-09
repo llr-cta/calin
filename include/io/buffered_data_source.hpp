@@ -243,26 +243,31 @@ public:
 private:
   void reader_loop()
   {
-    std::unique_ptr<zmq_inproc::ZMQPusher> pusher { zmq_->new_pusher() };
-    reader_active_ = true;
-    while(reader_active_)
-    {
-      // The reader stays active until the ZMQ context is closed in the
-      // desctructor. However it stops getting data from the supplied source
-      // when requested by the user. After this it just delivers "nullptr".
-      // This simplifies the implementation of the BufferedDataSource which
-      // otherwise has a problem either potentially getting blocked or missing
-      // a data item.
-      Payload<T> payload;
-      if(!stop_buffering_)
-        payload.ptr = source_->get_next(payload.seq_index, &payload.arena);
-      if(!pusher->push(&payload, sizeof(payload)))
+    try {
+      std::unique_ptr<zmq_inproc::ZMQPusher> pusher { zmq_->new_pusher() };
+      reader_active_ = true;
+      while(reader_active_)
       {
-        // Only occurs when context is closed
-        if(payload.arena)delete payload.arena;
-        else delete payload.ptr;
-        reader_active_ = false;
+        // The reader stays active until the ZMQ context is closed in the
+        // desctructor. However it stops getting data from the supplied source
+        // when requested by the user. After this it just delivers "nullptr".
+        // This simplifies the implementation of the BufferedDataSource which
+        // otherwise has a problem either potentially getting blocked or missing
+        // a data item.
+        Payload<T> payload;
+        if(!stop_buffering_)
+          payload.ptr = source_->get_next(payload.seq_index, &payload.arena);
+        if(!pusher->push(&payload, sizeof(payload)))
+        {
+          // Only occurs when context is closed
+          if(payload.arena)delete payload.arena;
+          else delete payload.ptr;
+          reader_active_ = false;
+        }
       }
+    } catch(const std::exception& x) {
+      util::log::LOG(util::log::FATAL) << x.what();
+      throw;
     }
   }
 
@@ -313,10 +318,10 @@ public:
   }
 
   BufferedDataSource<T>* new_data_source() override {
-    return new BufferedDataSource<T>(zmq_dn_->new_puller()); }
+    return new BufferedDataSource<T>(zmq_dn_->new_puller(zmq_inproc::ZMQBindOrConnect::CONNECT)); }
 
   BufferedDataSink<T>* new_data_sink() override {
-    return new BufferedDataSink<T>(zmq_up_->new_pusher()); }
+    return new BufferedDataSink<T>(zmq_up_->new_pusher(zmq_inproc::ZMQBindOrConnect::CONNECT)); }
 
   void stop_buffering() { stop_ventilator_ = true; }
   void stop_ventilator() { stop_ventilator_ = true; }
@@ -324,53 +329,58 @@ public:
 private:
   void ventilator_loop()
   {
-    std::unique_ptr<zmq_inproc::ZMQPusher> pusher { zmq_dn_->new_pusher() };
-    std::unique_ptr<zmq_inproc::ZMQPuller> puller { zmq_up_->new_puller() };
-    ventilator_active_ = true;
-    Payload<T> payload_push;
-    payload_push.ptr = source_->get_next(payload_push.seq_index, &payload_push.arena);
-    while(ventilator_active_)
-    {
-      // The reader stays active until the ZMQ context is closed in the
-      // desctructor. However it stops getting data from the supplied source
-      // when requested by the user. After this it just delivers "nullptr".
-      // This simplifies the implementation of the BufferedDataSource which
-      // otherwise has a problem either potentially getting blocked or missing
-      // a data item.
-      zmq_pollitem_t pollitems[] = { puller->pollitem(), pusher->pollitem() };
-      if(zmq_poll(pollitems, 2, -1) < 0) {
-        // Only occurs when context is closed
-        ventilator_active_ = false;
-      } else {
-        if(pollitems[0].revents) {
-          // Prioritize sata from puller - keep getting some while its available
-          Payload<T> payload_pull;
-          while(puller->pull_assert_size(&payload_pull, sizeof(payload_pull),
-              /* dont_wait= */ true)) {
-            sink_->put_next(payload_pull.ptr, payload_pull.seq_index,
-              payload_pull.arena, /* adopt_data = */ true);
-            payload_pull.ptr = nullptr;
-            payload_pull.arena = nullptr;
+    try {
+      std::unique_ptr<zmq_inproc::ZMQPusher> pusher { zmq_dn_->new_pusher(zmq_inproc::ZMQBindOrConnect::BIND) };
+      std::unique_ptr<zmq_inproc::ZMQPuller> puller { zmq_up_->new_puller(zmq_inproc::ZMQBindOrConnect::BIND) };
+      ventilator_active_ = true;
+      Payload<T> payload_push;
+      payload_push.ptr = source_->get_next(payload_push.seq_index, &payload_push.arena);
+      while(ventilator_active_)
+      {
+        // The reader stays active until the ZMQ context is closed in the
+        // desctructor. However it stops getting data from the supplied source
+        // when requested by the user. After this it just delivers "nullptr".
+        // This simplifies the implementation of the BufferedDataSource which
+        // otherwise has a problem either potentially getting blocked or missing
+        // a data item.
+        zmq_pollitem_t pollitems[] = { puller->pollitem(), pusher->pollitem() };
+        if(zmq_poll(pollitems, 2, -1) < 0) {
+          // Only occurs when context is closed
+          ventilator_active_ = false;
+        } else {
+          if(pollitems[0].revents) {
+            // Prioritize sata from puller - keep getting some while its available
+            Payload<T> payload_pull;
+            while(puller->pull_assert_size(&payload_pull, sizeof(payload_pull),
+                /* dont_wait= */ true)) {
+              sink_->put_next(payload_pull.ptr, payload_pull.seq_index,
+                payload_pull.arena, /* adopt_data = */ true);
+              payload_pull.ptr = nullptr;
+              payload_pull.arena = nullptr;
+            }
           }
-        }
-        if(pollitems[1].revents) {
-          if(pusher->push(&payload_push, sizeof(payload_push))) {
-            payload_push.ptr = nullptr;
-            payload_push.arena = nullptr;
-            if(!stop_ventilator_)
-              payload_push.ptr = source_->get_next(payload_push.seq_index, &payload_push.arena);
-          } else {
-            ventilator_active_ = false;
+          if(pollitems[1].revents) {
+            if(pusher->push(&payload_push, sizeof(payload_push))) {
+              payload_push.ptr = nullptr;
+              payload_push.arena = nullptr;
+              if(!stop_ventilator_)
+                payload_push.ptr = source_->get_next(payload_push.seq_index, &payload_push.arena);
+            } else {
+              ventilator_active_ = false;
+            }
           }
         }
       }
-    }
-    if(payload_push.ptr) {
-      if(sink_unsent_data_)
-        sink_->put_next(payload_push.ptr, payload_push.seq_index,
-          payload_push.arena, /* adopt_data = */ true);
-      else if(payload_push.arena)delete payload_push  .arena;
-      else delete payload_push.ptr;
+      if(payload_push.ptr) {
+        if(sink_unsent_data_)
+          sink_->put_next(payload_push.ptr, payload_push.seq_index,
+            payload_push.arena, /* adopt_data = */ true);
+        else if(payload_push.arena)delete payload_push  .arena;
+        else delete payload_push.ptr;
+      }
+    } catch(const std::exception& x) {
+      util::log::LOG(util::log::FATAL) << x.what();
+      throw;
     }
   }
 

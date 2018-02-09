@@ -154,14 +154,14 @@ ZMQInprocPushPull::~ZMQInprocPushPull()
   if(my_zmq_ctx_)zmq_ctx_destroy(my_zmq_ctx_);
 }
 
-ZMQPuller* ZMQInprocPushPull::new_puller()
+ZMQPuller* ZMQInprocPushPull::new_puller(ZMQBindOrConnect bind_or_connect)
 {
-  return new ZMQPuller(zmq_ctx(), address(), buffer_size_);
+  return new ZMQPuller(zmq_ctx(), address(), buffer_size_, bind_or_connect);
 }
 
-ZMQPusher* ZMQInprocPushPull::new_pusher()
+ZMQPusher* ZMQInprocPushPull::new_pusher(ZMQBindOrConnect bind_or_connect)
 {
-  return new ZMQPusher(zmq_ctx(), address(), buffer_size_);
+  return new ZMQPusher(zmq_ctx(), address(), buffer_size_, bind_or_connect);
 }
 
 std::string ZMQInprocPushPull::address()

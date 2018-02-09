@@ -147,18 +147,23 @@ void TelescopeEventDispatcher::process_run(calin::io::data_source::DataSource<
       d->accept_run_configuration(run_config);
       threads_active++;
       threads.emplace_back([d,sink,&threads_active](){
-        auto* bsrc = sink->new_data_source();
-        google::protobuf::Arena* arena = nullptr;
-        uint64_t seq_index;
-        while(TelescopeEvent* event = bsrc->get_next(seq_index, &arena))
-        {
-          d->accept_event(seq_index, event);
-          if(arena)delete arena;
-          else delete event;
-          arena = nullptr;
+        try {
+          auto* bsrc = sink->new_data_source();
+          google::protobuf::Arena* arena = nullptr;
+          uint64_t seq_index;
+          while(TelescopeEvent* event = bsrc->get_next(seq_index, &arena))
+          {
+            d->accept_event(seq_index, event);
+            if(arena)delete arena;
+            else delete event;
+            arena = nullptr;
+          }
+          delete bsrc;
+          threads_active--;
+        } catch(const std::exception& x) {
+          util::log::LOG(util::log::FATAL) << x.what();
+          throw;
         }
-        delete bsrc;
-        threads_active--;
       });
     }
 
