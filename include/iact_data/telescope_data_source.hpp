@@ -39,6 +39,10 @@ CALIN_TYPEALIAS(TelescopeRandomAccessDataSource,
   calin::io::data_source::RandomAccessDataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>);
 
+CALIN_TYPEALIAS(TelescopeDataSourceFactory,
+  calin::io::data_source::DataSourceFactory<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>);
+
 CALIN_TYPEALIAS(RawFileTelescopeDataSource,
   calin::io::data_source::ProtobufFileDataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>);
@@ -53,6 +57,10 @@ CALIN_TYPEALIAS(MultiThreadTelescopeDataSourceBuffer,
 
 CALIN_TYPEALIAS(TelescopeDataSink,
   calin::io::data_source::DataSink<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>);
+
+CALIN_TYPEALIAS(TelescopeDataSinkFactory,
+  calin::io::data_source::DataSinkFactory<
     calin::ix::iact_data::telescope_event::TelescopeEvent>);
 
 CALIN_TYPEALIAS(RawFileTelescopeDataSink,

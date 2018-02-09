@@ -71,6 +71,9 @@ using namespace calin::io;
 %apply google::protobuf::Arena** CALIN_ARENA_OUTPUT {
   google::protobuf::Arena** arena_out };
 
+%newobject new_data_source();
+%newobject new_data_sink();
+
 %import "io/data_source.hpp"
 %import "io/chained_data_source.hpp"
 
@@ -116,9 +119,16 @@ using namespace calin::io;
   calin::io::data_source::ProtobufFileDataSink<
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
+%template(TelescopeDataSourceFactory)
+  calin::io::data_source::DataSourceFactory<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>;
+
+  %template(TelescopeDataSinkFactory)
+    calin::io::data_source::DataSinkFactory<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>;
+
 %include "io/buffered_data_source.hpp"
 
-%newobject new_data_source();
 
 %template(BufferedTelescopeDataSource)
   calin::io::data_source::BufferedDataSource<
@@ -157,7 +167,6 @@ using namespace calin::io;
 %template(BasicChainedRandomAccessDataSourceTelescopeRandomAccessDataSourceWithRunConfig)
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>;
-
 
 %include "iact_data/zfits_data_source.hpp"
 

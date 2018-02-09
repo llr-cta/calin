@@ -31,6 +31,16 @@
 
 namespace calin { namespace iact_data { namespace event_visitor {
 
+class EventLifetimeManager
+{
+public:
+  virtual ~EventLifetimeManager();
+  virtual void keep_event(
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) = 0;
+  virtual void release_event(
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) = 0;
+};
+
 class TelescopeEventVisitor
 {
 public:
@@ -48,13 +58,35 @@ public:
       TelescopeRunConfiguration* run_config);
   virtual bool leave_telescope_run();
 
-  virtual bool visit_telescope_event(uint64_t seq_index, 
+  virtual bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
   virtual bool leave_telescope_event();
 
   virtual bool visit_waveform(unsigned ichan,
     calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
     calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain);
+
+  virtual bool merge_results();
+};
+
+class ParallelEventVisitor
+{
+public:
+  virtual ~ParallelEventVisitor();
+
+  virtual ParallelEventVisitor* new_sub_visitor(
+    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+      antecedent_visitors = { });
+
+  virtual bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config,
+      EventLifetimeManager* event_lifetime_manager);
+  virtual bool leave_telescope_run();
+
+  virtual bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event);
 
   virtual bool merge_results();
 };

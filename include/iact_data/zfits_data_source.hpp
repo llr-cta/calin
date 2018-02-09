@@ -103,6 +103,25 @@ private:
   bool adopt_actl_sink_ = false;
 };
 
+class DecodedConstACTLDataSourceFactory:
+  public calin::iact_data::telescope_data_source::TelescopeDataSourceFactory
+{
+public:
+  DecodedConstACTLDataSourceFactory(
+    calin::io::data_source::BidirectionalBufferedDataSourcePump<
+      const DataModel::CameraEvent>* pump, CTACameraEventDecoder* decoder,
+    bool adopt_pump = false, bool adopt_decoder = false);
+  virtual ~DecodedConstACTLDataSourceFactory();
+  DecodedConstACTLDataSource* new_data_source() override;
+
+private:
+  CTACameraEventDecoder* decoder_;
+  bool adopt_decoder_ = false;
+  calin::io::data_source::BidirectionalBufferedDataSourcePump<
+    const DataModel::CameraEvent>* pump_ = nullptr;
+  bool adopt_pump_ = false;
+};
+
 class ZFITSSingleFileDataSource:
   public calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig

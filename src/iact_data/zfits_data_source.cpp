@@ -170,6 +170,30 @@ DecodedConstACTLDataSource::get_next(
   return event;
 }
 
+DecodedConstACTLDataSourceFactory::DecodedConstACTLDataSourceFactory(
+    calin::io::data_source::BidirectionalBufferedDataSourcePump<
+      const DataModel::CameraEvent>* pump, CTACameraEventDecoder* decoder,
+    bool adopt_pump, bool adopt_decoder):
+  calin::iact_data::telescope_data_source::TelescopeDataSourceFactory(),
+  decoder_(decoder), adopt_decoder_(adopt_decoder),
+  pump_(pump), adopt_pump_(adopt_pump)
+{
+  // nothing to see here
+}
+
+DecodedConstACTLDataSourceFactory::~DecodedConstACTLDataSourceFactory()
+{
+  if(adopt_pump_)delete pump_;
+  if(adopt_decoder_)delete decoder_;
+}
+
+DecodedConstACTLDataSource* DecodedConstACTLDataSourceFactory::new_data_source()
+{
+  return new DecodedConstACTLDataSource(
+    pump_->new_data_source(), pump_->new_data_sink(), decoder_,
+    /* adopt_actl_src= */ true, /* adopt_actl_sink = */ true);
+}
+
 // =============================================================================
 // ZFITSSingleFileDataSource - single ZFits file with decoder
 // Uses ZFITSSingleFileACTLDataSource to read events and decoder to translate

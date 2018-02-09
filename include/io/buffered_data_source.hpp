@@ -203,7 +203,8 @@ private:
 
 // Launch thread to read events from supplied DataSource, buffer them in 0MQ
 // Push/Pull socket for use by other threads
-template<typename T> class UnidirectionalBufferedDataSourcePump
+template<typename T> class UnidirectionalBufferedDataSourcePump:
+  public DataSourceFactory<T>
 {
 public:
   CALIN_TYPEALIAS(data_type, typename DataSource<T>::data_type);
@@ -213,6 +214,7 @@ public:
 
   UnidirectionalBufferedDataSourcePump(DataSource<T>* source, unsigned buffer_size = 100,
       bool adopt_source = false):
+    DataSourceFactory<T>(),
     source_(source), adopt_source_(adopt_source),
     zmq_(new zmq_inproc::ZMQInprocPushPull(buffer_size)),
     reader_thread_(
@@ -222,7 +224,7 @@ public:
     while(!reader_active_){ CALIN_SPINWAIT(); }
   }
 
-  ~UnidirectionalBufferedDataSourcePump()
+  virtual ~UnidirectionalBufferedDataSourcePump()
   {
     stop_buffering_ = true;
     // This closes the ZMQ context prompting all readers and the writer to
@@ -233,7 +235,7 @@ public:
     if(adopt_source_)delete source_;
   }
 
-  BufferedDataSource<T>* new_data_source() {
+  BufferedDataSource<T>* new_data_source() override {
     return new BufferedDataSource<T>(zmq_->new_puller()); }
 
   void stop_buffering() { stop_buffering_ = true; }
@@ -272,7 +274,8 @@ private:
   std::thread* reader_thread_ = nullptr;
 };
 
-template<typename T> class BidirectionalBufferedDataSourcePump
+template<typename T> class BidirectionalBufferedDataSourcePump:
+  public DataSourceFactory<T>, public DataSinkFactory<T>
 {
 public:
   CALIN_TYPEALIAS(data_type, typename DataSource<T>::data_type);
@@ -283,6 +286,7 @@ public:
   BidirectionalBufferedDataSourcePump(DataSource<T>* source, DataSink<T>* sink,
       unsigned buffer_size = 100, bool sink_unsent_data = false,
       bool adopt_source = false, bool adopt_sink = false):
+    DataSourceFactory<T>(), DataSinkFactory<T>(),
     source_(source), adopt_source_(adopt_source),
     sink_(sink), adopt_sink_(adopt_sink),
     sink_unsent_data_(sink_unsent_data),
@@ -295,7 +299,7 @@ public:
     while(!ventilator_active_){ CALIN_SPINWAIT(); }
   }
 
-  ~BidirectionalBufferedDataSourcePump()
+  virtual ~BidirectionalBufferedDataSourcePump()
   {
     stop_ventilator_ = true;
     // This closes the ZMQ context prompting all readers and the writer to
@@ -308,10 +312,10 @@ public:
     if(adopt_sink_)delete sink_;
   }
 
-  BufferedDataSource<T>* new_data_source() {
+  BufferedDataSource<T>* new_data_source() override {
     return new BufferedDataSource<T>(zmq_dn_->new_puller()); }
 
-  BufferedDataSink<T>* new_data_sink() {
+  BufferedDataSink<T>* new_data_sink() override {
     return new BufferedDataSink<T>(zmq_up_->new_pusher()); }
 
   void stop_buffering() { stop_ventilator_ = true; }
