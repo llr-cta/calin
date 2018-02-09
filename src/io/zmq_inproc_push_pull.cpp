@@ -146,7 +146,7 @@ ZMQInprocPushPull(unsigned buffer_size, ZMQInprocPushPull* shared_ctx):
   zmq_ctx_((shared_ctx!=nullptr and shared_ctx->my_zmq_ctx_!=nullptr) ? shared_ctx->my_zmq_ctx_ : my_zmq_ctx_),
   address_index_((shared_ctx!=nullptr and shared_ctx->my_zmq_ctx_!=nullptr) ? shared_ctx->zmq_ctx_address_.fetch_add(1) : zmq_ctx_address_.fetch_add(1))
 {
-  // nothing to see here
+  if(my_zmq_ctx_)zmq_ctx_set(my_zmq_ctx_, ZMQ_IO_THREADS, 0); // inproc only
 }
 
 ZMQInprocPushPull::~ZMQInprocPushPull()
