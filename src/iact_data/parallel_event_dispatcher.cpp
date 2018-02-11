@@ -204,7 +204,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
   std::atomic<uint_fast64_t>& ndispatched)
 {
   std::vector<ParallelEventDispatcher*> sub_dispatchers;
-  for(int ithread=0;ithread<nthread;ithread++)
+  for(unsigned ithread=0;ithread<nthread;ithread++)
   {
     auto* d = new ParallelEventDispatcher;
     sub_dispatchers.emplace_back(d);
