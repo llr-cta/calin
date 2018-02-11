@@ -139,10 +139,14 @@ bool ZMQPuller::pull_assert_size(void* data, unsigned buffer_size,
   return good;
 }
 
-ZMQInprocPushPull::ZMQInprocPushPull(unsigned buffer_size):
-  buffer_size_(buffer_size), my_zmq_ctx_(zmq_ctx_new()), zmq_ctx_(my_zmq_ctx_)
+ZMQInprocPushPull::
+ZMQInprocPushPull(unsigned buffer_size, ZMQInprocPushPull* shared_ctx):
+  buffer_size_(buffer_size),
+  my_zmq_ctx_((shared_ctx!=nullptr and shared_ctx->my_zmq_ctx_!=nullptr) ? nullptr : zmq_ctx_new()),
+  zmq_ctx_((shared_ctx!=nullptr and shared_ctx->my_zmq_ctx_!=nullptr) ? shared_ctx->my_zmq_ctx_ : my_zmq_ctx_),
+  address_index_((shared_ctx!=nullptr and shared_ctx->my_zmq_ctx_!=nullptr) ? shared_ctx->zmq_ctx_address_.fetch_add(1) : zmq_ctx_address_.fetch_add(1))
 {
-  // nothing to see here
+  if(my_zmq_ctx_)zmq_ctx_set(my_zmq_ctx_, ZMQ_IO_THREADS, 0); // inproc only
 }
 
 ZMQInprocPushPull::~ZMQInprocPushPull()
@@ -150,14 +154,14 @@ ZMQInprocPushPull::~ZMQInprocPushPull()
   if(my_zmq_ctx_)zmq_ctx_destroy(my_zmq_ctx_);
 }
 
-ZMQPuller* ZMQInprocPushPull::new_puller()
+ZMQPuller* ZMQInprocPushPull::new_puller(ZMQBindOrConnect bind_or_connect)
 {
-  return new ZMQPuller(zmq_ctx(), address(), buffer_size_);
+  return new ZMQPuller(zmq_ctx(), address(), buffer_size_, bind_or_connect);
 }
 
-ZMQPusher* ZMQInprocPushPull::new_pusher()
+ZMQPusher* ZMQInprocPushPull::new_pusher(ZMQBindOrConnect bind_or_connect)
 {
-  return new ZMQPusher(zmq_ctx(), address(), buffer_size_);
+  return new ZMQPusher(zmq_ctx(), address(), buffer_size_, bind_or_connect);
 }
 
 std::string ZMQInprocPushPull::address()

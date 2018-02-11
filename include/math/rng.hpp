@@ -44,6 +44,10 @@
 #include <random>
 #include <utility>
 
+#if defined(__AVX2__)
+#include <immintrin.h>
+#endif
+
 #include <calin_global_definitions.hpp>
 #include <math/rng.pb.h>
 
@@ -56,6 +60,9 @@ namespace calin { namespace math { namespace rng {
 // time spent doing the indirect call so we'll go with a base class
 // and potentially reevaluate if profiling shows this assumption is
 // wrong.
+
+constexpr float C_U32_TO_FLT = 2.328306437E-10;
+constexpr double C_U64_TO_DBL = 5.42101086242752217E-20;
 
 class RNGCore
 {
@@ -94,28 +101,14 @@ public:
 
   uint64_t uniform_uint64() { return core_->uniform_uint64(); }
 
-  uint32_t uniform_uint32() {
-    if(dev32_hascached_)
-    {
-      dev32_hascached_ = false;
-      return dev32_cachedval_&0xFFFFFFFF;
-    }
-    else
-    {
-      dev32_hascached_ = true;
-      dev32_cachedval_ = uniform_uint64();
-      uint32_t ret = dev32_cachedval_ & 0xFFFFFFFF;
-      dev32_cachedval_ >>= 32;
-      return ret;
-    }
-  }
+  uint32_t uniform_uint32() { return uint32_t(uniform_uint64()); }
 
   double uniform_double() {
-    return 5.42101086242752217E-20 * double(uniform_uint64());
+    return C_U64_TO_DBL * double(uniform_uint64());
   }
 
   float uniform_float() {
-    return 2.328306437e-10 * float(uniform_uint32());
+    return C_U32_TO_FLT * float(uniform_uint32());
   }
 
   void uniform_by_type(uint64_t& x) { x = uniform_uint64(); }
@@ -159,9 +152,6 @@ private:
   bool bm_hascached_ = false;
   double bm_cachedval_ = 0.0;
 
-  bool dev32_hascached_ = false;
-  uint64_t dev32_cachedval_ = 0;
-
   // Speedup caches
   double   poi_lambdaexp_ = 1.0/M_E;
   double   poi_lambdasrt_ = 1.0;
@@ -183,6 +173,24 @@ private:
 //
 // =============================================================================
 
+constexpr uint64_t C_NR3_U_INIT = UINT64_C(0);
+constexpr uint64_t C_NR3_V_INIT = UINT64_C(4101842887655102017);
+constexpr uint64_t C_NR3_W_INIT = UINT64_C(1);
+
+constexpr uint64_t C_NR3_U_MUL = UINT64_C(2862933555777941757);
+constexpr uint64_t C_NR3_U_ADD = UINT64_C(7046029254386353087);
+
+constexpr int C_NR3_V_SHIFT1 = 17;
+constexpr int C_NR3_V_SHIFT2 = 31;
+constexpr int C_NR3_V_SHIFT3 = 8;
+
+constexpr uint64_t C_NR3_W_MUL = UINT64_C(4294957665);
+constexpr int C_NR3_W_SHIFT1 = 32;
+
+constexpr int C_NR3_X_SHIFT1 = 21;
+constexpr int C_NR3_X_SHIFT2 = 35;
+constexpr int C_NR3_X_SHIFT3 = 4;
+
 class NR3RNGCore: public RNGCore
 {
  public:
@@ -191,7 +199,7 @@ class NR3RNGCore: public RNGCore
   NR3RNGCore(uint64_t seed = 0):
       RNGCore(),
       seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
-      u_(UINT64_C(0)), v_(UINT64_C(4101842887655102017)), w_(UINT64_C(1))
+      u_(C_NR3_U_INIT), v_(C_NR3_V_INIT), w_(C_NR3_W_INIT)
   {
     u_ = seed_^v_; uniform_uint64();
     v_ = u_; uniform_uint64();
@@ -204,17 +212,18 @@ class NR3RNGCore: public RNGCore
 
   uint64_t uniform_uint64() override {
     calls_++;
-    u_ = u_*UINT64_C(2862933555777941757) + UINT64_C(7046029254386353087);
-    v_ ^= v_ >> 17;
-    v_ ^= v_ << 31;
-    v_ ^= v_ >> 8;
-    w_ = 4294957665U*(w_ & 0xFFFFFFFF) + (w_ >> 32);
-    uint64_t x = u_ ^ (u_ << 21);
-    x ^= x >> 35;
-    x ^= x << 4;
+    u_ = u_*C_NR3_U_MUL + C_NR3_U_ADD;
+    v_ ^= v_ >> C_NR3_V_SHIFT1;
+    v_ ^= v_ << C_NR3_V_SHIFT2;
+    v_ ^= v_ >> C_NR3_V_SHIFT3;
+    w_ = C_NR3_W_MUL*(w_ & 0xFFFFFFFF) + (w_ >> C_NR3_W_SHIFT1);
+    uint64_t x = u_ ^ (u_ << C_NR3_X_SHIFT1);
+    x ^= x >> C_NR3_X_SHIFT2;
+    x ^= x << C_NR3_X_SHIFT3;
     return (x+v_)^w_;
   }
 
+  void save_to_proto(ix::math::rng::NR3RNGCoreData* data) const;
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
 
   static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
@@ -317,7 +326,7 @@ class MT19937RNGCore: public RNGCore
 template<unsigned NSTREAM>
 class NR3_EmulateSIMD_RNGCore: public RNGCore
 {
- public:
+public:
   typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
 
   NR3_EmulateSIMD_RNGCore(uint64_t seed):
@@ -334,7 +343,52 @@ class NR3_EmulateSIMD_RNGCore: public RNGCore
     for(unsigned i=0;i<NSTREAM;i++)core_[i] = new NR3RNGCore(seeds[i]);
   }
 
-  NR3_EmulateSIMD_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto);
+  NR3_EmulateSIMD_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto,
+      bool restore_state = false):
+    NR3_EmulateSIMD_RNGCore(proto.seed())
+  {
+    if(proto.vec_stream_seed_size()!=0)
+    {
+      if(proto.vec_stream_seed_size() != NSTREAM)
+        throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need " +
+          std::to_string(NSTREAM) + " seeds to restore state.");
+      if(restore_state and proto.state_saved()) {
+        calls_ = proto.calls();
+        if(proto.vec_u_size() != NSTREAM)
+          throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need " +
+            std::to_string(NSTREAM) + " u elements to restore state.");
+        if(proto.vec_v_size() != NSTREAM)
+          throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need " +
+            std::to_string(NSTREAM) + " v elements to restore state.");
+        if(proto.vec_w_size() != NSTREAM)
+          throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need " +
+            std::to_string(NSTREAM) + " w elements to restore state.");
+      }
+      for(unsigned i=0; i<NSTREAM; i++)
+      {
+        calin::ix::math::rng::NR3RNGCoreData core_data;
+        core_data.set_seed(proto.vec_stream_seed(i));
+        if(restore_state and proto.state_saved()) {
+          core_data.set_calls(calls_);
+          core_data.set_state_saved(true);
+          core_data.set_u(proto.vec_u(i));
+          core_data.set_v(proto.vec_v(i));
+          core_data.set_w(proto.vec_w(i));
+        }
+        delete core_[NSTREAM-i-1];
+        core_[NSTREAM-i-1] = new NR3RNGCore(core_data, restore_state);
+      }
+      ndev_ = NSTREAM;
+      if(restore_state and proto.state_saved()) {
+        if(proto.dev_size() > int(NSTREAM))
+          throw std::runtime_error("NR3_EmulateSIMD_RNGCore: need a most " +
+            std::to_string(NSTREAM) + " saved deviates to restore state.");
+        for(int i=0; i<proto.dev_size(); i++) {
+          vec_dev_[--ndev_] = proto.dev(i);
+        }
+      }
+    }
+  }
 
   ~NR3_EmulateSIMD_RNGCore()
   {
@@ -343,17 +397,38 @@ class NR3_EmulateSIMD_RNGCore: public RNGCore
 
   uint64_t uniform_uint64() override
   {
-    if(ndev_ < NSTREAM)
+    if(ndev_ >= NSTREAM)
     {
-      for(unsigned i=0;i<NSTREAM;i++)vec_dev_ = core_[i]->uniform_uint64();
+      for(unsigned i=0;i<NSTREAM;i++)vec_dev_[i] = core_[i]->uniform_uint64();
       ndev_ = 0;
     }
     return vec_dev_[ndev_++];
   }
 
-  void save_to_proto(ix::math::rng::RNGData* proto) const override;
+  void save_to_proto(ix::math::rng::RNGData* proto) const override
+  {
+    auto* data = proto->mutable_nr3_simd_emu4_core();
+    data->set_seed(seed_);
+    data->set_calls(calls_);
+    data->set_state_saved(true);
+    for(unsigned i=NSTREAM; i>0;)
+    {
+      calin::ix::math::rng::NR3RNGCoreData core_data;
+      core_[--i]->save_to_proto(&core_data);
+      data->add_vec_stream_seed(core_data.seed());
+      data->add_vec_u(core_data.u());
+      data->add_vec_v(core_data.v());
+      data->add_vec_w(core_data.w());
+    }
+    for(unsigned i=NSTREAM; i>ndev_;)data->add_dev(vec_dev_[--i]);
+  }
 
- private:
+  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
+    return proto->mutable_nr3_simd_emu4_core(); }
+  static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
+  { return proto.nr3_simd_emu4_core(); }
+
+private:
   NR3RNGCore* core_[NSTREAM];
   uint64_t seed_ = 0;
   uint64_t calls_ = 0;
@@ -361,20 +436,28 @@ class NR3_EmulateSIMD_RNGCore: public RNGCore
   unsigned ndev_ = NSTREAM;
 };
 
-#if 0
+#if defined(__AVX2__)
+#define CALIN_HAS_NR3_AVX2_RNGCORE
+#endif
+
 class NR3_AVX2_RNGCore: public RNGCore
 {
- private:
+private:
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
+  void test_cpu() const;
+
   void init(uint64_t seed0, uint64_t seed1, uint64_t seed2, uint64_t seed3)
   {
+    test_cpu();
+
     stream_seed0_ = seed0;
     stream_seed1_ = seed1;
     stream_seed2_ = seed2;
     stream_seed3_ = seed3;
 
-    vec_u_ = _mm256_setzero_si256();
-    vec_v_ = _mm256_set1_epi64x(UINT64_C(4101842887655102017));
-    vec_w_ = _mm256_set1_epi64x(UINT64_C(1));
+    vec_u_ = _mm256_set1_epi64x(C_NR3_U_INIT);
+    vec_v_ = _mm256_set1_epi64x(C_NR3_V_INIT);
+    vec_w_ = _mm256_set1_epi64x(C_NR3_W_INIT);
 
     __m256i vec_seed = _mm256_set_epi64x(seed0,seed1,seed2,seed3);
 
@@ -386,73 +469,126 @@ class NR3_AVX2_RNGCore: public RNGCore
     uniform_uivec256();
     calls_ = 0;
   }
+#endif
 
  public:
   typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
 
   NR3_AVX2_RNGCore(uint64_t seed = 0):
-      RNGCore(),
-      seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device())
+    RNGCore(), seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device())
   {
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
     std::mt19937_64 gen(seed_);
-    init(gen(), gen(), gen(), gen());
+    uint64_t seed0 = gen();
+    uint64_t seed1 = gen();
+    uint64_t seed2 = gen();
+    uint64_t seed3 = gen();
+    init(seed0, seed1, seed2, seed3);
+#else
+    throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
+#endif
   }
 
-  NR3_AVX2_RNGCore(uint64_t seed0, uint64_t seed1,
-                 uint64_t seed2, uint64_t seed3):
-      RNGCore(), seed_(0)
+  NR3_AVX2_RNGCore(uint64_t seed0, uint64_t seed1, uint64_t seed2, uint64_t seed3):
+    RNGCore(), seed_(0)
   {
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
     init(seed0, seed1, seed2, seed3);
+#else
+    throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
+#endif
   }
 
   NR3_AVX2_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto,
-                  bool restore_state = false);
+                   bool restore_state = false);
 
-  ~NR3_AVX2_RNGCore();
+  virtual ~NR3_AVX2_RNGCore();
 
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
   __m256i uniform_uivec256()
   {
-    constexpr uint64_t CU1 = UINT64_C(2862933555777941757);
-    constexpr uint64_t CU2 = UINT64_C(7046029254386353087);
-
+#if 0
     // AVX2 doesn't have 64bit->64bit multiply, so instead we do
     // three 32bit->64bit multiplies, two 64bit adds and one 64bit
     // shift.  u*C = ( u_hi*C_lo + u_lo*C_hi ) << 32 + u_lo*C_lo
-    const __m256i vec_cu1_lo = _mm256_set1_epi64x(CU1);
-    const __m256i vec_cu1_hi = _mm256_set1_epi64x(CU1>>32);
+    const __m256i vec_cu1_lo = _mm256_set1_epi64x(C_NR3_U_MUL);
+    const __m256i vec_cu1_hi = _mm256_set1_epi64x(C_NR3_U_MUL>>32);
     const __m256i vec_u_lo = vec_u_;
     const __m256i vec_u_hi = _mm256_shuffle_epi32(vec_u_, 0xB1);
     vec_u_ = _mm256_mul_epu32(vec_u_hi, vec_cu1_lo);
     vec_u_ = _mm256_add_epi64(vec_u_, _mm256_mul_epu32(vec_u_lo, vec_cu1_hi));
     vec_u_ = _mm256_slli_epi64(vec_u_, 32);
     vec_u_ = _mm256_add_epi64(vec_u_, _mm256_mul_epu32(vec_u_lo, vec_cu1_lo));
-    const __m256i vec_cu2 = _mm256_set1_epi64x(CU2);
+    const __m256i vec_cu2 = _mm256_set1_epi64x(C_NR3_U_ADD);
     vec_u_ =  _mm256_add_epi64(vec_u_, vec_cu2);
+#else
+    // AVX2 doesn't have 64bit->64bit multiply, so instead we do
+    // three 32bit->64bit multiplies, two 64bit adds and one 64bit
+    // shift.  u*C = ( u_hi*C_lo + u_lo*C_hi ) << 32 + u_lo*C_lo
+    const __m256i vec_cu1 = _mm256_set1_epi64x(C_NR3_U_MUL);
+    __m256i vec_tmp = _mm256_mul_epu32(_mm256_shuffle_epi32(vec_u_, 0xB1), vec_cu1);
+    vec_tmp = _mm256_add_epi64(vec_tmp, _mm256_mul_epu32(vec_u_, _mm256_shuffle_epi32(vec_cu1, 0xB1)));
+    vec_tmp = _mm256_slli_epi64(vec_tmp, 32);
+    vec_tmp = _mm256_add_epi64(vec_tmp, _mm256_mul_epu32(vec_u_, vec_cu1));
+    vec_u_ =  _mm256_add_epi64(vec_tmp, _mm256_set1_epi64x(C_NR3_U_ADD));
+#endif
 
-    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_srli_epi64(vec_v_, 17));
-    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_slli_epi64(vec_v_, 31));
-    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_srli_epi64(vec_v_, 8));
+    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_srli_epi64(vec_v_, C_NR3_V_SHIFT1));
+    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_slli_epi64(vec_v_, C_NR3_V_SHIFT2));
+    vec_v_ = _mm256_xor_si256(vec_v_, _mm256_srli_epi64(vec_v_, C_NR3_V_SHIFT3));
 
-    constexpr uint64_t CW = UINT64_C(4294957665);
-    const __m256i vec_cw =  _mm256_set1_epi64x(CW);
+    const __m256i vec_cw =  _mm256_set1_epi64x(C_NR3_W_MUL);
     vec_w_ = _mm256_add_epi64(_mm256_mul_epu32(vec_w_, vec_cw),
-                              _mm256_srli_epi64(vec_w_, 32));
+                              _mm256_srli_epi64(vec_w_, C_NR3_W_SHIFT1));
 
-    __m256i vec_x =  _mm256_xor_si256(vec_u_, _mm256_slli_epi64(vec_u_, 21));
-    vec_x = _mm256_xor_si256(vec_x, _mm256_srli_epi64(vec_x, 35));
-    vec_x = _mm256_xor_si256(vec_x, _mm256_slli_epi64(vec_x, 4));
+    __m256i vec_x =  _mm256_xor_si256(vec_u_, _mm256_slli_epi64(vec_u_, C_NR3_X_SHIFT1));
+    vec_x = _mm256_xor_si256(vec_x, _mm256_srli_epi64(vec_x, C_NR3_X_SHIFT2));
+    vec_x = _mm256_xor_si256(vec_x, _mm256_slli_epi64(vec_x, C_NR3_X_SHIFT3));
+
+    ++calls_;
 
     return _mm256_xor_si256(_mm256_add_epi64(vec_x, vec_v_), vec_w_);
   }
 
+  // Generate 8 float deviates in the range [-0.5*scale+offset, 0.5*scale+offset)
+  // The default values therefore create deviates in the "standard" range of [0,1)
+  __m256 uniform_psvec256(const float scale = 1.0, const float offset = 0.5)
+  {
+    __m256i vec_ui = uniform_uivec256();
+    __m256 vec_ps = _mm256_cvtepi32_ps(vec_ui);
+#ifdef __FMA__
+    vec_ps = _mm256_fmadd_ps(vec_ps, _mm256_set1_ps(C_U32_TO_FLT*scale),
+                _mm256_set1_ps(offset));
+#else
+    vec_ps = _mm256_mul_ps(vec_ps, _mm256_set1_ps(C_U32_TO_FLT*scale));
+    vec_ps = _mm256_add_ps(vec_ps, _mm256_set1_ps(offset));
+#endif
+    return vec_ps;
+  }
+
+  // Generate 8 "zero centered" float deviates in the range [-0.5*scale, 0.5*scale)
+  __m256 uniform_zc_psvec256(const float scale = 1.0)
+  {
+    __m256i vec_ui = uniform_uivec256();
+    __m256 vec_ps = _mm256_cvtepi32_ps(vec_ui);
+    vec_ps = _mm256_mul_ps(vec_ps, _mm256_set1_ps(C_U32_TO_FLT*scale));
+    return vec_ps;
+  }
+#endif
+
   uint64_t uniform_uint64() override
   {
-    if(ndev_ == 0)
-    {
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
+    if(ndev_) {
+      return vec_dev_[ndev_--];
+    } else {
       vec_dev_ = uniform_uivec256();
-      ndev_ = 4;
+      ndev_ = 3;
+      return vec_dev_[3];
     }
-    return reinterpret_cast<uint64_t*>(&vec_dev_)[--ndev_];
+#else
+    throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
+#endif
   }
 
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
@@ -462,19 +598,36 @@ class NR3_AVX2_RNGCore: public RNGCore
   static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
   { return proto.nr3_avx2_core(); }
 
- private:
+#ifndef SWIG
+  static void* operator new(size_t nbytes) {
+    void* p = nullptr;
+    if(::posix_memalign(&p, 32, nbytes)==0) {
+      return p;
+    }
+    throw std::bad_alloc();
+  }
+  static void* operator new(size_t nbytes, void* p) {
+    return p;
+  }
+  static void operator delete(void *p) {
+    free(p);
+  }
+#endif
+
+private:
   uint64_t seed_;
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
   uint64_t stream_seed0_;
   uint64_t stream_seed1_;
   uint64_t stream_seed2_;
   uint64_t stream_seed3_;
   uint64_t calls_ = 0;
-  __m256i vec_u_;
-  __m256i vec_v_;
-  __m256i vec_w_;
-  __m256i vec_dev_;
+  __m256i __attribute__((aligned(32))) vec_u_;
+  __m256i __attribute__((aligned(32))) vec_v_;
+  __m256i __attribute__((aligned(32))) vec_w_;
+  __m256i __attribute__((aligned(32))) vec_dev_;
   unsigned ndev_ = 0;
-};
 #endif
+};
 
 } } } // namespace calin::math::rng

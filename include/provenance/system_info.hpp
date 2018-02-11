@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <util/log.hpp>
 #include <provenance/system_info.pb.h>
 
 namespace calin { namespace provenance { namespace system_info {
@@ -46,5 +47,7 @@ calin::ix::provenance::system_info::HostAndProcessInfo* copy_the_host_info();
 void copy_the_host_info(calin::ix::provenance::system_info::HostAndProcessInfo* x);
 #endif
 
+void write_system_info_to_log(calin::util::log::Level level = calin::util::log::INFO,
+  calin::util::log::Logger* logger = calin::util::log::default_logger());
 
 } } } // namespace calin::provenance::system

@@ -197,7 +197,7 @@ void calin::math::hex_array::xy_to_uv(double x, double y, int& u, int& v)
   // lozenge-shaped space rather than hexagonal. We then correct the
   // four regions that lie outside the hexagonal cell assigning them
   // to their correct neighboring cell.
-  // Writer's note: see Code/Projects/CTA/Calib/Scribbles/Hex\ Test.ipynb
+  // Writer's note: see ~/Google Drive/Work/calin
   double dv = y*c_vy_inv;
   double du = x-dv*c_vx;
   u = std::lround(du);

@@ -52,6 +52,7 @@ calin::ix::provenance::system_info::BuildInfo* new_build_info()
   info->set_bin_install_dir(CALIN_BIN_INSTALL_DIR);
   info->set_header_install_dir(CALIN_HEADER_INSTALL_DIR);
   info->set_python_install_dir(CALIN_PYTHON_INSTALL_DIR);
+  info->set_unit_test_install_dir(CALIN_UNIT_TEST_INSTALL_DIR);
   info->set_build_system(CALIN_BUILD_SYSTEM);
   info->set_build_type(CALIN_BUILD_TYPE);
   info->set_build_arch(CALIN_BUILD_ARCH);
@@ -197,6 +198,16 @@ calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
     info->set_cpu_has_fma4(c & bit_FMA4);
   }
 
+  unsigned simd_vec_size = 0;
+  if(info->cpu_has_avx512f())simd_vec_size=512/8;
+  else if(info->cpu_has_avx())simd_vec_size=256/8;
+  else if(info->cpu_has_sse2())simd_vec_size=128/8;
+  else simd_vec_size = 64/8;
+  info->set_simd_vec_size(simd_vec_size);
+  unsigned log2_simd_vec_size = 0;
+  while(simd_vec_size>>=1)++log2_simd_vec_size;
+  info->set_log2_simd_vec_size(log2_simd_vec_size);
+
   return info;
 }
 
@@ -231,4 +242,41 @@ calin::provenance::system_info::copy_the_host_info(calin::ix::provenance::system
   if(x == nullptr) x = new calin::ix::provenance::system_info::HostAndProcessInfo;
   x->CopyFrom(*calin::provenance::system_info::the_host_info());
   return x;
+}
+
+void calin::provenance::system_info::write_system_info_to_log(calin::util::log::Level level,
+  calin::util::log::Logger* logger)
+{
+  const auto* host_info = calin::provenance::system_info::the_host_info();
+  auto L = LOG(level, logger);
+  L << host_info->uname_sysname() << " " << host_info->uname_release() << " on "
+    << host_info->cpu_processor_brand() << '\n';
+  if(host_info->cpu_has_sse()) {
+    L << "CPU has :";
+    if(host_info->cpu_has_avx512f())L << " AVX-512F";
+    if(host_info->cpu_has_avx512dq())L << "/DQ";
+    if(host_info->cpu_has_avx512ifma())L << "/IFMA";
+    if(host_info->cpu_has_avx512pf())L << "/PF";
+    if(host_info->cpu_has_avx512er())L << "/ER";
+    if(host_info->cpu_has_avx512cd())L << "/CD";
+    if(host_info->cpu_has_avx512bw())L << "/BW";
+    if(host_info->cpu_has_avx512vl())L << "/VL";
+    if(host_info->cpu_has_avx512vbmi())L << "/VBMI";
+    if(host_info->cpu_has_avx512vbmi2())L << "/VBMI2";
+    if(host_info->cpu_has_avx512vnni())L << "/VNNI";
+    if(host_info->cpu_has_avx512bitalg())L << "/BITALG";
+    if(host_info->cpu_has_avx512vpopcntdq())L << "/VPOPCNTDQ";
+    if(host_info->cpu_has_avx512_4vnniw())L << "/4VNNIW";
+    if(host_info->cpu_has_avx512_4fmaps())L << "/4FMAPS";
+    if(host_info->cpu_has_avx2())L << " AVX2";
+    if(host_info->cpu_has_avx())L << " AVX";
+    if(host_info->cpu_has_fma3())L << " FMA3";
+    if(host_info->cpu_has_fma4())L << " FMA4";
+    if(host_info->cpu_has_sse4_2())L << " SSE4.2";
+    if(host_info->cpu_has_sse4_1())L << " SSE4.1";
+    if(host_info->cpu_has_ssse3())L << " SSSE3";
+    if(host_info->cpu_has_sse3())L << " SSE3";
+    if(host_info->cpu_has_sse2())L << " SSE2";
+    if(host_info->cpu_has_sse())L << " SSE";
+  }
 }

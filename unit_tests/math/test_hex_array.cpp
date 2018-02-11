@@ -20,18 +20,23 @@
 
 */
 
+#include <random>
 #include <iostream>
 #include <iomanip>
 #include <gtest/gtest.h>
 #include <vector>
 
 #include "math/hex_array.hpp"
+#include "math/hex_array_simd.hpp"
 
 using namespace calin::math::hex_array;
 using namespace calin::math::hex_array::vvv;
 
+constexpr unsigned NLOOP_SPEED_TEST_50RINGS = 10000;
+constexpr unsigned NLOOP_HEXID_TOFROM_UV = 1000;
+
 TEST(TestHexArray, HexIDToRingIDLoop_SpeedTest50Rings) {
-  for(unsigned iloop = 0; iloop<3000; iloop++)
+  for(unsigned iloop = 0; iloop<NLOOP_SPEED_TEST_50RINGS; iloop++)
   {
     unsigned hexid = 1;
     for(unsigned iring=1;iring<50;iring++)
@@ -44,7 +49,7 @@ TEST(TestHexArray, HexIDToRingIDLoop_SpeedTest50Rings) {
 }
 
 TEST(TestHexArray, HexIDToRingIDRoot_SpeedTest50Rings) {
-  for(unsigned iloop = 0; iloop<3000; iloop++)
+  for(unsigned iloop = 0; iloop<NLOOP_SPEED_TEST_50RINGS; iloop++)
   {
     unsigned hexid = 1;
     for(unsigned iring=1;iring<50;iring++)
@@ -56,15 +61,44 @@ TEST(TestHexArray, HexIDToRingIDRoot_SpeedTest50Rings) {
   }
 }
 
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToRingIDRoot_SpeedTest50Rings) {
+  for(unsigned iloop = 0; iloop<NLOOP_SPEED_TEST_50RINGS/8; iloop++)
+  {
+    unsigned hexid = 1;
+    for(unsigned iring=1;iring<50;iring++)
+      for(unsigned ichan=0;ichan<6*iring;ichan++)
+      {
+        EXPECT_EQ(iring, test_avx2_positive_hexid_to_ringid_root(hexid));
+        hexid++;
+      }
+  }
+}
+#endif
+
 TEST(TestHexArray, HexIDToRingIDRoot_2000Rings) {
   unsigned hexid = 1;
   for(unsigned iring=1;iring<2000;iring++)
     for(unsigned ichan=0;ichan<6*iring;ichan++)
     {
-      EXPECT_EQ(iring, positive_hexid_to_ringid_root(hexid));
+      ASSERT_EQ(iring, positive_hexid_to_ringid_root(hexid))
+        << "With hexid=" << hexid;
       hexid++;
     }
 }
+
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToRingIDRoot_2000Rings) {
+  unsigned hexid = 1;
+  for(unsigned iring=1;iring<2000;iring++)
+    for(unsigned ichan=0;ichan<6*iring;ichan++)
+    {
+      ASSERT_EQ(iring, test_avx2_positive_hexid_to_ringid_root(hexid))
+        << "With hexid=" << hexid;
+      hexid++;
+    }
+}
+#endif
 
 TEST(TestHexArray, SomeNeighbors) {
   EXPECT_EQ(hexid_to_neighbor_hexids(0),
@@ -131,6 +165,38 @@ TEST(TestHexArray, HexIDToXY_ComparisonWithVVVCode) {
     }
 }
 
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToXY_Equals_Scalar) {
+  unsigned hexid = 1;
+  for(unsigned iring=1;iring<500;iring++)
+    for(unsigned ichan=0;ichan<6*iring;ichan++)
+    {
+      double x1,y1;
+      float x2,y2;
+      hexid_to_xy(hexid, x1, y1);
+      test_avx2_hexid_to_xy_f(hexid, x2, y2);
+      EXPECT_NEAR(float(x1),x2,abs(x2)*1e-6);
+      EXPECT_NEAR(float(y1),y2,abs(y2)*1e-6);
+      hexid++;
+    }
+}
+
+TEST(TestHexArray, AVX2_HexIDToXY_CW_Equals_Scalar) {
+  unsigned hexid = 1;
+  for(unsigned iring=1;iring<500;iring++)
+    for(unsigned ichan=0;ichan<6*iring;ichan++)
+    {
+      double x1,y1;
+      float x2,y2;
+      hexid_to_xy(hexid, x1, y1, true);
+      test_avx2_hexid_to_xy_f(hexid, x2, y2, true);
+      EXPECT_NEAR(float(x1),x2,abs(x2)*1e-6);
+      EXPECT_NEAR(float(y1),y2,abs(y2)*1e-6);
+      hexid++;
+    }
+}
+#endif
+
 TEST(TestHexArray, XYToHexID_NewCodeSpeedTest) {
   for(double x=-10.005; x<10.015; x+=0.01)
     for(double y=-10.005; y<10.015; y+=0.01)
@@ -176,6 +242,106 @@ TEST(TestHexArray, XYToHexID_ComparisonWithVVVCode) {
     }
 }
 
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_XYToHexID_Equals_Scalar) {
+  for(double x=-10.005; x<10.015; x+=0.02)
+    for(double y=-10.005; y<10.015; y+=0.02)
+    {
+      double xx1 = x;
+      double yy1 = y;
+      unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1);
+      float xx2 = x;
+      float yy2 = y;
+      unsigned hexid2 = test_avx2_xy_to_hexid_with_remainder_f(xx2, yy2);
+      EXPECT_EQ(hexid, hexid2);
+      EXPECT_NEAR(xx1,xx2,1e-6);
+      EXPECT_NEAR(yy1,yy2,1e-6);
+    }
+}
+
+TEST(TestHexArray, AVX2_XYToHexID_CW_Equals_Scalar) {
+  for(double x=-10.005; x<10.015; x+=0.02)
+    for(double y=-10.005; y<10.015; y+=0.02)
+    {
+      double xx1 = x;
+      double yy1 = y;
+      unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1, true);
+      float xx2 = x;
+      float yy2 = y;
+      unsigned hexid2 = test_avx2_xy_to_hexid_with_remainder_f(xx2, yy2, true);
+      EXPECT_EQ(hexid, hexid2);
+      EXPECT_NEAR(xx1,xx2,1e-6);
+      EXPECT_NEAR(yy1,yy2,1e-6);
+    }
+}
+
+TEST(TestHexArray, AVX2_XYToHexID_Trans_Equals_Scalar) {
+  float dx = 0.32426534147237f;
+  float dy = 1.25432437427634f;
+  float theta = 12.21752765/180.0*M_PI;
+  float ctheta = std::cos(theta);
+  float stheta = std::sin(theta);
+  float scale = 0.9326575752f;
+  for(double x=-10.005; x<10.015; x+=0.02)
+    for(double y=-10.005; y<10.015; y+=0.02)
+    {
+      double xx1 = x;
+      double yy1 = y;
+      unsigned hexid = xy_trans_to_hexid_with_remainder(xx1, yy1, ctheta, stheta, scale, dx, dy);
+      float xx2 = x;
+      float yy2 = y;
+      unsigned hexid2 = test_avx2_xy_trans_to_hexid_with_remainder_f(xx2, yy2, ctheta, stheta, scale, dx, dy);
+      EXPECT_EQ(hexid, hexid2);
+      EXPECT_NEAR(xx1,xx2,1e-5);
+      EXPECT_NEAR(yy1,yy2,1e-5);
+    }
+}
+
+TEST(TestHexArray, AVX2_XYToHexID_CW_Trans_Equals_Scalar) {
+  float dx = 0.32426534147237f;
+  float dy = 1.25432437427634f;
+  float theta = 12.21752765/180.0*M_PI;
+  float ctheta = std::cos(theta);
+  float stheta = std::sin(theta);
+  float scale = 0.9326575752f;
+  for(double x=-10.005; x<10.015; x+=0.02)
+    for(double y=-10.005; y<10.015; y+=0.02)
+    {
+      double xx1 = x;
+      double yy1 = y;
+      unsigned hexid = xy_trans_to_hexid_with_remainder(xx1, yy1, true, ctheta, stheta, scale, dx, dy);
+      float xx2 = x;
+      float yy2 = y;
+      unsigned hexid2 = test_avx2_xy_trans_to_hexid_with_remainder_f(xx2, yy2, true, ctheta, stheta, scale, dx, dy);
+      EXPECT_EQ(hexid, hexid2);
+      EXPECT_NEAR(xx1,xx2,1e-5);
+      EXPECT_NEAR(yy1,yy2,1e-5);
+    }
+}
+#endif
+
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToFromRingSegRun_APriori) {
+  unsigned hexid=1;
+  for(unsigned iring=1;iring<100;iring++)
+    for(unsigned iseg=0;iseg<6;iseg++)
+      for(unsigned irun=0;irun<iring;irun++)
+      {
+        ASSERT_EQ(hexid,
+          test_avx2_positive_ringid_segid_runid_to_hexid(iring, iseg, irun)) <<
+            iring << ' ' << iseg << ' ' << irun;
+        unsigned ringid = 0;
+        unsigned segid = 0;
+        unsigned runid = 0;
+        test_avx2_positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+        ASSERT_EQ(iring, ringid);
+        ASSERT_EQ(iseg, segid);
+        ASSERT_EQ(irun, runid);
+        hexid++;
+      }
+}
+#endif
+
 TEST(TestHexArray, HexIDToFromRingSegRun_APriori) {
   unsigned hexid=1;
   for(unsigned iring=1;iring<100;iring++)
@@ -209,6 +375,21 @@ TEST(TestHexArray, HexIDToFromRingSegRun_EQ) {
   }
 }
 
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToFromRingSegRun_EQ) {
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    unsigned ringid = 0;
+    unsigned segid = 0;
+    unsigned runid = 0;
+    test_avx2_positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+    ASSERT_EQ(hexid,
+      test_avx2_positive_ringid_segid_runid_to_hexid(ringid, segid, runid))
+        << ringid << ' ' << segid << ' ' << runid;
+  }
+}
+#endif
+
 TEST(TestHexArray, HexIDToFromUV_CW_EQ) {
   for(unsigned hexid=1;hexid<100000;hexid++)
   {
@@ -221,6 +402,7 @@ TEST(TestHexArray, HexIDToFromUV_CW_EQ) {
 }
 
 TEST(TestHexArray, HexIDToFromUV_CCW_EQ) {
+  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV; iloop++)
   for(unsigned hexid=1;hexid<100000;hexid++)
   {
     int u = 0;
@@ -230,6 +412,86 @@ TEST(TestHexArray, HexIDToFromUV_CCW_EQ) {
       << hexid << ' ' << u << ' ' << v;
   }
 }
+
+TEST(TestHexArray, RandHexIDToFromUV_CCW_EQ) {
+  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV; iloop++) {
+    std::mt19937 gen(15939); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_int_distribution<> dis(0, 100000);
+    for(unsigned idev=0;idev<100000;idev++)
+    {
+      unsigned hexid = dis(gen);
+      int u = 0;
+      int v = 0;
+      hexid_to_uv_ccw(hexid, u, v);
+      ASSERT_EQ(hexid, uv_to_hexid_ccw(u, v))
+        << hexid << ' ' << u << ' ' << v;
+    }
+  }
+}
+
+
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, AVX2_HexIDToFromUV_CW_EQ) {
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    int u = 0;
+    int v = 0;
+    test_avx2_hexid_to_uv_cw(hexid, u, v);
+    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_cw(u, v))
+      << hexid << ' ' << u << ' ' << v;
+  }
+}
+
+TEST(TestHexArray, AVX2_HexIDToFromUV_CW_Equals_Scalar) {
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    int u = 0;
+    int v = 0;
+    hexid_to_uv_cw(hexid, u, v);
+    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_cw(u, v))
+      << hexid << ' ' << u << ' ' << v;
+  }
+}
+
+TEST(TestHexArray, AVX2_HexIDToFromUV_CCW_EQ) {
+  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV/8; iloop++)
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    int u = 0;
+    int v = 0;
+    test_avx2_hexid_to_uv_ccw(hexid, u, v);
+    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_ccw(u, v))
+      << hexid << ' ' << u << ' ' << v;
+  }
+}
+
+TEST(TestHexArray, AVX2_HexIDToFromUV_CCW_Equals_Scalar) {
+  for(unsigned hexid=1;hexid<100000;hexid++)
+  {
+    int u = 0;
+    int v = 0;
+    hexid_to_uv_ccw(hexid, u, v);
+    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_ccw(u, v))
+      << hexid << ' ' << u << ' ' << v;
+  }
+}
+
+TEST(TestHexArray, AVX2_RandHexIDToFromUV_CCW_EQ) {
+  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV/8; iloop++) {
+    std::mt19937 gen(15939); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_int_distribution<> dis(0, 100000);
+    for(unsigned idev=0;idev<100000;idev++)
+    {
+      unsigned hexid = dis(gen);
+      int u = 0;
+      int v = 0;
+      test_avx2_hexid_to_uv_ccw(hexid, u, v);
+      ASSERT_EQ(hexid, test_avx2_uv_to_hexid_ccw(u, v))
+        << hexid << ' ' << u << ' ' << v;
+    }
+  }
+}
+#endif
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

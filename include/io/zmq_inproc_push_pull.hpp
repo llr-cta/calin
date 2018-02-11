@@ -24,6 +24,7 @@
 
 #include <string>
 #include <memory>
+#include <atomic>
 
 #include <zmq.h>
 
@@ -37,6 +38,8 @@ public:
   ZMQPusher(void* zmq_ctx, const std::string& endpoint, int buffer_size = 100,
     ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::BIND);
   bool push(void* data, unsigned size, bool dont_wait = false);
+  void* socket() { return socket_.get(); }
+  zmq_pollitem_t pollitem() { return { socket_.get(), 0, ZMQ_POLLOUT, 0 }; }
 private:
   std::unique_ptr<void,int(*)(void*)> socket_;
 };
@@ -50,6 +53,8 @@ public:
      bool dont_wait = false);
   bool pull_assert_size(void* data, unsigned buffer_size,
       bool dont_wait = false);
+  void* socket() { return socket_.get(); }
+  zmq_pollitem_t pollitem() { return { socket_.get(), 0, ZMQ_POLLIN, 0 }; }
 private:
   std::unique_ptr<void,int(*)(void*)> socket_;
 };
@@ -57,17 +62,20 @@ private:
 class ZMQInprocPushPull
 {
 public:
-  ZMQInprocPushPull(unsigned buffer_size = 100);
+  ZMQInprocPushPull(unsigned buffer_size = 100, ZMQInprocPushPull* shared_ctx = nullptr);
+  ZMQInprocPushPull(ZMQInprocPushPull* shared_ctx, unsigned buffer_size = 100):
+    ZMQInprocPushPull(buffer_size, shared_ctx) { }
   ~ZMQInprocPushPull();
 
-  ZMQPuller* new_puller();
-  ZMQPusher* new_pusher();
+  ZMQPuller* new_puller(ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::CONNECT);
+  ZMQPusher* new_pusher(ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::BIND);
 
   void* zmq_ctx() { return zmq_ctx_; }
   unsigned address_index() { return address_index_; }
   std::string address();
 
 private:
+  std::atomic<unsigned> zmq_ctx_address_ { 0 };
   unsigned buffer_size_ = 100;
   void* my_zmq_ctx_ = nullptr;
   void* zmq_ctx_ = nullptr;

@@ -44,8 +44,12 @@
 
 #include <math/rng.hpp>
 #include <provenance/chronicle.hpp>
+#include <provenance/system_info.hpp>
+#include <util/log.hpp>
+#include <util/memory.hpp>
 
 using namespace calin::math::rng;
+using namespace calin::util::log;
 
 RNGCore::~RNGCore()
 {
@@ -61,8 +65,17 @@ RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGData& proto,
     case ix::math::rng::RNGData::kMt19937Core:
       return new MT19937RNGCore(proto.mt19937_core(), restore_state);
     case ix::math::rng::RNGData::kNr3Core:
-    default:
       return new NR3RNGCore(proto.nr3_core(), restore_state);
+    case ix::math::rng::RNGData::kNr3SimdEmu4Core:
+      return new NR3_EmulateSIMD_RNGCore<4>(proto.nr3_simd_emu4_core(), restore_state);
+    case ix::math::rng::RNGData::kNr3Avx2Core:
+      // Ugh : placement new here to overcome problem with AVX members
+      // return new(calin::util::memory::aligned_calloc<NR3_AVX2_RNGCore>(1)) NR3_AVX2_RNGCore(proto.nr3_avx2_core(), restore_state);
+      return new NR3_AVX2_RNGCore(proto.nr3_avx2_core(), restore_state);
+    default:
+      LOG(ERROR) << "Unrecognised RNG type case : " << proto.core_case();
+    case 0:
+      return new NR3RNGCore();
   }
 }
 
@@ -120,8 +133,6 @@ RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state, const std::str
   {
     bm_hascached_ = proto.bm_hascached();
     bm_cachedval_ = proto.bm_cachedval();
-    dev32_hascached_ = proto.dev32_hascached();
-    dev32_cachedval_ = proto.dev32_cachedval();
   }
   const ix::math::rng::RNGData* proto2 = this->as_proto();
   calin::provenance::chronicle::register_calin_rng(*proto2, created_by);
@@ -138,8 +149,6 @@ void RNG::save_to_proto(ix::math::rng::RNGData* proto) const
   core_->save_to_proto(proto);
   proto->set_bm_hascached(bm_hascached_);
   proto->set_bm_cachedval(bm_hascached_ ? bm_cachedval_ : 0.0);
-  proto->set_dev32_hascached(dev32_hascached_);
-  proto->set_dev32_cachedval(dev32_hascached_ ? dev32_cachedval_ : 0ULL);
 }
 
 uint64_t RNG::uint64_from_random_device()
@@ -471,6 +480,11 @@ NR3RNGCore::~NR3RNGCore()
 void NR3RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
 {
   auto* data = proto->mutable_nr3_core();
+  save_to_proto(data);
+}
+
+void NR3RNGCore::save_to_proto(ix::math::rng::NR3RNGCoreData* data) const
+{
   data->set_seed(seed_);
   data->set_state_saved(true);
   data->set_calls(calls_);
@@ -540,6 +554,103 @@ void MT19937RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
   state << gen_;
   data->set_state(state.str());
 }
+
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
+void NR3_AVX2_RNGCore::test_cpu() const
+{
+  const auto* sysinfo = calin::provenance::system_info::the_host_info();
+  if(not sysinfo->cpu_has_avx2())
+    throw std::runtime_error("NR3_AVX2_RNGCore: CPU does not support AVX2 instructions.");
+}
+#endif
+
+NR3_AVX2_RNGCore::~NR3_AVX2_RNGCore()
+{
+  // nothing to see here
+}
+
+NR3_AVX2_RNGCore::NR3_AVX2_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto,
+    bool restore_state):
+  NR3_AVX2_RNGCore(proto.seed())
+{
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
+  test_cpu();
+  if(proto.vec_stream_seed_size() != 0) {
+    // We allow either zero of four seeds.. zero means we do "seed only" reinit
+    if(proto.vec_stream_seed_size() != 4)
+      throw std::runtime_error("NR3_AVX2_RNGCore: saved seed vectors must have 4 elements");
+    init(proto.vec_stream_seed(3), proto.vec_stream_seed(2),
+         proto.vec_stream_seed(1), proto.vec_stream_seed(0));
+    if(restore_state and proto.state_saved())
+    {
+      if(proto.vec_u_size() != 4 or proto.vec_v_size() != 4 or proto.vec_w_size() != 4)
+        throw std::runtime_error("NR3_AVX2_RNGCore: saved state vectors must have 4 elements");
+      if(proto.dev_size() > 4)
+        throw std::runtime_error("NR3_AVX2_RNGCore: saved deviate vector must have at most 4 elements");
+      calls_ = proto.calls();
+      vec_u_ = _mm256_set_epi64x(proto.vec_u(3), proto.vec_u(2), proto.vec_u(1), proto.vec_u(0));
+      vec_v_ = _mm256_set_epi64x(proto.vec_v(3), proto.vec_v(2), proto.vec_v(1), proto.vec_v(0));
+      vec_w_ = _mm256_set_epi64x(proto.vec_w(3), proto.vec_w(2), proto.vec_w(1), proto.vec_w(0));
+      ndev_ = proto.dev_size();
+      switch(ndev_) {
+      case 0:
+      default:
+        vec_dev_ = _mm256_setzero_si256();
+        break;
+      case 1:
+        vec_dev_ = _mm256_set_epi64x(0U, 0U, 0U, proto.dev(0));
+        break;
+      case 2:
+        vec_dev_ = _mm256_set_epi64x(0U, 0U, proto.dev(1), proto.dev(0));
+        break;
+      case 3:
+        vec_dev_ = _mm256_set_epi64x(0U, proto.dev(2), proto.dev(1), proto.dev(0));
+        break;
+      case 4:
+        vec_dev_ = _mm256_set_epi64x(proto.dev(3), proto.dev(2), proto.dev(1), proto.dev(0));
+        break;
+      }
+    }
+  }
+#else
+  throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
+#endif
+}
+
+void NR3_AVX2_RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
+{
+  auto* data = proto->mutable_nr3_avx2_core();
+  data->set_seed(seed_);
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
+  data->set_calls(calls_);
+  data->set_state_saved(true);
+  data->add_vec_stream_seed(stream_seed3_);
+  data->add_vec_stream_seed(stream_seed2_);
+  data->add_vec_stream_seed(stream_seed1_);
+  data->add_vec_stream_seed(stream_seed0_);
+
+  data->add_vec_u(_mm256_extract_epi64(vec_u_,0));
+  data->add_vec_u(_mm256_extract_epi64(vec_u_,1));
+  data->add_vec_u(_mm256_extract_epi64(vec_u_,2));
+  data->add_vec_u(_mm256_extract_epi64(vec_u_,3));
+
+  data->add_vec_v(_mm256_extract_epi64(vec_v_,0));
+  data->add_vec_v(_mm256_extract_epi64(vec_v_,1));
+  data->add_vec_v(_mm256_extract_epi64(vec_v_,2));
+  data->add_vec_v(_mm256_extract_epi64(vec_v_,3));
+
+  data->add_vec_w(_mm256_extract_epi64(vec_w_,0));
+  data->add_vec_w(_mm256_extract_epi64(vec_w_,1));
+  data->add_vec_w(_mm256_extract_epi64(vec_w_,2));
+  data->add_vec_w(_mm256_extract_epi64(vec_w_,3));
+
+  if(ndev_>0U)data->add_dev(_mm256_extract_epi64(vec_dev_,0));
+  if(ndev_>1U)data->add_dev(_mm256_extract_epi64(vec_dev_,1));
+  if(ndev_>2U)data->add_dev(_mm256_extract_epi64(vec_dev_,2));
+  if(ndev_>3U)data->add_dev(_mm256_extract_epi64(vec_dev_,3));
+#endif
+}
+
 
 #if 0
 

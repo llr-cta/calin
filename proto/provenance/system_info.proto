@@ -53,6 +53,9 @@ message BuildInfo {
   string python_install_dir                                = 8 [
     (CFO).desc = "Installation directory for python files." ];
 
+  string unit_test_install_dir                             = 9 [
+    (CFO).desc = "Installation directory for unit tests." ];
+
   string build_system                                      = 100 [
     (CFO).desc = "Build system (i.e. operating system) type from CMake "
       "variable CMAKE_SYSTEM."];
@@ -120,7 +123,18 @@ message HostAndProcessInfo {
     (CFO).desc = "Harware conurrency returned by C++-11 "
       "std::thread::hardware_concurrency implementation." ];
 
-  map<string, string> environment                          = 7 [
+  uint32 log2_simd_vec_size                                = 7 [
+    (CFO).desc = "Log2 of the number of bytes in largest SIMD vector type. Will be "
+      "log2(512/8)=6 on machines with AVX-512, "
+      "log2(256/8)=5 on machines with AVX/AVX2, "
+      "log2(128/8)=4 on machines with SSE2, or log2(64/8)=3 on other machines." ];
+
+  uint32 simd_vec_size                                     = 8 [
+    (CFO).desc = "Number of bytes in largest SIMD vector type. Will be "
+      "512/8=64 on machines with AVX-512, 256/8=32 on machines with AVX/AVX2, "
+      "128/8=16 on machines with SSE2, or 64/8=8 on other machines." ];
+
+  map<string, string> environment                          = 9 [
     (CFO).desc = "Map of environment variables." ];
 
   string uname_sysname                                     = 100 [

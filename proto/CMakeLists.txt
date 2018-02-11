@@ -97,8 +97,20 @@ macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
 		target_link_libraries(_${base_name}_pb calin_proto ${arg_proto_library} ${PYTHON_LIBRARIES} ${PROTOBUF_LIBRARY})
 		install(TARGETS _${base_name}_pb  DESTINATION ${arg_swig_install_dir})
 		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.py  DESTINATION ${arg_swig_install_dir})
-		install(FILES __init__.py DESTINATION ${arg_swig_install_dir})
 	endforeach (proto_interface_file)
+	set(CALIN_PY_INIT_SWIG_LIST FALSE)
+  foreach (proto_interface_file ${ARGN})
+    string(REPLACE ".proto" "" base_name ${proto_interface_file})
+    if(CALIN_PY_INIT_SWIG_LIST)
+      set(CALIN_PY_INIT_SWIG_LIST "${CALIN_PY_INIT_SWIG_LIST}, \"${base_name}\"")
+    else(CALIN_PY_INIT_SWIG_LIST)
+      set(CALIN_PY_INIT_SWIG_LIST "\"${base_name}\"")
+    endif(CALIN_PY_INIT_SWIG_LIST)
+  endforeach (proto_interface_file)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/__init__.py.in
+    ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+    DESTINATION ${arg_swig_install_dir})
 endmacro()
 
 ######################################################################

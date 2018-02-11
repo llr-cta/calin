@@ -24,3 +24,6 @@ add_test(TestSQLTransceiver test_sql_transceiver)
 add_executable(test_data_source test_data_source.cpp)
 target_link_libraries(test_data_source ${GTEST_BOTH_LIBRARIES} calin_io calin_proto ${EXTRA_LIBS})
 add_test(TestDataSource test_data_source)
+
+install(TARGETS test_log test_sql_transceiver test_data_source
+  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})

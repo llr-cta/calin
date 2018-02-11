@@ -197,6 +197,19 @@ message ChannelWaveform {
     (CFO).units = "dc" ];
 };
 
+message SIMDVectorWaveform {
+  bytes vector_samples_array                                = 1 [
+    (CFO).desc = "Raw samples array as SIMD vectors. Sample j of channel i is "
+    "stored as a U16 in little endian order starting at position "
+    "start+2*((i/nchan_per_vector*num_samples_per_channel + j)*nchan_per_vector+(i%nchan_per_vector))." ];
+  uint32 start                                              = 2 [
+    (CFO).desc = "Start of of samples in array. Used to align data per "
+      "system-dependent SIMD alignment requirements." ];
+  uint32 nchan_per_vector                                   = 3 [
+    (CFO).desc = "Number of channels (samples) per SIMD vector. For "
+      "AVX/AVX2 (256 bit) this is 16. For AVX-512 this is 32." ];
+}
+
 message Waveforms {
   bool all_channels_present                                 = 1 [
     (CFO).desc = "True if waveforms for all channels are present. In this case "
@@ -214,6 +227,16 @@ message Waveforms {
     (CFO).desc = "Number of samples per channel if this is constant per event, "
       "zero otherwise.",
     (CFO).units = "samples" ];
+  bytes raw_samples_array                                   = 7 [
+    (CFO).desc = "Raw samples array. Sample j of channel i is stored as a U16 in "
+      "little endian order starting at position "
+      "2*(i*num_samples_per_channel+j)+raw_samples_array_start. The size may "
+      "of raw_samples_array be larger than the data to allow for the system "
+      "SIMD vector data type to be used on all samples." ];
+  uint32 raw_samples_array_start                            = 8 [
+    (CFO).desc = "Start of samples in raw_samples_array. Used to align data per "
+      "system-dependent SIMD alignment requirements, e.g. to 32 byte "
+      "boundary for 256bit AVX/AVX2, or 512bit for AVX-512." ];
 };
 
 message DigitizedSkyImage {

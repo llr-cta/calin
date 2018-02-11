@@ -29,6 +29,7 @@
 #include <calin_global_config.hpp>
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/event_visitor.hpp>
+#include <iact_data/nectarcam_data_source.hpp>
 
 namespace calin { namespace iact_data { namespace event_dispatcher {
 
@@ -54,6 +55,40 @@ public:
   void process_run(calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig* src,
     unsigned log_frequency = 0, int nthread = 0);
+
+  void process_run(calin::io::data_source::DataSource<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
+    calin::ix::iact_data::
+      telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    unsigned log_frequency = 0, int nthread = 0,
+    bool use_buffered_reader = true);
+
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+  void process_nectarcam_zfits_run(const std::string& filename,
+    unsigned log_frequency = 0, int nthread = 0,
+    const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config =
+      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource::default_decoder_config(),
+    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config =
+      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource::default_config());
+
+  void process_nectarcam_zfits_run(const std::string& filename,
+    unsigned log_frequency, int nthread,
+    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config,
+    const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config =
+      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource::default_decoder_config()) {
+    return process_nectarcam_zfits_run(filename, log_frequency, nthread,
+      decoder_config, zfits_config);
+  }
+
+  void process_nectarcam_zfits_run(const std::string& filename,
+    const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config,
+    unsigned log_frequency = 0, int nthread = 0,
+    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config =
+      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource::default_config()) {
+    return process_nectarcam_zfits_run(filename, log_frequency, nthread,
+      decoder_config, zfits_config);
+  }
+#endif
 
   // These functions allow events to be passed on to the visitors - they
   // are not meant to be called directly as the visiors expect them to be

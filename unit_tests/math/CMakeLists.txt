@@ -13,6 +13,8 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --save-temps")
+
 add_executable(test_histogram test_histogram.cpp)
 target_link_libraries(test_histogram ${GTEST_BOTH_LIBRARIES} calin_math calin_proto)
 add_test(TestHistogram test_histogram)
@@ -41,3 +43,11 @@ add_test(TestHexArray test_hex_array)
 add_executable(test_rng test_rng.cpp)
 target_link_libraries(test_rng ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
 add_test(TestRNG test_rng)
+
+add_executable(test_simd test_simd.cpp)
+target_link_libraries(test_simd ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
+add_test(TestSIMD test_simd)
+
+install(TARGETS test_histogram test_hessian test_pdf_1d test_m_estimate
+	test_data_modeling test_hex_array test_rng test_simd
+  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})

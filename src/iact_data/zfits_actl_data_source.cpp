@@ -174,6 +174,7 @@ release_borrowed_event(const DataModel::CameraEvent* event)
 DataModel::CameraEvent* ZFITSSingleFileACTLDataSource::
 get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
+  if(arena)*arena = nullptr;
   const DataModel::CameraEvent* event = borrow_next_event(seq_index_out);
   if(event == nullptr)return nullptr;
 
@@ -314,4 +315,74 @@ DataModel::CameraRunHeader* ZFITSACTLDataSource::get_run_header()
   auto* run_header = new DataModel::CameraRunHeader();
   run_header->CopyFrom(*run_header_);
   return run_header;
+}
+
+const DataModel::CameraEvent* ZFITSACTLDataSource::
+borrow_next_event(uint64_t& seq_index_out)
+{
+  uint64_t unused_index = 0;
+  while(isource_ < opener_->num_sources())
+  {
+    if(const data_type* next = source_->borrow_next_event(unused_index))
+    {
+      seq_index_out = seq_index_;
+      ++seq_index_;
+      return next;
+    }
+    ++isource_;
+    open_file();
+  }
+  return nullptr;
+}
+
+void ZFITSACTLDataSource::
+release_borrowed_event(const DataModel::CameraEvent* event)
+{
+  if(source_)
+    source_->release_borrowed_event(event);
+  else
+    delete event;
+}
+
+ZFITSConstACTLDataSourceBorrowAdapter::
+ZFITSConstACTLDataSourceBorrowAdapter(ZFITSACTLDataSource* src):
+  calin::io::data_source::DataSource<const DataModel::CameraEvent>(),
+  src_(src)
+{
+  // nothing to see here
+}
+
+ZFITSConstACTLDataSourceBorrowAdapter::~ZFITSConstACTLDataSourceBorrowAdapter()
+{
+  // nothing to see here
+}
+
+const DataModel::CameraEvent* ZFITSConstACTLDataSourceBorrowAdapter::
+get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
+{
+  assert(arena==nullptr or *arena==nullptr);
+  return src_->borrow_next_event(seq_index_out);
+}
+
+ZFITSConstACTLDataSourceReleaseAdapter::
+ZFITSConstACTLDataSourceReleaseAdapter(ZFITSACTLDataSource* src):
+  calin::io::data_source::DataSink<const DataModel::CameraEvent>(),
+  src_(src)
+{
+  // nothing to see here
+}
+
+ZFITSConstACTLDataSourceReleaseAdapter::~ZFITSConstACTLDataSourceReleaseAdapter()
+{
+  // nothing to see here
+}
+
+bool ZFITSConstACTLDataSourceReleaseAdapter::
+put_next(const DataModel::CameraEvent* data, uint64_t seq_index,
+  google::protobuf::Arena* arena, bool adopt_data)
+{
+  assert(adopt_data);
+  assert(arena==nullptr);
+  src_->release_borrowed_event(data);
+  return true;
 }

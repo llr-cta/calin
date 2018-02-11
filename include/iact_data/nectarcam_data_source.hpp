@@ -50,6 +50,7 @@ public:
   static config_type default_config() {
     config_type config = config_type::default_instance();
     config.set_nmc_xml_suffix(".NMC.xml");
+    config.set_separate_channel_waveforms(true);
     return config;
   }
 
@@ -65,8 +66,14 @@ public:
     const DataModel::CameraRunHeader* cta_run_header,
     const DataModel::CameraEvent* cta_event) override;
 
-private:
-  void copy_single_gain_image(const DataModel::CameraEvent* cta_event,
+protected:
+  void copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
+    const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+    const DataModel::PixelsChannel& cta_image,
+    calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
+    const std::string& which_gain) const;
+
+  virtual void copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
     const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     const DataModel::PixelsChannel& cta_image,
     calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,

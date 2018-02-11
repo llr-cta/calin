@@ -13,10 +13,14 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --save-temps")
+
 set(CALIN_TARGET_LIBRARY calin_iact_data)
 set(CALIN_SOURCES telescope_data_source.cpp event_visitor.cpp
-	event_dispatcher.cpp functional_event_visitor.cpp instrument_layout.cpp
-	nectarcam_layout.cpp nectarcam_module_configuration.cpp)
+	event_dispatcher.cpp parallel_event_dispatcher.cpp 
+	functional_event_visitor.cpp instrument_layout.cpp
+	nectarcam_layout.cpp nectarcam_module_configuration.cpp
+	waveform_treatment_event_visitor.cpp waveform_treatment_event_visitor_impl.cpp)
 
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES} zfits_actl_data_source.cpp

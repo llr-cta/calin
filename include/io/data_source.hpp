@@ -61,6 +61,20 @@ public:
     google::protobuf::Arena* arena = nullptr, bool adopt_data = false) = 0;
 };
 
+template<typename T> class DataSourceFactory
+{
+public:
+  virtual ~DataSourceFactory() { }
+  virtual DataSource<T>* new_data_source() = 0;
+};
+
+template<typename T> class DataSinkFactory
+{
+public:
+  virtual ~DataSinkFactory() { }
+  virtual DataSink<T>* new_data_sink() = 0;
+};
+
 // *****************************************************************************
 //
 // ProtobufPacketStreamDataSource/Sink : transform a PacketIn/OutStream into a

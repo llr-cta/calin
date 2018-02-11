@@ -14,7 +14,8 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_SWIG_FILES telescope_data_source.i event_dispatcher.i
-	functional_event_visitor.i instrument_layout.i nectarcam_layout.i)
+	functional_event_visitor.i instrument_layout.i nectarcam_layout.i
+	waveform_treatment_event_visitor.i)
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SWIG_FILES ${CALIN_SWIG_FILES} raw_actl_event_data_source.i)
 endif()
@@ -27,5 +28,3 @@ endif()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 make_swig_modules(calin_${CALIN_SWIG_TARGET}
 	${CALIN_SWIG_INSTALL_DIR}/${CALIN_SWIG_TARGET} ${CALIN_SWIG_FILES})
-install(FILES __init__.py
-	DESTINATION ${CALIN_SWIG_INSTALL_DIR}/${CALIN_SWIG_TARGET})
