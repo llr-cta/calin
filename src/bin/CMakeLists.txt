@@ -13,19 +13,17 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_executable(do_spe_fit do_spe_fit)
-target_link_libraries(do_spe_fit calin_calib calin_math calin_proto calin_nlopt calin_util)
+add_executable(write_system_info write_system_info)
+target_link_libraries(write_system_info calin_provenance calin_util)
 
-add_executable(do_spe_expgauss_fit do_spe_expgauss_fit)
-target_link_libraries(do_spe_expgauss_fit calin_calib calin_math calin_proto calin_nlopt calin_util)
-
-install(TARGETS do_spe_fit do_spe_expgauss_fit DESTINATION ${CALIN_BIN_INSTALL_DIR})
+install(TARGETS write_system_info DESTINATION ${CALIN_BIN_INSTALL_DIR})
 
 if(CTA_CAMERASTOACTL_FOUND)
 	include_directories(${CTA_CAMERASTOACTL_INCLUDE_DIRS})
 	add_executable(dump_nectar_zfits dump_nectar_zfits)
   target_link_libraries(dump_nectar_zfits calin_iact_data calin_util)
   install(TARGETS dump_nectar_zfits DESTINATION ${CALIN_BIN_INSTALL_DIR})
+
 	add_executable(write_nectar_zfits_as_raw write_nectar_zfits_as_raw)
   target_link_libraries(write_nectar_zfits_as_raw calin_iact_data calin_util)
   install(TARGETS write_nectar_zfits_as_raw DESTINATION ${CALIN_BIN_INSTALL_DIR})

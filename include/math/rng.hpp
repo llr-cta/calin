@@ -580,7 +580,7 @@ private:
   {
 #if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
     if(ndev_) {
-      return vec_dev_[ndev_--];
+      return vec_dev_[--ndev_];
     } else {
       vec_dev_ = uniform_uivec256();
       ndev_ = 3;
