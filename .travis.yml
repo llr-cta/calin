@@ -194,6 +194,7 @@ script:
           -DCMAKE_INSTALL_PREFIX=build .. &&
     make -j3 &&
     make install | tail &&
+    ./build/bin/write_system_info && 
     make test
 #    ./unit_tests/calib/test_spe_fit
 
