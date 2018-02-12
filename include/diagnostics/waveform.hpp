@@ -28,6 +28,7 @@
 #include <iact_data/functional_event_visitor.hpp>
 #include <diagnostics/waveform.pb.h>
 #include <math/histogram.hpp>
+#include <math/simd.hpp>
 
 namespace calin { namespace diagnostics { namespace waveform {
 
@@ -68,12 +69,11 @@ public:
   static Eigen::MatrixXd waveform_cov_frac(
     const ix::diagnostics::waveform::WaveformRawStats* stat);
 
-protected:
 #ifndef SWIG
+protected:
   void process_one_waveform(const uint16_t*__restrict__ wf,
     ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
     ix::diagnostics::waveform::WaveformRawStats* r_stat);
-#endif
 
   void merge_partial(
     ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
@@ -86,6 +86,70 @@ protected:
   const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
     run_config_ = nullptr;
   bool calculate_covariance_ = false;
+#endif
+};
+
+class AVX2_Unroll8_WaveformStatsVisitor:
+  public iact_data::event_visitor::ParallelEventVisitor
+{
+public:
+  AVX2_Unroll8_WaveformStatsVisitor(bool high_gain = true, bool calculate_covariance = true);
+
+  virtual ~AVX2_Unroll8_WaveformStatsVisitor();
+
+  AVX2_Unroll8_WaveformStatsVisitor* new_sub_visitor(
+    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+      antecedent_visitors) override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+  bool leave_telescope_run() override;
+
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  bool merge_results() override;
+
+  calin::ix::diagnostics::waveform::CameraWaveformRawStats results()
+  {
+    return results_;
+  }
+
+#if defined(__AVX2__) and not defined(SWIG)
+protected:
+  void process_8_events();
+  void merge_partials();
+
+  AVX2_Unroll8_WaveformStatsVisitor* parent_ = nullptr;
+  calin::ix::diagnostics::waveform::CameraWaveformRawStats results_;
+
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager_ = nullptr;
+
+  unsigned nkept_events_ = 0;
+  calin::ix::iact_data::telescope_event::TelescopeEvent* kept_events_[8] =
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+
+  __m256i* samples_[8] =
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+
+  unsigned nchan_ = 0;
+  unsigned nsamp_ = 0;
+
+  unsigned partial_num_entries_ = 0;
+  unsigned* partial_chan_nevent_ = nullptr;
+  __m256i* partial_chan_sum_ = nullptr;
+  __m256i* partial_chan_sum_squared_ = nullptr;
+  __m256i* partial_chan_sum_cov_ = nullptr;
+
+  unsigned partial_max_num_entries_ = 256;
+  const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
+    run_config_ = nullptr;
+
+  bool high_gain_ = false;
+  bool calculate_covariance_ = false;
+#endif // defined(__AVX2__) and not defined(SWIG)
 };
 
 class WaveformPSDVisitor:
