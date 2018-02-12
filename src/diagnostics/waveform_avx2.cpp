@@ -254,19 +254,19 @@ void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
       sum_l = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi0,0));
       sum_u = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi0,1));
       sum_l = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi1,0)));
-      sum_u = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi1,1)));
+      sum_u = _mm256_add_epi32(sum_u, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi1,1)));
       sum_l = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi2,0)));
-      sum_u = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi2,1)));
+      sum_u = _mm256_add_epi32(sum_u, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi2,1)));
       sum_l = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi3,0)));
-      sum_u = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi3,1)));
+      sum_u = _mm256_add_epi32(sum_u, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi3,1)));
       sum_l = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi4,0)));
-      sum_u = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi4,1)));
+      sum_u = _mm256_add_epi32(sum_u, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi4,1)));
       sum_l = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi5,0)));
-      sum_u = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi5,1)));
+      sum_u = _mm256_add_epi32(sum_u, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi5,1)));
       sum_l = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi6,0)));
-      sum_u = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi6,1)));
+      sum_u = _mm256_add_epi32(sum_u, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi6,1)));
       sum_l = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi7,0)));
-      sum_u = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi7,1)));
+      sum_u = _mm256_add_epi32(sum_u, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi7,1)));
 
       *sum_base = _mm256_add_epi32(*sum_base, sum_l);
       sum_base++;
