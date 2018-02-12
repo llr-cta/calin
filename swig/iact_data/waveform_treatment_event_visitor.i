@@ -23,6 +23,9 @@
 %module (package="calin.iact_data", threads="1") waveform_treatment_event_visitor
 
 %{
+#include "iact_data/event_visitor.hpp"
+#include "iact_data/event_dispatcher.hpp"
+#include "iact_data/parallel_event_dispatcher.hpp"
 #include "iact_data/waveform_treatment_event_visitor.hpp"
 #define SWIG_FILE_WITH_INIT
   %}

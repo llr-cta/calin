@@ -31,7 +31,7 @@
 namespace calin { namespace iact_data { namespace waveform_treatment_event_visitor {
 
 class SingleGainDualWindowWaveformTreatmentEventVisitor:
-  public calin::iact_data::event_visitor::TelescopeEventVisitor
+  public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
   SingleGainDualWindowWaveformTreatmentEventVisitor(
@@ -40,16 +40,14 @@ public:
     bool treat_high_gain = true);
   virtual ~SingleGainDualWindowWaveformTreatmentEventVisitor();
 
-  bool demand_waveforms() override;
-  bool is_parallelizable() override;
   SingleGainDualWindowWaveformTreatmentEventVisitor* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
-        calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>&
       antecedent_visitors = { }) override;
 
   bool visit_telescope_run(
-    const calin::ix::iact_data::telescope_run_configuration::
-      TelescopeRunConfiguration* run_config) override;
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
 
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
@@ -133,13 +131,13 @@ public:
   virtual ~AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor();
 
   AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
-        calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>&
       antecedent_visitors = { }) override;
 
   bool visit_telescope_run(
-    const calin::ix::iact_data::telescope_run_configuration::
-      TelescopeRunConfiguration* run_config) override;
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
 
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;

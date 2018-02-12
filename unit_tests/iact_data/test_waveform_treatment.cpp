@@ -56,7 +56,7 @@ TEST(TestWaveformTreatment, TraceAnalysis)
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
   run_config.set_num_samples(nsamp);
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
-  wfev.visit_telescope_run(&run_config);
+  wfev.visit_telescope_run(&run_config, nullptr);
 
   auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
@@ -101,7 +101,7 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis)
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
   run_config.set_num_samples(nsamp);
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
-  wfev.visit_telescope_run(&run_config);
+  wfev.visit_telescope_run(&run_config, nullptr);
 
   auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
@@ -146,7 +146,7 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis_V2)
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
   run_config.set_num_samples(nsamp);
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
-  wfev.visit_telescope_run(&run_config);
+  wfev.visit_telescope_run(&run_config, nullptr);
 
   auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
@@ -192,7 +192,7 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis_V3)
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
   run_config.set_num_samples(nsamp);
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
-  wfev.visit_telescope_run(&run_config);
+  wfev.visit_telescope_run(&run_config, nullptr);
 
   auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
