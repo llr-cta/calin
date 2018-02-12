@@ -174,7 +174,8 @@ bool AVX2_Unroll8_WaveformStatsVisitor::merge_results()
   std::fill(partial_chan_nevent_, partial_chan_nevent_+nchan_, 0);
   std::fill(partial_chan_sum_, partial_chan_sum_+nchan_block*nsamp_, _mm256_setzero_si256());
   std::fill(partial_chan_sum_squared_, partial_chan_sum_squared_+nchan_block*nsamp_, _mm256_setzero_si256());
-  std::fill(partial_chan_sum_cov_, partial_chan_sum_cov_+nchan_block*nsamp_*(nsamp_-1)/2, _mm256_setzero_si256());
+  if(covariance_calc_)
+    std::fill(partial_chan_sum_cov_, partial_chan_sum_cov_+nchan_block*nsamp_*(nsamp_-1)/2, _mm256_setzero_si256());
   return true;
 #else // defined(__AVX2__)
   throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
