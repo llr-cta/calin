@@ -102,7 +102,7 @@ bool AVX2_Unroll8_WaveformStatsVisitor::visit_telescope_run(
   nkept_events_ = 0;
 
   if(nsamp_ != old_nsamp or samples_[0] == nullptr) {
-    for(unsigned i=0;i<8;i++)safe_aligned_recalloc(samples_[i], nsamp_block);
+    for(unsigned i=0;i<8;i++)safe_aligned_recalloc(samples_[i], nsamp_block*16);
   }
 
   partial_num_entries_ = 0;
