@@ -31,7 +31,7 @@ using namespace calin::diagnostics::waveform;
 using calin::math::covariance_calc::cov_i64_gen;
 
 WaveformStatsVisitor::WaveformStatsVisitor(bool calculate_covariance):
-  TelescopeEventVisitor(), calculate_covariance_(calculate_covariance)
+  ParallelEventVisitor(), calculate_covariance_(calculate_covariance)
 {
   // nothing to see here
 }
@@ -41,29 +41,19 @@ WaveformStatsVisitor::~WaveformStatsVisitor()
   // nothing to see here
 }
 
-bool WaveformStatsVisitor::demand_waveforms()
-{
-  return true;
-}
-
-bool WaveformStatsVisitor::is_parallelizable()
-{
-  return true;
-}
-
 WaveformStatsVisitor* WaveformStatsVisitor::new_sub_visitor(
-  const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
-      calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+  const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+      calin::iact_data::event_visitor::ParallelEventVisitor*>&
     antecedent_visitors)
 {
-  auto* sub_visitor = new WaveformStatsVisitor;
+  auto* sub_visitor = new WaveformStatsVisitor(calculate_covariance_);
   sub_visitor->parent_ = this;
   return sub_visitor;
 }
 
 bool WaveformStatsVisitor::visit_telescope_run(
-  const calin::ix::iact_data::telescope_run_configuration::
-    TelescopeRunConfiguration* run_config)
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
 {
   run_config_ = run_config;
   results_.Clear();
@@ -110,52 +100,54 @@ bool WaveformStatsVisitor::leave_telescope_run()
 bool WaveformStatsVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
+  const int nchan = run_config_->configured_channel_id_size();
+  const int nsamp = run_config_->num_samples();
+
+  if(event->has_high_gain_image() and event->high_gain_image().has_camera_waveforms())
+  {
+    const ix::iact_data::telescope_event::Waveforms* wf =
+      &event->high_gain_image().camera_waveforms();
+    const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
+        wf->raw_samples_array().data() + wf->raw_samples_array_start());
+    for(int ichan = 0; ichan<nchan; ichan++) {
+      process_one_waveform(wf_data, partial_.mutable_high_gain(ichan),
+        results_.mutable_high_gain(ichan));
+      wf_data += nsamp;
+    }
+  }
+
   // nothing to see here
   return true;
 }
 
-bool WaveformStatsVisitor::visit_waveform(unsigned ichan,
-  calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
-  calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain)
-{
-  const int index = ichan; //run_config_->configured_channel_index(ichan);
-  if(high_gain)
-    process_one_waveform(high_gain, partial_.mutable_high_gain(index),
-      results_.mutable_high_gain(index));
-  if(low_gain)
-    process_one_waveform(low_gain, partial_.mutable_low_gain(index),
-      results_.mutable_low_gain(index));
-  return true;
-}
-
 void WaveformStatsVisitor::
-process_one_waveform(
-  const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
+process_one_waveform(const uint16_t*__restrict__ wf,
   ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
   ix::diagnostics::waveform::WaveformRawStats* r_stat)
 {
   const unsigned nsample = run_config_->num_samples();
   assert(wf->samples_size() == int(nsample));
-  const auto* sample = wf->samples().data();
   p_stat->set_num_entries(p_stat->num_entries()+1);
-  auto* sum = p_stat->mutable_sum()->mutable_data();
-  for(unsigned isample=0; isample<nsample; isample++)
-    sum[isample] += sample[isample];
-  auto* sum_squared = p_stat->mutable_sum_squared()->mutable_data();
-  for(unsigned isample=0; isample<nsample; isample++)
-    sum_squared[isample] += sample[isample] * sample[isample];
+  auto*__restrict__ sum = p_stat->mutable_sum()->mutable_data();
+  auto*__restrict__ sum_squared = p_stat->mutable_sum_squared()->mutable_data();
+  for(unsigned isample=0; isample<nsample; isample++) {
+    uint32_t sample = wf[isample];
+    sum[isample] += sample;
+    sum_squared[isample] += sample*sample;
+  }
+
   if(calculate_covariance_)
   {
-    auto* sum_product = p_stat->mutable_sum_product()->mutable_data();
-    const auto* sample_j = sample;
+    auto*__restrict__ sum_product = p_stat->mutable_sum_product()->mutable_data();
+    const uint16_t*__restrict__ wf_j = wf;
     unsigned msample = nsample;
     for(unsigned isample=0; isample<nsample; isample++)
     {
-      uint32_t sample_i = *sample_j;
-      ++sample_j;
+      uint32_t sample_i = *wf_j;
+      ++wf_j;
       --msample;
       for(unsigned jsample=0; jsample<msample; jsample++)
-        sum_product[jsample] += sample_i * sample_j[jsample];
+        sum_product[jsample] += sample_i * uint32_t(wf_j[jsample]);
       sum_product += msample;
     }
   }

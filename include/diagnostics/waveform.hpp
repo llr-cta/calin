@@ -32,31 +32,25 @@
 namespace calin { namespace diagnostics { namespace waveform {
 
 class WaveformStatsVisitor:
-  public iact_data::event_visitor::TelescopeEventVisitor
+  public iact_data::event_visitor::ParallelEventVisitor
 {
 public:
   WaveformStatsVisitor(bool calculate_covariance = true);
 
   virtual ~WaveformStatsVisitor();
 
-  bool demand_waveforms() override;
-  bool is_parallelizable() override;
   WaveformStatsVisitor* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
-        calin::iact_data::event_visitor::TelescopeEventVisitor*>&
+    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>&
       antecedent_visitors) override;
 
   bool visit_telescope_run(
-    const calin::ix::iact_data::telescope_run_configuration::
-      TelescopeRunConfiguration* run_config) override;
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
   bool leave_telescope_run() override;
 
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
-
-  bool visit_waveform(unsigned ichan,
-    calin::ix::iact_data::telescope_event::ChannelWaveform* high_gain,
-    calin::ix::iact_data::telescope_event::ChannelWaveform* low_gain) override;
 
   bool merge_results() override;
 
@@ -75,10 +69,11 @@ public:
     const ix::diagnostics::waveform::WaveformRawStats* stat);
 
 protected:
-  void process_one_waveform(
-    const calin::ix::iact_data::telescope_event::ChannelWaveform* wf,
+#ifndef SWIG
+  void process_one_waveform(const uint16_t*__restrict__ wf,
     ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
     ix::diagnostics::waveform::WaveformRawStats* r_stat);
+#endif
 
   void merge_partial(
     ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,

@@ -20,7 +20,7 @@
 
 */
 
-%module (package="calin.iact_data", threads="1") functional_event_visitor
+%module (package="calin.iact_data") functional_event_visitor
 
 %{
 #include "iact_data/functional_event_visitor.hpp"
@@ -34,6 +34,6 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%import "event_dispatcher.i"
+%import "event_visitor.i"
 %import "iact_data/functional_event_visitor.pb.i"
 %include "iact_data/functional_event_visitor.hpp"
