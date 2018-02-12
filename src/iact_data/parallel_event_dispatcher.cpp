@@ -75,7 +75,7 @@ void ParallelEventDispatcher::release_event(
 {
   auto ifind = event_keep_.find(event);
   if(ifind == event_keep_.end())
-    throw std::logic_error("keep_event: event not on managed event list");
+    throw std::logic_error("release_event: event not on managed event list");
   if(--ifind->second.usage_count == 0) {
     if(ifind->second.arena)delete ifind->second.arena;
     else delete event;

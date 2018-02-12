@@ -114,7 +114,11 @@ public:
 
   calin::ix::diagnostics::waveform::CameraWaveformRawStats results()
   {
+#if defined(__AVX2__)
     return results_;
+#else // defined(__AVX2__)
+    throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
+#endif // defined(__AVX2__)
   }
 
 #if defined(__AVX2__) and not defined(SWIG)
