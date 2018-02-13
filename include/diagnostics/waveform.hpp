@@ -121,8 +121,8 @@ public:
 #endif // defined(__AVX2__)
   }
 
-#if defined(__AVX2__) and not defined(SWIG)
 protected:
+#if defined(__AVX2__) and not defined(SWIG)
   void process_8_events();
   void merge_partials();
 
