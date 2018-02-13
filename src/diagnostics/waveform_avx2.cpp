@@ -183,9 +183,9 @@ bool AVX2_Unroll8_WaveformStatsVisitor::merge_results()
 #endif // defined(__AVX2__)
 }
 
+#if defined(__AVX2__)
 void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
 {
-#if defined(__AVX2__)
   const unsigned nsamp_block = (nsamp_ + 15)/16; // number of uint16_t vectors in nsamp
   const unsigned nchan_block = (nchan_ + 15)/16; // number of uint16_t vectors in nchan
 
@@ -400,14 +400,10 @@ void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
     kept_events_[ievent] = nullptr;
   }
   nkept_events_ = 0;
-#else // defined(__AVX2__)
-  throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
-#endif // defined(__AVX2__)
 }
 
 void AVX2_Unroll8_WaveformStatsVisitor::merge_partials()
 {
-#if defined(__AVX2__)
   const unsigned nchan = nchan_;
   const unsigned nsamp = nsamp_;
   const unsigned nchan_block = (nchan + 15)/16; // number of uint16_t vectors in nchan
@@ -445,7 +441,5 @@ void AVX2_Unroll8_WaveformStatsVisitor::merge_partials()
   std::fill(partial_chan_sum_, partial_chan_sum_+nchan_block*nsamp*2, _mm256_setzero_si256());
   std::fill(partial_chan_sum_squared_, partial_chan_sum_squared_+nchan_block*nsamp*2, _mm256_setzero_si256());
   std::fill(partial_chan_sum_cov_, partial_chan_sum_cov_+nchan_block*nsamp*(nsamp-1), _mm256_setzero_si256());
-#else // defined(__AVX2__)
-  throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
-#endif // defined(__AVX2__)
 }
+#endif // defined(__AVX2__)
