@@ -85,19 +85,23 @@ bool AVX2_Unroll8_WaveformStatsVisitor::visit_telescope_run(
   results_.Clear();
   for(unsigned ichan = 0; ichan<nchan_; ichan++)
   {
+    calin::ix::diagnostics::waveform::WaveformRawStats* stats;
     if(high_gain_) {
-      auto* hg_wf = results_.add_high_gain();
-      hg_wf->mutable_sum()->Resize(nsamp_,0);
-      hg_wf->mutable_sum_squared()->Resize(nsamp_,0);
-      if(calculate_covariance_)
-        hg_wf->mutable_sum_product()->Resize(nsamp_*(nsamp_-1)/2,0);
+      stats = results_.add_high_gain();
     } else {
-      auto* lg_wf = results_.add_low_gain();
-      lg_wf->mutable_sum()->Resize(nsamp_,0);
-      lg_wf->mutable_sum_squared()->Resize(nsamp_,0);
-      if(calculate_covariance_)
-        lg_wf->mutable_sum_product()->Resize(nsamp_*(nsamp_-1)/2,0);
+      stats = results_.add_low_gain();
     }
+
+    stats->mutable_sum()->Resize(nsamp_,0);
+    stats->mutable_sum_squared()->Resize(nsamp_,0);
+    if(calculate_covariance_)
+      stats->mutable_sum_product()->Resize(nsamp_*(nsamp_-1)/2,0);
+
+    stats->set_num_entries(0);
+    std::fill(stats->mutable_sum()->begin(), stats->mutable_sum()->end(), 0);
+    std::fill(stats->mutable_sum_squared()->begin(), stats->mutable_sum_squared()->end(), 0);
+    if(calculate_covariance_)
+      std::fill(stats->mutable_sum_product()->begin(), stats->mutable_sum_product()->end(), 0);
   }
 
   unsigned nsamp_block = (nsamp_ + 15)/16; // number of uint16_t vectors in nsamp
@@ -133,7 +137,7 @@ bool AVX2_Unroll8_WaveformStatsVisitor::visit_telescope_run(
 bool AVX2_Unroll8_WaveformStatsVisitor::leave_telescope_run()
 {
 #if defined(__AVX2__)
-  process_8_events();
+  if(nkept_events_)process_8_events();
   merge_partials();
   event_lifetime_manager_ = nullptr;
   return true;
@@ -172,14 +176,7 @@ bool AVX2_Unroll8_WaveformStatsVisitor::visit_telescope_event(uint64_t seq_index
 bool AVX2_Unroll8_WaveformStatsVisitor::merge_results()
 {
 #if defined(__AVX2__)
-  const unsigned nsamp_block = (nsamp_ + 15)/16; // number of uint16_t vectors in nsamp
-  const unsigned nchan_block = (nchan_ + 15)/16; // number of uint16_t vectors in nchan
-
-  std::fill(partial_chan_nevent_, partial_chan_nevent_+nchan_, 0);
-  std::fill(partial_chan_sum_, partial_chan_sum_+nchan_block*nsamp_, _mm256_setzero_si256());
-  std::fill(partial_chan_sum_squared_, partial_chan_sum_squared_+nchan_block*nsamp_, _mm256_setzero_si256());
-  if(calculate_covariance_)
-    std::fill(partial_chan_sum_cov_, partial_chan_sum_cov_+nchan_block*nsamp_*(nsamp_-1)/2, _mm256_setzero_si256());
+  if(parent_)parent_->results_.IntegrateFrom(results_);
   return true;
 #else // defined(__AVX2__)
   throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
@@ -391,6 +388,13 @@ void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
     }
   }
 
+  unsigned*__restrict__ chan_nevent = partial_chan_nevent_;
+  const unsigned nchan = nchan_;
+  const unsigned nkept = nkept_events_;
+  for(unsigned ichan=0; ichan<nchan; ichan++) {
+    *(chan_nevent++) += nkept;
+  }
+
   for(unsigned ievent=0; ievent<nkept_events_; ievent++) {
     event_lifetime_manager_->release_event(kept_events_[ievent]);
     kept_events_[ievent] = nullptr;
@@ -404,7 +408,40 @@ void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
 void AVX2_Unroll8_WaveformStatsVisitor::merge_partials()
 {
 #if defined(__AVX2__)
+  const unsigned nchan = nchan_;
+  const unsigned nsamp = nsamp_;
 
+  __m256i*__restrict__ sum_base = partial_chan_sum_;
+  __m256i*__restrict__ ssq_base = partial_chan_sum_squared_;
+  __m256i*__restrict__ cov_base = partial_chan_sum_cov_;
+
+  for(unsigned ichan=0,ivec=0,iel=0; ichan<nchan; ichan++,iel++) {
+    if(iel==8)ivec++, iel=0;
+
+    calin::ix::diagnostics::waveform::WaveformRawStats* stats;
+    if(high_gain_)stats = results_.mutable_high_gain(ichan);
+    else stats = results_.mutable_low_gain(ichan);
+
+    stats->set_num_entries(stats->num_entries() + partial_chan_nevent_[ichan]);
+    for(unsigned isamp=0,ijsamp=0; isamp<nsamp; isamp++) {
+      stats->set_sum(isamp, stats->sum(isamp) + sum_base[ivec*nsamp+isamp][iel]);
+      stats->set_sum_squared(isamp, stats->sum_squared(isamp) + ssq_base[ivec*nsamp+isamp][iel]);
+      if(calculate_covariance_)
+      {
+        for(unsigned jsamp=isamp+1;jsamp<nsamp_;jsamp++,ijsamp++) {
+          stats->set_sum_product(ijsamp, stats->sum_product(ijsamp) +
+            cov_base[ivec*nsamp*(nsamp-1)/2 + ijsamp][iel]);
+        }
+      }
+    }
+  }
+
+  const unsigned nchan_block = (nchan + 15)/16; // number of uint16_t vectors in nchan
+
+  std::fill(partial_chan_nevent_, partial_chan_nevent_+nchan_, 0);
+  std::fill(partial_chan_sum_, partial_chan_sum_+nchan_block*nsamp*2, _mm256_setzero_si256());
+  std::fill(partial_chan_sum_squared_, partial_chan_sum_squared_+nchan_block*nsamp*2, _mm256_setzero_si256());
+  std::fill(partial_chan_sum_cov_, partial_chan_sum_cov_+nchan_block*nsamp*(nsamp-1), _mm256_setzero_si256());
 #else // defined(__AVX2__)
   throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
 #endif // defined(__AVX2__)
