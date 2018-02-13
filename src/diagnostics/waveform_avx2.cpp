@@ -44,11 +44,15 @@ AVX2_Unroll8_WaveformStatsVisitor(bool high_gain, bool calculate_covariance):
 
 AVX2_Unroll8_WaveformStatsVisitor::~AVX2_Unroll8_WaveformStatsVisitor()
 {
+#if defined(__AVX2__)
   for(unsigned i=0;i<8;i++)free(samples_[i]);
   free(partial_chan_nevent_);
   free(partial_chan_sum_);
   free(partial_chan_sum_squared_);
   if(calculate_covariance_)free(partial_chan_sum_cov_);
+#else // defined(__AVX2__)
+  throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
+#endif // defined(__AVX2__)
 }
 
 AVX2_Unroll8_WaveformStatsVisitor* AVX2_Unroll8_WaveformStatsVisitor::

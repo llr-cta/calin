@@ -146,6 +146,7 @@ protected:
   __m256i* partial_chan_sum_ = nullptr;
   __m256i* partial_chan_sum_squared_ = nullptr;
   __m256i* partial_chan_sum_cov_ = nullptr;
+#endif // defined(__AVX2__) and not defined(SWIG)
 
   unsigned partial_max_num_entries_ = 256;
   const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
@@ -153,7 +154,6 @@ protected:
 
   bool high_gain_ = false;
   bool calculate_covariance_ = false;
-#endif // defined(__AVX2__) and not defined(SWIG)
 };
 
 class WaveformPSDVisitor:

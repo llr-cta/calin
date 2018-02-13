@@ -139,7 +139,6 @@ process_one_waveform(const uint16_t*__restrict__ wf,
   ix::diagnostics::waveform::WaveformRawStats* r_stat)
 {
   const unsigned nsample = run_config_->num_samples();
-  assert(wf->samples_size() == int(nsample));
   p_stat->set_num_entries(p_stat->num_entries()+1);
   auto*__restrict__ sum = p_stat->mutable_sum()->mutable_data();
   auto*__restrict__ sum_squared = p_stat->mutable_sum_squared()->mutable_data();
