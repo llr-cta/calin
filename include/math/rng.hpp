@@ -43,6 +43,7 @@
 #include <cmath>
 #include <random>
 #include <utility>
+#include <cstddef>
 
 #if defined(__AVX2__)
 #include <immintrin.h>
@@ -69,6 +70,9 @@ class RNGCore
 public:
   virtual ~RNGCore();
   virtual uint64_t uniform_uint64() = 0;
+  virtual void bulk_uniform_uint64(void* buffer, std::size_t nbytes);
+  virtual void bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes,
+    uint64_t mask = 0xFFFFFFFFFFFFFFFFU);
   virtual void save_to_proto(ix::math::rng::RNGData* proto) const = 0;
   ix::math::rng::RNGData* as_proto() const {
     auto* proto = new ix::math::rng::RNGData;

@@ -56,6 +56,40 @@ RNGCore::~RNGCore()
   // nothing to see here
 }
 
+void RNGCore::bulk_uniform_uint64(void* buffer, std::size_t nbytes)
+{
+  uint64_t* u64_ptr = reinterpret_cast<uint64_t*>(buffer);
+  std::size_t n64 = nbytes >> 3;
+  for(std::size_t i64=0; i64<n64; i64++) {
+    u64_ptr[i64] = this->uniform_uint64();
+  }
+  u64_ptr += n64;
+  nbytes -= n64*8;
+  if(nbytes)
+  {
+    uint64_t u64 = this->uniform_uint64();
+    std::copy(reinterpret_cast<uint8_t*>(u64_ptr),
+      reinterpret_cast<uint8_t*>(u64_ptr)+nbytes, reinterpret_cast<uint8_t*>(&u64));
+  }
+}
+
+void RNGCore::bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes, uint64_t mask)
+{
+  uint64_t* u64_ptr = reinterpret_cast<uint64_t*>(buffer);
+  std::size_t n64 = nbytes >> 3;
+  for(std::size_t i64=0; i64<n64; i64++) {
+    u64_ptr[i64] = this->uniform_uint64() & mask;
+  }
+  u64_ptr += n64;
+  nbytes -= n64*8;
+  if(nbytes)
+  {
+    uint64_t u64 = this->uniform_uint64() & mask;
+    std::copy(reinterpret_cast<uint8_t*>(u64_ptr),
+      reinterpret_cast<uint8_t*>(u64_ptr)+nbytes, reinterpret_cast<uint8_t*>(&u64));
+  }
+}
+
 RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGData& proto,
                                     bool restore_state)
 {
