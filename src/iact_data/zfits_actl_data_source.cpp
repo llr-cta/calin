@@ -51,7 +51,7 @@ namespace {
 ZFITSSingleFileACTLDataSource::
 ZFITSSingleFileACTLDataSource(const std::string& filename, config_type config):
   ACTLRandomAccessDataSourceWithRunHeader(),
-  filename_(expand_filename(filename))
+  filename_(expand_filename(filename)), config_(config)
 {
   if(config.run_header_table_name().empty())
     config.set_run_header_table_name(default_run_header_table_name);
@@ -155,7 +155,11 @@ ZFITSSingleFileACTLDataSource::borrow_next_event(uint64_t& seq_index_out)
 {
   if(zfits_ == nullptr)
     throw std::runtime_error(std::string("File not open: ")+filename_);
-  if(next_event_index_ >= zfits_->getNumMessagesInTable())return nullptr;
+
+  uint64_t max_seq_index = zfits_->getNumMessagesInTable();
+  if(config_.max_seq_index())
+    max_seq_index = std::min(max_seq_index, config_.max_seq_index());
+  if(next_event_index_ >= max_seq_index)return nullptr;
 
   seq_index_out = next_event_index_;
   const DataModel::CameraEvent* event {
@@ -200,14 +204,21 @@ get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 
 uint64_t ZFITSSingleFileACTLDataSource::size()
 {
-  return zfits_->getNumMessagesInTable();
+  uint64_t max_seq_index = zfits_->getNumMessagesInTable();
+  if(config_.max_seq_index())
+    max_seq_index = std::min(max_seq_index, config_.max_seq_index());
+  return max_seq_index;
 }
 
 void ZFITSSingleFileACTLDataSource::set_next_index(uint64_t next_index)
 {
   if(zfits_ == nullptr)next_event_index_ = 0;
-  else next_event_index_ =
-    std::min(next_index, uint64_t(zfits_->getNumMessagesInTable()));
+  else {
+    uint64_t max_seq_index = zfits_->getNumMessagesInTable();
+    if(config_.max_seq_index())
+      max_seq_index = std::min(max_seq_index, config_.max_seq_index());
+    next_event_index_ = std::min(next_index, max_seq_index);
+  }
 }
 
 DataModel::CameraRunHeader* ZFITSSingleFileACTLDataSource::get_run_header()
@@ -290,6 +301,7 @@ ZFITSACTLDataSourceOpener::open(unsigned isource)
     LOG(INFO) << "Opening file: " << filenames_[isource];
   auto config = config_;
   if(has_opened_file_)config.set_dont_read_run_header(true);
+  config.set_max_seq_index(0);
   has_opened_file_ = true;
   return new ZFITSSingleFileACTLDataSource(filenames_[isource], config);
 }
@@ -320,9 +332,11 @@ DataModel::CameraRunHeader* ZFITSACTLDataSource::get_run_header()
 const DataModel::CameraEvent* ZFITSACTLDataSource::
 borrow_next_event(uint64_t& seq_index_out)
 {
-  uint64_t unused_index = 0;
+  if(config_.max_seq_index() and seq_index_>=config_.max_seq_index())
+    return nullptr;
   while(isource_ < opener_->num_sources())
   {
+    uint64_t unused_index = 0;
     if(const data_type* next = source_->borrow_next_event(unused_index))
     {
       seq_index_out = seq_index_;
@@ -342,6 +356,33 @@ release_borrowed_event(const DataModel::CameraEvent* event)
     source_->release_borrowed_event(event);
   else
     delete event;
+}
+
+DataModel::CameraEvent* ZFITSACTLDataSource::get_next(uint64_t& seq_index_out,
+  google::protobuf::Arena** arena)
+{
+  if(config_.max_seq_index() and seq_index_>=config_.max_seq_index())
+    return nullptr;
+  else
+    return calin::io::data_source::BasicChainedRandomAccessDataSource<
+      ACTLRandomAccessDataSourceWithRunHeader>::get_next(seq_index_out, arena);
+}
+
+uint64_t ZFITSACTLDataSource::size()
+{
+  uint64_t max_seq_index = calin::io::data_source::BasicChainedRandomAccessDataSource<
+    ACTLRandomAccessDataSourceWithRunHeader>::size();
+  if(config_.max_seq_index() and max_seq_index>config_.max_seq_index())
+    max_seq_index = config_.max_seq_index();
+  return max_seq_index;
+}
+
+void ZFITSACTLDataSource::set_next_index(uint64_t next_index)
+{
+  if(config_.max_seq_index() and next_index>config_.max_seq_index())
+    next_index = config_.max_seq_index();
+  calin::io::data_source::BasicChainedRandomAccessDataSource<
+    ACTLRandomAccessDataSourceWithRunHeader>::set_next_index(next_index);
 }
 
 ZFITSConstACTLDataSourceBorrowAdapter::

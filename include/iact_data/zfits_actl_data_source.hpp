@@ -118,12 +118,14 @@ public:
   DataModel::CameraRunHeader* get_run_header() override;
 
   static config_type default_config();
+  const config_type& config() const { return config_; }
 
 private:
   std::string filename_;
   ACTL::IO::ProtobufIFits* zfits_ = nullptr;
   uint64_t next_event_index_ = 0;
   DataModel::CameraRunHeader* run_header_ = nullptr;
+  config_type config_;
 };
 
 class ZFITSACTLDataSource:
@@ -146,6 +148,11 @@ public:
 
   const DataModel::CameraEvent* borrow_next_event(uint64_t& seq_index_out) override;
   void release_borrowed_event(const DataModel::CameraEvent* event) override;
+
+  DataModel::CameraEvent* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override;
+  uint64_t size() override;
+  void set_next_index(uint64_t next_index) override;
 
 private:
   config_type config_;
