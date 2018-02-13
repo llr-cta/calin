@@ -123,8 +123,8 @@ bool WaveformStatsVisitor::visit_telescope_event(uint64_t seq_index,
     const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
         wf->raw_samples_array().data() + wf->raw_samples_array_start());
     for(int ichan = 0; ichan<nchan; ichan++) {
-      process_one_waveform(wf_data, partial_.mutable_high_gain(ichan),
-        results_.mutable_high_gain(ichan));
+      process_one_waveform(wf_data, partial_.mutable_low_gain(ichan),
+        results_.mutable_low_gain(ichan));
       wf_data += nsamp;
     }
   }

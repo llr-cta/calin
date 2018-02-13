@@ -193,7 +193,7 @@ void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
     __m256i*__restrict__ samples = samples_[ievent];
     __m256i*__restrict__ vp = samples;
     for(unsigned isamp_block=0; isamp_block<nsamp_block; isamp_block++) {
-      for(unsigned ichan_block=0; ichan_block<nchan_block; ichan_block++) {
+      for(unsigned ichan_block=0; ichan_block<16; ichan_block++) {
         *(vp++) = _mm256_setzero_si256();
       }
     }
@@ -214,7 +214,7 @@ void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
 
   for(unsigned iblock=0;iblock<nchan_block;iblock++)
   {
-    const unsigned nchan_block = std::min(16U, nchan_-iblock*16);
+    const unsigned nvec = std::min(16U, nchan_-iblock*16);
     for(unsigned ievent=0; ievent<nkept_events_; ievent++) {
       const ix::iact_data::telescope_event::Waveforms* wf = nullptr;
       if(ievent <= nkept_events_) {
@@ -241,7 +241,7 @@ void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
       __m256i*__restrict__ samples = samples_[ievent];
       __m256i*__restrict__ vp = samples;
       for(unsigned isamp_block=0; isamp_block<nsamp_block; isamp_block++) {
-        for(unsigned ichan_block=0; ichan_block<nchan_block; ichan_block++) {
+        for(unsigned ichan_block=0; ichan_block<nvec; ichan_block++) {
           *(vp++) = _mm256_loadu_si256((__m256i*)(base + isamp_block*16 + nsamp_*ichan_block));
         }
         calin::math::simd::avx2_m256_swizzle_u16(samples + isamp_block*16);
@@ -410,13 +410,14 @@ void AVX2_Unroll8_WaveformStatsVisitor::merge_partials()
 #if defined(__AVX2__)
   const unsigned nchan = nchan_;
   const unsigned nsamp = nsamp_;
+  const unsigned nchan_block = (nchan + 15)/16; // number of uint16_t vectors in nchan
 
   __m256i*__restrict__ sum_base = partial_chan_sum_;
   __m256i*__restrict__ ssq_base = partial_chan_sum_squared_;
   __m256i*__restrict__ cov_base = partial_chan_sum_cov_;
 
-  for(unsigned ichan=0,ivec=0,iel=0; ichan<nchan; ichan++,iel++) {
-    if(iel==8)ivec++, iel=0;
+  for(unsigned ichan=0,iblock=0,iel=0; ichan<nchan; ichan++,iel++) {
+    if(iel==16)iblock++, iel=0;
 
     calin::ix::diagnostics::waveform::WaveformRawStats* stats;
     if(high_gain_)stats = results_.mutable_high_gain(ichan);
@@ -424,19 +425,21 @@ void AVX2_Unroll8_WaveformStatsVisitor::merge_partials()
 
     stats->set_num_entries(stats->num_entries() + partial_chan_nevent_[ichan]);
     for(unsigned isamp=0,ijsamp=0; isamp<nsamp; isamp++) {
-      stats->set_sum(isamp, stats->sum(isamp) + sum_base[ivec*nsamp+isamp][iel]);
-      stats->set_sum_squared(isamp, stats->sum_squared(isamp) + ssq_base[ivec*nsamp+isamp][iel]);
+      stats->set_sum(isamp, stats->sum(isamp) +
+        reinterpret_cast<uint32_t*>(&sum_base[(iblock*nsamp+isamp)*2])[iel]);
+      stats->set_sum_squared(isamp, stats->sum_squared(isamp) +
+        reinterpret_cast<uint32_t*>(&ssq_base[(iblock*nsamp+isamp)*2])[iel]);
       if(calculate_covariance_)
       {
         for(unsigned jsamp=isamp+1;jsamp<nsamp_;jsamp++,ijsamp++) {
           stats->set_sum_product(ijsamp, stats->sum_product(ijsamp) +
-            cov_base[ivec*nsamp*(nsamp-1)/2 + ijsamp][iel]);
+            reinterpret_cast<uint32_t*>(&cov_base[iblock*nsamp*(nsamp-1) + ijsamp*2])[iel]);
         }
       }
     }
   }
 
-  const unsigned nchan_block = (nchan + 15)/16; // number of uint16_t vectors in nchan
+  partial_num_entries_ = 0;
 
   std::fill(partial_chan_nevent_, partial_chan_nevent_+nchan_, 0);
   std::fill(partial_chan_sum_, partial_chan_sum_+nchan_block*nsamp*2, _mm256_setzero_si256());
