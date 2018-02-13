@@ -112,16 +112,16 @@ bool AVX2_Unroll8_WaveformStatsVisitor::visit_telescope_run(
   partial_num_entries_ = 0;
   if(nsamp_ != old_nchan or partial_chan_nevent_ == nullptr) {
     safe_aligned_recalloc(partial_chan_nevent_, nchan_);
-    safe_aligned_recalloc(partial_chan_sum_, nchan_block*nsamp_);
-    safe_aligned_recalloc(partial_chan_sum_squared_, nchan_block*nsamp_);
+    safe_aligned_recalloc(partial_chan_sum_, nchan_block*nsamp_*2);
+    safe_aligned_recalloc(partial_chan_sum_squared_, nchan_block*nsamp_*2);
     if(calculate_covariance_)
-      safe_aligned_recalloc(partial_chan_sum_cov_, nchan_block*nsamp_*(nsamp_-1)/2);
+      safe_aligned_recalloc(partial_chan_sum_cov_, nchan_block*nsamp_*(nsamp_-1));
   }
 
   std::fill(partial_chan_nevent_, partial_chan_nevent_+nchan_, 0);
-  std::fill(partial_chan_sum_, partial_chan_sum_+nchan_block*nsamp_, _mm256_setzero_si256());
-  std::fill(partial_chan_sum_squared_, partial_chan_sum_squared_+nchan_block*nsamp_, _mm256_setzero_si256());
-  std::fill(partial_chan_sum_cov_, partial_chan_sum_cov_+nchan_block*nsamp_*(nsamp_-1)/2, _mm256_setzero_si256());
+  std::fill(partial_chan_sum_, partial_chan_sum_+nchan_block*nsamp_*2, _mm256_setzero_si256());
+  std::fill(partial_chan_sum_squared_, partial_chan_sum_squared_+nchan_block*nsamp_*2, _mm256_setzero_si256());
+  std::fill(partial_chan_sum_cov_, partial_chan_sum_cov_+nchan_block*nsamp_*(nsamp_-1), _mm256_setzero_si256());
 
   event_lifetime_manager_ = event_lifetime_manager;
   return true;
@@ -227,6 +227,15 @@ void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
           wf = &kept_events_[ievent]->low_gain_image().camera_waveforms();
         }
       }
+
+#if 0
+      std::cerr << "process_8_events loop : " << ievent << ' '
+        << kept_events_[ievent] << ' ' << wf << ' '
+        << reinterpret_cast<const void*>(wf->raw_samples_array().data()) << ' '
+        << wf->raw_samples_array().size() << ' '
+        << wf->raw_samples_array_start() << ' '
+        << iblock*nsamp_*16 << '\n';
+#endif
 
       const uint16_t*__restrict__ data =
         reinterpret_cast<const uint16_t*__restrict__>(

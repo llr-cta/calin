@@ -68,6 +68,7 @@ void ParallelEventDispatcher::keep_event(
   if(ifind == event_keep_.end())
     throw std::logic_error("keep_event: event not on managed event list");
   ifind->second.usage_count++;
+  // std::cerr << "Keep: " << event << " count " << ifind->second.usage_count << '\n';
 }
 
 void ParallelEventDispatcher::release_event(
@@ -76,7 +77,11 @@ void ParallelEventDispatcher::release_event(
   auto ifind = event_keep_.find(event);
   if(ifind == event_keep_.end())
     throw std::logic_error("release_event: event not on managed event list");
-  if(--ifind->second.usage_count == 0) {
+  ifind->second.usage_count--;
+  // std::cerr << "Release: " << event << " count " << ifind->second.usage_count << '\n';
+  if(ifind->second.usage_count == 0) {
+    // std::cerr << "Freeing: " << event << " arena: " << ifind->second.arena
+    //   << " seq: " << ifind->second.seq_index << '\n';
     if(ifind->second.arena)delete ifind->second.arena;
     else delete event;
     event_keep_.erase(ifind);
