@@ -595,6 +595,10 @@ private:
 #endif
   }
 
+  void bulk_uniform_uint64(void* buffer, std::size_t nbytes) override;
+  void bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes,
+    uint64_t mask = 0xFFFFFFFFFFFFFFFFU) override;
+
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
 
   static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
