@@ -395,6 +395,8 @@ void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
     *(chan_nevent++) += nkept;
   }
 
+  partial_num_entries_ += nkept_events_;
+
   for(unsigned ievent=0; ievent<nkept_events_; ievent++) {
     event_lifetime_manager_->release_event(kept_events_[ievent]);
     kept_events_[ievent] = nullptr;
