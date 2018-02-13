@@ -165,7 +165,7 @@ bool AVX2_Unroll8_WaveformStatsVisitor::visit_telescope_event(uint64_t seq_index
     event_lifetime_manager_->keep_event(event);
     kept_events_[nkept_events_++] = event;
     if(nkept_events_ == 8)process_8_events();
-    if(partial_num_entries_ == partial_max_num_entries_)merge_partials();
+    if(partial_num_entries_ >= partial_max_num_entries_)merge_partials();
   }
   return true;
 #else // defined(__AVX2__)
