@@ -30,19 +30,19 @@ using namespace calin::util::log;
 using namespace calin::diagnostics::waveform;
 using calin::util::memory::safe_aligned_recalloc;
 
-AVX2_Unroll8_WaveformStatsVisitor::
-AVX2_Unroll8_WaveformStatsVisitor(bool high_gain, bool calculate_covariance):
+AVX2_Unroll8_WaveformStatsParallelVisitor::
+AVX2_Unroll8_WaveformStatsParallelVisitor(bool high_gain, bool calculate_covariance):
   ParallelEventVisitor(),
   high_gain_(high_gain), calculate_covariance_(calculate_covariance)
 {
 #if defined(__AVX2__)
   // nothing to see here
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
+  throw std::runtime_error("AVX2_Unroll8_WaveformStatsParallelVisitor: AVX2 not supported at compile time");
 #endif // defined(__AVX2__)
 }
 
-AVX2_Unroll8_WaveformStatsVisitor::~AVX2_Unroll8_WaveformStatsVisitor()
+AVX2_Unroll8_WaveformStatsParallelVisitor::~AVX2_Unroll8_WaveformStatsParallelVisitor()
 {
 #if defined(__AVX2__)
   for(unsigned i=0;i<8;i++)free(samples_[i]);
@@ -51,27 +51,27 @@ AVX2_Unroll8_WaveformStatsVisitor::~AVX2_Unroll8_WaveformStatsVisitor()
   free(partial_chan_sum_squared_);
   if(calculate_covariance_)free(partial_chan_sum_cov_);
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
+  throw std::runtime_error("AVX2_Unroll8_WaveformStatsParallelVisitor: AVX2 not supported at compile time");
 #endif // defined(__AVX2__)
 }
 
-AVX2_Unroll8_WaveformStatsVisitor* AVX2_Unroll8_WaveformStatsVisitor::
+AVX2_Unroll8_WaveformStatsParallelVisitor* AVX2_Unroll8_WaveformStatsParallelVisitor::
 new_sub_visitor(
   const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
       calin::iact_data::event_visitor::ParallelEventVisitor*>&
     antecedent_visitors)
 {
 #if defined(__AVX2__)
-  AVX2_Unroll8_WaveformStatsVisitor* child =
-    new AVX2_Unroll8_WaveformStatsVisitor(high_gain_, calculate_covariance_);
+  AVX2_Unroll8_WaveformStatsParallelVisitor* child =
+    new AVX2_Unroll8_WaveformStatsParallelVisitor(high_gain_, calculate_covariance_);
   child->parent_ = this;
   return child;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
+  throw std::runtime_error("AVX2_Unroll8_WaveformStatsParallelVisitor: AVX2 not supported at compile time");
 #endif // defined(__AVX2__)
 }
 
-bool AVX2_Unroll8_WaveformStatsVisitor::visit_telescope_run(
+bool AVX2_Unroll8_WaveformStatsParallelVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
 {
@@ -130,11 +130,11 @@ bool AVX2_Unroll8_WaveformStatsVisitor::visit_telescope_run(
   event_lifetime_manager_ = event_lifetime_manager;
   return true;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
+  throw std::runtime_error("AVX2_Unroll8_WaveformStatsParallelVisitor: AVX2 not supported at compile time");
 #endif // defined(__AVX2__)
 }
 
-bool AVX2_Unroll8_WaveformStatsVisitor::leave_telescope_run()
+bool AVX2_Unroll8_WaveformStatsParallelVisitor::leave_telescope_run()
 {
 #if defined(__AVX2__)
   if(nkept_events_)process_8_events();
@@ -142,11 +142,11 @@ bool AVX2_Unroll8_WaveformStatsVisitor::leave_telescope_run()
   event_lifetime_manager_ = nullptr;
   return true;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
+  throw std::runtime_error("AVX2_Unroll8_WaveformStatsParallelVisitor: AVX2 not supported at compile time");
 #endif // defined(__AVX2__)
 }
 
-bool AVX2_Unroll8_WaveformStatsVisitor::visit_telescope_event(uint64_t seq_index,
+bool AVX2_Unroll8_WaveformStatsParallelVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
 #if defined(__AVX2__)
@@ -169,22 +169,22 @@ bool AVX2_Unroll8_WaveformStatsVisitor::visit_telescope_event(uint64_t seq_index
   }
   return true;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
+  throw std::runtime_error("AVX2_Unroll8_WaveformStatsParallelVisitor: AVX2 not supported at compile time");
 #endif // defined(__AVX2__)
 }
 
-bool AVX2_Unroll8_WaveformStatsVisitor::merge_results()
+bool AVX2_Unroll8_WaveformStatsParallelVisitor::merge_results()
 {
 #if defined(__AVX2__)
   if(parent_)parent_->results_.IntegrateFrom(results_);
   return true;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX2_Unroll8_WaveformStatsVisitor: AVX2 not supported at compile time");
+  throw std::runtime_error("AVX2_Unroll8_WaveformStatsParallelVisitor: AVX2 not supported at compile time");
 #endif // defined(__AVX2__)
 }
 
 #if defined(__AVX2__)
-void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
+void AVX2_Unroll8_WaveformStatsParallelVisitor::process_8_events()
 {
   const unsigned nsamp_block = (nsamp_ + 15)/16; // number of uint16_t vectors in nsamp
   const unsigned nchan_block = (nchan_ + 15)/16; // number of uint16_t vectors in nchan
@@ -404,7 +404,7 @@ void AVX2_Unroll8_WaveformStatsVisitor::process_8_events()
   nkept_events_ = 0;
 }
 
-void AVX2_Unroll8_WaveformStatsVisitor::merge_partials()
+void AVX2_Unroll8_WaveformStatsParallelVisitor::merge_partials()
 {
   const unsigned nchan = nchan_;
   const unsigned nsamp = nsamp_;
