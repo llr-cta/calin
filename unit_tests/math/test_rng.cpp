@@ -418,7 +418,7 @@ TEST(TestRNG_Core64GbitSpeedTest_Float, NR3)
   NR3RNGCore core(seed);
   for(unsigned i=0;i<2000000000;i++)
     sum += 2.328306437e-10 * float(unsigned(core.uniform_uint64()));
-  EXPECT_GE(reinterpret_cast<uint64_t*>(&sum)[0],0ULL);
+  EXPECT_GE(sum,0.0);
 }
 
 #ifdef CALIN_HAS_NR3_AVX2_RNGCORE
