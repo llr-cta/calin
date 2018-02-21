@@ -27,17 +27,22 @@
 #include <tuple>
 #include <cmath>
 
+#include <fftw3.h>
+
 #include <math/rng.hpp>
 #include <math/simd.hpp>
+#include <math/special.hpp>
 #include <util/memory.hpp>
 
 using calin::math::rng::NR3_AVX2_RNGCore;
 using calin::math::rng::NR3RNGCore;
+using calin::math::special::SQR;
 using namespace calin::math::simd;
 
 static constexpr uint64_t NSIM_RANDSINCOS = 100000000ULL;
 static constexpr unsigned NSIM_TRACEANAL = 10000;
 static constexpr unsigned NSIM_TRACECOV = 1024;
+static constexpr unsigned NSIM_TRACEPSD = 4096;
 
 TEST(TestSIMD, SpeedTest100M_Random64SinCos32)
 {
@@ -1326,6 +1331,263 @@ INSTANTIATE_TEST_CASE_P(TestTraceCov,
                         NEvent,
                         ::testing::Values(1,2,4,8));
 
+TEST(TestTracePSD, Scalar)
+{
+  NR3_AVX2_RNGCore core(12345);
+  uint16_t* hg = new uint16_t[nchan*nsamp];
+  float* xt = fftwf_alloc_real(nsamp);
+  float* xf = fftwf_alloc_real(2*(nsamp/2 + 1));
+  double* psd_sum = fftw_alloc_real(nchan*(nsamp/2 + 1));
+  double* psd_sumsq = fftw_alloc_real(nchan*(nsamp/2 + 1));
+  std::fill(psd_sum, psd_sum+nsamp/2+1, 0.0);
+  std::fill(psd_sumsq, psd_sum+nsamp/2+1, 0.0);
+  fftwf_plan plan = fftwf_plan_dft_r2c_1d(nsamp, xt, (fftwf_complex*)xf, FFTW_MEASURE);
+  for(unsigned iloop=0;iloop<NSIM_TRACEPSD;iloop++)
+  {
+    const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg+i*16), x);
+    }
+
+    const uint16_t*__restrict__ samp = hg;
+    double*__restrict__ ipsd_sum = psd_sum;
+    double*__restrict__ ipsd_sumsq = psd_sumsq;
+    for(unsigned ichan=0;ichan<nchan;ichan++) {
+      float*__restrict__ ixt = xt;
+      for(unsigned isamp=0;isamp<nsamp;isamp++) {
+        *ixt++ = float(*samp++);
+      }
+
+      fftwf_execute(plan);
+
+      const float*__restrict__ ri = xf;
+      const float*__restrict__ ci = xf + nsamp - 1;
+      double psdi = SQR(*ri++);
+      *ipsd_sum++ += psdi;
+      *ipsd_sumsq++ += SQR(psdi);
+      while(ri < ci)
+      {
+        psdi = SQR(*ri++) + SQR(*ci--);
+        *ipsd_sum++ += psdi;
+        *ipsd_sumsq++ += SQR(psdi);
+      }
+      if(ri==ci)
+      {
+        double psdi = SQR(*ri);
+        *ipsd_sum++ += psdi;
+        *ipsd_sumsq++ += SQR(psdi);
+      }
+    }
+  }
+
+  for(unsigned ifreq=0;ifreq<nsamp/2+1;ifreq++)
+    std::cout << psd_sum[ifreq] << ' ';
+  std::cout << '\n';
+
+  fftw_free(psd_sum);
+  fftw_free(psd_sumsq);
+  fftwf_destroy_plan(plan);
+  fftwf_free(xf);
+  fftwf_free(xt);
+  delete[] hg;
+}
+
+TEST(TestTracePSD, AVX2)
+{
+  NR3_AVX2_RNGCore core(12345);
+  uint16_t* hg;
+  calin::util::memory::safe_aligned_calloc(hg, nchan*nsamp);
+  std::fill(cov, cov+nchan*nsamp*(nsamp+1)/2, 0);
+  const unsigned nv_trace = (nsamp+15)/16;
+  const unsigned nv_block = nv_trace*16;
+  __m256i* samples;
+  calin::util::memory::safe_aligned_calloc(samples, nv_block);
+
+  __m256* xt;
+  __m256* xf;
+  calin::util::memory::safe_aligned_calloc(xt, 2*nsamp);
+  calin::util::memory::safe_aligned_calloc(xf, 2*(nsamp/2 + 1));
+
+  const unsigned nblock = nchan/16;
+
+  __m256d* psd_sum;
+  __m256d* psd_sumsq;
+  calin::util::memory::safe_aligned_calloc(psd_sum, 4*nblock*(nsamp/2 + 1));
+  calin::util::memory::safe_aligned_calloc(psd_sumsq, 4*nblock*(nsamp/2 + 1));
+  std::fill(psd_sum, psd_sum+4*nblock*(nsamp/2 + 1), _mm256_setzero_pd());
+  std::fill(psd_sumsq, psd_sumsq+4*nblock*(nsamp/2 + 1), _mm256_setzero_pd());
+
+  int n = nsamp;
+  fftwf_plan plan = fftwf_plan_many_dft_r2c(1, &n, 16,
+                            (float*)xt, nullptr, 16, 1,
+                            (fftwf_complex*)xf, nullptr, 16, 1,
+                            FFTW_MEASURE);
+
+  for(unsigned iloop=0;iloop<NSIM_TRACEPSD;iloop++)
+  {
+    const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
+    for(unsigned i=0;i<nchan*nsamp/16;i++) {
+      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      _mm256_storeu_si256((__m256i*)(hg+i*16), x);
+    }
+
+    __m256d*__restrict__ ipsd_sum = psd_sum;
+    __m256d*__restrict__ ipsd_sumsq = psd_sumsq;
+
+    for(unsigned iblock=0;iblock<nblock;iblock++)
+    {
+      uint16_t* base = hg + iblock*nsamp*16;
+      __m256i*__restrict__ vp = samples;
+      for(unsigned iv_trace=0; iv_trace<nv_trace; iv_trace++) {
+        for(unsigned ivec=0; ivec<16; ivec++) {
+          *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_trace*16 + nsamp*ivec));
+        }
+        calin::math::simd::avx2_m256_swizzle_u16(samples + iv_trace*16);
+      }
+
+      vp = samples;
+      __m256*__restrict__ ixt = xt;
+      for(unsigned isamp=0;isamp<nsamp;isamp++) {
+        __m256i samp = *vp++;
+        *ixt++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp,0)));
+        *ixt++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp,1)));
+      }
+
+      fftwf_execute(plan);
+
+      const __m256*__restrict__ ri = xf;
+      const __m256*__restrict__ ci = ri + 2*(nsamp - 1);
+
+      __m256 ri_f;
+      __m256 ci_f;
+
+      __m256d val_d;
+
+      ri_f = *ri++;
+      val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 0));
+      val_d = _mm256_mul_pd(val_d, val_d);
+      *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+      ipsd_sum++;
+      *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+      ipsd_sumsq++;
+
+      val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 1));
+      val_d = _mm256_mul_pd(val_d, val_d);
+      *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+      ipsd_sum++;
+      *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+      ipsd_sumsq++;
+
+      ri_f = *ri++;
+      val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 0));
+      val_d = _mm256_mul_pd(val_d, val_d);
+      *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+      ipsd_sum++;
+      *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+      ipsd_sumsq++;
+
+      val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 1));
+      val_d = _mm256_mul_pd(val_d, val_d);
+      *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+      ipsd_sum++;
+      *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+      ipsd_sumsq++;
+
+      while(ri < ci)
+      {
+        __m256d cval_d;
+
+        ri_f = *ri++;
+        ci_f = *ci++;
+
+        val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 0));
+        val_d = _mm256_mul_pd(val_d, val_d);
+        cval_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ci_f, 0));
+        val_d = _mm256_fmadd_pd(cval_d, cval_d, val_d);
+        *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+        ipsd_sum++;
+        *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+        ipsd_sumsq++;
+
+        val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 1));
+        val_d = _mm256_mul_pd(val_d, val_d);
+        cval_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ci_f, 1));
+        val_d = _mm256_fmadd_pd(cval_d, cval_d, val_d);
+        *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+        ipsd_sum++;
+        *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+        ipsd_sumsq++;
+
+        ri_f = *ri++;
+        ci_f = *ci;
+        ci -= 3;
+
+        val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 0));
+        val_d = _mm256_mul_pd(val_d, val_d);
+        cval_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ci_f, 0));
+        val_d = _mm256_fmadd_pd(cval_d, cval_d, val_d);
+        *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+        ipsd_sum++;
+        *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+        ipsd_sumsq++;
+
+        val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 1));
+        val_d = _mm256_mul_pd(val_d, val_d);
+        cval_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ci_f, 1));
+        val_d = _mm256_fmadd_pd(cval_d, cval_d, val_d);
+        *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+        ipsd_sum++;
+        *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+        ipsd_sumsq++;
+      }
+      if(ri==ci)
+      {
+        ri_f = *ri++;
+        val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 0));
+        val_d = _mm256_mul_pd(val_d, val_d);
+        *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+        ipsd_sum++;
+        *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+        ipsd_sumsq++;
+
+        val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 1));
+        val_d = _mm256_mul_pd(val_d, val_d);
+        *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+        ipsd_sum++;
+        *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+        ipsd_sumsq++;
+
+        ri_f = *ri++;
+        val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 0));
+        val_d = _mm256_mul_pd(val_d, val_d);
+        *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+        ipsd_sum++;
+        *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+        ipsd_sumsq++;
+
+        val_d = _mm256_cvtps_pd(_mm256_extractf128_ps(ri_f, 1));
+        val_d = _mm256_mul_pd(val_d, val_d);
+        *ipsd_sum = _mm256_add_pd(val_d, *ipsd_sum);
+        ipsd_sum++;
+        *ipsd_sumsq = _mm256_fmadd_pd(val_d, val_d, *ipsd_sumsq);
+        ipsd_sumsq++;
+      }
+    }
+  }
+
+  for(unsigned ifreq=0;ifreq<nsamp/2+1;ifreq++)
+    std::cout << psd_sum[ifreq*4][0] << ' ';
+  std::cout << '\n';
+
+  free(psd_sum);
+  free(psd_sumsq);
+  fftwf_destroy_plan(plan);
+  free(xf);
+  free(xt);
+  free(hg);
+  free(samples);
+}
 
 #endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
 
