@@ -196,7 +196,7 @@ std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, bool n_is_od
   free(xf);
   free(xt);
   delete dft;
-  return fft;
+  return data;
 #else // defined(__AVX__)
   throw std::runtime_error("AVX not present at compile type")
 #endif // defined(__AVX__)
@@ -234,7 +234,7 @@ std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, bool n_
   free(xf);
   free(xt);
   delete dft;
-  return fft;
+  return data;
 #else // defined(__AVX__)
   throw std::runtime_error("AVX not present at compile type")
 #endif // defined(__AVX__)
