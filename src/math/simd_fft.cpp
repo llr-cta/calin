@@ -27,9 +27,12 @@
 
 #include <math/simd_fft.hpp>
 
-#if defined(__AVX__)
-namespace calin { namespace math { namespace simd_fft { namespace m256 {
+namespace calin { namespace math { namespace simd_fft {
 
+#if defined(__AVX__)
+namespace m256 {
+
+using float_type = __m256;
 using E = float_type;
 using R = float_type;
 using INT = int;
@@ -68,10 +71,11 @@ inline E ZERO() { return _mm256_setzero_ps(); }
 
 #undef DK
 
-} } } } // namespace calin::math::simd_fft::m256
+} // namespace calin::math::simd_fft::m256
 
-namespace calin { namespace math { namespace simd_fft { namespace m256d {
+namespace m256d {
 
+using float_type = __m256d;
 using E = float_type;
 using R = float_type;
 using INT = int;
@@ -110,6 +114,51 @@ inline E ZERO() { return _mm256_setzero_pd(); }
 
 #undef DK
 
-} } } } // namespace calin::math::simd_fft::m256d
+} // namespace calin::math::simd_fft::m256d
+
+FixedSizeRealToComplexDFT<__m256>* new_m256_r2c_dft(unsigned n,
+  unsigned real_stride, unsigned complex_stride)
+{
+  FixedSizeRealToComplexDFT<__m256>* ptr
+    = m256::new_codelet_r2c_dft(n, real_stride, complex_stride);
+  if(ptr == nullptr)
+    ptr = new FFTWF_FixedSizeRealToComplexDFT<__m256>(n, real_stride, complex_stride);
+  return ptr;
+}
+
+FixedSizeRealToComplexDFT<__m256d>* new_m256d_r2c_dft(unsigned n,
+  unsigned real_stride, unsigned complex_stride)
+{
+  FixedSizeRealToComplexDFT<__m256d>* ptr
+    = m256d::new_codelet_r2c_dft(n, real_stride, complex_stride);
+  if(ptr == nullptr)
+    ptr = new FFTW_FixedSizeRealToComplexDFT<__m256d>(n, real_stride, complex_stride);
+  return ptr;
+}
+
+FixedSizeRealToComplexDFT<__m256>* new_m256_codelet_r2c_dft(unsigned n,
+  unsigned real_stride, unsigned complex_stride)
+{
+  return m256::new_codelet_r2c_dft(n, real_stride, complex_stride);
+}
+
+FixedSizeRealToComplexDFT<__m256d>* new_m256d_codelet_r2c_dft(unsigned n,
+  unsigned real_stride, unsigned complex_stride)
+{
+  return m256d::new_codelet_r2c_dft(n, real_stride, complex_stride);
+}
+
+std::vector<unsigned> list_available_m256_codelets()
+{
+  return m256::list_available_codelets();
+}
+
+std::vector<unsigned> list_available_m256d_codelets()
+{
+  return m256d::list_available_codelets();
+}
 
 #endif // defined(__AVX__)
+
+
+} } } // namespace calin::math::simd_fft

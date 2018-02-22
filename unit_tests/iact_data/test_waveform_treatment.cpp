@@ -58,9 +58,8 @@ TEST(TestWaveformTreatment, TraceAnalysis)
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
   wfev.visit_telescope_run(&run_config, nullptr);
 
-  auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
-  safe_aligned_calloc(samples_data, nchan*nsamp, host_info->log2_simd_vec_size());
+  safe_aligned_calloc(samples_data, nchan*nsamp);
 
   NR3_AVX2_RNGCore core(12345);
   for(unsigned iloop=0;iloop<NSIM_TRACEANAL;iloop++)
@@ -103,9 +102,8 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis)
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
   wfev.visit_telescope_run(&run_config, nullptr);
 
-  auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
-  safe_aligned_calloc(samples_data, nchan*nsamp, host_info->log2_simd_vec_size());
+  safe_aligned_calloc(samples_data, nchan*nsamp);
 
   NR3_AVX2_RNGCore core(12345);
   for(unsigned iloop=0;iloop<NSIM_TRACEANAL;iloop++)
@@ -148,9 +146,8 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis_V2)
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
   wfev.visit_telescope_run(&run_config, nullptr);
 
-  auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
-  safe_aligned_calloc(samples_data, nchan*nsamp, host_info->log2_simd_vec_size());
+  safe_aligned_calloc(samples_data, nchan*nsamp);
 
   NR3_AVX2_RNGCore core(12345);
   for(unsigned iloop=0;iloop<NSIM_TRACEANAL;iloop++)
@@ -194,9 +191,8 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis_V3)
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
   wfev.visit_telescope_run(&run_config, nullptr);
 
-  auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
-  safe_aligned_calloc(samples_data, nchan*nsamp, host_info->log2_simd_vec_size());
+  safe_aligned_calloc(samples_data, nchan*nsamp);
 
   NR3_AVX2_RNGCore core(12345);
   for(unsigned iloop=0;iloop<NSIM_TRACEANAL;iloop++)
