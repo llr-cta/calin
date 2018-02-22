@@ -33,6 +33,52 @@
 
 namespace calin { namespace math { namespace simd_fft {
 
+template<typename T> void shuffle_rc(T& r, T&c) { }
+
+#if defined(__AVX__)
+void shuffle_c_v2s(__m256& r, __m256&c)
+{
+  __m256 t;
+  t = _mm256_set_m128(_mm256_extractf128_ps(r,0), _mm256_extractf128_ps(c,0));
+  c = _mm256_set_m128(_mm256_extractf128_ps(r,1), _mm256_extractf128_ps(c,1));
+  c = _mm256_permute_ps(c, 0b10110001);
+  r = _mm256_blend_ps(t, c, 0b10101010);
+  c = _mm256_blend_ps(t, c, 0x01010101);
+  r = _mm256_permute_ps(r, 0b11011000);
+  c = _mm256_permute_ps(c, 0b10001101);
+}
+
+void shuffle_c_s2v(__m256& r, __m256&c)
+{
+  __m256 t;
+  r = _mm256_permute_ps(r, 0b11011000);
+  c = _mm256_permute_ps(c, 0b01110010);
+  t = _mm256_blend_ps(r, c, 0b10101010);
+  c = _mm256_blend_ps(r, c, 0x01010101);
+  c = _mm256_permute_ps(c, 0b10110001);
+  r = _mm256_set_m128(_mm256_extractf128_ps(t,0), _mm256_extractf128_ps(c,0));
+  c = _mm256_set_m128(_mm256_extractf128_ps(t,1), _mm256_extractf128_ps(c,1));
+}
+
+void shuffle_c_v2s(__m256d& r, __m256d&c)
+{
+  __m256d t;
+  t = _mm256_set_m128d(_mm256_extractf128_pd(r,0), _mm256_extractf128_pd(c,0));
+  c = _mm256_set_m128d(_mm256_extractf128_pd(r,1), _mm256_extractf128_pd(c,1));
+  r = _mm256_unpacklo_pd(t, c);
+  c = _mm256_unpackhi_pd(t, c);
+}
+
+void shuffle_c_s2v(__m256d& r, __m256d&c)
+{
+  __m256d t;
+  t = _mm256_unpacklo_pd(r, c);
+  c = _mm256_unpackhi_pd(r, c);
+  r = _mm256_set_m128d(_mm256_extractf128_pd(t,0), _mm256_extractf128_pd(c,0));
+  c = _mm256_set_m128d(_mm256_extractf128_pd(t,1), _mm256_extractf128_pd(c,1));
+}
+#endif
+
 template<typename T> class FixedSizeRealToComplexDFT
 {
 public:
@@ -114,8 +160,18 @@ public:
   }
   void r2c(T* r_in, T* c_out) override {
     fftw_execute_dft_r2c(plan_r2c_, (double*)r_in, (fftw_complex*)c_out);
+    unsigned nc = FixedSizeRealToComplexDFT<T>::num_complex();
+    for(unsigned ic=0; ic<nc; ic++) {
+      shuffle_c_v2s(c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
+        c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
+    }
   }
   void c2r(T* r_out, T* c_in) override {
+    unsigned nc = FixedSizeRealToComplexDFT<T>::num_complex();
+    for(unsigned ic=0; ic<nc; ic++) {
+      shuffle_c_s2v(c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
+        c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
+    }
     fftw_execute_dft_c2r(plan_c2r_, (fftw_complex*)c_in, (double*)r_out);
   }
 protected:
@@ -150,8 +206,18 @@ public:
   }
   void r2c(T* r_in, T* c_out) override {
     fftwf_execute_dft_r2c(plan_r2c_, (float*)r_in, (fftwf_complex*)c_out);
+    unsigned nc = FixedSizeRealToComplexDFT<T>::num_complex();
+    for(unsigned ic=0; ic<nc; ic++) {
+      shuffle_c_v2s(c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
+        c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
+    }
   }
   void c2r(T* r_out, T* c_in) override {
+    unsigned nc = FixedSizeRealToComplexDFT<T>::num_complex();
+    for(unsigned ic=0; ic<nc; ic++) {
+      shuffle_c_s2v(c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
+        c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
+    }
     fftwf_execute_dft_c2r(plan_c2r_, (fftwf_complex*)c_in, (float*)r_out);
   }
 protected:
@@ -173,5 +239,11 @@ FixedSizeRealToComplexDFT<__m256d>* new_m256d_codelet_r2c_dft(unsigned n,
 
 std::vector<unsigned> list_available_m256_codelets();
 std::vector<unsigned> list_available_m256d_codelets();
+
+std::vector<float> test_m256_r2c_dft(const std::vector<float>& data);
+std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, bool n_is_odd);
+std::vector<float> test_fftw_m256_r2c_dft(const std::vector<float>& data);
+std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, bool n_is_odd);
+
 
 } } } // namespace calin::math::simd_fft

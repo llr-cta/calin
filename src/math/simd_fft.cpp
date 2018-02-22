@@ -160,5 +160,84 @@ std::vector<unsigned> list_available_m256d_codelets()
 
 #endif // defined(__AVX__)
 
+std::vector<float> test_m256_r2c_dft(const std::vector<float>& data)
+{
+#if defined(__AVX__)
+  auto* dft = new_m256_r2c_dft(data.size());
+  std::vector<float> fft(dft->complex_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_complex_array();
+  std::transform(data.begin(), data.end(), xt, [](float x){ return _mm256_set1_ps(x); });
+  dft->r2c(xt, xf);
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return fft;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, bool n_is_odd)
+{
+#if defined(__AVX__)
+  if(fft.size() == 0)throw std::runtime_error("Input DFT empty");
+  if(fft.size()%2 == 1)throw std::runtime_error("Input DFT must have even number of components");
+  int n = fft.size()-2;
+  if(n_is_odd)n++;
+  auto* dft = new_m256_r2c_dft(n);
+  std::vector<float> data(dft->real_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_complex_array();
+  std::transform(fft.begin(), fft.end(), xf, [](float x){ return _mm256_set1_ps(x); });
+  dft->c2r(xt, xf);
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return fft;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+std::vector<float> test_fftw_m256_r2c_dft(const std::vector<float>& data)
+{
+  auto* dft = new FFTWF_FixedSizeRealToComplexDFT<__m256>(data.size());
+  std::vector<float> fft(dft->complex_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_complex_array();
+  std::transform(data.begin(), data.end(), xt, [](float x){ return _mm256_set1_ps(x); });
+  dft->r2c(xt, xf);
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return fft;
+}
+
+std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, bool n_is_odd)
+{
+#if defined(__AVX__)
+  if(fft.size() == 0)throw std::runtime_error("Input DFT empty");
+  if(fft.size()%2 == 1)throw std::runtime_error("Input DFT must have even number of components");
+  int n = fft.size()-2;
+  if(n_is_odd)n++;
+  auto* dft = new FFTWF_FixedSizeRealToComplexDFT<__m256>(n);
+  std::vector<float> data(dft->real_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_complex_array();
+  std::transform(fft.begin(), fft.end(), xf, [](float x){ return _mm256_set1_ps(x); });
+  dft->c2r(xt, xf);
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return fft;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
 
 } } } // namespace calin::math::simd_fft
