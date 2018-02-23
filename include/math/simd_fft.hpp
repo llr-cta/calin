@@ -50,8 +50,8 @@ inline void shuffle_complex_s2v(__m256& r, __m256&c)
   c = _mm256_insertf128_ps(c, _mm256_extractf128_ps(r,1), 0);
 #endif
   c = _mm256_permute_ps(c, 0b10110001);
-  r = _mm256_blend_ps(t, c, 0b10101010);
-  c = _mm256_blend_ps(t, c, 0x01010101);
+  r = _mm256_blend_ps(t, c, (uint8_t)0b10101010);
+  c = _mm256_blend_ps(t, c, (uint8_t)0x01010101);
   r = _mm256_permute_ps(r, 0b11011000);
   c = _mm256_permute_ps(c, 0b10001101);
 }
@@ -61,8 +61,8 @@ inline void shuffle_complex_v2s(__m256& r, __m256&c)
   __m256 t;
   r = _mm256_permute_ps(r, 0b11011000);
   c = _mm256_permute_ps(c, 0b01110010);
-  t = _mm256_blend_ps(r, c, 0b10101010);
-  c = _mm256_blend_ps(r, c, 0x01010101);
+  t = _mm256_blend_ps(r, c, (uint8_t)0b10101010);
+  c = _mm256_blend_ps(r, c, (uint8_t)0x01010101);
   c = _mm256_permute_ps(c, 0b10110001);
 #if 0
   r = _mm256_set_m128(_mm256_extractf128_ps(c,0), _mm256_extractf128_ps(t,0));
