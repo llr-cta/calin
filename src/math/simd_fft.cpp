@@ -453,7 +453,7 @@ std::vector<double> test_m256d_r2hc_dft(const std::vector<double>& data)
   auto* xf = dft->alloc_half_complex_array();
   std::transform(data.begin(), data.end(), xt, [](double x){ return _mm256_set_pd(0,0,0,x); });
   dft->r2hc(xt, xf);
-  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return /* _mm256_cvtsd_f64(x) */ x[0]; });
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256d x){ return /* _mm256_cvtsd_f64(x) */ x[0]; });
   free(xf);
   free(xt);
   delete dft;
@@ -472,7 +472,7 @@ std::vector<double> test_m256d_hc2r_dft(const std::vector<double>& fft)
   auto* xf = dft->alloc_half_complex_array();
   std::transform(fft.begin(), fft.end(), xf, [](double x){ return _mm256_set_pd(0,0,0,x); });
   dft->hc2r(xt, xf);
-  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return /* _mm256_cvtsd_f64(x) */ x[0]; });
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256d x){ return /* _mm256_cvtsd_f64(x) */ x[0]; });
   free(xf);
   free(xt);
   delete dft;
@@ -491,7 +491,7 @@ std::vector<double> test_fftw_m256d_r2hc_dft(const std::vector<double>& data)
   auto* xf = dft->alloc_half_complex_array();
   std::transform(data.begin(), data.end(), xt, [](double x){ return _mm256_set_pd(0,0,0,x); });
   dft->r2hc(xt, xf);
-  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return /* _mm256_cvtsd_f64(x) */ x[0]; });
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256d x){ return /* _mm256_cvtsd_f64(x) */ x[0]; });
   free(xf);
   free(xt);
   delete dft;
@@ -510,7 +510,7 @@ std::vector<double> test_fftw_m256d_hc2r_dft(const std::vector<double>& fft)
   auto* xf = dft->alloc_half_complex_array();
   std::transform(fft.begin(), fft.end(), xf, [](double x){ return _mm256_set_pd(0,0,0,x); });
   dft->hc2r(xt, xf);
-  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return /* _mm256_cvtsd_f64(x) */ x[0]; });
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256d x){ return /* _mm256_cvtsd_f64(x) */ x[0]; });
   free(xf);
   free(xt);
   delete dft;
