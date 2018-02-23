@@ -204,6 +204,7 @@ std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, bool n_is_od
 
 std::vector<float> test_fftw_m256_r2c_dft(const std::vector<float>& data)
 {
+#if defined(__AVX__)
   auto* dft = new FFTWF_FixedSizeRealToComplexDFT<__m256>(data.size());
   std::vector<float> fft(dft->complex_array_size());
   auto* xt = dft->alloc_real_array();
@@ -215,6 +216,9 @@ std::vector<float> test_fftw_m256_r2c_dft(const std::vector<float>& data)
   free(xt);
   delete dft;
   return fft;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
 }
 
 std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, bool n_is_odd)
