@@ -17,7 +17,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-CODELET_SIZES="8 12 15 16 18 20 24 30 32 36 40 48 56 60 64"
+CODELET_SIZES="8 12 15 16 18 20 24 28 30 32 36 40 48 56 60 64"
 CODELET_CSV=`echo $CODELET_SIZES | tr ' ' ','`
 
 GENFFTDIR=/Users/sfegan/GitHub/fftw3/genfft
@@ -46,7 +46,7 @@ do
 
 #include "dft_r2cf_${N}.c"
 #include "dft_r2cb_${N}.c"
-#include "dft_c2c_${N}.c"
+//#include "dft_c2c_${N}.c"
 
 template<> inline void dft_r2c<${N}>(float_type* r_in, float_type* c_out, int rs, int cs)
 {
@@ -72,10 +72,10 @@ template<> inline void dft_hc2r<${N}>(float_type* r_out, float_type* c_in, int r
 
 EOF
 
-  # echo Generating r2cf codelet for n=$N
-  # $GENFFTDIR/gen_r2cf.native -n ${N} -standalone -fma -generic-arith -compact -name dft_codelet_r2cf_${N} | $INDENT > dft_r2cf_${N}.c
-  # echo Generating r2cb codelet for n=$N
-  # $GENFFTDIR/gen_r2cb.native -n ${N} -standalone -fma -generic-arith -compact -name dft_codelet_r2cb_${N} | $INDENT > dft_r2cb_${N}.c
+  echo Generating r2cf codelet for n=$N
+  $GENFFTDIR/gen_r2cf.native -n ${N} -standalone -fma -generic-arith -compact -name dft_codelet_r2cf_${N} | $INDENT > dft_r2cf_${N}.c
+  echo Generating r2cb codelet for n=$N
+  $GENFFTDIR/gen_r2cb.native -n ${N} -sign 1 -standalone -fma -generic-arith -compact -name dft_codelet_r2cb_${N} | $INDENT > dft_r2cb_${N}.c
   # echo Generating c2c codelet for n=$N
   # $GENFFTDIR/gen_notw.native -n ${N} -standalone -fma -generic-arith -compact -name dft_codelet_c2c_${N} | $INDENT > dft_c2c_${N}.c
 done
