@@ -72,12 +72,12 @@ template<> inline void dft_hc2r<${N}>(float_type* r_out, float_type* c_in, int r
 
 EOF
 
-  echo Generating r2cf codelet for n=$N
-  $GENFFTDIR/gen_r2cf.native -n ${N} -standalone -fma -generic-arith -compact -name dft_codelet_r2cf_${N} | $INDENT > dft_r2cf_${N}.c
-  echo Generating r2cb codelet for n=$N
-  $GENFFTDIR/gen_r2cb.native -n ${N} -sign 1 -standalone -fma -generic-arith -compact -name dft_codelet_r2cb_${N} | $INDENT > dft_r2cb_${N}.c
-  # echo Generating c2c codelet for n=$N
-  # $GENFFTDIR/gen_notw.native -n ${N} -standalone -fma -generic-arith -compact -name dft_codelet_c2c_${N} | $INDENT > dft_c2c_${N}.c
+  # echo Generating r2cf codelet for n=$N
+  # $GENFFTDIR/gen_r2cf.native -n ${N} -standalone -fma -generic-arith -compact -name dft_codelet_r2cf_${N} | $INDENT > dft_r2cf_${N}.c
+  # echo Generating r2cb codelet for n=$N
+  # $GENFFTDIR/gen_r2cb.native -n ${N} -sign 1 -standalone -fma -generic-arith -compact -name dft_codelet_r2cb_${N} | $INDENT > dft_r2cb_${N}.c
+  ## echo Generating c2c codelet for n=$N
+  ## $GENFFTDIR/gen_notw.native -n ${N} -standalone -fma -generic-arith -compact -name dft_codelet_c2c_${N} | $INDENT > dft_c2c_${N}.c
 done
 
 cat >> define_all_dft_codelets.cpp_incl <<EOF
