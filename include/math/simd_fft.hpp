@@ -241,9 +241,14 @@ std::vector<unsigned> list_available_m256_codelets();
 std::vector<unsigned> list_available_m256d_codelets();
 
 std::vector<float> test_m256_r2c_dft(const std::vector<float>& data);
-std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, bool n_is_odd);
+std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, unsigned n);
 std::vector<float> test_fftw_m256_r2c_dft(const std::vector<float>& data);
-std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, bool n_is_odd);
+std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, unsigned n);
+
+std::vector<double> test_m256d_r2c_dft(const std::vector<double>& data);
+std::vector<double> test_m256d_c2r_dft(const std::vector<double>& fft, unsigned n);
+std::vector<double> test_fftw_m256d_r2c_dft(const std::vector<double>& data);
+std::vector<double> test_fftw_m256d_c2r_dft(const std::vector<double>& fft, unsigned n);
 
 
 } } } // namespace calin::math::simd_fft

@@ -160,6 +160,8 @@ std::vector<unsigned> list_available_m256d_codelets()
 
 #endif // defined(__AVX__)
 
+// ****************************** FLOAT TEST CODE ******************************
+
 std::vector<float> test_m256_r2c_dft(const std::vector<float>& data)
 {
 #if defined(__AVX__)
@@ -179,13 +181,11 @@ std::vector<float> test_m256_r2c_dft(const std::vector<float>& data)
 #endif // defined(__AVX__)
 }
 
-std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, bool n_is_odd)
+std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, unsigned n)
 {
 #if defined(__AVX__)
   if(fft.size() == 0)throw std::runtime_error("Input DFT empty");
-  if(fft.size()%2 == 1)throw std::runtime_error("Input DFT must have even number of components");
-  int n = fft.size()-2;
-  if(n_is_odd)n++;
+  if(fft.size() != 2*(n/2+1))throw std::runtime_error("Input DFT must have size " + std::to_string(2*(n/2+1)));
   auto* dft = new_m256_r2c_dft(n);
   std::vector<float> data(dft->real_array_size());
   auto* xt = dft->alloc_real_array();
@@ -221,13 +221,11 @@ std::vector<float> test_fftw_m256_r2c_dft(const std::vector<float>& data)
 #endif // defined(__AVX__)
 }
 
-std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, bool n_is_odd)
+std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, unsigned n)
 {
 #if defined(__AVX__)
   if(fft.size() == 0)throw std::runtime_error("Input DFT empty");
-  if(fft.size()%2 == 1)throw std::runtime_error("Input DFT must have even number of components");
-  int n = fft.size()-2;
-  if(n_is_odd)n++;
+  if(fft.size() != 2*(n/2+1))throw std::runtime_error("Input DFT must have size " + std::to_string(2*(n/2+1)));
   auto* dft = new FFTWF_FixedSizeRealToComplexDFT<__m256>(n);
   std::vector<float> data(dft->real_array_size());
   auto* xt = dft->alloc_real_array();
@@ -235,6 +233,88 @@ std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, bool n_
   std::transform(fft.begin(), fft.end(), xf, [](float x){ return _mm256_set1_ps(x); });
   dft->c2r(xt, xf);
   std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return data;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+// ***************************** DOUBLE TEST CODE ******************************
+
+std::vector<double> test_m256d_r2c_dft(const std::vector<double>& data)
+{
+#if defined(__AVX__)
+  auto* dft = new_m256d_r2c_dft(data.size());
+  std::vector<double> fft(dft->complex_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_complex_array();
+  std::transform(data.begin(), data.end(), xt, [](double x){ return _mm256_set1_pd(x); });
+  dft->r2c(xt, xf);
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtsd_f64(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return fft;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+std::vector<double> test_m256d_c2r_dft(const std::vector<double>& fft, unsigned n)
+{
+#if defined(__AVX__)
+  if(fft.size() == 0)throw std::runtime_error("Input DFT empty");
+  if(fft.size() != 2*(n/2+1))throw std::runtime_error("Input DFT must have size " + std::to_string(2*(n/2+1)));
+  auto* dft = new_m256d_r2c_dft(n);
+  std::vector<double> data(dft->real_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_complex_array();
+  std::transform(fft.begin(), fft.end(), xf, [](double x){ return _mm256_set1_pd(x); });
+  dft->c2r(xt, xf);
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtsd_f64(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return data;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+std::vector<double> test_fftw_m256d_r2c_dft(const std::vector<double>& data)
+{
+#if defined(__AVX__)
+  auto* dft = new FFTW_FixedSizeRealToComplexDFT<__m256d>(data.size());
+  std::vector<double> fft(dft->complex_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_complex_array();
+  std::transform(data.begin(), data.end(), xt, [](double x){ return _mm256_set1_pd(x); });
+  dft->r2c(xt, xf);
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtsd_f64(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return fft;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+std::vector<double> test_fftw_m256d_c2r_dft(const std::vector<double>& fft, unsigned n)
+{
+#if defined(__AVX__)
+  if(fft.size() == 0)throw std::runtime_error("Input DFT empty");
+  if(fft.size() != 2*(n/2+1))throw std::runtime_error("Input DFT must have size " + std::to_string(2*(n/2+1)));
+  auto* dft = new FFTW_FixedSizeRealToComplexDFT<__m256d>(n);
+  std::vector<double> data(dft->real_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_complex_array();
+  std::transform(fft.begin(), fft.end(), xf, [](double x){ return _mm256_set1_pd(x); });
+  dft->c2r(xt, xf);
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtsd_f64(x); });
   free(xf);
   free(xt);
   delete dft;
