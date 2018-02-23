@@ -23,6 +23,7 @@
 #pragma once
 
 #include <vector>
+#include <algorithm>
 #include <fftw3.h>
 #include <immintrin.h>
 
@@ -95,8 +96,8 @@ inline void shuffle_complex_v2s(__m256d& r, __m256d&c)
   r = _mm256_set_m128d(_mm256_extractf128_pd(c,0), _mm256_extractf128_pd(t,0));
   c = _mm256_set_m128d(_mm256_extractf128_pd(c,1), _mm256_extractf128_pd(t,1));
 #else
-  r = _mm256_insertf128_ps(t, _mm256_extractf128_pd(c,0), 1);
-  c = _mm256_insertf128_ps(c, _mm256_extractf128_pd(t,1), 0);
+  r = _mm256_insertf128_pd(t, _mm256_extractf128_pd(c,0), 1);
+  c = _mm256_insertf128_pd(c, _mm256_extractf128_pd(t,1), 0);
 #endif
 }
 #endif
