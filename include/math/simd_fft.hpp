@@ -24,10 +24,7 @@
 
 #include <vector>
 #include <fftw3.h>
-
-#if defined(__AVX__)
 #include <immintrin.h>
-#endif // defined(__AVX__)
 
 #include <util/memory.hpp>
 
@@ -44,8 +41,13 @@ template<typename T> void shuffle_complex_v2s(T& r, T&c) { }
 inline void shuffle_complex_s2v(__m256& r, __m256&c)
 {
   __m256 t;
+#if 0
   t = _mm256_set_m128(_mm256_extractf128_ps(c,0), _mm256_extractf128_ps(r,0));
   c = _mm256_set_m128(_mm256_extractf128_ps(c,1), _mm256_extractf128_ps(r,1));
+#else
+  t = _mm256_insertf128_ps(r, _mm256_extractf128_ps(c,0), 1);
+  c = _mm256_insertf128_ps(c, _mm256_extractf128_ps(r,1), 0);
+#endif
   c = _mm256_permute_ps(c, 0b10110001);
   r = _mm256_blend_ps(t, c, 0b10101010);
   c = _mm256_blend_ps(t, c, 0x01010101);
@@ -61,15 +63,25 @@ inline void shuffle_complex_v2s(__m256& r, __m256&c)
   t = _mm256_blend_ps(r, c, 0b10101010);
   c = _mm256_blend_ps(r, c, 0x01010101);
   c = _mm256_permute_ps(c, 0b10110001);
+#if 0
   r = _mm256_set_m128(_mm256_extractf128_ps(c,0), _mm256_extractf128_ps(t,0));
   c = _mm256_set_m128(_mm256_extractf128_ps(c,1), _mm256_extractf128_ps(t,1));
+#else
+  r = _mm256_insertf128_ps(t, _mm256_extractf128_ps(c,0), 1);
+  c = _mm256_insertf128_ps(c, _mm256_extractf128_ps(t,1), 0);
+#endif
 }
 
 inline void shuffle_complex_s2v(__m256d& r, __m256d&c)
 {
   __m256d t;
+#if 0
   t = _mm256_set_m128d(_mm256_extractf128_pd(c,0), _mm256_extractf128_pd(r,0));
   c = _mm256_set_m128d(_mm256_extractf128_pd(c,1), _mm256_extractf128_pd(r,1));
+#else
+  t = _mm256_insertf128_pd(r, _mm256_extractf128_pd(c,0), 1);
+  c = _mm256_insertf128_pd(c, _mm256_extractf128_pd(r,1), 0);
+#endif
   r = _mm256_unpacklo_pd(t, c);
   c = _mm256_unpackhi_pd(t, c);
 }
@@ -79,8 +91,13 @@ inline void shuffle_complex_v2s(__m256d& r, __m256d&c)
   __m256d t;
   t = _mm256_unpacklo_pd(r, c);
   c = _mm256_unpackhi_pd(r, c);
+#if 0
   r = _mm256_set_m128d(_mm256_extractf128_pd(c,0), _mm256_extractf128_pd(t,0));
   c = _mm256_set_m128d(_mm256_extractf128_pd(c,1), _mm256_extractf128_pd(t,1));
+#else
+  r = _mm256_insertf128_ps(t, _mm256_extractf128_pd(c,0), 1);
+  c = _mm256_insertf128_ps(c, _mm256_extractf128_pd(t,1), 0);
+#endif
 }
 #endif
 
