@@ -99,6 +99,21 @@ public:
   }
 };
 
+template<int N> class Codelet_FixedSizeRealToHalfComplexDFT:
+  public FixedSizeRealToHalfComplexDFT<R>
+{
+public:
+  Codelet_FixedSizeRealToHalfComplexDFT(unsigned real_stride = 1, unsigned half_complex_stride = 1):
+    FixedSizeRealToHalfComplexDFT<R>(N, real_stride, half_complex_stride) { }
+  virtual ~Codelet_FixedSizeRealToHalfComplexDFT() { }
+  void r2hc(R* r_in, R* hc_out) override {
+    dft_r2hc<N>(r_in, hc_out, FixedSizeRealToHalfComplexDFT<R>::rs_, FixedSizeRealToHalfComplexDFT<R>::hcs_);
+  }
+  void hc2r(R* r_out, R* hc_in) override {
+    dft_hc2r<N>(r_out, hc_in, FixedSizeRealToHalfComplexDFT<R>::rs_, FixedSizeRealToHalfComplexDFT<R>::hcs_);
+  }
+};
+
 FixedSizeRealToComplexDFT<R>* new_codelet_r2c_dft(unsigned N,
   unsigned real_stride = 1, unsigned complex_stride = 1)
 {
@@ -107,6 +122,20 @@ EOF
 for N in $CODELET_SIZES
 do
   echo "  case $N: return new Codelet_FixedSizeRealToComplexDFT<$N>(real_stride, complex_stride);" >> define_all_dft_codelets.cpp_incl
+done
+cat >> define_all_dft_codelets.cpp_incl <<EOF
+  default: return nullptr;
+  }
+}
+
+FixedSizeRealToHalfComplexDFT<R>* new_codelet_r2hc_dft(unsigned N,
+  unsigned real_stride = 1, unsigned half_complex_stride = 1)
+{
+  switch(N) {
+EOF
+for N in $CODELET_SIZES
+do
+  echo "  case $N: return new Codelet_FixedSizeRealToHalfComplexDFT<$N>(real_stride, half_complex_stride);" >> define_all_dft_codelets.cpp_incl
 done
 cat >> define_all_dft_codelets.cpp_incl <<EOF
   default: return nullptr;

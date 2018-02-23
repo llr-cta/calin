@@ -486,6 +486,21 @@ public:
   }
 };
 
+template<int N> class Codelet_FixedSizeRealToHalfComplexDFT:
+  public FixedSizeRealToHalfComplexDFT<R>
+{
+public:
+  Codelet_FixedSizeRealToHalfComplexDFT(unsigned real_stride = 1, unsigned half_complex_stride = 1):
+    FixedSizeRealToHalfComplexDFT<R>(N, real_stride, half_complex_stride) { }
+  virtual ~Codelet_FixedSizeRealToHalfComplexDFT() { }
+  void r2hc(R* r_in, R* hc_out) override {
+    dft_r2hc<N>(r_in, hc_out, FixedSizeRealToHalfComplexDFT<R>::rs_, FixedSizeRealToHalfComplexDFT<R>::hcs_);
+  }
+  void hc2r(R* r_out, R* hc_in) override {
+    dft_hc2r<N>(r_out, hc_in, FixedSizeRealToHalfComplexDFT<R>::rs_, FixedSizeRealToHalfComplexDFT<R>::hcs_);
+  }
+};
+
 FixedSizeRealToComplexDFT<R>* new_codelet_r2c_dft(unsigned N,
   unsigned real_stride = 1, unsigned complex_stride = 1)
 {
@@ -506,6 +521,30 @@ FixedSizeRealToComplexDFT<R>* new_codelet_r2c_dft(unsigned N,
   case 56: return new Codelet_FixedSizeRealToComplexDFT<56>(real_stride, complex_stride);
   case 60: return new Codelet_FixedSizeRealToComplexDFT<60>(real_stride, complex_stride);
   case 64: return new Codelet_FixedSizeRealToComplexDFT<64>(real_stride, complex_stride);
+  default: return nullptr;
+  }
+}
+
+FixedSizeRealToHalfComplexDFT<R>* new_codelet_r2hc_dft(unsigned N,
+  unsigned real_stride = 1, unsigned half_complex_stride = 1)
+{
+  switch(N) {
+  case 8: return new Codelet_FixedSizeRealToHalfComplexDFT<8>(real_stride, half_complex_stride);
+  case 12: return new Codelet_FixedSizeRealToHalfComplexDFT<12>(real_stride, half_complex_stride);
+  case 15: return new Codelet_FixedSizeRealToHalfComplexDFT<15>(real_stride, half_complex_stride);
+  case 16: return new Codelet_FixedSizeRealToHalfComplexDFT<16>(real_stride, half_complex_stride);
+  case 18: return new Codelet_FixedSizeRealToHalfComplexDFT<18>(real_stride, half_complex_stride);
+  case 20: return new Codelet_FixedSizeRealToHalfComplexDFT<20>(real_stride, half_complex_stride);
+  case 24: return new Codelet_FixedSizeRealToHalfComplexDFT<24>(real_stride, half_complex_stride);
+  case 28: return new Codelet_FixedSizeRealToHalfComplexDFT<28>(real_stride, half_complex_stride);
+  case 30: return new Codelet_FixedSizeRealToHalfComplexDFT<30>(real_stride, half_complex_stride);
+  case 32: return new Codelet_FixedSizeRealToHalfComplexDFT<32>(real_stride, half_complex_stride);
+  case 36: return new Codelet_FixedSizeRealToHalfComplexDFT<36>(real_stride, half_complex_stride);
+  case 40: return new Codelet_FixedSizeRealToHalfComplexDFT<40>(real_stride, half_complex_stride);
+  case 48: return new Codelet_FixedSizeRealToHalfComplexDFT<48>(real_stride, half_complex_stride);
+  case 56: return new Codelet_FixedSizeRealToHalfComplexDFT<56>(real_stride, half_complex_stride);
+  case 60: return new Codelet_FixedSizeRealToHalfComplexDFT<60>(real_stride, half_complex_stride);
+  case 64: return new Codelet_FixedSizeRealToHalfComplexDFT<64>(real_stride, half_complex_stride);
   default: return nullptr;
   }
 }

@@ -148,6 +148,38 @@ FixedSizeRealToComplexDFT<__m256d>* new_m256d_codelet_r2c_dft(unsigned n,
   return m256d::new_codelet_r2c_dft(n, real_stride, complex_stride);
 }
 
+FixedSizeRealToHalfComplexDFT<__m256>* new_m256_r2hc_dft(unsigned n,
+  unsigned real_stride, unsigned half_complex_stride)
+{
+  FixedSizeRealToHalfComplexDFT<__m256>* ptr
+    = m256::new_codelet_r2hc_dft(n, real_stride, half_complex_stride);
+  if(ptr == nullptr)
+    ptr = new FFTWF_FixedSizeRealToHalfComplexDFT<__m256>(n, real_stride, half_complex_stride);
+  return ptr;
+}
+
+FixedSizeRealToHalfComplexDFT<__m256d>* new_m256d_r2hc_dft(unsigned n,
+  unsigned real_stride, unsigned half_complex_stride)
+{
+  FixedSizeRealToHalfComplexDFT<__m256d>* ptr
+    = m256d::new_codelet_r2hc_dft(n, real_stride, half_complex_stride);
+  if(ptr == nullptr)
+    ptr = new FFTW_FixedSizeRealToHalfComplexDFT<__m256d>(n, real_stride, half_complex_stride);
+  return ptr;
+}
+
+FixedSizeRealToHalfComplexDFT<__m256>* new_m256_codelet_r2hc_dft(unsigned n,
+  unsigned real_stride, unsigned half_complex_stride)
+{
+  return m256::new_codelet_r2hc_dft(n, real_stride, half_complex_stride);
+}
+
+FixedSizeRealToHalfComplexDFT<__m256d>* new_m256d_codelet_r2hc_dft(unsigned n,
+  unsigned real_stride, unsigned half_complex_stride)
+{
+  return m256d::new_codelet_r2hc_dft(n, real_stride, half_complex_stride);
+}
+
 std::vector<unsigned> list_available_m256_codelets()
 {
   return m256::list_available_codelets();
@@ -160,7 +192,9 @@ std::vector<unsigned> list_available_m256d_codelets()
 
 #endif // defined(__AVX__)
 
-// ****************************** FLOAT TEST CODE ******************************
+// *****************************************************************************
+// ******************* FLOAT AVX REAL <-> COMPLEX TEST CODE ********************
+// *****************************************************************************
 
 std::vector<float> test_m256_r2c_dft(const std::vector<float>& data)
 {
@@ -242,7 +276,9 @@ std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, unsigne
 #endif // defined(__AVX__)
 }
 
-// ***************************** DOUBLE TEST CODE ******************************
+// *****************************************************************************
+// ******************* DOUBLE AVX REAL <-> COMPLEX TEST CODE *******************
+// *****************************************************************************
 
 std::vector<double> test_m256d_r2c_dft(const std::vector<double>& data)
 {
@@ -314,6 +350,166 @@ std::vector<double> test_fftw_m256d_c2r_dft(const std::vector<double>& fft, unsi
   auto* xf = dft->alloc_complex_array();
   std::transform(fft.begin(), fft.end(), xf, [](double x){ return _mm256_set_pd(0,0,0,x); });
   dft->c2r(xt, xf);
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtsd_f64(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return data;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+// *****************************************************************************
+// ***************** FLOAT AVX REAL <-> HALF COMPLEX TEST CODE *****************
+// *****************************************************************************
+
+std::vector<float> test_m256_r2hc_dft(const std::vector<float>& data)
+{
+#if defined(__AVX__)
+  auto* dft = new_m256_r2hc_dft(data.size());
+  std::vector<float> fft(dft->half_complex_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_half_complex_array();
+  std::transform(data.begin(), data.end(), xt, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
+  dft->r2hc(xt, xf);
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return fft;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+std::vector<float> test_m256_hc2r_dft(const std::vector<float>& fft)
+{
+#if defined(__AVX__)
+  auto* dft = new_m256_r2hc_dft(fft.size());
+  std::vector<float> data(dft->real_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_half_complex_array();
+  std::transform(fft.begin(), fft.end(), xf, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
+  dft->hc2r(xt, xf);
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return data;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+std::vector<float> test_fftw_m256_r2hc_dft(const std::vector<float>& data)
+{
+#if defined(__AVX__)
+  auto* dft = new FFTWF_FixedSizeRealToHalfComplexDFT<__m256>(data.size());
+  std::vector<float> fft(dft->half_complex_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_half_complex_array();
+  std::transform(data.begin(), data.end(), xt, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
+  dft->r2hc(xt, xf);
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return fft;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+std::vector<float> test_fftw_m256_hc2r_dft(const std::vector<float>& fft)
+{
+#if defined(__AVX__)
+  auto* dft = new FFTWF_FixedSizeRealToHalfComplexDFT<__m256>(fft.size());
+  std::vector<float> data(dft->real_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_half_complex_array();
+  std::transform(fft.begin(), fft.end(), xf, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
+  dft->hc2r(xt, xf);
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return data;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+// *****************************************************************************
+// ***************** DOUBLE AVX REAL <-> HALF COMPLEX TEST CODE ****************
+// *****************************************************************************
+
+std::vector<double> test_m256d_r2hc_dft(const std::vector<double>& data)
+{
+#if defined(__AVX__)
+  auto* dft = new_m256d_r2hc_dft(data.size());
+  std::vector<double> fft(dft->half_complex_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_half_complex_array();
+  std::transform(data.begin(), data.end(), xt, [](double x){ return _mm256_set_pd(0,0,0,x); });
+  dft->r2hc(xt, xf);
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtsd_f64(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return fft;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+std::vector<double> test_m256d_hc2r_dft(const std::vector<double>& fft)
+{
+#if defined(__AVX__)
+  auto* dft = new_m256d_r2hc_dft(fft.size());
+  std::vector<double> data(dft->real_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_half_complex_array();
+  std::transform(fft.begin(), fft.end(), xf, [](double x){ return _mm256_set_pd(0,0,0,x); });
+  dft->hc2r(xt, xf);
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtsd_f64(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return data;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+std::vector<double> test_fftw_m256d_r2hc_dft(const std::vector<double>& data)
+{
+#if defined(__AVX__)
+  auto* dft = new FFTW_FixedSizeRealToHalfComplexDFT<__m256d>(data.size());
+  std::vector<double> fft(dft->half_complex_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_half_complex_array();
+  std::transform(data.begin(), data.end(), xt, [](double x){ return _mm256_set_pd(0,0,0,x); });
+  dft->r2hc(xt, xf);
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtsd_f64(x); });
+  free(xf);
+  free(xt);
+  delete dft;
+  return fft;
+#else // defined(__AVX__)
+  throw std::runtime_error("AVX not present at compile type")
+#endif // defined(__AVX__)
+}
+
+std::vector<double> test_fftw_m256d_hc2r_dft(const std::vector<double>& fft)
+{
+#if defined(__AVX__)
+  auto* dft = new FFTW_FixedSizeRealToHalfComplexDFT<__m256d>(fft.size());
+  std::vector<double> data(dft->real_array_size());
+  auto* xt = dft->alloc_real_array();
+  auto* xf = dft->alloc_half_complex_array();
+  std::transform(fft.begin(), fft.end(), xf, [](double x){ return _mm256_set_pd(0,0,0,x); });
+  dft->hc2r(xt, xf);
   std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtsd_f64(x); });
   free(xf);
   free(xt);

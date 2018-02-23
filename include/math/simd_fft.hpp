@@ -33,6 +33,10 @@
 
 namespace calin { namespace math { namespace simd_fft {
 
+// ****************************************************************************
+// *************************** DFT REAL <-> COMPLEX ***************************
+// ****************************************************************************
+
 template<typename T> void shuffle_complex_s2v(T& r, T&c) { }
 template<typename T> void shuffle_complex_v2s(T& r, T&c) { }
 
@@ -105,34 +109,6 @@ protected:
   unsigned rs_;
   unsigned cs_;
 };
-
-#if 0
-template<typename T> class FixedSizeRealToHalfComplexDFT
-{
-public:
-  FixedSizeRealToHalfComplexDFT(unsigned N, unsigned real_stride = 1, unsigned half_complex_stride = 1):
-    N_(N), rs_(real_stride), hcs_(half_complex_stride) { assert(rs_ != 0); assert(hcs_ != 0); };
-  virtual ~FixedSizeRealToHalfComplexDFT() { }
-  virtual void r2hc(T* r_in, T* hc_out) = 0;
-  virtual void hc2r(T* r_out, T* hc_in) = 0;
-
-  // Utility functions
-  int real_stride() const { return rs_; }
-  int half_complex_stride() const { return hcs_; }
-  unsigned num_real() const { return N_; }
-  unsigned num_half_complex() const { return N_; }
-  unsigned real_array_size() const { return num_real()*rs_; }
-  unsigned half_complex_array_size() const { return num_complex()*hcs_; }
-  T* alloc_real_array() const {
-    return calin::util::memory::aligned_calloc<T>(real_array_size()); }
-  T* alloc_half_complex_array() const {
-    return calin::util::memory::aligned_calloc<T>(complex_array_size()); }
-protected:
-  unsigned N_;
-  unsigned rs_;
-  unsigned hcs_;
-};
-#endif
 
 template<typename T> class FFTW_FixedSizeRealToComplexDFT:
   public FixedSizeRealToComplexDFT<T>
@@ -282,9 +258,6 @@ FixedSizeRealToComplexDFT<__m256d>* new_m256d_codelet_r2c_dft(unsigned n,
   unsigned real_stride = 1, unsigned complex_stride = 1);
 #endif // defined(__AVX__)
 
-std::vector<unsigned> list_available_m256_codelets();
-std::vector<unsigned> list_available_m256d_codelets();
-
 std::vector<float> test_m256_r2c_dft(const std::vector<float>& data);
 std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, unsigned n);
 std::vector<float> test_fftw_m256_r2c_dft(const std::vector<float>& data);
@@ -294,6 +267,143 @@ std::vector<double> test_m256d_r2c_dft(const std::vector<double>& data);
 std::vector<double> test_m256d_c2r_dft(const std::vector<double>& fft, unsigned n);
 std::vector<double> test_fftw_m256d_r2c_dft(const std::vector<double>& data);
 std::vector<double> test_fftw_m256d_c2r_dft(const std::vector<double>& fft, unsigned n);
+
+// ****************************************************************************
+// ************************* DFT REAL <-> HALF-COMPLEX ************************
+// ****************************************************************************
+
+template<typename T> class FixedSizeRealToHalfComplexDFT
+{
+public:
+  FixedSizeRealToHalfComplexDFT(unsigned N, unsigned real_stride = 1, unsigned half_complex_stride = 1):
+    N_(N), rs_(real_stride), hcs_(half_complex_stride) { assert(rs_ != 0); assert(hcs_ != 0); };
+  virtual ~FixedSizeRealToHalfComplexDFT() { }
+  virtual void r2hc(T* r_in, T* hc_out) = 0;
+  virtual void hc2r(T* r_out, T* hc_in) = 0;
+
+  // Utility functions
+  int real_stride() const { return rs_; }
+  int half_complex_stride() const { return hcs_; }
+  unsigned num_real() const { return N_; }
+  unsigned num_half_complex() const { return N_; }
+  unsigned real_array_size() const { return num_real()*rs_; }
+  unsigned half_complex_array_size() const { return num_half_complex()*hcs_; }
+  T* alloc_real_array() const {
+    return calin::util::memory::aligned_calloc<T>(real_array_size()); }
+  T* alloc_half_complex_array() const {
+    return calin::util::memory::aligned_calloc<T>(half_complex_array_size()); }
+protected:
+  unsigned N_;
+  unsigned rs_;
+  unsigned hcs_;
+};
+
+template<typename T> class FFTW_FixedSizeRealToHalfComplexDFT:
+  public FixedSizeRealToHalfComplexDFT<T>
+{
+public:
+  FFTW_FixedSizeRealToHalfComplexDFT(unsigned N, unsigned real_stride = 1, unsigned half_complex_stride = 1,
+    unsigned flags = FFTW_MEASURE):
+      FixedSizeRealToHalfComplexDFT<T>(N, real_stride, half_complex_stride) {
+    T* xt = FixedSizeRealToHalfComplexDFT<T>::alloc_real_array();
+    T* xf = FixedSizeRealToHalfComplexDFT<T>::alloc_half_complex_array();
+    int howmany = sizeof(T)/sizeof(double);
+    fftw_r2r_kind kind = FFTW_R2HC;
+    int n = N;
+    plan_r2hc_ = fftw_plan_many_r2r(1, &n, howmany,
+      (double*)xt, nullptr, FixedSizeRealToHalfComplexDFT<T>::rs_*howmany, 1,
+      (double*)xf, nullptr, FixedSizeRealToHalfComplexDFT<T>::hcs_*howmany, 1,
+      &kind, flags);
+    kind = FFTW_HC2R;
+    plan_hc2r_ = fftw_plan_many_r2r(1, &n, howmany,
+      (double*)xf, nullptr, FixedSizeRealToHalfComplexDFT<T>::hcs_*howmany, 1,
+      (double*)xt, nullptr, FixedSizeRealToHalfComplexDFT<T>::rs_*howmany, 1,
+      &kind, flags);
+    free(xf);
+    free(xt);
+  }
+  virtual ~FFTW_FixedSizeRealToHalfComplexDFT() {
+    fftw_destroy_plan(plan_r2hc_);
+    fftw_destroy_plan(plan_hc2r_);
+  }
+  void r2hc(T* r_in, T* hc_out) override {
+    fftw_execute_r2r(plan_r2hc_, (double*)r_in, (double*)hc_out);
+  }
+  void hc2r(T* r_out, T* hc_in) override {
+    fftw_execute_r2r(plan_hc2r_, (double*)hc_in, (double*)r_out);
+  }
+protected:
+  fftw_plan plan_r2hc_;
+  fftw_plan plan_hc2r_;
+};
+
+template<typename T> class FFTWF_FixedSizeRealToHalfComplexDFT:
+  public FixedSizeRealToHalfComplexDFT<T>
+{
+public:
+  FFTWF_FixedSizeRealToHalfComplexDFT(unsigned N, unsigned real_stride = 1, unsigned half_complex_stride = 1,
+    unsigned flags = FFTW_MEASURE):
+      FixedSizeRealToHalfComplexDFT<T>(N, real_stride, half_complex_stride) {
+    T* xt = FixedSizeRealToHalfComplexDFT<T>::alloc_real_array();
+    T* xf = FixedSizeRealToHalfComplexDFT<T>::alloc_half_complex_array();
+    int howmany = sizeof(T)/sizeof(float);
+    fftw_r2r_kind kind = FFTW_R2HC;
+    int n = N;
+    plan_r2hc_ = fftwf_plan_many_r2r(1, &n, howmany,
+      (float*)xt, nullptr, FixedSizeRealToHalfComplexDFT<T>::rs_*howmany, 1,
+      (float*)xf, nullptr, FixedSizeRealToHalfComplexDFT<T>::hcs_*howmany, 1,
+      &kind, flags);
+    kind = FFTW_HC2R;
+    plan_hc2r_ = fftwf_plan_many_r2r(1, &n, howmany,
+      (float*)xf, nullptr, FixedSizeRealToHalfComplexDFT<T>::hcs_*howmany, 1,
+      (float*)xt, nullptr, FixedSizeRealToHalfComplexDFT<T>::rs_*howmany, 1,
+      &kind, flags);
+    free(xf);
+    free(xt);
+  }
+  virtual ~FFTWF_FixedSizeRealToHalfComplexDFT() {
+    fftwf_destroy_plan(plan_r2hc_);
+    fftwf_destroy_plan(plan_hc2r_);
+  }
+  void r2hc(T* r_in, T* hc_out) override {
+    fftwf_execute_r2r(plan_r2hc_, (float*)r_in, (float*)hc_out);
+  }
+  void hc2r(T* r_out, T* hc_in) override {
+    fftwf_execute_r2r(plan_hc2r_, (float*)hc_in, (float*)r_out);
+  }
+protected:
+  fftwf_plan plan_r2hc_;
+  fftwf_plan plan_hc2r_;
+};
+
+#if defined(__AVX__)
+FixedSizeRealToHalfComplexDFT<__m256>* new_m256_r2hc_dft(unsigned n,
+  unsigned real_stride = 1, unsigned half_complex_stride = 1);
+FixedSizeRealToHalfComplexDFT<__m256d>* new_m256d_r2hc_dft(unsigned n,
+  unsigned real_stride = 1, unsigned half_complex_stride = 1);
+
+FixedSizeRealToHalfComplexDFT<__m256>* new_m256_codelet_r2hc_dft(unsigned n,
+  unsigned real_stride = 1, unsigned half_complex_stride = 1);
+FixedSizeRealToHalfComplexDFT<__m256d>* new_m256d_codelet_r2hc_dft(unsigned n,
+  unsigned real_stride = 1, unsigned half_complex_stride = 1);
+#endif // defined(__AVX__)
+
+std::vector<float> test_m256_r2hc_dft(const std::vector<float>& data);
+std::vector<float> test_m256_hc2r_dft(const std::vector<float>& fft);
+std::vector<float> test_fftw_m256_r2hc_dft(const std::vector<float>& data);
+std::vector<float> test_fftw_m256_hc2r_dft(const std::vector<float>& fft);
+
+std::vector<double> test_m256d_r2hc_dft(const std::vector<double>& data);
+std::vector<double> test_m256d_hc2r_dft(const std::vector<double>& fft);
+std::vector<double> test_fftw_m256d_r2hc_dft(const std::vector<double>& data);
+std::vector<double> test_fftw_m256d_hc2r_dft(const std::vector<double>& fft);
+
+// ****************************************************************************
+// ************************** OTHER UTILITY FUNCTIONS *************************
+// ****************************************************************************
+
+std::vector<unsigned> list_available_m256_codelets();
+std::vector<unsigned> list_available_m256d_codelets();
 
 
 } } } // namespace calin::math::simd_fft
