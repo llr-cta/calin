@@ -33,14 +33,15 @@
 
 namespace calin { namespace math { namespace simd_fft {
 
-template<typename T> void shuffle_rc(T& r, T&c) { }
+template<typename T> void shuffle_complex_s2v(T& r, T&c) { }
+template<typename T> void shuffle_complex_v2s(T& r, T&c) { }
 
 #if defined(__AVX__)
-void shuffle_c_v2s(__m256& r, __m256&c)
+inline void shuffle_complex_s2v(__m256& r, __m256&c)
 {
   __m256 t;
-  t = _mm256_set_m128(_mm256_extractf128_ps(r,0), _mm256_extractf128_ps(c,0));
-  c = _mm256_set_m128(_mm256_extractf128_ps(r,1), _mm256_extractf128_ps(c,1));
+  t = _mm256_set_m128(_mm256_extractf128_ps(c,0), _mm256_extractf128_ps(r,0));
+  c = _mm256_set_m128(_mm256_extractf128_ps(c,1), _mm256_extractf128_ps(r,1));
   c = _mm256_permute_ps(c, 0b10110001);
   r = _mm256_blend_ps(t, c, 0b10101010);
   c = _mm256_blend_ps(t, c, 0x01010101);
@@ -48,7 +49,7 @@ void shuffle_c_v2s(__m256& r, __m256&c)
   c = _mm256_permute_ps(c, 0b10001101);
 }
 
-void shuffle_c_s2v(__m256& r, __m256&c)
+inline void shuffle_complex_v2s(__m256& r, __m256&c)
 {
   __m256 t;
   r = _mm256_permute_ps(r, 0b11011000);
@@ -56,26 +57,26 @@ void shuffle_c_s2v(__m256& r, __m256&c)
   t = _mm256_blend_ps(r, c, 0b10101010);
   c = _mm256_blend_ps(r, c, 0x01010101);
   c = _mm256_permute_ps(c, 0b10110001);
-  r = _mm256_set_m128(_mm256_extractf128_ps(t,0), _mm256_extractf128_ps(c,0));
-  c = _mm256_set_m128(_mm256_extractf128_ps(t,1), _mm256_extractf128_ps(c,1));
+  r = _mm256_set_m128(_mm256_extractf128_ps(c,0), _mm256_extractf128_ps(t,0));
+  c = _mm256_set_m128(_mm256_extractf128_ps(c,1), _mm256_extractf128_ps(t,1));
 }
 
-void shuffle_c_v2s(__m256d& r, __m256d&c)
+inline void shuffle_complex_s2v(__m256d& r, __m256d&c)
 {
   __m256d t;
-  t = _mm256_set_m128d(_mm256_extractf128_pd(r,0), _mm256_extractf128_pd(c,0));
-  c = _mm256_set_m128d(_mm256_extractf128_pd(r,1), _mm256_extractf128_pd(c,1));
+  t = _mm256_set_m128d(_mm256_extractf128_pd(c,0), _mm256_extractf128_pd(r,0));
+  c = _mm256_set_m128d(_mm256_extractf128_pd(c,1), _mm256_extractf128_pd(r,1));
   r = _mm256_unpacklo_pd(t, c);
   c = _mm256_unpackhi_pd(t, c);
 }
 
-void shuffle_c_s2v(__m256d& r, __m256d&c)
+inline void shuffle_complex_v2s(__m256d& r, __m256d&c)
 {
   __m256d t;
   t = _mm256_unpacklo_pd(r, c);
   c = _mm256_unpackhi_pd(r, c);
-  r = _mm256_set_m128d(_mm256_extractf128_pd(t,0), _mm256_extractf128_pd(c,0));
-  c = _mm256_set_m128d(_mm256_extractf128_pd(t,1), _mm256_extractf128_pd(c,1));
+  r = _mm256_set_m128d(_mm256_extractf128_pd(c,0), _mm256_extractf128_pd(t,0));
+  c = _mm256_set_m128d(_mm256_extractf128_pd(c,1), _mm256_extractf128_pd(t,1));
 }
 #endif
 
@@ -162,14 +163,14 @@ public:
     fftw_execute_dft_r2c(plan_r2c_, (double*)r_in, (fftw_complex*)c_out);
     unsigned nc = FixedSizeRealToComplexDFT<T>::num_complex();
     for(unsigned ic=0; ic<nc; ic++) {
-      shuffle_c_v2s(c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
+      shuffle_complex_s2v(c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
         c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
     }
   }
   void c2r(T* r_out, T* c_in) override {
     unsigned nc = FixedSizeRealToComplexDFT<T>::num_complex();
     for(unsigned ic=0; ic<nc; ic++) {
-      shuffle_c_s2v(c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
+      shuffle_complex_v2s(c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
         c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
     }
     fftw_execute_dft_c2r(plan_c2r_, (fftw_complex*)c_in, (double*)r_out);
@@ -207,15 +208,41 @@ public:
   void r2c(T* r_in, T* c_out) override {
     fftwf_execute_dft_r2c(plan_r2c_, (float*)r_in, (fftwf_complex*)c_out);
     unsigned nc = FixedSizeRealToComplexDFT<T>::num_complex();
+#if 0
     for(unsigned ic=0; ic<nc; ic++) {
-      shuffle_c_v2s(c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
+      std::cout << "I(" << ic << "): "
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic][0] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic][1] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic][2] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic][3] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1][0] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1][1] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1][2] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1][3] << '\n';
+    }
+#endif
+    for(unsigned ic=0; ic<nc; ic++) {
+      shuffle_complex_s2v(c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
         c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
     }
+#if 0
+    for(unsigned ic=0; ic<nc; ic++) {
+      std::cout << "O(" << ic << "): "
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic][0] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic][1] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic][2] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic][3] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1][0] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1][1] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1][2] << ' '
+        << c_out[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1][3] << '\n';
+    }
+#endif
   }
   void c2r(T* r_out, T* c_in) override {
     unsigned nc = FixedSizeRealToComplexDFT<T>::num_complex();
     for(unsigned ic=0; ic<nc; ic++) {
-      shuffle_c_s2v(c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
+      shuffle_complex_v2s(c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
         c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
     }
     fftwf_execute_dft_c2r(plan_c2r_, (fftwf_complex*)c_in, (float*)r_out);
