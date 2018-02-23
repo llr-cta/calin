@@ -205,7 +205,7 @@ std::vector<float> test_m256_r2c_dft(const std::vector<float>& data)
   auto* xf = dft->alloc_complex_array();
   std::transform(data.begin(), data.end(), xt, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
   dft->r2c(xt, xf);
-  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return /* _mm256_cvtss_f32(x) */ (float)x[0]; });
   free(xf);
   free(xt);
   delete dft;
@@ -226,7 +226,7 @@ std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, unsigned n)
   auto* xf = dft->alloc_complex_array();
   std::transform(fft.begin(), fft.end(), xf, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
   dft->c2r(xt, xf);
-  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return /* _mm256_cvtss_f32(x) */ (float)x[0]; });
   free(xf);
   free(xt);
   delete dft;
@@ -245,7 +245,7 @@ std::vector<float> test_fftw_m256_r2c_dft(const std::vector<float>& data)
   auto* xf = dft->alloc_complex_array();
   std::transform(data.begin(), data.end(), xt, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
   dft->r2c(xt, xf);
-  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return /* _mm256_cvtss_f32(x) */ x[0]; });
   free(xf);
   free(xt);
   delete dft;
@@ -266,7 +266,7 @@ std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, unsigne
   auto* xf = dft->alloc_complex_array();
   std::transform(fft.begin(), fft.end(), xf, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
   dft->c2r(xt, xf);
-  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return /* _mm256_cvtss_f32(x) */ x[0]; });
   free(xf);
   free(xt);
   delete dft;
@@ -373,7 +373,7 @@ std::vector<float> test_m256_r2hc_dft(const std::vector<float>& data)
   auto* xf = dft->alloc_half_complex_array();
   std::transform(data.begin(), data.end(), xt, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
   dft->r2hc(xt, xf);
-  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return /* _mm256_cvtss_f32(x) */ x[0]; });
   free(xf);
   free(xt);
   delete dft;
@@ -392,7 +392,7 @@ std::vector<float> test_m256_hc2r_dft(const std::vector<float>& fft)
   auto* xf = dft->alloc_half_complex_array();
   std::transform(fft.begin(), fft.end(), xf, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
   dft->hc2r(xt, xf);
-  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return /* _mm256_cvtss_f32(x) */ x[0]; });
   free(xf);
   free(xt);
   delete dft;
@@ -411,7 +411,7 @@ std::vector<float> test_fftw_m256_r2hc_dft(const std::vector<float>& data)
   auto* xf = dft->alloc_half_complex_array();
   std::transform(data.begin(), data.end(), xt, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
   dft->r2hc(xt, xf);
-  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  std::transform(xf, xf+fft.size(), fft.begin(), [](__m256 x){ return /* _mm256_cvtss_f32(x) */ x[0]; });
   free(xf);
   free(xt);
   delete dft;
@@ -430,7 +430,7 @@ std::vector<float> test_fftw_m256_hc2r_dft(const std::vector<float>& fft)
   auto* xf = dft->alloc_half_complex_array();
   std::transform(fft.begin(), fft.end(), xf, [](float x){ return _mm256_set_ps(0,0,0,0,0,0,0,x); });
   dft->hc2r(xt, xf);
-  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return _mm256_cvtss_f32(x); });
+  std::transform(xt, xt+data.size(), data.begin(), [](__m256 x){ return /* _mm256_cvtss_f32(x) */ x[0]; });
   free(xf);
   free(xt);
   delete dft;
