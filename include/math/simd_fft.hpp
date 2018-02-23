@@ -138,8 +138,10 @@ template<typename T> class FFTW_FixedSizeRealToComplexDFT:
   public FixedSizeRealToComplexDFT<T>
 {
 public:
-  FFTW_FixedSizeRealToComplexDFT(unsigned N, unsigned real_stride = 1, unsigned complex_stride = 1, unsigned flags = FFTW_MEASURE):
-      FixedSizeRealToComplexDFT<T>(N, real_stride, complex_stride) {
+  FFTW_FixedSizeRealToComplexDFT(unsigned N, unsigned real_stride = 1, unsigned complex_stride = 1,
+    bool allow_c2r_to_modify_dft=false, unsigned flags = FFTW_MEASURE):
+      FixedSizeRealToComplexDFT<T>(N, real_stride, complex_stride),
+      dont_allow_c2r_to_modify_dft_(!allow_c2r_to_modify_dft) {
     T* xt = FixedSizeRealToComplexDFT<T>::alloc_real_array();
     T* xf = FixedSizeRealToComplexDFT<T>::alloc_complex_array();
     int howmany = sizeof(T)/sizeof(double);
@@ -174,18 +176,27 @@ public:
         c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
     }
     fftw_execute_dft_c2r(plan_c2r_, (fftw_complex*)c_in, (double*)r_out);
+    if(dont_allow_c2r_to_modify_dft_) {
+      for(unsigned ic=0; ic<nc; ic++) {
+        shuffle_complex_s2v(c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
+          c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
+      }
+    }
   }
 protected:
   fftw_plan plan_r2c_;
   fftw_plan plan_c2r_;
+  bool dont_allow_c2r_to_modify_dft_;
 };
 
 template<typename T> class FFTWF_FixedSizeRealToComplexDFT:
   public FixedSizeRealToComplexDFT<T>
 {
 public:
-  FFTWF_FixedSizeRealToComplexDFT(unsigned N, unsigned real_stride = 1, unsigned complex_stride = 1, unsigned flags = FFTW_MEASURE):
-      FixedSizeRealToComplexDFT<T>(N, real_stride, complex_stride) {
+  FFTWF_FixedSizeRealToComplexDFT(unsigned N, unsigned real_stride = 1, unsigned complex_stride = 1,
+    bool allow_c2r_to_modify_dft=false, unsigned flags = FFTW_MEASURE):
+      FixedSizeRealToComplexDFT<T>(N, real_stride, complex_stride),
+      dont_allow_c2r_to_modify_dft_(!allow_c2r_to_modify_dft) {
     T* xt = FixedSizeRealToComplexDFT<T>::alloc_real_array();
     T* xf = FixedSizeRealToComplexDFT<T>::alloc_complex_array();
     int howmany = sizeof(T)/sizeof(float);
@@ -246,10 +257,17 @@ public:
         c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
     }
     fftwf_execute_dft_c2r(plan_c2r_, (fftwf_complex*)c_in, (float*)r_out);
+    if(dont_allow_c2r_to_modify_dft_) {
+      for(unsigned ic=0; ic<nc; ic++) {
+        shuffle_complex_s2v(c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic],
+          c_in[2*FixedSizeRealToComplexDFT<T>::cs_*ic+1]);
+      }
+    }
   }
 protected:
   fftwf_plan plan_r2c_;
   fftwf_plan plan_c2r_;
+  bool dont_allow_c2r_to_modify_dft_;
 };
 
 #if defined(__AVX__)
