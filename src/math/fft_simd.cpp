@@ -235,7 +235,7 @@ std::vector<float> test_m256_r2c_dft(const std::vector<float>& data)
   delete dft;
   return fft;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -256,7 +256,7 @@ std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, unsigned n)
   delete dft;
   return data;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -275,7 +275,7 @@ std::vector<float> test_fftw_m256_r2c_dft(const std::vector<float>& data)
   delete dft;
   return fft;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -296,7 +296,7 @@ std::vector<float> test_fftw_m256_c2r_dft(const std::vector<float>& fft, unsigne
   delete dft;
   return data;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -319,7 +319,7 @@ std::vector<double> test_m256d_r2c_dft(const std::vector<double>& data)
   delete dft;
   return fft;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -340,7 +340,7 @@ std::vector<double> test_m256d_c2r_dft(const std::vector<double>& fft, unsigned 
   delete dft;
   return data;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -359,7 +359,7 @@ std::vector<double> test_fftw_m256d_r2c_dft(const std::vector<double>& data)
   delete dft;
   return fft;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -380,7 +380,7 @@ std::vector<double> test_fftw_m256d_c2r_dft(const std::vector<double>& fft, unsi
   delete dft;
   return data;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -403,7 +403,7 @@ std::vector<float> test_m256_r2hc_dft(const std::vector<float>& data)
   delete dft;
   return fft;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -422,7 +422,7 @@ std::vector<float> test_m256_hc2r_dft(const std::vector<float>& fft)
   delete dft;
   return data;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -441,7 +441,7 @@ std::vector<float> test_fftw_m256_r2hc_dft(const std::vector<float>& data)
   delete dft;
   return fft;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -460,7 +460,7 @@ std::vector<float> test_fftw_m256_hc2r_dft(const std::vector<float>& fft)
   delete dft;
   return data;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -483,7 +483,7 @@ std::vector<double> test_m256d_r2hc_dft(const std::vector<double>& data)
   delete dft;
   return fft;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -502,7 +502,7 @@ std::vector<double> test_m256d_hc2r_dft(const std::vector<double>& fft)
   delete dft;
   return data;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -521,7 +521,7 @@ std::vector<double> test_fftw_m256d_r2hc_dft(const std::vector<double>& data)
   delete dft;
   return fft;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
@@ -540,7 +540,7 @@ std::vector<double> test_fftw_m256d_hc2r_dft(const std::vector<double>& fft)
   delete dft;
   return data;
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX not present at compile type")
+  throw std::runtime_error("AVX not present at compile type");
 #endif // defined(__AVX2__)
 }
 
