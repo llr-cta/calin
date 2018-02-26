@@ -25,6 +25,7 @@
 
 #include <provenance/system_info.hpp>
 #include <math/lomb_scargle.hpp>
+#include <util/memory.hpp>
 
 namespace {
 
@@ -246,11 +247,11 @@ periodogram_avx2(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
 
   Eigen::VectorXd periodogram(nfreq);
 
-  __m256d* vx = new __m256d[ni_block];
-  __m256d* vcf = new __m256d[ni_block];
-  __m256d* vsf = new __m256d[ni_block];
-  __m256d* vcdf = new __m256d[ni_block];
-  __m256d* vsdf = new __m256d[ni_block];
+  __m256d* vx = calin::util::memory::aligned_calloc<__m256d>(ni_block);
+  __m256d* vcf = calin::util::memory::aligned_calloc<__m256d>(ni_block);
+  __m256d* vsf = calin::util::memory::aligned_calloc<__m256d>(ni_block);
+  __m256d* vcdf = calin::util::memory::aligned_calloc<__m256d>(ni_block);
+  __m256d* vsdf = calin::util::memory::aligned_calloc<__m256d>(ni_block);
 
   double delta_omega = 2*M_PI*delta_freq;
 
@@ -376,11 +377,11 @@ periodogram_avx2(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
     periodogram[ifreq*2+1] = xc2*A2+xs2*B2;
   }
 
-  delete[] vx;
-  delete[] vcf;
-  delete[] vsf;
-  delete[] vcdf;
-  delete[] vsdf;
+  free(vx);
+  free(vcf);
+  free(vsf);
+  free(vcdf);
+  free(vsdf);
 
   return periodogram;
 }
@@ -415,11 +416,11 @@ periodogram_avx2_float(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
 
   Eigen::VectorXd periodogram(nfreq);
 
-  __m256* vx = new __m256[ni_block];
-  __m256* vcf = new __m256[ni_block];
-  __m256* vsf = new __m256[ni_block];
-  __m256* vcdf = new __m256[ni_block];
-  __m256* vsdf = new __m256[ni_block];
+  __m256* vx = calin::util::memory::aligned_calloc<__m256>(ni_block);
+  __m256* vcf = calin::util::memory::aligned_calloc<__m256>(ni_block);
+  __m256* vsf = calin::util::memory::aligned_calloc<__m256>(ni_block);
+  __m256* vcdf = calin::util::memory::aligned_calloc<__m256>(ni_block);
+  __m256* vsdf = calin::util::memory::aligned_calloc<__m256>(ni_block);
 
   double delta_omega = 2*M_PI*delta_freq;
 
@@ -545,11 +546,11 @@ periodogram_avx2_float(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
     periodogram[ifreq*2+1] = xc2*A2+xs2*B2;
   }
 
-  delete[] vx;
-  delete[] vcf;
-  delete[] vsf;
-  delete[] vcdf;
-  delete[] vsdf;
+  free(vx);
+  free(vcf);
+  free(vsf);
+  free(vcdf);
+  free(vsdf);
 
   return periodogram;
 }
