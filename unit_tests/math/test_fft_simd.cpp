@@ -40,15 +40,16 @@ using namespace calin::math::simd;
 using namespace calin::math::fft_simd;
 
 static constexpr unsigned NSIM_COMPARE = 256;
+static constexpr unsigned NSIM_SPEED = 1024*1024;
 
 #ifdef CALIN_HAS_NR3_AVX2_RNGCORE
 
-class TestFFTSIMD : public ::testing::TestWithParam<unsigned>
+class TestFFTSIMD_Compare : public ::testing::TestWithParam<unsigned>
 {
   // nothing to see here
 };
 
-TEST_P(TestFFTSIMD, AVX_R2C_Equals_FFT_Float)
+TEST_P(TestFFTSIMD_Compare, AVX_R2C_Equals_FFT_Float)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -69,9 +70,11 @@ TEST_P(TestFFTSIMD, AVX_R2C_Equals_FFT_Float)
   free(xf1);
   free(xf2);
   free(xt);
+  delete codelet;
+  delete fftw;
 }
 
-TEST_P(TestFFTSIMD, AVX_R2HC_Equals_FFT_Float)
+TEST_P(TestFFTSIMD_Compare, AVX_R2HC_Equals_FFT_Float)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -92,9 +95,11 @@ TEST_P(TestFFTSIMD, AVX_R2HC_Equals_FFT_Float)
   free(xf1);
   free(xf2);
   free(xt);
+  delete codelet;
+  delete fftw;
 }
 
-TEST_P(TestFFTSIMD, AVX_C2R_Equals_FFT_Float)
+TEST_P(TestFFTSIMD_Compare, AVX_C2R_Equals_FFT_Float)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -118,9 +123,11 @@ TEST_P(TestFFTSIMD, AVX_C2R_Equals_FFT_Float)
   free(xf2);
   free(xt1);
   free(xt2);
+  delete codelet;
+  delete fftw;
 }
 
-TEST_P(TestFFTSIMD, AVX_HC2R_Equals_FFT_Float)
+TEST_P(TestFFTSIMD_Compare, AVX_HC2R_Equals_FFT_Float)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -144,36 +151,55 @@ TEST_P(TestFFTSIMD, AVX_HC2R_Equals_FFT_Float)
   free(xf2);
   free(xt1);
   free(xt2);
+  delete codelet;
+  delete fftw;
 }
 
-#if 0
-TEST_P(TestFFTSIMD, AVX_R2C_Equals_FFT_Double)
+class TestFFTSIMD_Speed : public ::testing::TestWithParam<unsigned>
+{
+  // nothing to see here
+};
+
+TEST_P(TestFFTSIMD_Speed, FFTW_SpeedTest_R2HC)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
-  auto* codelet = new_m256d_codelet_r2c_dft(n);
-  auto* fftw = new_m256d_fftw_r2c_dft(n);
-  __m256d* xt = codelet->alloc_real_array();
-  __m256d* xf1 = codelet->alloc_complex_array();
-  __m256d* xf2 = fftw->alloc_complex_array();
-  for(unsigned isim=0; isim<NSIM_COMPARE; isim++) {
-    for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_pdvec256();
-    codelet->r2c(xt, xf1);
-    fftw->r2c(xt, xf2);
-    for(unsigned i=0;i<codelet->complex_array_size();i++)
-      for(unsigned j=0;j<4;j++)
-        EXPECT_NEAR(xf1[i][j], xf2[i][j], 1e-6)
-          << "With i=" << i << " and j=" << j;
+  auto* fftw = new_m256_fftw_r2hc_dft(n);
+  __m256* xt = fftw->alloc_real_array();
+  __m256* xf = fftw->alloc_half_complex_array();
+  for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_psvec256();
+  for(unsigned isim=0; isim<NSIM_SPEED; isim++) {
+    fftw->r2hc(xt, xf);
   }
-  free(xf1);
-  free(xf2);
+  free(xf);
   free(xt);
+  delete fftw;
 }
-#endif
+
+TEST_P(TestFFTSIMD_Speed, AVXCodelet_SpeedTest_R2HC)
+{
+  unsigned n = GetParam();
+  NR3_AVX2_RNGCore core(12345);
+  auto* codelet = new_m256_codelet_r2hc_dft(n);
+  __m256* xt = codelet->alloc_real_array();
+  __m256* xf = codelet->alloc_half_complex_array();
+  for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_psvec256();
+  for(unsigned isim=0; isim<NSIM_SPEED; isim++) {
+    codelet->r2hc(xt, xf);
+  }
+  free(xf);
+  free(xt);
+  delete codelet;
+}
 
 INSTANTIATE_TEST_CASE_P(TestFFTSIMD,
-                        TestFFTSIMD,
+                        TestFFTSIMD_Compare,
                         ::testing::Values(8,12,15,16,18,20,24,28,30,32,36,40,48,56,60,64));
+
+INSTANTIATE_TEST_CASE_P(TestFFTSIMD,
+                        TestFFTSIMD_Speed,
+                        ::testing::Values(16,60,64));
+
 #endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
 
 int main(int argc, char **argv) {
