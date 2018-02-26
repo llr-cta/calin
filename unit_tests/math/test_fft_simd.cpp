@@ -1,0 +1,182 @@
+/*
+
+   calin/unit_tests/math/test_simd.cpp -- Stephen Fegan -- 2018-01-05
+
+   Unit tests for SIMD FFT class
+
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+#include <iostream>
+#include <iomanip>
+#include <gtest/gtest.h>
+#include <vector>
+#include <tuple>
+#include <cmath>
+
+#include <math/rng.hpp>
+#include <math/simd.hpp>
+#include <math/special.hpp>
+#include <util/memory.hpp>
+#include <math/fft_simd.hpp>
+
+using calin::math::rng::NR3_AVX2_RNGCore;
+using calin::math::rng::NR3RNGCore;
+using calin::math::special::SQR;
+using namespace calin::math::simd;
+using namespace calin::math::fft_simd;
+
+static constexpr unsigned NSIM_COMPARE = 256;
+
+#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
+
+class TestFFTSIMD : public ::testing::TestWithParam<unsigned>
+{
+  // nothing to see here
+};
+
+TEST_P(TestFFTSIMD, AVX_R2C_Equals_FFT_Float)
+{
+  unsigned n = GetParam();
+  NR3_AVX2_RNGCore core(12345);
+  auto* codelet = new_m256_codelet_r2c_dft(n);
+  auto* fftw = new_m256_fftw_r2c_dft(n);
+  __m256* xt = codelet->alloc_real_array();
+  __m256* xf1 = codelet->alloc_complex_array();
+  __m256* xf2 = fftw->alloc_complex_array();
+  for(unsigned isim=0; isim<NSIM_COMPARE; isim++) {
+    for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_psvec256();
+    codelet->r2c(xt, xf1);
+    fftw->r2c(xt, xf2);
+    for(unsigned i=0;i<codelet->complex_array_size();i++)
+      for(unsigned j=0;j<8;j++)
+        EXPECT_NEAR(xf1[i][j], xf2[i][j], 1.5e-6)
+          << "With i=" << i << " and j=" << j;
+  }
+  free(xf1);
+  free(xf2);
+  free(xt);
+}
+
+TEST_P(TestFFTSIMD, AVX_R2HC_Equals_FFT_Float)
+{
+  unsigned n = GetParam();
+  NR3_AVX2_RNGCore core(12345);
+  auto* codelet = new_m256_codelet_r2hc_dft(n);
+  auto* fftw = new_m256_fftw_r2hc_dft(n);
+  __m256* xt = codelet->alloc_real_array();
+  __m256* xf1 = codelet->alloc_half_complex_array();
+  __m256* xf2 = fftw->alloc_half_complex_array();
+  for(unsigned isim=0; isim<NSIM_COMPARE; isim++) {
+    for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_psvec256();
+    codelet->r2hc(xt, xf1);
+    fftw->r2hc(xt, xf2);
+    for(unsigned i=0;i<codelet->half_complex_array_size();i++)
+      for(unsigned j=0;j<8;j++)
+        EXPECT_NEAR(xf1[i][j], xf2[i][j], 1.5e-6)
+          << "With i=" << i << " and j=" << j;
+  }
+  free(xf1);
+  free(xf2);
+  free(xt);
+}
+
+TEST_P(TestFFTSIMD, AVX_C2R_Equals_FFT_Float)
+{
+  unsigned n = GetParam();
+  NR3_AVX2_RNGCore core(12345);
+  auto* codelet = new_m256_codelet_r2c_dft(n);
+  auto* fftw = new_m256_fftw_r2c_dft(n);
+  __m256* xf1 = codelet->alloc_complex_array();
+  __m256* xf2 = fftw->alloc_complex_array();
+  __m256* xt1 = codelet->alloc_real_array();
+  __m256* xt2 = fftw->alloc_real_array();
+  for(unsigned isim=0; isim<NSIM_COMPARE; isim++) {
+    for(unsigned i=0;i<codelet->complex_array_size();i++)
+      xf1[i] = xf2[i] = core.uniform_zc_psvec256();
+    codelet->c2r(xt1, xf1);
+    fftw->c2r(xt2, xf2);
+    for(unsigned i=0;i<n;i++)
+      for(unsigned j=0;j<8;j++)
+        EXPECT_NEAR(xt1[i][j], xt2[i][j], 3e-6)
+          << "With i=" << i << " and j=" << j;
+  }
+  free(xf1);
+  free(xf2);
+  free(xt1);
+  free(xt2);
+}
+
+TEST_P(TestFFTSIMD, AVX_HC2R_Equals_FFT_Float)
+{
+  unsigned n = GetParam();
+  NR3_AVX2_RNGCore core(12345);
+  auto* codelet = new_m256_codelet_r2hc_dft(n);
+  auto* fftw = new_m256_fftw_r2hc_dft(n);
+  __m256* xf1 = codelet->alloc_half_complex_array();
+  __m256* xf2 = fftw->alloc_half_complex_array();
+  __m256* xt1 = codelet->alloc_real_array();
+  __m256* xt2 = fftw->alloc_real_array();
+  for(unsigned isim=0; isim<NSIM_COMPARE; isim++) {
+    for(unsigned i=0;i<n;i++)
+      xf1[i] = xf2[i] = core.uniform_zc_psvec256();
+    codelet->hc2r(xt1, xf1);
+    fftw->hc2r(xt2, xf2);
+    for(unsigned i=0;i<n;i++)
+      for(unsigned j=0;j<8;j++)
+        EXPECT_NEAR(xt1[i][j], xt2[i][j], 3e-6)
+          << "With i=" << i << " and j=" << j;
+  }
+  free(xf1);
+  free(xf2);
+  free(xt1);
+  free(xt2);
+}
+
+#if 0
+TEST_P(TestFFTSIMD, AVX_R2C_Equals_FFT_Double)
+{
+  unsigned n = GetParam();
+  NR3_AVX2_RNGCore core(12345);
+  auto* codelet = new_m256d_codelet_r2c_dft(n);
+  auto* fftw = new_m256d_fftw_r2c_dft(n);
+  __m256d* xt = codelet->alloc_real_array();
+  __m256d* xf1 = codelet->alloc_complex_array();
+  __m256d* xf2 = fftw->alloc_complex_array();
+  for(unsigned isim=0; isim<NSIM_COMPARE; isim++) {
+    for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_pdvec256();
+    codelet->r2c(xt, xf1);
+    fftw->r2c(xt, xf2);
+    for(unsigned i=0;i<codelet->complex_array_size();i++)
+      for(unsigned j=0;j<4;j++)
+        EXPECT_NEAR(xf1[i][j], xf2[i][j], 1e-6)
+          << "With i=" << i << " and j=" << j;
+  }
+  free(xf1);
+  free(xf2);
+  free(xt);
+}
+#endif
+
+INSTANTIATE_TEST_CASE_P(TestFFTSIMD,
+                        TestFFTSIMD,
+                        ::testing::Values(8,12,15,16,18,20,24,28,30,32,36,40,48,56,60,64));
+#endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
+
+int main(int argc, char **argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

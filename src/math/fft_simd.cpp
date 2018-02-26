@@ -148,6 +148,18 @@ FixedSizeRealToComplexDFT<__m256d>* new_m256d_codelet_r2c_dft(unsigned n,
   return m256d::new_codelet_r2c_dft(n, real_stride, complex_stride);
 }
 
+FixedSizeRealToComplexDFT<__m256>* new_m256_fftw_r2c_dft(unsigned n,
+  unsigned real_stride, unsigned complex_stride)
+{
+  return new FFTWF_FixedSizeRealToComplexDFT<__m256>(n, real_stride, complex_stride);
+}
+
+FixedSizeRealToComplexDFT<__m256d>* new_m256d_fftw_r2c_dft(unsigned n,
+  unsigned real_stride, unsigned complex_stride)
+{
+  return new FFTW_FixedSizeRealToComplexDFT<__m256d>(n, real_stride, complex_stride);
+}
+
 FixedSizeRealToHalfComplexDFT<__m256>* new_m256_r2hc_dft(unsigned n,
   unsigned real_stride, unsigned half_complex_stride)
 {
@@ -178,6 +190,18 @@ FixedSizeRealToHalfComplexDFT<__m256d>* new_m256d_codelet_r2hc_dft(unsigned n,
   unsigned real_stride, unsigned half_complex_stride)
 {
   return m256d::new_codelet_r2hc_dft(n, real_stride, half_complex_stride);
+}
+
+FixedSizeRealToHalfComplexDFT<__m256>* new_m256_fftw_r2hc_dft(unsigned n,
+  unsigned real_stride, unsigned half_complex_stride)
+{
+  return new FFTWF_FixedSizeRealToHalfComplexDFT<__m256>(n, real_stride, half_complex_stride);
+}
+
+FixedSizeRealToHalfComplexDFT<__m256d>* new_m256d_fftw_r2hc_dft(unsigned n,
+  unsigned real_stride, unsigned half_complex_stride)
+{
+  return new FFTW_FixedSizeRealToHalfComplexDFT<__m256d>(n, real_stride, half_complex_stride);
 }
 
 std::vector<unsigned> list_available_m256_codelets()

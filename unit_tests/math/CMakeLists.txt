@@ -48,6 +48,10 @@ add_executable(test_simd test_simd.cpp)
 target_link_libraries(test_simd ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
 add_test(TestSIMD test_simd)
 
+add_executable(test_fft_simd test_fft_simd.cpp)
+target_link_libraries(test_fft_simd ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
+add_test(TestFFTSIMD test_fft_simd)
+
 install(TARGETS test_histogram test_hessian test_pdf_1d test_m_estimate
 	test_data_modeling test_hex_array test_rng test_simd
   DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})

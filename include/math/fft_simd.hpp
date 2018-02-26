@@ -41,36 +41,20 @@ template<typename T> void shuffle_complex_v2s(T& r, T&c) { }
 #if defined(__AVX__)
 inline void shuffle_complex_s2v(__m256& r, __m256&c)
 {
-  __m256 t;
-#if 0
-  t = _mm256_set_m128(_mm256_extractf128_ps(c,0), _mm256_extractf128_ps(r,0));
-  c = _mm256_set_m128(_mm256_extractf128_ps(c,1), _mm256_extractf128_ps(r,1));
-#else
-  t = _mm256_insertf128_ps(r, _mm256_extractf128_ps(c,0), 1);
-  c = _mm256_insertf128_ps(c, _mm256_extractf128_ps(r,1), 0);
-#endif
-  c = _mm256_permute_ps(c, 0b10110001);
-  r = _mm256_blend_ps(t, c, (uint8_t)0b10101010);
-  c = _mm256_blend_ps(t, c, (uint8_t)0x01010101);
-  r = _mm256_permute_ps(r, 0b11011000);
-  c = _mm256_permute_ps(c, 0b10001101);
+  r = _mm256_permutevar8x32_ps(r, _mm256_set_epi32(7,5,3,1,6,4,2,0));
+  c = _mm256_permutevar8x32_ps(c, _mm256_set_epi32(7,5,3,1,6,4,2,0));
+  __m128 t = _mm256_extractf128_ps(r,1);
+  r = _mm256_insertf128_ps(r, _mm256_extractf128_ps(c,0), 1);
+  c = _mm256_insertf128_ps(c, t, 0);
 }
 
 inline void shuffle_complex_v2s(__m256& r, __m256&c)
 {
-  __m256 t;
-  r = _mm256_permute_ps(r, 0b11011000);
-  c = _mm256_permute_ps(c, 0b01110010);
-  t = _mm256_blend_ps(r, c, (uint8_t)0b10101010);
-  c = _mm256_blend_ps(r, c, (uint8_t)0x01010101);
-  c = _mm256_permute_ps(c, 0b10110001);
-#if 0
-  r = _mm256_set_m128(_mm256_extractf128_ps(c,0), _mm256_extractf128_ps(t,0));
-  c = _mm256_set_m128(_mm256_extractf128_ps(c,1), _mm256_extractf128_ps(t,1));
-#else
-  r = _mm256_insertf128_ps(t, _mm256_extractf128_ps(c,0), 1);
-  c = _mm256_insertf128_ps(c, _mm256_extractf128_ps(t,1), 0);
-#endif
+  __m128 t = _mm256_extractf128_ps(r,1);
+  r = _mm256_insertf128_ps(r, _mm256_extractf128_ps(c,0), 1);
+  c = _mm256_insertf128_ps(c, t, 0);
+  r = _mm256_permutevar8x32_ps(r, _mm256_set_epi32(7,3,6,2,5,1,4,0));
+  c = _mm256_permutevar8x32_ps(c, _mm256_set_epi32(7,3,6,2,5,1,4,0));
 }
 
 inline void shuffle_complex_s2v(__m256d& r, __m256d&c)
@@ -274,6 +258,11 @@ FixedSizeRealToComplexDFT<__m256>* new_m256_codelet_r2c_dft(unsigned n,
   unsigned real_stride = 1, unsigned complex_stride = 1);
 FixedSizeRealToComplexDFT<__m256d>* new_m256d_codelet_r2c_dft(unsigned n,
   unsigned real_stride = 1, unsigned complex_stride = 1);
+
+FixedSizeRealToComplexDFT<__m256>* new_m256_fftw_r2c_dft(unsigned n,
+  unsigned real_stride = 1, unsigned complex_stride = 1);
+FixedSizeRealToComplexDFT<__m256d>* new_m256d_fftw_r2c_dft(unsigned n,
+  unsigned real_stride = 1, unsigned complex_stride = 1);
 #endif // defined(__AVX__)
 
 std::vector<float> test_m256_r2c_dft(const std::vector<float>& data);
@@ -403,6 +392,11 @@ FixedSizeRealToHalfComplexDFT<__m256d>* new_m256d_r2hc_dft(unsigned n,
 FixedSizeRealToHalfComplexDFT<__m256>* new_m256_codelet_r2hc_dft(unsigned n,
   unsigned real_stride = 1, unsigned half_complex_stride = 1);
 FixedSizeRealToHalfComplexDFT<__m256d>* new_m256d_codelet_r2hc_dft(unsigned n,
+  unsigned real_stride = 1, unsigned half_complex_stride = 1);
+
+FixedSizeRealToHalfComplexDFT<__m256>* new_m256_fftw_r2hc_dft(unsigned n,
+  unsigned real_stride = 1, unsigned half_complex_stride = 1);
+FixedSizeRealToHalfComplexDFT<__m256d>* new_m256d_fftw_r2hc_dft(unsigned n,
   unsigned real_stride = 1, unsigned half_complex_stride = 1);
 #endif // defined(__AVX__)
 
