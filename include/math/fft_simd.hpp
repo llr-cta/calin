@@ -38,7 +38,7 @@ namespace calin { namespace math { namespace fft_simd {
 template<typename T> void shuffle_complex_s2v(T& r, T&c) { }
 template<typename T> void shuffle_complex_v2s(T& r, T&c) { }
 
-#if defined(__AVX__)
+#if defined(__AVX2__)
 inline void shuffle_complex_s2v(__m256& r, __m256&c)
 {
   r = _mm256_permutevar8x32_ps(r, _mm256_set_epi32(7,5,3,1,6,4,2,0));
@@ -60,13 +60,8 @@ inline void shuffle_complex_v2s(__m256& r, __m256&c)
 inline void shuffle_complex_s2v(__m256d& r, __m256d&c)
 {
   __m256d t;
-#if 0
-  t = _mm256_set_m128d(_mm256_extractf128_pd(c,0), _mm256_extractf128_pd(r,0));
-  c = _mm256_set_m128d(_mm256_extractf128_pd(c,1), _mm256_extractf128_pd(r,1));
-#else
   t = _mm256_insertf128_pd(r, _mm256_extractf128_pd(c,0), 1);
   c = _mm256_insertf128_pd(c, _mm256_extractf128_pd(r,1), 0);
-#endif
   r = _mm256_unpacklo_pd(t, c);
   c = _mm256_unpackhi_pd(t, c);
 }
@@ -76,13 +71,8 @@ inline void shuffle_complex_v2s(__m256d& r, __m256d&c)
   __m256d t;
   t = _mm256_unpacklo_pd(r, c);
   c = _mm256_unpackhi_pd(r, c);
-#if 0
-  r = _mm256_set_m128d(_mm256_extractf128_pd(c,0), _mm256_extractf128_pd(t,0));
-  c = _mm256_set_m128d(_mm256_extractf128_pd(c,1), _mm256_extractf128_pd(t,1));
-#else
   r = _mm256_insertf128_pd(t, _mm256_extractf128_pd(c,0), 1);
   c = _mm256_insertf128_pd(c, _mm256_extractf128_pd(t,1), 0);
-#endif
 }
 #endif
 
@@ -248,7 +238,7 @@ protected:
   bool dont_allow_c2r_to_modify_dft_;
 };
 
-#if defined(__AVX__)
+#if defined(__AVX2__)
 FixedSizeRealToComplexDFT<__m256>* new_m256_r2c_dft(unsigned n,
   unsigned real_stride = 1, unsigned complex_stride = 1);
 FixedSizeRealToComplexDFT<__m256d>* new_m256d_r2c_dft(unsigned n,
@@ -263,7 +253,7 @@ FixedSizeRealToComplexDFT<__m256>* new_m256_fftw_r2c_dft(unsigned n,
   unsigned real_stride = 1, unsigned complex_stride = 1);
 FixedSizeRealToComplexDFT<__m256d>* new_m256d_fftw_r2c_dft(unsigned n,
   unsigned real_stride = 1, unsigned complex_stride = 1);
-#endif // defined(__AVX__)
+#endif // defined(__AVX2__)
 
 std::vector<float> test_m256_r2c_dft(const std::vector<float>& data);
 std::vector<float> test_m256_c2r_dft(const std::vector<float>& fft, unsigned n);
@@ -383,7 +373,7 @@ protected:
   fftwf_plan plan_hc2r_;
 };
 
-#if defined(__AVX__)
+#if defined(__AVX2__)
 FixedSizeRealToHalfComplexDFT<__m256>* new_m256_r2hc_dft(unsigned n,
   unsigned real_stride = 1, unsigned half_complex_stride = 1);
 FixedSizeRealToHalfComplexDFT<__m256d>* new_m256d_r2hc_dft(unsigned n,
@@ -398,7 +388,7 @@ FixedSizeRealToHalfComplexDFT<__m256>* new_m256_fftw_r2hc_dft(unsigned n,
   unsigned real_stride = 1, unsigned half_complex_stride = 1);
 FixedSizeRealToHalfComplexDFT<__m256d>* new_m256d_fftw_r2hc_dft(unsigned n,
   unsigned real_stride = 1, unsigned half_complex_stride = 1);
-#endif // defined(__AVX__)
+#endif // defined(__AVX2__)
 
 std::vector<float> test_m256_r2hc_dft(const std::vector<float>& data);
 std::vector<float> test_m256_hc2r_dft(const std::vector<float>& fft);
