@@ -155,12 +155,12 @@ TEST_P(Compare, AVX_HC2R_Equals_FFT_Float)
   delete fftw;
 }
 
-class Speed : public ::testing::TestWithParam<unsigned>
+class Speed_1M : public ::testing::TestWithParam<unsigned>
 {
   // nothing to see here
 };
 
-TEST_P(Speed, FFTW_R2HC)
+TEST_P(Speed_1M, FFTW_R2HC)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -176,7 +176,7 @@ TEST_P(Speed, FFTW_R2HC)
   delete fftw;
 }
 
-TEST_P(Speed, AVXCodelet_R2HC)
+TEST_P(Speed_1M, AVXCodelet_R2HC)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -198,7 +198,7 @@ INSTANTIATE_TEST_CASE_P(TestFFTSIMD,
                         ::testing::PrintToStringParamName());
 
 INSTANTIATE_TEST_CASE_P(TestFFTSIMD,
-                        Speed,
+                        Speed_1M,
                         ::testing::Values(16,60,64),
                         ::testing::PrintToStringParamName());
 
