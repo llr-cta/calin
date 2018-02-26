@@ -2,9 +2,9 @@
 
 /*
 
-   calin/math/simd_fft.i -- Stephen Fegan -- 2018-02-22
+   calin/math/fft_simd.i -- Stephen Fegan -- 2018-02-22
 
-   SWIG interface file for calin.math.simd_fft
+   SWIG interface file for calin.math.fft_simd
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3
@@ -22,10 +22,10 @@
 
 */
 
-%module (package="calin.math") simd_fft
+%module (package="calin.math") fft_simd
 
 %{
-#include "math/simd_fft.hpp"
+#include "math/fft_simd.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -36,4 +36,4 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%include "math/simd_fft.hpp"
+%include "math/fft_simd.hpp"

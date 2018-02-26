@@ -1,6 +1,6 @@
 /*
 
-   calin/math/simd_fft.hpp -- Stephen Fegan -- 2018-02-21
+   calin/math/fft_simd.hpp -- Stephen Fegan -- 2018-02-21
 
    SIMD FFT functions using codelets from FFTW/genfft
 
@@ -29,7 +29,7 @@
 
 #include <util/memory.hpp>
 
-namespace calin { namespace math { namespace simd_fft {
+namespace calin { namespace math { namespace fft_simd {
 
 // ****************************************************************************
 // *************************** DFT REAL <-> COMPLEX ***************************
@@ -424,4 +424,4 @@ std::vector<unsigned> list_available_m256_codelets();
 std::vector<unsigned> list_available_m256d_codelets();
 
 
-} } } // namespace calin::math::simd_fft
+} } } // namespace calin::math::fft_simd

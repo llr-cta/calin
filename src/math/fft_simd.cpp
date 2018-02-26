@@ -1,6 +1,6 @@
 /*
 
-   calin/math/simd_fft.cpp -- Stephen Fegan -- 2018-02-21
+   calin/math/fft_simd.cpp -- Stephen Fegan -- 2018-02-21
 
    SIMD FFT functions
 
@@ -25,9 +25,9 @@
 
 #include <immintrin.h>
 
-#include <math/simd_fft.hpp>
+#include <math/fft_simd.hpp>
 
-namespace calin { namespace math { namespace simd_fft {
+namespace calin { namespace math { namespace fft_simd {
 
 #if defined(__AVX__)
 namespace m256 {
@@ -71,7 +71,7 @@ inline E ZERO() { return _mm256_setzero_ps(); }
 
 #undef DK
 
-} // namespace calin::math::simd_fft::m256
+} // namespace calin::math::fft_simd::m256
 
 namespace m256d {
 
@@ -114,7 +114,7 @@ inline E ZERO() { return _mm256_setzero_pd(); }
 
 #undef DK
 
-} // namespace calin::math::simd_fft::m256d
+} // namespace calin::math::fft_simd::m256d
 
 FixedSizeRealToComplexDFT<__m256>* new_m256_r2c_dft(unsigned n,
   unsigned real_stride, unsigned complex_stride)
@@ -520,4 +520,4 @@ std::vector<double> test_fftw_m256d_hc2r_dft(const std::vector<double>& fft)
 #endif // defined(__AVX__)
 }
 
-} } } // namespace calin::math::simd_fft
+} } } // namespace calin::math::fft_simd
