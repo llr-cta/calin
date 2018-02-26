@@ -44,12 +44,12 @@ static constexpr unsigned NSIM_SPEED = 1024*1024;
 
 #ifdef CALIN_HAS_NR3_AVX2_RNGCORE
 
-class TestFFTSIMD_Compare : public ::testing::TestWithParam<unsigned>
+class Compare : public ::testing::TestWithParam<unsigned>
 {
   // nothing to see here
 };
 
-TEST_P(TestFFTSIMD_Compare, AVX_R2C_Equals_FFT_Float)
+TEST_P(Compare, AVX_R2C_Equals_FFT_Float)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -74,7 +74,7 @@ TEST_P(TestFFTSIMD_Compare, AVX_R2C_Equals_FFT_Float)
   delete fftw;
 }
 
-TEST_P(TestFFTSIMD_Compare, AVX_R2HC_Equals_FFT_Float)
+TEST_P(Compare, AVX_R2HC_Equals_FFT_Float)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -99,7 +99,7 @@ TEST_P(TestFFTSIMD_Compare, AVX_R2HC_Equals_FFT_Float)
   delete fftw;
 }
 
-TEST_P(TestFFTSIMD_Compare, AVX_C2R_Equals_FFT_Float)
+TEST_P(Compare, AVX_C2R_Equals_FFT_Float)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -127,7 +127,7 @@ TEST_P(TestFFTSIMD_Compare, AVX_C2R_Equals_FFT_Float)
   delete fftw;
 }
 
-TEST_P(TestFFTSIMD_Compare, AVX_HC2R_Equals_FFT_Float)
+TEST_P(Compare, AVX_HC2R_Equals_FFT_Float)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -155,12 +155,12 @@ TEST_P(TestFFTSIMD_Compare, AVX_HC2R_Equals_FFT_Float)
   delete fftw;
 }
 
-class TestFFTSIMD_Speed : public ::testing::TestWithParam<unsigned>
+class Speed : public ::testing::TestWithParam<unsigned>
 {
   // nothing to see here
 };
 
-TEST_P(TestFFTSIMD_Speed, FFTW_SpeedTest_R2HC)
+TEST_P(Speed, FFTW_R2HC)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -176,7 +176,7 @@ TEST_P(TestFFTSIMD_Speed, FFTW_SpeedTest_R2HC)
   delete fftw;
 }
 
-TEST_P(TestFFTSIMD_Speed, AVXCodelet_SpeedTest_R2HC)
+TEST_P(Speed, AVXCodelet_R2HC)
 {
   unsigned n = GetParam();
   NR3_AVX2_RNGCore core(12345);
@@ -193,12 +193,14 @@ TEST_P(TestFFTSIMD_Speed, AVXCodelet_SpeedTest_R2HC)
 }
 
 INSTANTIATE_TEST_CASE_P(TestFFTSIMD,
-                        TestFFTSIMD_Compare,
-                        ::testing::Values(8,12,15,16,18,20,24,28,30,32,36,40,48,56,60,64));
+                        Compare,
+                        ::testing::ValuesIn(list_available_m256_codelets()),
+                        ::testing::PrintToStringParamName());
 
 INSTANTIATE_TEST_CASE_P(TestFFTSIMD,
-                        TestFFTSIMD_Speed,
-                        ::testing::Values(16,60,64));
+                        Speed,
+                        ::testing::Values(16,60,64),
+                        ::testing::PrintToStringParamName());
 
 #endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
 
