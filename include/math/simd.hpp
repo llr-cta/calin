@@ -149,6 +149,93 @@ inline void avx2_m256_swizzle_u16(__m256i* data)
 }
 #endif // defined(__AVX2__)
 
+#if defined(__AVX__)
+
+inline void _CALIN_DO_ONE_AVX_SWIZZLE_FLT32(__m256& x, __m256& y)
+{
+  __m256 t;
+  t = _mm256_unpackhi_ps(x, y);
+  x = _mm256_unpacklo_ps(x, y);
+  y = t;
+}
+
+inline void _CALIN_DO_ONE_AVX_SWIZZLE_FLT64(__m256& x, __m256& y)
+{
+  __m256d t;
+  t = _mm256_unpackhi_pd(_mm256_castps_pd(x), _mm256_castps_pd(y));
+  x = _mm256_castpd_ps(_mm256_unpacklo_pd(_mm256_castps_pd(x), _mm256_castps_pd(y)));
+  y = _mm256_castpd_ps(t);
+}
+
+inline void _CALIN_DO_ONE_AVX_SWIZZLE_FLT128_HILO(__m256& x, __m256& y)
+{
+  __m128 t;
+  t = _mm256_extractf128_ps(x, 1);
+  x = _mm256_insertf128_ps(x, _mm256_extractf128_ps(y, 0), 1);
+  y = _mm256_insertf128_ps(y, t, 0);
+}
+
+inline void _CALIN_DO_ONE_AVX_SWIZZLE_FLT128_LOLO(__m256& x, __m256& y)
+{
+  __m128 t;
+  t = _mm256_extractf128_ps(x, 0);
+  x = _mm256_insertf128_ps(x, _mm256_extractf128_ps(y, 0), 0);
+  y = _mm256_insertf128_ps(y, t, 0);
+}
+
+inline void _CALIN_DO_ONE_AVX_SWIZZLE_FLT128_HIHI(__m256& x, __m256& y)
+{
+  __m128 t;
+  t = _mm256_extractf128_ps(x, 1);
+  x = _mm256_insertf128_ps(x, _mm256_extractf128_ps(y, 1), 1);
+  y = _mm256_insertf128_ps(y, t, 1);
+}
+
+inline void transpose(__m256& a, __m256& b, __m256& c, __m256& d, __m256& e, __m256& f, __m256& g, __m256& h)
+{
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT32(a, b);
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT32(c, d);
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT32(e, f);
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT32(g, h);
+
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT64(a, c);
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT64(b, d);
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT64(e, g);
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT64(f, h);
+
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT128_HILO(a, e);
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT128_HILO(b, g);
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT128_HILO(c, f);
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT128_HILO(d, h);
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT128_LOLO(b, c);
+  _CALIN_DO_ONE_AVX_SWIZZLE_FLT128_HIHI(f, g);
+}
+
+inline void _CALIN_DO_ONE_AVX_SWIZZLE_DBL64(__m256d& x, __m256d& y)
+{
+  __m256d t;
+  t = _mm256_unpackhi_pd(x, y);
+  x = _mm256_unpacklo_pd(x, y);
+  y = t;
+}
+
+inline void _CALIN_DO_ONE_AVX_SWIZZLE_DBL128(__m256d& x, __m256d& y)
+{
+  __m128d t;
+  t = _mm256_extractf128_pd(x, 1);
+  x = _mm256_insertf128_pd(x, _mm256_extractf128_pd(y, 0), 1);
+  y = _mm256_insertf128_pd(y, t, 0);
+}
+
+inline void transpose(__m256d& a, __m256d& b, __m256d& c, __m256d& d)
+{
+  _CALIN_DO_ONE_AVX_SWIZZLE_DBL64(a, b);
+  _CALIN_DO_ONE_AVX_SWIZZLE_DBL64(c, d);
+  _CALIN_DO_ONE_AVX_SWIZZLE_DBL128(a, c);
+  _CALIN_DO_ONE_AVX_SWIZZLE_DBL128(b, d);
+}
+
+#endif
 
 // First fit direct
 // constexpr float _ps0=7.8539816171e-01;
