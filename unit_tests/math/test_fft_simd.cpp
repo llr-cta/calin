@@ -39,10 +39,10 @@ using calin::math::special::SQR;
 using namespace calin::math::simd;
 using namespace calin::math::fft_simd;
 
+#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
+
 static constexpr unsigned NSIM_COMPARE = 256;
 static constexpr unsigned NSIM_SPEED = 1024*1024;
-
-#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
 
 class Compare : public ::testing::TestWithParam<unsigned>
 {

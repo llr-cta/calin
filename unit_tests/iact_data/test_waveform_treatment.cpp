@@ -39,12 +39,13 @@ using namespace calin::math::simd;
 using namespace calin::iact_data::waveform_treatment_event_visitor;
 using namespace calin::ix::iact_data::waveform_treatment_event_visitor;
 
+
+#if defined(__AVX2__) and defined(__FMA__)
+
 static constexpr unsigned NSIM_TRACEANAL = 10000;
 
 constexpr int nchan = 1024;
 constexpr int nsamp = 60;
-
-#if defined(__AVX2__) and defined(__FMA__)
 
 TEST(TestWaveformTreatment, TraceAnalysis)
 {

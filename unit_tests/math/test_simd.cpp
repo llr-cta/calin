@@ -40,9 +40,9 @@ using calin::math::special::SQR;
 using namespace calin::math::simd;
 
 static constexpr uint64_t NSIM_RANDSINCOS = 100000000ULL;
-static constexpr unsigned NSIM_TRACEANAL = 10000;
-static constexpr unsigned NSIM_TRACECOV = 1024;
+#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
 static constexpr unsigned NSIM_TRACEPSD = 4096;
+#endif
 
 TEST(TestSIMD, SpeedTest100M_Random64SinCos32)
 {
@@ -67,6 +67,7 @@ TEST(TestSIMD, SpeedTest100M_Random64SinCos32)
 }
 
 #ifdef CALIN_HAS_NR3_AVX2_RNGCORE
+
 TEST(TestSIMD, SpeedTest100M_Random256SinCos32)
 {
   float sum_s = 0;
