@@ -97,23 +97,6 @@ template<typename T> struct GenericNumTraits
     MulCost = 1
   };
 
-  // Division is messy but important, because it is expensive and throughput
-  // varies significantly. The following numbers are based on min division
-  // throughput on Haswell.
-  template<bool Vectorized>
-  struct Div {
-    enum {
-#ifdef EIGEN_VECTORIZE_AVX
-      AVX = true,
-#else
-      AVX = false,
-#endif
-      Cost = IsInteger ? (sizeof(T) == 8 ? (IsSigned ? 24 : 21) : (IsSigned ? 8 : 9)):
-          Vectorized ? (sizeof(T) == 8 ? (AVX ? 16 : 8) : (AVX ? 14 : 7)) : 8
-    };
-  };
-
-
   typedef T Real;
   typedef typename internal::conditional<
                      IsInteger,
@@ -232,6 +215,8 @@ struct NumTraits<Array<Scalar, Rows, Cols, Options, MaxRows, MaxCols> >
   static inline RealScalar epsilon() { return NumTraits<RealScalar>::epsilon(); }
   EIGEN_DEVICE_FUNC
   static inline RealScalar dummy_precision() { return NumTraits<RealScalar>::dummy_precision(); }
+
+  static inline int digits10() { return NumTraits<Scalar>::digits10(); }
 };
 
 template<> struct NumTraits<std::string>
@@ -254,6 +239,9 @@ private:
   static inline std::string infinity();
   static inline std::string quiet_NaN();
 };
+
+// Empty specialization for void to allow template specialization based on NumTraits<T>::Real with T==void and SFINAE.
+template<> struct NumTraits<void> {};
 
 } // end namespace Eigen
 

@@ -29,11 +29,12 @@ struct traits<CompleteOrthogonalDecomposition<_MatrixType> >
   *
   * \param MatrixType the type of the matrix of which we are computing the COD.
   *
-  * This class performs a rank-revealing complete ortogonal decomposition of a
+  * This class performs a rank-revealing complete orthogonal decomposition of a
   * matrix  \b A into matrices \b P, \b Q, \b T, and \b Z such that
   * \f[
-  *  \mathbf{A} \, \mathbf{P} = \mathbf{Q} \, \begin{matrix} \mathbf{T} &
-  *  \mathbf{0} \\ \mathbf{0} & \mathbf{0} \end{matrix} \, \mathbf{Z}
+  *  \mathbf{A} \, \mathbf{P} = \mathbf{Q} \,
+  *                     \begin{bmatrix} \mathbf{T} &  \mathbf{0} \\
+  *                                     \mathbf{0} & \mathbf{0} \end{bmatrix} \, \mathbf{Z}
   * \f]
   * by using Householder transformations. Here, \b P is a permutation matrix,
   * \b Q and \b Z are unitary matrices and \b T an upper triangular matrix of
@@ -134,10 +135,10 @@ class CompleteOrthogonalDecomposition {
 
 
   /** This method computes the minimum-norm solution X to a least squares
-   * problem \f[\mathrm{minimize} ||A X - B|| \f], where \b A is the matrix of
+   * problem \f[\mathrm{minimize} \|A X - B\|, \f] where \b A is the matrix of
    * which \c *this is the complete orthogonal decomposition.
    *
-   * \param B the right-hand sides of the problem to solve.
+   * \param b the right-hand sides of the problem to solve.
    *
    * \returns a solution.
    *
@@ -546,7 +547,6 @@ CompleteOrthogonalDecomposition<MatrixType>::householderQ() const {
   return m_cpqr.householderQ();
 }
 
-#ifndef __CUDACC__
 /** \return the complete orthogonal decomposition of \c *this.
   *
   * \sa class CompleteOrthogonalDecomposition
@@ -556,7 +556,6 @@ const CompleteOrthogonalDecomposition<typename MatrixBase<Derived>::PlainObject>
 MatrixBase<Derived>::completeOrthogonalDecomposition() const {
   return CompleteOrthogonalDecomposition<PlainObject>(eval());
 }
-#endif  // __CUDACC__
 
 }  // end namespace Eigen
 
