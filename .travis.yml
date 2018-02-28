@@ -134,9 +134,10 @@ install:
   - |
     if [ ! -f $LOCAL/bin/swig ]
     then (
-      wget https://sourceforge.net/projects/swig/files/swig/swig-3.0.12/swig-3.0.12.tar.gz &&
-      tar zxf swig-3.0.12.tar.gz &&
-      cd swig-3.0.12 &&
+      wget https://github.com/swig/swig/archive/rel-3.0.12.tar.gz &&
+      tar zxf swig-rel-3.0.12.tar.gz &&
+      cd swig-rel-3.0.12 &&
+      ./autogen.sh &&
       ./configure --prefix=$LOCAL --without-alllang --with-python &&
       make -j3 &&
       make install > /dev/null &&
