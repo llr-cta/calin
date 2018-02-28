@@ -120,17 +120,17 @@ install:
     if [ -d $LOCAL ]; then ls -l $LOCAL ; fi
     echo $LOCAL/bin
     if [ -d $LOCAL/bin ]; then ls -l $LOCAL/bin ; fi
-  - |
-    if [ ! -f $LOCAL/bin/cmake ];
-    then (
-      wget --no-check-certificate https://cmake.org/files/v3.9/cmake-3.9.6.tar.gz &&
-      tar zxf cmake-3.9.6.tar.gz &&
-      cd cmake-3.9.6 &&
-      ./bootstrap  --parallel=3 --prefix=$LOCAL &&
-      make -j3 &&
-      make install > /dev/null &&
-      touch $HOME/suppress_geant_build
-    ); fi
+  # - |
+  #   if [ ! -f $LOCAL/bin/cmake ];
+  #   then (
+  #     wget --no-check-certificate https://cmake.org/files/v3.9/cmake-3.9.6.tar.gz &&
+  #     tar zxf cmake-3.9.6.tar.gz &&
+  #     cd cmake-3.9.6 &&
+  #     ./bootstrap  --parallel=3 --prefix=$LOCAL &&
+  #     make -j3 &&
+  #     make install > /dev/null &&
+  #     touch $HOME/suppress_geant_build
+  #   ); fi
   - |
     if [ ! -f $LOCAL/bin/swig ]
     then (
@@ -194,7 +194,7 @@ script:
           -DCMAKE_INSTALL_PREFIX=build .. &&
     make -j3 &&
     make install | tail &&
-    ./src/bin/write_system_info && 
+    ./src/bin/write_system_info &&
     make test
 #    ./unit_tests/calib/test_spe_fit
 
