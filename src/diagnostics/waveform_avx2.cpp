@@ -51,7 +51,7 @@ AVX2_Unroll8_WaveformStatsParallelVisitor::~AVX2_Unroll8_WaveformStatsParallelVi
   free(partial_chan_sum_squared_);
   if(calculate_covariance_)free(partial_chan_sum_cov_);
 #else // defined(__AVX2__)
-  throw std::runtime_error("AVX2_Unroll8_WaveformStatsParallelVisitor: AVX2 not supported at compile time");
+  // throw std::runtime_error("AVX2_Unroll8_WaveformStatsParallelVisitor: AVX2 not supported at compile time");
 #endif // defined(__AVX2__)
 }
 
