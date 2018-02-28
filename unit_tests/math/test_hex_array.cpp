@@ -121,11 +121,7 @@ TEST(TestHexArray, HexIDToXY_NewCodeSpeedTest) {
       for(unsigned ichan=0;ichan<6*iring;ichan++)
       {
         double x1,y1;
-        //double x2,y2;
         hexid_to_xy(hexid, x1, y1, true);
-        //int vvv_hexid = hexid+1;
-        //nh_to_xy(&vvv_hexid, &x2, &y2);
-        //EXPECT_NEAR(x1,x2,1e-6);
         hexid++;
       }
   }
