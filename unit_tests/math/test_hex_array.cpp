@@ -204,11 +204,7 @@ TEST(TestHexArray, XYToHexID_NewCodeSpeedTest) {
     {
       double xx1 = x;
       double yy1 = y;
-      /* unsigned hexid = */ xy_to_hexid_with_remainder(xx1, yy1, true);
-      //double xx2 = x;
-      //double yy2 = y;
-      //int hexid2;
-      //xy_to_nh(&xx2,&yy2,&hexid2);
+      xy_to_hexid_with_remainder(xx1, yy1, true);
     }
 }
 
@@ -217,9 +213,6 @@ TEST(TestHexArray, XYToHexID_VVVCodeSpeedTest) {
   for(double x=-10.005; x<10.015; x+=dx)
     for(double y=-10.005; y<10.015; y+=dx)
     {
-      //double xx1 = x;
-      //double yy1 = y;
-      //unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1, true);
       double xx2 = x;
       double yy2 = y;
       int hexid2;
@@ -236,9 +229,6 @@ TEST(TestHexArray, XYToHexID_AVX2CodeSpeedTest) {
     for(float y=-10.005; y<10.015; y+=8*dx)
     {
       __m256 vy = _mm256_set_ps(y+7*dx,y+6*dx,y+5*dx,y+4*dx,y+3*dx,y+2*dx,y+dx,y);
-      //double xx1 = x;
-      //double yy1 = y;
-      //unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1, true);
       hexid = avx2_xy_to_hexid_with_remainder_f(vx,vy);
     }
   }
