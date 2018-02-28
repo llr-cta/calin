@@ -190,7 +190,7 @@ AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
   free(qt_l_);
   free(qt_u_);
 #else
-  throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
+  // throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
 #endif
 }
 

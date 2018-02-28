@@ -1231,7 +1231,7 @@ r_exec_select(SQLTable* t, google::protobuf::Message* m_data,
 
 bool SQLTransceiver::finalize_statements(SQLTable* t)
 {
-  iterate_over_tables(t, [this](SQLTable* t) {
+  iterate_over_tables(t, [](SQLTable* t) {
       delete t->stmt; t->stmt = nullptr; });
   return true;
 }
