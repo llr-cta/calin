@@ -228,6 +228,7 @@ TEST(TestHexArray, XYToHexID_AVX2CodeSpeedTest) {
       hexid = avx2_xy_to_hexid_with_remainder_f(vx,vy);
     }
   }
+  EXPECT_GE(int32_t(hexid[0]), 0);
 }
 #endif
 
