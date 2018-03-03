@@ -61,6 +61,11 @@ public:
     return results_;
   }
 
+  calin::ix::diagnostics::waveform::CameraWaveformRawPSD psd_results()
+  {
+    return psd_results_;
+  }
+
   static Eigen::VectorXd waveform_mean(
     const ix::diagnostics::waveform::WaveformRawStats* stat);
   static Eigen::VectorXd waveform_var(

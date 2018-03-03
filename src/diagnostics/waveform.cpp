@@ -98,10 +98,10 @@ bool WaveformStatsParallelVisitor::visit_telescope_run(
     assert(waveform_t_);
     assert(waveform_f_);
     fftw_plan_fwd_ =
-      fftwf_plan_r2r_1d(N, waveform_t_, waveform_f_, FFTW_R2HC, 0);
+      fftwf_plan_r2r_1d(N, waveform_t_, waveform_f_, FFTW_R2HC, FFTW_MEASURE|FFTW_DESTROY_INPUT);
     assert(fftw_plan_fwd_);
     fftw_plan_bwd_ =
-      fftwf_plan_r2r_1d(N, waveform_f_, waveform_t_, FFTW_HC2R, 0);
+      fftwf_plan_r2r_1d(N, waveform_f_, waveform_t_, FFTW_HC2R, FFTW_MEASURE|FFTW_DESTROY_INPUT);
     assert(fftw_plan_bwd_);
     for(int ichan = 0; ichan<run_config->configured_channel_id_size(); ichan++)
     {
@@ -259,7 +259,10 @@ process_one_waveform(const uint16_t*__restrict__ wf,
 
 bool WaveformStatsParallelVisitor::merge_results()
 {
-  if(parent_)parent_->results_.IntegrateFrom(results_);
+  if(parent_) {
+    parent_->results_.IntegrateFrom(results_);
+    if(calculate_psd_)parent_->psd_results_.IntegrateFrom(psd_results_);
+  }
   return true;
 }
 
