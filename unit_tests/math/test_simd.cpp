@@ -76,7 +76,7 @@ TEST(TestSIMD, SpeedTest100M_Random256SinCos32)
   NR3_AVX2_RNGCore core(seed);
   for(unsigned i=0;i<NSIM_RANDSINCOS/8;i++) {
     float x[8] __attribute__((aligned(32)));
-    __m256 vx = core.uniform_zc_psvec256(2*M_PI);
+    __m256 vx = core.uniform_zc_m256(2*M_PI);
     _mm256_store_ps(x, vx);
     sum_s += ::sinf(x[0]);
     sum_c += ::cosf(x[0]);
@@ -109,7 +109,7 @@ TEST(TestSIMD, SpeedTest100M_Random256SinCos256)
   uint64_t seed = calin::math::rng::RNG::uint64_from_random_device();
   NR3_AVX2_RNGCore core(seed);
   for(unsigned i=0;i<NSIM_RANDSINCOS/8;i++) {
-    __m256 x = core.uniform_zc_psvec256(8.0);
+    __m256 x = core.uniform_zc_m256(8.0);
     __m256 s;
     __m256 c;
     avx2_sincosf_domain_pi_poly3(x, s, c);
@@ -173,7 +173,7 @@ TEST(TestTracePSD, Scalar)
   {
     const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
     for(unsigned i=0;i<nchan*nsamp/16;i++) {
-      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      __m256i x = _mm256_and_si256(core.uniform_m256i(), mask_12bit);
       _mm256_storeu_si256((__m256i*)(hg+i*16), x);
     }
 
@@ -255,7 +255,7 @@ TEST(TestTracePSD, AVX2)
   {
     const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
     for(unsigned i=0;i<nchan*nsamp/16;i++) {
-      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      __m256i x = _mm256_and_si256(core.uniform_m256i(), mask_12bit);
       _mm256_storeu_si256((__m256i*)(hg+i*16), x);
     }
 

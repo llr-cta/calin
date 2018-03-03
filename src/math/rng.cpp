@@ -693,14 +693,14 @@ void NR3_AVX2_RNGCore::bulk_uniform_uint64(void* buffer, std::size_t nbytes)
   __m256i* u256_ptr = reinterpret_cast<__m256i*>(buffer);
   std::size_t n256 = nbytes >> 5;
   for(std::size_t i256=0; i256<n256; i256++) {
-    __m256i u256 = uniform_uivec256();
+    __m256i u256 = uniform_m256i();
     _mm256_storeu_si256(u256_ptr+i256, u256);
   }
   u256_ptr += n256;
   nbytes -= n256*32;
   if(nbytes)
   {
-    __m256i u256 = uniform_uivec256();
+    __m256i u256 = uniform_m256i();
     std::copy(reinterpret_cast<uint8_t*>(u256_ptr),
       reinterpret_cast<uint8_t*>(u256_ptr)+nbytes, reinterpret_cast<uint8_t*>(&u256));
   }
@@ -717,14 +717,14 @@ bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes, uint64_t mask)
   __m256i* u256_ptr = reinterpret_cast<__m256i*>(buffer);
   std::size_t n256 = nbytes >> 5;
   for(std::size_t i256=0; i256<n256; i256++) {
-    __m256i u256 = _mm256_and_si256(uniform_uivec256(), mask256);
+    __m256i u256 = _mm256_and_si256(uniform_m256i(), mask256);
     _mm256_storeu_si256(u256_ptr+i256, u256);
   }
   u256_ptr += n256;
   nbytes -= n256*32;
   if(nbytes)
   {
-    __m256i u256 = _mm256_and_si256(uniform_uivec256(), mask256);
+    __m256i u256 = _mm256_and_si256(uniform_m256i(), mask256);
     std::copy(reinterpret_cast<uint8_t*>(u256_ptr),
       reinterpret_cast<uint8_t*>(u256_ptr)+nbytes, reinterpret_cast<uint8_t*>(&u256));
   }

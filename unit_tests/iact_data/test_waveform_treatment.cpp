@@ -67,7 +67,7 @@ TEST(TestWaveformTreatment, TraceAnalysis)
   {
     const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
     for(unsigned i=0;i<nchan*nsamp/16;i++) {
-      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      __m256i x = _mm256_and_si256(core.uniform_m256i(), mask_12bit);
       _mm256_store_si256((__m256i*)(samples_data+i*16), x);
     }
 
@@ -111,7 +111,7 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis)
   {
     const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
     for(unsigned i=0;i<nchan*nsamp/16;i++) {
-      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      __m256i x = _mm256_and_si256(core.uniform_m256i(), mask_12bit);
       _mm256_store_si256((__m256i*)(samples_data+i*16), x);
     }
 
@@ -155,7 +155,7 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis_V2)
   {
     const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
     for(unsigned i=0;i<nchan*nsamp/16;i++) {
-      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      __m256i x = _mm256_and_si256(core.uniform_m256i(), mask_12bit);
       _mm256_store_si256((__m256i*)(samples_data+i*16), x);
     }
 
@@ -200,7 +200,7 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis_V3)
   {
     const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
     for(unsigned i=0;i<nchan*nsamp/16;i++) {
-      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      __m256i x = _mm256_and_si256(core.uniform_m256i(), mask_12bit);
       _mm256_store_si256((__m256i*)(samples_data+i*16), x);
     }
 

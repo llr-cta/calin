@@ -59,7 +59,7 @@ TEST_P(Compare, AVX_R2C_Equals_FFT_Float)
   __m256* xf1 = codelet->alloc_complex_array();
   __m256* xf2 = fftw->alloc_complex_array();
   for(unsigned isim=0; isim<NSIM_COMPARE; isim++) {
-    for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_psvec256();
+    for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_m256();
     codelet->r2c(xt, xf1);
     fftw->r2c(xt, xf2);
     for(unsigned i=0;i<codelet->complex_array_size();i++)
@@ -84,7 +84,7 @@ TEST_P(Compare, AVX_R2HC_Equals_FFT_Float)
   __m256* xf1 = codelet->alloc_half_complex_array();
   __m256* xf2 = fftw->alloc_half_complex_array();
   for(unsigned isim=0; isim<NSIM_COMPARE; isim++) {
-    for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_psvec256();
+    for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_m256();
     codelet->r2hc(xt, xf1);
     fftw->r2hc(xt, xf2);
     for(unsigned i=0;i<codelet->half_complex_array_size();i++)
@@ -111,7 +111,7 @@ TEST_P(Compare, AVX_C2R_Equals_FFT_Float)
   __m256* xt2 = fftw->alloc_real_array();
   for(unsigned isim=0; isim<NSIM_COMPARE; isim++) {
     for(unsigned i=0;i<codelet->complex_array_size();i++)
-      xf1[i] = xf2[i] = core.uniform_zc_psvec256();
+      xf1[i] = xf2[i] = core.uniform_zc_m256();
     codelet->c2r(xt1, xf1);
     fftw->c2r(xt2, xf2);
     for(unsigned i=0;i<n;i++)
@@ -139,7 +139,7 @@ TEST_P(Compare, AVX_HC2R_Equals_FFT_Float)
   __m256* xt2 = fftw->alloc_real_array();
   for(unsigned isim=0; isim<NSIM_COMPARE; isim++) {
     for(unsigned i=0;i<n;i++)
-      xf1[i] = xf2[i] = core.uniform_zc_psvec256();
+      xf1[i] = xf2[i] = core.uniform_zc_m256();
     codelet->hc2r(xt1, xf1);
     fftw->hc2r(xt2, xf2);
     for(unsigned i=0;i<n;i++)
@@ -167,7 +167,7 @@ TEST_P(Speed_1M, FFTW_R2HC)
   auto* fftw = new_m256_fftw_r2hc_dft(n);
   __m256* xt = fftw->alloc_real_array();
   __m256* xf = fftw->alloc_half_complex_array();
-  for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_psvec256();
+  for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_m256();
   for(unsigned isim=0; isim<NSIM_SPEED; isim++) {
     fftw->r2hc(xt, xf);
   }
@@ -183,7 +183,7 @@ TEST_P(Speed_1M, AVXCodelet_R2HC)
   auto* codelet = new_m256_codelet_r2hc_dft(n);
   __m256* xt = codelet->alloc_real_array();
   __m256* xf = codelet->alloc_half_complex_array();
-  for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_psvec256();
+  for(unsigned i=0;i<n;i++)xt[i] = core.uniform_zc_m256();
   for(unsigned isim=0; isim<NSIM_SPEED; isim++) {
     codelet->r2hc(xt, xf);
   }
