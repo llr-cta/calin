@@ -28,14 +28,86 @@ namespace calin { namespace math { namespace fftw_util {
 
 #ifndef SWIG
 
-void hcvec_scale_and_multiply(double* ovec, const double* ivec1,
-  const double* ivec2, unsigned nsample, double scale = 1.0);
+template<typename T>
+void hcvec_scale_and_multiply(T* ovec, const T* ivec1,
+  const T* ivec2, unsigned nsample, T scale = 1.0)
+{
+  T *ro = ovec;
+  T *co = ovec + nsample-1;
+  const T *ri1 = ivec1;
+  const T *ci1 = ivec1 + nsample-1;
+  const T *ri2 = ivec2;
+  const T *ci2 = ivec2 + nsample-1;
 
-void hcvec_scale_and_multiply_conj(double* ovec, const double* ivec1,
-  const double* ivec2_conj, unsigned nsample, double scale = 1.0);
+  (*ro++) = (*ri1++) * (*ri2++) * scale;
+  if(ro==ri1 or ro==ri2)
+  {
+    while(ro < co)
+    {
+      T vri1 = *ri1++;
+      T vci1 = *ci1--;
+      T vri2 = *ri2++;
+      T vci2 = *ci2--;
+      (*ro++) = (vri1*vri2 - vci1*vci2)*scale;
+      (*co--) = (vri1*vci2 + vci1*vri2)*scale;
+    }
+   }
+  else
+  {
+    while(ro < co)
+    {
+      (*ro++) = ((*ri1)*(*ri2) - (*ci1)*(*ci2)) * scale;
+      (*co--) = ((*ri1++)*(*ci2--) + (*ci1--)*(*ri2++)) * scale;
+    }
+  }
+  if(ro==co)(*ro) = (*ri1) * (*ri2) * scale;
+}
 
-void hcvec_scale_and_add(double* ovec, const double* ivec, unsigned nsample,
-  double scale = 1.0);
+template<typename T>
+void hcvec_scale_and_multiply_conj(T* ovec, const T* ivec1,
+  const T* ivec2_conj, unsigned nsample, T scale = 1.0)
+{
+  T *ro = ovec;
+  T *co = ovec + nsample-1;
+  const T *ri1 = ivec1;
+  const T *ci1 = ivec1 + nsample-1;
+  const T *ri2 = ivec2_conj;
+  const T *ci2 = ivec2_conj + nsample-1;
+
+  (*ro++) = (*ri1++) * (*ri2++) * scale;
+  if(ro==ri1 or ro==ri2)
+  {
+    while(ro < co)
+    {
+      T vri1 = *ri1++;
+      T vci1 = *ci1--;
+      T vri2 = *ri2++;
+      T vci2 = *ci2--;
+      (*ro++) = (vri1*vri2 + vci1*vci2)*scale;
+      (*co--) = (vci1*vri2 - vri1*vci2)*scale;
+    }
+   }
+  else
+  {
+    while(ro < co)
+    {
+      (*ro++) = ((*ri1)*(*ri2) + (*ci1)*(*ci2)) * scale;
+      (*co--) = ((*ci1--)*(*ri2++) - (*ri1++)*(*ci2--)) * scale;
+    }
+  }
+  if(ro==co)(*ro) = (*ri1) * (*ri2) * scale;
+}
+
+template<typename T>
+void hcvec_scale_and_add(T* ovec, const T* ivec, unsigned nsample,
+  T scale = 1.0)
+{
+  T *ro = ovec;
+  T *re = ovec + nsample;
+  const T *ri = ivec;
+  while(ro<re)
+    *(ro++) += *(ri++)*scale;
+}
 
 #endif
 

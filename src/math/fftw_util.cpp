@@ -27,6 +27,7 @@
 #include <util/file.hpp>
 #include <math/fftw_util.hpp>
 
+#if 0
 void calin::math::fftw_util::
 hcvec_scale_and_multiply(double* ovec, const double* ivec1,
                          const double* ivec2, unsigned nsample, double scale)
@@ -107,6 +108,7 @@ hcvec_scale_and_add(double* ovec, const double* ivec, unsigned nsample,
   while(ro<re)
     *(ro++) += *(ri++)*scale;
 }
+#endif
 
 bool calin::math::fftw_util::load_wisdom_from_file(std::string filename)
 {
