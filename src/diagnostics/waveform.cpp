@@ -24,14 +24,18 @@
 #include <util/log.hpp>
 #include <diagnostics/waveform.hpp>
 #include <math/covariance_calc.hpp>
+#include <math/fftw_util.hpp>
 
 using calin::math::special::SQR;
 using namespace calin::util::log;
 using namespace calin::diagnostics::waveform;
+using namespace calin::math::fftw_util;
 using calin::math::covariance_calc::cov_i64_gen;
 
-WaveformStatsParallelVisitor::WaveformStatsParallelVisitor(bool calculate_covariance):
-  ParallelEventVisitor(), calculate_covariance_(calculate_covariance)
+WaveformStatsParallelVisitor::WaveformStatsParallelVisitor(
+    bool calculate_psd, bool calculate_covariance):
+  ParallelEventVisitor(),
+  calculate_psd_(calculate_psd), calculate_covariance_(calculate_covariance)
 {
   // nothing to see here
 }
@@ -82,6 +86,38 @@ bool WaveformStatsParallelVisitor::visit_telescope_run(
     if(calculate_covariance_)
       plg_wf->mutable_sum_product()->Resize(N*(N-1)/2,0);
   }
+
+  if(calculate_psd_)
+  {
+    psd_results_.Clear();
+    unsigned nfreq = 1 + N/2; // 1->1 2->2 3->2 4->3 5->3 etc
+    free(waveform_t_);
+    free(waveform_f_);
+    waveform_t_ = fftwf_alloc_real(N);
+    waveform_f_ = fftwf_alloc_real(N);
+    assert(waveform_t_);
+    assert(waveform_f_);
+    fftw_plan_fwd_ =
+      fftwf_plan_r2r_1d(N, waveform_t_, waveform_f_, FFTW_R2HC, 0);
+    assert(fftw_plan_fwd_);
+    fftw_plan_bwd_ =
+      fftwf_plan_r2r_1d(N, waveform_f_, waveform_t_, FFTW_HC2R, 0);
+    assert(fftw_plan_bwd_);
+    for(int ichan = 0; ichan<run_config->configured_channel_id_size(); ichan++)
+    {
+      auto* hg_wf = psd_results_.add_high_gain();
+      hg_wf->mutable_psd_sum()->Resize(nfreq,0);
+      hg_wf->mutable_psd_sum_squared()->Resize(nfreq,0);
+      hg_wf->mutable_corr_sum()->Resize(N,0);
+      hg_wf->mutable_corr_sum_squared()->Resize(N,0);
+      auto* lg_wf = psd_results_.add_low_gain();
+      lg_wf->mutable_psd_sum()->Resize(nfreq,0);
+      lg_wf->mutable_psd_sum_squared()->Resize(nfreq,0);
+      lg_wf->mutable_corr_sum()->Resize(N,0);
+      lg_wf->mutable_corr_sum_squared()->Resize(N,0);
+    }
+  }
+
   return true;
 }
 
@@ -94,6 +130,17 @@ bool WaveformStatsParallelVisitor::leave_telescope_run()
     merge_partial(partial_.mutable_low_gain(ichan),
       results_.mutable_low_gain(ichan));
   run_config_ = nullptr;
+  if(calculate_psd_)
+  {
+    fftwf_destroy_plan(fftw_plan_bwd_);
+    fftw_plan_bwd_ = nullptr;
+    fftwf_destroy_plan(fftw_plan_fwd_);
+    fftw_plan_fwd_ = nullptr;
+    fftwf_free(waveform_t_);
+    waveform_t_ = nullptr;
+    fftwf_free(waveform_f_);
+    waveform_f_ = nullptr;
+  }
   return true;
 }
 
@@ -110,8 +157,10 @@ bool WaveformStatsParallelVisitor::visit_telescope_event(uint64_t seq_index,
     const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
         wf->raw_samples_array().data() + wf->raw_samples_array_start());
     for(int ichan = 0; ichan<nchan; ichan++) {
+      calin::ix::diagnostics::waveform::WaveformRawPSD* psd = nullptr;
+      if(calculate_psd_)psd = psd_results_.mutable_high_gain(ichan);
       process_one_waveform(wf_data, partial_.mutable_high_gain(ichan),
-        results_.mutable_high_gain(ichan));
+        results_.mutable_high_gain(ichan), psd);
       wf_data += nsamp;
     }
   }
@@ -123,8 +172,10 @@ bool WaveformStatsParallelVisitor::visit_telescope_event(uint64_t seq_index,
     const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
         wf->raw_samples_array().data() + wf->raw_samples_array_start());
     for(int ichan = 0; ichan<nchan; ichan++) {
+      calin::ix::diagnostics::waveform::WaveformRawPSD* psd = nullptr;
+      if(calculate_psd_)psd = psd_results_.mutable_low_gain(ichan);
       process_one_waveform(wf_data, partial_.mutable_low_gain(ichan),
-        results_.mutable_low_gain(ichan));
+        results_.mutable_low_gain(ichan), psd);
       wf_data += nsamp;
     }
   }
@@ -136,16 +187,55 @@ bool WaveformStatsParallelVisitor::visit_telescope_event(uint64_t seq_index,
 void WaveformStatsParallelVisitor::
 process_one_waveform(const uint16_t*__restrict__ wf,
   ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
-  ix::diagnostics::waveform::WaveformRawStats* r_stat)
+  ix::diagnostics::waveform::WaveformRawStats* r_stat,
+  calin::ix::diagnostics::waveform::WaveformRawPSD* psd)
 {
   const unsigned nsample = run_config_->num_samples();
   p_stat->set_num_entries(p_stat->num_entries()+1);
   auto*__restrict__ sum = p_stat->mutable_sum()->mutable_data();
   auto*__restrict__ sum_squared = p_stat->mutable_sum_squared()->mutable_data();
-  for(unsigned isample=0; isample<nsample; isample++) {
-    uint32_t sample = wf[isample];
-    sum[isample] += sample;
-    sum_squared[isample] += sample*sample;
+  if(psd) {
+    for(unsigned isample=0; isample<nsample; isample++) {
+      uint32_t sample = wf[isample];
+      waveform_t_[isample] = float(sample);
+      sum[isample] += sample;
+      sum_squared[isample] += sample*sample;
+    }
+    fftwf_execute(fftw_plan_fwd_);
+    psd->set_num_entries(psd->num_entries()+1);
+    auto* psd_sum = psd->mutable_psd_sum()->mutable_data();
+    auto* psd_sum_squared = psd->mutable_psd_sum_squared()->mutable_data();
+    const float*__restrict__ ri = waveform_f_;
+    const float*__restrict__ ci = waveform_f_ + nsample-1;
+    double psdi = SQR(*ri++);
+    (*psd_sum++) += psdi;
+    (*psd_sum_squared++) += SQR(psdi);
+    while(ri < ci)
+    {
+      psdi = SQR(*ri++) + SQR(*ci--);
+      (*psd_sum++) += psdi;
+      (*psd_sum_squared++) += SQR(psdi);
+    }
+    if(ri==ci)
+    {
+      double psdi = SQR(*ri);
+      *psd_sum += psdi;
+      *psd_sum_squared += SQR(psdi);
+    }
+    hcvec_scale_and_multiply_conj(waveform_f_, waveform_f_, waveform_f_, nsample);
+    fftwf_execute(fftw_plan_bwd_);
+    auto* corr_sum = psd->mutable_corr_sum()->mutable_data();
+    for(unsigned isample=0; isample<nsample; isample++)
+      corr_sum[isample] += waveform_t_[isample];
+    auto* corr_sum_squared = psd->mutable_corr_sum_squared()->mutable_data();
+    for(unsigned isample=0; isample<nsample; isample++)
+      corr_sum_squared[isample] += SQR(waveform_t_[isample]);
+  } else {
+    for(unsigned isample=0; isample<nsample; isample++) {
+      uint32_t sample = wf[isample];
+      sum[isample] += sample;
+      sum_squared[isample] += sample*sample;
+    }
   }
 
   if(calculate_covariance_)

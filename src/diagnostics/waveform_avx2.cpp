@@ -31,9 +31,10 @@ using namespace calin::diagnostics::waveform;
 using calin::util::memory::safe_aligned_recalloc;
 
 AVX2_Unroll8_WaveformStatsParallelVisitor::
-AVX2_Unroll8_WaveformStatsParallelVisitor(bool high_gain, bool calculate_covariance):
+AVX2_Unroll8_WaveformStatsParallelVisitor(bool high_gain,
+    bool calculate_psd, bool calculate_covariance):
   ParallelEventVisitor(),
-  high_gain_(high_gain), calculate_covariance_(calculate_covariance)
+  high_gain_(high_gain), calculate_psd_(calculate_psd), calculate_covariance_(calculate_covariance)
 {
 #if defined(__AVX2__)
   // nothing to see here

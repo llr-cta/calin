@@ -36,7 +36,8 @@ class WaveformStatsParallelVisitor:
   public iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  WaveformStatsParallelVisitor(bool calculate_covariance = true);
+  WaveformStatsParallelVisitor(bool calculate_psd = true,
+    bool calculate_covariance = true);
 
   virtual ~WaveformStatsParallelVisitor();
 
@@ -73,7 +74,8 @@ public:
 protected:
   void process_one_waveform(const uint16_t*__restrict__ wf,
     ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
-    ix::diagnostics::waveform::WaveformRawStats* r_stat);
+    ix::diagnostics::waveform::WaveformRawStats* r_stat,
+    ix::diagnostics::waveform::WaveformRawPSD* psd = nullptr);
 
   void merge_partial(
     ix::diagnostics::waveform::PartialWaveformRawStats* p_stat,
@@ -85,6 +87,14 @@ protected:
   unsigned partial_max_num_entries_ = 256;
   const ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
     run_config_ = nullptr;
+
+  calin::ix::diagnostics::waveform::CameraWaveformRawPSD psd_results_;
+  float*__restrict__ waveform_t_ = nullptr;
+  float*__restrict__ waveform_f_ = nullptr;
+  fftwf_plan fftw_plan_fwd_;
+  fftwf_plan fftw_plan_bwd_;
+
+  bool calculate_psd_ = false;
   bool calculate_covariance_ = false;
 #endif
 };
@@ -93,7 +103,8 @@ class AVX2_Unroll8_WaveformStatsParallelVisitor:
   public iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  AVX2_Unroll8_WaveformStatsParallelVisitor(bool high_gain = true, bool calculate_covariance = true);
+  AVX2_Unroll8_WaveformStatsParallelVisitor(bool high_gain = true,
+    bool calculate_psd = true, bool calculate_covariance = true);
 
   virtual ~AVX2_Unroll8_WaveformStatsParallelVisitor();
 
@@ -153,6 +164,7 @@ protected:
     run_config_ = nullptr;
 
   bool high_gain_ = false;
+  bool calculate_psd_ = false;
   bool calculate_covariance_ = false;
 };
 
