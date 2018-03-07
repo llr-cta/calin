@@ -29,6 +29,7 @@
 #include <diagnostics/waveform.pb.h>
 #include <math/histogram.hpp>
 #include <math/simd.hpp>
+#include <math/fft_simd.hpp>
 
 namespace calin { namespace diagnostics { namespace waveform {
 
@@ -139,6 +140,8 @@ public:
 
 protected:
 #if defined(__AVX2__) and not defined(SWIG)
+  void do_8_dft(__m256*__restrict__& psd_sum, __m256*__restrict__& psd_sumsq,
+    __m256*__restrict__& ac_sum, __m256*__restrict__& ac_sumsq);
   void process_8_events();
   void merge_partials();
 
@@ -153,6 +156,14 @@ protected:
 
   __m256i* samples_[8] =
     { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+
+  __m256* dft_xt_[8] =
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+
+  __m256* dft_xf_[8] =
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+
+  calin::math::fft_simd::FixedSizeRealToHalfComplexDFT<__m256>* dft_ = nullptr;
 
   unsigned nchan_ = 0;
   unsigned nsamp_ = 0;

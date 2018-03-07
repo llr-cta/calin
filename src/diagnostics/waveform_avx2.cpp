@@ -114,6 +114,15 @@ bool AVX2_Unroll8_WaveformStatsParallelVisitor::visit_telescope_run(
     for(unsigned i=0;i<8;i++)safe_aligned_recalloc(samples_[i], nsamp_block*16);
   }
 
+  if(calculate_psd_ and (nsamp_ != old_nsamp or dft_xt_[0] == nullptr)) {
+    for(unsigned i=0;i<8;i++) {
+      safe_aligned_recalloc(dft_xt_[i], nsamp_ * 2);
+      safe_aligned_recalloc(dft_xf_[i], nsamp_ * 2);
+    }
+    delete dft_;
+    dft_ = calin::math::fft_simd::new_m256_r2hc_dft(nsamp_, 2, 2);
+  }
+
   partial_num_entries_ = 0;
   if(nsamp_ != old_nchan or partial_chan_nevent_ == nullptr) {
     safe_aligned_recalloc(partial_chan_nevent_, nchan_);
@@ -185,6 +194,451 @@ bool AVX2_Unroll8_WaveformStatsParallelVisitor::merge_results()
 }
 
 #if defined(__AVX2__)
+void AVX2_Unroll8_WaveformStatsParallelVisitor::do_8_dft(
+  __m256*__restrict__& psd_sum, __m256*__restrict__& psd_sumsq,
+  __m256*__restrict__& ac_sum, __m256*__restrict__& ac_sumsq)
+{
+  // This function is extremely complex
+
+  const unsigned nsamp = nsamp_;
+
+  const __m256i*__restrict__ samples0 = samples_[0];
+  const __m256i*__restrict__ samples1 = samples_[1];
+  const __m256i*__restrict__ samples2 = samples_[2];
+  const __m256i*__restrict__ samples3 = samples_[3];
+  const __m256i*__restrict__ samples4 = samples_[4];
+  const __m256i*__restrict__ samples5 = samples_[5];
+  const __m256i*__restrict__ samples6 = samples_[6];
+  const __m256i*__restrict__ samples7 = samples_[7];
+
+  __m256*__restrict__ xi0 = dft_xt_[0];
+  __m256*__restrict__ xi1 = dft_xt_[1];
+  __m256*__restrict__ xi2 = dft_xt_[2];
+  __m256*__restrict__ xi3 = dft_xt_[3];
+  __m256*__restrict__ xi4 = dft_xt_[4];
+  __m256*__restrict__ xi5 = dft_xt_[5];
+  __m256*__restrict__ xi6 = dft_xt_[6];
+  __m256*__restrict__ xi7 = dft_xt_[7];
+
+  for(unsigned isamp=0;isamp<nsamp;isamp++) {
+    const __m256i samp0 = samples0[isamp];
+    const __m256i samp1 = samples1[isamp];
+    const __m256i samp2 = samples2[isamp];
+    const __m256i samp3 = samples3[isamp];
+    const __m256i samp4 = samples4[isamp];
+    const __m256i samp5 = samples5[isamp];
+    const __m256i samp6 = samples6[isamp];
+    const __m256i samp7 = samples7[isamp];
+
+    *xi0++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp0,0)));
+    *xi0++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp0,1)));
+    *xi1++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp1,0)));
+    *xi1++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp1,1)));
+    *xi2++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp2,0)));
+    *xi2++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp2,1)));
+    *xi3++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp3,0)));
+    *xi3++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp3,1)));
+    *xi4++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp4,0)));
+    *xi4++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp4,1)));
+    *xi5++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp5,0)));
+    *xi5++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp5,1)));
+    *xi6++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp6,0)));
+    *xi6++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp6,1)));
+    *xi7++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp7,0)));
+    *xi7++ = _mm256_cvtepi32_ps(_mm256_cvtepu16_epi32(_mm256_extracti128_si256(samp7,1)));
+  }
+
+  dft_->r2hc(dft_xt_[0],   dft_xf_[0]);
+  dft_->r2hc(dft_xt_[0]+1, dft_xf_[0]+1);
+  dft_->r2hc(dft_xt_[1],   dft_xf_[1]);
+  dft_->r2hc(dft_xt_[1]+1, dft_xf_[1]+1);
+  dft_->r2hc(dft_xt_[2],   dft_xf_[2]);
+  dft_->r2hc(dft_xt_[2]+1, dft_xf_[2]+1);
+  dft_->r2hc(dft_xt_[3],   dft_xf_[3]);
+  dft_->r2hc(dft_xt_[3]+1, dft_xf_[3]+1);
+  dft_->r2hc(dft_xt_[4],   dft_xf_[4]);
+  dft_->r2hc(dft_xt_[4]+1, dft_xf_[4]+1);
+  dft_->r2hc(dft_xt_[5],   dft_xf_[5]);
+  dft_->r2hc(dft_xt_[5]+1, dft_xf_[5]+1);
+  dft_->r2hc(dft_xt_[6],   dft_xf_[6]);
+  dft_->r2hc(dft_xt_[6]+1, dft_xf_[6]+1);
+  dft_->r2hc(dft_xt_[7],   dft_xf_[7]);
+  dft_->r2hc(dft_xt_[7]+1, dft_xf_[7]+1);
+
+  __m256*__restrict__ ri0 = dft_xf_[0];
+  __m256*__restrict__ ci0 = dft_xf_[0] + 2*(nsamp-1);
+  __m256*__restrict__ ri1 = dft_xf_[1];
+  __m256*__restrict__ ci1 = dft_xf_[1] + 2*(nsamp-1);
+  __m256*__restrict__ ri2 = dft_xf_[2];
+  __m256*__restrict__ ci2 = dft_xf_[2] + 2*(nsamp-1);
+  __m256*__restrict__ ri3 = dft_xf_[3];
+  __m256*__restrict__ ci3 = dft_xf_[3] + 2*(nsamp-1);
+  __m256*__restrict__ ri4 = dft_xf_[4];
+  __m256*__restrict__ ci4 = dft_xf_[4] + 2*(nsamp-1);
+  __m256*__restrict__ ri5 = dft_xf_[5];
+  __m256*__restrict__ ci5 = dft_xf_[5] + 2*(nsamp-1);
+  __m256*__restrict__ ri6 = dft_xf_[6];
+  __m256*__restrict__ ci6 = dft_xf_[6] + 2*(nsamp-1);
+  __m256*__restrict__ ri7 = dft_xf_[7];
+  __m256*__restrict__ ci7 = dft_xf_[7] + 2*(nsamp-1);
+
+  __m256 sum;
+  __m256 sumsq;
+  __m256 psdi;
+
+  sum = _mm256_mul_ps(*ri0, *ri0);
+  *ri0 = sum;
+  sumsq = _mm256_mul_ps(sum, sum);
+  psdi = _mm256_mul_ps(*ri1, *ri1);
+  *ri1 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri2, *ri2);
+  *ri2 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri3, *ri3);
+  *ri3 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri4, *ri4);
+  *ri4 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri5, *ri5);
+  *ri5 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri6, *ri6);
+  *ri6 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri7, *ri7);
+  *ri7 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  ri0++; ri1++; ri2++; ri3++; ri4++; ri5++; ri6++; ri7++;
+  *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 0)));
+  psd_sum++;
+  *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 1)));
+  psd_sum++;
+  *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 0)));
+  psd_sumsq++;
+  *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 1)));
+  psd_sumsq++;
+
+  sum = _mm256_mul_ps(*ri0, *ri0);
+  *ri0 = sum;
+  sumsq = _mm256_mul_ps(sum, sum);
+  psdi = _mm256_mul_ps(*ri1, *ri1);
+  *ri1 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri2, *ri2);
+  *ri2 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri3, *ri3);
+  *ri3 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri4, *ri4);
+  *ri4 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri5, *ri5);
+  *ri5 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri6, *ri6);
+  *ri6 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  psdi = _mm256_mul_ps(*ri7, *ri7);
+  *ri7 = psdi;
+  sum = _mm256_add_ps(psdi, sum);
+  sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+  ri0++; ri1++; ri2++; ri3++; ri4++; ri5++; ri6++; ri7++;
+  *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 0)));
+  psd_sum++;
+  *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 1)));
+  psd_sum++;
+  *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 0)));
+  psd_sumsq++;
+  *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 1)));
+  psd_sumsq++;
+
+  while(ri0 < ci0)
+  {
+    psdi = _mm256_mul_ps(*ri0, *ri0);
+    psdi = _mm256_fmadd_ps(*ci0, *ci0, psdi);
+    *ri0 = psdi; *ci0 = _mm256_setzero_ps();
+    sum = psdi;
+    sumsq = _mm256_mul_ps(psdi, psdi);
+    psdi = _mm256_mul_ps(*ri1, *ri1);
+    psdi = _mm256_fmadd_ps(*ci1, *ci1, psdi);
+    *ri1 = psdi; *ci1 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri2, *ri2);
+    psdi = _mm256_fmadd_ps(*ci2, *ci2, psdi);
+    *ri2 = psdi; *ci2 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri3, *ri3);
+    psdi = _mm256_fmadd_ps(*ci3, *ci3, psdi);
+    *ri3 = psdi; *ci3 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri4, *ri4);
+    psdi = _mm256_fmadd_ps(*ci4, *ci4, psdi);
+    *ri4 = psdi; *ci4 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri5, *ri5);
+    psdi = _mm256_fmadd_ps(*ci5, *ci5, psdi);
+    *ri5 = psdi; *ci5 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri6, *ri6);
+    psdi = _mm256_fmadd_ps(*ci6, *ci6, psdi);
+    *ri6 = psdi; *ci6 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri7, *ri7);
+    psdi = _mm256_fmadd_ps(*ci7, *ci7, psdi);
+    *ri7 = psdi; *ci7 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    ri0++; ri1++; ri2++; ri3++; ri4++; ri5++; ri6++; ri7++;
+    ci0++; ci1++; ci2++; ci3++; ci4++; ci5++; ci6++; ci7++;
+    *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 0)));
+    psd_sum++;
+    *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 1)));
+    psd_sum++;
+    *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 0)));
+    psd_sumsq++;
+    *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 1)));
+    psd_sumsq++;
+
+    psdi = _mm256_mul_ps(*ri0, *ri0);
+    psdi = _mm256_fmadd_ps(*ci0, *ci0, psdi);
+    *ri0 = psdi; *ci0 = _mm256_setzero_ps();
+    sum = psdi;
+    sumsq = _mm256_mul_ps(psdi, psdi);
+    psdi = _mm256_mul_ps(*ri1, *ri1);
+    psdi = _mm256_fmadd_ps(*ci1, *ci1, psdi);
+    *ri1 = psdi; *ci1 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri2, *ri2);
+    psdi = _mm256_fmadd_ps(*ci2, *ci2, psdi);
+    *ri2 = psdi; *ci2 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri3, *ri3);
+    psdi = _mm256_fmadd_ps(*ci3, *ci3, psdi);
+    *ri3 = psdi; *ci3 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri4, *ri4);
+    psdi = _mm256_fmadd_ps(*ci4, *ci4, psdi);
+    *ri4 = psdi; *ci4 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri5, *ri5);
+    psdi = _mm256_fmadd_ps(*ci5, *ci5, psdi);
+    *ri5 = psdi; *ci5 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri6, *ri6);
+    psdi = _mm256_fmadd_ps(*ci6, *ci6, psdi);
+    *ri6 = psdi; *ci6 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri7, *ri7);
+    psdi = _mm256_fmadd_ps(*ci7, *ci7, psdi);
+    *ri7 = psdi; *ci7 = _mm256_setzero_ps();
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    ri0++; ri1++; ri2++; ri3++; ri4++; ri5++; ri6++; ri7++;
+    ci0-=3; ci1-=3; ci2-=3; ci3-=3; ci4-=3; ci5-=3; ci6-=3; ci7-=3;
+    *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 0)));
+    psd_sum++;
+    *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 1)));
+    psd_sum++;
+    *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 0)));
+    psd_sumsq++;
+    *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 1)));
+    psd_sumsq++;
+  }
+  if(ri0==ci0)
+  {
+    sum = _mm256_mul_ps(*ri0, *ri0);
+    *ri0 = sum;
+    sumsq = _mm256_mul_ps(sum, sum);
+    psdi = _mm256_mul_ps(*ri1, *ri1);
+    *ri1 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri2, *ri2);
+    *ri2 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri3, *ri3);
+    *ri3 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri4, *ri4);
+    *ri4 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri5, *ri5);
+    *ri5 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri6, *ri6);
+    *ri6 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri7, *ri7);
+    *ri7 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    ri0++; ri1++; ri2++; ri3++; ri4++; ri5++; ri6++; ri7++;
+    *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 0)));
+    psd_sum++;
+    *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 1)));
+    psd_sum++;
+    *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 0)));
+    psd_sumsq++;
+    *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 1)));
+    psd_sumsq++;
+
+    sum = _mm256_mul_ps(*ri0, *ri0);
+    *ri0 = sum;
+    sumsq = _mm256_mul_ps(sum, sum);
+    psdi = _mm256_mul_ps(*ri1, *ri1);
+    *ri1 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri2, *ri2);
+    *ri2 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri3, *ri3);
+    *ri3 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri4, *ri4);
+    *ri4 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri5, *ri5);
+    *ri5 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri6, *ri6);
+    *ri6 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    psdi = _mm256_mul_ps(*ri7, *ri7);
+    *ri7 = psdi;
+    sum = _mm256_add_ps(psdi, sum);
+    sumsq = _mm256_fmadd_ps(psdi, psdi, sumsq);
+    ri0++; ri1++; ri2++; ri3++; ri4++; ri5++; ri6++; ri7++;
+    *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 0)));
+    psd_sum++;
+    *psd_sum = _mm256_add_pd(*psd_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 1)));
+    psd_sum++;
+    *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 0)));
+    psd_sumsq++;
+    *psd_sumsq = _mm256_add_pd(*psd_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 1)));
+    psd_sumsq++;
+  }
+
+  dft_->hc2r(dft_xt_[0],   dft_xf_[0]);
+  dft_->hc2r(dft_xt_[0]+1, dft_xf_[0]+1);
+  dft_->hc2r(dft_xt_[1],   dft_xf_[1]);
+  dft_->hc2r(dft_xt_[1]+1, dft_xf_[1]+1);
+  dft_->hc2r(dft_xt_[2],   dft_xf_[2]);
+  dft_->hc2r(dft_xt_[2]+1, dft_xf_[2]+1);
+  dft_->hc2r(dft_xt_[3],   dft_xf_[3]);
+  dft_->hc2r(dft_xt_[3]+1, dft_xf_[3]+1);
+  dft_->hc2r(dft_xt_[4],   dft_xf_[4]);
+  dft_->hc2r(dft_xt_[4]+1, dft_xf_[4]+1);
+  dft_->hc2r(dft_xt_[5],   dft_xf_[5]);
+  dft_->hc2r(dft_xt_[5]+1, dft_xf_[5]+1);
+  dft_->hc2r(dft_xt_[6],   dft_xf_[6]);
+  dft_->hc2r(dft_xt_[6]+1, dft_xf_[6]+1);
+  dft_->hc2r(dft_xt_[7],   dft_xf_[7]);
+  dft_->hc2r(dft_xt_[7]+1, dft_xf_[7]+1);
+
+  const __m256*__restrict__ xt0 = dft_xt_[0];
+  const __m256*__restrict__ xt1 = dft_xt_[1];
+  const __m256*__restrict__ xt2 = dft_xt_[2];
+  const __m256*__restrict__ xt3 = dft_xt_[3];
+  const __m256*__restrict__ xt4 = dft_xt_[4];
+  const __m256*__restrict__ xt5 = dft_xt_[5];
+  const __m256*__restrict__ xt6 = dft_xt_[6];
+  const __m256*__restrict__ xt7 = dft_xt_[7];
+
+  for(unsigned isamp=0;isamp<nsamp;isamp++)
+  {
+    sum = *xt0;
+    sumsq = _mm256_mul_ps(*xt0, *xt0);
+    sum = _mm256_add_ps(*xt1, sum);
+    sumsq = _mm256_fmadd_ps(*xt1, *xt1, sumsq);
+    sum = _mm256_add_ps(*xt2, sum);
+    sumsq = _mm256_fmadd_ps(*xt2, *xt2, sumsq);
+    sum = _mm256_add_ps(*xt3, sum);
+    sumsq = _mm256_fmadd_ps(*xt3, *xt3, sumsq);
+    sum = _mm256_add_ps(*xt4, sum);
+    sumsq = _mm256_fmadd_ps(*xt4, *xt4, sumsq);
+    sum = _mm256_add_ps(*xt5, sum);
+    sumsq = _mm256_fmadd_ps(*xt5, *xt5, sumsq);
+    sum = _mm256_add_ps(*xt6, sum);
+    sumsq = _mm256_fmadd_ps(*xt6, *xt6, sumsq);
+    sum = _mm256_add_ps(*xt7, sum);
+    sumsq = _mm256_fmadd_ps(*xt7, *xt7, sumsq);
+    xt0++; xt1++; xt2++; xt3++; xt4++; xt5++; xt6++; xt7++;
+    *ac_sum = _mm256_add_pd(*ac_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 0)));
+    ac_sum++;
+    *ac_sum = _mm256_add_pd(*ac_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 1)));
+    ac_sum++;
+    *ac_sumsq = _mm256_add_pd(*ac_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 0)));
+    ac_sumsq++;
+    *ac_sumsq = _mm256_add_pd(*ac_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 1)));
+    ac_sumsq++;
+
+    sum = *xt0;
+    sumsq = _mm256_mul_ps(*xt0, *xt0);
+    sum = _mm256_add_ps(*xt1, sum);
+    sumsq = _mm256_fmadd_ps(*xt1, *xt1, sumsq);
+    sum = _mm256_add_ps(*xt2, sum);
+    sumsq = _mm256_fmadd_ps(*xt2, *xt2, sumsq);
+    sum = _mm256_add_ps(*xt3, sum);
+    sumsq = _mm256_fmadd_ps(*xt3, *xt3, sumsq);
+    sum = _mm256_add_ps(*xt4, sum);
+    sumsq = _mm256_fmadd_ps(*xt4, *xt4, sumsq);
+    sum = _mm256_add_ps(*xt5, sum);
+    sumsq = _mm256_fmadd_ps(*xt5, *xt5, sumsq);
+    sum = _mm256_add_ps(*xt6, sum);
+    sumsq = _mm256_fmadd_ps(*xt6, *xt6, sumsq);
+    sum = _mm256_add_ps(*xt7, sum);
+    sumsq = _mm256_fmadd_ps(*xt7, *xt7, sumsq);
+    xt0++; xt1++; xt2++; xt3++; xt4++; xt5++; xt6++; xt7++;
+    *ac_sum = _mm256_add_pd(*ac_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 0)));
+    ac_sum++;
+    *ac_sum = _mm256_add_pd(*ac_sum, _mm256_cvtps_pd(_mm256_extractf128_ps(sum, 1)));
+    ac_sum++;
+    *ac_sumsq = _mm256_add_pd(*ac_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 0)));
+    ac_sumsq++;
+    *ac_sumsq = _mm256_add_pd(*ac_sumsq, _mm256_cvtps_pd(_mm256_extractf128_ps(sumsq, 1)));
+    ac_sumsq++;
+  }
+}
+
 void AVX2_Unroll8_WaveformStatsParallelVisitor::process_8_events()
 {
   const unsigned nsamp_block = (nsamp_ + 15)/16; // number of uint16_t vectors in nsamp
@@ -262,7 +716,6 @@ void AVX2_Unroll8_WaveformStatsParallelVisitor::process_8_events()
 
       __m256i sum_l;
       __m256i sum_u;
-
       sum_l = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi0,0));
       sum_u = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi0,1));
       sum_l = _mm256_add_epi32(sum_l, _mm256_cvtepu16_epi32(_mm256_extracti128_si256(sampi1,0)));
@@ -387,6 +840,10 @@ void AVX2_Unroll8_WaveformStatsParallelVisitor::process_8_events()
         }
       }
     }
+
+    if(calculate_psd_) {
+      //do_8_dft()
+    }
   }
 
   unsigned*__restrict__ chan_nevent = partial_chan_nevent_;
@@ -416,7 +873,10 @@ void AVX2_Unroll8_WaveformStatsParallelVisitor::merge_partials()
   __m256i*__restrict__ cov_base = partial_chan_sum_cov_;
 
   for(unsigned ichan=0,iblock=0,iel=0; ichan<nchan; ichan++,iel++) {
-    if(iel==16)iblock++, iel=0;
+    if(iel==16) {
+      iblock++;
+      iel=0;
+    }
 
     calin::ix::diagnostics::waveform::WaveformRawStats* stats;
     if(high_gain_)stats = results_.mutable_high_gain(ichan);
