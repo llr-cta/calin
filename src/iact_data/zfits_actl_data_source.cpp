@@ -249,7 +249,11 @@ ZFITSACTLDataSourceOpener::ZFITSACTLDataSourceOpener(std::string filename,
       filename = filename.substr(0, ifind);
 
       unsigned istart = 0;
-      if(not is_file(filename+".1"+extension) and not is_file(filename+".001"+extension))
+      if(not is_file(filename+".1"+extension)
+        and not is_file(filename+".01"+extension)
+        and not is_file(filename+".001"+extension)
+        and not is_file(filename+".0001"+extension)
+        and not is_file(filename+".00001"+extension))
       {
         ifind = filename.rfind('.');
         if(ifind != std::string::npos and
@@ -269,14 +273,55 @@ ZFITSACTLDataSourceOpener::ZFITSACTLDataSourceOpener(std::string filename,
           continue;
         }
 
-        filename_i = filename + ".";
-        if(i<10) filename_i += "00";
-        else if(i<100) filename_i += "0";
-        else break; // no point in rechecking same file as above
-        filename_i += std::to_string(i)+extension;
+        if(i<10) {
+          filename_i = filename + ".";
+          filename_i += "0";
+          filename_i += std::to_string(i)+extension;
 
-        if(not is_file(filename_i))break;
-        filenames_.emplace_back(filename_i);
+          if(is_file(filename_i)) {
+            filenames_.emplace_back(filename_i);
+            continue;
+          }
+        }
+
+        if(i<100) {
+          filename_i = filename + ".";
+          if(i<10) filename_i += "00";
+          else filename_i += "0";
+          filename_i += std::to_string(i)+extension;
+
+          if(is_file(filename_i)) {
+            filenames_.emplace_back(filename_i);
+            continue;
+          }
+        }
+
+        if(i<1000) {
+          filename_i = filename + ".";
+          if(i<10) filename_i += "000";
+          else if(i<100) filename_i += "00";
+          else filename_i += "0";
+          filename_i += std::to_string(i)+extension;
+
+          if(is_file(filename_i)) {
+            filenames_.emplace_back(filename_i);
+            continue;
+          }
+        }
+
+        if(i<10000) {
+          filename_i = filename + ".";
+          if(i<10) filename_i += "0000";
+          else if(i<100) filename_i += "000";
+          else if(i<1000) filename_i += "00";
+          else filename_i += "0";
+          filename_i += std::to_string(i)+extension;
+
+          if(is_file(filename_i)) {
+            filenames_.emplace_back(filename_i);
+            continue;
+          }
+        }
       }
     }
   }
