@@ -43,6 +43,7 @@
 #include <cmath>
 #include <random>
 #include <utility>
+#include <cstddef>
 
 #if defined(__AVX2__)
 #include <immintrin.h>
@@ -69,6 +70,9 @@ class RNGCore
 public:
   virtual ~RNGCore();
   virtual uint64_t uniform_uint64() = 0;
+  virtual void bulk_uniform_uint64(void* buffer, std::size_t nbytes);
+  virtual void bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes,
+    uint64_t mask = 0xFFFFFFFFFFFFFFFFU);
   virtual void save_to_proto(ix::math::rng::RNGData* proto) const = 0;
   ix::math::rng::RNGData* as_proto() const {
     auto* proto = new ix::math::rng::RNGData;
@@ -462,11 +466,11 @@ private:
     __m256i vec_seed = _mm256_set_epi64x(seed0,seed1,seed2,seed3);
 
     vec_u_ = _mm256_xor_si256(vec_v_, vec_seed);
-    uniform_uivec256();
+    uniform_m256i();
     vec_v_ = vec_u_;
-    uniform_uivec256();
+    uniform_m256i();
     vec_w_ = vec_v_;
-    uniform_uivec256();
+    uniform_m256i();
     calls_ = 0;
   }
 #endif
@@ -505,7 +509,7 @@ private:
   virtual ~NR3_AVX2_RNGCore();
 
 #if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
-  __m256i uniform_uivec256()
+  __m256i uniform_m256i()
   {
 #if 0
     // AVX2 doesn't have 64bit->64bit multiply, so instead we do
@@ -552,9 +556,9 @@ private:
 
   // Generate 8 float deviates in the range [-0.5*scale+offset, 0.5*scale+offset)
   // The default values therefore create deviates in the "standard" range of [0,1)
-  __m256 uniform_psvec256(const float scale = 1.0, const float offset = 0.5)
+  __m256 uniform_m256(const float scale = 1.0, const float offset = 0.5)
   {
-    __m256i vec_ui = uniform_uivec256();
+    __m256i vec_ui = uniform_m256i();
     __m256 vec_ps = _mm256_cvtepi32_ps(vec_ui);
 #ifdef __FMA__
     vec_ps = _mm256_fmadd_ps(vec_ps, _mm256_set1_ps(C_U32_TO_FLT*scale),
@@ -567,9 +571,9 @@ private:
   }
 
   // Generate 8 "zero centered" float deviates in the range [-0.5*scale, 0.5*scale)
-  __m256 uniform_zc_psvec256(const float scale = 1.0)
+  __m256 uniform_zc_m256(const float scale = 1.0)
   {
-    __m256i vec_ui = uniform_uivec256();
+    __m256i vec_ui = uniform_m256i();
     __m256 vec_ps = _mm256_cvtepi32_ps(vec_ui);
     vec_ps = _mm256_mul_ps(vec_ps, _mm256_set1_ps(C_U32_TO_FLT*scale));
     return vec_ps;
@@ -582,7 +586,7 @@ private:
     if(ndev_) {
       return vec_dev_[--ndev_];
     } else {
-      vec_dev_ = uniform_uivec256();
+      vec_dev_ = uniform_m256i();
       ndev_ = 3;
       return vec_dev_[3];
     }
@@ -590,6 +594,10 @@ private:
     throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
 #endif
   }
+
+  void bulk_uniform_uint64(void* buffer, std::size_t nbytes) override;
+  void bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes,
+    uint64_t mask = 0xFFFFFFFFFFFFFFFFU) override;
 
   void save_to_proto(ix::math::rng::RNGData* proto) const override;
 

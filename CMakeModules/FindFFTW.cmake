@@ -9,8 +9,9 @@
 
 find_path ( FFTW_INCLUDE_DIR fftw3.h )
 find_library ( FFTW_LIBRARY NAMES fftw3 )
+find_library ( FFTWF_LIBRARY NAMES fftw3f )
 
-set ( FFTW_LIBRARIES ${FFTW_LIBRARY} )
+set ( FFTW_LIBRARIES ${FFTW_LIBRARY} ${FFTWF_LIBRARY} )
 set ( FFTW_INCLUDE_DIRS ${FFTW_INCLUDE_DIR} )
 
 include ( FindPackageHandleStandardArgs )

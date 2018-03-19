@@ -56,6 +56,40 @@ RNGCore::~RNGCore()
   // nothing to see here
 }
 
+void RNGCore::bulk_uniform_uint64(void* buffer, std::size_t nbytes)
+{
+  uint64_t* u64_ptr = reinterpret_cast<uint64_t*>(buffer);
+  std::size_t n64 = nbytes >> 3;
+  for(std::size_t i64=0; i64<n64; i64++) {
+    u64_ptr[i64] = this->uniform_uint64();
+  }
+  u64_ptr += n64;
+  nbytes -= n64*8;
+  if(nbytes)
+  {
+    uint64_t u64 = this->uniform_uint64();
+    std::copy(reinterpret_cast<uint8_t*>(u64_ptr),
+      reinterpret_cast<uint8_t*>(u64_ptr)+nbytes, reinterpret_cast<uint8_t*>(&u64));
+  }
+}
+
+void RNGCore::bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes, uint64_t mask)
+{
+  uint64_t* u64_ptr = reinterpret_cast<uint64_t*>(buffer);
+  std::size_t n64 = nbytes >> 3;
+  for(std::size_t i64=0; i64<n64; i64++) {
+    u64_ptr[i64] = this->uniform_uint64() & mask;
+  }
+  u64_ptr += n64;
+  nbytes -= n64*8;
+  if(nbytes)
+  {
+    uint64_t u64 = this->uniform_uint64() & mask;
+    std::copy(reinterpret_cast<uint8_t*>(u64_ptr),
+      reinterpret_cast<uint8_t*>(u64_ptr)+nbytes, reinterpret_cast<uint8_t*>(&u64));
+  }
+}
+
 RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGData& proto,
                                     bool restore_state)
 {
@@ -648,9 +682,56 @@ void NR3_AVX2_RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
   if(ndev_>1U)data->add_dev(_mm256_extract_epi64(vec_dev_,1));
   if(ndev_>2U)data->add_dev(_mm256_extract_epi64(vec_dev_,2));
   if(ndev_>3U)data->add_dev(_mm256_extract_epi64(vec_dev_,3));
+#else
+  throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
 #endif
 }
 
+void NR3_AVX2_RNGCore::bulk_uniform_uint64(void* buffer, std::size_t nbytes)
+{
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
+  __m256i* u256_ptr = reinterpret_cast<__m256i*>(buffer);
+  std::size_t n256 = nbytes >> 5;
+  for(std::size_t i256=0; i256<n256; i256++) {
+    __m256i u256 = uniform_m256i();
+    _mm256_storeu_si256(u256_ptr+i256, u256);
+  }
+  u256_ptr += n256;
+  nbytes -= n256*32;
+  if(nbytes)
+  {
+    __m256i u256 = uniform_m256i();
+    std::copy(reinterpret_cast<uint8_t*>(u256_ptr),
+      reinterpret_cast<uint8_t*>(u256_ptr)+nbytes, reinterpret_cast<uint8_t*>(&u256));
+  }
+#else
+  throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
+#endif
+}
+
+void NR3_AVX2_RNGCore::
+bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes, uint64_t mask)
+{
+#if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
+  const __m256i mask256 = _mm256_set1_epi64x(mask);
+  __m256i* u256_ptr = reinterpret_cast<__m256i*>(buffer);
+  std::size_t n256 = nbytes >> 5;
+  for(std::size_t i256=0; i256<n256; i256++) {
+    __m256i u256 = _mm256_and_si256(uniform_m256i(), mask256);
+    _mm256_storeu_si256(u256_ptr+i256, u256);
+  }
+  u256_ptr += n256;
+  nbytes -= n256*32;
+  if(nbytes)
+  {
+    __m256i u256 = _mm256_and_si256(uniform_m256i(), mask256);
+    std::copy(reinterpret_cast<uint8_t*>(u256_ptr),
+      reinterpret_cast<uint8_t*>(u256_ptr)+nbytes, reinterpret_cast<uint8_t*>(&u256));
+  }
+#else
+  throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
+#endif
+}
 
 #if 0
 

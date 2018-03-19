@@ -75,16 +75,16 @@ large enough to hold all the data.
 
     // Map a tensor of ints on top of stack-allocated storage.
     int storage[128];  // 2 x 4 x 2 x 8 = 128
-    TensorMap<int, 4> t_4d(storage, 2, 4, 2, 8);
+    TensorMap<Tensor<int, 4>> t_4d(storage, 2, 4, 2, 8);
 
     // The same storage can be viewed as a different tensor.
     // You can also pass the sizes as an array.
-    TensorMap<int, 2> t_2d(storage, 16, 8);
+    TensorMap<Tensor<int, 2>> t_2d(storage, 16, 8);
 
     // You can also map fixed-size tensors.  Here we get a 1d view of
     // the 2d fixed-size tensor.
     Tensor<float, Sizes<4, 5>> t_4x3;
-    TensorMap<float, 1> t_12(t_4x3, 12);
+    TensorMap<Tensor<float, 1>> t_12(t_4x3, 12);
 
 
 #### Class TensorRef
@@ -1102,7 +1102,7 @@ Example: Reduction along two dimensions.
 
 As a special case, if you pass no parameter to a reduction operation the
 original tensor is reduced along *all* its dimensions.  The result is a
-one-dimension tensor with a single value.
+scalar, represented as a zero-dimension tensor.
 
     Eigen::Tensor<float, 3> a(2, 3, 4);
     a.setValues({{{0.0f, 1.0f, 2.0f, 3.0f},
@@ -1112,7 +1112,7 @@ one-dimension tensor with a single value.
                   {19.0f, 18.0f, 17.0f, 16.0f},
                   {20.0f, 21.0f, 22.0f, 23.0f}}});
     // Reduce along all dimensions using the sum() operator.
-    Eigen::Tensor<float, 1> b = a.sum();
+    Eigen::Tensor<float, 0> b = a.sum();
     cout << "b" << endl << b << endl << endl;
     =>
     b

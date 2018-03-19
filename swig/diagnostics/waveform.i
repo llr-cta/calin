@@ -34,8 +34,7 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%import "iact_data/event_dispatcher.i"
-%import "iact_data/functional_event_visitor.i"
+%import "iact_data/event_visitor.i"
 %import "diagnostics/waveform.pb.i"
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& h };
 %include "diagnostics/waveform.hpp"

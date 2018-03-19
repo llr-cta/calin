@@ -20,9 +20,10 @@
 
 */
 
-%module (package="calin.iact_data", threads="1") waveform_treatment_event_visitor
+%module (package="calin.iact_data") waveform_treatment_event_visitor
 
 %{
+#include "iact_data/event_visitor.hpp"
 #include "iact_data/waveform_treatment_event_visitor.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
@@ -34,6 +35,6 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%import "event_dispatcher.i"
+%import "event_visitor.i"
 %import "iact_data/waveform_treatment_event_visitor.pb.i"
 %include "iact_data/waveform_treatment_event_visitor.hpp"

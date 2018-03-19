@@ -83,7 +83,7 @@ set(EXTRA_LIBS ${EXTRA_LIBS} ${PROTOBUF_LIBRARY})
 
 ## Find FFTW libraries
 find_package(FFTW REQUIRED)
-include_directories(${FFTW_INCLUDES})
+include_directories(${FFTW_INCLUDE_DIRS})
 set(EXTRA_LIBS ${EXTRA_LIBS} ${FFTW_LIBRARIES} )
 
 ## Find GSL libraries

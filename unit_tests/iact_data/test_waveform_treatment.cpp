@@ -39,12 +39,13 @@ using namespace calin::math::simd;
 using namespace calin::iact_data::waveform_treatment_event_visitor;
 using namespace calin::ix::iact_data::waveform_treatment_event_visitor;
 
+
+#if defined(__AVX2__) and defined(__FMA__)
+
 static constexpr unsigned NSIM_TRACEANAL = 10000;
 
 constexpr int nchan = 1024;
 constexpr int nsamp = 60;
-
-#if defined(__AVX2__) and defined(__FMA__)
 
 TEST(TestWaveformTreatment, TraceAnalysis)
 {
@@ -56,18 +57,17 @@ TEST(TestWaveformTreatment, TraceAnalysis)
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
   run_config.set_num_samples(nsamp);
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
-  wfev.visit_telescope_run(&run_config);
+  wfev.visit_telescope_run(&run_config, nullptr);
 
-  auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
-  safe_aligned_calloc(samples_data, nchan*nsamp, host_info->log2_simd_vec_size());
+  safe_aligned_calloc(samples_data, nchan*nsamp);
 
   NR3_AVX2_RNGCore core(12345);
   for(unsigned iloop=0;iloop<NSIM_TRACEANAL;iloop++)
   {
     const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
     for(unsigned i=0;i<nchan*nsamp/16;i++) {
-      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      __m256i x = _mm256_and_si256(core.uniform_m256i(), mask_12bit);
       _mm256_store_si256((__m256i*)(samples_data+i*16), x);
     }
 
@@ -101,18 +101,17 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis)
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
   run_config.set_num_samples(nsamp);
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
-  wfev.visit_telescope_run(&run_config);
+  wfev.visit_telescope_run(&run_config, nullptr);
 
-  auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
-  safe_aligned_calloc(samples_data, nchan*nsamp, host_info->log2_simd_vec_size());
+  safe_aligned_calloc(samples_data, nchan*nsamp);
 
   NR3_AVX2_RNGCore core(12345);
   for(unsigned iloop=0;iloop<NSIM_TRACEANAL;iloop++)
   {
     const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
     for(unsigned i=0;i<nchan*nsamp/16;i++) {
-      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      __m256i x = _mm256_and_si256(core.uniform_m256i(), mask_12bit);
       _mm256_store_si256((__m256i*)(samples_data+i*16), x);
     }
 
@@ -146,18 +145,17 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis_V2)
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
   run_config.set_num_samples(nsamp);
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
-  wfev.visit_telescope_run(&run_config);
+  wfev.visit_telescope_run(&run_config, nullptr);
 
-  auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
-  safe_aligned_calloc(samples_data, nchan*nsamp, host_info->log2_simd_vec_size());
+  safe_aligned_calloc(samples_data, nchan*nsamp);
 
   NR3_AVX2_RNGCore core(12345);
   for(unsigned iloop=0;iloop<NSIM_TRACEANAL;iloop++)
   {
     const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
     for(unsigned i=0;i<nchan*nsamp/16;i++) {
-      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      __m256i x = _mm256_and_si256(core.uniform_m256i(), mask_12bit);
       _mm256_store_si256((__m256i*)(samples_data+i*16), x);
     }
 
@@ -192,18 +190,17 @@ TEST(TestWaveformTreatment, AVX_TraceAnalysis_V3)
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
   run_config.set_num_samples(nsamp);
   for(unsigned ichan=0;ichan<nchan;ichan++)run_config.add_configured_channel_id(ichan);
-  wfev.visit_telescope_run(&run_config);
+  wfev.visit_telescope_run(&run_config, nullptr);
 
-  auto* host_info = calin::provenance::system_info::the_host_info();
   uint16_t* samples_data;
-  safe_aligned_calloc(samples_data, nchan*nsamp, host_info->log2_simd_vec_size());
+  safe_aligned_calloc(samples_data, nchan*nsamp);
 
   NR3_AVX2_RNGCore core(12345);
   for(unsigned iloop=0;iloop<NSIM_TRACEANAL;iloop++)
   {
     const __m256i mask_12bit = _mm256_set1_epi16((1<<12)-1);
     for(unsigned i=0;i<nchan*nsamp/16;i++) {
-      __m256i x = _mm256_and_si256(core.uniform_uivec256(), mask_12bit);
+      __m256i x = _mm256_and_si256(core.uniform_m256i(), mask_12bit);
       _mm256_store_si256((__m256i*)(samples_data+i*16), x);
     }
 

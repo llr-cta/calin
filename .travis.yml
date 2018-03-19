@@ -94,6 +94,16 @@ matrix:
           packages:
           - *common_packages
           - clang-4.0
+    - compiler: clang-5.0
+      env: BUILD_TYPE=Debug GEANT4=FALSE BUILD_CC=clang-5.0 BUILD_CXX=clang++-5.0
+      addons: &clang50_addons
+        apt:
+          sources:
+          - *common_sources
+          - llvm-toolchain-trusty-5.0
+          packages:
+          - *common_packages
+          - clang-5.0
 
 cache:
   directories:
@@ -120,23 +130,24 @@ install:
     if [ -d $LOCAL ]; then ls -l $LOCAL ; fi
     echo $LOCAL/bin
     if [ -d $LOCAL/bin ]; then ls -l $LOCAL/bin ; fi
-  - |
-    if [ ! -f $LOCAL/bin/cmake ];
-    then (
-      wget --no-check-certificate https://cmake.org/files/v3.9/cmake-3.9.6.tar.gz &&
-      tar zxf cmake-3.9.6.tar.gz &&
-      cd cmake-3.9.6 &&
-      ./bootstrap  --parallel=3 --prefix=$LOCAL &&
-      make -j3 &&
-      make install > /dev/null &&
-      touch $HOME/suppress_geant_build
-    ); fi
+  # - |
+  #   if [ ! -f $LOCAL/bin/cmake ];
+  #   then (
+  #     wget --no-check-certificate https://cmake.org/files/v3.9/cmake-3.9.6.tar.gz &&
+  #     tar zxf cmake-3.9.6.tar.gz &&
+  #     cd cmake-3.9.6 &&
+  #     ./bootstrap  --parallel=3 --prefix=$LOCAL &&
+  #     make -j3 &&
+  #     make install > /dev/null &&
+  #     touch $HOME/suppress_geant_build
+  #   ); fi
   - |
     if [ ! -f $LOCAL/bin/swig ]
     then (
-      wget https://sourceforge.net/projects/swig/files/swig/swig-3.0.12/swig-3.0.12.tar.gz &&
-      tar zxf swig-3.0.12.tar.gz &&
-      cd swig-3.0.12 &&
+      wget https://github.com/swig/swig/archive/rel-3.0.12.tar.gz &&
+      tar zxf rel-3.0.12.tar.gz &&
+      cd swig-rel-3.0.12 &&
+      ./autogen.sh &&
       ./configure --prefix=$LOCAL --without-alllang --with-python &&
       make -j3 &&
       make install > /dev/null &&
@@ -194,7 +205,7 @@ script:
           -DCMAKE_INSTALL_PREFIX=build .. &&
     make -j3 &&
     make install | tail &&
-    ./src/bin/write_system_info && 
+    ./src/bin/write_system_info &&
     make test
 #    ./unit_tests/calib/test_spe_fit
 

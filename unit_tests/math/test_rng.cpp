@@ -284,7 +284,7 @@ TEST(TestRNG_NR3_AVX2_RNGCore, FloatsInRange)
   NR3_AVX2_RNGCore core(seed);
   for(unsigned i=0;i<10000000;i++)
   {
-    __m256 vx = core.uniform_psvec256();
+    __m256 vx = core.uniform_m256();
     float x[8];
     _mm256_store_ps(x, vx);
     EXPECT_GE(x[0], 0.0) << "Float out of range: x[0]=" << x[0];
@@ -317,7 +317,7 @@ TEST(TestRNG_NR3_AVX2_RNGCore, FloatMoments)
   unsigned N = 10000000;
   for(unsigned i=0;i<N;i++)
   {
-    __m256 vx = core.uniform_psvec256();
+    __m256 vx = core.uniform_m256();
     vsum_x = _mm256_add_ps(vsum_x, vx);
     vx = _mm256_sub_ps(vx, _mm256_set1_ps(0.5));
     __m256 vxx = _mm256_mul_ps(vx, vx);
@@ -358,7 +358,7 @@ TEST(TestRNG_NR3_AVX2_RNGCore, FillsAllBits256)
   unsigned N = 1000000;
   for(unsigned i=0;i<N;i++)
   {
-    __m256i vx = core.uniform_uivec256();
+    __m256i vx = core.uniform_m256i();
     uint64_t x[4] __attribute__ ((aligned (32)));
     _mm256_store_si256(reinterpret_cast<__m256i*>(x), vx);
     for(unsigned j=0;j<4;j++) {
@@ -406,7 +406,7 @@ TEST(TestRNG_Core64GbitSpeedTest, NR3_AVX2_vec)
   uint64_t seed = RNG::uint64_from_random_device();
   NR3_AVX2_RNGCore core(seed);
   for(unsigned i=0;i<250000000;i++)
-    sum = _mm256_add_epi64(sum, core.uniform_uivec256());
+    sum = _mm256_add_epi64(sum, core.uniform_m256i());
   EXPECT_GE(core.uniform_uint64(), 0ULL);
 }
 #endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
@@ -418,7 +418,7 @@ TEST(TestRNG_Core64GbitSpeedTest_Float, NR3)
   NR3RNGCore core(seed);
   for(unsigned i=0;i<2000000000;i++)
     sum += 2.328306437e-10 * float(unsigned(core.uniform_uint64()));
-  EXPECT_GE(reinterpret_cast<uint64_t*>(&sum)[0],0ULL);
+  EXPECT_GE(sum,0.0);
 }
 
 #ifdef CALIN_HAS_NR3_AVX2_RNGCORE
@@ -428,7 +428,7 @@ TEST(TestRNG_Core64GbitSpeedTest_Float, NR3_AVX2_vec)
   uint64_t seed = RNG::uint64_from_random_device();
   NR3_AVX2_RNGCore core(seed);
   for(unsigned i=0;i<250000000;i++)
-    sum = _mm256_add_ps(sum, core.uniform_psvec256());
+    sum = _mm256_add_ps(sum, core.uniform_m256());
   EXPECT_GE(reinterpret_cast<float*>(&sum)[0],0.0);
 }
 #endif // defined CALIN_HAS_NR3_AVX2_RNGCORE

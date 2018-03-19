@@ -85,8 +85,8 @@ scalar_analyze_waveforms(const uint16_t*__restrict__ data)
       }
       ++isamp;
     }
-    if(bkg_window_0_ == nsamp_-window_n_)bkg = win;
-    if(sig_window_0_[ichan] == nsamp_-window_n_)sig = win;
+    if(bkg_window_0_ == int(nsamp_-window_n_))bkg = win;
+    if(sig_window_0_[ichan] == int(nsamp_-window_n_))sig = win;
 
     chan_max_index_[ichan] = imax;
     chan_max_[ichan] = max;

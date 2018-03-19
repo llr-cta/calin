@@ -121,11 +121,7 @@ TEST(TestHexArray, HexIDToXY_NewCodeSpeedTest) {
       for(unsigned ichan=0;ichan<6*iring;ichan++)
       {
         double x1,y1;
-        //double x2,y2;
         hexid_to_xy(hexid, x1, y1, true);
-        //int vvv_hexid = hexid+1;
-        //nh_to_xy(&vvv_hexid, &x2, &y2);
-        //EXPECT_NEAR(x1,x2,1e-6);
         hexid++;
       }
   }
@@ -198,32 +194,43 @@ TEST(TestHexArray, AVX2_HexIDToXY_CW_Equals_Scalar) {
 #endif
 
 TEST(TestHexArray, XYToHexID_NewCodeSpeedTest) {
-  for(double x=-10.005; x<10.015; x+=0.01)
-    for(double y=-10.005; y<10.015; y+=0.01)
+  double dx = 0.005;
+  for(double x=-10.005; x<10.015; x+=dx)
+    for(double y=-10.005; y<10.015; y+=dx)
     {
       double xx1 = x;
       double yy1 = y;
-      /* unsigned hexid = */ xy_to_hexid_with_remainder(xx1, yy1, true);
-      //double xx2 = x;
-      //double yy2 = y;
-      //int hexid2;
-      //xy_to_nh(&xx2,&yy2,&hexid2);
+      xy_to_hexid_with_remainder(xx1, yy1, true);
     }
 }
 
 TEST(TestHexArray, XYToHexID_VVVCodeSpeedTest) {
-  for(double x=-10.005; x<10.015; x+=0.01)
-    for(double y=-10.005; y<10.015; y+=0.01)
+  double dx = 0.005;
+  for(double x=-10.005; x<10.015; x+=dx)
+    for(double y=-10.005; y<10.015; y+=dx)
     {
-      //double xx1 = x;
-      //double yy1 = y;
-      //unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1, true);
       double xx2 = x;
       double yy2 = y;
       int hexid2;
       xy_to_nh(&xx2,&yy2,&hexid2);
     }
 }
+
+#if defined(__AVX2__) and defined(__FMA__)
+TEST(TestHexArray, XYToHexID_AVX2CodeSpeedTest) {
+  volatile __m256i hexid;
+  float dx = 0.005;
+  for(float x=-10.005; x<10.015; x+=dx) {
+    __m256 vx = _mm256_set1_ps(x);
+    for(float y=-10.005; y<10.015; y+=8*dx)
+    {
+      __m256 vy = _mm256_set_ps(y+7*dx,y+6*dx,y+5*dx,y+4*dx,y+3*dx,y+2*dx,y+dx,y);
+      hexid = avx2_xy_to_hexid_with_remainder_f(vx,vy);
+    }
+  }
+  EXPECT_GE(int32_t(hexid[0]), 0);
+}
+#endif
 
 TEST(TestHexArray, XYToHexID_ComparisonWithVVVCode) {
   for(double x=-10.005; x<10.015; x+=0.02)

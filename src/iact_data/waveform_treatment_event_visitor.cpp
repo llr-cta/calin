@@ -31,6 +31,7 @@ using namespace calin::ix::iact_data::waveform_treatment_event_visitor;
 using namespace calin::iact_data::waveform_treatment_event_visitor;
 using namespace calin::ix::iact_data::telescope_run_configuration;
 using namespace calin::ix::iact_data::telescope_event;
+using namespace calin::iact_data::event_visitor;
 using calin::util::memory::safe_aligned_recalloc;
 
 SingleGainDualWindowWaveformTreatmentEventVisitor::
@@ -38,7 +39,7 @@ SingleGainDualWindowWaveformTreatmentEventVisitor(
     calin::ix::iact_data::waveform_treatment_event_visitor::
       SingleGainDualWindowWaveformTreatmentEventVisitorConfig config,
     bool treat_high_gain):
-  TelescopeEventVisitor(), config_(config), treat_high_gain_(treat_high_gain)
+  ParallelEventVisitor(), config_(config), treat_high_gain_(treat_high_gain)
 {
   // nothing to see here
 }
@@ -60,25 +61,16 @@ SingleGainDualWindowWaveformTreatmentEventVisitor::
   free(chan_mean_t_);
 }
 
-bool SingleGainDualWindowWaveformTreatmentEventVisitor::demand_waveforms()
-{
-  return false;
-}
-
-bool SingleGainDualWindowWaveformTreatmentEventVisitor::is_parallelizable()
-{
-  return true;
-}
-
 SingleGainDualWindowWaveformTreatmentEventVisitor* SingleGainDualWindowWaveformTreatmentEventVisitor::new_sub_visitor(
-  const std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>&
+  const std::map<ParallelEventVisitor*,ParallelEventVisitor*>&
     antecedent_visitors)
 {
   return new SingleGainDualWindowWaveformTreatmentEventVisitor(config_);
 }
 
 bool SingleGainDualWindowWaveformTreatmentEventVisitor::
-visit_telescope_run(const TelescopeRunConfiguration* run_config)
+visit_telescope_run(const TelescopeRunConfiguration* run_config,
+  EventLifetimeManager* event_lifetime_manager)
 {
   reconfigure(run_config->configured_channel_id_size(), run_config->num_samples());
 
@@ -198,24 +190,25 @@ AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
   free(qt_l_);
   free(qt_u_);
 #else
-  throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
+  // throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
 #endif
 }
 
 AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor*
 AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::new_sub_visitor(
-  const std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>&
+  const std::map<ParallelEventVisitor*,ParallelEventVisitor*>&
     antecedent_visitors)
 {
   return new AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor(config_);
 }
 
 bool AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
-visit_telescope_run(const TelescopeRunConfiguration* run_config)
+visit_telescope_run(const TelescopeRunConfiguration* run_config,
+  EventLifetimeManager* event_lifetime_manager)
 {
 #if defined(__AVX2__) and defined(__FMA__)
   bool old_nsamp = nsamp_;
-  bool good = SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config);
+  bool good = SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config, event_lifetime_manager);
   if(nsamp_!=old_nsamp) {
     auto* host_info = calin::provenance::system_info::the_host_info();
     const unsigned nv_samp = (nsamp_+15)/16;

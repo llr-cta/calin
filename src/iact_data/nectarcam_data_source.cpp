@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <string>
 #include <memory>
+#include <numeric>
 
 #if !defined(__clang__) and defined(__GNUC__) && __GNUC__<5
 namespace std {
@@ -646,6 +647,7 @@ copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
       if((ipix&(nblock_copy-1)) == 0) {
         unsigned icount = (std::min(ipix+nblock_copy,npix) - ipix)*nsample;
         std::copy(cta_wf_data, cta_wf_data+icount, calin_wf_raw_data);
+        // std::iota(calin_wf_raw_data, calin_wf_raw_data+icount, uint16_t(ipix*nsample));
         calin_wf_raw_data += icount;
       }
 

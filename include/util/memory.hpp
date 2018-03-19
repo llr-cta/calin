@@ -34,73 +34,78 @@
 
 namespace calin { namespace util { namespace memory {
 
-template<typename T> inline T* aligned_calloc(const size_t num, const size_t log2_align = calin::provenance::system_info::the_host_info()->log2_simd_vec_size())
+#if defined(__AVX512F__)
+constexpr size_t default_align = 512/8;
+#elif defined(__AVX__)
+constexpr size_t default_align = 256/8;
+#else
+constexpr size_t default_align = 128/8;
+#endif
+
+template<typename T> inline T* aligned_calloc(const size_t num, size_t align = default_align)
 {
-  const size_t align = 1<<log2_align;
-  assert(align >= sizeof(void*));
+  align = std::max(std::max(sizeof(T),sizeof(void*)), align);
   void* ptr = nullptr;
-//  const size_t alloc_size = ((num*sizeof(T)+align-1)>>log2_align)<<log2_align;
   const size_t alloc_size = num*sizeof(T)+align;
-//  std::cout << num << ' ' << sizeof(T) << ' ' << alloc_size << ' ' << align << ' ' << log2_align << '\n';
   if(::posix_memalign(&ptr, align, alloc_size)==0)
     return reinterpret_cast<T*>(ptr);
   return nullptr;
 }
 
-template<typename T> inline bool aligned_calloc(T*& ptr, const size_t num, const size_t log2_align = calin::provenance::system_info::the_host_info()->log2_simd_vec_size())
+template<typename T> inline bool aligned_calloc(T*& ptr, const size_t num, const size_t align = default_align)
 {
-  ptr = aligned_calloc<T>(num, log2_align);
+  ptr = aligned_calloc<T>(num, align);
   return ptr != nullptr;
 }
 
-template<typename T> inline bool aligned_calloc(T*__restrict__& ptr, const size_t num, const size_t log2_align = calin::provenance::system_info::the_host_info()->log2_simd_vec_size())
+template<typename T> inline bool aligned_calloc(T*__restrict__& ptr, const size_t num, const size_t align = default_align)
 {
-  ptr = aligned_calloc<T>(num, log2_align);
+  ptr = aligned_calloc<T>(num, align);
   return ptr != nullptr;
 }
 
-template<typename T> inline bool aligned_recalloc(T*& ptr, const size_t num, const size_t log2_align = calin::provenance::system_info::the_host_info()->log2_simd_vec_size())
+template<typename T> inline bool aligned_recalloc(T*& ptr, const size_t num, const size_t align = default_align)
 {
   ::free(ptr);
-  ptr = aligned_calloc<T>(num, log2_align);
+  ptr = aligned_calloc<T>(num, align);
   return ptr != nullptr;
 }
 
-template<typename T> inline bool aligned_recalloc(T*__restrict__& ptr, const size_t num, const size_t log2_align = calin::provenance::system_info::the_host_info()->log2_simd_vec_size())
+template<typename T> inline bool aligned_recalloc(T*__restrict__& ptr, const size_t num, const size_t align = default_align)
 {
   ::free(ptr);
-  ptr = aligned_calloc<T>(num, log2_align);
+  ptr = aligned_calloc<T>(num, align);
   return ptr != nullptr;
 }
 
-template<typename T> inline T* safe_aligned_calloc(const size_t num, const size_t log2_align = calin::provenance::system_info::the_host_info()->log2_simd_vec_size())
+template<typename T> inline T* safe_aligned_calloc(const size_t num, const size_t align = default_align)
 {
-  T* ptr = aligned_calloc<T>(num, log2_align);
+  T* ptr = aligned_calloc<T>(num, align);
   if(ptr != nullptr)return ptr;
   throw std::runtime_error("Could not allocate array of " + std::to_string(num) +
     " elements of size " + std::to_string(sizeof(T)) + " bytes");
 }
 
-template<typename T> inline void safe_aligned_calloc(T*& ptr, const size_t num, const size_t log2_align = calin::provenance::system_info::the_host_info()->log2_simd_vec_size())
+template<typename T> inline void safe_aligned_calloc(T*& ptr, const size_t num, const size_t align = default_align)
 {
-  ptr = safe_aligned_calloc<T>(num, log2_align);
+  ptr = safe_aligned_calloc<T>(num, align);
 }
 
-template<typename T> inline void safe_aligned_calloc(T*__restrict__& ptr, const size_t num, const size_t log2_align = calin::provenance::system_info::the_host_info()->log2_simd_vec_size())
+template<typename T> inline void safe_aligned_calloc(T*__restrict__& ptr, const size_t num, const size_t align = default_align)
 {
-  ptr = safe_aligned_calloc<T>(num, log2_align);
+  ptr = safe_aligned_calloc<T>(num, align);
 }
 
-template<typename T> inline void safe_aligned_recalloc(T*& ptr, const size_t num, const size_t log2_align = calin::provenance::system_info::the_host_info()->log2_simd_vec_size())
+template<typename T> inline void safe_aligned_recalloc(T*& ptr, const size_t num, const size_t align = default_align)
 {
   free(ptr);
-  ptr = safe_aligned_calloc<T>(num, log2_align);
+  ptr = safe_aligned_calloc<T>(num, align);
 }
 
-template<typename T> inline void safe_aligned_recalloc(T*__restrict__& ptr, const size_t num, const size_t log2_align = calin::provenance::system_info::the_host_info()->log2_simd_vec_size())
+template<typename T> inline void safe_aligned_recalloc(T*__restrict__& ptr, const size_t num, const size_t align = default_align)
 {
   free(ptr);
-  ptr = safe_aligned_calloc<T>(num, log2_align);
+  ptr = safe_aligned_calloc<T>(num, align);
 }
 
 } } } // namespace calin::util::memory

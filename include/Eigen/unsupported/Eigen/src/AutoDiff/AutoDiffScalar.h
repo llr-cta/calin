@@ -108,7 +108,9 @@ class AutoDiffScalar
     template<typename OtherDerType>
     AutoDiffScalar(const AutoDiffScalar<OtherDerType>& other
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-    , typename internal::enable_if<internal::is_same<Scalar, typename internal::traits<typename internal::remove_all<OtherDerType>::type>::Scalar>::value,void*>::type = 0
+    , typename internal::enable_if<
+            internal::is_same<Scalar, typename internal::traits<typename internal::remove_all<OtherDerType>::type>::Scalar>::value
+        &&  internal::is_convertible<OtherDerType,DerType>::value , void*>::type = 0
 #endif
     )
       : m_value(other.value()), m_derivatives(other.derivatives())
@@ -497,31 +499,15 @@ struct make_coherent_impl<Matrix<A_Scalar, A_Rows, A_Cols, A_Options, A_MaxRows,
 
 } // end namespace internal
 
-template<typename A_Scalar, int A_Rows, int A_Cols, int A_Options, int A_MaxRows, int A_MaxCols, typename BinOp>
-struct ScalarBinaryOpTraits<Matrix<A_Scalar, A_Rows, A_Cols, A_Options, A_MaxRows, A_MaxCols>,A_Scalar,BinOp>
-{
-  enum { Defined = 1 };
-  typedef Matrix<A_Scalar, A_Rows, A_Cols, A_Options, A_MaxRows, A_MaxCols> ReturnType;
-};
-
-template<typename A_Scalar, int A_Rows, int A_Cols, int A_Options, int A_MaxRows, int A_MaxCols, typename BinOp>
-struct ScalarBinaryOpTraits<A_Scalar, Matrix<A_Scalar, A_Rows, A_Cols, A_Options, A_MaxRows, A_MaxCols>, BinOp>
-{
-  enum { Defined = 1 };
-  typedef Matrix<A_Scalar, A_Rows, A_Cols, A_Options, A_MaxRows, A_MaxCols> ReturnType;
-};
-
 template<typename DerType, typename BinOp>
 struct ScalarBinaryOpTraits<AutoDiffScalar<DerType>,typename DerType::Scalar,BinOp>
 {
-  enum { Defined = 1 };
   typedef AutoDiffScalar<DerType> ReturnType;
 };
 
 template<typename DerType, typename BinOp>
 struct ScalarBinaryOpTraits<typename DerType::Scalar,AutoDiffScalar<DerType>, BinOp>
 {
-  enum { Defined = 1 };
   typedef AutoDiffScalar<DerType> ReturnType;
 };
 
@@ -578,6 +564,15 @@ inline AutoDiffScalar<typename Eigen::internal::remove_all<DerType>::type::Plain
   typedef AutoDiffScalar<typename Eigen::internal::remove_all<DerType>::type::PlainObject> ADS;
   return (x > y ? ADS(x) : ADS(y));
 }
+template<typename DerType>
+inline AutoDiffScalar<typename Eigen::internal::remove_all<DerType>::type::PlainObject> (min)(const AutoDiffScalar<DerType>& x, const AutoDiffScalar<DerType>& y) {
+  return (x.value() < y.value() ? x : y);
+}
+template<typename DerType>
+inline AutoDiffScalar<typename Eigen::internal::remove_all<DerType>::type::PlainObject> (max)(const AutoDiffScalar<DerType>& x, const AutoDiffScalar<DerType>& y) {
+  return (x.value() >= y.value() ? x : y);
+}
+
 
 EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(abs,
   using std::abs;
@@ -673,18 +668,26 @@ EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(cosh,
 #undef EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY
 
 template<typename DerType> struct NumTraits<AutoDiffScalar<DerType> >
-  : NumTraits< typename NumTraits<typename DerType::Scalar>::Real >
+  : NumTraits< typename NumTraits<typename internal::remove_all<DerType>::type::Scalar>::Real >
 {
-  typedef AutoDiffScalar<Matrix<typename NumTraits<typename DerType::Scalar>::Real,DerType::RowsAtCompileTime,DerType::ColsAtCompileTime,
-                                0, DerType::MaxRowsAtCompileTime, DerType::MaxColsAtCompileTime> > Real;
+  typedef typename internal::remove_all<DerType>::type DerTypeCleaned;
+  typedef AutoDiffScalar<Matrix<typename NumTraits<typename DerTypeCleaned::Scalar>::Real,DerTypeCleaned::RowsAtCompileTime,DerTypeCleaned::ColsAtCompileTime,
+                                0, DerTypeCleaned::MaxRowsAtCompileTime, DerTypeCleaned::MaxColsAtCompileTime> > Real;
   typedef AutoDiffScalar<DerType> NonInteger;
   typedef AutoDiffScalar<DerType> Nested;
-  typedef typename NumTraits<typename DerType::Scalar>::Literal Literal;
+  typedef typename NumTraits<typename DerTypeCleaned::Scalar>::Literal Literal;
   enum{
     RequireInitialization = 1
   };
 };
 
 }
+
+namespace std {
+template <typename T>
+class numeric_limits<Eigen::AutoDiffScalar<T> >
+  : public numeric_limits<typename T::Scalar> {};
+
+}  // namespace std
 
 #endif // EIGEN_AUTODIFF_SCALAR_H
