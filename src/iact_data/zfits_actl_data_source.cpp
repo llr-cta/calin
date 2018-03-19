@@ -273,6 +273,7 @@ ZFITSACTLDataSourceOpener::ZFITSACTLDataSourceOpener(std::string filename,
           continue;
         }
 
+        // This is verbose but pretty simple
         if(i<10) {
           filename_i = filename + ".";
           filename_i += "0";
