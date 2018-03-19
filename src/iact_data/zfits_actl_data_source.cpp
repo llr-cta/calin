@@ -323,6 +323,8 @@ ZFITSACTLDataSourceOpener::ZFITSACTLDataSourceOpener(std::string filename,
             continue;
           }
         }
+
+        break;
       }
     }
   }
