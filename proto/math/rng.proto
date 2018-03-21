@@ -101,7 +101,7 @@ message NR3_SIMD_RNGCoreData
     [(CFO).desc = "RNG seeds for each of the streams."];
 }
 
-message RNGData
+message RNGCoreData
 {
   oneof core
   {
@@ -116,6 +116,12 @@ message RNGData
     NR3_SIMD_RNGCoreData nr3_avx2_core  = 5
       [(CFO).desc = "NR3 AVX2 core state data."];
   }
+}
+
+message RNGData
+{
+  RNGCoreData core                      = 1
+    [(CFO).desc = "Core state data"];
   bool bm_hascached                     = 10
     [(CFO).desc = "Flag for Box-Muller cached value available."];
   double bm_cachedval                   = 11

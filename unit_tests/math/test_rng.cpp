@@ -138,7 +138,7 @@ TYPED_TEST_P(CoreTests, SaveAndRestoreState64)
     std::vector<uint64_t> data1;
     for(unsigned i=0;i<N;i++)
       data0.push_back(core.uniform_uint64());
-    calin::ix::math::rng::RNGData proto;
+    calin::ix::math::rng::RNGCoreData proto;
     core.save_to_proto(&proto);
 #if 0
     google::protobuf::io::OstreamOutputStream stream(&std::cout);
@@ -166,7 +166,7 @@ TYPED_TEST_P(CoreTests, RestoreFromSeedOnlyProto)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   TypeParam core(seed);
-  calin::ix::math::rng::RNGData proto;
+  calin::ix::math::rng::RNGCoreData proto;
   TypeParam::mutable_core_data(&proto)->set_seed(seed);
 #if 0
   google::protobuf::io::OstreamOutputStream stream(&std::cout);
@@ -252,7 +252,7 @@ TEST(TestRNG_NR3_AVX2_RNGCore, RestoreTo_NR3_EmulateSIMD_RNGCore)
   for(unsigned N=0; N<100; N++) {
     NR3_AVX2_RNGCore rng_avx(seed);
     for(unsigned i=0;i<N;i++)rng_avx.uniform_uint64();
-    calin::ix::math::rng::RNGData proto;
+    calin::ix::math::rng::RNGCoreData proto;
     rng_avx.save_to_proto(&proto);
     NR3_EmulateSIMD_RNGCore<4> rng_simd(*rng_avx.mutable_core_data(&proto), true);
     for(unsigned i=0;i<100;i++) {
@@ -268,7 +268,7 @@ TEST(TestRNG_NR3_AVX2_RNGCore, ConstructFrom_NR3_EmulateSIMD_RNGCore)
   for(unsigned N=0; N<100; N++) {
     NR3_EmulateSIMD_RNGCore<4> rng_simd(seed);
     for(unsigned i=0;i<N;i++)rng_simd.uniform_uint64();
-    calin::ix::math::rng::RNGData proto;
+    calin::ix::math::rng::RNGCoreData proto;
     rng_simd.save_to_proto(&proto);
     NR3_AVX2_RNGCore rng_avx(*rng_simd.mutable_core_data(&proto), true);
     for(unsigned i=0;i<100;i++) {
@@ -511,7 +511,7 @@ TEST(TestRNG, RestoreFromSeedOnlyProto)
   uint64_t seed = RNG::uint64_from_random_device();
   RNG rng(seed);
   calin::ix::math::rng::RNGData proto;
-  proto.mutable_nr3_core()->set_seed(seed);
+  proto.mutable_core()->mutable_nr3_core()->set_seed(seed);
   RNG rng2(proto);
   for(unsigned i=0;i<1000;i++)
     EXPECT_EQ(rng.normal(), rng2.normal());

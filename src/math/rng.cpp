@@ -90,21 +90,19 @@ void RNGCore::bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes, ui
   }
 }
 
-RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGData& proto,
+RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGCoreData& proto,
                                     bool restore_state)
 {
   switch(proto.core_case()) {
-    case ix::math::rng::RNGData::kRanlux48Core:
+    case ix::math::rng::RNGCoreData::kRanlux48Core:
       return new Ranlux48RNGCore(proto.ranlux48_core(), restore_state);
-    case ix::math::rng::RNGData::kMt19937Core:
+    case ix::math::rng::RNGCoreData::kMt19937Core:
       return new MT19937RNGCore(proto.mt19937_core(), restore_state);
-    case ix::math::rng::RNGData::kNr3Core:
+    case ix::math::rng::RNGCoreData::kNr3Core:
       return new NR3RNGCore(proto.nr3_core(), restore_state);
-    case ix::math::rng::RNGData::kNr3SimdEmu4Core:
+    case ix::math::rng::RNGCoreData::kNr3SimdEmu4Core:
       return new NR3_EmulateSIMD_RNGCore<4>(proto.nr3_simd_emu4_core(), restore_state);
-    case ix::math::rng::RNGData::kNr3Avx2Core:
-      // Ugh : placement new here to overcome problem with AVX members
-      // return new(calin::util::memory::aligned_calloc<NR3_AVX2_RNGCore>(1)) NR3_AVX2_RNGCore(proto.nr3_avx2_core(), restore_state);
+    case ix::math::rng::RNGCoreData::kNr3Avx2Core:
       return new NR3_AVX2_RNGCore(proto.nr3_avx2_core(), restore_state);
     default:
       LOG(ERROR) << "Unrecognised RNG type case : " << proto.core_case();
@@ -161,7 +159,7 @@ RNG::RNG(RNGCore* core, bool adopt_core):
 }
 
 RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state, const std::string& created_by):
-    core_(RNGCore::create_from_proto(proto, restore_state)), adopt_core_(true)
+    core_(RNGCore::create_from_proto(proto.core(), restore_state)), adopt_core_(true)
 {
   if(restore_state)
   {
@@ -180,7 +178,7 @@ RNG::~RNG()
 
 void RNG::save_to_proto(ix::math::rng::RNGData* proto) const
 {
-  core_->save_to_proto(proto);
+  core_->save_to_proto(proto->mutable_core());
   proto->set_bm_hascached(bm_hascached_);
   proto->set_bm_cachedval(bm_hascached_ ? bm_cachedval_ : 0.0);
 }
@@ -511,7 +509,7 @@ NR3RNGCore::~NR3RNGCore()
   // nothing to see here
 }
 
-void NR3RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
+void NR3RNGCore::save_to_proto(ix::math::rng::RNGCoreData* proto) const
 {
   auto* data = proto->mutable_nr3_core();
   save_to_proto(data);
@@ -547,9 +545,14 @@ Ranlux48RNGCore::~Ranlux48RNGCore()
   // nothing to see here
 }
 
-void Ranlux48RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
+void Ranlux48RNGCore::save_to_proto(ix::math::rng::RNGCoreData* proto) const
 {
   auto* data = proto->mutable_ranlux48_core();
+  save_to_proto(data);
+}
+
+void Ranlux48RNGCore::save_to_proto(ix::math::rng::Ranlux48RNGCoreData* data) const
+{
   data->set_seed(gen_seed_);
   data->set_calls(gen_calls_);
   data->set_state_saved(true);
@@ -578,9 +581,14 @@ MT19937RNGCore::~MT19937RNGCore()
   // nothing to see here
 }
 
-void MT19937RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
+void MT19937RNGCore::save_to_proto(ix::math::rng::RNGCoreData* proto) const
 {
   auto* data = proto->mutable_mt19937_core();
+  save_to_proto(data);
+}
+
+void MT19937RNGCore::save_to_proto(ix::math::rng::STLRNGCoreData* data) const
+{
   data->set_seed(gen_seed_);
   data->set_calls(gen_calls_);
   data->set_state_saved(true);
@@ -651,9 +659,14 @@ NR3_AVX2_RNGCore::NR3_AVX2_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& pr
 #endif
 }
 
-void NR3_AVX2_RNGCore::save_to_proto(ix::math::rng::RNGData* proto) const
+void NR3_AVX2_RNGCore::save_to_proto(ix::math::rng::RNGCoreData* proto) const
 {
   auto* data = proto->mutable_nr3_avx2_core();
+  save_to_proto(data);
+}
+
+void NR3_AVX2_RNGCore::save_to_proto(ix::math::rng::NR3_SIMD_RNGCoreData* data) const
+{
   data->set_seed(seed_);
 #if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
   data->set_calls(calls_);

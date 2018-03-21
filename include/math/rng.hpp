@@ -73,11 +73,11 @@ public:
   virtual void bulk_uniform_uint64(void* buffer, std::size_t nbytes);
   virtual void bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes,
     uint64_t mask = 0xFFFFFFFFFFFFFFFFU);
-  virtual void save_to_proto(ix::math::rng::RNGData* proto) const = 0;
-  ix::math::rng::RNGData* as_proto() const {
-    auto* proto = new ix::math::rng::RNGData;
+  virtual void save_to_proto(ix::math::rng::RNGCoreData* proto) const = 0;
+  ix::math::rng::RNGCoreData* as_proto() const {
+    auto* proto = new ix::math::rng::RNGCoreData;
     save_to_proto(proto); return proto; }
-  static RNGCore* create_from_proto(const ix::math::rng::RNGData& proto,
+  static RNGCore* create_from_proto(const ix::math::rng::RNGCoreData& proto,
                                     bool restore_state = false);
 };
 
@@ -228,11 +228,11 @@ class NR3RNGCore: public RNGCore
   }
 
   void save_to_proto(ix::math::rng::NR3RNGCoreData* data) const;
-  void save_to_proto(ix::math::rng::RNGData* proto) const override;
+  void save_to_proto(ix::math::rng::RNGCoreData* proto) const override;
 
-  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
+  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGCoreData* proto) {
     return proto->mutable_nr3_core(); }
-  static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
+  static const ix_core_data_type& core_data(const ix::math::rng::RNGCoreData& proto)
   { return proto.nr3_core(); }
 
  private:
@@ -284,11 +284,12 @@ class Ranlux48RNGCore: public RNGCore
     return res;
   }
 
-  void save_to_proto(ix::math::rng::RNGData* proto) const override;
+  void save_to_proto(ix::math::rng::Ranlux48RNGCoreData* proto) const;
+  void save_to_proto(ix::math::rng::RNGCoreData* proto) const override;
 
-  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
+  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGCoreData* proto) {
     return proto->mutable_ranlux48_core(); }
-  static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
+  static const ix_core_data_type& core_data(const ix::math::rng::RNGCoreData& proto)
   { return proto.ranlux48_core(); }
 
  private:
@@ -314,11 +315,12 @@ class MT19937RNGCore: public RNGCore
 
   uint64_t uniform_uint64() override { gen_calls_++; return gen_(); }
 
-  void save_to_proto(ix::math::rng::RNGData* proto) const override;
+  void save_to_proto(ix::math::rng::STLRNGCoreData* proto) const;
+  void save_to_proto(ix::math::rng::RNGCoreData* proto) const override;
 
-  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
+  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGCoreData* proto) {
     return proto->mutable_mt19937_core(); }
-  static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
+  static const ix_core_data_type& core_data(const ix::math::rng::RNGCoreData& proto)
   { return proto.mt19937_core(); }
 
  private:
@@ -409,9 +411,8 @@ public:
     return vec_dev_[ndev_++];
   }
 
-  void save_to_proto(ix::math::rng::RNGData* proto) const override
+  void save_to_proto(ix::math::rng::NR3_SIMD_RNGCoreData* data) const
   {
-    auto* data = proto->mutable_nr3_simd_emu4_core();
     data->set_seed(seed_);
     data->set_calls(calls_);
     data->set_state_saved(true);
@@ -427,9 +428,14 @@ public:
     for(unsigned i=NSTREAM; i>ndev_;)data->add_dev(vec_dev_[--i]);
   }
 
-  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
+  void save_to_proto(ix::math::rng::RNGCoreData* proto) const override
+  {
+    save_to_proto(proto->mutable_nr3_simd_emu4_core());
+  }
+
+  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGCoreData* proto) {
     return proto->mutable_nr3_simd_emu4_core(); }
-  static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
+  static const ix_core_data_type& core_data(const ix::math::rng::RNGCoreData& proto)
   { return proto.nr3_simd_emu4_core(); }
 
 private:
@@ -599,11 +605,12 @@ private:
   void bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes,
     uint64_t mask = 0xFFFFFFFFFFFFFFFFU) override;
 
-  void save_to_proto(ix::math::rng::RNGData* proto) const override;
+  void save_to_proto(ix::math::rng::NR3_SIMD_RNGCoreData* proto) const;
+  void save_to_proto(ix::math::rng::RNGCoreData* proto) const override;
 
-  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGData* proto) {
+  static ix_core_data_type* mutable_core_data(ix::math::rng::RNGCoreData* proto) {
     return proto->mutable_nr3_avx2_core(); }
-  static const ix_core_data_type& core_data(const ix::math::rng::RNGData& proto)
+  static const ix_core_data_type& core_data(const ix::math::rng::RNGCoreData& proto)
   { return proto.nr3_avx2_core(); }
 
 #ifndef SWIG
