@@ -74,6 +74,10 @@ public:
   unsigned num_sources() override {
     return nsource_;
   }
+  std::string source_name(unsigned isource) override {
+    if(isource>=nsource_)return {};
+    return std::to_string(isource);
+  }
   data_source_type* open(unsigned isource) override {
     if(isource>=nsource_)return nullptr;
     return new UnitTestIntegerDataSource(count_, count_*isource);

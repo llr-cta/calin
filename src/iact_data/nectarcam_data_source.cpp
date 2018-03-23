@@ -62,7 +62,8 @@ using namespace calin::util::log;
 #define TEST_ANYARRAY_TYPES 0
 
 NectarCamCameraEventDecoder::NectarCamCameraEventDecoder(
-    const std::string& filename, unsigned run_number, const config_type& config):
+  const std::string& filename,
+  unsigned run_number, const config_type& config):
   zfits_data_source::CTACameraEventDecoder(), config_(config),
   filename_(filename), run_number_(run_number)
 {
@@ -763,7 +764,7 @@ NectarCamZFITSDataSource(const std::string& filename,
   calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
     decoder_ = new NectarCamCameraEventDecoder(filename,
       calin::util::file::extract_first_number_from_filename(filename),
-      decoder_config), false, config)
+      decoder_config), false /* we delete it! */, config)
 {
   // nothing to see here
 }

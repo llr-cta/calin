@@ -164,6 +164,8 @@ void ParallelEventDispatcher::process_nectarcam_zfits_run(
   delete actl_run_header;
   zfits_actl_src.release_borrowed_event(actl_sample_event);
   zfits_actl_src.set_next_index(0);
+  for(const auto& ifilename : zfits_actl_src.source_names())
+    run_config.add_fragment_filename(ifilename);
 
   dispatch_run_configuration(&run_config);
 

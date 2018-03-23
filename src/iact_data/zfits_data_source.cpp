@@ -320,7 +320,10 @@ ZFITSDataSource::ZFITSDataSource(const std::string& filename,
   decoder_(decoder), adopt_decoder_(adopt_decoder),
   run_config_(source_->get_run_configuration())
 {
-  // nothing to see here
+  if(run_config_) {
+    for(const auto& ifilename : source_names())
+      run_config_->add_fragment_filename(ifilename);
+  }
 }
 
 ZFITSDataSource::~ZFITSDataSource()
@@ -365,6 +368,11 @@ ZFITSDataSourceOpener::~ZFITSDataSourceOpener()
 unsigned ZFITSDataSourceOpener::num_sources()
 {
   return zfits_actl_opener_->num_sources();
+}
+
+std::string ZFITSDataSourceOpener::source_name(unsigned isource)
+{
+  return zfits_actl_opener_->source_name(isource);
 }
 
 ZFITSSingleFileDataSource* ZFITSDataSourceOpener::open(unsigned isource)

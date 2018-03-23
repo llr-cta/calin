@@ -37,11 +37,14 @@ enum SerializedRawHeaderType {
 
 message TelescopeRunConfiguration {
   string filename                                          = 1 [
-    (CFO).desc = "Filename of data file." ];
+    (CFO).desc = "Primary filename of run data." ];
   uint32 run_number                                        = 2 [
     (CFO).desc = "Run number." ];
   common_types.Time run_start_time                         = 3 [
     (CFO).desc = "Start date and time of run." ];
+  repeated string fragment_filename                        = 4 [
+    (CFO).desc = "Filenames of run data fragments." ];
+
   repeated int32 configured_channel_index                  = 11 [
     (CFO).desc = "Index within list of configured channels for each channel "
       "in the camera, or -1 if channel is not configued." ];

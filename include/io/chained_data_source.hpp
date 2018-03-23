@@ -34,6 +34,13 @@ public:
   CALIN_TYPEALIAS(data_source_type, DST);
   virtual ~DataSourceOpener() { }
   virtual unsigned num_sources() = 0;
+  virtual std::string source_name(unsigned isource) = 0;
+  std::vector<std::string> source_names() {
+    std::vector<std::string> source_names;
+    for(unsigned isource=0; isource<this->num_sources(); isource++)
+      source_names.push_back(this->source_name(isource));
+    return source_names;
+  }
   virtual DST* open(unsigned isource) = 0;
 };
 
@@ -53,6 +60,9 @@ public:
   std::string filename(unsigned isource) {
     if(isource<filenames_.size())return filenames_[isource];
     return {};
+  }
+  std::string source_name(unsigned isource) override {
+    return filename(isource);
   }
   virtual DST* open_filename(const std::string& filename) = 0;
 protected:
@@ -96,6 +106,10 @@ public:
   }
 
   unsigned source_index() const { return isource_; }
+  std::string source_name() const { return opener_->source_name(isource_); }
+  std::string source_name(unsigned isource) const {
+    return opener_->source_name(isource); }
+  std::vector<std::string> source_names() { return opener_->source_names(); }
 
 protected:
   virtual void open_file()

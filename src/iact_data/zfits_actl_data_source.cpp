@@ -249,11 +249,7 @@ ZFITSACTLDataSourceOpener::ZFITSACTLDataSourceOpener(std::string filename,
       filename = filename.substr(0, ifind);
 
       unsigned istart = 0;
-      if(not is_file(filename+".1"+extension)
-        and not is_file(filename+".01"+extension)
-        and not is_file(filename+".001"+extension)
-        and not is_file(filename+".0001"+extension)
-        and not is_file(filename+".00001"+extension))
+      if(not is_file(filename+".1"+extension))
       {
         ifind = filename.rfind('.');
         if(ifind != std::string::npos and
@@ -264,67 +260,21 @@ ZFITSACTLDataSourceOpener::ZFITSACTLDataSourceOpener(std::string filename,
         }
       }
 
-      for(unsigned i=istart+1; config_.max_file_fragments()==0 or
-        filenames_.size()<config_.max_file_fragments() ; ++i)
+      bool fragment_found = true;
+      for(unsigned i=istart+1; fragment_found and (config_.max_file_fragments()==0 or
+        filenames_.size()<config_.max_file_fragments()) ; ++i)
       {
-        std::string filename_i { filename+"."+std::to_string(i)+extension };
-        if(is_file(filename_i)) {
-          filenames_.emplace_back(filename_i);
-          continue;
-        }
-
-        // This is verbose but pretty simple
-        if(i<10) {
-          filename_i = filename + ".";
-          filename_i += "0";
-          filename_i += std::to_string(i)+extension;
-
+        fragment_found = false;
+        std::string fragment_i { std::to_string(i) };
+        do {
+          std::string filename_i { filename+"."+fragment_i+extension };
           if(is_file(filename_i)) {
             filenames_.emplace_back(filename_i);
-            continue;
+            fragment_found = true;
+          } else {
+            fragment_i = std::string("0") + fragment_i;
           }
-        }
-
-        if(i<100) {
-          filename_i = filename + ".";
-          if(i<10) filename_i += "00";
-          else filename_i += "0";
-          filename_i += std::to_string(i)+extension;
-
-          if(is_file(filename_i)) {
-            filenames_.emplace_back(filename_i);
-            continue;
-          }
-        }
-
-        if(i<1000) {
-          filename_i = filename + ".";
-          if(i<10) filename_i += "000";
-          else if(i<100) filename_i += "00";
-          else filename_i += "0";
-          filename_i += std::to_string(i)+extension;
-
-          if(is_file(filename_i)) {
-            filenames_.emplace_back(filename_i);
-            continue;
-          }
-        }
-
-        if(i<10000) {
-          filename_i = filename + ".";
-          if(i<10) filename_i += "0000";
-          else if(i<100) filename_i += "000";
-          else if(i<1000) filename_i += "00";
-          else filename_i += "0";
-          filename_i += std::to_string(i)+extension;
-
-          if(is_file(filename_i)) {
-            filenames_.emplace_back(filename_i);
-            continue;
-          }
-        }
-
-        break;
+        }while(not fragment_found and fragment_i.size() <= 6);
       }
     }
   }
@@ -338,6 +288,12 @@ ZFITSACTLDataSourceOpener::~ZFITSACTLDataSourceOpener()
 unsigned ZFITSACTLDataSourceOpener::num_sources()
 {
   return filenames_.size();
+}
+
+std::string ZFITSACTLDataSourceOpener::source_name(unsigned isource)
+{
+  if(isource >= filenames_.size())return {};
+  return filenames_[isource];
 }
 
 calin::iact_data::zfits_actl_data_source::
