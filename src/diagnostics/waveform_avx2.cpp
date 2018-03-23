@@ -195,8 +195,8 @@ bool AVX2_Unroll8_WaveformStatsParallelVisitor::merge_results()
 
 #if defined(__AVX2__)
 void AVX2_Unroll8_WaveformStatsParallelVisitor::do_8_dft(
-  __m256*__restrict__& psd_sum, __m256*__restrict__& psd_sumsq,
-  __m256*__restrict__& ac_sum, __m256*__restrict__& ac_sumsq)
+  __m256d*__restrict__& psd_sum, __m256d*__restrict__& psd_sumsq,
+  __m256d*__restrict__& ac_sum, __m256d*__restrict__& ac_sumsq)
 {
   // This function is extremely complex
 

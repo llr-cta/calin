@@ -140,8 +140,8 @@ public:
 
 protected:
 #if defined(__AVX2__) and not defined(SWIG)
-  void do_8_dft(__m256*__restrict__& psd_sum, __m256*__restrict__& psd_sumsq,
-    __m256*__restrict__& ac_sum, __m256*__restrict__& ac_sumsq);
+  void do_8_dft(__m256d*__restrict__& psd_sum, __m256d*__restrict__& psd_sumsq,
+    __m256d*__restrict__& ac_sum, __m256d*__restrict__& ac_sumsq);
   void process_8_events();
   void merge_partials();
 
