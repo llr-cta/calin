@@ -321,6 +321,7 @@ ZFITSDataSource::ZFITSDataSource(const std::string& filename,
   run_config_(source_->get_run_configuration())
 {
   if(run_config_) {
+    run_config_->clear_fragment_filename();
     for(const auto& ifilename : source_names())
       run_config_->add_fragment_filename(ifilename);
   }

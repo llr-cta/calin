@@ -346,6 +346,7 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   const DataModel::CameraEvent* cta_event)
 {
   calin_run_config->set_filename(filename_);
+  calin_run_config->add_fragment_filename(filename_);
   calin_run_config->set_run_number(run_number_);
 
   switch(config_.camera_type())
