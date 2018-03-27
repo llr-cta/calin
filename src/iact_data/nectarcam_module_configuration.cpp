@@ -161,6 +161,14 @@ calin::iact_data::nectarcam_module_configuration::decode_nmc_xml_file(
                 if(sub_element->hasAttribute(att_daqType)) {
                   module->set_daq_mode(to_string(sub_element->getAttribute(att_daqType)));
                 }
+              } else if (to_string(sub_element->getTagName()) == "CntrlFpga") {
+                static const XMLCh att_NectarFreq[] = {
+                  chLatin_N, chLatin_e, chLatin_c, chLatin_t, chLatin_a, chLatin_r,
+                  chLatin_F, chLatin_r, chLatin_e, chLatin_q, chNull };
+                if(sub_element->hasAttribute(att_NectarFreq)) {
+                  uint32_t mode = calin::util::string::int32_from_string(to_string(sub_element->getAttribute(att_NectarFreq)));
+                  module->set_daq_nominal_sampling_frequency(2000.0/(mode+1));
+                }
               }
               sub_element = sub_element->getNextElementSibling();
             }

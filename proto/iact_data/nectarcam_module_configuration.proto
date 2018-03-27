@@ -44,6 +44,10 @@ message NectarCamModuleConfiguration {
   string daq_mode                                          = 11 [
     (CFO).desc = "NectarCam DAQ mode." ];
 
+  double daq_nominal_sampling_frequency                    = 12 [
+    (CFO).desc = "NectarCam DAQ nominal sampling frequency.",
+    (CFO).units = "MHz" ];
+
   repeated double hvpa_voltage                             = 20 [
     (CFO).desc = "HVPA voltages for channels in modules.", (CFO).units = "volt" ];
 };
