@@ -133,7 +133,7 @@ def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False,
     else:
         raise Exception('Unknown histogram type: '+str(type(h)))
     if plot_as_pdf:
-        hy /= h.sum_w()/abs(h.dxval()*xscale)
+        hy /= h.sum_w()*abs(h.dxval()*xscale)
     elif plot_as_pmf:
         hy /= h.sum_w()
     hx = np.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
