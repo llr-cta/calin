@@ -38,13 +38,16 @@ message NectarCamModuleConfiguration {
   string mac_address                                       = 3 [
     (CFO).desc = "MAC address of module." ];
 
-  uint32 daq_num_samples                                   = 10 [
+  uint32 num_samples                                       = 10 [
     (CFO).desc = "Number of samples to read out." ];
 
   string daq_mode                                          = 11 [
-    (CFO).desc = "NectarCam DAQ mode." ];
+    (CFO).desc = "NectarCam FEB DAQ mode." ];
 
-  double daq_nominal_sampling_frequency                    = 12 [
+  uint32 clock_divisor                                     = 12 [
+    (CFO).desc = "FEB clock divisor such that sampling rate is 2GHz/divisor." ];
+
+  double nominal_sampling_frequency                        = 13 [
     (CFO).desc = "NectarCam DAQ nominal sampling frequency.",
     (CFO).units = "MHz" ];
 

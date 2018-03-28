@@ -154,7 +154,7 @@ calin::iact_data::nectarcam_module_configuration::decode_nmc_xml_file(
               } else if (to_string(sub_element->getTagName()) == "CntrlDaq") {
                 static const XMLCh att_nf[] = { chLatin_n, chLatin_f, chNull };
                 if(sub_element->hasAttribute(att_nf)) {
-                  module->set_daq_num_samples(calin::util::string::int32_from_string(to_string(sub_element->getAttribute(att_nf))));
+                  module->set_num_samples(calin::util::string::int32_from_string(to_string(sub_element->getAttribute(att_nf))));
                 }
 
                 static const XMLCh att_daqType[] = { chLatin_d, chLatin_a, chLatin_q, chLatin_T, chLatin_y, chLatin_p, chLatin_e, chNull };
@@ -166,8 +166,9 @@ calin::iact_data::nectarcam_module_configuration::decode_nmc_xml_file(
                   chLatin_N, chLatin_e, chLatin_c, chLatin_t, chLatin_a, chLatin_r,
                   chLatin_F, chLatin_r, chLatin_e, chLatin_q, chNull };
                 if(sub_element->hasAttribute(att_NectarFreq)) {
-                  uint32_t mode = calin::util::string::int32_from_string(to_string(sub_element->getAttribute(att_NectarFreq)));
-                  module->set_daq_nominal_sampling_frequency(2000.0/(mode+1));
+                  uint32_t divisor = 1+calin::util::string::int32_from_string(to_string(sub_element->getAttribute(att_NectarFreq)));
+                  module->set_clock_divisor(divisor);
+                  module->set_nominal_sampling_frequency(2000.0/divisor);
                 }
               }
               sub_element = sub_element->getNextElementSibling();

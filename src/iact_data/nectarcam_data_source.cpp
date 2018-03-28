@@ -494,9 +494,9 @@ bool NectarCamCameraEventDecoder::decode_run_config(
     nsample = cta_run_header->numtraces();
   if(nsample == 0 and calin_run_config->has_nectarcam() and
       calin_run_config->nectarcam().module_size()>0) {
-    nsample = calin_run_config->nectarcam().module(0).daq_num_samples();
+    nsample = calin_run_config->nectarcam().module(0).num_samples();
     for(int imod=1; imod<calin_run_config->nectarcam().module_size(); imod++)
-      if(calin_run_config->nectarcam().module(imod).daq_num_samples() != nsample)
+      if(calin_run_config->nectarcam().module(imod).num_samples() != nsample)
         nsample = 0;
   }
   if(nsample == 0 and cta_event and cta_event->has_logain() and
@@ -506,6 +506,23 @@ bool NectarCamCameraEventDecoder::decode_run_config(
       cta_event->higain().has_waveforms())
     nsample = cta_event->higain().waveforms().num_samples();
   calin_run_config->set_num_samples(nsample);
+
+  // ==========================================================================
+  //
+  // RUN SAMPLING FREQUENCY
+  //
+  // ==========================================================================
+
+  double nominal_sampling_frequency = config_.demand_sampling_frequency();
+  if(nominal_sampling_frequency == 0.0 and calin_run_config->has_nectarcam() and
+      calin_run_config->nectarcam().module_size()>0) {
+    nominal_sampling_frequency =
+      calin_run_config->nectarcam().module(0).nominal_sampling_frequency();
+    for(int imod=1; imod<calin_run_config->nectarcam().module_size(); imod++)
+      if(calin_run_config->nectarcam().module(imod).nominal_sampling_frequency()
+        != nominal_sampling_frequency)nominal_sampling_frequency = 0;
+  }
+  calin_run_config->set_nominal_sampling_frequency(nominal_sampling_frequency);
 
   // ==========================================================================
   //

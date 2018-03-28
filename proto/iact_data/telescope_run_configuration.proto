@@ -50,13 +50,19 @@ message TelescopeRunConfiguration {
       "in the camera, or -1 if channel is not configued." ];
   repeated int32 configured_channel_id                     = 12 [
     (CFO).desc = "Id of each channel configured in the run." ];
+
   repeated int32 configured_module_index                   = 21 [
     (CFO).desc = "Index within list of configured modules for each module "
       "in the camera, or -1 if module is not configued." ];
   repeated int32 configured_module_id                      = 22 [
     (CFO).desc = "Id of each module configured in the run." ];
+
   uint32 num_samples                                       = 31 [
     (CFO).desc = "Number of samples in each trace." ];
+  double nominal_sampling_frequency                        = 32 [
+    (CFO).desc = "Nominal DAQ waveform sampling frequency, or zero if unknown. May "
+      "not be calibrated.", (CFO).units = "MHz" ];
+
   calin.ix.iact_data.instrument_layout.
       CameraLayout camera_layout                           = 101 [
     (CFO).desc = "Camera layout." ];
