@@ -67,7 +67,7 @@ scalar_analyze_waveforms(const uint16_t*__restrict__ data)
     isig_max = 0;
     sum_q = win;
     while(isamp<nsamp_) {
-      int iss = isamp-16;
+      int iss = isamp-window_n_;
       if(bkg_window_0_ == iss)bkg = win;
       if(sig_window_0_[ichan] == iss)sig = win;
       const int _samp = data[ichan*nsamp_+isamp];
