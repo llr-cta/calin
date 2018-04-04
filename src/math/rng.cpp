@@ -498,18 +498,39 @@ void RNG::generate_inverse_cdf(std::vector<std::pair<double,double>> &cdf,
 // *****************************************************************************
 // *****************************************************************************
 
+NR3RNGCore::NR3RNGCore(uint64_t seed,
+    const std::string& created_by, const std::string& comment):
+  RNGCore(),
+  seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
+  u_(C_NR3_U_INIT), v_(C_NR3_V_INIT), w_(C_NR3_W_INIT)
+{
+  u_ = seed_^v_; uniform_uint64();
+  v_ = u_; uniform_uint64();
+  w_ = v_; uniform_uint64();
+  calls_ = 0;
+  write_provenance(created_by, comment);
+}
 
 NR3RNGCore::
-NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto, bool restore_state):
-    NR3RNGCore(proto.seed())
+NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto, bool restore_state,
+    const std::string& created_by, const std::string& comment):
+  RNGCore(),
+  seed_(proto.seed()>0 ? proto.seed() : RNG::nonzero_uint64_from_random_device()),
+  u_(C_NR3_U_INIT), v_(C_NR3_V_INIT), w_(C_NR3_W_INIT)
 {
-  if(restore_state and proto.state_saved())
+  if(proto.seed()>0 and restore_state and proto.state_saved())
   {
-    calls_ = proto.calls();
     u_ = proto.u();
     v_ = proto.v();
     w_ = proto.w();
+    calls_ = proto.calls();
+  } else {
+    u_ = seed_^v_; uniform_uint64();
+    v_ = u_; uniform_uint64();
+    w_ = v_; uniform_uint64();
+    calls_ = 0;
   }
+  write_provenance(created_by, comment);
 }
 
 NR3RNGCore::~NR3RNGCore()

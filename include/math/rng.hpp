@@ -202,18 +202,10 @@ class NR3RNGCore: public RNGCore
  public:
   typedef calin::ix::math::rng::NR3RNGCoreData ix_core_data_type;
 
-  NR3RNGCore(uint64_t seed = 0):
-      RNGCore(),
-      seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
-      u_(C_NR3_U_INIT), v_(C_NR3_V_INIT), w_(C_NR3_W_INIT)
-  {
-    u_ = seed_^v_; uniform_uint64();
-    v_ = u_; uniform_uint64();
-    w_ = v_; uniform_uint64();
-    calls_ = 0;
-  }
-  NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto,
-             bool restore_state = false);
+  NR3RNGCore(uint64_t seed = 0,
+    const std::string& created_by = "", const std::string& comment = "");
+  NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto, bool restore_state = false,
+    const std::string& created_by = "", const std::string& comment = "");
   ~NR3RNGCore();
 
   uint64_t uniform_uint64() override {
