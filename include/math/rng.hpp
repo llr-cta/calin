@@ -79,6 +79,8 @@ public:
     save_to_proto(proto); return proto; }
   static RNGCore* create_from_proto(const ix::math::rng::RNGCoreData& proto,
                                     bool restore_state = false);
+protected:
+  void write_provenance(const std::string& created_by, const std::string& comment = "");
 };
 
 class RNG

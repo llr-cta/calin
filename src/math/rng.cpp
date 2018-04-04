@@ -111,6 +111,14 @@ RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGCoreData& proto,
   }
 }
 
+void RNGCore::write_provenance(
+  const std::string& created_by, const std::string& comment)
+{
+  const ix::math::rng::RNGCoreData* proto = this->as_proto();
+  calin::provenance::chronicle::register_rng_core(*proto, created_by, comment);
+  delete proto;
+}
+
 RNG::RNG(CoreType core_type, const std::string& created_by): core_(nullptr), adopt_core_(true)
 {
   switch(core_type) {
