@@ -79,6 +79,11 @@ public:
     save_to_proto(proto); return proto; }
   static RNGCore* create_from_proto(const ix::math::rng::RNGCoreData& proto,
                                     bool restore_state = false);
+
+  std::vector<uint64_t> vec_uniform_uint64(std::size_t nelements);
+  std::vector<uint64_t> vec_uniform_uint64_with_mask(std::size_t nelements,
+    uint64_t mask = 0xFFFFFFFFFFFFFFFFU);
+
 protected:
   void write_provenance(const std::string& created_by, const std::string& comment = "");
 };
@@ -242,12 +247,11 @@ class Ranlux48RNGCore: public RNGCore
  public:
   typedef calin::ix::math::rng::Ranlux48RNGCoreData ix_core_data_type;
 
-  Ranlux48RNGCore(uint64_t seed = 0):
-      RNGCore(),
-      gen_seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
-      gen_(gen_seed_) { }
+  Ranlux48RNGCore(uint64_t seed = 0,
+    const std::string& created_by = "", const std::string& comment = "");
   Ranlux48RNGCore(const ix::math::rng::Ranlux48RNGCoreData& proto,
-                  bool restore_state = false);
+    bool restore_state = false,
+    const std::string& created_by = "", const std::string& comment = "");
   ~Ranlux48RNGCore();
 
   uint64_t uniform_uint64() override {
@@ -299,12 +303,11 @@ class MT19937RNGCore: public RNGCore
  public:
   typedef calin::ix::math::rng::STLRNGCoreData ix_core_data_type;
 
-  MT19937RNGCore(uint64_t seed = 0):
-      RNGCore(),
-      gen_seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
-      gen_(gen_seed_) { }
+  MT19937RNGCore(uint64_t seed = 0,
+    const std::string& created_by = "", const std::string& comment = "");
   MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto,
-                 bool restore_state = false);
+    bool restore_state = false,
+    const std::string& created_by = "", const std::string& comment = "");
   ~MT19937RNGCore();
 
   uint64_t uniform_uint64() override { gen_calls_++; return gen_(); }
