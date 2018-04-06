@@ -98,6 +98,24 @@ protected:
   std::vector<std::pair<double,double>>          inv_cdf_;
 };
 
+class PMTSimGammaDistribution: public SignalSource
+{
+public:
+  PMTSimGammaDistribution(double alpha, double beta,
+    calin::math::rng::RNG* rng = nullptr, bool adopt_rng = false);
+
+  virtual ~PMTSimGammaDistribution();
+  virtual double rv();
+
+  calin::math::rng::RNG* rng() { return rng_; }
+
+protected:
+  double alpha_;
+  double beta_;
+  math::rng::RNG* rng_ = nullptr;
+  bool adopt_rng_ = false;
+};
+
 class MultiPESpectrum: public SignalSource
 {
 public:

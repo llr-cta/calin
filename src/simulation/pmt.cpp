@@ -373,6 +373,25 @@ save_inv_cdf_to_file(const std::string& filename,
       << std::to_string(inv_cdf_[iy].second) <<  '\n';
 }
 
+PMTSimGammaDistribution::PMTSimGammaDistribution(double alpha, double beta,
+    calin::math::rng::RNG* rng, bool adopt_rng):
+  SignalSource(), alpha_(alpha), beta_(beta),
+  rng_((rng==nullptr)?new math::rng::RNG("PMTSimGammaDistribution") : rng),
+  adopt_rng_((rng==nullptr)?true:adopt_rng)
+{
+  // nothing to see here
+}
+
+PMTSimGammaDistribution::~PMTSimGammaDistribution()
+{
+  if(adopt_rng_)delete rng_;
+}
+
+double PMTSimGammaDistribution::rv()
+{
+  return rng_->gamma_by_alpha_and_beta(alpha_, beta_);
+}
+
 // =============================================================================
 //
 // MultiPESpectrum
@@ -486,7 +505,7 @@ ExponentialTraceSim(SignalSource* pmt, const Eigen::VectorXd& pmt_pulse, double 
   nsample_(pmt_pulse.size()),
   pmt_pulse_fft_(fftw_alloc_real(nsample_)), trace_(fftw_alloc_real(nsample_)),
   rng_((rng==nullptr)?new math::rng::RNG("ExponentialTraceSim") : rng),
-  adopt_pmt_(adopt_pmt), adopt_pmt_ap_(adopt_pmt_ap), adopt_rng_((rng==nullptr)?true:adopt_pmt)
+  adopt_pmt_(adopt_pmt), adopt_pmt_ap_(adopt_pmt_ap), adopt_rng_((rng==nullptr)?true:adopt_rng)
 {
   int plan_flags = FFTW_ESTIMATE; // proto_planning_enum_to_fftw_flag(config_.fftw_planning());
   trace_plan_fwd_ =
@@ -524,7 +543,7 @@ Eigen::VectorXd ExponentialTraceSim::trace()
     }
   }
 
-  if(pmt_ap_)
+  if(pmt_ap_ and tmean_ap_>0)
   {
     double t = rng_->exponential(tmean_ap_);
     unsigned it = std::ceil(t);
