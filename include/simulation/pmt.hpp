@@ -155,10 +155,16 @@ class ExponentialTraceSim
 public:
   ExponentialTraceSim(const Eigen::VectorXd& pmt_pulse, double rate,
       math::rng::RNG* rng = nullptr, bool adopt_rng = false) :
-    ExponentialTraceSim(nullptr, pmt_pulse, rate, rng, false, adopt_rng) { }
+    ExponentialTraceSim(nullptr, pmt_pulse, rate, nullptr, 0, rng, false, false, adopt_rng) { }
 
   ExponentialTraceSim(SignalSource* pmt, const Eigen::VectorXd& pmt_pulse, double rate,
-      math::rng::RNG* rng = nullptr, bool adopt_pmt = false, bool adopt_rng = false);
+      math::rng::RNG* rng = nullptr, bool adopt_pmt = false, bool adopt_rng = false):
+    ExponentialTraceSim(pmt, pmt_pulse, rate, nullptr, 0, rng, adopt_pmt, false, adopt_rng) { }
+
+  ExponentialTraceSim(SignalSource* pmt, const Eigen::VectorXd& pmt_pulse, double rate,
+    SignalSource* pmt_ap, double rate_ap, math::rng::RNG* rng = nullptr,
+    bool adopt_pmt = false, bool adopt_pmt_ap = false, bool adopt_rng = false);
+
   ~ExponentialTraceSim();
 
   Eigen::VectorXd trace();
@@ -166,15 +172,18 @@ public:
   double rate() const { return 1.0/tmean_; }
   void set_rate(double rate) { tmean_ = 1.0/rate; }
 private:
-  SignalSource* pmt_;
-  double tmean_;
+  SignalSource* pmt_ = nullptr;
+  double tmean_ = 0;
+  SignalSource* pmt_ap_;
+  double tmean_ap_ = 0;
   unsigned nsample_;
   double* pmt_pulse_fft_ = nullptr;
   double* trace_ = nullptr;
   fftw_plan trace_plan_fwd_;
   fftw_plan trace_plan_rev_;
-  math::rng::RNG* rng_;
+  math::rng::RNG* rng_ = nullptr;
   bool adopt_pmt_ = false;
+  bool adopt_pmt_ap_ = false;
   bool adopt_rng_ = false;
 };
 
