@@ -376,7 +376,7 @@ save_inv_cdf_to_file(const std::string& filename,
 PMTSimGammaDistribution::PMTSimGammaDistribution(double alpha, double beta,
     calin::math::rng::RNG* rng, bool adopt_rng):
   SignalSource(), alpha_(alpha), beta_(beta),
-  rng_((rng==nullptr)?new math::rng::RNG("PMTSimGammaDistribution") : rng),
+  rng_((rng==nullptr)?new math::rng::RNG(__PRETTY_FUNCTION__) : rng),
   adopt_rng_((rng==nullptr)?true:adopt_rng)
 {
   // nothing to see here
@@ -504,7 +504,7 @@ ExponentialTraceSim(SignalSource* pmt, const Eigen::VectorXd& pmt_pulse, double 
   pmt_(pmt), tmean_(1.0/rate), pmt_ap_(pmt_ap), tmean_ap_(rate_ap>0 ? (1.0/rate_ap) : 0.0),
   nsample_(pmt_pulse.size()),
   pmt_pulse_fft_(fftw_alloc_real(nsample_)), trace_(fftw_alloc_real(nsample_)),
-  rng_((rng==nullptr)?new math::rng::RNG("ExponentialTraceSim") : rng),
+  rng_((rng==nullptr)?new math::rng::RNG(__PRETTY_FUNCTION__) : rng),
   adopt_pmt_(adopt_pmt), adopt_pmt_ap_(adopt_pmt_ap), adopt_rng_((rng==nullptr)?true:adopt_rng)
 {
   int plan_flags = FFTW_ESTIMATE; // proto_planning_enum_to_fftw_flag(config_.fftw_planning());
