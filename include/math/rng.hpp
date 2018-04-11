@@ -333,22 +333,43 @@ class NR3_EmulateSIMD_RNGCore: public RNGCore
 public:
   typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
 
-  NR3_EmulateSIMD_RNGCore(uint64_t seed):
-      RNGCore(),
-      seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device())
+  NR3_EmulateSIMD_RNGCore(uint64_t seed,
+      const std::string& created_by = "", const std::string& comment = ""):
+    RNGCore(),
+    seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device())
   {
     std::mt19937_64 gen(seed_);
-    for(unsigned i=0;i<NSTREAM;i++)core_[i] = new NR3RNGCore(gen());
+    std::string sub_comment = comment;
+    if(not created_by.empty()) {
+      sub_comment = "Deligated from: " + created_by;
+      if(not comment.empty()) {
+        sub_comment += ". Comment: " + comment;
+      }
+    }
+    for(unsigned i=0;i<NSTREAM;i++)
+      core_[i] = new NR3RNGCore(gen(), __PRETTY_FUNCTION__, sub_comment);
+    write_provenance(created_by, comment);
   }
 
-  NR3_EmulateSIMD_RNGCore(uint64_t seeds[NSTREAM]):
-      RNGCore(), seed_(0)
+  NR3_EmulateSIMD_RNGCore(uint64_t seeds[NSTREAM],
+      const std::string& created_by = "", const std::string& comment = ""):
+    RNGCore(), seed_(0)
   {
-    for(unsigned i=0;i<NSTREAM;i++)core_[i] = new NR3RNGCore(seeds[i]);
+    std::string sub_comment = comment;
+    if(not created_by.empty()) {
+      sub_comment = "Deligated from: " + created_by;
+      if(not comment.empty()) {
+        sub_comment += ". Comment: " + comment;
+      }
+    }
+    for(unsigned i=0;i<NSTREAM;i++)
+      core_[i] = new NR3RNGCore(seeds[i], __PRETTY_FUNCTION__, sub_comment);
+    write_provenance(created_by, comment);
   }
 
   NR3_EmulateSIMD_RNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto,
-      bool restore_state = false):
+      bool restore_state = false,
+      const std::string& created_by = "", const std::string& comment = ""):
     NR3_EmulateSIMD_RNGCore(proto.seed())
   {
     if(proto.vec_stream_seed_size()!=0)
