@@ -91,15 +91,15 @@ void RNGCore::bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes, ui
 }
 
 RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGCoreData& proto,
-                                    bool restore_state)
+  bool restore_state, const std::string& created_by, const std::string& comment)
 {
   switch(proto.core_case()) {
     case ix::math::rng::RNGCoreData::kRanlux48Core:
-      return new Ranlux48RNGCore(proto.ranlux48_core(), restore_state);
+      return new Ranlux48RNGCore(proto.ranlux48_core(), restore_state, created_by, comment);
     case ix::math::rng::RNGCoreData::kMt19937Core:
-      return new MT19937RNGCore(proto.mt19937_core(), restore_state);
+      return new MT19937RNGCore(proto.mt19937_core(), restore_state, created_by, comment);
     case ix::math::rng::RNGCoreData::kNr3Core:
-      return new NR3RNGCore(proto.nr3_core(), restore_state);
+      return new NR3RNGCore(proto.nr3_core(), restore_state, created_by, comment);
     case ix::math::rng::RNGCoreData::kNr3SimdEmu4Core:
       return new NR3_EmulateSIMD_RNGCore<4>(proto.nr3_simd_emu4_core(), restore_state);
     case ix::math::rng::RNGCoreData::kNr3Avx2Core:

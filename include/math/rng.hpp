@@ -78,7 +78,8 @@ public:
     auto* proto = new ix::math::rng::RNGCoreData;
     save_to_proto(proto); return proto; }
   static RNGCore* create_from_proto(const ix::math::rng::RNGCoreData& proto,
-                                    bool restore_state = false);
+    bool restore_state = false,
+    const std::string& created_by = "", const std::string& comment = "");
 
   std::vector<uint64_t> vec_uniform_uint64(std::size_t nelements);
   std::vector<uint64_t> vec_uniform_uint64_with_mask(std::size_t nelements,
