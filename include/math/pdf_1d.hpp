@@ -266,4 +266,68 @@ class TwoComponent1DPDF: public Parameterizable1DPDF
   std::string cpt2_name_;
 };
 
+class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
+{
+ public:
+  TwoComponent1DConstraintPDF(Parameterizable1DPDF* pdf1, const std::string& cpt1_name,
+                  Parameterizable1DPDF* pdf2, const std::string& cpt2_name,
+                  bool adopt_pdf1 = false, bool adopt_pdf2 = false);
+  virtual ~TwoComponent1DConstraintPDF();
+  unsigned num_parameters() override;
+  std::vector<function::ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+
+  function::DomainAxis domain_axis() override;
+
+  bool can_calculate_gradient() override;
+  bool can_calculate_hessian() override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  double value_1d(double x) override;
+  double value_and_gradient_1d(double x,  double& dfdx) override;
+  double value_gradient_and_hessian_1d(double x, double& dfdx,
+                            double& d2fdx2) override;
+  double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
+  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                                 MatRef hessian) override;
+  double F(double x, double mu1,double mu2,double p,double res,double n);
+  double dFdmu1(double x, double mu1,double mu2,double p,double res,double n);
+  double dFdmu2(double x, double mu1,double mu2,double p,double res,double n);
+  double dFdp(double x, double mu1,double mu2,double p,double res,double n);
+  double dFdres(double x, double mu1,double mu2,double p,double res,double n);
+  double dFdn(double x, double mu1,double mu2,double p,double res,double n);
+  double H00(double x, double mu1,double mu2,double p,double res,double n);
+  double H01(double x, double mu1,double mu2,double p,double res,double n);
+  double H02(double x, double mu1,double mu2,double p,double res,double n);
+  double H03(double x, double mu1,double mu2,double p,double res,double n);
+  double H04(double x, double mu1,double mu2,double p,double res,double n);
+  double H11(double x, double mu1,double mu2,double p,double res,double n);
+  double H12(double x, double mu1,double mu2,double p,double res,double n);
+  double H13(double x, double mu1,double mu2,double p,double res,double n);
+  double H14(double x, double mu1,double mu2,double p,double res,double n);
+  double H22(double x, double mu1,double mu2,double p,double res,double n);
+  double H23(double x, double mu1,double mu2,double p,double res,double n);
+  double H24(double x, double mu1,double mu2,double p,double res,double n);
+  double H33(double x, double mu1,double mu2,double p,double res,double n);
+  double H34(double x, double mu1,double mu2,double p,double res,double n);
+  double H44(double x, double mu1,double mu2,double p,double res,double n);
+
+ protected:
+  double prob_cpt1_;
+  double mu1_;
+  double mu2_;
+  double res_;
+  double n_;
+  Parameterizable1DPDF* pdf1_;
+  bool adopt_pdf1_;
+  std::string cpt1_name_;
+  Parameterizable1DPDF* pdf2_;
+  bool adopt_pdf2_;
+  std::string cpt2_name_;
+  bool is_Constrained_Model_;
+  
+};
+
 } } } // namespace calin::math::pdf_1d

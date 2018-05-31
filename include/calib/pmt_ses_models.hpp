@@ -35,4 +35,12 @@ public:
   virtual ~TwoGaussianSES();
 };
 
+class TwoGaussianSESConstrained:
+  public calin::math::function::ReducedSpaceParameterizableSingleAxisFunction
+{
+public:
+  TwoGaussianSESConstrained(double dx = 0);
+  virtual ~TwoGaussianSESConstrained();
+};
+
 } } } // namespace calin::calib::pmt_ses_models
