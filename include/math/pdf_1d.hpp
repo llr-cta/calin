@@ -316,6 +316,7 @@ class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
 
  protected:
   double prob_cpt1_;
+  double pp_;
   double mu1_;
   double mu2_;
   double res_;
