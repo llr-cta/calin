@@ -132,7 +132,7 @@ def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
     lst.mutable_pixel().set_cone_inner_diameter(5)
     lst.mutable_pixel().set_cone_survival_prob(1)
     lst.mutable_pixel().set_hex_module_size(1)
-    mst.mutable_pixel().set_hex_module_layout_use_b_configuration(True)
+    lst.mutable_pixel().set_hex_module_layout_use_b_configuration(True)
     lst.mutable_pixel().set_module_num_hex_rings(9)
     u1,v1 = calin.math.hex_array.cluster_hexid_to_center_uv(1,1,False)
     x1,y1 = calin.math.hex_array.uv_to_xy(u1,v1)

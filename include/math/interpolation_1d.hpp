@@ -114,6 +114,10 @@ public:
     	if(m_xy.empty() || fabs(i->first - m_xy.back().first)>epsilon)
   	  {
   	    xy_type xy(i->first, op(i->first, f1(i->first), f2(i->first)));
+#if 0
+        std::cout << i->first << ' ' << f1(i->first) << ' ' << f2(i->first)
+          << ' ' << op(i->first, f1(i->first), f2(i->first)) << '\n';
+#endif
   	    m_xy.push_back(xy);
   	  }
     }
