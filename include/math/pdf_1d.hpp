@@ -271,7 +271,7 @@ class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
  public:
   TwoComponent1DConstraintPDF(Parameterizable1DPDF* pdf1, const std::string& cpt1_name,
                   Parameterizable1DPDF* pdf2, const std::string& cpt2_name,
-                  bool adopt_pdf1 = false, bool adopt_pdf2 = false);
+                  bool adopt_pdf1 = false, bool adopt_pdf2 = false, bool fast_mode = false);
   virtual ~TwoComponent1DConstraintPDF();
   unsigned num_parameters() override;
   std::vector<function::ParameterAxis> parameters() override;
@@ -328,6 +328,7 @@ class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
   bool adopt_pdf2_;
   std::string cpt2_name_;
   bool is_Constrained_Model_;
+  bool fast_mode_;
   
 };
 
