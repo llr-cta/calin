@@ -108,11 +108,34 @@ message VSOAlignedBoxObscurationData {
     [(CFO).desc = "True if photons should only be obscured only when u.j>0"];
 };
 
+message VSOAlignedRectangularApertureData {
+  common_types.Vector3D center_pos                         = 1
+    [(CFO).desc = "Position of the center of the square in reflector frame. ",
+     (CFO).units = "cm" ];
+  double flat_to_flat_x                                    = 2
+    [(CFO).desc = "Width of the rectangle in X",
+     (CFO).units = "cm"];
+  double flat_to_flat_z                                    = 3
+   [(CFO).desc = "height of the rectangle in Z",
+    (CFO).units = "cm"];
+}
+
+message VSOAlignedCircularApertureData {
+  common_types.Vector3D center_pos                         = 1
+    [(CFO).desc = "Position of the center of the disk in reflector frame. ",
+     (CFO).units = "cm" ];
+  double diameter                                          = 2
+    [(CFO).desc = "Diameter of the disk",
+     (CFO).units = "cm"];
+}
+
 message VSOObscurationData {
   oneof type {
     VSODiskObscurationData disk                            = 1;
     VSOTubeObscurationData tube                            = 2;
     VSOAlignedBoxObscurationData aligned_box               = 3;
+    VSOAlignedRectangularApertureData rectangular_aperture = 4;
+    VSOAlignedCircularApertureData circular_aperture       = 5;
   }
 };
 

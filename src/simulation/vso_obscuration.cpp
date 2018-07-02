@@ -36,9 +36,11 @@
 #include <math/ray.hpp>
 #include <simulation/vso_obscuration.hpp>
 #include <math/geometry.hpp>
+#include <math/special.hpp>
 
 using namespace calin::math::ray;
 using namespace calin::simulation::vs_optics;
+using calin::math::special::SQR;
 
 VSOObscuration::~VSOObscuration()
 {
@@ -198,4 +200,99 @@ VSOAlignedBoxObscuration* VSOAlignedBoxObscuration::create_from_proto(
     calin::math::vector3d_util::from_proto(d.max_corner()),
     calin::math::vector3d_util::from_proto(d.min_corner()),
     d.incoming_only());
+}
+
+VSOAlignedRectangularAperture::~VSOAlignedRectangularAperture()
+{
+  // nothing to see here
+}
+
+
+bool VSOAlignedRectangularAperture::
+doesObscure(const calin::math::ray::Ray& r_in, calin::math::ray::Ray& r_out, double n) const
+{
+  // Aperture is only applied when travelling away from mirror (+y)
+  if(r_in.direction().y()>0)return false;
+
+  r_out = r_in;
+  if(r_out.propagate_to_y_plane(center_.y(), false, n))
+  {
+    const double De =
+      std::max(fabs(r_out.x()-center_.x())-flat_to_flat_x_2_,
+               fabs(r_out.z()-center_.z())-flat_to_flat_z_2_);
+    return De < 0;
+  }
+
+  return false;
+}
+
+VSOAlignedRectangularAperture* VSOAlignedRectangularAperture::clone() const
+{
+  return new VSOAlignedRectangularAperture(center_,2*flat_to_flat_x_2_,2*flat_to_flat_z_2_);
+}
+
+calin::ix::simulation::vs_optics::VSOObscurationData*
+VSOAlignedRectangularAperture::dump_as_proto(
+  calin::ix::simulation::vs_optics::VSOObscurationData* d) const
+{
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
+  auto* dd = d->mutable_rectangular_aperture();
+  calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center_pos());
+  dd->set_flat_to_flat_x(2*flat_to_flat_x_2_);
+  dd->set_flat_to_flat_z(2*flat_to_flat_z_2_);
+  return d;
+}
+
+VSOAlignedRectangularAperture* VSOAlignedRectangularAperture::create_from_proto(
+  const calin::ix::simulation::vs_optics::VSOAlignedRectangularApertureData& d)
+{
+  return new VSOAlignedRectangularAperture(
+    calin::math::vector3d_util::from_proto(d.center_pos()),
+    d.flat_to_flat_x(), d.flat_to_flat_z());
+}
+
+
+VSOAlignedCircularAperture::~VSOAlignedCircularAperture()
+{
+  // nothing to see here
+}
+
+bool VSOAlignedCircularAperture::
+doesObscure(const calin::math::ray::Ray& r_in, calin::math::ray::Ray& r_out, double n) const
+{
+  // Aperture is only applied when travelling away from mirror (+y)
+  if(r_in.direction().y()>0)return false;
+
+  r_out = r_in;
+  if(r_out.propagate_to_y_plane(center_.y(), false, n))
+  {
+    const double D2e =
+      SQR(r_out.x()-center_.x())+SQR(r_out.z()-center_.z())-radius_sq_;
+    return D2e < 0;
+  }
+
+  return false;
+}
+
+VSOAlignedCircularAperture* VSOAlignedCircularAperture::clone() const
+{
+  return new VSOAlignedCircularAperture(center_,2*sqrt(radius_sq_));
+}
+
+calin::ix::simulation::vs_optics::VSOObscurationData*
+VSOAlignedCircularAperture::dump_as_proto(
+  calin::ix::simulation::vs_optics::VSOObscurationData* d) const
+{
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
+  auto* dd = d->mutable_circular_aperture();
+  calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center_pos());
+  dd->set_diameter(2*sqrt(radius_sq_));
+  return d;
+}
+
+VSOAlignedCircularAperture* VSOAlignedCircularAperture::create_from_proto(
+  const calin::ix::simulation::vs_optics::VSOAlignedCircularApertureData& d)
+{
+  return new VSOAlignedCircularAperture(
+    calin::math::vector3d_util::from_proto(d.center_pos()),d.diameter());
 }

@@ -168,8 +168,8 @@ class VSOAlignedBoxObscuration: public VSOObscuration
   }
 
   virtual ~VSOAlignedBoxObscuration();
-  bool doesObscure(const calin::math::ray::Ray& p_in,
-                   calin::math::ray::Ray& p_out, double n) const override;
+  bool doesObscure(const calin::math::ray::Ray& r_in,
+                   calin::math::ray::Ray& r_out, double n) const override;
   VSOAlignedBoxObscuration* clone() const override;
 
 #ifndef SWIG
@@ -191,6 +191,90 @@ class VSOAlignedBoxObscuration: public VSOObscuration
   Eigen::Vector3d         min_corner_;
   Eigen::Vector3d         max_corner_;
   bool                    incoming_only_;
+};
+
+class VSOAlignedRectangularAperture: public VSOObscuration
+{
+public:
+  VSOAlignedRectangularAperture(double center_y, double flat_to_flat_xy):
+    VSOObscuration(), center_(0,0,center_y),
+    flat_to_flat_x_2_(0.5*flat_to_flat_xy), flat_to_flat_z_2_(0.5*flat_to_flat_xy)
+  {
+   // nothing to see here
+  }
+
+  VSOAlignedRectangularAperture(const Eigen::Vector3d& center,
+                                double flat_to_flat_xy):
+    VSOObscuration(), center_(center),
+    flat_to_flat_x_2_(0.5*flat_to_flat_xy), flat_to_flat_z_2_(0.5*flat_to_flat_xy)
+  {
+   // nothing to see here
+  }
+
+  VSOAlignedRectangularAperture(const Eigen::Vector3d& center,
+                                double flat_to_flat_x, double flat_to_flat_z):
+    VSOObscuration(), center_(center),
+    flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z)
+  {
+   // nothing to see here
+  }
+
+  virtual ~VSOAlignedRectangularAperture();
+  bool doesObscure(const calin::math::ray::Ray& p_in,
+                  calin::math::ray::Ray& p_out, double n) const override;
+  VSOAlignedRectangularAperture* clone() const override;
+
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
+  static VSOAlignedRectangularAperture* create_from_proto(
+    const ix::simulation::vs_optics::VSOAlignedRectangularApertureData& d);
+
+private:
+  Eigen::Vector3d         center_;
+  double                  flat_to_flat_x_2_;
+  double                  flat_to_flat_z_2_;
+};
+
+class VSOAlignedCircularAperture: public VSOObscuration
+{
+public:
+  VSOAlignedCircularAperture(double center_y, double diameter):
+    VSOObscuration(), center_(0,0,center_y), radius_sq_(0.25*diameter*diameter)
+  {
+   // nothing to see here
+  }
+
+  VSOAlignedCircularAperture(const Eigen::Vector3d& center, double diameter):
+    VSOObscuration(), center_(center), radius_sq_(0.25*diameter*diameter)
+  {
+   // nothing to see here
+  }
+
+  virtual ~VSOAlignedCircularAperture();
+  bool doesObscure(const calin::math::ray::Ray& p_in,
+                  calin::math::ray::Ray& p_out, double n) const override;
+  VSOAlignedCircularAperture* clone() const override;
+
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
+  static VSOAlignedCircularAperture* create_from_proto(
+    const ix::simulation::vs_optics::VSOAlignedCircularApertureData& d);
+
+private:
+  Eigen::Vector3d         center_;
+  double                  radius_sq_;
 };
 
 } } } // namespace calin::simulation::vs_optics

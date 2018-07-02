@@ -48,6 +48,12 @@ public:
   Eigen::Vector3d& direction() { return dir_; }
   double& ct() { return ct_; }
   double& energy() { return energy_; }
+  double& x() { return pos_.x(); }
+  double& y() { return pos_.y(); }
+  double& z() { return pos_.z(); }
+  double& ux() { return dir_.x(); }
+  double& uy() { return dir_.y(); }
+  double& uz() { return dir_.z(); }
 #endif
 
   const Eigen::Vector3d& position() const { return pos_; }
@@ -83,6 +89,9 @@ public:
   //! Propagates free particle to the given plane
   bool propagate_to_plane(const Eigen::Vector3d& normal, double d,
     bool time_reversal_ok=true, double n = 1.0);
+
+  //! Propagates free particle to plane with y-normal
+  bool propagate_to_y_plane(double d, bool time_reversal_ok=true, double n = 1.0);
 
   //! Propagates free particle to the closest approach with line
   bool propagate_to_point_closest_approach(const Eigen::Vector3d& r0,
