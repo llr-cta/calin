@@ -82,13 +82,13 @@ def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0):
 
     if(obscure_camera):
         obs_camera_box = mst.add_obscurations()
-        obs_camera_box.aligned_box().max_corner().set_x(150)
-        obs_camera_box.aligned_box().max_corner().set_y(mst.focal_plane().translation().y()+150)
-        obs_camera_box.aligned_box().max_corner().set_z(150)
-        obs_camera_box.aligned_box().min_corner().set_x(-150)
-        obs_camera_box.aligned_box().min_corner().set_y(mst.focal_plane().translation().y())
-        obs_camera_box.aligned_box().min_corner().set_z(-150)
-        obs_camera_box.aligned_box().set_incoming_only(True)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(150)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_y(mst.focal_plane().translation().y()+150)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(150)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_x(-150)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_y(mst.focal_plane().translation().y())
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_z(-150)
+        obs_camera_boxmutable_.aligned_box().set_incoming_only(True)
 
     return mst
 
