@@ -60,7 +60,7 @@ bool Ray::propagate_to_plane(const Eigen::Vector3d& normal, double d,
 //! Propagates free particle to the given plane
 bool Ray::propagate_to_y_plane(double d, bool time_reversal_ok, double n)
 {
-  const double n_hat_dot_v_hat = dir_.z();
+  const double n_hat_dot_v_hat = dir_.y();
 
   if(n_hat_dot_v_hat == 0)     //the particle never hits the plane
     return false;
@@ -68,7 +68,7 @@ bool Ray::propagate_to_y_plane(double d, bool time_reversal_ok, double n)
   // Compute the distance between the plane and one parallel to it
   // which goes through the particle's current position
 
-  const double plane_sep = -d - pos_.z();
+  const double plane_sep = -d - pos_.y();
 
   // Distance the particle must travel to reach the plane i.e.
   // n_hat * vhat = cos( theta ) = plane_dist / propagation_dist
