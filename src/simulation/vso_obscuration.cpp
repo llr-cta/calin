@@ -53,6 +53,8 @@ create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
   if(d.has_disk())return VSODiskObscuration::create_from_proto(d.disk());
   else if(d.has_tube())return VSOTubeObscuration::create_from_proto(d.tube());
   else if(d.has_aligned_box())return VSOAlignedBoxObscuration::create_from_proto(d.aligned_box());
+  else if(d.has_rectangular_aperture())return VSOAlignedRectangularAperture::create_from_proto(d.rectangular_aperture());
+  else if(d.has_circular_aperture())return VSOAlignedCircularAperture::create_from_proto(d.circular_aperture());
   else {
     throw std::runtime_error("VSOObscuration::create_from_proto: unknown obscuration type");
     return 0;
@@ -212,15 +214,15 @@ bool VSOAlignedRectangularAperture::
 doesObscure(const calin::math::ray::Ray& r_in, calin::math::ray::Ray& r_out, double n) const
 {
   // Aperture is only applied when travelling away from mirror (+y)
-  if(r_in.direction().y()>0)return false;
+  if(r_in.direction().y()<0)return false;
 
   r_out = r_in;
-  if(r_out.propagate_to_y_plane(center_.y(), false, n))
+  if(r_out.propagate_to_y_plane(-center_.y(), false, n))
   {
     const double De =
       std::max(fabs(r_out.x()-center_.x())-flat_to_flat_x_2_,
                fabs(r_out.z()-center_.z())-flat_to_flat_z_2_);
-    return De < 0;
+    return De > 0;
   }
 
   return false;
@@ -261,14 +263,14 @@ bool VSOAlignedCircularAperture::
 doesObscure(const calin::math::ray::Ray& r_in, calin::math::ray::Ray& r_out, double n) const
 {
   // Aperture is only applied when travelling away from mirror (+y)
-  if(r_in.direction().y()>0)return false;
+  if(r_in.direction().y()<0)return false;
 
   r_out = r_in;
-  if(r_out.propagate_to_y_plane(center_.y(), false, n))
+  if(r_out.propagate_to_y_plane(-center_.y(), false, n))
   {
     const double D2e =
       SQR(r_out.x()-center_.x())+SQR(r_out.z()-center_.z())-radius_sq_;
-    return D2e < 0;
+    return D2e > 0;
   }
 
   return false;
