@@ -812,6 +812,8 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
   if(modules_missing.find(0) == modules_missing.end())
   {
     auto* m = c->add_module();
+    m->set_module_index(0);
+    m->set_module_grid_index(0);
     unsigned modchan_id = 0;
     for(auto id : math::hex_array::cluster_hexid_to_member_hexid(0, module_size, use_a_config)) {
       pixel_hexids[id] = std::make_pair(module_index, modchan_id);
@@ -847,6 +849,8 @@ calin::simulation::vs_optics::dc_parameters_to_telescope_layout(
         module_ring_in_camera = true;
         unsigned modchan_id = 0;
         auto* m = c->add_module();
+        m->set_module_index(module_index);
+        m->set_module_grid_index(module_id);
         for(auto id : math::hex_array::
             cluster_hexid_to_member_hexid(module_id, module_size, use_a_config)) {
           m->add_channels_in_module(id); // temporarily add hexid

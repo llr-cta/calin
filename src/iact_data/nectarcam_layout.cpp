@@ -178,6 +178,8 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
   {
     const auto& mod = modvec[imod];
     auto* m = layout->add_module();
+    m->set_module_index(imod);
+    m->set_module_grid_index(mod.imod);
     auto mhid = cluster_hexid_to_member_hexid(mod.imod, 1, false);
     for(unsigned imodchan = 0; imodchan<mhid.size(); imodchan++)
     {
