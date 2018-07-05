@@ -269,9 +269,7 @@ class TwoComponent1DPDF: public Parameterizable1DPDF
 class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
 {
  public:
-  TwoComponent1DConstraintPDF(Parameterizable1DPDF* pdf1, const std::string& cpt1_name,
-                  Parameterizable1DPDF* pdf2, const std::string& cpt2_name,
-                  bool adopt_pdf1 = false, bool adopt_pdf2 = false, bool fast_mode = false);
+  TwoComponent1DConstraintPDF(Parameterizable1DPDF* pdfTest, bool fast_mode = false);
   virtual ~TwoComponent1DConstraintPDF();
   unsigned num_parameters() override;
   std::vector<function::ParameterAxis> parameters() override;
@@ -292,43 +290,20 @@ class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
   double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
   double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
                                                  MatRef hessian) override;
-  double F(double x, double mu1,double mu2,double p,double res,double n);
-  double dFdmu1(double x, double mu1,double mu2,double p,double res,double n);
-  double dFdmu2(double x, double mu1,double mu2,double p,double res,double n);
-  double dFdp(double x, double mu1,double mu2,double p,double res,double n);
-  double dFdres(double x, double mu1,double mu2,double p,double res,double n);
-  double dFdn(double x, double mu1,double mu2,double p,double res,double n);
-  double H00(double x, double mu1,double mu2,double p,double res,double n);
-  double H01(double x, double mu1,double mu2,double p,double res,double n);
-  double H02(double x, double mu1,double mu2,double p,double res,double n);
-  double H03(double x, double mu1,double mu2,double p,double res,double n);
-  double H04(double x, double mu1,double mu2,double p,double res,double n);
-  double H11(double x, double mu1,double mu2,double p,double res,double n);
-  double H12(double x, double mu1,double mu2,double p,double res,double n);
-  double H13(double x, double mu1,double mu2,double p,double res,double n);
-  double H14(double x, double mu1,double mu2,double p,double res,double n);
-  double H22(double x, double mu1,double mu2,double p,double res,double n);
-  double H23(double x, double mu1,double mu2,double p,double res,double n);
-  double H24(double x, double mu1,double mu2,double p,double res,double n);
-  double H33(double x, double mu1,double mu2,double p,double res,double n);
-  double H34(double x, double mu1,double mu2,double p,double res,double n);
-  double H44(double x, double mu1,double mu2,double p,double res,double n);
+  Eigen::MatrixXd Jacobian(double x, double mu1,double mu2,double pp,double res,double n);
+
 
  protected:
+  
   double prob_cpt1_;
   double pp_;
   double mu1_;
   double mu2_;
   double res_;
   double n_;
-  Parameterizable1DPDF* pdf1_;
-  bool adopt_pdf1_;
-  std::string cpt1_name_;
-  Parameterizable1DPDF* pdf2_;
-  bool adopt_pdf2_;
-  std::string cpt2_name_;
-  bool is_Constrained_Model_;
+  Parameterizable1DPDF* pdfTest_;
   bool fast_mode_;
+  
   
 };
 

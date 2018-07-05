@@ -45,9 +45,10 @@ TwoGaussianSES::~TwoGaussianSES()
 TwoGaussianSESConstrained::TwoGaussianSESConstrained(double dx):
   pattern::delegation::Delegator<ParameterizableSingleAxisFunction>(
     new calin::math::pdf_1d::TwoComponent1DConstraintPDF(
+      new calin::math::pdf_1d::TwoComponent1DPDF(
       new calin::math::pdf_1d::LimitedGaussianPDF(0, inf, dx), "gauss_lo",
       new calin::math::pdf_1d::LimitedGaussianPDF(0, inf, dx), "gauss_hi",
-      true, true), true),
+      true, true)), true),
   calin::math::function::BasicReducedSpaceParameterizable<calin::math::function::ParameterizableSingleAxisFunction>(delegate_)
 {
   remove_parameter_from_subspace(1, 0.0); // Mean of gauss-lo
@@ -61,9 +62,10 @@ TwoGaussianSESConstrained::~TwoGaussianSESConstrained()
 TwoGaussianSESConstrained_Fast::TwoGaussianSESConstrained_Fast(double dx):
   pattern::delegation::Delegator<ParameterizableSingleAxisFunction>(
     new calin::math::pdf_1d::TwoComponent1DConstraintPDF(
+      new calin::math::pdf_1d::TwoComponent1DPDF(
       new calin::math::pdf_1d::LimitedGaussianPDF(0, inf, dx), "gauss_lo",
       new calin::math::pdf_1d::LimitedGaussianPDF(0, inf, dx), "gauss_hi",
-      true, true, true), true),
+      true, true), true), true),
   calin::math::function::BasicReducedSpaceParameterizable<calin::math::function::ParameterizableSingleAxisFunction>(delegate_)
 {
   remove_parameter_from_subspace(1, 0.0); // Mean of gauss-lo
