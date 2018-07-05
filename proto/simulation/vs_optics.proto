@@ -116,8 +116,17 @@ message VSOAlignedRectangularApertureData {
     [(CFO).desc = "Width of the rectangle in X",
      (CFO).units = "cm"];
   double flat_to_flat_z                                    = 3
-   [(CFO).desc = "height of the rectangle in Z",
+   [(CFO).desc = "Height of the rectangle in Z",
     (CFO).units = "cm"];
+}
+
+message VSOAlignedHexagonalApertureData {
+  common_types.Vector3D center_pos                         = 1
+    [(CFO).desc = "Position of the center of the hexagon in reflector frame. ",
+     (CFO).units = "cm" ];
+  double flat_to_flat                                      = 2
+    [(CFO).desc = "Flat to flat width of the hexagon",
+     (CFO).units = "cm"];
 }
 
 message VSOAlignedCircularApertureData {
@@ -136,6 +145,7 @@ message VSOObscurationData {
     VSOAlignedBoxObscurationData aligned_box               = 3;
     VSOAlignedRectangularApertureData rectangular_aperture = 4;
     VSOAlignedCircularApertureData circular_aperture       = 5;
+    VSOAlignedHexagonalApertureData hexagonal_aperture     = 6;
   }
 };
 

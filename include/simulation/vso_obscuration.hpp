@@ -241,6 +241,42 @@ private:
   double                  flat_to_flat_z_2_;
 };
 
+class VSOAlignedHexagonalAperture: public VSOObscuration
+{
+public:
+  VSOAlignedHexagonalAperture(double center_y, double flat_to_flat):
+    VSOObscuration(), center_(0,0,center_y), flat_to_flat_2_(0.5*flat_to_flat)
+  {
+   // nothing to see here
+  }
+
+  VSOAlignedHexagonalAperture(const Eigen::Vector3d& center, double flat_to_flat):
+    VSOObscuration(), center_(center), flat_to_flat_2_(0.5*flat_to_flat)
+  {
+   // nothing to see here
+  }
+
+  virtual ~VSOAlignedHexagonalAperture();
+  bool doesObscure(const calin::math::ray::Ray& p_in,
+                  calin::math::ray::Ray& p_out, double n) const override;
+  VSOAlignedHexagonalAperture* clone() const override;
+
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
+  static VSOAlignedHexagonalAperture* create_from_proto(
+    const ix::simulation::vs_optics::VSOAlignedHexagonalApertureData& d);
+
+private:
+  Eigen::Vector3d         center_;
+  double                  flat_to_flat_2_;
+};
+
 class VSOAlignedCircularAperture: public VSOObscuration
 {
 public:
