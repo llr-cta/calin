@@ -58,7 +58,9 @@ message NectarCamCameraEventDecoderConfig {
   uint32 demand_nsample                                    = 100 [
     (CFO).desc = "Override number of samples per event stored in file. Zero "
       "means we use value from file."];
-  repeated uint32 demand_configured_module_id              = 101 [
+  double demand_sampling_frequency                         = 101 [
+    (CFO).desc = "Override sampling frequency.", (CFO).units = "MHz" ];
+  repeated uint32 demand_configured_module_id              = 102 [
     (CFO).desc = "Ids of modules present in file, overrides what is stored "
       "in camera header. Must have number of entries to match number of "
       "channels in data." ];

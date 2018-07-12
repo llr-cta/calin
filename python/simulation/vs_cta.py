@@ -82,13 +82,13 @@ def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0):
 
     if(obscure_camera):
         obs_camera_box = mst.add_obscurations()
-        obs_camera_box.aligned_box().max_corner().set_x(150)
-        obs_camera_box.aligned_box().max_corner().set_y(mst.focal_plane().translation().y()+150)
-        obs_camera_box.aligned_box().max_corner().set_z(150)
-        obs_camera_box.aligned_box().min_corner().set_x(-150)
-        obs_camera_box.aligned_box().min_corner().set_y(mst.focal_plane().translation().y())
-        obs_camera_box.aligned_box().min_corner().set_z(-150)
-        obs_camera_box.aligned_box().set_incoming_only(True)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(150)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_y(mst.focal_plane().translation().y()+150)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(150)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_x(-150)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_y(mst.focal_plane().translation().y())
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_z(-150)
+        obs_camera_box.mutable_aligned_box().set_incoming_only(True)
 
     return mst
 
@@ -132,7 +132,7 @@ def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
     lst.mutable_pixel().set_cone_inner_diameter(5)
     lst.mutable_pixel().set_cone_survival_prob(1)
     lst.mutable_pixel().set_hex_module_size(1)
-    mst.mutable_pixel().set_hex_module_layout_use_b_configuration(True)
+    lst.mutable_pixel().set_hex_module_layout_use_b_configuration(True)
     lst.mutable_pixel().set_module_num_hex_rings(9)
     u1,v1 = calin.math.hex_array.cluster_hexid_to_center_uv(1,1,False)
     x1,y1 = calin.math.hex_array.uv_to_xy(u1,v1)
@@ -141,13 +141,13 @@ def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
 
     if(obscure_camera):
         obs_camera_box = lst.add_obscurations()
-        obs_camera_box.aligned_box().max_corner().set_x(150)
-        obs_camera_box.aligned_box().max_corner().set_y(lst.focal_plane().translation().y()+150)
-        obs_camera_box.aligned_box().max_corner().set_z(150)
-        obs_camera_box.aligned_box().min_corner().set_x(-150)
-        obs_camera_box.aligned_box().min_corner().set_y(lst.focal_plane().translation().y())
-        obs_camera_box.aligned_box().min_corner().set_z(-150)
-        obs_camera_box.aligned_box().set_incoming_only(True)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(150)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_y(lst.focal_plane().translation().y()+150)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(150)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_x(-150)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_y(lst.focal_plane().translation().y())
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_z(-150)
+        obs_camera_box.mutable_aligned_box().set_incoming_only(True)
 
     return lst
 

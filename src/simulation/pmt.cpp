@@ -373,6 +373,25 @@ save_inv_cdf_to_file(const std::string& filename,
       << std::to_string(inv_cdf_[iy].second) <<  '\n';
 }
 
+PMTSimGammaDistribution::PMTSimGammaDistribution(double alpha, double beta,
+    calin::math::rng::RNG* rng, bool adopt_rng):
+  SignalSource(), alpha_(alpha), beta_(beta),
+  rng_((rng==nullptr)?new math::rng::RNG(__PRETTY_FUNCTION__) : rng),
+  adopt_rng_((rng==nullptr)?true:adopt_rng)
+{
+  // nothing to see here
+}
+
+PMTSimGammaDistribution::~PMTSimGammaDistribution()
+{
+  if(adopt_rng_)delete rng_;
+}
+
+double PMTSimGammaDistribution::rv()
+{
+  return rng_->gamma_by_alpha_and_beta(alpha_, beta_);
+}
+
 // =============================================================================
 //
 // MultiPESpectrum
@@ -480,11 +499,13 @@ Eigen::VectorXd PoissonSignalSim::rvs(const Eigen::VectorXd& lambdas)
 
 ExponentialTraceSim::
 ExponentialTraceSim(SignalSource* pmt, const Eigen::VectorXd& pmt_pulse, double rate,
-    math::rng::RNG* rng, bool adopt_pmt, bool adopt_rng):
-  pmt_(pmt), tmean_(1.0/rate), nsample_(pmt_pulse.size()),
+    SignalSource* pmt_ap, double rate_ap,
+    math::rng::RNG* rng, bool adopt_pmt, bool adopt_pmt_ap, bool adopt_rng):
+  pmt_(pmt), tmean_(1.0/rate), pmt_ap_(pmt_ap), tmean_ap_(rate_ap>0 ? (1.0/rate_ap) : 0.0),
+  nsample_(pmt_pulse.size()),
   pmt_pulse_fft_(fftw_alloc_real(nsample_)), trace_(fftw_alloc_real(nsample_)),
-  rng_((rng==nullptr)?new math::rng::RNG("ExponentialTraceSim") : rng),
-  adopt_pmt_(adopt_pmt), adopt_rng_((rng==nullptr)?true:adopt_pmt)
+  rng_((rng==nullptr)?new math::rng::RNG(__PRETTY_FUNCTION__) : rng),
+  adopt_pmt_(adopt_pmt), adopt_pmt_ap_(adopt_pmt_ap), adopt_rng_((rng==nullptr)?true:adopt_rng)
 {
   int plan_flags = FFTW_ESTIMATE; // proto_planning_enum_to_fftw_flag(config_.fftw_planning());
   trace_plan_fwd_ =
@@ -500,6 +521,7 @@ ExponentialTraceSim(SignalSource* pmt, const Eigen::VectorXd& pmt_pulse, double 
 ExponentialTraceSim::~ExponentialTraceSim()
 {
   if(adopt_pmt_)delete pmt_;
+  if(adopt_pmt_ap_)delete pmt_ap_;
   if(adopt_rng_)delete rng_;
   fftw_destroy_plan(trace_plan_fwd_);
   fftw_destroy_plan(trace_plan_rev_);
@@ -518,6 +540,17 @@ Eigen::VectorXd ExponentialTraceSim::trace()
     while(it > t) {
       sample += (pmt_ == nullptr) ? 1.0 : pmt_->rv();
       t += rng_->exponential(tmean_);
+    }
+  }
+
+  if(pmt_ap_ and tmean_ap_>0)
+  {
+    double t = rng_->exponential(tmean_ap_);
+    unsigned it = std::ceil(t);
+    while(it < nsample_) {
+      trace_[it] += pmt_ap_->rv();
+      t += rng_->exponential(tmean_ap_);
+      it = std::ceil(t);
     }
   }
 

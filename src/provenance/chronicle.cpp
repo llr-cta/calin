@@ -95,6 +95,22 @@ register_calin_rng(const calin::ix::math::rng::RNGData& rng_data,
 }
 
 void calin::provenance::chronicle::
+register_rng_core(const calin::ix::math::rng::RNGCoreData& rng_core_data,
+  const std::string& created_by, const std::string& comment)
+{
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  calin::ix::provenance::chronicle::RNGCoreRecord* record = nullptr;
+  {
+    std::lock_guard<std::mutex> lock { chronicle_mutex };
+    record = singleton_chronicle->add_rng_core_record();
+  }
+  ts.as_proto(record->mutable_timestamp());
+  record->mutable_rng_core()->CopyFrom(rng_core_data);
+  record->set_comment(comment);
+  record->set_created_by(created_by);
+}
+
+void calin::provenance::chronicle::
 register_external_rng(uint64_t seed, const std::string& rng_type,
   const std::string& created_by, void* rng_data, unsigned rng_data_size,
   const std::string& comment)

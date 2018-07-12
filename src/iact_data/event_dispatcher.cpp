@@ -223,6 +223,9 @@ void TelescopeEventDispatcher::process_nectarcam_zfits_run(
   delete actl_run_header;
   zfits_actl_src.release_borrowed_event(actl_sample_event);
   zfits_actl_src.set_next_index(0);
+  run_config.clear_fragment_filename();
+  for(const auto& ifilename : zfits_actl_src.source_names())
+    run_config.add_fragment_filename(ifilename);
 
   zfits_actl_data_source::ZFITSConstACTLDataSourceBorrowAdapter zfits_actl_borrow_src(&zfits_actl_src);
   zfits_actl_data_source::ZFITSConstACTLDataSourceReleaseAdapter zfits_actl_release_sink(&zfits_actl_src);

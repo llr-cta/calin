@@ -62,7 +62,8 @@ using namespace calin::util::log;
 #define TEST_ANYARRAY_TYPES 0
 
 NectarCamCameraEventDecoder::NectarCamCameraEventDecoder(
-    const std::string& filename, unsigned run_number, const config_type& config):
+  const std::string& filename,
+  unsigned run_number, const config_type& config):
   zfits_data_source::CTACameraEventDecoder(), config_(config),
   filename_(filename), run_number_(run_number)
 {
@@ -345,6 +346,7 @@ bool NectarCamCameraEventDecoder::decode_run_config(
   const DataModel::CameraEvent* cta_event)
 {
   calin_run_config->set_filename(filename_);
+  calin_run_config->add_fragment_filename(filename_);
   calin_run_config->set_run_number(run_number_);
 
   switch(config_.camera_type())
@@ -492,9 +494,9 @@ bool NectarCamCameraEventDecoder::decode_run_config(
     nsample = cta_run_header->numtraces();
   if(nsample == 0 and calin_run_config->has_nectarcam() and
       calin_run_config->nectarcam().module_size()>0) {
-    nsample = calin_run_config->nectarcam().module(0).daq_num_samples();
+    nsample = calin_run_config->nectarcam().module(0).num_samples();
     for(int imod=1; imod<calin_run_config->nectarcam().module_size(); imod++)
-      if(calin_run_config->nectarcam().module(imod).daq_num_samples() != nsample)
+      if(calin_run_config->nectarcam().module(imod).num_samples() != nsample)
         nsample = 0;
   }
   if(nsample == 0 and cta_event and cta_event->has_logain() and
@@ -504,6 +506,23 @@ bool NectarCamCameraEventDecoder::decode_run_config(
       cta_event->higain().has_waveforms())
     nsample = cta_event->higain().waveforms().num_samples();
   calin_run_config->set_num_samples(nsample);
+
+  // ==========================================================================
+  //
+  // RUN SAMPLING FREQUENCY
+  //
+  // ==========================================================================
+
+  double nominal_sampling_frequency = config_.demand_sampling_frequency();
+  if(nominal_sampling_frequency == 0.0 and calin_run_config->has_nectarcam() and
+      calin_run_config->nectarcam().module_size()>0) {
+    nominal_sampling_frequency =
+      calin_run_config->nectarcam().module(0).nominal_sampling_frequency();
+    for(int imod=1; imod<calin_run_config->nectarcam().module_size(); imod++)
+      if(calin_run_config->nectarcam().module(imod).nominal_sampling_frequency()
+        != nominal_sampling_frequency)nominal_sampling_frequency = 0;
+  }
+  calin_run_config->set_nominal_sampling_frequency(nominal_sampling_frequency);
 
   // ==========================================================================
   //
@@ -763,7 +782,7 @@ NectarCamZFITSDataSource(const std::string& filename,
   calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
     decoder_ = new NectarCamCameraEventDecoder(filename,
       calin::util::file::extract_first_number_from_filename(filename),
-      decoder_config), false, config)
+      decoder_config), false /* we delete it! */, config)
 {
   // nothing to see here
 }

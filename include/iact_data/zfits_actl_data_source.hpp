@@ -170,6 +170,7 @@ public:
       ZFITSACTLDataSource::default_config());
   virtual ~ZFITSACTLDataSourceOpener();
   unsigned num_sources() override;
+  std::string source_name(unsigned isource) override;
   ZFITSSingleFileACTLDataSource* open(unsigned isource) override;
   bool has_opened_file() { return has_opened_file_; }
 private:

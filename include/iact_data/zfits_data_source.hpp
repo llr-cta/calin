@@ -182,7 +182,7 @@ public:
   static config_type default_config() {
     return zfits_actl_data_source::ZFITSACTLDataSource::default_config(); }
 
-private:
+protected:
   CTACameraEventDecoder* decoder_;
   bool adopt_decoder_ = false;
   calin::ix::iact_data::telescope_run_configuration::
@@ -202,6 +202,7 @@ public:
       ZFITSDataSource::default_config());
   virtual ~ZFITSDataSourceOpener();
   unsigned num_sources() override;
+  std::string source_name(unsigned isource) override;
   ZFITSSingleFileDataSource* open(unsigned isource) override;
 private:
   calin::iact_data::zfits_actl_data_source::

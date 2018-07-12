@@ -290,18 +290,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   // ****************** RAY IS NOW IN REFLECTOR COORDINATES *******************
   // **************************************************************************
 
-  // Test for obscuration
-  obs_ihit  = nobs;
-  obs_time  = ray.ct();
-  for(unsigned iobs=0;iobs<nobs;iobs++)
-  {
-    math::ray::Ray r_out;
-    if(info.scope->obscuration(iobs)->doesObscure(ray, r_out, ref_index))
-    {
-      if((obs_ihit==nobs)||(r_out.ct()<obs_time))
-        obs_ihit = iobs, obs_time = r_out.ct();
-    }
-  }
+  calin::math::ray::Ray obs_test_ray(ray);
 
   // Translate to focal plane coordinates
   info.scope->reflectorToFocalPlane(ray);
@@ -315,7 +304,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   // **************************************************************************
 
   // Propagate back to camera plane
-  good = ray.propagate_to_plane(Eigen::Vector3d::UnitY(),0,false,ref_index);
+  good = ray.propagate_to_y_plane(0,false,ref_index);
   if(!good)
   {
     info.status = TS_TRAVELLING_AWAY_FROM_FOCAL_PLANE;
@@ -324,6 +313,18 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   }
 
   // Test for interaction with obscuration before focal plane was hit
+  obs_ihit  = nobs;
+  obs_time  = ray.ct();
+  for(unsigned iobs=0;iobs<nobs;iobs++)
+  {
+    math::ray::Ray r_out;
+    if(info.scope->obscuration(iobs)->doesObscure(obs_test_ray, r_out, ref_index))
+    {
+      if((obs_ihit==nobs)||(r_out.ct()<obs_time))
+        obs_ihit = iobs, obs_time = r_out.ct();
+    }
+  }
+
   if((obs_ihit!=nobs) && (obs_time<ray.ct()))
   {
     info.status = TS_OBSCURED_BEFORE_FOCAL_PLANE;
@@ -334,6 +335,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
     return 0;
   }
 
+  // We good, record position on focal plane etc
   info.fplane_x = ray.position().x();
   info.fplane_z = ray.position().z();
   info.fplane_dx = info.fplane_x;

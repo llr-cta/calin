@@ -266,4 +266,45 @@ class TwoComponent1DPDF: public Parameterizable1DPDF
   std::string cpt2_name_;
 };
 
+class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
+{
+ public:
+  TwoComponent1DConstraintPDF(Parameterizable1DPDF* pdfTest, bool fast_mode = false);
+  virtual ~TwoComponent1DConstraintPDF();
+  unsigned num_parameters() override;
+  std::vector<function::ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+
+  function::DomainAxis domain_axis() override;
+
+  bool can_calculate_gradient() override;
+  bool can_calculate_hessian() override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  double value_1d(double x) override;
+  double value_and_gradient_1d(double x,  double& dfdx) override;
+  double value_gradient_and_hessian_1d(double x, double& dfdx,
+                            double& d2fdx2) override;
+  double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
+  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                                 MatRef hessian) override;
+  Eigen::MatrixXd Jacobian(double x, double mu1,double mu2,double pp,double res,double n);
+
+
+ protected:
+  
+  double prob_cpt1_;
+  double pp_;
+  double mu1_;
+  double mu2_;
+  double res_;
+  double n_;
+  Parameterizable1DPDF* pdfTest_;
+  bool fast_mode_;
+  
+  
+};
+
 } } } // namespace calin::math::pdf_1d

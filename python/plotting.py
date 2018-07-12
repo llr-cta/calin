@@ -92,9 +92,9 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     max_xy = 0
     if plate_scale is None:
         plate_scale = 1
-        if type(camera_layout) is calin.ix.iact_data.instrument_layout.calin.ix.iact_data.instrument_layout.TelescopeLayout:
+        if type(camera_layout) is calin.ix.iact_data.instrument_layout.TelescopeLayout:
             plate_scale = 180/np.pi/camera_layout.effective_focal_length()
-    if type(camera_layout) is calin.ix.iact_data.instrument_layout.calin.ix.iact_data.instrument_layout.TelescopeLayout:
+    if type(camera_layout) is calin.ix.iact_data.instrument_layout.TelescopeLayout:
         camera_layout = camera_layout.camera()
     for chan_index in range(len(channel_data)):
         chan_id = int(configured_channels[chan_index]) if configured_channels is not None else chan_index
@@ -133,7 +133,7 @@ def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False,
     else:
         raise Exception('Unknown histogram type: '+str(type(h)))
     if plot_as_pdf:
-        hy /= h.sum_w()/abs(h.dxval()*xscale)
+        hy /= h.sum_w()*abs(h.dxval()*xscale)
     elif plot_as_pmf:
         hy /= h.sum_w()
     hx = np.append(hx, hx[-1]+h.dxval()) * xscale + xoffset

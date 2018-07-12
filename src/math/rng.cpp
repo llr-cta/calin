@@ -91,15 +91,15 @@ void RNGCore::bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes, ui
 }
 
 RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGCoreData& proto,
-                                    bool restore_state)
+  bool restore_state, const std::string& created_by, const std::string& comment)
 {
   switch(proto.core_case()) {
     case ix::math::rng::RNGCoreData::kRanlux48Core:
-      return new Ranlux48RNGCore(proto.ranlux48_core(), restore_state);
+      return new Ranlux48RNGCore(proto.ranlux48_core(), restore_state, created_by, comment);
     case ix::math::rng::RNGCoreData::kMt19937Core:
-      return new MT19937RNGCore(proto.mt19937_core(), restore_state);
+      return new MT19937RNGCore(proto.mt19937_core(), restore_state, created_by, comment);
     case ix::math::rng::RNGCoreData::kNr3Core:
-      return new NR3RNGCore(proto.nr3_core(), restore_state);
+      return new NR3RNGCore(proto.nr3_core(), restore_state, created_by, comment);
     case ix::math::rng::RNGCoreData::kNr3SimdEmu4Core:
       return new NR3_EmulateSIMD_RNGCore<4>(proto.nr3_simd_emu4_core(), restore_state);
     case ix::math::rng::RNGCoreData::kNr3Avx2Core:
@@ -109,6 +109,29 @@ RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGCoreData& proto,
     case 0:
       return new NR3RNGCore();
   }
+}
+
+std::vector<uint64_t> RNGCore::vec_uniform_uint64(std::size_t nelements)
+{
+  std::vector<uint64_t> vec(nelements);
+  bulk_uniform_uint64(vec.data(), nelements*sizeof(uint64_t));
+  return vec;
+}
+
+std::vector<uint64_t> RNGCore::vec_uniform_uint64_with_mask(
+  std::size_t nelements, uint64_t mask)
+{
+  std::vector<uint64_t> vec(nelements);
+  bulk_uniform_uint64_with_mask(vec.data(), nelements*sizeof(uint64_t), mask);
+  return vec;
+}
+
+void RNGCore::write_provenance(
+  const std::string& created_by, const std::string& comment)
+{
+  const ix::math::rng::RNGCoreData* proto = this->as_proto();
+  calin::provenance::chronicle::register_rng_core(*proto, created_by, comment);
+  delete proto;
 }
 
 RNG::RNG(CoreType core_type, const std::string& created_by): core_(nullptr), adopt_core_(true)
@@ -490,18 +513,39 @@ void RNG::generate_inverse_cdf(std::vector<std::pair<double,double>> &cdf,
 // *****************************************************************************
 // *****************************************************************************
 
+NR3RNGCore::NR3RNGCore(uint64_t seed,
+    const std::string& created_by, const std::string& comment):
+  RNGCore(),
+  seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
+  u_(C_NR3_U_INIT), v_(C_NR3_V_INIT), w_(C_NR3_W_INIT)
+{
+  u_ = seed_^v_; uniform_uint64();
+  v_ = u_; uniform_uint64();
+  w_ = v_; uniform_uint64();
+  calls_ = 0;
+  write_provenance(created_by, comment);
+}
 
 NR3RNGCore::
-NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto, bool restore_state):
-    NR3RNGCore(proto.seed())
+NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto, bool restore_state,
+    const std::string& created_by, const std::string& comment):
+  RNGCore(),
+  seed_(proto.seed()>0 ? proto.seed() : RNG::nonzero_uint64_from_random_device()),
+  u_(C_NR3_U_INIT), v_(C_NR3_V_INIT), w_(C_NR3_W_INIT)
 {
-  if(restore_state and proto.state_saved())
+  if(proto.seed()>0 and restore_state and proto.state_saved())
   {
-    calls_ = proto.calls();
     u_ = proto.u();
     v_ = proto.v();
     w_ = proto.w();
+    calls_ = proto.calls();
+  } else {
+    u_ = seed_^v_; uniform_uint64();
+    v_ = u_; uniform_uint64();
+    w_ = v_; uniform_uint64();
+    calls_ = 0;
   }
+  write_provenance(created_by, comment);
 }
 
 NR3RNGCore::~NR3RNGCore()
@@ -525,12 +569,23 @@ void NR3RNGCore::save_to_proto(ix::math::rng::NR3RNGCoreData* data) const
   data->set_w(w_);
 }
 
-Ranlux48RNGCore::
-Ranlux48RNGCore(const ix::math::rng::Ranlux48RNGCoreData& proto,
-                bool restore_state):
-    RNGCore(), gen_seed_(proto.seed()), gen_(gen_seed_)
+Ranlux48RNGCore::Ranlux48RNGCore(uint64_t seed,
+    const std::string& created_by, const std::string& comment):
+  RNGCore(),
+  gen_seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
+  gen_(gen_seed_)
 {
-  if(restore_state and proto.state_saved())
+  write_provenance(created_by, comment);
+}
+
+Ranlux48RNGCore::
+Ranlux48RNGCore(const ix::math::rng::Ranlux48RNGCoreData& proto, bool restore_state,
+    const std::string& created_by, const std::string& comment):
+  RNGCore(),
+  gen_seed_(proto.seed()>0 ? proto.seed() : RNG::nonzero_uint64_from_random_device()),
+  gen_(gen_seed_)
+{
+  if(proto.seed()>0 and restore_state and proto.state_saved())
   {
     std::istringstream state(proto.state());
     state >> gen_;
@@ -538,6 +593,7 @@ Ranlux48RNGCore(const ix::math::rng::Ranlux48RNGCoreData& proto,
     dev_ = proto.dev();
     dev_blocks_ = proto.dev_blocks();
   }
+  write_provenance(created_by, comment);
 }
 
 Ranlux48RNGCore::~Ranlux48RNGCore()
@@ -563,17 +619,29 @@ void Ranlux48RNGCore::save_to_proto(ix::math::rng::Ranlux48RNGCoreData* data) co
   data->set_dev_blocks(dev_blocks_);
 }
 
-MT19937RNGCore::
-MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto,
-               bool restore_state):
-  RNGCore(), gen_seed_(proto.seed()), gen_(gen_seed_)
+MT19937RNGCore::MT19937RNGCore(uint64_t seed,
+    const std::string& created_by, const std::string& comment):
+  RNGCore(),
+  gen_seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
+  gen_(gen_seed_)
 {
-  if(restore_state and proto.state_saved())
+  write_provenance(created_by, comment);
+}
+
+MT19937RNGCore::
+MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto, bool restore_state,
+    const std::string& created_by, const std::string& comment):
+  RNGCore(),
+  gen_seed_(proto.seed()>0 ? proto.seed() : RNG::nonzero_uint64_from_random_device()),
+  gen_(gen_seed_)
+{
+  if(proto.seed()>0 and restore_state and proto.state_saved())
   {
     std::istringstream state(proto.state());
     state >> gen_;
     gen_calls_ = proto.calls();
   }
+  write_provenance(created_by, comment);
 }
 
 MT19937RNGCore::~MT19937RNGCore()

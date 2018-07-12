@@ -34,6 +34,7 @@
 
 #include <cmath>
 #include <tuple>
+#include <ostream>
 
 #include <math/interpolation_1d.hpp>
 
@@ -112,6 +113,12 @@ struct CherenkovBandwidthTaylorCoefficients
     return false; // All coefficients equal in sort
   }
 };
+
+inline std::ostream& operator<<(std::ostream& stream, const CherenkovBandwidthTaylorCoefficients& c)
+{
+  stream << "[ " << c.n << ' ' << c.dn_dw << ' ' << c.d2n_dw2 << " ]";
+  return stream;
+}
 
 typedef CherenkovBandwidthTaylorCoefficients bandwidth_t;
 

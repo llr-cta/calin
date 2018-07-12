@@ -31,15 +31,15 @@ package calin.ix.iact_data.instrument_layout;
 
 message ChannelLayout {
   uint32 channel_index                                     = 1 [
-    (CFO).desc = "Sequential index of channel corresponding to this pixel "
-      "in camera. This must be identical to index that this pixel has in the "
+    (CFO).desc = "Sequential index of channel corresponding to this channel "
+      "in camera. This must be identical to index that this channel has in the "
       "telescope channel array." ];
   int32 pixel_index                                        = 2 [
     (CFO).desc = "Index of pixel that this channel corresponds to. A value "
       "of -1 means there is no (sky facing) pixel associated with this "
       "channel. It may, for example have an enginnering signal applied etc." ];
   int32 pixel_grid_index                                   = 3 [
-    (CFO).desc = "Index of pixel withing hexagonal or square grid if the "
+    (CFO).desc = "Index of pixel within hexagonal or square grid if the "
       "camera follows a grid, -1 otherwise." ];
   int32 channel_set_index                                  = 4 [
     (CFO).desc = "Index of the channel-set that this channel belongs to. "
@@ -94,7 +94,13 @@ message ChannelLayout {
 };
 
 message ModuleLayout {
-  repeated int32 channels_in_module                        = 1 [
+  uint32 module_index                                      = 1 [
+    (CFO).desc = "Sequential index of module in camera. This must be identical "
+      "to index that this module has in the telescope module array." ];
+  int32 module_grid_index                                  = 2 [
+    (CFO).desc = "Index of module within hexagonal or square grid if the "
+      "camera follows a grid, -1 otherwise." ];
+  repeated int32 channels_in_module                        = 10 [
     (CFO).desc = "List of indexes for all channels in module." ];;
 
   repeated uint32 outline_polygon_vertex_index             = 30 [
