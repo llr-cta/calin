@@ -1080,6 +1080,81 @@ TEST(TestLogQuadSpline, BinnedParameterGradientCheck_ABZero) {
   }
 }
 
+
+TEST(TestTwoComponent1DConstraintPDF, SetAndRecallParameters) {
+  pdf_1d::LimitedGaussianPDF gauss1_pdf(1.0, 9.0);
+  pdf_1d::LimitedGaussianPDF gauss2_pdf(1.0, 9.0);
+  pdf_1d::TwoComponent1DPDF TwoComponent(&gauss1_pdf, "gauss_low", &gauss2_pdf, "gauss_high");
+  pdf_1d::TwoComponent1DConstraintPDF pdf(&TwoComponent);
+
+  EXPECT_EQ(pdf.num_parameters(), 5U);
+  auto pvec = pdf.parameters();
+  EXPECT_EQ(pvec[0].name, "probability");
+  EXPECT_EQ(pvec[1].name, "mean_low_gauss");
+  EXPECT_EQ(pvec[2].name, "resolution");
+  EXPECT_EQ(pvec[3].name, "mean_high_gauss");
+  EXPECT_EQ(pvec[4].name, "Width_Ratio");
+  Eigen::VectorXd p(5);
+  p << 0.4, 0, 0.4, 5.0, 0.5;
+  pdf.set_parameter_values(p);
+  EXPECT_EQ(pdf.parameter_values(), p);
+}
+
+TEST(TestTwoComponent1DConstraintPDF, GradientCheck) {
+  pdf_1d::LimitedGaussianPDF gauss1_pdf(1.0, 9.0);
+  pdf_1d::LimitedGaussianPDF gauss2_pdf(1.0, 9.0);
+  pdf_1d::TwoComponent1DPDF TwoComponent(&gauss1_pdf, "gauss_low", &gauss2_pdf, "gauss_high");
+  pdf_1d::TwoComponent1DConstraintPDF pdf(&TwoComponent);
+  Eigen::VectorXd p(5);
+  p << 0.4, 0, 0.4, 5.0, 0.5;
+  pdf.set_parameter_values(p);
+  EXPECT_EQ(p, pdf.parameter_values());
+  for(double x = 0; x<10.0; x+=0.1)
+  {
+    double good;
+    EXPECT_TRUE(gradient_check(pdf, x, 1e-6, good));
+    EXPECT_LE(good, 0.5);
+  }
+}
+
+TEST(TestTwoComponent1DConstraintPDF, HessianCheck) {
+  pdf_1d::LimitedGaussianPDF gauss1_pdf(1.0, 9.0);
+  pdf_1d::LimitedGaussianPDF gauss2_pdf(1.0, 9.0);
+  pdf_1d::TwoComponent1DPDF TwoComponent(&gauss1_pdf, "gauss_low", &gauss2_pdf, "gauss_high");
+  pdf_1d::TwoComponent1DConstraintPDF pdf(&TwoComponent);
+  Eigen::VectorXd p(5);
+  p << 0.4, 0, 0.4, 5.0, 0.5;
+  pdf.set_parameter_values(p);
+  EXPECT_EQ(p, pdf.parameter_values());
+  for(double x = 0; x<10.0; x+=0.1)
+  {
+    double good;
+    EXPECT_TRUE(hessian_check(pdf, x, 1e-6, good));
+    EXPECT_LE(good, 0.5);
+  }
+}
+
+TEST(TestTwoComponent1DConstraintPDF, ParameterGradientCheck) {
+  pdf_1d::LimitedGaussianPDF gauss1_pdf(1.0, 9.0);
+  pdf_1d::LimitedGaussianPDF gauss2_pdf(1.0, 9.0);
+  pdf_1d::TwoComponent1DPDF TwoComponent(&gauss1_pdf, "gauss_low", &gauss2_pdf, "gauss_high");
+  pdf_1d::TwoComponent1DConstraintPDF pdf(&TwoComponent);
+  Eigen::VectorXd p(5);
+  p << 0.4, 0, 0.4, 5.0, 0.5;
+  Eigen::VectorXd dp(5);
+  dp << 1e-6, 1e-6, 1e-6, 1e-6, 1e-6;
+  for(double x = 0; x<10.0; x+=0.1)
+  {
+    Eigen::VectorXd good(5);
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
+    EXPECT_LE(good(4), 0.5);
+  }
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
