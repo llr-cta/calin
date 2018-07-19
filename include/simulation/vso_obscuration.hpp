@@ -73,9 +73,8 @@ class VSODiskObscuration: public VSOObscuration
  public:
   VSODiskObscuration(const Eigen::Vector3d& center,
                      const Eigen::Vector3d& normal,
-                     double radius, bool incoming_only):
-      VSOObscuration(), fX0(center), fN(normal), fR(radius), fD0(),
-      fICO(incoming_only)
+                     double radius):
+      VSOObscuration(), fX0(center), fN(normal), fR(radius), fD0()
   {
     fD0 = center.dot(normal);
   }
@@ -98,23 +97,20 @@ class VSODiskObscuration: public VSOObscuration
   const Eigen::Vector3d& center_pos() const { return fX0; }
   const Eigen::Vector3d& normal() const { return fN; }
   double diameter() const { return 2.0*fR; }
-  bool incoming_only() const { return fICO; }
 
  private:
   Eigen::Vector3d fX0;
   Eigen::Vector3d fN;
   double                  fR;
   double                  fD0;
-  bool                    fICO;
 };
 
 class VSOTubeObscuration: public VSOObscuration
 {
  public:
   VSOTubeObscuration(const Eigen::Vector3d& x1, const Eigen::Vector3d& x2,
-                     double radius, bool incoming_only):
-      VSOObscuration(), fX1(x1), fX2(x2), fR(radius), fN(), fD1(), fD2(),
-      fICO(incoming_only)
+                     double radius):
+      VSOObscuration(), fX1(x1), fX2(x2), fR(radius), fN(), fD1(), fD2()
   {
     fN = x2-x1;
     fN.normalize();
@@ -142,7 +138,6 @@ class VSOTubeObscuration: public VSOObscuration
   const Eigen::Vector3d& end1_pos() const { return fX1; }
   const Eigen::Vector3d& end2_pos() const { return fX2; }
   double diameter() const { return 2.0*fR; }
-  bool incoming_only() const { return fICO; }
 
  private:
   Eigen::Vector3d         fX1;
@@ -152,17 +147,14 @@ class VSOTubeObscuration: public VSOObscuration
   double                  fD1;
   double                  fD2;
   double                  fD;
-  bool                    fICO;
 };
 
 class VSOAlignedBoxObscuration: public VSOObscuration
 {
  public:
   VSOAlignedBoxObscuration(const Eigen::Vector3d& max_corner,
-                           const Eigen::Vector3d& min_corner,
-                           bool incoming_only):
-      VSOObscuration(), min_corner_(min_corner), max_corner_(max_corner),
-      incoming_only_(incoming_only)
+                           const Eigen::Vector3d& min_corner):
+      VSOObscuration(), min_corner_(min_corner), max_corner_(max_corner)
   {
     // nothing to see here
   }
@@ -185,12 +177,10 @@ class VSOAlignedBoxObscuration: public VSOObscuration
 
   const Eigen::Vector3d& max_corner() const { return max_corner_; }
   const Eigen::Vector3d& min_corner() const { return min_corner_; }
-  bool incoming_only() const { return incoming_only_; }
 
  private:
   Eigen::Vector3d         min_corner_;
   Eigen::Vector3d         max_corner_;
-  bool                    incoming_only_;
 };
 
 class VSOAlignedRectangularAperture: public VSOObscuration

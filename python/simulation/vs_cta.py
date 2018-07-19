@@ -81,14 +81,27 @@ def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0):
     mst.mutable_pixel().set_grid_rotation(rot)
 
     if(obscure_camera):
-        obs_camera_box = mst.add_obscurations()
-        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(150)
-        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_y(mst.focal_plane().translation().y()+150)
-        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(150)
-        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_x(-150)
-        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_y(mst.focal_plane().translation().y())
-        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_z(-150)
+        obs_camera_box = mst.add_pre_obscurations()
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(2918.0/20)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_y(mst.focal_plane().translation().y()+(1532.25-513.0)/10)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(2918.0/20)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_x(-2918.0/20)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_y(mst.focal_plane().translation().y()-513.0/10)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_z(-2918.0/20)
         obs_camera_box.mutable_aligned_box().set_incoming_only(True)
+
+        obs_outer_aperture = mst.add_post_obscurations()
+        obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_x(0)
+        obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_z(-25.0/10)
+        obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_y(mst.focal_plane().translation().y()-513.0/10)
+        obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_x(2714.0/10)
+        obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_z((2585.0-5.0)/10)
+
+        obs_inner_aperture = mst.add_post_obscurations()
+        obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_x(0)
+        obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_z(0)
+        obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_y(mst.focal_plane().translation().y()-222.5/10)
+        obs_inner_aperture.mutable_circular_aperture().set_diameter(2304.0/10)
 
     return mst
 
@@ -140,7 +153,7 @@ def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
     lst.mutable_pixel().set_grid_rotation(rot)
 
     if(obscure_camera):
-        obs_camera_box = lst.add_obscurations()
+        obs_camera_box = lst.add_post_obscurations()
         obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(150)
         obs_camera_box.mutable_aligned_box().mutable_max_corner().set_y(lst.focal_plane().translation().y()+150)
         obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(150)

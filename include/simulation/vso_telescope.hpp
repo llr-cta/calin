@@ -87,7 +87,8 @@ class VSOTelescope
                double PS, double PR, double PGSX, double PGSZ,
                double CSP, const Eigen::Vector3d& FPR,
                double CIP, bool PP,
-               const std::vector<VSOObscuration*>& OBSVEC = {}
+               const std::vector<VSOObscuration*>& OBSVEC_PRE = {},
+               const std::vector<VSOObscuration*>& OBSVEC_POST = {}
                );
   VSOTelescope(const VSOTelescope& o);
   virtual ~VSOTelescope();
@@ -104,8 +105,10 @@ class VSOTelescope
       const ix::simulation::vs_optics::IsotropicDCArrayParameters& param,
       math::rng::RNG& rng);
 
-  void add_obscuration(VSOObscuration* obs) {
-    fObscurations.push_back(obs); }
+  void add_pre_reflection_obscuration(VSOObscuration* obs) {
+    fPreObscurations.push_back(obs); }
+  void add_post_reflection_obscuration(VSOObscuration* obs) {
+    fPostObscurations.push_back(obs); }
   void add_mirror(VSOMirror* mirror) {
     if(fMirrors.size()<=mirror->id())fMirrors.resize(mirror->id()+1);
     fMirrors[mirror->id()] = mirror;
@@ -234,7 +237,8 @@ class VSOTelescope
   double                 cameraIP() const { return fCameraIP; }
   bool                   pixelParity() const { return fPixelParity; }
 
-  unsigned               numObscurations() const { return fObscurations.size(); }
+  unsigned               numPreReflectionObscurations() const { return fPreObscurations.size(); }
+  unsigned               numPostReflectionObscurations() const { return fPostObscurations.size(); }
 
   unsigned               numMirrors() const { return fMirrors.size(); }
   unsigned               numMirrorHexSites() const { return fMirrorsByHexID.size(); }
@@ -242,8 +246,10 @@ class VSOTelescope
   unsigned               numPixels() const { return fPixels.size(); }
   unsigned               numPixelHexSites() const { return fPixelsByHexID.size(); }
 
-  inline const VSOObscuration* obscuration(unsigned id) const;
-  std::vector<VSOObscuration*> all_obscurations() { return fObscurations; }
+  inline const VSOObscuration* pre_reflection_obscuration(unsigned id) const;
+  std::vector<VSOObscuration*> all_pre_reflection_obscurations() { return fPreObscurations; }
+  inline const VSOObscuration* post_reflection_obscuration(unsigned id) const;
+  std::vector<VSOObscuration*> all_post_reflection_obscurations() { return fPostObscurations; }
 
   inline const VSOMirror* mirror(unsigned id) const;
   inline const VSOMirror* mirrorByHexID(unsigned hexID) const;
@@ -308,7 +314,8 @@ class VSOTelescope
   // Mirrors and Pixel data
   // ************************************************************************
 
-  std::vector<VSOObscuration*>  fObscurations;
+  std::vector<VSOObscuration*>  fPreObscurations;
+  std::vector<VSOObscuration*>  fPostObscurations;
   std::vector<VSOMirror*>       fMirrors;
   std::vector<VSOMirror*>       fMirrorsByHexID;
   std::vector<VSOPixel*>        fPixels;
@@ -333,10 +340,16 @@ class VSOTelescope
   void calculateRotationVector();
 };
 
-inline const VSOObscuration* VSOTelescope::obscuration(unsigned id) const
+inline const VSOObscuration* VSOTelescope::pre_reflection_obscuration(unsigned id) const
 {
-  if(id>=fObscurations.size())return 0;
-  else return fObscurations[id];
+  if(id>=fPreObscurations.size())return 0;
+  else return fPreObscurations[id];
+}
+
+inline const VSOObscuration* VSOTelescope::post_reflection_obscuration(unsigned id) const
+{
+  if(id>=fPostObscurations.size())return 0;
+  else return fPostObscurations[id];
 }
 
 inline const VSOMirror* VSOTelescope::mirror(unsigned id) const

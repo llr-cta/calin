@@ -79,8 +79,6 @@ message VSODiskObscurationData {
   double diameter                                          = 3
     [(CFO).desc = "Diameter of the disk",
      (CFO).units = "cm"];
-  bool incoming_only                                       = 4
-    [(CFO).desc = "True if photons should only be obscured only when u.j>0"];
 };
 
 message VSOTubeObscurationData {
@@ -93,8 +91,6 @@ message VSOTubeObscurationData {
   double diameter                                          = 3
     [(CFO).desc = "Cross-sectional diameter of the tube",
      (CFO).units = "cm"];
-  bool incoming_only                                       = 4
-    [(CFO).desc = "True if photons should only be obscured when u.j>0"];
 };
 
 message VSOAlignedBoxObscurationData {
@@ -104,8 +100,6 @@ message VSOAlignedBoxObscurationData {
   common_types.Vector3D min_corner                         = 2
     [(CFO).desc = "Corner of box with min values of x,y,z.",
      (CFO).units = "cm" ];
-  bool incoming_only                                       = 3
-    [(CFO).desc = "True if photons should only be obscured only when u.j>0"];
 };
 
 message VSOAlignedRectangularApertureData {
@@ -260,11 +254,13 @@ message VSOTelescopeData {
     [(CFO).desc = "Pixels are counted (on the hex. grid) in the direction of "
      "the +x-axis when this flag is FALSE, and in the direction of the "
      "-x-axis when this flag is TRUE (in the camera r.f.)."];
-  repeated VSOObscurationData obscuration                  = 100
-    [(CFO).desc = "Obscurations in the reflector frame."];
-  repeated VSOMirrorData mirror                            = 101
+  repeated VSOObscurationData pre_reflection_obscuration   = 100
+    [(CFO).desc = "Obscurations before reflection at mirror, in the reflector frame."];
+  repeated VSOObscurationData post_reflection_obscuration  = 101
+    [(CFO).desc = "Obscurations after reflection at mirror, in the reflector frame."];
+  repeated VSOMirrorData mirror                            = 200
     [(CFO).desc = "Mirror facets on the telescope."];
-  repeated VSOPixelData pixel                              = 102
+  repeated VSOPixelData pixel                              = 300
     [(CFO).desc = "Pixels in the camera of the telescope."];
 };
 
@@ -601,7 +597,8 @@ message IsotropicDCArrayParameters {
   };
   ReflectorFrameParameters reflector_frame                 = 4;
   HexDCReflectorParameters reflector                       = 5;
-  repeated VSOObscurationData obscurations                 = 6;
-  FocalPlaneParameters focal_plane                         = 7;
-  HexPixelArrayParameters pixel                            = 8;
+  repeated VSOObscurationData pre_reflection_obscuration   = 6;
+  repeated VSOObscurationData post_reflection_obscuration  = 7;
+  FocalPlaneParameters focal_plane                         = 8;
+  HexPixelArrayParameters pixel                            = 9;
 };

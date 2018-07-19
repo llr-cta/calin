@@ -188,14 +188,14 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   // ****************** RAY IS NOW IN RELECTOR COORDINATES *******************
   // **************************************************************************
 
-  // Test for obscuration
-  unsigned nobs = info.scope->numObscurations();
+  // Test for obscuration of incoming ray
+  unsigned nobs = info.scope->numPreReflectionObscurations();
   unsigned obs_ihit  = nobs;
   double   obs_time  = ray.ct();
   for(unsigned iobs=0;iobs<nobs;iobs++)
   {
     math::ray::Ray r_out;
-    if(info.scope->obscuration(iobs)->doesObscure(ray, r_out, ref_index))
+    if(info.scope->pre_reflection_obscuration(iobs)->doesObscure(ray, r_out, ref_index))
     {
       if((obs_ihit==nobs)||(r_out.ct()<obs_time))
         obs_ihit = iobs, obs_time = r_out.ct();
@@ -244,7 +244,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
     info.status = TS_OBSCURED_BEFORE_MIRROR;
     info.mirror->mirrorToReflector(ray);
     info.scope->reflectorToGlobal(ray);
-    info.obscuration = info.scope->obscuration(obs_ihit);
+    info.obscuration = info.scope->pre_reflection_obscuration(obs_ihit);
     info.obscuration_id = obs_ihit;
     return 0;
   }
@@ -313,12 +313,13 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   }
 
   // Test for interaction with obscuration before focal plane was hit
+  nobs = info.scope->numPostReflectionObscurations();
   obs_ihit  = nobs;
   obs_time  = ray.ct();
   for(unsigned iobs=0;iobs<nobs;iobs++)
   {
     math::ray::Ray r_out;
-    if(info.scope->obscuration(iobs)->doesObscure(obs_test_ray, r_out, ref_index))
+    if(info.scope->post_reflection_obscuration(iobs)->doesObscure(obs_test_ray, r_out, ref_index))
     {
       if((obs_ihit==nobs)||(r_out.ct()<obs_time))
         obs_ihit = iobs, obs_time = r_out.ct();
@@ -330,7 +331,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
     info.status = TS_OBSCURED_BEFORE_FOCAL_PLANE;
     info.scope->focalPlaneToReflector(ray);
     info.scope->reflectorToGlobal(ray);
-    info.obscuration = info.scope->obscuration(obs_ihit);
+    info.obscuration = info.scope->post_reflection_obscuration(obs_ihit);
     info.obscuration_id = obs_ihit;
     return 0;
   }

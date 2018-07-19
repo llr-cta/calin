@@ -163,9 +163,12 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
       // Position
       Eigen::Vector3d pos(scope_pos[i]);
 
-      std::vector<VSOObscuration*> obsvec;
-      for(const auto& obs : param.obscurations())
-        obsvec.push_back(VSOObscuration::create_from_proto(obs));
+      std::vector<VSOObscuration*> obsvec_pre;
+      for(const auto& obs : param.pre_reflection_obscuration())
+        obsvec_pre.push_back(VSOObscuration::create_from_proto(obs));
+      std::vector<VSOObscuration*> obsvec_post;
+      for(const auto& obs : param.post_reflection_obscuration())
+        obsvec_post.push_back(VSOObscuration::create_from_proto(obs));
 
       VSOTelescope* telescope =
       	new VSOTelescope(fTelescopes.size(), pos,
@@ -197,7 +200,8 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
              calin::math::vector3d_util::from_scaled_proto(param.focal_plane().rotation(), M_PI/180.0),
              0.0,
              param.pixel().pixel_labeling_parity(),
-	           obsvec
+	           obsvec_pre,
+             obsvec_post
 		         );
 
       telescope->populateMirrorsAndPixelsRandom(param,rng);
