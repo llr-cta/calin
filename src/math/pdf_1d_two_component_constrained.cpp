@@ -125,7 +125,7 @@ void TwoComponent1DConstraintPDF::set_parameter_values(ConstVecRef values)
 
   Eigen::VectorXd param_2G(5);
   param_2G[0] = prob_cpt1_;
-  param_2G[1] = 0;
+  param_2G[1] = mu1_;
   param_2G[2] = solNeg;
   param_2G[3] = mu2;
   param_2G[4] = sig2;
@@ -186,9 +186,8 @@ double TwoComponent1DConstraintPDF::value_and_parameter_gradient_1d(double x,  V
   double val = 0;
   
   
-  double dFdmu2Jacobian = 0, dFdppJacobian = 0, dFdresJacobian = 0, dFdnJacobian = 0; //dFdmu1Jacobian = 0,
+  double dFdmu1Jacobian = 0, dFdmu2Jacobian = 0, dFdppJacobian = 0, dFdresJacobian = 0, dFdnJacobian = 0;
 
-  gradient[1] = 0;
   const int OptParam = 5;
   
   if (fast_mode_){
@@ -197,28 +196,31 @@ double TwoComponent1DConstraintPDF::value_and_parameter_gradient_1d(double x,  V
 		  Eigen::MatrixXd JacobMatrix = Jacobian(x,mu1_,mu2_,pp_,res_,n_);
 		  for (int i=0; i < 5;i++){
 			  dFdppJacobian += gradient2G(i)*JacobMatrix(i,0);
-			  //~ dFdmu1Jacobian += gradient2G(i)*JacobMatrix(i,1);
+			  dFdmu1Jacobian += gradient2G(i)*JacobMatrix(i,1);
 			  dFdresJacobian += gradient2G(i)*JacobMatrix(i,2);
 			  dFdmu2Jacobian += gradient2G(i)*JacobMatrix(i,3);
 			  dFdnJacobian += gradient2G(i)*JacobMatrix(i,4);
 		  }
-		  gradient[0] = dFdppJacobian;
-		  gradient[2] = dFdresJacobian;
-		  gradient[3] = dFdmu2Jacobian;
-		  gradient[4] = dFdnJacobian;
-	 }
+	}
+	gradient[0] = dFdppJacobian;
+	gradient[1] = dFdmu1Jacobian;
+	gradient[2] = dFdresJacobian;
+	gradient[3] = dFdmu2Jacobian;
+	gradient[4] = dFdnJacobian;
+	 
   }
   else{
 	val = pdfTest_->value_and_parameter_gradient_1d(x,  gradient2G);
 	Eigen::MatrixXd JacobMatrix = Jacobian(x,mu1_,mu2_,pp_,res_,n_);
 	for (int i=0; i < 5;i++){
 		dFdppJacobian += gradient2G(i)*JacobMatrix(i,0);
-		//~ dFdmu1Jacobian += gradient2G(i)*JacobMatrix(i,1);
+		dFdmu1Jacobian += gradient2G(i)*JacobMatrix(i,1);
 		dFdresJacobian += gradient2G(i)*JacobMatrix(i,2);
 		dFdmu2Jacobian += gradient2G(i)*JacobMatrix(i,3);
 		dFdnJacobian += gradient2G(i)*JacobMatrix(i,4);
 		}
 	gradient[0] = dFdppJacobian;
+	gradient[1] = dFdmu1Jacobian;
 	gradient[2] = dFdresJacobian;
 	gradient[3] = dFdmu2Jacobian;
 	gradient[4] = dFdnJacobian;
