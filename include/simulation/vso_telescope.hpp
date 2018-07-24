@@ -87,6 +87,8 @@ class VSOTelescope
                double PS, double PR, double PGSX, double PGSZ,
                double CSP, const Eigen::Vector3d& FPR,
                double CIP, bool PP,
+               const Eigen::Vector3d& WIN_CEN, double WIN_RAD, double WIN_THICK,
+               double WIN_N,
                const std::vector<VSOObscuration*>& OBSVEC_PRE = {},
                const std::vector<VSOObscuration*>& OBSVEC_POST = {}
                );
@@ -237,6 +239,11 @@ class VSOTelescope
   double                 cameraIP() const { return fCameraIP; }
   bool                   pixelParity() const { return fPixelParity; }
 
+  const Eigen::Vector3d& windowCenter() const { return fWindowCenter; }
+  double                 windowOuterRadius() const { return fWindowOuterRadius; }
+  double                 windowThickness() const { return fWindowThickness; }
+  double                 windowRefractiveIndex() const { return fWindowRefractiveIndex; }
+
   unsigned               numPreReflectionObscurations() const { return fPreObscurations.size(); }
   unsigned               numPostReflectionObscurations() const { return fPostObscurations.size(); }
 
@@ -309,6 +316,15 @@ class VSOTelescope
   double          fCameraIP;
   bool            fPixelParity;       //!< Parity for counting pixels; 1 => counting toward +x-axis
   //!  in reflector r.f.; -1 => counting toward -x-axis
+
+  // ************************************************************************
+  // Window Parameters
+  // ************************************************************************
+
+  Eigen::Vector3d fWindowCenter;      //!< Center of window spheres
+  double          fWindowOuterRadius; //!< Radius of window outer sphere
+  double          fWindowThickness;   //!< Thickness of window
+  double          fWindowRefractiveIndex; //!< Refractive index of window
 
   // ************************************************************************
   // Mirrors and Pixel data
