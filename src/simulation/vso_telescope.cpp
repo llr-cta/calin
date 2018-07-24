@@ -672,6 +672,10 @@ dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const
   calin::math::vector3d_util::dump_as_scaled_proto(fFPRotation, 180.0/M_PI, d->mutable_fp_rotation());
   d->set_camera_ip(fCameraIP);
   d->set_pixel_labeling_parity(fPixelParity);
+  calin::math::vector3d_util::dump_as_proto(fWindowCenter, d->mutable_window_center());
+  d->set_window_outer_radius(fWindowOuterRadius);
+  d->set_window_thickness(fWindowThickness);
+  d->set_window_refractive_index(fWindowRefractiveIndex);
 
   for(auto iobs : fPreObscurations)
     iobs->dump_as_proto(d->add_pre_reflection_obscuration());
