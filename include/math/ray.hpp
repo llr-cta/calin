@@ -108,6 +108,18 @@ public:
 
   enum IPOut { IPO_NONE, IPO_FIRST, IPO_SECOND };
 
+  bool propagate_to_standard_sphere_1st_interaction_fwd_bwd(double radius,
+    double n = 1.0);
+
+  bool propagate_to_standard_sphere_1st_interaction_fwd_only(double radius,
+    double n = 1.0);
+
+  bool propagate_to_y_sphere_1st_interaction_fwd_bwd(double radius,
+    double surface_y_min = 0, double n = 1.0);
+
+  bool propagate_to_y_sphere_1st_interaction_fwd_only(double radius,
+    double surface_y_min = 0, double n = 1.0);
+
   bool propagate_to_standard_sphere_2nd_interaction_fwd_bwd(double radius,
     double n = 1.0);
 

@@ -50,7 +50,7 @@ VSOTelescope::VSOTelescope():
     fPixelRotation(), fCosPixelRotation(1.0), fSinPixelRotation(0.0),
     fPixelGridShiftX(), fPixelGridShiftZ(), fConcSurvProb(),
     fFPRotation(), fCameraIP(), fPixelParity(),
-    fWindowCenter(), fWindowOuterRadius(), fWindowThickness(), fWindowRefractiveIndex(),
+    fWindowFront(), fWindowOuterRadius(), fWindowThickness(), fWindowRefractiveIndex(),
     fPreObscurations(), fPostObscurations(),
     fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), rot_reflector_to_global_()
 {
@@ -67,8 +67,7 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
 	     const Eigen::Vector3d& FPT, double CD, double FOV,
        double D, double PS, double PR, double PGSX, double PGSZ,
 	     double CSP, const Eigen::Vector3d& FPR, double CIP, bool PP,
-       const Eigen::Vector3d& WIN_CEN, double WIN_RAD, double WIN_THICK,
-       double WIN_N,
+       double WIN_FRONT, double WIN_RAD, double WIN_THICK, double WIN_N,
 	     const std::vector<VSOObscuration*>& OBSVEC_PRE,
        const std::vector<VSOObscuration*>& OBSVEC_POST
 	     ):
@@ -85,7 +84,7 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
     fPixelGridShiftX(PGSX), fPixelGridShiftZ(PGSZ),
     fConcSurvProb(CSP),
     fFPRotation(FPR), fCameraIP(CIP), fPixelParity(PP),
-    fWindowCenter(WIN_CEN), fWindowOuterRadius(WIN_RAD),
+    fWindowFront(WIN_FRONT), fWindowOuterRadius(WIN_RAD),
     fWindowThickness(WIN_THICK), fWindowRefractiveIndex(WIN_N),
     fPreObscurations(OBSVEC_PRE), fPostObscurations(OBSVEC_POST),
     fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), rot_reflector_to_global_()
@@ -118,7 +117,7 @@ VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fConcSurvProb(o.fConcSurvProb),
     fFPRotation(o.fFPRotation), fCameraIP(o.fCameraIP),
     fPixelParity(o.fPixelParity),
-    fWindowCenter(o.fWindowCenter), fWindowOuterRadius(o.fWindowOuterRadius),
+    fWindowFront(o.fWindowFront), fWindowOuterRadius(o.fWindowOuterRadius),
     fWindowThickness(o.fWindowThickness), fWindowRefractiveIndex(o.fWindowRefractiveIndex),
     fPreObscurations(), fPostObscurations(),
     fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(),
@@ -204,7 +203,7 @@ const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
   fFPRotation        = o.fFPRotation;
   fCameraIP          = o.fCameraIP;
   fPixelParity       = o.fPixelParity;
-  fWindowCenter      = o.fWindowCenter;
+  fWindowFront      = o.fWindowFront;
   fWindowOuterRadius = o.fWindowOuterRadius;
   fWindowThickness   = o.fWindowThickness;
   fWindowRefractiveIndex = o.fWindowRefractiveIndex;
@@ -672,7 +671,7 @@ dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const
   calin::math::vector3d_util::dump_as_scaled_proto(fFPRotation, 180.0/M_PI, d->mutable_fp_rotation());
   d->set_camera_ip(fCameraIP);
   d->set_pixel_labeling_parity(fPixelParity);
-  calin::math::vector3d_util::dump_as_proto(fWindowCenter, d->mutable_window_center());
+  d->set_window_front(fWindowFront);
   d->set_window_outer_radius(fWindowOuterRadius);
   d->set_window_thickness(fWindowThickness);
   d->set_window_refractive_index(fWindowRefractiveIndex);
@@ -724,7 +723,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOTelescopeData& d)
     calin::math::vector3d_util::from_scaled_proto(d.fp_rotation(), M_PI/180.0), // FPR
     d.camera_ip(), // CIP
     d.pixel_labeling_parity(), // PP
-    calin::math::vector3d_util::from_proto(d.window_center()),
+    d.window_front(),
     d.window_outer_radius(),
     d.window_thickness(),
     d.window_refractive_index()

@@ -255,9 +255,9 @@ message VSOTelescopeData {
      "the +x-axis when this flag is FALSE, and in the direction of the "
      "-x-axis when this flag is TRUE (in the camera r.f.)."];
 
-  common_types.Vector3D window_center                      = 40
-    [(CFO).desc = "Position of center of window sphere or point on planar "
-      "window in reflector frame.",
+  double window_front                                      = 40
+    [(CFO).desc = "Position of outer window surface along y-axis window in "
+      "reflector frame.",
     (CFO).units = "cm"];
   double window_outer_radius                               = 41
     [(CFO).desc = "Radius of outer window sphere, must be positive or zero. If "
@@ -508,9 +508,9 @@ message HexDCReflectorParameters
 };
 
 message SphericalWindowParameters {
-  common_types.Vector3D outer_sphere_point                 = 1
-    [(CFO).desc = "Position of point on outer window surface in reflector "
-      "frame with normal along the negative y-axis.",
+  double front_y_coord                                     = 1
+    [(CFO).desc = "Position of point on outer window surface along y-axis in "
+      "reflector frame with normal along the negative y-axis.",
      (CFO).units = "cm"];
   double outer_radius                                      = 2
     [(CFO).desc = "Radius of outer window sphere, must be positive or zero. If "

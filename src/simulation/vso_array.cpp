@@ -170,7 +170,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
       for(const auto& obs : param.post_reflection_obscuration())
         obsvec_post.push_back(VSOObscuration::create_from_proto(obs));
 
-      Eigen::Vector3d win_pos;
+      double win_front = 0;
       double win_radius = 0;
       double win_thickness = 0;
       double win_n = 0;
@@ -180,12 +180,11 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
         and param.spherical_window().thickness()>0
         and param.spherical_window().refractive_index()>0)
       {
-        win_pos = calin::math::vector3d_util::from_proto(param.spherical_window().outer_sphere_point());
+        win_front = param.spherical_window().front_y_coord();
         if(param.spherical_window().outer_radius()==0 or
             std::isinf(param.spherical_window().outer_radius())) {
           win_radius = 0;
         } else {
-          win_pos.y() += param.spherical_window().outer_radius();
           win_radius = param.spherical_window().outer_radius();
         }
         win_thickness = param.spherical_window().thickness();
@@ -222,7 +221,7 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
              calin::math::vector3d_util::from_scaled_proto(param.focal_plane().rotation(), M_PI/180.0),
              0.0,
              param.pixel().pixel_labeling_parity(),
-             win_pos, win_radius, win_thickness, win_n,
+             win_front, win_radius, win_thickness, win_n,
 	           obsvec_pre,
              obsvec_post
 		         );

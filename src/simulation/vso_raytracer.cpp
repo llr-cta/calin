@@ -292,6 +292,75 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
 
   calin::math::ray::Ray obs_test_ray(ray);
 
+  // Bending at window, if defined
+  if(info.scope->windowThickness() > 0)
+  {
+    Eigen::Vector3d er;
+    Eigen::Vector3d et;
+    if(info.scope->windowOuterRadius() > 0) {
+      // Spherical window
+      good = ray.propagate_to_y_sphere_1st_interaction_fwd_only(
+        info.scope->windowOuterRadius(), info.scope->windowFront(), ref_index);
+      er = ray.position();
+      er.y() -= info.scope->windowOuterRadius()+info.scope->windowFront();
+      er /= info.scope->windowOuterRadius();
+    } else {
+      good = ray.propagate_to_y_plane(-info.scope->windowFront(), ref_index);
+      er << 0, -1, 0;
+    }
+
+    if(!good)
+    {
+      info.status = TS_MISSED_WINDOW;
+      info.scope->reflectorToGlobal(ray);
+      return 0;
+    }
+
+    double cosi = ray.direction().dot(er);
+    if(cosi < 1.0) {
+      et = ray.direction() - cosi * et;
+      et.normalize();
+    } else {
+      et << 1, 0, 0; // arbitrarily
+    }
+    double sint = ray.direction().dot(et);
+    double sinr = sint * (ref_index/info.scope->windowRefractiveIndex());
+    double cosr = -sqrt(1-sinr*sinr);
+    ray.direction() = cosr*er + sinr*et;
+
+    if(info.scope->windowOuterRadius() > 0) {
+      // Spherical window
+      good = ray.propagate_to_y_sphere_1st_interaction_fwd_only(
+        info.scope->windowOuterRadius()-info.scope->windowThickness(),
+        info.scope->windowFront()+info.scope->windowThickness(),
+        info.scope->windowRefractiveIndex());
+      er = ray.position();
+      er.y() -= info.scope->windowOuterRadius() + info.scope->windowFront();
+      er /= info.scope->windowOuterRadius()-info.scope->windowThickness();
+    } else {
+      good = ray.propagate_to_y_plane(-info.scope->windowFront(), ref_index);
+    }
+
+    if(!good)
+    {
+      info.status = TS_MISSED_WINDOW;
+      info.scope->reflectorToGlobal(ray);
+      return 0;
+    }
+
+    cosi = ray.direction().dot(er);
+    if(cosi < 1.0) {
+      et = ray.direction() - cosi * et;
+      et.normalize();
+    } else {
+      et << 1, 0, 0; // arbitrarily
+    }
+    sint = ray.direction().dot(et);
+    sinr = sint * (info.scope->windowRefractiveIndex()/ref_index);
+    cosr = -sqrt(1-sinr*sinr);
+    ray.direction() = cosr*er + sinr*et;
+  }
+
   // Translate to focal plane coordinates
   info.scope->reflectorToFocalPlane(ray);
 
