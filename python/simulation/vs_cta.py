@@ -33,7 +33,7 @@ def dms(d,m,s):
         s = abs(s)
     return sign * (d + m/60.0 + s/3600.0)
 
-def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0):
+def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0, include_window = False):
     mst = calin.ix.simulation.vs_optics.IsotropicDCArrayParameters()
     mst.mutable_array_origin().set_latitude(dms(28, 45, 47.36))
     mst.mutable_array_origin().set_longitude(dms(-17, 53, 23.93))
@@ -101,6 +101,13 @@ def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0):
         obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_z(0)
         obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_y(mst.focal_plane().translation().y()-222.5/10)
         obs_inner_aperture.mutable_circular_aperture().set_diameter(2304.0/10)
+
+    if include_window:
+        win = mst.mutable_spherical_window()
+        win.set_front_y_coord(mst.focal_plane().translation().y() + 427.5/10)
+        win.set_outer_radius(3443.0/10)
+        win.set_thickness(5.25/10.0)
+        win.set_refractive_index(1.5)
 
     return mst
 
