@@ -318,13 +318,13 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
 
     double cosi = ray.direction().dot(er);
     if(cosi < 1.0) {
-      et = ray.direction() - cosi * et;
+      et = ray.direction() - cosi * er;
       et.normalize();
     } else {
       et << 1, 0, 0; // arbitrarily
     }
-    double sint = ray.direction().dot(et);
-    double sinr = sint * (ref_index/info.scope->windowRefractiveIndex());
+    double sini = ray.direction().dot(et);
+    double sinr = sini * (ref_index/info.scope->windowRefractiveIndex());
     double cosr = -sqrt(1-sinr*sinr);
     ray.direction() = cosr*er + sinr*et;
 
@@ -350,13 +350,13 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
 
     cosi = ray.direction().dot(er);
     if(cosi < 1.0) {
-      et = ray.direction() - cosi * et;
+      et = ray.direction() - cosi * er;
       et.normalize();
     } else {
       et << 1, 0, 0; // arbitrarily
     }
-    sint = ray.direction().dot(et);
-    sinr = sint * (info.scope->windowRefractiveIndex()/ref_index);
+    sini = ray.direction().dot(et);
+    sinr = sini * (info.scope->windowRefractiveIndex()/ref_index);
     cosr = -sqrt(1-sinr*sinr);
     ray.direction() = cosr*er + sinr*et;
   }
