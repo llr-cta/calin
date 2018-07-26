@@ -295,15 +295,15 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   // Bending at window, if defined
   if(info.scope->windowThickness() > 0)
   {
+    const double n = info.scope->windowRefractiveIndex()/ref_index;
     Eigen::Vector3d er;
-    Eigen::Vector3d et;
     if(info.scope->windowOuterRadius() > 0) {
       // Spherical window
       good = ray.propagate_to_y_sphere_1st_interaction_fwd_only(
         info.scope->windowOuterRadius(), info.scope->windowFront(), ref_index);
       er = ray.position();
       er.y() -= info.scope->windowOuterRadius()+info.scope->windowFront();
-      er /= info.scope->windowOuterRadius();
+      er *= 1.0/info.scope->windowOuterRadius();
     } else {
       good = ray.propagate_to_y_plane(-info.scope->windowFront(), ref_index);
       er << 0, -1, 0;
@@ -316,17 +316,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
       return 0;
     }
 
-    double cosi = ray.direction().dot(er);
-    if(cosi < 1.0) {
-      et = ray.direction() - cosi * er;
-      et.normalize();
-    } else {
-      et << 1, 0, 0; // arbitrarily
-    }
-    double sini = ray.direction().dot(et);
-    double sinr = sini * (ref_index/info.scope->windowRefractiveIndex());
-    double cosr = -sqrt(1-sinr*sinr);
-    ray.direction() = cosr*er + sinr*et;
+    ray.refract_at_surface_in(er, n);
 
     if(info.scope->windowOuterRadius() > 0) {
       // Spherical window
@@ -336,29 +326,29 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
         info.scope->windowRefractiveIndex());
       er = ray.position();
       er.y() -= info.scope->windowOuterRadius() + info.scope->windowFront();
-      er /= info.scope->windowOuterRadius()-info.scope->windowThickness();
+      er *= -1.0/(info.scope->windowOuterRadius()-info.scope->windowThickness());
     } else {
       good = ray.propagate_to_y_plane(-info.scope->windowFront(), ref_index);
+      er << 0, 1, 0;
     }
 
     if(!good)
     {
+      // Case of internal surface not encountered - ray exits outer again
       info.status = TS_MISSED_WINDOW;
       info.scope->reflectorToGlobal(ray);
       return 0;
     }
 
-    cosi = ray.direction().dot(er);
-    if(cosi < 1.0) {
-      et = ray.direction() - cosi * er;
-      et.normalize();
-    } else {
-      et << 1, 0, 0; // arbitrarily
+    good = ray.refract_at_surface_out(er, n);
+
+    if(!good)
+    {
+      // Total internal reflection not supported
+      info.status = TS_MISSED_WINDOW;
+      info.scope->reflectorToGlobal(ray);
+      return 0;
     }
-    sini = ray.direction().dot(et);
-    sinr = sini * (info.scope->windowRefractiveIndex()/ref_index);
-    cosr = -sqrt(1-sinr*sinr);
-    ray.direction() = cosr*er + sinr*et;
   }
 
   // Translate to focal plane coordinates

@@ -80,6 +80,23 @@ public:
     dir_ -= surface_norm * (2.0*(dir_.dot(surface_norm)));
   }
 
+  void refract_at_surface_in(const Eigen::Vector3d& surface_norm,
+      double n) {
+    const double eta = 1.0/n;
+    const double cosi = -dir_.dot(surface_norm);
+    const double c2 = 1-eta*eta*(1-cosi*cosi);
+    dir_ = eta*dir_ + (eta*cosi - std::sqrt(c2))*surface_norm;
+  };
+
+  bool refract_at_surface_out(const Eigen::Vector3d& surface_norm, double n) {
+    const double eta = n;
+    const double cosi = dir_.dot(surface_norm);
+    const double c2 = 1-eta*eta*(1-cosi*cosi);
+    if(c2<0)return false;
+    dir_ = eta*dir_ - (eta*cosi - std::sqrt(c2))*surface_norm;
+    return true;
+  };
+
   //! Propagate free particle fixed distance
   void propagate_dist(double dist, double n = 1.0) {
     pos_ += dir_ * dist;
