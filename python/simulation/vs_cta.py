@@ -104,7 +104,7 @@ def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0, include_window = F
 
     if include_window:
         win = mst.mutable_spherical_window()
-        win.set_front_y_coord(mst.focal_plane().translation().y() + 427.5/10)
+        win.set_front_y_coord(mst.focal_plane().translation().y() - 427.5/10)
         win.set_outer_radius(3443.0/10)
         win.set_thickness(5.25/10.0)
         win.set_refractive_index(1.5)
