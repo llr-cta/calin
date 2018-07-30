@@ -237,6 +237,41 @@ bool Ray::propagate_to_standard_sphere_2nd_interaction_fwd_bwd(double radius,
   return true;
 }
 
+bool Ray::propagate_to_y_sphere_2nd_interaction_fwd_bwd(double radius,
+  double surface_y_min, double n)
+{
+  Eigen::Vector3d pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
+  const double b_2 = pos_rel.dot(dir_);
+  const double c = pos_rel.squaredNorm() - SQR(radius);
+
+  const double disc_4 = SQR(b_2)-c;
+  if(disc_4 < 0)return false;
+
+  const double time = std::sqrt(disc_4) - b_2;
+  propagate_dist(time, n);
+  return true;
+}
+
+bool Ray::propagate_to_y_sphere_2nd_interaction_fwd_only(double radius,
+  double surface_y_min, double n)
+{
+  Eigen::Vector3d pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
+  const double b_2 = pos_rel.dot(dir_);
+  const double c = pos_rel.squaredNorm() - SQR(radius);
+
+  const double disc_4 = SQR(b_2)-c;
+  if(disc_4 < 0)return false;
+
+  const double time = std::sqrt(disc_4) - b_2;
+
+  if(time>0) {
+    propagate_dist(time, n);
+    return true;
+  }
+
+  return false;
+}
+
 Ray::IPOut Ray::propagate_to_sphere(const Eigen::Vector3d& center, double radius,
   IntersectionPoint ip, bool time_reversal_ok, double n)
 {
