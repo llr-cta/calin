@@ -25,8 +25,10 @@
 #include <gtest/gtest.h>
 
 #include <util/vcl.hpp>
+#include <math/rng_vcl.hpp>
 
 using namespace calin::util::vcl;
+using namespace calin::math::rng;
 
 TEST(TestVCL, Print) {
   Vec8f v(1.234);
@@ -35,6 +37,72 @@ TEST(TestVCL, Print) {
   std::cout << vi << '\n';
   std::cout << to_float(vi) << '\n';
   std::cout << to_float(vi) + 0.5 << '\n';
+}
+
+TEST(TestVCL, RNG128) {
+  uint64_t seeds[2] = { 1, 2 };
+  NR3_VCLRNGCore<VCL128Architecture> rng(seeds);
+  NR3RNGCore rng0(seeds[0]);
+  NR3RNGCore rng1(seeds[1]);
+  std::cout << rng.uniform_uint64() << ' '
+    << rng0.uniform_uint64() << ' '
+    << rng1.uniform_uint64() << '\n';
+
+  std::cout << rng.uniform_uint64() << ' '
+    << rng0.uniform_uint64() << ' '
+    << rng1.uniform_uint64() << '\n';
+}
+
+TEST(TestVCL, RNG256) {
+  uint64_t seeds[4] = { 1, 2, 3, 4 };
+  NR3_VCLRNGCore<VCL256Architecture> rng(seeds);
+  NR3RNGCore rng0(seeds[0]);
+  NR3RNGCore rng1(seeds[1]);
+  NR3RNGCore rng2(seeds[2]);
+  NR3RNGCore rng3(seeds[3]);
+  std::cout << rng.uniform_uint64() << ' '
+    << rng0.uniform_uint64() << ' '
+    << rng1.uniform_uint64() << ' '
+    << rng2.uniform_uint64() << ' '
+    << rng3.uniform_uint64() << '\n';
+
+  std::cout << rng.uniform_uint64() << ' '
+    << rng0.uniform_uint64() << ' '
+    << rng1.uniform_uint64() << ' '
+    << rng2.uniform_uint64() << ' '
+    << rng3.uniform_uint64() << '\n';
+}
+
+TEST(TestVCL, RNG512) {
+  uint64_t seeds[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
+  NR3_VCLRNGCore<VCL512Architecture> rng(seeds);
+  NR3RNGCore rng0(seeds[0]);
+  NR3RNGCore rng1(seeds[1]);
+  NR3RNGCore rng2(seeds[2]);
+  NR3RNGCore rng3(seeds[3]);
+  NR3RNGCore rng4(seeds[4]);
+  NR3RNGCore rng5(seeds[5]);
+  NR3RNGCore rng6(seeds[6]);
+  NR3RNGCore rng7(seeds[7]);
+  std::cout << rng.uniform_uint64() << ' '
+    << rng0.uniform_uint64() << ' '
+    << rng1.uniform_uint64() << ' '
+    << rng2.uniform_uint64() << ' '
+    << rng3.uniform_uint64() << ' '
+    << rng4.uniform_uint64() << ' '
+    << rng5.uniform_uint64() << ' '
+    << rng6.uniform_uint64() << ' '
+    << rng7.uniform_uint64() << '\n';
+
+  std::cout << rng.uniform_uint64() << ' '
+    << rng0.uniform_uint64() << ' '
+    << rng1.uniform_uint64() << ' '
+    << rng2.uniform_uint64() << ' '
+    << rng3.uniform_uint64() << ' '
+    << rng4.uniform_uint64() << ' '
+    << rng5.uniform_uint64() << ' '
+    << rng6.uniform_uint64() << ' '
+    << rng7.uniform_uint64() << '\n';
 }
 
 int main(int argc, char **argv) {

@@ -220,6 +220,7 @@ class NR3RNGCore: public RNGCore
     v_ ^= v_ >> C_NR3_V_SHIFT1;
     v_ ^= v_ << C_NR3_V_SHIFT2;
     v_ ^= v_ >> C_NR3_V_SHIFT3;
+    // Slight inefficiency in next statement - 32bit multiplies would be OK
     w_ = C_NR3_W_MUL*(w_ & 0xFFFFFFFF) + (w_ >> C_NR3_W_SHIFT1);
     uint64_t x = u_ ^ (u_ << C_NR3_X_SHIFT1);
     x ^= x >> C_NR3_X_SHIFT2;

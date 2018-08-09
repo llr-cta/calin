@@ -15,7 +15,7 @@
 
 add_executable(test_vcl test_vcl.cpp)
 target_link_libraries(test_vcl ${GTEST_BOTH_LIBRARIES}
-	calin_util)
-add_test(TestVCL test_vcl)
+	calin_math calin_util)
+#add_test(TestVCL test_vcl)
 install(TARGETS test_vcl
   DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
