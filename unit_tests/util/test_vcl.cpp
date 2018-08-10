@@ -41,10 +41,11 @@ TEST(TestVCL, Print) {
 }
 
 TEST(TestVCL, RNG128) {
+  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
   uint64_t seeds[2] = { 1, 2 };
-  NR3_VCLRNGCore<VCL128Architecture> rng(seeds);
-  NR3RNGCore rng0(seeds[0]);
-  NR3RNGCore rng1(seeds[1]);
+  NR3_VCLRNGCore<VCL128Architecture> rng(seeds,fixture,"rng");
+  NR3RNGCore rng0(seeds[0],fixture,"rng0");
+  NR3RNGCore rng1(seeds[1],fixture,"rng1");
   std::cout << rng.uniform_uint64() << ' '
     << rng0.uniform_uint64() << ' '
     << rng1.uniform_uint64() << '\n';
@@ -55,12 +56,13 @@ TEST(TestVCL, RNG128) {
 }
 
 TEST(TestVCL, RNG256) {
+  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
   uint64_t seeds[4] = { 1, 2, 3, 4 };
-  NR3_VCLRNGCore<VCL256Architecture> rng(seeds);
-  NR3RNGCore rng0(seeds[0]);
-  NR3RNGCore rng1(seeds[1]);
-  NR3RNGCore rng2(seeds[2]);
-  NR3RNGCore rng3(seeds[3]);
+  NR3_VCLRNGCore<VCL256Architecture> rng(seeds,fixture,"rng");
+  NR3RNGCore rng0(seeds[0],fixture,"rng0");
+  NR3RNGCore rng1(seeds[1],fixture,"rng1");
+  NR3RNGCore rng2(seeds[2],fixture,"rng2");
+  NR3RNGCore rng3(seeds[3],fixture,"rng3");
   std::cout << rng.uniform_uint64() << ' '
     << rng0.uniform_uint64() << ' '
     << rng1.uniform_uint64() << ' '

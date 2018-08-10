@@ -160,7 +160,7 @@ template<typename VCLArchitecture> class NR3_VCLRNGCore:
   public VCLRNGCore<VCLArchitecture>
 {
 public:
-  // typedef calin::ix::math::rng::NR3RNGCoreData ix_core_data_type;
+  typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
 
   NR3_VCLRNGCore(uint64_t seed = 0,
       const std::string& created_by = "", const std::string& comment = ""):
@@ -171,11 +171,7 @@ public:
     std::mt19937_64 gen(seed_);
     uint64_t seeds[VCLArchitecture::num_uint64];
     for(unsigned i=0; i<VCLArchitecture::num_uint64; i++)seeds[i] = gen();
-    sequence_seeds_.load(seeds);
-    u_ = sequence_seeds_^v_; uniform_uint64();
-    v_ = u_; uniform_uint64();
-    w_ = v_; uniform_uint64();
-    calls_ = 0;
+    init(seeds);
     this->write_provenance(created_by, comment);
   }
 
@@ -185,16 +181,48 @@ public:
     seed_(0), sequence_seeds_(),
     u_(C_NR3_U_INIT), v_(C_NR3_V_INIT), w_(C_NR3_W_INIT)
   {
-    sequence_seeds_.load(seeds);
-    u_ = sequence_seeds_^v_; uniform_uint64();
-    v_ = u_; uniform_uint64();
-    w_ = v_; uniform_uint64();
-    calls_ = 0;
+    init(seeds);
     this->write_provenance(created_by, comment);
   }
 
-  // NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto, bool restore_state = false,
-  //   const std::string& created_by = "", const std::string& comment = "");
+  NR3_VCLRNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto, bool restore_state = false,
+      const std::string& created_by = "", const std::string& comment = ""):
+    VCLRNGCore<VCLArchitecture>(),
+    seed_(proto.seed())
+  {
+    // We allow either zero of num_uint64 seeds.. zero means we do "seed only" reinit
+    if(proto.vec_stream_seed_size() == 0)
+    {
+      if(seed_ == 0)seed_ = RNG::nonzero_uint64_from_random_device();
+      std::mt19937_64 gen(seed_);
+      uint64_t seeds[VCLArchitecture::num_uint64];
+      for(unsigned i=0; i<VCLArchitecture::num_uint64; i++)seeds[i] = gen();
+      init(seeds);
+    }
+    else if(proto.vec_stream_seed_size() == VCLArchitecture::num_uint64)
+    {
+      init(proto.vec_stream_seed().data());
+      if(restore_state and proto.state_saved())
+      {
+        if(proto.vec_u_size() != VCLArchitecture::num_uint64
+            or proto.vec_v_size() != VCLArchitecture::num_uint64
+            or proto.vec_w_size() != VCLArchitecture::num_uint64)
+          throw std::runtime_error(std::string("NR3_AVX2_RNGCore<")
+            + VCLArchitecture::architecture_name + ">: saved state vectors must have "
+            + std::to_string(VCLArchitecture::num_uint64) + " elements");
+        calls_ = proto.calls();
+        u_.load(proto.vec_u().data());
+        v_.load(proto.vec_v().data());
+        w_.load(proto.vec_w().data());
+      }
+    }
+    else
+    {
+      throw std::runtime_error(std::string("NR3_AVX2_RNGCore<")
+        + VCLArchitecture::architecture_name + ">: saved seed vectors must have "
+        + std::to_string(VCLArchitecture::num_uint64) + " elements");
+    }
+  }
 
   virtual ~NR3_VCLRNGCore() { }
 
@@ -255,6 +283,14 @@ public:
 #endif
 
 private:
+  void init(const uint64_t* seeds)
+  {
+    sequence_seeds_.load(seeds);
+    u_ = sequence_seeds_^v_; uniform_uint64();
+    v_ = u_; uniform_uint64();
+    w_ = v_; uniform_uint64();
+  }
+
   uint64_t seed_;
   uint64_t calls_ = 0;
   typename VCLArchitecture::uint64_vec_type sequence_seeds_;

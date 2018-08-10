@@ -40,6 +40,8 @@ namespace calin { namespace util { namespace vcl {
 
   struct VCL128Architecture
   {
+    constexpr static char architecture_name[] = "VCL128Architecture";
+
     constexpr static unsigned vec_bits   = 128;
     constexpr static unsigned vec_bytes  = vec_bits/8;
     constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
@@ -81,6 +83,8 @@ namespace calin { namespace util { namespace vcl {
 
   struct VCL256Architecture
   {
+    constexpr static char architecture_name[] = "VCL256Architecture";
+
     constexpr static unsigned vec_bits   = 256;
     constexpr static unsigned vec_bytes  = vec_bits/8;
     constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
@@ -122,6 +126,8 @@ namespace calin { namespace util { namespace vcl {
 
   struct VCL512Architecture
   {
+    constexpr static char architecture_name[] = "VCL512Architecture";
+
     constexpr static unsigned vec_bits   = 512;
     constexpr static unsigned vec_bytes  = vec_bits/8;
     constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
