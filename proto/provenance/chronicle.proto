@@ -67,9 +67,19 @@ message RNGCoreRecord
   string created_by                                        = 4;
 }
 
+message VCLRNGCoreRecord
+{
+  calin.ix.util.timestamp.Timestamp timestamp              = 1
+    [ (CFO).sql.inline_message=true ];
+  calin.ix.math.rng.VCLRNGCoreData vcl_rng_core            = 2;
+  string comment                                           = 3;
+  string created_by                                        = 4;
+}
+
 message Chronicle
 {
   repeated FileIORecord file_io_record                     = 1;
   repeated RNGRecord rng_record                            = 10;
   repeated RNGCoreRecord rng_core_record                   = 11;
+  repeated VCLRNGCoreRecord vcl_rng_core_record            = 12;
 }

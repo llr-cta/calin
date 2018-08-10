@@ -24,6 +24,7 @@
 
 #include <math/rng.hpp>
 #include <util/vcl.hpp>
+#include <provenance/chronicle.hpp>
 
 namespace calin { namespace math { namespace rng {
 
@@ -31,17 +32,32 @@ template<typename VCLArchitecture> class VCLRNGCore: public VCLArchitecture
 {
 public:
   virtual ~VCLRNGCore() { }
+
   virtual typename VCLArchitecture::uint64_vec_type uniform_uint64() = 0;
-  // virtual void save_to_proto(ix::math::rng::RNGCoreData* proto) const = 0;
-  // ix::math::rng::RNGCoreData* as_proto() const {
-  //   auto* proto = new ix::math::rng::RNGCoreData;
-  //   save_to_proto(proto); return proto; }
+
+  virtual void save_to_proto(calin::ix::math::rng::VCLRNGCoreData* proto) const = 0;
+
+  calin::ix::math::rng::VCLRNGCoreData* as_proto() const
+  {
+    auto* proto = new calin::ix::math::rng::VCLRNGCoreData;
+    save_to_proto(proto);
+    return proto;
+  }
+
   // static RNGCore* create_from_proto(const ix::math::rng::RNGCoreData& proto,
   //   bool restore_state = false,
-  //   const std::string& created_by = "", const std::string& comment = "");
+  //   const std::string& created_by = "", const std::string& comment = "")
+  // {
+  //
+  // }
 
 protected:
-  // void write_provenance(const std::string& created_by, const std::string& comment = "");
+  void write_provenance(const std::string& created_by, const std::string& comment = "")
+  {
+    const ix::math::rng::VCLRNGCoreData* proto = this->as_proto();
+    calin::provenance::chronicle::register_vcl_rng_core(*proto, created_by, comment);
+    delete proto;
+  }
 };
 
 // class RNG
@@ -160,7 +176,7 @@ public:
     v_ = u_; uniform_uint64();
     w_ = v_; uniform_uint64();
     calls_ = 0;
-    // write_provenance(created_by, comment);
+    this->write_provenance(created_by, comment);
   }
 
   NR3_VCLRNGCore(uint64_t seeds[VCLArchitecture::num_uint64],
@@ -174,12 +190,13 @@ public:
     v_ = u_; uniform_uint64();
     w_ = v_; uniform_uint64();
     calls_ = 0;
-    // write_provenance(created_by, comment);
+    this->write_provenance(created_by, comment);
   }
 
   // NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto, bool restore_state = false,
   //   const std::string& created_by = "", const std::string& comment = "");
-  ~NR3_VCLRNGCore() { }
+
+  virtual ~NR3_VCLRNGCore() { }
 
   typename VCLArchitecture::uint64_vec_type uniform_uint64() override {
     calls_++;
@@ -196,9 +213,26 @@ public:
     return (x+v_)^w_;
   }
 
-  // void save_to_proto(ix::math::rng::NR3RNGCoreData* data) const;
-  // void save_to_proto(ix::math::rng::RNGCoreData* proto) const override;
-  //
+  void save_to_proto(calin::ix::math::rng::NR3_SIMD_RNGCoreData* data) const
+  {
+    data->set_seed(seed_);
+    data->set_calls(calls_);
+    data->set_state_saved(true);
+    for(unsigned i=0; i<VCLArchitecture::num_uint64; i++) {
+      data->add_vec_stream_seed(sequence_seeds_[i]);
+      data->add_vec_u(u_[i]);
+      data->add_vec_v(v_[i]);
+      data->add_vec_w(w_[i]);
+    }
+  }
+
+  void save_to_proto(calin::ix::math::rng::VCLRNGCoreData* proto) const override
+  {
+    proto->set_vcl_architecture(VCLArchitecture::vec_bits);
+    auto* data = proto->mutable_nr3_vcl_core();
+    save_to_proto(data);
+  }
+
   // static ix_core_data_type* mutable_core_data(ix::math::rng::RNGCoreData* proto) {
   //   return proto->mutable_nr3_core(); }
   // static const ix_core_data_type& core_data(const ix::math::rng::RNGCoreData& proto)

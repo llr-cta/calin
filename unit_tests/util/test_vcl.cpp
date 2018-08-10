@@ -26,6 +26,7 @@
 
 #include <util/vcl.hpp>
 #include <math/rng_vcl.hpp>
+#include <provenance/chronicle.hpp>
 
 using namespace calin::util::vcl;
 using namespace calin::math::rng;
@@ -74,16 +75,17 @@ TEST(TestVCL, RNG256) {
 }
 
 TEST(TestVCL, RNG512) {
+  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
   uint64_t seeds[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
-  NR3_VCLRNGCore<VCL512Architecture> rng(seeds);
-  NR3RNGCore rng0(seeds[0]);
-  NR3RNGCore rng1(seeds[1]);
-  NR3RNGCore rng2(seeds[2]);
-  NR3RNGCore rng3(seeds[3]);
-  NR3RNGCore rng4(seeds[4]);
-  NR3RNGCore rng5(seeds[5]);
-  NR3RNGCore rng6(seeds[6]);
-  NR3RNGCore rng7(seeds[7]);
+  NR3_VCLRNGCore<VCL512Architecture> rng(seeds,fixture,"rng");
+  NR3RNGCore rng0(seeds[0],fixture,"rng0");
+  NR3RNGCore rng1(seeds[1],fixture,"rng1");
+  NR3RNGCore rng2(seeds[2],fixture,"rng2");
+  NR3RNGCore rng3(seeds[3],fixture,"rng3");
+  NR3RNGCore rng4(seeds[4],fixture,"rng4");
+  NR3RNGCore rng5(seeds[5],fixture,"rng5");
+  NR3RNGCore rng6(seeds[6],fixture,"rng6");
+  NR3RNGCore rng7(seeds[7],fixture,"rng7");
   std::cout << rng.uniform_uint64() << ' '
     << rng0.uniform_uint64() << ' '
     << rng1.uniform_uint64() << ' '
@@ -103,6 +105,13 @@ TEST(TestVCL, RNG512) {
     << rng5.uniform_uint64() << ' '
     << rng6.uniform_uint64() << ' '
     << rng7.uniform_uint64() << '\n';
+}
+
+TEST(TestVCL, ZZ_DumpChronicle) {
+  calin::ix::provenance::chronicle::Chronicle* c =
+    calin::provenance::chronicle::copy_the_chronicle();
+  std::cout << c->DebugString();
+  delete c;
 }
 
 int main(int argc, char **argv) {

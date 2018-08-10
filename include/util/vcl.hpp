@@ -40,17 +40,18 @@ namespace calin { namespace util { namespace vcl {
 
   struct VCL128Architecture
   {
-    constexpr static unsigned vec_size   = 128;
-    constexpr static unsigned num_int8   = vec_size/sizeof(int8_t);
-    constexpr static unsigned num_uint8  = vec_size/sizeof(uint8_t);
-    constexpr static unsigned num_int16  = vec_size/sizeof(int16_t);
-    constexpr static unsigned num_uint16 = vec_size/sizeof(uint16_t);
-    constexpr static unsigned num_int32  = vec_size/sizeof(int32_t);
-    constexpr static unsigned num_uint32 = vec_size/sizeof(uint32_t);
-    constexpr static unsigned num_int64  = vec_size/sizeof(int64_t);
-    constexpr static unsigned num_uint64 = vec_size/sizeof(uint64_t);
-    constexpr static unsigned num_float  = vec_size/sizeof(float);
-    constexpr static unsigned num_double = vec_size/sizeof(double);
+    constexpr static unsigned vec_bits   = 128;
+    constexpr static unsigned vec_bytes  = vec_bits/8;
+    constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
+    constexpr static unsigned num_uint8  = vec_bytes/sizeof(uint8_t);
+    constexpr static unsigned num_int16  = vec_bytes/sizeof(int16_t);
+    constexpr static unsigned num_uint16 = vec_bytes/sizeof(uint16_t);
+    constexpr static unsigned num_int32  = vec_bytes/sizeof(int32_t);
+    constexpr static unsigned num_uint32 = vec_bytes/sizeof(uint32_t);
+    constexpr static unsigned num_int64  = vec_bytes/sizeof(int64_t);
+    constexpr static unsigned num_uint64 = vec_bytes/sizeof(uint64_t);
+    constexpr static unsigned num_float  = vec_bytes/sizeof(float);
+    constexpr static unsigned num_double = vec_bytes/sizeof(double);
 
     typedef Vec128b bool_vec_type;
     typedef Vec16c  int8_vec_type;
@@ -80,17 +81,18 @@ namespace calin { namespace util { namespace vcl {
 
   struct VCL256Architecture
   {
-    constexpr static unsigned vec_size   = 256;
-    constexpr static unsigned num_int8   = vec_size/sizeof(int8_t);
-    constexpr static unsigned num_uint8  = vec_size/sizeof(uint8_t);
-    constexpr static unsigned num_int16  = vec_size/sizeof(int16_t);
-    constexpr static unsigned num_uint16 = vec_size/sizeof(uint16_t);
-    constexpr static unsigned num_int32  = vec_size/sizeof(int32_t);
-    constexpr static unsigned num_uint32 = vec_size/sizeof(uint32_t);
-    constexpr static unsigned num_int64  = vec_size/sizeof(int64_t);
-    constexpr static unsigned num_uint64 = vec_size/sizeof(uint64_t);
-    constexpr static unsigned num_float  = vec_size/sizeof(float);
-    constexpr static unsigned num_double = vec_size/sizeof(double);
+    constexpr static unsigned vec_bits   = 256;
+    constexpr static unsigned vec_bytes  = vec_bits/8;
+    constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
+    constexpr static unsigned num_uint8  = vec_bytes/sizeof(uint8_t);
+    constexpr static unsigned num_int16  = vec_bytes/sizeof(int16_t);
+    constexpr static unsigned num_uint16 = vec_bytes/sizeof(uint16_t);
+    constexpr static unsigned num_int32  = vec_bytes/sizeof(int32_t);
+    constexpr static unsigned num_uint32 = vec_bytes/sizeof(uint32_t);
+    constexpr static unsigned num_int64  = vec_bytes/sizeof(int64_t);
+    constexpr static unsigned num_uint64 = vec_bytes/sizeof(uint64_t);
+    constexpr static unsigned num_float  = vec_bytes/sizeof(float);
+    constexpr static unsigned num_double = vec_bytes/sizeof(double);
 
     typedef Vec256b bool_vec_type;
     typedef Vec32c  int8_vec_type;
@@ -120,17 +122,18 @@ namespace calin { namespace util { namespace vcl {
 
   struct VCL512Architecture
   {
-    constexpr static unsigned vec_size   = 512;
-    constexpr static unsigned num_int8   = vec_size/sizeof(int8_t);
-    constexpr static unsigned num_uint8  = vec_size/sizeof(uint8_t);
-    constexpr static unsigned num_int16  = vec_size/sizeof(int16_t);
-    constexpr static unsigned num_uint16 = vec_size/sizeof(uint16_t);
-    constexpr static unsigned num_int32  = vec_size/sizeof(int32_t);
-    constexpr static unsigned num_uint32 = vec_size/sizeof(uint32_t);
-    constexpr static unsigned num_int64  = vec_size/sizeof(int64_t);
-    constexpr static unsigned num_uint64 = vec_size/sizeof(uint64_t);
-    constexpr static unsigned num_float  = vec_size/sizeof(float);
-    constexpr static unsigned num_double = vec_size/sizeof(double);
+    constexpr static unsigned vec_bits   = 512;
+    constexpr static unsigned vec_bytes  = vec_bits/8;
+    constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
+    constexpr static unsigned num_uint8  = vec_bytes/sizeof(uint8_t);
+    constexpr static unsigned num_int16  = vec_bytes/sizeof(int16_t);
+    constexpr static unsigned num_uint16 = vec_bytes/sizeof(uint16_t);
+    constexpr static unsigned num_int32  = vec_bytes/sizeof(int32_t);
+    constexpr static unsigned num_uint32 = vec_bytes/sizeof(uint32_t);
+    constexpr static unsigned num_int64  = vec_bytes/sizeof(int64_t);
+    constexpr static unsigned num_uint64 = vec_bytes/sizeof(uint64_t);
+    constexpr static unsigned num_float  = vec_bytes/sizeof(float);
+    constexpr static unsigned num_double = vec_bytes/sizeof(double);
 
     // typedef Vec512b bool_vec_type;
     // typedef Vec64c  int8_vec_type;

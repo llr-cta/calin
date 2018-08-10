@@ -46,6 +46,8 @@ void register_calin_rng(const calin::ix::math::rng::RNGData& rng_data,
   const std::string& created_by, const std::string& comment = "");
 void register_rng_core(const calin::ix::math::rng::RNGCoreData& rng_data,
   const std::string& created_by, const std::string& comment = "");
+void register_vcl_rng_core(const calin::ix::math::rng::VCLRNGCoreData& vcl_rng_data,
+  const std::string& created_by, const std::string& comment = "");
 void register_external_rng(uint64_t seed, const std::string& rng_type,
   const std::string& created_by, void* rng_data = nullptr, unsigned rng_data_size = 0,
   const std::string& comment = "");
