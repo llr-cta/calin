@@ -23,6 +23,7 @@
 #pragma once
 
 #include <ostream>
+#include <string>
 
 #define MAX_VECTOR_SIZE 512
 #define VCL_NAMESPACE vcl
@@ -55,17 +56,28 @@ namespace calin { namespace util { namespace vcl {
     constexpr static unsigned num_float  = vec_bytes/sizeof(float);
     constexpr static unsigned num_double = vec_bytes/sizeof(double);
 
-    typedef Vec128b bool_vec_type;
-    typedef Vec16c  int8_vec_type;
-    typedef Vec16uc uint8_vec_type;
-    typedef Vec8s   int16_vec_type;
-    typedef Vec8us  uint16_vec_type;
-    typedef Vec4i   int32_vec_type;
-    typedef Vec4ui  uint32_vec_type;
-    typedef Vec2q   int64_vec_type;
-    typedef Vec2uq  uint64_vec_type;
-    typedef Vec4f   float_vec_type;
-    typedef Vec2d   double_vec_type;
+    typedef Vec128b bool_vt;
+    typedef Vec16c  int8_vt;
+    typedef Vec16uc uint8_vt;
+    typedef Vec8s   int16_vt;
+    typedef Vec8us  uint16_vt;
+    typedef Vec4i   int32_vt;
+    typedef Vec4ui  uint32_vt;
+    typedef Vec2q   int64_vt;
+    typedef Vec2uq  uint64_vt;
+    typedef Vec4f   float_vt;
+    typedef Vec2d   double_vt;
+
+    typedef Vec16cb int8_bvt;
+    typedef Vec16cb uint8_bvt;
+    typedef Vec8sb  int16_bvt;
+    typedef Vec8sb  uint16_bvt;
+    typedef Vec4ib  int32_bvt;
+    typedef Vec4ib  uint32_bvt;
+    typedef Vec2qb  int64_bvt;
+    typedef Vec2qb  uint64_bvt;
+    typedef Vec4fb  float_bvt;
+    typedef Vec2db  double_bvt;
 
     // template<int32_t x> static int32_type constant_int32() {
     //   return vcl::constant4i<x,x,x,x>(); }
@@ -98,17 +110,29 @@ namespace calin { namespace util { namespace vcl {
     constexpr static unsigned num_float  = vec_bytes/sizeof(float);
     constexpr static unsigned num_double = vec_bytes/sizeof(double);
 
-    typedef Vec256b bool_vec_type;
-    typedef Vec32c  int8_vec_type;
-    typedef Vec32uc uint8_vec_type;
-    typedef Vec16s  int16_vec_type;
-    typedef Vec16us uint16_vec_type;
-    typedef Vec8i   int32_vec_type;
-    typedef Vec8ui  uint32_vec_type;
-    typedef Vec4q   int64_vec_type;
-    typedef Vec4uq  uint64_vec_type;
-    typedef Vec8f   float_vec_type;
-    typedef Vec4d   double_vec_type;
+    typedef Vec256b bool_vt;
+    typedef Vec32c  int8_vt;
+    typedef Vec32uc uint8_vt;
+    typedef Vec16s  int16_vt;
+    typedef Vec16us uint16_vt;
+    typedef Vec8i   int32_vt;
+    typedef Vec8ui  uint32_vt;
+    typedef Vec4q   int64_vt;
+    typedef Vec4uq  uint64_vt;
+    typedef Vec8f   float_vt;
+    typedef Vec4d   double_vt;
+
+    typedef Vec32cb int8_bvt;
+    typedef Vec32cb uint8_bvt;
+    typedef Vec16sb int16_bvt;
+    typedef Vec16sb uint16_bvt;
+    typedef Vec8ib  int32_bvt;
+    typedef Vec8ib  uint32_bvt;
+    typedef Vec4qb  int64_bvt;
+    typedef Vec4qb  uint64_bvt;
+    typedef Vec8fb  float_bvt;
+    typedef Vec4db  double_bvt;
+
 
     // template<int32_t x> static int32_type constant_int32() {
     //   return vcl::constant8i<x,x,x,x,x,x,x,x>(); }
@@ -141,23 +165,36 @@ namespace calin { namespace util { namespace vcl {
     constexpr static unsigned num_float  = vec_bytes/sizeof(float);
     constexpr static unsigned num_double = vec_bytes/sizeof(double);
 
-    // typedef Vec512b bool_vec_type;
-    // typedef Vec64c  int8_vec_type;
-    // typedef Vec64uc uint8_vec_type;
-    // typedef Vec32s  int16_vec_type;
-    // typedef Vec32us uint16_vec_type;
-    typedef void    bool_vec_type;
-    typedef void    int8_vec_type;
-    typedef void    uint8_vec_type;
-    typedef void    int16_vec_type;
-    typedef void    uint16_vec_type;
-    typedef Vec16i  int32_vec_type;
-    typedef Vec16ui uint32_vec_type;
-    typedef Vec8q   int64_vec_type;
-    typedef Vec8uq  uint64_vec_type;
-    typedef Vec16f  float_vec_type;
-    typedef Vec8d   double_vec_type;
+    // typedef Vec512b bool_vt;
+    // typedef Vec64c  int8_vt;
+    // typedef Vec64uc uint8_vt;
+    // typedef Vec32s  int16_vt;
+    // typedef Vec32us uint16_vt;
+    // typedef void    bool_vt;
+    // typedef void    int8_vt;
+    // typedef void    uint8_vt;
+    // typedef void    int16_vt;
+    // typedef void    uint16_vt;
+    typedef Vec16i  int32_vt;
+    typedef Vec16ui uint32_vt;
+    typedef Vec8q   int64_vt;
+    typedef Vec8uq  uint64_vt;
+    typedef Vec16f  float_vt;
+    typedef Vec8d   double_vt;
+
+    typedef Vec16ib int32_bvt;
+    typedef Vec16ib uint32_bvt;
+    typedef Vec8qb  int64_bvt;
+    typedef Vec8qb  uint64_bvt;
+    typedef Vec16fb float_bvt;
+    typedef Vec8db  double_bvt;
   };
+
+  template<typename VCLArchitecture> std::string templated_class_name(
+    const std::string& class_name)
+  {
+    return class_name + "<" + VCLArchitecture::architecture_name + ">";
+  }
 
   template<typename T> struct vcl_type
   {

@@ -109,10 +109,34 @@ TEST(TestVCL, RNG512) {
     << rng7.uniform_uint64() << '\n';
 }
 
+TEST(TestVCL, RNG256_FLT) {
+  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
+  VCLRNG<VCL256Architecture> rng(fixture,"rng");
+  std::cout << rng.uniform_float() << '\n';
+  std::cout << rng.uniform_float() << '\n';
+}
+
+TEST(TestVCL, RNG256_FLT_EXP) {
+  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
+  VCLRNG<VCL256Architecture> rng(fixture,"rng");
+  std::cout << rng.exponential_float() << '\n';
+  std::cout << rng.exponential_float() << '\n';
+}
+
+TEST(TestVCL, RNG256_FLT_SINCOS) {
+  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
+  VCLRNG<VCL256Architecture> rng(fixture,"rng");
+  Vec8f s, c;
+  rng.sincos_float(s,c);
+  std::cout << s << " -- " << c << " -- " << s*s+c*c << '\n';
+  rng.sincos_float(s,c);
+  std::cout << s << " -- " << c << " -- " << s*s+c*c << '\n';
+}
+
 TEST(TestVCL, ZZ_DumpChronicle) {
   calin::ix::provenance::chronicle::Chronicle* c =
     calin::provenance::chronicle::copy_the_chronicle();
-  std::cout << c->DebugString();
+  //std::cout << c->DebugString();
   delete c;
 }
 
