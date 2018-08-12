@@ -34,9 +34,11 @@ template<typename VCLArchitecture> class NR3_VCLRNGCore;
 template<typename VCLArchitecture> class VCLRNGCore: public VCLArchitecture
 {
 public:
+  using typename VCLArchitecture::uint64_vt;
+
   virtual ~VCLRNGCore() { }
 
-  virtual typename VCLArchitecture::uint64_vt uniform_uint64() = 0;
+  virtual uint64_vt uniform_uint64() = 0;
 
   virtual void save_to_proto(calin::ix::math::rng::VCLRNGCoreData* proto) const = 0;
 
@@ -83,6 +85,15 @@ protected:
 template<typename VCLArchitecture> class VCLRNG: public VCLArchitecture
 {
 public:
+  using typename VCLArchitecture::uint32_vt;
+  using typename VCLArchitecture::int32_vt;
+  using typename VCLArchitecture::uint64_vt;
+  using typename VCLArchitecture::int64_vt;
+  using typename VCLArchitecture::float_vt;
+  using typename VCLArchitecture::double_vt;
+  using typename VCLArchitecture::float_bvt;
+  using typename VCLArchitecture::double_bvt;
+
   enum class CoreType { NR3 };
   VCLRNG(uint64_t seed, CoreType core_type = CoreType::NR3,
     const std::string& created_by = "", const std::string& comment = "")
@@ -122,47 +133,77 @@ public:
   //     auto* proto = new ix::math::rng::RNGData;
   //     save_to_proto(proto); return proto; }
 
-  typename VCLArchitecture::uint64_vt uniform_uint64() {
-    return core_->uniform_uint64(); }
-  typename VCLArchitecture::int64_vt uniform_int64() {
-    return typename VCLArchitecture::int64_vt(core_->uniform_uint64()); }
+  uint64_vt uniform_uint64() { return core_->uniform_uint64(); }
+  int64_vt uniform_int64() { return int64_vt(core_->uniform_uint64()); }
 
-  typename VCLArchitecture::uint32_vt uniform_uint32() {
-    return typename VCLArchitecture::uint32_vt(core_->uniform_uint64()); }
-  typename VCLArchitecture::int32_vt uniform_int32() {
-    return typename VCLArchitecture::int32_vt(core_->uniform_uint64()); }
+  uint32_vt uniform_uint32() { return uint32_vt(core_->uniform_uint64()); }
+  int32_vt uniform_int32() { return int32_vt(core_->uniform_uint64()); }
 
   // Generate float/double deviates in the range [-0.5*scale+offset, 0.5*scale+offset)
   // The default values therefore create deviates in the "standard" range of [0,1)
-  typename VCLArchitecture::double_vt uniform_double(
-    const double scale = 1.0, const double offset = 0.5)
-  {
-    auto i64 = uniform_int64();
-    return calin::util::vcl::mul_add(calin::util::vcl::to_double(i64),
-      C_U64_TO_DBL*scale, offset);
+  double_vt uniform_double_gen(const double scale = 1.0, const double offset = 0.5) {
+    return mul_add(to_double(uniform_int64()), C_U64_TO_DBL*scale, offset);
   }
 
-  typename VCLArchitecture::float_vt uniform_float(
-    const float scale = 1.0f, const float offset = 0.5f)
-  {
-    auto i32 = uniform_int32();
-    return calin::util::vcl::mul_add(calin::util::vcl::to_float(i32),
-      C_U32_TO_FLT*scale, offset);
+  float_vt uniform_float_gen(const float scale = 1.0f, const float offset = 0.5f) {
+    return mul_add(to_float(uniform_int32()), C_U32_TO_FLT*scale, offset);
   }
 
-  typename VCLArchitecture::double_vt exponential_double()
-  {
-    auto x = uniform_double();
-    return -calin::util::vcl::log(x);
+  // Generate zero-centered float/double deviates in the range [-0.5*scale, 0.5*scale]
+  // The default values therefore create deviates in the range of [-0.5,0.5]
+  double_vt uniform_double_zc(const double scale = 1.0) {
+    return to_double(uniform_int64()) * (C_U64_TO_DBL*scale);
   }
 
-  typename VCLArchitecture::float_vt exponential_float()
-  {
-    auto x = uniform_float();
-    return -calin::util::vcl::log(x);
+  float_vt uniform_float_zc(const float scale = 1.0f) {
+    return to_float(uniform_int32()) * (C_U32_TO_FLT*scale);
   }
 
-  void sincos_float(typename VCLArchitecture::float_vt& s, typename VCLArchitecture::float_vt& c)
+  // Generate standard float/double deviates in the range [0, scale]
+  // The default values therefore create deviates in the range of [0,1]
+  double_vt uniform_double(const double scale = 1.0) {
+    const double multiplier = C_U64_TO_DBL*scale;
+    double_vt x = to_double(uniform_int64());
+    return select(x<0, nmul_add(x,multiplier,0.5*scale), x*multiplier);
+  }
+
+  float_vt uniform_float(const float scale = 1.0f) {
+    const float multiplier = C_U32_TO_FLT*scale;
+    float_vt x = to_float(uniform_int32());
+    return select(x<0, nmul_add(x,multiplier,0.5*scale), x*multiplier);
+  }
+
+  void uniform_by_type(uint64_vt& x) { x = uniform_uint64(); }
+  void uniform_by_type(uint32_vt& x) { x = uniform_uint32(); }
+  void uniform_by_type(double_vt& x) { x = uniform_double(); }
+  // void uniform_by_type(double_vt& x, double scale) { x = uniform_double(scale); }
+  // void uniform_by_type(double_vt& x, double scale, double offset) {
+  //   x = uniform_double(scale,offset); }
+  void uniform_by_type(float_vt& x) { x = uniform_float(); }
+  // void uniform_by_type(float_vt& x, float scale) { x = uniform_float(scale); }
+  // void uniform_by_type(float_vt& x, float scale, float offset) {
+  //   x = uniform_float(scale, offset); }
+
+  double_vt exponential_double() {
+    return -calin::util::vcl::log(max(uniform_double(),DBL_MIN));
+  }
+
+  double_vt exponential_double(const double_vt& scale) {
+    return scale * exponential_double();
+  }
+
+  float_vt exponential_float() {
+    return -calin::util::vcl::log(max(uniform_float(),FLT_MIN));
+  }
+
+  float_vt exponential_float(const float_vt& scale) {
+    return scale * exponential_float();
+  }
+
+  // This is a stripped-down version of "sincos_f" in VCL "vectormath_trig.h"
+  // The code for range-reduction and quadrant selection is removed since the
+  // argument is in a controlled range.
+  void sincos_float(float_vt& s, float_vt& c)
   {
     const float P0sinf = -1.6666654611E-1f;
     const float P1sinf = 8.3321608736E-3f;
@@ -172,40 +213,97 @@ public:
     const float P1cosf = -1.388731625493765E-3f;
     const float P2cosf = 2.443315711809948E-5f;
 
-    typename VCLArchitecture::uint32_vt uix = uniform_uint32();
+    // Sin and cos calculated from uniform 32-bit integers
+    // Note : Lowest two bits used below to (1) flip cos sign bit and
+    //        (2) exchange sin and cos polynomials. As such these bits
+    //        should not be used in argument to float, but it is not necessary
+    //        to explicitly mask them as they are lost when 32-bits are
+    //        converted to 24-bit mantissa, except if denormed (which should
+    //        really be disabled)
+    uint32_vt uix = uniform_uint32();
 
     // Random deviate between -pi/4 and pi/4
-    typename VCLArchitecture::float_vt x =
-      C_U32_TO_FLT*M_PI_2*calin::util::vcl::to_float(typename VCLArchitecture::int32_vt(uix));
+    float_vt x = C_U32_TO_FLT*M_PI_2*to_float(int32_vt(uix));
 
     // Polynomial for sin and cos valid between -pi/4 and pi/4
-    typename VCLArchitecture::float_vt x2 = x * x;
-    s = polynomial_2(x2, P0sinf, P1sinf, P2sinf) * (x*x2) + x;
-    c = polynomial_2(x2, P0cosf, P1cosf, P2cosf) * (x2*x2) + nmul_add(0.5f, x2, 1.0f);
+    float_vt x2 = x * x;
+    s = polynomial_2(x2, P0sinf, P1sinf, P2sinf);
+    c = polynomial_2(x2, P0cosf, P1cosf, P2cosf);
+    s = mul_add(s, x*x2, x);
+    c = mul_add(c, x2*x2, nmul_add(0.5f, x2, 1.0f));
 
-    // Second lowest bit of original uint32 used to swap sin and cos
+    // Second lowest bit of original uint32 used to swap sin and cos.
+    // The trick here is to propagate the left-most bit (#31) to the full
+    // 32-bit masks using the sign-extend (signed integer) right shift function
     uix <<= 30;
-    typename VCLArchitecture::float_bvt swap_mask =
-      typename VCLArchitecture::float_bvt(typename VCLArchitecture::int32_vt(uix) >> 31);
+    float_bvt swap_mask = float_bvt(int32_vt(uix) >> 31);
 
-    // Lowest bit of original uint32 used to flip sign of cos
+    // Lowest bit of original uint32 used to flip sign of cos - XOR the sign bit
     uix <<= 1;
     c ^= reinterpret_f(uix);
 
-    typename VCLArchitecture::float_vt c2 = select(swap_mask, c, s);
+    float_vt c2 = select(swap_mask, c, s);
     s = select(swap_mask, s, c);
     c = c2;
   }
 
-//
-//   void uniform_by_type(uint64_t& x) { x = uniform_uint64(); }
-//   void uniform_by_type(uint32_t& x) { x = uniform_uint32(); }
-//   void uniform_by_type(double& x) { x = uniform_double(); }
-//   void uniform_by_type(float& x) { x = uniform_float(); }
-//
-//   double uniform() { return uniform_double(); }
-//   double exponential() { return -std::log(uniform()); }
-//   double exponential(double mean) { return -mean*std::log(uniform()); }
+  void sincos_double(double_vt& s, double_vt& c)
+  {
+    // See comments from sincos_float
+
+    const double P0sin = -1.66666666666666307295E-1;
+    const double P1sin = 8.33333333332211858878E-3;
+    const double P2sin = -1.98412698295895385996E-4;
+    const double P3sin = 2.75573136213857245213E-6;
+    const double P4sin = -2.50507477628578072866E-8;
+    const double P5sin = 1.58962301576546568060E-10;
+
+    const double P0cos = 4.16666666666665929218E-2;
+    const double P1cos = -1.38888888888730564116E-3;
+    const double P2cos = 2.48015872888517045348E-5;
+    const double P3cos = -2.75573141792967388112E-7;
+    const double P4cos = 2.08757008419747316778E-9;
+    const double P5cos = -1.13585365213876817300E-11;
+
+    uint64_vt uix = uniform_uint64();
+
+    double_vt x = C_U64_TO_DBL*M_PI_2*to_double(int64_vt(uix));
+
+    double_vt x2 = x * x;
+    s = polynomial_5(x2, P0sin, P1sin, P2sin, P3sin, P4sin, P5sin);
+    c = polynomial_5(x2, P0cos, P1cos, P2cos, P3cos, P4cos, P5cos);
+    s = mul_add(x * x2, s, x);
+    c = mul_add(x2 * x2, c, nmul_add(x2, 0.5, 1.0));
+
+    uix <<= 62;
+    double_bvt swap_mask = double_bvt(int64_vt(uix) >> 63);
+
+    uix <<= 1;
+    c ^= reinterpret_d(uix);
+
+    double_vt c2 = select(swap_mask, c, s);
+    s = select(swap_mask, s, c);
+    c = c2;
+  }
+
+  void normal_two_float_bm(float_vt& x1, float_vt& x2)
+  {
+    float_vt r = sqrt(exponential_float(2.0));
+    float_vt s, c;
+    sincos_float(s, c);
+    x1 = r*c;
+    x2 = r*s;
+  }
+
+  void normal_two_double_bm(double_vt& x1, double_vt& x2)
+  {
+    double_vt r = sqrt(exponential_double(2.0));
+    double_vt s, c;
+    sincos_double(s, c);
+    x1 = r*c;
+    x2 = r*s;
+  }
+
 //   double normal();
 //   double normal(double mean, double sigma) { return mean+normal()*sigma; }
 //   double gamma_by_alpha_and_beta(double alpha, double beta);
@@ -246,6 +344,8 @@ template<typename VCLArchitecture> class NR3_VCLRNGCore:
   public VCLRNGCore<VCLArchitecture>
 {
 public:
+  using typename VCLArchitecture::uint64_vt;
+
   typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
 
   NR3_VCLRNGCore(uint64_t seed = 0,
@@ -314,7 +414,7 @@ public:
 
   virtual ~NR3_VCLRNGCore() { }
 
-  typename VCLArchitecture::uint64_vt uniform_uint64() override {
+  uint64_vt uniform_uint64() override {
     calls_++;
     u_ = u_*C_NR3_U_MUL + C_NR3_U_ADD;
     v_ ^= v_ >> C_NR3_V_SHIFT1;
@@ -323,7 +423,7 @@ public:
     // This is inefficient as the full 64bit multiply is not needed
     // w_ = C_NR3_W_MUL*(w_ & 0xFFFFFFFF) + (w_ >> C_NR3_W_SHIFT1);
     w_ = calin::util::vcl::multiply_low_32bit(w_, C_NR3_W_MUL) + (w_ >> C_NR3_W_SHIFT1);
-    typename VCLArchitecture::uint64_vt x = u_ ^ (u_ << C_NR3_X_SHIFT1);
+    uint64_vt x = u_ ^ (u_ << C_NR3_X_SHIFT1);
     x ^= x >> C_NR3_X_SHIFT2;
     x ^= x << C_NR3_X_SHIFT3;
     return (x+v_)^w_;
@@ -381,10 +481,10 @@ private:
 
   uint64_t seed_;
   uint64_t calls_ = 0;
-  typename VCLArchitecture::uint64_vt sequence_seeds_;
-  typename VCLArchitecture::uint64_vt u_;
-  typename VCLArchitecture::uint64_vt v_;
-  typename VCLArchitecture::uint64_vt w_;
+  uint64_vt sequence_seeds_;
+  uint64_vt u_;
+  uint64_vt v_;
+  uint64_vt w_;
 };
 
 } } } // namespace calin::math::rng
