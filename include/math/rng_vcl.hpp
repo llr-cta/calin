@@ -164,13 +164,15 @@ public:
   double_vt uniform_double(const double scale = 1.0) {
     const double multiplier = C_U64_TO_DBL*scale;
     double_vt x = to_double(uniform_int64());
-    return select(x<0, nmul_add(x,multiplier,0.5*scale), x*multiplier);
-  }
+    // return select(x<0, nmul_add(x,multiplier,0.5*scale), x*multiplier);
+    return mul_add(x, multiplier, double_vt(scale) & (x<0));
+}
 
   float_vt uniform_float(const float scale = 1.0f) {
     const float multiplier = C_U32_TO_FLT*scale;
     float_vt x = to_float(uniform_int32());
-    return select(x<0, nmul_add(x,multiplier,0.5*scale), x*multiplier);
+    // return select(x<0, nmul_add(x,multiplier,0.5*scale), x*multiplier);
+    return mul_add(x, multiplier, float_vt(scale) & (x<0));
   }
 
   void uniform_by_type(uint64_vt& x) { x = uniform_uint64(); }
@@ -288,6 +290,9 @@ public:
 
   void normal_two_float_bm(float_vt& x1, float_vt& x2)
   {
+    // double_vt r1 = sqrt(exponential_double(2.0));
+    // double_vt r2 = sqrt(exponential_double(2.0));
+    // float_vt r = compress(r1,r2);
     float_vt r = sqrt(exponential_float(2.0));
     float_vt s, c;
     sincos_float(s, c);
