@@ -46,19 +46,19 @@ private:
   value_type sum_;
 };
 
-class KahanAccumulator
+template<typename value_type> class BasicKahanAccumulator
 {
   // Kahan summation algorithm - summation with correction
   // Reference: http://en.wikipedia.org/wiki/Kahan_summation_algorithm
 public:
-  using value_type = accumulator_value_type;
+  // using value_type = T;
 
-  KahanAccumulator(const value_type val=0): sum_{val}, cor_{} { /* nothing to see here */ }
+  BasicKahanAccumulator(const value_type val=0): sum_{val}, cor_{0} { /* nothing to see here */ }
   void reset(double val=0) { sum_ = val; cor_ = 0; }
   void accumulate(const value_type x)
   {
-    volatile value_type Y { x-cor_ };
-    volatile value_type T { sum_+Y };
+    value_type Y { x-cor_ };
+    value_type T { sum_+Y };
     cor_=(T-sum_)-Y;
     sum_=T;
   }
@@ -66,7 +66,7 @@ public:
   value_type correction() const { return -cor_; }
   std::vector<value_type> corrections() const { return { correction() }; }
   operator value_type() const { return total(); }
-  bool operator== (const KahanAccumulator& o) const
+  bool operator== (const BasicKahanAccumulator<value_type>& o) const
   {
     return sum_==o.sum_ and cor_==o.cor_;
   }
@@ -74,6 +74,8 @@ private:
   value_type sum_;
   value_type cor_;
 };
+
+CALIN_TYPEALIAS(KahanAccumulator, BasicKahanAccumulator<double>);
 
 #if 0
 
