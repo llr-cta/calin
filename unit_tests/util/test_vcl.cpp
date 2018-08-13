@@ -26,10 +26,12 @@
 
 #include <util/vcl.hpp>
 #include <math/rng_vcl.hpp>
+#include <math/accumulator.hpp>
 #include <provenance/chronicle.hpp>
 
 using namespace calin::util::vcl;
 using namespace calin::math::rng;
+using namespace calin::math::accumulator;
 
 TEST(TestVCL, Print) {
   Vec8f v(1.234);
@@ -246,24 +248,24 @@ TEST(TestVCL, RNG256_FLT_NORMAL_BM) {
   std::cout << x << " -- " << y << '\n';
 
   unsigned N = 10000000;
-  Vec8f sum_x(0);
-  Vec8f sum_xx(0);
-  Vec8f sum_y(0);
-  Vec8f sum_yy(0);
+  BasicKahanAccumulator<Vec8f> sum_x(0);
+  BasicKahanAccumulator<Vec8f> sum_xx(0);
+  BasicKahanAccumulator<Vec8f> sum_y(0);
+  BasicKahanAccumulator<Vec8f> sum_yy(0);
   for(unsigned i=0;i<N;i++)
   {
     rng.normal_two_float_bm(x,y);
-    sum_x += x;
-    sum_xx += x*x;
-    sum_y += y;
-    sum_yy += y*y;
+    sum_x.accumulate(x);
+    sum_xx.accumulate(x*x);
+    sum_y.accumulate(y);
+    sum_yy.accumulate(y*y);
   }
-  std::cout << sum_x << " -- " << sum_xx << '\n';
-  std::cout << sum_y << " -- " << sum_yy << '\n';
-  float mean_x = horizontal_add(sum_x)/(8*N);
-  float var_x = horizontal_add(sum_xx)/(8*N) - mean_x*mean_x;
-  float mean_y = horizontal_add(sum_y)/(8*N);
-  float var_y = horizontal_add(sum_yy)/(8*N) - mean_y*mean_y;
+  std::cout << sum_x.total() << " -- " << sum_xx.total() << '\n';
+  std::cout << sum_y.total() << " -- " << sum_yy.total() << '\n';
+  float mean_x = horizontal_add(sum_x.total())/(8*N);
+  float var_x = horizontal_add(sum_xx.total())/(8*N) - mean_x*mean_x;
+  float mean_y = horizontal_add(sum_y.total())/(8*N);
+  float var_y = horizontal_add(sum_yy.total())/(8*N) - mean_y*mean_y;
   std::cout << mean_x << ' ' << mean_y << ' ' << var_x << ' ' << var_y << '\n';
 }
 
