@@ -239,7 +239,7 @@ public:
 
     // Lowest bit of original uint32 used to flip sign of cos - XOR the sign bit
     uix <<= 31;
-    c = sign_combine(c, reinterpret_f(uix));
+    c ^= reinterpret_f(uix);
 
     float_vt c2 = select(swap_mask, c, s);
     s = select(swap_mask, s, c);
@@ -277,7 +277,7 @@ public:
     double_bvt swap_mask = double_bvt((uix & UINT64_C(0x2)) == UINT64_C(0));
 
     uix <<= 63;
-    c = sign_combine(c, reinterpret_d(uix));
+    c ^= reinterpret_d(uix);
 
     double_vt c2 = select(swap_mask, c, s);
     s = select(swap_mask, s, c);
