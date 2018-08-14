@@ -58,7 +58,7 @@ public:
         << calin::util::vcl::templated_class_name<VCLArchitecture>("VCLRNGCore")
         << "Incorrect architecture : " << proto.vcl_architecture()
         << " != " << VCLArchitecture::vec_bits;
-      return new NR3_VCLRNGCore<VCLArchitecture>(0, created_by, comment);
+      return new NR3_VCLRNGCore<VCLArchitecture>(created_by, comment);
     }
 
     switch(proto.core_case()) {
@@ -69,7 +69,7 @@ public:
           << calin::util::vcl::templated_class_name<VCLArchitecture>("VCLRNGCore")
           << "Unrecognised RNG type case : " << proto.core_case();
       case 0:
-        return new NR3_VCLRNGCore<VCLArchitecture>(0, created_by, comment);
+        return new NR3_VCLRNGCore<VCLArchitecture>(created_by, comment);
     }
   }
 
@@ -370,7 +370,17 @@ public:
 
   typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
 
-  NR3_VCLRNGCore(uint64_t seed = 0,
+  NR3_VCLRNGCore(
+      const std::string& created_by = "", const std::string& comment = ""):
+    VCLRNGCore<VCLArchitecture>(),
+    seed_(RNG::nonzero_uint64_from_random_device()),
+    sequence_seeds_(VCLRNG<VCLArchitecture>::uint64_from_seed(seed_))
+  {
+    init();
+    this->write_provenance(created_by, comment);
+  }
+
+  NR3_VCLRNGCore(uint64_t seed,
       const std::string& created_by = "", const std::string& comment = ""):
     VCLRNGCore<VCLArchitecture>(),
     seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
@@ -432,6 +442,10 @@ public:
 
   virtual ~NR3_VCLRNGCore() { }
 
+  uint64_t calls() const { return calls_; }
+  uint64_t seed() const { return seed_; }
+  uint64_vt sequence_seeds() const { return sequence_seeds_; }
+
   uint64_vt uniform_uint64() override {
     calls_++;
     u_ = u_*C_NR3_U_MUL + C_NR3_U_ADD;
@@ -467,10 +481,10 @@ public:
     save_to_proto(data);
   }
 
-  // static ix_core_data_type* mutable_core_data(ix::math::rng::RNGCoreData* proto) {
-  //   return proto->mutable_nr3_core(); }
-  // static const ix_core_data_type& core_data(const ix::math::rng::RNGCoreData& proto)
-  // { return proto.nr3_core(); }
+  static ix_core_data_type* mutable_core_data(ix::math::rng::VCLRNGCoreData* proto) {
+    return proto->mutable_nr3_vcl_core(); }
+  static const ix_core_data_type& core_data(const ix::math::rng::VCLRNGCoreData& proto) {
+    return proto.nr3_vcl_core(); }
 
 #ifndef SWIG
   static void* operator new(size_t nbytes) {
