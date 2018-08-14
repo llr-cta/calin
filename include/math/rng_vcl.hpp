@@ -235,14 +235,11 @@ public:
     c = mul_add(c, x2*x2, nmul_add(0.5f, x2, 1.0f));
 
     // Second lowest bit of original uint32 used to swap sin and cos.
-    // The trick here is to propagate the left-most bit (#31) to the full
-    // 32-bit masks using the sign-extend (signed integer) right shift function
-    uix <<= 30;
-    float_bvt swap_mask = float_bvt(int32_vt(uix) >> 31);
+    float_bvt swap_mask = float_bvt((uix & 0x2) == 0);
 
     // Lowest bit of original uint32 used to flip sign of cos - XOR the sign bit
-    uix <<= 1;
-    c ^= reinterpret_f(uix);
+    uix <<= 31;
+    c = sign_combine(c, reinterpret_f(uix));
 
     float_vt c2 = select(swap_mask, c, s);
     s = select(swap_mask, s, c);
@@ -277,11 +274,10 @@ public:
     s = mul_add(x * x2, s, x);
     c = mul_add(x2 * x2, c, nmul_add(x2, 0.5, 1.0));
 
-    uix <<= 62;
-    double_bvt swap_mask = double_bvt(int64_vt(uix) >> 63);
+    double_bvt swap_mask = double_bvt((uix & UINT64_C(0x2)) == UINT64_C(0));
 
-    uix <<= 1;
-    c ^= reinterpret_d(uix);
+    uix <<= 63;
+    c = sign_combine(c, reinterpret_d(uix));
 
     double_vt c2 = select(swap_mask, c, s);
     s = select(swap_mask, s, c);
