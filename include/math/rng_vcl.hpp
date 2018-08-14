@@ -302,23 +302,29 @@ public:
     x2 = r*s;
   }
 
-  static uint32_vt uint32_from_random_device()
+  static uint64_vt uint64_from_seed(uint64_t seed = 0)
   {
-    std::random_device gen;
-    static_assert(sizeof(std::random_device::result_type)==sizeof(uint32_t),
-                  "std::random_device::result_type is not 32 bits");
-    uint32_t i32[VCLArchitecture::num_int32];
-    for(unsigned i=0;i<VCLArchitecture::num_int32;i++) {
-      i32[i] = gen();
-    }
-    uint32_vt x;
-    x.load(i32);
+    if(seed == 0)seed = RNG::uint64_from_random_device();
+    std::mt19937_64 gen(seed);
+    uint64_t u64[VCLArchitecture::num_uint64];
+    for(unsigned i=0; i<VCLArchitecture::num_uint64; i++)u64[i] = gen();
+    uint64_vt x;
+    x.load(u64);
     return x;
   }
 
   static uint64_vt uint64_from_random_device()
   {
-    return uint64_vt(uint32_from_random_device());
+    std::random_device gen;
+    static_assert(sizeof(std::random_device::result_type)==sizeof(uint32_t),
+                  "std::random_device::result_type is not 32 bits");
+    uint32_t u32[VCLArchitecture::num_int32];
+    for(unsigned i=0;i<VCLArchitecture::num_int32;i++) {
+      u32[i] = gen();
+    }
+    uint32_vt x;
+    x.load(u32);
+    return uint64_vt(x);
   }
 
 //   double normal(double mean, double sigma) { return mean+normal()*sigma; }
@@ -368,42 +374,36 @@ public:
       const std::string& created_by = "", const std::string& comment = ""):
     VCLRNGCore<VCLArchitecture>(),
     seed_(seed>0 ? seed : RNG::nonzero_uint64_from_random_device()),
-    sequence_seeds_(), u_(C_NR3_U_INIT), v_(C_NR3_V_INIT), w_(C_NR3_W_INIT)
+    sequence_seeds_(VCLRNG<VCLArchitecture>::uint64_from_seed(seed_))
   {
-    std::mt19937_64 gen(seed_);
-    uint64_t seeds[VCLArchitecture::num_uint64];
-    for(unsigned i=0; i<VCLArchitecture::num_uint64; i++)seeds[i] = gen();
-    init(seeds);
+    init();
     this->write_provenance(created_by, comment);
   }
 
   NR3_VCLRNGCore(uint64_t seeds[VCLArchitecture::num_uint64],
       const std::string& created_by = "", const std::string& comment = ""):
-    VCLRNGCore<VCLArchitecture>(),
-    seed_(0), sequence_seeds_(),
-    u_(C_NR3_U_INIT), v_(C_NR3_V_INIT), w_(C_NR3_W_INIT)
+    VCLRNGCore<VCLArchitecture>(), seed_(0)
   {
-    init(seeds);
+    sequence_seeds_.load(seeds);
+    init();
     this->write_provenance(created_by, comment);
   }
 
-  NR3_VCLRNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto, bool restore_state = false,
+  NR3_VCLRNGCore(const ix::math::rng::NR3_SIMD_RNGCoreData& proto,
+      bool restore_state = false,
       const std::string& created_by = "", const std::string& comment = ""):
-    VCLRNGCore<VCLArchitecture>(),
-    seed_(proto.seed())
+    VCLRNGCore<VCLArchitecture>(), seed_(proto.seed())
   {
     // We allow either zero of num_uint64 seeds.. zero means we do "seed only" reinit
     if(proto.vec_stream_seed_size() == 0)
     {
       if(seed_ == 0)seed_ = RNG::nonzero_uint64_from_random_device();
-      std::mt19937_64 gen(seed_);
-      uint64_t seeds[VCLArchitecture::num_uint64];
-      for(unsigned i=0; i<VCLArchitecture::num_uint64; i++)seeds[i] = gen();
-      init(seeds);
+      sequence_seeds_ = VCLRNG<VCLArchitecture>::uint64_from_seed(seed_);
+      init();
     }
     else if(proto.vec_stream_seed_size() == VCLArchitecture::num_uint64)
     {
-      init(proto.vec_stream_seed().data());
+      sequence_seeds_.load(proto.vec_stream_seed().data());
       if(restore_state and proto.state_saved())
       {
         if(proto.vec_u_size() != VCLArchitecture::num_uint64
@@ -417,6 +417,8 @@ public:
         u_.load(proto.vec_u().data());
         v_.load(proto.vec_v().data());
         w_.load(proto.vec_w().data());
+      } else {
+        init();
       }
     }
     else
@@ -487,9 +489,8 @@ public:
 #endif
 
 private:
-  void init(const uint64_t* seeds)
+  void init()
   {
-    sequence_seeds_.load(seeds);
     u_ = sequence_seeds_^v_; uniform_uint64();
     v_ = u_; uniform_uint64();
     w_ = v_; uniform_uint64();
@@ -498,9 +499,9 @@ private:
   uint64_t seed_;
   uint64_t calls_ = 0;
   uint64_vt sequence_seeds_;
-  uint64_vt u_;
-  uint64_vt v_;
-  uint64_vt w_;
+  uint64_vt u_ = C_NR3_U_INIT;
+  uint64_vt v_ = C_NR3_V_INIT;
+  uint64_vt w_ = C_NR3_W_INIT;
 };
 
 } } } // namespace calin::math::rng
