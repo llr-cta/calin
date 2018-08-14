@@ -346,5 +346,4 @@ ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8db);
 namespace calin { namespace util { namespace vcl {
 
 
-
 } } } // namespace calin::util::vcl
