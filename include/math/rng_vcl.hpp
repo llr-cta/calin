@@ -203,7 +203,7 @@ public:
   }
 
   // This is a stripped-down version of "sincos_f" in VCL "vectormath_trig.h"
-  // The code for range-reduction and quadrant selection is removed since the
+  // The code for range reduction and quadrant selection is removed since the
   // argument is in a controlled range.
   void sincos_float(float_vt& s, float_vt& c)
   {
@@ -217,15 +217,12 @@ public:
 
     // Sin and cos calculated from uniform 32-bit integers
     // Note : Lowest two bits used below to (1) flip cos sign bit and
-    //        (2) exchange sin and cos polynomials. As such these bits
-    //        should not be used in argument to float, but it is not necessary
-    //        to explicitly mask them as they are lost when 32-bits are
-    //        converted to 24-bit mantissa, except if denormed (which should
-    //        really be disabled)
+    //        (2) exchange sin and cos polynomials. These bits are masked so
+    //        that they are not used in the argument.
     uint32_vt uix = uniform_uint32();
 
     // Random deviate between -pi/4 and pi/4
-    float_vt x = C_U32_TO_FLT*M_PI_2*to_float(int32_vt(uix));
+    float_vt x = C_U32_TO_FLT*M_PI_2*to_float(int32_vt(uix & (~0x3)));
 
     // Polynomial for sin and cos valid between -pi/4 and pi/4
     float_vt x2 = x * x;
@@ -266,7 +263,7 @@ public:
 
     uint64_vt uix = uniform_uint64();
 
-    double_vt x = C_U64_TO_DBL*M_PI_2*to_double(int64_vt(uix));
+    double_vt x = C_U64_TO_DBL*M_PI_2*to_double(int64_vt(uix & (~UINT64_C(0x3))));
 
     double_vt x2 = x * x;
     s = polynomial_5(x2, P0sin, P1sin, P2sin, P3sin, P4sin, P5sin);
@@ -305,7 +302,25 @@ public:
     x2 = r*s;
   }
 
-//   double normal();
+  static uint32_vt uint32_from_random_device()
+  {
+    std::random_device gen;
+    static_assert(sizeof(std::random_device::result_type)==sizeof(uint32_t),
+                  "std::random_device::result_type is not 32 bits");
+    uint32_t i32[VCLArchitecture::num_int32];
+    for(unsigned i=0;i<VCLArchitecture::num_int32;i++) {
+      i32[i] = gen();
+    }
+    uint32_vt x;
+    x.load(i32);
+    return x;
+  }
+
+  static uint64_vt uint64_from_random_device()
+  {
+    return uint64_vt(uint32_from_random_device());
+  }
+
 //   double normal(double mean, double sigma) { return mean+normal()*sigma; }
 //   double gamma_by_alpha_and_beta(double alpha, double beta);
 //   double gamma_by_mean_and_sigma(const double mean, const double sigma) {
