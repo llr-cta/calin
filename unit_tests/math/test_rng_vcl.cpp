@@ -187,8 +187,8 @@ TYPED_TEST(VCLRNGTests, UniformFloatZCMoments)
   VCLRNG<TypeParam> core(seed);
   const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
-  BasicKahanAccumulator<typename TypeParam::float_vt> sumxx(0.0);
-  BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx(0.0);
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx;
   typename TypeParam::float_vt xmax(-1.0);
   typename TypeParam::float_vt xmin(1.0);
   typename TypeParam::float_vt x;
@@ -218,9 +218,9 @@ TYPED_TEST(VCLRNGTests, UniformDoubleZCMoments)
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed);
   const unsigned N = 1000000;
-  BasicKahanAccumulator<typename TypeParam::double_vt> sumx(0.0);
-  BasicKahanAccumulator<typename TypeParam::double_vt> sumxx(0.0);
-  BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx(0.0);
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxx;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx;
   typename TypeParam::double_vt xmax(-1.0);
   typename TypeParam::double_vt xmin(1.0);
   typename TypeParam::double_vt x;
@@ -251,8 +251,8 @@ TYPED_TEST(VCLRNGTests, ExponentialFloatMoments)
   VCLRNG<TypeParam> core(seed);
   const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
-  BasicKahanAccumulator<typename TypeParam::float_vt> sumxx(0.0);
-  BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx(0.0);
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx;
   typename TypeParam::float_vt x;
   for(unsigned i=0;i<N;i++) {
     x = core.exponential_float();
@@ -276,8 +276,8 @@ TYPED_TEST(VCLRNGTests, ExponentialDoubleMoments)
   VCLRNG<TypeParam> core(seed);
   const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
-  BasicKahanAccumulator<typename TypeParam::double_vt> sumxx(0.0);
-  BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx(0.0);
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxx;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx;
   typename TypeParam::double_vt x;
   for(unsigned i=0;i<N;i++) {
     x = core.exponential_double();
@@ -293,6 +293,49 @@ TYPED_TEST(VCLRNGTests, ExponentialDoubleMoments)
   verify_double_range("m1", m1, 1.0-0.003, 1.0+0.003);
   verify_double_range("m2", m2, 2.0-0.01,  2.0+0.01);
   verify_double_range("m3", m3, 6.0-0.1,   6.0+0.1);
+}
+
+TYPED_TEST(VCLRNGTests, SinCoslFloatMoments)
+{
+  uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed);
+  const unsigned N = 1000000;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sums;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumss;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumsss;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumc;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumcc;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumccc;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumsc;
+  typename TypeParam::float_vt s;
+  typename TypeParam::float_vt c;
+  for(unsigned i=0;i<N;i++) {
+    core.sincos_float(s,c);
+    sums.accumulate(s);
+    sumss.accumulate(s*s);
+    sumsss.accumulate(s*s*s);
+    sumc.accumulate(c);
+    sumcc.accumulate(c*c);
+    sumccc.accumulate(c*c*c);
+    sumsc.accumulate(s*c);
+  }
+
+  typename TypeParam::float_vt m1s = sums.total()/float(N);
+  typename TypeParam::float_vt m2s = sumss.total()/float(N);
+  typename TypeParam::float_vt m3s = sumsss.total()/float(N);
+  typename TypeParam::float_vt m1c = sumc.total()/float(N);
+  typename TypeParam::float_vt m2c = sumcc.total()/float(N);
+  typename TypeParam::float_vt m3c = sumccc.total()/float(N);
+
+  typename TypeParam::float_vt m2sc = sumsc.total()/float(N);
+
+  verify_float_range("m1s", m1s, -0.005, 0.005);
+  verify_float_range("m2s", m2s, 0.5-0.005,  0.5+0.005);
+  verify_float_range("m3s", m3s, -0.005, 0.005);
+  verify_float_range("m1c", m1c, -0.005, 0.005);
+  verify_float_range("m2c", m2c, 0.5-0.005,  0.5+0.005);
+  verify_float_range("m3c", m3c, -0.005, 0.005);
+  verify_float_range("m2sc", m2sc, -0.002, 0.002);
 }
 
 int main(int argc, char **argv) {
