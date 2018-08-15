@@ -255,9 +255,21 @@ namespace calin { namespace util { namespace vcl {
     return _mm_mul_epu32(a, b);
   }
 
+#if (defined (__AVX512DQ__) && defined (__AVX512VL__)) || INSTRSET < 5
   inline Vec2uq mul_64(const Vec2uq& a, const Vec2uq& b) {
     return a*b;
   }
+#else
+  inline Vec2uq mul_64(const Vec2uq& a, const Vec2uq& b) {
+    __m128i prod = _mm_mul_epu32(_mm_shuffle_epi32(a, 0xB1), b);
+    __m128i tmp = _mm_mul_epu32(a, _mm_shuffle_epi32(b, 0xB1));
+    prod = _mm_add_epi64(prod, tmp);
+    prod = _mm_slli_epi64(prod, 32);
+    tmp = _mm_mul_epu32(a, b);
+    prod = _mm_add_epi64(prod, tmp);
+    return prod;
+  }
+#endif
 
 #if MAX_VECTOR_SIZE >= 256
 #if INSTRSET >= 8
@@ -265,6 +277,11 @@ namespace calin { namespace util { namespace vcl {
     return _mm256_mul_epu32(a, b);
   }
 
+#if defined (__AVX512DQ__) && defined (__AVX512VL__)
+  inline Vec4uq mul_64(const Vec4uq& a, const Vec4uq& b) {
+    return a*b;
+  }
+#else
   inline Vec4uq mul_64(const Vec4uq& a, const Vec4uq& b) {
     __m256i prod = _mm256_mul_epu32(_mm256_shuffle_epi32(a, 0xB1), b);
     __m256i tmp = _mm256_mul_epu32(a, _mm256_shuffle_epi32(b, 0xB1));
@@ -274,6 +291,7 @@ namespace calin { namespace util { namespace vcl {
     prod = _mm256_add_epi64(prod, tmp);
     return prod;
   }
+#endif // defined (__AVX512DQ__) && defined (__AVX512VL__)
 #else // INSTRSET < 8
   inline Vec4uq mul_low32_packed64(const Vec4uq& a, const Vec4uq& b) {
     return Vec4uq(mul_low32_packed64(a.get_low(), b.get_low()),
