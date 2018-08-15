@@ -187,7 +187,13 @@ public:
   //   x = uniform_float(scale, offset); }
 
   double_vt exponential_double() {
-    return -calin::util::vcl::log(max(uniform_double(),DBL_MIN));
+    double_vt x = uniform_double();
+    double_bvt xzero = x==0.0;
+    while(horizontal_or(xzero)) {
+      x = select(xzero, uniform_double(), x);
+      xzero = x==0.0;
+    }
+    return -calin::util::vcl::log(x);
   }
 
   double_vt exponential_double(const double_vt& scale) {
@@ -195,7 +201,13 @@ public:
   }
 
   float_vt exponential_float() {
-    return -calin::util::vcl::log(max(uniform_float(),FLT_MIN));
+    float_vt x = uniform_float();
+    float_bvt xzero = x==0.0f;
+    while(horizontal_or(xzero)) {
+      x = select(xzero, uniform_float(), x);
+      xzero = x==0.0f;
+    }
+    return -calin::util::vcl::log(x);
   }
 
   float_vt exponential_float(const float_vt& scale) {
