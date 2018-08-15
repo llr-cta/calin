@@ -251,35 +251,57 @@ namespace calin { namespace util { namespace vcl {
       s << '_' << v[i];
   }
 
-  inline Vec2uq multiply_low_32bit(const Vec2uq& a, const Vec2uq& b) {
+  inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
     return _mm_mul_epu32(a, b);
+  }
+
+  inline Vec2uq mul_64(const Vec2uq& a, const Vec2uq& b) {
+    return a*b;
   }
 
 #if MAX_VECTOR_SIZE >= 256
 #if INSTRSET >= 8
-  inline Vec4uq multiply_low_32bit(const Vec4uq& a, const Vec4uq& b) {
+  inline Vec4uq mul_low32_packed64(const Vec4uq& a, const Vec4uq& b) {
     return _mm256_mul_epu32(a, b);
   }
+
+  inline Vec4uq mul_64(const Vec4uq& a, const Vec4uq& b) {
+    __m256i prod = _mm256_mul_epu32(_mm256_shuffle_epi32(a, 0xB1), b);
+    __m256i tmp = _mm256_mul_epu32(a, _mm256_shuffle_epi32(b, 0xB1));
+    prod = _mm256_add_epi64(prod, tmp);
+    prod = _mm256_slli_epi64(prod, 32);
+    tmp = _mm256_mul_epu32(a, b);
+    prod = _mm256_add_epi64(prod, tmp);
+    return prod;
+  }
 #else // INSTRSET < 8
-  inline Vec4uq multiply_low_32bit(const Vec4uq& a, const Vec4uq& b) {
-    return Vec4uq(multiply_low_32bit(a.get_low(), b.get_low()),
-                  multiply_low_32bit(a.get_high(), b.get_high()));
+  inline Vec4uq mul_low32_packed64(const Vec4uq& a, const Vec4uq& b) {
+    return Vec4uq(mul_low32_packed64(a.get_low(), b.get_low()),
+                  mul_low32_packed64(a.get_high(), b.get_high()));
+  }
+
+  inline Vec4uq mul_64(const Vec4uq& a, const Vec4uq& b) {
+    return a*b;
   }
 #endif // INSTRSET < 8
 #endif // MAX_VECTOR_SIZE >= 256
 
 #if MAX_VECTOR_SIZE >= 512
 #if INSTRSET >= 9
-  inline Vec8uq multiply_low_32bit(const Vec8uq& a, const Vec8uq& b) {
+  inline Vec8uq mul_low32_packed64(const Vec8uq& a, const Vec8uq& b) {
     return _mm512_mul_epu32(a, b);
   }
 #else // INSTRSET < 9
-  inline Vec8uq multiply_low_32bit(const Vec8uq& a, const Vec8uq& b) {
-    return Vec8uq(multiply_low_32bit(a.get_low(), b.get_low()),
-                  multiply_low_32bit(a.get_high(), b.get_high()));
+  inline Vec8uq mul_low32_packed64(const Vec8uq& a, const Vec8uq& b) {
+    return Vec8uq(mul_low32_packed64(a.get_low(), b.get_low()),
+                  mul_low32_packed64(a.get_high(), b.get_high()));
   }
 #endif // INSTRSET < 9
 #endif // MAX_VECTOR_SIZE >= 512
+
+  inline Vec8uq mul_64(const Vec8uq& a, const Vec8uq& b) {
+    return a*b;
+  }
 
 } } } // namespace calin::util::vcl
 

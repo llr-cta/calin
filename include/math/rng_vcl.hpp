@@ -448,13 +448,13 @@ public:
 
   uint64_vt uniform_uint64() override {
     calls_++;
-    u_ = u_*C_NR3_U_MUL + C_NR3_U_ADD;
+    u_ = calin::util::vcl::mul_64(u_, C_NR3_U_MUL) + C_NR3_U_ADD;
     v_ ^= v_ >> C_NR3_V_SHIFT1;
     v_ ^= v_ << C_NR3_V_SHIFT2;
     v_ ^= v_ >> C_NR3_V_SHIFT3;
     // This is inefficient as the full 64bit multiply is not needed
     // w_ = C_NR3_W_MUL*(w_ & 0xFFFFFFFF) + (w_ >> C_NR3_W_SHIFT1);
-    w_ = calin::util::vcl::multiply_low_32bit(w_, C_NR3_W_MUL) + (w_ >> C_NR3_W_SHIFT1);
+    w_ = calin::util::vcl::mul_low32_packed64(w_, C_NR3_W_MUL) + (w_ >> C_NR3_W_SHIFT1);
     uint64_vt x = u_ ^ (u_ << C_NR3_X_SHIFT1);
     x ^= x >> C_NR3_X_SHIFT2;
     x ^= x << C_NR3_X_SHIFT3;
