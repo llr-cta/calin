@@ -329,57 +329,60 @@ namespace calin { namespace util { namespace vcl {
     return s; \
   }
 
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec16c);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec16uc);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8s);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8us);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec4i);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec4ui);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec2q);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec2uq);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec4f);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec2d);
+namespace vcl {
 
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec16cb);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8sb);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec4ib);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec2qb);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec4fb);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec2db);
+ADD_OSTREAM_OPERATOR(Vec16c);
+ADD_OSTREAM_OPERATOR(Vec16uc);
+ADD_OSTREAM_OPERATOR(Vec8s);
+ADD_OSTREAM_OPERATOR(Vec8us);
+ADD_OSTREAM_OPERATOR(Vec4i);
+ADD_OSTREAM_OPERATOR(Vec4ui);
+ADD_OSTREAM_OPERATOR(Vec2q);
+ADD_OSTREAM_OPERATOR(Vec2uq);
+ADD_OSTREAM_OPERATOR(Vec4f);
+ADD_OSTREAM_OPERATOR(Vec2d);
 
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec32c);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec32uc);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec16s);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec16us);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8i);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8ui);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec4q);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec4uq);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8f);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec4d);
+ADD_OSTREAM_OPERATOR(Vec16cb);
+ADD_OSTREAM_OPERATOR(Vec8sb);
+ADD_OSTREAM_OPERATOR(Vec4ib);
+ADD_OSTREAM_OPERATOR(Vec2qb);
+ADD_OSTREAM_OPERATOR(Vec4fb);
+ADD_OSTREAM_OPERATOR(Vec2db);
 
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec32cb);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec16sb);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8ib);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec4qb);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8fb);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec4db);
+ADD_OSTREAM_OPERATOR(Vec32c);
+ADD_OSTREAM_OPERATOR(Vec32uc);
+ADD_OSTREAM_OPERATOR(Vec16s);
+ADD_OSTREAM_OPERATOR(Vec16us);
+ADD_OSTREAM_OPERATOR(Vec8i);
+ADD_OSTREAM_OPERATOR(Vec8ui);
+ADD_OSTREAM_OPERATOR(Vec4q);
+ADD_OSTREAM_OPERATOR(Vec4uq);
+ADD_OSTREAM_OPERATOR(Vec8f);
+ADD_OSTREAM_OPERATOR(Vec4d);
 
-// ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec64c);
-// ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec64uc);
-// ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec32s);
-// ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec32us);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec16i);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec16ui);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8q);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8uq);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec16f);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8d);
+ADD_OSTREAM_OPERATOR(Vec32cb);
+ADD_OSTREAM_OPERATOR(Vec16sb);
+ADD_OSTREAM_OPERATOR(Vec8ib);
+ADD_OSTREAM_OPERATOR(Vec4qb);
+ADD_OSTREAM_OPERATOR(Vec8fb);
+ADD_OSTREAM_OPERATOR(Vec4db);
 
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec16ib);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8qb);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec16fb);
-ADD_OSTREAM_OPERATOR(calin::util::vcl::Vec8db);
+// ADD_OSTREAM_OPERATOR(Vec64c);
+// ADD_OSTREAM_OPERATOR(Vec64uc);
+// ADD_OSTREAM_OPERATOR(Vec32s);
+// ADD_OSTREAM_OPERATOR(Vec32us);
+ADD_OSTREAM_OPERATOR(Vec16i);
+ADD_OSTREAM_OPERATOR(Vec16ui);
+ADD_OSTREAM_OPERATOR(Vec8q);
+ADD_OSTREAM_OPERATOR(Vec8uq);
+ADD_OSTREAM_OPERATOR(Vec16f);
+ADD_OSTREAM_OPERATOR(Vec8d);
+
+ADD_OSTREAM_OPERATOR(Vec16ib);
+ADD_OSTREAM_OPERATOR(Vec8qb);
+ADD_OSTREAM_OPERATOR(Vec16fb);
+ADD_OSTREAM_OPERATOR(Vec8db);
+}
 
 #undef ADD_OSTREAM_OPERATOR
 
