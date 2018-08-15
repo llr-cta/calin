@@ -32,7 +32,7 @@ using namespace calin::math::accumulator;
 using namespace calin::math::rng;
 using namespace calin::util::vcl;
 
-template<typename VCLArchitecture> class NR3_VCLCoreTests :
+template<typename VCLArchitecture> class NR3_VCLRNGCoreTests :
   public testing::Test
 {
 public:
@@ -40,9 +40,9 @@ public:
 
 using ArchTypes = ::testing::Types<VCL128Architecture, VCL256Architecture, VCL512Architecture>;
 
-TYPED_TEST_CASE(NR3_VCLCoreTests, ArchTypes);
+TYPED_TEST_CASE(NR3_VCLRNGCoreTests, ArchTypes);
 
-TYPED_TEST(NR3_VCLCoreTests, SameSeedsSameDeviates)
+TYPED_TEST(NR3_VCLRNGCoreTests, SameSeedsSameDeviates)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   NR3_VCLRNGCore<TypeParam> core(seed);
@@ -55,7 +55,7 @@ TYPED_TEST(NR3_VCLCoreTests, SameSeedsSameDeviates)
   }
 }
 
-TYPED_TEST(NR3_VCLCoreTests, DifferentSeedsDifferentDeviates)
+TYPED_TEST(NR3_VCLRNGCoreTests, DifferentSeedsDifferentDeviates)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   NR3_VCLRNGCore<TypeParam> core(seed);
@@ -67,7 +67,7 @@ TYPED_TEST(NR3_VCLCoreTests, DifferentSeedsDifferentDeviates)
   }
 }
 
-TYPED_TEST(NR3_VCLCoreTests, SaveAndRestoreState)
+TYPED_TEST(NR3_VCLRNGCoreTests, SaveAndRestoreState)
 {
   NR3_VCLRNGCore<TypeParam> core;
   for(unsigned i=0;i<1000;i++) {
@@ -84,7 +84,7 @@ TYPED_TEST(NR3_VCLCoreTests, SaveAndRestoreState)
   delete state;
 }
 
-TYPED_TEST(NR3_VCLCoreTests, SaveAndRestoreState_Factory)
+TYPED_TEST(NR3_VCLRNGCoreTests, SaveAndRestoreState_Factory)
 {
   NR3_VCLRNGCore<TypeParam> core;
   for(unsigned i=0;i<1000;i++) {
@@ -100,7 +100,7 @@ TYPED_TEST(NR3_VCLCoreTests, SaveAndRestoreState_Factory)
   delete state;
 }
 
-TYPED_TEST(NR3_VCLCoreTests, EqualsScalarNR3Implentation)
+TYPED_TEST(NR3_VCLRNGCoreTests, EqualsScalarNR3Implentation)
 {
   NR3_VCLRNGCore<TypeParam> core;
   NR3RNGCore* scalar_cores[TypeParam::num_uint64];
@@ -115,7 +115,7 @@ TYPED_TEST(NR3_VCLCoreTests, EqualsScalarNR3Implentation)
     delete scalar_cores[j];
 }
 
-TYPED_TEST(NR3_VCLCoreTests, 64GBitSpeedTest)
+TYPED_TEST(NR3_VCLRNGCoreTests, 64GBitSpeedTest)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   NR3_VCLRNGCore<TypeParam> core(seed);
@@ -127,7 +127,7 @@ TYPED_TEST(NR3_VCLCoreTests, 64GBitSpeedTest)
   EXPECT_TRUE(horizontal_and(x >= UINT64_C(0)));
 }
 
-// TYPED_TEST(NR3_VCLCoreTests, 64GBitSpeedTest_Cmp)
+// TYPED_TEST(NR3_VCLRNGCoreTests, 64GBitSpeedTest_Cmp)
 // {
 //   uint64_t seed = RNG::uint64_from_random_device();
 //   NR3_VCLRNGCore<TypeParam> core(seed);
@@ -140,7 +140,7 @@ TYPED_TEST(NR3_VCLCoreTests, 64GBitSpeedTest)
 // }
 
 
-TYPED_TEST(NR3_VCLCoreTests, 64GBitSpeedTest_Float)
+TYPED_TEST(NR3_VCLRNGCoreTests, 64GBitSpeedTest_Float)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed);
@@ -153,6 +153,16 @@ TYPED_TEST(NR3_VCLCoreTests, 64GBitSpeedTest_Float)
   EXPECT_TRUE(horizontal_and(x >= -0.5));
 }
 
+template<typename VCLArchitecture> class VCLRNGTests :
+  public testing::Test
+{
+public:
+};
+
+using ArchTypes = ::testing::Types<VCL128Architecture, VCL256Architecture, VCL512Architecture>;
+
+TYPED_TEST_CASE(VCLRNGTests, ArchTypes);
+
 template<typename float_vt> void verify_float_range(const std::string& what,
   const float_vt& x, float xmin, float xmax)
 {
@@ -162,7 +172,16 @@ template<typename float_vt> void verify_float_range(const std::string& what,
     << "Out of range: " << what << " below minimum : " << x << " < " << xmin;
 }
 
-TYPED_TEST(NR3_VCLCoreTests, UniformMoments)
+template<typename double_vt> void verify_double_range(const std::string& what,
+  const double_vt& x, double xmin, double xmax)
+{
+  EXPECT_FALSE(horizontal_or(x>xmax))
+    << "Out of range: " << what << " above maximum : " << x << " > " << xmax;
+  EXPECT_FALSE(horizontal_or(x<xmin))
+    << "Out of range: " << what << " below minimum : " << x << " < " << xmin;
+}
+
+TYPED_TEST(VCLRNGTests, UniformFloatZCMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed);
@@ -185,13 +204,95 @@ TYPED_TEST(NR3_VCLCoreTests, UniformMoments)
   verify_float_range("xmax", xmax, 0.5*0.9999, 0.5);
   verify_float_range("xmin", xmin, -0.5, -0.5*0.9999);
 
-  typename TypeParam::float_vt m1 = sumx.total()/double(N);
-  typename TypeParam::float_vt m2 = sumxx.total()/double(N);
-  typename TypeParam::float_vt m3 = sumxxx.total()/double(N);
+  typename TypeParam::float_vt m1 = sumx.total()/float(N);
+  typename TypeParam::float_vt m2 = sumxx.total()/float(N);
+  typename TypeParam::float_vt m3 = sumxxx.total()/float(N);
 
   verify_float_range("m1", m1, -0.001, 0.001);
   verify_float_range("m2", m2, 1/12.0-0.001, 1/12.0+0.001);
   verify_float_range("m3", m3, -0.0001, 0.0001);
+}
+
+TYPED_TEST(VCLRNGTests, UniformDoubleZCMoments)
+{
+  uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed);
+  const unsigned N = 1000000;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumx(0.0);
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxx(0.0);
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx(0.0);
+  typename TypeParam::double_vt xmax(-1.0);
+  typename TypeParam::double_vt xmin(1.0);
+  typename TypeParam::double_vt x;
+  for(unsigned i=0;i<N;i++) {
+    x = core.uniform_double_zc();
+    xmax = max(x, xmax);
+    xmin = min(x, xmin);
+    sumx.accumulate(x);
+    sumxx.accumulate(x*x);
+    sumxxx.accumulate(x*x*x);
+  }
+
+  verify_double_range("xmax", xmax, 0.5*0.9999, 0.5);
+  verify_double_range("xmin", xmin, -0.5, -0.5*0.9999);
+
+  typename TypeParam::double_vt m1 = sumx.total()/double(N);
+  typename TypeParam::double_vt m2 = sumxx.total()/double(N);
+  typename TypeParam::double_vt m3 = sumxxx.total()/double(N);
+
+  verify_double_range("m1", m1, -0.001, 0.001);
+  verify_double_range("m2", m2, 1/12.0-0.001, 1/12.0+0.001);
+  verify_double_range("m3", m3, -0.0001, 0.0001);
+}
+
+TYPED_TEST(VCLRNGTests, ExponentialFloatMoments)
+{
+  uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed);
+  const unsigned N = 1000000;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxx(0.0);
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx(0.0);
+  typename TypeParam::float_vt x;
+  for(unsigned i=0;i<N;i++) {
+    x = core.exponential_float();
+    sumx.accumulate(x);
+    sumxx.accumulate(x*x);
+    sumxxx.accumulate(x*x*x);
+  }
+
+  typename TypeParam::float_vt m1 = sumx.total()/float(N);
+  typename TypeParam::float_vt m2 = sumxx.total()/float(N);
+  typename TypeParam::float_vt m3 = sumxxx.total()/float(N);
+
+  verify_float_range("m1", m1, 1.0-0.003, 1.0+0.003);
+  verify_float_range("m2", m2, 2.0-0.01,  2.0+0.01);
+  verify_float_range("m3", m3, 6.0-0.1,   6.0+0.1);
+}
+
+TYPED_TEST(VCLRNGTests, ExponentialDoubleMoments)
+{
+  uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed);
+  const unsigned N = 1000000;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxx(0.0);
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx(0.0);
+  typename TypeParam::double_vt x;
+  for(unsigned i=0;i<N;i++) {
+    x = core.exponential_double();
+    sumx.accumulate(x);
+    sumxx.accumulate(x*x);
+    sumxxx.accumulate(x*x*x);
+  }
+
+  typename TypeParam::double_vt m1 = sumx.total()/double(N);
+  typename TypeParam::double_vt m2 = sumxx.total()/double(N);
+  typename TypeParam::double_vt m3 = sumxxx.total()/double(N);
+
+  verify_double_range("m1", m1, 1.0-0.003, 1.0+0.003);
+  verify_double_range("m2", m2, 2.0-0.01,  2.0+0.01);
+  verify_double_range("m3", m3, 6.0-0.1,   6.0+0.1);
 }
 
 int main(int argc, char **argv) {
