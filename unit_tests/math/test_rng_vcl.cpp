@@ -24,9 +24,11 @@
 #include <iomanip>
 #include <gtest/gtest.h>
 
+#include <math/accumulator.hpp>
 #include <math/rng_vcl.hpp>
 #include <util/vcl.hpp>
 
+using namespace calin::math::accumulator;
 using namespace calin::math::rng;
 using namespace calin::util::vcl;
 
@@ -143,11 +145,53 @@ TYPED_TEST(NR3_VCLCoreTests, 64GBitSpeedTest_Float)
   uint64_t seed = RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed);
   const unsigned N = unsigned(UINT64_C(64000000000)/TypeParam::vec_bits);
-  typename TypeParam::float_vt sum(0);
+  typename TypeParam::float_vt x;
   for(unsigned i=0;i<N;i++) {
-    sum += core.uniform_float();
+    x = core.uniform_float_zc();
   }
-  EXPECT_TRUE(horizontal_and(sum >= 0.0));
+  EXPECT_TRUE(horizontal_and(x <= 0.5));
+  EXPECT_TRUE(horizontal_and(x >= -0.5));
+}
+
+template<typename float_vt> void verify_float_range(const std::string& what,
+  const float_vt& x, float xmin, float xmax)
+{
+  EXPECT_FALSE(horizontal_or(x>xmax))
+    << "Out of range: " << what << " above maximum : " << x << " > " << xmax;
+  EXPECT_FALSE(horizontal_or(x<xmin))
+    << "Out of range: " << what << " below minimum : " << x << " < " << xmin;
+}
+
+TYPED_TEST(NR3_VCLCoreTests, UniformMoments)
+{
+  uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed);
+  const unsigned N = 1000000;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxx(0.0);
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx(0.0);
+  typename TypeParam::float_vt xmax(-1.0);
+  typename TypeParam::float_vt xmin(1.0);
+  typename TypeParam::float_vt x;
+  for(unsigned i=0;i<N;i++) {
+    x = core.uniform_float_zc();
+    xmax = max(x, xmax);
+    xmin = min(x, xmin);
+    sumx.accumulate(x);
+    sumxx.accumulate(x*x);
+    sumxxx.accumulate(x*x*x);
+  }
+
+  verify_float_range("xmax", xmax, 0.5*0.9999, 0.5);
+  verify_float_range("xmin", xmin, -0.5, -0.5*0.9999);
+
+  typename TypeParam::float_vt m1 = sumx.total()/double(N);
+  typename TypeParam::float_vt m2 = sumxx.total()/double(N);
+  typename TypeParam::float_vt m3 = sumxxx.total()/double(N);
+
+  verify_float_range("m1", m1, -0.001, 0.001);
+  verify_float_range("m2", m2, 1/12.0-0.001, 1/12.0+0.001);
+  verify_float_range("m3", m3, -0.0001, 0.0001);
 }
 
 int main(int argc, char **argv) {
