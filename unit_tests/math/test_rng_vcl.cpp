@@ -338,6 +338,49 @@ TYPED_TEST(VCLRNGTests, SinCoslFloatMoments)
   verify_float_range("m2sc", m2sc, -0.002, 0.002);
 }
 
+TYPED_TEST(VCLRNGTests, SinCoslDoubleMoments)
+{
+  uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed);
+  const unsigned N = 1000000;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sums;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumss;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumsss;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumc;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumcc;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumccc;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumsc;
+  typename TypeParam::double_vt s;
+  typename TypeParam::double_vt c;
+  for(unsigned i=0;i<N;i++) {
+    core.sincos_double(s,c);
+    sums.accumulate(s);
+    sumss.accumulate(s*s);
+    sumsss.accumulate(s*s*s);
+    sumc.accumulate(c);
+    sumcc.accumulate(c*c);
+    sumccc.accumulate(c*c*c);
+    sumsc.accumulate(s*c);
+  }
+
+  typename TypeParam::double_vt m1s = sums.total()/double(N);
+  typename TypeParam::double_vt m2s = sumss.total()/double(N);
+  typename TypeParam::double_vt m3s = sumsss.total()/double(N);
+  typename TypeParam::double_vt m1c = sumc.total()/double(N);
+  typename TypeParam::double_vt m2c = sumcc.total()/double(N);
+  typename TypeParam::double_vt m3c = sumccc.total()/double(N);
+
+  typename TypeParam::double_vt m2sc = sumsc.total()/double(N);
+
+  verify_double_range("m1s", m1s, -0.005, 0.005);
+  verify_double_range("m2s", m2s, 0.5-0.005,  0.5+0.005);
+  verify_double_range("m3s", m3s, -0.005, 0.005);
+  verify_double_range("m1c", m1c, -0.005, 0.005);
+  verify_double_range("m2c", m2c, 0.5-0.005,  0.5+0.005);
+  verify_double_range("m3c", m3c, -0.005, 0.005);
+  verify_double_range("m2sc", m2sc, -0.002, 0.002);
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
