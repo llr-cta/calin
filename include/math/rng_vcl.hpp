@@ -91,6 +91,7 @@ public:
   using typename VCLArchitecture::int64_vt;
   using typename VCLArchitecture::float_vt;
   using typename VCLArchitecture::double_vt;
+  using typename VCLArchitecture::uint64_bvt;
   using typename VCLArchitecture::float_bvt;
   using typename VCLArchitecture::double_bvt;
 
@@ -339,6 +340,18 @@ public:
     return uint64_vt(x);
   }
 
+  static uint64_vt nonzero_uint64_from_random_device()
+  {
+    uint64_vt x = uint64_from_random_device();
+    uint64_bvt xzero = x == 0;
+    while(horizontal_or(xzero)) {
+      x = select(xzero, uint64_from_random_device(), x);
+      xzero = x == 0;
+    }
+    return x;
+  }
+
+
 //   double normal(double mean, double sigma) { return mean+normal()*sigma; }
 //   double gamma_by_alpha_and_beta(double alpha, double beta);
 //   double gamma_by_mean_and_sigma(const double mean, const double sigma) {
@@ -348,9 +361,6 @@ public:
 //   int polya(double mean, double non_poisson_sigma) {
 //     return poisson(gamma_by_mean_and_sigma(mean, non_poisson_sigma)); }
 //   int binomial(double pp, int n);
-//
-//   static uint32_t uint32_from_random_device();
-//   static uint64_t uint64_from_random_device();
 //
 //   static uint64_t nonzero_uint64_from_random_device() { uint64_t x;
 //     do x = uint64_from_random_device(); while(x==0ULL); return x; }
