@@ -295,7 +295,7 @@ TYPED_TEST(VCLRNGTests, ExponentialDoubleMoments)
   verify_double_range("m3", m3, 6.0-0.1,   6.0+0.1);
 }
 
-TYPED_TEST(VCLRNGTests, SinCoslFloatMoments)
+TYPED_TEST(VCLRNGTests, SinCosFloatMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed);
@@ -338,7 +338,7 @@ TYPED_TEST(VCLRNGTests, SinCoslFloatMoments)
   verify_float_range("m2sc", m2sc, -0.002, 0.002);
 }
 
-TYPED_TEST(VCLRNGTests, SinCoslDoubleMoments)
+TYPED_TEST(VCLRNGTests, SinCosDoubleMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed);
@@ -379,6 +379,92 @@ TYPED_TEST(VCLRNGTests, SinCoslDoubleMoments)
   verify_double_range("m2c", m2c, 0.5-0.005,  0.5+0.005);
   verify_double_range("m3c", m3c, -0.005, 0.005);
   verify_double_range("m2sc", m2sc, -0.002, 0.002);
+}
+
+TYPED_TEST(VCLRNGTests, NormalFloatMoments)
+{
+  uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed);
+  const unsigned N = 1000000;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumy;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumyy;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumyyy;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxy;
+  typename TypeParam::float_vt x;
+  typename TypeParam::float_vt y;
+  for(unsigned i=0;i<N;i++) {
+    core.normal_two_float_bm(x,y);
+    sumx.accumulate(x);
+    sumxx.accumulate(x*x);
+    sumxxx.accumulate(x*x*x);
+    sumy.accumulate(y);
+    sumyy.accumulate(y*y);
+    sumyyy.accumulate(y*y*y);
+    sumxy.accumulate(x*y);
+  }
+
+  typename TypeParam::float_vt m1x = sumx.total()/float(N);
+  typename TypeParam::float_vt m2x = sumxx.total()/float(N);
+  typename TypeParam::float_vt m3x = sumxxx.total()/float(N);
+  typename TypeParam::float_vt m1y = sumy.total()/float(N);
+  typename TypeParam::float_vt m2y = sumyy.total()/float(N);
+  typename TypeParam::float_vt m3y = sumyyy.total()/float(N);
+
+  typename TypeParam::float_vt m2xy = sumxy.total()/float(N);
+
+  verify_float_range("m1x", m1x, -0.005, 0.005);
+  verify_float_range("m2x", m2x, 1.0-0.005,  1.0+0.005);
+  verify_float_range("m3x", m3x, -0.02, 0.02);
+  verify_float_range("m1y", m1y, -0.005, 0.005);
+  verify_float_range("m2y", m2y, 1.0-0.005,  1.0+0.005);
+  verify_float_range("m3y", m3y, -0.02, 0.02);
+  verify_float_range("m2xy", m2xy, -0.005, 0.005);
+}
+
+TYPED_TEST(VCLRNGTests, NormalDoubleMoments)
+{
+  uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed);
+  const unsigned N = 1000000;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxx;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumy;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumyy;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumyyy;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxy;
+  typename TypeParam::double_vt x;
+  typename TypeParam::double_vt y;
+  for(unsigned i=0;i<N;i++) {
+    core.normal_two_double_bm(x,y);
+    sumx.accumulate(x);
+    sumxx.accumulate(x*x);
+    sumxxx.accumulate(x*x*x);
+    sumy.accumulate(y);
+    sumyy.accumulate(y*y);
+    sumyyy.accumulate(y*y*y);
+    sumxy.accumulate(x*y);
+  }
+
+  typename TypeParam::double_vt m1x = sumx.total()/double(N);
+  typename TypeParam::double_vt m2x = sumxx.total()/double(N);
+  typename TypeParam::double_vt m3x = sumxxx.total()/double(N);
+  typename TypeParam::double_vt m1y = sumy.total()/double(N);
+  typename TypeParam::double_vt m2y = sumyy.total()/double(N);
+  typename TypeParam::double_vt m3y = sumyyy.total()/double(N);
+
+  typename TypeParam::double_vt m2xy = sumxy.total()/double(N);
+
+  verify_double_range("m1x", m1x, -0.005, 0.005);
+  verify_double_range("m2x", m2x, 1.0-0.005,  1.0+0.005);
+  verify_double_range("m3x", m3x, -0.02, 0.02);
+  verify_double_range("m1y", m1y, -0.005, 0.005);
+  verify_double_range("m2y", m2y, 1.0-0.005,  1.0+0.005);
+  verify_double_range("m3y", m3y, -0.02, 0.02);
+  verify_double_range("m2xy", m2xy, -0.005, 0.005);
 }
 
 int main(int argc, char **argv) {
