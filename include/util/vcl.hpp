@@ -281,6 +281,82 @@ namespace calin { namespace util { namespace vcl {
 #endif // INSTRSET < 9
 #endif // MAX_VECTOR_SIZE >= 512
 
+  // SHIFT LEFT AND RIGHT BY IMMEDIATE AMOUNT
+
+  template <int n> inline Vec2uq shift_right(const Vec2uq& x) {
+    return _mm_srli_epi64(x, n); }
+  template <int n> inline Vec4ui shift_right(const Vec4ui& x) {
+    return _mm_srli_epi32(x, n); }
+  template <int n> inline Vec8us shift_right(const Vec8us& x) {
+    return _mm_srli_epi16(x, n); }
+  template <int n> inline Vec2uq shift_left(const Vec2uq& x) {
+    return _mm_slli_epi64(x, n); }
+  template <int n> inline Vec4ui shift_left(const Vec4ui& x) {
+    return _mm_slli_epi32(x, n); }
+  template <int n> inline Vec8us shift_left(const Vec8us& x) {
+    return _mm_slli_epi16(x, n); }
+
+#if MAX_VECTOR_SIZE >= 256
+#if INSTRSET >= 8
+  template <int n> inline Vec4uq shift_right(const Vec4uq& x) {
+    return _mm256_srli_epi64(x, n); }
+  template <int n> inline Vec8ui shift_right(const Vec8ui& x) {
+    return _mm256_srli_epi32(x, n); }
+  template <int n> inline Vec16us shift_right(const Vec16us& x) {
+    return _mm256_srli_epi16(x, n); }
+  template <int n> inline Vec4uq shift_left(const Vec4uq& x) {
+    return _mm256_slli_epi64(x, n); }
+  template <int n> inline Vec8ui shift_left(const Vec8ui& x) {
+    return _mm256_slli_epi32(x, n); }
+  template <int n> inline Vec16us shift_left(const Vec16us& x) {
+    return _mm256_slli_epi16(x, n); }
+#else // INSTRSET < 8
+  template <int n> inline Vec4uq shift_right(const Vec4uq& x) {
+    return Vec4uq(shift_right<n>(x.get_low()), shift_right<n>(x.get_high()); }
+  template <int n> inline Vec8ui shift_right(const Vec8ui& x) {
+    return Vec8ui(shift_right<n>(x.get_low()), shift_right<n>(x.get_high())); }
+  template <int n> inline Vec16us shift_right(const Vec16us& x) {
+    return Vec16us(shift_right<n>(x.get_low()), shift_right<n>(x.get_high())); }
+  template <int n> inline Vec4uq shift_left(const Vec4uq& x) {
+    return Vec4uq(shift_left<n>(x.get_low()), shift_left<n>(x.get_high())); }
+  template <int n> inline Vec8ui shift_left(const Vec8ui& x) {
+    return Vec8ui(shift_left<n>(x.get_low()), shift_left<n>(x.get_high())); }
+  template <int n> inline Vec16us shift_left(const Vec16us& x) {
+    return Vec16us(shift_left<n>(x.get_low()), shift_left<n>(x.get_high())); }
+#endif // INSTRSET < 8
+#endif // MAX_VECTOR_SIZE >= 256
+
+#if MAX_VECTOR_SIZE >= 512
+#if INSTRSET >= 9
+  template <int n> inline Vec8uq shift_right(const Vec8uq& x) {
+    return _mm512_srli_epi64(x, n); }
+  template <int n> inline Vec16ui shift_right(const Vec16ui& x) {
+    return _mm512_srli_epi32(x, n); }
+  // template <int n> inline Vec32us shift_right(const Vec32us& x) {
+  //   return _mm512_srli_epi16(x, n); }
+  template <int n> inline Vec8uq shift_left(const Vec8uq& x) {
+    return _mm512_slli_epi64(x, n); }
+  template <int n> inline Vec16ui shift_left(const Vec16ui& x) {
+    return _mm512_slli_epi32(x, n); }
+  // template <int n> inline Vec32us shift_left(const Vec32us& x) {
+  //   return _mm512_slli_epi16(x, n); }
+#else // INSTRSET < 9
+  template <int n> inline Vec8uq shift_right(const Vec8uq& x) {
+    return Vec8uq(shift_right<n>(x.get_low()), shift_right<n>(x.get_high())); }
+  template <int n> inline Vec16ui shift_right(const Vec16ui& x) {
+    return Vec16ui(shift_right<n>(x.get_low()), shift_right<n>(x.get_high())); }
+  // template <int n> inline Vec32us shift_right(const Vec32us& x) {
+  //   return Vec32us(shift_right<n>(x.get_low()), shift_right<n>(x.get_high())); }
+  template <int n> inline Vec8uq shift_left(const Vec8uq& x) {
+    return Vec8uq(shift_left<n>(x.get_low()), shift_left<n>(x.get_high())); }
+  template <int n> inline Vec16ui shift_left(const Vec16ui& x) {
+    return Vec16ui(shift_left<n>(x.get_low()), shift_left<n>(x.get_high())); }
+  // template <int n> inline Vec32us shift_left(const Vec32us& x) {
+  //   return Vec32us(shift_left<n>(x.get_low()), shift_left<n>(x.get_high())); }
+#endif // INSTRSET < 9
+#endif // MAX_VECTOR_SIZE >= 512
+
+
 } } } // namespace calin::util::vcl
 
 #define ADD_OSTREAM_OPERATOR(Vec) \
