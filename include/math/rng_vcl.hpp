@@ -315,12 +315,36 @@ public:
     x2 = r*s;
   }
 
+  float_vt from_inverse_cdf_float(const std::vector<float>& inverse_cdf)
+  {
+    float len = inverse_cdf.size();
+    float_vt x = uniform_float_gen(len, 0.5*len);
+    float_vt dx = x - floor(x);
+    int32_vt ix = truncate_to_int(x);
+    float_vt y0 = vcl::lookup<0x80000000>(ix, inverse_cdf.data());
+    float_vt y1 = vcl::lookup<0x80000000>(ix+1, inverse_cdf.data());
+    return y0 + (y1-y0)*dx;
+  }
+
+  double_vt from_inverse_cdf_double(const std::vector<double>& inverse_cdf)
+  {
+    double len = inverse_cdf.size();
+    double_vt x = uniform_double_gen(len, 0.5*len);
+    double_vt dx = x - floor(x);
+    int64_vt ix = truncate_to_int(x);
+    double_vt y0 = vcl::lookup<0x80000000>(ix, inverse_cdf.data());
+    double_vt y1 = vcl::lookup<0x80000000>(ix+1, inverse_cdf.data());
+    return y0 + (y1-y0)*dx;
+  }
+
   static uint64_vt uint64_from_seed(uint64_t seed = 0)
   {
     if(seed == 0)seed = RNG::uint64_from_random_device();
     std::mt19937_64 gen(seed);
     uint64_t u64[VCLArchitecture::num_uint64];
-    for(unsigned i=0; i<VCLArchitecture::num_uint64; i++)u64[i] = gen();
+    for(unsigned i=0; i<VCLArchitecture::num_uint64; i++) {
+      u64[i] = gen();
+    }
     uint64_vt x;
     x.load(u64);
     return x;
@@ -350,7 +374,6 @@ public:
     }
     return x;
   }
-
 
 //   double normal(double mean, double sigma) { return mean+normal()*sigma; }
 //   double gamma_by_alpha_and_beta(double alpha, double beta);
