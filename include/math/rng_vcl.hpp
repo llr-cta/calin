@@ -315,26 +315,40 @@ public:
     x2 = r*s;
   }
 
-  float_vt from_inverse_cdf_float(const std::vector<float>& inverse_cdf)
+  float_vt from_inverse_cdf_float(const float* inverse_cdf, unsigned npoints)
   {
-    float len = inverse_cdf.size();
+    float len = npoints-1;
     float_vt x = uniform_float_gen(len, 0.5*len);
-    float_vt dx = x - floor(x);
     int32_vt ix = truncate_to_int(x);
-    float_vt y0 = vcl::lookup<0x80000000>(ix, inverse_cdf.data());
-    float_vt y1 = vcl::lookup<0x80000000>(ix+1, inverse_cdf.data());
+    ix = max(ix, 0);
+    ix = min(ix, npoints-2);
+    float_vt dx = x - to_float(ix);
+    float_vt y0 = vcl::lookup<0x80000000>(ix, inverse_cdf);
+    float_vt y1 = vcl::lookup<0x80000000>(ix+1, inverse_cdf);
     return y0 + (y1-y0)*dx;
   }
 
-  double_vt from_inverse_cdf_double(const std::vector<double>& inverse_cdf)
+  float_vt from_inverse_cdf_float(const std::vector<float> inverse_cdf)
   {
-    double len = inverse_cdf.size();
+    return from_inverse_cdf_float(inverse_cdf.data(), inverse_cdf.size());
+  }
+
+  double_vt from_inverse_cdf_double(const double* inverse_cdf, unsigned npoints)
+  {
+    double len = npoints-1;
     double_vt x = uniform_double_gen(len, 0.5*len);
-    double_vt dx = x - floor(x);
     int64_vt ix = truncate_to_int(x);
-    double_vt y0 = vcl::lookup<0x80000000>(ix, inverse_cdf.data());
-    double_vt y1 = vcl::lookup<0x80000000>(ix+1, inverse_cdf.data());
+    ix = max(ix, 0);
+    ix = min(ix, npoints-2);
+    double_vt dx = x - to_double(ix);
+    double_vt y0 = vcl::lookup<0x80000000>(ix, inverse_cdf);
+    double_vt y1 = vcl::lookup<0x80000000>(ix+1, inverse_cdf);
     return y0 + (y1-y0)*dx;
+  }
+
+  double_vt from_inverse_cdf_double(const std::vector<double> inverse_cdf)
+  {
+    return from_inverse_cdf_double(inverse_cdf.data(), inverse_cdf.size());
   }
 
   static uint64_vt uint64_from_seed(uint64_t seed = 0)
