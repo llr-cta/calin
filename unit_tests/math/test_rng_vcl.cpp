@@ -45,8 +45,8 @@ TYPED_TEST_CASE(NR3_VCLRNGCoreTests, ArchTypes);
 TYPED_TEST(NR3_VCLRNGCoreTests, SameSeedsSameDeviates)
 {
   uint64_t seed = RNG::uint64_from_random_device();
-  NR3_VCLRNGCore<TypeParam> core(seed);
-  NR3_VCLRNGCore<TypeParam> core2(seed);
+  NR3_VCLRNGCore<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
+  NR3_VCLRNGCore<TypeParam> core2(seed, __PRETTY_FUNCTION__, "core2");
   EXPECT_EQ(core.seed(), core2.seed());
   EXPECT_EQ(core.calls(), core2.calls());
   EXPECT_TRUE(horizontal_and(core.sequence_seeds() == core2.sequence_seeds()));
@@ -58,8 +58,8 @@ TYPED_TEST(NR3_VCLRNGCoreTests, SameSeedsSameDeviates)
 TYPED_TEST(NR3_VCLRNGCoreTests, DifferentSeedsDifferentDeviates)
 {
   uint64_t seed = RNG::uint64_from_random_device();
-  NR3_VCLRNGCore<TypeParam> core(seed);
-  NR3_VCLRNGCore<TypeParam> core2(seed+1);
+  NR3_VCLRNGCore<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
+  NR3_VCLRNGCore<TypeParam> core2(seed+1, __PRETTY_FUNCTION__, "core2");
   EXPECT_NE(core.seed(), core2.seed());
   EXPECT_TRUE(horizontal_and(core.sequence_seeds() != core2.sequence_seeds()));
   for(unsigned i=0;i<1000;i++) {
@@ -69,12 +69,13 @@ TYPED_TEST(NR3_VCLRNGCoreTests, DifferentSeedsDifferentDeviates)
 
 TYPED_TEST(NR3_VCLRNGCoreTests, SaveAndRestoreState)
 {
-  NR3_VCLRNGCore<TypeParam> core;
+  NR3_VCLRNGCore<TypeParam> core(__PRETTY_FUNCTION__, "core");
   for(unsigned i=0;i<1000;i++) {
     core.uniform_uint64();
   }
   auto* state = core.as_proto();
-  NR3_VCLRNGCore<TypeParam> core2(NR3_VCLRNGCore<TypeParam>::core_data(*state), /* restore_state = */ true);
+  NR3_VCLRNGCore<TypeParam> core2(NR3_VCLRNGCore<TypeParam>::core_data(*state),
+    /* restore_state = */ true, __PRETTY_FUNCTION__, "core2");
   EXPECT_EQ(core.seed(), core2.seed());
   EXPECT_EQ(core.calls(), core2.calls());
   EXPECT_TRUE(horizontal_and(core.sequence_seeds() == core2.sequence_seeds()));
@@ -86,13 +87,14 @@ TYPED_TEST(NR3_VCLRNGCoreTests, SaveAndRestoreState)
 
 TYPED_TEST(NR3_VCLRNGCoreTests, SaveAndRestoreState_Factory)
 {
-  NR3_VCLRNGCore<TypeParam> core;
+  NR3_VCLRNGCore<TypeParam> core(__PRETTY_FUNCTION__, "core");
   for(unsigned i=0;i<1000;i++) {
     core.uniform_uint64();
   }
   auto* state = core.as_proto();
   VCLRNGCore<TypeParam>* core2 =
-    VCLRNGCore<TypeParam>::create_from_proto(*state, /* restore_state = */ true);
+    VCLRNGCore<TypeParam>::create_from_proto(*state, /* restore_state = */ true,
+      __PRETTY_FUNCTION__, "core");
   for(unsigned i=0;i<1000;i++) {
     EXPECT_TRUE(horizontal_and(core.uniform_uint64() == core2->uniform_uint64()));
   }
@@ -102,10 +104,11 @@ TYPED_TEST(NR3_VCLRNGCoreTests, SaveAndRestoreState_Factory)
 
 TYPED_TEST(NR3_VCLRNGCoreTests, EqualsScalarNR3Implentation)
 {
-  NR3_VCLRNGCore<TypeParam> core;
+  NR3_VCLRNGCore<TypeParam> core(__PRETTY_FUNCTION__, "core");
   NR3RNGCore* scalar_cores[TypeParam::num_uint64];
   for(unsigned j=0;j<TypeParam::num_uint64;j++)
-    scalar_cores[j] = new NR3RNGCore(core.sequence_seeds()[j]);
+    scalar_cores[j] = new NR3RNGCore(core.sequence_seeds()[j],
+      __PRETTY_FUNCTION__, "scalar_cores["+std::to_string(j)+"]");
   for(unsigned i=0;i<1000000;i++) {
     typename TypeParam::uint64_vt x = core.uniform_uint64();
     for(unsigned j=0;j<TypeParam::num_uint64;j++)
@@ -118,7 +121,7 @@ TYPED_TEST(NR3_VCLRNGCoreTests, EqualsScalarNR3Implentation)
 TYPED_TEST(NR3_VCLRNGCoreTests, 64GBitSpeedTest)
 {
   uint64_t seed = RNG::uint64_from_random_device();
-  NR3_VCLRNGCore<TypeParam> core(seed);
+  NR3_VCLRNGCore<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = unsigned(UINT64_C(64000000000)/TypeParam::vec_bits);
   typename TypeParam::uint64_vt x(0);
   for(unsigned i=0;i<N;i++) {
@@ -143,7 +146,7 @@ TYPED_TEST(NR3_VCLRNGCoreTests, 64GBitSpeedTest)
 TYPED_TEST(NR3_VCLRNGCoreTests, 64GBitSpeedTest_Float)
 {
   uint64_t seed = RNG::uint64_from_random_device();
-  VCLRNG<TypeParam> core(seed);
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = unsigned(UINT64_C(64000000000)/TypeParam::vec_bits);
   typename TypeParam::float_vt x;
   for(unsigned i=0;i<N;i++) {
@@ -184,7 +187,7 @@ template<typename double_vt> void verify_double_range(const std::string& what,
 TYPED_TEST(VCLRNGTests, UniformFloatZCMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
-  VCLRNG<TypeParam> core(seed);
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
@@ -216,7 +219,7 @@ TYPED_TEST(VCLRNGTests, UniformFloatZCMoments)
 TYPED_TEST(VCLRNGTests, UniformDoubleZCMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
-  VCLRNG<TypeParam> core(seed);
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumxx;
@@ -248,7 +251,7 @@ TYPED_TEST(VCLRNGTests, UniformDoubleZCMoments)
 TYPED_TEST(VCLRNGTests, ExponentialFloatMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
-  VCLRNG<TypeParam> core(seed);
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
@@ -273,7 +276,7 @@ TYPED_TEST(VCLRNGTests, ExponentialFloatMoments)
 TYPED_TEST(VCLRNGTests, ExponentialDoubleMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
-  VCLRNG<TypeParam> core(seed);
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumxx;
@@ -298,7 +301,7 @@ TYPED_TEST(VCLRNGTests, ExponentialDoubleMoments)
 TYPED_TEST(VCLRNGTests, SinCosFloatMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
-  VCLRNG<TypeParam> core(seed);
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sums;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumss;
@@ -326,7 +329,6 @@ TYPED_TEST(VCLRNGTests, SinCosFloatMoments)
   typename TypeParam::float_vt m1c = sumc.total()/float(N);
   typename TypeParam::float_vt m2c = sumcc.total()/float(N);
   typename TypeParam::float_vt m3c = sumccc.total()/float(N);
-
   typename TypeParam::float_vt m2sc = sumsc.total()/float(N);
 
   verify_float_range("m1s", m1s, -0.005, 0.005);
@@ -341,7 +343,7 @@ TYPED_TEST(VCLRNGTests, SinCosFloatMoments)
 TYPED_TEST(VCLRNGTests, SinCosDoubleMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
-  VCLRNG<TypeParam> core(seed);
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::double_vt> sums;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumss;
@@ -369,7 +371,6 @@ TYPED_TEST(VCLRNGTests, SinCosDoubleMoments)
   typename TypeParam::double_vt m1c = sumc.total()/double(N);
   typename TypeParam::double_vt m2c = sumcc.total()/double(N);
   typename TypeParam::double_vt m3c = sumccc.total()/double(N);
-
   typename TypeParam::double_vt m2sc = sumsc.total()/double(N);
 
   verify_double_range("m1s", m1s, -0.005, 0.005);
@@ -384,7 +385,7 @@ TYPED_TEST(VCLRNGTests, SinCosDoubleMoments)
 TYPED_TEST(VCLRNGTests, NormalFloatMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
-  VCLRNG<TypeParam> core(seed);
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
@@ -412,7 +413,6 @@ TYPED_TEST(VCLRNGTests, NormalFloatMoments)
   typename TypeParam::float_vt m1y = sumy.total()/float(N);
   typename TypeParam::float_vt m2y = sumyy.total()/float(N);
   typename TypeParam::float_vt m3y = sumyyy.total()/float(N);
-
   typename TypeParam::float_vt m2xy = sumxy.total()/float(N);
 
   verify_float_range("m1x", m1x, -0.005, 0.005);
@@ -427,7 +427,7 @@ TYPED_TEST(VCLRNGTests, NormalFloatMoments)
 TYPED_TEST(VCLRNGTests, NormalDoubleMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
-  VCLRNG<TypeParam> core(seed);
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumxx;
@@ -455,7 +455,6 @@ TYPED_TEST(VCLRNGTests, NormalDoubleMoments)
   typename TypeParam::double_vt m1y = sumy.total()/double(N);
   typename TypeParam::double_vt m2y = sumyy.total()/double(N);
   typename TypeParam::double_vt m3y = sumyyy.total()/double(N);
-
   typename TypeParam::double_vt m2xy = sumxy.total()/double(N);
 
   verify_double_range("m1x", m1x, -0.005, 0.005);
