@@ -247,7 +247,7 @@ namespace calin { namespace util { namespace vcl {
   template<typename Vec> void print_vec(std::ostream& s, const Vec& v)
   {
     s << v[0];
-    for(unsigned i=1;i<v.size();i++)
+    for(int i=1;i<v.size();i++)
       s << '_' << v[i];
   }
 
