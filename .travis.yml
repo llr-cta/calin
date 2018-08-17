@@ -206,10 +206,10 @@ script:
     make -j3 &&
     make install | tail &&
     ./src/bin/write_system_info &&
-    make test
-    ./unit_tests/math/test_rng
-    ./unit_tests/math/test_data_modeling
-    ./unit_tests/calib/test_spe_fit
+#    make test
+    ./unit_tests/math/test_rng_vcl
+#    ./unit_tests/math/test_data_modeling
+#    ./unit_tests/calib/test_spe_fit
 #    ./unit_tests/iact_data/test_waveform_treatment
 
 #after_failure:
