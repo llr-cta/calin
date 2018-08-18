@@ -66,6 +66,89 @@ calin::ix::provenance::system_info::BuildInfo* new_build_info()
   info->set_git_commit_sha1(CALIN_GIT_COMMIT_SHA1);
   info->set_git_commit_date(CALIN_GIT_COMMIT_DATE);
   info->set_git_repo_status(CALIN_GIT_REPO_STATUS);
+
+#ifdef __x86_64__
+  info->set_compiled_with_x86_64(true);
+#endif
+#ifdef __SSE__
+  info->set_compiled_with_sse(true);
+#endif
+#ifdef __SSE2__
+  info->set_compiled_with_sse2(true);
+#endif
+#ifdef __SSE3__
+  info->set_compiled_with_sse3(true);
+#endif
+#ifdef __SSSE3__
+  info->set_compiled_with_ssse3(true);
+#endif
+#ifdef __SSE4_1__
+  info->set_compiled_with_sse4_1(true);
+#endif
+#ifdef __SSE4_2__
+  info->set_compiled_with_sse4_2(true);
+#endif
+#ifdef __AVX__
+  info->set_compiled_with_avx(true);
+#endif
+#ifdef __AVX2__
+  info->set_compiled_with_avx2(true);
+#endif
+#ifdef __FMA__
+  info->set_compiled_with_fma3(true);
+#endif
+#ifdef __FMA4__
+  info->set_compiled_with_fma4(true);
+#endif
+#ifdef __AVX512__
+  info->set_compiled_with_avx512(true);
+#endif
+#ifdef __AVX512F__
+  info->set_compiled_with_avx512f(true);
+#endif
+#ifdef __AVX512DQ__
+  info->set_compiled_with_avx512dq(true);
+#endif
+#ifdef __AVX512IFMA__
+  info->set_compiled_with_avx512ifma(true);
+#endif
+#ifdef __AVX512PF__
+  info->set_compiled_with_avx512pf(true);
+#endif
+#ifdef __AVX512ER__
+  info->set_compiled_with_avx512er(true);
+#endif
+#ifdef __AVX512CD__
+  info->set_compiled_with_avx512cd(true);
+#endif
+#ifdef __AVX512BW__
+  info->set_compiled_with_avx512bw(true);
+#endif
+#ifdef __AVX512VL__
+  info->set_compiled_with_avx512vl(true);
+#endif
+#ifdef __AVX512VBMI__
+  info->set_compiled_with_avx512vbmi(true);
+#endif
+#ifdef __AVX512VBMI2__
+  info->set_compiled_with_avx512vbmi2(true);
+#endif
+#ifdef __AVX512VNNI__
+  info->set_compiled_with_avx512vnni(true);
+#endif
+#ifdef __AVX512BITALG__
+  info->set_compiled_with_avx512bitalg(true);
+#endif
+#ifdef __AVX512VPOPCNTDQ__
+  info->set_compiled_with_avx512vpopcntdq(true);
+#endif
+#ifdef __AVX5124VNNIW__
+  info->set_compiled_with_avx5124vnniw(true);
+#endif
+#ifdef __AVX5124MAPS__
+  info->set_compiled_with_avx5124maps(true);
+#endif
+
   return info;
 };
 

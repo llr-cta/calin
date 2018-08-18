@@ -205,7 +205,7 @@ script:
           -DCMAKE_INSTALL_PREFIX=build .. &&
     make -j3 &&
     make install | tail &&
-    ./src/bin/write_system_info &&
+    ./src/bin/write_system_info -l &&
     ./unit_tests/math/test_rng_vcl
 #    make test
 #    ./unit_tests/math/test_data_modeling

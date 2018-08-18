@@ -100,6 +100,87 @@ message BuildInfo {
   string git_repo_status                                   = 205 [
     (CFO).desc = "Status of git repo at time of configuration: "
       "\"clean\" or \"dirty\"." ];
+
+  bool compiled_with_x86_64                                = 300 [
+    (CFO).desc = "Macro __x86_64__ defined at compile time." ];
+
+  bool compiled_with_sse                                   = 301 [
+    (CFO).desc = "Macro __SSE__ defined at compile time." ];
+
+  bool compiled_with_sse2                                  = 302 [
+    (CFO).desc = "Macro __SSE2__ defined at compile time." ];
+
+  bool compiled_with_sse3                                  = 303 [
+    (CFO).desc = "Macro __SSE3__ defined at compile time." ];
+
+  bool compiled_with_ssse3                                 = 304 [
+    (CFO).desc = "Macro __SSSE3__ defined at compile time." ];
+
+  bool compiled_with_sse4_1                                = 305 [
+    (CFO).desc = "Macro __SSE4_1__ defined at compile time." ];
+
+  bool compiled_with_sse4_2                                = 306 [
+    (CFO).desc = "Macro __SSE4_2__ defined at compile time." ];
+
+  bool compiled_with_avx                                   = 307 [
+    (CFO).desc = "Macro __AVX__ defined at compile time." ];
+
+  bool compiled_with_avx2                                  = 308 [
+    (CFO).desc = "Macro __AVX2__ defined at compile time." ];
+
+  bool compiled_with_fma3                                  = 320 [
+    (CFO).desc = "Macro __FMA3__ defined at compile time." ];
+
+  bool compiled_with_fma4                                  = 321 [
+    (CFO).desc = "Macro __FMA4__ defined at compile time." ];
+
+  bool compiled_with_avx512                                = 339 [
+    (CFO).desc = "Macro __AVX512__ defined at compile time." ];
+
+  bool compiled_with_avx512f                               = 340 [
+    (CFO).desc = "Macro __AVX512F__ defined at compile time." ];
+
+  bool compiled_with_avx512dq                              = 341 [
+    (CFO).desc = "Macro __AVX512DQ__ defined at compile time." ];
+
+  bool compiled_with_avx512ifma                            = 342 [
+    (CFO).desc = "Macro __AVX512IFMA__ defined at compile time." ];
+
+  bool compiled_with_avx512pf                              = 343 [
+    (CFO).desc = "Macro __AVX512PF__ defined at compile time." ];
+
+  bool compiled_with_avx512er                              = 344 [
+    (CFO).desc = "Macro __AVX512ER__ defined at compile time." ];
+
+  bool compiled_with_avx512cd                              = 345 [
+    (CFO).desc = "Macro __AVX512CD__ defined at compile time." ];
+
+  bool compiled_with_avx512bw                              = 346 [
+    (CFO).desc = "Macro __AVX512BW__ defined at compile time." ];
+
+  bool compiled_with_avx512vl                              = 347 [
+    (CFO).desc = "Macro __AVX512VL__ defined at compile time." ];
+
+  bool compiled_with_avx512vbmi                            = 348 [
+    (CFO).desc = "Macro __AVX512VBMI__ defined at compile time." ];
+
+  bool compiled_with_avx512vbmi2                           = 349 [
+    (CFO).desc = "Macro __AVX512VBMI2__ defined at compile time." ];
+
+  bool compiled_with_avx512vnni                            = 350 [
+    (CFO).desc = "Macro __AVX512VNNI__ defined at compile time." ];
+
+  bool compiled_with_avx512bitalg                          = 351 [
+    (CFO).desc = "Macro __AVX512BITALG__ defined at compile time." ];
+
+  bool compiled_with_avx512vpopcntdq                       = 352 [
+    (CFO).desc = "Macro __AVX512VPOPCNTDQ__ defined at compile time." ];
+
+  bool compiled_with_avx5124vnniw                          = 353 [
+    (CFO).desc = "Macro __AVX5124VNNIW__ defined at compile time." ];
+
+  bool compiled_with_avx5124fmaps                          = 354 [
+    (CFO).desc = "Macro __AVX5124FMAPS__ defined at compile time." ];
 };
 
 message HostAndProcessInfo {

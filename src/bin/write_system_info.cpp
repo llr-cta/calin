@@ -28,4 +28,11 @@ int main(int argc, char** argv)
   calin::util::log::default_logger()->add_cout(/* apply_timestamp = */ false,
     /* use_colors = */ false);
   calin::provenance::system_info::write_system_info_to_log();
+  if(argc>1) {
+    const auto* host_info = calin::provenance::system_info::the_host_info();
+    const auto* build_info = calin::provenance::system_info::the_build_info();
+    auto L = calin::util::log::LOG(calin::util::log::INFO);
+    L << "----------\nBUILD INFO\n----------\n" << build_info->DebugString();
+    L << "\n---------\nHOST INFO\n---------\n" << host_info->DebugString();
+  }
 }
