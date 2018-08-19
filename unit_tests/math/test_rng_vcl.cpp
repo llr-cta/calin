@@ -428,7 +428,7 @@ TYPED_TEST(VCLRNGTests, NormalDoubleMoments)
   verify_double_range("m2xy", m2xy, -0.005, 0.005);
 }
 
-TYPED_TEST(VCLRNGTests, CDFUniformfloatZCMoments)
+TYPED_TEST(VCLRNGTests, CDFUniformFloatZCMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
@@ -501,6 +501,42 @@ TYPED_TEST(VCLRNGTests, CDFUniformDoubleZCMoments)
   verify_double_range("m2", m2, 1/12.0-0.001, 1/12.0+0.001);
   verify_double_range("m3", m3, -0.0001, 0.0001);
 }
+
+TYPED_TEST(VCLRNGTests, CDFNormalFloatZCMoments)
+{
+  uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
+  std::vector<std::pair<double, double>> cdf;
+  cdf.emplace_back(-20.0, 0.0);
+  for(double x=-10.0; x<=10.0; x+=0.1) {
+    cdf.emplace_back(x, 0.5*(std::erf(x)+1.0));
+  }
+  cdf.emplace_back(20.0, 1.0);
+  std::vector<float> inverse_cdf = core.generate_inverse_cdf_float(cdf, 4096);
+
+  //for(auto x: inverse_cdf) { std::cout << x << '\n'; }
+
+  const unsigned N = 1000000;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx;
+  typename TypeParam::float_vt x;
+  for(unsigned i=0;i<N;i++) {
+    x = core.from_inverse_cdf_float(inverse_cdf);
+    sumx.accumulate(x);
+    sumxx.accumulate(x*x);
+    sumxxx.accumulate(x*x*x);
+  }
+
+  typename TypeParam::float_vt m1 = sumx.total()/float(N);
+  typename TypeParam::float_vt m2 = sumxx.total()/float(N);
+  typename TypeParam::float_vt m3 = sumxxx.total()/float(N);
+
+  verify_float_range("m1", m1, -0.005, 0.005);
+  verify_float_range("m2", m2, 0.5-0.01,  0.5+0.01);
+  verify_float_range("m3", m3, -0.02, 0.02);
+}
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

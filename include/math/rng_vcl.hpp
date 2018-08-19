@@ -325,6 +325,8 @@ public:
     float_vt dx = x - to_float(ix);
     float_vt y0 = vcl::lookup<0x40000000>(ix, inverse_cdf);
     float_vt y1 = vcl::lookup<0x40000000>(ix+1, inverse_cdf);
+    // std::cout << len << ' ' << x[0] << ' ' << ix[0] << ' ' << dx[0]
+    //   << ' ' << y0[0] << ' ' << y1[0] <<  '\n';
     return y0 + (y1-y0)*dx;
   }
 
