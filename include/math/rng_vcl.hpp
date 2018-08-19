@@ -323,8 +323,8 @@ public:
     ix = max(ix, 0);
     ix = min(ix, npoints-2);
     float_vt dx = x - to_float(ix);
-    float_vt y0 = vcl::lookup<0x80000000>(ix, inverse_cdf);
-    float_vt y1 = vcl::lookup<0x80000000>(ix+1, inverse_cdf);
+    float_vt y0 = vcl::lookup<0x40000000>(ix, inverse_cdf);
+    float_vt y1 = vcl::lookup<0x40000000>(ix+1, inverse_cdf);
     return y0 + (y1-y0)*dx;
   }
 
@@ -337,12 +337,12 @@ public:
   {
     double len = npoints-1;
     double_vt x = uniform_double_gen(len, 0.5*len);
-    int64_vt ix = truncate_to_int(x);
+    int64_vt ix = truncate_to_int64(x);
     ix = max(ix, 0);
     ix = min(ix, npoints-2);
     double_vt dx = x - to_double(ix);
-    double_vt y0 = vcl::lookup<0x80000000>(ix, inverse_cdf);
-    double_vt y1 = vcl::lookup<0x80000000>(ix+1, inverse_cdf);
+    double_vt y0 = vcl::lookup<0x40000000>(ix, inverse_cdf);
+    double_vt y1 = vcl::lookup<0x40000000>(ix+1, inverse_cdf);
     return y0 + (y1-y0)*dx;
   }
 
@@ -388,6 +388,91 @@ public:
     }
     return x;
   }
+
+  static std::vector<double> generate_inverse_cdf_double(
+    const std::vector<std::pair<double,double>> cdf, unsigned nbins)
+  {
+    if(cdf.size() < 2)
+      throw std::runtime_error("generate_inverse_cdf_double : CDF must have at least 2 points.");
+    if(cdf.front().second != 0.0)
+      throw std::runtime_error("generate_inverse_cdf_double : First CDF bin must have probability zero.");
+    if(cdf.back().second != 1.0)
+      throw std::runtime_error("generate_inverse_cdf_double : Last CDF bin must have probability one.");
+    double p = 0.0;
+    for(auto icdf : cdf) {
+      if(icdf.second < p)
+        throw std::runtime_error("generate_inverse_cdf_double : CDF must be uniformly increasing.");
+      p = icdf.second;
+    }
+
+    if(nbins < 2)nbins = cdf.size();
+    nbins = ((nbins + VCLArchitecture::num_double - 1)/VCLArchitecture::num_double)
+      * VCLArchitecture::num_double;
+
+    std::vector<double> inverse_cdf(nbins);
+
+    auto iter = std::upper_bound(cdf.begin(), cdf.end(), 0.0,
+      [](double p, const std::pair<double,double>& x) { return p<x.second; });
+    inverse_cdf[0] = (iter-1)->first;
+
+    double n_inv = 1.0/double(nbins-1);
+    for(unsigned ibin=1; ibin<nbins-1; ibin++) {
+      double p = double(ibin)*n_inv;
+      iter = std::upper_bound(cdf.begin(), cdf.end(), p,
+        [](double p, const std::pair<double,double>& x) { return p<x.second; });
+      double dx = (p-(iter-1)->second)/(iter->second-(iter-1)->second);
+      inverse_cdf[ibin] = (iter-1)->first + dx*(iter->first - (iter-1)->first);
+    }
+
+    iter = std::lower_bound(cdf.begin(), cdf.end(), 1.0,
+      [](const std::pair<double,double>& x, double p) { return x.second<p; });
+    inverse_cdf[nbins-1] = iter->first;
+
+    return inverse_cdf;
+  }
+
+  static std::vector<float> generate_inverse_cdf_float(
+    const std::vector<std::pair<double,double>> cdf, unsigned nbins)
+  {
+    if(cdf.size() < 2)
+      throw std::runtime_error("generate_inverse_cdf_double : CDF must have at least 2 points.");
+    if(cdf.front().second != 0.0)
+      throw std::runtime_error("generate_inverse_cdf_double : First CDF bin must have probability zero.");
+    if(cdf.back().second != 1.0)
+      throw std::runtime_error("generate_inverse_cdf_double : Last CDF bin must have probability one.");
+    double p = 0.0;
+    for(auto icdf : cdf) {
+      if(icdf.second < p)
+        throw std::runtime_error("generate_inverse_cdf_double : CDF must be uniformly increasing.");
+      p = icdf.second;
+    }
+
+    if(nbins < 2)nbins = cdf.size();
+    nbins = ((nbins + VCLArchitecture::num_double - 1)/VCLArchitecture::num_double)
+      * VCLArchitecture::num_double;
+
+    std::vector<float> inverse_cdf(nbins);
+
+    auto iter = std::upper_bound(cdf.begin(), cdf.end(), 0.0,
+      [](double p, const std::pair<double,double>& x) { return p<x.second; });
+    inverse_cdf[0] = (iter-1)->first;
+
+    double n_inv = 1.0/double(nbins-1);
+    for(unsigned ibin=1; ibin<nbins-1; ibin++) {
+      double p = double(ibin)*n_inv;
+      iter = std::upper_bound(cdf.begin(), cdf.end(), p,
+        [](double p, const std::pair<double,double>& x) { return p<x.second; });
+      double dx = (p-(iter-1)->second)/(iter->second-(iter-1)->second);
+      inverse_cdf[ibin] = (iter-1)->first + dx*(iter->first - (iter-1)->first);
+    }
+
+    iter = std::lower_bound(cdf.begin(), cdf.end(), 1.0,
+      [](const std::pair<double,double>& x, double p) { return x.second<p; });
+    inverse_cdf[nbins-1] = iter->first;
+
+    return inverse_cdf;
+  }
+
 
 //   double normal(double mean, double sigma) { return mean+normal()*sigma; }
 //   double gamma_by_alpha_and_beta(double alpha, double beta);

@@ -48,6 +48,10 @@ add_executable(test_rng_vcl test_rng_vcl.cpp)
 target_link_libraries(test_rng_vcl ${GTEST_BOTH_LIBRARIES} calin_math calin_util ${EXTRA_LIBS})
 add_test(TestRNGVCL test_rng_vcl)
 
+add_executable(speedtest_rng speedtest_rng.cpp)
+target_link_libraries(speedtest_rng ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
+#add_test(SpeedTestRNG speedtest_rng)
+
 add_executable(test_simd test_simd.cpp)
 target_link_libraries(test_simd ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
 add_test(TestSIMD test_simd)

@@ -118,44 +118,6 @@ TYPED_TEST(NR3_VCLRNGCoreTests, EqualsScalarNR3Implentation)
     delete scalar_cores[j];
 }
 
-TYPED_TEST(NR3_VCLRNGCoreTests, 64GBitSpeedTest)
-{
-  uint64_t seed = RNG::uint64_from_random_device();
-  NR3_VCLRNGCore<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
-  const unsigned N = unsigned(UINT64_C(64000000000)/TypeParam::vec_bits);
-  typename TypeParam::uint64_vt x(0);
-  for(unsigned i=0;i<N;i++) {
-    x = core.uniform_uint64();
-  }
-  EXPECT_TRUE(horizontal_and(x >= UINT64_C(0)));
-}
-
-// TYPED_TEST(NR3_VCLRNGCoreTests, 64GBitSpeedTest_Cmp)
-// {
-//   uint64_t seed = RNG::uint64_from_random_device();
-//   NR3_VCLRNGCore<TypeParam> core(seed);
-//   const unsigned N = unsigned(UINT64_C(64000000000)/TypeParam::vec_bits);
-//   typename TypeParam::uint64_vt x(0);
-//   for(unsigned i=0;i<N;i++) {
-//     x = core.uniform_uint64_reference();
-//   }
-//   EXPECT_TRUE(horizontal_and(x >= UINT64_C(0)));
-// }
-
-
-TYPED_TEST(NR3_VCLRNGCoreTests, 64GBitSpeedTest_Float)
-{
-  uint64_t seed = RNG::uint64_from_random_device();
-  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
-  const unsigned N = unsigned(UINT64_C(64000000000)/TypeParam::vec_bits);
-  typename TypeParam::float_vt x;
-  for(unsigned i=0;i<N;i++) {
-    x = core.uniform_float_zc();
-  }
-  EXPECT_TRUE(horizontal_and(x <= 0.5));
-  EXPECT_TRUE(horizontal_and(x >= -0.5));
-}
-
 template<typename VCLArchitecture> class VCLRNGTests :
   public testing::Test
 {
@@ -464,6 +426,80 @@ TYPED_TEST(VCLRNGTests, NormalDoubleMoments)
   verify_double_range("m2y", m2y, 1.0-0.005,  1.0+0.005);
   verify_double_range("m3y", m3y, -0.02, 0.02);
   verify_double_range("m2xy", m2xy, -0.005, 0.005);
+}
+
+TYPED_TEST(VCLRNGTests, CDFUniformfloatZCMoments)
+{
+  uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
+  std::vector<std::pair<double, double>> cdf;
+  cdf.emplace_back(-0.5,0.0);
+  cdf.emplace_back(0.5,1.0);
+  std::vector<float> inverse_cdf = core.generate_inverse_cdf_float(cdf, 0);
+
+  const unsigned N = 1000000;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
+  BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx;
+  typename TypeParam::float_vt xmax(-1.0);
+  typename TypeParam::float_vt xmin(1.0);
+  typename TypeParam::float_vt x;
+  for(unsigned i=0;i<N;i++) {
+    x = core.from_inverse_cdf_float(inverse_cdf);
+    xmax = max(x, xmax);
+    xmin = min(x, xmin);
+    sumx.accumulate(x);
+    sumxx.accumulate(x*x);
+    sumxxx.accumulate(x*x*x);
+  }
+
+  verify_float_range("xmax", xmax, 0.5*0.9999, 0.5);
+  verify_float_range("xmin", xmin, -0.5, -0.5*0.9999);
+
+  typename TypeParam::float_vt m1 = sumx.total()/float(N);
+  typename TypeParam::float_vt m2 = sumxx.total()/float(N);
+  typename TypeParam::float_vt m3 = sumxxx.total()/float(N);
+
+  verify_float_range("m1", m1, -0.001, 0.001);
+  verify_float_range("m2", m2, 1/12.0-0.001, 1/12.0+0.001);
+  verify_float_range("m3", m3, -0.0001, 0.0001);
+}
+
+TYPED_TEST(VCLRNGTests, CDFUniformDoubleZCMoments)
+{
+  uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
+  std::vector<std::pair<double, double>> cdf;
+  cdf.emplace_back(-0.5,0.0);
+  cdf.emplace_back(0.5,1.0);
+  std::vector<double> inverse_cdf = core.generate_inverse_cdf_double(cdf, 0);
+
+  const unsigned N = 1000000;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxx;
+  BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx;
+  typename TypeParam::double_vt xmax(-1.0);
+  typename TypeParam::double_vt xmin(1.0);
+  typename TypeParam::double_vt x;
+  for(unsigned i=0;i<N;i++) {
+    x = core.from_inverse_cdf_double(inverse_cdf);
+    xmax = max(x, xmax);
+    xmin = min(x, xmin);
+    sumx.accumulate(x);
+    sumxx.accumulate(x*x);
+    sumxxx.accumulate(x*x*x);
+  }
+
+  verify_double_range("xmax", xmax, 0.5*0.9999, 0.5);
+  verify_double_range("xmin", xmin, -0.5, -0.5*0.9999);
+
+  typename TypeParam::double_vt m1 = sumx.total()/double(N);
+  typename TypeParam::double_vt m2 = sumxx.total()/double(N);
+  typename TypeParam::double_vt m3 = sumxxx.total()/double(N);
+
+  verify_double_range("m1", m1, -0.001, 0.001);
+  verify_double_range("m2", m2, 1/12.0-0.001, 1/12.0+0.001);
+  verify_double_range("m3", m3, -0.0001, 0.0001);
 }
 
 int main(int argc, char **argv) {
