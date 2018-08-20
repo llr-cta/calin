@@ -40,6 +40,10 @@ add_executable(test_hex_array test_hex_array.cpp)
 target_link_libraries(test_hex_array ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
 add_test(TestHexArray test_hex_array)
 
+add_executable(test_hex_array_vcl test_hex_array_vcl.cpp)
+target_link_libraries(test_hex_array_vcl ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
+add_test(TestHexArrayVCL test_hex_array_vcl)
+
 add_executable(test_rng test_rng.cpp)
 target_link_libraries(test_rng ${GTEST_BOTH_LIBRARIES} calin_math ${EXTRA_LIBS})
 add_test(TestRNG test_rng)
@@ -65,5 +69,5 @@ target_link_libraries(test_accumulator ${GTEST_BOTH_LIBRARIES} calin_math)
 add_test(TestAccumulator test_accumulator)
 
 install(TARGETS test_histogram test_hessian test_pdf_1d test_m_estimate
-	test_data_modeling test_hex_array test_rng test_simd
+	test_data_modeling test_hex_array test_hex_array_vcl test_rng test_simd
   DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
