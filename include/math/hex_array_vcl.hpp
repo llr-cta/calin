@@ -196,7 +196,7 @@ public:
     iring -= irun;
 
     irun = min(iring, ringid);
-    u += irun;
+    u -= irun;
     iring -= irun;
 
     irun = min(iring, ringid);
@@ -226,7 +226,7 @@ public:
     v = -v;
   }
 
-  static inline int32_vt avx2_uv_to_hexid_ccw(const int32_vt u, const int32_vt v)
+  static inline int32_vt uv_to_hexid_ccw(const int32_vt u, const int32_vt v)
   {
     // if(u==0 and v==0)return 0;
     // int ringid = uv_to_ringid(u,v);
@@ -252,37 +252,44 @@ public:
     // if(upv==ringid and v!=ringid)         { segid=0; runid=v; }
     int32_bvt here_mask = upv==ringid;
     hexid = if_add(not_found_mask, hexid, select(here_mask, v, ringid));
-    not_found_mask = andnot(here_mask, not_found_mask);
+    not_found_mask = andnot(not_found_mask, here_mask);
 
     // Seg ID = 1
     // else if(v==ringid and u!=-ringid)     { segid=1; runid=-u; }
     here_mask = v==ringid;
     hexid = if_add(not_found_mask, hexid, select(here_mask, -u, ringid));
-    not_found_mask = andnot(here_mask, not_found_mask);
+    not_found_mask = andnot(not_found_mask, here_mask);
 
     // Seg ID = 2
     // else if(u==-ringid and upv!=-ringid)  { segid=2; runid=ringid-v; }
     here_mask = u==minus_ringid;
     hexid = if_add(not_found_mask, hexid, select(here_mask, -upv, ringid));
-    not_found_mask = andnot(here_mask, not_found_mask);
+    not_found_mask = andnot(not_found_mask, here_mask);
 
     // Seg ID = 3
     // else if(u+v==-ringid and v!=-ringid)  { segid=3; runid=-v; }
     here_mask = upv==minus_ringid;
     hexid = if_add(not_found_mask, hexid, select(here_mask, -v, ringid));
-    not_found_mask = andnot(here_mask, not_found_mask);
+    not_found_mask = andnot(not_found_mask, here_mask);
 
     // Seg ID = 4
     // else if(v==-ringid and u!=ringid)     { segid=4; runid=u; }
     here_mask = v==minus_ringid;
     hexid = if_add(not_found_mask, hexid, select(here_mask, u, ringid));
-    not_found_mask = andnot(here_mask, not_found_mask);
+    not_found_mask = andnot(not_found_mask, here_mask);
 
     // Seg ID = 5
     // else /*if(u==ringid and upv!=ringid)*/{ segid=5; runid=ringid+v; }
     hexid = if_add(not_found_mask, hexid, upv);
 
     return select(ringid>0, hexid, 0);
+  }
+
+  static inline int32_vt uv_to_hexid_cw(int32_vt u, int32_vt v)
+  {
+    u += v;
+    v = -v;
+    return uv_to_hexid_ccw(u, v);
   }
 
 };
@@ -294,15 +301,6 @@ public:
 
 
 
-inline __m256i avx2_uv_to_hexid_cw(__m256i u, __m256i v)
-{
-  // u += v;
-  // v = -v;
-  // return uv_to_hexid_ccw(u, v);
-  u = _mm256_add_epi32(u, v);
-  v = _mm256_sign_epi32(v, _mm256_cmpeq_epi32(v, v));
-  return avx2_uv_to_hexid_ccw(u, v);
-}
 
 inline void avx2_hexid_to_uv(__m256i hexid, __m256i& u, __m256i& v)
 {

@@ -120,6 +120,30 @@ TYPED_TEST(VCLHexArrayTest, HexIDToFromRingSegRun_EQ) {
   }
 }
 
+TYPED_TEST(VCLHexArrayTest, HexIDToFromUV_CW_EQ) {
+  for(unsigned ihex=1;ihex<100000;ihex++)
+  {
+    typename TypeParam::int32_vt u = 0;
+    typename TypeParam::int32_vt v = 0;
+    VCLHexArray<TypeParam>::hexid_to_uv_cw(ihex, u, v);
+    typename TypeParam::int32_vt hexid = VCLHexArray<TypeParam>::uv_to_hexid_cw(u, v);
+    ASSERT_TRUE(horizontal_and(hexid == ihex))
+      << ihex << ' ' << u << ' ' << v << ' ' << hexid;
+  }
+}
+
+TYPED_TEST(VCLHexArrayTest, HexIDToFromUV_CCW_EQ) {
+  for(unsigned ihex=1;ihex<100000;ihex++)
+  {
+    typename TypeParam::int32_vt u = 0;
+    typename TypeParam::int32_vt v = 0;
+    VCLHexArray<TypeParam>::hexid_to_uv_ccw(ihex, u, v);
+    typename TypeParam::int32_vt hexid = VCLHexArray<TypeParam>::uv_to_hexid_ccw(u, v);
+    ASSERT_TRUE(horizontal_and(hexid == ihex))
+      << ihex << ' ' << u << ' ' << v << ' ' << hexid;
+  }
+}
+
 
 // TEST(VCLHexArrayTest, HexIDToXY_Equals_Scalar) {
 //   unsigned hexid = 1;
@@ -305,28 +329,6 @@ TEST(TestHexArray, AVX2_XYToHexID_CW_Trans_Equals_Scalar) {
 #endif
 
 
-TEST(TestHexArray, HexIDToFromUV_CW_EQ) {
-  for(unsigned hexid=1;hexid<100000;hexid++)
-  {
-    int u = 0;
-    int v = 0;
-    hexid_to_uv_cw(hexid, u, v);
-    ASSERT_EQ(hexid, uv_to_hexid_cw(u, v))
-      << hexid << ' ' << u << ' ' << v;
-  }
-}
-
-TEST(TestHexArray, HexIDToFromUV_CCW_EQ) {
-  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV; iloop++)
-  for(unsigned hexid=1;hexid<100000;hexid++)
-  {
-    int u = 0;
-    int v = 0;
-    hexid_to_uv_ccw(hexid, u, v);
-    ASSERT_EQ(hexid, uv_to_hexid_ccw(u, v))
-      << hexid << ' ' << u << ' ' << v;
-  }
-}
 
 TEST(TestHexArray, RandHexIDToFromUV_CCW_EQ) {
   for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV; iloop++) {
