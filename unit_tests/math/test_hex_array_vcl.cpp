@@ -144,144 +144,75 @@ TYPED_TEST(VCLHexArrayTest, HexIDToFromUV_CCW_EQ) {
   }
 }
 
-
-// TEST(VCLHexArrayTest, HexIDToXY_Equals_Scalar) {
-//   unsigned hexid = 1;
-//   for(unsigned iring=1;iring<500;iring++)
-//     for(unsigned ichan=0;ichan<6*iring;ichan++)
-//     {
-//       double x1,y1;
-//       float x2,y2;
-//       hexid_to_xy(hexid, x1, y1);
-//       test_avx2_hexid_to_xy_f(hexid, x2, y2);
-//       EXPECT_NEAR(float(x1),x2,abs(x2)*1e-6);
-//       EXPECT_NEAR(float(y1),y2,abs(y2)*1e-6);
-//       hexid++;
-//     }
-// }
-
-
-#if 0
-#if defined(__AVX2__) and defined(__FMA__)
-TEST(TestHexArray, AVX2_HexIDToXY_Equals_Scalar) {
+TYPED_TEST(VCLHexArrayTest, HexIDToXY_Equals_Scalar) {
   unsigned hexid = 1;
   for(unsigned iring=1;iring<500;iring++)
     for(unsigned ichan=0;ichan<6*iring;ichan++)
     {
       double x1,y1;
-      float x2,y2;
+      typename TypeParam::float_vt x2,y2;
       hexid_to_xy(hexid, x1, y1);
-      test_avx2_hexid_to_xy_f(hexid, x2, y2);
-      EXPECT_NEAR(float(x1),x2,abs(x2)*1e-6);
-      EXPECT_NEAR(float(y1),y2,abs(y2)*1e-6);
+      VCLHexArray<TypeParam>::hexid_to_xy_f(hexid, x2, y2);
+      EXPECT_NEAR(float(x1),x2[0],abs(x1)*1e-6);
+      EXPECT_NEAR(float(y1),y2[0],abs(y1)*1e-6);
       hexid++;
     }
 }
 
-TEST(TestHexArray, AVX2_HexIDToXY_CW_Equals_Scalar) {
+TYPED_TEST(VCLHexArrayTest, HexIDToXY_CW_Equals_Scalar) {
   unsigned hexid = 1;
   for(unsigned iring=1;iring<500;iring++)
     for(unsigned ichan=0;ichan<6*iring;ichan++)
     {
       double x1,y1;
-      float x2,y2;
+      typename TypeParam::float_vt x2,y2;
       hexid_to_xy(hexid, x1, y1, true);
-      test_avx2_hexid_to_xy_f(hexid, x2, y2, true);
-      EXPECT_NEAR(float(x1),x2,abs(x2)*1e-6);
-      EXPECT_NEAR(float(y1),y2,abs(y2)*1e-6);
+      VCLHexArray<TypeParam>::hexid_to_xy_f(hexid, x2, y2, true);
+      EXPECT_NEAR(float(x1),x2[0],abs(x1)*1e-6);
+      EXPECT_NEAR(float(y1),y2[0],abs(y1)*1e-6);
       hexid++;
     }
 }
-#endif
 
-TEST(TestHexArray, XYToHexID_NewCodeSpeedTest) {
-  double dx = 0.005;
-  for(double x=-10.005; x<10.015; x+=dx)
-    for(double y=-10.005; y<10.015; y+=dx)
-    {
-      double xx1 = x;
-      double yy1 = y;
-      xy_to_hexid_with_remainder(xx1, yy1, true);
-    }
-}
-
-TEST(TestHexArray, XYToHexID_VVVCodeSpeedTest) {
-  double dx = 0.005;
-  for(double x=-10.005; x<10.015; x+=dx)
-    for(double y=-10.005; y<10.015; y+=dx)
-    {
-      double xx2 = x;
-      double yy2 = y;
-      int hexid2;
-      xy_to_nh(&xx2,&yy2,&hexid2);
-    }
-}
-
-#if defined(__AVX2__) and defined(__FMA__)
-TEST(TestHexArray, XYToHexID_AVX2CodeSpeedTest) {
-  volatile __m256i hexid;
-  float dx = 0.005;
-  for(float x=-10.005; x<10.015; x+=dx) {
-    __m256 vx = _mm256_set1_ps(x);
-    for(float y=-10.005; y<10.015; y+=8*dx)
-    {
-      __m256 vy = _mm256_set_ps(y+7*dx,y+6*dx,y+5*dx,y+4*dx,y+3*dx,y+2*dx,y+dx,y);
-      hexid = avx2_xy_to_hexid_with_remainder_f(vx,vy);
-    }
-  }
-  EXPECT_GE(int32_t(hexid[0]), 0);
-}
-#endif
-
-TEST(TestHexArray, XYToHexID_ComparisonWithVVVCode) {
-  for(double x=-10.005; x<10.015; x+=0.02)
-    for(double y=-10.005; y<10.015; y+=0.02)
-    {
-      double xx1 = x;
-      double yy1 = y;
-      unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1, true);
-      double xx2 = x;
-      double yy2 = y;
-      int hexid2;
-      xy_to_nh(&xx2,&yy2,&hexid2);
-      EXPECT_EQ(hexid, (unsigned)hexid2-1);
-      EXPECT_NEAR(xx1,xx2,1e-6);
-      EXPECT_NEAR(yy1,yy2,1e-6);
-    }
-}
-
-#if defined(__AVX2__) and defined(__FMA__)
-TEST(TestHexArray, AVX2_XYToHexID_Equals_Scalar) {
+TYPED_TEST(VCLHexArrayTest, XYToHexID_Equals_Scalar) {
   for(double x=-10.005; x<10.015; x+=0.02)
     for(double y=-10.005; y<10.015; y+=0.02)
     {
       double xx1 = x;
       double yy1 = y;
       unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1);
-      float xx2 = x;
-      float yy2 = y;
-      unsigned hexid2 = test_avx2_xy_to_hexid_with_remainder_f(xx2, yy2);
-      EXPECT_EQ(hexid, hexid2);
-      EXPECT_NEAR(xx1,xx2,1e-6);
-      EXPECT_NEAR(yy1,yy2,1e-6);
+      typename TypeParam::float_vt xx2 = x;
+      typename TypeParam::float_vt yy2 = y;
+      typename TypeParam::int32_vt hexid2 =
+        VCLHexArray<TypeParam>::xy_to_hexid_with_remainder_f(xx2, yy2);
+      EXPECT_EQ(hexid, hexid2[0]);
+      EXPECT_NEAR(xx1,xx2[0],1e-6);
+      EXPECT_NEAR(yy1,yy2[0],1e-6);
     }
 }
 
-TEST(TestHexArray, AVX2_XYToHexID_CW_Equals_Scalar) {
+TYPED_TEST(VCLHexArrayTest, XYToHexID_CW_Equals_Scalar) {
   for(double x=-10.005; x<10.015; x+=0.02)
     for(double y=-10.005; y<10.015; y+=0.02)
     {
       double xx1 = x;
       double yy1 = y;
       unsigned hexid = xy_to_hexid_with_remainder(xx1, yy1, true);
-      float xx2 = x;
-      float yy2 = y;
-      unsigned hexid2 = test_avx2_xy_to_hexid_with_remainder_f(xx2, yy2, true);
-      EXPECT_EQ(hexid, hexid2);
-      EXPECT_NEAR(xx1,xx2,1e-6);
-      EXPECT_NEAR(yy1,yy2,1e-6);
+      typename TypeParam::float_vt xx2 = x;
+      typename TypeParam::float_vt yy2 = y;
+      typename TypeParam::int32_vt hexid2 =
+        VCLHexArray<TypeParam>::xy_to_hexid_with_remainder_f(xx2, yy2, true);
+      EXPECT_EQ(hexid, hexid2[0]);
+      EXPECT_NEAR(xx1,xx2[0],1e-6);
+      EXPECT_NEAR(yy1,yy2[0],1e-6);
     }
 }
+
+
+#if 0
+
+
+#if defined(__AVX2__) and defined(__FMA__)
 
 TEST(TestHexArray, AVX2_XYToHexID_Trans_Equals_Scalar) {
   float dx = 0.32426534147237f;
