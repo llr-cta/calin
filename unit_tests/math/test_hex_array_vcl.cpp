@@ -296,10 +296,10 @@ TYPED_TEST(VCLHexArrayTest, HexIDToXY_Trans_Equals_Scalar) {
       typename TypeParam::float_vt x2,y2;
       hexid_to_xy_trans(hexid, x1, y1, false, ctheta, stheta, scale, dx, dy);
       VCLHexArray<TypeParam>::hexid_to_xy_trans_ccw_f(hexid, x2, y2, ctheta, stheta, scale, dx, dy);
-      ASSERT_NEAR(float(x1),x2[0],(1+abs(x1))*1e-5)
+      ASSERT_NEAR(float(x1),x2[0],(2+abs(x1))*1e-5)
         << hexid << ' ' << iring << ' ' << ichan << ' ' << x1 << ' ' << y1 << ' '
         << x2 << ' ' << y2;
-      ASSERT_NEAR(float(y1),y2[0],(1+abs(y1))*1e-5)
+      ASSERT_NEAR(float(y1),y2[0],(2+abs(y1))*1e-5)
         << hexid << ' ' << iring << ' ' << ichan << ' ' << x1 << ' ' << y1 << ' '
         << x2 << ' ' << y2;
       hexid++;
