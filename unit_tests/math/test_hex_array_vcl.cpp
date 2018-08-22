@@ -120,6 +120,30 @@ TYPED_TEST(VCLHexArrayTest, HexIDToFromRingSegRun_EQ) {
   }
 }
 
+TYPED_TEST(VCLHexArrayTest, HexIDToFromUV_CW_Equals_Scalar) {
+  for(unsigned ihex=1;ihex<100000;ihex++)
+  {
+    int u = 0;
+    int v = 0;
+    hexid_to_uv_cw(ihex, u, v);
+    typename TypeParam::int32_vt hexid = uv_to_hexid_cw(u, v);
+    ASSERT_TRUE(horizontal_and(hexid == ihex))
+      << ihex << ' ' << hexid << ' ' << u << ' ' << v;
+  }
+}
+
+TYPED_TEST(VCLHexArrayTest, HexIDToFromUV_CCW_Equals_Scalar) {
+  for(unsigned ihex=1;ihex<100000;ihex++)
+  {
+    int u = 0;
+    int v = 0;
+    hexid_to_uv_ccw(ihex, u, v);
+    typename TypeParam::int32_vt hexid = uv_to_hexid_ccw(u, v);
+    ASSERT_TRUE(horizontal_and(hexid == ihex))
+      << ihex << ' ' << hexid << ' ' << u << ' ' << v;
+  }
+}
+
 TYPED_TEST(VCLHexArrayTest, HexIDToFromUV_CW_EQ) {
   for(unsigned ihex=1;ihex<100000;ihex++)
   {
@@ -153,8 +177,8 @@ TYPED_TEST(VCLHexArrayTest, HexIDToXY_Equals_Scalar) {
       typename TypeParam::float_vt x2,y2;
       hexid_to_xy(hexid, x1, y1);
       VCLHexArray<TypeParam>::hexid_to_xy_f(hexid, x2, y2);
-      EXPECT_NEAR(float(x1),x2[0],abs(x1)*1e-6);
-      EXPECT_NEAR(float(y1),y2[0],abs(y1)*1e-6);
+      ASSERT_NEAR(float(x1),x2[0],abs(x1)*1e-6);
+      ASSERT_NEAR(float(y1),y2[0],abs(y1)*1e-6);
       hexid++;
     }
 }
@@ -168,8 +192,8 @@ TYPED_TEST(VCLHexArrayTest, HexIDToXY_CW_Equals_Scalar) {
       typename TypeParam::float_vt x2,y2;
       hexid_to_xy(hexid, x1, y1, true);
       VCLHexArray<TypeParam>::hexid_to_xy_f(hexid, x2, y2, true);
-      EXPECT_NEAR(float(x1),x2[0],abs(x1)*1e-6);
-      EXPECT_NEAR(float(y1),y2[0],abs(y1)*1e-6);
+      ASSERT_NEAR(float(x1),x2[0],abs(x1)*1e-6);
+      ASSERT_NEAR(float(y1),y2[0],abs(y1)*1e-6);
       hexid++;
     }
 }
@@ -185,9 +209,9 @@ TYPED_TEST(VCLHexArrayTest, XYToHexID_Equals_Scalar) {
       typename TypeParam::float_vt yy2 = y;
       typename TypeParam::int32_vt hexid2 =
         VCLHexArray<TypeParam>::xy_to_hexid_with_remainder_f(xx2, yy2);
-      EXPECT_EQ(hexid, hexid2[0]);
-      EXPECT_NEAR(xx1,xx2[0],1e-6);
-      EXPECT_NEAR(yy1,yy2[0],1e-6);
+      ASSERT_EQ(hexid, hexid2[0]);
+      ASSERT_NEAR(xx1,xx2[0],1e-6);
+      ASSERT_NEAR(yy1,yy2[0],1e-6);
     }
 }
 
@@ -202,19 +226,36 @@ TYPED_TEST(VCLHexArrayTest, XYToHexID_CW_Equals_Scalar) {
       typename TypeParam::float_vt yy2 = y;
       typename TypeParam::int32_vt hexid2 =
         VCLHexArray<TypeParam>::xy_to_hexid_with_remainder_f(xx2, yy2, true);
-      EXPECT_EQ(hexid, hexid2[0]);
-      EXPECT_NEAR(xx1,xx2[0],1e-6);
-      EXPECT_NEAR(yy1,yy2[0],1e-6);
+      ASSERT_EQ(hexid, hexid2[0]);
+      ASSERT_NEAR(xx1,xx2[0],1e-6);
+      ASSERT_NEAR(yy1,yy2[0],1e-6);
     }
 }
 
+TYPED_TEST(VCLHexArrayTest, UVToXY_Trans_Equals_Scalar) {
+  float dx = 0.32426534147237f;
+  float dy = 1.25432437427634f;
+  float theta = 12.21752765/180.0*M_PI;
+  float ctheta = std::cos(theta);
+  float stheta = std::sin(theta);
+  float scale = 0.9326575752f;
+  for(unsigned v=-10;v<=10;v++)
+    for(unsigned u=-10;u<=10;u++)
+    {
+      double x1,y1;
+      typename TypeParam::float_vt x2,y2;
+      uv_to_xy_trans(u, v, x1, y1, ctheta, stheta, scale, dx, dy);
+      VCLHexArray<TypeParam>::uv_to_xy_trans_f(u, v, x2, y2, ctheta, stheta, scale, dx, dy);
+      ASSERT_NEAR(float(x1),x2[0],abs(x1)*1e-6)
+        << u << ' ' << v << ' ' << x1 << ' ' << y1 << ' '
+        << x2 << ' ' << y2;
+      ASSERT_NEAR(float(y1),y2[0],abs(y1)*1e-6)
+        << u << ' ' << v << ' ' << x1 << ' ' << y1 << ' '
+        << x2 << ' ' << y2;
+    }
+}
 
-#if 0
-
-
-#if defined(__AVX2__) and defined(__FMA__)
-
-TEST(TestHexArray, AVX2_XYToHexID_Trans_Equals_Scalar) {
+TYPED_TEST(VCLHexArrayTest, XYToUV_Trans_Equals_Scalar) {
   float dx = 0.32426534147237f;
   float dy = 1.25432437427634f;
   float theta = 12.21752765/180.0*M_PI;
@@ -226,17 +267,70 @@ TEST(TestHexArray, AVX2_XYToHexID_Trans_Equals_Scalar) {
     {
       double xx1 = x;
       double yy1 = y;
-      unsigned hexid = xy_trans_to_hexid_with_remainder(xx1, yy1, ctheta, stheta, scale, dx, dy);
-      float xx2 = x;
-      float yy2 = y;
-      unsigned hexid2 = test_avx2_xy_trans_to_hexid_with_remainder_f(xx2, yy2, ctheta, stheta, scale, dx, dy);
-      EXPECT_EQ(hexid, hexid2);
-      EXPECT_NEAR(xx1,xx2,1e-5);
-      EXPECT_NEAR(yy1,yy2,1e-5);
+      int u, v;
+      xy_trans_to_uv_with_remainder(xx1, yy1, u, v, ctheta, stheta, scale, dx, dy);
+      typename TypeParam::float_vt xx2 = x;
+      typename TypeParam::float_vt yy2 = y;
+      typename TypeParam::int32_vt u2;
+      typename TypeParam::int32_vt v2;
+      VCLHexArray<TypeParam>::xy_trans_to_uv_with_remainder_f(xx2, yy2, u2, v2, ctheta, stheta, scale, dx, dy);
+      ASSERT_EQ(u, u2[0]);
+      ASSERT_EQ(v, v2[0]);
+      ASSERT_NEAR(xx1,xx2[0],1e-5);
+      ASSERT_NEAR(yy1,yy2[0],1e-5);
     }
 }
 
-TEST(TestHexArray, AVX2_XYToHexID_CW_Trans_Equals_Scalar) {
+TYPED_TEST(VCLHexArrayTest, HexIDToXY_Trans_Equals_Scalar) {
+  float dx = 0.32426534147237f;
+  float dy = 1.25432437427634f;
+  float theta = 12.21752765/180.0*M_PI;
+  float ctheta = std::cos(theta);
+  float stheta = std::sin(theta);
+  float scale = 0.9326575752f;
+  unsigned hexid = 1;
+  for(unsigned iring=1;iring<500;iring++)
+    for(unsigned ichan=0;ichan<6*iring;ichan++)
+    {
+      double x1,y1;
+      typename TypeParam::float_vt x2,y2;
+      hexid_to_xy_trans(hexid, x1, y1, false, ctheta, stheta, scale, dx, dy);
+      VCLHexArray<TypeParam>::hexid_to_xy_trans_ccw_f(hexid, x2, y2, ctheta, stheta, scale, dx, dy);
+      ASSERT_NEAR(float(x1),x2[0],(1+abs(x1))*1e-5)
+        << hexid << ' ' << iring << ' ' << ichan << ' ' << x1 << ' ' << y1 << ' '
+        << x2 << ' ' << y2;
+      ASSERT_NEAR(float(y1),y2[0],(1+abs(y1))*1e-5)
+        << hexid << ' ' << iring << ' ' << ichan << ' ' << x1 << ' ' << y1 << ' '
+        << x2 << ' ' << y2;
+      hexid++;
+    }
+}
+
+
+TYPED_TEST(VCLHexArrayTest, XYToHexID_Trans_Equals_Scalar) {
+  float dx = 0.32426534147237f;
+  float dy = 1.25432437427634f;
+  float theta = 12.21752765/180.0*M_PI;
+  float ctheta = std::cos(theta);
+  float stheta = std::sin(theta);
+  float scale = 0.9326575752f;
+  for(double x=-10.005; x<10.015; x+=0.02)
+    for(double y=-10.005; y<10.015; y+=0.02)
+    {
+      double xx1 = x;
+      double yy1 = y;
+      unsigned hexid = xy_trans_to_hexid_with_remainder(xx1, yy1, false, ctheta, stheta, scale, dx, dy);
+      typename TypeParam::float_vt xx2 = x;
+      typename TypeParam::float_vt yy2 = y;
+      typename TypeParam::int32_vt hexid2 =
+        VCLHexArray<TypeParam>::xy_trans_to_hexid_with_remainder_ccw_f(xx2, yy2, ctheta, stheta, scale, dx, dy);
+      ASSERT_EQ(hexid, hexid2[0]);
+      ASSERT_NEAR(xx1,xx2[0],1e-5);
+      ASSERT_NEAR(yy1,yy2[0],1e-5);
+    }
+}
+
+TYPED_TEST(VCLHexArrayTest, XYToHexID_CW_Trans_Equals_Scalar) {
   float dx = 0.32426534147237f;
   float dy = 1.25432437427634f;
   float theta = 12.21752765/180.0*M_PI;
@@ -249,98 +343,15 @@ TEST(TestHexArray, AVX2_XYToHexID_CW_Trans_Equals_Scalar) {
       double xx1 = x;
       double yy1 = y;
       unsigned hexid = xy_trans_to_hexid_with_remainder(xx1, yy1, true, ctheta, stheta, scale, dx, dy);
-      float xx2 = x;
-      float yy2 = y;
-      unsigned hexid2 = test_avx2_xy_trans_to_hexid_with_remainder_f(xx2, yy2, true, ctheta, stheta, scale, dx, dy);
-      EXPECT_EQ(hexid, hexid2);
-      EXPECT_NEAR(xx1,xx2,1e-5);
-      EXPECT_NEAR(yy1,yy2,1e-5);
+      typename TypeParam::float_vt xx2 = x;
+      typename TypeParam::float_vt yy2 = y;
+      typename TypeParam::int32_vt hexid2 =
+        VCLHexArray<TypeParam>::xy_trans_to_hexid_with_remainder_cw_f(xx2, yy2, ctheta, stheta, scale, dx, dy);
+      ASSERT_EQ(hexid, hexid2[0]);
+      ASSERT_NEAR(xx1,xx2[0],1e-5);
+      ASSERT_NEAR(yy1,yy2[0],1e-5);
     }
 }
-#endif
-
-
-
-TEST(TestHexArray, RandHexIDToFromUV_CCW_EQ) {
-  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV; iloop++) {
-    std::mt19937 gen(15939); //Standard mersenne_twister_engine seeded with rd()
-    std::uniform_int_distribution<> dis(0, 100000);
-    for(unsigned idev=0;idev<100000;idev++)
-    {
-      unsigned hexid = dis(gen);
-      int u = 0;
-      int v = 0;
-      hexid_to_uv_ccw(hexid, u, v);
-      ASSERT_EQ(hexid, uv_to_hexid_ccw(u, v))
-        << hexid << ' ' << u << ' ' << v;
-    }
-  }
-}
-
-
-#if defined(__AVX2__) and defined(__FMA__)
-TEST(TestHexArray, AVX2_HexIDToFromUV_CW_EQ) {
-  for(unsigned hexid=1;hexid<100000;hexid++)
-  {
-    int u = 0;
-    int v = 0;
-    test_avx2_hexid_to_uv_cw(hexid, u, v);
-    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_cw(u, v))
-      << hexid << ' ' << u << ' ' << v;
-  }
-}
-
-TEST(TestHexArray, AVX2_HexIDToFromUV_CW_Equals_Scalar) {
-  for(unsigned hexid=1;hexid<100000;hexid++)
-  {
-    int u = 0;
-    int v = 0;
-    hexid_to_uv_cw(hexid, u, v);
-    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_cw(u, v))
-      << hexid << ' ' << u << ' ' << v;
-  }
-}
-
-TEST(TestHexArray, AVX2_HexIDToFromUV_CCW_EQ) {
-  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV/8; iloop++)
-  for(unsigned hexid=1;hexid<100000;hexid++)
-  {
-    int u = 0;
-    int v = 0;
-    test_avx2_hexid_to_uv_ccw(hexid, u, v);
-    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_ccw(u, v))
-      << hexid << ' ' << u << ' ' << v;
-  }
-}
-
-TEST(TestHexArray, AVX2_HexIDToFromUV_CCW_Equals_Scalar) {
-  for(unsigned hexid=1;hexid<100000;hexid++)
-  {
-    int u = 0;
-    int v = 0;
-    hexid_to_uv_ccw(hexid, u, v);
-    ASSERT_EQ(hexid, test_avx2_uv_to_hexid_ccw(u, v))
-      << hexid << ' ' << u << ' ' << v;
-  }
-}
-
-TEST(TestHexArray, AVX2_RandHexIDToFromUV_CCW_EQ) {
-  for(unsigned iloop=0; iloop<NLOOP_HEXID_TOFROM_UV/8; iloop++) {
-    std::mt19937 gen(15939); //Standard mersenne_twister_engine seeded with rd()
-    std::uniform_int_distribution<> dis(0, 100000);
-    for(unsigned idev=0;idev<100000;idev++)
-    {
-      unsigned hexid = dis(gen);
-      int u = 0;
-      int v = 0;
-      test_avx2_hexid_to_uv_ccw(hexid, u, v);
-      ASSERT_EQ(hexid, test_avx2_uv_to_hexid_ccw(u, v))
-        << hexid << ' ' << u << ' ' << v;
-    }
-  }
-}
-#endif
-#endif
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
