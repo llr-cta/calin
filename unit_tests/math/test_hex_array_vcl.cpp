@@ -88,7 +88,7 @@ finish_test:
 }
 
 TYPED_TEST(VCLHexArrayTest, HexIDToRingIDDoubleRoot_HexID2E31) {
-  unsigned iring = 26650;
+  unsigned iring = 1; //26650;
   unsigned hexid = ringid_to_nsites_contained(iring-1);
   for(;iring<26760;iring++)
     for(unsigned ichan=0;ichan<6*iring;ichan++)
