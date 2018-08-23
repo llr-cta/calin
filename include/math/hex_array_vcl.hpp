@@ -82,6 +82,25 @@ public:
     return truncate_to_int(arg);
   }
 
+  static inline int32_vt positive_hexid_to_ringid_double_root(const int32_vt hexid)
+  {
+    // The following algorithm works until hexid=12,589,056
+    // const unsigned iarg = 1+4*(hexid-1)/3;
+    // return (unsigned(std::sqrt(float(iarg)))+1)/2;
+    const double_vt four_over_three = 4.0/3.0;
+    const double_vt one_over_three = 1.0/3.0;
+    double_vt arg_l = calin::util::vcl::to_double_low(hexid);
+    double_vt arg_h = calin::util::vcl::to_double_high(hexid);
+    arg_l = mul_sub(arg_l, four_over_three, one_over_three);
+    arg_h = mul_sub(arg_h, four_over_three, one_over_three);
+    arg_l = sqrt(arg_l);
+    arg_h = sqrt(arg_h);
+    const double_vt one_half = 0.5;
+    arg_l = mul_add(arg_l, one_half, one_half);
+    arg_h = mul_add(arg_h, one_half, one_half);
+    return truncate_to_int(arg_l, arg_h);
+  }
+
   static inline int32_vt positive_hexid_to_ringid(const int32_vt hexid)
   {
     return positive_hexid_to_ringid_root(hexid);
@@ -322,7 +341,8 @@ public:
 
   // XY <-> UV without rotation matrix
 
-  static inline void uv_to_xy_f(const int32_vt u, const int32_vt v, float_vt& x, float_vt& y)
+  static inline void uv_to_xy_float(const int32_vt u, const int32_vt v,
+    float_vt& x, float_vt& y)
   {
     x = to_float(u);
     y = to_float(v);
@@ -330,7 +350,7 @@ public:
     y *= c_vy_f;
   }
 
-  static inline void xy_to_uv_f(float_vt x, float_vt y, int32_vt& u, int32_vt& v)
+  static inline void xy_to_uv_float(float_vt x, float_vt y, int32_vt& u, int32_vt& v)
   {
     // Convert X,Y first into U,V space then round to nearest
     // integer. That gets us close to correct answer, mapping XY to a
@@ -386,10 +406,10 @@ public:
     // v = _mm256_blendv_epi8(_mm256_add_epi32(v, uvshift), v, mask);
   }
 
-  static inline void xy_to_uv_with_remainder_f(
+  static inline void xy_to_uv_with_remainder_float(
     float_vt& x_in_dx_out, float_vt& y_in_dy_out, int32_vt& u, int32_vt& v)
   {
-    xy_to_uv_f(x_in_dx_out, y_in_dy_out, u, v);
+    xy_to_uv_float(x_in_dx_out, y_in_dy_out, u, v);
     x_in_dx_out = x_in_dx_out - to_float(u);
     float_vt vf = to_float(v);
     x_in_dx_out = nmul_add(vf, c_vx_f, x_in_dx_out);
@@ -398,14 +418,14 @@ public:
 
   // XY <-> UV with (shear-free) affine transformation
 
-  static inline void uv_to_xy_trans_f(const int32_vt u, const int32_vt v, float_vt& x, float_vt& y,
+  static inline void uv_to_xy_trans_float(const int32_vt u, const int32_vt v, float_vt& x, float_vt& y,
     const float_vt& crot, const float_vt& srot, const float_vt& scale, const float_vt& dx = 0, const float_vt& dy = 0)
   {
     // uv_to_xy(u,v,x,y);
     // double xx = x*crot - y*srot;
     // y = scale * (y*crot + x*srot) + dy;
     // x = scale * xx + dx;
-    uv_to_xy_f(u,v,x,y);
+    uv_to_xy_float(u,v,x,y);
     float_vt xx = y * srot;
     xx = mul_sub(x, crot, xx);
     y = y * crot;
@@ -415,7 +435,7 @@ public:
     y = mul_add(y, scale, dy);
   }
 
-  static void xy_trans_to_uv_f(float_vt x, float_vt y, int32_vt& u, int32_vt& v,
+  static void xy_trans_to_uv_float(float_vt x, float_vt y, int32_vt& u, int32_vt& v,
     const float_vt& crot, const float_vt& srot, const float_vt& scale, const float_vt& dx = 0, const float_vt& dy = 0)
   {
     // x = (x - dx)/scale;
@@ -430,10 +450,10 @@ public:
     yy = mul_sub(y, crot, yy);
     x = x * crot;
     x = mul_add(y, srot, x);
-    xy_to_uv_f(x, yy, u, v);
+    xy_to_uv_float(x, yy, u, v);
   }
 
-  static void xy_trans_to_uv_scaleinv_f(float_vt x, float_vt y, int32_vt& u, int32_vt& v,
+  static void xy_trans_to_uv_scaleinv_float(float_vt x, float_vt y, int32_vt& u, int32_vt& v,
     const float_vt& crot, const float_vt& srot, const float_vt& scale_inv, const float_vt& dx = 0, const float_vt& dy = 0)
   {
     // x = (x - dx)/scale;
@@ -447,10 +467,10 @@ public:
     yy = mul_sub(y, crot, yy);
     x = x * crot;
     x = mul_add(y, srot, x);
-    xy_to_uv_f(x, yy, u, v);
+    xy_to_uv_float(x, yy, u, v);
   }
 
-  static inline void xy_trans_to_uv_with_remainder_f(
+  static inline void xy_trans_to_uv_with_remainder_float(
     float_vt& x_in_dx_out, float_vt& y_in_dy_out, int32_vt& u, int32_vt& v,
     const float_vt& crot, const float_vt& srot, const float_vt& scale, const float_vt& dx = 0, const float_vt& dy = 0)
   {
@@ -461,7 +481,7 @@ public:
     yy = mul_sub(y_in_dy_out, crot, yy);
     x_in_dx_out = x_in_dx_out * crot;
     x_in_dx_out = mul_add(y_in_dy_out, srot, x_in_dx_out);
-    xy_to_uv_with_remainder_f(x_in_dx_out, yy, u, v);
+    xy_to_uv_with_remainder_float(x_in_dx_out, yy, u, v);
 
     y_in_dy_out = yy * crot;
     y_in_dy_out = mul_add(x_in_dx_out, srot, y_in_dy_out);
@@ -472,7 +492,7 @@ public:
     x_in_dx_out = x_in_dx_out * scale;
   }
 
-  static inline void xy_trans_to_uv_scaleinv_with_remainder_f(
+  static inline void xy_trans_to_uv_scaleinv_with_remainder_float(
     float_vt& x_in_dx_out, float_vt& y_in_dy_out, int32_vt& u, int32_vt& v,
     const float_vt& crot, const float_vt& srot, const float_vt& scale, const float_vt& scale_inv, const float_vt& dx = 0, const float_vt& dy = 0)
   {
@@ -482,7 +502,7 @@ public:
     yy = mul_sub(y_in_dy_out, crot, yy);
     x_in_dx_out = x_in_dx_out * crot;
     x_in_dx_out = mul_add(y_in_dy_out, srot, x_in_dx_out);
-    xy_to_uv_with_remainder_f(x_in_dx_out, yy, u, v);
+    xy_to_uv_with_remainder_float(x_in_dx_out, yy, u, v);
 
     y_in_dy_out = yy * crot;
     y_in_dy_out = mul_add(x_in_dx_out, srot, y_in_dy_out);
@@ -495,241 +515,241 @@ public:
 
   // XY <-> HEXID without rotation matrix
 
-  static inline void hexid_to_xy_ccw_f(int32_vt hexid, float_vt& x, float_vt& y)
+  static inline void hexid_to_xy_ccw_float(int32_vt hexid, float_vt& x, float_vt& y)
   {
     int32_vt u;
     int32_vt v;
     hexid_to_uv_ccw(hexid, u, v);
-    uv_to_xy_f(u,v,x,y);
+    uv_to_xy_float(u,v,x,y);
   }
 
-  static inline void hexid_to_xy_cw_f(int32_vt hexid, float_vt& x, float_vt& y)
+  static inline void hexid_to_xy_cw_float(int32_vt hexid, float_vt& x, float_vt& y)
   {
     int32_vt u;
     int32_vt v;
     hexid_to_uv_cw(hexid, u, v);
-    uv_to_xy_f(u,v,x,y);
+    uv_to_xy_float(u,v,x,y);
   }
 
-  static inline void hexid_to_xy_f(int32_vt hexid, float_vt& x, float_vt& y, bool clockwise=false)
+  static inline void hexid_to_xy_float(int32_vt hexid, float_vt& x, float_vt& y, bool clockwise=false)
   {
     int32_vt u;
     int32_vt v;
     hexid_to_uv(hexid, u, v, clockwise);
-    uv_to_xy_f(u,v,x,y);
+    uv_to_xy_float(u,v,x,y);
   }
 
-  static inline int32_vt xy_to_hexid_ccw_f(const float_vt x, const float_vt y)
+  static inline int32_vt xy_to_hexid_ccw_float(const float_vt x, const float_vt y)
   {
     int32_vt u;
     int32_vt v;
-    xy_to_uv_f(x, y, u, v);
+    xy_to_uv_float(x, y, u, v);
     return uv_to_hexid_ccw(u, v);
   }
 
-  static inline int32_vt xy_to_hexid_cw_f(const float_vt x, const float_vt y)
+  static inline int32_vt xy_to_hexid_cw_float(const float_vt x, const float_vt y)
   {
     int32_vt u;
     int32_vt v;
-    xy_to_uv_f(x, y, u, v);
+    xy_to_uv_float(x, y, u, v);
     return uv_to_hexid_cw(u, v);
   }
 
-  static inline int32_vt xy_to_hexid_f(const float_vt x, const float_vt y, bool clockwise=false)
+  static inline int32_vt xy_to_hexid_float(const float_vt x, const float_vt y, bool clockwise=false)
   {
     int32_vt u;
     int32_vt v;
-    xy_to_uv_f(x, y, u, v);
+    xy_to_uv_float(x, y, u, v);
     return uv_to_hexid(u, v, clockwise);
   }
 
-  static inline int32_vt xy_to_hexid_with_remainder_ccw_f(float_vt& x_in_dx_out, float_vt& y_in_dy_out)
+  static inline int32_vt xy_to_hexid_with_remainder_ccw_float(float_vt& x_in_dx_out, float_vt& y_in_dy_out)
   {
     int32_vt u;
     int32_vt v;
-    xy_to_uv_with_remainder_f(x_in_dx_out, y_in_dy_out, u, v);
+    xy_to_uv_with_remainder_float(x_in_dx_out, y_in_dy_out, u, v);
     return uv_to_hexid_ccw(u, v);
   }
 
-  static inline int32_vt xy_to_hexid_with_remainder_cw_f(float_vt& x_in_dx_out, float_vt& y_in_dy_out)
+  static inline int32_vt xy_to_hexid_with_remainder_cw_float(float_vt& x_in_dx_out, float_vt& y_in_dy_out)
   {
     int32_vt u;
     int32_vt v;
-    xy_to_uv_with_remainder_f(x_in_dx_out, y_in_dy_out, u, v);
+    xy_to_uv_with_remainder_float(x_in_dx_out, y_in_dy_out, u, v);
     return uv_to_hexid_cw(u, v);
   }
 
-  static inline int32_vt xy_to_hexid_with_remainder_f(float_vt& x_in_dx_out, float_vt& y_in_dy_out, bool clockwise=false)
+  static inline int32_vt xy_to_hexid_with_remainder_float(float_vt& x_in_dx_out, float_vt& y_in_dy_out, bool clockwise=false)
   {
     int32_vt u;
     int32_vt v;
-    xy_to_uv_with_remainder_f(x_in_dx_out, y_in_dy_out, u, v);
+    xy_to_uv_with_remainder_float(x_in_dx_out, y_in_dy_out, u, v);
     return uv_to_hexid(u, v, clockwise);
   }
 
   // XY <-> HEXID with (shear-free) affine transformation
 
-  static inline int32_vt xy_trans_to_hexid_ccw_f(float_vt x, float_vt y,
+  static inline int32_vt xy_trans_to_hexid_ccw_float(float_vt x, float_vt y,
     const float_vt& crot, const float_vt& srot, const float_vt& scale,
     const float_vt& dx = 0, const float_vt& dy = 0)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_f(x, y, u, v, crot, srot, scale, dx, dy);
+    xy_trans_to_uv_float(x, y, u, v, crot, srot, scale, dx, dy);
     return uv_to_hexid_ccw(u, v);
   }
 
-  static inline int32_vt xy_trans_to_hexid_ccw_scaleinv_f(float_vt x, float_vt y,
+  static inline int32_vt xy_trans_to_hexid_ccw_scaleinv_float(float_vt x, float_vt y,
     const float_vt& crot, const float_vt& srot, const float_vt& scale_inv,
     const float_vt& dx = 0, const float_vt& dy = 0)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_scaleinv_f(x, y, u, v, crot, srot, scale_inv, dx, dy);
+    xy_trans_to_uv_scaleinv_float(x, y, u, v, crot, srot, scale_inv, dx, dy);
     return uv_to_hexid_ccw(u, v);
   }
 
-  static inline int32_vt xy_trans_to_hexid_cw_f(float_vt x, float_vt y,
+  static inline int32_vt xy_trans_to_hexid_cw_float(float_vt x, float_vt y,
     const float_vt& crot, const float_vt& srot, const float_vt& scale,
     const float_vt& dx = 0, const float_vt& dy = 0)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_f(x, y, u, v, crot, srot, scale, dx, dy);
+    xy_trans_to_uv_float(x, y, u, v, crot, srot, scale, dx, dy);
     return uv_to_hexid_cw(u, v);
   }
 
-  static inline int32_vt xy_trans_to_hexid_cw_scaleinv_f(float_vt x, float_vt y,
+  static inline int32_vt xy_trans_to_hexid_cw_scaleinv_float(float_vt x, float_vt y,
     const float_vt& crot, const float_vt& srot, const float_vt& scale_inv,
     const float_vt& dx = 0, const float_vt& dy = 0)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_scaleinv_f(x, y, u, v, crot, srot, scale_inv, dx, dy);
+    xy_trans_to_uv_scaleinv_float(x, y, u, v, crot, srot, scale_inv, dx, dy);
     return uv_to_hexid_cw(u, v);
   }
 
-  static inline int32_vt xy_trans_to_hexid_f(float_vt x, float_vt y,
+  static inline int32_vt xy_trans_to_hexid_float(float_vt x, float_vt y,
     const float_vt& crot, const float_vt& srot, const float_vt& scale,
     const float_vt& dx = 0, const float_vt& dy = 0,
     bool clockwise=false)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_f(x, y, u, v, crot, srot, scale, dx, dy);
+    xy_trans_to_uv_float(x, y, u, v, crot, srot, scale, dx, dy);
     return uv_to_hexid(u, v, clockwise);
   }
 
-  static inline int32_vt xy_trans_to_hexid_scaleinv_f(float_vt x, float_vt y,
+  static inline int32_vt xy_trans_to_hexid_scaleinv_float(float_vt x, float_vt y,
     const float_vt& crot, const float_vt& srot, const float_vt& scale_inv,
     const float_vt& dx = 0, const float_vt& dy = 0, bool clockwise=false)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_scaleinv_f(x, y, u, v, crot, srot, scale_inv, dx, dy);
+    xy_trans_to_uv_scaleinv_float(x, y, u, v, crot, srot, scale_inv, dx, dy);
     return uv_to_hexid(u, v, clockwise);
   }
 
-  static inline int32_vt xy_trans_to_hexid_with_remainder_ccw_f(
+  static inline int32_vt xy_trans_to_hexid_with_remainder_ccw_float(
     float_vt& x_in_dx_out, float_vt& y_in_dy_out,
     const float_vt& crot, const float_vt& srot, const float_vt& scale,
     const float_vt& dx = 0, const float_vt& dy = 0)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_with_remainder_f(x_in_dx_out, y_in_dy_out, u, v,
+    xy_trans_to_uv_with_remainder_float(x_in_dx_out, y_in_dy_out, u, v,
       crot, srot, scale, dx, dy);
     return uv_to_hexid_ccw(u, v);
   }
 
-  static inline int32_vt xy_trans_to_hexid_with_remainder_ccw_scaleinv_f(
+  static inline int32_vt xy_trans_to_hexid_with_remainder_ccw_scaleinv_float(
     float_vt& x_in_dx_out, float_vt& y_in_dy_out,
     const float_vt& crot, const float_vt& srot, const float_vt& scale, const float_vt& scale_inv,
     const float_vt& dx = 0, const float_vt& dy = 0)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_scaleinv_with_remainder_f(x_in_dx_out, y_in_dy_out, u, v,
+    xy_trans_to_uv_scaleinv_with_remainder_float(x_in_dx_out, y_in_dy_out, u, v,
       crot, srot, scale, scale_inv, dx, dy);
     return uv_to_hexid_ccw(u, v);
   }
 
-  static inline int32_vt xy_trans_to_hexid_with_remainder_cw_f(
+  static inline int32_vt xy_trans_to_hexid_with_remainder_cw_float(
     float_vt& x_in_dx_out, float_vt& y_in_dy_out,
     const float_vt& crot, const float_vt& srot, const float_vt& scale,
     const float_vt& dx = 0, const float_vt& dy = 0)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_with_remainder_f(x_in_dx_out, y_in_dy_out, u, v,
+    xy_trans_to_uv_with_remainder_float(x_in_dx_out, y_in_dy_out, u, v,
       crot, srot, scale, dx, dy);
     return uv_to_hexid_cw(u, v);
   }
 
-  static inline int32_vt xy_trans_to_hexid_with_remainder_cw_scaleinv_f(
+  static inline int32_vt xy_trans_to_hexid_with_remainder_cw_scaleinv_float(
     float_vt& x_in_dx_out, float_vt& y_in_dy_out,
     const float_vt& crot, const float_vt& srot, const float_vt& scale, const float_vt& scale_inv,
     const float_vt& dx = 0, const float_vt& dy = 0)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_scaleinv_with_remainder_f(x_in_dx_out, y_in_dy_out, u, v,
+    xy_trans_to_uv_scaleinv_with_remainder_float(x_in_dx_out, y_in_dy_out, u, v,
       crot, srot, scale, scale_inv, dx, dy);
     return uv_to_hexid_cw(u, v);
   }
 
-  static inline int32_vt xy_trans_to_hexid_with_remainder_f(
+  static inline int32_vt xy_trans_to_hexid_with_remainder_float(
     float_vt& x_in_dx_out, float_vt& y_in_dy_out,
     const float_vt& crot, const float_vt& srot, const float_vt& scale,
     const float_vt& dx = 0, const float_vt& dy = 0, bool clockwise = false)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_with_remainder_f(x_in_dx_out, y_in_dy_out, u, v,
+    xy_trans_to_uv_with_remainder_float(x_in_dx_out, y_in_dy_out, u, v,
       crot, srot, scale, dx, dy);
     return uv_to_hexid(u, v, clockwise);
   }
 
-  static inline int32_vt xy_trans_to_hexid_with_remainder_scaleinv_f(
+  static inline int32_vt xy_trans_to_hexid_with_remainder_scaleinv_float(
     float_vt& x_in_dx_out, float_vt& y_in_dy_out,
     const float_vt& crot, const float_vt& srot, const float_vt& scale, const float_vt& scale_inv,
     const float_vt& dx = 0, const float_vt& dy = 0, bool clockwise = false)
   {
     int32_vt u;
     int32_vt v;
-    xy_trans_to_uv_scaleinv_with_remainder_f(x_in_dx_out, y_in_dy_out, u, v,
+    xy_trans_to_uv_scaleinv_with_remainder_float(x_in_dx_out, y_in_dy_out, u, v,
       crot, srot, scale, scale_inv, dx, dy);
     return uv_to_hexid(u, v, clockwise);
   }
 
-  static inline void hexid_to_xy_trans_ccw_f(int32_vt hexid, float_vt& x, float_vt& y,
+  static inline void hexid_to_xy_trans_ccw_float(int32_vt hexid, float_vt& x, float_vt& y,
     const float_vt& crot, const float_vt& srot, const float_vt& scale,
     const float_vt& dx = 0, const float_vt& dy = 0)
   {
     int32_vt u;
     int32_vt v;
     hexid_to_uv_ccw(hexid, u, v);
-    uv_to_xy_trans_f(u, v, x, y, crot, srot, scale, dx, dy);
+    uv_to_xy_trans_float(u, v, x, y, crot, srot, scale, dx, dy);
   }
 
-  static inline void hexid_to_xy_trans_cw_f(int32_vt hexid, float_vt& x, float_vt& y,
+  static inline void hexid_to_xy_trans_cw_float(int32_vt hexid, float_vt& x, float_vt& y,
     const float_vt& crot, const float_vt& srot, const float_vt& scale,
     const float_vt& dx = 0, const float_vt& dy = 0)
   {
     int32_vt u;
     int32_vt v;
     hexid_to_uv_cw(hexid, u, v);
-    uv_to_xy_trans_f(u, v, x, y, crot, srot, scale, dx, dy);
+    uv_to_xy_trans_float(u, v, x, y, crot, srot, scale, dx, dy);
   }
 
-  static inline void hexid_to_xy_trans_f(int32_vt hexid, float_vt& x, float_vt& y,
+  static inline void hexid_to_xy_trans_float(int32_vt hexid, float_vt& x, float_vt& y,
     const float_vt& crot, const float_vt& srot, const float_vt& scale,
     const float_vt& dx = 0, const float_vt& dy = 0, bool clockwise = false)
   {
     int32_vt u;
     int32_vt v;
     hexid_to_uv(hexid, u, v, clockwise);
-    uv_to_xy_trans_f(u, v, x, y, crot, srot, scale, dx, dy);
+    uv_to_xy_trans_float(u, v, x, y, crot, srot, scale, dx, dy);
   }
 
 };
@@ -755,37 +775,37 @@ unsigned test_avx2_uv_to_hexid_ccw(int u, int v);
 unsigned test_avx2_uv_to_hexid_cw(int u, int v);
 
 
-void test_avx2_uv_to_xy_f(int u, int v, float& x, float& y);
-void test_avx2_xy_to_uv_f(float x, float y, int& u, int& v);
-void test_avx2_xy_to_uv_with_remainder_f(float& x_in_dx_out, float& y_in_dy_out,
+void test_avx2_uv_to_xy_float(int u, int v, float& x, float& y);
+void test_avx2_xy_to_uv_float(float x, float y, int& u, int& v);
+void test_avx2_xy_to_uv_with_remainder_float(float& x_in_dx_out, float& y_in_dy_out,
   int& u, int& v);
-void test_avx2_uv_to_xy_trans_f(int u, int v, float& x, float& y,
+void test_avx2_uv_to_xy_trans_float(int u, int v, float& x, float& y,
   float crot, float srot, float scale, float dx = 0, float dy = 0);
-void test_avx2_xy_trans_to_uv_f(float x, float y, int& u, int& v,
+void test_avx2_xy_trans_to_uv_float(float x, float y, int& u, int& v,
   float crot, float srot, float scale, float dx = 0, float dy = 0);
-void test_avx2_xy_trans_to_uv_with_remainder_f(float& x_in_dx_out, float& y_in_dy_out,
+void test_avx2_xy_trans_to_uv_with_remainder_float(float& x_in_dx_out, float& y_in_dy_out,
   int& u, int& v,
   float crot, float srot, float scale, float dx = 0, float dy = 0);
 
-unsigned test_avx2_xy_to_hexid_f(float x, float y);
-unsigned test_avx2_xy_to_hexid_with_remainder_f(float& x_in_dx_out, float& y_in_dy_out);
-unsigned test_avx2_xy_to_hexid_with_remainder_f(float& x_in_dx_out, float& y_in_dy_out, bool clockwise);
-void test_avx2_hexid_to_xy_f(unsigned hexid, float& x, float& y);
-void test_avx2_hexid_to_xy_f(unsigned hexid, float& x, float& y, bool clockwise);
+unsigned test_avx2_xy_to_hexid_float(float x, float y);
+unsigned test_avx2_xy_to_hexid_with_remainder_float(float& x_in_dx_out, float& y_in_dy_out);
+unsigned test_avx2_xy_to_hexid_with_remainder_float(float& x_in_dx_out, float& y_in_dy_out, bool clockwise);
+void test_avx2_hexid_to_xy_float(unsigned hexid, float& x, float& y);
+void test_avx2_hexid_to_xy_float(unsigned hexid, float& x, float& y, bool clockwise);
 
-unsigned test_avx2_xy_trans_to_hexid_f(float x, float y,
+unsigned test_avx2_xy_trans_to_hexid_float(float x, float y,
   float crot, float srot, float scale, float dx = 0, float dy = 0);
-unsigned test_avx2_xy_trans_to_hexid_f(float x, float y, bool clockwise,
+unsigned test_avx2_xy_trans_to_hexid_float(float x, float y, bool clockwise,
   float crot, float srot, float scale, float dx = 0, float dy = 0);
-unsigned test_avx2_xy_trans_to_hexid_with_remainder_f(float& x_in_dx_out,
+unsigned test_avx2_xy_trans_to_hexid_with_remainder_float(float& x_in_dx_out,
   float& y_in_dy_out,
   float crot, float srot, float scale, float dx = 0, float dy = 0);
-unsigned test_avx2_xy_trans_to_hexid_with_remainder_f(float& x_in_dx_out,
+unsigned test_avx2_xy_trans_to_hexid_with_remainder_float(float& x_in_dx_out,
   float& y_in_dy_out, bool clockwise,
   float crot, float srot, float scale, float dx = 0, float dy = 0);
-void test_avx2_hexid_to_xy_trans_f(unsigned hexid, float& x, float& y,
+void test_avx2_hexid_to_xy_trans_float(unsigned hexid, float& x, float& y,
   float crot, float srot, float scale, float dx = 0, float dy = 0);
-void test_avx2_hexid_to_xy_trans_f(unsigned hexid, float& x, float& y, bool clockwise,
+void test_avx2_hexid_to_xy_trans_float(unsigned hexid, float& x, float& y, bool clockwise,
   float crot, float srot, float scale, float dx = 0, float dy = 0);
 
 #endif
