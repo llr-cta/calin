@@ -35,172 +35,339 @@
 
 #include <Eigen/Core>
 
+namespace Eigen {
+
+template<> struct NumTraits<::vcl::Vec4f>: NumTraits<float>
+{
+  typedef ::vcl::Vec4f Real;
+  typedef ::vcl::Vec4f NonInteger;
+  typedef ::vcl::Vec4f Nested;
+  typedef float Literal;
+  enum {
+    IsComplex = 0,
+    IsInteger = 0,
+    IsSigned = 1,
+    RequireInitialization = 1,
+    ReadCost = 1,
+    AddCost = 3,
+    MulCost = 3
+  };
+};
+
+template<> struct NumTraits<::vcl::Vec8f>: NumTraits<float>
+{
+  typedef ::vcl::Vec8f Real;
+  typedef ::vcl::Vec8f NonInteger;
+  typedef ::vcl::Vec8f Nested;
+  typedef float Literal;
+  enum {
+    IsComplex = 0,
+    IsInteger = 0,
+    IsSigned = 1,
+    RequireInitialization = 1,
+    ReadCost = 1,
+    AddCost = 3,
+    MulCost = 3
+  };
+};
+
+template<> struct NumTraits<::vcl::Vec16f>: NumTraits<float>
+{
+  typedef ::vcl::Vec16f Real;
+  typedef ::vcl::Vec16f NonInteger;
+  typedef ::vcl::Vec16f Nested;
+  typedef float Literal;
+  enum {
+    IsComplex = 0,
+    IsInteger = 0,
+    IsSigned = 1,
+    RequireInitialization = 1,
+    ReadCost = 1,
+    AddCost = 3,
+    MulCost = 3
+  };
+};
+
+template<> struct NumTraits<::vcl::Vec2d>: NumTraits<double>
+{
+  typedef ::vcl::Vec2d Real;
+  typedef ::vcl::Vec2d NonInteger;
+  typedef ::vcl::Vec2d Nested;
+  typedef double Literal;
+  enum {
+    IsComplex = 0,
+    IsInteger = 0,
+    IsSigned = 1,
+    RequireInitialization = 1,
+    ReadCost = 1,
+    AddCost = 3,
+    MulCost = 3
+  };
+};
+
+template<> struct NumTraits<::vcl::Vec4d>: NumTraits<double>
+{
+  typedef ::vcl::Vec4d Real;
+  typedef ::vcl::Vec4d NonInteger;
+  typedef ::vcl::Vec4d Nested;
+  typedef double Literal;
+  enum {
+    IsComplex = 0,
+    IsInteger = 0,
+    IsSigned = 1,
+    RequireInitialization = 1,
+    ReadCost = 1,
+    AddCost = 3,
+    MulCost = 3
+  };
+};
+
+template<> struct NumTraits<::vcl::Vec8d>: NumTraits<double>
+{
+  typedef ::vcl::Vec8d Real;
+  typedef ::vcl::Vec8d NonInteger;
+  typedef ::vcl::Vec8d Nested;
+  typedef double Literal;
+  enum {
+    IsComplex = 0,
+    IsInteger = 0,
+    IsSigned = 1,
+    RequireInitialization = 1,
+    ReadCost = 1,
+    AddCost = 3,
+    MulCost = 3
+  };
+};
+
+typedef Eigen::Matrix< ::vcl::Vec4f , 3 , 1> Vector3_4f;
+typedef Eigen::Matrix< ::vcl::Vec4f , 3 , 3> Matrix3_4f;
+typedef Eigen::Matrix< ::vcl::Vec8f , 3 , 1> Vector3_8f;
+typedef Eigen::Matrix< ::vcl::Vec8f , 3 , 3> Matrix3_8f;
+typedef Eigen::Matrix< ::vcl::Vec16f , 3 , 1> Vector3_16f;
+typedef Eigen::Matrix< ::vcl::Vec16f , 3 , 3> Matrix3_16f;
+
+typedef Eigen::Matrix< ::vcl::Vec2d , 3 , 1> Vector3_2d;
+typedef Eigen::Matrix< ::vcl::Vec2d , 3 , 3> Matrix3_2d;
+typedef Eigen::Matrix< ::vcl::Vec4d , 3 , 1> Vector3_4d;
+typedef Eigen::Matrix< ::vcl::Vec4d , 3 , 3> Matrix3_4d;
+typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 1> Vector3_8d;
+typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 3> Matrix3_8d;
+
+} // namespace Eigen
+
 namespace calin { namespace util { namespace vcl {
 
-  using namespace ::vcl;
+using namespace ::vcl;
 
-  struct VCL128Architecture
-  {
-    constexpr static char architecture_name[] = "VCL128Architecture";
+struct VCL128Architecture
+{
+  constexpr static char architecture_name[] = "VCL128Architecture";
 
-    constexpr static unsigned vec_bits   = 128;
-    constexpr static unsigned vec_bytes  = vec_bits/8;
-    constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
-    constexpr static unsigned num_uint8  = vec_bytes/sizeof(uint8_t);
-    constexpr static unsigned num_int16  = vec_bytes/sizeof(int16_t);
-    constexpr static unsigned num_uint16 = vec_bytes/sizeof(uint16_t);
-    constexpr static unsigned num_int32  = vec_bytes/sizeof(int32_t);
-    constexpr static unsigned num_uint32 = vec_bytes/sizeof(uint32_t);
-    constexpr static unsigned num_int64  = vec_bytes/sizeof(int64_t);
-    constexpr static unsigned num_uint64 = vec_bytes/sizeof(uint64_t);
-    constexpr static unsigned num_float  = vec_bytes/sizeof(float);
-    constexpr static unsigned num_double = vec_bytes/sizeof(double);
+  constexpr static unsigned vec_bits   = 128;
+  constexpr static unsigned vec_bytes  = vec_bits/8;
+  constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
+  constexpr static unsigned num_uint8  = vec_bytes/sizeof(uint8_t);
+  constexpr static unsigned num_int16  = vec_bytes/sizeof(int16_t);
+  constexpr static unsigned num_uint16 = vec_bytes/sizeof(uint16_t);
+  constexpr static unsigned num_int32  = vec_bytes/sizeof(int32_t);
+  constexpr static unsigned num_uint32 = vec_bytes/sizeof(uint32_t);
+  constexpr static unsigned num_int64  = vec_bytes/sizeof(int64_t);
+  constexpr static unsigned num_uint64 = vec_bytes/sizeof(uint64_t);
+  constexpr static unsigned num_float  = vec_bytes/sizeof(float);
+  constexpr static unsigned num_double = vec_bytes/sizeof(double);
 
-    typedef Vec128b bool_vt;
-    typedef Vec16c  int8_vt;
-    typedef Vec16uc uint8_vt;
-    typedef Vec8s   int16_vt;
-    typedef Vec8us  uint16_vt;
-    typedef Vec4i   int32_vt;
-    typedef Vec4ui  uint32_vt;
-    typedef Vec2q   int64_vt;
-    typedef Vec2uq  uint64_vt;
-    typedef Vec4f   float_vt;
-    typedef Vec2d   double_vt;
+  typedef Vec128b bool_vt;
+  typedef Vec16c  int8_vt;
+  typedef Vec16uc uint8_vt;
+  typedef Vec8s   int16_vt;
+  typedef Vec8us  uint16_vt;
+  typedef Vec4i   int32_vt;
+  typedef Vec4ui  uint32_vt;
+  typedef Vec2q   int64_vt;
+  typedef Vec2uq  uint64_vt;
+  typedef Vec4f   float_vt;
+  typedef Vec2d   double_vt;
 
-    typedef Vec16cb int8_bvt;
-    typedef Vec16cb uint8_bvt;
-    typedef Vec8sb  int16_bvt;
-    typedef Vec8sb  uint16_bvt;
-    typedef Vec4ib  int32_bvt;
-    typedef Vec4ib  uint32_bvt;
-    typedef Vec2qb  int64_bvt;
-    typedef Vec2qb  uint64_bvt;
-    typedef Vec4fb  float_bvt;
-    typedef Vec2db  double_bvt;
+  typedef Vec16cb int8_bvt;
+  typedef Vec16cb uint8_bvt;
+  typedef Vec8sb  int16_bvt;
+  typedef Vec8sb  uint16_bvt;
+  typedef Vec4ib  int32_bvt;
+  typedef Vec4ib  uint32_bvt;
+  typedef Vec2qb  int64_bvt;
+  typedef Vec2qb  uint64_bvt;
+  typedef Vec4fb  float_bvt;
+  typedef Vec2db  double_bvt;
 
-    // template<int32_t x> static int32_type constant_int32() {
-    //   return vcl::constant4i<x,x,x,x>(); }
-    // template<uint32_t x> static uint32_type constant_uint32() {
-    //   return vcl::constant4ui<x,x,x,x>(); }
-    // template<int64_t x> static int64_type constant_int64() {
-    //   return vcl::constant2i<x,x>(); }
-    // template<uint64_t x> static uint64_type constant_uint64() {
-    //   return vcl::constant2ui<x,x>(); }
-    // template<float x> static float_type constant_float() {
-    //   return vcl::constant4f<x,x,x,x>(); }
-    // template<double x> static double_type constant_double() {
-    //   return vcl::constant2d<x,x>(); }
-  };
+  typedef Eigen::Vector3_4f Vector3f_vt;
+  typedef Eigen::Matrix3_4f Matrix3f_vt;
 
-  struct VCL256Architecture
-  {
-    constexpr static char architecture_name[] = "VCL256Architecture";
+  typedef Eigen::Vector3_2d  Vector3d_vt;
+  typedef Eigen::Matrix3_2d  Matrix3d_vt;
 
-    constexpr static unsigned vec_bits   = 256;
-    constexpr static unsigned vec_bytes  = vec_bits/8;
-    constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
-    constexpr static unsigned num_uint8  = vec_bytes/sizeof(uint8_t);
-    constexpr static unsigned num_int16  = vec_bytes/sizeof(int16_t);
-    constexpr static unsigned num_uint16 = vec_bytes/sizeof(uint16_t);
-    constexpr static unsigned num_int32  = vec_bytes/sizeof(int32_t);
-    constexpr static unsigned num_uint32 = vec_bytes/sizeof(uint32_t);
-    constexpr static unsigned num_int64  = vec_bytes/sizeof(int64_t);
-    constexpr static unsigned num_uint64 = vec_bytes/sizeof(uint64_t);
-    constexpr static unsigned num_float  = vec_bytes/sizeof(float);
-    constexpr static unsigned num_double = vec_bytes/sizeof(double);
+  // template<int32_t x> static int32_type constant_int32() {
+  //   return vcl::constant4i<x,x,x,x>(); }
+  // template<uint32_t x> static uint32_type constant_uint32() {
+  //   return vcl::constant4ui<x,x,x,x>(); }
+  // template<int64_t x> static int64_type constant_int64() {
+  //   return vcl::constant2i<x,x>(); }
+  // template<uint64_t x> static uint64_type constant_uint64() {
+  //   return vcl::constant2ui<x,x>(); }
+  // template<float x> static float_type constant_float() {
+  //   return vcl::constant4f<x,x,x,x>(); }
+  // template<double x> static double_type constant_double() {
+  //   return vcl::constant2d<x,x>(); }
+};
 
-    typedef Vec256b bool_vt;
-    typedef Vec32c  int8_vt;
-    typedef Vec32uc uint8_vt;
-    typedef Vec16s  int16_vt;
-    typedef Vec16us uint16_vt;
-    typedef Vec8i   int32_vt;
-    typedef Vec8ui  uint32_vt;
-    typedef Vec4q   int64_vt;
-    typedef Vec4uq  uint64_vt;
-    typedef Vec8f   float_vt;
-    typedef Vec4d   double_vt;
+struct VCL256Architecture
+{
+  constexpr static char architecture_name[] = "VCL256Architecture";
 
-    typedef Vec32cb int8_bvt;
-    typedef Vec32cb uint8_bvt;
-    typedef Vec16sb int16_bvt;
-    typedef Vec16sb uint16_bvt;
-    typedef Vec8ib  int32_bvt;
-    typedef Vec8ib  uint32_bvt;
-    typedef Vec4qb  int64_bvt;
-    typedef Vec4qb  uint64_bvt;
-    typedef Vec8fb  float_bvt;
-    typedef Vec4db  double_bvt;
+  constexpr static unsigned vec_bits   = 256;
+  constexpr static unsigned vec_bytes  = vec_bits/8;
+  constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
+  constexpr static unsigned num_uint8  = vec_bytes/sizeof(uint8_t);
+  constexpr static unsigned num_int16  = vec_bytes/sizeof(int16_t);
+  constexpr static unsigned num_uint16 = vec_bytes/sizeof(uint16_t);
+  constexpr static unsigned num_int32  = vec_bytes/sizeof(int32_t);
+  constexpr static unsigned num_uint32 = vec_bytes/sizeof(uint32_t);
+  constexpr static unsigned num_int64  = vec_bytes/sizeof(int64_t);
+  constexpr static unsigned num_uint64 = vec_bytes/sizeof(uint64_t);
+  constexpr static unsigned num_float  = vec_bytes/sizeof(float);
+  constexpr static unsigned num_double = vec_bytes/sizeof(double);
 
+  typedef Vec256b bool_vt;
+  typedef Vec32c  int8_vt;
+  typedef Vec32uc uint8_vt;
+  typedef Vec16s  int16_vt;
+  typedef Vec16us uint16_vt;
+  typedef Vec8i   int32_vt;
+  typedef Vec8ui  uint32_vt;
+  typedef Vec4q   int64_vt;
+  typedef Vec4uq  uint64_vt;
+  typedef Vec8f   float_vt;
+  typedef Vec4d   double_vt;
 
-    // template<int32_t x> static int32_type constant_int32() {
-    //   return vcl::constant8i<x,x,x,x,x,x,x,x>(); }
-    // template<uint32_t x> static uint32_type constant_uint32() {
-    //   return vcl::constant8ui<x,x,x,x,x,x,x,x>(); }
-    // template<int64_t x> static int64_type constant_int64() {
-    //   return vcl::constant4i<x,x,x,x>(); }
-    // template<uint64_t x> static uint64_type constant_uint64() {
-    //   return vcl::constant4ui<x,x,x,x>(); }
-    // template<float x> static float_type constant_float() {
-    //   return vcl::constant8f<x,x,x,x,x,x,x,x>(); }
-    // template<double x> static double_type constant_double() {
-    //   return vcl::constant4d<x,x,x,x>(); }
-  };
+  typedef Vec32cb int8_bvt;
+  typedef Vec32cb uint8_bvt;
+  typedef Vec16sb int16_bvt;
+  typedef Vec16sb uint16_bvt;
+  typedef Vec8ib  int32_bvt;
+  typedef Vec8ib  uint32_bvt;
+  typedef Vec4qb  int64_bvt;
+  typedef Vec4qb  uint64_bvt;
+  typedef Vec8fb  float_bvt;
+  typedef Vec4db  double_bvt;
 
-  struct VCL512Architecture
-  {
-    constexpr static char architecture_name[] = "VCL512Architecture";
+  typedef Eigen::Vector3_8f Vector3f_vt;
+  typedef Eigen::Matrix3_8f Matrix3f_vt;
 
-    constexpr static unsigned vec_bits   = 512;
-    constexpr static unsigned vec_bytes  = vec_bits/8;
-    constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
-    constexpr static unsigned num_uint8  = vec_bytes/sizeof(uint8_t);
-    constexpr static unsigned num_int16  = vec_bytes/sizeof(int16_t);
-    constexpr static unsigned num_uint16 = vec_bytes/sizeof(uint16_t);
-    constexpr static unsigned num_int32  = vec_bytes/sizeof(int32_t);
-    constexpr static unsigned num_uint32 = vec_bytes/sizeof(uint32_t);
-    constexpr static unsigned num_int64  = vec_bytes/sizeof(int64_t);
-    constexpr static unsigned num_uint64 = vec_bytes/sizeof(uint64_t);
-    constexpr static unsigned num_float  = vec_bytes/sizeof(float);
-    constexpr static unsigned num_double = vec_bytes/sizeof(double);
+  typedef Eigen::Vector3_4d  Vector3d_vt;
+  typedef Eigen::Matrix3_4d  Matrix3d_vt;
 
-    // typedef Vec512b bool_vt;
-    // typedef Vec64c  int8_vt;
-    // typedef Vec64uc uint8_vt;
-    // typedef Vec32s  int16_vt;
-    // typedef Vec32us uint16_vt;
-    // typedef void    bool_vt;
-    // typedef void    int8_vt;
-    // typedef void    uint8_vt;
-    // typedef void    int16_vt;
-    // typedef void    uint16_vt;
-    typedef Vec16i  int32_vt;
-    typedef Vec16ui uint32_vt;
-    typedef Vec8q   int64_vt;
-    typedef Vec8uq  uint64_vt;
-    typedef Vec16f  float_vt;
-    typedef Vec8d   double_vt;
+  // template<int32_t x> static int32_type constant_int32() {
+  //   return vcl::constant8i<x,x,x,x,x,x,x,x>(); }
+  // template<uint32_t x> static uint32_type constant_uint32() {
+  //   return vcl::constant8ui<x,x,x,x,x,x,x,x>(); }
+  // template<int64_t x> static int64_type constant_int64() {
+  //   return vcl::constant4i<x,x,x,x>(); }
+  // template<uint64_t x> static uint64_type constant_uint64() {
+  //   return vcl::constant4ui<x,x,x,x>(); }
+  // template<float x> static float_type constant_float() {
+  //   return vcl::constant8f<x,x,x,x,x,x,x,x>(); }
+  // template<double x> static double_type constant_double() {
+  //   return vcl::constant4d<x,x,x,x>(); }
+};
 
-    typedef Vec16ib int32_bvt;
-    typedef Vec16ib uint32_bvt;
-    typedef Vec8qb  int64_bvt;
-    typedef Vec8qb  uint64_bvt;
-    typedef Vec16fb float_bvt;
-    typedef Vec8db  double_bvt;
-  };
+struct VCL512Architecture
+{
+  constexpr static char architecture_name[] = "VCL512Architecture";
 
-  template<typename VCLArchitecture> std::string templated_class_name(
-    const std::string& class_name)
-  {
-    return class_name + "<" + VCLArchitecture::architecture_name + ">";
-  }
+  constexpr static unsigned vec_bits   = 512;
+  constexpr static unsigned vec_bytes  = vec_bits/8;
+  constexpr static unsigned num_int8   = vec_bytes/sizeof(int8_t);
+  constexpr static unsigned num_uint8  = vec_bytes/sizeof(uint8_t);
+  constexpr static unsigned num_int16  = vec_bytes/sizeof(int16_t);
+  constexpr static unsigned num_uint16 = vec_bytes/sizeof(uint16_t);
+  constexpr static unsigned num_int32  = vec_bytes/sizeof(int32_t);
+  constexpr static unsigned num_uint32 = vec_bytes/sizeof(uint32_t);
+  constexpr static unsigned num_int64  = vec_bytes/sizeof(int64_t);
+  constexpr static unsigned num_uint64 = vec_bytes/sizeof(uint64_t);
+  constexpr static unsigned num_float  = vec_bytes/sizeof(float);
+  constexpr static unsigned num_double = vec_bytes/sizeof(double);
 
-  template<typename T> struct vcl_type
-  {
-    typedef void scalar_type;
-    typedef void vcl_architecture;
-  };
+  // typedef Vec512b bool_vt;
+  // typedef Vec64c  int8_vt;
+  // typedef Vec64uc uint8_vt;
+  // typedef Vec32s  int16_vt;
+  // typedef Vec32us uint16_vt;
+  // typedef void    bool_vt;
+  // typedef void    int8_vt;
+  // typedef void    uint8_vt;
+  // typedef void    int16_vt;
+  // typedef void    uint16_vt;
+  typedef Vec16i  int32_vt;
+  typedef Vec16ui uint32_vt;
+  typedef Vec8q   int64_vt;
+  typedef Vec8uq  uint64_vt;
+  typedef Vec16f  float_vt;
+  typedef Vec8d   double_vt;
+
+  typedef Vec16ib int32_bvt;
+  typedef Vec16ib uint32_bvt;
+  typedef Vec8qb  int64_bvt;
+  typedef Vec8qb  uint64_bvt;
+  typedef Vec16fb float_bvt;
+  typedef Vec8db  double_bvt;
+
+  typedef Eigen::Vector3_16f Vector3f_vt;
+  typedef Eigen::Matrix3_16f Matrix3f_vt;
+
+  typedef Eigen::Vector3_8d  Vector3d_vt;
+  typedef Eigen::Matrix3_8d  Matrix3d_vt;
+};
+
+template<typename VCLArchitecture> struct VCLFloatReal
+{
+  constexpr static unsigned num_fp                = VCLArchitecture::num_float;
+  typedef VCLArchitecture                         architecture;
+  typedef float                                   real_t;
+  typedef typename VCLArchitecture::float_vt      real_vt;
+  typedef typename VCLArchitecture::float_bvt     real_bvt;
+  typedef typename VCLArchitecture::Vector3f_vt   vec3_vt;
+  typedef typename VCLArchitecture::Matrix3f_vt   mat3_vt;
+};
+
+template<typename VCLArchitecture> struct VCLDoubleReal
+{
+  constexpr static unsigned num_fp                = VCLArchitecture::num_double;
+  typedef VCLArchitecture                         architecture;
+  typedef double                                  real_t;
+  typedef typename VCLArchitecture::double_vt     real_vt;
+  typedef typename VCLArchitecture::double_bvt    real_bvt;
+  typedef typename VCLArchitecture::Vector3d_vt   vec3_vt;
+  typedef typename VCLArchitecture::Matrix3d_vt   mat3_vt;
+};
+
+typedef VCLFloatReal<VCL128Architecture> VCL128FloatReal;
+typedef VCLFloatReal<VCL256Architecture> VCL256FloatReal;
+typedef VCLFloatReal<VCL512Architecture> VCL512FloatReal;
+
+typedef VCLDoubleReal<VCL128Architecture> VCL128DoubleReal;
+typedef VCLDoubleReal<VCL256Architecture> VCL256DoubleReal;
+typedef VCLDoubleReal<VCL512Architecture> VCL512DoubleReal;
+
+template<typename VCLArchitecture> std::string templated_class_name(
+  const std::string& class_name)
+{
+  return class_name + "<" + VCLArchitecture::architecture_name + ">";
+}
+
+template<typename T> struct vcl_type
+{
+  typedef void scalar_type;
+  typedef void vcl_architecture;
+};
 
 #define DEFINE_VCL_TYPE(Vec,Scalar,Arch) \
   template<> struct vcl_type<Vec> \
@@ -209,51 +376,51 @@ namespace calin { namespace util { namespace vcl {
     typedef Arch vcl_architecture; \
   }
 
-  DEFINE_VCL_TYPE(Vec16c,  int8_t,   VCL128Architecture);
-  DEFINE_VCL_TYPE(Vec16uc, uint8_t,  VCL128Architecture);
-  DEFINE_VCL_TYPE(Vec8s,   int16_t,  VCL128Architecture);
-  DEFINE_VCL_TYPE(Vec8us,  uint16_t, VCL128Architecture);
-  DEFINE_VCL_TYPE(Vec4i,   int32_t,  VCL128Architecture);
-  DEFINE_VCL_TYPE(Vec4ui,  uint32_t, VCL128Architecture);
-  DEFINE_VCL_TYPE(Vec2q,   int64_t,  VCL128Architecture);
-  DEFINE_VCL_TYPE(Vec2uq,  uint64_t, VCL128Architecture);
-  DEFINE_VCL_TYPE(Vec4f,   float,    VCL128Architecture);
-  DEFINE_VCL_TYPE(Vec2d,   double,   VCL128Architecture);
+DEFINE_VCL_TYPE(Vec16c,  int8_t,   VCL128Architecture);
+DEFINE_VCL_TYPE(Vec16uc, uint8_t,  VCL128Architecture);
+DEFINE_VCL_TYPE(Vec8s,   int16_t,  VCL128Architecture);
+DEFINE_VCL_TYPE(Vec8us,  uint16_t, VCL128Architecture);
+DEFINE_VCL_TYPE(Vec4i,   int32_t,  VCL128Architecture);
+DEFINE_VCL_TYPE(Vec4ui,  uint32_t, VCL128Architecture);
+DEFINE_VCL_TYPE(Vec2q,   int64_t,  VCL128Architecture);
+DEFINE_VCL_TYPE(Vec2uq,  uint64_t, VCL128Architecture);
+DEFINE_VCL_TYPE(Vec4f,   float,    VCL128Architecture);
+DEFINE_VCL_TYPE(Vec2d,   double,   VCL128Architecture);
 
-  DEFINE_VCL_TYPE(Vec32c,  int8_t,   VCL256Architecture);
-  DEFINE_VCL_TYPE(Vec32uc, uint8_t,  VCL256Architecture);
-  DEFINE_VCL_TYPE(Vec16s,  int16_t,  VCL256Architecture);
-  DEFINE_VCL_TYPE(Vec16us, uint16_t, VCL256Architecture);
-  DEFINE_VCL_TYPE(Vec8i,   int32_t,  VCL256Architecture);
-  DEFINE_VCL_TYPE(Vec8ui,  uint32_t, VCL256Architecture);
-  DEFINE_VCL_TYPE(Vec4q,   int64_t,  VCL256Architecture);
-  DEFINE_VCL_TYPE(Vec4uq,  uint64_t, VCL256Architecture);
-  DEFINE_VCL_TYPE(Vec8f,   float,    VCL256Architecture);
-  DEFINE_VCL_TYPE(Vec4d,   double,   VCL256Architecture);
+DEFINE_VCL_TYPE(Vec32c,  int8_t,   VCL256Architecture);
+DEFINE_VCL_TYPE(Vec32uc, uint8_t,  VCL256Architecture);
+DEFINE_VCL_TYPE(Vec16s,  int16_t,  VCL256Architecture);
+DEFINE_VCL_TYPE(Vec16us, uint16_t, VCL256Architecture);
+DEFINE_VCL_TYPE(Vec8i,   int32_t,  VCL256Architecture);
+DEFINE_VCL_TYPE(Vec8ui,  uint32_t, VCL256Architecture);
+DEFINE_VCL_TYPE(Vec4q,   int64_t,  VCL256Architecture);
+DEFINE_VCL_TYPE(Vec4uq,  uint64_t, VCL256Architecture);
+DEFINE_VCL_TYPE(Vec8f,   float,    VCL256Architecture);
+DEFINE_VCL_TYPE(Vec4d,   double,   VCL256Architecture);
 
-  // DEFINE_VCL_TYPE(Vec64c,  int8_t,   VCL512Architecture);
-  // DEFINE_VCL_TYPE(Vec64uc, uint8_t,  VCL512Architecture);
-  // DEFINE_VCL_TYPE(Vec32s,  int16_t,  VCL512Architecture);
-  // DEFINE_VCL_TYPE(Vec32us, uint16_t, VCL512Architecture);
-  DEFINE_VCL_TYPE(Vec16i,  int32_t,  VCL512Architecture);
-  DEFINE_VCL_TYPE(Vec16ui, uint32_t, VCL512Architecture);
-  DEFINE_VCL_TYPE(Vec8q,   int64_t,  VCL512Architecture);
-  DEFINE_VCL_TYPE(Vec8uq,  uint64_t, VCL512Architecture);
-  DEFINE_VCL_TYPE(Vec16f,  float,    VCL512Architecture);
-  DEFINE_VCL_TYPE(Vec8d,   double,   VCL512Architecture);
+// DEFINE_VCL_TYPE(Vec64c,  int8_t,   VCL512Architecture);
+// DEFINE_VCL_TYPE(Vec64uc, uint8_t,  VCL512Architecture);
+// DEFINE_VCL_TYPE(Vec32s,  int16_t,  VCL512Architecture);
+// DEFINE_VCL_TYPE(Vec32us, uint16_t, VCL512Architecture);
+DEFINE_VCL_TYPE(Vec16i,  int32_t,  VCL512Architecture);
+DEFINE_VCL_TYPE(Vec16ui, uint32_t, VCL512Architecture);
+DEFINE_VCL_TYPE(Vec8q,   int64_t,  VCL512Architecture);
+DEFINE_VCL_TYPE(Vec8uq,  uint64_t, VCL512Architecture);
+DEFINE_VCL_TYPE(Vec16f,  float,    VCL512Architecture);
+DEFINE_VCL_TYPE(Vec8d,   double,   VCL512Architecture);
 
 #undef DEFINE_VCL_TYPE
 
-  template<typename Vec> void print_vec(std::ostream& s, const Vec& v)
-  {
-    s << v[0];
-    for(int i=1;i<v.size();i++)
-      s << '_' << v[i];
-  }
+template<typename Vec> void print_vec(std::ostream& s, const Vec& v)
+{
+  s << v[0];
+  for(int i=1;i<v.size();i++)
+    s << '_' << v[i];
+}
 
-  inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
-    return _mm_mul_epu32(a, b);
-  }
+inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
+  return _mm_mul_epu32(a, b);
+}
 
 #if (defined (__AVX512DQ__) && defined (__AVX512VL__)) || INSTRSET < 5
   inline Vec2uq mul_64(const Vec2uq& a, const Vec2uq& b) {
