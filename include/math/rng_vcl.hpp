@@ -142,12 +142,20 @@ public:
 
   // Generate float/double deviates in the range [-0.5*scale+offset, 0.5*scale+offset)
   // The default values therefore create deviates in the "standard" range of [0,1)
-  double_vt uniform_double_gen(const double scale = 1.0, const double offset = 0.5) {
+  double_vt uniform_double_gen(const double_vt& scale = 1.0, const double_vt& offset = 0.5) {
     return mul_add(to_double(uniform_int64()), C_U64_TO_DBL*scale, offset);
   }
 
-  float_vt uniform_float_gen(const float scale = 1.0f, const float offset = 0.5f) {
+  float_vt uniform_float_gen(const float_vt& scale = 1.0f, const float_vt& offset = 0.5f) {
     return mul_add(to_float(uniform_int32()), C_U32_TO_FLT*scale, offset);
+  }
+
+  void uniform_real_gen(float_vt& x, const float_vt& scale = 1.0f, const float_vt& offset = 0.5f) {
+    x = uniform_float_gen(scale, offset);
+  }
+
+  void uniform_real_gen(double_vt& x, const double_vt& scale = 1.0f, const double_vt& offset = 0.5f) {
+    x = uniform_double_gen(scale, offset);
   }
 
   // Generate zero-centered float/double deviates in the range [-0.5*scale, 0.5*scale]
@@ -158,6 +166,14 @@ public:
 
   float_vt uniform_float_zc(const float scale = 1.0f) {
     return to_float(uniform_int32()) * (C_U32_TO_FLT*scale);
+  }
+
+  void uniform_real_zc(float_vt& x, const float_vt& scale = 1.0f) {
+    x = uniform_float_zc(scale);
+  }
+
+  void uniform_real_zc(double_vt& x, const double_vt& scale = 1.0f) {
+    x = uniform_double_zc(scale);
   }
 
   // Generate standard float/double deviates in the range [0, scale]
@@ -176,13 +192,22 @@ public:
     return mul_add(x, multiplier, float_vt(scale) & (x<0));
   }
 
-  void uniform_by_type(uint64_vt& x) { x = uniform_uint64(); }
-  void uniform_by_type(uint32_vt& x) { x = uniform_uint32(); }
-  void uniform_by_type(double_vt& x) { x = uniform_double(); }
+  void uniform_real(float_vt& x, const float_vt& scale = 1.0f) {
+    x = uniform_float(scale);
+  }
+
+  void uniform_real(double_vt& x, const double_vt& scale = 1.0f) {
+    x = uniform_double(scale);
+  }
+
+
+  // void uniform_by_type(uint64_vt& x) { x = uniform_uint64(); }
+  // void uniform_by_type(uint32_vt& x) { x = uniform_uint32(); }
+  // void uniform_by_type(double_vt& x) { x = uniform_double(); }
   // void uniform_by_type(double_vt& x, double scale) { x = uniform_double(scale); }
   // void uniform_by_type(double_vt& x, double scale, double offset) {
   //   x = uniform_double(scale,offset); }
-  void uniform_by_type(float_vt& x) { x = uniform_float(); }
+  // void uniform_by_type(float_vt& x) { x = uniform_float(); }
   // void uniform_by_type(float_vt& x, float scale) { x = uniform_float(scale); }
   // void uniform_by_type(float_vt& x, float scale, float offset) {
   //   x = uniform_float(scale, offset); }
@@ -213,6 +238,22 @@ public:
 
   float_vt exponential_float(const float_vt& scale) {
     return scale * exponential_float();
+  }
+
+  void exponential_real(double_vt& x) {
+    x = exponential_double();
+  }
+
+  void exponential_real(double_vt& x, const double_vt& scale) {
+    x = exponential_double(scale);
+  }
+
+  void exponential_real(float_vt& x) {
+    x = exponential_float();
+  }
+
+  void exponential_real(float_vt& x, const float_vt& scale) {
+    x = exponential_float(scale);
   }
 
   // This is a stripped-down version of "sincos_f" in VCL "vectormath_trig.h"
@@ -294,6 +335,16 @@ public:
     c = c2;
   }
 
+  void sincos_real(float_vt& s, float_vt& c)
+  {
+    sincos_float(s, c);
+  }
+
+  void sincos_real(double_vt& s, double_vt& c)
+  {
+    sincos_double(s, c);
+  }
+
   void normal_two_float_bm(float_vt& x1, float_vt& x2)
   {
     // double_vt r1 = sqrt(exponential_double(2.0));
@@ -313,6 +364,16 @@ public:
     sincos_double(s, c);
     x1 = r*c;
     x2 = r*s;
+  }
+
+  void normal_two_real_bm(float_vt& x1, float_vt& x2)
+  {
+    normal_two_float_bm(x1, x2);
+  }
+
+  void normal_two_real_bm(double_vt& x1, double_vt& x2)
+  {
+    normal_two_double_bm(x1, x2);
   }
 
   float_vt from_inverse_cdf_float(const float* inverse_cdf, unsigned npoints)
