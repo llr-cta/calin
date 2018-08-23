@@ -84,6 +84,7 @@ public:
 
   static inline int32_vt positive_hexid_to_ringid_double_root(const int32_vt hexid)
   {
+    static unsigned count = 0;
     // The following algorithm works until hexid=12,589,056
     // const unsigned iarg = 1+4*(hexid-1)/3;
     // return (unsigned(std::sqrt(float(iarg)))+1)/2;
@@ -98,6 +99,10 @@ public:
     const double_vt one_half = 0.5;
     arg_l = mul_add(arg_l, one_half, one_half);
     arg_h = mul_add(arg_h, one_half, one_half);
+    if(count<10) {
+      std::cout << arg_l << ' ' << arg_h << ' ' << truncate_to_int(arg_l, arg_h) << '\n';
+      ++count;
+    }
     return truncate_to_int(arg_l, arg_h);
   }
 
