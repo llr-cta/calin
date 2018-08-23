@@ -155,6 +155,38 @@ typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 3> Matrix3_8d;
 
 } // namespace Eigen
 
+namespace vcl {
+
+  inline Vec4d to_double_low(Vec8i const & a) {
+    return to_double(a.get_low());
+  }
+
+  inline Vec4d to_double_high(Vec8i const & a) {
+    return to_double(a.get_high());
+  }
+
+  inline Vec8d to_double_low(Vec16i const & a) {
+    return to_double(a.get_low());
+  }
+
+  inline Vec8d to_double_high(Vec16i const & a) {
+    return to_double(a.get_high());
+  }
+
+  inline Vec8i truncate_to_int(Vec4d const & a, Vec4d const & b) {
+    Vec4i t1 = truncate_to_int(a);
+    Vec4i t2 = truncate_to_int(b);
+    return Vec8i(t1,t2);
+  }
+
+  inline Vec16i truncate_to_int(Vec8d const & a, Vec8d const & b) {
+    Vec8i t1 = truncate_to_int(a);
+    Vec8i t2 = truncate_to_int(b);
+    return Vec16i(t1,t2);
+  }
+
+}
+
 namespace calin { namespace util { namespace vcl {
 
 using namespace ::vcl;
