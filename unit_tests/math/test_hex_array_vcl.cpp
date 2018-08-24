@@ -29,9 +29,11 @@
 #include <util/vcl.hpp>
 #include <math/hex_array.hpp>
 #include <math/hex_array_vcl.hpp>
+#include <math/rng_vcl.hpp>
 
 using namespace calin::util::vcl;
 using namespace calin::math::hex_array;
+using namespace calin::math::rng;
 
 template<typename VCLArchitecture> class VCLHexArrayTest :
   public VCLArchitecture, public testing::Test
@@ -88,7 +90,7 @@ finish_test:
 }
 
 TYPED_TEST(VCLHexArrayTest, HexIDToRingIDDoubleRoot_HexID2E31) {
-  unsigned iring = 1; //26650;
+  unsigned iring = 26650; // 1;
   unsigned hexid = ringid_to_nsites_contained(iring-1);
   for(;iring<26760;iring++)
     for(unsigned ichan=0;ichan<6*iring;ichan++)
@@ -197,8 +199,8 @@ TYPED_TEST(VCLHexArrayTest, HexIDToXY_Equals_Scalar) {
       typename TypeParam::float_vt x2,y2;
       hexid_to_xy(hexid, x1, y1);
       VCLHexArray<TypeParam>::hexid_to_xy_float(hexid, x2, y2);
-      ASSERT_NEAR(float(x1),x2[0],abs(x1)*1e-6);
-      ASSERT_NEAR(float(y1),y2[0],abs(y1)*1e-6);
+      ASSERT_NEAR(float(x1),x2[0],std::abs(x1)*1e-6);
+      ASSERT_NEAR(float(y1),y2[0],std::abs(y1)*1e-6);
       hexid++;
     }
 }
@@ -212,8 +214,8 @@ TYPED_TEST(VCLHexArrayTest, HexIDToXY_CW_Equals_Scalar) {
       typename TypeParam::float_vt x2,y2;
       hexid_to_xy(hexid, x1, y1, true);
       VCLHexArray<TypeParam>::hexid_to_xy_float(hexid, x2, y2, true);
-      ASSERT_NEAR(float(x1),x2[0],abs(x1)*1e-6);
-      ASSERT_NEAR(float(y1),y2[0],abs(y1)*1e-6);
+      ASSERT_NEAR(float(x1),x2[0],std::abs(x1)*1e-6);
+      ASSERT_NEAR(float(y1),y2[0],std::abs(y1)*1e-6);
       hexid++;
     }
 }
@@ -266,10 +268,10 @@ TYPED_TEST(VCLHexArrayTest, UVToXY_Trans_Equals_Scalar) {
       typename TypeParam::float_vt x2,y2;
       uv_to_xy_trans(u, v, x1, y1, ctheta, stheta, scale, dx, dy);
       VCLHexArray<TypeParam>::uv_to_xy_trans_float(u, v, x2, y2, ctheta, stheta, scale, dx, dy);
-      ASSERT_NEAR(float(x1),x2[0],abs(x1)*1e-6)
+      ASSERT_NEAR(float(x1),x2[0],std::abs(x1)*1e-6)
         << u << ' ' << v << ' ' << x1 << ' ' << y1 << ' '
         << x2 << ' ' << y2;
-      ASSERT_NEAR(float(y1),y2[0],abs(y1)*1e-6)
+      ASSERT_NEAR(float(y1),y2[0],std::abs(y1)*1e-6)
         << u << ' ' << v << ' ' << x1 << ' ' << y1 << ' '
         << x2 << ' ' << y2;
     }
@@ -316,16 +318,43 @@ TYPED_TEST(VCLHexArrayTest, HexIDToXY_Trans_Equals_Scalar) {
       typename TypeParam::float_vt x2,y2;
       hexid_to_xy_trans(hexid, x1, y1, false, ctheta, stheta, scale, dx, dy);
       VCLHexArray<TypeParam>::hexid_to_xy_trans_ccw_float(hexid, x2, y2, ctheta, stheta, scale, dx, dy);
-      ASSERT_NEAR(float(x1),x2[0],(2+abs(x1))*1e-5)
+      ASSERT_NEAR(float(x1),x2[0],(2+std::abs(x1))*1e-5)
         << hexid << ' ' << iring << ' ' << ichan << ' ' << x1 << ' ' << y1 << ' '
         << x2 << ' ' << y2;
-      ASSERT_NEAR(float(y1),y2[0],(2+abs(y1))*1e-5)
+      ASSERT_NEAR(float(y1),y2[0],(2+std::abs(y1))*1e-5)
         << hexid << ' ' << iring << ' ' << ichan << ' ' << x1 << ' ' << y1 << ' '
         << x2 << ' ' << y2;
       hexid++;
     }
 }
 
+TYPED_TEST(VCLHexArrayTest, HexIDToXY_Trans_Equals_Scalar_RNG) {
+  float dx = 0.32426534147237f;
+  float dy = 1.25432437427634f;
+  float theta = 12.21752765/180.0*M_PI;
+  float ctheta = std::cos(theta);
+  float stheta = std::sin(theta);
+  float scale = 0.9326575752f;
+
+  VCLRNG<TypeParam> rng(__PRETTY_FUNCTION__, "core");
+  for(unsigned i=0;i<1000000;i++)
+  {
+    typename TypeParam::int32_vt hexid = rng.uniform_uint32() & 0xFFFF;
+    typename TypeParam::float_vt x2,y2;
+    VCLHexArray<TypeParam>::hexid_to_xy_trans_ccw_float(hexid, x2, y2, ctheta, stheta, scale, dx, dy);
+    for(unsigned j=0;j<TypeParam::num_float;j++)
+    {
+      double x1,y1;
+      hexid_to_xy_trans(hexid[j], x1, y1, false, ctheta, stheta, scale, dx, dy);
+      ASSERT_NEAR(float(x1),x2[j],(2+std::abs(x1))*1e-5)
+        << hexid[j] << ' ' << x1 << ' ' << y1 << ' '
+        << x2 << ' ' << y2;
+      ASSERT_NEAR(float(y1),y2[j],(2+std::abs(y1))*1e-5)
+        << hexid[j] << ' ' << x1 << ' ' << y1 << ' '
+        << x2 << ' ' << y2;
+    }
+  }
+}
 
 TYPED_TEST(VCLHexArrayTest, XYToHexID_Trans_Equals_Scalar) {
   float dx = 0.32426534147237f;
@@ -371,6 +400,36 @@ TYPED_TEST(VCLHexArrayTest, XYToHexID_CW_Trans_Equals_Scalar) {
       ASSERT_NEAR(xx1,xx2[0],1e-5);
       ASSERT_NEAR(yy1,yy2[0],1e-5);
     }
+}
+
+TYPED_TEST(VCLHexArrayTest, XYToHexIDWithRemainder_Trans_FwdBack_RNG) {
+  float dx = 0.32426534147237f;
+  float dy = 1.25432437427634f;
+  float theta = 12.21752765/180.0*M_PI;
+  float ctheta = std::cos(theta);
+  float stheta = std::sin(theta);
+  float scale = 0.9326575752f;
+
+  VCLRNG<TypeParam> rng(__PRETTY_FUNCTION__, "core");
+  for(unsigned i=0;i<1000000;i++)
+  {
+    typename TypeParam::float_vt x = rng.uniform_float_zc(20.0f);
+    typename TypeParam::float_vt y = rng.uniform_float_zc(20.0f);
+    typename TypeParam::float_vt xr = x;
+    typename TypeParam::float_vt yr = y;
+    typename TypeParam::int32_vt hexid =
+      VCLHexArray<TypeParam>::xy_trans_to_hexid_with_remainder_ccw_float(
+        xr, yr, ctheta, stheta, scale, dx, dy);
+    ASSERT_TRUE(horizontal_and(xr*xr+yr*yr <= (1.0f+FLT_EPSILON)*scale*scale/3.0f));
+    typename TypeParam::float_vt xc;
+    typename TypeParam::float_vt yc;
+    VCLHexArray<TypeParam>::hexid_to_xy_trans_ccw_float(hexid,
+      xc, yc, ctheta, stheta, scale, dx, dy);
+    ASSERT_TRUE(horizontal_and(abs(x - (xc + xr)) < 1e-5))
+      << x << '\n' << xc+xr << '\n' << abs(x - (xc + xr)) << '\n' << hexid;
+    ASSERT_TRUE(horizontal_and(abs(y - (yc + yr)) < 1e-5))
+      << y << '\n' << yc+yr << '\n' << abs(y - (yc + yr)) << '\n' << hexid;
+  }
 }
 
 int main(int argc, char **argv) {
