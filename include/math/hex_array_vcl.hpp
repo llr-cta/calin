@@ -92,8 +92,9 @@ public:
     const double_vt one_over_three = 1.0/3.0;
     double_vt arg_l = calin::util::vcl::to_double_low(hexid);
     double_vt arg_h = calin::util::vcl::to_double_high(hexid);
-    arg_l = mul_sub(arg_l, four_over_three, one_over_three);
-    arg_h = mul_sub(arg_h, four_over_three, one_over_three);
+    // Changed mul_sub -> mul_add for non FMA systems (2018-08-24)
+    arg_l = mul_add(arg_l, four_over_three, one_over_three);
+    arg_h = mul_add(arg_h, four_over_three, one_over_three);
     arg_l = sqrt(arg_l);
     arg_h = sqrt(arg_h);
     const double_vt one_half = 0.5;
