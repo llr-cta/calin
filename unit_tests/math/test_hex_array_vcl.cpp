@@ -1,10 +1,10 @@
 /*
 
-   calin/unit_tests/math/test_hex_array.cpp -- Stephen Fegan -- 2015-10-21
+   calin/unit_tests/math/test_hex_array.cpp -- Stephen Fegan -- 2018-08-20
 
-   Unit tests for hex array classes
+   Unit tests for VCL hex array classes
 
-   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"

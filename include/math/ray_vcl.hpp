@@ -36,7 +36,7 @@ namespace calin { namespace math { namespace ray {
 using calin::math::constants::cgs_c;
 #endif
 
-template<typename VCLReal> class BasicVCLRay: public VCLReal
+template<typename VCLReal> class VCLRay: public VCLReal
 {
 public:
   using typename VCLReal::real_t;
@@ -45,8 +45,8 @@ public:
   using typename VCLReal::vec3_vt;
   using typename VCLReal::mat3_vt;
 
-  BasicVCLRay() { }
-  BasicVCLRay(const vec3_vt& pos, const vec3_vt& dir, const real_vt& time = 0,
+  VCLRay() { }
+  VCLRay(const vec3_vt& pos, const vec3_vt& dir, const real_vt& time = 0,
       const real_vt& energy = 0):
     pos_(pos), dir_(dir), ct_(time*cgs_c), energy_(energy) {
     /* nothing to see here */
@@ -54,21 +54,21 @@ public:
 
   const vec3_vt& position() const { return pos_; }
   const vec3_vt& direction() const { return dir_; }
-  const fp_vt& ct() const { return ct_; }
-  const fp_vt& time() const { return ct_/cgs_c; }
-  const fp_vt& energy() const { return energy_; }
-  const fp_vt& x() const { return pos_.x(); }
-  const fp_vt& y() const { return pos_.y(); }
-  const fp_vt& z() const { return pos_.z(); }
-  const fp_vt& ux() const { return dir_.x(); }
-  const fp_vt& uy() const { return dir_.y(); }
-  const fp_vt& uz() const { return dir_.z(); }
+  const real_vt& ct() const { return ct_; }
+  const real_vt& time() const { return ct_/cgs_c; }
+  const real_vt& energy() const { return energy_; }
+  const real_vt& x() const { return pos_.x(); }
+  const real_vt& y() const { return pos_.y(); }
+  const real_vt& z() const { return pos_.z(); }
+  const real_vt& ux() const { return dir_.x(); }
+  const real_vt& uy() const { return dir_.y(); }
+  const real_vt& uz() const { return dir_.z(); }
 
   void set_position(const vec3_vt& pos) { pos_ = pos; }
   void set_direction(const vec3_vt& dir) { clear_dir_inv(); dir_ = dir; }
-  void set_ct(const fp_vt& ct) {  ct_ = ct; }
-  void set_time(const fp_vt& t) { ct_ = t*cgs_c; }
-  void set_energy(const fp_vt& e) { energy_ = e; }
+  void set_ct(const real_vt& ct) {  ct_ = ct; }
+  void set_time(const real_vt& t) { ct_ = t*cgs_c; }
+  void set_energy(const real_vt& e) { energy_ = e; }
 
   void translate_origin(const vec3_vt& origin) { pos_ -= origin; }
   void untranslate_origin(const vec3_vt& origin) { pos_ += origin; }

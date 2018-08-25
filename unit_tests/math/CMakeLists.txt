@@ -68,6 +68,11 @@ add_executable(test_accumulator test_accumulator.cpp)
 target_link_libraries(test_accumulator ${GTEST_BOTH_LIBRARIES} calin_math)
 add_test(TestAccumulator test_accumulator)
 
+add_executable(test_ray_vcl test_ray_vcl.cpp)
+target_link_libraries(test_ray_vcl ${GTEST_BOTH_LIBRARIES} calin_math)
+add_test(TestRayVCL test_ray_vcl)
+
 install(TARGETS test_histogram test_hessian test_pdf_1d test_m_estimate
-	test_data_modeling test_hex_array test_hex_array_vcl test_rng test_simd
+	test_data_modeling test_hex_array test_hex_array_vcl test_rng test_rng_vcl
+	test_simd
   DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
