@@ -157,29 +157,29 @@ typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 3> Matrix3_8d;
 
 namespace vcl {
 
-  inline Vec4d to_double_low(Vec8i const & a) {
+  static inline Vec4d to_double_low(Vec8i const & a) {
     return to_double(a.get_low());
   }
 
-  inline Vec4d to_double_high(Vec8i const & a) {
+  static inline Vec4d to_double_high(Vec8i const & a) {
     return to_double(a.get_high());
   }
 
-  inline Vec8d to_double_low(Vec16i const & a) {
+  static inline Vec8d to_double_low(Vec16i const & a) {
     return to_double(a.get_low());
   }
 
-  inline Vec8d to_double_high(Vec16i const & a) {
+  static inline Vec8d to_double_high(Vec16i const & a) {
     return to_double(a.get_high());
   }
 
-  inline Vec8i truncate_to_int(Vec4d const & a, Vec4d const & b) {
+  static inline Vec8i truncate_to_int(Vec4d const & a, Vec4d const & b) {
     Vec4i t1 = truncate_to_int(a);
     Vec4i t2 = truncate_to_int(b);
     return Vec8i(t1,t2);
   }
 
-  inline Vec16i truncate_to_int(Vec8d const & a, Vec8d const & b) {
+  static inline Vec16i truncate_to_int(Vec8d const & a, Vec8d const & b) {
     Vec8i t1 = truncate_to_int(a);
     Vec8i t2 = truncate_to_int(b);
     return Vec16i(t1,t2);
@@ -190,6 +190,32 @@ namespace vcl {
 namespace calin { namespace util { namespace vcl {
 
 using namespace ::vcl;
+
+template<typename VCLArchitecture> struct VCLFloatReal
+{
+  constexpr static unsigned num_fp                = VCLArchitecture::num_float;
+  typedef VCLArchitecture                         architecture;
+  typedef float                                   real_t;
+  typedef typename VCLArchitecture::int32_vt      int_vt;
+  typedef typename VCLArchitecture::uint32_vt     uint_vt;
+  typedef typename VCLArchitecture::float_vt      real_vt;
+  typedef typename VCLArchitecture::float_bvt     real_bvt;
+  typedef typename VCLArchitecture::Vector3f_vt   vec3_vt;
+  typedef typename VCLArchitecture::Matrix3f_vt   mat3_vt;
+};
+
+template<typename VCLArchitecture> struct VCLDoubleReal
+{
+  constexpr static unsigned num_fp                = VCLArchitecture::num_double;
+  typedef VCLArchitecture                         architecture;
+  typedef double                                  real_t;
+  typedef typename VCLArchitecture::int64_vt      int_vt;
+  typedef typename VCLArchitecture::uint64_vt     uint_vt;
+  typedef typename VCLArchitecture::double_vt     real_vt;
+  typedef typename VCLArchitecture::double_bvt    real_bvt;
+  typedef typename VCLArchitecture::Vector3d_vt   vec3_vt;
+  typedef typename VCLArchitecture::Matrix3d_vt   mat3_vt;
+};
 
 struct VCL128Architecture
 {
@@ -237,18 +263,8 @@ struct VCL128Architecture
   typedef Eigen::Vector3_2d  Vector3d_vt;
   typedef Eigen::Matrix3_2d  Matrix3d_vt;
 
-  // template<int32_t x> static int32_type constant_int32() {
-  //   return vcl::constant4i<x,x,x,x>(); }
-  // template<uint32_t x> static uint32_type constant_uint32() {
-  //   return vcl::constant4ui<x,x,x,x>(); }
-  // template<int64_t x> static int64_type constant_int64() {
-  //   return vcl::constant2i<x,x>(); }
-  // template<uint64_t x> static uint64_type constant_uint64() {
-  //   return vcl::constant2ui<x,x>(); }
-  // template<float x> static float_type constant_float() {
-  //   return vcl::constant4f<x,x,x,x>(); }
-  // template<double x> static double_type constant_double() {
-  //   return vcl::constant2d<x,x>(); }
+  typedef VCLFloatReal<VCL128Architecture> float_real;
+  typedef VCLDoubleReal<VCL128Architecture> double_real;
 };
 
 struct VCL256Architecture
@@ -297,18 +313,8 @@ struct VCL256Architecture
   typedef Eigen::Vector3_4d  Vector3d_vt;
   typedef Eigen::Matrix3_4d  Matrix3d_vt;
 
-  // template<int32_t x> static int32_type constant_int32() {
-  //   return vcl::constant8i<x,x,x,x,x,x,x,x>(); }
-  // template<uint32_t x> static uint32_type constant_uint32() {
-  //   return vcl::constant8ui<x,x,x,x,x,x,x,x>(); }
-  // template<int64_t x> static int64_type constant_int64() {
-  //   return vcl::constant4i<x,x,x,x>(); }
-  // template<uint64_t x> static uint64_type constant_uint64() {
-  //   return vcl::constant4ui<x,x,x,x>(); }
-  // template<float x> static float_type constant_float() {
-  //   return vcl::constant8f<x,x,x,x,x,x,x,x>(); }
-  // template<double x> static double_type constant_double() {
-  //   return vcl::constant4d<x,x,x,x>(); }
+  typedef VCLFloatReal<VCL256Architecture> float_real;
+  typedef VCLDoubleReal<VCL256Architecture> double_real;
 };
 
 struct VCL512Architecture
@@ -328,16 +334,6 @@ struct VCL512Architecture
   constexpr static unsigned num_float  = vec_bytes/sizeof(float);
   constexpr static unsigned num_double = vec_bytes/sizeof(double);
 
-  // typedef Vec512b bool_vt;
-  // typedef Vec64c  int8_vt;
-  // typedef Vec64uc uint8_vt;
-  // typedef Vec32s  int16_vt;
-  // typedef Vec32us uint16_vt;
-  // typedef void    bool_vt;
-  // typedef void    int8_vt;
-  // typedef void    uint8_vt;
-  // typedef void    int16_vt;
-  // typedef void    uint16_vt;
   typedef Vec16i  int32_vt;
   typedef Vec16ui uint32_vt;
   typedef Vec8q   int64_vt;
@@ -357,28 +353,9 @@ struct VCL512Architecture
 
   typedef Eigen::Vector3_8d  Vector3d_vt;
   typedef Eigen::Matrix3_8d  Matrix3d_vt;
-};
 
-template<typename VCLArchitecture> struct VCLFloatReal
-{
-  constexpr static unsigned num_fp                = VCLArchitecture::num_float;
-  typedef VCLArchitecture                         architecture;
-  typedef float                                   real_t;
-  typedef typename VCLArchitecture::float_vt      real_vt;
-  typedef typename VCLArchitecture::float_bvt     real_bvt;
-  typedef typename VCLArchitecture::Vector3f_vt   vec3_vt;
-  typedef typename VCLArchitecture::Matrix3f_vt   mat3_vt;
-};
-
-template<typename VCLArchitecture> struct VCLDoubleReal
-{
-  constexpr static unsigned num_fp                = VCLArchitecture::num_double;
-  typedef VCLArchitecture                         architecture;
-  typedef double                                  real_t;
-  typedef typename VCLArchitecture::double_vt     real_vt;
-  typedef typename VCLArchitecture::double_bvt    real_bvt;
-  typedef typename VCLArchitecture::Vector3d_vt   vec3_vt;
-  typedef typename VCLArchitecture::Matrix3d_vt   mat3_vt;
+  typedef VCLFloatReal<VCL512Architecture> float_real;
+  typedef VCLDoubleReal<VCL512Architecture> double_real;
 };
 
 typedef VCLFloatReal<VCL128Architecture> VCL128FloatReal;
