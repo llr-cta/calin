@@ -259,7 +259,7 @@ TEST(TestPoissonGaussianMES, HessianCheck_MES)
                    &MultiElectronSpectrum::pdf_gradient_mes,
                    &MultiElectronSpectrum::pdf_gradient_hessian_mes,
                    { 1.123, 0.100000, 0.2, 1.321, 0.45 },
-                   { dp1, dp1, dp1, dp1, dp1}, -1.0, 10.0, 0.1);
+                   { dp1, dp1, dp1, dp1, dp1}, -1.0, 10.0, 0.1, 0.6);
 }
 
 TEST(TestSPELikelihood, KarkarPG_GradientCheck) {
