@@ -30,7 +30,7 @@
 
 namespace calin { namespace math { namespace hex_array {
 
-template<typename VCLArchitecture> class VCLHexArray: public VCLArchitecture
+template<typename VCLArchitecture> class VCL: public VCLArchitecture
 {
 public:
   using typename VCLArchitecture::uint32_vt;

@@ -63,7 +63,7 @@ TYPED_TEST(VCLHexArrayTest, HexIDToRingIDLoop_50Rings) {
   for(unsigned iring=1;iring<50;iring++)
     for(unsigned ichan=0;ichan<6*iring;ichan++)
     {
-      typename TypeParam::int32_vt ringid = VCLHexArray<TypeParam>::positive_hexid_to_ringid_loop(hexid);
+      typename TypeParam::int32_vt ringid = VCL<TypeParam>::positive_hexid_to_ringid_loop(hexid);
       EXPECT_TRUE(horizontal_and(ringid == iring))
         << "With hexid=" << hexid << " giving " << ringid;
       hexid++;
@@ -75,7 +75,7 @@ TYPED_TEST(VCLHexArrayTest, HexIDToRingIDRoot_5000Rings) {
   for(unsigned iring=1;iring<5000;iring++)
     for(unsigned ichan=0;ichan<6*iring;ichan++)
     {
-      typename TypeParam::int32_vt ringid = VCLHexArray<TypeParam>::positive_hexid_to_ringid_root(hexid);
+      typename TypeParam::int32_vt ringid = VCL<TypeParam>::positive_hexid_to_ringid_root(hexid);
       if(!horizontal_and(ringid == iring))
       {
         std::cout << "Mismatch for hexid=" << hexid[0] << " (ring=" << iring <<
@@ -95,7 +95,7 @@ TYPED_TEST(VCLHexArrayTest, HexIDToRingIDDoubleRoot_HexID2E31) {
   for(;iring<26760;iring++)
     for(unsigned ichan=0;ichan<6*iring;ichan++)
     {
-      typename TypeParam::int32_vt ringid = VCLHexArray<TypeParam>::positive_hexid_to_ringid_double_root(hexid);
+      typename TypeParam::int32_vt ringid = VCL<TypeParam>::positive_hexid_to_ringid_double_root(hexid);
       if(!horizontal_and(ringid == iring))
       {
         std::cout << "Mismatch for hexid=" << hexid << " (ring=" << iring <<
@@ -115,12 +115,12 @@ TYPED_TEST(VCLHexArrayTest, HexIDToFromRingSegRun_APriori) {
     for(unsigned iseg=0;iseg<6;iseg++)
       for(unsigned irun=0;irun<iring;irun++)
       {
-        ASSERT_TRUE(horizontal_and(VCLHexArray<TypeParam>::positive_ringid_segid_runid_to_hexid(iring, iseg, irun) == hexid))
+        ASSERT_TRUE(horizontal_and(VCL<TypeParam>::positive_ringid_segid_runid_to_hexid(iring, iseg, irun) == hexid))
           << iring << ' ' << iseg << ' ' << irun;
         typename TypeParam::int32_vt ringid = 0;
         typename TypeParam::int32_vt segid = 0;
         typename TypeParam::int32_vt runid = 0;
-        VCLHexArray<TypeParam>::positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
+        VCL<TypeParam>::positive_hexid_to_ringid_segid_runid(hexid, ringid, segid, runid);
         ASSERT_TRUE(horizontal_and(ringid == iring)) << iring << ' ' << iseg << ' ' << irun;
         ASSERT_TRUE(horizontal_and(segid == iseg)) << iring << ' ' << iseg << ' ' << irun;
         ASSERT_TRUE(horizontal_and(runid == irun)) << iring << ' ' << iseg << ' ' << irun;
@@ -134,9 +134,9 @@ TYPED_TEST(VCLHexArrayTest, HexIDToFromRingSegRun_EQ) {
     typename TypeParam::int32_vt ringid = 0;
     typename TypeParam::int32_vt segid = 0;
     typename TypeParam::int32_vt runid = 0;
-    VCLHexArray<TypeParam>::positive_hexid_to_ringid_segid_runid(ihex, ringid, segid, runid);
+    VCL<TypeParam>::positive_hexid_to_ringid_segid_runid(ihex, ringid, segid, runid);
     typename TypeParam::int32_vt hexid =
-      VCLHexArray<TypeParam>::positive_ringid_segid_runid_to_hexid(ringid, segid, runid);
+      VCL<TypeParam>::positive_ringid_segid_runid_to_hexid(ringid, segid, runid);
     ASSERT_TRUE(horizontal_and(hexid == ihex))
       << ringid << ' ' << segid << ' ' << runid;
   }
@@ -171,8 +171,8 @@ TYPED_TEST(VCLHexArrayTest, HexIDToFromUV_CW_EQ) {
   {
     typename TypeParam::int32_vt u = 0;
     typename TypeParam::int32_vt v = 0;
-    VCLHexArray<TypeParam>::hexid_to_uv_cw(ihex, u, v);
-    typename TypeParam::int32_vt hexid = VCLHexArray<TypeParam>::uv_to_hexid_cw(u, v);
+    VCL<TypeParam>::hexid_to_uv_cw(ihex, u, v);
+    typename TypeParam::int32_vt hexid = VCL<TypeParam>::uv_to_hexid_cw(u, v);
     ASSERT_TRUE(horizontal_and(hexid == ihex))
       << ihex << ' ' << u << ' ' << v << ' ' << hexid;
   }
@@ -183,8 +183,8 @@ TYPED_TEST(VCLHexArrayTest, HexIDToFromUV_CCW_EQ) {
   {
     typename TypeParam::int32_vt u = 0;
     typename TypeParam::int32_vt v = 0;
-    VCLHexArray<TypeParam>::hexid_to_uv_ccw(ihex, u, v);
-    typename TypeParam::int32_vt hexid = VCLHexArray<TypeParam>::uv_to_hexid_ccw(u, v);
+    VCL<TypeParam>::hexid_to_uv_ccw(ihex, u, v);
+    typename TypeParam::int32_vt hexid = VCL<TypeParam>::uv_to_hexid_ccw(u, v);
     ASSERT_TRUE(horizontal_and(hexid == ihex))
       << ihex << ' ' << u << ' ' << v << ' ' << hexid;
   }
@@ -198,7 +198,7 @@ TYPED_TEST(VCLHexArrayTest, HexIDToXY_Equals_Scalar) {
       double x1,y1;
       typename TypeParam::float_vt x2,y2;
       hexid_to_xy(hexid, x1, y1);
-      VCLHexArray<TypeParam>::hexid_to_xy_float(hexid, x2, y2);
+      VCL<TypeParam>::hexid_to_xy_float(hexid, x2, y2);
       ASSERT_NEAR(float(x1),x2[0],std::abs(x1)*1e-6);
       ASSERT_NEAR(float(y1),y2[0],std::abs(y1)*1e-6);
       hexid++;
@@ -213,7 +213,7 @@ TYPED_TEST(VCLHexArrayTest, HexIDToXY_CW_Equals_Scalar) {
       double x1,y1;
       typename TypeParam::float_vt x2,y2;
       hexid_to_xy(hexid, x1, y1, true);
-      VCLHexArray<TypeParam>::hexid_to_xy_float(hexid, x2, y2, true);
+      VCL<TypeParam>::hexid_to_xy_float(hexid, x2, y2, true);
       ASSERT_NEAR(float(x1),x2[0],std::abs(x1)*1e-6);
       ASSERT_NEAR(float(y1),y2[0],std::abs(y1)*1e-6);
       hexid++;
@@ -230,7 +230,7 @@ TYPED_TEST(VCLHexArrayTest, XYToHexID_Equals_Scalar) {
       typename TypeParam::float_vt xx2 = x;
       typename TypeParam::float_vt yy2 = y;
       typename TypeParam::int32_vt hexid2 =
-        VCLHexArray<TypeParam>::xy_to_hexid_with_remainder_float(xx2, yy2);
+        VCL<TypeParam>::xy_to_hexid_with_remainder_float(xx2, yy2);
       ASSERT_EQ(hexid, hexid2[0]);
       ASSERT_NEAR(xx1,xx2[0],1e-6);
       ASSERT_NEAR(yy1,yy2[0],1e-6);
@@ -247,7 +247,7 @@ TYPED_TEST(VCLHexArrayTest, XYToHexID_CW_Equals_Scalar) {
       typename TypeParam::float_vt xx2 = x;
       typename TypeParam::float_vt yy2 = y;
       typename TypeParam::int32_vt hexid2 =
-        VCLHexArray<TypeParam>::xy_to_hexid_with_remainder_float(xx2, yy2, true);
+        VCL<TypeParam>::xy_to_hexid_with_remainder_float(xx2, yy2, true);
       ASSERT_EQ(hexid, hexid2[0]);
       ASSERT_NEAR(xx1,xx2[0],1e-6);
       ASSERT_NEAR(yy1,yy2[0],1e-6);
@@ -267,7 +267,7 @@ TYPED_TEST(VCLHexArrayTest, UVToXY_Trans_Equals_Scalar) {
       double x1,y1;
       typename TypeParam::float_vt x2,y2;
       uv_to_xy_trans(u, v, x1, y1, ctheta, stheta, scale, dx, dy);
-      VCLHexArray<TypeParam>::uv_to_xy_trans_float(u, v, x2, y2, ctheta, stheta, scale, dx, dy);
+      VCL<TypeParam>::uv_to_xy_trans_float(u, v, x2, y2, ctheta, stheta, scale, dx, dy);
       ASSERT_NEAR(float(x1),x2[0],std::abs(x1)*1e-6)
         << u << ' ' << v << ' ' << x1 << ' ' << y1 << ' '
         << x2 << ' ' << y2;
@@ -295,7 +295,7 @@ TYPED_TEST(VCLHexArrayTest, XYToUV_Trans_Equals_Scalar) {
       typename TypeParam::float_vt yy2 = y;
       typename TypeParam::int32_vt u2;
       typename TypeParam::int32_vt v2;
-      VCLHexArray<TypeParam>::xy_trans_to_uv_with_remainder_float(xx2, yy2, u2, v2, ctheta, stheta, scale, dx, dy);
+      VCL<TypeParam>::xy_trans_to_uv_with_remainder_float(xx2, yy2, u2, v2, ctheta, stheta, scale, dx, dy);
       ASSERT_EQ(u, u2[0]);
       ASSERT_EQ(v, v2[0]);
       ASSERT_NEAR(xx1,xx2[0],1e-5);
@@ -317,7 +317,7 @@ TYPED_TEST(VCLHexArrayTest, HexIDToXY_Trans_Equals_Scalar) {
       double x1,y1;
       typename TypeParam::float_vt x2,y2;
       hexid_to_xy_trans(hexid, x1, y1, false, ctheta, stheta, scale, dx, dy);
-      VCLHexArray<TypeParam>::hexid_to_xy_trans_ccw_float(hexid, x2, y2, ctheta, stheta, scale, dx, dy);
+      VCL<TypeParam>::hexid_to_xy_trans_ccw_float(hexid, x2, y2, ctheta, stheta, scale, dx, dy);
       ASSERT_NEAR(float(x1),x2[0],(2+std::abs(x1))*1e-5)
         << hexid << ' ' << iring << ' ' << ichan << ' ' << x1 << ' ' << y1 << ' '
         << x2 << ' ' << y2;
@@ -341,7 +341,7 @@ TYPED_TEST(VCLHexArrayTest, HexIDToXY_Trans_Equals_Scalar_RNG) {
   {
     typename TypeParam::int32_vt hexid = rng.uniform_uint32() & 0xFFFF;
     typename TypeParam::float_vt x2,y2;
-    VCLHexArray<TypeParam>::hexid_to_xy_trans_ccw_float(hexid, x2, y2, ctheta, stheta, scale, dx, dy);
+    VCL<TypeParam>::hexid_to_xy_trans_ccw_float(hexid, x2, y2, ctheta, stheta, scale, dx, dy);
     for(unsigned j=0;j<TypeParam::num_float;j++)
     {
       double x1,y1;
@@ -372,7 +372,7 @@ TYPED_TEST(VCLHexArrayTest, XYToHexID_Trans_Equals_Scalar) {
       typename TypeParam::float_vt xx2 = x;
       typename TypeParam::float_vt yy2 = y;
       typename TypeParam::int32_vt hexid2 =
-        VCLHexArray<TypeParam>::xy_trans_to_hexid_with_remainder_ccw_float(xx2, yy2, ctheta, stheta, scale, dx, dy);
+        VCL<TypeParam>::xy_trans_to_hexid_with_remainder_ccw_float(xx2, yy2, ctheta, stheta, scale, dx, dy);
       ASSERT_EQ(hexid, hexid2[0]);
       ASSERT_NEAR(xx1,xx2[0],1e-5);
       ASSERT_NEAR(yy1,yy2[0],1e-5);
@@ -395,7 +395,7 @@ TYPED_TEST(VCLHexArrayTest, XYToHexID_CW_Trans_Equals_Scalar) {
       typename TypeParam::float_vt xx2 = x;
       typename TypeParam::float_vt yy2 = y;
       typename TypeParam::int32_vt hexid2 =
-        VCLHexArray<TypeParam>::xy_trans_to_hexid_with_remainder_cw_float(xx2, yy2, ctheta, stheta, scale, dx, dy);
+        VCL<TypeParam>::xy_trans_to_hexid_with_remainder_cw_float(xx2, yy2, ctheta, stheta, scale, dx, dy);
       ASSERT_EQ(hexid, hexid2[0]);
       ASSERT_NEAR(xx1,xx2[0],1e-5);
       ASSERT_NEAR(yy1,yy2[0],1e-5);
@@ -418,12 +418,12 @@ TYPED_TEST(VCLHexArrayTest, XYToHexIDWithRemainder_Trans_FwdBack_RNG) {
     typename TypeParam::float_vt xr = x;
     typename TypeParam::float_vt yr = y;
     typename TypeParam::int32_vt hexid =
-      VCLHexArray<TypeParam>::xy_trans_to_hexid_with_remainder_ccw_float(
+      VCL<TypeParam>::xy_trans_to_hexid_with_remainder_ccw_float(
         xr, yr, ctheta, stheta, scale, dx, dy);
     ASSERT_TRUE(horizontal_and(xr*xr+yr*yr <= (1.0f+FLT_EPSILON)*scale*scale/3.0f));
     typename TypeParam::float_vt xc;
     typename TypeParam::float_vt yc;
-    VCLHexArray<TypeParam>::hexid_to_xy_trans_ccw_float(hexid,
+    VCL<TypeParam>::hexid_to_xy_trans_ccw_float(hexid,
       xc, yc, ctheta, stheta, scale, dx, dy);
     ASSERT_TRUE(horizontal_and(abs(x - (xc + xr)) < 1e-5))
       << x << '\n' << xc+xr << '\n' << abs(x - (xc + xr)) << '\n' << hexid;
