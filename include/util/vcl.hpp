@@ -199,7 +199,7 @@ template<typename VCLArchitecture> struct VCLFloatReal
   typedef typename VCLArchitecture::int32_vt      int_vt;
   typedef typename VCLArchitecture::uint32_vt     uint_vt;
   typedef typename VCLArchitecture::float_vt      real_vt;
-  typedef typename VCLArchitecture::float_bvt     real_bvt;
+  typedef typename VCLArchitecture::float_bvt     bool_vt;
   typedef typename VCLArchitecture::Vector3f_vt   vec3_vt;
   typedef typename VCLArchitecture::Matrix3f_vt   mat3_vt;
 };
@@ -212,7 +212,7 @@ template<typename VCLArchitecture> struct VCLDoubleReal
   typedef typename VCLArchitecture::int64_vt      int_vt;
   typedef typename VCLArchitecture::uint64_vt     uint_vt;
   typedef typename VCLArchitecture::double_vt     real_vt;
-  typedef typename VCLArchitecture::double_bvt    real_bvt;
+  typedef typename VCLArchitecture::double_bvt    bool_vt;
   typedef typename VCLArchitecture::Vector3d_vt   vec3_vt;
   typedef typename VCLArchitecture::Matrix3d_vt   mat3_vt;
 };
