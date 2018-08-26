@@ -94,6 +94,8 @@ public:
   using typename VCLArchitecture::uint64_bvt;
   using typename VCLArchitecture::float_bvt;
   using typename VCLArchitecture::double_bvt;
+  using typename VCLArchitecture::Vector3f_vt;
+  using typename VCLArchitecture::Vector3d_vt;
 
   enum class CoreType { NR3 };
   VCLRNG(uint64_t seed, CoreType core_type = CoreType::NR3,
@@ -374,6 +376,38 @@ public:
   void normal_two_real_bm(double_vt& x1, double_vt& x2)
   {
     normal_two_double_bm(x1, x2);
+  }
+
+  void uniform_on_unit_sphere_float(float_vt& x, float_vt& y, float_vt& z)
+  {
+    z = uniform_float_zc(2.0f); // z=cos(theta) uniform from -1 to +1
+    const float_vt rho = sqrt(nmul_add(z, z, 1.0f));
+    sincos_float(x, y);
+    x *= rho;
+    y *= rho;
+  }
+
+  void uniform_on_unit_sphere_double(double_vt& x, double_vt& y, double_vt& z)
+  {
+    z = uniform_double_zc(2.0); // z=cos(theta) uniform from -1 to +1
+    const double_vt rho = sqrt(nmul_add(z, z, 1.0));
+    sincos_double(x, y);
+    x *= rho;
+    y *= rho;
+  }
+
+  Vector3f_vt uniform_on_unit_sphere_vec_float()
+  {
+    Vector3f_vt v;
+    uniform_on_unit_sphere_float(v.x(), v.y(), v.z());
+    return v;
+  }
+
+  Vector3d_vt uniform_on_unit_sphere_vec_double()
+  {
+    Vector3d_vt v;
+    uniform_on_unit_sphere_double(v.x(), v.y(), v.z());
+    return v;
   }
 
   float_vt from_inverse_cdf_float(const float* inverse_cdf, unsigned npoints)
