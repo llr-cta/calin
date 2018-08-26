@@ -43,7 +43,7 @@ TYPED_TEST_CASE(VCLRayTest, RealTypes);
 
 TYPED_TEST(VCLRayTest, SimplePropagateToYPlane) {
   typename TypeParam::vec3_vt pos(0.0,-1.0,0);
-  typename TypeParam::vec3_vt dir(0.0,sqrt(0.5f),sqrt(0.5f));
+  typename TypeParam::vec3_vt dir(0.0,std::sqrt(0.5f),std::sqrt(0.5f));
   VCLRay<TypeParam> ray(pos,dir);
   ASSERT_TRUE(horizontal_and(ray.propagate_to_y_plane(0,true,1.5)));
   ASSERT_TRUE(horizontal_and(ray.ux() == dir.x()));
@@ -51,8 +51,10 @@ TYPED_TEST(VCLRayTest, SimplePropagateToYPlane) {
   ASSERT_TRUE(horizontal_and(ray.uz() == dir.z()));
   ASSERT_TRUE(horizontal_and(ray.x() == 0.0f)) << ray.x();
   ASSERT_TRUE(horizontal_and(abs(ray.y()) < 1e-7f)) << ray.y();
-  ASSERT_TRUE(horizontal_and(abs(ray.z() - 1.0f) < 1e-7)) << ray.z();
-  ASSERT_TRUE(horizontal_and(abs(ray.ct() - sqrt(2.0f)*1.5f) < 1e-7)) << ray.ct();
+  ASSERT_TRUE(horizontal_and(abs(ray.z() - 1.0f) < 1e-7))
+    << ray.z() << ' ' << ray.z()-1.0f;
+  ASSERT_TRUE(horizontal_and(abs(ray.ct() - std::sqrt(2.0f)*1.5f) < 1e-7))
+    << ray.ct();
 }
 
 int main(int argc, char **argv) {
