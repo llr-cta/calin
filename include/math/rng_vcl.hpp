@@ -396,6 +396,16 @@ public:
     y *= rho;
   }
 
+  void uniform_on_unit_sphere_real(float_vt& x, float_vt& y, float_vt& z)
+  {
+    uniform_on_unit_sphere_float(x, y, z);
+  }
+
+  void uniform_on_unit_sphere_real(double_vt& x, double_vt& y, double_vt& z)
+  {
+    uniform_on_unit_sphere_float(x, y, z);
+  }
+
   Vector3f_vt uniform_on_unit_sphere_vec_float()
   {
     Vector3f_vt v;
@@ -408,6 +418,16 @@ public:
     Vector3d_vt v;
     uniform_on_unit_sphere_double(v.x(), v.y(), v.z());
     return v;
+  }
+
+  void uniform_on_unit_sphere_vec_real(Vector3f_vt& v)
+  {
+    uniform_on_unit_sphere_float(v.x(), v.y(), v.z());
+  }
+
+  void uniform_on_unit_sphere_vec_real(Vector3d_vt& v)
+  {
+    uniform_on_unit_sphere_double(v.x(), v.y(), v.z());
   }
 
   float_vt from_inverse_cdf_float(const float* inverse_cdf, unsigned npoints)

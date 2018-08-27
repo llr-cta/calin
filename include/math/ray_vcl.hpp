@@ -156,7 +156,7 @@ public:
   bool_vt propagate_to_y_sphere_1st_interaction_fwd_bwd_with_mask(const bool_vt& maskin,
     const real_vt& radius, const real_vt& surface_y_min = 0, const real_vt& n = 1.0)
   {
-    vec3_vt pos_rel(pos_.x(), pos_.y()-radius, pos_.z());
+    vec3_vt pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
     const real_vt b_2 = pos_rel.dot(dir_);
     const real_vt c = nmul_add(radius, radius, pos_rel.squaredNorm());
 
@@ -167,13 +167,13 @@ public:
 
     real_vt dist = -sqrt(disc_4) - b_2;
     propagate_dist_with_mask(mask, dist, n);
-    return true;
+    return mask;
   }
 
-  bool propagate_to_y_sphere_1st_interaction_fwd_only_with_mask(const bool_vt& maskin,
+  bool_vt propagate_to_y_sphere_1st_interaction_fwd_only_with_mask(const bool_vt& maskin,
     const real_vt& radius, const real_vt& surface_y_min = 0, const real_vt& n = 1.0)
   {
-    vec3_vt pos_rel(pos_.x(), pos_.y()-radius, pos_.z());
+    vec3_vt pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
     const real_vt b_2 = pos_rel.dot(dir_);
     const real_vt c = nmul_add(radius, radius, pos_rel.squaredNorm());
 
@@ -186,13 +186,13 @@ public:
     mask &= dist >= 0;
 
     propagate_dist_with_mask(mask, dist, n);
-    return true;
+    return mask;
   }
 
   bool_vt propagate_to_y_sphere_2nd_interaction_fwd_bwd_with_mask(const bool_vt& maskin,
     const real_vt& radius, const real_vt& surface_y_min = 0, const real_vt& n = 1.0)
   {
-    vec3_vt pos_rel(pos_.x(), pos_.y()-radius, pos_.z());
+    vec3_vt pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
     const real_vt b_2 = pos_rel.dot(dir_);
     const real_vt c = nmul_add(radius, radius, pos_rel.squaredNorm());
 
@@ -203,13 +203,13 @@ public:
 
     real_vt dist = sqrt(disc_4) - b_2;
     propagate_dist_with_mask(mask, dist, n);
-    return true;
+    return mask;
   }
 
-  bool propagate_to_y_sphere_2nd_interaction_fwd_only_with_mask(const bool_vt& maskin,
+  bool_vt propagate_to_y_sphere_2nd_interaction_fwd_only_with_mask(const bool_vt& maskin,
     const real_vt& radius, const real_vt& surface_y_min = 0, const real_vt& n = 1.0)
   {
-    vec3_vt pos_rel(pos_.x(), pos_.y()-radius, pos_.z());
+    vec3_vt pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
     const real_vt b_2 = pos_rel.dot(dir_);
     const real_vt c = nmul_add(radius, radius, pos_rel.squaredNorm());
 
@@ -222,7 +222,7 @@ public:
     mask &= dist >= 0;
 
     propagate_dist_with_mask(mask, dist, n);
-    return true;
+    return mask;
   }
 
 #if 0
