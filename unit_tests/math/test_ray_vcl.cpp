@@ -59,7 +59,7 @@ TYPED_TEST(VCLRayTest, SimplePropagateToYPlane) {
     << ray.ct();
 }
 
-TYPED_TEST(VCLRayTest, SimplePropagateToSphere) {
+TYPED_TEST(VCLRayTest, SimplePropagateToSphere2nd) {
   VCLRNG<typename TypeParam::architecture> rng;
   for(unsigned i=0; i<10000; i++) {
     typename TypeParam::vec3_vt pos(0.0,0.0,0);
@@ -85,6 +85,54 @@ TYPED_TEST(VCLRayTest, SimplePropagateToSphere) {
       << ray.ct();
   }
 }
+
+TYPED_TEST(VCLRayTest, SimplePropagateToSphere1st) {
+  VCLRNG<typename TypeParam::architecture> rng;
+  for(unsigned i=0; i<10000; i++) {
+    typename TypeParam::vec3_vt pos(0.0,0.0,0);
+    typename TypeParam::vec3_vt dir;
+    rng.uniform_on_unit_sphere_vec_real(dir);
+    VCLRay<TypeParam> ray(pos,dir);
+    typename TypeParam::bool_vt mask = true;
+    ASSERT_TRUE(horizontal_and(ray.propagate_to_y_sphere_1st_interaction_fwd_bwd_with_mask(
+      mask, 1.0f, -1.0f, 1.5f)));
+    ASSERT_TRUE(horizontal_and(ray.ux() == dir.x()));
+    ASSERT_TRUE(horizontal_and(ray.uy() == dir.y()));
+    ASSERT_TRUE(horizontal_and(ray.uz() == dir.z()));
+    ASSERT_TRUE(horizontal_and(abs(ray.position().squaredNorm() - 1.0f) < 1e-6))
+      << ray.position() << ' ' << ray.position().squaredNorm() << ' '
+      << abs(ray.position().squaredNorm() - 1.0f);
+    ASSERT_TRUE(horizontal_and(abs(ray.x() + ray.ux()) < 1e-7f))
+      << ray.x() << ' ' << ray.ux() << ' ' << ray.x() - ray.ux();
+    ASSERT_TRUE(horizontal_and(abs(ray.y() + ray.uy()) < 1e-7f))
+      << ray.y() << ' ' << ray.uy() << ' ' << ray.y() - ray.uy();
+    ASSERT_TRUE(horizontal_and(abs(ray.z() + ray.uz()) < 1e-7f))
+      << ray.z() << ' ' << ray.uz() << ' ' << ray.z() - ray.uz();
+    ASSERT_TRUE(horizontal_and(abs(ray.ct() + 1.5f) < 1e-7))
+      << ray.ct();
+  }
+}
+
+TYPED_TEST(VCLRayTest, SimplePropagateToSphere1stFwdOnly) {
+  VCLRNG<typename TypeParam::architecture> rng;
+  for(unsigned i=0; i<10000; i++) {
+    typename TypeParam::vec3_vt pos(0.0,0.0,0);
+    typename TypeParam::vec3_vt dir;
+    rng.uniform_on_unit_sphere_vec_real(dir);
+    VCLRay<TypeParam> ray(pos,dir);
+    typename TypeParam::bool_vt mask = true;
+    ASSERT_FALSE(horizontal_or(ray.propagate_to_y_sphere_1st_interaction_fwd_only_with_mask(
+      mask, 1.0f, -1.0f, 1.5f)));
+    ASSERT_TRUE(horizontal_and(ray.ux() == dir.x()));
+    ASSERT_TRUE(horizontal_and(ray.uy() == dir.y()));
+    ASSERT_TRUE(horizontal_and(ray.uz() == dir.z()));
+    ASSERT_TRUE(horizontal_and(ray.x() == pos.x()));
+    ASSERT_TRUE(horizontal_and(ray.y() == pos.y()));
+    ASSERT_TRUE(horizontal_and(ray.z() == pos.z()));
+    ASSERT_TRUE(horizontal_and(ray.ct() == 0.0f));
+  }
+}
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
