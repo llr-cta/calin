@@ -35,6 +35,20 @@ public:
   virtual bool next(Eigen::Vector3d& pos, double& weight) = 0;
 };
 
+class SinglePositionGenerator: public PositionGenerator
+{
+public:
+  SinglePositionGenerator(double x, double y, double z, double base_weight = 1.0);
+  SinglePositionGenerator(const Eigen::Vector3d& pos, double base_weight = 1.0);
+  virtual ~SinglePositionGenerator();
+  void reset() override;
+  bool next(Eigen::Vector3d& pos, double& weight) override;
+private:
+  const Eigen::Vector3d pos_;
+  double weight_ = 1.0;
+  bool position_generated_ = false;
+};
+
 class MCPlanePositionGenerator: public PositionGenerator
 {
 public:
