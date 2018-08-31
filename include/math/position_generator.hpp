@@ -43,6 +43,7 @@ public:
   virtual ~SinglePositionGenerator();
   void reset() override;
   bool next(Eigen::Vector3d& pos, double& weight) override;
+  double weight() const { return weight_; }
 private:
   const Eigen::Vector3d pos_;
   double weight_ = 1.0;
@@ -59,6 +60,7 @@ public:
   virtual ~MCPlanePositionGenerator();
   void reset() override;
   bool next(Eigen::Vector3d& pos, double& weight) override;
+  double weight() const { return weight_; }
 protected:
   unsigned iray_ = 0;
   unsigned nray_ = 0;
@@ -76,6 +78,7 @@ public:
   virtual ~HexGridPlanePositionGenerator();
   void reset() override;
   bool next(Eigen::Vector3d& pos, double& weight) override;
+  double weight() const { return weight_; }
 protected:
   unsigned hexid_ = 0;
   double r2_max_ = 0.0;
