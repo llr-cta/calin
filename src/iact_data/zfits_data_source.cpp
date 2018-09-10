@@ -396,7 +396,7 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
   const DataModel::AnyArray& cta_array)
 {
   // Reference : https://forge.in2p3.fr/projects/cta/repository/entry/ACTL/ExternalDevicesCommunication/trunk/TiCkSdecode/ticks_decode.c
-  struct CDTSMessageData {
+  struct CDTSMessageData_V0 {
     uint32_t event_counter;
     uint32_t pps_counter;
     uint32_t clock_counter;
@@ -407,15 +407,27 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     uint8_t arbitrary_information;
   } __attribute__((__packed__));
 
+  struct CDTSMessageData_V1 {
+    uint32_t event_counter;
+    uint32_t busy_counter;
+    uint32_t pps_counter;
+    uint32_t clock_counter;
+    uint64_t ucts_timestamp;
+    uint8_t trigger_type;
+    uint8_t white_rabbit_reset_busy_status;
+    uint16_t arbitrary_information;
+    uint8_t num_in_bunch;
+  } __attribute__((__packed__));
+
   const auto& cta_cdts_data = cta_array.data();
 #if TEST_ANYARRAY_TYPES
   if(cta_cdts_data.type() != DataModel::AnyArray::U32)
     throw std::runtime_error("CDTS counters type not U32");
 #endif
-  if(cta_cdts_data.size() != sizeof(CDTSMessageData))
+  if(cta_cdts_data.size() != sizeof(CDTSMessageData_V0))
     throw std::runtime_error("CDTS data array not expected size");
   const auto* cdts_data =
-    reinterpret_cast<const CDTSMessageData*>(&cta_cdts_data.front());
+    reinterpret_cast<const CDTSMessageData_V0*>(&cta_cdts_data.front());
 
   calin_cdts_data->set_event_counter(cdts_data->event_counter);
   calin_cdts_data->set_pps_counter(cdts_data->pps_counter);
