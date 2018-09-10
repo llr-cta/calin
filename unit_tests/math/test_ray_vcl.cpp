@@ -146,7 +146,7 @@ TYPED_TEST(VCLRayTest, SimplePropagateToBox) {
     typename TypeParam::real_vt tmax;
 
     mask = calin::math::geometry::VCL<TypeParam>::
-      box_has_future_intersection_vcl(tmin, tmax,
+      box_has_future_intersection(tmin, tmax,
         typename TypeParam::vec3_vt(-1.0,-1.0,-1.0),
         typename TypeParam::vec3_vt(1.0,1.0,1.0),
         pos, dir);
