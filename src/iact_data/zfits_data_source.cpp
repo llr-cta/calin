@@ -424,19 +424,40 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
   if(cta_cdts_data.type() != DataModel::AnyArray::U32)
     throw std::runtime_error("CDTS counters type not U32");
 #endif
-  if(cta_cdts_data.size() != sizeof(CDTSMessageData_V0))
-    throw std::runtime_error("CDTS data array not expected size");
-  const auto* cdts_data =
-    reinterpret_cast<const CDTSMessageData_V0*>(&cta_cdts_data.front());
+  if(cta_cdts_data.size() == sizeof(CDTSMessageData_V1)) {
+    const auto* cdts_data =
+      reinterpret_cast<const CDTSMessageData_V1*>(&cta_cdts_data.front());
 
-  calin_cdts_data->set_event_counter(cdts_data->event_counter);
-  calin_cdts_data->set_pps_counter(cdts_data->pps_counter);
-  calin_cdts_data->set_clock_counter(cdts_data->clock_counter);
-  calin_cdts_data->set_ucts_timestamp(cdts_data->ucts_timestamp);
-  calin_cdts_data->set_camera_timestamp(cdts_data->camera_timestamp);
-  calin_cdts_data->set_trigger_type(cdts_data->trigger_type);
-  calin_cdts_data->set_white_rabbit_status(cdts_data->white_rabbit_status);
-  calin_cdts_data->set_arbitrary_information(cdts_data->arbitrary_information);
+    calin_cdts_data->set_event_counter(cdts_data->event_counter);
+    calin_cdts_data->set_busy_counter(cdts_data->busy_counter);
+    calin_cdts_data->set_pps_counter(cdts_data->pps_counter);
+    calin_cdts_data->set_clock_counter(cdts_data->clock_counter);
+    calin_cdts_data->set_ucts_timestamp(cdts_data->ucts_timestamp);
+    calin_cdts_data->set_camera_timestamp(0);
+    calin_cdts_data->set_trigger_type(cdts_data->trigger_type);
+    calin_cdts_data->set_white_rabbit_status(cdts_data->white_rabbit_reset_busy_status);
+    calin_cdts_data->set_arbitrary_information(cdts_data->arbitrary_information);
+    calin_cdts_data->set_num_in_bunch(cdts_data->num_in_bunch);
+    calin_cdts_data->set_version(1);
+  } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V0)) {
+    const auto* cdts_data =
+      reinterpret_cast<const CDTSMessageData_V0*>(&cta_cdts_data.front());
+
+    calin_cdts_data->set_event_counter(cdts_data->event_counter);
+    calin_cdts_data->set_busy_counter(0);
+    calin_cdts_data->set_pps_counter(cdts_data->pps_counter);
+    calin_cdts_data->set_clock_counter(cdts_data->clock_counter);
+    calin_cdts_data->set_ucts_timestamp(cdts_data->ucts_timestamp);
+    calin_cdts_data->set_camera_timestamp(cdts_data->camera_timestamp);
+    calin_cdts_data->set_trigger_type(cdts_data->trigger_type);
+    calin_cdts_data->set_white_rabbit_status(cdts_data->white_rabbit_status);
+    calin_cdts_data->set_arbitrary_information(cdts_data->arbitrary_information);
+    calin_cdts_data->set_num_in_bunch(0);
+    calin_cdts_data->set_version(0);
+  } else {
+    throw std::runtime_error("CDTS data array not expected size");
+  }
+
 }
 
 void calin::iact_data::zfits_data_source::
