@@ -65,7 +65,7 @@ public:
     const vec3_vt& min_corner, const vec3_vt& max_corner,
     const vec3_vt& pos, const vec3_vt& dir)
   {
-    return box_has_future_intersection_dirinv_vcl(tmin, tmin,
+    return box_has_future_intersection_dirinv_vcl(tmin, tmax,
       min_corner, max_corner, pos, 1.0f/dir.x(), 1.0f/dir.y(), 1.0f/dir.z());
   }
 };
