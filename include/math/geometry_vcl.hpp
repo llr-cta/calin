@@ -35,7 +35,7 @@ public:
   using typename VCLReal::bool_vt;
   using typename VCLReal::vec3_vt;
 
-  inline bool_vt box_has_future_intersection_dirinv_vcl(real_vt& tmin, real_vt& tmin,
+  static inline bool_vt box_has_future_intersection_dirinv_vcl(real_vt& tmin, real_vt& tmax,
     const vec3_vt& min_corner, const vec3_vt& max_corner,
     const vec3_vt& pos,
     const real_vt& ux_inv, const real_vt& uy_inv, const real_vt& uz_inv)
@@ -54,14 +54,14 @@ public:
     tmax = min(tmax, max(max(ty1, ty2), tmin));
 
     const real_vt tz1 = min_rel.z() * uz_inv;
-    const real_vt tz2 = max_rel.z() * uz_inv
+    const real_vt tz2 = max_rel.z() * uz_inv;
     tmin = max(tmin, min(min(tz1, tz2), tmax));
     tmax = min(tmax, max(max(tz1, tz2), tmin));
 
     return tmax > max(tmin, 0.0);
   }
 
-  inline bool_vt box_has_future_intersection_vcl(real_vt& tmin, real_vt& tmin,
+  static inline bool_vt box_has_future_intersection_vcl(real_vt& tmin, real_vt& tmax,
     const vec3_vt& min_corner, const vec3_vt& max_corner,
     const vec3_vt& pos, const vec3_vt& dir)
   {
