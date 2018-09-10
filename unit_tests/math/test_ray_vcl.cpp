@@ -28,6 +28,7 @@
 
 #include "math/ray_vcl.hpp"
 #include "math/rng_vcl.hpp"
+#include "math/geometry_vcl.hpp"
 
 using namespace calin::math::ray;
 using namespace calin::math::rng;
@@ -133,6 +134,33 @@ TYPED_TEST(VCLRayTest, SimplePropagateToSphere1stFwdOnly) {
   }
 }
 
+TYPED_TEST(VCLRayTest, SimplePropagateToBox) {
+  VCLRNG<typename TypeParam::architecture> rng;
+  for(unsigned i=0; i<10000; i++) {
+    typename TypeParam::vec3_vt pos(0.0,0.0,0);
+    typename TypeParam::vec3_vt dir;
+    rng.uniform_on_unit_sphere_vec_real(dir);
+    VCLRay<TypeParam> ray(pos,dir);
+    typename TypeParam::bool_vt mask = true;
+    typename TypeParam::real_vt tmin;
+    typename TypeParam::real_vt tmax;
+
+    mask = calin::math::geometry::VCL<TypeParam>::
+      box_has_future_intersection_vcl(tmin, tmax,
+        typename TypeParam::vec3_vt(-1.0,-1.0,-1.0),
+        typename TypeParam::vec3_vt(1.0,1.0,1.0),
+        pos, dir);
+
+    ASSERT_TRUE(horizontal_and(mask)) << mask;
+
+    ray.propagate_dist(tmax);
+
+    typename TypeParam::real_vt xyz_max =
+      max(max(abs(ray.x()),abs(ray.y())), abs(ray.z()));
+
+    ASSERT_TRUE(horizontal_and(abs(xyz_max - 1.0) < 1e-6)) << xyz_max;
+  }
+}
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
