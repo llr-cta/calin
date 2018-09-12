@@ -196,6 +196,8 @@ template<typename VCLArchitecture> struct VCLFloatReal
   constexpr static unsigned num_fp                = VCLArchitecture::num_float;
   typedef VCLArchitecture                         architecture;
   typedef float                                   real_t;
+  typedef int32_t                                 int_t;
+  typedef uint32_t                                uint_t;
   typedef typename VCLArchitecture::int32_vt      int_vt;
   typedef typename VCLArchitecture::uint32_vt     uint_vt;
   typedef typename VCLArchitecture::float_vt      real_vt;
@@ -209,6 +211,8 @@ template<typename VCLArchitecture> struct VCLDoubleReal
   constexpr static unsigned num_fp                = VCLArchitecture::num_double;
   typedef VCLArchitecture                         architecture;
   typedef double                                  real_t;
+  typedef int64_t                                 int_t;
+  typedef uint64_t                                uint_t;
   typedef typename VCLArchitecture::int64_vt      int_vt;
   typedef typename VCLArchitecture::uint64_vt     uint_vt;
   typedef typename VCLArchitecture::double_vt     real_vt;
