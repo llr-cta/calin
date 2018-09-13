@@ -78,32 +78,40 @@ public:
   void derotate(const mat3_vt& rot) {
     clear_dir_inv(); pos_ = rot.transpose() * pos_; dir_ = rot.transpose() * dir_; }
 
-  void reflect_from_surface(const vec3_vt& surface_norm) {
+  void reflect_from_surface_with_mask(const bool_vt& mask, const vec3_vt& surface_norm) {
     clear_dir_inv();
-    dir_ -= surface_norm * (2.0*(dir_.dot(surface_norm)));
+    dir_ -= surface_norm * select(mask, 2.0*(dir_.dot(surface_norm)), 0);
   }
 
   // Refract at incoming surface (where eta=1/n<1 and norm.dir<0)
-  void refract_at_surface_in_eta(const vec3_vt& surface_norm, real_vt eta) {
+  void refract_at_surface_in_eta_with_mask(const bool_vt& mask, const vec3_vt& surface_norm, real_vt eta) {
     clear_dir_inv();
-    real_vt cosi = -dir_.dot(surface_norm);
-    real_vt c2 = 1.0-eta*eta*(1.0-cosi*cosi);
-    dir_ = eta*dir_ + (eta*cosi - sqrt(c2))*surface_norm;
+    eta = select(mask, eta, 1.0);
+    const real_vt cosi = -dir_.dot(surface_norm);
+    const real_vt etacosi = eta*cosi;
+    // const real_vt c2 = 1.0-eta*eta*(1.0-cosi*cosi);
+    // const real_vt c2 = nmul_add(eta*eta,nmul_add(cosi,cosi,1.0),1.0);
+    const real_vt c2 = nmul_add(etacosi, etacosi, 1.0 - eta*eta);
+    dir_ = eta*dir_ + (etacosi - sqrt(c2))*surface_norm;
   };
 
   // Refract at incoming surface (where n>1 and norm.dir<0)
-  void refract_at_surface_in(const vec3_vt& surface_norm, real_vt n) {
-    refract_at_surface_in_eta(surface_norm, 1.0/n);
+  void refract_at_surface_in_with_mask(const bool_vt& mask, const vec3_vt& surface_norm, real_vt n) {
+    refract_at_surface_in_eta(mask, surface_norm, 1.0/n);
   };
 
   // Refract at outgoing surface (where n>1 and norm.dir>0)
-  bool_vt refract_at_surface_out(const vec3_vt& surface_norm, real_vt n) {
+  bool_vt refract_at_surface_out_with_mask(const bool_vt& mask_in, const vec3_vt& surface_norm, real_vt n) {
     clear_dir_inv();
-    const real_vt eta = n;
+    real_vt eta = n;
     const real_vt cosi = dir_.dot(surface_norm);
-    const real_vt c2 = 1.0-eta*eta*(1.0-cosi*cosi);
-    bool_vt mask = c2>0;
-    dir_ = eta*dir_ - (eta*cosi - sqrt(select(mask,c2,0)))*surface_norm;
+    real_vt etacosi = n*cosi;
+    const real_vt c2 = nmul_add(etacosi, etacosi, 1.0 - eta*eta);
+    bool_vt mask = mask_in & (c2>0);
+    eta = select(mask, eta, 1.0);
+    etacosi = select(mask, etacosi, cosi);
+    c2 = select(mask, c2, cosi*cosi);
+    dir_ = eta*dir_ - (etacosi - sqrt(c2))*surface_norm;
     return mask;
   };
 
