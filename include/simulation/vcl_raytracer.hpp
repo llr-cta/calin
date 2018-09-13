@@ -1,0 +1,229 @@
+/*
+
+   calin/simulation/vcl_raytracer.hpp -- Stephen Fegan -- 2018-09-10
+
+   Class for raytracing on a single VSOTelescope using VCL
+
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+#pragma once
+
+#include <util/vcl.hpp>
+#include <math/ray_vcl.hpp>
+#include <math/rng_vcl.hpp>
+#include <simulation/vso_telescope.hpp>
+
+namespace calin { namespace simulation { namespace vcl_raytracer {
+
+enum ScopeTraceStatus {
+  STS_MISSED_REFLECTOR_SPHERE,                              // 0
+  STS_OUTSIDE_REFLECTOR_APERTURE,                           // 1
+  STS_NO_MIRROR,                                            // 2
+  STS_MISSED_MIRROR_SPHERE,                                 // 3
+  STS_MISSED_MIRROR_EDGE,                                   // 4
+  STS_OBSCURED_BEFORE_MIRROR,                               // 5
+
+                   TS_ABSORBED_AT_MIRROR,                 // 10
+                   TS_MISSED_WINDOW,                      // 11
+                   TS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,   // 12
+                   TS_OBSCURED_BEFORE_FOCAL_PLANE,        // 13
+                   TS_NO_PIXEL,                           // 14
+                   TS_ABSORBED_AT_CONCENTRATOR,           // 15
+                   TS_PE_GENERATED };                     // 16
+
+template<typename VCLReal> class ScopeTraceInfo: public VCLReal
+{
+public:
+  using typename VCLReal::real_t;
+  using typename VCLReal::real_vt;
+  using typename VCLReal::bool_vt;
+  using typename VCLReal::int_vt;
+  using typename VCLReal::uint_vt;
+  using typename VCLReal::vec3_vt;
+  using typename VCLReal::mat3_vt;
+  using typename calin::math::ray::VCLRay<VCLReal> Ray;
+
+  int_vt              status;
+  real_vt             reflec_x;
+  real_vt             reflec_z;
+  int_vt              mirror_hexid;
+  int_vt              mirror_id;
+  vec3_vt             mirror_pos;
+  mat3_vt             mirror_rot;
+  real_vt             mirror_rad;
+
+#if 0
+  real_vt             reflec_dx;
+  real_vt             reflec_dz;
+  const VSOMirror*    mirror;
+  double              mirror_normal_dispersion;
+  Eigen::Vector3d     mirror_scattered;
+  double              mirror_reflection_angle;
+  double              fplane_x;
+  double              fplane_z;
+  double              fplane_dx;
+  double              fplane_dz;
+  double              fplane_t;
+  double              fplane_uy;     // y-axis directional cosine at FP
+  int                 pixel_hexid;
+  const VSOPixel*     pixel;
+  double              pixel_dist;
+  bool                concentrator_hit;
+  unsigned            obscuration_id;
+  const VSOObscuration* obscuration;
+
+  void reset();
+  std::ostream& write(std::ostream& stream = std::cout,
+                      bool convert_to_physical_units = true,
+                      bool end_of_line = true) const;
+
+  bool rayWasReflected() const
+  { return (int)status >= (int)TS_TRAVELLING_AWAY_FROM_FOCAL_PLANE; }
+  bool rayHitFocalPlane() const
+  { return (int)status >= (int)TS_NO_PIXEL; }
+#endif
+};
+
+template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
+{
+ public:
+   using typename VCLRealType::real_t;
+   using typename VCLRealType::int_t;
+   using typename VCLRealType::uint_t;
+   using typename VCLRealType::real_vt;
+   using typename VCLRealType::bool_vt;
+   using typename VCLRealType::vec3_vt;
+   using typename VCLRealType::mat3_vt;
+   using typename calin::math::ray::VCLRay<VCLRealType> Ray;
+
+  // RayTracer(const VSOArray* array, math::rng::RNG* rng):
+  //   fArray(array), fRNG(rng) { /* nothing to see here */ }
+  // RayTracer(math::rng::RNG* rng, const VSOArray* array = nullptr):
+  //   fArray(array), fRNG(rng) { /* nothing to see here */ }
+  // ~VSORayTracer();
+
+  bool_vt trace_scope_centered_global_frame(Ray& ray, ScopeTraceInfo& info)
+  {
+    // *************************************************************************
+    // *************** RAY STARTS IN SCOPE CENTERED GLOBAL FRAME ***************
+    // *************************************************************************
+
+    ray.rotate(global_to_reflector_rot_);
+    bool_vt mask = trace_reflector_frame(ray, info);
+    ray.derotate(global_to_reflector_rot_);
+    return mask;
+  }
+
+  bool_vt trace_reflector_frame(Ray& ray, ScopeTraceInfo& info)
+  {
+    bool_vt mask = true;
+    info.status = 0;
+
+    // *************************************************************************
+    // ****************** RAY STARTS IN RELECTOR COORDINATES *******************
+    // *************************************************************************
+
+    // Test for obscuration - to come
+
+    // Propagate to intersection with the reflector sphere
+    info.status = select(mask, STS_MISSED_REFLECTOR_SPHERE, info.status);
+    mask = ray.propagate_to_y_sphere_2nd_interaction_fwd_only_with_mask(mask,
+      curvature_radius_, 0, ref_index_);
+
+    info.reflec_x     = select(mask, ray.position().x(), 0);
+    info.reflec_z     = select(mask, ray.position().z(), 0);
+
+    // Test aperture
+    info.status = select(mask, STS_OUTSIDE_REFLECTOR_APERTURE, info.status);
+    real_vt reflec_r2 =
+    mask &= (info.reflec_x*info.reflec_x + info.reflec_y*info.reflec_y) <= reflec_aperture2;
+
+    // Assume mirrors on hexagonal grid - use hex_array routines to find which hit
+    info.status = select(mask, STS_NO_MIRROR, info.status);
+    info.mirror_hexid = calin::math::hex_array::VLCReal<VCLRealType>::
+      xy_trans_to_hexid_scaleinv(info.reflec_x, info.reflec_z,
+        reflec_crot_, reflec_srot_, reflec_scaleinv_, reflec_shift_x_, reflec_shift_z_,
+        reflec_cw_);
+
+    // Test we have a valid mirror hexid
+    mask &= info.mirror_hexid < mirror_hexid_end_;
+
+    // Find the mirror ID
+    info.mirror_id =
+      vcl::lookup<0x40000000>(select(mask_, info.mirror_hexid, mirror_hexid_end_)),
+        mirror_id_lookup_);
+
+    // Test we have a valid mirror id
+    mask &= info.mirror_id < mirror_id_end_;
+
+    info.mirror_pos
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_x_lookup_)
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_y_lookup_)
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_z_lookup_);
+
+    ray.translate_origin(mirror_pos)
+
+    info.mirror_rot
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m00_lookup_)
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m01_lookup_)
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m02_lookup_)
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m10_lookup_)
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m11_lookup_)
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m12_lookup_)
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m20_lookup_)
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m21_lookup_)
+      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m22_lookup_);
+
+    ray.rotate(mirror_rot);
+
+    // *************************************************************************
+    // ******************* RAY IS NOW IN MIRROR COORDINATES ********************
+    // *************************************************************************
+
+    info.mirror_rad = vcl::lookup<0x40000000>(info.mirror_id, mirror_r_lookup_);
+
+    // Propagate to intersection with the reflector sphere
+    info.status = select(mask, STS_MISSED_MIRROR_SPHERE, info.status);
+    mask = ray.propagate_to_y_sphere_2nd_interaction_fwd_bwd_with_mask(mask,
+      info.mirror_rad, 0, ref_index_);
+
+    info.mirror_normal =
+      (vec3_vt(0,info.mirror_rad,0) - ray.position()).normalized();
+
+    // Scatter the normal to account for the spot size ot the focal length of the
+    // radius. The spot size is given as the DIAMETER at the focal distance.
+    // Must divide by 2 (for reflection) and another 2 for diameter -> radius
+    info.mirror_normal_dispersion =
+      vcl::lookup<0x40000000>(info.mirror_id, mirror_normdisp_lookup_);
+
+    info.mirror_scattered = info.mirror_normal;
+    rng_.
+    calin::math::vector3d_util::scatter_direction(info.mirror_scattered,
+      info.mirror_normal_dispersion,*fRNG);
+
+      // Reflect ray
+      ray.reflect_from_surface(info.mirror_scattered);
+
+  }
+
+ private:
+   mat3_vt         global_to_reflector_rot_;
+};
+
+// std::ostream& operator <<(std::ostream& stream, const VSORayTracer::TraceInfo& o);
+
+} } } // namespace calin::simulations::vs_optics
