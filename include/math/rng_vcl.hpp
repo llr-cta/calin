@@ -142,6 +142,12 @@ public:
   uint32_vt uniform_uint32() { return uint32_vt(core_->uniform_uint64()); }
   int32_vt uniform_int32() { return int32_vt(core_->uniform_uint64()); }
 
+  void uniform_uint(uint64_vt& x) { x = uniform_uint64(); }
+  void uniform_uint(uint32_vt& x) { x = uniform_uint32(); }
+
+  void uniform_int(int64_vt& x) { x = uniform_uint64(); }
+  void uniform_int(int32_vt& x) { x = uniform_uint32(); }
+
   // Generate float/double deviates in the range [-0.5*scale+offset, 0.5*scale+offset)
   // The default values therefore create deviates in the "standard" range of [0,1)
   double_vt uniform_double_gen(const double_vt& scale = 1.0, const double_vt& offset = 0.5) {
@@ -162,11 +168,11 @@ public:
 
   // Generate zero-centered float/double deviates in the range [-0.5*scale, 0.5*scale]
   // The default values therefore create deviates in the range of [-0.5,0.5]
-  double_vt uniform_double_zc(const double scale = 1.0) {
+  double_vt uniform_double_zc(const double_vt& scale = 1.0) {
     return to_double(uniform_int64()) * (C_U64_TO_DBL*scale);
   }
 
-  float_vt uniform_float_zc(const float scale = 1.0f) {
+  float_vt uniform_float_zc(const float_vt& scale = 1.0f) {
     return to_float(uniform_int32()) * (C_U32_TO_FLT*scale);
   }
 
@@ -616,6 +622,44 @@ private:
   VCLRNGCore<VCLArchitecture>* core_ = nullptr;
   bool adopt_core_ = true;
 };
+
+#if 0
+template<typename VCLRealArchitecture> class VCLRealRNG: public VCLRealArchitecture
+{
+public:
+  using typename VCLRealArch::architecture;
+  using typename VCLRealArch::real_vt;
+
+  VCLRealRNG(VCLRNG<architecture>* rng, bool adopt_rng = false):
+    rng_(rng), adopt_rng_(adopt_rng)
+  {
+    // nothing to see here
+  }
+
+  VCLRealRNG(VCLRNG<architecture>* rng, bool adopt_rng = false):
+    rng_(rng), adopt_rng_(adopt_rng)
+  {
+    // nothing to see here
+  }
+
+  VCLRNG(const std::string& created_by, const std::string& comment = "",
+      uint64_t seed = 0, CoreType core_type = CoreType::NR3):
+    VCLRNG(seed, core_type, created_by, comment) { /* nothing to see here */ }
+  VCLRNG(uint64_t seed, const std::string& created_by, const std::string& comment = "",
+      CoreType core_type = CoreType::NR3):
+    VCLRNG(seed, core_type, created_by, comment) { /* nothing to see here */ }
+
+
+  ~VCLRealRNG()
+  {
+    if(adopt_rng_)delete rng_;
+  }
+
+private:
+  VCLRNG<architecture>* rng_;
+  bool adopt_rng_;
+}
+#endif
 
 // =============================================================================
 //

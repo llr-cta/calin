@@ -592,14 +592,14 @@ public:
 
 };
 
-template<typename VCLRealType> class VCLReal: public VCLRealType
+template<typename VCLRealArch> class VCLReal: public VCLRealArch
 {
 public:
-  using typename VCLRealType::architecture;
-  using typename VCLRealType::real_vt;
-  using typename VCLRealType::bool_vt;
-  using typename VCLRealType::int_vt;
-  using typename VCLRealType::uint_vt;
+  using typename VCLRealArch::architecture;
+  using typename VCLRealArch::real_vt;
+  using typename VCLRealArch::bool_vt;
+  using typename VCLRealArch::int_vt;
+  using typename VCLRealArch::uint_vt;
 
   // XY <-> UV without rotation matrix
 

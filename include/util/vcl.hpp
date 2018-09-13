@@ -193,7 +193,7 @@ using namespace ::vcl;
 
 template<typename VCLArchitecture> struct VCLFloatReal
 {
-  constexpr static unsigned num_fp                = VCLArchitecture::num_float;
+  constexpr static unsigned num_real              = VCLArchitecture::num_float;
   typedef VCLArchitecture                         architecture;
   typedef float                                   real_t;
   typedef int32_t                                 int_t;
@@ -208,7 +208,7 @@ template<typename VCLArchitecture> struct VCLFloatReal
 
 template<typename VCLArchitecture> struct VCLDoubleReal
 {
-  constexpr static unsigned num_fp                = VCLArchitecture::num_double;
+  constexpr static unsigned num_real              = VCLArchitecture::num_double;
   typedef VCLArchitecture                         architecture;
   typedef double                                  real_t;
   typedef int64_t                                 int_t;
@@ -568,5 +568,6 @@ ADD_OSTREAM_OPERATOR(Vec8db);
 
 namespace calin { namespace util { namespace vcl {
 
+//template
 
 } } } // namespace calin::util::vcl

@@ -326,7 +326,6 @@ TYPED_TEST(VCLHexArrayRealTest, HexIDToXY_Trans_Equals_Scalar) {
     }
 }
 
-#if 0
 TYPED_TEST(VCLHexArrayRealTest, HexIDToXY_Trans_Equals_Scalar_RNG) {
   float dx = 0.32426534147237f;
   float dy = 1.25432437427634f;
@@ -335,13 +334,15 @@ TYPED_TEST(VCLHexArrayRealTest, HexIDToXY_Trans_Equals_Scalar_RNG) {
   float stheta = std::sin(theta);
   float scale = 0.9326575752f;
 
-  VCLRNG<TypeParam> rng(__PRETTY_FUNCTION__, "core");
+  VCLRNG<typename TypeParam::architecture> rng(__PRETTY_FUNCTION__, "core");
   for(unsigned i=0;i<1000000;i++)
   {
-    typename TypeParam::int_vt hexid = rng.uniform_uint32() & 0xFFFF;
+    typename TypeParam::int_vt hexid;
+    rng.uniform_int(hexid);
+    hexid &= 0xFFFF;
     typename TypeParam::real_vt x2,y2;
     VCLReal<TypeParam>::hexid_to_xy_trans_ccw(hexid, x2, y2, ctheta, stheta, scale, dx, dy);
-    for(unsigned j=0;j<TypeParam::num_float;j++)
+    for(unsigned j=0;j<TypeParam::num_real;j++)
     {
       double x1,y1;
       hexid_to_xy_trans(hexid[j], x1, y1, false, ctheta, stheta, scale, dx, dy);
@@ -354,7 +355,6 @@ TYPED_TEST(VCLHexArrayRealTest, HexIDToXY_Trans_Equals_Scalar_RNG) {
     }
   }
 }
-#endif
 
 TYPED_TEST(VCLHexArrayRealTest, XYToHexID_Trans_Equals_Scalar) {
   float dx = 0.32426534147237f;
@@ -402,7 +402,6 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexID_CW_Trans_Equals_Scalar) {
     }
 }
 
-#if 0
 TYPED_TEST(VCLHexArrayRealTest, XYToHexIDWithRemainder_Trans_FwdBack_RNG) {
   float dx = 0.32426534147237f;
   float dy = 1.25432437427634f;
@@ -411,11 +410,13 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexIDWithRemainder_Trans_FwdBack_RNG) {
   float stheta = std::sin(theta);
   float scale = 0.9326575752f;
 
-  VCLRNG<TypeParam> rng(__PRETTY_FUNCTION__, "core");
+  VCLRNG<typename TypeParam::architecture> rng(__PRETTY_FUNCTION__, "core");
   for(unsigned i=0;i<1000000;i++)
   {
-    typename TypeParam::real_vt x = rng.uniform_float_zc(20.0f);
-    typename TypeParam::real_vt y = rng.uniform_float_zc(20.0f);
+    typename TypeParam::real_vt x;
+    typename TypeParam::real_vt y;
+    rng.uniform_real_zc(x, 20.0f);
+    rng.uniform_real_zc(y, 20.0f);
     typename TypeParam::real_vt xr = x;
     typename TypeParam::real_vt yr = y;
     typename TypeParam::int_vt hexid =
@@ -432,7 +433,6 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexIDWithRemainder_Trans_FwdBack_RNG) {
       << y << '\n' << yc+yr << '\n' << abs(y - (yc + yr)) << '\n' << hexid;
   }
 }
-#endif
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
