@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <limits>
+
 #include <util/vcl.hpp>
 
 namespace calin { namespace math { namespace geometry {
@@ -31,9 +33,11 @@ namespace calin { namespace math { namespace geometry {
 template<typename VCLReal> struct VCL: public VCLReal
 {
 public:
+  using typename VCLReal::real_t;
   using typename VCLReal::real_vt;
   using typename VCLReal::bool_vt;
   using typename VCLReal::vec3_vt;
+  using typename VCLReal::mat3_vt;
 
   static inline bool_vt box_has_future_intersection_dirinv(real_vt& tmin, real_vt& tmax,
     const vec3_vt& min_corner, const vec3_vt& max_corner,
@@ -68,6 +72,23 @@ public:
     return box_has_future_intersection_dirinv(tmin, tmax,
       min_corner, max_corner, pos, 1.0f/dir.x(), 1.0f/dir.y(), 1.0f/dir.z());
   }
+
+  static inline void rotation_z_to_xyz(mat3_vt& m,
+    const real_vt x, const real_vt y, const real_vt z)
+  {
+    real_vt st = std::sqrt(x*x+y*y);
+    real_vt st_inv = 1.0/st;
+
+    bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon;
+
+    real_vt sp = select(is_uz, 0.0, y * st_inv);
+    real_vt cp = select(is_uz, 1.0, x * st_inv);
+
+    m << z*cp, -sp, x,
+         z*sp,  cp, y,
+          -st,   0, z;
+  }
+
 };
 
 #if 0
