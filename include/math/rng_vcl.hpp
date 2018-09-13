@@ -474,6 +474,26 @@ public:
     return from_inverse_cdf_double(inverse_cdf.data(), inverse_cdf.size());
   }
 
+  void from_inverse_cdf_real(float_vt& x, const float* inverse_cdf, unsigned npoints)
+  {
+    x = from_inverse_cdf_float(inverse_cdf, npoints);
+  }
+
+  void from_inverse_cdf_real(float_vt& x, const std::vector<float>& inverse_cdf)
+  {
+    x = from_inverse_cdf_float(inverse_cdf);
+  }
+
+  void from_inverse_cdf_real(double_vt& x, const double* inverse_cdf, unsigned npoints)
+  {
+    x = from_inverse_cdf_double(inverse_cdf, npoints);
+  }
+
+  void from_inverse_cdf_real(double_vt& x, const std::vector<double>& inverse_cdf)
+  {
+    x = from_inverse_cdf_double(inverse_cdf);
+  }
+
   static uint64_vt uint64_from_seed(uint64_t seed = 0)
   {
     if(seed == 0)seed = RNG::uint64_from_random_device();
@@ -623,12 +643,15 @@ private:
   bool adopt_core_ = true;
 };
 
-#if 0
-template<typename VCLRealArchitecture> class VCLRealRNG: public VCLRealArchitecture
+template<typename VCLRealArch> class VCLRealRNG: public VCLRealArch
 {
 public:
   using typename VCLRealArch::architecture;
+  using typename VCLRealArch::real_t;
   using typename VCLRealArch::real_vt;
+  using typename VCLRealArch::int_vt;
+  using typename VCLRealArch::uint_vt;
+  using typename VCLRealArch::vec3_vt;
 
   VCLRealRNG(VCLRNG<architecture>* rng, bool adopt_rng = false):
     rng_(rng), adopt_rng_(adopt_rng)
@@ -636,30 +659,58 @@ public:
     // nothing to see here
   }
 
-  VCLRealRNG(VCLRNG<architecture>* rng, bool adopt_rng = false):
-    rng_(rng), adopt_rng_(adopt_rng)
+  VCLRealRNG(const std::string& created_by, const std::string& comment = "",
+      uint64_t seed = 0, typename VCLRNG<architecture>::CoreType core_type = VCLRNG<architecture>::CoreType::NR3):
+    rng_(new VCLRNG<architecture>(created_by, comment, seed, core_type)),
+    adopt_rng_(true)
   {
     // nothing to see here
   }
 
-  VCLRNG(const std::string& created_by, const std::string& comment = "",
-      uint64_t seed = 0, CoreType core_type = CoreType::NR3):
-    VCLRNG(seed, core_type, created_by, comment) { /* nothing to see here */ }
-  VCLRNG(uint64_t seed, const std::string& created_by, const std::string& comment = "",
-      CoreType core_type = CoreType::NR3):
-    VCLRNG(seed, core_type, created_by, comment) { /* nothing to see here */ }
-
+  VCLRealRNG(uint64_t seed, const std::string& created_by, const std::string& comment = "",
+      typename VCLRNG<architecture>::CoreType core_type = VCLRNG<architecture>::CoreType::NR3):
+    rng_(new VCLRNG<architecture>(seed, created_by, comment, core_type)),
+    adopt_rng_(true)
+  {
+    /* nothing to see here */
+  }
 
   ~VCLRealRNG()
   {
     if(adopt_rng_)delete rng_;
   }
 
+  int_vt uniform_int() { int_vt x; rng_->uniform_int(x); return x; }
+  uint_vt uniform_uint() { uint_vt x; rng_->uniform_uint(x); return x; }
+
+  real_vt uniform_gen(const real_vt& scale = 1.0, const real_vt& offset = 0.5) {
+    real_vt x; rng_->uniform_real_gen(x, scale, offset); return x; }
+  real_vt uniform_zc(const real_vt& scale = 1.0) {
+    real_vt x; rng_->uniform_real_zc(x, scale); return x; }
+  real_vt uniform(const real_vt& scale = 1.0) {
+    real_vt x; rng_->uniform_real(x, scale); return x; }
+
+  real_vt exponential() { real_vt x; rng_exponential_real(x); return x; }
+
+  void normal_two_bm(real_vt& x1, real_vt& x2) {
+    rng_->normal_two_real_bm(x1,x2); }
+  real_vt normal() {
+    real_vt x1, x2; rng_->normal_two_real_bm(x1,x2); return x1; }
+
+  void uniform_on_unit_sphere(real_vt& x, real_vt& y, real_vt& z) {
+    rng_->uniform_on_unit_sphere_real(x,y,z); }
+  vec3_vt uniform_on_unit_sphere() {
+    return rng_->uniform_on_unit_sphere_vec_real(); }
+
+  real_vt from_inverse_cdf(const real_t* inverse_cdf, unsigned npoints) {
+    return from_inverse_cdf_real(inverse_cdf, npoints); }
+  real_vt from_inverse_cdf(const std::vector<real_t>& inverse_cdf) {
+    return from_inverse_cdf_real(inverse_cdf); }
+
 private:
   VCLRNG<architecture>* rng_;
   bool adopt_rng_;
-}
-#endif
+};
 
 // =============================================================================
 //
