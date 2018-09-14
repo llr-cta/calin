@@ -27,6 +27,7 @@
 #include <limits>
 
 #include <util/vcl.hpp>
+#include <math/rng_vcl.hpp>
 
 namespace calin { namespace math { namespace geometry {
 
@@ -79,6 +80,8 @@ public:
     real_vt st = std::sqrt(x*x+y*y);
     real_vt st_inv = 1.0/st;
 
+    // If we are aong the z-axis (z=+/-1) then we arrange for matrix to be
+    // diagonal with (+1,1,+1) or (-1,1,-1)
     bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon;
 
     real_vt sp = select(is_uz, 0.0, y * st_inv);
@@ -87,6 +90,23 @@ public:
     m << z*cp, -sp, x,
          z*sp,  cp, y,
           -st,   0, z;
+  }
+
+  static inline void
+  scatter_direction(vec3_vt& v, real_vt dispersion,
+    calin::math::rng::VCLRealRNG<VCLReal>& rng)
+  {
+    vec3_vt x;
+    rng.normal_two_bm(x.x(), x.y());
+    x.x() *= dispersion;
+    x.y() *= dispersion;
+    // x.z() = sqrt(1.0-x.x()*x.x()-x.y()*x.y());
+    x.z() = sqrt(nmul_add(x.y(),x.y(),nmul_add(x.x(),x.x(),1.0)));
+
+    mat3_vt m;
+    rotation_z_to_xyz(m, v.x(), v.y(), v.z());
+
+    return m*x;
   }
 
 };
