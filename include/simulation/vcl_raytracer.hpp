@@ -205,7 +205,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
     const real_vt sin60 = 0.5*CALIN_HEX_ARRAY_SQRT3;
 
     const real_vt x_cos60 = ray.x() * cos60;
-    const real_vt z_sin60 = ray.z() * cos60;
+    const real_vt z_sin60 = ray.z() * sin60;
 
     const real_vt dhex_pos60 = abs(x_cos60 - z_sin60);
     const real_vt dhex_neg60 = abs(x_cos60 + z_sin60);
