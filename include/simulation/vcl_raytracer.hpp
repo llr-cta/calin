@@ -37,13 +37,12 @@ enum ScopeTraceStatus {
   STS_MISSED_MIRROR_SPHERE,
   STS_MISSED_MIRROR_EDGE,
   STS_OBSCURED_BEFORE_MIRROR,
-      TS_ABSORBED_AT_MIRROR,
       TS_MISSED_WINDOW,
       TS_OBSCURED_BEFORE_FOCAL_PLANE,
   STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,
-      TS_NO_PIXEL,
-      TS_ABSORBED_AT_CONCENTRATOR,
-      TS_PE_GENERATED
+  STS_OUTSIDE_FOCAL_PLANE_APERTURE,
+  STS_TS_NO_PIXEL,
+  STD_TS_FOUND_PIXEL
 };
 
 template<typename VCLReal> class ScopeTraceInfo: public VCLReal
@@ -150,7 +149,6 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
 
     // Test aperture
     info.status = select(mask, STS_OUTSIDE_REFLECTOR_APERTURE, info.status);
-    real_vt reflec_r2 =
     mask &= (info.reflec_x*info.reflec_x + info.reflec_y*info.reflec_y) <= reflec_aperture2;
 
     // Assume mirrors on hexagonal grid - use hex_array routines to find which hit
@@ -264,7 +262,8 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
     info.fplane_t = select(mask, ray.ct(), 0) * math::constants::cgs_1_c;
     info.fplane_uy = select(mask, ray.uy(), 0);
 
-
+    info.status = select(mask, STS_OUTSIDE_FOCAL_PLANE_APERTURE, info.status);
+    mask &= (info.fplane_x*info.fplane_x + info.fplane_z*info.fplane_z) <= fplane_aperture2;
 
     info.pixel_hexid =
       math::hex_array::VCLReal<VCLRealType>::xy_trans_to_hexid(
@@ -272,14 +271,18 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
         pixel_crot_, pixel_srot_, pixel_scaleinv_, pixel_shift_x_, pixel_shift_z_,
         pixel_cw_);
 
-    // Find pixel (if there is a real pixel at that site)
-    info.pixel = info.scope->pixelByHexID(info.pixel_hexid);
-    if(info.pixel==0)
-    {
-      info.status = TS_NO_PIXEL;
-      info.scope->focalPlaneToGlobal(ray);
-      return 0;
-    }
+    // Test we have a valid mirror hexid
+    info.status = select(mask, STS_TS_NO_PIXEL, info.status);
+    mask &= info.pixel_hexid < pixel_hexid_end_;
+
+    // Find the mirror ID
+    info.pixel_id =
+      vcl::lookup<0x40000000>(select(mask_, info.pixel_hexid, mirror_pixel_end_)),
+        pixel_id_lookup_);
+
+    mask &= info.pixel_id < pixel_id_end_;
+
+    info.status = select(mask, STD_TS_FOUND_PIXEL, info.status);
 
     if(fp_has_rot_)ray.derotate(fp_rot_);
     ray.untranslate(fp_pos_)
@@ -288,8 +291,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
     // ************ RAY IS NOW BACK IN REFLECTOR COORDINATES AGAIN *************
     // *************************************************************************
 
-
-
+    return mask;
   }
 
  private:
