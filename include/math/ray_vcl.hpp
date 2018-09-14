@@ -127,7 +127,7 @@ public:
     propagate_dist(masked_dist, n);
   }
 
-  //! Propagates free particle to plane with y-normal
+  //! Propagates free particle to plane with y-normal : y + d = 0
   bool_vt propagate_to_y_plane_with_mask(const bool_vt& inmask, const real_vt& d,
     bool time_reversal_ok=true, const real_vt& n = 1.0)
   {
