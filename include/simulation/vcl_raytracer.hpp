@@ -30,20 +30,21 @@
 namespace calin { namespace simulation { namespace vcl_raytracer {
 
 enum ScopeTraceStatus {
-  STS_MISSED_REFLECTOR_SPHERE,                              // 0
-  STS_OUTSIDE_REFLECTOR_APERTURE,                           // 1
-  STS_NO_MIRROR,                                            // 2
-  STS_MISSED_MIRROR_SPHERE,                                 // 3
-  STS_MISSED_MIRROR_EDGE,                                   // 4
-  STS_OBSCURED_BEFORE_MIRROR,                               // 5
-
-                   TS_ABSORBED_AT_MIRROR,                 // 10
-                   TS_MISSED_WINDOW,                      // 11
-                   TS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,   // 12
-                   TS_OBSCURED_BEFORE_FOCAL_PLANE,        // 13
-                   TS_NO_PIXEL,                           // 14
-                   TS_ABSORBED_AT_CONCENTRATOR,           // 15
-                   TS_PE_GENERATED };                     // 16
+  STS_TRAVELLING_AWAY_REFLECTOR,
+  STS_MISSED_REFLECTOR_SPHERE,
+  STS_OUTSIDE_REFLECTOR_APERTURE,
+  STS_NO_MIRROR,
+  STS_MISSED_MIRROR_SPHERE,
+  STS_MISSED_MIRROR_EDGE,
+  STS_OBSCURED_BEFORE_MIRROR,
+      TS_ABSORBED_AT_MIRROR,
+      TS_MISSED_WINDOW,
+      TS_OBSCURED_BEFORE_FOCAL_PLANE,
+  STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,
+      TS_NO_PIXEL,
+      TS_ABSORBED_AT_CONCENTRATOR,
+      TS_PE_GENERATED
+};
 
 template<typename VCLReal> class ScopeTraceInfo: public VCLReal
 {
@@ -130,8 +131,8 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
 
   bool_vt trace_reflector_frame(Ray& ray, ScopeTraceInfo& info)
   {
-    bool_vt mask = true;
-    info.status = 0;
+    bool_vt mask = ray.uz() < 0;
+    info.status = STS_TRAVELLING_AWAY_REFLECTOR,
 
     // *************************************************************************
     // ****************** RAY STARTS IN RELECTOR COORDINATES *******************
@@ -175,7 +176,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
       << vcl::lookup<0x40000000>(info.mirror_id, mirror_y_lookup_)
       << vcl::lookup<0x40000000>(info.mirror_id, mirror_z_lookup_);
 
-    ray.translate_origin(mirror_pos)
+    ray.translate_origin(info.mirror_pos)
 
     info.mirror_rot
       << vcl::lookup<0x40000000>(info.mirror_id, mirror_m00_lookup_)
@@ -188,7 +189,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
       << vcl::lookup<0x40000000>(info.mirror_id, mirror_m21_lookup_)
       << vcl::lookup<0x40000000>(info.mirror_id, mirror_m22_lookup_);
 
-    ray.rotate(mirror_rot);
+    ray.derotate(info.mirror_rot);
 
     // *************************************************************************
     // ******************* RAY IS NOW IN MIRROR COORDINATES ********************
@@ -201,6 +202,19 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
     mask = ray.propagate_to_y_sphere_2nd_interaction_fwd_bwd_with_mask(mask,
       info.mirror_rad, 0, ref_index_);
 
+    // Verify that ray impacts inside of hexagonal mirror surface
+    const real_vt cos60 = 0.5;
+    const real_vt sin60 = 0.5*CALIN_HEX_ARRAY_SQRT3;
+
+    const real_vt x_cos60 = ray.x() * cos60;
+    const real_vt z_sin60 = ray.z() * cos60;
+
+    const real_vt dhex_pos60 = abs(x_cos60 - z_sin60);
+    const real_vt dhex_neg60 = abs(x_cos60 + z_sin60);
+
+    mask &= max(max(dhex_pos60, dhex_neg60), abs(ray.x())) < mirror_dhex_max_;
+
+    // Calculate mirror normal at impact point
     info.mirror_normal =
       (vec3_vt(0,info.mirror_rad,0) - ray.position()).normalized();
 
@@ -211,12 +225,70 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
       vcl::lookup<0x40000000>(info.mirror_id, mirror_normdisp_lookup_);
 
     info.mirror_scattered = info.mirror_normal;
-    rng_.
-    calin::math::vector3d_util::scatter_direction(info.mirror_scattered,
-      info.mirror_normal_dispersion,*fRNG);
+    calin::math::geometry::VCL<VCLRealType>::scatter_direction(
+      info.mirror_scattered, info.mirror_normal_dispersion, *rng_);
 
-      // Reflect ray
-      ray.reflect_from_surface(info.mirror_scattered);
+    // Reflect ray
+    ray.reflect_from_surface_with_mask(mask, info.mirror_scattered);
+
+    info.mirror->mirrorToReflector(ray);
+
+    // Translate back to reflector frame
+    ray.rotate(mirror_rot);
+    ray.untranslate_origin(mirror_pos)
+
+    // *************************************************************************
+    // *************** RAY IS NOW BACK IN REFLECTOR COORDINATES ****************
+    // *************************************************************************
+
+    // Check obsucrations
+
+    // Refract in window
+
+    ray.translate(fp_pos_)
+    if(fp_has_rot_)ray.rotate(fp_rot_);
+
+    // *************************************************************************
+    // ***************** RAY IS NOW IN FOCAL PLANE COORDINATES *****************
+    // *************************************************************************
+
+    // Propagate to focal plane
+    info.status = select(mask, STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE, info.status);
+    mask = ray.propagate_to_y_plane_with_mask(mask, 0, false, ref_index);
+
+    // Test for interaction with obscuration before focal plane was hit
+
+    // We good, record position on focal plane etc
+    info.fplane_x = select(mask, ray.x(), 0);
+    info.fplane_z = select(mask, ray.z(), 0);
+    info.fplane_t = select(mask, ray.ct(), 0) * math::constants::cgs_1_c;
+    info.fplane_uy = select(mask, ray.uy(), 0);
+
+
+
+    info.pixel_hexid =
+      math::hex_array::VCLReal<VCLRealType>::xy_trans_to_hexid(
+        info.fplane_x, info.fplane_z,
+        pixel_crot_, pixel_srot_, pixel_scaleinv_, pixel_shift_x_, pixel_shift_z_,
+        pixel_cw_);
+
+    // Find pixel (if there is a real pixel at that site)
+    info.pixel = info.scope->pixelByHexID(info.pixel_hexid);
+    if(info.pixel==0)
+    {
+      info.status = TS_NO_PIXEL;
+      info.scope->focalPlaneToGlobal(ray);
+      return 0;
+    }
+
+    if(fp_has_rot_)ray.derotate(fp_rot_);
+    ray.untranslate(fp_pos_)
+
+    // *************************************************************************
+    // ************ RAY IS NOW BACK IN REFLECTOR COORDINATES AGAIN *************
+    // *************************************************************************
+
+
 
   }
 
