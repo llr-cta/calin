@@ -98,8 +98,6 @@ public:
     real_vt st = sqrt(x*x+y*y);
     real_vt st_inv = 1.0/st;
 
-    // If we are aong the z-axis (z=+/-1) then we arrange for matrix to be
-    // diagonal with (+1,1,+1) or (-1,1,-1)
     bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon();
 
     real_vt sp = select(is_uz, 0.0, y * st_inv);
@@ -119,8 +117,6 @@ public:
     real_vt st = sqrt(z*z+x*x);
     real_vt st_inv = 1.0/st;
 
-    // If we are aong the z-axis (z=+/-1) then we arrange for matrix to be
-    // diagonal with (+1,1,+1) or (-1,1,-1)
     bool_vt is_uy = st < std::numeric_limits<real_t>::epsilon();
 
     real_vt sp = select(is_uy, 0.0, x * st_inv);
@@ -132,6 +128,26 @@ public:
     m << y*sp2+cp2, x,  ymo_cpsp,
                 -x, y,        -z,
           ymo_cpsp, z, y*cp2+sp2;
+  }
+
+  // xyz -> yzx
+  static inline void rotation_x_to_xyz_Rxzx(mat3_vt& m,
+    const real_vt x, const real_vt y, const real_vt z)
+  {
+    real_vt st = sqrt(y*y+z*z);
+    real_vt st_inv = 1.0/st;
+
+    bool_vt is_ux = st < std::numeric_limits<real_t>::epsilon();
+
+    real_vt sp = select(is_ux, 0.0, z * st_inv);
+    real_vt cp = select(is_ux, 1.0, y * st_inv);
+    real_vt sp2 = sp*sp;
+    real_vt cp2 = cp*cp;
+    real_vt xmo_cpsp = (x-1)*cp*sp;
+
+    m << x,        -y,        -z,
+         y, x*cp2+sp2,  xmo_cpsp,
+         z,  xmo_cpsp, x*sp2+cp2;
   }
 
   static inline void

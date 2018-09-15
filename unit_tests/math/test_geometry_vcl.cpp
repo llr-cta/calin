@@ -39,7 +39,7 @@ template<typename VCLRealType> class VCLGeometryTest :
 public:
 };
 
-using RealTypes = ::testing::Types<VCL128FloatReal, VCL256FloatReal, VCL512FloatReal>;
+using RealTypes = ::testing::Types<VCL128FloatReal, VCL256FloatReal, VCL512FloatReal, VCL128DoubleReal, VCL256DoubleReal, VCL512DoubleReal>;
 
 TYPED_TEST_CASE(VCLGeometryTest, RealTypes);
 
@@ -101,6 +101,32 @@ TYPED_TEST(VCLGeometryTest, Rotation_Ryxy) {
 
     // Test axis is eigen-vector
     typename TypeParam::vec3_vt ax = TypeParam::vec3_vt::UnitY().cross(dir);
+    typename TypeParam::vec3_vt ax2 = m * ax;
+
+    ASSERT_TRUE(horizontal_and(dir.x() == dir2.x())) << dir.x() << dir2.x();
+    ASSERT_TRUE(horizontal_and(dir.y() == dir2.y())) << dir.y() << dir2.y();
+    ASSERT_TRUE(horizontal_and(dir.z() == dir2.z())) << dir.y() << dir2.z();
+    ASSERT_TRUE(horizontal_and(abs(m.determinant()-1)<1e-6)) << m.determinant();
+    ASSERT_TRUE(horizontal_and(abs(ax.x() - ax2.x())<1e-6)) << ax.x() << ax2.x();
+    ASSERT_TRUE(horizontal_and(abs(ax.y() - ax2.y())<1e-6)) << ax.y() << ax2.y();
+    ASSERT_TRUE(horizontal_and(abs(ax.z() - ax2.z())<1e-6)) << ax.y() << ax2.z();
+
+  }
+}
+
+TYPED_TEST(VCLGeometryTest, Rotation_Rxzx) {
+  VCLRNG<typename TypeParam::architecture> rng;
+  for(unsigned i=0; i<10000; i++) {
+    typename TypeParam::vec3_vt dir;
+    rng.uniform_on_unit_sphere_vec_real(dir);
+
+    typename TypeParam::mat3_vt m;
+    calin::math::geometry::VCL<TypeParam>::rotation_x_to_xyz_Rxzx(m, dir.x(), dir.y(), dir.z());
+
+    typename TypeParam::vec3_vt dir2 = m * TypeParam::vec3_vt::UnitX();
+
+    // Test axis is eigen-vector
+    typename TypeParam::vec3_vt ax = TypeParam::vec3_vt::UnitX().cross(dir);
     typename TypeParam::vec3_vt ax2 = m * ax;
 
     ASSERT_TRUE(horizontal_and(dir.x() == dir2.x())) << dir.x() << dir2.x();
