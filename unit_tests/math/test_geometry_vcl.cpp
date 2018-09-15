@@ -80,6 +80,24 @@ TYPED_TEST(VCLGeometryTest, Rotation_RzRyRnz) {
   }
 }
 
+TYPED_TEST(VCLGeometryTest, Rotation_RyRxRny) {
+  VCLRNG<typename TypeParam::architecture> rng;
+  for(unsigned i=0; i<10000; i++) {
+    typename TypeParam::vec3_vt dir;
+    rng.uniform_on_unit_sphere_vec_real(dir);
+
+    typename TypeParam::mat3_vt m;
+    calin::math::geometry::VCL<TypeParam>::rotation_y_to_xyz_RyRxRny(m, dir.x(), dir.y(), dir.z());
+
+    typename TypeParam::vec3_vt dir2 = m * TypeParam::vec3_vt::UnitY();
+
+    ASSERT_TRUE(horizontal_and(dir.x() == dir2.x())) << dir.x() << dir2.x();
+    ASSERT_TRUE(horizontal_and(dir.y() == dir2.y())) << dir.y() << dir2.y();
+    ASSERT_TRUE(horizontal_and(dir.z() == dir2.z())) << dir.y() << dir2.z();
+    ASSERT_TRUE(horizontal_and(abs(m.determinant()-1)<1e-6)) << m.determinant();
+  }
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
