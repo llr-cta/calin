@@ -73,10 +73,18 @@ TYPED_TEST(VCLGeometryTest, Rotation_RzRyRnz) {
 
     typename TypeParam::vec3_vt dir2 = m * TypeParam::vec3_vt::UnitZ();
 
+    // Test axis is eigen-vector
+    typename TypeParam::vec3_vt ax = TypeParam::vec3_vt::UnitZ().cross(dir);
+    typename TypeParam::vec3_vt ax2 = m * ax;
+
     ASSERT_TRUE(horizontal_and(dir.x() == dir2.x())) << dir.x() << dir2.x();
     ASSERT_TRUE(horizontal_and(dir.y() == dir2.y())) << dir.y() << dir2.y();
     ASSERT_TRUE(horizontal_and(dir.z() == dir2.z())) << dir.y() << dir2.z();
     ASSERT_TRUE(horizontal_and(abs(m.determinant()-1)<1e-6)) << m.determinant();
+    ASSERT_TRUE(horizontal_and(abs(ax.x() - ax2.x())<1e-6)) << ax.x() << ax2.x();
+    ASSERT_TRUE(horizontal_and(abs(ax.y() - ax2.y())<1e-6)) << ax.y() << ax2.y();
+    ASSERT_TRUE(horizontal_and(abs(ax.z() - ax2.z())<1e-6)) << ax.y() << ax2.z();
+
   }
 }
 
@@ -91,10 +99,18 @@ TYPED_TEST(VCLGeometryTest, Rotation_RyRxRny) {
 
     typename TypeParam::vec3_vt dir2 = m * TypeParam::vec3_vt::UnitY();
 
+    // Test axis is eigen-vector
+    typename TypeParam::vec3_vt ax = TypeParam::vec3_vt::UnitY().cross(dir);
+    typename TypeParam::vec3_vt ax2 = m * ax;
+
     ASSERT_TRUE(horizontal_and(dir.x() == dir2.x())) << dir.x() << dir2.x();
     ASSERT_TRUE(horizontal_and(dir.y() == dir2.y())) << dir.y() << dir2.y();
     ASSERT_TRUE(horizontal_and(dir.z() == dir2.z())) << dir.y() << dir2.z();
     ASSERT_TRUE(horizontal_and(abs(m.determinant()-1)<1e-6)) << m.determinant();
+    ASSERT_TRUE(horizontal_and(abs(ax.x() - ax2.x())<1e-6)) << ax.x() << ax2.x();
+    ASSERT_TRUE(horizontal_and(abs(ax.y() - ax2.y())<1e-6)) << ax.y() << ax2.y();
+    ASSERT_TRUE(horizontal_and(abs(ax.z() - ax2.z())<1e-6)) << ax.y() << ax2.z();
+
   }
 }
 
