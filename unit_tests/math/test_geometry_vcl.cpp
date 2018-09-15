@@ -44,14 +44,14 @@ using RealTypes = ::testing::Types<VCL128FloatReal, VCL256FloatReal, VCL512Float
 TYPED_TEST_CASE(VCLGeometryTest, RealTypes);
 
 
-TYPED_TEST(VCLGeometryTest, Rotation_RzRy) {
+TYPED_TEST(VCLGeometryTest, Rotation_Rzy) {
   VCLRNG<typename TypeParam::architecture> rng;
   for(unsigned i=0; i<10000; i++) {
     typename TypeParam::vec3_vt dir;
     rng.uniform_on_unit_sphere_vec_real(dir);
 
     typename TypeParam::mat3_vt m;
-    calin::math::geometry::VCL<TypeParam>::rotation_z_to_xyz_RzRy(m, dir.x(), dir.y(), dir.z());
+    calin::math::geometry::VCL<TypeParam>::rotation_z_to_xyz_Rzy(m, dir.x(), dir.y(), dir.z());
 
     typename TypeParam::vec3_vt dir2 = m * TypeParam::vec3_vt::UnitZ();
 
@@ -62,14 +62,14 @@ TYPED_TEST(VCLGeometryTest, Rotation_RzRy) {
   }
 }
 
-TYPED_TEST(VCLGeometryTest, Rotation_RzRyRnz) {
+TYPED_TEST(VCLGeometryTest, Rotation_Rzyz) {
   VCLRNG<typename TypeParam::architecture> rng;
   for(unsigned i=0; i<10000; i++) {
     typename TypeParam::vec3_vt dir;
     rng.uniform_on_unit_sphere_vec_real(dir);
 
     typename TypeParam::mat3_vt m;
-    calin::math::geometry::VCL<TypeParam>::rotation_z_to_xyz_RzRyRnz(m, dir.x(), dir.y(), dir.z());
+    calin::math::geometry::VCL<TypeParam>::rotation_z_to_xyz_Rzyz(m, dir.x(), dir.y(), dir.z());
 
     typename TypeParam::vec3_vt dir2 = m * TypeParam::vec3_vt::UnitZ();
 
@@ -88,14 +88,14 @@ TYPED_TEST(VCLGeometryTest, Rotation_RzRyRnz) {
   }
 }
 
-TYPED_TEST(VCLGeometryTest, Rotation_RyRxRny) {
+TYPED_TEST(VCLGeometryTest, Rotation_Ryxy) {
   VCLRNG<typename TypeParam::architecture> rng;
   for(unsigned i=0; i<10000; i++) {
     typename TypeParam::vec3_vt dir;
     rng.uniform_on_unit_sphere_vec_real(dir);
 
     typename TypeParam::mat3_vt m;
-    calin::math::geometry::VCL<TypeParam>::rotation_y_to_xyz_RyRxRny(m, dir.x(), dir.y(), dir.z());
+    calin::math::geometry::VCL<TypeParam>::rotation_y_to_xyz_Ryxy(m, dir.x(), dir.y(), dir.z());
 
     typename TypeParam::vec3_vt dir2 = m * TypeParam::vec3_vt::UnitY();
 

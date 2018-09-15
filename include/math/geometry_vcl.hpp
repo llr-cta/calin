@@ -74,7 +74,7 @@ public:
       min_corner, max_corner, pos, 1.0f/dir.x(), 1.0f/dir.y(), 1.0f/dir.z());
   }
 
-  static inline void rotation_z_to_xyz_RzRy(mat3_vt& m,
+  static inline void rotation_z_to_xyz_Rzy(mat3_vt& m,
     const real_vt x, const real_vt y, const real_vt z)
   {
     real_vt st = sqrt(x*x+y*y);
@@ -92,7 +92,7 @@ public:
           -st,   0, z;
   }
 
-  static inline void rotation_z_to_xyz_RzRyRnz(mat3_vt& m,
+  static inline void rotation_z_to_xyz_Rzyz(mat3_vt& m,
     const real_vt x, const real_vt y, const real_vt z)
   {
     real_vt st = sqrt(x*x+y*y);
@@ -113,7 +113,7 @@ public:
                 -x,        -y, z;
   }
 
-  static inline void rotation_y_to_xyz_RyRxRny(mat3_vt& m,
+  static inline void rotation_y_to_xyz_Ryxy(mat3_vt& m,
     const real_vt x, const real_vt y, const real_vt z)
   {
     real_vt st = sqrt(z*z+x*x);
