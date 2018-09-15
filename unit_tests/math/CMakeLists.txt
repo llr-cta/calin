@@ -72,6 +72,10 @@ add_executable(test_ray_vcl test_ray_vcl.cpp)
 target_link_libraries(test_ray_vcl ${GTEST_BOTH_LIBRARIES} calin_math)
 add_test(TestRayVCL test_ray_vcl)
 
+add_executable(test_geometry_vcl test_geometry_vcl.cpp)
+target_link_libraries(test_geometry_vcl ${GTEST_BOTH_LIBRARIES} calin_math)
+add_test(TestGeometryVCL test_geometry_vcl)
+
 install(TARGETS test_histogram test_hessian test_pdf_1d test_m_estimate
 	test_data_modeling test_hex_array test_hex_array_vcl test_rng test_rng_vcl
 	test_simd

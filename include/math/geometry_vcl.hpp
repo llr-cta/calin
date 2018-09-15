@@ -74,15 +74,15 @@ public:
       min_corner, max_corner, pos, 1.0f/dir.x(), 1.0f/dir.y(), 1.0f/dir.z());
   }
 
-  static inline void rotation_z_to_xyz(mat3_vt& m,
+  static inline void rotation_z_to_xyz_RzRy(mat3_vt& m,
     const real_vt x, const real_vt y, const real_vt z)
   {
-    real_vt st = std::sqrt(x*x+y*y);
+    real_vt st = sqrt(x*x+y*y);
     real_vt st_inv = 1.0/st;
 
     // If we are aong the z-axis (z=+/-1) then we arrange for matrix to be
     // diagonal with (+1,1,+1) or (-1,1,-1)
-    bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon;
+    bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon();
 
     real_vt sp = select(is_uz, 0.0, y * st_inv);
     real_vt cp = select(is_uz, 1.0, x * st_inv);
@@ -90,6 +90,48 @@ public:
     m << z*cp, -sp, x,
          z*sp,  cp, y,
           -st,   0, z;
+  }
+
+  static inline void rotation_z_to_xyz_RzRyRnz(mat3_vt& m,
+    const real_vt x, const real_vt y, const real_vt z)
+  {
+    real_vt st = sqrt(x*x+y*y);
+    real_vt st_inv = 1.0/st;
+
+    // If we are aong the z-axis (z=+/-1) then we arrange for matrix to be
+    // diagonal with (+1,1,+1) or (-1,1,-1)
+    bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon();
+
+    real_vt sp = select(is_uz, 0.0, y * st_inv);
+    real_vt cp = select(is_uz, 1.0, x * st_inv);
+    real_vt sp2 = sp*sp;
+    real_vt cp2 = cp*cp;
+    real_vt zmo_cpsp = (z-1)*cp*sp;
+
+    m << z*cp2+sp2,  zmo_cpsp, x,
+          zmo_cpsp, z*sp2+cp2, y,
+                -x,        -y, z;
+  }
+
+  static inline void rotation_y_to_xyz_RyRxRny(mat3_vt& m,
+    const real_vt x, const real_vt y, const real_vt z)
+  {
+    real_vt st = sqrt(z*z+x*x);
+    real_vt st_inv = 1.0/st;
+
+    // If we are aong the z-axis (z=+/-1) then we arrange for matrix to be
+    // diagonal with (+1,1,+1) or (-1,1,-1)
+    bool_vt is_uy = st < std::numeric_limits<real_t>::epsilon();
+
+    real_vt sp = select(is_uy, 0.0, x * st_inv);
+    real_vt cp = select(is_uy, 1.0, z * st_inv);
+    real_vt sp2 = sp*sp;
+    real_vt cp2 = cp*cp;
+    real_vt ymo_cpsp = (y-1)*cp*sp;
+
+    m << y*sp2+cp2, x,  ymo_cpsp,
+                -x, y,        -z,
+          ymo_cpsp, z, y*cp2+sp2;
   }
 
   static inline void

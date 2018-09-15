@@ -34,6 +34,7 @@
 #include <VCL/vectormath_hyp.h>
 
 #include <Eigen/Core>
+#include <Eigen/LU>
 
 namespace Eigen {
 
