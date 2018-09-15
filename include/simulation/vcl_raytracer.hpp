@@ -169,36 +169,43 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
     // Test we have a valid mirror id
     mask &= info.mirror_id < mirror_id_end_;
 
-    info.mirror_pos
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_x_lookup_)
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_y_lookup_)
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_z_lookup_);
+    real_vt mirror_nx = vcl::lookup<0x40000000>(info.mirror_id, mirror_nx_lookup_);
+    real_vt mirror_nz = vcl::lookup<0x40000000>(info.mirror_id, mirror_nz_lookup_);
+    real_vt mirror_ny = sqrt(nmul_add(mirror_nz,mirror_nz,nmul_add(mirror_nx,mirror_nx,1.0)));
+    info.mirror_dir << mirror_nx << mirror_ny << mirror_nz;
 
-    ray.translate_origin(info.mirror_pos)
+    info.mirror_r = vcl::lookup<0x40000000>(info.mirror_id, mirror_r_lookup_);
 
-    info.mirror_rot
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m00_lookup_)
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m01_lookup_)
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m02_lookup_)
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m10_lookup_)
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m11_lookup_)
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m12_lookup_)
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m20_lookup_)
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m21_lookup_)
-      << vcl::lookup<0x40000000>(info.mirror_id, mirror_m22_lookup_);
+    real_vt mirror_x = vcl::lookup<0x40000000>(info.mirror_id, mirror_x_lookup_);
+    real_vt mirror_z = vcl::lookup<0x40000000>(info.mirror_id, mirror_z_lookup_);
+    real_vt mirror_y = vcl::lookup<0x40000000>(info.mirror_id, mirror_y_lookup_);
+    info.mirror_pos << mirror_x << mirror_y << mirror_z;
+      
+    vec3_vt mirror_center = info.mirror_pos + mirror_dir * info.mirror_r;
 
-    ray.derotate(info.mirror_rot);
+    ray.translate_origin(mirror_center)
 
     // *************************************************************************
     // ******************* RAY IS NOW IN MIRROR COORDINATES ********************
     // *************************************************************************
 
-    info.mirror_rad = vcl::lookup<0x40000000>(info.mirror_id, mirror_r_lookup_);
-
-    // Propagate to intersection with the reflector sphere
+    // Propagate to intersection with the mirror sphere
     info.status = select(mask, STS_MISSED_MIRROR_SPHERE, info.status);
     mask = ray.propagate_to_y_sphere_2nd_interaction_fwd_bwd_with_mask(mask,
-      info.mirror_rad, 0, ref_index_);
+      info.mirror_rad, info.mirror_rad, ref_index_);
+
+    // Impact point relative to facet attchment point
+    mirror_x = ray.x() + mirror_center.x() - info.mirror_pos.x();
+    mirror_y = ray.y() + mirror_center.y() - info.mirror_pos.y();
+    mirror_z = ray.z() + mirror_center.z() - info.mirror_pos.z();
+
+    if(1) {
+      real_vt rot_temp = mirror_x * reflec_crot_ + mirror_z * reflec_srot_;
+      mirror_z = mirror_z * reflec_crot_ - mirror_x * reflec_srot_;
+      mirror_x = rot_temp;
+    }
+
+
 
     // Verify that ray impacts inside of hexagonal mirror surface
     const real_vt cos60 = 0.5;
