@@ -74,6 +74,152 @@ public:
       min_corner, max_corner, pos, 1.0f/dir.x(), 1.0f/dir.y(), 1.0f/dir.z());
   }
 
+  static inline void rotate_in_place_2d(real_vt& x, real_vt& y,
+    const real_vt& cos_theta, const real_vt& sin_theta)
+  {
+    real_vt xnew = mul_sub(cos_theta, x, sin_theta*y);
+    y = mul_add(cos_theta, y, sin_theta*x);
+    x = xnew;
+  }
+
+  static inline void derotate_in_place_2d(real_vt& x, real_vt& y,
+    const real_vt& cos_theta, const real_vt& sin_theta)
+  {
+    real_vt xnew = mul_add(cos_theta, x, sin_theta*y);
+    y = mul_sub(cos_theta, y, sin_theta*x);
+    x = xnew;
+  }
+
+  static inline void rotate_in_place_Rz(vec3_vt& v,
+    const real_vt& cos_theta, const real_vt& sin_theta)
+  {
+    rotate_in_place_2d(v.x(), v.y(), cos_theta, sin_theta);
+  }
+
+  static inline void derotate_in_place_Rz(vec3_vt& v,
+    const real_vt& cos_theta, const real_vt& sin_theta)
+  {
+    derotate_in_place_2d(v.x(), v.y(), cos_theta, sin_theta);
+  }
+
+  static inline void rotate_in_place_Ry(vec3_vt& v,
+    const real_vt& cos_theta, const real_vt& sin_theta)
+  {
+    rotate_in_place_2d(v.z(), v.x(), cos_theta, sin_theta);
+  }
+
+  static inline void derotate_in_place_Ry(vec3_vt& v,
+    const real_vt& cos_theta, const real_vt& sin_theta)
+  {
+    derotate_in_place_2d(v.z(), v.x(), cos_theta, sin_theta);
+  }
+
+  static inline void rotate_in_place_Rx(vec3_vt& v,
+    const real_vt& cos_theta, const real_vt& sin_theta)
+  {
+    rotate_in_place_2d(v.y(), v.z(), cos_theta, sin_theta);
+  }
+
+  static inline void derotate_in_place_Rx(vec3_vt& v,
+    const real_vt& cos_theta, const real_vt& sin_theta)
+  {
+    derotate_in_place_2d(v.y(), v.z(), cos_theta, sin_theta);
+  }
+
+  static inline void rotate_in_place_z_to_u_Rzy(vec3_vt& v, const vec3_vt& u)
+  {
+    real_vt st = sqrt(mul_add(u.x(),u.x(),u.y()*u.y()));
+    real_vt st_inv = 1.0/st;
+    bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon();
+    real_vt sp = select(is_uz, 0.0, u.y() * st_inv);
+    real_vt cp = select(is_uz, 1.0, u.x() * st_inv);
+    rotate_in_place_Ry(v, u.z(), st);
+    rotate_in_place_Rz(v, cp, sp);
+  }
+
+  static inline void derotate_in_place_z_to_u_Rzy(vec3_vt& v, const vec3_vt& u)
+  {
+    real_vt st = sqrt(mul_add(u.x(),u.x(),u.y()*u.y()));
+    real_vt st_inv = 1.0/st;
+    bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon();
+    real_vt sp = select(is_uz, 0.0, u.y() * st_inv);
+    real_vt cp = select(is_uz, 1.0, u.x() * st_inv);
+    derotate_in_place_Rz(v, cp, sp);
+    derotate_in_place_Ry(v, u.z(), st);
+  }
+
+  static inline void rotate_in_place_z_to_u_Rzyz(vec3_vt& v, const vec3_vt& u)
+  {
+    real_vt st = sqrt(mul_add(u.x(),u.x(),u.y()*u.y()));
+    real_vt st_inv = 1.0/st;
+    bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon();
+    real_vt sp = select(is_uz, 0.0, u.y() * st_inv);
+    real_vt cp = select(is_uz, 1.0, u.x() * st_inv);
+    derotate_in_place_Rz(v, cp, sp);
+    rotate_in_place_Ry(v, u.z(), st);
+    rotate_in_place_Rz(v, cp, sp);
+  }
+
+  static inline void derotate_in_place_z_to_u_Rzyz(vec3_vt& v, const vec3_vt& u)
+  {
+    real_vt st = sqrt(mul_add(u.x(),u.x(),u.y()*u.y()));
+    real_vt st_inv = 1.0/st;
+    bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon();
+    real_vt sp = select(is_uz, 0.0, u.y() * st_inv);
+    real_vt cp = select(is_uz, 1.0, u.x() * st_inv);
+    derotate_in_place_Rz(v, cp, sp);
+    derotate_in_place_Ry(v, u.z(), st);
+    rotate_in_place_Rz(v, cp, sp);
+  }
+
+  static inline void rotate_in_place_y_to_u_Ryxy(vec3_vt& v, const vec3_vt& u)
+  {
+    real_vt st = sqrt(mul_add(u.z(),u.z(),u.x()*u.x()));
+    real_vt st_inv = 1.0/st;
+    bool_vt is_uy = st < std::numeric_limits<real_t>::epsilon();
+    real_vt sp = select(is_uy, 0.0, u.x() * st_inv);
+    real_vt cp = select(is_uy, 1.0, u.z() * st_inv);
+    derotate_in_place_Ry(v, cp, sp);
+    rotate_in_place_Rx(v, u.y(), st);
+    rotate_in_place_Ry(v, cp, sp);
+  }
+
+  static inline void derotate_in_place_y_to_u_Ryxy(vec3_vt& v, const vec3_vt& u)
+  {
+    real_vt st = sqrt(mul_add(u.z(),u.z(),u.x()*u.x()));
+    real_vt st_inv = 1.0/st;
+    bool_vt is_uy = st < std::numeric_limits<real_t>::epsilon();
+    real_vt sp = select(is_uy, 0.0, u.x() * st_inv);
+    real_vt cp = select(is_uy, 1.0, u.z() * st_inv);
+    derotate_in_place_Ry(v, cp, sp);
+    derotate_in_place_Rx(v, u.y(), st);
+    rotate_in_place_Ry(v, cp, sp);
+  }
+
+  static inline void rotate_in_place_x_to_u_Rxzx(vec3_vt& v, const vec3_vt& u)
+  {
+    real_vt st = sqrt(mul_add(u.y(),u.y(),u.z()*u.z()));
+    real_vt st_inv = 1.0/st;
+    bool_vt is_ux = st < std::numeric_limits<real_t>::epsilon();
+    real_vt sp = select(is_ux, 0.0, u.z() * st_inv);
+    real_vt cp = select(is_ux, 1.0, u.y() * st_inv);
+    derotate_in_place_Rx(v, cp, sp);
+    rotate_in_place_Rz(v, u.x(), st);
+    rotate_in_place_Rx(v, cp, sp);
+  }
+
+  static inline void derotate_in_place_x_to_u_Rxzx(vec3_vt& v, const vec3_vt& u)
+  {
+    real_vt st = sqrt(mul_add(u.y(),u.y(),u.z()*u.z()));
+    real_vt st_inv = 1.0/st;
+    bool_vt is_ux = st < std::numeric_limits<real_t>::epsilon();
+    real_vt sp = select(is_ux, 0.0, u.z() * st_inv);
+    real_vt cp = select(is_ux, 1.0, u.y() * st_inv);
+    derotate_in_place_Rx(v, cp, sp);
+    derotate_in_place_Rz(v, u.x(), st);
+    rotate_in_place_Rx(v, cp, sp);
+  }
+
   static inline void rotation_z_to_xyz_Rzy(mat3_vt& m,
     const real_vt x, const real_vt y, const real_vt z)
   {
@@ -130,7 +276,6 @@ public:
           ymo_cpsp, z, y*cp2+sp2;
   }
 
-  // xyz -> yzx
   static inline void rotation_x_to_xyz_Rxzx(mat3_vt& m,
     const real_vt x, const real_vt y, const real_vt z)
   {
@@ -162,7 +307,7 @@ public:
     x.z() = sqrt(nmul_add(x.y(),x.y(),nmul_add(x.x(),x.x(),1.0)));
 
     mat3_vt m;
-    rotation_z_to_xyz(m, v.x(), v.y(), v.z());
+    rotation_z_to_xyz_Rzy(m, v.x(), v.y(), v.z());
 
     return m*x;
   }
