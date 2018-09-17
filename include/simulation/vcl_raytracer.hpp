@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <util/memory.hpp>
 #include <util/vcl.hpp>
 #include <math/ray_vcl.hpp>
 #include <math/rng_vcl.hpp>
@@ -115,6 +116,49 @@ public:
     reflec_shift_x_          = scope->facetGridShiftX();
     reflec_shift_z_          = scope->facetGridShiftZ();
     reflec_cw_               = scope->mirrorParity();
+
+    mirror_hexid_end_        = scope->numMirrorHexSites();
+    mirror_id_end_           = scope->numMirrors();
+
+    calin::util::memory::aligned_calloc(mirror_id_lookup_, mirror_hexid_end_+1);
+    calin::util::memory::aligned_calloc(mirror_nx_lookup_, mirror_id_end_+1);
+    calin::util::memory::aligned_calloc(mirror_nz_lookup_, mirror_id_end_+1);
+    calin::util::memory::aligned_calloc(mirror_ny_lookup_, mirror_id_end_+1);
+    calin::util::memory::aligned_calloc(mirror_r_lookup_, mirror_id_end_+1);
+    calin::util::memory::aligned_calloc(mirror_x_lookup_, mirror_id_end_+1);
+    calin::util::memory::aligned_calloc(mirror_z_lookup_, mirror_id_end_+1);
+    calin::util::memory::aligned_calloc(mirror_y_lookup_, mirror_id_end_+1);
+    calin::util::memory::aligned_calloc(mirror_normdisp_lookup_, mirror_id_end_+1);
+
+    for(int ihexid=0; ihexid<mirror_hexid_end_; ihexid++) {
+      auto* mirror = scope->mirrorByHexID(ihexid);
+      mirror_id_lookup_[ihexid] = mirror ? mirror->hexID() : mirror_id_end_;
+    }
+    mirror_id_lookup_[mirror_hexid_end_] = mirror_id_end_;
+
+    for(int iid=0; iid<mirror_id_end_; iid++) {
+      auto* mirror = scope->mirror(iid);
+      mirror_nx_lookup_[iid] = mirror->align().x();
+      mirror_nz_lookup_[iid] = mirror->align().y();
+      mirror_ny_lookup_[iid] = mirror->align().z();
+      mirror_r_lookup_[iid] = mirror->focalLength();
+      mirror_x_lookup_[iid] = mirror->pos().x();
+      mirror_z_lookup_[iid] = mirror->pos().y();
+      mirror_y_lookup_[iid] = mirror->pos().z();
+      mirror_normdisp_lookup_[iid] = 0.25*mirror->spotSize()/mirror->focalLength();
+    }
+    mirror_nx_lookup_[mirror_id_end_] = 0.0;
+    mirror_nz_lookup_[mirror_id_end_] = 0.0;
+    mirror_ny_lookup_[mirror_id_end_] = 1.0;
+    mirror_r_lookup_[mirror_id_end_] = 100000.0; // 1km - should be enough!
+    mirror_x_lookup_[mirror_id_end_] = 0.0;
+    mirror_z_lookup_[mirror_id_end_] = 0.0;
+    mirror_y_lookup_[mirror_id_end_] = 0.0;
+    mirror_normdisp_lookup_[mirror_id_end_] = 0.0;
+
+    mirror_id_lookup_[mirror_hexid_end_] = mirror_id_end_;
+
+
 #if 0
 
     int_t           mirror_hexid_end_;
@@ -128,7 +172,6 @@ public:
     real_t*         mirror_z_lookup_ = nullptr;
     real_t*         mirror_y_lookup_ = nullptr;
     real_t          mirror_dhex_max_;
-    real_t*         mirror_normdisp_lookup_ = nullptr;
 #endif
   }
 
