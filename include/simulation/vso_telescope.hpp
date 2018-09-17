@@ -76,7 +76,7 @@ dc_parameters_to_telescope_layout(
 
 class VSOTelescope
 {
- public:
+public:
   VSOTelescope();
   VSOTelescope(unsigned TID, /*unsigned THID,*/ const Eigen::Vector3d&P,
                double DY, double AX, double AY, double EL, double AZ,
@@ -266,7 +266,10 @@ class VSOTelescope
   inline const VSOPixel* pixelByHexID(unsigned hexID) const;
   std::vector<VSOPixel*> all_pixels() { return fPixels; }
 
- private:
+  const Eigen::Matrix3d& rotationGlobalToReflector() const { return rot_global_to_reflector_; }
+  const Eigen::Vector3d& translationGlobalToReflector() const { return off_global_to_reflector_; }
+
+private:
   // ************************************************************************
   // Telescope Parameters
   // ************************************************************************
