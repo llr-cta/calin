@@ -84,18 +84,53 @@ public:
 
 template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
 {
- public:
-   using typename VCLRealType::real_t;
-   using typename VCLRealType::int_t;
-   using typename VCLRealType::uint_t;
-   using typename VCLRealType::mat3_t;
-   using typename VCLRealType::vec3_t;
-   using typename VCLRealType::real_vt;
-   using typename VCLRealType::bool_vt;
-   using typename VCLRealType::vec3_vt;
-   using typename VCLRealType::mat3_vt;
-   using Ray = calin::math::ray::VCLRay<VCLRealType>;
-   using ScopeTraceInfo = ScopeTraceInfo<VCLRealType>;
+public:
+  using typename VCLRealType::real_t;
+  using typename VCLRealType::int_t;
+  using typename VCLRealType::uint_t;
+  using typename VCLRealType::mat3_t;
+  using typename VCLRealType::vec3_t;
+  using typename VCLRealType::real_vt;
+  using typename VCLRealType::bool_vt;
+  using typename VCLRealType::vec3_vt;
+  using typename VCLRealType::mat3_vt;
+  using Ray = calin::math::ray::VCLRay<VCLRealType>;
+  using TraceInfo = ScopeTraceInfo<VCLRealType>;
+  using RNG = calin::math::rng::VCLRealRNG<VCLRealType>;
+
+  ScopeRayTracer(const calin::simulation::vs_optics::VSOTelescope* scope,
+      real_t refractive_index = 1.0,
+      RNG* rng = nullptr, bool adopt_rng = false):
+    VCLRealType(), rng_(rng==nullptr ? new RNG(__PRETTY_FUNCTION__) : rng),
+    adopt_rng_(rng==nullptr ? true : adopt_rng)
+  {
+    global_to_reflector_rot_ = scope->rotationGlobalToReflector().cast<real_t>();
+    ref_index_               = refractive_index;
+
+    reflec_curvature_radius_ = scope->curvatureRadius();
+    reflec_aperture2_        = scope->aperture();
+    reflec_crot_             = scope->cosReflectorRotation();
+    reflec_srot_             = scope->sinReflectorRotation();
+    reflec_scaleinv_         = 1.0/scope->facetSpacing();
+    reflec_shift_x_          = scope->facetGridShiftX();
+    reflec_shift_z_          = scope->facetGridShiftZ();
+    reflec_cw_               = scope->mirrorParity();
+#if 0
+
+    int_t           mirror_hexid_end_;
+    int_t           mirror_id_end_;
+    int_t*          mirror_id_lookup_ = nullptr;
+    real_t*         mirror_nx_lookup_ = nullptr;
+    real_t*         mirror_nz_lookup_ = nullptr;
+    real_t*         mirror_ny_lookup_ = nullptr;
+    real_t*         mirror_r_lookup_ = nullptr;
+    real_t*         mirror_x_lookup_ = nullptr;
+    real_t*         mirror_z_lookup_ = nullptr;
+    real_t*         mirror_y_lookup_ = nullptr;
+    real_t          mirror_dhex_max_;
+    real_t*         mirror_normdisp_lookup_ = nullptr;
+#endif
+  }
 
   // RayTracer(const VSOArray* array, math::rng::RNG* rng):
   //   fArray(array), fRNG(rng) { /* nothing to see here */ }
@@ -103,7 +138,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
   //   fArray(array), fRNG(rng) { /* nothing to see here */ }
   // ~VSORayTracer();
 
-  bool_vt trace_scope_centered_global_frame(bool_vt mask, Ray& ray, ScopeTraceInfo& info)
+  bool_vt trace_scope_centered_global_frame(bool_vt mask, Ray& ray, TraceInfo& info)
   {
     // *************************************************************************
     // *************** RAY STARTS IN SCOPE CENTERED GLOBAL FRAME ***************
@@ -115,7 +150,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
     return mask;
   }
 
-  bool_vt trace_reflector_frame(bool_vt mask, Ray& ray, ScopeTraceInfo& info)
+  bool_vt trace_reflector_frame(bool_vt mask, Ray& ray, TraceInfo& info)
   {
     info.status = STS_MASKED_ON_ENTRY;
 
@@ -331,7 +366,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
    int_t           pixel_id_end_;
    int_t*          pixel_id_lookup_ = nullptr;
 
-   calin::math::rng::VCLRealRNG<VCLRealType>* rng_ = nullptr;
+   RNG* rng_ = nullptr;
    bool adopt_rng_ = false;
 };
 

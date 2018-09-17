@@ -42,7 +42,7 @@ using RealTypes = ::testing::Types<VCL128FloatReal, VCL256FloatReal, VCL512Float
 TYPED_TEST_CASE(TestVCLRaytracer, RealTypes);
 
 TYPED_TEST(TestVCLRaytracer, Test) {
-  ScopeRayTracer<TypeParam> raytracer;
+  ScopeRayTracer<TypeParam> raytracer(nullptr);
 
 }
 
