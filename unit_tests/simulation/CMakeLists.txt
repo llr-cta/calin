@@ -22,6 +22,11 @@ if(GEANT4_FOUND)
 	  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
 endif()
 
+add_executable(test_vcl_raytracer test_vcl_raytracer.cpp)
+target_link_libraries(test_vcl_raytracer ${GTEST_BOTH_LIBRARIES}
+				     calin_simulation)
+add_test(TestVCLRaytracer test_vcl_raytracer)
+
 #add_executable(test_vs_optics test_vs_optics.cpp)
 #target_link_libraries(test_vs_optics ${GTEST_BOTH_LIBRARIES}
 #				     calin_simulation calin_io calin_proto)
