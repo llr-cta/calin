@@ -79,37 +79,6 @@ public:
 
   int_vt              pixel_hexid;
   int_vt              pixel_id;
-
-#if 0
-  real_vt             reflec_dx;
-  real_vt             reflec_dz;
-  const VSOMirror*    mirror;
-  double              mirror_normal_dispersion;
-  Eigen::Vector3d     mirror_scattered;
-  double              mirror_reflection_angle;
-  double              fplane_x;
-  double              fplane_z;
-  double              fplane_dx;
-  double              fplane_dz;
-  double              fplane_t;
-  double              fplane_uy;     // y-axis directional cosine at FP
-  int                 pixel_hexid;
-  const VSOPixel*     pixel;
-  double              pixel_dist;
-  bool                concentrator_hit;
-  unsigned            obscuration_id;
-  const VSOObscuration* obscuration;
-
-  void reset();
-  std::ostream& write(std::ostream& stream = std::cout,
-                      bool convert_to_physical_units = true,
-                      bool end_of_line = true) const;
-
-  bool rayWasReflected() const
-  { return (int)status >= (int)TS_TRAVELLING_AWAY_FROM_FOCAL_PLANE; }
-  bool rayHitFocalPlane() const
-  { return (int)status >= (int)TS_NO_PIXEL; }
-#endif
 };
 
 template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
