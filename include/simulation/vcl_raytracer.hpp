@@ -25,6 +25,8 @@
 #include <util/vcl.hpp>
 #include <math/ray_vcl.hpp>
 #include <math/rng_vcl.hpp>
+#include <math/hex_array_vcl.hpp>
+#include <math/geometry_vcl.hpp>
 #include <simulation/vso_telescope.hpp>
 
 namespace calin { namespace simulation { namespace vcl_raytracer {
@@ -46,17 +48,16 @@ enum ScopeTraceStatus {
   STD_TS_FOUND_PIXEL
 };
 
-template<typename VCLReal> class ScopeTraceInfo: public VCLReal
+template<typename VCLRealType> class ScopeTraceInfo: public VCLRealType
 {
 public:
-  using typename VCLReal::real_t;
-  using typename VCLReal::real_vt;
-  using typename VCLReal::bool_vt;
-  using typename VCLReal::int_vt;
-  using typename VCLReal::uint_vt;
-  using typename VCLReal::vec3_vt;
-  using typename VCLReal::mat3_vt;
-  using typename calin::math::ray::VCLRay<VCLReal> Ray;
+  using typename VCLRealType::real_t;
+  using typename VCLRealType::real_vt;
+  using typename VCLRealType::bool_vt;
+  using typename VCLRealType::int_vt;
+  using typename VCLRealType::uint_vt;
+  using typename VCLRealType::vec3_vt;
+  using typename VCLRealType::mat3_vt;
 
   int_vt              status;
 
@@ -87,11 +88,14 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
    using typename VCLRealType::real_t;
    using typename VCLRealType::int_t;
    using typename VCLRealType::uint_t;
+   using typename VCLRealType::mat3_t;
+   using typename VCLRealType::vec3_t;
    using typename VCLRealType::real_vt;
    using typename VCLRealType::bool_vt;
    using typename VCLRealType::vec3_vt;
    using typename VCLRealType::mat3_vt;
-   using typename calin::math::ray::VCLRay<VCLRealType> Ray;
+   using Ray = calin::math::ray::VCLRay<VCLRealType>;
+   using ScopeTraceInfo = ScopeTraceInfo<VCLRealType>;
 
   // RayTracer(const VSOArray* array, math::rng::RNG* rng):
   //   fArray(array), fRNG(rng) { /* nothing to see here */ }
@@ -138,7 +142,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
 
     // Assume mirrors on hexagonal grid - use hex_array routines to find which hit
     info.status = select(mask, STS_NO_MIRROR, info.status);
-    info.mirror_hexid = calin::math::hex_array::VLCReal<VCLRealType>::
+    info.mirror_hexid = calin::math::hex_array::VCLReal<VCLRealType>::
       xy_trans_to_hexid_scaleinv(info.reflec_x, info.reflec_z,
         reflec_crot_, reflec_srot_, reflec_scaleinv_, reflec_shift_x_, reflec_shift_z_,
         reflec_cw_);
@@ -148,7 +152,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
 
     // Find the mirror ID
     info.mirror_id =
-      vcl::lookup<0x40000000>(select(mask_, info.mirror_hexid, mirror_hexid_end_)),
+      vcl::lookup<0x40000000>(select(mask, info.mirror_hexid, mirror_hexid_end_),
         mirror_id_lookup_);
 
     // Test we have a valid mirror id
@@ -172,7 +176,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
 
     vec3_vt mirror_center = info.mirror_pos + info.mirror_dir * info.mirror_r;
 
-    ray.translate_origin(mirror_center)
+    ray.translate_origin(mirror_center);
 
     // *************************************************************************
     // ******************* RAY IS NOW IN MIRROR COORDINATES ********************
@@ -185,14 +189,14 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
 
     // Impact point relative to facet attchment point
     vec3_vt ray_pos = ray.position() + mirror_center - info.mirror_pos;
-    calin::math::geometry::VCLReal<VCLRealType>::
+    calin::math::geometry::VCL<VCLRealType>::
       derotate_in_place_Ry(ray_pos, reflec_crot_, reflec_srot_);
 
     vec3_vt mirror_dir = info.mirror_dir;
-    calin::math::geometry::VCLReal<VCLRealType>::
+    calin::math::geometry::VCL<VCLRealType>::
       derotate_in_place_Ry(mirror_dir, reflec_crot_, reflec_srot_);
 
-    calin::math::geometry::VCLReal<VCLRealType>::
+    calin::math::geometry::VCL<VCLRealType>::
       derotate_in_place_y_to_u_Ryxy(ray_pos, mirror_dir);
 
     // Verify that ray impacts inside of hexagonal mirror surface
@@ -224,7 +228,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
     ray.reflect_from_surface_with_mask(mask, info.mirror_scattered);
 
     // Translate back to reflector frame
-    ray.untranslate_origin(mirror_center)
+    ray.untranslate_origin(mirror_center);
 
     // *************************************************************************
     // *************** RAY IS NOW BACK IN REFLECTOR COORDINATES ****************
@@ -234,7 +238,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
 
     // Refract in window
 
-    ray.translate(fp_pos_)
+    ray.translate(fp_pos_);
     if(fp_has_rot_)ray.rotate(fp_rot_);
 
     // *************************************************************************
@@ -268,7 +272,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
 
     // Find the mirror ID
     info.pixel_id =
-      vcl::lookup<0x40000000>(select(mask_, info.pixel_hexid, pixel_hexid_end_)),
+      vcl::lookup<0x40000000>(select(mask, info.pixel_hexid, pixel_hexid_end_),
         pixel_id_lookup_);
 
     mask &= info.pixel_id < pixel_id_end_;
@@ -276,7 +280,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
     info.status = select(mask, STD_TS_FOUND_PIXEL, info.status);
 
     if(fp_has_rot_)ray.derotate(fp_rot_);
-    ray.untranslate(fp_pos_)
+    ray.untranslate(fp_pos_);
 
     // *************************************************************************
     // ************ RAY IS NOW BACK IN REFLECTOR COORDINATES AGAIN *************
@@ -286,7 +290,7 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
   }
 
  private:
-   mat3_vt         global_to_reflector_rot_;
+   mat3_t          global_to_reflector_rot_;
    real_t          ref_index_;
 
    real_t          reflec_curvature_radius_;
@@ -300,16 +304,16 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
 
    int_t           mirror_hexid_end_;
    int_t           mirror_id_end_;
-   int_t*          mirror_id_lookup_;
-   real_t*         mirror_nx_lookup_;
-   real_t*         mirror_nz_lookup_;
-   real_t*         mirror_ny_lookup_;
-   real_t*         mirror_r_lookup_;
-   real_t*         mirror_x_lookup_;
-   real_t*         mirror_z_lookup_;
-   real_t*         mirror_y_lookup_;
+   int_t*          mirror_id_lookup_ = nullptr;
+   real_t*         mirror_nx_lookup_ = nullptr;
+   real_t*         mirror_nz_lookup_ = nullptr;
+   real_t*         mirror_ny_lookup_ = nullptr;
+   real_t*         mirror_r_lookup_ = nullptr;
+   real_t*         mirror_x_lookup_ = nullptr;
+   real_t*         mirror_z_lookup_ = nullptr;
+   real_t*         mirror_y_lookup_ = nullptr;
    real_t          mirror_dhex_max_;
-   real_t*         mirror_normdisp_lookup_;
+   real_t*         mirror_normdisp_lookup_ = nullptr;
 
    vec3_vt         fp_pos_;
    bool            fp_has_rot_;
@@ -324,8 +328,13 @@ template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
    bool            pixel_cw_;
 
    int_t           pixel_hexid_end_;
-   int_t*          pixel_id_lookup_;
+   int_t           pixel_id_end_;
+   int_t*          pixel_id_lookup_ = nullptr;
+
+   calin::math::rng::VCLRealRNG<VCLRealType>* rng_ = nullptr;
+   bool adopt_rng_ = false;
 };
+
 
 // std::ostream& operator <<(std::ostream& stream, const VSORayTracer::TraceInfo& o);
 
