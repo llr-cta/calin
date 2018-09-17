@@ -306,10 +306,10 @@ public:
     // x.z() = sqrt(1.0-x.x()*x.x()-x.y()*x.y());
     x.z() = sqrt(nmul_add(x.y(),x.y(),nmul_add(x.x(),x.x(),1.0)));
 
-    mat3_vt m;
-    rotation_z_to_xyz_Rzy(m, v.x(), v.y(), v.z());
+    // Use the simpler rotate fuction (Rzy) as X and Y directions are arbitrary
+    rotate_in_place_z_to_u_Rzy(x, v);
 
-    return m*x;
+    return x;
   }
 
 };
