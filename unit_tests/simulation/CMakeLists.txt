@@ -24,7 +24,7 @@ endif()
 
 add_executable(test_vcl_raytracer test_vcl_raytracer.cpp)
 target_link_libraries(test_vcl_raytracer ${GTEST_BOTH_LIBRARIES}
-				     calin_simulation)
+	calin_simulation calin_math)
 add_test(TestVCLRaytracer test_vcl_raytracer)
 
 #add_executable(test_vs_optics test_vs_optics.cpp)

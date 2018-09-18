@@ -23,13 +23,104 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <limits>
 #include <gtest/gtest.h>
+
+#include <math/rng.hpp>
+#include <math/hex_array.hpp>
+#include <simulation/vso_array.hpp>
+#include <simulation/vs_optics.pb.h>
 
 #include <util/vcl.hpp>
 #include <simulation/vcl_raytracer.hpp>
 
 using namespace calin::util::vcl;
 using namespace calin::simulation::vcl_raytracer;
+
+calin::simulation::vs_optics::VSOArray* make_test_array()
+{
+  calin::ix::simulation::vs_optics::IsotropicDCArrayParameters mst;
+  mst.mutable_array_origin()->set_latitude(28.0 + 45.0/60.0 + 47.36/3600.0);
+  mst.mutable_array_origin()->set_longitude(-(17.0 + 53.0/60.0 + 23.93/3600.0));
+  mst.mutable_array_origin()->set_elevation(2147 * 100.0);
+
+  auto* scope = mst.mutable_prescribed_array_layout()->add_scope_positions();
+  scope->set_x(0);
+  scope->set_y(0);
+  scope->set_z(mst.array_origin().elevation());
+
+  mst.mutable_reflector_frame()->set_optic_axis_rotation(-90.0);
+
+  auto* dc = mst.mutable_reflector();
+  dc->set_curvature_radius(1920);
+  dc->set_aperture(1230);
+  dc->set_facet_num_hex_rings(5);
+  dc->mutable_psf_align()->set_object_plane(std::numeric_limits<double>::infinity());
+  dc->set_alignment_image_plane(1600);
+  dc->set_facet_spacing(122);
+  dc->set_facet_size(120);
+  dc->set_facet_focal_length(1607);
+  dc->set_facet_focal_length_dispersion(1);
+  dc->set_facet_spot_size_probability(0.8);
+  dc->set_facet_spot_size(0.5 * 2.8); // Spot size of 28mm at 2F
+  dc->set_facet_spot_size_dispersion(0.5 * 0.02);
+  dc->set_facet_labeling_parity(true);
+  dc->set_weathering_factor(1.0);
+  for(auto id : { 1,67,72,82,87 })dc->add_facet_missing_list(id-1);
+  mst.mutable_focal_plane()->set_camera_diameter(235);
+  mst.mutable_focal_plane()->mutable_translation()->set_y(1.0/(1.0/dc->alignment_image_plane()-1.0/(10 * 1e5)));
+  mst.mutable_pixel()->set_spacing(5);
+  mst.mutable_pixel()->set_cone_inner_diameter(5);
+  mst.mutable_pixel()->set_cone_survival_prob(1);
+  mst.mutable_pixel()->set_hex_module_size(1);
+  mst.mutable_pixel()->set_hex_module_layout_use_b_configuration(true);
+  mst.mutable_pixel()->set_module_num_hex_rings(9);
+
+  int u1, v1;
+  double x1,y1;
+  calin::math::hex_array::cluster_hexid_to_center_uv(1,1,u1,v1,false);
+  calin::math::hex_array::uv_to_xy(u1,v1,x1,y1);
+  mst.mutable_pixel()->set_grid_rotation(atan2(-y1,x1)/M_PI*180.0 + 30.0);
+
+#if 0
+  if(obscure_camera):
+      obs_camera_box = mst.add_pre_reflection_obscuration()
+      obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(2918.0/20)
+      obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(2918.0/20)
+      obs_camera_box.mutable_aligned_box().mutable_max_corner().set_y(mst.focal_plane().translation().y()+(1532.25-513.0)/10)
+      obs_camera_box.mutable_aligned_box().mutable_min_corner().set_x(-2918.0/20)
+      obs_camera_box.mutable_aligned_box().mutable_min_corner().set_z(-2918.0/20)
+      obs_camera_box.mutable_aligned_box().mutable_min_corner().set_y(mst.focal_plane().translation().y()-513.0/10)
+
+      obs_outer_aperture = mst.add_post_reflection_obscuration()
+      obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_x(0)
+      obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_z(-50.0/20)
+      obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_y(mst.focal_plane().translation().y()-513.0/10)
+      obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_x(2714.0/10)
+      obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_z((2585.0-50.0)/10)
+
+      obs_inner_aperture = mst.add_post_reflection_obscuration()
+      obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_x(0)
+      obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_z(0)
+      obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_y(mst.focal_plane().translation().y()-222.5/10)
+      obs_inner_aperture.mutable_circular_aperture().set_diameter(2304.0/10)
+
+  if include_window:
+      win = mst.mutable_spherical_window()
+      win.set_front_y_coord(mst.focal_plane().translation().y() - 427.5/10)
+      win.set_outer_radius(3443.0/10)
+      win.set_thickness(5.25/10.0)
+      win.set_refractive_index(1.5)
+  return mst
+  #endif
+
+  calin::simulation::vs_optics::VSOArray* array =
+    new calin::simulation::vs_optics::VSOArray;
+  calin::math::rng::RNG rng(__PRETTY_FUNCTION__, "VSOArray population");
+  array->generateFromArrayParameters(mst, rng);
+
+  return array;
+}
 
 template<typename VCLRealType> class TestVCLRaytracer :
   public VCLRealType, public testing::Test
@@ -42,8 +133,9 @@ using RealTypes = ::testing::Types<VCL128FloatReal, VCL256FloatReal, VCL512Float
 TYPED_TEST_CASE(TestVCLRaytracer, RealTypes);
 
 TYPED_TEST(TestVCLRaytracer, Test) {
-  ScopeRayTracer<TypeParam> raytracer(nullptr);
-
+  calin::simulation::vs_optics::VSOArray* array = make_test_array();
+  ScopeRayTracer<TypeParam> raytracer(array->telescope(0));
+  delete array;
 }
 
 int main(int argc, char **argv) {
