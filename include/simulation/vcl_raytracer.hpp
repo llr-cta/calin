@@ -148,7 +148,7 @@ public:
       mirror_nx_lookup_[iid] = mirror->align().x();
       mirror_nz_lookup_[iid] = mirror->align().z();
       mirror_ny_lookup_[iid] = mirror->align().y();
-      mirror_r_lookup_[iid] = mirror->focalLength();
+      mirror_r_lookup_[iid] = 2.0*mirror->focalLength();
       mirror_x_lookup_[iid] = mirror->pos().x();
       mirror_z_lookup_[iid] = mirror->pos().z();
       mirror_y_lookup_[iid] = mirror->pos().y();
@@ -194,6 +194,13 @@ public:
     }
     pixel_id_lookup_[pixel_hexid_end_] = pixel_hexid_end_;
     fp_aperture2_ = SQR(std::sqrt(fp_aperture2_) + scope->pixelSpacing());
+
+#if 0
+    std::cout << pixel_crot_ << ' ' << pixel_srot_ << ' ' << pixel_scaleinv_ << ' '
+      << pixel_shift_x_ << ' ' << pixel_shift_z_ << ' ' << pixel_cw_ << ' '
+      << pixel_hexid_end_ << ' ' << pixel_id_end_ << ' '
+      << fp_aperture2_ << ' ' << std::sqrt(fp_aperture2_) << '\n';
+#endif
   }
 
   ~ScopeRayTracer()
@@ -402,8 +409,8 @@ public:
 #endif
 
     info.pixel_hexid =
-      math::hex_array::VCLReal<VCLRealType>::xy_trans_to_hexid(
-        info.fplane_x, info.fplane_z,
+    calin::math::hex_array::VCLReal<VCLRealType>::
+      xy_trans_to_hexid_scaleinv(info.fplane_x, info.fplane_z,
         pixel_crot_, pixel_srot_, pixel_scaleinv_, pixel_shift_x_, pixel_shift_z_,
         pixel_cw_);
 
