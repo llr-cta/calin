@@ -296,7 +296,7 @@ public:
   }
 
   static inline void
-  scatter_direction(vec3_vt& v, real_vt dispersion,
+  scatter_direction_in_place(vec3_vt& v, real_vt dispersion,
     calin::math::rng::VCLRealRNG<VCLReal>& rng)
   {
     vec3_vt x;
@@ -308,8 +308,6 @@ public:
 
     // Use the simpler rotate fuction (Rzy) as X and Y directions are arbitrary
     rotate_in_place_z_to_u_Rzy(x, v);
-
-    return x;
   }
 
 };
