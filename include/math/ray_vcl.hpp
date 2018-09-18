@@ -139,7 +139,7 @@ public:
   }
 
   //! Propagates free particle to plane with y-normal : y + d = 0
-  bool_vt propagate_to_y_plane_with_mask(const bool_vt& inmask, const real_vt& d,
+  bool_vt propagate_to_y_plane_with_mask(bool_vt mask, const real_vt& d,
     bool time_reversal_ok=true, const real_vt& n = 1.0)
   {
     calc_uy_inv();
@@ -153,7 +153,6 @@ public:
     real_vt propagation_dist = plane_sep * uy_inv_;
 
     // Test whether particle is parallel to y plane
-    bool_vt mask = inmask;
     mask &= is_finite(propagation_dist);
 
     // Test whether particles would need to travel backwards, if requested
@@ -162,7 +161,7 @@ public:
     // Propagate particles that have mask=true
     propagate_dist_with_mask(mask, propagation_dist, n);
 
-    return true;
+    return mask;
   }
 
   bool_vt propagate_to_y_plane(const real_vt& d,
@@ -172,7 +171,7 @@ public:
     return propagate_to_y_plane_with_mask(mask, d, time_reversal_ok, n);
   }
 
-  bool_vt propagate_to_y_sphere_1st_interaction_fwd_bwd_with_mask(const bool_vt& maskin,
+  bool_vt propagate_to_y_sphere_1st_interaction_fwd_bwd_with_mask(bool_vt mask,
     const real_vt& radius, const real_vt& surface_y_min = 0, const real_vt& n = 1.0)
   {
     vec3_vt pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
@@ -181,7 +180,6 @@ public:
 
     const real_vt disc_4 = mul_sub(b_2, b_2, c);
 
-    bool_vt mask = maskin;
     mask &= disc_4 >= 0;
 
     real_vt dist = -sqrt(disc_4) - b_2;
@@ -189,7 +187,7 @@ public:
     return mask;
   }
 
-  bool_vt propagate_to_y_sphere_1st_interaction_fwd_only_with_mask(const bool_vt& maskin,
+  bool_vt propagate_to_y_sphere_1st_interaction_fwd_only_with_mask(bool_vt mask,
     const real_vt& radius, const real_vt& surface_y_min = 0, const real_vt& n = 1.0)
   {
     vec3_vt pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
@@ -197,8 +195,6 @@ public:
     const real_vt c = nmul_add(radius, radius, pos_rel.squaredNorm());
 
     const real_vt disc_4 = mul_sub(b_2, b_2, c);
-
-    bool_vt mask = maskin;
     mask &= disc_4 >= 0;
 
     real_vt dist = -sqrt(disc_4) - b_2;
@@ -208,7 +204,7 @@ public:
     return mask;
   }
 
-  bool_vt propagate_to_y_sphere_2nd_interaction_fwd_bwd_with_mask(const bool_vt& maskin,
+  bool_vt propagate_to_y_sphere_2nd_interaction_fwd_bwd_with_mask(bool_vt mask,
     const real_vt& radius, const real_vt& surface_y_min = 0, const real_vt& n = 1.0)
   {
     vec3_vt pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
@@ -216,8 +212,6 @@ public:
     const real_vt c = nmul_add(radius, radius, pos_rel.squaredNorm());
 
     const real_vt disc_4 = mul_sub(b_2, b_2, c);
-
-    bool_vt mask = maskin;
     mask &= disc_4 >= 0;
 
     real_vt dist = sqrt(disc_4) - b_2;
@@ -225,7 +219,7 @@ public:
     return mask;
   }
 
-  bool_vt propagate_to_y_sphere_2nd_interaction_fwd_only_with_mask(const bool_vt& maskin,
+  bool_vt propagate_to_y_sphere_2nd_interaction_fwd_only_with_mask(bool_vt mask,
     const real_vt& radius, const real_vt& surface_y_min = 0, const real_vt& n = 1.0)
   {
     vec3_vt pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
@@ -233,8 +227,6 @@ public:
     const real_vt c = nmul_add(radius, radius, pos_rel.squaredNorm());
 
     const real_vt disc_4 = mul_sub(b_2, b_2, c);
-
-    bool_vt mask = maskin;
     mask &= disc_4 >= 0;
 
     real_vt dist = sqrt(disc_4) - b_2;
