@@ -133,7 +133,7 @@ using RealTypes = ::testing::Types<VCL128FloatReal, VCL256FloatReal, VCL512Float
 
 TYPED_TEST_CASE(TestVCLRaytracer, RealTypes);
 
-TYPED_TEST(TestVCLRaytracer, Test) {
+TYPED_TEST(TestVCLRaytracer, RayTrace) {
   calin::simulation::vs_optics::VSOArray* array = make_test_array();
   ScopeRayTracer<TypeParam> raytracer(array->telescope(0));
 
@@ -142,13 +142,44 @@ TYPED_TEST(TestVCLRaytracer, Test) {
     ray.mutable_direction() << 0.0 , -1.0, 0.0;
     ray.mutable_position() << mirror->pos().x() , 2000.0, mirror->pos().z();
     typename TypeParam::bool_vt mask = true;
+    mask.insert(1, false);
     typename ScopeRayTracer<TypeParam>::TraceInfo trace_info;
     mask = raytracer.trace_reflector_frame(mask, ray, trace_info);
-    std::cout << mask << ' ' << trace_info.status << '\n';
+    ASSERT_TRUE(mask[0]);
+    ASSERT_FALSE(mask[1]);
+    ASSERT_EQ(trace_info.status[0], calin::simulation::vcl_raytracer::STS_TS_FOUND_PIXEL);
+    ASSERT_EQ(trace_info.status[1], calin::simulation::vcl_raytracer::STS_MASKED_ON_ENTRY);
+    ASSERT_EQ(trace_info.mirror_hexid[0], mirror->hexID());
+    ASSERT_EQ(trace_info.mirror_id[0], mirror->id());
+    ASSERT_EQ(trace_info.mirror_hexid[1], array->telescope(0)->numMirrorHexSites());
+    ASSERT_EQ(trace_info.mirror_id[1], array->telescope(0)->numMirrors());
   }
 
   delete array;
 }
+
+TEST(TestVCLRaytracer, PSF) {
+  calin::simulation::vs_optics::VSOArray* array = make_test_array();
+  ScopeRayTracer<VCL256FloatReal> raytracer(array->telescope(0));
+  calin::math::rng::VCLRealRNG<VCL256FloatReal> rng(__PRETTY_FUNCTION__,"Ray position generator");
+
+  for(unsigned iray=0; iray<100000; iray++) {
+    calin::math::ray::VCLRay<VCL256FloatReal> ray;
+    ray.mutable_direction() << 0.0 , -1.0, 0.0;
+    ray.mutable_position() <<
+      rng.uniform_zc(array->telescope(0)->reflectorIP()),
+      2000.0,
+      rng.uniform_zc(array->telescope(0)->reflectorIP());
+    typename VCL256FloatReal::bool_vt mask = true;
+    typename ScopeRayTracer<VCL256FloatReal>::TraceInfo trace_info;
+    auto pos = ray.position();
+    mask = raytracer.trace_reflector_frame(mask, ray, trace_info);
+    for(unsigned i=0;i<8;i++)std::cout << pos.x()[i] << ' ' << pos.z()[i] << ' ' << mask[i] << ' ' << trace_info.status[i] << '\n';
+  }
+
+  delete array;
+}
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

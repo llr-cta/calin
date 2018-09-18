@@ -115,7 +115,7 @@ public:
     ref_index_               = refractive_index;
 
     reflec_curvature_radius_ = scope->curvatureRadius();
-    reflec_aperture2_        = scope->aperture();
+    reflec_aperture2_        = 0;
     reflec_crot_             = scope->cosReflectorRotation();
     reflec_srot_             = scope->sinReflectorRotation();
     reflec_scaleinv_         = 1.0/scope->facetSpacing();
@@ -153,6 +153,7 @@ public:
       mirror_z_lookup_[iid] = mirror->pos().z();
       mirror_y_lookup_[iid] = mirror->pos().y();
       mirror_normdisp_lookup_[iid] = 0.25*mirror->spotSize()/mirror->focalLength();
+      reflec_aperture2_ = std::max(reflec_aperture2_, real_t(SQR(mirror->pos().x())+SQR(mirror->pos().z())));
     }
     mirror_nx_lookup_[mirror_id_end_] = 0.0;
     mirror_nz_lookup_[mirror_id_end_] = 0.0;
@@ -163,6 +164,7 @@ public:
     mirror_y_lookup_[mirror_id_end_] = 0.0;
     mirror_normdisp_lookup_[mirror_id_end_] = 0.0;
     mirror_dhex_max_ = 0.5*scope->facetSize();
+    reflec_aperture2_ = SQR(std::sqrt(reflec_aperture2_) + scope->facetSpacing());
 
     fp_pos_                  = scope->focalPlanePosition().cast<real_t>();
     fp_has_rot_              = scope->hasFPRotation();
@@ -221,12 +223,20 @@ public:
     return mask;
   }
 
+//#define DEBUG_STATUS
+
   bool_vt trace_reflector_frame(bool_vt mask, Ray& ray, TraceInfo& info)
   {
     info.status = STS_MASKED_ON_ENTRY;
+#ifdef DEBUG_STATUS
+    std::cout << mask[0] << '/' << info.status[0];
+#endif
 
     info.status = select(bool_int_vt(mask), STS_MISSED_REFLECTOR_SPHERE, info.status);
     mask &= ray.uy() < 0;
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     // *************************************************************************
     // ****************** RAY STARTS IN RELECTOR COORDINATES *******************
@@ -238,6 +248,9 @@ public:
     info.status = select(bool_int_vt(mask), STS_MISSED_REFLECTOR_SPHERE, info.status);
     mask = ray.propagate_to_y_sphere_2nd_interaction_fwd_only_with_mask(mask,
       reflec_curvature_radius_, 0, ref_index_);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     info.reflec_x     = select(mask, ray.position().x(), 0);
     info.reflec_z     = select(mask, ray.position().z(), 0);
@@ -245,6 +258,9 @@ public:
     // Test aperture
     info.status = select(bool_int_vt(mask), STS_OUTSIDE_REFLECTOR_APERTURE, info.status);
     mask &= (info.reflec_x*info.reflec_x + info.reflec_z*info.reflec_z) <= reflec_aperture2_;
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     // Assume mirrors on hexagonal grid - use hex_array routines to find which hit
     info.status = select(bool_int_vt(mask), STS_NO_MIRROR, info.status);
@@ -255,14 +271,20 @@ public:
 
     // Test we have a valid mirror hexid
     mask &= typename VCLRealType::bool_vt(info.mirror_hexid < mirror_hexid_end_);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
+
+    info.mirror_hexid = select(bool_int_vt(mask), info.mirror_hexid, mirror_hexid_end_);
 
     // Find the mirror ID
-    info.mirror_id =
-      vcl::lookup<0x40000000>(select(bool_int_vt(mask), info.mirror_hexid, mirror_hexid_end_),
-        mirror_id_lookup_);
+    info.mirror_id = vcl::lookup<0x40000000>(info.mirror_hexid, mirror_id_lookup_);
 
     // Test we have a valid mirror id
     mask &= typename VCLRealType::bool_vt(info.mirror_id < mirror_id_end_);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     info.mirror_dir.x() = vcl::lookup<0x40000000>(info.mirror_id, mirror_nx_lookup_);
     info.mirror_dir.z() = vcl::lookup<0x40000000>(info.mirror_id, mirror_nz_lookup_);
@@ -292,6 +314,9 @@ public:
     info.status = select(bool_int_vt(mask), STS_MISSED_MIRROR_SPHERE, info.status);
     mask = ray.propagate_to_y_sphere_2nd_interaction_fwd_bwd_with_mask(mask,
       info.mirror_r, -info.mirror_r, ref_index_);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     // Impact point relative to facet attchment point
     vec3_vt ray_pos = ray.position() + mirror_center - info.mirror_pos;
@@ -315,7 +340,11 @@ public:
     const real_vt dhex_pos60 = abs(x_cos60 - z_sin60);
     const real_vt dhex_neg60 = abs(x_cos60 + z_sin60);
 
+    info.status = select(bool_int_vt(mask), STS_MISSED_MIRROR_EDGE, info.status);
     mask &= max(max(dhex_pos60, dhex_neg60), abs(ray_pos.x())) < mirror_dhex_max_;
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     // Calculate mirror normal at impact point
     info.mirror_normal = -ray.position() * (1.0/info.mirror_r);
@@ -354,6 +383,9 @@ public:
     // Propagate to focal plane
     info.status = select(bool_int_vt(mask), STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE, info.status);
     mask = ray.propagate_to_y_plane_with_mask(mask, 0, false, ref_index_);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     // Test for interaction with obscuration before focal plane was hit
 
@@ -365,6 +397,9 @@ public:
 
     info.status = select(bool_int_vt(mask), STS_OUTSIDE_FOCAL_PLANE_APERTURE, info.status);
     mask &= (info.fplane_x*info.fplane_x + info.fplane_z*info.fplane_z) <= fp_aperture2_;
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     info.pixel_hexid =
       math::hex_array::VCLReal<VCLRealType>::xy_trans_to_hexid(
@@ -375,6 +410,9 @@ public:
     // Test we have a valid mirror hexid
     info.status = select(bool_int_vt(mask), STS_TS_NO_PIXEL, info.status);
     mask &= typename VCLRealType::bool_vt(info.pixel_hexid < pixel_hexid_end_);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     // Find the mirror ID
     info.pixel_id =
@@ -382,8 +420,14 @@ public:
         pixel_id_lookup_);
 
     mask &= typename VCLRealType::bool_vt(info.pixel_id < pixel_id_end_);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     info.status = select(bool_int_vt(mask), STS_TS_FOUND_PIXEL, info.status);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     if(fp_has_rot_)ray.derotate(fp_rot_.template cast<real_vt>());
     ray.untranslate_origin(fp_pos_.template cast<real_vt>());
@@ -392,6 +436,9 @@ public:
     // ************ RAY IS NOW BACK IN REFLECTOR COORDINATES AGAIN *************
     // *************************************************************************
 
+#ifdef DEBUG_STATUS
+    std::cout << '\n';
+#endif
     return mask;
   }
 
