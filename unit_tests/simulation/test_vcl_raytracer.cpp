@@ -69,7 +69,8 @@ calin::simulation::vs_optics::VSOArray* make_test_array()
   dc->set_weathering_factor(1.0);
   for(auto id : { 1,67,72,82,87 })dc->add_facet_missing_list(id-1);
   mst.mutable_focal_plane()->set_camera_diameter(235);
-  mst.mutable_focal_plane()->mutable_translation()->set_y(1.0/(1.0/dc->alignment_image_plane()-1.0/(10 * 1e5)));
+  //mst.mutable_focal_plane()->mutable_translation()->set_y(1.0/(1.0/dc->alignment_image_plane()-1.0/(10 * 1e5)));
+  mst.mutable_focal_plane()->mutable_translation()->set_y(dc->alignment_image_plane());
   mst.mutable_pixel()->set_spacing(5);
   mst.mutable_pixel()->set_cone_inner_diameter(5);
   mst.mutable_pixel()->set_cone_survival_prob(1);
@@ -162,7 +163,7 @@ TEST(TestVCLRaytracer, PSF) {
   calin::simulation::vs_optics::VSOArray* array = make_test_array();
   ScopeRayTracer<VCL256FloatReal> raytracer(array->telescope(0));
   calin::math::rng::VCLRealRNG<VCL256FloatReal> rng(__PRETTY_FUNCTION__,"Ray position generator");
-
+  std::ofstream stream("test.dat");
   for(unsigned iray=0; iray<100000; iray++) {
     calin::math::ray::VCLRay<VCL256FloatReal> ray;
     ray.mutable_direction() << 0.0 , -1.0, 0.0;
@@ -174,7 +175,13 @@ TEST(TestVCLRaytracer, PSF) {
     typename ScopeRayTracer<VCL256FloatReal>::TraceInfo trace_info;
     auto pos = ray.position();
     mask = raytracer.trace_reflector_frame(mask, ray, trace_info);
-    for(unsigned i=0;i<8;i++)std::cout << pos.x()[i] << ' ' << pos.z()[i] << ' ' << mask[i] << ' ' << trace_info.status[i] << '\n';
+    for(unsigned i=0;i<8;i++)stream
+      << ' ' << mask[i] << ' ' << trace_info.status[i]
+      << ' ' << pos.x()[i] << ' ' << pos.z()[i]
+      << ' ' << trace_info.fplane_x[i] << ' ' << trace_info.fplane_z[i]
+      << ' ' << trace_info.pixel_hexid[i] << ' ' << trace_info.pixel_id[i]
+      << ' ' << trace_info.mirror_hexid[i] << ' ' << trace_info.mirror_id[i]
+      << '\n';
   }
 
   delete array;
