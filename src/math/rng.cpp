@@ -134,44 +134,46 @@ void RNGCore::write_provenance(
   delete proto;
 }
 
-RNG::RNG(CoreType core_type, const std::string& created_by): core_(nullptr), adopt_core_(true)
+RNG::RNG(CoreType core_type, const std::string& created_by,
+  const std::string& comment): core_(nullptr), adopt_core_(true)
 {
   switch(core_type) {
     case CoreType::NR3:
-      core_ = new NR3RNGCore;
+      core_ = new NR3RNGCore(created_by, comment);
       break;
     case CoreType::RANLUX48:
-      core_ = new Ranlux48RNGCore;
+      core_ = new Ranlux48RNGCore(created_by, comment);
       break;
     case CoreType::MT19937:
-      core_ = new MT19937RNGCore;
+      core_ = new MT19937RNGCore(created_by, comment);
       break;
     default:
       throw std::invalid_argument("Unsupported RNG core type: " + std::to_string(int(core_type)));
   }
   const ix::math::rng::RNGData* proto = this->as_proto();
-  calin::provenance::chronicle::register_calin_rng(*proto, created_by);
+  calin::provenance::chronicle::register_calin_rng(*proto, created_by, comment);
   delete proto;
 }
 
-RNG::RNG(uint64_t seed, CoreType core_type, const std::string& created_by):
+RNG::RNG(uint64_t seed, CoreType core_type, const std::string& created_by,
+    const std::string& comment):
   core_(nullptr), adopt_core_(true)
 {
   switch(core_type) {
     case CoreType::NR3:
-      core_ = new NR3RNGCore(seed);
+      core_ = new NR3RNGCore(seed, created_by, comment);
       break;
     case CoreType::RANLUX48:
-      core_ = new Ranlux48RNGCore(seed);
+      core_ = new Ranlux48RNGCore(seed, created_by, comment);
       break;
     case CoreType::MT19937:
-      core_ = new MT19937RNGCore(seed);
+      core_ = new MT19937RNGCore(seed, created_by, comment);
       break;
     default:
       throw std::invalid_argument("Unsupported RNG core type: " + std::to_string(int(core_type)));
   }
   const ix::math::rng::RNGData* proto = this->as_proto();
-  calin::provenance::chronicle::register_calin_rng(*proto, created_by);
+  calin::provenance::chronicle::register_calin_rng(*proto, created_by, comment);
   delete proto;
 }
 
@@ -181,8 +183,9 @@ RNG::RNG(RNGCore* core, bool adopt_core):
   // nothing to see here
 }
 
-RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state, const std::string& created_by):
-    core_(RNGCore::create_from_proto(proto.core(), restore_state)), adopt_core_(true)
+RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state,
+    const std::string& created_by, const std::string& comment):
+  core_(RNGCore::create_from_proto(proto.core(), restore_state, created_by, comment)), adopt_core_(true)
 {
   if(restore_state)
   {
@@ -190,7 +193,7 @@ RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state, const std::str
     bm_cachedval_ = proto.bm_cachedval();
   }
   const ix::math::rng::RNGData* proto2 = this->as_proto();
-  calin::provenance::chronicle::register_calin_rng(*proto2, created_by);
+  calin::provenance::chronicle::register_calin_rng(*proto2, created_by, comment);
   delete proto2;
 }
 

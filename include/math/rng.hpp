@@ -93,15 +93,19 @@ class RNG
 {
 public:
   enum class CoreType { NR3, RANLUX48, MT19937 /*, DEV_RANDOM*/ };
-  RNG(CoreType core_type = CoreType::NR3, const std::string& created_by = "");
-  RNG(const std::string& created_by, CoreType core_type = CoreType::NR3):
-    RNG(core_type, created_by) { /* nothing to see here */ }
-  RNG(uint64_t seed, CoreType core_type = CoreType::NR3, const std::string& created_by = "");
-  RNG(uint64_t seed, const std::string& created_by, CoreType core_type = CoreType::NR3):
-    RNG(seed, core_type, created_by) { /* nothing to see here */ }
+  RNG(CoreType core_type = CoreType::NR3, const std::string& created_by = "",
+    const std::string& comment = "");
+  RNG(const std::string& created_by, const std::string& comment = "",
+      CoreType core_type = CoreType::NR3):
+    RNG(core_type, created_by, comment) { /* nothing to see here */ }
+  RNG(uint64_t seed, CoreType core_type = CoreType::NR3, const std::string& created_by = "",
+    const std::string& comment = "");
+  RNG(uint64_t seed, const std::string& created_by, const std::string& comment = "",
+      CoreType core_type = CoreType::NR3):
+    RNG(seed, core_type, created_by, comment) { /* nothing to see here */ }
   RNG(RNGCore* core, bool adopt_core = false);
   RNG(const ix::math::rng::RNGData& proto, bool restore_state = false,
-    const std::string& created_by = "");
+    const std::string& created_by = "", const std::string& comment = "");
 
   ~RNG();
 
@@ -210,6 +214,8 @@ class NR3RNGCore: public RNGCore
 
   NR3RNGCore(uint64_t seed = 0,
     const std::string& created_by = "", const std::string& comment = "");
+  NR3RNGCore(const std::string& created_by, const std::string& comment = ""):
+    NR3RNGCore(0, created_by, comment) { /* nothing to see here */ }
   NR3RNGCore(const ix::math::rng::NR3RNGCoreData& proto, bool restore_state = false,
     const std::string& created_by = "", const std::string& comment = "");
   ~NR3RNGCore();
@@ -251,6 +257,8 @@ class Ranlux48RNGCore: public RNGCore
 
   Ranlux48RNGCore(uint64_t seed = 0,
     const std::string& created_by = "", const std::string& comment = "");
+  Ranlux48RNGCore(const std::string& created_by, const std::string& comment = ""):
+    Ranlux48RNGCore(0, created_by, comment) { /* nothing to see here */ }
   Ranlux48RNGCore(const ix::math::rng::Ranlux48RNGCoreData& proto,
     bool restore_state = false,
     const std::string& created_by = "", const std::string& comment = "");
@@ -307,6 +315,8 @@ class MT19937RNGCore: public RNGCore
 
   MT19937RNGCore(uint64_t seed = 0,
     const std::string& created_by = "", const std::string& comment = "");
+  MT19937RNGCore(const std::string& created_by, const std::string& comment = ""):
+    MT19937RNGCore(0, created_by, comment) { /* nothing to see here */ }
   MT19937RNGCore(const ix::math::rng::STLRNGCoreData& proto,
     bool restore_state = false,
     const std::string& created_by = "", const std::string& comment = "");
