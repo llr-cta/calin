@@ -193,11 +193,20 @@ public:
     fp_aperture2_ = SQR(std::sqrt(fp_aperture2_) + scope->pixelSpacing());
   }
 
-  // RayTracer(const VSOArray* array, math::rng::RNG* rng):
-  //   fArray(array), fRNG(rng) { /* nothing to see here */ }
-  // RayTracer(math::rng::RNG* rng, const VSOArray* array = nullptr):
-  //   fArray(array), fRNG(rng) { /* nothing to see here */ }
-  // ~VSORayTracer();
+  ~ScopeRayTracer()
+  {
+    free(mirror_id_lookup_);
+    free(mirror_nx_lookup_);
+    free(mirror_nz_lookup_);
+    free(mirror_ny_lookup_);
+    free(mirror_r_lookup_);
+    free(mirror_x_lookup_);
+    free(mirror_z_lookup_);
+    free(mirror_y_lookup_);
+    free(mirror_normdisp_lookup_);
+    free(pixel_id_lookup_);
+    if(adopt_rng_)delete rng_;
+  }
 
   bool_vt trace_scope_centered_global_frame(bool_vt mask, Ray& ray, TraceInfo& info)
   {
