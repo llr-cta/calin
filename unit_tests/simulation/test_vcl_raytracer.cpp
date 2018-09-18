@@ -32,6 +32,7 @@
 #include <simulation/vs_optics.pb.h>
 
 #include <util/vcl.hpp>
+#include <math/ray_vcl.hpp>
 #include <simulation/vcl_raytracer.hpp>
 
 using namespace calin::util::vcl;
@@ -135,6 +136,17 @@ TYPED_TEST_CASE(TestVCLRaytracer, RealTypes);
 TYPED_TEST(TestVCLRaytracer, Test) {
   calin::simulation::vs_optics::VSOArray* array = make_test_array();
   ScopeRayTracer<TypeParam> raytracer(array->telescope(0));
+
+  for(const auto* mirror : array->telescope(0)->all_mirrors()) {
+    calin::math::ray::VCLRay<TypeParam> ray;
+    ray.mutable_direction() << 0.0 , -1.0, 0.0;
+    ray.mutable_position() << mirror->pos().x() , 2000.0, mirror->pos().z();
+    typename TypeParam::bool_vt mask = true;
+    typename ScopeRayTracer<TypeParam>::TraceInfo trace_info;
+    mask = raytracer.trace_reflector_frame(mask, ray, trace_info);
+    std::cout << mask << ' ' << trace_info.status << '\n';
+  }
+
   delete array;
 }
 
