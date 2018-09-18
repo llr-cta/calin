@@ -64,6 +64,17 @@ public:
   const real_vt& uy() const { return dir_.y(); }
   const real_vt& uz() const { return dir_.z(); }
 
+  vec3_vt& mutable_position() { return pos_; }
+  vec3_vt& mutable_direction() { clear_dir_inv(); return dir_; }
+  real_vt& mutable_ct() { return ct_; }
+  real_vt& mutable_energy() { return energy_; }
+  real_vt& mutable_x() { return pos_.x(); }
+  real_vt& mutable_y() { return pos_.y(); }
+  real_vt& mutable_z() { return pos_.z(); }
+  real_vt& mutable_ux() { has_ux_inv_=false; return dir_.x(); }
+  real_vt& mutable_uy() { has_uy_inv_=false; return dir_.y(); }
+  real_vt& mutable_uz() { has_uz_inv_=false; return dir_.z(); }
+
   void set_position(const vec3_vt& pos) { pos_ = pos; }
   void set_direction(const vec3_vt& dir) { clear_dir_inv(); dir_ = dir; }
   void set_ct(const real_vt& ct) {  ct_ = ct; }
