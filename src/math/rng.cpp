@@ -177,10 +177,13 @@ RNG::RNG(uint64_t seed, CoreType core_type, const std::string& created_by,
   delete proto;
 }
 
-RNG::RNG(RNGCore* core, bool adopt_core):
-    core_(core), adopt_core_(adopt_core)
+RNG::RNG(RNGCore* core, bool adopt_core,
+    const std::string& created_by, const std::string& comment):
+  core_(core), adopt_core_(adopt_core)
 {
-  // nothing to see here
+  const ix::math::rng::RNGData* proto = this->as_proto();
+  calin::provenance::chronicle::register_calin_rng(*proto, created_by, comment);
+  delete proto;
 }
 
 RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state,

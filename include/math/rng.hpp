@@ -103,7 +103,8 @@ public:
   RNG(uint64_t seed, const std::string& created_by, const std::string& comment = "",
       CoreType core_type = CoreType::NR3):
     RNG(seed, core_type, created_by, comment) { /* nothing to see here */ }
-  RNG(RNGCore* core, bool adopt_core = false);
+  RNG(RNGCore* core, bool adopt_core = false,
+    const std::string& created_by = "", const std::string& comment = "");
   RNG(const ix::math::rng::RNGData& proto, bool restore_state = false,
     const std::string& created_by = "", const std::string& comment = "");
 
