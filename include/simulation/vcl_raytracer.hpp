@@ -239,7 +239,7 @@ public:
     std::cout << mask[0] << '/' << info.status[0];
 #endif
 
-    info.status = select(bool_int_vt(mask), STS_MISSED_REFLECTOR_SPHERE, info.status);
+    info.status = select(bool_int_vt(mask), STS_TRAVELLING_AWAY_REFLECTOR, info.status);
     mask &= ray.uy() < 0;
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
