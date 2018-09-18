@@ -269,6 +269,9 @@ public:
   const Eigen::Matrix3d& rotationGlobalToReflector() const { return rot_global_to_reflector_; }
   const Eigen::Vector3d& translationGlobalToReflector() const { return off_global_to_reflector_; }
 
+  const Eigen::Matrix3d& rotationReflectorToFP() const { return rot_reflector_to_camera_; }
+  bool hasFPRotation() const { return fHasFPRotation; }
+
 private:
   // ************************************************************************
   // Telescope Parameters
