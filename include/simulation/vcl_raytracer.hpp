@@ -22,8 +22,11 @@
 
 #pragma once
 
+#include <algorithm>
+
 #include <util/memory.hpp>
 #include <util/vcl.hpp>
+#include <math/special.hpp>
 #include <math/ray_vcl.hpp>
 #include <math/rng_vcl.hpp>
 #include <math/hex_array_vcl.hpp>
@@ -105,6 +108,8 @@ public:
     VCLRealType(), rng_(rng==nullptr ? new RNG(__PRETTY_FUNCTION__) : rng),
     adopt_rng_(rng==nullptr ? true : adopt_rng)
   {
+    using calin::math::special::SQR;
+
     global_to_reflector_rot_ = scope->rotationGlobalToReflector().cast<real_t>();
     ref_index_               = refractive_index;
 
@@ -132,7 +137,8 @@ public:
 
     for(int ihexid=0; ihexid<mirror_hexid_end_; ihexid++) {
       auto* mirror = scope->mirrorByHexID(ihexid);
-      mirror_id_lookup_[ihexid] = mirror ? mirror->hexID() : mirror_id_end_;
+      mirror_id_lookup_[ihexid] =
+        (mirror==nullptr or mirror->removed()) ? mirror_id_end_ : mirror->id();
     }
     mirror_id_lookup_[mirror_hexid_end_] = mirror_id_end_;
 
@@ -155,24 +161,36 @@ public:
     mirror_z_lookup_[mirror_id_end_] = 0.0;
     mirror_y_lookup_[mirror_id_end_] = 0.0;
     mirror_normdisp_lookup_[mirror_id_end_] = 0.0;
+    mirror_dhex_max_ = 0.5*scope->facetSize();
 
-    mirror_id_lookup_[mirror_hexid_end_] = mirror_id_end_;
+    fp_pos_                  = scope->focalPlanePosition().cast<real_t>();
+    fp_has_rot_              = scope->hasFPRotation();
+    fp_rot_                  = scope->rotationReflectorToFP().cast<real_t>();
+    fp_aperture2_            = 0;
 
+    pixel_crot_              = scope->cosPixelRotation();
+    pixel_srot_              = scope->sinPixelRotation();
+    pixel_scaleinv_          = 1.0/scope->pixelSpacing();
+    pixel_shift_x_           = scope->pixelGridShiftX();
+    pixel_shift_z_           = scope->pixelGridShiftZ();
+    pixel_cw_                = scope->pixelParity();
 
-#if 0
+    pixel_hexid_end_         = scope->numPixelHexSites();
+    pixel_id_end_            = scope->numPixels();
 
-    int_t           mirror_hexid_end_;
-    int_t           mirror_id_end_;
-    int_t*          mirror_id_lookup_ = nullptr;
-    real_t*         mirror_nx_lookup_ = nullptr;
-    real_t*         mirror_nz_lookup_ = nullptr;
-    real_t*         mirror_ny_lookup_ = nullptr;
-    real_t*         mirror_r_lookup_ = nullptr;
-    real_t*         mirror_x_lookup_ = nullptr;
-    real_t*         mirror_z_lookup_ = nullptr;
-    real_t*         mirror_y_lookup_ = nullptr;
-    real_t          mirror_dhex_max_;
-#endif
+    calin::util::memory::aligned_calloc(pixel_id_lookup_, pixel_hexid_end_+1);
+    for(int ihexid = 0; ihexid<pixel_hexid_end_; ihexid++) {
+      const auto* pixel = scope->pixelByHexID(ihexid);
+      if(pixel==nullptr or pixel->removed()) {
+        pixel_id_lookup_[ihexid] = pixel_hexid_end_;
+      } else {
+        pixel_id_lookup_[ihexid] = pixel->id();
+        fp_aperture2_ =
+          std::max(fp_aperture2_, real_t(SQR(pixel->pos().x())+SQR(pixel->pos().z())));
+      }
+    }
+    pixel_id_lookup_[pixel_hexid_end_] = pixel_hexid_end_;
+    fp_aperture2_ = SQR(std::sqrt(fp_aperture2_) + scope->pixelSpacing());
   }
 
   // RayTracer(const VSOArray* array, math::rng::RNG* rng):
@@ -393,9 +411,9 @@ public:
    real_t          mirror_dhex_max_;
    real_t*         mirror_normdisp_lookup_ = nullptr;
 
-   vec3_vt         fp_pos_;
+   vec3_t          fp_pos_;
    bool            fp_has_rot_;
-   mat3_vt         fp_rot_;
+   mat3_t          fp_rot_;
    real_t          fp_aperture2_;
 
    real_t          pixel_crot_;
