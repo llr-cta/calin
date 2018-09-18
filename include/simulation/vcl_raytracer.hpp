@@ -139,12 +139,12 @@ public:
     for(int iid=0; iid<mirror_id_end_; iid++) {
       auto* mirror = scope->mirror(iid);
       mirror_nx_lookup_[iid] = mirror->align().x();
-      mirror_nz_lookup_[iid] = mirror->align().y();
-      mirror_ny_lookup_[iid] = mirror->align().z();
+      mirror_nz_lookup_[iid] = mirror->align().z();
+      mirror_ny_lookup_[iid] = mirror->align().y();
       mirror_r_lookup_[iid] = mirror->focalLength();
       mirror_x_lookup_[iid] = mirror->pos().x();
-      mirror_z_lookup_[iid] = mirror->pos().y();
-      mirror_y_lookup_[iid] = mirror->pos().z();
+      mirror_z_lookup_[iid] = mirror->pos().z();
+      mirror_y_lookup_[iid] = mirror->pos().y();
       mirror_normdisp_lookup_[iid] = 0.25*mirror->spotSize()/mirror->focalLength();
     }
     mirror_nx_lookup_[mirror_id_end_] = 0.0;
