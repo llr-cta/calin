@@ -295,14 +295,16 @@ public:
          z,  xmo_cpsp, x*sp2+cp2;
   }
 
+  // Note this function generates scattered vectors with RMS of
+  // dispersion_per_axis on each of the axes perpendicular to v
   static inline void
-  scatter_direction_in_place(vec3_vt& v, real_vt dispersion,
+  scatter_direction_in_place(vec3_vt& v, real_vt dispersion_per_axis,
     calin::math::rng::VCLRealRNG<VCLReal>& rng)
   {
     vec3_vt x;
     rng.normal_two_bm(x.x(), x.y());
-    x.x() *= dispersion;
-    x.y() *= dispersion;
+    x.x() *= dispersion_per_axis;
+    x.y() *= dispersion_per_axis;
     // x.z() = sqrt(1.0-x.x()*x.x()-x.y()*x.y());
     x.z() = sqrt(nmul_add(x.y(),x.y(),nmul_add(x.x(),x.x(),1.0)));
 
