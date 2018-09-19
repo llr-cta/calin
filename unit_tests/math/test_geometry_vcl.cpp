@@ -26,12 +26,15 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-#include "math/rng_vcl.hpp"
-#include "math/geometry_vcl.hpp"
+#include <math/moments_calc.hpp>
+#include <math/rng_vcl.hpp>
+#include <math/geometry_vcl.hpp>
+#include <math/vector3d_util.hpp>
 
 using namespace calin::math::geometry;
 using namespace calin::math::rng;
 using namespace calin::util::vcl;
+using namespace calin::math::moments_calc;
 
 template<typename VCLRealType> class VCLGeometryTest :
   public VCLRealType, public testing::Test
@@ -326,6 +329,26 @@ TYPED_TEST(VCLGeometryTest, RotateInPlace_Rxzx) {
     ASSERT_TRUE(horizontal_and(abs(vz.y())<1e-6)) << vz.y() << '\n' << u.y();
     ASSERT_TRUE(horizontal_and(abs(vz.z() - 1.0)<1e-6)) << vz.y() << '\n' << u.z();
   }
+}
+
+TEST(VCLGeometryTest, ScatterDirectionEqualsScalar) {
+  VCLRealRNG<VCL256DoubleReal> v_rng;
+  RNG s_rng;
+
+  SecondMomentsCalc2D v_moments;
+  SecondMomentsCalc2D s_moments;
+
+  for(unsigned i=0; i<1000000; i++) {
+    VCL256DoubleReal::vec3_vt v_vec = VCL256DoubleReal::vec3_vt::UnitZ();
+    Eigen::Vector3d s_vec = Eigen::Vector3d::UnitZ();
+
+    calin::math::geometry::VCL<VCL256DoubleReal>::scatter_direction_in_place(v_vec, 0.01, v_rng);
+    calin::math::vector3d_util::scatter_direction(s_vec, 0.01, s_rng);
+    v_moments.accumulate(v_vec.x()[0], v_vec.y()[0]);
+    s_moments.accumulate(s_vec.x(), s_vec.y());
+  }
+  EXPECT_NEAR(v_moments.mean_x(), v_moments.mean_x(), 0.0001);
+  EXPECT_NEAR(v_moments.mean_y(), v_moments.mean_y(), 0.0001);
 }
 
 int main(int argc, char **argv) {
