@@ -32,6 +32,7 @@
 #include <math/hex_array_vcl.hpp>
 #include <math/geometry_vcl.hpp>
 #include <simulation/vso_telescope.hpp>
+#include <simulation/vso_obscuration.hpp>
 
 namespace calin { namespace simulation { namespace vcl_raytracer {
 
@@ -84,6 +85,22 @@ public:
 
   int_vt              pixel_hexid;
   int_vt              pixel_id;
+};
+
+template<typename VCLRealType> class Obscuration: public VCLRealType
+{
+public:
+  using typename VCLRealType::real_vt;
+  using typename VCLRealType::bool_vt;
+  using typename VCLRealType::vec3_vt;
+  using typename VCLRealType::mat3_vt;
+  using Ray = calin::math::ray::VCLRay<VCLRealType>;
+
+  virtual ~Obscuration() {
+    // nothing to see here
+  }
+  virtual bool_vt doesObscure(const Ray& p_in, Ray& p_out, real_vt n) = 0;
+  virtual Obscuration<VCLRealType>* clone() const = 0;
 };
 
 template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
@@ -494,6 +511,51 @@ public:
    RNG* rng_ = nullptr;
    bool adopt_rng_ = false;
 };
+
+template<typename VCLRealType> class AlignedBoxObscuration:
+  public Obscuration<VCLRealType>
+{
+public:
+  using typename Obscuration<VCLRealType>::real_vt;
+  using typename Obscuration<VCLRealType>::bool_vt;
+  using typename Obscuration<VCLRealType>::vec3_vt;
+  using typename Obscuration<VCLRealType>::mat3_vt;
+  using typename Obscuration<VCLRealType>::Ray;
+
+  AlignedBoxObscuration(const vec3_vt& max_corner, const vec3_vt& min_corner):
+    Obscuration<VCLRealType>(), min_corner_(min_corner), max_corner_(max_corner)
+  {
+    // nothing to see here
+  }
+  AlignedBoxObscuration(const calin::simulation::vs_optics::VSOAlignedBoxObscuration& o):
+    Obscuration<VCLRealType>(),
+    min_corner_(o.min_corner().template cast<real_vt>()),
+    max_corner_(o.max_corner().template cast<real_vt>())
+  {
+    // nothing to see here
+  }
+  virtual ~AlignedBoxObscuration()
+  {
+    // nothing to see here
+  }
+  bool_vt doesObscure(const Ray& p_in, Ray& p_out, real_vt n) override
+  {
+    real_vt tmin;
+    real_vt tmax;
+    bool_vt mask = p_in.box_has_future_intersection(tmin, tmax, min_corner_, max_corner_);
+    p_out = p_in;
+    p_out.propagate_dist_with_mask(mask & (tmin>0), tmin, n);
+    return mask;
+  }
+  virtual AlignedBoxObscuration<VCLRealType>* clone() const override
+  {
+    return new AlignedBoxObscuration<VCLRealType>(*this);
+  }
+private:
+  vec3_vt min_corner_;
+  vec3_vt max_corner_;
+};
+
 
 
 // std::ostream& operator <<(std::ostream& stream, const VSORayTracer::TraceInfo& o);
