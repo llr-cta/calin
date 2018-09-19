@@ -308,6 +308,7 @@ public:
 
     // Use the simpler rotate fuction (Rzy) as X and Y directions are arbitrary
     rotate_in_place_z_to_u_Rzy(x, v);
+    v = x;
   }
 
 };
