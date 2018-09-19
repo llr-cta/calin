@@ -190,14 +190,14 @@ public:
     const double multiplier = C_U64_TO_DBL*scale;
     double_vt x = to_double(uniform_int64());
     // return select(x<0, nmul_add(x,multiplier,0.5*scale), x*multiplier);
-    return mul_add(x, multiplier, double_vt(scale) & (x<0));
+    return mul_add(x, multiplier, select(x<0, scale, 0.0));
 }
 
   float_vt uniform_float(const float scale = 1.0f) {
     const float multiplier = C_U32_TO_FLT*scale;
     float_vt x = to_float(uniform_int32());
     // return select(x<0, nmul_add(x,multiplier,0.5*scale), x*multiplier);
-    return mul_add(x, multiplier, float_vt(scale) & (x<0));
+    return mul_add(x, multiplier, select(x<0, scale, 0));
   }
 
   void uniform_real(float_vt& x, const float_vt& scale = 1.0f) {
@@ -659,7 +659,7 @@ public:
     // nothing to see here
   }
 
-  VCLRealRNG(const std::string& created_by, const std::string& comment = "",
+  VCLRealRNG(const std::string& created_by = "", const std::string& comment = "",
       uint64_t seed = 0, typename VCLRNG<architecture>::CoreType core_type = VCLRNG<architecture>::CoreType::NR3):
     rng_(new VCLRNG<architecture>(created_by, comment, seed, core_type)),
     adopt_rng_(true)
@@ -667,7 +667,7 @@ public:
     // nothing to see here
   }
 
-  VCLRealRNG(uint64_t seed, const std::string& created_by, const std::string& comment = "",
+  VCLRealRNG(uint64_t seed, const std::string& created_by = "", const std::string& comment = "",
       typename VCLRNG<architecture>::CoreType core_type = VCLRNG<architecture>::CoreType::NR3):
     rng_(new VCLRNG<architecture>(seed, created_by, comment, core_type)),
     adopt_rng_(true)
