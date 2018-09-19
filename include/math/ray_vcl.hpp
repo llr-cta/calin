@@ -29,6 +29,7 @@
 #include <calin_global_definitions.hpp>
 #include <math/constants.hpp>
 #include <util/vcl.hpp>
+#include <math/geometry_vcl.hpp>
 
 namespace calin { namespace math { namespace ray {
 
@@ -64,6 +65,10 @@ public:
   const real_vt& uy() const { return dir_.y(); }
   const real_vt& uz() const { return dir_.z(); }
 
+  real_vt ux_inv() const { calc_ux_inv(); return ux_inv_; }
+  real_vt uy_inv() const { calc_uy_inv(); return uy_inv_; }
+  real_vt uz_inv() const { calc_uz_inv(); return uz_inv_; }
+
   vec3_vt& mutable_position() { return pos_; }
   vec3_vt& mutable_direction() { clear_dir_inv(); return dir_; }
   real_vt& mutable_ct() { return ct_; }
@@ -88,6 +93,15 @@ public:
     clear_dir_inv(); pos_ = rot * pos_; dir_ = rot * dir_; }
   void derotate(const mat3_vt& rot) {
     clear_dir_inv(); pos_ = rot.transpose() * pos_; dir_ = rot.transpose() * dir_; }
+
+  bool_vt box_has_future_intersection(real_vt& tmin, real_vt& tmax,
+    const vec3_vt& min_corner, const vec3_vt& max_corner)
+  {
+    calc_dir_inv();
+    return calin::math::geometry::VCL<VCLReal>::
+      box_has_future_intersection_dirinv(tmin, tmax, min_corner, max_corner,
+        pos_, ux_inv_, uy_inv_, uz_inv_);
+  }
 
   void reflect_from_surface_with_mask(const bool_vt& mask, const vec3_vt& surface_norm) {
     clear_dir_inv();
@@ -299,27 +313,27 @@ public:
     IntersectionPoint ip = IP_CLOSEST, bool time_reversal_ok = true, double n = 1.0);
 #endif
 
-  void calc_ux_inv() {
-    if(!has_ux_inv_) { has_ux_inv_ = true; ux_inv_ = 1.0/dir_.x(); } }
-  void calc_uy_inv() {
-    if(!has_uy_inv_) { has_uy_inv_ = true; uy_inv_ = 1.0/dir_.y(); } }
-  void calc_uz_inv() {
-    if(!has_uz_inv_) { has_uz_inv_ = true; uz_inv_ = 1.0/dir_.z(); } }
-  void calc_dir_inv() { calc_ux_inv(); calc_uy_inv(); calc_uz_inv(); }
-
 private:
-  void clear_dir_inv() { has_ux_inv_ = has_uy_inv_ = has_uz_inv_ = false; }
+  void calc_ux_inv() const {
+    if(!has_ux_inv_) { has_ux_inv_ = true; ux_inv_ = 1.0/dir_.x(); } }
+  void calc_uy_inv() const {
+    if(!has_uy_inv_) { has_uy_inv_ = true; uy_inv_ = 1.0/dir_.y(); } }
+  void calc_uz_inv() const {
+    if(!has_uz_inv_) { has_uz_inv_ = true; uz_inv_ = 1.0/dir_.z(); } }
+  void calc_dir_inv() const { calc_ux_inv(); calc_uy_inv(); calc_uz_inv(); }
+
+  void clear_dir_inv() const { has_ux_inv_ = has_uy_inv_ = has_uz_inv_ = false; }
 
   vec3_vt pos_ = vec3_vt::Zero();
   vec3_vt dir_ = vec3_vt::UnitY();
   real_vt ct_ = 0;
   real_vt energy_ = 0;
-  bool has_ux_inv_ = false;
-  bool has_uy_inv_ = false;
-  bool has_uz_inv_ = false;
-  real_vt ux_inv_ = 0;
-  real_vt uy_inv_ = 0;
-  real_vt uz_inv_ = 0;
+  mutable bool has_ux_inv_ = false;
+  mutable bool has_uy_inv_ = false;
+  mutable bool has_uz_inv_ = false;
+  mutable real_vt ux_inv_ = 0;
+  mutable real_vt uy_inv_ = 0;
+  mutable real_vt uz_inv_ = 0;
 };
 
 } } } // namespace calin::math::ray
