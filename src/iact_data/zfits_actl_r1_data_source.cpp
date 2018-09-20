@@ -78,7 +78,7 @@ ZFITSSingleFileACTL_R1_CameraEventDataSource(const std::string& filename, config
   if(config.run_header_table_name().empty())
     config.set_run_header_table_name(default_R1_run_header_table_name);
   if(config.events_table_name().empty())
-    config.set_events_table_name(default_R1_run_header_table_name);
+    config.set_events_table_name(default_R1_events_table_name);
 
   if(!is_file(filename_))
     throw std::runtime_error(std::string("No such file: ")+filename_);
@@ -168,7 +168,7 @@ ZFITSSingleFileACTL_R1_CameraEventDataSource::default_config()
   config_type config = config_type::default_instance();
   config.set_extension(".fits.fz");
   config.set_run_header_table_name(default_R1_run_header_table_name);
-  config.set_events_table_name(default_R1_run_header_table_name);
+  config.set_events_table_name(default_R1_events_table_name);
   return config;
 }
 
