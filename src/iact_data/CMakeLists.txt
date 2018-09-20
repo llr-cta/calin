@@ -17,13 +17,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --save-temps")
 
 set(CALIN_TARGET_LIBRARY calin_iact_data)
 set(CALIN_SOURCES telescope_data_source.cpp event_visitor.cpp
-	event_dispatcher.cpp parallel_event_dispatcher.cpp 
+	event_dispatcher.cpp parallel_event_dispatcher.cpp
 	functional_event_visitor.cpp instrument_layout.cpp
 	nectarcam_layout.cpp nectarcam_module_configuration.cpp
 	waveform_treatment_event_visitor.cpp waveform_treatment_event_visitor_impl.cpp)
 
 if(CTA_CAMERASTOACTL_FOUND)
-	set(CALIN_SOURCES ${CALIN_SOURCES} zfits_actl_data_source.cpp
+	set(CALIN_SOURCES ${CALIN_SOURCES}
+		zfits_actl_l0_data_source.cpp zfits_actl_r1_data_source.cpp
 		zfits_data_source.cpp nectarcam_data_source.cpp)
 endif()
 
