@@ -33,8 +33,9 @@
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
 #include <ProtobufIFits.h>
+
+#ifndef CALIN_NO_ACTL_L0
 #include <L0.pb.h>
-#include <R1.pb.h>
 
 /*
 
@@ -227,6 +228,11 @@ private:
 
 } } } // namespace calin::iact_data::zfits_actl_data_source
 
+#endif // not defined CALIN_NO_ACTL_L0
+
+#ifndef CALIN_NO_ACTL_R1
+#include <R1.pb.h>
+
 /*
 
                       RRRRRRRRRRRRRRRRR          1111111
@@ -417,5 +423,6 @@ private:
 };
 
 } } } // namespace calin::iact_data::zfits_actl_data_source
+#endif // not defined CALIN_NO_ACTL_R1
 
-#endif
+#endif // defined CALIN_HAVE_CTA_CAMERASTOACTL

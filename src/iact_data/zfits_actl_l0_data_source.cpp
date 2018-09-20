@@ -2,7 +2,7 @@
 
    calin/iact_data/zfits_actl_l0_data_source.cpp -- Stephen Fegan -- 2016-05-04
 
-   A supplier of single telescope ACTL R1 CameraEvent data from ZFits data files
+   A supplier of single telescope ACTL L0 CameraEvent data from ZFits data files
 
    This data dormat is DEPRICATED
 
@@ -66,18 +66,9 @@ ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader::
   // nothing to see here
 }
 
-ACTL_R1_CameraEventRandomAccessDataSourceWithRunHeader::
-~ACTL_R1_CameraEventRandomAccessDataSourceWithRunHeader()
-{
-  // nothing to see here
-}
-
 namespace {
   static std::string default_L0_run_header_table_name("RunHeader");
   static std::string default_L0_events_table_name("Events");
-
-  static std::string default_R1_run_header_table_name("CameraConfig");
-  static std::string default_R1_events_table_name("Events");
 } // anonymous namespace
 
 ZFITSSingleFileACTL_L0_CameraEventDataSource::
