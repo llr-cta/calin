@@ -221,12 +221,12 @@ TEST(TestVCLRaytracer, CompareToScalar) {
         s_moments.accumulate(s_trace_info.fplane_x,s_trace_info.fplane_z);
     }
   }
-  std::cout << v_moments.mean_x() << ' ' << v_moments.mean_y()
-    << ' ' << std::sqrt(v_moments.var_x()) << ' ' << std::sqrt(v_moments.var_y())
-    << '\n';
-  std::cout << s_moments.mean_x() << ' ' << s_moments.mean_y()
-    << ' ' << std::sqrt(s_moments.var_x()) << ' ' << std::sqrt(s_moments.var_y())
-    << '\n';
+
+  EXPECT_NEAR(v_moments.sum_w(), s_moments.sum_w(), 2.5);
+  EXPECT_NEAR(v_moments.mean_x(), s_moments.mean_x(), 3e-3);
+  EXPECT_NEAR(v_moments.mean_y(), s_moments.mean_y(), 3e-3);
+  EXPECT_NEAR(v_moments.var_x(), s_moments.var_x(), 1.5e-3);
+  EXPECT_NEAR(v_moments.var_y(), s_moments.var_y(), 1.5e-3);
 }
 
 TEST(TestVCLRaytracer, LaserPSF) {
@@ -245,12 +245,14 @@ TEST(TestVCLRaytracer, LaserPSF) {
     for(unsigned i=0;i<8;i++)
       v_moments.accumulate(trace_info.fplane_x[i],trace_info.fplane_z[i]);
   }
-  std::cout << std::sqrt(v_moments.var_x()) << ' ' << std::sqrt(v_moments.var_y())
-    << ' ' << array->telescope(0)->mirror(0)->spotSize()*0.5 << '\n';
-
+  auto* scope = array->telescope(0);
+  auto* mirror = scope->mirror(0);
+  double disp_expected =
+    mirror->spotSize()/mirror->focalLength()*scope->focalPlanePosition().y()*0.5;
+  EXPECT_NEAR(std::sqrt(v_moments.var_x()), disp_expected, 0.001);
+  EXPECT_NEAR(std::sqrt(v_moments.var_y()), disp_expected, 0.001);
   delete array;
 }
-
 
 TEST(TestVCLRaytracer, PSF) {
   calin::simulation::vs_optics::VSOArray* array = make_test_array();
