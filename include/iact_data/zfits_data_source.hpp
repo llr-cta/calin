@@ -53,16 +53,16 @@ public:
     const DataModel::CameraEvent* cta_event) = 0;
 };
 
-class DecodedACTLDataSource:
+class DecodedACTL_L0_CameraEventDataSource:
   public calin::iact_data::telescope_data_source::TelescopeDataSource
 {
 public:
-  DecodedACTLDataSource(
-    calin::iact_data::zfits_actl_data_source::ACTLDataSource* actl_src,
+  DecodedACTL_L0_CameraEventDataSource(
+    calin::iact_data::zfits_actl_data_source::ACTL_L0_CameraEventDataSource* actl_src,
     CTACameraEventDecoder* decoder,
     bool adopt_actl_src = false, bool adopt_decoder = false);
 
-  virtual ~DecodedACTLDataSource();
+  virtual ~DecodedACTL_L0_CameraEventDataSource();
 
   calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
     uint64_t& seq_index_out, google::protobuf::Arena** arena = nullptr) override;
@@ -70,26 +70,26 @@ public:
 private:
   CTACameraEventDecoder* decoder_;
   bool adopt_decoder_ = false;
-  calin::iact_data::zfits_actl_data_source::ACTLDataSource* actl_src_ = nullptr;
+  calin::iact_data::zfits_actl_data_source::ACTL_L0_CameraEventDataSource* actl_src_ = nullptr;
   bool adopt_actl_src_ = false;
 };
 
-class DecodedConstACTLDataSource:
+class DecodedConstACTL_L0_CameraEventDataSource:
   public calin::iact_data::telescope_data_source::TelescopeDataSource
 {
 public:
-  DecodedConstACTLDataSource(
-    calin::iact_data::zfits_actl_data_source::ConstACTLDataSource* actl_src,
-    calin::iact_data::zfits_actl_data_source::ConstACTLDataSink* actl_sink,
+  DecodedConstACTL_L0_CameraEventDataSource(
+    calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSource* actl_src,
+    calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSink* actl_sink,
     CTACameraEventDecoder* decoder,
     bool adopt_actl_src = false, bool adopt_actl_sink = false, bool adopt_decoder = false);
 
-  DecodedConstACTLDataSource(
-    calin::iact_data::zfits_actl_data_source::ConstACTLDataSource* actl_src,
+  DecodedConstACTL_L0_CameraEventDataSource(
+    calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSource* actl_src,
     CTACameraEventDecoder* decoder,
     bool adopt_actl_src = false, bool adopt_decoder = false);
 
-  virtual ~DecodedConstACTLDataSource();
+  virtual ~DecodedConstACTL_L0_CameraEventDataSource();
 
   calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
     uint64_t& seq_index_out, google::protobuf::Arena** arena = nullptr) override;
@@ -97,22 +97,22 @@ public:
 private:
   CTACameraEventDecoder* decoder_;
   bool adopt_decoder_ = false;
-  calin::iact_data::zfits_actl_data_source::ConstACTLDataSource* actl_src_ = nullptr;
+  calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSource* actl_src_ = nullptr;
   bool adopt_actl_src_ = false;
-  calin::iact_data::zfits_actl_data_source::ConstACTLDataSink* actl_sink_ = nullptr;
+  calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSink* actl_sink_ = nullptr;
   bool adopt_actl_sink_ = false;
 };
 
-class DecodedConstACTLDataSourceFactory:
+class DecodedConstACTL_L0_CameraEventDataSourceFactory:
   public calin::iact_data::telescope_data_source::TelescopeDataSourceFactory
 {
 public:
-  DecodedConstACTLDataSourceFactory(
+  DecodedConstACTL_L0_CameraEventDataSourceFactory(
     calin::io::data_source::BidirectionalBufferedDataSourcePump<
       const DataModel::CameraEvent>* pump, CTACameraEventDecoder* decoder,
     bool adopt_pump = false, bool adopt_decoder = false);
-  virtual ~DecodedConstACTLDataSourceFactory();
-  DecodedConstACTLDataSource* new_data_source() override;
+  virtual ~DecodedConstACTL_L0_CameraEventDataSourceFactory();
+  DecodedConstACTL_L0_CameraEventDataSource* new_data_source() override;
 
 private:
   CTACameraEventDecoder* decoder_;
@@ -131,7 +131,7 @@ public:
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
   ZFITSSingleFileDataSource(calin::iact_data::zfits_actl_data_source::
-      ZFITSSingleFileACTLDataSource* actl_zfits,
+      ZFITSSingleFileACTL_L0_CameraEventDataSource* actl_zfits,
     bool dont_decode_run_configuration,
     CTACameraEventDecoder* decoder, bool adopt_decoder = false,
     bool adopt_actl_zfits = false);
@@ -150,13 +150,13 @@ public:
     TelescopeRunConfiguration* get_run_configuration() override;
 
   static config_type default_config() {
-    return zfits_actl_data_source::ZFITSSingleFileACTLDataSource::default_config(); }
+    return zfits_actl_data_source::ZFITSSingleFileACTL_L0_CameraEventDataSource::default_config(); }
 
 private:
   CTACameraEventDecoder* decoder_;
   bool adopt_decoder_ = false;
   calin::iact_data::zfits_actl_data_source::
-    ZFITSSingleFileACTLDataSource* actl_zfits_ = nullptr;
+    ZFITSSingleFileACTL_L0_CameraEventDataSource* actl_zfits_ = nullptr;
   bool adopt_actl_zfits_ = false;
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* run_config_ = nullptr;
@@ -180,7 +180,7 @@ public:
     TelescopeRunConfiguration* get_run_configuration() override;
 
   static config_type default_config() {
-    return zfits_actl_data_source::ZFITSACTLDataSource::default_config(); }
+    return zfits_actl_data_source::ZFITSACTL_L0_CameraEventDataSource::default_config(); }
 
 protected:
   CTACameraEventDecoder* decoder_;
@@ -206,7 +206,7 @@ public:
   ZFITSSingleFileDataSource* open(unsigned isource) override;
 private:
   calin::iact_data::zfits_actl_data_source::
-    ZFITSACTLDataSourceOpener* zfits_actl_opener_ = nullptr;
+    ZFITSACTL_L0_CameraEventDataSourceOpener* zfits_actl_opener_ = nullptr;
   CTACameraEventDecoder* decoder_ = nullptr;
   ZFITSDataSource::config_type config_;
 };

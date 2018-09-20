@@ -77,11 +77,11 @@ class CameraRunHeader: public google::protobuf::Message { };
 %import "iact_data/telescope_data_source.i"
 %import "iact_data/zfits_data_source.pb.i"
 
-%template(ACTLDataSource)
+%template(ACTL_L0_CameraEventDataSource)
   calin::io::data_source::DataSource<DataModel::CameraEvent>;
-%template(ConstACTLDataSource)
+%template(ConstACTL_L0_CameraEventDataSource)
   calin::io::data_source::DataSource<const DataModel::CameraEvent>;
-%template(ConstACTLDataSink)
+%template(ConstACTL_L0_CameraEventDataSink)
   calin::io::data_source::DataSink<const DataModel::CameraEvent>;
 
 %newobject simple_get_next();

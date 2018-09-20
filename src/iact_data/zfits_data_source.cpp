@@ -45,12 +45,12 @@ CTACameraEventDecoder::~CTACameraEventDecoder()
 }
 
 // =============================================================================
-// DecodedACTLDataSource - extract ACTL events from an ACTLDataSource and
+// DecodedACTL_L0_CameraEventDataSource - extract ACTL events from an ACTL_L0_CameraEventDataSource and
 // decode them using a supplied decoder
 // =============================================================================
 
-DecodedACTLDataSource::DecodedACTLDataSource(
-    calin::iact_data::zfits_actl_data_source::ACTLDataSource* actl_src,
+DecodedACTL_L0_CameraEventDataSource::DecodedACTL_L0_CameraEventDataSource(
+    calin::iact_data::zfits_actl_data_source::ACTL_L0_CameraEventDataSource* actl_src,
     CTACameraEventDecoder* decoder, bool adopt_actl_src, bool adopt_decoder):
   calin::iact_data::telescope_data_source::TelescopeDataSource(),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
@@ -59,14 +59,14 @@ DecodedACTLDataSource::DecodedACTLDataSource(
   // nothing to see here
 }
 
-DecodedACTLDataSource::~DecodedACTLDataSource()
+DecodedACTL_L0_CameraEventDataSource::~DecodedACTL_L0_CameraEventDataSource()
 {
   if(adopt_decoder_)delete decoder_;
   if(adopt_actl_src_)delete actl_src_;
 }
 
 calin::ix::iact_data::telescope_event::TelescopeEvent*
-DecodedACTLDataSource::get_next(
+DecodedACTL_L0_CameraEventDataSource::get_next(
   uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
   const DataModel::CameraEvent* cta_event = actl_src_->get_next(seq_index_out);
@@ -100,9 +100,9 @@ DecodedACTLDataSource::get_next(
   return event;
 }
 
-DecodedConstACTLDataSource::DecodedConstACTLDataSource(
-    calin::iact_data::zfits_actl_data_source::ConstACTLDataSource* actl_src,
-    calin::iact_data::zfits_actl_data_source::ConstACTLDataSink* actl_sink,
+DecodedConstACTL_L0_CameraEventDataSource::DecodedConstACTL_L0_CameraEventDataSource(
+    calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSource* actl_src,
+    calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSink* actl_sink,
     CTACameraEventDecoder* decoder,
     bool adopt_actl_src, bool adopt_actl_sink, bool adopt_decoder):
   calin::iact_data::telescope_data_source::TelescopeDataSource(),
@@ -113,8 +113,8 @@ DecodedConstACTLDataSource::DecodedConstACTLDataSource(
   // nothing to see here
 }
 
-DecodedConstACTLDataSource::DecodedConstACTLDataSource(
-    calin::iact_data::zfits_actl_data_source::ConstACTLDataSource* actl_src,
+DecodedConstACTL_L0_CameraEventDataSource::DecodedConstACTL_L0_CameraEventDataSource(
+    calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSource* actl_src,
     CTACameraEventDecoder* decoder,
     bool adopt_actl_src, bool adopt_decoder):
   calin::iact_data::telescope_data_source::TelescopeDataSource(),
@@ -125,7 +125,7 @@ DecodedConstACTLDataSource::DecodedConstACTLDataSource(
   // nothing to see here
 }
 
-DecodedConstACTLDataSource::~DecodedConstACTLDataSource()
+DecodedConstACTL_L0_CameraEventDataSource::~DecodedConstACTL_L0_CameraEventDataSource()
 {
   if(adopt_decoder_)delete decoder_;
   if(adopt_actl_src_)delete actl_src_;
@@ -133,7 +133,7 @@ DecodedConstACTLDataSource::~DecodedConstACTLDataSource()
 }
 
 calin::ix::iact_data::telescope_event::TelescopeEvent*
-DecodedConstACTLDataSource::get_next(
+DecodedConstACTL_L0_CameraEventDataSource::get_next(
   uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
   const DataModel::CameraEvent* cta_event = actl_src_->get_next(seq_index_out);
@@ -170,7 +170,7 @@ DecodedConstACTLDataSource::get_next(
   return event;
 }
 
-DecodedConstACTLDataSourceFactory::DecodedConstACTLDataSourceFactory(
+DecodedConstACTL_L0_CameraEventDataSourceFactory::DecodedConstACTL_L0_CameraEventDataSourceFactory(
     calin::io::data_source::BidirectionalBufferedDataSourcePump<
       const DataModel::CameraEvent>* pump, CTACameraEventDecoder* decoder,
     bool adopt_pump, bool adopt_decoder):
@@ -181,28 +181,28 @@ DecodedConstACTLDataSourceFactory::DecodedConstACTLDataSourceFactory(
   // nothing to see here
 }
 
-DecodedConstACTLDataSourceFactory::~DecodedConstACTLDataSourceFactory()
+DecodedConstACTL_L0_CameraEventDataSourceFactory::~DecodedConstACTL_L0_CameraEventDataSourceFactory()
 {
   if(adopt_pump_)delete pump_;
   if(adopt_decoder_)delete decoder_;
 }
 
-DecodedConstACTLDataSource* DecodedConstACTLDataSourceFactory::new_data_source()
+DecodedConstACTL_L0_CameraEventDataSource* DecodedConstACTL_L0_CameraEventDataSourceFactory::new_data_source()
 {
-  return new DecodedConstACTLDataSource(
+  return new DecodedConstACTL_L0_CameraEventDataSource(
     pump_->new_data_source(), pump_->new_data_sink(), decoder_,
     /* adopt_actl_src= */ true, /* adopt_actl_sink = */ true);
 }
 
 // =============================================================================
 // ZFITSSingleFileDataSource - single ZFits file with decoder
-// Uses ZFITSSingleFileACTLDataSource to read events and decoder to translate
+// Uses ZFITSSingleFileACTL_L0_CameraEventDataSource to read events and decoder to translate
 // them.
 // =============================================================================
 
 ZFITSSingleFileDataSource::
 ZFITSSingleFileDataSource(calin::iact_data::zfits_actl_data_source::
-      ZFITSSingleFileACTLDataSource* actl_zfits,
+      ZFITSSingleFileACTL_L0_CameraEventDataSource* actl_zfits,
     bool dont_decode_run_configuration,
     CTACameraEventDecoder* decoder, bool adopt_decoder, bool adopt_actl_zfits):
   TelescopeRandomAccessDataSourceWithRunConfig(),
@@ -238,7 +238,7 @@ ZFITSSingleFileDataSource(const std::string& filename,
     CTACameraEventDecoder* decoder, bool adopt_decoder,
     const config_type& config):
   ZFITSSingleFileDataSource(new calin::iact_data::zfits_actl_data_source::
-    ZFITSSingleFileACTLDataSource(filename, config), false,
+    ZFITSSingleFileACTL_L0_CameraEventDataSource(filename, config), false,
     decoder, adopt_decoder, true)
 {
   // nothing to see here
@@ -344,7 +344,7 @@ TelescopeRunConfiguration* ZFITSDataSource::get_run_configuration()
 
 // =============================================================================
 // ZFITSDataSourceOpener - opener for ZFITSSingleFileDataSource
-// Uses ZFITSACTLDataSourceOpener to open underlying ZFITSSingleFileACTLDataSource
+// Uses ZFITSACTL_L0_CameraEventDataSourceOpener to open underlying ZFITSSingleFileACTL_L0_CameraEventDataSource
 // objects
 // =============================================================================
 
@@ -355,7 +355,7 @@ ZFITSDataSourceOpener(std::string filename, CTACameraEventDecoder* decoder,
     calin::iact_data::telescope_data_source::
       TelescopeRandomAccessDataSourceWithRunConfig>(),
   zfits_actl_opener_(new calin::iact_data::zfits_actl_data_source::
-    ZFITSACTLDataSourceOpener(filename, config)),
+    ZFITSACTL_L0_CameraEventDataSourceOpener(filename, config)),
   decoder_(decoder), config_(config)
 {
   // nothing to see here

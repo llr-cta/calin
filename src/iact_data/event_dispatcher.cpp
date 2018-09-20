@@ -198,7 +198,7 @@ void TelescopeEventDispatcher::process_nectarcam_zfits_run(
   const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config)
 {
   calin::iact_data::zfits_actl_data_source::
-    ZFITSACTLDataSource zfits_actl_src(filename, zfits_config);
+    ZFITSACTL_L0_CameraEventDataSource zfits_actl_src(filename, zfits_config);
   calin::iact_data::nectarcam_data_source::
     NectarCamCameraEventDecoder decoder(filename,
       calin::util::file::extract_first_number_from_filename(filename),
@@ -227,22 +227,22 @@ void TelescopeEventDispatcher::process_nectarcam_zfits_run(
   for(const auto& ifilename : zfits_actl_src.source_names())
     run_config.add_fragment_filename(ifilename);
 
-  zfits_actl_data_source::ZFITSConstACTLDataSourceBorrowAdapter zfits_actl_borrow_src(&zfits_actl_src);
-  zfits_actl_data_source::ZFITSConstACTLDataSourceReleaseAdapter zfits_actl_release_sink(&zfits_actl_src);
+  zfits_actl_data_source::ZFITSConstACTL_L0_CameraEventDataSourceBorrowAdapter zfits_actl_borrow_src(&zfits_actl_src);
+  zfits_actl_data_source::ZFITSConstACTL_L0_CameraEventDataSourceReleaseAdapter zfits_actl_release_sink(&zfits_actl_src);
 
   calin::io::data_source::BidirectionalBufferedDataSourcePump<
     const DataModel::CameraEvent>* pump_actl_src = nullptr;
 
-  calin::iact_data::zfits_data_source::DecodedConstACTLDataSource* src;
+  calin::iact_data::zfits_data_source::DecodedConstACTL_L0_CameraEventDataSource* src;
 
   if(nthread == -1) {
-    src = new calin::iact_data::zfits_data_source::DecodedConstACTLDataSource(
+    src = new calin::iact_data::zfits_data_source::DecodedConstACTL_L0_CameraEventDataSource(
       &zfits_actl_borrow_src, &zfits_actl_release_sink, &decoder);
   } else {
     pump_actl_src = new calin::io::data_source::BidirectionalBufferedDataSourcePump<
       const DataModel::CameraEvent>(&zfits_actl_borrow_src, &zfits_actl_release_sink,
         /* buffer_size = */ 100, /* sink_unsent_data = */ true);
-    src = new calin::iact_data::zfits_data_source::DecodedConstACTLDataSource(
+    src = new calin::iact_data::zfits_data_source::DecodedConstACTL_L0_CameraEventDataSource(
       pump_actl_src->new_data_source(), pump_actl_src->new_data_sink(),
       &decoder, /* adopt_actl_src = */ true, /* adopt_actl_sink = */ true);
   }
