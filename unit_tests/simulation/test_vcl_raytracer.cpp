@@ -223,10 +223,10 @@ TEST(TestVCLRaytracer, CompareToScalar) {
   }
 
   EXPECT_NEAR(v_moments.sum_w(), s_moments.sum_w(), 2.5);
-  EXPECT_NEAR(v_moments.mean_x(), s_moments.mean_x(), 3e-3);
-  EXPECT_NEAR(v_moments.mean_y(), s_moments.mean_y(), 3e-3);
-  EXPECT_NEAR(v_moments.var_x(), s_moments.var_x(), 1.5e-3);
-  EXPECT_NEAR(v_moments.var_y(), s_moments.var_y(), 1.5e-3);
+  EXPECT_NEAR(v_moments.mean_x(), s_moments.mean_x(), 4e-3);
+  EXPECT_NEAR(v_moments.mean_y(), s_moments.mean_y(), 4e-3);
+  EXPECT_NEAR(v_moments.var_x(), s_moments.var_x(), 2e-3);
+  EXPECT_NEAR(v_moments.var_y(), s_moments.var_y(), 2e-3);
 }
 
 TEST(TestVCLRaytracer, LaserPSF) {
