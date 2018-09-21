@@ -182,7 +182,7 @@ public:
   virtual bool decode_run_config(
     calin::ix::iact_data::telescope_run_configuration::
       TelescopeRunConfiguration* run_config,
-    const DataModel::CameraConfiguration* cta_run_header,
+    const R1::CameraConfiguration* cta_run_header,
     const R1::CameraEvent* cta_event) = 0;
 };
 
