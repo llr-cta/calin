@@ -32,18 +32,22 @@ package calin.ix.iact_data.telescope_run_configuration;
 
 enum SerializedRawHeaderType {
   SERIALIZED_RAW_HEADER_NONE                               = 0;
-  SERIALIZED_RAW_HEADER_ACTL_PROTOBUF                      = 1;
+  SERIALIZED_RAW_HEADER_ACTL_L0_PROTOBUF                   = 1;
+  SERIALIZED_RAW_HEADER_ACTL_R1_PROTOBUF                   = 2;
 };
 
 message TelescopeRunConfiguration {
   string filename                                          = 1 [
     (CFO).desc = "Primary filename of run data." ];
-  uint32 run_number                                        = 2 [
-    (CFO).desc = "Run number." ];
-  common_types.Time run_start_time                         = 3 [
-    (CFO).desc = "Start date and time of run." ];
-  repeated string fragment_filename                        = 4 [
+  repeated string fragment_filename                        = 2 [
     (CFO).desc = "Filenames of run data fragments." ];
+  uint32 run_number                                        = 3 [
+    (CFO).desc = "Run number." ];
+  common_types.Time run_start_time                         = 4 [
+    (CFO).desc = "Approximate start date and time of run, possibly from NTP on "
+      "camera server." ];
+  uint32 telescope_id                                      = 5 [
+    (CFO).desc = "Telescope ID." ];
 
   repeated int32 configured_channel_index                  = 11 [
     (CFO).desc = "Index within list of configured channels for each channel "
@@ -62,6 +66,14 @@ message TelescopeRunConfiguration {
   double nominal_sampling_frequency                        = 32 [
     (CFO).desc = "Nominal DAQ waveform sampling frequency, or zero if unknown. May "
       "not be calibrated.", (CFO).units = "MHz" ];
+
+  string camera_server_serial_number                       = 41 [
+    (CFO).desc = "Serial number of the computer that the camera server is "
+      "running on." ];
+  int64 configuration_id                                   = 42 [
+    (CFO).desc = "Key into database describing camera configuration." ];
+  string data_model_version                                = 43 [
+    (CFO).desc = "Version of data model." ];
 
   calin.ix.iact_data.instrument_layout.
       CameraLayout camera_layout                           = 101 [

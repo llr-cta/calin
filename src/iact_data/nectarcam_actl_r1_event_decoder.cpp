@@ -56,35 +56,34 @@ using namespace calin::ix::iact_data::nectarcam_data_source;
 using namespace calin::util::log;
 
 #include <ProtobufIFits.h>
-#include <L0.pb.h>
+#include <R1.pb.h>
 
 #define TEST_ANYARRAY_TYPES 0
 
 /*
 
-              LLLLLLLLLLL                       000000000
-              L:::::::::L                     00:::::::::00
-              L:::::::::L                   00:::::::::::::00
-              LL:::::::LL                  0:::::::000:::::::0
-                L:::::L                    0::::::0   0::::::0
-                L:::::L                    0:::::0     0:::::0
-                L:::::L                    0:::::0     0:::::0
-                L:::::L                    0:::::0 000 0:::::0
-                L:::::L                    0:::::0 000 0:::::0
-                L:::::L                    0:::::0     0:::::0
-                L:::::L                    0:::::0     0:::::0
-                L:::::L         LLLLLL     0::::::0   0::::::0
-              LL:::::::LLLLLLLLL:::::L     0:::::::000:::::::0
-              L::::::::::::::::::::::L      00:::::::::::::00
-              L::::::::::::::::::::::L        00:::::::::00
-              LLLLLLLLLLLLLLLLLLLLLLLL          000000000
+                      RRRRRRRRRRRRRRRRR          1111111
+                      R::::::::::::::::R        1::::::1
+                      R::::::RRRRRR:::::R      1:::::::1
+                      RR:::::R     R:::::R     111:::::1
+                        R::::R     R:::::R        1::::1
+                        R::::R     R:::::R        1::::1
+                        R::::RRRRRR:::::R         1::::1
+                        R:::::::::::::RR          1::::l
+                        R::::RRRRRR:::::R         1::::l
+                        R::::R     R:::::R        1::::l
+                        R::::R     R:::::R        1::::l
+                        R::::R     R:::::R        1::::l
+                      RR:::::R     R:::::R     111::::::111
+                      R::::::R     R:::::R     1::::::::::1
+                      R::::::R     R:::::R     1::::::::::1
+                      RRRRRRRR     RRRRRRR     111111111111
 
 */
 
-NectarCAM_ACTL_L0_CameraEventDecoder::NectarCAM_ACTL_L0_CameraEventDecoder(
-  const std::string& filename,
-  unsigned run_number, const config_type& config):
-  actl_event_decoder::ACTL_L0_CameraEventDecoder(), config_(config),
+NectarCAM_ACTL_R1_CameraEventDecoder::NectarCAM_ACTL_R1_CameraEventDecoder(
+    const std::string& filename, unsigned run_number, const config_type& config):
+  actl_event_decoder::ACTL_R1_CameraEventDecoder(), config_(config),
   filename_(filename), run_number_(run_number)
 {
   switch(config.exchange_gain_channels()) {
@@ -96,22 +95,21 @@ NectarCAM_ACTL_L0_CameraEventDecoder::NectarCAM_ACTL_L0_CameraEventDecoder(
       break;
     case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_AUTOMATIC:
     default:
-      exchange_gain_channels_ = run_number>=32 and run_number<621;
-      if(exchange_gain_channels_)
-        LOG(WARNING) << "High/Low gain exchange automatically configured.";
+      exchange_gain_channels_ = false;
       break;
   }
 }
 
-NectarCAM_ACTL_L0_CameraEventDecoder::~NectarCAM_ACTL_L0_CameraEventDecoder()
+NectarCAM_ACTL_R1_CameraEventDecoder::~NectarCAM_ACTL_R1_CameraEventDecoder()
 {
   // nothing to see here
 }
 
-bool NectarCAM_ACTL_L0_CameraEventDecoder::decode(
+bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
   calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
-  const DataModel::CameraEvent* cta_event)
+  const R1::CameraEvent* cta_event)
 {
+#if 0
   calin_event->set_telescope_id(cta_event->telescopeid());
   calin_event->set_local_event_number(cta_event->eventnumber());
   calin_event->set_trigger_type(TRIGGER_SCIENCE);
@@ -355,15 +353,15 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode(
     calin_event->set_serialized_raw_event_type(
       SerializedRawEventType::SERIALIZED_RAW_EVENT_NONE);
   }
-
+#endif
   return true;
 }
 
-bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
+bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* calin_run_config,
-  const DataModel::CameraRunHeader* cta_run_header,
-  const DataModel::CameraEvent* cta_event)
+  const R1::CameraConfiguration* cta_run_header,
+  const R1::CameraEvent* cta_event)
 {
   calin_run_config->set_filename(filename_);
   calin_run_config->add_fragment_filename(filename_);
@@ -371,11 +369,11 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
 
   switch(config_.camera_type())
   {
+  case NectarCamCameraEventDecoderConfig::AUTOMATIC:
   case NectarCamCameraEventDecoderConfig::NECTARCAM:
     nectarcam_layout::nectarcam_layout(
       calin_run_config->mutable_camera_layout());
     break;
-  case NectarCamCameraEventDecoderConfig::AUTOMATIC:
   case NectarCamCameraEventDecoderConfig::NECTARCAM_TESTBENCH_19CHANNEL:
   default:
     nectarcam_layout::nectarcam_19module_layout(
@@ -443,6 +441,7 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
   //
   // ---------------------------------------------------------------------------
 
+#if 0
   if(cta_run_header)
   {
 #if 0
@@ -468,13 +467,13 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
   if(config_.demand_configured_module_id_size() != 0)
   {
     if(config_.demand_configured_module_id_size() != nmod)
-      throw std::runtime_error("NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config: "
+      throw std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config: "
         "Demand module list size must equal number of modules in data.");
     config_mod_id.clear();
     for(int imod=0;imod<nmod;imod++) {
       unsigned mod_id = config_.demand_configured_module_id(imod);
       if(mod_id >= nmod_camera)
-        throw std::runtime_error("NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config: "
+        throw std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config: "
           "Demand module id out of range: " + std::to_string(mod_id) + " >= " +
           std::to_string(nmod_camera));
       config_mod_id.insert(mod_id);
@@ -485,7 +484,7 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
     for(int imod=0; imod<nmod; imod++) {
       unsigned mod_id = calin_run_config->nectarcam().module(imod).module_id();
       if(mod_id >= nmod_camera)
-        throw std::runtime_error("NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config: "
+        throw std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config: "
           "Demand module id out of range: " + std::to_string(mod_id) + " >= " +
           std::to_string(nmod_camera));
       config_mod_id.insert(mod_id);
@@ -572,23 +571,24 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
   if(cta_run_header and config_.include_serialized_raw_data())
   {
     calin_run_config->set_serialized_raw_header_type(
-      SerializedRawHeaderType::SERIALIZED_RAW_HEADER_ACTL_L0_PROTOBUF);
+      SerializedRawHeaderType::SERIALIZED_RAW_HEADER_ACTL_PROTOBUF);
     cta_run_header->SerializeToString(calin_run_config->mutable_serialized_raw_header());
   } else {
     calin_run_config->set_serialized_raw_header_type(
       SerializedRawHeaderType::SERIALIZED_RAW_HEADER_NONE);
   }
-
+#endif
   return true;
 }
 
-void NectarCAM_ACTL_L0_CameraEventDecoder::
+void NectarCAM_ACTL_R1_CameraEventDecoder::
 copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
   const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   const DataModel::PixelsChannel& cta_image,
   calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
   const std::string& which_gain) const
 {
+#if 0
   if(cta_image.has_integrals() and cta_image.integrals().has_gains())
   {
     const auto& cta_q = cta_image.integrals().gains();
@@ -621,15 +621,17 @@ copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
     }
     calin_q_image->set_all_channels_present(all_channels_present);
   }
+#endif
 }
 
-void NectarCAM_ACTL_L0_CameraEventDecoder::
+void NectarCAM_ACTL_R1_CameraEventDecoder::
 copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
   const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   const DataModel::PixelsChannel& cta_image,
   calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
   const std::string& which_gain) const
 {
+#if 0
   if(cta_image.has_waveforms() and cta_image.waveforms().has_samples())
   {
     const auto& cta_wf = cta_image.waveforms().samples();
@@ -665,7 +667,7 @@ copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
     std::size_t space = calin_wf_raw_data_string->size();
     if(simd_vec_size>0) {
       if(std::align(simd_vec_size, cta_wf.data().size(), vp, space)==nullptr)
-        throw std::runtime_error("NectarCAM_ACTL_L0_CameraEventDecoder: cannot align data.");
+        throw std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder: cannot align data.");
       std::fill(cp, (char*)vp, uint8_t(0));
       std::fill((char*)vp+cta_wf.data().size(), cp+calin_wf_raw_data_string->size(), uint8_t(0));
     }
@@ -711,79 +713,5 @@ copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
     }
     calin_wf_image->set_all_channels_present(all_channels_present);
   }
-}
-
-unsigned NectarCAM_ACTL_L0_CameraEventDecoder::
-get_nmod_from_event(const DataModel::CameraEvent* cta_event) const
-{
-  unsigned nmod = 0;
-  if(cta_event->has_modulestatus() and
-    cta_event->modulestatus().has_status())
-  {
-    const auto& cta_status = cta_event->modulestatus().status();
-#if TEST_ANYARRAY_TYPES
-    if(cta_status.type() != DataModel::AnyArray::U8)
-      throw std::runtime_error("Camera status type not U8");
 #endif
-    nmod = cta_status.data().size();
-  }
-  else if(cta_event->has_higain() and cta_event->higain().has_integrals()
-    and cta_event->higain().integrals().has_gains())
-  {
-    const auto& cta_q = cta_event->higain().integrals().gains();
-#if TEST_ANYARRAY_TYPES
-    if(cta_q.type() != DataModel::AnyArray::U16)
-      throw std::runtime_error("Integral data type not uint16 in "
-        "high gain channel.");
-#endif
-    nmod = cta_q.data().size()/sizeof(uint16_t)/7;
-  }
-  else if(cta_event->has_logain() and cta_event->logain().has_integrals()
-   and cta_event->logain().integrals().has_gains())
-  {
-    const auto& cta_q = cta_event->logain().integrals().gains();
-#if TEST_ANYARRAY_TYPES
-    if(cta_q.type() != DataModel::AnyArray::U16)
-      throw std::runtime_error("Integral data type not uint16 in "
-        "low gain channel.");
-#endif
-    nmod = cta_q.data().size()/sizeof(uint16_t)/7;
-  }
-  else if(cta_event->has_higain() and cta_event->higain().has_waveforms()
-    and cta_event->higain().waveforms().has_samples())
-  {
-    const auto& cta_wf = cta_event->higain().waveforms().samples();
-#if TEST_ANYARRAY_TYPES
-    if(cta_wf.type() != DataModel::AnyArray::U16)
-      throw std::runtime_error("Waveform data type not uint16 in " +
-        "high gain channel.");
-#endif
-    unsigned nsample = config_.demand_nsample();
-    if(nsample == 0)nsample = cta_event->higain().waveforms().num_samples();
-    if(nsample == 0)throw std::runtime_error("Number of samples is zero in "
-      "high gain channel.");
-    if(cta_wf.data().size() % (sizeof(uint16_t)*nsample) != 0)
-      throw std::runtime_error("Waveform data array for high gain "
-        "channel not integral multiple of nsample uint16.");
-    nmod = cta_wf.data().size()/(sizeof(uint16_t)*nsample*7);
-  }
-  else if(cta_event->has_logain() and cta_event->logain().has_waveforms()
-    and cta_event->logain().waveforms().has_samples())
-  {
-    const auto& cta_wf = cta_event->logain().waveforms().samples();
-#if TEST_ANYARRAY_TYPES
-    if(cta_wf.type() != DataModel::AnyArray::U16)
-      throw std::runtime_error("Waveform data type not uint16 in " +
-        "low gain channel.");
-#endif
-    unsigned nsample = config_.demand_nsample();
-    if(nsample == 0)nsample = cta_event->logain().waveforms().num_samples();
-    if(nsample == 0)throw std::runtime_error("Number of samples is zero in "
-      "low gain channel.");
-    if(cta_wf.data().size() % (sizeof(uint16_t)*nsample) != 0)
-      throw std::runtime_error("Waveform data array for low gain "
-        "channel not integral multiple of nsample uint16.");
-    nmod = cta_wf.data().size()/(sizeof(uint16_t)*nsample*7);
-  }
-  return nmod;
 }

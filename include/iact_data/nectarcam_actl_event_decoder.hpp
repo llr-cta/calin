@@ -108,6 +108,77 @@ protected:
   int64_t run_start_time_ = 0;
 };
 
+/*
+
+                      RRRRRRRRRRRRRRRRR          1111111
+                      R::::::::::::::::R        1::::::1
+                      R::::::RRRRRR:::::R      1:::::::1
+                      RR:::::R     R:::::R     111:::::1
+                        R::::R     R:::::R        1::::1
+                        R::::R     R:::::R        1::::1
+                        R::::RRRRRR:::::R         1::::1
+                        R:::::::::::::RR          1::::l
+                        R::::RRRRRR:::::R         1::::l
+                        R::::R     R:::::R        1::::l
+                        R::::R     R:::::R        1::::l
+                        R::::R     R:::::R        1::::l
+                      RR:::::R     R:::::R     111::::::111
+                      R::::::R     R:::::R     1::::::::::1
+                      R::::::R     R:::::R     1::::::::::1
+                      RRRRRRRR     RRRRRRR     111111111111
+
+*/
+
+class NectarCAM_ACTL_R1_CameraEventDecoder:
+  public actl_event_decoder::ACTL_R1_CameraEventDecoder
+{
+public:
+  CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
+    nectarcam_data_source::NectarCamCameraEventDecoderConfig);
+
+  NectarCAM_ACTL_R1_CameraEventDecoder(const std::string& filename, unsigned run_number = 0,
+    const config_type& config = default_config());
+
+  ~NectarCAM_ACTL_R1_CameraEventDecoder();
+
+  virtual bool decode(
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+    const R1::CameraEvent* cta_event) override;
+
+  virtual bool decode_run_config(
+    calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config,
+    const R1::CameraConfiguration* cta_run_header,
+    const R1::CameraEvent* cta_event) override;
+
+  config_type config() const { return config_; }
+
+  static config_type default_config() {
+    config_type config = config_type::default_instance();
+    config.set_nmc_xml_suffix(".NMC.xml");
+    config.set_separate_channel_waveforms(true);
+    return config;
+  }
+
+protected:
+  void copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
+    const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+    const DataModel::PixelsChannel& cta_image,
+    calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
+    const std::string& which_gain) const;
+
+  virtual void copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
+    const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+    const DataModel::PixelsChannel& cta_image,
+    calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
+    const std::string& which_gain) const;
+
+  config_type config_;
+  std::string filename_;
+  unsigned run_number_ = 0;
+  bool exchange_gain_channels_ = false;
+  int64_t run_start_time_ = 0;  
+};
 
 #endif
 
