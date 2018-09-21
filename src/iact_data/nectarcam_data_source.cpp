@@ -64,7 +64,7 @@ using namespace calin::util::log;
 NectarCamCameraEventDecoder::NectarCamCameraEventDecoder(
   const std::string& filename,
   unsigned run_number, const config_type& config):
-  zfits_data_source::CTACameraEventDecoder(), config_(config),
+  zfits_data_source::ACTL_L0_CameraEventDecoder(), config_(config),
   filename_(filename), run_number_(run_number)
 {
   switch(config.exchange_gain_channels()) {

@@ -34,7 +34,7 @@ namespace calin { namespace iact_data { namespace nectarcam_data_source {
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
 class NectarCamCameraEventDecoder:
-  public zfits_data_source::CTACameraEventDecoder
+  public zfits_data_source::ACTL_L0_CameraEventDecoder
 {
 public:
   CALIN_TYPEALIAS(config_type, calin::ix::iact_data::

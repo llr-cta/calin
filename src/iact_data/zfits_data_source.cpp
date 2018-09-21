@@ -39,7 +39,7 @@ using calin::util::file::expand_filename;
 #include <ProtobufIFits.h>
 #include <L0.pb.h>
 
-CTACameraEventDecoder::~CTACameraEventDecoder()
+ACTL_L0_CameraEventDecoder::~ACTL_L0_CameraEventDecoder()
 {
   // nothing to see here
 }
@@ -51,7 +51,7 @@ CTACameraEventDecoder::~CTACameraEventDecoder()
 
 DecodedACTL_L0_CameraEventDataSource::DecodedACTL_L0_CameraEventDataSource(
     calin::iact_data::zfits_actl_data_source::ACTL_L0_CameraEventDataSource* actl_src,
-    CTACameraEventDecoder* decoder, bool adopt_actl_src, bool adopt_decoder):
+    ACTL_L0_CameraEventDecoder* decoder, bool adopt_actl_src, bool adopt_decoder):
   calin::iact_data::telescope_data_source::TelescopeDataSource(),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
   actl_src_(actl_src), adopt_actl_src_(adopt_actl_src)
@@ -103,7 +103,7 @@ DecodedACTL_L0_CameraEventDataSource::get_next(
 DecodedConstACTL_L0_CameraEventDataSource::DecodedConstACTL_L0_CameraEventDataSource(
     calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSource* actl_src,
     calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSink* actl_sink,
-    CTACameraEventDecoder* decoder,
+    ACTL_L0_CameraEventDecoder* decoder,
     bool adopt_actl_src, bool adopt_actl_sink, bool adopt_decoder):
   calin::iact_data::telescope_data_source::TelescopeDataSource(),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
@@ -115,7 +115,7 @@ DecodedConstACTL_L0_CameraEventDataSource::DecodedConstACTL_L0_CameraEventDataSo
 
 DecodedConstACTL_L0_CameraEventDataSource::DecodedConstACTL_L0_CameraEventDataSource(
     calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSource* actl_src,
-    CTACameraEventDecoder* decoder,
+    ACTL_L0_CameraEventDecoder* decoder,
     bool adopt_actl_src, bool adopt_decoder):
   calin::iact_data::telescope_data_source::TelescopeDataSource(),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
@@ -172,7 +172,7 @@ DecodedConstACTL_L0_CameraEventDataSource::get_next(
 
 DecodedConstACTL_L0_CameraEventDataSourceFactory::DecodedConstACTL_L0_CameraEventDataSourceFactory(
     calin::io::data_source::BidirectionalBufferedDataSourcePump<
-      const DataModel::CameraEvent>* pump, CTACameraEventDecoder* decoder,
+      const DataModel::CameraEvent>* pump, ACTL_L0_CameraEventDecoder* decoder,
     bool adopt_pump, bool adopt_decoder):
   calin::iact_data::telescope_data_source::TelescopeDataSourceFactory(),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
@@ -204,7 +204,7 @@ ZFITSSingleFileDataSource::
 ZFITSSingleFileDataSource(calin::iact_data::zfits_actl_data_source::
       ZFITSSingleFileACTL_L0_CameraEventDataSource* actl_zfits,
     bool dont_decode_run_configuration,
-    CTACameraEventDecoder* decoder, bool adopt_decoder, bool adopt_actl_zfits):
+    ACTL_L0_CameraEventDecoder* decoder, bool adopt_decoder, bool adopt_actl_zfits):
   TelescopeRandomAccessDataSourceWithRunConfig(),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
   actl_zfits_(actl_zfits), adopt_actl_zfits_(adopt_actl_zfits)
@@ -235,7 +235,7 @@ ZFITSSingleFileDataSource(calin::iact_data::zfits_actl_data_source::
 
 ZFITSSingleFileDataSource::
 ZFITSSingleFileDataSource(const std::string& filename,
-    CTACameraEventDecoder* decoder, bool adopt_decoder,
+    ACTL_L0_CameraEventDecoder* decoder, bool adopt_decoder,
     const config_type& config):
   ZFITSSingleFileDataSource(new calin::iact_data::zfits_actl_data_source::
     ZFITSSingleFileACTL_L0_CameraEventDataSource(filename, config), false,
@@ -311,7 +311,7 @@ calin::ix::iact_data::telescope_run_configuration::
 // =============================================================================
 
 ZFITSDataSource::ZFITSDataSource(const std::string& filename,
-    CTACameraEventDecoder* decoder, bool adopt_decoder,
+    ACTL_L0_CameraEventDecoder* decoder, bool adopt_decoder,
     const config_type& config):
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::telescope_data_source::
@@ -349,7 +349,7 @@ TelescopeRunConfiguration* ZFITSDataSource::get_run_configuration()
 // =============================================================================
 
 ZFITSDataSourceOpener::
-ZFITSDataSourceOpener(std::string filename, CTACameraEventDecoder* decoder,
+ZFITSDataSourceOpener(std::string filename, ACTL_L0_CameraEventDecoder* decoder,
     const ZFITSDataSource::config_type& config):
   calin::io::data_source::DataSourceOpener<
     calin::iact_data::telescope_data_source::
