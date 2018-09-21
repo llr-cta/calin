@@ -16,7 +16,7 @@
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --save-temps")
 
 set(CALIN_TARGET_LIBRARY calin_iact_data)
-set(CALIN_SOURCES actl_event_decoder.cpp
+set(CALIN_SOURCES
 	telescope_data_source.cpp event_visitor.cpp
 	event_dispatcher.cpp parallel_event_dispatcher.cpp
 	functional_event_visitor.cpp instrument_layout.cpp
@@ -25,8 +25,9 @@ set(CALIN_SOURCES actl_event_decoder.cpp
 
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES}
+		actl_event_decoder.cpp
 		zfits_actl_l0_data_source.cpp zfits_actl_r1_data_source.cpp zfits_data_source.cpp
-	nectarcam_actl_l0_event_decoder.cpp nectarcam_data_source.cpp)
+		nectarcam_actl_l0_event_decoder.cpp nectarcam_data_source.cpp)
 endif()
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
