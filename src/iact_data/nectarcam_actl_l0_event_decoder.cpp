@@ -529,6 +529,21 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
 
   // ==========================================================================
   //
+  // DAQ MODE
+  //
+  // ==========================================================================
+
+  if(calin_run_config->has_nectarcam() and
+      calin_run_config->nectarcam().module_size()>0) {
+    std::string daq_mode = calin_run_config->nectarcam().module(0).daq_mode();
+    for(int imod=1; imod<calin_run_config->nectarcam().module_size(); imod++)
+      if(calin_run_config->nectarcam().module(imod).daq_mode()
+        != daq_mode)daq_mode = "";
+    calin_run_config->mutable_nectarcam()->set_daq_mode(daq_mode);
+  }
+
+  // ==========================================================================
+  //
   // RUN SAMPLING FREQUENCY
   //
   // ==========================================================================

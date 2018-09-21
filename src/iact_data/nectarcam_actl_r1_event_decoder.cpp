@@ -437,6 +437,46 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
 
   // ---------------------------------------------------------------------------
   //
+  // Extract CTA run header data
+  //
+  // ---------------------------------------------------------------------------
+
+  if(cta_run_header)
+  {
+    calin_run_config->set_telescope_id(cta_run_header->telescope_id());
+    calin_run_config->set_camera_server_serial_number(cta_run_header->cs_serial());
+    calin_run_config->set_configuration_id(cta_run_header->configuration_id());
+    calin_run_config->set_data_model_version(cta_run_header->data_model_version());
+    run_start_time_ = uint64_t(cta_run_header->date()) * uint64_t(1000000000);
+    calin_run_config->mutable_run_start_time()->set_time_ns(run_start_time_);
+
+    if(cta_run_header->has_nectarcam()) {
+      const auto* cta_nectarcam_header = &cta_run_header->nectarcam();
+      auto* ncc = calin_run_config->mutable_nectarcam();
+      if(ncc->daq_mode() == "") {
+        switch(cta_nectarcam_header->acquisition_mode()) {
+          // See MST-CAM-TN-0008-LPNHE
+          case 0: ncc->set_daq_mode("DAQCHARGE_C"); break;
+          case 1: ncc->set_daq_mode("DAQCHARGE_T"); break;
+          case 2: ncc->set_daq_mode("DAQSAMPLE"); break;
+          case 3: ncc->set_daq_mode("DAQSAMPLE_C"); break;
+          case 4: ncc->set_daq_mode("DAQSAMPLE_D"); break;
+          case 5: ncc->set_daq_mode("DAQCHARGESAMPLE"); break;
+          case 6: ncc->set_daq_mode("DAQCHARGESAMPLE_D"); break;
+          default:
+            ncc->set_daq_mode("Unrecognised DAQ mode: "
+              + std::to_string(cta_nectarcam_header->acquisition_mode()));
+            break;
+        }
+      }
+      ncc->set_daq_processing_algorithms(cta_nectarcam_header->algorithms());
+      ncc->set_idaq_version(cta_nectarcam_header->idaq_version());
+      ncc->set_cdhs_version(cta_nectarcam_header->cdhs_version());
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //
   // Get the list of configured modules
   //
   // ---------------------------------------------------------------------------
