@@ -25,8 +25,8 @@ set(CALIN_SOURCES actl_event_decoder.cpp
 
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES}
-		zfits_actl_l0_data_source.cpp zfits_actl_r1_data_source.cpp
-		zfits_data_source.cpp nectarcam_data_source.cpp)
+		zfits_actl_l0_data_source.cpp zfits_actl_r1_data_source.cpp zfits_data_source.cpp
+	nectarcam_actl_l0_event_decoder.cpp nectarcam_data_source.cpp)
 endif()
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})

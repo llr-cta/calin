@@ -30,6 +30,7 @@
 #include <io/data_source.hpp>
 #include <io/buffered_data_source.hpp>
 #include <util/file.hpp>
+#include <iact_data/nectarcam_actl_event_decoder.hpp>
 
 using namespace calin::util::string;
 using namespace calin::util::log;
@@ -140,8 +141,8 @@ void ParallelEventDispatcher::process_nectarcam_zfits_run(
 
   calin::iact_data::zfits_actl_data_source::
     ZFITSACTL_L0_CameraEventDataSource zfits_actl_src(filename, zfits_config);
-  calin::iact_data::nectarcam_data_source::
-    NectarCamCameraEventDecoder decoder(filename,
+  calin::iact_data::nectarcam_actl_event_decoder::
+    NectarCAM_ACTL_L0_CameraEventDecoder decoder(filename,
       calin::util::file::extract_first_number_from_filename(filename),
       decoder_config);
 
@@ -175,7 +176,7 @@ void ParallelEventDispatcher::process_nectarcam_zfits_run(
 
   if(nthread <= 0)
   {
-    calin::iact_data::zfits_data_source::DecodedConstACTL_L0_CameraEventDataSource src(
+    calin::iact_data::actl_event_decoder::DecodedConstACTL_L0_CameraEventDataSource src(
       &zfits_actl_borrow_src, &zfits_actl_release_sink, &decoder);
     do_dispatcher_loop(&src, log_frequency, start_time, ndispatched);
   }
@@ -184,7 +185,7 @@ void ParallelEventDispatcher::process_nectarcam_zfits_run(
     calin::io::data_source::BidirectionalBufferedDataSourcePump<
       const DataModel::CameraEvent> pump(&zfits_actl_borrow_src, &zfits_actl_release_sink,
         /* buffer_size = */ 100, /* sink_unsent_data = */ true);
-    calin::iact_data::zfits_data_source::DecodedConstACTL_L0_CameraEventDataSourceFactory factory(
+    calin::iact_data::actl_event_decoder::DecodedConstACTL_L0_CameraEventDataSourceFactory factory(
       &pump, &decoder);
 
     do_parallel_dispatcher_loops(&run_config, &factory, nthread, log_frequency,

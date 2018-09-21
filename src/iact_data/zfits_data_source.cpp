@@ -26,6 +26,7 @@
 
 #include <util/log.hpp>
 #include <util/file.hpp>
+#include <iact_data/actl_event_decoder.hpp>
 #include <iact_data/zfits_data_source.hpp>
 
 using namespace calin::iact_data::zfits_data_source;
@@ -38,161 +39,9 @@ using calin::util::file::expand_filename;
 
 #include <ProtobufIFits.h>
 #include <L0.pb.h>
+#include <R1.pb.h>
 
-ACTL_L0_CameraEventDecoder::~ACTL_L0_CameraEventDecoder()
-{
-  // nothing to see here
-}
-
-// =============================================================================
-// DecodedACTL_L0_CameraEventDataSource - extract ACTL events from an ACTL_L0_CameraEventDataSource and
-// decode them using a supplied decoder
-// =============================================================================
-
-DecodedACTL_L0_CameraEventDataSource::DecodedACTL_L0_CameraEventDataSource(
-    calin::iact_data::zfits_actl_data_source::ACTL_L0_CameraEventDataSource* actl_src,
-    ACTL_L0_CameraEventDecoder* decoder, bool adopt_actl_src, bool adopt_decoder):
-  calin::iact_data::telescope_data_source::TelescopeDataSource(),
-  decoder_(decoder), adopt_decoder_(adopt_decoder),
-  actl_src_(actl_src), adopt_actl_src_(adopt_actl_src)
-{
-  // nothing to see here
-}
-
-DecodedACTL_L0_CameraEventDataSource::~DecodedACTL_L0_CameraEventDataSource()
-{
-  if(adopt_decoder_)delete decoder_;
-  if(adopt_actl_src_)delete actl_src_;
-}
-
-calin::ix::iact_data::telescope_event::TelescopeEvent*
-DecodedACTL_L0_CameraEventDataSource::get_next(
-  uint64_t& seq_index_out, google::protobuf::Arena** arena)
-{
-  const DataModel::CameraEvent* cta_event = actl_src_->get_next(seq_index_out);
-  if(!cta_event) {
-    if(arena)*arena = nullptr;
-    return nullptr;
-  }
-  TelescopeEvent* event = nullptr;
-  TelescopeEvent* delete_event = nullptr;
-  google::protobuf::Arena* delete_arena = nullptr;
-  if(arena) {
-    if(!*arena)*arena = delete_arena = new google::protobuf::Arena;
-    event = google::protobuf::Arena::CreateMessage<TelescopeEvent>(*arena);
-  }
-  else event = delete_event = new TelescopeEvent;
-  if(!event)
-  {
-    delete cta_event;
-    delete delete_arena;
-    throw std::runtime_error("Could not allocate telescope event");
-  }
-  if(!decoder_->decode(event, cta_event))
-  {
-    delete cta_event;
-    delete delete_arena;
-    delete delete_event;
-    throw std::runtime_error("Could not decode ACTL event");
-  }
-  event->set_source_event_index(seq_index_out);
-  delete cta_event;
-  return event;
-}
-
-DecodedConstACTL_L0_CameraEventDataSource::DecodedConstACTL_L0_CameraEventDataSource(
-    calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSource* actl_src,
-    calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSink* actl_sink,
-    ACTL_L0_CameraEventDecoder* decoder,
-    bool adopt_actl_src, bool adopt_actl_sink, bool adopt_decoder):
-  calin::iact_data::telescope_data_source::TelescopeDataSource(),
-  decoder_(decoder), adopt_decoder_(adopt_decoder),
-  actl_src_(actl_src), adopt_actl_src_(adopt_actl_src),
-  actl_sink_(actl_sink), adopt_actl_sink_(adopt_actl_sink)
-{
-  // nothing to see here
-}
-
-DecodedConstACTL_L0_CameraEventDataSource::DecodedConstACTL_L0_CameraEventDataSource(
-    calin::iact_data::zfits_actl_data_source::ConstACTL_L0_CameraEventDataSource* actl_src,
-    ACTL_L0_CameraEventDecoder* decoder,
-    bool adopt_actl_src, bool adopt_decoder):
-  calin::iact_data::telescope_data_source::TelescopeDataSource(),
-  decoder_(decoder), adopt_decoder_(adopt_decoder),
-  actl_src_(actl_src), adopt_actl_src_(adopt_actl_src),
-  actl_sink_(nullptr), adopt_actl_sink_(false)
-{
-  // nothing to see here
-}
-
-DecodedConstACTL_L0_CameraEventDataSource::~DecodedConstACTL_L0_CameraEventDataSource()
-{
-  if(adopt_decoder_)delete decoder_;
-  if(adopt_actl_src_)delete actl_src_;
-  if(adopt_actl_sink_)delete actl_sink_;
-}
-
-calin::ix::iact_data::telescope_event::TelescopeEvent*
-DecodedConstACTL_L0_CameraEventDataSource::get_next(
-  uint64_t& seq_index_out, google::protobuf::Arena** arena)
-{
-  const DataModel::CameraEvent* cta_event = actl_src_->get_next(seq_index_out);
-  if(!cta_event) {
-    if(arena)*arena = nullptr;
-    return nullptr;
-  }
-  TelescopeEvent* event = nullptr;
-  TelescopeEvent* delete_event = nullptr;
-  google::protobuf::Arena* delete_arena = nullptr;
-  if(arena) {
-    if(!*arena)*arena = delete_arena = new google::protobuf::Arena;
-    event = google::protobuf::Arena::CreateMessage<TelescopeEvent>(*arena);
-  }
-  else event = delete_event = new TelescopeEvent;
-  if(!event)
-  {
-    if(actl_sink_)actl_sink_->put_next(cta_event, seq_index_out, nullptr, true);
-    else delete cta_event;
-    delete delete_arena;
-    throw std::runtime_error("Could not allocate telescope event");
-  }
-  if(!decoder_->decode(event, cta_event))
-  {
-    if(actl_sink_)actl_sink_->put_next(cta_event, seq_index_out, nullptr, true);
-    else delete cta_event;
-    delete delete_arena;
-    delete delete_event;
-    throw std::runtime_error("Could not decode ACTL event");
-  }
-  event->set_source_event_index(seq_index_out);
-  if(actl_sink_)actl_sink_->put_next(cta_event, seq_index_out, nullptr, true);
-  else delete cta_event;
-  return event;
-}
-
-DecodedConstACTL_L0_CameraEventDataSourceFactory::DecodedConstACTL_L0_CameraEventDataSourceFactory(
-    calin::io::data_source::BidirectionalBufferedDataSourcePump<
-      const DataModel::CameraEvent>* pump, ACTL_L0_CameraEventDecoder* decoder,
-    bool adopt_pump, bool adopt_decoder):
-  calin::iact_data::telescope_data_source::TelescopeDataSourceFactory(),
-  decoder_(decoder), adopt_decoder_(adopt_decoder),
-  pump_(pump), adopt_pump_(adopt_pump)
-{
-  // nothing to see here
-}
-
-DecodedConstACTL_L0_CameraEventDataSourceFactory::~DecodedConstACTL_L0_CameraEventDataSourceFactory()
-{
-  if(adopt_pump_)delete pump_;
-  if(adopt_decoder_)delete decoder_;
-}
-
-DecodedConstACTL_L0_CameraEventDataSource* DecodedConstACTL_L0_CameraEventDataSourceFactory::new_data_source()
-{
-  return new DecodedConstACTL_L0_CameraEventDataSource(
-    pump_->new_data_source(), pump_->new_data_sink(), decoder_,
-    /* adopt_actl_src= */ true, /* adopt_actl_sink = */ true);
-}
+using namespace calin::iact_data::actl_event_decoder;
 
 // =============================================================================
 // ZFITSSingleFileDataSource - single ZFits file with decoder
