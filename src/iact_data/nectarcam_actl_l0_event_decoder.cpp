@@ -569,7 +569,7 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
     cta_event->uctsdata().has_data())
   {
     calin::ix::iact_data::telescope_event::CDTSData calin_cdts_data;
-    calin::iact_data::zfits_data_source::decode_cdts_data(
+    calin::iact_data::actl_event_decoder::decode_cdts_data(
       &calin_cdts_data, cta_event->uctsdata().data());
 
     if(calin_cdts_data.white_rabbit_status() == 1) {
