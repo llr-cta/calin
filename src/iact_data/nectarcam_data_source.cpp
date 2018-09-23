@@ -227,7 +227,7 @@ NectarCamZFITSDataSource::construct_delegate(const std::string& filename,
       use_r1 = true;
     } else {
       throw(std::runtime_error(
-        "NectarCamZFITSDataSource::construct_delegate: Unknown message type: " + message_name));
+        "NectarCamZFITSDataSource::construct_delegate: FITS table encodes unknown data model: " + message_name));
     }
   } else if(config.data_model() ==
       calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0) {
@@ -236,7 +236,7 @@ NectarCamZFITSDataSource::construct_delegate(const std::string& filename,
       calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1) {
     use_r1 = true;
   } else {
-    throw(std::runtime_error("NectarCamZFITSDataSource::construct_delegate: Requested data model not unknown"));
+    throw(std::runtime_error("NectarCamZFITSDataSource::construct_delegate: Requested data model not known"));
   }
 
   if(use_r1)return new NectarCamZFITSDataSource_R1(filename, config, decoder_config);
