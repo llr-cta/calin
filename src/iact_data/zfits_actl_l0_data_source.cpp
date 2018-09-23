@@ -167,6 +167,7 @@ ZFITSSingleFileACTL_L0_CameraEventDataSource::config_type
 ZFITSSingleFileACTL_L0_CameraEventDataSource::default_config()
 {
   config_type config = config_type::default_instance();
+  config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0);
   config.set_extension(".fits.fz");
   config.set_run_header_table_name(default_L0_run_header_table_name);
   config.set_events_table_name(default_L0_events_table_name);

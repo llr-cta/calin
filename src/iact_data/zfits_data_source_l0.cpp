@@ -64,13 +64,13 @@ using namespace calin::iact_data::actl_event_decoder;
 */
 
 // =============================================================================
-// ZFITSSingleFileDataSource - single ZFits file with decoder
+// ZFITSSingleFileDataSource_L0 - single ZFits file with decoder
 // Uses ZFITSSingleFileACTL_L0_CameraEventDataSource to read events and
 // decoder to translate them.
 // =============================================================================
 
-ZFITSSingleFileDataSource::
-ZFITSSingleFileDataSource(calin::iact_data::zfits_actl_data_source::
+ZFITSSingleFileDataSource_L0::
+ZFITSSingleFileDataSource_L0(calin::iact_data::zfits_actl_data_source::
       ZFITSSingleFileACTL_L0_CameraEventDataSource* actl_zfits,
     bool dont_decode_run_configuration,
     ACTL_L0_CameraEventDecoder* decoder, bool adopt_decoder, bool adopt_actl_zfits):
@@ -102,18 +102,18 @@ ZFITSSingleFileDataSource(calin::iact_data::zfits_actl_data_source::
   }
 }
 
-ZFITSSingleFileDataSource::
-ZFITSSingleFileDataSource(const std::string& filename,
+ZFITSSingleFileDataSource_L0::
+ZFITSSingleFileDataSource_L0(const std::string& filename,
     ACTL_L0_CameraEventDecoder* decoder, bool adopt_decoder,
     const config_type& config):
-  ZFITSSingleFileDataSource(new calin::iact_data::zfits_actl_data_source::
+  ZFITSSingleFileDataSource_L0(new calin::iact_data::zfits_actl_data_source::
     ZFITSSingleFileACTL_L0_CameraEventDataSource(filename, config), false,
     decoder, adopt_decoder, true)
 {
   // nothing to see here
 }
 
-ZFITSSingleFileDataSource::~ZFITSSingleFileDataSource()
+ZFITSSingleFileDataSource_L0::~ZFITSSingleFileDataSource_L0()
 {
   delete run_config_;
   if(adopt_actl_zfits_)delete actl_zfits_;
@@ -121,7 +121,7 @@ ZFITSSingleFileDataSource::~ZFITSSingleFileDataSource()
 }
 
 calin::ix::iact_data::telescope_event::TelescopeEvent*
-ZFITSSingleFileDataSource::get_next(
+ZFITSSingleFileDataSource_L0::get_next(
   uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
   const DataModel::CameraEvent* cta_event =
@@ -156,18 +156,18 @@ ZFITSSingleFileDataSource::get_next(
   return event;
 }
 
-uint64_t ZFITSSingleFileDataSource::size()
+uint64_t ZFITSSingleFileDataSource_L0::size()
 {
   return actl_zfits_->size();
 }
 
-void ZFITSSingleFileDataSource::set_next_index(uint64_t next_index)
+void ZFITSSingleFileDataSource_L0::set_next_index(uint64_t next_index)
 {
   actl_zfits_->set_next_index(next_index);
 }
 
 calin::ix::iact_data::telescope_run_configuration::
-  TelescopeRunConfiguration* ZFITSSingleFileDataSource::get_run_configuration()
+  TelescopeRunConfiguration* ZFITSSingleFileDataSource_L0::get_run_configuration()
 {
   if(!run_config_)return nullptr;
   auto* run_config = new TelescopeRunConfiguration();
@@ -176,16 +176,16 @@ calin::ix::iact_data::telescope_run_configuration::
 }
 
 // =============================================================================
-// ZFITSDataSource - chained ZFits files with decoder
+// ZFITSDataSource_L0 - chained ZFits files with decoder
 // =============================================================================
 
-ZFITSDataSource::ZFITSDataSource(const std::string& filename,
+ZFITSDataSource_L0::ZFITSDataSource_L0(const std::string& filename,
     ACTL_L0_CameraEventDecoder* decoder, bool adopt_decoder,
     const config_type& config):
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::telescope_data_source::
       TelescopeRandomAccessDataSourceWithRunConfig>(
-    new ZFITSDataSourceOpener(filename, decoder, config), true),
+    new ZFITSDataSourceOpener_L0(filename, decoder, config), true),
   decoder_(decoder), adopt_decoder_(adopt_decoder),
   run_config_(source_->get_run_configuration())
 {
@@ -196,14 +196,14 @@ ZFITSDataSource::ZFITSDataSource(const std::string& filename,
   }
 }
 
-ZFITSDataSource::~ZFITSDataSource()
+ZFITSDataSource_L0::~ZFITSDataSource_L0()
 {
   delete run_config_;
   if(adopt_decoder_)delete decoder_;
 }
 
 calin::ix::iact_data::telescope_run_configuration::
-TelescopeRunConfiguration* ZFITSDataSource::get_run_configuration()
+TelescopeRunConfiguration* ZFITSDataSource_L0::get_run_configuration()
 {
   if(!run_config_)return nullptr;
   auto* run_config = new TelescopeRunConfiguration();
@@ -212,14 +212,14 @@ TelescopeRunConfiguration* ZFITSDataSource::get_run_configuration()
 }
 
 // =============================================================================
-// ZFITSDataSourceOpener - opener for ZFITSSingleFileDataSource
+// ZFITSDataSourceOpener_L0 - opener for ZFITSSingleFileDataSource_L0
 // Uses ZFITSACTL_L0_CameraEventDataSourceOpener to open underlying ZFITSSingleFileACTL_L0_CameraEventDataSource
 // objects
 // =============================================================================
 
-ZFITSDataSourceOpener::
-ZFITSDataSourceOpener(std::string filename, ACTL_L0_CameraEventDecoder* decoder,
-    const ZFITSDataSource::config_type& config):
+ZFITSDataSourceOpener_L0::
+ZFITSDataSourceOpener_L0(std::string filename, ACTL_L0_CameraEventDecoder* decoder,
+    const ZFITSDataSource_L0::config_type& config):
   calin::io::data_source::DataSourceOpener<
     calin::iact_data::telescope_data_source::
       TelescopeRandomAccessDataSourceWithRunConfig>(),
@@ -230,26 +230,26 @@ ZFITSDataSourceOpener(std::string filename, ACTL_L0_CameraEventDecoder* decoder,
   // nothing to see here
 }
 
-ZFITSDataSourceOpener::~ZFITSDataSourceOpener()
+ZFITSDataSourceOpener_L0::~ZFITSDataSourceOpener_L0()
 {
   delete zfits_actl_opener_;
 }
 
-unsigned ZFITSDataSourceOpener::num_sources()
+unsigned ZFITSDataSourceOpener_L0::num_sources()
 {
   return zfits_actl_opener_->num_sources();
 }
 
-std::string ZFITSDataSourceOpener::source_name(unsigned isource)
+std::string ZFITSDataSourceOpener_L0::source_name(unsigned isource)
 {
   return zfits_actl_opener_->source_name(isource);
 }
 
-ZFITSSingleFileDataSource* ZFITSDataSourceOpener::open(unsigned isource)
+ZFITSSingleFileDataSource_L0* ZFITSDataSourceOpener_L0::open(unsigned isource)
 {
   bool suppress_run_config = zfits_actl_opener_->has_opened_file();
   auto* zfits_actl = zfits_actl_opener_->open(isource);
   if(zfits_actl == nullptr)return nullptr;
-  return new ZFITSSingleFileDataSource(zfits_actl, suppress_run_config,
+  return new ZFITSSingleFileDataSource_L0(zfits_actl, suppress_run_config,
      decoder_, false, true);
 }

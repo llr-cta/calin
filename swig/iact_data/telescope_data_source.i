@@ -168,6 +168,12 @@ using namespace calin::io;
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>;
 
+%include "pattern/delegation.hpp"
+
+%template(DelegatorTelescopeRandomAccessDataSourceWithRunConfig)
+  calin::pattern::delegation::Delegator<
+    calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>;
+
 %include "iact_data/zfits_data_source.hpp"
 
 %include "iact_data/nectarcam_data_source.hpp"

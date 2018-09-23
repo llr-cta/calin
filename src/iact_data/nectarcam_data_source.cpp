@@ -66,10 +66,10 @@ using namespace calin::iact_data::nectarcam_actl_event_decoder;
 
 */
 
-NectarCamZFITSDataSource::
-NectarCamZFITSDataSource(const std::string& filename,
+NectarCamZFITSDataSource_L0::
+NectarCamZFITSDataSource_L0(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
-  calin::iact_data::zfits_data_source::ZFITSDataSource(filename,
+  calin::iact_data::zfits_data_source::ZFITSDataSource_L0(filename,
     decoder_ = new NectarCAM_ACTL_L0_CameraEventDecoder(filename,
       calin::util::file::extract_first_number_from_filename(filename),
       decoder_config), false /* we delete it! */, config)
@@ -77,15 +77,15 @@ NectarCamZFITSDataSource(const std::string& filename,
   // nothing to see here
 }
 
-NectarCamZFITSDataSource::
-NectarCamZFITSDataSource(const std::string& filename,
+NectarCamZFITSDataSource_L0::
+NectarCamZFITSDataSource_L0(const std::string& filename,
   const decoder_config_type& decoder_config, const config_type& config):
-    NectarCamZFITSDataSource(filename, config, decoder_config)
+    NectarCamZFITSDataSource_L0(filename, config, decoder_config)
 {
   // nothing to see here
 }
 
-NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
+NectarCamZFITSDataSource_L0::~NectarCamZFITSDataSource_L0()
 {
   delete decoder_;
 }
@@ -133,4 +133,93 @@ NectarCamZFITSDataSource_R1(const std::string& filename,
 NectarCamZFITSDataSource_R1::~NectarCamZFITSDataSource_R1()
 {
   delete decoder_;
+}
+
+/*
+
+               AAA                                     tttt
+              A:::A                                 ttt:::t
+             A:::::A                                t:::::t
+            A:::::::A                               t:::::t
+           A:::::::::A        uuuuuu    uuuuuuttttttt:::::ttttttt       ooooooooooo
+          A:::::A:::::A       u::::u    u::::ut:::::::::::::::::t     oo:::::::::::oo
+         A:::::A A:::::A      u::::u    u::::ut:::::::::::::::::t    o:::::::::::::::o
+        A:::::A   A:::::A     u::::u    u::::utttttt:::::::tttttt    o:::::ooooo:::::o
+       A:::::A     A:::::A    u::::u    u::::u      t:::::t          o::::o     o::::o
+      A:::::AAAAAAAAA:::::A   u::::u    u::::u      t:::::t          o::::o     o::::o
+     A:::::::::::::::::::::A  u::::u    u::::u      t:::::t          o::::o     o::::o
+    A:::::AAAAAAAAAAAAA:::::A u:::::uuuu:::::u      t:::::t    tttttto::::o     o::::o
+   A:::::A             A:::::Au:::::::::::::::uu    t::::::tttt:::::to:::::ooooo:::::o
+  A:::::A               A:::::Au:::::::::::::::u    tt::::::::::::::to:::::::::::::::o
+ A:::::A                 A:::::Auu::::::::uu:::u      tt:::::::::::tt oo:::::::::::oo
+AAAAAAA                   AAAAAAA uuuuuuuu  uuuu        ttttttttttt     ooooooooooo
+
+*/
+
+NectarCamZFITSDataSource::
+NectarCamZFITSDataSource(const std::string& filename,
+    const config_type& config, const decoder_config_type& decoder_config):
+  TelescopeRandomAccessDataSourceWithRunConfig(),
+  Delegator<calin::iact_data::telescope_data_source::
+    TelescopeRandomAccessDataSourceWithRunConfig>(
+      construct_delegate(filename, config, decoder_config), /* adopt_delegate=*/ true)
+{
+  // nothing to see here
+}
+
+NectarCamZFITSDataSource::
+NectarCamZFITSDataSource(const std::string& filename,
+    const decoder_config_type& decoder_config, const config_type& config):
+  NectarCamZFITSDataSource(filename, config, decoder_config)
+{
+  // nothing to see here
+}
+
+NectarCamZFITSDataSource::~NectarCamZFITSDataSource()
+{
+  // nothing to see here
+}
+
+calin::ix::iact_data::telescope_event::TelescopeEvent*
+NectarCamZFITSDataSource::get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
+{
+  return delegate_->get_next(seq_index_out, arena);
+}
+
+uint64_t NectarCamZFITSDataSource::size()
+{
+  return delegate_->size();
+}
+
+void NectarCamZFITSDataSource::set_next_index(uint64_t next_index)
+{
+  return delegate_->set_next_index(next_index);
+}
+
+calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
+NectarCamZFITSDataSource::get_run_configuration()
+{
+  return delegate_->get_run_configuration();
+}
+
+calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*
+NectarCamZFITSDataSource::construct_delegate(const std::string& filename,
+  const config_type& config, const decoder_config_type& decoder_config)
+{
+  bool use_r1 = true;
+  if(config.data_model() ==
+      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT) {
+
+  } else if(config.data_model() ==
+      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0) {
+    use_r1 = false;
+  } else if(config.data_model() ==
+      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1) {
+    use_r1 = true;
+  } else {
+    // WTF?
+  }
+
+  if(use_r1)return new NectarCamZFITSDataSource_R1(filename, config, decoder_config);
+  else return new NectarCamZFITSDataSource_L0(filename, config, decoder_config);
 }

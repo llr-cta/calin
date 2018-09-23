@@ -61,7 +61,7 @@ namespace calin { namespace iact_data { namespace zfits_data_source {
 
 */
 
-class ZFITSSingleFileDataSource:
+class ZFITSSingleFileDataSource_L0:
   public calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig
 {
@@ -69,18 +69,18 @@ public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
-  ZFITSSingleFileDataSource(calin::iact_data::zfits_actl_data_source::
+  ZFITSSingleFileDataSource_L0(calin::iact_data::zfits_actl_data_source::
       ZFITSSingleFileACTL_L0_CameraEventDataSource* actl_zfits,
     bool dont_decode_run_configuration,
     calin::iact_data::actl_event_decoder::ACTL_L0_CameraEventDecoder* decoder,
     bool adopt_decoder = false,
     bool adopt_actl_zfits = false);
 
-  ZFITSSingleFileDataSource(const std::string& filename,
+  ZFITSSingleFileDataSource_L0(const std::string& filename,
     calin::iact_data::actl_event_decoder::ACTL_L0_CameraEventDecoder* decoder,
     bool adopt_decoder = false,
     const config_type& config = default_config());
-  virtual ~ZFITSSingleFileDataSource();
+  virtual ~ZFITSSingleFileDataSource_L0();
 
   calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
     uint64_t& seq_index_out, google::protobuf::Arena** arena = nullptr) override;
@@ -103,7 +103,7 @@ private:
     TelescopeRunConfiguration* run_config_ = nullptr;
 };
 
-class ZFITSDataSource:
+class ZFITSDataSource_L0:
   public calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::telescope_data_source::
       TelescopeRandomAccessDataSourceWithRunConfig>
@@ -112,11 +112,11 @@ public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
-  ZFITSDataSource(const std::string& filename,
+  ZFITSDataSource_L0(const std::string& filename,
     calin::iact_data::actl_event_decoder::ACTL_L0_CameraEventDecoder* decoder,
     bool adopt_decoder = false,
     const config_type& config = default_config());
-  virtual ~ZFITSDataSource();
+  virtual ~ZFITSDataSource_L0();
 
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* get_run_configuration() override;
@@ -131,7 +131,7 @@ protected:
     TelescopeRunConfiguration* run_config_ = nullptr;
 };
 
-class ZFITSDataSourceOpener:
+class ZFITSDataSourceOpener_L0:
   public calin::io::data_source::DataSourceOpener<
     calin::iact_data::telescope_data_source::
       TelescopeRandomAccessDataSourceWithRunConfig>
@@ -139,19 +139,19 @@ class ZFITSDataSourceOpener:
 public:
   CALIN_TYPEALIAS(data_source_type, calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig);
-  ZFITSDataSourceOpener(std::string filename,
+  ZFITSDataSourceOpener_L0(std::string filename,
     calin::iact_data::actl_event_decoder::ACTL_L0_CameraEventDecoder* decoder,
-    const ZFITSDataSource::config_type& config =
-      ZFITSDataSource::default_config());
-  virtual ~ZFITSDataSourceOpener();
+    const ZFITSDataSource_L0::config_type& config =
+      ZFITSDataSource_L0::default_config());
+  virtual ~ZFITSDataSourceOpener_L0();
   unsigned num_sources() override;
   std::string source_name(unsigned isource) override;
-  ZFITSSingleFileDataSource* open(unsigned isource) override;
+  ZFITSSingleFileDataSource_L0* open(unsigned isource) override;
 private:
   calin::iact_data::zfits_actl_data_source::
     ZFITSACTL_L0_CameraEventDataSourceOpener* zfits_actl_opener_ = nullptr;
   calin::iact_data::actl_event_decoder::ACTL_L0_CameraEventDecoder* decoder_ = nullptr;
-  ZFITSDataSource::config_type config_;
+  ZFITSDataSource_L0::config_type config_;
 };
 
 /*
@@ -257,7 +257,7 @@ public:
   ZFITSDataSourceOpener_R1(std::string filename,
     calin::iact_data::actl_event_decoder::ACTL_R1_CameraEventDecoder* decoder,
     const ZFITSDataSource_R1::config_type& config =
-      ZFITSDataSource::default_config());
+      ZFITSDataSource_R1::default_config());
   virtual ~ZFITSDataSourceOpener_R1();
   unsigned num_sources() override;
   std::string source_name(unsigned isource) override;
@@ -266,30 +266,8 @@ private:
   calin::iact_data::zfits_actl_data_source::
     ZFITSACTL_R1_CameraEventDataSourceOpener* zfits_actl_opener_ = nullptr;
   calin::iact_data::actl_event_decoder::ACTL_R1_CameraEventDecoder* decoder_ = nullptr;
-  ZFITSDataSource::config_type config_;
+  ZFITSDataSource_R1::config_type config_;
 };
-
-
-/*
-
-    UUUUUUUU     UUUUUUUU                   iiii
-    U::::::U     U::::::U                  i::::i
-    U::::::U     U::::::U                   iiii
-    UU:::::U     U:::::UU
-     U:::::U     U:::::Unnnn  nnnnnnnn    iiiiiiivvvvvvv           vvvvvvv
-     U:::::D     D:::::Un:::nn::::::::nn  i:::::i v:::::v         v:::::v
-     U:::::D     D:::::Un::::::::::::::nn  i::::i  v:::::v       v:::::v
-     U:::::D     D:::::Unn:::::::::::::::n i::::i   v:::::v     v:::::v
-     U:::::D     D:::::U  n:::::nnnn:::::n i::::i    v:::::v   v:::::v
-     U:::::D     D:::::U  n::::n    n::::n i::::i     v:::::v v:::::v
-     U:::::D     D:::::U  n::::n    n::::n i::::i      v:::::v:::::v
-     U::::::U   U::::::U  n::::n    n::::n i::::i       v:::::::::v
-     U:::::::UUU:::::::U  n::::n    n::::ni::::::i       v:::::::v
-      UU:::::::::::::UU   n::::n    n::::ni::::::i        v:::::v
-        UU:::::::::UU     n::::n    n::::ni::::::i         v:::v
-          UUUUUUUUU       nnnnnn    nnnnnniiiiiiii          vvv
-
-*/
 
 #endif
 } } } // namespace calin::iact_data::zfits_data_source
