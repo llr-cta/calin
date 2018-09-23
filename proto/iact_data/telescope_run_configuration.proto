@@ -89,4 +89,7 @@ message TelescopeRunConfiguration {
     (CFO).sql.dont_store = true ];
   bytes serialized_raw_header                               = 999 [
     (CFO).desc = "Serialized raw header.", (CFO).sql.dont_store = true ];
+  string data_transcoder                                    = 1000 [
+    (CFO).desc = "Class name of data encoder / decoder that is producing this "
+      "header and accociated events." ];
 };

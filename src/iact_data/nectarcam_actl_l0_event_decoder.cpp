@@ -365,20 +365,30 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
   const DataModel::CameraRunHeader* cta_run_header,
   const DataModel::CameraEvent* cta_event)
 {
+  calin_run_config->set_data_transcoder(
+    "calin::iact_data::nectarcam_actl_event_decoder::NectarCAM_ACTL_L0_CameraEventDecoder");
   calin_run_config->set_filename(filename_);
   calin_run_config->add_fragment_filename(filename_);
   calin_run_config->set_run_number(run_number_);
 
   switch(config_.camera_type())
   {
-  case NectarCamCameraEventDecoderConfig::NECTARCAM:
-    nectarcam_layout::nectarcam_layout(
+  case NectarCamCameraEventDecoderConfig::AUTOMATIC:
+    if(run_number_ > 877) {
+      nectarcam_layout::nectarcam_layout(
+        calin_run_config->mutable_camera_layout());
+    } else {
+      nectarcam_layout::nectarcam_19module_layout(
+        calin_run_config->mutable_camera_layout());
+    }
+    break;
+  case NectarCamCameraEventDecoderConfig::NECTARCAM_TESTBENCH_19CHANNEL:
+    nectarcam_layout::nectarcam_19module_layout(
       calin_run_config->mutable_camera_layout());
     break;
-  case NectarCamCameraEventDecoderConfig::AUTOMATIC:
-  case NectarCamCameraEventDecoderConfig::NECTARCAM_TESTBENCH_19CHANNEL:
+  case NectarCamCameraEventDecoderConfig::NECTARCAM:
   default:
-    nectarcam_layout::nectarcam_19module_layout(
+    nectarcam_layout::nectarcam_layout(
       calin_run_config->mutable_camera_layout());
     break;
   }

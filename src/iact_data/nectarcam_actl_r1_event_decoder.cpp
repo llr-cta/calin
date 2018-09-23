@@ -363,6 +363,8 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
   const R1::CameraConfiguration* cta_run_header,
   const R1::CameraEvent* cta_event)
 {
+  calin_run_config->set_data_transcoder(
+    "calin::iact_data::nectarcam_actl_event_decoder::NectarCAM_ACTL_R1_CameraEventDecoder");
   calin_run_config->set_filename(filename_);
   calin_run_config->add_fragment_filename(filename_);
   calin_run_config->set_run_number(run_number_);

@@ -40,10 +40,13 @@ using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::ix::iact_data::telescope_run_configuration;
 using namespace calin::ix::iact_data::nectarcam_data_source;
 using namespace calin::util::log;
+using namespace calin::util::file;
 using namespace calin::iact_data::nectarcam_actl_event_decoder;
 
 #include <ProtobufIFits.h>
+#include <IFits.h>
 #include <L0.pb.h>
+#include <R1.pb.h>
 
 /*
 
@@ -209,7 +212,23 @@ NectarCamZFITSDataSource::construct_delegate(const std::string& filename,
   bool use_r1 = true;
   if(config.data_model() ==
       calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT) {
-
+    if(!is_file(filename))
+      throw(std::runtime_error(
+        "NectarCamZFITSDataSource::construct_delegate: File not found: " + filename));
+    std::string events_table_name = config.events_table_name();
+    if(events_table_name == "")events_table_name =
+      zfits_actl_data_source::ZFITSSingleFileACTL_R1_CameraEventDataSource::
+        default_config().events_table_name();
+    IFits ifits(filename, events_table_name, /* force= */ true);
+    const std::string& message_name = ifits.GetStr("PBFHEAD");
+    if (message_name == "DataModel.CameraEvent") {
+      use_r1 = false;
+    } else if (message_name == "R1.CameraEvent") {
+      use_r1 = true;
+    } else {
+      throw(std::runtime_error(
+        "NectarCamZFITSDataSource::construct_delegate: Unknown message type: " + message_name));
+    }
   } else if(config.data_model() ==
       calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0) {
     use_r1 = false;
@@ -217,7 +236,7 @@ NectarCamZFITSDataSource::construct_delegate(const std::string& filename,
       calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1) {
     use_r1 = true;
   } else {
-    // WTF?
+    throw(std::runtime_error("NectarCamZFITSDataSource::construct_delegate: Requested data model not unknown"));
   }
 
   if(use_r1)return new NectarCamZFITSDataSource_R1(filename, config, decoder_config);
