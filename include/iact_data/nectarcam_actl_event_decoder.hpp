@@ -167,14 +167,16 @@ protected:
     calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
     const std::string& which_gain) const;
 
-  virtual void copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
+  void copy_single_gain_waveforms(
     const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
-    const DataModel::PixelsChannel& cta_image,
-    calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
-    const std::string& which_gain) const;
+    const int16_t* cta_waveforms, const int8_t* cta_pixel_mask,
+    calin::ix::iact_data::telescope_event::Waveforms* calin_waveforms,
+    uint8 has_gain_mask, const std::string& which_gain) const;
 
   config_type config_;
   std::string filename_;
+  unsigned nmod_ = 0;
+  unsigned nsample_ = 0;
   unsigned run_number_ = 0;
   unsigned telescope_id_ = 0;
   bool exchange_gain_channels_ = false;
