@@ -492,7 +492,8 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
 
   // Next get list of IDs
   unsigned nmod_camera = calin_run_config->camera_layout().module_size();
-  std::set<unsigned> config_mod_id;
+  std::vector<unsigned> config_mod_id;
+  config_mod_id.reserve(nmod_camera);
   if(config_.demand_configured_module_id_size() != 0)
   {
     if(config_.demand_configured_module_id_size() != nmod)
@@ -504,7 +505,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
         throw std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config: "
           "Demand module id out of range: " + std::to_string(mod_id) + " >= " +
           std::to_string(nmod_camera));
-      config_mod_id.insert(mod_id);
+      config_mod_id.push_back(mod_id);
     }
   }
   else if(calin_run_config->has_nectarcam() and
@@ -516,7 +517,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
         throw std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config: "
           "NMC module id out of range: " + std::to_string(mod_id) + " >= " +
           std::to_string(nmod_camera));
-      config_mod_id.insert(mod_id);
+      config_mod_id.push_back(mod_id);
     }
   }
   else if(cta_run_header
@@ -527,27 +528,27 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
     const uint16_t* mod_id =
       reinterpret_cast<const uint16_t*>(&
         cta_run_header->nectarcam().expected_modules_id().data().front());
-    for(int imod=0;imod<nmod;imod++)config_mod_id.insert(mod_id[imod]);
+    for(int imod=0;imod<nmod;imod++)config_mod_id.push_back(mod_id[imod]);
   }
   else
   {
-    for(int imod=0;imod<nmod;imod++)config_mod_id.insert(imod);
+    for(int imod=0;imod<nmod;imod++)config_mod_id.push_back(imod);
   }
 
-  for(unsigned mod_id=0, mod_index=0; mod_id<nmod_camera; mod_id++)
+  for(unsigned mod_id=0; mod_id<nmod_camera; mod_id++)
   {
-    if(config_mod_id.find(mod_id) == config_mod_id.end()) {
-      calin_run_config->add_configured_module_index(-1);
-      for(unsigned ipix=0; ipix<7; ipix++)
-        calin_run_config->add_configured_channel_index(-1);
-    } else {
-      calin_run_config->add_configured_module_id(mod_id);
-      calin_run_config->add_configured_module_index(mod_index);
-      for(unsigned ipix=0; ipix<7; ipix++) {
-        calin_run_config->add_configured_channel_id(mod_id*7+ipix);
-        calin_run_config->add_configured_channel_index(mod_index*7+ipix);
-      }
-      ++mod_index;
+    calin_run_config->add_configured_module_index(-1);
+    for(unsigned ipix=0; ipix<7; ipix++)
+      calin_run_config->add_configured_channel_index(-1);
+  }
+  for(unsigned imod=0; imod<config_mod_id.size();imod++)
+  {
+    unsigned mod_id = config_mod_id[imod];
+    calin_run_config->add_configured_module_id(mod_id);
+    calin_run_config->set_configured_module_index(mod_id, imod);
+    for(unsigned ipix=0; ipix<7; ipix++) {
+      calin_run_config->add_configured_channel_id(mod_id*7+ipix);
+      calin_run_config->set_configured_channel_index(mod_id*7+ipix, imod*7+ipix);
     }
   }
 
