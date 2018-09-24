@@ -177,7 +177,7 @@ protected:
   std::string filename_;
   unsigned run_number_ = 0;
   bool exchange_gain_channels_ = false;
-  int64_t run_start_time_ = 0;  
+  int64_t run_start_time_ = 0;
 };
 
 #endif

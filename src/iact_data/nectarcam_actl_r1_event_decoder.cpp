@@ -86,18 +86,12 @@ NectarCAM_ACTL_R1_CameraEventDecoder::NectarCAM_ACTL_R1_CameraEventDecoder(
   actl_event_decoder::ACTL_R1_CameraEventDecoder(), config_(config),
   filename_(filename), run_number_(run_number)
 {
-  switch(config.exchange_gain_channels()) {
-    case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_NONE:
-      exchange_gain_channels_ = false;
-      break;
-    case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_FORCED:
-      exchange_gain_channels_ = true;
-      break;
-    case ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_AUTOMATIC:
-    default:
-      exchange_gain_channels_ = false;
-      break;
-  }
+  if(config_.demand_configured_module_id_size() != 0)
+    LOG(WARNING) << "Decoder option \"demand_configured_module_id_size\" not supported in R1 data at this time.";
+
+  if(config_.exchange_gain_channels() ==
+      ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_FORCED)
+    LOG(WARNING) << "Decoder option \"exchange_gain_channels\" not supported in R1 data at this time.";
 }
 
 NectarCAM_ACTL_R1_CameraEventDecoder::~NectarCAM_ACTL_R1_CameraEventDecoder()
@@ -451,7 +445,6 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
     calin_run_config->set_data_model_version(cta_run_header->data_model_version());
     run_start_time_ = uint64_t(cta_run_header->date()) * uint64_t(1000000000);
     calin_run_config->mutable_run_start_time()->set_time_ns(run_start_time_);
-
     if(cta_run_header->has_nectarcam()) {
       const auto* cta_nectarcam_header = &cta_run_header->nectarcam();
       auto* ncc = calin_run_config->mutable_nectarcam();
@@ -483,35 +476,28 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
   //
   // ---------------------------------------------------------------------------
 
-#if 0
-  if(cta_run_header)
-  {
-#if 0
-    calin_run_config->set_run_number(cta_run_header->runnumber());
-    calin_run_config->set_run_start_time(
-      make_time_mjd_ns(cta_run_header->datemjd(), cta_run_header->timenanosec());
-    calin_run_config->set_num_samples(cta_run_header->numtraces());
-#endif
+  // First try to determine number of modules - require this to come from data
+  int nmod = 0;
+  if(nmod==0 and cta_run_header and cta_run_header->has_nectarcam()) {
+    nmod = cta_run_header->nectarcam().num_modules();
+  }
+  if(nmod==0 and cta_event and cta_event->has_nectarcam()
+      and cta_event->nectarcam().has_module_status()) {
+    cta_event->nectarcam().module_status().data().size();
+  }
+  if(nmod == 0) {
+    throw std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config: "
+      "Could not determine number of modules");
   }
 
-  int nmod = 0;
-  std::set<unsigned> config_mod_id;
-  if(cta_run_header)
-  {
-    // what to do here
-  }
-  if(nmod==0 and cta_event)
-  {
-    nmod = get_nmod_from_event(cta_event);
-    for(int imod=0;imod<nmod;imod++)config_mod_id.insert(imod);
-  }
+  // Next get list of IDs
   unsigned nmod_camera = calin_run_config->camera_layout().module_size();
+  std::set<unsigned> config_mod_id;
   if(config_.demand_configured_module_id_size() != 0)
   {
     if(config_.demand_configured_module_id_size() != nmod)
       throw std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config: "
         "Demand module list size must equal number of modules in data.");
-    config_mod_id.clear();
     for(int imod=0;imod<nmod;imod++) {
       unsigned mod_id = config_.demand_configured_module_id(imod);
       if(mod_id >= nmod_camera)
@@ -520,17 +506,32 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
           std::to_string(nmod_camera));
       config_mod_id.insert(mod_id);
     }
-  } else if(calin_run_config->has_nectarcam() and
-      calin_run_config->nectarcam().module_size() == nmod) {
-    config_mod_id.clear();
+  }
+  else if(calin_run_config->has_nectarcam() and
+    calin_run_config->nectarcam().module_size() == nmod)
+  {
     for(int imod=0; imod<nmod; imod++) {
       unsigned mod_id = calin_run_config->nectarcam().module(imod).module_id();
       if(mod_id >= nmod_camera)
         throw std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config: "
-          "Demand module id out of range: " + std::to_string(mod_id) + " >= " +
+          "NMC module id out of range: " + std::to_string(mod_id) + " >= " +
           std::to_string(nmod_camera));
       config_mod_id.insert(mod_id);
     }
+  }
+  else if(cta_run_header
+    and cta_run_header->has_nectarcam()
+    and cta_run_header->nectarcam().has_expected_modules_id()
+    and cta_run_header->nectarcam().expected_modules_id().data().size() == nmod*sizeof(uint16_t))
+  {
+    const uint16_t* mod_id =
+      reinterpret_cast<const uint16_t*>(&
+        cta_run_header->nectarcam().expected_modules_id().data().front());
+    for(int imod=0;imod<nmod;imod++)config_mod_id.insert(mod_id[imod]);
+  }
+  else
+  {
+    for(int imod=0;imod<nmod;imod++)config_mod_id.insert(imod);
   }
 
   for(unsigned mod_id=0, mod_index=0; mod_id<nmod_camera; mod_id++)
@@ -550,9 +551,15 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
     }
   }
 
+  // ---------------------------------------------------------------------------
+  //
+  // Determine nsample
+  //
+  // ---------------------------------------------------------------------------
+
   unsigned nsample = config_.demand_nsample();
   if(nsample == 0 and cta_run_header)
-    nsample = cta_run_header->numtraces();
+    nsample = cta_run_header->num_samples();
   if(nsample == 0 and calin_run_config->has_nectarcam() and
       calin_run_config->nectarcam().module_size()>0) {
     nsample = calin_run_config->nectarcam().module(0).num_samples();
@@ -560,12 +567,18 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
       if(calin_run_config->nectarcam().module(imod).num_samples() != nsample)
         nsample = 0;
   }
+#if 0
   if(nsample == 0 and cta_event and cta_event->has_logain() and
       cta_event->logain().has_waveforms())
     nsample = cta_event->logain().waveforms().num_samples();
   if(nsample == 0 and cta_event and cta_event->has_higain() and
       cta_event->higain().has_waveforms())
     nsample = cta_event->higain().waveforms().num_samples();
+#endif
+  if(nsample == 0) {
+    throw std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config: "
+      "Could not determine number of samples");
+  }
   calin_run_config->set_num_samples(nsample);
 
   // ==========================================================================
@@ -591,6 +604,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
   //
   // ==========================================================================
 
+#if 0
   if(cta_event->uctsdatapresence() and cta_event->has_uctsdata() and
     cta_event->uctsdata().has_data())
   {
@@ -603,6 +617,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
       calin_run_config->mutable_run_start_time()->set_time_ns(run_start_time_);
     }
   }
+#endif
 
   // ==========================================================================
   //
@@ -613,13 +628,12 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
   if(cta_run_header and config_.include_serialized_raw_data())
   {
     calin_run_config->set_serialized_raw_header_type(
-      SerializedRawHeaderType::SERIALIZED_RAW_HEADER_ACTL_PROTOBUF);
+      SerializedRawHeaderType::SERIALIZED_RAW_HEADER_ACTL_R1_PROTOBUF);
     cta_run_header->SerializeToString(calin_run_config->mutable_serialized_raw_header());
   } else {
     calin_run_config->set_serialized_raw_header_type(
       SerializedRawHeaderType::SERIALIZED_RAW_HEADER_NONE);
   }
-#endif
   return true;
 }
 
