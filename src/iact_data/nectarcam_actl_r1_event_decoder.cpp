@@ -103,6 +103,10 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
   calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   const R1::CameraEvent* cta_event)
 {
+  if(!cta_event->has_nectarcam())
+    throw(std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode: "
+      "ACTL event does not have NectarCAM extension"));
+
   calin_event->set_telescope_id(telescope_id_);
   calin_event->set_local_event_number(cta_event->tel_event_id());
   calin_event->set_trigger_type(TRIGGER_SCIENCE);
@@ -119,18 +123,15 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
   calin_event->mutable_elapsed_event_time()->set_time_ns(
     calin_event->absolute_event_time().time_ns() - run_start_time_);
 
-#if 0
   bool all_modules_present = true;
-  if(cta_event->has_modulestatus() and
-    cta_event->modulestatus().has_status())
+  if(cta_event->nectarcam().has_module_status())
   {
-    const auto& cta_status = cta_event->modulestatus().status();
+    const auto& cta_status = cta_event->nectarcam().module_status();
 #if TEST_ANYARRAY_TYPES
     if(cta_status.type() != DataModel::AnyArray::U8)
       throw std::runtime_error("Camera status type not U8");
 #endif
-    unsigned nmod =
-      cta_status.data().size();
+    unsigned nmod = cta_status.data().size();
     const auto* mod_status =
       reinterpret_cast<const uint8_t*>(&cta_status.data().front());
     for(unsigned imod=0, mod_index=0;imod<nmod;imod++)
@@ -149,25 +150,12 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
   }
   else
   {
-#if 0 // Is this needed?
-    unsigned nmod = 0;
-    if(cta_event->has_higain() and
-      cta_event->higain().has_integrals() and
-      cta_event->higain().integrals().has_gains())
-    {
-      const auto& cta_q = cta_event->higain().integrals().gains();
-      nmod = cta_q.data().size()/sizeof(uint16_t)/7;
-    }
-    else if(cta_event->has_logain() and
-      cta_event->logain().has_integrals() and
-      cta_event->logain().integrals().has_gains())
-    {
-      const auto& cta_q = cta_event->logain().integrals().gains();
-      nmod = cta_q.data().size()/sizeof(uint16_t)/7;
-    }
-#endif
+    throw(std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode: "
+      "ACTL event does not have NectarCAM module_status"));
   }
   calin_event->set_all_modules_present(all_modules_present);
+
+#if 0
 
   // ==========================================================================
   //
@@ -207,6 +195,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
         calin_event->mutable_low_gain_image(), "low");
     }
   }
+#endif
 
   // ==========================================================================
   //
@@ -214,8 +203,8 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
-  if(cta_event->has_cameracounters() and
-    cta_event->cameracounters().has_counters())
+#if 0
+  if(cta_event->nectarcam().has_counters())
   {
     struct NectarCounters {
       uint32_t global_event_counter;
@@ -289,15 +278,14 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
       clock->mutable_time()->set_time_ns(time_ns);
     }
   }
-
+#endif
   // ==========================================================================
   //
   // DECODE NECTARCAM CDTS DATA MESSAGE
   //
   // ==========================================================================
-#endif
 
-  if(cta_event->has_nectarcam() and cta_event->nectarcam().has_cdts_data()
+  if(cta_event->nectarcam().has_cdts_data()
     and cta_event->nectarcam().cdts_data().has_data())
   {
     calin::iact_data::actl_event_decoder::decode_cdts_data(
@@ -316,7 +304,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
-  if(cta_event->has_nectarcam() and cta_event->nectarcam().has_tib_data()
+  if(cta_event->nectarcam().has_tib_data()
     and cta_event->nectarcam().tib_data().has_data())
   {
     calin::iact_data::actl_event_decoder::decode_tib_data(
