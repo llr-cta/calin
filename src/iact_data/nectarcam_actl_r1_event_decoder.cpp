@@ -140,6 +140,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
       {
         calin_event->add_module_index(mod_index);
         calin_event->add_module_id(imod);
+        mod_index++;
       }
       else
       {
@@ -203,7 +204,6 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
-#if 0
   if(cta_event->nectarcam().has_counters())
   {
     struct NectarCounters {
@@ -216,7 +216,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
       uint16_t ts2_empty;
     }__attribute__((packed));
 
-    const auto& cta_counters = cta_event->cameracounters().counters();
+    const auto& cta_counters = cta_event->nectarcam().counters();
 #if TEST_ANYARRAY_TYPES
     if(cta_counters.type() != DataModel::AnyArray::U16)
       throw std::runtime_error("Camera counters type not U16");
@@ -224,8 +224,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
     if(cta_counters.data().size()%sizeof(NectarCounters) != 0)
       throw std::runtime_error("Camera counters data array not integral "
         "multiple of expected structure size.");
-    unsigned nmod =
-      cta_counters.data().size()/sizeof(NectarCounters);
+    unsigned nmod = cta_counters.data().size()/sizeof(NectarCounters);
     const auto* mod_counter =
       reinterpret_cast<const NectarCounters*>(&cta_counters.data().front());
     for(unsigned imod=0;imod<nmod;imod++, mod_counter++)
@@ -258,12 +257,8 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
       module_data->set_ts2_event(mod_counter->ts2_event);
       module_data->set_ts2_empty(mod_counter->ts2_empty);
 
-#if 0 // OBSOLETE version of TS2 definition
-#define ts2_decode(x) ((x)&0xF0?((x)&0xC0?((x)&0x80?0:1):((x)&0x20?2:3)):\
-                                ((x)&0x0C?((x)&0x08?4:5):((x)&0x02?6:7)))
-#else
 #define ts2_decode(x) int32_t(x)
-#endif
+
       int32_t ts2_bunch = ts2_decode(mod_counter->ts2_bunch);
       int32_t ts2_event = ts2_decode(mod_counter->ts2_event);
       int32_t ts = mod_counter->ts1*8 + ts2_event - ts2_bunch;
@@ -278,7 +273,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
       clock->mutable_time()->set_time_ns(time_ns);
     }
   }
-#endif
+
   // ==========================================================================
   //
   // DECODE NECTARCAM CDTS DATA MESSAGE
