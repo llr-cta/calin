@@ -176,6 +176,7 @@ protected:
   config_type config_;
   std::string filename_;
   unsigned run_number_ = 0;
+  unsigned telescope_id_ = 0;
   bool exchange_gain_channels_ = false;
   int64_t run_start_time_ = 0;
 };

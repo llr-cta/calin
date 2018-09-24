@@ -103,15 +103,23 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
   calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   const R1::CameraEvent* cta_event)
 {
-#if 0
-  calin_event->set_telescope_id(cta_event->telescopeid());
-  calin_event->set_local_event_number(cta_event->eventnumber());
+  calin_event->set_telescope_id(telescope_id_);
+  calin_event->set_local_event_number(cta_event->tel_event_id());
   calin_event->set_trigger_type(TRIGGER_SCIENCE);
   calin_event->set_array_trigger_received(false);
-  calin_event->set_array_event_number(-1);
+  calin_event->set_array_event_number(cta_event->event_id());
   //calin_event->local_clock_time
   calin_event->set_image_treatment(TREATMENT_SCIENCE);
+  calin_event->set_configuration_id(cta_event->configuration_id());
+  calin_event->set_pedestal_dataset_id(cta_event->ped_id());
 
+  calin_event->mutable_absolute_event_time()->set_time_ns(
+    uint64_t(cta_event->trigger_time_s())*uint64_t(1000000000)
+    + uint64_t(cta_event->trigger_time_qns()>>2));
+  calin_event->mutable_elapsed_event_time()->set_time_ns(
+    calin_event->absolute_event_time().time_ns() - run_start_time_);
+
+#if 0
   bool all_modules_present = true;
   if(cta_event->has_modulestatus() and
     cta_event->modulestatus().has_status())
@@ -287,12 +295,13 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
   // DECODE NECTARCAM CDTS DATA MESSAGE
   //
   // ==========================================================================
+#endif
 
-  if(cta_event->uctsdatapresence() and cta_event->has_uctsdata() and
-    cta_event->uctsdata().has_data())
+  if(cta_event->has_nectarcam() and cta_event->nectarcam().has_cdts_data()
+    and cta_event->nectarcam().cdts_data().has_data())
   {
     calin::iact_data::actl_event_decoder::decode_cdts_data(
-      calin_event->mutable_cdts_data(), cta_event->uctsdata().data());
+      calin_event->mutable_cdts_data(), cta_event->nectarcam().cdts_data());
 
     if(calin_event->cdts_data().white_rabbit_status() == 1) {
       auto* calin_clock = calin_event->add_camera_clock();
@@ -307,13 +316,14 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
-  if(cta_event->tibdatapresence() and cta_event->has_tibdata() and
-    cta_event->tibdata().has_data())
+  if(cta_event->has_nectarcam() and cta_event->nectarcam().has_tib_data()
+    and cta_event->nectarcam().tib_data().has_data())
   {
     calin::iact_data::actl_event_decoder::decode_tib_data(
-      calin_event->mutable_tib_data(), cta_event->tibdata().data());
+      calin_event->mutable_tib_data(), cta_event->nectarcam().tib_data());
   }
 
+#if 0
   // ==========================================================================
   //
   // FIGURE OUT EVENT TIME
@@ -439,7 +449,8 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode_run_config(
 
   if(cta_run_header)
   {
-    calin_run_config->set_telescope_id(cta_run_header->telescope_id());
+    telescope_id_ = cta_run_header->telescope_id();
+    calin_run_config->set_telescope_id(telescope_id_);
     calin_run_config->set_camera_server_serial_number(cta_run_header->cs_serial());
     calin_run_config->set_configuration_id(cta_run_header->configuration_id());
     calin_run_config->set_data_model_version(cta_run_header->data_model_version());

@@ -324,6 +324,11 @@ message TelescopeEvent {
   repeated ModuleCounters module_counter                    = 40 [
     (CFO).desc = "Vector of module counter values associated with event." ];
 
+  uint64 configuration_id                                   = 50 [
+    (CFO).desc = "Key into database describing camera configuration." ];
+  uint64 pedestal_dataset_id                                = 51 [
+    (CFO).desc = "Key into database giving subtracted pedestal values." ];
+
   ImageTreatmentMode image_treatment                        = 99 [
     (CFO).desc = "Image treatment mode." ];
   DigitizedSkyImage image                                   = 100 [

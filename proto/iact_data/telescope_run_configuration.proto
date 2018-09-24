@@ -67,12 +67,12 @@ message TelescopeRunConfiguration {
     (CFO).desc = "Nominal DAQ waveform sampling frequency, or zero if unknown. May "
       "not be calibrated.", (CFO).units = "MHz" ];
 
-  string camera_server_serial_number                       = 41 [
+  uint64 configuration_id                                   = 50 [
+    (CFO).desc = "Key into database describing camera configuration." ];
+  string camera_server_serial_number                       = 51 [
     (CFO).desc = "Serial number of the computer that the camera server is "
       "running on." ];
-  int64 configuration_id                                   = 42 [
-    (CFO).desc = "Key into database describing camera configuration." ];
-  string data_model_version                                = 43 [
+  string data_model_version                                = 52 [
     (CFO).desc = "Version of data model." ];
 
   calin.ix.iact_data.instrument_layout.
