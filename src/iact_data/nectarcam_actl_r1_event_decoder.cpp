@@ -306,7 +306,6 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
       calin_event->mutable_tib_data(), cta_event->nectarcam().tib_data());
   }
 
-#if 0
   // ==========================================================================
   //
   // FIGURE OUT EVENT TIME
@@ -340,7 +339,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
     calin_event->set_serialized_raw_event_type(
       SerializedRawEventType::SERIALIZED_RAW_EVENT_NONE);
   }
-#endif
+
   return true;
 }
 
