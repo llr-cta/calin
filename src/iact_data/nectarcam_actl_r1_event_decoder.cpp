@@ -167,11 +167,12 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
 
   if(cta_event->has_waveform() and cta_event->has_pixel_status())
   {
-    if(cta_event->waveform().data().size() != 2*nmod_*nsample_*sizeof(int16_t))
+    unsigned single_gain_dataset_size = 7*nmod_*nsample_*sizeof(int16_t);
+    if(cta_event->waveform().data().size() != 2*single_gain_dataset_size)
       throw(std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode: "
         "Samples array incorrect size: "
         + std::to_string(cta_event->waveform().data().size())
-        + ", expected: " + std::to_string(2*nmod_*nsample_*sizeof(int16_t))));
+        + ", expected: " + std::to_string(2*single_gain_dataset_size)));
     if(cta_event->pixel_status().data().size() != nmod_*7)
       throw(std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode: "
         "Pixel status array incorrect size: "
@@ -179,17 +180,17 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
         + ", expected: " + std::to_string(nmod_*7)));
 
     const uint8_t* pix_status =
-      reinterpret_cast<uint8_t*>(cta_event->pixel_status().data().data());
+      reinterpret_cast<const uint8_t*>(cta_event->pixel_status().data().data());
     const int16_t* waveforms =
-      reinterpret_cast<uint8_t*>(cta_event->waveform().data().data());
+      reinterpret_cast<const int16_t*>(cta_event->waveform().data().data());
 
     copy_single_gain_waveforms(calin_event, waveforms, pix_status,
       calin_event->mutable_high_gain_image()->mutable_camera_waveforms(),
-      0x04, "high");
+      0x08, "high");
 
-    copy_single_gain_waveforms(calin_event, waveforms, pix_status,
+    copy_single_gain_waveforms(calin_event, waveforms+nmod_*nsample_, pix_status,
       calin_event->mutable_low_gain_image()->mutable_camera_waveforms(),
-      0x08, "low");
+      0x04, "low");
   }
 #if 0
 
@@ -704,7 +705,7 @@ copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
 void NectarCAM_ACTL_R1_CameraEventDecoder::
 copy_single_gain_waveforms(
   const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
-  const int16_t* cta_waveforms, const int8_t* cta_pixel_mask,
+  const int16_t* cta_waveforms, const uint8_t* cta_pixel_mask,
   calin::ix::iact_data::telescope_event::Waveforms* calin_waveforms,
   uint8 has_gain_mask, const std::string& which_gain) const
 {
