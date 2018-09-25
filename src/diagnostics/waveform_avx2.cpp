@@ -685,13 +685,12 @@ void AVX2_Unroll8_WaveformStatsParallelVisitor::process_8_events()
         << kept_events_[ievent] << ' ' << wf << ' '
         << reinterpret_cast<const void*>(wf->raw_samples_array().data()) << ' '
         << wf->raw_samples_array().size() << ' '
-        << wf->raw_samples_array_start() << ' '
         << iblock*nsamp_*16 << '\n';
 #endif
 
       const uint16_t*__restrict__ data =
         reinterpret_cast<const uint16_t*__restrict__>(
-          wf->raw_samples_array().data() + wf->raw_samples_array_start());
+          wf->raw_samples_array().data());
       const uint16_t*__restrict__ base = data + iblock*nsamp_*16;
       __m256i*__restrict__ samples = samples_[ievent];
       __m256i*__restrict__ vp = samples;

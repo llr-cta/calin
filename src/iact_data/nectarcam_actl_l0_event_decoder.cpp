@@ -684,18 +684,10 @@ copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
 #if defined(__AVX512F__)
     if(calin::provenance::system_info::the_host_info()->cpu_has_avx512f())simd_vec_size=512/8;
 #endif
-    calin_wf_raw_data_string->resize(cta_wf.data().size() + 2*simd_vec_size);
+    calin_wf_raw_data_string->resize(cta_wf.data().size() + simd_vec_size);
     char* cp = &calin_wf_raw_data_string->front();
-    void* vp = cp;
-    std::size_t space = calin_wf_raw_data_string->size();
-    if(simd_vec_size>0) {
-      if(std::align(simd_vec_size, cta_wf.data().size(), vp, space)==nullptr)
-        throw std::runtime_error("NectarCAM_ACTL_L0_CameraEventDecoder: cannot align data.");
-      std::fill(cp, (char*)vp, uint8_t(0));
-      std::fill((char*)vp+cta_wf.data().size(), cp+calin_wf_raw_data_string->size(), uint8_t(0));
-    }
-    calin_wf_image->set_raw_samples_array_start((char*)vp - cp);
-    uint16_t* calin_wf_raw_data = reinterpret_cast<uint16_t*>(vp);
+    std::fill(cp+cta_wf.data().size(), cp+calin_wf_raw_data_string->size(), uint8_t(0));
+    uint16_t* calin_wf_raw_data = reinterpret_cast<uint16_t*>(cp);
 
     unsigned npix = cta_wf.data().size()/(sizeof(uint16_t)*nsample);
     const uint16_t* cta_wf_data =

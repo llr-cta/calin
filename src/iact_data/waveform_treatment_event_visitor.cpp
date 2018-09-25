@@ -175,7 +175,7 @@ visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
   }
   if(wf == nullptr)return true;
   const uint16_t* data = reinterpret_cast<const uint16_t*>(
-    wf->raw_samples_array().data() + wf->raw_samples_array_start());
+    wf->raw_samples_array().data());
   scalar_analyze_waveforms(data);
   return true;
 }
@@ -244,7 +244,7 @@ visit_telescope_event(uint64_t seq_index,
   }
   if(wf == nullptr)return true;
   const uint16_t* data = reinterpret_cast<const uint16_t*>(
-    wf->raw_samples_array().data() + wf->raw_samples_array_start());
+    wf->raw_samples_array().data());
   avx2_analyze_waveforms(data);
   return true;
 #else
