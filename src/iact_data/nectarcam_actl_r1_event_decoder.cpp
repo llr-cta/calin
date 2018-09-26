@@ -25,22 +25,6 @@
 #include <memory>
 #include <numeric>
 
-#if !defined(__clang__) and defined(__GNUC__) && __GNUC__<5
-namespace std {
-
-inline void *align( std::size_t alignment, std::size_t size,
-                void *&ptr, std::size_t &space ) {
-  std::uintptr_t pn = reinterpret_cast< std::uintptr_t >( ptr );
-  std::uintptr_t aligned = ( pn + alignment - 1 ) & - alignment;
-  std::size_t padding = aligned - pn;
-  if ( space < size + padding ) return nullptr;
-  space -= padding;
-  return ptr = reinterpret_cast< void * >( aligned );
-}
-
-}
-#endif
-
 #include <util/log.hpp>
 #include <util/file.hpp>
 #include <iact_data/nectarcam_actl_event_decoder.hpp>
@@ -715,9 +699,17 @@ copy_single_gain_waveforms(
   calin_waveforms->mutable_channel_index()->Reserve(npix);
   calin_waveforms->mutable_channel_id()->Reserve(npix);
 
+  std::string* calin_wf_raw_data_string = calin_waveforms->mutable_raw_samples_array();
+  unsigned simd_vec_size = calin::provenance::system_info::the_host_info()->simd_vec_size();
+  calin_wf_raw_data_string->resize(nsample_*npix*sizeof(int16_t) + simd_vec_size);
+  char* cp = &calin_wf_raw_data_string->front();
+  std::fill(cp+nsample_*npix*sizeof(int16_t), cp+calin_wf_raw_data_string->size(), int8_t(0));
+  int16_t* calin_wf_raw_data = reinterpret_cast<int16_t*>(cp);
+
   for(unsigned ipix=0;ipix<npix;ipix++)
   {
     if(cta_pixel_mask[ipix] & has_gain_mask) {
+      std::copy(cta_waveforms, cta_waveforms+nsample_, calin_wf_raw_data);
       calin_waveforms->add_channel_index(calin_waveforms->channel_id_size());
       calin_waveforms->add_channel_id(ipix);
       if(config_.separate_channel_waveforms()) {
@@ -727,6 +719,7 @@ copy_single_gain_waveforms(
           calin_samp->Add(*cta_waveforms++);
       }
     } else {
+      std::fill(calin_wf_raw_data, calin_wf_raw_data+nsample_, 0);
       all_channels_present = false;
       calin_waveforms->add_channel_index(-1);
       cta_waveforms += nsample_;
@@ -736,61 +729,7 @@ copy_single_gain_waveforms(
   calin_waveforms->set_all_channels_present(all_channels_present);
 
 #if 0
-  if(cta_image.has_waveforms() and cta_image.waveforms().has_samples())
-  {
-    const auto& cta_wf = cta_image.waveforms().samples();
-    auto* calin_wf_image = calin_image->mutable_camera_waveforms();
-#if TEST_ANYARRAY_TYPES
-    if(cta_wf.type() != DataModel::AnyArray::U16)
-      throw std::runtime_error("Waveform data type not uint16 in " +
-        which_gain + " channel.");
-#endif
-    unsigned nsample = config_.demand_nsample();
-    if(nsample == 0)nsample = cta_image.waveforms().num_samples();
-    if(nsample == 0)throw std::runtime_error("Number of samples is zero in "
-      + which_gain + " channel.");
-    if(cta_wf.data().size() % (sizeof(uint16_t)*nsample) != 0)
-      throw std::runtime_error("Waveform data array for " + which_gain +
-        " gain channel not integral multiple of nsample uint16.");
-    calin_wf_image->set_num_samples_per_channel(nsample);
 
-    std::string* calin_wf_raw_data_string = calin_wf_image->mutable_raw_samples_array();
-    unsigned simd_vec_size = 0;
-#if defined(__SSE2__)
-    if(calin::provenance::system_info::the_host_info()->cpu_has_sse2())simd_vec_size=128/8;
-#endif
-#if defined(__AVX__)
-    if(calin::provenance::system_info::the_host_info()->cpu_has_avx())simd_vec_size=256/8;
-#endif
-#if defined(__AVX512F__)
-    if(calin::provenance::system_info::the_host_info()->cpu_has_avx512f())simd_vec_size=512/8;
-#endif
-    calin_wf_raw_data_string->resize(cta_wf.data().size() + 2*simd_vec_size);
-    char* cp = &calin_wf_raw_data_string->front();
-    void* vp = cp;
-    std::size_t space = calin_wf_raw_data_string->size();
-    if(simd_vec_size>0) {
-      if(std::align(simd_vec_size, cta_wf.data().size(), vp, space)==nullptr)
-        throw std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder: cannot align data.");
-      std::fill(cp, (char*)vp, uint8_t(0));
-      std::fill((char*)vp+cta_wf.data().size(), cp+calin_wf_raw_data_string->size(), uint8_t(0));
-    }
-    calin_wf_image->set_raw_samples_array_start((char*)vp - cp);
-    uint16_t* calin_wf_raw_data = reinterpret_cast<uint16_t*>(vp);
-
-    unsigned npix = cta_wf.data().size()/(sizeof(uint16_t)*nsample);
-    const uint16_t* cta_wf_data =
-      reinterpret_cast<const uint16_t*>(&cta_wf.data().front());
-    bool all_channels_present = true;
-
-    calin_wf_image->mutable_channel_index()->Reserve(npix);
-    calin_wf_image->mutable_channel_id()->Reserve(npix);
-
-    for(unsigned ipix=0;ipix<npix;ipix++)
-    {
-      constexpr unsigned nblock_copy = 16;
-      if((ipix&(nblock_copy-1)) == 0) {
-        unsigned icount = (std::min(ipix+nblock_copy,npix) - ipix)*nsample;
         std::copy(cta_wf_data, cta_wf_data+icount, calin_wf_raw_data);
         // std::iota(calin_wf_raw_data, calin_wf_raw_data+icount, uint16_t(ipix*nsample));
         calin_wf_raw_data += icount;
