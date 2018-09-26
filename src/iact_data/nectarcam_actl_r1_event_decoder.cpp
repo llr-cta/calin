@@ -151,17 +151,18 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
 
   if(cta_event->has_waveform() and cta_event->has_pixel_status())
   {
-    unsigned single_gain_dataset_size = 7*nmod_*nsample_*sizeof(int16_t);
+    const unsigned npix = nmod_*7;
+    unsigned single_gain_dataset_size = npix*nsample_*sizeof(int16_t);
     if(cta_event->waveform().data().size() != 2*single_gain_dataset_size)
       throw(std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode: "
         "Samples array incorrect size: "
         + std::to_string(cta_event->waveform().data().size())
         + ", expected: " + std::to_string(2*single_gain_dataset_size)));
-    if(cta_event->pixel_status().data().size() != nmod_*7)
+    if(cta_event->pixel_status().data().size() != npix)
       throw(std::runtime_error("NectarCAM_ACTL_R1_CameraEventDecoder::decode: "
         "Pixel status array incorrect size: "
         + std::to_string(cta_event->pixel_status().data().size())
-        + ", expected: " + std::to_string(nmod_*7)));
+        + ", expected: " + std::to_string(npix)));
 
     const uint8_t* pix_status =
       reinterpret_cast<const uint8_t*>(cta_event->pixel_status().data().data());
@@ -172,7 +173,7 @@ bool NectarCAM_ACTL_R1_CameraEventDecoder::decode(
       calin_event->mutable_high_gain_image()->mutable_camera_waveforms(),
       0x08, "high");
 
-    copy_single_gain_waveforms(calin_event, waveforms+nmod_*nsample_, pix_status,
+    copy_single_gain_waveforms(calin_event, waveforms+npix*nsample_, pix_status,
       calin_event->mutable_low_gain_image()->mutable_camera_waveforms(),
       0x04, "low");
   }
@@ -718,6 +719,8 @@ copy_single_gain_waveforms(
         calin_samp->Reserve(nsample_);
         for(unsigned isample=0;isample<nsample_;isample++)
           calin_samp->Add(*cta_waveforms++);
+      } else {
+        cta_waveforms += nsample_;
       }
     } else {
       std::fill(calin_wf_raw_data, calin_wf_raw_data+nsample_, 0);

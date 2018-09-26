@@ -46,6 +46,7 @@ opt.set_sig_window_start(24)
 opt.set_bkg_window_start(0)
 opt.set_nthread(4)
 opt.set_db_results_table_name('diagnostics_results')
+opt.set_calculate_covariance_matrices(True)
 opt.mutable_zfits().CopyFrom(calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_config())
 opt.mutable_decoder().CopyFrom(calin.iact_data.telescope_data_source.\
@@ -112,8 +113,11 @@ dispatcher.add_visitor(bkg_window_sum_visitor, \
     calin.iact_data.event_dispatcher.EXECUTE_SEQUENTIAL_AND_PARALLEL)
 
 # Background window stats
+stats_cfg = calin.diagnostics.functional.FunctionalIntStatsVisitor.default_config();
+stats_cfg.set_calculate_covariance(opt.calculate_covariance_matrices())
+
 bkg_window_stats_visitor = calin.diagnostics.functional.\
-    FunctionalIntStatsVisitor(bkg_window_sum_visitor)
+    FunctionalIntStatsVisitor(bkg_window_sum_visitor,stats_cfg)
 dispatcher.add_visitor(bkg_window_stats_visitor)
 
 capture_channels = []
@@ -169,7 +173,7 @@ for ichan in capture_channels:
 
 # Raw signal window stats
 sig_window_stats_visitor = calin.diagnostics.functional.\
-    FunctionalIntStatsVisitor(sig_window_sum_visitor)
+    FunctionalIntStatsVisitor(sig_window_sum_visitor,stats_cfg)
 dispatcher.add_visitor(sig_window_stats_visitor)
 
 # Signal minus background functional
@@ -181,7 +185,7 @@ dispatcher.add_visitor(sig_bkg_diff_visitor, \
 
 # Signal minus background stats
 sig_bkg_stats_visitor = calin.diagnostics.functional.\
-    FunctionalIntStatsVisitor(sig_bkg_diff_visitor)
+    FunctionalIntStatsVisitor(sig_bkg_diff_visitor,stats_cfg)
 dispatcher.add_visitor(sig_bkg_stats_visitor)
 
 # Signal minus background capture adapter
@@ -195,7 +199,8 @@ dispatcher.add_visitor(sig_bkg_stats_visitor)
 #dispatcher.add_visitor(sig_bkg_capture)
 
 # Waveform stats
-waveform_visitor = calin.diagnostics.waveform.WaveformStatsVisitor()
+waveform_visitor = calin.diagnostics.waveform.WaveformStatsVisitor(
+    opt.calculate_covariance_matrices())
 dispatcher.add_visitor(waveform_visitor)
 
 # Waveform PSD stats
@@ -236,6 +241,7 @@ dispatcher.add_visitor(t0_calc,
 # T0 rise time stats
 t0_stats_cfg = calin.diagnostics.functional.\
     FunctionalDoubleStatsVisitor.default_config()
+t0_stats_cfg.set_calculate_covariance(opt.calculate_covariance_matrices())
 t0_stats_cfg.hist_config().set_dxval(0.1)
 t0_stats_cfg.hist_config().set_xval_units('samples')
 t0_stats = calin.diagnostics.functional.\

@@ -192,3 +192,15 @@ std::string calin::util::string::to_string(const bool& x)
   else return "false";
 }
 #endif
+
+bool calin::util::string::from_string(const std::string& s, bool& x)
+{
+  if(s=="true" or s=="True" or s=="TRUE" or s=="t" or s=="T" or s=="1") {
+    x = true;
+    return true;
+  } else if(s=="false" or s=="False" or s=="FALSE" or s=="f" or s=="F" or s == "0") {
+    x = false;
+    return true;
+  }
+  return false;
+}
