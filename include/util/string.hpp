@@ -84,6 +84,8 @@ std::string to_string_with_commas(T value, unsigned precision = 2)
   return ss.str();
 }
 
+bool from_string(const std::string& s, bool& x);
+
 template<typename T> bool from_string(const std::string& s, T& x)
 {
   std::istringstream stream(s);
