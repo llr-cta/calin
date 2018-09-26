@@ -51,6 +51,9 @@ message CommandLineOptions {
     (CFO).units="samples" ];
   bool use_sig_sliding_window                              = 13 [
     (CFO).desc = "Use a sliding window sum for the signal integration." ];
+  bool calculate_covariance_matrices                       = 14 [
+    (CFO).desc = "Calculate the channel-to-channel or sample-to-sample "
+      "covariance matrices." ];
 
   bool capture_all_channels                                = 20 [
     (CFO).desc = "Capture signal and background values for all events from "
