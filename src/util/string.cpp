@@ -195,11 +195,10 @@ std::string calin::util::string::to_string(const bool& x)
 
 bool calin::util::string::from_string(const std::string& s, bool& x)
 {
-  std::string s_lower = to_lower(s);
-  if(s_lower == "true" or s_lower == "t" or s == "1") {
+  if(s=="true" or s=="True" or s=="TRUE" or s=="t" or s=="T" or s=="1") {
     x = true;
     return true;
-  } else if(s_lower == "false" or s_lower == "f" or s == "0") {
+  } else if(s=="false" or s=="False" or s=="FALSE" or s=="f" or s=="F" or s == "0") {
     x = false;
     return true;
   }
