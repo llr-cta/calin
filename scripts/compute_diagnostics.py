@@ -200,7 +200,7 @@ dispatcher.add_visitor(sig_bkg_stats_visitor)
 
 # Waveform stats
 waveform_visitor = calin.diagnostics.waveform.WaveformStatsVisitor(
-    calculate_covariance_matrices())
+    opt.calculate_covariance_matrices())
 dispatcher.add_visitor(waveform_visitor)
 
 # Waveform PSD stats
