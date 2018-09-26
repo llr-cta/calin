@@ -1,10 +1,10 @@
 /*
 
-   calin/iact_data/raw_actl_event_data_source.i -- Stephen Fegan -- 2016-12-12
+   calin/iact_data/raw_actl_r1_event_data_source.i -- Stephen Fegan -- 2018-09-20
 
    SWIG interface file for calin.io.telescope_data_source
 
-   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
@@ -20,11 +20,13 @@
 
 */
 
-%module (package="calin.iact_data") raw_actl_event_data_source
+%module (package="calin.iact_data") raw_actl_r1_event_data_source
+
+#define CALIN_NO_ACTL_L0
 
 %{
 #include <ProtobufIFits.h>
-#include <L0.pb.h>
+#include <R1.pb.h>
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
 #include <common_types.pb.h>
@@ -50,26 +52,26 @@
 %ignore get_next(uint64_t& seq_index_out);
 %ignore get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena);
 
-namespace DataModel {
+namespace R1 {
 
 class CameraEvent: public google::protobuf::Message { };
-class CameraRunHeader: public google::protobuf::Message { };
+class CameraConfiguration: public google::protobuf::Message { };
 
 }
 
-%typemap(in, numinputs=0) DataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT
-  (DataModel::CameraEvent* temp = nullptr) {
-    // typemap(in) DataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
+%typemap(in, numinputs=0) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT
+  (R1::CameraEvent* temp = nullptr) {
+    // typemap(in) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
     $1 = &temp;
 }
 
-%typemap(argout) DataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT {
-    // typemap(argout) DataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
+%typemap(argout) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
+    // typemap(argout) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
     %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, 0));
 }
 
-%apply DataModel::CameraEvent** CALIN_PROTOBUF_OUTPUT {
-  DataModel::CameraEvent** event_out };
+%apply R1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
+  R1::CameraEvent** event_out };
 %apply uint64_t& OUTPUT { uint64_t& seq_index_out };
 %apply google::protobuf::Arena** CALIN_ARENA_OUTPUT {
   google::protobuf::Arena** arena_out };
@@ -77,25 +79,25 @@ class CameraRunHeader: public google::protobuf::Message { };
 %import "iact_data/telescope_data_source.i"
 %import "iact_data/zfits_data_source.pb.i"
 
-%template(ACTLDataSource)
-  calin::io::data_source::DataSource<DataModel::CameraEvent>;
-%template(ConstACTLDataSource)
-  calin::io::data_source::DataSource<const DataModel::CameraEvent>;
-%template(ConstACTLDataSink)
-  calin::io::data_source::DataSink<const DataModel::CameraEvent>;
+%template(ACTL_R1_CameraEventDataSource)
+  calin::io::data_source::DataSource<R1::CameraEvent>;
+%template(ConstACTL_R1_CameraEventDataSource)
+  calin::io::data_source::DataSource<const R1::CameraEvent>;
+%template(ConstACTL_R1_CameraEventDataSink)
+  calin::io::data_source::DataSink<const R1::CameraEvent>;
 
 %newobject simple_get_next();
 
-%extend calin::io::data_source::DataSource<DataModel::CameraEvent> {
+%extend calin::io::data_source::DataSource<R1::CameraEvent> {
 
-  DataModel::CameraEvent* simple_get_next()
+  R1::CameraEvent* simple_get_next()
   {
     uint64_t unused_seq_index = 0;
     return $self->get_next(unused_seq_index);
   }
 
 #if 0
-  void get_next(uint64_t& seq_index_out, DataModel::CameraEvent** event_out,
+  void get_next(uint64_t& seq_index_out, R1::CameraEvent** event_out,
     google::protobuf::Arena** arena_out)
   {
     seq_index_out = 0;
@@ -104,7 +106,7 @@ class CameraRunHeader: public google::protobuf::Message { };
       throw std::runtime_error("Memory allocation error: no Arena returned");
   }
 #else
-  void get_next(uint64_t& seq_index_out, DataModel::CameraEvent** event_out)
+  void get_next(uint64_t& seq_index_out, R1::CameraEvent** event_out)
   {
     seq_index_out = 0;
     *event_out = $self->get_next(seq_index_out);

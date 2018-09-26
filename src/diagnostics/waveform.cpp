@@ -155,7 +155,7 @@ bool WaveformStatsParallelVisitor::visit_telescope_event(uint64_t seq_index,
     const ix::iact_data::telescope_event::Waveforms* wf =
       &event->high_gain_image().camera_waveforms();
     const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
-        wf->raw_samples_array().data() + wf->raw_samples_array_start());
+        wf->raw_samples_array().data());
     for(int ichan = 0; ichan<nchan; ichan++) {
       calin::ix::diagnostics::waveform::WaveformRawPSD* psd = nullptr;
       if(calculate_psd_)psd = psd_results_.mutable_high_gain(ichan);
@@ -170,7 +170,7 @@ bool WaveformStatsParallelVisitor::visit_telescope_event(uint64_t seq_index,
     const ix::iact_data::telescope_event::Waveforms* wf =
       &event->low_gain_image().camera_waveforms();
     const uint16_t*__restrict__ wf_data = reinterpret_cast<const uint16_t*__restrict__>(
-        wf->raw_samples_array().data() + wf->raw_samples_array_start());
+        wf->raw_samples_array().data());
     for(int ichan = 0; ichan<nchan; ichan++) {
       calin::ix::diagnostics::waveform::WaveformRawPSD* psd = nullptr;
       if(calculate_psd_)psd = psd_results_.mutable_low_gain(ichan);
