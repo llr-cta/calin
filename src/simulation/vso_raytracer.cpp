@@ -188,14 +188,14 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   // ****************** RAY IS NOW IN RELECTOR COORDINATES *******************
   // **************************************************************************
 
-  // Test for obscuration
-  unsigned nobs = info.scope->numObscurations();
+  // Test for obscuration of incoming ray
+  unsigned nobs = info.scope->numPreReflectionObscurations();
   unsigned obs_ihit  = nobs;
   double   obs_time  = ray.ct();
   for(unsigned iobs=0;iobs<nobs;iobs++)
   {
     math::ray::Ray r_out;
-    if(info.scope->obscuration(iobs)->doesObscure(ray, r_out, ref_index))
+    if(info.scope->pre_reflection_obscuration(iobs)->doesObscure(ray, r_out, ref_index))
     {
       if((obs_ihit==nobs)||(r_out.ct()<obs_time))
         obs_ihit = iobs, obs_time = r_out.ct();
@@ -244,7 +244,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
     info.status = TS_OBSCURED_BEFORE_MIRROR;
     info.mirror->mirrorToReflector(ray);
     info.scope->reflectorToGlobal(ray);
-    info.obscuration = info.scope->obscuration(obs_ihit);
+    info.obscuration = info.scope->pre_reflection_obscuration(obs_ihit);
     info.obscuration_id = obs_ihit;
     return 0;
   }
@@ -292,6 +292,65 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
 
   calin::math::ray::Ray obs_test_ray(ray);
 
+  // Bending at window, if defined
+  if(info.scope->windowThickness() > 0)
+  {
+    const double n = info.scope->windowRefractiveIndex()/ref_index;
+    Eigen::Vector3d er;
+    if(info.scope->windowOuterRadius() > 0) {
+      // Spherical window
+      good = ray.propagate_to_y_sphere_1st_interaction_fwd_only(
+        info.scope->windowOuterRadius(), info.scope->windowFront(), ref_index);
+      er = ray.position();
+      er.y() -= info.scope->windowOuterRadius()+info.scope->windowFront();
+      er *= 1.0/info.scope->windowOuterRadius();
+    } else {
+      good = ray.propagate_to_y_plane(-info.scope->windowFront(), ref_index);
+      er << 0, -1, 0;
+    }
+
+    if(!good)
+    {
+      info.status = TS_MISSED_WINDOW;
+      info.scope->reflectorToGlobal(ray);
+      return 0;
+    }
+
+    ray.refract_at_surface_in(er, n);
+
+    if(info.scope->windowOuterRadius() > 0) {
+      // Spherical window
+      good = ray.propagate_to_y_sphere_1st_interaction_fwd_only(
+        info.scope->windowOuterRadius()-info.scope->windowThickness(),
+        info.scope->windowFront()+info.scope->windowThickness(),
+        info.scope->windowRefractiveIndex());
+      er = ray.position();
+      er.y() -= info.scope->windowOuterRadius() + info.scope->windowFront();
+      er *= -1.0/(info.scope->windowOuterRadius()-info.scope->windowThickness());
+    } else {
+      good = ray.propagate_to_y_plane(-info.scope->windowFront(), ref_index);
+      er << 0, 1, 0;
+    }
+
+    if(!good)
+    {
+      // Case of internal surface not encountered - ray exits outer again
+      info.status = TS_MISSED_WINDOW;
+      info.scope->reflectorToGlobal(ray);
+      return 0;
+    }
+
+    good = ray.refract_at_surface_out(er, n);
+
+    if(!good)
+    {
+      // Total internal reflection not supported
+      info.status = TS_MISSED_WINDOW;
+      info.scope->reflectorToGlobal(ray);
+      return 0;
+    }
+  }
+
   // Translate to focal plane coordinates
   info.scope->reflectorToFocalPlane(ray);
 
@@ -313,12 +372,13 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   }
 
   // Test for interaction with obscuration before focal plane was hit
+  nobs = info.scope->numPostReflectionObscurations();
   obs_ihit  = nobs;
   obs_time  = ray.ct();
   for(unsigned iobs=0;iobs<nobs;iobs++)
   {
     math::ray::Ray r_out;
-    if(info.scope->obscuration(iobs)->doesObscure(obs_test_ray, r_out, ref_index))
+    if(info.scope->post_reflection_obscuration(iobs)->doesObscure(obs_test_ray, r_out, ref_index))
     {
       if((obs_ihit==nobs)||(r_out.ct()<obs_time))
         obs_ihit = iobs, obs_time = r_out.ct();
@@ -330,7 +390,7 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
     info.status = TS_OBSCURED_BEFORE_FOCAL_PLANE;
     info.scope->focalPlaneToReflector(ray);
     info.scope->reflectorToGlobal(ray);
-    info.obscuration = info.scope->obscuration(obs_ihit);
+    info.obscuration = info.scope->post_reflection_obscuration(obs_ihit);
     info.obscuration_id = obs_ihit;
     return 0;
   }

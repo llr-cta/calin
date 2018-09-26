@@ -163,9 +163,33 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
       // Position
       Eigen::Vector3d pos(scope_pos[i]);
 
-      std::vector<VSOObscuration*> obsvec;
-      for(const auto& obs : param.obscurations())
-        obsvec.push_back(VSOObscuration::create_from_proto(obs));
+      std::vector<VSOObscuration*> obsvec_pre;
+      for(const auto& obs : param.pre_reflection_obscuration())
+        obsvec_pre.push_back(VSOObscuration::create_from_proto(obs));
+      std::vector<VSOObscuration*> obsvec_post;
+      for(const auto& obs : param.post_reflection_obscuration())
+        obsvec_post.push_back(VSOObscuration::create_from_proto(obs));
+
+      double win_front = 0;
+      double win_radius = 0;
+      double win_thickness = 0;
+      double win_n = 0;
+
+      if(param.has_spherical_window()
+        and param.spherical_window().outer_radius()>=0
+        and param.spherical_window().thickness()>0
+        and param.spherical_window().refractive_index()>0)
+      {
+        win_front = param.spherical_window().front_y_coord();
+        if(param.spherical_window().outer_radius()==0 or
+            std::isinf(param.spherical_window().outer_radius())) {
+          win_radius = 0;
+        } else {
+          win_radius = param.spherical_window().outer_radius();
+        }
+        win_thickness = param.spherical_window().thickness();
+        win_n = param.spherical_window().refractive_index();
+      }
 
       VSOTelescope* telescope =
       	new VSOTelescope(fTelescopes.size(), pos,
@@ -197,7 +221,9 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
              calin::math::vector3d_util::from_scaled_proto(param.focal_plane().rotation(), M_PI/180.0),
              0.0,
              param.pixel().pixel_labeling_parity(),
-	           obsvec
+             win_front, win_radius, win_thickness, win_n,
+	           obsvec_pre,
+             obsvec_post
 		         );
 
       telescope->populateMirrorsAndPixelsRandom(param,rng);

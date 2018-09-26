@@ -120,7 +120,7 @@ TEST(TestChi2, HessianCheck) {
     for(x(2) = 8.0; x(2)<12.0; x(2)+=0.1) {
       x(0) = 10000 + (x(1)-100.0)*10.0;
       Eigen::MatrixXd good(3,3);
-      EXPECT_TRUE(hessian_check(cost_fn, x, dx, good, maxgood));
+      EXPECT_TRUE(hessian_check(cost_fn, x, dx, good, 2.5));
       EXPECT_LE(good(0,0), maxgood);
       EXPECT_LE(good(0,1), maxgood);
       EXPECT_LE(good(0,2), maxgood);

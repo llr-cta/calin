@@ -1,8 +1,10 @@
 /*
 
-   calin/iact_data/zfits_actl_data_source.cpp -- Stephen Fegan -- 2016-05-04
+   calin/iact_data/zfits_actl_l0_data_source.cpp -- Stephen Fegan -- 2016-05-04
 
-   A supplier of single telescope ACTL data from ZFits data files
+   A supplier of single telescope ACTL L0 CameraEvent data from ZFits data files
+
+   This data dormat is DEPRICATED
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3
@@ -17,6 +19,27 @@
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    General Public License for more details.
+
+*/
+
+/*
+
+              LLLLLLLLLLL                       000000000
+              L:::::::::L                     00:::::::::00
+              L:::::::::L                   00:::::::::::::00
+              LL:::::::LL                  0:::::::000:::::::0
+                L:::::L                    0::::::0   0::::::0
+                L:::::L                    0:::::0     0:::::0
+                L:::::L                    0:::::0     0:::::0
+                L:::::L                    0:::::0 000 0:::::0
+                L:::::L                    0:::::0 000 0:::::0
+                L:::::L                    0:::::0     0:::::0
+                L:::::L                    0:::::0     0:::::0
+                L:::::L         LLLLLL     0::::::0   0::::::0
+              LL:::::::LLLLLLLLL:::::L     0:::::::000:::::::0
+              L::::::::::::::::::::::L      00:::::::::::::00
+              L::::::::::::::::::::::L        00:::::::::00
+              LLLLLLLLLLLLLLLLLLLLLLLL          000000000
 
 */
 
@@ -37,26 +60,26 @@ using calin::util::file::is_file;
 using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
 
-ACTLRandomAccessDataSourceWithRunHeader::
-~ACTLRandomAccessDataSourceWithRunHeader()
+ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader::
+~ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader()
 {
   // nothing to see here
 }
 
 namespace {
-  static std::string default_run_header_table_name("RunHeader");
-  static std::string default_events_table_name("Events");
+  static std::string default_L0_run_header_table_name("RunHeader");
+  static std::string default_L0_events_table_name("Events");
 } // anonymous namespace
 
-ZFITSSingleFileACTLDataSource::
-ZFITSSingleFileACTLDataSource(const std::string& filename, config_type config):
-  ACTLRandomAccessDataSourceWithRunHeader(),
+ZFITSSingleFileACTL_L0_CameraEventDataSource::
+ZFITSSingleFileACTL_L0_CameraEventDataSource(const std::string& filename, config_type config):
+  ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader(),
   filename_(expand_filename(filename)), config_(config)
 {
   if(config.run_header_table_name().empty())
-    config.set_run_header_table_name(default_run_header_table_name);
+    config.set_run_header_table_name(default_L0_run_header_table_name);
   if(config.events_table_name().empty())
-    config.set_events_table_name(default_events_table_name);
+    config.set_events_table_name(default_L0_events_table_name);
 
   if(!is_file(filename_))
     throw std::runtime_error(std::string("No such file: ")+filename_);
@@ -102,7 +125,7 @@ ZFITSSingleFileACTLDataSource(const std::string& filename, config_type config):
     {
       if(!config.ignore_run_header_errors())
         LOG(WARNING)
-          << "ZFITSSingleFileACTLDataSource: Could not read run header from "
+          << "ZFITSSingleFileACTL_L0_CameraEventDataSource: Could not read run header from "
           << filename_;
     }
   }
@@ -134,24 +157,25 @@ ZFITSSingleFileACTLDataSource(const std::string& filename, config_type config):
   }
 }
 
-ZFITSSingleFileACTLDataSource::~ZFITSSingleFileACTLDataSource()
+ZFITSSingleFileACTL_L0_CameraEventDataSource::~ZFITSSingleFileACTL_L0_CameraEventDataSource()
 {
   delete zfits_;
   delete run_header_;
 }
 
-ZFITSSingleFileACTLDataSource::config_type
-ZFITSSingleFileACTLDataSource::default_config()
+ZFITSSingleFileACTL_L0_CameraEventDataSource::config_type
+ZFITSSingleFileACTL_L0_CameraEventDataSource::default_config()
 {
   config_type config = config_type::default_instance();
+  config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0);
   config.set_extension(".fits.fz");
-  config.set_run_header_table_name(default_run_header_table_name);
-  config.set_events_table_name(default_events_table_name);
+  config.set_run_header_table_name(default_L0_run_header_table_name);
+  config.set_events_table_name(default_L0_events_table_name);
   return config;
 }
 
 const DataModel::CameraEvent*
-ZFITSSingleFileACTLDataSource::borrow_next_event(uint64_t& seq_index_out)
+ZFITSSingleFileACTL_L0_CameraEventDataSource::borrow_next_event(uint64_t& seq_index_out)
 {
   if(zfits_ == nullptr)
     throw std::runtime_error(std::string("File not open: ")+filename_);
@@ -169,13 +193,13 @@ ZFITSSingleFileACTLDataSource::borrow_next_event(uint64_t& seq_index_out)
   return event;
 }
 
-void ZFITSSingleFileACTLDataSource::
+void ZFITSSingleFileACTL_L0_CameraEventDataSource::
 release_borrowed_event(const DataModel::CameraEvent* event)
 {
   zfits_->returnBorrowedMessage(event);
 }
 
-DataModel::CameraEvent* ZFITSSingleFileACTLDataSource::
+DataModel::CameraEvent* ZFITSSingleFileACTL_L0_CameraEventDataSource::
 get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
   if(arena)*arena = nullptr;
@@ -192,7 +216,7 @@ get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
   else event_copy = new DataModel::CameraEvent;
 #else
   if(arena && *arena)
-    throw std::runtime_error("ZFITSSingleFileACTLDataSource::get_next: "
+    throw std::runtime_error("ZFITSSingleFileACTL_L0_CameraEventDataSource::get_next: "
       " pre-allocated arena not supported.");
   event_copy = new DataModel::CameraEvent;
 #endif
@@ -202,7 +226,7 @@ get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
   return event_copy;
 }
 
-uint64_t ZFITSSingleFileACTLDataSource::size()
+uint64_t ZFITSSingleFileACTL_L0_CameraEventDataSource::size()
 {
   uint64_t max_seq_index = zfits_->getNumMessagesInTable();
   if(config_.max_seq_index())
@@ -210,7 +234,7 @@ uint64_t ZFITSSingleFileACTLDataSource::size()
   return max_seq_index;
 }
 
-void ZFITSSingleFileACTLDataSource::set_next_index(uint64_t next_index)
+void ZFITSSingleFileACTL_L0_CameraEventDataSource::set_next_index(uint64_t next_index)
 {
   if(zfits_ == nullptr)next_event_index_ = 0;
   else {
@@ -221,7 +245,7 @@ void ZFITSSingleFileACTLDataSource::set_next_index(uint64_t next_index)
   }
 }
 
-DataModel::CameraRunHeader* ZFITSSingleFileACTLDataSource::get_run_header()
+DataModel::CameraRunHeader* ZFITSSingleFileACTL_L0_CameraEventDataSource::get_run_header()
 {
   if(!run_header_)return nullptr;
   auto* run_header = new DataModel::CameraRunHeader();
@@ -229,10 +253,10 @@ DataModel::CameraRunHeader* ZFITSSingleFileACTLDataSource::get_run_header()
   return run_header;
 }
 
-ZFITSACTLDataSourceOpener::ZFITSACTLDataSourceOpener(std::string filename,
-  const ZFITSACTLDataSource::config_type& config):
+ZFITSACTL_L0_CameraEventDataSourceOpener::ZFITSACTL_L0_CameraEventDataSourceOpener(std::string filename,
+  const ZFITSACTL_L0_CameraEventDataSource::config_type& config):
   calin::io::data_source::DataSourceOpener<
-    ACTLRandomAccessDataSourceWithRunHeader>(),
+    ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader>(),
   config_(config)
 {
   if(is_file(filename))
@@ -280,25 +304,25 @@ ZFITSACTLDataSourceOpener::ZFITSACTLDataSourceOpener(std::string filename,
   }
 }
 
-ZFITSACTLDataSourceOpener::~ZFITSACTLDataSourceOpener()
+ZFITSACTL_L0_CameraEventDataSourceOpener::~ZFITSACTL_L0_CameraEventDataSourceOpener()
 {
   // nothing to see here
 }
 
-unsigned ZFITSACTLDataSourceOpener::num_sources()
+unsigned ZFITSACTL_L0_CameraEventDataSourceOpener::num_sources()
 {
   return filenames_.size();
 }
 
-std::string ZFITSACTLDataSourceOpener::source_name(unsigned isource)
+std::string ZFITSACTL_L0_CameraEventDataSourceOpener::source_name(unsigned isource)
 {
   if(isource >= filenames_.size())return {};
   return filenames_[isource];
 }
 
 calin::iact_data::zfits_actl_data_source::
-ZFITSSingleFileACTLDataSource*
-ZFITSACTLDataSourceOpener::open(unsigned isource)
+ZFITSSingleFileACTL_L0_CameraEventDataSource*
+ZFITSACTL_L0_CameraEventDataSourceOpener::open(unsigned isource)
 {
   if(isource >= filenames_.size())return nullptr;
   if(config_.log_on_file_open())
@@ -307,25 +331,25 @@ ZFITSACTLDataSourceOpener::open(unsigned isource)
   if(has_opened_file_)config.set_dont_read_run_header(true);
   config.set_max_seq_index(0);
   has_opened_file_ = true;
-  return new ZFITSSingleFileACTLDataSource(filenames_[isource], config);
+  return new ZFITSSingleFileACTL_L0_CameraEventDataSource(filenames_[isource], config);
 }
 
-ZFITSACTLDataSource::ZFITSACTLDataSource(const std::string& filename,
+ZFITSACTL_L0_CameraEventDataSource::ZFITSACTL_L0_CameraEventDataSource(const std::string& filename,
   const config_type& config):
   calin::io::data_source::BasicChainedRandomAccessDataSource<
-    ACTLRandomAccessDataSourceWithRunHeader>(
-    new ZFITSACTLDataSourceOpener(filename, config), true),
+    ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader>(
+    new ZFITSACTL_L0_CameraEventDataSourceOpener(filename, config), true),
   config_(config), run_header_(source_->get_run_header())
 {
   // nothing to see here
 }
 
-ZFITSACTLDataSource::~ZFITSACTLDataSource()
+ZFITSACTL_L0_CameraEventDataSource::~ZFITSACTL_L0_CameraEventDataSource()
 {
   delete run_header_;
 }
 
-DataModel::CameraRunHeader* ZFITSACTLDataSource::get_run_header()
+DataModel::CameraRunHeader* ZFITSACTL_L0_CameraEventDataSource::get_run_header()
 {
   if(!run_header_)return nullptr;
   auto* run_header = new DataModel::CameraRunHeader();
@@ -333,7 +357,7 @@ DataModel::CameraRunHeader* ZFITSACTLDataSource::get_run_header()
   return run_header;
 }
 
-const DataModel::CameraEvent* ZFITSACTLDataSource::
+const DataModel::CameraEvent* ZFITSACTL_L0_CameraEventDataSource::
 borrow_next_event(uint64_t& seq_index_out)
 {
   if(config_.max_seq_index() and seq_index_>=config_.max_seq_index())
@@ -353,7 +377,7 @@ borrow_next_event(uint64_t& seq_index_out)
   return nullptr;
 }
 
-void ZFITSACTLDataSource::
+void ZFITSACTL_L0_CameraEventDataSource::
 release_borrowed_event(const DataModel::CameraEvent* event)
 {
   if(source_)
@@ -362,67 +386,67 @@ release_borrowed_event(const DataModel::CameraEvent* event)
     delete event;
 }
 
-DataModel::CameraEvent* ZFITSACTLDataSource::get_next(uint64_t& seq_index_out,
+DataModel::CameraEvent* ZFITSACTL_L0_CameraEventDataSource::get_next(uint64_t& seq_index_out,
   google::protobuf::Arena** arena)
 {
   if(config_.max_seq_index() and seq_index_>=config_.max_seq_index())
     return nullptr;
   else
     return calin::io::data_source::BasicChainedRandomAccessDataSource<
-      ACTLRandomAccessDataSourceWithRunHeader>::get_next(seq_index_out, arena);
+      ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader>::get_next(seq_index_out, arena);
 }
 
-uint64_t ZFITSACTLDataSource::size()
+uint64_t ZFITSACTL_L0_CameraEventDataSource::size()
 {
   uint64_t max_seq_index = calin::io::data_source::BasicChainedRandomAccessDataSource<
-    ACTLRandomAccessDataSourceWithRunHeader>::size();
+    ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader>::size();
   if(config_.max_seq_index() and max_seq_index>config_.max_seq_index())
     max_seq_index = config_.max_seq_index();
   return max_seq_index;
 }
 
-void ZFITSACTLDataSource::set_next_index(uint64_t next_index)
+void ZFITSACTL_L0_CameraEventDataSource::set_next_index(uint64_t next_index)
 {
   if(config_.max_seq_index() and next_index>config_.max_seq_index())
     next_index = config_.max_seq_index();
   calin::io::data_source::BasicChainedRandomAccessDataSource<
-    ACTLRandomAccessDataSourceWithRunHeader>::set_next_index(next_index);
+    ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader>::set_next_index(next_index);
 }
 
-ZFITSConstACTLDataSourceBorrowAdapter::
-ZFITSConstACTLDataSourceBorrowAdapter(ZFITSACTLDataSource* src):
+ZFITSConstACTL_L0_CameraEventDataSourceBorrowAdapter::
+ZFITSConstACTL_L0_CameraEventDataSourceBorrowAdapter(ZFITSACTL_L0_CameraEventDataSource* src):
   calin::io::data_source::DataSource<const DataModel::CameraEvent>(),
   src_(src)
 {
   // nothing to see here
 }
 
-ZFITSConstACTLDataSourceBorrowAdapter::~ZFITSConstACTLDataSourceBorrowAdapter()
+ZFITSConstACTL_L0_CameraEventDataSourceBorrowAdapter::~ZFITSConstACTL_L0_CameraEventDataSourceBorrowAdapter()
 {
   // nothing to see here
 }
 
-const DataModel::CameraEvent* ZFITSConstACTLDataSourceBorrowAdapter::
+const DataModel::CameraEvent* ZFITSConstACTL_L0_CameraEventDataSourceBorrowAdapter::
 get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
   assert(arena==nullptr or *arena==nullptr);
   return src_->borrow_next_event(seq_index_out);
 }
 
-ZFITSConstACTLDataSourceReleaseAdapter::
-ZFITSConstACTLDataSourceReleaseAdapter(ZFITSACTLDataSource* src):
+ZFITSConstACTL_L0_CameraEventDataSourceReleaseAdapter::
+ZFITSConstACTL_L0_CameraEventDataSourceReleaseAdapter(ZFITSACTL_L0_CameraEventDataSource* src):
   calin::io::data_source::DataSink<const DataModel::CameraEvent>(),
   src_(src)
 {
   // nothing to see here
 }
 
-ZFITSConstACTLDataSourceReleaseAdapter::~ZFITSConstACTLDataSourceReleaseAdapter()
+ZFITSConstACTL_L0_CameraEventDataSourceReleaseAdapter::~ZFITSConstACTL_L0_CameraEventDataSourceReleaseAdapter()
 {
   // nothing to see here
 }
 
-bool ZFITSConstACTLDataSourceReleaseAdapter::
+bool ZFITSConstACTL_L0_CameraEventDataSourceReleaseAdapter::
 put_next(const DataModel::CameraEvent* data, uint64_t seq_index,
   google::protobuf::Arena* arena, bool adopt_data)
 {

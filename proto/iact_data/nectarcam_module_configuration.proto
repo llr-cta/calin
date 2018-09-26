@@ -58,8 +58,22 @@ message NectarCamModuleConfiguration {
 message NectarCamCameraConfiguration {
   string nmc_source_filename                               = 1 [
     (CFO).desc = "Filename of data source from which NMC data is derived "
-      "(the NMX xml file for example)." ];
+      "(the NMC xml file for example), or nothing if the data comes from "
+      "elsewhere." ];
+
+  string daq_mode                                          = 2 [
+    (CFO).desc = "NectarCam DAQ mode." ];
+
+  uint32 daq_processing_algorithms                         = 3 [
+    (CFO).desc = "Bitmask of pedestal and gain processing algorithms applied." ];
 
   repeated NectarCamModuleConfiguration module             = 10 [
     (CFO).desc = "Configuration of modules." ];
+
+  string idaq_version                                      = 20 [
+    (CFO).desc = "SVN version number of IDAQ (what is this?)." ];
+
+  string cdhs_version                                      = 21 [
+    (CFO).desc = "SVN version number of CDHS (Central Data Handling Service - "
+      "was ACTL)." ];
 };

@@ -563,7 +563,10 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
        eps*std::pow(10.0,max_good/0.5-1))
     {
       std::cerr << "hessian_check: gradient value differs (axis=" << iaxis
-                << "): " << g0(iaxis) << " != " << g0h(iaxis) << '\n';
+                << "): " << g0(iaxis) << " != " << g0h(iaxis) << '\n'
+                << "Difference of " << std::abs(g0(iaxis) - g0h(iaxis))
+                << " exceeds maximum "
+                << std::abs(g0(iaxis))*eps*std::pow(10.0,max_good/0.5-1) << '\n';
       return false;
     }
 

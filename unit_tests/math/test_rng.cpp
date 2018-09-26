@@ -379,60 +379,6 @@ TEST(TestRNG_NR3_AVX2_RNGCore, FillsAllBits256)
 
 #endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
 
-TEST(TestRNG_Core64GbitSpeedTest, NR3)
-{
-  uint64_t sum = 0ULL;
-  uint64_t seed = RNG::uint64_from_random_device();
-  NR3RNGCore core(seed);
-  for(unsigned i=0;i<1000000000;i++)
-    sum += core.uniform_uint64();
-  EXPECT_GE(sum, 0ULL);
-}
-
-#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
-TEST(TestRNG_Core64GbitSpeedTest, NR3_AVX2)
-{
-  uint64_t sum = 0ULL;
-  uint64_t seed = RNG::uint64_from_random_device();
-  NR3_AVX2_RNGCore core(seed);
-  for(unsigned i=0;i<1000000000;i++)
-    sum += core.uniform_uint64();
-  EXPECT_GE(sum, 0ULL);
-}
-
-TEST(TestRNG_Core64GbitSpeedTest, NR3_AVX2_vec)
-{
-  __m256i sum = _mm256_setzero_si256();
-  uint64_t seed = RNG::uint64_from_random_device();
-  NR3_AVX2_RNGCore core(seed);
-  for(unsigned i=0;i<250000000;i++)
-    sum = _mm256_add_epi64(sum, core.uniform_m256i());
-  EXPECT_GE(core.uniform_uint64(), 0ULL);
-}
-#endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
-
-TEST(TestRNG_Core64GbitSpeedTest_Float, NR3)
-{
-  double sum = 0;
-  uint64_t seed = RNG::uint64_from_random_device();
-  NR3RNGCore core(seed);
-  for(unsigned i=0;i<2000000000;i++)
-    sum += 2.328306437e-10 * float(unsigned(core.uniform_uint64()));
-  EXPECT_GE(sum,0.0);
-}
-
-#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
-TEST(TestRNG_Core64GbitSpeedTest_Float, NR3_AVX2_vec)
-{
-  __m256 sum = _mm256_setzero_ps();
-  uint64_t seed = RNG::uint64_from_random_device();
-  NR3_AVX2_RNGCore core(seed);
-  for(unsigned i=0;i<250000000;i++)
-    sum = _mm256_add_ps(sum, core.uniform_m256());
-  EXPECT_GE(reinterpret_cast<float*>(&sum)[0],0.0);
-}
-#endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
-
 TEST(TestRNG, SaveAndRestoreStateU32)
 {
   for(unsigned N=1;N<100;N++)

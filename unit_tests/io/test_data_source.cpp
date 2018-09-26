@@ -335,8 +335,9 @@ TEST(TestBufferedIntegerDataSource, MultiThreadedWithStop) {
   uint64_t seq_index = 0;
   auto* m = src.get_next(seq_index);
   unsigned i = 0;
-  if(m != nullptr)
+  if(m != nullptr) {
     for(;i<unsigned(m->ssm_i32());i++)EXPECT_GT(ids[i],0U) << "With: i=" << i;
+  }
   for(;i<N;i++)EXPECT_EQ(ids[i],0U) << "With: i=" << i;
   delete m;
 }

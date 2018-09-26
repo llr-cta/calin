@@ -56,11 +56,12 @@ enum VSOTraceStatus { TS_NONE,                               // 0
                       TS_OBSCURED_BEFORE_MIRROR,             // 8
                       TS_MISSED_MIRROR_EDGE,                 // 9
                       TS_ABSORBED_AT_MIRROR,                 // 10
-                      TS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,   // 11
-                      TS_OBSCURED_BEFORE_FOCAL_PLANE,        // 12
-                      TS_NO_PIXEL,                           // 13
-                      TS_ABSORBED_AT_CONCENTRATOR,           // 14
-                      TS_PE_GENERATED };                     // 15
+                      TS_MISSED_WINDOW,                      // 11
+                      TS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,   // 12
+                      TS_OBSCURED_BEFORE_FOCAL_PLANE,        // 13
+                      TS_NO_PIXEL,                           // 14
+                      TS_ABSORBED_AT_CONCENTRATOR,           // 15
+                      TS_PE_GENERATED };                     // 16
 
 class VSOTraceInfo
 {

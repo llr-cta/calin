@@ -15,7 +15,7 @@
 
 set(CALIN_TARGET_LIBRARY calin_util)
 set(CALIN_SOURCES string.cpp file.cpp log.cpp options_processor.cpp
-  string_to_protobuf.cpp timestamp.cpp)
+  string_to_protobuf.cpp timestamp.cpp vcl.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} ${PROTOBUF_LIBRARY} calin_proto_util calin_proto

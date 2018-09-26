@@ -61,6 +61,12 @@ public:
   double ct() const { return ct_; }
   double time() const { return ct_/cgs_c; }
   double energy() const { return energy_; }
+  double x() const { return pos_.x(); }
+  double y() const { return pos_.y(); }
+  double z() const { return pos_.z(); }
+  double ux() const { return dir_.x(); }
+  double uy() const { return dir_.y(); }
+  double uz() const { return dir_.z(); }
 
   void set_position(const Eigen::Vector3d& pos) { pos_ = pos; }
   void set_direction(const Eigen::Vector3d& dir) { dir_ = dir; }
@@ -79,6 +85,25 @@ public:
   void reflect_from_surface(const Eigen::Vector3d& surface_norm) {
     dir_ -= surface_norm * (2.0*(dir_.dot(surface_norm)));
   }
+
+  // Refract at incoming surface (where n>1 and norm.dir<0)
+  void refract_at_surface_in(const Eigen::Vector3d& surface_norm,
+      double n) {
+    const double eta = 1.0/n;
+    const double cosi = -dir_.dot(surface_norm);
+    const double c2 = 1-eta*eta*(1-cosi*cosi);
+    dir_ = eta*dir_ + (eta*cosi - std::sqrt(c2))*surface_norm;
+  };
+
+  // Refract at outgoing surface (where n>1 and norm.dir>0)
+  bool refract_at_surface_out(const Eigen::Vector3d& surface_norm, double n) {
+    const double eta = n;
+    const double cosi = dir_.dot(surface_norm);
+    const double c2 = 1-eta*eta*(1-cosi*cosi);
+    if(c2<0)return false;
+    dir_ = eta*dir_ - (eta*cosi - std::sqrt(c2))*surface_norm;
+    return true;
+  };
 
   //! Propagate free particle fixed distance
   void propagate_dist(double dist, double n = 1.0) {
@@ -108,11 +133,29 @@ public:
 
   enum IPOut { IPO_NONE, IPO_FIRST, IPO_SECOND };
 
+  bool propagate_to_standard_sphere_1st_interaction_fwd_bwd(double radius,
+    double n = 1.0);
+
+  bool propagate_to_standard_sphere_1st_interaction_fwd_only(double radius,
+    double n = 1.0);
+
+  bool propagate_to_y_sphere_1st_interaction_fwd_bwd(double radius,
+    double surface_y_min = 0, double n = 1.0);
+
+  bool propagate_to_y_sphere_1st_interaction_fwd_only(double radius,
+    double surface_y_min = 0, double n = 1.0);
+
   bool propagate_to_standard_sphere_2nd_interaction_fwd_bwd(double radius,
     double n = 1.0);
 
   bool propagate_to_standard_sphere_2nd_interaction_fwd_only(double radius,
     double n = 1.0);
+
+  bool propagate_to_y_sphere_2nd_interaction_fwd_bwd(double radius,
+    double surface_y_min = 0, double n = 1.0);
+
+  bool propagate_to_y_sphere_2nd_interaction_fwd_only(double radius,
+    double surface_y_min = 0, double n = 1.0);
 
   bool propagate_to_standard_sphere_2nd_interaction(double radius,
     bool time_reversal_ok = true, double n = 1.0)

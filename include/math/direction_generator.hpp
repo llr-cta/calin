@@ -45,6 +45,7 @@ public:
   virtual ~SingleDirectionGenerator();
   void reset() override;
   bool next_as_theta_phi(double& theta, double& phi, double& weight) override;
+  double weight() const { return weight_; }
 private:
   double theta_ = 0.0;
   double phi_ = 0.0;
@@ -62,6 +63,7 @@ public:
   virtual ~MCSphereDirectionGenerator();
   void reset() override;
   bool next_as_theta_phi(double& theta, double& phi, double& weight) override;
+  double weight() const { return weight_; }
 protected:
   unsigned iray_ = 0;
   unsigned nray_ = 0;
@@ -80,6 +82,7 @@ public:
   void reset() override;
   bool next_as_theta_phi(double& theta, double& phi, double& weight) override;
   bool next_as_vector(Eigen::Vector3d& dir, double& weight) override;
+  double weight() const { return weight_; }
 protected:
   uint64_t pixid_ = 0;
   double cos_theta_max_ = 1.0;

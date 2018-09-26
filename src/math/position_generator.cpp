@@ -34,6 +34,38 @@ PositionGenerator::~PositionGenerator()
   // nothing to see here
 }
 
+SinglePositionGenerator::SinglePositionGenerator(double x, double y, double z,
+  double base_weight): PositionGenerator(), pos_(x,y,z), weight_(base_weight)
+{
+  // nothing to see here
+}
+
+
+SinglePositionGenerator::SinglePositionGenerator(const Eigen::Vector3d& pos,
+  double base_weight): PositionGenerator(), pos_(pos), weight_(base_weight)
+{
+  // nothing to see here
+}
+
+SinglePositionGenerator::~SinglePositionGenerator()
+{
+  // nothing to see here
+}
+
+void SinglePositionGenerator::reset()
+{
+  position_generated_ = false;
+}
+
+bool SinglePositionGenerator::next(Eigen::Vector3d& pos, double& weight)
+{
+  if(position_generated_)return false;
+  pos = pos_;
+  weight = weight_;
+  position_generated_ = true;
+  return true;
+}
+
 MCPlanePositionGenerator::MCPlanePositionGenerator(double r_max, unsigned nray,
     calin::math::rng::RNG* rng, bool scale_weight_by_area, double base_weight,
     bool adopt_rng):

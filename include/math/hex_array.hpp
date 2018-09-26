@@ -225,6 +225,10 @@ constexpr double c_vx = 0.5;
 constexpr double c_vy = 0.5*CALIN_HEX_ARRAY_SQRT3;
 constexpr double c_vy_inv = 1.0/c_vy;
 
+constexpr float c_vx_f = 0.5f;
+constexpr float c_vy_f = 0.5f*CALIN_HEX_ARRAY_SQRT3;
+constexpr float c_vy_inv_f = 1.0f/c_vy;
+
 inline double cell_area(double scale = 1.0)
 {
   return 0.5*CALIN_HEX_ARRAY_SQRT3*scale*scale;

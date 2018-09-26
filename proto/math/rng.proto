@@ -118,6 +118,17 @@ message RNGCoreData
   }
 }
 
+message VCLRNGCoreData
+{
+  uint32 vcl_architecture               = 1
+    [(CFO).desc = "Size of VCL vectors supplied by this RNG: 128, 256 or 512."];
+  oneof core
+  {
+    NR3_SIMD_RNGCoreData nr3_vcl_core   = 2
+      [(CFO).desc = "NR3 vcl core state data."];
+  }
+}
+
 message RNGData
 {
   RNGCoreData core                      = 1

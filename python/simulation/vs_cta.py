@@ -33,7 +33,7 @@ def dms(d,m,s):
         s = abs(s)
     return sign * (d + m/60.0 + s/3600.0)
 
-def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0):
+def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0, include_window = False):
     mst = calin.ix.simulation.vs_optics.IsotropicDCArrayParameters()
     mst.mutable_array_origin().set_latitude(dms(28, 45, 47.36))
     mst.mutable_array_origin().set_longitude(dms(-17, 53, 23.93))
@@ -81,14 +81,33 @@ def mstn1_config(obscure_camera = True, scope_x=0, scope_y=0):
     mst.mutable_pixel().set_grid_rotation(rot)
 
     if(obscure_camera):
-        obs_camera_box = mst.add_obscurations()
-        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(150)
-        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_y(mst.focal_plane().translation().y()+150)
-        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(150)
-        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_x(-150)
-        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_y(mst.focal_plane().translation().y())
-        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_z(-150)
-        obs_camera_box.mutable_aligned_box().set_incoming_only(True)
+        obs_camera_box = mst.add_pre_reflection_obscuration()
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(2918.0/20)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(2918.0/20)
+        obs_camera_box.mutable_aligned_box().mutable_max_corner().set_y(mst.focal_plane().translation().y()+(1532.25-513.0)/10)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_x(-2918.0/20)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_z(-2918.0/20)
+        obs_camera_box.mutable_aligned_box().mutable_min_corner().set_y(mst.focal_plane().translation().y()-513.0/10)
+
+        obs_outer_aperture = mst.add_post_reflection_obscuration()
+        obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_x(0)
+        obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_z(-50.0/20)
+        obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_y(mst.focal_plane().translation().y()-513.0/10)
+        obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_x(2714.0/10)
+        obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_z((2585.0-50.0)/10)
+
+        obs_inner_aperture = mst.add_post_reflection_obscuration()
+        obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_x(0)
+        obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_z(0)
+        obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_y(mst.focal_plane().translation().y()-222.5/10)
+        obs_inner_aperture.mutable_circular_aperture().set_diameter(2304.0/10)
+
+    if include_window:
+        win = mst.mutable_spherical_window()
+        win.set_front_y_coord(mst.focal_plane().translation().y() - 427.5/10)
+        win.set_outer_radius(3443.0/10)
+        win.set_thickness(5.25/10.0)
+        win.set_refractive_index(1.5)
 
     return mst
 
@@ -140,14 +159,13 @@ def lst1_config(obscure_camera = True, scope_x=0, scope_y=0):
     lst.mutable_pixel().set_grid_rotation(rot)
 
     if(obscure_camera):
-        obs_camera_box = lst.add_obscurations()
+        obs_camera_box = lst.add_post_reflection_obscuration()
         obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(150)
         obs_camera_box.mutable_aligned_box().mutable_max_corner().set_y(lst.focal_plane().translation().y()+150)
         obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(150)
         obs_camera_box.mutable_aligned_box().mutable_min_corner().set_x(-150)
         obs_camera_box.mutable_aligned_box().mutable_min_corner().set_y(lst.focal_plane().translation().y())
         obs_camera_box.mutable_aligned_box().mutable_min_corner().set_z(-150)
-        obs_camera_box.mutable_aligned_box().set_incoming_only(True)
 
     return lst
 

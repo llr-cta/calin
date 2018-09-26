@@ -79,8 +79,6 @@ message VSODiskObscurationData {
   double diameter                                          = 3
     [(CFO).desc = "Diameter of the disk",
      (CFO).units = "cm"];
-  bool incoming_only                                       = 4
-    [(CFO).desc = "True if photons should only be obscured only when u.j>0"];
 };
 
 message VSOTubeObscurationData {
@@ -93,8 +91,6 @@ message VSOTubeObscurationData {
   double diameter                                          = 3
     [(CFO).desc = "Cross-sectional diameter of the tube",
      (CFO).units = "cm"];
-  bool incoming_only                                       = 4
-    [(CFO).desc = "True if photons should only be obscured when u.j>0"];
 };
 
 message VSOAlignedBoxObscurationData {
@@ -104,8 +100,6 @@ message VSOAlignedBoxObscurationData {
   common_types.Vector3D min_corner                         = 2
     [(CFO).desc = "Corner of box with min values of x,y,z.",
      (CFO).units = "cm" ];
-  bool incoming_only                                       = 3
-    [(CFO).desc = "True if photons should only be obscured only when u.j>0"];
 };
 
 message VSOAlignedRectangularApertureData {
@@ -260,11 +254,29 @@ message VSOTelescopeData {
     [(CFO).desc = "Pixels are counted (on the hex. grid) in the direction of "
      "the +x-axis when this flag is FALSE, and in the direction of the "
      "-x-axis when this flag is TRUE (in the camera r.f.)."];
-  repeated VSOObscurationData obscuration                  = 100
-    [(CFO).desc = "Obscurations in the reflector frame."];
-  repeated VSOMirrorData mirror                            = 101
+
+  double window_front                                      = 40
+    [(CFO).desc = "Position of outer window surface along y-axis window in "
+      "reflector frame.",
+    (CFO).units = "cm"];
+  double window_outer_radius                               = 41
+    [(CFO).desc = "Radius of outer window sphere, must be positive or zero. If "
+      "zero then the window is planar.",
+     (CFO).units = "cm"];
+  double window_thickness                                  = 42
+    [(CFO).desc = "Thickness of window, i.e. difference between radii of "
+       "outer and inner window spheres. If zero then there is no window.",
+     (CFO).units = "cm"];
+  double window_refractive_index                           = 43
+    [(CFO).desc = "Refractive index of window material." ];
+
+  repeated VSOObscurationData pre_reflection_obscuration   = 100
+    [(CFO).desc = "Obscurations before reflection at mirror, in the reflector frame."];
+  repeated VSOObscurationData post_reflection_obscuration  = 101
+    [(CFO).desc = "Obscurations after reflection at mirror, in the reflector frame."];
+  repeated VSOMirrorData mirror                            = 200
     [(CFO).desc = "Mirror facets on the telescope."];
-  repeated VSOPixelData pixel                              = 102
+  repeated VSOPixelData pixel                              = 300
     [(CFO).desc = "Pixels in the camera of the telescope."];
 };
 
@@ -495,33 +507,22 @@ message HexDCReflectorParameters
      "of 1.0 means no absorption"];
 };
 
-message PlaneWindowParameters {
-  double diameter                                          = 1
-    [(CFO).desc = "Diameter of the window in the focal plane.",
+message SphericalWindowParameters {
+  double front_y_coord                                     = 1
+    [(CFO).desc = "Position of point on outer window surface along y-axis in "
+      "reflector frame with normal along the negative y-axis.",
      (CFO).units = "cm"];
-  double translation_y                                     = 2
-    [(CFO).desc = "Y coordinate of origin of window front surface "
-     "in the reflector frame.",
+  double outer_radius                                      = 2
+    [(CFO).desc = "Radius of outer window sphere, must be positive or zero. If "
+      "zero or infinity then window is planar.",
      (CFO).units = "cm"];
-  double rotation_x                                        = 3
-    [(CFO).desc = "Ideally the window plane is in the x-z plane in the "
-     "reflector reflector frame. However it can be rotated with respect to "
-     "reflector frame if desired. Focal plane rotation around x-axis of "
-     "the reflector frame.",
-     (CFO).units = "deg"];
-  double rotation_z                                        = 4
-    [(CFO).desc = "Ideally the focal plane is in the x-z plane in the "
-     "reflector reflector frame. However it can be rotated with respect to "
-     "reflector frame if desired. Focal plane rotation around z-axis of "
-     "the reflector frame.",
-     (CFO).units = "deg"];
-  repeated common_types.SpectralResponsePoint transmittance = 5
-    [(CFO).desc = "Energy dependent absorption factor."];
-  double weathering_factor                                 = 6
-    [(CFO).desc = "Additional absorption factor applied to all photons."];
-
-  double refractive_index                                  = 7;
-}
+  double thickness                                         = 3
+   [(CFO).desc = "Thickness of window, i.e. difference between radii of "
+      "outer and inner window spheres.",
+    (CFO).units = "cm"];
+  double refractive_index                                  = 4
+    [(CFO).desc = "Refractive index of window material." ];
+};
 
 message FocalPlaneParameters {
   double camera_diameter                                   = 1
@@ -601,7 +602,9 @@ message IsotropicDCArrayParameters {
   };
   ReflectorFrameParameters reflector_frame                 = 4;
   HexDCReflectorParameters reflector                       = 5;
-  repeated VSOObscurationData obscurations                 = 6;
-  FocalPlaneParameters focal_plane                         = 7;
-  HexPixelArrayParameters pixel                            = 8;
+  repeated VSOObscurationData pre_reflection_obscuration   = 6;
+  repeated VSOObscurationData post_reflection_obscuration  = 7;
+  FocalPlaneParameters focal_plane                         = 8;
+  HexPixelArrayParameters pixel                            = 9;
+  SphericalWindowParameters spherical_window               = 10;
 };
