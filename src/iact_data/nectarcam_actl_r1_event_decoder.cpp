@@ -710,6 +710,7 @@ copy_single_gain_waveforms(
   {
     if(cta_pixel_mask[ipix] & has_gain_mask) {
       std::copy(cta_waveforms, cta_waveforms+nsample_, calin_wf_raw_data);
+      calin_wf_raw_data += nsample_;
       calin_waveforms->add_channel_index(calin_waveforms->channel_id_size());
       calin_waveforms->add_channel_id(ipix);
       if(config_.separate_channel_waveforms()) {
@@ -720,6 +721,7 @@ copy_single_gain_waveforms(
       }
     } else {
       std::fill(calin_wf_raw_data, calin_wf_raw_data+nsample_, 0);
+      calin_wf_raw_data += nsample_;
       all_channels_present = false;
       calin_waveforms->add_channel_index(-1);
       cta_waveforms += nsample_;
