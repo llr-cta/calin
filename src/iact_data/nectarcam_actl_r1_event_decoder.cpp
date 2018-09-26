@@ -727,34 +727,4 @@ copy_single_gain_waveforms(
   }
 
   calin_waveforms->set_all_channels_present(all_channels_present);
-
-#if 0
-
-        std::copy(cta_wf_data, cta_wf_data+icount, calin_wf_raw_data);
-        // std::iota(calin_wf_raw_data, calin_wf_raw_data+icount, uint16_t(ipix*nsample));
-        calin_wf_raw_data += icount;
-      }
-
-      if(calin_event->module_index(ipix/7) == -1)
-      {
-        all_channels_present = false;
-        calin_wf_image->add_channel_index(-1);
-        cta_wf_data += nsample;
-      }
-      else
-      {
-        calin_wf_image->add_channel_index(calin_wf_image->channel_id_size());
-        calin_wf_image->add_channel_id(ipix);
-        if(config_.separate_channel_waveforms())
-        {
-          auto* calin_samp = calin_wf_image->add_waveform()->mutable_samples();
-          calin_samp->Reserve(nsample);
-          for(unsigned isample=0;isample<nsample;isample++)
-            calin_samp->Add(*cta_wf_data++);
-        }
-      }
-    }
-    calin_wf_image->set_all_channels_present(all_channels_present);
-  }
-#endif
 }
