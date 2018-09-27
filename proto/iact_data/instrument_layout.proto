@@ -102,7 +102,22 @@ message ModuleLayout {
       "camera follows a grid, -1 otherwise." ];
   repeated int32 channels_in_module                        = 10 [
     (CFO).desc = "List of indexes for all channels in module." ];;
-
+  double x                                                 = 20 [
+    (CFO).desc = "X-position of module center in camera. Looking at the "
+      "camera from the center of the reflector, with the camera at zero "
+      "elevation, the X-axis corresponds to the horizontal plane, with "
+      "positive X is to the right, and the Y-axis is the vertical plane, with "
+      "positive Y up. If this channel is not connected to a real pixel "
+      "then the value should be Nan.",
+    (CFO).units = "cm" ];
+  double y                                                 = 21 [
+    (CFO).desc = "Y-position of module center in camera. Looking at the "
+      "camera from the center of the reflector, with the camera at zero "
+      "elevation, the X-axis corresponds to the horizontal plane, with "
+      "positive X is to the right, and the Y-axis is the vertical plane, with "
+      "positive Y up. If this channel is not connected to a real pixel "
+      "then the value should be Nan.",
+    (CFO).units = "cm" ];
   repeated uint32 outline_polygon_vertex_index             = 30 [
     (CFO).desc = "Index of end of module polygon lines." ];
   repeated double outline_polygon_vertex_x                 = 31 [
