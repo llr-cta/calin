@@ -191,6 +191,10 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       double x;
       double y;
       uv_to_xy_trans(u,v,x,y,crot,srot,spacing);
+      if(gridchanmap[imodchan] == 0) {
+        m->set_x(x);
+        m->set_y(y);
+      }
       m->add_channels_in_module(ichan);
       auto* c = layout->add_channel();
       c->set_channel_index(ichan);
