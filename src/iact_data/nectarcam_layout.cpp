@@ -191,7 +191,7 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       double x;
       double y;
       uv_to_xy_trans(u,v,x,y,crot,srot,spacing);
-      if(imodchan == 0) {
+      if(gridchanmap[imodchan] == 0) {
         m->set_x(x);
         m->set_y(y);
       }
