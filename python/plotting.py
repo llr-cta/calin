@@ -52,6 +52,35 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
         cbar.set_label(cbar_label)
     return pc
 
+def plot_module_camera(mod_data, camera_layout, configured_modules = None, ax_in = None,
+        cbar_label = None):
+    if(configured_modules is not None and len(configured_modules) != len(mod_data)):
+        raise ValueError('configured_modules must either be None or have same length as mod_data')
+    mod = []
+    max_xy = 0
+    for mod_index in range(len(mod_data)):
+        mod_id = int(configured_modules[mod_index]) if configured_modules is not None else mod_index
+        vx = camera_layout.module(mod_id).outline_polygon_vertex_x_view()
+        vy = camera_layout.module(mod_id).outline_polygon_vertex_y_view()
+        vv = np.zeros((len(vx),2))
+        vv[:,0] = vx
+        vv[:,1] = vy
+        max_xy = max(max_xy, max(abs(vx)), max(abs(vy)))
+        mod.append(plt.Polygon(vv,closed=True))
+    ax = ax_in if ax_in is not None else plt.gca()
+    pc = matplotlib.collections.PatchCollection(mod, cmap=matplotlib.cm.jet)
+    pc.set_array(np.asarray(mod_data))
+    pc.set_linewidths(0)
+    ax.add_collection(pc)
+    ax.axis('square')
+    ax.axis(np.asarray([-1,1,-1,1])*1.05*max_xy)
+    ax.set_xlabel('X coordinate [cm]')
+    ax.set_ylabel('Y coordinate [cm]')
+    cbar = plt.colorbar(pc, ax=ax)
+    if cbar_label is not None:
+        cbar.set_label(cbar_label)
+    return pc
+
 def layout_to_polygon_vxy(layout, plate_scale = 1.0):
     all_vxy = []
     ibegin = 0;
