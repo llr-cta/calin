@@ -53,7 +53,7 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
     return pc
 
 def plot_module_camera(mod_data, camera_layout, configured_modules = None, ax_in = None,
-        cbar_label = None):
+        cbar_label = None, module_label_color = None, module_label_font_size = 8):
     if(configured_modules is not None and len(configured_modules) != len(mod_data)):
         raise ValueError('configured_modules must either be None or have same length as mod_data')
     mod = []
@@ -72,6 +72,12 @@ def plot_module_camera(mod_data, camera_layout, configured_modules = None, ax_in
     pc.set_array(np.asarray(mod_data))
     pc.set_linewidths(0)
     ax.add_collection(pc)
+    if(module_label_color is not None):
+        for mod_index in range(len(mod_data)):
+            mod_id = int(configured_modules[mod_index]) if configured_modules is not None else mod_index
+            ax.text(camera_layout.module(mod_id).x(), camera_layout.module(mod_id).y(),
+                '%d'%mod_id, ha='center', va='center', fontsize=module_label_font_size,
+                color=module_label_color)
     ax.axis('square')
     ax.axis(np.asarray([-1,1,-1,1])*1.05*max_xy)
     ax.set_xlabel('X coordinate [cm]')
