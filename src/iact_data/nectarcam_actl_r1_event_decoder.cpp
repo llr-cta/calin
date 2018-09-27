@@ -71,11 +71,13 @@ NectarCAM_ACTL_R1_CameraEventDecoder::NectarCAM_ACTL_R1_CameraEventDecoder(
   filename_(filename), run_number_(run_number)
 {
   if(config_.demand_configured_module_id_size() != 0)
-    LOG(WARNING) << "Decoder option \"demand_configured_module_id_size\" not supported in R1 data at this time.";
+    LOG(WARNING) << "Decoder option \"demand_configured_module_id_size\" not "
+      "supported in R1 data at this time.";
 
   if(config_.exchange_gain_channels() ==
       ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig::EXCHANGE_GAIN_MODE_FORCED)
-    LOG(WARNING) << "Decoder option \"exchange_gain_channels\" not supported in R1 data at this time.";
+    LOG(WARNING) << "Decoder option \"exchange_gain_channels\" not supported "
+      "in R1 data at this time.";
 }
 
 NectarCAM_ACTL_R1_CameraEventDecoder::~NectarCAM_ACTL_R1_CameraEventDecoder()
