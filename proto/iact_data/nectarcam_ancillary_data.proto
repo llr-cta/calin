@@ -1,0 +1,55 @@
+/*
+
+   calin/proto/iact_data/nectarcam_ancillary_data.proto -- Stephen Fegan -- 2018-09-28
+
+   Protobufs for NectarCAM ancillary (monioring & configuration) data
+
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.iact_data.nectarcam_ancillary_data;
+
+message NectarCamTemperatureMeasurement {
+  int64 id                                                 = 1 [
+    (CFO).desc = "Primary key." ];
+
+  int32 camera                                             = 2 [
+    (CFO).desc = "Camera identifier." ];
+
+  int32 drawer                                             = 3 [
+    (CFO).desc = "Drawer identifier." ];
+
+/*
+  int32 time                                               = 4 [
+    (CFO).desc = "Time of measurement." ];
+*/
+
+  string time                                              = 4 [
+    (CFO).desc = "Time of measurement." ];
+
+  float tfeb1                                              = 5 [
+    (CFO).desc = "FEB temperature 1.", (CFO).units = "C" ];
+
+  float tfeb2                                              = 6 [
+    (CFO).desc = "FEB temperature 2.", (CFO).units = "C" ];
+
+  float tatbp                                              = 7 [
+    (CFO).desc = "Temperature at back plane.", (CFO).units = "C" ];
+};
