@@ -513,11 +513,12 @@ inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
                   mul_low32_packed64(a.get_high(), b.get_high()));
   }
 #endif // INSTRSET < 9
-#endif // MAX_VECTOR_SIZE >= 512
 
   inline Vec8uq mul_64(const Vec8uq& a, const Vec8uq& b) {
     return a*b;
   }
+
+#endif // MAX_VECTOR_SIZE >= 512
 
 } } } // namespace calin::util::vcl
 
