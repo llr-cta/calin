@@ -139,6 +139,7 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode(
       {
         calin_event->add_module_index(mod_index);
         calin_event->add_module_id(imod);
+        mod_index++;
       }
       else
       {
