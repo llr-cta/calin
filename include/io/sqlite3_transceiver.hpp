@@ -57,6 +57,10 @@ protected:
   bool begin_transaction() override;
   bool commit_transaction() override;
   bool rollback_transaction() override;
+
+  std::string sql_select_field_spec(const SQLTableField* f) override;
+  std::string sql_insert_field_spec(const SQLTableField* f) override;
+  std::string sql_type(const google::protobuf::FieldDescriptor* d) override;
 };
 
 } } } // namespace calin::io::sql_transceiver

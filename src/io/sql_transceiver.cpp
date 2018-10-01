@@ -544,8 +544,17 @@ std::string SQLTransceiver::sql_field_name(const std::string& name)
   return new_name;
 }
 
-std::string SQLTransceiver::
-sql_type(const google::protobuf::FieldDescriptor* d)
+std::string SQLTransceiver::sql_select_field_spec(const SQLTableField* f)
+{
+  return sql_field_name(f->field_name);
+}
+
+std::string SQLTransceiver::sql_insert_field_spec(const SQLTableField* f)
+{
+  return "?";
+}
+
+std::string SQLTransceiver::sql_type(const google::protobuf::FieldDescriptor* d)
 {
   // The base class implements MySQL types since SQLite3 is very
   // forgiving about what it accepts as types
@@ -683,7 +692,7 @@ sql_insert(const SQLTable* t)
   sql << ") VALUES (\n";
   for ( auto f : t->fields )
   {
-    sql << "  ?";
+    sql << "  " << sql_insert_field_spec(f);
     if(f != t->fields.back())sql << ',';
     sql << '\n';
   }
@@ -714,7 +723,7 @@ sql_select(const SQLTable* t, bool select_oid)
   {
     if(!f->is_inherited())
     {
-      sql << "  " << sql_field_name(f->field_name);
+      sql << "  " << sql_select_field_spec(f);
       if(f != t->fields.back())sql << ',';
       sql << '\n';
     }

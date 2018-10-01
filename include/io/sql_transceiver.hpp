@@ -334,6 +334,9 @@ class SQLTransceiver
   virtual std::string sql_table_name(const std::string& name);
   virtual std::string sql_field_name(const std::string& name);
 
+  virtual std::string sql_select_field_spec(const SQLTableField* f);
+  virtual std::string sql_insert_field_spec(const SQLTableField* f);
+
   virtual std::string sql_type(const google::protobuf::FieldDescriptor* d);
   virtual std::string sql_oid_column_name();
 

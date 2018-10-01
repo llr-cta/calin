@@ -145,3 +145,57 @@ bool SQLite3Transceiver::rollback_transaction()
   return
       sqlite3_exec(db_, "ROLLBACK TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
 }
+
+std::string SQLite3Transceiver::sql_select_field_spec(const SQLTableField* f)
+{
+  if(f->field_d) {
+    const google::protobuf::FieldOptions* fopt { &f->field_d->options() };
+    if(fopt->HasExtension(CFO)) {
+      const auto& cfo = fopt->GetExtension(CFO);
+      switch(cfo.sql().transform()) {
+        case SQLFieldOptions::TRANSFORM_UNIXTIME_TOFROM_DATETIME:
+          return "strftime('%s'," + sql_field_name(f->field_name) + ")";
+        case SQLFieldOptions::TRANSFORM_NONE:
+        default:
+          return sql_field_name(f->field_name);
+      }
+    }
+  }
+  return sql_field_name(f->field_name);
+}
+
+std::string SQLite3Transceiver::sql_insert_field_spec(const SQLTableField* f)
+{
+  if(f->field_d) {
+    const google::protobuf::FieldOptions* fopt { &f->field_d->options() };
+    if(fopt->HasExtension(CFO)) {
+      const auto& cfo = fopt->GetExtension(CFO);
+      switch(cfo.sql().transform()) {
+        case SQLFieldOptions::TRANSFORM_UNIXTIME_TOFROM_DATETIME:
+          return "datetime(?,'unixepoch')";
+        case SQLFieldOptions::TRANSFORM_NONE:
+        default:
+          return "?";
+      }
+    }
+  }
+  return "?";
+}
+
+std::string SQLite3Transceiver::sql_type(const google::protobuf::FieldDescriptor* d)
+{
+  if(d) {
+    const google::protobuf::FieldOptions* fopt { &d->options() };
+    if(fopt->HasExtension(CFO)) {
+      const auto& cfo = fopt->GetExtension(CFO);
+      switch(cfo.sql().transform()) {
+        case SQLFieldOptions::TRANSFORM_UNIXTIME_TOFROM_DATETIME:
+          return "DATETIME";
+        case SQLFieldOptions::TRANSFORM_NONE:
+        default:
+          return SQLTransceiver::sql_type(d);
+      }
+    }
+  }
+  return SQLTransceiver::sql_type(d);
+}

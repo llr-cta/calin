@@ -29,11 +29,17 @@ import "google/protobuf/descriptor.proto";
 package calin;
 
 message SQLFieldOptions {
+  enum SQLFieldTransform {
+    TRANSFORM_NONE       = 0;
+    TRANSFORM_UNIXTIME_TOFROM_DATETIME   = 1;
+  }
+
   bool dont_store                       = 1;
   bool is_key                           = 2;
   bool inline_message                   = 3;
   bool dont_inline_message              = 4;
   string index_name                     = 5;
+  SQLFieldTransform transform           = 6;
 };
 
 message SQLMessageOptions {
