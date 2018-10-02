@@ -34,7 +34,7 @@ message NectarCamTemperatureMeasurement {
     (CFO).desc = "Drawer identifier." ];
 
   // This limits resolution to 1 second
-  double time                                              = 3 [
+  fixed32 time                                             = 3 [
     (CFO).desc = "Time of measurement.", (CFO).units = "s",
     (CFO).sql.transform=TRANSFORM_UNIXTIME_TOFROM_DATETIME ];
 
