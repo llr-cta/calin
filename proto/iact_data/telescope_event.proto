@@ -125,9 +125,11 @@ message CDTSData {
     (CFO).desc = "Type of event that triggered the readout." ];
   uint32 white_rabbit_status                                = 8 [
     (CFO).desc = "Status of the White Rabbit synchronization." ];
-  uint32 arbitrary_information                              = 9 [
+  uint32 stereo_pattern                                     = 9 [
+    (CFO).desc = "Stereo bit pattern from TIB." ];
+  uint32 arbitrary_information                              = 10 [
     (CFO).desc = "Optional field for camera specific information." ];
-  uint32 num_in_bunch                                       = 10 [
+  uint32 num_in_bunch                                       = 11 [
     (CFO).desc = "Number of events in TiCkS message bunch?" ];
   uint32 version                                            = 20 [
     (CFO).desc = "TiCkS version number. Version 0 does not implement "

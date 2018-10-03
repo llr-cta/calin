@@ -118,12 +118,12 @@ bind_field(unsigned ifield, const google::protobuf::Message* m,
   case FieldDescriptor::TYPE_INT32:
     switch(int32_type) {
   	case FieldOptions::INT_16:
-            return bind_int16(ifield, m->GetReflection()->GetInt32(*m, d));
+      return bind_int16(ifield, m->GetReflection()->GetInt32(*m, d));
   	case FieldOptions::INT_8:
-            return bind_int8(ifield, m->GetReflection()->GetInt32(*m, d));
+      return bind_int8(ifield, m->GetReflection()->GetInt32(*m, d));
   	case FieldOptions::INT_32:       // fallthrough
-          default:
-            return bind_int32(ifield, m->GetReflection()->GetInt32(*m, d));
+    default:
+      return bind_int32(ifield, m->GetReflection()->GetInt32(*m, d));
   	};
   case FieldDescriptor::TYPE_FIXED32:
   case FieldDescriptor::TYPE_UINT32:
@@ -186,29 +186,29 @@ bind_repeated_field(unsigned ifield, uint64_t iloop,
   case FieldDescriptor::TYPE_INT32:
     switch(int32_type) {
   	case FieldOptions::INT_16:
-            return bind_int16(ifield, m->GetReflection()->
-                              GetRepeatedInt32(*m,d,iloop));
+      return bind_int16(ifield, m->GetReflection()->
+                        GetRepeatedInt32(*m,d,iloop));
   	case FieldOptions::INT_8:
-            return bind_int8(ifield, m->GetReflection()->
-                             GetRepeatedInt32(*m,d,iloop));
+      return bind_int8(ifield, m->GetReflection()->
+                       GetRepeatedInt32(*m,d,iloop));
   	case FieldOptions::INT_32:       // fallthrough
-          default:
-            return bind_int32(ifield, m->GetReflection()->
-                              GetRepeatedInt32(*m,d,iloop));
+    default:
+      return bind_int32(ifield, m->GetReflection()->
+                        GetRepeatedInt32(*m,d,iloop));
     };
   case FieldDescriptor::TYPE_FIXED32:
   case FieldDescriptor::TYPE_UINT32:
     switch(int32_type) {
   	case FieldOptions::INT_16:
-            return bind_uint16(ifield, m->GetReflection()->
-                               GetRepeatedUInt32(*m, d, iloop));
+      return bind_uint16(ifield, m->GetReflection()->
+                         GetRepeatedUInt32(*m, d, iloop));
   	case FieldOptions::INT_8:
-            return bind_uint8(ifield, m->GetReflection()->
-                              GetRepeatedUInt32(*m, d, iloop));
+      return bind_uint8(ifield, m->GetReflection()->
+                        GetRepeatedUInt32(*m, d, iloop));
   	case FieldOptions::INT_32:       // fall through
-          default:
-            return bind_uint32(ifield, m->GetReflection()->
-                               GetRepeatedUInt32(*m, d, iloop));
+    default:
+      return bind_uint32(ifield, m->GetReflection()->
+                         GetRepeatedUInt32(*m, d, iloop));
     }
   case FieldDescriptor::TYPE_BOOL:
     return bind_bool(ifield, m->GetReflection()->
@@ -315,80 +315,80 @@ bool SQLStatement::extract_field(unsigned ifield, google::protobuf::Message* m,
   bool good = true;
   switch(d->type())
   {
-    case FieldDescriptor::TYPE_DOUBLE: {
-      auto value = extract_double(ifield, &good);
-      if(good)m->GetReflection()->SetDouble(m, d, value);
+  case FieldDescriptor::TYPE_DOUBLE: {
+    auto value = extract_double(ifield, &good);
+    if(good)m->GetReflection()->SetDouble(m, d, value);
+    return good; }
+  case FieldDescriptor::TYPE_FLOAT: {
+    auto value = extract_float(ifield, &good);
+    if(good)m->GetReflection()->SetFloat(m, d, value);
+    return good; }
+  case FieldDescriptor::TYPE_SFIXED64: // fallthrough
+  case FieldDescriptor::TYPE_SINT64:   // fallthrough
+  case FieldDescriptor::TYPE_INT64: {
+    auto value = extract_int64(ifield, &good);
+    if(good)m->GetReflection()->SetInt64(m, d, value);
+    return good; }
+  case FieldDescriptor::TYPE_FIXED64:  // fallthrough
+  case FieldDescriptor::TYPE_UINT64: {
+    auto value = extract_uint64(ifield, &good);
+    if(good)m->GetReflection()->SetUInt64(m, d, value);
+    return good; }
+  case FieldDescriptor::TYPE_SFIXED32: // fallthrough
+  case FieldDescriptor::TYPE_SINT32:   // fallthrough
+  case FieldDescriptor::TYPE_INT32:
+    switch(int32_type) {
+  	case FieldOptions::INT_16: {
+      auto value = extract_int16(ifield, &good);
+      if(good)m->GetReflection()->SetInt32(m, d, value);
       return good; }
-    case FieldDescriptor::TYPE_FLOAT: {
-      auto value = extract_float(ifield, &good);
-      if(good)m->GetReflection()->SetFloat(m, d, value);
+  	case FieldOptions::INT_8: {
+      auto value = extract_int8(ifield, &good);
+      if(good)m->GetReflection()->SetInt32(m, d, value);
       return good; }
-    case FieldDescriptor::TYPE_SFIXED64: // fallthrough
-    case FieldDescriptor::TYPE_SINT64:   // fallthrough
-    case FieldDescriptor::TYPE_INT64: {
-      auto value = extract_int64(ifield, &good);
-      if(good)m->GetReflection()->SetInt64(m, d, value);
-      return good; }
-    case FieldDescriptor::TYPE_FIXED64:  // fallthrough
-    case FieldDescriptor::TYPE_UINT64: {
-      auto value = extract_uint64(ifield, &good);
-      if(good)m->GetReflection()->SetUInt64(m, d, value);
-      return good; }
-    case FieldDescriptor::TYPE_SFIXED32: // fallthrough
-    case FieldDescriptor::TYPE_SINT32:   // fallthrough
-    case FieldDescriptor::TYPE_INT32:
-      switch(int32_type) {
-	case FieldOptions::INT_16: {
-          auto value = extract_int16(ifield, &good);
-          if(good)m->GetReflection()->SetInt32(m, d, value);
-          return good; }
-	case FieldOptions::INT_8: {
-          auto value = extract_int8(ifield, &good);
-          if(good)m->GetReflection()->SetInt32(m, d, value);
-          return good; }
-	case FieldOptions::INT_32:       // fallthrough
-        default: {
-          auto value = extract_int32(ifield, &good);
-          if(good)m->GetReflection()->SetInt32(m, d, value);
-          return good; }
-      };
-    case FieldDescriptor::TYPE_FIXED32:
-    case FieldDescriptor::TYPE_UINT32:
-      switch(int32_type) {
-	case FieldOptions::INT_16: {
-          auto value = extract_uint16(ifield, &good);
-          if(good)m->GetReflection()->SetUInt32(m, d, value);
-          return good; }
-	case FieldOptions::INT_8:{
-          auto value = extract_uint8(ifield, &good);
-          if(good)m->GetReflection()->SetUInt32(m, d, value);
-          return good; }
-	case FieldOptions::INT_32:       // fall through
-        default: {
-          auto value = extract_uint32(ifield, &good);
-          if(good)m->GetReflection()->SetUInt32(m, d, value);
-          return good; }
-      }
-    case FieldDescriptor::TYPE_BOOL: {
-          auto value = extract_bool(ifield, &good);
-          if(good)m->GetReflection()->SetBool(m, d, value);
-          return good; }
-    case FieldDescriptor::TYPE_STRING: {
-          auto value = extract_string(ifield, &good);
-          if(good)m->GetReflection()->SetString(m, d, value);
-          return good; }
-    case FieldDescriptor::TYPE_BYTES: {
-          auto value = extract_bytes(ifield, &good);
-          if(good)m->GetReflection()->SetString(m, d, value);
-          return good; }
-    case FieldDescriptor::TYPE_ENUM: {
+  	case FieldOptions::INT_32:       // fallthrough
+    default: {
       auto value = extract_int32(ifield, &good);
-      if(good)m->GetReflection()->SetEnumValue(m, d, value);
+      if(good)m->GetReflection()->SetInt32(m, d, value);
       return good; }
-    case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
-    case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
-    default:
-      break;
+  };
+  case FieldDescriptor::TYPE_FIXED32:
+  case FieldDescriptor::TYPE_UINT32:
+    switch(int32_type) {
+  	case FieldOptions::INT_16: {
+      auto value = extract_uint16(ifield, &good);
+      if(good)m->GetReflection()->SetUInt32(m, d, value);
+      return good; }
+  	case FieldOptions::INT_8:{
+      auto value = extract_uint8(ifield, &good);
+      if(good)m->GetReflection()->SetUInt32(m, d, value);
+      return good; }
+  	case FieldOptions::INT_32:       // fall through
+    default: {
+      auto value = extract_uint32(ifield, &good);
+      if(good)m->GetReflection()->SetUInt32(m, d, value);
+      return good; }
+    }
+  case FieldDescriptor::TYPE_BOOL: {
+    auto value = extract_bool(ifield, &good);
+    if(good)m->GetReflection()->SetBool(m, d, value);
+    return good; }
+  case FieldDescriptor::TYPE_STRING: {
+    auto value = extract_string(ifield, &good);
+    if(good)m->GetReflection()->SetString(m, d, value);
+    return good; }
+  case FieldDescriptor::TYPE_BYTES: {
+    auto value = extract_bytes(ifield, &good);
+    if(good)m->GetReflection()->SetString(m, d, value);
+    return good; }
+  case FieldDescriptor::TYPE_ENUM: {
+    auto value = extract_int32(ifield, &good);
+    if(good)m->GetReflection()->SetEnumValue(m, d, value);
+    return good; }
+  case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
+  case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
+  default:
+    break;
   }
   assert(0);
   return false;
@@ -410,90 +410,90 @@ extract_repeated_field(unsigned ifield, uint64_t loop_id,
   uint64_t fs = r->FieldSize(*m, d);
   switch(d->type())
   {
-    case FieldDescriptor::TYPE_DOUBLE: {
-      auto value = extract_double(ifield, &good);
-      if(good) { if(loop_id<fs)r->SetRepeatedDouble(m, d, loop_id, value);
-        else while(loop_id>=fs++)r->AddDouble(m, d, loop_id<fs?value:0); }
-      return good; }
-    case FieldDescriptor::TYPE_FLOAT: {
-      auto value = extract_float(ifield, &good);
-      if(good) { if(loop_id<fs)r->SetRepeatedFloat(m, d, loop_id, value);
-        else while(loop_id>=fs++)r->AddFloat(m, d, loop_id<fs?value:0); }
-      return good; }
-    case FieldDescriptor::TYPE_SFIXED64: // fallthrough
-    case FieldDescriptor::TYPE_SINT64:   // fallthrough
-    case FieldDescriptor::TYPE_INT64: {
-      auto value = extract_int64(ifield, &good);
-      if(good) { if(loop_id<fs)r->SetRepeatedInt64(m, d, loop_id, value);
-        else while(loop_id>=fs++)r->AddInt64(m, d, loop_id<fs?value:0); }
-      return good; }
-    case FieldDescriptor::TYPE_FIXED64:  // fallthrough
-    case FieldDescriptor::TYPE_UINT64: {
-      auto value = extract_uint64(ifield, &good);
-      if(good) { if(loop_id<fs)r->SetRepeatedUInt64(m, d, loop_id, value);
-        else while(loop_id>=fs++)r->AddUInt64(m, d, loop_id<fs?value:0); }
-      return good; }
-    case FieldDescriptor::TYPE_SFIXED32: // fallthrough
-    case FieldDescriptor::TYPE_SINT32:   // fallthrough
-    case FieldDescriptor::TYPE_INT32: {
-      int32_t value = 0;
-      switch(int32_type) {
-	case FieldOptions::INT_16:
-          value = extract_int16(ifield, &good);
-          break;
-	case FieldOptions::INT_8:
-          value = extract_int8(ifield, &good);
-          break;
-        case FieldOptions::INT_32:       // fallthrough
-        default:
-          value = extract_int32(ifield, &good);
-          break;
-      }
-      if(good) { if(loop_id<fs)r->SetRepeatedInt32(m, d, loop_id, value);
-        else while(loop_id>=fs++)r->AddInt32(m, d, loop_id<fs?value:0); }
-      return good; }
-    case FieldDescriptor::TYPE_FIXED32:
-    case FieldDescriptor::TYPE_UINT32: {
-      uint32_t value = 0;
-      switch(int32_type) {
-	case FieldOptions::INT_16:
-          value = extract_uint16(ifield, &good);
-          break;
-        case FieldOptions::INT_8:
-          value = extract_uint8(ifield, &good);
-          break;
-	case FieldOptions::INT_32:       // fall through
-        default:
-          value = extract_uint32(ifield, &good);
-          break;
-      }
-      if(good) { if(loop_id<fs)r->SetRepeatedUInt32(m, d, loop_id, value);
-        else while(loop_id>=fs++)r->AddUInt32(m, d, loop_id<fs?value:0); }
-      return good; }
-    case FieldDescriptor::TYPE_BOOL: {
-      auto value = extract_bool(ifield, &good);
-      if(good) { if(loop_id<fs)r->SetRepeatedBool(m, d, loop_id, value);
-        else while(loop_id>=fs++)r->AddBool(m, d, loop_id<fs?value:0); }
-      return good; }
-    case FieldDescriptor::TYPE_STRING: {
-      auto value = extract_string(ifield, &good);
-      if(good) { if(loop_id<fs)r->SetRepeatedString(m, d, loop_id, value);
-        else while(loop_id>=fs++)r->AddString(m, d, loop_id<fs?value:0); }
-      return good; }
-    case FieldDescriptor::TYPE_BYTES: {
-      auto value = extract_bytes(ifield, &good);
-      if(good) { if(loop_id<fs)r->SetRepeatedString(m, d, loop_id, value);
-        else while(loop_id>=fs++)r->AddString(m, d, loop_id<fs?value:0); }
-      return good; }
-    case FieldDescriptor::TYPE_ENUM: {
-      auto value = extract_int32(ifield, &good);
-      if(good) { if(loop_id<fs)r->SetRepeatedEnumValue(m, d, loop_id, value);
-        else while(loop_id>=fs++)r->AddEnumValue(m, d, loop_id<fs?value:0); }
-      return good; }
-    case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
-    case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
-    default:
+  case FieldDescriptor::TYPE_DOUBLE: {
+    auto value = extract_double(ifield, &good);
+    if(good) { if(loop_id<fs)r->SetRepeatedDouble(m, d, loop_id, value);
+      else while(loop_id>=fs++)r->AddDouble(m, d, loop_id<fs?value:0); }
+    return good; }
+  case FieldDescriptor::TYPE_FLOAT: {
+    auto value = extract_float(ifield, &good);
+    if(good) { if(loop_id<fs)r->SetRepeatedFloat(m, d, loop_id, value);
+      else while(loop_id>=fs++)r->AddFloat(m, d, loop_id<fs?value:0); }
+    return good; }
+  case FieldDescriptor::TYPE_SFIXED64: // fallthrough
+  case FieldDescriptor::TYPE_SINT64:   // fallthrough
+  case FieldDescriptor::TYPE_INT64: {
+    auto value = extract_int64(ifield, &good);
+    if(good) { if(loop_id<fs)r->SetRepeatedInt64(m, d, loop_id, value);
+      else while(loop_id>=fs++)r->AddInt64(m, d, loop_id<fs?value:0); }
+    return good; }
+  case FieldDescriptor::TYPE_FIXED64:  // fallthrough
+  case FieldDescriptor::TYPE_UINT64: {
+    auto value = extract_uint64(ifield, &good);
+    if(good) { if(loop_id<fs)r->SetRepeatedUInt64(m, d, loop_id, value);
+      else while(loop_id>=fs++)r->AddUInt64(m, d, loop_id<fs?value:0); }
+    return good; }
+  case FieldDescriptor::TYPE_SFIXED32: // fallthrough
+  case FieldDescriptor::TYPE_SINT32:   // fallthrough
+  case FieldDescriptor::TYPE_INT32: {
+    int32_t value = 0;
+    switch(int32_type) {
+  	case FieldOptions::INT_16:
+      value = extract_int16(ifield, &good);
       break;
+  	case FieldOptions::INT_8:
+      value = extract_int8(ifield, &good);
+      break;
+    case FieldOptions::INT_32:       // fallthrough
+    default:
+      value = extract_int32(ifield, &good);
+      break;
+    }
+    if(good) { if(loop_id<fs)r->SetRepeatedInt32(m, d, loop_id, value);
+      else while(loop_id>=fs++)r->AddInt32(m, d, loop_id<fs?value:0); }
+    return good; }
+  case FieldDescriptor::TYPE_FIXED32:
+  case FieldDescriptor::TYPE_UINT32: {
+    uint32_t value = 0;
+    switch(int32_type) {
+  	case FieldOptions::INT_16:
+      value = extract_uint16(ifield, &good);
+      break;
+    case FieldOptions::INT_8:
+      value = extract_uint8(ifield, &good);
+      break;
+  	case FieldOptions::INT_32:       // fall through
+    default:
+      value = extract_uint32(ifield, &good);
+      break;
+    }
+    if(good) { if(loop_id<fs)r->SetRepeatedUInt32(m, d, loop_id, value);
+      else while(loop_id>=fs++)r->AddUInt32(m, d, loop_id<fs?value:0); }
+    return good; }
+  case FieldDescriptor::TYPE_BOOL: {
+    auto value = extract_bool(ifield, &good);
+    if(good) { if(loop_id<fs)r->SetRepeatedBool(m, d, loop_id, value);
+      else while(loop_id>=fs++)r->AddBool(m, d, loop_id<fs?value:0); }
+    return good; }
+  case FieldDescriptor::TYPE_STRING: {
+    auto value = extract_string(ifield, &good);
+    if(good) { if(loop_id<fs)r->SetRepeatedString(m, d, loop_id, value);
+      else while(loop_id>=fs++)r->AddString(m, d, loop_id<fs?value:0); }
+    return good; }
+  case FieldDescriptor::TYPE_BYTES: {
+    auto value = extract_bytes(ifield, &good);
+    if(good) { if(loop_id<fs)r->SetRepeatedString(m, d, loop_id, value);
+      else while(loop_id>=fs++)r->AddString(m, d, loop_id<fs?value:0); }
+    return good; }
+  case FieldDescriptor::TYPE_ENUM: {
+    auto value = extract_int32(ifield, &good);
+    if(good) { if(loop_id<fs)r->SetRepeatedEnumValue(m, d, loop_id, value);
+      else while(loop_id>=fs++)r->AddEnumValue(m, d, loop_id<fs?value:0); }
+    return good; }
+  case FieldDescriptor::TYPE_MESSAGE:  // fallthrough to assert(0)
+  case FieldDescriptor::TYPE_GROUP:    // fallthrough to assert(0)
+  default:
+    break;
   }
   assert(0);
   return false;

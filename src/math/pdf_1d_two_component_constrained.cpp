@@ -68,7 +68,7 @@ std::vector<function::ParameterAxis> TwoComponent1DConstraintPDF::parameters()
 	  { "mean_low_gauss", "x-value units", false, -inf, false, inf },
       { "resolution", "1", true, tiny_val, true, 1 },
       { "mean_high_gauss", "x-value units", true, -inf, false, inf },
-      { "Width_Ratio", "1", true, tiny_val, true, 0.99 },
+      { "Width_Ratio", "1", true, tiny_val, true, 1-tiny_val },
        };
 }
 

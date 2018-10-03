@@ -154,7 +154,7 @@ std::string SQLite3Transceiver::sql_select_field_spec(const SQLTableField* f)
       const auto& cfo = fopt->GetExtension(CFO);
       switch(cfo.sql().transform()) {
         case SQLFieldOptions::TRANSFORM_UNIXTIME_TOFROM_DATETIME:
-          return "strftime('%s'," + sql_field_name(f->field_name) + ")";
+          return "STRFTIME('%s'," + sql_field_name(f->field_name) + ")";
         case SQLFieldOptions::TRANSFORM_NONE:
         default:
           return sql_field_name(f->field_name);
@@ -172,7 +172,7 @@ std::string SQLite3Transceiver::sql_insert_field_spec(const SQLTableField* f)
       const auto& cfo = fopt->GetExtension(CFO);
       switch(cfo.sql().transform()) {
         case SQLFieldOptions::TRANSFORM_UNIXTIME_TOFROM_DATETIME:
-          return "datetime(?,'unixepoch')";
+          return "DATETIME(?,'UNIXEPOCH')";
         case SQLFieldOptions::TRANSFORM_NONE:
         default:
           return "?";

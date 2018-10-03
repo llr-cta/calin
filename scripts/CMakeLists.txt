@@ -14,3 +14,4 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 install(PROGRAMS compute_diagnostics.py DESTINATION ${CALIN_BIN_INSTALL_DIR})
+install(PROGRAMS scriptSPEFit.py DESTINATION ${CALIN_BIN_INSTALL_DIR})

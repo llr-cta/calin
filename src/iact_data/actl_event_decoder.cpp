@@ -50,7 +50,7 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
   const DataModel::AnyArray& cta_array)
 {
   // Reference : https://forge.in2p3.fr/projects/cta/repository/entry/ACTL/ExternalDevicesCommunication/trunk/TiCkSdecode/ticks_decode.c
-  struct CDTSMessageData_V0 {
+  struct CDTSMessageData_V0 { // 31 bytes
     uint32_t event_counter;
     uint32_t pps_counter;
     uint32_t clock_counter;
@@ -61,7 +61,7 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     uint8_t arbitrary_information;
   } __attribute__((__packed__));
 
-  struct CDTSMessageData_V1 {
+  struct CDTSMessageData_V1 { // 29 bytes
     uint32_t event_counter;
     uint32_t busy_counter;
     uint32_t pps_counter;
@@ -73,12 +73,72 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     uint8_t num_in_bunch;
   } __attribute__((__packed__));
 
+  struct CDTSMessageData_V2 { // 28 bytes
+    uint32_t event_counter;
+    uint32_t busy_counter;
+    uint32_t pps_counter;
+    uint32_t clock_counter;
+    uint64_t ucts_timestamp;
+    uint8_t trigger_type; // For TIB, this is the first 7 bits of SPI
+    uint8_t white_rabbit_reset_busy_status; // A few status flags here, see below
+    uint8_t stereo_pattern; // For TIB, this is the next 8 bits of the SPI string
+    uint8_t num_in_bunch; // This information only needed for debugging
+  } __attribute__((__packed__));
+
+  /* whiteRabbitResetBusyStatus bits defined as:
+
+     Bit Meaning :
+     0 White Rabbit Status (PLL Lock)
+     1 Reset counter acknowledge
+     6 Busy bit from SPI (should be the same as the busy flag, bit 7)
+     7 Busy flag (defined by UCTS depending on which channel the T-S came in on)
+  */
+
+  /* Note: "triggerType" and "StereoPattern" from TIB SPI defined as follows:
+     From document TIB User manual v4.6: https://portal.cta-observatory.org/WG/mst/CAM/NeCTArCam/NectarCamDoc/Shared%20Documents/07.%20Design/7.4%20Trigger%20and%20Clock/7.4.2%20TIB/TIB%20User%20Manual.pdf
+     Table 9: TIB to UCTS SPI trigger type message structure
+
+     Bit Meaning :
+     0 Mono
+     1 Stereo
+     2 Calib
+     3 Sphe
+     4 Softrig Trigger Pattern
+     5 Pedestal
+     6 Slow
+     7 Local
+     8 NB1
+     9 NB2
+     10 NB3
+     11 NB4 Stereo Pattern
+     12 NB5
+     13 NB6
+     14 NB7
+     15 Busy Busy  (put the SPI busy into the whiteRabbitResetBusyStatus)
+   */
+
   const auto& cta_cdts_data = cta_array.data();
 #if TEST_ANYARRAY_TYPES
   if(cta_cdts_data.type() != DataModel::AnyArray::U32)
     throw std::runtime_error("CDTS counters type not U32");
 #endif
-  if(cta_cdts_data.size() == sizeof(CDTSMessageData_V1)) {
+  if(cta_cdts_data.size() == sizeof(CDTSMessageData_V2)) {
+    const auto* cdts_data =
+      reinterpret_cast<const CDTSMessageData_V2*>(&cta_cdts_data.front());
+
+    calin_cdts_data->set_event_counter(cdts_data->event_counter);
+    calin_cdts_data->set_busy_counter(cdts_data->busy_counter);
+    calin_cdts_data->set_pps_counter(cdts_data->pps_counter);
+    calin_cdts_data->set_clock_counter(cdts_data->clock_counter);
+    calin_cdts_data->set_ucts_timestamp(cdts_data->ucts_timestamp);
+    calin_cdts_data->set_camera_timestamp(0);
+    calin_cdts_data->set_trigger_type(cdts_data->trigger_type);
+    calin_cdts_data->set_white_rabbit_status(cdts_data->white_rabbit_reset_busy_status);
+    calin_cdts_data->set_stereo_pattern(cdts_data->stereo_pattern);
+    calin_cdts_data->set_arbitrary_information(0);
+    calin_cdts_data->set_num_in_bunch(cdts_data->num_in_bunch);
+    calin_cdts_data->set_version(2);
+  } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V1)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V1*>(&cta_cdts_data.front());
 
@@ -90,6 +150,7 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_camera_timestamp(0);
     calin_cdts_data->set_trigger_type(cdts_data->trigger_type);
     calin_cdts_data->set_white_rabbit_status(cdts_data->white_rabbit_reset_busy_status);
+    calin_cdts_data->set_stereo_pattern(cdts_data->arbitrary_information);
     calin_cdts_data->set_arbitrary_information(cdts_data->arbitrary_information);
     calin_cdts_data->set_num_in_bunch(cdts_data->num_in_bunch);
     calin_cdts_data->set_version(1);

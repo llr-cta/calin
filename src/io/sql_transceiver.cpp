@@ -879,8 +879,9 @@ set_const_data_pointers(SQLTable* t,
           m = &r->GetMessage(*m, d);
           r = m->GetReflection();
         }
-        if(f->oneof_d or f->field_d->is_repeated() or
-           r->HasField(*m, f->field_d))
+        if(f->oneof_d or f->field_d->is_repeated()
+            or r->HasField(*m, f->field_d)
+            /* or f->field_d->message_type()==nullptr */)
           f->set_data_const_message(m);
         else
           f->set_data_null();
