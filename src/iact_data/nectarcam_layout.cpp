@@ -239,13 +239,13 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       for(auto vy : vertex_y)c->add_outline_polygon_vertex_y(vy);
       c->add_outline_polygon_vertex_index(vertex_x.size());
     }
+  }
 
-    unsigned ispiral = 0;
-    for(auto igrid : grid_hexid_to_channel) {
-      auto ichan = igrid.second;
-      layout->add_pixel_spiral_channel_index(ichan);
-      layout->mutable_channel(ichan)->set_pixel_spiral_index(ispiral++);
-    }
+  unsigned ispiral = 0;
+  for(auto igrid : grid_hexid_to_channel) {
+    auto ichan = igrid.second;
+    layout->add_pixel_spiral_channel_index(ichan);
+    layout->mutable_channel(ichan)->set_pixel_spiral_index(ispiral++);
   }
 
   calin::iact_data::instrument_layout::compute_camera_and_module_outlines(layout);
