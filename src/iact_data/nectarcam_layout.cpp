@@ -39,7 +39,7 @@ namespace {
 
 struct mod_info {
   mod_info(int imod_, int uc_, int vc_, double xc_, double yc_,
-      int ix_, double iy_): imod(imod_), uc(uc_), vc(vc_), xc(xc_), yc(yc_),
+      int ix_, int iy_): imod(imod_), uc(uc_), vc(vc_), xc(xc_), yc(yc_),
     ix(ix_), iy(iy_) { /* nothing to see here */ }
   int imod;
   int uc;
@@ -47,7 +47,7 @@ struct mod_info {
   double xc;
   double yc;
   int ix;
-  double iy;
+  int iy;
 };
 
 std::vector<mod_info>
@@ -63,7 +63,7 @@ nectarcam_mod_map(unsigned nring, double radius, double spacing, double& rot)
   double x1 = 0;
   double y1 = 0;
   uv_to_xy(u1,v1,x1,y1);
-  rot = std::atan2(-y1,x1) + 30.0/180.0*M_PI;
+  rot = std::atan2(-y1,x1) + /*30.0*/90/180.0*M_PI;
   //LOG(INFO) << u1 << ' ' << v1 << ' ' << rot << ' ' << x1 << ' ' << y1;
 
   double crot = std::cos(rot);
@@ -85,8 +85,10 @@ nectarcam_mod_map(unsigned nring, double radius, double spacing, double& rot)
       uv_to_xy_trans(uc,vc,xc,yc,crot,srot,spacing);
       if(radius>0 and xc*xc+yc*yc > radius*radius)continue;
       ring_has_module = true;
-      int ix = (vc*2+uc*3)/7;
-      double iy = -(vc+uc)+2.5*ix;
+      // int ix = (vc*2+uc*3)/7;
+      // double iy = -(vc+uc)+2.5*ix;
+      int ix = 2*uc - vc;
+      int iy = -(5*vc + 4*uc);
       modvec.emplace_back(imod, uc, vc, xc, yc, ix, iy);
     }
   }
@@ -158,8 +160,9 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
   }
 #endif
 
-  //const unsigned modchanmap[] = { 3, 0, 6, 5, 4, 2, 1 };
-  const unsigned gridchanmap[] = { 1, 6, 5, 0, 4, 3, 2 };
+  // Mapping from before 60def rotation to align with LST (changed 2018-10-04)
+  // const unsigned gridchanmap[] = { 1, 6, 5, 0, 4, 3, 2 };
+  const unsigned gridchanmap[] = { 6, 5, 4, 0, 3, 2, 1 };
 
   std::map<unsigned, unsigned> grid_chan_index;
   for(unsigned imod = 0; imod<modvec.size(); imod++)
@@ -174,12 +177,19 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
     }
   }
 
+  std::map<int, int> grid_hexid_to_channel;
+
   for(unsigned imod = 0; imod<modvec.size(); imod++)
   {
     const auto& mod = modvec[imod];
     auto* m = layout->add_module();
     m->set_module_index(imod);
     m->set_module_grid_index(mod.imod);
+    int um;
+    int vm;
+    hexid_to_uv(mod.imod, um, vm);
+    m->set_module_grid_u(um);
+    m->set_module_grid_v(vm);
     auto mhid = cluster_hexid_to_member_hexid(mod.imod, 1, false);
     for(unsigned imodchan = 0; imodchan<mhid.size(); imodchan++)
     {
@@ -200,9 +210,12 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       c->set_channel_index(ichan);
       c->set_pixel_index(ichan);
       c->set_pixel_grid_index(igridchan);
+      grid_hexid_to_channel[igridchan] = ichan;
       c->set_channel_set_index(0);
       c->set_module_index(imod);
       c->set_module_channel_index(imodchan);
+      c->set_pixel_grid_u(u);
+      c->set_pixel_grid_v(v);
       c->set_x(x);
       c->set_y(y);
       c->set_diameter(layout->pixel_grid_spacing());
@@ -221,6 +234,11 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       for(auto vx : vertex_x)c->add_outline_polygon_vertex_x(vx);
       for(auto vy : vertex_y)c->add_outline_polygon_vertex_y(vy);
       c->add_outline_polygon_vertex_index(vertex_x.size());
+    }
+
+    unsigned ipixel = 0;
+    for(auto igrid : grid_hexid_to_channel) {
+      layout->mutable_channel(igrid.second)->set_pixel_spiral_index(ipixel++);
     }
   }
 

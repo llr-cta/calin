@@ -37,7 +37,10 @@ message ChannelLayout {
   int32 pixel_index                                        = 2 [
     (CFO).desc = "Index of pixel that this channel corresponds to. A value "
       "of -1 means there is no (sky facing) pixel associated with this "
-      "channel. It may, for example have an enginnering signal applied etc." ];
+      "channel. It may, for example have an enginnering signal applied etc. It "
+      "is likely this corresponds either to \"channel_index\" or "
+      "\"pixel_spiral_index\" depending on the politics of the camera "
+      "collaboration." ];
   int32 pixel_grid_index                                   = 3 [
     (CFO).desc = "Index of pixel within hexagonal or square grid if the "
       "camera follows a grid, -1 otherwise." ];
@@ -52,6 +55,17 @@ message ChannelLayout {
   int32 module_channel_index                               = 6 [
     (CFO).desc = "Index of the channel within the module that it belongs to, "
       "if appropriate; -1 otherwise." ];
+  int32 pixel_grid_u                                       = 7 [
+    (CFO).desc = "U-axis index of pixel within hexagonal or square grid if the "
+      "camera follows a grid, -1 otherwise." ];
+  int32 pixel_grid_v                                       = 8 [
+    (CFO).desc = "V-axis index of pixel within hexagonal or square grid if the "
+      "camera follows a grid, -1 otherwise." ];
+  int32 pixel_spiral_index                                 = 9 [
+    (CFO).desc = "Index of pixel that this channel corresponds to using a "
+      "spiral labeling system starting from center. A value of -1 means there "
+      "is no (sky facing) pixel associated with this channel. It may, for "
+      "example have an enginnering signal applied etc." ];
 
   double x                                                 = 10 [
     (CFO).desc = "X-position of pixel center in camera. Looking at the "
@@ -99,6 +113,12 @@ message ModuleLayout {
       "to index that this module has in the telescope module array." ];
   int32 module_grid_index                                  = 2 [
     (CFO).desc = "Index of module within hexagonal or square grid if the "
+      "camera follows a grid, -1 otherwise." ];
+  int32 module_grid_u                                      = 3 [
+    (CFO).desc = "U-axis index of module within hexagonal or square grid if the "
+      "camera follows a grid, -1 otherwise." ];
+  int32 module_grid_v                                      = 4 [
+    (CFO).desc = "V-axis index of module within hexagonal or square grid if the "
       "camera follows a grid, -1 otherwise." ];
   repeated int32 channels_in_module                        = 10 [
     (CFO).desc = "List of indexes for all channels in module." ];;
