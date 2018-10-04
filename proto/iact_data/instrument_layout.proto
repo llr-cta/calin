@@ -57,10 +57,10 @@ message ChannelLayout {
       "if appropriate; -1 otherwise." ];
   int32 pixel_grid_u                                       = 7 [
     (CFO).desc = "U-axis index of pixel within hexagonal or square grid if the "
-      "camera follows a grid, -1 otherwise." ];
+      "camera follows a grid, 0 otherwise." ];
   int32 pixel_grid_v                                       = 8 [
     (CFO).desc = "V-axis index of pixel within hexagonal or square grid if the "
-      "camera follows a grid, -1 otherwise." ];
+      "camera follows a grid, 0 otherwise." ];
   int32 pixel_spiral_index                                 = 9 [
     (CFO).desc = "Index of pixel that this channel corresponds to using a "
       "spiral labeling system starting from center. A value of -1 means there "
@@ -202,28 +202,34 @@ message CameraLayout {
   double pixel_grid_geometric_area                         = 18 [
     (CFO).desc = "Nominal size of pixel in grid.",
     (CFO).units = "cm^2" ];
+  repeated int32 pixel_channel_index                       = 19 [
+    (CFO).desc = "Index into channel array for each of the pixels, or -1 if "
+      "that pixel is not connected to an electronics channel." ];
+  repeated int32 pixel_spiral_channel_index                = 20 [
+    (CFO).desc = "Index into channel array for each of the pixels in spiral "
+      "order, or -1 if that pixel is not connected to an electronics channel." ];
 
-  uint32 channels_per_modules                              = 20 [
+  uint32 channels_per_modules                              = 30 [
     (CFO).desc = "Number of channels per module." ];
-  repeated ModuleLayout module                             = 21 [
+  repeated ModuleLayout module                             = 31 [
     (CFO).desc = "Layout of each module." ];
 
-  ADCGains adc_gains                                       = 30;
-  int32 adc_bits                                           = 31;
-  bool can_read_waveforms                                  = 32;
-  bool can_read_charges                                    = 33;
-  bool can_read_peak_sample                                = 34;
+  ADCGains adc_gains                                       = 40;
+  int32 adc_bits                                           = 41;
+  bool can_read_waveforms                                  = 42;
+  bool can_read_charges                                    = 43;
+  bool can_read_peak_sample                                = 44;
 
-  map<int32, string> module_counter_id_to_name             = 40;
-  map<string, int32> module_counter_name_to_id             = 41;
+  map<int32, string> module_counter_id_to_name             = 50;
+  map<string, int32> module_counter_name_to_id             = 51;
 
-  repeated uint32 outline_polygon_vertex_index             = 50 [
+  repeated uint32 outline_polygon_vertex_index             = 60 [
     (CFO).desc = "Index of end of camera polygon lines." ];
-  repeated double outline_polygon_vertex_x                 = 51 [
+  repeated double outline_polygon_vertex_x                 = 61 [
     (CFO).desc = "X coordinates of an open polygon that represents the "
       "outline of the camera.",
     (CFO).units = "cm" ];
-  repeated double outline_polygon_vertex_y                 = 52 [
+  repeated double outline_polygon_vertex_y                 = 62 [
     (CFO).desc = "Y coordinates of an open polygon that represents the "
       "outline of the camera.",
     (CFO).units = "cm" ];

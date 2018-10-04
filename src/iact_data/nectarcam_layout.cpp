@@ -208,7 +208,11 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       m->add_channels_in_module(ichan);
       auto* c = layout->add_channel();
       c->set_channel_index(ichan);
+
+      // For NectarCAM the channel and pixels are equivalent
       c->set_pixel_index(ichan);
+      layout->add_pixel_channel_index(ichan);
+
       c->set_pixel_grid_index(igridchan);
       grid_hexid_to_channel[igridchan] = ichan;
       c->set_channel_set_index(0);
@@ -236,9 +240,11 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       c->add_outline_polygon_vertex_index(vertex_x.size());
     }
 
-    unsigned ipixel = 0;
+    unsigned ispiral = 0;
     for(auto igrid : grid_hexid_to_channel) {
-      layout->mutable_channel(igrid.second)->set_pixel_spiral_index(ipixel++);
+      auto ichan = igrid.second;
+      layout->add_pixel_spiral_channel_index(ichan);
+      layout->mutable_channel(ichan)->set_pixel_spiral_index(ispiral++);
     }
   }
 
