@@ -1,10 +1,10 @@
 /*
 
-   calin/iact_data/nectarcam_layout.cpp -- Stephen Fegan -- 2016-06-06
+   calin/iact_data/lstcam_layout.cpp -- Stephen Fegan -- 2018-19-05
 
-   Camera layout for NectarCam
+   Camera layout for LSTCam
 
-   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3
 
    This file is part of "calin"
@@ -27,7 +27,7 @@
 #include <math/special.hpp>
 #include <math/hex_array.hpp>
 #include <iact_data/instrument_layout.hpp>
-#include <iact_data/nectarcam_layout.hpp>
+#include <iact_data/lstcam_layout.hpp>
 #include <util/log.hpp>
 
 using calin::math::special::SQR;
@@ -51,10 +51,10 @@ struct mod_info {
 };
 
 std::vector<mod_info>
-nectarcam_mod_map(unsigned nring, double radius, double spacing, double& rot)
+lstcam_mod_map(unsigned nring, double radius, double spacing, double& rot)
 {
   if(nring == 0 and radius <= 0)
-    throw std::runtime_error("nectarcam_mod_map: At least one of nring or "
+    throw std::runtime_error("lstcam_mod_map: At least one of nring or "
       "radius must be positive.");
 
   int u1 = 0;
@@ -101,7 +101,7 @@ nectarcam_mod_map(unsigned nring, double radius, double spacing, double& rot)
   return modvec;
 }
 
-CameraLayout* nectarcam_general_layout(CameraLayout* layout,
+CameraLayout* lstcam_general_layout(CameraLayout* layout,
   const std::vector<mod_info>& modvec, CameraLayout::CameraType camera_type,
   double spacing, double rot)
 {
@@ -209,7 +209,7 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       auto* c = layout->add_channel();
       c->set_channel_index(ichan);
 
-      // For NectarCAM the channel and pixels are equivalent
+      // For lstcam the channel and pixels are equivalent
       c->set_pixel_index(ichan);
       layout->add_pixel_channel_index(ichan);
 
@@ -255,23 +255,23 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
 } // anonymous namespace
 
 CameraLayout*
-calin::iact_data::nectarcam_layout::nectarcam_19module_layout(
+calin::iact_data::lstcam_layout::lstcam_19module_layout(
   CameraLayout* layout)
 {
   const double spacing = 5;
   double rot = 0;
-  auto modvec = nectarcam_mod_map(2, 0.0, spacing, rot);
-  return nectarcam_general_layout(layout, modvec,
-    CameraLayout::NECTARCAM_TESTBENCH_19CHANNEL, spacing, rot);
+  auto modvec = lstcam_mod_map(2, 0.0, spacing, rot);
+  return lstcam_general_layout(layout, modvec,
+    CameraLayout::lstcam_TESTBENCH_19CHANNEL, spacing, rot);
 }
 
 CameraLayout*
-calin::iact_data::nectarcam_layout::nectarcam_layout(
+calin::iact_data::lstcam_layout::lstcam_layout(
   CameraLayout* layout)
 {
   const double spacing = 5;
   double rot = 0;
-  auto modvec = nectarcam_mod_map(9, 23.5*spacing, spacing, rot);
-  return nectarcam_general_layout(layout, modvec,
-    CameraLayout::NECTARCAM, spacing, rot);
+  auto modvec = lstcam_mod_map(9, 23.5*spacing, spacing, rot);
+  return lstcam_general_layout(layout, modvec,
+    CameraLayout::lstcam, spacing, rot);
 }
