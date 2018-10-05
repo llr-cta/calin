@@ -160,6 +160,34 @@ void uv_to_neighbor_uv(int u, int v, std::vector<int>& u_neighbors,
                        std::vector<int>& v_neighbors);
 std::vector<unsigned> hexid_to_neighbor_hexids(unsigned hexid);
 
+inline void rotate1_uv(int& u, int& v) { u+=v; v=-v; std::swap(u,v); }
+inline void rotate2_uv(int& u, int& v) { v+=u; v=-v; std::swap(u,v); }
+inline void rotate3_uv(int& u, int& v) { u=-u; v=-v; }
+inline void rotate4_uv(int& u, int& v) { u+=v; u=-u; std::swap(u,v); }
+inline void rotate5_uv(int& u, int& v) { v+=u; u=-u; std::swap(u,v); }
+
+inline void rotate1_hexid_cw(unsigned hexid) { int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline void rotate2_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline void rotate3_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline void rotate4_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline void rotate5_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_cw(u,v); }
+
+inline void rotate1_hexid_ccw(unsigned hexid) { int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline void rotate2_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline void rotate3_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline void rotate4_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline void rotate5_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_ccw(u,v); }
+
 // *****************************************************************************
 //
 // Cluster
