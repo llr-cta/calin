@@ -186,7 +186,7 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
     auto* m = layout->add_module();
     m->set_module_index(imod);
     m->set_module_grid_index(mod.imod);
-    module_hexid_to_module[rotate_ccw1_hexid_ccw(mod.imod)] = imod;
+    module_hexid_to_module[/* rotate_ccw1_hexid_ccw(mod.imod) */ mod.imod] = imod;
     int um;
     int vm;
     hexid_to_uv(mod.imod, um, vm);
