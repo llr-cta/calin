@@ -190,6 +190,8 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
     hexid_to_uv(mod.imod, um, vm);
     m->set_module_grid_u(um);
     m->set_module_grid_v(vm);
+    m->set_module_grid_i(vm);
+    m->set_module_grid_j(2*um+vm);
     auto mhid = cluster_hexid_to_member_hexid(mod.imod, 1, false);
     for(unsigned imodchan = 0; imodchan<mhid.size(); imodchan++)
     {

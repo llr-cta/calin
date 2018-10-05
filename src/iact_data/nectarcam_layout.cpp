@@ -177,7 +177,8 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
     }
   }
 
-  std::map<int, int> grid_hexid_to_channel;
+  std::map<int, int> pixel_hexid_to_channel;
+  std::map<int, int> module_hexid_to_module;
 
   for(unsigned imod = 0; imod<modvec.size(); imod++)
   {
@@ -185,11 +186,15 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
     auto* m = layout->add_module();
     m->set_module_index(imod);
     m->set_module_grid_index(mod.imod);
+    module_hexid_to_module[rotate5_hexid_cw(mod.imod)] = imod;
     int um;
     int vm;
     hexid_to_uv(mod.imod, um, vm);
     m->set_module_grid_u(um);
     m->set_module_grid_v(vm);
+    m->set_module_grid_i(vm);
+    m->set_module_grid_j(2*um+vm);
+
     auto mhid = cluster_hexid_to_member_hexid(mod.imod, 1, false);
     for(unsigned imodchan = 0; imodchan<mhid.size(); imodchan++)
     {
@@ -214,7 +219,7 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       layout->add_pixel_channel_index(ichan);
 
       c->set_pixel_grid_index(igridchan);
-      grid_hexid_to_channel[igridchan] = ichan;
+      pixel_hexid_to_channel[igridchan] = ichan;
       c->set_channel_set_index(0);
       c->set_module_index(imod);
       c->set_module_channel_index(imodchan);
@@ -242,7 +247,13 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
   }
 
   unsigned ispiral = 0;
-  for(auto igrid : grid_hexid_to_channel) {
+  for(auto igrid : module_hexid_to_module) {
+    auto imod = igrid.second;
+    layout->add_module_spiral_module_index(imod);
+    layout->mutable_module(imod)->set_module_spiral_index(ispiral++);
+  }
+  ispiral = 0;
+  for(auto igrid : pixel_hexid_to_channel) {
     auto ichan = igrid.second;
     layout->add_pixel_spiral_channel_index(ichan);
     layout->mutable_channel(ichan)->set_pixel_spiral_index(ispiral++);

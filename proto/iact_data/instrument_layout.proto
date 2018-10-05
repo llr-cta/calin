@@ -120,6 +120,15 @@ message ModuleLayout {
   int32 module_grid_v                                      = 4 [
     (CFO).desc = "V-axis index of module within hexagonal or square grid if the "
       "camera follows a grid, -1 otherwise." ];
+  int32 module_grid_i                                      = 5 [
+    (CFO).desc = "For hexagonal grids this gives the LSTCam cluster \"i\" index, "
+      "which is the same number as \"module_grid_v\". -1 otherwise." ];
+  int32 module_grid_j                                      = 6 [
+    (CFO).desc = "For hexagonal grids this gives the LSTCam cluster \"j\" index, "
+      "which is the same number as \"2*module_grid_u+module_grid_v\". -1 otherwise." ];
+  int32 module_spiral_index                                = 7 [
+    (CFO).desc = "Index of module using a spiral labeling system starting from center." ];
+
   repeated int32 channels_in_module                        = 10 [
     (CFO).desc = "List of indexes for all channels in module." ];;
   double x                                                 = 20 [
@@ -213,6 +222,9 @@ message CameraLayout {
     (CFO).desc = "Number of channels per module." ];
   repeated ModuleLayout module                             = 31 [
     (CFO).desc = "Layout of each module." ];
+  repeated int32 module_spiral_module_index                = 32 [
+    (CFO).desc = "Index into module array for each of the modules in spiral "
+      "order." ];
 
   ADCGains adc_gains                                       = 40;
   int32 adc_bits                                           = 41;
