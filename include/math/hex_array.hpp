@@ -166,27 +166,27 @@ inline void rotate3_uv(int& u, int& v) { u=-u; v=-v; }
 inline void rotate4_uv(int& u, int& v) { u+=v; u=-u; std::swap(u,v); }
 inline void rotate5_uv(int& u, int& v) { v+=u; u=-u; std::swap(u,v); }
 
-inline void rotate1_hexid_cw(unsigned hexid) { int u,v;
+inline unsigned rotate1_hexid_cw(unsigned hexid) { int u,v;
   hexid_to_uv_cw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_cw(u,v); }
-inline void rotate2_hexid_cw(unsigned hexid) {  int u,v;
-  hexid_to_uv_cw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_cw(u,v); }
-inline void rotate3_hexid_cw(unsigned hexid) {  int u,v;
-  hexid_to_uv_cw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_cw(u,v); }
-inline void rotate4_hexid_cw(unsigned hexid) {  int u,v;
-  hexid_to_uv_cw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_cw(u,v); }
-inline void rotate5_hexid_cw(unsigned hexid) {  int u,v;
-  hexid_to_uv_cw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline unsigned rotate2_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate2_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline unsigned rotate3_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate3_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline unsigned rotate4_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate4_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline unsigned rotate5_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate5_uv(u,v); return uv_to_hexid_cw(u,v); }
 
-inline void rotate1_hexid_ccw(unsigned hexid) { int u,v;
+inline unsigned rotate1_hexid_ccw(unsigned hexid) { int u,v;
   hexid_to_uv_ccw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_ccw(u,v); }
-inline void rotate2_hexid_ccw(unsigned hexid) {  int u,v;
-  hexid_to_uv_ccw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_ccw(u,v); }
-inline void rotate3_hexid_ccw(unsigned hexid) {  int u,v;
-  hexid_to_uv_ccw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_ccw(u,v); }
-inline void rotate4_hexid_ccw(unsigned hexid) {  int u,v;
-  hexid_to_uv_ccw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_ccw(u,v); }
-inline void rotate5_hexid_ccw(unsigned hexid) {  int u,v;
-  hexid_to_uv_ccw(hexid,u,v); rotate1_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline unsigned rotate2_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate2_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline unsigned rotate3_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate3_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline unsigned rotate4_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate4_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline unsigned rotate5_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate5_uv(u,v); return uv_to_hexid_ccw(u,v); }
 
 // *****************************************************************************
 //
