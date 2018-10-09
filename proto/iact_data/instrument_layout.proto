@@ -94,6 +94,8 @@ message ChannelLayout {
   repeated uint32 neighbour_channel_indexes                = 20 [
     (CFO).desc = "Indexes of the channels for all neigbouring pixels. "
       "This forms a commutative relationship between the two channels." ];
+  bool is_boundary_pixel                                   = 21 [
+    (CFO).desc = "True if channel corresponds to pixel on edge of camera." ];
 
   repeated uint32 outline_polygon_vertex_index             = 30 [
     (CFO).desc = "Index of end of pixel polygon lines." ];
@@ -217,6 +219,8 @@ message CameraLayout {
   repeated int32 pixel_spiral_channel_index                = 20 [
     (CFO).desc = "Index into channel array for each of the pixels in spiral "
       "order, or -1 if that pixel is not connected to an electronics channel." ];
+  repeated uint32 boundary_pixel_channel_index             = 21 [
+    (CFO).desc = "Index into channel array for each of the boundary pixels." ];
 
   uint32 channels_per_modules                              = 30 [
     (CFO).desc = "Number of channels per module." ];

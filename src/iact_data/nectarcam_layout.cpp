@@ -230,11 +230,18 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
       c->set_diameter(layout->pixel_grid_spacing());
       c->set_geometric_area(layout->pixel_grid_geometric_area());
 
+      c->set_is_boundary_pixel(false);
       for(auto nigrid : hexid_to_neighbor_hexids(igridchan))
       {
         auto nid = grid_chan_index.find(nigrid);
-        if(nid != grid_chan_index.end())
+        if(nid != grid_chan_index.end()) {
           c->add_neighbour_channel_indexes(nid->second);
+        } else {
+          c->set_is_boundary_pixel(true);
+        }
+      }
+      if(c->is_boundary_pixel()) {
+        layout->add_boundary_pixel_channel_index(ichan);
       }
 
       std::vector<double> vertex_x;
