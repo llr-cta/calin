@@ -1,0 +1,44 @@
+/*
+
+   calin/proto/iact_data/lstcam_configuration.proto
+                                                -- Stephen Fegan -- 2018-10-15
+
+   Protobufs for LSTCam configuration information
+
+   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+//import "common_types.proto";
+
+package calin.ix.iact_data.lstcam_configuration;
+
+message LSTCamCameraConfiguration {
+  uint32 daq_processing_algorithms                         = 1 [
+    (CFO).desc = "Bitmask of pedestal and gain processing algorithms applied." ];
+
+  uint32 daq_pre_processing_algorithms                     = 2 [
+    (CFO).desc = "Bitmask of DAQ pre-processing algorithms applied." ];
+
+  string idaq_version                                      = 20 [
+    (CFO).desc = "SVN version number of IDAQ (what is this?)." ];
+
+  string cdhs_version                                      = 21 [
+    (CFO).desc = "SVN version number of CDHS (Central Data Handling Service - "
+      "was ACTL)." ];
+};

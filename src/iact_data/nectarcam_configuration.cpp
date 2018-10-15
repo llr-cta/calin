@@ -1,6 +1,6 @@
 /*
 
-   calin/iact_data/nectarcam_module_configuration.cpp -- Stephen Fegan -- 2017-12-13
+   calin/iact_data/nectarcam_configuration.cpp -- Stephen Fegan -- 2017-12-13
 
    NectarCAM specific configuration
 
@@ -24,7 +24,7 @@
 #include <memory>
 
 #include <calin_global_config.hpp>
-#include <iact_data/nectarcam_module_configuration.hpp>
+#include <iact_data/nectarcam_configuration.hpp>
 #include <util/log.hpp>
 #include <util/string.hpp>
 #include <util/file.hpp>
@@ -59,12 +59,12 @@ std::string to_lower_string(const XMLCh* const to_transcode) {
 
 } // anonymous namespace
 
-calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration*
-calin::iact_data::nectarcam_module_configuration::decode_nmc_xml_file(
+calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration*
+calin::iact_data::nectarcam_configuration::decode_nmc_xml_file(
   const std::string& filename,
-  calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration* nccc)
+  calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration* nccc)
 {
-  calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration* nccc_out = nullptr;
+  calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration* nccc_out = nullptr;
 
   try {
     XMLPlatformUtils::Initialize();
@@ -106,7 +106,7 @@ calin::iact_data::nectarcam_module_configuration::decode_nmc_xml_file(
       }
       if(doc_element) {
         nccc_out = nccc;
-        if(nccc_out == nullptr)nccc_out = new calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration;
+        if(nccc_out == nullptr)nccc_out = new calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration;
 
         nccc_out->set_nmc_source_filename(filename);
 
@@ -204,10 +204,10 @@ calin::iact_data::nectarcam_module_configuration::decode_nmc_xml_file(
 
 #else
 
-calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration*
-calin::iact_data::nectarcam_module_configuration::decode_nmc_xml_file(
+calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration*
+calin::iact_data::nectarcam_configuration::decode_nmc_xml_file(
   const std::string& filename,
-  calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration* nccc)
+  calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration* nccc)
 {
   LOG(WARNING) << "decode_nmc_xml_file: not implemented as XERCES not present at compile time.";
   return nullptr;

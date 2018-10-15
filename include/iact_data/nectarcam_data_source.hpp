@@ -61,7 +61,7 @@ class NectarCamZFITSDataSource_L0:
 {
 public:
   CALIN_TYPEALIAS(decoder_config_type,
-    nectarcam_actl_event_decoder::NectarCAM_ACTL_L0_CameraEventDecoder::config_type);
+    nectarcam_actl_event_decoder::NectarCam_ACTL_L0_CameraEventDecoder::config_type);
 
 #if 0
   void set_decoder_config(const decoder_config_type& config) {
@@ -74,7 +74,7 @@ public:
     return decoder_->mutable_config(); }
 #endif
   static decoder_config_type default_decoder_config() {
-    return nectarcam_actl_event_decoder::NectarCAM_ACTL_L0_CameraEventDecoder::default_config(); }
+    return nectarcam_actl_event_decoder::NectarCam_ACTL_L0_CameraEventDecoder::default_config(); }
 
   NectarCamZFITSDataSource_L0(const std::string& filename,
     const config_type& config,
@@ -84,7 +84,7 @@ public:
     const config_type& config = default_config());
   virtual ~NectarCamZFITSDataSource_L0();
 private:
-  nectarcam_actl_event_decoder::NectarCAM_ACTL_L0_CameraEventDecoder* decoder_;
+  nectarcam_actl_event_decoder::NectarCam_ACTL_L0_CameraEventDecoder* decoder_;
 };
 
 /*
@@ -113,7 +113,7 @@ class NectarCamZFITSDataSource_R1:
 {
 public:
   CALIN_TYPEALIAS(decoder_config_type,
-    nectarcam_actl_event_decoder::NectarCAM_ACTL_R1_CameraEventDecoder::config_type);
+    nectarcam_actl_event_decoder::NectarCam_ACTL_R1_CameraEventDecoder::config_type);
 
 #if 0
   void set_decoder_config(const decoder_config_type& config) {
@@ -126,7 +126,7 @@ public:
     return decoder_->mutable_config(); }
 #endif
   static decoder_config_type default_decoder_config() {
-    return nectarcam_actl_event_decoder::NectarCAM_ACTL_R1_CameraEventDecoder::default_config(); }
+    return nectarcam_actl_event_decoder::NectarCam_ACTL_R1_CameraEventDecoder::default_config(); }
 
   NectarCamZFITSDataSource_R1(const std::string& filename,
     const config_type& config,
@@ -136,7 +136,7 @@ public:
     const config_type& config = default_config());
   virtual ~NectarCamZFITSDataSource_R1();
 private:
-  nectarcam_actl_event_decoder::NectarCAM_ACTL_R1_CameraEventDecoder* decoder_;
+  nectarcam_actl_event_decoder::NectarCam_ACTL_R1_CameraEventDecoder* decoder_;
 };
 
 /*

@@ -26,7 +26,7 @@ syntax = "proto3";
 import "calin.proto";
 import "common_types.proto";
 import "iact_data/instrument_layout.proto";
-import "iact_data/nectarcam_module_configuration.proto";
+import "iact_data/nectarcam_configuration.proto";
 
 package calin.ix.iact_data.telescope_run_configuration;
 
@@ -80,7 +80,7 @@ message TelescopeRunConfiguration {
     (CFO).desc = "Camera layout." ];
 
   oneof camera_specific_configuration {
-    calin.ix.iact_data.nectarcam_module_configuration.NectarCamCameraConfiguration nectarcam = 200 [
+    calin.ix.iact_data.nectarcam_configuration.NectarCamCameraConfiguration nectarcam = 200 [
       (CFO).desc = "NectarCam configuration elements." ];
   }
 

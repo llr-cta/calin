@@ -31,7 +31,7 @@
 #include <iact_data/zfits_data_source.hpp>
 #include <iact_data/nectarcam_layout.hpp>
 #include <iact_data/nectarcam_actl_event_decoder.hpp>
-#include <iact_data/nectarcam_module_configuration.hpp>
+#include <iact_data/nectarcam_configuration.hpp>
 #include <math/simd.hpp>
 #include <provenance/system_info.hpp>
 
@@ -73,7 +73,7 @@ NectarCamZFITSDataSource_L0::
 NectarCamZFITSDataSource_L0(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource_L0(filename,
-    decoder_ = new NectarCAM_ACTL_L0_CameraEventDecoder(filename,
+    decoder_ = new NectarCam_ACTL_L0_CameraEventDecoder(filename,
       calin::util::file::extract_first_number_from_filename(filename),
       decoder_config), false /* we delete it! */, config)
 {
@@ -118,7 +118,7 @@ NectarCamZFITSDataSource_R1::
 NectarCamZFITSDataSource_R1(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource_R1(filename,
-    decoder_ = new NectarCAM_ACTL_R1_CameraEventDecoder(filename,
+    decoder_ = new NectarCam_ACTL_R1_CameraEventDecoder(filename,
       calin::util::file::extract_first_number_from_filename(filename),
       decoder_config), false /* we delete it! */, config)
 {

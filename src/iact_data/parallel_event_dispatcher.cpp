@@ -142,7 +142,7 @@ void ParallelEventDispatcher::process_nectarcam_zfits_run(
   calin::iact_data::zfits_actl_data_source::
     ZFITSACTL_L0_CameraEventDataSource zfits_actl_src(filename, zfits_config);
   calin::iact_data::nectarcam_actl_event_decoder::
-    NectarCAM_ACTL_L0_CameraEventDecoder decoder(filename,
+    NectarCam_ACTL_L0_CameraEventDecoder decoder(filename,
       calin::util::file::extract_first_number_from_filename(filename),
       decoder_config);
 

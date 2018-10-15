@@ -14,10 +14,11 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_SWIG_PROTO instrument_layout.proto telescope_event.proto
-	zfits_data_source.proto nectarcam_data_source.proto
-	telescope_run_configuration.proto functional_event_visitor.proto
-	nectarcam_module_configuration.proto waveform_treatment_event_visitor.proto
-	nectarcam_ancillary_data.proto)
+	zfits_data_source.proto telescope_run_configuration.proto
+	functional_event_visitor.proto waveform_treatment_event_visitor.proto
+	nectarcam_data_source.proto nectarcam_configuration.proto
+	nectarcam_ancillary_data.proto
+lstcam_data_source.proto lstcam_configuration.proto)
 set(CALIN_PACKAGE iact_data)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 
