@@ -33,9 +33,11 @@
 #include <iact_data/telescope_event.pb.h>
 #include <iact_data/instrument_layout.pb.h>
 #include <iact_data/nectarcam_data_source.pb.h>
+#include <iact_data/lstcam_data_source.pb.h>
 #include <iact_data/zfits_actl_data_source.hpp>
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
+#include <iact_data/lstcam_data_source.hpp>
 #define SWIG_FILE_WITH_INIT
   %}
 

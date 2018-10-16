@@ -31,7 +31,8 @@ if(CTA_CAMERASTOACTL_FOUND)
 		lstcam_actl_r1_event_decoder.cpp
 		zfits_actl_l0_data_source.cpp zfits_actl_r1_data_source.cpp
 		zfits_data_source_l0.cpp zfits_data_source_r1.cpp
-		nectarcam_data_source.cpp)
+		nectarcam_data_source.cpp
+		lstcam_data_source.cpp)
 endif()
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
