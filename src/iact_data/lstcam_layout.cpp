@@ -143,7 +143,8 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
     (*layout->mutable_module_counter_name_to_id())[i.second] = i.first;
   }
 
-  const unsigned gridchanmap[] = { 6, 5, 4, 0, 1, 2, 3 };
+  // https://forge.in2p3.fr/attachments/download/59969/Pixel_Numbering_explain.png
+  const unsigned gridchanmap[] = { 6, 5, 4, 0, 1, 3, 2 };
 
   std::map<unsigned, unsigned> grid_chan_index;
   for(unsigned imod = 0; imod<modvec.size(); imod++)
