@@ -298,7 +298,8 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   // ==========================================================================
 
   if(cta_event->nectarcam().has_cdts_data()
-    and cta_event->nectarcam().cdts_data().has_data())
+    and cta_event->nectarcam().cdts_data().has_data()
+    and cta_event->nectarcam().extdevices_presence() & 0x01)
   {
     calin::iact_data::actl_event_decoder::decode_cdts_data(
       calin_event->mutable_cdts_data(), cta_event->nectarcam().cdts_data());
@@ -317,7 +318,8 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   // ==========================================================================
 
   if(cta_event->nectarcam().has_tib_data()
-    and cta_event->nectarcam().tib_data().has_data())
+    and cta_event->nectarcam().tib_data().has_data()
+    and cta_event->nectarcam().extdevices_presence() & 0x02)
   {
     calin::iact_data::actl_event_decoder::decode_tib_data(
       calin_event->mutable_tib_data(), cta_event->nectarcam().tib_data());
@@ -616,7 +618,8 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
   // ==========================================================================
 
   if(cta_event->nectarcam().has_cdts_data()
-    and cta_event->nectarcam().cdts_data().has_data())
+    and cta_event->nectarcam().cdts_data().has_data()
+    and cta_event->nectarcam().extdevices_presence() & 0x01)
   {
     calin::ix::iact_data::telescope_event::CDTSData calin_cdts_data;
     calin::iact_data::actl_event_decoder::decode_cdts_data(

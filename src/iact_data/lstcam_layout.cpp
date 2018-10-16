@@ -130,39 +130,20 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
   layout->set_adc_gains(CameraLayout::PARALLEL_DUAL_GAIN);
   layout->set_adc_bits(12);
   layout->set_can_read_waveforms(true);
-  layout->set_can_read_charges(true);
+  layout->set_can_read_charges(false);
   layout->set_can_read_peak_sample(false);
 
   auto& mod_ctr_id_to_name = *layout->mutable_module_counter_id_to_name();
-  mod_ctr_id_to_name[0] = "global_event_counter";
-  mod_ctr_id_to_name[1] = "bunch_counter";
+  mod_ctr_id_to_name[0] = "backplane_10MHz_counter";
+  mod_ctr_id_to_name[1] = "pps_counter";
   mod_ctr_id_to_name[2] = "event_counter";
-  mod_ctr_id_to_name[3] = "ts1";
-  mod_ctr_id_to_name[4] = "ts2_bunch";
-  mod_ctr_id_to_name[5] = "ts2_event";
-  mod_ctr_id_to_name[6] = "ts2_empty";
+  mod_ctr_id_to_name[3] = "local_133MHz_counter";
+  mod_ctr_id_to_name[4] = "trigger_counter";
   for(auto&& i : layout->module_counter_id_to_name()) {
     (*layout->mutable_module_counter_name_to_id())[i.second] = i.first;
   }
 
-#if 0 // Obsolete as CDTS has its own structure type
-  auto& cam_ctr_id_to_name = *layout->mutable_camera_counter_id_to_name();
-  cam_ctr_id_to_name[0] = "cdts_event_counter";
-  cam_ctr_id_to_name[1] = "cdts_pps_counter";
-  cam_ctr_id_to_name[2] = "cdts_clock_counter";
-  cam_ctr_id_to_name[3] = "cdts_ucts_timestamp_ns";
-  cam_ctr_id_to_name[4] = "cdts_camera_timestamp_ns";
-  cam_ctr_id_to_name[5] = "cdts_trigger_type";
-  cam_ctr_id_to_name[6] = "cdts_white_rabbit_status";
-  cam_ctr_id_to_name[7] = "cdts_arbitrary_information";
-  for(auto&& i : layout->camera_counter_id_to_name()) {
-    (*layout->mutable_camera_counter_name_to_id())[i.second] = i.first;
-  }
-#endif
-
-  // Mapping from before 60def rotation to align with LST (changed 2018-10-04)
-  // const unsigned gridchanmap[] = { 1, 6, 5, 0, 4, 3, 2 };
-  const unsigned gridchanmap[] = { 6, 5, 4, 0, 3, 2, 1 };
+  const unsigned gridchanmap[] = { 6, 5, 4, 0, 1, 2, 3 };
 
   std::map<unsigned, unsigned> grid_chan_index;
   for(unsigned imod = 0; imod<modvec.size(); imod++)
@@ -177,7 +158,8 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
     }
   }
 
-  std::map<int, int> grid_hexid_to_channel;
+  std::map<int, int> pixel_hexid_to_channel;
+  std::map<int, int> module_hexid_to_module;
 
   for(unsigned imod = 0; imod<modvec.size(); imod++)
   {
@@ -185,6 +167,7 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
     auto* m = layout->add_module();
     m->set_module_index(imod);
     m->set_module_grid_index(mod.imod);
+    module_hexid_to_module[/* rotate_ccw1_hexid_ccw(mod.imod) */ mod.imod] = imod;
     int um;
     int vm;
     hexid_to_uv(mod.imod, um, vm);
@@ -192,6 +175,7 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
     m->set_module_grid_v(vm);
     m->set_module_grid_i(vm);
     m->set_module_grid_j(2*um+vm);
+
     auto mhid = cluster_hexid_to_member_hexid(mod.imod, 1, false);
     for(unsigned imodchan = 0; imodchan<mhid.size(); imodchan++)
     {
@@ -211,12 +195,8 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
       auto* c = layout->add_channel();
       c->set_channel_index(ichan);
 
-      // For lstcam the channel and pixels are equivalent
-      c->set_pixel_index(ichan);
-      layout->add_pixel_channel_index(ichan);
-
       c->set_pixel_grid_index(igridchan);
-      grid_hexid_to_channel[igridchan] = ichan;
+      pixel_hexid_to_channel[igridchan] = ichan;
       c->set_channel_set_index(0);
       c->set_module_index(imod);
       c->set_module_channel_index(imodchan);
@@ -227,11 +207,18 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
       c->set_diameter(layout->pixel_grid_spacing());
       c->set_geometric_area(layout->pixel_grid_geometric_area());
 
+      c->set_is_boundary_pixel(false);
       for(auto nigrid : hexid_to_neighbor_hexids(igridchan))
       {
         auto nid = grid_chan_index.find(nigrid);
-        if(nid != grid_chan_index.end())
+        if(nid != grid_chan_index.end()) {
           c->add_neighbour_channel_indexes(nid->second);
+        } else {
+          c->set_is_boundary_pixel(true);
+        }
+      }
+      if(c->is_boundary_pixel()) {
+        layout->add_boundary_pixel_channel_index(ichan);
       }
 
       std::vector<double> vertex_x;
@@ -244,10 +231,23 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
   }
 
   unsigned ispiral = 0;
-  for(auto igrid : grid_hexid_to_channel) {
+  for(auto igrid : module_hexid_to_module) {
+    auto imod = igrid.second;
+    layout->add_module_spiral_module_index(imod);
+    layout->mutable_module(imod)->set_module_spiral_index(ispiral++);
+  }
+  ispiral = 0;
+  for(auto igrid : pixel_hexid_to_channel) {
     auto ichan = igrid.second;
+
     layout->add_pixel_spiral_channel_index(ichan);
-    layout->mutable_channel(ichan)->set_pixel_spiral_index(ispiral++);
+    layout->mutable_channel(ichan)->set_pixel_spiral_index(ispiral);
+
+    // For LSTCAM the pixel and spiral indexes are equivalent
+    layout->add_pixel_channel_index(ichan);
+    layout->mutable_channel(ichan)->set_pixel_index(ispiral);
+
+    ++ispiral;
   }
 
   calin::iact_data::instrument_layout::compute_camera_and_module_outlines(layout);
@@ -257,17 +257,6 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
 } // anonymous namespace
 
 CameraLayout*
-calin::iact_data::lstcam_layout::lstcam_19module_layout(
-  CameraLayout* layout)
-{
-  const double spacing = 5;
-  double rot = 0;
-  auto modvec = lstcam_mod_map(2, 0.0, spacing, rot);
-  return lstcam_general_layout(layout, modvec,
-    CameraLayout::lstcam_TESTBENCH_19CHANNEL, spacing, rot);
-}
-
-CameraLayout*
 calin::iact_data::lstcam_layout::lstcam_layout(
   CameraLayout* layout)
 {
@@ -275,5 +264,5 @@ calin::iact_data::lstcam_layout::lstcam_layout(
   double rot = 0;
   auto modvec = lstcam_mod_map(9, 23.5*spacing, spacing, rot);
   return lstcam_general_layout(layout, modvec,
-    CameraLayout::lstcam, spacing, rot);
+    CameraLayout::LSTCAM, spacing, rot);
 }

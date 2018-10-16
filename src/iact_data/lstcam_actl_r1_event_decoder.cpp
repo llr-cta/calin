@@ -221,11 +221,11 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
       module_data->set_event_counter(mod_counter->event_counter);
       module_data->set_trigger_counter(mod_counter->trigger_counter);
       module_data->set_pps_counter(mod_counter->pps_counter);
-      module_data->set_backplane_10mhz_counter(mod_counter->backplane_10MHz_counter);
-      module_data->set_local_133mhz_counter(mod_counter->local_133mhz_counter);
+      module_data->set_backplane_10megahertz_counter(mod_counter->backplane_10MHz_counter);
+      module_data->set_local_133megahertz_counter(mod_counter->local_133MHz_counter);
 
       // Integer arithmatic approximate 133MHz to ns conversion
-      int64_t time_ns = (mod_counter->local_133MHz_counter*30797ULL)>>12
+      int64_t time_ns = (mod_counter->local_133MHz_counter*30797ULL)>>12;
       auto* module_clocks = calin_event->add_module_clock();
       module_clocks->set_module_id(imod);
       auto* clock = module_clocks->add_clock();
@@ -233,7 +233,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
       clock->mutable_time()->set_time_ns(time_ns);
       clock = module_clocks->add_clock();
       clock->set_clock_id(1);
-      clock->mutable_time()->set_time_ns(backplane_10MHz_counter*100ULL);
+      clock->mutable_time()->set_time_ns(mod_counter->backplane_10MHz_counter*100ULL);
     }
   }
 
@@ -244,7 +244,8 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
   // ==========================================================================
 
   if(cta_event->lstcam().has_cdts_data()
-    and cta_event->lstcam().cdts_data().has_data())
+    and cta_event->lstcam().cdts_data().has_data()
+    and cta_event->lstcam().extdevices_presence() & 0x01)
   {
     calin::iact_data::actl_event_decoder::decode_cdts_data(
       calin_event->mutable_cdts_data(), cta_event->lstcam().cdts_data());
@@ -263,7 +264,8 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
   // ==========================================================================
 
   if(cta_event->lstcam().has_tib_data()
-    and cta_event->lstcam().tib_data().has_data())
+    and cta_event->lstcam().tib_data().has_data()
+    and cta_event->lstcam().extdevices_presence() & 0x02)
   {
     calin::iact_data::actl_event_decoder::decode_tib_data(
       calin_event->mutable_tib_data(), cta_event->lstcam().tib_data());
@@ -410,12 +412,12 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode_run_config(
   if(nsample_ == 0 and cta_run_header) {
     nsample_ = cta_run_header->num_samples();
   }
-  if(nsample == 0 and cta_event and cta_event->has_waveform() and
+  if(nsample_ == 0 and cta_event and cta_event->has_waveform() and
       cta_event->waveform().has_data()) {
-    if(cta_event->waveform().data().size() % (nmod*sizeof(uint16_t)*2) != 0)
+    if(cta_event->waveform().data().size() % (nmod_*sizeof(uint16_t)*2) != 0)
       throw std::runtime_error("LSTCam_ACTL_R1_CameraEventDecoder::decode_run_config: "
-        "Waveform data is not even number of modules."
-    nsample = cta_event->waveform().data().size() / (nmod*sizeof(uint16_t)*2);
+        "Waveform data is not even number of modules.");
+    nsample_ = cta_event->waveform().data().size() / (nmod_*sizeof(uint16_t)*2);
   }
   if(nsample_ == 0) {
     throw std::runtime_error("LSTCam_ACTL_R1_CameraEventDecoder::decode_run_config: "
@@ -439,7 +441,8 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode_run_config(
   // ==========================================================================
 
   if(cta_event->lstcam().has_cdts_data()
-    and cta_event->lstcam().cdts_data().has_data())
+    and cta_event->lstcam().cdts_data().has_data()
+    and cta_event->lstcam().extdevices_presence() & 0x01)
   {
     calin::ix::iact_data::telescope_event::CDTSData calin_cdts_data;
     calin::iact_data::actl_event_decoder::decode_cdts_data(

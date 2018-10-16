@@ -26,10 +26,10 @@
 
 #include <calin_global_definitions.hpp>
 #include <calin_global_config.hpp>
-#include <iact_data/LSTCam_data_source.pb.h>
+#include <iact_data/lstcam_data_source.pb.h>
 #include <iact_data/zfits_data_source.hpp>
 
-namespace calin { namespace iact_data { namespace LSTCam_actl_event_decoder {
+namespace calin { namespace iact_data { namespace lstcam_actl_event_decoder {
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
@@ -59,7 +59,7 @@ class LSTCam_ACTL_R1_CameraEventDecoder:
 {
 public:
   CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
-    LSTCam_data_source::LSTCamCameraEventDecoderConfig);
+    lstcam_data_source::LSTCamCameraEventDecoderConfig);
 
   LSTCam_ACTL_R1_CameraEventDecoder(const std::string& filename, unsigned run_number = 0,
     const config_type& config = default_config());
@@ -103,4 +103,4 @@ protected:
 
 #endif
 
-} } } // namespace calin::iact_data::LSTCam_data_source
+} } } // namespace calin::iact_data::lstcam_data_source
