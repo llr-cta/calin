@@ -94,7 +94,7 @@ lstcam_mod_map(unsigned nring, double radius, double spacing, double& rot)
   }
 
   std::sort(modvec.begin(), modvec.end(),
-    [](const mod_info& a, const mod_info& b) { if(a.ix<b.ix)return true;
+    [](const mod_info& a, const mod_info& b) { if(a.ix>b.ix)return true;
       if(a.ix==b.ix)return a.iy<b.iy;
       return false; });
 
