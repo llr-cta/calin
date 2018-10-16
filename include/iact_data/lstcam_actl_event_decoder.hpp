@@ -62,7 +62,7 @@ public:
     lstcam_data_source::LSTCamCameraEventDecoderConfig);
 
   LSTCam_ACTL_R1_CameraEventDecoder(const std::string& filename, unsigned run_number = 0,
-    const config_type& config = default_config());
+    const calin::ix::iact_data::lstcam_data_source::LSTCamCameraEventDecoderConfig& config = default_config());
 
   ~LSTCam_ACTL_R1_CameraEventDecoder();
 
@@ -76,9 +76,9 @@ public:
     const R1::CameraConfiguration* cta_run_header,
     const R1::CameraEvent* cta_event) override;
 
-  config_type config() const { return config_; }
+  calin::ix::iact_data::lstcam_data_source::LSTCamCameraEventDecoderConfig config() const { return config_; }
 
-  static config_type default_config() {
+  static calin::ix::iact_data::lstcam_data_source::LSTCamCameraEventDecoderConfig default_config() {
     config_type config = config_type::default_instance();
     config.set_separate_channel_waveforms(true);
     config.set_clock_calibration_133megahertz(30797ULL);

@@ -61,19 +61,19 @@ class LSTCamZFITSDataSource_R1:
 {
 public:
   CALIN_TYPEALIAS(decoder_config_type,
-    lstcam_actl_event_decoder::LSTCam_ACTL_R1_CameraEventDecoder::config_type);
+    calin::ix::iact_data::lstcam_data_source::LSTCamCameraEventDecoderConfig);
 
 #if 0
   void set_decoder_config(const decoder_config_type& config) {
     decoder_->set_config(config); }
 #endif
-  decoder_config_type decoder_config() const {
+  calin::ix::iact_data::lstcam_data_source::LSTCamCameraEventDecoderConfig decoder_config() const {
     return decoder_->config(); }
 #if 0
   decoder_config_type* mutable_decoder_config() {
     return decoder_->mutable_config(); }
 #endif
-  static decoder_config_type default_decoder_config() {
+  static calin::ix::iact_data::lstcam_data_source::LSTCamCameraEventDecoderConfig default_decoder_config() {
     return lstcam_actl_event_decoder::LSTCam_ACTL_R1_CameraEventDecoder::default_config(); }
 
   LSTCamZFITSDataSource_R1(const std::string& filename,
