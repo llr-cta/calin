@@ -233,7 +233,8 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
       clock->mutable_time()->set_time_ns(time_ns);
       clock = module_clocks->add_clock();
       clock->set_clock_id(1);
-      clock->mutable_time()->set_time_ns(mod_counter->backplane_10MHz_counter*100ULL);
+      clock->mutable_time()->set_time_ns(mod_counter->pps_counter*1000000000ULL +
+        mod_counter->backplane_10MHz_counter*100ULL);
     }
   }
 
