@@ -370,18 +370,54 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode_run_config(
   unsigned nmod_camera = calin_run_config->camera_layout().module_size();
   std::vector<unsigned> config_mod_id;
   config_mod_id.reserve(nmod_camera);
-  if(cta_run_header
+  if(config_mod_id.size()!=nmod_
+    and cta_run_header
+    and cta_run_header->has_expected_pixels_id()
+    and cta_run_header->expected_pixels_id().data().size() == 7*nmod_*sizeof(uint16_t))
+  {
+    config_mod_id.clear();
+    const uint16_t* pix_id =
+      reinterpret_cast<const uint16_t*>(&cta_run_header->expected_pixels_id().data().front());
+    for(unsigned imod=0;imod<nmod_;imod++)
+    {
+      unsigned chan_id = calin_run_config->camera_layout().pixel_channel_index(pix_id[imod*7]);
+      unsigned mod_id = calin_run_config->camera_layout().channel(chan_id).module_index();
+      for(unsigned imodpix=1; imodpix<7; imodpix++) {
+        chan_id = calin_run_config->camera_layout().pixel_channel_index(pix_id[imod*7+imodpix]);
+        unsigned mod_id_2 = calin_run_config->camera_layout().channel(chan_id).module_index();
+        if(mod_id != mod_id_2) {
+          LOG(WARNING) << "LSTCam_ACTL_R1_CameraEventDecoder: expected_pixels_id not in expected order";
+          config_mod_id.clear();
+          goto abort_pixel_based_method;
+        }
+      }
+      config_mod_id.push_back(mod_id);
+    }
+    for(unsigned imod=1;imod<nmod_;imod++) {
+      if(config_mod_id[imod] <= config_mod_id[imod-1]) {
+        LOG(WARNING) << "LSTCam_ACTL_R1_CameraEventDecoder: configured module ids not strictly increasing.";
+        break;
+      }
+    }
+
+abort_pixel_based_method:
+    ;
+  }
+  if(config_mod_id.size()!=nmod_
+    and cta_run_header
     and cta_run_header->has_lstcam()
     and cta_run_header->lstcam().has_expected_modules_id()
     and cta_run_header->lstcam().expected_modules_id().data().size() == nmod_*sizeof(uint16_t))
   {
+    config_mod_id.clear();
     const uint16_t* mod_id =
       reinterpret_cast<const uint16_t*>(&
         cta_run_header->lstcam().expected_modules_id().data().front());
     for(int imod=0;imod<nmod_;imod++)config_mod_id.push_back(mod_id[imod]);
   }
-  else
+  if(config_mod_id.size()!=nmod_)
   {
+    config_mod_id.clear();
     for(int imod=0;imod<nmod_;imod++)config_mod_id.push_back(imod);
   }
 
