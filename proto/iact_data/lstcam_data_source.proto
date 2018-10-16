@@ -33,6 +33,11 @@ message LSTCamCameraEventDecoderConfig {
       "present in the telescope event structure." ];
   bool include_serialized_raw_data                         = 2 [
     (CFO).desc = "Include serialized raw ACTL protobuf header and event data." ];
+  uint64 clock_calibration_133megahertz                    = 10 [
+    (CFO).desc = "Calibration constant to apply to 133MHz clock counter in "
+      "order to calculate time in nanoseconds. If the number of 133MHz counts "
+      "N_133 then the calculated time is T_133 = N_133 ClockCalib/4096. The "
+      "nominal value is 30797.", (CFO).units="ns/4096cnt" ];
   uint32 demand_nsample                                    = 100 [
     (CFO).desc = "Override number of samples per event stored in file. Zero "
       "means we use value from file."];
