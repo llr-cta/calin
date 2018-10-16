@@ -45,7 +45,11 @@ message ZFITSDataSourceConfig {
   uint32 max_file_fragments                                = 5 [
     (CFO).desc = "Maximum number of file fragments to open. Zero means open "
       "all fragments found." ];
-  uint64 max_seq_index                                     = 6 [
+  uint32 file_fragment_stride                              = 6 [
+    (CFO).desc = "Numbering stride for file fragments to open. Zero or one "
+      "means open all fragments found. Stride values greater than one means "
+      "only one in every \"stride\" fragments are opened." ];
+  uint64 max_seq_index                                     = 7 [
     (CFO).desc = "Maximum event sequence number. This effectively sets the "
       "number of events that can be read. Zero means there is no limit." ];
   bool dont_read_run_header                                = 11 [

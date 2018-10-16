@@ -171,6 +171,7 @@ ZFITSSingleFileACTL_L0_CameraEventDataSource::default_config()
   config.set_extension(".fits.fz");
   config.set_run_header_table_name(default_L0_run_header_table_name);
   config.set_events_table_name(default_L0_events_table_name);
+  config.set_file_fragment_stride(1);
   return config;
 }
 
@@ -259,6 +260,8 @@ ZFITSACTL_L0_CameraEventDataSourceOpener::ZFITSACTL_L0_CameraEventDataSourceOpen
     ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader>(),
   config_(config)
 {
+  const unsigned istride = std::max(1U,config.file_fragment_stride());
+
   if(is_file(filename))
     filenames_.emplace_back(filename);
   else
@@ -285,8 +288,8 @@ ZFITSACTL_L0_CameraEventDataSourceOpener::ZFITSACTL_L0_CameraEventDataSourceOpen
       }
 
       bool fragment_found = true;
-      for(unsigned i=istart+1; fragment_found and (config_.max_file_fragments()==0 or
-        filenames_.size()<config_.max_file_fragments()) ; ++i)
+      for(unsigned i=istart+istride; fragment_found and (config_.max_file_fragments()==0 or
+        filenames_.size()<config_.max_file_fragments()) ; i+=istride)
       {
         fragment_found = false;
         std::string fragment_i { std::to_string(i) };
