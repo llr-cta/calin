@@ -62,12 +62,12 @@ public:
     nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
   NectarCam_ACTL_L0_CameraEventDecoder(const std::string& filename, unsigned run_number = 0,
-    const config_type& config = default_config());
+    const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& config = default_config());
 
   //void set_config(const config_type& config) { config_.CopyFrom(config); }
-  config_type config() const { return config_; }
+  calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig config() const { return config_; }
   //config_type* mutable_config() { return &config_; }
-  static config_type default_config() {
+  static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_config() {
     config_type config = config_type::default_instance();
     config.set_nmc_xml_suffix(".NMC.xml");
     config.set_separate_channel_waveforms(true);
@@ -151,9 +151,9 @@ public:
     const R1::CameraConfiguration* cta_run_header,
     const R1::CameraEvent* cta_event) override;
 
-  config_type config() const { return config_; }
+  calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig config() const { return config_; }
 
-  static config_type default_config() {
+  static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_config() {
     config_type config = config_type::default_instance();
     config.set_nmc_xml_suffix(".NMC.xml");
     config.set_separate_channel_waveforms(true);
