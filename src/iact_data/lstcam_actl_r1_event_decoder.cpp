@@ -402,6 +402,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode_run_config(
     unsigned pix_id;
     unsigned chan_id;
     unsigned mod_id;
+    std::map<unsigned,unsigned> pix_id_found;
     for(unsigned imod=0;imod<nmod_;imod++)
     {
       pix_id = pix_id_array[imod*7];
@@ -410,6 +411,11 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode_run_config(
         config_mod_id.clear();
         goto abort_pixel_based_method;
       }
+      if(pix_id_found.find(pix_id) != pix_id_found.end()
+          and pix_id_found[pix_id] == 1) {
+        LOG(WARNING) << "LSTCam_ACTL_R1_CameraEventDecoder: duplicate expected_pixels_id found: " + std::to_string(pix_id);
+      }
+      ++pix_id_found[pix_id];
       chan_id = calin_run_config->camera_layout().pixel_channel_index(pix_id);
       mod_id = calin_run_config->camera_layout().channel(chan_id).module_index();
       for(unsigned imodpix=1; imodpix<7; imodpix++) {
@@ -419,6 +425,11 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode_run_config(
           config_mod_id.clear();
           goto abort_pixel_based_method;
         }
+        if(pix_id_found.find(pix_id) != pix_id_found.end()
+            and pix_id_found[pix_id] == 1) {
+          LOG(WARNING) << "LSTCam_ACTL_R1_CameraEventDecoder: duplicate expected_pixels_id found: " + std::to_string(pix_id);
+        }
+        ++pix_id_found[pix_id];
         chan_id = calin_run_config->camera_layout().pixel_channel_index(pix_id);
         unsigned mod_id_2 = calin_run_config->camera_layout().channel(chan_id).module_index();
         if(mod_id != mod_id_2) {
