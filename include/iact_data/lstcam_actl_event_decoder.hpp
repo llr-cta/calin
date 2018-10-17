@@ -87,9 +87,8 @@ public:
 
 protected:
   void copy_single_gain_waveforms(
-    const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+    calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
     const int16_t* cta_waveforms, const uint8_t* cta_pixel_mask,
-    calin::ix::iact_data::telescope_event::Waveforms* calin_waveforms,
     uint8 has_gain_mask, const std::string& which_gain) const;
 
   config_type config_;

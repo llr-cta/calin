@@ -164,12 +164,12 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
     const int16_t* waveforms =
       reinterpret_cast<const int16_t*>(cta_event->waveform().data().data());
 
-    copy_single_gain_waveforms(calin_event, waveforms, pix_status,
-      calin_event->mutable_high_gain_image()->mutable_camera_waveforms(),
+    copy_single_gain_waveforms(calin_event->mutable_high_gain_image(),
+      waveforms, pix_status,
       0x08, "high");
 
-    copy_single_gain_waveforms(calin_event, waveforms+npix*nsample_, pix_status,
-      calin_event->mutable_low_gain_image()->mutable_camera_waveforms(),
+    copy_single_gain_waveforms(calin_event->mutable_low_gain_image(),
+      waveforms+npix*nsample_, pix_status,
       0x04, "low");
   }
 
@@ -513,13 +513,15 @@ abort_pixel_based_method:
 
 void LSTCam_ACTL_R1_CameraEventDecoder::
 copy_single_gain_waveforms(
-  const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
+  calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
   const int16_t* cta_waveforms, const uint8_t* cta_pixel_mask,
-  calin::ix::iact_data::telescope_event::Waveforms* calin_waveforms,
   uint8 has_gain_mask, const std::string& which_gain) const
 {
   unsigned npix = nmod_*7;
   bool all_channels_present = true;
+
+  calin::ix::iact_data::telescope_event::Waveforms* calin_waveforms =
+    calin_image->mutable_camera_waveforms();
 
   calin_waveforms->mutable_channel_index()->Reserve(npix);
   calin_waveforms->mutable_channel_id()->Reserve(npix);

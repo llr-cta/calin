@@ -266,21 +266,23 @@ message Waveforms {
 
 message LSTCamImageData {
   repeated uint32 first_capacitor_id                        = 1 [
-    (CFO).desc = "First capacitor ID for each of the channels.",
+    (CFO).desc = "First capacitor ID for each of the channels. Even channels "
+      "that are not read out are kept in this array.",
     (CFO).ref = "dragon_document_v5_3_00_04.pdf" ];
   repeated uint32 drs_flag                                  = 2 [
     (CFO).desc = "The Dragon FPGA reads the \"stop channel (8bits pattern)\" from "
       "DRS4 before reading the charge stored in each capacitor. This flag is used "
       "for checking if the stop channel data is the expected one. When it "
       "reads unexpected stop channel value, the first bit of flag data goes "
-      "high, otherwise they are 0s.",
+      "high, otherwise they are 0s. Even channels that are not read out are "
+      "kept in this array.",
     (CFO).ref = "dragon_document_v5_3_00_04.pdf" ];
-  bool drs_tag_present                                      = 3 [
-    (CFO).desc = "True if DRS tag is present." ];
+  repeated bool drs_tag_present                             = 3 [
+    (CFO).desc = "True if DRS tag is present for each module." ];
   repeated ChannelWaveform drs_tag_waveform                 = 4 [
-    (CFO).desc = "Is this the 8th waveform digitised by each board? No "
-      "information is given in Dragon manual." ];
-  uint32 drs_tag_first_capacitor_id                         = 5 [
+    (CFO).desc = "The 8th waveform digitised by each board? Not used for "
+      "anything at the present time." ];
+  repeated uint32 drs_tag_first_capacitor_id                = 5 [
     (CFO).desc = "First capacitor ID that corresponds to 8th channel." ];
 };
 
