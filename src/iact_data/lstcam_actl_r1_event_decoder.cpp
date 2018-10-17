@@ -561,9 +561,9 @@ copy_single_gain_waveforms(
   std::fill(cp+nsample_*npix*sizeof(int16_t), cp+calin_wf_raw_data_string->size(), int8_t(0));
   int16_t* calin_wf_raw_data = reinterpret_cast<int16_t*>(cp);
 
-  for(unsigned ipix=0,imod=0; imod<nmod_; imod++)
+  for(unsigned imod=0,ipix=0; imod<nmod_; imod++)
   {
-    for(unsigned imodpix=0; imod<7; imodpix++, ipix++)
+    for(unsigned imodpix=0; imodpix<7; imodpix++, ipix++)
     {
       if(cta_pixel_mask[ipix] & has_gain_mask) {
         std::copy(cta_waveforms, cta_waveforms+nsample_, calin_wf_raw_data);
