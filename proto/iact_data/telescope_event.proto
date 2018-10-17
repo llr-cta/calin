@@ -239,6 +239,22 @@ message ChannelWaveform {
     (CFO).units = "dc" ];
 };
 
+message LSTWaveformsData {
+  repeated uint32 drs_flag                                  = 1 [
+    (CFO).desc = "The Dragon FPGA reads the \"stop channel (8bits pattern)\" from "
+      "DRS4 before reading the charge stored in each capacitor. This flag is used "
+      "for checking if the stop channel data is the expected one. When it "
+      "reads unexpected stop channel value, the first bit of flag data goes "
+      "high, otherwise they are 0s.",
+    (CFO).ref = "dragon_document_v5_3_00_04.pdf" ];
+  repeated uint32 first_capacitor_id                        = 2 [
+    (CFO).desc = "First capacitor ID for each of the channels.",
+    (CFO).ref = "dragon_document_v5_3_00_04.pdf" ];
+  repeated ChannelWaveform waveform_capacitor_id            = 3 [
+    (CFO).desc = "DRS capacitor ID for each sample.",
+    (CFO).ref = "dragon_document_v5_3_00_04.pdf" ];
+};
+
 message Waveforms {
   bool all_channels_present                                 = 1 [
     (CFO).desc = "True if waveforms for all channels are present. In this case "
@@ -262,6 +278,11 @@ message Waveforms {
       "2*(i*num_samples_per_channel+j). The size "
       "of raw_samples_array be larger than the data to allow for the system "
       "SIMD vector data type to be used on all samples." ];
+
+  oneof camera_specific_waveforms_data {
+    LSTWaveformsData lstcam                                 = 10 [
+      (CFO).desc = "LST specific waveform data." ];
+  };
 };
 
 message LSTCamImageData {
@@ -295,7 +316,7 @@ message DigitizedSkyImage {
       "retained in the event." ];
 
   oneof camera_specific_image_data {
-    LSTCamImageData lstcam_data                             = 10 [
+    LSTCamImageData lstcam                                  = 10 [
       (CFO).desc = "LST specific image data." ];
   };
 };

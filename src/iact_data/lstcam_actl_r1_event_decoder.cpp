@@ -227,7 +227,8 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
       module_data->set_local_133megahertz_counter(mod_counter->local_133MHz_counter);
 
       // Integer arithmatic approximate 133MHz to ns conversion
-      int64_t time_ns = (mod_counter->local_133MHz_counter*config_.counts_to_time_133megahertz() /*30797ULL*/)>>12;
+      int64_t time_ns = (mod_counter->local_133MHz_counter
+        * config_.counts_to_time_133megahertz() /*30797ULL*/) >> 12;
       auto* module_clocks = calin_event->add_module_clock();
       module_clocks->set_module_id(imod);
       auto* clock = module_clocks->add_clock();
