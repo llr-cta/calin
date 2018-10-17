@@ -68,9 +68,9 @@ LSTCam_ACTL_R1_CameraEventDecoder::LSTCam_ACTL_R1_CameraEventDecoder(
   actl_event_decoder::ACTL_R1_CameraEventDecoder(), config_(config),
   filename_(filename), run_number_(run_number)
 {
-  if(config_.clock_calibration_133megahertz() == 0)
-    config_.set_clock_calibration_133megahertz(
-      default_config().clock_calibration_133megahertz());
+  if(config_.counts_to_time_133megahertz() == 0)
+    config_.set_counts_to_time_133megahertz(
+      default_config().counts_to_time_133megahertz());
 }
 
 LSTCam_ACTL_R1_CameraEventDecoder::~LSTCam_ACTL_R1_CameraEventDecoder()
@@ -227,7 +227,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
       module_data->set_local_133megahertz_counter(mod_counter->local_133MHz_counter);
 
       // Integer arithmatic approximate 133MHz to ns conversion
-      int64_t time_ns = (mod_counter->local_133MHz_counter*config_.clock_calibration_133megahertz() /*30797ULL*/)>>12;
+      int64_t time_ns = (mod_counter->local_133MHz_counter*config_.counts_to_time_133megahertz() /*30797ULL*/)>>12;
       auto* module_clocks = calin_event->add_module_clock();
       module_clocks->set_module_id(imod);
       auto* clock = module_clocks->add_clock();

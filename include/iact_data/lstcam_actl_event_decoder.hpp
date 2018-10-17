@@ -81,7 +81,7 @@ public:
   static calin::ix::iact_data::lstcam_data_source::LSTCamCameraEventDecoderConfig default_config() {
     config_type config = config_type::default_instance();
     config.set_separate_channel_waveforms(true);
-    config.set_clock_calibration_133megahertz(30797ULL);
+    config.set_counts_to_time_133megahertz(30797ULL);
     return config;
   }
 
