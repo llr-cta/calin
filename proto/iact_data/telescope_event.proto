@@ -239,7 +239,7 @@ message ChannelWaveform {
     (CFO).units = "dc" ];
 };
 
-message LSTWaveformsData {
+message LSTCamWaveformsData {
   repeated uint32 drs_flag                                  = 1 [
     (CFO).desc = "The Dragon FPGA reads the \"stop channel (8bits pattern)\" from "
       "DRS4 before reading the charge stored in each capacitor. This flag is used "
@@ -249,9 +249,6 @@ message LSTWaveformsData {
     (CFO).ref = "dragon_document_v5_3_00_04.pdf" ];
   repeated uint32 first_capacitor_id                        = 2 [
     (CFO).desc = "First capacitor ID for each of the channels.",
-    (CFO).ref = "dragon_document_v5_3_00_04.pdf" ];
-  repeated ChannelWaveform waveform_capacitor_id            = 3 [
-    (CFO).desc = "DRS capacitor ID for each sample.",
     (CFO).ref = "dragon_document_v5_3_00_04.pdf" ];
 };
 
@@ -280,7 +277,7 @@ message Waveforms {
       "SIMD vector data type to be used on all samples." ];
 
   oneof camera_specific_waveforms_data {
-    LSTWaveformsData lstcam                                 = 10 [
+    LSTCamWaveformsData lstcam                              = 10 [
       (CFO).desc = "LST specific waveform data." ];
   };
 };

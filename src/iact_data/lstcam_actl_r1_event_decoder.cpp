@@ -164,12 +164,29 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
     const int16_t* waveforms =
       reinterpret_cast<const int16_t*>(cta_event->waveform().data().data());
 
+    const uint16_t* first_capacitor_id = nullptr;
+    const uint16_t* drs_flag = nullptr;
+
+    if(cta_event->lstcam().has_first_capacitor_id()
+        and cta_event->lstcam().first_capacitor_id().has_data()
+        and cta_event->lstcam().first_capacitor_id().data().size() == nmod_*8*sizeof(uint16_t))
+      first_capacitor_id = reinterpret_cast<const uint16_t*>(cta_event->lstcam().first_capacitor_id().data().data());
+
+    if(cta_event->lstcam().has_chips_flags()
+        and cta_event->lstcam().chips_flags().has_data()
+        and cta_event->lstcam().chips_flags().data().size() == nmod_*8*sizeof(uint16_t))
+      drs_flag = reinterpret_cast<const uint16_t*>(cta_event->lstcam().chips_flags().data().data());
+
     copy_single_gain_waveforms(calin_event->mutable_high_gain_image(),
-      waveforms, pix_status,
+      waveforms, pix_status, first_capacitor_id, drs_flag,
       0x08, "high");
 
+    waveforms += npix*nsample_;
+    if(drs_flag) drs_flag += 4;
+    if(first_capacitor_id) first_capacitor_id += 4;
+
     copy_single_gain_waveforms(calin_event->mutable_low_gain_image(),
-      waveforms+npix*nsample_, pix_status,
+      waveforms, pix_status, first_capacitor_id, drs_flag,
       0x04, "low");
   }
 
@@ -516,6 +533,7 @@ void LSTCam_ACTL_R1_CameraEventDecoder::
 copy_single_gain_waveforms(
   calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
   const int16_t* cta_waveforms, const uint8_t* cta_pixel_mask,
+  const uint16_t* cta_first_capacitor_id, const uint16_t* cta_drs_flag,
   uint8 has_gain_mask, const std::string& which_gain) const
 {
   unsigned npix = nmod_*7;
@@ -523,9 +541,18 @@ copy_single_gain_waveforms(
 
   calin::ix::iact_data::telescope_event::Waveforms* calin_waveforms =
     calin_image->mutable_camera_waveforms();
+  calin::ix::iact_data::telescope_event::LSTCamWaveformsData* calin_wf_lstcam =
+    calin_waveforms->mutable_lstcam();
 
   calin_waveforms->mutable_channel_index()->Reserve(npix);
   calin_waveforms->mutable_channel_id()->Reserve(npix);
+
+  if(config_.separate_channel_waveforms()) {
+    if(cta_drs_flag)
+      calin_wf_lstcam->mutable_drs_flag()->Reserve(npix);
+    if(cta_first_capacitor_id)
+      calin_wf_lstcam->mutable_first_capacitor_id()->Reserve(npix);
+  }
 
   std::string* calin_wf_raw_data_string = calin_waveforms->mutable_raw_samples_array();
   unsigned simd_vec_size = calin::provenance::system_info::the_host_info()->simd_vec_size();
@@ -534,27 +561,37 @@ copy_single_gain_waveforms(
   std::fill(cp+nsample_*npix*sizeof(int16_t), cp+calin_wf_raw_data_string->size(), int8_t(0));
   int16_t* calin_wf_raw_data = reinterpret_cast<int16_t*>(cp);
 
-  for(unsigned ipix=0;ipix<npix;ipix++)
+  for(unsigned ipix=0,imod=0; imod<nmod_; imod++)
   {
-    if(cta_pixel_mask[ipix] & has_gain_mask) {
-      std::copy(cta_waveforms, cta_waveforms+nsample_, calin_wf_raw_data);
-      calin_wf_raw_data += nsample_;
-      calin_waveforms->add_channel_index(calin_waveforms->channel_id_size());
-      calin_waveforms->add_channel_id(ipix);
-      if(config_.separate_channel_waveforms()) {
-        auto* calin_samp = calin_waveforms->add_waveform()->mutable_samples();
-        calin_samp->Reserve(nsample_);
-        for(unsigned isample=0;isample<nsample_;isample++)
-          calin_samp->Add(*cta_waveforms++);
+    for(unsigned imodpix=0; imod<7; imodpix++, ipix++)
+    {
+      if(cta_pixel_mask[ipix] & has_gain_mask) {
+        std::copy(cta_waveforms, cta_waveforms+nsample_, calin_wf_raw_data);
+        calin_wf_raw_data += nsample_;
+        calin_waveforms->add_channel_index(calin_waveforms->channel_id_size());
+        calin_waveforms->add_channel_id(ipix);
+        if(config_.separate_channel_waveforms()) {
+          auto* calin_samp = calin_waveforms->add_waveform()->mutable_samples();
+          calin_samp->Reserve(nsample_);
+          for(unsigned isample=0;isample<nsample_;isample++)
+            calin_samp->Add(*cta_waveforms++);
+          unsigned drs_index = (imod<<3) + (imodpix>>1);
+          if(cta_drs_flag) {
+            calin_wf_lstcam->add_drs_flag(cta_drs_flag[drs_index]);
+          }
+          if(cta_first_capacitor_id) {
+            calin_wf_lstcam->add_first_capacitor_id(cta_first_capacitor_id[drs_index]);
+          }
+        } else {
+          cta_waveforms += nsample_;
+        }
       } else {
+        std::fill(calin_wf_raw_data, calin_wf_raw_data+nsample_, 0);
+        calin_wf_raw_data += nsample_;
+        all_channels_present = false;
+        calin_waveforms->add_channel_index(-1);
         cta_waveforms += nsample_;
       }
-    } else {
-      std::fill(calin_wf_raw_data, calin_wf_raw_data+nsample_, 0);
-      calin_wf_raw_data += nsample_;
-      all_channels_present = false;
-      calin_waveforms->add_channel_index(-1);
-      cta_waveforms += nsample_;
     }
   }
 
