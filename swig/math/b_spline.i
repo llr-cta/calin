@@ -50,3 +50,6 @@
 %template(eval1) calin::math::b_spline::eval1<double>;
 %template(eval2) calin::math::b_spline::eval2<double>;
 %template(eval3) calin::math::b_spline::eval3<double>;
+
+%template(integrate0) calin::math::b_spline::integrate0<double>;
+%template(integrate1) calin::math::b_spline::integrate1<double>;

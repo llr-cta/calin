@@ -102,5 +102,21 @@ template<typename REAL> inline REAL eval3(REAL x, REAL c0, REAL c1, REAL c2, REA
   return S*c0;
 }
 
+template<typename REAL> inline REAL integrate0(REAL x, REAL c0)
+{
+  return x*c0;
+}
+
+template<typename REAL> inline REAL integrate1(REAL x, REAL c0, REAL c1)
+{
+  constexpr REAL S = 1.0/2.0;
+
+  double I = 0;
+  I += eval1(x, c0*x, c1*(1+x));
+  I += eval0(x, c1*x);
+  return S*I;
+}
+
+
 
 } } } // namespace calin:math::b_spline
