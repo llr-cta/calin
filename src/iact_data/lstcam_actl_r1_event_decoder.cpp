@@ -113,7 +113,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
 #endif
     if(nmod_ != cta_status.data().size())
       throw std::runtime_error("LSTCam_ACTL_R1_CameraEventDecoder::decode: "
-        "Module status array size does not match number of nodukes.");
+        "Module status array size does not match number of modules.");
     const auto* mod_status =
       reinterpret_cast<const uint8_t*>(&cta_status.data().front());
     for(unsigned imod=0, mod_index=0;imod<nmod_;imod++)
