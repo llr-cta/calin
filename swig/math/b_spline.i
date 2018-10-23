@@ -41,22 +41,22 @@
 
 %include "math/b_spline.hpp"
 
-%template(basis0) calin::math::b_spline::basis0<double>;
-%template(basis1) calin::math::b_spline::basis1<double>;
-%template(basis2) calin::math::b_spline::basis2<double>;
-%template(basis3) calin::math::b_spline::basis3<double>;
+%template(interval_basis0) calin::math::b_spline::interval_basis0<double>;
+%template(interval_basis1) calin::math::b_spline::interval_basis1<double>;
+%template(interval_basis2) calin::math::b_spline::interval_basis2<double>;
+%template(interval_basis3) calin::math::b_spline::interval_basis3<double>;
 
-%template(eval0) calin::math::b_spline::eval0<double>;
-%template(eval1) calin::math::b_spline::eval1<double>;
-%template(eval2) calin::math::b_spline::eval2<double>;
-%template(eval3) calin::math::b_spline::eval3<double>;
+%template(interval_value0) calin::math::b_spline::interval_value0<double>;
+%template(interval_value1) calin::math::b_spline::interval_value1<double>;
+%template(interval_value2) calin::math::b_spline::interval_value2<double>;
+%template(interval_value3) calin::math::b_spline::interval_value3<double>;
 
-%template(integral0) calin::math::b_spline::integral0<double>;
-%template(integral1) calin::math::b_spline::integral1<double>;
-%template(integral2) calin::math::b_spline::integral2<double>;
-%template(integral3) calin::math::b_spline::integral3<double>;
+%template(interval_integral0) calin::math::b_spline::interval_integral0<double>;
+%template(interval_integral1) calin::math::b_spline::interval_integral1<double>;
+%template(interval_integral2) calin::math::b_spline::interval_integral2<double>;
+%template(interval_integral3) calin::math::b_spline::interval_integral3<double>;
 
-%template(derivative0) calin::math::b_spline::derivative0<double>;
-%template(derivative1) calin::math::b_spline::derivative1<double>;
-%template(derivative2) calin::math::b_spline::derivative2<double>;
-%template(derivative3) calin::math::b_spline::derivative3<double>;
+%template(interval_derivative0) calin::math::b_spline::interval_derivative0<double>;
+%template(interval_derivative1) calin::math::b_spline::interval_derivative1<double>;
+%template(interval_derivative2) calin::math::b_spline::interval_derivative2<double>;
+%template(interval_derivative3) calin::math::b_spline::interval_derivative3<double>;
