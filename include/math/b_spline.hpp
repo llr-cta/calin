@@ -104,12 +104,12 @@ template<typename REAL> inline REAL eval3(REAL x, REAL c0, REAL c1, REAL c2, REA
 
 // See "The calculation of indefinite integrals of B-Spline" P.W. Gaffney (1974)
 // but be careful of the different normalization we use here
-template<typename REAL> inline REAL integrate0(REAL x, REAL c0)
+template<typename REAL> inline REAL integral0(REAL x, REAL c0)
 {
   return x*c0;
 }
 
-template<typename REAL> inline REAL integrate1(REAL x, REAL c0, REAL c1)
+template<typename REAL> inline REAL integral1(REAL x, REAL c0, REAL c1)
 {
   double I = 0;
   I += eval1(x, c0*x, c1*(1+x))/2.0;
@@ -117,7 +117,7 @@ template<typename REAL> inline REAL integrate1(REAL x, REAL c0, REAL c1)
   return I;
 }
 
-template<typename REAL> inline REAL integrate2(REAL x, REAL c0, REAL c1, REAL c2)
+template<typename REAL> inline REAL integral2(REAL x, REAL c0, REAL c1, REAL c2)
 {
   double I = 0;
   I += eval2(x, c0*x, c1*(1+x), c2*(2+x))/3.0;
@@ -126,7 +126,7 @@ template<typename REAL> inline REAL integrate2(REAL x, REAL c0, REAL c1, REAL c2
   return I;
 }
 
-template<typename REAL> inline REAL integrate3(REAL x, REAL c0, REAL c1, REAL c2, REAL c3)
+template<typename REAL> inline REAL integral3(REAL x, REAL c0, REAL c1, REAL c2, REAL c3)
 {
   double I = 0;
   I += eval3(x, c0*x, c1*(1+x), c2*(2+x), c3*(3+x))/4.0;
@@ -134,6 +134,26 @@ template<typename REAL> inline REAL integrate3(REAL x, REAL c0, REAL c1, REAL c2
   I += eval1(x, c2*x, c3*(1+x))/2.0;
   I += eval0(x, c3*x);
   return I;
+}
+
+template<typename REAL> inline REAL derivative0(REAL x, REAL c0)
+{
+  return 0;
+}
+
+template<typename REAL> inline REAL derivative1(REAL x, REAL c0, REAL c1)
+{
+  return eval0(x, c0 - c1);
+}
+
+template<typename REAL> inline REAL derivative2(REAL x, REAL c0, REAL c1, REAL c2)
+{
+  return eval1(x, c0 - c1, c1 - c2);
+}
+
+template<typename REAL> inline REAL derivative3(REAL x, REAL c0, REAL c1, REAL c2, REAL c3)
+{
+  return eval2(x, c0 - c1, c1 - c2, c2 - c3);
 }
 
 

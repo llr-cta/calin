@@ -51,7 +51,12 @@
 %template(eval2) calin::math::b_spline::eval2<double>;
 %template(eval3) calin::math::b_spline::eval3<double>;
 
-%template(integrate0) calin::math::b_spline::integrate0<double>;
-%template(integrate1) calin::math::b_spline::integrate1<double>;
-%template(integrate2) calin::math::b_spline::integrate2<double>;
-%template(integrate3) calin::math::b_spline::integrate3<double>;
+%template(integral0) calin::math::b_spline::integral0<double>;
+%template(integral1) calin::math::b_spline::integral1<double>;
+%template(integral2) calin::math::b_spline::integral2<double>;
+%template(integral3) calin::math::b_spline::integral3<double>;
+
+%template(derivative0) calin::math::b_spline::derivative0<double>;
+%template(derivative1) calin::math::b_spline::derivative1<double>;
+%template(derivative2) calin::math::b_spline::derivative2<double>;
+%template(derivative3) calin::math::b_spline::derivative3<double>;
