@@ -102,6 +102,8 @@ template<typename REAL> inline REAL eval3(REAL x, REAL c0, REAL c1, REAL c2, REA
   return S*c0;
 }
 
+// See "The calculation of indefinite integrals of B-Spline" P.W. Gaffney (1974)
+// but be careful of the different normalization we use here
 template<typename REAL> inline REAL integrate0(REAL x, REAL c0)
 {
   return x*c0;
@@ -109,14 +111,30 @@ template<typename REAL> inline REAL integrate0(REAL x, REAL c0)
 
 template<typename REAL> inline REAL integrate1(REAL x, REAL c0, REAL c1)
 {
-  constexpr REAL S = 1.0/2.0;
-
   double I = 0;
-  I += eval1(x, c0*x, c1*(1+x));
+  I += eval1(x, c0*x, c1*(1+x))/2.0;
   I += eval0(x, c1*x);
-  return S*I;
+  return I;
 }
 
+template<typename REAL> inline REAL integrate2(REAL x, REAL c0, REAL c1, REAL c2)
+{
+  double I = 0;
+  I += eval2(x, c0*x, c1*(1+x), c2*(2+x))/3.0;
+  I += eval1(x, c1*x, c2*(1+x))/2.0;
+  I += eval0(x, c2*x);
+  return I;
+}
+
+template<typename REAL> inline REAL integrate3(REAL x, REAL c0, REAL c1, REAL c2, REAL c3)
+{
+  double I = 0;
+  I += eval3(x, c0*x, c1*(1+x), c2*(2+x), c3*(3+x))/4.0;
+  I += eval2(x, c1*x, c2*(1+x), c3*(2+x))/3.0;
+  I += eval1(x, c2*x, c3*(1+x))/2.0;
+  I += eval0(x, c3*x);
+  return I;
+}
 
 
 } } } // namespace calin:math::b_spline

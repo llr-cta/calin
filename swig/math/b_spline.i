@@ -53,3 +53,5 @@
 
 %template(integrate0) calin::math::b_spline::integrate0<double>;
 %template(integrate1) calin::math::b_spline::integrate1<double>;
+%template(integrate2) calin::math::b_spline::integrate2<double>;
+%template(integrate3) calin::math::b_spline::integrate3<double>;
