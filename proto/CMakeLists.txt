@@ -31,7 +31,7 @@ execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CXX_FLAGS_LIST}
 	-I ${PROTOBUF_INCLUDE_DIRS}
 	-o ${CMAKE_BINARY_DIR}/protoc-gen-swig_dep
 	${CMAKE_SOURCE_DIR}/tools/protoc-gen-swig_dep/protoc-gen-swig_dep.cpp
-	${PROTOBUF_LIBRARY} ${PROTOBUF_PROTOC_LIBRARY})
+  ${PROTOBUF_LIBRARY} ${PROTOBUF_PROTOC_LIBRARY} -lpthread)
 
 macro(make_proto_modules arg_proto_library arg_package)
 	if("${arg_package}" STREQUAL "")
