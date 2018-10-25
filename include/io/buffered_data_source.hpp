@@ -34,7 +34,7 @@
 
 namespace calin { namespace io { namespace data_source {
 
-#if GOOGLE_PROTOBUF_VERSION < 3006001
+#if GOOGLE_PROTOBUF_VERSION < 3006000
 typedef google::protobuf::internal::true_type true_type;
 typedef google::protobuf::internal::false_type false_type;
 #else
