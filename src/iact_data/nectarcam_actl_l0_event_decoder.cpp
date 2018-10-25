@@ -520,6 +520,8 @@ bool NectarCam_ACTL_L0_CameraEventDecoder::decode_run_config(
     }
   }
 
+  calin::iact_data::telescope_data_source::report_run_configuration_problems(calin_run_config);
+
   unsigned nsample = config_.demand_nsample();
   if(nsample == 0 and cta_run_header)
     nsample = cta_run_header->numtraces();

@@ -564,6 +564,8 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
     }
   }
 
+  calin::iact_data::telescope_data_source::report_run_configuration_problems(calin_run_config);
+
   // ---------------------------------------------------------------------------
   //
   // Determine nsample

@@ -440,12 +440,6 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode_run_config(
       }
       config_mod_id.push_back(mod_id);
     }
-    for(unsigned imod=1;imod<nmod_;imod++) {
-      if(config_mod_id[imod] <= config_mod_id[imod-1]) {
-        LOG(WARNING) << "LSTCam_ACTL_R1_CameraEventDecoder: configured module ids not strictly increasing.";
-        break;
-      }
-    }
 
 abort_pixel_based_method:
     ;
@@ -484,6 +478,8 @@ abort_pixel_based_method:
       calin_run_config->set_configured_channel_index(mod_id*7+ipix, imod*7+ipix);
     }
   }
+
+  calin::iact_data::telescope_data_source::report_run_configuration_problems(calin_run_config);
 
   // ---------------------------------------------------------------------------
   //

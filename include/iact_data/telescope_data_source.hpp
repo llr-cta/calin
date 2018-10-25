@@ -28,8 +28,13 @@
 #include <io/buffered_data_source.hpp>
 #include <iact_data/telescope_event.pb.h>
 #include <iact_data/telescope_run_configuration.pb.h>
+#include <util/log.hpp>
 
 namespace calin { namespace iact_data { namespace telescope_data_source {
+
+void report_run_configuration_problems(
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  calin::util::log::Logger* logger = calin::util::log::default_logger());
 
 CALIN_TYPEALIAS(TelescopeDataSource,
   calin::io::data_source::DataSource<
