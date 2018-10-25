@@ -23,6 +23,7 @@
 #include <iostream>
 #include <sstream>
 #include <numeric>
+#include <memory>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/io/printer.h>
@@ -419,7 +420,7 @@ Generate(const google::protobuf::FileDescriptor * file,
     const calin::MessageOptions* cmo = &mopt->GetExtension(calin::CMO);
     if(cmo->message_integration_function() != calin::MessageOptions::MIF_NONE)
     {
-      google::protobuf::scoped_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
+      std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
           context->OpenForInsert(pb_to_hpp_filename(file->name()),
           std::string("class_scope:")+d->full_name()));
       google::protobuf::io::Printer printer(output.get(), '$');
@@ -432,7 +433,7 @@ Generate(const google::protobuf::FileDescriptor * file,
 
   if(not automatic_mif.empty())
   {
-    google::protobuf::scoped_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
+    std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
         context->OpenForInsert(pb_to_cpp_filename(file->name()),
         std::string("namespace_scope")));
     google::protobuf::io::Printer printer(output.get(), '$');
