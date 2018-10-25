@@ -187,9 +187,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/protoc ]
     then (
-      wget https://github.com/google/protobuf/releases/download/v3.5.0/protobuf-cpp-3.5.0.tar.gz &&
-      tar zxf protobuf-cpp-3.5.0.tar.gz &&
-      cd protobuf-3.5.0 &&
+      wget https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz &&
+      tar zxf protobuf-cpp-3.6.1.tar.gz &&
+      cd protobuf-3.6.1 &&
       ./configure --prefix=$LOCAL &&
       make -j3 &&
       make install > /dev/null &&
