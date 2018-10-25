@@ -74,6 +74,15 @@ matrix:
           packages:
           - *common_packages
           - g++-7
+    - compiler: gcc-8
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-8 BUILD_CXX=g++-8
+      addons: &gcc8_addons
+        apt:
+          sources:
+          - *common_sources
+          packages:
+          - *common_packages
+          - g++-8
     # - compiler: clang-3.9
     #   env: BUILD_TYPE=Debug GEANT4=FALSE BUILD_CC=clang-3.9 BUILD_CXX=clang++-3.9
     #   addons: &clang39_addons
