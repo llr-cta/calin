@@ -1,0 +1,44 @@
+/*
+
+   calin/proto/diagnostics/run_info.proto -- Stephen Fegan -- 2018-10-26
+
+   Protobufs for run informaton diagnostics
+
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "math/histogram.proto";
+import "diagnostics/range.proto";
+//import "common_types.proto";
+
+package calin.ix.diagnostics.run_info;
+
+message RunInfo {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  uint64 num_events_found                                  = 1 [
+    (CFO).desc = "Number of events found." ];
+  calin.ix.diagnostics.range.IndexRange event_numbers_found = 2 [
+    (CFO).desc = "Range of event numbers found." ];
+  calin.ix.math.histogram.Histogram1DData event_number_histogram = 3 [
+    (CFO).desc = "Histogram of event numbers found." ];
+
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 10 [
+    (CFO).desc = "Histogram of elapsed time." ];
+};
