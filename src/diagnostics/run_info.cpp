@@ -20,8 +20,10 @@
 
 */
 
+#include <util/log.hpp>
 #include <diagnostics/run_info.hpp>
 
+using namespace calin::util::log;
 using namespace calin::iact_data::diagnostics;
 
 RunInfoDiagnosticsVisitor::RunInfoDiagnosticsVisitor()
@@ -61,12 +63,32 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
 {
   results_.set_num_events_found(results_.num_events_found() + 1);
   event_number_hist_.insert(event->local_event_number());
-  event_number_hist_.insert(event->elapsed_event_time().time_ns()*1e-9);
+  elapsed_time_hist_.insert(event->elapsed_event_time().time_ns()*1e-9);
   return true;
+}
+
+const calin::ix::diagnostics::run_info::RunInfo& RunInfoDiagnosticsVisitor::run_info()
+{
+  integrate_data();
+  return results_;
 }
 
 bool RunInfoDiagnosticsVisitor::merge_results()
 {
+  integrate_data();
   parent_->results_.IntegrateFrom(results_);
   return true;
+}
+
+void RunInfoDiagnosticsVisitor::integrate_data()
+{
+  auto* event_number_hist_data = event_number_hist_.dump_as_proto();
+  results_.mutable_event_number_histogram()->IntegrateFrom(*event_number_hist_data);
+  delete event_number_hist_data;
+  event_number_hist_.clear();
+
+  auto* elapsed_time_hist_data = elapsed_time_hist_.dump_as_proto();
+  results_.mutable_elapsed_time_histogram()->IntegrateFrom(*elapsed_time_hist_data);
+  delete elapsed_time_hist_data;
+  elapsed_time_hist_.clear();
 }

@@ -52,13 +52,15 @@ public:
 
   bool merge_results() override;
 
+  const calin::ix::diagnostics::run_info::RunInfo& run_info();
 private:
+  void integrate_data();
+  
   RunInfoDiagnosticsVisitor* parent_ = nullptr;
 
   calin::math::histogram::Histogram1D event_number_hist_ { 1.0e4, 0.0, 1.0e9 };
   calin::math::histogram::Histogram1D elapsed_time_hist_ { 1.0, 0.0, 7200.0 };
   calin::ix::diagnostics::run_info::RunInfo results_;
-
 };
 
 } } } // namespace calin::iact_data::diagnostics
