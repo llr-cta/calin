@@ -14,11 +14,12 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_SWIG_PROTO waveform.proto module.proto counter.proto
-	event_number.proto functional.proto value_capture.proto)
+	event_number.proto functional.proto value_capture.proto run_coherence.proto)
 set(CALIN_PACKAGE diagnostics)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 
-make_proto_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})
+make_proto_modules(${CALIN_TARGET_LIBRARY} ${CALIN_PACKAGE} ${CALIN_SWIG_PROTO}
+	run_coherence_mif.cpp)
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_proto_math)
 make_proto_swig_modules(${CALIN_TARGET_LIBRARY}
 	${CALIN_PROTO_SWIG_INSTALL_DIR}/${CALIN_PACKAGE} ${CALIN_SWIG_PROTO})
