@@ -39,7 +39,9 @@ RunInfoDiagnosticsVisitor* RunInfoDiagnosticsVisitor::new_sub_visitor(
       calin::iact_data::event_visitor::ParallelEventVisitor*>&
     antecedent_visitors)
 {
-  return nullptr;
+  RunInfoDiagnosticsVisitor* child = new RunInfoDiagnosticsVisitor();
+  child->parent_ = this;
+  return child;
 }
 
 bool RunInfoDiagnosticsVisitor::visit_telescope_run(
@@ -57,10 +59,14 @@ bool RunInfoDiagnosticsVisitor::leave_telescope_run()
 bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
+  results_.set_num_events_found(results_.num_events_found() + 1);
+  event_number_hist_.insert(event->local_event_number());
+  event_number_hist_.insert(event->elapsed_event_time().time_ns()*1e-9);
   return true;
 }
 
 bool RunInfoDiagnosticsVisitor::merge_results()
 {
+  parent_->results_.IntegrateFrom(results_);
   return true;
 }

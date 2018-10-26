@@ -22,7 +22,9 @@
 
 #pragma once
 
+#include <math/histogram.hpp>
 #include <iact_data/event_visitor.hpp>
+#include <diagnostics/run_info.pb.h>
 
 namespace calin { namespace iact_data { namespace diagnostics {
 
@@ -31,7 +33,7 @@ class RunInfoDiagnosticsVisitor:
 {
 public:
   RunInfoDiagnosticsVisitor();
-  
+
   virtual ~RunInfoDiagnosticsVisitor();
 
   RunInfoDiagnosticsVisitor* new_sub_visitor(
@@ -49,6 +51,14 @@ public:
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
   bool merge_results() override;
+
+private:
+  RunInfoDiagnosticsVisitor* parent_ = nullptr;
+
+  calin::math::histogram::Histogram1D event_number_hist_ { 1.0e4, 0.0, 1.0e9 };
+  calin::math::histogram::Histogram1D elapsed_time_hist_ { 1.0, 0.0, 7200.0 };
+  calin::ix::diagnostics::run_info::RunInfo results_;
+
 };
 
 } } } // namespace calin::iact_data::diagnostics
