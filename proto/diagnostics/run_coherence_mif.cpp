@@ -20,6 +20,7 @@
 
 */
 
+#include <cstdint>
 #include <algorithm>
 
 namespace {
