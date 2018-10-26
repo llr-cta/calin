@@ -1,6 +1,6 @@
 /*
 
-   calin/proto/diagnostics/run_coherence_mif.cpp -- Stephen Fegan -- 2018-10-26
+   calin/proto/diagnostics/range_mif.cpp -- Stephen Fegan -- 2018-10-26
 
    Message integration function for run coherence diagnostics protobuf
 
@@ -23,7 +23,7 @@
 #include <cstdint>
 #include <algorithm>
 
-#include "diagnostics/run_coherence.pb.h"
+#include "diagnostics/range.pb.h"
 
 namespace {
   struct range_and_value {
@@ -36,8 +36,8 @@ namespace {
     return a.begin_index<b.begin_index; }
 }
 
-void calin::ix::diagnostics::run_coherence::IndexRange::IntegrateFrom(
-  const calin::ix::diagnostics::run_coherence::IndexRange& from)
+void calin::ix::diagnostics::range::IndexRange::IntegrateFrom(
+  const calin::ix::diagnostics::range::IndexRange& from)
 {
   if(this->begin_index_size() != this->end_index_size())
     throw std::runtime_error("IntegrateFrom: index and value arrays must be same size");
@@ -77,8 +77,8 @@ void calin::ix::diagnostics::run_coherence::IndexRange::IntegrateFrom(
   this->add_end_index(v.end_index);
 }
 
-void calin::ix::diagnostics::run_coherence::CoherentValueRange::IntegrateFrom(
-  const calin::ix::diagnostics::run_coherence::CoherentValueRange& from)
+void calin::ix::diagnostics::range::CoherentValueRange::IntegrateFrom(
+  const calin::ix::diagnostics::range::CoherentValueRange& from)
 {
   if(this->value_size() != this->begin_index_size() or
       this->value_size() != this->end_index_size())

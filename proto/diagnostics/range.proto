@@ -1,6 +1,6 @@
 /*
 
-   calin/proto/diagnostics/run_coherence.proto -- Stephen Fegan -- 2018-10-26
+   calin/proto/diagnostics/range.proto -- Stephen Fegan -- 2018-10-26
 
    Protobufs for run coherence diagnostics
 
@@ -24,7 +24,7 @@ syntax = "proto3";
 
 import "calin.proto";
 
-package calin.ix.diagnostics.run_coherence;
+package calin.ix.diagnostics.range;
 
 message IndexRange {
   option (CMO).message_integration_function = MIF_USER_GENERATED;
