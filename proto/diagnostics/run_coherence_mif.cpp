@@ -2,7 +2,7 @@
 
    calin/proto/diagnostics/run_coherence_mif.cpp -- Stephen Fegan -- 2018-10-26
 
-   Protobufs for run coherence diagnostics
+   Message integration function for run coherence diagnostics protobuf
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3
