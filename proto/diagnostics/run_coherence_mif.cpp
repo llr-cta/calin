@@ -23,6 +23,8 @@
 #include <cstdint>
 #include <algorithm>
 
+#include "diagnostics/run_coherence.pb.h"
+
 namespace {
   struct range_and_value {
     uint64_t begin_index;
@@ -33,8 +35,6 @@ namespace {
   bool operator<(const range_and_value& a, const range_and_value& b) {
     return a.begin_index<b.begin_index; }
 }
-
-#include "diagnostics/run_coherence.pb.h"
 
 void calin::ix::diagnostics::run_coherence::IndexRange::IntegrateFrom(
   const calin::ix::diagnostics::run_coherence::IndexRange& from)
