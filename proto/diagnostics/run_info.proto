@@ -34,7 +34,8 @@ message RunInfo {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
   uint64 num_events_found                                  = 1 [
-    (CFO).desc = "Number of events found." ];
+    (CFO).desc = "Number of events found.",
+    (CFO).is_counter = true ];
   calin.ix.diagnostics.range.IndexRange event_numbers_found = 2 [
     (CFO).desc = "Range of event numbers found." ];
   calin.ix.math.histogram.Histogram1DData event_number_histogram = 3 [
@@ -44,13 +45,17 @@ message RunInfo {
     (CFO).desc = "Histogram of elapsed time." ];
 
   uint64 num_events_missing_cdts                           = 20 [
-    (CFO).desc = "Number of events without CDTS information." ];
+    (CFO).desc = "Number of events without CDTS information.",
+    (CFO).is_counter = true ];
   uint64 num_events_missing_tib                            = 21 [
-    (CFO).desc = "Number of events without TIB information." ];
+    (CFO).desc = "Number of events without TIB information.",
+    (CFO).is_counter = true ];
   uint64 num_events_missing_swat                           = 22 [
-    (CFO).desc = "Number of events without SWAT information." ];
+    (CFO).desc = "Number of events without SWAT information.",
+    (CFO).is_counter = true ];
   uint64 num_events_incomplete                             = 23 [
-    (CFO).desc = "Number of events without all channel information." ];
+    (CFO).desc = "Number of events without all channel information.",
+    (CFO).is_counter = true ];
 
   calin.ix.diagnostics.range.IndexRange events_missing_cdts = 30 [
     (CFO).desc = "List of event ranges without UCTS information." ];
@@ -66,7 +71,8 @@ message RunInfo {
 message PartialRunInfo {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
-  repeated uint64 event_number_sequence                    = 1;
+  repeated uint64 event_number_sequence                    = 1 [
+    (CFO).integration_algorithm = APPEND ];
   calin.ix.diagnostics.range.RunLengthEncodingBool cdts_presence = 2;
   calin.ix.diagnostics.range.RunLengthEncodingBool tib_presence = 3;
   calin.ix.diagnostics.range.RunLengthEncodingBool swat_presence = 4;

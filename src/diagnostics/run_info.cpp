@@ -70,32 +70,31 @@ bool RunInfoDiagnosticsVisitor::leave_telescope_run()
 bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
-  results_->set_num_events_found(results_->num_events_found() + 1);
+  results_->increment_num_events_found();
   event_number_hist_.insert(event->local_event_number());
   elapsed_time_hist_.insert(event->elapsed_event_time().time_ns()*1e-9);
 
   partials_->add_event_number_sequence(event->local_event_number());
 
   // UCTS
-  if(!event->has_cdts_data()) {
-    results_->set_num_events_missing_cdts(results_->num_events_missing_cdts() + 1);
-  }
+  results_->increment_num_events_missing_cdts_if(!event->has_cdts_data());
   calin::diagnostics::range::encode_value(
     partials_->mutable_cdts_presence(), event->has_cdts_data());
 
   // TIB
-  if(!event->has_tib_data()) {
-    results_->set_num_events_missing_tib(results_->num_events_missing_tib() + 1);
-  }
+  results_->increment_num_events_missing_tib_if(!event->has_tib_data());
   calin::diagnostics::range::encode_value(
     partials_->mutable_tib_presence(), event->has_tib_data());
 
   // SWAT
-  if(!event->has_swat_data()) {
-    results_->set_num_events_missing_swat(results_->num_events_missing_swat() + 1);
-  }
+  results_->increment_num_events_missing_swat_if(!event->has_swat_data());
   calin::diagnostics::range::encode_value(
     partials_->mutable_swat_presence(), event->has_swat_data());
+
+  // ALL CHANNELS
+  results_->increment_num_events_incomplete_if(!event->all_modules_present());
+  calin::diagnostics::range::encode_value(
+    partials_->mutable_all_channels_presence(), event->all_modules_present());
 
   return true;
 }
