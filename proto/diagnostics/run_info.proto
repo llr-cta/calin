@@ -21,6 +21,7 @@
 */
 
 syntax = "proto3";
+option cc_enable_arenas = true;
 
 import "calin.proto";
 import "math/histogram.proto";
@@ -41,4 +42,33 @@ message RunInfo {
 
   calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 10 [
     (CFO).desc = "Histogram of elapsed time." ];
+
+  uint64 num_events_missing_cdts                           = 20 [
+    (CFO).desc = "Number of events without CDTS information." ];
+  uint64 num_events_missing_tib                            = 21 [
+    (CFO).desc = "Number of events without TIB information." ];
+  uint64 num_events_missing_swat                           = 22 [
+    (CFO).desc = "Number of events without SWAT information." ];
+  uint64 num_events_incomplete                             = 23 [
+    (CFO).desc = "Number of events without all channel information." ];
+
+  calin.ix.diagnostics.range.IndexRange events_missing_cdts = 30 [
+    (CFO).desc = "List of event ranges without UCTS information." ];
+  calin.ix.diagnostics.range.IndexRange events_missing_tib = 31 [
+    (CFO).desc = "List of event ranges without TIB information." ];
+  calin.ix.diagnostics.range.IndexRange events_missing_swat = 32 [
+    (CFO).desc = "List of event ranges without SWAT information." ];
+  calin.ix.diagnostics.range.IndexRange events_incomplete  = 33 [
+    (CFO).desc = "List of event ranges without without all channel information." ];
+
 };
+
+message PartialRunInfo {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  repeated uint64 event_number_sequence                    = 1;
+  calin.ix.diagnostics.range.RunLengthEncodingBool cdts_presence = 2;
+  calin.ix.diagnostics.range.RunLengthEncodingBool tib_presence = 3;
+  calin.ix.diagnostics.range.RunLengthEncodingBool swat_presence = 4;
+  calin.ix.diagnostics.range.RunLengthEncodingBool all_channels_presence = 5;
+}

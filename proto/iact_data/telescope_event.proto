@@ -35,6 +35,8 @@ message Clock {
     (CFO).desc = "Clock ID." ];
   common_types.Time time                                    = 2 [
     (CFO).desc = "Time according to the clock." ];
+  bool time_not_consecutive                                 = 3 [
+    (CFO).desc = "Time value not consecutive with previous value." ];
 };
 
 message ModuleClocks {
@@ -202,6 +204,10 @@ message TIBData {
 
   uint32 spare_bits                                         = 20 [
     (CFO).desc = "Unused bits." ];
+};
+
+message SWATData {
+
 };
 
 message IntegratedCharges {
@@ -380,7 +386,9 @@ message TelescopeEvent {
     (CFO).desc = "Raw TIB data values for this event." ];
   CDTSData cdts_data                                        = 31 [
     (CFO).desc = "Raw CDTS data values for this event." ];
-  repeated CameraSpecificModuleData module_data             = 32 [
+  SWATData swat_data                                        = 32 [
+    (CFO).desc = "Raw SWAT data values for this event." ];
+  repeated CameraSpecificModuleData module_data             = 33 [
     (CFO).desc = "Camera-specific module data." ];
 
   repeated ModuleCounters module_counter                    = 40 [

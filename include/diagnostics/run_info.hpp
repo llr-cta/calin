@@ -26,7 +26,7 @@
 #include <iact_data/event_visitor.hpp>
 #include <diagnostics/run_info.pb.h>
 
-namespace calin { namespace iact_data { namespace diagnostics {
+namespace calin { namespace diagnostics { namespace run_info {
 
 class RunInfoDiagnosticsVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
@@ -53,14 +53,17 @@ public:
   bool merge_results() override;
 
   const calin::ix::diagnostics::run_info::RunInfo& run_info();
+  const calin::ix::diagnostics::run_info::PartialRunInfo& partial_run_info();
 private:
   void integrate_data();
-  
+
   RunInfoDiagnosticsVisitor* parent_ = nullptr;
 
-  calin::math::histogram::Histogram1D event_number_hist_ { 1.0e4, 0.0, 1.0e9 };
-  calin::math::histogram::Histogram1D elapsed_time_hist_ { 1.0, 0.0, 7200.0 };
-  calin::ix::diagnostics::run_info::RunInfo results_;
+  calin::math::histogram::Histogram1D event_number_hist_ { 1.0e4, 0.0, 1.0e9, 0.0 };
+  calin::math::histogram::Histogram1D elapsed_time_hist_ { 1.0, 0.0, 7200.0, 0.0 };
+  google::protobuf::Arena* arena_ = nullptr;
+  calin::ix::diagnostics::run_info::RunInfo* results_ = nullptr;
+  calin::ix::diagnostics::run_info::PartialRunInfo* partials_ = nullptr;
 };
 
-} } } // namespace calin::iact_data::diagnostics
+} } } // namespace calin::diagnostics::run_info
