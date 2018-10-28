@@ -55,6 +55,13 @@ string pb_to_hpp_filename(string pb_filename, string extension = ".pb.h")
   return pb_to_cpp_filename(pb_filename, extension);
 }
 
+string allsmallcase(const string& s)
+{
+  string t;
+  for(auto c : s)t += std::tolower(c);
+  return t;
+}
+
 bool is_numeric_type(google::protobuf::FieldDescriptor::Type type)
 {
   switch(type)
@@ -105,6 +112,36 @@ bool is_non_numeric_scalar_type(google::protobuf::FieldDescriptor::Type type)
   }
   assert(0);
   return false;
+}
+
+bool counter_field(const google::protobuf::FieldDescriptor* f,
+  google::protobuf::io::Printer& printer, string * error)
+{
+  const google::protobuf::FieldOptions* fopt = &f->options();
+  const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
+
+  if(!cfo->is_counter())return true;
+
+  if(f->is_repeated()) {
+    *error = "Repeated field cannot be counter: "+f->name();
+    return false;
+  }
+
+  if(is_numeric_type(f->type())) {
+    string name = allsmallcase(f->name());
+    string type = f->cpp_type_name();
+    if(type != "float" and type != "double")
+      type = "::google::protobuf::" + type;
+    printer.Print("$type$ increment_$name$() { \n"
+      "  set_$name$($name$() + 1); return $name$(); }\n"
+      "$type$ increment_$name$_if(bool condition) { \n"
+        "  if(condition)set_$name$($name$() + 1); return $name$(); }\n",
+      "name", name, "type", type);
+    return true;
+  } else {
+    *error = "Non-numeric field cannot be counter: "+f->name();
+    return false;
+  }
 }
 
 bool integrate_field(const google::protobuf::FieldDescriptor* f,
@@ -418,12 +455,20 @@ Generate(const google::protobuf::FileDescriptor * file,
     const google::protobuf::MessageOptions* mopt = &d->options();
     if(!mopt->HasExtension(calin::CMO))continue;
     const calin::MessageOptions* cmo = &mopt->GetExtension(calin::CMO);
+
+    std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
+        context->OpenForInsert(pb_to_hpp_filename(file->name()),
+        std::string("class_scope:")+d->full_name()));
+    google::protobuf::io::Printer printer(output.get(), '$');
+
+    for(int i=0;i<d->field_count();i++)
+    {
+      const google::protobuf::FieldDescriptor* f = d->field(i);
+      if(not counter_field(f, printer, error))return false;
+    }
+
     if(cmo->message_integration_function() != calin::MessageOptions::MIF_NONE)
     {
-      std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
-          context->OpenForInsert(pb_to_hpp_filename(file->name()),
-          std::string("class_scope:")+d->full_name()));
-      google::protobuf::io::Printer printer(output.get(), '$');
       printer.Print("void IntegrateFrom(const $type$& from);\n", "type", d->name());
     }
 

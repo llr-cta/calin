@@ -68,6 +68,7 @@ message FieldOptions {
   string            ref                 = 3; // Reference document or URL
   double            min_val             = 4; // Smallest allowed value as double
   double            max_val             = 5; // Largest allowed value as double
+  bool              is_counter          = 10; // Field is a counter. Generate increment functions
   Int32StorageType  int32_type          = 100;
   bool              dont_store          = 101;
   AutomaticMessageIntegrationFunctionAlgorithm integration_algorithm = 200;
