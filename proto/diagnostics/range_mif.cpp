@@ -59,11 +59,13 @@ void calin::ix::diagnostics::range::IndexRange::IntegrateFrom(
   this->clear_end_index();
 
   range_and_value v = values.front();
+  bool overlap_warning_sent = false;
   for(unsigned i=1; i<values.size(); i++)
   {
     if(values[i].begin_index < v.end_index)
-      throw std::runtime_error("Cannot integrate IntegrateFrom, ranges overlap: "
-        + std::to_string(v.end_index) + " > " + std::to_string(values[i].begin_index));
+      continue;
+      // throw std::runtime_error("Cannot integrate IntegrateFrom, ranges overlap: "
+      //   + std::to_string(v.end_index) + " > " + std::to_string(values[i].begin_index));
 
     if(values[i].begin_index == v.end_index and values[i].value == v.value) {
       v.end_index = values[i].end_index;
@@ -106,8 +108,9 @@ void calin::ix::diagnostics::range::CoherentValueRange::IntegrateFrom(
   for(unsigned i=1; i<values.size(); i++)
   {
     if(values[i].begin_index < v.end_index)
-      throw std::runtime_error("Cannot integrate CoherentValueRange, ranges overlap: "
-        + std::to_string(v.end_index) + " > " + std::to_string(values[i].begin_index));
+      continue;
+      // throw std::runtime_error("Cannot integrate CoherentValueRange, ranges overlap: "
+      //   + std::to_string(v.end_index) + " > " + std::to_string(values[i].begin_index));
 
     if(values[i].begin_index == v.end_index and values[i].value == v.value) {
       v.end_index = values[i].end_index;

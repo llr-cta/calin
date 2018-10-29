@@ -56,6 +56,9 @@ message RunInfo {
   uint64 num_events_incomplete                             = 23 [
     (CFO).desc = "Number of events without all channel information.",
     (CFO).is_counter = true ];
+  uint64 num_duplicate_event_numbers                       = 24 [
+    (CFO).desc = "Number of duplicated event numbers found.",
+    (CFO).is_counter = true ];
 
   calin.ix.diagnostics.range.IndexRange events_missing_cdts = 30 [
     (CFO).desc = "List of event ranges without UCTS information." ];
@@ -65,7 +68,9 @@ message RunInfo {
     (CFO).desc = "List of event ranges without SWAT information." ];
   calin.ix.diagnostics.range.IndexRange events_incomplete  = 33 [
     (CFO).desc = "List of event ranges without without all channel information." ];
-
+  calin.ix.diagnostics.range.RunLengthEncodingUInt64 duplicate_event_numbers = 34 [
+    (CFO).desc = "List of duplicate event numbers (value) and the number "
+      "of EXTRA times they appear (count)." ];
 };
 
 message PartialRunInfo {

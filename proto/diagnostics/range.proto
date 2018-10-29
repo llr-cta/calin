@@ -27,13 +27,24 @@ import "calin.proto";
 
 package calin.ix.diagnostics.range;
 
-message RunLengthEncodingU64 {
+message RunLengthEncodingUInt64 {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
   repeated uint32 count                                    = 1 [
     (CFO).desc = "Number of values represented by each range.",
     (CFO).integration_algorithm = APPEND ];
   repeated uint64 value                                    = 2 [
+    (CFO).desc = "Value for each range.",
+    (CFO).integration_algorithm = APPEND ];
+}
+
+message RunLengthEncodingUInt32 {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  repeated uint32 count                                    = 1 [
+    (CFO).desc = "Number of values represented by each range.",
+    (CFO).integration_algorithm = APPEND ];
+  repeated uint32 value                                    = 2 [
     (CFO).desc = "Value for each range.",
     (CFO).integration_algorithm = APPEND ];
 }

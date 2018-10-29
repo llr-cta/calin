@@ -162,6 +162,12 @@ namespace {
 
 void RunInfoDiagnosticsVisitor::integrate_partials()
 {
+  if(partials_->event_number_sequence_size() == 0)
+  {
+    partials_->Clear();
+    return;
+  }
+
   std::vector<uint64_t> event_list;
   calin::ix::diagnostics::range::IndexRange range;
   event_list.reserve(partials_->event_number_sequence_size());
@@ -170,6 +176,15 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
     event_list.push_back(ievent);
   }
   std::sort(event_list.begin(), event_list.end());
+  unsigned last_event_number = event_list.front();
+  for(unsigned iel=1;iel<event_list.size();iel++) {
+    if(event_list[iel] == last_event_number) {
+      results_->increment_num_duplicate_event_numbers();
+      calin::diagnostics::range::encode_value(
+        results_->mutable_duplicate_event_numbers(), last_event_number);
+    }
+    last_event_number = event_list[iel];
+  }
   calin::diagnostics::range::make_index_range(
     event_list.begin(), event_list.end(), &range);
   results_->mutable_event_numbers_found()->IntegrateFrom(range);
