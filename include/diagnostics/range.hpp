@@ -39,4 +39,19 @@ inline void encode_value(RunLengthEncodingType* rle, ValueType value)
   }
 }
 
+template<typename Iterator>
+inline void make_index_range(const Iterator& begin, const Iterator& end,
+  calin::ix::diagnostics::range::IndexRange* range)
+{
+  for(auto i = begin; i != end; ++i) {
+    unsigned nindex = range->end_index_size();
+    if(nindex and range->end_index(nindex-1)==*i) {
+      range->set_end_index(nindex-1, *i+1);
+    } else {
+      range->add_begin_index(*i);
+      range->add_end_index(*i + 1);
+    }
+  }
+}
+
 } } } // namespace calin::diagnostics::range

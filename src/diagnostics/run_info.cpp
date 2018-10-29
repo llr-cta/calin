@@ -101,7 +101,8 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
 
 const calin::ix::diagnostics::run_info::RunInfo& RunInfoDiagnosticsVisitor::run_info()
 {
-  integrate_data();
+  integrate_histograms();
+  integrate_partials();
   return *results_;
 }
 
@@ -112,13 +113,15 @@ const calin::ix::diagnostics::run_info::PartialRunInfo& RunInfoDiagnosticsVisito
 
 bool RunInfoDiagnosticsVisitor::merge_results()
 {
-  integrate_data();
+  integrate_histograms();
   parent_->results_->IntegrateFrom(*results_);
   parent_->partials_->IntegrateFrom(*partials_);
+  results_->Clear();
+  partials_->Clear();
   return true;
 }
 
-void RunInfoDiagnosticsVisitor::integrate_data()
+void RunInfoDiagnosticsVisitor::integrate_histograms()
 {
   auto* event_number_hist_data = event_number_hist_.dump_as_proto();
   results_->mutable_event_number_histogram()->IntegrateFrom(*event_number_hist_data);
@@ -129,4 +132,80 @@ void RunInfoDiagnosticsVisitor::integrate_data()
   results_->mutable_elapsed_time_histogram()->IntegrateFrom(*elapsed_time_hist_data);
   delete elapsed_time_hist_data;
   elapsed_time_hist_.clear();
+}
+
+namespace {
+
+  template<typename Iterator>
+  void make_index_range_from_conditional_bool_rle(
+    const Iterator& begin, const Iterator& end,
+    const calin::ix::diagnostics::range::RunLengthEncodingBool& rle,
+    calin::ix::diagnostics::range::IndexRange* range,
+    bool value = false)
+  {
+    Iterator ievent = begin;
+    std::vector<uint64_t> event_list;
+    unsigned nrange = rle.count_size();
+    for(unsigned irange=0;irange<nrange;irange++) {
+      unsigned count = rle.count(irange);
+      if(rle.value(irange) == value) {
+        while(count--)event_list.push_back(*ievent++);
+      } else {
+        while(count--)ievent++;
+      }
+    }
+    std::sort(event_list.begin(), event_list.end());
+    calin::diagnostics::range::make_index_range(
+      event_list.begin(), event_list.end(), range);
+  }
+}
+
+void RunInfoDiagnosticsVisitor::integrate_partials()
+{
+  std::vector<uint64_t> event_list;
+  calin::ix::diagnostics::range::IndexRange range;
+  event_list.reserve(partials_->event_number_sequence_size());
+
+  for(auto ievent: partials_->event_number_sequence()) {
+    event_list.push_back(ievent);
+  }
+  std::sort(event_list.begin(), event_list.end());
+  calin::diagnostics::range::make_index_range(
+    event_list.begin(), event_list.end(), &range);
+  results_->mutable_event_numbers_found()->IntegrateFrom(range);
+
+  range.Clear();
+  make_index_range_from_conditional_bool_rle(
+    partials_->event_number_sequence().begin(), partials_->event_number_sequence().end(),
+    partials_->cdts_presence(),
+    &range, false);
+  if(range.begin_index_size())
+    results_->mutable_events_missing_cdts()->IntegrateFrom(range);
+
+
+  range.Clear();
+  make_index_range_from_conditional_bool_rle(
+    partials_->event_number_sequence().begin(), partials_->event_number_sequence().end(),
+    partials_->tib_presence(),
+    &range, false);
+  if(range.begin_index_size())
+    results_->mutable_events_missing_tib()->IntegrateFrom(range);
+
+  range.Clear();
+  make_index_range_from_conditional_bool_rle(
+    partials_->event_number_sequence().begin(), partials_->event_number_sequence().end(),
+    partials_->swat_presence(),
+    &range, false);
+  if(range.begin_index_size())
+    results_->mutable_events_missing_swat()->IntegrateFrom(range);
+
+  range.Clear();
+  make_index_range_from_conditional_bool_rle(
+    partials_->event_number_sequence().begin(), partials_->event_number_sequence().end(),
+    partials_->all_channels_presence(),
+    &range, false);
+  if(range.begin_index_size())
+    results_->mutable_events_incomplete()->IntegrateFrom(range);
+
+  //partials_->Clear();
 }
