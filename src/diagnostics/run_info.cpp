@@ -207,5 +207,5 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
   if(range.begin_index_size())
     results_->mutable_events_incomplete()->IntegrateFrom(range);
 
-  //partials_->Clear();
+  partials_->Clear();
 }
