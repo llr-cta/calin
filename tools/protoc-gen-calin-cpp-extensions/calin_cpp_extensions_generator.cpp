@@ -132,10 +132,10 @@ bool counter_field(const google::protobuf::FieldDescriptor* f,
     string type = f->cpp_type_name();
     if(type != "float" and type != "double")
       type = "::google::protobuf::" + type;
-    printer.Print("$type$ increment_$name$() { \n"
-      "  set_$name$($name$() + 1); return $name$(); }\n"
-      "$type$ increment_$name$_if(bool condition) { \n"
-        "  if(condition)set_$name$($name$() + 1); return $name$(); }\n",
+    printer.Print("$type$ increment_$name$(const $type$ count=1) { \n"
+      "  set_$name$($name$() + count); return $name$(); }\n"
+      "$type$ increment_$name$_if(bool condition, const $type$ count=1) { \n"
+        "  if(condition)set_$name$($name$() + count); return $name$(); }\n",
       "name", name, "type", type);
     return true;
   } else {
