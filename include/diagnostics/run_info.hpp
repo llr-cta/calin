@@ -61,10 +61,11 @@ private:
   RunInfoDiagnosticsVisitor* parent_ = nullptr;
 
   calin::math::histogram::Histogram1D event_number_hist_ { 1.0e4, 0.0, 1.0e9, 0.0 };
-  calin::math::histogram::Histogram1D elapsed_time_hist_ { 1.0, 0.0, 7200.0, 0.0 };
+  calin::math::histogram::Histogram1D elapsed_time_hist_ { 1.0, -60.0, 7200.0, 0.0 };
   google::protobuf::Arena* arena_ = nullptr;
   calin::ix::diagnostics::run_info::RunInfo* results_ = nullptr;
   calin::ix::diagnostics::run_info::PartialRunInfo* partials_ = nullptr;
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
 };
 
 } } } // namespace calin::diagnostics::run_info

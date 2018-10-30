@@ -47,9 +47,9 @@ void calin::ix::diagnostics::range::IndexRange::IntegrateFrom(
 
   std::vector<range_and_value> values;
   values.reserve(this->begin_index_size() + from.begin_index_size());
-  for(unsigned i=0; i<this->begin_index_size(); i++)
+  for(int i=0; i<this->begin_index_size(); i++)
     values.push_back({this->begin_index(i),this->end_index(i),0});
-  for(unsigned i=0; i<from.begin_index_size(); i++)
+  for(int i=0; i<from.begin_index_size(); i++)
     values.push_back({from.begin_index(i),from.end_index(i),0});
 
   if(values.size() == 0)return;
@@ -59,7 +59,6 @@ void calin::ix::diagnostics::range::IndexRange::IntegrateFrom(
   this->clear_end_index();
 
   range_and_value v = values.front();
-  bool overlap_warning_sent = false;
   for(unsigned i=1; i<values.size(); i++)
   {
     if(values[i].begin_index < v.end_index)
@@ -92,9 +91,9 @@ void calin::ix::diagnostics::range::CoherentValueRange::IntegrateFrom(
 
     std::vector<range_and_value> values;
     values.reserve(this->begin_index_size() + from.begin_index_size());
-    for(unsigned i=0; i<this->begin_index_size(); i++)
+    for(int i=0; i<this->begin_index_size(); i++)
       values.push_back({this->begin_index(i),this->end_index(i),this->value(i)});
-    for(unsigned i=0; i<from.begin_index_size(); i++)
+    for(int i=0; i<from.begin_index_size(); i++)
       values.push_back({from.begin_index(i),from.end_index(i),from.value(i)});
 
   if(values.size() == 0)return;
