@@ -38,4 +38,6 @@ RUN cd /build/calin &&                                             \
     cd / &&                                                        \
     rm -rf /build
 
+RUN mkdir /data
+
 CMD ["/usr/local/bin/jupyter-notebook"]
