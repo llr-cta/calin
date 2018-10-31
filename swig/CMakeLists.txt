@@ -44,7 +44,7 @@ macro(make_swig_modules arg_calin_library arg_swig_install_dir)
 		file(READ ${interface_dep} SWIG_DEPS)
 		string(STRIP "${SWIG_DEPS}" SWIG_DEPS)
 		add_custom_command(OUTPUT ${base_name}_wrap.cxx
-		  COMMAND ${SWIG_EXECUTABLE} ${CMAKE_SWIG_FLAGS} -interface _${base_name} -c++ -python ${CMAKE_CURRENT_SOURCE_DIR}/${interface_file}
+		  COMMAND ${SWIG_EXECUTABLE} ${CMAKE_SWIG_FLAGS} -outcurrentdir -interface _${base_name} -c++ -python ${CMAKE_CURRENT_SOURCE_DIR}/${interface_file}
 			DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${interface_file};${SWIG_DEPS}"
       COMMENT "swig: ${interface_file}")
 		include_directories(${CMAKE_CURRENT_BINARY_DIR})
