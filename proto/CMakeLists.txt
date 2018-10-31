@@ -49,7 +49,8 @@ macro(make_proto_modules arg_proto_library arg_package)
 			string(REPLACE ".proto" "" base_name ${proto_interface_file})
 			add_custom_command(OUTPUT ${base_name}.pb.cc ${base_name}.pb.h
 				COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I${PROTOBUF_IMPORT_DIRS} --cpp_out=${CMAKE_BINARY_DIR}/proto --plugin=protoc-gen-calin-cpp-extensions=${CMAKE_BINARY_DIR}/tools/protoc-gen-calin-cpp-extensions/protoc-gen-calin-cpp-extensions --calin-cpp-extensions_out=${CMAKE_BINARY_DIR}/proto ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
-				DEPENDS ${proto_interface_file} ${CMAKE_BINARY_DIR}/tools/protoc-gen-calin-cpp-extensions/protoc-gen-calin-cpp-extensions)
+				DEPENDS ${proto_interface_file} ${CMAKE_BINARY_DIR}/tools/protoc-gen-calin-cpp-extensions/protoc-gen-calin-cpp-extensions
+				COMMENT "protoc-gen-calin-cpp: ${proto_interface_file}")
 			set(proto_cxx ${proto_cxx} ${base_name}.pb.cc)
 			set(proto_proto ${proto_proto} ${proto_interface_file})
 			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.pb.h DESTINATION ${proto_header_install_dir})
@@ -72,9 +73,13 @@ macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
 	foreach (proto_interface_file ${ARGN})
 		string(REPLACE ".proto" "" base_name ${proto_interface_file})
   	set(interface_file ${base_name}.pb.i)
-		add_custom_command(OUTPUT ${interface_file}
-			COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --plugin=protoc-gen-swig=${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig --swig_out=${CMAKE_BINARY_DIR}/proto -I${PROTOBUF_IMPORT_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
-		  DEPENDS ${proto_interface_file} ${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig)
+	  add_custom_command(OUTPUT ${interface_file}
+	  	COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --plugin=protoc-gen-swig=${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig --swig_out=${CMAKE_BINARY_DIR}/proto -I${PROTOBUF_IMPORT_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/${proto_interface_file}
+			MAIN_DEPENDENCY ${proto_interface_file}
+			DEPENDS ${proto_interface_file} ${CMAKE_BINARY_DIR}/tools/protoc-gen-swig/protoc-gen-swig
+			COMMENT "protoc-gen-swig: ${proto_interface_file}")
+		add_custom_target(protoc-gen-swig-${base_name}
+			DEPENDS ${interface_file})
 	endforeach (proto_interface_file)
 	foreach (proto_interface_file ${ARGN})
 		string(REPLACE ".proto" "" base_name ${proto_interface_file})
@@ -88,8 +93,9 @@ macro(make_proto_swig_modules arg_proto_library arg_swig_install_dir)
 #		string(REGEX REPLACE "([^;]+)" "${CMAKE_BINARY_DIR}/proto/\\1" SWIG_DEPS "${SWIG_DEPS}")
 #		MESSAGE(STATUS "${SWIG_DEPS}")
 		add_custom_command(OUTPUT ${base_name}.pb_wrap.cxx
-		  COMMAND ${SWIG_EXECUTABLE} ${CMAKE_SWIG_FLAGS} -interface _${base_name}_pb  -c++ -python ${interface_file}
-			DEPENDS "${interface_file};${CMAKE_BINARY_DIR}/swig/calin_config.i;${SWIG_DEPS}")
+		  COMMAND ${SWIG_EXECUTABLE} ${CMAKE_SWIG_FLAGS} -I${CMAKE_BINARY_DIR}/proto -interface _${base_name}_pb  -c++ -python ${interface_file}
+			DEPENDS "${interface_file};${SWIG_DEPS}"
+			COMMENT "swig: ${interface_file}")
 		include_directories(${CMAKE_CURRENT_BINARY_DIR})
 		add_library(_${base_name}_pb MODULE ${base_name}.pb_wrap.cxx)
 		set_target_properties(_${base_name}_pb PROPERTIES NO_SONAME ON)

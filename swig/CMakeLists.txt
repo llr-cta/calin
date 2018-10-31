@@ -24,7 +24,8 @@ int main() { return is_long_int<int64_t>(); }" CALIN_INT64_IS_LONGINT)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/calin_config.i.in
   ${CMAKE_CURRENT_BINARY_DIR}/calin_config.i)
 
-set(CALIN_SWIG_FILES calin_global_definitions.i google_protobuf.i)
+set(CALIN_SWIG_FILES google_protobuf.i)
+#set(CALIN_SWIG_FILES calin_global_definitions.i google_protobuf.i)
 set(CALIN_SWIG_INSTALL_DIR ${CALIN_PYTHON_INSTALL_DIR})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -36,24 +37,23 @@ execute_process(COMMAND ${CMAKE_CXX_COMPILER} ${CXX_FLAGS_LIST}
 
 macro(make_swig_modules arg_calin_library arg_swig_install_dir)
   foreach (interface_file ${ARGN})
-    set_source_files_properties(${interface_file} PROPERTIES CPLUSPLUS ON)
     string(REPLACE ".i" "" base_name ${interface_file})
-    set(interface_dep ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.swig_dep)
+		set(interface_dep ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.swig_dep)
     execute_process(COMMAND ${CMAKE_BINARY_DIR}/gen-swig_dep
 			${CMAKE_CURRENT_SOURCE_DIR}/${interface_file} ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR})
-		file(READ ${interface_dep} SWIG_MODULE_${base_name}_EXTRA_DEPS)
-    # This could eventually be removed by advancing the minimum required CMake version
-    if (${CMAKE_VERSION} VERSION_LESS "3.8.0")
-      swig_add_module(${base_name} python ${interface_file})
-    else()
-      swig_add_library(${base_name} LANGUAGE python TYPE MODULE SOURCES ${interface_file})
-    endif()
-    swig_link_libraries(${base_name} ${arg_calin_library} ${PYTHON_LIBRARIES}
-      ${PROTOBUF_LIBRARIES})
-    install(TARGETS ${SWIG_MODULE_${base_name}_REAL_NAME}
-      DESTINATION ${arg_swig_install_dir})
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.py
-      DESTINATION ${arg_swig_install_dir})
+		file(READ ${interface_dep} SWIG_DEPS)
+		string(STRIP "${SWIG_DEPS}" SWIG_DEPS)
+		add_custom_command(OUTPUT ${base_name}_wrap.cxx
+		  COMMAND ${SWIG_EXECUTABLE} ${CMAKE_SWIG_FLAGS} -interface _${base_name} -c++ -python ${CMAKE_CURRENT_SOURCE_DIR}/${interface_file}
+			DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${interface_file};${SWIG_DEPS}"
+      COMMENT "swig: ${interface_file}")
+		include_directories(${CMAKE_CURRENT_BINARY_DIR})
+		add_library(_${base_name} MODULE ${base_name}_wrap.cxx)
+		set_target_properties(_${base_name} PROPERTIES NO_SONAME ON)
+		set_target_properties(_${base_name} PROPERTIES PREFIX "")
+		target_link_libraries(_${base_name} calin_proto ${arg_calin_library} ${PYTHON_LIBRARIES} ${PROTOBUF_LIBRARY})
+		install(TARGETS _${base_name}  DESTINATION ${arg_swig_install_dir})
+		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${base_name}.py DESTINATION ${arg_swig_install_dir})
   endforeach (interface_file)
 
   set(CALIN_PY_INIT_SWIG_LIST FALSE)

@@ -82,9 +82,15 @@ void write_dep(std::ostream& depstream, const string& dep, string& sep,
   if(dep.size()>PBI.size() and
     dep.substr(dep.size()-PBI.size(), PBI.size()) == PBI)
   {
-    test_file = src_dir + "/proto/" + dep.substr(0, dep.size()-PBI.size()) + PROTO;
+    string basename = dep.substr(0, dep.size()-PBI.size());
+    test_file = src_dir + "/proto/" + basename + PROTO;
     if(access(test_file.c_str(),R_OK)==0) {
-      depstream << sep << bin_dir + "/proto/" + dep;
+      //      depstream << sep << bin_dir + "/proto/" + dep;
+      if(basename.find_last_of('/') != std::string::npos) {
+        depstream << sep << "protoc-gen-swig-" << basename.substr(basename.find_last_of('/')+1);
+      } else {
+        depstream << sep << "protoc-gen-swig-" << basename;
+      }
       sep = cmake_sep;
       return;
     }

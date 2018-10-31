@@ -42,6 +42,15 @@ using google::protobuf::io::Printer;
 
 namespace {
 
+string pb_basename(string pb_filename, string extension = ".pb.i")
+{
+  string fn = pb_filename.substr(0,pb_filename.find_last_of('.'));
+  if(fn.find_last_of('/') != string::npos) {
+    fn = fn.substr(fn.find_last_of('/')+1);
+  }
+  return fn;
+}
+
 string pb_to_gen_filename(string pb_filename, string extension = ".pb.i")
 {
   return pb_filename.substr(0,pb_filename.find_last_of('.')) + extension;
@@ -62,7 +71,8 @@ void write_dep(Printer* I, const string& dep, string& sep,
 
   test_file = src_dir + "/proto/" + dep;
   if(access(test_file.c_str(),R_OK)==0) {
-    test_file = bin_dir + "/proto/" + swig_file;
+    test_file = "protoc-gen-swig-" + pb_basename(dep);
+    // test_file = bin_dir + "/proto/" + swig_file;
     I->Print("$sep$$file$", "sep", sep, "file", test_file);
     sep = cmake_sep;
     return;
