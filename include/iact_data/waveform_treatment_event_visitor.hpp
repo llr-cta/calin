@@ -142,7 +142,6 @@ public:
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
-#if defined(__AVX2__) and defined(__FMA__)
 #ifndef SWIG
   void avx2_analyze_waveforms(const uint16_t* __restrict__ data);
   void avx2_analyze_waveforms_v2(const uint16_t* __restrict__ data);
@@ -150,6 +149,7 @@ public:
 #endif
 
 protected:
+#if defined(__AVX2__) and defined(__FMA__)
 #ifndef SWIG
   __m256i*__restrict__ samples_ = nullptr;
   __m256i*__restrict__ q_l_ = nullptr;
