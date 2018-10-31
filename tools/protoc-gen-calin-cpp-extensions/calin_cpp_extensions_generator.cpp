@@ -135,7 +135,8 @@ bool counter_field(const google::protobuf::FieldDescriptor* f,
     printer.Print("$type$ increment_$name$(const $type$ count=1) { \n"
       "  set_$name$($name$() + count); return $name$(); }\n"
       "$type$ increment_$name$_if(bool condition, const $type$ count=1) { \n"
-        "  if(condition)set_$name$($name$() + count); return $name$(); }\n",
+        "  if(condition) { set_$name$($name$() + count); }\n"
+        "  return $name$(); }\n",
       "name", name, "type", type);
     return true;
   } else {

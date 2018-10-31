@@ -63,8 +63,8 @@ void calin::ix::diagnostics::range::IndexRange::IntegrateFrom(
   {
     if(values[i].begin_index < v.end_index)
       continue;
-      // throw std::runtime_error("Cannot integrate IntegrateFrom, ranges overlap: "
-      //   + std::to_string(v.end_index) + " > " + std::to_string(values[i].begin_index));
+    // throw std::runtime_error("Cannot integrate IntegrateFrom, ranges overlap: "
+    //   + std::to_string(v.end_index) + " > " + std::to_string(values[i].begin_index));
 
     if(values[i].begin_index == v.end_index and values[i].value == v.value) {
       v.end_index = values[i].end_index;
@@ -89,12 +89,12 @@ void calin::ix::diagnostics::range::CoherentValueRange::IntegrateFrom(
       from.value_size() != from.end_index_size())
     throw std::runtime_error("CoherentValueRange: index and value arrays must be same size");
 
-    std::vector<range_and_value> values;
-    values.reserve(this->begin_index_size() + from.begin_index_size());
-    for(int i=0; i<this->begin_index_size(); i++)
-      values.push_back({this->begin_index(i),this->end_index(i),this->value(i)});
-    for(int i=0; i<from.begin_index_size(); i++)
-      values.push_back({from.begin_index(i),from.end_index(i),from.value(i)});
+  std::vector<range_and_value> values;
+  values.reserve(this->begin_index_size() + from.begin_index_size());
+  for(int i=0; i<this->begin_index_size(); i++)
+    values.push_back({this->begin_index(i),this->end_index(i),this->value(i)});
+  for(int i=0; i<from.begin_index_size(); i++)
+    values.push_back({from.begin_index(i),from.end_index(i),from.value(i)});
 
   if(values.size() == 0)return;
   std::sort(values.begin(), values.end());
