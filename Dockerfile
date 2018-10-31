@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-FROM llrcta/calin-docker-base:ubuntu16.04_v1.16
+FROM llrcta/calin-docker-base:ubuntu18.04_v1.17
 
 MAINTAINER sfegan@llr.in2p3.fr
 
@@ -21,7 +21,7 @@ MAINTAINER sfegan@llr.in2p3.fr
 #    sqlite3                                                        \
 #    libsqlite3-dev
 
-ENV CC=gcc-5 CXX=g++-5
+# ENV CC=gcc-5 CXX=g++-5
 
 ADD / /build/calin/
 
@@ -33,12 +33,9 @@ RUN cd /build/calin &&                                             \
           -DCMAKE_INSTALL_PREFIX=/usr                              \
           -DCALIN_PYTHON_SUB_DIR=lib/python3.5                     \
           .. &&                                                    \
-    make &&                                                        \
+    make &&                                                    \
     make install &&                                                \
     cd / &&                                                        \
     rm -rf /build
-
-# Transfer this to base system when next rebuilding
-RUN mkdir /data
 
 CMD ["/usr/local/bin/jupyter-notebook"]
