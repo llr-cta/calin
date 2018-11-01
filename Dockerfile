@@ -17,23 +17,25 @@ FROM llrcta/calin-docker-base:ubuntu18.04_v1.17
 
 MAINTAINER sfegan@llr.in2p3.fr
 
-#RUN apt-get update -y && apt-get install -y                        \
-#    sqlite3                                                        \
-#    libsqlite3-dev
+# Allow CPU architecture to be specified at build time, e.g.:
+# docker build --build-arg arch=native .
+# docker build --build-arg arch=broadwell .
+ARG arch=generic
 
-# ENV CC=gcc-5 CXX=g++-5
+# Allow number of build threads to be specified
+ARG threads=2
 
 ADD / /build/calin/
 
 RUN cd /build/calin &&                                             \
     mkdir mybuild &&                                               \
     cd mybuild &&                                                  \
-    cmake -DCALIN_BUILD_ARCH=generic                               \
+    cmake -DCALIN_BUILD_ARCH=${arch}                               \
           -DCMAKE_BUILD_TYPE=Release                               \
           -DCMAKE_INSTALL_PREFIX=/usr                              \
-          -DCALIN_PYTHON_SUB_DIR=lib/python3.5                     \
+          -DCALIN_PYTHON_SUB_DIR=lib/python3.6                     \
           .. &&                                                    \
-    make &&                                                    \
+    make -j${threads} &&                                           \
     make install &&                                                \
     cd / &&                                                        \
     rm -rf /build
