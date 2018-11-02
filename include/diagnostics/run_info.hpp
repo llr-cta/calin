@@ -28,11 +28,43 @@
 
 namespace calin { namespace diagnostics { namespace run_info {
 
+#ifndef SWIG
+class ModuleCounterProcessor {
+public:
+  virtual ~ModuleCounterProcessor();
+  virtual int64_t processCounters(std::vector<int64_t>& values, int64_t event_number) = 0;
+};
+
+class DirectModuleCounterProcessor: public ModuleCounterProcessor
+{
+public:
+  virtual ~DirectModuleCounterProcessor();
+  int64_t processCounters(std::vector<int64_t>& values, int64_t event_number) override;
+};
+
+class RelativeToEventNumberModuleCounterProcessor: public ModuleCounterProcessor
+{
+public:
+  virtual ~RelativeToEventNumberModuleCounterProcessor();
+  int64_t processCounters(std::vector<int64_t>& values, int64_t event_number) override;
+};
+
+class RelativeToMedianModuleCounterProcessor: public ModuleCounterProcessor
+{
+public:
+  virtual ~RelativeToMedianModuleCounterProcessor();
+  int64_t processCounters(std::vector<int64_t>& values, int64_t event_number) override;
+private:
+  std::map<int64_t, unsigned> median_find_;
+};
+
+#endif // not defined SWIG
+
 class RunInfoDiagnosticsVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  RunInfoDiagnosticsVisitor();
+  RunInfoDiagnosticsVisitor(const calin::ix::diagnostics::run_info::RunInfoConfig& config = default_config());
 
   virtual ~RunInfoDiagnosticsVisitor();
 
@@ -54,11 +86,24 @@ public:
 
   const calin::ix::diagnostics::run_info::RunInfo& run_info();
   const calin::ix::diagnostics::run_info::PartialRunInfo& partial_run_info();
+
+  static calin::ix::diagnostics::run_info::RunInfoConfig default_config() {
+    calin::ix::diagnostics::run_info::RunInfoConfig config;
+    return config;
+  }
+
 private:
+
+
   void integrate_histograms();
   void integrate_partials ();
 
   RunInfoDiagnosticsVisitor* parent_ = nullptr;
+  calin::ix::diagnostics::run_info::RunInfoConfig config_ = default_config();
+
+  std::vector<int64_t> mod_counter_values_;
+  std::vector<unsigned> mod_counter_id_;
+  std::vector<ModuleCounterProcessor*> mod_counter_processor_;
 
   calin::math::histogram::Histogram1D event_number_hist_ { 1.0e4, 0.0, 1.0e9, 0.0 };
   calin::math::histogram::Histogram1D elapsed_time_hist_ { 1.0, -60.0, 7200.0, 0.0 };

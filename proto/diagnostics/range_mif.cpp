@@ -78,16 +78,16 @@ void calin::ix::diagnostics::range::IndexRange::IntegrateFrom(
   this->add_end_index(v.end_index);
 }
 
-void calin::ix::diagnostics::range::CoherentValueRange::IntegrateFrom(
-  const calin::ix::diagnostics::range::CoherentValueRange& from)
+void calin::ix::diagnostics::range::IndexAndValueRangeInt64::IntegrateFrom(
+  const calin::ix::diagnostics::range::IndexAndValueRangeInt64& from)
 {
   if(this->value_size() != this->begin_index_size() or
       this->value_size() != this->end_index_size())
-    throw std::runtime_error("CoherentValueRange: index and value arrays must be same size");
+    throw std::runtime_error("IndexAndValueRangeInt64: index and value arrays must be same size");
 
   if(from.value_size() != from.begin_index_size() or
       from.value_size() != from.end_index_size())
-    throw std::runtime_error("CoherentValueRange: index and value arrays must be same size");
+    throw std::runtime_error("IndexAndValueRangeInt64: index and value arrays must be same size");
 
   std::vector<range_and_value> values;
   values.reserve(this->begin_index_size() + from.begin_index_size());
@@ -108,7 +108,7 @@ void calin::ix::diagnostics::range::CoherentValueRange::IntegrateFrom(
   {
     if(values[i].begin_index < v.end_index)
       continue;
-      // throw std::runtime_error("Cannot integrate CoherentValueRange, ranges overlap: "
+      // throw std::runtime_error("Cannot integrate IndexAndValueRangeInt64, ranges overlap: "
       //   + std::to_string(v.end_index) + " > " + std::to_string(values[i].begin_index));
 
     if(values[i].begin_index == v.end_index and values[i].value == v.value) {

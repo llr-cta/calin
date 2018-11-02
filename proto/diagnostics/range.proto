@@ -69,7 +69,7 @@ message IndexRange {
     (CFO).desc = "One past final index of this range." ];
 };
 
-message CoherentValueRange {
+message IndexAndValueRangeInt64 {
   option (CMO).message_integration_function = MIF_USER_GENERATED;
 
   repeated uint64 begin_index                              = 1 [

@@ -39,6 +39,25 @@ inline void encode_value(RunLengthEncodingType* rle, ValueType value)
   }
 }
 
+template<typename IndexValueRangeType, typename ValueType>
+inline void encode_monotonic_index_and_value(IndexValueRangeType* ivr,
+  uint64_t index, ValueType value,
+  bool missing_indexes_compatible = false)
+{
+  int nivr = ivr->begin_index_size();
+  assert(nivr == ivr->end_index_size());
+  assert(nivr == ivr->value_size());
+  if(nivr==0 or ivr->value(nivr-1) != value or
+      (index > ivr->end_index(nivr-1) and missing_indexes_compatible == false)) {
+    ivr->add_begin_index(index);
+    ivr->add_end_index(index+1);
+    ivr->add_value(value);
+  } else {
+    ivr->set_end_index(nivr-1, index+1);
+  }
+}
+
+
 template<typename Iterator>
 inline void make_index_range(const Iterator& begin, const Iterator& end,
   calin::ix::diagnostics::range::IndexRange* range)

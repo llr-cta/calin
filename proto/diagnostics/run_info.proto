@@ -30,11 +30,25 @@ import "diagnostics/range.proto";
 
 package calin.ix.diagnostics.run_info;
 
+
+enum CounterValueTestMode {
+  CVSM_VALUE_DIRECT                                        = 0;
+  CDTS_VALUE_RELATIVE_TO_MEDIAN                            = 1;
+  CDTS_VALUE_RELATIVE_TO_EVENT_NUMBER                      = 2;
+};
+
+message RunInfoConfig {
+  repeated int32 module_counter_test_id                    = 1;
+  repeated CounterValueTestMode module_counter_test_mode   = 2;
+};
+
 message CounterCoherence {
   uint32 counter_id                                        = 1 [
     (CFO).desc = "Module ID within camera." ];
 
-}
+//  message IndexAndValueRangeInt64                          = 2 [
+//]
+};
 
 message ModuleRunInfo {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
@@ -102,6 +116,7 @@ message PartialModuleRunInfo {
 
   uint64 num_events_present                                = 1 [ (CFO).is_counter = true ];
   calin.ix.diagnostics.range.RunLengthEncodingBool module_presence = 10;
+  repeated calin.ix.diagnostics.range.RunLengthEncodingUInt64 counter_value = 20;
 };
 
 message PartialRunInfo {

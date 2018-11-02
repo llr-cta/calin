@@ -27,8 +27,59 @@
 using namespace calin::util::log;
 using namespace calin::diagnostics::run_info;
 
-RunInfoDiagnosticsVisitor::RunInfoDiagnosticsVisitor():
+ModuleCounterProcessor::~ModuleCounterProcessor()
+{
+  // nothing to see here
+}
+
+DirectModuleCounterProcessor::~DirectModuleCounterProcessor()
+{
+  // nothing to see here
+}
+
+int64_t DirectModuleCounterProcessor::
+processCounters(std::vector<int64_t>& values, int64_t event_number)
+{
+  return 0;
+}
+
+RelativeToEventNumberModuleCounterProcessor::
+~RelativeToEventNumberModuleCounterProcessor()
+{
+  // nothing to see here
+}
+
+int64_t RelativeToEventNumberModuleCounterProcessor::
+processCounters(std::vector<int64_t>& values, int64_t event_number)
+{
+  for(auto& iv: values) { iv -= event_number; }
+  return event_number;
+}
+
+RelativeToMedianModuleCounterProcessor::
+~RelativeToMedianModuleCounterProcessor()
+{
+  // nothing to see here
+}
+
+int64_t RelativeToMedianModuleCounterProcessor::
+processCounters(std::vector<int64_t>& values, int64_t event_number)
+{
+  median_find_.clear();
+  for(const auto& iv: values) { median_find_[iv]++; }
+  unsigned count = 0;
+  unsigned median_count = values.size()/2;
+  auto imedian_find = median_find_.begin();
+  while((count+=imedian_find->second < median_count))++imedian_find;
+  int64_t offset = imedian_find->first;
+  for(auto& iv: values) { iv -= offset; }
+  return offset;
+}
+
+RunInfoDiagnosticsVisitor::RunInfoDiagnosticsVisitor(
+    const calin::ix::diagnostics::run_info::RunInfoConfig& config):
   calin::iact_data::event_visitor::ParallelEventVisitor(),
+  config_(config),
   arena_(new google::protobuf::Arena),
   results_(google::protobuf::Arena::CreateMessage<calin::ix::diagnostics::run_info::RunInfo>(arena_)),
   partials_(google::protobuf::Arena::CreateMessage<calin::ix::diagnostics::run_info::PartialRunInfo>(arena_)),
@@ -62,14 +113,40 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   event_number_hist_.clear();
   elapsed_time_hist_.clear();
   run_config_->CopyFrom(*run_config);
+
+  mod_counter_id_.clear();
+  mod_counter_processor_.clear();
+  for(unsigned icounter=0;icounter<config_.module_counter_test_id_size();icounter++) {
+    int counter_id = config_.module_counter_test_id(icounter);
+    if(counter_id<0 or counter_id>=run_config_->camera_layout().module_counter_id_to_name_size())continue;
+    mod_counter_id_.push_back(icounter);
+    if(icounter<config_.module_counter_test_mode_size()
+        and config_.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::CDTS_VALUE_RELATIVE_TO_MEDIAN) {
+      mod_counter_processor_.push_back(new RelativeToEventNumberModuleCounterProcessor());
+    } else if(icounter<config_.module_counter_test_mode_size()
+        and config_.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::CDTS_VALUE_RELATIVE_TO_EVENT_NUMBER) {
+      mod_counter_processor_.push_back(new RelativeToMedianModuleCounterProcessor());
+    } else {
+      mod_counter_processor_.push_back(new DirectModuleCounterProcessor());
+    }
+  }
+  if(not mod_counter_id_.empty())
+    mod_counter_values_.reserve(run_config->configured_module_id_size());
+
   for(unsigned imod=0;imod<run_config->configured_module_id_size();imod++) {
-    partials_->add_module();
+    auto* m = partials_->add_module();
+    for(unsigned icounter=0;icounter<config_.module_counter_test_id_size();icounter++) {
+      m->add_counter_value();
+    }
   }
   return true;
 }
 
 bool RunInfoDiagnosticsVisitor::leave_telescope_run()
 {
+  for(auto* iproc: mod_counter_processor_)delete iproc;
+  mod_counter_id_.clear();
+  mod_counter_processor_.clear();
   return true;
 }
 
@@ -110,6 +187,24 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
       calin::diagnostics::range::encode_value(mod->mutable_module_presence(), true);
     } else {
       calin::diagnostics::range::encode_value(mod->mutable_module_presence(), false);
+    }
+  }
+
+  // MODULE COUNTERS
+  for(unsigned icounter=0;icounter<mod_counter_id_.size(); icounter++) {
+    int counter_id = mod_counter_id_[icounter];
+    mod_counter_values_.clear();
+    for(unsigned imod=0; imod<event->module_counter_size(); imod++) {
+      int64_t val = event->module_counter(imod).counter_value(counter_id);
+      mod_counter_values_.push_back(val);
+    }
+    int64_t offset = mod_counter_processor_[icounter]->processCounters(
+      mod_counter_values_, event->local_event_number());
+    for(unsigned imod=0; imod<event->module_counter_size(); imod++) {
+      unsigned mod_id = event->module_counter(imod).module_id();
+      auto* mod = partials_->mutable_module(mod_id);
+      calin::diagnostics::range::encode_value(
+        mod->mutable_counter_value(icounter), mod_counter_values_[imod]);
     }
   }
 
@@ -246,7 +341,6 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
       &range, false);
     if(range.begin_index_size())
       results_->mutable_events_missing_modules()->IntegrateFrom(range);
-
 
     for(unsigned imod=0;imod<partials_->module_size();imod++) {
       range.Clear();
