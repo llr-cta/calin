@@ -38,6 +38,17 @@ message RunLengthEncodingUInt64 {
     (CFO).integration_algorithm = APPEND ];
 }
 
+message RunLengthEncodingInt64 {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  repeated uint32 count                                    = 1 [
+    (CFO).desc = "Number of values represented by each range.",
+    (CFO).integration_algorithm = APPEND ];
+  repeated int64 value                                     = 2 [
+    (CFO).desc = "Value for each range.",
+    (CFO).integration_algorithm = APPEND ];
+}
+
 message RunLengthEncodingUInt32 {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
@@ -45,6 +56,17 @@ message RunLengthEncodingUInt32 {
     (CFO).desc = "Number of values represented by each range.",
     (CFO).integration_algorithm = APPEND ];
   repeated uint32 value                                    = 2 [
+    (CFO).desc = "Value for each range.",
+    (CFO).integration_algorithm = APPEND ];
+}
+
+message RunLengthEncodingInt32 {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  repeated uint32 count                                    = 1 [
+    (CFO).desc = "Number of values represented by each range.",
+    (CFO).integration_algorithm = APPEND ];
+  repeated int32 value                                     = 2 [
     (CFO).desc = "Value for each range.",
     (CFO).integration_algorithm = APPEND ];
 }

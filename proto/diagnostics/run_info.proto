@@ -116,7 +116,7 @@ message PartialModuleRunInfo {
 
   uint64 num_events_present                                = 1 [ (CFO).is_counter = true ];
   calin.ix.diagnostics.range.RunLengthEncodingBool module_presence = 10;
-  repeated calin.ix.diagnostics.range.RunLengthEncodingUInt64 counter_value = 20;
+  repeated calin.ix.diagnostics.range.RunLengthEncodingInt64 counter_value = 20;
 };
 
 message PartialRunInfo {

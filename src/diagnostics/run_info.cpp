@@ -70,7 +70,7 @@ processCounters(std::vector<int64_t>& values, int64_t event_number)
   unsigned count = 0;
   unsigned median_count = values.size()/2;
   auto imedian_find = median_find_.begin();
-  while((count+=imedian_find->second < median_count))++imedian_find;
+  while((count+=imedian_find->second) < median_count)++imedian_find;
   int64_t offset = imedian_find->first;
   for(auto& iv: values) { iv -= offset; }
   return offset;
@@ -98,7 +98,7 @@ RunInfoDiagnosticsVisitor* RunInfoDiagnosticsVisitor::new_sub_visitor(
       calin::iact_data::event_visitor::ParallelEventVisitor*>&
     antecedent_visitors)
 {
-  RunInfoDiagnosticsVisitor* child = new RunInfoDiagnosticsVisitor();
+  RunInfoDiagnosticsVisitor* child = new RunInfoDiagnosticsVisitor(config_);
   child->parent_ = this;
   return child;
 }
@@ -119,13 +119,13 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   for(unsigned icounter=0;icounter<config_.module_counter_test_id_size();icounter++) {
     int counter_id = config_.module_counter_test_id(icounter);
     if(counter_id<0 or counter_id>=run_config_->camera_layout().module_counter_id_to_name_size())continue;
-    mod_counter_id_.push_back(icounter);
+    mod_counter_id_.push_back(counter_id);
     if(icounter<config_.module_counter_test_mode_size()
         and config_.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::CDTS_VALUE_RELATIVE_TO_MEDIAN) {
-      mod_counter_processor_.push_back(new RelativeToEventNumberModuleCounterProcessor());
+      mod_counter_processor_.push_back(new RelativeToMedianModuleCounterProcessor());
     } else if(icounter<config_.module_counter_test_mode_size()
         and config_.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::CDTS_VALUE_RELATIVE_TO_EVENT_NUMBER) {
-      mod_counter_processor_.push_back(new RelativeToMedianModuleCounterProcessor());
+      mod_counter_processor_.push_back(new RelativeToEventNumberModuleCounterProcessor());
     } else {
       mod_counter_processor_.push_back(new DirectModuleCounterProcessor());
     }
