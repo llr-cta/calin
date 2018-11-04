@@ -133,15 +133,11 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
   layout->set_can_read_charges(false);
   layout->set_can_read_peak_sample(false);
 
-  auto& mod_ctr_id_to_name = *layout->mutable_module_counter_id_to_name();
-  mod_ctr_id_to_name[0] = "backplane_10MHz_counter";
-  mod_ctr_id_to_name[1] = "pps_counter";
-  mod_ctr_id_to_name[2] = "event_counter";
-  mod_ctr_id_to_name[3] = "local_133MHz_counter";
-  mod_ctr_id_to_name[4] = "trigger_counter";
-  for(auto&& i : layout->module_counter_id_to_name()) {
-    (*layout->mutable_module_counter_name_to_id())[i.second] = i.first;
-  }
+  layout->add_module_counter_name("backplane_10MHz_counter");
+  layout->add_module_counter_name("pps_counter");
+  layout->add_module_counter_name("event_counter");
+  layout->add_module_counter_name("local_133MHz_counter");
+  layout->add_module_counter_name("trigger_counter");
 
   // https://forge.in2p3.fr/attachments/download/59969/Pixel_Numbering_explain.png
   const unsigned gridchanmap[] = { 6, 5, 4, 0, 1, 3, 2 };

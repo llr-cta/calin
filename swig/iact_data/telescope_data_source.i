@@ -110,6 +110,14 @@ using namespace calin::io;
   calin::io::data_source::RandomAccessDataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
+%template(VectorTelescopeDataSource)
+  std::vector<calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*>;
+
+%template(VectorTelescopeRandomAccessDataSource)
+  std::vector<calin::io::data_source::RandomAccessDataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*>;
+
 %template(FileTelescopeDataSource)
   calin::io::data_source::ProtobufFileDataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
@@ -126,9 +134,9 @@ using namespace calin::io;
   calin::io::data_source::DataSourceFactory<
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
-  %template(TelescopeDataSinkFactory)
-    calin::io::data_source::DataSinkFactory<
-      calin::ix::iact_data::telescope_event::TelescopeEvent>;
+%template(TelescopeDataSinkFactory)
+  calin::io::data_source::DataSinkFactory<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
 %include "io/buffered_data_source.hpp"
 
@@ -170,6 +178,9 @@ using namespace calin::io;
 %template(BasicChainedRandomAccessDataSourceTelescopeRandomAccessDataSourceWithRunConfig)
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>;
+
+%template(VectorTelescopeRandomAccessDataSourceWithRunConfig)
+  std::vector<calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*>;
 
 %include "pattern/delegation.hpp"
 

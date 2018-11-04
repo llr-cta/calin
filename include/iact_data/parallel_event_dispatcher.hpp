@@ -51,11 +51,21 @@ public:
     TelescopeRandomAccessDataSourceWithRunConfig* src,
     unsigned log_frequency = 0, int nthread = 0);
 
+  void process_run(std::vector<calin::iact_data::telescope_data_source::
+    TelescopeRandomAccessDataSourceWithRunConfig*> src_list,
+    unsigned log_frequency = 0);
+
   void process_run(calin::io::data_source::DataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
     calin::ix::iact_data::
       telescope_run_configuration::TelescopeRunConfiguration* run_config,
     unsigned log_frequency = 0, int nthread = 0);
+
+  void process_run(std::vector<calin::io::data_source::DataSource<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list,
+    calin::ix::iact_data::
+      telescope_run_configuration::TelescopeRunConfiguration* merged_run_config,
+    unsigned log_frequency = 0);
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
   void process_nectarcam_zfits_run(const std::string& filename,
@@ -83,6 +93,11 @@ public:
       decoder_config, zfits_config);
   }
 #endif
+
+  static bool merge_run_config(calin::ix::iact_data::
+      telescope_run_configuration::TelescopeRunConfiguration* to,
+    const calin::ix::iact_data::
+      telescope_run_configuration::TelescopeRunConfiguration& from);
 
 private:
   // These functions allow events to be passed on to the visitors - they

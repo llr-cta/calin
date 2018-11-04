@@ -118,7 +118,7 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   mod_counter_processor_.clear();
   for(unsigned icounter=0;icounter<config_.module_counter_test_id_size();icounter++) {
     int counter_id = config_.module_counter_test_id(icounter);
-    if(counter_id<0 or counter_id>=run_config_->camera_layout().module_counter_id_to_name_size())continue;
+    if(counter_id<0 or counter_id>=run_config_->camera_layout().module_counter_name_size())continue;
     mod_counter_id_.push_back(counter_id);
     if(icounter<config_.module_counter_test_mode_size()
         and config_.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::CDTS_VALUE_RELATIVE_TO_MEDIAN) {

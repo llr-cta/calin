@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 
+#include <pattern/delegation.hpp>
 #include <io/packet_stream.hpp>
 #include <io/packet_stream.pb.h>
 
@@ -40,6 +41,23 @@ public:
   virtual T* get_next(uint64_t& seq_index_out,
     google::protobuf::Arena** arena = nullptr) = 0;
 };
+
+template<typename T> class DelegatedDataSource:
+  public DataSource<T>, calin::pattern::delegation::Delegator<DataSource<T> >
+{
+public:
+  CALIN_TYPEALIAS(data_type, T);
+  DelegatedDataSource(DataSource<T>* delegate, bool adopt_delegate = false):
+    DataSource<T>(),
+    pattern::delegation::Delegator<DataSource<T> >(delegate, adopt_delegate) { }
+  virtual ~DelegatedDataSource() { }
+  T* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override
+  {
+    return this->delegate_->get_next(seq_index_out,arena);
+  }
+};
+
 
 template<typename T> class RandomAccessDataSource: public DataSource<T>
 {
@@ -73,6 +91,30 @@ template<typename T> class DataSinkFactory
 public:
   virtual ~DataSinkFactory() { }
   virtual DataSink<T>* new_data_sink() = 0;
+};
+
+template<typename T> class VectorDataSourceFactory: public DataSourceFactory<T>
+{
+public:
+  VectorDataSourceFactory(const std::vector<DataSource<T>*>& sources,
+      bool adopt_sources = false):
+    DataSourceFactory<T>(), sources_(sources), adopt_sources_(adopt_sources) { }
+  virtual ~VectorDataSourceFactory() {
+    if(adopt_sources_)for(auto* src: sources_)delete src;
+  }
+  DataSource<T>* new_data_source() override {
+    unsigned isource = isource_.fetch_add(1);
+    if(isource<sources_.size()) {
+      return new DelegatedDataSource<T>(sources_[isource], false);
+    } else {
+      return nullptr;
+    }
+  }
+
+private:
+  std::vector<DataSource<T>*> sources_;
+  bool adopt_sources_ = false;
+  std::atomic<uint_fast64_t> isource_ { 0 };
 };
 
 // *****************************************************************************

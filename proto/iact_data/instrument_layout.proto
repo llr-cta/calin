@@ -238,8 +238,7 @@ message CameraLayout {
   bool can_read_charges                                    = 43;
   bool can_read_peak_sample                                = 44;
 
-  map<int32, string> module_counter_id_to_name             = 50;
-  map<string, int32> module_counter_name_to_id             = 51;
+  repeated string module_counter_name                      = 50;
 
   repeated uint32 outline_polygon_vertex_index             = 60 [
     (CFO).desc = "Index of end of camera polygon lines." ];

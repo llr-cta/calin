@@ -105,6 +105,26 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
   delete run_config;
 }
 
+void ParallelEventDispatcher::
+process_run(std::vector<calin::iact_data::telescope_data_source::
+  TelescopeRandomAccessDataSourceWithRunConfig*> src_list,
+  unsigned log_frequency)
+{
+  if(src_list.empty())
+    throw std::runtime_error("process_run: empty data source list");
+  TelescopeRunConfiguration* run_config = src_list[0]->get_run_configuration();
+  for(unsigned isrc=1; isrc<src_list.size(); isrc++) {
+    TelescopeRunConfiguration* from_run_config =
+      src_list[isrc]->get_run_configuration();
+    merge_run_config(run_config, *from_run_config);
+    delete from_run_config;
+  }
+  std::vector<calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
+  for(auto* src: src_list)src_list_upcast.push_back(src);
+  this->process_run(src_list_upcast, run_config, log_frequency);
+}
+
 void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
   calin::ix::iact_data::
@@ -124,6 +144,34 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
     io::data_source::UnidirectionalBufferedDataSourcePump<TelescopeEvent> pump(src);
     do_parallel_dispatcher_loops(run_config, &pump, nthread, log_frequency,
       start_time, ndispatched);
+  }
+  dispatch_leave_run();
+  write_final_log_message(log_frequency, start_time, ndispatched);
+}
+
+void ParallelEventDispatcher::
+process_run(std::vector<calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list,
+  calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  unsigned log_frequency)
+{
+  if(src_list.empty())
+    throw std::runtime_error("process_run: empty data source list");
+
+  auto start_time = std::chrono::system_clock::now();
+  std::atomic<uint_fast64_t> ndispatched { 0 };
+
+  dispatch_run_configuration(run_config);
+  if(src_list.size() == 1)
+  {
+    do_dispatcher_loop(src_list[0], log_frequency, start_time, ndispatched);
+  }
+  else
+  {
+    io::data_source::VectorDataSourceFactory<TelescopeEvent> src_factory(src_list);
+    do_parallel_dispatcher_loops(run_config, &src_factory, src_list.size(),
+      log_frequency, start_time, ndispatched);
   }
   dispatch_leave_run();
   write_final_log_message(log_frequency, start_time, ndispatched);
@@ -337,4 +385,48 @@ dispatch_merge_results(bool dispatch_only_to_adopted_visitors)
   } else {
     for(auto iv : visitors_)iv->merge_results();
   }
+}
+
+namespace {
+  template<typename T> bool equal(const T& a, const T& b) {
+    if(a.size() != b.size())return false;
+    return std::equal(a.begin(), a.end(), b.begin());
+  }
+}
+
+bool ParallelEventDispatcher::merge_run_config(calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration* to,
+  const calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration& from)
+{
+  if(to->run_number() != from.run_number())
+    throw std::runtime_error("merge_run_config: Mismatch of run_number");
+  if(to->telescope_id() != from.telescope_id())
+    throw std::runtime_error("merge_run_config: Mismatch of telescope_id");
+  if(not equal(to->configured_channel_index(), from.configured_channel_index()))
+    throw std::runtime_error("merge_run_config: Mismatch of configured_channel_index");
+  if(not equal(to->configured_channel_id(), from.configured_channel_id()))
+    throw std::runtime_error("merge_run_config: Mismatch of configured_channel_id");
+  if(not equal(to->configured_module_index(), from.configured_module_index()))
+    throw std::runtime_error("merge_run_config: Mismatch of configured_module_index");
+  if(not equal(to->configured_module_id(), from.configured_module_id()))
+    throw std::runtime_error("merge_run_config: Mismatch of configured_module_id");
+  if(to->num_samples() != from.num_samples())
+    throw std::runtime_error("merge_run_config: Mismatch of num_samples");
+  std::string to_camera = to->camera_layout().SerializeAsString();
+  std::string from_camera = from.camera_layout().SerializeAsString();
+  if(to_camera != from_camera)
+    throw std::runtime_error("merge_run_config: Mismatch of camera_layout");
+  if(to->has_nectarcam() != from.has_nectarcam()
+      or (to->has_nectarcam() and to->nectarcam().SerializeAsString() != from.nectarcam().SerializeAsString()))
+    throw std::runtime_error("merge_run_config: Mismatch of NectarCAM specific elements");
+  if(to->has_lstcam() != from.has_lstcam()
+      or (to->has_lstcam() and to->lstcam().SerializeAsString() != from.lstcam().SerializeAsString()))
+    throw std::runtime_error("merge_run_config: Mismatch of LSTCAM specific elements");
+
+  to->set_filename(std::min(to->filename(), from.filename()));
+  to->mutable_run_start_time()->set_time_ns(std::min(
+    to->run_start_time().time_ns(), from.run_start_time().time_ns()));
+  for(const auto& iff : from.fragment_filename())to->add_fragment_filename(iff);
+  return true;
 }

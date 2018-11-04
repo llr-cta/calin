@@ -133,17 +133,13 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
   layout->set_can_read_charges(true);
   layout->set_can_read_peak_sample(false);
 
-  auto& mod_ctr_id_to_name = *layout->mutable_module_counter_id_to_name();
-  mod_ctr_id_to_name[0] = "global_event_counter";
-  mod_ctr_id_to_name[1] = "bunch_counter";
-  mod_ctr_id_to_name[2] = "event_counter";
-  mod_ctr_id_to_name[3] = "ts1";
-  mod_ctr_id_to_name[4] = "ts2_bunch";
-  mod_ctr_id_to_name[5] = "ts2_event";
-  mod_ctr_id_to_name[6] = "ts2_empty";
-  for(auto&& i : layout->module_counter_id_to_name()) {
-    (*layout->mutable_module_counter_name_to_id())[i.second] = i.first;
-  }
+  layout->add_module_counter_name("global_event_counter");
+  layout->add_module_counter_name("bunch_counter");
+  layout->add_module_counter_name("event_counter");
+  layout->add_module_counter_name("ts1");
+  layout->add_module_counter_name("ts2_bunch");
+  layout->add_module_counter_name("ts2_event");
+  layout->add_module_counter_name("ts2_empty");
 
 #if 0 // Obsolete as CDTS has its own structure type
   auto& cam_ctr_id_to_name = *layout->mutable_camera_counter_id_to_name();
