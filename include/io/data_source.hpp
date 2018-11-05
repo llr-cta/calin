@@ -114,7 +114,7 @@ public:
 private:
   std::vector<DataSource<T>*> sources_;
   bool adopt_sources_ = false;
-  std::atomic<uint_fast64_t> isource_ { 0 };
+  std::atomic<uint_fast32_t> isource_ { 0 };
 };
 
 // *****************************************************************************
