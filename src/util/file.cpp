@@ -276,7 +276,7 @@ unsigned calin::util::file::extract_run_number_from_filename(const std::string& 
   return calin::util::string::unsigned_from_string(filename.substr(num_start));
 }
 
-std::vector<std::string> calin::util::file::filename_fragments(std::string filename,
+std::vector<std::string> calin::util::file::file_fragments(std::string filename,
   const std::string& extension, unsigned fragment_stride)
 {
   if(not is_file(filename))return { };

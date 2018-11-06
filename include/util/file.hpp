@@ -102,7 +102,7 @@ void replace_question_with_number(std::string& filename, unsigned n);
 //   "/data/CTA/ZFITS/NectarCAM.Run12345.0002.fits.fz"
 //   "/data/CTA/ZFITS/NectarCAM.Run12345.0003.fits.fz" }
 // if all those files existed
-std::vector<std::string> filename_fragments(std::string filename,
+std::vector<std::string> file_fragments(std::string filename,
   const std::string& extension, unsigned fragment_stride=1U);
 
 void save_protobuf_to_json_file(const std::string& filename,
