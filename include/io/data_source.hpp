@@ -103,7 +103,7 @@ public:
     if(adopt_sources_)for(auto* src: sources_)delete src;
   }
   DataSource<T>* new_data_source() override {
-    unsigned isource = isource_.fetch_add(1);
+    unsigned isource = isource_.fetch_add(1,std::memory_order_relaxed);
     if(isource<sources_.size()) {
       return new DelegatedDataSource<T>(sources_[isource], false);
     } else {

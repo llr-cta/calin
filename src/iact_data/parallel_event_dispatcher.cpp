@@ -323,7 +323,7 @@ void ParallelEventDispatcher::do_dispatcher_loop(
   uint64_t seq_index;
   while(TelescopeEvent* event = src->get_next(seq_index, &arena))
   {
-    unsigned ndispatched_val = ndispatched.fetch_add(1);
+    unsigned ndispatched_val = ndispatched.fetch_add(1, std::memory_order_relaxed);
     if(log_frequency and ndispatched_val and ndispatched_val % log_frequency == 0)
     {
       auto dt = std::chrono::system_clock::now() - start_time;
