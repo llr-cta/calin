@@ -288,6 +288,7 @@ std::vector<std::string> calin::util::file::filename_fragments(std::string filen
   auto ifind = filename.rfind(extension);
   if(ifind == filename.size()-extension.size())
   {
+    unsigned padded_size = 0;
     filename = filename.substr(0, ifind);
 
     unsigned istart = 0;
@@ -298,6 +299,7 @@ std::vector<std::string> calin::util::file::filename_fragments(std::string filen
         std::all_of(filename.begin() + ifind + 1, filename.end(), ::isdigit))
       {
         istart = std::stoi(filename.substr(ifind + 1));
+        padded_size = filename.size()-ifind-1;
         filename = filename.substr(0, ifind);
       }
     }
@@ -315,7 +317,7 @@ std::vector<std::string> calin::util::file::filename_fragments(std::string filen
         } else {
           fragment_i = std::string("0") + fragment_i;
         }
-      }while(not fragment_found and fragment_i.size() <= 6);
+      }while(not fragment_found and fragment_i.size() <= padded_size);
     }
   }
   return filenames;
