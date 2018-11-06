@@ -83,10 +83,27 @@ unsigned extract_longest_number_from_filename(const std::string& filename);
 // "/veritas/data/V12345_v2.cvbf" would return 12345.
 unsigned extract_first_number_from_filename(const std::string& filename);
 
+//! Extract the run number from the filename portion of a path/file
+//  specification. This corresponds to the number that follows the word "Run"
+//  in filename, or the first number in the run if not present. or For example,
+// "/data/CTA/ZFITS/LST-1.Run12345.fits.fz" would return 12345, as would
+// "/veritas/data/V12345_v2.cvbf"
+unsigned extract_run_number_from_filename(const std::string& filename);
+
 //! Replace the first occurance of a question mark '?' with an
 // unsigned integer. For example passing: filename="?.root" and n=12345
 // would result in filename being returned as "12345.root"
 void replace_question_with_number(std::string& filename, unsigned n);
+
+// Search for file fragments based on filename and extension, e.g.
+// "/data/CTA/ZFITS/NectarCAM.Run12345.0000.fits.fz" might yield
+// { "/data/CTA/ZFITS/NectarCAM.Run12345.0000.fits.fz",
+//   "/data/CTA/ZFITS/NectarCAM.Run12345.0001.fits.fz"
+//   "/data/CTA/ZFITS/NectarCAM.Run12345.0002.fits.fz"
+//   "/data/CTA/ZFITS/NectarCAM.Run12345.0003.fits.fz" }
+// if all those files existed
+std::vector<std::string> filename_fragments(std::string filename,
+  const std::string& extension, unsigned fragment_stride=1U);
 
 void save_protobuf_to_json_file(const std::string& filename,
   const google::protobuf::Message* message);
