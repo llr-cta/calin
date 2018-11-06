@@ -28,6 +28,7 @@
 #include <iact_data/nectarcam_data_source.hpp>
 #include <iact_data/nectarcam_configuration.hpp>
 #include <iact_data/lstcam_data_source.hpp>
+#include <iact_data/cta_data_source.hpp>
 using namespace calin::io;
 #define SWIG_FILE_WITH_INIT
   %}
@@ -47,6 +48,7 @@ using namespace calin::io;
 %import "iact_data/zfits_data_source.pb.i"
 %import "iact_data/nectarcam_data_source.pb.i"
 %import "iact_data/lstcam_data_source.pb.i"
+%import "iact_data/cta_data_source.pb.i"
 
 %newobject decode_nmc_xml_file(const std::string& filename);
 %include "iact_data/nectarcam_configuration.hpp"
@@ -192,3 +194,4 @@ using namespace calin::io;
 
 %include "iact_data/nectarcam_data_source.hpp"
 %include "iact_data/lstcam_data_source.hpp"
+%include "iact_data/cta_data_source.hpp"

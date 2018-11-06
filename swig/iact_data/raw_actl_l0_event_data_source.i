@@ -39,6 +39,7 @@
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
 #include <iact_data/lstcam_data_source.hpp>
+#include <iact_data/cta_data_source.hpp>
 #define SWIG_FILE_WITH_INIT
   %}
 
