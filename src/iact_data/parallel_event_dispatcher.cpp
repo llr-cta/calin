@@ -191,7 +191,7 @@ void ParallelEventDispatcher::process_nectarcam_zfits_run(
     ZFITSACTL_L0_CameraEventDataSource zfits_actl_src(filename, zfits_config);
   calin::iact_data::nectarcam_actl_event_decoder::
     NectarCam_ACTL_L0_CameraEventDecoder decoder(filename,
-      calin::util::file::extract_first_number_from_filename(filename),
+      calin::util::file::extract_run_number_from_filename(filename),
       decoder_config);
 
   const DataModel::CameraEvent* actl_sample_event = nullptr;
@@ -323,7 +323,7 @@ void ParallelEventDispatcher::do_dispatcher_loop(
   uint64_t seq_index;
   while(TelescopeEvent* event = src->get_next(seq_index, &arena))
   {
-    unsigned ndispatched_val = ndispatched.fetch_add(1, std::memory_order_relaxed);
+    unsigned ndispatched_val = ndispatched.fetch_add(1);
     if(log_frequency and ndispatched_val and ndispatched_val % log_frequency == 0)
     {
       auto dt = std::chrono::system_clock::now() - start_time;

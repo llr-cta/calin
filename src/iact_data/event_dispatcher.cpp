@@ -201,7 +201,7 @@ void TelescopeEventDispatcher::process_nectarcam_zfits_run(
     ZFITSACTL_L0_CameraEventDataSource zfits_actl_src(filename, zfits_config);
   calin::iact_data::nectarcam_actl_event_decoder::
     NectarCam_ACTL_L0_CameraEventDecoder decoder(filename,
-      calin::util::file::extract_first_number_from_filename(filename),
+      calin::util::file::extract_run_number_from_filename(filename),
       decoder_config);
 
   const DataModel::CameraEvent* actl_sample_event = nullptr;

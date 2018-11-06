@@ -74,7 +74,7 @@ NectarCamZFITSDataSource_L0(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource_L0(filename,
     decoder_ = new NectarCam_ACTL_L0_CameraEventDecoder(filename,
-      calin::util::file::extract_first_number_from_filename(filename),
+      calin::util::file::extract_run_number_from_filename(filename),
       decoder_config), false /* we delete it! */, config)
 {
   // nothing to see here
@@ -119,7 +119,7 @@ NectarCamZFITSDataSource_R1(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource_R1(filename,
     decoder_ = new NectarCam_ACTL_R1_CameraEventDecoder(filename,
-      calin::util::file::extract_first_number_from_filename(filename),
+      calin::util::file::extract_run_number_from_filename(filename),
       decoder_config), false /* we delete it! */, config)
 {
   // nothing to see here
