@@ -60,6 +60,29 @@ using calin::util::file::is_file;
 using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
 
+bool calin::iact_data::zfits_actl_data_source::
+is_zfits_l0(std::string filename, std::string events_table_name)
+{
+  calin::util::file::expand_filename_in_place(filename);
+  if(!is_file(filename))return false;
+
+  if(events_table_name == "")events_table_name =
+    ZFITSSingleFileACTL_L0_CameraEventDataSource::
+      default_config().events_table_name();
+
+  try {
+    IFits ifits(filename, events_table_name, /* force= */ true);
+    const std::string& message_name = ifits.GetStr("PBFHEAD");
+    if (message_name == "DataModel.CameraEvent") {
+      return true;
+    }
+    // fallthrough to return false
+  } catch(...) {
+    // fallthrough to return false
+  }
+  return false;
+}
+
 ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader::
 ~ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader()
 {

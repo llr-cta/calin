@@ -78,6 +78,8 @@ CALIN_TYPEALIAS(ConstACTL_L0_CameraEventDataSink,
 
 namespace calin { namespace iact_data { namespace zfits_actl_data_source {
 
+bool is_zfits_l0(std::string filename, std::string events_table_name = "");
+
 class ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader:
   public calin::io::data_source::RandomAccessDataSource<DataModel::CameraEvent>
 {
@@ -273,6 +275,8 @@ CALIN_TYPEALIAS(ConstACTL_R1_CameraEventDataSink,
 #endif
 
 namespace calin { namespace iact_data { namespace zfits_actl_data_source {
+
+bool is_zfits_r1(std::string filename, std::string events_table_name = "");
 
 class ACTL_R1_CameraEventRandomAccessDataSourceWithRunHeader:
   public calin::io::data_source::RandomAccessDataSource<R1::CameraEvent>

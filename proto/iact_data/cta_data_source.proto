@@ -30,7 +30,7 @@ package calin.ix.iact_data.cta_data_source;
 
 message CTACameraEventDecoderConfig {
   enum CameraType {
-    AUTOMATIC                                              = 0;
+    AUTO_DETECT                                            = 0;
     NECTARCAM                                              = 1;
     LSTCAM                                                 = 2;
   };

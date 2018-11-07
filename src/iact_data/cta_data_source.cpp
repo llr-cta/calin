@@ -112,37 +112,55 @@ CTAZFITSDataSource::get_run_configuration()
 
 calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*
 CTAZFITSDataSource::construct_delegate(const std::string& filename,
-  const config_type& config, decoder_config_type decoder_config)
+  config_type config, decoder_config_type decoder_config)
 {
   if(config.data_model() ==
-      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0) {
+      calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT) {
+    if(zfits_actl_data_source::is_zfits_r1(filename, config.events_table_name())) {
+      config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0);
+    } else if (zfits_actl_data_source::is_zfits_l0(filename, config.events_table_name())) {
+      config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1);
+    }
+  }
+
+  if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0) {
+    if(decoder_config.camera_type() ==
+        calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::AUTO_DETECT
+      or decoder_config.camera_type() ==
+        calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::NECTARCAM) {
+      return new NectarCamZFITSDataSource_L0(filename, config, decoder_config.nectarcam());
+    }
     throw std::runtime_error(
-      "CTAZFITSDataSource::construct_delegate: L0 data format not supported");
-  }
+      "CTAZFITSDataSource::construct_delegate: L0 data format not supported with camera type: "
+      + calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::CameraType_Name(decoder_config.camera_type()));
+  } else if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1) {
+    if(decoder_config.camera_type()
+        == calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::AUTO_DETECT)
+    {
+      if(!is_file(filename))
+        throw std::runtime_error(
+          "CTAZFITSDataSource::construct_delegate: File not found: " + filename);
+      ZFITSSingleFileACTL_R1_CameraEventDataSource src(filename, config);
+      auto* header = src.get_run_header();
+      if(header->has_nectarcam()) {
+        decoder_config.set_camera_type(
+          calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::NECTARCAM);
+      } else if(header->has_lstcam()) {
+        decoder_config.set_camera_type(
+          calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::LSTCAM);
+      } else {
+        delete header;
+        throw std::runtime_error(
+          "CTAZFITSDataSource::construct_delegate: no known camera extension found");
+      }
+      delete header;
+    }
 
-  if(decoder_config.camera_type()
-      == calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::AUTOMATIC)
-  {
-    if(!is_file(filename))
-      throw std::runtime_error(
-        "CTAZFITSDataSource::construct_delegate: File not found: " + filename);
-    ZFITSSingleFileACTL_R1_CameraEventDataSource src(filename, config);
-    auto* header = src.get_run_header();
-    if(header->has_nectarcam())
-      decoder_config.set_camera_type(
-        calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::NECTARCAM);
-    else if(header->has_lstcam())
-      decoder_config.set_camera_type(
-        calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::LSTCAM);
-    else
-      throw std::runtime_error(
-        "CTAZFITSDataSource::construct_delegate: no known camera extension found");
-    delete header;
+    if(decoder_config.camera_type() == calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::NECTARCAM) {
+      return new NectarCamZFITSDataSource_R1(filename, config, decoder_config.nectarcam());
+    } else {
+      return new LSTCamZFITSDataSource_R1(filename, config, decoder_config.lstcam());
+    }
   }
-
-  if(decoder_config.camera_type() == calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::NECTARCAM) {
-    return new NectarCamZFITSDataSource_R1(filename, config, decoder_config.nectarcam());
-  } else {
-    return new LSTCamZFITSDataSource_R1(filename, config, decoder_config.lstcam());
-  }
+  return nullptr;
 }

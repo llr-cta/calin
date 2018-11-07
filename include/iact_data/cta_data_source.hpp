@@ -48,6 +48,8 @@ public:
 
   static calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig default_config() {
     config_type config = calin::iact_data::zfits_data_source::ZFITSDataSource_R1::default_config();
+    config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT);
+    config.set_run_header_table_name(""); // Differs between L0 and R1 so let downstream decode
     return config;
   }
 
@@ -71,8 +73,7 @@ public:
 
 private:
   static TelescopeRandomAccessDataSourceWithRunConfig* construct_delegate(
-    const std::string& filename, const config_type& config,
-    decoder_config_type decoder_config);
+    const std::string& filename, config_type config, decoder_config_type decoder_config);
 };
 
 
