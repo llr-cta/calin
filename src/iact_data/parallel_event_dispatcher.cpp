@@ -30,13 +30,13 @@
 #include <io/data_source.hpp>
 #include <io/buffered_data_source.hpp>
 #include <util/file.hpp>
-#include <iact_data/nectarcam_actl_event_decoder.hpp>
 
 using namespace calin::util::string;
 using namespace calin::util::log;
 using namespace calin::iact_data::event_dispatcher;
 using namespace calin::io::data_source;
 using namespace calin::iact_data::telescope_data_source;
+using namespace calin::iact_data::cta_data_source;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::ix::iact_data::telescope_run_configuration;
 using calin::iact_data::event_visitor::ParallelEventVisitor;
@@ -178,6 +178,44 @@ process_run(std::vector<calin::io::data_source::DataSource<
 }
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+void ParallelEventDispatcher::
+process_cta_zfits_run(const std::string& filename, unsigned log_frequency, unsigned nthread,
+  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config,
+  calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig zfits_config)
+{
+  auto fragments = calin::util::file::file_fragments(filename,
+    zfits_config.extension(), zfits_config.file_fragment_stride());
+  if(fragments.empty()) {
+    throw std::runtime_error("process_cta_zfits_run: file not found: " + filename);
+  }
+  nthread = std::min(std::max(nthread, 1U), unsigned(fragments.size()));
+  zfits_config.set_file_fragment_stride(
+    nthread*std::max(1U, zfits_config.file_fragment_stride()));
+  std::vector<calin::iact_data::telescope_data_source::
+    TelescopeRandomAccessDataSourceWithRunConfig*> src_list(nthread);
+  for(unsigned ithread=0; ithread<nthread; ithread++) {
+    try {
+      src_list[ithread] =
+        new CTAZFITSDataSource(fragments[ithread], decoder_config, zfits_config);
+    } catch(...) {
+      for(auto* src: src_list)delete src;
+      throw;
+    }
+  }
+  process_run(src_list, log_frequency);
+  for(auto* src: src_list)delete src;
+}
+
+void ParallelEventDispatcher::
+process_cta_zfits_run(const std::string& filename, unsigned log_frequency, unsigned nthread,
+  const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config,
+  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config)
+{
+  return process_cta_zfits_run(filename, log_frequency, nthread, decoder_config, zfits_config);
+}
+#endif // defined(CALIN_HAVE_CTA_CAMERASTOACTL)
+
+#if 0
 void ParallelEventDispatcher::process_nectarcam_zfits_run(
   const std::string& filename,
   unsigned log_frequency, int nthread,
@@ -243,7 +281,7 @@ void ParallelEventDispatcher::process_nectarcam_zfits_run(
   dispatch_leave_run();
   write_final_log_message(log_frequency, start_time, ndispatched);
 }
-#endif // defined(CALIN_HAVE_CTA_CAMERASTOACTL)
+#endif // 0
 
 void ParallelEventDispatcher::
 dispatch_event(uint64_t seq_index, TelescopeEvent* event)

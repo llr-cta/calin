@@ -31,7 +31,7 @@
 #include <calin_global_config.hpp>
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/event_visitor.hpp>
-#include <iact_data/nectarcam_data_source.hpp>
+#include <iact_data/cta_data_source.hpp>
 
 namespace calin { namespace iact_data { namespace event_dispatcher {
 
@@ -68,6 +68,19 @@ public:
     unsigned log_frequency = 0);
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+  void process_cta_zfits_run(const std::string& filename, unsigned log_frequency = 0, unsigned nthread = 1,
+    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config =
+      calin::iact_data::cta_data_source::CTAZFITSDataSource::default_decoder_config(),
+    calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig zfits_config =
+      calin::iact_data::cta_data_source::CTAZFITSDataSource::default_config());
+
+  void process_cta_zfits_run(const std::string& filename, unsigned log_frequency, unsigned nthread,
+    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config,
+    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config =
+      calin::iact_data::cta_data_source::CTAZFITSDataSource::default_decoder_config());
+#endif
+
+#if 0
   void process_nectarcam_zfits_run(const std::string& filename,
     unsigned log_frequency = 0, int nthread = 0,
     const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config =

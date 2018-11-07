@@ -142,6 +142,10 @@ CTAZFITSDataSource::construct_delegate(const std::string& filename,
           "CTAZFITSDataSource::construct_delegate: File not found: " + filename);
       ZFITSSingleFileACTL_R1_CameraEventDataSource src(filename, config);
       auto* header = src.get_run_header();
+      if(header == nullptr) {
+        throw std::runtime_error(
+          "CTAZFITSDataSource::construct_delegate: no run header found: " + filename);
+      }
       if(header->has_nectarcam()) {
         decoder_config.set_camera_type(
           calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::NECTARCAM);
