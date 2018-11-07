@@ -161,6 +161,10 @@ CTAZFITSDataSource::construct_delegate(const std::string& filename,
     } else {
       return new LSTCamZFITSDataSource_R1(filename, config, decoder_config.lstcam());
     }
+  } else {
+    throw std::runtime_error(
+      "CTAZFITSDataSource::construct_delegate: unsupported data format: "
+      + calin::ix::iact_data::zfits_data_source::ACTLDataModel_Name(config.data_model()));
   }
   return nullptr;
 }
