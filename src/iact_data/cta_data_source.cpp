@@ -117,17 +117,17 @@ CTAZFITSDataSource::construct_delegate(const std::string& filename,
   if(config.data_model() ==
       calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT) {
     if(zfits_actl_data_source::is_zfits_r1(filename, config.events_table_name())) {
-      config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0);
-    } else if (zfits_actl_data_source::is_zfits_l0(filename, config.events_table_name())) {
       config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1);
+    } else if (zfits_actl_data_source::is_zfits_l0(filename, config.events_table_name())) {
+      config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0);
     }
   }
 
   if(config.data_model() == calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0) {
     if(decoder_config.camera_type() ==
-        calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::AUTO_DETECT
-      or decoder_config.camera_type() ==
-        calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::NECTARCAM) {
+          calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::AUTO_DETECT
+        or decoder_config.camera_type() ==
+          calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::NECTARCAM) {
       return new NectarCamZFITSDataSource_L0(filename, config, decoder_config.nectarcam());
     }
     throw std::runtime_error(
