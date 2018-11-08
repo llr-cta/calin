@@ -274,6 +274,27 @@ namespace {
     calin::diagnostics::range::make_index_range(
       event_list.begin(), event_list.end(), range);
   }
+
+  template<typename Iterable, typename ValueRLE, typename IndexValueRange>
+  void make_index_range_from_value_rle(
+    const Iterable& indexes, const ValueRLE& rle, IndexValueRange* ivr)
+  {
+    std::map<uint64_t, unsigned> index_and_value;
+    unsigned irle = 0;
+    unsigned nrle = rle.count(irle);
+    for(auto index : indexes) {
+      if(nrle==0) {
+        ++irle;
+        nrle = rle.count(irle);
+      }
+      index_and_value[index] = irle;
+      --nrle;
+    }
+    for(auto iv : index_and_value) {
+      calin::diagnostics::range::encode_monotonic_index_and_value(
+        ivr, iv.first, rle.value(iv.second));
+    }
+  }
 }
 
 void RunInfoDiagnosticsVisitor::integrate_partials()
@@ -343,13 +364,17 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
       results_->mutable_events_missing_modules()->IntegrateFrom(range);
 
     for(unsigned imod=0;imod<partials_->module_size();imod++) {
+      auto* rimod = results_->mutable_module(imod);
+      auto& pimod = partials_->module(imod);
+
       range.Clear();
       make_index_range_from_conditional_bool_rle(
         partials_->event_number_sequence().begin(), partials_->event_number_sequence().end(),
-        partials_->module(imod).module_presence(),
-        &range, false);
+        pimod.module_presence(), &range, false);
       if(range.begin_index_size())
         results_->mutable_module(imod)->mutable_events_missing()->IntegrateFrom(range);
+      rimod->set_num_events_present(pimod.num_events_present());
+
     }
   }
 }
