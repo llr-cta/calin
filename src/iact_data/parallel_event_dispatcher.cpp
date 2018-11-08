@@ -193,16 +193,16 @@ process_cta_zfits_run(const std::string& filename, unsigned log_frequency, unsig
     nthread*std::max(1U, zfits_config.file_fragment_stride()));
   std::vector<calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig*> src_list(nthread);
-  for(unsigned ithread=0; ithread<nthread; ithread++) {
-    try {
+  try {
+    for(unsigned ithread=0; ithread<nthread; ithread++) {
       src_list[ithread] =
         new CTAZFITSDataSource(fragments[ithread], decoder_config, zfits_config);
-    } catch(...) {
-      for(auto* src: src_list)delete src;
-      throw;
     }
+    process_run(src_list, log_frequency);
+  } catch(...) {
+    for(auto* src: src_list)delete src;
+    throw;
   }
-  process_run(src_list, log_frequency);
   for(auto* src: src_list)delete src;
 }
 
