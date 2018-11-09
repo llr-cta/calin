@@ -84,8 +84,9 @@ public:
 
   bool merge_results() override;
 
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration& run_config() const;
   const calin::ix::diagnostics::run_info::RunInfo& run_info();
-  const calin::ix::diagnostics::run_info::PartialRunInfo& partial_run_info();
+  const calin::ix::diagnostics::run_info::PartialRunInfo& partial_run_info() const;
 
   static calin::ix::diagnostics::run_info::RunInfoConfig default_config() {
     calin::ix::diagnostics::run_info::RunInfoConfig config;

@@ -212,6 +212,12 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
   return true;
 }
 
+const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration&
+RunInfoDiagnosticsVisitor::run_config() const
+{
+  return *run_config_;
+}
+
 const calin::ix::diagnostics::run_info::RunInfo& RunInfoDiagnosticsVisitor::run_info()
 {
   results_->Clear();
@@ -233,7 +239,7 @@ const calin::ix::diagnostics::run_info::RunInfo& RunInfoDiagnosticsVisitor::run_
   return *results_;
 }
 
-const calin::ix::diagnostics::run_info::PartialRunInfo& RunInfoDiagnosticsVisitor::partial_run_info()
+const calin::ix::diagnostics::run_info::PartialRunInfo& RunInfoDiagnosticsVisitor::partial_run_info() const
 {
   return *partials_;
 }
