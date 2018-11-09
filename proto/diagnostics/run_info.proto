@@ -32,9 +32,9 @@ package calin.ix.diagnostics.run_info;
 
 
 enum CounterValueTestMode {
-  CVSM_VALUE_DIRECT                                        = 0;
-  CDTS_VALUE_RELATIVE_TO_MEDIAN                            = 1;
-  CDTS_VALUE_RELATIVE_TO_EVENT_NUMBER                      = 2;
+  VALUE                                                    = 0;
+  VALUE_RELATIVE_TO_MEDIAN                                 = 1;
+  VALUE_RELATIVE_TO_EVENT_NUMBER                           = 2;
 };
 
 message RunInfoConfig {
@@ -42,12 +42,17 @@ message RunInfoConfig {
   repeated CounterValueTestMode module_counter_test_mode   = 2;
 };
 
-message CounterCoherence {
-  uint32 counter_id                                        = 1 [
-    (CFO).desc = "Module ID within camera." ];
+message CounterValues {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
 
-//  message IndexAndValueRangeInt64                          = 2 [
-//]
+  uint32 counter_id                                        = 1 [
+    (CFO).desc = "Counter ID within module." ];
+  string counter_name                                      = 2 [
+    (CFO).desc = "Counter name within module." ];
+  CounterValueTestMode test_mode                           = 3 [
+    (CFO).desc = "Counter value processing mode." ];
+  calin.ix.diagnostics.range.IndexAndValueRangeInt64 value_range = 4 [
+    (CFO).desc = "Counter value and index range." ];
 };
 
 message ModuleRunInfo {
@@ -64,6 +69,9 @@ message ModuleRunInfo {
   calin.ix.diagnostics.range.IndexRange events_missing     = 4 [
     (CFO).desc = "Ranges of event numbers for data from this module was "
       "missing." ];
+  repeated CounterValues counter_value                     = 10 [
+    (CFO).desc = "Ranges of event numbers for which the modules had consistent "
+      "values." ];
 };
 
 message RunInfo {

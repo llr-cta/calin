@@ -90,6 +90,7 @@ RunInfoDiagnosticsVisitor::RunInfoDiagnosticsVisitor(
 
 RunInfoDiagnosticsVisitor::~RunInfoDiagnosticsVisitor()
 {
+  for(auto* iproc: mod_counter_processor_)delete iproc;
   delete arena_;
 }
 
@@ -114,17 +115,20 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   elapsed_time_hist_.clear();
   run_config_->CopyFrom(*run_config);
 
+  for(auto* iproc: mod_counter_processor_)delete iproc;
   mod_counter_id_.clear();
+  mod_counter_mode_.clear();
   mod_counter_processor_.clear();
   for(unsigned icounter=0;icounter<config_.module_counter_test_id_size();icounter++) {
     int counter_id = config_.module_counter_test_id(icounter);
     if(counter_id<0 or counter_id>=run_config_->camera_layout().module_counter_name_size())continue;
     mod_counter_id_.push_back(counter_id);
+    mod_counter_mode_.push_back(config_.module_counter_test_mode(icounter));
     if(icounter<config_.module_counter_test_mode_size()
-        and config_.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::CDTS_VALUE_RELATIVE_TO_MEDIAN) {
+        and config_.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_MEDIAN) {
       mod_counter_processor_.push_back(new RelativeToMedianModuleCounterProcessor());
     } else if(icounter<config_.module_counter_test_mode_size()
-        and config_.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::CDTS_VALUE_RELATIVE_TO_EVENT_NUMBER) {
+        and config_.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_EVENT_NUMBER) {
       mod_counter_processor_.push_back(new RelativeToEventNumberModuleCounterProcessor());
     } else {
       mod_counter_processor_.push_back(new DirectModuleCounterProcessor());
@@ -135,7 +139,7 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
 
   for(unsigned imod=0;imod<run_config->configured_module_id_size();imod++) {
     auto* m = partials_->add_module();
-    for(unsigned icounter=0;icounter<config_.module_counter_test_id_size();icounter++) {
+    for(unsigned icounter=0;icounter<mod_counter_id_.size();icounter++) {
       m->add_counter_value();
     }
   }
@@ -144,9 +148,6 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
 
 bool RunInfoDiagnosticsVisitor::leave_telescope_run()
 {
-  for(auto* iproc: mod_counter_processor_)delete iproc;
-  mod_counter_id_.clear();
-  mod_counter_processor_.clear();
   return true;
 }
 
@@ -218,6 +219,14 @@ const calin::ix::diagnostics::run_info::RunInfo& RunInfoDiagnosticsVisitor::run_
     auto* mod = results_->add_module();
     mod->set_configured_module_rank(imod);
     mod->set_camera_module_id(run_config_->configured_module_id(imod));
+    for(unsigned icounter=0;icounter<mod_counter_id_.size(); icounter++) {
+      auto* counter = mod->add_counter_value();
+      counter->set_counter_id(mod_counter_id_[icounter]);
+      counter->set_counter_name(run_config_->camera_layout().module_counter_name(
+        mod_counter_id_[icounter]));
+      counter->set_test_mode(
+        calin::ix::diagnostics::run_info::CounterValueTestMode(mod_counter_mode_[icounter]));
+    }
   }
   integrate_histograms();
   integrate_partials();
@@ -275,24 +284,28 @@ namespace {
       event_list.begin(), event_list.end(), range);
   }
 
-  template<typename Iterable, typename ValueRLE, typename IndexValueRange>
+  template<typename Iterable, typename PresenceRLE, typename ValueRLE, typename IndexValueRange>
   void make_index_range_from_value_rle(
-    const Iterable& indexes, const ValueRLE& rle, IndexValueRange* ivr)
+    const Iterable& indexes, const PresenceRLE& has_rle, const ValueRLE& val_rle,
+    IndexValueRange* ivr)
   {
     std::map<uint64_t, unsigned> index_and_value;
-    unsigned irle = 0;
-    unsigned nrle = rle.count(irle);
+    unsigned val_irle = 0;
+    unsigned val_nrle = val_rle.count(val_irle);
+    unsigned has_irle = 0;
+    unsigned has_nrle = has_rle.count(has_irle);
     for(auto index : indexes) {
-      if(nrle==0) {
-        ++irle;
-        nrle = rle.count(irle);
+      if(has_nrle==0) { ++has_irle; has_nrle = has_rle.count(has_irle); }
+      if(val_nrle==0) { ++val_irle; val_nrle = val_rle.count(val_irle); }
+      if(has_rle.value(has_irle)) {
+        index_and_value[index] = val_irle;
+        --val_nrle;
       }
-      index_and_value[index] = irle;
-      --nrle;
+      --has_nrle;
     }
     for(auto iv : index_and_value) {
       calin::diagnostics::range::encode_monotonic_index_and_value(
-        ivr, iv.first, rle.value(iv.second));
+        ivr, iv.first, val_rle.value(iv.second));
     }
   }
 }
@@ -375,6 +388,11 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
         results_->mutable_module(imod)->mutable_events_missing()->IntegrateFrom(range);
       rimod->set_num_events_present(pimod.num_events_present());
 
+      for(unsigned icounter=0; icounter<mod_counter_id_.size(); icounter++) {
+        make_index_range_from_value_rle(partials_->event_number_sequence(),
+          pimod.module_presence(), pimod.counter_value(icounter),
+          rimod->mutable_counter_value(icounter)->mutable_value_range());
+      }
     }
   }
 }

@@ -103,6 +103,7 @@ private:
 
   std::vector<int64_t> mod_counter_values_;
   std::vector<unsigned> mod_counter_id_;
+  std::vector<unsigned> mod_counter_mode_;
   std::vector<ModuleCounterProcessor*> mod_counter_processor_;
 
   calin::math::histogram::Histogram1D event_number_hist_ { 1.0e4, 0.0, 1.0e9, 0.0 };
