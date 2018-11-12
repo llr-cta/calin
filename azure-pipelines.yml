@@ -9,6 +9,7 @@ pool:
 variables:
   imageName: 'calin:$(build.buildId)'
 
+steps:
 - script: |
     docker build -f Dockerfile -t $(dockerId)/$(imageName) .
     docker login -u $(dockerId) -p $pswd
