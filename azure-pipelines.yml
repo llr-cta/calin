@@ -10,6 +10,8 @@ strategy:
   matrix:
     generic:
       build_arch: generic
+    ivybridge:
+      build_arch: ivybridge
     broadwell:
       build_arch: broadwell
 
