@@ -231,6 +231,49 @@ private:
   double                  flat_to_flat_z_2_;
 };
 
+class VSOAlignedTileAperture: public VSOObscuration
+{
+public:
+  VSOAlignedTileAperture(const Eigen::Vector3d& center,
+      double pitch_x, double pitch_z,
+      double center_x, double center_z,
+      double support_width_x, double support_width_z):
+    VSOObscuration(), center_(center),
+    pitch_x_inv_(1.0/pitch_x), pitch_z_inv_(1.0/pitch_z),
+    edge_x_(center_x - 0.5*pitch_x),
+    edge_z_(center_z - 0.5*pitch_z),
+    opaque_frac_x_2_(0.5*support_width_x*pitch_x_inv_),
+    opaque_frac_z_2_(0.5*support_width_z*pitch_z_inv_)
+  {
+   // nothing to see here
+  }
+
+  virtual ~VSOAlignedTileAperture();
+  bool doesObscure(const calin::math::ray::Ray& p_in,
+                  calin::math::ray::Ray& p_out, double n) const override;
+  VSOAlignedTileAperture* clone() const override;
+
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
+  static VSOAlignedTileAperture* create_from_proto(
+    const ix::simulation::vs_optics::VSOAlignedTileApertureData& d);
+
+private:
+  Eigen::Vector3d         center_;
+  double                  pitch_x_inv_;
+  double                  pitch_z_inv_;
+  double                  edge_x_;
+  double                  edge_z_;
+  double                  opaque_frac_x_2_;
+  double                  opaque_frac_z_2_;
+};
+
 class VSOAlignedHexagonalAperture: public VSOObscuration
 {
 public:

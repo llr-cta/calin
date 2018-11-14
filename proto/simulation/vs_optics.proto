@@ -110,9 +110,33 @@ message VSOAlignedRectangularApertureData {
     [(CFO).desc = "Width of the rectangle in X",
      (CFO).units = "cm"];
   double flat_to_flat_z                                    = 3
-   [(CFO).desc = "Height of the rectangle in Z",
-    (CFO).units = "cm"];
-}
+    [(CFO).desc = "Height of the rectangle in Z",
+     (CFO).units = "cm"];
+};
+
+message VSOAlignedTileApertureData {
+  common_types.Vector3D center_pos                         = 1
+    [(CFO).desc = "Position of the center of the square in reflector frame. ",
+     (CFO).units = "cm" ];
+  double pitch_x                                      = 4
+    [(CFO).desc = "Tile pitch in X",
+     (CFO).units = "cm"];
+  double pitch_z                                      = 5
+    [(CFO).desc = "Tile pitch in Z",
+     (CFO).units = "cm"];
+  double center_x                                     = 6
+    [(CFO).desc = "Center of tile opening in X",
+     (CFO).units = "cm"];
+  double center_z                                     = 7
+    [(CFO).desc = "Center of tile opening in Z",
+     (CFO).units = "cm"];
+  double support_width_x                              = 8
+    [(CFO).desc = "Center of tile opening in X",
+     (CFO).units = "cm"];
+  double support_width_z                              = 9
+    [(CFO).desc = "Center of tile opening in Z",
+     (CFO).units = "cm"];
+};
 
 message VSOAlignedHexagonalApertureData {
   common_types.Vector3D center_pos                         = 1
@@ -140,6 +164,7 @@ message VSOObscurationData {
     VSOAlignedRectangularApertureData rectangular_aperture = 4;
     VSOAlignedCircularApertureData circular_aperture       = 5;
     VSOAlignedHexagonalApertureData hexagonal_aperture     = 6;
+    VSOAlignedTileApertureData tile_aperture               = 7;
   }
 };
 

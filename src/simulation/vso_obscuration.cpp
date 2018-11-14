@@ -63,6 +63,14 @@ create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
   }
 }
 
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSODiskObscuration
+//
+// *****************************************************************************
+// *****************************************************************************
+
 VSODiskObscuration::~VSODiskObscuration()
 {
   // nothing to see here
@@ -101,6 +109,13 @@ VSODiskObscuration* VSODiskObscuration::clone() const
   return new VSODiskObscuration(*this);
 }
 
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOTubeObscuration
+//
+// *****************************************************************************
+// *****************************************************************************
 
 VSOTubeObscuration::~VSOTubeObscuration()
 {
@@ -152,6 +167,14 @@ VSOTubeObscuration* VSOTubeObscuration::clone() const
   return new VSOTubeObscuration(*this);
 }
 
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOAlignedBoxObscuration
+//
+// *****************************************************************************
+// *****************************************************************************
+
 VSOAlignedBoxObscuration::~VSOAlignedBoxObscuration()
 {
   // nothing to see here
@@ -196,6 +219,14 @@ VSOAlignedBoxObscuration* VSOAlignedBoxObscuration::create_from_proto(
     calin::math::vector3d_util::from_proto(d.max_corner()),
     calin::math::vector3d_util::from_proto(d.min_corner()));
 }
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOAlignedRectangularAperture
+//
+// *****************************************************************************
+// *****************************************************************************
 
 VSOAlignedRectangularAperture::~VSOAlignedRectangularAperture()
 {
@@ -243,11 +274,18 @@ VSOAlignedRectangularAperture* VSOAlignedRectangularAperture::create_from_proto(
     d.flat_to_flat_x(), d.flat_to_flat_z());
 }
 
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOAlignedHexagonalAperture
+//
+// *****************************************************************************
+// *****************************************************************************
+
 VSOAlignedHexagonalAperture::~VSOAlignedHexagonalAperture()
 {
   // nothing to see here
 }
-
 
 bool VSOAlignedHexagonalAperture::
 doesObscure(const calin::math::ray::Ray& r_in, calin::math::ray::Ray& r_out, double n) const
@@ -292,6 +330,14 @@ VSOAlignedHexagonalAperture* VSOAlignedHexagonalAperture::create_from_proto(
     calin::math::vector3d_util::from_proto(d.center_pos()), d.flat_to_flat());
 }
 
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOAlignedCircularAperture
+//
+// *****************************************************************************
+// *****************************************************************************
+
 VSOAlignedCircularAperture::~VSOAlignedCircularAperture()
 {
   // nothing to see here
@@ -332,4 +378,90 @@ VSOAlignedCircularAperture* VSOAlignedCircularAperture::create_from_proto(
 {
   return new VSOAlignedCircularAperture(
     calin::math::vector3d_util::from_proto(d.center_pos()),d.diameter());
+}
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOAlignedTileAperture
+//
+// *****************************************************************************
+// *****************************************************************************
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOAlignedRectangularAperture
+//
+// *****************************************************************************
+// *****************************************************************************
+
+VSOAlignedTileAperture::~VSOAlignedTileAperture()
+{
+  // nothing to see here
+}
+
+bool VSOAlignedTileAperture::
+doesObscure(const calin::math::ray::Ray& r_in, calin::math::ray::Ray& r_out, double n) const
+{
+  r_out = r_in;
+  if(r_out.propagate_to_y_plane(-center_.y(), false, n))
+  {
+    double x = r_out.x() - center_.x();
+    double z = r_out.z() - center_.z();
+
+    x -= edge_x_;
+    z -= edge_z_;
+    x *= pitch_x_inv_;
+    z *= pitch_z_inv_;
+    x -= std::round(x);
+    z -= std::round(z);
+
+    const double Dm =
+      std::min(std::fabs(x)-opaque_frac_x_2_, std::fabs(z)-opaque_frac_z_2_);
+    return (Dm < 0);
+  }
+
+  return false;
+}
+
+VSOAlignedTileAperture* VSOAlignedTileAperture::clone() const
+{
+  return new VSOAlignedTileAperture(*this);
+  // center_,2*flat_to_flat_x_2_,2*flat_to_flat_z_2_);
+  //   1.0/pitch_x_inv_, 1.0/pitch_z_inv_
+  //     double center_x, double center_z,
+  //     double support_width_x, double support_width_z):
+  //   VSOObscuration(), center_(center),
+  //   flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z),
+  //   pitch_x_inv_(1.0/pitch_x), pitch_z_inv_(1.0/pitch_z),
+  //   edge_x_(center_x - 0.5*pitch_x),
+  //   edge_z_(center_z - 0.5*pitch_z),
+  //   opaque_frac_x_2_(0.5*support_width_x*pitch_x_inv_),
+  //   opaque_frac_z_2_(0.5*support_width_z*pitch_z_inv_),
+}
+
+calin::ix::simulation::vs_optics::VSOObscurationData*
+VSOAlignedTileAperture::dump_as_proto(
+  calin::ix::simulation::vs_optics::VSOObscurationData* d) const
+{
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
+  auto* dd = d->mutable_tile_aperture();
+  calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center_pos());
+  dd->set_pitch_x(1.0/pitch_x_inv_);
+  dd->set_pitch_z(1.0/pitch_z_inv_);
+  dd->set_center_x(edge_x_ + 0.5*dd->pitch_x());
+  dd->set_center_z(edge_z_ + 0.5*dd->pitch_z());
+  dd->set_support_width_x(2.0*opaque_frac_x_2_*dd->pitch_x());
+  dd->set_support_width_z(2.0*opaque_frac_z_2_*dd->pitch_z());
+  return d;
+}
+
+VSOAlignedTileAperture* VSOAlignedTileAperture::create_from_proto(
+  const calin::ix::simulation::vs_optics::VSOAlignedTileApertureData& d)
+{
+  return new VSOAlignedTileAperture(
+    calin::math::vector3d_util::from_proto(d.center_pos()),
+    d.pitch_x(), d.pitch_z(),
+    d.center_x(), d.center_z(),
+    d.support_width_x(), d.support_width_z());
 }
