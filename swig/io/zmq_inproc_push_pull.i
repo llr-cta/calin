@@ -36,6 +36,6 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%apply std::string &OUTPUT { std::string &data_pull };
+%apply std::string &CALIN_BYTES_OUT { std::string &data_pull };
 
 %include "io/zmq_inproc_push_pull.hpp"
