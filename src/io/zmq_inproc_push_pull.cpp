@@ -26,6 +26,16 @@
 
 using namespace calin::io::zmq_inproc;
 
+void* calin::io::zmq_inproc::new_zmq_ctx()
+{
+  return zmq_ctx_new();
+}
+
+void calin::io::zmq_inproc::destroy_zmq_ctx(void* zmq_cxt)
+{
+  zmq_ctx_destroy(zmq_cxt);
+}
+
 ZMQPusher::ZMQPusher(void* zmq_ctx, const std::string& endpoint,
   int buffer_size, ZMQBindOrConnect bind_or_connect):
   socket_(zmq_socket(zmq_ctx, ZMQ_PUSH), &zmq_close)
@@ -63,7 +73,12 @@ ZMQPusher::ZMQPusher(void* zmq_ctx, const std::string& endpoint,
   }
 }
 
-bool ZMQPusher::push(void* data, unsigned size, bool dont_wait)
+bool ZMQPusher::push(const std::string& data_push, bool dont_wait)
+{
+  return this->push(data_push.data(), data_push.size(), dont_wait);
+}
+
+bool ZMQPusher::push(const void* data, unsigned size, bool dont_wait)
 {
   if(zmq_send(socket_.get(), data, size, dont_wait ? ZMQ_DONTWAIT : 0) < 0)
   {
@@ -109,6 +124,23 @@ ZMQPuller::ZMQPuller(void* zmq_ctx, const std::string& endpoint,
         + endpoint + "\n"
         + "ZMQPuller: " + zmq_strerror(errno));
   }
+}
+
+bool ZMQPuller::pull(std::string& data_pull, bool dont_wait)
+{
+  /* Create an empty ØMQ message */
+  zmq_msg_t msg;
+  zmq_msg_init(&msg);
+  int nbytes = zmq_recvmsg(socket_.get(), &msg, dont_wait?ZMQ_DONTWAIT:0);
+  if(nbytes < 0)
+  {
+    if((dont_wait and errno == EAGAIN) or errno == ETERM)return false;
+    throw std::runtime_error(std::string("ZMQPuller: error receiving data: ")
+      + zmq_strerror(errno));
+  }
+  data_pull.assign(static_cast<char*>(zmq_msg_data(&msg)), zmq_msg_size(&msg));
+  zmq_msg_close (&msg);
+  return true;
 }
 
 bool ZMQPuller::pull(void* data, unsigned buffer_size, unsigned& bytes_received,
