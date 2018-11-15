@@ -60,6 +60,7 @@ namespace DataModel {
 
 class CameraEvent: public google::protobuf::Message { };
 class CameraRunHeader: public google::protobuf::Message { };
+class CTAMessage: public google::protobuf::Message { };
 
 }
 
