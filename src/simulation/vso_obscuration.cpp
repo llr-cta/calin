@@ -57,6 +57,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
   else if(d.has_rectangular_aperture())return VSOAlignedRectangularAperture::create_from_proto(d.rectangular_aperture());
   else if(d.has_circular_aperture())return VSOAlignedCircularAperture::create_from_proto(d.circular_aperture());
   else if(d.has_hexagonal_aperture())return VSOAlignedHexagonalAperture::create_from_proto(d.hexagonal_aperture());
+  else if(d.has_tile_aperture())return VSOAlignedTileAperture::create_from_proto(d.tile_aperture());
   else {
     throw std::runtime_error("VSOObscuration::create_from_proto: unknown obscuration type");
     return 0;
