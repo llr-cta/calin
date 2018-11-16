@@ -3,7 +3,7 @@
    calin/io/buffered_data_source.hpp -- Stephen Fegan -- 2016-02-29
 
    A multi-threaded data source which buffers data from a parent source
-   making it available
+   making it available... only works inproc
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3

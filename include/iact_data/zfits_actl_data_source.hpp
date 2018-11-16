@@ -28,6 +28,8 @@
 #include <calin_global_config.hpp>
 #include <io/data_source.hpp>
 #include <io/chained_data_source.hpp>
+#include <io/zmq_inproc_push_pull.hpp>
+#include <io/zmq_protobuf_data_source.hpp>
 #include <iact_data/zfits_data_source.pb.h>
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
@@ -278,6 +280,17 @@ namespace calin { namespace iact_data { namespace zfits_actl_data_source {
 
 bool is_zfits_r1(std::string filename, std::string events_table_name = "");
 
+class ACTL_R1_CameraEventDataSourceWithRunHeader:
+  public calin::io::data_source::DataSource<R1::CameraEvent>
+{
+public:
+  ACTL_R1_CameraEventDataSourceWithRunHeader():
+      calin::io::data_source::DataSource<R1::CameraEvent>() {
+    /* nothing to see here */ }
+  virtual ~ACTL_R1_CameraEventDataSourceWithRunHeader();
+  virtual R1::CameraConfiguration* get_run_header() = 0;
+};
+
 class ACTL_R1_CameraEventRandomAccessDataSourceWithRunHeader:
   public calin::io::data_source::RandomAccessDataSource<R1::CameraEvent>
 {
@@ -424,6 +437,34 @@ public:
     google::protobuf::Arena* arena = nullptr, bool adopt_data = false) override;
 private:
   ZFITSACTL_R1_CameraEventDataSource* src_;
+};
+
+class ZMQACTL_R1_CameraEventDataSource:
+  public ACTL_R1_CameraEventDataSourceWithRunHeader
+{
+public:
+  ZMQACTL_R1_CameraEventDataSource(
+    const std::string& endpoint, void* zmq_ctx = nullptr, int buffer_size = 100);
+  ZMQACTL_R1_CameraEventDataSource(
+      void* zmq_ctx, const std::string& endpoint, int buffer_size = 100):
+    ZMQACTL_R1_CameraEventDataSource(endpoint, zmq_ctx, buffer_size) {
+    // nothing to see here
+  }
+  virtual ~ZMQACTL_R1_CameraEventDataSource();
+
+  R1::CameraConfiguration* get_run_header() override;
+
+  R1::CameraEvent* get_next(uint64_t& seq_index_out,
+    google::protobuf::Arena** arena = nullptr) override;
+
+private:
+  void* zmq_ctx_ = nullptr;
+  void* my_zmq_ctx_ = nullptr;
+  calin::io::data_source::ZMQProtobufDataSource<DataModel::CTAMessage>* zmq_source_ = nullptr;
+  R1::CameraConfiguration* run_header_ = nullptr;
+  bool eos_received_ = false;
+  R1::CameraEvent* saved_event_ = nullptr;
+  uint64_t saved_seq_index_;
 };
 
 } } } // namespace calin::iact_data::zfits_actl_data_source

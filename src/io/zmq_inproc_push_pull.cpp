@@ -126,18 +126,24 @@ ZMQPuller::ZMQPuller(void* zmq_ctx, const std::string& endpoint,
   }
 }
 
-bool ZMQPuller::pull(std::string& data_pull, bool dont_wait)
+bool ZMQPuller::pull(zmq_msg_t* msg, bool dont_wait)
 {
-  /* Create an empty ØMQ message */
-  zmq_msg_t msg;
-  zmq_msg_init(&msg);
-  int nbytes = zmq_recvmsg(socket_.get(), &msg, dont_wait?ZMQ_DONTWAIT:0);
+  int nbytes = zmq_recvmsg(socket_.get(), msg, dont_wait?ZMQ_DONTWAIT:0);
   if(nbytes < 0)
   {
     if((dont_wait and errno == EAGAIN) or errno == ETERM)return false;
     throw std::runtime_error(std::string("ZMQPuller: error receiving data: ")
       + zmq_strerror(errno));
   }
+  return true;
+}
+
+bool ZMQPuller::pull(std::string& data_pull, bool dont_wait)
+{
+  /* Create an empty ØMQ message */
+  zmq_msg_t msg;
+  zmq_msg_init(&msg);
+  pull(&msg, dont_wait);
   data_pull.assign(static_cast<char*>(zmq_msg_data(&msg)), zmq_msg_size(&msg));
   zmq_msg_close (&msg);
   return true;

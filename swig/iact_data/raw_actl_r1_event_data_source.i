@@ -70,7 +70,7 @@ class CameraConfiguration: public google::protobuf::Message { };
 
 %typemap(argout) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
     // typemap(argout) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
-    %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, 0));
+    %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, SWIG_POINTER_OWN));
 }
 
 %apply R1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
