@@ -40,18 +40,20 @@ public:
   ZMQProtobufDataSource(const ZMQProtobufDataSource&) = delete;
   ZMQProtobufDataSource& operator=(const ZMQProtobufDataSource&) = delete;
 
-  ZMQProtobufDataSource(zmq_inproc::ZMQPuller* puller, bool adopt_puller = false):
-    DataSource<T>(), puller_(puller), adopt_puller_(adopt_puller)
+  ZMQProtobufDataSource(zmq_inproc::ZMQPuller* puller,
+    long timeout_ms = -1, long timeout_ms_zero = -1, bool adopt_puller = false):
+    DataSource<T>(), puller_(puller), adopt_puller_(adopt_puller),
+    timeout_ms_(timeout_ms), timeout_ms_zero_(timeout_ms_zero)
   {
     // nothing to see here
   }
 
   ZMQProtobufDataSource(void* zmq_ctx, const std::string& endpoint,
-      int buffer_size = 100,
+      long timeout_ms = -1, long timeout_ms_zero = -1, int buffer_size = 100,
       calin::io::zmq_inproc::ZMQBindOrConnect bind_or_connect = calin::io::zmq_inproc::ZMQBindOrConnect::CONNECT):
     DataSource<T>(), puller_(
       new zmq_inproc::ZMQPuller(zmq_ctx, endpoint, buffer_size, bind_or_connect)),
-    adopt_puller_(true)
+    adopt_puller_(true), timeout_ms_(timeout_ms), timeout_ms_zero_(timeout_ms_zero)
   {
     // nothing to see here
   }
@@ -66,10 +68,16 @@ public:
     if(arena != nullptr)
       throw std::runtime_error(
         "ZMQProtobufDataSource::get_next : arenas not supported");
+
+    long timeout = (seq_index_ == 0) ? timeout_ms_zero_ : timeout_ms_;
+    if(puller_->wait_for_data(timeout) == false) {
+      return nullptr;
+    }
+
     zmq_msg_t msg;
     zmq_msg_init(&msg);
     try {
-      if(puller_->pull(&msg, false) == 0) {
+      if(puller_->pull(&msg, true) == 0) {
         zmq_msg_close (&msg);
         return nullptr;
       }
@@ -92,6 +100,8 @@ private:
   zmq_inproc::ZMQPuller* puller_ = nullptr;
   bool adopt_puller_ = false;
   uint64_t seq_index_ = 0;
+  long timeout_ms_ = -1;
+  long timeout_ms_zero_ = -1;
 };
 
 

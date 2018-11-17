@@ -444,10 +444,13 @@ class ZMQACTL_R1_CameraEventDataSource:
 {
 public:
   ZMQACTL_R1_CameraEventDataSource(
-    const std::string& endpoint, void* zmq_ctx = nullptr, int buffer_size = 100);
+    const std::string& endpoint, void* zmq_ctx = nullptr,
+    long timeout_ms = -1, long timeout_ms_zero = -1,
+    int buffer_size = 100);
   ZMQACTL_R1_CameraEventDataSource(
-      void* zmq_ctx, const std::string& endpoint, int buffer_size = 100):
-    ZMQACTL_R1_CameraEventDataSource(endpoint, zmq_ctx, buffer_size) {
+      void* zmq_ctx, const std::string& endpoint,
+      long timeout_ms = -1, long timeout_ms_zero = -1, int buffer_size = 100):
+    ZMQACTL_R1_CameraEventDataSource(endpoint, zmq_ctx, timeout_ms, timeout_ms_zero, buffer_size) {
     // nothing to see here
   }
   virtual ~ZMQACTL_R1_CameraEventDataSource();

@@ -177,6 +177,13 @@ bool ZMQPuller::pull_assert_size(void* data, unsigned buffer_size,
   return good;
 }
 
+bool ZMQPuller::wait_for_data(long timeout_ms)
+{
+  zmq_pollitem_t item = this->pollitem();
+  int rc = zmq_poll(&item, 1, timeout_ms);
+  return rc>0;
+}
+
 ZMQInprocPushPull::
 ZMQInprocPushPull(unsigned buffer_size, ZMQInprocPushPull* shared_ctx):
   buffer_size_(buffer_size),

@@ -489,12 +489,13 @@ put_next(const R1::CameraEvent* data, uint64_t seq_index,
 
 ZMQACTL_R1_CameraEventDataSource::
 ZMQACTL_R1_CameraEventDataSource(
-    const std::string& endpoint, void* zmq_ctx, int buffer_size):
+    const std::string& endpoint, void* zmq_ctx,
+    long timeout_ms, long timeout_ms_zero, int buffer_size):
   ACTL_R1_CameraEventDataSourceWithRunHeader(),
   zmq_ctx_((zmq_ctx == nullptr)?calin::io::zmq_inproc::new_zmq_ctx():zmq_ctx),
   my_zmq_ctx_((zmq_ctx == nullptr)?zmq_ctx_:nullptr),
   zmq_source_(new calin::io::data_source::ZMQProtobufDataSource<DataModel::CTAMessage>(
-    zmq_ctx_, endpoint, buffer_size))
+    zmq_ctx_, endpoint, timeout_ms, timeout_ms_zero, buffer_size))
 {
   // nothing to see here
 }
