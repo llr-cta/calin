@@ -29,6 +29,7 @@
 
 #include <io/data_source.hpp>
 #include <io/zmq_inproc_push_pull.hpp>
+#include <provenance/chronicle.hpp>
 
 namespace calin { namespace io { namespace data_source {
 
@@ -55,7 +56,7 @@ public:
       new zmq_inproc::ZMQPuller(zmq_ctx, endpoint, buffer_size, bind_or_connect)),
     adopt_puller_(true), timeout_ms_(timeout_ms), timeout_ms_zero_(timeout_ms_zero)
   {
-    // nothing to see here
+    calin::provenance::chronicle::register_network_open(endpoint, __PRETTY_FUNCTION__);
   }
 
   virtual ~ZMQProtobufDataSource()

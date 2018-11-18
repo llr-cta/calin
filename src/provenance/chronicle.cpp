@@ -79,6 +79,22 @@ register_file_open(const std::string& file_name,
 }
 
 void calin::provenance::chronicle::
+register_network_open(const std::string& endpoint,
+  const std::string& opened_by, const std::string& comment)
+{
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  calin::ix::provenance::chronicle::NetworkIORecord* record = nullptr;
+  {
+    std::lock_guard<std::mutex> lock { chronicle_mutex };
+    record = singleton_chronicle->add_network_io_record();
+  }
+  ts.as_proto(record->mutable_timestamp());
+  record->set_endpoint_name(endpoint);
+  record->set_comment(comment);
+  record->set_opened_by(opened_by);
+}
+
+void calin::provenance::chronicle::
 register_calin_rng(const calin::ix::math::rng::RNGData& rng_data,
   const std::string& created_by, const std::string& comment)
 {

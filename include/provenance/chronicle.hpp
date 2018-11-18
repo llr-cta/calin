@@ -41,6 +41,8 @@ void copy_the_chronicle(calin::ix::provenance::chronicle::Chronicle* x);
 void register_file_open(const std::string& file_name,
   calin::ix::provenance::chronicle::AccessType access,
   const std::string& opened_by, const std::string& comment = "");
+void register_network_open(const std::string& endpoint,
+  const std::string& opened_by, const std::string& comment = "");
 
 void register_calin_rng(const calin::ix::math::rng::RNGData& rng_data,
   const std::string& created_by, const std::string& comment = "");
