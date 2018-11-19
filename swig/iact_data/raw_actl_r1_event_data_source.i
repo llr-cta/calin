@@ -81,6 +81,7 @@ class CameraConfiguration: public google::protobuf::Message { };
 
 %import "iact_data/telescope_data_source.i"
 %import "iact_data/zfits_data_source.pb.i"
+%import "io/zmq_data_source.pb.i"
 
 %template(ACTL_R1_CameraEventDataSource)
   calin::io::data_source::DataSource<R1::CameraEvent>;
