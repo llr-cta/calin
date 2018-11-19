@@ -577,11 +577,14 @@ get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
         }
       }
       default:
+      {
+        std::string type = DataModel::MessageType_Name(message->payload_type(0))
+          + " (" + std::to_string(message->payload_type(0)) + ")";
         delete message;
         receive_status_ = PROTOCOL_ERROR;
         throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
-          "unknown message payload type: "
-          + DataModel::MessageType_Name(message->payload_type(0)));
+          "unknown message payload type: " + type);
+      }
     }
   }
 }
