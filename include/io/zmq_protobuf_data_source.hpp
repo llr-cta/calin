@@ -29,6 +29,7 @@
 
 #include <io/data_source.hpp>
 #include <io/zmq_inproc_push_pull.hpp>
+#include <io/zmq_data_source.pb.h>
 #include <provenance/chronicle.hpp>
 
 namespace calin { namespace io { namespace data_source {
@@ -36,32 +37,50 @@ namespace calin { namespace io { namespace data_source {
 template<typename T> class ZMQProtobufDataSource: public DataSource<T>
 {
 public:
+  CALIN_TYPEALIAS(config_type, calin::ix::io::zmq_data_source::ZMQDataSourceConfig);
   CALIN_TYPEALIAS(data_type, typename DataSource<T>::data_type);
 
   ZMQProtobufDataSource(const ZMQProtobufDataSource&) = delete;
   ZMQProtobufDataSource& operator=(const ZMQProtobufDataSource&) = delete;
 
   ZMQProtobufDataSource(zmq_inproc::ZMQPuller* puller,
-    long timeout_ms = -1, long timeout_ms_zero = -1, bool adopt_puller = false):
+      calin::ix::io::zmq_data_source::ZMQDataSourceConfig config = default_config(),
+      bool adopt_puller = false):
     DataSource<T>(), puller_(puller), adopt_puller_(adopt_puller),
-    timeout_ms_(timeout_ms), timeout_ms_zero_(timeout_ms_zero)
+     config_(config)
   {
     // nothing to see here
   }
 
-  ZMQProtobufDataSource(void* zmq_ctx, const std::string& endpoint,
-      long timeout_ms = -1, long timeout_ms_zero = -1, int buffer_size = 100,
+  ZMQProtobufDataSource(const std::string& endpoint, void* zmq_ctx = nullptr,
+      calin::ix::io::zmq_data_source::ZMQDataSourceConfig config = default_config(),
       calin::io::zmq_inproc::ZMQBindOrConnect bind_or_connect = calin::io::zmq_inproc::ZMQBindOrConnect::CONNECT):
-    DataSource<T>(), puller_(
-      new zmq_inproc::ZMQPuller(zmq_ctx, endpoint, buffer_size, bind_or_connect)),
-    adopt_puller_(true), timeout_ms_(timeout_ms), timeout_ms_zero_(timeout_ms_zero)
+    DataSource<T>(), adopt_puller_(true), config_(config)
   {
+    if(zmq_ctx == nullptr) {
+      my_zmq_ctx_ = zmq_ctx = calin::io::zmq_inproc::new_zmq_ctx();
+      zmq_ctx_set(my_zmq_ctx_, ZMQ_IO_THREADS, config_.num_io_threads());
+    }
+
+    puller_ = new calin::io::zmq_inproc::ZMQPuller(zmq_ctx, endpoint,
+      config_.receive_buffer_size(), bind_or_connect);
+
     calin::provenance::chronicle::register_network_open(endpoint, __PRETTY_FUNCTION__);
+  }
+
+  ZMQProtobufDataSource(const std::string& endpoint,
+      calin::ix::io::zmq_data_source::ZMQDataSourceConfig config,
+      void* zmq_ctx = nullptr,
+      calin::io::zmq_inproc::ZMQBindOrConnect bind_or_connect = calin::io::zmq_inproc::ZMQBindOrConnect::CONNECT):
+    ZMQProtobufDataSource(endpoint, zmq_ctx, config, bind_or_connect)
+  {
+    // nothing to see here
   }
 
   virtual ~ZMQProtobufDataSource()
   {
     if(adopt_puller_)delete puller_;
+    if(my_zmq_ctx_)calin::io::zmq_inproc::destroy_zmq_ctx(my_zmq_ctx_);
   }
 
   T* get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena = nullptr) override
@@ -70,8 +89,10 @@ public:
       throw std::runtime_error(
         "ZMQProtobufDataSource::get_next : arenas not supported");
 
-    long timeout = (seq_index_ == 0) ? timeout_ms_zero_ : timeout_ms_;
+    timed_out_ = false;
+    long timeout = (seq_index_ == 0) ? config_.initial_receive_timeout_ms() : config_.receive_timeout_ms();
     if(puller_->wait_for_data(timeout) == false) {
+      timed_out_ = true;
       return nullptr;
     }
 
@@ -97,12 +118,26 @@ public:
     return next;
   }
 
+  bool timed_out() const { return timed_out_; }
+
+  void* my_zmq_ctx() { return my_zmq_ctx_; }
+
+  static calin::ix::io::zmq_data_source::ZMQDataSourceConfig default_config() {
+    calin::ix::io::zmq_data_source::ZMQDataSourceConfig config;
+    config.set_receive_timeout_ms(-1);
+    config.set_initial_receive_timeout_ms(-1);
+    config.set_receive_buffer_size(1000);
+    config.set_num_io_threads(1);
+    return config;
+  }
+
 private:
-  zmq_inproc::ZMQPuller* puller_ = nullptr;
+  void* my_zmq_ctx_ = nullptr;
+  calin::io::zmq_inproc::ZMQPuller* puller_ = nullptr;
   bool adopt_puller_ = false;
   uint64_t seq_index_ = 0;
-  long timeout_ms_ = -1;
-  long timeout_ms_zero_ = -1;
+  calin::ix::io::zmq_data_source::ZMQDataSourceConfig config_ = default_config();
+  bool timed_out_ = false;
 };
 
 

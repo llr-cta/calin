@@ -31,6 +31,7 @@
 #include <io/zmq_inproc_push_pull.hpp>
 #include <io/zmq_protobuf_data_source.hpp>
 #include <iact_data/zfits_data_source.pb.h>
+#include <io/zmq_data_source.pb.h>
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 
@@ -443,14 +444,20 @@ class ZMQACTL_R1_CameraEventDataSource:
   public ACTL_R1_CameraEventDataSourceWithRunHeader
 {
 public:
+  enum ReceiveStatus { DATA_SOURCE_UNUSED,
+    DATA_RECEIVED, END_OF_STREAM_RECEIVED,
+    TIMEOUT, CONNECTION_CLOSED, PROTOCOL_ERROR, CONNECTION_ERROR };
+
+  CALIN_TYPEALIAS(config_type, calin::ix::io::zmq_data_source::ZMQDataSourceConfig);
+
   ZMQACTL_R1_CameraEventDataSource(
     const std::string& endpoint, void* zmq_ctx = nullptr,
-    long timeout_ms = -1, long timeout_ms_zero = -1,
-    int buffer_size = 100);
+    calin::ix::io::zmq_data_source::ZMQDataSourceConfig config = default_config());
   ZMQACTL_R1_CameraEventDataSource(
-      void* zmq_ctx, const std::string& endpoint,
-      long timeout_ms = -1, long timeout_ms_zero = -1, int buffer_size = 100):
-    ZMQACTL_R1_CameraEventDataSource(endpoint, zmq_ctx, timeout_ms, timeout_ms_zero, buffer_size) {
+      const std::string& endpoint,
+      calin::ix::io::zmq_data_source::ZMQDataSourceConfig config,
+      void* zmq_ctx = nullptr):
+    ZMQACTL_R1_CameraEventDataSource(endpoint, zmq_ctx, config) {
     // nothing to see here
   }
   virtual ~ZMQACTL_R1_CameraEventDataSource();
@@ -460,14 +467,21 @@ public:
   R1::CameraEvent* get_next(uint64_t& seq_index_out,
     google::protobuf::Arena** arena = nullptr) override;
 
+  ReceiveStatus receive_status() const {
+    return receive_status_; }
+
+  void* my_zmq_ctx() { return zmq_source_->my_zmq_ctx(); }
+
+  static calin::ix::io::zmq_data_source::ZMQDataSourceConfig default_config() {
+    return calin::io::data_source::ZMQProtobufDataSource<DataModel::CTAMessage>::default_config();
+  }
+
 private:
-  void* zmq_ctx_ = nullptr;
-  void* my_zmq_ctx_ = nullptr;
   calin::io::data_source::ZMQProtobufDataSource<DataModel::CTAMessage>* zmq_source_ = nullptr;
   R1::CameraConfiguration* run_header_ = nullptr;
-  bool eos_received_ = false;
+  ReceiveStatus receive_status_ = DATA_SOURCE_UNUSED;
   R1::CameraEvent* saved_event_ = nullptr;
-  uint64_t saved_seq_index_;
+  uint64_t saved_seq_index_ = 0;
 };
 
 } } } // namespace calin::iact_data::zfits_actl_data_source

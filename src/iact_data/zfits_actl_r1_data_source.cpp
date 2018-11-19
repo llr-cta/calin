@@ -490,12 +490,10 @@ put_next(const R1::CameraEvent* data, uint64_t seq_index,
 ZMQACTL_R1_CameraEventDataSource::
 ZMQACTL_R1_CameraEventDataSource(
     const std::string& endpoint, void* zmq_ctx,
-    long timeout_ms, long timeout_ms_zero, int buffer_size):
+    calin::ix::io::zmq_data_source::ZMQDataSourceConfig config):
   ACTL_R1_CameraEventDataSourceWithRunHeader(),
-  zmq_ctx_((zmq_ctx == nullptr)?calin::io::zmq_inproc::new_zmq_ctx():zmq_ctx),
-  my_zmq_ctx_((zmq_ctx == nullptr)?zmq_ctx_:nullptr),
   zmq_source_(new calin::io::data_source::ZMQProtobufDataSource<DataModel::CTAMessage>(
-    zmq_ctx_, endpoint, timeout_ms, timeout_ms_zero, buffer_size))
+    endpoint, zmq_ctx, config))
 {
   // nothing to see here
 }
@@ -503,7 +501,6 @@ ZMQACTL_R1_CameraEventDataSource(
 ZMQACTL_R1_CameraEventDataSource::~ZMQACTL_R1_CameraEventDataSource()
 {
   delete zmq_source_;
-  if(my_zmq_ctx_)calin::io::zmq_inproc::destroy_zmq_ctx(my_zmq_ctx_);
 }
 
 R1::CameraConfiguration* ZMQACTL_R1_CameraEventDataSource::get_run_header()
@@ -517,29 +514,41 @@ R1::CameraConfiguration* ZMQACTL_R1_CameraEventDataSource::get_run_header()
 R1::CameraEvent* ZMQACTL_R1_CameraEventDataSource::
 get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
+  receive_status_ = DATA_RECEIVED;
+
   if(saved_event_) {
     R1::CameraEvent* event = saved_event_;
     seq_index_out = saved_seq_index_;
     saved_event_ = nullptr;
     return event;
   }
-  if(eos_received_)return nullptr;
 
   DataModel::CTAMessage* message = nullptr;
   while(1) {
-    message = zmq_source_->get_next(seq_index_out);
-    if(message == nullptr)return nullptr;
+    try {
+      message = zmq_source_->get_next(seq_index_out);
+    }
+    catch(...)
+    {
+      receive_status_ = CONNECTION_ERROR;
+      throw;
+    }
+    if(message == nullptr) {
+      if(zmq_source_->timed_out())receive_status_ = TIMEOUT;
+      else receive_status_ = CONNECTION_CLOSED;
+      return nullptr;
+    }
     if(message->payload_type_size() == 0) {
       delete message;
-      return nullptr;
+      continue;
     }
     switch(message->payload_type(0)) {
       case DataModel::EMPTY_MESSAGE:
         delete message;
-        return nullptr;
+        continue;
       case DataModel::END_OF_STREAM:
         delete message;
-        eos_received_ = true;
+        receive_status_ = END_OF_STREAM_RECEIVED;
         return nullptr;
       case DataModel::R1_CAMERA_EVENT:
       {
@@ -549,6 +558,7 @@ get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
           return event;
         } else {
           delete message;
+          receive_status_ = PROTOCOL_ERROR;
           throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
             "could not parse event payload");
         }
@@ -561,12 +571,14 @@ get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
           continue;
         } else {
           delete message;
+          receive_status_ = PROTOCOL_ERROR;
           throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
             "could not parse caamera configuration payload");
         }
       }
       default:
         delete message;
+        receive_status_ = PROTOCOL_ERROR;
         throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
           "unknown message payload type: "
           + DataModel::MessageType_Name(message->payload_type(0)));
