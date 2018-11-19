@@ -200,11 +200,43 @@ public:
   calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
     uint64_t& seq_index_out, google::protobuf::Arena** arena = nullptr) override;
 
-private:
+protected:
   ACTL_R1_CameraEventDecoder* decoder_;
+  virtual R1::CameraEvent* do_get_next(uint64_t& seq_index_out);
+
+private:
   bool adopt_decoder_ = false;
   calin::iact_data::zfits_actl_data_source::ACTL_R1_CameraEventDataSource* actl_src_ = nullptr;
   bool adopt_actl_src_ = false;
+};
+
+class DecodedACTL_R1_CameraEventDataSourceWithRunConfig:
+  public virtual calin::iact_data::telescope_data_source::TelescopeDataSourceWithRunConfig,
+  public virtual DecodedACTL_R1_CameraEventDataSource
+{
+public:
+  DecodedACTL_R1_CameraEventDataSourceWithRunConfig(
+    calin::iact_data::zfits_actl_data_source::ACTL_R1_CameraEventDataSourceWithRunHeader* actl_src,
+    ACTL_R1_CameraEventDecoder* decoder,
+    bool adopt_actl_src = false, bool adopt_decoder = false);
+
+  virtual ~DecodedACTL_R1_CameraEventDataSourceWithRunConfig();
+
+  calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
+    uint64_t& seq_index_out, google::protobuf::Arena** arena = nullptr) override;
+
+  calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* get_run_configuration() override;
+
+protected:
+  R1::CameraEvent* do_get_next(uint64_t& seq_index_out) override;
+  void ensure_run_config();
+
+private:
+  calin::iact_data::zfits_actl_data_source::ACTL_R1_CameraEventDataSourceWithRunHeader* actl_src_ = nullptr;
+  R1::CameraEvent* saved_event_ = nullptr;
+  uint64_t saved_seq_index_ = 0;
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
 };
 
 class DecodedConstACTL_R1_CameraEventDataSource:

@@ -465,7 +465,7 @@ calin::ix::iact_data::telescope_event::TelescopeEvent*
 DecodedACTL_R1_CameraEventDataSource::get_next(
   uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
-  const R1::CameraEvent* cta_event = actl_src_->get_next(seq_index_out);
+  const R1::CameraEvent* cta_event = this->do_get_next(seq_index_out);
   if(!cta_event) {
     if(arena)*arena = nullptr;
     return nullptr;
@@ -494,6 +494,76 @@ DecodedACTL_R1_CameraEventDataSource::get_next(
   event->set_source_event_index(seq_index_out);
   delete cta_event;
   return event;
+}
+
+R1::CameraEvent*
+DecodedACTL_R1_CameraEventDataSource::do_get_next(uint64_t& seq_index_out)
+{
+  return actl_src_->get_next(seq_index_out);
+}
+
+// =============================================================================
+// DecodedACTL_R1_CameraEventDataSourceWithRunConfig - extract ACTL events
+// from an ACTL_R1ACTL_R1_CameraEventDataSourceWithRunHeader and decode them
+// using a supplied decoder
+// =============================================================================
+
+DecodedACTL_R1_CameraEventDataSourceWithRunConfig::
+DecodedACTL_R1_CameraEventDataSourceWithRunConfig(
+    calin::iact_data::zfits_actl_data_source::ACTL_R1_CameraEventDataSourceWithRunHeader* actl_src,
+    ACTL_R1_CameraEventDecoder* decoder,
+    bool adopt_actl_src, bool adopt_decoder):
+  DecodedACTL_R1_CameraEventDataSource(actl_src, decoder, adopt_actl_src, adopt_decoder),
+  actl_src_(actl_src)
+{
+  // nothing to see here
+}
+
+DecodedACTL_R1_CameraEventDataSourceWithRunConfig::
+~DecodedACTL_R1_CameraEventDataSourceWithRunConfig()
+{
+  if(saved_event_)delete saved_event_;
+  if(run_config_)delete run_config_;
+}
+
+calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
+DecodedACTL_R1_CameraEventDataSourceWithRunConfig::get_run_configuration()
+{
+  ensure_run_config();
+  return new TelescopeRunConfiguration(*run_config_);
+}
+
+calin::ix::iact_data::telescope_event::TelescopeEvent*
+DecodedACTL_R1_CameraEventDataSourceWithRunConfig::get_next(
+  uint64_t& seq_index_out, google::protobuf::Arena** arena)
+{
+  ensure_run_config();
+  return DecodedACTL_R1_CameraEventDataSource::get_next(seq_index_out, arena);
+}
+
+R1::CameraEvent*
+DecodedACTL_R1_CameraEventDataSourceWithRunConfig::do_get_next(uint64_t& seq_index_out)
+{
+  if(saved_event_) {
+    R1::CameraEvent* event = saved_event_;
+    seq_index_out = saved_seq_index_;
+    saved_event_ = nullptr;
+    saved_seq_index_ = 0;
+    return event;
+  } else {
+    return actl_src_->get_next(seq_index_out);
+  }
+}
+
+void DecodedACTL_R1_CameraEventDataSourceWithRunConfig::ensure_run_config()
+{
+  if(!run_config_) {
+    saved_event_ = this->do_get_next(saved_seq_index_);
+    R1::CameraConfiguration* run_header = actl_src_->get_run_header();
+    run_config_ = new TelescopeRunConfiguration;
+    decoder_->decode_run_config(run_config_, run_header, saved_event_);
+    delete run_header;
+  }
 }
 
 DecodedConstACTL_R1_CameraEventDataSource::DecodedConstACTL_R1_CameraEventDataSource(

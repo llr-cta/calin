@@ -72,6 +72,20 @@ CALIN_TYPEALIAS(RawFileTelescopeDataSink,
   calin::io::data_source::ProtobufFileDataSink<
     calin::ix::iact_data::telescope_event::TelescopeEvent>);
 
+class TelescopeDataSourceWithRunConfig:
+  public calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>
+{
+public:
+  TelescopeDataSourceWithRunConfig():
+    calin::io::data_source::DataSource<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>() {
+    /* nothing to see here */ }
+  virtual ~TelescopeDataSourceWithRunConfig();
+  virtual calin::ix::iact_data::telescope_run_configuration::
+    TelescopeRunConfiguration* get_run_configuration() = 0;
+};
+
 class TelescopeRandomAccessDataSourceWithRunConfig:
   public calin::io::data_source::RandomAccessDataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>
