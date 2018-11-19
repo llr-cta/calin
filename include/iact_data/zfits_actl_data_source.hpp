@@ -470,6 +470,8 @@ public:
   ReceiveStatus receive_status() const {
     return receive_status_; }
 
+  std::string receive_status_string() const;
+
   void* my_zmq_ctx() { return zmq_source_->my_zmq_ctx(); }
 
   static calin::ix::io::zmq_data_source::ZMQDataSourceConfig default_config() {

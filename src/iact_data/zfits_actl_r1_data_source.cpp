@@ -585,3 +585,19 @@ get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
     }
   }
 }
+
+#define HANDLE_CASE(x) case x: return #x
+
+std::string ZMQACTL_R1_CameraEventDataSource::receive_status_string() const
+{
+  switch(receive_status()) {
+    HANDLE_CASE(DATA_SOURCE_UNUSED);
+    HANDLE_CASE(DATA_RECEIVED);
+    HANDLE_CASE(END_OF_STREAM_RECEIVED);
+    HANDLE_CASE(TIMEOUT);
+    HANDLE_CASE(CONNECTION_CLOSED);
+    HANDLE_CASE(PROTOCOL_ERROR);
+    HANDLE_CASE(CONNECTION_ERROR);
+  }
+}
+enum ReceiveStatus {  };
