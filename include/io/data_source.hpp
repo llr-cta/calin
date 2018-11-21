@@ -43,7 +43,7 @@ public:
 };
 
 template<typename T> class DelegatedDataSource:
-  public DataSource<T>, calin::pattern::delegation::Delegator<DataSource<T> >
+  public virtual DataSource<T>, calin::pattern::delegation::Delegator<DataSource<T> >
 {
 public:
   CALIN_TYPEALIAS(data_type, T);
@@ -59,7 +59,7 @@ public:
 };
 
 
-template<typename T> class RandomAccessDataSource: public DataSource<T>
+template<typename T> class RandomAccessDataSource: public virtual DataSource<T>
 {
 public:
   CALIN_TYPEALIAS(data_type, T);
