@@ -22,8 +22,6 @@
 
 %module (package="calin.iact_data") actl_event_decoder
 
-#define CALIN_NO_ACTL_R1
-
 %{
 #include <ProtobufIFits.h>
 #include <L0.pb.h>
