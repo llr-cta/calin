@@ -135,6 +135,7 @@ bool ZMQPuller::pull(zmq_msg_t* msg, bool dont_wait)
     throw std::runtime_error(std::string("ZMQPuller: error receiving data: ")
       + zmq_strerror(errno));
   }
+  nbytes_pulled_ += nbytes;
   return true;
 }
 
@@ -162,6 +163,7 @@ bool ZMQPuller::pull(void* data, unsigned buffer_size, unsigned& bytes_received,
       + zmq_strerror(errno));
   }
   bytes_received = unsigned(nbytes);
+  nbytes_pulled_ += nbytes;
   return true;
 }
 

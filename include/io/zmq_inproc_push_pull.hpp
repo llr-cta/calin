@@ -41,7 +41,9 @@ public:
   ZMQPusher(void* zmq_ctx, const std::string& endpoint, int buffer_size = 100,
     ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::BIND);
   bool push(const std::string& data_push, bool dont_wait = false);
+#ifndef SWIG
   bool push(const void* data, unsigned size, bool dont_wait = false);
+#endif
   void* socket() { return socket_.get(); }
   zmq_pollitem_t pollitem() { return { socket_.get(), 0, ZMQ_POLLOUT, 0 }; }
 private:
@@ -53,17 +55,21 @@ class ZMQPuller
 public:
   ZMQPuller(void* zmq_ctx, const std::string& endpoint, int buffer_size = 100,
     ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::CONNECT);
-  bool pull(zmq_msg_t* msg, bool dont_wait = false);
   bool pull(std::string& data_pull, bool dont_wait = false);
+#ifndef SWIG
+  bool pull(zmq_msg_t* msg, bool dont_wait = false);
   bool pull(void* data, unsigned buffer_size, unsigned& bytes_received,
      bool dont_wait = false);
   bool pull_assert_size(void* data, unsigned buffer_size,
       bool dont_wait = false);
+#endif
+  uint64_t nbytes_received() const { return nbytes_pulled_; }
   void* socket() { return socket_.get(); }
   bool wait_for_data(long timeout_ms = -1);
   zmq_pollitem_t pollitem() { return { socket_.get(), 0, ZMQ_POLLIN, 0 }; }
 private:
   std::unique_ptr<void,int(*)(void*)> socket_;
+  uint64_t nbytes_pulled_ = 0;
 };
 
 class ZMQInprocPushPull

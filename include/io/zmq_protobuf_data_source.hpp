@@ -65,7 +65,9 @@ public:
     puller_ = new calin::io::zmq_inproc::ZMQPuller(zmq_ctx, endpoint,
       config_.receive_buffer_size(), bind_or_connect);
 
-    calin::provenance::chronicle::register_network_open(endpoint, __PRETTY_FUNCTION__);
+    network_io_record_ =
+      calin::provenance::chronicle::register_network_open(endpoint, __PRETTY_FUNCTION__);
+    network_io_record_->set_nbytes_sent(0);
   }
 
   ZMQProtobufDataSource(const std::string& endpoint,
@@ -79,6 +81,9 @@ public:
 
   virtual ~ZMQProtobufDataSource()
   {
+    if(network_io_record_)
+      calin::provenance::chronicle::register_network_close(network_io_record_,
+        puller_->nbytes_received(), 0);
     if(adopt_puller_)delete puller_;
     if(my_zmq_ctx_)calin::io::zmq_inproc::destroy_zmq_ctx(my_zmq_ctx_);
   }
@@ -115,6 +120,9 @@ public:
       seq_index_out = seq_index_++;
     }
     zmq_msg_close (&msg);
+    if(network_io_record_) {
+      network_io_record_->set_nbytes_received(puller_->nbytes_received());
+    }
     return next;
   }
 
@@ -138,6 +146,7 @@ private:
   uint64_t seq_index_ = 0;
   calin::ix::io::zmq_data_source::ZMQDataSourceConfig config_ = default_config();
   bool timed_out_ = false;
+  calin::ix::provenance::chronicle::NetworkIORecord* network_io_record_ = nullptr;
 };
 
 
