@@ -35,7 +35,7 @@ enum AccessType { AT_READ      = 0;
 
 message FileIORecord
 {
-  calin.ix.util.timestamp.Timestamp timestamp              = 1
+  calin.ix.util.timestamp.Timestamp open_timestamp         = 1
     [ (CFO).sql.inline_message=true ];
   AccessType access                                        = 2;
   string file_name                                         = 3;
@@ -44,16 +44,22 @@ message FileIORecord
   calin.ix.util.timestamp.Timestamp file_mtime             = 6
     [ (CFO).sql.inline_message=true ];
   string opened_by                                         = 7;
+  calin.ix.util.timestamp.Timestamp close_timestamp        = 8
+    [ (CFO).sql.inline_message=true ];
 }
 
 message NetworkIORecord
 {
-  calin.ix.util.timestamp.Timestamp timestamp              = 1
+  calin.ix.util.timestamp.Timestamp open_timestamp         = 1
     [ (CFO).sql.inline_message=true ];
   AccessType access                                        = 2;
   string endpoint_name                                     = 3;
   string comment                                           = 4;
-  string opened_by                                         = 5;
+  int64 nbytes_received                                    = 5;
+  int64 nbytes_sent                                        = 6;
+  string opened_by                                         = 7;
+  calin.ix.util.timestamp.Timestamp close_timestamp        = 8
+    [ (CFO).sql.inline_message=true ];
 }
 
 message RNGRecord

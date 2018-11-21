@@ -38,11 +38,17 @@ calin::ix::provenance::chronicle::Chronicle* copy_the_chronicle();
 void copy_the_chronicle(calin::ix::provenance::chronicle::Chronicle* x);
 #endif
 
-void register_file_open(const std::string& file_name,
+calin::ix::provenance::chronicle::FileIORecord*
+register_file_open(const std::string& file_name,
   calin::ix::provenance::chronicle::AccessType access,
   const std::string& opened_by, const std::string& comment = "");
-void register_network_open(const std::string& endpoint,
+void register_file_close(calin::ix::provenance::chronicle::FileIORecord* record);
+
+calin::ix::provenance::chronicle::NetworkIORecord*
+register_network_open(const std::string& endpoint,
   const std::string& opened_by, const std::string& comment = "");
+void register_network_close(calin::ix::provenance::chronicle::NetworkIORecord* record,
+  int64_t nbytes_received = -1, int64_t nbytes_sent = -1);
 
 void register_calin_rng(const calin::ix::math::rng::RNGData& rng_data,
   const std::string& created_by, const std::string& comment = "");
