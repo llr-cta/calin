@@ -68,8 +68,16 @@ bool CTA_ACTL_R1_CameraEventDecoder::decode(
     else
       throw std::runtime_error("CTA_ACTL_R1_CameraEventDecoder: event does not "
         "have NectarCAM or LSTCam extensions");
+  } else if(config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT
+      and dynamic_cast<LSTCam_ACTL_R1_CameraEventDecoder*>(this->delegate())
+      and cta_event!=nullptr and cta_event->has_nectarcam()) {
+    this->set_delegate(new NectarCam_ACTL_R1_CameraEventDecoder(filename_, run_number_, config_.nectarcam()),true);
+  } else if(config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT
+      and dynamic_cast<NectarCam_ACTL_R1_CameraEventDecoder*>(this->delegate())
+      and cta_event!=nullptr and cta_event->has_lstcam()) {
+    this->set_delegate(new LSTCam_ACTL_R1_CameraEventDecoder(filename_, run_number_, config_.lstcam()),true);
   }
-  delegate_->decode(event, cta_event);
+  return this->delegate()->decode(event, cta_event);
 }
 
 bool CTA_ACTL_R1_CameraEventDecoder::decode_run_config(
@@ -92,12 +100,27 @@ bool CTA_ACTL_R1_CameraEventDecoder::decode_run_config(
     else
       throw std::runtime_error("CTA_ACTL_R1_CameraEventDecoder: event does not "
         "have NectarCAM or LSTCam extensions");
+  } else if(config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT
+      and dynamic_cast<LSTCam_ACTL_R1_CameraEventDecoder*>(this->delegate())
+      and ((cta_event!=nullptr and cta_event->has_nectarcam()) or
+        (cta_run_header!=nullptr and cta_run_header->has_nectarcam()))) {
+    this->set_delegate(new NectarCam_ACTL_R1_CameraEventDecoder(filename_, run_number_, config_.nectarcam()),true);
+  } else if(config_.camera_type() == CTACameraEventDecoderConfig::AUTO_DETECT
+      and dynamic_cast<NectarCam_ACTL_R1_CameraEventDecoder*>(this->delegate())
+      and ((cta_event!=nullptr and cta_event->has_lstcam()) or
+        (cta_run_header!=nullptr and cta_run_header->has_lstcam()))) {
+    this->set_delegate(new LSTCam_ACTL_R1_CameraEventDecoder(filename_, run_number_, config_.lstcam()),true);
   }
-  delegate_->decode_run_config(run_config, cta_run_header, cta_event);
+  return this->delegate()->decode_run_config(run_config, cta_run_header, cta_event);
 }
 
 calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig
 CTA_ACTL_R1_CameraEventDecoder::default_config()
 {
-
+  calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig config;
+  config.mutable_nectarcam()->CopyFrom(
+    NectarCam_ACTL_R1_CameraEventDecoder::default_config());
+  config.mutable_lstcam()->CopyFrom(
+    LSTCam_ACTL_R1_CameraEventDecoder::default_config());
+  return config;
 }

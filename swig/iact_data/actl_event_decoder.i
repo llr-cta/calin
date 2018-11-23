@@ -34,9 +34,11 @@
 #include <iact_data/actl_event_decoder.hpp>
 #include <iact_data/nectarcam_actl_event_decoder.hpp>
 #include <iact_data/lstcam_actl_event_decoder.hpp>
+#include <iact_data/cta_actl_event_decoder.hpp>
+#include <iact_data/cta_data_source.hpp>
+#include <iact_data/actl_event_decoder.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
 #include <iact_data/lstcam_data_source.hpp>
-#include <iact_data/cta_data_source.hpp>
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -56,3 +58,4 @@
 %include <iact_data/actl_event_decoder.hpp>
 %include <iact_data/nectarcam_actl_event_decoder.hpp>
 %include <iact_data/lstcam_actl_event_decoder.hpp>
+%include <iact_data/cta_actl_event_decoder.hpp>
