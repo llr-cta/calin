@@ -32,6 +32,8 @@
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/event_visitor.hpp>
 #include <iact_data/cta_data_source.hpp>
+#include <iact_data/cta_actl_event_decoder.hpp>
+//#include <iact_data/cta_actl_event_decoder.hpp>
 
 namespace calin { namespace iact_data { namespace event_dispatcher {
 
@@ -50,6 +52,10 @@ public:
   void process_run(calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig* src,
     unsigned log_frequency = 0, int nthread = 0);
+
+  void process_run(std::vector<calin::iact_data::telescope_data_source::
+    TelescopeDataSourceWithRunConfig*> src_list,
+    unsigned log_frequency = 0);
 
   void process_run(std::vector<calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig*> src_list,
@@ -78,6 +84,29 @@ public:
     const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config,
     const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config =
       calin::iact_data::cta_data_source::CTAZFITSDataSource::default_decoder_config());
+
+  void process_cta_zmq_stream(const std::vector<std::string>& endpoints, unsigned log_frequency = 0, unsigned nthread = 1,
+    const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config =
+      calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config(),
+    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config =
+      calin::iact_data::cta_actl_event_decoder::CTA_ACTL_R1_CameraEventDecoder::default_config());
+
+  void process_cta_zmq_stream(const std::string& endpoint, unsigned log_frequency = 0, unsigned nthread = 1,
+    const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config =
+      calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config(),
+    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config =
+      calin::iact_data::cta_actl_event_decoder::CTA_ACTL_R1_CameraEventDecoder::default_config());
+
+  void process_cta_zmq_stream(const std::vector<std::string>& endpoints, unsigned log_frequency, unsigned nthread,
+    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config,
+    const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config =
+      calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config());
+
+  void process_cta_zmq_stream(const std::string& endpoint, unsigned log_frequency, unsigned nthread,
+    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config,
+    const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config =
+      calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config());
+
 #endif
 
 #if 0

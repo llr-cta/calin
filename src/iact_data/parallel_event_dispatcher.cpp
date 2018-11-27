@@ -25,6 +25,8 @@
 
 #include <util/string.hpp>
 #include <util/log.hpp>
+#include <iact_data/zfits_actl_data_source.hpp>
+#include <iact_data/cta_actl_event_decoder.hpp>
 #include <iact_data/event_dispatcher.hpp>
 #include <iact_data/parallel_event_dispatcher.hpp>
 #include <io/data_source.hpp>
@@ -109,6 +111,25 @@ void ParallelEventDispatcher::
 process_run(std::vector<calin::iact_data::telescope_data_source::
   TelescopeRandomAccessDataSourceWithRunConfig*> src_list,
   unsigned log_frequency)
+{
+  if(src_list.empty())
+    throw std::runtime_error("process_run: empty data source list");
+  TelescopeRunConfiguration* run_config = src_list[0]->get_run_configuration();
+  for(unsigned isrc=1; isrc<src_list.size(); isrc++) {
+    TelescopeRunConfiguration* from_run_config =
+      src_list[isrc]->get_run_configuration();
+    merge_run_config(run_config, *from_run_config);
+    delete from_run_config;
+  }
+  std::vector<calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
+  for(auto* src: src_list)src_list_upcast.push_back(src);
+  this->process_run(src_list_upcast, run_config, log_frequency);
+}
+
+void ParallelEventDispatcher::
+process_run(std::vector<calin::iact_data::telescope_data_source::
+  TelescopeDataSourceWithRunConfig*> src_list, unsigned log_frequency)
 {
   if(src_list.empty())
     throw std::runtime_error("process_run: empty data source list");
@@ -212,6 +233,62 @@ process_cta_zfits_run(const std::string& filename, unsigned log_frequency, unsig
   const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config)
 {
   return process_cta_zfits_run(filename, log_frequency, nthread, decoder_config, zfits_config);
+}
+
+void ParallelEventDispatcher::
+process_cta_zmq_stream(const std::vector<std::string>& endpoints, unsigned log_frequency, unsigned nthread,
+  const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config,
+  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config)
+{
+  if(endpoints.empty())
+    throw std::runtime_error("process_run: empty endpoints list");
+  std::vector<calin::iact_data::telescope_data_source::
+    TelescopeDataSourceWithRunConfig*> src_list;
+  try {
+    for(const auto& endpoint: endpoints) {
+      for(unsigned ithread=0; ithread<std::max(nthread,1U); ++ithread) {
+        auto* rsrc = new calin::iact_data::zfits_actl_data_source::
+          ZMQACTL_R1_CameraEventDataSource(endpoint, zmq_config);
+        auto* decoder = new calin::iact_data::cta_actl_event_decoder::
+          CTA_ACTL_R1_CameraEventDecoder(endpoint, 0, decoder_config);
+        auto* src = new calin::iact_data::actl_event_decoder::
+          DecodedACTL_R1_CameraEventDataSourceWithRunConfig(rsrc, decoder,
+            /* adopt_actl_src = */ false, /* adopt_decoder = */ true);
+        src_list.emplace_back(src);
+      }
+    }
+    process_run(src_list, log_frequency);
+  } catch(...) {
+    for(auto* src: src_list)delete src;
+    throw;
+  }
+  for(auto* src: src_list)delete src;
+}
+
+void ParallelEventDispatcher::
+process_cta_zmq_stream(const std::string& endpoint, unsigned log_frequency, unsigned nthread,
+  const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config,
+  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config)
+{
+  std::vector<std::string> endpoints;
+  endpoints.emplace_back(endpoint);
+  process_cta_zmq_stream(endpoints, log_frequency, nthread, zmq_config, decoder_config);
+}
+
+void ParallelEventDispatcher::
+process_cta_zmq_stream(const std::vector<std::string>& endpoints, unsigned log_frequency, unsigned nthread,
+  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config,
+  const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config)
+{
+  process_cta_zmq_stream(endpoints, log_frequency, nthread, zmq_config, decoder_config);
+}
+
+void ParallelEventDispatcher::
+process_cta_zmq_stream(const std::string& endpoint, unsigned log_frequency, unsigned nthread,
+  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config,
+  const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config)
+{
+  process_cta_zmq_stream(endpoint, log_frequency, nthread, zmq_config, decoder_config);
 }
 #endif // defined(CALIN_HAVE_CTA_CAMERASTOACTL)
 
