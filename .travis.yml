@@ -2,7 +2,7 @@
 # Stephen Fegan - sfegan@llr.in2p3.fr - 2015-11-01
 
 dist: trusty
-sudo: false
+#sudo: false
 language: cpp
 
 addons:
