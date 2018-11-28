@@ -97,6 +97,7 @@ sql = calin.io.sql_transceiver.SQLite3Transceiver(sql_file,
 
 # Get the results
 results = calin.ix.scripts.zmq_diagnostics.Results()
+results.mutable_command_line_arguments().CopyFrom(opt_proc.command_line_arguments())
 results.mutable_command_line_options().CopyFrom(opt)
 calin.provenance.anthology.get_current_anthology(results.mutable_provenance())
 results.mutable_run_config().CopyFrom(ri.run_config())

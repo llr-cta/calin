@@ -327,6 +327,8 @@ struct OptionDetails
 void OptionsProcessor::process_arguments(const std::vector<std::string>& args,
   bool first_arg_is_program_name)
 {
+  for(const auto& iarg: args)cla_.add_argument(iarg);
+
   std::vector<OptionDetails> options;
 
   bool arg_is_program_name = first_arg_is_program_name;
