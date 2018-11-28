@@ -341,12 +341,14 @@ ParallelEventDispatcher::default_config()
   config.set_log_frequency(10000);
   config.set_nthread(1);
   config.set_run_number(0);
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
   config.mutable_decoder()->CopyFrom(
     calin::iact_data::cta_actl_event_decoder::CTA_ACTL_R1_CameraEventDecoder::default_config());
   config.mutable_zfits()->CopyFrom(
     calin::iact_data::cta_data_source::CTAZFITSDataSource::default_config());
   config.mutable_zmq()->CopyFrom(
     calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config());
+#endif // defined(CALIN_HAVE_CTA_CAMERASTOACTL)
   return config;
 }
 
