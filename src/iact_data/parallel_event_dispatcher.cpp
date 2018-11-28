@@ -200,16 +200,16 @@ process_run(std::vector<calin::io::data_source::DataSource<
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
 void ParallelEventDispatcher::
-process_cta_zfits_run(const std::string& filename, unsigned log_frequency, unsigned nthread,
-  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config,
-  calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig zfits_config)
+process_cta_zfits_run(const std::string& filename,
+  const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
 {
   auto fragments = calin::util::file::file_fragments(filename,
-    zfits_config.extension(), zfits_config.file_fragment_stride());
+    config.zfits().extension(), config.zfits().file_fragment_stride());
   if(fragments.empty()) {
     throw std::runtime_error("process_cta_zfits_run: file not found: " + filename);
   }
-  nthread = std::min(std::max(nthread, 1U), unsigned(fragments.size()));
+  unsigned nthread = std::min(std::max(config.nthread(), 1U), unsigned(fragments.size()));
+  auto zfits_config = config.zfits();
   zfits_config.set_file_fragment_stride(
     nthread*std::max(1U, zfits_config.file_fragment_stride()));
   std::vector<calin::iact_data::telescope_data_source::
@@ -217,9 +217,9 @@ process_cta_zfits_run(const std::string& filename, unsigned log_frequency, unsig
   try {
     for(unsigned ithread=0; ithread<nthread; ithread++) {
       src_list[ithread] =
-        new CTAZFITSDataSource(fragments[ithread], decoder_config, zfits_config);
+        new CTAZFITSDataSource(fragments[ithread], config.decoder(), zfits_config);
     }
-    process_run(src_list, log_frequency);
+    process_run(src_list, config.log_frequency());
   } catch(...) {
     for(auto* src: src_list)delete src;
     throw;
@@ -228,17 +228,8 @@ process_cta_zfits_run(const std::string& filename, unsigned log_frequency, unsig
 }
 
 void ParallelEventDispatcher::
-process_cta_zfits_run(const std::string& filename, unsigned log_frequency, unsigned nthread,
-  const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config,
-  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config)
-{
-  return process_cta_zfits_run(filename, log_frequency, nthread, decoder_config, zfits_config);
-}
-
-void ParallelEventDispatcher::
-process_cta_zmq_stream(const std::vector<std::string>& endpoints, unsigned log_frequency, unsigned nthread,
-  const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config,
-  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config)
+process_cta_zmq_stream(const std::vector<std::string>& endpoints,
+  const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
 {
   if(endpoints.empty())
     throw std::runtime_error("process_run: empty endpoints list");
@@ -246,18 +237,18 @@ process_cta_zmq_stream(const std::vector<std::string>& endpoints, unsigned log_f
     TelescopeDataSourceWithRunConfig*> src_list;
   try {
     for(const auto& endpoint: endpoints) {
-      for(unsigned ithread=0; ithread<std::max(nthread,1U); ++ithread) {
+      for(unsigned ithread=0; ithread<std::max(config.nthread(),1U); ++ithread) {
         auto* rsrc = new calin::iact_data::zfits_actl_data_source::
-          ZMQACTL_R1_CameraEventDataSource(endpoint, zmq_config);
+          ZMQACTL_R1_CameraEventDataSource(endpoint, config.zmq());
         auto* decoder = new calin::iact_data::cta_actl_event_decoder::
-          CTA_ACTL_R1_CameraEventDecoder(endpoint, 0, decoder_config);
+          CTA_ACTL_R1_CameraEventDecoder(endpoint, config.run_number(), config.decoder());
         auto* src = new calin::iact_data::actl_event_decoder::
           DecodedACTL_R1_CameraEventDataSourceWithRunConfig(rsrc, decoder,
             /* adopt_actl_src = */ false, /* adopt_decoder = */ true);
         src_list.emplace_back(src);
       }
     }
-    process_run(src_list, log_frequency);
+    process_run(src_list, config.log_frequency());
   } catch(...) {
     for(auto* src: src_list)delete src;
     throw;
@@ -266,29 +257,12 @@ process_cta_zmq_stream(const std::vector<std::string>& endpoints, unsigned log_f
 }
 
 void ParallelEventDispatcher::
-process_cta_zmq_stream(const std::string& endpoint, unsigned log_frequency, unsigned nthread,
-  const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config,
-  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config)
+process_cta_zmq_stream(const std::string& endpoint,
+  const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
 {
   std::vector<std::string> endpoints;
   endpoints.emplace_back(endpoint);
-  process_cta_zmq_stream(endpoints, log_frequency, nthread, zmq_config, decoder_config);
-}
-
-void ParallelEventDispatcher::
-process_cta_zmq_stream(const std::vector<std::string>& endpoints, unsigned log_frequency, unsigned nthread,
-  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config,
-  const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config)
-{
-  process_cta_zmq_stream(endpoints, log_frequency, nthread, zmq_config, decoder_config);
-}
-
-void ParallelEventDispatcher::
-process_cta_zmq_stream(const std::string& endpoint, unsigned log_frequency, unsigned nthread,
-  const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config,
-  const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config)
-{
-  process_cta_zmq_stream(endpoint, log_frequency, nthread, zmq_config, decoder_config);
+  process_cta_zmq_stream(endpoints, config);
 }
 #endif // defined(CALIN_HAVE_CTA_CAMERASTOACTL)
 
@@ -359,6 +333,22 @@ void ParallelEventDispatcher::process_nectarcam_zfits_run(
   write_final_log_message(log_frequency, start_time, ndispatched);
 }
 #endif // 0
+
+calin::ix::iact_data::event_dispatcher::EventDispatcherConfig
+ParallelEventDispatcher::default_config()
+{
+  calin::ix::iact_data::event_dispatcher::EventDispatcherConfig config;
+  config.set_log_frequency(10000);
+  config.set_nthread(1);
+  config.set_run_number(0);
+  config.mutable_decoder()->CopyFrom(
+    calin::iact_data::cta_actl_event_decoder::CTA_ACTL_R1_CameraEventDecoder::default_config());
+  config.mutable_zfits()->CopyFrom(
+    calin::iact_data::cta_data_source::CTAZFITSDataSource::default_config());
+  config.mutable_zmq()->CopyFrom(
+    calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config());
+  return config;
+}
 
 void ParallelEventDispatcher::
 dispatch_event(uint64_t seq_index, TelescopeEvent* event)

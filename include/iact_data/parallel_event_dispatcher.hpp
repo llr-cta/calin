@@ -33,6 +33,7 @@
 #include <iact_data/event_visitor.hpp>
 #include <iact_data/cta_data_source.hpp>
 #include <iact_data/cta_actl_event_decoder.hpp>
+#include <iact_data/event_dispatcher.pb.h>
 //#include <iact_data/cta_actl_event_decoder.hpp>
 
 namespace calin { namespace iact_data { namespace event_dispatcher {
@@ -41,6 +42,9 @@ class ParallelEventDispatcher: protected
   calin::iact_data::event_visitor::EventLifetimeManager
 {
 public:
+  CALIN_TYPEALIAS(config_type,
+    calin::ix::iact_data::event_dispatcher::EventDispatcherConfig);
+
   ParallelEventDispatcher();
 
   ~ParallelEventDispatcher();
@@ -74,39 +78,14 @@ public:
     unsigned log_frequency = 0);
 
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
-  void process_cta_zfits_run(const std::string& filename, unsigned log_frequency = 0, unsigned nthread = 1,
-    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config =
-      calin::iact_data::cta_data_source::CTAZFITSDataSource::default_decoder_config(),
-    calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig zfits_config =
-      calin::iact_data::cta_data_source::CTAZFITSDataSource::default_config());
+  void process_cta_zfits_run(const std::string& filename,
+    const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
 
-  void process_cta_zfits_run(const std::string& filename, unsigned log_frequency, unsigned nthread,
-    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config,
-    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config =
-      calin::iact_data::cta_data_source::CTAZFITSDataSource::default_decoder_config());
+  void process_cta_zmq_stream(const std::vector<std::string>& endpoints,
+    const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
 
-  void process_cta_zmq_stream(const std::vector<std::string>& endpoints, unsigned log_frequency = 0, unsigned nthread = 1,
-    const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config =
-      calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config(),
-    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config =
-      calin::iact_data::cta_actl_event_decoder::CTA_ACTL_R1_CameraEventDecoder::default_config());
-
-  void process_cta_zmq_stream(const std::string& endpoint, unsigned log_frequency = 0, unsigned nthread = 1,
-    const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config =
-      calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config(),
-    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config =
-      calin::iact_data::cta_actl_event_decoder::CTA_ACTL_R1_CameraEventDecoder::default_config());
-
-  void process_cta_zmq_stream(const std::vector<std::string>& endpoints, unsigned log_frequency, unsigned nthread,
-    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config,
-    const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config =
-      calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config());
-
-  void process_cta_zmq_stream(const std::string& endpoint, unsigned log_frequency, unsigned nthread,
-    const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config,
-    const calin::ix::io::zmq_data_source::ZMQDataSourceConfig& zmq_config =
-      calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config());
-
+  void process_cta_zmq_stream(const std::string& endpoint,
+    const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
 #endif
 
 #if 0
@@ -135,6 +114,8 @@ public:
       decoder_config, zfits_config);
   }
 #endif
+
+  static calin::ix::iact_data::event_dispatcher::EventDispatcherConfig default_config();
 
   static bool merge_run_config(calin::ix::iact_data::
       telescope_run_configuration::TelescopeRunConfiguration* to,
