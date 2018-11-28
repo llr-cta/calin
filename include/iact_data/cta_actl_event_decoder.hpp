@@ -93,4 +93,4 @@ protected:
 
 #endif
 
-} } } // namespace calin::iact_data::lstcam_data_source
+} } } // namespace calin::iact_data::cta_actl_event_decoder
