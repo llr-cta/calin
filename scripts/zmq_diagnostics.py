@@ -45,6 +45,7 @@ opt.set_log_frequency(cfg.log_frequency())
 opt.set_nthread(1)
 opt.mutable_decoder().CopyFrom(cfg.decoder())
 opt.mutable_zmq().CopyFrom(cfg.zmq())
+opt.mutable_run_info().CopyFrom(calin.diagnostics.run_info.RunInfoDiagnosticsVisitor.default_config())
 
 opt_proc = calin.util.options_processor.OptionsProcessor(opt, True);
 opt_proc.process_arguments(sys.argv)
@@ -85,7 +86,7 @@ cfg.mutable_zmq().CopyFrom(opt.zmq())
 dispatcher = calin.iact_data.event_dispatcher.ParallelEventDispatcher()
 
 # Create the run info visitor
-ri = calin.diagnostics.run_info.RunInfoDiagnosticsVisitor()
+ri = calin.diagnostics.run_info.RunInfoDiagnosticsVisitor(opt.run_info())
 dispatcher.add_visitor(ri)
 
 # Run all the visitors

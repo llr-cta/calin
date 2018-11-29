@@ -53,6 +53,9 @@ message CommandLineOptions {
     (CFO).desc = "CTA event decoder options." ];
   calin.ix.io.zmq_data_source.ZMQDataSourceConfig zmq      = 31 [
     (CFO).desc = "Options for ZMQ data streams." ];
+
+  calin.ix.diagnostics.run_info.RunInfoConfig run_info     = 40 [
+    (CFO).desc = "Options for Run Info diagnostic calculator." ];
 };
 
 message Results {
