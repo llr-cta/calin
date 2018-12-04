@@ -37,9 +37,16 @@ enum CounterValueTestMode {
   VALUE_RELATIVE_TO_EVENT_NUMBER                           = 2;
 };
 
+message CameraRunInfoConfig {
+  repeated int32 module_counter_test_id                    = 1;
+  repeated CounterValueTestMode module_counter_test_mode   = 2;
+};
+
 message RunInfoConfig {
   repeated int32 module_counter_test_id                    = 1;
   repeated CounterValueTestMode module_counter_test_mode   = 2;
+  CameraRunInfoConfig default_nectarcam_config             = 10;
+  CameraRunInfoConfig default_lstcam_config                = 11;
 };
 
 message CounterValues {

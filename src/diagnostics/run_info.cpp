@@ -115,20 +115,35 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   elapsed_time_hist_.clear();
   run_config_->CopyFrom(*run_config);
 
+  calin::ix::diagnostics::run_info::RunInfoConfig config = config_;
+  if(config.module_counter_test_id_size() == 0 and
+      config.module_counter_test_mode_size() == 0) {
+    if(run_config_->camera_layout().camera_type() ==
+        calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM) {
+      *(config.mutable_module_counter_test_id()) = config.default_nectarcam_config().module_counter_test_id();
+      *(config.mutable_module_counter_test_mode()) = config.default_nectarcam_config().module_counter_test_mode();
+    } else if(run_config_->camera_layout().camera_type() ==
+        calin::ix::iact_data::instrument_layout::CameraLayout::LSTCAM) {
+      *(config.mutable_module_counter_test_id()) = config.default_lstcam_config().module_counter_test_id();
+      *(config.mutable_module_counter_test_mode()) = config.default_lstcam_config().module_counter_test_mode();
+    }
+  }
+
   for(auto* iproc: mod_counter_processor_)delete iproc;
   mod_counter_id_.clear();
   mod_counter_mode_.clear();
   mod_counter_processor_.clear();
-  for(unsigned icounter=0;icounter<config_.module_counter_test_id_size();icounter++) {
-    int counter_id = config_.module_counter_test_id(icounter);
+  for(unsigned icounter=0;icounter<std::max(config.module_counter_test_id_size(),
+      config.module_counter_test_mode_size());icounter++) {
+    int counter_id = config.module_counter_test_id(icounter);
     if(counter_id<0 or counter_id>=run_config_->camera_layout().module_counter_name_size())continue;
     mod_counter_id_.push_back(counter_id);
-    mod_counter_mode_.push_back(config_.module_counter_test_mode(icounter));
-    if(icounter<config_.module_counter_test_mode_size()
-        and config_.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_MEDIAN) {
+    mod_counter_mode_.push_back(config.module_counter_test_mode(icounter));
+    if(icounter<config.module_counter_test_mode_size()
+        and config.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_MEDIAN) {
       mod_counter_processor_.push_back(new RelativeToMedianModuleCounterProcessor());
-    } else if(icounter<config_.module_counter_test_mode_size()
-        and config_.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_EVENT_NUMBER) {
+    } else if(icounter<config.module_counter_test_mode_size()
+        and config.module_counter_test_mode(icounter) == calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_EVENT_NUMBER) {
       mod_counter_processor_.push_back(new RelativeToEventNumberModuleCounterProcessor());
     } else {
       mod_counter_processor_.push_back(new DirectModuleCounterProcessor());
@@ -210,6 +225,32 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
   }
 
   return true;
+}
+
+calin::ix::diagnostics::run_info::RunInfoConfig RunInfoDiagnosticsVisitor::default_config()
+{
+  calin::ix::diagnostics::run_info::RunInfoConfig config;
+  config.mutable_default_nectarcam_config()->add_module_counter_test_id(0);
+  config.mutable_default_nectarcam_config()->add_module_counter_test_id(1);
+  config.mutable_default_nectarcam_config()->add_module_counter_test_id(2);
+  config.mutable_default_nectarcam_config()->add_module_counter_test_mode(
+    calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_MEDIAN);
+  config.mutable_default_nectarcam_config()->add_module_counter_test_mode(
+    calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_MEDIAN);
+  config.mutable_default_nectarcam_config()->add_module_counter_test_mode(
+    calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_MEDIAN);
+
+  config.mutable_default_lstcam_config()->add_module_counter_test_id(0);
+  config.mutable_default_lstcam_config()->add_module_counter_test_id(1);
+  config.mutable_default_lstcam_config()->add_module_counter_test_id(2);
+  config.mutable_default_lstcam_config()->add_module_counter_test_mode(
+    calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_MEDIAN);
+  config.mutable_default_lstcam_config()->add_module_counter_test_mode(
+    calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_MEDIAN);
+  config.mutable_default_lstcam_config()->add_module_counter_test_mode(
+    calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_MEDIAN);
+
+  return config;
 }
 
 const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration&
