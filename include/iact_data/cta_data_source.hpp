@@ -46,13 +46,7 @@ public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
 
-  static calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig default_config() {
-    config_type config = calin::iact_data::zfits_data_source::ZFITSDataSource_R1::default_config();
-    config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT);
-    config.set_run_header_table_name(""); // Differs between L0 and R1 so let downstream decode
-    return config;
-  }
-
+  static calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig default_config();
   static calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig default_decoder_config();
 
   CTAZFITSDataSource(const std::string& filename,
