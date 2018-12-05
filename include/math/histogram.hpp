@@ -73,17 +73,17 @@ public:
 
   BinnedData1D(double dxval, double xval_align = 0.5,
                const std::string& xval_units = std::string()):
-      dxval_{dxval}, xval_align_{xval_align}, xval_units_{xval_units}
+      dxval_{dxval}, dxval_inv_{1.0/dxval_}, xval_align_{xval_align}, xval_units_{xval_units}
     { /* nothing to see here */ }
   BinnedData1D(double dxval, double xval_limit_lo, double xval_limit_hi,
                double xval_align = 0.5,
                const std::string& xval_units = std::string()):
-      dxval_{dxval}, xval_align_{xval_align}, limited_{true},
+      dxval_{dxval}, dxval_inv_{1.0/dxval_}, xval_align_{xval_align}, limited_{true},
       xval_limit_lo_{xval_limit_lo}, xval_limit_hi_{xval_limit_hi},
       xval_units_{xval_units}
     { /* nothing to see here */ }
   BinnedData1D(const calin::ix::math::histogram::Histogram1DConfig& config):
-      dxval_{config.dxval()}, xval_align_{config.xval_align()},
+      dxval_{config.dxval()}, dxval_inv_{1.0/dxval_}, xval_align_{config.xval_align()},
       limited_{config.limited()}, xval_limit_lo_{config.xval_limit_lo()},
       xval_limit_hi_{config.xval_limit_hi()}, xval_units_{config.xval_units()}
     { /* nothing to see here */ }
@@ -119,8 +119,8 @@ public:
   Eigen::VectorXd all_xval_center() const { Eigen::VectorXd x(bins_.size());
     for(int ibin=0;ibin<this->size();ibin++)x[ibin] = xval_center(ibin);
     return x; }
-  int ibin(double x) const { return std::floor((x-xval0_)/dxval_); }
-  int ibin_and_rem(double x, double& dx) const { int ix = std::floor((x-xval0_)/dxval_); dx = x-xval_left(ix); return ix; }
+  int ibin(double x) const { return std::floor((x-xval0_)*dxval_inv_); }
+  int ibin_and_rem(double x, double& dx) const { int ix = std::floor((x-xval0_)*dxval_inv_); dx = x-xval_left(ix); return ix; }
   bool has_ibin(int ibin) const {
     return ibin>=0 and (unsigned)ibin<bins_.size(); }
   bool has_xval(double x) const
@@ -156,7 +156,7 @@ protected:
   BinnedData1D(double dxval, double xval_align, double xval0,
                bool limited, double xval_limit_lo, double xval_limit_hi,
                const std::string& xval_units):
-      dxval_(dxval), xval_align_(xval_align), xval0_(xval0),
+      dxval_(dxval), dxval_inv_(1.0/dxval_), xval_align_(xval_align), xval0_(xval0),
       xval_limit_lo_(xval_limit_lo), xval_limit_hi_(xval_limit_hi),
       xval_units_(xval_units) { /* nothing to see here */ }
 
@@ -167,7 +167,7 @@ protected:
                bool limited, double xval_limit_lo, double xval_limit_hi,
                const T& overflow_lo, const T& overflow_hi,
                const std::string& xval_units):
-      dxval_(dxval), xval_align_(xval_align), xval0_(xval0),
+      dxval_(dxval), dxval_inv_(1.0/dxval_), xval_align_(xval_align), xval0_(xval0),
       bins_(bins_data_begin, bins_data_end), limited_(limited),
       xval_limit_lo_(xval_limit_lo), xval_limit_hi_(xval_limit_hi),
       overflow_lo_(overflow_lo), overflow_hi_(overflow_hi),
@@ -206,7 +206,8 @@ protected:
         bins_.emplace_front();
         ++thebin;
       }while(thebin<0);
-      xval0_ = std::floor((x+xval_align_)/dxval_)*dxval_ - xval_align_;
+      //xval0_ = std::floor((x+xval_align_)*dxval_inv_)*dxval_ - xval_align_;
+      xval0_ = (std::floor(x*dxval_inv_+xval_align_) - xval_align_)*dxval_;
     }
     else if(static_cast<unsigned>(thebin) >= bins_.size())
     {
@@ -234,7 +235,8 @@ protected:
     if(bins_.empty())
     {
       bins_.emplace_back();
-      xval0_ = std::floor((x+xval_align_)/dxval_)*dxval_ - xval_align_;
+      //xval0_ = std::floor((x+xval_align_)*dxval_inv_)*dxval_ - xval_align_;
+      xval0_ = (std::floor(x*dxval_inv_+xval_align_) - xval_align_)*dxval_;
       return bins_.front();
     }
     int thebin { ibin(x) };
@@ -243,6 +245,7 @@ protected:
   }
 
   double dxval_           = 1.0;
+  double dxval_inv_       = 1.0;
   double xval_align_      = 0.5;
   double xval0_;
   Container bins_;

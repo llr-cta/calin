@@ -31,7 +31,6 @@
 #include "math/optimizer.hpp"
 #include "math/nlopt_optimizer.hpp"
 #include "math/cminpack_optimizer.hpp"
-#include "math/minuit75_optimizer.hpp"
 
 using namespace calin::math;
 using namespace calin::math::histogram;
@@ -613,50 +612,6 @@ TEST(TestSPELikelihood, Optimize_CMinpack)
   Eigen::MatrixXd err_mat = hessian_mat.inverse();
   std::cout << std::fixed << std::setprecision(9) << err_mat << '\n';
 }
-
-#if 0
-TEST(TestSPELikelihood, Minimize_Minuit75)
-{
-  auto mes_data = karkar_data();
-  SimpleHist mes_hist(1.0);
-  for(auto idata : mes_data)mes_hist.insert(idata);
-  PoissonGaussianMES mes_model(20);
-  SPELikelihood like(mes_model, mes_hist);
-
-  optimizer::Minuit75Optimizer opt(&like);
-  Eigen::VectorXd xopt { 1.0, 3100.0, 20.0, 100.0, 0.45 };
-  double fopt;
-  opt.set_initial_values(xopt);
-  opt.set_scale({ 0.001, 0.1, 0.01, 0.1, 0.001 });
-  opt.minimize(xopt,fopt);
-
-  #if 0
-  //EXPECT_EQ(status, GSL_SUCCESS);
-  EXPECT_NEAR(x[0], 0.55349337, 0.0001);
-  EXPECT_NEAR(x[1], 3094.2715, 0.01);
-  EXPECT_NEAR(x[2], 19.6141970, 0.001);
-  EXPECT_NEAR(x[3], 89.1810077, 0.01);
-  EXPECT_NEAR(x[4], 0.32388838, 0.0001);
-
-  std::cout << x[0] << ' ' << x[1] << ' ' << x[2] << ' '
-            << x[3] << ' ' << x[4] << '\n';
-
-  Eigen::MatrixXd hessian_mat(5,5);
-  std::vector<double> gradient(5);
-  like.value_gradient_and_hessian(&x.front(), &gradient.front(), hessian_mat.data());
-  Eigen::MatrixXd err_mat = hessian_mat.inverse();
-  std::cout << err_mat << '\n';
-
-  std::cout << std::sqrt(err_mat(0,0)) << ' '
-            << std::sqrt(err_mat(1,1)) << ' '
-            << std::sqrt(err_mat(2,2)) << ' '
-            << std::sqrt(err_mat(3,3)) << ' '
-            << std::sqrt(err_mat(4,4)) << '\n';
-#endif
-}
-
-#endif
-
 
 TEST(TestGeneralPoissonMES_Gauss, SetAndRecallParameters) {
   pdf_1d::GaussianPDF ped;

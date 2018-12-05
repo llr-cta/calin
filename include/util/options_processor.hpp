@@ -29,6 +29,7 @@
 #include <string>
 
 #include <google/protobuf/message.h>
+#include <util/options_processor.pb.h>
 
 namespace calin { namespace util { namespace options_processor {
 
@@ -144,7 +145,7 @@ public:
   std::string usage(unsigned width = 80);
   bool help_requested() { return help_handler_ != nullptr
     and help_handler_->was_option_handled(); }
-
+  const calin::ix::util::options_processor::CommandLineArguments& command_line_arguments() { return cla_; }
 protected:
   ProtobufOptionHandler* priority_protobuf_handler_ = nullptr;
   std::vector<OptionHandler*> handlers_;
@@ -157,6 +158,8 @@ protected:
   std::vector<std::string> arguments_;
   google::protobuf::Message* default_message_ = nullptr;
   google::protobuf::Message* message_ = nullptr;
+
+  calin::ix::util::options_processor::CommandLineArguments cla_;
 };
 
 } } } // namespace calin::util::options_processor

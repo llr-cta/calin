@@ -22,11 +22,13 @@
 */
 
 syntax = "proto3";
+option cc_enable_arenas = true;
 
 import "calin.proto";
 import "common_types.proto";
 import "iact_data/instrument_layout.proto";
-import "iact_data/nectarcam_module_configuration.proto";
+import "iact_data/lstcam_configuration.proto";
+import "iact_data/nectarcam_configuration.proto";
 
 package calin.ix.iact_data.telescope_run_configuration;
 
@@ -67,7 +69,7 @@ message TelescopeRunConfiguration {
     (CFO).desc = "Nominal DAQ waveform sampling frequency, or zero if unknown. May "
       "not be calibrated.", (CFO).units = "MHz" ];
 
-  uint64 configuration_id                                   = 50 [
+  uint64 configuration_id                                  = 50 [
     (CFO).desc = "Key into database describing camera configuration." ];
   string camera_server_serial_number                       = 51 [
     (CFO).desc = "Serial number of the computer that the camera server is "
@@ -80,8 +82,10 @@ message TelescopeRunConfiguration {
     (CFO).desc = "Camera layout." ];
 
   oneof camera_specific_configuration {
-    calin.ix.iact_data.nectarcam_module_configuration.NectarCamCameraConfiguration nectarcam = 200 [
+    calin.ix.iact_data.nectarcam_configuration.NectarCamCameraConfiguration nectarcam = 200 [
       (CFO).desc = "NectarCam configuration elements." ];
+    calin.ix.iact_data.lstcam_configuration.LSTCamCameraConfiguration lstcam = 201 [
+      (CFO).desc = "LSTCam configuration elements." ];
   }
 
   SerializedRawHeaderType serialized_raw_header_type        = 998 [

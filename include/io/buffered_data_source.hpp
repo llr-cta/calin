@@ -3,7 +3,7 @@
    calin/io/buffered_data_source.hpp -- Stephen Fegan -- 2016-02-29
 
    A multi-threaded data source which buffers data from a parent source
-   making it available
+   making it available... only works inproc
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3
@@ -34,6 +34,14 @@
 
 namespace calin { namespace io { namespace data_source {
 
+#if GOOGLE_PROTOBUF_VERSION < 3006000
+typedef google::protobuf::internal::true_type true_type;
+typedef google::protobuf::internal::false_type false_type;
+#else
+typedef std::true_type true_type;
+typedef std::false_type false_type;
+#endif
+
 template<typename T> struct Payload
 {
 public:
@@ -47,7 +55,7 @@ public:
 
 template<typename T> inline T* unpack_payload(const Payload<T>& payload,
   uint64_t& seq_index_out, google::protobuf::Arena** arena,
-  bool &warning_sent, const google::protobuf::internal::true_type&)
+  bool &warning_sent, const true_type&)
 {
   if(payload.ptr == nullptr)return nullptr;
   seq_index_out = payload.seq_index;
@@ -85,7 +93,7 @@ template<typename T> inline T* unpack_payload(const Payload<T>& payload,
 
 template<typename T> inline T* unpack_payload(const Payload<T>& payload,
   uint64_t& seq_index_out, google::protobuf::Arena** arena,
-  bool &warning_sent, const google::protobuf::internal::false_type&)
+  bool &warning_sent, const false_type&)
 {
   if(payload.arena != nullptr)
     throw std::runtime_error("unpack_payload: logic error, non-null payload arena for type that does not support arena");
@@ -97,7 +105,7 @@ template<typename T> inline T* unpack_payload(const Payload<T>& payload,
 
 template<typename T> bool pack_payload(Payload<T>& payload,
   T* ptr, uint64_t seq_index, google::protobuf::Arena* arena, bool adopt_data,
-  const google::protobuf::internal::true_type&)
+  const true_type&)
 {
   payload.seq_index = seq_index;
   if(adopt_data) {
@@ -120,7 +128,7 @@ template<typename T> bool pack_payload(Payload<T>& payload,
 
 template<typename T> bool pack_payload(Payload<T>& payload,
   T* ptr, uint64_t seq_index, google::protobuf::Arena* arena, bool adopt_data,
-  const google::protobuf::internal::false_type&)
+  const false_type&)
 {
   if(arena != nullptr)
     throw std::runtime_error("pack_payload: logic error, non-null user arena for type that does not support arena");

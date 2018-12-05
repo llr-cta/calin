@@ -1,6 +1,6 @@
 /*
 
-   calin/proto/iact_data/nectarcam_module_configuration.proto
+   calin/proto/iact_data/nectarcam_configuration.proto
                                                 -- Stephen Fegan -- 2017-12-13
 
    Protobufs for NectarCAM module configuration information
@@ -26,7 +26,7 @@ syntax = "proto3";
 import "calin.proto";
 //import "common_types.proto";
 
-package calin.ix.iact_data.nectarcam_module_configuration;
+package calin.ix.iact_data.nectarcam_configuration;
 
 message NectarCamModuleConfiguration {
   int32 module_id                                          = 1 [

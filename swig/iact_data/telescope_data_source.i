@@ -26,7 +26,9 @@
 #include <calin_global_config.hpp>
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
-#include <iact_data/nectarcam_module_configuration.hpp>
+#include <iact_data/nectarcam_configuration.hpp>
+#include <iact_data/lstcam_data_source.hpp>
+#include <iact_data/cta_data_source.hpp>
 using namespace calin::io;
 #define SWIG_FILE_WITH_INIT
   %}
@@ -40,13 +42,16 @@ using namespace calin::io;
 %import "calin_global_definitions.i"
 
 %import "iact_data/telescope_event.pb.i"
-%import "iact_data/nectarcam_module_configuration.pb.i"
+%import "iact_data/nectarcam_configuration.pb.i"
+%import "iact_data/lstcam_configuration.pb.i"
 %import "iact_data/telescope_run_configuration.pb.i"
 %import "iact_data/zfits_data_source.pb.i"
 %import "iact_data/nectarcam_data_source.pb.i"
+%import "iact_data/lstcam_data_source.pb.i"
+%import "iact_data/cta_data_source.pb.i"
 
 %newobject decode_nmc_xml_file(const std::string& filename);
-%include "iact_data/nectarcam_module_configuration.hpp"
+%include "iact_data/nectarcam_configuration.hpp"
 
 %newobject get_run_configuration();
 
@@ -107,6 +112,14 @@ using namespace calin::io;
   calin::io::data_source::RandomAccessDataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
+%template(VectorTelescopeDataSource)
+  std::vector<calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*>;
+
+%template(VectorTelescopeRandomAccessDataSource)
+  std::vector<calin::io::data_source::RandomAccessDataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*>;
+
 %template(FileTelescopeDataSource)
   calin::io::data_source::ProtobufFileDataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
@@ -123,9 +136,9 @@ using namespace calin::io;
   calin::io::data_source::DataSourceFactory<
     calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
-  %template(TelescopeDataSinkFactory)
-    calin::io::data_source::DataSinkFactory<
-      calin::ix::iact_data::telescope_event::TelescopeEvent>;
+%template(TelescopeDataSinkFactory)
+  calin::io::data_source::DataSinkFactory<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>;
 
 %include "io/buffered_data_source.hpp"
 
@@ -168,6 +181,9 @@ using namespace calin::io;
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>;
 
+%template(VectorTelescopeRandomAccessDataSourceWithRunConfig)
+  std::vector<calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*>;
+
 %include "pattern/delegation.hpp"
 
 %template(DelegatorTelescopeRandomAccessDataSourceWithRunConfig)
@@ -177,3 +193,5 @@ using namespace calin::io;
 %include "iact_data/zfits_data_source.hpp"
 
 %include "iact_data/nectarcam_data_source.hpp"
+%include "iact_data/lstcam_data_source.hpp"
+%include "iact_data/cta_data_source.hpp"

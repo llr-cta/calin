@@ -20,16 +20,21 @@ set(CALIN_SOURCES
 	telescope_data_source.cpp event_visitor.cpp
 	event_dispatcher.cpp parallel_event_dispatcher.cpp
 	functional_event_visitor.cpp instrument_layout.cpp
-	nectarcam_layout.cpp nectarcam_module_configuration.cpp
+	nectarcam_layout.cpp nectarcam_configuration.cpp
+	lstcam_layout.cpp
 	waveform_treatment_event_visitor.cpp waveform_treatment_event_visitor_impl.cpp)
 
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES}
 		actl_event_decoder.cpp
 		nectarcam_actl_l0_event_decoder.cpp nectarcam_actl_r1_event_decoder.cpp
+		lstcam_actl_r1_event_decoder.cpp
+		cta_actl_r1_event_decoder.cpp
 		zfits_actl_l0_data_source.cpp zfits_actl_r1_data_source.cpp
 		zfits_data_source_l0.cpp zfits_data_source_r1.cpp
-		nectarcam_data_source.cpp)
+		nectarcam_data_source.cpp
+		lstcam_data_source.cpp
+		cta_data_source.cpp)
 endif()
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})

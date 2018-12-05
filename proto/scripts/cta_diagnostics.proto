@@ -1,0 +1,75 @@
+/*
+
+   calin/proto/scripts/cta_diagnostics.proto -- Stephen Fegan -- 2018-11-28
+
+   Protobufs for command line options abnd results of cta_diagnostics.py
+
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "provenance/anthology.proto";
+import "iact_data/telescope_run_configuration.proto";
+import "iact_data/cta_data_source.proto";
+import "iact_data/zfits_data_source.proto";
+import "util/options_processor.proto";
+import "io/zmq_data_source.proto";
+import "diagnostics/run_info.proto";
+
+
+package calin.ix.scripts.cta_diagnostics;
+
+message CommandLineOptions {
+  uint32 run_number                                        = 1 [
+    (CFO).desc = "Run number." ];
+
+  string o                                                 = 10 [
+    (CFO).desc = "SQLite3 output file name." ];
+  string db_results_table_name                             = 11 [
+    (CFO).desc = "Table name of results structure in database." ];
+
+  uint32 log_frequency                                     = 20 [
+    (CFO).desc = "Print a message to log every \"log_frequency\" events." ];
+  int32 nthread                                            = 21 [
+    (CFO).desc = "Number of computation threads. A value of -1 disables "
+      "threading completely." ];
+
+  calin.ix.iact_data.cta_data_source.CTACameraEventDecoderConfig decoder = 30 [
+    (CFO).desc = "CTA event decoder options." ];
+  calin.ix.iact_data.zfits_data_source.ZFITSDataSourceConfig zfits = 31 [
+    (CFO).desc = "Options for ZFITS data streams." ];
+  calin.ix.io.zmq_data_source.ZMQDataSourceConfig zmq      = 32 [
+    (CFO).desc = "Options for ZMQ data streams." ];
+
+  calin.ix.diagnostics.run_info.RunInfoConfig run_info     = 40 [
+    (CFO).desc = "Options for Run Info diagnostic calculator." ];
+};
+
+message Results {
+  calin.ix.util.options_processor.CommandLineArguments command_line_arguments = 1 [
+    (CFO).desc = "Command line options passed to script." ];
+  CommandLineOptions command_line_options                  = 2 [
+    (CFO).desc = "Command line options passed to script." ];
+  calin.ix.provenance.anthology.Anthology provenance       = 3 [
+    (CFO).desc = "Provenance information." ];
+
+  calin.ix.iact_data.telescope_run_configuration.TelescopeRunConfiguration run_config = 10 [
+    (CFO).desc = "Run configuration." ];
+
+  calin.ix.diagnostics.run_info.RunInfo run_info           = 20;
+};

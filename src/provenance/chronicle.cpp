@@ -55,7 +55,7 @@ calin::provenance::chronicle::copy_the_chronicle(calin::ix::provenance::chronicl
   return x;
 }
 
-void calin::provenance::chronicle::
+calin::ix::provenance::chronicle::FileIORecord* calin::provenance::chronicle::
 register_file_open(const std::string& file_name,
   calin::ix::provenance::chronicle::AccessType access,
   const std::string& opened_by, const std::string& comment)
@@ -66,7 +66,7 @@ register_file_open(const std::string& file_name,
     std::lock_guard<std::mutex> lock { chronicle_mutex };
     record = singleton_chronicle->add_file_io_record();
   }
-  ts.as_proto(record->mutable_timestamp());
+  ts.as_proto(record->mutable_open_timestamp());
   record->set_access(access);
   record->set_file_name(file_name);
   record->set_comment(comment);
@@ -76,6 +76,43 @@ register_file_open(const std::string& file_name,
     calin::util::timestamp::Timestamp(stat_buffer.st_mtime).as_proto(record->mutable_file_mtime());
   }
   record->set_opened_by(opened_by);
+  return record;
+}
+
+void calin::provenance::chronicle::
+register_file_close(calin::ix::provenance::chronicle::FileIORecord* record)
+{
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  ts.as_proto(record->mutable_close_timestamp());
+}
+
+calin::ix::provenance::chronicle::NetworkIORecord* calin::provenance::chronicle::
+register_network_open(const std::string& endpoint,
+  const std::string& opened_by, const std::string& comment)
+{
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  calin::ix::provenance::chronicle::NetworkIORecord* record = nullptr;
+  {
+    std::lock_guard<std::mutex> lock { chronicle_mutex };
+    record = singleton_chronicle->add_network_io_record();
+  }
+  ts.as_proto(record->mutable_open_timestamp());
+  record->set_endpoint_name(endpoint);
+  record->set_comment(comment);
+  record->set_nbytes_received(-1);
+  record->set_nbytes_sent(-1);
+  record->set_opened_by(opened_by);
+  return record;
+}
+
+void calin::provenance::chronicle::
+register_network_close(calin::ix::provenance::chronicle::NetworkIORecord* record,
+  int64_t nbytes_received, int64_t nbytes_sent)
+{
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  ts.as_proto(record->mutable_close_timestamp());
+  if(nbytes_received>=0)record->set_nbytes_received(nbytes_received);
+  if(nbytes_sent>=0)record->set_nbytes_sent(nbytes_sent);
 }
 
 void calin::provenance::chronicle::

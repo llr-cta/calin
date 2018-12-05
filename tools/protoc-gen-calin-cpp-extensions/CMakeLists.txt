@@ -20,6 +20,6 @@ add_executable(protoc-gen-calin-cpp-extensions protoc-gen-calin-cpp-extensions.c
 include_directories(${CMAKE_CURRENT_BUILD_DIR})
 
 target_link_libraries(protoc-gen-calin-cpp-extensions calin_util_lite
-	${PROTOBUF_LIBRARY} calin_proto_base ${PROTOBUF_PROTOC_LIBRARIES})
+${PROTOBUF_LIBRARY} calin_proto_base ${PROTOBUF_PROTOC_LIBRARIES} -lpthread)
 
 install(TARGETS protoc-gen-calin-cpp-extensions DESTINATION ${CALIN_BIN_INSTALL_DIR})

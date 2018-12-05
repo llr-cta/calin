@@ -54,27 +54,27 @@ namespace calin { namespace iact_data { namespace nectarcam_actl_event_decoder {
 
 */
 
-class NectarCAM_ACTL_L0_CameraEventDecoder:
+class NectarCam_ACTL_L0_CameraEventDecoder:
   public actl_event_decoder::ACTL_L0_CameraEventDecoder
 {
 public:
   CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
     nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
-  NectarCAM_ACTL_L0_CameraEventDecoder(const std::string& filename, unsigned run_number = 0,
-    const config_type& config = default_config());
+  NectarCam_ACTL_L0_CameraEventDecoder(const std::string& filename, unsigned run_number = 0,
+    const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& config = default_config());
 
   //void set_config(const config_type& config) { config_.CopyFrom(config); }
-  config_type config() const { return config_; }
+  calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig config() const { return config_; }
   //config_type* mutable_config() { return &config_; }
-  static config_type default_config() {
+  static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_config() {
     config_type config = config_type::default_instance();
     config.set_nmc_xml_suffix(".NMC.xml");
     config.set_separate_channel_waveforms(true);
     return config;
   }
 
-  virtual ~NectarCAM_ACTL_L0_CameraEventDecoder();
+  virtual ~NectarCam_ACTL_L0_CameraEventDecoder();
 
   bool decode(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event,
@@ -129,17 +129,17 @@ protected:
 
 */
 
-class NectarCAM_ACTL_R1_CameraEventDecoder:
+class NectarCam_ACTL_R1_CameraEventDecoder:
   public actl_event_decoder::ACTL_R1_CameraEventDecoder
 {
 public:
   CALIN_TYPEALIAS(config_type, calin::ix::iact_data::
     nectarcam_data_source::NectarCamCameraEventDecoderConfig);
 
-  NectarCAM_ACTL_R1_CameraEventDecoder(const std::string& filename, unsigned run_number = 0,
+  NectarCam_ACTL_R1_CameraEventDecoder(const std::string& filename, unsigned run_number = 0,
     const config_type& config = default_config());
 
-  ~NectarCAM_ACTL_R1_CameraEventDecoder();
+  ~NectarCam_ACTL_R1_CameraEventDecoder();
 
   virtual bool decode(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event,
@@ -151,9 +151,9 @@ public:
     const R1::CameraConfiguration* cta_run_header,
     const R1::CameraEvent* cta_event) override;
 
-  config_type config() const { return config_; }
+  calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig config() const { return config_; }
 
-  static config_type default_config() {
+  static calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig default_config() {
     config_type config = config_type::default_instance();
     config.set_nmc_xml_suffix(".NMC.xml");
     config.set_separate_channel_waveforms(true);

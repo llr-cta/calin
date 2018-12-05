@@ -1,0 +1,46 @@
+/*
+
+   calin/proto/iact_data/lstcam_data_source.proto -- Stephen Fegan -- 2018-10-15
+
+   Protobufs for configuration of LSTCamZFITSDataSource
+
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.iact_data.lstcam_data_source;
+
+message LSTCamCameraEventDecoderConfig {
+  bool separate_channel_waveforms                          = 1 [
+    (CFO).desc = "Copy the waveforms for each channel out into separete arrays. "
+      "If this option is not set then the ChannelWaveform structures will not be "
+      "present in the telescope event structure." ];
+  bool include_serialized_raw_data                         = 2 [
+    (CFO).desc = "Include serialized raw ACTL protobuf header and event data." ];
+  uint64 counts_to_time_133megahertz                    = 10 [
+    (CFO).desc = "Calibration constant to apply to 133MHz clock counter in "
+      "order to calculate time in nanoseconds. If the number of 133MHz counts "
+      "N_133 then the calculated time is T_133 = N_133 ClockCalib/4096. The "
+      "nominal value is 30797.", (CFO).units="ns/4096cnt" ];
+  uint32 demand_nsample                                    = 100 [
+    (CFO).desc = "Override number of samples per event stored in file. Zero "
+      "means we use value from file."];
+  double demand_sampling_frequency                         = 101 [
+    (CFO).desc = "Override sampling frequency.", (CFO).units = "MHz" ];
+};

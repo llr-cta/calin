@@ -45,7 +45,7 @@ inline void *align( std::size_t alignment, std::size_t size,
 #include <util/file.hpp>
 #include <iact_data/nectarcam_actl_event_decoder.hpp>
 #include <iact_data/nectarcam_layout.hpp>
-#include <iact_data/nectarcam_module_configuration.hpp>
+#include <iact_data/nectarcam_configuration.hpp>
 #include <math/simd.hpp>
 #include <provenance/system_info.hpp>
 
@@ -81,7 +81,7 @@ using namespace calin::util::log;
 
 */
 
-NectarCAM_ACTL_L0_CameraEventDecoder::NectarCAM_ACTL_L0_CameraEventDecoder(
+NectarCam_ACTL_L0_CameraEventDecoder::NectarCam_ACTL_L0_CameraEventDecoder(
   const std::string& filename,
   unsigned run_number, const config_type& config):
   actl_event_decoder::ACTL_L0_CameraEventDecoder(), config_(config),
@@ -103,12 +103,12 @@ NectarCAM_ACTL_L0_CameraEventDecoder::NectarCAM_ACTL_L0_CameraEventDecoder(
   }
 }
 
-NectarCAM_ACTL_L0_CameraEventDecoder::~NectarCAM_ACTL_L0_CameraEventDecoder()
+NectarCam_ACTL_L0_CameraEventDecoder::~NectarCam_ACTL_L0_CameraEventDecoder()
 {
   // nothing to see here
 }
 
-bool NectarCAM_ACTL_L0_CameraEventDecoder::decode(
+bool NectarCam_ACTL_L0_CameraEventDecoder::decode(
   calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   const DataModel::CameraEvent* cta_event)
 {
@@ -360,14 +360,14 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode(
   return true;
 }
 
-bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
+bool NectarCam_ACTL_L0_CameraEventDecoder::decode_run_config(
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* calin_run_config,
   const DataModel::CameraRunHeader* cta_run_header,
   const DataModel::CameraEvent* cta_event)
 {
   calin_run_config->set_data_transcoder(
-    "calin::iact_data::nectarcam_actl_event_decoder::NectarCAM_ACTL_L0_CameraEventDecoder");
+    "calin::iact_data::nectarcam_actl_event_decoder::NectarCam_ACTL_L0_CameraEventDecoder");
   calin_run_config->set_filename(filename_);
   calin_run_config->add_fragment_filename(filename_);
   calin_run_config->set_run_number(run_number_);
@@ -430,8 +430,8 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
   }
 
   if(not nmc_file.empty()) {
-    calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration* nccc =
-      calin::iact_data::nectarcam_module_configuration::decode_nmc_xml_file(nmc_file);
+    calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration* nccc =
+      calin::iact_data::nectarcam_configuration::decode_nmc_xml_file(nmc_file);
     if(nccc) {
       calin_run_config->mutable_nectarcam()->CopyFrom(*nccc);
     } else {
@@ -479,13 +479,13 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
   if(config_.demand_configured_module_id_size() != 0)
   {
     if(config_.demand_configured_module_id_size() != nmod)
-      throw std::runtime_error("NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config: "
+      throw std::runtime_error("NectarCam_ACTL_L0_CameraEventDecoder::decode_run_config: "
         "Demand module list size must equal number of modules in data.");
     config_mod_id.clear();
     for(int imod=0;imod<nmod;imod++) {
       unsigned mod_id = config_.demand_configured_module_id(imod);
       if(mod_id >= nmod_camera)
-        throw std::runtime_error("NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config: "
+        throw std::runtime_error("NectarCam_ACTL_L0_CameraEventDecoder::decode_run_config: "
           "Demand module id out of range: " + std::to_string(mod_id) + " >= " +
           std::to_string(nmod_camera));
       config_mod_id.insert(mod_id);
@@ -496,7 +496,7 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
     for(int imod=0; imod<nmod; imod++) {
       unsigned mod_id = calin_run_config->nectarcam().module(imod).module_id();
       if(mod_id >= nmod_camera)
-        throw std::runtime_error("NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config: "
+        throw std::runtime_error("NectarCam_ACTL_L0_CameraEventDecoder::decode_run_config: "
           "Demand module id out of range: " + std::to_string(mod_id) + " >= " +
           std::to_string(nmod_camera));
       config_mod_id.insert(mod_id);
@@ -519,6 +519,8 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
       ++mod_index;
     }
   }
+
+  calin::iact_data::telescope_data_source::report_run_configuration_problems(calin_run_config);
 
   unsigned nsample = config_.demand_nsample();
   if(nsample == 0 and cta_run_header)
@@ -608,7 +610,7 @@ bool NectarCAM_ACTL_L0_CameraEventDecoder::decode_run_config(
   return true;
 }
 
-void NectarCAM_ACTL_L0_CameraEventDecoder::
+void NectarCam_ACTL_L0_CameraEventDecoder::
 copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
   const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   const DataModel::PixelsChannel& cta_image,
@@ -649,7 +651,7 @@ copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
   }
 }
 
-void NectarCAM_ACTL_L0_CameraEventDecoder::
+void NectarCam_ACTL_L0_CameraEventDecoder::
 copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
   const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   const DataModel::PixelsChannel& cta_image,
@@ -731,7 +733,7 @@ copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
   }
 }
 
-unsigned NectarCAM_ACTL_L0_CameraEventDecoder::
+unsigned NectarCam_ACTL_L0_CameraEventDecoder::
 get_nmod_from_event(const DataModel::CameraEvent* cta_event) const
 {
   unsigned nmod = 0;

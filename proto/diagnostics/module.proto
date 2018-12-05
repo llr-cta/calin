@@ -23,10 +23,21 @@
 syntax = "proto3";
 
 import "calin.proto";
-//import "math/histogram.proto";
+import "math/histogram.proto";
 //import "common_types.proto";
 
 package calin.ix.diagnostics.module;
+
+message ModuleDiagnostics {
+  uint32 module_id                                         = 1 [
+    (CFO).desc = "Module ID within expected module list." ];
+  uint64 num_events_missing                                = 10 [
+    (CFO).desc = "Number of events for which this module is missing." ];
+  calin.ix.math.histogram.Histogram1DData num_events_missing_hist = 11 [
+    (CFO).desc = "Histogram of missing events as a function of elapsed time." ];
+  
+};
+
 
 message ModuleMissingRange {
   uint64 first_source_index                                = 1 [

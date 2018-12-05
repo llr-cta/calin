@@ -26,6 +26,16 @@
 
 using namespace calin::io::zmq_inproc;
 
+void* calin::io::zmq_inproc::new_zmq_ctx()
+{
+  return zmq_ctx_new();
+}
+
+void calin::io::zmq_inproc::destroy_zmq_ctx(void* zmq_cxt)
+{
+  zmq_ctx_destroy(zmq_cxt);
+}
+
 ZMQPusher::ZMQPusher(void* zmq_ctx, const std::string& endpoint,
   int buffer_size, ZMQBindOrConnect bind_or_connect):
   socket_(zmq_socket(zmq_ctx, ZMQ_PUSH), &zmq_close)
@@ -63,7 +73,12 @@ ZMQPusher::ZMQPusher(void* zmq_ctx, const std::string& endpoint,
   }
 }
 
-bool ZMQPusher::push(void* data, unsigned size, bool dont_wait)
+bool ZMQPusher::push(const std::string& data_push, bool dont_wait)
+{
+  return this->push(data_push.data(), data_push.size(), dont_wait);
+}
+
+bool ZMQPusher::push(const void* data, unsigned size, bool dont_wait)
 {
   if(zmq_send(socket_.get(), data, size, dont_wait ? ZMQ_DONTWAIT : 0) < 0)
   {
@@ -111,6 +126,30 @@ ZMQPuller::ZMQPuller(void* zmq_ctx, const std::string& endpoint,
   }
 }
 
+bool ZMQPuller::pull(zmq_msg_t* msg, bool dont_wait)
+{
+  int nbytes = zmq_recvmsg(socket_.get(), msg, dont_wait?ZMQ_DONTWAIT:0);
+  if(nbytes < 0)
+  {
+    if((dont_wait and errno == EAGAIN) or errno == ETERM)return false;
+    throw std::runtime_error(std::string("ZMQPuller: error receiving data: ")
+      + zmq_strerror(errno));
+  }
+  nbytes_pulled_ += nbytes;
+  return true;
+}
+
+bool ZMQPuller::pull(std::string& data_pull, bool dont_wait)
+{
+  /* Create an empty ØMQ message */
+  zmq_msg_t msg;
+  zmq_msg_init(&msg);
+  pull(&msg, dont_wait);
+  data_pull.assign(static_cast<char*>(zmq_msg_data(&msg)), zmq_msg_size(&msg));
+  zmq_msg_close (&msg);
+  return true;
+}
+
 bool ZMQPuller::pull(void* data, unsigned buffer_size, unsigned& bytes_received,
    bool dont_wait)
 {
@@ -124,6 +163,7 @@ bool ZMQPuller::pull(void* data, unsigned buffer_size, unsigned& bytes_received,
       + zmq_strerror(errno));
   }
   bytes_received = unsigned(nbytes);
+  nbytes_pulled_ += nbytes;
   return true;
 }
 
@@ -137,6 +177,13 @@ bool ZMQPuller::pull_assert_size(void* data, unsigned buffer_size,
       "number of bytes: ") + std::to_string(bytes_received) + " != "
       + std::to_string(buffer_size));
   return good;
+}
+
+bool ZMQPuller::wait_for_data(long timeout_ms)
+{
+  zmq_pollitem_t item = this->pollitem();
+  int rc = zmq_poll(&item, 1, timeout_ms);
+  return rc>0;
 }
 
 ZMQInprocPushPull::

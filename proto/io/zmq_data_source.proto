@@ -1,0 +1,58 @@
+/*
+
+   calin/proto/io/zmq_data_source.proto -- Stephen Fegan -- 2018-11-19
+
+   Protobufs for configuration of ZMQ DataSources
+
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.io.zmq_data_source;
+
+message ZMQDataSourceConfig {
+  int32 receive_timeout_ms                                 = 1 [
+    (CFO).desc = "Timeout for data pulls subsequent to initial pull. "
+      "A value of 0 means data must be immediately available. A value of "
+      "-1 gives an inifinite timeout. A reasonable scenario is to set this "
+      "to some 1000s of milliseconds so that data source times out after "
+      "lack of data for some period (unless a reliable disconnect mechanism "
+      "has been implemented).",
+    (CFO).units = "ms", (CFO).ref = "http://api.zeromq.org/4-2:zmq-poll" ];
+  int32 initial_receive_timeout_ms                         = 2 [
+    (CFO).desc = "Timeout for initial data pull. "
+      "A value of 0 means data must be immediately available. A value of "
+      "-1 gives an inifinite timeout. A reasonable scenario is to set this "
+      "to -1 (or to some large value) to allow the system to wait for the "
+      "initial connection.",
+    (CFO).units = "ms", (CFO).ref = "http://api.zeromq.org/4-2:zmq-poll" ];
+  uint32 receive_buffer_size                               = 3 [
+    (CFO).desc = "Set the high water mark for inbound messages on the "
+      "ZMQ socket. The high water mark is a hard limit on the maximum number "
+      "of outstanding messages ZMQ shall queue in memory for any single peer "
+      "that the specified socket is communicating with. A value of zero means "
+      "no limit.",
+    (CFO).ref = "http://api.zeromq.org/4-2:zmq-setsockopt#toc35" ];
+  uint32 num_io_threads                                    = 4 [
+    (CFO).desc = "Timeout for initial data pull. "
+      "The size of the ZMQ thread pool to handle I/O operations. If the "
+      "datasource is using only the inproc transport for messaging you may set "
+      "this to zero, otherwise set it to at least one.",
+    (CFO).ref = "http://api.zeromq.org/4-2:zmq-ctx-set" ];
+};

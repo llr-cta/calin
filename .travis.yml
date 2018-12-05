@@ -2,7 +2,7 @@
 # Stephen Fegan - sfegan@llr.in2p3.fr - 2015-11-01
 
 dist: trusty
-sudo: false
+#sudo: false
 language: cpp
 
 addons:
@@ -40,7 +40,7 @@ matrix:
 #      addons:
 #        <<: *gcc49_addons
     - compiler: gcc-5
-      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5
       addons: &gcc5_addons
         apt:
           sources:
@@ -48,14 +48,14 @@ matrix:
           packages:
           - *common_packages
           - g++-5
-    # - compiler: gcc-5
-    #   env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
-    #   addons:
-    #     <<: *gcc5_addons
-    - compiler: gcc-5
-      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-5 BUILD_CXX=g++-5
-      addons:
-        <<: *gcc5_addons
+#    - compiler: gcc-5
+#      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+#      addons:
+#        <<: *gcc5_addons
+#    - compiler: gcc-5
+#      env: BUILD_TYPE=Release GEANT4=TRUE BUILD_CC=gcc-5 BUILD_CXX=g++-5
+#      addons:
+#        <<: *gcc5_addons
     - compiler: gcc-6
       env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-6 BUILD_CXX=g++-6
       addons: &gcc6_addons
@@ -74,6 +74,15 @@ matrix:
           packages:
           - *common_packages
           - g++-7
+    - compiler: gcc-8
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-8 BUILD_CXX=g++-8
+      addons: &gcc8_addons
+        apt:
+          sources:
+          - *common_sources
+          packages:
+          - *common_packages
+          - g++-8
     # - compiler: clang-3.9
     #   env: BUILD_TYPE=Debug GEANT4=FALSE BUILD_CC=clang-3.9 BUILD_CXX=clang++-3.9
     #   addons: &clang39_addons
@@ -104,6 +113,26 @@ matrix:
           packages:
           - *common_packages
           - clang-5.0
+    - compiler: clang-6.0
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-6.0 BUILD_CXX=clang++-6.0
+      addons: &clang60_addons
+        apt:
+          sources:
+          - *common_sources
+          - llvm-toolchain-trusty-6.0
+          packages:
+          - *common_packages
+          - clang-6.0
+    # - compiler: clang-7
+    #   env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=clang-7 BUILD_CXX=clang++-7
+    #   addons: &clang7_addons
+    #     apt:
+    #       sources:
+    #       - *common_sources
+    #       - llvm-toolchain-trusty-7
+    #       packages:
+    #       - *common_packages
+    #       - clang-7
 
 cache:
   directories:
@@ -117,8 +146,6 @@ before_install:
   - export LOCAL=$HOME/local/$CC
   - export PATH=$LOCAL/bin:$PATH
   - export LD_LIBRARY_PATH=$LOCAL/lib64:$LOCAL/lib:$LD_LIBRARY_PATH
-  # Temporarily add this as Eigen produces a vast number of errors - 2016-06-30
-  - if [ "x$BUILD_CXX" == "xg++-6" ]; then CXXFLAGS="$CXXFLAGS -Wno-ignored-attributes"; fi
 
 # Build SWIG-3, protobuf-3 and Geant4-10 if not available in the cache
 # Download and unpack Geant4 data files if necessary
@@ -158,9 +185,9 @@ install:
   - |
     if [ ! -f $LOCAL/bin/protoc ]
     then (
-      wget https://github.com/google/protobuf/releases/download/v3.5.0/protobuf-cpp-3.5.0.tar.gz &&
-      tar zxf protobuf-cpp-3.5.0.tar.gz &&
-      cd protobuf-3.5.0 &&
+      wget https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz &&
+      tar zxf protobuf-cpp-3.6.1.tar.gz &&
+      cd protobuf-3.6.1 &&
       ./configure --prefix=$LOCAL &&
       make -j3 &&
       make install > /dev/null &&

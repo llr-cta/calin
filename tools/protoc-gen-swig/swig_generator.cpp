@@ -335,6 +335,7 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
   for(int i=0;i<d->field_count();i++)
   {
     auto* f = d->field(i);
+    const google::protobuf::FieldOptions* fopt { &f->options() };
 
     std::map<string, string> vars;
     vars["id"]          = std::to_string(f->index());
@@ -562,6 +563,14 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
         I->Print(vars,
           "$type$ $name$() const;\n"
           "void set_$name$($type_in$ INPUT);\n");
+        if(fopt->HasExtension(calin::CFO)) {
+          if(fopt->GetExtension(calin::CFO).is_counter()) {
+            I->Print(vars,
+              "$type$ increment_$name$();\n"
+              "$type$ increment_$name$_if(bool);\n");
+          }
+        }
+
       }
     }
 
@@ -570,7 +579,6 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
     I->Print("%extend {\n");
     I->Indent();
 
-    const google::protobuf::FieldOptions* fopt { &f->options() };
     if(fopt->HasExtension(calin::CFO))
     {
       if(!fopt->GetExtension(calin::CFO).desc().empty())

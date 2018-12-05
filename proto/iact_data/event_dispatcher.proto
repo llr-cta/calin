@@ -1,0 +1,55 @@
+/*
+
+   calin/proto/iact_data/event_dispatcher.proto -- Stephen Fegan -- 2018-11-28
+
+   Protobufs for configuration of parallel event dispatcher
+
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "iact_data/cta_data_source.proto";
+import "iact_data/zfits_data_source.proto";
+import "io/zmq_data_source.proto";
+
+package calin.ix.iact_data.event_dispatcher;
+
+message EventDispatcherConfig {
+  uint32 log_frequency                                     = 1 [
+    (CFO).desc = "Print a message to log every \"log_frequency\" events." ];
+
+  uint32 nthread                                           = 2 [
+    (CFO).desc = "Number of threads to use in dispatching events. For a "
+      "ZFITS file dispached through \"process_cta_zfits_run\" each thread "
+      "dispatches a different file fragment. For ZMQ streams dispached through "
+      "\"process_cta_zmq_run\" this specifies the number of threads per ZMQ "
+      "endpoint." ];
+
+  uint32 run_number                                        = 3 [
+    (CFO).desc = "Run number if it cannot be determined from data file or "
+      "from ZMQ stream." ];
+
+  calin.ix.iact_data.cta_data_source.CTACameraEventDecoderConfig decoder = 10 [
+    (CFO).desc = "CTA event decoder options." ];
+
+  calin.ix.iact_data.zfits_data_source.ZFITSDataSourceConfig zfits = 11 [
+    (CFO).desc = "Options for ZFITS data files." ];
+
+  calin.ix.io.zmq_data_source.ZMQDataSourceConfig zmq      = 12 [
+    (CFO).desc = "Options for ZMQ data streams." ];
+};

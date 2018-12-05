@@ -31,7 +31,10 @@
 #include <calin_global_config.hpp>
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/event_visitor.hpp>
-#include <iact_data/nectarcam_data_source.hpp>
+#include <iact_data/cta_data_source.hpp>
+#include <iact_data/cta_actl_event_decoder.hpp>
+#include <iact_data/event_dispatcher.pb.h>
+//#include <iact_data/cta_actl_event_decoder.hpp>
 
 namespace calin { namespace iact_data { namespace event_dispatcher {
 
@@ -39,6 +42,9 @@ class ParallelEventDispatcher: protected
   calin::iact_data::event_visitor::EventLifetimeManager
 {
 public:
+  CALIN_TYPEALIAS(config_type,
+    calin::ix::iact_data::event_dispatcher::EventDispatcherConfig);
+
   ParallelEventDispatcher();
 
   ~ParallelEventDispatcher();
@@ -51,13 +57,38 @@ public:
     TelescopeRandomAccessDataSourceWithRunConfig* src,
     unsigned log_frequency = 0, int nthread = 0);
 
+  void process_run(std::vector<calin::iact_data::telescope_data_source::
+    TelescopeDataSourceWithRunConfig*> src_list,
+    unsigned log_frequency = 0);
+
+  void process_run(std::vector<calin::iact_data::telescope_data_source::
+    TelescopeRandomAccessDataSourceWithRunConfig*> src_list,
+    unsigned log_frequency = 0);
+
   void process_run(calin::io::data_source::DataSource<
       calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
     calin::ix::iact_data::
       telescope_run_configuration::TelescopeRunConfiguration* run_config,
     unsigned log_frequency = 0, int nthread = 0);
 
+  void process_run(std::vector<calin::io::data_source::DataSource<
+      calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list,
+    calin::ix::iact_data::
+      telescope_run_configuration::TelescopeRunConfiguration* merged_run_config,
+    unsigned log_frequency = 0);
+
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+  void process_cta_zfits_run(const std::string& filename,
+    const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
+
+  void process_cta_zmq_run(const std::vector<std::string>& endpoints,
+    const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
+
+  void process_cta_zmq_run(const std::string& endpoint,
+    const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
+#endif
+
+#if 0
   void process_nectarcam_zfits_run(const std::string& filename,
     unsigned log_frequency = 0, int nthread = 0,
     const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config =
@@ -83,6 +114,13 @@ public:
       decoder_config, zfits_config);
   }
 #endif
+
+  static calin::ix::iact_data::event_dispatcher::EventDispatcherConfig default_config();
+
+  static bool merge_run_config(calin::ix::iact_data::
+      telescope_run_configuration::TelescopeRunConfiguration* to,
+    const calin::ix::iact_data::
+      telescope_run_configuration::TelescopeRunConfiguration& from);
 
 private:
   // These functions allow events to be passed on to the visitors - they

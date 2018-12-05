@@ -1,0 +1,158 @@
+/*
+
+   calin/proto/diagnostics/run_info.proto -- Stephen Fegan -- 2018-10-26
+
+   Protobufs for run informaton diagnostics
+
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+option cc_enable_arenas = true;
+
+import "calin.proto";
+import "math/histogram.proto";
+import "diagnostics/range.proto";
+//import "common_types.proto";
+
+package calin.ix.diagnostics.run_info;
+
+
+enum CounterValueTestMode {
+  VALUE                                                    = 0;
+  VALUE_RELATIVE_TO_MEDIAN                                 = 1;
+  VALUE_RELATIVE_TO_EVENT_NUMBER                           = 2;
+};
+
+message CameraRunInfoConfig {
+  repeated int32 module_counter_test_id                    = 1;
+  repeated CounterValueTestMode module_counter_test_mode   = 2;
+};
+
+message RunInfoConfig {
+  repeated int32 module_counter_test_id                    = 1;
+  repeated CounterValueTestMode module_counter_test_mode   = 2;
+  CameraRunInfoConfig default_nectarcam_config             = 10;
+  CameraRunInfoConfig default_lstcam_config                = 11;
+};
+
+message CounterValues {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  uint32 counter_id                                        = 1 [
+    (CFO).desc = "Counter ID within module." ];
+  string counter_name                                      = 2 [
+    (CFO).desc = "Counter name within module." ];
+  CounterValueTestMode test_mode                           = 3 [
+    (CFO).desc = "Counter value processing mode." ];
+  calin.ix.diagnostics.range.IndexAndValueRangeInt64 value_range = 4 [
+    (CFO).desc = "Counter value and index range." ];
+};
+
+message ModuleRunInfo {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  uint32 configured_module_rank                            = 1 [
+    (CFO).desc = "Rank of module within configured modules for this run." ];
+  uint32 camera_module_id                                  = 2 [
+    (CFO).desc = "Module ID within camera." ];
+  uint64 num_events_present                                = 3 [
+    (CFO).desc = "Number of events for which data from this module was "
+      "present.",
+    (CFO).is_counter = true ];
+  calin.ix.diagnostics.range.IndexRange events_missing     = 4 [
+    (CFO).desc = "Ranges of event numbers for data from this module was "
+      "missing." ];
+  repeated CounterValues counter_value                     = 10 [
+    (CFO).desc = "Ranges of event numbers for which the modules had consistent "
+      "values." ];
+};
+
+message RunInfo {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  uint64 num_events_found                                  = 1 [
+    (CFO).desc = "Number of events found.",
+    (CFO).is_counter = true ];
+  calin.ix.diagnostics.range.IndexRange event_numbers_found = 2 [
+    (CFO).desc = "Range of event numbers found." ];
+  calin.ix.math.histogram.Histogram1DData event_number_histogram = 3 [
+    (CFO).desc = "Histogram of event numbers found." ];
+
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 10 [
+    (CFO).desc = "Histogram of elapsed time." ];
+
+  uint64 num_events_missing_cdts                           = 20 [
+    (CFO).desc = "Number of events without CDTS information.",
+    (CFO).is_counter = true ];
+  uint64 num_events_missing_tib                            = 21 [
+    (CFO).desc = "Number of events without TIB information.",
+    (CFO).is_counter = true ];
+  uint64 num_events_missing_swat                           = 22 [
+    (CFO).desc = "Number of events without SWAT information.",
+    (CFO).is_counter = true ];
+  uint64 num_events_missing_modules                        = 23 [
+    (CFO).desc = "Number of events without all channel information.",
+    (CFO).is_counter = true ];
+  uint64 num_duplicate_event_numbers                       = 24 [
+    (CFO).desc = "Number of duplicated event numbers found.",
+    (CFO).is_counter = true ];
+
+  calin.ix.diagnostics.range.IndexRange events_missing_cdts    = 30 [
+    (CFO).desc = "List of event ranges without UCTS information." ];
+  calin.ix.diagnostics.range.IndexRange events_missing_tib     = 31 [
+    (CFO).desc = "List of event ranges without TIB information." ];
+  calin.ix.diagnostics.range.IndexRange events_missing_swat    = 32 [
+    (CFO).desc = "List of event ranges without SWAT information." ];
+  calin.ix.diagnostics.range.IndexRange events_missing_modules = 33 [
+    (CFO).desc = "List of event ranges without without all channel information." ];
+  calin.ix.diagnostics.range.RunLengthEncodingUInt64 duplicate_event_numbers = 34 [
+    (CFO).desc = "List of duplicate event numbers (value) and the number "
+      "of EXTRA times they appear (count)." ];
+
+  repeated ModuleRunInfo module                            = 100;
+};
+
+message PartialModuleRunInfo {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  uint64 num_events_present                                = 1 [ (CFO).is_counter = true ];
+  calin.ix.diagnostics.range.RunLengthEncodingBool module_presence = 10;
+  repeated calin.ix.diagnostics.range.RunLengthEncodingInt64 counter_value = 20;
+};
+
+message PartialRunInfo {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  uint64 num_events_found                                  = 1 [ (CFO).is_counter = true ];
+  uint64 num_events_missing_cdts                           = 2 [ (CFO).is_counter = true ];
+  uint64 num_events_missing_tib                            = 3 [ (CFO).is_counter = true ];
+  uint64 num_events_missing_swat                           = 4 [ (CFO).is_counter = true ];
+  uint64 num_events_missing_modules                        = 5 [ (CFO).is_counter = true ];
+  uint64 num_duplicate_event_numbers                       = 6 [ (CFO).is_counter = true ];
+
+  calin.ix.math.histogram.Histogram1DData event_number_histogram = 10;
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 11;
+
+  repeated uint64 event_number_sequence                    = 20 [
+    (CFO).integration_algorithm = APPEND ];
+  calin.ix.diagnostics.range.RunLengthEncodingBool cdts_presence         = 21;
+  calin.ix.diagnostics.range.RunLengthEncodingBool tib_presence          = 22;
+  calin.ix.diagnostics.range.RunLengthEncodingBool swat_presence         = 23;
+  calin.ix.diagnostics.range.RunLengthEncodingBool all_channels_presence = 24;
+
+  repeated PartialModuleRunInfo module                     = 100;
+};

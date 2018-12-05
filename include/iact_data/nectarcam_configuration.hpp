@@ -1,6 +1,6 @@
 /*
 
-   calin/iact_data/nectarcam_module_configuration.hpp -- Stephen Fegan -- 2017-12-13
+   calin/iact_data/nectarcam_configuration.hpp -- Stephen Fegan -- 2017-12-13
 
    NectarCAM specific configuration
 
@@ -20,23 +20,23 @@
 
 */
 
-#include <iact_data/nectarcam_module_configuration.pb.h>
+#include <iact_data/nectarcam_configuration.pb.h>
 
-namespace calin { namespace iact_data { namespace nectarcam_module_configuration {
+namespace calin { namespace iact_data { namespace nectarcam_configuration {
 
 #ifndef SWIG
 
-calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration*
+calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration*
 decode_nmc_xml_file(const std::string& filename,
-  calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration* nccc = nullptr);
+  calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration* nccc = nullptr);
 
 #else
 
-calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration*
+calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration*
 decode_nmc_xml_file(const std::string& filename);
 void decode_nmc_xml_file(const std::string& filename,
-  calin::ix::iact_data::nectarcam_module_configuration::NectarCamCameraConfiguration* nccc);
+  calin::ix::iact_data::nectarcam_configuration::NectarCamCameraConfiguration* nccc);
 
 #endif
 
-} } } // namespace calin::iact_data::nectarcam_module_configuration
+} } } // namespace calin::iact_data::nectarcam_configuration

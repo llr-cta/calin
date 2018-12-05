@@ -1,0 +1,49 @@
+# calin/azure-pipelines.yaml -- Stephen Fegan -- 2018-11-13
+#
+# Build calin Docker images using Microsift Azure compute platform and push
+# them to the Docker hub.
+#
+# Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+# LLR, Ecole Polytechnique, CNRS/IN2P3
+#
+# This file is part of "calin"
+#
+# "calin" is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License version 2 or later, as published by
+# the Free Software Foundation.
+#
+# "calin" is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+pool:
+  vmImage: 'Ubuntu 16.04'
+
+strategy:
+  matrix:
+    generic:
+      build_arch: generic
+    ivybridge:
+      build_arch: ivybridge
+    broadwell:
+      build_arch: broadwell
+
+variables:
+  imageName: 'calin:$(build_arch)'
+  latestImageName: 'calin:latest'
+
+steps:
+- script: |
+    docker build -f Dockerfile --build-arg arch=$(build_arch) -t $(dockerId)/$(imageName) .
+  displayName: 'Build Docker image'
+- script: |
+    docker login -u $(dockerId) -p $pswd
+    docker push $(dockerId)/$(imageName)
+    if test "$(build_arch)" == "generic"
+    then
+      docker tag $(dockerId)/$(imageName) $(dockerId)/$(latestImageName)
+      docker push $(dockerId)/$(latestImageName)
+    fi
+  env:
+    pswd: $(dockerPassword)
+  displayName: 'Push image to Docker hub'

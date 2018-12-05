@@ -18,6 +18,6 @@ add_executable(protoc-gen-swig protoc-gen-swig.cpp swig_generator.cpp)
 include_directories(${CMAKE_CURRENT_BUILD_DIR})
 
 target_link_libraries(protoc-gen-swig calin_proto_base calin_util_lite
-	 ${PROTOBUF_LIBRARY} ${PROTOBUF_PROTOC_LIBRARIES})
+	 ${PROTOBUF_LIBRARY} ${PROTOBUF_PROTOC_LIBRARIES} -lpthread)
 
 install(TARGETS protoc-gen-swig DESTINATION ${CALIN_BIN_INSTALL_DIR})

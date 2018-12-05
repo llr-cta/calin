@@ -58,6 +58,35 @@ using calin::util::file::is_file;
 using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
 
+bool calin::iact_data::zfits_actl_data_source::
+is_zfits_r1(std::string filename, std::string events_table_name)
+{
+  calin::util::file::expand_filename_in_place(filename);
+  if(!is_file(filename))return false;
+
+  if(events_table_name == "")events_table_name =
+    ZFITSSingleFileACTL_R1_CameraEventDataSource::
+      default_config().events_table_name();
+
+  try {
+    IFits ifits(filename, events_table_name, /* force= */ true);
+    const std::string& message_name = ifits.GetStr("PBFHEAD");
+    if (message_name == "R1.CameraEvent") {
+      return true;
+    }
+    // fallthrough to return false
+  } catch(...) {
+    // fallthrough to return false
+  }
+  return false;
+}
+
+ACTL_R1_CameraEventDataSourceWithRunHeader::
+~ACTL_R1_CameraEventDataSourceWithRunHeader()
+{
+  // nothing to see here
+}
+
 ACTL_R1_CameraEventRandomAccessDataSourceWithRunHeader::
 ~ACTL_R1_CameraEventRandomAccessDataSourceWithRunHeader()
 {
@@ -170,6 +199,7 @@ ZFITSSingleFileACTL_R1_CameraEventDataSource::default_config()
   config.set_extension(".fits.fz");
   config.set_run_header_table_name(default_R1_run_header_table_name);
   config.set_events_table_name(default_R1_events_table_name);
+  config.set_file_fragment_stride(1);
   return config;
 }
 
@@ -258,6 +288,7 @@ ZFITSACTL_R1_CameraEventDataSourceOpener::ZFITSACTL_R1_CameraEventDataSourceOpen
     ACTL_R1_CameraEventRandomAccessDataSourceWithRunHeader>(),
   config_(config)
 {
+  const unsigned istride = std::max(1U,config.file_fragment_stride());
   if(is_file(filename))
     filenames_.emplace_back(filename);
   else
@@ -284,8 +315,8 @@ ZFITSACTL_R1_CameraEventDataSourceOpener::ZFITSACTL_R1_CameraEventDataSourceOpen
       }
 
       bool fragment_found = true;
-      for(unsigned i=istart+1; fragment_found and (config_.max_file_fragments()==0 or
-        filenames_.size()<config_.max_file_fragments()) ; ++i)
+      for(unsigned i=istart+istride; fragment_found and (config_.max_file_fragments()==0 or
+        filenames_.size()<config_.max_file_fragments()) ; i+=istride)
       {
         fragment_found = false;
         std::string fragment_i { std::to_string(i) };
@@ -454,3 +485,122 @@ put_next(const R1::CameraEvent* data, uint64_t seq_index,
   src_->release_borrowed_event(data);
   return true;
 }
+
+
+ZMQACTL_R1_CameraEventDataSource::
+ZMQACTL_R1_CameraEventDataSource(
+    const std::string& endpoint, void* zmq_ctx,
+    calin::ix::io::zmq_data_source::ZMQDataSourceConfig config):
+  ACTL_R1_CameraEventDataSourceWithRunHeader(),
+  zmq_source_(new calin::io::data_source::ZMQProtobufDataSource<DataModel::CTAMessage>(
+    endpoint, zmq_ctx, config))
+{
+  // nothing to see here
+}
+
+ZMQACTL_R1_CameraEventDataSource::~ZMQACTL_R1_CameraEventDataSource()
+{
+  delete zmq_source_;
+}
+
+R1::CameraConfiguration* ZMQACTL_R1_CameraEventDataSource::get_run_header()
+{
+  if(run_header_)return new R1::CameraConfiguration(*run_header_);
+  if(!saved_event_)saved_event_ = get_next(saved_seq_index_, nullptr);
+  if(run_header_)return new R1::CameraConfiguration(*run_header_);
+  return nullptr;
+}
+
+R1::CameraEvent* ZMQACTL_R1_CameraEventDataSource::
+get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
+{
+  receive_status_ = DATA_RECEIVED;
+
+  if(saved_event_) {
+    R1::CameraEvent* event = saved_event_;
+    seq_index_out = saved_seq_index_;
+    saved_event_ = nullptr;
+    return event;
+  }
+
+  DataModel::CTAMessage* message = nullptr;
+  while(1) {
+    try {
+      message = zmq_source_->get_next(seq_index_out);
+    }
+    catch(...)
+    {
+      receive_status_ = CONNECTION_ERROR;
+      throw;
+    }
+    if(message == nullptr) {
+      if(zmq_source_->timed_out())receive_status_ = TIMEOUT;
+      else receive_status_ = CONNECTION_CLOSED;
+      return nullptr;
+    }
+    if(message->payload_type_size() == 0) {
+      delete message;
+      continue;
+    }
+    switch(message->payload_type(0)) {
+      case DataModel::EMPTY_MESSAGE:
+        delete message;
+        continue;
+      case DataModel::END_OF_STREAM:
+        delete message;
+        receive_status_ = END_OF_STREAM_RECEIVED;
+        return nullptr;
+      case DataModel::R1_CAMERA_EVENT:
+      {
+        R1::CameraEvent* event = new R1::CameraEvent();
+        if(event->ParseFromString(message->payload_data(0))) {
+          delete message;
+          return event;
+        } else {
+          delete message;
+          receive_status_ = PROTOCOL_ERROR;
+          throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
+            "could not parse event payload");
+        }
+      }
+      case DataModel::R1_CAMERA_CONFIG:
+      {
+        if(run_header_ == nullptr)run_header_ = new R1::CameraConfiguration();
+        if(run_header_->ParseFromString(message->payload_data(0))) {
+          delete message;
+          continue;
+        } else {
+          delete message;
+          receive_status_ = PROTOCOL_ERROR;
+          throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
+            "could not parse caamera configuration payload");
+        }
+      }
+      default:
+      {
+        std::string type = DataModel::MessageType_Name(message->payload_type(0))
+          + " (" + std::to_string(message->payload_type(0)) + ")";
+        delete message;
+        receive_status_ = PROTOCOL_ERROR;
+        throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
+          "unknown message payload type: " + type);
+      }
+    }
+  }
+}
+
+#define HANDLE_CASE(x) case x: return #x
+
+std::string ZMQACTL_R1_CameraEventDataSource::receive_status_string() const
+{
+  switch(receive_status()) {
+    HANDLE_CASE(DATA_SOURCE_UNUSED);
+    HANDLE_CASE(DATA_RECEIVED);
+    HANDLE_CASE(END_OF_STREAM_RECEIVED);
+    HANDLE_CASE(TIMEOUT);
+    HANDLE_CASE(CONNECTION_CLOSED);
+    HANDLE_CASE(PROTOCOL_ERROR);
+    HANDLE_CASE(CONNECTION_ERROR);
+  }
+}
+enum ReceiveStatus {  };

@@ -35,7 +35,7 @@ enum AccessType { AT_READ      = 0;
 
 message FileIORecord
 {
-  calin.ix.util.timestamp.Timestamp timestamp              = 1
+  calin.ix.util.timestamp.Timestamp open_timestamp         = 1
     [ (CFO).sql.inline_message=true ];
   AccessType access                                        = 2;
   string file_name                                         = 3;
@@ -44,6 +44,22 @@ message FileIORecord
   calin.ix.util.timestamp.Timestamp file_mtime             = 6
     [ (CFO).sql.inline_message=true ];
   string opened_by                                         = 7;
+  calin.ix.util.timestamp.Timestamp close_timestamp        = 8
+    [ (CFO).sql.inline_message=true ];
+}
+
+message NetworkIORecord
+{
+  calin.ix.util.timestamp.Timestamp open_timestamp         = 1
+    [ (CFO).sql.inline_message=true ];
+  AccessType access                                        = 2;
+  string endpoint_name                                     = 3;
+  string comment                                           = 4;
+  int64 nbytes_received                                    = 5;
+  int64 nbytes_sent                                        = 6;
+  string opened_by                                         = 7;
+  calin.ix.util.timestamp.Timestamp close_timestamp        = 8
+    [ (CFO).sql.inline_message=true ];
 }
 
 message RNGRecord
@@ -79,6 +95,7 @@ message VCLRNGCoreRecord
 message Chronicle
 {
   repeated FileIORecord file_io_record                     = 1;
+  repeated NetworkIORecord network_io_record               = 2;
   repeated RNGRecord rng_record                            = 10;
   repeated RNGCoreRecord rng_core_record                   = 11;
   repeated VCLRNGCoreRecord vcl_rng_core_record            = 12;

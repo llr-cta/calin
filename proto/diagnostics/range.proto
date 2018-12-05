@@ -1,0 +1,103 @@
+/*
+
+   calin/proto/diagnostics/range.proto -- Stephen Fegan -- 2018-10-26
+
+   Protobufs for run coherence diagnostics
+
+   Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+option cc_enable_arenas = true;
+
+import "calin.proto";
+
+package calin.ix.diagnostics.range;
+
+message RunLengthEncodingUInt64 {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  repeated uint32 count                                    = 1 [
+    (CFO).desc = "Number of values represented by each range.",
+    (CFO).integration_algorithm = APPEND ];
+  repeated uint64 value                                    = 2 [
+    (CFO).desc = "Value for each range.",
+    (CFO).integration_algorithm = APPEND ];
+}
+
+message RunLengthEncodingInt64 {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  repeated uint32 count                                    = 1 [
+    (CFO).desc = "Number of values represented by each range.",
+    (CFO).integration_algorithm = APPEND ];
+  repeated int64 value                                     = 2 [
+    (CFO).desc = "Value for each range.",
+    (CFO).integration_algorithm = APPEND ];
+}
+
+message RunLengthEncodingUInt32 {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  repeated uint32 count                                    = 1 [
+    (CFO).desc = "Number of values represented by each range.",
+    (CFO).integration_algorithm = APPEND ];
+  repeated uint32 value                                    = 2 [
+    (CFO).desc = "Value for each range.",
+    (CFO).integration_algorithm = APPEND ];
+}
+
+message RunLengthEncodingInt32 {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  repeated uint32 count                                    = 1 [
+    (CFO).desc = "Number of values represented by each range.",
+    (CFO).integration_algorithm = APPEND ];
+  repeated int32 value                                     = 2 [
+    (CFO).desc = "Value for each range.",
+    (CFO).integration_algorithm = APPEND ];
+}
+
+message RunLengthEncodingBool {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  repeated uint32 count                                    = 1 [
+    (CFO).desc = "Number of values represented by each range.",
+    (CFO).integration_algorithm = APPEND ];
+  repeated bool value                                      = 2 [
+    (CFO).desc = "Value for each range.",
+    (CFO).integration_algorithm = APPEND ];
+}
+
+message IndexRange {
+  option (CMO).message_integration_function = MIF_USER_GENERATED;
+
+  repeated uint64 begin_index                              = 1 [
+    (CFO).desc = "First index of this range." ];
+  repeated uint64 end_index                                = 2 [
+    (CFO).desc = "One past final index of this range." ];
+};
+
+message IndexAndValueRangeInt64 {
+  option (CMO).message_integration_function = MIF_USER_GENERATED;
+
+  repeated uint64 begin_index                              = 1 [
+    (CFO).desc = "First index of this range." ];
+  repeated uint64 end_index                                = 2 [
+    (CFO).desc = "One past final index of this range." ];
+  repeated int64 value                                     = 3 [
+    (CFO).desc = "Value for this range." ];
+};

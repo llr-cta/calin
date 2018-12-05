@@ -29,9 +29,10 @@
 #include <util/file.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
 #include <iact_data/zfits_data_source.hpp>
+#include <iact_data/zfits_actl_data_source.hpp>
 #include <iact_data/nectarcam_layout.hpp>
 #include <iact_data/nectarcam_actl_event_decoder.hpp>
-#include <iact_data/nectarcam_module_configuration.hpp>
+#include <iact_data/nectarcam_configuration.hpp>
 #include <math/simd.hpp>
 #include <provenance/system_info.hpp>
 
@@ -73,8 +74,8 @@ NectarCamZFITSDataSource_L0::
 NectarCamZFITSDataSource_L0(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource_L0(filename,
-    decoder_ = new NectarCAM_ACTL_L0_CameraEventDecoder(filename,
-      calin::util::file::extract_first_number_from_filename(filename),
+    decoder_ = new NectarCam_ACTL_L0_CameraEventDecoder(filename,
+      calin::util::file::extract_run_number_from_filename(filename),
       decoder_config), false /* we delete it! */, config)
 {
   // nothing to see here
@@ -118,8 +119,8 @@ NectarCamZFITSDataSource_R1::
 NectarCamZFITSDataSource_R1(const std::string& filename,
   const config_type& config, const decoder_config_type& decoder_config):
   calin::iact_data::zfits_data_source::ZFITSDataSource_R1(filename,
-    decoder_ = new NectarCAM_ACTL_R1_CameraEventDecoder(filename,
-      calin::util::file::extract_first_number_from_filename(filename),
+    decoder_ = new NectarCam_ACTL_R1_CameraEventDecoder(filename,
+      calin::util::file::extract_run_number_from_filename(filename),
       decoder_config), false /* we delete it! */, config)
 {
   // nothing to see here
@@ -212,23 +213,7 @@ NectarCamZFITSDataSource::construct_delegate(const std::string& filename,
   bool use_r1 = true;
   if(config.data_model() ==
       calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT) {
-    if(!is_file(filename))
-      throw(std::runtime_error(
-        "NectarCamZFITSDataSource::construct_delegate: File not found: " + filename));
-    std::string events_table_name = config.events_table_name();
-    if(events_table_name == "")events_table_name =
-      zfits_actl_data_source::ZFITSSingleFileACTL_R1_CameraEventDataSource::
-        default_config().events_table_name();
-    IFits ifits(filename, events_table_name, /* force= */ true);
-    const std::string& message_name = ifits.GetStr("PBFHEAD");
-    if (message_name == "DataModel.CameraEvent") {
-      use_r1 = false;
-    } else if (message_name == "R1.CameraEvent") {
-      use_r1 = true;
-    } else {
-      throw(std::runtime_error(
-        "NectarCamZFITSDataSource::construct_delegate: FITS table encodes unknown data model: " + message_name));
-    }
+    use_r1 = zfits_actl_data_source::is_zfits_r1(filename, config.events_table_name());
   } else if(config.data_model() ==
       calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0) {
     use_r1 = false;
@@ -236,7 +221,7 @@ NectarCamZFITSDataSource::construct_delegate(const std::string& filename,
       calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1) {
     use_r1 = true;
   } else {
-    throw(std::runtime_error("NectarCamZFITSDataSource::construct_delegate: Requested data model not known"));
+    throw std::runtime_error("NectarCamZFITSDataSource::construct_delegate: Requested data model not known");
   }
 
   if(use_r1)return new NectarCamZFITSDataSource_R1(filename, config, decoder_config);

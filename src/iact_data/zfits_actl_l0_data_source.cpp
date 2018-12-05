@@ -60,6 +60,29 @@ using calin::util::file::is_file;
 using calin::util::file::is_readable;
 using calin::util::file::expand_filename;
 
+bool calin::iact_data::zfits_actl_data_source::
+is_zfits_l0(std::string filename, std::string events_table_name)
+{
+  calin::util::file::expand_filename_in_place(filename);
+  if(!is_file(filename))return false;
+
+  if(events_table_name == "")events_table_name =
+    ZFITSSingleFileACTL_L0_CameraEventDataSource::
+      default_config().events_table_name();
+
+  try {
+    IFits ifits(filename, events_table_name, /* force= */ true);
+    const std::string& message_name = ifits.GetStr("PBFHEAD");
+    if (message_name == "DataModel.CameraEvent") {
+      return true;
+    }
+    // fallthrough to return false
+  } catch(...) {
+    // fallthrough to return false
+  }
+  return false;
+}
+
 ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader::
 ~ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader()
 {
@@ -171,6 +194,7 @@ ZFITSSingleFileACTL_L0_CameraEventDataSource::default_config()
   config.set_extension(".fits.fz");
   config.set_run_header_table_name(default_L0_run_header_table_name);
   config.set_events_table_name(default_L0_events_table_name);
+  config.set_file_fragment_stride(1);
   return config;
 }
 
@@ -259,6 +283,8 @@ ZFITSACTL_L0_CameraEventDataSourceOpener::ZFITSACTL_L0_CameraEventDataSourceOpen
     ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader>(),
   config_(config)
 {
+  const unsigned istride = std::max(1U,config.file_fragment_stride());
+
   if(is_file(filename))
     filenames_.emplace_back(filename);
   else
@@ -285,8 +311,8 @@ ZFITSACTL_L0_CameraEventDataSourceOpener::ZFITSACTL_L0_CameraEventDataSourceOpen
       }
 
       bool fragment_found = true;
-      for(unsigned i=istart+1; fragment_found and (config_.max_file_fragments()==0 or
-        filenames_.size()<config_.max_file_fragments()) ; ++i)
+      for(unsigned i=istart+istride; fragment_found and (config_.max_file_fragments()==0 or
+        filenames_.size()<config_.max_file_fragments()) ; i+=istride)
       {
         fragment_found = false;
         std::string fragment_i { std::to_string(i) };

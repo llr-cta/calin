@@ -33,9 +33,12 @@
 #include <iact_data/telescope_event.pb.h>
 #include <iact_data/instrument_layout.pb.h>
 #include <iact_data/nectarcam_data_source.pb.h>
+#include <iact_data/lstcam_data_source.pb.h>
 #include <iact_data/zfits_actl_data_source.hpp>
 #include <iact_data/telescope_data_source.hpp>
 #include <iact_data/nectarcam_data_source.hpp>
+#include <iact_data/lstcam_data_source.hpp>
+#include <iact_data/cta_data_source.hpp>
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -67,7 +70,7 @@ class CameraConfiguration: public google::protobuf::Message { };
 
 %typemap(argout) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
     // typemap(argout) R1::CameraEvent** CALIN_PROTOBUF_OUTPUT - raw_actl_event_data_source.i
-    %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, 0));
+    %append_output(SWIG_NewPointerObj(SWIG_as_voidptr(*$1), $*1_descriptor, SWIG_POINTER_OWN));
 }
 
 %apply R1::CameraEvent** CALIN_PROTOBUF_OUTPUT {
@@ -78,6 +81,7 @@ class CameraConfiguration: public google::protobuf::Message { };
 
 %import "iact_data/telescope_data_source.i"
 %import "iact_data/zfits_data_source.pb.i"
+%import "io/zmq_data_source.pb.i"
 
 %template(ACTL_R1_CameraEventDataSource)
   calin::io::data_source::DataSource<R1::CameraEvent>;

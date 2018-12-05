@@ -95,7 +95,7 @@ bind_field(unsigned ifield, const google::protobuf::Message* m,
            const google::protobuf::FieldDescriptor* d)
 {
   calin::FieldOptions::Int32StorageType int32_type =
-      calin::FieldOptions::INT_32;
+    calin::FieldOptions::INT_32;
   const google::protobuf::FieldOptions* fopt { &d->options() };
   if(fopt->HasExtension(CFO))
     int32_type = fopt->GetExtension(CFO).int32_type();
@@ -351,7 +351,7 @@ bool SQLStatement::extract_field(unsigned ifield, google::protobuf::Message* m,
       auto value = extract_int32(ifield, &good);
       if(good)m->GetReflection()->SetInt32(m, d, value);
       return good; }
-  };
+    }
   case FieldDescriptor::TYPE_FIXED32:
   case FieldDescriptor::TYPE_UINT32:
     switch(int32_type) {

@@ -160,6 +160,34 @@ void uv_to_neighbor_uv(int u, int v, std::vector<int>& u_neighbors,
                        std::vector<int>& v_neighbors);
 std::vector<unsigned> hexid_to_neighbor_hexids(unsigned hexid);
 
+inline void rotate_ccw1_uv(int& u, int& v) { u+=v; v=-v; std::swap(u,v); }
+inline void rotate_ccw2_uv(int& u, int& v) { v+=u; v=-v; std::swap(u,v); }
+inline void rotate_ccw3_uv(int& u, int& v) { u=-u; v=-v; }
+inline void rotate_ccw4_uv(int& u, int& v) { u+=v; u=-u; std::swap(u,v); }
+inline void rotate_ccw5_uv(int& u, int& v) { v+=u; u=-u; std::swap(u,v); }
+
+inline unsigned rotate_ccw1_hexid_cw(unsigned hexid) { int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate_ccw1_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline unsigned rotate_ccw2_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate_ccw2_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline unsigned rotate_ccw3_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate_ccw3_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline unsigned rotate_ccw4_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate_ccw4_uv(u,v); return uv_to_hexid_cw(u,v); }
+inline unsigned rotate_ccw5_hexid_cw(unsigned hexid) {  int u,v;
+  hexid_to_uv_cw(hexid,u,v); rotate_ccw5_uv(u,v); return uv_to_hexid_cw(u,v); }
+
+inline unsigned rotate_ccw1_hexid_ccw(unsigned hexid) { int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate_ccw1_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline unsigned rotate_ccw2_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate_ccw2_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline unsigned rotate_ccw3_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate_ccw3_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline unsigned rotate_ccw4_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate_ccw4_uv(u,v); return uv_to_hexid_ccw(u,v); }
+inline unsigned rotate_ccw5_hexid_ccw(unsigned hexid) {  int u,v;
+  hexid_to_uv_ccw(hexid,u,v); rotate_ccw5_uv(u,v); return uv_to_hexid_ccw(u,v); }
+
 // *****************************************************************************
 //
 // Cluster

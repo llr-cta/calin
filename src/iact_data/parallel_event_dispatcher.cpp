@@ -25,18 +25,20 @@
 
 #include <util/string.hpp>
 #include <util/log.hpp>
+#include <iact_data/zfits_actl_data_source.hpp>
+#include <iact_data/cta_actl_event_decoder.hpp>
 #include <iact_data/event_dispatcher.hpp>
 #include <iact_data/parallel_event_dispatcher.hpp>
 #include <io/data_source.hpp>
 #include <io/buffered_data_source.hpp>
 #include <util/file.hpp>
-#include <iact_data/nectarcam_actl_event_decoder.hpp>
 
 using namespace calin::util::string;
 using namespace calin::util::log;
 using namespace calin::iact_data::event_dispatcher;
 using namespace calin::io::data_source;
 using namespace calin::iact_data::telescope_data_source;
+using namespace calin::iact_data::cta_data_source;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::ix::iact_data::telescope_run_configuration;
 using calin::iact_data::event_visitor::ParallelEventVisitor;
@@ -105,6 +107,45 @@ process_run(TelescopeRandomAccessDataSourceWithRunConfig* src,
   delete run_config;
 }
 
+void ParallelEventDispatcher::
+process_run(std::vector<calin::iact_data::telescope_data_source::
+  TelescopeRandomAccessDataSourceWithRunConfig*> src_list,
+  unsigned log_frequency)
+{
+  if(src_list.empty())
+    throw std::runtime_error("process_run: empty data source list");
+  TelescopeRunConfiguration* run_config = src_list[0]->get_run_configuration();
+  for(unsigned isrc=1; isrc<src_list.size(); isrc++) {
+    TelescopeRunConfiguration* from_run_config =
+      src_list[isrc]->get_run_configuration();
+    merge_run_config(run_config, *from_run_config);
+    delete from_run_config;
+  }
+  std::vector<calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
+  for(auto* src: src_list)src_list_upcast.push_back(src);
+  this->process_run(src_list_upcast, run_config, log_frequency);
+}
+
+void ParallelEventDispatcher::
+process_run(std::vector<calin::iact_data::telescope_data_source::
+  TelescopeDataSourceWithRunConfig*> src_list, unsigned log_frequency)
+{
+  if(src_list.empty())
+    throw std::runtime_error("process_run: empty data source list");
+  TelescopeRunConfiguration* run_config = src_list[0]->get_run_configuration();
+  for(unsigned isrc=1; isrc<src_list.size(); isrc++) {
+    TelescopeRunConfiguration* from_run_config =
+      src_list[isrc]->get_run_configuration();
+    merge_run_config(run_config, *from_run_config);
+    delete from_run_config;
+  }
+  std::vector<calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
+  for(auto* src: src_list)src_list_upcast.push_back(src);
+  this->process_run(src_list_upcast, run_config, log_frequency);
+}
+
 void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
     calin::ix::iact_data::telescope_event::TelescopeEvent>* src,
   calin::ix::iact_data::
@@ -129,7 +170,103 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
   write_final_log_message(log_frequency, start_time, ndispatched);
 }
 
+void ParallelEventDispatcher::
+process_run(std::vector<calin::io::data_source::DataSource<
+    calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list,
+  calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  unsigned log_frequency)
+{
+  if(src_list.empty())
+    throw std::runtime_error("process_run: empty data source list");
+
+  auto start_time = std::chrono::system_clock::now();
+  std::atomic<uint_fast64_t> ndispatched { 0 };
+
+  dispatch_run_configuration(run_config);
+  if(src_list.size() == 1)
+  {
+    do_dispatcher_loop(src_list[0], log_frequency, start_time, ndispatched);
+  }
+  else
+  {
+    io::data_source::VectorDataSourceFactory<TelescopeEvent> src_factory(src_list);
+    do_parallel_dispatcher_loops(run_config, &src_factory, src_list.size(),
+      log_frequency, start_time, ndispatched);
+  }
+  dispatch_leave_run();
+  write_final_log_message(log_frequency, start_time, ndispatched);
+}
+
 #ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+void ParallelEventDispatcher::
+process_cta_zfits_run(const std::string& filename,
+  const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
+{
+  auto fragments = calin::util::file::file_fragments(filename,
+    config.zfits().extension(), config.zfits().file_fragment_stride());
+  if(fragments.empty()) {
+    throw std::runtime_error("process_cta_zfits_run: file not found: " + filename);
+  }
+  unsigned nthread = std::min(std::max(config.nthread(), 1U), unsigned(fragments.size()));
+  auto zfits_config = config.zfits();
+  zfits_config.set_file_fragment_stride(
+    nthread*std::max(1U, zfits_config.file_fragment_stride()));
+  std::vector<calin::iact_data::telescope_data_source::
+    TelescopeRandomAccessDataSourceWithRunConfig*> src_list(nthread);
+  try {
+    for(unsigned ithread=0; ithread<nthread; ithread++) {
+      src_list[ithread] =
+        new CTAZFITSDataSource(fragments[ithread], config.decoder(), zfits_config);
+    }
+    process_run(src_list, config.log_frequency());
+  } catch(...) {
+    for(auto* src: src_list)delete src;
+    throw;
+  }
+  for(auto* src: src_list)delete src;
+}
+
+void ParallelEventDispatcher::
+process_cta_zmq_run(const std::vector<std::string>& endpoints,
+  const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
+{
+  if(endpoints.empty())
+    throw std::runtime_error("process_run: empty endpoints list");
+  std::vector<calin::iact_data::telescope_data_source::
+    TelescopeDataSourceWithRunConfig*> src_list;
+  try {
+    for(const auto& endpoint: endpoints) {
+      for(unsigned ithread=0; ithread<std::max(config.nthread(),1U); ++ithread) {
+        auto* rsrc = new calin::iact_data::zfits_actl_data_source::
+          ZMQACTL_R1_CameraEventDataSource(endpoint, config.zmq());
+        auto* decoder = new calin::iact_data::cta_actl_event_decoder::
+          CTA_ACTL_R1_CameraEventDecoder(endpoint, config.run_number(), config.decoder());
+        auto* src = new calin::iact_data::actl_event_decoder::
+          DecodedACTL_R1_CameraEventDataSourceWithRunConfig(rsrc, decoder,
+            /* adopt_actl_src = */ false, /* adopt_decoder = */ true);
+        src_list.emplace_back(src);
+      }
+    }
+    process_run(src_list, config.log_frequency());
+  } catch(...) {
+    for(auto* src: src_list)delete src;
+    throw;
+  }
+  for(auto* src: src_list)delete src;
+}
+
+void ParallelEventDispatcher::
+process_cta_zmq_run(const std::string& endpoint,
+  const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
+{
+  std::vector<std::string> endpoints;
+  endpoints.emplace_back(endpoint);
+  process_cta_zmq_run(endpoints, config);
+}
+#endif // defined(CALIN_HAVE_CTA_CAMERASTOACTL)
+
+#if 0
 void ParallelEventDispatcher::process_nectarcam_zfits_run(
   const std::string& filename,
   unsigned log_frequency, int nthread,
@@ -142,8 +279,8 @@ void ParallelEventDispatcher::process_nectarcam_zfits_run(
   calin::iact_data::zfits_actl_data_source::
     ZFITSACTL_L0_CameraEventDataSource zfits_actl_src(filename, zfits_config);
   calin::iact_data::nectarcam_actl_event_decoder::
-    NectarCAM_ACTL_L0_CameraEventDecoder decoder(filename,
-      calin::util::file::extract_first_number_from_filename(filename),
+    NectarCam_ACTL_L0_CameraEventDecoder decoder(filename,
+      calin::util::file::extract_run_number_from_filename(filename),
       decoder_config);
 
   const DataModel::CameraEvent* actl_sample_event = nullptr;
@@ -195,7 +332,25 @@ void ParallelEventDispatcher::process_nectarcam_zfits_run(
   dispatch_leave_run();
   write_final_log_message(log_frequency, start_time, ndispatched);
 }
+#endif // 0
+
+calin::ix::iact_data::event_dispatcher::EventDispatcherConfig
+ParallelEventDispatcher::default_config()
+{
+  calin::ix::iact_data::event_dispatcher::EventDispatcherConfig config;
+  config.set_log_frequency(10000);
+  config.set_nthread(1);
+  config.set_run_number(0);
+#ifdef CALIN_HAVE_CTA_CAMERASTOACTL
+  config.mutable_decoder()->CopyFrom(
+    calin::iact_data::cta_actl_event_decoder::CTA_ACTL_R1_CameraEventDecoder::default_config());
+  config.mutable_zfits()->CopyFrom(
+    calin::iact_data::cta_data_source::CTAZFITSDataSource::default_config());
+  config.mutable_zmq()->CopyFrom(
+    calin::iact_data::zfits_actl_data_source::ZMQACTL_R1_CameraEventDataSource::default_config());
 #endif // defined(CALIN_HAVE_CTA_CAMERASTOACTL)
+  return config;
+}
 
 void ParallelEventDispatcher::
 dispatch_event(uint64_t seq_index, TelescopeEvent* event)
@@ -337,4 +492,48 @@ dispatch_merge_results(bool dispatch_only_to_adopted_visitors)
   } else {
     for(auto iv : visitors_)iv->merge_results();
   }
+}
+
+namespace {
+  template<typename T> bool equal(const T& a, const T& b) {
+    if(a.size() != b.size())return false;
+    return std::equal(a.begin(), a.end(), b.begin());
+  }
+}
+
+bool ParallelEventDispatcher::merge_run_config(calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration* to,
+  const calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration& from)
+{
+  if(to->run_number() != from.run_number())
+    throw std::runtime_error("merge_run_config: Mismatch of run_number");
+  if(to->telescope_id() != from.telescope_id())
+    throw std::runtime_error("merge_run_config: Mismatch of telescope_id");
+  if(not equal(to->configured_channel_index(), from.configured_channel_index()))
+    throw std::runtime_error("merge_run_config: Mismatch of configured_channel_index");
+  if(not equal(to->configured_channel_id(), from.configured_channel_id()))
+    throw std::runtime_error("merge_run_config: Mismatch of configured_channel_id");
+  if(not equal(to->configured_module_index(), from.configured_module_index()))
+    throw std::runtime_error("merge_run_config: Mismatch of configured_module_index");
+  if(not equal(to->configured_module_id(), from.configured_module_id()))
+    throw std::runtime_error("merge_run_config: Mismatch of configured_module_id");
+  if(to->num_samples() != from.num_samples())
+    throw std::runtime_error("merge_run_config: Mismatch of num_samples");
+  std::string to_camera = to->camera_layout().SerializeAsString();
+  std::string from_camera = from.camera_layout().SerializeAsString();
+  if(to_camera != from_camera)
+    throw std::runtime_error("merge_run_config: Mismatch of camera_layout");
+  if(to->has_nectarcam() != from.has_nectarcam()
+      or (to->has_nectarcam() and to->nectarcam().SerializeAsString() != from.nectarcam().SerializeAsString()))
+    throw std::runtime_error("merge_run_config: Mismatch of NectarCAM specific elements");
+  if(to->has_lstcam() != from.has_lstcam()
+      or (to->has_lstcam() and to->lstcam().SerializeAsString() != from.lstcam().SerializeAsString()))
+    throw std::runtime_error("merge_run_config: Mismatch of LSTCAM specific elements");
+
+  to->set_filename(std::min(to->filename(), from.filename()));
+  to->mutable_run_start_time()->set_time_ns(std::min(
+    to->run_start_time().time_ns(), from.run_start_time().time_ns()));
+  for(const auto& iff : from.fragment_filename())to->add_fragment_filename(iff);
+  return true;
 }

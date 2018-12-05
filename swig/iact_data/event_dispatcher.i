@@ -38,6 +38,7 @@
 %include "calin_global_config.hpp"
 
 %import "iact_data/event_visitor.i"
+%import "iact_data/event_dispatcher.pb.i"
 
 %thread; // Release Pyhton GIL for all functions here (since some use threads)
 %include "iact_data/event_dispatcher.hpp"

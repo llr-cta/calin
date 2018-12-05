@@ -149,12 +149,14 @@ public:
 #endif
 
 protected:
+#if defined(__AVX2__) and defined(__FMA__)
 #ifndef SWIG
   __m256i*__restrict__ samples_ = nullptr;
   __m256i*__restrict__ q_l_ = nullptr;
   __m256i*__restrict__ q_u_ = nullptr;
   __m256i*__restrict__ qt_l_ = nullptr;
   __m256i*__restrict__ qt_u_ = nullptr;
+#endif
 #endif
 };
 

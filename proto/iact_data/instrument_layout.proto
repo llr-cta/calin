@@ -23,6 +23,7 @@
 */
 
 syntax = "proto3";
+option cc_enable_arenas = true;
 
 import "calin.proto";
 import "common_types.proto";
@@ -37,7 +38,10 @@ message ChannelLayout {
   int32 pixel_index                                        = 2 [
     (CFO).desc = "Index of pixel that this channel corresponds to. A value "
       "of -1 means there is no (sky facing) pixel associated with this "
-      "channel. It may, for example have an enginnering signal applied etc." ];
+      "channel. It may, for example have an enginnering signal applied etc. It "
+      "is likely this corresponds either to \"channel_index\" or "
+      "\"pixel_spiral_index\" depending on the politics of the camera "
+      "collaboration." ];
   int32 pixel_grid_index                                   = 3 [
     (CFO).desc = "Index of pixel within hexagonal or square grid if the "
       "camera follows a grid, -1 otherwise." ];
@@ -52,6 +56,17 @@ message ChannelLayout {
   int32 module_channel_index                               = 6 [
     (CFO).desc = "Index of the channel within the module that it belongs to, "
       "if appropriate; -1 otherwise." ];
+  int32 pixel_grid_u                                       = 7 [
+    (CFO).desc = "U-axis index of pixel within hexagonal or square grid if the "
+      "camera follows a grid, 0 otherwise." ];
+  int32 pixel_grid_v                                       = 8 [
+    (CFO).desc = "V-axis index of pixel within hexagonal or square grid if the "
+      "camera follows a grid, 0 otherwise." ];
+  int32 pixel_spiral_index                                 = 9 [
+    (CFO).desc = "Index of pixel that this channel corresponds to using a "
+      "spiral labeling system starting from center. A value of -1 means there "
+      "is no (sky facing) pixel associated with this channel. It may, for "
+      "example have an enginnering signal applied etc." ];
 
   double x                                                 = 10 [
     (CFO).desc = "X-position of pixel center in camera. Looking at the "
@@ -80,6 +95,8 @@ message ChannelLayout {
   repeated uint32 neighbour_channel_indexes                = 20 [
     (CFO).desc = "Indexes of the channels for all neigbouring pixels. "
       "This forms a commutative relationship between the two channels." ];
+  bool is_boundary_pixel                                   = 21 [
+    (CFO).desc = "True if channel corresponds to pixel on edge of camera." ];
 
   repeated uint32 outline_polygon_vertex_index             = 30 [
     (CFO).desc = "Index of end of pixel polygon lines." ];
@@ -100,6 +117,21 @@ message ModuleLayout {
   int32 module_grid_index                                  = 2 [
     (CFO).desc = "Index of module within hexagonal or square grid if the "
       "camera follows a grid, -1 otherwise." ];
+  int32 module_grid_u                                      = 3 [
+    (CFO).desc = "U-axis index of module within hexagonal or square grid if the "
+      "camera follows a grid, -1 otherwise." ];
+  int32 module_grid_v                                      = 4 [
+    (CFO).desc = "V-axis index of module within hexagonal or square grid if the "
+      "camera follows a grid, -1 otherwise." ];
+  int32 module_grid_i                                      = 5 [
+    (CFO).desc = "For hexagonal grids this gives the LSTCam cluster \"i\" index, "
+      "which is the same number as \"module_grid_v\". -1 otherwise." ];
+  int32 module_grid_j                                      = 6 [
+    (CFO).desc = "For hexagonal grids this gives the LSTCam cluster \"j\" index, "
+      "which is the same number as \"2*module_grid_u+module_grid_v\". -1 otherwise." ];
+  int32 module_spiral_index                                = 7 [
+    (CFO).desc = "Index of module using a spiral labeling system starting from center." ];
+
   repeated int32 channels_in_module                        = 10 [
     (CFO).desc = "List of indexes for all channels in module." ];;
   double x                                                 = 20 [
@@ -134,6 +166,7 @@ message CameraLayout {
   enum CameraType {
     NO_CAMERA                                              = 0;
     NECTARCAM                                              = 10;
+    LSTCAM                                                 = 11;
     NECTARCAM_TESTBENCH_19CHANNEL                          = 1000;
   };
 
@@ -182,28 +215,38 @@ message CameraLayout {
   double pixel_grid_geometric_area                         = 18 [
     (CFO).desc = "Nominal size of pixel in grid.",
     (CFO).units = "cm^2" ];
+  repeated int32 pixel_channel_index                       = 19 [
+    (CFO).desc = "Index into channel array for each of the pixels, or -1 if "
+      "that pixel is not connected to an electronics channel." ];
+  repeated int32 pixel_spiral_channel_index                = 20 [
+    (CFO).desc = "Index into channel array for each of the pixels in spiral "
+      "order, or -1 if that pixel is not connected to an electronics channel." ];
+  repeated uint32 boundary_pixel_channel_index             = 21 [
+    (CFO).desc = "Index into channel array for each of the boundary pixels." ];
 
-  uint32 channels_per_modules                              = 20 [
+  uint32 channels_per_modules                              = 30 [
     (CFO).desc = "Number of channels per module." ];
-  repeated ModuleLayout module                             = 21 [
+  repeated ModuleLayout module                             = 31 [
     (CFO).desc = "Layout of each module." ];
+  repeated int32 module_spiral_module_index                = 32 [
+    (CFO).desc = "Index into module array for each of the modules in spiral "
+      "order." ];
 
-  ADCGains adc_gains                                       = 30;
-  int32 adc_bits                                           = 31;
-  bool can_read_waveforms                                  = 32;
-  bool can_read_charges                                    = 33;
-  bool can_read_peak_sample                                = 34;
+  ADCGains adc_gains                                       = 40;
+  int32 adc_bits                                           = 41;
+  bool can_read_waveforms                                  = 42;
+  bool can_read_charges                                    = 43;
+  bool can_read_peak_sample                                = 44;
 
-  map<int32, string> module_counter_id_to_name             = 40;
-  map<string, int32> module_counter_name_to_id             = 41;
+  repeated string module_counter_name                      = 50;
 
-  repeated uint32 outline_polygon_vertex_index             = 50 [
+  repeated uint32 outline_polygon_vertex_index             = 60 [
     (CFO).desc = "Index of end of camera polygon lines." ];
-  repeated double outline_polygon_vertex_x                 = 51 [
+  repeated double outline_polygon_vertex_x                 = 61 [
     (CFO).desc = "X coordinates of an open polygon that represents the "
       "outline of the camera.",
     (CFO).units = "cm" ];
-  repeated double outline_polygon_vertex_y                 = 52 [
+  repeated double outline_polygon_vertex_y                 = 62 [
     (CFO).desc = "Y coordinates of an open polygon that represents the "
       "outline of the camera.",
     (CFO).units = "cm" ];

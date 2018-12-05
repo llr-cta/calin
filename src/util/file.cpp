@@ -260,6 +260,70 @@ unsigned calin::util::file::extract_first_number_from_filename(const std::string
   return calin::util::string::unsigned_from_string(std::string(num_start,num_end));
 }
 
+namespace {
+  std::string::size_type advance_if_not_npos(std::string::size_type a, std::string::size_type b) {
+    if(b == std::string::npos)return a;
+    else return std::max(a,b);
+  }
+}
+
+unsigned calin::util::file::extract_run_number_from_filename(const std::string& filename)
+{
+  std::string::size_type num_start = advance_if_not_npos(0, filename.find_last_of('/'));
+  num_start = advance_if_not_npos(num_start, filename.find("Run", num_start));
+  num_start = filename.find_first_of("0123456789", num_start);
+  if(num_start == std::string::npos)return 0;
+  return calin::util::string::unsigned_from_string(filename.substr(num_start));
+}
+
+std::vector<std::string> calin::util::file::file_fragments(std::string filename,
+  const std::string& extension, unsigned fragment_stride)
+{
+  expand_filename_in_place(filename);
+  if(not is_file(filename))return { };
+
+  std::vector<std::string> filenames;
+  fragment_stride = std::max(1U, fragment_stride);
+  filenames.emplace_back(filename);
+
+  auto ifind = filename.rfind(extension);
+  if(ifind == filename.size()-extension.size())
+  {
+    unsigned padded_size = 0;
+    filename = filename.substr(0, ifind);
+
+    unsigned istart = 0;
+    if(not is_file(filename+".1"+extension))
+    {
+      ifind = filename.rfind('.');
+      if(ifind != std::string::npos and
+        std::all_of(filename.begin() + ifind + 1, filename.end(), ::isdigit))
+      {
+        istart = std::stoi(filename.substr(ifind + 1));
+        padded_size = filename.size()-ifind-1;
+        filename = filename.substr(0, ifind);
+      }
+    }
+
+    bool fragment_found = true;
+    for(unsigned i=istart+fragment_stride; fragment_found; i+=fragment_stride)
+    {
+      fragment_found = false;
+      std::string fragment_i { std::to_string(i) };
+      do {
+        std::string filename_i { filename+"."+fragment_i+extension };
+        if(is_file(filename_i)) {
+          filenames.emplace_back(filename_i);
+          fragment_found = true;
+        } else {
+          fragment_i = std::string("0") + fragment_i;
+        }
+      }while(not fragment_found and fragment_i.size() <= padded_size);
+    }
+  }
+  return filenames;
+}
+
 void calin::util::file::replace_question_with_number(std::string& filename, unsigned n)
 {
   std::string::size_type iquestion = filename.find('?');
