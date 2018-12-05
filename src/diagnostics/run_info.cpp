@@ -234,7 +234,7 @@ calin::ix::diagnostics::run_info::RunInfoConfig RunInfoDiagnosticsVisitor::defau
   config.mutable_default_nectarcam_config()->add_module_counter_test_id(1);
   config.mutable_default_nectarcam_config()->add_module_counter_test_id(2);
   config.mutable_default_nectarcam_config()->add_module_counter_test_mode(
-    calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_MEDIAN);
+    calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_EVENT_NUMBER);
   config.mutable_default_nectarcam_config()->add_module_counter_test_mode(
     calin::ix::diagnostics::run_info::VALUE_RELATIVE_TO_MEDIAN);
   config.mutable_default_nectarcam_config()->add_module_counter_test_mode(

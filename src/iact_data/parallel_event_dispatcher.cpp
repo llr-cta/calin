@@ -228,7 +228,7 @@ process_cta_zfits_run(const std::string& filename,
 }
 
 void ParallelEventDispatcher::
-process_cta_zmq_stream(const std::vector<std::string>& endpoints,
+process_cta_zmq_run(const std::vector<std::string>& endpoints,
   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
 {
   if(endpoints.empty())
@@ -257,12 +257,12 @@ process_cta_zmq_stream(const std::vector<std::string>& endpoints,
 }
 
 void ParallelEventDispatcher::
-process_cta_zmq_stream(const std::string& endpoint,
+process_cta_zmq_run(const std::string& endpoint,
   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
 {
   std::vector<std::string> endpoints;
   endpoints.emplace_back(endpoint);
-  process_cta_zmq_stream(endpoints, config);
+  process_cta_zmq_run(endpoints, config);
 }
 #endif // defined(CALIN_HAVE_CTA_CAMERASTOACTL)
 

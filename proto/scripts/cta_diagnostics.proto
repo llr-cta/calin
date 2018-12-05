@@ -1,8 +1,8 @@
 /*
 
-   calin/proto/scripts/zmq_diagnostics.proto -- Stephen Fegan -- 2018-11-28
+   calin/proto/scripts/cta_diagnostics.proto -- Stephen Fegan -- 2018-11-28
 
-   Protobufs for command line options abnd results of zmq_diagnostics.py
+   Protobufs for command line options abnd results of cta_diagnostics.py
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
    LLR, Ecole Polytechnique, CNRS/IN2P3
@@ -32,7 +32,7 @@ import "io/zmq_data_source.proto";
 import "diagnostics/run_info.proto";
 
 
-package calin.ix.scripts.zmq_diagnostics;
+package calin.ix.scripts.cta_diagnostics;
 
 message CommandLineOptions {
   uint32 run_number                                        = 1 [
@@ -51,7 +51,9 @@ message CommandLineOptions {
 
   calin.ix.iact_data.cta_data_source.CTACameraEventDecoderConfig decoder = 30 [
     (CFO).desc = "CTA event decoder options." ];
-  calin.ix.io.zmq_data_source.ZMQDataSourceConfig zmq      = 31 [
+  calin.ix.iact_data.zfits_data_source.ZFITSDataSourceConfig zfits = 31 [
+    (CFO).desc = "Options for ZFITS data streams." ];
+  calin.ix.io.zmq_data_source.ZMQDataSourceConfig zmq      = 32 [
     (CFO).desc = "Options for ZMQ data streams." ];
 
   calin.ix.diagnostics.run_info.RunInfoConfig run_info     = 40 [

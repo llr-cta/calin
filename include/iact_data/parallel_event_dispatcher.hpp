@@ -81,10 +81,10 @@ public:
   void process_cta_zfits_run(const std::string& filename,
     const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
 
-  void process_cta_zmq_stream(const std::vector<std::string>& endpoints,
+  void process_cta_zmq_run(const std::vector<std::string>& endpoints,
     const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
 
-  void process_cta_zmq_stream(const std::string& endpoint,
+  void process_cta_zmq_run(const std::string& endpoint,
     const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
 #endif
 
