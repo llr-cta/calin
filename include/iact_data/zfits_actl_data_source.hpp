@@ -460,6 +460,10 @@ public:
     ZMQACTL_R1_CameraEventDataSource(endpoint, zmq_ctx, config) {
     // nothing to see here
   }
+
+  ZMQACTL_R1_CameraEventDataSource(const ZMQACTL_R1_CameraEventDataSource&) = delete;
+  ZMQACTL_R1_CameraEventDataSource& operator=(const ZMQACTL_R1_CameraEventDataSource&) = delete;
+
   virtual ~ZMQACTL_R1_CameraEventDataSource();
 
   R1::CameraConfiguration* get_run_header() override;
