@@ -197,11 +197,13 @@ int ZMQPuller::wait_for_data_multi_source(ZMQPuller* puller2, long timeout_ms)
 {
   zmq_pollitem_t items[2];
   items[0] = this->pollitem();
-  items[1] = puller2->pollitem();
-  int rc = zmq_poll(items, 2, timeout_ms);
+  if(puller2) {
+    items[1] = puller2->pollitem();
+  }
+  int rc = zmq_poll(items, (puller2)?2:1, timeout_ms);
   if(rc<=0)return rc;
   if(items[0].revents & ZMQ_POLLIN)return 1;
-  if(items[1].revents & ZMQ_POLLIN)return 2;
+  if((puller2) and (items[1].revents & ZMQ_POLLIN))return 2;
   throw std::logic_error("Impossible case in ZMQPuller::wait_for_data_multi_source");
   return -1;
 }

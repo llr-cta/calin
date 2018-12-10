@@ -440,6 +440,29 @@ private:
   ZFITSACTL_R1_CameraEventDataSource* src_;
 };
 
+/*
+
+    ZZZZZZZZZZZZZZZZZZZMMMMMMMM               MMMMMMMM     QQQQQQQQQ
+    Z:::::::::::::::::ZM:::::::M             M:::::::M   QQ:::::::::QQ
+    Z:::::::::::::::::ZM::::::::M           M::::::::M QQ:::::::::::::QQ
+    Z:::ZZZZZZZZ:::::Z M:::::::::M         M:::::::::MQ:::::::QQQ:::::::Q
+    ZZZZZ     Z:::::Z  M::::::::::M       M::::::::::MQ::::::O   Q::::::Q
+            Z:::::Z    M:::::::::::M     M:::::::::::MQ:::::O     Q:::::Q
+           Z:::::Z     M:::::::M::::M   M::::M:::::::MQ:::::O     Q:::::Q
+          Z:::::Z      M::::::M M::::M M::::M M::::::MQ:::::O     Q:::::Q
+         Z:::::Z       M::::::M  M::::M::::M  M::::::MQ:::::O     Q:::::Q
+        Z:::::Z        M::::::M   M:::::::M   M::::::MQ:::::O     Q:::::Q
+       Z:::::Z         M::::::M    M:::::M    M::::::MQ:::::O  QQQQ:::::Q
+    ZZZ:::::Z     ZZZZZM::::::M     MMMMM     M::::::MQ::::::O Q::::::::Q
+    Z::::::ZZZZZZZZ:::ZM::::::M               M::::::MQ:::::::QQ::::::::Q
+    Z:::::::::::::::::ZM::::::M               M::::::M QQ::::::::::::::Q
+    Z:::::::::::::::::ZM::::::M               M::::::M   QQ:::::::::::Q
+    ZZZZZZZZZZZZZZZZZZZMMMMMMMM               MMMMMMMM     QQQQQQQQ::::QQ
+                                                                   Q:::::Q
+                                                                    QQQQQQ
+
+*/
+
 class ZMQACTL_R1_CameraEventDataSource:
   public ACTL_R1_CameraEventDataSourceWithRunHeader
 {
@@ -450,6 +473,34 @@ public:
 
   CALIN_TYPEALIAS(config_type, calin::ix::io::zmq_data_source::ZMQDataSourceConfig);
 
+#ifndef SWIG
+  struct InProcPayload
+  {
+    enum MessageType { HEADER, NO_HEADER, END_OF_STREAM, ABORT };
+    MessageType message_type;
+    R1::CameraConfiguration* header = nullptr;
+  };
+
+  class InProcPayloadDistributer
+  {
+  public:
+    InProcPayloadDistributer(void* zmq_ctx = nullptr, unsigned endpoint_count = 0);
+    ~InProcPayloadDistributer();
+    std::tuple<calin::io::zmq_inproc::ZMQPusher*, calin::io::zmq_inproc::ZMQPuller*> connect();
+    void main_loop();
+    void terminate_loop();
+  private:
+    void* zmq_ctx_ { nullptr };
+    unsigned endpoint_count_ { 0 };
+    std::atomic<unsigned> num_connections_ { 0 };
+    calin::io::zmq_inproc::ZMQPusher* downstream_master_;
+    calin::io::zmq_inproc::ZMQPuller* upstream_master_;
+    calin::io::zmq_inproc::ZMQPuller* new_downstream_puller();
+    calin::io::zmq_inproc::ZMQPusher* new_upstream_pusher();
+    std::string upstream_endpoint() const;
+    std::string downstream_endpoint() const;
+  };
+
   ZMQACTL_R1_CameraEventDataSource(
     const std::string& endpoint, void* zmq_ctx = nullptr,
     calin::ix::io::zmq_data_source::ZMQDataSourceConfig config = default_config());
@@ -459,7 +510,8 @@ public:
       void* zmq_ctx = nullptr):
     ZMQACTL_R1_CameraEventDataSource(endpoint, zmq_ctx, config) {
     // nothing to see here
-  }
+  };
+#endif
 
   ZMQACTL_R1_CameraEventDataSource(const ZMQACTL_R1_CameraEventDataSource&) = delete;
   ZMQACTL_R1_CameraEventDataSource& operator=(const ZMQACTL_R1_CameraEventDataSource&) = delete;
@@ -484,10 +536,14 @@ public:
 
 private:
   calin::io::data_source::ZMQProtobufDataSource<DataModel::CTAMessage>* zmq_source_ = nullptr;
+  calin::ix::io::zmq_data_source::ZMQDataSourceConfig config_ = default_config();
   R1::CameraConfiguration* run_header_ = nullptr;
   ReceiveStatus receive_status_ = DATA_SOURCE_UNUSED;
+  bool has_saved_event_ = false;
   R1::CameraEvent* saved_event_ = nullptr;
   uint64_t saved_seq_index_ = 0;
+  calin::io::zmq_inproc::ZMQPuller* downstream_puller_ = nullptr;
+  calin::io::zmq_inproc::ZMQPusher* upstream_pusher_ = nullptr;
 };
 
 } } } // namespace calin::iact_data::zfits_actl_data_source

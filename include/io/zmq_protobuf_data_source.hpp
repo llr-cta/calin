@@ -47,7 +47,7 @@ public:
       calin::ix::io::zmq_data_source::ZMQDataSourceConfig config = default_config(),
       bool adopt_puller = false):
     DataSource<T>(), puller_(puller), adopt_puller_(adopt_puller),
-     config_(config)
+    config_(config)
   {
     // nothing to see here
   }
@@ -88,6 +88,11 @@ public:
     if(my_zmq_ctx_)calin::io::zmq_inproc::destroy_zmq_ctx(my_zmq_ctx_);
   }
 
+  void set_receive_timeout_ms(long timeout_ms)
+  {
+    config_.set_receive_timeout_ms(timeout_ms);
+  }
+
   T* get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena = nullptr) override
   {
     if(arena != nullptr)
@@ -104,7 +109,7 @@ public:
     zmq_msg_t msg;
     zmq_msg_init(&msg);
     try {
-      if(puller_->pull(&msg, true) == 0) {
+      if(puller_->pull(&msg, /* dont_wait= */ true) == 0) {
         zmq_msg_close (&msg);
         return nullptr;
       }
@@ -124,6 +129,17 @@ public:
       network_io_record_->set_nbytes_received(puller_->nbytes_received());
     }
     return next;
+  }
+
+  long timeout() const
+  {
+    long timeout = (seq_index_ == 0) ? config_.initial_receive_timeout_ms() : config_.receive_timeout_ms();
+    return timeout;
+  }
+
+  calin::io::zmq_inproc::ZMQPuller* puller() const
+  {
+    return puller_;
   }
 
   bool timed_out() const { return timed_out_; }

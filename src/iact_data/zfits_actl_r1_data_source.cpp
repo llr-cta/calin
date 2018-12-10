@@ -492,10 +492,12 @@ ZMQACTL_R1_CameraEventDataSource(
     const std::string& endpoint, void* zmq_ctx,
     calin::ix::io::zmq_data_source::ZMQDataSourceConfig config):
   ACTL_R1_CameraEventDataSourceWithRunHeader(),
-  zmq_source_(new calin::io::data_source::ZMQProtobufDataSource<DataModel::CTAMessage>(
-    endpoint, zmq_ctx, config))
+  zmq_source_(nullptr), config_(config)
 {
-  // nothing to see here
+  config.set_initial_receive_timeout_ms(0);
+  config.set_receive_timeout_ms(0);
+  zmq_source_ = new calin::io::data_source::ZMQProtobufDataSource<DataModel::CTAMessage>(
+    endpoint, zmq_ctx, config);
 }
 
 ZMQACTL_R1_CameraEventDataSource::~ZMQACTL_R1_CameraEventDataSource()
@@ -506,7 +508,10 @@ ZMQACTL_R1_CameraEventDataSource::~ZMQACTL_R1_CameraEventDataSource()
 R1::CameraConfiguration* ZMQACTL_R1_CameraEventDataSource::get_run_header()
 {
   if(run_header_)return new R1::CameraConfiguration(*run_header_);
-  if(!saved_event_)saved_event_ = get_next(saved_seq_index_, nullptr);
+  if(receive_status_ == DATA_SOURCE_UNUSED) {
+    has_saved_event_ = true;
+    saved_event_ = get_next(saved_seq_index_, nullptr);
+  }
   if(run_header_)return new R1::CameraConfiguration(*run_header_);
   return nullptr;
 }
@@ -514,77 +519,130 @@ R1::CameraConfiguration* ZMQACTL_R1_CameraEventDataSource::get_run_header()
 R1::CameraEvent* ZMQACTL_R1_CameraEventDataSource::
 get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
 {
-  receive_status_ = DATA_RECEIVED;
-
-  if(saved_event_) {
+  if(has_saved_event_) {
     R1::CameraEvent* event = saved_event_;
     seq_index_out = saved_seq_index_;
     saved_event_ = nullptr;
+    has_saved_event_ = false;
     return event;
   }
 
-  DataModel::CTAMessage* message = nullptr;
   while(1) {
+    long timeout = (receive_status_ == DATA_SOURCE_UNUSED) ?
+      config_.initial_receive_timeout_ms() : config_.receive_timeout_ms();
+    int ws;
     try {
-      message = zmq_source_->get_next(seq_index_out);
-    }
-    catch(...)
-    {
+      ws = zmq_source_->puller()->wait_for_data_multi_source(downstream_puller_, timeout);
+    } catch(...) {
       receive_status_ = CONNECTION_ERROR;
       throw;
     }
-    if(message == nullptr) {
-      if(zmq_source_->timed_out())receive_status_ = TIMEOUT;
-      else receive_status_ = CONNECTION_CLOSED;
+
+    if(ws<0) {
+      receive_status_ = CONNECTION_ERROR;
+      throw std::runtime_error(std::string("ZMQACTL_R1_CameraEventDataSource::get_next: "
+        "poll returned error: ") + zmq_strerror(errno));
+    } else if(ws==0) {
+      receive_status_ = TIMEOUT;
       return nullptr;
-    }
-    if(message->payload_type_size() == 0) {
-      delete message;
-      continue;
-    }
-    switch(message->payload_type(0)) {
-      case DataModel::EMPTY_MESSAGE:
+    } else if(ws==1) {
+      DataModel::CTAMessage* message = nullptr;
+      try {
+        message = zmq_source_->get_next(seq_index_out);
+      }
+      catch(...)
+      {
+        receive_status_ = CONNECTION_ERROR;
+        throw;
+      }
+      if(message == nullptr) {
+        receive_status_ = CONNECTION_CLOSED;
+        return nullptr;
+      }
+      if(message->payload_type_size() == 0) {
         delete message;
         continue;
-      case DataModel::END_OF_STREAM:
-        delete message;
-        receive_status_ = END_OF_STREAM_RECEIVED;
-        return nullptr;
-      case DataModel::R1_CAMERA_EVENT:
-      {
-        R1::CameraEvent* event = new R1::CameraEvent();
-        if(event->ParseFromString(message->payload_data(0))) {
-          delete message;
-          return event;
-        } else {
-          delete message;
-          receive_status_ = PROTOCOL_ERROR;
-          throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
-            "could not parse event payload");
-        }
       }
-      case DataModel::R1_CAMERA_CONFIG:
+      switch(message->payload_type(0))
       {
-        if(run_header_ == nullptr)run_header_ = new R1::CameraConfiguration();
-        if(run_header_->ParseFromString(message->payload_data(0))) {
+        case DataModel::EMPTY_MESSAGE:
           delete message;
           continue;
-        } else {
+        case DataModel::END_OF_STREAM:
+          delete message;
+          receive_status_ = END_OF_STREAM_RECEIVED;
+          if(upstream_pusher_) {
+            InProcPayload payload;
+            payload.message_type = InProcPayload::END_OF_STREAM;
+            upstream_pusher_->push(&payload, sizeof(payload));
+          }
+          return nullptr;
+        case DataModel::R1_CAMERA_EVENT:
+        {
+          if(receive_status_ == DATA_SOURCE_UNUSED) {
+            if(upstream_pusher_) {
+              InProcPayload payload;
+              payload.message_type = InProcPayload::NO_HEADER;
+              upstream_pusher_->push(&payload, sizeof(payload));
+            }
+          }
+          R1::CameraEvent* event = new R1::CameraEvent();
+          if(event->ParseFromString(message->payload_data(0))) {
+            receive_status_ = DATA_RECEIVED;
+            delete message;
+            return event;
+          } else {
+            delete message;
+            receive_status_ = PROTOCOL_ERROR;
+            throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
+              "could not parse event payload");
+          }
+        }
+        case DataModel::R1_CAMERA_CONFIG:
+        {
+          if(receive_status_ == DATA_SOURCE_UNUSED and run_header_ == nullptr)
+          {
+            run_header_ = new R1::CameraConfiguration();
+            if(run_header_->ParseFromString(message->payload_data(0))) {
+              delete message;
+              if(upstream_pusher_) {
+                InProcPayload payload;
+                payload.message_type = InProcPayload::HEADER;
+                payload.header = run_header_;
+                upstream_pusher_->push(&payload, sizeof(payload));
+              }
+              receive_status_ = DATA_RECEIVED;
+              continue;
+            } else {
+              delete message;
+              if(upstream_pusher_) {
+                InProcPayload payload;
+                payload.message_type = InProcPayload::NO_HEADER;
+                upstream_pusher_->push(&payload, sizeof(payload));
+              }
+              receive_status_ = PROTOCOL_ERROR;
+              throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
+                "could not parse caamera configuration payload");
+            }
+          } else {
+            delete message;
+            receive_status_ = DATA_RECEIVED;
+            continue;
+          }
+        }
+        default:
+        {
+          std::string type = DataModel::MessageType_Name(message->payload_type(0))
+            + " (" + std::to_string(message->payload_type(0)) + ")";
           delete message;
           receive_status_ = PROTOCOL_ERROR;
           throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
-            "could not parse caamera configuration payload");
+            "unknown message payload type: " + type);
         }
       }
-      default:
-      {
-        std::string type = DataModel::MessageType_Name(message->payload_type(0))
-          + " (" + std::to_string(message->payload_type(0)) + ")";
-        delete message;
-        receive_status_ = PROTOCOL_ERROR;
-        throw std::runtime_error("ZMQACTL_R1_CameraEventDataSource::get_next: "
-          "unknown message payload type: " + type);
-      }
+
+    } else {
+
     }
   }
 }
@@ -603,4 +661,97 @@ std::string ZMQACTL_R1_CameraEventDataSource::receive_status_string() const
     HANDLE_CASE(CONNECTION_ERROR);
   }
 }
-enum ReceiveStatus {  };
+
+ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::
+InProcPayloadDistributer(void* zmq_ctx, unsigned endpoint_count):
+  zmq_ctx_(zmq_ctx), endpoint_count_(endpoint_count),
+  downstream_master_(new calin::io::zmq_inproc::ZMQPusher(zmq_ctx_, downstream_endpoint(), 100,
+    calin::io::zmq_inproc::ZMQBindOrConnect::BIND, calin::io::zmq_inproc::ZMQProtocol::PUB_SUB)),
+  upstream_master_(new calin::io::zmq_inproc::ZMQPuller(zmq_ctx_, upstream_endpoint(), 100,
+    calin::io::zmq_inproc::ZMQBindOrConnect::BIND, calin::io::zmq_inproc::ZMQProtocol::PUSH_PULL))
+{
+  // nothing to see here
+}
+
+ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::
+~InProcPayloadDistributer()
+{
+  delete downstream_master_;
+  delete upstream_master_;
+}
+
+std::tuple<calin::io::zmq_inproc::ZMQPusher*, calin::io::zmq_inproc::ZMQPuller*>
+ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::connect()
+{
+  num_connections_.fetch_add(1);
+  return { new_upstream_pusher(), new_downstream_puller() };
+}
+
+void ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::main_loop()
+{
+  bool eos_sent = false;
+  bool header_sent = false;
+  unsigned num_no_header = 0;
+
+  ZMQACTL_R1_CameraEventDataSource::InProcPayload payload;
+  while(upstream_master_->pull_assert_size(&payload, sizeof(payload))
+    and payload.message_type == ZMQACTL_R1_CameraEventDataSource::InProcPayload::ABORT)
+  {
+    switch(payload.message_type)
+    {
+    case ZMQACTL_R1_CameraEventDataSource::InProcPayload::HEADER:
+      if(!header_sent) {
+        downstream_master_->push(&payload, sizeof(payload));
+      }
+      header_sent = true;
+      break;
+    case ZMQACTL_R1_CameraEventDataSource::InProcPayload::NO_HEADER:
+      num_no_header++;
+      if(!header_sent and num_no_header==num_connections_) {
+        downstream_master_->push(&payload, sizeof(payload));
+      }
+      break;
+    case ZMQACTL_R1_CameraEventDataSource::InProcPayload::END_OF_STREAM:
+      if(!eos_sent) {
+        downstream_master_->push(&payload, sizeof(payload));
+      }
+      eos_sent = true;
+      break;
+    case ZMQACTL_R1_CameraEventDataSource::InProcPayload::ABORT:
+      break;
+    }
+  }
+}
+
+void ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::terminate_loop()
+{
+  ZMQACTL_R1_CameraEventDataSource::InProcPayload payload;
+  payload.message_type = ZMQACTL_R1_CameraEventDataSource::InProcPayload::ABORT;
+  auto* upstream_pusher = new_upstream_pusher();
+  upstream_pusher->push(&payload, sizeof(payload));
+  delete upstream_pusher;
+}
+
+calin::io::zmq_inproc::ZMQPuller*
+ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::new_downstream_puller()
+{
+  return new calin::io::zmq_inproc::ZMQPuller(zmq_ctx_, downstream_endpoint(), 100,
+    calin::io::zmq_inproc::ZMQBindOrConnect::CONNECT, calin::io::zmq_inproc::ZMQProtocol::PUB_SUB);
+}
+
+calin::io::zmq_inproc::ZMQPusher*
+ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::new_upstream_pusher()
+{
+  return new calin::io::zmq_inproc::ZMQPusher(zmq_ctx_, upstream_endpoint(), 100,
+    calin::io::zmq_inproc::ZMQBindOrConnect::CONNECT, calin::io::zmq_inproc::ZMQProtocol::PUSH_PULL);
+}
+
+std::string ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::upstream_endpoint() const
+{
+  return std::string("inproc://ZMQACTL_R1_CameraEventDataSource/InProcPayloadDistributer/" + std::to_string(endpoint_count_));
+}
+
+std::string ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::downstream_endpoint() const
+{
+  return std::string("inproc://ZMQACTL_R1_CameraEventDataSource/InProcPayloadDistributer/" + std::to_string(endpoint_count_));
+}
