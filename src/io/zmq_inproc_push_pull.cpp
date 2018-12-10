@@ -127,7 +127,9 @@ ZMQPuller::ZMQPuller(void* zmq_ctx, const std::string& endpoint,
 
   // If we are PUB/SUB then we must subscribe to all messages
   if(protocol==ZMQProtocol::PUB_SUB) {
-    zmq_setsockopt(socket_.get(), ZMQ_SUBSCRIBE, "", 0);
+    if(zmq_setsockopt(socket_.get(), ZMQ_SUBSCRIBE, "", 0) < 0)
+      throw std::runtime_error("ZMQPuller: error setting PUB/SUB subscription: " + endpoint + "\n"
+        + "ZMQPuller: " + zmq_strerror(errno));
   }
 }
 
