@@ -124,6 +124,11 @@ ZMQPuller::ZMQPuller(void* zmq_ctx, const std::string& endpoint,
         + endpoint + "\n"
         + "ZMQPuller: " + zmq_strerror(errno));
   }
+
+  // If we are PUB/SUB then we must subscribe to all messages
+  if(protocol==ZMQProtocol::PUB_SUB) {
+    zmq_setsockopt(socket_.get(), ZMQ_SUBSCRIBE, "", 0);
+  }
 }
 
 bool ZMQPuller::pull(zmq_msg_t* msg, bool dont_wait)
