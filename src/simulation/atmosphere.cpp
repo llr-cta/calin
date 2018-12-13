@@ -113,6 +113,12 @@ double IsothermalAtmosphere::n_minus_one(double z)
   return m_nmo0*std::exp(-z/m_zs);
 }
 
+double IsothermalAtmosphere::dn_dz(double z, double& n_minus_one)
+{
+  n_minus_one = m_nmo0*std::exp(-z/m_zs);
+  return -n_minus_one/m_zs;
+}
+
 double IsothermalAtmosphere::propagation_ct_correction(double z)
 {
   return m_zs*m_nmo0*(1.0-exp(-z/m_zs));
@@ -300,6 +306,13 @@ double LayeredAtmosphere::n_minus_one(double z)
 {
   auto ilayer = findZ(z);
   return ilayer->nmo0 * std::exp(-z/ilayer->nmozs);
+}
+
+double LayeredAtmosphere::dn_dz(double z, double& n_minus_one)
+{
+  auto ilayer = findZ(z);
+  n_minus_one = ilayer->nmo0 * std::exp(-z/ilayer->nmozs);
+  return -n_minus_one/ilayer->nmozs;
 }
 
 double LayeredAtmosphere::propagation_ct_correction(double z)

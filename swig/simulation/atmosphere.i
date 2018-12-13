@@ -39,4 +39,7 @@
 %template (VectorAtmSlice) std::vector<calin::simulation::atmosphere::AtmSlice>;
 %template (VectorLayeredAtmosphereLevel) std::vector<calin::simulation::atmosphere::LayeredAtmosphereLevel>;
 
+%apply double &OUTPUT { double& n_minus_one };
+%apply double &OUTPUT { double& propagation_ct_correction };
+
 %include "simulation/atmosphere.hpp"

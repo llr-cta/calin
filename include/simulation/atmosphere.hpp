@@ -121,6 +121,7 @@ class Atmosphere
   virtual double rho(double z) = 0;
   virtual double thickness(double z) = 0;
   virtual double n_minus_one(double z) = 0;
+  virtual double dn_dz(double z, double& n_minus_one) = 0;
   virtual void cherenkov_parameters(double z,
     double& n_minus_one, double& propagation_ct_correction);
 #if 0
@@ -154,6 +155,7 @@ class IsothermalAtmosphere: public Atmosphere
   double rho(double z) override;
   double thickness(double z) override;
   double n_minus_one(double z) override;
+  double dn_dz(double z, double& n_minus_one) override;
 #if 0
   double pressure(double z) override;
   double temperature(double z) override;
@@ -227,6 +229,7 @@ class LayeredAtmosphere: public Atmosphere
   double rho(double z) override;
   double thickness(double z) override;
   double n_minus_one(double z) override;
+  double dn_dz(double z, double& n_minus_one) override;
 #if 0
   double pressure(double z) override;
   double temperature(double z) override;
