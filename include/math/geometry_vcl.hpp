@@ -71,7 +71,7 @@ public:
     const vec3_vt& pos, const vec3_vt& dir)
   {
     return box_has_future_intersection_dirinv(tmin, tmax,
-      min_corner, max_corner, pos, 1.0f/dir.x(), 1.0f/dir.y(), 1.0f/dir.z());
+      min_corner, max_corner, pos, 1.0/dir.x(), 1.0/dir.y(), 1.0/dir.z());
   }
 
   static inline void rotate_in_place_2d(real_vt& x, real_vt& y,
