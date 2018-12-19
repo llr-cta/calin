@@ -184,11 +184,13 @@ generate_cubic_spline_interpolation(
     m[ip] = d[ip]-c[ip]*m[ip+1];
   }
 
-  std::vector<double> ypp(np);
-  for(unsigned ip=0; ip<np-1; ip++) {
-    ypp[ip] = 6*dy[ip]*SQR(dx_inv[ip]) - (4*m[ip]+2*m[ip+1])*dx_inv[ip];
-  }
-  ypp[np-1] = -6*dy[np-2]*SQR(dx_inv[np-2]) + (2*m[np-2]+4*m[np-1])*dx_inv[np-2];
+  return m;
 
-  return ypp;
+  // std::vector<double> ypp(np);
+  // for(unsigned ip=0; ip<np-1; ip++) {
+  //   ypp[ip] = 6*dy[ip]*SQR(dx_inv[ip]) - (4*m[ip]+2*m[ip+1])*dx_inv[ip];
+  // }
+  // ypp[np-1] = -6*dy[np-2]*SQR(dx_inv[np-2]) + (2*m[np-2]+4*m[np-1])*dx_inv[np-2];
+  //
+  // return ypp;
 }

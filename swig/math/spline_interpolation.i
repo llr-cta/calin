@@ -36,7 +36,14 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-//%apply double &OUTPUT { double& x, double& y };
+%apply double &OUTPUT { double& value };
 //%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& xv, Eigen::VectorXd& yv };
 
 %include "math/spline_interpolation.hpp"
+
+%template(core_value) calin::math::spline_interpolation::core_value<double>;
+%template(core_1st_derivative) calin::math::spline_interpolation::core_1st_derivative<double>;
+%template(core_1st_derivative_and_value) calin::math::spline_interpolation::core_1st_derivative_and_value<double>;
+%template(core_2nd_derivative) calin::math::spline_interpolation::core_2nd_derivative<double>;
+%template(core_3rd_derivative) calin::math::spline_interpolation::core_3rd_derivative<double>;
+%template(core_integral) calin::math::spline_interpolation::core_integral<double>;
