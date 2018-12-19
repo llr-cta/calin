@@ -23,6 +23,7 @@
 
 */
 
+#include <stdexcept>
 #include <iostream>
 
 #include <math/spline_interpolation.hpp>
