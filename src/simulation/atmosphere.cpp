@@ -138,27 +138,41 @@ double IsothermalAtmosphere::top_of_atmosphere()
 // LAYERED ATMOSPHERE
 // ****************************************************************************
 
-LayeredAtmosphere::LayeredAtmosphere(const std::string& filename):
-  Atmosphere(), m_ztoa(), m_ttoa(), m_levels(), m_layers(), m_ilayer()
+std::vector<LayeredAtmosphereLevel>
+calin::simulation::atmosphere::load_levels(const std::string& filename)
 {
   std::ifstream stream(filename.c_str());
   if(!stream)
-    throw std::string("LayeredAtmosphere: could not open: ")+filename;
-  calin::provenance::chronicle::register_file_open(filename,
+    throw std::string("load_levels: could not open: ")+filename;
+  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
+  std::string comment;
+  std::vector<LayeredAtmosphereLevel> levels;
   while(std::getline(stream, line))
   {
     unsigned ichar=0;
     while(isspace(line[ichar]))ichar++;
-    if(line[ichar] == '#')continue;
+    if(line[ichar] == '#') {
+      comment += line;
+      comment += '\n';
+      continue;
+    }
     std::istringstream lstream(line);
-    Level l;
+    LayeredAtmosphereLevel l;
     lstream >> l.z >> l.rho >> l.t >> l.nmo;
     if(!lstream)continue;
     l.z *= 1e5;
-    m_levels.push_back(l);
+    levels.push_back(l);
   }
+  file_record->set_comment(comment);
+  calin::provenance::chronicle::register_file_close(file_record);
+  return levels;
+}
+
+LayeredAtmosphere::LayeredAtmosphere(const std::string& filename):
+  Atmosphere(), m_ztoa(), m_ttoa(), m_levels(load_levels(filename)), m_layers(), m_ilayer()
+{
   initialize();
 }
 
@@ -346,7 +360,13 @@ double LayeredAtmosphere::top_of_atmosphere()
 
 LayeredAtmosphere* LayeredAtmosphere::us76()
 {
-  std::vector<Level> levels;
+  return new LayeredAtmosphere(us76_levels());
+}
+
+std::vector<LayeredAtmosphereLevel>
+calin::simulation::atmosphere::us76_levels()
+{
+  std::vector<LayeredAtmosphereLevel> levels;
   levels.push_back({ 0.0, 0.12219E-02, 0.10350E+04, 0.28232E-03 });
   levels.push_back({ 100000.0, 0.11099E-02, 0.91853E+03, 0.25634E-03 });
   levels.push_back({ 200000.0, 0.10054E-02, 0.81286E+03, 0.23214E-03 });
@@ -397,5 +417,5 @@ LayeredAtmosphere* LayeredAtmosphere::us76()
   levels.push_back({ 11000000.0, 0.10312E-09, 0.52792E-04, 0.23788E-10 });
   levels.push_back({ 11500000.0, 0.46595E-10, 0.17216E-04, 0.10748E-10 });
   levels.push_back({ 12000000.0, 0.24596E-10, 0.00000E+00, 0.56734E-11 });
-  return new LayeredAtmosphere(levels);
+  return levels;
 }
