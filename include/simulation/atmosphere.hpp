@@ -216,10 +216,13 @@ struct LayeredAtmosphereLayer
 };
 #endif // ifndef SWIG
 
+std::vector<LayeredAtmosphereLevel> us76_levels();
+std::vector<LayeredAtmosphereLevel> load_levels(const std::string& filename);
+
 // Parameterized, layered model
 class LayeredAtmosphere: public Atmosphere
 {
- public:
+public:
   CALIN_TYPEALIAS(Level, LayeredAtmosphereLevel);
 
   LayeredAtmosphere(const std::string& filename);
@@ -245,7 +248,7 @@ class LayeredAtmosphere: public Atmosphere
 
   static LayeredAtmosphere* us76();
 
- private:
+private:
   CALIN_TYPEALIAS(Layer, LayeredAtmosphereLayer);
 
   void initialize();
@@ -257,5 +260,47 @@ class LayeredAtmosphere: public Atmosphere
   std::vector<Layer> m_layers;
   mutable std::vector<Layer>::const_iterator m_ilayer;
 };
+
+#if 0
+// Parameterized, layered model
+class SmoothLayeredAtmosphere: public Atmosphere
+{
+public:
+  CALIN_TYPEALIAS(Level, SmoothLayeredAtmosphere);
+
+  SmoothLayeredAtmosphere(const std::string& filename);
+  SmoothLayeredAtmosphere(const std::vector<Level> levels);
+
+  virtual ~LayeredAtmosphere();
+  double rho(double z) override;
+  double thickness(double z) override;
+  double n_minus_one(double z) override;
+  double dn_dz(double z, double& n_minus_one) override;
+#if 0
+  double pressure(double z) override;
+  double temperature(double z) override;
+  AtmComposition composition(double z) override;
+#endif
+  double propagation_ct_correction(double z) override;
+  void cherenkov_parameters(double z,
+    double& n_minus_one, double& propagation_ct_correction) override;
+  double z_for_thickness(double t) override;
+  double top_of_atmosphere() override;
+
+  const std::vector<Level>& getLevels() const { return m_levels; }
+
+  static SmoothLayeredAtmosphere* us76();
+
+private:
+  void initialize();
+
+  double m_ztoa;
+  double m_ttoa;
+  double* log_rho_ = nullptr;
+  double* log_thickess_ = nullptr;
+  double* log_nmo_ = nullptr;
+
+};
+#endif
 
 } } } // namespace calin::simulation::atmosphere
