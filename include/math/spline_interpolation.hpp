@@ -29,6 +29,7 @@
 #include <vector>
 #include <algorithm>
 
+#include <iostream>
 #include <math/special.hpp>
 
 namespace calin { namespace math { namespace spline_interpolation {
@@ -63,11 +64,10 @@ std::vector<double> generate_cubic_spline_interpolation(
 // scalar or vector types.
 
 template<typename R> inline
-R cubic_value(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
+R cubic_value(R t, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
   D0 *= dx;
   D1 *= dx;
-  R t = (x-x0)*dx_inv;
   R dy = y1-y0;
   R c = 3*dy - (2*D0 + D1);
   R d = -2*dy + (D0 + D1);
@@ -75,11 +75,10 @@ R cubic_value(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 }
 
 template<typename R> inline
-R cubic_1st_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
+R cubic_1st_derivative(R t, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
   D0 *= dx;
   D1 *= dx;
-  R t = (x-x0)*dx_inv;
   R dy = y1-y0;
   R c = 3*dy - (2*D0 + D1);
   R d = -2*dy + (D0 + D1);
@@ -88,11 +87,10 @@ R cubic_1st_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 
 template<typename R> inline
 R cubic_1st_derivative_and_value(R& value,
-  R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
+  R t, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
   D0 *= dx;
   D1 *= dx;
-  R t = (x-x0)*dx_inv;
   R dy = y1-y0;
   R c = 3*dy - (2*D0 + D1);
   R d = -2*dy + (D0 + D1);
@@ -101,12 +99,11 @@ R cubic_1st_derivative_and_value(R& value,
 }
 
 template<typename R> inline
-R cubic_2nd_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
+R cubic_2nd_derivative(R t, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
   using calin::math::special::SQR;
   D0 *= dx;
   D1 *= dx;
-  R t = (x-x0)*dx_inv;
   R dy = y1-y0;
   R c = 3*dy - (2*D0 + D1);
   R d = -2*dy + (D0 + D1);
@@ -114,7 +111,7 @@ R cubic_2nd_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 }
 
 template<typename R> inline
-R cubic_3rd_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
+R cubic_3rd_derivative(R t, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
   using calin::math::special::CUBE;
   D0 *= dx;
@@ -125,16 +122,56 @@ R cubic_3rd_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 }
 
 template<typename R> inline
-R cubic_integral(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1, R I0 = 0)
+R cubic_integral(R t, R dx, R dx_inv, R y0, R y1, R D0, R D1, R I0 = 0)
 {
   D0 *= dx;
   D1 *= dx;
-  R t = (x-x0)*dx_inv;
   R dy = y1-y0;
   R c = 3*dy - (2*D0 + D1);
   R d = -2*dy + (D0 + D1);
   return I0 + dx * t * (y0 + t * ((1.0/2.0)*D0 + t * ((1.0/3.0)*c + t * (1.0/4.0) * d)));
 }
+
+template<typename R> inline
+R cubic_solve(R y, R dx, R dx_inv, R y0, R y1, R D0, R D1)
+{
+  using calin::math::special::CUBE;
+  using calin::math::special::SQR;
+
+  D0 *= dx;
+  D1 *= dx;
+  R dy = y1-y0;
+
+  R f = 1/(-2*dy + (D0 + D1));
+
+  R c = f * (y0-y);
+  R b = f * D0;
+  R a = f * (3*dy - (2*D0 + D1));
+
+  R Q1 = (SQR(a) - 3*b)/9;
+  R R1 = (2*CUBE(a) - 9*a*b + 27*c)/54;
+
+  R Q3 = CUBE(Q1);
+  R R2 = SQR(R1);
+
+  R t;
+  if(R2 < Q3) {
+    R theta = acos(R1/sqrt(Q3));
+    R t1 = -2*sqrt(Q1)*cos(theta/3)-a/3;
+    R t2 = -2*sqrt(Q1)*cos((theta+2*M_PI)/3)-a/3;
+    R t3 = -2*sqrt(Q1)*cos((theta-2*M_PI)/3)-a/3;
+    t = t1;
+    if(t2>=0 and t2<=1)t = t2;
+    else if(t3>=0 and t3<=1)t = t3;
+  } else {
+    R A = -((R1<0)?-1.0:1.0) * cbrt(abs(R1) + sqrt(R2-Q3));
+    R B = (A==0)?0:Q1/A;
+    t = (A+B)-a/3;
+  }
+
+  return t;
+}
+
 
 inline unsigned find_interval(double x, const InterpolationIntervals& intervals)
 {
@@ -161,6 +198,7 @@ public:
   double value(double x) const;
   double derivative(double x) const;
   double integral(double x) const;
+  double invert(double y) const;
 private:
   CubicSplineIntervals s_;
   std::vector<double> I_;

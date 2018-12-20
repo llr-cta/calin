@@ -244,7 +244,8 @@ CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
   I_.push_back(I);
   for(unsigned i=0; i<x.size()-1; i++) {
     double dx = s_.x[i+1]-s_.x[i];
-    I += cubic_integral(x[i+1], s_.x[i], dx, 1.0/dx, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+    double dx_inv = 1.0/dx;
+    I += cubic_integral(1.0, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
     I_.push_back(I);
   }
 }
@@ -253,19 +254,37 @@ double CubicSpline::value(double x) const
 {
   unsigned i = find_interval(x, s_);
   double dx = s_.x[i+1]-s_.x[i];
-  return cubic_value(x, s_.x[i], dx, 1.0/dx, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_value(t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
 }
 
 double CubicSpline::derivative(double x) const
 {
   unsigned i = find_interval(x, s_);
   double dx = s_.x[i+1]-s_.x[i];
-  return cubic_1st_derivative(x, s_.x[i], dx, 1.0/dx, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_1st_derivative(t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
 }
 
 double CubicSpline::integral(double x) const
 {
   unsigned i = find_interval(x, s_);
   double dx = s_.x[i+1]-s_.x[i];
-  return cubic_integral(x, s_.x[i], dx, 1.0/dx, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1], I_[i]);
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_integral(t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1], I_[i]);
+}
+
+double CubicSpline::invert(double y) const
+{
+  auto ifind = std::upper_bound(s_.y.begin(), s_.y.end(), y);
+  if(ifind == s_.y.end())return NAN;
+  if(ifind == s_.y.begin())return NAN;
+  unsigned i = ifind - s_.y.begin() - 1;
+  double dx = s_.x[i+1]-s_.x[i];
+  double dx_inv = 1.0/dx;
+  double t = cubic_solve(y, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+  return t*dx + s_.x[i];
 }
