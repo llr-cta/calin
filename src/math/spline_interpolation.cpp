@@ -201,6 +201,49 @@ generate_cubic_spline_interpolation(
   // return ypp;
 }
 
+double calin::math::spline_interpolation::
+cubic_solve(double y, double dx, double dx_inv, double y0, double y1, double D0, double D1)
+{
+  // Roots of cubic from Numerical Recipies
+
+  using calin::math::special::CUBE;
+  using calin::math::special::SQR;
+
+  D0 *= dx;
+  D1 *= dx;
+  double dy = y1-y0;
+
+  double f = 1/(-2*dy + (D0 + D1));
+
+  double c = f * (y0-y);
+  double b = f * D0;
+  double a = f * (3*dy - (2*D0 + D1));
+
+  double Q1 = (SQR(a) - 3*b)/9;
+  double R1 = (2*CUBE(a) - 9*a*b + 27*c)/54;
+
+  double Q3 = CUBE(Q1);
+  double R2 = SQR(R1);
+
+  double t;
+  if(R2 < Q3) {
+    double theta = std::acos(R1/std::sqrt(Q3));
+    t = -2*std::sqrt(Q1)*std::cos((theta-2*M_PI)/3)-a/3;
+    if(t<0 or t>1) {
+      t = -2*std::sqrt(Q1)*std::cos(theta/3)-a/3;
+      if(t<0 or t>1) {
+        t = -2*std::sqrt(Q1)*std::cos((theta+2*M_PI)/3)-a/3;
+      }
+    }
+  } else {
+    double A = -((R1<0)?-1.0:1.0) * std::cbrt(std::abs(R1) + std::sqrt(R2-Q3));
+    double B = (A==0)?0:Q1/A;
+    t = (A+B)-a/3;
+  }
+
+  return t;
+}
+
 CubicSpline::
 CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
     BoundaryConitions bc_lhs, double bc_lhs_val,
@@ -217,6 +260,10 @@ CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
     double dx_inv = 1.0/dx;
     I += cubic_integral(1.0, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
     I_.push_back(I);
+  }
+  for(unsigned iy=1;iy<y.size();iy++) {
+    if(y[iy]<y[iy-1])y_is_monotonic_inc_ = false;
+    if(y[iy]>y[iy-1])y_is_monotonic_dec_ = false;
   }
 }
 
@@ -249,20 +296,27 @@ double CubicSpline::integral(double x) const
 
 double CubicSpline::invert(double y) const
 {
-  unsigned i;
-  if(s_.y.back() > s_.y.front()) {
-    auto ifind = std::upper_bound(s_.y.begin(), s_.y.end(), y);
-    if(ifind == s_.y.end())return NAN;
-    if(ifind == s_.y.begin())return NAN;
-    i = ifind - s_.y.begin() - 1;
+  std::vector<double>::const_iterator ifind = s_.y.end();
+  if(y_is_monotonic_inc_) {
+    ifind = std::upper_bound(s_.y.begin(), s_.y.end(), y);
+  } else if(y_is_monotonic_dec_) {
+    ifind = std::upper_bound(s_.y.begin(), s_.y.end(), y, std::greater<double>());
   } else {
-    auto ifind = std::upper_bound(s_.y.begin(), s_.y.end(), y, std::greater<double>());
-    if(ifind == s_.y.end())return NAN;
-    if(ifind == s_.y.begin())return NAN;
-    i = ifind - s_.y.begin() - 1;
+    throw std::runtime_error("invert: y values must be monotonic");
   }
+  if(ifind == s_.y.end())return NAN;
+  if(ifind == s_.y.begin())return NAN;
+  unsigned i = ifind - s_.y.begin() - 1;
   double dx = s_.x[i+1]-s_.x[i];
   double dx_inv = 1.0/dx;
-  double t = cubic_solve(y, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+  double t;
+  if(y == s_.y[i+1]) {
+    t = 1.0;
+  } else if(y == s_.y[i]) {
+    t = 0.0;
+  } else {
+    t = cubic_solve(y, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+  }
+  std::cout << i << ' ' << t << '\n';
   return t*dx + s_.x[i];
 }

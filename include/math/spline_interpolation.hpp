@@ -132,49 +132,7 @@ R cubic_integral(R t, R dx, R dx_inv, R y0, R y1, R D0, R D1, R I0 = 0)
   return I0 + dx * t * (y0 + t * ((1.0/2.0)*D0 + t * ((1.0/3.0)*c + t * (1.0/4.0) * d)));
 }
 
-template<typename R> inline
-R cubic_solve(R y, R dx, R dx_inv, R y0, R y1, R D0, R D1)
-{
-  // Roots of cubic from Numerical Recipies
-  
-  using calin::math::special::CUBE;
-  using calin::math::special::SQR;
-
-  D0 *= dx;
-  D1 *= dx;
-  R dy = y1-y0;
-
-  R f = 1/(-2*dy + (D0 + D1));
-
-  R c = f * (y0-y);
-  R b = f * D0;
-  R a = f * (3*dy - (2*D0 + D1));
-
-  R Q1 = (SQR(a) - 3*b)/9;
-  R R1 = (2*CUBE(a) - 9*a*b + 27*c)/54;
-
-  R Q3 = CUBE(Q1);
-  R R2 = SQR(R1);
-
-  R t;
-  if(R2 < Q3) {
-    R theta = acos(R1/sqrt(Q3));
-    t = -2*sqrt(Q1)*cos((theta-2*M_PI)/3)-a/3;
-    if(t<0 or t>1) {
-      t = -2*sqrt(Q1)*cos(theta/3)-a/3;
-      if(t<0 or t>1) {
-        t = -2*sqrt(Q1)*cos((theta+2*M_PI)/3)-a/3;
-      }
-    }
-  } else {
-    R A = -((R1<0)?-1.0:1.0) * cbrt(abs(R1) + sqrt(R2-Q3));
-    R B = (A==0)?0:Q1/A;
-    t = (A+B)-a/3;
-  }
-
-  return t;
-}
-
+double cubic_solve(double y, double dx, double dx_inv, double y0, double y1, double D0, double D1);
 
 inline unsigned find_interval(double x, const InterpolationIntervals& intervals)
 {
@@ -205,6 +163,8 @@ public:
 private:
   CubicSplineIntervals s_;
   std::vector<double> I_;
+  bool y_is_monotonic_inc_ = true;
+  bool y_is_monotonic_dec_ = true;
 };
 
 } } } // namespace calin::math::spline_interpolation
