@@ -176,36 +176,6 @@ generate_cubic_spline_interpolation(
     break;
   }
 
-#if 0
-  std::cout << "a=[";
-  for(unsigned ip=0;ip<np;ip++) {
-    if(ip)std::cout << ',';
-    std::cout << a[ip];
-  }
-  std::cout << "];\n";
-
-  std::cout << "b=[";
-  for(unsigned ip=0;ip<np;ip++) {
-    if(ip)std::cout << ',';
-    std::cout << b[ip];
-  }
-  std::cout << "];\n";
-
-  std::cout << "c=[";
-  for(unsigned ip=0;ip<np;ip++) {
-    if(ip)std::cout << ',';
-    std::cout << c[ip];
-  }
-  std::cout << "];\n";
-
-  std::cout << "d=[";
-  for(unsigned ip=0;ip<np;ip++) {
-    if(ip)std::cout << ',';
-    std::cout << d[ip];
-  }
-  std::cout << "];\n";
-#endif
-
   c[0] /= b[0];
   d[0] /= b[0];
 
@@ -279,10 +249,18 @@ double CubicSpline::integral(double x) const
 
 double CubicSpline::invert(double y) const
 {
-  auto ifind = std::upper_bound(s_.y.begin(), s_.y.end(), y);
-  if(ifind == s_.y.end())return NAN;
-  if(ifind == s_.y.begin())return NAN;
-  unsigned i = ifind - s_.y.begin() - 1;
+  unsigned i;
+  if(s_.y.back() > s_.y.front()) {
+    auto ifind = std::upper_bound(s_.y.begin(), s_.y.end(), y);
+    if(ifind == s_.y.end())return NAN;
+    if(ifind == s_.y.begin())return NAN;
+    i = ifind - s_.y.begin() - 1;
+  } else {
+    auto ifind = std::upper_bound(s_.y.begin(), s_.y.end(), y, std::greater<double>());
+    if(ifind == s_.y.end())return NAN;
+    if(ifind == s_.y.begin())return NAN;
+    i = ifind - s_.y.begin() - 1;
+  }
   double dx = s_.x[i+1]-s_.x[i];
   double dx_inv = 1.0/dx;
   double t = cubic_solve(y, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);

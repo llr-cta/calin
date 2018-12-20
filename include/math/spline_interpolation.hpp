@@ -135,6 +135,8 @@ R cubic_integral(R t, R dx, R dx_inv, R y0, R y1, R D0, R D1, R I0 = 0)
 template<typename R> inline
 R cubic_solve(R y, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
+  // Roots of cubic from Numerical Recipies
+  
   using calin::math::special::CUBE;
   using calin::math::special::SQR;
 
@@ -157,12 +159,13 @@ R cubic_solve(R y, R dx, R dx_inv, R y0, R y1, R D0, R D1)
   R t;
   if(R2 < Q3) {
     R theta = acos(R1/sqrt(Q3));
-    R t1 = -2*sqrt(Q1)*cos(theta/3)-a/3;
-    R t2 = -2*sqrt(Q1)*cos((theta+2*M_PI)/3)-a/3;
-    R t3 = -2*sqrt(Q1)*cos((theta-2*M_PI)/3)-a/3;
-    t = t1;
-    if(t2>=0 and t2<=1)t = t2;
-    else if(t3>=0 and t3<=1)t = t3;
+    t = -2*sqrt(Q1)*cos((theta-2*M_PI)/3)-a/3;
+    if(t<0 or t>1) {
+      t = -2*sqrt(Q1)*cos(theta/3)-a/3;
+      if(t<0 or t>1) {
+        t = -2*sqrt(Q1)*cos((theta+2*M_PI)/3)-a/3;
+      }
+    }
   } else {
     R A = -((R1<0)?-1.0:1.0) * cbrt(abs(R1) + sqrt(R2-Q3));
     R B = (A==0)?0:Q1/A;
