@@ -25,7 +25,9 @@
 
 #pragma once
 
+#include <cmath>
 #include <vector>
+#include <algorithm>
 
 #include <math/special.hpp>
 
@@ -35,9 +37,10 @@ struct InterpolationIntervals
 {
   double xmin;
   double xmax;
-  double regular_xmax;    // x at the start of the regularly sampled portion
-  double regular;         // the interval of the regularly sampled portion
+  double regular_xmax;    // x at the end of the regularly sampled portion
+  double regular_dx;      // the interval of the regularly sampled portion
   double regular_dx_inv;  // one over the interval of the regularly sampled portion
+  unsigned irregular_start;
   std::vector<double> x;  // x at the start / end of the intervals
 };
 
@@ -47,15 +50,20 @@ struct CubicSplineIntervals: public InterpolationIntervals
   std::vector<double> dy_dx; // dy/dx at the start / end of the intervals
 };
 
-enum BoundaryConitions { BC_NATURAL, BC_NOT_A_KNOT, BC_CLAMPED_SLOPE };
+enum BoundaryConitions { BC_NOT_A_KNOT, BC_NATURAL, BC_CLAMPED_SLOPE };
+
+InterpolationIntervals make_intervals(const std::vector<double>& x);
 
 std::vector<double> generate_cubic_spline_interpolation(
   const std::vector<double>& x, const std::vector<double>& y,
-  BoundaryConitions bc_lhs = BC_NATURAL, double bc_lhs_val = 0.0,
-  BoundaryConitions bc_rhs = BC_NATURAL, double bc_rhs_val = 0.0);
+  BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
+  BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
+
+// The core cubic calculation functions are templates so they can be used for
+// scalar or vector types.
 
 template<typename R> inline
-R core_value(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
+R cubic_value(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
   D0 *= dx;
   D1 *= dx;
@@ -67,7 +75,7 @@ R core_value(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 }
 
 template<typename R> inline
-R core_1st_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
+R cubic_1st_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
   D0 *= dx;
   D1 *= dx;
@@ -79,21 +87,21 @@ R core_1st_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 }
 
 template<typename R> inline
-R core_1st_derivative_and_value(R& value,
+R cubic_1st_derivative_and_value(R& value,
   R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
   D0 *= dx;
   D1 *= dx;
-  double t = (x-x0)*dx_inv;
-  double dy = y1-y0;
-  double c = 3*dy - (2*D0 + D1);
-  double d = -2*dy + (D0 + D1);
+  R t = (x-x0)*dx_inv;
+  R dy = y1-y0;
+  R c = 3*dy - (2*D0 + D1);
+  R d = -2*dy + (D0 + D1);
   value = y0 + t * (D0 + t * (c + t * d));
   return dx_inv * (D0 + t * (2*c + t * 3*d));
 }
 
 template<typename R> inline
-R core_2nd_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
+R cubic_2nd_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
   using calin::math::special::SQR;
   D0 *= dx;
@@ -106,19 +114,18 @@ R core_2nd_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 }
 
 template<typename R> inline
-R core_3rd_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
+R cubic_3rd_derivative(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
   using calin::math::special::CUBE;
   D0 *= dx;
   D1 *= dx;
-  R t = (x-x0)*dx_inv;
   R dy = y1-y0;
   R d = -2*dy + (D0 + D1);
   return CUBE(dx_inv) * 6*d;
 }
 
 template<typename R> inline
-R core_integral(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1, R I0 = 0)
+R cubic_integral(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1, R I0 = 0)
 {
   D0 *= dx;
   D1 *= dx;
@@ -126,7 +133,37 @@ R core_integral(R x, R x0, R dx, R dx_inv, R y0, R y1, R D0, R D1, R I0 = 0)
   R dy = y1-y0;
   R c = 3*dy - (2*D0 + D1);
   R d = -2*dy + (D0 + D1);
-  return I0 + t * (y0 + t * ((1.0/2.0)*D0 + t * ((1.0/3.0)*c + t * (1.0/4.0) * d)));
+  return I0 + dx * t * (y0 + t * ((1.0/2.0)*D0 + t * ((1.0/3.0)*c + t * (1.0/4.0) * d)));
 }
+
+inline unsigned find_interval(double x, const InterpolationIntervals& intervals)
+{
+  if(x<=intervals.xmin)return 0;
+  if(x>=intervals.xmax)return intervals.x.size()-2;
+  if(x<intervals.regular_xmax) {
+    return std::floor((x-intervals.xmin)*intervals.regular_dx_inv);
+  }
+  auto i = std::upper_bound(
+    intervals.x.begin()+intervals.irregular_start, intervals.x.end(), x);
+  return i - intervals.x.begin() - 1;
+}
+
+class CubicSpline
+{
+public:
+  CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
+    BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
+    BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
+  double xmin() const { return s_.xmax; }
+  double xmax() const { return s_.xmin; }
+  const std::vector<double> xknot() const { return s_.x; }
+  const std::vector<double> yknot() const { return s_.y; }
+  double value(double x) const;
+  double derivative(double x) const;
+  double integral(double x) const;
+private:
+  CubicSplineIntervals s_;
+  std::vector<double> I_;
+};
 
 } } } // namespace calin::math::spline_interpolation

@@ -35,6 +35,42 @@ using calin::math::special::SQR;
 using calin::math::special::CUBE;
 using calin::math::special::QUAD;
 
+InterpolationIntervals
+calin::math::spline_interpolation::make_intervals(const std::vector<double>& x)
+{
+  if(x.size() < 2)
+    throw std::runtime_error("make_intervals: need at least two x values");
+  InterpolationIntervals intervals;
+  intervals.xmin = x[0];
+
+  intervals.regular_xmax = x[1];
+  intervals.regular_dx = x[1] - x[0];
+  intervals.regular_dx_inv = 1/intervals.regular_dx;
+  intervals.irregular_start = 1;
+
+  if(intervals.regular_dx <= 0)
+    std::runtime_error("make_intervals: x values must be monotonously increasing");
+  for(unsigned i=2; i<x.size(); i++) {
+    double dx = x[i] - x[i-1];
+    if(dx <= 0)
+      std::runtime_error("make_intervals: x values must be monotonously increasing");
+    if(intervals.irregular_start == (i-1) and
+        abs(dx - intervals.regular_dx)/intervals.regular_dx < 1e-6) {
+      intervals.irregular_start = i;
+      intervals.regular_xmax = x[i];
+    }
+  }
+  intervals.xmax = x.back();
+  intervals.x = x;
+  if(intervals.irregular_start == 1) {
+    intervals.regular_xmax = x[0];
+    intervals.regular_dx = 0;
+    intervals.regular_dx_inv = 0;
+    intervals.irregular_start = 0;
+  }
+  return intervals;
+}
+
 std::vector<double> calin::math::spline_interpolation::
 generate_cubic_spline_interpolation(
   const std::vector<double>& x, const std::vector<double>& y,
@@ -193,4 +229,43 @@ generate_cubic_spline_interpolation(
   // ypp[np-1] = -6*dy[np-2]*SQR(dx_inv[np-2]) + (2*m[np-2]+4*m[np-1])*dx_inv[np-2];
   //
   // return ypp;
+}
+
+CubicSpline::
+CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
+    BoundaryConitions bc_lhs, double bc_lhs_val,
+    BoundaryConitions bc_rhs, double bc_rhs_val):
+  s_(), I_()
+{
+  *static_cast<InterpolationIntervals*>(&s_) = make_intervals(x);
+  s_.y = y;
+  s_.dy_dx = generate_cubic_spline_interpolation(x, y, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val);
+  double I=0;
+  I_.push_back(I);
+  for(unsigned i=0; i<x.size()-1; i++) {
+    double dx = s_.x[i+1]-s_.x[i];
+    I += cubic_integral(x[i+1], s_.x[i], dx, 1.0/dx, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+    I_.push_back(I);
+  }
+}
+
+double CubicSpline::value(double x) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  return cubic_value(x, s_.x[i], dx, 1.0/dx, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+}
+
+double CubicSpline::derivative(double x) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  return cubic_1st_derivative(x, s_.x[i], dx, 1.0/dx, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+}
+
+double CubicSpline::integral(double x) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  return cubic_integral(x, s_.x[i], dx, 1.0/dx, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1], I_[i]);
 }

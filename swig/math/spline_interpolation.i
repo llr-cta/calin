@@ -41,9 +41,9 @@
 
 %include "math/spline_interpolation.hpp"
 
-%template(core_value) calin::math::spline_interpolation::core_value<double>;
-%template(core_1st_derivative) calin::math::spline_interpolation::core_1st_derivative<double>;
-%template(core_1st_derivative_and_value) calin::math::spline_interpolation::core_1st_derivative_and_value<double>;
-%template(core_2nd_derivative) calin::math::spline_interpolation::core_2nd_derivative<double>;
-%template(core_3rd_derivative) calin::math::spline_interpolation::core_3rd_derivative<double>;
-%template(core_integral) calin::math::spline_interpolation::core_integral<double>;
+%template(cubic_value) calin::math::spline_interpolation::cubic_value<double>;
+%template(cubic_1st_derivative) calin::math::spline_interpolation::cubic_1st_derivative<double>;
+%template(cubic_1st_derivative_and_value) calin::math::spline_interpolation::cubic_1st_derivative_and_value<double>;
+%template(cubic_2nd_derivative) calin::math::spline_interpolation::cubic_2nd_derivative<double>;
+%template(cubic_3rd_derivative) calin::math::spline_interpolation::cubic_3rd_derivative<double>;
+%template(cubic_integral) calin::math::spline_interpolation::cubic_integral<double>;
