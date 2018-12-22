@@ -285,6 +285,15 @@ double CubicSpline::derivative(double x) const
   return cubic_1st_derivative(t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
 }
 
+double CubicSpline::derivative_and_value(double x, double& value) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_1st_derivative_and_value(value, t, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
+}
+
 double CubicSpline::integral(double x) const
 {
   unsigned i = find_interval(x, s_);
@@ -319,4 +328,73 @@ double CubicSpline::invert(double y) const
   }
   std::cout << i << ' ' << t << '\n';
   return t*dx + s_.x[i];
+}
+
+CubicMultiSpline::
+CubicMultiSpline(const std::vector<double>& x)
+{
+  s_ = make_intervals(x);
+}
+
+void CubicMultiSpline::add_spline(const std::vector<double>& y,
+  BoundaryConitions bc_lhs, double bc_lhs_val,
+  BoundaryConitions bc_rhs, double bc_rhs_val)
+{
+  y_.emplace_back(y);
+  dy_dx_.emplace_back(generate_cubic_spline_interpolation(s_.x, y, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val));
+}
+
+double CubicMultiSpline::value(double x, unsigned ispline) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_value(t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
+    dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
+}
+
+std::tuple<double, double> CubicMultiSpline::
+value(double x, unsigned ispline0, unsigned ispline1) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  return {
+    cubic_value(t, dx, dx_inv, y_[ispline0][i], y_[ispline0][i+1],
+      dy_dx_[ispline0][i], dy_dx_[ispline0][i+1]),
+    cubic_value(t, dx, dx_inv, y_[ispline1][i], y_[ispline1][i+1],
+      dy_dx_[ispline1][i], dy_dx_[ispline1][i+1]) };
+}
+
+std::tuple<double, double, double> CubicMultiSpline::
+value(double x, unsigned ispline0, unsigned ispline1, unsigned ispline2) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  return {
+    cubic_value(t, dx, dx_inv, y_[ispline0][i], y_[ispline0][i+1],
+      dy_dx_[ispline0][i], dy_dx_[ispline0][i+1]),
+    cubic_value(t, dx, dx_inv, y_[ispline1][i], y_[ispline1][i+1],
+      dy_dx_[ispline1][i], dy_dx_[ispline1][i+1]),
+    cubic_value(t, dx, dx_inv, y_[ispline2][i], y_[ispline2][i+1],
+      dy_dx_[ispline2][i], dy_dx_[ispline2][i+1]) };
+}
+
+std::vector<double> CubicMultiSpline::value(double x)
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  std::vector<double> values;
+  for(unsigned ispline=0;ispline<y_.size();ispline++) {
+    values[ispline] =
+      cubic_value(t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
+        dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
+  }
+  return values;
 }

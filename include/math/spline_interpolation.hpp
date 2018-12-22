@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <vector>
+#include <tuple>
 #include <algorithm>
 
 #include <iostream>
@@ -158,6 +159,7 @@ public:
   const std::vector<double> yknot() const { return s_.y; }
   double value(double x) const;
   double derivative(double x) const;
+  double derivative_and_value(double x, double& value) const;
   double integral(double x) const;
   double invert(double y) const;
 private:
@@ -165,6 +167,30 @@ private:
   std::vector<double> I_;
   bool y_is_monotonic_inc_ = true;
   bool y_is_monotonic_dec_ = true;
+};
+
+class CubicMultiSpline
+{
+public:
+  CubicMultiSpline(const std::vector<double>& x);
+  void add_spline(const std::vector<double>& y,
+    BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
+    BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
+
+  double xmin() const { return s_.xmax; }
+  double xmax() const { return s_.xmin; }
+  const std::vector<double> xknot() const { return s_.x; }
+  unsigned num_spline() const { return y_.size(); };
+
+  const std::vector<double> yknot(unsigned ispline) const { return y_[ispline]; }
+  double value(double x, unsigned ispline) const;
+  std::tuple<double, double> value(double x, unsigned ispline0, unsigned ispline1) const;
+  std::tuple<double, double, double> value(double x, unsigned ispline0, unsigned ispline1, unsigned ispline2) const;
+  std::vector<double> value(double x);
+private:
+  InterpolationIntervals s_;
+  std::vector<std::vector<double> > y_;
+  std::vector<std::vector<double> > dy_dx_;
 };
 
 } } } // namespace calin::math::spline_interpolation
