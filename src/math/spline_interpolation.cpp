@@ -398,3 +398,23 @@ std::vector<double> CubicMultiSpline::value(double x)
   }
   return values;
 }
+
+double CubicMultiSpline::derivative(double x, unsigned ispline) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_1st_derivative(t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
+    dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
+}
+
+double CubicMultiSpline::derivative_and_value(double x, double& value, unsigned ispline) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_1st_derivative_and_value(value, t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
+    dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
+}

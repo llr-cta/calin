@@ -187,6 +187,10 @@ public:
   std::tuple<double, double> value(double x, unsigned ispline0, unsigned ispline1) const;
   std::tuple<double, double, double> value(double x, unsigned ispline0, unsigned ispline1, unsigned ispline2) const;
   std::vector<double> value(double x);
+
+  double derivative(double x, unsigned ispline) const;
+  double derivative_and_value(double x, double& value, unsigned ispline) const;
+
 private:
   InterpolationIntervals s_;
   std::vector<std::vector<double> > y_;
