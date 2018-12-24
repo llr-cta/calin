@@ -253,17 +253,33 @@ CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
   *static_cast<InterpolationIntervals*>(&s_) = make_intervals(x);
   s_.y = y;
   s_.dy_dx = generate_cubic_spline_interpolation(x, y, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val);
+  init();
+}
+
+CubicSpline::
+CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
+    const std::vector<double>& dy_dx):
+  s_(), I_()
+{
+  *static_cast<InterpolationIntervals*>(&s_) = make_intervals(x);
+  s_.y = y;
+  s_.dy_dx = dy_dx;
+  init();
+}
+
+void CubicSpline::init()
+{
   double I=0;
   I_.push_back(I);
-  for(unsigned i=0; i<x.size()-1; i++) {
+  for(unsigned i=0; i<s_.x.size()-1; i++) {
     double dx = s_.x[i+1]-s_.x[i];
     double dx_inv = 1.0/dx;
     I += cubic_integral(1.0, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
     I_.push_back(I);
   }
-  for(unsigned iy=1;iy<y.size();iy++) {
-    if(y[iy]<y[iy-1])y_is_monotonic_inc_ = false;
-    if(y[iy]>y[iy-1])y_is_monotonic_dec_ = false;
+  for(unsigned iy=1;iy<s_.y.size();iy++) {
+    if(s_.y[iy]<s_.y[iy-1])y_is_monotonic_inc_ = false;
+    if(s_.y[iy]>s_.y[iy-1])y_is_monotonic_dec_ = false;
   }
 }
 
@@ -337,11 +353,13 @@ CubicMultiSpline(const std::vector<double>& x)
 }
 
 void CubicMultiSpline::add_spline(const std::vector<double>& y,
+  const std::string& name,
   BoundaryConitions bc_lhs, double bc_lhs_val,
   BoundaryConitions bc_rhs, double bc_rhs_val)
 {
   y_.emplace_back(y);
   dy_dx_.emplace_back(generate_cubic_spline_interpolation(s_.x, y, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val));
+  name_.emplace_back(name);
 }
 
 double CubicMultiSpline::value(double x, unsigned ispline) const

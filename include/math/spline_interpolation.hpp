@@ -153,6 +153,9 @@ public:
   CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
     BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
     BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
+  CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
+    const std::vector<double>& dy_dx);
+
   double xmin() const { return s_.xmax; }
   double xmax() const { return s_.xmin; }
   const std::vector<double> xknot() const { return s_.x; }
@@ -163,6 +166,7 @@ public:
   double integral(double x) const;
   double invert(double y) const;
 private:
+  void init();
   CubicSplineIntervals s_;
   std::vector<double> I_;
   bool y_is_monotonic_inc_ = true;
@@ -173,7 +177,7 @@ class CubicMultiSpline
 {
 public:
   CubicMultiSpline(const std::vector<double>& x);
-  void add_spline(const std::vector<double>& y,
+  void add_spline(const std::vector<double>& y, const std::string& name = "",
     BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
     BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
 
@@ -181,6 +185,7 @@ public:
   double xmax() const { return s_.xmin; }
   const std::vector<double> xknot() const { return s_.x; }
   unsigned num_spline() const { return y_.size(); };
+  const std::string& dataset_name(unsigned ispline) { return name_[ispline]; }
 
   const std::vector<double> yknot(unsigned ispline) const { return y_[ispline]; }
   double value(double x, unsigned ispline) const;
@@ -197,6 +202,7 @@ private:
   InterpolationIntervals s_;
   std::vector<std::vector<double> > y_;
   std::vector<std::vector<double> > dy_dx_;
+  std::vector<std::string> name_;
 };
 
 } } } // namespace calin::math::spline_interpolation
