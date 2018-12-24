@@ -354,34 +354,32 @@ double CubicMultiSpline::value(double x, unsigned ispline) const
     dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
 }
 
-std::tuple<double, double> CubicMultiSpline::
-value(double x, unsigned ispline0, unsigned ispline1) const
+void CubicMultiSpline::value(double x, unsigned ispline0, double& value0,
+  unsigned ispline1, double& value1) const
 {
   unsigned i = find_interval(x, s_);
   double dx = s_.x[i+1]-s_.x[i];
   double dx_inv = 1.0/dx;
   double t = (x-s_.x[i])*dx_inv;
-  return {
-    cubic_value(t, dx, dx_inv, y_[ispline0][i], y_[ispline0][i+1],
-      dy_dx_[ispline0][i], dy_dx_[ispline0][i+1]),
-    cubic_value(t, dx, dx_inv, y_[ispline1][i], y_[ispline1][i+1],
-      dy_dx_[ispline1][i], dy_dx_[ispline1][i+1]) };
+  value0 = cubic_value(t, dx, dx_inv, y_[ispline0][i], y_[ispline0][i+1],
+    dy_dx_[ispline0][i], dy_dx_[ispline0][i+1]);
+  value1 = cubic_value(t, dx, dx_inv, y_[ispline1][i], y_[ispline1][i+1],
+    dy_dx_[ispline1][i], dy_dx_[ispline1][i+1]);
 }
 
-std::tuple<double, double, double> CubicMultiSpline::
-value(double x, unsigned ispline0, unsigned ispline1, unsigned ispline2) const
+void CubicMultiSpline::value(double x, unsigned ispline0, double& value0,
+  unsigned ispline1, double& value1, unsigned ispline2, double& value2) const
 {
   unsigned i = find_interval(x, s_);
   double dx = s_.x[i+1]-s_.x[i];
   double dx_inv = 1.0/dx;
   double t = (x-s_.x[i])*dx_inv;
-  return {
-    cubic_value(t, dx, dx_inv, y_[ispline0][i], y_[ispline0][i+1],
-      dy_dx_[ispline0][i], dy_dx_[ispline0][i+1]),
-    cubic_value(t, dx, dx_inv, y_[ispline1][i], y_[ispline1][i+1],
-      dy_dx_[ispline1][i], dy_dx_[ispline1][i+1]),
-    cubic_value(t, dx, dx_inv, y_[ispline2][i], y_[ispline2][i+1],
-      dy_dx_[ispline2][i], dy_dx_[ispline2][i+1]) };
+  value0 = cubic_value(t, dx, dx_inv, y_[ispline0][i], y_[ispline0][i+1],
+    dy_dx_[ispline0][i], dy_dx_[ispline0][i+1]);
+  value1 = cubic_value(t, dx, dx_inv, y_[ispline1][i], y_[ispline1][i+1],
+    dy_dx_[ispline1][i], dy_dx_[ispline1][i+1]);
+  value2 = cubic_value(t, dx, dx_inv, y_[ispline2][i], y_[ispline2][i+1],
+    dy_dx_[ispline2][i], dy_dx_[ispline2][i+1]);
 }
 
 std::vector<double> CubicMultiSpline::value(double x)

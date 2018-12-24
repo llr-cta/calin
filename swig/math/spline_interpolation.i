@@ -37,6 +37,9 @@
 %import "calin_global_definitions.i"
 
 %apply double &OUTPUT { double& value };
+%apply double &OUTPUT { double& value0 };
+%apply double &OUTPUT { double& value1 };
+%apply double &OUTPUT { double& value2 };
 //%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& xv, Eigen::VectorXd& yv };
 
 %include "math/spline_interpolation.hpp"
