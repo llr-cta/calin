@@ -196,7 +196,7 @@ public:
   std::vector<double> value(double x);
 
   double derivative(double x, unsigned ispline) const;
-  double derivative_and_value(double x, double& value, unsigned ispline) const;
+  double derivative_and_value(double x, unsigned ispline, double& value) const;
 
 private:
   InterpolationIntervals s_;

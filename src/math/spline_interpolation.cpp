@@ -425,7 +425,7 @@ double CubicMultiSpline::derivative(double x, unsigned ispline) const
     dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
 }
 
-double CubicMultiSpline::derivative_and_value(double x, double& value, unsigned ispline) const
+double CubicMultiSpline::derivative_and_value(double x, unsigned ispline, double& value) const
 {
   unsigned i = find_interval(x, s_);
   double dx = s_.x[i+1]-s_.x[i];
