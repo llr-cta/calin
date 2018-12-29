@@ -188,6 +188,8 @@ public:
   const std::string& dataset_name(unsigned ispline) { return name_[ispline]; }
 
   const std::vector<double> yknot(unsigned ispline) const { return y_[ispline]; }
+  const std::vector<double> dydxknot(unsigned ispline) const { return dy_dx_[ispline]; }
+
   double value(double x, unsigned ispline) const;
   void value(double x, unsigned ispline0, double& value0,
     unsigned ispline1, double& value1) const;
