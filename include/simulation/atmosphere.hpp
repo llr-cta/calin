@@ -32,6 +32,8 @@
 #include"calin_global_definitions.hpp"
 
 #include <math/special.hpp>
+#include <math/ray.hpp>
+#include <math/spline_interpolation.hpp>
 
 // Units:
 // Height, z:    cm
@@ -262,45 +264,45 @@ private:
 };
 
 #if 0
-// Parameterized, layered model
-class SmoothLayeredAtmosphere: public Atmosphere
+// Parameterized, layered model that is capable of calculating refraction
+// corrections in impact time and point
+class LayeredRefractiveAtmosphere: public Atmosphere
 {
 public:
-  CALIN_TYPEALIAS(Level, SmoothLayeredAtmosphere);
+  CALIN_TYPEALIAS(Level, LayeredRefractiveAtmosphere);
 
-  SmoothLayeredAtmosphere(const std::string& filename);
-  SmoothLayeredAtmosphere(const std::vector<Level> levels);
+  LayeredRefractiveAtmosphere(const std::string& filename, double z_ground_cm=0);
+  LayeredRefractiveAtmosphere(const std::vector<Level> levels, double z_ground_cm=0);
 
-  virtual ~LayeredAtmosphere();
+  virtual ~LayeredRefractiveAtmosphere();
   double rho(double z) override;
   double thickness(double z) override;
   double n_minus_one(double z) override;
   double dn_dz(double z, double& n_minus_one) override;
-#if 0
-  double pressure(double z) override;
-  double temperature(double z) override;
-  AtmComposition composition(double z) override;
-#endif
+
   double propagation_ct_correction(double z) override;
   void cherenkov_parameters(double z,
     double& n_minus_one, double& propagation_ct_correction) override;
+
+  void propagate_ray_with_refraction(const calin::math::ray::Ray ray);
+
   double z_for_thickness(double t) override;
   double top_of_atmosphere() override;
 
-  const std::vector<Level>& getLevels() const { return m_levels; }
+  const std::vector<Level>& getLevels() const { return levels_; }
 
-  static SmoothLayeredAtmosphere* us76();
+  static LayeredRefractiveAtmosphere* us76();
 
 private:
   void initialize();
 
-  double m_ztoa;
-  double m_ttoa;
-  double* log_rho_ = nullptr;
-  double* log_thickess_ = nullptr;
-  double* log_nmo_ = nullptr;
-
+  std::vector<Level> levels_;
+  math::spline_interpolation::CubicMultiSpline* s_ = nullptr;
+  double z_g_ = 0;
+  double nmo_g = 0;
+  double velocity_dct_g = 0;
+  double refraction_dx_g = 0;
+  double refraction_dct_g = 0;
 };
 #endif
-
 } } } // namespace calin::simulation::atmosphere
