@@ -23,11 +23,14 @@
 
 #include <cmath>
 
+#include <calin_global_definitions.hpp>
 #include <math/accumulator.hpp>
+#include <math/special.hpp>
 #include <simulation/atmosphere.hpp>
 
 using namespace calin::simulation::atmosphere;
 using calin::math::accumulator::RecommendedAccumulator;
+using namespace calin::math::special;
 
 LayeredRefractiveAtmosphere::
 LayeredRefractiveAtmosphere(const std::string& filename):
@@ -38,11 +41,11 @@ LayeredRefractiveAtmosphere(const std::string& filename):
 
 LayeredRefractiveAtmosphere::
 LayeredRefractiveAtmosphere(const std::vector<Level> levels):
-  Atmosphere(), levals_(levels)
+  Atmosphere(), levels_(levels)
 {
   std::vector<double> v(levels.size());
   std::transform(levels.begin(), levels.end(), v.begin(), [](const Level& l){return l.z;});
-  s_ = new CubicMultiSpline(v);
+  s_ = new math::spline_interpolation::CubicMultiSpline(v);
   // Spline 0 - density
   std::transform(levels.begin(), levels.end(), v.begin(), [](const Level& l){return std::log(l.rho);});
   s_->add_spline(v, "density [ln(g/cm^3)]");
@@ -56,11 +59,11 @@ LayeredRefractiveAtmosphere(const std::vector<Level> levels):
   // Calculate the effects of refraction by integrating the path of rays from
   // various levels in the atmosphere
 
-  double dz = 1.0; // 1cm integration steps
-  std::vector<double> zn0 = { 0, 10, 20, 30, 40, 50, 60, 70 };
+  double dz = 10.0; // 10cm integration steps
+  std::vector<double> zn0 = { 0, 45, 10, 20, 30, 40, 50, 60, 70 };
   std::vector<double> sin2_zn0(zn0.size());
   std::transform(zn0.begin(), zn0.end(), sin2_zn0.begin(),
-    [](double x)[return SQR(std::sin(x/180.0*M_PI));]);
+    [](double x){ return SQR(std::sin(x/180.0*M_PI)); });
 
   std::vector<double> n0sq(levels.size());
   std::transform(levels.begin(), levels.end(), n0sq.begin(),
@@ -72,8 +75,8 @@ LayeredRefractiveAtmosphere(const std::vector<Level> levels):
   double z = levels.back().z;
   for(unsigned ilevel=levels.size()-1;ilevel>0;ilevel--)
   {
-    for(unsigned iangle=0;iangle<tan_zn0.size();iangle++) {
-      x[ilevel].emplace_back(levels[ilevel].z * std::tan(zn0[iangle]/180.0*M_PI));
+    for(unsigned iangle=0;iangle<zn0.size();iangle++) {
+      x[ilevel].emplace_back(0);
       t[ilevel].emplace_back(0);
     }
 
@@ -96,29 +99,36 @@ LayeredRefractiveAtmosphere(const std::vector<Level> levels):
       for(unsigned jlevel = ilevel; jlevel<levels.size(); jlevel++) {
         for(unsigned iangle = 0; iangle<sin2_zn0.size(); iangle++) {
           double sin2_zn = sin2_zn0[iangle] * n0sq[jlevel] * n2_inv;
-          double sec2_zn = 1.0/(1.0-sin2_zn;)
+          double sec2_zn = 1.0/(1.0-sin2_zn);
           double tan_zn = std::sqrt(sin2_zn*sec2_zn);
           x[jlevel][iangle].accumulate(dzstep*tan_zn);
-          t[jlevel][iangle].accumulate(dzstep*sqrt(sec2_zn)*n)
-
-z -= dz
-x -= dz*tan_zn
-s += dz*sqrt(1+tan_zn**2)
-tan_zn += dtanzn_dz * dz
-
+          t[jlevel][iangle].accumulate(dzstep*sqrt(sec2_zn)*n);
         }
-        double sec2_zn0 = (1+SQR(tan_zn0));
-        double sin2_zn0 = 1.0-1.0/sec2_zn0;
-        double sin2_zn = sin2_zn0 * n0sq[jlevel] * n2_inv;
-        double sec2_zn = 1.0/(1.0-sin2_zn;)
-
-        double tan_zn = tan_zn0;
-
       }
-      z.
+    }
+  }
+  for(unsigned iangle=0;iangle<zn0.size();iangle++) {
+    x[0].emplace_back(0);
+    t[0].emplace_back(0);
+  }
+
+  for(unsigned ilevel = 1; ilevel<levels.size(); ilevel++) {
+    for(unsigned iangle = 0; iangle<sin2_zn0.size(); iangle++) {
+      x[ilevel][iangle].accumulate(-levels[ilevel].z * std::tan(zn0[iangle]/180.0*M_PI));
+      t[ilevel][iangle].accumulate(-levels[ilevel].z / std::cos(zn0[iangle]/180.0*M_PI));
     }
   }
 
+  test_ray_zne_ = calin::std_to_eigenvec(zn0);
+  test_ray_ze_ = calin::std_to_eigenvec(s_->xknot());
+  test_ray_xg_.resize(levels.size(),zn0.size());
+  test_ray_ctg_.resize(levels.size(),zn0.size());
+  for(unsigned ilevel = 0; ilevel<levels.size(); ilevel++) {
+    for(unsigned iangle = 0; iangle<sin2_zn0.size(); iangle++) {
+      test_ray_xg_(ilevel,iangle) = x[ilevel][iangle];
+      test_ray_ctg_(ilevel,iangle) = t[ilevel][iangle];
+    }
+  }
 
   // Spline 3 - vertical propagation time correction
 
@@ -175,28 +185,21 @@ propagate_ray_with_refraction(const calin::math::ray::Ray ray)
 
 double LayeredRefractiveAtmosphere::z_for_thickness(double t)
 {
-
+  return 0;
 }
 
 double LayeredRefractiveAtmosphere::top_of_atmosphere()
 {
-
+  return s_->xknot().back();
 }
 
 LayeredRefractiveAtmosphere*
-LayeredRefractiveAtmosphere::LayeredRefractiveAtmosphere* us76()
+LayeredRefractiveAtmosphere::LayeredRefractiveAtmosphere::us76()
+{
+  return nullptr;
+}
+
+void LayeredRefractiveAtmosphere::initialize()
 {
 
 }
-
-void LayeredRefractiveAtmosphere*initialize()
-{
-
-}
-
-  CubicMultiSpline s_;
-  double z_g_ = 0;
-  double nmo_g = 0;
-  double velocity_dct_g = 0;
-  double refraction_dx_g = 0;
-  double refraction_dct_g = 0;

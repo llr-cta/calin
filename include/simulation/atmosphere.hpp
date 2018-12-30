@@ -263,16 +263,16 @@ private:
   mutable std::vector<Layer>::const_iterator m_ilayer;
 };
 
-#if 0
+#if 1
 // Parameterized, layered model that is capable of calculating refraction
 // corrections in impact time and point
 class LayeredRefractiveAtmosphere: public Atmosphere
 {
 public:
-  CALIN_TYPEALIAS(Level, LayeredRefractiveAtmosphere);
+  CALIN_TYPEALIAS(Level, LayeredAtmosphereLevel);
 
-  LayeredRefractiveAtmosphere(const std::string& filename, double z_ground_cm=0);
-  LayeredRefractiveAtmosphere(const std::vector<Level> levels, double z_ground_cm=0);
+  LayeredRefractiveAtmosphere(const std::string& filename);
+  LayeredRefractiveAtmosphere(const std::vector<Level> levels);
 
   virtual ~LayeredRefractiveAtmosphere();
   double rho(double z) override;
@@ -293,11 +293,22 @@ public:
 
   static LayeredRefractiveAtmosphere* us76();
 
+  const Eigen::VectorXd& test_ray_zne() { return test_ray_zne_; }
+  const Eigen::VectorXd& test_ray_ze() { return test_ray_ze_; }
+  const Eigen::MatrixXd& test_ray_xg() { return test_ray_xg_; }
+  const Eigen::MatrixXd& test_ray_ctg() { return test_ray_ctg_; }
+
 private:
   void initialize();
 
   std::vector<Level> levels_;
   math::spline_interpolation::CubicMultiSpline* s_ = nullptr;
+
+  Eigen::VectorXd test_ray_zne_;
+  Eigen::VectorXd test_ray_ze_;
+  Eigen::MatrixXd test_ray_xg_;
+  Eigen::MatrixXd test_ray_ctg_;
+
   double z_g_ = 0;
   double nmo_g = 0;
   double velocity_dct_g = 0;

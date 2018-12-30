@@ -14,7 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_TARGET_LIBRARY calin_simulation)
-set(CALIN_SOURCES atmosphere.cpp pmt.cpp
+set(CALIN_SOURCES atmosphere.cpp atmosphere_refraction.cpp pmt.cpp
 	vso_pixel.cpp vso_mirror.cpp vso_obscuration.cpp vso_telescope.cpp
   vso_array.cpp vso_raytracer.cpp
 	pe_processor.cpp ray_processor.cpp vso_ray_processor.cpp
