@@ -36,6 +36,8 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%import "math/spline_interpolation.i"
+
 %template (VectorAtmSlice) std::vector<calin::simulation::atmosphere::AtmSlice>;
 %template (VectorLayeredAtmosphereLevel) std::vector<calin::simulation::atmosphere::LayeredAtmosphereLevel>;
 

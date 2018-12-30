@@ -293,6 +293,8 @@ public:
 
   static LayeredRefractiveAtmosphere* us76();
 
+  const calin::math::spline_interpolation::CubicMultiSpline* spline() const { return s_; }
+
   const Eigen::VectorXd& test_ray_zne() { return test_ray_zne_; }
   const Eigen::VectorXd& test_ray_ze() { return test_ray_ze_; }
   const Eigen::MatrixXd& test_ray_xg() { return test_ray_xg_; }
@@ -302,7 +304,7 @@ private:
   void initialize();
 
   std::vector<Level> levels_;
-  math::spline_interpolation::CubicMultiSpline* s_ = nullptr;
+  calin::math::spline_interpolation::CubicMultiSpline* s_ = nullptr;
 
   Eigen::VectorXd test_ray_zne_;
   Eigen::VectorXd test_ray_ze_;
