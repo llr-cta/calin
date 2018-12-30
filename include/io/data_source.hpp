@@ -43,7 +43,7 @@ public:
 };
 
 template<typename T> class DelegatedDataSource:
-  public virtual DataSource<T>, calin::pattern::delegation::Delegator<DataSource<T> >
+  public virtual DataSource<T>, public calin::pattern::delegation::Delegator<DataSource<T> >
 {
 public:
   CALIN_TYPEALIAS(data_type, T);

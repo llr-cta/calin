@@ -70,7 +70,7 @@ report_run_configuration_problems(
       LOG(ERROR,logger) << "Expected module #" << mod_id << " not valid in camera";
     else
       mod_map[mod_id] = 0;
-    for(unsigned irank=1; irank<run_config->configured_module_id_size();irank++)
+    for(int irank=1; irank<run_config->configured_module_id_size();irank++)
     {
       unsigned next_mod_id = run_config->configured_module_id(irank);
       if(next_mod_id <= mod_id)module_id_strictly_increasing=false;

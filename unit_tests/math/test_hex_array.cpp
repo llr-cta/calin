@@ -398,86 +398,86 @@ TEST(TestHexArray, AVX2_HexIDToFromRingSegRun_EQ) {
 #endif
 
 TEST(TestHexArray, RotateHexID_CCW) {
-  ASSERT_EQ(rotate_ccw1_hexid_ccw(0), 0);
-  ASSERT_EQ(rotate_ccw1_hexid_ccw(1), 2);
-  ASSERT_EQ(rotate_ccw1_hexid_ccw(2), 3);
-  ASSERT_EQ(rotate_ccw1_hexid_ccw(3), 4);
-  ASSERT_EQ(rotate_ccw1_hexid_ccw(4), 5);
-  ASSERT_EQ(rotate_ccw1_hexid_ccw(5), 6);
-  ASSERT_EQ(rotate_ccw1_hexid_ccw(6), 1);
+  ASSERT_EQ(rotate_ccw1_hexid_ccw(0), 0U);
+  ASSERT_EQ(rotate_ccw1_hexid_ccw(1), 2U);
+  ASSERT_EQ(rotate_ccw1_hexid_ccw(2), 3U);
+  ASSERT_EQ(rotate_ccw1_hexid_ccw(3), 4U);
+  ASSERT_EQ(rotate_ccw1_hexid_ccw(4), 5U);
+  ASSERT_EQ(rotate_ccw1_hexid_ccw(5), 6U);
+  ASSERT_EQ(rotate_ccw1_hexid_ccw(6), 1U);
 
-  ASSERT_EQ(rotate_ccw2_hexid_ccw(0), 0);
-  ASSERT_EQ(rotate_ccw2_hexid_ccw(1), 3);
-  ASSERT_EQ(rotate_ccw2_hexid_ccw(2), 4);
-  ASSERT_EQ(rotate_ccw2_hexid_ccw(3), 5);
-  ASSERT_EQ(rotate_ccw2_hexid_ccw(4), 6);
-  ASSERT_EQ(rotate_ccw2_hexid_ccw(5), 1);
-  ASSERT_EQ(rotate_ccw2_hexid_ccw(6), 2);
+  ASSERT_EQ(rotate_ccw2_hexid_ccw(0), 0U);
+  ASSERT_EQ(rotate_ccw2_hexid_ccw(1), 3U);
+  ASSERT_EQ(rotate_ccw2_hexid_ccw(2), 4U);
+  ASSERT_EQ(rotate_ccw2_hexid_ccw(3), 5U);
+  ASSERT_EQ(rotate_ccw2_hexid_ccw(4), 6U);
+  ASSERT_EQ(rotate_ccw2_hexid_ccw(5), 1U);
+  ASSERT_EQ(rotate_ccw2_hexid_ccw(6), 2U);
 
-  ASSERT_EQ(rotate_ccw3_hexid_ccw(0), 0);
-  ASSERT_EQ(rotate_ccw3_hexid_ccw(1), 4);
-  ASSERT_EQ(rotate_ccw3_hexid_ccw(2), 5);
-  ASSERT_EQ(rotate_ccw3_hexid_ccw(3), 6);
-  ASSERT_EQ(rotate_ccw3_hexid_ccw(4), 1);
-  ASSERT_EQ(rotate_ccw3_hexid_ccw(5), 2);
-  ASSERT_EQ(rotate_ccw3_hexid_ccw(6), 3);
+  ASSERT_EQ(rotate_ccw3_hexid_ccw(0), 0U);
+  ASSERT_EQ(rotate_ccw3_hexid_ccw(1), 4U);
+  ASSERT_EQ(rotate_ccw3_hexid_ccw(2), 5U);
+  ASSERT_EQ(rotate_ccw3_hexid_ccw(3), 6U);
+  ASSERT_EQ(rotate_ccw3_hexid_ccw(4), 1U);
+  ASSERT_EQ(rotate_ccw3_hexid_ccw(5), 2U);
+  ASSERT_EQ(rotate_ccw3_hexid_ccw(6), 3U);
 
-  ASSERT_EQ(rotate_ccw4_hexid_ccw(0), 0);
-  ASSERT_EQ(rotate_ccw4_hexid_ccw(1), 5);
-  ASSERT_EQ(rotate_ccw4_hexid_ccw(2), 6);
-  ASSERT_EQ(rotate_ccw4_hexid_ccw(3), 1);
-  ASSERT_EQ(rotate_ccw4_hexid_ccw(4), 2);
-  ASSERT_EQ(rotate_ccw4_hexid_ccw(5), 3);
-  ASSERT_EQ(rotate_ccw4_hexid_ccw(6), 4);
+  ASSERT_EQ(rotate_ccw4_hexid_ccw(0), 0U);
+  ASSERT_EQ(rotate_ccw4_hexid_ccw(1), 5U);
+  ASSERT_EQ(rotate_ccw4_hexid_ccw(2), 6U);
+  ASSERT_EQ(rotate_ccw4_hexid_ccw(3), 1U);
+  ASSERT_EQ(rotate_ccw4_hexid_ccw(4), 2U);
+  ASSERT_EQ(rotate_ccw4_hexid_ccw(5), 3U);
+  ASSERT_EQ(rotate_ccw4_hexid_ccw(6), 4U);
 
-  ASSERT_EQ(rotate_ccw5_hexid_ccw(0), 0);
-  ASSERT_EQ(rotate_ccw5_hexid_ccw(2), 1);
-  ASSERT_EQ(rotate_ccw5_hexid_ccw(3), 2);
-  ASSERT_EQ(rotate_ccw5_hexid_ccw(4), 3);
-  ASSERT_EQ(rotate_ccw5_hexid_ccw(5), 4);
-  ASSERT_EQ(rotate_ccw5_hexid_ccw(6), 5);
+  ASSERT_EQ(rotate_ccw5_hexid_ccw(0), 0U);
+  ASSERT_EQ(rotate_ccw5_hexid_ccw(2), 1U);
+  ASSERT_EQ(rotate_ccw5_hexid_ccw(3), 2U);
+  ASSERT_EQ(rotate_ccw5_hexid_ccw(4), 3U);
+  ASSERT_EQ(rotate_ccw5_hexid_ccw(5), 4U);
+  ASSERT_EQ(rotate_ccw5_hexid_ccw(6), 5U);
 }
 
 TEST(TestHexArray, RotateHexID_CW) {
-  ASSERT_EQ(rotate_ccw5_hexid_cw(0), 0);
-  ASSERT_EQ(rotate_ccw5_hexid_cw(1), 2);
-  ASSERT_EQ(rotate_ccw5_hexid_cw(2), 3);
-  ASSERT_EQ(rotate_ccw5_hexid_cw(3), 4);
-  ASSERT_EQ(rotate_ccw5_hexid_cw(4), 5);
-  ASSERT_EQ(rotate_ccw5_hexid_cw(5), 6);
-  ASSERT_EQ(rotate_ccw5_hexid_cw(6), 1);
+  ASSERT_EQ(rotate_ccw5_hexid_cw(0), 0U);
+  ASSERT_EQ(rotate_ccw5_hexid_cw(1), 2U);
+  ASSERT_EQ(rotate_ccw5_hexid_cw(2), 3U);
+  ASSERT_EQ(rotate_ccw5_hexid_cw(3), 4U);
+  ASSERT_EQ(rotate_ccw5_hexid_cw(4), 5U);
+  ASSERT_EQ(rotate_ccw5_hexid_cw(5), 6U);
+  ASSERT_EQ(rotate_ccw5_hexid_cw(6), 1U);
 
-  ASSERT_EQ(rotate_ccw4_hexid_cw(0), 0);
-  ASSERT_EQ(rotate_ccw4_hexid_cw(1), 3);
-  ASSERT_EQ(rotate_ccw4_hexid_cw(2), 4);
-  ASSERT_EQ(rotate_ccw4_hexid_cw(3), 5);
-  ASSERT_EQ(rotate_ccw4_hexid_cw(4), 6);
-  ASSERT_EQ(rotate_ccw4_hexid_cw(5), 1);
-  ASSERT_EQ(rotate_ccw4_hexid_cw(6), 2);
+  ASSERT_EQ(rotate_ccw4_hexid_cw(0), 0U);
+  ASSERT_EQ(rotate_ccw4_hexid_cw(1), 3U);
+  ASSERT_EQ(rotate_ccw4_hexid_cw(2), 4U);
+  ASSERT_EQ(rotate_ccw4_hexid_cw(3), 5U);
+  ASSERT_EQ(rotate_ccw4_hexid_cw(4), 6U);
+  ASSERT_EQ(rotate_ccw4_hexid_cw(5), 1U);
+  ASSERT_EQ(rotate_ccw4_hexid_cw(6), 2U);
 
-  ASSERT_EQ(rotate_ccw3_hexid_cw(0), 0);
-  ASSERT_EQ(rotate_ccw3_hexid_cw(1), 4);
-  ASSERT_EQ(rotate_ccw3_hexid_cw(2), 5);
-  ASSERT_EQ(rotate_ccw3_hexid_cw(3), 6);
-  ASSERT_EQ(rotate_ccw3_hexid_cw(4), 1);
-  ASSERT_EQ(rotate_ccw3_hexid_cw(5), 2);
-  ASSERT_EQ(rotate_ccw3_hexid_cw(6), 3);
+  ASSERT_EQ(rotate_ccw3_hexid_cw(0), 0U);
+  ASSERT_EQ(rotate_ccw3_hexid_cw(1), 4U);
+  ASSERT_EQ(rotate_ccw3_hexid_cw(2), 5U);
+  ASSERT_EQ(rotate_ccw3_hexid_cw(3), 6U);
+  ASSERT_EQ(rotate_ccw3_hexid_cw(4), 1U);
+  ASSERT_EQ(rotate_ccw3_hexid_cw(5), 2U);
+  ASSERT_EQ(rotate_ccw3_hexid_cw(6), 3U);
 
-  ASSERT_EQ(rotate_ccw2_hexid_cw(0), 0);
-  ASSERT_EQ(rotate_ccw2_hexid_cw(1), 5);
-  ASSERT_EQ(rotate_ccw2_hexid_cw(2), 6);
-  ASSERT_EQ(rotate_ccw2_hexid_cw(3), 1);
-  ASSERT_EQ(rotate_ccw2_hexid_cw(4), 2);
-  ASSERT_EQ(rotate_ccw2_hexid_cw(5), 3);
-  ASSERT_EQ(rotate_ccw2_hexid_cw(6), 4);
+  ASSERT_EQ(rotate_ccw2_hexid_cw(0), 0U);
+  ASSERT_EQ(rotate_ccw2_hexid_cw(1), 5U);
+  ASSERT_EQ(rotate_ccw2_hexid_cw(2), 6U);
+  ASSERT_EQ(rotate_ccw2_hexid_cw(3), 1U);
+  ASSERT_EQ(rotate_ccw2_hexid_cw(4), 2U);
+  ASSERT_EQ(rotate_ccw2_hexid_cw(5), 3U);
+  ASSERT_EQ(rotate_ccw2_hexid_cw(6), 4U);
 
-  ASSERT_EQ(rotate_ccw1_hexid_cw(0), 0);
-  ASSERT_EQ(rotate_ccw1_hexid_cw(1), 6);
-  ASSERT_EQ(rotate_ccw1_hexid_cw(2), 1);
-  ASSERT_EQ(rotate_ccw1_hexid_cw(3), 2);
-  ASSERT_EQ(rotate_ccw1_hexid_cw(4), 3);
-  ASSERT_EQ(rotate_ccw1_hexid_cw(5), 4);
-  ASSERT_EQ(rotate_ccw1_hexid_cw(6), 5);
+  ASSERT_EQ(rotate_ccw1_hexid_cw(0), 0U);
+  ASSERT_EQ(rotate_ccw1_hexid_cw(1), 6U);
+  ASSERT_EQ(rotate_ccw1_hexid_cw(2), 1U);
+  ASSERT_EQ(rotate_ccw1_hexid_cw(3), 2U);
+  ASSERT_EQ(rotate_ccw1_hexid_cw(4), 3U);
+  ASSERT_EQ(rotate_ccw1_hexid_cw(5), 4U);
+  ASSERT_EQ(rotate_ccw1_hexid_cw(6), 5U);
 }
 
 TEST(TestHexArray, HexIDToFromUV_CW_EQ) {
