@@ -151,14 +151,17 @@ LayeredRefractiveAtmosphere(const std::vector<Level> levels):
   // Spline 3 - vertical propagation time correction
   std::transform(t.begin(), t.end(), v.begin(),
     [](const std::vector<RecommendedAccumulator>& v){return v[0];});
-  s_->add_spline(v, "vertical propagation c * time correction [cm]");
+  s_->add_spline(v, "vertical propagation ct correction [cm]");
 
   // Spline 4 - refraction impact point scaling
   std::transform(x.begin(), x.end(), v.begin(),
-    [zn0](const std::vector<RecommendedAccumulator>& v){return v[1];});
-  s_->add_spline(v, "refraction impact point correction for ray at reference angle [cm]");
+    [](const std::vector<RecommendedAccumulator>& v){return v[1];});
+  s_->add_spline(v, "refraction impact dist correction [cm]");
 
   // Spline 5 - refraction propagation time correction
+  std::transform(t.begin(), t.end(), v.begin(),
+    [zn0](const std::vector<RecommendedAccumulator>& v){return v[1]-v[0]/std::cos(zn0[1]/180.0*M_PI);});
+  s_->add_spline(v, "refraction impact ct correction [cm]");
 
 }
 
