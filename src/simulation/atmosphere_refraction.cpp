@@ -59,8 +59,11 @@ LayeredRefractiveAtmosphere(const std::vector<Level> levels):
   // Calculate the effects of refraction by integrating the path of rays from
   // various levels in the atmosphere
 
-  double dz = 10.0; // 10cm integration steps
+  double dzn = 0.5 * M_PI/180.0/60.0/60.0/1000.0; // 0.1 milli-arcsecond integration step for ray at 45 degrees
+  double dz_max = 1000; // 10m maximum integration steps
+
   std::vector<double> zn0 = { 0, 45, 10, 20, 30, 40, 50, 60, 70 };
+  double tan_znref_inv = 1.0/std::tan(zn0[1]/180.0*M_PI);
   std::vector<double> sin2_zn0(zn0.size());
   std::transform(zn0.begin(), zn0.end(), sin2_zn0.begin(),
     [](double x){ return SQR(std::sin(x/180.0*M_PI)); });
@@ -73,6 +76,12 @@ LayeredRefractiveAtmosphere(const std::vector<Level> levels):
   std::vector<std::vector<RecommendedAccumulator> > t(levels.size());
 
   double z = levels.back().z;
+
+  double n;
+  double dn_dz = this->dn_dz(z, n);
+  n += 1.0;
+  double dz = std::min(dz_max, dzn*n*tan_znref_inv/std::abs(dn_dz));
+
   for(unsigned ilevel=levels.size()-1;ilevel>0;ilevel--)
   {
     for(unsigned iangle=0;iangle<zn0.size();iangle++) {
@@ -80,8 +89,10 @@ LayeredRefractiveAtmosphere(const std::vector<Level> levels):
       t[ilevel].emplace_back(0);
     }
 
+    unsigned nstep = 0;
     double zmin = levels[ilevel-1].z;
     while(z > zmin) {
+      ++nstep;
       double zmid = z;
       double dzstep;
       z -= dz;
@@ -90,10 +101,15 @@ LayeredRefractiveAtmosphere(const std::vector<Level> levels):
       } else {
         z = zmin;
         dzstep = zmid - z;
+        std::cout << z*1e-5 << ' ' <<  dz << ' ' << nstep << '\n';
+        nstep = 0;
       }
       zmid -= 0.5*dzstep;
 
-      double n = 1.0 + this->n_minus_one(zmid);
+      dn_dz = this->dn_dz(zmid, n  /* n minus one */);
+      n += 1.0;
+      dz = std::min(dz_max, dzn*n*tan_znref_inv/std::abs(dn_dz));
+
       double n2_inv = 1.0/SQR(n);
 
       for(unsigned jlevel = ilevel; jlevel<levels.size(); jlevel++) {
@@ -196,7 +212,7 @@ double LayeredRefractiveAtmosphere::top_of_atmosphere()
 LayeredRefractiveAtmosphere*
 LayeredRefractiveAtmosphere::LayeredRefractiveAtmosphere::us76()
 {
-  return nullptr;
+  return new LayeredRefractiveAtmosphere(us76_levels());
 }
 
 void LayeredRefractiveAtmosphere::initialize()
