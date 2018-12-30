@@ -177,7 +177,8 @@ class CubicMultiSpline
 {
 public:
   CubicMultiSpline(const std::vector<double>& x);
-  void add_spline(const std::vector<double>& y, const std::string& name = "",
+
+  unsigned add_spline(const std::vector<double>& y, const std::string& name = "",
     BoundaryConitions bc_lhs = BC_NOT_A_KNOT, double bc_lhs_val = 0.0,
     BoundaryConitions bc_rhs = BC_NOT_A_KNOT, double bc_rhs_val = 0.0);
 
@@ -195,7 +196,7 @@ public:
     unsigned ispline1, double& value1) const;
   void value(double x, unsigned ispline0, double& value0,
     unsigned ispline1, double& value1, unsigned ispline2, double& value2) const;
-  std::vector<double> value(double x);
+  std::vector<double> value(double x) const;
 
   double derivative(double x, unsigned ispline) const;
   double derivative_and_value(double x, unsigned ispline, double& value) const;

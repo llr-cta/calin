@@ -352,14 +352,16 @@ CubicMultiSpline(const std::vector<double>& x)
   s_ = make_intervals(x);
 }
 
-void CubicMultiSpline::add_spline(const std::vector<double>& y,
+unsigned CubicMultiSpline::add_spline(const std::vector<double>& y,
   const std::string& name,
   BoundaryConitions bc_lhs, double bc_lhs_val,
   BoundaryConitions bc_rhs, double bc_rhs_val)
 {
+  unsigned ispline = y_.size();
   y_.emplace_back(y);
   dy_dx_.emplace_back(generate_cubic_spline_interpolation(s_.x, y, bc_lhs, bc_lhs_val, bc_rhs, bc_rhs_val));
   name_.emplace_back(name);
+  return ispline;
 }
 
 double CubicMultiSpline::value(double x, unsigned ispline) const
@@ -400,7 +402,7 @@ void CubicMultiSpline::value(double x, unsigned ispline0, double& value0,
     dy_dx_[ispline2][i], dy_dx_[ispline2][i+1]);
 }
 
-std::vector<double> CubicMultiSpline::value(double x)
+std::vector<double> CubicMultiSpline::value(double x) const
 {
   unsigned i = find_interval(x, s_);
   double dx = s_.x[i+1]-s_.x[i];
