@@ -171,8 +171,8 @@ TEST(TestHexArray, AVX2_HexIDToXY_Equals_Scalar) {
       float x2,y2;
       hexid_to_xy(hexid, x1, y1);
       test_avx2_hexid_to_xy_f(hexid, x2, y2);
-      EXPECT_NEAR(float(x1),x2,abs(x2)*1e-6);
-      EXPECT_NEAR(float(y1),y2,abs(y2)*1e-6);
+      EXPECT_NEAR(float(x1),x2,std::abs(x2)*1e-6);
+      EXPECT_NEAR(float(y1),y2,std::abs(y2)*1e-6);
       hexid++;
     }
 }
@@ -186,8 +186,8 @@ TEST(TestHexArray, AVX2_HexIDToXY_CW_Equals_Scalar) {
       float x2,y2;
       hexid_to_xy(hexid, x1, y1, true);
       test_avx2_hexid_to_xy_f(hexid, x2, y2, true);
-      EXPECT_NEAR(float(x1),x2,abs(x2)*1e-6);
-      EXPECT_NEAR(float(y1),y2,abs(y2)*1e-6);
+      EXPECT_NEAR(float(x1),x2,std::abs(x2)*1e-6);
+      EXPECT_NEAR(float(y1),y2,std::abs(y2)*1e-6);
       hexid++;
     }
 }

@@ -55,7 +55,7 @@ calin::math::spline_interpolation::make_intervals(const std::vector<double>& x)
     if(dx <= 0)
       std::runtime_error("make_intervals: x values must be monotonously increasing");
     if(intervals.irregular_start == (i-1) and
-        abs(dx - intervals.regular_dx)/intervals.regular_dx < 1e-6) {
+        std::abs(dx - intervals.regular_dx)/intervals.regular_dx < 1e-6) {
       intervals.irregular_start = i;
       intervals.regular_xmax = x[i];
     }
