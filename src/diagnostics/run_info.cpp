@@ -152,7 +152,7 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   if(not mod_counter_id_.empty())
     mod_counter_values_.reserve(run_config->configured_module_id_size());
 
-  for(unsigned imod=0;imod<run_config->configured_module_id_size();imod++) {
+  for(int imod=0;imod<run_config->configured_module_id_size();imod++) {
     auto* m = partials_->add_module();
     for(unsigned icounter=0;icounter<mod_counter_id_.size();icounter++) {
       m->add_counter_value();

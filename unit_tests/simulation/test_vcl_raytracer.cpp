@@ -163,7 +163,7 @@ TYPED_TEST(TestVCLRaytracer, RayTrace) {
     ASSERT_FALSE(mask[1]);
     ASSERT_EQ(trace_info.status[0], calin::simulation::vcl_raytracer::STS_TS_FOUND_PIXEL);
     ASSERT_EQ(trace_info.status[1], calin::simulation::vcl_raytracer::STS_MASKED_ON_ENTRY);
-    ASSERT_EQ(int(trace_info.mirror_hexid[0]), mirror->hexID());
+    ASSERT_EQ(trace_info.mirror_hexid[0], int(mirror->hexID()));
     ASSERT_EQ(trace_info.mirror_id[0], mirror->id());
     ASSERT_EQ(trace_info.mirror_hexid[1], array->telescope(0)->numMirrorHexSites());
     ASSERT_EQ(trace_info.mirror_id[1], array->telescope(0)->numMirrors());

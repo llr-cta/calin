@@ -373,7 +373,7 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexID_Trans_Equals_Scalar) {
       typename TypeParam::real_vt yy2 = y;
       typename TypeParam::int_vt hexid2 =
         VCLReal<TypeParam>::xy_trans_to_hexid_with_remainder_ccw(xx2, yy2, ctheta, stheta, scale, dx, dy);
-      ASSERT_EQ(hexid, hexid2[0]);
+      ASSERT_EQ(int(hexid), hexid2[0]);
       ASSERT_NEAR(xx1,xx2[0],1e-5);
       ASSERT_NEAR(yy1,yy2[0],1e-5);
     }
