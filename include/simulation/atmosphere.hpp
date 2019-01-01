@@ -271,10 +271,18 @@ class LayeredRefractiveAtmosphere: public Atmosphere
 public:
   CALIN_TYPEALIAS(Level, LayeredAtmosphereLevel);
 
-  LayeredRefractiveAtmosphere(const std::string& filename);
-  LayeredRefractiveAtmosphere(const std::vector<Level> levels);
+  LayeredRefractiveAtmosphere(const std::string& filename,
+    const std::vector<double>& obs_levels = {});
+  LayeredRefractiveAtmosphere(const std::string& filename,
+    double obs_level);
+  LayeredRefractiveAtmosphere(const std::vector<Level>& levels,
+    const std::vector<double>& obs_levels = {});
 
   virtual ~LayeredRefractiveAtmosphere();
+
+  double num_obs_levels() const { return zobs_.size(); }
+  double zobs(unsigned iground) const { return zobs_[iground]; }
+
   double rho(double z) override;
   double thickness(double z) override;
   double n_minus_one(double z) override;
@@ -284,16 +292,21 @@ public:
   void cherenkov_parameters(double z,
     double& n_minus_one, double& propagation_ct_correction) override;
 
-  void propagate_ray_with_refraction(const calin::math::ray::Ray ray);
-
   double z_for_thickness(double t) override;
   double top_of_atmosphere() override;
 
-  const std::vector<Level>& getLevels() const { return levels_; }
+  void propagate_ray_with_refraction(const calin::math::ray::Ray ray);
 
-  static LayeredRefractiveAtmosphere* us76();
+  const std::vector<Level>& get_levels() const { return levels_; }
+
+  static LayeredRefractiveAtmosphere* us76(const std::vector<double>& obs_levels = {});
 
   const calin::math::spline_interpolation::CubicMultiSpline* spline() const { return s_; }
+
+  const Eigen::MatrixXd& test_ray_lev_x() { return test_ray_lev_x_; }
+  const Eigen::MatrixXd& test_ray_lev_ct() { return test_ray_lev_ct_; }
+  const Eigen::MatrixXd& test_ray_obs_x(unsigned iobs) { return test_ray_obs_x_[iobs]; }
+  const Eigen::MatrixXd& test_ray_obs_ct(unsigned iobs) { return test_ray_obs_ct_[iobs]; }
 
   const Eigen::VectorXd& test_ray_zne() { return test_ray_zne_; }
   const Eigen::VectorXd& test_ray_ze() { return test_ray_ze_; }
@@ -305,6 +318,13 @@ private:
 
   std::vector<Level> levels_;
   calin::math::spline_interpolation::CubicMultiSpline* s_ = nullptr;
+
+  std::vector<double> zobs_;
+
+  Eigen::MatrixXd test_ray_lev_x_;
+  Eigen::MatrixXd test_ray_lev_ct_;
+  std::vector<Eigen::MatrixXd> test_ray_obs_x_;
+  std::vector<Eigen::MatrixXd> test_ray_obs_ct_;
 
   Eigen::VectorXd test_ray_zne_;
   Eigen::VectorXd test_ray_ze_;
