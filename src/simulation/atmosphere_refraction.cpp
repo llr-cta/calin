@@ -72,7 +72,7 @@ LayeredRefractiveAtmosphere(const std::vector<Level>& levels, const std::vector<
   // them all from the top of the atmosphere - we use Snell's law to arrange
   // that they all have correct zenith angle at their prescribed layer. We
   // record the position and time when each ray passes its origin layer in the
-  // atmpsohere (test_ray_lev_x_ and test_ray_lev_ct_) and when each of them passes
+  // atmpsohere (test_ray_emi_x_ and test_ray_emi_ct_) and when each of them passes
   // each of the ground layers (test_ray_obs_x_ and test_ray_obs_ct_).
 
   std::vector<double> zn0 = { 0, 45, 10, 20, 30, 40, 50, 60, 70 };
@@ -98,8 +98,8 @@ LayeredRefractiveAtmosphere(const std::vector<Level>& levels, const std::vector<
   }
 
   // Storage for results of integration at atmospheric and observation levels
-  test_ray_lev_x_.resize(levels.size(),zn0.size());
-  test_ray_lev_ct_.resize(levels.size(),zn0.size());
+  test_ray_emi_x_.resize(levels.size(),zn0.size());
+  test_ray_emi_ct_.resize(levels.size(),zn0.size());
   test_ray_obs_x_.resize(zobs_.size(), { levels.size(),zn0.size() });
   test_ray_obs_ct_.resize(zobs_.size(), { levels.size(),zn0.size() });
 
@@ -129,7 +129,7 @@ LayeredRefractiveAtmosphere(const std::vector<Level>& levels, const std::vector<
     }
   }
 
-  // Initialize z at top of atmosphere and calculate step in z
+  // Initialize z at top of atmosphere and calculate initial step in z
   double z = levels.back().z;
 
   double n;
@@ -137,13 +137,14 @@ LayeredRefractiveAtmosphere(const std::vector<Level>& levels, const std::vector<
   n += 1.0;
   double dz = std::min(dz_max, dzn*n*tan_znref_inv/std::abs(dn_dz));
 
+  // Integrate all test ray paths from top of atmosphere (x=ct=0) to bottom
+  // recording positions at each atmospheric and observation level
   int iobs = zobs_.size()-1;
-
   for(unsigned ilevel=levels.size()-1;ilevel>0;ilevel--)
   {
     for(unsigned iangle=0;iangle<zn0.size();iangle++) {
-      test_ray_lev_x_(ilevel,iangle) = x[ilevel][iangle].total();
-      test_ray_lev_ct_(ilevel,iangle) = t[ilevel][iangle].total();
+      test_ray_emi_x_(ilevel,iangle) = x[ilevel][iangle].total();
+      test_ray_emi_ct_(ilevel,iangle) = t[ilevel][iangle].total();
     }
 
     unsigned nstep = 0;
@@ -198,43 +199,59 @@ LayeredRefractiveAtmosphere(const std::vector<Level>& levels, const std::vector<
     }
   }
   for(unsigned iangle=0;iangle<zn0.size();iangle++) {
-    test_ray_lev_x_(0,iangle) = x[0][iangle].total();
-    test_ray_lev_ct_(0,iangle) = t[0][iangle].total();
+    test_ray_emi_x_(0,iangle) = x[0][iangle].total();
+    test_ray_emi_ct_(0,iangle) = t[0][iangle].total();
   }
 
-  for(unsigned ilevel = 1; ilevel<levels.size(); ilevel++) {
-    for(unsigned iangle = 0; iangle<sin2_zn0.size(); iangle++) {
-      x[ilevel][iangle].accumulate(-levels[ilevel].z * std::tan(zn0[iangle]/180.0*M_PI));
-      t[ilevel][iangle].accumulate(-levels[ilevel].z / std::cos(zn0[iangle]/180.0*M_PI));
+  test_ray_emi_zn_ = calin::std_to_eigenvec(zn0);
+  test_ray_emi_z_ = calin::std_to_eigenvec(s_->xknot());
+
+  // Save the values at the bottom of the atmosphere
+  test_ray_boa_x_.resize(levels.size(),zn0.size());
+  test_ray_boa_ct_.resize(levels.size(),zn0.size());
+  for(unsigned ilevel=0; ilevel<levels.size(); ilevel++) {
+    for(unsigned iangle=0;iangle<zn0.size();iangle++) {
+      test_ray_boa_x_(ilevel,iangle) = x[ilevel][iangle].total();
+      test_ray_boa_ct_(ilevel,iangle) = t[ilevel][iangle].total();
     }
   }
 
-  test_ray_zne_ = calin::std_to_eigenvec(zn0);
-  test_ray_ze_ = calin::std_to_eigenvec(s_->xknot());
-  test_ray_xg_.resize(levels.size(),zn0.size());
-  test_ray_ctg_.resize(levels.size(),zn0.size());
-  for(unsigned ilevel = 0; ilevel<levels.size(); ilevel++) {
-    for(unsigned iangle = 0; iangle<sin2_zn0.size(); iangle++) {
-      test_ray_xg_(ilevel,iangle) = x[ilevel][iangle];
-      test_ray_ctg_(ilevel,iangle) = t[ilevel][iangle];
-    }
+  // Subtract off emission time and place to shift rays to origin of x & ct
+  // at their emission points
+  test_ray_boa_x_ -= test_ray_emi_x_;
+  test_ray_boa_ct_ -= test_ray_emi_ct_;
+  for(unsigned iobs=0; iobs<zobs_.size(); iobs++) {
+    test_ray_obs_x_[iobs] -= test_ray_emi_x_;
+    test_ray_obs_ct_[iobs] -= test_ray_emi_ct_;
   }
 
-  // Spline 3 - vertical propagation time correction
-  std::transform(t.begin(), t.end(), v.begin(),
-    [](const std::vector<RecommendedAccumulator>& v){return v[0];});
+  // Spline 3 - vertical propagation time correction to bottom of atmosphere
+  for(unsigned ilevel=0; ilevel<levels.size(); ilevel++) {
+    v[ilevel] = t[ilevel][0].total() - levels[ilevel].z;
+  }
   s_->add_spline(v, "vertical propagation ct correction [cm]");
 
-  // Spline 4 - refraction impact point scaling
-  std::transform(x.begin(), x.end(), v.begin(),
-    [](const std::vector<RecommendedAccumulator>& v){return v[1];});
-  s_->add_spline(v, "refraction impact dist correction [cm]");
+  // Three splines per observarion level : (4,5,6), (7,8,9) etc...
+  for(unsigned iobs=0; iobs<zobs_.size(); iobs++) {
+    // Spline 4,7,10 ... vertical propagation time correction to obs level
+    for(unsigned ilevel=0; ilevel<levels.size(); ilevel++) {
+      double zlev = (levels[ilevel].z-zobs_[iobs]);
+      v[ilevel] = test_ray_obs_ct_[iobs](ilevel,0) - zlev;
+    }
+    s_->add_spline(v, "vertical ct correction iobs=" + std::to_string(iobs) + " [cm]");
 
-  // Spline 5 - refraction propagation time correction
-  std::transform(t.begin(), t.end(), v.begin(),
-    [zn0](const std::vector<RecommendedAccumulator>& v){return v[1]-v[0]/std::cos(zn0[1]/180.0*M_PI);});
-  s_->add_spline(v, "refraction impact ct correction [cm]");
+    for(unsigned ilevel=0; ilevel<levels.size(); ilevel++) {
+      double zlev = (levels[ilevel].z-zobs_[iobs]);
+      v[ilevel] = test_ray_obs_x_[iobs](ilevel,1) - zlev * std::tan(zn0[1]/180.0*M_PI);
+    }
+    s_->add_spline(v, "refraction x correction iobs=" + std::to_string(iobs) + " [cm]");
 
+    for(unsigned ilevel=0; ilevel<levels.size(); ilevel++) {
+      v[ilevel] = test_ray_obs_ct_[iobs](ilevel,1)
+        - test_ray_obs_ct_[iobs](ilevel,0) / std::cos(zn0[1]/180.0*M_PI);
+    }
+    s_->add_spline(v, "refraction ct correction iobs=" + std::to_string(iobs) + " [cm]");
+  }
 }
 
 LayeredRefractiveAtmosphere::~LayeredRefractiveAtmosphere()

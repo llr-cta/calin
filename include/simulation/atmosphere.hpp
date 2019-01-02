@@ -303,15 +303,16 @@ public:
 
   const calin::math::spline_interpolation::CubicMultiSpline* spline() const { return s_; }
 
-  const Eigen::MatrixXd& test_ray_lev_x() { return test_ray_lev_x_; }
-  const Eigen::MatrixXd& test_ray_lev_ct() { return test_ray_lev_ct_; }
+  const Eigen::VectorXd& test_ray_emi_zn() { return test_ray_emi_zn_; }
+  const Eigen::VectorXd& test_ray_emi_z() { return test_ray_emi_z_; }
+  const Eigen::MatrixXd& test_ray_emi_x() { return test_ray_emi_x_; }
+  const Eigen::MatrixXd& test_ray_emi_ct() { return test_ray_emi_ct_; }
+
   const Eigen::MatrixXd& test_ray_obs_x(unsigned iobs) { return test_ray_obs_x_[iobs]; }
   const Eigen::MatrixXd& test_ray_obs_ct(unsigned iobs) { return test_ray_obs_ct_[iobs]; }
 
-  const Eigen::VectorXd& test_ray_zne() { return test_ray_zne_; }
-  const Eigen::VectorXd& test_ray_ze() { return test_ray_ze_; }
-  const Eigen::MatrixXd& test_ray_xg() { return test_ray_xg_; }
-  const Eigen::MatrixXd& test_ray_ctg() { return test_ray_ctg_; }
+  const Eigen::MatrixXd& test_ray_boa_x() { return test_ray_boa_x_; }
+  const Eigen::MatrixXd& test_ray_boa_ct() { return test_ray_boa_ct_; }
 
 private:
   void initialize();
@@ -321,21 +322,15 @@ private:
 
   std::vector<double> zobs_;
 
-  Eigen::MatrixXd test_ray_lev_x_;
-  Eigen::MatrixXd test_ray_lev_ct_;
+  Eigen::VectorXd test_ray_emi_zn_;
+  Eigen::VectorXd test_ray_emi_z_;
+  Eigen::MatrixXd test_ray_emi_x_;
+  Eigen::MatrixXd test_ray_emi_ct_;
   std::vector<Eigen::MatrixXd> test_ray_obs_x_;
   std::vector<Eigen::MatrixXd> test_ray_obs_ct_;
+  Eigen::MatrixXd test_ray_boa_x_;
+  Eigen::MatrixXd test_ray_boa_ct_;
 
-  Eigen::VectorXd test_ray_zne_;
-  Eigen::VectorXd test_ray_ze_;
-  Eigen::MatrixXd test_ray_xg_;
-  Eigen::MatrixXd test_ray_ctg_;
-
-  double z_g_ = 0;
-  double nmo_g = 0;
-  double velocity_dct_g = 0;
-  double refraction_dx_g = 0;
-  double refraction_dct_g = 0;
 };
 #endif
 } } } // namespace calin::simulation::atmosphere
