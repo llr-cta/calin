@@ -196,6 +196,9 @@ public:
     unsigned ispline1, double& value1) const;
   void value(double x, unsigned ispline0, double& value0,
     unsigned ispline1, double& value1, unsigned ispline2, double& value2) const;
+  void value(double x,
+    unsigned ispline0, double& value0, unsigned ispline1, double& value1,
+    unsigned ispline2, double& value2, unsigned ispline3, double& value3) const;
   std::vector<double> value(double x) const;
 
   double derivative(double x, unsigned ispline) const;
