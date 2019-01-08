@@ -54,9 +54,20 @@ message LayeredRefractiveAtmosphereConfig {
 
   bool high_accuracy_mode                                  = 5 [
     (CFO).desc = "Enable high-accuracy mode. The effects of refraction in "
-      "impact position and time are calculated from a two-term expansion in "
-      "zenith angle. In normal mode the ratio of the two terms fixed for all "
-      "altitudes. In high-accuracy mode the two terms vary independently with "
-      "altitude. This increases accuracy but requires two extra spline "
-      "interpolations (one for position and one for time)." ];
+      "impact position and time are factored into two-term expansion in "
+      "zenith angle where the coefficients of the terms depend on emission "
+      "altitude. In normal mode the ratio of the two terms fixed for all "
+      "altitudes, and a single function (spline) is used for both the position "
+      "and time corrections. In high-accuracy mode separate elevation "
+      "functions are used for time and position, and the two terms vary "
+      "independently with altitude. This increases accuracy but requires three "
+      "extra spline interpolations." ];
+
+  double angular_model_optimization_altitude               = 6 [
+    (CFO).desc = "Altitude at which the second term of the angular dependence "
+      "in single-spline model is fitted to the impact points calculated "
+      "through ray tracing. A goof choice would be the altitude of shower "
+      "maximum. However a value of 28km seems to minimize residuals over all "
+      "altitudes.",
+    (CFO).units = "cm" ];
 };
