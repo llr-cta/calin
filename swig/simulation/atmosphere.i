@@ -38,6 +38,7 @@
 
 %import "math/spline_interpolation.i"
 %import "math/ray.i"
+%import "simulation/atmosphere.pb.i"
 
 %template (VectorAtmSlice) std::vector<calin::simulation::atmosphere::AtmSlice>;
 %template (VectorLayeredAtmosphereLevel) std::vector<calin::simulation::atmosphere::LayeredAtmosphereLevel>;
