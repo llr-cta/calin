@@ -34,6 +34,7 @@
 #include <math/special.hpp>
 #include <math/ray.hpp>
 #include <math/spline_interpolation.hpp>
+#include <simulation/atmosphere.pb.h>
 
 // Units:
 // Height, z:    cm
@@ -272,11 +273,14 @@ public:
   CALIN_TYPEALIAS(Level, LayeredAtmosphereLevel);
 
   LayeredRefractiveAtmosphere(const std::string& filename,
-    const std::vector<double>& obs_levels = {});
+    const std::vector<double>& obs_levels = {},
+    const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& config = default_config());
   LayeredRefractiveAtmosphere(const std::string& filename,
-    double obs_level);
+    double obs_level,
+    const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& config = default_config());
   LayeredRefractiveAtmosphere(const std::vector<Level>& levels,
-    const std::vector<double>& obs_levels = {});
+    const std::vector<double>& obs_levels = {},
+    const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& config = default_config());
 
   virtual ~LayeredRefractiveAtmosphere();
 
@@ -295,7 +299,7 @@ public:
   double z_for_thickness(double t) override;
   double top_of_atmosphere() override;
 
-  void propagate_ray_with_refraction(const calin::math::ray::Ray ray);
+  bool propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs=0);
 
   const std::vector<Level>& get_levels() const { return levels_; }
 
@@ -314,6 +318,11 @@ public:
   const Eigen::MatrixXd& test_ray_boa_x() { return test_ray_boa_x_; }
   const Eigen::MatrixXd& test_ray_boa_ct() { return test_ray_boa_ct_; }
 
+  const Eigen::MatrixXd& model_ray_obs_x(unsigned iobs) { return model_ray_obs_x_[iobs]; }
+  const Eigen::MatrixXd& model_ray_obs_ct(unsigned iobs) { return model_ray_obs_ct_[iobs]; }
+
+  static calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig default_config();
+
 private:
   void initialize();
 
@@ -321,6 +330,8 @@ private:
   calin::math::spline_interpolation::CubicMultiSpline* s_ = nullptr;
 
   std::vector<double> zobs_;
+  std::vector<double> nobs_inv_;
+  bool high_accuracy_mode_ = false;
 
   Eigen::VectorXd test_ray_emi_zn_;
   Eigen::VectorXd test_ray_emi_z_;
@@ -330,7 +341,8 @@ private:
   std::vector<Eigen::MatrixXd> test_ray_obs_ct_;
   Eigen::MatrixXd test_ray_boa_x_;
   Eigen::MatrixXd test_ray_boa_ct_;
-
+  std::vector<Eigen::MatrixXd> model_ray_obs_x_;
+  std::vector<Eigen::MatrixXd> model_ray_obs_ct_;
 };
 #endif
 } } } // namespace calin::simulation::atmosphere
