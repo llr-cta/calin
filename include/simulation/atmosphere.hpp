@@ -330,7 +330,15 @@ private:
   calin::math::spline_interpolation::CubicMultiSpline* s_ = nullptr;
 
   std::vector<double> zobs_;
-  std::vector<double> nobs_inv_;
+
+  struct ObsLevelData {
+    double z = 0.0;
+    double n_inv = 1.0;
+    double x_ba_ratio = 0.0;
+    double ct_ba_ratio = 0.0;
+  };
+
+  std::vector<ObsLevelData> obs_level_data_;
   bool high_accuracy_mode_ = false;
 
   Eigen::VectorXd test_ray_emi_zn_;

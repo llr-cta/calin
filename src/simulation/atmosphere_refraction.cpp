@@ -46,14 +46,14 @@ using namespace calin::math::special;
 
 namespace {
   inline void calculate_refraction_angular_terms(
-    double sin_i, double cos_i, double n_i, double n_r_inv,
+    double sin_i, double sec_i, double n_i_over_n_r,
     double& sin_r, double& cos_r,
     double& t1_x, double& t2_x, double& t1_ct, double& t2_ct)
   {
-    sin_r = sin_i * n_i * n_r_inv;
+    sin_r = sin_i * n_i_over_n_r;
     const double cos2_r = 1.0 - SQR(sin_r);
     cos_r = std::sqrt(cos2_r);
-    const double sec2_i = 1.0/SQR(cos_i);
+    const double sec2_i = SQR(sec_i);
 
     t1_x = sin_i * sec2_i / cos_r;
     t2_x = t1_x * SQR(sin_i) * sec2_i;
@@ -82,9 +82,9 @@ namespace {
       double t2_x;
       double t1_ct;
       double t2_ct;
-      calculate_refraction_angular_terms(sin_i, cos_i, n_i, n_r_inv,
-        cos_r, sin_r, t1_x, t2_x, t1_ct, t2_ct);
       double sec_i = 1.0/cos_i;
+      calculate_refraction_angular_terms(sin_i, sec_i, n_i * n_r_inv,
+        cos_r, sin_r, t1_x, t2_x, t1_ct, t2_ct);
 
       double mc_x = z_prop*sin_i*sec_i - x_obs(izn);
       M_x(0,0) += t1_x*t1_x;
@@ -190,6 +190,7 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
   //   | | | '_ \| | __| |/ _` | / __|/ _` | __| |/ _ \| '_ \
   //  _| |_| | | | | |_| | (_| | \__ \ (_| | |_| | (_) | | | |
   // |_____|_| |_|_|\__|_|\__,_|_|___/\__,_|\__|_|\___/|_| |_|
+  //
 
   // Calculate the effects of refraction by integrating the path of rays from
   // various levels in the atmosphere. We use a matrix of test rays that have
@@ -232,9 +233,11 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
         "Observation-level altitudes must be below top of the atmosphere");
     }
   }
-  nobs_inv_.resize(zobs_.size());
-  std::transform(zobs_.begin(), zobs_.end(), nobs_inv_.begin(),
-    [this](double z){return 1.0/(1.0+this->n_minus_one(z));});
+  obs_level_data_.resize(zobs_.size());
+  for(unsigned iobs=0; iobs<zobs_.size(); ++iobs) {
+    obs_level_data_[iobs].z = zobs_[iobs];
+    obs_level_data_[iobs].n_inv = 1.0/(1.0+this->n_minus_one(zobs_[iobs]));
+  }
 
   // Storage for results of integration at atmospheric and observation levels
   test_ray_emi_x_.resize(levels.size(),zn0.size());
@@ -357,6 +360,7 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
   //  \___ \| __/ _ \| '__/ _ \ |  _  // _ \/ __| | | | | __/ __|
   //  ____) | || (_) | | |  __/ | | \ \  __/\__ \ |_| | | |_\__ \
   // |_____/ \__\___/|_|  \___| |_|  \_\___||___/\__,_|_|\__|___/
+  //
 
   test_ray_emi_zn_ = calin::std_to_eigenvec(zn0);
   test_ray_emi_z_ = calin::std_to_eigenvec(s_->xknot());
@@ -474,6 +478,7 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
     //  \___ \| __/ _ \| '__/ _ \ | |\/| |/ _ \ / _` |/ _ \ | | |    / _ \ / _ \  _|  _/ __|
     //  ____) | || (_) | | |  __/ | |  | | (_) | (_| |  __/ | | |___| (_) |  __/ | | | \__ \
     // |_____/ \__\___/|_|  \___| |_|  |_|\___/ \__,_|\___|_|  \_____\___/ \___|_| |_| |___/
+    //
 
     s_->add_spline(v, "vertical ct correction (iobs=" + std::to_string(iobs) + ") [cm]");
     s_->add_spline(va_x, "refraction a_x coeff (iobs=" + std::to_string(iobs) + ") [cm]");
@@ -525,47 +530,62 @@ void LayeredRefractiveAtmosphere::cherenkov_parameters(double z,
 bool LayeredRefractiveAtmosphere::
 propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs)
 {
-  double dz = zobs_[iobs] - ray.z();
-  if(ray.uz()>=0 or dz>0)return false;
+  double dz = ray.z() - obs_level_data_[iobs].z;
 
-  double n0;
-  double dct_v;
-  double dct_r;
-  double dx_r;
+  const double cos_i = -ray.uz();
 
-  unsigned ispline = 4+iobs*3;
-  s_->value(ray.z(), 2, n0, ispline, dct_v, ispline+1, dct_r, ispline+2, dx_r);
-  n0 = std::exp(n0);
+  if(ray.uz()<=0 or dz<0)return false;
 
-  double sec_i = 1.0/ray.uz();
+  double n_i;
+  double v_ct;
+  double a_x;
+  double b_x;
+  double a_ct;
+  double b_ct;
+
+  unsigned ispline = 4+iobs*5;
+  if(high_accuracy_mode_) {
+    // 6 spline interpolations for all required data
+    s_->value(ray.z(),
+      /* 1 */ 2, n_i,
+      /* 2 */ ispline, v_ct,
+      /* 3 */ ispline+1, a_x,
+      /* 4 */ ispline+2, b_x,
+      /* 5 */ ispline+3, a_ct,
+      /* 6 */ ispline+4, b_ct);
+  } else {
+    s_->value(ray.z(),
+      /* 1 */ 2, n_i,
+      /* 2 */ ispline, v_ct,
+      /* 3 */ ispline+1, a_x);
+    b_x = obs_level_data_[iobs].x_ba_ratio * a_x;
+    a_ct = a_x;
+    b_ct = obs_level_data_[iobs].x_ba_ratio * a_ct;
+  }
+  n_i = std::exp(n_i);
+
+  const double n_r_inv = obs_level_data_[iobs].n_inv;
+  const double n_i_over_n_r = n_i * n_r_inv;
+
+  const double sec_i = 1.0/cos_i;
+  const double sin2_i = SQR(ray.ux()) + SQR(ray.uy());
+  const double sin_i = std::sqrt(sin2_i);
+
+  double sin_r;
+  double cos_r;
+  double t1_x;
+  double t2_x;
+  double t1_ct;
+  double t2_ct;
+
+  calculate_refraction_angular_terms(sin_i, sec_i, n_i_over_n_r,
+    sin_r, cos_r, t1_x, t2_x, t1_ct, t2_ct);
 
   ray.propagate_dist(dz*sec_i);
 
-  double sin2_i = SQR(ray.ux()) + SQR(ray.uy());
-  double ni_over_nr = n0 * nobs_inv_[iobs];
-  double sin2_r = sin2_i * SQR(ni_over_nr);
-  double cos_i = ray.uz();
-  double cos_r = -std::sqrt(1.0 - sin2_r);
-
-  ray.uz() = cos_r;
-  ray.ux() *= ni_over_nr;
-  ray.uy() *= ni_over_nr;
-
-  double sec2_i = SQR(sec_i);
-  double sin_i = std::sqrt(sin2_i);
-
-  // f3 = A*sin(zn1)/(cos(zn0)*cos(zn1)**2) + (1-A)*sin(zn1)**3/(cos(zn0)*cos(zn1)**4)
-
-  double t1 = sin_i * sec2_i / cos_r;
-  double t2 = t1 * sin2_i * sec2_i;
-
-  // f3 = A*sin(zn0)/(cos(zn0)**2*cos(zn1)) + (1-A)*sin(zn0)**3/(cos(zn0)**4*cos(zn1))
-
-
-  if(sin2_r > 0) {
-    double sin_r_inv = 1.0/std::sqrt(sin2_r);
-
-  }
+  ray.uz() = -cos_r;
+  ray.ux() *= n_i_over_n_r;
+  ray.uy() *= n_i_over_n_r;
 
   return true;
 }
