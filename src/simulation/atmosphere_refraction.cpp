@@ -105,10 +105,10 @@ namespace {
 
     if(use_fixed_ba_ratio) {
       a_x = (V_x(0) + ba_ratio_x * V_x(1)) /
-        (M_x(0,0)*M_x(0,0) + 2*ba_ratio_x*M_x(0,0)*M_x(1,0) + ba_ratio_x*ba_ratio_x*M_x(1,1)*M_x(1,1));
+        (M_x(0,0) + 2*ba_ratio_x*M_x(1,0) + ba_ratio_x*ba_ratio_x*M_x(1,1));
       b_x = a_x * ba_ratio_x;
       a_ct = (V_ct(0) + ba_ratio_ct * V_ct(1)) /
-        (M_ct(0,0)*M_ct(0,0) + 2*ba_ratio_ct*M_ct(0,0)*M_ct(1,0) + ba_ratio_ct*ba_ratio_ct*M_ct(1,1)*M_ct(1,1));
+        (M_ct(0,0) + 2*ba_ratio_ct*M_ct(1,0) + ba_ratio_ct*ba_ratio_ct*M_ct(1,1));
       b_ct = a_ct * ba_ratio_ct;
     } else {
       Eigen::Vector2d ab_x = M_x.colPivHouseholderQr().solve(V_x);
@@ -310,7 +310,9 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
       } else {
         z = zmin;
         dzstep = zold - z;
+#if 0
         std::cout << z*1e-5 << ' ' <<  dz << ' ' << nstep << '\n';
+#endif
       }
       double zmid = zold - 0.5*dzstep;
 
@@ -422,8 +424,8 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
     std::vector<double> va_ct(levels.size());
     std::vector<double> vb_ct(levels.size());
 
-    double ab_ratio_x = 0;
-    double ab_ratio_ct = 0;
+    double ba_ratio_x = 0;
+    double ba_ratio_ct = 0;
     if(!high_accuracy_mode_) {
       double dzmin = std::abs(levels[0].z - config.angular_model_optimization_altitude());
       unsigned ilevel = 0;
@@ -447,9 +449,12 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
         test_ray_obs_x_[iobs].row(ilevel), test_ray_obs_ct_[iobs].row(ilevel),
         a_x, b_x, a_ct, b_ct);
 
-      ab_ratio_x = b_x/a_x;
-      ab_ratio_ct = b_ct/a_ct;
+      ba_ratio_x = b_x/a_x;
+      ba_ratio_ct = b_ct/a_ct;
     }
+
+    obs_level_data_[iobs].x_ba_ratio = ba_ratio_x;
+    obs_level_data_[iobs].ct_ba_ratio = ba_ratio_ct;
 
     for(unsigned ilevel=0; ilevel<levels.size(); ilevel++) {
       const double z_i = levels[ilevel].z;
@@ -464,7 +469,7 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
       fit_refraction_angular_coefficients(z_i, z_r, n_i, n_r_inv, zn0,
         test_ray_obs_x_[iobs].row(ilevel), test_ray_obs_ct_[iobs].row(ilevel),
         a_x, b_x, a_ct, b_ct,
-        !high_accuracy_mode_, ab_ratio_x, ab_ratio_ct);
+        !high_accuracy_mode_, ba_ratio_x, ba_ratio_ct);
 
       va_x[ilevel] = a_x;
       vb_x[ilevel] = b_x;
@@ -532,9 +537,9 @@ propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs)
 {
   double dz = ray.z() - obs_level_data_[iobs].z;
 
-  const double cos_i = -ray.uz();
+  const double cos_i = -ray.uz(); // The code assumes theta_i is Zenith angle
 
-  if(ray.uz()<=0 or dz<0)return false;
+  if(cos_i<=0 or dz<0)return false;
 
   double n_i;
   double v_ct;
@@ -560,9 +565,9 @@ propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs)
       /* 3 */ ispline+1, a_x);
     b_x = obs_level_data_[iobs].x_ba_ratio * a_x;
     a_ct = a_x;
-    b_ct = obs_level_data_[iobs].x_ba_ratio * a_ct;
+    b_ct = obs_level_data_[iobs].ct_ba_ratio * a_ct;
   }
-  n_i = std::exp(n_i);
+  n_i = 1.0 + std::exp(n_i);
 
   const double n_r_inv = obs_level_data_[iobs].n_inv;
   const double n_i_over_n_r = n_i * n_r_inv;
@@ -583,9 +588,27 @@ propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs)
 
   ray.propagate_dist(dz*sec_i);
 
+  // Bend direction for Snell's law
   ray.uz() = -cos_r;
   ray.ux() *= n_i_over_n_r;
   ray.uy() *= n_i_over_n_r;
+
+  if(std::abs(sin_r) > 0)
+  {
+    const double dx = a_x * t1_x + b_x * t2_x;
+    const double dx_csc_r = dx / std::abs(sin_r);
+    ray.x() -= dx_csc_r * ray.ux();
+    ray.y() -= dx_csc_r * ray.uy();
+  }
+
+  ray.ct() += v_ct * sec_i - (a_ct * t1_ct + b_ct * t2_ct);
+
+#if 0
+  std::cout << v_ct << ' ' << a_x << ' ' << b_x << ' ' << a_ct << ' ' << b_ct << '\n';
+  std::cout << t1_x << ' ' << t2_x << ' ' << t1_ct << ' ' << t2_ct << '\n';
+  std::cout << sin_i << ' ' << cos_i << ' ' << SQR(sin_i)+SQR(cos_i) << ' '
+    << sin_r << ' ' << cos_r << ' ' << SQR(sin_r)+SQR(cos_r) << '\n';
+#endif
 
   return true;
 }
