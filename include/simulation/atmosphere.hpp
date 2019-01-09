@@ -299,7 +299,8 @@ public:
   double z_for_thickness(double t) override;
   double top_of_atmosphere() override;
 
-  bool propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs=0);
+  bool propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs=0,
+    bool time_reversal_ok=true);
 
   const std::vector<Level>& get_levels() const { return levels_; }
 
@@ -336,6 +337,7 @@ private:
     double n_inv = 1.0;
     double x_ba_ratio = 0.0;
     double ct_ba_ratio = 0.0;
+    double ct_x_ratio = 0.0;
   };
 
   std::vector<ObsLevelData> obs_level_data_;

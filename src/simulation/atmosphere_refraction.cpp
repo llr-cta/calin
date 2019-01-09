@@ -426,6 +426,7 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
 
     double ba_ratio_x = 0;
     double ba_ratio_ct = 0;
+    double ct_x_ratio = 1;
     if(!high_accuracy_mode_) {
       double dzmin = std::abs(levels[0].z - config.angular_model_optimization_altitude());
       unsigned ilevel = 0;
@@ -451,10 +452,12 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
 
       ba_ratio_x = b_x/a_x;
       ba_ratio_ct = b_ct/a_ct;
+      ct_x_ratio = a_ct/a_x;
     }
 
     obs_level_data_[iobs].x_ba_ratio = ba_ratio_x;
     obs_level_data_[iobs].ct_ba_ratio = ba_ratio_ct;
+    obs_level_data_[iobs].ct_x_ratio = ct_x_ratio;
 
     for(unsigned ilevel=0; ilevel<levels.size(); ilevel++) {
       const double z_i = levels[ilevel].z;
@@ -490,6 +493,30 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
     s_->add_spline(vb_x, "refraction b_x coeff (iobs=" + std::to_string(iobs) + ") [cm]");
     s_->add_spline(va_ct, "refraction a_ct coeff (iobs=" + std::to_string(iobs) + ") [cm]");
     s_->add_spline(vb_ct, "refraction b_ct coeff (iobs=" + std::to_string(iobs) + ") [cm]");
+  }
+
+  //  ______          _             _         __  __           _      _
+  // |  ____|        | |           | |       |  \/  |         | |    | |
+  // | |____   ____ _| |_   _  __ _| |_ ___  | \  / | ___   __| | ___| |
+  // |  __\ \ / / _` | | | | |/ _` | __/ _ \ | |\/| |/ _ \ / _` |/ _ \ |
+  // | |___\ V / (_| | | |_| | (_| | ||  __/ | |  | | (_) | (_| |  __/ |
+  // |______\_/ \__,_|_|\__,_|\__,_|\__\___| |_|  |_|\___/ \__,_|\___|_|
+  //
+
+  model_ray_obs_x_.resize(zobs_.size(), { levels.size(),zn0.size() });
+  model_ray_obs_ct_.resize(zobs_.size(), { levels.size(),zn0.size() });
+
+  for(unsigned iobs=0; iobs<zobs_.size(); iobs++) {
+    for(unsigned ilevel=0; ilevel<levels.size(); ilevel++) {
+      for(unsigned iangle = 0; iangle<zn0.size(); iangle++) {
+        calin::math::ray::Ray ray;
+        ray.position() = { 0, 0, levels[ilevel].z };
+        ray.direction() = { sin(zn0[iangle]), 0, -cos(zn0[iangle]) };
+        this->propagate_ray_with_refraction(ray, iobs, true);
+        model_ray_obs_x_[iobs](ilevel,iangle) = ray.x();
+        model_ray_obs_ct_[iobs](ilevel,iangle) = ray.ct();
+      }
+    }
   }
 }
 
@@ -533,13 +560,14 @@ void LayeredRefractiveAtmosphere::cherenkov_parameters(double z,
 }
 
 bool LayeredRefractiveAtmosphere::
-propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs)
+propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs,
+  bool time_reversal_ok)
 {
   double dz = ray.z() - obs_level_data_[iobs].z;
 
   const double cos_i = -ray.uz(); // The code assumes theta_i is Zenith angle
 
-  if(cos_i<=0 or dz<0)return false;
+  if(cos_i<=0 or (dz<0 and not time_reversal_ok))return false;
 
   double n_i;
   double v_ct;
@@ -564,7 +592,7 @@ propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs)
       /* 2 */ ispline, v_ct,
       /* 3 */ ispline+1, a_x);
     b_x = obs_level_data_[iobs].x_ba_ratio * a_x;
-    a_ct = a_x;
+    a_ct = obs_level_data_[iobs].ct_x_ratio * a_x;
     b_ct = obs_level_data_[iobs].ct_ba_ratio * a_ct;
   }
   n_i = 1.0 + std::exp(n_i);
