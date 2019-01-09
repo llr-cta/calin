@@ -284,8 +284,6 @@ scaleEffFromFile(const std::string& filename)
   eff_fn.insert_from_2column_file_with_filter(filename,
     [](double& lambda_in_e_out, double& eff) {
       lambda_in_e_out = EV_NM / lambda_in_e_out; return true; });
-  calin::provenance::chronicle::register_file_open(filename,
-    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   scaleEff(eff_fn);
 }
 
@@ -294,11 +292,13 @@ scaleEffFromOldStyleFile(const std::string& filename,
 		 double lambda0_nm, double dlambda_nm)
 {
   std::ifstream stream(filename.c_str());
-  calin::provenance::chronicle::register_file_open(filename,
+  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   InterpLinear1D eff_fn;
   std::string line;
   std::getline(stream,line); // skip first line
+  line += '\n';
+  file_record->set_comment(line);
   double lambda = lambda0_nm;
   double eff;
   stream >> eff;
@@ -310,6 +310,7 @@ scaleEffFromOldStyleFile(const std::string& filename,
     stream >> eff;
   }
   scaleEff(eff_fn);
+  calin::provenance::chronicle::register_file_close(file_record);
 }
 
 // ----------------------------------------------------------------------------
