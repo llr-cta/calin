@@ -33,41 +33,41 @@ using namespace calin::util::log;
 using namespace calin::simulation::iact_array_tracker;
 using calin::math::special::SQR;
 
-IACTDetectorSphereHitProcessor::~IACTDetectorSphereHitProcessor()
+IACTDetectorSphereCherenkovConeIntersectionProcessor::~IACTDetectorSphereCherenkovConeIntersectionProcessor()
 {
   // nothing to see here
 }
 
-HitIACTVisitor::~HitIACTVisitor()
+IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor::~IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor()
 {
   // nothing to see here
 }
 
-void HitIACTVisitor::visit_event(const calin::simulation::tracker::Event& event,
+void IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor::visit_event(const calin::simulation::tracker::Event& event,
   bool& kill_event)
 {
   // nothing to see here
 }
 
-void HitIACTVisitor::visit_cherenkov_track(
+void IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor::visit_cherenkov_track(
   const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
   bool& kill_track)
 {
   // nothing to see here
 }
 
-void HitIACTVisitor::leave_cherenkov_track()
+void IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor::leave_cherenkov_track()
 {
   // nothing to see here
 }
 
-void HitIACTVisitor::leave_event()
+void IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor::leave_event()
 {
   // nothing to see here
 }
 
-IACTDetectorSphereAirCherenkovTrackVisitor::
-IACTDetectorSphereAirCherenkovTrackVisitor(HitIACTVisitor* visitor,
+IACTDetectorSphereCherenkovConeIntersectionFinder::
+IACTDetectorSphereCherenkovConeIntersectionFinder(IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor* visitor,
     bool adopt_visitor):
   calin::simulation::air_cherenkov_tracker::AirCherenkovTrackVisitor(),
   visitor_(visitor), adopt_visitor_(adopt_visitor),
@@ -81,20 +81,20 @@ IACTDetectorSphereAirCherenkovTrackVisitor(HitIACTVisitor* visitor,
 #endif
 }
 
-IACTDetectorSphereAirCherenkovTrackVisitor::
-~IACTDetectorSphereAirCherenkovTrackVisitor()
+IACTDetectorSphereCherenkovConeIntersectionFinder::
+~IACTDetectorSphereCherenkovConeIntersectionFinder()
 {
   for(auto& isphere : spheres_)delete isphere.processor;
   if(adopt_visitor_)delete visitor_;
 }
 
-void IACTDetectorSphereAirCherenkovTrackVisitor::
+void IACTDetectorSphereCherenkovConeIntersectionFinder::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
   visitor_->visit_event(event, kill_event);
 }
 
-void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
+void IACTDetectorSphereCherenkovConeIntersectionFinder::visit_cherenkov_track(
   const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& CT,
   bool& kill_track)
 {
@@ -105,7 +105,7 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
   {
     // Author's note : see Calin notebook for sphere / cone intersection
 
-    IACTDetectorSphereHit hit;
+    IACTDetectorSphereCherenkovConeIntersection hit;
     hit.x0                = CT.x_mid;
     hit.rx                = isphere.r0 - CT.x_mid;
     hit.u                 = CT.dx_hat;
@@ -198,7 +198,7 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
   visitor_->leave_cherenkov_track();
 }
 
-void IACTDetectorSphereAirCherenkovTrackVisitor::leave_event()
+void IACTDetectorSphereCherenkovConeIntersectionFinder::leave_event()
 {
   visitor_->leave_event();
 }

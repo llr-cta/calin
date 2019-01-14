@@ -154,6 +154,11 @@ CherenkovPhotonVisitor::~CherenkovPhotonVisitor()
   // nothing to see here
 }
 
+void CherenkovPhotonVisitor::set_bandpass(double epsilon0, double bandwidth, bool do_color_photons)
+{
+  // nothing to see here
+}
+
 void CherenkovPhotonVisitor::visit_event(const Event& event, bool& kill_event)
 {
   // nothing to see here

@@ -587,6 +587,7 @@ propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs,
       /* 5 */ ispline+3, a_ct,
       /* 6 */ ispline+4, b_ct);
   } else {
+    // 3 spline interpolations for n, vertical ct and horizontal x corrections
     s_->value(ray.z(),
       /* 1 */ 2, n_i,
       /* 2 */ ispline, v_ct,

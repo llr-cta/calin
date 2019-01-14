@@ -34,59 +34,59 @@ using namespace calin::util::log;
 using calin::math::special::SQR;
 using calin::simulation::iact_array_tracker::IACTDetectorSphere;
 
-QuadratureIACTArrayPEProcessor::~QuadratureIACTArrayPEProcessor()
+IACTArrayFocalPlaneHitProcessor::~IACTArrayFocalPlaneHitProcessor()
 {
   // nothing to see here
 }
 
-void QuadratureIACTArrayPEProcessor::visit_event(
+void IACTArrayFocalPlaneHitProcessor::visit_event(
   const calin::simulation::tracker::Event& event,
   bool& kill_event)
 {
   // nothing to see here
 }
 
-void QuadratureIACTArrayPEProcessor::visit_cherenkov_track(
+void IACTArrayFocalPlaneHitProcessor::visit_cherenkov_track(
   const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
   bool& kill_track)
 {
   // nothing to see here
 }
 
-void QuadratureIACTArrayPEProcessor::process_pe(unsigned scope_id,
+void IACTArrayFocalPlaneHitProcessor::process_focal_plane_hit(unsigned scope_id,
   unsigned pixel_id, double x, double y, double t0, double pe_weight)
 {
   // nothing to see here
 }
 
-void QuadratureIACTArrayPEProcessor::leave_cherenkov_track()
+void IACTArrayFocalPlaneHitProcessor::leave_cherenkov_track()
 {
   // nothing to see here
 }
 
-void QuadratureIACTArrayPEProcessor::leave_event()
+void IACTArrayFocalPlaneHitProcessor::leave_event()
 {
   // nothing to see here
 }
 
 
-QuadratureIACTDetectorSphereHitProcessor::
-QuadratureIACTDetectorSphereHitProcessor(
+QuadratureIACTDetectorSphereCherenkovConeIntersectionProcessor::
+QuadratureIACTDetectorSphereCherenkovConeIntersectionProcessor(
     QuadratureIACTArrayIntegrationHitVisitor* quadrature, unsigned scope_id):
-  calin::simulation::iact_array_tracker::IACTDetectorSphereHitProcessor(),
+  calin::simulation::iact_array_tracker::IACTDetectorSphereCherenkovConeIntersectionProcessor(),
   quadrature_(quadrature), scope_id_(scope_id)
 {
   // nothing to see here
 }
 
-QuadratureIACTDetectorSphereHitProcessor::
-~QuadratureIACTDetectorSphereHitProcessor()
+QuadratureIACTDetectorSphereCherenkovConeIntersectionProcessor::
+~QuadratureIACTDetectorSphereCherenkovConeIntersectionProcessor()
 {
   // nothing to see here
 }
 
-void QuadratureIACTDetectorSphereHitProcessor::process_hit(
-  const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit)
+void QuadratureIACTDetectorSphereCherenkovConeIntersectionProcessor::process_hit(
+  const calin::simulation::iact_array_tracker::IACTDetectorSphereCherenkovConeIntersection& hit)
 {
   quadrature_->process_hit_sphere(hit, scope_id_);
 }
@@ -96,7 +96,7 @@ QuadratureIACTArrayIntegrationHitVisitor(
     const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
     calin::simulation::ray_processor::RayProcessor* visitor,
     bool adopt_visitor):
-  calin::simulation::iact_array_tracker::HitIACTVisitor(),
+  calin::simulation::iact_array_tracker::IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor(),
   ray_spacing_linear_(config.ray_spacing_linear()),
   ray_spacing_angular_(config.ray_spacing_angular() / 180.0 * M_PI),
   visitor_(visitor), adopt_visitor_(adopt_visitor)
@@ -118,7 +118,7 @@ QuadratureIACTArrayIntegrationHitVisitor::spheres()
   unsigned scope_id = 0;
   for(auto isphere : ray_processor_spheres) {
     s.emplace_back(isphere.r0, isphere.radius_sq,
-      new QuadratureIACTDetectorSphereHitProcessor(this, scope_id++));
+      new QuadratureIACTDetectorSphereCherenkovConeIntersectionProcessor(this, scope_id++));
   }
   return s;
 }
@@ -135,7 +135,7 @@ void QuadratureIACTArrayIntegrationHitVisitor::leave_event()
 }
 
 void QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
-  const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
+  const calin::simulation::iact_array_tracker::IACTDetectorSphereCherenkovConeIntersection& hit,
   unsigned scope_id, double cos_phi, double sin_phi, double weight)
 {
   Eigen::Vector3d p_hat = hit.rot *
@@ -150,7 +150,7 @@ void QuadratureIACTArrayIntegrationHitVisitor::process_test_ray(
 }
 
 void QuadratureIACTArrayIntegrationHitVisitor::process_hit_sphere(
-  const calin::simulation::iact_array_tracker::IACTDetectorSphereHit& hit,
+  const calin::simulation::iact_array_tracker::IACTDetectorSphereCherenkovConeIntersection& hit,
   unsigned scope_id)
 {
   double dphi = std::numeric_limits<double>::infinity();

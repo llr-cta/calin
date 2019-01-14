@@ -126,6 +126,7 @@ class CherenkovPhotonVisitor
 {
 public:
   virtual ~CherenkovPhotonVisitor();
+  virtual void set_bandpass(double epsilon0, double bandwidth, bool do_color_photons);
   virtual void visit_event(const Event& event, bool& kill_event);
   virtual void visit_cherenkov_photon(const CherenkovPhoton& cherenkov_photon);
   virtual void leave_event();

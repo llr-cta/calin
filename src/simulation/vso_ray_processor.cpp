@@ -76,10 +76,10 @@ process_traced_ray(unsigned scope_id,
 {
   if(not trace.rayHitFocalPlane())return;
   if(trace.pixel != nullptr) {
-    visitor_->process_pe(scope_id, trace.pixel->id(),
+    visitor_->process_focal_plane_hit(scope_id, trace.pixel->id(),
       trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
   } else {
-    visitor_->process_pe(scope_id, -1,
+    visitor_->process_focal_plane_hit(scope_id, -1,
       trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
   }
 }

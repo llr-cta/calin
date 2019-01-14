@@ -90,11 +90,11 @@ void FederatedPEProcessor::start_processing()
   if(scope_id_base_ == 0)pe_processor_->start_processing();
 }
 
-void FederatedPEProcessor::process_pe(unsigned scope_id, int pixel_id,
+void FederatedPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
   double x, double y, double t0, double pe_weight)
 {
   pe_processor_->
-    process_pe(scope_id+scope_id_base_, pixel_id, x, y, t0, pe_weight);
+    process_focal_plane_hit(scope_id+scope_id_base_, pixel_id, x, y, t0, pe_weight);
 }
 
 void FederatedPEProcessor::finish_processing()
