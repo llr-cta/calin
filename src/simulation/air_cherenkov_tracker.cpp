@@ -183,6 +183,7 @@ MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
   epsilon0_(epsilon0), bandwidth_(bandwidth), do_color_photons_(do_color_photons),
   rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)), adopt_rng_(rng ? adopt_rng : true)
 {
+  visitor->set_bandpass(epsilon0, bandwidth, do_color_photons);
   dX_emission_ = rng_->exponential();
 }
 

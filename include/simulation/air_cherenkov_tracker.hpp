@@ -140,10 +140,10 @@ public:
     calin::math::rng::RNG* rng = nullptr,
     bool adopt_visitor = false, bool adopt_rng = false);
   virtual ~MCCherenkovPhotonGenerator();
-  virtual void visit_event(const Event& event, bool& kill_event);
-  virtual void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
-    bool& kill_track);
-  virtual void leave_event();
+  void visit_event(const Event& event, bool& kill_event) override;
+  void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
+    bool& kill_track) override;
+  void leave_event() override;
 private:
   CherenkovPhotonVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
