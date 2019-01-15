@@ -29,6 +29,7 @@
 
 #include"Eigen/Core"
 
+#include"math/ray.hpp"
 #include"simulation/air_cherenkov_tracker.hpp"
 
 namespace calin { namespace simulation { namespace iact_array_tracker {
@@ -61,12 +62,13 @@ public:
 struct IACTDetectorSphere
 {
   IACTDetectorSphere(const Eigen::Vector3d& r0_, double radius_sq_,
-    IACTDetectorSphereCherenkovConeIntersectionProcessor* processor_):
-      r0(r0_), radius_sq(radius_sq_), processor(processor_) {
+    IACTDetectorSphereCherenkovConeIntersectionProcessor* processor_, unsigned iobs_ = 0):
+      r0(r0_), radius_sq(radius_sq_), iobs(iobs_), cone_processor(processor_) {
     /* nothing to see here */ }
   Eigen::Vector3d r0;                        // Center of detector sphere [cm]
   double radius_sq;                          // Squared radius of sphere  [cm^2]
-  IACTDetectorSphereCherenkovConeIntersectionProcessor* processor; // Hit processor for this detector
+  unsigned iobs;                             // Observation level at detector sphere
+  IACTDetectorSphereCherenkovConeIntersectionProcessor* cone_processor; // Hit processor for this detector
 };
 
 class IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor
@@ -101,28 +103,5 @@ private:
   bool adopt_visitor_;
   std::vector<IACTDetectorSphere> spheres_;
 };
-
-struct IACTDetectorSphereCherenkovPhotonIntersection
-{
-  const calin::simulation::air_cherenkov_tracker::CherenkovPhoton* cherenkov_photon_emitted;
-  const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack* cherenkov_track;
-};
-
-#if 0
-class IACTDetectorSphereCherenkovIntersectionFinder:
-  public calin::simulation::air_cherenkov_tracker::CherenkovPhotonVisitor
-{
-public:
-  IACTDetectorSphereCherenkovIntersectionFinder(
-    calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm);
-  virtual ~IACTDetectorSphereCherenkovIntersectionFinder();
-  void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
-  void visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::CherenkovPhoton& cherenkov_photon) override;
-  void leave_event() override;
-private:
-  calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm_;
-  calin::simulation::detector_efficiency::ACTEffectiveBandwidth bw_;
-};
-#endif
 
 } } } // namespace calin::simulation::iact_array_tracker

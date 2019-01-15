@@ -84,7 +84,9 @@ IACTDetectorSphereCherenkovConeIntersectionFinder(IACTDetectorSpherePotentialChe
 IACTDetectorSphereCherenkovConeIntersectionFinder::
 ~IACTDetectorSphereCherenkovConeIntersectionFinder()
 {
-  for(auto& isphere : spheres_)delete isphere.processor;
+  for(auto& isphere : spheres_) {
+    delete isphere.cone_processor;
+  }
   if(adopt_visitor_)delete visitor_;
 }
 
@@ -149,7 +151,7 @@ void IACTDetectorSphereCherenkovConeIntersectionFinder::visit_cherenkov_track(
         << hit.w.transpose() << "] " << rx2_minus_r2
         << '\n';
   #endif
-      isphere.processor->process_hit(hit);
+      isphere.cone_processor->process_hit(hit);
       continue;
     }
 
@@ -190,7 +192,7 @@ void IACTDetectorSphereCherenkovConeIntersectionFinder::visit_cherenkov_track(
         hit.phimax        = std::acos(cos_phimax);
       }
       hit.cherenkov_track = &CT;
-      isphere.processor->process_hit(hit);
+      isphere.cone_processor->process_hit(hit);
       continue;
     }
   }

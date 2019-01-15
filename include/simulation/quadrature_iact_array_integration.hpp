@@ -30,46 +30,31 @@
 
 namespace calin { namespace simulation { namespace quadrature_iact_array_integration {
 
-class IACTArrayFocalPlaneHitProcessor
-{
-public:
-  virtual ~IACTArrayFocalPlaneHitProcessor();
-  virtual void visit_event(const calin::simulation::tracker::Event& event,
-    bool& kill_event);
-  virtual void visit_cherenkov_track(
-    const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
-    bool& kill_track);
-  virtual void process_focal_plane_hit(unsigned scope_id, unsigned pixel_id,
-    double x, double y, double t0, double pe_weight);
-  virtual void leave_cherenkov_track();
-  virtual void leave_event();
-};
-
-class QuadratureIACTArrayIntegrationHitVisitor;
+class QuadratureIACTArrayIntegration;
 
 class QuadratureIACTDetectorSphereCherenkovConeIntersectionProcessor:
   public calin::simulation::iact_array_tracker::IACTDetectorSphereCherenkovConeIntersectionProcessor
 {
 public:
   QuadratureIACTDetectorSphereCherenkovConeIntersectionProcessor(
-    QuadratureIACTArrayIntegrationHitVisitor* quadrature, unsigned scope_id);
+    QuadratureIACTArrayIntegration* quadrature, unsigned scope_id);
   virtual ~QuadratureIACTDetectorSphereCherenkovConeIntersectionProcessor();
   virtual void process_hit(
     const calin::simulation::iact_array_tracker::IACTDetectorSphereCherenkovConeIntersection& hit);
 private:
-  QuadratureIACTArrayIntegrationHitVisitor* quadrature_ = nullptr;
+  QuadratureIACTArrayIntegration* quadrature_ = nullptr;
   unsigned scope_id_ = 0;
 };
 
-class QuadratureIACTArrayIntegrationHitVisitor:
+class QuadratureIACTArrayIntegration:
   public calin::simulation::iact_array_tracker::IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor
 {
 public:
-  QuadratureIACTArrayIntegrationHitVisitor(
+  QuadratureIACTArrayIntegration(
     const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
     calin::simulation::ray_processor::RayProcessor* visitor,
     bool adopt_visitor = false);
-  ~QuadratureIACTArrayIntegrationHitVisitor();
+  ~QuadratureIACTArrayIntegration();
 
   std::vector<calin::simulation::iact_array_tracker::IACTDetectorSphere> spheres() override;
   void visit_event(const calin::simulation::tracker::Event& event,
