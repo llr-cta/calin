@@ -204,3 +204,51 @@ void IACTDetectorSphereCherenkovConeIntersectionFinder::leave_event()
 {
   visitor_->leave_event();
 }
+
+IACTDetectorSphereCherenkovPhotonIntersectionFinder::
+IACTDetectorSphereCherenkovPhotonIntersectionFinder(
+    calin::simulation::ray_processor::RayProcessor* visitor,
+    calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    bool adopt_visitor, bool adopt_atm):
+  CherenkovPhotonVisitor(),
+  visitor_(visitor), adopt_visitor_(adopt_visitor),
+  atm_(atm), adopt_atm_(adopt_atm)
+{
+  // nothing to see here
+}
+
+IACTDetectorSphereCherenkovPhotonIntersectionFinder::
+~IACTDetectorSphereCherenkovPhotonIntersectionFinder()
+{
+  if(adopt_visitor_)delete visitor_;
+  if(adopt_atm_)delete atm_;
+}
+
+void IACTDetectorSphereCherenkovPhotonIntersectionFinder::
+set_bandpass(double epsilon0, double bandwidth, bool do_color_photons)
+{
+
+}
+
+void IACTDetectorSphereCherenkovPhotonIntersectionFinder::
+visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
+{
+  visitor_->start_processing();
+}
+
+void IACTDetectorSphereCherenkovPhotonIntersectionFinder::
+visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::CherenkovPhoton& cherenkov_photon)
+{
+  calin::math::ray::Ray ray(cherenkov_photon.x0, cherenkov_photon.u0,
+    cherenkov_photon.t0, cherenkov_photon.epsilon);
+
+#if 0
+  visitor_->process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
+    double pe_weight);
+#endif
+}
+
+void IACTDetectorSphereCherenkovPhotonIntersectionFinder::leave_event()
+{
+  visitor_->finish_processing();
+}

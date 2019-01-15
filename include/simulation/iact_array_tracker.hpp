@@ -30,6 +30,7 @@
 #include"Eigen/Core"
 
 #include"math/ray.hpp"
+#include"simulation/ray_processor.hpp"
 #include"simulation/air_cherenkov_tracker.hpp"
 
 namespace calin { namespace simulation { namespace iact_array_tracker {
@@ -103,5 +104,30 @@ private:
   bool adopt_visitor_;
   std::vector<IACTDetectorSphere> spheres_;
 };
+
+class IACTDetectorSphereCherenkovPhotonIntersectionFinder:
+  public calin::simulation::air_cherenkov_tracker::CherenkovPhotonVisitor
+{
+public:
+  IACTDetectorSphereCherenkovPhotonIntersectionFinder(
+    //const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
+    calin::simulation::ray_processor::RayProcessor* visitor,
+    calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    bool adopt_visitor = false, bool adopt_atm = false);
+  virtual ~IACTDetectorSphereCherenkovPhotonIntersectionFinder();
+
+  void set_bandpass(double epsilon0, double bandwidth, bool do_color_photons) override;
+  void visit_event(
+    const calin::simulation::tracker::Event& event, bool& kill_event) override;
+  void visit_cherenkov_photon(
+    const calin::simulation::air_cherenkov_tracker::CherenkovPhoton& cherenkov_photon) override;
+  void leave_event() override;
+private:
+  calin::simulation::ray_processor::RayProcessor* visitor_ = nullptr;
+  bool adopt_visitor_ = false;
+  calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm_ = nullptr;
+  bool adopt_atm_ = false;
+};
+
 
 } } } // namespace calin::simulation::iact_array_tracker
