@@ -241,11 +241,22 @@ visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::Cherenkov
 {
   calin::math::ray::Ray ray(cherenkov_photon.x0, cherenkov_photon.u0,
     cherenkov_photon.t0, cherenkov_photon.epsilon);
-
-#if 0
-  visitor_->process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
-    double pe_weight);
-#endif
+  double ct0 = ray.ct();
+  unsigned scope_id = 0;
+  for(auto& isphere : visitor_->detector_spheres()) {
+    Eigen::Vector3d dx = cherenkov_photon.x0 - isphere.r0;
+    double u0_dot_dx = cherenkov_photon.u0.dot(dx);
+    double dr2 = dx.squaredNorm() - u0_dot_dx*u0_dot_dx;
+    if(dr2 < SQR(isphere.radius + refraction_safety_margin_)) {
+      // we have a potential hit !
+      if(do_refraction_) {
+        atm_->propagate_ray_with_refraction(ray, isphere.iobs, /* time_reversal_ok = */ false);
+        ray.propagate_dist(ct0 - ray.ct());
+      }
+      visitor_->process_ray(scope_id, ray, /* pe_weight = */ 1.0);
+    }
+    ++scope_id;
+  }
 }
 
 void IACTDetectorSphereCherenkovPhotonIntersectionFinder::leave_event()

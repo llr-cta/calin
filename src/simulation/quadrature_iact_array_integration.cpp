@@ -81,7 +81,7 @@ QuadratureIACTArrayIntegration::spheres()
   std::vector<calin::simulation::iact_array_tracker::IACTDetectorSphere> s;
   unsigned scope_id = 0;
   for(auto isphere : ray_processor_spheres) {
-    s.emplace_back(isphere.r0, isphere.radius_sq,
+    s.emplace_back(isphere.r0, SQR(isphere.radius),
       new QuadratureIACTDetectorSphereCherenkovConeIntersectionProcessor(this, scope_id++));
   }
   return s;

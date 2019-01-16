@@ -127,6 +127,9 @@ private:
   bool adopt_visitor_ = false;
   calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm_ = nullptr;
   bool adopt_atm_ = false;
+  double do_refraction_ = false;
+  double refraction_safety_margin_ = 0;
+
 };
 
 

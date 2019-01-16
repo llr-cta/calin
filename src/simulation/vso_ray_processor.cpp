@@ -170,7 +170,7 @@ VSORayProcessor::detector_spheres()
     auto* scope = array_->telescope(iscope);
     Eigen::Vector3d sphere_center = scope->reflectorIPCenter();
     scope->reflectorToGlobal_pos(sphere_center);
-    s.emplace_back(sphere_center, SQR(0.5*scope->reflectorIP()));
+    s.emplace_back(sphere_center, 0.5*scope->reflectorIP());
   }
   return s;
 }
