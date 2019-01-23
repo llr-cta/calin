@@ -777,7 +777,12 @@ VSOTelescope::convert_to_telescope_layout(
     auto* ch = c->add_channel();
     ch->set_channel_index(ipix->id());
     ch->set_pixel_index(ipix->id());
+    ch->set_pixel_spiral_index(ipix->id());
     ch->set_pixel_grid_index(ipix->hexID());
+
+    c->add_pixel_channel_index(ipix->id());
+    c->add_pixel_spiral_channel_index(ipix->id());
+
     ch->set_channel_set_index(0);
     ch->set_module_index(-1);
     ch->set_module_channel_index(-1);
@@ -789,9 +794,11 @@ VSOTelescope::convert_to_telescope_layout(
     ch->set_diameter(fPixelSpacing);
     ch->set_geometric_area(grid.cell_area(ipix->hexID()));
     auto nbr = grid.gridid_to_neighbour_gridids(ipix->hexID());
+    ch->set_is_boundary_pixel(false);
     for(auto inbr : nbr) {
       const VSOPixel* npix = this->pixelByHexID(inbr);
       if(npix)ch->add_neighbour_channel_indexes(npix->id());
+      else ch->set_is_boundary_pixel(true);
     }
     Eigen::VectorXd xv;
     Eigen::VectorXd yv;
@@ -800,7 +807,14 @@ VSOTelescope::convert_to_telescope_layout(
       ch->add_outline_polygon_vertex_x(xv(i));
     for(unsigned i=0; i<yv.size(); i++)
       ch->add_outline_polygon_vertex_y(yv(i));
+    ch->add_outline_polygon_vertex_index(xv.size());
+
+    if(ch->is_boundary_pixel()) {
+      c->add_boundary_pixel_channel_index(ipix->id());
+    }
   }
+
+  calin::iact_data::instrument_layout::compute_camera_and_module_outlines(c);
 
   return d;
 }
