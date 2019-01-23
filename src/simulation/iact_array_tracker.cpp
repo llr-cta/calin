@@ -241,7 +241,6 @@ visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::Cherenkov
 {
   calin::math::ray::Ray ray(cherenkov_photon.x0, cherenkov_photon.u0,
     cherenkov_photon.t0, cherenkov_photon.epsilon);
-  double ct0 = ray.ct();
   unsigned scope_id = 0;
   for(auto& isphere : visitor_->detector_spheres()) {
     Eigen::Vector3d dx = cherenkov_photon.x0 - isphere.r0;
@@ -250,8 +249,12 @@ visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::Cherenkov
     if(dr2 < SQR(isphere.radius + refraction_safety_margin_)) {
       // we have a potential hit !
       if(do_refraction_) {
+        // Here we propagate to the observation plane associated with the
+        // detector sphere then refract the ray then bac-propagate to the
+        // height of the photon emission so absoption can be calculated later
         atm_->propagate_ray_with_refraction(ray, isphere.iobs, /* time_reversal_ok = */ false);
-        ray.propagate_dist(ct0 - ray.ct());
+        double reverse_propagate_dist = (cherenkov_photon.x0.z() - ray.z())/ray.uz();
+        ray.propagate_dist(reverse_propagate_dist);
       }
       visitor_->process_ray(scope_id, ray, /* pe_weight = */ 1.0);
     }
