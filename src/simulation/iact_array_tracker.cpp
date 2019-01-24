@@ -227,7 +227,7 @@ IACTDetectorSphereCherenkovPhotonIntersectionFinder::
 void IACTDetectorSphereCherenkovPhotonIntersectionFinder::
 set_bandpass(double epsilon0, double bandwidth, bool do_color_photons)
 {
-
+  // nothing to see here
 }
 
 void IACTDetectorSphereCherenkovPhotonIntersectionFinder::
