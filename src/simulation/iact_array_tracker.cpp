@@ -242,21 +242,32 @@ visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::Cherenkov
   calin::math::ray::Ray ray(cherenkov_photon.x0, cherenkov_photon.u0,
     cherenkov_photon.t0, cherenkov_photon.epsilon);
   unsigned scope_id = 0;
+  bool do_refraction = do_refraction_;
+  double refraction_safety_margin = refraction_safety_margin_;
   for(auto& isphere : visitor_->detector_spheres()) {
     Eigen::Vector3d dx = cherenkov_photon.x0 - isphere.r0;
     double u0_dot_dx = cherenkov_photon.u0.dot(dx);
     double dr2 = dx.squaredNorm() - u0_dot_dx*u0_dot_dx;
-    if(dr2 < SQR(isphere.radius + refraction_safety_margin_)) {
+    if(dr2 < SQR(isphere.radius + refraction_safety_margin)) {
       // we have a potential hit !
-      if(do_refraction_) {
+      if(do_refraction) {
         // Here we propagate to the observation plane associated with the
-        // detector sphere then refract the ray then bac-propagate to the
+        // detector sphere then refract the ray then back-propagate to the
         // height of the photon emission so absoption can be calculated later
         atm_->propagate_ray_with_refraction(ray, isphere.iobs, /* time_reversal_ok = */ false);
         double reverse_propagate_dist = (cherenkov_photon.x0.z() - ray.z())/ray.uz();
         ray.propagate_dist(reverse_propagate_dist);
+        do_refraction = false; // don't refract twice if we have overlapping telescopes
+        refraction_safety_margin = 0.0;
+        dx = cherenkov_photon.x0 - isphere.r0;
+        u0_dot_dx = cherenkov_photon.u0.dot(dx);
+        dr2 = dx.squaredNorm() - u0_dot_dx*u0_dot_dx;
+        if(dr2<SQR(isphere.radius)) {
+          visitor_->process_ray(scope_id, ray, /* pe_weight = */ 1.0);
+        }
+      } else {
+        visitor_->process_ray(scope_id, ray, /* pe_weight = */ 1.0);
       }
-      visitor_->process_ray(scope_id, ray, /* pe_weight = */ 1.0);
     }
     ++scope_id;
   }
