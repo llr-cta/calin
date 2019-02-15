@@ -306,10 +306,10 @@ private:
   std::vector<std::string> name_;
 };
 
-#define VCALC_SPLINE(ispline) cubic_value(t, dx, dx_inv, \
-  vcl::lookup<0x40000000>(iinterval, y_[ispline].data()), \
-  vcl::lookup<0x40000000>(iinterval, y_[ispline].data()+1), \
-  vcl::lookup<0x40000000>(iinterval, dy_dx_[ispline].data()), \
+#define VCALC_SPLINE(ispline) cubic_value(t, dx, dx_inv,          \
+  vcl::lookup<0x40000000>(iinterval, y_[ispline].data()),         \
+  vcl::lookup<0x40000000>(iinterval, y_[ispline].data()+1),       \
+  vcl::lookup<0x40000000>(iinterval, dy_dx_[ispline].data()),     \
   vcl::lookup<0x40000000>(iinterval, dy_dx_[ispline].data()+1))
 
 template<typename VCLArchitecture> typename VCLArchitecture::double_vt
