@@ -143,7 +143,7 @@ calin::simulation::atmosphere::load_levels(const std::string& filename)
 {
   std::ifstream stream(filename.c_str());
   if(!stream)
-    throw std::string("load_levels: could not open: ")+filename;
+    throw std::runtime_error(std::string("load_levels: could not open: ")+filename);
   auto* file_record = calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
