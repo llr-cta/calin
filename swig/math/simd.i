@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") simd
+%feature(autodoc,2);
 
 %{
 #include "math/simd.hpp"

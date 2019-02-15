@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.math") moments_calc
+%feature(autodoc,2);
 
 %{
 #include "math/moments_calc.hpp"

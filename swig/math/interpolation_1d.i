@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") interpolation_1d
+%feature(autodoc,2);
 
 %{
 #include "math/interpolation_1d.hpp"

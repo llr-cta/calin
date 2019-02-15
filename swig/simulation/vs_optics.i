@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.simulation") vs_optics
+%feature(autodoc,2);
 
 %{
 #include "simulation/vso_pixel.hpp"

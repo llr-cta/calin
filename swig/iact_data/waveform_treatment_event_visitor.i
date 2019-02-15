@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.iact_data") waveform_treatment_event_visitor
+%feature(autodoc,2);
 
 %{
 #include "iact_data/event_visitor.hpp"

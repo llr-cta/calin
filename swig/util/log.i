@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.io") log
+%feature(autodoc,2);
 
 %{
 #include "util/log.hpp"

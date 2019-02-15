@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.simulation") geant4_shower_generator
+%feature(autodoc,2);
 
 %{
 //#include <G4Exception.hh>

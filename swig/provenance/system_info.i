@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.provenance") system_info
+%feature(autodoc,2);
 
 %{
 #include "provenance/system_info.hpp"

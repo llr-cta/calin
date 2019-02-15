@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") fft_simd
+%feature(autodoc,2);
 
 %{
 #include "math/fft_simd.hpp"

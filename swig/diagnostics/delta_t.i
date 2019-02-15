@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.diagnostics") delta_t
+%feature(autodoc,2);
 
 %{
 #include "diagnostics/delta_t.hpp"

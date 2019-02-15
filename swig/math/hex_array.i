@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") hex_array
+%feature(autodoc,2);
 
 %{
 #include "math/hex_array.hpp"

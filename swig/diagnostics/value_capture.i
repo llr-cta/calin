@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.diagnostics") value_capture
+%feature(autodoc,2);
 
 %{
 #include "diagnostics/value_capture.hpp"

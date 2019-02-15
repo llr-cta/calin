@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.util") string
+%feature(autodoc,2);
 
 %{
 #include "util/string.hpp"

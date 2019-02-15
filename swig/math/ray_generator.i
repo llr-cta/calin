@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") ray_generator
+%feature(autodoc,2);
 
 %{
 #include "math/position_generator.hpp"

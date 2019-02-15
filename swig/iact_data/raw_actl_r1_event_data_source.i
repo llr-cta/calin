@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.iact_data") raw_actl_r1_event_data_source
+%feature(autodoc,2);
 
 #define CALIN_NO_ACTL_L0
 

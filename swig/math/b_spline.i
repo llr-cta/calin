@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.math") b_spline
+%feature(autodoc,2);
 
 %{
 #include "math/b_spline.hpp"

@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.util") options_processor
+%feature(autodoc,2);
 
 %{
 #include "util/options_processor.hpp"

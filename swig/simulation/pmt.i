@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.simulation") pmt
+%feature(autodoc,2);
 
 %{
 #include "simulation/pmt.hpp"

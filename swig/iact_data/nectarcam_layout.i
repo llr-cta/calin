@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.iact_data") nectarcam_layout
+%feature(autodoc,2);
 
 %{
 #include "iact_data/nectarcam_layout.hpp"

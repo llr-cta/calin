@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.diagnostics") waveform
+%feature(autodoc,2);
 
 %{
 #include "diagnostics/waveform.hpp"

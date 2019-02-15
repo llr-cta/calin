@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.simulation") tracker
+%feature(autodoc,2);
 
 %{
 #include "simulation/tracker.hpp"

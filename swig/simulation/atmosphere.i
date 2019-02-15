@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.simulation") atmosphere
+%feature(autodoc,2);
 
 %{
 #include "simulation/atmosphere.hpp"

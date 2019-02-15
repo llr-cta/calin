@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.iact_data") telescope_data_source
+%feature(autodoc,2);
 
 %{
 #include <calin_global_config.hpp>

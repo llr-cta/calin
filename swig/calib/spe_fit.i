@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.calib") spe_fit
+%feature(autodoc,2);
 
 %{
 #include "calib/spe_fit.hpp"

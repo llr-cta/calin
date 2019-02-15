@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") rng
+%feature(autodoc,2);
 
 %{
 #include "math/rng.hpp"

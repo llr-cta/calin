@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.util") timestamp
+%feature(autodoc,2);
 
 %{
 #include "util/timestamp.hpp"

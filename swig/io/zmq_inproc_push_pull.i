@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.io") zmq_inproc_push_pull
+%feature(autodoc,2);
 
 %{
 #include "io/zmq_inproc_push_pull.hpp"

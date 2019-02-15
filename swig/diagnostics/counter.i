@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.diagnostics") counter
+%feature(autodoc,2);
 
 %{
 #include "diagnostics/counter.hpp"

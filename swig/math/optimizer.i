@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") optimizer
+%feature(autodoc,2);
 
 %{
 #include "math/optimizer.hpp"

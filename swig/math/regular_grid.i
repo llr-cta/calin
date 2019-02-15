@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") regular_grid
+%feature(autodoc,2);
 
 %{
 #include "math/regular_grid.hpp"

@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.simulation") detector_efficiency
+%feature(autodoc,2);
 
 %{
 #include "simulation/detector_efficiency.hpp"

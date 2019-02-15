@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.io") sql_transceiver
+%feature(autodoc,2);
 
 %{
 #include "io/sql_transceiver.hpp"

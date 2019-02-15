@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") special
+%feature(autodoc,2);
 
 %{
 #include "math/special.hpp"

@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.calib") pmt_ses_models
+%feature(autodoc,2);
 
 %{
 #include "math/log_quadratic_spline_pdf_1d.hpp"

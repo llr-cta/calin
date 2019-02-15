@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") hessian
+%feature(autodoc,2);
 
 %{
 #include "math/hessian.hpp"

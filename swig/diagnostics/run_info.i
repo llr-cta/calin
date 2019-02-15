@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.diagnostics") run_info
+%feature(autodoc,2);
 
 %{
 #include "iact_data/event_visitor.hpp"

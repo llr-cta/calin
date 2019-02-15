@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.math") histogram
+%feature(autodoc,2);
 
 %{
 #include "math/histogram.hpp"

@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.math") fftw_util
+%feature(autodoc,2);
 
 %{
 #include "math/fftw_util.hpp"

@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.simulation") ray_processor
+%feature(autodoc,2);
 
 %{
 #include "simulation/pe_processor.hpp"

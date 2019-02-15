@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") healpix_array
+%feature(autodoc,2);
 
 %{
 #include "math/healpix_array.hpp"

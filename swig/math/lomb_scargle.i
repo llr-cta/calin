@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") lomb_scargle
+%feature(autodoc,2);
 
 %{
 #include "math/lomb_scargle.hpp"

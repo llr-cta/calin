@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.math") data_modeling
+%feature(autodoc,2);
 
 %{
 #include "math/data_modeling.hpp"

@@ -23,6 +23,7 @@
 */
 
 %module (package="calin") calin_global_definitions
+%feature(autodoc,2);
 
 %{
 #include <iostream>

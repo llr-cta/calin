@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") vector3d_util
+%feature(autodoc,2);
 
 %{
 #include "math/vector3d_util.hpp"

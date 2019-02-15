@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.iact_data", threads="1") event_dispatcher
+%feature(autodoc,2);
 %nothread;
 
 %{

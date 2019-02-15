@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.simulation") world_magnetic_model
+%feature(autodoc,2);
 
 %{
 #include "simulation/world_magnetic_model.hpp"

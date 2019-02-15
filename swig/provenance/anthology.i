@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.provenance") anthology
+%feature(autodoc,2);
 
 %{
 #include "provenance/anthology.hpp"

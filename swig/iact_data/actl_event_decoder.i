@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.iact_data") actl_event_decoder
+%feature(autodoc,2);
 
 %{
 #include <ProtobufIFits.h>

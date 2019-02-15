@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") vs_physics
+%feature(autodoc,2);
 
 %{
 #include "math/vs_vec3d.hpp"

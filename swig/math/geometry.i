@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.math") geometry
+%feature(autodoc,2);
 
 %{
 #include "math/geometry.hpp"

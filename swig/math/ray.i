@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") ray
+%feature(autodoc,2);
 
 %{
 #include "math/ray.hpp"

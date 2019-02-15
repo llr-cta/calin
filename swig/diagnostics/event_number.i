@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.diagnostics") event_number
+%feature(autodoc,2);
 
 %{
 #include "diagnostics/event_number.hpp"

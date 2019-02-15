@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.iact_data") functional_event_visitor
+%feature(autodoc,2);
 
 %{
 #include "iact_data/functional_event_visitor.hpp"

@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.diagnostics") module
+%feature(autodoc,2);
 
 %{
 #include "diagnostics/module.hpp"

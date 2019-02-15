@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.provenance") chronicle
+%feature(autodoc,2);
 
 %{
 #include "provenance/chronicle.hpp"

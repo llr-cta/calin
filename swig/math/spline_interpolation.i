@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") spline_interpolation
+%feature(autodoc,2);
 
 %{
 #include "math/spline_interpolation.hpp"
