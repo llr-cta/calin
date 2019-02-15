@@ -295,7 +295,9 @@ public:
     typename VCLArchitecture::double_vt& value4, unsigned ispline4,
     typename VCLArchitecture::double_vt& value5, unsigned ispline5) const;
 
-  double test_vcl_value(double x, unsigned ispline, unsigned ivec) const;
+  double test_vcl_value(double x, unsigned ispline, unsigned ivec=0) const;
+  std::vector<double> test_vcl_value(double x0, double x1, double x2, double x3,
+    unsigned ispline) const;
 
 private:
   InterpolationIntervals s_;

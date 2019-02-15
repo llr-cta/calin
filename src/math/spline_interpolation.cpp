@@ -505,3 +505,14 @@ double CubicMultiSpline::test_vcl_value(double x, unsigned ispline, unsigned ive
   double_vt vy = vcl_value<calin::util::vcl::VCL256Architecture>(x, ispline);
   return vy[ivec];
 }
+
+std::vector<double> CubicMultiSpline::test_vcl_value(double x0, double x1, double x2, double x3,
+  unsigned ispline) const
+{
+  typedef typename calin::util::vcl::VCL256Architecture::double_vt double_vt;
+  std::vector<double> ay(4);
+  double_vt vx(x0,x1,x2,x3);
+  double_vt vy = vcl_value<calin::util::vcl::VCL256Architecture>(vx, ispline);
+  vy.store(ay.data());
+  return ay;
+}
