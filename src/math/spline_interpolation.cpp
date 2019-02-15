@@ -498,3 +498,10 @@ double CubicMultiSpline::derivative_and_value(double x, unsigned ispline, double
   return cubic_1st_derivative_and_value(value, t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
     dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
 }
+
+double CubicMultiSpline::test_vcl_value(double x, unsigned ispline, unsigned ivec) const
+{
+  typedef typename calin::util::vcl::VCL256Architecture::double_vt double_vt;
+  double_vt vy = vcl_value<calin::util::vcl::VCL256Architecture>(x, ispline);
+  return vy[ivec];
+}

@@ -204,6 +204,9 @@ template<typename VCLArchitecture> struct VCLFloatReal
   typedef Eigen::Vector3f                         vec3_t;
   typedef Eigen::Matrix3f                         mat3_t;
 
+  typedef int_t                                   int_at[VCLArchitecture::num_double] __attribute((aligned(VCLArchitecture::vec_bytes)));
+  typedef real_t                                  real_at[VCLArchitecture::num_double] __attribute((aligned(VCLArchitecture::vec_bytes)));
+
   typedef typename VCLArchitecture::int32_vt      int_vt;
   typedef typename VCLArchitecture::uint32_vt     uint_vt;
   typedef typename VCLArchitecture::int32_bvt     bool_int_vt;
@@ -214,6 +217,22 @@ template<typename VCLArchitecture> struct VCLFloatReal
 
   typedef typename VCLArchitecture::Vector3f_vt   vec3_vt;
   typedef typename VCLArchitecture::Matrix3f_vt   mat3_vt;
+
+  static inline int_vt truncate_to_int_limited(real_vt x) {
+    return vcl::truncate_to_int(x);
+  }
+
+  static inline int_vt round_to_int_limited(real_vt x) {
+    return vcl::round_to_int(x);
+  }
+
+  static inline int_vt truncate_to_int(real_vt x) {
+    return vcl::truncate_to_int(x);
+  }
+
+  static inline int_vt round_to_int(real_vt x) {
+    return vcl::round_to_int(x);
+  }
 };
 
 template<typename VCLArchitecture> struct VCLDoubleReal
@@ -227,6 +246,9 @@ template<typename VCLArchitecture> struct VCLDoubleReal
   typedef Eigen::Vector3d                         vec3_t;
   typedef Eigen::Matrix3d                         mat3_t;
 
+  typedef int_t                                   int_at[VCLArchitecture::num_double] __attribute((aligned(VCLArchitecture::vec_bytes)));
+  typedef real_t                                  real_at[VCLArchitecture::num_double] __attribute((aligned(VCLArchitecture::vec_bytes)));
+
   typedef typename VCLArchitecture::int64_vt      int_vt;
   typedef typename VCLArchitecture::uint64_vt     uint_vt;
   typedef typename VCLArchitecture::int64_bvt     bool_int_vt;
@@ -237,6 +259,22 @@ template<typename VCLArchitecture> struct VCLDoubleReal
 
   typedef typename VCLArchitecture::Vector3d_vt   vec3_vt;
   typedef typename VCLArchitecture::Matrix3d_vt   mat3_vt;
+
+  static inline int_vt truncate_to_int_limited(real_vt x) {
+    return vcl::truncate_to_int64_limited(x);
+  }
+
+  static inline int_vt round_to_int_limited(real_vt x) {
+    return vcl::round_to_int64_limited(x);
+  }
+
+  static inline int_vt truncate_to_int(real_vt x) {
+    return vcl::truncate_to_int64(x);
+  }
+
+  static inline int_vt round_to_int(real_vt x) {
+    return vcl::round_to_int64(x);
+  }
 };
 
 struct VCL128Architecture
@@ -523,7 +561,7 @@ inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
 } } } // namespace calin::util::vcl
 
 #define ADD_OSTREAM_OPERATOR(Vec) \
-  std::ostream& operator<<(std::ostream& s, const Vec& v) { \
+  inline std::ostream& operator<<(std::ostream& s, const Vec& v) { \
     calin::util::vcl::print_vec(s, v); \
     return s; \
   }
