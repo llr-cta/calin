@@ -31,11 +31,12 @@ namespace calin { namespace simulation { namespace ray_processor {
 
 struct RayProcessorDetectorSphere
 {
+  RayProcessorDetectorSphere() { /* nothing to see here */ }
   RayProcessorDetectorSphere(const Eigen::Vector3d& r0_, double radius, unsigned iobs_ = 0):
       r0(r0_), radius(radius), iobs(iobs_) { /* nothing to see here */ }
   Eigen::Vector3d r0;        // Center of detector sphere [cm]
-  double radius;             // Squared radius of sphere  [cm^2]
-  unsigned iobs;             // Observation layer associated with this detector
+  double radius = 0;         // Squared radius of sphere  [cm^2]
+  unsigned iobs = 0;         // Observation layer associated with this detector
 };
 
 class RayProcessor

@@ -46,3 +46,6 @@
 %newobject *::add_processor_and_pe_visitor;
 %include "simulation/ray_processor.hpp"
 %include "simulation/vso_ray_processor.hpp"
+
+%template(StdVectorRayProcessorDetectorSphere)
+  std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>;
