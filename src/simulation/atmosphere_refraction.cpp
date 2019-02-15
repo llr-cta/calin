@@ -45,15 +45,17 @@ using namespace calin::math::special;
 // that can be computed for rays without using trignometric functions
 
 namespace {
+  template<typename R>
   inline void calculate_refraction_angular_terms(
-    double sin_i, double sec_i, double n_i_over_n_r,
-    double& sin_r, double& cos_r,
-    double& t1_x, double& t2_x, double& t1_ct, double& t2_ct)
+    R sin_i, R sec_i, R n_i_over_n_r,
+    R& sin_r, R& cos_r, R& t1_x, R& t2_x, R& t1_ct, R& t2_ct)
   {
+    using std::sqrt;
+    using vcl::sqrt;
     sin_r = sin_i * n_i_over_n_r;
-    const double cos2_r = 1.0 - SQR(sin_r);
-    cos_r = std::sqrt(cos2_r);
-    const double sec2_i = SQR(sec_i);
+    const R cos2_r = 1.0 - SQR(sin_r);
+    cos_r = sqrt(cos2_r);
+    const R sec2_i = SQR(sec_i);
 
     t1_x = sin_i * sec2_i / cos_r;
     t2_x = t1_x * SQR(sin_i) * sec2_i;
