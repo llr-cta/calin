@@ -185,7 +185,7 @@ LayeredAtmosphere::LayeredAtmosphere(const std::vector<Level> levels):
 void LayeredAtmosphere::initialize()
 {
   if(m_levels.size()<2)
-    throw std::string("LayeredAtmosphere: A minimum of 2 levels required.");
+    throw std::runtime_error("LayeredAtmosphere: A minimum of 2 levels required.");
   std::sort(m_levels.begin(), m_levels.end(), Level::CmpZAsc());
   m_layers.resize(m_levels.size()-1);
 
@@ -201,7 +201,7 @@ void LayeredAtmosphere::initialize()
     // constant
 
     if(m_levels.size()<3)
-      throw std::string("LayeredAtmosphere: A minimum of 3 levels required "
+      throw std::runtime_error("LayeredAtmosphere: A minimum of 3 levels required "
 		    "to solve for thickness.");
 
     const double y2 = m_levels[m_levels.size() - 2].t;
@@ -219,7 +219,7 @@ void LayeredAtmosphere::initialize()
     {
       // Newton-Ralphson to find value of H giving agreement with data
       if(niter-- == 0)
-        throw std::string("LayeredAtmosphere: max number of iterations exceeded");
+        throw std::runtime_error("LayeredAtmosphere: max number of iterations exceeded");
       double dfdH =
         (den*(x3*std::exp(-x3/H)-x1*std::exp(-x1/H))
          - num*(x2*std::exp(-x2/H)-x1*std::exp(-x1/H)))/(den*den*H*H);
