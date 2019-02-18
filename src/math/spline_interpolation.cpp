@@ -342,7 +342,7 @@ double CubicSpline::invert(double y) const
   } else {
     t = cubic_solve(y, dx, dx_inv, s_.y[i], s_.y[i+1], s_.dy_dx[i], s_.dy_dx[i+1]);
   }
-  std::cout << i << ' ' << t << '\n';
+  //std::cout << i << ' ' << t << '\n';
   return t*dx + s_.x[i];
 }
 
