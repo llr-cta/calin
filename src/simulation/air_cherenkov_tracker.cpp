@@ -101,6 +101,7 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   if(cherenkov.n<0)return;
   cherenkov.n             += 1.0;
 
+  // Watch out for gamma^2 slightly less than 1.0
   const double g2 = SQR(std::max(cherenkov.e_mid/track.mass,1.0)); // gamma^2
   cherenkov.gamma_sq       = g2;
   const double b2 = 1.0 - 1.0/g2;                    // beta^2
