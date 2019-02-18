@@ -103,7 +103,6 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
     visitor_->visit_event(event, kill_event);
     if(kill_event)continue;
 
-    Eigen::Vector3d x = x0;
     if(propagation_mode_ == FWD_TO_GROUND)
     {
       track.x1       = event.x0;
@@ -114,13 +113,21 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
       umid.normalize();
 
       bool kill_track = false;
-      while(x.z() > zground_or_dist_ and not kill_track)
+      while(track.x1.z() > zground_or_dist_ and not kill_track)
       {
         track.x0     = track.x1;
         track.u0     = track.u1;
         track.t0     = track.t1;
 
         track.x1     = track.x0 + umid * step_size_;
+        if(track.x1.z() < zground_or_dist_)
+        {
+          double step_size = (zground_or_dist_ - track.x0.z())/umid.z();
+          track.x1.x() = track.x0.x() + umid.x() * step_size;
+          track.x1.y() = track.x0.y() + umid.y() * step_size;
+          track.x1.z() = zground_or_dist_;
+        }
+
         track.t1     = track.t0 + dt;
 
         track.dx_hat = umid;
