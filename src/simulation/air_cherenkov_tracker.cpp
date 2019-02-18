@@ -101,7 +101,7 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   if(cherenkov.n<0)return;
   cherenkov.n             += 1.0;
 
-  const double g2 = SQR(cherenkov.e_mid/track.mass); // gamma^2
+  const double g2 = SQR(std::max(cherenkov.e_mid/track.mass,1.0)); // gamma^2
   cherenkov.gamma_sq       = g2;
   const double b2 = 1.0 - 1.0/g2;                    // beta^2
   if(enable_forced_cherenkov_angle_mode_)
@@ -114,11 +114,12 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   cherenkov.cos_thetac     = std::sqrt(1.0 - cherenkov.sin2_thetac);
   cherenkov.sin_thetac     = std::sqrt(cherenkov.sin2_thetac);
 
-  if(std::isnan(cherenkov.yield_density)) {
-    LOG(INFO) << '(' << cherenkov.x0.transpose() << ") ("
+  if(std::isnan(cherenkov.yield_density) or cherenkov.yield_density>1e6) {
+    LOG(INFO) << '(' // << cherenkov.x0.transpose() << ") ("
               << cherenkov.x_mid.transpose() << ") "
               << cherenkov.dx << ' '
-              << cherenkov.n << ' ' << cherenkov.e0 << ' '
+              << cherenkov.n << ' ' << track.q << ' ' << track.pdg_type << ' '
+              << cherenkov.e_mid << ' ' << track.mass << ' '
               << g2 << ' ' << b2 << ' '
               << cherenkov.sin2_thetac << ' '
               << cherenkov.yield_density;
