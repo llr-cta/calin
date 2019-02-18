@@ -646,7 +646,10 @@ propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs,
 
 double LayeredRefractiveAtmosphere::z_for_thickness(double t)
 {
-  return 0;
+  if(t <= std::exp(s_->yknot(1).back()))return s_->xknot().back();
+  calin::math::spline_interpolation::CubicSpline st(
+    s_->xknot(), s_->yknot(1), s_->dydxknot(1));
+  return st.invert(std::log(t));
 }
 
 double LayeredRefractiveAtmosphere::top_of_atmosphere()
@@ -658,9 +661,4 @@ LayeredRefractiveAtmosphere*
 LayeredRefractiveAtmosphere::LayeredRefractiveAtmosphere::us76(const std::vector<double>& obs_levels)
 {
   return new LayeredRefractiveAtmosphere(us76_levels(), obs_levels);
-}
-
-void LayeredRefractiveAtmosphere::initialize()
-{
-
 }

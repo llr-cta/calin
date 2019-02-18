@@ -325,8 +325,6 @@ public:
   static calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig default_config();
 
 private:
-  void initialize();
-
   std::vector<Level> levels_;
   calin::math::spline_interpolation::CubicMultiSpline* s_ = nullptr;
 
