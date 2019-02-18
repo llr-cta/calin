@@ -155,4 +155,21 @@ private:
   double dX_emission_ = -1;
 };
 
+class CherenkovTrackYieldLogger: public AirCherenkovTrackVisitor
+{
+public:
+  CherenkovTrackYieldLogger();
+  virtual ~CherenkovTrackYieldLogger();
+  void visit_event(const Event& event, bool& kill_event) override;
+  void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
+    bool& kill_track) override;
+  const std::vector<double>& track_altitude() const { return track_altitude_; }
+  const std::vector<double>& track_length() const { return track_length_; }
+  const std::vector<double>& track_yield() const { return track_yield_; }
+private:
+  std::vector<double> track_altitude_;
+  std::vector<double> track_length_;
+  std::vector<double> track_yield_;
+};
+
 } } } // namespace calin::simulation::air_cherenkov_tracker

@@ -239,3 +239,28 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
   }
   dX_emission_ -= dX_left;
 }
+
+CherenkovTrackYieldLogger::CherenkovTrackYieldLogger(): AirCherenkovTrackVisitor()
+{
+  // nothing to see here
+}
+
+CherenkovTrackYieldLogger::~CherenkovTrackYieldLogger()
+{
+  // nothing to see here
+}
+
+void CherenkovTrackYieldLogger::visit_event(const Event& event, bool& kill_event)
+{
+  track_altitude_.clear();
+  track_length_.clear();
+  track_yield_.clear();
+}
+
+void CherenkovTrackYieldLogger::visit_cherenkov_track(
+  const AirCherenkovTrack& cherenkov_track, bool& kill_track)
+{
+  track_altitude_.push_back(cherenkov_track.x_mid.z());
+  track_length_.push_back(cherenkov_track.dx);
+  track_yield_.push_back(cherenkov_track.yield_density);
+}
