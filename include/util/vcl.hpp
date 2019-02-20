@@ -490,15 +490,15 @@ template<typename Vec> void print_vec(std::ostream& s, const Vec& v)
 template<typename VCLReal> inline void
 insert_into_vec3_with_mask(typename VCLReal::vec3_vt& vv,
     const typename VCLReal::vec3_t& vs, const typename VCLReal::bool_vt& mask) {
-  vv.x() = vcl::select(mask, vv.x(), vs.x());
-  vv.y() = vcl::select(mask, vv.y(), vs.y());
-  vv.z() = vcl::select(mask, vv.z(), vs.z());
+  vv.x() = vcl::select(mask, vs.x(), vv.x());
+  vv.y() = vcl::select(mask, vs.y(), vv.y());
+  vv.z() = vcl::select(mask, vs.z(), vv.z());
 }
 
 template<typename VCLReal> inline void
 insert_into_with_mask(typename VCLReal::real_vt& v,
     const typename VCLReal::real_t& s, const typename VCLReal::bool_vt& mask) {
-  v = vcl::select(mask, v, s);
+  v = vcl::select(mask, s, v);
 }
 
 typedef Eigen::Matrix< ::vcl::Vec4f , 3 , 1> Vector3_4f;
