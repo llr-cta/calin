@@ -113,8 +113,9 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 
   int insert_index = vcl::horizontal_find_first(track_dx_ <= 0);
   if(insert_index == -1)
-    throw std::logic_error("VCLIACTTrackVisitor<"
-      + VCLArchitecture::architecture_name + ">::visit_track: No SIMD vector slot");
+    throw std::logic_error(
+      calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTTrackVisitor")
+      + "::visit_track: No SIMD vector slot");
 
   double_bvt insert_mask = false;
   insert_mask.insert(insert_index, true);
