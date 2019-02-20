@@ -49,7 +49,7 @@ template<> struct NumTraits<::vcl::Vec4f>: NumTraits<float>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -66,7 +66,7 @@ template<> struct NumTraits<::vcl::Vec8f>: NumTraits<float>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -83,7 +83,7 @@ template<> struct NumTraits<::vcl::Vec16f>: NumTraits<float>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -100,7 +100,7 @@ template<> struct NumTraits<::vcl::Vec2d>: NumTraits<double>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -117,7 +117,7 @@ template<> struct NumTraits<::vcl::Vec4d>: NumTraits<double>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -134,7 +134,7 @@ template<> struct NumTraits<::vcl::Vec8d>: NumTraits<double>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -486,6 +486,35 @@ template<typename Vec> void print_vec(std::ostream& s, const Vec& v)
   for(int i=1;i<v.size();i++)
     s << '_' << v[i];
 }
+
+template<typename VCLReal> inline void
+insert_into_vec3_with_mask(typename VCLReal::vec3_real& vv,
+    const typename VCLReal::vec3_t& vs, const typename VCLReal::bool_vt& mask) {
+  vv.x() = vcl::select(mask, vv.x(), vs.x());
+  vv.y() = vcl::select(mask, vv.y(), vs.y());
+  vv.z() = vcl::select(mask, vv.z(), vs.z());
+}
+
+template<typename VCLReal> inline void
+insert_into_with_mask(typename VCLReal::real_vt& v,
+    const typename VCLReal::real_t& s, const typename VCLReal::bool_vt& mask) {
+  v = vcl::select(mask, v, s);
+}
+
+typedef Eigen::Matrix< ::vcl::Vec4f , 3 , 1> Vector3_4f;
+typedef Eigen::Matrix< ::vcl::Vec4f , 3 , 3> Matrix3_4f;
+typedef Eigen::Matrix< ::vcl::Vec8f , 3 , 1> Vector3_8f;
+typedef Eigen::Matrix< ::vcl::Vec8f , 3 , 3> Matrix3_8f;
+typedef Eigen::Matrix< ::vcl::Vec16f , 3 , 1> Vector3_16f;
+typedef Eigen::Matrix< ::vcl::Vec16f , 3 , 3> Matrix3_16f;
+
+typedef Eigen::Matrix< ::vcl::Vec2d , 3 , 1> Vector3_2d;
+typedef Eigen::Matrix< ::vcl::Vec2d , 3 , 3> Matrix3_2d;
+typedef Eigen::Matrix< ::vcl::Vec4d , 3 , 1> Vector3_4d;
+typedef Eigen::Matrix< ::vcl::Vec4d , 3 , 3> Matrix3_4d;
+typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 1> Vector3_8d;
+typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 3> Matrix3_8d;
+
 
 inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
   return _mm_mul_epu32(a, b);
