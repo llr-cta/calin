@@ -29,6 +29,7 @@
 #include <math/rng_vcl.hpp>
 #include <math/special.hpp>
 #include <simulation/tracker.hpp>
+#include <util/log.hpp>
 
 namespace calin { namespace simulation { namespace vcl_iact {
 
@@ -108,14 +109,28 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 {
+  if(track.q == 0 or track.dx <= 0)return; // it's store policy: no charge, no track = no radiation
+
+  static unsigned to_print = 100;
+
   using calin::util::vcl::insert_into_vec3_with_mask;
   using calin::util::vcl::insert_into_with_mask;
 
-  int insert_index = vcl::horizontal_find_first(track_dx_ <= 0);
+  double_bvt unused_tracks = track_dx_ <= 0;
+  int unused_track_count = vcl::horizontal_count(unused_tracks);
+
+  int insert_index = vcl::horizontal_find_first(unused_tracks);
+
+  if(to_print)
+  {
+    --to_print;
+    calin::util::log::LOG(calin::util::log::INFO) << insert_index << ' ' << track_dx_;
+  }
+
   if(insert_index == -1)
     throw std::logic_error(
       calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTTrackVisitor")
-      + "::visit_track: No SIMD vector slot");
+      + "::visit_track: No free SIMD vector slot");
 
   double_bvt insert_mask = false;
   insert_mask.insert(insert_index, true);
@@ -131,6 +146,15 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   insert_into_vec3_with_mask<double_real>(track_u_, track.dx_hat, insert_mask);
   insert_into_with_mask<double_real>(track_dx_, track.dx, insert_mask);
   insert_into_with_mask<double_real>(track_dt_, track.dt, insert_mask);
+
+  if(unused_track_count == 1)
+  {
+    // All vector slots are full now
+    do {
+      track_dx_ -= dX_emission_;
+      dX_emission_ = rng_->exponential_double();
+    } while(vcl::horizontal_and(track_dx_ > 0));
+  }
 
 /*
 
