@@ -40,3 +40,6 @@
 %import "simulation/tracker.i"
 
 %include "simulation/vcl_iact.hpp"
+
+%template (VCLIACTTrackVisitor256)
+  calin::simulation::vcl_iact::VCLIACTTrackVisitor<calin::util::vcl::VCL256Architecture>;
