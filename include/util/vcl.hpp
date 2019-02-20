@@ -488,7 +488,7 @@ template<typename Vec> void print_vec(std::ostream& s, const Vec& v)
 }
 
 template<typename VCLReal> inline void
-insert_into_vec3_with_mask(typename VCLReal::vec3_real& vv,
+insert_into_vec3_with_mask(typename VCLReal::vec3_vt& vv,
     const typename VCLReal::vec3_t& vs, const typename VCLReal::bool_vt& mask) {
   vv.x() = vcl::select(mask, vv.x(), vs.x());
   vv.y() = vcl::select(mask, vv.y(), vs.y());
