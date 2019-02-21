@@ -529,36 +529,36 @@ LayeredRefractiveAtmosphere::~LayeredRefractiveAtmosphere()
 
 double LayeredRefractiveAtmosphere::rho(double z)
 {
-  return exp(s_->value(z, 0));
+  return std::exp(s_->value(z, 0));
 }
 
 double LayeredRefractiveAtmosphere::thickness(double z)
 {
-  return exp(s_->value(z, 1));
+  return std::exp(s_->value(z, 1));
 }
 
 double LayeredRefractiveAtmosphere::n_minus_one(double z)
 {
-  return exp(s_->value(z, 2));
+  return std::exp(s_->value(z, 2));
 }
 
 double LayeredRefractiveAtmosphere::dn_dz(double z, double& n_minus_one)
 {
   double dlogn_dz = s_->derivative_and_value(z, 2, n_minus_one);
-  n_minus_one = exp(n_minus_one);
+  n_minus_one = std::exp(n_minus_one);
   return n_minus_one * dlogn_dz;
 }
 
 double LayeredRefractiveAtmosphere::propagation_ct_correction(double z)
 {
-  return exp(s_->value(z, 3));
+  return std::exp(s_->value(z, 3));
 }
 
 void LayeredRefractiveAtmosphere::cherenkov_parameters(double z,
   double& n_minus_one, double& propagation_ct_correction)
 {
-  n_minus_one = exp(s_->value(z, 2));
-  propagation_ct_correction = exp(s_->value(z, 3));
+  n_minus_one = std::exp(s_->value(z, 2));
+  propagation_ct_correction = std::exp(s_->value(z, 3));
 }
 
 bool LayeredRefractiveAtmosphere::
