@@ -28,6 +28,8 @@
 #include <math/rng.hpp>
 #include <math/rng_vcl.hpp>
 #include <math/special.hpp>
+#include <math/geometry_vcl.hpp>
+#include <math/ray_vcl.hpp>
 #include <simulation/tracker.hpp>
 #include <simulation/atmosphere.hpp>
 #include <util/log.hpp>
@@ -66,6 +68,7 @@ public:
 #ifndef SWIG
 public:
   void generate_mc_rays();
+  void propagate_rays(double_vt sin2thetac);
 
   calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm_ = nullptr;
   bool adopt_atm_ = false;
@@ -85,6 +88,7 @@ public:
   double_vt track_dg_dx_; // track : rate of change of gamma of particle along track
 
   double bandwidth_ = 3.0;
+  double forced_sin2theta_ = -1.0;
 #endif // not defined SWIG
 };
 
@@ -198,41 +202,31 @@ leave_event()
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 generate_mc_rays()
 {
-  static unsigned to_print = 1000;
-
   using calin::math::special::SQR;
   using namespace calin::util::log;
 
   double_vt nmo; // n minus one
-  double_vt dlognmo_dx =
-    atm_->vcl_dlognmo_dz<VCLArchitecture>(track_x_.z(), nmo) * track_u_.z();
+  double_vt dlognmo_dx; // rate of change of log(n minus one) with track length
+  double_vt sin2thetac; // sin squared of the Cherenkov angle
 
-#if 0
-  LOG(WARNING) << "IN   z: " << track_x_.z() << '\n'
-               << "   1/n: " << ninv << '\n'
-               << "    dx: " << track_dx_ << '\n'
-               << "     Y: " << track_yield_const_ << '\n'
-               << " 1/b^2: " << track_b2inv_;
-  if(!to_print)return;
-#endif
-
-  double max_loop = 1000;
-  do {
+  if(forced_sin2theta_ > 0) {
+    nmo = 0.0;
+    dlognmo_dx = 0.0;
+    sin2thetac = forced_sin2theta_;
+  } else {
+    dlognmo_dx =
+      atm_->vcl_dlognmo_dz<VCLArchitecture>(track_x_.z(), nmo) * track_u_.z();
     double_vt n2inv = 1.0/SQR(nmo + 1.0);
     double_vt g2 = SQR(track_g_);
     double_vt b2inv = g2/(g2-1.0);
+    sin2thetac = vcl::max(1.0 - b2inv * n2inv, 0.0);
+  }
 
-    double_vt sin2thetac = vcl::max(1.0 - b2inv * n2inv, 0.0);
-
+  double max_loop = 10000;
+  do {
     double_vt yield = track_yield_const_ * sin2thetac;
     double_vt mfp = 1.0/yield;
-    double_vt dx_emission = mfp * rng_->exponential_double();
-
-    if(horizontal_or(yield <= 0))
-    {
-      LOG(INFO) << sin2thetac << ' ' << mfp << ' ' << dx_emission << ' ' << track_dx_-dx_emission;
-
-    }
+    double_vt dx_emission = vcl::min(mfp * rng_->exponential_double(), track_dx_);
 
     track_dx_ -= dx_emission;
     track_valid_ &= track_dx_>0;
@@ -243,18 +237,17 @@ generate_mc_rays()
 
     nmo *= (1.0 + dlognmo_dx * dx_emission);
 
-#if 0
-    if(to_print)
-    {
-      LOG(INFO) << sin2thetac << ' ' << mfp << ' ' << track_dx_;
-      to_print--;
-    } else {
-      break;
+    if(horizontal_or(track_valid_)) {
+      if(forced_sin2theta_ > 0) {
+        // nothing to see here
+      } else {
+        double_vt n2inv = 1.0/SQR(nmo + 1.0);
+        double_vt g2 = SQR(track_g_);
+        double_vt b2inv = g2/(g2-1.0);
+        sin2thetac = vcl::max(1.0 - b2inv * n2inv, 0.0);
+      }
+      propagate_rays(sin2thetac);
     }
-#endif
-
-    // cherenkov.cos_thetac     = std::sqrt(1.0 - cherenkov.sin2_thetac);
-    // cherenkov.sin_thetac     = std::sqrt(cherenkov.sin2_thetac);
 
     if(--max_loop == 0)
     {
@@ -269,6 +262,22 @@ generate_mc_rays()
       throw std::runtime_error("Maximum loop exceeded");
     }
   } while(vcl::horizontal_and(track_dx_ > 0));
+}
+
+template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
+propagate_rays(double_vt sin2thetac)
+{
+  double_vt cos_thetac = vcl::sqrt(1.0 - sin2thetac);
+  double_vt sin_thetac = vcl::sqrt(sin2thetac);
+
+  double_vt cos_phi;
+  double_vt sin_phi;
+  rng_->sincos_double(sin_phi, cos_phi);
+
+  Vector3d_vt v(cos_phi*sin_thetac, sin_phi*sin_thetac,cos_thetac);
+  calin::math::geometry::VCL<double_real>::rotate_in_place_z_to_u_Rzy(v, track_u_);
+
+  calin::math::ray::VCLRay<double_real> ray(track_x_, v, track_t_);
 
 }
 
