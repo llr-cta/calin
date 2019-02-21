@@ -33,6 +33,7 @@
 
 #include <math/special.hpp>
 #include <math/ray.hpp>
+#include <util/vcl.hpp>
 #include <math/spline_interpolation.hpp>
 #include <simulation/atmosphere.pb.h>
 
@@ -264,9 +265,9 @@ private:
   mutable std::vector<Layer>::const_iterator m_ilayer;
 };
 
-#if 1
 // Parameterized, layered model that is capable of calculating refraction
 // corrections in impact time and point
+// Also supports SIMD interface
 class LayeredRefractiveAtmosphere: public Atmosphere
 {
 public:
@@ -301,6 +302,22 @@ public:
 
   bool propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs=0,
     bool time_reversal_ok=true);
+
+  template<typename VCLArchitecture> inline void
+  n_minus_one(typename VCLArchitecture::double_vt z) const
+  {
+    return vcl::exp(s_->value(z, 2));
+  }
+
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+  dn_dz(typename VCLArchitecture::double_vt z,
+    typename VCLArchitecture::double_vt& n_minus_one) const
+  {
+    typename VCLArchitecture::double_vt dlogn_dz =
+      s_->vcl_derivative_and_value(z, 2, n_minus_one);
+    n_minus_one = vcl::exp(n_minus_one);
+    return n_minus_one * dlogn_dz;
+  }
 
   const std::vector<Level>& get_levels() const { return levels_; }
 
@@ -352,5 +369,5 @@ private:
   std::vector<Eigen::MatrixXd> model_ray_obs_x_;
   std::vector<Eigen::MatrixXd> model_ray_obs_ct_;
 };
-#endif
+
 } } } // namespace calin::simulation::atmosphere
