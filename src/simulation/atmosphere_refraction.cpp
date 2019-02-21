@@ -174,12 +174,19 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
   std::vector<double> v(levels.size());
   std::transform(levels.begin(), levels.end(), v.begin(), [](const Level& l){return l.z;});
   s_ = new math::spline_interpolation::CubicMultiSpline(v);
+
   // Spline 0 - density
   std::transform(levels.begin(), levels.end(), v.begin(), [](const Level& l){return std::log(l.rho);});
   s_->add_spline(v, "density [ln(g/cm^3)]");
 
   // Spline 1 - integrated thickness to altitude
-  std::transform(levels.begin(), levels.end(), v.begin(), [](const Level& l){return std::log(l.t);});
+  thickness_to_toa_ = levels.back().t;
+  if(thickness_to_toa_ <= 0) {
+    thickness_to_toa_ = LayeredAtmosphere::solve_for_thickness_at_toa(levels);
+    std::transform(levels.begin(), levels.end(), v.begin(), [this](const Level& l){return std::log(l.t+thickness_to_toa_);});
+  } else {
+    std::transform(levels.begin(), levels.end(), v.begin(), [](const Level& l){return std::log(l.t);});
+  }
   s_->add_spline(v, "thickness to altitude [ln(g/cm^2)]");
 
   // Spline 2 - refractive index : n minus one
@@ -534,7 +541,7 @@ double LayeredRefractiveAtmosphere::rho(double z)
 
 double LayeredRefractiveAtmosphere::thickness(double z)
 {
-  return std::exp(s_->value(z, 1));
+  return std::exp(s_->value(z, 1)) - thickness_to_toa_;
 }
 
 double LayeredRefractiveAtmosphere::n_minus_one(double z)
@@ -646,6 +653,7 @@ propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs,
 
 double LayeredRefractiveAtmosphere::z_for_thickness(double t)
 {
+  t += thickness_to_toa_;
   if(t <= std::exp(s_->yknot(1).back()))return s_->xknot().back();
   calin::math::spline_interpolation::CubicSpline st(
     s_->xknot(), s_->yknot(1), s_->dydxknot(1));

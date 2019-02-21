@@ -200,37 +200,7 @@ void LayeredAtmosphere::initialize()
     // that the scale height between the final three levels is
     // constant
 
-    if(m_levels.size()<3)
-      throw std::runtime_error("LayeredAtmosphere: A minimum of 3 levels required "
-		    "to solve for thickness.");
-
-    const double y2 = m_levels[m_levels.size() - 2].t;
-    const double y3 = m_levels[m_levels.size() - 3].t;
-    const double x1 = m_levels[m_levels.size() - 1].z;
-    const double x2 = m_levels[m_levels.size() - 2].z;
-    const double x3 = m_levels[m_levels.size() - 3].z;
-
-    double H = (x2-x3)/(std::log(y3)-std::log(y2)); // initial guess
-    double num = std::exp(-x3/H)-std::exp(-x1/H);
-    double den = std::exp(-x2/H)-std::exp(-x1/H);
-    double df = y3/y2 - num/den;
-    unsigned niter = 10;
-    while(std::fabs(df)/(y3/y2) > 1e-8)
-    {
-      // Newton-Ralphson to find value of H giving agreement with data
-      if(niter-- == 0)
-        throw std::runtime_error("LayeredAtmosphere: max number of iterations exceeded");
-      double dfdH =
-        (den*(x3*std::exp(-x3/H)-x1*std::exp(-x1/H))
-         - num*(x2*std::exp(-x2/H)-x1*std::exp(-x1/H)))/(den*den*H*H);
-      H += df/dfdH;
-      num = std::exp(-x3/H)-std::exp(-x1/H);
-      den = std::exp(-x2/H)-std::exp(-x1/H);
-      df = y3/y2 - num/den;
-    }
-
-    double t0 = y3/(std::exp(-x3/H)-std::exp(-x1/H));
-    m_ttoa = t0*std::exp(-x1/H);
+    m_ttoa = solve_for_thickness_at_toa(m_levels);
 
     for(unsigned ilevel=0;ilevel<m_levels.size();ilevel++)
       m_levels[ilevel].t += m_ttoa;
@@ -361,6 +331,48 @@ double LayeredAtmosphere::top_of_atmosphere()
 LayeredAtmosphere* LayeredAtmosphere::us76()
 {
   return new LayeredAtmosphere(us76_levels());
+}
+
+double LayeredAtmosphere::solve_for_thickness_at_toa(
+  const std::vector<LayeredAtmosphereLevel>& levels)
+{
+  // If the thickness at the top of the atmosphere is zero
+  // (i.e. the thickness from infinity to that point has been
+  // subtracted) then solve for the thickness there by assuming
+  // that the scale height between the final three levels is
+  // constant
+
+  if(levels.size()<3)
+    throw std::runtime_error("LayeredAtmosphere: A minimum of 3 levels required "
+      "to solve for thickness.");
+
+  const double y2 = levels[levels.size() - 2].t;
+  const double y3 = levels[levels.size() - 3].t;
+  const double x1 = levels[levels.size() - 1].z;
+  const double x2 = levels[levels.size() - 2].z;
+  const double x3 = levels[levels.size() - 3].z;
+
+  double H = (x2-x3)/(std::log(y3)-std::log(y2)); // initial guess
+  double num = std::exp(-x3/H)-std::exp(-x1/H);
+  double den = std::exp(-x2/H)-std::exp(-x1/H);
+  double df = y3/y2 - num/den;
+  unsigned niter = 10;
+  while(std::fabs(df)/(y3/y2) > 1e-8)
+  {
+    // Newton-Ralphson to find value of H giving agreement with data
+    if(niter-- == 0)
+      throw std::runtime_error("LayeredAtmosphere: max number of iterations exceeded");
+    double dfdH =
+      (den*(x3*std::exp(-x3/H)-x1*std::exp(-x1/H))
+       - num*(x2*std::exp(-x2/H)-x1*std::exp(-x1/H)))/(den*den*H*H);
+    H += df/dfdH;
+    num = std::exp(-x3/H)-std::exp(-x1/H);
+    den = std::exp(-x2/H)-std::exp(-x1/H);
+    df = y3/y2 - num/den;
+  }
+
+  double t0 = y3/(std::exp(-x3/H)-std::exp(-x1/H));
+  return t0*std::exp(-x1/H);
 }
 
 std::vector<LayeredAtmosphereLevel>

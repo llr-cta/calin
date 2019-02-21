@@ -251,6 +251,7 @@ public:
   const std::vector<Level>& getLevels() const { return m_levels; }
 
   static LayeredAtmosphere* us76();
+  static double solve_for_thickness_at_toa(const std::vector<Level>& levels);
 
 private:
   CALIN_TYPEALIAS(Layer, LayeredAtmosphereLayer);
@@ -356,6 +357,7 @@ private:
   calin::math::spline_interpolation::CubicMultiSpline* s_ = nullptr;
 
   std::vector<double> zobs_;
+  double thickness_to_toa_ = 0;
 
   struct ObsLevelData {
     double z = 0.0;
