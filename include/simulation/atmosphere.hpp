@@ -306,7 +306,7 @@ public:
   template<typename VCLArchitecture> inline void
   vcl_n_minus_one(typename VCLArchitecture::double_vt z) const
   {
-    return vcl::exp(s_->value(z, 2));
+    return vcl::exp(s_->vcl_value<VCLArchitecture>(z, 2));
   }
 
   template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
@@ -314,7 +314,7 @@ public:
     typename VCLArchitecture::double_vt& n_minus_one) const
   {
     typename VCLArchitecture::double_vt dlogn_dz =
-      s_->vcl_derivative_and_value(z, 2, n_minus_one);
+      s_->vcl_derivative_and_value<VCLArchitecture>(z, 2, n_minus_one);
     n_minus_one = vcl::exp(n_minus_one);
     return n_minus_one * dlogn_dz;
   }
