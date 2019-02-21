@@ -204,8 +204,9 @@ template<typename VCLArchitecture> struct VCLFloatReal
   typedef Eigen::Vector3f                         vec3_t;
   typedef Eigen::Matrix3f                         mat3_t;
 
-  typedef int_t                                   int_at[VCLArchitecture::num_double] __attribute((aligned(VCLArchitecture::vec_bytes)));
-  typedef real_t                                  real_at[VCLArchitecture::num_double] __attribute((aligned(VCLArchitecture::vec_bytes)));
+  typedef typename VCLArchitecture::int32_at      int_at;
+  typedef typename VCLArchitecture::uint32_at     uint_at;
+  typedef typename VCLArchitecture::float_at      real_at;
 
   typedef typename VCLArchitecture::int32_vt      int_vt;
   typedef typename VCLArchitecture::uint32_vt     uint_vt;
@@ -246,8 +247,9 @@ template<typename VCLArchitecture> struct VCLDoubleReal
   typedef Eigen::Vector3d                         vec3_t;
   typedef Eigen::Matrix3d                         mat3_t;
 
-  typedef int_t                                   int_at[VCLArchitecture::num_double] __attribute((aligned(VCLArchitecture::vec_bytes)));
-  typedef real_t                                  real_at[VCLArchitecture::num_double] __attribute((aligned(VCLArchitecture::vec_bytes)));
+  typedef typename VCLArchitecture::int64_at      int_at;
+  typedef typename VCLArchitecture::uint64_at     uint_at;
+  typedef typename VCLArchitecture::double_at     real_at;
 
   typedef typename VCLArchitecture::int64_vt      int_vt;
   typedef typename VCLArchitecture::uint64_vt     uint_vt;
@@ -317,6 +319,13 @@ struct VCL128Architecture
   typedef Vec4fb  float_bvt;
   typedef Vec2db  double_bvt;
 
+  typedef int32_t  int32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef uint32_t uint32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef int64_t  int64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef uint64_t uint64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef float    float_at[num_float] __attribute((aligned(vec_bytes)));
+  typedef double   double_at[num_double] __attribute((aligned(vec_bytes)));
+
   typedef Eigen::Vector3_4f Vector3f_vt;
   typedef Eigen::Matrix3_4f Matrix3f_vt;
 
@@ -367,6 +376,13 @@ struct VCL256Architecture
   typedef Vec8fb  float_bvt;
   typedef Vec4db  double_bvt;
 
+  typedef int32_t  int32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef uint32_t uint32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef int64_t  int64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef uint64_t uint64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef float    float_at[num_float] __attribute((aligned(vec_bytes)));
+  typedef double   double_at[num_double] __attribute((aligned(vec_bytes)));
+
   typedef Eigen::Vector3_8f Vector3f_vt;
   typedef Eigen::Matrix3_8f Matrix3f_vt;
 
@@ -407,6 +423,13 @@ struct VCL512Architecture
   typedef Vec8qb  uint64_bvt;
   typedef Vec16fb float_bvt;
   typedef Vec8db  double_bvt;
+
+  typedef int32_t  int32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef uint32_t uint32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef int64_t  int64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef uint64_t uint64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef float    float_at[num_float] __attribute((aligned(vec_bytes)));
+  typedef double   double_at[num_double] __attribute((aligned(vec_bytes)));
 
   typedef Eigen::Vector3_16f Vector3f_vt;
   typedef Eigen::Matrix3_16f Matrix3f_vt;
