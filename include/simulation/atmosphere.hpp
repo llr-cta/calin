@@ -319,6 +319,16 @@ public:
     return n_minus_one * dlogn_dz;
   }
 
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+  vcl_dlognmo_dz(typename VCLArchitecture::double_vt z,
+    typename VCLArchitecture::double_vt& n_minus_one) const
+  {
+    typename VCLArchitecture::double_vt dlognmo_dz =
+      s_->vcl_derivative_and_value<VCLArchitecture>(z, 2, n_minus_one);
+    n_minus_one = vcl::exp(n_minus_one);
+    return dlognmo_dz;
+  }
+
   const std::vector<Level>& get_levels() const { return levels_; }
 
   static LayeredRefractiveAtmosphere* us76(const std::vector<double>& obs_levels = {});

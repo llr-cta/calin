@@ -31,6 +31,7 @@
 #include <simulation/tracker.hpp>
 #include <simulation/atmosphere.hpp>
 #include <util/log.hpp>
+#include <simulation/air_cherenkov_tracker.hpp>
 
 namespace calin { namespace simulation { namespace vcl_iact {
 
@@ -71,18 +72,19 @@ public:
   calin::math::rng::VCLRNG<VCLArchitecture>* rng_ = nullptr;
   bool adopt_rng_ = false;
 
-  Vector3d_vt track_x0_; // track : position at last photon emission point
-  double_vt track_t0_;   // track : time at last photon emission point
-  double_vt track_e0_;   // track : time at last photon emission point
+  double_bvt track_valid_; // track : is this a valid track or not
 
+  Vector3d_vt track_x_;   // track : position at track point
+  double_vt track_t_;     // track : time at track point
+  double_vt track_g_;     // track : gamma at track point
+  double_vt track_yield_const_; // track : cherenkov yield constant for this track
 
-  Vector3d_vt track_u_;  // track : normalized direction vector
-  double_vt track_dx_;   // track : distance from x0 to end
-  double_vt track_dt_;   // track : time from x0 to end
-  double_vt track_b2_;   // track : beta^2 of particle
-  double_vt track_db2_;  // track : change in beta^2 from x0 to end
+  Vector3d_vt track_u_;   // track : normalized direction vector
+  double_vt track_dx_;    // track : distance reamaining to end
+  double_vt track_dt_dx_; // track : rate of change of time per unit track length
+  double_vt track_dg_dx_; // track : rate of change of gamma of particle along track
 
-  double_vt dX_emission_; // distance along track until next photon emission
+  double bandwidth_ = 3.0;
 #endif // not defined SWIG
 };
 
@@ -111,7 +113,6 @@ template<typename VCLArchitecture> VCLIACTTrackVisitor<VCLArchitecture>::
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
-  dX_emission_ = rng_->exponential_double();
   track_dx_ = 0.0;
 }
 
@@ -122,6 +123,8 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 
   using calin::util::vcl::insert_into_vec3_with_mask;
   using calin::util::vcl::insert_into_with_mask;
+  using calin::math::special::SQR;
+  using calin::simulation::air_cherenkov_tracker::YIELD_CONST;
 
   double_bvt unused_tracks = track_dx_ <= 0;
   int unused_track_count = vcl::horizontal_count(unused_tracks);
@@ -136,17 +139,25 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   double_bvt insert_mask = false;
   insert_mask.insert(insert_index, true);
 
+  vcl::Vec2d g = vcl::max(vcl::Vec2d(track.e0, track.e1)/track.mass, 1.0);
+
+  double dx_inv = 1.0/track.dx;
+
   // Watch out for gamma^2 slightly less than 1.0
   // const double g2 = SQR(std::max(track.e0/track.mass,1.0)); // gamma^2
   // const double b2 = 1.0 - 1.0/g2; // beta^2
 
-  insert_into_vec3_with_mask<double_real>(track_x0_, track.x0, insert_mask);
-  insert_into_with_mask<double_real>(track_t0_, track.t0, insert_mask);
-  insert_into_with_mask<double_real>(track_e0_, track.e0, insert_mask);
+  track_valid_ |= insert_mask;
+
+  insert_into_vec3_with_mask<double_real>(track_x_, track.x0, insert_mask);
+  insert_into_with_mask<double_real>(track_t_, track.t0, insert_mask);
+  insert_into_with_mask<double_real>(track_g_, g[0], insert_mask);
+  insert_into_with_mask<double_real>(track_yield_const_, bandwidth_*YIELD_CONST*SQR(track.q), insert_mask);
 
   insert_into_vec3_with_mask<double_real>(track_u_, track.dx_hat, insert_mask);
   insert_into_with_mask<double_real>(track_dx_, track.dx, insert_mask);
-  insert_into_with_mask<double_real>(track_dt_, track.dt, insert_mask);
+  insert_into_with_mask<double_real>(track_dt_dx_, track.dt*dx_inv, insert_mask);
+  insert_into_with_mask<double_real>(track_dg_dx_, (g[1]-g[0])*dx_inv, insert_mask);
 
   if(unused_track_count == 1)
   {
@@ -187,13 +198,76 @@ leave_event()
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 generate_mc_rays()
 {
-  double_vt n;
-  double_vt dn_dz = atm_->vcl_dn_dz<VCLArchitecture>(track_x0_.z(), n);
-  n += 1.0;
+  static unsigned to_print = 1000;
 
+  using calin::math::special::SQR;
+  using namespace calin::util::log;
+
+  double_vt nmo; // n minus one
+  double_vt dlognmo_dx =
+    atm_->vcl_dlognmo_dz<VCLArchitecture>(track_x_.z(), nmo) * track_u_.z();
+
+#if 0
+  LOG(WARNING) << "IN   z: " << track_x_.z() << '\n'
+               << "   1/n: " << ninv << '\n'
+               << "    dx: " << track_dx_ << '\n'
+               << "     Y: " << track_yield_const_ << '\n'
+               << " 1/b^2: " << track_b2inv_;
+  if(!to_print)return;
+#endif
+
+  double max_loop = 1000;
   do {
-    track_dx_ -= dX_emission_;
-    dX_emission_ = rng_->exponential_double();
+    double_vt n2inv = 1.0/SQR(nmo + 1.0);
+    double_vt g2 = SQR(track_g_);
+    double_vt b2inv = g2/(g2-1.0);
+
+    double_vt sin2thetac = vcl::max(1.0 - b2inv * n2inv, 0.0);
+
+    double_vt yield = track_yield_const_ * sin2thetac;
+    double_vt mfp = 1.0/yield;
+    double_vt dx_emission = mfp * rng_->exponential_double();
+
+    if(horizontal_or(yield <= 0))
+    {
+      LOG(INFO) << sin2thetac << ' ' << mfp << ' ' << dx_emission << ' ' << track_dx_-dx_emission;
+
+    }
+
+    track_dx_ -= dx_emission;
+    track_valid_ &= track_dx_>0;
+
+    track_x_ += track_u_ * dx_emission;
+    track_t_ += track_dt_dx_ * dx_emission;
+    track_g_ += track_dg_dx_ * dx_emission;
+
+    nmo *= (1.0 + dlognmo_dx * dx_emission);
+
+#if 0
+    if(to_print)
+    {
+      LOG(INFO) << sin2thetac << ' ' << mfp << ' ' << track_dx_;
+      to_print--;
+    } else {
+      break;
+    }
+#endif
+
+    // cherenkov.cos_thetac     = std::sqrt(1.0 - cherenkov.sin2_thetac);
+    // cherenkov.sin_thetac     = std::sqrt(cherenkov.sin2_thetac);
+
+    if(--max_loop == 0)
+    {
+      LOG(WARNING) << "IN   z: " << track_x_.z() << '\n'
+                   << "   n-1: " << nmo << '\n'
+                   << "    dx: " << track_dx_ << '\n'
+                   << "    Yc: " << track_yield_const_ << '\n'
+                   << " gamma: " << track_g_ << '\n'
+                   << " sin2c: " << sin2thetac << '\n'
+                   << "     Y: " << yield << '\n'
+                   << "   MFP: " << mfp;
+      throw std::runtime_error("Maximum loop exceeded");
+    }
   } while(vcl::horizontal_and(track_dx_ > 0));
 
 }
