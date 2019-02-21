@@ -29,6 +29,7 @@
 #include <math/rng_vcl.hpp>
 #include <math/special.hpp>
 #include <simulation/tracker.hpp>
+#include <simulation/atmosphere.hpp>
 #include <util/log.hpp>
 
 namespace calin { namespace simulation { namespace vcl_iact {
@@ -53,8 +54,9 @@ public:
   using typename VCLArchitecture::double_real;
 #endif // not defined SWIG
 
-  VCLIACTTrackVisitor(calin::math::rng::VCLRNG<VCLArchitecture>* rng = nullptr,
-    bool adopt_rng = false);
+  VCLIACTTrackVisitor(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    calin::math::rng::VCLRNG<VCLArchitecture>* rng = nullptr,
+    bool adopt_atm = false, bool adopt_rng = false);
   virtual ~VCLIACTTrackVisitor();
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
   void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
@@ -62,7 +64,11 @@ public:
 
 #ifndef SWIG
 public:
-  calin::math::rng::VCLRNG<VCLArchitecture>* rng_;
+  void generate_mc_rays();
+
+  calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm_ = nullptr;
+  bool adopt_atm_ = false;
+  calin::math::rng::VCLRNG<VCLArchitecture>* rng_ = nullptr;
   bool adopt_rng_ = false;
 
   Vector3d_vt track_x0_; // track : position at last photon emission point
@@ -83,9 +89,12 @@ public:
 #ifndef SWIG
 
 template<typename VCLArchitecture> VCLIACTTrackVisitor<VCLArchitecture>::
-VCLIACTTrackVisitor(calin::math::rng::VCLRNG<VCLArchitecture>* rng,
-    bool adopt_rng):
+VCLIACTTrackVisitor(
+    calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    calin::math::rng::VCLRNG<VCLArchitecture>* rng,
+    bool adopt_atm, bool adopt_rng):
   VCLArchitecture(), calin::simulation::tracker::TrackVisitor(),
+  atm_(atm), adopt_atm_(adopt_atm),
   rng_(rng ? rng : new calin::math::rng::VCLRNG<VCLArchitecture>()),
   adopt_rng_(rng ? adopt_rng : true)
 {
@@ -111,8 +120,6 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 {
   if(track.q == 0 or track.dx <= 0)return; // it's store policy: no charge, no track = no radiation
 
-  static unsigned to_print = 100;
-
   using calin::util::vcl::insert_into_vec3_with_mask;
   using calin::util::vcl::insert_into_with_mask;
 
@@ -120,12 +127,6 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   int unused_track_count = vcl::horizontal_count(unused_tracks);
 
   int insert_index = vcl::horizontal_find_first(unused_tracks);
-
-  if(to_print)
-  {
-    --to_print;
-    calin::util::log::LOG(calin::util::log::INFO) << insert_index << ' ' << track_dx_;
-  }
 
   if(insert_index == -1)
     throw std::logic_error(
@@ -150,10 +151,7 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   if(unused_track_count == 1)
   {
     // All vector slots are full now
-    do {
-      track_dx_ -= dX_emission_;
-      dX_emission_ = rng_->exponential_double();
-    } while(vcl::horizontal_and(track_dx_ > 0));
+    generate_mc_rays();
   }
 
 /*
@@ -183,8 +181,23 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 leave_event()
 {
+  // nothing to see here
+}
+
+template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
+generate_mc_rays()
+{
+  double_vt n;
+  double_vt dn_dz = atm_->dn_dz(track_x0_.z(), n);
+  n += 1.0;
+
+  do {
+    track_dx_ -= dX_emission_;
+    dX_emission_ = rng_->exponential_double();
+  } while(vcl::horizontal_and(track_dx_ > 0));
 
 }
+
 #endif // not defined SWIG
 
 } } } // namespace calin::simulation::vcl_iact
