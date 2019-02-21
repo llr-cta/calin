@@ -65,6 +65,10 @@ public:
   void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
   void leave_event() override;
 
+  unsigned num_tracks() const { return num_tracks_; }
+  unsigned num_steps() const { return num_steps_; }
+  unsigned num_rays() const { return num_rays_; }
+
 #ifndef SWIG
 public:
   void generate_mc_rays();
@@ -86,6 +90,10 @@ public:
   double_vt track_dx_;    // track : distance reamaining to end
   double_vt track_dt_dx_; // track : rate of change of time per unit track length
   double_vt track_dg_dx_; // track : rate of change of gamma of particle along track
+
+  unsigned num_tracks_ = 0;
+  unsigned num_steps_ = 0;
+  unsigned num_rays_ = 0;
 
   double bandwidth_ = 3.0;
   double forced_sin2theta_ = -1.0;
@@ -117,6 +125,9 @@ template<typename VCLArchitecture> VCLIACTTrackVisitor<VCLArchitecture>::
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
+  num_tracks_ = 0;
+  num_steps_ = 0;
+  num_rays_ = 0;
   track_dx_ = 0.0;
 }
 
@@ -150,6 +161,8 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   // Watch out for gamma^2 slightly less than 1.0
   // const double g2 = SQR(std::max(track.e0/track.mass,1.0)); // gamma^2
   // const double b2 = 1.0 - 1.0/g2; // beta^2
+
+  ++num_tracks_;
 
   track_valid_ |= insert_mask;
 
@@ -224,6 +237,8 @@ generate_mc_rays()
 
   double max_loop = 10000;
   do {
+    ++num_steps_;
+
     double_vt yield = track_yield_const_ * sin2thetac;
     double_vt mfp = 1.0/yield;
     double_vt dx_emission = vcl::min(mfp * rng_->exponential_double(), track_dx_);
@@ -246,6 +261,9 @@ generate_mc_rays()
         double_vt b2inv = g2/(g2-1.0);
         sin2thetac = vcl::max(1.0 - b2inv * n2inv, 0.0);
       }
+
+      num_rays_ += horizontal_count(track_valid_);
+
       propagate_rays(sin2thetac);
     }
 
