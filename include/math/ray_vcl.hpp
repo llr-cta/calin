@@ -185,6 +185,39 @@ public:
     return propagate_to_y_plane_with_mask(mask, d, time_reversal_ok, n);
   }
 
+  //! Propagates free particle to plane with z-normal : z + d = 0
+  bool_vt propagate_to_z_plane_with_mask(bool_vt mask, const real_vt& d,
+    bool time_reversal_ok=true, const real_vt& n = 1.0)
+  {
+    calc_uz_inv();
+
+    // Compute the distance between the plane and one parallel to it
+    // which goes through the particle's current position
+    real_vt plane_sep = -d - pos_.z();
+
+    // Distance the particle must travel to reach the plane i.e.
+    // n_hat * vhat = cos( theta ) = plane_dist / propagation_dist
+    real_vt propagation_dist = plane_sep * uz_inv_;
+
+    // Test whether particle is parallel to z plane
+    mask &= is_finite(propagation_dist);
+
+    // Test whether particles would need to travel backwards, if requested
+    if(!time_reversal_ok)mask &= propagation_dist>=0;
+
+    // Propagate particles that have mask=true
+    propagate_dist_with_mask(mask, propagation_dist, n);
+
+    return mask;
+  }
+
+  bool_vt propagate_to_z_plane(const real_vt& d,
+    bool time_reversal_ok=true, const real_vt& n = 1.0)
+  {
+    bool_vt mask = true;
+    return propagate_to_z_plane_with_mask(mask, d, time_reversal_ok, n);
+  }
+
   bool_vt propagate_to_y_sphere_1st_interaction_fwd_bwd_with_mask(bool_vt mask,
     const real_vt& radius, const real_vt& surface_y_min = 0, const real_vt& n = 1.0)
   {
