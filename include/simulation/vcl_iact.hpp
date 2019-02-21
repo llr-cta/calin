@@ -55,6 +55,8 @@ public:
   using typename VCLArchitecture::Vector3d_vt;
   using typename VCLArchitecture::float_real;
   using typename VCLArchitecture::double_real;
+  using typename VCLArchitecture::float_at;
+  using typename VCLArchitecture::double_at;
 #endif // not defined SWIG
 
   VCLIACTTrackVisitor(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
@@ -65,9 +67,11 @@ public:
   void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
   void leave_event() override;
 
-  unsigned num_tracks() const { return num_tracks_; }
-  unsigned num_steps() const { return num_steps_; }
-  unsigned num_rays() const { return num_rays_; }
+  uint64_t num_tracks() const { return num_tracks_; }
+  uint64_t num_steps() const { return num_steps_; }
+  uint64_t num_rays() const { return num_rays_; }
+  const std::vector<double>& xgnd() const { return xgnd_; }
+  const std::vector<double>& ygnd() const { return ygnd_; }
 
 #ifndef SWIG
 public:
@@ -91,12 +95,15 @@ public:
   double_vt track_dt_dx_; // track : rate of change of time per unit track length
   double_vt track_dg_dx_; // track : rate of change of gamma of particle along track
 
-  unsigned num_tracks_ = 0;
-  unsigned num_steps_ = 0;
-  unsigned num_rays_ = 0;
+  uint64_t num_tracks_ = 0;
+  uint64_t num_steps_ = 0;
+  uint64_t num_rays_ = 0;
 
   double bandwidth_ = 3.0;
   double forced_sin2theta_ = -1.0;
+
+  std::vector<double> xgnd_;
+  std::vector<double> ygnd_;
 #endif // not defined SWIG
 };
 
@@ -129,6 +136,9 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
   num_steps_ = 0;
   num_rays_ = 0;
   track_dx_ = 0.0;
+
+  xgnd_.clear();
+  ygnd_.clear();
 }
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
@@ -296,7 +306,19 @@ propagate_rays(double_vt sin2thetac)
   calin::math::geometry::VCL<double_real>::rotate_in_place_z_to_u_Rzy(v, track_u_);
 
   calin::math::ray::VCLRay<double_real> ray(track_x_, v, track_t_);
+  double_bvt mask = ray.propagate_to_z_plane_with_mask(track_valid_, atm_->zobs(0), false);
 
+  double_at x;
+  double_at y;
+  ray.x().store(x);
+  ray.y().store(y);
+
+  for(unsigned iv=0; iv<VCLArchitecture::num_double; iv++) {
+    if(mask[iv]) {
+      xgnd_.push_back(x[iv]);
+      ygnd_.push_back(y[iv]);
+    }
+  }
 }
 
 #endif // not defined SWIG
