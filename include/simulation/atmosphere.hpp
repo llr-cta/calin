@@ -304,13 +304,13 @@ public:
     bool time_reversal_ok=true);
 
   template<typename VCLArchitecture> inline void
-  n_minus_one(typename VCLArchitecture::double_vt z) const
+  vcl_n_minus_one(typename VCLArchitecture::double_vt z) const
   {
     return vcl::exp(s_->value(z, 2));
   }
 
   template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
-  dn_dz(typename VCLArchitecture::double_vt z,
+  vcl_dn_dz(typename VCLArchitecture::double_vt z,
     typename VCLArchitecture::double_vt& n_minus_one) const
   {
     typename VCLArchitecture::double_vt dlogn_dz =
