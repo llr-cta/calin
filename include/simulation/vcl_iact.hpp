@@ -188,7 +188,7 @@ template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 generate_mc_rays()
 {
   double_vt n;
-  double_vt dn_dz = atm_->dn_dz(track_x0_.z(), n);
+  double_vt dn_dz = atm_->vcl_dn_dz<VCLArchitecture>(track_x0_.z(), n);
   n += 1.0;
 
   do {
