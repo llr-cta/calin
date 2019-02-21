@@ -295,6 +295,10 @@ public:
     typename VCLArchitecture::double_vt& value4, unsigned ispline4,
     typename VCLArchitecture::double_vt& value5, unsigned ispline5) const;
 
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+  vcl_derivative_and_value(typename VCLArchitecture::double_vt x, unsigned ispline,
+    typename VCLArchitecture::double_vt& value) const;
+
   double test_vcl_value(double x, unsigned ispline, unsigned ivec=0) const;
   std::vector<double> test_vcl_value(double x0, double x1, double x2, double x3,
     unsigned ispline) const;
@@ -441,6 +445,28 @@ CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x,
   value3 = VCALC_SPLINE(ispline3);
   value4 = VCALC_SPLINE(ispline4);
   value5 = VCALC_SPLINE(ispline5);
+}
+
+template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+CubicMultiSpline::vcl_derivative_and_value(
+  typename VCLArchitecture::double_vt x, unsigned ispline,
+  typename VCLArchitecture::double_vt& value) const
+{
+  typedef typename VCLArchitecture::int64_vt int64_vt;
+  typedef typename VCLArchitecture::double_vt double_vt;
+
+  int64_vt iinterval = vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
+  double_vt x0 = vcl::lookup<0x40000000>(iinterval, s_.x.data());
+  double_vt x1 = vcl::lookup<0x40000000>(iinterval, s_.x.data()+1);
+  double_vt dx = x1-x0;
+  double_vt dx_inv = 1.0/dx;
+  double_vt t = (x-x0)*dx_inv;
+
+  return cubic_1st_derivative_and_value(value, t, dx, dx_inv,
+    vcl::lookup<0x40000000>(iinterval, y_[ispline].data()),
+    vcl::lookup<0x40000000>(iinterval, y_[ispline].data()+1),
+    vcl::lookup<0x40000000>(iinterval, dy_dx_[ispline].data()),
+    vcl::lookup<0x40000000>(iinterval, dy_dx_[ispline].data()+1));
 }
 
 #undef VCALC_SPLINE
