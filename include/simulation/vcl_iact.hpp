@@ -70,11 +70,17 @@ public:
   uint64_t num_tracks() const { return num_tracks_; }
   uint64_t num_steps() const { return num_steps_; }
   uint64_t num_rays() const { return num_rays_; }
+
   const std::vector<double>& xgnd() const { return xgnd_; }
   const std::vector<double>& ygnd() const { return ygnd_; }
+  const std::vector<double>& uxgnd() const { return uxgnd_; }
+  const std::vector<double>& uygnd() const { return uygnd_; }
 
 #ifndef SWIG
 public:
+  inline int insert_track(const Eigen::Vector3d& x, const double t, const double g,
+    const double yield, const Eigen::Vector3d& u, const double dx, const double dt_dx,
+    const double dg_dx, bool valid = true);
   void generate_mc_rays();
   void propagate_rays(double_vt sin2thetac);
 
@@ -104,6 +110,8 @@ public:
 
   std::vector<double> xgnd_;
   std::vector<double> ygnd_;
+  std::vector<double> uxgnd_;
+  std::vector<double> uygnd_;
 #endif // not defined SWIG
 };
 
@@ -136,90 +144,114 @@ visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
   num_steps_ = 0;
   num_rays_ = 0;
   track_dx_ = 0.0;
+  track_valid_ = false;
 
   xgnd_.clear();
   ygnd_.clear();
+  uxgnd_.clear();
+  uygnd_.clear();
 }
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 {
-  if(track.q == 0 or track.dx <= 0)return; // it's store policy: no charge, no track = no radiation
+  using namespace calin::util::log;
 
-  using calin::util::vcl::insert_into_vec3_with_mask;
-  using calin::util::vcl::insert_into_with_mask;
+  double zobs = atm_->zobs(0);
+  double dx = track.dx;
+
+  bool z0_at_or_below_ground = track.x0.z() <= zobs;
+  bool z1_below_ground = track.x1.z() < zobs;
+
+  kill_track = z0_at_or_below_ground;
+
+  // it's store policy: no charge, no track, no photons
+  if(track.q == 0 or dx <= 0 or z0_at_or_below_ground)return;
+
+  if(z1_below_ground) {
+    dx = (zobs - track.x0.z())/track.dx_hat.z();
+    if(dx <= 0)return;
+  }
+
   using calin::math::special::SQR;
   using calin::simulation::air_cherenkov_tracker::YIELD_CONST;
 
-  double_bvt unused_tracks = track_dx_ <= 0;
-  int unused_track_count = vcl::horizontal_count(unused_tracks);
-
-  int insert_index = vcl::horizontal_find_first(unused_tracks);
-
-  if(insert_index == -1)
-    throw std::logic_error(
-      calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTTrackVisitor")
-      + "::visit_track: No free SIMD vector slot");
-
-  double_bvt insert_mask = false;
-  insert_mask.insert(insert_index, true);
-
+  // Watch out for gamma^2 slightly less than 1.0
   vcl::Vec2d g = vcl::max(vcl::Vec2d(track.e0, track.e1)/track.mass, 1.0);
 
-  double dx_inv = 1.0/track.dx;
-
-  // Watch out for gamma^2 slightly less than 1.0
-  // const double g2 = SQR(std::max(track.e0/track.mass,1.0)); // gamma^2
-  // const double b2 = 1.0 - 1.0/g2; // beta^2
+  double dx_inv = 1.0/dx;
 
   ++num_tracks_;
 
-  track_valid_ |= insert_mask;
-
-  insert_into_vec3_with_mask<double_real>(track_x_, track.x0, insert_mask);
-  insert_into_with_mask<double_real>(track_t_, track.t0, insert_mask);
-  insert_into_with_mask<double_real>(track_g_, g[0], insert_mask);
-  insert_into_with_mask<double_real>(track_yield_const_, bandwidth_*YIELD_CONST*SQR(track.q), insert_mask);
-
-  insert_into_vec3_with_mask<double_real>(track_u_, track.dx_hat, insert_mask);
-  insert_into_with_mask<double_real>(track_dx_, track.dx, insert_mask);
-  insert_into_with_mask<double_real>(track_dt_dx_, track.dt*dx_inv, insert_mask);
-  insert_into_with_mask<double_real>(track_dg_dx_, (g[1]-g[0])*dx_inv, insert_mask);
+  int unused_track_count =
+    insert_track(track.x0, track.t0, g[0], bandwidth_*YIELD_CONST*SQR(track.q),
+      track.dx_hat, dx, track.dt*dx_inv, (g[1]-g[0])*dx_inv);
 
   if(unused_track_count == 1)
   {
     // All vector slots are full now
     generate_mc_rays();
   }
-
-/*
-
-  if(enable_forced_cherenkov_angle_mode_)
-    cherenkov.sin2_thetac  = forced_sin2_thetac_;
-  else
-    cherenkov.sin2_thetac  = 1.0 - 1.0/(b2*SQR(cherenkov.n));
-  if(cherenkov.sin2_thetac <= 0.0)return;
-  cherenkov.yield_density  =
-    YIELD_CONST*SQR(track.q)*cherenkov.sin2_thetac*cherenkov.dx;
-  cherenkov.cos_thetac     = std::sqrt(1.0 - cherenkov.sin2_thetac);
-  cherenkov.sin_thetac     = std::sqrt(cherenkov.sin2_thetac);
-
-  cherenkov.dx             = track.dx;
-  cherenkov.de             = track.de;
-  cherenkov.dt             = track.dt;
-
-
-  Vector3d_vt track_x0; // track : position at start
-  Vector3d_vt track_u;  // track : normalized direction vector
-  double_vt track_dx_;  // track : distance from x0 to end
-  double_vt track_b2_;  // track : beta^2 of particle
-*/
 }
+
+template<typename VCLArchitecture> inline int VCLIACTTrackVisitor<VCLArchitecture>::
+insert_track(const Eigen::Vector3d& x, const double t, const double g,
+  const double yield, const Eigen::Vector3d& u, const double dx, const double dt_dx,
+  const double dg_dx, bool valid)
+{
+  using calin::util::vcl::insert_into_vec3_with_mask;
+  using calin::util::vcl::insert_into_with_mask;
+  using namespace calin::util::log;
+
+  double_bvt unused_tracks = track_dx_ <= 0;
+  int insert_index = vcl::horizontal_find_first(unused_tracks);
+
+  if(insert_index == -1)
+    throw std::logic_error(
+      calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTTrackVisitor")
+      + "::insert_track: No free SIMD vector slot");
+
+  double_bvt insert_mask = false;
+  insert_mask.insert(insert_index, true);
+
+  if(valid)track_valid_ = track_valid_ || insert_mask;
+  else track_valid_ = vcl::andnot(track_valid_, insert_mask);
+
+  insert_into_vec3_with_mask<double_real>(track_x_, x, insert_mask);
+  insert_into_with_mask<double_real>(track_t_, t, insert_mask);
+  insert_into_with_mask<double_real>(track_g_, g, insert_mask);
+  insert_into_with_mask<double_real>(track_yield_const_, yield, insert_mask);
+
+  insert_into_vec3_with_mask<double_real>(track_u_, u, insert_mask);
+  insert_into_with_mask<double_real>(track_dx_, dx, insert_mask);
+  insert_into_with_mask<double_real>(track_dt_dx_, dt_dx, insert_mask);
+  insert_into_with_mask<double_real>(track_dg_dx_, dg_dx, insert_mask);
+
+  return vcl::horizontal_count(unused_tracks);
+}
+
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
 leave_event()
 {
-  // nothing to see here
+  while(horizontal_or(track_valid_)) {
+    int index = horizontal_find_first(track_dx_ > 0);
+
+    if(index == -1)
+      throw std::logic_error(
+        calin::util::vcl::templated_class_name<VCLArchitecture>("VCLIACTTrackVisitor")
+        + "::leave_event: No active track found");
+
+    Eigen::Vector3d x(track_x_.x()[index], track_x_.y()[index], track_x_.z()[index]);
+    Eigen::Vector3d u(track_u_.x()[index], track_u_.y()[index], track_u_.z()[index]);
+
+    while(horizontal_or(track_dx_ <= 0)) {
+      insert_track(x, track_t_[index], track_g_[index], track_yield_const_[index],
+        u, track_dx_[index], track_dg_dx_[index], track_dg_dx_[index], false);
+    }
+
+    generate_mc_rays();
+  }
 }
 
 template<typename VCLArchitecture> void VCLIACTTrackVisitor<VCLArchitecture>::
@@ -262,7 +294,8 @@ generate_mc_rays()
 
     nmo *= (1.0 + dlognmo_dx * dx_emission);
 
-    if(horizontal_or(track_valid_)) {
+    unsigned nvalid = horizontal_count(track_valid_);
+    if(nvalid) {
       if(forced_sin2theta_ > 0) {
         // nothing to see here
       } else {
@@ -272,14 +305,20 @@ generate_mc_rays()
         sin2thetac = vcl::max(1.0 - b2inv * n2inv, 0.0);
       }
 
-      num_rays_ += horizontal_count(track_valid_);
+      num_rays_ += nvalid;
 
       propagate_rays(sin2thetac);
     }
 
     if(--max_loop == 0)
     {
-      LOG(WARNING) << "IN   z: " << track_x_.z() << '\n'
+      LOG(WARNING) << " valid: " << track_valid_ << '\n'
+                   << "     x: " << track_x_.x() << '\n'
+                   << "     y: " << track_x_.y() << '\n'
+                   << "     z: " << track_x_.z() << '\n'
+                   << "    ux: " << track_u_.x() << '\n'
+                   << "    uy: " << track_u_.y() << '\n'
+                   << "    uz: " << track_u_.z() << '\n'
                    << "   n-1: " << nmo << '\n'
                    << "    dx: " << track_dx_ << '\n'
                    << "    Yc: " << track_yield_const_ << '\n'
@@ -310,13 +349,19 @@ propagate_rays(double_vt sin2thetac)
 
   double_at x;
   double_at y;
+  double_at ux;
+  double_at uy;
   ray.x().store(x);
   ray.y().store(y);
+  ray.ux().store(ux);
+  ray.uy().store(uy);
 
   for(unsigned iv=0; iv<VCLArchitecture::num_double; iv++) {
     if(mask[iv]) {
       xgnd_.push_back(x[iv]);
       ygnd_.push_back(y[iv]);
+      uxgnd_.push_back(ux[iv]);
+      uygnd_.push_back(uy[iv]);
     }
   }
 }
