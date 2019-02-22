@@ -29,6 +29,23 @@
 using namespace calin::simulation::tracker;
 using namespace calin::util::log;
 
+std::ostream& calin::simulation::tracker::operator<<(std::ostream& stream,
+  const calin::simulation::tracker::Track& t)
+{
+  stream
+    << "================================== TRACK ==================================\n"
+    << "type: " << particle_type_to_string(t.type) << " (PDG: " << t.pdg_type << ")  q: " << t.q << "  mass: " << t.mass << "  weight: " << t.weight << '\n'
+    << "x0: " << t.x0.transpose() << '\n'
+    << "x1: " << t.x1.transpose() << '\n'
+    << "dx: " << t.dx << "  dx_hat: " << t.dx_hat.transpose() << '\n'
+    << "u0: " << t.u0.transpose() << '\n'
+    << "u1: " << t.u1.transpose() << '\n'
+    << "e0: " << t.e0 << "  e1: " << t.e1 << "  de: " << t.de << '\n'
+    << "t0: " << t.t0 << "  t1: " << t.t1 << "  dt: " << t.dt << '\n'
+    << "===========================================================================\n";
+  return stream;
+}
+
 calin::simulation::tracker::ParticleType
 calin::simulation::tracker::pdg_type_to_particle_type(int pdg_type)
 {
@@ -109,6 +126,32 @@ particle_type_to_charge(ParticleType track_type)
   };
   assert(0);
   return 0;
+}
+
+std::string calin::simulation::tracker::
+particle_type_to_string(ParticleType track_type)
+{
+  switch(track_type)
+  {
+  case ParticleType::GAMMA:
+    return "GAMMA";
+  case ParticleType::ELECTRON:
+    return "ELECTRON";
+  case ParticleType::POSITRON:
+    return "POSITRON";
+  case ParticleType::MUON:
+    return "MUON-";
+  case ParticleType::ANTI_MUON:
+    return "MUON+";
+  case ParticleType::ANTI_PROTON:
+    return "PROTON-";
+  case ParticleType::PROTON:
+    return "PROTON+";
+  case ParticleType::OTHER:
+    return "OTHER";
+  };
+  assert(0);
+  return "UNKNOWN";
 }
 
 TrackVisitor::~TrackVisitor()

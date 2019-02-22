@@ -28,6 +28,7 @@
 // Energy, e:    MeV
 
 #include<vector>
+#include<ostream>
 #include<map>
 
 #include"Eigen/Core"
@@ -42,6 +43,7 @@ ParticleType pdg_type_to_particle_type(int pdg_type);
 int particle_type_to_pdg_type(ParticleType track_type);
 double particle_type_to_mass(ParticleType track_type);
 double particle_type_to_charge(ParticleType track_type);
+std::string particle_type_to_string(ParticleType track_type);
 
 struct Event
 {
@@ -84,6 +86,8 @@ struct Track
 
   double weight;           // Track weighting for thinning
 };
+
+std::ostream& operator<<(std::ostream& stream, const Track& t);
 
 class TrackVisitor
 {
