@@ -85,7 +85,6 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
   track.weight   = event.weight;
   track.e0       = event.e0;
   track.e1       = event.e0;
-  track.dx       = step_size_;
   track.de       = 0.0;
 
   const double gamma = track.e0/track.mass;
@@ -94,6 +93,7 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
   const double dt = step_size_/v;
   const double gyro = GYRO_CONST * track.q / track.e0 * dt;
 
+  track.dx       = step_size_;
   track.dt       = dt;
 
   while(num_events--)
@@ -120,13 +120,20 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
         track.t0     = track.t1;
 
         track.x1     = track.x0 + umid * step_size_;
+
         if(track.x1.z() < zground_or_dist_)
         {
           double step_size = (zground_or_dist_ - track.x0.z())/umid.z();
           track.x1.x() = track.x0.x() + umid.x() * step_size;
           track.x1.y() = track.x0.y() + umid.y() * step_size;
           track.x1.z() = zground_or_dist_;
+          track.dx     = step_size;
+          track.dt     = step_size/v;
+        } else {
+          track.dx     = step_size_;
+          track.dt     = dt;
         }
+
 
         track.t1     = track.t0 + dt;
 
