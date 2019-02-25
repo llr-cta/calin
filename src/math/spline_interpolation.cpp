@@ -46,7 +46,7 @@ calin::math::spline_interpolation::make_intervals(const std::vector<double>& x)
   intervals.regular_xmax = x[1];
   intervals.regular_dx = x[1] - x[0];
   intervals.regular_dx_inv = 1/intervals.regular_dx;
-  intervals.irregular_start = 1;
+  intervals.irregular_begin = 1;
 
   if(intervals.regular_dx <= 0)
     std::runtime_error("make_intervals: x values must be monotonously increasing");
@@ -54,19 +54,19 @@ calin::math::spline_interpolation::make_intervals(const std::vector<double>& x)
     double dx = x[i] - x[i-1];
     if(dx <= 0)
       std::runtime_error("make_intervals: x values must be monotonously increasing");
-    if(intervals.irregular_start == (i-1) and
+    if(intervals.irregular_begin == (i-1) and
         std::abs(dx - intervals.regular_dx)/intervals.regular_dx < 1e-6) {
-      intervals.irregular_start = i;
+      intervals.irregular_begin = i;
       intervals.regular_xmax = x[i];
     }
   }
   intervals.xmax = x.back();
   intervals.x = x;
-  if(intervals.irregular_start == 1) {
+  if(intervals.irregular_begin == 1) {
     intervals.regular_xmax = x[0];
     intervals.regular_dx = 0;
     intervals.regular_dx_inv = 0;
-    intervals.irregular_start = 0;
+    intervals.irregular_begin = 0;
   }
   return intervals;
 }
@@ -496,6 +496,28 @@ double CubicMultiSpline::derivative_and_value(double x, unsigned ispline, double
   double dx_inv = 1.0/dx;
   double t = (x-s_.x[i])*dx_inv;
   return cubic_1st_derivative_and_value(value, t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
+    dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
+}
+
+double CubicMultiSpline::second_derivative(double x, unsigned ispline) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_2nd_derivative(t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
+    dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
+}
+
+double CubicMultiSpline::second_derivative_and_value(double x, unsigned ispline,
+  double& first_derivative, double& value) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  return cubic_2nd_derivative_and_value(first_derivative, value, 
+    t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
     dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
 }
 

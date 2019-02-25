@@ -44,7 +44,7 @@ struct InterpolationIntervals
   double regular_xmax;    // x at the end of the regularly sampled portion
   double regular_dx;      // the interval of the regularly sampled portion
   double regular_dx_inv;  // one over the interval of the regularly sampled portion
-  unsigned irregular_start;
+  unsigned irregular_begin;
   std::vector<double> x;  // x at the start / end of the intervals
 };
 
@@ -114,6 +114,21 @@ R cubic_2nd_derivative(R t, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 }
 
 template<typename R> inline
+R cubic_2nd_derivative_and_value(R& first_derivative, R& value,
+  R t, R dx, R dx_inv, R y0, R y1, R D0, R D1)
+{
+  using calin::math::special::SQR;
+  D0 *= dx;
+  D1 *= dx;
+  R dy = y1-y0;
+  R c = 3*dy - (2*D0 + D1);
+  R d = -2*dy + (D0 + D1);
+  value = y0 + t * (D0 + t * (c + t * d));
+  first_derivative = dx_inv * (D0 + t * (2*c + t * 3*d));
+  return SQR(dx_inv) * (2*c + t * 6*d);
+}
+
+template<typename R> inline
 R cubic_3rd_derivative(R t, R dx, R dx_inv, R y0, R y1, R D0, R D1)
 {
   using calin::math::special::CUBE;
@@ -145,7 +160,7 @@ inline unsigned find_interval(double x, const InterpolationIntervals& intervals)
     return std::floor((x-intervals.xmin)*intervals.regular_dx_inv);
   }
   auto i = std::upper_bound(
-    intervals.x.begin()+intervals.irregular_start, intervals.x.end(), x);
+    intervals.x.begin()+intervals.irregular_begin, intervals.x.end(), x);
   return i - intervals.x.begin() - 1;
 }
 
@@ -156,18 +171,18 @@ vcl_find_interval(typename VCLReal::real_vt x, const InterpolationIntervals& int
     VCLReal::round_to_int(vcl::floor((x-intervals.xmin)*intervals.regular_dx_inv));
   ireg = vcl::max(ireg, 0);
   unsigned iregmax = intervals.x.size()-2;
-  if(intervals.irregular_start <= iregmax)
+  if(intervals.irregular_begin <= iregmax)
   {
-    if(vcl::horizontal_or(ireg > intervals.irregular_start)) {
+    if(vcl::horizontal_or(ireg > intervals.irregular_begin)) {
       // Yucky scalar code, sniff :'(
       typename VCLReal::real_at x_array;
       typename VCLReal::int_at ireg_array;
       x.store_a(x_array);
       ireg.store_a(ireg_array);
       for(unsigned iv=0; iv<VCLReal::num_real; ++iv) {
-        if(ireg_array[iv] > intervals.irregular_start) {
+        if(ireg_array[iv] > intervals.irregular_begin) {
           auto i = std::upper_bound(
-            intervals.x.begin()+intervals.irregular_start, intervals.x.end()-1, x_array[iv]);
+            intervals.x.begin()+intervals.irregular_begin, intervals.x.end()-1, x_array[iv]);
           ireg_array[iv] = i - intervals.x.begin() - 1;
         }
       }
@@ -233,6 +248,23 @@ public:
 
   const InterpolationIntervals& intervals() const { return s_; }
 
+  inline unsigned get_interval(double x) const {
+    return find_interval(x, s_);
+  }
+
+  inline void get_xsupport(unsigned iinterval,
+    double& x0, double& dx, double& dx_inv)
+  {
+    x0 = s_.x[iinterval];
+    if(iinterval < s_.irregular_begin) {
+      dx = s_.regular_dx;
+      dx_inv = s_.regular_dx_inv;
+    } else {
+      dx = s_.x[iinterval+1]-x0;
+      dx_inv = 1.0/dx;
+    }
+  }
+
   const std::vector<double> yknot(unsigned ispline) const { return y_[ispline]; }
   const std::vector<double> dydxknot(unsigned ispline) const { return dy_dx_[ispline]; }
 
@@ -256,6 +288,40 @@ public:
 
   double derivative(double x, unsigned ispline) const;
   double derivative_and_value(double x, unsigned ispline, double& value) const;
+
+  double second_derivative(double x, unsigned ispline) const;
+  double second_derivative_and_value(double x, unsigned ispline,
+    double& first_derivative, double& value) const;
+
+  template<typename VCLArchitecture> inline typename VCLArchitecture::int64_vt
+  vcl_get_interval(typename VCLArchitecture::double_vt x) const {
+    return vcl_find_interval<calin::util::vcl::VCLDoubleReal<VCLArchitecture> >(x, s_);
+  }
+
+  template<typename VCLArchitecture> inline void
+  vcl_get_xsupport(typename VCLArchitecture::int64_vt iinterval,
+    typename VCLArchitecture::double_vt& x0,
+    typename VCLArchitecture::double_vt& dx,
+    typename VCLArchitecture::double_vt& dx_inv)
+  {
+    x0 = vcl::lookup<0x40000000>(iinterval, s_.x.data());
+    if(vcl::horizontal_and(iinterval < s_.irregular_begin)) {
+      dx = s_.regular_dx;
+      dx_inv = s_.regular_dx_inv;
+    } else {
+      typename VCLArchitecture::double_vt x1 =
+        vcl::lookup<0x40000000>(iinterval, s_.x.data()+1);
+      dx = x1-x0;
+      dx_inv = 1.0/dx;
+    }
+  }
+
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+  vcl_value_with_xsupport(typename VCLArchitecture::double_vt x, unsigned ispline,
+    typename VCLArchitecture::int64_vt iinterval,
+    typename VCLArchitecture::double_vt& x0,
+    typename VCLArchitecture::double_vt& dx,
+    typename VCLArchitecture::double_vt& dx_inv) const;
 
   template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
   vcl_value(typename VCLArchitecture::double_vt x, unsigned ispline) const;
@@ -315,6 +381,17 @@ private:
   vcl::lookup<0x40000000>(iinterval, y_[ispline].data()+1),       \
   vcl::lookup<0x40000000>(iinterval, dy_dx_[ispline].data()),     \
   vcl::lookup<0x40000000>(iinterval, dy_dx_[ispline].data()+1))
+
+template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+CubicMultiSpline::vcl_value_with_xsupport(typename VCLArchitecture::double_vt x, unsigned ispline,
+  typename VCLArchitecture::int64_vt iinterval,
+  typename VCLArchitecture::double_vt& x0,
+  typename VCLArchitecture::double_vt& dx,
+  typename VCLArchitecture::double_vt& dx_inv) const
+{
+  typename VCLArchitecture::double_vt t = (x-x0)*dx_inv;
+  return VCALC_SPLINE(ispline);
+}
 
 template<typename VCLArchitecture> typename VCLArchitecture::double_vt
 CubicMultiSpline::vcl_value(typename VCLArchitecture::double_vt x, unsigned ispline) const
