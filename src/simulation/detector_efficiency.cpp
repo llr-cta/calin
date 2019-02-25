@@ -59,6 +59,9 @@ AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
     double ground_level_km, double spacing_km)
 {
   std::ifstream stream(filename.c_str());
+  if(!stream.good())
+    throw std::runtime_error("Could not open: "+filename);
+
   calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
@@ -108,6 +111,9 @@ AtmosphericAbsorption::AtmosphericAbsorption(const std::string& filename,
   std::vector<double> levels_cm)
 {
   std::ifstream stream(filename.c_str());
+  if(!stream.good())
+    throw std::runtime_error("Could not open: "+filename);
+
   calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
