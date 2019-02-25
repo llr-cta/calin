@@ -20,6 +20,12 @@ if(GEANT4_FOUND)
 	add_test(TestGeant4 test_geant4)
 	install(TARGETS test_geant4
 	  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
+
+	add_executable(speedtest_vcl_iact speedtest_vcl_iact.cpp)
+	target_link_libraries(speedtest_vcl_iact ${GTEST_BOTH_LIBRARIES}
+				     calin_simulation calin_math calin_proto)
+	install(TARGETS speedtest_vcl_iact
+	  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
 endif()
 
 add_executable(test_vcl_raytracer test_vcl_raytracer.cpp)
