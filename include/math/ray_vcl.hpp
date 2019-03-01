@@ -346,6 +346,22 @@ public:
     IntersectionPoint ip = IP_CLOSEST, bool time_reversal_ok = true, double n = 1.0);
 #endif
 
+#ifndef SWIG
+  static void* operator new(size_t nbytes) {
+    void* p = nullptr;
+    if(::posix_memalign(&p, CALIN_NEW_ALIGN, nbytes)==0) {
+      return p;
+    }
+    throw std::bad_alloc();
+  }
+  static void* operator new(size_t nbytes, void* p) {
+    return p;
+  }
+  static void operator delete(void *p) {
+    free(p);
+  }
+#endif
+
 private:
   void calc_ux_inv() const {
     if(!has_ux_inv_) { has_ux_inv_ = true; ux_inv_ = 1.0/dir_.x(); } }

@@ -77,6 +77,20 @@ public:
   const std::vector<double>& uygnd() const { return uygnd_; }
 
 #ifndef SWIG
+  static void* operator new(size_t nbytes) {
+    void* p = nullptr;
+    if(::posix_memalign(&p, CALIN_GLOBAL_ALIGN, nbytes)==0) {
+      return p;
+    }
+    throw std::bad_alloc();
+  }
+  static void* operator new(size_t nbytes, void* p) {
+    return p;
+  }
+  static void operator delete(void *p) {
+    free(p);
+  }
+
 public:
   inline int insert_track(const Eigen::Vector3d& x, const double t, const double g,
     const double yield, const Eigen::Vector3d& u, const double dx, const double dt_dx,

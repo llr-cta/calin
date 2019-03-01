@@ -26,6 +26,8 @@
 #include <vector>
 #include <Eigen/Core>
 
+#define CALIN_NEW_ALIGN 32
+
 namespace calin {
 
 #ifndef SWIG

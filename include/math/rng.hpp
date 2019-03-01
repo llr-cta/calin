@@ -647,7 +647,7 @@ private:
 #ifndef SWIG
   static void* operator new(size_t nbytes) {
     void* p = nullptr;
-    if(::posix_memalign(&p, 32, nbytes)==0) {
+    if(::posix_memalign(&p, CALIN_NEW_ALIGN, nbytes)==0) {
       return p;
     }
     throw std::bad_alloc();
