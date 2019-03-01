@@ -288,6 +288,7 @@ public:
 
   double derivative(double x, unsigned ispline) const;
   double derivative_and_value(double x, unsigned ispline, double& value) const;
+  std::vector<double> derivative(double x) const;
 
   double second_derivative(double x, unsigned ispline) const;
   double second_derivative_and_value(double x, unsigned ispline,

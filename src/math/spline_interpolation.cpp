@@ -470,13 +470,28 @@ std::vector<double> CubicMultiSpline::value(double x) const
   double dx = s_.x[i+1]-s_.x[i];
   double dx_inv = 1.0/dx;
   double t = (x-s_.x[i])*dx_inv;
-  std::vector<double> values;
+  std::vector<double> values(y_.size());
   for(unsigned ispline=0;ispline<y_.size();ispline++) {
     values[ispline] =
       cubic_value(t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
         dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
   }
   return values;
+}
+
+std::vector<double> CubicMultiSpline::derivative(double x) const
+{
+  unsigned i = find_interval(x, s_);
+  double dx = s_.x[i+1]-s_.x[i];
+  double dx_inv = 1.0/dx;
+  double t = (x-s_.x[i])*dx_inv;
+  std::vector<double> derivative(y_.size());
+  for(unsigned ispline=0;ispline<y_.size();ispline++) {
+    derivative[ispline] =
+      cubic_1st_derivative(t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
+        dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
+  }
+  return derivative;
 }
 
 double CubicMultiSpline::derivative(double x, unsigned ispline) const
@@ -516,7 +531,7 @@ double CubicMultiSpline::second_derivative_and_value(double x, unsigned ispline,
   double dx = s_.x[i+1]-s_.x[i];
   double dx_inv = 1.0/dx;
   double t = (x-s_.x[i])*dx_inv;
-  return cubic_2nd_derivative_and_value(first_derivative, value, 
+  return cubic_2nd_derivative_and_value(first_derivative, value,
     t, dx, dx_inv, y_[ispline][i], y_[ispline][i+1],
     dy_dx_[ispline][i], dy_dx_[ispline][i+1]);
 }
