@@ -34,6 +34,7 @@
 #include <simulation/atmosphere.hpp>
 #include <util/log.hpp>
 #include <simulation/air_cherenkov_tracker.hpp>
+#include <simulation/vcl_iact.pb.h>
 
 namespace calin { namespace simulation { namespace vcl_iact {
 
@@ -60,6 +61,7 @@ public:
 #endif // not defined SWIG
 
   VCLIACTTrackVisitor(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    const calin::ix::simulation::vcl_iact::VCLIACTConfiguration& config = default_config(),
     calin::math::rng::VCLRNG<VCLArchitecture>* rng = nullptr,
     bool adopt_atm = false, bool adopt_rng = false);
   virtual ~VCLIACTTrackVisitor();
@@ -75,6 +77,14 @@ public:
   const std::vector<double>& ygnd() const { return ygnd_; }
   const std::vector<double>& uxgnd() const { return uxgnd_; }
   const std::vector<double>& uygnd() const { return uygnd_; }
+
+  static calin::ix::simulation::vcl_iact::VCLIACTConfiguration default_config() {
+    calin::ix::simulation::vcl_iact::VCLIACTConfiguration config;
+    config.set_bandwidth(3.0);
+    config.set_enable_forced_cherenkov_angle_mode(false);
+    config.set_forced_cherenkov_angle(-1.0);
+    return config;
+  }
 
 #ifndef SWIG
   static void* operator new(size_t nbytes) {
@@ -134,12 +144,16 @@ public:
 template<typename VCLArchitecture> VCLIACTTrackVisitor<VCLArchitecture>::
 VCLIACTTrackVisitor(
     calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    const calin::ix::simulation::vcl_iact::VCLIACTConfiguration& config,
     calin::math::rng::VCLRNG<VCLArchitecture>* rng,
     bool adopt_atm, bool adopt_rng):
   VCLArchitecture(), calin::simulation::tracker::TrackVisitor(),
   atm_(atm), adopt_atm_(adopt_atm),
   rng_(rng ? rng : new calin::math::rng::VCLRNG<VCLArchitecture>()),
-  adopt_rng_(rng ? adopt_rng : true)
+  adopt_rng_(rng ? adopt_rng : true),
+  bandwidth_(config.bandwidth()),
+  forced_sin2theta_(config.enable_forced_cherenkov_angle_mode()?
+    SQR(std::sin(config.forced_cherenkov_angle()/180.0*M_PI)) : -1.0)
 {
   // nothing to see here
 }

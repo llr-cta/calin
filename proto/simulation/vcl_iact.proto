@@ -1,0 +1,42 @@
+/*
+
+   calin/proto/simulations/vcl_iact.proto -- Stephen Fegan -- 2019-03-02
+
+   Protobufs for configuration of VCL IACT cherenkov photon generator
+
+   Copyright 2019, Stephen Fegan <sfegan@llr.in2p3.fr>
+   LLR, Ecole Polytechnique, CNRS/IN2P3
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+//import "common_types.proto";
+
+package calin.ix.simulation.vcl_iact;
+
+message VCLIACTConfiguration
+{
+  double bandwidth                                         = 1
+    [(CFO).desc = "Fixed bandwidth over which to generate Cherenkov photons",
+     (CFO).units = "eV" ];
+  bool enable_forced_cherenkov_angle_mode                  = 2
+    [(CFO).desc = "Force the Cherenkov angle for all particles to have same "
+       "prescribed value. Useful for testing certain models where angle is a "
+       "parameter (e.g. muons)." ];
+  double forced_cherenkov_angle                            = 3
+    [(CFO).desc = "Cherenkov angle for all particles in forced mode.",
+     (CFO).units = "deg" ];
+};

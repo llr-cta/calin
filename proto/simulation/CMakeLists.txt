@@ -13,7 +13,8 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_PROTO pmt.proto vs_optics.proto tracker.proto atmosphere.proto)
+set(CALIN_SWIG_PROTO pmt.proto vs_optics.proto tracker.proto atmosphere.proto
+	vcl_iact.proto)
 set(CALIN_PACKAGE simulation)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 
