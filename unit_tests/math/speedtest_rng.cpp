@@ -32,7 +32,7 @@ using namespace calin::math::accumulator;
 using namespace calin::math::rng;
 using namespace calin::util::vcl;
 
-TEST(NR3SpeedTestRNG, Scalar_UInt64)
+TEST(NR3SpeedTestRNG, Scalar_1G_UInt64)
 {
   uint64_t sum = 0ULL;
   uint64_t seed = RNG::uint64_from_random_device();
@@ -43,7 +43,7 @@ TEST(NR3SpeedTestRNG, Scalar_UInt64)
 }
 
 #ifdef CALIN_HAS_NR3_AVX2_RNGCORE
-TEST(NR3SpeedTestRNG, AVX2_UInt64)
+TEST(NR3SpeedTestRNG, AVX2_1G_UInt64)
 {
   uint64_t sum = 0ULL;
   uint64_t seed = RNG::uint64_from_random_device();
@@ -53,36 +53,56 @@ TEST(NR3SpeedTestRNG, AVX2_UInt64)
   EXPECT_GE(sum, 0ULL);
 }
 
-TEST(NR3SpeedTestRNG, AVX2_VEC_UInt64)
+TEST(NR3SpeedTestRNG, AVX2_VEC_1G_UInt64)
 {
   __m256i sum = _mm256_setzero_si256();
   uint64_t seed = RNG::uint64_from_random_device();
   NR3_AVX2_RNGCore core(seed);
   for(unsigned i=0;i<250000000;i++)
     sum = _mm256_add_epi64(sum, core.uniform_m256i());
-  EXPECT_GE(core.uniform_uint64(), 0ULL);
+  EXPECT_GE(sum[0], 0ULL);
+  EXPECT_GE(sum[1], 0ULL);
+  EXPECT_GE(sum[2], 0ULL);
+  EXPECT_GE(sum[3], 0ULL);
 }
 #endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
 
-TEST(NR3SpeedTestRNG, Scalar_Float)
+TEST(NR3SpeedTestRNG, Scalar_1G_Float)
 {
-  double sum = 0;
+  float sum = 0;
   uint64_t seed = RNG::uint64_from_random_device();
   NR3RNGCore core(seed);
-  for(unsigned i=0;i<2000000000;i++)
+  for(unsigned i=0;i<1000000000;i++)
     sum += 2.328306437e-10 * float(unsigned(core.uniform_uint64()));
   EXPECT_GE(sum,0.0);
 }
 
+TEST(NR3SpeedTestRNG, Scalar_1G_Double)
+{
+  double sum = 0;
+  uint64_t seed = RNG::uint64_from_random_device();
+  NR3RNGCore core(seed);
+  for(unsigned i=0;i<1000000000;i++)
+    sum += 5.42101086242752217E-20 * double(core.uniform_uint64());
+  EXPECT_GE(sum,0.0);
+}
+
 #ifdef CALIN_HAS_NR3_AVX2_RNGCORE
-TEST(NR3SpeedTestRNG, AVX2_VEC_Float)
+TEST(NR3SpeedTestRNG, AVX2_VEC_1G_Float)
 {
   __m256 sum = _mm256_setzero_ps();
   uint64_t seed = RNG::uint64_from_random_device();
   NR3_AVX2_RNGCore core(seed);
-  for(unsigned i=0;i<250000000;i++)
+  for(unsigned i=0;i<125000000;i++)
     sum = _mm256_add_ps(sum, core.uniform_m256());
-  EXPECT_GE(reinterpret_cast<float*>(&sum)[0],0.0);
+  EXPECT_GE(sum[0],0.0);
+  EXPECT_GE(sum[1],0.0);
+  EXPECT_GE(sum[2],0.0);
+  EXPECT_GE(sum[3],0.0);
+  EXPECT_GE(sum[4],0.0);
+  EXPECT_GE(sum[5],0.0);
+  EXPECT_GE(sum[6],0.0);
+  EXPECT_GE(sum[7],0.0);
 }
 #endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
 
@@ -96,29 +116,64 @@ using ArchTypes = ::testing::Types<VCL128Architecture, VCL256Architecture, VCL51
 
 TYPED_TEST_CASE(VCLSpeedTestRNG, ArchTypes);
 
-TYPED_TEST(VCLSpeedTestRNG, VEC_Uint64)
+TYPED_TEST(VCLSpeedTestRNG, VEC_1G_Uint64)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   NR3_VCLRNGCore<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = unsigned(UINT64_C(64000000000)/TypeParam::vec_bits);
-  typename TypeParam::uint64_vt x(0);
+  typename TypeParam::uint64_vt sum(0);
   for(unsigned i=0;i<N;i++) {
-    x = core.uniform_uint64();
+    sum += core.uniform_uint64();
   }
-  EXPECT_TRUE(horizontal_and(x >= UINT64_C(0)));
+  EXPECT_TRUE(horizontal_and(sum >= UINT64_C(0)));
 }
 
-TYPED_TEST(VCLSpeedTestRNG, VEC_Float)
+TYPED_TEST(VCLSpeedTestRNG, VEC_1G_Float)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
+  const unsigned N = unsigned(UINT64_C(32000000000)/TypeParam::vec_bits);
+  typename TypeParam::float_vt sum(0);
+  for(unsigned i=0;i<N;i++) {
+    sum = core.uniform_float();
+  }
+  EXPECT_TRUE(horizontal_and(sum >= 0.0));
+}
+
+TYPED_TEST(VCLSpeedTestRNG, VEC_1G_Double)
 {
   uint64_t seed = RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
   const unsigned N = unsigned(UINT64_C(64000000000)/TypeParam::vec_bits);
-  typename TypeParam::float_vt x;
+  typename TypeParam::double_vt sum(0);
   for(unsigned i=0;i<N;i++) {
-    x = core.uniform_float_zc();
+    sum = core.uniform_double();
   }
-  EXPECT_TRUE(horizontal_and(x <= 0.5));
-  EXPECT_TRUE(horizontal_and(x >= -0.5));
+  EXPECT_TRUE(horizontal_and(sum >= 0.0));
+}
+
+TYPED_TEST(VCLSpeedTestRNG, VEC_1G_Double_Alt)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
+  const unsigned N = unsigned(UINT64_C(64000000000)/TypeParam::vec_bits);
+  typename TypeParam::double_vt sum(0);
+  for(unsigned i=0;i<N;i++) {
+    sum = core.uniform_double_alt();
+  }
+  EXPECT_TRUE(horizontal_and(sum >= 0.0));
+}
+
+TYPED_TEST(VCLSpeedTestRNG, VEC_1G_Double_53bit)
+{
+  uint64_t seed = RNG::uint64_from_random_device();
+  VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
+  const unsigned N = unsigned(UINT64_C(64000000000)/TypeParam::vec_bits);
+  typename TypeParam::double_vt sum(0);
+  for(unsigned i=0;i<N;i++) {
+    sum = core.uniform_double_53bit();
+  }
+  EXPECT_TRUE(horizontal_and(sum >= 0.0));
 }
 
 int main(int argc, char **argv) {
