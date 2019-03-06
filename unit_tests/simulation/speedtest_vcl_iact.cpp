@@ -27,6 +27,10 @@
 #include "simulation/atmosphere.hpp"
 #include "provenance/system_info.hpp"
 #include "util/vcl.hpp"
+#include "util/string.hpp"
+
+char** global_argv;
+int global_argc;
 
 using namespace calin::simulation::atmosphere;
 using namespace calin::simulation::tracker;
@@ -36,8 +40,15 @@ TEST(SpeedTestVCLIACT, Generate100Protons1TeV) {
   //CLHEP::HepRandom::setTheSeed(time(0));
   std::string datadir = calin::provenance::system_info::build_info()->data_install_dir();
   auto* atm = new LayeredRefractiveAtmosphere(datadir + "/simulation/atmprof36.dat");
+
+  auto config = calin::simulation::vcl_iact::VCLIACTTrackVisitor<
+    calin::util::vcl::VCL256Architecture>::default_config();
+  if(global_argc > 1) {
+    config.set_bandwidth(calin::util::string::double_from_string(global_argv[1]));
+    std::cerr << "HELLO: " << global_argv[1] << ' ' << config.bandwidth() << '\n';
+  }
   auto* act = new calin::simulation::vcl_iact::VCLIACTTrackVisitor<
-    calin::util::vcl::VCL256Architecture>(atm);
+    calin::util::vcl::VCL256Architecture>(atm, config);
 
   Geant4ShowerGenerator sim(act, atm,
                             1000, 0, atm->top_of_atmosphere(), nullptr,
@@ -71,5 +82,7 @@ TEST(SpeedTestVCLIACT, Generate100Protons1TeV) {
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
+  global_argc = argc;
+  global_argv = argv;
   return RUN_ALL_TESTS();
 }
