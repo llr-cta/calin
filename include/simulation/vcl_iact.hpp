@@ -153,7 +153,7 @@ VCLIACTTrackVisitor(
   adopt_rng_(rng ? adopt_rng : true),
   bandwidth_(config.bandwidth()),
   forced_sin2theta_(config.enable_forced_cherenkov_angle_mode()?
-    SQR(std::sin(config.forced_cherenkov_angle()/180.0*M_PI)) : -1.0)
+    calin::math::special::SQR(std::sin(config.forced_cherenkov_angle()/180.0*M_PI)) : -1.0)
 {
   // nothing to see here
 }
