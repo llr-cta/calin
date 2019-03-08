@@ -29,7 +29,7 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 	rng.cpp fftw_util.cpp healpix_array.cpp position_generator.cpp
 	direction_generator.cpp ray_generator.cpp data_modeling.cpp m_estimate.cpp
 	regular_grid.cpp lomb_scargle.cpp simd.cpp fft_simd.cpp b_spline.cpp
-	spline_interpolation.cpp)
+	spline_interpolation.cpp least_squares.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY}
