@@ -38,36 +38,16 @@ calin::math::least_squares::polyfit(const Eigen::VectorXd& x, const Eigen::Vecto
     throw std::runtime_error("polyfit: x and y arrays must have at least norder+1 points");
   }
 
-  Eigen::VectorXd xxs(2*norder+1);
-  Eigen::VectorXd yxs(norder+1);
-
-  xxs.setZero();
-  yxs.setZero();
-
-  for(unsigned ixy = 0;ixy<x.size();ixy++) {
-    double xx = 1;
-    xxs(0) += xx;
-    for(unsigned iorder=0;iorder<2*norder;++iorder) {
-      xx *= x[ixy];
-      xxs(iorder+1) += xx;
-    }
-
-    double yx = y[ixy];
-    yxs(0) += yx;
+  // See https://eigen.tuxfamily.org/dox/group__LeastSquares.html
+  Eigen::MatrixXd X(x.size(), norder+1);
+  for(unsigned ix = 0;ix<x.size();ix++) {
+    double xi =  x[ix];
+    double xn = 1;
+    X(ix, 0) = xn;
     for(unsigned iorder=0;iorder<norder;++iorder) {
-      yx *= x[ixy];
-      yxs(iorder+1) += yx;
+      xn *= xi;
+      X(ix, iorder+1) = xn;
     }
   }
-
-  Eigen::MatrixXd XXs(norder+1,norder+1);
-  for(unsigned iorder=0;iorder<norder+1;++iorder) {
-    for(unsigned jorder=0;jorder<norder+1;++jorder) {
-      XXs(jorder,iorder) = xxs(iorder+jorder);
-    }
-  }
-
-  //LOG(INFO) << XXs << '\n' << yxs;
-
-  return XXs.llt().solve(yxs);
+  return X.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(y);
 }
