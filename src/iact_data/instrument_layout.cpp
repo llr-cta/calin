@@ -72,7 +72,7 @@ namespace {
     for(unsigned icurve=0; icurve<ncurve; icurve++) {
       Eigen::VectorXd xv;
       Eigen::VectorXd yv;
-      grid->extract_bounday_curve(xv, yv, boundary, icurve, false);
+      grid->extract_boundary_curve(xv, yv, boundary, icurve, false);
       for(unsigned ixv=0; ixv<xv.size(); ixv++)vx->Add(xv[ixv]);
       for(unsigned iyv=0; iyv<yv.size(); iyv++)vy->Add(yv[iyv]);
       indexes->Add(vx->size());
@@ -174,4 +174,168 @@ void calin::iact_data::instrument_layout::map_channels_using_from_coordinates(
     from_y[ichan] = chan.y();
   }
   map_channels_using_from_coordinates(map, from_x, from_y, to, tolerance);
+}
+
+calin::ix::iact_data::instrument_layout::CameraLayout*
+calin::iact_data::instrument_layout::reduce_channels(
+  const calin::ix::iact_data::instrument_layout::CameraLayout& in,
+  const std::vector<unsigned int>& channel_id, bool recenter)
+{
+  std::vector<int> in_to_out(in.channel_size(), -1);
+
+  double min_x;
+  double max_x;
+  double min_y;
+  double max_y;
+  for(unsigned i=0;i<channel_id.size();++i) {
+    if(channel_id[i] >= in.channel_size()) {
+      throw std::runtime_error("Channel ID out of range: " +
+        std::to_string(channel_id[i]));
+    }
+    if(in_to_out[channel_id[i]] != -1) {
+      throw std::runtime_error("Duplicate channel ID: " +
+        std::to_string(channel_id[i]));
+    }
+    in_to_out[channel_id[i]] = i;
+    const auto& ic = in.channel(channel_id[i]);
+    if(i==0) {
+      min_x = max_x = ic.x();
+      min_y = max_y = ic.y();
+    } else {
+      min_x = std::min(min_x, ic.x());
+      max_x = std::max(max_x, ic.x());
+      min_y = std::min(min_y, ic.y());
+      max_y = std::max(max_y, ic.y());
+    }
+  }
+
+  double shift_x = recenter ? 0.5*(min_x+max_x) : 0.0;
+  double shift_y = recenter ? 0.5*(min_y+max_y) : 0.0;
+
+  auto* out = new calin::ix::iact_data::instrument_layout::CameraLayout();
+
+  out->set_camera_type(in.camera_type());
+  out->set_camera_number(in.camera_number());
+
+  for(unsigned ichan=0;ichan<channel_id.size();++ichan) {
+    const auto& ic = in.channel(channel_id[ichan]);
+    auto* oc = out->add_channel();
+
+    oc->set_channel_index(ichan);
+    oc->set_pixel_index(ic.pixel_index());
+    oc->set_pixel_grid_index(ic.pixel_grid_index());
+    oc->set_channel_set_index(ic.channel_set_index());
+    oc->set_module_index(-1);
+    oc->set_module_channel_index(-1);
+    oc->set_pixel_grid_u(ic.pixel_grid_u());
+    oc->set_pixel_grid_v(ic.pixel_grid_v());
+    oc->set_pixel_spiral_index(ic.pixel_spiral_index());
+    oc->set_x(ic.x() - shift_x);
+    oc->set_y(ic.y() - shift_y);
+    oc->set_diameter(ic.diameter());
+    oc->set_geometric_area(ic.geometric_area());
+
+    oc->set_is_boundary_pixel(ic.is_boundary_pixel());
+    for(auto nci : ic.neighbour_channel_indexes()) {
+      if(in_to_out[nci] != -1) {
+        oc->add_neighbour_channel_indexes(in_to_out[nci]);
+      } else {
+        oc->set_is_boundary_pixel(true);
+      }
+    }
+    if(oc->is_boundary_pixel()) {
+      out->add_boundary_pixel_channel_index(ichan);
+    }
+    for(auto index : ic.outline_polygon_vertex_index())
+      oc->add_outline_polygon_vertex_index(index);
+    for(auto x : ic.outline_polygon_vertex_x())
+      oc->add_outline_polygon_vertex_x(x - shift_x);
+    for(auto y : ic.outline_polygon_vertex_y())
+      oc->add_outline_polygon_vertex_y(y - shift_y);
+  }
+
+  out->set_pixel_grid_layout(in.pixel_grid_layout());
+  out->set_pixel_grid_spacing(in.pixel_grid_spacing());
+  out->set_pixel_grid_rotation(in.pixel_grid_rotation());
+  out->set_pixel_grid_cos_rotation(in.pixel_grid_cos_rotation());
+  out->set_pixel_grid_sin_rotation(in.pixel_grid_sin_rotation());
+  out->set_pixel_grid_offset_x(in.pixel_grid_offset_x() - shift_x);
+  out->set_pixel_grid_offset_y(in.pixel_grid_offset_y() - shift_y);
+  out->set_pixel_grid_geometric_area(in.pixel_grid_geometric_area());
+
+  for(auto i : in.pixel_channel_index())
+    out->add_pixel_channel_index(i==-1 ? -1 : in_to_out[i]);
+  for(auto i : in.pixel_spiral_channel_index())
+    out->add_pixel_spiral_channel_index(i==-1 ? -1 : in_to_out[i]);
+
+  out->set_adc_gains(in.adc_gains());
+  out->set_adc_bits(in.adc_bits());
+  out->set_can_read_waveforms(in.can_read_waveforms());
+  out->set_can_read_charges(in.can_read_charges());
+  out->set_can_read_peak_sample(in.can_read_peak_sample());
+
+  compute_camera_and_module_outlines(out);
+  return out;
+}
+
+calin::ix::iact_data::instrument_layout::CameraLayout*
+calin::iact_data::instrument_layout::reduce_modules(
+  const calin::ix::iact_data::instrument_layout::CameraLayout& in,
+  const std::vector<unsigned> module_id, bool recenter)
+{
+  std::vector<int> in_to_out(in.module_size(), -1);
+  std::vector<unsigned> channel_id;
+
+  for(unsigned i=0;i<module_id.size();++i) {
+    if(module_id[i] >= in.module_size()) {
+      throw std::runtime_error("Module ID out of range: " +
+        std::to_string(module_id[i]));
+    }
+    if(in_to_out[module_id[i]] != -1) {
+      throw std::runtime_error("Duplicate module ID: " +
+        std::to_string(module_id[i]));
+    }
+    in_to_out[module_id[i]] = i;
+    for(auto ic : in.module(module_id[i]).channels_in_module()) {
+      channel_id.push_back(ic);
+    }
+  }
+
+  auto* out = reduce_channels(in, channel_id, recenter);
+
+  double shift_x = in.pixel_grid_offset_x() - out->pixel_grid_offset_x();
+  double shift_y = in.pixel_grid_offset_y() - out->pixel_grid_offset_y();
+
+  for(unsigned imod=0, ichan=0;imod<module_id.size();++imod) {
+    const auto& im = in.module(module_id[imod]);
+    auto* om = out->add_module();
+
+    om->set_module_index(imod);
+    om->set_module_grid_index(im.module_grid_index());
+    om->set_module_grid_u(im.module_grid_u());
+    om->set_module_grid_v(im.module_grid_v());
+    om->set_module_grid_i(im.module_grid_i());
+    om->set_module_grid_j(im.module_grid_j());
+    om->set_module_spiral_index(im.module_spiral_index());
+    for(unsigned imodchan=0; imodchan<im.channels_in_module_size(); imodchan++) {
+      out->mutable_channel(ichan)->set_module_index(imod);
+      out->mutable_channel(ichan)->set_module_channel_index(imodchan);
+      om->add_channels_in_module(ichan++);
+    }
+    om->set_x(im.x() - shift_x);
+    om->set_y(im.y() - shift_y);
+
+    for(auto index : im.outline_polygon_vertex_index())
+      om->add_outline_polygon_vertex_index(index);
+    for(auto x : im.outline_polygon_vertex_x())
+      om->add_outline_polygon_vertex_x(x - shift_x);
+    for(auto y : im.outline_polygon_vertex_y())
+      om->add_outline_polygon_vertex_y(y - shift_y);
+  }
+
+  for(auto i : in.module_spiral_module_index())
+    out->module_spiral_module_index(i==-1 ? -1 : in_to_out[i]);
+
+  compute_camera_and_module_outlines(out);
+  return out;
 }

@@ -36,6 +36,9 @@
 %import "calin_global_definitions.i"
 
 %newobject make_grid_from_instrument_layout;
+%newobject reduce_channels;
+
+%apply const std::vector<unsigned int> & { const std::vector<unsigned int>& channel_id };
 
 %apply Eigen::VectorXi &OUTPUT { Eigen::VectorXi& map };
 

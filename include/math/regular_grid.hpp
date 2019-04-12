@@ -47,7 +47,7 @@ public:
     const std::vector<unsigned>& region_gridids);
   static unsigned num_bounday_curves(
     const std::vector<std::pair<unsigned,unsigned> >& boundary);
-  void extract_bounday_curve(Eigen::VectorXd& xv, Eigen::VectorXd& yv,
+  void extract_boundary_curve(Eigen::VectorXd& xv, Eigen::VectorXd& yv,
     const std::vector<std::pair<unsigned,unsigned> >& boundary,
     unsigned icurve = 0, bool closed = false);
 

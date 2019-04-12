@@ -87,7 +87,7 @@ unsigned calin::math::regular_grid::Grid::num_bounday_curves(
   return ncurve;
 }
 
-void calin::math::regular_grid::Grid::extract_bounday_curve(
+void calin::math::regular_grid::Grid::extract_boundary_curve(
   Eigen::VectorXd& xv, Eigen::VectorXd& yv,
   const std::vector<std::pair<unsigned,unsigned> >& boundary,
   unsigned icurve, bool closed)
