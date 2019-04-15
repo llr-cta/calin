@@ -55,12 +55,17 @@ void map_channels_using_from_coordinates(
   const calin::ix::iact_data::instrument_layout::CameraLayout& to,
   double tolerance = 0.1);
 
-calin::ix::iact_data::instrument_layout::CameraLayout* reduce_channels(
+calin::ix::iact_data::instrument_layout::CameraLayout* reduce_camera_channels(
   const calin::ix::iact_data::instrument_layout::CameraLayout& layout_in,
   const std::vector<unsigned>& channel_id, bool recenter = false);
 
-calin::ix::iact_data::instrument_layout::CameraLayout* reduce_modules(
+calin::ix::iact_data::instrument_layout::CameraLayout* reduce_camera_modules(
   const calin::ix::iact_data::instrument_layout::CameraLayout& layout_in,
-  const std::vector<unsigned> module_id, bool recenter = false);
+  const std::vector<unsigned>& module_id, bool recenter = false);
+
+calin::ix::iact_data::instrument_layout::OutlinePolygon* channel_outline(
+  const calin::ix::iact_data::instrument_layout::CameraLayout& camera_layout,
+  const std::vector<unsigned>& channel_id);
+
 
 } } } // namespace calin::iact_data::instrument_layout

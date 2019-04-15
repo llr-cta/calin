@@ -94,6 +94,7 @@ def layout_to_polygon_vxy(layout, plate_scale = 1.0):
         vx = layout.outline_polygon_vertex_x()[ibegin:iend]*plate_scale
         vy = layout.outline_polygon_vertex_y()[ibegin:iend]*plate_scale
         all_vxy.append(np.column_stack([vx, vy]))
+        ibegin=iend
     return all_vxy
 
 def layout_to_polygon(layout, plate_scale = 1.0, **args):

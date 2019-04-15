@@ -177,7 +177,7 @@ void calin::iact_data::instrument_layout::map_channels_using_from_coordinates(
 }
 
 calin::ix::iact_data::instrument_layout::CameraLayout*
-calin::iact_data::instrument_layout::reduce_channels(
+calin::iact_data::instrument_layout::reduce_camera_channels(
   const calin::ix::iact_data::instrument_layout::CameraLayout& in,
   const std::vector<unsigned int>& channel_id, bool recenter)
 {
@@ -279,9 +279,9 @@ calin::iact_data::instrument_layout::reduce_channels(
 }
 
 calin::ix::iact_data::instrument_layout::CameraLayout*
-calin::iact_data::instrument_layout::reduce_modules(
+calin::iact_data::instrument_layout::reduce_camera_modules(
   const calin::ix::iact_data::instrument_layout::CameraLayout& in,
-  const std::vector<unsigned> module_id, bool recenter)
+  const std::vector<unsigned>& module_id, bool recenter)
 {
   std::vector<int> in_to_out(in.module_size(), -1);
   std::vector<unsigned> channel_id;
@@ -301,7 +301,7 @@ calin::iact_data::instrument_layout::reduce_modules(
     }
   }
 
-  auto* out = reduce_channels(in, channel_id, recenter);
+  auto* out = reduce_camera_channels(in, channel_id, recenter);
 
   double shift_x = in.pixel_grid_offset_x() - out->pixel_grid_offset_x();
   double shift_y = in.pixel_grid_offset_y() - out->pixel_grid_offset_y();
@@ -338,4 +338,44 @@ calin::iact_data::instrument_layout::reduce_modules(
 
   compute_camera_and_module_outlines(out);
   return out;
+}
+
+calin::ix::iact_data::instrument_layout::OutlinePolygon*
+calin::iact_data::instrument_layout::channel_outline(
+  const calin::ix::iact_data::instrument_layout::CameraLayout& camera_layout,
+  const std::vector<unsigned>& channel_id)
+{
+  auto* grid = make_grid_from_instrument_layout(camera_layout);
+  if(grid == nullptr)
+    throw std::runtime_error("channel_outline: camera must "
+      "have standard grid.");
+
+  std::vector<unsigned> camera_grid_ids;
+  std::vector<bool> channel_ids_selected(camera_layout.channel_size(), false);
+  for(auto ichan : channel_id) {
+    if(ichan >= camera_layout.channel_size()) {
+      delete grid;
+      throw std::runtime_error("Channel ID out of range: "
+        + std::to_string(ichan));
+    }
+    if(camera_layout.channel(ichan).pixel_grid_index() == -1) {
+      delete grid;
+      throw std::runtime_error("Channel has no pixel grid ID: "
+        + std::to_string(ichan));
+    }
+    if(channel_ids_selected[ichan] == false) {
+      channel_ids_selected[ichan] = true;
+      camera_grid_ids.push_back(camera_layout.channel(ichan).pixel_grid_index());
+    }
+  }
+
+  auto* outline = new calin::ix::iact_data::instrument_layout::OutlinePolygon();
+
+  compute_and_store_boundary(grid, camera_grid_ids,
+    outline->mutable_outline_polygon_vertex_index(),
+    outline->mutable_outline_polygon_vertex_x(),
+    outline->mutable_outline_polygon_vertex_y());
+
+  delete grid;
+  return outline;
 }
