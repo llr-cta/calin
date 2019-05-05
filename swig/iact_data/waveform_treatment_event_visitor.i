@@ -39,3 +39,6 @@
 %import "event_visitor.i"
 %import "iact_data/waveform_treatment_event_visitor.pb.i"
 %include "iact_data/waveform_treatment_event_visitor.hpp"
+
+%template (VCLSingleGainDualWindowWaveformTreatmentEventVisitor256)
+  calin::iact_data::waveform_treatment_event_visitor::VCL_SingleGainDualWindowWaveformTreatmentEventVisitor<calin::util::vcl::VCL256Architecture>;
