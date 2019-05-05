@@ -610,6 +610,13 @@ inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
 
 #endif // MAX_VECTOR_SIZE >= 512
 
+void transpose(Vec8s* x);
+void transpose(Vec8us* x);
+#if MAX_VECTOR_SIZE >= 256
+void transpose(Vec16s* x);
+void transpose(Vec16us* x);
+#endif
+
 } } } // namespace calin::util::vcl
 
 #define ADD_OSTREAM_OPERATOR(Vec) \

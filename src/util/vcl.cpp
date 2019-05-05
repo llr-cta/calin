@@ -65,3 +65,214 @@ constexpr unsigned VCL512Architecture::num_int64;
 constexpr unsigned VCL512Architecture::num_uint64;
 constexpr unsigned VCL512Architecture::num_float;
 constexpr unsigned VCL512Architecture::num_double;
+
+namespace {
+  template<typename T> inline void do_one_128_swizzle_16(T& a, T& b) {
+    __m128i tmp = _mm_unpackhi_epi16(a, b);
+    a = _mm_unpacklo_epi16(a, b);
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_128_swizzle_32(T& a, T& b) {
+    __m128i tmp = _mm_unpackhi_epi32(a, b);
+    a = _mm_unpacklo_epi32(a, b);
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_128_swizzle_64(T& a, T& b) {
+    __m128i tmp = _mm_unpackhi_epi64(a, b);
+    a = _mm_unpacklo_epi64(a, b);
+    b = tmp;
+  }
+}
+
+void calin::util::vcl::transpose(Vec8s* x)
+{
+  do_one_128_swizzle_16(x[0], x[1]);
+  do_one_128_swizzle_16(x[2], x[3]);
+  do_one_128_swizzle_16(x[4], x[5]);
+  do_one_128_swizzle_16(x[6], x[7]);
+
+  do_one_128_swizzle_32(x[0], x[2]);
+  do_one_128_swizzle_32(x[1], x[3]);
+  do_one_128_swizzle_32(x[4], x[6]);
+  do_one_128_swizzle_32(x[5], x[7]);
+
+  do_one_128_swizzle_64(x[0], x[4]);
+  do_one_128_swizzle_64(x[1], x[5]);
+  do_one_128_swizzle_64(x[2], x[6]);
+  do_one_128_swizzle_64(x[3], x[7]);
+
+  std::swap(x[1], x[4]);
+  std::swap(x[3], x[6]);
+}
+
+void calin::util::vcl::transpose(Vec8us* x)
+{
+  do_one_128_swizzle_16(x[0], x[1]);
+  do_one_128_swizzle_16(x[2], x[3]);
+  do_one_128_swizzle_16(x[4], x[5]);
+  do_one_128_swizzle_16(x[6], x[7]);
+
+  do_one_128_swizzle_32(x[0], x[2]);
+  do_one_128_swizzle_32(x[1], x[3]);
+  do_one_128_swizzle_32(x[4], x[6]);
+  do_one_128_swizzle_32(x[5], x[7]);
+
+  do_one_128_swizzle_64(x[0], x[4]);
+  do_one_128_swizzle_64(x[1], x[5]);
+  do_one_128_swizzle_64(x[2], x[6]);
+  do_one_128_swizzle_64(x[3], x[7]);
+
+  std::swap(x[1], x[4]);
+  std::swap(x[3], x[6]);
+}
+
+#if MAX_VECTOR_SIZE >= 256
+
+namespace {
+#if INSTRSET >= 8
+  template<typename T> inline void do_one_256_swizzle_16(T& a, T& b) {
+    __m256i tmp = _mm256_unpackhi_epi16(a, b);
+    a = _mm256_unpacklo_epi16(a, b);
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_256_swizzle_32(T& a, T& b) {
+    __m256i tmp = _mm256_unpackhi_epi32(a, b);
+    a = _mm256_unpacklo_epi32(a, b);
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_256_swizzle_64(T& a, T& b) {
+    __m256i tmp = _mm256_unpackhi_epi64(a, b);
+    a = _mm256_unpacklo_epi64(a, b);
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_256_swizzle_128(T& a, T& b) {
+    __m256i tmp =  _mm256_permute2x128_si256(a, b, 0x31);
+    a = _mm256_permute2x128_si256(a, b, 0x20);
+    b = tmp;
+  }
+#else // INSTRSET >= 8
+  template<typename T> inline void do_one_256_swizzle_16(T& a, T& b) {
+    T tmp(_mm_unpackhi_epi16(a.get_low(), b.get_low()),
+          _mm_unpackhi_epi16(a.get_high(), b.get_high()));
+    a = T(_mm_unpacklo_epi16(a.get_low(), b.get_low()),
+          _mm_unpacklo_epi16(a.get_high(), b.get_high()));
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_256_swizzle_32(T& a, T& b) {
+    T tmp(_mm_unpackhi_epi32(a.get_low(), b.get_low()),
+          _mm_unpackhi_epi32(a.get_high(), b.get_high()));
+    a = T(_mm_unpacklo_epi32(a.get_low(), b.get_low()),
+          _mm_unpacklo_epi32(a.get_high(), b.get_high()));
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_256_swizzle_64(T& a, T& b) {
+    T tmp(_mm_unpackhi_epi64(a.get_low(), b.get_low()),
+          _mm_unpackhi_epi64(a.get_high(), b.get_high()));
+    a = T(_mm_unpacklo_epi64(a.get_low(), b.get_low()),
+          _mm_unpacklo_epi64(a.get_high(), b.get_high()));
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_256_swizzle_128(T& a, T& b) {
+    T tmp(a.get_high(), b.get_high());
+    a = T(a.get_low(), b.get_low());
+    b = tmp;
+  }
+#endif // INSTRSET >= 8
+}
+
+void calin::util::vcl::transpose(Vec16s* x)
+{
+  do_one_256_swizzle_16(x[0],   x[1]);
+  do_one_256_swizzle_16(x[2],   x[3]);
+  do_one_256_swizzle_16(x[4],   x[5]);
+  do_one_256_swizzle_16(x[6],   x[7]);
+  do_one_256_swizzle_16(x[8],   x[9]);
+  do_one_256_swizzle_16(x[10],  x[11]);
+  do_one_256_swizzle_16(x[12],  x[13]);
+  do_one_256_swizzle_16(x[14],  x[15]);
+
+  do_one_256_swizzle_32(x[0],   x[2]);
+  do_one_256_swizzle_32(x[1],   x[3]);
+  do_one_256_swizzle_32(x[4],   x[6]);
+  do_one_256_swizzle_32(x[5],   x[7]);
+  do_one_256_swizzle_32(x[8],   x[10]);
+  do_one_256_swizzle_32(x[9],   x[11]);
+  do_one_256_swizzle_32(x[12],  x[14]);
+  do_one_256_swizzle_32(x[13],  x[15]);
+
+  do_one_256_swizzle_64(x[0],   x[4]);
+  do_one_256_swizzle_64(x[1],   x[5]);
+  do_one_256_swizzle_64(x[2],   x[6]);
+  do_one_256_swizzle_64(x[3],   x[7]);
+  do_one_256_swizzle_64(x[8],   x[12]);
+  do_one_256_swizzle_64(x[9],   x[13]);
+  do_one_256_swizzle_64(x[10],  x[14]);
+  do_one_256_swizzle_64(x[11],  x[15]);
+
+  do_one_256_swizzle_128(x[0],  x[8]);
+  do_one_256_swizzle_128(x[1],  x[9]);
+  do_one_256_swizzle_128(x[2],  x[10]);
+  do_one_256_swizzle_128(x[3],  x[11]);
+  do_one_256_swizzle_128(x[4],  x[12]);
+  do_one_256_swizzle_128(x[5],  x[13]);
+  do_one_256_swizzle_128(x[6],  x[14]);
+  do_one_256_swizzle_128(x[7],  x[15]);
+
+  std::swap(x[1],  x[4]);
+  std::swap(x[3],  x[6]);
+  std::swap(x[9],  x[12]);
+  std::swap(x[11], x[14]);
+}
+
+void calin::util::vcl::transpose(Vec16us* x)
+{
+  do_one_256_swizzle_16(x[0],   x[1]);
+  do_one_256_swizzle_16(x[2],   x[3]);
+  do_one_256_swizzle_16(x[4],   x[5]);
+  do_one_256_swizzle_16(x[6],   x[7]);
+  do_one_256_swizzle_16(x[8],   x[9]);
+  do_one_256_swizzle_16(x[10],  x[11]);
+  do_one_256_swizzle_16(x[12],  x[13]);
+  do_one_256_swizzle_16(x[14],  x[15]);
+
+  do_one_256_swizzle_32(x[0],   x[2]);
+  do_one_256_swizzle_32(x[1],   x[3]);
+  do_one_256_swizzle_32(x[4],   x[6]);
+  do_one_256_swizzle_32(x[5],   x[7]);
+  do_one_256_swizzle_32(x[8],   x[10]);
+  do_one_256_swizzle_32(x[9],   x[11]);
+  do_one_256_swizzle_32(x[12],  x[14]);
+  do_one_256_swizzle_32(x[13],  x[15]);
+
+  do_one_256_swizzle_64(x[0],   x[4]);
+  do_one_256_swizzle_64(x[1],   x[5]);
+  do_one_256_swizzle_64(x[2],   x[6]);
+  do_one_256_swizzle_64(x[3],   x[7]);
+  do_one_256_swizzle_64(x[8],   x[12]);
+  do_one_256_swizzle_64(x[9],   x[13]);
+  do_one_256_swizzle_64(x[10],  x[14]);
+  do_one_256_swizzle_64(x[11],  x[15]);
+
+  do_one_256_swizzle_128(x[0],  x[8]);
+  do_one_256_swizzle_128(x[1],  x[9]);
+  do_one_256_swizzle_128(x[2],  x[10]);
+  do_one_256_swizzle_128(x[3],  x[11]);
+  do_one_256_swizzle_128(x[4],  x[12]);
+  do_one_256_swizzle_128(x[5],  x[13]);
+  do_one_256_swizzle_128(x[6],  x[14]);
+  do_one_256_swizzle_128(x[7],  x[15]);
+
+  std::swap(x[1],  x[4]);
+  std::swap(x[3],  x[6]);
+  std::swap(x[9],  x[12]);
+  std::swap(x[11], x[14]);
+}
+#endif // MAX_VECTOR_SIZE >= 256
