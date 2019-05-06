@@ -271,10 +271,10 @@ public:
         nsamp_left -= num_int16;
       }
 
-      vcl::extend_low(samp_max).store(chan_max_ + ichan_block*16);
-      vcl::extend_high(samp_max).store(chan_max_ + ichan_block*16 + 8);
-      vcl::extend_low(isamp_max).store(chan_max_index_ + ichan_block*16);
-      vcl::extend_high(isamp_max).store(chan_max_index_ + ichan_block*16 + 8);
+      vcl::extend_low(samp_max).store(chan_max_ + ichan_block*2*num_int32);
+      vcl::extend_high(samp_max).store(chan_max_ + ichan_block*2*num_int32 + num_int32);
+      vcl::extend_low(isamp_max).store(chan_max_index_ + ichan_block*2*num_int32);
+      vcl::extend_high(isamp_max).store(chan_max_index_ + ichan_block*2*num_int32 + num_int32);
     }
   }
 #endif

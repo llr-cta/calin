@@ -42,3 +42,5 @@
 
 %template (VCLSingleGainDualWindowWaveformTreatmentEventVisitor256)
   calin::iact_data::waveform_treatment_event_visitor::VCL_SingleGainDualWindowWaveformTreatmentEventVisitor<calin::util::vcl::VCL256Architecture>;
+%template (VCLSingleGainDualWindowWaveformTreatmentEventVisitor128)
+  calin::iact_data::waveform_treatment_event_visitor::VCL_SingleGainDualWindowWaveformTreatmentEventVisitor<calin::util::vcl::VCL128Architecture>;
