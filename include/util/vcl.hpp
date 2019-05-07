@@ -559,10 +559,36 @@ inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
   }
 #endif
 
+inline Vec4ui extend_16_to_32_low(const Vec8us x) {
+  return _mm_cvtepu16_epi32(x);
+}
+inline Vec4ui extend_16_to_32_high(const Vec8us x) {
+  return _mm_cvtepu16_epi32(_mm_srli_si128(x,8));
+}
+inline Vec4i extend_16_to_32_low(const Vec8s x) {
+  return _mm_cvtepi16_epi32(x);
+}
+inline Vec4i extend_16_to_32_high(const Vec8s x) {
+  return _mm_cvtepi16_epi32(_mm_srli_si128(x,8));
+}
+
 #if MAX_VECTOR_SIZE >= 256
 #if INSTRSET >= 8
   inline Vec4uq mul_low32_packed64(const Vec4uq& a, const Vec4uq& b) {
     return _mm256_mul_epu32(a, b);
+  }
+
+  inline Vec8ui extend_16_to_32_low(const Vec16us x) {
+    return _mm256_cvtepu16_epi32(x.get_low());
+  }
+  inline Vec8ui extend_16_to_32_high(const Vec16us x) {
+    return _mm256_cvtepu16_epi32(x.get_high());
+  }
+  inline Vec8i extend_16_to_32_low(const Vec16s x) {
+    return _mm256_cvtepi16_epi32(x.get_low());
+  }
+  inline Vec8i extend_16_to_32_high(const Vec16s x) {
+    return _mm256_cvtepi16_epi32(x.get_high());
   }
 
 #if defined (__AVX512DQ__) && defined (__AVX512VL__)
@@ -589,6 +615,24 @@ inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
   inline Vec4uq mul_64(const Vec4uq& a, const Vec4uq& b) {
     return a*b;
   }
+
+  inline Vec8ui extend_16_to_32_low(const Vec16us x) {
+    return Vec8ui(extend_16_to_32_low(x.get_low()),
+                  extend_16_to_32_high(x.get_low()));
+  }
+  inline Vec8ui extend_16_to_32_high(const Vec16us x) {
+    return Vec8ui(extend_16_to_32_low(x.get_high()),
+                  extend_16_to_32_high(x.get_high()));
+  }
+  inline Vec8i extend_16_to_32_low(const Vec16s x) {
+    return Vec8i(extend_16_to_32_low(x.get_low()),
+                 extend_16_to_32_high(x.get_low()));
+  }
+  inline Vec8i extend_16_to_32_high(const Vec16s x) {
+    return Vec8i(extend_16_to_32_low(x.get_high()),
+                 extend_16_to_32_high(x.get_high()));
+  }
+
 #endif // INSTRSET < 8
 #endif // MAX_VECTOR_SIZE >= 256
 

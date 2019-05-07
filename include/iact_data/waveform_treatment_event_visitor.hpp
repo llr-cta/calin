@@ -275,8 +275,8 @@ public:
       int16_vt samp_max = samples_[0];
       uint16_vt isamp_max = 0;
 
-      int32_vt q_l = vcl::extend_low(samples_[0]);
-      int32_vt q_h = vcl::extend_high(samples_[0]);
+      int32_vt q_l = calin::util::vcl::extend_16_to_32_low(samples_[0]);
+      int32_vt q_h = calin::util::vcl::extend_16_to_32_high(samples_[0]);
 
       int32_vt all_qt_l = 0;
       int32_vt all_qt_h = 0;
@@ -292,11 +292,11 @@ public:
 
         int32_vt sample32;
 
-        sample32 = vcl::extend_low(sample);
+        sample32 = calin::util::vcl::extend_16_to_32_low(sample);
         q_l += sample32;
         all_qt_l += sample32 * isamp_win_end;
 
-        sample32 = vcl::extend_high(sample);
+        sample32 = calin::util::vcl::extend_16_to_32_high(sample);
         q_h += sample32;
         all_qt_h += sample32 * isamp_win_end;
       }
@@ -333,20 +333,20 @@ public:
         isamp_max = vcl::select(samp_bigger_than_max, uint16_t(isamp_win_end), isamp_max);
 
         int32_vt sample32;
-        sample32 = vcl::extend_low(sample);
+        sample32 = calin::util::vcl::extend_16_to_32_low(sample);
         q_l += sample32;
         all_q_l += sample32;
         all_qt_l += sample32 * isamp_win_end;
 
-        sample32 = vcl::extend_high(sample);
+        sample32 = calin::util::vcl::extend_16_to_32_high(sample);
         q_h += sample32;
         all_q_h += sample32;
         all_qt_h += sample32 * isamp_win_end;
 
         sample = samples_[isamp_win_begin];
 
-        q_l -= vcl::extend_low(sample);
-        q_h -= vcl::extend_high(sample);
+        q_l -= calin::util::vcl::extend_16_to_32_low(sample);
+        q_h -= calin::util::vcl::extend_16_to_32_high(sample);
 
         ++isamp_win_begin;
 
@@ -368,10 +368,10 @@ public:
         }
       }
 
-      vcl::extend_low(samp_max).store(chan_max_ + ioffset_l);
-      vcl::extend_high(samp_max).store(chan_max_ + ioffset_h);
-      vcl::extend_low(isamp_max).store(chan_max_index_ + ioffset_l);
-      vcl::extend_high(isamp_max).store(chan_max_index_ + ioffset_h);
+      calin::util::vcl::extend_16_to_32_low(samp_max).store(chan_max_ + ioffset_l);
+      calin::util::vcl::extend_16_to_32_high(samp_max).store(chan_max_ + ioffset_h);
+      calin::util::vcl::extend_16_to_32_low(isamp_max).store(chan_max_index_ + ioffset_l);
+      calin::util::vcl::extend_16_to_32_high(isamp_max).store(chan_max_index_ + ioffset_h);
       sig_q_l.store(chan_sig_win_sum_ + ioffset_l);
       sig_q_h.store(chan_sig_win_sum_ + ioffset_h);
       max_q_l.store(chan_sig_max_sum_ + ioffset_l);
