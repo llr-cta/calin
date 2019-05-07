@@ -27,6 +27,7 @@
 #include <iact_data/event_visitor.hpp>
 #include <math/simd.hpp>
 #include <util/vcl.hpp>
+#include <util/log.hpp>
 #include <iact_data/waveform_treatment_event_visitor.pb.h>
 #include <provenance/system_info.hpp>
 #include <util/memory.hpp>
@@ -125,9 +126,13 @@ public:
   AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor(
       calin::ix::iact_data::waveform_treatment_event_visitor::
         SingleGainDualWindowWaveformTreatmentEventVisitorConfig config = default_config(),
-      bool treat_high_gain = true):
+      bool treat_high_gain = true, bool suppress_deprication_warning = false):
     SingleGainDualWindowWaveformTreatmentEventVisitor(config, treat_high_gain)
   {
+    if(not suppress_deprication_warning)
+      calin::util::log::LOG(calin::util::log::WARNING)
+        << "AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor is depricated.\n"
+        << "Use VCL_SingleGainDualWindowWaveformTreatmentEventVisitor instead.";
     /* nothing to see here */
   }
 
