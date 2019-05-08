@@ -63,6 +63,46 @@ TEST(TestVCL, Transpose256_U16) {
       EXPECT_EQ(x[j][i], i*16+j);
 }
 
+TEST(TestVCL, Transpose128_U32) {
+  Vec4ui x[4];
+  for(unsigned i=0;i<4;i++)
+    x[i] = Vec4ui(i*4+0,i*4+1,i*4+2,i*4+3);
+  transpose(x);
+  for(unsigned j=0;j<4;j++)
+    for(unsigned i=0;i<4;i++)
+      EXPECT_EQ(x[j][i], i*4+j);
+}
+
+TEST(TestVCL, Transpose256_U32) {
+  Vec8ui x[8];
+  for(unsigned i=0;i<8;i++)
+    x[i] = Vec8ui(i*8+0,i*8+1,i*8+2,i*8+3,i*8+4,i*8+5,i*8+6,i*8+7);
+  transpose(x);
+  for(unsigned j=0;j<8;j++)
+    for(unsigned i=0;i<8;i++)
+      EXPECT_EQ(x[j][i], i*8+j);
+}
+
+TEST(TestVCL, Transpose128_U64) {
+  Vec2uq x[2];
+  for(unsigned i=0;i<2;i++)
+    x[i] = Vec2uq(i*2+0,i*2+1);
+  transpose(x);
+  for(unsigned j=0;j<2;j++)
+    for(unsigned i=0;i<2;i++)
+      EXPECT_EQ(x[j][i], i*2+j);
+}
+
+TEST(TestVCL, Transpose256_U64) {
+  Vec4uq x[4];
+  for(unsigned i=0;i<4;i++)
+    x[i] = Vec4uq(i*4+0,i*4+1,i*4+2,i*4+3);
+  transpose(x);
+  for(unsigned j=0;j<4;j++)
+    for(unsigned i=0;i<4;i++)
+      EXPECT_EQ(x[j][i], i*4+j);
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

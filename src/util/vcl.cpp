@@ -128,6 +128,38 @@ void calin::util::vcl::transpose(Vec8us* x)
   std::swap(x[3], x[6]);
 }
 
+void calin::util::vcl::transpose(Vec4i* x)
+{
+  do_one_128_swizzle_32(x[0], x[1]);
+  do_one_128_swizzle_32(x[2], x[3]);
+
+  do_one_128_swizzle_64(x[0], x[2]);
+  do_one_128_swizzle_64(x[1], x[3]);
+
+  std::swap(x[1], x[2]);
+}
+
+void calin::util::vcl::transpose(Vec4ui* x)
+{
+  do_one_128_swizzle_32(x[0], x[1]);
+  do_one_128_swizzle_32(x[2], x[3]);
+
+  do_one_128_swizzle_64(x[0], x[2]);
+  do_one_128_swizzle_64(x[1], x[3]);
+
+  std::swap(x[1], x[2]);
+}
+
+void calin::util::vcl::transpose(Vec2q* x)
+{
+  do_one_128_swizzle_64(x[0], x[1]);
+}
+
+void calin::util::vcl::transpose(Vec2uq* x)
+{
+  do_one_128_swizzle_64(x[0], x[1]);
+}
+
 #if MAX_VECTOR_SIZE >= 256
 
 namespace {
@@ -275,4 +307,65 @@ void calin::util::vcl::transpose(Vec16us* x)
   std::swap(x[9],  x[12]);
   std::swap(x[11], x[14]);
 }
+
+void calin::util::vcl::transpose(Vec8i* x)
+{
+  do_one_256_swizzle_32(x[0],   x[1]);
+  do_one_256_swizzle_32(x[2],   x[3]);
+  do_one_256_swizzle_32(x[4],   x[5]);
+  do_one_256_swizzle_32(x[6],   x[7]);
+
+  do_one_256_swizzle_64(x[0],   x[2]);
+  do_one_256_swizzle_64(x[1],   x[3]);
+  do_one_256_swizzle_64(x[4],   x[6]);
+  do_one_256_swizzle_64(x[5],   x[7]);
+
+  do_one_256_swizzle_128(x[0],  x[4]);
+  do_one_256_swizzle_128(x[1],  x[5]);
+  do_one_256_swizzle_128(x[2],  x[6]);
+  do_one_256_swizzle_128(x[3],  x[7]);
+
+  std::swap(x[1],  x[2]);
+  std::swap(x[5],  x[6]);
+}
+
+void calin::util::vcl::transpose(Vec8ui* x)
+{
+  do_one_256_swizzle_32(x[0],   x[1]);
+  do_one_256_swizzle_32(x[2],   x[3]);
+  do_one_256_swizzle_32(x[4],   x[5]);
+  do_one_256_swizzle_32(x[6],   x[7]);
+
+  do_one_256_swizzle_64(x[0],   x[2]);
+  do_one_256_swizzle_64(x[1],   x[3]);
+  do_one_256_swizzle_64(x[4],   x[6]);
+  do_one_256_swizzle_64(x[5],   x[7]);
+
+  do_one_256_swizzle_128(x[0],  x[4]);
+  do_one_256_swizzle_128(x[1],  x[5]);
+  do_one_256_swizzle_128(x[2],  x[6]);
+  do_one_256_swizzle_128(x[3],  x[7]);
+
+  std::swap(x[1],  x[2]);
+  std::swap(x[5],  x[6]);
+}
+
+void calin::util::vcl::transpose(Vec4q* x)
+{
+  do_one_256_swizzle_64(x[0],   x[1]);
+  do_one_256_swizzle_64(x[2],   x[3]);
+
+  do_one_256_swizzle_128(x[0],  x[2]);
+  do_one_256_swizzle_128(x[1],  x[3]);
+}
+
+void calin::util::vcl::transpose(Vec4uq* x)
+{
+  do_one_256_swizzle_64(x[0],   x[1]);
+  do_one_256_swizzle_64(x[2],   x[3]);
+
+  do_one_256_swizzle_128(x[0],  x[2]);
+  do_one_256_swizzle_128(x[1],  x[3]);
+}
+
 #endif // MAX_VECTOR_SIZE >= 256

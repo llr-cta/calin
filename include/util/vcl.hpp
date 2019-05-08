@@ -656,9 +656,17 @@ inline Vec4i extend_16_to_32_high(const Vec8s x) {
 
 void transpose(Vec8s* x);
 void transpose(Vec8us* x);
+void transpose(Vec4i* x);
+void transpose(Vec4ui* x);
+void transpose(Vec2q* x);
+void transpose(Vec2uq* x);
 #if MAX_VECTOR_SIZE >= 256
 void transpose(Vec16s* x);
 void transpose(Vec16us* x);
+void transpose(Vec8i* x);
+void transpose(Vec8ui* x);
+void transpose(Vec4q* x);
+void transpose(Vec4uq* x);
 #endif
 
 } } } // namespace calin::util::vcl
