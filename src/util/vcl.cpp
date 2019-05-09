@@ -84,6 +84,19 @@ namespace {
     a = _mm_unpacklo_epi64(a, b);
     b = tmp;
   }
+
+  template<typename T> inline void do_one_128_swizzle_ps(T& a, T& b) {
+    __m128 tmp = _mm_unpackhi_ps(a, b);
+    a = _mm_unpacklo_ps(a, b);
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_128_swizzle_pd(T& a, T& b) {
+    __m128d tmp = _mm_unpackhi_pd(a, b);
+    a = _mm_unpacklo_pd(a, b);
+    b = tmp;
+  }
+
 }
 
 void calin::util::vcl::transpose(Vec8s* x)
@@ -160,6 +173,22 @@ void calin::util::vcl::transpose(Vec2uq* x)
   do_one_128_swizzle_64(x[0], x[1]);
 }
 
+void calin::util::vcl::transpose(Vec4f* x)
+{
+  do_one_128_swizzle_ps(x[0], x[1]);
+  do_one_128_swizzle_ps(x[2], x[3]);
+
+  do_one_128_swizzle_pd(x[0], x[2]);
+  do_one_128_swizzle_pd(x[1], x[3]);
+
+  std::swap(x[1], x[2]);
+}
+
+void calin::util::vcl::transpose(Vec2d* x)
+{
+  do_one_128_swizzle_pd(x[0], x[1]);
+}
+
 #if MAX_VECTOR_SIZE >= 256
 
 namespace {
@@ -187,6 +216,25 @@ namespace {
     a = _mm256_permute2x128_si256(a, b, 0x20);
     b = tmp;
   }
+
+  template<typename T> inline void do_one_256_swizzle_ps(T& a, T& b) {
+    __m256 tmp = _mm256_unpackhi_ps(a, b);
+    a = _mm256_unpacklo_ps(a, b);
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_256_swizzle_pd(T& a, T& b) {
+    __m256d tmp = _mm256_unpackhi_pd(a, b);
+    a = _mm256_unpacklo_pd(a, b);
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_256_swizzle_flt128(T& a, T& b) {
+    __m256 tmp =  _mm256_permute2f128_ps(a, b, 0x31);
+    a = _mm256_permute2f128_ps(a, b, 0x20);
+    b = tmp;
+  }
+
 #else // INSTRSET >= 8
   template<typename T> inline void do_one_256_swizzle_16(T& a, T& b) {
     T tmp(_mm_unpackhi_epi16(a.get_low(), b.get_low()),
@@ -217,6 +265,29 @@ namespace {
     a = T(a.get_low(), b.get_low());
     b = tmp;
   }
+
+  template<typename T> inline void do_one_256_swizzle_ps(T& a, T& b) {
+    T tmp(_mm_unpackhi_ps(a.get_low(), b.get_low()),
+          _mm_unpackhi_ps(a.get_high(), b.get_high()));
+    a = T(_mm_unpacklo_ps(a.get_low(), b.get_low()),
+          _mm_unpacklo_ps(a.get_high(), b.get_high()));
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_256_swizzle_pd(T& a, T& b) {
+    T tmp(_mm_unpackhi_pd(a.get_low(), b.get_low()),
+          _mm_unpackhi_pd(a.get_high(), b.get_high()));
+    a = T(_mm_unpacklo_pd(a.get_low(), b.get_low()),
+          _mm_unpacklo_pd(a.get_high(), b.get_high()));
+    b = tmp;
+  }
+
+  template<typename T> inline void do_one_256_swizzle_flt128(T& a, T& b) {
+    T tmp(a.get_high(), b.get_high());
+    a = T(a.get_low(), b.get_low());
+    b = tmp;
+  }
+
 #endif // INSTRSET >= 8
 }
 
@@ -366,6 +437,36 @@ void calin::util::vcl::transpose(Vec4uq* x)
 
   do_one_256_swizzle_128(x[0],  x[2]);
   do_one_256_swizzle_128(x[1],  x[3]);
+}
+
+void calin::util::vcl::transpose(Vec8f* x)
+{
+  do_one_256_swizzle_ps(x[0],   x[1]);
+  do_one_256_swizzle_ps(x[2],   x[3]);
+  do_one_256_swizzle_ps(x[4],   x[5]);
+  do_one_256_swizzle_ps(x[6],   x[7]);
+
+  do_one_256_swizzle_pd(x[0],   x[2]);
+  do_one_256_swizzle_pd(x[1],   x[3]);
+  do_one_256_swizzle_pd(x[4],   x[6]);
+  do_one_256_swizzle_pd(x[5],   x[7]);
+
+  do_one_256_swizzle_flt128(x[0],  x[4]);
+  do_one_256_swizzle_flt128(x[1],  x[5]);
+  do_one_256_swizzle_flt128(x[2],  x[6]);
+  do_one_256_swizzle_flt128(x[3],  x[7]);
+
+  std::swap(x[1],  x[2]);
+  std::swap(x[5],  x[6]);
+}
+
+void calin::util::vcl::transpose(Vec4d* x)
+{
+  do_one_256_swizzle_pd(x[0],   x[1]);
+  do_one_256_swizzle_pd(x[2],   x[3]);
+
+  do_one_256_swizzle_flt128(x[0],  x[2]);
+  do_one_256_swizzle_flt128(x[1],  x[3]);
 }
 
 #endif // MAX_VECTOR_SIZE >= 256

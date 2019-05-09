@@ -52,17 +52,6 @@ TEST(TestVCL, Transpose128_U16) {
       EXPECT_EQ(x[j][i], i*8+j);
 }
 
-TEST(TestVCL, Transpose256_U16) {
-  Vec16us x[16];
-  for(unsigned i=0;i<16;i++)
-    x[i] = Vec16us(i*16+0,i*16+1,i*16+2,i*16+3,i*16+4,i*16+5,i*16+6,i*16+7,
-      i*16+8,i*16+9,i*16+10,i*16+11,i*16+12,i*16+13,i*16+14,i*16+15);
-  transpose(x);
-  for(unsigned j=0;j<16;j++)
-    for(unsigned i=0;i<16;i++)
-      EXPECT_EQ(x[j][i], i*16+j);
-}
-
 TEST(TestVCL, Transpose128_U32) {
   Vec4ui x[4];
   for(unsigned i=0;i<4;i++)
@@ -71,16 +60,6 @@ TEST(TestVCL, Transpose128_U32) {
   for(unsigned j=0;j<4;j++)
     for(unsigned i=0;i<4;i++)
       EXPECT_EQ(x[j][i], i*4+j);
-}
-
-TEST(TestVCL, Transpose256_U32) {
-  Vec8ui x[8];
-  for(unsigned i=0;i<8;i++)
-    x[i] = Vec8ui(i*8+0,i*8+1,i*8+2,i*8+3,i*8+4,i*8+5,i*8+6,i*8+7);
-  transpose(x);
-  for(unsigned j=0;j<8;j++)
-    for(unsigned i=0;i<8;i++)
-      EXPECT_EQ(x[j][i], i*8+j);
 }
 
 TEST(TestVCL, Transpose128_U64) {
@@ -93,6 +72,47 @@ TEST(TestVCL, Transpose128_U64) {
       EXPECT_EQ(x[j][i], i*2+j);
 }
 
+TEST(TestVCL, Transpose128_FLT) {
+  Vec4f x[4];
+  for(unsigned i=0;i<4;i++)
+    x[i] = Vec4f(i+0,i+0.1,i+0.2,i+0.3);
+  transpose(x);
+  for(unsigned j=0;j<4;j++)
+    for(unsigned i=0;i<4;i++)
+      EXPECT_NEAR(x[j][i], i+0.1*j, 0.01);
+}
+
+TEST(TestVCL, Transpose128_DBL) {
+  Vec2d x[2];
+  for(unsigned i=0;i<2;i++)
+    x[i] = Vec2d(i*2+0,i*2+0.1);
+  transpose(x);
+  for(unsigned j=0;j<2;j++)
+    for(unsigned i=0;i<2;i++)
+      EXPECT_NEAR(x[j][i], i*2+0.1*j, 0.01);
+}
+
+TEST(TestVCL, Transpose256_U16) {
+  Vec16us x[16];
+  for(unsigned i=0;i<16;i++)
+    x[i] = Vec16us(i*16+0,i*16+1,i*16+2,i*16+3,i*16+4,i*16+5,i*16+6,i*16+7,
+      i*16+8,i*16+9,i*16+10,i*16+11,i*16+12,i*16+13,i*16+14,i*16+15);
+  transpose(x);
+  for(unsigned j=0;j<16;j++)
+    for(unsigned i=0;i<16;i++)
+      EXPECT_EQ(x[j][i], i*16+j);
+}
+
+TEST(TestVCL, Transpose256_U32) {
+  Vec8ui x[8];
+  for(unsigned i=0;i<8;i++)
+    x[i] = Vec8ui(i*8+0,i*8+1,i*8+2,i*8+3,i*8+4,i*8+5,i*8+6,i*8+7);
+  transpose(x);
+  for(unsigned j=0;j<8;j++)
+    for(unsigned i=0;i<8;i++)
+      EXPECT_EQ(x[j][i], i*8+j);
+}
+
 TEST(TestVCL, Transpose256_U64) {
   Vec4uq x[4];
   for(unsigned i=0;i<4;i++)
@@ -101,6 +121,26 @@ TEST(TestVCL, Transpose256_U64) {
   for(unsigned j=0;j<4;j++)
     for(unsigned i=0;i<4;i++)
       EXPECT_EQ(x[j][i], i*4+j);
+}
+
+TEST(TestVCL, Transpos256_FLT) {
+  Vec8f x[8];
+  for(unsigned i=0;i<8;i++)
+    x[i] = Vec8f(i+0.0,i+0.1,i+0.2,i+0.3,i+0.4,i+0.5,i+0.6,i+0.7);
+  transpose(x);
+  for(unsigned j=0;j<8;j++)
+    for(unsigned i=0;i<8;i++)
+      EXPECT_NEAR(x[j][i], i+0.1*j, 0.01);
+}
+
+TEST(TestVCL, Transpose256_DBL) {
+  Vec4d x[4];
+  for(unsigned i=0;i<4;i++)
+    x[i] = Vec4d(i+0,i+0.1,i+0.2,i+0.3);
+  transpose(x);
+  for(unsigned j=0;j<4;j++)
+    for(unsigned i=0;i<4;i++)
+      EXPECT_NEAR(x[j][i], i+0.1*j, 0.01);
 }
 
 int main(int argc, char **argv) {
