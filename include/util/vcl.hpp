@@ -563,28 +563,28 @@ inline Vec4ui extend_16_to_32_low(const Vec8us x) {
 #if INSTRSET >= 5   // SSE4.1
   return _mm_cvtepu16_epi32(x);
 #else
-  return extend(x);
+  return vcl::extend(x);
 #endif
 }
 inline Vec4ui extend_16_to_32_high(const Vec8us x) {
 #if INSTRSET >= 5   // SSE4.1
   return _mm_cvtepu16_epi32(_mm_srli_si128(x,8));
 #else
-  return extend(x);
+  return vcl::extend(x);
 #endif
 }
 inline Vec4i extend_16_to_32_low(const Vec8s x) {
 #if INSTRSET >= 5   // SSE4.1
   return _mm_cvtepi16_epi32(x);
 #else
-  return extend(x);
+  return vcl::extend(x);
 #endif
 }
 inline Vec4i extend_16_to_32_high(const Vec8s x) {
 #if INSTRSET >= 5   // SSE4.1
   return _mm_cvtepi16_epi32(_mm_srli_si128(x,8));
 #else
-  return extend(x);
+  return vcl::extend(x);
 #endif
 }
 
