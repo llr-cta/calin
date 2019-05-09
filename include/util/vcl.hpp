@@ -634,7 +634,7 @@ inline Vec4i extend_16_to_32_high(const Vec8s x) {
     return vcl::extend_high(x);
   }
   inline Vec8i extend_16_to_32_low(const Vec16s x) {
-    return vcl::extend_low();
+    return vcl::extend_low(x);
   }
   inline Vec8i extend_16_to_32_high(const Vec16s x) {
     return vcl::extend_high(x);
