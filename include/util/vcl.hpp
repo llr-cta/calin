@@ -628,23 +628,6 @@ inline Vec4i extend_16_to_32_high(const Vec8s x) {
   }
 
   inline Vec8ui extend_16_to_32_low(const Vec16us x) {
-    return vcl::extend_low(x);
-  }
-  inline Vec8ui extend_16_to_32_high(const Vec16us x) {
-    return vcl::extend_high(x);
-  }
-  inline Vec8i extend_16_to_32_low(const Vec16s x) {
-    return vcl::extend_low(x);
-  }
-  inline Vec8i extend_16_to_32_high(const Vec16s x) {
-    return vcl::extend_high(x);
-  }
-
-  inline Vec4uq mul_64(const Vec4uq& a, const Vec4uq& b) {
-    return a*b;
-  }
-
-  inline Vec8ui extend_16_to_32_low(const Vec16us x) {
     return Vec8ui(extend_16_to_32_low(x.get_low()),
                   extend_16_to_32_high(x.get_low()));
   }
@@ -661,6 +644,9 @@ inline Vec4i extend_16_to_32_high(const Vec8s x) {
                  extend_16_to_32_high(x.get_high()));
   }
 
+  inline Vec4uq mul_64(const Vec4uq& a, const Vec4uq& b) {
+    return a*b;
+  }
 #endif // INSTRSET < 8
 #endif // MAX_VECTOR_SIZE >= 256
 
