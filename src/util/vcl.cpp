@@ -229,15 +229,27 @@ namespace {
     b = tmp;
   }
 
-  template<typename T> inline void do_one_256_swizzle_pd(T& a, T& b) {
-    T tmp = _mm256_unpackhi_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
+  inline void do_one_256_swizzle_pd(Vec8f& a, Vec8f& b) {
+    Vec4d tmp = _mm256_unpackhi_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
     a = _mm256_unpacklo_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
+    b = vcl::reinterpret_f(tmp);
+  }
+
+  inline void do_one_256_swizzle_pd(Vec4d& a, Vec4d& b) {
+    Vec4d tmp = _mm256_unpackhi_pd(a, b);
+    a = _mm256_unpacklo_pd(a, b);
     b = tmp;
   }
 
-  template<typename T> inline void do_one_256_swizzle_flt128(T& a, T& b) {
-    T tmp =  _mm256_permute2f128_ps(vcl::reinterpret_d(a), vcl::reinterpret_d(b), 0x31);
-    a = _mm256_permute2f128_ps(vcl::reinterpret_d(a), vcl::reinterpret_d(b), 0x20);
+  inline void do_one_256_swizzle_flt128(Vec8f& a, Vec8f& b) {
+    Vec8f tmp =  _mm256_permute2f128_ps(a, b, 0x31);
+    a = _mm256_permute2f128_ps(a, b, 0x20);
+    b = tmp;
+  }
+
+  inline void do_one_256_swizzle_flt128(Vec4d& a, Vec4d& b) {
+    Vec4d tmp =  _mm256_permute2f128_pd(a, b, 0x31);
+    a = _mm256_permute2f128_ps(a, b, 0x20);
     b = tmp;
   }
 
