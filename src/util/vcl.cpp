@@ -249,7 +249,7 @@ namespace {
 
   inline void do_one_256_swizzle_flt128(Vec4d& a, Vec4d& b) {
     Vec4d tmp =  _mm256_permute2f128_pd(a, b, 0x31);
-    a = _mm256_permute2f128_ps(a, b, 0x20);
+    a = _mm256_permute2f128_pd(a, b, 0x20);
     b = tmp;
   }
 
