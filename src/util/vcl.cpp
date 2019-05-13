@@ -93,8 +93,8 @@ namespace {
 
   inline void do_one_128_swizzle_pd(Vec4f& a, Vec4f& b) {
     __m128d tmp = _mm_unpackhi_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
-    a = vcl::reinterpret_f(_mm_unpacklo_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b)));
-    b = vcl::reinterpret_f(tmp);
+    a = _mm_castpd_ps(_mm_unpacklo_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b)));
+    b = _mm_castpd_ps(tmp);
   }
 
   inline void do_one_128_swizzle_pd(Vec2d& a, Vec2d& b) {
@@ -230,25 +230,25 @@ namespace {
   }
 
   inline void do_one_256_swizzle_pd(Vec8f& a, Vec8f& b) {
-    Vec4d tmp = _mm256_unpackhi_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
-    a = _mm256_unpacklo_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
-    b = vcl::reinterpret_f(tmp);
+    __m256d tmp = _mm256_unpackhi_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
+    a = _mm256_castpd_ps(_mm256_unpacklo_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b)));
+    b = _mm256_castpd_ps(tmp);
   }
 
   inline void do_one_256_swizzle_pd(Vec4d& a, Vec4d& b) {
-    Vec4d tmp = _mm256_unpackhi_pd(a, b);
+    __m256d tmp = _mm256_unpackhi_pd(a, b);
     a = _mm256_unpacklo_pd(a, b);
     b = tmp;
   }
 
   inline void do_one_256_swizzle_flt128(Vec8f& a, Vec8f& b) {
-    Vec8f tmp =  _mm256_permute2f128_ps(a, b, 0x31);
+    __m256 tmp =  _mm256_permute2f128_ps(a, b, 0x31);
     a = _mm256_permute2f128_ps(a, b, 0x20);
     b = tmp;
   }
 
   inline void do_one_256_swizzle_flt128(Vec4d& a, Vec4d& b) {
-    Vec4d tmp =  _mm256_permute2f128_pd(a, b, 0x31);
+    __m256d tmp =  _mm256_permute2f128_pd(a, b, 0x31);
     a = _mm256_permute2f128_pd(a, b, 0x20);
     b = tmp;
   }
@@ -293,10 +293,10 @@ namespace {
   }
 
   inline void do_one_256_swizzle_pd(Vec8f& a, Vec8f& b) {
-    Vec8f tmp(vcl::reinterpret_f(_mm_unpackhi_pd(vcl::reinterpret_d(a.get_low()), vcl::reinterpret_d(b.get_low()))),
-          vcl::reinterpret_f(_mm_unpackhi_pd(vcl::reinterpret_d(a.get_high()), vcl::reinterpret_d(b.get_high()))));
-    a = Vec8f(vcl::reinterpret_f(_mm_unpacklo_pd(vcl::reinterpret_d(a.get_low()), vcl::reinterpret_d(b.get_low()))),
-              vcl::reinterpret_f(_mm_unpacklo_pd(vcl::reinterpret_d(a.get_high()), vcl::reinterpret_d(b.get_high()))));
+    Vec8f tmp(_mm_castpd_ps(_mm_unpackhi_pd(vcl::reinterpret_d(a.get_low()), vcl::reinterpret_d(b.get_low()))),
+              _mm_castpd_ps(_mm_unpackhi_pd(vcl::reinterpret_d(a.get_high()), vcl::reinterpret_d(b.get_high()))));
+    a = Vec8f(_mm_castpd_ps(_mm_unpacklo_pd(vcl::reinterpret_d(a.get_low()), vcl::reinterpret_d(b.get_low()))),
+              _mm_castpd_ps(_mm_unpacklo_pd(vcl::reinterpret_d(a.get_high()), vcl::reinterpret_d(b.get_high()))));
     b = tmp;
   }
 
