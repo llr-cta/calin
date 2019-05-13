@@ -85,13 +85,19 @@ namespace {
     b = tmp;
   }
 
-  template<typename T> inline void do_one_128_swizzle_ps(T& a, T& b) {
+  inline void do_one_128_swizzle_ps(Vec4f& a, Vec4f& b) {
     __m128 tmp = _mm_unpackhi_ps(a, b);
     a = _mm_unpacklo_ps(a, b);
     b = tmp;
   }
 
-  template<typename T> inline void do_one_128_swizzle_pd(T& a, T& b) {
+  inline void do_one_128_swizzle_pd(Vec4f& a, Vec4f& b) {
+    __m128d tmp = _mm_unpackhi_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
+    a = vcl::reinterpret_f(_mm_unpacklo_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b)));
+    b = vcl::reinterpret_f(tmp);
+  }
+
+  inline void do_one_128_swizzle_pd(Vec2d& a, Vec2d& b) {
     __m128d tmp = _mm_unpackhi_pd(a, b);
     a = _mm_unpacklo_pd(a, b);
     b = tmp;
@@ -218,20 +224,20 @@ namespace {
   }
 
   template<typename T> inline void do_one_256_swizzle_ps(T& a, T& b) {
-    __m256 tmp = _mm256_unpackhi_ps(a, b);
+    T tmp = _mm256_unpackhi_ps(a, b);
     a = _mm256_unpacklo_ps(a, b);
     b = tmp;
   }
 
   template<typename T> inline void do_one_256_swizzle_pd(T& a, T& b) {
-    __m256d tmp = _mm256_unpackhi_pd(a, b);
-    a = _mm256_unpacklo_pd(a, b);
+    T tmp = _mm256_unpackhi_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
+    a = _mm256_unpacklo_pd(vcl::reinterpret_d(a), vcl::reinterpret_d(b));
     b = tmp;
   }
 
   template<typename T> inline void do_one_256_swizzle_flt128(T& a, T& b) {
-    __m256 tmp =  _mm256_permute2f128_ps(a, b, 0x31);
-    a = _mm256_permute2f128_ps(a, b, 0x20);
+    T tmp =  _mm256_permute2f128_ps(vcl::reinterpret_d(a), vcl::reinterpret_d(b), 0x31);
+    a = _mm256_permute2f128_ps(vcl::reinterpret_d(a), vcl::reinterpret_d(b), 0x20);
     b = tmp;
   }
 
@@ -266,21 +272,31 @@ namespace {
     b = tmp;
   }
 
-  template<typename T> inline void do_one_256_swizzle_ps(T& a, T& b) {
-    T tmp(_mm_unpackhi_ps(a.get_low(), b.get_low()),
+  inline void do_one_256_swizzle_ps(Vec8f& a, Vec8f& b) {
+    Vec8f tmp(_mm_unpackhi_ps(a.get_low(), b.get_low()),
           _mm_unpackhi_ps(a.get_high(), b.get_high()));
-    a = T(_mm_unpacklo_ps(a.get_low(), b.get_low()),
+    a = Vec8f(_mm_unpacklo_ps(a.get_low(), b.get_low()),
           _mm_unpacklo_ps(a.get_high(), b.get_high()));
     b = tmp;
   }
 
-  template<typename T> inline void do_one_256_swizzle_pd(T& a, T& b) {
-    T tmp(_mm_unpackhi_pd(a.get_low(), b.get_low()),
-          _mm_unpackhi_pd(a.get_high(), b.get_high()));
-    a = T(_mm_unpacklo_pd(a.get_low(), b.get_low()),
-          _mm_unpacklo_pd(a.get_high(), b.get_high()));
+  inline void do_one_256_swizzle_pd(Vec8f& a, Vec8f& b) {
+    Vec8f tmp(vcl::reinterpret_f(_mm_unpackhi_pd(vcl::reinterpret_d(a.get_low()), vcl::reinterpret_d(b.get_low()))),
+          vcl::reinterpret_f(_mm_unpackhi_pd(vcl::reinterpret_d(a.get_high()), vcl::reinterpret_d(b.get_high()))));
+    a = Vec8f(vcl::reinterpret_f(_mm_unpacklo_pd(vcl::reinterpret_d(a.get_low()), vcl::reinterpret_d(b.get_low()))),
+              vcl::reinterpret_f(_mm_unpacklo_pd(vcl::reinterpret_d(a.get_high()), vcl::reinterpret_d(b.get_high()))));
     b = tmp;
   }
+
+  inline void do_one_256_swizzle_pd(Vec4d& a, Vec4d& b) {
+    Vec4d tmp(_mm_unpackhi_pd(a.get_low(), b.get_low()),
+              _mm_unpackhi_pd(a.get_high(), b.get_high()));
+    a = Vec4d(_mm_unpacklo_pd(a.get_low(), b.get_low()),
+              _mm_unpacklo_pd(a.get_high(), b.get_high()));
+    b = tmp;
+  }
+
+
 
   template<typename T> inline void do_one_256_swizzle_flt128(T& a, T& b) {
     T tmp(a.get_high(), b.get_high());
