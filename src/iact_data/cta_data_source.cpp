@@ -123,6 +123,10 @@ calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunC
 CTAZFITSDataSource::construct_delegate(const std::string& filename,
   config_type config, decoder_config_type decoder_config)
 {
+  if(!is_file(filename))
+    throw std::runtime_error(
+      "CTAZFITSDataSource::construct_delegate: File not found: " + filename);
+
   if(config.data_model() ==
       calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT) {
     if(zfits_actl_data_source::is_zfits_r1(filename, config.events_table_name())) {
@@ -146,9 +150,6 @@ CTAZFITSDataSource::construct_delegate(const std::string& filename,
     if(decoder_config.camera_type()
         == calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig::AUTO_DETECT)
     {
-      if(!is_file(filename))
-        throw std::runtime_error(
-          "CTAZFITSDataSource::construct_delegate: File not found: " + filename);
       ZFITSSingleFileACTL_R1_CameraEventDataSource src(filename, config);
       auto* header = src.get_run_header();
       if(header == nullptr) {
