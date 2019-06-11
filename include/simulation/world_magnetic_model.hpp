@@ -5,7 +5,7 @@
    Interface to the NOAA World Magnetic Model (WMM)
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   LLR, CNRS, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 

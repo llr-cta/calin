@@ -5,7 +5,7 @@
    Provides reading and writing of protobuf structures to SQLite3 databases
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   LLR, CNRS, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 

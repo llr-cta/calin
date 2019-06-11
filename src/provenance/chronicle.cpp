@@ -5,7 +5,7 @@
    Provenance system for recording noteworthy run-time events (io files etc)
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   LLR, CNRS, Ecole Polytechnique, Institut Polytechnique de Paris
 
    Based on original, copyright 2006, Stephen Fegan, see notice below
 
