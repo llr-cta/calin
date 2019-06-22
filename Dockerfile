@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-FROM llrcta/calin-docker-base:ubuntu18.04_v1.31
+FROM llrcta/calin-docker-base:ubuntu18.04_v1.32
 
 MAINTAINER sfegan@llr.in2p3.fr
 
