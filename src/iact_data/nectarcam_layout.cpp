@@ -280,6 +280,17 @@ calin::iact_data::nectarcam_layout::nectarcam_19module_layout(
 }
 
 CameraLayout*
+calin::iact_data::nectarcam_layout::nectarcam_61module_layout(
+  CameraLayout* layout)
+{
+  const double spacing = 5;
+  double rot = 0;
+  auto modvec = nectarcam_mod_map(4, 0.0, spacing, rot);
+  return nectarcam_general_layout(layout, modvec,
+    CameraLayout::NECTARCAM_TESTBENCH_61CHANNEL, spacing, rot);
+}
+
+CameraLayout*
 calin::iact_data::nectarcam_layout::nectarcam_layout(
   CameraLayout* layout)
 {

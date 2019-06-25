@@ -181,6 +181,7 @@ message CameraLayout {
     NECTARCAM                                              = 10;
     LSTCAM                                                 = 11;
     NECTARCAM_TESTBENCH_19CHANNEL                          = 1000;
+    NECTARCAM_TESTBENCH_61CHANNEL                          = 1001;
   };
 
   enum PixelGridLayout {

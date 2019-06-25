@@ -33,6 +33,10 @@ nectarcam_19module_layout(
   calin::ix::iact_data::instrument_layout::CameraLayout* layout = nullptr);
 
 calin::ix::iact_data::instrument_layout::CameraLayout*
+nectarcam_61module_layout(
+  calin::ix::iact_data::instrument_layout::CameraLayout* layout = nullptr);
+
+calin::ix::iact_data::instrument_layout::CameraLayout*
 nectarcam_layout(
   calin::ix::iact_data::instrument_layout::CameraLayout* layout = nullptr);
 
