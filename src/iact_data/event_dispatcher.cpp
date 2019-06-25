@@ -5,7 +5,7 @@
    A dispatcher of run and event data
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, CNRS, Ecole Polytechnique, Institut Polytechnique de Paris
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 

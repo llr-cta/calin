@@ -5,7 +5,7 @@
    Calculate 1D and 2D moments
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, CNRS, Ecole Polytechnique, Institut Polytechnique de Paris
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 

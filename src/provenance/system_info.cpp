@@ -5,7 +5,7 @@
    Provenance information about build-time and run-time system environment
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, CNRS, Ecole Polytechnique, Institut Polytechnique de Paris
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    Based on original, copyright 2006, Stephen Fegan, see notice below
 
