@@ -13,8 +13,8 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_subdirectory(gtest-1.8.0)
-include_directories(gtest-1.8.0/include)
+add_subdirectory(gtest-1.8.1)
+include_directories(gtest-1.8.1/include)
 set(GTEST_BOTH_LIBRARIES gtest gtest_main)
 
 add_subdirectory(simulation)
