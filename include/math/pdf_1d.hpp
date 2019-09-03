@@ -257,7 +257,7 @@ class TwoComponent1DPDF: public Parameterizable1DPDF
                                                  MatRef hessian) override;
 
  protected:
-  double prob_cpt1_;
+  double prob_cpt1_     = 0.0;
   Parameterizable1DPDF* pdf1_;
   bool adopt_pdf1_;
   std::string cpt1_name_;
@@ -294,7 +294,7 @@ class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
 
 
  protected:
-  
+
   double prob_cpt1_;
   double pp_;
   double mu1_;
@@ -303,8 +303,8 @@ class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
   double n_;
   Parameterizable1DPDF* pdfTest_;
   bool fast_mode_;
-  
-  
+
+
 };
 
 } } } // namespace calin::math::pdf_1d
