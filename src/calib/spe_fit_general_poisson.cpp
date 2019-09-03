@@ -406,7 +406,7 @@ single_electron_spectrum_gradient(unsigned iparam) const
                             "iparam out of range");
 
   unsigned isespar = iparam_ses();
-  if(iparam<=isespar)return Eigen::VectorXd::Zero(nsample_);
+  if(iparam<isespar)return Eigen::VectorXd::Zero(nsample_);
   iparam -= isespar;
 
   uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
