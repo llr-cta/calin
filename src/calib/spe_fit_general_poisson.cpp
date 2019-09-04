@@ -379,7 +379,7 @@ Eigen::VectorXd GeneralPoissonMES::
 off_pedestal_spectrum_gradient(unsigned iparam) const
 {
   if(not config_.include_on_off_ped_shift())
-    return off_pedestal_spectrum_gradient(iparam);
+    return pedestal_spectrum_gradient(iparam);
 
   if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
     throw std::out_of_range("GeneralPoissonMES::off_pedestal_spectrum_gradient: "
