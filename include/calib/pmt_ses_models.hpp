@@ -82,6 +82,7 @@ private:
   double beta_    = 0.451781;
   Eigen::MatrixXd jacobian_inv_ = Eigen::MatrixXd::Identity(4,4);
   Eigen::FullPivLU<Eigen::MatrixXd> jacobian_lu_;
+  unsigned num_warnings_ = 5;
 };
 
 // ********************************** OBSOLETE *********************************

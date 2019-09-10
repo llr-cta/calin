@@ -245,15 +245,23 @@ void ReparameterizedTwoGaussianSES::update_cached_values()
     dg_dPl, dg_dsl, dg_dmh, dg_dsh,
     db_dPl, db_dsl, db_dmh, db_dsh;
 
-  // jacobian_ = jacobian_inv_.inverse().transpose();
   jacobian_lu_ = Eigen::FullPivLU<Eigen::MatrixXd>(jacobian_inv_.transpose());
-  // jacobian_lu_transpose_ = Eigen::FullPivLU<Eigen::MatrixXd>(jacobian_inv_);
 
   double mx_est;
   double mxx_est;
   ses_.moments(mx_est, mxx_est);
 
-  LOG(INFO) << Pl << ' ' << sl << ' ' << mh << ' ' << sh << ' ' << mx << ' ' << mx_est << ' ' << mxx << ' ' << mxx_est;
+  if(std::abs(mx_est/mx - 1)>1e-8 or std::abs(mxx_est/mxx - 1)>1e-8) {
+    if(num_warnings_) {
+      LOG(WARNING) << "ReparameterizedTwoGaussianSES: inconsistent gain or resolution\n"
+        << "  Pl=" << Pl << " sl=" << sl << " mh=" << mh << " sh=" << sh << "\n"
+        << "  gain=" << mx << " gain_est=" << mx_est << " mxx=" << mxx << " mxx_est=" << mxx_est;
+      --num_warnings_;
+      if(num_warnings_ == 0) {
+        LOG(INFO) << "ReparameterizedTwoGaussianSES: further warnings will be suppressed\n";
+      }
+    }
+  }
 }
 
 // ********************************* OBSOLETE *********************************
