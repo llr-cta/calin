@@ -135,7 +135,7 @@ bool ReparameterizedTwoGaussianSES::can_calculate_parameter_gradient()
 
 bool ReparameterizedTwoGaussianSES::can_calculate_parameter_hessian()
 {
-  return true;
+  return false;
 }
 
 calin::math::function::DomainAxis ReparameterizedTwoGaussianSES::domain_axis()
@@ -172,11 +172,8 @@ value_and_parameter_gradient_1d(double x,  VecRef gradient)
 double ReparameterizedTwoGaussianSES::
 value_parameter_gradient_and_hessian_1d(double x, VecRef gradient, MatRef hessian)
 {
-  double value = ses_.value_parameter_gradient_and_hessian_1d(x, gradient, hessian);
-  gradient = jacobian_lu_.solve(gradient);
-  hessian =  jacobian_lu_.solve(hessian.transpose());
-  hessian =  jacobian_lu_.solve(hessian.transpose());
-  return value;
+  // Transforming the Hessian would require a 3-index tensor in addition to the Jacobian
+  throw std::runtime_error("ReparameterizedTwoGaussianSES: cannot calculate Hessian");
 }
 
 void ReparameterizedTwoGaussianSES::update_cached_values()
@@ -204,7 +201,7 @@ void ReparameterizedTwoGaussianSES::update_cached_values()
 
     sh_est = std::sqrt(sh_est);
 
-    if(std::abs(mh_est - mh)<1e-16*mx and std::abs(sh_est - sh )<1e-16*mx) {
+    if(std::abs(mh_est - mh)<1e-16*mx  and std::abs(sh_est - sh )<1e-16*mx) {
       mh = mh_est;
       sh = sh_est;
       break;
@@ -248,8 +245,9 @@ void ReparameterizedTwoGaussianSES::update_cached_values()
     dg_dPl, dg_dsl, dg_dmh, dg_dsh,
     db_dPl, db_dsl, db_dmh, db_dsh;
 
-  jacobian_ = jacobian_inv_.inverse().transpose();
+  // jacobian_ = jacobian_inv_.inverse().transpose();
   jacobian_lu_ = Eigen::FullPivLU<Eigen::MatrixXd>(jacobian_inv_.transpose());
+  // jacobian_lu_transpose_ = Eigen::FullPivLU<Eigen::MatrixXd>(jacobian_inv_);
 
   double mx_est;
   double mxx_est;

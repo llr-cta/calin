@@ -69,7 +69,7 @@ public:
                                                  MatRef hessian) override;
 
   TwoGaussianSES* underlying_ses() { return &ses_; }
-  Eigen::MatrixXd jabobian() const { return jacobian_; }
+  Eigen::MatrixXd jabobian() const { return jacobian_lu_.inverse(); }
   Eigen::MatrixXd jabobian_inv() const { return jacobian_inv_; }
 
 private:
@@ -81,7 +81,6 @@ private:
   double gain_    = 100;
   double beta_    = 0.451781;
   Eigen::MatrixXd jacobian_inv_ = Eigen::MatrixXd::Identity(4,4);
-  Eigen::MatrixXd jacobian_ = Eigen::MatrixXd::Identity(4,4);
   Eigen::FullPivLU<Eigen::MatrixXd> jacobian_lu_;
 };
 
