@@ -228,7 +228,7 @@ void ReparameterizedTwoGaussianSES::update_cached_values()
 
     sh_est = std::sqrt(sh_est);
 
-    if(std::abs(mh_est - mh)<1e-16*mx  and std::abs(sh_est - sh )<1e-16*mx) {
+    if(std::abs(mh_est - mh)<1e-16*mx and std::abs(sh_est - sh )<1e-16*mx) {
       mh = mh_est;
       sh = sh_est;
       break;
