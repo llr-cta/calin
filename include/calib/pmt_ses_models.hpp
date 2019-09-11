@@ -72,6 +72,12 @@ public:
   Eigen::MatrixXd jabobian() const { return jacobian_lu_.inverse(); }
   Eigen::MatrixXd jabobian_inv() const { return jacobian_inv_; }
 
+  Eigen::MatrixXd prob_lo_curv() const { return prob_lo_curv_; }
+  Eigen::MatrixXd beta_lo_curv() const { return beta_lo_curv_; }
+  Eigen::MatrixXd gain_curv() const { return gain_curv_; }
+  Eigen::MatrixXd beta_curv() const { return beta_curv_; }
+  Eigen::MatrixXd mxx_curv() const { return mxx_curv_; }
+
 private:
   void update_cached_values();
 
@@ -82,6 +88,12 @@ private:
   double beta_    = 0.451781;
   Eigen::MatrixXd jacobian_inv_ = Eigen::MatrixXd::Identity(4,4);
   Eigen::FullPivLU<Eigen::MatrixXd> jacobian_lu_;
+  Eigen::MatrixXd prob_lo_curv_ = Eigen::MatrixXd::Zero(4,4);
+  Eigen::MatrixXd beta_lo_curv_ = Eigen::MatrixXd::Zero(4,4);
+  Eigen::MatrixXd gain_curv_ = Eigen::MatrixXd::Zero(4,4);
+  Eigen::MatrixXd beta_curv_ = Eigen::MatrixXd::Zero(4,4);
+  Eigen::MatrixXd mxx_curv_ = Eigen::MatrixXd::Zero(4,4);
+
   unsigned num_warnings_ = 5;
 };
 

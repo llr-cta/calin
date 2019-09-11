@@ -42,4 +42,6 @@
 %import "math/function.i"
 %import "math/pdf_1d.i"
 
+%apply double &OUTPUT { double& mx, double& mxx };
+
 %include "calib/pmt_ses_models.hpp"

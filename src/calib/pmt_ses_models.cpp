@@ -172,8 +172,18 @@ value_and_parameter_gradient_1d(double x,  VecRef gradient)
 double ReparameterizedTwoGaussianSES::
 value_parameter_gradient_and_hessian_1d(double x, VecRef gradient, MatRef hessian)
 {
-  // Transforming the Hessian would require a 3-index tensor in addition to the Jacobian
-  throw std::runtime_error("ReparameterizedTwoGaussianSES: cannot calculate Hessian");
+  double value = ses_.value_parameter_gradient_and_hessian_1d(x, gradient, hessian);
+  gradient = jacobian_lu_.solve(gradient);
+
+  hessian -= gradient[0]*prob_lo_curv_;
+  hessian -= gradient[1]*beta_lo_curv_;
+  hessian -= gradient[2]*gain_curv_;
+  hessian -= gradient[3]*beta_curv_;
+
+  hessian = jacobian_lu_.solve(hessian);
+  hessian = jacobian_lu_.solve(hessian.transpose());
+
+  return value;
 }
 
 void ReparameterizedTwoGaussianSES::update_cached_values()
@@ -246,6 +256,62 @@ void ReparameterizedTwoGaussianSES::update_cached_values()
     db_dPl, db_dsl, db_dmh, db_dsh;
 
   jacobian_lu_ = Eigen::FullPivLU<Eigen::MatrixXd>(jacobian_inv_.transpose());
+
+  prob_lo_curv_ <<
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0;
+
+  const double d2g_dPldPl = 0;
+  const double d2g_dPldsl = sqrt2_pi;
+  const double d2g_dPldmh = -dg_dmh/(1-Pl);
+  const double d2g_dPldsh = -dg_dsh/(1-Pl);
+
+  const double d2g_dsldsl = 0;
+  const double d2g_dsldmh = 0;
+  const double d2g_dsldsh = 0;
+
+  const double d2g_dmhdmh = sqrt2_pi*(1-Pl)*erfc_inv*exp2/sh*
+    (-1 + mh*mh/(sh*sh) + sqrt2_pi*erfc_inv*exp2*(3*mh/sh + 2*sqrt2_pi*erfc_inv*exp2));
+  const double d2g_dmhdsh = -d2g_dmhdmh*mh/sh;
+  const double d2g_dshdsh = d2g_dmhdmh*mh*mh/(sh*sh);
+
+  gain_curv_ <<
+    d2g_dPldPl, d2g_dPldsl, d2g_dPldmh, d2g_dPldsh,
+    d2g_dPldsl, d2g_dsldsl, d2g_dsldmh, d2g_dsldsh,
+    d2g_dPldmh, d2g_dsldmh, d2g_dmhdmh, d2g_dmhdsh,
+    d2g_dPldsh, d2g_dsldsh, d2g_dmhdsh, d2g_dshdsh;
+
+  Eigen::VectorXd dg_dtheta(4);
+  dg_dtheta << dg_dPl, dg_dsl, dg_dmh, dg_dsh;
+
+  beta_lo_curv_ = sl/(mx*mx)*(2/mx*dg_dtheta*dg_dtheta.transpose() - gain_curv_);
+  beta_lo_curv_.col(1) += (-1/(mx*mx))*dg_dtheta;
+  beta_lo_curv_.row(1) += (-1/(mx*mx))*dg_dtheta.transpose();
+
+  mxx_curv_ <<
+                     0, -sqrt2_pi*mh+2*sl, -sqrt2_pi*sl,    -2*sh,
+     -sqrt2_pi*mh+2*sl,              2*Pl, -sqrt2_pi*Pl,        0,
+          -sqrt2_pi*sl,      -sqrt2_pi*Pl,            0,        0,
+                 -2*sh,                 0,            0, 2*(1-Pl);
+  mxx_curv_.col(2) += dg_dtheta;
+  mxx_curv_.row(2) += dg_dtheta.transpose();
+  mxx_curv_ += mh*gain_curv_;
+
+  Eigen::VectorXd dmxx_dtheta(4);
+  dmxx_dtheta << dmxx_dPl, dmxx_dsl, dmxx_dmh, dmxx_dsh;
+
+  Eigen::VectorXd db_dtheta(4);
+  db_dtheta << db_dPl, db_dsl, db_dmh, db_dsh;
+
+  beta_curv_ =
+    -1/beta_ * (db_dtheta * db_dtheta.transpose())
+    + 1/(2*beta_*mx*mx)*
+      (mxx_curv_
+        - 2/mx*(dmxx_dtheta * dg_dtheta.transpose() + dg_dtheta * dmxx_dtheta.transpose())
+        + 6*mxx/(mx*mx)*(dg_dtheta * dg_dtheta.transpose())
+        - 2*mxx/mx*gain_curv_);
 
   double mx_est;
   double mxx_est;
