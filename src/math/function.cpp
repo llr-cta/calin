@@ -441,13 +441,13 @@ gradient_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
   Eigen::VectorXd gradient(fcn_num_axes);
   double f0g = fcn.value_and_gradient(x, gradient);
   assert(fcn_num_axes == gradient.size());
+  good = Eigen::VectorXd::Zero(fcn_num_axes);
   if(std::abs(f0 - f0g)/std::abs(f0) > eps*std::pow(10.0,max_good/0.5-1))
   {
     std::cerr << "gradient_check: function value differs: "
               << f0 << " != " << f0g << '\n';
     return false;
   }
-  good.resize(fcn_num_axes);
   for(unsigned iaxis = 0;iaxis<fcn_num_axes;iaxis++)
   {
     // The philosophy used here is to calculate the gradient with the two-point
@@ -545,9 +545,13 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
   assert(fcn_num_axes == hessian.rows());
   assert(fcn_num_axes == hessian.cols());
 
+  good = Eigen::MatrixXd::Zero(fcn_num_axes, fcn_num_axes);
+
   if(hessian != hessian.transpose())
   {
     std::cerr << "hessian_check: hessian matrix not symmetric\n";
+    // std::cerr << hessian << "\n";
+    // std::cerr << hessian - hessian.transpose() << "\n";
     return false;
   }
 
@@ -570,7 +574,6 @@ hessian_check(MultiAxisFunction& fcn, ConstVecRef x, ConstVecRef dx,
       return false;
     }
 
-  good.resize(fcn_num_axes, fcn_num_axes);
   for(unsigned iaxis = 0;iaxis<fcn_num_axes;iaxis++)
   {
     // The philosophy used here is to calculate the hessian with the two-point
