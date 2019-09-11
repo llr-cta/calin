@@ -105,6 +105,71 @@ TEST(TestTwoGaussianSES, ParameterHessianCheck) {
   }
 }
 
+TEST(TestReparameterizedTwoGaussianSES, VerifyGainAndResolution) {
+  Eigen::VectorXd p(4);
+  p << 0.176559, 0.362319, 100, 0.451781; // frac, beta_lo, gain, beta
+  ReparameterizedTwoGaussianSES pdf;
+  pdf.set_parameter_values(p);
+  EXPECT_NEAR(p[2], pdf.underlying_ses()->gain(), 1e-5);
+  EXPECT_NEAR(p[3], pdf.underlying_ses()->resolution(), 1e-5);
+
+  p << 0.176559, 0.362319, 30, 0.451781; // frac, beta_lo, gain, beta
+  pdf.set_parameter_values(p);
+  EXPECT_NEAR(p[2], pdf.underlying_ses()->gain(), 1e-5);
+  EXPECT_NEAR(p[3], pdf.underlying_ses()->resolution(), 1e-5);
+
+  p << 0.176559, 0.362319, 100, 0.42; // frac, beta_lo, gain, beta
+  pdf.set_parameter_values(p);
+  EXPECT_NEAR(p[2], pdf.underlying_ses()->gain(), 1e-5);
+  EXPECT_NEAR(p[3], pdf.underlying_ses()->resolution(), 1e-5);
+}
+
+TEST(TestReparameterizedTwoGaussianSES, ParameterGradientCheck) {
+  Eigen::VectorXd p(4);
+  p << 0.176559, 0.362319, 100, 0.451781; // frac, beta_lo, gain, beta
+  Eigen::VectorXd dp(4);
+  dp << 1e-5, 1e-5, 1e-3, 1e-5;
+  ReparameterizedTwoGaussianSES pdf;
+  for(double x=0; x<200.0; x+=1.0)
+  {
+    Eigen::VectorXd good(4);
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
+  }
+}
+
+TEST(TestReparameterizedTwoGaussianSES, ParameterHessianCheck) {
+  Eigen::VectorXd p(4);
+  p << 0.176559, 0.362319, 100, 0.451781; // frac, beta_lo, gain, beta
+  Eigen::VectorXd dp(4);
+  dp << 1e-5, 1e-5, 1e-3, 1e-5;
+  ReparameterizedTwoGaussianSES pdf;
+  for(double x=1.0; x<200.0; x+=1.0)
+  {
+    Eigen::MatrixXd good(4,4);
+    EXPECT_TRUE(hessian_check_par(pdf, x, p, dp, good));
+    EXPECT_LE(good(0,0), 0.5);
+    EXPECT_LE(good(0,1), 0.5);
+    EXPECT_LE(good(0,2), 0.5);
+    EXPECT_LE(good(0,3), 0.5);
+    EXPECT_LE(good(1,0), 0.5);
+    EXPECT_LE(good(1,1), 0.5);
+    EXPECT_LE(good(1,2), 0.5);
+    EXPECT_LE(good(1,3), 0.5);
+    EXPECT_LE(good(2,0), 0.5);
+    EXPECT_LE(good(2,1), 0.5);
+    EXPECT_LE(good(2,2), 0.5);
+    EXPECT_LE(good(2,3), 0.5);
+    EXPECT_LE(good(3,0), 0.5);
+    EXPECT_LE(good(3,1), 0.5);
+    EXPECT_LE(good(3,2), 0.5);
+    EXPECT_LE(good(3,3), 0.5);
+  }
+}
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
