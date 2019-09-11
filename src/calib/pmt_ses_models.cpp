@@ -135,7 +135,7 @@ bool ReparameterizedTwoGaussianSES::can_calculate_parameter_gradient()
 
 bool ReparameterizedTwoGaussianSES::can_calculate_parameter_hessian()
 {
-  return false;
+  return true;
 }
 
 calin::math::function::DomainAxis ReparameterizedTwoGaussianSES::domain_axis()
@@ -182,6 +182,21 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient, MatRef hessia
 
   hessian = jacobian_lu_.solve(hessian);
   hessian = jacobian_lu_.solve(hessian.transpose());
+
+  // Resymmetrise just in case errors have crept in
+  hessian = 0.5*(hessian + hessian.transpose());
+  hessian(1,0) = hessian(0,1);
+  hessian(2,0) = hessian(0,2);
+  hessian(3,0) = hessian(0,3);
+  hessian(2,1) = hessian(1,2);
+  hessian(3,1) = hessian(1,3);
+  hessian(3,2) = hessian(2,3);
+
+#if 0
+  std::cout << "x=" << x << "  -> " << value << "\n\n"
+            << gradient << "\n\n"
+            << hessian << "\n\n";
+#endif
 
   return value;
 }
