@@ -203,6 +203,8 @@ value_parameter_gradient_and_hessian_1d(double x, VecRef gradient, MatRef hessia
 
 void ReparameterizedTwoGaussianSES::update_cached_values()
 {
+  // See yellow notebook 2019-B
+
   const double sqrt2_pi = std::sqrt(2.0/M_PI);
 
   const double Pl = prob_lo_;
