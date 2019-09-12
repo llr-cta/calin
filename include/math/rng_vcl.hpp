@@ -5,7 +5,7 @@
    Random number generators for VCL vector types.
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -191,7 +191,26 @@ public:
     double_vt x = to_double(uniform_int64());
     // return select(x<0, nmul_add(x,multiplier,0.5*scale), x*multiplier);
     return mul_add(x, multiplier, select(x<0, scale, 0.0));
-}
+  }
+
+  double_vt uniform_double_53bit(const double scale = 1.0) {
+    constexpr uint64_t MASK_HI = (1ULL<<52)-1;
+    constexpr uint64_t EXP_HI = 1023ULL<<52;
+    uint64_vt xui = uniform_uint64();
+    double_vt xhi = vcl::reinterpret_d((xui&MASK_HI) | EXP_HI);
+    return scale*(xhi-1.0);
+  }
+
+  double_vt uniform_double_alt(const double scale = 1.0) {
+    constexpr uint64_t MASK_HI = (1ULL<<52)-1;
+    constexpr uint64_t MASK_LO = ((1ULL<<12)-1)<<40;
+    constexpr uint64_t EXP_HI = 1023ULL<<52;
+    constexpr uint64_t EXP_LO = (1023ULL-52ULL)<<52;
+    uint64_vt xui = uniform_uint64();
+    double_vt xlo = vcl::reinterpret_d(((xui>>12)&MASK_LO) | EXP_LO);
+    double_vt xhi = vcl::reinterpret_d((xui&MASK_HI) | EXP_HI);
+    return scale*((xlo-2.2204460492503130808e-16) + (xhi-1.0));
+  }
 
   float_vt uniform_float(const float scale = 1.0f) {
     const float multiplier = C_U32_TO_FLT*scale;
@@ -845,7 +864,7 @@ public:
 #ifndef SWIG
   static void* operator new(size_t nbytes) {
     void* p = nullptr;
-    if(::posix_memalign(&p, 32, nbytes)==0) {
+    if(::posix_memalign(&p, CALIN_NEW_ALIGN, nbytes)==0) {
       return p;
     }
     throw std::bad_alloc();

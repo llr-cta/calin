@@ -5,7 +5,7 @@
    Air shower track visitor to calcilate Cherenkov cone parameters
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -126,6 +126,7 @@ class CherenkovPhotonVisitor
 {
 public:
   virtual ~CherenkovPhotonVisitor();
+  virtual void set_bandpass(double epsilon0, double bandwidth, bool do_color_photons);
   virtual void visit_event(const Event& event, bool& kill_event);
   virtual void visit_cherenkov_photon(const CherenkovPhoton& cherenkov_photon);
   virtual void leave_event();
@@ -139,10 +140,10 @@ public:
     calin::math::rng::RNG* rng = nullptr,
     bool adopt_visitor = false, bool adopt_rng = false);
   virtual ~MCCherenkovPhotonGenerator();
-  virtual void visit_event(const Event& event, bool& kill_event);
-  virtual void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
-    bool& kill_track);
-  virtual void leave_event();
+  void visit_event(const Event& event, bool& kill_event) override;
+  void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
+    bool& kill_track) override;
+  void leave_event() override;
 private:
   CherenkovPhotonVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
@@ -152,6 +153,23 @@ private:
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
   double dX_emission_ = -1;
+};
+
+class CherenkovTrackYieldLogger: public AirCherenkovTrackVisitor
+{
+public:
+  CherenkovTrackYieldLogger();
+  virtual ~CherenkovTrackYieldLogger();
+  void visit_event(const Event& event, bool& kill_event) override;
+  void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
+    bool& kill_track) override;
+  const std::vector<double>& track_altitude() const { return track_altitude_; }
+  const std::vector<double>& track_length() const { return track_length_; }
+  const std::vector<double>& track_yield() const { return track_yield_; }
+private:
+  std::vector<double> track_altitude_;
+  std::vector<double> track_length_;
+  std::vector<double> track_yield_;
 };
 
 } } } // namespace calin::simulation::air_cherenkov_tracker

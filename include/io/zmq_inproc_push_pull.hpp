@@ -5,7 +5,7 @@
    A class to implement ZMQ inprox push/pull sockets
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -30,6 +30,7 @@
 
 namespace calin { namespace io { namespace zmq_inproc {
 
+enum class ZMQProtocol { PUSH_PULL, PUB_SUB };
 enum class ZMQBindOrConnect { BIND, CONNECT };
 
 void* new_zmq_ctx();
@@ -39,7 +40,8 @@ class ZMQPusher
 {
 public:
   ZMQPusher(void* zmq_ctx, const std::string& endpoint, int buffer_size = 100,
-    ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::BIND);
+    ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::BIND,
+    ZMQProtocol protocol = ZMQProtocol::PUSH_PULL);
   bool push(const std::string& data_push, bool dont_wait = false);
 #ifndef SWIG
   bool push(const void* data, unsigned size, bool dont_wait = false);
@@ -54,7 +56,8 @@ class ZMQPuller
 {
 public:
   ZMQPuller(void* zmq_ctx, const std::string& endpoint, int buffer_size = 100,
-    ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::CONNECT);
+    ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::CONNECT,
+    ZMQProtocol protocol = ZMQProtocol::PUSH_PULL);
   bool pull(std::string& data_pull, bool dont_wait = false);
 #ifndef SWIG
   bool pull(zmq_msg_t* msg, bool dont_wait = false);
@@ -66,6 +69,8 @@ public:
   uint64_t nbytes_received() const { return nbytes_pulled_; }
   void* socket() { return socket_.get(); }
   bool wait_for_data(long timeout_ms = -1);
+  // Returns 0 if timeout, -1 if error, 1 if this is ready or 2 if puller2 is ready
+  int wait_for_data_multi_source(ZMQPuller* puller2, long timeout_ms = -1);
   zmq_pollitem_t pollitem() { return { socket_.get(), 0, ZMQ_POLLIN, 0 }; }
 private:
   std::unique_ptr<void,int(*)(void*)> socket_;
@@ -75,9 +80,13 @@ private:
 class ZMQInprocPushPull
 {
 public:
-  ZMQInprocPushPull(unsigned buffer_size = 100, ZMQInprocPushPull* shared_ctx = nullptr);
-  ZMQInprocPushPull(ZMQInprocPushPull* shared_ctx, unsigned buffer_size = 100):
-    ZMQInprocPushPull(buffer_size, shared_ctx) { }
+  ZMQInprocPushPull(void* extern_ctx, unsigned address_index,
+    ZMQProtocol protocol = ZMQProtocol::PUSH_PULL, unsigned buffer_size = 100);
+  ZMQInprocPushPull(unsigned buffer_size = 100, ZMQInprocPushPull* shared_ctx = nullptr,
+    ZMQProtocol protocol = ZMQProtocol::PUSH_PULL);
+  ZMQInprocPushPull(ZMQInprocPushPull* shared_ctx, unsigned buffer_size = 100,
+      ZMQProtocol protocol = ZMQProtocol::PUSH_PULL):
+    ZMQInprocPushPull(buffer_size, shared_ctx, protocol) { }
   ~ZMQInprocPushPull();
 
   ZMQPuller* new_puller(ZMQBindOrConnect bind_or_connect = ZMQBindOrConnect::CONNECT);
@@ -87,12 +96,18 @@ public:
   unsigned address_index() { return address_index_; }
   std::string address();
 
+  unsigned num_puller() const { return num_puller_;  }
+  unsigned num_pusher() const { return num_pusher_;  }
+
 private:
   std::atomic<unsigned> zmq_ctx_address_ { 0 };
   unsigned buffer_size_ = 100;
   void* my_zmq_ctx_ = nullptr;
   void* zmq_ctx_ = nullptr;
   unsigned address_index_ = 0;
+  ZMQProtocol protocol_ = ZMQProtocol::PUSH_PULL;
+  std::atomic<unsigned> num_pusher_ { 0 };
+  std::atomic<unsigned> num_puller_ { 0 };
 };
 
 } } } // namespace calin::io::zmq_inproc

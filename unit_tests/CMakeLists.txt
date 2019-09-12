@@ -1,7 +1,7 @@
 # calin/unit_tests/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole Polytechnique, CNRS/IN2P3
+# Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 #
 # This file is part of "calin"
 #
@@ -13,8 +13,8 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-add_subdirectory(gtest-1.8.0)
-include_directories(gtest-1.8.0/include)
+add_subdirectory(gtest-1.8.1)
+include_directories(gtest-1.8.1/include)
 set(GTEST_BOTH_LIBRARIES gtest gtest_main)
 
 add_subdirectory(simulation)

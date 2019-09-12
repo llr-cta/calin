@@ -7,7 +7,7 @@
    cone - instance that uses VSOptics ray tracer
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -74,25 +74,25 @@ private:
 };
 #endif
 
-class VSO_QuadratureIACTArrayIntegrationHitVisitor:
-  public calin::simulation::quadrature_iact_array_integration::QuadratureIACTArrayIntegrationHitVisitor
+class VSO_QuadratureIACTArrayIntegration:
+  public calin::simulation::quadrature_iact_array_integration::QuadratureIACTArrayIntegration
 {
 public:
-  VSO_QuadratureIACTArrayIntegrationHitVisitor(
+  VSO_QuadratureIACTArrayIntegration(
     const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
     calin::simulation::vs_optics::VSOArray* array,
     calin::simulation::vso_ray_processor::VSOTracedRayVisitor* visitor,
     calin::math::rng::RNG* rng = nullptr,
     bool adopt_array = false, bool adopt_visitor = false,
     bool adopt_rng = false);
-  VSO_QuadratureIACTArrayIntegrationHitVisitor(
+  VSO_QuadratureIACTArrayIntegration(
     const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
     calin::simulation::vs_optics::VSOArray* array,
     calin::simulation::pe_processor::PEProcessor* visitor,
     calin::math::rng::RNG* rng = nullptr,
     bool adopt_array = false, bool adopt_visitor = false,
     bool adopt_rng = false);
-  ~VSO_QuadratureIACTArrayIntegrationHitVisitor();
+  ~VSO_QuadratureIACTArrayIntegration();
 
   void add_fp_hit_trace_visitor(
     calin::simulation::vso_ray_processor::VSOTracedRayVisitor* visitor,

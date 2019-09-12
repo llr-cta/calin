@@ -1,7 +1,7 @@
 # calin/unit_tests/math/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole Polytechnique, CNRS/IN2P3
+# Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 #
 # This file is part of "calin"
 #
@@ -78,5 +78,6 @@ add_test(TestGeometryVCL test_geometry_vcl)
 
 install(TARGETS test_histogram test_hessian test_pdf_1d test_m_estimate
 	test_data_modeling test_hex_array test_hex_array_vcl test_rng test_rng_vcl
-	test_simd
+	test_simd test_fft_simd test_accumulator test_ray_vcl test_geometry_vcl
+	speedtest_rng
   DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})

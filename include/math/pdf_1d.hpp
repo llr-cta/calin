@@ -8,7 +8,7 @@
    moments.
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -257,7 +257,7 @@ class TwoComponent1DPDF: public Parameterizable1DPDF
                                                  MatRef hessian) override;
 
  protected:
-  double prob_cpt1_;
+  double prob_cpt1_     = 0.0;
   Parameterizable1DPDF* pdf1_;
   bool adopt_pdf1_;
   std::string cpt1_name_;
@@ -265,6 +265,15 @@ class TwoComponent1DPDF: public Parameterizable1DPDF
   bool adopt_pdf2_;
   std::string cpt2_name_;
 };
+
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
 
 class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
 {
@@ -294,7 +303,7 @@ class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
 
 
  protected:
-  
+
   double prob_cpt1_;
   double pp_;
   double mu1_;
@@ -303,8 +312,8 @@ class TwoComponent1DConstraintPDF: public Parameterizable1DPDF
   double n_;
   Parameterizable1DPDF* pdfTest_;
   bool fast_mode_;
-  
-  
+
+
 };
 
 } } } // namespace calin::math::pdf_1d

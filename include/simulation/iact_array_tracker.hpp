@@ -5,7 +5,7 @@
    Air shower track visitor with array of multiple IACT detector spheres
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -29,11 +29,13 @@
 
 #include"Eigen/Core"
 
+#include"math/ray.hpp"
+#include"simulation/ray_processor.hpp"
 #include"simulation/air_cherenkov_tracker.hpp"
 
 namespace calin { namespace simulation { namespace iact_array_tracker {
 
-struct IACTDetectorSphereHit
+struct IACTDetectorSphereCherenkovConeIntersection
 {
   Eigen::Vector3d x0;    // Position of particle at emisson
   Eigen::Vector3d rx;    // Vector from x0 to r0 (r0-x0)
@@ -51,28 +53,29 @@ struct IACTDetectorSphereHit
   const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack* cherenkov_track;
 };
 
-class IACTDetectorSphereHitProcessor
+class IACTDetectorSphereCherenkovConeIntersectionProcessor
 {
 public:
-  virtual ~IACTDetectorSphereHitProcessor();
-  virtual void process_hit(const IACTDetectorSphereHit& hit) = 0;
+  virtual ~IACTDetectorSphereCherenkovConeIntersectionProcessor();
+  virtual void process_hit(const IACTDetectorSphereCherenkovConeIntersection& hit) = 0;
 };
 
 struct IACTDetectorSphere
 {
   IACTDetectorSphere(const Eigen::Vector3d& r0_, double radius_sq_,
-    IACTDetectorSphereHitProcessor* processor_):
-      r0(r0_), radius_sq(radius_sq_), processor(processor_) {
+    IACTDetectorSphereCherenkovConeIntersectionProcessor* processor_, unsigned iobs_ = 0):
+      r0(r0_), radius_sq(radius_sq_), iobs(iobs_), cone_processor(processor_) {
     /* nothing to see here */ }
   Eigen::Vector3d r0;                        // Center of detector sphere [cm]
   double radius_sq;                          // Squared radius of sphere  [cm^2]
-  IACTDetectorSphereHitProcessor* processor; // Hit processor for this detector
+  unsigned iobs;                             // Observation level at detector sphere
+  IACTDetectorSphereCherenkovConeIntersectionProcessor* cone_processor; // Hit processor for this detector
 };
 
-class HitIACTVisitor
+class IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor
 {
 public:
-  virtual ~HitIACTVisitor();
+  virtual ~IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor();
   virtual std::vector<IACTDetectorSphere> spheres() = 0;
   virtual void visit_event(const calin::simulation::tracker::Event& event,
     bool& kill_event);
@@ -83,13 +86,13 @@ public:
   virtual void leave_event();
 };
 
-class IACTDetectorSphereAirCherenkovTrackVisitor:
+class IACTDetectorSphereCherenkovConeIntersectionFinder:
   public calin::simulation::air_cherenkov_tracker::AirCherenkovTrackVisitor
 {
 public:
-  IACTDetectorSphereAirCherenkovTrackVisitor(HitIACTVisitor* visitor_,
+  IACTDetectorSphereCherenkovConeIntersectionFinder(IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor* visitor_,
       bool adopt_visitor = false);
-  virtual ~IACTDetectorSphereAirCherenkovTrackVisitor();
+  virtual ~IACTDetectorSphereCherenkovConeIntersectionFinder();
   virtual void visit_event(const calin::simulation::tracker::Event& event,
     bool& kill_event);
   virtual void visit_cherenkov_track(
@@ -97,9 +100,37 @@ public:
     bool& kill_track);
   virtual void leave_event();
 private:
-  HitIACTVisitor* visitor_;
+  IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor* visitor_;
   bool adopt_visitor_;
   std::vector<IACTDetectorSphere> spheres_;
 };
+
+class IACTDetectorSphereCherenkovPhotonIntersectionFinder:
+  public calin::simulation::air_cherenkov_tracker::CherenkovPhotonVisitor
+{
+public:
+  IACTDetectorSphereCherenkovPhotonIntersectionFinder(
+    //const calin::ix::simulation::tracker::QuadratureIACTArrayIntegrationConfig& config,
+    calin::simulation::ray_processor::RayProcessor* visitor,
+    calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    bool adopt_visitor = false, bool adopt_atm = false);
+  virtual ~IACTDetectorSphereCherenkovPhotonIntersectionFinder();
+
+  void set_bandpass(double epsilon0, double bandwidth, bool do_color_photons) override;
+  void visit_event(
+    const calin::simulation::tracker::Event& event, bool& kill_event) override;
+  void visit_cherenkov_photon(
+    const calin::simulation::air_cherenkov_tracker::CherenkovPhoton& cherenkov_photon) override;
+  void leave_event() override;
+private:
+  calin::simulation::ray_processor::RayProcessor* visitor_ = nullptr;
+  bool adopt_visitor_ = false;
+  calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm_ = nullptr;
+  bool adopt_atm_ = false;
+  double do_refraction_ = false;
+  double refraction_safety_margin_ = 0;
+
+};
+
 
 } } } // namespace calin::simulation::iact_array_tracker

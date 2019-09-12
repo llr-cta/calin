@@ -8,7 +8,7 @@
    moments.
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -28,11 +28,22 @@
 #include <stdexcept>
 #include <time.h>
 
+#include <util/log.hpp>
 #include <math/pdf_1d.hpp>
 
 using namespace calin::math;
 using namespace calin::math::pdf_1d;
+using namespace calin::util::log;
 using function::assign_parameters;
+
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
+// ********************************* OBSOLETE *********************************
 
 
 // ============================================================================
@@ -47,7 +58,10 @@ TwoComponent1DConstraintPDF(Parameterizable1DPDF* pdfTest, bool fast_mode):
     Parameterizable1DPDF(),
     pdfTest_(pdfTest), fast_mode_(fast_mode)
 {
-  // nothing to see here
+  static bool warning_sent = false;
+  if(!warning_sent)
+    LOG(WARNING) << "TwoComponent1DConstraintPDF is obsolete and will be removed in future version";
+  warning_sent = true;
 }
 
 TwoComponent1DConstraintPDF::~TwoComponent1DConstraintPDF()
@@ -85,7 +99,7 @@ void TwoComponent1DConstraintPDF::set_parameter_values(ConstVecRef values)
   //~ temps1 = clock();
   verify_set_parameter_values(values, "TwoComponent1DPDF_Constrained");
   assign_parameters(values, pp_, mu1_, res_, mu2_, n_);
-  
+
   const double res = values[2];
   const double pi = M_PI;
   const double Pmax = M_PI*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI);
@@ -102,10 +116,10 @@ void TwoComponent1DConstraintPDF::set_parameter_values(ConstVecRef values)
     SigLowLimit = sqrt((pow(res, 2) + 1)*(pow(-p + 1, 2) - (-p + 1)/(pow(res, 2) + 1))/(-p + 1))*mu2;
     }
   const double sig2 = SigLowLimit + values[4]*(SigLimit-SigLowLimit);
-  
-  const double ax = (2./pi)*p*p-p/(res*res+1);	
+
+  const double ax = (2./pi)*p*p-p/(res*res+1);
   const double bx = (sqrt(2./pi)*2*p*(1-p)*mu2);
-  const double cx = (1-p)*(1-p)*mu2*mu2 - (1-p)*(sig2*sig2+mu2*mu2)/(res*res+1);	
+  const double cx = (1-p)*(1-p)*mu2*mu2 - (1-p)*(sig2*sig2+mu2*mu2)/(res*res+1);
   const double delta = bx*bx - 4*ax*cx;
   const double solNeg = (sqrt(delta)-bx)/(2*ax);
   //~ const double solPos = (-1)*(bx+sqrt(delta))/(2*ax);
@@ -160,36 +174,36 @@ bool TwoComponent1DConstraintPDF::can_calculate_parameter_hessian()
 }
 
 double TwoComponent1DConstraintPDF::value_1d(double x)
-{ 
+{
   const double val = pdfTest_->value_1d(x);
   return val;
 }
 
 double TwoComponent1DConstraintPDF::value_and_gradient_1d(double x,  double& dfdx)
-{ 
+{
   const double val = pdfTest_->value_and_gradient_1d(x,  dfdx);
   return val;
 }
 
 double TwoComponent1DConstraintPDF::value_gradient_and_hessian_1d(double x, double& dfdx,
                                            double& d2fdx2)
-{ 
+{
   const double val = pdfTest_->value_gradient_and_hessian_1d(x,  dfdx, d2fdx2);
   return val;
 }
 
 double TwoComponent1DConstraintPDF::value_and_parameter_gradient_1d(double x,  VecRef gradient)
-{ 
+{
   gradient.resize(5);
-  
+
   Eigen::VectorXd gradient2G;
   double val = 0;
-  
-  
+
+
   double dFdmu1Jacobian = 0, dFdmu2Jacobian = 0, dFdppJacobian = 0, dFdresJacobian = 0, dFdnJacobian = 0;
 
   const int OptParam = 5;
-  
+
   if (fast_mode_){
 	if(x < mu2_+OptParam*res_*mu2_) {
 		  val = pdfTest_->value_and_parameter_gradient_1d(x,  gradient2G);
@@ -207,7 +221,7 @@ double TwoComponent1DConstraintPDF::value_and_parameter_gradient_1d(double x,  V
 	gradient[2] = dFdresJacobian;
 	gradient[3] = dFdmu2Jacobian;
 	gradient[4] = dFdnJacobian;
-	 
+
   }
   else{
 	val = pdfTest_->value_and_parameter_gradient_1d(x,  gradient2G);
@@ -310,6 +324,6 @@ Eigen::MatrixXd TwoComponent1DConstraintPDF::Jacobian(double x, double mu1,doubl
 		    JacobMat(2,3) = (-2*sqrt(2)*M_PI*pp*pow(res, 2)*(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)*sqrt(1.0/pi)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + (8*pow(M_PI, 2)*mu2*pow(pp, 2)*pow(res, 4)*pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)) - 1.0L/2.0L*(2*mu2*pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2) - (2*mu2 + (mu2*sqrt((pow(res, 2) + 1)*(pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2) - (-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)/(pow(res, 2) + 1))/(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)) + n*(-mu2*sqrt((pow(res, 2) + 1)*(pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2) - (-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)/(pow(res, 2) + 1))/(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)) + mu2*sqrt((pow(res, 2) + 1)*((-4*M_PI*pp*pow(res, 2)/((pow(res, 2) + 1)*(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI)) + 8*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)))*(pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2) - (-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)/(pow(res, 2) + 1)) - 8*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)*pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)))/((-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)*(-4*M_PI*pp*pow(res, 2)/((pow(res, 2) + 1)*(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI)) + 8*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)))))))*(2*n*(-sqrt((pow(res, 2) + 1)*(pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2) - (-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)/(pow(res, 2) + 1))/(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)) + sqrt((pow(res, 2) + 1)*((-4*M_PI*pp*pow(res, 2)/((pow(res, 2) + 1)*(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI)) + 8*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)))*(pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2) - (-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)/(pow(res, 2) + 1)) - 8*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)*pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)))/((-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)*(-4*M_PI*pp*pow(res, 2)/((pow(res, 2) + 1)*(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI)) + 8*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)))))) + 2*sqrt((pow(res, 2) + 1)*(pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2) - (-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)/(pow(res, 2) + 1))/(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1))))*(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)/(pow(res, 2) + 1))*(-4*M_PI*pp*pow(res, 2)/((pow(res, 2) + 1)*(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI)) + 8*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2))))/sqrt(8*pow(M_PI, 2)*pow(mu2, 2)*pow(pp, 2)*pow(res, 4)*pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)) - (pow(mu2, 2)*pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2) - (pow(mu2, 2) + pow(mu2*sqrt((pow(res, 2) + 1)*(pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2) - (-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)/(pow(res, 2) + 1))/(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)) + n*(-mu2*sqrt((pow(res, 2) + 1)*(pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2) - (-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)/(pow(res, 2) + 1))/(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)) + mu2*sqrt((pow(res, 2) + 1)*((-4*M_PI*pp*pow(res, 2)/((pow(res, 2) + 1)*(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI)) + 8*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)))*(pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2) - (-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)/(pow(res, 2) + 1)) - 8*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)*pow(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1, 2)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)))/((-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)*(-4*M_PI*pp*pow(res, 2)/((pow(res, 2) + 1)*(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI)) + 8*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)))))), 2))*(-M_PI*pp*pow(res, 2)/(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI) + 1)/(pow(res, 2) + 1))*(-4*M_PI*pp*pow(res, 2)/((pow(res, 2) + 1)*(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI)) + 8*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)))))/(-2*M_PI*pp*pow(res, 2)/((pow(res, 2) + 1)*(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI)) + 4*pow(M_PI, 2)*pow(pp, 2)*pow(res, 4)/(pi*pow(-2*pow(res, 2) + M_PI*pow(res, 2) - 2 + M_PI, 2)));
 		}
 	}
-	
+
 	return JacobMat;
 }

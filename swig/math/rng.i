@@ -7,7 +7,7 @@
    SWIG interface file for calin.math.rng
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") rng
+%feature(autodoc,2);
 
 %{
 #include "math/rng.hpp"

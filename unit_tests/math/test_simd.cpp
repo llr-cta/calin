@@ -5,7 +5,7 @@
    Unit tests for SIMD
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -40,8 +40,10 @@ using calin::math::special::SQR;
 using namespace calin::math::simd;
 
 static constexpr uint64_t NSIM_RANDSINCOS = 100000000ULL;
+#if 0
 #ifdef CALIN_HAS_NR3_AVX2_RNGCORE
 static constexpr unsigned NSIM_TRACEPSD = 4096;
+#endif
 #endif
 
 TEST(TestSIMD, SpeedTest100M_Random64SinCos32)

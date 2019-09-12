@@ -5,7 +5,7 @@
    domain. General Poisson MES.
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -379,7 +379,7 @@ Eigen::VectorXd GeneralPoissonMES::
 off_pedestal_spectrum_gradient(unsigned iparam) const
 {
   if(not config_.include_on_off_ped_shift())
-    return off_pedestal_spectrum_gradient(iparam);
+    return pedestal_spectrum_gradient(iparam);
 
   if(iparam >= const_cast<GeneralPoissonMES*>(this)->num_parameters())
     throw std::out_of_range("GeneralPoissonMES::off_pedestal_spectrum_gradient: "
@@ -406,7 +406,7 @@ single_electron_spectrum_gradient(unsigned iparam) const
                             "iparam out of range");
 
   unsigned isespar = iparam_ses();
-  if(iparam<=isespar)return Eigen::VectorXd::Zero(nsample_);
+  if(iparam<isespar)return Eigen::VectorXd::Zero(nsample_);
   iparam -= isespar;
 
   uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };

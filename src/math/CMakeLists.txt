@@ -1,7 +1,7 @@
 # calin/src/math/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole Polytechnique, CNRS/IN2P3
+# Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 #
 # This file is part of "calin"
 #
@@ -28,7 +28,8 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 	#vs_vec3d_obsolete.cpp# vs_vec4d_obsolete.cpp vs_particle_obsolete.cpp
 	rng.cpp fftw_util.cpp healpix_array.cpp position_generator.cpp
 	direction_generator.cpp ray_generator.cpp data_modeling.cpp m_estimate.cpp
-regular_grid.cpp lomb_scargle.cpp simd.cpp fft_simd.cpp b_spline.cpp)
+	regular_grid.cpp lomb_scargle.cpp simd.cpp fft_simd.cpp b_spline.cpp
+	spline_interpolation.cpp least_squares.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY}

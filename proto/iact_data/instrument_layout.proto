@@ -7,7 +7,7 @@
    Protobufs for instrument layout (channel, module, camera, telescope, array)
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -29,6 +29,19 @@ import "calin.proto";
 import "common_types.proto";
 
 package calin.ix.iact_data.instrument_layout;
+
+message OutlinePolygon {
+  repeated uint32 outline_polygon_vertex_index             = 1 [
+    (CFO).desc = "Index of end of pixel polygon lines." ];
+  repeated double outline_polygon_vertex_x                 = 2 [
+    (CFO).desc = "X coordinates of an open polygon that represents the "
+      "outline of the pixel.",
+    (CFO).units = "cm" ];
+  repeated double outline_polygon_vertex_y                 = 3 [
+    (CFO).desc = "Y coordinates of an open polygon that represents the "
+      "outline of the pixel.",
+    (CFO).units = "cm" ];
+};
 
 message ChannelLayout {
   uint32 channel_index                                     = 1 [
@@ -168,6 +181,7 @@ message CameraLayout {
     NECTARCAM                                              = 10;
     LSTCAM                                                 = 11;
     NECTARCAM_TESTBENCH_19CHANNEL                          = 1000;
+    NECTARCAM_TESTBENCH_61CHANNEL                          = 1001;
   };
 
   enum PixelGridLayout {

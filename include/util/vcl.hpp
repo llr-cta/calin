@@ -5,7 +5,7 @@
    Calin interface to Agner Fog's Vector Class Library (VCL)
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -49,7 +49,7 @@ template<> struct NumTraits<::vcl::Vec4f>: NumTraits<float>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -66,7 +66,7 @@ template<> struct NumTraits<::vcl::Vec8f>: NumTraits<float>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -83,7 +83,7 @@ template<> struct NumTraits<::vcl::Vec16f>: NumTraits<float>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -100,7 +100,7 @@ template<> struct NumTraits<::vcl::Vec2d>: NumTraits<double>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -117,7 +117,7 @@ template<> struct NumTraits<::vcl::Vec4d>: NumTraits<double>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -134,7 +134,7 @@ template<> struct NumTraits<::vcl::Vec8d>: NumTraits<double>
     IsComplex = 0,
     IsInteger = 0,
     IsSigned = 1,
-    RequireInitialization = 1,
+    RequireInitialization = 0,
     ReadCost = 1,
     AddCost = 3,
     MulCost = 3
@@ -204,6 +204,10 @@ template<typename VCLArchitecture> struct VCLFloatReal
   typedef Eigen::Vector3f                         vec3_t;
   typedef Eigen::Matrix3f                         mat3_t;
 
+  typedef typename VCLArchitecture::int32_at      int_at;
+  typedef typename VCLArchitecture::uint32_at     uint_at;
+  typedef typename VCLArchitecture::float_at      real_at;
+
   typedef typename VCLArchitecture::int32_vt      int_vt;
   typedef typename VCLArchitecture::uint32_vt     uint_vt;
   typedef typename VCLArchitecture::int32_bvt     bool_int_vt;
@@ -214,6 +218,22 @@ template<typename VCLArchitecture> struct VCLFloatReal
 
   typedef typename VCLArchitecture::Vector3f_vt   vec3_vt;
   typedef typename VCLArchitecture::Matrix3f_vt   mat3_vt;
+
+  static inline int_vt truncate_to_int_limited(real_vt x) {
+    return vcl::truncate_to_int(x);
+  }
+
+  static inline int_vt round_to_int_limited(real_vt x) {
+    return vcl::round_to_int(x);
+  }
+
+  static inline int_vt truncate_to_int(real_vt x) {
+    return vcl::truncate_to_int(x);
+  }
+
+  static inline int_vt round_to_int(real_vt x) {
+    return vcl::round_to_int(x);
+  }
 };
 
 template<typename VCLArchitecture> struct VCLDoubleReal
@@ -227,6 +247,10 @@ template<typename VCLArchitecture> struct VCLDoubleReal
   typedef Eigen::Vector3d                         vec3_t;
   typedef Eigen::Matrix3d                         mat3_t;
 
+  typedef typename VCLArchitecture::int64_at      int_at;
+  typedef typename VCLArchitecture::uint64_at     uint_at;
+  typedef typename VCLArchitecture::double_at     real_at;
+
   typedef typename VCLArchitecture::int64_vt      int_vt;
   typedef typename VCLArchitecture::uint64_vt     uint_vt;
   typedef typename VCLArchitecture::int64_bvt     bool_int_vt;
@@ -237,6 +261,22 @@ template<typename VCLArchitecture> struct VCLDoubleReal
 
   typedef typename VCLArchitecture::Vector3d_vt   vec3_vt;
   typedef typename VCLArchitecture::Matrix3d_vt   mat3_vt;
+
+  static inline int_vt truncate_to_int_limited(real_vt x) {
+    return vcl::truncate_to_int64_limited(x);
+  }
+
+  static inline int_vt round_to_int_limited(real_vt x) {
+    return vcl::round_to_int64_limited(x);
+  }
+
+  static inline int_vt truncate_to_int(real_vt x) {
+    return vcl::truncate_to_int64(x);
+  }
+
+  static inline int_vt round_to_int(real_vt x) {
+    return vcl::round_to_int64(x);
+  }
 };
 
 struct VCL128Architecture
@@ -278,6 +318,13 @@ struct VCL128Architecture
   typedef Vec2qb  uint64_bvt;
   typedef Vec4fb  float_bvt;
   typedef Vec2db  double_bvt;
+
+  typedef int32_t  int32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef uint32_t uint32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef int64_t  int64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef uint64_t uint64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef float    float_at[num_float] __attribute((aligned(vec_bytes)));
+  typedef double   double_at[num_double] __attribute((aligned(vec_bytes)));
 
   typedef Eigen::Vector3_4f Vector3f_vt;
   typedef Eigen::Matrix3_4f Matrix3f_vt;
@@ -329,6 +376,13 @@ struct VCL256Architecture
   typedef Vec8fb  float_bvt;
   typedef Vec4db  double_bvt;
 
+  typedef int32_t  int32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef uint32_t uint32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef int64_t  int64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef uint64_t uint64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef float    float_at[num_float] __attribute((aligned(vec_bytes)));
+  typedef double   double_at[num_double] __attribute((aligned(vec_bytes)));
+
   typedef Eigen::Vector3_8f Vector3f_vt;
   typedef Eigen::Matrix3_8f Matrix3f_vt;
 
@@ -369,6 +423,13 @@ struct VCL512Architecture
   typedef Vec8qb  uint64_bvt;
   typedef Vec16fb float_bvt;
   typedef Vec8db  double_bvt;
+
+  typedef int32_t  int32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef uint32_t uint32_at[num_int32] __attribute((aligned(vec_bytes)));
+  typedef int64_t  int64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef uint64_t uint64_at[num_int64] __attribute((aligned(vec_bytes)));
+  typedef float    float_at[num_float] __attribute((aligned(vec_bytes)));
+  typedef double   double_at[num_double] __attribute((aligned(vec_bytes)));
 
   typedef Eigen::Vector3_16f Vector3f_vt;
   typedef Eigen::Matrix3_16f Matrix3f_vt;
@@ -449,6 +510,35 @@ template<typename Vec> void print_vec(std::ostream& s, const Vec& v)
     s << '_' << v[i];
 }
 
+template<typename VCLReal> inline void
+insert_into_vec3_with_mask(typename VCLReal::vec3_vt& vv,
+    const typename VCLReal::vec3_t& vs, const typename VCLReal::bool_vt& mask) {
+  vv.x() = vcl::select(mask, vs.x(), vv.x());
+  vv.y() = vcl::select(mask, vs.y(), vv.y());
+  vv.z() = vcl::select(mask, vs.z(), vv.z());
+}
+
+template<typename VCLReal> inline void
+insert_into_with_mask(typename VCLReal::real_vt& v,
+    const typename VCLReal::real_t& s, const typename VCLReal::bool_vt& mask) {
+  v = vcl::select(mask, s, v);
+}
+
+typedef Eigen::Matrix< ::vcl::Vec4f , 3 , 1> Vector3_4f;
+typedef Eigen::Matrix< ::vcl::Vec4f , 3 , 3> Matrix3_4f;
+typedef Eigen::Matrix< ::vcl::Vec8f , 3 , 1> Vector3_8f;
+typedef Eigen::Matrix< ::vcl::Vec8f , 3 , 3> Matrix3_8f;
+typedef Eigen::Matrix< ::vcl::Vec16f , 3 , 1> Vector3_16f;
+typedef Eigen::Matrix< ::vcl::Vec16f , 3 , 3> Matrix3_16f;
+
+typedef Eigen::Matrix< ::vcl::Vec2d , 3 , 1> Vector3_2d;
+typedef Eigen::Matrix< ::vcl::Vec2d , 3 , 3> Matrix3_2d;
+typedef Eigen::Matrix< ::vcl::Vec4d , 3 , 1> Vector3_4d;
+typedef Eigen::Matrix< ::vcl::Vec4d , 3 , 3> Matrix3_4d;
+typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 1> Vector3_8d;
+typedef Eigen::Matrix< ::vcl::Vec8d , 3 , 3> Matrix3_8d;
+
+
 inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
   return _mm_mul_epu32(a, b);
 }
@@ -469,10 +559,51 @@ inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
   }
 #endif
 
+#if INSTRSET >= 5   // SSE4.1
+inline Vec4ui extend_16_to_32_low(const Vec8us x) {
+  return _mm_cvtepu16_epi32(x);
+}
+inline Vec4ui extend_16_to_32_high(const Vec8us x) {
+  return _mm_cvtepu16_epi32(_mm_srli_si128(x,8));
+}
+inline Vec4i extend_16_to_32_low(const Vec8s x) {
+  return _mm_cvtepi16_epi32(x);
+}
+inline Vec4i extend_16_to_32_high(const Vec8s x) {
+  return _mm_cvtepi16_epi32(_mm_srli_si128(x,8));
+}
+#else // INSTRSET < 5 no SSE4.1
+inline Vec4ui extend_16_to_32_low(const Vec8us x) {
+  return vcl::extend_low(x);
+}
+inline Vec4ui extend_16_to_32_high(const Vec8us x) {
+  return vcl::extend_high(x);
+}
+inline Vec4i extend_16_to_32_low(const Vec8s x) {
+  return vcl::extend_low(x);
+}
+inline Vec4i extend_16_to_32_high(const Vec8s x) {
+  return vcl::extend_high(x);
+}
+#endif // INSTRSET < 5 no SSE4.1
+
 #if MAX_VECTOR_SIZE >= 256
 #if INSTRSET >= 8
   inline Vec4uq mul_low32_packed64(const Vec4uq& a, const Vec4uq& b) {
     return _mm256_mul_epu32(a, b);
+  }
+
+  inline Vec8ui extend_16_to_32_low(const Vec16us x) {
+    return _mm256_cvtepu16_epi32(x.get_low());
+  }
+  inline Vec8ui extend_16_to_32_high(const Vec16us x) {
+    return _mm256_cvtepu16_epi32(x.get_high());
+  }
+  inline Vec8i extend_16_to_32_low(const Vec16s x) {
+    return _mm256_cvtepi16_epi32(x.get_low());
+  }
+  inline Vec8i extend_16_to_32_high(const Vec16s x) {
+    return _mm256_cvtepi16_epi32(x.get_high());
   }
 
 #if defined (__AVX512DQ__) && defined (__AVX512VL__)
@@ -494,6 +625,23 @@ inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
   inline Vec4uq mul_low32_packed64(const Vec4uq& a, const Vec4uq& b) {
     return Vec4uq(mul_low32_packed64(a.get_low(), b.get_low()),
                   mul_low32_packed64(a.get_high(), b.get_high()));
+  }
+
+  inline Vec8ui extend_16_to_32_low(const Vec16us x) {
+    return Vec8ui(extend_16_to_32_low(x.get_low()),
+                  extend_16_to_32_high(x.get_low()));
+  }
+  inline Vec8ui extend_16_to_32_high(const Vec16us x) {
+    return Vec8ui(extend_16_to_32_low(x.get_high()),
+                  extend_16_to_32_high(x.get_high()));
+  }
+  inline Vec8i extend_16_to_32_low(const Vec16s x) {
+    return Vec8i(extend_16_to_32_low(x.get_low()),
+                 extend_16_to_32_high(x.get_low()));
+  }
+  inline Vec8i extend_16_to_32_high(const Vec16s x) {
+    return Vec8i(extend_16_to_32_low(x.get_high()),
+                 extend_16_to_32_high(x.get_high()));
   }
 
   inline Vec4uq mul_64(const Vec4uq& a, const Vec4uq& b) {
@@ -520,10 +668,29 @@ inline Vec2uq mul_low32_packed64(const Vec2uq& a, const Vec2uq& b) {
 
 #endif // MAX_VECTOR_SIZE >= 512
 
+void transpose(Vec8s* x);
+void transpose(Vec8us* x);
+void transpose(Vec4i* x);
+void transpose(Vec4ui* x);
+void transpose(Vec2q* x);
+void transpose(Vec2uq* x);
+void transpose(Vec4f* x);
+void transpose(Vec2d* x);
+#if MAX_VECTOR_SIZE >= 256
+void transpose(Vec16s* x);
+void transpose(Vec16us* x);
+void transpose(Vec8i* x);
+void transpose(Vec8ui* x);
+void transpose(Vec4q* x);
+void transpose(Vec4uq* x);
+void transpose(Vec8f* x);
+void transpose(Vec4d* x);
+#endif
+
 } } } // namespace calin::util::vcl
 
 #define ADD_OSTREAM_OPERATOR(Vec) \
-  std::ostream& operator<<(std::ostream& s, const Vec& v) { \
+  inline std::ostream& operator<<(std::ostream& s, const Vec& v) { \
     calin::util::vcl::print_vec(s, v); \
     return s; \
   }

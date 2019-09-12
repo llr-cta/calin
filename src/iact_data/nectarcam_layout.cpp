@@ -5,7 +5,7 @@
    Camera layout for NectarCam
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -277,6 +277,17 @@ calin::iact_data::nectarcam_layout::nectarcam_19module_layout(
   auto modvec = nectarcam_mod_map(2, 0.0, spacing, rot);
   return nectarcam_general_layout(layout, modvec,
     CameraLayout::NECTARCAM_TESTBENCH_19CHANNEL, spacing, rot);
+}
+
+CameraLayout*
+calin::iact_data::nectarcam_layout::nectarcam_61module_layout(
+  CameraLayout* layout)
+{
+  const double spacing = 5;
+  double rot = 0;
+  auto modvec = nectarcam_mod_map(4, 0.0, spacing, rot);
+  return nectarcam_general_layout(layout, modvec,
+    CameraLayout::NECTARCAM_TESTBENCH_61CHANNEL, spacing, rot);
 }
 
 CameraLayout*

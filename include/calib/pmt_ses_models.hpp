@@ -5,7 +5,7 @@
    PMT single-electron spectrum models
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -22,8 +22,10 @@
 
 #pragma once
 
-#include "math/function.hpp"
-#include "math/pdf_1d.hpp"
+#include <Eigen/Dense>
+
+#include <math/function.hpp>
+#include <math/pdf_1d.hpp>
 
 namespace calin { namespace calib { namespace pmt_ses_models {
 
@@ -33,7 +35,69 @@ class TwoGaussianSES:
 public:
   TwoGaussianSES(double dx = 0);
   virtual ~TwoGaussianSES();
+
+  double gain();
+  double resolution();
+  void moments(double& mx, double& mxx);
 };
+
+class ReparameterizedTwoGaussianSES:
+  public calin::math::pdf_1d::Parameterizable1DPDF
+{
+public:
+  ReparameterizedTwoGaussianSES(double dx = 0);
+  virtual ~ReparameterizedTwoGaussianSES();
+
+  unsigned num_parameters() override;
+  std::vector<calin::math::function::ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+
+  calin::math::function::DomainAxis domain_axis() override;
+
+  bool can_calculate_gradient() override;
+  bool can_calculate_hessian() override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  double value_1d(double x) override;
+  double value_and_gradient_1d(double x,  double& dfdx) override;
+  double value_gradient_and_hessian_1d(double x, double& dfdx,
+                            double& d2fdx2) override;
+  double value_and_parameter_gradient_1d(double x,  VecRef gradient) override;
+  double value_parameter_gradient_and_hessian_1d(double x, VecRef gradient,
+                                                 MatRef hessian) override;
+
+  TwoGaussianSES* underlying_ses() { return &ses_; }
+  Eigen::MatrixXd jabobian() const { return jacobian_lu_.inverse(); }
+  Eigen::MatrixXd jabobian_inv() const { return jacobian_inv_; }
+
+  Eigen::MatrixXd prob_lo_curv() const { return prob_lo_curv_; }
+  Eigen::MatrixXd beta_lo_curv() const { return beta_lo_curv_; }
+  Eigen::MatrixXd gain_curv() const { return gain_curv_; }
+  Eigen::MatrixXd beta_curv() const { return beta_curv_; }
+  Eigen::MatrixXd mxx_curv() const { return mxx_curv_; }
+
+private:
+  void update_cached_values();
+
+  TwoGaussianSES ses_;
+  double prob_lo_ = 0.176559;
+  double beta_lo_ = 0.362319;
+  double gain_    = 100;
+  double beta_    = 0.451781;
+  Eigen::MatrixXd jacobian_inv_ = Eigen::MatrixXd::Identity(4,4);
+  Eigen::FullPivLU<Eigen::MatrixXd> jacobian_lu_;
+  Eigen::MatrixXd prob_lo_curv_ = Eigen::MatrixXd::Zero(4,4);
+  Eigen::MatrixXd beta_lo_curv_ = Eigen::MatrixXd::Zero(4,4);
+  Eigen::MatrixXd gain_curv_ = Eigen::MatrixXd::Zero(4,4);
+  Eigen::MatrixXd beta_curv_ = Eigen::MatrixXd::Zero(4,4);
+  Eigen::MatrixXd mxx_curv_ = Eigen::MatrixXd::Zero(4,4);
+
+  unsigned num_warnings_ = 5;
+};
+
+// ********************************** OBSOLETE *********************************
 
 class TwoGaussianSESConstrained:
   public calin::math::function::ReducedSpaceParameterizableSingleAxisFunction

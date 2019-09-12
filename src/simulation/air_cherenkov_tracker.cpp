@@ -5,10 +5,10 @@
    Air shower track visitor to calcilate Cherenkov cone parameters.
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    Certain portions are from code that is Copyright 2012, Stephen Fegan
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -101,7 +101,8 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   if(cherenkov.n<0)return;
   cherenkov.n             += 1.0;
 
-  const double g2 = SQR(cherenkov.e_mid/track.mass); // gamma^2
+  // Watch out for gamma^2 slightly less than 1.0
+  const double g2 = SQR(std::max(cherenkov.e_mid/track.mass,1.0)); // gamma^2
   cherenkov.gamma_sq       = g2;
   const double b2 = 1.0 - 1.0/g2;                    // beta^2
   if(enable_forced_cherenkov_angle_mode_)
@@ -114,11 +115,12 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   cherenkov.cos_thetac     = std::sqrt(1.0 - cherenkov.sin2_thetac);
   cherenkov.sin_thetac     = std::sqrt(cherenkov.sin2_thetac);
 
-  if(std::isnan(cherenkov.yield_density)) {
-    LOG(INFO) << '(' << cherenkov.x0.transpose() << ") ("
+  if(std::isnan(cherenkov.yield_density) or cherenkov.yield_density>1e6) {
+    LOG(INFO) << '(' // << cherenkov.x0.transpose() << ") ("
               << cherenkov.x_mid.transpose() << ") "
               << cherenkov.dx << ' '
-              << cherenkov.n << ' ' << cherenkov.e0 << ' '
+              << cherenkov.n << ' ' << track.q << ' ' << track.pdg_type << ' '
+              << cherenkov.e_mid << ' ' << track.mass << ' '
               << g2 << ' ' << b2 << ' '
               << cherenkov.sin2_thetac << ' '
               << cherenkov.yield_density;
@@ -154,6 +156,11 @@ CherenkovPhotonVisitor::~CherenkovPhotonVisitor()
   // nothing to see here
 }
 
+void CherenkovPhotonVisitor::set_bandpass(double epsilon0, double bandwidth, bool do_color_photons)
+{
+  // nothing to see here
+}
+
 void CherenkovPhotonVisitor::visit_event(const Event& event, bool& kill_event)
 {
   // nothing to see here
@@ -178,6 +185,7 @@ MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
   epsilon0_(epsilon0), bandwidth_(bandwidth), do_color_photons_(do_color_photons),
   rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)), adopt_rng_(rng ? adopt_rng : true)
 {
+  visitor->set_bandpass(epsilon0, bandwidth, do_color_photons);
   dX_emission_ = rng_->exponential();
 }
 
@@ -232,4 +240,29 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
     if(do_color_photons_)photon.epsilon = epsilon0_ + rng_->uniform()*bandwidth_;
   }
   dX_emission_ -= dX_left;
+}
+
+CherenkovTrackYieldLogger::CherenkovTrackYieldLogger(): AirCherenkovTrackVisitor()
+{
+  // nothing to see here
+}
+
+CherenkovTrackYieldLogger::~CherenkovTrackYieldLogger()
+{
+  // nothing to see here
+}
+
+void CherenkovTrackYieldLogger::visit_event(const Event& event, bool& kill_event)
+{
+  track_altitude_.clear();
+  track_length_.clear();
+  track_yield_.clear();
+}
+
+void CherenkovTrackYieldLogger::visit_cherenkov_track(
+  const AirCherenkovTrack& cherenkov_track, bool& kill_track)
+{
+  track_altitude_.push_back(cherenkov_track.x_mid.z());
+  track_length_.push_back(cherenkov_track.dx);
+  track_yield_.push_back(cherenkov_track.yield_density);
 }

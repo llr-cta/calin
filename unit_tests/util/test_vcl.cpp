@@ -5,7 +5,7 @@
    Unit tests for vcl
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -42,269 +42,105 @@ TEST(TestVCL, Print) {
   std::cout << to_float(vi) + 0.5 << '\n';
 }
 
-TEST(TestVCL, RNG128) {
-  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
-  uint64_t seeds[2] = { 1, 2 };
-  NR3_VCLRNGCore<VCL128Architecture> rng(seeds,fixture,"rng");
-  NR3RNGCore rng0(seeds[0],fixture,"rng0");
-  NR3RNGCore rng1(seeds[1],fixture,"rng1");
-  std::cout << rng.uniform_uint64() << ' '
-    << rng0.uniform_uint64() << ' '
-    << rng1.uniform_uint64() << '\n';
-
-  std::cout << rng.uniform_uint64() << ' '
-    << rng0.uniform_uint64() << ' '
-    << rng1.uniform_uint64() << '\n';
+TEST(TestVCL, Transpose128_U16) {
+  Vec8us x[8];
+  for(unsigned i=0;i<8;i++)
+    x[i] = Vec8us(i*8+0,i*8+1,i*8+2,i*8+3,i*8+4,i*8+5,i*8+6,i*8+7);
+  transpose(x);
+  for(unsigned j=0;j<8;j++)
+    for(unsigned i=0;i<8;i++)
+      EXPECT_EQ(x[j][i], i*8+j);
 }
 
-TEST(TestVCL, RNG256) {
-  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
-  uint64_t seeds[4] = { 1, 2, 3, 4 };
-  NR3_VCLRNGCore<VCL256Architecture> rng(seeds,fixture,"rng");
-  NR3RNGCore rng0(seeds[0],fixture,"rng0");
-  NR3RNGCore rng1(seeds[1],fixture,"rng1");
-  NR3RNGCore rng2(seeds[2],fixture,"rng2");
-  NR3RNGCore rng3(seeds[3],fixture,"rng3");
-  std::cout << rng.uniform_uint64() << ' '
-    << rng0.uniform_uint64() << ' '
-    << rng1.uniform_uint64() << ' '
-    << rng2.uniform_uint64() << ' '
-    << rng3.uniform_uint64() << '\n';
-
-  std::cout << rng.uniform_uint64() << ' '
-    << rng0.uniform_uint64() << ' '
-    << rng1.uniform_uint64() << ' '
-    << rng2.uniform_uint64() << ' '
-    << rng3.uniform_uint64() << '\n';
+TEST(TestVCL, Transpose128_U32) {
+  Vec4ui x[4];
+  for(unsigned i=0;i<4;i++)
+    x[i] = Vec4ui(i*4+0,i*4+1,i*4+2,i*4+3);
+  transpose(x);
+  for(unsigned j=0;j<4;j++)
+    for(unsigned i=0;i<4;i++)
+      EXPECT_EQ(x[j][i], i*4+j);
 }
 
-TEST(TestVCL, RNG512) {
-  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
-  uint64_t seeds[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
-  NR3_VCLRNGCore<VCL512Architecture> rng(seeds,fixture,"rng");
-  NR3RNGCore rng0(seeds[0],fixture,"rng0");
-  NR3RNGCore rng1(seeds[1],fixture,"rng1");
-  NR3RNGCore rng2(seeds[2],fixture,"rng2");
-  NR3RNGCore rng3(seeds[3],fixture,"rng3");
-  NR3RNGCore rng4(seeds[4],fixture,"rng4");
-  NR3RNGCore rng5(seeds[5],fixture,"rng5");
-  NR3RNGCore rng6(seeds[6],fixture,"rng6");
-  NR3RNGCore rng7(seeds[7],fixture,"rng7");
-  std::cout << rng.uniform_uint64() << ' '
-    << rng0.uniform_uint64() << ' '
-    << rng1.uniform_uint64() << ' '
-    << rng2.uniform_uint64() << ' '
-    << rng3.uniform_uint64() << ' '
-    << rng4.uniform_uint64() << ' '
-    << rng5.uniform_uint64() << ' '
-    << rng6.uniform_uint64() << ' '
-    << rng7.uniform_uint64() << '\n';
-
-  std::cout << rng.uniform_uint64() << ' '
-    << rng0.uniform_uint64() << ' '
-    << rng1.uniform_uint64() << ' '
-    << rng2.uniform_uint64() << ' '
-    << rng3.uniform_uint64() << ' '
-    << rng4.uniform_uint64() << ' '
-    << rng5.uniform_uint64() << ' '
-    << rng6.uniform_uint64() << ' '
-    << rng7.uniform_uint64() << '\n';
+TEST(TestVCL, Transpose128_U64) {
+  Vec2uq x[2];
+  for(unsigned i=0;i<2;i++)
+    x[i] = Vec2uq(i*2+0,i*2+1);
+  transpose(x);
+  for(unsigned j=0;j<2;j++)
+    for(unsigned i=0;i<2;i++)
+      EXPECT_EQ(x[j][i], i*2+j);
 }
 
-TEST(TestVCL, RNG256_FLT) {
-  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
-  VCLRNG<VCL256Architecture> rng(fixture,"rng");
-  std::cout << rng.uniform_float() << '\n';
-  std::cout << rng.uniform_float() << '\n';
-
-  unsigned N = 10000000;
-  Vec8f x;
-  Vec8f sum_x(0);
-  Vec8f sum_xx(0);
-  Vec8f max_x(-100);
-  Vec8f min_x(100);
-  for(unsigned i=0;i<N;i++)
-  {
-    x = rng.uniform_float();
-    sum_x += x;
-    sum_xx += x*x;
-    max_x = max(x, max_x);
-    min_x = min(x, min_x);
-  }
-  std::cout << sum_x << " -- " << sum_xx << '\n';
-  std::cout << min_x << " -- " << max_x << " -- " << 1-max_x << '\n';
-  float mean_x = horizontal_add(sum_x)/(8*N);
-  float var_x = horizontal_add(sum_xx)/(8*N) - mean_x*mean_x;
-  std::cout << mean_x << ' ' << var_x << '\n';
+TEST(TestVCL, Transpose128_FLT) {
+  Vec4f x[4];
+  for(unsigned i=0;i<4;i++)
+    x[i] = Vec4f(i+0,i+0.1,i+0.2,i+0.3);
+  transpose(x);
+  for(unsigned j=0;j<4;j++)
+    for(unsigned i=0;i<4;i++)
+      EXPECT_NEAR(x[j][i], i+0.1*j, 0.01);
 }
 
-TEST(TestVCL, RNG256_FLT_EXP) {
-  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
-  VCLRNG<VCL256Architecture> rng(fixture,"rng");
-  std::cout << rng.exponential_float() << '\n';
-  std::cout << rng.exponential_float() << '\n';
+TEST(TestVCL, Transpose128_DBL) {
+  Vec2d x[2];
+  for(unsigned i=0;i<2;i++)
+    x[i] = Vec2d(i*2+0,i*2+0.1);
+  transpose(x);
+  for(unsigned j=0;j<2;j++)
+    for(unsigned i=0;i<2;i++)
+      EXPECT_NEAR(x[j][i], i*2+0.1*j, 0.01);
 }
 
-TEST(TestVCL, RNG256_FLT_THETA) {
-  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
-  VCLRNG<VCL256Architecture> rng(fixture,"rng");
-  Vec8f t, s, c;
-  t = rng.uniform_float_zc(2.0*M_PI); s=sincos(&c,t);
-  std::cout << t << " -- " << s << " -- " << c << " -- " << s*s+c*c << '\n';
-  t = rng.uniform_float_zc(2.0*M_PI); s=sincos(&c,t);
-  std::cout << t << " -- " << s << " -- " << c << " -- " << s*s+c*c << '\n';
-  unsigned N = 10000000;
-  Vec8f sum_s(0);
-  Vec8f sum_ss(0);
-  Vec8f sum_c(0);
-  Vec8f sum_cc(0);
-  for(unsigned i=0;i<N;i++)
-  {
-    t = rng.uniform_float_zc(2.0*M_PI);
-    s=sincos(&c,t);
-    sum_s += s;
-    sum_ss += s*s;
-    sum_c += c;
-    sum_cc += c*c;
-  }
-  std::cout << sum_s << " -- " << sum_ss << '\n';
-  std::cout << sum_c << " -- " << sum_cc << '\n';
-  float mean_s = horizontal_add(sum_s)/(8*N);
-  float var_s = horizontal_add(sum_ss)/(8*N) - mean_s*mean_s;
-  float mean_c = horizontal_add(sum_c)/(8*N);
-  float var_c = horizontal_add(sum_cc)/(8*N) - mean_c*mean_c;
-  std::cout << mean_s << ' ' << mean_c << ' ' << var_s << ' ' << var_c << '\n';
+TEST(TestVCL, Transpose256_U16) {
+  Vec16us x[16];
+  for(unsigned i=0;i<16;i++)
+    x[i] = Vec16us(i*16+0,i*16+1,i*16+2,i*16+3,i*16+4,i*16+5,i*16+6,i*16+7,
+      i*16+8,i*16+9,i*16+10,i*16+11,i*16+12,i*16+13,i*16+14,i*16+15);
+  transpose(x);
+  for(unsigned j=0;j<16;j++)
+    for(unsigned i=0;i<16;i++)
+      EXPECT_EQ(x[j][i], i*16+j);
 }
 
-TEST(TestVCL, RNG256_FLT_SINCOS) {
-  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
-  VCLRNG<VCL256Architecture> rng(fixture,"rng");
-  Vec8f s, c;
-  rng.sincos_float(s,c);
-  std::cout << s << " -- " << c << " -- " << s*s+c*c << '\n';
-  rng.sincos_float(s,c);
-  std::cout << s << " -- " << c << " -- " << s*s+c*c << '\n';
-
-  unsigned N = 10000000;
-  Vec8f sum_s(0);
-  Vec8f sum_ss(0);
-  Vec8f sum_c(0);
-  Vec8f sum_cc(0);
-  for(unsigned i=0;i<N;i++)
-  {
-    rng.sincos_float(s,c);
-    sum_s += s;
-    sum_ss += s*s;
-    sum_c += c;
-    sum_cc += c*c;
-  }
-  std::cout << sum_s << " -- " << sum_ss << '\n';
-  std::cout << sum_c << " -- " << sum_cc << '\n';
-  float mean_s = horizontal_add(sum_s)/(8*N);
-  float var_s = horizontal_add(sum_ss)/(8*N) - mean_s*mean_s;
-  float mean_c = horizontal_add(sum_c)/(8*N);
-  float var_c = horizontal_add(sum_cc)/(8*N) - mean_c*mean_c;
-  std::cout << mean_s << ' ' << mean_c << ' ' << var_s << ' ' << var_c << '\n';
+TEST(TestVCL, Transpose256_U32) {
+  Vec8ui x[8];
+  for(unsigned i=0;i<8;i++)
+    x[i] = Vec8ui(i*8+0,i*8+1,i*8+2,i*8+3,i*8+4,i*8+5,i*8+6,i*8+7);
+  transpose(x);
+  for(unsigned j=0;j<8;j++)
+    for(unsigned i=0;i<8;i++)
+      EXPECT_EQ(x[j][i], i*8+j);
 }
 
-TEST(TestVCL, RNG256_DBL_SINCOS) {
-  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
-  VCLRNG<VCL256Architecture> rng(fixture,"rng");
-  Vec4d s, c;
-  rng.sincos_double(s,c);
-  std::cout << s << " -- " << c << " -- " << s*s+c*c << '\n';
-  rng.sincos_double(s,c);
-  std::cout << s << " -- " << c << " -- " << s*s+c*c << '\n';
-
-  unsigned N = 10000000;
-  Vec4d sum_s(0);
-  Vec4d sum_ss(0);
-  Vec4d sum_c(0);
-  Vec4d sum_cc(0);
-  for(unsigned i=0;i<N;i++)
-  {
-    rng.sincos_double(s,c);
-    sum_s += s;
-    sum_ss += s*s;
-    sum_c += c;
-    sum_cc += c*c;
-  }
-  std::cout << sum_s << " -- " << sum_ss << '\n';
-  std::cout << sum_c << " -- " << sum_cc << '\n';
-  double mean_s = horizontal_add(sum_s)/(4*N);
-  double var_s = horizontal_add(sum_ss)/(4*N) - mean_s*mean_s;
-  double mean_c = horizontal_add(sum_c)/(4*N);
-  double var_c = horizontal_add(sum_cc)/(4*N) - mean_c*mean_c;
-  std::cout << mean_s << ' ' << mean_c << ' ' << var_s << ' ' << var_c << '\n';
+TEST(TestVCL, Transpose256_U64) {
+  Vec4uq x[4];
+  for(unsigned i=0;i<4;i++)
+    x[i] = Vec4uq(i*4+0,i*4+1,i*4+2,i*4+3);
+  transpose(x);
+  for(unsigned j=0;j<4;j++)
+    for(unsigned i=0;i<4;i++)
+      EXPECT_EQ(x[j][i], i*4+j);
 }
 
-TEST(TestVCL, RNG256_FLT_NORMAL_BM) {
-  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
-  VCLRNG<VCL256Architecture> rng(fixture,"rng");
-  Vec8f x, y;
-  rng.normal_two_float_bm(x,y);
-  std::cout << x << " -- " << y << '\n';
-  rng.normal_two_float_bm(x,y);
-  std::cout << x << " -- " << y << '\n';
-
-  unsigned N = 10000000;
-  BasicKahanAccumulator<Vec8f> sum_x(0);
-  BasicKahanAccumulator<Vec8f> sum_xx(0);
-  BasicKahanAccumulator<Vec8f> sum_y(0);
-  BasicKahanAccumulator<Vec8f> sum_yy(0);
-  for(unsigned i=0;i<N;i++)
-  {
-    rng.normal_two_float_bm(x,y);
-    sum_x.accumulate(x);
-    sum_xx.accumulate(x*x);
-    sum_y.accumulate(y);
-    sum_yy.accumulate(y*y);
-  }
-  std::cout << sum_x.total() << " -- " << sum_xx.total() << '\n';
-  std::cout << sum_y.total() << " -- " << sum_yy.total() << '\n';
-  float mean_x = horizontal_add(sum_x.total())/(8*N);
-  float var_x = horizontal_add(sum_xx.total())/(8*N) - mean_x*mean_x;
-  float mean_y = horizontal_add(sum_y.total())/(8*N);
-  float var_y = horizontal_add(sum_yy.total())/(8*N) - mean_y*mean_y;
-  std::cout << mean_x << ' ' << mean_y << ' ' << var_x << ' ' << var_y << '\n';
+TEST(TestVCL, Transpos256_FLT) {
+  Vec8f x[8];
+  for(unsigned i=0;i<8;i++)
+    x[i] = Vec8f(i+0.0,i+0.1,i+0.2,i+0.3,i+0.4,i+0.5,i+0.6,i+0.7);
+  transpose(x);
+  for(unsigned j=0;j<8;j++)
+    for(unsigned i=0;i<8;i++)
+      EXPECT_NEAR(x[j][i], i+0.1*j, 0.01);
 }
 
-TEST(TestVCL, RNG256_DBL_NORMAL_BM) {
-  std::string fixture = ::testing::UnitTest::GetInstance()->current_test_info()->name();
-  VCLRNG<VCL256Architecture> rng(fixture,"rng");
-  Vec4d x, y;
-  rng.normal_two_double_bm(x,y);
-  std::cout << x << " -- " << y << '\n';
-  rng.normal_two_double_bm(x,y);
-  std::cout << x << " -- " << y << '\n';
-
-  unsigned N = 10000000;
-  Vec4d sum_x(0);
-  Vec4d sum_xx(0);
-  Vec4d sum_y(0);
-  Vec4d sum_yy(0);
-  for(unsigned i=0;i<N;i++)
-  {
-    rng.normal_two_double_bm(x,y);
-    sum_x += x;
-    sum_xx += x*x;
-    sum_y += y;
-    sum_yy += y*y;
-  }
-  std::cout << sum_x << " -- " << sum_xx << '\n';
-  std::cout << sum_y << " -- " << sum_yy << '\n';
-  double mean_x = horizontal_add(sum_x)/(4*N);
-  double var_x = horizontal_add(sum_xx)/(4*N) - mean_x*mean_x;
-  double mean_y = horizontal_add(sum_y)/(4*N);
-  double var_y = horizontal_add(sum_yy)/(4*N) - mean_y*mean_y;
-  std::cout << mean_x << ' ' << mean_y << ' ' << var_x << ' ' << var_y << '\n';
-}
-
-TEST(TestVCL, ZZ_DumpChronicle) {
-  calin::ix::provenance::chronicle::Chronicle* c =
-    calin::provenance::chronicle::copy_the_chronicle();
-  //std::cout << c->DebugString();
-  delete c;
+TEST(TestVCL, Transpose256_DBL) {
+  Vec4d x[4];
+  for(unsigned i=0;i<4;i++)
+    x[i] = Vec4d(i+0,i+0.1,i+0.2,i+0.3);
+  transpose(x);
+  for(unsigned j=0;j<4;j++)
+    for(unsigned i=0;i<4;i++)
+      EXPECT_NEAR(x[j][i], i+0.1*j, 0.01);
 }
 
 int main(int argc, char **argv) {

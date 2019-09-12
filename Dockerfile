@@ -1,7 +1,7 @@
 # calin/Dockerfile -- Stephen Fegan -- 2016-09-08
 #
 # Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole Polytechnique, CNRS/IN2P3
+# Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 #
 # This file is part of "calin"
 #
@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-FROM llrcta/calin-docker-base:ubuntu18.04_v1.22
+FROM llrcta/calin-docker-base:ubuntu18.04_v1.32
 
 MAINTAINER sfegan@llr.in2p3.fr
 

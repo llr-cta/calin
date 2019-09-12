@@ -5,7 +5,7 @@
    VSO ray (weight, scope, ray) processor.
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -76,10 +76,10 @@ process_traced_ray(unsigned scope_id,
 {
   if(not trace.rayHitFocalPlane())return;
   if(trace.pixel != nullptr) {
-    visitor_->process_pe(scope_id, trace.pixel->id(),
+    visitor_->process_focal_plane_hit(scope_id, trace.pixel->id(),
       trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
   } else {
-    visitor_->process_pe(scope_id, -1,
+    visitor_->process_focal_plane_hit(scope_id, -1,
       trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
   }
 }
@@ -170,7 +170,7 @@ VSORayProcessor::detector_spheres()
     auto* scope = array_->telescope(iscope);
     Eigen::Vector3d sphere_center = scope->reflectorIPCenter();
     scope->reflectorToGlobal_pos(sphere_center);
-    s.emplace_back(sphere_center, SQR(0.5*scope->reflectorIP()));
+    s.emplace_back(sphere_center, 0.5*scope->reflectorIP());
   }
   return s;
 }

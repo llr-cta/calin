@@ -5,7 +5,7 @@
    Generic instrument layout functions
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -54,5 +54,18 @@ void map_channels_using_from_coordinates(
   const calin::ix::iact_data::instrument_layout::CameraLayout& from,
   const calin::ix::iact_data::instrument_layout::CameraLayout& to,
   double tolerance = 0.1);
+
+calin::ix::iact_data::instrument_layout::CameraLayout* reduce_camera_channels(
+  const calin::ix::iact_data::instrument_layout::CameraLayout& layout_in,
+  const std::vector<unsigned>& channel_id, bool recenter = false);
+
+calin::ix::iact_data::instrument_layout::CameraLayout* reduce_camera_modules(
+  const calin::ix::iact_data::instrument_layout::CameraLayout& layout_in,
+  const std::vector<unsigned>& module_id, bool recenter = false);
+
+calin::ix::iact_data::instrument_layout::OutlinePolygon* channel_outline(
+  const calin::ix::iact_data::instrument_layout::CameraLayout& camera_layout,
+  const std::vector<unsigned>& channel_id);
+
 
 } } } // namespace calin::iact_data::instrument_layout

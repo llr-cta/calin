@@ -5,7 +5,7 @@
    Run info diagnostics
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -133,7 +133,7 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   mod_counter_id_.clear();
   mod_counter_mode_.clear();
   mod_counter_processor_.clear();
-  for(unsigned icounter=0;icounter<std::max(config.module_counter_test_id_size(),
+  for(int icounter=0;icounter<std::max(config.module_counter_test_id_size(),
       config.module_counter_test_mode_size());icounter++) {
     int counter_id = config.module_counter_test_id(icounter);
     if(counter_id<0 or counter_id>=run_config_->camera_layout().module_counter_name_size())continue;
@@ -152,7 +152,7 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   if(not mod_counter_id_.empty())
     mod_counter_values_.reserve(run_config->configured_module_id_size());
 
-  for(unsigned imod=0;imod<run_config->configured_module_id_size();imod++) {
+  for(int imod=0;imod<run_config->configured_module_id_size();imod++) {
     auto* m = partials_->add_module();
     for(unsigned icounter=0;icounter<mod_counter_id_.size();icounter++) {
       m->add_counter_value();
@@ -196,7 +196,7 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
     partials_->mutable_all_channels_presence(), event->all_modules_present());
 
   // MODULES
-  for(unsigned imodindex=0; imodindex<event->module_index_size(); imodindex++) {
+  for(int imodindex=0; imodindex<event->module_index_size(); imodindex++) {
     auto* mod = partials_->mutable_module(imodindex);
     if(event->module_index(imodindex)>=0) {
       mod->increment_num_events_present();
@@ -210,13 +210,13 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
   for(unsigned icounter=0;icounter<mod_counter_id_.size(); icounter++) {
     int counter_id = mod_counter_id_[icounter];
     mod_counter_values_.clear();
-    for(unsigned imod=0; imod<event->module_counter_size(); imod++) {
+    for(int imod=0; imod<event->module_counter_size(); imod++) {
       int64_t val = event->module_counter(imod).counter_value(counter_id);
       mod_counter_values_.push_back(val);
     }
-    int64_t offset = mod_counter_processor_[icounter]->processCounters(
+    /* int64_t offset = */ mod_counter_processor_[icounter]->processCounters(
       mod_counter_values_, event->local_event_number());
-    for(unsigned imod=0; imod<event->module_counter_size(); imod++) {
+    for(int imod=0; imod<event->module_counter_size(); imod++) {
       unsigned mod_id = event->module_counter(imod).module_id();
       auto* mod = partials_->mutable_module(mod_id);
       calin::diagnostics::range::encode_value(
@@ -262,7 +262,7 @@ RunInfoDiagnosticsVisitor::run_config() const
 const calin::ix::diagnostics::run_info::RunInfo& RunInfoDiagnosticsVisitor::run_info()
 {
   results_->Clear();
-  for(unsigned imod=0;imod<run_config_->configured_module_id_size();imod++) {
+  for(int imod=0;imod<run_config_->configured_module_id_size();imod++) {
     auto* mod = results_->add_module();
     mod->set_configured_module_rank(imod);
     mod->set_camera_module_id(run_config_->configured_module_id(imod));
@@ -423,7 +423,7 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
     if(range.begin_index_size())
       results_->mutable_events_missing_modules()->IntegrateFrom(range);
 
-    for(unsigned imod=0;imod<partials_->module_size();imod++) {
+    for(int imod=0;imod<partials_->module_size();imod++) {
       auto* rimod = results_->mutable_module(imod);
       auto& pimod = partials_->module(imod);
 

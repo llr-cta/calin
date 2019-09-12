@@ -5,7 +5,7 @@
    A class to implement ZMQ inprox push/pull sockets
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -37,8 +37,8 @@ void calin::io::zmq_inproc::destroy_zmq_ctx(void* zmq_cxt)
 }
 
 ZMQPusher::ZMQPusher(void* zmq_ctx, const std::string& endpoint,
-  int buffer_size, ZMQBindOrConnect bind_or_connect):
-  socket_(zmq_socket(zmq_ctx, ZMQ_PUSH), &zmq_close)
+  int buffer_size, ZMQBindOrConnect bind_or_connect, ZMQProtocol protocol):
+  socket_(zmq_socket(zmq_ctx, (protocol==ZMQProtocol::PUSH_PULL)?ZMQ_PUSH:ZMQ_PUB), &zmq_close)
 {
   // Open the socket
   if(!socket_)
@@ -90,8 +90,8 @@ bool ZMQPusher::push(const void* data, unsigned size, bool dont_wait)
 }
 
 ZMQPuller::ZMQPuller(void* zmq_ctx, const std::string& endpoint,
-  int buffer_size, ZMQBindOrConnect bind_or_connect):
-  socket_(zmq_socket(zmq_ctx, ZMQ_PULL), &zmq_close)
+  int buffer_size, ZMQBindOrConnect bind_or_connect, ZMQProtocol protocol):
+  socket_(zmq_socket(zmq_ctx, (protocol==ZMQProtocol::PUSH_PULL)?ZMQ_PULL:ZMQ_SUB), &zmq_close)
 {
   // Open the socket
   if(!socket_)
@@ -122,6 +122,13 @@ ZMQPuller::ZMQPuller(void* zmq_ctx, const std::string& endpoint,
       throw std::runtime_error(
         std::string("ZMQPuller: error connecting socket: ")
         + endpoint + "\n"
+        + "ZMQPuller: " + zmq_strerror(errno));
+  }
+
+  // If we are PUB/SUB then we must subscribe to all messages
+  if(protocol==ZMQProtocol::PUB_SUB) {
+    if(zmq_setsockopt(socket_.get(), ZMQ_SUBSCRIBE, "", 0) < 0)
+      throw std::runtime_error("ZMQPuller: error setting PUB/SUB subscription: " + endpoint + "\n"
         + "ZMQPuller: " + zmq_strerror(errno));
   }
 }
@@ -186,12 +193,36 @@ bool ZMQPuller::wait_for_data(long timeout_ms)
   return rc>0;
 }
 
+int ZMQPuller::wait_for_data_multi_source(ZMQPuller* puller2, long timeout_ms)
+{
+  zmq_pollitem_t items[2];
+  items[0] = this->pollitem();
+  if(puller2) {
+    items[1] = puller2->pollitem();
+  }
+  int rc = zmq_poll(items, (puller2)?2:1, timeout_ms);
+  if(rc<=0)return rc;
+  if(items[0].revents & ZMQ_POLLIN)return 1;
+  if((puller2) and (items[1].revents & ZMQ_POLLIN))return 2;
+  throw std::logic_error("Impossible case in ZMQPuller::wait_for_data_multi_source");
+  return -1;
+}
+
+ZMQInprocPushPull::ZMQInprocPushPull(void* extern_ctx, unsigned address_index,
+    ZMQProtocol protocol, unsigned buffer_size):
+  buffer_size_(buffer_size),
+  zmq_ctx_(extern_ctx), address_index_(address_index), protocol_(protocol)
+{
+  // nothing to see here
+}
+
 ZMQInprocPushPull::
-ZMQInprocPushPull(unsigned buffer_size, ZMQInprocPushPull* shared_ctx):
+ZMQInprocPushPull(unsigned buffer_size, ZMQInprocPushPull* shared_ctx, ZMQProtocol protocol):
   buffer_size_(buffer_size),
   my_zmq_ctx_((shared_ctx!=nullptr and shared_ctx->my_zmq_ctx_!=nullptr) ? nullptr : zmq_ctx_new()),
   zmq_ctx_((shared_ctx!=nullptr and shared_ctx->my_zmq_ctx_!=nullptr) ? shared_ctx->my_zmq_ctx_ : my_zmq_ctx_),
-  address_index_((shared_ctx!=nullptr and shared_ctx->my_zmq_ctx_!=nullptr) ? shared_ctx->zmq_ctx_address_.fetch_add(1) : zmq_ctx_address_.fetch_add(1))
+  address_index_((shared_ctx!=nullptr and shared_ctx->my_zmq_ctx_!=nullptr) ? shared_ctx->zmq_ctx_address_.fetch_add(1) : zmq_ctx_address_.fetch_add(1)),
+  protocol_(protocol)
 {
   if(my_zmq_ctx_)zmq_ctx_set(my_zmq_ctx_, ZMQ_IO_THREADS, 0); // inproc only
 }
@@ -203,12 +234,12 @@ ZMQInprocPushPull::~ZMQInprocPushPull()
 
 ZMQPuller* ZMQInprocPushPull::new_puller(ZMQBindOrConnect bind_or_connect)
 {
-  return new ZMQPuller(zmq_ctx(), address(), buffer_size_, bind_or_connect);
+  return new ZMQPuller(zmq_ctx(), address(), buffer_size_, bind_or_connect, protocol_);
 }
 
 ZMQPusher* ZMQInprocPushPull::new_pusher(ZMQBindOrConnect bind_or_connect)
 {
-  return new ZMQPusher(zmq_ctx(), address(), buffer_size_, bind_or_connect);
+  return new ZMQPusher(zmq_ctx(), address(), buffer_size_, bind_or_connect, protocol_);
 }
 
 std::string ZMQInprocPushPull::address()

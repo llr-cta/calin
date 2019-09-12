@@ -1,7 +1,7 @@
 # calin/proto/simulation/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole Polytechnique, CNRS/IN2P3
+# Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 #
 # This file is part of "calin"
 #
@@ -13,7 +13,8 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_PROTO pmt.proto vs_optics.proto tracker.proto)
+set(CALIN_SWIG_PROTO pmt.proto vs_optics.proto tracker.proto atmosphere.proto
+	vcl_iact.proto)
 set(CALIN_PACKAGE simulation)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 

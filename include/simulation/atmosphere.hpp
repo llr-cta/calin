@@ -5,7 +5,7 @@
    Classes to model density and refractive index of atmosphere
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -32,6 +32,10 @@
 #include"calin_global_definitions.hpp"
 
 #include <math/special.hpp>
+#include <math/ray.hpp>
+#include <util/vcl.hpp>
+#include <math/spline_interpolation.hpp>
+#include <simulation/atmosphere.pb.h>
 
 // Units:
 // Height, z:    cm
@@ -121,6 +125,7 @@ class Atmosphere
   virtual double rho(double z) = 0;
   virtual double thickness(double z) = 0;
   virtual double n_minus_one(double z) = 0;
+  virtual double dn_dz(double z, double& n_minus_one) = 0;
   virtual void cherenkov_parameters(double z,
     double& n_minus_one, double& propagation_ct_correction);
 #if 0
@@ -154,6 +159,7 @@ class IsothermalAtmosphere: public Atmosphere
   double rho(double z) override;
   double thickness(double z) override;
   double n_minus_one(double z) override;
+  double dn_dz(double z, double& n_minus_one) override;
 #if 0
   double pressure(double z) override;
   double temperature(double z) override;
@@ -214,10 +220,13 @@ struct LayeredAtmosphereLayer
 };
 #endif // ifndef SWIG
 
+std::vector<LayeredAtmosphereLevel> us76_levels();
+std::vector<LayeredAtmosphereLevel> load_levels(const std::string& filename);
+
 // Parameterized, layered model
 class LayeredAtmosphere: public Atmosphere
 {
- public:
+public:
   CALIN_TYPEALIAS(Level, LayeredAtmosphereLevel);
 
   LayeredAtmosphere(const std::string& filename);
@@ -227,6 +236,7 @@ class LayeredAtmosphere: public Atmosphere
   double rho(double z) override;
   double thickness(double z) override;
   double n_minus_one(double z) override;
+  double dn_dz(double z, double& n_minus_one) override;
 #if 0
   double pressure(double z) override;
   double temperature(double z) override;
@@ -241,8 +251,9 @@ class LayeredAtmosphere: public Atmosphere
   const std::vector<Level>& getLevels() const { return m_levels; }
 
   static LayeredAtmosphere* us76();
+  static double solve_for_thickness_at_toa(const std::vector<Level>& levels);
 
- private:
+private:
   CALIN_TYPEALIAS(Layer, LayeredAtmosphereLayer);
 
   void initialize();
@@ -253,6 +264,122 @@ class LayeredAtmosphere: public Atmosphere
   std::vector<Level> m_levels;
   std::vector<Layer> m_layers;
   mutable std::vector<Layer>::const_iterator m_ilayer;
+};
+
+// Parameterized, layered model that is capable of calculating refraction
+// corrections in impact time and point
+// Also supports SIMD interface
+class LayeredRefractiveAtmosphere: public Atmosphere
+{
+public:
+  CALIN_TYPEALIAS(Level, LayeredAtmosphereLevel);
+
+  LayeredRefractiveAtmosphere(const std::string& filename,
+    const std::vector<double>& obs_levels = {},
+    const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& config = default_config());
+  LayeredRefractiveAtmosphere(const std::string& filename,
+    double obs_level,
+    const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& config = default_config());
+  LayeredRefractiveAtmosphere(const std::vector<Level>& levels,
+    const std::vector<double>& obs_levels = {},
+    const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& config = default_config());
+
+  virtual ~LayeredRefractiveAtmosphere();
+
+  double num_obs_levels() const { return zobs_.size(); }
+  double zobs(unsigned iground) const { return zobs_[iground]; }
+
+  double rho(double z) override;
+  double thickness(double z) override;
+  double n_minus_one(double z) override;
+  double dn_dz(double z, double& n_minus_one) override;
+
+  double propagation_ct_correction(double z) override;
+  void cherenkov_parameters(double z,
+    double& n_minus_one, double& propagation_ct_correction) override;
+
+  double z_for_thickness(double t) override;
+  double top_of_atmosphere() override;
+
+  bool propagate_ray_with_refraction(calin::math::ray::Ray& ray, unsigned iobs=0,
+    bool time_reversal_ok=true);
+
+  template<typename VCLArchitecture> inline void
+  vcl_n_minus_one(typename VCLArchitecture::double_vt z) const
+  {
+    return vcl::exp(s_->vcl_value<VCLArchitecture>(z, 2));
+  }
+
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+  vcl_dn_dz(typename VCLArchitecture::double_vt z,
+    typename VCLArchitecture::double_vt& n_minus_one) const
+  {
+    typename VCLArchitecture::double_vt dlogn_dz =
+      s_->vcl_derivative_and_value<VCLArchitecture>(z, 2, n_minus_one);
+    n_minus_one = vcl::exp(n_minus_one);
+    return n_minus_one * dlogn_dz;
+  }
+
+  template<typename VCLArchitecture> inline typename VCLArchitecture::double_vt
+  vcl_dlognmo_dz(typename VCLArchitecture::double_vt z,
+    typename VCLArchitecture::double_vt& n_minus_one) const
+  {
+    typename VCLArchitecture::double_vt dlognmo_dz =
+      s_->vcl_derivative_and_value<VCLArchitecture>(z, 2, n_minus_one);
+    n_minus_one = vcl::exp(n_minus_one);
+    return dlognmo_dz;
+  }
+
+  const std::vector<Level>& get_levels() const { return levels_; }
+
+  static LayeredRefractiveAtmosphere* us76(const std::vector<double>& obs_levels = {});
+
+  const calin::math::spline_interpolation::CubicMultiSpline* spline() const { return s_; }
+
+  const Eigen::VectorXd& test_ray_emi_zn() { return test_ray_emi_zn_; }
+  const Eigen::VectorXd& test_ray_emi_z() { return test_ray_emi_z_; }
+  const Eigen::MatrixXd& test_ray_emi_x() { return test_ray_emi_x_; }
+  const Eigen::MatrixXd& test_ray_emi_ct() { return test_ray_emi_ct_; }
+
+  const Eigen::MatrixXd& test_ray_obs_x(unsigned iobs) { return test_ray_obs_x_[iobs]; }
+  const Eigen::MatrixXd& test_ray_obs_ct(unsigned iobs) { return test_ray_obs_ct_[iobs]; }
+
+  const Eigen::MatrixXd& test_ray_boa_x() { return test_ray_boa_x_; }
+  const Eigen::MatrixXd& test_ray_boa_ct() { return test_ray_boa_ct_; }
+
+  const Eigen::MatrixXd& model_ray_obs_x(unsigned iobs) { return model_ray_obs_x_[iobs]; }
+  const Eigen::MatrixXd& model_ray_obs_ct(unsigned iobs) { return model_ray_obs_ct_[iobs]; }
+
+  static calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig default_config();
+
+private:
+  std::vector<Level> levels_;
+  calin::math::spline_interpolation::CubicMultiSpline* s_ = nullptr;
+
+  std::vector<double> zobs_;
+  double thickness_to_toa_ = 0;
+
+  struct ObsLevelData {
+    double z = 0.0;
+    double n_inv = 1.0;
+    double x_ba_ratio = 0.0;
+    double ct_ba_ratio = 0.0;
+    double ct_x_ratio = 0.0;
+  };
+
+  std::vector<ObsLevelData> obs_level_data_;
+  bool high_accuracy_mode_ = false;
+
+  Eigen::VectorXd test_ray_emi_zn_;
+  Eigen::VectorXd test_ray_emi_z_;
+  Eigen::MatrixXd test_ray_emi_x_;
+  Eigen::MatrixXd test_ray_emi_ct_;
+  std::vector<Eigen::MatrixXd> test_ray_obs_x_;
+  std::vector<Eigen::MatrixXd> test_ray_obs_ct_;
+  Eigen::MatrixXd test_ray_boa_x_;
+  Eigen::MatrixXd test_ray_boa_ct_;
+  std::vector<Eigen::MatrixXd> model_ray_obs_x_;
+  std::vector<Eigen::MatrixXd> model_ray_obs_ct_;
 };
 
 } } } // namespace calin::simulation::atmosphere

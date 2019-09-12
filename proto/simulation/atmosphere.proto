@@ -1,0 +1,73 @@
+//-*-mode:protobuf; mode:font-lock;-*-
+
+/*
+
+   calin/proto/simulations/atmosphere.proto -- Stephen Fegan -- 2019-01-07
+
+   Protobufs for configuring atmospheric refracion code
+
+   Copyright 2019, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "common_types.proto";
+
+package calin.ix.simulation.atmosphere;
+
+message LayeredRefractiveAtmosphereConfig {
+  double zn_reference                                      = 1 [
+    (CFO).desc = "Reference zenith angle for which integration step size is "
+      "computed. Cannot be zero. A reasonable value is 45 degrees.",
+    (CFO).units = "deg" ];
+
+  repeated double zn_optimize                              = 2 [
+    (CFO).desc = "Zenith angles over which the refraction correction function "
+      "be optimised. The reference angle and ZN=0 are added automatically.",
+    (CFO).units = "deg" ];
+
+  double step_delta_zn                                     = 3 [
+    (CFO).desc = "Change in angle of ray at reference zenith angle which "
+      "defines the vertical integration step size. A value of "
+      "0.5 milli-arcsecond (mas) is reasonable.",
+    (CFO).units = "mas" ];
+
+  double step_delta_z_max                                  = 4 [
+    (CFO).desc = "Maximum vertical integration step size for cases when a step "
+      "defined by \"delta_zn\" would result in too large a step. A value of "
+      "1000 cm is reasonable (10m)",
+    (CFO).units = "cm" ];
+
+  bool high_accuracy_mode                                  = 5 [
+    (CFO).desc = "Enable high-accuracy mode. The effects of refraction in "
+      "impact position and time are factored into two-term expansion in "
+      "zenith angle where the coefficients of the terms depend on emission "
+      "altitude. In normal mode the ratio of the two terms fixed for all "
+      "altitudes, and a single function (spline) is used for both the position "
+      "and time corrections. In high-accuracy mode separate elevation "
+      "functions are used for time and position, and the two terms vary "
+      "independently with altitude. This increases accuracy but requires three "
+      "extra spline interpolations." ];
+
+  double angular_model_optimization_altitude               = 6 [
+    (CFO).desc = "Altitude at which the second term of the angular dependence "
+      "in single-spline model is fitted to the impact points calculated "
+      "through ray tracing. A goof choice would be the altitude of shower "
+      "maximum. However a value of 28km seems to minimize residuals over all "
+      "altitudes.",
+    (CFO).units = "cm" ];
+};

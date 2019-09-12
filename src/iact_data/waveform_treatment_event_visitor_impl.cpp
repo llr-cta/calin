@@ -5,7 +5,7 @@
    Waveform treatment event data visitor - process waveforms
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -134,12 +134,14 @@ avx2_analyze_waveforms(const uint16_t*__restrict__ data)
   for(unsigned iblock=0;iblock<nblock;iblock++)
   {
     const unsigned nvec = std::min(16U, nchan_-iblock*16);
+    // std::cout << iblock << ' ' << nvec << '\n';
     const uint16_t* base = data + iblock*nsamp_*16;
     __m256i* vp = samples;
     for(unsigned iv_samp=0; iv_samp<nv_samp; iv_samp++) {
       for(unsigned ivec=0; ivec<nvec; ivec++) {
         *(vp++) = _mm256_loadu_si256((__m256i*)(base + iv_samp*16 + nsamp_*ivec));
       }
+      vp += 16-nvec;
       calin::math::simd::avx2_m256_swizzle_u16(samples + iv_samp*16);
     }
 

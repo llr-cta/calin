@@ -5,7 +5,7 @@
    Multi-purpose PE (weight, scope, pixel & time) processor.
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -39,7 +39,7 @@ void PEProcessor::start_processing()
   // nothing to see here
 }
 
-void PEProcessor::process_pe(unsigned scope_id, int pixel_id,
+void PEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
     double x, double y, double t0, double pe_weight)
 {
   // nothing to see here
@@ -76,7 +76,7 @@ void SimpleImagePEProcessor::start_processing()
 }
 
 void SimpleImagePEProcessor::
-process_pe(unsigned scope_id, int pixel_id, double x, double y,
+process_focal_plane_hit(unsigned scope_id, int pixel_id, double x, double y,
   double t0, double pe_weight)
 {
 #if 0
@@ -88,10 +88,10 @@ process_pe(unsigned scope_id, int pixel_id, double x, double y,
 
   if(pixel_id<0)return;
   if(scope_id >= images_.size())
-    throw std::out_of_range("SimpleImagePEProcessor::process_pe: scope_id out "
+    throw std::out_of_range("SimpleImagePEProcessor::process_focal_plane_hit: scope_id out "
       "of range");
   if(unsigned(pixel_id) >= images_[scope_id].size())
-    throw std::out_of_range("SimpleImagePEProcessor::process_pe: pixel_id out "
+    throw std::out_of_range("SimpleImagePEProcessor::process_focal_plane_hit: pixel_id out "
       "of range");
   images_[scope_id][pixel_id].accumulate(pe_weight);
 }
@@ -132,7 +132,7 @@ void TelescopePSFCalcPEProcessor::start_processing()
   if(auto_clear_)clear();
 }
 
-void TelescopePSFCalcPEProcessor::process_pe(unsigned scope_id, int pixel_id,
+void TelescopePSFCalcPEProcessor::process_focal_plane_hit(unsigned scope_id, int pixel_id,
   double x, double y, double t0, double pe_weight)
 {
   if(scope_id == iscope_)mom_.accumulate(x, y, pe_weight);
@@ -157,7 +157,7 @@ void TelescopePSFCalcThirdMomentPEProcessor::start_processing()
 }
 
 void TelescopePSFCalcThirdMomentPEProcessor::
-process_pe(unsigned scope_id, int pixel_id,
+process_focal_plane_hit(unsigned scope_id, int pixel_id,
   double x, double y, double t0, double pe_weight)
 {
   if(scope_id == iscope_)mom_.accumulate(x, y, pe_weight);

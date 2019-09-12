@@ -1,7 +1,7 @@
 # calin/src/simulation/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole Polytechnique, CNRS/IN2P3
+# Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 #
 # This file is part of "calin"
 #
@@ -14,7 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_TARGET_LIBRARY calin_simulation)
-set(CALIN_SOURCES atmosphere.cpp pmt.cpp
+set(CALIN_SOURCES atmosphere.cpp atmosphere_refraction.cpp pmt.cpp
 	vso_pixel.cpp vso_mirror.cpp vso_obscuration.cpp vso_telescope.cpp
   vso_array.cpp vso_raytracer.cpp
 	pe_processor.cpp ray_processor.cpp vso_ray_processor.cpp
@@ -22,7 +22,7 @@ set(CALIN_SOURCES atmosphere.cpp pmt.cpp
 	tracker.cpp misc_trackers.cpp
   straight_track_generator.cpp quadrature_iact_array_integration.cpp
  	bfield_track_generator.cpp vso_quadrature_iact_array_integration.cpp
-	detector_efficiency.cpp world_magnetic_model.cpp
+	detector_efficiency.cpp world_magnetic_model.cpp vcl_iact.cpp
 	GeomagnetismLibrary.c)
 
 if(GEANT4_FOUND)

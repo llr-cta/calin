@@ -1,7 +1,7 @@
 # calin/unit_tests/simulation/CMakeLists.txt -- Stephen Fegan
 #
 # Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole Polytechnique, CNRS/IN2P3
+# Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 #
 # This file is part of "calin"
 #
@@ -19,6 +19,12 @@ if(GEANT4_FOUND)
 				     calin_simulation calin_math calin_proto)
 	add_test(TestGeant4 test_geant4)
 	install(TARGETS test_geant4
+	  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
+
+	add_executable(speedtest_vcl_iact speedtest_vcl_iact.cpp)
+	target_link_libraries(speedtest_vcl_iact ${GTEST_BOTH_LIBRARIES}
+				     calin_simulation calin_math calin_proto)
+	install(TARGETS speedtest_vcl_iact
 	  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
 endif()
 

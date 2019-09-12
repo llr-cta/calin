@@ -5,7 +5,7 @@
    Definitions of types and macros that apply to the full package
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -25,6 +25,8 @@
 #include <google/protobuf/repeated_field.h>
 #include <vector>
 #include <Eigen/Core>
+
+#define CALIN_NEW_ALIGN 32
 
 namespace calin {
 

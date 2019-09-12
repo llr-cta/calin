@@ -7,7 +7,7 @@
    SWIG interface file for calin.math.lomb_scargle
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") lomb_scargle
+%feature(autodoc,2);
 
 %{
 #include "math/lomb_scargle.hpp"

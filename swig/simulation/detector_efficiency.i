@@ -7,7 +7,7 @@
    SWIG interface file for calin.simulation.detector_efficiency
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.simulation") detector_efficiency
+%feature(autodoc,2);
 
 %{
 #include "simulation/detector_efficiency.hpp"

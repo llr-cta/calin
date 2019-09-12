@@ -5,7 +5,7 @@
    File utility functions, e.g. test whether files exist, expand filenames etc
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    Based on original, copyright 2006, Stephen Fegan, see notice below
 

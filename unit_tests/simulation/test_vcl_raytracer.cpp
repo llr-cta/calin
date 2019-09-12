@@ -5,7 +5,7 @@
    Unit tests for VCL raytracer
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -163,10 +163,10 @@ TYPED_TEST(TestVCLRaytracer, RayTrace) {
     ASSERT_FALSE(mask[1]);
     ASSERT_EQ(trace_info.status[0], calin::simulation::vcl_raytracer::STS_TS_FOUND_PIXEL);
     ASSERT_EQ(trace_info.status[1], calin::simulation::vcl_raytracer::STS_MASKED_ON_ENTRY);
-    ASSERT_EQ(trace_info.mirror_hexid[0], mirror->hexID());
-    ASSERT_EQ(trace_info.mirror_id[0], mirror->id());
-    ASSERT_EQ(trace_info.mirror_hexid[1], array->telescope(0)->numMirrorHexSites());
-    ASSERT_EQ(trace_info.mirror_id[1], array->telescope(0)->numMirrors());
+    ASSERT_EQ(trace_info.mirror_hexid[0], int(mirror->hexID()));
+    ASSERT_EQ(trace_info.mirror_id[0], int(mirror->id()));
+    ASSERT_EQ(trace_info.mirror_hexid[1], int(array->telescope(0)->numMirrorHexSites()));
+    ASSERT_EQ(trace_info.mirror_id[1], int(array->telescope(0)->numMirrors()));
   }
 
   delete array;

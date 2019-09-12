@@ -5,7 +5,7 @@
    Base class for all air shower track visitors
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -33,41 +33,41 @@ using namespace calin::util::log;
 using namespace calin::simulation::iact_array_tracker;
 using calin::math::special::SQR;
 
-IACTDetectorSphereHitProcessor::~IACTDetectorSphereHitProcessor()
+IACTDetectorSphereCherenkovConeIntersectionProcessor::~IACTDetectorSphereCherenkovConeIntersectionProcessor()
 {
   // nothing to see here
 }
 
-HitIACTVisitor::~HitIACTVisitor()
+IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor::~IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor()
 {
   // nothing to see here
 }
 
-void HitIACTVisitor::visit_event(const calin::simulation::tracker::Event& event,
+void IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor::visit_event(const calin::simulation::tracker::Event& event,
   bool& kill_event)
 {
   // nothing to see here
 }
 
-void HitIACTVisitor::visit_cherenkov_track(
+void IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor::visit_cherenkov_track(
   const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& cherenkov_track,
   bool& kill_track)
 {
   // nothing to see here
 }
 
-void HitIACTVisitor::leave_cherenkov_track()
+void IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor::leave_cherenkov_track()
 {
   // nothing to see here
 }
 
-void HitIACTVisitor::leave_event()
+void IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor::leave_event()
 {
   // nothing to see here
 }
 
-IACTDetectorSphereAirCherenkovTrackVisitor::
-IACTDetectorSphereAirCherenkovTrackVisitor(HitIACTVisitor* visitor,
+IACTDetectorSphereCherenkovConeIntersectionFinder::
+IACTDetectorSphereCherenkovConeIntersectionFinder(IACTDetectorSpherePotentialCherenkovConeIntersectionVisitor* visitor,
     bool adopt_visitor):
   calin::simulation::air_cherenkov_tracker::AirCherenkovTrackVisitor(),
   visitor_(visitor), adopt_visitor_(adopt_visitor),
@@ -81,20 +81,22 @@ IACTDetectorSphereAirCherenkovTrackVisitor(HitIACTVisitor* visitor,
 #endif
 }
 
-IACTDetectorSphereAirCherenkovTrackVisitor::
-~IACTDetectorSphereAirCherenkovTrackVisitor()
+IACTDetectorSphereCherenkovConeIntersectionFinder::
+~IACTDetectorSphereCherenkovConeIntersectionFinder()
 {
-  for(auto& isphere : spheres_)delete isphere.processor;
+  for(auto& isphere : spheres_) {
+    delete isphere.cone_processor;
+  }
   if(adopt_visitor_)delete visitor_;
 }
 
-void IACTDetectorSphereAirCherenkovTrackVisitor::
+void IACTDetectorSphereCherenkovConeIntersectionFinder::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
   visitor_->visit_event(event, kill_event);
 }
 
-void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
+void IACTDetectorSphereCherenkovConeIntersectionFinder::visit_cherenkov_track(
   const calin::simulation::air_cherenkov_tracker::AirCherenkovTrack& CT,
   bool& kill_track)
 {
@@ -105,7 +107,7 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
   {
     // Author's note : see Calin notebook for sphere / cone intersection
 
-    IACTDetectorSphereHit hit;
+    IACTDetectorSphereCherenkovConeIntersection hit;
     hit.x0                = CT.x_mid;
     hit.rx                = isphere.r0 - CT.x_mid;
     hit.u                 = CT.dx_hat;
@@ -149,7 +151,7 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
         << hit.w.transpose() << "] " << rx2_minus_r2
         << '\n';
   #endif
-      isphere.processor->process_hit(hit);
+      isphere.cone_processor->process_hit(hit);
       continue;
     }
 
@@ -190,7 +192,7 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
         hit.phimax        = std::acos(cos_phimax);
       }
       hit.cherenkov_track = &CT;
-      isphere.processor->process_hit(hit);
+      isphere.cone_processor->process_hit(hit);
       continue;
     }
   }
@@ -198,7 +200,80 @@ void IACTDetectorSphereAirCherenkovTrackVisitor::visit_cherenkov_track(
   visitor_->leave_cherenkov_track();
 }
 
-void IACTDetectorSphereAirCherenkovTrackVisitor::leave_event()
+void IACTDetectorSphereCherenkovConeIntersectionFinder::leave_event()
 {
   visitor_->leave_event();
+}
+
+IACTDetectorSphereCherenkovPhotonIntersectionFinder::
+IACTDetectorSphereCherenkovPhotonIntersectionFinder(
+    calin::simulation::ray_processor::RayProcessor* visitor,
+    calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
+    bool adopt_visitor, bool adopt_atm):
+  CherenkovPhotonVisitor(),
+  visitor_(visitor), adopt_visitor_(adopt_visitor),
+  atm_(atm), adopt_atm_(adopt_atm)
+{
+  // nothing to see here
+}
+
+IACTDetectorSphereCherenkovPhotonIntersectionFinder::
+~IACTDetectorSphereCherenkovPhotonIntersectionFinder()
+{
+  if(adopt_visitor_)delete visitor_;
+  if(adopt_atm_)delete atm_;
+}
+
+void IACTDetectorSphereCherenkovPhotonIntersectionFinder::
+set_bandpass(double epsilon0, double bandwidth, bool do_color_photons)
+{
+  // nothing to see here
+}
+
+void IACTDetectorSphereCherenkovPhotonIntersectionFinder::
+visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
+{
+  visitor_->start_processing();
+}
+
+void IACTDetectorSphereCherenkovPhotonIntersectionFinder::
+visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::CherenkovPhoton& cherenkov_photon)
+{
+  calin::math::ray::Ray ray(cherenkov_photon.x0, cherenkov_photon.u0,
+    cherenkov_photon.t0, cherenkov_photon.epsilon);
+  unsigned scope_id = 0;
+  bool do_refraction = do_refraction_;
+  double refraction_safety_margin = refraction_safety_margin_;
+  for(auto& isphere : visitor_->detector_spheres()) {
+    Eigen::Vector3d dx = cherenkov_photon.x0 - isphere.r0;
+    double u0_dot_dx = cherenkov_photon.u0.dot(dx);
+    double dr2 = dx.squaredNorm() - u0_dot_dx*u0_dot_dx;
+    if(dr2 < SQR(isphere.radius + refraction_safety_margin)) {
+      // we have a potential hit !
+      if(do_refraction) {
+        // Here we propagate to the observation plane associated with the
+        // detector sphere then refract the ray then back-propagate to the
+        // height of the photon emission so absoption can be calculated later
+        atm_->propagate_ray_with_refraction(ray, isphere.iobs, /* time_reversal_ok = */ false);
+        double reverse_propagate_dist = (cherenkov_photon.x0.z() - ray.z())/ray.uz();
+        ray.propagate_dist(reverse_propagate_dist);
+        do_refraction = false; // don't refract twice if we have overlapping telescopes
+        refraction_safety_margin = 0.0;
+        dx = cherenkov_photon.x0 - isphere.r0;
+        u0_dot_dx = cherenkov_photon.u0.dot(dx);
+        dr2 = dx.squaredNorm() - u0_dot_dx*u0_dot_dx;
+        if(dr2<SQR(isphere.radius)) {
+          visitor_->process_ray(scope_id, ray, /* pe_weight = */ 1.0);
+        }
+      } else {
+        visitor_->process_ray(scope_id, ray, /* pe_weight = */ 1.0);
+      }
+    }
+    ++scope_id;
+  }
+}
+
+void IACTDetectorSphereCherenkovPhotonIntersectionFinder::leave_event()
+{
+  visitor_->finish_processing();
 }

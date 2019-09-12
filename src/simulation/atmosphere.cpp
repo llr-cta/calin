@@ -5,7 +5,7 @@
    Classes to model density and refractive index of atmosphere
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -113,6 +113,12 @@ double IsothermalAtmosphere::n_minus_one(double z)
   return m_nmo0*std::exp(-z/m_zs);
 }
 
+double IsothermalAtmosphere::dn_dz(double z, double& n_minus_one)
+{
+  n_minus_one = m_nmo0*std::exp(-z/m_zs);
+  return -n_minus_one/m_zs;
+}
+
 double IsothermalAtmosphere::propagation_ct_correction(double z)
 {
   return m_zs*m_nmo0*(1.0-exp(-z/m_zs));
@@ -132,27 +138,41 @@ double IsothermalAtmosphere::top_of_atmosphere()
 // LAYERED ATMOSPHERE
 // ****************************************************************************
 
-LayeredAtmosphere::LayeredAtmosphere(const std::string& filename):
-  Atmosphere(), m_ztoa(), m_ttoa(), m_levels(), m_layers(), m_ilayer()
+std::vector<LayeredAtmosphereLevel>
+calin::simulation::atmosphere::load_levels(const std::string& filename)
 {
   std::ifstream stream(filename.c_str());
   if(!stream)
-    throw std::string("LayeredAtmosphere: could not open: ")+filename;
-  calin::provenance::chronicle::register_file_open(filename,
+    throw std::runtime_error(std::string("load_levels: could not open: ")+filename);
+  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
+  std::string comment;
+  std::vector<LayeredAtmosphereLevel> levels;
   while(std::getline(stream, line))
   {
     unsigned ichar=0;
     while(isspace(line[ichar]))ichar++;
-    if(line[ichar] == '#')continue;
+    if(line[ichar] == '#') {
+      comment += line;
+      comment += '\n';
+      continue;
+    }
     std::istringstream lstream(line);
-    Level l;
+    LayeredAtmosphereLevel l;
     lstream >> l.z >> l.rho >> l.t >> l.nmo;
     if(!lstream)continue;
     l.z *= 1e5;
-    m_levels.push_back(l);
+    levels.push_back(l);
   }
+  file_record->set_comment(comment);
+  calin::provenance::chronicle::register_file_close(file_record);
+  return levels;
+}
+
+LayeredAtmosphere::LayeredAtmosphere(const std::string& filename):
+  Atmosphere(), m_ztoa(), m_ttoa(), m_levels(load_levels(filename)), m_layers(), m_ilayer()
+{
   initialize();
 }
 
@@ -165,7 +185,7 @@ LayeredAtmosphere::LayeredAtmosphere(const std::vector<Level> levels):
 void LayeredAtmosphere::initialize()
 {
   if(m_levels.size()<2)
-    throw std::string("LayeredAtmosphere: A minimum of 2 levels required.");
+    throw std::runtime_error("LayeredAtmosphere: A minimum of 2 levels required.");
   std::sort(m_levels.begin(), m_levels.end(), Level::CmpZAsc());
   m_layers.resize(m_levels.size()-1);
 
@@ -180,37 +200,7 @@ void LayeredAtmosphere::initialize()
     // that the scale height between the final three levels is
     // constant
 
-    if(m_levels.size()<3)
-      throw std::string("LayeredAtmosphere: A minimum of 3 levels required "
-		    "to solve for thickness.");
-
-    const double y2 = m_levels[m_levels.size() - 2].t;
-    const double y3 = m_levels[m_levels.size() - 3].t;
-    const double x1 = m_levels[m_levels.size() - 1].z;
-    const double x2 = m_levels[m_levels.size() - 2].z;
-    const double x3 = m_levels[m_levels.size() - 3].z;
-
-    double H = (x2-x3)/(std::log(y3)-std::log(y2)); // initial guess
-    double num = std::exp(-x3/H)-std::exp(-x1/H);
-    double den = std::exp(-x2/H)-std::exp(-x1/H);
-    double df = y3/y2 - num/den;
-    unsigned niter = 10;
-    while(std::fabs(df)/(y3/y2) > 1e-8)
-    {
-      // Newton-Ralphson to find value of H giving agreement with data
-      if(niter-- == 0)
-        throw std::string("LayeredAtmosphere: max number of iterations exceeded");
-      double dfdH =
-        (den*(x3*std::exp(-x3/H)-x1*std::exp(-x1/H))
-         - num*(x2*std::exp(-x2/H)-x1*std::exp(-x1/H)))/(den*den*H*H);
-      H += df/dfdH;
-      num = std::exp(-x3/H)-std::exp(-x1/H);
-      den = std::exp(-x2/H)-std::exp(-x1/H);
-      df = y3/y2 - num/den;
-    }
-
-    double t0 = y3/(std::exp(-x3/H)-std::exp(-x1/H));
-    m_ttoa = t0*std::exp(-x1/H);
+    m_ttoa = solve_for_thickness_at_toa(m_levels);
 
     for(unsigned ilevel=0;ilevel<m_levels.size();ilevel++)
       m_levels[ilevel].t += m_ttoa;
@@ -302,6 +292,13 @@ double LayeredAtmosphere::n_minus_one(double z)
   return ilayer->nmo0 * std::exp(-z/ilayer->nmozs);
 }
 
+double LayeredAtmosphere::dn_dz(double z, double& n_minus_one)
+{
+  auto ilayer = findZ(z);
+  n_minus_one = ilayer->nmo0 * std::exp(-z/ilayer->nmozs);
+  return -n_minus_one/ilayer->nmozs;
+}
+
 double LayeredAtmosphere::propagation_ct_correction(double z)
 {
   auto ilayer = findZ(z);
@@ -333,7 +330,55 @@ double LayeredAtmosphere::top_of_atmosphere()
 
 LayeredAtmosphere* LayeredAtmosphere::us76()
 {
-  std::vector<Level> levels;
+  return new LayeredAtmosphere(us76_levels());
+}
+
+double LayeredAtmosphere::solve_for_thickness_at_toa(
+  const std::vector<LayeredAtmosphereLevel>& levels)
+{
+  // If the thickness at the top of the atmosphere is zero
+  // (i.e. the thickness from infinity to that point has been
+  // subtracted) then solve for the thickness there by assuming
+  // that the scale height between the final three levels is
+  // constant
+
+  if(levels.size()<3)
+    throw std::runtime_error("LayeredAtmosphere: A minimum of 3 levels required "
+      "to solve for thickness.");
+
+  const double y2 = levels[levels.size() - 2].t;
+  const double y3 = levels[levels.size() - 3].t;
+  const double x1 = levels[levels.size() - 1].z;
+  const double x2 = levels[levels.size() - 2].z;
+  const double x3 = levels[levels.size() - 3].z;
+
+  double H = (x2-x3)/(std::log(y3)-std::log(y2)); // initial guess
+  double num = std::exp(-x3/H)-std::exp(-x1/H);
+  double den = std::exp(-x2/H)-std::exp(-x1/H);
+  double df = y3/y2 - num/den;
+  unsigned niter = 10;
+  while(std::fabs(df)/(y3/y2) > 1e-8)
+  {
+    // Newton-Ralphson to find value of H giving agreement with data
+    if(niter-- == 0)
+      throw std::runtime_error("LayeredAtmosphere: max number of iterations exceeded");
+    double dfdH =
+      (den*(x3*std::exp(-x3/H)-x1*std::exp(-x1/H))
+       - num*(x2*std::exp(-x2/H)-x1*std::exp(-x1/H)))/(den*den*H*H);
+    H += df/dfdH;
+    num = std::exp(-x3/H)-std::exp(-x1/H);
+    den = std::exp(-x2/H)-std::exp(-x1/H);
+    df = y3/y2 - num/den;
+  }
+
+  double t0 = y3/(std::exp(-x3/H)-std::exp(-x1/H));
+  return t0*std::exp(-x1/H);
+}
+
+std::vector<LayeredAtmosphereLevel>
+calin::simulation::atmosphere::us76_levels()
+{
+  std::vector<LayeredAtmosphereLevel> levels;
   levels.push_back({ 0.0, 0.12219E-02, 0.10350E+04, 0.28232E-03 });
   levels.push_back({ 100000.0, 0.11099E-02, 0.91853E+03, 0.25634E-03 });
   levels.push_back({ 200000.0, 0.10054E-02, 0.81286E+03, 0.23214E-03 });
@@ -384,5 +429,5 @@ LayeredAtmosphere* LayeredAtmosphere::us76()
   levels.push_back({ 11000000.0, 0.10312E-09, 0.52792E-04, 0.23788E-10 });
   levels.push_back({ 11500000.0, 0.46595E-10, 0.17216E-04, 0.10748E-10 });
   levels.push_back({ 12000000.0, 0.24596E-10, 0.00000E+00, 0.56734E-11 });
-  return new LayeredAtmosphere(levels);
+  return levels;
 }

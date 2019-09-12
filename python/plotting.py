@@ -3,7 +3,7 @@
 # Plotting of camera faces and histograms
 #
 # Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-# LLR, Ecole Polytechnique, CNRS/IN2P3
+# Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 #
 # This file is part of "calin"
 #
@@ -87,32 +87,36 @@ def plot_module_camera(mod_data, camera_layout, configured_modules = None, ax_in
         cbar.set_label(cbar_label)
     return pc
 
-def layout_to_polygon_vxy(layout, plate_scale = 1.0):
+def layout_to_polygon_vxy(layout, plate_scale = 1.0, rotation = 0.0):
+    crot = np.cos(rotation/180.0*np.pi)
+    srot = np.sin(rotation/180.0*np.pi)
     all_vxy = []
     ibegin = 0;
     for iend in layout.outline_polygon_vertex_index():
         vx = layout.outline_polygon_vertex_x()[ibegin:iend]*plate_scale
         vy = layout.outline_polygon_vertex_y()[ibegin:iend]*plate_scale
+        vx, vy = vx*crot - vy*srot, vy*crot + vx*srot
         all_vxy.append(np.column_stack([vx, vy]))
+        ibegin=iend
     return all_vxy
 
-def layout_to_polygon(layout, plate_scale = 1.0, **args):
+def layout_to_polygon(layout, plate_scale = 1.0, rotation = 0.0, **args):
     all_p = []
-    for vxy in layout_to_polygon_vxy(layout, plate_scale):
+    for vxy in layout_to_polygon_vxy(layout, plate_scale, rotation):
         all_p.append(plt.Polygon(vxy, **args))
     if len(all_p) == 1:
         return all_p[0]
     return all_p
 
-def add_outline(axis, layout, plate_scale = 1.0,
+def add_outline(axis, layout, plate_scale = 1.0, rotation = 0.0,
         outline_lw = 0.5, outline_color = '#888888'):
-    for vxy in layout_to_polygon_vxy(layout, plate_scale):
+    for vxy in layout_to_polygon_vxy(layout, plate_scale, rotation):
         axis.add_patch(plt.Polygon(vxy,
             fill=False, lw=outline_lw, edgecolor=outline_color))
 
 def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         configured_channels = None, zero_suppression = None,
-        plate_scale = None, R = None,
+        plate_scale = None, rotation = 0.0, R = None,
         cmap = matplotlib.cm.CMRmap_r, axis = None, draw_outline = False,
         pix_lw = 0, outline_lw = 0.5, outline_color = '#888888'):
     if(channel_mask is None and zero_suppression is not None):
@@ -129,6 +133,8 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         plate_scale = 1
         if type(camera_layout) is calin.ix.iact_data.instrument_layout.TelescopeLayout:
             plate_scale = 180/np.pi/camera_layout.effective_focal_length()
+    crot = np.cos(rotation/180.0*np.pi)
+    srot = np.sin(rotation/180.0*np.pi)
     if type(camera_layout) is calin.ix.iact_data.instrument_layout.TelescopeLayout:
         camera_layout = camera_layout.camera()
     for chan_index in range(len(channel_data)):
@@ -139,6 +145,7 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         if((channel_mask is None or channel_mask[chan_index]) and chan.pixel_index() != -1):
             vx = chan.outline_polygon_vertex_x_view()*plate_scale
             vy = chan.outline_polygon_vertex_y_view()*plate_scale
+            vx, vy = vx*crot - vy*srot, vy*crot + vx*srot
             vv = np.column_stack([vx, vy])
             max_xy = max(max_xy, max(abs(vx)), max(abs(vy)))
             pix.append(plt.Polygon(vv,closed=True))
@@ -150,7 +157,7 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     axis.add_collection(pc)
 
     if draw_outline:
-        add_outline(axis, camera_layout, plate_scale=plate_scale,
+        add_outline(axis, camera_layout, plate_scale=plate_scale, rotation=rotation,
             outline_lw=outline_lw, outline_color=outline_color)
 
     axis.axis('square')

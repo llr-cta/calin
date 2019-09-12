@@ -5,7 +5,7 @@
    Collection of functions which operate on regular grids (i.e. hex and square)
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -47,7 +47,7 @@ public:
     const std::vector<unsigned>& region_gridids);
   static unsigned num_bounday_curves(
     const std::vector<std::pair<unsigned,unsigned> >& boundary);
-  void extract_bounday_curve(Eigen::VectorXd& xv, Eigen::VectorXd& yv,
+  void extract_boundary_curve(Eigen::VectorXd& xv, Eigen::VectorXd& yv,
     const std::vector<std::pair<unsigned,unsigned> >& boundary,
     unsigned icurve = 0, bool closed = false);
 

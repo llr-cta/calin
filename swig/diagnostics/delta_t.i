@@ -5,7 +5,7 @@
    SWIG interface file for Delta-T visitors
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.diagnostics") delta_t
+%feature(autodoc,2);
 
 %{
 #include "diagnostics/delta_t.hpp"

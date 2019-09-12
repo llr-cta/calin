@@ -7,7 +7,7 @@
    SWIG interface file for calin.simulation.ray_processor
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.simulation") ray_processor
+%feature(autodoc,2);
 
 %{
 #include "simulation/pe_processor.hpp"
@@ -46,3 +47,6 @@
 %newobject *::add_processor_and_pe_visitor;
 %include "simulation/ray_processor.hpp"
 %include "simulation/vso_ray_processor.hpp"
+
+%template(StdVectorRayProcessorDetectorSphere)
+  std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>;

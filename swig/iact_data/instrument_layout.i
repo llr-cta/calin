@@ -5,7 +5,7 @@
    SWIG interface file for calin instrument (camera) layout
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.iact_data") instrument_layout
+%feature(autodoc,2);
 
 %{
 #include "iact_data/instrument_layout.hpp"
@@ -35,6 +36,12 @@
 %import "calin_global_definitions.i"
 
 %newobject make_grid_from_instrument_layout;
+%newobject reduce_camera_channels;
+%newobject reduce_camera_modules;
+%newobject channel_outline;
+
+%apply const std::vector<unsigned int> & { const std::vector<unsigned int>& channel_id };
+%apply const std::vector<unsigned int> & { const std::vector<unsigned int>& module_id };
 
 %apply Eigen::VectorXi &OUTPUT { Eigen::VectorXi& map };
 

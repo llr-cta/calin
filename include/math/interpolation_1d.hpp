@@ -6,7 +6,7 @@
    Originally from EGS5 ACT code, see header below.
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -37,6 +37,8 @@
 #include <string>
 #include <algorithm>
 #include <utility>
+
+#include <provenance/chronicle.hpp>
 
 namespace calin { namespace math { namespace interpolation_1d {
 
@@ -287,9 +289,19 @@ public:
     if(!stream.good())
       throw std::runtime_error("Could not open: "+filename);
 
+    auto* file_record = calin::provenance::chronicle::register_file_open(filename,
+      calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
+
+    std::string comment;
     std::string line;
     std::getline(stream,line);
-    while((line.empty() or line[0] == '#') and stream)std::getline(stream,line);
+    while((line.empty() or line[0] == '#') and stream) {
+      if(line[0] == '#') {
+        comment += line;
+        comment += '\n';
+      }
+      std::getline(stream,line);
+    }
     if(!stream)return;
     do
     {
@@ -304,6 +316,9 @@ public:
       std::getline(stream,line);
     }while(stream);
     std::sort(m_xy.begin(), m_xy.end());
+
+    file_record->set_comment(comment);
+    calin::provenance::chronicle::register_file_close(file_record);
   }
 
   void insert_from_2column_file(const std::string& filename)

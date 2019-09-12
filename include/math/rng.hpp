@@ -6,7 +6,7 @@
    by the author while at UCLA in 2007.
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -647,7 +647,7 @@ private:
 #ifndef SWIG
   static void* operator new(size_t nbytes) {
     void* p = nullptr;
-    if(::posix_memalign(&p, 32, nbytes)==0) {
+    if(::posix_memalign(&p, CALIN_NEW_ALIGN, nbytes)==0) {
       return p;
     }
     throw std::bad_alloc();

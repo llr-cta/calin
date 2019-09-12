@@ -5,7 +5,7 @@
    Unit tests for pmt_ses_models classes
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -83,6 +83,71 @@ TEST(TestTwoGaussianSES, ParameterHessianCheck) {
   dp << 1e-4, 1e-4, 1e-4, 1e-4;
   TwoGaussianSES pdf;
   for(double x=0; x<20.0; x+=0.1)
+  {
+    Eigen::MatrixXd good(4,4);
+    EXPECT_TRUE(hessian_check_par(pdf, x, p, dp, good));
+    EXPECT_LE(good(0,0), 0.5);
+    EXPECT_LE(good(0,1), 0.5);
+    EXPECT_LE(good(0,2), 0.5);
+    EXPECT_LE(good(0,3), 0.5);
+    EXPECT_LE(good(1,0), 0.5);
+    EXPECT_LE(good(1,1), 0.5);
+    EXPECT_LE(good(1,2), 0.5);
+    EXPECT_LE(good(1,3), 0.5);
+    EXPECT_LE(good(2,0), 0.5);
+    EXPECT_LE(good(2,1), 0.5);
+    EXPECT_LE(good(2,2), 0.5);
+    EXPECT_LE(good(2,3), 0.5);
+    EXPECT_LE(good(3,0), 0.5);
+    EXPECT_LE(good(3,1), 0.5);
+    EXPECT_LE(good(3,2), 0.5);
+    EXPECT_LE(good(3,3), 0.5);
+  }
+}
+
+TEST(TestReparameterizedTwoGaussianSES, VerifyGainAndResolution) {
+  Eigen::VectorXd p(4);
+  p << 0.176559, 0.362319, 100, 0.451781; // frac, beta_lo, gain, beta
+  ReparameterizedTwoGaussianSES pdf;
+  pdf.set_parameter_values(p);
+  EXPECT_NEAR(p[2], pdf.underlying_ses()->gain(), 1e-5);
+  EXPECT_NEAR(p[3], pdf.underlying_ses()->resolution(), 1e-5);
+
+  p << 0.176559, 0.362319, 30, 0.451781; // frac, beta_lo, gain, beta
+  pdf.set_parameter_values(p);
+  EXPECT_NEAR(p[2], pdf.underlying_ses()->gain(), 1e-5);
+  EXPECT_NEAR(p[3], pdf.underlying_ses()->resolution(), 1e-5);
+
+  p << 0.176559, 0.362319, 100, 0.42; // frac, beta_lo, gain, beta
+  pdf.set_parameter_values(p);
+  EXPECT_NEAR(p[2], pdf.underlying_ses()->gain(), 1e-5);
+  EXPECT_NEAR(p[3], pdf.underlying_ses()->resolution(), 1e-5);
+}
+
+TEST(TestReparameterizedTwoGaussianSES, ParameterGradientCheck) {
+  Eigen::VectorXd p(4);
+  p << 0.176559, 0.362319, 100, 0.451781; // frac, beta_lo, gain, beta
+  Eigen::VectorXd dp(4);
+  dp << 1e-5, 1e-5, 1e-3, 1e-5;
+  ReparameterizedTwoGaussianSES pdf;
+  for(double x=0; x<200.0; x+=1.0)
+  {
+    Eigen::VectorXd good(4);
+    EXPECT_TRUE(gradient_check_par(pdf, x, p, dp, good));
+    EXPECT_LE(good(0), 0.5);
+    EXPECT_LE(good(1), 0.5);
+    EXPECT_LE(good(2), 0.5);
+    EXPECT_LE(good(3), 0.5);
+  }
+}
+
+TEST(TestReparameterizedTwoGaussianSES, ParameterHessianCheck) {
+  Eigen::VectorXd p(4);
+  p << 0.176559, 0.362319, 100, 0.451781; // frac, beta_lo, gain, beta
+  Eigen::VectorXd dp(4);
+  dp << 1e-5, 1e-5, 1e-3, 1e-5;
+  ReparameterizedTwoGaussianSES pdf;
+  for(double x=1.0; x<200.0; x+=1.0)
   {
     Eigen::MatrixXd good(4,4);
     EXPECT_TRUE(hessian_check_par(pdf, x, p, dp, good));

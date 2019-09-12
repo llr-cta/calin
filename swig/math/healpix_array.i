@@ -7,7 +7,7 @@
    SWIG interface file for calin.math.healpix_array
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -23,6 +23,7 @@
 */
 
 %module (package="calin.math") healpix_array
+%feature(autodoc,2);
 
 %{
 #include "math/healpix_array.hpp"

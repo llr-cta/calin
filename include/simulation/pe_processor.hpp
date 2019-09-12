@@ -5,7 +5,7 @@
    Multi-purpose PE (weight, scope, pixel & time) processor.
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -34,7 +34,7 @@ class PEProcessor
 public:
   virtual ~PEProcessor();
   virtual void start_processing();
-  virtual void process_pe(unsigned scope_id, int pixel_id,
+  virtual void process_focal_plane_hit(unsigned scope_id, int pixel_id,
     double x, double y, double t0, double pe_weight);
   virtual void finish_processing();
 };
@@ -48,7 +48,7 @@ public:
     bool auto_clear = true);
   virtual ~SimpleImagePEProcessor();
   void start_processing() override;
-  void process_pe(unsigned scope_id, int pixel_id,
+  void process_focal_plane_hit(unsigned scope_id, int pixel_id,
     double x, double y, double t0, double pe_weight) override;
   const std::vector<double> scope_image(unsigned iscope) const;
   void clear_all_images();
@@ -64,7 +64,7 @@ public:
   TelescopePSFCalcPEProcessor(unsigned iscope = 0, bool auto_clear = true);
   virtual ~TelescopePSFCalcPEProcessor();
   void start_processing() override;
-  void process_pe(unsigned scope_id, int pixel_id,
+  void process_focal_plane_hit(unsigned scope_id, int pixel_id,
     double x, double y, double t0, double pe_weight) override;
   void clear() { mom_.reset(); }
   const calin::math::moments_calc::SecondMomentsCalc2D mom() { return mom_; }
@@ -80,7 +80,7 @@ public:
   TelescopePSFCalcThirdMomentPEProcessor(unsigned iscope = 0, bool auto_clear = true);
   virtual ~TelescopePSFCalcThirdMomentPEProcessor();
   void start_processing() override;
-  void process_pe(unsigned scope_id, int pixel_id,
+  void process_focal_plane_hit(unsigned scope_id, int pixel_id,
     double x, double y, double t0, double pe_weight) override;
   void clear() { mom_.reset(); }
   const calin::math::moments_calc::ThirdMomentsCalc2D mom() { return mom_; }

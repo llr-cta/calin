@@ -5,7 +5,7 @@
    Unit tests for VCL hex array classes
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -67,7 +67,7 @@ TYPED_TEST(VCLHexArrayTest, HexIDToRingIDRoot_5000Rings) {
       {
         std::cout << "Mismatch for hexid=" << hexid[0] << " (ring=" << iring <<
           ") giving " << ringid[0] << '\n';
-        EXPECT_GE(iring,2000);
+        EXPECT_GE(iring,2000U);
         goto finish_test;
       }
       hexid++;
@@ -229,7 +229,7 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexID_Equals_Scalar) {
       typename TypeParam::real_vt yy2 = y;
       typename TypeParam::int_vt hexid2 =
         VCLReal<TypeParam>::xy_to_hexid_with_remainder(xx2, yy2);
-      ASSERT_EQ(hexid, hexid2[0]);
+      ASSERT_EQ(int(hexid), hexid2[0]);
       ASSERT_NEAR(xx1,xx2[0],1e-6);
       ASSERT_NEAR(yy1,yy2[0],1e-6);
     }
@@ -246,7 +246,7 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexID_CW_Equals_Scalar) {
       typename TypeParam::real_vt yy2 = y;
       typename TypeParam::int_vt hexid2 =
         VCLReal<TypeParam>::xy_to_hexid_with_remainder(xx2, yy2, true);
-      ASSERT_EQ(hexid, hexid2[0]);
+      ASSERT_EQ(int(hexid), hexid2[0]);
       ASSERT_NEAR(xx1,xx2[0],1e-6);
       ASSERT_NEAR(yy1,yy2[0],1e-6);
     }
@@ -373,7 +373,7 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexID_Trans_Equals_Scalar) {
       typename TypeParam::real_vt yy2 = y;
       typename TypeParam::int_vt hexid2 =
         VCLReal<TypeParam>::xy_trans_to_hexid_with_remainder_ccw(xx2, yy2, ctheta, stheta, scale, dx, dy);
-      ASSERT_EQ(hexid, hexid2[0]);
+      ASSERT_EQ(int(hexid), hexid2[0]);
       ASSERT_NEAR(xx1,xx2[0],1e-5);
       ASSERT_NEAR(yy1,yy2[0],1e-5);
     }
@@ -396,7 +396,7 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexID_CW_Trans_Equals_Scalar) {
       typename TypeParam::real_vt yy2 = y;
       typename TypeParam::int_vt hexid2 =
         VCLReal<TypeParam>::xy_trans_to_hexid_with_remainder_cw(xx2, yy2, ctheta, stheta, scale, dx, dy);
-      ASSERT_EQ(hexid, hexid2[0]);
+      ASSERT_EQ(int(hexid), hexid2[0]);
       ASSERT_NEAR(xx1,xx2[0],1e-5);
       ASSERT_NEAR(yy1,yy2[0],1e-5);
     }

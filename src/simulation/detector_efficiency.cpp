@@ -8,7 +8,7 @@
    Originally from EGS5 ACT code, see header below.
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -59,6 +59,9 @@ AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
     double ground_level_km, double spacing_km)
 {
   std::ifstream stream(filename.c_str());
+  if(!stream.good())
+    throw std::runtime_error("Could not open: "+filename);
+
   calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
@@ -108,6 +111,9 @@ AtmosphericAbsorption::AtmosphericAbsorption(const std::string& filename,
   std::vector<double> levels_cm)
 {
   std::ifstream stream(filename.c_str());
+  if(!stream.good())
+    throw std::runtime_error("Could not open: "+filename);
+
   calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
@@ -284,8 +290,6 @@ scaleEffFromFile(const std::string& filename)
   eff_fn.insert_from_2column_file_with_filter(filename,
     [](double& lambda_in_e_out, double& eff) {
       lambda_in_e_out = EV_NM / lambda_in_e_out; return true; });
-  calin::provenance::chronicle::register_file_open(filename,
-    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   scaleEff(eff_fn);
 }
 
@@ -294,11 +298,13 @@ scaleEffFromOldStyleFile(const std::string& filename,
 		 double lambda0_nm, double dlambda_nm)
 {
   std::ifstream stream(filename.c_str());
-  calin::provenance::chronicle::register_file_open(filename,
+  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   InterpLinear1D eff_fn;
   std::string line;
   std::getline(stream,line); // skip first line
+  line += '\n';
+  file_record->set_comment(line);
   double lambda = lambda0_nm;
   double eff;
   stream >> eff;
@@ -310,6 +316,7 @@ scaleEffFromOldStyleFile(const std::string& filename,
     stream >> eff;
   }
   scaleEff(eff_fn);
+  calin::provenance::chronicle::register_file_close(file_record);
 }
 
 // ----------------------------------------------------------------------------

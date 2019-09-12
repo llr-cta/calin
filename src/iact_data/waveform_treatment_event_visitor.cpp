@@ -5,7 +5,7 @@
    Waveform treatment event data visitor - process waveforms
 
    Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -145,18 +145,19 @@ reconfigure(unsigned nchan, unsigned nsamp)
     auto* host_info = calin::provenance::system_info::the_host_info();
     nchan_ = nchan;
     nsamp_ = nsamp;
-    safe_aligned_recalloc(sig_window_0_, nchan_, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_ped_est_, nchan_, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_max_index_, nchan_, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_max_, nchan_, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_bkg_win_sum_, nchan_, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_win_sum_, nchan_, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_max_sum_, nchan_, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_max_sum_index_, nchan_, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_all_sum_q_, nchan_, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_all_sum_qt_, nchan_, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_sig_, nchan_, host_info->log2_simd_vec_size());
-    safe_aligned_recalloc(chan_mean_t_, nchan_, host_info->log2_simd_vec_size());
+    unsigned nalloc = ((nchan_+15)/16)*16;
+    safe_aligned_recalloc(sig_window_0_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_ped_est_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_max_index_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_max_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_bkg_win_sum_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_sig_win_sum_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_sig_max_sum_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_sig_max_sum_index_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_all_sum_q_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_all_sum_qt_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_sig_, nalloc, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(chan_mean_t_, nalloc, host_info->log2_simd_vec_size());
   }
 }
 

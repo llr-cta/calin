@@ -5,7 +5,7 @@
    SWIG interface file for calin.io.telescope_data_source
 
    Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -21,6 +21,7 @@
 */
 
 %module (package="calin.iact_data") telescope_data_source
+%feature(autodoc,2);
 
 %{
 #include <calin_global_config.hpp>

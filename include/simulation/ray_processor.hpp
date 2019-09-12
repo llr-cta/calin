@@ -5,7 +5,7 @@
    Multi-purpose ray processor.
 
    Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
-   LLR, Ecole Polytechnique, CNRS/IN2P3
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
 
@@ -31,10 +31,12 @@ namespace calin { namespace simulation { namespace ray_processor {
 
 struct RayProcessorDetectorSphere
 {
-  RayProcessorDetectorSphere(const Eigen::Vector3d& r0_, double radius_sq_):
-      r0(r0_), radius_sq(radius_sq_) { /* nothing to see here */ }
-  Eigen::Vector3d r0;                        // Center of detector sphere [cm]
-  double radius_sq;                          // Squared radius of sphere  [cm^2]
+  RayProcessorDetectorSphere() { /* nothing to see here */ }
+  RayProcessorDetectorSphere(const Eigen::Vector3d& r0_, double radius, unsigned iobs_ = 0):
+      r0(r0_), radius(radius), iobs(iobs_) { /* nothing to see here */ }
+  Eigen::Vector3d r0;        // Center of detector sphere [cm]
+  double radius = 0;         // Squared radius of sphere  [cm^2]
+  unsigned iobs = 0;         // Observation layer associated with this detector
 };
 
 class RayProcessor
@@ -57,7 +59,7 @@ public:
     unsigned scope_id_base);
   virtual ~FederatedPEProcessor();
   void start_processing() override;
-  void process_pe(unsigned scope_id, int pixel_id,
+  void process_focal_plane_hit(unsigned scope_id, int pixel_id,
     double x, double y, double t0, double pe_weight) override;
   void finish_processing() override;
 protected:
