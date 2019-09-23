@@ -545,7 +545,8 @@ TEST(TestSPELikelihood, Optimize_NLOpt)
   //optimizer::NLOptOptimizer opt("LN_SBPLX", &like);
   optimizer::NLOptOptimizer opt("LD_LBFGS", &like);
   opt.set_scale({0.1,0.1,1.0,1.0,0.05});
-  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  //opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SILENT);
   opt.set_abs_tolerance(0.0001);
   opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 0.45 });
   Eigen::VectorXd x_opt(5);
@@ -559,22 +560,21 @@ TEST(TestSPELikelihood, Optimize_NLOpt)
   EXPECT_NEAR(x_opt[3], 89.1810077, 0.01);
   EXPECT_NEAR(x_opt[4], 0.32388838, 0.0001);
 
-  std::cout << std::fixed << std::setprecision(3);
-  std::cout << x_opt[0] << ' ' << x_opt[1] << ' ' << x_opt[2] << ' '
-            << x_opt[3] << ' ' << x_opt[4] << '\n';
+  // std::cout << std::fixed << std::setprecision(3);
+  // std::cout << x_opt[0] << ' ' << x_opt[1] << ' ' << x_opt[2] << ' '
+  //           << x_opt[3] << ' ' << x_opt[4] << '\n';
 
   Eigen::MatrixXd hessian_mat(5,5);
   Eigen::VectorXd gradient(5);
   like.value_gradient_and_hessian(x_opt, gradient, hessian_mat);
   Eigen::MatrixXd err_mat = hessian_mat.inverse();
-  std::cout << std::scientific << std::setprecision(8) << err_mat << '\n';
-
-  std::cout << std::sqrt(err_mat(0,0)) << ' '
-            << std::sqrt(err_mat(1,1)) << ' '
-            << std::sqrt(err_mat(2,2)) << ' '
-            << std::sqrt(err_mat(3,3)) << ' '
-            << std::sqrt(err_mat(4,4)) << '\n';
-
+  // std::cout << std::scientific << std::setprecision(8) << err_mat << '\n';
+  //
+  // std::cout << std::sqrt(err_mat(0,0)) << ' '
+  //           << std::sqrt(err_mat(1,1)) << ' '
+  //           << std::sqrt(err_mat(2,2)) << ' '
+  //           << std::sqrt(err_mat(3,3)) << ' '
+  //           << std::sqrt(err_mat(4,4)) << '\n';
 }
 
 TEST(TestSPELikelihood, Optimize_CMinpack)
@@ -588,7 +588,8 @@ TEST(TestSPELikelihood, Optimize_CMinpack)
   //optimizer::NLOptOptimizer opt("LN_SBPLX", &like);
   optimizer::CMinpackOptimizer opt(&like);
   opt.set_scale({0.1,0.1,1.0,1.0,0.05});
-  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  //opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SILENT);
   opt.set_abs_tolerance(0.0001);
   opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 0.45 });
   Eigen::VectorXd x_opt(5);
@@ -602,15 +603,15 @@ TEST(TestSPELikelihood, Optimize_CMinpack)
   EXPECT_NEAR(x_opt[3], 89.1810077, 0.01);
   EXPECT_NEAR(x_opt[4], 0.32388838, 0.0001);
 
-  std::cout << f_val << ' ' << std::fixed << std::setprecision(3);
-  std::cout << x_opt[0] << ' ' << x_opt[1] << ' ' << x_opt[2] << ' '
-            << x_opt[3] << ' ' << x_opt[4] << '\n';
+  // std::cout << f_val << ' ' << std::fixed << std::setprecision(3);
+  // std::cout << x_opt[0] << ' ' << x_opt[1] << ' ' << x_opt[2] << ' '
+  //           << x_opt[3] << ' ' << x_opt[4] << '\n';
 
   Eigen::MatrixXd hessian_mat;
   Eigen::VectorXd gradient;
   like.value_gradient_and_hessian(x_opt, gradient, hessian_mat);
   Eigen::MatrixXd err_mat = hessian_mat.inverse();
-  std::cout << std::fixed << std::setprecision(9) << err_mat << '\n';
+  // std::cout << std::fixed << std::setprecision(9) << err_mat << '\n';
 }
 
 TEST(TestGeneralPoissonMES_Gauss, SetAndRecallParameters) {
@@ -649,7 +650,8 @@ TEST(TestGeneralPoissonMES_Gauss, Optimize_NLOpt_Simplex)
   optimizer::NLOptOptimizer opt("LN_SBPLX", &like);
   //optimizer::NLOptOptimizer opt("LD_LBFGS", &like);
   opt.set_scale({0.1,0.1,1.0,1.0,0.05});
-  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS);
+  // opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS);
+  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SILENT);
   opt.set_abs_tolerance(0.0001);
   opt.set_initial_values({ 1.0, 3100.0, 20.0, 100.0, 45.0 });
   Eigen::VectorXd x_opt(5);
@@ -674,17 +676,17 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
                     { 1.123, 0.100000, 0.2, 0.3, 0.2, 1.321, 0.35 },
                     { dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 0.5);
 
-  std::ofstream file("spec.dat");
-  Eigen::VectorXd mes_spec = mes_model.multi_electron_spectrum();
-  Eigen::VectorXd ped_spec = mes_model.pedestal_spectrum();
-  Eigen::VectorXd one_es_spec = mes_model.n_electron_spectrum(1);
-  //one_es_spec = mes_model.n_electron_spectrum(1);
-  Eigen::VectorXd two_es_spec = mes_model.n_electron_spectrum(2);
-  Eigen::VectorXd three_es_spec = mes_model.n_electron_spectrum(3);
-  for(unsigned i=0;i<mes_spec.size();i++)
-    file << mes_spec[i] << ' ' << ped_spec[i] << ' '
-         << one_es_spec[i] << ' ' << two_es_spec[i] << ' '
-         << three_es_spec[i] << ' ' << '\n';
+  // std::ofstream file("spec.dat");
+  // Eigen::VectorXd mes_spec = mes_model.multi_electron_spectrum();
+  // Eigen::VectorXd ped_spec = mes_model.pedestal_spectrum();
+  // Eigen::VectorXd one_es_spec = mes_model.n_electron_spectrum(1);
+  // //one_es_spec = mes_model.n_electron_spectrum(1);
+  // Eigen::VectorXd two_es_spec = mes_model.n_electron_spectrum(2);
+  // Eigen::VectorXd three_es_spec = mes_model.n_electron_spectrum(3);
+  // for(unsigned i=0;i<mes_spec.size();i++)
+  //   file << mes_spec[i] << ' ' << ped_spec[i] << ' '
+  //        << one_es_spec[i] << ' ' << two_es_spec[i] << ' '
+  //        << three_es_spec[i] << ' ' << '\n';
 }
 
 TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_PED)
@@ -760,7 +762,8 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
   //optimizer::NLOptOptimizer opt("LN_SBPLX", &like);
   optimizer::NLOptOptimizer opt("LD_LBFGS", &like);
   opt.set_scale({0.01,0.1,1.0,0.01,0.1,1.0,1.0});
-  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  // opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::MAX);
+  opt.set_verbosity_level(optimizer::OptimizerVerbosityLevel::SILENT);
   opt.set_abs_tolerance(0.001);
   opt.set_initial_values({ 1.0, 3100.0, 20.0, 0.05, 50.0, 100.0, 45.0 });
   opt.set_initial_values({ 0.56, 3094.7, 19.6, 0.1, 5.0, 88.9, 29.3 });
@@ -788,7 +791,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, Optimize_NLOpt_Simplex)
     throw;
   }
 
-#if 1
+#if 0
   Eigen::VectorXd p(7);
   p << 1.0, 3100.0, 10.0, 0.4, 50.0, 100.0, 25.0;
   //mes_model.set_parameter_values(p);
@@ -833,12 +836,12 @@ TEST(TestGeneralPoissonMES_GaussWithShift, SetAndRecallParameters) {
   double off_sum_wx = 0;
   for(unsigned i=0; i<ped_spec.size(); i++)
     off_sum_w += off_spec[i], off_sum_wx += off_spec[i] * (double(i)+0.5);
-  std::cout << ped_sum_wx/ped_sum_w << ' ' << off_sum_wx/off_sum_w << '\n';
+  // std::cout << ped_sum_wx/ped_sum_w << ' ' << off_sum_wx/off_sum_w << '\n';
   Eigen::VectorXd grad(6);
   mes.pdf_gradient_mes(10.0, grad);
-  std::cout << grad.transpose() << '\n';
+  // std::cout << grad.transpose() << '\n';
   mes.pdf_gradient_ped(10.0, grad);
-  std::cout << grad.transpose() << '\n';
+  // std::cout << grad.transpose() << '\n';
 }
 
 TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_MES)
@@ -998,8 +1001,8 @@ TEST(TestFastGeneralPoissonMES, GradientCheck_MES)
                     &MultiElectronSpectrum::pdf_gradient_hessian_mes,
                     { 1.123 },
                     { dp1 }, 0.5, 1000.0, 1.0, 0.75);
-  std::ofstream file("nes.dat");
-  file << mes.nes_pmf_matrix();
+  // std::ofstream file("nes.dat");
+  // file << mes.nes_pmf_matrix();
 }
 
 TEST(TestFastGeneralPoissonMES, Ovsersampled_GradientCheck_MES)
@@ -1028,8 +1031,8 @@ TEST(TestFastGeneralPoissonMES, Ovsersampled_GradientCheck_MES)
                     &MultiElectronSpectrum::pdf_gradient_hessian_mes,
                     { 1.123 },
                     { dp1 }, 0.5, 1000.0, 1.0, 0.75);
-  std::ofstream file("nes.dat");
-  file << mes.nes_pmf_matrix();
+  // std::ofstream file("nes.dat");
+  // file << mes.nes_pmf_matrix();
 }
 
 TEST(TestFastGeneralPoissonMES, RepeatabilityOfGradient)
