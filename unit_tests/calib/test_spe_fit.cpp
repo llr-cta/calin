@@ -1002,6 +1002,36 @@ TEST(TestFastGeneralPoissonMES, GradientCheck_MES)
   file << mes.nes_pmf_matrix();
 }
 
+TEST(TestFastGeneralPoissonMES, Ovsersampled_GradientCheck_MES)
+{
+  pdf_1d::GaussianPDF ped;
+  pdf_1d::LimitedGaussianPDF ses(0,std::numeric_limits<double>::infinity());
+
+  auto cfg = GeneralPoissonMES::default_config();
+  cfg.set_include_on_off_ped_shift(false);
+  cfg.set_num_pe_convolutions(10);
+  cfg.set_oversampling_factor(16);
+
+  GeneralPoissonMES mes_base(0, 1, 1000, &ses, &ped, cfg);
+  Eigen::VectorXd p_base(5);
+  p_base << 1.0, 100.0, 20.0, 100.0, 35.0;
+  mes_base.set_parameter_values(p_base);
+  FastSingleValueGeneralPoissonMES mes(&mes_base);
+  EXPECT_EQ(mes.num_parameters(), 1U);
+  Eigen::VectorXd p(1);
+  p << 1.0;
+  mes.set_parameter_values(p);
+  double dp1 = 1e-7;
+  mes_gradient_test(&mes,
+                    &MultiElectronSpectrum::pdf_mes,
+                    &MultiElectronSpectrum::pdf_gradient_mes,
+                    &MultiElectronSpectrum::pdf_gradient_hessian_mes,
+                    { 1.123 },
+                    { dp1 }, 0.5, 1000.0, 1.0, 0.75);
+  std::ofstream file("nes.dat");
+  file << mes.nes_pmf_matrix();
+}
+
 TEST(TestFastGeneralPoissonMES, RepeatabilityOfGradient)
 {
   double val0;
