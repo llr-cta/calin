@@ -288,12 +288,12 @@ protected:
   int ibin(double x) const;
   void set_cache(bool force = false);
 
-  double downsample_one(double* data, unsigned ibin) const
+  double downsample_one(double* data, unsigned ibin, double rescale = 1) const
   {
     double val = data[ibin*oversample_factor_];
     for(unsigned ioversample=1; ioversample<oversample_factor_; ioversample++)
       val += data[ibin*oversample_factor_ + ioversample];
-    return val*inv_oversample_factor_;
+    return val*inv_oversample_factor_*rescale;
   }
 
   void downsample_all(double* data_to, double* data_from, double rescale = 1) const
@@ -302,7 +302,7 @@ protected:
       std::copy(data_from, data_from+nsample_, data_to);
     } else {
       for(unsigned isample=0; isample<nsample_; isample++) {
-        data_to[isample] = downsample_one(data_from, isample)*rescale;
+        data_to[isample] = downsample_one(data_from, isample, rescale);
       }
     }
   }

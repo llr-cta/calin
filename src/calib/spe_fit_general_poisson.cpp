@@ -517,7 +517,7 @@ Eigen::VectorXd GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
              log_nsample) };
 
   hcvec_scale_and_multiply(spec_buffer.get(), nes_fft_[n-1], ped_fft_,
-                           noversample_, poisson_factor*dx_);
+                           noversample_, poisson_factor*dx_oversample_);
 
   fftw_execute(spec_plan.get());
   downsample_all(spec.data(), spec_buffer.get());
@@ -608,12 +608,12 @@ void GeneralPoissonMES::set_cache(bool force)
     if(config_.ses_norm_warning_threshold()>0 and
       (config_.max_ses_norm_warning()==0 or
         n_ses_norm_warning_<config_.max_ses_norm_warning()) and
-      std::abs(ses_acc.total() * dx_ - 1.0) >
+      std::abs(ses_acc.total() * dx_oversample_ - 1.0) >
         config_.ses_norm_warning_threshold()/double(noversample_))
     {
       // The owls are not what they seem
       LOG(WARNING) << "SES normalization is significantly different from 1.0: "
-                   << ses_acc.total() * dx_ << '\n'
+                   << ses_acc.total() * dx_oversample_ << '\n'
                    << "SES parameter values : "
                    << ses_pdf_->parameter_values().transpose();
       n_ses_norm_warning_++;
@@ -624,7 +624,7 @@ void GeneralPoissonMES::set_cache(bool force)
     fftw_execute(ses_plan_fwd_);
     for(unsigned ines=1;ines<config_.num_pe_convolutions();ines++)
       hcvec_scale_and_multiply(nes_fft_[ines], nes_fft_[ines-1], nes_fft_[0],
-                               noversample_, dx_);
+                               noversample_, dx_oversample_);
   } // if(ses_npar or force)
 
   // Same for PED, if it has no paramerters then we assume it doesn't change,
@@ -719,29 +719,29 @@ void GeneralPoissonMES::set_cache(bool force)
   if(calc_gradient)
   {
     hcvec_scale_and_multiply(mes_grad_[0],
-      mes_grad_[0], ped_fft_, noversample_, dx_);
+      mes_grad_[0], ped_fft_, noversample_, dx_oversample_);
     hcvec_scale_and_add(mes_grad_[0],
       ped_fft_, noversample_, -std::exp(-intensity_pe_-log_nsample));
     for(unsigned ipar=0;ipar<ped_npar;ipar++)
     {
       hcvec_scale_and_multiply(mes_grad_[1+ipar],
-        mes_spec_, ped_grad_fft_[ipar], noversample_, dx_);
+        mes_spec_, ped_grad_fft_[ipar], noversample_, dx_oversample_);
       hcvec_scale_and_add(mes_grad_[1+ipar],
         ped_grad_fft_[ipar], noversample_, std::exp(-intensity_pe_-log_nsample));
     }
     for(unsigned ipar=0;ipar<ses_npar;ipar++)
     {
       hcvec_scale_and_multiply(mes_grad_[1+ped_npar+ipar],
-        mes_grad_[1+ped_npar+ipar], ses_grad_fft_[ipar], noversample_, dx_);
+        mes_grad_[1+ped_npar+ipar], ses_grad_fft_[ipar], noversample_, dx_oversample_);
       hcvec_scale_and_add(mes_grad_[1+ped_npar+ipar],
         ses_grad_fft_[ipar], noversample_,
         std::exp(log_intensity -intensity_pe_ - log_nsample));
       hcvec_scale_and_multiply(mes_grad_[1+ped_npar+ipar],
-        mes_grad_[1+ped_npar+ipar], ped_fft_, noversample_, dx_);
+        mes_grad_[1+ped_npar+ipar], ped_fft_, noversample_, dx_oversample_);
     }
   }
 
-  hcvec_scale_and_multiply(mes_spec_, mes_spec_, ped_fft_, noversample_, dx_);
+  hcvec_scale_and_multiply(mes_spec_, mes_spec_, ped_fft_, noversample_, dx_oversample_);
   hcvec_scale_and_add(mes_spec_, ped_fft_, noversample_,
                       std::exp(-intensity_pe_-log_nsample));
   fftw_execute(mes_plan_rev_);
