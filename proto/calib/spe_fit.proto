@@ -34,6 +34,12 @@ message GeneralPoissonMESConfig {
   bool include_on_off_ped_shift                            = 2 [
     (CFO).desc = "Include parameter to allow on and off pedestal distributions "
       "to be shifted." ];
+  uint32 oversampling_factor                               = 3 [
+    (CFO).desc = "Oversampling factor, the ratio between sampling of pedestal "
+      "and SES PDFs and the output PDF. This can be used to minimize the "
+      "effect of quantization and will improve the accuracy of the effets in "
+      "the PDFs that have a size comparable to the quantization. The minimum "
+      "value is one." ];
   uint32 max_ses_norm_warning                              = 10 [
     (CFO).desc = "Maximum number of SES normalization warnings, or zero to "
       "always issue warnings."];

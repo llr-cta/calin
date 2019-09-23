@@ -280,8 +280,32 @@ public:
 protected:
   friend class FastSingleValueGeneralPoissonMES;
 
+  double ses_x_oversampled(unsigned isample) const {
+    return (0.5+double(isample))*dx_oversample_; }
+  double ped_x_oversampled(unsigned isample) const {
+    return x0_ + (0.5+double(isample))*dx_oversample_; }
+
   int ibin(double x) const;
   void set_cache(bool force = false);
+
+  double downsample_one(double* data, unsigned ibin) const
+  {
+    double val = data[ibin*oversample_factor_];
+    for(unsigned ioversample=1; ioversample<oversample_factor_; ioversample++)
+      val += data[ibin*oversample_factor_ + ioversample];
+    return val*inv_oversample_factor_;
+  }
+
+  void downsample_all(double* data_to, double* data_from, double rescale = 1) const
+  {
+    if(oversample_factor_ <= 1) {
+      std::copy(data_from, data_from+nsample_, data_to);
+    } else {
+      for(unsigned isample=0; isample<nsample_; isample++) {
+        data_to[isample] = downsample_one(data_from, isample)*rescale;
+      }
+    }
+  }
 
   calin::math::function::ParameterizableSingleAxisFunction* ses_pdf_;
   calin::math::function::ParameterizableSingleAxisFunction* ped_pdf_;
@@ -294,6 +318,10 @@ protected:
   double x0_ = 0;
   double dx_ = 0;
   unsigned nsample_ = 0;
+  unsigned oversample_factor_ = 1;
+  double inv_oversample_factor_ = 1;
+  unsigned noversample_ = 0;
+  double dx_oversample_ = 0;
   double* ped_spec_ = nullptr;
   double* off_spec_ = nullptr;
   double* off_dfdx_ = nullptr;
