@@ -33,6 +33,7 @@
 #include <math/special.hpp>
 #include <util/log.hpp>
 #include <math/fftw_util.hpp>
+#include <provenance/chronicle.hpp>
 
 using namespace calin::simulation::pmt;
 using calin::math::special::SQR;
@@ -331,20 +332,29 @@ PMTSimInvCDF::PMTSimInvCDF(const std::string& filename, math::rng::RNG* rng):
   std::ifstream s(filename.c_str());
   if(!s)throw std::runtime_error(
     std::string("PMTSimInvCDF: Could not open file: ")+filename);
+  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
+  std::string comment;
   std::getline(s,line);
   while(s)
   {
     unsigned ic=0;
     while(ic<line.size() && isspace(line[ic]))ic++;
     if(ic==line.size())goto next_line;
-    if(line[ic] == '#')goto next_line;
+    if(line[ic] == '#') {
+      comment += line.substr(ic);
+      comment += '\n';
+      goto next_line;
+    }
     double x,y;
     if(std::istringstream(line) >> x >> y)
     inv_cdf_.emplace_back(x,y);
   next_line:
     std::getline(s,line);
   }
+  file_record->set_comment(comment);
+  calin::provenance::chronicle::register_file_close(file_record);
 }
 
 PMTSimInvCDF::~PMTSimInvCDF()
@@ -364,6 +374,8 @@ save_inv_cdf_to_file(const std::string& filename,
   std::ofstream s(filename.c_str());
   if(!s)throw std::runtime_error(
     std::string("PMTSimInvCDF: Could not open file: ")+filename);
+  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
+    calin::ix::provenance::chronicle::AT_WRITE, __PRETTY_FUNCTION__, comment);
   time_t rawtime;
   time (&rawtime);
   s << "# Inverse CDF written " << ctime(&rawtime);
@@ -371,6 +383,8 @@ save_inv_cdf_to_file(const std::string& filename,
   for(unsigned iy=0;iy<inv_cdf_.size();iy++)
     s << std::to_string(inv_cdf_[iy].first) << ' '
       << std::to_string(inv_cdf_[iy].second) <<  '\n';
+  file_record->set_file_size(s.tellp());
+  calin::provenance::chronicle::register_file_close(file_record);
 }
 
 PMTSimGammaDistribution::PMTSimGammaDistribution(double alpha, double beta,
