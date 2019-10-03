@@ -41,6 +41,8 @@ public:
   virtual Eigen::VectorXd rvs(unsigned size = 1);
 };
 
+// Original Polya PMT simulation with Polya distributon for all stages and an
+// option for electron to bypass a stage to generate a low-gain population
 class PMTSimPolya: public SignalSource
 {
 public:
@@ -48,7 +50,6 @@ public:
 	  math::rng::RNG* rng = nullptr);
   virtual ~PMTSimPolya();
   virtual double rv();
-  //virtual void rvs(std::vector<double>& n, unsigned size = 1);
 
   // Slow function to calculate PMF using Prescott (1965).
   calin::ix::simulation::pmt::PMTSimPMF calc_pmf(double precision = 0.0001,
@@ -74,6 +75,52 @@ protected:
   unsigned                                       napprox_limit_;
   double                                         p0_;
   double                                         total_gain_;
+};
+
+// Newer Polya PMT simulation with option for multiple populations in the first
+// stage but with simple Poisson statistics for all subsequent stages
+
+class PMTSimTwoPopulation: public SignalSource
+{
+public:
+  PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig& config,
+	  math::rng::RNG* rng = nullptr);
+  virtual ~PMTSimTwoPopulation();
+  virtual double rv() override;
+
+  // Slow function to calculate PMF using Prescott (1965).
+  calin::ix::simulation::pmt::PMTSimPMF calc_pmf(double precision = 0.0001,
+    bool log_progress = false) const;
+
+  double total_gain() const { return total_gain_; }
+  double p0() const { return p0_; }
+  double stage_0_gain() const {
+    return config_.stage_0_lo_prob()*config_.stage_0_lo_gain()
+      + (1-config_.stage_0_lo_prob())*config_.stage_0_hi_gain();
+  }
+  double stage_n_gain() const { return stage_n_gain_; }
+
+  math::rng::RNG* rng() { return rng_; }
+  void set_rng(math::rng::RNG* rng) { delete my_rng_; my_rng_=0; rng_=rng; }
+
+  // static calin::ix::simulation::pmt::PMTSimAbbreviatedConfig cta_model_4();
+
+protected:
+  static double stage_p0(double p0_last, double gain, double gain_rms_frac);
+  void recalc_total_gain_and_p0();
+
+  calin::ix::simulation::pmt::PMTSimTwoPopulationConfig config_;
+  double          p0_                       = 0.0;
+  double          total_gain_               = 1.0;
+  double          stage_n_gain_             = 1.0;
+  double          gamma_a_0_lo_             = 0.0;
+  double          gamma_b_0_lo_             = 0.0;
+  double          gamma_a_0_hi_             = 0.0;
+  double          gamma_b_0_hi_             = 0.0;
+  double          gamma_a_n_                = 0.0;
+  double          gamma_b_n_                = 0.0;
+  math::rng::RNG* rng_                      = nullptr;
+  math::rng::RNG* my_rng_                   = nullptr;
 };
 
 class PMTSimInvCDF: public SignalSource

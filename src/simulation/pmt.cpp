@@ -290,6 +290,169 @@ PMTSimPolya::calc_pmf(double precision, bool log_progress) const
   return OUTPUT;
 }
 
+PMTSimTwoPopulation::
+PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig& config,
+    math::rng::RNG* rng):
+  config_(config), rng_(rng)
+{
+  if(config.num_stage()==0)
+    throw std::runtime_error("PMTSimTwoPopulation: number of stages must be positive.");
+
+  if(rng==nullptr)rng_ = my_rng_ = new RNG(__PRETTY_FUNCTION__);
+
+  if(config_.stage_0_hi_gain_rms_frac() > 0) {
+    gamma_a_0_hi_ = 1.0/SQR(config_.stage_0_hi_gain_rms_frac());
+    gamma_b_0_hi_ = gamma_a_0_hi_/config_.stage_0_hi_gain();
+  }
+  if(config_.stage_0_lo_gain_rms_frac() > 0) {
+    gamma_a_0_lo_ = 1.0/SQR(config_.stage_0_lo_gain_rms_frac());
+    gamma_b_0_lo_ = gamma_a_0_lo_/config_.stage_0_lo_gain();
+  }
+
+  stage_n_gain_ = std::pow(config.total_gain()/stage_0_gain(), 1/double(config_.num_stage()-1));
+  recalc_total_gain_and_p0();
+  unsigned iter = 10;
+  while(std::abs(total_gain_/config.total_gain() - 1)>1e-8) {
+    if(iter == 0) {
+      throw std::runtime_error("PMTSimTwoPopulation: iteration limit reached in calculating stage gain");
+    }
+    --iter;
+    stage_n_gain_ *= std::pow(config.total_gain()/total_gain_, 1/double(config_.num_stage()-1));
+    recalc_total_gain_and_p0();
+  }
+
+  if(config_.stage_n_gain_rms_frac() > 0) {
+    gamma_a_n_    = 1.0/SQR(config_.stage_n_gain_rms_frac());
+    gamma_b_n_    = gamma_a_n_/stage_n_gain_;
+  }
+}
+
+double PMTSimTwoPopulation::
+stage_p0(double p0_last, double gain, double gain_rms_frac)
+{
+  // This little mess of code implements one iteration of the calculation of p0
+  // from Prescott (1965) to account for the suppressed zeros in the calculation
+  // of the total gain
+
+  double mu      = gain;
+  double b       = SQR(gain_rms_frac);
+  double bmu     = b*mu;
+  double C1      = 1.0 + bmu*(1.0-p0_last);
+  double p0;
+  if(b == 0) {
+    p0 = std::exp(mu*(p0_last-1.0));
+  } else {
+    p0 = pow(C1,-1.0/b);
+  }
+  return p0;
+}
+
+void PMTSimTwoPopulation::recalc_total_gain_and_p0()
+{
+  total_gain_ = 1;
+  p0_         = 0;
+
+  for(int istage=1; istage<config_.num_stage(); istage++)
+  {
+    total_gain_ *= stage_n_gain_;
+    p0_ = stage_p0(p0_, stage_n_gain_, config_.stage_n_gain_rms_frac());
+  }
+
+  total_gain_ *= stage_0_gain();
+  double p0_hi = stage_p0(p0_, config_.stage_0_hi_gain(), config_.stage_0_hi_gain_rms_frac());
+  if(config_.stage_0_lo_prob() > 0) {
+    double p0_lo = stage_p0(p0_, config_.stage_0_lo_gain(), config_.stage_0_lo_gain_rms_frac());
+    p0_ = config_.stage_0_lo_prob()*p0_lo + (1-config_.stage_0_lo_prob())*p0_hi;
+  } else {
+    p0_ = p0_hi;
+  }
+
+  if(config_.suppress_zero())
+    total_gain_ /= 1.0-p0_;
+}
+
+PMTSimTwoPopulation::~PMTSimTwoPopulation()
+{
+  // nothing to see here
+}
+
+double PMTSimTwoPopulation::rv()
+{
+  unsigned n;
+
+do_over:
+  double gamma_a = gamma_a_0_hi_;
+  double gamma_b = gamma_b_0_hi_;
+  double gain = config_.stage_0_hi_gain();
+  double gain_rms_frac = config_.stage_0_hi_gain_rms_frac();
+  double nmean = 0;
+  if(config_.stage_0_lo_prob()>0 and rng_->uniform()<config_.stage_0_lo_prob()) {
+    gamma_a = gamma_a_0_lo_;
+    gamma_b = gamma_b_0_lo_;
+    gain = config_.stage_0_lo_gain();
+    gain_rms_frac = config_.stage_0_lo_gain_rms_frac();
+  }
+
+  if(gain_rms_frac > 0) {
+    nmean = rng_->gamma_by_alpha_and_beta(gamma_a, gamma_b);
+  } else {
+    nmean = gain;
+  }
+
+  n = rng_->poisson(nmean);
+  if(n==0)
+  {
+    if(config_.suppress_zero()) {
+      goto do_over;
+    } else {
+      return 0.0;
+    }
+  }
+
+  for(int istage=1; istage<config_.num_stage(); istage++)
+  {
+    unsigned n_in = n;
+
+    double nmean = 0;
+    if(config_.stage_n_gain_rms_frac()>0)
+  	{
+	    for(unsigned in_in = 0; in_in<n_in;in_in++) {
+	      nmean += rng_->gamma_by_alpha_and_beta(gamma_a_n_,gamma_b_n_);
+      }
+  	} else {
+      nmean = double(n_in)*stage_n_gain_;
+    }
+    n = rng_->poisson(nmean);
+
+    if(n==0)
+  	{
+  	  if(config_.suppress_zero()) {
+        goto do_over;
+      } else {
+        return 0.0;
+      }
+  	}
+  }
+  if(config_.signal_in_pe()) {
+    return double(n)/total_gain_;
+  } else {
+    return double(n);
+  }
+}
+
+// Slow function to calculate PMF using Prescott (1965).
+calin::ix::simulation::pmt::PMTSimPMF
+PMTSimTwoPopulation::calc_pmf(double precision, bool log_progress) const
+{
+  
+}
+
+#if 0
+
+  static calin::ix::simulation::pmt::PMTSimAbbreviatedConfig cta_model_4();
+
+#endif
+
 // =============================================================================
 //
 // PMTSimInvCDF
