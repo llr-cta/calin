@@ -440,11 +440,113 @@ do_over:
   }
 }
 
+std::vector<double> PMTSimTwoPopulation::stage_pmf(
+  const std::vector<double>& pkmo, double gain, double gain_rms_frac, double precision)
+{
+  // Do one iteration of Prescott's algorithm (1965).
+
+  double mu      = gain;
+  double b       = gain_rms_frac;
+  double bmu     = b*mu;
+  double bmo     = b-1.0;
+  double C1      = 1.0 + bmu*(1.0-pkmo[0]);
+  double pcutoff = 1.0 - precision;
+  double psum;
+
+  std::vector<double> pk;
+  pk.reserve(pkmo.size()*5*int(ceil(mu)));
+  pk.resize(1);
+  if(b == 0)
+    pk[0] = std::exp(mu*(pkmo[0]-1.0));
+  else
+    pk[0] = pow(C1,-1.0/b);
+  psum = pk[0];
+
+  for(unsigned ix=1;psum<pcutoff;ix++)
+  {
+    double ix_dbl = double(ix);
+    double pkx = 0;
+    unsigned ii0 = ix-std::min(ix,unsigned(pkmo.size()-1));
+    double ii_dbl = double(ii0);
+    for(unsigned ii=ii0; ii<ix; ++ii, ii_dbl+=1) {
+      pkx += pk[ii]*pkmo[ix-ii]*(ix_dbl+ii_dbl*bmo);
+    }
+    pkx *= mu/ix_dbl/C1;
+    psum += pkx;
+    pk.push_back(pkx);
+    if(pkx/psum < 1e-10)break;
+  }
+
+  double norm = 1.0/psum;
+  for(unsigned ix=0;ix<pk.size();ix++) {
+    pk[ix] *= norm;
+  }
+
+  return pk;
+}
+
+void PMTSimTwoPopulation::do_log_progress(unsigned istage, const std::vector<double>& pk) const
+{
+  double p1 = 0;
+  double pn = 0;
+  double pnn = 0;
+  unsigned ix0 = config_.suppress_zero() ? 1 : 0;
+  for(unsigned ix=ix0;ix<pk.size();ix++) {
+    p1 += pk[ix];
+    pn += double(ix)*pk[ix];
+    pnn += SQR(double(ix))*pk[ix];
+  }
+  LOG(INFO) << "Stage " << istage << ", p0=" << pk[0]
+    << ", <x>=" << pn/p1
+    << " res(x)=" << sqrt(pnn*p1/SQR(pn)-1);
+}
+
 // Slow function to calculate PMF using Prescott (1965).
 calin::ix::simulation::pmt::PMTSimPMF
-PMTSimTwoPopulation::calc_pmf(double precision, bool log_progress) const
+PMTSimTwoPopulation::calc_pmf(unsigned nstage, double precision, bool log_progress) const
 {
-  
+  if(nstage == 0)nstage = config_.num_stage();
+
+  std::vector<double> pk { 0.0, 1.0 };
+  for(int ik=1;ik<nstage;ik++)
+  {
+    pk = stage_pmf(pk, stage_n_gain_, config_.stage_n_gain_rms_frac(), precision);
+
+    if(log_progress) {
+      do_log_progress(nstage-ik, pk);
+    }
+  }
+
+  std::vector<double> pk_hi =
+    stage_pmf(pk, config_.stage_0_hi_gain(), config_.stage_0_hi_gain_rms_frac(), precision*0.1);
+  if(config_.stage_0_lo_prob()) {
+    std::vector<double> pk_lo =
+      stage_pmf(pk, config_.stage_0_lo_gain(), config_.stage_0_lo_gain_rms_frac(), precision*0.1);
+
+    double p_lo = config_.stage_0_lo_prob();
+    double p_hi = 1-p_lo;
+
+    if(pk_hi.size() < pk_lo.size()) {
+      std::swap(pk_hi, pk_lo);
+      std::swap(p_hi, p_lo);
+    }
+
+    for(unsigned i=0;i<pk_hi.size();i++)pk_hi[i] *= p_hi;
+    for(unsigned i=0;i<pk_lo.size();i++)pk_hi[i] += pk_lo[i] * p_lo;
+  };
+
+  std::swap(pk, pk_hi);
+
+  if(log_progress) {
+    do_log_progress(0, pk);
+  }
+
+  calin::ix::simulation::pmt::PMTSimPMF OUTPUT;
+  OUTPUT.set_suppress_zero(config_.suppress_zero());
+  OUTPUT.set_signal_in_pe(config_.signal_in_pe());
+  OUTPUT.mutable_pn()->Resize(pk.size(),0);
+  std::copy(pk.begin(), pk.end(), OUTPUT.mutable_pn()->begin());
+  return OUTPUT;
 }
 
 #if 0

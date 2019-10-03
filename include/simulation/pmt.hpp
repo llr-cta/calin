@@ -89,8 +89,8 @@ public:
   virtual double rv() override;
 
   // Slow function to calculate PMF using Prescott (1965).
-  calin::ix::simulation::pmt::PMTSimPMF calc_pmf(double precision = 0.0001,
-    bool log_progress = false) const;
+  calin::ix::simulation::pmt::PMTSimPMF calc_pmf(unsigned nstage = 0,
+    double precision = 0.0001, bool log_progress = false) const;
 
   double total_gain() const { return total_gain_; }
   double p0() const { return p0_; }
@@ -107,7 +107,10 @@ public:
 
 protected:
   static double stage_p0(double p0_last, double gain, double gain_rms_frac);
+  static std::vector<double> stage_pmf(const std::vector<double>& pmf_last,
+    double gain, double gain_rms_frac, double precision);
   void recalc_total_gain_and_p0();
+  void do_log_progress(unsigned istage, const std::vector<double>& pmf) const;
 
   calin::ix::simulation::pmt::PMTSimTwoPopulationConfig config_;
   double          p0_                       = 0.0;
