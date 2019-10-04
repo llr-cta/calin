@@ -293,7 +293,7 @@ PMTSimPolya::calc_pmf(double precision, bool log_progress) const
 PMTSimTwoPopulation::
 PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig& config,
     math::rng::RNG* rng, bool use_new_stage_n_algorithm):
-  config_(config), rng_(rng), use_new_rv_algorithm_(use_new_rv_algorithm)
+  config_(config), rng_(rng), use_new_stage_n_algorithm_(use_new_stage_n_algorithm)
 {
   if(config.num_stage()==0)
     throw std::runtime_error("PMTSimTwoPopulation: number of stages must be positive.");
@@ -438,7 +438,7 @@ do_over:
 
   if(config_.stage_n_gain_rms_frac() == 0) {
     n = stage_n_poisson(n);
-  } else if(use_new_rv_algorithm_) {
+  } else if(use_new_stage_n_algorithm) {
     n = stage_n_new(n);
   } else {
     n = stage_n_old(n);

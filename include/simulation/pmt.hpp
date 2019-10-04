@@ -134,7 +134,7 @@ protected:
   std::vector<double> stage1_n_cdf_;
   std::vector<double> stage2_n_cdf_;
   std::vector<double> stage3_n_cdf_;
-  bool            use_new_rv_algorithm_     = false;
+  bool            use_new_stage_n_algorithm = false;
 };
 
 class PMTSimInvCDF: public SignalSource
