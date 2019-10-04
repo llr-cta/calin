@@ -292,7 +292,7 @@ PMTSimPolya::calc_pmf(double precision, bool log_progress) const
 
 PMTSimTwoPopulation::
 PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig& config,
-    math::rng::RNG* rng, bool use_new_stage_n_algorithm)
+    math::rng::RNG* rng, bool use_new_stage_n_algorithm):
   config_(config), rng_(rng), use_new_rv_algorithm_(use_new_rv_algorithm)
 {
   if(config.num_stage()==0)
