@@ -120,21 +120,21 @@ protected:
   std::string stage_summary(unsigned istage, const std::vector<double>& pk) const;
 
   calin::ix::simulation::pmt::PMTSimTwoPopulationConfig config_;
-  double          p0_                       = 0.0;
-  double          total_gain_               = 1.0;
-  double          stage_n_gain_             = 1.0;
-  double          gamma_a_0_lo_             = 0.0;
-  double          gamma_b_0_lo_             = 0.0;
-  double          gamma_a_0_hi_             = 0.0;
-  double          gamma_b_0_hi_             = 0.0;
-  double          gamma_a_n_                = 0.0;
-  double          gamma_b_n_                = 0.0;
-  math::rng::RNG* rng_                      = nullptr;
-  math::rng::RNG* my_rng_                   = nullptr;
+  double          p0_                        = 0.0;
+  double          total_gain_                = 1.0;
+  double          stage_n_gain_              = 1.0;
+  double          gamma_a_0_lo_              = 0.0;
+  double          gamma_b_0_lo_              = 0.0;
+  double          gamma_a_0_hi_              = 0.0;
+  double          gamma_b_0_hi_              = 0.0;
+  double          gamma_a_n_                 = 0.0;
+  double          gamma_b_n_                 = 0.0;
+  math::rng::RNG* rng_                       = nullptr;
+  math::rng::RNG* my_rng_                    = nullptr;
   std::vector<double> stage1_n_cdf_;
   std::vector<double> stage2_n_cdf_;
   std::vector<double> stage3_n_cdf_;
-  bool            use_new_stage_n_algorithm = false;
+  bool            use_new_stage_n_algorithm_ = true;
 };
 
 class PMTSimInvCDF: public SignalSource

@@ -438,7 +438,7 @@ do_over:
 
   if(config_.stage_n_gain_rms_frac() == 0) {
     n = stage_n_poisson(n);
-  } else if(use_new_stage_n_algorithm) {
+  } else if(use_new_stage_n_algorithm_) {
     n = stage_n_new(n);
   } else {
     n = stage_n_old(n);
