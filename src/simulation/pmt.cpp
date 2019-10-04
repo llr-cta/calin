@@ -292,8 +292,8 @@ PMTSimPolya::calc_pmf(double precision, bool log_progress) const
 
 PMTSimTwoPopulation::
 PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig& config,
-    math::rng::RNG* rng):
-  config_(config), rng_(rng)
+    math::rng::RNG* rng, bool use_new_stage_n_algorithm)
+  config_(config), rng_(rng), use_new_rv_algorithm_(use_new_rv_algorithm)
 {
   if(config.num_stage()==0)
     throw std::runtime_error("PMTSimTwoPopulation: number of stages must be positive.");
@@ -340,6 +340,22 @@ PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig&
   if(config_.stage_n_gain_rms_frac() > 0) {
     gamma_a_n_    = 1.0/SQR(config_.stage_n_gain_rms_frac());
     gamma_b_n_    = gamma_a_n_/stage_n_gain_;
+
+    stage1_n_cdf_ = stage_pmf({0.0, 1.0}, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+    stage2_n_cdf_ = stage_pmf(stage1_n_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+    stage3_n_cdf_ = stage_pmf(stage2_n_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+
+    double psum = 0;
+    for(auto & ibin : stage1_n_cdf_) { psum += ibin; ibin = psum; }
+    if(psum<1.0) { stage1_n_cdf_.push_back(1.0) ; }
+
+    psum = 0;
+    for(auto & ibin : stage2_n_cdf_) { psum += ibin; ibin = psum; }
+    if(psum<1.0) { stage2_n_cdf_.push_back(1.0) ; }
+
+    psum = 0;
+    for(auto & ibin : stage3_n_cdf_) { psum += ibin; ibin = psum; }
+    if(psum<1.0) { stage3_n_cdf_.push_back(1.0) ; }
   }
 }
 
@@ -394,28 +410,23 @@ PMTSimTwoPopulation::~PMTSimTwoPopulation()
 
 double PMTSimTwoPopulation::rv()
 {
-  unsigned n;
-
 do_over:
-  double gamma_a = gamma_a_0_hi_;
-  double gamma_b = gamma_b_0_hi_;
-  double gain = config_.stage_0_hi_gain();
-  double gain_rms_frac = config_.stage_0_hi_gain_rms_frac();
-  double nmean = 0;
+  double nmean;
   if(config_.stage_0_lo_prob()>0 and rng_->uniform()<config_.stage_0_lo_prob()) {
-    gamma_a = gamma_a_0_lo_;
-    gamma_b = gamma_b_0_lo_;
-    gain = config_.stage_0_lo_gain();
-    gain_rms_frac = config_.stage_0_lo_gain_rms_frac();
-  }
-
-  if(gain_rms_frac > 0) {
-    nmean = rng_->gamma_by_alpha_and_beta(gamma_a, gamma_b);
+    if(config_.stage_0_lo_gain_rms_frac() > 0) {
+      nmean = rng_->gamma_by_alpha_and_beta(gamma_a_0_lo_, gamma_b_0_lo_);
+    } else {
+      nmean = config_.stage_0_lo_gain();
+    }
   } else {
-    nmean = gain;
+    if(config_.stage_0_hi_gain_rms_frac() > 0) {
+      nmean = rng_->gamma_by_alpha_and_beta(gamma_a_0_hi_, gamma_b_0_hi_);
+    } else {
+      nmean = config_.stage_0_hi_gain();
+    }
   }
 
-  n = rng_->poisson(nmean);
+  unsigned n = rng_->poisson(nmean);
   if(n==0)
   {
     if(config_.suppress_zero()) {
@@ -425,35 +436,84 @@ do_over:
     }
   }
 
-  for(int istage=1; istage<config_.num_stage(); istage++)
-  {
-    unsigned n_in = n;
-
-    double nmean = 0;
-    if(config_.stage_n_gain_rms_frac()>0)
-  	{
-	    for(unsigned in_in = 0; in_in<n_in;in_in++) {
-	      nmean += rng_->gamma_by_alpha_and_beta(gamma_a_n_,gamma_b_n_);
-      }
-  	} else {
-      nmean = double(n_in)*stage_n_gain_;
-    }
-    n = rng_->poisson(nmean);
-
-    if(n==0)
-  	{
-  	  if(config_.suppress_zero()) {
-        goto do_over;
-      } else {
-        return 0.0;
-      }
-  	}
+  if(config_.stage_n_gain_rms_frac() == 0) {
+    n = stage_n_poisson(n);
+  } else if(use_new_rv_algorithm_) {
+    n = stage_n_new(n);
+  } else {
+    n = stage_n_old(n);
   }
+
+  if(n==0 and config_.suppress_zero()) {
+    goto do_over;
+  }
+
   if(config_.signal_in_pe()) {
     return double(n)/total_gain_;
   } else {
     return double(n);
   }
+}
+
+unsigned PMTSimTwoPopulation::stage_n_new(unsigned n) const
+{
+  int istage = 1;
+
+  if((config_.num_stage()-1) % 2 == 1) {
+    unsigned n_in = n;
+    n = 0;
+    for(unsigned i = 0; i<n_in; i++) {
+      n += std::upper_bound(stage1_n_cdf_.begin(), stage1_n_cdf_.end(),
+        rng_->uniform()) - stage1_n_cdf_.begin();
+    }
+    istage += 1;
+  } else if((config_.num_stage()-1) % 2 == 2) {
+    unsigned n_in = n;
+    n = 0;
+    for(unsigned i = 0; i<n_in; i++) {
+      n += std::upper_bound(stage2_n_cdf_.begin(), stage2_n_cdf_.end(),
+        rng_->uniform()) - stage2_n_cdf_.begin();
+    }
+    istage += 2;
+  }
+
+  if(n==0)return 0;
+
+  for(; istage<config_.num_stage(); istage+=3)
+  {
+    unsigned n_in = n;
+    n = 0;
+    for(unsigned i = 0; i<n_in; i++) {
+      n += std::upper_bound(stage3_n_cdf_.begin(), stage3_n_cdf_.end(),
+        rng_->uniform()) - stage3_n_cdf_.begin();
+    }
+    if(n==0)return 0;
+  }
+  return n;
+}
+
+unsigned PMTSimTwoPopulation::stage_n_old(unsigned n) const
+{
+  for(int istage=1; istage<config_.num_stage(); istage++)
+  {
+    double nmean = 0;
+    for(unsigned i = 0; i<n;i++) {
+      nmean += rng_->gamma_by_alpha_and_beta(gamma_a_n_,gamma_b_n_);
+    }
+    n = rng_->poisson(nmean);
+    if(n==0)break;
+  }
+  return n;
+}
+
+unsigned PMTSimTwoPopulation::stage_n_poisson(unsigned n) const
+{
+  for(int istage=1; istage<config_.num_stage(); istage++)
+  {
+    n = rng_->poisson(double(n)*stage_n_gain_);
+    if(n==0)break;
+  }
+  return n;
 }
 
 std::vector<double> PMTSimTwoPopulation::stage_pmf(
@@ -501,26 +561,35 @@ std::vector<double> PMTSimTwoPopulation::stage_pmf(
   return pk;
 }
 
-void PMTSimTwoPopulation::do_log_progress(unsigned istage, const std::vector<double>& pk) const
+std::string PMTSimTwoPopulation::stage_summary(unsigned istage, const std::vector<double>& pk) const
 {
   double p1 = 0;
   double pn = 0;
   double pnn = 0;
   unsigned ix0 = config_.suppress_zero() ? 1 : 0;
+  double ptot =  config_.suppress_zero() ? pk[0] : 0;
   for(unsigned ix=ix0;ix<pk.size();ix++) {
+    ptot += pk[ix];
     p1 += pk[ix];
     pn += double(ix)*pk[ix];
     pnn += SQR(double(ix))*pk[ix];
   }
-  LOG(INFO) << "Stage " << istage << ", p0=" << pk[0]
+  std::ostringstream stream;
+  stream << "Stage " << istage
+    << ", p(0)=" << pk[0]
     << ", <x>=" << pn/p1
-    << " res(x)=" << sqrt(pnn*p1/SQR(pn)-1);
+    << " res(x)=" << sqrt(pnn*p1/SQR(pn)-1)
+    << ", 1-norm=" << 1-ptot
+    ;
+  return stream.str();
 }
 
 // Slow function to calculate PMF using Prescott (1965).
 calin::ix::simulation::pmt::PMTSimPMF
 PMTSimTwoPopulation::calc_pmf(unsigned nstage, double precision, bool log_progress) const
 {
+  std::string stats_summary;
+
   if(nstage == 0)nstage = config_.num_stage();
 
   std::vector<double> pk { 0.0, 1.0 };
@@ -528,8 +597,10 @@ PMTSimTwoPopulation::calc_pmf(unsigned nstage, double precision, bool log_progre
   {
     pk = stage_pmf(pk, stage_n_gain_, config_.stage_n_gain_rms_frac(), precision);
 
+    std::string this_stage_summary = stage_summary(nstage-ik, pk);
+    stats_summary += this_stage_summary + '\n';
     if(log_progress) {
-      do_log_progress(nstage-ik, pk);
+      LOG(INFO) << this_stage_summary;
     }
   }
 
@@ -553,8 +624,10 @@ PMTSimTwoPopulation::calc_pmf(unsigned nstage, double precision, bool log_progre
 
   std::swap(pk, pk_hi);
 
+  std::string this_stage_summary = stage_summary(0, pk);
+  stats_summary += this_stage_summary + '\n';
   if(log_progress) {
-    do_log_progress(0, pk);
+    LOG(INFO) << this_stage_summary;
   }
 
   calin::ix::simulation::pmt::PMTSimPMF OUTPUT;
@@ -562,6 +635,7 @@ PMTSimTwoPopulation::calc_pmf(unsigned nstage, double precision, bool log_progre
   OUTPUT.set_signal_in_pe(config_.signal_in_pe());
   OUTPUT.mutable_pn()->Resize(pk.size(),0);
   std::copy(pk.begin(), pk.end(), OUTPUT.mutable_pn()->begin());
+  OUTPUT.set_stage_statistics_summary(stats_summary);
   return OUTPUT;
 }
 

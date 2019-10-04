@@ -109,6 +109,8 @@ message PMTSimPMF  {
     (CFO).desc = "Suppress events with zero charge." ];
   bool signal_in_pe                                        = 3 [
     (CFO).desc = "Rescale output into PE by dividing by mean gain." ];
+  string stage_statistics_summary                          = 4 [
+    (CFO).desc = "Text describing statistical moments after each stage of calculation." ];
 };
 
 message MultiPESpectrumConfig {
