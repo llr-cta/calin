@@ -297,6 +297,22 @@ PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig&
 {
   if(config.num_stage()==0)
     throw std::runtime_error("PMTSimTwoPopulation: number of stages must be positive.");
+  if(config.total_gain()<=0)
+    throw std::runtime_error("PMTSimTwoPopulation: total gain must be positive.");
+  if(config.stage_0_hi_gain()<=0)
+    throw std::runtime_error("PMTSimTwoPopulation: stage 0 high-charge gain must be positive.");
+  if(config.stage_0_hi_gain_rms_frac()<0)
+    throw std::runtime_error("PMTSimTwoPopulation: stage 0 high-charge excess RMS must be zero or positive.");
+  if(config.stage_0_lo_prob()<0 or config.stage_0_lo_prob()>=1)
+    throw std::runtime_error("PMTSimTwoPopulation: stage 0 low-charge probability must be in the range [0,1).");
+  if(config.stage_0_lo_prob()>0) {
+    if(config.stage_0_lo_gain()<=0)
+      throw std::runtime_error("PMTSimTwoPopulation: stage 0 low-charge gain must be positive.");
+    if(config.stage_0_lo_gain_rms_frac()<0)
+      throw std::runtime_error("PMTSimTwoPopulation: stage 0 low-charge excess RMS must be zero or positive.");
+  }
+  if(config.stage_n_gain_rms_frac()<0)
+    throw std::runtime_error("PMTSimTwoPopulation: stage 1+ excess RMS must be zero or positive.");
 
   if(rng==nullptr)rng_ = my_rng_ = new RNG(__PRETTY_FUNCTION__);
 
@@ -446,7 +462,7 @@ std::vector<double> PMTSimTwoPopulation::stage_pmf(
   // Do one iteration of Prescott's algorithm (1965).
 
   double mu      = gain;
-  double b       = gain_rms_frac;
+  double b       = SQR(gain_rms_frac);
   double bmu     = b*mu;
   double bmo     = b-1.0;
   double C1      = 1.0 + bmu*(1.0-pkmo[0]);
@@ -459,7 +475,7 @@ std::vector<double> PMTSimTwoPopulation::stage_pmf(
   if(b == 0)
     pk[0] = std::exp(mu*(pkmo[0]-1.0));
   else
-    pk[0] = pow(C1,-1.0/b);
+    pk[0] = std::pow(C1,-1.0/b);
   psum = pk[0];
 
   for(unsigned ix=1;psum<pcutoff;ix++)
@@ -519,7 +535,7 @@ PMTSimTwoPopulation::calc_pmf(unsigned nstage, double precision, bool log_progre
 
   std::vector<double> pk_hi =
     stage_pmf(pk, config_.stage_0_hi_gain(), config_.stage_0_hi_gain_rms_frac(), precision*0.1);
-  if(config_.stage_0_lo_prob()) {
+  if(config_.stage_0_lo_prob() > 0) {
     std::vector<double> pk_lo =
       stage_pmf(pk, config_.stage_0_lo_gain(), config_.stage_0_lo_gain_rms_frac(), precision*0.1);
 
