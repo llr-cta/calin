@@ -148,7 +148,7 @@ protected:
   void recalc_total_gain_and_p0();
   std::string stage_summary(unsigned istage, const std::vector<double>& pk) const;
   static void renorm_pmf(std::vector<double>& pmf);
-  void fft_log_progress(unsigned istage, double* fk, unsigned nsample, int plan_flags) const;
+  std::string fft_log_progress(unsigned istage, double* fk, unsigned nsample, int plan_flags) const;
 
   calin::ix::simulation::pmt::PMTSimTwoPopulationConfig config_;
   double          p0_                        = 0.0;

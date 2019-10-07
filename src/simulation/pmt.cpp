@@ -622,7 +622,7 @@ std::string PMTSimTwoPopulation::stage_summary(unsigned istage, const std::vecto
   return stream.str();
 }
 
-void PMTSimTwoPopulation::
+std::string PMTSimTwoPopulation::
 fft_log_progress(unsigned istage, double* fk, unsigned npoint, int plan_flags) const
 {
   // FFT of multi-stage PMF including the k lowest stages
@@ -650,11 +650,13 @@ fft_log_progress(unsigned istage, double* fk, unsigned npoint, int plan_flags) c
     pi += double(i)*pk.get()[i];
     pii += SQR(double(i))*pk.get()[i];
   }
-  LOG(INFO) << "Stage " << istage
+  std::ostringstream stream;
+  stream << "Stage " << istage
     << ", p(0)=" << *pk/npoint << ", <x>=" << pi/p1
     //<< ", EVF(x)=" << pii*p1/(pi*pi)
     << ", res(x)=" << sqrt(pii*p1/(pi*pi) - 1)
     << ", 1-norm=" << 1.0-(p1 + (config_.suppress_zero()?(*pk):0))/double(npoint);
+  return stream.str();
 }
 
 // Slow function to calculate PMF using Prescott (1965).
@@ -664,6 +666,8 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
 {
   int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor);
   nflop_ = 0;
+
+  std::string stage_summary;
 
   if(nstage == 0) {
     nstage = config_.num_stage();
@@ -717,7 +721,9 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
   nflop_ += uint64_t(nmul) + uint64_t(nfma);
 
   if(log_progress) {
-    fft_log_progress(nstage-1, fkmo.get(), npoint, plan_flags);
+    std::string s = fft_log_progress(nstage-1, fkmo.get(), npoint, plan_flags);
+    LOG(INFO) << s;
+    stage_summary += s;
   }
 
   // Do the convolutions nstage-2 times from fkmo to fk, swapping back each time
@@ -728,7 +734,9 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
     std::swap(fk, fkmo);
 
     if(log_progress) {
-      fft_log_progress(nstage-1-ik, fkmo.get(), npoint, plan_flags);
+      std::string s = fft_log_progress(nstage-1-ik, fkmo.get(), npoint, plan_flags);
+      LOG(INFO) << s;
+      stage_summary += s;
     }
   }
 
@@ -742,7 +750,9 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
   std::swap(fk, fkmo);
 
   if(log_progress) {
-    fft_log_progress(0, fkmo.get(), npoint, plan_flags);
+    std::string s = fft_log_progress(0, fkmo.get(), npoint, plan_flags);
+    LOG(INFO) << s;
+    stage_summary += s;
   }
 
   // Prepare the backward DFT
@@ -761,7 +771,7 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
   OUTPUT.mutable_pn()->Resize(npoint,0);
   std::transform(fk.get(), fk.get()+npoint, OUTPUT.mutable_pn()->begin(),
     [norm](double x) { return x*norm; });
-  // OUTPUT.set_stage_statistics_summary(stats_summary);
+  OUTPUT.set_stage_statistics_summary(stage_summary);
   return OUTPUT;
 }
 
