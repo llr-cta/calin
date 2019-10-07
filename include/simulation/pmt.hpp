@@ -114,25 +114,28 @@ public:
   std::vector<double> stage_n_x2_cdf() const { return stage_n_x2_cdf_; }
   std::vector<double> stage_n_x3_cdf() const { return stage_n_x3_cdf_; }
 
-  std::vector<double> stage_0_lo_pmf(double precision = 1e-10) {
+  std::vector<double> stage_0_lo_pmf(double precision = 1e-10) const {
     return stage_pmf({0.0, 1.0}, config_.stage_0_lo_gain(), config_.stage_0_lo_gain_rms_frac(),
       precision);
   }
 
-  std::vector<double> stage_0_hi_pmf(double precision = 1e-10) {
+  std::vector<double> stage_0_hi_pmf(double precision = 1e-10) const {
     return stage_pmf({0.0, 1.0}, config_.stage_0_hi_gain(), config_.stage_0_hi_gain_rms_frac(),
       precision);
   }
 
-  std::vector<double> stage_n_pmf(double precision = 1e-10) {
+  std::vector<double> stage_0_pmf(double precision = 1e-10) const;
+
+  std::vector<double> stage_n_pmf(double precision = 1e-10) const {
     return stage_pmf({0.0, 1.0}, stage_n_gain_, config_.stage_n_gain_rms_frac(),
       precision);
   }
 
-  math::rng::RNG* rng() { return rng_; }
+  math::rng::RNG* rng() const { return rng_; }
   void set_rng(math::rng::RNG* rng) { delete my_rng_; my_rng_=0; rng_=rng; }
-  uint64_t nflop() { return nflop_; }
-  // static calin::ix::simulation::pmt::PMTSimAbbreviatedConfig cta_model_4();
+  uint64_t nflop() const { return nflop_; }
+
+  static calin::ix::simulation::pmt::PMTSimTwoPopulationConfig cta_model_4();
 
 protected:
   unsigned stage_n_poisson(unsigned n_in) const;

@@ -581,6 +581,24 @@ void PMTSimTwoPopulation::renorm_pmf(std::vector<double>& pk)
   }
 }
 
+std::vector<double> PMTSimTwoPopulation::stage_0_pmf(double precision) const
+{
+  std::vector<double> p0 = stage_0_hi_pmf();
+  if(config_.stage_0_lo_prob() > 0) {
+    std::vector<double> p0_lo = stage_0_lo_pmf();
+    for(unsigned ipe=0; ipe<p0.size(); ipe++) {
+      p0[ipe] *= (1-config_.stage_0_lo_prob());
+    }
+    if(p0_lo.size() > p0.size()) {
+      p0.resize(p0_lo.size());
+    }
+    for(unsigned ipe=0; ipe<p0_lo.size(); ipe++) {
+      p0[ipe] += config_.stage_0_lo_prob()*p0_lo[ipe];
+    }
+  }
+  return p0;
+}
+
 std::string PMTSimTwoPopulation::stage_summary(unsigned istage, const std::vector<double>& pk) const
 {
   calin::math::accumulator::KahanAccumulator p1;
@@ -713,21 +731,7 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
   }
 
   // Calculate the stage-0 PMF
-  std::vector<double> p0 =
-    stage_pmf({0.0, 1.0}, config_.stage_0_hi_gain(), config_.stage_0_hi_gain_rms_frac(), precision);
-  if(config_.stage_0_lo_prob() > 0) {
-    std::vector<double> p0_lo =
-      stage_pmf({0.0, 1.0}, config_.stage_0_lo_gain(), config_.stage_0_lo_gain_rms_frac(), precision);
-    for(unsigned ipe=0; ipe<p0.size(); ipe++) {
-      p0[ipe] *= (1-config_.stage_0_lo_prob());
-    }
-    if(p0_lo.size() > p0.size()) {
-      p0.resize(p0_lo.size());
-    }
-    for(unsigned ipe=0; ipe<p0_lo.size(); ipe++) {
-      p0[ipe] += config_.stage_0_lo_prob()*p0_lo[ipe];
-    }
-  }
+  std::vector<double> p0 = stage_0_pmf();
   renorm_pmf(p0);
 
   // Do the final stage convolution
@@ -817,11 +821,20 @@ PMTSimTwoPopulation::calc_pmf_prescott(unsigned nstage, double precision, bool l
   return OUTPUT;
 }
 
-#if 0
-
-  static calin::ix::simulation::pmt::PMTSimAbbreviatedConfig cta_model_4();
-
-#endif
+calin::ix::simulation::pmt::PMTSimTwoPopulationConfig PMTSimTwoPopulation::cta_model_4()
+{
+  calin::ix::simulation::pmt::PMTSimTwoPopulationConfig cfg;
+  cfg.set_num_stage(7);
+  cfg.set_total_gain(40000);
+  cfg.set_stage_0_hi_gain(12);
+  cfg.set_stage_0_hi_gain_rms_frac(0);
+  cfg.set_stage_0_lo_gain(3);
+  cfg.set_stage_0_lo_gain_rms_frac(0);
+  cfg.set_stage_0_lo_prob(0.15);
+  cfg.set_stage_n_gain_rms_frac(0.0);
+  cfg.set_suppress_zero(true);
+  return cfg;
+}
 
 // =============================================================================
 //
