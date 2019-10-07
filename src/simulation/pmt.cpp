@@ -654,7 +654,7 @@ fft_log_progress(unsigned istage, double* fk, unsigned npoint, int plan_flags) c
     << ", p(0)=" << *pk/npoint << ", <x>=" << pi/p1
     //<< ", EVF(x)=" << pii*p1/(pi*pi)
     << ", res(x)=" << sqrt(pii*p1/(pi*pi) - 1)
-    << ", 1-norm=" << 1.0-p1/double(npoint);
+    << ", 1-norm=" << 1.0-(p1 + (config_.suppress_zero()?(*pk):0))/double(npoint);
 }
 
 // Slow function to calculate PMF using Prescott (1965).
