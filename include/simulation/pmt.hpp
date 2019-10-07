@@ -30,6 +30,7 @@
 #include <Eigen/Core>
 #include <math/rng.hpp>
 #include <simulation/pmt.pb.h>
+#include <math/fftw_util.pb.h>
 
 namespace calin { namespace simulation { namespace pmt {
 
@@ -88,9 +89,19 @@ public:
   virtual ~PMTSimTwoPopulation();
   virtual double rv() override;
 
-  // Slow function to calculate PMF using Prescott (1965).
   calin::ix::simulation::pmt::PMTSimPMF calc_pmf(unsigned nstage = 0,
-    double precision = 0.0001, bool log_progress = false) const;
+      double precision = 1e-10, bool log_progress = false) {
+    return calc_pmf_prescott(nstage, precision, log_progress);
+  }
+
+  // Slow function to calculate PMF using Prescott (1965).
+  calin::ix::simulation::pmt::PMTSimPMF calc_pmf_prescott(unsigned nstage = 0,
+    double precision = 1e-10, bool log_progress = false) const;
+
+  // Faster function to calculate PMF using FFTs
+  calin::ix::simulation::pmt::PMTSimPMF calc_pmf_fft(unsigned npoint = 0, unsigned nstage = 0,
+    double precision = 1e-10, bool log_progress = false,
+    calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE) const;
 
   double total_gain() const { return total_gain_; }
   double p0() const { return p0_; }
@@ -99,13 +110,28 @@ public:
       + (1-config_.stage_0_lo_prob())*config_.stage_0_hi_gain();
   }
   double stage_n_gain() const { return stage_n_gain_; }
-  std::vector<double> stage1_n_cdf() const { return stage1_n_cdf_; }
-  std::vector<double> stage2_n_cdf() const { return stage2_n_cdf_; }
-  std::vector<double> stage3_n_cdf() const { return stage3_n_cdf_; }
+  std::vector<double> stage_n_x1_cdf() const { return stage_n_x1_cdf_; }
+  std::vector<double> stage_n_x2_cdf() const { return stage_n_x2_cdf_; }
+  std::vector<double> stage_n_x3_cdf() const { return stage_n_x3_cdf_; }
+
+  std::vector<double> stage_0_lo_pmf(double precision = 1e-10) {
+    return stage_pmf({0.0, 1.0}, config_.stage_0_lo_gain(), config_.stage_0_lo_gain_rms_frac(),
+      precision);
+  }
+
+  std::vector<double> stage_0_hi_pmf(double precision = 1e-10) {
+    return stage_pmf({0.0, 1.0}, config_.stage_0_hi_gain(), config_.stage_0_hi_gain_rms_frac(),
+      precision);
+  }
+
+  std::vector<double> stage_n_pmf(double precision = 1e-10) {
+    return stage_pmf({0.0, 1.0}, stage_n_gain_, config_.stage_n_gain_rms_frac(),
+      precision);
+  }
 
   math::rng::RNG* rng() { return rng_; }
   void set_rng(math::rng::RNG* rng) { delete my_rng_; my_rng_=0; rng_=rng; }
-
+  uint64_t nflop() { return nflop_; }
   // static calin::ix::simulation::pmt::PMTSimAbbreviatedConfig cta_model_4();
 
 protected:
@@ -114,10 +140,12 @@ protected:
   unsigned stage_n_old(unsigned n_in) const;
 
   static double stage_p0(double p0_last, double gain, double gain_rms_frac);
-  static std::vector<double> stage_pmf(const std::vector<double>& pmf_last,
-    double gain, double gain_rms_frac, double precision);
+  std::vector<double> stage_pmf(const std::vector<double>& pmf_last,
+    double gain, double gain_rms_frac, double precision) const;
   void recalc_total_gain_and_p0();
   std::string stage_summary(unsigned istage, const std::vector<double>& pk) const;
+  static void renorm_pmf(std::vector<double>& pmf);
+  void fft_log_progress(unsigned istage, double* fk, unsigned nsample, int plan_flags) const;
 
   calin::ix::simulation::pmt::PMTSimTwoPopulationConfig config_;
   double          p0_                        = 0.0;
@@ -131,10 +159,11 @@ protected:
   double          gamma_b_n_                 = 0.0;
   math::rng::RNG* rng_                       = nullptr;
   math::rng::RNG* my_rng_                    = nullptr;
-  std::vector<double> stage1_n_cdf_;
-  std::vector<double> stage2_n_cdf_;
-  std::vector<double> stage3_n_cdf_;
+  std::vector<double> stage_n_x1_cdf_;
+  std::vector<double> stage_n_x2_cdf_;
+  std::vector<double> stage_n_x3_cdf_;
   bool            use_new_stage_n_algorithm_ = true;
+  mutable uint64_t nflop_                    = 0;
 };
 
 class PMTSimInvCDF: public SignalSource

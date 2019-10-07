@@ -27,18 +27,25 @@
 #include <fstream>
 #include <sstream>
 #include <cctype>
+#include <fftw3.h>
 
 #include <calin_global_definitions.hpp>
 #include <simulation/pmt.hpp>
 #include <math/special.hpp>
+#include <math/accumulator.hpp>
 #include <util/log.hpp>
 #include <math/fftw_util.hpp>
 #include <provenance/chronicle.hpp>
+#include <math/fftw_util.hpp>
 
 using namespace calin::simulation::pmt;
 using calin::math::special::SQR;
 using calin::math::rng::RNG;
 using namespace calin::util::log;
+using namespace calin::math::fftw_util;
+
+using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
+using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 
 SignalSource::~SignalSource()
 {
@@ -341,21 +348,25 @@ PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig&
     gamma_a_n_    = 1.0/SQR(config_.stage_n_gain_rms_frac());
     gamma_b_n_    = gamma_a_n_/stage_n_gain_;
 
-    stage1_n_cdf_ = stage_pmf({0.0, 1.0}, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
-    stage2_n_cdf_ = stage_pmf(stage1_n_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
-    stage3_n_cdf_ = stage_pmf(stage2_n_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+    stage_n_x1_cdf_ = stage_pmf({0.0, 1.0}, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+    stage_n_x2_cdf_ = stage_pmf(stage_n_x1_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+    stage_n_x3_cdf_ = stage_pmf(stage_n_x2_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+
+    renorm_pmf(stage_n_x1_cdf_);
+    renorm_pmf(stage_n_x2_cdf_);
+    renorm_pmf(stage_n_x3_cdf_);
 
     double psum = 0;
-    for(auto & ibin : stage1_n_cdf_) { psum += ibin; ibin = psum; }
-    if(psum<1.0) { stage1_n_cdf_.push_back(1.0) ; }
+    for(auto & ibin : stage_n_x1_cdf_) { psum += ibin; ibin = psum; }
+    if(psum<1.0) { stage_n_x1_cdf_.push_back(1.0) ; }
 
     psum = 0;
-    for(auto & ibin : stage2_n_cdf_) { psum += ibin; ibin = psum; }
-    if(psum<1.0) { stage2_n_cdf_.push_back(1.0) ; }
+    for(auto & ibin : stage_n_x2_cdf_) { psum += ibin; ibin = psum; }
+    if(psum<1.0) { stage_n_x2_cdf_.push_back(1.0) ; }
 
     psum = 0;
-    for(auto & ibin : stage3_n_cdf_) { psum += ibin; ibin = psum; }
-    if(psum<1.0) { stage3_n_cdf_.push_back(1.0) ; }
+    for(auto & ibin : stage_n_x3_cdf_) { psum += ibin; ibin = psum; }
+    if(psum<1.0) { stage_n_x3_cdf_.push_back(1.0) ; }
   }
 }
 
@@ -463,16 +474,16 @@ unsigned PMTSimTwoPopulation::stage_n_new(unsigned n) const
     unsigned n_in = n;
     n = 0;
     for(unsigned i = 0; i<n_in; i++) {
-      n += std::upper_bound(stage1_n_cdf_.begin(), stage1_n_cdf_.end(),
-        rng_->uniform()) - stage1_n_cdf_.begin();
+      n += std::upper_bound(stage_n_x1_cdf_.begin(), stage_n_x1_cdf_.end(),
+        rng_->uniform()) - stage_n_x1_cdf_.begin();
     }
     istage += 1;
   } else if((config_.num_stage()-1) % 2 == 2) {
     unsigned n_in = n;
     n = 0;
     for(unsigned i = 0; i<n_in; i++) {
-      n += std::upper_bound(stage2_n_cdf_.begin(), stage2_n_cdf_.end(),
-        rng_->uniform()) - stage2_n_cdf_.begin();
+      n += std::upper_bound(stage_n_x2_cdf_.begin(), stage_n_x2_cdf_.end(),
+        rng_->uniform()) - stage_n_x2_cdf_.begin();
     }
     istage += 2;
   }
@@ -484,8 +495,8 @@ unsigned PMTSimTwoPopulation::stage_n_new(unsigned n) const
     unsigned n_in = n;
     n = 0;
     for(unsigned i = 0; i<n_in; i++) {
-      n += std::upper_bound(stage3_n_cdf_.begin(), stage3_n_cdf_.end(),
-        rng_->uniform()) - stage3_n_cdf_.begin();
+      n += std::upper_bound(stage_n_x3_cdf_.begin(), stage_n_x3_cdf_.end(),
+        rng_->uniform()) - stage_n_x3_cdf_.begin();
     }
     if(n==0)return 0;
   }
@@ -517,7 +528,7 @@ unsigned PMTSimTwoPopulation::stage_n_poisson(unsigned n) const
 }
 
 std::vector<double> PMTSimTwoPopulation::stage_pmf(
-  const std::vector<double>& pkmo, double gain, double gain_rms_frac, double precision)
+  const std::vector<double>& pkmo, double gain, double gain_rms_frac, double precision) const
 {
   // Do one iteration of Prescott's algorithm (1965).
 
@@ -527,7 +538,7 @@ std::vector<double> PMTSimTwoPopulation::stage_pmf(
   double bmo     = b-1.0;
   double C1      = 1.0 + bmu*(1.0-pkmo[0]);
   double pcutoff = 1.0 - precision;
-  double psum;
+  calin::math::accumulator::KahanAccumulator psum;
 
   std::vector<double> pk;
   pk.reserve(pkmo.size()*5*int(ceil(mu)));
@@ -536,58 +547,211 @@ std::vector<double> PMTSimTwoPopulation::stage_pmf(
     pk[0] = std::exp(mu*(pkmo[0]-1.0));
   else
     pk[0] = std::pow(C1,-1.0/b);
-  psum = pk[0];
+  psum.accumulate(pk[0]);
 
-  for(unsigned ix=1;psum<pcutoff;ix++)
+  for(unsigned ix=1;psum.total()<pcutoff;ix++)
   {
     double ix_dbl = double(ix);
-    double pkx = 0;
+    calin::math::accumulator::KahanAccumulator pkx_acc;
     unsigned ii0 = ix-std::min(ix,unsigned(pkmo.size()-1));
-    double ii_dbl = double(ii0);
-    for(unsigned ii=ii0; ii<ix; ++ii, ii_dbl+=1) {
-      pkx += pk[ii]*pkmo[ix-ii]*(ix_dbl+ii_dbl*bmo);
+    double ii_dbl = ix_dbl + double(ii0)*bmo;
+    for(unsigned ii=ii0; ii<ix; ++ii, ii_dbl+=bmo) {
+      ++nflop_;
+      // LOG(INFO) << ix << ' ' << ii << ' ' << ix-ii;
+      pkx_acc.accumulate(pk[ii]*pkmo[ix-ii]*ii_dbl);
     }
-    pkx *= mu/ix_dbl/C1;
-    psum += pkx;
+    double pkx = pkx_acc.total()*mu/ix_dbl/C1;
+    psum.accumulate(pkx);
     pk.push_back(pkx);
-    if(pkx/psum < 1e-10)break;
-  }
-
-  double norm = 1.0/psum;
-  for(unsigned ix=0;ix<pk.size();ix++) {
-    pk[ix] *= norm;
+    if(psum.total() > 0.99 and pkx < precision)break;
   }
 
   return pk;
 }
 
+void PMTSimTwoPopulation::renorm_pmf(std::vector<double>& pk)
+{
+  calin::math::accumulator::KahanAccumulator psum = 0;
+  for(unsigned ix=0;ix<pk.size();ix++) {
+    psum.accumulate(pk[ix]);
+  }
+  double norm = 1.0/psum.total();
+  for(unsigned ix=0;ix<pk.size();ix++) {
+    pk[ix] *= norm;
+  }
+}
+
 std::string PMTSimTwoPopulation::stage_summary(unsigned istage, const std::vector<double>& pk) const
 {
-  double p1 = 0;
-  double pn = 0;
-  double pnn = 0;
+  calin::math::accumulator::KahanAccumulator p1;
+  calin::math::accumulator::KahanAccumulator pn;
+  calin::math::accumulator::KahanAccumulator pnn;
   unsigned ix0 = config_.suppress_zero() ? 1 : 0;
-  double ptot =  config_.suppress_zero() ? pk[0] : 0;
   for(unsigned ix=ix0;ix<pk.size();ix++) {
-    ptot += pk[ix];
-    p1 += pk[ix];
-    pn += double(ix)*pk[ix];
-    pnn += SQR(double(ix))*pk[ix];
+    p1.accumulate(pk[ix]);
+    pn.accumulate(double(ix)*pk[ix]);
+    pnn.accumulate(SQR(double(ix))*pk[ix]);
   }
+  double ptot = (config_.suppress_zero() ? pk[0] : 0.0) + p1.total();
   std::ostringstream stream;
   stream << "Stage " << istage
     << ", p(0)=" << pk[0]
-    << ", <x>=" << pn/p1
-    << " res(x)=" << sqrt(pnn*p1/SQR(pn)-1)
+    << ", <x>=" << pn.total()/p1.total()
+    << " res(x)=" << sqrt(pnn.total()*p1.total()/SQR(pn.total())-1)
     << ", 1-norm=" << 1-ptot
+    << ", N=" << pk.size()
     ;
   return stream.str();
 }
 
+void PMTSimTwoPopulation::
+fft_log_progress(unsigned istage, double* fk, unsigned npoint, int plan_flags) const
+{
+  // FFT of multi-stage PMF including the k lowest stages
+  uptr_fftw_data fk_copy { fftw_alloc_real(npoint), fftw_free };
+  assert(fk_copy);
+
+  uptr_fftw_data pk { fftw_alloc_real(npoint), fftw_free };
+  assert(pk);
+
+  // Prepare the backward DFT
+  uptr_fftw_plan bwd_plan = {
+    fftw_plan_r2r_1d(npoint, fk_copy.get(), pk.get(),
+                    FFTW_HC2R , plan_flags), fftw_destroy_plan };
+  assert(bwd_plan);
+
+  std::copy(fk, fk+npoint, fk_copy.get());
+
+  fftw_execute(bwd_plan.get());
+
+  double p1 = 0;
+  double pi = 0;
+  double pii = 0;
+  for(unsigned i=0; i<npoint; i++) {
+    p1 += pk.get()[i];
+    pi += double(i)*pk.get()[i];
+    pii += SQR(double(i))*pk.get()[i];
+  }
+  LOG(INFO) << "Stage " << istage
+    << ", psum=" << p1/double(npoint) << ", <x>=" << pi/p1
+    << ", EVF(x)=" << pii*p1/(pi*pi) << ", res(x)=" << sqrt(pii*p1/(pi*pi) - 1);
+}
+
 // Slow function to calculate PMF using Prescott (1965).
 calin::ix::simulation::pmt::PMTSimPMF
-PMTSimTwoPopulation::calc_pmf(unsigned nstage, double precision, bool log_progress) const
+PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double precision,
+  bool log_progress, calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor) const
 {
+  int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor);
+
+  if(nstage == 0) {
+    nstage = config_.num_stage();
+  }
+
+  if(nstage == 1) {
+    return calc_pmf_prescott(nstage, precision);
+  }
+
+  if(npoint==0) {
+    npoint = int(total_gain_ * 4.0);
+    unsigned log_npoint = 0;
+    while(npoint) {
+      npoint >>= 1;
+      ++log_npoint;
+    }
+    npoint = 1 << log_npoint;
+  }
+
+  const double norm = 1/double(npoint);
+
+  // FFT of multi-stage PMF including the k lowest stages
+  uptr_fftw_data fk { fftw_alloc_real(npoint), fftw_free };
+  assert(fk);
+
+  // FFT of multi-stage PMF including the (k - 1) lowest stages
+  uptr_fftw_data fkmo { fftw_alloc_real(npoint), fftw_free };
+  assert(fkmo);
+
+  // Get the stage-n PMF
+  std::vector<double> pn =
+    stage_pmf({0.0, 1.0}, stage_n_gain_, config_.stage_n_gain_rms_frac(), precision);
+  renorm_pmf(pn);
+  assert(pn.size() < npoint);
+
+  // Temporarily make zero-padded copy of single n-stage PMF in fk
+  std::fill(fk.get(), fk.get()+npoint, 0.0);
+  std::copy(pn.begin(), pn.end(), fk.get());
+
+  // Do the forward DFT transforming pn into fkmo
+  uptr_fftw_plan fwd_plan = {
+    fftw_plan_r2r_1d(npoint, fk.get(), fkmo.get(),
+                    FFTW_R2HC, plan_flags), fftw_destroy_plan };
+  assert(fwd_plan);
+  fftw_execute(fwd_plan.get());
+
+  if(log_progress) {
+    fft_log_progress(nstage-1, fkmo.get(), npoint, plan_flags);
+  }
+
+  // Do the convolutions nstage-2 times from fkmo to fk, swapping back each time
+  for(unsigned ik=1; ik<(nstage-1); ik++)
+  {
+    hcvec_polynomial(fk.get(), fkmo.get(), pn, npoint /*, norm*/);
+    std::swap(fk, fkmo);
+
+    if(log_progress) {
+      fft_log_progress(nstage-1, fkmo.get(), npoint, plan_flags);
+    }
+  }
+
+  // Calculate the stage-0 PMF
+  std::vector<double> p0 =
+    stage_pmf({0.0, 1.0}, config_.stage_0_hi_gain(), config_.stage_0_hi_gain_rms_frac(), precision);
+  if(config_.stage_0_lo_prob() > 0) {
+    std::vector<double> p0_lo =
+      stage_pmf({0.0, 1.0}, config_.stage_0_lo_gain(), config_.stage_0_lo_gain_rms_frac(), precision);
+    for(unsigned ipe=0; ipe<p0.size(); ipe++) {
+      p0[ipe] *= (1-config_.stage_0_lo_prob());
+    }
+    if(p0_lo.size() > p0.size()) {
+      p0.resize(p0_lo.size());
+    }
+    for(unsigned ipe=0; ipe<p0_lo.size(); ipe++) {
+      p0[ipe] += config_.stage_0_lo_prob()*p0_lo[ipe];
+    }
+  }
+  renorm_pmf(p0);
+
+  // Do the final stage convolution
+  hcvec_polynomial(fk.get(), fkmo.get(), p0, npoint /*, norm */);
+  std::swap(fk, fkmo);
+
+  if(log_progress) {
+    fft_log_progress(nstage-1, fkmo.get(), npoint, plan_flags);
+  }
+
+  // Prepare the backward DFT
+  uptr_fftw_plan bwd_plan = {
+    fftw_plan_r2r_1d(npoint, fkmo.get(), fk.get(),
+                    FFTW_HC2R , plan_flags), fftw_destroy_plan };
+  assert(bwd_plan);
+  fftw_execute(bwd_plan.get());
+
+  calin::ix::simulation::pmt::PMTSimPMF OUTPUT;
+  OUTPUT.set_suppress_zero(config_.suppress_zero());
+  OUTPUT.set_signal_in_pe(config_.signal_in_pe());
+  OUTPUT.mutable_pn()->Resize(npoint,0);
+  std::transform(fk.get(), fk.get()+npoint, OUTPUT.mutable_pn()->begin(),
+    [norm](double x) { return x*norm; });
+  // OUTPUT.set_stage_statistics_summary(stats_summary);
+  return OUTPUT;
+}
+
+// Slow function to calculate PMF using Prescott (1965).
+calin::ix::simulation::pmt::PMTSimPMF
+PMTSimTwoPopulation::calc_pmf_prescott(unsigned nstage, double precision, bool log_progress) const
+{
+  nflop_ = 0;
   std::string stats_summary;
 
   if(nstage == 0)nstage = config_.num_stage();
@@ -629,6 +793,8 @@ PMTSimTwoPopulation::calc_pmf(unsigned nstage, double precision, bool log_progre
   if(log_progress) {
     LOG(INFO) << this_stage_summary;
   }
+
+  renorm_pmf(pk);
 
   calin::ix::simulation::pmt::PMTSimPMF OUTPUT;
   OUTPUT.set_suppress_zero(config_.suppress_zero());
@@ -924,7 +1090,7 @@ Eigen::VectorXd ExponentialTraceSim::trace()
   }
 
   fftw_execute(trace_plan_fwd_);
-  calin::math::fftw_util::
+
     hcvec_scale_and_multiply(trace_, trace_, pmt_pulse_fft_, nsample_, 1.0/double(nsample_));
   fftw_execute(trace_plan_rev_);
 
