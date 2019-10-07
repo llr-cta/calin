@@ -181,17 +181,10 @@ void hcvec_polynomial(T* ovec, const T* ivec, const std::vector<T>& p, unsigned 
 
   --pi;
   hcvec_set_real(ovec, *pi, nsample);
-  // calin::util::log::LOG(calin::util::log::INFO) << *pi;
-
-  // for(unsigned i=0; i<nsample; i++)
-  //   calin::util::log::LOG(calin::util::log::INFO) << ovec[i] << ' ' << ivec[i];
 
   while(pi != p.begin()) {
     --pi;
-    // calin::util::log::LOG(calin::util::log::INFO) << *pi;
     hcvec_multiply_and_add_real(ovec, ovec, ivec, *pi, nsample, scale);
-    // for(unsigned i=0; i<nsample; i++)
-    //   calin::util::log::LOG(calin::util::log::INFO) << ovec[i] << ' ' << ivec[i];
   }
 }
 
