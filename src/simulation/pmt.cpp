@@ -556,7 +556,7 @@ std::vector<double> PMTSimTwoPopulation::stage_pmf(
     unsigned ii0 = ix-std::min(ix,unsigned(pkmo.size()-1));
     double ii_dbl = ix_dbl + double(ii0)*bmo;
     for(unsigned ii=ii0; ii<ix; ++ii, ii_dbl+=bmo) {
-      ++nflop_;
+      nflop_ += 2;
       // LOG(INFO) << ix << ' ' << ii << ' ' << ix-ii;
       pkx_acc.accumulate(pk[ii]*pkmo[ix-ii]*ii_dbl);
     }
@@ -643,6 +643,7 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
   bool log_progress, calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor) const
 {
   int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor);
+  nflop_ = 0;
 
   if(nstage == 0) {
     nstage = config_.num_stage();
@@ -689,6 +690,12 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
   assert(fwd_plan);
   fftw_execute(fwd_plan.get());
 
+  double nadd;
+  double nmul;
+  double nfma;
+  fftw_flops(fwd_plan.get(), &nadd, &nmul, &nfma);
+  nflop_ += uint64_t(nmul) + uint64_t(nfma);
+
   if(log_progress) {
     fft_log_progress(nstage-1, fkmo.get(), npoint, plan_flags);
   }
@@ -697,6 +704,7 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
   for(unsigned ik=1; ik<(nstage-1); ik++)
   {
     hcvec_polynomial(fk.get(), fkmo.get(), pn, npoint /*, norm*/);
+    nflop_ += pn.size() * npoint * 2;
     std::swap(fk, fkmo);
 
     if(log_progress) {
@@ -724,6 +732,7 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
 
   // Do the final stage convolution
   hcvec_polynomial(fk.get(), fkmo.get(), p0, npoint /*, norm */);
+  nflop_ += p0.size() * npoint * 2;
   std::swap(fk, fkmo);
 
   if(log_progress) {
@@ -736,6 +745,9 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
                     FFTW_HC2R , plan_flags), fftw_destroy_plan };
   assert(bwd_plan);
   fftw_execute(bwd_plan.get());
+
+  fftw_flops(bwd_plan.get(), &nadd, &nmul, &nfma);
+  nflop_ += uint64_t(nmul) + uint64_t(nfma);
 
   calin::ix::simulation::pmt::PMTSimPMF OUTPUT;
   OUTPUT.set_suppress_zero(config_.suppress_zero());
