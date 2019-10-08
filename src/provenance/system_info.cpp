@@ -36,7 +36,7 @@
 
 extern char **environ;
 
-#include "cpuid_bits.h"
+#include <provenance/cpuid_bits.h>
 
 namespace {
 
@@ -362,4 +362,56 @@ void calin::provenance::system_info::write_system_info_to_log(calin::util::log::
     if(host_info->cpu_has_sse2())L << " SSE2";
     if(host_info->cpu_has_sse())L << " SSE";
   }
+}
+
+bool calin::provenance::system_info::has_avx()
+{
+  unsigned a,b,c,d;
+  __cpuid (0 /* vendor string */, a, b, c, d);
+  unsigned max_frame = a;
+  if(max_frame >= 1)
+  {
+    __cpuid (1 /* Processor Info and Feature Bits */, a, b, c, d);
+    return c & bit_AVX;
+  }
+  return false;
+}
+
+bool calin::provenance::system_info::has_fma3()
+{
+  unsigned a,b,c,d;
+  __cpuid (0 /* vendor string */, a, b, c, d);
+  unsigned max_frame = a;
+  if(max_frame >= 1)
+  {
+    __cpuid (1 /* Processor Info and Feature Bits */, a, b, c, d);
+    return c & bit_FMA;
+  }
+  return false;
+}
+
+bool calin::provenance::system_info::has_avx2()
+{
+  unsigned a,b,c,d;
+  __cpuid (0 /* vendor string */, a, b, c, d);
+  unsigned max_frame = a;
+  if(max_frame >= 7)
+  {
+    __cpuid_count (7, 0 /* Extended Features */, a, b, c, d);
+    return b & bit_AVX2;
+  }
+  return false;
+}
+
+bool calin::provenance::system_info::has_avx512f()
+{
+  unsigned a,b,c,d;
+  __cpuid (0 /* vendor string */, a, b, c, d);
+  unsigned max_frame = a;
+  if(max_frame >= 7)
+  {
+    __cpuid_count (7, 0 /* Extended Features */, a, b, c, d);
+    return b & bit_AVX512F;
+  }
+  return false;
 }
