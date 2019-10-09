@@ -24,90 +24,25 @@
 
 #include <fftw3.h>
 
+#include <util/vcl.hpp>
 #include <util/file.hpp>
 #include <math/fftw_util.hpp>
 
-#if 0
-void calin::math::fftw_util::
-hcvec_scale_and_multiply(double* ovec, const double* ivec1,
-                         const double* ivec2, unsigned nsample, double scale)
+#if INSTRSET >= 7
+void calin::math::fftw_util::hcvec_multiply_and_add_real(double* ovec, const double* ivec1,
+  const double* ivec2, double real_addand, unsigned nsample)
 {
-  double *ro = ovec;
-  double *co = ovec + nsample-1;
-  const double *ri1 = ivec1;
-  const double *ci1 = ivec1 + nsample-1;
-  const double *ri2 = ivec2;
-  const double *ci2 = ivec2 + nsample-1;
-
-  (*ro++) = (*ri1++) * (*ri2++) * scale;
-  if(ro==ri1 or ro==ri2)
-  {
-    while(ro < co)
-    {
-      double vri1 = *ri1++;
-      double vci1 = *ci1--;
-      double vri2 = *ri2++;
-      double vci2 = *ci2--;
-      (*ro++) = (vri1*vri2 - vci1*vci2)*scale;
-      (*co--) = (vri1*vci2 + vci1*vri2)*scale;
-    }
-   }
-  else
-  {
-    while(ro < co)
-    {
-      (*ro++) = ((*ri1)*(*ri2) - (*ci1)*(*ci2)) * scale;
-      (*co--) = ((*ri1++)*(*ci2--) + (*ci1--)*(*ri2++)) * scale;
-    }
-  }
-  if(ro==co)(*ro) = (*ri1) * (*ri2) * scale;
+  hcvec_multiply_and_add_real_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec,
+    ivec1, ivec2, real_addand, nsample);
+  // hcvec_multiply_and_add_real<double>(ovec, ivec1, ivec2, real_addand, nsample);
 }
 
-void calin::math::fftw_util::
-hcvec_scale_and_multiply_conj(double* ovec, const double* ivec1,
-                       const double* ivec2_conj, unsigned nsample, double scale)
+void calin::math::fftw_util::hcvec_polynomial(double* ovec, const double* ivec,
+  const std::vector<double>& p, unsigned nsample)
 {
-  double *ro = ovec;
-  double *co = ovec + nsample-1;
-  const double *ri1 = ivec1;
-  const double *ci1 = ivec1 + nsample-1;
-  const double *ri2 = ivec2_conj;
-  const double *ci2 = ivec2_conj + nsample-1;
-
-  (*ro++) = (*ri1++) * (*ri2++) * scale;
-  if(ro==ri1 or ro==ri2)
-  {
-    while(ro < co)
-    {
-      double vri1 = *ri1++;
-      double vci1 = *ci1--;
-      double vri2 = *ri2++;
-      double vci2 = *ci2--;
-      (*ro++) = (vri1*vri2 + vci1*vci2)*scale;
-      (*co--) = (vci1*vri2 - vri1*vci2)*scale;
-    }
-   }
-  else
-  {
-    while(ro < co)
-    {
-      (*ro++) = ((*ri1)*(*ri2) + (*ci1)*(*ci2)) * scale;
-      (*co--) = ((*ci1--)*(*ri2++) - (*ri1++)*(*ci2--)) * scale;
-    }
-  }
-  if(ro==co)(*ro) = (*ri1) * (*ri2) * scale;
+  hcvec_polynomial_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, ivec, p, nsample);
 }
 
-void calin::math::fftw_util::
-hcvec_scale_and_add(double* ovec, const double* ivec, unsigned nsample,
-  double scale)
-{
-  double *ro = ovec;
-  double *re = ovec + nsample;
-  const double *ri = ivec;
-  while(ro<re)
-    *(ro++) += *(ri++)*scale;
-}
 #endif
 
 bool calin::math::fftw_util::load_wisdom_from_file(std::string filename)

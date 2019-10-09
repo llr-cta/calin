@@ -32,7 +32,7 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 	spline_interpolation.cpp least_squares.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
-target_link_libraries(${CALIN_TARGET_LIBRARY}
+target_link_libraries(${CALIN_TARGET_LIBRARY} calin_util
 	calin_nlopt calin_cminpack calin_chealpix calin_f2c calin_io calin_provenance
 	calin_proto_math ${EXTRA_LIBS})
 
