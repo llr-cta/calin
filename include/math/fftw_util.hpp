@@ -241,11 +241,15 @@ void hcvec_polynomial(T* ovec, const T* ivec, const std::vector<T>& p, unsigned 
 
   auto pi = p.end();
   --pi;
-  *ro = *pi;
+  T vro = *pi;
+  T vco;
+  T vri = *ri;
+  T vci;
   while(pi != p.begin()) {
     --pi;
-    *ro = (*ro) * (*ri) + (*pi);
+    vro = vro * vri + (*pi);
   }
+  *ro = vro;
 
   ++ro, ++ri;
   --co, --ci;
@@ -254,14 +258,20 @@ void hcvec_polynomial(T* ovec, const T* ivec, const std::vector<T>& p, unsigned 
   {
     pi = p.end();
     --pi;
-    *ro = *pi;
-    *co = T(0);
+    vro = *pi;
+    vco = T(0);
+
+    vri = *ri;
+    vci = *ci;
+
     while(pi != p.begin()) {
       --pi;
-      T vro = (*ro) * (*ri) - (*co) * (*ci) + (*pi);
-      *co   = (*ro) * (*ci) + (*co) * (*ri);
-      *ro   = vro;
+      T vvro = vro * vri - vco * vci + (*pi);
+      vco    = vro * vci + vco * vri;
+      vro   = vvro;
     }
+    *ro = vro;
+    *co = vco;
 
     ++ro, ++ri;
     --co, --ci;
@@ -270,11 +280,13 @@ void hcvec_polynomial(T* ovec, const T* ivec, const std::vector<T>& p, unsigned 
   if(ro==co) {
     pi = p.end();
     --pi;
-    *ro = *pi;
+    vro = *pi;
+    vri = *ri;
     while(pi != p.begin()) {
       --pi;
-      *ro = (*ro) * (*ri) + (*pi);
+      vro = vro * vri + (*pi);
     }
+    *ro = vro;
   }
 }
 
@@ -303,35 +315,49 @@ void hcvec_polynomial_vcl(typename VCLReal::real_t* ovec,
 
   ++ro, ++ri;
 
-  while(co - ro >= 2*VCLReal::num_real)
+  while(co - ro >= 4*VCLReal::num_real)
   {
-    co -= VCLReal::num_real;
-    ci -= VCLReal::num_real;
-
     pi = p.end();
-    --pi;
+    typename VCLReal::real_vt vpi = *(--pi);
 
-    typename VCLReal::real_vt vro = *pi;
-    typename VCLReal::real_vt vco = typename VCLReal::real_t(0);
+    typename VCLReal::real_vt vro_a = vpi;
+    typename VCLReal::real_vt vco_a = typename VCLReal::real_t(0);
+    typename VCLReal::real_vt vro_b = vpi;
+    typename VCLReal::real_vt vco_b = typename VCLReal::real_t(0);
 
-    typename VCLReal::real_vt vri; vri.load(ri);
-    typename VCLReal::real_vt vci; vci.load(ci);
+    typename VCLReal::real_vt vri_a; vri_a.load(ri);
+    ri += VCLReal::num_real;
+    typename VCLReal::real_vt vri_b; vri_b.load(ri);
+    ri += VCLReal::num_real;
+
+    ci -= VCLReal::num_real;
+    typename VCLReal::real_vt vci_a; vci_a.load(ci);
+    ci -= VCLReal::num_real;
+    typename VCLReal::real_vt vci_b; vci_b.load(ci);
 
     while(pi != p.begin()) {
-      --pi;
+      vpi = *(--pi);
 
-      typename VCLReal::real_vt vvro;
+      typename VCLReal::real_vt vro_t;
 
-      vvro = vro*vri - calin::util::vcl::reverse(vco*vci) + (*pi);
-      vco  = calin::util::vcl::reverse(vro)*vci + vco*calin::util::vcl::reverse(vri);
-      vro  = vvro;
+      vro_t  = vro_a*vri_a - calin::util::vcl::reverse(vco_a*vci_a) + vpi;
+      vco_a  = calin::util::vcl::reverse(vro_a)*vci_a + vco_a*calin::util::vcl::reverse(vri_a);
+      vro_a  = vro_t;
+
+      vro_t  = vro_b*vri_b - calin::util::vcl::reverse(vco_b*vci_b) + vpi;
+      vco_b  = calin::util::vcl::reverse(vro_b)*vci_b + vco_b*calin::util::vcl::reverse(vri_b);
+      vro_b  = vro_t;
     }
 
-    vro.store(ro);
-    vco.store(co);
-
+    vro_a.store(ro);
     ro += VCLReal::num_real;
-    ri += VCLReal::num_real;
+    vro_b.store(ro);
+    ro += VCLReal::num_real;
+
+    co -= VCLReal::num_real;
+    vco_a.store(co);
+    co -= VCLReal::num_real;
+    vco_b.store(co);
   }
 
   --co, --ci;

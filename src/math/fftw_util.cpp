@@ -41,6 +41,7 @@ void calin::math::fftw_util::hcvec_polynomial(double* ovec, const double* ivec,
   const std::vector<double>& p, unsigned nsample)
 {
   hcvec_polynomial_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, ivec, p, nsample);
+  //hcvec_polynomial<double>(ovec, ivec, p, nsample);
 }
 
 #endif
