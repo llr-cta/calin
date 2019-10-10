@@ -378,9 +378,10 @@ void hcvec_polynomial_vcl(typename VCLReal::real_t* ovec,
 
     while(pi != p.begin()) {
       --pi;
-      typename VCLReal::real_t vrt = vro * vri - vco * vci + (*pi);
-      vco                          = vro * vci + vco * vri;
-      vro                          = vrt;
+      typename VCLReal::real_t vrt;
+      vrt = vro * vri - vco * vci + (*pi);
+      vco = vro * vci + vco * vri;
+      vro = vrt;
     }
     *ro = vro;
     *co = vco;
