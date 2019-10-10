@@ -290,6 +290,10 @@ void hcvec_polynomial(T* ovec, const T* ivec, const std::vector<T>& p, unsigned 
   }
 }
 
+// More complex version with vectorization and unrolling of vector loop. In this
+// version the order of the inner loops are inverted so that each frequency is
+// passed through the full polynomial before moving to the next (to improve
+// cache performance)
 template<typename VCLReal>
 void hcvec_polynomial_vcl(typename VCLReal::real_t* ovec,
   const typename VCLReal::real_t* ivec,
@@ -366,14 +370,20 @@ void hcvec_polynomial_vcl(typename VCLReal::real_t* ovec,
   {
     pi = p.end();
     --pi;
-    *ro = *pi;
-    *co = typename VCLReal::real_t(0);
+    typename VCLReal::real_t vro = *pi;
+    typename VCLReal::real_t vco = typename VCLReal::real_t(0);
+
+    typename VCLReal::real_t vri = *ri;
+    typename VCLReal::real_t vci = *ci;
+
     while(pi != p.begin()) {
       --pi;
-      typename VCLReal::real_t vro = (*ro) * (*ri) - (*co) * (*ci) + (*pi);
-      *co   = (*ro) * (*ci) + (*co) * (*ri);
-      *ro   = vro;
+      typename VCLReal::real_t vrt = vro * vri - vco * vci + (*pi);
+      vco                          = vro * vci + vco * vri;
+      vro                          = vrt;
     }
+    *ro = vro;
+    *co = vco;
 
     ++ro, ++ri;
     --co, --ci;
@@ -382,11 +392,13 @@ void hcvec_polynomial_vcl(typename VCLReal::real_t* ovec,
   if(ro==co) {
     pi = p.end();
     --pi;
-    *ro = *pi;
+    typename VCLReal::real_t vro = *pi;
+    typename VCLReal::real_t vri = *ri;
     while(pi != p.begin()) {
       --pi;
-      *ro = (*ro) * (*ri) + (*pi);
+      vro = vro * vri + (*pi);
     }
+    *ro = vro;
   }
 }
 
