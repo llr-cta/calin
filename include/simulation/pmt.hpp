@@ -151,22 +151,22 @@ protected:
   std::string fft_log_progress(unsigned istage, double* fk, unsigned nsample, int plan_flags) const;
 
   calin::ix::simulation::pmt::PMTSimTwoPopulationConfig config_;
-  double          p0_                        = 0.0;
-  double          total_gain_                = 1.0;
-  double          stage_n_gain_              = 1.0;
-  double          gamma_a_0_lo_              = 0.0;
-  double          gamma_b_0_lo_              = 0.0;
-  double          gamma_a_0_hi_              = 0.0;
-  double          gamma_b_0_hi_              = 0.0;
-  double          gamma_a_n_                 = 0.0;
-  double          gamma_b_n_                 = 0.0;
-  math::rng::RNG* rng_                       = nullptr;
-  math::rng::RNG* my_rng_                    = nullptr;
+  double           p0_                        = 0.0;
+  double           total_gain_                = 1.0;
+  double           stage_n_gain_              = 1.0;
+  double           gamma_a_0_lo_              = 0.0;
+  double           gamma_b_0_lo_              = 0.0;
+  double           gamma_a_0_hi_              = 0.0;
+  double           gamma_b_0_hi_              = 0.0;
+  double           gamma_a_n_                 = 0.0;
+  double           gamma_b_n_                 = 0.0;
+  math::rng::RNG*  rng_                       = nullptr;
+  math::rng::RNG*  my_rng_                    = nullptr;
   std::vector<double> stage_n_x1_cdf_;
   std::vector<double> stage_n_x2_cdf_;
   std::vector<double> stage_n_x3_cdf_;
-  bool            use_new_stage_n_algorithm_ = true;
-  mutable uint64_t nflop_                    = 0;
+  bool             use_new_stage_n_algorithm_ = true;
+  mutable uint64_t nflop_                     = 0;
 };
 
 class PMTSimInvCDF: public SignalSource
