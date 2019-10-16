@@ -900,8 +900,8 @@ calin::ix::simulation::pmt::PMTSimPMF PMTSimTwoPopulation::calc_multi_electron_s
 
   // Prepare the backward DFT
   uptr_fftw_plan bwd_plan = {
-    fftw_plan_r2r_1d(npoint, fmes.get(), fmes.get(),
-                    FFTW_HC2R , plan_flags), fftw_destroy_plan };
+    fftw_plan_r2r_1d(npoint, fmes.get(), fmes.get(), FFTW_HC2R , plan_flags),
+    fftw_destroy_plan };
   assert(bwd_plan);
   fftw_execute(bwd_plan.get());
 
