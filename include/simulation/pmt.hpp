@@ -100,6 +100,13 @@ public:
 
   // Faster function to calculate PMF using FFTs
   calin::ix::simulation::pmt::PMTSimPMF calc_pmf_fft(unsigned npoint = 0, unsigned nstage = 0,
+    double precision = 1e-10, bool log_progress = false, bool skip_inverse_fft = false,
+    calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE) const;
+
+  calin::ix::simulation::pmt::PMTSimPMF calc_multi_electron_spectrum(
+    double intensity_mean, double intensity_rms_frac = 0.0,
+    const Eigen::VectorXd& ped_hc_dft = Eigen::VectorXd(),
+    unsigned npoint = 0, unsigned nstage = 0,
     double precision = 1e-10, bool log_progress = false,
     calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE) const;
 

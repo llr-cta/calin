@@ -659,10 +659,11 @@ fft_log_progress(unsigned istage, double* fk, unsigned npoint, int plan_flags) c
   return stream.str();
 }
 
-// Slow function to calculate PMF using Prescott (1965).
+// Fast function to calculate PMF using FFTs
 calin::ix::simulation::pmt::PMTSimPMF
 PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double precision,
-  bool log_progress, calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor) const
+  bool log_progress, bool skip_inverse_fft,
+  calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor) const
 {
   int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor);
   nflop_ = 0;
@@ -686,8 +687,6 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
     }
     npoint = 1 << log_npoint;
   }
-
-  const double norm = 1/double(npoint);
 
   // FFT of multi-stage PMF including the k lowest stages
   uptr_fftw_data fk { fftw_alloc_real(npoint), fftw_free };
@@ -729,7 +728,7 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
   // Do the convolutions nstage-2 times from fkmo to fk, swapping back each time
   for(unsigned ik=1; ik<(nstage-1); ik++)
   {
-    hcvec_polynomial(fk.get(), fkmo.get(), pn, npoint /*, norm*/);
+    hcvec_polynomial(fk.get(), fkmo.get(), pn, npoint);
     nflop_ += pn.size() * npoint * 2;
     std::swap(fk, fkmo);
 
@@ -745,7 +744,7 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
   renorm_pmf(p0);
 
   // Do the final stage convolution
-  hcvec_polynomial(fk.get(), fkmo.get(), p0, npoint /*, norm */);
+  hcvec_polynomial(fk.get(), fkmo.get(), p0, npoint);
   nflop_ += p0.size() * npoint * 2;
   std::swap(fk, fkmo);
 
@@ -755,23 +754,31 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
     stage_summary += s;
   }
 
-  // Prepare the backward DFT
-  uptr_fftw_plan bwd_plan = {
-    fftw_plan_r2r_1d(npoint, fkmo.get(), fk.get(),
-                    FFTW_HC2R , plan_flags), fftw_destroy_plan };
-  assert(bwd_plan);
-  fftw_execute(bwd_plan.get());
-
-  fftw_flops(bwd_plan.get(), &nadd, &nmul, &nfma);
-  nflop_ += uint64_t(nmul) + uint64_t(nfma);
-
   calin::ix::simulation::pmt::PMTSimPMF OUTPUT;
   OUTPUT.set_suppress_zero(config_.suppress_zero());
   OUTPUT.set_signal_in_pe(config_.signal_in_pe());
   OUTPUT.mutable_pn()->Resize(npoint,0);
-  std::transform(fk.get(), fk.get()+npoint, OUTPUT.mutable_pn()->begin(),
-    [norm](double x) { return x*norm; });
   OUTPUT.set_stage_statistics_summary(stage_summary);
+
+  if(skip_inverse_fft) {
+    std::copy(fkmo.get(), fkmo.get()+npoint, OUTPUT.mutable_pn()->begin());
+  } else {
+    // Prepare the backward DFT
+    uptr_fftw_plan bwd_plan = {
+      fftw_plan_r2r_1d(npoint, fkmo.get(), fk.get(),
+                      FFTW_HC2R , plan_flags), fftw_destroy_plan };
+    assert(bwd_plan);
+    fftw_execute(bwd_plan.get());
+
+    fftw_flops(bwd_plan.get(), &nadd, &nmul, &nfma);
+    nflop_ += uint64_t(nmul) + uint64_t(nfma);
+
+    const double norm = 1/double(npoint);
+    std::transform(fk.get(), fk.get()+npoint, OUTPUT.mutable_pn()->begin(),
+      [norm](double x) { return x*norm; });
+    nflop_ += npoint;
+  }
+
   return OUTPUT;
 }
 
@@ -830,6 +837,82 @@ PMTSimTwoPopulation::calc_pmf_prescott(unsigned nstage, double precision, bool l
   OUTPUT.mutable_pn()->Resize(pk.size(),0);
   std::copy(pk.begin(), pk.end(), OUTPUT.mutable_pn()->begin());
   OUTPUT.set_stage_statistics_summary(stats_summary);
+  return OUTPUT;
+}
+
+calin::ix::simulation::pmt::PMTSimPMF PMTSimTwoPopulation::calc_multi_electron_spectrum(
+  double intensity_mean, double intensity_rms_frac,
+  const Eigen::VectorXd& ped_hc_dft,
+  unsigned npoint, unsigned nstage,
+  double precision, bool log_progress,
+  calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor) const
+{
+  int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor);
+  double nadd;
+  double nmul;
+  double nfma;
+
+  if(npoint == 0) {
+    if(ped_hc_dft.size()==0) {
+      npoint = int(std::min(1.0, intensity_mean) * total_gain_ * 4.0);
+      unsigned log_npoint = 0;
+      while(npoint) {
+        npoint >>= 1;
+        ++log_npoint;
+      }
+      npoint = 1 << log_npoint;
+    } else {
+      npoint = ped_hc_dft.size();
+    }
+  }
+
+  // Calculate the single electron spectrum, leaving it in Fourier space
+  calin::ix::simulation::pmt::PMTSimPMF OUTPUT = calc_pmf_fft(npoint, nstage,
+    precision, log_progress, /* skip_inverse_fft = */ true, fftw_rigor);
+
+  if(OUTPUT.suppress_zero()) {
+    double p0 = hcvec_avg_real(OUTPUT.pn().begin(), npoint);
+    hcvec_scale_and_add_real(OUTPUT.mutable_pn()->begin(), 1/(1-p0), -p0/(1-p0), npoint);
+  }
+
+  // FFT of multi-electron spectrum
+  uptr_fftw_data fmes { fftw_alloc_real(npoint), fftw_free };
+  assert(fmes);
+
+  // Get the photo-electron PMF
+  std::vector<double> ppe =
+    stage_pmf({0.0, 1.0}, intensity_mean, intensity_rms_frac, precision);
+  renorm_pmf(ppe);
+  assert(ppe.size() < npoint);
+
+  // Do the PE convolution
+  hcvec_polynomial(fmes.get(), OUTPUT.pn().begin(), ppe, npoint);
+  nflop_ += ppe.size() * npoint * 2;
+
+  // Add the arbitrary pedestal noise if requested
+  if(ped_hc_dft.size() > 0) {
+    if(ped_hc_dft.size() != npoint) {
+      throw std::runtime_error("Pedestal PDF must be same size as npoint.");
+    }
+    hcvec_scale_and_multiply(fmes.get(), fmes.get(), ped_hc_dft.data(), npoint);
+    nflop_ += npoint * 2;
+  }
+
+  // Prepare the backward DFT
+  uptr_fftw_plan bwd_plan = {
+    fftw_plan_r2r_1d(npoint, fmes.get(), fmes.get(),
+                    FFTW_HC2R , plan_flags), fftw_destroy_plan };
+  assert(bwd_plan);
+  fftw_execute(bwd_plan.get());
+
+  fftw_flops(bwd_plan.get(), &nadd, &nmul, &nfma);
+  nflop_ += uint64_t(nmul) + uint64_t(nfma);
+
+  const double norm = 1/double(npoint);
+  std::transform(fmes.get(), fmes.get()+npoint, OUTPUT.mutable_pn()->begin(),
+    [norm](double x) { return x*norm; });
+  nflop_ += npoint;
+
   return OUTPUT;
 }
 
