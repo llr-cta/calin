@@ -136,6 +136,50 @@ void hcvec_set_real(T* ovec, T real_value, unsigned nsample)
 }
 
 template<typename T>
+void hcvec_add_real(T* ovec, T real_value, unsigned nsample)
+{
+  T *ro = ovec;
+  T *co = ovec + nsample-1;
+  (*ro++) += real_value;
+  while(ro < co)
+  {
+    (*ro++) += real_value;
+    (*co--) = T(0);
+  }
+  if(ro==co)(*ro) += real_value;
+}
+
+template<typename T>
+T hcvec_sum_real(const T* ivec, unsigned nsample)
+{
+  const T *ro = ivec;
+  const T *co = ivec + nsample-1;
+  T sum_real = (*ro++);
+  while(ro < co)
+  {
+    sum_real += (*ro++);
+    --co;
+  }
+  if(ro==co)sum_real += (*ro);
+  return sum_real;
+}
+
+template<typename T>
+T hcvec_avg_real(const T* ivec, unsigned nsample)
+{
+  const T *ro = ivec;
+  const T *co = ivec + nsample-1;
+  T sum_real = (*ro++);
+  while(ro < co)
+  {
+    sum_real += (*ro++);
+    --co;
+  }
+  if(ro==co)sum_real += (*ro++);
+  return sum_real/double(ro-ivec);
+}
+
+template<typename T>
 void hcvec_multiply_and_add_real(T* ovec, const T* ivec1,
   const T* ivec2, T real_addand, unsigned nsample)
 {
@@ -429,6 +473,11 @@ void hcvec_polynomial(double* ovec, const double* ivec,
 #endif
 
 #endif
+
+Eigen::VectorXd fftw_r2hc(const Eigen::VectorXd& x,
+  calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
+Eigen::VectorXd fftw_hc2r(const Eigen::VectorXd& f,
+  calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
 
 int proto_planning_enum_to_fftw_flag(calin::ix::math::fftw_util::FFTWPlanningRigor x);
 

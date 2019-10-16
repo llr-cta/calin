@@ -28,6 +28,9 @@
 #include <util/file.hpp>
 #include <math/fftw_util.hpp>
 
+using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
+using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
+
 #if INSTRSET >= 7
 void calin::math::fftw_util::hcvec_multiply_and_add_real(double* ovec, const double* ivec1,
   const double* ivec2, double real_addand, unsigned nsample)
@@ -45,6 +48,54 @@ void calin::math::fftw_util::hcvec_polynomial(double* ovec, const double* ivec,
 }
 
 #endif
+
+Eigen::VectorXd calin::math::fftw_util::fftw_r2hc(const Eigen::VectorXd& x,
+  calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor)
+{
+  int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor);
+
+  uptr_fftw_data x_copy { fftw_alloc_real(x.size()), fftw_free };
+  assert(x_copy);
+
+  uptr_fftw_data f { fftw_alloc_real(x.size()), fftw_free };
+  assert(f);
+
+  // Prepare the DFT
+  uptr_fftw_plan r2hc_plan = {
+    fftw_plan_r2r_1d(x.size(), x_copy.get(), f.get(),
+                    FFTW_R2HC , plan_flags), fftw_destroy_plan };
+  assert(r2hc_plan);
+
+  std::copy(x.data(), x.data()+x.size(), x_copy.get());
+
+  fftw_execute(r2hc_plan.get());
+
+  return Eigen::Map<Eigen::VectorXd>(f.get(), x.size());
+}
+
+Eigen::VectorXd calin::math::fftw_util::fftw_hc2r(const Eigen::VectorXd& f,
+  calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor)
+{
+  int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor);
+
+  uptr_fftw_data f_copy { fftw_alloc_real(f.size()), fftw_free };
+  assert(f_copy);
+
+  uptr_fftw_data x { fftw_alloc_real(f.size()), fftw_free };
+  assert(x);
+
+  // Prepare the DFT
+  uptr_fftw_plan hc2r_plan = {
+    fftw_plan_r2r_1d(f.size(), f_copy.get(), x.get(),
+                    FFTW_HC2R , plan_flags), fftw_destroy_plan };
+  assert(hc2r_plan);
+
+  std::copy(f.data(), f.data()+f.size(), f_copy.get());
+
+  fftw_execute(hc2r_plan.get());
+
+  return Eigen::Map<Eigen::VectorXd>(x.get(), f.size());
+}
 
 bool calin::math::fftw_util::load_wisdom_from_file(std::string filename)
 {
