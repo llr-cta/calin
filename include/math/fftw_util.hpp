@@ -144,7 +144,7 @@ void hcvec_add_real(T* ovec, T real_value, unsigned nsample)
   while(ro < co)
   {
     (*ro++) += real_value;
-    (*co--) = T(0);
+    --co;
   }
   if(ro==co)(*ro) += real_value;
 }
