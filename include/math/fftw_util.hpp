@@ -154,11 +154,14 @@ void hcvec_scale_and_add_real(T* ovec, T scale, T real_value, unsigned nsample)
 {
   T *ro = ovec;
   T *co = ovec + nsample-1;
-  (*ro++) = *ro * scale + real_value;
+  *ro = *ro * scale + real_value;
+  ++ro;
   while(ro < co)
   {
-    (*ro++) = *ro * scale + real_value;
-    (*co--) = *co * scale;
+    *ro = *ro * scale + real_value;
+    *co = *co * scale;
+    ++ro;
+    --co;
   }
   if(ro==co)(*ro) = *ro * scale + real_value;
 }
