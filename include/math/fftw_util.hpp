@@ -150,6 +150,20 @@ void hcvec_add_real(T* ovec, T real_value, unsigned nsample)
 }
 
 template<typename T>
+void hcvec_scale_and_add_real(T* ovec, T scale, T real_value, unsigned nsample)
+{
+  T *ro = ovec;
+  T *co = ovec + nsample-1;
+  (*ro++) = *ro * scale + real_value;
+  while(ro < co)
+  {
+    (*ro++) = *ro * scale + real_value;
+    (*co--) = *co * scale;
+  }
+  if(ro==co)(*ro) = *ro * scale + real_value;
+}
+
+template<typename T>
 T hcvec_sum_real(const T* ivec, unsigned nsample)
 {
   const T *ro = ivec;
