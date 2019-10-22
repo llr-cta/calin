@@ -88,7 +88,6 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
   // V3 from : https://forge.in2p3.fr/projects/cta/repository/revisions/37071/entry/ACTL/ExternalDevicesCommunication/trunk/TiCkS/TiCkS_decode/ticks_decode.h
 
   struct CDTSMessageData_V3 { // 36 bytes
-  {
     /*  8 */ uint64_t ucts_timestamp;
     /* 12 */ uint32_t ucts_address;
     /* 16 */ uint32_t event_counter;
@@ -139,7 +138,25 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
   if(cta_cdts_data.type() != DataModel::AnyArray::U32)
     throw std::runtime_error("CDTS counters type not U32");
 #endif
-  if(cta_cdts_data.size() == sizeof(CDTSMessageData_V2)) {
+  if(cta_cdts_data.size() == sizeof(CDTSMessageData_V3)) {
+    const auto* cdts_data =
+      reinterpret_cast<const CDTSMessageData_V3*>(&cta_cdts_data.front());
+
+    calin_cdts_data->set_event_counter(cdts_data->event_counter);
+    calin_cdts_data->set_busy_counter(cdts_data->busy_counter);
+    calin_cdts_data->set_pps_counter(cdts_data->pps_counter);
+    calin_cdts_data->set_clock_counter(cdts_data->clock_counter);
+    calin_cdts_data->set_ucts_timestamp(cdts_data->ucts_timestamp);
+    calin_cdts_data->set_camera_timestamp(0);
+    calin_cdts_data->set_trigger_type(cdts_data->trigger_type);
+    calin_cdts_data->set_white_rabbit_status(cdts_data->white_rabbit_reset_busy_status);
+    calin_cdts_data->set_stereo_pattern(cdts_data->stereo_pattern);
+    calin_cdts_data->set_arbitrary_information(0);
+    calin_cdts_data->set_num_in_bunch(cdts_data->num_in_bunch);
+    calin_cdts_data->set_ucts_address(cdts_data->ucts_address);
+    calin_cdts_data->set_cdts_version(cdts_data->cdts_version);
+    calin_cdts_data->set_version(3);
+  } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V2)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V2*>(&cta_cdts_data.front());
 
@@ -154,6 +171,8 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_stereo_pattern(cdts_data->stereo_pattern);
     calin_cdts_data->set_arbitrary_information(0);
     calin_cdts_data->set_num_in_bunch(cdts_data->num_in_bunch);
+    calin_cdts_data->set_ucts_address(0);
+    calin_cdts_data->set_cdts_version(0);
     calin_cdts_data->set_version(2);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V1)) {
     const auto* cdts_data =
@@ -167,9 +186,11 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_camera_timestamp(0);
     calin_cdts_data->set_trigger_type(cdts_data->trigger_type);
     calin_cdts_data->set_white_rabbit_status(cdts_data->white_rabbit_reset_busy_status);
-    calin_cdts_data->set_stereo_pattern(cdts_data->arbitrary_information);
+    calin_cdts_data->set_stereo_pattern(0);
     calin_cdts_data->set_arbitrary_information(cdts_data->arbitrary_information);
     calin_cdts_data->set_num_in_bunch(cdts_data->num_in_bunch);
+    calin_cdts_data->set_ucts_address(0);
+    calin_cdts_data->set_cdts_version(0);
     calin_cdts_data->set_version(1);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V0)) {
     const auto* cdts_data =
@@ -183,8 +204,11 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_camera_timestamp(cdts_data->camera_timestamp);
     calin_cdts_data->set_trigger_type(cdts_data->trigger_type);
     calin_cdts_data->set_white_rabbit_status(cdts_data->white_rabbit_status);
+    calin_cdts_data->set_stereo_pattern(0);
     calin_cdts_data->set_arbitrary_information(cdts_data->arbitrary_information);
     calin_cdts_data->set_num_in_bunch(0);
+    calin_cdts_data->set_ucts_address(0);
+    calin_cdts_data->set_cdts_version(0);
     calin_cdts_data->set_version(0);
   } else {
     throw std::runtime_error("CDTS data array not expected size");
