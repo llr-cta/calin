@@ -265,7 +265,7 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
 
       trigger_map = calin_event->mutable_trigger_map();
       trigger_map->mutable_hit_channel_id()->Reserve(20);
-      trigger_map->mutable_trigger_image()->Resize(nmod_ * 7, 0xFFFFFFFF);
+      trigger_map->mutable_trigger_image()->Resize(nmod_ * 7, 0x80000000);
     }
 
     const auto* mod_data = cta_counters.data().data();
