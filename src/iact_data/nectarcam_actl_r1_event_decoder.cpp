@@ -233,19 +233,41 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
       uint16_t ts2_empty;
     }__attribute__((packed));
 
+    struct NectarCountersWithTriggerPattern {
+      uint32_t global_event_counter;
+      uint16_t bunch_counter;
+      uint16_t event_counter;
+      uint32_t ts1;
+      int8_t   ts2_event;
+      int8_t   ts2_bunch;
+      uint16_t ts2_empty;
+      uint32_t trigger_pattern;
+    }__attribute__((packed));
+
     const auto& cta_counters = cta_event->nectarcam().counters();
 #if TEST_ANYARRAY_TYPES
     if(cta_counters.type() != DataModel::AnyArray::U16)
       throw std::runtime_error("Camera counters type not U16");
 #endif
-    if(cta_counters.data().size()%sizeof(NectarCounters) != 0)
-      throw std::runtime_error("Camera counters data array not integral "
-        "multiple of expected structure size.");
-    unsigned nmod = cta_counters.data().size()/sizeof(NectarCounters);
-    const auto* mod_counter =
-      reinterpret_cast<const NectarCounters*>(&cta_counters.data().front());
-    for(unsigned imod=0;imod<nmod;imod++, mod_counter++)
+
+    unsigned data_size = sizeof(NectarCounters);
+    unsigned data_version = 0;
+    if(cta_counters.data().size() != nmod_ * data_size) {
+      data_size = sizeof(NectarCountersWithTriggerPattern);
+      data_version = 1;
+      if(cta_counters.data().size() != nmod_ * data_size) {
+        throw std::runtime_error("Camera counters data array correct size. "
+          "Expected " + std::to_string(nmod_*sizeof(NectarCounters)) + " or " +
+          std::to_string(nmod_*sizeof(NectarCountersWithTriggerPattern)) +
+          ", got " + std::to_string(cta_counters.data().size()));
+      }
+    }
+
+    const auto* mod_data = cta_counters.data().data();
+    for(unsigned imod=0;imod<nmod_;imod++, mod_data+=data_size)
     {
+      const auto* mod_counter = reinterpret_cast<const NectarCounters*>(mod_data);
+
       if(imod < static_cast<unsigned>(calin_event->module_index_size()) and
         calin_event->module_index(imod) == -1)continue;
 
@@ -273,6 +295,14 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
       module_data->set_ts2_bunch(mod_counter->ts2_bunch);
       module_data->set_ts2_event(mod_counter->ts2_event);
       module_data->set_ts2_empty(mod_counter->ts2_empty);
+      module_data->set_version(data_version);
+
+      if(data_version > 0) {
+        const auto* mod_trigger = reinterpret_cast<const NectarCountersWithTriggerPattern*>(mod_data);
+        module_data->set_trigger_pattern(mod_trigger->trigger_pattern);
+      } else {
+        module_data->set_trigger_pattern(0);
+      }
 
 #define ts2_decode(x) int32_t(x)
 

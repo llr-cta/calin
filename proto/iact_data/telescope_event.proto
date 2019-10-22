@@ -84,6 +84,13 @@ message NectarCamModuleData {
   int32 bunch_event_time                                    = 9 [
     (CFO).desc = "Time within bunch, computed by combining TS1 and TS2.",
     (CFO).units = "ns" ];
+  uint32 trigger_pattern                                    = 10 [
+    (CFO).desc = "Trigger pattern for channels in module. The 32 bit datum "
+      "packs 4 samples from the 66MHz into 4 bytes. In each byte the lowest 7 "
+      "bits encode the L0 trigger state during the sample. See MST-CAM-TN-0252. "
+      "Only available if version>=1." ];
+  uint32 version                                            = 20 [
+    (CFO).desc = "Version of data." ];
 };
 
 message LSTCamModuleData {
