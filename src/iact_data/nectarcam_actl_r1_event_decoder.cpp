@@ -250,6 +250,7 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
       throw std::runtime_error("Camera counters type not U16");
 #endif
 
+    calin::ix::iact_data::telescope_event::ChannelTriggerMap* trigger_map = nullptr;
     unsigned data_size = sizeof(NectarCounters);
     unsigned data_version = 0;
     if(cta_counters.data().size() != nmod_ * data_size) {
@@ -261,6 +262,10 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
           std::to_string(nmod_*sizeof(NectarCountersWithTriggerPattern)) +
           ", got " + std::to_string(cta_counters.data().size()));
       }
+
+      trigger_map = calin_event->mutable_trigger_map();
+      trigger_map->mutable_hit_channel_id()->Reserve(20);
+      trigger_map->mutable_trigger_image()->Resize(nmod_ * 7, 0xFFFFFFFF);
     }
 
     const auto* mod_data = cta_counters.data().data();
@@ -300,6 +305,19 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
       if(data_version > 0) {
         const auto* mod_trigger = reinterpret_cast<const NectarCountersWithTriggerPattern*>(mod_data);
         module_data->set_trigger_pattern(mod_trigger->trigger_pattern);
+
+        for(unsigned imodchan=0; imodchan<7; imodchan++) {
+          uint32_t chan_trigger = mod_trigger->trigger_pattern>>imodchan;
+          chan_trigger =
+            (chan_trigger & 0x01) | ((chan_trigger >> 7) & 0x02) |
+            ((chan_trigger >> 14) & 0x04) | ((chan_trigger >> 21) & 0x08);
+          trigger_map->set_trigger_image(imod*7+imodchan, chan_trigger);
+          if(chan_trigger) {
+            trigger_map->add_hit_channel_id(imod*7+imodchan);
+          }
+        }
+        trigger_map->mutable_hit_channel_id()->Reserve(20);
+        trigger_map->mutable_trigger_image()->Resize(nmod_ * 7, 0xFFFFFFFF);
       } else {
         module_data->set_trigger_pattern(0);
       }
