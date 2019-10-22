@@ -207,9 +207,11 @@ NectarCamZFITSDataSource::get_run_configuration()
 }
 
 calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*
-NectarCamZFITSDataSource::construct_delegate(const std::string& filename,
+NectarCamZFITSDataSource::construct_delegate(std::string filename,
   const config_type& config, const decoder_config_type& decoder_config)
 {
+  expand_filename_in_place(filename);
+
   bool use_r1 = true;
   if(config.data_model() ==
       calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_AUTO_DETECT) {
