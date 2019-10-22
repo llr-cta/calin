@@ -316,8 +316,6 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
             trigger_map->add_hit_channel_id(imod*7+imodchan);
           }
         }
-        trigger_map->mutable_hit_channel_id()->Reserve(20);
-        trigger_map->mutable_trigger_image()->Resize(nmod_ * 7, 0xFFFFFFFF);
       } else {
         module_data->set_trigger_pattern(0);
       }
