@@ -317,7 +317,7 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
           }
         }
       } else {
-        module_data->set_trigger_pattern(0);
+        module_data->set_trigger_pattern(0x80808080);
       }
 
 #define ts2_decode(x) int32_t(x)
