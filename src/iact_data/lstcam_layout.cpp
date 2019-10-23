@@ -132,6 +132,7 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
   layout->set_can_read_waveforms(true);
   layout->set_can_read_charges(false);
   layout->set_can_read_peak_sample(false);
+  layout->set_can_read_trigger_image(false);
 
   layout->add_module_counter_name("backplane_10MHz_counter");
   layout->add_module_counter_name("pps_counter");

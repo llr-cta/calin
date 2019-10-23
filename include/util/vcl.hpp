@@ -687,6 +687,34 @@ void transpose(Vec8f* x);
 void transpose(Vec4d* x);
 #endif
 
+inline Vec8s reverse(Vec8s x) { return ::vcl::permute8s<7,6,5,4,3,2,1,0>(x); }
+inline Vec8us reverse(Vec8us x) { return ::vcl::permute8us<7,6,5,4,3,2,1,0>(x); }
+inline Vec4i reverse(Vec4i x) { return ::vcl::permute4i<3,2,1,0>(x); }
+inline Vec4ui reverse(Vec4ui x) { return ::vcl::permute4ui<3,2,1,0>(x); }
+inline Vec2q reverse(Vec2q x) { return ::vcl::permute2q<1,0>(x); }
+inline Vec2uq reverse(Vec2uq x) { return ::vcl::permute2uq<1,0>(x); }
+inline Vec4f reverse(Vec4f x) { return ::vcl::permute4f<3,2,1,0>(x); }
+inline Vec2d reverse(Vec2d x) { return ::vcl::permute2d<1,0>(x); }
+#if MAX_VECTOR_SIZE >= 256
+inline Vec16s reverse(Vec16s x) { return ::vcl::permute16s<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(x); }
+inline Vec16us reverse(Vec16us x) { return ::vcl::permute16us<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(x); }
+inline Vec8i reverse(Vec8i x) { return ::vcl::permute8i<7,6,5,4,3,2,1,0>(x); }
+inline Vec8ui reverse(Vec8ui x) { return ::vcl::permute8ui<7,6,5,4,3,2,1,0>(x); }
+inline Vec4q reverse(Vec4q x) { return ::vcl::permute4q<3,2,1,0>(x); }
+inline Vec4uq reverse(Vec4uq x) { return ::vcl::permute4uq<3,2,1,0>(x); }
+inline Vec8f reverse(Vec8f x) { return ::vcl::permute8f<7,6,5,4,3,2,1,0>(x); }
+inline Vec4d reverse(Vec4d x) { return ::vcl::permute4d<3,2,1,0>(x); }
+#endif
+#if MAX_VECTOR_SIZE >= 512
+inline Vec16i reverse(Vec16i x) { return ::vcl::permute16i<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(x); }
+inline Vec16ui reverse(Vec16ui x) { return ::vcl::permute16ui<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(x); }
+inline Vec8q reverse(Vec8q x) { return ::vcl::permute8q<7,6,5,4,3,2,1,0>(x); }
+inline Vec8uq reverse(Vec8uq x) { return ::vcl::permute8uq<7,6,5,4,3,2,1,0>(x); }
+inline Vec16f reverse(Vec16f x) { return ::vcl::permute16f<15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0>(x); }
+inline Vec8d reverse(Vec8d x) { return ::vcl::permute8d<7,6,5,4,3,2,1,0>(x); }
+#endif
+
+
 } } } // namespace calin::util::vcl
 
 #define ADD_OSTREAM_OPERATOR(Vec) \

@@ -63,27 +63,31 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
     ses_pdf_(ses), ped_pdf_(ped),
     adopt_ses_pdf_(adopt_ses), adopt_ped_pdf_(adopt_ped),
     config_(config), x0_(x0), dx_(dx), nsample_(npoint),
+    oversample_factor_(std::max(config_.oversampling_factor(), 1U)),
+    inv_oversample_factor_(1.0 / double(oversample_factor_)),
+    noversample_(nsample_ * oversample_factor_),
+    dx_oversample_(dx * inv_oversample_factor_),
     nes_fft_(config.num_pe_convolutions())
 {
   int plan_flags = proto_planning_enum_to_fftw_flag(config_.fftw_planning());
 
-  ped_spec_ = fftw_alloc_real(nsample_);
+  ped_spec_ = fftw_alloc_real(noversample_);
   if(config_.include_on_off_ped_shift())
   {
-    off_spec_ = fftw_alloc_real(nsample_);
-    off_dfdx_ = fftw_alloc_real(nsample_);
+    off_spec_ = fftw_alloc_real(noversample_);
+    off_dfdx_ = fftw_alloc_real(noversample_);
   }
-  ped_fft_ = fftw_alloc_real(nsample_);
+  ped_fft_ = fftw_alloc_real(noversample_);
   for(unsigned ines=0; ines<config_.num_pe_convolutions();ines++)
-    nes_fft_[ines] = fftw_alloc_real(nsample_);
-  mes_spec_ = fftw_alloc_real(nsample_);
+    nes_fft_[ines] = fftw_alloc_real(noversample_);
+  mes_spec_ = fftw_alloc_real(noversample_);
 
   ped_plan_fwd_ =
-      fftw_plan_r2r_1d(nsample_, ped_fft_, ped_fft_, FFTW_R2HC, plan_flags);
+      fftw_plan_r2r_1d(noversample_, ped_fft_, ped_fft_, FFTW_R2HC, plan_flags);
   ses_plan_fwd_ =
-      fftw_plan_r2r_1d(nsample_, nes_fft_[0], nes_fft_[0], FFTW_R2HC, plan_flags);
+      fftw_plan_r2r_1d(noversample_, nes_fft_[0], nes_fft_[0], FFTW_R2HC, plan_flags);
   mes_plan_rev_ =
-      fftw_plan_r2r_1d(nsample_, mes_spec_, mes_spec_, FFTW_HC2R, plan_flags);
+      fftw_plan_r2r_1d(noversample_, mes_spec_, mes_spec_, FFTW_HC2R, plan_flags);
 
   if(can_calculate_parameter_gradient())
   {
@@ -94,10 +98,10 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
     ped_grad_plan_fwd_.resize(ped_npar);
     for(unsigned ipar=0;ipar<ped_npar;ipar++)
     {
-      ped_grad_[ipar] = fftw_alloc_real(nsample_);
-      ped_grad_fft_[ipar] = fftw_alloc_real(nsample_);
+      ped_grad_[ipar] = fftw_alloc_real(noversample_);
+      ped_grad_fft_[ipar] = fftw_alloc_real(noversample_);
       ped_grad_plan_fwd_[ipar] =
-          fftw_plan_r2r_1d(nsample_, ped_grad_[ipar], ped_grad_fft_[ipar],
+          fftw_plan_r2r_1d(noversample_, ped_grad_[ipar], ped_grad_fft_[ipar],
                            FFTW_R2HC, plan_flags);
     }
 
@@ -105,7 +109,7 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
     {
       off_grad_.resize(ped_npar);
       for(unsigned ipar=0;ipar<ped_npar;ipar++)
-        off_grad_[ipar] = fftw_alloc_real(nsample_);
+        off_grad_[ipar] = fftw_alloc_real(noversample_);
     }
 
     unsigned ses_npar = ses_pdf_->num_parameters();
@@ -113,9 +117,9 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
     ses_grad_plan_fwd_.resize(ses_npar);
     for(unsigned ipar=0;ipar<ses_npar;ipar++)
     {
-      ses_grad_fft_[ipar] = fftw_alloc_real(nsample_);
+      ses_grad_fft_[ipar] = fftw_alloc_real(noversample_);
       ses_grad_plan_fwd_[ipar] =
-          fftw_plan_r2r_1d(nsample_, ses_grad_fft_[ipar], ses_grad_fft_[ipar],
+          fftw_plan_r2r_1d(noversample_, ses_grad_fft_[ipar], ses_grad_fft_[ipar],
                            FFTW_R2HC, plan_flags);
     }
 
@@ -124,9 +128,9 @@ GeneralPoissonMES(double x0, double dx, unsigned npoint,
     mes_grad_plan_rev_.resize(mes_npar);
     for(unsigned ipar=0;ipar<mes_npar;ipar++)
     {
-      mes_grad_[ipar] = fftw_alloc_real(nsample_);
+      mes_grad_[ipar] = fftw_alloc_real(noversample_);
       mes_grad_plan_rev_[ipar] =
-          fftw_plan_r2r_1d(nsample_, mes_grad_[ipar], mes_grad_[ipar],
+          fftw_plan_r2r_1d(noversample_, mes_grad_[ipar], mes_grad_[ipar],
                            FFTW_HC2R, plan_flags);
     }
   }
@@ -236,9 +240,9 @@ bool GeneralPoissonMES::can_calculate_parameter_hessian()
 double GeneralPoissonMES::pdf_ped(double x)
 {
   if(config_.include_on_off_ped_shift())
-    return std::max(off_spec_[ibin(x)],0.0);
+    return std::max(downsample_one(off_spec_, ibin(x)),0.0);
   else
-    return std::max(ped_spec_[ibin(x)],0.0);
+    return std::max(downsample_one(ped_spec_, ibin(x)),0.0);
 }
 
 double GeneralPoissonMES::pdf_gradient_ped(double x, VecRef gradient)
@@ -250,16 +254,16 @@ double GeneralPoissonMES::pdf_gradient_ped(double x, VecRef gradient)
   gradient.resize(num_parameters());
   gradient.setZero();
   if(config_.include_on_off_ped_shift()) {
-    gradient[iparam_off_ped_shift()] = off_dfdx_[thebin];
+    gradient[iparam_off_ped_shift()] = downsample_one(off_dfdx_, thebin);
     unsigned ipedpar = iparam_ped();
     for(unsigned ipar=0;ipar<npar;ipar++)
-      gradient[ipedpar + ipar] = off_grad_[ipar][thebin];
-    return std::max(off_spec_[ibin(x)],0.0);
+      gradient[ipedpar + ipar] = downsample_one(off_grad_[ipar], thebin);
+    return std::max(downsample_one(off_spec_, ibin(x)),0.0);
   } else {
     unsigned ipedpar = iparam_ped();
     for(unsigned ipar=0;ipar<npar;ipar++)
-      gradient[ipedpar + ipar] = ped_grad_[ipar][thebin];
-    return std::max(ped_spec_[thebin],0.0);
+      gradient[ipedpar + ipar] = downsample_one(ped_grad_[ipar], thebin);
+    return std::max(downsample_one(ped_spec_, thebin),0.0);
   }
 }
 
@@ -272,7 +276,7 @@ double GeneralPoissonMES::pdf_gradient_hessian_ped(double x, VecRef gradient,
 double GeneralPoissonMES::pdf_mes(double x)
 {
   //std::cout << x << ' ' << ibin(x) << ' ' << mes_spec_[ibin(x)] << '\n';
-  return std::max(mes_spec_[ibin(x)],0.0);
+  return std::max(downsample_one(mes_spec_, ibin(x)),0.0);
 }
 
 double GeneralPoissonMES::pdf_gradient_mes(double x, VecRef gradient)
@@ -283,10 +287,10 @@ double GeneralPoissonMES::pdf_gradient_mes(double x, VecRef gradient)
   unsigned ipedpar = iparam_ped();
   gradient.resize(npar);
   gradient.setZero();
-  gradient[iparam_light_intensity()] = mes_grad_[0][thebin];
+  gradient[iparam_light_intensity()] = downsample_one(mes_grad_[0], thebin);
   for(unsigned ipar=ipedpar;ipar<npar;ipar++)
-    gradient[ipar] = mes_grad_[ipar-ipedpar+1][thebin];
-  return std::max(mes_spec_[thebin],0.0);
+    gradient[ipar] = downsample_one(mes_grad_[ipar-ipedpar+1], thebin);
+  return std::max(downsample_one(mes_spec_, thebin),0.0);
 }
 
 double GeneralPoissonMES::pdf_gradient_hessian_mes(double x, VecRef gradient,
@@ -322,14 +326,14 @@ double GeneralPoissonMES::ses_rms_pe()
 Eigen::VectorXd GeneralPoissonMES::multi_electron_spectrum() const
 {
   Eigen::VectorXd spec(nsample_);
-  std::copy(mes_spec_, mes_spec_+nsample_, spec.data());
+  downsample_all(spec.data(), mes_spec_);
   return spec;
 }
 
 Eigen::VectorXd GeneralPoissonMES::pedestal_spectrum() const
 {
   Eigen::VectorXd spec(nsample_);
-  std::copy(ped_spec_, ped_spec_+nsample_, spec.data());
+  downsample_all(spec.data(), ped_spec_);
   return spec;
 }
 
@@ -337,7 +341,7 @@ Eigen::VectorXd GeneralPoissonMES::off_pedestal_spectrum() const
 {
   if(not config_.include_on_off_ped_shift())return pedestal_spectrum();
   Eigen::VectorXd spec(nsample_);
-  std::copy(off_spec_, off_spec_+nsample_, spec.data());
+  downsample_all(spec.data(), off_spec_);
   return spec;
 }
 
@@ -352,9 +356,9 @@ multi_electron_spectrum_gradient(unsigned iparam) const
   unsigned ipedpar = iparam_ped();
   Eigen::VectorXd grad(nsample_);
   if(iparam == iparam_light_intensity())
-    std::copy(mes_grad_[0], mes_grad_[0]+nsample_, grad.data());
+    downsample_all(grad.data(), mes_grad_[0]);
   else if(iparam>=ipedpar)
-    std::copy(mes_grad_[iparam-ipedpar+1], mes_grad_[iparam-ipedpar+1]+nsample_, grad.data());
+    downsample_all(grad.data(), mes_grad_[iparam-ipedpar+1]);
   else
     grad.setZero();
   return grad;
@@ -371,7 +375,7 @@ pedestal_spectrum_gradient(unsigned iparam) const
   if(iparam==0 || iparam>ped_pdf_->num_parameters())
     grad.setZero();
   else
-    std::copy(ped_grad_[iparam-1], ped_grad_[iparam-1]+nsample_, grad.data());
+    downsample_all(grad.data(), ped_grad_[iparam-1]);
   return grad;
 }
 
@@ -388,9 +392,9 @@ off_pedestal_spectrum_gradient(unsigned iparam) const
   Eigen::VectorXd grad(nsample_);
   unsigned ipedpar = iparam_ped();
   if(iparam == iparam_off_ped_shift())
-    std::copy(off_dfdx_, off_dfdx_+nsample_, grad.data());
+    downsample_all(grad.data(), off_dfdx_);
   else if(iparam >= ipedpar and iparam < iparam_ses())
-    std::copy(off_grad_[iparam-ipedpar], off_grad_[iparam-ipedpar]+nsample_, grad.data());
+    downsample_all(grad.data(), off_grad_[iparam-ipedpar]);
   else
     grad.setZero();
   return grad;
@@ -409,23 +413,21 @@ single_electron_spectrum_gradient(unsigned iparam) const
   if(iparam<isespar)return Eigen::VectorXd::Zero(nsample_);
   iparam -= isespar;
 
-  uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
+  uptr_fftw_data spec_buffer { fftw_alloc_real(noversample_), fftw_free };
   assert(spec_buffer);
 
   uptr_fftw_plan spec_plan = {
-    fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
+    fftw_plan_r2r_1d(noversample_, spec_buffer.get(), spec_buffer.get(),
                      FFTW_HC2R, plan_flags), fftw_destroy_plan };
   assert(spec_plan);
 
-  std::copy(ses_grad_fft_[iparam], ses_grad_fft_[iparam]+nsample_,
+  std::copy(ses_grad_fft_[iparam], ses_grad_fft_[iparam]+noversample_,
             spec_buffer.get());
   fftw_execute(spec_plan.get());
 
   Eigen::VectorXd spec_gradient(nsample_);
-  double norm { 1.0/double(nsample_) };
-  std::transform(spec_buffer.get(), spec_buffer.get()+nsample_,
-                 spec_gradient.data(),
-                 [norm](double x){return x*norm;});
+  double norm { 1.0/double(noversample_) };
+  downsample_all(spec_gradient.data(), spec_buffer.get(), /* rescale= */ norm);
   return spec_gradient;
 }
 
@@ -437,21 +439,20 @@ Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum(unsigned n) const
     throw std::out_of_range("GeneralPoissonMES::n_electron_spectrum: "
                             "number of PEs out of range");
 
-  uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
+  uptr_fftw_data spec_buffer { fftw_alloc_real(noversample_), fftw_free };
   assert(spec_buffer);
 
   uptr_fftw_plan spec_plan = {
-    fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
+    fftw_plan_r2r_1d(noversample_, spec_buffer.get(), spec_buffer.get(),
                      FFTW_HC2R, plan_flags), fftw_destroy_plan };
   assert(spec_plan);
 
-  std::copy(nes_fft_[n-1], nes_fft_[n-1]+nsample_, spec_buffer.get());
+  std::copy(nes_fft_[n-1], nes_fft_[n-1]+noversample_, spec_buffer.get());
   fftw_execute(spec_plan.get());
 
   Eigen::VectorXd spec(nsample_);
-  double norm { 1.0/double(nsample_) };
-  std::transform(spec_buffer.get(), spec_buffer.get()+nsample_, spec.data(),
-                 [norm](double x){return x*norm;});
+  double norm { 1.0/double(noversample_) };
+  downsample_all(spec.data(), spec_buffer.get(), /* rescale= */ norm);
   return spec;
 }
 
@@ -465,21 +466,21 @@ Eigen::VectorXd GeneralPoissonMES::n_electron_spectrum_with_pedestal(unsigned n)
     throw std::out_of_range("GeneralPoissonMES::n_electron_spectrum_with_pedestal: "
                             "number of PEs out of range");
 
-  uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
+  uptr_fftw_data spec_buffer { fftw_alloc_real(noversample_), fftw_free };
   assert(spec_buffer);
 
   uptr_fftw_plan spec_plan = {
-    fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
+    fftw_plan_r2r_1d(noversample_, spec_buffer.get(), spec_buffer.get(),
                      FFTW_HC2R, plan_flags), fftw_destroy_plan };
   assert(spec_plan);
 
   hcvec_scale_and_multiply(spec_buffer.get(), nes_fft_[n-1], ped_fft_,
-                           nsample_, 1.0/double(nsample_));
+                           noversample_, 1.0/double(noversample_));
 
   fftw_execute(spec_plan.get());
 
   Eigen::VectorXd spec(nsample_);
-  std::copy(spec_buffer.get(), spec_buffer.get()+nsample_, spec.data());
+  downsample_all(spec.data(), spec_buffer.get());
   return spec;
 }
 
@@ -492,21 +493,20 @@ Eigen::VectorXd GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
                             "number of PEs out of range");
 
   Eigen::VectorXd spec(nsample_);
-  double log_nsample = std::log(double(nsample_));
+  double log_nsample = std::log(double(noversample_));
 
   if(n==0)
   {
     double scale = std::exp(-intensity_pe_);
-    std::transform(ped_spec_, ped_spec_+nsample_, spec.data(),
-                   [scale](const double& x){ return x*scale; });
+    downsample_all(spec.data(), ped_spec_, /* rescale= */ scale);
     return spec;
   }
 
-  uptr_fftw_data spec_buffer { fftw_alloc_real(nsample_), fftw_free };
+  uptr_fftw_data spec_buffer { fftw_alloc_real(noversample_), fftw_free };
   assert(spec_buffer);
 
   uptr_fftw_plan spec_plan = {
-    fftw_plan_r2r_1d(nsample_, spec_buffer.get(), spec_buffer.get(),
+    fftw_plan_r2r_1d(noversample_, spec_buffer.get(), spec_buffer.get(),
                      FFTW_HC2R, plan_flags), fftw_destroy_plan };
   assert(spec_plan);
 
@@ -517,10 +517,10 @@ Eigen::VectorXd GeneralPoissonMES::mes_n_electron_cpt(unsigned n) const
              log_nsample) };
 
   hcvec_scale_and_multiply(spec_buffer.get(), nes_fft_[n-1], ped_fft_,
-                           nsample_, poisson_factor*dx_);
+                           noversample_, poisson_factor*dx_oversample_);
 
   fftw_execute(spec_plan.get());
-  std::copy(spec_buffer.get(), spec_buffer.get()+nsample_, spec.data());
+  downsample_all(spec.data(), spec_buffer.get());
   return spec;
 }
 
@@ -579,7 +579,7 @@ void GeneralPoissonMES::set_cache(bool force)
     Eigen::VectorXd ses_gradient(ses_npar);
     ses_gradient.setZero();
     calin::math::accumulator::LikelihoodAccumulator ses_acc;
-    for(unsigned isample = 0;isample<nsample_;isample++)
+    for(unsigned isample = 0;isample<noversample_;isample++)
     {
       // The SES describes charge delivered by the PMT and is assumed be
       // positive. Hence the function is sampled from zero here and not
@@ -587,7 +587,7 @@ void GeneralPoissonMES::set_cache(bool force)
       // axis limits to specify the minimum bound. We would need to
       // adjust x0 to compensate for where the pedestal distribution
       // would end up.
-      const double x = ses_x(isample); // (0.5+double(isample))*dx_;
+      const double x = ses_x_oversampled(isample); // (0.5+double(isample))*dx_;
       double val;
       if(calc_gradient)
       {
@@ -608,12 +608,12 @@ void GeneralPoissonMES::set_cache(bool force)
     if(config_.ses_norm_warning_threshold()>0 and
       (config_.max_ses_norm_warning()==0 or
         n_ses_norm_warning_<config_.max_ses_norm_warning()) and
-      std::abs(ses_acc.total() * dx_ - 1.0) >
-        config_.ses_norm_warning_threshold()/double(nsample_))
+      std::abs(ses_acc.total() * dx_oversample_ - 1.0) >
+        config_.ses_norm_warning_threshold()/double(noversample_))
     {
       // The owls are not what they seem
       LOG(WARNING) << "SES normalization is significantly different from 1.0: "
-                   << ses_acc.total() * dx_ << '\n'
+                   << ses_acc.total() * dx_oversample_ << '\n'
                    << "SES parameter values : "
                    << ses_pdf_->parameter_values().transpose();
       n_ses_norm_warning_++;
@@ -624,7 +624,7 @@ void GeneralPoissonMES::set_cache(bool force)
     fftw_execute(ses_plan_fwd_);
     for(unsigned ines=1;ines<config_.num_pe_convolutions();ines++)
       hcvec_scale_and_multiply(nes_fft_[ines], nes_fft_[ines-1], nes_fft_[0],
-                               nsample_, dx_);
+                               noversample_, dx_oversample_);
   } // if(ses_npar or force)
 
   // Same for PED, if it has no paramerters then we assume it doesn't change,
@@ -634,9 +634,9 @@ void GeneralPoissonMES::set_cache(bool force)
   {
     Eigen::VectorXd ped_gradient(ped_npar);
     ped_gradient.setZero();
-    for(unsigned isample = 0;isample<nsample_;isample++)
+    for(unsigned isample = 0;isample<noversample_;isample++)
     {
-      const double x = ped_x(isample); // x0_ + (0.5+double(isample))*dx_;
+      const double x = ped_x_oversampled(isample); // x0_ + (0.5+double(isample))*dx_;
       double val;
       if(calc_gradient)
       {
@@ -659,9 +659,9 @@ void GeneralPoissonMES::set_cache(bool force)
   {
     Eigen::VectorXd ped_gradient(ped_npar);
     ped_gradient.setZero();
-    for(unsigned isample = 0;isample<nsample_;isample++)
+    for(unsigned isample = 0;isample<noversample_;isample++)
     {
-      const double x = ped_x(isample) + off_ped_shift_dc_;
+      const double x = ped_x_oversampled(isample) + off_ped_shift_dc_;
       double val;
       if(calc_gradient)
       {
@@ -690,59 +690,59 @@ void GeneralPoissonMES::set_cache(bool force)
     for(unsigned ipar=0;ipar<ped_npar;ipar++)
       fftw_execute(ped_grad_plan_fwd_[ipar]);
     for(unsigned ipar=0;ipar<mes_npar;ipar++)
-      std::fill(mes_grad_[ipar], mes_grad_[ipar]+nsample_, 0.0);
+      std::fill(mes_grad_[ipar], mes_grad_[ipar]+noversample_, 0.0);
   }
 
-  std::fill(mes_spec_, mes_spec_+nsample_, 0.0);
+  std::fill(mes_spec_, mes_spec_+noversample_, 0.0);
 
   double log_intensity = std::log(intensity_pe_);
-  double log_nsample = std::log(double(nsample_));
+  double log_nsample = std::log(double(noversample_));
   for(unsigned ines = 0;ines<config_.num_pe_convolutions();ines++)
   {
     double dbl_n { double(ines+1) };
     double poisson_factor {
       std::exp(dbl_n*log_intensity - intensity_pe_ - lgamma(dbl_n+1.0) -
                log_nsample) };
-    hcvec_scale_and_add(mes_spec_, nes_fft_[ines], nsample_, poisson_factor);
+    hcvec_scale_and_add(mes_spec_, nes_fft_[ines], noversample_, poisson_factor);
 
     if(calc_gradient)
     {
       hcvec_scale_and_add(mes_grad_[0],
-        nes_fft_[ines], nsample_, poisson_factor*(dbl_n/intensity_pe_ - 1.0));
+        nes_fft_[ines], noversample_, poisson_factor*(dbl_n/intensity_pe_ - 1.0));
       if(ines>0)
         for(unsigned ipar=0;ipar<ses_npar;ipar++)
           hcvec_scale_and_add(mes_grad_[1+ped_npar+ipar], nes_fft_[ines-1],
-                              nsample_, dbl_n*poisson_factor);
+                              noversample_, dbl_n*poisson_factor);
     }
   }
 
   if(calc_gradient)
   {
     hcvec_scale_and_multiply(mes_grad_[0],
-      mes_grad_[0], ped_fft_, nsample_, dx_);
+      mes_grad_[0], ped_fft_, noversample_, dx_oversample_);
     hcvec_scale_and_add(mes_grad_[0],
-      ped_fft_, nsample_, -std::exp(-intensity_pe_-log_nsample));
+      ped_fft_, noversample_, -std::exp(-intensity_pe_-log_nsample));
     for(unsigned ipar=0;ipar<ped_npar;ipar++)
     {
       hcvec_scale_and_multiply(mes_grad_[1+ipar],
-        mes_spec_, ped_grad_fft_[ipar], nsample_, dx_);
+        mes_spec_, ped_grad_fft_[ipar], noversample_, dx_oversample_);
       hcvec_scale_and_add(mes_grad_[1+ipar],
-        ped_grad_fft_[ipar], nsample_, std::exp(-intensity_pe_-log_nsample));
+        ped_grad_fft_[ipar], noversample_, std::exp(-intensity_pe_-log_nsample));
     }
     for(unsigned ipar=0;ipar<ses_npar;ipar++)
     {
       hcvec_scale_and_multiply(mes_grad_[1+ped_npar+ipar],
-        mes_grad_[1+ped_npar+ipar], ses_grad_fft_[ipar], nsample_, dx_);
+        mes_grad_[1+ped_npar+ipar], ses_grad_fft_[ipar], noversample_, dx_oversample_);
       hcvec_scale_and_add(mes_grad_[1+ped_npar+ipar],
-        ses_grad_fft_[ipar], nsample_,
+        ses_grad_fft_[ipar], noversample_,
         std::exp(log_intensity -intensity_pe_ - log_nsample));
       hcvec_scale_and_multiply(mes_grad_[1+ped_npar+ipar],
-        mes_grad_[1+ped_npar+ipar], ped_fft_, nsample_, dx_);
+        mes_grad_[1+ped_npar+ipar], ped_fft_, noversample_, dx_oversample_);
     }
   }
 
-  hcvec_scale_and_multiply(mes_spec_, mes_spec_, ped_fft_, nsample_, dx_);
-  hcvec_scale_and_add(mes_spec_, ped_fft_, nsample_,
+  hcvec_scale_and_multiply(mes_spec_, mes_spec_, ped_fft_, noversample_, dx_oversample_);
+  hcvec_scale_and_add(mes_spec_, ped_fft_, noversample_,
                       std::exp(-intensity_pe_-log_nsample));
   fftw_execute(mes_plan_rev_);
 

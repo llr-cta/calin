@@ -199,7 +199,7 @@ public:
 
 private:
   static TelescopeRandomAccessDataSourceWithRunConfig* construct_delegate(
-    const std::string& filename, const config_type& config,
+    std::string filename, const config_type& config,
     const decoder_config_type& decoder_config);
 };
 

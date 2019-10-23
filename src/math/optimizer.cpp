@@ -209,7 +209,8 @@ void Optimizer::opt_starting(const std::string& opt_name,
     }
   }
 
-  if(verbose_ == OptimizerVerbosityLevel::SUMMARY_ONLY or
+  if(verbose_ == OptimizerVerbosityLevel::SILENT or
+     verbose_ == OptimizerVerbosityLevel::SUMMARY_ONLY or
      verbose_ == OptimizerVerbosityLevel::SUMMARY_AND_PROGRESS)return;
 
   auto L = LOG(INFO);

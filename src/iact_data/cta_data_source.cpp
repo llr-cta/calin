@@ -120,9 +120,11 @@ CTAZFITSDataSource::get_run_configuration()
 }
 
 calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*
-CTAZFITSDataSource::construct_delegate(const std::string& filename,
+CTAZFITSDataSource::construct_delegate(std::string filename,
   config_type config, decoder_config_type decoder_config)
 {
+  expand_filename_in_place(filename);
+
   if(!is_file(filename))
     throw std::runtime_error(
       "CTAZFITSDataSource::construct_delegate: File not found: " + filename);

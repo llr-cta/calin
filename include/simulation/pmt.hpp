@@ -30,6 +30,7 @@
 #include <Eigen/Core>
 #include <math/rng.hpp>
 #include <simulation/pmt.pb.h>
+#include <math/fftw_util.pb.h>
 
 namespace calin { namespace simulation { namespace pmt {
 
@@ -41,6 +42,8 @@ public:
   virtual Eigen::VectorXd rvs(unsigned size = 1);
 };
 
+// Original Polya PMT simulation with Polya distributon for all stages and an
+// option for electron to bypass a stage to generate a low-gain population
 class PMTSimPolya: public SignalSource
 {
 public:
@@ -48,7 +51,6 @@ public:
 	  math::rng::RNG* rng = nullptr);
   virtual ~PMTSimPolya();
   virtual double rv();
-  //virtual void rvs(std::vector<double>& n, unsigned size = 1);
 
   // Slow function to calculate PMF using Prescott (1965).
   calin::ix::simulation::pmt::PMTSimPMF calc_pmf(double precision = 0.0001,
@@ -74,6 +76,104 @@ protected:
   unsigned                                       napprox_limit_;
   double                                         p0_;
   double                                         total_gain_;
+};
+
+// Newer Polya PMT simulation with option for multiple populations in the first
+// stage but with simple Poisson statistics for all subsequent stages
+
+class PMTSimTwoPopulation: public SignalSource
+{
+public:
+  PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig& config,
+    math::rng::RNG* rng = nullptr, bool use_new_stage_n_algorithm = true);
+  virtual ~PMTSimTwoPopulation();
+  virtual double rv() override;
+
+  calin::ix::simulation::pmt::PMTSimPMF calc_pmf(unsigned nstage = 0,
+      double precision = 1e-10, bool log_progress = false) {
+    return calc_pmf_prescott(nstage, precision, log_progress);
+  }
+
+  // Slow function to calculate PMF using Prescott (1965).
+  calin::ix::simulation::pmt::PMTSimPMF calc_pmf_prescott(unsigned nstage = 0,
+    double precision = 1e-10, bool log_progress = false) const;
+
+  // Faster function to calculate PMF using FFTs
+  calin::ix::simulation::pmt::PMTSimPMF calc_pmf_fft(unsigned npoint = 0, unsigned nstage = 0,
+    double precision = 1e-10, bool log_progress = false, bool skip_inverse_fft = false,
+    calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE) const;
+
+  calin::ix::simulation::pmt::PMTSimPMF calc_multi_electron_spectrum(
+    double intensity_mean, double intensity_rms_frac = 0.0,
+    const Eigen::VectorXd& ped_hc_dft = Eigen::VectorXd(),
+    unsigned npoint = 0, unsigned nstage = 0,
+    double precision = 1e-10, bool log_progress = false,
+    calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE) const;
+
+  double total_gain() const { return total_gain_; }
+  double p0() const { return p0_; }
+  double stage_0_gain() const {
+    return config_.stage_0_lo_prob()*config_.stage_0_lo_gain()
+      + (1-config_.stage_0_lo_prob())*config_.stage_0_hi_gain();
+  }
+  double stage_n_gain() const { return stage_n_gain_; }
+  std::vector<double> stage_n_x1_cdf() const { return stage_n_x1_cdf_; }
+  std::vector<double> stage_n_x2_cdf() const { return stage_n_x2_cdf_; }
+  std::vector<double> stage_n_x3_cdf() const { return stage_n_x3_cdf_; }
+
+  std::vector<double> stage_0_lo_pmf(double precision = 1e-10) const {
+    return stage_pmf({0.0, 1.0}, config_.stage_0_lo_gain(), config_.stage_0_lo_gain_rms_frac(),
+      precision);
+  }
+
+  std::vector<double> stage_0_hi_pmf(double precision = 1e-10) const {
+    return stage_pmf({0.0, 1.0}, config_.stage_0_hi_gain(), config_.stage_0_hi_gain_rms_frac(),
+      precision);
+  }
+
+  std::vector<double> stage_0_pmf(double precision = 1e-10) const;
+
+  std::vector<double> stage_n_pmf(double precision = 1e-10) const {
+    return stage_pmf({0.0, 1.0}, stage_n_gain_, config_.stage_n_gain_rms_frac(),
+      precision);
+  }
+
+  math::rng::RNG* rng() const { return rng_; }
+  void set_rng(math::rng::RNG* rng) { delete my_rng_; my_rng_=0; rng_=rng; }
+  uint64_t nflop() const { return nflop_; }
+
+  static calin::ix::simulation::pmt::PMTSimTwoPopulationConfig cta_model_4();
+
+protected:
+  unsigned stage_n_poisson(unsigned n_in) const;
+  unsigned stage_n_new(unsigned n_in) const;
+  unsigned stage_n_old(unsigned n_in) const;
+
+  static double stage_p0(double p0_last, double gain, double gain_rms_frac);
+  std::vector<double> stage_pmf(const std::vector<double>& pmf_last,
+    double gain, double gain_rms_frac, double precision) const;
+  void recalc_total_gain_and_p0();
+  std::string stage_summary(unsigned istage, const std::vector<double>& pk) const;
+  static void renorm_pmf(std::vector<double>& pmf);
+  std::string fft_log_progress(unsigned istage, double* fk, unsigned nsample, int plan_flags) const;
+
+  calin::ix::simulation::pmt::PMTSimTwoPopulationConfig config_;
+  double           p0_                        = 0.0;
+  double           total_gain_                = 1.0;
+  double           stage_n_gain_              = 1.0;
+  double           gamma_a_0_lo_              = 0.0;
+  double           gamma_b_0_lo_              = 0.0;
+  double           gamma_a_0_hi_              = 0.0;
+  double           gamma_b_0_hi_              = 0.0;
+  double           gamma_a_n_                 = 0.0;
+  double           gamma_b_n_                 = 0.0;
+  math::rng::RNG*  rng_                       = nullptr;
+  math::rng::RNG*  my_rng_                    = nullptr;
+  std::vector<double> stage_n_x1_cdf_;
+  std::vector<double> stage_n_x2_cdf_;
+  std::vector<double> stage_n_x3_cdf_;
+  bool             use_new_stage_n_algorithm_ = true;
+  mutable uint64_t nflop_                     = 0;
 };
 
 class PMTSimInvCDF: public SignalSource

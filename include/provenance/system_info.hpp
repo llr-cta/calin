@@ -50,4 +50,9 @@ void copy_the_host_info(calin::ix::provenance::system_info::HostAndProcessInfo* 
 void write_system_info_to_log(calin::util::log::Level level = calin::util::log::INFO,
   calin::util::log::Logger* logger = calin::util::log::default_logger());
 
+bool has_avx();
+bool has_avx2();
+bool has_avx512f();
+bool has_fma3();
+
 } } } // namespace calin::provenance::system

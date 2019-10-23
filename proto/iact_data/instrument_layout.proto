@@ -251,6 +251,7 @@ message CameraLayout {
   bool can_read_waveforms                                  = 42;
   bool can_read_charges                                    = 43;
   bool can_read_peak_sample                                = 44;
+  bool can_read_trigger_image                              = 45;
 
   repeated string module_counter_name                      = 50;
 
