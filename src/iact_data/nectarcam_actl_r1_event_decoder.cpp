@@ -304,13 +304,13 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
 
       if(data_version > 0) {
         const auto* mod_trigger = reinterpret_cast<const NectarCountersWithTriggerPattern*>(mod_data);
-        module_data->set_trigger_pattern(mod_trigger->trigger_pattern);
+        module_data->set_trigger_pattern(mod_trigger->trigger_pattern & 0x7F7F7F7F);
 
         for(unsigned imodchan=0; imodchan<7; imodchan++) {
-          uint32_t chan_trigger = mod_trigger->trigger_pattern>>imodchan;
-          chan_trigger =
-            (chan_trigger & 0x01) | ((chan_trigger >> 7) & 0x02) |
-            ((chan_trigger >> 14) & 0x04) | ((chan_trigger >> 21) & 0x08);
+          uint32_t chan_trigger = (mod_trigger->trigger_pattern>>imodchan) & 0x01010101;
+          chan_trigger |= chan_trigger >> 7;
+          chan_trigger |= chan_trigger >> 14;
+          chan_trigger &= 0x0F;
           trigger_map->set_trigger_image(imod*7+imodchan, chan_trigger);
           if(chan_trigger) {
             trigger_map->add_hit_channel_id(imod*7+imodchan);
