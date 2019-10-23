@@ -307,10 +307,14 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
         module_data->set_trigger_pattern(mod_trigger->trigger_pattern & 0x7F7F7F7F);
 
         for(unsigned imodchan=0; imodchan<7; imodchan++) {
+          // Shuffle trigger pattern for each channel into its own bit stream
+          // As an example, if imodchan=4
+          // and pattern starts as               XXX4XXXX XXX3XXXX XXX2XXXX XXX1XXXX
+          // first apply shift and mask giving   00000004 00000003 00000002 00000001
           uint32_t chan_trigger = (mod_trigger->trigger_pattern>>imodchan) & 0x01010101;
-          chan_trigger |= chan_trigger >> 7;
-          chan_trigger |= chan_trigger >> 14;
-          chan_trigger &= 0x0F;
+          chan_trigger |= chan_trigger >> 7;  // 00000004 00000043 00000032 00000021
+          chan_trigger |= chan_trigger >> 14; // 00000004 00000043 00000432 00004321
+          chan_trigger &= 0x0F;               // 00000000 00000000 00000000 00004321
           trigger_map->set_trigger_image(imod*7+imodchan, chan_trigger);
           if(chan_trigger) {
             trigger_map->add_hit_channel_id(imod*7+imodchan);
