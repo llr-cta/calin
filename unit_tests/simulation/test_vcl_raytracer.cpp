@@ -287,6 +287,84 @@ TEST(TestVCLRaytracer, PSF) {
   delete array;
 }
 
+TEST(TestVCLAlignedCircularAperture, CompareToScalar) {
+  using Real = VCL256DoubleReal;
+  calin::math::rng::RNG rng(__PRETTY_FUNCTION__,"Ray generator");
+  for(unsigned iray=0; iray<100000; ++iray) {
+    double x0 = rng.uniform()*2.0 - 1.0;
+    double y0 = rng.uniform()*2.0 - 1.0;
+    double z0 = rng.uniform()*2.0 - 1.0;
+    double d0 = rng.uniform()*0.25;
+
+    Eigen::Vector3d center(x0,y0,z0);
+    calin::simulation::vs_optics::VSOAlignedCircularAperture sobs(center, d0);
+    AlignedCircularAperture<Real> vobs(center, d0);
+
+    double x = rng.uniform()*2.0 - 1.0;
+    double y = rng.uniform()*2.0 - 1.0;
+    double z = rng.uniform()*2.0 - 1.0;
+    double uy = rng.uniform()*2.0 - 1.0;
+    double theta = rng.uniform()*2.0*M_PI;
+    double ur = std::sqrt(1.0-uy*uy);
+    double ux = ur*std::cos(theta);
+    double uz = ur*std::sin(theta);
+    Eigen::Vector3d r(x,y,z);
+    Eigen::Vector3d u(ux,uy,uz);
+
+    calin::math::ray::Ray sray_in(r,u);
+    calin::math::ray::Ray sray_out;
+    bool sintersects = sobs.doesObscure(sray_in, sray_out, 1.0);
+
+    calin::math::ray::VCLRay<Real> vray_in(
+      r.template cast<Real::real_vt>(), u.template cast<Real::real_vt>());
+    calin::math::ray::VCLRay<Real> vray_out;
+    Real::bool_vt vintersects = vobs.doesObscure(vray_in, vray_out, 1.0);
+
+    ASSERT_EQ(sintersects, vintersects[0])
+      << sintersects << ' ' << vintersects << ' ' << iray << '\n'
+      << r.transpose() << '\n' << u.transpose();
+  }
+}
+
+TEST(TestVCLAlignedRectangularAperture, CompareToScalar) {
+  using Real = VCL256DoubleReal;
+  calin::math::rng::RNG rng(__PRETTY_FUNCTION__,"Ray generator");
+  for(unsigned iray=0; iray<100000; ++iray) {
+    double x0 = rng.uniform()*2.0 - 1.0;
+    double y0 = rng.uniform()*2.0 - 1.0;
+    double z0 = rng.uniform()*2.0 - 1.0;
+    double dx = rng.uniform()*0.25;
+    double dz = rng.uniform()*0.25;
+
+    Eigen::Vector3d center(x0,y0,z0);
+    calin::simulation::vs_optics::VSOAlignedRectangularAperture sobs(center, dx, dz);
+    AlignedRectangularAperture<Real> vobs(center, dx, dz);
+
+    double x = rng.uniform()*2.0 - 1.0;
+    double y = rng.uniform()*2.0 - 1.0;
+    double z = rng.uniform()*2.0 - 1.0;
+    double uy = rng.uniform()*2.0 - 1.0;
+    double theta = rng.uniform()*2.0*M_PI;
+    double ur = std::sqrt(1.0-uy*uy);
+    double ux = ur*std::cos(theta);
+    double uz = ur*std::sin(theta);
+    Eigen::Vector3d r(x,y,z);
+    Eigen::Vector3d u(ux,uy,uz);
+
+    calin::math::ray::Ray sray_in(r,u);
+    calin::math::ray::Ray sray_out;
+    bool sintersects = sobs.doesObscure(sray_in, sray_out, 1.0);
+
+    calin::math::ray::VCLRay<Real> vray_in(
+      r.template cast<Real::real_vt>(), u.template cast<Real::real_vt>());
+    calin::math::ray::VCLRay<Real> vray_out;
+    Real::bool_vt vintersects = vobs.doesObscure(vray_in, vray_out, 1.0);
+
+    ASSERT_EQ(sintersects, vintersects[0])
+      << sintersects << ' ' << vintersects << ' ' << iray << '\n'
+      << r.transpose() << '\n' << u.transpose();
+  }
+}
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);

@@ -96,10 +96,13 @@ public:
   using typename VCLRealType::mat3_vt;
   using Ray = calin::math::ray::VCLRay<VCLRealType>;
 
+  using typename VCLRealType::vec3_t;
+  using typename VCLRealType::real_t;
+
   virtual ~Obscuration() {
     // nothing to see here
   }
-  virtual bool_vt doesObscure(const Ray& p_in, Ray& p_out, real_vt n) = 0;
+  virtual bool_vt doesObscure(const Ray& r_in, Ray& r_out, real_vt n) = 0;
   virtual Obscuration<VCLRealType>* clone() const = 0;
 };
 
@@ -519,9 +522,16 @@ public:
   using typename Obscuration<VCLRealType>::real_vt;
   using typename Obscuration<VCLRealType>::bool_vt;
   using typename Obscuration<VCLRealType>::vec3_vt;
-  using typename Obscuration<VCLRealType>::mat3_vt;
   using typename Obscuration<VCLRealType>::Ray;
+  using typename Obscuration<VCLRealType>::vec3_t;
 
+  AlignedBoxObscuration(const vec3_t& max_corner, const vec3_t& min_corner):
+    Obscuration<VCLRealType>(),
+    min_corner_(min_corner.template cast<real_vt>()),
+    max_corner_(max_corner.template cast<real_vt>())
+  {
+    // nothing to see here
+  }
   AlignedBoxObscuration(const vec3_vt& max_corner, const vec3_vt& min_corner):
     Obscuration<VCLRealType>(), min_corner_(min_corner), max_corner_(max_corner)
   {
@@ -538,13 +548,13 @@ public:
   {
     // nothing to see here
   }
-  bool_vt doesObscure(const Ray& p_in, Ray& p_out, real_vt n) override
+  bool_vt doesObscure(const Ray& r_in, Ray& r_out, real_vt n) override
   {
     real_vt tmin;
     real_vt tmax;
-    bool_vt mask = p_in.box_has_future_intersection(tmin, tmax, min_corner_, max_corner_);
-    p_out = p_in;
-    p_out.propagate_dist_with_mask(mask & (tmin>0), tmin, n);
+    bool_vt mask = r_in.box_has_future_intersection(tmin, tmax, min_corner_, max_corner_);
+    r_out = r_in;
+    r_out.propagate_dist_with_mask(mask & (tmin>0), tmin, n);
     return mask;
   }
   virtual AlignedBoxObscuration<VCLRealType>* clone() const override
@@ -556,7 +566,112 @@ private:
   vec3_vt max_corner_;
 };
 
+template<typename VCLRealType> class AlignedCircularAperture:
+  public Obscuration<VCLRealType>
+{
+public:
+  using typename Obscuration<VCLRealType>::real_vt;
+  using typename Obscuration<VCLRealType>::bool_vt;
+  using typename Obscuration<VCLRealType>::vec3_vt;
+  using typename Obscuration<VCLRealType>::Ray;
+  using typename Obscuration<VCLRealType>::vec3_t;
+  using typename Obscuration<VCLRealType>::real_t;
 
+  AlignedCircularAperture(const vec3_t& center, const real_t& diameter):
+    Obscuration<VCLRealType>(), center_(center.template cast<real_vt>()),
+    radius_sq_(0.25*diameter*diameter)
+  {
+    // nothing to see here
+  }
+  AlignedCircularAperture(const vec3_vt& center, const real_vt& diameter):
+    Obscuration<VCLRealType>(), center_(center), radius_sq_(0.25*diameter*diameter)
+  {
+    // nothing to see here
+  }
+  AlignedCircularAperture(const calin::simulation::vs_optics::VSOAlignedCircularAperture& o):
+    Obscuration<VCLRealType>(),
+    center_(o.center().template cast<real_vt>()), radius_sq_(o.radius_sq())
+  {
+    // nothing to see here
+  }
+  virtual ~AlignedCircularAperture()
+  {
+    // nothing to see here
+  }
+  bool_vt doesObscure(const Ray& r_in, Ray& r_out, real_vt n) override
+  {
+    using calin::math::special::SQR;
+    r_out = r_in;
+    bool_vt ray_reaches_plane = r_out.propagate_to_y_plane(-center_.y(),
+      /*time_reversal_ok=*/ false, n);
+    const real_vt r2 =
+      SQR(r_out.x()-center_.x())+SQR(r_out.z()-center_.z())-radius_sq_;
+    return ray_reaches_plane & (r2>0);
+  }
+  virtual AlignedCircularAperture<VCLRealType>* clone() const override
+  {
+    return new AlignedCircularAperture<VCLRealType>(*this);
+  }
+private:
+  vec3_vt center_;
+  real_vt radius_sq_;
+};
+
+template<typename VCLRealType> class AlignedRectangularAperture:
+  public Obscuration<VCLRealType>
+{
+public:
+  using typename Obscuration<VCLRealType>::real_vt;
+  using typename Obscuration<VCLRealType>::bool_vt;
+  using typename Obscuration<VCLRealType>::vec3_vt;
+  using typename Obscuration<VCLRealType>::Ray;
+  using typename Obscuration<VCLRealType>::vec3_t;
+  using typename Obscuration<VCLRealType>::real_t;
+
+  AlignedRectangularAperture(const vec3_t& center,
+      const real_t& flat_to_flat_x, const real_t& flat_to_flat_z):
+    Obscuration<VCLRealType>(), center_(center.template cast<real_vt>()),
+    flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z)
+  {
+    // nothing to see here
+  }
+  AlignedRectangularAperture(const vec3_vt& center,
+      const real_vt& flat_to_flat_x, const real_vt& flat_to_flat_z):
+    Obscuration<VCLRealType>(), center_(center),
+    flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z)
+  {
+    // nothing to see here
+  }
+  AlignedRectangularAperture(const calin::simulation::vs_optics::VSOAlignedRectangularAperture& o):
+    Obscuration<VCLRealType>(),
+    center_(o.center().template cast<real_vt>()),
+    flat_to_flat_x_2_(o.flat_to_flat_x_2()), flat_to_flat_z_2_(o.flat_to_flat_z_2())
+  {
+    // nothing to see here
+  }
+  virtual ~AlignedRectangularAperture()
+  {
+    // nothing to see here
+  }
+  bool_vt doesObscure(const Ray& r_in, Ray& r_out, real_vt n) override
+  {
+    using calin::math::special::SQR;
+    r_out = r_in;
+    bool_vt ray_reaches_plane = r_out.propagate_to_y_plane(-center_.y(),
+      /*time_reversal_ok=*/ false, n);
+    const real_vt dx = vcl::abs(r_out.x()-center_.x()) - flat_to_flat_x_2_;
+    const real_vt dz = vcl::abs(r_out.z()-center_.z()) - flat_to_flat_z_2_;
+    return ray_reaches_plane & (vcl::max(dx,dz)>0);
+  }
+  virtual AlignedRectangularAperture<VCLRealType>* clone() const override
+  {
+    return new AlignedRectangularAperture<VCLRealType>(*this);
+  }
+private:
+  vec3_vt center_;
+  real_vt flat_to_flat_x_2_;
+  real_vt flat_to_flat_z_2_;
+};
 
 // std::ostream& operator <<(std::ostream& stream, const VSORayTracer::TraceInfo& o);
 

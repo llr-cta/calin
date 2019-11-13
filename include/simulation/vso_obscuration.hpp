@@ -225,6 +225,10 @@ public:
   static VSOAlignedRectangularAperture* create_from_proto(
     const ix::simulation::vs_optics::VSOAlignedRectangularApertureData& d);
 
+  const Eigen::Vector3d& center() const { return center_; }
+  double flat_to_flat_x_2() const { return flat_to_flat_x_2_; }
+  double flat_to_flat_z_2() const { return flat_to_flat_z_2_; }
+
 private:
   Eigen::Vector3d         center_;
   double                  flat_to_flat_x_2_;
@@ -340,6 +344,9 @@ public:
 
   static VSOAlignedCircularAperture* create_from_proto(
     const ix::simulation::vs_optics::VSOAlignedCircularApertureData& d);
+
+  const Eigen::Vector3d& center() const { return center_; }
+  const double radius_sq() const { return radius_sq_; }
 
 private:
   Eigen::Vector3d         center_;
