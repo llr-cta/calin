@@ -290,11 +290,13 @@ TEST(TestVCLRaytracer, PSF) {
 TEST(TestVCLAlignedCircularAperture, CompareToScalar) {
   using Real = VCL256DoubleReal;
   calin::math::rng::RNG rng(__PRETTY_FUNCTION__,"Ray generator");
-  for(unsigned iray=0; iray<100000; ++iray) {
+  unsigned nray = 100000;
+  unsigned nhit = 0;
+  for(unsigned iray=0; iray<nray; ++iray) {
     double x0 = rng.uniform()*2.0 - 1.0;
     double y0 = rng.uniform()*2.0 - 1.0;
     double z0 = rng.uniform()*2.0 - 1.0;
-    double d0 = rng.uniform()*0.25;
+    double d0 = rng.uniform();
 
     Eigen::Vector3d center(x0,y0,z0);
     calin::simulation::vs_optics::VSOAlignedCircularAperture sobs(center, d0);
@@ -323,18 +325,73 @@ TEST(TestVCLAlignedCircularAperture, CompareToScalar) {
     ASSERT_EQ(sintersects, vintersects[0])
       << sintersects << ' ' << vintersects << ' ' << iray << '\n'
       << r.transpose() << '\n' << u.transpose();
+
+    if(sintersects)++nhit;
   }
+  ASSERT_GE(nhit*10, nray);
+  ASSERT_LE(nhit*10, 9*nray);
+}
+
+TEST(TestVCLAlignedBoxObscuration, CompareToScalar) {
+  using Real = VCL256DoubleReal;
+  calin::math::rng::RNG rng(__PRETTY_FUNCTION__,"Ray generator");
+  unsigned nray = 100000;
+  unsigned nhit = 0;
+  for(unsigned iray=0; iray<nray; ++iray) {
+    double min_x = -rng.uniform();
+    double min_y = -rng.uniform();
+    double min_z = -rng.uniform();
+    double max_x = rng.uniform();
+    double max_y = rng.uniform();
+    double max_z = rng.uniform();
+
+    Eigen::Vector3d min_xyz(min_x,min_y,min_z);
+    Eigen::Vector3d max_xyz(max_x,max_y,max_z);
+
+    calin::simulation::vs_optics::VSOAlignedBoxObscuration sobs(min_xyz, max_xyz);
+    AlignedBoxObscuration<Real> vobs(min_xyz, max_xyz);
+
+    double x = rng.uniform()*2.0 - 1.0;
+    double y = rng.uniform()*2.0 - 1.0;
+    double z = rng.uniform()*2.0 - 1.0;
+    double uy = rng.uniform()*2.0 - 1.0;
+    double theta = rng.uniform()*2.0*M_PI;
+    double ur = std::sqrt(1.0-uy*uy);
+    double ux = ur*std::cos(theta);
+    double uz = ur*std::sin(theta);
+    Eigen::Vector3d r(x,y,z);
+    Eigen::Vector3d u(ux,uy,uz);
+
+    calin::math::ray::Ray sray_in(r,u);
+    calin::math::ray::Ray sray_out;
+    bool sintersects = sobs.doesObscure(sray_in, sray_out, 1.0);
+
+    calin::math::ray::VCLRay<Real> vray_in(
+      r.template cast<Real::real_vt>(), u.template cast<Real::real_vt>());
+    calin::math::ray::VCLRay<Real> vray_out;
+    Real::bool_vt vintersects = vobs.doesObscure(vray_in, vray_out, 1.0);
+
+    ASSERT_EQ(sintersects, vintersects[0])
+      << sintersects << ' ' << vintersects << ' ' << iray << '\n'
+      << r.transpose() << '\n' << u.transpose();
+
+    if(sintersects)++nhit;
+  }
+  ASSERT_GE(nhit*10, nray);
+  ASSERT_LE(nhit*10, 9*nray);
 }
 
 TEST(TestVCLAlignedRectangularAperture, CompareToScalar) {
   using Real = VCL256DoubleReal;
   calin::math::rng::RNG rng(__PRETTY_FUNCTION__,"Ray generator");
-  for(unsigned iray=0; iray<100000; ++iray) {
+  unsigned nray = 100000;
+  unsigned nhit = 0;
+  for(unsigned iray=0; iray<nray; ++iray) {
     double x0 = rng.uniform()*2.0 - 1.0;
     double y0 = rng.uniform()*2.0 - 1.0;
     double z0 = rng.uniform()*2.0 - 1.0;
-    double dx = rng.uniform()*0.25;
-    double dz = rng.uniform()*0.25;
+    double dx = rng.uniform();
+    double dz = rng.uniform();
 
     Eigen::Vector3d center(x0,y0,z0);
     calin::simulation::vs_optics::VSOAlignedRectangularAperture sobs(center, dx, dz);
@@ -363,7 +420,11 @@ TEST(TestVCLAlignedRectangularAperture, CompareToScalar) {
     ASSERT_EQ(sintersects, vintersects[0])
       << sintersects << ' ' << vintersects << ' ' << iray << '\n'
       << r.transpose() << '\n' << u.transpose();
+
+    if(sintersects)++nhit;
   }
+  ASSERT_GE(nhit*10, nray);
+  ASSERT_LE(nhit*10, 9*nray);
 }
 
 int main(int argc, char **argv) {

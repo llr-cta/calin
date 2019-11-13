@@ -95,7 +95,7 @@ public:
     clear_dir_inv(); pos_ = rot.transpose() * pos_; dir_ = rot.transpose() * dir_; }
 
   bool_vt box_has_future_intersection(real_vt& tmin, real_vt& tmax,
-    const vec3_vt& min_corner, const vec3_vt& max_corner)
+    const vec3_vt& min_corner, const vec3_vt& max_corner) const
   {
     calc_dir_inv();
     return calin::math::geometry::VCL<VCLReal>::
