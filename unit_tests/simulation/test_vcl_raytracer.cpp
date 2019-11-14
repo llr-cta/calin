@@ -41,7 +41,7 @@ using namespace calin::util::vcl;
 using namespace calin::simulation::vcl_raytracer;
 using namespace calin::ix::simulation::vs_optics;
 
-IsotropicDCArrayParameters* make_array_config()
+IsotropicDCArrayParameters* make_array_config(bool obscure_camera = false)
 {
   IsotropicDCArrayParameters* mst = new IsotropicDCArrayParameters;
   mst->mutable_array_origin()->set_latitude(28.0 + 45.0/60.0 + 47.36/3600.0);
@@ -87,16 +87,17 @@ IsotropicDCArrayParameters* make_array_config()
   calin::math::hex_array::uv_to_xy(u1,v1,x1,y1);
   mst->mutable_pixel()->set_grid_rotation(atan2(-y1,x1)/M_PI*180.0 + 30.0);
 
-#if 0
-  if(obscure_camera):
-      obs_camera_box = mst->add_pre_reflection_obscuration()
-      obs_camera_box.mutable_aligned_box().mutable_max_corner().set_x(2918.0/20)
-      obs_camera_box.mutable_aligned_box().mutable_max_corner().set_z(2918.0/20)
-      obs_camera_box.mutable_aligned_box().mutable_max_corner().set_y(mst->focal_plane().translation().y()+(1532.25-513.0)/10)
-      obs_camera_box.mutable_aligned_box().mutable_min_corner().set_x(-2918.0/20)
-      obs_camera_box.mutable_aligned_box().mutable_min_corner().set_z(-2918.0/20)
-      obs_camera_box.mutable_aligned_box().mutable_min_corner().set_y(mst->focal_plane().translation().y()-513.0/10)
+  if(obscure_camera) {
+    auto* obs_camera_box = mst->add_pre_reflection_obscuration();
+    obs_camera_box->mutable_aligned_box()->mutable_max_corner()->set_x(2918.0/20);
+    obs_camera_box->mutable_aligned_box()->mutable_max_corner()->set_z(2918.0/20);
+    obs_camera_box->mutable_aligned_box()->mutable_max_corner()->set_y(mst->focal_plane().translation().y()+(1532.25-513.0)/10);
+    obs_camera_box->mutable_aligned_box()->mutable_min_corner()->set_x(-2918.0/20);
+    obs_camera_box->mutable_aligned_box()->mutable_min_corner()->set_z(-2918.0/20);
+    obs_camera_box->mutable_aligned_box()->mutable_min_corner()->set_y(mst->focal_plane().translation().y()-513.0/10);
+  }
 
+#if 0
       obs_outer_aperture = mst->add_post_reflection_obscuration()
       obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_x(0)
       obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_z(-50.0/20)
@@ -117,7 +118,7 @@ IsotropicDCArrayParameters* make_array_config()
       win.set_thickness(5.25/10.0)
       win.set_refractive_index(1.5)
   return mst
-  #endif
+#endif
 
   return mst;
 }
@@ -136,6 +137,21 @@ calin::simulation::vs_optics::VSOArray* make_test_array(IsotropicDCArrayParamete
   delete my_mst;
   return array;
 }
+
+calin::simulation::vs_optics::VSOArray* make_test_array(bool obscure_camera)
+{
+  IsotropicDCArrayParameters* mst = make_array_config(obscure_camera);
+
+  calin::simulation::vs_optics::VSOArray* array =
+    new calin::simulation::vs_optics::VSOArray;
+  calin::math::rng::RNG rng(__PRETTY_FUNCTION__, "VSOArray population");
+  array->generateFromArrayParameters(*mst, rng);
+  array->pointTelescopesAzEl(0,M_PI/2);
+
+  delete mst;
+  return array;
+}
+
 
 template<typename VCLRealType> class TestVCLRaytracer :
   public VCLRealType, public testing::Test
@@ -222,6 +238,73 @@ TEST(TestVCLRaytracer, CompareToScalar) {
     }
   }
 
+  std::cout
+    << s_moments.sum_w() << ' '
+    << s_moments.mean_x() << ' ' << s_moments.mean_y() << ' '
+    << s_moments.var_x() << ' ' << s_moments.var_y() << '\n';
+
+  EXPECT_NEAR(v_moments.sum_w(), s_moments.sum_w(), 2.5);
+  EXPECT_NEAR(v_moments.mean_x(), s_moments.mean_x(), 4e-3);
+  EXPECT_NEAR(v_moments.mean_y(), s_moments.mean_y(), 4e-3);
+  EXPECT_NEAR(v_moments.var_x(), s_moments.var_x(), 3e-3);
+  EXPECT_NEAR(v_moments.var_y(), s_moments.var_y(), 3e-3);
+}
+
+TEST(TestVCLRaytracer, CompareToScalar_Obscured) {
+  calin::simulation::vs_optics::VSOArray* array = make_test_array(true);
+  calin::simulation::vs_optics::VSOTelescope* scope = array->telescope(0);
+  calin::math::rng::RNG s_rng;
+  calin::simulation::vs_optics::VSORayTracer s_raytracer(array,&s_rng);
+
+  ScopeRayTracer<VCL256FloatReal> raytracer(scope);
+  calin::math::rng::VCLRealRNG<VCL256FloatReal> rng(__PRETTY_FUNCTION__,"Ray position generator");
+  double theta = 0.0 / 180.0*M_PI;
+  double cos_theta = std::cos(theta);
+  double sin_theta = std::sin(theta);
+
+  calin::math::moments_calc::SecondMomentsCalc2D v_moments;
+  calin::math::moments_calc::SecondMomentsCalc2D s_moments;
+
+  for(unsigned iray=0; iray<100000; iray++) {
+    VCL256FloatReal::vec3_vt dir(0.0, -1.0, 0.0);
+    VCL256FloatReal::vec3_vt pos(
+      rng.uniform_zc(scope->reflectorIP()),
+      2000.0,
+      rng.uniform_zc(scope->reflectorIP()));
+    calin::math::geometry::VCL<VCL256FloatReal>::rotate_in_place_Rz(
+      pos, cos_theta, sin_theta);
+    calin::math::geometry::VCL<VCL256FloatReal>::rotate_in_place_Rz(
+      dir, cos_theta, sin_theta);
+
+    calin::math::ray::VCLRay<VCL256FloatReal> ray(pos, dir);
+    typename VCL256FloatReal::bool_vt mask = true;
+    typename ScopeRayTracer<VCL256FloatReal>::TraceInfo trace_info;
+    mask = raytracer.trace_reflector_frame(mask, ray, trace_info);
+    for(unsigned i=0;i<8;i++) {
+      if(trace_info.status[i]>=STS_OUTSIDE_FOCAL_PLANE_APERTURE)
+        v_moments.accumulate(trace_info.fplane_x[i],trace_info.fplane_z[i]);
+    }
+
+    calin::math::geometry::VCL<VCL256FloatReal>::rotate_in_place_Rx(pos, 0.0, 1.0);
+    calin::math::geometry::VCL<VCL256FloatReal>::rotate_in_place_Rx(dir, 0.0, 1.0);
+
+    for(unsigned i=0;i<8;i++) {
+      Eigen::Vector3d s_pos(pos.x()[i], pos.y()[i], pos.z()[i]);
+      s_pos += scope->pos();
+      Eigen::Vector3d s_dir(dir.x()[i], dir.y()[i], dir.z()[i]);
+      calin::math::ray::Ray s_ray(s_pos, s_dir);
+      calin::simulation::vs_optics::VSOTraceInfo s_trace_info;
+      s_raytracer.trace(s_ray, s_trace_info, scope);
+      if(s_trace_info.rayHitFocalPlane())
+        s_moments.accumulate(s_trace_info.fplane_x,s_trace_info.fplane_z);
+    }
+  }
+
+  std::cout
+    << s_moments.sum_w() << ' '
+    << s_moments.mean_x() << ' ' << s_moments.mean_y() << ' '
+    << s_moments.var_x() << ' ' << s_moments.var_y() << '\n';
+
   EXPECT_NEAR(v_moments.sum_w(), s_moments.sum_w(), 2.5);
   EXPECT_NEAR(v_moments.mean_x(), s_moments.mean_x(), 4e-3);
   EXPECT_NEAR(v_moments.mean_y(), s_moments.mean_y(), 4e-3);
@@ -255,7 +338,7 @@ TEST(TestVCLRaytracer, LaserPSF) {
 }
 
 TEST(TestVCLRaytracer, PSF) {
-  calin::simulation::vs_optics::VSOArray* array = make_test_array();
+  calin::simulation::vs_optics::VSOArray* array = make_test_array(true);
   ScopeRayTracer<VCL256FloatReal> raytracer(array->telescope(0));
   calin::math::rng::VCLRealRNG<VCL256FloatReal> rng(__PRETTY_FUNCTION__,"Ray position generator");
   std::ofstream stream("test.dat");
