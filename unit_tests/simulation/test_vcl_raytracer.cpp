@@ -95,29 +95,28 @@ IsotropicDCArrayParameters* make_array_config(bool obscure_camera = false)
     obs_camera_box->mutable_aligned_box()->mutable_min_corner()->set_x(-2918.0/20);
     obs_camera_box->mutable_aligned_box()->mutable_min_corner()->set_z(-2918.0/20);
     obs_camera_box->mutable_aligned_box()->mutable_min_corner()->set_y(mst->focal_plane().translation().y()-513.0/10);
+
+    auto* obs_outer_aperture = mst->add_post_reflection_obscuration();
+    obs_outer_aperture->mutable_rectangular_aperture()->mutable_center_pos()->set_x(0);
+    obs_outer_aperture->mutable_rectangular_aperture()->mutable_center_pos()->set_z(-50.0/20);
+    obs_outer_aperture->mutable_rectangular_aperture()->mutable_center_pos()->set_y(mst->focal_plane().translation().y()-513.0/10);
+    obs_outer_aperture->mutable_rectangular_aperture()->set_flat_to_flat_x(2714.0/10);
+    obs_outer_aperture->mutable_rectangular_aperture()->set_flat_to_flat_z((2585.0-50.0)/10);
+
+    auto* obs_inner_aperture = mst->add_post_reflection_obscuration();
+    obs_inner_aperture->mutable_circular_aperture()->mutable_center_pos()->set_x(0);
+    obs_inner_aperture->mutable_circular_aperture()->mutable_center_pos()->set_z(0);
+    obs_inner_aperture->mutable_circular_aperture()->mutable_center_pos()->set_y(mst->focal_plane().translation().y()-222.5/10);
+    obs_inner_aperture->mutable_circular_aperture()->set_diameter(2304.0/10);
   }
 
 #if 0
-      obs_outer_aperture = mst->add_post_reflection_obscuration()
-      obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_x(0)
-      obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_z(-50.0/20)
-      obs_outer_aperture.mutable_rectangular_aperture().mutable_center_pos().set_y(mst->focal_plane().translation().y()-513.0/10)
-      obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_x(2714.0/10)
-      obs_outer_aperture.mutable_rectangular_aperture().set_flat_to_flat_z((2585.0-50.0)/10)
-
-      obs_inner_aperture = mst->add_post_reflection_obscuration()
-      obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_x(0)
-      obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_z(0)
-      obs_inner_aperture.mutable_circular_aperture().mutable_center_pos().set_y(mst->focal_plane().translation().y()-222.5/10)
-      obs_inner_aperture.mutable_circular_aperture().set_diameter(2304.0/10)
-
   if include_window:
       win = mst->mutable_spherical_window()
       win.set_front_y_coord(mst->focal_plane().translation().y() - 427.5/10)
       win.set_outer_radius(3443.0/10)
       win.set_thickness(5.25/10.0)
       win.set_refractive_index(1.5)
-  return mst
 #endif
 
   return mst;
