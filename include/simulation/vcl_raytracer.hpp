@@ -107,6 +107,10 @@ public:
   virtual Obscuration<VCLRealType>* clone() const = 0;
 };
 
+template<typename VCLRealType> class AlignedBoxObscuration;
+template<typename VCLRealType> class AlignedRectangularAperture;
+template<typename VCLRealType> class AlignedCircularAperture;
+
 template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
 {
 public:
@@ -132,6 +136,9 @@ public:
     adopt_rng_(rng==nullptr ? true : adopt_rng)
   {
     using calin::math::special::SQR;
+    using calin::simulation::vs_optics::VSOAlignedBoxObscuration;
+    using calin::simulation::vs_optics::VSOAlignedRectangularAperture;
+    using calin::simulation::vs_optics::VSOAlignedCircularAperture;
 
     global_to_reflector_rot_ = scope->rotationGlobalToReflector().cast<real_t>();
     ref_index_               = refractive_index;
@@ -217,6 +224,34 @@ public:
     pixel_id_lookup_[pixel_hexid_end_] = pixel_hexid_end_;
     fp_aperture2_ = SQR(std::sqrt(fp_aperture2_) + scope->pixelSpacing());
 
+    for(unsigned iobs=0;iobs<scope->numPreReflectionObscurations();iobs++)
+    {
+      const auto* obs = scope->pre_reflection_obscuration(iobs);
+      if(const auto* dc_obs = dynamic_cast<const VSOAlignedBoxObscuration*>(obs)) {
+        pre_reflection_obscuration.push_back(new AlignedBoxObscuration<VCLRealType>(*dc_obs));
+      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedRectangularAperture*>(obs)) {
+        pre_reflection_obscuration.push_back(new AlignedRectangularAperture<VCLRealType>(*dc_obs));
+      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedCircularAperture*>(obs)) {
+        pre_reflection_obscuration.push_back(new AlignedCircularAperture<VCLRealType>(*dc_obs));
+      } else {
+        throw std::runtime_error("Unsupported pre-reflection obscuration type");
+      }
+    }
+
+    for(unsigned iobs=0;iobs<scope->numPostReflectionObscurations();iobs++)
+    {
+      const auto* obs = scope->post_reflection_obscuration(iobs);
+      if(const auto* dc_obs = dynamic_cast<const VSOAlignedBoxObscuration*>(obs)) {
+        post_reflection_obscuration.push_back(new AlignedBoxObscuration<VCLRealType>(*dc_obs));
+      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedRectangularAperture*>(obs)) {
+        post_reflection_obscuration.push_back(new AlignedRectangularAperture<VCLRealType>(*dc_obs));
+      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedCircularAperture*>(obs)) {
+        post_reflection_obscuration.push_back(new AlignedCircularAperture<VCLRealType>(*dc_obs));
+      } else {
+        throw std::runtime_error("Unsupported pre-reflection obscuration type");
+      }
+    }
+
 #if 0
     std::cout << pixel_crot_ << ' ' << pixel_srot_ << ' ' << pixel_scaleinv_ << ' '
       << pixel_shift_x_ << ' ' << pixel_shift_z_ << ' ' << pixel_cw_ << ' '
@@ -237,6 +272,9 @@ public:
     free(mirror_y_lookup_);
     free(mirror_normdisp_lookup_);
     free(pixel_id_lookup_);
+    for(auto* obs: pre_reflection_obscuration)free(obs);
+    for(auto* obs: post_reflection_obscuration)free(obs);
+    for(auto* obs: in_camera_obscuration)free(obs);
     if(adopt_rng_)delete rng_;
   }
 
