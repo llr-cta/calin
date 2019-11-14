@@ -23,6 +23,7 @@
 #pragma once
 
 #include <algorithm>
+#include <limits>
 
 #include <util/memory.hpp>
 #include <util/vcl.hpp>
@@ -46,7 +47,7 @@ enum ScopeTraceStatus {
   STS_MISSED_MIRROR_EDGE,
   STS_OBSCURED_BEFORE_MIRROR,
       TS_MISSED_WINDOW,
-      TS_OBSCURED_BEFORE_FOCAL_PLANE,
+  STS_OBSCURED_BEFORE_FOCAL_PLANE,
   STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,
   STS_OUTSIDE_FOCAL_PLANE_APERTURE,
   STS_TS_NO_PIXEL,
@@ -102,7 +103,7 @@ public:
   virtual ~Obscuration() {
     // nothing to see here
   }
-  virtual bool_vt doesObscure(const Ray& r_in, Ray& r_out, real_vt n) = 0;
+  virtual bool_vt doesObscure(const Ray& ray_in, Ray& ray_out, real_vt n) const = 0;
   virtual Obscuration<VCLRealType>* clone() const = 0;
 };
 
@@ -119,6 +120,7 @@ public:
   using typename VCLRealType::bool_vt;
   using typename VCLRealType::vec3_vt;
   using typename VCLRealType::mat3_vt;
+  using Obscuration = Obscuration<VCLRealType>;
   using Ray = calin::math::ray::VCLRay<VCLRealType>;
   using TraceInfo = ScopeTraceInfo<VCLRealType>;
   using RNG = calin::math::rng::VCLRealRNG<VCLRealType>;
@@ -269,7 +271,16 @@ public:
     // ****************** RAY STARTS IN RELECTOR COORDINATES *******************
     // *************************************************************************
 
-    // Test for obscuration - to come
+    // Test for obscuration of incoming ray
+    bool_vt was_obscured = false;
+    real_vt ct_obscured = std::numeric_limits<real_t>::infinity();
+    for(const auto* obs : pre_reflection_obscuration) {
+      Ray ray_out;
+      bool_vt was_obscured_here = obs->doesObscure(ray, ray_out, ref_index_);
+      ct_obscured = vcl::select(was_obscured_here,
+        vcl::min(ct_obscured, ray_out.ct()), ct_obscured);
+      was_obscured |= was_obscured_here;
+    }
 
     // Propagate to intersection with the reflector sphere
     info.status = select(bool_int_vt(mask), STS_MISSED_REFLECTOR_SPHERE, info.status);
@@ -396,7 +407,21 @@ public:
     // *************** RAY IS NOW BACK IN REFLECTOR COORDINATES ****************
     // *************************************************************************
 
-    // Check obsucrations
+    // Finish checking obscuration before mirror hit
+    info.status = select(bool_int_vt(mask), STS_OBSCURED_BEFORE_MIRROR, info.status);
+    mask &= ~(was_obscured & (ct_obscured < ray.ct()));
+
+    // Test for obscuration on way to focal plane - first with obscurations
+    // that are given in reflector coordinates (telescope arms etc)
+    was_obscured = false;
+    ct_obscured = std::numeric_limits<real_t>::infinity();
+    for(const auto* obs : post_reflection_obscuration) {
+      Ray ray_out;
+      bool_vt was_obscured_here = obs->doesObscure(ray, ray_out, ref_index_);
+      ct_obscured = vcl::select(was_obscured_here,
+        vcl::min(ct_obscured, ray_out.ct()), ct_obscured);
+      was_obscured |= was_obscured_here;
+    }
 
     // Refract in window
 
@@ -414,7 +439,19 @@ public:
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
 
-    // Test for interaction with obscuration before focal plane was hit
+    // Test for obscuration on way to focal plane - second with obscurations
+    // that are given in focal plane coordinates
+    for(const auto* obs : in_camera_obscurations) {
+      Ray ray_out;
+      bool_vt was_obscured_here = obs->doesObscure(ray, ray_out, ref_index_);
+      ct_obscured = vcl::select(was_obscured_here,
+        vcl::min(ct_obscured, ray_out.ct()), ct_obscured);
+      was_obscured |= was_obscured_here;
+    }
+
+    // Finish checking obscuration after mirror reflection
+    info.status = select(bool_int_vt(mask), STS_OBSCURED_BEFORE_FOCAL_PLANE, info.status);
+    mask &= ~(was_obscured & (ct_obscured < ray.ct()));
 
     // We good, record position on focal plane etc
     info.fplane_x = select(mask, ray.x(), 0);
@@ -511,6 +548,10 @@ public:
    int_t           pixel_id_end_;
    int_t*          pixel_id_lookup_ = nullptr;
 
+   std::vector<Obscuration*> pre_reflection_obscuration;
+   std::vector<Obscuration*> post_reflection_obscuration;
+   std::vector<Obscuration*> in_camera_obscurations;
+
    RNG* rng_ = nullptr;
    bool adopt_rng_ = false;
 };
@@ -548,13 +589,13 @@ public:
   {
     // nothing to see here
   }
-  bool_vt doesObscure(const Ray& r_in, Ray& r_out, real_vt n) override
+  bool_vt doesObscure(const Ray& ray_in, Ray& ray_out, real_vt n) const override
   {
     real_vt tmin;
     real_vt tmax;
-    bool_vt mask = r_in.box_has_future_intersection(tmin, tmax, min_corner_, max_corner_);
-    r_out = r_in;
-    r_out.propagate_dist_with_mask(mask & (tmin>0), tmin, n);
+    bool_vt mask = ray_in.box_has_future_intersection(tmin, tmax, min_corner_, max_corner_);
+    ray_out = ray_in;
+    ray_out.propagate_dist_with_mask(mask & (tmin>0), tmin, n);
     return mask;
   }
   virtual AlignedBoxObscuration<VCLRealType>* clone() const override
@@ -598,14 +639,14 @@ public:
   {
     // nothing to see here
   }
-  bool_vt doesObscure(const Ray& r_in, Ray& r_out, real_vt n) override
+  bool_vt doesObscure(const Ray& ray_in, Ray& ray_out, real_vt n) const override
   {
     using calin::math::special::SQR;
-    r_out = r_in;
-    bool_vt ray_reaches_plane = r_out.propagate_to_y_plane(-center_.y(),
+    ray_out = ray_in;
+    bool_vt ray_reaches_plane = ray_out.propagate_to_y_plane(-center_.y(),
       /*time_reversal_ok=*/ false, n);
     const real_vt r2 =
-      SQR(r_out.x()-center_.x())+SQR(r_out.z()-center_.z())-radius_sq_;
+      SQR(ray_out.x()-center_.x())+SQR(ray_out.z()-center_.z())-radius_sq_;
     return ray_reaches_plane & (r2>0);
   }
   virtual AlignedCircularAperture<VCLRealType>* clone() const override
@@ -653,14 +694,14 @@ public:
   {
     // nothing to see here
   }
-  bool_vt doesObscure(const Ray& r_in, Ray& r_out, real_vt n) override
+  bool_vt doesObscure(const Ray& ray_in, Ray& ray_out, real_vt n) const override
   {
     using calin::math::special::SQR;
-    r_out = r_in;
-    bool_vt ray_reaches_plane = r_out.propagate_to_y_plane(-center_.y(),
+    ray_out = ray_in;
+    bool_vt ray_reaches_plane = ray_out.propagate_to_y_plane(-center_.y(),
       /*time_reversal_ok=*/ false, n);
-    const real_vt dx = vcl::abs(r_out.x()-center_.x()) - flat_to_flat_x_2_;
-    const real_vt dz = vcl::abs(r_out.z()-center_.z()) - flat_to_flat_z_2_;
+    const real_vt dx = vcl::abs(ray_out.x()-center_.x()) - flat_to_flat_x_2_;
+    const real_vt dz = vcl::abs(ray_out.z()-center_.z()) - flat_to_flat_z_2_;
     return ray_reaches_plane & (vcl::max(dx,dz)>0);
   }
   virtual AlignedRectangularAperture<VCLRealType>* clone() const override
