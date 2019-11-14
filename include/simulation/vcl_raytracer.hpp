@@ -479,7 +479,7 @@ public:
 
     // Test for obscuration on way to focal plane - second with obscurations
     // that are given in focal plane coordinates
-    for(const auto* obs : in_camera_obscurations) {
+    for(const auto* obs : in_camera_obscuration) {
       Ray ray_out;
       bool_vt was_obscured_here = obs->doesObscure(ray, ray_out, ref_index_);
       ct_obscured = vcl::select(was_obscured_here,
@@ -588,7 +588,7 @@ public:
 
    std::vector<Obscuration*> pre_reflection_obscuration;
    std::vector<Obscuration*> post_reflection_obscuration;
-   std::vector<Obscuration*> in_camera_obscurations;
+   std::vector<Obscuration*> in_camera_obscuration;
 
    RNG* rng_ = nullptr;
    bool adopt_rng_ = false;
