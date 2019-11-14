@@ -124,7 +124,6 @@ public:
   using typename VCLRealType::bool_vt;
   using typename VCLRealType::vec3_vt;
   using typename VCLRealType::mat3_vt;
-  using Obscuration = Obscuration<VCLRealType>;
   using Ray = calin::math::ray::VCLRay<VCLRealType>;
   using TraceInfo = ScopeTraceInfo<VCLRealType>;
   using RNG = calin::math::rng::VCLRealRNG<VCLRealType>;
@@ -586,9 +585,9 @@ public:
    int_t           pixel_id_end_;
    int_t*          pixel_id_lookup_ = nullptr;
 
-   std::vector<Obscuration*> pre_reflection_obscuration;
-   std::vector<Obscuration*> post_reflection_obscuration;
-   std::vector<Obscuration*> in_camera_obscuration;
+   std::vector<Obscuration<VCLRealType>*> pre_reflection_obscuration;
+   std::vector<Obscuration<VCLRealType>*> post_reflection_obscuration;
+   std::vector<Obscuration<VCLRealType>*> in_camera_obscuration;
 
    RNG* rng_ = nullptr;
    bool adopt_rng_ = false;
