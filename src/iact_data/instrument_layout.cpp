@@ -183,12 +183,12 @@ calin::iact_data::instrument_layout::reduce_camera_channels(
 {
   std::vector<int> in_to_out(in.channel_size(), -1);
 
-  double min_x;
-  double max_x;
-  double min_y;
-  double max_y;
+  double min_x = 0;
+  double max_x = 0;
+  double min_y = 0;
+  double max_y = 0;
   for(unsigned i=0;i<channel_id.size();++i) {
-    if(channel_id[i] >= in.channel_size()) {
+    if(channel_id[i] >= int(in.channel_size())) {
       throw std::runtime_error("Channel ID out of range: " +
         std::to_string(channel_id[i]));
     }
@@ -287,7 +287,7 @@ calin::iact_data::instrument_layout::reduce_camera_modules(
   std::vector<unsigned> channel_id;
 
   for(unsigned i=0;i<module_id.size();++i) {
-    if(module_id[i] >= in.module_size()) {
+    if(module_id[i] >= int(in.module_size())) {
       throw std::runtime_error("Module ID out of range: " +
         std::to_string(module_id[i]));
     }
@@ -317,7 +317,7 @@ calin::iact_data::instrument_layout::reduce_camera_modules(
     om->set_module_grid_i(im.module_grid_i());
     om->set_module_grid_j(im.module_grid_j());
     om->set_module_spiral_index(im.module_spiral_index());
-    for(unsigned imodchan=0; imodchan<im.channels_in_module_size(); imodchan++) {
+    for(int imodchan=0; imodchan<im.channels_in_module_size(); imodchan++) {
       out->mutable_channel(ichan)->set_module_index(imod);
       out->mutable_channel(ichan)->set_module_channel_index(imodchan);
       om->add_channels_in_module(ichan++);
@@ -353,7 +353,7 @@ calin::iact_data::instrument_layout::channel_outline(
   std::vector<unsigned> camera_grid_ids;
   std::vector<bool> channel_ids_selected(camera_layout.channel_size(), false);
   for(auto ichan : channel_id) {
-    if(ichan >= camera_layout.channel_size()) {
+    if(ichan >= int(camera_layout.channel_size())) {
       delete grid;
       throw std::runtime_error("Channel ID out of range: "
         + std::to_string(ichan));
