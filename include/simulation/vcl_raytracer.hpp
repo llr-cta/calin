@@ -37,7 +37,7 @@
 
 namespace calin { namespace simulation { namespace vcl_raytracer {
 
-enum ScopeTraceStatus {
+enum VCLScopeTraceStatus {
   STS_MASKED_ON_ENTRY,
   STS_TRAVELLING_AWAY_REFLECTOR,
   STS_MISSED_REFLECTOR_SPHERE,
@@ -54,7 +54,7 @@ enum ScopeTraceStatus {
   STS_TS_FOUND_PIXEL
 };
 
-template<typename VCLRealType> class ScopeTraceInfo: public VCLRealType
+template<typename VCLRealType> class VCLScopeTraceInfo: public VCLRealType
 {
 public:
   using typename VCLRealType::real_t;
@@ -88,7 +88,7 @@ public:
   int_vt              pixel_id;
 };
 
-template<typename VCLRealType> class Obscuration: public VCLRealType
+template<typename VCLRealType> class VCLObscuration: public VCLRealType
 {
 public:
   using typename VCLRealType::real_vt;
@@ -100,18 +100,18 @@ public:
   using typename VCLRealType::vec3_t;
   using typename VCLRealType::real_t;
 
-  virtual ~Obscuration() {
+  virtual ~VCLObscuration() {
     // nothing to see here
   }
   virtual bool_vt doesObscure(const Ray& ray_in, Ray& ray_out, real_vt n) const = 0;
-  virtual Obscuration<VCLRealType>* clone() const = 0;
+  virtual VCLObscuration<VCLRealType>* clone() const = 0;
 };
 
-template<typename VCLRealType> class AlignedBoxObscuration;
-template<typename VCLRealType> class AlignedRectangularAperture;
-template<typename VCLRealType> class AlignedCircularAperture;
+template<typename VCLRealType> class VCLAlignedBoxObscuration;
+template<typename VCLRealType> class VCLAlignedRectangularAperture;
+template<typename VCLRealType> class VCLAlignedCircularAperture;
 
-template<typename VCLRealType> class ScopeRayTracer: public VCLRealType
+template<typename VCLRealType> class VCLScopeRayTracer: public VCLRealType
 {
 public:
   using typename VCLRealType::real_t;
@@ -125,10 +125,10 @@ public:
   using typename VCLRealType::vec3_vt;
   using typename VCLRealType::mat3_vt;
   using Ray = calin::math::ray::VCLRay<VCLRealType>;
-  using TraceInfo = ScopeTraceInfo<VCLRealType>;
+  using TraceInfo = VCLScopeTraceInfo<VCLRealType>;
   using RNG = calin::math::rng::VCLRealRNG<VCLRealType>;
 
-  ScopeRayTracer(const calin::simulation::vs_optics::VSOTelescope* scope,
+  VCLScopeRayTracer(const calin::simulation::vs_optics::VSOTelescope* scope,
       real_t refractive_index = 1.0,
       RNG* rng = nullptr, bool adopt_rng = false):
     VCLRealType(), rng_(rng==nullptr ? new RNG(__PRETTY_FUNCTION__) : rng),
@@ -227,11 +227,11 @@ public:
     {
       const auto* obs = scope->pre_reflection_obscuration(iobs);
       if(const auto* dc_obs = dynamic_cast<const VSOAlignedBoxObscuration*>(obs)) {
-        pre_reflection_obscuration.push_back(new AlignedBoxObscuration<VCLRealType>(*dc_obs));
+        pre_reflection_obscuration.push_back(new VCLAlignedBoxObscuration<VCLRealType>(*dc_obs));
       } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedRectangularAperture*>(obs)) {
-        pre_reflection_obscuration.push_back(new AlignedRectangularAperture<VCLRealType>(*dc_obs));
+        pre_reflection_obscuration.push_back(new VCLAlignedRectangularAperture<VCLRealType>(*dc_obs));
       } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedCircularAperture*>(obs)) {
-        pre_reflection_obscuration.push_back(new AlignedCircularAperture<VCLRealType>(*dc_obs));
+        pre_reflection_obscuration.push_back(new VCLAlignedCircularAperture<VCLRealType>(*dc_obs));
       } else {
         throw std::runtime_error("Unsupported pre-reflection obscuration type");
       }
@@ -241,11 +241,11 @@ public:
     {
       const auto* obs = scope->post_reflection_obscuration(iobs);
       if(const auto* dc_obs = dynamic_cast<const VSOAlignedBoxObscuration*>(obs)) {
-        post_reflection_obscuration.push_back(new AlignedBoxObscuration<VCLRealType>(*dc_obs));
+        post_reflection_obscuration.push_back(new VCLAlignedBoxObscuration<VCLRealType>(*dc_obs));
       } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedRectangularAperture*>(obs)) {
-        post_reflection_obscuration.push_back(new AlignedRectangularAperture<VCLRealType>(*dc_obs));
+        post_reflection_obscuration.push_back(new VCLAlignedRectangularAperture<VCLRealType>(*dc_obs));
       } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedCircularAperture*>(obs)) {
-        post_reflection_obscuration.push_back(new AlignedCircularAperture<VCLRealType>(*dc_obs));
+        post_reflection_obscuration.push_back(new VCLAlignedCircularAperture<VCLRealType>(*dc_obs));
       } else {
         throw std::runtime_error("Unsupported pre-reflection obscuration type");
       }
@@ -259,7 +259,7 @@ public:
 #endif
   }
 
-  ~ScopeRayTracer()
+  ~VCLScopeRayTracer()
   {
     free(mirror_id_lookup_);
     free(mirror_nx_lookup_);
@@ -585,38 +585,38 @@ public:
    int_t           pixel_id_end_;
    int_t*          pixel_id_lookup_ = nullptr;
 
-   std::vector<Obscuration<VCLRealType>*> pre_reflection_obscuration;
-   std::vector<Obscuration<VCLRealType>*> post_reflection_obscuration;
-   std::vector<Obscuration<VCLRealType>*> in_camera_obscuration;
+   std::vector<VCLObscuration<VCLRealType>*> pre_reflection_obscuration;
+   std::vector<VCLObscuration<VCLRealType>*> post_reflection_obscuration;
+   std::vector<VCLObscuration<VCLRealType>*> in_camera_obscuration;
 
    RNG* rng_ = nullptr;
    bool adopt_rng_ = false;
 };
 
-template<typename VCLRealType> class AlignedBoxObscuration:
-  public Obscuration<VCLRealType>
+template<typename VCLRealType> class VCLAlignedBoxObscuration:
+  public VCLObscuration<VCLRealType>
 {
 public:
-  using typename Obscuration<VCLRealType>::real_vt;
-  using typename Obscuration<VCLRealType>::bool_vt;
-  using typename Obscuration<VCLRealType>::vec3_vt;
-  using typename Obscuration<VCLRealType>::Ray;
-  using typename Obscuration<VCLRealType>::vec3_t;
-  using typename Obscuration<VCLRealType>::real_t;
+  using typename VCLObscuration<VCLRealType>::real_vt;
+  using typename VCLObscuration<VCLRealType>::bool_vt;
+  using typename VCLObscuration<VCLRealType>::vec3_vt;
+  using typename VCLObscuration<VCLRealType>::Ray;
+  using typename VCLObscuration<VCLRealType>::vec3_t;
+  using typename VCLObscuration<VCLRealType>::real_t;
 
-  AlignedBoxObscuration(const vec3_t& max_corner, const vec3_t& min_corner):
-    Obscuration<VCLRealType>(), min_corner_(min_corner), max_corner_(max_corner)
+  VCLAlignedBoxObscuration(const vec3_t& max_corner, const vec3_t& min_corner):
+    VCLObscuration<VCLRealType>(), min_corner_(min_corner), max_corner_(max_corner)
   {
     // nothing to see here
   }
-  AlignedBoxObscuration(const calin::simulation::vs_optics::VSOAlignedBoxObscuration& o):
-    Obscuration<VCLRealType>(),
+  VCLAlignedBoxObscuration(const calin::simulation::vs_optics::VSOAlignedBoxObscuration& o):
+    VCLObscuration<VCLRealType>(),
     min_corner_(o.min_corner().template cast<real_t>()),
     max_corner_(o.max_corner().template cast<real_t>()) /* still need cast for double -> float */
   {
     // nothing to see here
   }
-  virtual ~AlignedBoxObscuration()
+  virtual ~VCLAlignedBoxObscuration()
   {
     // nothing to see here
   }
@@ -630,39 +630,39 @@ public:
     ray_out.propagate_dist_with_mask(mask & (tmin>0), tmin, n);
     return mask;
   }
-  virtual AlignedBoxObscuration<VCLRealType>* clone() const override
+  virtual VCLAlignedBoxObscuration<VCLRealType>* clone() const override
   {
-    return new AlignedBoxObscuration<VCLRealType>(*this);
+    return new VCLAlignedBoxObscuration<VCLRealType>(*this);
   }
 private:
   vec3_t min_corner_;
   vec3_t max_corner_;
 };
 
-template<typename VCLRealType> class AlignedCircularAperture:
-  public Obscuration<VCLRealType>
+template<typename VCLRealType> class VCLAlignedCircularAperture:
+  public VCLObscuration<VCLRealType>
 {
 public:
-  using typename Obscuration<VCLRealType>::real_vt;
-  using typename Obscuration<VCLRealType>::bool_vt;
-  using typename Obscuration<VCLRealType>::vec3_vt;
-  using typename Obscuration<VCLRealType>::Ray;
-  using typename Obscuration<VCLRealType>::vec3_t;
-  using typename Obscuration<VCLRealType>::real_t;
+  using typename VCLObscuration<VCLRealType>::real_vt;
+  using typename VCLObscuration<VCLRealType>::bool_vt;
+  using typename VCLObscuration<VCLRealType>::vec3_vt;
+  using typename VCLObscuration<VCLRealType>::Ray;
+  using typename VCLObscuration<VCLRealType>::vec3_t;
+  using typename VCLObscuration<VCLRealType>::real_t;
 
-  AlignedCircularAperture(const vec3_t& center, const real_t& diameter):
-    Obscuration<VCLRealType>(), center_(center),
+  VCLAlignedCircularAperture(const vec3_t& center, const real_t& diameter):
+    VCLObscuration<VCLRealType>(), center_(center),
     radius_sq_(0.25*diameter*diameter)
   {
     // nothing to see here
   }
-  AlignedCircularAperture(const calin::simulation::vs_optics::VSOAlignedCircularAperture& o):
-    Obscuration<VCLRealType>(),
+  VCLAlignedCircularAperture(const calin::simulation::vs_optics::VSOAlignedCircularAperture& o):
+    VCLObscuration<VCLRealType>(),
     center_(o.center().template cast<real_t>()), radius_sq_(o.radius_sq())
   {
     // nothing to see here
   }
-  virtual ~AlignedCircularAperture()
+  virtual ~VCLAlignedCircularAperture()
   {
     // nothing to see here
   }
@@ -676,41 +676,41 @@ public:
       SQR(ray_out.x()-center_.x())+SQR(ray_out.z()-center_.z())-radius_sq_;
     return ray_reaches_plane & (r2>0);
   }
-  virtual AlignedCircularAperture<VCLRealType>* clone() const override
+  virtual VCLAlignedCircularAperture<VCLRealType>* clone() const override
   {
-    return new AlignedCircularAperture<VCLRealType>(*this);
+    return new VCLAlignedCircularAperture<VCLRealType>(*this);
   }
 private:
   vec3_t center_;
   real_t radius_sq_;
 };
 
-template<typename VCLRealType> class AlignedRectangularAperture:
-  public Obscuration<VCLRealType>
+template<typename VCLRealType> class VCLAlignedRectangularAperture:
+  public VCLObscuration<VCLRealType>
 {
 public:
-  using typename Obscuration<VCLRealType>::real_vt;
-  using typename Obscuration<VCLRealType>::bool_vt;
-  using typename Obscuration<VCLRealType>::vec3_vt;
-  using typename Obscuration<VCLRealType>::Ray;
-  using typename Obscuration<VCLRealType>::vec3_t;
-  using typename Obscuration<VCLRealType>::real_t;
+  using typename VCLObscuration<VCLRealType>::real_vt;
+  using typename VCLObscuration<VCLRealType>::bool_vt;
+  using typename VCLObscuration<VCLRealType>::vec3_vt;
+  using typename VCLObscuration<VCLRealType>::Ray;
+  using typename VCLObscuration<VCLRealType>::vec3_t;
+  using typename VCLObscuration<VCLRealType>::real_t;
 
-  AlignedRectangularAperture(const vec3_t& center,
+  VCLAlignedRectangularAperture(const vec3_t& center,
       const real_t& flat_to_flat_x, const real_t& flat_to_flat_z):
-    Obscuration<VCLRealType>(), center_(center),
+    VCLObscuration<VCLRealType>(), center_(center),
     flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z)
   {
     // nothing to see here
   }
-  AlignedRectangularAperture(const calin::simulation::vs_optics::VSOAlignedRectangularAperture& o):
-    Obscuration<VCLRealType>(),
+  VCLAlignedRectangularAperture(const calin::simulation::vs_optics::VSOAlignedRectangularAperture& o):
+    VCLObscuration<VCLRealType>(),
     center_(o.center().template cast<real_t>()),
     flat_to_flat_x_2_(o.flat_to_flat_x_2()), flat_to_flat_z_2_(o.flat_to_flat_z_2())
   {
     // nothing to see here
   }
-  virtual ~AlignedRectangularAperture()
+  virtual ~VCLAlignedRectangularAperture()
   {
     // nothing to see here
   }
@@ -724,9 +724,9 @@ public:
     const real_vt dz = vcl::abs(ray_out.z()-center_.z()) - flat_to_flat_z_2_;
     return ray_reaches_plane & (vcl::max(dx,dz)>0);
   }
-  virtual AlignedRectangularAperture<VCLRealType>* clone() const override
+  virtual VCLAlignedRectangularAperture<VCLRealType>* clone() const override
   {
-    return new AlignedRectangularAperture<VCLRealType>(*this);
+    return new VCLAlignedRectangularAperture<VCLRealType>(*this);
   }
 private:
   vec3_t center_;
@@ -736,4 +736,4 @@ private:
 
 // std::ostream& operator <<(std::ostream& stream, const VSORayTracer::TraceInfo& o);
 
-} } } // namespace calin::simulations::vs_optics
+} } } // namespace calin::simulations::vcl_raytracer

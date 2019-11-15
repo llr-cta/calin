@@ -164,7 +164,7 @@ TYPED_TEST_CASE(TestVCLRaytracer, RealTypes);
 
 TYPED_TEST(TestVCLRaytracer, RayTrace) {
   calin::simulation::vs_optics::VSOArray* array = make_test_array();
-  ScopeRayTracer<TypeParam> raytracer(array->telescope(0));
+  VCLScopeRayTracer<TypeParam> raytracer(array->telescope(0));
 
   for(const auto* mirror : array->telescope(0)->all_mirrors()) {
     calin::math::ray::VCLRay<TypeParam> ray;
@@ -172,7 +172,7 @@ TYPED_TEST(TestVCLRaytracer, RayTrace) {
     ray.mutable_position() << mirror->pos().x() , 2000.0, mirror->pos().z();
     typename TypeParam::bool_vt mask = true;
     mask.insert(1, false);
-    typename ScopeRayTracer<TypeParam>::TraceInfo trace_info;
+    typename VCLScopeRayTracer<TypeParam>::TraceInfo trace_info;
     mask = raytracer.trace_reflector_frame(mask, ray, trace_info);
     ASSERT_TRUE(mask[0]);
     ASSERT_FALSE(mask[1]);
@@ -193,7 +193,7 @@ TEST(TestVCLRaytracer, CompareToScalar) {
   calin::math::rng::RNG s_rng;
   calin::simulation::vs_optics::VSORayTracer s_raytracer(array,&s_rng);
 
-  ScopeRayTracer<VCL256FloatReal> raytracer(scope);
+  VCLScopeRayTracer<VCL256FloatReal> raytracer(scope);
   calin::math::rng::VCLRealRNG<VCL256FloatReal> rng(__PRETTY_FUNCTION__,"Ray position generator");
   double theta = 0.0 / 180.0*M_PI;
   double cos_theta = std::cos(theta);
@@ -215,7 +215,7 @@ TEST(TestVCLRaytracer, CompareToScalar) {
 
     calin::math::ray::VCLRay<VCL256FloatReal> ray(pos, dir);
     typename VCL256FloatReal::bool_vt mask = true;
-    typename ScopeRayTracer<VCL256FloatReal>::TraceInfo trace_info;
+    typename VCLScopeRayTracer<VCL256FloatReal>::TraceInfo trace_info;
     mask = raytracer.trace_reflector_frame(mask, ray, trace_info);
     for(unsigned i=0;i<8;i++) {
       if(trace_info.status[i]>=STS_OUTSIDE_FOCAL_PLANE_APERTURE)
@@ -255,7 +255,7 @@ TEST(TestVCLRaytracer, CompareToScalar_Obscured) {
   calin::math::rng::RNG s_rng;
   calin::simulation::vs_optics::VSORayTracer s_raytracer(array,&s_rng);
 
-  ScopeRayTracer<VCL256FloatReal> raytracer(scope);
+  VCLScopeRayTracer<VCL256FloatReal> raytracer(scope);
   calin::math::rng::VCLRealRNG<VCL256FloatReal> rng(__PRETTY_FUNCTION__,"Ray position generator");
   double theta = 0.0 / 180.0*M_PI;
   double cos_theta = std::cos(theta);
@@ -277,7 +277,7 @@ TEST(TestVCLRaytracer, CompareToScalar_Obscured) {
 
     calin::math::ray::VCLRay<VCL256FloatReal> ray(pos, dir);
     typename VCL256FloatReal::bool_vt mask = true;
-    typename ScopeRayTracer<VCL256FloatReal>::TraceInfo trace_info;
+    typename VCLScopeRayTracer<VCL256FloatReal>::TraceInfo trace_info;
     mask = raytracer.trace_reflector_frame(mask, ray, trace_info);
     for(unsigned i=0;i<8;i++) {
       if(trace_info.status[i]>=STS_OUTSIDE_FOCAL_PLANE_APERTURE)
@@ -313,7 +313,7 @@ TEST(TestVCLRaytracer, CompareToScalar_Obscured) {
 
 TEST(TestVCLRaytracer, LaserPSF) {
   calin::simulation::vs_optics::VSOArray* array = make_test_array();
-  ScopeRayTracer<VCL256FloatReal> raytracer(array->telescope(0));
+  VCLScopeRayTracer<VCL256FloatReal> raytracer(array->telescope(0));
   calin::math::rng::VCLRealRNG<VCL256FloatReal> rng(__PRETTY_FUNCTION__,"Ray position generator");
   calin::math::moments_calc::SecondMomentsCalc2D v_moments;
   for(unsigned iray=0; iray<1000000; iray++) {
@@ -321,7 +321,7 @@ TEST(TestVCLRaytracer, LaserPSF) {
     ray.mutable_direction() << 0.0, -1.0, 0.0;
     ray.mutable_position() << 0.0, 2000.0, 0.0;
     typename VCL256FloatReal::bool_vt mask = true;
-    typename ScopeRayTracer<VCL256FloatReal>::TraceInfo trace_info;
+    typename VCLScopeRayTracer<VCL256FloatReal>::TraceInfo trace_info;
     mask = raytracer.trace_reflector_frame(mask, ray, trace_info);
     ASSERT_TRUE(horizontal_and(mask)) << mask;
     for(unsigned i=0;i<8;i++)
@@ -338,7 +338,7 @@ TEST(TestVCLRaytracer, LaserPSF) {
 
 TEST(TestVCLRaytracer, PSF) {
   calin::simulation::vs_optics::VSOArray* array = make_test_array(true);
-  ScopeRayTracer<VCL256FloatReal> raytracer(array->telescope(0));
+  VCLScopeRayTracer<VCL256FloatReal> raytracer(array->telescope(0));
   calin::math::rng::VCLRealRNG<VCL256FloatReal> rng(__PRETTY_FUNCTION__,"Ray position generator");
   std::ofstream stream("test.dat");
   double theta = 2.0 / 180.0*M_PI;
@@ -354,7 +354,7 @@ TEST(TestVCLRaytracer, PSF) {
     calin::math::geometry::VCL<VCL256FloatReal>::rotate_in_place_Rz(
       ray.mutable_position(), cos(theta), sin(theta));
     typename VCL256FloatReal::bool_vt mask = true;
-    typename ScopeRayTracer<VCL256FloatReal>::TraceInfo trace_info;
+    typename VCLScopeRayTracer<VCL256FloatReal>::TraceInfo trace_info;
     auto pos = ray.position();
     mask = raytracer.trace_reflector_frame(mask, ray, trace_info);
     for(unsigned i=0;i<8;i++)stream
@@ -382,7 +382,7 @@ TEST(TestVCLAlignedCircularAperture, CompareToScalar) {
 
     Eigen::Vector3d center(x0,y0,z0);
     calin::simulation::vs_optics::VSOAlignedCircularAperture sobs(center, d0);
-    AlignedCircularAperture<Real> vobs(center, d0);
+    VCLAlignedCircularAperture<Real> vobs(center, d0);
 
     double x = rng.uniform()*2.0 - 1.0;
     double y = rng.uniform()*2.0 - 1.0;
@@ -414,7 +414,7 @@ TEST(TestVCLAlignedCircularAperture, CompareToScalar) {
   ASSERT_LE(nhit*10, 9*nray);
 }
 
-TEST(TestVCLAlignedBoxObscuration, CompareToScalar) {
+TEST(TestAlignedBoxObscuration, CompareToScalar) {
   using Real = VCL256DoubleReal;
   calin::math::rng::RNG rng(__PRETTY_FUNCTION__,"Ray generator");
   unsigned nray = 100000;
@@ -431,7 +431,7 @@ TEST(TestVCLAlignedBoxObscuration, CompareToScalar) {
     Eigen::Vector3d max_xyz(max_x,max_y,max_z);
 
     calin::simulation::vs_optics::VSOAlignedBoxObscuration sobs(min_xyz, max_xyz);
-    AlignedBoxObscuration<Real> vobs(min_xyz, max_xyz);
+    VCLAlignedBoxObscuration<Real> vobs(min_xyz, max_xyz);
 
     double x = rng.uniform()*2.0 - 1.0;
     double y = rng.uniform()*2.0 - 1.0;
@@ -463,7 +463,7 @@ TEST(TestVCLAlignedBoxObscuration, CompareToScalar) {
   ASSERT_LE(nhit*10, 9*nray);
 }
 
-TEST(TestVCLAlignedRectangularAperture, CompareToScalar) {
+TEST(TestVCLVCLAlignedRectangularAperture, CompareToScalar) {
   using Real = VCL256DoubleReal;
   calin::math::rng::RNG rng(__PRETTY_FUNCTION__,"Ray generator");
   unsigned nray = 100000;
@@ -477,7 +477,7 @@ TEST(TestVCLAlignedRectangularAperture, CompareToScalar) {
 
     Eigen::Vector3d center(x0,y0,z0);
     calin::simulation::vs_optics::VSOAlignedRectangularAperture sobs(center, dx, dz);
-    AlignedRectangularAperture<Real> vobs(center, dx, dz);
+    VCLAlignedRectangularAperture<Real> vobs(center, dx, dz);
 
     double x = rng.uniform()*2.0 - 1.0;
     double y = rng.uniform()*2.0 - 1.0;
