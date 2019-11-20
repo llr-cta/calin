@@ -139,6 +139,7 @@ public:
     using calin::simulation::vs_optics::VSOAlignedRectangularAperture;
     using calin::simulation::vs_optics::VSOAlignedCircularAperture;
 
+    scope_pos_               = scope->pos().cast<real_t>();
     global_to_reflector_rot_ = scope->rotationGlobalToReflector().cast<real_t>();
     ref_index_               = refractive_index;
 
@@ -277,7 +278,25 @@ public:
     if(adopt_rng_)delete rng_;
   }
 
-  bool_vt trace_scope_centered_global_frame(bool_vt mask, Ray& ray, TraceInfo& info)
+  bool_vt trace_global_frame(bool_vt mask, Ray& ray, TraceInfo& info,
+    bool do_derotation = true)
+  {
+    // *************************************************************************
+    // ********************** RAY STARTS IN GLOBAL FRAME ***********************
+    // *************************************************************************
+
+    ray.translate_origin(scope_pos_);
+    ray.rotate(global_to_reflector_rot_.template cast<real_vt>());
+    mask = trace_reflector_frame(mask, ray, info);
+    if(do_derotation) {
+      ray.derotate(global_to_reflector_rot_.template cast<real_vt>());
+      ray.untranslate_origin(scope_pos_);
+    }
+    return mask;
+  }
+
+  bool_vt trace_scope_centered_global_frame(bool_vt mask, Ray& ray, TraceInfo& info,
+    bool do_derotation = true)
   {
     // *************************************************************************
     // *************** RAY STARTS IN SCOPE CENTERED GLOBAL FRAME ***************
@@ -285,7 +304,9 @@ public:
 
     ray.rotate(global_to_reflector_rot_.template cast<real_vt>());
     mask = trace_reflector_frame(mask, ray, info);
-    ray.derotate(global_to_reflector_rot_.template cast<real_vt>());
+    if(do_derotation) {
+      ray.derotate(global_to_reflector_rot_.template cast<real_vt>());
+    }
     return mask;
   }
 
@@ -544,6 +565,7 @@ public:
   }
 
  private:
+   vec3_t          scope_pos_;
    mat3_t          global_to_reflector_rot_;
    real_t          ref_index_;
 
