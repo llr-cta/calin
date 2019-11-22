@@ -31,10 +31,10 @@ namespace calin { namespace math { namespace rng {
 
 template<typename VCLArchitecture> class NR3_VCLRNGCore;
 
-template<typename VCLArchitecture> class VCLRNGCore: public VCLArchitecture
+template<typename VCLArchitecture> class VCLRNGCore
 {
 public:
-  using typename VCLArchitecture::uint64_vt;
+  CALIN_TYPEALIAS(uint64_vt, typename VCLArchitecture::uint64_vt);
 
   virtual ~VCLRNGCore() { }
 
@@ -82,20 +82,20 @@ protected:
   }
 };
 
-template<typename VCLArchitecture> class VCLRNG: public VCLArchitecture
+template<typename VCLArchitecture> class VCLRNG
 {
 public:
-  using typename VCLArchitecture::uint32_vt;
-  using typename VCLArchitecture::int32_vt;
-  using typename VCLArchitecture::uint64_vt;
-  using typename VCLArchitecture::int64_vt;
-  using typename VCLArchitecture::float_vt;
-  using typename VCLArchitecture::double_vt;
-  using typename VCLArchitecture::uint64_bvt;
-  using typename VCLArchitecture::float_bvt;
-  using typename VCLArchitecture::double_bvt;
-  using typename VCLArchitecture::Vector3f_vt;
-  using typename VCLArchitecture::Vector3d_vt;
+  CALIN_TYPEALIAS(uint32_vt, typename VCLArchitecture::uint32_vt);
+  CALIN_TYPEALIAS(int32_vt, typename VCLArchitecture::int32_vt);
+  CALIN_TYPEALIAS(uint64_vt, typename VCLArchitecture::uint64_vt);
+  CALIN_TYPEALIAS(int64_vt, typename VCLArchitecture::int64_vt);
+  CALIN_TYPEALIAS(float_vt, typename VCLArchitecture::float_vt);
+  CALIN_TYPEALIAS(double_vt, typename VCLArchitecture::double_vt);
+  CALIN_TYPEALIAS(uint64_bvt, typename VCLArchitecture::uint64_bvt);
+  CALIN_TYPEALIAS(float_bvt, typename VCLArchitecture::float_bvt);
+  CALIN_TYPEALIAS(double_bvt, typename VCLArchitecture::double_bvt);
+  CALIN_TYPEALIAS(Vector3f_vt, typename VCLArchitecture::Vector3f_vt);
+  CALIN_TYPEALIAS(Vector3d_vt, typename VCLArchitecture::Vector3d_vt);
 
   enum class CoreType { NR3 };
   VCLRNG(uint64_t seed, CoreType core_type = CoreType::NR3,
@@ -186,14 +186,15 @@ public:
 
   // Generate standard float/double deviates in the range [0, scale]
   // The default values therefore create deviates in the range of [0,1]
-  double_vt uniform_double(const double scale = 1.0) {
-    const double multiplier = C_U64_TO_DBL*scale;
+  double_vt uniform_double(const double_vt& scale = 1.0) {
+    const double_vt multiplier = C_U64_TO_DBL*scale;
     double_vt x = to_double(uniform_int64());
     // return select(x<0, nmul_add(x,multiplier,0.5*scale), x*multiplier);
     return mul_add(x, multiplier, select(x<0, scale, 0.0));
   }
 
-  double_vt uniform_double_53bit(const double scale = 1.0) {
+  // Probably should not be kept (after testing)
+  double_vt uniform_double_53bit(const double_vt& scale = 1.0) {
     constexpr uint64_t MASK_HI = (1ULL<<52)-1;
     constexpr uint64_t EXP_HI = 1023ULL<<52;
     uint64_vt xui = uniform_uint64();
@@ -201,7 +202,8 @@ public:
     return scale*(xhi-1.0);
   }
 
-  double_vt uniform_double_alt(const double scale = 1.0) {
+  // Probably should not be kept (after testing)
+  double_vt uniform_double_alt(const double_vt& scale = 1.0) {
     constexpr uint64_t MASK_HI = (1ULL<<52)-1;
     constexpr uint64_t MASK_LO = ((1ULL<<12)-1)<<40;
     constexpr uint64_t EXP_HI = 1023ULL<<52;
@@ -212,8 +214,8 @@ public:
     return scale*((xlo-2.2204460492503130808e-16) + (xhi-1.0));
   }
 
-  float_vt uniform_float(const float scale = 1.0f) {
-    const float multiplier = C_U32_TO_FLT*scale;
+  float_vt uniform_float(const float_vt& scale = 1.0f) {
+    const float_vt multiplier = C_U32_TO_FLT*scale;
     float_vt x = to_float(uniform_int32());
     // return select(x<0, nmul_add(x,multiplier,0.5*scale), x*multiplier);
     return mul_add(x, multiplier, select(x<0, scale, 0));
@@ -428,7 +430,7 @@ public:
 
   void uniform_on_unit_sphere_real(double_vt& x, double_vt& y, double_vt& z)
   {
-    uniform_on_unit_sphere_float(x, y, z);
+    uniform_on_unit_sphere_double(x, y, z);
   }
 
   Vector3f_vt uniform_on_unit_sphere_vec_float()
@@ -662,15 +664,15 @@ private:
   bool adopt_core_ = true;
 };
 
-template<typename VCLRealArch> class VCLRealRNG: public VCLRealArch
+template<typename VCLRealArch> class VCLRealRNG
 {
 public:
-  using typename VCLRealArch::architecture;
-  using typename VCLRealArch::real_t;
-  using typename VCLRealArch::real_vt;
-  using typename VCLRealArch::int_vt;
-  using typename VCLRealArch::uint_vt;
-  using typename VCLRealArch::vec3_vt;
+  CALIN_TYPEALIAS(architecture, typename VCLRealArch::architecture);
+  CALIN_TYPEALIAS(real_t,  typename VCLRealArch::real_t);
+  CALIN_TYPEALIAS(real_vt, typename VCLRealArch::real_vt);
+  CALIN_TYPEALIAS(int_vt,  typename VCLRealArch::int_vt);
+  CALIN_TYPEALIAS(uint_vt, typename VCLRealArch::uint_vt);
+  CALIN_TYPEALIAS(vec3_vt, typename VCLRealArch::vec3_vt);
 
   VCLRealRNG(VCLRNG<architecture>* rng, bool adopt_rng = false):
     rng_(rng), adopt_rng_(adopt_rng)
@@ -741,7 +743,7 @@ template<typename VCLArchitecture> class NR3_VCLRNGCore:
   public VCLRNGCore<VCLArchitecture>
 {
 public:
-  using typename VCLArchitecture::uint64_vt;
+  CALIN_TYPEALIAS(uint64_vt, typename VCLArchitecture::uint64_vt);
 
   typedef calin::ix::math::rng::NR3_SIMD_RNGCoreData ix_core_data_type;
 

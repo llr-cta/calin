@@ -27,6 +27,7 @@
 
 %{
 #include "math/rng.hpp"
+#include "math/rng_vcl.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -44,3 +45,7 @@
 %include "math/rng.hpp"
 
 %template(NR3_EmulateSIMD_RNGCore_4) calin::math::rng::NR3_EmulateSIMD_RNGCore<4>;
+
+%include "math/rng_vcl.hpp"
+%template (VCLRNG256) calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>;
+%template (VCLRNG128) calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>;
