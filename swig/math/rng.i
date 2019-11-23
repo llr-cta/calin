@@ -51,10 +51,10 @@
 %template (VCLRNG256) calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>;
 %template (VCLRNG512) calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>;
 
-%template (VCLFloatRealRNG128) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL128FloatReal>;
-%template (VCLFloatRealRNG256) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL256FloatReal>;
-%template (VCLFloatRealRNG512) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL512FloatReal>;
+%template (VCLRealRNGFloat128) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL128FloatReal>;
+%template (VCLRealRNGFloat256) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL256FloatReal>;
+%template (VCLRealRNGFloat512) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL512FloatReal>;
 
-%template (VCLDoubleRealRNG128) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL128DoubleReal>;
-%template (VCLDoubleRealRNG256) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL256DoubleReal>;
-%template (VCLDoubleRealRNG512) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL512DoubleReal>;
+%template (VCLRealRNGDouble128) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL128DoubleReal>;
+%template (VCLRealRNGDouble256) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL256DoubleReal>;
+%template (VCLRealRNGDouble512) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL512DoubleReal>;
