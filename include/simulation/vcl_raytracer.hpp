@@ -285,12 +285,12 @@ public:
     // ********************** RAY STARTS IN GLOBAL FRAME ***********************
     // *************************************************************************
 
-    ray.translate_origin(scope_pos_);
+    ray.translate_origin(scope_pos_.template cast<real_vt>());
     ray.rotate(global_to_reflector_rot_.template cast<real_vt>());
     mask = trace_reflector_frame(mask, ray, info);
     if(do_derotation) {
       ray.derotate(global_to_reflector_rot_.template cast<real_vt>());
-      ray.untranslate_origin(scope_pos_);
+      ray.untranslate_origin(scope_pos_.template cast<real_vt>());
     }
     return mask;
   }
