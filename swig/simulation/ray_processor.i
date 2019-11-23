@@ -29,6 +29,7 @@
 #include "simulation/pe_processor.hpp"
 #include "simulation/ray_processor.hpp"
 #include "simulation/vso_ray_processor.hpp"
+#include "simulation/vcl_ray_processor.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -50,3 +51,13 @@
 
 %template(StdVectorRayProcessorDetectorSphere)
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>;
+
+%include "simulation/vcl_ray_processor.hpp"
+
+%template (VCLRayTracerRayProcessorFloat128) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL128FloatReal>;
+%template (VCLRayTracerRayProcessorFloat256) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL256FloatReal>;
+%template (VCLRayTracerRayProcessorFloat512) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL512FloatReal>;
+
+%template (VCLRayTracerRayProcessorDouble128) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL128DoubleReal>;
+%template (VCLRayTracerRayProcessorDouble256) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL256DoubleReal>;
+%template (VCLRayTracerRayProcessorDouble512) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL512DoubleReal>;
