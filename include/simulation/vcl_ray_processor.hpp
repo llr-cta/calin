@@ -34,38 +34,39 @@
 
 namespace calin { namespace simulation { namespace vcl_ray_processor {
 
-template<typename VCLRealType> class VCLRayTracerRayProcessor:
+template<typename VCLArchitecture> class VCLRayTracerRayProcessorDouble:
   public calin::simulation::ray_processor::RayProcessor
 {
 public:
-  CALIN_TYPEALIAS(real_t, typename VCLRealType::real_t);
-  CALIN_TYPEALIAS(real_vt, typename VCLRealType::real_vt);
-  CALIN_TYPEALIAS(real_at, typename VCLRealType::real_at);
-  CALIN_TYPEALIAS(bool_vt, typename VCLRealType::bool_vt);
-  CALIN_TYPEALIAS(int_vt, typename VCLRealType::int_vt);
-  CALIN_TYPEALIAS(int_at, typename VCLRealType::int_at);
+  CALIN_TYPEALIAS(double_vt, typename VCLArchitecture::double_vt);
+  CALIN_TYPEALIAS(double_at, typename VCLArchitecture::double_at);
+  CALIN_TYPEALIAS(int64_vt, typename VCLArchitecture::int64_vt);
+  CALIN_TYPEALIAS(int64_at, typename VCLArchitecture::int64_at);
+  CALIN_TYPEALIAS(bool_vt, typename VCLArchitecture::double_bvt);
 
+  CALIN_TYPEALIAS(VCLRealType, calin::util::vcl::VCLDoubleReal<VCLArchitecture>);
+  CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
   CALIN_TYPEALIAS(RNG, calin::math::rng::VCLRealRNG<VCLRealType>);
   CALIN_TYPEALIAS(RayTracer, calin::simulation::vcl_raytracer::VCLScopeRayTracer<VCLRealType>);
 
-  VCLRayTracerRayProcessor(calin::simulation::vs_optics::VSOArray* array,
-      calin::simulation::pe_processor::PEProcessor* visitor, RNG* rng = nullptr,
+  VCLRayTracerRayProcessorDouble(calin::simulation::vs_optics::VSOArray* array,
+      calin::simulation::pe_processor::PEProcessor* visitor, ArchRNG* rng = nullptr,
       bool adopt_array = false, bool adopt_visitor = false,
       bool adopt_rng = false):
     array_(array), adopt_array_(adopt_array),
     visitor_(visitor), adopt_visitor_(adopt_visitor),
-    rng_(rng==nullptr ? new RNG(__PRETTY_FUNCTION__) : rng),
-    adopt_rng_(rng==nullptr ? true : adopt_rng),
+    rng_(new RNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng,
+      rng==nullptr ? true : adopt_rng)), adopt_rng_(true),
     ray_tracer_(array->numTelescopes()), nray_(array->numTelescopes()),
-    ray_ux_(array->numTelescopes() * buffer_depth_ * VCLRealType::num_real),
-    ray_uy_(array->numTelescopes() * buffer_depth_ * VCLRealType::num_real),
-    ray_uz_(array->numTelescopes() * buffer_depth_ * VCLRealType::num_real),
-    ray_e_(array->numTelescopes() * buffer_depth_ * VCLRealType::num_real),
-    ray_x_(array->numTelescopes() * buffer_depth_ * VCLRealType::num_real),
-    ray_y_(array->numTelescopes() * buffer_depth_ * VCLRealType::num_real),
-    ray_z_(array->numTelescopes() * buffer_depth_ * VCLRealType::num_real),
-    ray_ct_(array->numTelescopes() * buffer_depth_ * VCLRealType::num_real),
-    ray_w_(array->numTelescopes() * buffer_depth_ * VCLRealType::num_real)
+    ray_ux_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
+    ray_uy_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
+    ray_uz_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
+    ray_e_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
+    ray_x_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
+    ray_y_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
+    ray_z_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
+    ray_ct_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double),
+    ray_w_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_double)
   {
     for(unsigned iscope=0;iscope<array->numTelescopes();++iscope) {
       ray_tracer_[iscope] = new RayTracer(
@@ -73,7 +74,7 @@ public:
     }
   }
 
-  virtual ~VCLRayTracerRayProcessor()
+  virtual ~VCLRayTracerRayProcessorDouble()
   {
     if(adopt_array_)delete array_;
     if(adopt_visitor_)delete visitor_;
@@ -96,6 +97,7 @@ public:
 
   void start_processing() override
   {
+    nhit_ = 0;
     visitor_->start_processing();
   }
 
@@ -126,6 +128,8 @@ public:
     visitor_->finish_processing();
   }
 
+  uint64_t nhit() const { return nhit_; }
+
 private:
   void process_buffered_rays(unsigned scope_id) {
     using Ray = calin::math::ray::VCLRay<VCLRealType>;
@@ -148,10 +152,10 @@ private:
       mask = ray_tracer_[scope_id]->
         trace_global_frame(mask, ray, info, /* do_derotation = */ false);
 
-      real_at fp_x;
-      real_at fp_z;
-      real_at fp_t;
-      int_at fp_pixel_id;
+      double_at fp_x;
+      double_at fp_z;
+      double_at fp_t;
+      int64_at fp_pixel_id;
       unsigned imask = vcl::to_bits(mask);
 
       info.fplane_x.store(fp_x);
@@ -162,6 +166,7 @@ private:
       unsigned mray = std::min(VCLRealType::num_real, nray);
       for(unsigned jray=0; jray<mray; jray++) {
         if(imask & (0x1<<jray)) {
+          ++nhit_;
           visitor_->process_focal_plane_hit(scope_id, fp_pixel_id[jray],
             double(fp_x[jray]), double(fp_z[jray]),
             double(fp_t[jray]) + ray_ct_[iray+jray]*math::constants::cgs_1_c,
@@ -184,15 +189,16 @@ private:
   double ref_index_ = 1.0;
   unsigned buffer_depth_ = 1;
   std::vector<unsigned> nray_;
-  std::vector<real_t> ray_ux_;
-  std::vector<real_t> ray_uy_;
-  std::vector<real_t> ray_uz_;
-  std::vector<real_t> ray_e_;
-  std::vector<real_t> ray_x_;
-  std::vector<real_t> ray_y_;
-  std::vector<real_t> ray_z_;
+  std::vector<double> ray_ux_;
+  std::vector<double> ray_uy_;
+  std::vector<double> ray_uz_;
+  std::vector<double> ray_e_;
+  std::vector<double> ray_x_;
+  std::vector<double> ray_y_;
+  std::vector<double> ray_z_;
   std::vector<double> ray_ct_;
   std::vector<double> ray_w_;
+  uint64_t nhit_ = 0;
 };
 
 } } } // namespace calin::simulations::vcl_ray_processor

@@ -54,10 +54,6 @@
 
 %include "simulation/vcl_ray_processor.hpp"
 
-%template (VCLRayTracerRayProcessorFloat128) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL128FloatReal>;
-%template (VCLRayTracerRayProcessorFloat256) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL256FloatReal>;
-%template (VCLRayTracerRayProcessorFloat512) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL512FloatReal>;
-
-%template (VCLRayTracerRayProcessorDouble128) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL128DoubleReal>;
-%template (VCLRayTracerRayProcessorDouble256) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL256DoubleReal>;
-%template (VCLRayTracerRayProcessorDouble512) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessor<calin::util::vcl::VCL512DoubleReal>;
+%template (VCLRayTracerRayProcessorDouble128) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessorDouble<calin::util::vcl::VCL128Architecture>;
+%template (VCLRayTracerRayProcessorDouble256) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessorDouble<calin::util::vcl::VCL256Architecture>;
+%template (VCLRayTracerRayProcessorDouble512) calin::simulation::vcl_ray_processor::VCLRayTracerRayProcessorDouble<calin::util::vcl::VCL512Architecture>;
