@@ -358,6 +358,11 @@ public:
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
 
+    if(not horizontal_or(mask)) {
+      // We outie ...
+      return mask;
+    }
+
     // Assume mirrors on hexagonal grid - use hex_array routines to find which hit
     info.status = select(bool_int_vt(mask), STS_NO_MIRROR, info.status);
     info.mirror_hexid = calin::math::hex_array::VCLReal<VCLRealType>::
