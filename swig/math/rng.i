@@ -49,3 +49,8 @@
 %include "math/rng_vcl.hpp"
 %template (VCLRNG256) calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>;
 %template (VCLRNG128) calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>;
+
+%template (VCLFloatRealRNG256) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL256FloatReal>;
+%template (VCLFloatRealRNG128) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL128FloatReal>;
+%template (VCLDoubleRealRNG256) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL256DoubleReal>;
+%template (VCLDoubleRealRNG128) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL128DoubleReal>;

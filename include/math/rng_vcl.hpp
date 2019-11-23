@@ -711,7 +711,7 @@ public:
   real_vt uniform(const real_vt& scale = 1.0) {
     real_vt x; rng_->uniform_real(x, scale); return x; }
 
-  real_vt exponential() { real_vt x; rng_exponential_real(x); return x; }
+  real_vt exponential() { real_vt x; rng_->exponential_real(x); return x; }
 
   void normal_two_bm(real_vt& x1, real_vt& x2) {
     rng_->normal_two_real_bm(x1,x2); }
@@ -721,12 +721,21 @@ public:
   void uniform_on_unit_sphere(real_vt& x, real_vt& y, real_vt& z) {
     rng_->uniform_on_unit_sphere_real(x,y,z); }
   vec3_vt uniform_on_unit_sphere() {
-    return rng_->uniform_on_unit_sphere_vec_real(); }
+    vec3_vt v;
+    rng_->uniform_on_unit_sphere_vec_real(v);
+    return v;
+  }
 
   real_vt from_inverse_cdf(const real_t* inverse_cdf, unsigned npoints) {
-    return from_inverse_cdf_real(inverse_cdf, npoints); }
+    real_vt x;
+    rng_->from_inverse_cdf_real(x, inverse_cdf, npoints);
+    return x;
+  }
   real_vt from_inverse_cdf(const std::vector<real_t>& inverse_cdf) {
-    return from_inverse_cdf_real(inverse_cdf); }
+    real_vt x;
+    rng_->from_inverse_cdf_real(x, inverse_cdf);
+    return x;
+  }
 
 private:
   VCLRNG<architecture>* rng_;
