@@ -31,6 +31,7 @@
 #include <math/geometry_vcl.hpp>
 #include <simulation/vcl_raytracer.hpp>
 #include <simulation/ray_processor.hpp>
+#include <util/log.hpp>
 
 namespace calin { namespace simulation { namespace vcl_ray_processor {
 
@@ -308,6 +309,8 @@ private:
   }
 
   void process_buffered_rays(unsigned scope_id) {
+    const auto* scope = array_->telescope(scope_id);
+
     using FloatRay = calin::math::ray::VCLRay<FloatType>;
     using DoubleRay = calin::math::ray::VCLRay<DoubleType>;
 
@@ -325,7 +328,13 @@ private:
       dbl_ray_lo.mutable_y().load(ray_y_.data() + iray);
       dbl_ray_lo.mutable_z().load(ray_z_.data() + iray);
       dbl_ray_lo.mutable_ct().load(ray_ct_.data() + iray);
-      DoubleRayTracer::transform_to_scope_reflector_frame(dbl_ray_lo, array_->telescope(scope_id));
+      if(propagate_to_scope_environs_) {
+        dbl_ray_lo.propagate_to_point_nearly_closest_approach_with_mask(/*mask=*/ true,
+          scope->pos().cast<double_vt>(), -2*scope->focalPlanePosition().y(),
+          /* time_reversal_ok = */ false, ref_index_);
+        dbl_ray_lo.ct().store(ray_ct_.data() + iray);
+      }
+      DoubleRayTracer::transform_to_scope_reflector_frame(dbl_ray_lo, scope);
       iray += VCLArchitecture::num_double;
 
       DoubleRay dbl_ray_hi;
@@ -337,7 +346,13 @@ private:
       dbl_ray_hi.mutable_y().load(ray_y_.data() + iray);
       dbl_ray_hi.mutable_z().load(ray_z_.data() + iray);
       dbl_ray_hi.mutable_ct().load(ray_ct_.data() + iray);
-      DoubleRayTracer::transform_to_scope_reflector_frame(dbl_ray_hi, array_->telescope(scope_id));
+      if(propagate_to_scope_environs_) {
+        dbl_ray_hi.propagate_to_point_nearly_closest_approach_with_mask(/*mask=*/ true,
+          scope->pos().cast<double_vt>(), -2*scope->focalPlanePosition().y(),
+          /* time_reversal_ok = */ false, ref_index_);
+        dbl_ray_hi.ct().store(ray_ct_.data() + iray);
+      }
+      DoubleRayTracer::transform_to_scope_reflector_frame(dbl_ray_hi, scope);
       iray -= VCLArchitecture::num_double;
 
       FloatRay flt_ray;
@@ -389,7 +404,9 @@ private:
   bool adopt_rng_ = false;
   std::vector<FloatRayTracer*> ray_tracer_;
   double ref_index_ = 1.0;
+  double ref_index_inv_ = 1.0;
   unsigned buffer_depth_ = 1;
+  bool propagate_to_scope_environs_ = true;
   std::vector<unsigned> nray_;
   std::vector<double> ray_ux_;
   std::vector<double> ray_uy_;
