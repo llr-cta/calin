@@ -211,10 +211,12 @@ public:
   CALIN_TYPEALIAS(int32_at, typename VCLArchitecture::int32_at);
   CALIN_TYPEALIAS(bool_vt, typename VCLArchitecture::float_bvt);
 
-  CALIN_TYPEALIAS(VCLRealType, calin::util::vcl::VCLFloatReal<VCLArchitecture>);
+  CALIN_TYPEALIAS(FloatType, calin::util::vcl::VCLFloatReal<VCLArchitecture>);
+  CALIN_TYPEALIAS(DoubleType, calin::util::vcl::VCLDoubleReal<VCLArchitecture>);
   CALIN_TYPEALIAS(ArchRNG, calin::math::rng::VCLRNG<VCLArchitecture>);
-  CALIN_TYPEALIAS(RNG, calin::math::rng::VCLRealRNG<VCLRealType>);
-  CALIN_TYPEALIAS(RayTracer, calin::simulation::vcl_raytracer::VCLScopeRayTracer<VCLRealType>);
+  CALIN_TYPEALIAS(FloatRNG, calin::math::rng::VCLRealRNG<FloatType>);
+  CALIN_TYPEALIAS(FloatRayTracer, calin::simulation::vcl_raytracer::VCLScopeRayTracer<FloatType>);
+  CALIN_TYPEALIAS(DoubleRayTracer, calin::simulation::vcl_raytracer::VCLScopeRayTracer<DoubleType>);
 
   VCLRayTracerRayProcessorFloat(calin::simulation::vs_optics::VSOArray* array,
       calin::simulation::pe_processor::PEProcessor* visitor, ArchRNG* rng = nullptr,
@@ -222,7 +224,7 @@ public:
       bool adopt_rng = false):
     array_(array), adopt_array_(adopt_array),
     visitor_(visitor), adopt_visitor_(adopt_visitor),
-    rng_(new RNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng,
+    rng_(new FloatRNG(rng==nullptr ? new ArchRNG(__PRETTY_FUNCTION__) : rng,
       rng==nullptr ? true : adopt_rng)), adopt_rng_(true),
     ray_tracer_(array->numTelescopes()), nray_(array->numTelescopes()),
     ray_ux_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_float),
@@ -236,7 +238,7 @@ public:
     ray_w_(array->numTelescopes() * buffer_depth_ * VCLArchitecture::num_float)
   {
     for(unsigned iscope=0;iscope<array->numTelescopes();++iscope) {
-      ray_tracer_[iscope] = new RayTracer(
+      ray_tracer_[iscope] = new FloatRayTracer(
         array->telescope(iscope), ref_index_, rng_, /* adopt_rng= */ false);
     }
   }
@@ -271,7 +273,7 @@ public:
   void process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
     double pe_weight) override
   {
-    unsigned iray = scope_id * buffer_depth_ * VCLRealType::num_real + nray_[scope_id];
+    unsigned iray = scope_id * buffer_depth_ * VCLArchitecture::num_float + nray_[scope_id];
     ++nray_[scope_id];
     ray_ux_[iray] = ray.ux();
     ray_uy_[iray] = ray.uy();
@@ -282,7 +284,7 @@ public:
     ray_z_[iray] = ray.z();
     ray_ct_[iray] = ray.ct();
     ray_w_[iray] = pe_weight;
-    if(nray_[scope_id] == buffer_depth_ * VCLRealType::num_real) {
+    if(nray_[scope_id] == buffer_depth_ * VCLArchitecture::num_float) {
       process_buffered_rays(scope_id);
     }
   }
@@ -298,15 +300,7 @@ public:
   uint64_t nhit() const { return nhit_; }
 
 private:
-  float_vt load(const double* xa) const {
-    double_vt xlo;
-    double_vt xhi;
-    xlo.load(xa);
-    xhi.load(xa + VCLArchitecture::num_double);
-    return compress(xlo, xhi);
-  }
-
-  float_vt store(double* xa, float_vt xv) const {
+  void store(double* xa, float_vt xv) const {
     double_vt xlo = extend_low(xv);
     double_vt xhi = extend_high(xv);
     xlo.store(xa);
@@ -314,28 +308,52 @@ private:
   }
 
   void process_buffered_rays(unsigned scope_id) {
-    using Ray = calin::math::ray::VCLRay<VCLRealType>;
-    using TraceInfo = calin::simulation::vcl_raytracer::VCLScopeTraceInfo<VCLRealType>;
+    using FloatRay = calin::math::ray::VCLRay<FloatType>;
+    using DoubleRay = calin::math::ray::VCLRay<DoubleType>;
+
+    using TraceInfo = calin::simulation::vcl_raytracer::VCLScopeTraceInfo<FloatType>;
     unsigned nray = nray_[scope_id];
-    unsigned iray = scope_id * buffer_depth_ * VCLRealType::num_real;
+    unsigned iray = scope_id * buffer_depth_ * VCLArchitecture::num_float;
     nray_[scope_id] = 0;
     while(nray) {
+      DoubleRay dbl_ray_lo;
+      dbl_ray_lo.mutable_ux().load(ray_ux_.data() + iray);
+      dbl_ray_lo.mutable_uy().load(ray_uy_.data() + iray);
+      dbl_ray_lo.mutable_uz().load(ray_uz_.data() + iray);
+      dbl_ray_lo.mutable_energy().load(ray_e_.data() + iray);
+      dbl_ray_lo.mutable_x().load(ray_x_.data() + iray);
+      dbl_ray_lo.mutable_y().load(ray_y_.data() + iray);
+      dbl_ray_lo.mutable_z().load(ray_z_.data() + iray);
+      dbl_ray_lo.mutable_ct().load(ray_ct_.data() + iray);
+      DoubleRayTracer::transform_to_scope_reflector_frame(dbl_ray_lo, array_->telescope(scope_id));
+      iray += VCLArchitecture::num_double;
+
+      DoubleRay dbl_ray_hi;
+      dbl_ray_hi.mutable_ux().load(ray_ux_.data() + iray);
+      dbl_ray_hi.mutable_uy().load(ray_uy_.data() + iray);
+      dbl_ray_hi.mutable_uz().load(ray_uz_.data() + iray);
+      dbl_ray_hi.mutable_energy().load(ray_e_.data() + iray);
+      dbl_ray_hi.mutable_x().load(ray_x_.data() + iray);
+      dbl_ray_hi.mutable_y().load(ray_y_.data() + iray);
+      dbl_ray_hi.mutable_z().load(ray_z_.data() + iray);
+      dbl_ray_hi.mutable_ct().load(ray_ct_.data() + iray);
+      DoubleRayTracer::transform_to_scope_reflector_frame(dbl_ray_hi, array_->telescope(scope_id));
+      iray -= VCLArchitecture::num_double;
+
+      FloatRay flt_ray;
+      flt_ray.mutable_ux() = compress(dbl_ray_lo.ux(), dbl_ray_hi.ux());
+      flt_ray.mutable_uy() = compress(dbl_ray_lo.uy(), dbl_ray_hi.uy());
+      flt_ray.mutable_uz() = compress(dbl_ray_lo.uz(), dbl_ray_hi.uz());
+      flt_ray.mutable_energy() = compress(dbl_ray_lo.energy(), dbl_ray_hi.energy());
+      flt_ray.mutable_x() = compress(dbl_ray_lo.x(), dbl_ray_hi.x());
+      flt_ray.mutable_y() = compress(dbl_ray_lo.y(), dbl_ray_hi.y());
+      flt_ray.mutable_z() = compress(dbl_ray_lo.z(), dbl_ray_hi.z());
+      flt_ray.mutable_ct() = 0;
+
       bool_vt mask = true;
-      Ray ray;
       TraceInfo info;
 
-// No.. need to do global frame in double then down-convert
-      ray.mutable_ux() = load(ray_ux_.data() + iray);
-      ray.mutable_uy() = load(ray_uy_.data() + iray);
-      ray.mutable_uz() = load(ray_uz_.data() + iray);
-      ray.mutable_energy() = load(ray_e_.data() + iray);
-      ray.mutable_x() = load(ray_x_.data() + iray);
-      ray.mutable_y() = load(ray_y_.data() + iray);
-      ray.mutable_z() = load(ray_z_.data() + iray);
-      ray.mutable_ct() = 0;
-
-      mask = ray_tracer_[scope_id]->
-        trace_global_frame(mask, ray, info, /* do_derotation = */ false);
+      mask = ray_tracer_[scope_id]->trace_reflector_frame(mask, flt_ray, info);
 
       double fp_x[VCLArchitecture::num_float];
       double fp_z[VCLArchitecture::num_float];
@@ -348,18 +366,17 @@ private:
       store(fp_t, info.fplane_t);
       info.pixel_id.store(fp_pixel_id);
 
-      unsigned mray = std::min(VCLRealType::num_real, nray);
+      unsigned mray = std::min(VCLArchitecture::num_float, nray);
       for(unsigned jray=0; jray<mray; jray++) {
         if(imask & (0x1<<jray)) {
           ++nhit_;
           visitor_->process_focal_plane_hit(scope_id, fp_pixel_id[jray],
-            double(fp_x[jray]), double(fp_z[jray]),
-            double(fp_t[jray]) + ray_ct_[iray+jray]*math::constants::cgs_1_c,
+            fp_x[jray], fp_z[jray], fp_t[jray] + ray_ct_[iray+jray]*math::constants::cgs_1_c,
             ray_w_[iray+jray]);
         }
       }
 
-      iray += VCLRealType::num_real;
+      iray += VCLArchitecture::num_float;
       nray -= mray;
     }
   }
@@ -368,9 +385,9 @@ private:
   bool adopt_array_ = false;
   calin::simulation::pe_processor::PEProcessor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
-  RNG* rng_ = nullptr;
+  FloatRNG* rng_ = nullptr;
   bool adopt_rng_ = false;
-  std::vector<RayTracer*> ray_tracer_;
+  std::vector<FloatRayTracer*> ray_tracer_;
   double ref_index_ = 1.0;
   unsigned buffer_depth_ = 1;
   std::vector<unsigned> nray_;
