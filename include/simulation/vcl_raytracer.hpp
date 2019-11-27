@@ -278,6 +278,13 @@ public:
     if(adopt_rng_)delete rng_;
   }
 
+  static void transform_to_scope_reflector_frame(Ray& ray,
+      const calin::simulation::vs_optics::VSOTelescope* scope)
+  {
+    ray.translate_origin(scope->pos().cast<real_vt>());
+    ray.rotate(scope->rotationGlobalToReflector().cast<real_vt>());
+  }
+
   bool_vt trace_global_frame(bool_vt mask, Ray& ray, TraceInfo& info,
     bool do_derotation = true)
   {
