@@ -52,10 +52,10 @@ void RayProcessor::finish_processing()
   // nothing to see here
 }
 
-unsigned RayProcessor::process_all_from_ray_generator(
+uint64_t RayProcessor::process_all_from_ray_generator(
   calin::math::ray_generator::RayGenerator* gen, unsigned scope_id)
 {
-  unsigned n = 0;
+  uint64_t n = 0;
   calin::math::ray::Ray ray;
   double weight;
   this->start_processing();
