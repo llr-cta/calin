@@ -483,13 +483,6 @@ public:
     // ***************** RAY IS NOW IN FOCAL PLANE COORDINATES *****************
     // *************************************************************************
 
-    // Propagate to focal plane
-    info.status = select(bool_int_vt(mask), STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE, info.status);
-    mask = ray.propagate_to_y_plane_with_mask(mask, 0, false, ref_index_);
-#ifdef DEBUG_STATUS
-    std::cout << ' ' << mask[0] << '/' << info.status[0];
-#endif
-
     // Test for obscuration on way to focal plane - second with obscurations
     // that are given in focal plane coordinates
     for(const auto* obs : camera_obscuration) {
@@ -499,6 +492,13 @@ public:
         vcl::min(ct_obscured, ray_out.ct()), ct_obscured);
       was_obscured |= was_obscured_here;
     }
+
+    // Propagate to focal plane
+    info.status = select(bool_int_vt(mask), STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE, info.status);
+    mask = ray.propagate_to_y_plane_with_mask(mask, 0, false, ref_index_);
+#ifdef DEBUG_STATUS
+    std::cout << ' ' << mask[0] << '/' << info.status[0];
+#endif
 
     // Finish checking obscuration after mirror reflection
     info.status = select(bool_int_vt(mask), STS_OBSCURED_BEFORE_FOCAL_PLANE, info.status);
@@ -561,7 +561,7 @@ private:
 
   void populate_obscuration(std::vector<VCLObscuration<VCLRealType>*>& to,
     const std::vector<const calin::simulation::vs_optics::VSOObscuration*>& from,
-    const std::string& type) 
+    const std::string& type)
   {
     using namespace calin::simulation::vs_optics;
     for(const auto* obs : from) {
