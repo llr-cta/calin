@@ -169,6 +169,9 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
       std::vector<VSOObscuration*> obsvec_post;
       for(const auto& obs : param.post_reflection_obscuration())
         obsvec_post.push_back(VSOObscuration::create_from_proto(obs));
+      std::vector<VSOObscuration*> obsvec_cam;
+      for(const auto& obs : param.camera_obscuration())
+        obsvec_cam.push_back(VSOObscuration::create_from_proto(obs));
 
       double win_front = 0;
       double win_radius = 0;
@@ -223,7 +226,8 @@ generateFromArrayParameters(const IsotropicDCArrayParameters& param,
              param.pixel().pixel_labeling_parity(),
              win_front, win_radius, win_thickness, win_n,
 	           obsvec_pre,
-             obsvec_post
+             obsvec_post,
+             obsvec_cam
 		         );
 
       telescope->populateMirrorsAndPixelsRandom(param,rng);

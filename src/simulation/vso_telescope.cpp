@@ -144,14 +144,9 @@ VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fPixelsByHexID[(*i)->hexID()]=pixel;
   }
 
-  for(std::vector<VSOObscuration*>::const_iterator i=o.fPreObscurations.begin();
-      i!=o.fPreObscurations.end(); i++)fPreObscurations.push_back((*i)->clone());
-
-  for(std::vector<VSOObscuration*>::const_iterator i=o.fPostObscurations.begin();
-      i!=o.fPostObscurations.end(); i++)fPostObscurations.push_back((*i)->clone());
-
-  for(std::vector<VSOObscuration*>::const_iterator i=o.fCameraObscurations.begin();
-      i!=o.fCameraObscurations.end(); i++)fCameraObscurations.push_back((*i)->clone());
+  for(const auto *i : o.fPreObscurations)fPreObscurations.push_back(i->clone());
+  for(const auto *i : o.fPostObscurations)fPostObscurations.push_back(i->clone());
+  for(const auto *i : o.fCameraObscurations)fCameraObscurations.push_back(i->clone());
 
   calculateFPRotationMatrix();
   calculateRotationVector();
