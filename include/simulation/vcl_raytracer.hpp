@@ -224,33 +224,14 @@ public:
     pixel_id_lookup_[pixel_hexid_end_] = pixel_hexid_end_;
     fp_aperture2_ = SQR(std::sqrt(fp_aperture2_) + scope->pixelSpacing());
 
-    for(unsigned iobs=0;iobs<scope->numPreReflectionObscurations();iobs++)
-    {
-      const auto* obs = scope->pre_reflection_obscuration(iobs);
-      if(const auto* dc_obs = dynamic_cast<const VSOAlignedBoxObscuration*>(obs)) {
-        pre_reflection_obscuration.push_back(new VCLAlignedBoxObscuration<VCLRealType>(*dc_obs));
-      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedRectangularAperture*>(obs)) {
-        pre_reflection_obscuration.push_back(new VCLAlignedRectangularAperture<VCLRealType>(*dc_obs));
-      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedCircularAperture*>(obs)) {
-        pre_reflection_obscuration.push_back(new VCLAlignedCircularAperture<VCLRealType>(*dc_obs));
-      } else {
-        throw std::runtime_error("Unsupported pre-reflection obscuration type");
-      }
-    }
+    populate_obscuration(pre_reflection_obscuration,
+      scope->all_pre_reflection_obscurations(), "pre-reflection");
 
-    for(unsigned iobs=0;iobs<scope->numPostReflectionObscurations();iobs++)
-    {
-      const auto* obs = scope->post_reflection_obscuration(iobs);
-      if(const auto* dc_obs = dynamic_cast<const VSOAlignedBoxObscuration*>(obs)) {
-        post_reflection_obscuration.push_back(new VCLAlignedBoxObscuration<VCLRealType>(*dc_obs));
-      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedRectangularAperture*>(obs)) {
-        post_reflection_obscuration.push_back(new VCLAlignedRectangularAperture<VCLRealType>(*dc_obs));
-      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedCircularAperture*>(obs)) {
-        post_reflection_obscuration.push_back(new VCLAlignedCircularAperture<VCLRealType>(*dc_obs));
-      } else {
-        throw std::runtime_error("Unsupported pre-reflection obscuration type");
-      }
-    }
+    populate_obscuration(post_reflection_obscuration,
+      scope->all_post_reflection_obscurations(), "post-reflection");
+
+    populate_obscuration(camera_obscuration,
+      scope->all_camera_obscurations(), "camera");
 
 #if 0
     std::cout << pixel_crot_ << ' ' << pixel_srot_ << ' ' << pixel_scaleinv_ << ' '
@@ -274,7 +255,7 @@ public:
     free(pixel_id_lookup_);
     for(auto* obs: pre_reflection_obscuration)free(obs);
     for(auto* obs: post_reflection_obscuration)free(obs);
-    for(auto* obs: in_camera_obscuration)free(obs);
+    for(auto* obs: camera_obscuration)free(obs);
     if(adopt_rng_)delete rng_;
   }
 
@@ -511,7 +492,7 @@ public:
 
     // Test for obscuration on way to focal plane - second with obscurations
     // that are given in focal plane coordinates
-    for(const auto* obs : in_camera_obscuration) {
+    for(const auto* obs : camera_obscuration) {
       Ray ray_out;
       bool_vt was_obscured_here = obs->doesObscure(ray, ray_out, ref_index_);
       ct_obscured = vcl::select(was_obscured_here,
@@ -576,55 +557,72 @@ public:
     return mask;
   }
 
- private:
-   vec3_t          scope_pos_;
-   mat3_t          global_to_reflector_rot_;
-   real_t          ref_index_;
+private:
 
-   real_t          reflec_curvature_radius_;
-   real_t          reflec_aperture2_;
-   real_t          reflec_crot_;
-   real_t          reflec_srot_;
-   real_t          reflec_scaleinv_;
-   real_t          reflec_shift_x_;
-   real_t          reflec_shift_z_;
-   bool            reflec_cw_;
+  void populate_obscuration(std::vector<VCLObscuration<VCLRealType>*>& to,
+      const std::vector<const calin::simulation::vs_optics::VSOObscuration*>& from, const std::string& type) {
+    using namespace calin::simulation::vs_optics;
+    for(const auto* obs : from) {
+      if(const auto* dc_obs = dynamic_cast<const VSOAlignedBoxObscuration*>(obs)) {
+        to.push_back(new VCLAlignedBoxObscuration<VCLRealType>(*dc_obs));
+      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedRectangularAperture*>(obs)) {
+        to.push_back(new VCLAlignedRectangularAperture<VCLRealType>(*dc_obs));
+      } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedCircularAperture*>(obs)) {
+        to.push_back(new VCLAlignedCircularAperture<VCLRealType>(*dc_obs));
+      } else {
+        throw std::runtime_error("Unsupported " + type + " obscuration type");
+      }
+    }
+  }
 
-   int_t           mirror_hexid_end_;
-   int_t           mirror_id_end_;
-   int_t*          mirror_id_lookup_ = nullptr;
-   real_t*         mirror_nx_lookup_ = nullptr;
-   real_t*         mirror_nz_lookup_ = nullptr;
-   real_t*         mirror_ny_lookup_ = nullptr;
-   real_t*         mirror_r_lookup_ = nullptr;
-   real_t*         mirror_x_lookup_ = nullptr;
-   real_t*         mirror_z_lookup_ = nullptr;
-   real_t*         mirror_y_lookup_ = nullptr;
-   real_t          mirror_dhex_max_;
-   real_t*         mirror_normdisp_lookup_ = nullptr;
+  vec3_t          scope_pos_;
+  mat3_t          global_to_reflector_rot_;
+  real_t          ref_index_;
 
-   vec3_t          fp_pos_;
-   bool            fp_has_rot_;
-   mat3_t          fp_rot_;
-   real_t          fp_aperture2_;
+  real_t          reflec_curvature_radius_;
+  real_t          reflec_aperture2_;
+  real_t          reflec_crot_;
+  real_t          reflec_srot_;
+  real_t          reflec_scaleinv_;
+  real_t          reflec_shift_x_;
+  real_t          reflec_shift_z_;
+  bool            reflec_cw_;
 
-   real_t          pixel_crot_;
-   real_t          pixel_srot_;
-   real_t          pixel_scaleinv_;
-   real_t          pixel_shift_x_;
-   real_t          pixel_shift_z_;
-   bool            pixel_cw_;
+  int_t           mirror_hexid_end_;
+  int_t           mirror_id_end_;
+  int_t*          mirror_id_lookup_ = nullptr;
+  real_t*         mirror_nx_lookup_ = nullptr;
+  real_t*         mirror_nz_lookup_ = nullptr;
+  real_t*         mirror_ny_lookup_ = nullptr;
+  real_t*         mirror_r_lookup_ = nullptr;
+  real_t*         mirror_x_lookup_ = nullptr;
+  real_t*         mirror_z_lookup_ = nullptr;
+  real_t*         mirror_y_lookup_ = nullptr;
+  real_t          mirror_dhex_max_;
+  real_t*         mirror_normdisp_lookup_ = nullptr;
 
-   int_t           pixel_hexid_end_;
-   int_t           pixel_id_end_;
-   int_t*          pixel_id_lookup_ = nullptr;
+  vec3_t          fp_pos_;
+  bool            fp_has_rot_;
+  mat3_t          fp_rot_;
+  real_t          fp_aperture2_;
 
-   std::vector<VCLObscuration<VCLRealType>*> pre_reflection_obscuration;
-   std::vector<VCLObscuration<VCLRealType>*> post_reflection_obscuration;
-   std::vector<VCLObscuration<VCLRealType>*> in_camera_obscuration;
+  real_t          pixel_crot_;
+  real_t          pixel_srot_;
+  real_t          pixel_scaleinv_;
+  real_t          pixel_shift_x_;
+  real_t          pixel_shift_z_;
+  bool            pixel_cw_;
 
-   RNG* rng_ = nullptr;
-   bool adopt_rng_ = false;
+  int_t           pixel_hexid_end_;
+  int_t           pixel_id_end_;
+  int_t*          pixel_id_lookup_ = nullptr;
+
+  std::vector<VCLObscuration<VCLRealType>*> pre_reflection_obscuration;
+  std::vector<VCLObscuration<VCLRealType>*> post_reflection_obscuration;
+  std::vector<VCLObscuration<VCLRealType>*> camera_obscuration;
+
+  RNG* rng_ = nullptr;
+  bool adopt_rng_ = false;
 };
 
 template<typename VCLRealType> class VCLAlignedBoxObscuration:
