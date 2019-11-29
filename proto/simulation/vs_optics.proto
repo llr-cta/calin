@@ -299,6 +299,8 @@ message VSOTelescopeData {
     [(CFO).desc = "Obscurations before reflection at mirror, in the reflector frame."];
   repeated VSOObscurationData post_reflection_obscuration  = 101
     [(CFO).desc = "Obscurations after reflection at mirror, in the reflector frame."];
+  repeated VSOObscurationData camera_obscuration           = 102
+    [(CFO).desc = "Obscurations after reflection at mirror, in the camera frame."];
   repeated VSOMirrorData mirror                            = 200
     [(CFO).desc = "Mirror facets on the telescope."];
   repeated VSOPixelData pixel                              = 300
