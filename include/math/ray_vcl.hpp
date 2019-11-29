@@ -295,6 +295,24 @@ public:
     return mask;
   }
 
+  bool_vt propagate_to_y_sphere_2nd_interaction_mostly_fwd_with_mask(bool_vt mask,
+    const real_vt& radius, const real_vt& surface_y_min = 0, const real_vt& fwd_margin = 0.0,
+    const real_vt& n = 1.0)
+  {
+    vec3_vt pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
+    const real_vt b_2 = pos_rel.dot(dir_);
+    const real_vt c = nmul_add(radius, radius, pos_rel.squaredNorm());
+
+    const real_vt disc_4 = mul_sub(b_2, b_2, c);
+    mask &= disc_4 >= 0;
+
+    real_vt dist = sqrt(disc_4) - b_2;
+    mask &= dist >= fwd_margin;
+
+    propagate_dist_with_mask(mask, dist, n);
+    return mask;
+  }
+
   //! Propagates free particle to the closest approach with point
   bool_vt propagate_to_point_closest_approach_with_mask(bool_vt mask,
     const vec3_vt& r0, bool time_reversal_ok, const real_vt& n = 1.0)
