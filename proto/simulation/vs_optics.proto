@@ -629,9 +629,10 @@ message IsotropicDCArrayParameters {
   };
   ReflectorFrameParameters reflector_frame                 = 4;
   HexDCReflectorParameters reflector                       = 5;
-  repeated VSOObscurationData pre_reflection_obscuration   = 6;
-  repeated VSOObscurationData post_reflection_obscuration  = 7;
-  FocalPlaneParameters focal_plane                         = 8;
-  HexPixelArrayParameters pixel                            = 9;
-  SphericalWindowParameters spherical_window               = 10;
+  repeated VSOObscurationData pre_reflection_obscuration   = 10;
+  repeated VSOObscurationData post_reflection_obscuration  = 11;
+  repeated VSOObscurationData camera_obscuration           = 12;
+  FocalPlaneParameters focal_plane                         = 20;
+  HexPixelArrayParameters pixel                            = 21;
+  SphericalWindowParameters spherical_window               = 22;
 };
