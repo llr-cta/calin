@@ -328,10 +328,13 @@ public:
       was_obscured |= was_obscured_here;
     }
 
-    // Propagate to intersection with the reflector sphere
+    // Remember initial ct to test reflection happens after emission
+    real_vt ct0 = ray.ct();
+
+    // Propagate to intersection with the reflector sphere (allow to go backwards a bit)
     info.status = select(bool_int_vt(mask), STS_MISSED_REFLECTOR_SPHERE, info.status);
-    mask = ray.propagate_to_y_sphere_2nd_interaction_fwd_only_with_mask(mask,
-      reflec_curvature_radius_, 0, ref_index_);
+    mask = ray.propagate_to_y_sphere_2nd_interaction_mostly_fwd_with_mask(mask,
+      reflec_curvature_radius_, 0, (-2.0/CALIN_HEX_ARRAY_SQRT3)*mirror_dhex_max_, ref_index_);
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
@@ -363,6 +366,11 @@ public:
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
+
+    if(not horizontal_or(mask)) {
+      // We outie ...
+      return mask;
+    }
 
     info.mirror_hexid = select(bool_int_vt(mask), info.mirror_hexid, mirror_hexid_end_);
 
@@ -403,9 +411,11 @@ public:
     info.status = select(bool_int_vt(mask), STS_MISSED_MIRROR_SPHERE, info.status);
     mask = ray.propagate_to_y_sphere_2nd_interaction_fwd_bwd_with_mask(mask,
       info.mirror_r, -info.mirror_r, ref_index_);
+    mask &= ray.ct() >= ct0;
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
+
 
     // Impact point relative to facet attchment point
     vec3_vt ray_pos = ray.position() + mirror_center - info.mirror_pos;
@@ -461,6 +471,11 @@ public:
     // Finish checking obscuration before mirror hit
     info.status = select(bool_int_vt(mask), STS_OBSCURED_BEFORE_MIRROR, info.status);
     mask &= ~(was_obscured & (ct_obscured < ray.ct()));
+
+    if(not horizontal_or(mask)) {
+      // We outie ...
+      return mask;
+    }
 
     // Test for obscuration on way to focal plane - first with obscurations
     // that are given in reflector coordinates (telescope arms etc)
