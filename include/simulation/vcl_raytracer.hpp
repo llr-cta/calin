@@ -231,7 +231,7 @@ public:
       scope->all_post_reflection_obscurations(), "post-reflection");
 
     populate_obscuration(camera_obscuration,
-      scope->all_camera_obscurations(), "camera");
+      scope->all_camera_obscurations(), "in-camera");
 
 #if 0
     std::cout << pixel_crot_ << ' ' << pixel_srot_ << ' ' << pixel_scaleinv_ << ' '
@@ -560,7 +560,9 @@ public:
 private:
 
   void populate_obscuration(std::vector<VCLObscuration<VCLRealType>*>& to,
-      const std::vector<const calin::simulation::vs_optics::VSOObscuration*>& from, const std::string& type) {
+    const std::vector<const calin::simulation::vs_optics::VSOObscuration*>& from,
+    const std::string& type) 
+  {
     using namespace calin::simulation::vs_optics;
     for(const auto* obs : from) {
       if(const auto* dc_obs = dynamic_cast<const VSOAlignedBoxObscuration*>(obs)) {
