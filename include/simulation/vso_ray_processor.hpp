@@ -127,6 +127,8 @@ public:
   void set_scope_cone_angular_response(unsigned iscope,
     const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency);
 
+  uint64_t nhit() { return nhit_; }
+
 private:
   calin::simulation::vs_optics::VSOArray* array_ = nullptr;
   bool adopt_array_ = false;
@@ -136,6 +138,7 @@ private:
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
   calin::simulation::vs_optics::VSORayTracer* ray_tracer_ = nullptr;
+  uint64_t nhit_ = 0;
 
   struct ScopeResponse {
     bool has_effective_bandwidth = false;

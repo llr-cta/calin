@@ -177,6 +177,7 @@ VSORayProcessor::detector_spheres()
 
 void VSORayProcessor::start_processing()
 {
+  nhit_ = 0;
   visitor_->start_processing();
 }
 
@@ -209,6 +210,9 @@ void VSORayProcessor::process_ray(unsigned scope_id,
   }
 #endif
 
+  if(trace_info.pixel != nullptr) {
+    ++nhit_;
+  }
   visitor_->process_traced_ray(scope_id, trace_info, pe_weight);
 }
 
