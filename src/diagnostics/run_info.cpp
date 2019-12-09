@@ -115,6 +115,12 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   elapsed_time_hist_.clear();
   run_config_->CopyFrom(*run_config);
 
+  results_->set_min_event_time(std::numeric_limits<int64_t>::max());
+  results_->set_max_event_time(std::numeric_limits<int64_t>::min());
+
+  partials_->set_min_event_time(std::numeric_limits<int64_t>::max());
+  partials_->set_max_event_time(std::numeric_limits<int64_t>::min());
+
   calin::ix::diagnostics::run_info::RunInfoConfig config = config_;
   if(config.module_counter_test_id_size() == 0 and
       config.module_counter_test_mode_size() == 0) {
@@ -195,6 +201,26 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
   calin::diagnostics::range::encode_value(
     partials_->mutable_all_channels_presence(), event->all_modules_present());
 
+  // TIB TRIGGER BITS
+  if(event->has_tib_data()) {
+    const auto& tib = event->tib_data();
+    partials_->increment_num_mono_trigger(tib.mono_trigger());
+    partials_->increment_num_stereo_trigger(tib.stereo_trigger());
+    partials_->increment_num_external_calibration_trigger(tib.external_calibration_trigger());
+    partials_->increment_num_internal_calibration_trigger(tib.internal_calibration_trigger());
+    partials_->increment_num_ucts_aux_trigger(tib.ucts_aux_trigger());
+    partials_->increment_num_pedestal_trigger(tib.pedestal_trigger());
+    partials_->increment_num_slow_control_trigger(tib.slow_control_trigger());
+    partials_->increment_num_busy_trigger(tib.busy_trigger());
+  }
+
+  // EVENT TIME
+  if(event->has_absolute_event_time() and event->absolute_event_time().time_ns()>0) {
+    auto t = event->absolute_event_time().time_ns();
+    partials_->set_max_event_time(std::max(partials_->max_event_time(), t));
+    partials_->set_min_event_time(std::min(partials_->min_event_time(), t));
+  }
+
   // MODULES
   for(int imodindex=0; imodindex<event->module_index_size(); imodindex++) {
     auto* mod = partials_->mutable_module(imodindex);
@@ -262,6 +288,8 @@ RunInfoDiagnosticsVisitor::run_config() const
 const calin::ix::diagnostics::run_info::RunInfo& RunInfoDiagnosticsVisitor::run_info()
 {
   results_->Clear();
+  results_->set_min_event_time(std::numeric_limits<int64_t>::max());
+  results_->set_max_event_time(std::numeric_limits<int64_t>::min());
   for(int imod=0;imod<run_config_->configured_module_id_size();imod++) {
     auto* mod = results_->add_module();
     mod->set_configured_module_rank(imod);
@@ -364,6 +392,18 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
   results_->increment_num_events_missing_tib(partials_->num_events_missing_tib());
   results_->increment_num_events_missing_swat(partials_->num_events_missing_swat());
   results_->increment_num_events_missing_modules(partials_->num_events_missing_modules());
+
+  results_->increment_num_mono_trigger(partials_->num_mono_trigger());
+  results_->increment_num_stereo_trigger(partials_->num_stereo_trigger()) ;
+  results_->increment_num_external_calibration_trigger(partials_->num_external_calibration_trigger());
+  results_->increment_num_internal_calibration_trigger(partials_->num_internal_calibration_trigger());
+  results_->increment_num_ucts_aux_trigger(partials_->num_ucts_aux_trigger());
+  results_->increment_num_pedestal_trigger(partials_->num_pedestal_trigger());
+  results_->increment_num_slow_control_trigger(partials_->num_slow_control_trigger());
+  results_->increment_num_busy_trigger(partials_->num_busy_trigger());
+
+  results_->set_min_event_time(std::min(results_->min_event_time(), partials_->min_event_time()));
+  results_->set_max_event_time(std::max(results_->max_event_time(), partials_->max_event_time()));
 
   results_->mutable_event_number_histogram()->IntegrateFrom(partials_->event_number_histogram());
   results_->mutable_elapsed_time_histogram()->IntegrateFrom(partials_->elapsed_time_histogram());
