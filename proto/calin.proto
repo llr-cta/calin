@@ -61,6 +61,8 @@ message FieldOptions {
     APPEND               = 4;  // Vectors, strings : append values to end
     INTEGRATE            = 5;  // Integrate sub-messages
     MERGE                = 6;  // Merge sub-messages
+    MAX                  = 7;  // Maximum for numeric types
+    MIN                  = 8;  // Minimum for numeric types
   }
 
   string            desc                = 1; // Description string
