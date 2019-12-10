@@ -57,6 +57,17 @@ inline void encode_monotonic_index_and_value(IndexValueRangeType* ivr,
   }
 }
 
+inline void encode_monotonic_index(calin::ix::diagnostics::range::IndexRange* range,
+  uint64_t index)
+{
+  unsigned nrange = range->end_index_size();
+  if(nrange and range->end_index(nrange-1)==index) {
+    range->set_end_index(nrange-1, index+1);
+  } else {
+    range->add_begin_index(index);
+    range->add_end_index(index + 1);
+  }
+}
 
 template<typename Iterator>
 inline void make_index_range(const Iterator& begin, const Iterator& end,
