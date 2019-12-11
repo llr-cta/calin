@@ -669,7 +669,8 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
   //
   // ==========================================================================
 
-  if(cta_event->nectarcam().has_cdts_data()
+  if(cta_event and cta_event->has_nectarcam()
+    and cta_event->nectarcam().has_cdts_data()
     and cta_event->nectarcam().cdts_data().has_data()
     and cta_event->nectarcam().extdevices_presence() & 0x01)
   {

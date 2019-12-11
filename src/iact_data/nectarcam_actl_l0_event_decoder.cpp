@@ -578,7 +578,7 @@ bool NectarCam_ACTL_L0_CameraEventDecoder::decode_run_config(
   //
   // ==========================================================================
 
-  if(cta_event->uctsdatapresence() and cta_event->has_uctsdata() and
+  if(cta_event and cta_event->uctsdatapresence() and cta_event->has_uctsdata() and
     cta_event->uctsdata().has_data())
   {
     calin::ix::iact_data::telescope_event::CDTSData calin_cdts_data;
