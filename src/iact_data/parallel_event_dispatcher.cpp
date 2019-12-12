@@ -415,7 +415,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
     for(auto* d : sub_dispatchers) {
       delete d;
     }
-    throw std::runtime_error("Exception(s) throw in in threaded dispatcher loop");
+    throw std::runtime_error("Exception(s) thrown in threaded dispatcher loop");
   }
 
   for(auto* d : sub_dispatchers)
