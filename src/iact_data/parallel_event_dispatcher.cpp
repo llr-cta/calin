@@ -390,25 +390,33 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
 
   std::vector<std::thread> threads;
   std::atomic<unsigned> threads_active { 0 };
+  std::atomic<unsigned> exceptions_raised { 0 };
 
   // Go go gadget threads
   for(auto* d : sub_dispatchers)
   {
-    threads_active++;
-    threads.emplace_back([d,src_factory,&threads_active,log_frequency,start_time,&ndispatched](){
+    ++threads_active;
+    threads.emplace_back([d,src_factory,&threads_active,&exceptions_raised,log_frequency,start_time,&ndispatched](){
+      auto* bsrc = src_factory->new_data_source();
       try {
-        auto* bsrc = src_factory->new_data_source();
         d->do_dispatcher_loop(bsrc, log_frequency, start_time, ndispatched);
-        delete bsrc;
-        threads_active--;
       } catch(const std::exception& x) {
         util::log::LOG(util::log::FATAL) << x.what();
-        throw;
+        ++exceptions_raised;
       }
+      delete bsrc;
+      --threads_active;
     });
   }
 
   for(auto& i : threads)i.join();
+
+  if(exceptions_raised) {
+    for(auto* d : sub_dispatchers) {
+      delete d;
+    }
+    throw std::runtime_error("Exception(s) throw in in threaded dispatcher loop");
+  }
 
   for(auto* d : sub_dispatchers)
   {
