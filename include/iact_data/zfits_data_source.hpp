@@ -261,59 +261,6 @@ protected:
     TelescopeRunConfiguration* run_config_ = nullptr;
 };
 
-# if 0
-class ZFITSDataSource_R1:
-  public calin::io::data_source::BasicChainedRandomAccessDataSource<
-    calin::iact_data::telescope_data_source::
-      TelescopeRandomAccessDataSourceWithRunConfig>
-{
-public:
-  CALIN_TYPEALIAS(config_type,
-    calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig);
+#endif // defined CALIN_HAVE_CTA_CAMERASTOACTL
 
-  ZFITSDataSource_R1(const std::string& filename,
-    calin::iact_data::actl_event_decoder::ACTL_R1_CameraEventDecoder* decoder,
-    bool adopt_decoder = false,
-    const config_type& config = default_config());
-
-  virtual ~ZFITSDataSource_R1();
-
-  calin::ix::iact_data::telescope_run_configuration::
-    TelescopeRunConfiguration* get_run_configuration() override;
-
-  static config_type default_config() {
-    return zfits_actl_data_source::ZFITSACTL_R1_CameraEventDataSource::default_config(); }
-
-protected:
-  calin::iact_data::actl_event_decoder::ACTL_R1_CameraEventDecoder* decoder_;
-  bool adopt_decoder_ = false;
-  calin::ix::iact_data::telescope_run_configuration::
-    TelescopeRunConfiguration* run_config_ = nullptr;
-};
-
-class ZFITSDataSourceOpener_R1:
-  public calin::io::data_source::DataSourceOpener<
-    calin::iact_data::telescope_data_source::
-      TelescopeRandomAccessDataSourceWithRunConfig>
-{
-public:
-  CALIN_TYPEALIAS(data_source_type, calin::iact_data::telescope_data_source::
-    TelescopeRandomAccessDataSourceWithRunConfig);
-  ZFITSDataSourceOpener_R1(std::string filename,
-    calin::iact_data::actl_event_decoder::ACTL_R1_CameraEventDecoder* decoder,
-    const ZFITSDataSource_R1::config_type& config =
-      ZFITSDataSource_R1::default_config());
-  virtual ~ZFITSDataSourceOpener_R1();
-  unsigned num_sources() const override;
-  std::string source_name(unsigned isource) const override;
-  ZFITSSingleFileDataSource_R1* open(unsigned isource) override;
-private:
-  calin::iact_data::zfits_actl_data_source::
-    ZFITSACTL_R1_CameraEventDataSourceOpener* zfits_actl_opener_ = nullptr;
-  calin::iact_data::actl_event_decoder::ACTL_R1_CameraEventDecoder* decoder_ = nullptr;
-  ZFITSDataSource_R1::config_type config_;
-};
-#endif
-
-#endif
 } } } // namespace calin::iact_data::zfits_data_source
