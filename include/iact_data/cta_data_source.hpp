@@ -72,6 +72,12 @@ public:
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* get_run_configuration() override;
 
+  // unsigned source_index() const;
+  // std::string source_name() const;
+  // unsigned num_sources() const;
+  // std::string source_name(unsigned isource) const;
+  // std::vector<std::string> source_names() const;
+
 private:
   static TelescopeRandomAccessDataSourceWithRunConfig* construct_delegate(
     std::string filename, config_type config, decoder_config_type decoder_config);

@@ -302,7 +302,7 @@ std::string ZFITSDataSource_R1::source_name(unsigned isource) const
   return actl_zfits_->source_name(isource);
 }
 
-std::vector<std::string> ZFITSDataSource_R1::source_names()
+std::vector<std::string> ZFITSDataSource_R1::source_names() const
 {
   return actl_zfits_->source_names();
 }

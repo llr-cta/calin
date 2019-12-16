@@ -134,7 +134,7 @@ public:
   std::string source_name() const;
   unsigned num_sources() const;
   std::string source_name(unsigned isource) const;
-  std::vector<std::string> source_names();
+  std::vector<std::string> source_names() const;
 
   static config_type default_config() {
     return zfits_actl_data_source::ZFITSACTL_L0_CameraEventDataSource::default_config(); }
@@ -244,7 +244,7 @@ public:
   std::string source_name() const;
   unsigned num_sources() const;
   std::string source_name(unsigned isource) const;
-  std::vector<std::string> source_names();
+  std::vector<std::string> source_names() const;
 
   static config_type default_config() {
     return zfits_actl_data_source::ZFITSACTL_R1_CameraEventDataSource::default_config(); }
