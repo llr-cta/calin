@@ -71,10 +71,10 @@ public:
   UnitTestDataSourceOpener(unsigned nsource, unsigned count = 10000):
     DataSourceOpener<UTSSM_RADS>(), nsource_(nsource), count_(count) { }
   ~UnitTestDataSourceOpener() { }
-  unsigned num_sources() override {
+  unsigned num_sources() const override {
     return nsource_;
   }
-  std::string source_name(unsigned isource) override {
+  std::string source_name(unsigned isource) const override {
     if(isource>=nsource_)return {};
     return std::to_string(isource);
   }

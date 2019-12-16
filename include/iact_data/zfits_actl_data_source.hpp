@@ -197,8 +197,8 @@ public:
     const ZFITSACTL_L0_CameraEventDataSource::config_type& config =
       ZFITSACTL_L0_CameraEventDataSource::default_config());
   virtual ~ZFITSACTL_L0_CameraEventDataSourceOpener();
-  unsigned num_sources() override;
-  std::string source_name(unsigned isource) override;
+  unsigned num_sources() const override;
+  std::string source_name(unsigned isource) const override;
   ZFITSSingleFileACTL_L0_CameraEventDataSource* open(unsigned isource) override;
   bool has_opened_file() { return has_opened_file_; }
 private:
@@ -406,8 +406,8 @@ public:
     const ZFITSACTL_R1_CameraEventDataSource::config_type& config =
       ZFITSACTL_R1_CameraEventDataSource::default_config());
   virtual ~ZFITSACTL_R1_CameraEventDataSourceOpener();
-  unsigned num_sources() override;
-  std::string source_name(unsigned isource) override;
+  unsigned num_sources() const override;
+  std::string source_name(unsigned isource) const override;
   ZFITSSingleFileACTL_R1_CameraEventDataSource* open(unsigned isource) override;
   bool has_opened_file() { return has_opened_file_; }
 private:

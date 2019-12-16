@@ -235,12 +235,12 @@ ZFITSDataSourceOpener_L0::~ZFITSDataSourceOpener_L0()
   delete zfits_actl_opener_;
 }
 
-unsigned ZFITSDataSourceOpener_L0::num_sources()
+unsigned ZFITSDataSourceOpener_L0::num_sources() const
 {
   return zfits_actl_opener_->num_sources();
 }
 
-std::string ZFITSDataSourceOpener_L0::source_name(unsigned isource)
+std::string ZFITSDataSourceOpener_L0::source_name(unsigned isource) const
 {
   return zfits_actl_opener_->source_name(isource);
 }

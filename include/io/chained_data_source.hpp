@@ -33,9 +33,9 @@ template<typename DST> class DataSourceOpener
 public:
   CALIN_TYPEALIAS(data_source_type, DST);
   virtual ~DataSourceOpener() { }
-  virtual unsigned num_sources() = 0;
-  virtual std::string source_name(unsigned isource) = 0;
-  std::vector<std::string> source_names() {
+  virtual unsigned num_sources() const = 0;
+  virtual std::string source_name(unsigned isource) const = 0;
+  std::vector<std::string> source_names() const {
     std::vector<std::string> source_names;
     for(unsigned isource=0; isource<this->num_sources(); isource++)
       source_names.push_back(this->source_name(isource));
@@ -52,16 +52,16 @@ public:
   FileOpener(const std::vector<std::string>& filenames):
     DataSourceOpener<DST>(), filenames_(filenames) { /* nothing to see here */ }
   virtual ~FileOpener() { /* nothing to see here */ }
-  unsigned num_sources() override { return filenames_.size(); }
+  unsigned num_sources() const override { return filenames_.size(); }
   DST* open(unsigned isource) override {
     if(isource<filenames_.size())return open_filename(filenames_[isource]);
     return nullptr;
   }
-  std::string filename(unsigned isource) {
+  std::string filename(unsigned isource) const {
     if(isource<filenames_.size())return filenames_[isource];
     return {};
   }
-  std::string source_name(unsigned isource) override {
+  std::string source_name(unsigned isource) const override {
     return filename(isource);
   }
   virtual DST* open_filename(const std::string& filename) = 0;
@@ -107,9 +107,10 @@ public:
 
   unsigned source_index() const { return isource_; }
   std::string source_name() const { return opener_->source_name(isource_); }
+  unsigned num_sources() const { return opener_->num_sources(); }
   std::string source_name(unsigned isource) const {
     return opener_->source_name(isource); }
-  std::vector<std::string> source_names() { return opener_->source_names(); }
+  std::vector<std::string> source_names() const { return opener_->source_names(); }
 
 protected:
   virtual void open_file()

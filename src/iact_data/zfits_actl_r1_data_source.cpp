@@ -358,12 +358,12 @@ ZFITSACTL_R1_CameraEventDataSourceOpener::~ZFITSACTL_R1_CameraEventDataSourceOpe
   // nothing to see here
 }
 
-unsigned ZFITSACTL_R1_CameraEventDataSourceOpener::num_sources()
+unsigned ZFITSACTL_R1_CameraEventDataSourceOpener::num_sources() const
 {
   return filenames_.size();
 }
 
-std::string ZFITSACTL_R1_CameraEventDataSourceOpener::source_name(unsigned isource)
+std::string ZFITSACTL_R1_CameraEventDataSourceOpener::source_name(unsigned isource) const
 {
   if(isource >= filenames_.size())return {};
   return filenames_[isource];
