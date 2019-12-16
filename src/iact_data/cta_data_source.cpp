@@ -138,6 +138,62 @@ CTAZFITSDataSource::get_run_configuration()
   return delegate_->get_run_configuration();
 }
 
+// This is horrible !!
+unsigned CTAZFITSDataSource::source_index() const
+{
+  if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_R1*>(this->delegate())) {
+    return zfits->source_index();
+  }else if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_L0*>(this->delegate())) {
+    return zfits->source_index();
+  } else {
+    throw std::runtime_error("CTAZFITSDataSource::source_index: unsupported data source");
+  }
+}
+
+std::string CTAZFITSDataSource::source_name() const
+{
+  if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_R1*>(this->delegate())) {
+    return zfits->source_name();
+  }else if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_L0*>(this->delegate())) {
+    return zfits->source_name();
+  } else {
+    throw std::runtime_error("CTAZFITSDataSource::source_name: unsupported data source");
+  }
+}
+
+unsigned CTAZFITSDataSource::num_sources() const
+{
+  if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_R1*>(this->delegate())) {
+    return zfits->num_sources();
+  }else if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_L0*>(this->delegate())) {
+    return zfits->num_sources();
+  } else {
+    throw std::runtime_error("CTAZFITSDataSource::num_sources: unsupported data source");
+  }
+}
+
+std::string CTAZFITSDataSource::source_name(unsigned isource) const
+{
+  if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_R1*>(this->delegate())) {
+    return zfits->source_name(isource);
+  }else if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_L0*>(this->delegate())) {
+    return zfits->source_name(isource);
+  } else {
+    throw std::runtime_error("CTAZFITSDataSource::source_name: unsupported data source");
+  }
+}
+
+std::vector<std::string> CTAZFITSDataSource::source_names() const
+{
+  if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_R1*>(this->delegate())) {
+    return zfits->source_names();
+  }else if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_L0*>(this->delegate())) {
+    return zfits->source_names();
+  } else {
+    throw std::runtime_error("CTAZFITSDataSource::source_names: unsupported data source");
+  }
+}
+
 calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*
 CTAZFITSDataSource::construct_delegate(std::string filename,
   config_type config, decoder_config_type decoder_config)
