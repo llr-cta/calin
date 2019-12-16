@@ -203,28 +203,45 @@ void ParallelEventDispatcher::
 process_cta_zfits_run(const std::string& filename,
   const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config)
 {
-  auto fragments = calin::util::file::file_fragments(filename,
-    config.zfits().extension(), config.zfits().file_fragment_stride());
+  auto zfits_config = config.zfits();
+  auto* cta_file = new CTAZFITSDataSource(filename, config.decoder(), zfits_config);
+
+  auto fragments = cta_file->source_names();
   if(fragments.empty()) {
+    // This should never happen (I guess) as we should already have had an exception
     throw std::runtime_error("process_cta_zfits_run: file not found: " + filename);
   }
+
   unsigned nthread = std::min(std::max(config.nthread(), 1U), unsigned(fragments.size()));
-  auto zfits_config = config.zfits();
-  zfits_config.set_file_fragment_stride(
-    nthread*std::max(1U, zfits_config.file_fragment_stride()));
-  std::vector<calin::iact_data::telescope_data_source::
-    TelescopeRandomAccessDataSourceWithRunConfig*> src_list(nthread);
-  try {
-    for(unsigned ithread=0; ithread<nthread; ithread++) {
-      src_list[ithread] =
-        new CTAZFITSDataSource(fragments[ithread], config.decoder(), zfits_config);
+
+  if(nthread == 1) {
+    try {
+      process_run(cta_file, config.log_frequency());
+    } catch(...) {
+      delete cta_file;
+      throw;
     }
-    process_run(src_list, config.log_frequency());
-  } catch(...) {
+  } else {
+    zfits_config.set_file_fragment_stride(
+      nthread*std::max(1U, zfits_config.file_fragment_stride()));
+
+    std::vector<calin::iact_data::telescope_data_source::
+      TelescopeRandomAccessDataSourceWithRunConfig*> src_list(nthread);
+    try {
+      for(unsigned ithread=0; ithread<nthread; ithread++) {
+        src_list[ithread] =
+          new CTAZFITSDataSource(fragments[ithread], cta_file, zfits_config);
+      }
+      delete cta_file;
+      cta_file = nullptr;
+      process_run(src_list, config.log_frequency());
+    } catch(...) {
+      for(auto* src: src_list)delete src;
+      delete cta_file;
+      throw;
+    }
     for(auto* src: src_list)delete src;
-    throw;
   }
-  for(auto* src: src_list)delete src;
 }
 
 void ParallelEventDispatcher::
