@@ -179,6 +179,124 @@ calin::ix::iact_data::telescope_run_configuration::
 // ZFITSDataSource_R1 - chained ZFits files with decoder
 // =============================================================================
 
+ZFITSDataSource_R1::
+ZFITSDataSource_R1(const std::string& filename,
+    calin::iact_data::actl_event_decoder::ACTL_R1_CameraEventDecoder* decoder,
+    bool adopt_decoder, const config_type& config):
+  TelescopeRandomAccessDataSourceWithRunConfig(),
+  decoder_(decoder), adopt_decoder_(adopt_decoder),
+  actl_zfits_(new calin::iact_data::zfits_actl_data_source::
+    ZFITSACTL_R1_CameraEventDataSource(filename, config)), adopt_actl_zfits_(true)
+{
+  const R1::CameraEvent* actl_sample_event = nullptr;
+  const R1::CameraConfiguration* actl_run_header = nullptr;
+  try {
+    actl_zfits_->set_next_index(0);
+    uint64_t unused_seq_index = 0;
+    actl_sample_event = actl_zfits_->borrow_next_event(unused_seq_index);
+  } catch(...) {
+    // ignore errors that occur reading sample event;
+  }
+  try {
+    actl_run_header = actl_zfits_->get_run_header();
+  } catch(...) {
+    // ignore errors that occur reading run header
+  }
+  run_config_ = new TelescopeRunConfiguration;
+  decoder_->decode_run_config(run_config_, actl_run_header, actl_sample_event);
+  delete actl_run_header;
+  if(actl_sample_event)actl_zfits_->release_borrowed_event(actl_sample_event);
+  actl_zfits_->set_next_index(0);
+}
+
+ZFITSDataSource_R1::~ZFITSDataSource_R1()
+{
+  delete run_config_;
+  if(adopt_actl_zfits_)delete actl_zfits_;
+  if(adopt_decoder_)delete decoder_;
+}
+
+calin::ix::iact_data::telescope_event::TelescopeEvent* ZFITSDataSource_R1::get_next(
+  uint64_t& seq_index_out, google::protobuf::Arena** arena)
+{
+  const R1::CameraEvent* cta_event =
+    actl_zfits_->borrow_next_event(seq_index_out);
+  if(!cta_event){
+    if(arena)*arena = nullptr;
+    return nullptr;
+  }
+  TelescopeEvent* event = nullptr;
+  TelescopeEvent* delete_event = nullptr;
+  google::protobuf::Arena* delete_arena = nullptr;
+  if(arena) {
+    if(!*arena)*arena = delete_arena = new google::protobuf::Arena;
+    event = google::protobuf::Arena::CreateMessage<TelescopeEvent>(*arena);
+  }
+  else event = delete_event = new TelescopeEvent;
+  if(!event)
+  {
+    delete delete_arena;
+    actl_zfits_->release_borrowed_event(cta_event);
+    throw std::runtime_error("Could not allocate telescpe event");
+  }
+  if(!decoder_->decode(event, cta_event))
+  {
+    delete delete_arena;
+    delete delete_event;
+    actl_zfits_->release_borrowed_event(cta_event);
+    throw std::runtime_error("Could not decode ACTL event");
+  }
+  actl_zfits_->release_borrowed_event(cta_event);
+  event->set_source_event_index(seq_index_out);
+  return event;
+}
+
+uint64_t ZFITSDataSource_R1::size()
+{
+  return actl_zfits_->size();
+}
+
+void ZFITSDataSource_R1::set_next_index(uint64_t next_index)
+{
+  actl_zfits_->set_next_index(next_index);
+}
+
+calin::ix::iact_data::telescope_run_configuration::
+TelescopeRunConfiguration* ZFITSDataSource_R1::get_run_configuration()
+{
+  if(!run_config_)return nullptr;
+  auto* run_config = new TelescopeRunConfiguration();
+  run_config->CopyFrom(*run_config_);
+  return run_config;
+}
+
+unsigned ZFITSDataSource_R1::source_index() const
+{
+  return actl_zfits_->source_index();
+}
+
+std::string ZFITSDataSource_R1::source_name() const
+{
+  return actl_zfits_->source_name();
+}
+
+unsigned ZFITSDataSource_R1::num_sources() const
+{
+  return actl_zfits_->num_sources();
+}
+
+std::string ZFITSDataSource_R1::source_name(unsigned isource) const
+{
+  return actl_zfits_->source_name(isource);
+}
+
+std::vector<std::string> ZFITSDataSource_R1::source_names()
+{
+  return actl_zfits_->source_names();
+}
+
+
+#if 0
 ZFITSDataSource_R1::ZFITSDataSource_R1(const std::string& filename,
     ACTL_R1_CameraEventDecoder* decoder, bool adopt_decoder,
     const config_type& config):
@@ -235,12 +353,12 @@ ZFITSDataSourceOpener_R1::~ZFITSDataSourceOpener_R1()
   delete zfits_actl_opener_;
 }
 
-unsigned ZFITSDataSourceOpener_R1::num_sources()
+unsigned ZFITSDataSourceOpener_R1::num_sources() const
 {
   return zfits_actl_opener_->num_sources();
 }
 
-std::string ZFITSDataSourceOpener_R1::source_name(unsigned isource)
+std::string ZFITSDataSourceOpener_R1::source_name(unsigned isource) const
 {
   return zfits_actl_opener_->source_name(isource);
 }
@@ -253,3 +371,5 @@ ZFITSSingleFileDataSource_R1* ZFITSDataSourceOpener_R1::open(unsigned isource)
   return new ZFITSSingleFileDataSource_R1(zfits_actl, suppress_run_config,
      decoder_, false, true);
 }
+
+#endif
