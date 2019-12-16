@@ -209,6 +209,18 @@ ZFITSDataSource_R1(const std::string& filename,
   actl_zfits_->set_next_index(0);
 }
 
+ZFITSDataSource_R1::
+ZFITSDataSource_R1(const std::string& filename,
+    ZFITSDataSource_R1* base_r1_datasource, const config_type& config):
+  TelescopeRandomAccessDataSourceWithRunConfig(),
+  decoder_(base_r1_datasource->decoder_->clone()), adopt_decoder_(true),
+  actl_zfits_(new calin::iact_data::zfits_actl_data_source::
+    ZFITSACTL_R1_CameraEventDataSource(filename, config)), adopt_actl_zfits_(true),
+  run_config_(base_r1_datasource->get_run_configuration())
+{
+  // nothing to see here
+}
+
 ZFITSDataSource_R1::~ZFITSDataSource_R1()
 {
   delete run_config_;
