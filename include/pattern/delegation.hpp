@@ -31,6 +31,7 @@ public:
     delegate_(delegate), adopt_delegate_(adopt_delegate) { }
   virtual ~Delegator() { if(adopt_delegate_)delete delegate_; }
   T* delegate() { return delegate_; }
+  const T* delegate() const { return delegate_; }
   void set_delegate(T* delegate, bool adopt_delegate = false) {
     if(adopt_delegate_)delete delegate_;
     delegate_ = delegate;

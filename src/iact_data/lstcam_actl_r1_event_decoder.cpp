@@ -619,3 +619,7 @@ copy_single_gain_waveforms(
 
   calin_waveforms->set_all_channels_present(all_channels_present);
 }
+
+LSTCam_ACTL_R1_CameraEventDecoder* LSTCam_ACTL_R1_CameraEventDecoder::clone() const {
+  return new LSTCam_ACTL_R1_CameraEventDecoder(*this);
+}

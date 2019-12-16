@@ -807,3 +807,7 @@ get_nmod_from_event(const DataModel::CameraEvent* cta_event) const
   }
   return nmod;
 }
+
+NectarCam_ACTL_L0_CameraEventDecoder* NectarCam_ACTL_L0_CameraEventDecoder::clone() const {
+  return new NectarCam_ACTL_L0_CameraEventDecoder(*this);
+}

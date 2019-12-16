@@ -76,6 +76,8 @@ public:
     const R1::CameraConfiguration* cta_run_header,
     const R1::CameraEvent* cta_event) override;
 
+  LSTCam_ACTL_R1_CameraEventDecoder* clone() const override;
+
   calin::ix::iact_data::lstcam_data_source::LSTCamCameraEventDecoderConfig config() const { return config_; }
 
   static calin::ix::iact_data::lstcam_data_source::LSTCamCameraEventDecoderConfig default_config() {

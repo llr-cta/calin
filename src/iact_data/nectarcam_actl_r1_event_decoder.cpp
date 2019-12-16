@@ -791,3 +791,7 @@ copy_single_gain_waveforms(
 
   calin_waveforms->set_all_channels_present(all_channels_present);
 }
+
+NectarCam_ACTL_R1_CameraEventDecoder* NectarCam_ACTL_R1_CameraEventDecoder::clone() const {
+  return new NectarCam_ACTL_R1_CameraEventDecoder(*this);
+}

@@ -86,6 +86,8 @@ public:
     const DataModel::CameraRunHeader* cta_run_header,
     const DataModel::CameraEvent* cta_event) override;
 
+  NectarCam_ACTL_L0_CameraEventDecoder* clone() const override;
+
 protected:
   void copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
     const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
@@ -150,6 +152,8 @@ public:
       TelescopeRunConfiguration* run_config,
     const R1::CameraConfiguration* cta_run_header,
     const R1::CameraEvent* cta_event) override;
+
+  NectarCam_ACTL_R1_CameraEventDecoder* clone() const override;
 
   calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig config() const { return config_; }
 
