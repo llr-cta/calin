@@ -282,27 +282,17 @@ TelescopeRunConfiguration* ZFITSDataSource_R1::get_run_configuration()
   return run_config;
 }
 
-unsigned ZFITSDataSource_R1::source_index() const
+unsigned ZFITSDataSource_R1::current_fragment_index() const
 {
-  return actl_zfits_->source_index();
+  return actl_zfits_->current_fragment_index();
 }
 
-std::string ZFITSDataSource_R1::source_name() const
+unsigned ZFITSDataSource_R1::num_fragments() const
 {
-  return actl_zfits_->source_name();
+  return actl_zfits_->num_fragments();
 }
 
-unsigned ZFITSDataSource_R1::num_sources() const
+std::string ZFITSDataSource_R1::fragment_name(unsigned index) const
 {
-  return actl_zfits_->num_sources();
-}
-
-std::string ZFITSDataSource_R1::source_name(unsigned isource) const
-{
-  return actl_zfits_->source_name(isource);
-}
-
-std::vector<std::string> ZFITSDataSource_R1::source_names() const
-{
-  return actl_zfits_->source_names();
+  return actl_zfits_->fragment_name(index);
 }

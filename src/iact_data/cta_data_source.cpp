@@ -138,60 +138,22 @@ CTAZFITSDataSource::get_run_configuration()
   return delegate_->get_run_configuration();
 }
 
-// This is horrible !!
-unsigned CTAZFITSDataSource::source_index() const
+unsigned CTAZFITSDataSource::current_fragment_index() const
 {
-  if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_R1*>(this->delegate())) {
-    return zfits->source_index();
-  }else if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_L0*>(this->delegate())) {
-    return zfits->source_index();
-  } else {
-    throw std::runtime_error("CTAZFITSDataSource::source_index: unsupported data source");
-  }
+  return dynamic_cast<const calin::io::data_source::FragmentList&>(
+    *this->delegate()).current_fragment_index();
 }
 
-std::string CTAZFITSDataSource::source_name() const
+unsigned CTAZFITSDataSource::num_fragments() const
 {
-  if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_R1*>(this->delegate())) {
-    return zfits->source_name();
-  }else if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_L0*>(this->delegate())) {
-    return zfits->source_name();
-  } else {
-    throw std::runtime_error("CTAZFITSDataSource::source_name: unsupported data source");
-  }
+  return dynamic_cast<const calin::io::data_source::FragmentList&>(
+    *this->delegate()).num_fragments();
 }
 
-unsigned CTAZFITSDataSource::num_sources() const
+std::string CTAZFITSDataSource::fragment_name(unsigned index) const
 {
-  if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_R1*>(this->delegate())) {
-    return zfits->num_sources();
-  }else if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_L0*>(this->delegate())) {
-    return zfits->num_sources();
-  } else {
-    throw std::runtime_error("CTAZFITSDataSource::num_sources: unsupported data source");
-  }
-}
-
-std::string CTAZFITSDataSource::source_name(unsigned isource) const
-{
-  if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_R1*>(this->delegate())) {
-    return zfits->source_name(isource);
-  }else if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_L0*>(this->delegate())) {
-    return zfits->source_name(isource);
-  } else {
-    throw std::runtime_error("CTAZFITSDataSource::source_name: unsupported data source");
-  }
-}
-
-std::vector<std::string> CTAZFITSDataSource::source_names() const
-{
-  if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_R1*>(this->delegate())) {
-    return zfits->source_names();
-  }else if(auto* zfits = dynamic_cast<const zfits_data_source::ZFITSDataSource_L0*>(this->delegate())) {
-    return zfits->source_names();
-  } else {
-    throw std::runtime_error("CTAZFITSDataSource::source_names: unsupported data source");
-  }
+  return dynamic_cast<const calin::io::data_source::FragmentList&>(
+    *this->delegate()).fragment_name(index);
 }
 
 calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*

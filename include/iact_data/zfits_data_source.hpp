@@ -105,7 +105,8 @@ private:
 
 class ZFITSDataSource_L0:
   public calin::iact_data::telescope_data_source::
-    TelescopeRandomAccessDataSourceWithRunConfig
+    TelescopeRandomAccessDataSourceWithRunConfig,
+  public calin::io::data_source::FragmentList
 {
 public:
   CALIN_TYPEALIAS(config_type,
@@ -130,11 +131,9 @@ public:
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* get_run_configuration() override;
 
-  unsigned source_index() const;
-  std::string source_name() const;
-  unsigned num_sources() const;
-  std::string source_name(unsigned isource) const;
-  std::vector<std::string> source_names() const;
+  unsigned current_fragment_index() const override;
+  unsigned num_fragments() const override;
+  std::string fragment_name(unsigned index) const override;
 
   static config_type default_config() {
     return zfits_actl_data_source::ZFITSACTL_L0_CameraEventDataSource::default_config(); }
@@ -215,7 +214,8 @@ private:
 
 class ZFITSDataSource_R1:
   public calin::iact_data::telescope_data_source::
-    TelescopeRandomAccessDataSourceWithRunConfig
+    TelescopeRandomAccessDataSourceWithRunConfig,
+  public calin::io::data_source::FragmentList
 {
 public:
   CALIN_TYPEALIAS(config_type,
@@ -240,11 +240,9 @@ public:
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* get_run_configuration() override;
 
-  unsigned source_index() const;
-  std::string source_name() const;
-  unsigned num_sources() const;
-  std::string source_name(unsigned isource) const;
-  std::vector<std::string> source_names() const;
+  unsigned current_fragment_index() const override;
+  unsigned num_fragments() const override;
+  std::string fragment_name(unsigned index) const override;
 
   static config_type default_config() {
     return zfits_actl_data_source::ZFITSACTL_R1_CameraEventDataSource::default_config(); }

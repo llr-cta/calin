@@ -80,8 +80,10 @@ using namespace calin::io;
 %newobject new_data_source();
 %newobject new_data_sink();
 
-%import "io/data_source.hpp"
-%import "io/chained_data_source.hpp"
+%import "io/data_source.i"
+
+/* %import "io/data_source.hpp"
+%import "io/chained_data_source.hpp" */
 
 %template(TelescopeDataSource)
   calin::io::data_source::DataSource<

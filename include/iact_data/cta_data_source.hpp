@@ -37,7 +37,8 @@ namespace calin { namespace iact_data { namespace cta_data_source {
 
 class CTAZFITSDataSource:
   public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig,
-  public calin::pattern::delegation::Delegator<
+  public calin::io::data_source::FragmentList,
+  private calin::pattern::delegation::Delegator<
     calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>
 {
 public:
@@ -72,11 +73,9 @@ public:
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* get_run_configuration() override;
 
-  unsigned source_index() const;
-  std::string source_name() const;
-  unsigned num_sources() const;
-  std::string source_name(unsigned isource) const;
-  std::vector<std::string> source_names() const;
+  unsigned current_fragment_index() const override;
+  unsigned num_fragments() const override;
+  std::string fragment_name(unsigned index) const override;
 
 private:
   static TelescopeRandomAccessDataSourceWithRunConfig* construct_delegate(

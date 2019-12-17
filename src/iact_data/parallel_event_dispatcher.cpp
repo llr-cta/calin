@@ -206,7 +206,7 @@ process_cta_zfits_run(const std::string& filename,
   auto zfits_config = config.zfits();
   auto* cta_file = new CTAZFITSDataSource(filename, config.decoder(), zfits_config);
 
-  auto fragments = cta_file->source_names();
+  auto fragments = cta_file->all_fragment_names();
   if(fragments.empty()) {
     // This should never happen (I guess) as we should already have had an exception
     throw std::runtime_error("process_cta_zfits_run: file not found: " + filename);
