@@ -1,9 +1,9 @@
 /****************************  vectormath_hyp.h   ******************************
 * Author:        Agner Fog
 * Date created:  2014-07-09
-* Last modified: 2015-02-10
-* Version:       1.16
-* Project:       vector classes
+* Last modified: 2019-08-01
+* Version:       1.40.00
+* Project:       vector class library
 * Description:
 * Header file containing inline vector functions of hyperbolic and inverse 
 * hyperbolic functions:
@@ -22,9 +22,10 @@
 * > Cephes math library by Stephen L. Moshier 1992,
 *   http://www.netlib.org/cephes/
 *
-* For detailed instructions, see vectormath_common.h and VectorClass.pdf
+* For detailed instructions, see vcl_manual.pdf
 *
-* (c) Copyright 2014-2016 GNU General Public License http://www.gnu.org/licenses
+* (c) Copyright 2014-2019 Agner Fog.
+* Apache License version 2.0 or later.
 ******************************************************************************/
 
 #ifndef VECTORMATH_HYP_H

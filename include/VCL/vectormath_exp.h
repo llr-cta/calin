@@ -1,11 +1,11 @@
 /****************************  vectormath_exp.h   ******************************
 * Author:        Agner Fog
 * Date created:  2014-04-18
-* Last modified: 2016-12-26
-* Version:       1.26
-* Project:       vector classes
+* Last modified: 2019-08-01
+* Version:       1.40.00
+* Project:       vector class library
 * Description:
-* Header file containing inline vector functions of logarithms, exponential 
+* Header file containing inline vector functions of logarithms, exponential
 * and power functions:
 * exp         exponential function
 * exp2        exponential function base 2
@@ -22,20 +22,21 @@
 * Theory, methods and inspiration based partially on these sources:
 * > Moshier, Stephen Lloyd Baluk: Methods and programs for mathematical functions.
 *   Ellis Horwood, 1989.
-* > VDT library developed on CERN by Danilo Piparo, Thomas Hauth and
-*   Vincenzo Innocente, 2012, https://svnweb.cern.ch/trac/vdt
+* > VDT library developed on CERN by Danilo Piparo, Thomas Hauth and Vincenzo Innocente,
+*   2012, https://root.cern.ch/doc/v606_/md_math_vdt_ReadMe.html
 * > Cephes math library by Stephen L. Moshier 1992,
 *   http://www.netlib.org/cephes/
 *
-* For detailed instructions, see vectormath_common.h and VectorClass.pdf
+* For detailed instructions, see vcl_manual.pdf
 *
-* (c) Copyright 2014-2016 GNU General Public License http://www.gnu.org/licenses
+* (c) Copyright 2014-2019 Agner Fog.
+* Apache License version 2.0 or later.
 ******************************************************************************/
 
 #ifndef VECTORMATH_EXP_H
-#define VECTORMATH_EXP_H  1 
+#define VECTORMATH_EXP_H  1
 
-#include "vectormath_common.h"  
+#include "vectormath_common.h"
 
 #ifdef VCL_NAMESPACE
 namespace VCL_NAMESPACE {
@@ -131,29 +132,29 @@ static inline Vec16f vm_pow2n (Vec16f const & n) {
 // Template parameters:
 // VTYPE:  double vector type
 // BVTYPE: boolean vector type
-// M1: 0 for exp, 1 for expm1
+// M1: 0 for exp, 1 for expm1, 3 for expm1 with pedantic preservation of signed zero
 // BA: 0 for exp, 1 for 0.5*exp, 2 for pow(2,x), 10 for pow(10,x)
 
 #if 1  // choose method
 
 // Taylor expansion
-template<class VTYPE, class BVTYPE, int M1, int BA> 
-static inline VTYPE exp_d(VTYPE const & initial_x) {    
+template<class VTYPE, class BVTYPE, int M1, int BA>
+static inline VTYPE exp_d(VTYPE const & initial_x) {
 
     // Taylor coefficients, 1/n!
     // Not using minimax approximation because we prioritize precision close to x = 0
     const double p2  = 1./2.;
     const double p3  = 1./6.;
     const double p4  = 1./24.;
-    const double p5  = 1./120.; 
-    const double p6  = 1./720.; 
-    const double p7  = 1./5040.; 
-    const double p8  = 1./40320.; 
-    const double p9  = 1./362880.; 
-    const double p10 = 1./3628800.; 
-    const double p11 = 1./39916800.; 
-    const double p12 = 1./479001600.; 
-    const double p13 = 1./6227020800.; 
+    const double p5  = 1./120.;
+    const double p6  = 1./720.;
+    const double p7  = 1./5040.;
+    const double p8  = 1./40320.;
+    const double p9  = 1./362880.;
+    const double p10 = 1./3628800.;
+    const double p11 = 1./39916800.;
+    const double p12 = 1./479001600.;
+    const double p13 = 1./6227020800.;
 
     // maximum abs(x), value depends on BA, defined below
     // The lower limit of x is slightly more restrictive than the upper limit.
@@ -199,7 +200,7 @@ static inline VTYPE exp_d(VTYPE const & initial_x) {
 
     if (BA == 1) r--;  // 0.5 * exp(x)
 
-    // multiply by power of 2 
+    // multiply by power of 2
     n2 = vm_pow2n(r);
 
     if (M1 == 0) {
@@ -209,6 +210,10 @@ static inline VTYPE exp_d(VTYPE const & initial_x) {
     else {
         // expm1
         z = mul_add(z, n2, n2 - 1.0);            // z = z * n2 + (n2 - 1.0);
+        if (M1 & 2) {                            // pedantic preservation of signed zero
+            // (I cannot find a way to detect if -fno-signed-zeros is turned on)
+            z = select(initial_x == 0., initial_x, z);
+        }
     }
 
     // check for overflow
@@ -222,7 +227,7 @@ static inline VTYPE exp_d(VTYPE const & initial_x) {
     }
     else {
         // overflow, underflow and NAN
-        r = select(sign_bit(initial_x), 0.-M1, infinite_vec<VTYPE>()); // value in case of +/- overflow or INF
+        r = select(sign_bit(initial_x), 0.-(M1&1), infinite_vec<VTYPE>()); // value in case of +/- overflow or INF
         z = select(inrange, z, r);                                     // +/- underflow
         z = select(is_nan(initial_x), initial_x, z);                   // NAN goes through
         return z;
@@ -232,7 +237,7 @@ static inline VTYPE exp_d(VTYPE const & initial_x) {
 #else
 
 // Pade expansion uses less code and fewer registers, but is slower
-template<class VTYPE, class BVTYPE, int M1, int BA> 
+template<class VTYPE, class BVTYPE, int M1, int BA>
 static inline VTYPE exp_d(VTYPE const & initial_x) {
 
     // define constants
@@ -309,7 +314,7 @@ static inline Vec2d exp(Vec2d const & x) {
 }
 
 static inline Vec2d expm1(Vec2d const & x) {
-    return exp_d<Vec2d, Vec2db, 1, 0>(x);
+    return exp_d<Vec2d, Vec2db, 3, 0>(x);
 }
 
 static inline Vec2d exp2(Vec2d const & x) {
@@ -327,7 +332,7 @@ static inline Vec4d exp(Vec4d const & x) {
 }
 
 static inline Vec4d expm1(Vec4d const & x) {
-    return exp_d<Vec4d, Vec4db, 1, 0>(x);
+    return exp_d<Vec4d, Vec4db, 3, 0>(x);
 }
 
 static inline Vec4d exp2(Vec4d const & x) {
@@ -347,7 +352,7 @@ static inline Vec8d exp(Vec8d const & x) {
 }
 
 static inline Vec8d expm1(Vec8d const & x) {
-    return exp_d<Vec8d, Vec8db, 1, 0>(x);
+    return exp_d<Vec8d, Vec8db, 3, 0>(x);
 }
 
 static inline Vec8d exp2(Vec8d const & x) {
@@ -366,21 +371,21 @@ static inline Vec8d exp10(Vec8d const & x) {
 // Template parameters:
 // VTYPE:  float vector type
 // BVTYPE: boolean vector type
-// M1: 0 for exp, 1 for expm1
+// M1: 0 for exp, 1 for expm1, 3 for expm1 with pedantic preservation of signed zero
 // BA: 0 for exp, 1 for 0.5*exp, 2 for pow(2,x), 10 for pow(10,x)
 
-template<class VTYPE, class BVTYPE, int M1, int BA> 
+template<class VTYPE, class BVTYPE, int M1, int BA>
 static inline VTYPE exp_f(VTYPE const & initial_x) {
 
     // Taylor coefficients
     const float P0expf   =  1.f/2.f;
     const float P1expf   =  1.f/6.f;
     const float P2expf   =  1.f/24.f;
-    const float P3expf   =  1.f/120.f; 
-    const float P4expf   =  1.f/720.f; 
-    const float P5expf   =  1.f/5040.f; 
+    const float P3expf   =  1.f/120.f;
+    const float P4expf   =  1.f/720.f;
+    const float P5expf   =  1.f/5040.f;
 
-    VTYPE  x, r, x2, z, n2;                      // data vectors        
+    VTYPE  x, r, x2, z, n2;                      // data vectors
     BVTYPE inrange;                              // boolean vector
 
     // maximum abs(x), value depends on BA, defined below
@@ -419,12 +424,12 @@ static inline VTYPE exp_f(VTYPE const & initial_x) {
     }
 
     x2 = x * x;
-    z = polynomial_5(x,P0expf,P1expf,P2expf,P3expf,P4expf,P5expf);    
+    z = polynomial_5(x,P0expf,P1expf,P2expf,P3expf,P4expf,P5expf);
     z = mul_add(z, x2, x);                       // z *= x2;  z += x;
 
     if (BA == 1) r--;                            // 0.5 * exp(x)
 
-    // multiply by power of 2 
+    // multiply by power of 2
     n2 = vm_pow2n(r);
 
     if (M1 == 0) {
@@ -434,6 +439,10 @@ static inline VTYPE exp_f(VTYPE const & initial_x) {
     else {
         // expm1
         z = mul_add(z, n2, n2 - 1.0f);           //  z = z * n2 + (n2 - 1.0f);
+        if (M1 & 2) {                            // pedantic preservation of signed zero
+            // (I cannot find a way to detect if -fno-signed-zeros is turned on)
+            z = select(initial_x == 0.f, initial_x, z);
+        }
     }
 
     // check for overflow
@@ -447,7 +456,7 @@ static inline VTYPE exp_f(VTYPE const & initial_x) {
     }
     else {
         // overflow, underflow and NAN
-        r = select(sign_bit(initial_x), 0.f-M1, infinite_vec<VTYPE>()); // value in case of +/- overflow or INF
+        r = select(sign_bit(initial_x), 0.f-(M1&1), infinite_vec<VTYPE>()); // value in case of +/- overflow or INF
         z = select(inrange, z, r);                                      // +/- underflow
         z = select(is_nan(initial_x), initial_x, z);                    // NAN goes through
         return z;
@@ -470,7 +479,7 @@ static inline Vec4f exp(Vec4f const & x) {
 }
 
 static inline Vec4f expm1(Vec4f const & x) {
-    return exp_f<Vec4f, Vec4fb, 1, 0>(x);
+    return exp_f<Vec4f, Vec4fb, 3, 0>(x);
 }
 
 static inline Vec4f exp2(Vec4f const & x) {
@@ -500,7 +509,7 @@ static inline Vec8f exp(Vec8f const & x) {
 }
 
 static inline Vec8f expm1(Vec8f const & x) {
-    return exp_f<Vec8f, Vec8fb, 1, 0>(x);
+    return exp_f<Vec8f, Vec8fb, 3, 0>(x);
 }
 
 static inline Vec8f exp2(Vec8f const & x) {
@@ -545,10 +554,10 @@ static inline Vec16f exp(Vec16f const & x) {
 #else  // no AVX512ER, use above template
     return exp_f<Vec16f, Vec16fb, 0, 0>(x);
 #endif
-} 
+}
 
 static inline Vec16f expm1(Vec16f const & x) {
-    return exp_f<Vec16f, Vec16fb, 1, 0>(x);
+    return exp_f<Vec16f, Vec16fb, 3, 0>(x);
 }
 
 static inline Vec16f exp2(Vec16f const & x) {
@@ -590,7 +599,7 @@ static inline Vec16f exp10(Vec16f const & x) {
 *                 Logarithm functions
 ******************************************************************************/
 
-// Helper functions: fraction_2(x) = fraction(x)*0.5
+// Helper function: fraction_2(x) = fraction(x)*0.5
 
 // Modified fraction function:
 // Extract the fraction part of a floating point number, and divide by 2
@@ -657,7 +666,7 @@ static inline Vec8d fraction_2(Vec8d const & a) {
 #endif // MAX_VECTOR_SIZE >= 512
 
 
-// Helper functions: exponent_f(x) = exponent(x) as floating point number
+// Helper function: exponent_f(x) = exponent(x) as floating point number
 
 union vm_ufi {
     float f;
@@ -670,11 +679,10 @@ union vm_udi {
 };
 
 // extract exponent of a positive number x as a floating point number
-//Note: the AVX512 version return -inf for x=0, the non-AVX versions return a negative number
 static inline Vec4f exponent_f(Vec4f const & x) {
 #ifdef __AVX512VL__                              // AVX512VL
-    // note: this version returns -inf for x=0
-    return _mm_getexp_ps(x);
+    // prevent returning -inf for x=0
+    return _mm_maskz_getexp_ps(_mm_cmp_ps_mask(x,Vec4f(0.f),4), x);
 #else
     const float pow2_23 =  8388608.0f;           // 2^23
     const float bias = 127.f;                    // bias in exponent
@@ -690,8 +698,10 @@ static inline Vec4f exponent_f(Vec4f const & x) {
 
 static inline Vec2d exponent_f(Vec2d const & x) {
 #ifdef __AVX512VL__                              // AVX512VL
-    // note: this version returns -inf for x=0
-    return _mm_getexp_pd(x);
+    // prevent returning -inf for x=0
+    //return _mm_maskz_getexp_pd(x != 0., x);
+    return _mm_maskz_getexp_pd(_mm_cmp_pd_mask(x,Vec2d(0.),4), x);
+
 #else
     const double pow2_52 = 4503599627370496.0;   // 2^52
     const double bias = 1023.0;                  // bias in exponent
@@ -710,8 +720,9 @@ static inline Vec2d exponent_f(Vec2d const & x) {
 
 static inline Vec8f exponent_f(Vec8f const & x) {
 #ifdef __AVX512VL__                              // AVX512VL
-    // note: this version returns -inf for x=0
-    return _mm256_getexp_ps(x);
+    // prevent returning -inf for x=0
+    //return _mm256_maskz_getexp_ps(x != 0.f, x);
+    return _mm256_maskz_getexp_ps(_mm256_cmp_ps_mask(x,Vec8f(0.f),4), x);
 #else
     const float pow2_23 =  8388608.0f;           // 2^23
     const float bias = 127.f;                    // bias in exponent
@@ -723,17 +734,18 @@ static inline Vec8f exponent_f(Vec8f const & x) {
     Vec8f  e = d - (pow2_23 + bias);             // subtract magic number and bias
     return e;
 #endif
-} 
+}
 
 // extract exponent of a positive number x as a floating point number
 static inline Vec4d exponent_f(Vec4d const & x) {
 #ifdef __AVX512VL__                              // AVX512VL
-    return _mm256_getexp_pd(x);
+    // prevent returning -inf for x=0
+    //return _mm256_maskz_getexp_pd(x != 0., x);
+    return _mm256_maskz_getexp_pd(_mm256_cmp_pd_mask(x,Vec4d(0.),4), x);
 #else
     const double pow2_52 = 4503599627370496.0;   // 2^52
     const double bias = 1023.0;                  // bias in exponent
     const vm_udi upow2_52 = {pow2_52};
-
     Vec4uq a = reinterpret_i(x);                 // bit-cast x to integer
     Vec4uq b = a >> 52;                          // shift down exponent to low bits
     Vec4uq c = b | Vec4uq(upow2_52.i);           // insert new exponent
@@ -749,18 +761,18 @@ static inline Vec4d exponent_f(Vec4d const & x) {
 
 static inline Vec16f exponent_f(Vec16f const & x) {
 #if INSTRSET >= 9                                // AVX512
-    // note: this version returns -inf for x=0
-    return _mm512_getexp_ps(x);
+    // prevent returning -inf for x=0
+    return _mm512_maskz_getexp_ps(x != 0.f, x);
 #else
     return Vec16f(exponent_f(x.get_low()), exponent_f(x.get_high()));
 #endif
-} 
+}
 
 // extract exponent of a positive number x as a floating point number
 static inline Vec8d exponent_f(Vec8d const & x) {
 #if INSTRSET >= 9                                // AVX512
-    // note: this returns -inf for x=0
-    return _mm512_getexp_pd(x);
+    // prevent returning -inf for x=0
+    return _mm512_maskz_getexp_pd(x != 0., x);
 #else
     return Vec8d(exponent_f(x.get_low()), exponent_f(x.get_high()));
 #endif
@@ -768,13 +780,176 @@ static inline Vec8d exponent_f(Vec8d const & x) {
 
 #endif // MAX_VECTOR_SIZE >= 512
 
+// Helper function: log_special_cases(x,r). Handle special cases for log function
+#if MAX_VECTOR_SIZE >= 512
+static inline Vec8d log_special_cases(Vec8d const & x1, Vec8d const & r) {
+    Vec8d res = r;
+#if INSTRSET >= 10  // AVX512DQ
+    Vec8db specialcases = _mm512_fpclass_pd_mask(x1, 0x7E); // zero, subnormal, negative, +-inf
+    if (!horizontal_or(specialcases)) {
+        return res;            // normal path
+    }
+    res = _mm512_fixupimm_pd(res, x1, Vec8q(0x03530411), 0); // handle most cases
+    res = select(Vec8db(_mm512_fpclass_pd_mask(x1, 0x26)),-infinite_vec<Vec8d>(),res); // subnormal -> -INF
+    res = select(Vec8db(_mm512_fpclass_pd_mask(x1, 0x50)),nan_vec<Vec8d>(NAN_LOG),res); // negative -> specific NAN
+    return res;
+#else
+    Vec8db overflow = !is_finite(x1);
+    Vec8db underflow = x1 < VM_SMALLEST_NORMAL;  // denormals not supported by this functions
+    if (!horizontal_or(overflow | underflow)) {
+        return res;                              // normal path
+    }
+    // overflow and underflow
+    res = select(underflow, nan_vec<Vec8d>(NAN_LOG), res);                // x1  < 0 gives NAN
+    res = select(is_zero_or_subnormal(x1), -infinite_vec<Vec8d>(), res);  // x1 == 0 gives -INF
+    res = select(overflow, x1, res);                                      // INF or NAN goes through
+    res = select(is_inf(x1) & sign_bit(x1), nan_vec<Vec8d>(NAN_LOG), res);// -INF gives NAN
+    return res;
+#endif // INSTRSET
+}
+
+static inline Vec16f log_special_cases(Vec16f const & x1, Vec16f const & r) {
+    Vec16f res = r;
+#if INSTRSET >= 10  // AVX512DQ
+    Vec16fb specialcases = _mm512_fpclass_ps_mask(x1, 0x7E); // zero, subnormal, negative, +-inf
+    if (!horizontal_or(specialcases)) {
+        return res;            // normal path
+    }
+    res = _mm512_fixupimm_ps(res, x1, Vec16i(0x03530411), 0); // handle most cases
+    res = select(Vec16fb(_mm512_fpclass_ps_mask(x1, 0x26)),-infinite_vec<Vec16f>(),res); // subnormal -> -INF
+    res = select(Vec16fb(_mm512_fpclass_ps_mask(x1, 0x50)),nan_vec<Vec16f>(NAN_LOG),res); // negative -> specific NAN
+    return res;
+#else
+    Vec16fb overflow = !is_finite(x1);
+    Vec16fb underflow = x1 < VM_SMALLEST_NORMALF;  // denormals not supported by this functions
+    if (!horizontal_or(overflow | underflow)) {
+        return res;                              // normal path
+    }
+    // overflow and underflow
+    res = select(underflow, nan_vec<Vec16f>(NAN_LOG), res);                // x1  < 0 gives NAN
+    res = select(is_zero_or_subnormal(x1), -infinite_vec<Vec16f>(), res);  // x1 == 0 gives -INF
+    res = select(overflow, x1, res);                                      // INF or NAN goes through
+    res = select(is_inf(x1) & sign_bit(x1), nan_vec<Vec16f>(NAN_LOG), res);// -INF gives NAN
+    return res;
+#endif // INSTRSET
+}
+
+#endif // MAX_VECTOR_SIZE >= 512
+
+#if MAX_VECTOR_SIZE >= 256
+static inline Vec4d log_special_cases(Vec4d const & x1, Vec4d const & r) {
+    Vec4d res = r;
+#if INSTRSET >= 10  // AVX512DQ AVX512VL
+    __mmask8 specialcases = _mm256_fpclass_pd_mask(x1, 0x7E); // zero, subnormal, negative, +-inf
+    if (specialcases == 0) {
+        return res;            // normal path
+    }
+    res = _mm256_fixupimm_pd(res, x1, Vec4q(0x03530411), 0); // handle most cases
+    res = _mm256_mask_mov_pd(res, _mm256_fpclass_pd_mask(x1, 0x26), -infinite_vec<Vec4d>()); // subnormal -> -INF
+    res = _mm256_mask_mov_pd(res, _mm256_fpclass_pd_mask(x1, 0x50), nan_vec<Vec4d>(NAN_LOG)); // negative -> specific NAN
+    return res;
+#else
+    Vec4db overflow = !is_finite(x1);
+    Vec4db underflow = x1 < VM_SMALLEST_NORMAL;  // denormals not supported by this functions
+    if (!horizontal_or(overflow | underflow)) {
+        return res;                              // normal path
+    }
+    // overflow and underflow
+    res = select(underflow, nan_vec<Vec4d>(NAN_LOG), res);                // x1  < 0 gives NAN
+    res = select(is_zero_or_subnormal(x1), -infinite_vec<Vec4d>(), res);  // x1 == 0 gives -INF
+    res = select(overflow, x1, res);                                      // INF or NAN goes through
+    res = select(is_inf(x1) & sign_bit(x1), nan_vec<Vec4d>(NAN_LOG), res);// -INF gives NAN
+    return res;
+#endif // INSTRSET
+}
+
+static inline Vec8f log_special_cases(Vec8f const & x1, Vec8f const & r) {
+    Vec8f res = r;
+#if INSTRSET >= 10  // AVX512DQ AVX512VL
+    __mmask8 specialcases = _mm256_fpclass_ps_mask(x1, 0x7E); // zero, subnormal, negative, +-inf
+    if (specialcases == 0) {
+        return res;            // normal path
+    }
+    res = _mm256_fixupimm_ps(res, x1, Vec8i(0x03530411), 0); // handle most cases
+    res = _mm256_mask_mov_ps(res, _mm256_fpclass_ps_mask(x1, 0x26), -infinite_vec<Vec8f>()); // subnormal -> -INF
+    res = _mm256_mask_mov_ps(res, _mm256_fpclass_ps_mask(x1, 0x50), nan_vec<Vec8f>(NAN_LOG)); // negative -> specific NAN
+    return res;
+#else
+    Vec8fb overflow = !is_finite(x1);
+    Vec8fb underflow = x1 < VM_SMALLEST_NORMALF;  // denormals not supported by this functions
+    if (!horizontal_or(overflow | underflow)) {
+        return res;                              // normal path
+    }
+    // overflow and underflow
+    res = select(underflow, nan_vec<Vec8f>(NAN_LOG), res);                // x1  < 0 gives NAN
+    res = select(is_zero_or_subnormal(x1), -infinite_vec<Vec8f>(), res);  // x1 == 0 gives -INF
+    res = select(overflow, x1, res);                                      // INF or NAN goes through
+    res = select(is_inf(x1) & sign_bit(x1), nan_vec<Vec8f>(NAN_LOG), res);// -INF gives NAN
+    return res;
+#endif // INSTRSET
+}
+
+#endif // MAX_VECTOR_SIZE >= 256
+
+static inline Vec2d log_special_cases(Vec2d const & x1, Vec2d const & r) {
+    Vec2d res = r;
+#if INSTRSET >= 10  // AVX512DQ AVX512VL
+    __mmask8 specialcases = _mm_fpclass_pd_mask(x1, 0x7E); // zero, subnormal, negative, +-inf
+    if (specialcases == 0) {
+        return res;            // normal path
+    }
+    res = _mm_fixupimm_pd(res, x1, Vec2q(0x03530411), 0); // handle most cases
+    res = _mm_mask_mov_pd(res, _mm_fpclass_pd_mask(x1, 0x26), -infinite_vec<Vec2d>()); // subnormal -> -INF
+    res = _mm_mask_mov_pd(res, _mm_fpclass_pd_mask(x1, 0x50), nan_vec<Vec2d>(NAN_LOG)); // negative -> specific NAN
+    return res;
+#else
+    Vec2db overflow = !is_finite(x1);
+    Vec2db underflow = x1 < VM_SMALLEST_NORMAL;  // denormals not supported by this functions
+    if (!horizontal_or(overflow | underflow)) {
+        return res;                              // normal path
+    }
+    // overflow and underflow
+    res = select(underflow, nan_vec<Vec2d>(NAN_LOG), res);                // x1  < 0 gives NAN
+    res = select(is_zero_or_subnormal(x1), -infinite_vec<Vec2d>(), res);  // x1 == 0 gives -INF
+    res = select(overflow, x1, res);                                      // INF or NAN goes through
+    res = select(is_inf(x1) & sign_bit(x1), nan_vec<Vec2d>(NAN_LOG), res);// -INF gives NAN
+    return res;
+#endif // INSTRSET
+}
+
+static inline Vec4f log_special_cases(Vec4f const & x1, Vec4f const & r) {
+    Vec4f res = r;
+#if INSTRSET >= 10  // AVX512DQ AVX512VL
+    __mmask8 specialcases = _mm_fpclass_ps_mask(x1, 0x7E); // zero, subnormal, negative, +-inf
+    if (specialcases == 0) {
+        return res;            // normal path
+    }
+    res = _mm_fixupimm_ps(res, x1, Vec4i(0x03530411), 0); // handle most cases
+    res = _mm_mask_mov_ps(res, _mm_fpclass_ps_mask(x1, 0x26), -infinite_vec<Vec4f>()); // subnormal -> -INF
+    res = _mm_mask_mov_ps(res, _mm_fpclass_ps_mask(x1, 0x50), nan_vec<Vec4f>(NAN_LOG)); // negative -> specific NAN
+    return res;
+#else
+    Vec4fb overflow = !is_finite(x1);
+    Vec4fb underflow = x1 < VM_SMALLEST_NORMALF;  // denormals not supported by this functions
+    if (!horizontal_or(overflow | underflow)) {
+        return res;                              // normal path
+    }
+    // overflow and underflow
+    res = select(underflow, nan_vec<Vec4f>(NAN_LOG), res);                // x1  < 0 gives NAN
+    res = select(is_zero_or_subnormal(x1), -infinite_vec<Vec4f>(), res);  // x1 == 0 gives -INF
+    res = select(overflow, x1, res);                                      // INF or NAN goes through
+    res = select(is_inf(x1) & sign_bit(x1), nan_vec<Vec4f>(NAN_LOG), res);// -INF gives NAN
+    return res;
+#endif // INSTRSET
+}
+
 
 // log function, double precision
 // template parameters:
 // VTYPE:  f.p. vector type
 // BVTYPE: boolean vector type
-// M1: 0 for log, 1 for log1p
-template<class VTYPE, class BVTYPE, int M1> 
+// M1: 0 for log, 1 for log1p, 3 for log1p with pedantic preservation of signed zero
+template<class VTYPE, class BVTYPE, int M1>
 static inline VTYPE log_d(VTYPE const & initial_x) {
 
     // define constants
@@ -793,7 +968,7 @@ static inline VTYPE log_d(VTYPE const & initial_x) {
     const double Q4log  =  1.12873587189167450590E1;
 
     VTYPE  x1, x, x2, px, qx, res, fe;           // data vectors
-    BVTYPE blend, overflow, underflow;           // boolean vectors
+    BVTYPE blend;//, overflow, underflow;           // boolean vectors
 
     if (M1 == 0) {
         x1 = initial_x;                          // log(x)
@@ -801,7 +976,7 @@ static inline VTYPE log_d(VTYPE const & initial_x) {
     else {
         x1 = initial_x + 1.0;                    // log(x+1)
     }
-    // separate mantissa from exponent 
+    // separate mantissa from exponent
     // VTYPE x  = fraction(x1) * 0.5;
     x  = fraction_2(x1);
     fe = exponent_f(x1);
@@ -819,7 +994,7 @@ static inline VTYPE log_d(VTYPE const & initial_x) {
         x = select(fe==0., initial_x, x - 1.0);
     }
 
-    // rational form 
+    // rational form
     px  = polynomial_5 (x, P0log, P1log, P2log, P3log, P4log, P5log);
     x2  = x * x;
     px *= x * x2;
@@ -831,21 +1006,13 @@ static inline VTYPE log_d(VTYPE const & initial_x) {
     res += nmul_add(x2, 0.5, x);                 // res += x  - 0.5 * x2;
     res  = mul_add(fe, ln2_hi, res);             // res += fe * ln2_hi;
 
-    overflow  = !is_finite(x1);
-    underflow = x1 < VM_SMALLEST_NORMAL;         // denormals not supported by this functions
+    if (M1 & 2) {                                // pedantic preservation of signed zero
+        // (I cannot find a way to detect if -fno-signed-zeros is turned on)
+        res = select(initial_x == 0., initial_x, res);
+    }
 
-    if (!horizontal_or(overflow | underflow)) {
-        // normal path
-        return res;
-    }
-    else {
-        // overflow and underflow
-        res = select(underflow, nan_vec<VTYPE>(NAN_LOG), res);                   // x1  < 0 gives NAN
-        res = select(x1 == 0. || is_subnormal(x1), -infinite_vec<VTYPE>(), res); // x1 == 0 gives -INF
-        res = select(overflow,  x1, res);                                        // INF or NAN goes through
-        res = select(is_inf(x1)&sign_bit(x1), nan_vec<VTYPE>(NAN_LOG), res);     // -INF gives NAN
-        return res;
-    }
+    // handle special cases, or return res
+    return log_special_cases(x1, res);
 }
 
 
@@ -854,7 +1021,7 @@ static inline Vec2d log(Vec2d const & x) {
 }
 
 static inline Vec2d log1p(Vec2d const & x) {
-    return log_d<Vec2d, Vec2db, 1>(x);
+    return log_d<Vec2d, Vec2db, 3>(x);
 }
 
 static inline Vec2d log2(Vec2d const & x) {
@@ -872,7 +1039,7 @@ static inline Vec4d log(Vec4d const & x) {
 }
 
 static inline Vec4d log1p(Vec4d const & x) {
-    return log_d<Vec4d, Vec4db, 1>(x);
+    return log_d<Vec4d, Vec4db, 3>(x);
 }
 
 static inline Vec4d log2(Vec4d const & x) {
@@ -892,7 +1059,7 @@ static inline Vec8d log(Vec8d const & x) {
 }
 
 static inline Vec8d log1p(Vec8d const & x) {
-    return log_d<Vec8d, Vec8db, 1>(x);
+    return log_d<Vec8d, Vec8db, 3>(x);
 }
 
 static inline Vec8d log2(Vec8d const & x) {
@@ -913,8 +1080,8 @@ static inline Vec8d log10(Vec8d const & x) {
 // ITYPE:  integer vector type with same element size
 // BVTYPE: boolean vector type
 // BTYPEI: boolean vector type for ITYPE
-// M1: 0 for log, 1 for log1p
-template<class VTYPE, class ITYPE, class BVTYPE, class BTYPEI, int M1> 
+// M1: 0 for log, 1 for log1p, 3 for log1p with pedantic preservation of signed zero
+template<class VTYPE, class ITYPE, class BVTYPE, class BTYPEI, int M1>
 static inline VTYPE log_f(VTYPE const & initial_x) {
 
     // define constants
@@ -941,7 +1108,7 @@ static inline VTYPE log_f(VTYPE const & initial_x) {
         x1 = initial_x + 1.0f;                   // log(x+1)
     }
 
-    // separate mantissa from exponent 
+    // separate mantissa from exponent
     x = fraction_2(x1);
     e = exponent(x1);
 
@@ -969,21 +1136,13 @@ static inline VTYPE log_f(VTYPE const & initial_x) {
     res += nmul_add(x2, 0.5f, x);                // res += x - 0.5f * x2;
     res  = mul_add(fe, ln2f_hi, res);            // res += ln2f_hi  * fe;
 
-    overflow  = !is_finite(x1);
-    underflow = x1 < VM_SMALLEST_NORMALF;        // denormals not supported by this functions
+    if (M1 & 2) {                                // pedantic preservation of signed zero
+        // (I cannot find a way to detect if -fno-signed-zeros is turned on)
+        res = select(initial_x == 0., initial_x, res);
+    }
 
-    if (!horizontal_or(overflow | underflow)) {
-        // normal path
-        return res;
-    }
-    else {
-        // overflow and underflow
-        res = select(underflow, nan_vec<VTYPE>(NAN_LOG), res);                    // x1 < 0 gives NAN
-        res = select(x1 == 0.f || is_subnormal(x1), -infinite_vec<VTYPE>(), res); // x1 == 0 or denormal gives -INF
-        res = select(overflow,  x1, res);                                         // INF or NAN goes through
-        res = select(is_inf(x1)&sign_bit(x1), nan_vec<VTYPE>(NAN_LOG), res);      // -INF gives NAN
-        return res;
-    }
+    // handle special cases, or return res
+    return log_special_cases(x1, res);
 }
 
 static inline Vec4f log(Vec4f const & x) {
@@ -991,7 +1150,7 @@ static inline Vec4f log(Vec4f const & x) {
 }
 
 static inline Vec4f log1p(Vec4f const & x) {
-    return log_f<Vec4f, Vec4i, Vec4fb, Vec4ib, 1>(x);
+    return log_f<Vec4f, Vec4i, Vec4fb, Vec4ib, 3>(x);
 }
 
 static inline Vec4f log2(Vec4f const & x) {
@@ -1009,7 +1168,7 @@ static inline Vec8f log(Vec8f const & x) {
 }
 
 static inline Vec8f log1p(Vec8f const & x) {
-    return log_f<Vec8f, Vec8i, Vec8fb, Vec8ib, 1>(x);
+    return log_f<Vec8f, Vec8i, Vec8fb, Vec8ib, 3>(x);
 }
 
 static inline Vec8f log2(Vec8f const & x) {
@@ -1029,7 +1188,7 @@ static inline Vec16f log(Vec16f const & x) {
 }
 
 static inline Vec16f log1p(Vec16f const & x) {
-    return log_f<Vec16f, Vec16i, Vec16fb, Vec16ib, 1>(x);
+    return log_f<Vec16f, Vec16i, Vec16fb, Vec16ib, 3>(x);
 }
 
 static inline Vec16f log2(Vec16f const & x) {
@@ -1054,7 +1213,7 @@ static inline Vec16f log10(Vec16f const & x) {
 // ITYPE2: uint64_t integer vector type with same total number of bits
 // BVTYPE: boolean vector type
 // CR:     -1 for reciprocal cube root, 1 for cube root, 2 for cube root squared
-template<class VTYPE, class ITYPE, class ITYPE2, class BVTYPE, int CR> 
+template<class VTYPE, class ITYPE, class ITYPE2, class BVTYPE, int CR>
 static inline VTYPE cbrt_d(VTYPE const & x) {
     const int iter = 7;     // iteration count of x^(-1/3) loop
     int i;
@@ -1074,15 +1233,15 @@ static inline VTYPE cbrt_d(VTYPE const & x) {
     m1 = reinterpret_i(xa);
     m2 = ITYPE(q1) - (m1 >> 20) * ITYPE(q2);
     a  = reinterpret_d(m2);
-    underflow = BVTYPE(ITYPE2(m1) < q3);          // true if denormal or zero
+    underflow = BVTYPE(ITYPE2(m1) <= q3);        // true if denormal or zero
 
-    // Newton Raphson iteration
+    // Newton Raphson iteration. Warning: may overflow!
     for (i = 0; i < iter-1; i++) {
         a2 = a * a;
         a = nmul_add(xa3, a2*a2, four_third*a);  // a = four_third*a - xa3*a2*a2;
     }
     // last iteration with better precision
-    a2 = a * a;    
+    a2 = a * a;
     a = mul_add(one_third, nmul_add(xa, a2*a2, a), a); // a = a + one_third*(a - xa*a2*a2);
 
     if (CR == -1) {  // reciprocal cube root
@@ -1162,10 +1321,10 @@ static inline Vec8d square_cbrt(Vec8d const & x) {
 // ITYPE:  uint32_t integer vector type
 // BVTYPE: boolean vector type
 // CR:     -1 for reciprocal cube root, 1 for cube root, 2 for cube root squared
-template<class VTYPE, class ITYPE, class BVTYPE, int CR> 
+template<class VTYPE, class ITYPE, class BVTYPE, int CR>
 static inline VTYPE cbrt_f(VTYPE const & x) {
 
-    const int iter = 6;                          // iteration count of x^(-1/3) loop
+    const int iter = 4;                          // iteration count of x^(-1/3) loop
     int i;
     VTYPE  xa, xa3, a, a2;
     ITYPE  m1, m2;
@@ -1184,15 +1343,15 @@ static inline VTYPE cbrt_f(VTYPE const & x) {
     m2 = q1 - (m1 >> 23) * q2;
     a  = reinterpret_f(m2);
 
-    underflow = BVTYPE(m1 < q3);                  // true if denormal or zero
+    underflow = BVTYPE(m1 <= q3);                // true if denormal or zero
 
     // Newton Raphson iteration
     for (i = 0; i < iter-1; i++) {
-        a2 = a*a;        
+        a2 = a*a;
         a = nmul_add(xa3, a2*a2, four_third*a);  // a = four_third*a - xa3*a2*a2;
     }
     // last iteration with better precision
-    a2 = a*a;    
+    a2 = a*a;
     a = mul_add(one_third, nmul_add(xa, a2*a2, a), a); //a = a + one_third*(a - xa*a2*a2);
 
     if (CR == -1) {                              // reciprocal cube root
@@ -1261,6 +1420,31 @@ static inline Vec16f square_cbrt(Vec16f const & x) {
     return cbrt_f<Vec16f, Vec16ui, Vec16fb, 2> (x);
 }
 
+#endif // MAX_VECTOR_SIZE >= 512
+
+
+/* ****************************************************************************
+                    pow functions
+*******************************************************************************
+Note about standard conformance:
+This implementation of a pow function differs from the IEEE 754-2008 floating
+point standard regarding nan propagation.
+The standard has pow(nan,0) = 1, and pow(1,nan) = 1, probably for historic reasons.
+The present implementation is guaranteed to always propagate nan's for reasons
+explained in this report:
+Agner Fog: "NAN propagation versus fault trapping in floating point code", 2019,
+https://www.agner.org/optimize/nan_propagation.pdf
+
+The standard defines another function, powr, which propagates NAN's, but powr
+will be less useful to programmers because it does not allow integer powers of
+negative x.
+
+******************************************************************************/
+
+// Helper functions:
+
+#if MAX_VECTOR_SIZE >= 512
+
 // Helper function for power function: insert special values of pow(x,y) when x=0:
 // y<0 -> inf, y=0 -> 1, y>0 -> 0, y=nan -> nan
 static inline Vec8d wm_pow_case_x0(Vec8db const & xiszero, Vec8d const & y, Vec8d const & z) {
@@ -1272,22 +1456,38 @@ static inline Vec8d wm_pow_case_x0(Vec8db const & xiszero, Vec8d const & y, Vec8
 #endif
 }
 
-#endif // MAX_VECTOR_SIZE >= 512
+// Helper function for power function: insert special values of pow(x,y) when x=0:
+// y<0 -> inf, y=0 -> 1, y>0 -> 0, y=nan -> nan
+static inline Vec16f wm_pow_case_x0(Vec16fb const & xiszero, Vec16f const & y, Vec16f const & z) {
+#if INSTRSET >= 9
+    const __m512i table = Vec16ui(0x85858A00);
+    return _mm512_mask_fixupimm_ps(z, xiszero, y, table, 0);
+#else
+    return select(xiszero, select(y < 0.f, infinite_vec<Vec16f>(), select(y == 0.f, Vec16f(1.f), Vec16f(0.f))), z);
+#endif
+}
+
+#endif
 
 #if MAX_VECTOR_SIZE >= 256
 
 static inline Vec4d wm_pow_case_x0(Vec4db const & xiszero, Vec4d const & y, Vec4d const & z) {
-//#if defined __AVX512VL__ && defined ?
-//   const __m256i table = Vec4q(0x85858A00);
-//    return _mm256_mask_fixupimm_pd(z, xiszero, y, table, 0);
+//#if INSTRSET >= 10
+    //const __m256i table = Vec4q(0x85858A00);
+    //return _mm256_mask_fixupimm_pd(z, xiszero, y, table, 0);
 //#else
     return select(xiszero, select(y < 0., infinite_vec<Vec4d>(), select(y == 0., Vec4d(1.), Vec4d(0.))), z);
 //#endif
 }
+
+static inline Vec8f wm_pow_case_x0(Vec8fb const & xiszero, Vec8f const & y, Vec8f const & z) {
+    return select(xiszero, select(y < 0.f, infinite_vec<Vec8f>(), select(y == 0.f, Vec8f(1.f), Vec8f(0.f))), z);
+}
+
 #endif
 
 static inline Vec2d wm_pow_case_x0(Vec2db const & xiszero, Vec2d const & y, Vec2d const & z) {
-//#if defined __AVX512VL__ && defined ?
+//#if INSTRSET >= 10
 //    const __m128i table = Vec2q(0x85858A00);
 //    return _mm_mask_fixupimm_pd(z, xiszero, y, table, 0);
 //#else
@@ -1295,15 +1495,20 @@ static inline Vec2d wm_pow_case_x0(Vec2db const & xiszero, Vec2d const & y, Vec2
 //#endif
 }
 
+static inline Vec4f wm_pow_case_x0(Vec4fb const & xiszero, Vec4f const & y, Vec4f const & z) {
+    return select(xiszero, select(y < 0.f, infinite_vec<Vec4f>(), select(y == 0.f, Vec4f(1.f), Vec4f(0.f))), z);
+}
+
+
 // ****************************************************************************
 //                pow template, double precision
 // ****************************************************************************
 // Calculate x to the power of y.
 
 // Precision is important here because rounding errors get multiplied by y.
-// The logarithm is calculated with extra precision, and the exponent is 
+// The logarithm is calculated with extra precision, and the exponent is
 // calculated separately.
-// The logarithm is calculated by Pad\E9 approximation with 6'th degree 
+// The logarithm is calculated by Pade approximation with 6'th degree
 // polynomials. A 7'th degree would be preferred for best precision by high y.
 // The alternative method: log(x) = z + z^3*R(z)/S(z), where z = 2(x-1)/(x+1)
 // did not give better precision.
@@ -1319,9 +1524,9 @@ static inline VTYPE pow_template_d(VTYPE const & x0, VTYPE const & y) {
     const double ln2d_hi = 0.693145751953125;           // log(2) in extra precision, high bits
     const double ln2d_lo = 1.42860682030941723212E-6;   // low bits of log(2)
     const double log2e   = VM_LOG2E;                    // 1/log(2)
-    const double pow2_52 = 4503599627370496.0;          // 2^52
+    //const double pow2_52 = 4503599627370496.0;          // 2^52
 
-    // coefficients for Pad\E9 polynomials
+    // coefficients for Pade polynomials
     const double P0logl =  2.0039553499201281259648E1;
     const double P1logl =  5.7112963590585538103336E1;
     const double P2logl =  6.0949667980987787057556E1;
@@ -1340,32 +1545,34 @@ static inline VTYPE pow_template_d(VTYPE const & x0, VTYPE const & y) {
     const double p2  = 1./2.;
     const double p3  = 1./6.;
     const double p4  = 1./24.;
-    const double p5  = 1./120.; 
-    const double p6  = 1./720.; 
-    const double p7  = 1./5040.; 
-    const double p8  = 1./40320.; 
-    const double p9  = 1./362880.; 
-    const double p10 = 1./3628800.; 
-    const double p11 = 1./39916800.; 
-    const double p12 = 1./479001600.; 
-    const double p13 = 1./6227020800.; 
+    const double p5  = 1./120.;
+    const double p6  = 1./720.;
+    const double p7  = 1./5040.;
+    const double p8  = 1./40320.;
+    const double p9  = 1./362880.;
+    const double p10 = 1./3628800.;
+    const double p11 = 1./39916800.;
+    const double p12 = 1./479001600.;
+    const double p13 = 1./6227020800.;
 
     // data vectors
-    VTYPE x, x1, x2;
-    VTYPE px, qx, ef, yr, v, z, z1;
+    VTYPE x, x1, x2;                             // x variable
+    VTYPE px, qx, ef, yr, v;                     // calculation of logarithm
     VTYPE lg, lg1, lg2;
     VTYPE lgerr, x2err;
-    VTYPE e1, e2, e3, ee;
+    VTYPE e1, e2, ee;
+    VTYPE e3, z, z1;                             // calculation of exp and pow
+    VTYPE yodd(0);                               // has sign bit set if y is an odd integer
     // integer vectors
-    ITYPE ei, ej, yodd;
+    ITYPE ei, ej;
     // boolean vectors
-    BVTYPE blend, xzero, xnegative;
-    BVTYPE overflow, underflow, xfinite, yfinite, efinite;
+    BVTYPE blend, xzero, xsign;              // x conditions
+    BVTYPE overflow, underflow, xfinite, yfinite, efinite; // error conditions
 
     // remove sign
     x1 = abs(x0);
 
-    // Separate mantissa from exponent 
+    // Separate mantissa from exponent
     // This gives the mantissa * 0.5
     x  = fraction_2(x1);
 
@@ -1381,7 +1588,7 @@ static inline VTYPE pow_template_d(VTYPE const & x0, VTYPE const & y) {
     px *= x * x2;
     qx = polynomial_6n (x, Q0logl, Q1logl, Q2logl, Q3logl, Q4logl, Q5logl);
     lg1 = px / qx;
- 
+
     // extract exponent
     ef = exponent_f(x1);
     ef = if_add(blend, ef, 1.);                  // conditional add
@@ -1424,7 +1631,8 @@ static inline VTYPE pow_template_d(VTYPE const & x0, VTYPE const & y) {
 
     // contributions to exponent
     ee = e1 + e2 + e3;
-    ei = round_to_int64_limited(ee);
+    //ei = round_to_int64_limited(ee);
+    ei = round_to_int64(ee);
     // biased exponent of result:
     ej = ei + (ITYPE(reinterpret_i(z)) >> 52);
     // check exponent for overflow and underflow
@@ -1439,7 +1647,7 @@ static inline VTYPE pow_template_d(VTYPE const & x0, VTYPE const & y) {
     yfinite   = is_finite(y);
     efinite   = is_finite(ee);
     xzero     = is_zero_or_subnormal(x0);
-    xnegative = x0  < 0.;
+    xsign     = sign_bit(x0);  // sign of x0. include -0.
 
     // check for overflow and underflow
     if (horizontal_or(overflow | underflow)) {
@@ -1452,13 +1660,17 @@ static inline VTYPE pow_template_d(VTYPE const & x0, VTYPE const & y) {
     z = wm_pow_case_x0(xzero, y, z);
     //z = select(xzero, select(y < 0., infinite_vec<VTYPE>(), select(y == 0., VTYPE(1.), VTYPE(0.))), z);
 
-    // check for x < 0. y must be integer
-    if (horizontal_or(xnegative)) {
-        // test if y odd
-        yodd = ITYPE(reinterpret_i(abs(y) + pow2_52)) << 63;     // convert y to integer and shift bit 0 to position of sign bit
-        z1 = z | (x0 & VTYPE(reinterpret_d(yodd)));              // apply sign if y odd
-        z1 = select(y == round(y), z1, nan_vec<VTYPE>(NAN_POW)); // NAN if y not integer
-        z = select(xnegative, z1, z);
+    // check for sign of x (include -0.). y must be integer
+    if (horizontal_or(xsign)) {
+        // test if y is an integer
+        BVTYPE yinteger = y == round(y);
+        // test if y is odd: convert to int and shift bit 0 into position of sign bit.
+        // this will be 0 if overflow
+        yodd = reinterpret_d(round_to_int64(y) << 63);
+        z1 = select(yinteger, z | yodd,    // y is integer. get sign if y is odd
+            select(x0 == 0., z, nan_vec<VTYPE>(NAN_POW)));  // NAN unless x0 == -0.
+        yodd = select(yinteger, yodd, 0.);  // yodd used below. only if y is integer
+        z = select(xsign, z1, z);
     }
 
     // check for range errors
@@ -1467,12 +1679,22 @@ static inline VTYPE pow_template_d(VTYPE const & x0, VTYPE const & y) {
         return z;
     }
 
-    // handle special error cases
-    z = select(yfinite & efinite, z, select(x1 == 1., VTYPE(1.), select((x1 > 1.) ^ sign_bit(y), infinite_vec<VTYPE>(), 0.)));
-    yodd = ITYPE(reinterpret_i(abs(y) + pow2_52)) << 63; // same as above
-    z = select(xfinite, z, select(y == 0., VTYPE(1.), select(y < 0., VTYPE(0.), infinite_vec<VTYPE>() | ( VTYPE(reinterpret_d(yodd)) & x0))));
-    z = select(is_nan(x0), select(is_nan(y), x0 | y, x0), select(is_nan(y), y, z));
-    return z;
+    // handle special error cases: y infinite
+    z1 = select(yfinite & efinite, z,
+        select(x1 == 1., VTYPE(1.),
+            select((x1 > 1.) ^ sign_bit(y), infinite_vec<VTYPE>(), 0.)));
+
+    // handle x infinite
+    z1 = select(xfinite, z1,
+        select(y == 0., VTYPE(1.),
+            select(y < 0., yodd & z,  // 0.0 with the sign of z from above
+                abs(x0) | (x0 & yodd)))); // get sign of x0 only if y is odd integer
+
+    // Always propagate nan:
+    // Deliberately differing from the IEEE-754 standard which has pow(0,nan)=1, and pow(1,nan)=1
+    z1 = select(is_nan(x0)|is_nan(y), x0+y, z1);
+
+    return z1;
 }
 
 
@@ -1530,28 +1752,8 @@ inline Vec8d pow<float>(Vec8d const & x, float const & y) {
     return pow_template_d<Vec8d, Vec8q, Vec8db>(x, (double)y);
 }
 
-// Helper function for power function: insert special values of pow(x,y) when x=0:
-// y<0 -> inf, y=0 -> 1, y>0 -> 0, y=nan -> nan
-static inline Vec16f wm_pow_case_x0(Vec16fb const & xiszero, Vec16f const & y, Vec16f const & z) {
-#if INSTRSET >= 9
-    const __m512i table = Vec16ui(0x85858A00);
-    return _mm512_mask_fixupimm_ps(z, xiszero, y, table, 0);
-#else
-    return select(xiszero, select(y < 0.f, infinite_vec<Vec16f>(), select(y == 0.f, Vec16f(1.f), Vec16f(0.f))), z);
-#endif
-}
-
 #endif // MAX_VECTOR_SIZE >= 512
 
-#if MAX_VECTOR_SIZE >= 256
-static inline Vec8f wm_pow_case_x0(Vec8fb const & xiszero, Vec8f const & y, Vec8f const & z) {
-    return select(xiszero, select(y < 0.f, infinite_vec<Vec8f>(), select(y == 0.f, Vec8f(1.f), Vec8f(0.f))), z);
-}
-#endif
-
-static inline Vec4f wm_pow_case_x0(Vec4fb const & xiszero, Vec4f const & y, Vec4f const & z) {
-    return select(xiszero, select(y < 0.f, infinite_vec<Vec4f>(), select(y == 0.f, Vec4f(1.f), Vec4f(0.f))), z);
-}
 
 // ****************************************************************************
 //                pow template, single precision
@@ -1566,13 +1768,11 @@ template <class VTYPE, class ITYPE, class BVTYPE>
 static inline VTYPE pow_template_f(VTYPE const & x0, VTYPE const & y) {
 
     // define constants
-    const float ln2f_hi  =  0.693359375f;
+    const float ln2f_hi  =  0.693359375f;        // log(2), split in two for extended precision
     const float ln2f_lo  = -2.12194440e-4f;
-    //const float max_expf =  87.3f;
     const float log2e    =  float(VM_LOG2E);     // 1/log(2)
-    const float pow2_23  =  8388608.0f;          // 2^23
 
-    const float P0logf  =  3.3333331174E-1f;
+    const float P0logf  =  3.3333331174E-1f;     // coefficients for logarithm expansion
     const float P1logf  = -2.4999993993E-1f;
     const float P2logf  =  2.0000714765E-1f;
     const float P3logf  = -1.6668057665E-1f;
@@ -1582,30 +1782,30 @@ static inline VTYPE pow_template_f(VTYPE const & x0, VTYPE const & y) {
     const float P7logf  = -1.1514610310E-1f;
     const float P8logf  =  7.0376836292E-2f;
 
-    // Taylor coefficients for exp function, 1/n!
-    const float p2expf   =  1.f/2.f;
+    const float p2expf   =  1.f/2.f;             // coefficients for Taylor expansion of exp
     const float p3expf   =  1.f/6.f;
     const float p4expf   =  1.f/24.f;
-    const float p5expf   =  1.f/120.f; 
-    const float p6expf   =  1.f/720.f; 
-    const float p7expf   =  1.f/5040.f; 
+    const float p5expf   =  1.f/120.f;
+    const float p6expf   =  1.f/720.f;
+    const float p7expf   =  1.f/5040.f;
 
     // data vectors
-    VTYPE x, x1, x2;
-    VTYPE ef, yr, v, z, z1;
-    VTYPE lg, lg1;
-    VTYPE lgerr, x2err;
-    VTYPE e1, e2, e3, ee;
+    VTYPE x, x1, x2;                             // x variable
+    VTYPE ef, e1, e2, e3, ee;                    // exponent
+    VTYPE yr;                                    // remainder
+    VTYPE lg, lg1, lgerr, x2err, v;              // logarithm
+    VTYPE z, z1;                                 // pow(x,y)
+    VTYPE yodd(0);                               // has sign bit set if y is an odd integer
     // integer vectors
-    ITYPE ei, ej, yodd;
+    ITYPE ei, ej;                                // exponent
     // boolean vectors
-    BVTYPE blend, xzero, xnegative;
-    BVTYPE overflow, underflow, xfinite, yfinite, efinite;
+    BVTYPE blend, xzero, xsign;                  // x conditions
+    BVTYPE overflow, underflow, xfinite, yfinite, efinite; // error conditions
 
     // remove sign
     x1 = abs(x0);
 
-    // Separate mantissa from exponent 
+    // Separate mantissa from exponent
     // This gives the mantissa * 0.5
     x  = fraction_2(x1);
 
@@ -1617,8 +1817,8 @@ static inline VTYPE pow_template_f(VTYPE const & x0, VTYPE const & y) {
     x   -= 1.0f;
     x2   = x * x;
     lg1  = polynomial_8(x, P0logf, P1logf, P2logf, P3logf, P4logf, P5logf, P6logf, P7logf, P8logf);
-    lg1 *= x2 * x; 
- 
+    lg1 *= x2 * x;
+
     // extract exponent
     ef = exponent_f(x1);
     ef = if_add(blend, ef, 1.0f);                // conditional add
@@ -1676,7 +1876,7 @@ static inline VTYPE pow_template_f(VTYPE const & x0, VTYPE const & y) {
     efinite   = is_finite(ee);
 
     xzero     = is_zero_or_subnormal(x0);
-    xnegative = x0  < 0.f;
+    xsign     = sign_bit(x0);  // x is negative or -0.
 
     // check for overflow and underflow
     if (horizontal_or(overflow | underflow)) {
@@ -1689,27 +1889,39 @@ static inline VTYPE pow_template_f(VTYPE const & x0, VTYPE const & y) {
     z = wm_pow_case_x0(xzero, y, z);
     //z = select(xzero, select(y < 0.f, infinite_vec<VTYPE>(), select(y == 0.f, VTYPE(1.f), VTYPE(0.f))), z);
 
-    // check for x < 0. y must be integer
-    if (horizontal_or(xnegative)) {
-        // test if y odd
-        yodd = ITYPE(reinterpret_i(abs(y) + pow2_23)) << 31;     // convert y to integer and shift bit 0 to position of sign bit
-        z1 = z | (x0 & VTYPE(reinterpret_f(yodd)));              // apply sign if y odd
-        z1 = select(y == round(y), z1, nan_vec<VTYPE>(NAN_POW)); // NAN if y not integer
-        z = select(xnegative, z1, z);
+    // check for sign of x (include -0.). y must be integer
+    if (horizontal_or(xsign)) {
+        // test if y is an integer
+        BVTYPE yinteger = y == round(y);
+        // test if y is odd: convert to int and shift bit 0 into position of sign bit.
+        // this will be 0 if overflow
+        yodd = reinterpret_f(round_to_int(y) << 31);
+        z1 = select(yinteger, z | yodd,    // y is integer. get sign if y is odd
+            select(x0 == 0.f, z, nan_vec<VTYPE>(NAN_POW)));  // NAN unless x0 == -0.
+        yodd = select(yinteger, yodd, 0);  // yodd used below. only if y is integer
+        z = select(xsign, z1, z);
     }
 
     // check for range errors
     if (horizontal_and(xfinite & yfinite & (efinite | xzero))) {
-        // fast return if no special cases
-        return z;
+        return z;        // fast return if no special cases
     }
 
-    // handle special error cases
-    z = select(yfinite & efinite, z, select(x1 == 1.f, VTYPE(1.f), select((x1 > 1.f) ^ sign_bit(y), infinite_vec<VTYPE>(), 0.f)));
-    yodd = ITYPE(reinterpret_i(abs(y) + pow2_23)) << 31; // same as above
-    z = select(xfinite, z, select(y == 0.f, VTYPE(1.f), select(y < 0.f, VTYPE(0.f), infinite_vec<VTYPE>() | (VTYPE(reinterpret_f(yodd)) & x0))));
-    z = select(is_nan(x0), select(is_nan(y), x0 | y, x0), select(is_nan(y), y, z));
-    return z;
+    // handle special error cases: y infinite
+    z1 = select(yfinite & efinite, z,
+        select(x1 == 1.f, VTYPE(1.f),
+            select((x1 > 1.f) ^ sign_bit(y), infinite_vec<VTYPE>(), 0.f)));
+
+    // handle x infinite
+    z1 = select(xfinite, z1,
+        select(y == 0.f, VTYPE(1.f),
+            select(y < 0.f, yodd & z,  // 0.0 with the sign of z from above
+                abs(x0) | (x0 & yodd)))); // get sign of x0 only if y is odd integer
+
+    // Always propagate nan:
+    // Deliberately differing from the IEEE-754 standard which has pow(0,nan)=1, and pow(1,nan)=1
+    z1 = select(is_nan(x0)|is_nan(y), x0+y, z1);
+    return z1;
 }
 
 //This template is in vectorf128.h to prevent implicit conversion of float y to int when float version is not defined:
@@ -1777,63 +1989,63 @@ template <int a, int b>
 class Power_rational {
 public:
     // overloaded member function for each vector type
-    Vec4f pow(Vec4f const & x) {
+    Vec4f poww(Vec4f const & x) {
         Vec4f y = x;
         // negative x allowed when b odd or a even
-        // (if a is even then either b is odd or a/b can be reduced, 
+        // (if a is even then either b is odd or a/b can be reduced,
         // but we can check a even anyway at no cost to be sure)
         if (a == 0) return 1.f;
         if ((b | ~a) & 1) y = abs(y);
         y = pow(y, float(double(a)/double(b)));
-        if (a & b & 1) y = sign_combine(y, x);          // apply sign if a and b both odd
+        if ((a & 1) && b == 1) y = sign_combine(y, x);  // apply sign if a odd and b = 1
         if ((a ^ b) >= 0) y = select(x == 0.f, 0.f, y); // zero allowed for positive a and b
         return y;
     }
-    Vec2d pow(Vec2d const & x) {
+    Vec2d poww(Vec2d const & x) {
         Vec2d y = x;
         if (a == 0) return 1.;
         if ((b | ~a) & 1) y = abs(y);
         y = pow(y, double((long double)a/(long double)b));
-        if (a & b & 1) y = sign_combine(y, x);
+        if ((a & 1) && b == 1) y = sign_combine(y, x);  // apply sign if a odd and b = 1
         if ((a ^ b) >= 0) y = select(x == 0., 0., y);
         return y;
     }
 #if MAX_VECTOR_SIZE >= 256
-    Vec8f pow(Vec8f const & x) {
+    Vec8f poww(Vec8f const & x) {
         Vec8f y = x;
         if (a == 0) return 1.f;
         if ((b | ~a) & 1) y = abs(y);
         y = pow(y, float(double(a)/double(b)));
-        if (a & b & 1) y = sign_combine(y, x);
+        if ((a & 1) && b == 1) y = sign_combine(y, x);  // apply sign if a odd and b = 1
         if ((a ^ b) >= 0) y = select(x == 0.f, 0.f, y);
         return y;
     }
-    Vec4d pow(Vec4d const & x) {
+    Vec4d poww(Vec4d const & x) {
         Vec4d y = x;
         if (a == 0) return 1.;
         if ((b | ~a) & 1) y = abs(y);
         y = pow(y, double((long double)a/(long double)b));
-        if (a & b & 1) y = sign_combine(y, x);
+        if ((a & 1) && b == 1) y = sign_combine(y, x);  // apply sign if a odd and b = 1
         if ((a ^ b) >= 0) y = select(x == 0., 0., y);
         return y;
     }
 #endif // MAX_VECTOR_SIZE >= 256
 #if MAX_VECTOR_SIZE >= 512
-    Vec16f pow(Vec16f const & x) {
+    Vec16f poww(Vec16f const & x) {
         Vec16f y = x;
         if (a == 0) return 1.f;
         if ((b | ~a) & 1) y = abs(y);
         y = pow(y, float(double(a)/double(b)));
-        if (a & b & 1) y = sign_combine(y, x);
+        if ((a & 1) && b == 1) y = sign_combine(y, x);  // apply sign if a odd and b = 1
         if ((a ^ b) >= 0) y = select(x == 0.f, 0.f, y);
         return y;
     }
-    Vec8d pow(Vec8d const & x) {
+    Vec8d poww(Vec8d const & x) {
         Vec8d y = x;
         if (a == 0) return 1.;
         if ((b | ~a) & 1) y = abs(y);
         y = pow(y, double((long double)a/(long double)b));
-        if (a & b & 1) y = sign_combine(y, x);
+        if ((a & 1) && b == 1) y = sign_combine(y, x);  // apply sign if a odd and b = 1
         if ((a ^ b) >= 0) y = select(x == 0., 0., y);
         return y;
     }
@@ -1845,7 +2057,7 @@ template<int a>
 class Power_rational<a,1> {
 public:
     template<class VTYPE>
-    VTYPE pow(VTYPE const & x) {return pow_n<a>(x);}
+    VTYPE poww(VTYPE const & x) {return pow_n<VTYPE, a>(x);}
 };
 
 // partial specialization for b = 2
@@ -1853,8 +2065,8 @@ template<int a>
 class Power_rational<a,2> {
 public:
     template<class VTYPE>
-    VTYPE pow(VTYPE const & x) {
-        VTYPE y = pow_n<(a > 0 ? a/2 : (a-1)/2)>(x);
+    VTYPE poww(VTYPE const & x) {
+        VTYPE y = pow_n<VTYPE, (a > 0 ? a/2 : (a-1)/2)>(x);
         if (a & 1) y *= sqrt(x);
         return y;
     }
@@ -1865,7 +2077,7 @@ template<>
 class Power_rational<1,2> {
 public:
     template<class VTYPE>
-    VTYPE pow(VTYPE const & x) {        
+    VTYPE poww(VTYPE const & x) {
         return sqrt(x);
     }
 };
@@ -1875,9 +2087,9 @@ template<>
 class Power_rational<-1,2> {
 public:
     template<class VTYPE>
-    VTYPE pow(VTYPE const & x) {        
+    VTYPE poww(VTYPE const & x) {
         // (this is faster than iteration method on modern CPUs)
-        return VTYPE(1.f) / sqrt(x);
+        return VTYPE(1.f) / abs(sqrt(x));
     }
 };
 
@@ -1886,32 +2098,32 @@ template<int a>
 class Power_rational<a,3> {
 public:
     template<class VTYPE>
-    VTYPE pow(VTYPE const & x) {
+    VTYPE poww(VTYPE const & x) {
         VTYPE t;
         switch (a % 3) {
         case -2:
             t = reciprocal_cbrt(x);
             t *= t;
             if (a == -2) return t;
-            t = t / pow_n<(-a-2)/3>(x);
+            t = t / pow_n<VTYPE, (-a-2)/3>(x);
             break;
         case -1:
             t = reciprocal_cbrt(x);
             if (a == -1) return t;
-            t = t / pow_n<(-a-1)/3>(x);
+            t = t / pow_n<VTYPE, (-a-1)/3>(x);
             break;
         case  0:
-            t = pow_n<a/3>(x);
+            t = pow_n<VTYPE, a/3>(x);
             break;
         case  1:
             t = cbrt(x);
             if (a == 1) return t;
-            t = t * pow_n<a/3>(x);
+            t = t * pow_n<VTYPE, a/3>(x);
             break;
         case  2:
             t = square_cbrt(x);
             if (a == 2) return t;
-            t = t * pow_n<a/3>(x);
+            t = t * pow_n<VTYPE, a/3>(x);
             break;
         }
         return t;
@@ -1923,35 +2135,35 @@ template<int a>
 class Power_rational<a,4> {
 public:
     template<class VTYPE>
-    VTYPE pow(VTYPE const & x) {
+    VTYPE poww(VTYPE const & x) {
         VTYPE t, s1, s2;
-        s1 = sqrt(x);
+        s1 = abs(sqrt(x));
         if (a & 1) s2 = sqrt(s1);
         switch (a % 4) {
         case -3:
-            t = s2 / pow_n<1+(-a)/4>(x);
+            t = s2 / pow_n<VTYPE, 1+(-a)/4>(x);
             break;
         case -2:
-            t = s1 / pow_n<1+(-a)/4>(x);
+            t = s1 / pow_n<VTYPE, 1+(-a)/4>(x);
             break;
         case -1:
-            if (a != -1) s2 *= pow_n<(-a)/4>(x);
+            if (a != -1) s2 *= pow_n<VTYPE, (-a)/4>(x);
             t = VTYPE(1.f) / s2;
             break;
         case  0: default:
-            t = pow_n<a/4>(x);
+            t = pow_n<VTYPE, a/4>(x);
             break;
         case  1:
             t = s2;
-            if (a != 1) t *= pow_n<a/4>(x);
+            if (a != 1) t *= pow_n<VTYPE, a/4>(x);
             break;
         case  2:
             t = s1;
-            if (a != 2) t *= pow_n<a/4>(x);
+            if (a != 2) t *= pow_n<VTYPE, a/4>(x);
             break;
         case  3:
             t = s1 * s2;
-            if (a != 3) t *= pow_n<a/4>(x);
+            if (a != 3) t *= pow_n<VTYPE, a/4>(x);
             break;
         }
         return t;
@@ -1963,54 +2175,54 @@ template<int a>
 class Power_rational<a,6> {
 public:
     template<class VTYPE>
-    VTYPE pow(VTYPE const & x) {
-        VTYPE t, s1, s2, s3;
+    VTYPE poww(VTYPE const & x) {
+        VTYPE t, s1;
         switch (a % 6) {
         case -5:
-            t = reciprocal_cbrt(x);
-            t = t * t * sqrt(t);
-            if (a != -5) t /= pow_n<(-a)/6>(x);
+            t = cbrt(sqrt(x)) / x;
+            if (a != -5) t /= pow_n<VTYPE, (-a)/6>(x);
             break;
         case -4:
             t = reciprocal_cbrt(x);
             t *= t;
-            if (a != -4) t /= pow_n<(-a)/6>(x);
+            if (a != -4) t /= pow_n<VTYPE, (-a)/6>(x);
             break;
         case -3:
-            t = pow_n<a/6>(x);
+            t = pow_n<VTYPE, a/6>(x);
             t /= sqrt(x);
             break;
         case -2:
             t = reciprocal_cbrt(x);
-            if (a != -2) t /= pow_n<(-a)/6>(x);
+            if (a != -2) t /= pow_n<VTYPE, (-a)/6>(x);
             break;
         case -1:
-            t = sqrt(reciprocal_cbrt(x));
-            if (a != -1) t /= pow_n<(-a)/6>(x);
+            t = reciprocal_cbrt(sqrt(x));
+            if (a != -1) t /= pow_n<VTYPE, (-a)/6>(x);
             break;
         case  0: default:
-            t = pow_n<a/6>(x);
+            t = pow_n<VTYPE, a/6>(x);
             break;
         case  1:
-            t = sqrt(cbrt(x));
-            if (a != 1) t *= pow_n<a/6>(x);
+            t = cbrt(sqrt(x));
+            if (a != 1) t *= pow_n<VTYPE, a/6>(x);
             break;
         case  2:
             t = cbrt(x);
-            if (a != 2) t *= pow_n<a/6>(x);
+            if (a != 2) t *= pow_n<VTYPE, a/6>(x);
             break;
         case  3:
             t = sqrt(x);
-            if (a != 3) t *= pow_n<a/6>(x);
+            if (a != 3) t *= pow_n<VTYPE, a/6>(x);
             break;
         case  4:
             t = square_cbrt(x);
-            if (a != 4) t *= pow_n<a/6>(x);
+            if (a != 4) t *= pow_n<VTYPE, a/6>(x);
             break;
         case  5:
-            t = cbrt(x);
-            t = t * t * sqrt(t);
-            if (a != 5) t *= pow_n<a/6>(x);
+            s1 = sqrt(x);
+            t = cbrt(s1);
+            t = t*t*s1;
+            if (a != 5) t *= pow_n<VTYPE, a/6>(x);
             break;
         }
         return t;
@@ -2022,65 +2234,65 @@ template<int a>
 class Power_rational<a,8> {
 public:
     template<class VTYPE>
-    VTYPE pow(VTYPE const & x) {
+    VTYPE poww(VTYPE const & x) {
         VTYPE t, s1, s2, s3;
         s1 = sqrt(x);               // x^(1/2)
         if (a & 3) s2 = sqrt(s1);   // x^(1/4)
         if (a & 1) s3 = sqrt(s2);   // x^(1/8)
         switch (a % 8) {
         case -7:
-            t = s3 / pow_n<1+(-a)/8>(x);
+            t = s3 / pow_n<VTYPE, 1+(-a)/8>(x);
             break;
         case -6:
-            t = s2 / pow_n<1+(-a)/8>(x);
+            t = s2 / pow_n<VTYPE, 1+(-a)/8>(x);
             break;
         case -5:
-            t = s3 * (s2 / pow_n<1+(-a)/8>(x));
+            t = s3 * (s2 / pow_n<VTYPE, 1+(-a)/8>(x));
             break;
         case -4:
-            t = s1 / pow_n<1+(-a)/8>(x);
+            t = s1 / pow_n<VTYPE, 1+(-a)/8>(x);
             break;
         case -3:
-            t = s3 * (s1 / pow_n<1+(-a)/8>(x));
+            t = s3 * (s1 / pow_n<VTYPE, 1+(-a)/8>(x));
             break;
         case -2:
-            if (a != -2) s2 *= pow_n<(-a)/8>(x);
+            if (a != -2) s2 *= pow_n<VTYPE, (-a)/8>(x);
             t = VTYPE(1.f) / s2;
             break;
         case -1:
-            if (a != -1) s3 *= pow_n<(-a)/8>(x);
+            if (a != -1) s3 *= pow_n<VTYPE, (-a)/8>(x);
             t = VTYPE(1.f) / s3;
             break;
         case  0: default:
-            t = pow_n<a/8>(x);
+            t = pow_n<VTYPE, a/8>(x);
             break;
         case  1:
             t = s3;
-            if (a != 1) t *= pow_n<a/8>(x);
+            if (a != 1) t *= pow_n<VTYPE, a/8>(x);
             break;
         case  2:
             t = s2;
-            if (a != 2) t *= pow_n<a/8>(x);
+            if (a != 2) t *= pow_n<VTYPE, a/8>(x);
             break;
         case  3:
             t = s2 * s3;
-            if (a != 3) t *= pow_n<a/8>(x);
+            if (a != 3) t *= pow_n<VTYPE, a/8>(x);
             break;
         case  4:
             t = s1;
-            if (a != 4) t *= pow_n<a/8>(x);
+            if (a != 4) t *= pow_n<VTYPE, a/8>(x);
             break;
         case  5:
             t = s1 * s3;
-            if (a != 5) t *= pow_n<a/8>(x);
+            if (a != 5) t *= pow_n<VTYPE, a/8>(x);
             break;
         case  6:
             t = s1 * s2;
-            if (a != 6) t *= pow_n<a/8>(x);
+            if (a != 6) t *= pow_n<VTYPE, a/8>(x);
             break;
         case  7:
             t = s2 * s3;
-            if (a != 7) s1 *= pow_n<a/8>(x);
+            if (a != 7) s1 *= pow_n<VTYPE, a/8>(x);
             t *= s1;
             break;
 
@@ -2090,7 +2302,7 @@ public:
 };
 
 // macro to call template class member function pow
-#define pow_ratio(x, a, b) (Power_rational<(b)<0 ? -(a):(a), (b)<0 ? -(b):(b)> ().pow(x))
+#define pow_ratio(x, a, b) (Power_rational<(b)<0 ? -(a):(a), (b)<0 ? -(b):(b)> ().poww(x))
 
 
 /******************************************************************************
@@ -2099,56 +2311,48 @@ public:
 * These functions return the code hidden in a NAN. The sign bit is ignored
 ******************************************************************************/
 
-static inline Vec4i nan_code(Vec4f const & x) {
-    Vec4i  a = reinterpret_i(x);
-    Vec4ib b = (a & 0x7F800000) == 0x7F800000;   // check if NAN/INF
-    return a & 0x007FFFFF & Vec4i(b);            // isolate NAN code bits
+static inline Vec4ui nan_code(Vec4f const & x) {
+    Vec4ui a = Vec4ui(reinterpret_i(x));
+    Vec4ui const n = 0x007FFFFF;
+    return select(Vec4ib(is_nan(x)), a & n, 0);
 }
 
 // This function returns the code hidden in a NAN. The sign bit is ignored
-static inline Vec2q nan_code(Vec2d const & x) {
-    Vec2q  a = reinterpret_i(x);
-    Vec2q const m = 0x7FF0000000000000;
-    Vec2q const n = 0x000FFFFFFFFFFFFF;
-    Vec2qb b = (a & m) == m;                     // check if NAN/INF
-    return a & n & Vec2q(b);                     // isolate NAN code bits
+static inline Vec2uq nan_code(Vec2d const & x) {
+    Vec2uq a = Vec2uq(reinterpret_i(x));
+    return select(Vec2qb(is_nan(x)), a << 12 >> (12+29), 0);
 }
 
 #if MAX_VECTOR_SIZE >= 256
 
 // This function returns the code hidden in a NAN. The sign bit is ignored
-static inline Vec8i nan_code(Vec8f const & x) {
-    Vec8i  a = reinterpret_i(x);
-    Vec8ib b = (a & 0x7F800000) == 0x7F800000;   // check if NAN/INF
-    return a & 0x007FFFFF & Vec8i(b);            // isolate NAN code bits
+static inline Vec8ui nan_code(Vec8f const & x) {
+    Vec8ui a = Vec8ui(reinterpret_i(x));
+    Vec8ui const n = 0x007FFFFF;
+    return select(Vec8ib(is_nan(x)), a & n, 0);
 }
 
 // This function returns the code hidden in a NAN. The sign bit is ignored
-static inline Vec4q nan_code(Vec4d const & x) {
-    Vec4q  a = reinterpret_i(x);
-    Vec4q const m = 0x7FF0000000000000;
-    Vec4q const n = 0x000FFFFFFFFFFFFF;
-    Vec4qb b = (a & m) == m;                     // check if NAN/INF
-    return a & n & Vec4q(b);                     // isolate NAN code bits
+static inline Vec4uq nan_code(Vec4d const & x) {
+    Vec4uq a = Vec4uq(reinterpret_i(x));
+    return select(Vec4qb(is_nan(x)), a << 12 >> (12+29), 0);
 }
 
-#endif // MAX_VECTOR_SIZE >= 256 
+#endif // MAX_VECTOR_SIZE >= 256
 #if MAX_VECTOR_SIZE >= 512
 
 // This function returns the code hidden in a NAN. The sign bit is ignored
-static inline Vec16i nan_code(Vec16f const & x) {
-    Vec16i  a = Vec16i(reinterpret_i(x));
-    Vec16ib b = (a & 0x7F800000) == 0x7F800000;  // check if NAN/INF
-    return a & 0x007FFFFF & Vec16i(b);           // isolate NAN code bits
+static inline Vec16ui nan_code(Vec16f const & x) {
+    Vec16ui a = Vec16ui(reinterpret_i(x));
+    Vec16ui const n = 0x007FFFFF;
+    return select(Vec16ib(is_nan(x)), a & n, 0);
 }
 
 // This function returns the code hidden in a NAN. The sign bit is ignored
-static inline Vec8q nan_code(Vec8d const & x) {
-    Vec8q  a = Vec8q(reinterpret_i(x));
-    Vec8q const m = 0x7FF0000000000000;
-    Vec8q const n = 0x000FFFFFFFFFFFFF;
-    Vec8qb b = (a & m) == m;                     // check if NAN/INF
-    return a & n & Vec8q(b);                     // isolate NAN code bits
+static inline Vec8uq nan_code(Vec8d const & x) {
+    Vec8uq a = Vec8uq(reinterpret_i(x));
+    //Vec8q const n = 0x000FFFFFFFFFFFFF;
+    return select(Vec8qb(is_nan(x)), a << 12 >> (12+29), 0);
 }
 
 #endif // MAX_VECTOR_SIZE >= 512

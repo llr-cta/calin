@@ -1,34 +1,35 @@
 /***************************  vectormath_common.h   ****************************
 * Author:        Agner Fog
 * Date created:  2014-04-18
-* Last modified: 2016-11-25
-* Version:       1.25
-* Project:       vector classes
+* Last modified: 2019-08-01
+* Version:       1.40.00
+* Project:       vector class library
 * Description:
 * Header file containing common code for inline version of mathematical functions.
 *
 * Theory, methods and inspiration based partially on these sources:
 * > Moshier, Stephen Lloyd Baluk: Methods and programs for mathematical functions.
 *   Ellis Horwood, 1989.
-* > VDT library developed on CERN by Danilo Piparo, Thomas Hauth and
-*   Vincenzo Innocente, 2012, https://svnweb.cern.ch/trac/vdt
+* > VDT library developed on CERN by Danilo Piparo, Thomas Hauth and Vincenzo Innocente,
+*   2012, https://root.cern.ch/doc/v606_/md_math_vdt_ReadMe.html
 * > Cephes math library by Stephen L. Moshier 1992,
 *   http://www.netlib.org/cephes/
 *
 * Calculation methods:
-* Some functions are using Padé approximations f(x) = P(x)/Q(x)
+* Some functions are using Pade approximations f(x) = P(x)/Q(x)
 * Most single precision functions are using Taylor expansions
 *
-* For detailed instructions, see VectorClass.pdf
+* For detailed instructions, see vcl_manual.pdf
 *
-* (c) Copyright 2014-2016 GNU General Public License http://www.gnu.org/licenses
+* (c) Copyright 2014-2019 Agner Fog.
+* Apache License version 2.0 or later.
 ******************************************************************************/
 
 #ifndef VECTORMATH_COMMON_H
 #define VECTORMATH_COMMON_H  1
 
 #ifdef VECTORMATH_LIB_H
-#error conflicting header files: vectormath_lib.h for external math functions, other vectormath_xxx.h for inline math functions
+#error conflicting header files. More than one implementation of mathematical functions included
 #endif
 
 #include <math.h>
@@ -100,49 +101,7 @@ inline Vec16f infinite_vec<Vec16f>() {
 #endif // MAX_VECTOR_SIZE >= 512
 
 
-// template for producing quiet NAN
-template <class VTYPE>
-static inline VTYPE nan_vec(int n = 0x100);
-
-template <>
-inline Vec2d nan_vec<Vec2d>(int n) {
-    return nan2d(n);
-}
-
-template <>
-inline Vec4f nan_vec<Vec4f>(int n) {
-    return nan4f(n);
-}
-
-#if MAX_VECTOR_SIZE >= 256
-
-template <>
-inline Vec4d nan_vec<Vec4d>(int n) {
-    return nan4d(n);
-}
-
-template <>
-inline Vec8f nan_vec<Vec8f>(int n) {
-    return nan8f(n);
-}
-
-#endif // MAX_VECTOR_SIZE >= 256
-
-#if MAX_VECTOR_SIZE >= 512
-
-template <>
-inline Vec8d nan_vec<Vec8d>(int n) {
-    return nan8d(n);
-}
-
-template <>
-inline Vec16f nan_vec<Vec16f>(int n) {
-    return nan16f(n);
-}
-
-#endif // MAX_VECTOR_SIZE >= 512
-
-// Define NAN trace values
+// Define NAN paload values
 #define NAN_LOG 0x101  // logarithm for x<0
 #define NAN_POW 0x102  // negative number raised to non-integer power
 #define NAN_HYP 0x104  // acosh for x<1 and atanh for abs(x)>1
