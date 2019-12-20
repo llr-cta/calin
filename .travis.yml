@@ -229,6 +229,7 @@ script:
           -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX \
           -DCMAKE_CXX_FLAGS=$CXXFLAGS \
           -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -DCALIN_BUILD_ARCH=broadwell \
           -DPYTHON_EXECUTABLE=`which python3` \
           $NO_GEANT4 \
           -DCMAKE_INSTALL_PREFIX=build .. &&
