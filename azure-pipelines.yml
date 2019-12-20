@@ -27,6 +27,8 @@ strategy:
       build_arch: ivybridge
     broadwell:
       build_arch: broadwell
+    skylake-avx512:
+      build_arch: skylake-avx512
 
 variables:
   imageName: 'calin:$(build_arch)'
