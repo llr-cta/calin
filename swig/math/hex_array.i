@@ -27,7 +27,7 @@
 
 %{
 #include "math/hex_array.hpp"
-#include "math/hex_array_simd.hpp"
+/* #include "math/hex_array_simd.hpp" */
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -53,4 +53,4 @@
 %apply float &INOUT { float& x_in_dx_out, float& y_in_dy_out };
 
 %include "math/hex_array.hpp"
-%include "math/hex_array_simd.hpp"
+/* %include "math/hex_array_simd.hpp" */

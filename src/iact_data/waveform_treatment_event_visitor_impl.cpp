@@ -25,7 +25,7 @@
 
 #include <util/memory.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
-#include <math/simd.hpp>
+#include <math/simd_obsolete.hpp>
 
 using namespace calin::iact_data::waveform_treatment_event_visitor;
 using calin::util::memory::safe_aligned_recalloc;
@@ -108,6 +108,7 @@ scalar_analyze_waveforms(const uint16_t*__restrict__ data)
   }
 }
 
+#if 1
 void calin::iact_data::waveform_treatment_event_visitor::
 AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
 avx2_analyze_waveforms(const uint16_t*__restrict__ data)
@@ -891,3 +892,4 @@ avx2_analyze_waveforms_v3(const uint16_t*__restrict__ data)
   throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
 #endif // defined(__AVX2__) and defined(__FMA__)
 }
+#endif

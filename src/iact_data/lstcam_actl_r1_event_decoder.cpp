@@ -29,7 +29,6 @@
 #include <util/file.hpp>
 #include <iact_data/lstcam_actl_event_decoder.hpp>
 #include <iact_data/lstcam_layout.hpp>
-#include <math/simd.hpp>
 #include <provenance/system_info.hpp>
 
 using namespace calin::iact_data::lstcam_actl_event_decoder;

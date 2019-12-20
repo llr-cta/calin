@@ -25,7 +25,7 @@
 #include <util/memory.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
 #include <provenance/system_info.hpp>
-#include <math/simd.hpp>
+#include <math/simd_obsolete.hpp>
 
 using namespace calin::ix::iact_data::waveform_treatment_event_visitor;
 using namespace calin::iact_data::waveform_treatment_event_visitor;

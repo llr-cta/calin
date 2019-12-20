@@ -45,9 +45,9 @@
 #include <utility>
 #include <cstddef>
 
-#if defined(__AVX2__)
-#include <immintrin.h>
-#endif
+// #if defined(__AVX2__)
+// #include <immintrin.h>
+// #endif
 
 #include <calin_global_definitions.hpp>
 #include <math/rng.pb.h>
@@ -477,6 +477,7 @@ private:
   unsigned ndev_ = NSTREAM;
 };
 
+#if 0 // ----- OBSOLETE -----
 #if defined(__AVX2__)
 #define CALIN_HAS_NR3_AVX2_RNGCORE
 #endif
@@ -675,5 +676,6 @@ private:
   unsigned ndev_ = 0;
 #endif
 };
+#endif
 
 } } } // namespace calin::math::rng

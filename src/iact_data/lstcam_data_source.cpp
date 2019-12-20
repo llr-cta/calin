@@ -31,7 +31,6 @@
 #include <iact_data/zfits_data_source.hpp>
 #include <iact_data/lstcam_layout.hpp>
 #include <iact_data/lstcam_actl_event_decoder.hpp>
-#include <math/simd.hpp>
 #include <provenance/system_info.hpp>
 
 using namespace calin::iact_data::lstcam_data_source;

@@ -102,8 +102,8 @@ RNGCore* RNGCore::create_from_proto(const ix::math::rng::RNGCoreData& proto,
       return new NR3RNGCore(proto.nr3_core(), restore_state, created_by, comment);
     case ix::math::rng::RNGCoreData::kNr3SimdEmu4Core:
       return new NR3_EmulateSIMD_RNGCore<4>(proto.nr3_simd_emu4_core(), restore_state);
-    case ix::math::rng::RNGCoreData::kNr3Avx2Core:
-      return new NR3_AVX2_RNGCore(proto.nr3_avx2_core(), restore_state);
+    // case ix::math::rng::RNGCoreData::kNr3Avx2Core:
+      // return new NR3_AVX2_RNGCore(proto.nr3_avx2_core(), restore_state);
     default:
       LOG(ERROR) << "Unrecognised RNG type case : " << proto.core_case();
     case 0:
@@ -671,6 +671,7 @@ void MT19937RNGCore::save_to_proto(ix::math::rng::STLRNGCoreData* data) const
   data->set_state(state.str());
 }
 
+#if 0
 #if defined(CALIN_HAS_NR3_AVX2_RNGCORE)
 void NR3_AVX2_RNGCore::test_cpu() const
 {
@@ -819,6 +820,7 @@ bulk_uniform_uint64_with_mask(void* buffer, std::size_t nbytes, uint64_t mask)
   throw std::runtime_error("NR3_AVX2_RNGCore: AVX2 not present at compile time.");
 #endif
 }
+#endif
 
 #if 0
 

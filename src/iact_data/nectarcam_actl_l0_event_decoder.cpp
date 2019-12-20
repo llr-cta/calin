@@ -46,7 +46,6 @@ inline void *align( std::size_t alignment, std::size_t size,
 #include <iact_data/nectarcam_actl_event_decoder.hpp>
 #include <iact_data/nectarcam_layout.hpp>
 #include <iact_data/nectarcam_configuration.hpp>
-#include <math/simd.hpp>
 #include <provenance/system_info.hpp>
 
 using namespace calin::iact_data::nectarcam_actl_event_decoder;

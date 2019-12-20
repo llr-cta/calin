@@ -110,11 +110,11 @@ Eigen::VectorXd calin::math::lomb_scargle::
 periodogram(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   double freq_lo, double freq_hi, double delta_freq)
 {
-#if defined(__AVX2__) && defined(__FMA__)
-  const auto* sysinfo = calin::provenance::system_info::the_host_info();
-  if(sysinfo->cpu_has_avx2() and sysinfo->cpu_has_fma3())
-    return periodogram_avx2(xi, ti, freq_lo, freq_hi, delta_freq);
-#endif
+// #if defined(__AVX2__) && defined(__FMA__)
+//   const auto* sysinfo = calin::provenance::system_info::the_host_info();
+//   if(sysinfo->cpu_has_avx2() and sysinfo->cpu_has_fma3())
+//     return periodogram_avx2(xi, ti, freq_lo, freq_hi, delta_freq);
+// #endif
   return periodogram_fast(xi, ti, freq_lo, freq_hi, delta_freq);
 }
 
@@ -207,6 +207,7 @@ frequencies(const Eigen::VectorXd& periodogram, double freq_lo, double delta_fre
   return freq;
 }
 
+#if 0 // OBSOLETE
 #if defined(__AVX2__) && defined(__FMA__)
 
 #include <immintrin.h>
@@ -571,4 +572,5 @@ periodogram_avx2_float(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   throw std::runtime_error("periodogram_avx2_float: AVX2 support was not available at compile time");
 }
 
+#endif
 #endif

@@ -28,8 +28,8 @@
 #include <iact_data/functional_event_visitor.hpp>
 #include <diagnostics/waveform.pb.h>
 #include <math/histogram.hpp>
-#include <math/simd.hpp>
-#include <math/fft_simd.hpp>
+// #include <math/simd.hpp>
+// #include <math/fft_simd.hpp>
 
 namespace calin { namespace diagnostics { namespace waveform {
 
@@ -105,6 +105,7 @@ protected:
 #endif
 };
 
+#if 0
 class AVX2_Unroll8_WaveformStatsParallelVisitor:
   public iact_data::event_visitor::ParallelEventVisitor
 {
@@ -183,6 +184,7 @@ protected:
   bool calculate_psd_ = false;
   bool calculate_covariance_ = false;
 };
+#endif
 
 class WaveformPSDVisitor:
   public iact_data::event_visitor::TelescopeEventVisitor

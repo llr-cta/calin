@@ -29,13 +29,11 @@
 
 #include <util/memory.hpp>
 #include <math/rng.hpp>
-#include <math/simd.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
 #include <provenance/system_info.hpp>
 
 using calin::math::rng::NR3_AVX2_RNGCore;
 using calin::util::memory::safe_aligned_calloc;
-using namespace calin::math::simd;
 using namespace calin::iact_data::waveform_treatment_event_visitor;
 using namespace calin::ix::iact_data::waveform_treatment_event_visitor;
 

@@ -25,7 +25,7 @@
 #include <string>
 
 #include <iact_data/event_visitor.hpp>
-#include <math/simd.hpp>
+#include <math/simd_obsolete.hpp>
 #include <util/vcl.hpp>
 #include <util/log.hpp>
 #include <iact_data/waveform_treatment_event_visitor.pb.h>
