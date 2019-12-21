@@ -32,17 +32,19 @@ using namespace calin::simulation::atmosphere;
 using calin::math::accumulator::RecommendedAccumulator;
 using namespace calin::math::special;
 
-//                             _              __  __           _      _
-//     /\                     | |            |  \/  |         | |    | |
-//    /  \   _ __   __ _ _   _| | __ _ _ __  | \  / | ___   __| | ___| |
-//   / /\ \ | '_ \ / _` | | | | |/ _` | '__| | |\/| |/ _ \ / _` |/ _ \ |
-//  / ____ \| | | | (_| | |_| | | (_| | |    | |  | | (_) | (_| |  __/ |
-// /_/    \_\_| |_|\__, |\__,_|_|\__,_|_|    |_|  |_|\___/ \__,_|\___|_|
-//                  __/ |
-//                 |___/
+/*
+                                _              __  __           _      _
+        /\                     | |            |  \/  |         | |    | |
+       /  \   _ __   __ _ _   _| | __ _ _ __  | \  / | ___   __| | ___| |
+      / /\ \ | '_ \ / _` | | | | |/ _` | '__| | |\/| |/ _ \ / _` |/ _ \ |
+     / ____ \| | | | (_| | |_| | | (_| | |    | |  | | (_) | (_| |  __/ |
+    /_/    \_\_| |_|\__, |\__,_|_|\__,_|_|    |_|  |_|\___/ \__,_|\___|_|
+                     __/ |
+                    |___/
 
-// The angular model consists of two terms in sin_i, cos_i, sin_r and cos2_r
-// that can be computed for rays without using trignometric functions
+    The angular model consists of two terms in sin_i, cos_i, sin_r and cos2_r
+    that can be computed for rays without using trignometric functions
+*/
 
 namespace {
   template<typename R>
@@ -162,14 +164,16 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
   Atmosphere(), levels_(levels), zobs_(obs_levels),
   high_accuracy_mode_(config.high_accuracy_mode())
 {
-  //          _                             _
-  //     /\  | |                           | |
-  //    /  \ | |_ _ __ ___   ___  ___ _ __ | |__   ___ _ __ ___
-  //   / /\ \| __| '_ ` _ \ / _ \/ __| '_ \| '_ \ / _ \ '__/ _ \
-  //  / ____ \ |_| | | | | | (_) \__ \ |_) | | | |  __/ | |  __/
-  // /_/    \_\__|_| |_| |_|\___/|___/ .__/|_| |_|\___|_|  \___|
-  //                                 | |
-  //                                 |_|
+  /*
+               _                             _
+          /\  | |                           | |
+         /  \ | |_ _ __ ___   ___  ___ _ __ | |__   ___ _ __ ___
+        / /\ \| __| '_ ` _ \ / _ \/ __| '_ \| '_ \ / _ \ '__/ _ \
+       / ____ \ |_| | | | | | (_) \__ \ |_) | | | |  __/ | |  __/
+      /_/    \_\__|_| |_| |_|\___/|___/ .__/|_| |_|\___|_|  \___|
+                                      | |
+                                      |_|
+  */
 
   std::vector<double> v(levels.size());
   std::transform(levels.begin(), levels.end(), v.begin(), [](const Level& l){return l.z;});
@@ -193,26 +197,28 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
   std::transform(levels.begin(), levels.end(), v.begin(), [](const Level& l){return std::log(l.nmo);});
   s_->add_spline(v, "refractive index minus one [ln(1)]");
 
-  //  _____       _ _   _       _           _   _
-  // |_   _|     (_) | (_)     (_)         | | (_)
-  //   | |  _ __  _| |_ _  __ _ _ ___  __ _| |_ _  ___  _ __
-  //   | | | '_ \| | __| |/ _` | / __|/ _` | __| |/ _ \| '_ \
-  //  _| |_| | | | | |_| | (_| | \__ \ (_| | |_| | (_) | | | |
-  // |_____|_| |_|_|\__|_|\__,_|_|___/\__,_|\__|_|\___/|_| |_|
-  //
+  /*
+       _____       _ _   _       _           _   _
+      |_   _|     (_) | (_)     (_)         | | (_)
+        | |  _ __  _| |_ _  __ _ _ ___  __ _| |_ _  ___  _ __
+        | | | '_ \| | __| |/ _` | / __|/ _` | __| |/ _ \| '_ \
+       _| |_| | | | | |_| | (_| | \__ \ (_| | |_| | (_) | | | |
+      |_____|_| |_|_|\__|_|\__,_|_|___/\__,_|\__|_|\___/|_| |_|
 
-  // Calculate the effects of refraction by integrating the path of rays from
-  // various levels in the atmosphere. We use a matrix of test rays that have
-  // predefined zenith angles at each of the atmospheric layers, but we track
-  // them all from the top of the atmosphere - we use Snell's law to arrange
-  // that they all have correct zenith angle at their prescribed layer. We
-  // record the position and time when each ray passes its origin layer in the
-  // atmpsohere (test_ray_emi_x_ and test_ray_emi_ct_) and when each of them
-  // passes each of the ground layers (test_ray_obs_x_ and test_ray_obs_ct_).
 
-  // We track all rays from the top of the atmosphere to the bottom so that
-  // the resulting splines are smooth - otherwise we would potentially have
-  // problems around each observation level.
+      Calculate the effects of refraction by integrating the path of rays from
+      various levels in the atmosphere. We use a matrix of test rays that have
+      predefined zenith angles at each of the atmospheric layers, but we track
+      them all from the top of the atmosphere - we use Snell's law to arrange
+      that they all have correct zenith angle at their prescribed layer. We
+      record the position and time when each ray passes its origin layer in the
+      atmpsohere (test_ray_emi_x_ and test_ray_emi_ct_) and when each of them
+      passes each of the ground layers (test_ray_obs_x_ and test_ray_obs_ct_).
+
+      We track all rays from the top of the atmosphere to the bottom so that
+      the resulting splines are smooth - otherwise we would potentially have
+      problems around each observation level.
+  */
 
   std::vector<double> zn0 = { 0, config.zn_reference() };
   for(auto zn : config.zn_optimize()) {
@@ -288,17 +294,20 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
   n += 1.0;
   double dz = std::min(dz_max, dzn*n*tan_znref_inv/std::abs(dn_dz));
 
-  //  _____       _                       _   _
-  // |_   _|     | |                     | | (_)
-  //   | |  _ __ | |_ ___  __ _ _ __ __ _| |_ _  ___  _ __
-  //   | | | '_ \| __/ _ \/ _` | '__/ _` | __| |/ _ \| '_ \
-  //  _| |_| | | | ||  __/ (_| | | | (_| | |_| | (_) | | | |
-  // |_____|_| |_|\__\___|\__, |_|  \__,_|\__|_|\___/|_| |_|
-  //                       __/ |
-  //                      |___/
+  /*
+       _____       _                       _   _
+      |_   _|     | |                     | | (_)
+        | |  _ __ | |_ ___  __ _ _ __ __ _| |_ _  ___  _ __
+        | | | '_ \| __/ _ \/ _` | '__/ _` | __| |/ _ \| '_ \
+       _| |_| | | | ||  __/ (_| | | | (_| | |_| | (_) | | | |
+      |_____|_| |_|\__\___|\__, |_|  \__,_|\__|_|\___/|_| |_|
+                            __/ |
+                           |___/
 
-  // Integrate all test ray paths from top of atmosphere (x=ct=0) to bottom
-  // recording positions at each atmospheric and observation level
+      Integrate all test ray paths from top of atmosphere (x=ct=0) to bottom
+      recording positions at each atmospheric and observation level
+  */
+
   int iobs = zobs_.size()-1;
   for(unsigned ilevel=levels.size()-1;ilevel>0;ilevel--)
   {
@@ -365,13 +374,15 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
     test_ray_emi_ct_(0,iangle) = t[0][iangle].total();
   }
 
-  //   _____ _                   _____                 _ _
-  //  / ____| |                 |  __ \               | | |
-  // | (___ | |_ ___  _ __ ___  | |__) |___  ___ _   _| | |_ ___
-  //  \___ \| __/ _ \| '__/ _ \ |  _  // _ \/ __| | | | | __/ __|
-  //  ____) | || (_) | | |  __/ | | \ \  __/\__ \ |_| | | |_\__ \
-  // |_____/ \__\___/|_|  \___| |_|  \_\___||___/\__,_|_|\__|___/
-  //
+  /*
+        _____ _                   _____                 _ _
+       / ____| |                 |  __ \               | | |
+      | (___ | |_ ___  _ __ ___  | |__) |___  ___ _   _| | |_ ___
+       \___ \| __/ _ \| '__/ _ \ |  _  // _ \/ __| | | | | __/ __|
+       ____) | || (_) | | |  __/ | | \ \  __/\__ \ |_| | | |_\__ \
+      |_____/ \__\___/|_|  \___| |_|  \_\___||___/\__,_|_|\__|___/
+
+  */
 
   test_ray_emi_zn_ = calin::std_to_eigenvec(zn0);
   test_ray_emi_z_ = calin::std_to_eigenvec(s_->xknot());
@@ -401,25 +412,27 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
   }
   s_->add_spline(v, "vertical ct correction (boa) [cm]");
 
-  //  ______ _ _                                _              __  __           _      _
-  // |  ____(_) |       /\                     | |            |  \/  |         | |    | |
-  // | |__   _| |_     /  \   _ __   __ _ _   _| | __ _ _ __  | \  / | ___   __| | ___| |
-  // |  __| | | __|   / /\ \ | '_ \ / _` | | | | |/ _` | '__| | |\/| |/ _ \ / _` |/ _ \ |
-  // | |    | | |_   / ____ \| | | | (_| | |_| | | (_| | |    | |  | | (_) | (_| |  __/ |
-  // |_|    |_|\__| /_/    \_\_| |_|\__, |\__,_|_|\__,_|_|    |_|  |_|\___/ \__,_|\___|_|
-  //                                 __/ |
-  //                                |___/
+  /*
+       ______ _ _                                _              __  __           _      _
+      |  ____(_) |       /\                     | |            |  \/  |         | |    | |
+      | |__   _| |_     /  \   _ __   __ _ _   _| | __ _ _ __  | \  / | ___   __| | ___| |
+      |  __| | | __|   / /\ \ | '_ \ / _` | | | | |/ _` | '__| | |\/| |/ _ \ / _` |/ _ \ |
+      | |    | | |_   / ____ \| | | | (_| | |_| | | (_| | |    | |  | | (_) | (_| |  __/ |
+      |_|    |_|\__| /_/    \_\_| |_|\__, |\__,_|_|\__,_|_|    |_|  |_|\___/ \__,_|\___|_|
+                                      __/ |
+                                     |___/
 
-  // Five splines per observarion level : (4,5,6,7,8), (9,10,11,12,13) etc...
+      Five splines per observarion level : (4,5,6,7,8), (9,10,11,12,13) etc...
 
-  // 4 + iobs*5 : vertical time correction to observation level
-  // 5 + iobs*5 : position (x) correction "a" coefficient - term in tan_i
-  // 6 + iobs*5 : position (x) correction "b" coefficient - term in tan^3_i
-  // 5 + iobs*5 : time (ct) correction "a" coefficient - term in tan_i
-  // 6 + iobs*5 : time (ct) correction "b" coefficient - term in tan^3_i
+      4 + iobs*5 : vertical time correction to observation level
+      5 + iobs*5 : position (x) correction "a" coefficient - term in tan_i
+      6 + iobs*5 : position (x) correction "b" coefficient - term in tan^3_i
+      5 + iobs*5 : time (ct) correction "a" coefficient - term in tan_i
+      6 + iobs*5 : time (ct) correction "b" coefficient - term in tan^3_i
 
-  // In "normal" mode only the first two are used, as the ratio of b/a is fixed
-  // and the ct and x corrections are both derived from the "a_x" spline
+      In "normal" mode only the first two are used, as the ratio of b/a is fixed
+      and the ct and x corrections are both derived from the "a_x" spline
+  */
 
   for(unsigned iobs=0; iobs<zobs_.size(); iobs++) {
     // Spline 4,9,14 ... vertical propagation time correction to obs level
@@ -489,13 +502,15 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
       vb_ct[ilevel] = b_ct;
     }
 
-    //   _____ _                   __  __           _      _    _____            __  __
-    //  / ____| |                 |  \/  |         | |    | |  / ____|          / _|/ _|
-    // | (___ | |_ ___  _ __ ___  | \  / | ___   __| | ___| | | |     ___   ___| |_| |_ ___
-    //  \___ \| __/ _ \| '__/ _ \ | |\/| |/ _ \ / _` |/ _ \ | | |    / _ \ / _ \  _|  _/ __|
-    //  ____) | || (_) | | |  __/ | |  | | (_) | (_| |  __/ | | |___| (_) |  __/ | | | \__ \
-    // |_____/ \__\___/|_|  \___| |_|  |_|\___/ \__,_|\___|_|  \_____\___/ \___|_| |_| |___/
-    //
+    /*
+          _____ _                   __  __           _      _    _____            __  __
+         / ____| |                 |  \/  |         | |    | |  / ____|          / _|/ _|
+        | (___ | |_ ___  _ __ ___  | \  / | ___   __| | ___| | | |     ___   ___| |_| |_ ___
+         \___ \| __/ _ \| '__/ _ \ | |\/| |/ _ \ / _` |/ _ \ | | |    / _ \ / _ \  _|  _/ __|
+         ____) | || (_) | | |  __/ | |  | | (_) | (_| |  __/ | | |___| (_) |  __/ | | | \__ \
+        |_____/ \__\___/|_|  \___| |_|  |_|\___/ \__,_|\___|_|  \_____\___/ \___|_| |_| |___/
+
+    */
 
     s_->add_spline(v, "vertical ct correction (iobs=" + std::to_string(iobs) + ") [cm]");
     s_->add_spline(va_x, "refraction a_x coeff (iobs=" + std::to_string(iobs) + ") [cm]");
@@ -504,13 +519,15 @@ const calin::ix::simulation::atmosphere::LayeredRefractiveAtmosphereConfig& conf
     s_->add_spline(vb_ct, "refraction b_ct coeff (iobs=" + std::to_string(iobs) + ") [cm]");
   }
 
-  //  ______          _             _         __  __           _      _
-  // |  ____|        | |           | |       |  \/  |         | |    | |
-  // | |____   ____ _| |_   _  __ _| |_ ___  | \  / | ___   __| | ___| |
-  // |  __\ \ / / _` | | | | |/ _` | __/ _ \ | |\/| |/ _ \ / _` |/ _ \ |
-  // | |___\ V / (_| | | |_| | (_| | ||  __/ | |  | | (_) | (_| |  __/ |
-  // |______\_/ \__,_|_|\__,_|\__,_|\__\___| |_|  |_|\___/ \__,_|\___|_|
-  //
+  /*
+       ______          _             _         __  __           _      _
+      |  ____|        | |           | |       |  \/  |         | |    | |
+      | |____   ____ _| |_   _  __ _| |_ ___  | \  / | ___   __| | ___| |
+      |  __\ \ / / _` | | | | |/ _` | __/ _ \ | |\/| |/ _ \ / _` |/ _ \ |
+      | |___\ V / (_| | | |_| | (_| | ||  __/ | |  | | (_) | (_| |  __/ |
+      |______\_/ \__,_|_|\__,_|\__,_|\__\___| |_|  |_|\___/ \__,_|\___|_|
+
+  */
 
   model_ray_obs_x_.resize(zobs_.size(), { levels.size(),zn0.size() });
   model_ray_obs_ct_.resize(zobs_.size(), { levels.size(),zn0.size() });
