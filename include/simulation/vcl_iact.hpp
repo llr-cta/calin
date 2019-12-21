@@ -39,25 +39,25 @@
 namespace calin { namespace simulation { namespace vcl_iact {
 
 template<typename VCLArchitecture> class VCLIACTTrackVisitor:
-  public VCLArchitecture, public calin::simulation::tracker::TrackVisitor
+  public calin::simulation::tracker::TrackVisitor
 {
 public:
 #ifndef SWIG
-  using typename VCLArchitecture::uint32_vt;
-  using typename VCLArchitecture::int32_vt;
-  using typename VCLArchitecture::uint64_vt;
-  using typename VCLArchitecture::int64_vt;
-  using typename VCLArchitecture::float_vt;
-  using typename VCLArchitecture::double_vt;
-  using typename VCLArchitecture::uint64_bvt;
-  using typename VCLArchitecture::float_bvt;
-  using typename VCLArchitecture::double_bvt;
-  using typename VCLArchitecture::Vector3f_vt;
-  using typename VCLArchitecture::Vector3d_vt;
-  using typename VCLArchitecture::float_real;
-  using typename VCLArchitecture::double_real;
-  using typename VCLArchitecture::float_at;
-  using typename VCLArchitecture::double_at;
+  using uint32_vt  = typename VCLArchitecture::uint32_vt;
+  using int32_vt   = typename VCLArchitecture::int32_vt;
+  using uint64_vt  = typename VCLArchitecture::uint64_vt;
+  using int64_vt   = typename VCLArchitecture::int64_vt;
+  using float_vt   = typename VCLArchitecture::float_vt;
+  using double_vt  = typename VCLArchitecture::double_vt;
+  using uint64_bvt  = typename VCLArchitecture::uint64_bvt;
+  using float_bvt   = typename VCLArchitecture::float_bvt;
+  using double_bvt  = typename VCLArchitecture::double_bvt;
+  using Vector3f_vt = typename VCLArchitecture::Vector3f_vt;
+  using Vector3d_vt = typename VCLArchitecture::Vector3d_vt;
+  using float_real  = typename VCLArchitecture::float_real;
+  using double_real = typename VCLArchitecture::double_real;
+  using float_at    = typename VCLArchitecture::float_at;
+  using double_at   = typename VCLArchitecture::double_at;
 #endif // not defined SWIG
 
   VCLIACTTrackVisitor(calin::simulation::atmosphere::LayeredRefractiveAtmosphere* atm,
@@ -147,7 +147,7 @@ VCLIACTTrackVisitor(
     const calin::ix::simulation::vcl_iact::VCLIACTConfiguration& config,
     calin::math::rng::VCLRNG<VCLArchitecture>* rng,
     bool adopt_atm, bool adopt_rng):
-  VCLArchitecture(), calin::simulation::tracker::TrackVisitor(),
+  calin::simulation::tracker::TrackVisitor(),
   atm_(atm), adopt_atm_(adopt_atm),
   rng_(rng ? rng : new calin::math::rng::VCLRNG<VCLArchitecture>()),
   adopt_rng_(rng ? adopt_rng : true),
