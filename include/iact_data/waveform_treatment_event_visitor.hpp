@@ -362,7 +362,7 @@ public:
         max_q_h = vcl::select(q_bigger_than_max, q_h, max_q_h);
         max_q_h_index = vcl::select(q_bigger_than_max, isamp_win_begin, max_q_h_index);
 
-        if(bkg_window_0_ == isamp_win_begin) {
+        if(bkg_window_0_ == int(isamp_win_begin)) {
           q_l.store(chan_bkg_win_sum_ + ichan_block*2*num_int32);
           q_h.store(chan_bkg_win_sum_ + ichan_block*2*num_int32 + num_int32);
         }

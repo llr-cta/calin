@@ -395,7 +395,7 @@ void PMTSimTwoPopulation::recalc_total_gain_and_p0()
   total_gain_ = 1;
   p0_         = 0;
 
-  for(int istage=1; istage<config_.num_stage(); istage++)
+  for(unsigned istage=1; istage<config_.num_stage(); istage++)
   {
     total_gain_ *= stage_n_gain_;
     p0_ = stage_p0(p0_, stage_n_gain_, config_.stage_n_gain_rms_frac());
@@ -468,7 +468,7 @@ do_over:
 
 unsigned PMTSimTwoPopulation::stage_n_new(unsigned n) const
 {
-  int istage = 1;
+  unsigned istage = 1;
 
   if((config_.num_stage()-1) % 2 == 1) {
     unsigned n_in = n;
@@ -505,7 +505,7 @@ unsigned PMTSimTwoPopulation::stage_n_new(unsigned n) const
 
 unsigned PMTSimTwoPopulation::stage_n_old(unsigned n) const
 {
-  for(int istage=1; istage<config_.num_stage(); istage++)
+  for(unsigned istage=1; istage<config_.num_stage(); istage++)
   {
     double nmean = 0;
     for(unsigned i = 0; i<n;i++) {
@@ -519,7 +519,7 @@ unsigned PMTSimTwoPopulation::stage_n_old(unsigned n) const
 
 unsigned PMTSimTwoPopulation::stage_n_poisson(unsigned n) const
 {
-  for(int istage=1; istage<config_.num_stage(); istage++)
+  for(unsigned istage=1; istage<config_.num_stage(); istage++)
   {
     n = rng_->poisson(double(n)*stage_n_gain_);
     if(n==0)break;
@@ -792,7 +792,7 @@ PMTSimTwoPopulation::calc_pmf_prescott(unsigned nstage, double precision, bool l
   if(nstage == 0)nstage = config_.num_stage();
 
   std::vector<double> pk { 0.0, 1.0 };
-  for(int ik=1;ik<nstage;ik++)
+  for(unsigned ik=1;ik<nstage;ik++)
   {
     pk = stage_pmf(pk, stage_n_gain_, config_.stage_n_gain_rms_frac(), precision);
 
