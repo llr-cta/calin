@@ -24,14 +24,10 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 	hessian.cpp brent.cpp
 	log_quadratic_spline_pdf_1d.cpp covariance_calc.cpp
 	special.cpp hex_array.cpp hex_array_vvv.cpp
-	#hex_array_simd.cpp
 	vector3d_util.cpp ray.cpp
-	#vs_vec3d_obsolete.cpp# vs_vec4d_obsolete.cpp vs_particle_obsolete.cpp
 	rng.cpp fftw_util.cpp healpix_array.cpp position_generator.cpp
 	direction_generator.cpp ray_generator.cpp data_modeling.cpp m_estimate.cpp
 	regular_grid.cpp lomb_scargle.cpp
-	simd_obsolete.cpp 
-	#fft_simd.cpp
 	b_spline.cpp
 	spline_interpolation.cpp least_squares.cpp)
 

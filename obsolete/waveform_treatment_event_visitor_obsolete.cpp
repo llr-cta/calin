@@ -179,3 +179,77 @@ visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
   scalar_analyze_waveforms(data);
   return true;
 }
+
+#if 0
+AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
+~AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor()
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  free(samples_);
+  free(q_l_);
+  free(q_u_);
+  free(qt_l_);
+  free(qt_u_);
+#else
+  // throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
+#endif
+}
+
+AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor*
+AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::new_sub_visitor(
+  const std::map<ParallelEventVisitor*,ParallelEventVisitor*>&
+    antecedent_visitors)
+{
+  return new AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor(config_);
+}
+
+bool AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
+visit_telescope_run(const TelescopeRunConfiguration* run_config,
+  EventLifetimeManager* event_lifetime_manager)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  bool old_nsamp = nsamp_;
+  bool good = SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config, event_lifetime_manager);
+  if(nsamp_!=old_nsamp) {
+    auto* host_info = calin::provenance::system_info::the_host_info();
+    const unsigned nv_samp = (nsamp_+15)/16;
+    const unsigned nv_block = nv_samp*16;
+    safe_aligned_recalloc(samples_, nv_block, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(q_l_, nsamp_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(q_u_, nsamp_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(qt_l_, nsamp_, host_info->log2_simd_vec_size());
+    safe_aligned_recalloc(qt_u_, nsamp_, host_info->log2_simd_vec_size());
+
+    qt_l_[0] = qt_u_[0] = _mm256_setzero_si256();
+  }
+  return good;
+#else
+  throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
+#endif
+}
+
+bool AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
+visit_telescope_event(uint64_t seq_index,
+  calin::ix::iact_data::telescope_event::TelescopeEvent* event)
+{
+#if defined(__AVX2__) and defined(__FMA__)
+  const Waveforms* wf = nullptr;
+  if(treat_high_gain_) {
+    if(event->has_high_gain_image() and
+        event->high_gain_image().has_camera_waveforms()) {
+      wf = &event->high_gain_image().camera_waveforms();
+    }
+  } else if(event->has_low_gain_image() and
+      event->low_gain_image().has_camera_waveforms()) {
+    wf = &event->low_gain_image().camera_waveforms();
+  }
+  if(wf == nullptr)return true;
+  const uint16_t* data = reinterpret_cast<const uint16_t*>(
+    wf->raw_samples_array().data());
+  avx2_analyze_waveforms(data);
+  return true;
+#else
+  throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
+#endif
+}
+#endif
