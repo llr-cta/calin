@@ -348,7 +348,7 @@ namespace {
   {
     event_value.resize(event_index.size());
 
-    for(unsigned irange=0, iindex=0;irange<rle.count_size();irange++) {
+    for(unsigned irange=0, iindex=0;irange<unsigned(rle.count_size());irange++) {
       uint64_t count = rle.count(irange);
       bool value =  rle.value(irange);
       while(count--) {
@@ -376,7 +376,7 @@ namespace {
     event_has.resize(event_index.size());
     event_val.resize(event_index.size());
 
-    for(unsigned irange=0, iindex=0;irange<has_rle.count_size();irange++) {
+    for(unsigned irange=0, iindex=0;irange<unsigned(has_rle.count_size());irange++) {
       uint64_t count = has_rle.count(irange);
       bool has = has_rle.value(irange);
       while(count--) {
@@ -384,7 +384,7 @@ namespace {
       }
     }
 
-    for(unsigned irange=0, iindex=0;irange<val_rle.count_size();irange++) {
+    for(unsigned irange=0, iindex=0;irange<unsigned(val_rle.count_size());irange++) {
       uint64_t count = val_rle.count(irange);
       int64_t val = val_rle.value(irange);
       while(count) {

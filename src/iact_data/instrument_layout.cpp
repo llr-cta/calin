@@ -188,7 +188,7 @@ calin::iact_data::instrument_layout::reduce_camera_channels(
   double min_y = 0;
   double max_y = 0;
   for(unsigned i=0;i<channel_id.size();++i) {
-    if(channel_id[i] >= int(in.channel_size())) {
+    if(channel_id[i] >= unsigned(in.channel_size())) {
       throw std::runtime_error("Channel ID out of range: " +
         std::to_string(channel_id[i]));
     }
@@ -287,7 +287,7 @@ calin::iact_data::instrument_layout::reduce_camera_modules(
   std::vector<unsigned> channel_id;
 
   for(unsigned i=0;i<module_id.size();++i) {
-    if(module_id[i] >= int(in.module_size())) {
+    if(module_id[i] >= unsigned(in.module_size())) {
       throw std::runtime_error("Module ID out of range: " +
         std::to_string(module_id[i]));
     }
@@ -353,7 +353,7 @@ calin::iact_data::instrument_layout::channel_outline(
   std::vector<unsigned> camera_grid_ids;
   std::vector<bool> channel_ids_selected(camera_layout.channel_size(), false);
   for(auto ichan : channel_id) {
-    if(ichan >= int(camera_layout.channel_size())) {
+    if(ichan >= unsigned(camera_layout.channel_size())) {
       delete grid;
       throw std::runtime_error("Channel ID out of range: "
         + std::to_string(ichan));
