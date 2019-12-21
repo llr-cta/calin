@@ -25,7 +25,6 @@
 #include <util/memory.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
 #include <provenance/system_info.hpp>
-#include <math/simd_obsolete.hpp>
 
 using namespace calin::ix::iact_data::waveform_treatment_event_visitor;
 using namespace calin::iact_data::waveform_treatment_event_visitor;
@@ -181,6 +180,7 @@ visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
   return true;
 }
 
+#if 0
 AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor::
 ~AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor()
 {
@@ -252,3 +252,4 @@ visit_telescope_event(uint64_t seq_index,
   throw std::runtime_error("AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor: AVX2 or FMA not available at compile time");
 #endif
 }
+#endif
