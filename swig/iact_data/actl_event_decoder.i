@@ -57,6 +57,15 @@
 %ignore get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena);
 
 %include <iact_data/actl_event_decoder.hpp>
+
+%import <pattern/delegation.hpp>
+%template (DelegatorACTL_R1_CameraEventDecoder)
+  calin::pattern::delegation::Delegator<
+    calin::iact_data::actl_event_decoder::ACTL_R1_CameraEventDecoder>;
+%template (DelegatorACTL_L0_CameraEventDecoder)
+  calin::pattern::delegation::Delegator<
+    calin::iact_data::actl_event_decoder::ACTL_L0_CameraEventDecoder>;
+
 %include <iact_data/nectarcam_actl_event_decoder.hpp>
 %include <iact_data/lstcam_actl_event_decoder.hpp>
 %include <iact_data/cta_actl_event_decoder.hpp>
