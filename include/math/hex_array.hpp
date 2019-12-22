@@ -44,7 +44,7 @@ namespace calin { namespace math { namespace hex_array {
 namespace vvv {
 void xy_to_nh(double *, double *, int *);
 void nh_to_xy(int *, double *, double *);
-} // namespace vvv
+} // namespace vinoutv
 #endif
 
 // *****************************************************************************
@@ -128,15 +128,15 @@ inline unsigned uv_to_ringid(int u, int v)
             std::abs(u+v)}));
 }
 
-void hexid_to_uv_ccw(unsigned hexid, int& u, int& v);
+void hexid_to_uv_ccw(unsigned hexid, int& uout, int& vout);
 unsigned uv_to_hexid_ccw(int u, int v);
 
-void hexid_to_uv_cw(unsigned hexid, int& u, int& v);
+void hexid_to_uv_cw(unsigned hexid, int& uout, int& vout);
 unsigned uv_to_hexid_cw(int u, int v);
 
-inline void hexid_to_uv(unsigned hexid, int& u, int& v)
+inline void hexid_to_uv(unsigned hexid, int& uout, int& vout)
 {
-  hexid_to_uv_ccw(hexid, u, v);
+  hexid_to_uv_ccw(hexid, uout, vout);
 }
 
 inline unsigned uv_to_hexid(int u, int v)
@@ -144,10 +144,10 @@ inline unsigned uv_to_hexid(int u, int v)
   return uv_to_hexid_ccw(u,v);
 }
 
-inline void hexid_to_uv(unsigned hexid, int& u, int& v, bool clockwise)
+inline void hexid_to_uv(unsigned hexid, int& uout, int& vout, bool clockwise)
 {
-  if(clockwise)hexid_to_uv_cw(hexid, u, v);
-  else hexid_to_uv_ccw(hexid, u, v);
+  if(clockwise)hexid_to_uv_cw(hexid, uout, vout);
+  else hexid_to_uv_ccw(hexid, uout, vout);
 }
 
 inline unsigned uv_to_hexid(int u, int v, bool clockwise)
@@ -160,11 +160,11 @@ void uv_to_neighbor_uv(int u, int v, std::vector<int>& u_neighbors,
                        std::vector<int>& v_neighbors);
 std::vector<unsigned> hexid_to_neighbor_hexids(unsigned hexid);
 
-inline void rotate_ccw1_uv(int& u, int& v) { u+=v; v=-v; std::swap(u,v); }
-inline void rotate_ccw2_uv(int& u, int& v) { v+=u; v=-v; std::swap(u,v); }
-inline void rotate_ccw3_uv(int& u, int& v) { u=-u; v=-v; }
-inline void rotate_ccw4_uv(int& u, int& v) { u+=v; u=-u; std::swap(u,v); }
-inline void rotate_ccw5_uv(int& u, int& v) { v+=u; u=-u; std::swap(u,v); }
+inline void rotate_ccw1_uv(int& uinout, int& vinout) { uinout+=vinout; vinout=-vinout; std::swap(uinout,vinout); }
+inline void rotate_ccw2_uv(int& uinout, int& vinout) { vinout+=uinout; vinout=-vinout; std::swap(uinout,vinout); }
+inline void rotate_ccw3_uv(int& uinout, int& vinout) { uinout=-uinout; vinout=-vinout; }
+inline void rotate_ccw4_uv(int& uinout, int& vinout) { uinout+=vinout; uinout=-uinout; std::swap(uinout,vinout); }
+inline void rotate_ccw5_uv(int& uinout, int& vinout) { vinout+=uinout; uinout=-uinout; std::swap(uinout,vinout); }
 
 inline unsigned rotate_ccw1_hexid_cw(unsigned hexid) { int u,v;
   hexid_to_uv_cw(hexid,u,v); rotate_ccw1_uv(u,v); return uv_to_hexid_cw(u,v); }
@@ -195,35 +195,35 @@ inline unsigned rotate_ccw5_hexid_ccw(unsigned hexid) {  int u,v;
 // *****************************************************************************
 
 inline void cluster_uv_to_center_uv_A(int cluster_u, int cluster_v,
-                                      unsigned cluster_nring, int& u, int& v)
+                                      unsigned cluster_nring, int& uout, int& vout)
 {
-  u = (1+cluster_nring)*cluster_u - cluster_nring*cluster_v;
-  v = (1+2*cluster_nring)*cluster_v + cluster_nring*cluster_u;
+  uout = (1+cluster_nring)*cluster_u - cluster_nring*cluster_v;
+  vout = (1+2*cluster_nring)*cluster_v + cluster_nring*cluster_u;
 }
 
 inline void cluster_uv_to_center_uv_B(int cluster_u, int cluster_v,
-                                      unsigned cluster_nring, int& u, int& v)
+                                      unsigned cluster_nring, int& uout, int& vout)
 {
-  u = cluster_nring*cluster_u - (1+cluster_nring)*cluster_v;
-  v = (1+2*cluster_nring)*cluster_v + (1+cluster_nring)*cluster_u;
+  uout = cluster_nring*cluster_u - (1+cluster_nring)*cluster_v;
+  vout = (1+2*cluster_nring)*cluster_v + (1+cluster_nring)*cluster_u;
 }
 
 inline void cluster_uv_to_center_uv(int cluster_u, int cluster_v,
-            unsigned cluster_nring, int& u, int& v, bool use_a_config = true)
+            unsigned cluster_nring, int& uout, int& vout, bool use_a_config = true)
 {
   if(use_a_config)
-    cluster_uv_to_center_uv_A(cluster_u, cluster_v, cluster_nring, u, v);
+    cluster_uv_to_center_uv_A(cluster_u, cluster_v, cluster_nring, uout, vout);
   else
-    cluster_uv_to_center_uv_B(cluster_u, cluster_v, cluster_nring, u, v);
+    cluster_uv_to_center_uv_B(cluster_u, cluster_v, cluster_nring, uout, vout);
 }
 
 inline void cluster_hexid_to_center_uv(unsigned cluster_hexid,
-         unsigned cluster_nring, int& u, int& v, bool use_a_config = true)
+         unsigned cluster_nring, int& uout, int& vout, bool use_a_config = true)
 {
   int cluster_u;
   int cluster_v;
   hexid_to_uv(cluster_hexid, cluster_u, cluster_v);
-  cluster_uv_to_center_uv(cluster_u, cluster_v, cluster_nring, u, v, use_a_config);
+  cluster_uv_to_center_uv(cluster_u, cluster_v, cluster_nring, uout, vout, use_a_config);
 }
 
 inline unsigned cluster_hexid_to_center_hexid(unsigned cluster_hexid,
@@ -270,14 +270,14 @@ inline void uv_to_xy(int u, int v, double& x, double& y)
   y = v*c_vy;
 }
 
-void xy_to_uv(double x, double y, int& u, int& v);
+void xy_to_uv(double x, double y, int& uout, int& vout);
 
 inline void xy_to_uv_with_remainder(double& x_in_dx_out,
-                                    double& y_in_dy_out, int& u, int& v)
+                                    double& y_in_dy_out, int& uout, int& vout)
 {
-  xy_to_uv(x_in_dx_out,  y_in_dy_out, u, v);
-  x_in_dx_out -= u + v*c_vx;
-  y_in_dy_out -= v*c_vy;
+  xy_to_uv(x_in_dx_out,  y_in_dy_out, uout, vout);
+  x_in_dx_out -= uout + vout*c_vx;
+  y_in_dy_out -= vout*c_vy;
 }
 
 // XY <-> UV with (shear-free) affine transformation
@@ -291,25 +291,25 @@ inline void uv_to_xy_trans(int u, int v, double& x, double& y,
   x = scale * xx + dx;
 }
 
-inline void xy_trans_to_uv(double x, double y, int& u, int& v,
+inline void xy_trans_to_uv(double x, double y, int& uout, int& vout,
   double crot, double srot, double scale, double dx = 0, double dy = 0)
 {
   x = (x - dx)/scale;
   y = (y - dy)/scale;
   double xx = x*crot + y*srot;
   y = y*crot - x*srot;
-  xy_to_uv(xx,y,u,v);
+  xy_to_uv(xx,y,uout,vout);
 }
 
 inline void xy_trans_to_uv_with_remainder(double& x_in_dx_out,
-  double& y_in_dy_out, int& u, int& v,
+  double& y_in_dy_out, int& uout, int& vout,
   double crot, double srot, double scale, double dx = 0, double dy = 0)
 {
   x_in_dx_out = (x_in_dx_out - dx)/scale;
   y_in_dy_out = (y_in_dy_out - dy)/scale;
   double xx = x_in_dx_out*crot + y_in_dy_out*srot;
   y_in_dy_out = y_in_dy_out*crot - x_in_dx_out*srot;
-  xy_to_uv_with_remainder(xx,  y_in_dy_out, u, v);
+  xy_to_uv_with_remainder(xx,  y_in_dy_out, uout, vout);
   x_in_dx_out = scale * (xx*crot - y_in_dy_out*srot); // do not add dx
   y_in_dy_out = scale * (y_in_dy_out*crot + xx*srot); // do not add dy
 }

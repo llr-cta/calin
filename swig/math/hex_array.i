@@ -39,7 +39,7 @@
 %import "calin_global_definitions.i"
 
 %apply unsigned &OUTPUT { unsigned& ringid, unsigned& segid, unsigned& runid };
-%apply int &OUTPUT { int& u, int& v };
+%apply int &OUTPUT { int& uout, int& vout };
 %apply std::vector<int> &OUTPUT { std::vector<int>& u_neighbors,
        std::vector<int>& v_neighbors,
        std::vector<int>& u, std::vector<int>& v
@@ -51,6 +51,8 @@
 
 %apply float &OUTPUT { float& x, float& y };
 %apply float &INOUT { float& x_in_dx_out, float& y_in_dy_out };
+
+%apply int &INOUT { int& uinout, int& vinout };
 
 %include "math/hex_array.hpp"
 /* %include "math/hex_array_simd.hpp" */
