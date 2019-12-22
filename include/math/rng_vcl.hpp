@@ -136,6 +136,7 @@ public:
   //     auto* proto = new ix::math::rng::RNGData;
   //     save_to_proto(proto); return proto; }
 
+#ifndef SWIG
   uint64_vt uniform_uint64() { return core_->uniform_uint64(); }
   int64_vt uniform_int64() { return int64_vt(core_->uniform_uint64()); }
 
@@ -552,6 +553,7 @@ public:
     }
     return x;
   }
+#endif // ifndef SWIG
 
   static std::vector<double> generate_inverse_cdf_double(
     const std::vector<std::pair<double,double>> cdf, unsigned nbins)
@@ -701,6 +703,7 @@ public:
     if(adopt_rng_)delete rng_;
   }
 
+#ifndef SWIG
   int_vt uniform_int() { int_vt x; rng_->uniform_int(x); return x; }
   uint_vt uniform_uint() { uint_vt x; rng_->uniform_uint(x); return x; }
 
@@ -736,6 +739,7 @@ public:
     rng_->from_inverse_cdf_real(x, inverse_cdf);
     return x;
   }
+#endif // ifndef SWIG
 
 private:
   VCLRNG<architecture>* rng_;
@@ -830,6 +834,8 @@ public:
 
   uint64_t calls() const { return calls_; }
   uint64_t seed() const { return seed_; }
+
+#ifndef SWIG
   uint64_vt sequence_seeds() const { return sequence_seeds_; }
 
   uint64_vt uniform_uint64() override {
@@ -846,6 +852,7 @@ public:
     x ^= x << C_NR3_X_SHIFT3;
     return (x+v_)^w_;
   }
+#endif // ifndef SWIG
 
   void save_to_proto(calin::ix::math::rng::NR3_SIMD_RNGCoreData* data) const
   {
