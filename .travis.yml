@@ -23,7 +23,7 @@ addons:
 matrix:
   include:
     - compiler: gcc-4.8
-      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 BUILD_CXXFLAGS=-fabi-version=0
+      env: BUILD_TYPE=Release GEANT4=FALSE BUILD_CC=gcc-4.8 BUILD_CXX=g++-4.8 BUILD_ARCH=generic BUILD_CXXFLAGS=-fabi-version=0
       addons: &gcc48_addons
         apt:
           sources:
@@ -152,6 +152,7 @@ before_install:
   - if test -n "$BUILD_CFLAGS"; then export CFLAGS="$BUILD_CFLAGS"; fi
   - if test -n "$BUILD_CXX"; then export CXX="$BUILD_CXX"; fi
   - if test -n "$BUILD_CXXFLAGS"; then export CXXFLAGS="$BUILD_CXXFLAGS"; fi
+  - if test -z "$BUILD_ARCH"; then export BUILD_ARCH="broadwell"; fi
   - export LOCAL=$HOME/local/$CC
   - export PATH=$LOCAL/bin:$PATH
   - export LD_LIBRARY_PATH=$LOCAL/lib64:$LOCAL/lib:$LD_LIBRARY_PATH
@@ -238,7 +239,7 @@ script:
           -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX \
           -DCMAKE_CXX_FLAGS=$CXXFLAGS \
           -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-          -DCALIN_BUILD_ARCH=broadwell \
+          -DCALIN_BUILD_ARCH=$BUILD_ARCH \
           -DPYTHON_EXECUTABLE=`which python3` \
           $NO_GEANT4 \
           -DCMAKE_INSTALL_PREFIX=build .. &&
