@@ -731,6 +731,7 @@ std::string ZMQACTL_R1_CameraEventDataSource::receive_status_string() const
     HANDLE_CASE(PROTOCOL_ERROR);
     HANDLE_CASE(CONNECTION_ERROR);
   }
+  return "OFF_PROTOCOL";
 }
 
 ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::
