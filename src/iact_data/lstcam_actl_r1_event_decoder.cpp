@@ -405,7 +405,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode_run_config(
     for(unsigned imod=0;imod<nmod_;imod++)
     {
       pix_id = pix_id_array[imod*7];
-      if(pix_id >= calin_run_config->camera_layout().pixel_channel_index_size()) {
+      if(pix_id >= unsigned(calin_run_config->camera_layout().pixel_channel_index_size())) {
         LOG(WARNING) << "LSTCam_ACTL_R1_CameraEventDecoder: expected_pixels_id out of range: " + std::to_string(pix_id);
         config_mod_id.clear();
         goto abort_pixel_based_method;
@@ -419,7 +419,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode_run_config(
       mod_id = calin_run_config->camera_layout().channel(chan_id).module_index();
       for(unsigned imodpix=1; imodpix<7; imodpix++) {
         pix_id = pix_id_array[imod*7+imodpix];
-        if(pix_id >= calin_run_config->camera_layout().pixel_channel_index_size()) {
+        if(pix_id >= unsigned(calin_run_config->camera_layout().pixel_channel_index_size())) {
           LOG(WARNING) << "LSTCam_ACTL_R1_CameraEventDecoder: expected_pixels_id out of range: " + std::to_string(pix_id);
           config_mod_id.clear();
           goto abort_pixel_based_method;
@@ -453,12 +453,12 @@ abort_pixel_based_method:
     const uint16_t* mod_id =
       reinterpret_cast<const uint16_t*>(&
         cta_run_header->lstcam().expected_modules_id().data().front());
-    for(int imod=0;imod<nmod_;imod++)config_mod_id.push_back(mod_id[imod]);
+    for(unsigned imod=0;imod<nmod_;imod++)config_mod_id.push_back(mod_id[imod]);
   }
   if(config_mod_id.size()!=nmod_)
   {
     config_mod_id.clear();
-    for(int imod=0;imod<nmod_;imod++)config_mod_id.push_back(imod);
+    for(unsigned imod=0;imod<nmod_;imod++)config_mod_id.push_back(imod);
   }
 
   for(unsigned mod_id=0; mod_id<nmod_camera; mod_id++)
