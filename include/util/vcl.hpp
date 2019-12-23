@@ -187,6 +187,150 @@ namespace vcl {
     return Vec16i(t1,t2);
   }
 
+  // function truncate_to_int64_limited: round towards zero. (inefficient)
+  // result as 64-bit integer vector, but with limited range. Deprecated!
+  static inline Vec2q truncate_to_int64_limited(Vec2d const & a) {
+  #if defined (__AVX512DQ__) && defined (__AVX512VL__)
+      return truncate_to_int64(a);
+  #else
+      // Note: assume MXCSR control register is set to rounding
+      Vec4i t1 = _mm_cvttpd_epi32(a);
+      return extend_low(t1);
+  #endif
+  }
+
+  // function round_to_int: round to nearest integer (even)
+  // result as 64-bit integer vector, but with limited range. Deprecated!
+  static inline Vec2q round_to_int64_limited(Vec2d const & a) {
+  #if defined (__AVX512DQ__) && defined (__AVX512VL__)
+      return round_to_int64(a);
+  #else
+      // Note: assume MXCSR control register is set to rounding
+      Vec4i t1 = _mm_cvtpd_epi32(a);
+      return extend_low(t1);
+  #endif
+  }
+  // function to_double_limited: convert integer vector elements to double vector
+  // limited to abs(x) < 2^31. Deprecated!
+  static inline Vec2d to_double_limited(Vec2q const & x) {
+  #if defined (__AVX512DQ__) && defined (__AVX512VL__)
+      return to_double(x);
+  #else
+      Vec4i compressed = permute4i<0,2,-256,-256>(Vec4i(x));
+      return _mm_cvtepi32_pd(compressed);
+  #endif
+  }
+
+#if MAX_VECTOR_SIZE >= 256
+#if INSTRSET >= 7
+  // function truncate_to_int64_limited: round towards zero.
+  // result as 64-bit integer vector, but with limited range. Deprecated!
+  static inline Vec4q truncate_to_int64_limited(Vec4d const & a) {
+  #if defined (__AVX512DQ__) && defined (__AVX512VL__)
+      return truncate_to_int64(a);
+  #elif VECTORI256_H > 1
+      // Note: assume MXCSR control register is set to rounding
+      Vec2q   b = _mm256_cvttpd_epi32(a);                    // round to 32-bit integers
+      __m256i c = permute4q<0,-256,1,-256>(Vec4q(b,b));      // get bits 64-127 to position 128-191
+      __m256i s = _mm256_srai_epi32(c, 31);                  // sign extension bits
+      return      _mm256_unpacklo_epi32(c, s);               // interleave with sign extensions
+  #else
+      return Vec4q(truncate_to_int64_limited(a.get_low()), truncate_to_int64_limited(a.get_high()));
+  #endif
+  }
+  // function round_to_int64_limited: round to nearest integer (even)
+  // result as 64-bit integer vector, but with limited range. Deprecated!
+  static inline Vec4q round_to_int64_limited(Vec4d const & a) {
+  #if defined (__AVX512DQ__) && defined (__AVX512VL__)
+      return round_to_int64(a);
+  #elif VECTORI256_H > 1
+      // Note: assume MXCSR control register is set to rounding
+      Vec2q   b = _mm256_cvtpd_epi32(a);                     // round to 32-bit integers
+      __m256i c = permute4q<0,-256,1,-256>(Vec4q(b,b));      // get bits 64-127 to position 128-191
+      __m256i s = _mm256_srai_epi32(c, 31);                  // sign extension bits
+      return      _mm256_unpacklo_epi32(c, s);               // interleave with sign extensions
+  #else
+      return Vec4q(round_to_int64_limited(a.get_low()), round_to_int64_limited(a.get_high()));
+  #endif
+  }
+  // function to_double_limited: convert integer vector elements to double vector
+  // limited to abs(x) < 2^31. Deprecated!
+  static inline Vec4d to_double_limited(Vec4q const & x) {
+  #if defined (__AVX512DQ__) && defined (__AVX512VL__)
+      return to_double(x);
+  #else
+      Vec8i compressed = permute8i<0,2,4,6,-256,-256,-256,-256>(Vec8i(x));
+      return _mm256_cvtepi32_pd(compressed.get_low());  // AVX
+  #endif
+  }
+#else // if INSTRSET >= 7
+  static inline Vec4q truncate_to_int64_limited(Vec4d const & a) {
+    return Vec4q(truncate_to_int64_limited(a.get_low()),
+                 truncate_to_int64_limited(a.get_high()));
+  }
+  static inline Vec4q round_to_int64_limited(Vec4d const & a) {
+    return Vec4q(round_to_int64_limited(a.get_low()),
+                 round_to_int64_limited(a.get_high()));
+  }
+  static inline Vec4d to_double_limited(Vec4q const & x) {
+    return Vec4d(to_double_limited(x.get_low()),
+                 to_double_limited(x.get_high()));
+  }
+#endif // if INSTRSET >= 7
+#endif // if MAX_VECTOR_SIZE >= 256
+
+#if MAX_VECTOR_SIZE >= 512
+#if INSTRSET >= 9
+  // function truncate_to_int64_limited: round towards zero.
+  // result as 64-bit integer vector, but with limited range. Deprecated!
+  static inline Vec8q truncate_to_int64_limited(Vec8d const & a) {
+  #ifdef __AVX512DQ__
+      return truncate_to_int64(a);
+  #else
+      // Note: assume MXCSR control register is set to rounding
+      Vec4q   b = _mm512_cvttpd_epi32(a);                    // round to 32-bit integers
+      __m512i c = permute8q<0,-256,1,-256,2,-256,3,-256>(Vec8q(b,b));      // get bits 64-127 to position 128-191, etc.
+      __m512i s = _mm512_srai_epi32(c, 31);                  // sign extension bits
+      return      _mm512_unpacklo_epi32(c, s);               // interleave with sign extensions
+  #endif
+  }
+  // function round_to_int64_limited: round to nearest integer (even)
+  // result as 64-bit integer vector, but with limited range. Deprecated!
+  static inline Vec8q round_to_int64_limited(Vec8d const & a) {
+  #ifdef __AVX512DQ__
+      return round_to_int64(a);
+  #else
+      Vec4q   b = _mm512_cvt_roundpd_epi32(a, 0+8);     // round to 32-bit integers
+      __m512i c = permute8q<0,-256,1,-256,2,-256,3,-256>(Vec8q(b,b));  // get bits 64-127 to position 128-191, etc.
+      __m512i s = _mm512_srai_epi32(c, 31);                            // sign extension bits
+      return      _mm512_unpacklo_epi32(c, s);                         // interleave with sign extensions
+  #endif
+  }
+  // function to_double_limited: convert integer vector elements to double vector
+  // limited to abs(x) < 2^31. Deprecated!
+  static inline Vec8d to_double_limited(Vec8q const & x) {
+  #if defined (__AVX512DQ__)
+      return to_double(x);
+  #else
+      Vec16i compressed = permute16i<0,2,4,6,8,10,12,14,-256,-256,-256,-256,-256,-256,-256,-256>(Vec16i(x));
+      return _mm512_cvtepi32_pd(compressed.get_low());
+  #endif
+  }
+#else // if INSTRSET >= 9
+  static inline Vec8q truncate_to_int64_limited(Vec8d const & a) {
+    return Vec8q(truncate_to_int64_limited(a.get_low()),
+                 truncate_to_int64_limited(a.get_high()));
+  }
+  static inline Vec8q round_to_int64_limited(Vec8d const & a) {
+    return Vec8q(round_to_int64_limited(a.get_low()),
+                 round_to_int64_limited(a.get_high()));
+  }
+  static inline Vec8d to_double_limited(Vec8q const & x) {
+    return Vec8d(to_double_limited(x.get_low()),
+                 to_double_limited(x.get_high()));
+  }
+#endif // if INSTRSET >= 9
+#endif // if MAX_VECTOR_SIZE >= 512
 }
 
 namespace calin { namespace util { namespace vcl {
@@ -319,12 +463,12 @@ struct VCL128Architecture
   typedef Vec4fb  float_bvt;
   typedef Vec2db  double_bvt;
 
-  typedef int32_t  int32_at[num_int32] __attribute((aligned(vec_bytes)));
-  typedef uint32_t uint32_at[num_int32] __attribute((aligned(vec_bytes)));
-  typedef int64_t  int64_at[num_int64] __attribute((aligned(vec_bytes)));
-  typedef uint64_t uint64_at[num_int64] __attribute((aligned(vec_bytes)));
-  typedef float    float_at[num_float] __attribute((aligned(vec_bytes)));
-  typedef double   double_at[num_double] __attribute((aligned(vec_bytes)));
+  typedef int32_t  int32_at[num_int32] __attribute((aligned(16)));
+  typedef uint32_t uint32_at[num_int32] __attribute((aligned(16)));
+  typedef int64_t  int64_at[num_int64] __attribute((aligned(16)));
+  typedef uint64_t uint64_at[num_int64] __attribute((aligned(16)));
+  typedef float    float_at[num_float] __attribute((aligned(16)));
+  typedef double   double_at[num_double] __attribute((aligned(16)));
 
   typedef Eigen::Vector3_4f Vector3f_vt;
   typedef Eigen::Matrix3_4f Matrix3f_vt;
@@ -376,12 +520,12 @@ struct VCL256Architecture
   typedef Vec8fb  float_bvt;
   typedef Vec4db  double_bvt;
 
-  typedef int32_t  int32_at[num_int32] __attribute((aligned(vec_bytes)));
-  typedef uint32_t uint32_at[num_int32] __attribute((aligned(vec_bytes)));
-  typedef int64_t  int64_at[num_int64] __attribute((aligned(vec_bytes)));
-  typedef uint64_t uint64_at[num_int64] __attribute((aligned(vec_bytes)));
-  typedef float    float_at[num_float] __attribute((aligned(vec_bytes)));
-  typedef double   double_at[num_double] __attribute((aligned(vec_bytes)));
+  typedef int32_t  int32_at[num_int32] __attribute((aligned(32)));
+  typedef uint32_t uint32_at[num_int32] __attribute((aligned(32)));
+  typedef int64_t  int64_at[num_int64] __attribute((aligned(32)));
+  typedef uint64_t uint64_at[num_int64] __attribute((aligned(32)));
+  typedef float    float_at[num_float] __attribute((aligned(32)));
+  typedef double   double_at[num_double] __attribute((aligned(32)));
 
   typedef Eigen::Vector3_8f Vector3f_vt;
   typedef Eigen::Matrix3_8f Matrix3f_vt;
@@ -424,12 +568,12 @@ struct VCL512Architecture
   typedef Vec16fb float_bvt;
   typedef Vec8db  double_bvt;
 
-  typedef int32_t  int32_at[num_int32] __attribute((aligned(vec_bytes)));
-  typedef uint32_t uint32_at[num_int32] __attribute((aligned(vec_bytes)));
-  typedef int64_t  int64_at[num_int64] __attribute((aligned(vec_bytes)));
-  typedef uint64_t uint64_at[num_int64] __attribute((aligned(vec_bytes)));
-  typedef float    float_at[num_float] __attribute((aligned(vec_bytes)));
-  typedef double   double_at[num_double] __attribute((aligned(vec_bytes)));
+  typedef int32_t  int32_at[num_int32] __attribute((aligned(64)));
+  typedef uint32_t uint32_at[num_int32] __attribute((aligned(64)));
+  typedef int64_t  int64_at[num_int64] __attribute((aligned(64)));
+  typedef uint64_t uint64_at[num_int64] __attribute((aligned(64)));
+  typedef float    float_at[num_float] __attribute((aligned(64)));
+  typedef double   double_at[num_double] __attribute((aligned(64)));
 
   typedef Eigen::Vector3_16f Vector3f_vt;
   typedef Eigen::Matrix3_16f Matrix3f_vt;

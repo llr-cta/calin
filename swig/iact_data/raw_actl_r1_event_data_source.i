@@ -52,6 +52,7 @@
 %import "calin_global_definitions.i"
 
 %import "google_protobuf.i"
+%import "io/data_source.i"
 
 %ignore get_next(uint64_t& seq_index_out);
 %ignore get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena);

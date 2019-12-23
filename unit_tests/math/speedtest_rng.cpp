@@ -42,31 +42,6 @@ TEST(NR3SpeedTestRNG, Scalar_1G_UInt64)
   EXPECT_GE(sum, 0ULL);
 }
 
-#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
-TEST(NR3SpeedTestRNG, AVX2_1G_UInt64)
-{
-  uint64_t sum = 0ULL;
-  uint64_t seed = RNG::uint64_from_random_device();
-  NR3_AVX2_RNGCore core(seed);
-  for(unsigned i=0;i<1000000000;i++)
-    sum += core.uniform_uint64();
-  EXPECT_GE(sum, 0ULL);
-}
-
-TEST(NR3SpeedTestRNG, AVX2_VEC_1G_UInt64)
-{
-  __m256i sum = _mm256_setzero_si256();
-  uint64_t seed = RNG::uint64_from_random_device();
-  NR3_AVX2_RNGCore core(seed);
-  for(unsigned i=0;i<250000000;i++)
-    sum = _mm256_add_epi64(sum, core.uniform_m256i());
-  EXPECT_GE(sum[0], 0ULL);
-  EXPECT_GE(sum[1], 0ULL);
-  EXPECT_GE(sum[2], 0ULL);
-  EXPECT_GE(sum[3], 0ULL);
-}
-#endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
-
 TEST(NR3SpeedTestRNG, Scalar_1G_Float)
 {
   float sum = 0;
@@ -86,25 +61,6 @@ TEST(NR3SpeedTestRNG, Scalar_1G_Double)
     sum += 5.42101086242752217E-20 * double(core.uniform_uint64());
   EXPECT_GE(sum,0.0);
 }
-
-#ifdef CALIN_HAS_NR3_AVX2_RNGCORE
-TEST(NR3SpeedTestRNG, AVX2_VEC_1G_Float)
-{
-  __m256 sum = _mm256_setzero_ps();
-  uint64_t seed = RNG::uint64_from_random_device();
-  NR3_AVX2_RNGCore core(seed);
-  for(unsigned i=0;i<125000000;i++)
-    sum = _mm256_add_ps(sum, core.uniform_m256());
-  EXPECT_GE(sum[0],0.0);
-  EXPECT_GE(sum[1],0.0);
-  EXPECT_GE(sum[2],0.0);
-  EXPECT_GE(sum[3],0.0);
-  EXPECT_GE(sum[4],0.0);
-  EXPECT_GE(sum[5],0.0);
-  EXPECT_GE(sum[6],0.0);
-  EXPECT_GE(sum[7],0.0);
-}
-#endif // defined CALIN_HAS_NR3_AVX2_RNGCORE
 
 template<typename VCLArchitecture> class VCLSpeedTestRNG :
   public testing::Test

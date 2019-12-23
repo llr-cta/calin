@@ -21,6 +21,7 @@
 */
 
 #include <util/log.hpp>
+#include <util/algorithm.hpp>
 #include <diagnostics/run_info.hpp>
 #include <diagnostics/range.hpp>
 
@@ -115,6 +116,12 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   elapsed_time_hist_.clear();
   run_config_->CopyFrom(*run_config);
 
+  results_->set_min_event_time(std::numeric_limits<int64_t>::max());
+  results_->set_max_event_time(std::numeric_limits<int64_t>::min());
+
+  partials_->set_min_event_time(std::numeric_limits<int64_t>::max());
+  partials_->set_max_event_time(std::numeric_limits<int64_t>::min());
+
   calin::ix::diagnostics::run_info::RunInfoConfig config = config_;
   if(config.module_counter_test_id_size() == 0 and
       config.module_counter_test_mode_size() == 0) {
@@ -195,6 +202,26 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
   calin::diagnostics::range::encode_value(
     partials_->mutable_all_channels_presence(), event->all_modules_present());
 
+  // TIB TRIGGER BITS
+  if(event->has_tib_data()) {
+    const auto& tib = event->tib_data();
+    partials_->increment_num_mono_trigger(tib.mono_trigger());
+    partials_->increment_num_stereo_trigger(tib.stereo_trigger());
+    partials_->increment_num_external_calibration_trigger(tib.external_calibration_trigger());
+    partials_->increment_num_internal_calibration_trigger(tib.internal_calibration_trigger());
+    partials_->increment_num_ucts_aux_trigger(tib.ucts_aux_trigger());
+    partials_->increment_num_pedestal_trigger(tib.pedestal_trigger());
+    partials_->increment_num_slow_control_trigger(tib.slow_control_trigger());
+    partials_->increment_num_busy_trigger(tib.busy_trigger());
+  }
+
+  // EVENT TIME
+  if(event->has_absolute_event_time() and event->absolute_event_time().time_ns()>0) {
+    auto t = event->absolute_event_time().time_ns();
+    partials_->set_max_event_time(std::max(partials_->max_event_time(), t));
+    partials_->set_min_event_time(std::min(partials_->min_event_time(), t));
+  }
+
   // MODULES
   for(int imodindex=0; imodindex<event->module_index_size(); imodindex++) {
     auto* mod = partials_->mutable_module(imodindex);
@@ -262,6 +289,8 @@ RunInfoDiagnosticsVisitor::run_config() const
 const calin::ix::diagnostics::run_info::RunInfo& RunInfoDiagnosticsVisitor::run_info()
 {
   results_->Clear();
+  results_->set_min_event_time(std::numeric_limits<int64_t>::max());
+  results_->set_max_event_time(std::numeric_limits<int64_t>::min());
   for(int imod=0;imod<run_config_->configured_module_id_size();imod++) {
     auto* mod = results_->add_module();
     mod->set_configured_module_rank(imod);
@@ -310,49 +339,66 @@ namespace {
 
   template<typename Iterator>
   void make_index_range_from_conditional_bool_rle(
-    const Iterator& begin, const Iterator& end,
+    const std::vector<size_t>& event_index,
+    const Iterator& event_number_begin,
     const calin::ix::diagnostics::range::RunLengthEncodingBool& rle,
+    std::vector<bool>& event_value,
     calin::ix::diagnostics::range::IndexRange* range,
     bool value = false)
   {
-    Iterator ievent = begin;
-    std::vector<uint64_t> event_list;
-    unsigned nrange = rle.count_size();
-    for(unsigned irange=0;irange<nrange;irange++) {
-      unsigned count = rle.count(irange);
-      if(rle.value(irange) == value) {
-        while(count--)event_list.push_back(*ievent++);
-      } else {
-        while(count--)ievent++;
+    event_value.resize(event_index.size());
+
+    for(unsigned irange=0, iindex=0;irange<unsigned(rle.count_size());irange++) {
+      uint64_t count = rle.count(irange);
+      bool value =  rle.value(irange);
+      while(count--) {
+        event_value[iindex++] = value;
       }
     }
-    std::sort(event_list.begin(), event_list.end());
-    calin::diagnostics::range::make_index_range(
-      event_list.begin(), event_list.end(), range);
+    for(unsigned iindex=0;iindex<event_index.size();iindex++) {
+      if(event_value[event_index[iindex]] == value) {
+        calin::diagnostics::range::encode_monotonic_index(range,
+          *(event_number_begin + event_index[iindex]));
+      }
+    }
   }
 
-  template<typename Iterable, typename PresenceRLE, typename ValueRLE, typename IndexValueRange>
-  void make_index_range_from_value_rle(
-    const Iterable& indexes, const PresenceRLE& has_rle, const ValueRLE& val_rle,
-    IndexValueRange* ivr)
+  template<typename Iterator>
+  void make_index_range_from_i64_value_rle(
+    const std::vector<size_t>& event_index,
+    const Iterator& event_number_begin,
+    const calin::ix::diagnostics::range::RunLengthEncodingBool& has_rle,
+    const calin::ix::diagnostics::range::RunLengthEncodingInt64& val_rle,
+    std::vector<bool>& event_has,
+    std::vector<int64_t>& event_val,
+    calin::ix::diagnostics::range::IndexAndValueRangeInt64* range)
   {
-    std::map<uint64_t, unsigned> index_and_value;
-    unsigned val_irle = 0;
-    unsigned val_nrle = val_rle.count(val_irle);
-    unsigned has_irle = 0;
-    unsigned has_nrle = has_rle.count(has_irle);
-    for(auto index : indexes) {
-      if(has_nrle==0) { ++has_irle; has_nrle = has_rle.count(has_irle); }
-      if(val_nrle==0) { ++val_irle; val_nrle = val_rle.count(val_irle); }
-      if(has_rle.value(has_irle)) {
-        index_and_value[index] = val_irle;
-        --val_nrle;
+    event_has.resize(event_index.size());
+    event_val.resize(event_index.size());
+
+    for(unsigned irange=0, iindex=0;irange<unsigned(has_rle.count_size());irange++) {
+      uint64_t count = has_rle.count(irange);
+      bool has = has_rle.value(irange);
+      while(count--) {
+        event_has[iindex++] = has;
       }
-      --has_nrle;
     }
-    for(auto iv : index_and_value) {
-      calin::diagnostics::range::encode_monotonic_index_and_value(
-        ivr, iv.first, val_rle.value(iv.second));
+
+    for(unsigned irange=0, iindex=0;irange<unsigned(val_rle.count_size());irange++) {
+      uint64_t count = val_rle.count(irange);
+      int64_t val = val_rle.value(irange);
+      while(count) {
+        event_val[iindex] = val;
+        if(event_has[iindex])count--;
+        iindex++;
+      }
+    }
+
+    for(unsigned iindex=0;iindex<event_index.size();iindex++) {
+      if(event_has[event_index[iindex]]) {
+        calin::diagnostics::range::encode_monotonic_index_and_value(range,
+          *(event_number_begin + event_index[iindex]), event_val[event_index[iindex]], true);
+      }
     }
   }
 }
@@ -365,61 +411,80 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
   results_->increment_num_events_missing_swat(partials_->num_events_missing_swat());
   results_->increment_num_events_missing_modules(partials_->num_events_missing_modules());
 
+  results_->increment_num_mono_trigger(partials_->num_mono_trigger());
+  results_->increment_num_stereo_trigger(partials_->num_stereo_trigger()) ;
+  results_->increment_num_external_calibration_trigger(partials_->num_external_calibration_trigger());
+  results_->increment_num_internal_calibration_trigger(partials_->num_internal_calibration_trigger());
+  results_->increment_num_ucts_aux_trigger(partials_->num_ucts_aux_trigger());
+  results_->increment_num_pedestal_trigger(partials_->num_pedestal_trigger());
+  results_->increment_num_slow_control_trigger(partials_->num_slow_control_trigger());
+  results_->increment_num_busy_trigger(partials_->num_busy_trigger());
+
+  results_->set_min_event_time(std::min(results_->min_event_time(), partials_->min_event_time()));
+  results_->set_max_event_time(std::max(results_->max_event_time(), partials_->max_event_time()));
+
   results_->mutable_event_number_histogram()->IntegrateFrom(partials_->event_number_histogram());
   results_->mutable_elapsed_time_histogram()->IntegrateFrom(partials_->elapsed_time_histogram());
 
   if(partials_->event_number_sequence_size() > 0)
   {
-    std::vector<uint64_t> event_list;
-    calin::ix::diagnostics::range::IndexRange range;
-    event_list.reserve(partials_->event_number_sequence_size());
+    auto event_index = calin::util::algorithm::argsort(
+      partials_->event_number_sequence().begin(), partials_->event_number_sequence().end());
 
-    for(auto ievent: partials_->event_number_sequence()) {
-      event_list.push_back(ievent);
-    }
-    std::sort(event_list.begin(), event_list.end());
-    unsigned last_event_number = event_list.front();
-    for(unsigned iel=1;iel<event_list.size();iel++) {
-      if(event_list[iel] == last_event_number) {
+    uint64_t first_event_number = partials_->event_number_sequence(event_index.front());
+    uint64_t last_event_number = first_event_number;
+
+    for(unsigned iel=1;iel<event_index.size();iel++) {
+      uint64_t event_number = partials_->event_number_sequence(event_index[iel]);
+      if(event_number == last_event_number) {
         results_->increment_num_duplicate_event_numbers();
         calin::diagnostics::range::encode_value(
-          results_->mutable_duplicate_event_numbers(), last_event_number);
+          results_->mutable_duplicate_event_numbers(), event_number);
+      } else if(event_number == last_event_number+1) {
+        last_event_number = event_number;
+      } else {
+        results_->mutable_event_numbers_found()->add_begin_index(first_event_number);
+        results_->mutable_event_numbers_found()->add_end_index(last_event_number + 1);
+        first_event_number = last_event_number = event_number;
       }
-      last_event_number = event_list[iel];
     }
-    calin::diagnostics::range::make_index_range(
-      event_list.begin(), event_list.end(), &range);
-    results_->mutable_event_numbers_found()->IntegrateFrom(range);
+
+    results_->mutable_event_numbers_found()->add_begin_index(first_event_number);
+    results_->mutable_event_numbers_found()->add_end_index(last_event_number + 1);
+
+    std::vector<bool> event_value_bool(event_index.size());
+    std::vector<int64_t> event_value_i64(event_index.size());
+    calin::ix::diagnostics::range::IndexRange range;
 
     range.Clear();
     make_index_range_from_conditional_bool_rle(
-      partials_->event_number_sequence().begin(), partials_->event_number_sequence().end(),
+      event_index, partials_->event_number_sequence().begin(),
       partials_->cdts_presence(),
-      &range, false);
+      event_value_bool, &range, false);
     if(range.begin_index_size())
       results_->mutable_events_missing_cdts()->IntegrateFrom(range);
 
     range.Clear();
     make_index_range_from_conditional_bool_rle(
-      partials_->event_number_sequence().begin(), partials_->event_number_sequence().end(),
+      event_index, partials_->event_number_sequence().begin(),
       partials_->tib_presence(),
-      &range, false);
+      event_value_bool, &range, false);
     if(range.begin_index_size())
       results_->mutable_events_missing_tib()->IntegrateFrom(range);
 
     range.Clear();
     make_index_range_from_conditional_bool_rle(
-      partials_->event_number_sequence().begin(), partials_->event_number_sequence().end(),
+      event_index, partials_->event_number_sequence().begin(),
       partials_->swat_presence(),
-      &range, false);
+      event_value_bool, &range, false);
     if(range.begin_index_size())
       results_->mutable_events_missing_swat()->IntegrateFrom(range);
 
     range.Clear();
     make_index_range_from_conditional_bool_rle(
-      partials_->event_number_sequence().begin(), partials_->event_number_sequence().end(),
+      event_index, partials_->event_number_sequence().begin(),
       partials_->all_channels_presence(),
-      &range, false);
+      event_value_bool, &range, false);
     if(range.begin_index_size())
       results_->mutable_events_missing_modules()->IntegrateFrom(range);
 
@@ -429,15 +494,18 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
 
       range.Clear();
       make_index_range_from_conditional_bool_rle(
-        partials_->event_number_sequence().begin(), partials_->event_number_sequence().end(),
-        pimod.module_presence(), &range, false);
+        event_index, partials_->event_number_sequence().begin(),
+        pimod.module_presence(),
+        event_value_bool, &range, false);
       if(range.begin_index_size())
         results_->mutable_module(imod)->mutable_events_missing()->IntegrateFrom(range);
       rimod->set_num_events_present(pimod.num_events_present());
 
       for(unsigned icounter=0; icounter<mod_counter_id_.size(); icounter++) {
-        make_index_range_from_value_rle(partials_->event_number_sequence(),
+        make_index_range_from_i64_value_rle(
+          event_index, partials_->event_number_sequence().begin(),
           pimod.module_presence(), pimod.counter_value(icounter),
+          event_value_bool, event_value_i64,
           rimod->mutable_counter_value(icounter)->mutable_value_range());
       }
     }

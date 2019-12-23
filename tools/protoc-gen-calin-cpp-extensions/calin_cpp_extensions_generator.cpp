@@ -179,6 +179,22 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
           "  this->add_$name$(from.$name$(i));\n", "name", f->name());
         field_handled = true;
         break;
+      case calin::FieldOptions::MIN:
+        printer.Print(
+          "for(int i=0; i<from.$name$_size(); i++) {\n"
+          "  if(i<this->$name$_size())this->set_$name$(i, std::min(this->$name$(i),from.$name$(i)));\n"
+          "  else this->add_$name$(from.$name$(i));\n"
+          "}\n", "name", f->name());
+        field_handled = true;
+        break;
+      case calin::FieldOptions::MAX:
+        printer.Print(
+          "for(int i=0; i<from.$name$_size(); i++) {\n"
+          "  if(i<this->$name$_size())this->set_$name$(i, std::max(this->$name$(i),from.$name$(i)));\n"
+          "  else this->add_$name$(from.$name$(i));\n"
+          "}\n", "name", f->name());
+        field_handled = true;
+        break;
       default:
         break;
       }
@@ -193,6 +209,16 @@ bool integrate_field(const google::protobuf::FieldDescriptor* f,
       case calin::FieldOptions::REPLACE:
         printer.Print(
           "this->set_$name$(from.$name$());\n", "name", f->name());
+        field_handled = true;
+        break;
+      case calin::FieldOptions::MIN:
+        printer.Print(
+          "this->set_$name$(std::min(this->$name$(),from.$name$()));\n", "name", f->name());
+        field_handled = true;
+        break;
+      case calin::FieldOptions::MAX:
+        printer.Print(
+          "this->set_$name$(std::max(this->$name$(),from.$name$()));\n", "name", f->name());
         field_handled = true;
         break;
       default:

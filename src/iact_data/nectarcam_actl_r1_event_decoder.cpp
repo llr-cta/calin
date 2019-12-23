@@ -30,7 +30,6 @@
 #include <iact_data/nectarcam_actl_event_decoder.hpp>
 #include <iact_data/nectarcam_layout.hpp>
 #include <iact_data/nectarcam_configuration.hpp>
-#include <math/simd.hpp>
 #include <provenance/system_info.hpp>
 
 using namespace calin::iact_data::nectarcam_actl_event_decoder;
@@ -558,10 +557,10 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
   config_mod_id.reserve(nmod_camera);
   if(config_.demand_configured_module_id_size() != 0)
   {
-    if(config_.demand_configured_module_id_size() != nmod_)
+    if(unsigned(config_.demand_configured_module_id_size()) != nmod_)
       throw std::runtime_error("NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config: "
         "Demand module list size must equal number of modules in data.");
-    for(int imod=0;imod<nmod_;imod++) {
+    for(unsigned imod=0;imod<nmod_;imod++) {
       unsigned mod_id = config_.demand_configured_module_id(imod);
       if(mod_id >= nmod_camera)
         throw std::runtime_error("NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config: "
@@ -571,9 +570,9 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
     }
   }
   else if(calin_run_config->has_nectarcam() and
-    calin_run_config->nectarcam().module_size() == nmod_)
+    unsigned(calin_run_config->nectarcam().module_size()) == nmod_)
   {
-    for(int imod=0; imod<nmod_; imod++) {
+    for(unsigned imod=0; imod<nmod_; imod++) {
       unsigned mod_id = calin_run_config->nectarcam().module(imod).module_id();
       if(mod_id >= nmod_camera)
         throw std::runtime_error("NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config: "
@@ -590,11 +589,11 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
     const uint16_t* mod_id =
       reinterpret_cast<const uint16_t*>(&
         cta_run_header->nectarcam().expected_modules_id().data().front());
-    for(int imod=0;imod<nmod_;imod++)config_mod_id.push_back(mod_id[imod]);
+    for(unsigned imod=0;imod<nmod_;imod++)config_mod_id.push_back(mod_id[imod]);
   }
   else
   {
-    for(int imod=0;imod<nmod_;imod++)config_mod_id.push_back(imod);
+    for(unsigned imod=0;imod<nmod_;imod++)config_mod_id.push_back(imod);
   }
 
   for(unsigned mod_id=0; mod_id<nmod_camera; mod_id++)
@@ -669,7 +668,8 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
   //
   // ==========================================================================
 
-  if(cta_event->nectarcam().has_cdts_data()
+  if(cta_event and cta_event->has_nectarcam()
+    and cta_event->nectarcam().has_cdts_data()
     and cta_event->nectarcam().cdts_data().has_data()
     and cta_event->nectarcam().extdevices_presence() & 0x01)
   {
@@ -789,4 +789,8 @@ copy_single_gain_waveforms(
   }
 
   calin_waveforms->set_all_channels_present(all_channels_present);
+}
+
+NectarCam_ACTL_R1_CameraEventDecoder* NectarCam_ACTL_R1_CameraEventDecoder::clone() const {
+  return new NectarCam_ACTL_R1_CameraEventDecoder(*this);
 }

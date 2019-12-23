@@ -46,7 +46,6 @@ inline void *align( std::size_t alignment, std::size_t size,
 #include <iact_data/nectarcam_actl_event_decoder.hpp>
 #include <iact_data/nectarcam_layout.hpp>
 #include <iact_data/nectarcam_configuration.hpp>
-#include <math/simd.hpp>
 #include <provenance/system_info.hpp>
 
 using namespace calin::iact_data::nectarcam_actl_event_decoder;
@@ -578,7 +577,7 @@ bool NectarCam_ACTL_L0_CameraEventDecoder::decode_run_config(
   //
   // ==========================================================================
 
-  if(cta_event->uctsdatapresence() and cta_event->has_uctsdata() and
+  if(cta_event and cta_event->uctsdatapresence() and cta_event->has_uctsdata() and
     cta_event->uctsdata().has_data())
   {
     calin::ix::iact_data::telescope_event::CDTSData calin_cdts_data;
@@ -806,4 +805,8 @@ get_nmod_from_event(const DataModel::CameraEvent* cta_event) const
     nmod = cta_wf.data().size()/(sizeof(uint16_t)*nsample*7);
   }
   return nmod;
+}
+
+NectarCam_ACTL_L0_CameraEventDecoder* NectarCam_ACTL_L0_CameraEventDecoder::clone() const {
+  return new NectarCam_ACTL_L0_CameraEventDecoder(*this);
 }

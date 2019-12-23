@@ -335,12 +335,12 @@ ZFITSACTL_L0_CameraEventDataSourceOpener::~ZFITSACTL_L0_CameraEventDataSourceOpe
   // nothing to see here
 }
 
-unsigned ZFITSACTL_L0_CameraEventDataSourceOpener::num_sources()
+unsigned ZFITSACTL_L0_CameraEventDataSourceOpener::num_sources() const
 {
   return filenames_.size();
 }
 
-std::string ZFITSACTL_L0_CameraEventDataSourceOpener::source_name(unsigned isource)
+std::string ZFITSACTL_L0_CameraEventDataSourceOpener::source_name(unsigned isource) const
 {
   if(isource >= filenames_.size())return {};
   return filenames_[isource];
@@ -365,9 +365,22 @@ ZFITSACTL_L0_CameraEventDataSource::ZFITSACTL_L0_CameraEventDataSource(const std
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     ACTL_L0_CameraEventRandomAccessDataSourceWithRunHeader>(
     new ZFITSACTL_L0_CameraEventDataSourceOpener(filename, config), true),
-  config_(config), run_header_(source_->get_run_header())
+  config_(config), run_header_(source_ ? source_->get_run_header() : nullptr)
 {
-  // nothing to see here
+  if(run_header_ == nullptr and opener_->num_sources() > 1) {
+    // In this case the first file fragment is missing the RunHeader, search
+    // for it in later fragments then reopen the first fragment
+
+    while(run_header_ == nullptr and isource_ < opener_->num_sources())
+    {
+      ++isource_;
+      open_file();
+      run_header_ = source_ ? source_->get_run_header() : nullptr;
+    }
+
+    isource_ = 0;
+    open_file();
+  }
 }
 
 ZFITSACTL_L0_CameraEventDataSource::~ZFITSACTL_L0_CameraEventDataSource()

@@ -113,8 +113,6 @@ message RNGCoreData
       [(CFO).desc = "NR3 core state data."];
     NR3_SIMD_RNGCoreData nr3_simd_emu4_core  = 4
       [(CFO).desc = "NR3 SIMD emulation 256bit core state data."];
-    NR3_SIMD_RNGCoreData nr3_avx2_core  = 5
-      [(CFO).desc = "NR3 AVX2 core state data."];
   }
 }
 

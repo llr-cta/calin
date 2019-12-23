@@ -51,7 +51,7 @@ VSOTelescope::VSOTelescope():
     fPixelGridShiftX(), fPixelGridShiftZ(), fConcSurvProb(),
     fFPRotation(), fCameraIP(), fPixelParity(),
     fWindowFront(), fWindowOuterRadius(), fWindowThickness(), fWindowRefractiveIndex(),
-    fPreObscurations(), fPostObscurations(),
+    fPreObscurations(), fPostObscurations(), fCameraObscurations(),
     fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), rot_reflector_to_global_()
 {
   calculateFPRotationMatrix();
@@ -69,7 +69,8 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
 	     double CSP, const Eigen::Vector3d& FPR, double CIP, bool PP,
        double WIN_FRONT, double WIN_RAD, double WIN_THICK, double WIN_N,
 	     const std::vector<VSOObscuration*>& OBSVEC_PRE,
-       const std::vector<VSOObscuration*>& OBSVEC_POST
+       const std::vector<VSOObscuration*>& OBSVEC_POST,
+       const std::vector<VSOObscuration*>& OBSVEC_CAM
 	     ):
     fID(TID), /*fTelescopeHexID(THID),*/ fPos(P),
     fDeltaY(DY), fAlphaX(AX), fAlphaY(AY), fElevation(EL), fAzimuth(AZ),
@@ -86,7 +87,7 @@ VSOTelescope(unsigned TID, const Eigen::Vector3d&P,
     fFPRotation(FPR), fCameraIP(CIP), fPixelParity(PP),
     fWindowFront(WIN_FRONT), fWindowOuterRadius(WIN_RAD),
     fWindowThickness(WIN_THICK), fWindowRefractiveIndex(WIN_N),
-    fPreObscurations(OBSVEC_PRE), fPostObscurations(OBSVEC_POST),
+    fPreObscurations(OBSVEC_PRE), fPostObscurations(OBSVEC_POST), fCameraObscurations(OBSVEC_CAM),
     fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(), rot_reflector_to_global_()
 {
   calculateFPRotationMatrix();
@@ -119,7 +120,7 @@ VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fPixelParity(o.fPixelParity),
     fWindowFront(o.fWindowFront), fWindowOuterRadius(o.fWindowOuterRadius),
     fWindowThickness(o.fWindowThickness), fWindowRefractiveIndex(o.fWindowRefractiveIndex),
-    fPreObscurations(), fPostObscurations(),
+    fPreObscurations(), fPostObscurations(), fCameraObscurations(),
     fMirrors(), fMirrorsByHexID(), fPixels(), fPixelsByHexID(),
     rot_reflector_to_global_()
 {
@@ -143,11 +144,9 @@ VSOTelescope::VSOTelescope(const VSOTelescope& o):
     fPixelsByHexID[(*i)->hexID()]=pixel;
   }
 
-  for(std::vector<VSOObscuration*>::const_iterator i=o.fPreObscurations.begin();
-      i!=o.fPreObscurations.end(); i++)fPreObscurations.push_back((*i)->clone());
-
-  for(std::vector<VSOObscuration*>::const_iterator i=o.fPostObscurations.begin();
-      i!=o.fPostObscurations.end(); i++)fPostObscurations.push_back((*i)->clone());
+  for(const auto *i : o.fPreObscurations)fPreObscurations.push_back(i->clone());
+  for(const auto *i : o.fPostObscurations)fPostObscurations.push_back(i->clone());
+  for(const auto *i : o.fCameraObscurations)fCameraObscurations.push_back(i->clone());
 
   calculateFPRotationMatrix();
   calculateRotationVector();
@@ -159,10 +158,9 @@ VSOTelescope::~VSOTelescope()
       i!=fMirrors.end(); i++)delete *i;
   for(std::vector<VSOPixel*>::iterator i=fPixels.begin();
       i!=fPixels.end(); i++)delete *i;
-  for(std::vector<VSOObscuration*>::iterator i=fPreObscurations.begin();
-      i!=fPreObscurations.end(); i++)delete *i;
-  for(std::vector<VSOObscuration*>::iterator i=fPostObscurations.begin();
-      i!=fPostObscurations.end(); i++)delete *i;
+  for(auto* i : fPreObscurations)delete i;
+  for(auto* i : fPostObscurations)delete i;
+  for(auto* i : fCameraObscurations)delete i;
 }
 
 // Stroustrup third edition sec 11.3.4 recommends default copy assignment
@@ -242,17 +240,17 @@ const VSOTelescope& VSOTelescope::operator =(const VSOTelescope& o)
     fPixelsByHexID[(*i)->hexID()]=pixel;
   }
 
-  for(std::vector<VSOObscuration*>::const_iterator i=fPreObscurations.begin();
-      i!=fPreObscurations.end(); i++)delete *i;
+  for(auto* i : fPreObscurations)delete i;
   fPreObscurations.clear();
-  for(std::vector<VSOObscuration*>::const_iterator i=o.fPreObscurations.begin();
-      i!=o.fPreObscurations.end(); i++)fPreObscurations.push_back((*i)->clone());
+  for(auto* i : o.fPreObscurations)fPreObscurations.push_back(i->clone());
 
-  for(std::vector<VSOObscuration*>::const_iterator i=fPostObscurations.begin();
-      i!=fPostObscurations.end(); i++)delete *i;
+  for(auto* i : fPostObscurations)delete i;
   fPostObscurations.clear();
-  for(std::vector<VSOObscuration*>::const_iterator i=o.fPostObscurations.begin();
-      i!=o.fPostObscurations.end(); i++)fPostObscurations.push_back((*i)->clone());
+  for(auto* i : o.fPostObscurations)fPostObscurations.push_back(i->clone());
+
+  for(auto* i : fCameraObscurations)delete i;
+  fCameraObscurations.clear();
+  for(auto* i : o.fCameraObscurations)fCameraObscurations.push_back(i->clone());
 
   calculateFPRotationMatrix();
   calculateRotationVector();
@@ -680,6 +678,8 @@ dump_as_proto(calin::ix::simulation::vs_optics::VSOTelescopeData* d) const
     iobs->dump_as_proto(d->add_pre_reflection_obscuration());
   for(auto iobs : fPostObscurations)
     iobs->dump_as_proto(d->add_post_reflection_obscuration());
+  for(auto iobs : fCameraObscurations)
+    iobs->dump_as_proto(d->add_camera_obscuration());
   for(auto imir : fMirrors)
     if(imir != nullptr)imir->dump_as_proto(d->add_mirror());
   for(auto ipix : fPixels)

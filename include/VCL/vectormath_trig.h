@@ -1,11 +1,11 @@
 /****************************  vectormath_trig.h   ******************************
 * Author:        Agner Fog
 * Date created:  2014-04-18
-* Last modified: 2016-05-02
-* Version:       1.22
-* Project:       vector classes
+* Last modified: 2019-08-01
+* Version:       1.40.00
+* Project:       vector class library
 * Description:
-* Header file containing inline version of trigonometric functions 
+* Header file containing inline version of trigonometric functions
 * and inverse trigonometric functions
 * sin, cos, sincos, tan
 * asin, acos, atan, atan2
@@ -18,9 +18,10 @@
 * > Cephes math library by Stephen L. Moshier 1992,
 *   http://www.netlib.org/cephes/
 *
-* For detailed instructions, see vectormath_common.h and VectorClass.pdf
+* For detailed instructions, see vcl_manual.pdf
 *
-* (c) Copyright 2014-2016 GNU General Public License http://www.gnu.org/licenses
+* (c) Copyright 2014-2019 Agner Fog.
+* Apache License version 2.0 or later.
 ******************************************************************************/
 
 #ifndef VECTORMATH_TRIG_H
@@ -32,82 +33,6 @@
 namespace VCL_NAMESPACE {
 #endif
 
-// Different overloaded functions for template resolution.
-// These are used to fix the problem that the quadrant index uses
-// a vector of 32-bit integers which doesn't fit the size of the
-// 64-bit double precision vector:
-// VTYPE | ITYPE | ITYPEH
-// -----------------------
-// Vec2d | Vec2q | Vec4i
-// Vec4d | Vec4q | Vec4i
-// Vec8d | Vec8q | Vec8i
-
-// define overloaded truncate functions
-static inline Vec4i vm_truncate_low_to_int(Vec2d const & x) {
-    return truncate_to_int(x, x);
-}
-
-#if MAX_VECTOR_SIZE >= 256
-static inline Vec4i vm_truncate_low_to_int(Vec4d const & x) {
-    return truncate_to_int(x);
-}
-#endif // MAX_VECTOR_SIZE >= 256
-
-#if MAX_VECTOR_SIZE >= 512
-static inline Vec8i vm_truncate_low_to_int(Vec8d const & x) {
-    return truncate_to_int(x);
-}
-#endif // MAX_VECTOR_SIZE >= 512
-
-
-// define int -> double conversions
-template<class VTYPE, class ITYPE>
-static inline VTYPE vm_half_int_vector_to_double(ITYPE const & x);
-
-template<>
-inline Vec2d vm_half_int_vector_to_double<Vec2d, Vec4i>(Vec4i const & x) {
-    return to_double_low(x);
-}
-
-#if MAX_VECTOR_SIZE >= 256
-template<>
-inline Vec4d vm_half_int_vector_to_double<Vec4d, Vec4i>(Vec4i const & x) {
-    return to_double(x);
-}
-#endif // MAX_VECTOR_SIZE >= 256
-
-#if MAX_VECTOR_SIZE >= 512
-template<>
-inline Vec8d vm_half_int_vector_to_double<Vec8d, Vec8i>(Vec8i const & x) {
-    return to_double(x);
-}
-#endif // MAX_VECTOR_SIZE >= 512
-
-
-// define int32_t to int64_t conversions
-template<class ITYPE, class ITYPEH>
-static inline ITYPE vm_half_int_vector_to_full(ITYPEH const & x);
-
-template<>
-inline Vec2q vm_half_int_vector_to_full<Vec2q, Vec4i>(Vec4i const & x) {
-    return extend_low(x);
-}
-
-#if MAX_VECTOR_SIZE >= 256
-template<>
-inline Vec4q vm_half_int_vector_to_full<Vec4q, Vec4i>(Vec4i const & x) {
-    return extend_low(Vec8i(x, x));
-}
-#endif // MAX_VECTOR_SIZE >= 256
-
-#if MAX_VECTOR_SIZE >= 512
-template<>
-inline Vec8q vm_half_int_vector_to_full<Vec8q, Vec8i>(Vec8i const & x) {
-    return extend_low(Vec16i(x, x));
-}
-#endif // MAX_VECTOR_SIZE >= 512
-
-
 
 // *************************************************************
 //             sincos template, double precision
@@ -115,17 +40,16 @@ inline Vec8q vm_half_int_vector_to_full<Vec8q, Vec8i>(Vec8i const & x) {
 // Template parameters:
 // VTYPE:  f.p. vector type
 // ITYPE:  integer vector type with same element size
-// ITYPEH: integer vector type with half the element size
 // BVTYPE: boolean vector type
 // SC:     1 = sin, 2 = cos, 3 = sincos
 // Paramterers:
 // xx = input x (radians)
 // cosret = return pointer (only if SC = 3)
-template<class VTYPE, class ITYPE, class ITYPEH, class BVTYPE, int SC>
+template<class VTYPE, class ITYPE, class BVTYPE, int SC>
 static inline VTYPE sincos_d(VTYPE * cosret, VTYPE const & xx) {
 
     // define constants
-    const double ONEOPIO4 = 4. / VM_PI;
+    //const double ONEOPIO4 = 4. / VM_PI;
 
     const double P0sin = -1.66666666666666307295E-1;
     const double P1sin = 8.33333333332211858878E-3;
@@ -141,33 +65,29 @@ static inline VTYPE sincos_d(VTYPE * cosret, VTYPE const & xx) {
     const double P4cos = 2.08757008419747316778E-9;
     const double P5cos = -1.13585365213876817300E-11;
 
-    const double DP1 = 7.853981554508209228515625E-1;
-    const double DP2 = 7.94662735614792836714E-9;
-    const double DP3 = 3.06161699786838294307E-17;
+    const double DP1 = 7.853981554508209228515625E-1 * 2.;
+    const double DP2 = 7.94662735614792836714E-9 * 2.;
+    const double DP3 = 3.06161699786838294307E-17 * 2.;
     /*
     const double DP1sc = 7.85398125648498535156E-1;
     const double DP2sc = 3.77489470793079817668E-8;
     const double DP3sc = 2.69515142907905952645E-15;
     */
     VTYPE  xa, x, y, x2, s, c, sin1, cos1;       // data vectors
-    ITYPEH q;                                    // integer vectors, 32 bit
-    ITYPE  qq, signsin, signcos;                 // integer vectors, 64 bit
+    ITYPE  q, qq, signsin, signcos;              // integer vectors, 64 bit
     BVTYPE swap, overflow;                       // boolean vectors
 
     xa = abs(xx);
 
     // Find quadrant
+    y = round(xa * (double)(2. / VM_PI));   // quadrant, as float
+    q = round_to_int64(y);                  // quadrant, as integer
+    // Find quadrant
     //      0 -   pi/4 => 0
-    //   pi/4 - 3*pi/4 => 2
-    // 3*pi/4 - 5*pi/4 => 4
-    // 5*pi/4 - 7*pi/4 => 6
-    // 7*pi/4 - 8*pi/4 => 8
-
-    // truncate to integer (magic number conversion is not faster here)
-    q = vm_truncate_low_to_int(xa * ONEOPIO4);
-    q = (q + 1) & ~1;
-
-    y = vm_half_int_vector_to_double<VTYPE>(q);  // quadrant, as double
+    //   pi/4 - 3*pi/4 => 1
+    // 3*pi/4 - 5*pi/4 => 2
+    // 5*pi/4 - 7*pi/4 => 3
+    // 7*pi/4 - 8*pi/4 => 4
 
     // Reduce by extended precision modular arithmetic
     x = nmul_add(y, DP3, nmul_add(y, DP2, nmul_add(y, DP1, xa)));    // x = ((xa - y * DP1) - y * DP2) - y * DP3;
@@ -179,25 +99,24 @@ static inline VTYPE sincos_d(VTYPE * cosret, VTYPE const & xx) {
     s = mul_add(x * x2, s, x);                                       // s = x + (x * x2) * s;
     c = mul_add(x2 * x2, c, nmul_add(x2, 0.5, 1.0));                 // c = 1.0 - x2 * 0.5 + (x2 * x2) * c;
 
-    // correct for quadrant
-    qq = vm_half_int_vector_to_full<ITYPE, ITYPEH>(q);
-    swap = BVTYPE((qq & 2) != 0);
+    // swap sin and cos if odd quadrant
+    swap = BVTYPE((q & 1) != 0);
+
 
     // check for overflow
-    if (horizontal_or(q < 0)) {
-        overflow = (y < 0) & is_finite(xa);
-        s = select(overflow, 0., s);
-        c = select(overflow, 1., c);
-    }
+    overflow = BVTYPE(q > 0x80000000000000);  // q big if overflow
+    overflow &= is_finite(xa);
+    s = select(overflow, 0.0, s);
+    c = select(overflow, 1.0, c);
 
     if (SC & 1) {  // calculate sin
         sin1 = select(swap, c, s);
-        signsin = ((qq << 61) ^ ITYPE(reinterpret_i(xx))) & ITYPE(1ULL << 63);
+        signsin = ((q << 62) ^ ITYPE(reinterpret_i(xx))) & 0x8000000000000000;
         sin1 ^= reinterpret_d(signsin);
     }
     if (SC & 2) {  // calculate cos
         cos1 = select(swap, s, c);
-        signcos = ((qq + 2) << 61) & (1ULL << 63);
+        signcos = ((q + 1) & 2) << 62;
         cos1 ^= reinterpret_d(signcos);
     }
     if (SC == 3) {  // calculate both. cos returned through pointer
@@ -209,42 +128,42 @@ static inline VTYPE sincos_d(VTYPE * cosret, VTYPE const & xx) {
 // instantiations of sincos_d template:
 
 static inline Vec2d sin(Vec2d const & x) {
-    return sincos_d<Vec2d, Vec2q, Vec4i, Vec2db, 1>(0, x);
+    return sincos_d<Vec2d, Vec2q, Vec2db, 1>(0, x);
 }
 
 static inline Vec2d cos(Vec2d const & x) {
-    return sincos_d<Vec2d, Vec2q, Vec4i, Vec2db, 2>(0, x);
+    return sincos_d<Vec2d, Vec2q, Vec2db, 2>(0, x);
 }
 
 static inline Vec2d sincos(Vec2d * cosret, Vec2d const & x) {
-    return sincos_d<Vec2d, Vec2q, Vec4i, Vec2db, 3>(cosret, x);
+    return sincos_d<Vec2d, Vec2q, Vec2db, 3>(cosret, x);
 }
 
 #if MAX_VECTOR_SIZE >= 256
 static inline Vec4d sin(Vec4d const & x) {
-    return sincos_d<Vec4d, Vec4q, Vec4i, Vec4db, 1>(0, x);
+    return sincos_d<Vec4d, Vec4q, Vec4db, 1>(0, x);
 }
 
 static inline Vec4d cos(Vec4d const & x) {
-    return sincos_d<Vec4d, Vec4q, Vec4i, Vec4db, 2>(0, x);
+    return sincos_d<Vec4d, Vec4q, Vec4db, 2>(0, x);
 }
 
 static inline Vec4d sincos(Vec4d * cosret, Vec4d const & x) {
-    return sincos_d<Vec4d, Vec4q, Vec4i, Vec4db, 3>(cosret, x);
+    return sincos_d<Vec4d, Vec4q, Vec4db, 3>(cosret, x);
 }
 #endif // MAX_VECTOR_SIZE >= 256
 
 #if MAX_VECTOR_SIZE >= 512
 static inline Vec8d sin(Vec8d const & x) {
-    return sincos_d<Vec8d, Vec8q, Vec8i, Vec8db, 1>(0, x);
+    return sincos_d<Vec8d, Vec8q, Vec8db, 1>(0, x);
 }
 
 static inline Vec8d cos(Vec8d const & x) {
-    return sincos_d<Vec8d, Vec8q, Vec8i, Vec8db, 2>(0, x);
+    return sincos_d<Vec8d, Vec8q, Vec8db, 2>(0, x);
 }
 
 static inline Vec8d sincos(Vec8d * cosret, Vec8d const & x) {
-    return sincos_d<Vec8d, Vec8q, Vec8i, Vec8db, 3>(cosret, x);
+    return sincos_d<Vec8d, Vec8q, Vec8db, 3>(cosret, x);
 }
 #endif // MAX_VECTOR_SIZE >= 512
 
@@ -264,11 +183,9 @@ template<class VTYPE, class ITYPE, class BVTYPE, int SC>
 static inline VTYPE sincos_f(VTYPE * cosret, VTYPE const & xx) {
 
     // define constants
-    const float ONEOPIO4f = (float)(4. / VM_PI);
-
-    const float DP1F = 0.78515625f;
-    const float DP2F = 2.4187564849853515625E-4f;
-    const float DP3F = 3.77489497744594108E-8f;
+    const float DP1F = 0.78515625f * 2.f;
+    const float DP2F = 2.4187564849853515625E-4f * 2.f;
+    const float DP3F = 3.77489497744594108E-8f * 2.f;
 
     const float P0sinf = -1.6666654611E-1f;
     const float P1sinf = 8.3321608736E-3f;
@@ -285,15 +202,13 @@ static inline VTYPE sincos_f(VTYPE * cosret, VTYPE const & xx) {
     xa = abs(xx);
 
     // Find quadrant
+    y = round(xa * (float)(2. / VM_PI));    // quadrant, as float
+    q = round_to_int(y);                    // quadrant, as integer
     //      0 -   pi/4 => 0
-    //   pi/4 - 3*pi/4 => 2
-    // 3*pi/4 - 5*pi/4 => 4
-    // 5*pi/4 - 7*pi/4 => 6
-    // 7*pi/4 - 8*pi/4 => 8
-    q = truncate_to_int(xa * ONEOPIO4f);
-    q = (q + 1) & ~1;
-
-    y = to_float(q);  // quadrant, as float
+    //   pi/4 - 3*pi/4 => 1
+    // 3*pi/4 - 5*pi/4 => 2
+    // 5*pi/4 - 7*pi/4 => 3
+    // 7*pi/4 - 8*pi/4 => 4
 
     // Reduce by extended precision modular arithmetic
     x = nmul_add(y, DP3F, nmul_add(y, DP2F, nmul_add(y, DP1F, xa))); // x = ((xa - y * DP1F) - y * DP2F) - y * DP3F;
@@ -306,24 +221,23 @@ static inline VTYPE sincos_f(VTYPE * cosret, VTYPE const & xx) {
     s = polynomial_2(x2, P0sinf, P1sinf, P2sinf) * (x*x2) + x;
     c = polynomial_2(x2, P0cosf, P1cosf, P2cosf) * (x2*x2) + nmul_add(0.5f, x2, 1.0f);
 
-    // correct for quadrant
-    swap = BVTYPE((q & 2) != 0);
+    // swap sin and cos if odd quadrant
+    swap = BVTYPE((q & 1) != 0);
 
     // check for overflow
-    overflow = BVTYPE(q < 0);  // q = 0x80000000 if overflow
-    if (horizontal_or(overflow & is_finite(xa))) {
-        s = select(overflow, 0.f, s);
-        c = select(overflow, 1.f, c);
-    }
+    overflow = BVTYPE(q > 0x2000000);  // q big if overflow
+    overflow &= is_finite(xa);
+    s = select(overflow, 0.0f, s);
+    c = select(overflow, 1.0f, c);
 
     if (SC & 5) {  // calculate sin
         sin1 = select(swap, c, s);
-        signsin = ((q << 29) ^ ITYPE(reinterpret_i(xx))) & ITYPE(1 << 31);
+        signsin = ((q << 30) ^ ITYPE(reinterpret_i(xx))) & 0x80000000;
         sin1 ^= reinterpret_f(signsin);
     }
     if (SC & 6) {  // calculate cos
         cos1 = select(swap, s, c);
-        signcos = ((q + 2) << 29) & (1 << 31);
+        signcos = ((q + 1) & 2) << 30;
         cos1 ^= reinterpret_f(signcos);
     }
     if (SC == 1) return sin1;
@@ -332,7 +246,9 @@ static inline VTYPE sincos_f(VTYPE * cosret, VTYPE const & xx) {
         *cosret = cos1;
         return sin1;
     }
-    else /*if (SC == 4)*/ return sin1 / cos1;
+    else {  // SC == 4. tan
+        return sin1 / cos1;
+    }
 }
 
 // instantiations of sincos_f template:
@@ -396,19 +312,18 @@ static inline Vec16f tan(Vec16f const & x) {
 // Template parameters:
 // VTYPE:  f.p. vector type
 // ITYPE:  integer vector type with same element size
-// ITYPEH: integer vector type with half the element size
 // BVTYPE: boolean vector type
 // Paramterers:
 // x = input x (radians)
-template<class VTYPE, class ITYPE, class ITYPEH, class BVTYPE>
+template<class VTYPE, class ITYPE, class BVTYPE>
 static inline VTYPE tan_d(VTYPE const & x) {
 
     // define constants
-    const double ONEOPIO4 = 4. / VM_PI;
+    //const double ONEOPIO4 = 4. / VM_PI;
 
-    const double DP1 = 7.853981554508209228515625E-1;
-    const double DP2 = 7.94662735614792836714E-9;
-    const double DP3 = 3.06161699786838294307E-17;
+    const double DP1 = 7.853981554508209228515625E-1 * 2.;;
+    const double DP2 = 7.94662735614792836714E-9 * 2.;;
+    const double DP3 = 3.06161699786838294307E-17 * 2.;;
 
     const double P2tan = -1.30936939181383777646E4;
     const double P1tan = 1.15351664838587416140E6;
@@ -420,25 +335,22 @@ static inline VTYPE tan_d(VTYPE const & x) {
     const double Q0tan = -5.38695755929454629881E7;
 
     VTYPE  xa, y, z, zz, px, qx, tn, recip; // data vectors
-    ITYPEH q;                               // integer vector, 32 bit
-    ITYPE  qq;                              // integer vector, 64 bit
+    ITYPE  q;                              // integer vector, 64 bit
     BVTYPE doinvert, xzero, overflow;       // boolean vectors
 
     xa = abs(x);
 
     // Find quadrant
+    y = round(xa * (double)(2. / VM_PI));   // quadrant, as float
+    q = round_to_int64(y);                  // quadrant, as integer
+    // Find quadrant
     //      0 -   pi/4 => 0
-    //   pi/4 - 3*pi/4 => 2
-    // 3*pi/4 - 5*pi/4 => 4
-    // 5*pi/4 - 7*pi/4 => 6
-    // 7*pi/4 - 8*pi/4 => 8
+    //   pi/4 - 3*pi/4 => 1
+    // 3*pi/4 - 5*pi/4 => 2
+    // 5*pi/4 - 7*pi/4 => 3
+    // 7*pi/4 - 8*pi/4 => 4
 
-    q = vm_truncate_low_to_int(xa * ONEOPIO4);
-    q = (q + 1) & ~1;
-
-    y = vm_half_int_vector_to_double<VTYPE>(q);  // quadrant, as double
-
-    // Reduce by extended precision modular arithmetic    
+    // Reduce by extended precision modular arithmetic
     z = nmul_add(y, DP3, nmul_add(y, DP2, nmul_add(y, DP1, xa)));    //z = ((xa - y * DP1) - y * DP2) - y * DP3;
 
     // Pade expansion of tan, valid for -pi/4 <= x <= pi/4
@@ -450,21 +362,17 @@ static inline VTYPE tan_d(VTYPE const & x) {
     tn = mul_add(px / qx, z * zz, z);            // tn = z + z * zz * px / qx;
 
     // if (q&2) tn = -1/tn
-    qq = vm_half_int_vector_to_full<ITYPE, ITYPEH>(q);
-    doinvert = BVTYPE((qq & 2) != 0);
+    doinvert = BVTYPE((q & 1) != 0);
     xzero = (xa == 0.);
     // avoid division by 0. We will not be using recip anyway if xa == 0.
-    // tn never becomes exactly 0 when x = pi/2 so we only have to make 
+    // tn never becomes exactly 0 when x = pi/2 so we only have to make
     // a special case for x == 0.
     recip = (-1.) / select(xzero, VTYPE(-1.), tn);
     tn = select(doinvert, recip, tn);
     tn = sign_combine(tn, x);       // get original sign
 
-    // check for overflow
-    if (horizontal_or(q < 0)) {
-        overflow = (y < 0) & is_finite(xa);
-        tn = select(overflow, 0., tn);
-    }
+    overflow = BVTYPE(q > 0x80000000000000) & is_finite(xa);
+    tn = select(overflow, 0., tn);
 
     return tn;
 }
@@ -472,101 +380,29 @@ static inline VTYPE tan_d(VTYPE const & x) {
 // instantiations of tan_d template:
 
 static inline Vec2d tan(Vec2d const & x) {
-    return tan_d<Vec2d, Vec2q, Vec4i, Vec2db>(x);
+    return tan_d<Vec2d, Vec2q, Vec2db>(x);
 }
 
 #if MAX_VECTOR_SIZE >= 256
 static inline Vec4d tan(Vec4d const & x) {
-    return tan_d<Vec4d, Vec4q, Vec4i, Vec4db>(x);
+    return tan_d<Vec4d, Vec4q, Vec4db>(x);
 }
 #endif // MAX_VECTOR_SIZE >= 256
 
 #if MAX_VECTOR_SIZE >= 512
 static inline Vec8d tan(Vec8d const & x) {
-    return tan_d<Vec8d, Vec8q, Vec8i, Vec8db>(x);
+    return tan_d<Vec8d, Vec8q, Vec8db>(x);
 }
 #endif // MAX_VECTOR_SIZE >= 512
 
 
-/*
-This is removed for the single precision version.
-It is faster to use tan(x) = sin(x)/cos(x)
-
 // *************************************************************
 //             tan template, single precision
 // *************************************************************
-// Template parameters:
-// VTYPE:  f.p. vector type
-// ITYPE:  integer vector type with same element size
-// BVTYPE: boolean vector type
-// Paramterers:
-// x = input x (radians)
-// cosret = return pointer (only if SC = 3)
-template<class VTYPE, class ITYPE, class BVTYPE>
-static inline VTYPE tan_f(VTYPE const & x) {
+// This is removed for the single precision version.
+// It is faster to use tan(x) = sin(x)/cos(x)
 
-    // define constants
-    const float ONEOPIO4f = (float)(4./VM_PI);
 
-    const float DP1F = 0.78515625f;
-    const float DP2F = 2.4187564849853515625E-4f;
-    const float DP3F = 3.77489497744594108E-8f;
-
-    const float P5tanf = 9.38540185543E-3f;
-    const float P4tanf = 3.11992232697E-3f;
-    const float P3tanf = 2.44301354525E-2f;
-    const float P2tanf = 5.34112807005E-2f;
-    const float P1tanf = 1.33387994085E-1f;
-    const float P0tanf = 3.33331568548E-1f;
-
-    VTYPE  xa, y, z, zz, tn, recip;  // data vectors
-    ITYPE  q;                        // integer vector
-    BVTYPE doinvert, xzero;          // boolean vectors
-
-    xa = abs(x);
-
-    // Find quadrant
-    //      0 -   pi/4 => 0
-    //   pi/4 - 3*pi/4 => 2
-    // 3*pi/4 - 5*pi/4 => 4
-    // 5*pi/4 - 7*pi/4 => 6
-    // 7*pi/4 - 8*pi/4 => 8
-    q = truncate_to_int(xa * ONEOPIO4f);
-    q = (q + 1) & ~1;
-
-    y = to_float(q);             // quadrant, as float
-
-    // Reduce by extended precision modular arithmetic
-    z = ((xa - y * DP1F) - y * DP2F) - y * DP3F;
-    //z = (xa - y * DP1F) - y * (DP2F + DP3F);
-    zz = z * z;
-
-    // Taylor expansion
-    tn = polynomial_5(zz, P0tanf, P1tanf, P2tanf, P3tanf, P4tanf, P5tanf) * (zz * z) + z;
-
-    // if (q&2) tn = -1/tn
-    doinvert = (q & 2) != 0;
-    xzero = (xa == 0.f);
-    // avoid division by 0. We will not be using recip anyway if xa == 0.
-    // tn never becomes exactly 0 when x = pi/2 so we only have to make
-    // a special case for x == 0.
-    recip = (-1.f) / select(xzero, VTYPE(-1.f), tn);
-    tn = select(doinvert, recip, tn);
-    tn = sign_combine(tn, x);          // get original sign
-
-    return tn;
-}
-
-// instantiations of tan_f template:
-
-static inline Vec4f tan(Vec4f const & x) {
-    return tan_f<Vec4f, Vec4i, Vec4fb>(x);
-}
-
-static inline Vec8f tan(Vec8f const & x) {
-    return tan_f<Vec8f, Vec8i, Vec8fb>(x);
-}
-*/
 
 // *************************************************************
 //             asin/acos template, double precision
@@ -670,7 +506,7 @@ static inline VTYPE asin_d(VTYPE const & x) {
         z1 = mul_add(xb, y1, xb);                // yb = xb * y1; z1 = xb + yb;
     }
 
-    // results for small        
+    // results for small
     z2 = mul_add(xa, y1, xa);                    // z2 = xa * y1 + xa;
 
     // correct for sign
@@ -747,7 +583,7 @@ static inline VTYPE asin_f(VTYPE const & x) {
     x2 = xa * xa;
     x3 = select(big, x1, x2);
 
-    //if (horizontal_or(big)) 
+    //if (horizontal_or(big))
     {
         xb = sqrt(x1);
     }
@@ -845,6 +681,16 @@ static inline VTYPE atan_d(VTYPE const & y, VTYPE const & x) {
         // swap x and y if y1 > x1
         x2 = select(swapxy, y1, x1);
         y2 = select(swapxy, x1, y1);
+
+        // check for special case: x and y are both +/- INF
+        BVTYPE both_infinite = is_inf(x) & is_inf(y);   // x and Y are both infinite
+        if (horizontal_or(both_infinite)) {             // at least one element has both infinite
+            VTYPE mone = VTYPE(-1.0);
+            // to do in version 2: conditional &. Branch not needed
+            x2 = select(both_infinite, x2 & mone, x2);  // get 1.0 with the sign of x
+            y2 = select(both_infinite, y2 & mone, y2);  // get 1.0 with the sign of y
+        }
+
         t = y2 / x2;                  // x = y = 0 gives NAN here
     }
     else {    // atan(y)
@@ -882,8 +728,8 @@ static inline VTYPE atan_d(VTYPE const & y, VTYPE const & x) {
     if (T2) {  // atan2(y,x)
         // move back in place
         re = select(swapxy, VM_PI_2 - re, re);
-        re = select(x < 0., VM_PI - re, re);
         re = select((x | y) == 0., 0., re);      // atan2(0,0) = 0 by convention
+        re = select(sign_bit(x), VM_PI - re, re);  // also for x = -0.
     }
     // get sign bit
     re = sign_combine(re, y);
@@ -956,7 +802,16 @@ static inline VTYPE atan_f(VTYPE const & y, VTYPE const & x) {
         x2 = select(swapxy, y1, x1);
         y2 = select(swapxy, x1, y1);
 
-        // do we need to protect against x = y = 0? It will just produce NAN, probably without delay
+        // check for special case: x and y are both +/- INF
+        BVTYPE both_infinite = is_inf(x) & is_inf(y);   // x and Y are both infinite
+        if (horizontal_or(both_infinite)) {             // at least one element has both infinite
+            VTYPE mone = VTYPE(-1.0f);
+            // to do: conditional &
+            x2 = select(both_infinite, x2 & mone, x2);  // get 1.0 with the sign of x
+            y2 = select(both_infinite, y2 & mone, y2);  // get 1.0 with the sign of y
+        }
+
+        // x = y = 0 will produce NAN. No problem, fixed below
         t = y2 / x2;
     }
     else {    // atan(y)
@@ -1001,8 +856,8 @@ static inline VTYPE atan_f(VTYPE const & y, VTYPE const & x) {
     if (T2) {  // atan2(y,x)
         // move back in place
         re = select(swapxy, float(VM_PI_2) - re, re);
-        re = select(x < 0., float(VM_PI) - re, re);
-        re = select((x | y) == 0.f, 0.f, re);    // atan2(0,0) = 0 by convention
+        re = select((x | y) == 0.f, 0.f, re);    // atan2(0,+0) = 0 by convention
+        re = select(sign_bit(x), float(VM_PI) - re, re);  // also for x = -0.
     }
     // get sign bit
     re = sign_combine(re, y);

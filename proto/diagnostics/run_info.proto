@@ -123,6 +123,38 @@ message RunInfo {
     (CFO).desc = "List of duplicate event numbers (value) and the number "
       "of EXTRA times they appear (count)." ];
 
+  uint64 num_mono_trigger                                  = 40 [
+    (CFO).desc = "Number of events with mono trigger TIB bit set.",
+    (CFO).is_counter = true ];
+  uint64 num_stereo_trigger                                = 41 [
+    (CFO).desc = "Number of events with stereo trigger TIB bit set.",
+    (CFO).is_counter = true ];
+  uint64 num_external_calibration_trigger                  = 42 [
+    (CFO).desc = "Number of events with external calibration trigger TIB bit set.",
+    (CFO).is_counter = true ];
+  uint64 num_internal_calibration_trigger                  = 43 [
+    (CFO).desc = "Number of events with internal calibration trigger TIB bit set.",
+    (CFO).is_counter = true ];
+  uint64 num_ucts_aux_trigger                              = 44 [
+    (CFO).desc = "Number of events with UCTS aux trigger TIB bit set.",
+    (CFO).is_counter = true ];
+  uint64 num_pedestal_trigger                              = 45 [
+    (CFO).desc = "Number of events with pedestal trigger TIB bit set.",
+    (CFO).is_counter = true ];
+  uint64 num_slow_control_trigger                          = 46 [
+    (CFO).desc = "Number of events with slow control trigger TIB bit set.",
+    (CFO).is_counter = true ];
+  uint64 num_busy_trigger                                  = 47 [
+    (CFO).desc = "Number of events with busy trigger trigger TIB bit set.",
+    (CFO).is_counter = true ];
+
+  int64 min_event_time                                     = 50 [
+    (CFO).desc = "Minimum absolute event time from all events.", (CFO).units = "ns",
+    (CFO).integration_algorithm = MIN ];
+  int64 max_event_time                                     = 51 [
+    (CFO).desc = "Maximum absolute event time from all events.", (CFO).units = "ns",
+    (CFO).integration_algorithm = MAX ];
+
   repeated ModuleRunInfo module                            = 100;
 };
 
@@ -153,6 +185,18 @@ message PartialRunInfo {
   calin.ix.diagnostics.range.RunLengthEncodingBool tib_presence          = 22;
   calin.ix.diagnostics.range.RunLengthEncodingBool swat_presence         = 23;
   calin.ix.diagnostics.range.RunLengthEncodingBool all_channels_presence = 24;
+
+  uint64 num_mono_trigger                                  = 40 [ (CFO).is_counter = true ];
+  uint64 num_stereo_trigger                                = 41 [ (CFO).is_counter = true ];
+  uint64 num_external_calibration_trigger                  = 42 [ (CFO).is_counter = true ];
+  uint64 num_internal_calibration_trigger                  = 43 [ (CFO).is_counter = true ];
+  uint64 num_ucts_aux_trigger                              = 44 [ (CFO).is_counter = true ];
+  uint64 num_pedestal_trigger                              = 45 [ (CFO).is_counter = true ];
+  uint64 num_slow_control_trigger                          = 46 [ (CFO).is_counter = true ];
+  uint64 num_busy_trigger                                  = 47 [ (CFO).is_counter = true ];
+
+  int64 min_event_time                                     = 50 [ (CFO).integration_algorithm = MIN ];
+  int64 max_event_time                                     = 51 [ (CFO).integration_algorithm = MAX ];
 
   repeated PartialModuleRunInfo module                     = 100;
 };

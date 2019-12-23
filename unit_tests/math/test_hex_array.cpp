@@ -27,7 +27,7 @@
 #include <vector>
 
 #include "math/hex_array.hpp"
-#include "math/hex_array_simd.hpp"
+// #include "math/hex_array_simd.hpp"
 
 using namespace calin::math::hex_array;
 using namespace calin::math::hex_array::vvv;
@@ -60,7 +60,7 @@ TEST(TestHexArray, HexIDToRingIDRoot_SpeedTest50Rings) {
       }
   }
 }
-
+#if 0
 #if defined(__AVX2__) and defined(__FMA__)
 TEST(TestHexArray, AVX2_HexIDToRingIDRoot_SpeedTest50Rings) {
   for(unsigned iloop = 0; iloop<NLOOP_SPEED_TEST_50RINGS/8; iloop++)
@@ -75,6 +75,7 @@ TEST(TestHexArray, AVX2_HexIDToRingIDRoot_SpeedTest50Rings) {
   }
 }
 #endif
+#endif
 
 TEST(TestHexArray, HexIDToRingIDRoot_2000Rings) {
   unsigned hexid = 1;
@@ -87,6 +88,7 @@ TEST(TestHexArray, HexIDToRingIDRoot_2000Rings) {
     }
 }
 
+#if 0
 #if defined(__AVX2__) and defined(__FMA__)
 TEST(TestHexArray, AVX2_HexIDToRingIDRoot_2000Rings) {
   unsigned hexid = 1;
@@ -98,6 +100,7 @@ TEST(TestHexArray, AVX2_HexIDToRingIDRoot_2000Rings) {
       hexid++;
     }
 }
+#endif
 #endif
 
 TEST(TestHexArray, SomeNeighbors) {
@@ -161,6 +164,7 @@ TEST(TestHexArray, HexIDToXY_ComparisonWithVVVCode) {
     }
 }
 
+#if 0
 #if defined(__AVX2__) and defined(__FMA__)
 TEST(TestHexArray, AVX2_HexIDToXY_Equals_Scalar) {
   unsigned hexid = 1;
@@ -192,6 +196,7 @@ TEST(TestHexArray, AVX2_HexIDToXY_CW_Equals_Scalar) {
     }
 }
 #endif
+#endif
 
 TEST(TestHexArray, XYToHexID_NewCodeSpeedTest) {
   double dx = 0.005;
@@ -216,6 +221,7 @@ TEST(TestHexArray, XYToHexID_VVVCodeSpeedTest) {
     }
 }
 
+#if 0
 #if defined(__AVX2__) and defined(__FMA__)
 TEST(TestHexArray, XYToHexID_AVX2CodeSpeedTest) {
   volatile __m256i hexid;
@@ -230,6 +236,7 @@ TEST(TestHexArray, XYToHexID_AVX2CodeSpeedTest) {
   }
   EXPECT_GE(int32_t(hexid[0]), 0);
 }
+#endif
 #endif
 
 TEST(TestHexArray, XYToHexID_ComparisonWithVVVCode) {
@@ -249,6 +256,7 @@ TEST(TestHexArray, XYToHexID_ComparisonWithVVVCode) {
     }
 }
 
+#if 0
 #if defined(__AVX2__) and defined(__FMA__)
 TEST(TestHexArray, AVX2_XYToHexID_Equals_Scalar) {
   for(double x=-10.005; x<10.015; x+=0.02)
@@ -348,6 +356,7 @@ TEST(TestHexArray, AVX2_HexIDToFromRingSegRun_APriori) {
       }
 }
 #endif
+#endif
 
 TEST(TestHexArray, HexIDToFromRingSegRun_APriori) {
   unsigned hexid=1;
@@ -382,6 +391,7 @@ TEST(TestHexArray, HexIDToFromRingSegRun_EQ) {
   }
 }
 
+#if 0
 #if defined(__AVX2__) and defined(__FMA__)
 TEST(TestHexArray, AVX2_HexIDToFromRingSegRun_EQ) {
   for(unsigned hexid=1;hexid<100000;hexid++)
@@ -395,6 +405,7 @@ TEST(TestHexArray, AVX2_HexIDToFromRingSegRun_EQ) {
         << ringid << ' ' << segid << ' ' << runid;
   }
 }
+#endif
 #endif
 
 TEST(TestHexArray, RotateHexID_CCW) {
@@ -519,7 +530,7 @@ TEST(TestHexArray, RandHexIDToFromUV_CCW_EQ) {
   }
 }
 
-
+#if 0
 #if defined(__AVX2__) and defined(__FMA__)
 TEST(TestHexArray, AVX2_HexIDToFromUV_CW_EQ) {
   for(unsigned hexid=1;hexid<100000;hexid++)
@@ -581,6 +592,7 @@ TEST(TestHexArray, AVX2_RandHexIDToFromUV_CCW_EQ) {
     }
   }
 }
+#endif
 #endif
 
 int main(int argc, char **argv) {

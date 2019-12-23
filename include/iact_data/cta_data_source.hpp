@@ -37,7 +37,8 @@ namespace calin { namespace iact_data { namespace cta_data_source {
 
 class CTAZFITSDataSource:
   public calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig,
-  public calin::pattern::delegation::Delegator<
+  public calin::io::data_source::FragmentList,
+  private calin::pattern::delegation::Delegator<
     calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig>
 {
 public:
@@ -55,6 +56,13 @@ public:
   CTAZFITSDataSource(const std::string& filename,
     const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& decoder_config = default_decoder_config(),
     const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& config = default_config());
+
+  CTAZFITSDataSource(const std::string& filename, CTAZFITSDataSource* base_data_source,
+    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& config = default_config());
+  CTAZFITSDataSource(const std::string& filename,
+    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& config,
+    CTAZFITSDataSource* base_data_source);
+
   virtual ~CTAZFITSDataSource();
 
   calin::ix::iact_data::telescope_event::TelescopeEvent* get_next(
@@ -65,9 +73,15 @@ public:
   calin::ix::iact_data::telescope_run_configuration::
     TelescopeRunConfiguration* get_run_configuration() override;
 
+  unsigned current_fragment_index() const override;
+  unsigned num_fragments() const override;
+  std::string fragment_name(unsigned index) const override;
+
 private:
   static TelescopeRandomAccessDataSourceWithRunConfig* construct_delegate(
     std::string filename, config_type config, decoder_config_type decoder_config);
+  static TelescopeRandomAccessDataSourceWithRunConfig* copy_base_data_source(
+    std::string filename, config_type config, CTAZFITSDataSource* base_data_source);
 };
 
 

@@ -72,6 +72,25 @@ CTAZFITSDataSource(const std::string& filename,
   // nothing to see here
 }
 
+CTAZFITSDataSource::
+CTAZFITSDataSource(const std::string& filename,
+    CTAZFITSDataSource* base_data_source, const config_type& config):
+  TelescopeRandomAccessDataSourceWithRunConfig(),
+  Delegator<calin::iact_data::telescope_data_source::
+    TelescopeRandomAccessDataSourceWithRunConfig>(
+      copy_base_data_source(filename, config, base_data_source), /* adopt_delegate=*/ true)
+{
+  // nothing to see here
+}
+
+CTAZFITSDataSource::
+CTAZFITSDataSource(const std::string& filename,
+    const config_type& config, CTAZFITSDataSource* base_data_source):
+  CTAZFITSDataSource(filename, base_data_source, config)
+{
+  // nothing to see here
+}
+
 CTAZFITSDataSource::~CTAZFITSDataSource()
 {
   // nothing to see here
@@ -117,6 +136,24 @@ calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
 CTAZFITSDataSource::get_run_configuration()
 {
   return delegate_->get_run_configuration();
+}
+
+unsigned CTAZFITSDataSource::current_fragment_index() const
+{
+  return dynamic_cast<const calin::io::data_source::FragmentList&>(
+    *this->delegate()).current_fragment_index();
+}
+
+unsigned CTAZFITSDataSource::num_fragments() const
+{
+  return dynamic_cast<const calin::io::data_source::FragmentList&>(
+    *this->delegate()).num_fragments();
+}
+
+std::string CTAZFITSDataSource::fragment_name(unsigned index) const
+{
+  return dynamic_cast<const calin::io::data_source::FragmentList&>(
+    *this->delegate()).fragment_name(index);
 }
 
 calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*
@@ -183,4 +220,24 @@ CTAZFITSDataSource::construct_delegate(std::string filename,
       + calin::ix::iact_data::zfits_data_source::ACTLDataModel_Name(config.data_model()));
   }
   return nullptr;
+}
+
+calin::iact_data::telescope_data_source::TelescopeRandomAccessDataSourceWithRunConfig*
+CTAZFITSDataSource::copy_base_data_source(
+  std::string filename, config_type config, CTAZFITSDataSource* base_data_source)
+{
+  expand_filename_in_place(filename);
+
+  if(!is_file(filename))
+    throw std::runtime_error(
+      "CTAZFITSDataSource::copy_base_data_source: File not found: " + filename);
+
+  if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_R1*>(base_data_source->delegate())) {
+    return new zfits_data_source::ZFITSDataSource_R1(filename, zfits, config);
+  }else if(auto* zfits = dynamic_cast<zfits_data_source::ZFITSDataSource_L0*>(base_data_source->delegate())) {
+    return new zfits_data_source::ZFITSDataSource_L0(filename, zfits, config);
+  } else {
+    throw std::runtime_error(
+      "CTAZFITSDataSource::copy_base_data_source: unsupported data source");
+  }
 }

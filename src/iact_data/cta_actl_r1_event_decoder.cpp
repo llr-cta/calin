@@ -39,6 +39,15 @@ using namespace calin::pattern::delegation;
 #include <R1.pb.h>
 
 CTA_ACTL_R1_CameraEventDecoder::
+CTA_ACTL_R1_CameraEventDecoder(
+    calin::iact_data::actl_event_decoder::ACTL_R1_CameraEventDecoder* decoder,
+    bool adopt_decoder):
+  ACTL_R1_CameraEventDecoder(), Delegator<ACTL_R1_CameraEventDecoder>(decoder, adopt_decoder)
+{
+  // nothing to see here
+}
+
+CTA_ACTL_R1_CameraEventDecoder::
 CTA_ACTL_R1_CameraEventDecoder(const std::string& filename, unsigned run_number,
     const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& config):
   ACTL_R1_CameraEventDecoder(), Delegator<ACTL_R1_CameraEventDecoder>(nullptr),
@@ -123,4 +132,8 @@ CTA_ACTL_R1_CameraEventDecoder::default_config()
   config.mutable_lstcam()->CopyFrom(
     LSTCam_ACTL_R1_CameraEventDecoder::default_config());
   return config;
+}
+
+CTA_ACTL_R1_CameraEventDecoder* CTA_ACTL_R1_CameraEventDecoder::clone() const {
+  return new CTA_ACTL_R1_CameraEventDecoder(this->delegate()->clone(), /* adopt_deligate = */ true);
 }

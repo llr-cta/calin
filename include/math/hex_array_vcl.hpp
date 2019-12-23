@@ -25,7 +25,6 @@
 
 #pragma once
 
-#include <math/simd.hpp>
 #include <math/hex_array.hpp>
 
 namespace calin { namespace math { namespace hex_array {

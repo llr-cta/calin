@@ -65,6 +65,7 @@ add_compile_options(-Wno-self-assign)
 add_compile_options(-Wno-unused-const-variable)
 add_compile_options(-Wno-maybe-uninitialized)
 add_compile_options(-Wno-unused-but-set-variable)
+add_compile_options(-Wno-array-bounds)
 
 add_library(calin_nlopt SHARED DIRect.c DIRserial.c DIRsubrout.c auglag.c bobyqa.c ccsa_quadratic.c cdirect.c cobyla.c crs.c deprecated.c direct_wrap.c esch.c f77api.c general.c global.cc hybrid.c isres.c linalg.cc local.cc mlsl.c mma.c mssubs.c mt19937ar.c newuoa.c nldrmd.c optimize.c options.c plip.c plis.c pnet.c praxis.c pssubs.c qsort_r.c redblack.c redblack_test.c rescale.c sbplx.c slsqp.c sobolseq.c stogo.cc stop.c timer.c tools.cc)
 

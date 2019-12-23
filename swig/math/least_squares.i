@@ -38,6 +38,6 @@
 %import "calin_global_definitions.i"
 
 //%apply double &OUTPUT { double& x, double& y };
-%apply Eigen::VectorXd &INPUT { const Eigen::VectorXd& x, const Eigen::VectorXd& y };
+//%apply const Eigen::VectorXd &INPUT { const Eigen::VectorXd& x, const Eigen::VectorXd& y };
 
 %include "math/least_squares.hpp"

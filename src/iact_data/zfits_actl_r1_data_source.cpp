@@ -98,6 +98,15 @@ namespace {
   static std::string default_R1_events_table_name("Events");
 } // anonymous namespace
 
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
+//
+// ZFITSSingleFileACTL_R1_CameraEventDataSource
+//
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
 
 ZFITSSingleFileACTL_R1_CameraEventDataSource::
 ZFITSSingleFileACTL_R1_CameraEventDataSource(const std::string& filename, config_type config):
@@ -282,6 +291,16 @@ R1::CameraConfiguration* ZFITSSingleFileACTL_R1_CameraEventDataSource::get_run_h
   return run_header;
 }
 
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
+//
+// ZFITSACTL_R1_CameraEventDataSourceOpener
+//
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
+
 ZFITSACTL_R1_CameraEventDataSourceOpener::ZFITSACTL_R1_CameraEventDataSourceOpener(std::string filename,
   const ZFITSACTL_R1_CameraEventDataSource::config_type& config):
   calin::io::data_source::DataSourceOpener<
@@ -339,12 +358,12 @@ ZFITSACTL_R1_CameraEventDataSourceOpener::~ZFITSACTL_R1_CameraEventDataSourceOpe
   // nothing to see here
 }
 
-unsigned ZFITSACTL_R1_CameraEventDataSourceOpener::num_sources()
+unsigned ZFITSACTL_R1_CameraEventDataSourceOpener::num_sources() const
 {
   return filenames_.size();
 }
 
-std::string ZFITSACTL_R1_CameraEventDataSourceOpener::source_name(unsigned isource)
+std::string ZFITSACTL_R1_CameraEventDataSourceOpener::source_name(unsigned isource) const
 {
   if(isource >= filenames_.size())return {};
   return filenames_[isource];
@@ -364,14 +383,37 @@ ZFITSACTL_R1_CameraEventDataSourceOpener::open(unsigned isource)
   return new ZFITSSingleFileACTL_R1_CameraEventDataSource(filenames_[isource], config);
 }
 
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
+//
+// ZFITSACTL_R1_CameraEventDataSource
+//
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
+
 ZFITSACTL_R1_CameraEventDataSource::ZFITSACTL_R1_CameraEventDataSource(const std::string& filename,
   const config_type& config):
   calin::io::data_source::BasicChainedRandomAccessDataSource<
     ACTL_R1_CameraEventRandomAccessDataSourceWithRunHeader>(
     new ZFITSACTL_R1_CameraEventDataSourceOpener(filename, config), true),
-  config_(config), run_header_(source_->get_run_header())
+  config_(config), run_header_(source_ ? source_->get_run_header() : nullptr)
 {
-  // nothing to see here
+  if(run_header_ == nullptr and opener_->num_sources() > 1) {
+    // In this case the first file fragment is missing the RunHeader, search
+    // for it in later fragments then reopen the first fragment
+
+    while(run_header_ == nullptr and isource_ < opener_->num_sources())
+    {
+      ++isource_;
+      open_file();
+      run_header_ = source_ ? source_->get_run_header() : nullptr;
+    }
+
+    isource_ = 0;
+    open_file();
+  }
 }
 
 ZFITSACTL_R1_CameraEventDataSource::~ZFITSACTL_R1_CameraEventDataSource()
@@ -443,6 +485,16 @@ void ZFITSACTL_R1_CameraEventDataSource::set_next_index(uint64_t next_index)
     ACTL_R1_CameraEventRandomAccessDataSourceWithRunHeader>::set_next_index(next_index);
 }
 
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
+//
+// ZFITSConstACTL_R1_CameraEventDataSourceBorrowAdapter - obsolete ?
+//
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
+
 ZFITSConstACTL_R1_CameraEventDataSourceBorrowAdapter::
 ZFITSConstACTL_R1_CameraEventDataSourceBorrowAdapter(ZFITSACTL_R1_CameraEventDataSource* src):
   calin::io::data_source::DataSource<const R1::CameraEvent>(),
@@ -462,6 +514,16 @@ get_next(uint64_t& seq_index_out, google::protobuf::Arena** arena)
   assert(arena==nullptr or *arena==nullptr);
   return src_->borrow_next_event(seq_index_out);
 }
+
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
+//
+// ZFITSConstACTL_R1_CameraEventDataSourceReleaseAdapter - obsolete ?
+//
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
 
 ZFITSConstACTL_R1_CameraEventDataSourceReleaseAdapter::
 ZFITSConstACTL_R1_CameraEventDataSourceReleaseAdapter(ZFITSACTL_R1_CameraEventDataSource* src):
@@ -486,6 +548,15 @@ put_next(const R1::CameraEvent* data, uint64_t seq_index,
   return true;
 }
 
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
+//
+// ZMQACTL_R1_CameraEventDataSource
+//
+// -----------------------------------------------------------------------------
+// *****************************************************************************
+// -----------------------------------------------------------------------------
 
 ZMQACTL_R1_CameraEventDataSource::
 ZMQACTL_R1_CameraEventDataSource(
@@ -660,6 +731,7 @@ std::string ZMQACTL_R1_CameraEventDataSource::receive_status_string() const
     HANDLE_CASE(PROTOCOL_ERROR);
     HANDLE_CASE(CONNECTION_ERROR);
   }
+  return "OFF_PROTOCOL";
 }
 
 ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::

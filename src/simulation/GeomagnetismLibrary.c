@@ -2832,8 +2832,8 @@ CALLS : none
 {
     int DMS[3], i;
     double temp = DegreesOfArc;
-    char tempstring[32] = "";
-    char tempstring2[32] = "";
+    char tempstring[64] = "";
+    char tempstring2[64] = "";
     strcpy(DMSstring, "");
     if(UnitDepth > 3)
         MAG_Error(21);

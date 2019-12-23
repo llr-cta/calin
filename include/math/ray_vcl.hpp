@@ -95,7 +95,7 @@ public:
     clear_dir_inv(); pos_ = rot.transpose() * pos_; dir_ = rot.transpose() * dir_; }
 
   bool_vt box_has_future_intersection(real_vt& tmin, real_vt& tmax,
-    const vec3_vt& min_corner, const vec3_vt& max_corner)
+    const vec3_vt& min_corner, const vec3_vt& max_corner) const
   {
     calc_dir_inv();
     return calin::math::geometry::VCL<VCLReal>::
@@ -146,10 +146,22 @@ public:
     ct_  += dist * n;
   }
 
+  //! Propagate ray fixed ct interval
+  void propagate_ct(const real_vt& ct, const real_vt& n_inv = 1.0) {
+    pos_ += dir_ * ct * n_inv;
+    ct_  += ct;
+  }
+
   //! Propagate ray fixed distance with mask (true if we are to propagate)
   void propagate_dist_with_mask(const bool_vt& mask, const real_vt& dist, const real_vt& n = 1.0) {
     real_vt masked_dist = select(mask, dist, 0);
     propagate_dist(masked_dist, n);
+  }
+
+  //! Propagate ray fixed distance with mask (true if we are to propagate)
+  void propagate_ct_with_mask(const bool_vt& mask, const real_vt& ct, const real_vt& n_inv = 1.0) {
+    real_vt masked_ct = select(mask, ct, 0);
+    propagate_ct(masked_ct, n_inv);
   }
 
   //! Propagates free particle to plane with y-normal : y + d = 0
@@ -282,6 +294,57 @@ public:
     propagate_dist_with_mask(mask, dist, n);
     return mask;
   }
+
+  bool_vt propagate_to_y_sphere_2nd_interaction_mostly_fwd_with_mask(bool_vt mask,
+    const real_vt& radius, const real_vt& surface_y_min = 0, const real_vt& fwd_margin = 0.0,
+    const real_vt& n = 1.0)
+  {
+    vec3_vt pos_rel(pos_.x(), pos_.y()-(radius+surface_y_min), pos_.z());
+    const real_vt b_2 = pos_rel.dot(dir_);
+    const real_vt c = nmul_add(radius, radius, pos_rel.squaredNorm());
+
+    const real_vt disc_4 = mul_sub(b_2, b_2, c);
+    mask &= disc_4 >= 0;
+
+    real_vt dist = sqrt(disc_4) - b_2;
+    mask &= dist >= fwd_margin;
+
+    propagate_dist_with_mask(mask, dist, n);
+    return mask;
+  }
+
+  //! Propagates free particle to the closest approach with point
+  bool_vt propagate_to_point_closest_approach_with_mask(bool_vt mask,
+    const vec3_vt& r0, bool time_reversal_ok, const real_vt& n = 1.0)
+  {
+    // Distance the particle must travel to reach the closest approach
+    const real_vt dist = (r0-pos_).dot(dir_);
+
+    if(not time_reversal_ok) {
+      mask &= dist >= 0;
+    }
+
+    propagate_dist_with_mask(mask, dist, n);
+    return true;
+  }
+
+  //! Propagates free particle to the closest approach with point with an
+  // additional offset in distance (positive means particle overruns the
+  // closest point, negative meens it doesn't go far enough to reach it)
+  bool_vt propagate_to_point_nearly_closest_approach_with_mask(bool_vt mask,
+    const vec3_vt& r0, const real_vt& overrun, bool time_reversal_ok, const real_vt& n = 1.0)
+  {
+    // Distance the particle must travel to reach the closest approach + overrun
+    const real_vt dist = (r0-pos_).dot(dir_) + overrun;
+
+    if(not time_reversal_ok) {
+      mask &= dist >= 0;
+    }
+
+    propagate_dist_with_mask(mask, dist, n);
+    return true;
+  }
+
 
 #if 0
   //! Propagates free particle to the given plane

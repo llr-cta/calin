@@ -108,11 +108,14 @@ def layout_to_polygon(layout, plate_scale = 1.0, rotation = 0.0, **args):
         return all_p[0]
     return all_p
 
-def add_outline(axis, layout, plate_scale = 1.0, rotation = 0.0,
-        outline_lw = 0.5, outline_color = '#888888'):
+def add_outline(axis, layout, plate_scale = 1.0, rotation = 0.0, fill=False,
+        outline_lw = 0.5, outline_ls = '-', outline_color = '#888888', **args):
+    all_p = []
     for vxy in layout_to_polygon_vxy(layout, plate_scale, rotation):
-        axis.add_patch(plt.Polygon(vxy,
-            fill=False, lw=outline_lw, edgecolor=outline_color))
+        p = axis.add_patch(plt.Polygon(vxy,
+            fill=fill, lw=outline_lw, ls=outline_ls, edgecolor=outline_color, **args))
+        all_p.append(p)
+    return all_p
 
 def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         configured_channels = None, zero_suppression = None,

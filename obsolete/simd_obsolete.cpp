@@ -22,7 +22,7 @@
 
 #include <stdexcept>
 
-#include <math/simd.hpp>
+#include <math/simd_obsolete.hpp>
 
 float calin::math::simd::test_sin_avx2_sincosf_domain_pi_4_poly3(const float x,
   const float ps0, const float ps1, const float ps2, const float ps3)

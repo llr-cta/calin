@@ -28,14 +28,33 @@
 
 namespace calin { namespace io { namespace data_source {
 
+class FragmentList
+{
+public:
+  virtual ~FragmentList();
+
+  virtual unsigned current_fragment_index() const = 0;
+  virtual unsigned num_fragments() const = 0;
+  virtual std::string fragment_name(unsigned index) const = 0;
+
+  std::string current_fragment_name() const {
+    return fragment_name(current_fragment_index());
+  }
+  std::vector<std::string> all_fragment_names() const {
+    std::vector<std::string> fragments(num_fragments());
+    for(unsigned i=0;i<num_fragments();i++)fragments[i] = fragment_name(i);
+    return fragments;
+  }
+};
+
 template<typename DST> class DataSourceOpener
 {
 public:
   CALIN_TYPEALIAS(data_source_type, DST);
   virtual ~DataSourceOpener() { }
-  virtual unsigned num_sources() = 0;
-  virtual std::string source_name(unsigned isource) = 0;
-  std::vector<std::string> source_names() {
+  virtual unsigned num_sources() const = 0;
+  virtual std::string source_name(unsigned isource) const = 0;
+  std::vector<std::string> source_names() const {
     std::vector<std::string> source_names;
     for(unsigned isource=0; isource<this->num_sources(); isource++)
       source_names.push_back(this->source_name(isource));
@@ -52,16 +71,16 @@ public:
   FileOpener(const std::vector<std::string>& filenames):
     DataSourceOpener<DST>(), filenames_(filenames) { /* nothing to see here */ }
   virtual ~FileOpener() { /* nothing to see here */ }
-  unsigned num_sources() override { return filenames_.size(); }
+  unsigned num_sources() const override { return filenames_.size(); }
   DST* open(unsigned isource) override {
     if(isource<filenames_.size())return open_filename(filenames_[isource]);
     return nullptr;
   }
-  std::string filename(unsigned isource) {
+  std::string filename(unsigned isource) const {
     if(isource<filenames_.size())return filenames_[isource];
     return {};
   }
-  std::string source_name(unsigned isource) override {
+  std::string source_name(unsigned isource) const override {
     return filename(isource);
   }
   virtual DST* open_filename(const std::string& filename) = 0;
@@ -69,7 +88,8 @@ protected:
   std::vector<std::string> filenames_;
 };
 
-template<typename DST> class BasicChainedDataSource: public DST
+template<typename DST> class BasicChainedDataSource:
+  public DST, public FragmentList
 {
 public:
   CALIN_TYPEALIAS(data_type, typename DST::data_type);
@@ -105,11 +125,10 @@ public:
     return nullptr;
   }
 
-  unsigned source_index() const { return isource_; }
-  std::string source_name() const { return opener_->source_name(isource_); }
-  std::string source_name(unsigned isource) const {
-    return opener_->source_name(isource); }
-  std::vector<std::string> source_names() { return opener_->source_names(); }
+  unsigned current_fragment_index() const override { return isource_; }
+  unsigned num_fragments() const override { return opener_->num_sources(); }
+  std::string fragment_name(unsigned index) const override {
+    return opener_->source_name(index); }
 
 protected:
   virtual void open_file()

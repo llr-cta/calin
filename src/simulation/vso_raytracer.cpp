@@ -290,7 +290,6 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   // ****************** RAY IS NOW IN REFLECTOR COORDINATES *******************
   // **************************************************************************
 
-  calin::math::ray::Ray obs_test_ray(ray);
 
   // Bending at window, if defined
   if(info.scope->windowThickness() > 0)
@@ -351,6 +350,20 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
     }
   }
 
+  // Test for interaction with obscuration in reflector coordinates
+  nobs = info.scope->numPostReflectionObscurations() + info.scope->numCameraObscurations();
+  obs_ihit  = nobs;
+  obs_time  = std::numeric_limits<double>::infinity();
+  for(unsigned iobs=0;iobs<info.scope->numPostReflectionObscurations();iobs++)
+  {
+    math::ray::Ray r_out;
+    if(info.scope->post_reflection_obscuration(iobs)->doesObscure(ray, r_out, ref_index))
+    {
+      if((obs_ihit==nobs)||(r_out.ct()<obs_time))
+        obs_ihit = iobs, obs_time = r_out.ct();
+    }
+  }
+
   // Translate to focal plane coordinates
   info.scope->reflectorToFocalPlane(ray);
 
@@ -362,6 +375,17 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
   // ***************** RAY IS NOW IN FOCAL PLANE COORDINATES ******************
   // **************************************************************************
 
+  // Test for interaction with obscuration in camera coordinates
+  for(unsigned iobs=0;iobs<info.scope->numCameraObscurations();iobs++)
+  {
+    math::ray::Ray r_out;
+    if(info.scope->camera_obscuration(iobs)->doesObscure(ray, r_out, ref_index))
+    {
+      if((obs_ihit==nobs)||(r_out.ct()<obs_time))
+        obs_ihit = iobs+info.scope->numPostReflectionObscurations(), obs_time = r_out.ct();
+    }
+  }
+
   // Propagate back to camera plane
   good = ray.propagate_to_y_plane(0,false,ref_index);
   if(!good)
@@ -371,25 +395,16 @@ VSORayTracer::scope_trace(math::ray::Ray& ray, TraceInfo& info)
     return 0;
   }
 
-  // Test for interaction with obscuration before focal plane was hit
-  nobs = info.scope->numPostReflectionObscurations();
-  obs_ihit  = nobs;
-  obs_time  = ray.ct();
-  for(unsigned iobs=0;iobs<nobs;iobs++)
-  {
-    math::ray::Ray r_out;
-    if(info.scope->post_reflection_obscuration(iobs)->doesObscure(obs_test_ray, r_out, ref_index))
-    {
-      if((obs_ihit==nobs)||(r_out.ct()<obs_time))
-        obs_ihit = iobs, obs_time = r_out.ct();
-    }
-  }
 
   if((obs_ihit!=nobs) && (obs_time<ray.ct()))
   {
     info.status = TS_OBSCURED_BEFORE_FOCAL_PLANE;
     info.scope->focalPlaneToReflector(ray);
     info.scope->reflectorToGlobal(ray);
+    if(obs_ihit < info.scope->numPostReflectionObscurations())
+      info.scope->post_reflection_obscuration(obs_ihit);
+    else
+      info.scope->post_reflection_obscuration(obs_ihit - info.scope->numPostReflectionObscurations());
     info.obscuration = info.scope->post_reflection_obscuration(obs_ihit);
     info.obscuration_id = obs_ihit;
     return 0;

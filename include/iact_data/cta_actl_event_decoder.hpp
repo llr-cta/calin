@@ -66,6 +66,10 @@ public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig);
 
+  CTA_ACTL_R1_CameraEventDecoder(
+    calin::iact_data::actl_event_decoder::ACTL_R1_CameraEventDecoder* decoder,
+    bool adopt_decoder = false);
+
   CTA_ACTL_R1_CameraEventDecoder(const std::string& filename, unsigned run_number = 0,
     const calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig& config = default_config());
 
@@ -80,6 +84,8 @@ public:
       TelescopeRunConfiguration* run_config,
     const R1::CameraConfiguration* cta_run_header,
     const R1::CameraEvent* cta_event) override;
+
+  CTA_ACTL_R1_CameraEventDecoder* clone() const override;
 
   calin::ix::iact_data::cta_data_source::CTACameraEventDecoderConfig config() const { return config_; }
 

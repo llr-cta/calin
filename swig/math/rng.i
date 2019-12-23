@@ -27,6 +27,7 @@
 
 %{
 #include "math/rng.hpp"
+#include "math/rng_vcl.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -44,3 +45,16 @@
 %include "math/rng.hpp"
 
 %template(NR3_EmulateSIMD_RNGCore_4) calin::math::rng::NR3_EmulateSIMD_RNGCore<4>;
+
+%include "math/rng_vcl.hpp"
+%template (VCLRNG128) calin::math::rng::VCLRNG<calin::util::vcl::VCL128Architecture>;
+%template (VCLRNG256) calin::math::rng::VCLRNG<calin::util::vcl::VCL256Architecture>;
+%template (VCLRNG512) calin::math::rng::VCLRNG<calin::util::vcl::VCL512Architecture>;
+
+%template (VCLRealRNGFloat128) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL128FloatReal>;
+%template (VCLRealRNGFloat256) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL256FloatReal>;
+%template (VCLRealRNGFloat512) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL512FloatReal>;
+
+%template (VCLRealRNGDouble128) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL128DoubleReal>;
+%template (VCLRealRNGDouble256) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL256DoubleReal>;
+%template (VCLRealRNGDouble512) calin::math::rng::VCLRealRNG<calin::util::vcl::VCL512DoubleReal>;

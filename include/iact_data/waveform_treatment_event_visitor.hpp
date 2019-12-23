@@ -25,7 +25,6 @@
 #include <string>
 
 #include <iact_data/event_visitor.hpp>
-#include <math/simd.hpp>
 #include <util/vcl.hpp>
 #include <util/log.hpp>
 #include <iact_data/waveform_treatment_event_visitor.pb.h>
@@ -119,6 +118,7 @@ protected:
 #endif
 };
 
+#if 0
 class AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor:
   public SingleGainDualWindowWaveformTreatmentEventVisitor
 {
@@ -167,27 +167,27 @@ protected:
 #endif
 #endif
 };
+#endif
 
 template<typename VCLArchitecture>
 class VCL_SingleGainDualWindowWaveformTreatmentEventVisitor:
-  public SingleGainDualWindowWaveformTreatmentEventVisitor,
-  public VCLArchitecture
+  public SingleGainDualWindowWaveformTreatmentEventVisitor
 {
 public:
 #ifndef SWIG
-  using typename VCLArchitecture::int16_vt;
-  using typename VCLArchitecture::int16_bvt;
-  using typename VCLArchitecture::uint16_vt;
+  CALIN_TYPEALIAS(int16_vt, typename VCLArchitecture::int16_vt);
+  CALIN_TYPEALIAS(int16_bvt, typename VCLArchitecture::int16_bvt);
+  CALIN_TYPEALIAS(uint16_vt, typename VCLArchitecture::uint16_vt);
 
-  using typename VCLArchitecture::int32_vt;
-  using typename VCLArchitecture::int32_bvt;
-  using typename VCLArchitecture::uint32_vt;
+  CALIN_TYPEALIAS(int32_vt, typename VCLArchitecture::int32_vt);
+  CALIN_TYPEALIAS(int32_bvt, typename VCLArchitecture::int32_bvt);
+  CALIN_TYPEALIAS(uint32_vt, typename VCLArchitecture::uint32_vt);
 
-  using typename VCLArchitecture::float_vt;
+  CALIN_TYPEALIAS(float_vt, typename VCLArchitecture::float_vt);
 
-  using VCLArchitecture::num_int16;
-  using VCLArchitecture::num_int32;
-  using VCLArchitecture::num_float;
+  constexpr static unsigned num_int16 = VCLArchitecture::num_int16;
+  constexpr static unsigned num_int32 = VCLArchitecture::num_int32;
+  constexpr static unsigned num_float = VCLArchitecture::num_float;
 #endif
 
   VCL_SingleGainDualWindowWaveformTreatmentEventVisitor(
@@ -362,7 +362,7 @@ public:
         max_q_h = vcl::select(q_bigger_than_max, q_h, max_q_h);
         max_q_h_index = vcl::select(q_bigger_than_max, isamp_win_begin, max_q_h_index);
 
-        if(bkg_window_0_ == isamp_win_begin) {
+        if(bkg_window_0_ == int(isamp_win_begin)) {
           q_l.store(chan_bkg_win_sum_ + ichan_block*2*num_int32);
           q_h.store(chan_bkg_win_sum_ + ichan_block*2*num_int32 + num_int32);
         }
