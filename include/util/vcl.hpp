@@ -554,6 +554,10 @@ struct VCL512Architecture
   constexpr static unsigned num_float  = vec_bytes/sizeof(float);
   constexpr static unsigned num_double = vec_bytes/sizeof(double);
 
+  typedef Vec64c  int8_vt;
+  typedef Vec64uc uint8_vt;
+  typedef Vec32s  int16_vt;
+  typedef Vec32us uint16_vt;
   typedef Vec16i  int32_vt;
   typedef Vec16ui uint32_vt;
   typedef Vec8q   int64_vt;
@@ -561,6 +565,10 @@ struct VCL512Architecture
   typedef Vec16f  float_vt;
   typedef Vec8d   double_vt;
 
+  typedef Vec64cb int8_bvt;
+  typedef Vec64cb uint8_bvt;
+  typedef Vec32sb int16_bvt;
+  typedef Vec32sb uint16_bvt;
   typedef Vec16ib int32_bvt;
   typedef Vec16ib uint32_bvt;
   typedef Vec8qb  int64_bvt;
@@ -634,10 +642,10 @@ DEFINE_VCL_TYPE(Vec4uq,  uint64_t, VCL256Architecture);
 DEFINE_VCL_TYPE(Vec8f,   float,    VCL256Architecture);
 DEFINE_VCL_TYPE(Vec4d,   double,   VCL256Architecture);
 
-// DEFINE_VCL_TYPE(Vec64c,  int8_t,   VCL512Architecture);
-// DEFINE_VCL_TYPE(Vec64uc, uint8_t,  VCL512Architecture);
-// DEFINE_VCL_TYPE(Vec32s,  int16_t,  VCL512Architecture);
-// DEFINE_VCL_TYPE(Vec32us, uint16_t, VCL512Architecture);
+DEFINE_VCL_TYPE(Vec64c,  int8_t,   VCL512Architecture);
+DEFINE_VCL_TYPE(Vec64uc, uint8_t,  VCL512Architecture);
+DEFINE_VCL_TYPE(Vec32s,  int16_t,  VCL512Architecture);
+DEFINE_VCL_TYPE(Vec32us, uint16_t, VCL512Architecture);
 DEFINE_VCL_TYPE(Vec16i,  int32_t,  VCL512Architecture);
 DEFINE_VCL_TYPE(Vec16ui, uint32_t, VCL512Architecture);
 DEFINE_VCL_TYPE(Vec8q,   int64_t,  VCL512Architecture);
