@@ -39,7 +39,7 @@ steps:
     docker build -f Dockerfile --build-arg arch=$(build_arch) -t $(dockerId)/$(imageName) .
   displayName: 'Build Docker image'
 - script: |
-    docker login -u $(dockerId) -p $pswd
+    docker login -u $(dockerUser) -p $pswd
     docker push $(dockerId)/$(imageName)
     if test "$(build_arch)" == "generic"
     then
