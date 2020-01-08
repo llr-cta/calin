@@ -756,7 +756,7 @@ std::tuple<calin::io::zmq_inproc::ZMQPusher*, calin::io::zmq_inproc::ZMQPuller*>
 ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::connect()
 {
   num_connections_.fetch_add(1);
-  return { new_upstream_pusher(), new_downstream_puller() };
+  return std::make_tuple(new_upstream_pusher(), new_downstream_puller());
 }
 
 void ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::main_loop()
