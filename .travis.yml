@@ -21,8 +21,6 @@ addons:
     - libxerces-c-dev
     - libpcap-dev
     - libz-dev
-    - zstd
-    - libzstd-dev
 
 matrix:
   include:
