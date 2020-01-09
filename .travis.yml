@@ -20,6 +20,7 @@ addons:
     - python3-numpy
     - libxerces-c-dev
     - libpcap-dev
+    - libz-dev
 
 matrix:
   include:
