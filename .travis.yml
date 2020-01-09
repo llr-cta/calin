@@ -226,7 +226,7 @@ install:
       cd mybuild &&
       cmake -DCMAKE_INSTALL_PREFIX=$LOCAL -DCMAKE_BUILD_TYPE=Release \
             -DACTL_BUILD_ARCH=$BUILD_ARCH .. &&
-      make -j3 &&
+      make -j3 VERBOSE=1 &&
       make install > /dev/null &&
       touch $HOME/suppress_geant_build
     ); fi
