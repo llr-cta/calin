@@ -215,6 +215,7 @@ install:
       cd zstd-1.4.4 &&
       make -j9 &&
       make install PREFIX=$LOCAL &&
+      ls -lR $LOCAL &&
       touch $HOME/suppress_geant_build
     ); fi
   - |
