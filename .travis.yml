@@ -9,7 +9,6 @@ addons:
   apt:
     sources: &common_sources
     - ubuntu-toolchain-r-test
-    - canonical-foundations/zstd-archive
     packages: &common_packages
     - gsl-bin
     - libgsl0-dev
@@ -208,6 +207,16 @@ install:
       ./configure --prefix=$LOCAL &&
       make -j3 &&
       make install > /dev/null &&
+      touch $HOME/suppress_geant_build
+    ); fi
+  - |
+    if [ ! -f $LOCAL/bin/zstd ]
+    then (
+      wget https://github.com/facebook/zstd/releases/download/v1.4.4/zstd-1.4.4.tar.gz &&
+      tar zxvf zstd-1.4.4.tar.gz &&
+      cd zstd-1.4.4 &&
+      make -j9 &&
+      make install PREFIX=$LOCAL &&
       touch $HOME/suppress_geant_build
     ); fi
   - |
