@@ -224,7 +224,8 @@ install:
       cd CamerasToACTL &&
       mkdir mybuild &&
       cd mybuild &&
-      cmake -DCMAKE_INSTALL_PREFIX=$LOCAL -DCMAKE_BUILD_TYPE=Release .. &&
+      cmake -DCMAKE_INSTALL_PREFIX=$LOCAL -DCMAKE_BUILD_TYPE=Release \
+            -DACTL_BUILD_ARCH=$BUILD_ARCH .. &&
       make -j3 &&
       make install > /dev/null &&
       touch $HOME/suppress_geant_build
