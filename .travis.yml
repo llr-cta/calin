@@ -208,7 +208,7 @@ install:
   - |
     if [ ! -f $LOCAL/lib/libZFitsIO.dylib -a -n "${CAMERASTOACTL_PASSWORD}" ]
     then (
-      git git clone https://sfegan:${CAMERASTOACTL_PASSWORD}@github.com/llr-cta/CamerasToACTL.git &
+      git clone https://sfegan:${CAMERASTOACTL_PASSWORD}@github.com/llr-cta/CamerasToACTL.git &
       cd CamerasToACTL1 &&
       mkdir mybuild &&
       cd mybuild &&
