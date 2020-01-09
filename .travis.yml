@@ -211,11 +211,10 @@ install:
     if [ ! -f $LOCAL/bin/zstd ]
     then (
       wget https://github.com/facebook/zstd/releases/download/v1.4.4/zstd-1.4.4.tar.gz &&
-      tar zxvf zstd-1.4.4.tar.gz &&
+      tar zxf zstd-1.4.4.tar.gz &&
       cd zstd-1.4.4 &&
       make -j9 &&
       make install PREFIX=$LOCAL &&
-      ls -lR $LOCAL &&
       touch $HOME/suppress_geant_build
     ); fi
   - |
