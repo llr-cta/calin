@@ -39,6 +39,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pwd.h>
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <fstream>
