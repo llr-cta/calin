@@ -206,6 +206,18 @@ install:
       touch $HOME/suppress_geant_build
     ); fi
   - |
+    if [ ! -f $LOCAL/lib/libZFitsIO.dylib -a -n "${CAMERASTOACTL_PASSWORD}" ]
+    then (
+      git git clone https://sfegan:${CAMERASTOACTL_PASSWORD}@github.com/llr-cta/CamerasToACTL.git &
+      cd CamerasToACTL1 &&
+      mkdir mybuild &&
+      cd mybuild &&
+      cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release .. &&
+      make -j3 &&
+      make install > /dev/null &&
+      touch $HOME/suppress_geant_build
+    );
+  - |
     if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh -a ! -f $HOME/suppress_geant_build ]
     then (
       wget http://geant4.cern.ch/support/source/geant4.10.04.tar.gz &&
