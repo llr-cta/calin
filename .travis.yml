@@ -9,6 +9,7 @@ addons:
   apt:
     sources: &common_sources
     - ubuntu-toolchain-r-test
+    - canonical-foundations/zstd-archive
     packages: &common_packages
     - gsl-bin
     - libgsl0-dev
