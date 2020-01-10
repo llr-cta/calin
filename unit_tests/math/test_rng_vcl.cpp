@@ -109,7 +109,7 @@ TYPED_TEST(NR3_VCLRNGCoreTests, EqualsScalarNR3Implentation)
   for(unsigned j=0;j<TypeParam::num_uint64;j++)
     scalar_cores[j] = new NR3RNGCore(core.sequence_seeds()[j],
       __PRETTY_FUNCTION__, "scalar_cores["+std::to_string(j)+"]");
-  for(unsigned i=0;i<100000;i++) {
+  for(unsigned i=0;i<1000000;i++) {
     typename TypeParam::uint64_vt x = core.uniform_uint64();
     for(unsigned j=0;j<TypeParam::num_uint64;j++)
       EXPECT_EQ(x[j], scalar_cores[j]->uniform_uint64());
@@ -150,7 +150,7 @@ TYPED_TEST(VCLRNGTests, UniformFloatZCMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
-  const unsigned N = 100000;
+  const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx;
@@ -182,7 +182,7 @@ TYPED_TEST(VCLRNGTests, UniformDoubleZCMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
-  const unsigned N = 100000;
+  const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumxx;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx;
@@ -214,7 +214,7 @@ TYPED_TEST(VCLRNGTests, ExponentialFloatMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
-  const unsigned N = 100000;
+  const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx;
@@ -239,7 +239,7 @@ TYPED_TEST(VCLRNGTests, ExponentialDoubleMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
-  const unsigned N = 100000;
+  const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumxx;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx;
@@ -264,7 +264,7 @@ TYPED_TEST(VCLRNGTests, SinCosFloatMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
-  const unsigned N = 100000;
+  const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sums;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumss;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumsss;
@@ -306,7 +306,7 @@ TYPED_TEST(VCLRNGTests, SinCosDoubleMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
-  const unsigned N = 100000;
+  const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::double_vt> sums;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumss;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumsss;
@@ -348,7 +348,7 @@ TYPED_TEST(VCLRNGTests, NormalFloatMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
-  const unsigned N = 100000;
+  const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx;
@@ -390,7 +390,7 @@ TYPED_TEST(VCLRNGTests, NormalDoubleMoments)
 {
   uint64_t seed = RNG::std_test_seed; //RNG::uint64_from_random_device();
   VCLRNG<TypeParam> core(seed, __PRETTY_FUNCTION__, "core");
-  const unsigned N = 100000;
+  const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumxx;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx;
@@ -437,7 +437,7 @@ TYPED_TEST(VCLRNGTests, CDFUniformFloatZCMoments)
   cdf.emplace_back(0.5,1.0);
   std::vector<float> inverse_cdf = core.generate_inverse_cdf_float(cdf, 0);
 
-  const unsigned N = 100000;
+  const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx;
@@ -474,7 +474,7 @@ TYPED_TEST(VCLRNGTests, CDFUniformDoubleZCMoments)
   cdf.emplace_back(0.5,1.0);
   std::vector<double> inverse_cdf = core.generate_inverse_cdf_double(cdf, 0);
 
-  const unsigned N = 100000;
+  const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumxx;
   BasicKahanAccumulator<typename TypeParam::double_vt> sumxxx;
@@ -516,7 +516,7 @@ TYPED_TEST(VCLRNGTests, CDFNormalFloatZCMoments)
 
   //for(auto x: inverse_cdf) { std::cout << x << '\n'; }
 
-  const unsigned N = 100000;
+  const unsigned N = 1000000;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxx;
   BasicKahanAccumulator<typename TypeParam::float_vt> sumxxx;
