@@ -274,8 +274,8 @@ script:
     make install | tail &&
     ./src/bin/write_system_info &&
     make test
-    ./unit_tests/math/test_hex_array_vcl
-#   ./unit_tests/simulation/test_vcl_raytracer
+#    ./unit_tests/math/test_hex_array_vcl
+#    ./unit_tests/simulation/test_vcl_raytracer
 #    ./unit_tests/math/speedtest_rng &&
 #    ./unit_tests/math/test_rng_vcl &&
 #    ./unit_tests/math/test_rng
