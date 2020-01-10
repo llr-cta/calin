@@ -335,7 +335,7 @@ TYPED_TEST(VCLHexArrayRealTest, HexIDToXY_Trans_Equals_Scalar_RNG) {
   float scale = 0.9326575752f;
 
   VCLRNG<typename TypeParam::architecture> rng(__PRETTY_FUNCTION__, "core");
-  for(unsigned i=0;i<1000000;i++)
+  for(unsigned i=0;i<100000;i++)
   {
     typename TypeParam::int_vt hexid;
     rng.uniform_int(hexid);
