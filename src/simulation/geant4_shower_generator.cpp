@@ -184,3 +184,27 @@ generate_showers(unsigned num_events,
   // start a run
   run_manager_->BeamOn(num_events);
 }
+
+double Geant4ShowerGenerator::
+get_material_density(const std::string& material_name)
+{
+  G4NistManager* nist = G4NistManager::Instance();
+  if(nist == nullptr)throw std::runtime_error("Could not construct NIST manager");
+  G4Material* material = nist->FindOrBuildMaterial(material_name);
+  if(material == nullptr)throw std::runtime_error("Could not find material " + material_name);
+  return material->GetDensity() / (CLHEP::g/CLHEP::cm3);
+}
+
+Geant4ShowerGenerator::config_type Geant4ShowerGenerator::default_config()
+{
+  config_type config;
+  config.set_num_atm_layers(1000);
+  config.set_zground(0);
+  config.set_ztop(100E5);
+  config.set_tracking_cut_scale(10);
+  config.set_detector_box_size(1000E5);
+  config.set_material("G4_AIR");
+  config.set_seed(0);
+  config.set_verbosity(calin::ix::simulation::geant4_shower_generator::SUPRESSED_STDOUT);
+  return config;
+}
