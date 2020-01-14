@@ -62,7 +62,6 @@ public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::simulation::geant4_shower_generator::GEANT4ShowerGeneratorConfiguration);
 
-#if 0
   Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                         calin::simulation::atmosphere::Atmosphere* atm,
                         config_type config = default_config(),
@@ -70,7 +69,7 @@ public:
                         bool adopt_visitor = false,
                         bool adopt_atm = false,
                         bool adopt_bfield = false);
-#endif
+
   Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                         calin::simulation::atmosphere::Atmosphere* atm,
                         unsigned num_atm_layers, double zground, double ztop,
@@ -110,6 +109,9 @@ public:
   static config_type default_config();
 
 protected:
+  void construct(unsigned num_atm_layers, VerbosityLevel verbose_level,
+    double default_cut_value_cm, double detector_size, const std::string& material_name);
+
   calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
   calin::simulation::atmosphere::Atmosphere* atm_ = nullptr;

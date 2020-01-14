@@ -33,6 +33,36 @@ using namespace calin::util::log;
 Geant4ShowerGenerator::
 Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                       calin::simulation::atmosphere::Atmosphere* atm,
+                      config_type config,
+                      calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
+                      bool adopt_visitor, bool adopt_atm, bool adopt_bfield):
+  visitor_(visitor), adopt_visitor_(adopt_visitor),
+  atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(config.ztop()), zground_(config.zground()),
+  bfield_(bfield), adopt_bfield_(adopt_bfield), seed_(config.seed())
+{
+  VerbosityLevel verbose_level;
+  switch(config.verbosity()) {
+    case calin::ix::simulation::geant4_shower_generator::SUPPRESSED_ALL:
+      verbose_level = VerbosityLevel::SUPPRESSED_ALL; break;
+    case calin::ix::simulation::geant4_shower_generator::SUPRESSED_STDOUT:
+      verbose_level = VerbosityLevel::SUPRESSED_STDOUT; break;
+    case calin::ix::simulation::geant4_shower_generator::NORMAL:
+    default:
+      verbose_level = VerbosityLevel::NORMAL; break;
+    case calin::ix::simulation::geant4_shower_generator::VERBOSE_EVENT:
+      verbose_level = VerbosityLevel::VERBOSE_EVENT; break;
+    case calin::ix::simulation::geant4_shower_generator::VERBOSE_TRACKING:
+      verbose_level = VerbosityLevel::VERBOSE_TRACKING; break;
+    case calin::ix::simulation::geant4_shower_generator::VERBOSE_EVERYTHING:
+      verbose_level = VerbosityLevel::VERBOSE_EVERYTHING; break;
+  }
+  construct(config.num_atm_layers(), verbose_level, config.tracking_cut_scale(),
+    config.detector_box_size(), config.material());
+}
+
+Geant4ShowerGenerator::
+Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
+                      calin::simulation::atmosphere::Atmosphere* atm,
                       unsigned num_atm_layers, double zground, double ztop,
                       calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
                       VerbosityLevel verbose_level, uint32_t seed,
@@ -41,6 +71,15 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
     visitor_(visitor), adopt_visitor_(adopt_visitor),
     atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground),
     bfield_(bfield), adopt_bfield_(adopt_bfield), seed_(seed)
+{
+  auto config = default_config();
+  construct(num_atm_layers, verbose_level, default_cut_value_cm,
+    config.detector_box_size(), config.material());
+}
+
+void Geant4ShowerGenerator::construct(unsigned num_atm_layers,
+  VerbosityLevel verbose_level, double default_cut_value_cm,
+  double detector_size, const std::string& material_name)
 {
   while(seed_ == 0)seed_ = calin::math::rng::RNG::uint32_from_random_device();
   CLHEP::HepRandom::setTheSeed(seed_);
@@ -100,7 +139,8 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
   run_manager_->SetUserInitialization(physlist);
 
   EAS_FlatDetectorConstruction* detector_constructor =
-      new EAS_FlatDetectorConstruction(atm, num_atm_layers, zground, ztop, bfield);
+      new EAS_FlatDetectorConstruction(atm_, num_atm_layers, zground_, ztop_of_atm_, bfield_,
+        detector_size, material_name);
   run_manager_->SetUserInitialization(detector_constructor);
 
   event_action_ = new EAS_UserEventAction(visitor_);

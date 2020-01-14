@@ -231,13 +231,14 @@ EAS_FlatDetectorConstruction::
 EAS_FlatDetectorConstruction(calin::simulation::atmosphere::Atmosphere* atm,
   unsigned num_atm_layers, double zground_cm, double ztop_of_atm_cm,
   double layer_side_cm,
-  calin::simulation::world_magnetic_model::FieldVsElevation* bfield)
+  calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
+  const std::string& material_name)
     : EAS_DetectorConstruction(), atm_(atm), num_atm_layers_(num_atm_layers),
       zground_cm_(zground_cm), ztop_of_atm_cm_(ztop_of_atm_cm),
       layer_side_cm_(layer_side_cm),
       min_corner_(-layer_side_cm, -layer_side_cm, zground_cm),
       max_corner_( layer_side_cm,  layer_side_cm, ztop_of_atm_cm),
-      bfield_(bfield)
+      bfield_(bfield), material_name_(material_name)
 {
   // nothing to see here
 }
@@ -290,7 +291,7 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
 
     G4Material* air =
         nist->BuildMaterialWithNewDensity(std::string("AIR_")+name,
-                                          "G4_AIR",density);
+                                          material_name_,density);
 
     G4double layer_hz = 0.5*(islice.zt-islice.zb)*CLHEP::cm;
     G4double pos_z = 0.5*(islice.zt+islice.zb)*CLHEP::cm;
