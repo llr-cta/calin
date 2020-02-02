@@ -49,11 +49,11 @@ Eigen::VectorXd periodogram_vcl256(const Eigen::VectorXd& xi, const Eigen::Vecto
 
 Eigen::MatrixXd multi_periodogram_vcl128(const Eigen::MatrixXd& xi, const Eigen::VectorXd& ti,
   double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq = 0,
-  unsigned unroll = 2);
+  unsigned unroll = 4);
 
 Eigen::MatrixXd multi_periodogram_vcl256(const Eigen::MatrixXd& xi, const Eigen::VectorXd& ti,
   double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq = 0,
-  unsigned unroll = 2);
+  unsigned unroll = 4);
 
 Eigen::VectorXd frequencies(const Eigen::VectorXd& periodogram,
   double freq_lo, double delta_freq);
