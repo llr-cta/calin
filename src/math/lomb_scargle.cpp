@@ -26,6 +26,7 @@
 #include <provenance/system_info.hpp>
 #include <math/lomb_scargle.hpp>
 #include <util/memory.hpp>
+#include <math/lomb_scargle_vcl.hpp>
 
 namespace {
 
@@ -34,6 +35,13 @@ inline void validate(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti)
   if(xi.size() != ti.size())
     throw std::runtime_error("Lomb-Scargle: xi and ti must be same size, "
       + std::to_string(xi.size()) + " != " + std::to_string(ti.size()));
+}
+
+inline void validate(const Eigen::MatrixXd& xi, const Eigen::VectorXd& ti)
+{
+  if(xi.rows() != ti.size())
+    throw std::runtime_error("Lomb-Scargle: xi and ti must be same size, "
+      + std::to_string(xi.rows()) + " != " + std::to_string(ti.size()));
 }
 
 } // anonymous namespace
@@ -191,6 +199,83 @@ periodogram_fast(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
     periodogram[ifreq] = XC*A+XS*B;
   }
   return periodogram;
+}
+
+Eigen::VectorXd calin::math::lomb_scargle::
+periodogram_vcl128(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq,
+  unsigned unroll)
+{
+  validate(xi,ti);
+  if(unroll == 1) {
+    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL128Architecture>, 1>(
+      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+  } else if (unroll == 2) {
+    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL128Architecture>, 2>(
+      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+  } else if (unroll == 3) {
+    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL128Architecture>, 3>(
+      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+  } else {
+    throw std::runtime_error("unroll must be 1, 2, or 3");
+  }
+}
+
+Eigen::VectorXd calin::math::lomb_scargle::
+periodogram_vcl256(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq,
+  unsigned unroll)
+{
+  validate(xi,ti);
+  if(unroll == 1) {
+    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture>, 1>(
+      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+  } else if (unroll == 2) {
+    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture>, 2>(
+      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+  } else if (unroll == 3) {
+    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture>, 3>(
+      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+  } else {
+    throw std::runtime_error("unroll must be 1, 2, or 3");
+  }
+}
+
+Eigen::MatrixXd calin::math::lomb_scargle::
+multi_periodogram_vcl128(const Eigen::MatrixXd& xi, const Eigen::VectorXd& ti,
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq,
+  unsigned unroll)
+{
+  using Real = calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL128Architecture>;
+  validate(xi,ti);
+  switch(unroll) {
+    case 1: return multi_periodogram_vcl<Real, 1>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 2: return multi_periodogram_vcl<Real, 2>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 3: return multi_periodogram_vcl<Real, 3>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 4: return multi_periodogram_vcl<Real, 4>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 5: return multi_periodogram_vcl<Real, 5>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 6: return multi_periodogram_vcl<Real, 6>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    default: throw std::runtime_error("unroll must be 1, 2, or 3");
+  }
+}
+
+Eigen::MatrixXd calin::math::lomb_scargle::
+multi_periodogram_vcl256(const Eigen::MatrixXd& xi, const Eigen::VectorXd& ti,
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq,
+  unsigned unroll)
+{
+  validate(xi,ti);
+  using Real = calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture>;
+  validate(xi,ti);
+  switch(unroll) {
+    case 1: return multi_periodogram_vcl<Real, 1>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 2: return multi_periodogram_vcl<Real, 2>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 3: return multi_periodogram_vcl<Real, 3>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 4: return multi_periodogram_vcl<Real, 4>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 5: return multi_periodogram_vcl<Real, 5>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 6: return multi_periodogram_vcl<Real, 6>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    default: throw std::runtime_error("unroll must be 1, 2, or 3");
+  }
 }
 
 Eigen::VectorXd calin::math::lomb_scargle::
