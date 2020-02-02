@@ -25,6 +25,10 @@
 #include <Eigen/Dense>
 #include <util/vcl.hpp>
 
+#include <util/timestamp.hpp>
+#include <util/log.hpp>
+using namespace calin::util::log;
+
 namespace calin { namespace math { namespace lomb_scargle {
 
 template<typename VCLReal, unsigned UNROLL=2>
@@ -183,7 +187,7 @@ typename VCLReal::vecX_t periodogram_vcl(
   return periodogram;
 }
 
-template<typename VCLReal, unsigned UNROLL=2>
+template<typename VCLReal, unsigned UNROLL=4>
 typename VCLReal::matX_t multi_periodogram_vcl(
   const typename VCLReal::matX_t& xi, const typename VCLReal::vecX_t& ti,
   const typename VCLReal::real_t freq_lo, const typename VCLReal::real_t freq_hi,
@@ -193,10 +197,15 @@ typename VCLReal::matX_t multi_periodogram_vcl(
   const unsigned nfreq = nfreq_block * UNROLL;
   renormalize_nfreq = (renormalize_nfreq+UNROLL-1)/UNROLL;
 
-  const unsigned ni_block = (xi.size()+VCLReal::num_real-1)/VCLReal::num_real;
+  const unsigned ni_block = (xi.rows()+VCLReal::num_real-1)/VCLReal::num_real;
   const unsigned ni = xi.rows();
 
   const unsigned nset = xi.cols();
+
+
+  LOG(INFO) << "Starting function for nset=" << nset << ", ni=" << ni << ", nfreq=" << nfreq
+    << ", and renormalize_nfreq=" << renormalize_nfreq;
+  auto start_time = calin::util::timestamp::Timestamp::now();
 
   // Allocate output vector
   typename VCLReal::matX_t periodogram(nfreq,nset);
@@ -212,6 +221,9 @@ typename VCLReal::matX_t multi_periodogram_vcl(
 
   typename VCLReal::real_t delta_omega = 2*M_PI*delta_freq;
   typename VCLReal::real_t omega0 = 2*M_PI*freq_lo;
+
+  LOG(INFO) << calin::util::timestamp::Timestamp::now().seconds_since(start_time)
+    << " : Initialize frequency storage";
 
   // Initialize frequency storage arrays
   for(unsigned iblock=0; iblock<ni_block; iblock++) {
@@ -248,6 +260,9 @@ typename VCLReal::matX_t multi_periodogram_vcl(
   std::copy(vcf0, vcf0+ni_block*VCLReal::num_real, vxcf);
   std::copy(vsf0, vsf0+ni_block*VCLReal::num_real, vxsf);
 
+  LOG(INFO) << calin::util::timestamp::Timestamp::now().seconds_since(start_time)
+    << " : Compute time-based sums";
+
   for(unsigned ifreq=0; ifreq<nfreq; ifreq++) {
     typename VCLReal::real_vt CC = 0;
     typename VCLReal::real_vt SS = 0;
@@ -255,6 +270,9 @@ typename VCLReal::matX_t multi_periodogram_vcl(
 
     // Renormalize the cosine and sine vectors as requested
     if(ifreq!=0 and renormalize_nfreq!=0 and ifreq%(renormalize_nfreq*UNROLL)==0) {
+      LOG(INFO) << calin::util::timestamp::Timestamp::now().seconds_since(start_time)
+        << " : CC/CS/SS renorm for ifreq=" << ifreq;
+
       const double omega = 2*M_PI*(freq_lo + delta_freq*ifreq);
       for(unsigned iblock=0; iblock<ni_block; ++iblock) {
         unsigned ix = iblock*VCLReal::num_real;
@@ -277,15 +295,16 @@ typename VCLReal::matX_t multi_periodogram_vcl(
     }
 
     for(unsigned iblock=0; iblock<ni_block; iblock++) {
+      unsigned ix = iblock*VCLReal::num_real;
       typename VCLReal::real_vt cdf;
       typename VCLReal::real_vt sdf;
-      cdf.load_a(vcdf + iblock*VCLReal::num_real);
-      sdf.load_a(vsdf + iblock*VCLReal::num_real);
+      cdf.load_a(vcdf + ix);
+      sdf.load_a(vsdf + ix);
 
       typename VCLReal::real_vt c;
       typename VCLReal::real_vt s;
-      c.load_a(vxcf + iblock*VCLReal::num_real);
-      s.load_a(vxsf + iblock*VCLReal::num_real);
+      c.load_a(vxcf + ix);
+      s.load_a(vxsf + ix);
 
       CC = vcl::mul_add(c,c,CC);
       CS = vcl::mul_add(c,s,CS);
@@ -295,8 +314,8 @@ typename VCLReal::matX_t multi_periodogram_vcl(
       s = vcl::mul_add(c,sdf,s*cdf);
       c = c_;
 
-      c.store_a(vxcf + iblock*VCLReal::num_real);
-      s.store_a(vxsf + iblock*VCLReal::num_real);
+      c.store_a(vxcf + ix);
+      s.store_a(vxsf + ix);
     }
 
     vcc[ifreq] = vcl::horizontal_add(CC);
@@ -307,6 +326,9 @@ typename VCLReal::matX_t multi_periodogram_vcl(
   // Compute periodograms
 
   for(unsigned iset=0; iset<nset; ++iset) {
+    LOG(INFO) << calin::util::timestamp::Timestamp::now().seconds_since(start_time)
+      << " : Compute periodogram for set " << iset;
+
     typename VCLReal::real_t xmean = xi.col(iset).sum()/double(ni);
 
     for(unsigned iblock=0; iblock<ni_block; ++iblock) {
@@ -409,6 +431,9 @@ typename VCLReal::matX_t multi_periodogram_vcl(
 
   free(vcf0);
   free(vcc);
+
+  LOG(INFO) << calin::util::timestamp::Timestamp::now().seconds_since(start_time)
+    << " : Finished...";
 
   return periodogram;
 }
