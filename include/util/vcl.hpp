@@ -347,6 +347,8 @@ template<typename VCLArchitecture> struct VCLFloatReal
   typedef float                                   real_t;
   typedef Eigen::Vector3f                         vec3_t;
   typedef Eigen::Matrix3f                         mat3_t;
+  typedef Eigen::VectorXf                         vecX_t;
+  typedef Eigen::MatrixXf                         matX_t;
 
   typedef typename VCLArchitecture::int32_at      int_at;
   typedef typename VCLArchitecture::uint32_at     uint_at;
@@ -390,6 +392,8 @@ template<typename VCLArchitecture> struct VCLDoubleReal
   typedef double                                  real_t;
   typedef Eigen::Vector3d                         vec3_t;
   typedef Eigen::Matrix3d                         mat3_t;
+  typedef Eigen::VectorXd                         vecX_t;
+  typedef Eigen::MatrixXd                         matX_t;
 
   typedef typename VCLArchitecture::int64_at      int_at;
   typedef typename VCLArchitecture::uint64_at     uint_at;
