@@ -263,17 +263,23 @@ typename VCLReal::matX_t multi_periodogram_vcl(
   LOG(INFO) << calin::util::timestamp::Timestamp::now().seconds_since(start_time)
     << " : Compute time-based sums";
 
-  for(unsigned ifreq=0; ifreq<nfreq; ifreq++) {
-    typename VCLReal::real_vt CC = 0;
-    typename VCLReal::real_vt SS = 0;
-    typename VCLReal::real_vt CS = 0;
+  for(unsigned ifreq_block=0; ifreq_block<nfreq_block; ifreq_block++) {
+    typename VCLReal::real_vt CC[UNROLL];
+    typename VCLReal::real_vt CS[UNROLL];
+    typename VCLReal::real_vt SS[UNROLL];
+
+    for(unsigned iroll=0;iroll<UNROLL;++iroll) {
+      CC[iroll] = 0;
+      CS[iroll] = 0;
+      SS[iroll] = 0;
+    }
 
     // Renormalize the cosine and sine vectors as requested
-    if(ifreq!=0 and renormalize_nfreq!=0 and ifreq%(renormalize_nfreq*UNROLL)==0) {
+    if(ifreq_block!=0 and renormalize_nfreq!=0 and ifreq_block%renormalize_nfreq==0) {
       LOG(INFO) << calin::util::timestamp::Timestamp::now().seconds_since(start_time)
-        << " : CC/CS/SS renorm for ifreq=" << ifreq;
+        << " : CC/CS/SS renorm for ifreq=" << ifreq_block*UNROLL;
 
-      const double omega = 2*M_PI*(freq_lo + delta_freq*ifreq);
+      const double omega = 2*M_PI*(freq_lo + delta_freq*ifreq_block*UNROLL);
       for(unsigned iblock=0; iblock<ni_block; ++iblock) {
         unsigned ix = iblock*VCLReal::num_real;
         typename VCLReal::real_vt t;
@@ -306,21 +312,26 @@ typename VCLReal::matX_t multi_periodogram_vcl(
       c.load_a(vxcf + ix);
       s.load_a(vxsf + ix);
 
-      CC = vcl::mul_add(c,c,CC);
-      CS = vcl::mul_add(c,s,CS);
-      SS = vcl::mul_add(s,s,SS);
+      for(unsigned iroll=0;iroll<UNROLL;++iroll) {
+        CC[iroll] = vcl::mul_add(c,c,CC[iroll]);
+        CS[iroll] = vcl::mul_add(c,s,CS[iroll]);
+        SS[iroll] = vcl::mul_add(s,s,SS[iroll]);
 
-      typename VCLReal::real_vt c_ = vcl::mul_sub(c,cdf,s*sdf);
-      s = vcl::mul_add(c,sdf,s*cdf);
-      c = c_;
+        typename VCLReal::real_vt c_ = vcl::mul_sub(c,cdf,s*sdf);
+        s = vcl::mul_add(c,sdf,s*cdf);
+        c = c_;
+      }
 
       c.store_a(vxcf + ix);
       s.store_a(vxsf + ix);
     }
 
-    vcc[ifreq] = vcl::horizontal_add(CC);
-    vcs[ifreq] = vcl::horizontal_add(CS);
-    vss[ifreq] = vcl::horizontal_add(SS);
+    for(unsigned iroll=0;iroll<UNROLL;++iroll) {
+      unsigned ifreq = ifreq_block*UNROLL + iroll;
+      vcc[ifreq] = vcl::horizontal_add(CC[iroll]);
+      vcs[ifreq] = vcl::horizontal_add(CS[iroll]);
+      vss[ifreq] = vcl::horizontal_add(SS[iroll]);
+    }
   }
 
   // Compute periodograms
