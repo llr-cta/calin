@@ -125,6 +125,7 @@ process_run(std::vector<calin::iact_data::telescope_data_source::
     calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
   for(auto* src: src_list)src_list_upcast.push_back(src);
   this->process_run(src_list_upcast, run_config, log_frequency);
+  delete run_config;
 }
 
 void ParallelEventDispatcher::
@@ -144,6 +145,7 @@ process_run(std::vector<calin::iact_data::telescope_data_source::
     calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
   for(auto* src: src_list)src_list_upcast.push_back(src);
   this->process_run(src_list_upcast, run_config, log_frequency);
+  delete run_config;
 }
 
 void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
@@ -205,6 +207,7 @@ process_cta_zfits_run(const std::string& filename,
 {
   auto zfits_config = config.zfits();
   auto* cta_file = new CTAZFITSDataSource(filename, config.decoder(), zfits_config);
+  TelescopeRunConfiguration* run_config = cta_file->get_run_configuration();
 
   auto fragments = cta_file->all_fragment_names();
   if(fragments.empty()) {
@@ -216,9 +219,10 @@ process_cta_zfits_run(const std::string& filename,
 
   if(nthread == 1) {
     try {
-      process_run(cta_file, config.log_frequency());
+      process_run(cta_file, run_config, config.log_frequency());
     } catch(...) {
       delete cta_file;
+      delete run_config;
       throw;
     }
   } else {
@@ -226,7 +230,7 @@ process_cta_zfits_run(const std::string& filename,
       nthread*std::max(1U, zfits_config.file_fragment_stride()));
 
     std::vector<calin::iact_data::telescope_data_source::
-      TelescopeRandomAccessDataSourceWithRunConfig*> src_list(nthread);
+      TelescopeDataSource*> src_list(nthread);
     try {
       for(unsigned ithread=0; ithread<nthread; ithread++) {
         src_list[ithread] =
@@ -234,14 +238,16 @@ process_cta_zfits_run(const std::string& filename,
       }
       delete cta_file;
       cta_file = nullptr;
-      process_run(src_list, config.log_frequency());
+      process_run(src_list, run_config, config.log_frequency());
     } catch(...) {
       for(auto* src: src_list)delete src;
       delete cta_file;
+      delete run_config;
       throw;
     }
     for(auto* src: src_list)delete src;
   }
+  delete run_config;
 }
 
 void ParallelEventDispatcher::
