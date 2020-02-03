@@ -33,6 +33,19 @@ double power(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti, double freq);
 Eigen::VectorXd periodogram(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   double freq_lo, double freq_hi, double delta_freq);
 
+Eigen::VectorXd frequencies(const Eigen::VectorXd& periodogram,
+  double freq_lo, double delta_freq);
+
+// -----------------------------------------------------------------------------
+// =============================================================================
+// -----------------------------------------------------------------------------
+//
+// Classic "O(N^2)" algorithms with various optimizations
+//
+// -----------------------------------------------------------------------------
+// =============================================================================
+// -----------------------------------------------------------------------------
+
 Eigen::VectorXd periodogram_slow(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   double freq_lo, double freq_hi, double delta_freq);
 
@@ -55,7 +68,5 @@ Eigen::MatrixXd multi_periodogram_vcl256(const Eigen::MatrixXd& xi, const Eigen:
   double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq = 0,
   unsigned unroll = 4);
 
-Eigen::VectorXd frequencies(const Eigen::VectorXd& periodogram,
-  double freq_lo, double delta_freq);
 
 } } } // namespace calin::math::lomb_scargle
