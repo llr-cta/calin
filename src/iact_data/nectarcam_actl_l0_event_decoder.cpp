@@ -113,7 +113,7 @@ bool NectarCam_ACTL_L0_CameraEventDecoder::decode(
 {
   calin_event->set_telescope_id(cta_event->telescopeid());
   calin_event->set_local_event_number(cta_event->eventnumber());
-  calin_event->set_trigger_type(TRIGGER_SCIENCE);
+  calin_event->set_trigger_type(TRIGGER_UNKNOWN);
   calin_event->set_array_trigger_received(false);
   calin_event->set_array_event_number(-1);
   //calin_event->local_clock_time
@@ -338,6 +338,24 @@ bool NectarCam_ACTL_L0_CameraEventDecoder::decode(
   if(calin_event->has_absolute_event_time() and run_start_time_!=0) {
     calin_event->mutable_elapsed_event_time()->set_time_ns(
       calin_event->absolute_event_time().time_ns() - run_start_time_);
+  }
+
+  // ==========================================================================
+  //
+  // FIGURE OUT EVENT TYPE
+  //
+  // ==========================================================================
+
+  if(calin_event->has_tib_data()) {
+    calin_event->set_trigger_type(
+      calin::iact_data::actl_event_decoder::determine_trigger_type(
+        &calin_event->tib_data(), nullptr));
+  } else if(calin_event->has_cdts_data()) {
+    calin_event->set_trigger_type(
+      calin::iact_data::actl_event_decoder::determine_trigger_type(
+        nullptr, &calin_event->cdts_data()));
+  } else {
+    // Now what cat? Now what?
   }
 
   // ==========================================================================

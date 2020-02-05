@@ -273,6 +273,45 @@ decode_tib_data(calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
   calin_tib_data->set_slow_control_trigger(tib_data->trigger_type & 0x40);
   calin_tib_data->set_busy_trigger(tib_data->trigger_type & 0x80);
   calin_tib_data->set_spare_bits(tib_data->stereo_pattern>>9);
+  calin_tib_data->set_trigger_type(tib_data->trigger_type);
+}
+
+calin::ix::iact_data::telescope_event::TriggerType
+calin::iact_data::actl_event_decoder::determine_trigger_type(
+  const calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
+  const calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_data)
+{
+  if(calin_tib_data) {
+    unsigned trig_bits =
+      unsigned(calin_tib_data->mono_trigger() or calin_tib_data->stereo_trigger()) &
+      (unsigned(calin_tib_data->external_calibration_trigger()) << 1) &
+      (unsigned(calin_tib_data->internal_calibration_trigger()) << 2) &
+      (unsigned(calin_tib_data->ucts_aux_trigger()) << 3) &
+      (unsigned(calin_tib_data->pedestal_trigger()) << 4) &
+      (unsigned(calin_tib_data->slow_control_trigger()) << 5);
+    if((trig_bits-1) & trig_bits) {
+      return calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE;
+    } else if(calin_tib_data->mono_trigger()) {
+      return calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL;
+    } else if(calin_tib_data->stereo_trigger()) {
+      return calin::ix::iact_data::telescope_event::TRIGGER_FORCED_BY_ARRAY;
+    } else if(calin_tib_data->external_calibration_trigger()) {
+      return calin::ix::iact_data::telescope_event::TRIGGER_EXTENAL_FLASHER;
+    } else if(calin_tib_data->internal_calibration_trigger()) {
+      return calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER;
+    } else if(calin_tib_data->ucts_aux_trigger()) {
+      return calin::ix::iact_data::telescope_event::TRIGGER_UCTS_AUX;
+    } else if(calin_tib_data->pedestal_trigger()) {
+      return calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL;
+    } else if(calin_tib_data->slow_control_trigger()) {
+      return calin::ix::iact_data::telescope_event::TRIGGER_SOFTWARE;
+    } else {
+      return calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN;
+    }
+  } else if(calin_cdts_data) {
+
+  }
+  return calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN;
 }
 
 /*

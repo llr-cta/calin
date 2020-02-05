@@ -218,6 +218,9 @@ message TIBData {
 
   uint32 spare_bits                                         = 20 [
     (CFO).desc = "Unused bits." ];
+
+  uint32 trigger_type                                       = 30 [
+    (CFO).desc = "Type of event that triggered the readout." ];
 };
 
 message SWATData {
@@ -346,12 +349,15 @@ message ChannelTriggerMap {
 };
 
 enum TriggerType {
-  TRIGGER_SCIENCE               = 0;
-  TRIGGER_SOFTWARE              = 1;
-  TRIGGER_PEDESTAL              = 2;
-  TRIGGER_EXTENAL_FLASHER       = 3;
-  TRIGGER_INTERNAL_FLASHER      = 4;
-  TRIGGER_FORCED_BY_ARRAY       = 5;
+  TRIGGER_UNKNOWN               = 0;
+  TRIGGER_INTERNAL              = 1;
+  TRIGGER_SOFTWARE              = 2;
+  TRIGGER_PEDESTAL              = 3;
+  TRIGGER_EXTENAL_FLASHER       = 4;
+  TRIGGER_INTERNAL_FLASHER      = 5;
+  TRIGGER_FORCED_BY_ARRAY       = 6;
+  TRIGGER_UCTS_AUX              = 7;
+  TRIGGER_MULTIPLE              = 99;
 };
 
 enum ImageTreatmentMode {
