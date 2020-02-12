@@ -43,9 +43,6 @@ typename VCLReal::vecX_t periodogram_vcl(
   const unsigned ni_block = (xi.size()+VCLReal::num_real-1)/VCLReal::num_real;
   const unsigned ni = xi.size();
 
-  unsigned ix;
-  unsigned iblock;
-
   renormalize_nfreq = (renormalize_nfreq+UNROLL-1)/UNROLL;
 
   // Calculate mean
@@ -66,7 +63,8 @@ typename VCLReal::vecX_t periodogram_vcl(
   typename VCLReal::real_t omega0 = 2*M_PI*freq_lo;
 
   // Initialize temporary storage
-  for(iblock=0, ix=0; iblock<ni_block; iblock++, ix+=VCLReal::num_real) {
+  for(unsigned iblock=0; iblock<ni_block; iblock++) {
+    const unsigned ix = iblock * VCLReal::num_real;
     typename VCLReal::real_vt x;
     typename VCLReal::real_vt t;
     typename VCLReal::real_vt mask(1.0);
@@ -100,9 +98,10 @@ typename VCLReal::vecX_t periodogram_vcl(
   for(unsigned ifreq=0; ifreq<nfreq_block; ifreq++) {
 
     // Renormalize the cosine and sine vectors as requested
-    if(renormalize_nfreq!=0 and ifreq%renormalize_nfreq==0) {
-      const double omega = 2*M_PI*(freq_lo + delta_freq*(ifreq*UNROLL));
-      for(iblock=0, ix=0; iblock<ni_block; iblock++, ix+=VCLReal::num_real) {
+    if(ifreq!=0 and renormalize_nfreq!=0 and ifreq%renormalize_nfreq==0) {
+      const typename VCLReal::real_vt omega = omega0 + delta_omega*(ifreq*UNROLL);
+      for(unsigned iblock=0; iblock<ni_block; iblock++) {
+        const unsigned ix = iblock * VCLReal::num_real;
         typename VCLReal::real_vt t;
         typename VCLReal::real_vt mask(1.0);
         if(ix+VCLReal::num_real <= ni) {
@@ -150,6 +149,7 @@ typename VCLReal::vecX_t periodogram_vcl(
       c.load_a(vcf + iblock*VCLReal::num_real);
       s.load_a(vsf + iblock*VCLReal::num_real);
 
+#pragma clang loop unroll(full)
       for(unsigned iroll=0; iroll<UNROLL; ++iroll) {
         CC[iroll] = vcl::mul_add(c,c,CC[iroll]);
         CS[iroll] = vcl::mul_add(c,s,CS[iroll]);
@@ -286,7 +286,7 @@ typename VCLReal::matX_t multi_periodogram_vcl(
         << " : CC/CS/SS renorm for ifreq=" << ifreq_block*UNROLL;
 #endif
 
-      const double omega = 2*M_PI*(freq_lo + delta_freq*ifreq_block*UNROLL);
+      const typename VCLReal::real_vt omega = omega0 + delta_omega*ifreq_block*UNROLL;
       for(unsigned iblock=0; iblock<ni_block; ++iblock) {
         unsigned ix = iblock*VCLReal::num_real;
         typename VCLReal::real_vt t;
@@ -319,6 +319,7 @@ typename VCLReal::matX_t multi_periodogram_vcl(
       c.load_a(vxcf + ix);
       s.load_a(vxsf + ix);
 
+#pragma clang loop unroll(full)
       for(unsigned iroll=0;iroll<UNROLL;++iroll) {
         CC[iroll] = vcl::mul_add(c,c,CC[iroll]);
         CS[iroll] = vcl::mul_add(c,s,CS[iroll]);
@@ -375,9 +376,15 @@ typename VCLReal::matX_t multi_periodogram_vcl(
     typename VCLReal::real_vt XS[UNROLL];
 
     for(unsigned ifreq_block=0; ifreq_block<nfreq_block; ifreq_block++) {
+
       // Renormalize the cosine and sine vectors as requested
       if(ifreq_block!=0 and renormalize_nfreq!=0 and ifreq_block%renormalize_nfreq==0) {
-        const double omega = 2*M_PI*(freq_lo + delta_freq*ifreq_block*UNROLL);
+#ifdef DEBUG_MULTI_PERIODOGRAM_VCL
+        LOG(INFO) << calin::util::timestamp::Timestamp::now().seconds_since(start_time)
+          << " : XC/XS renorm for ifreq=" << ifreq_block*UNROLL;
+#endif
+
+        const typename VCLReal::real_vt omega = omega0 + delta_omega*ifreq_block*UNROLL;
         for(unsigned iblock=0; iblock<ni_block; ++iblock) {
           unsigned ix = iblock * VCLReal::num_real;
           typename VCLReal::real_vt t;
@@ -394,6 +401,7 @@ typename VCLReal::matX_t multi_periodogram_vcl(
           }
           typename VCLReal::real_vt cf;
           typename VCLReal::real_vt sf = vcl::sincos(&cf, t * omega);
+          x -= xmean;
           cf *= x;
           sf *= x;
           cf.store_a(vxcf + ix);
@@ -419,6 +427,7 @@ typename VCLReal::matX_t multi_periodogram_vcl(
         xc.load_a(vxcf + ix);
         xs.load_a(vxsf + ix);
 
+#pragma clang loop unroll(full)
         for(unsigned iroll=0;iroll<UNROLL;++iroll) {
           XC[iroll] += xc;
           XS[iroll] += xs;
