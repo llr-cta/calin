@@ -206,18 +206,13 @@ periodogram_vcl128(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq,
   unsigned unroll)
 {
+  using Real = calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL128Architecture>;
   validate(xi,ti);
-  if(unroll == 1) {
-    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL128Architecture>, 1>(
-      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
-  } else if (unroll == 2) {
-    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL128Architecture>, 2>(
-      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
-  } else if (unroll == 3) {
-    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL128Architecture>, 3>(
-      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
-  } else {
-    throw std::runtime_error("unroll must be 1, 2, or 3");
+  switch(unroll) {
+    case 1: return periodogram_vcl<Real, 1>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 2: return periodogram_vcl<Real, 2>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 3: return periodogram_vcl<Real, 3>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    default: throw std::runtime_error("unroll must be 1, 2, or 3");
   }
 }
 
@@ -226,18 +221,30 @@ periodogram_vcl256(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
   double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq,
   unsigned unroll)
 {
+  using Real = calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture>;
   validate(xi,ti);
-  if(unroll == 1) {
-    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture>, 1>(
-      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
-  } else if (unroll == 2) {
-    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture>, 2>(
-      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
-  } else if (unroll == 3) {
-    return periodogram_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture>, 3>(
-      xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
-  } else {
-    throw std::runtime_error("unroll must be 1, 2, or 3");
+  switch(unroll) {
+    case 1: return periodogram_vcl<Real, 1>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 2: return periodogram_vcl<Real, 2>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    case 3: return periodogram_vcl<Real, 3>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
+    default: throw std::runtime_error("unroll must be 1, 2, or 3");
+  }
+}
+
+Eigen::VectorXd calin::math::lomb_scargle::
+periodogram_vcl256_float(const Eigen::VectorXd& xi, const Eigen::VectorXd& ti,
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq,
+  unsigned unroll)
+{
+  using Real = calin::util::vcl::VCLFloatReal<calin::util::vcl::VCL256Architecture>;
+  validate(xi,ti);
+  Eigen::VectorXf xif = xi.cast<float>();
+  Eigen::VectorXf tif = ti.cast<float>();
+  switch(unroll) {
+    case 1: return periodogram_vcl<Real, 1>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    case 2: return periodogram_vcl<Real, 2>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    case 3: return periodogram_vcl<Real, 3>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    default: throw std::runtime_error("unroll must be 1, 2, or 3");
   }
 }
 
@@ -255,7 +262,7 @@ multi_periodogram_vcl128(const Eigen::MatrixXd& xi, const Eigen::VectorXd& ti,
     case 4: return multi_periodogram_vcl<Real, 4>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
     case 5: return multi_periodogram_vcl<Real, 5>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
     case 6: return multi_periodogram_vcl<Real, 6>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
-    default: throw std::runtime_error("unroll must be 1, 2, or 3");
+    default: throw std::runtime_error("unroll must be 1, 2, 3, 4, 5, or 6");
   }
 }
 
@@ -264,7 +271,6 @@ multi_periodogram_vcl256(const Eigen::MatrixXd& xi, const Eigen::VectorXd& ti,
   double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq,
   unsigned unroll)
 {
-  validate(xi,ti);
   using Real = calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture>;
   validate(xi,ti);
   switch(unroll) {
@@ -274,7 +280,27 @@ multi_periodogram_vcl256(const Eigen::MatrixXd& xi, const Eigen::VectorXd& ti,
     case 4: return multi_periodogram_vcl<Real, 4>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
     case 5: return multi_periodogram_vcl<Real, 5>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
     case 6: return multi_periodogram_vcl<Real, 6>(xi, ti, freq_lo, freq_hi, delta_freq, renormalize_nfreq);
-    default: throw std::runtime_error("unroll must be 1, 2, or 3");
+    default: throw std::runtime_error("unroll must be 1, 2, 3, 4, 5, or 6");
+  }
+}
+
+Eigen::MatrixXd calin::math::lomb_scargle::
+multi_periodogram_vcl256_float(const Eigen::MatrixXd& xi, const Eigen::VectorXd& ti,
+  double freq_lo, double freq_hi, double delta_freq, unsigned renormalize_nfreq,
+  unsigned unroll)
+{
+  using Real = calin::util::vcl::VCLFloatReal<calin::util::vcl::VCL256Architecture>;
+  validate(xi,ti);
+  Eigen::MatrixXf xif = xi.cast<float>();
+  Eigen::MatrixXf tif = ti.cast<float>();
+  switch(unroll) {
+    case 1: return multi_periodogram_vcl<Real, 1>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    case 2: return multi_periodogram_vcl<Real, 2>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    case 3: return multi_periodogram_vcl<Real, 3>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    case 4: return multi_periodogram_vcl<Real, 4>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    case 5: return multi_periodogram_vcl<Real, 5>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    case 6: return multi_periodogram_vcl<Real, 6>(xif, tif, freq_lo, freq_hi, delta_freq, renormalize_nfreq).cast<double>();
+    default: throw std::runtime_error("unroll must be 1, 2, 3, 4, 5, or 6");
   }
 }
 
