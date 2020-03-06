@@ -27,6 +27,16 @@ ARG threads=2
 
 ADD / /build/calin/
 
+RUN apt-get update -y
+
+RUN apt-get install -y software-properties-common
+
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test
+
+RUN apt install -y gcc-9 g++-9
+
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+
 RUN cd /build/calin &&                                             \
     mkdir mybuild &&                                               \
     cd mybuild &&                                                  \
