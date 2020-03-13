@@ -114,6 +114,14 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   run_config_->Clear();
   event_number_hist_.clear();
   elapsed_time_hist_.clear();
+  trigger_physics_elapsed_time_hist_.clear();
+  trigger_software_elapsed_time_hist_.clear();
+  trigger_pedestal_elapsed_time_hist_.clear();
+  trigger_external_flasher_elapsed_time_hist_.clear();
+  trigger_internal_flasher_elapsed_time_hist_.clear();
+  trigger_forced_array_elapsed_time_hist_.clear();
+  trigger_ucts_aux_elapsed_time_hist_.clear();
+
   run_config_->CopyFrom(*run_config);
 
   results_->set_min_event_time(std::numeric_limits<int64_t>::max());
@@ -178,7 +186,30 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
 {
   partials_->increment_num_events_found();
   event_number_hist_.insert(event->local_event_number());
-  elapsed_time_hist_.insert(event->elapsed_event_time().time_ns()*1e-9);
+
+  double elapsed_time_sec = event->elapsed_event_time().time_ns()*1e-9;
+  elapsed_time_hist_.insert(elapsed_time_sec);
+  switch(event->trigger_type()) {
+  case calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS:
+    trigger_physics_elapsed_time_hist_.insert(elapsed_time_sec); break;
+  case calin::ix::iact_data::telescope_event::TRIGGER_SOFTWARE:
+    trigger_software_elapsed_time_hist_.insert(elapsed_time_sec); break;
+  case calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL:
+    trigger_pedestal_elapsed_time_hist_.insert(elapsed_time_sec); break;
+  case calin::ix::iact_data::telescope_event::TRIGGER_EXTENAL_FLASHER:
+    trigger_external_flasher_elapsed_time_hist_.insert(elapsed_time_sec); break;
+  case calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER:
+    trigger_internal_flasher_elapsed_time_hist_.insert(elapsed_time_sec); break;
+  case calin::ix::iact_data::telescope_event::TRIGGER_FORCED_BY_ARRAY:
+    trigger_forced_array_elapsed_time_hist_.insert(elapsed_time_sec); break;
+  case calin::ix::iact_data::telescope_event::TRIGGER_UCTS_AUX:
+    trigger_ucts_aux_elapsed_time_hist_.insert(elapsed_time_sec); break;
+  case calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN:
+  case calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE:
+  default:
+    /* do nothing */
+    break;
+  };
 
   partials_->add_event_number_sequence(event->local_event_number());
 
@@ -322,17 +353,37 @@ bool RunInfoDiagnosticsVisitor::merge_results()
   return true;
 }
 
+namespace {
+  void integrate_histogram_to_proto_and_clear(calin::ix::math::histogram::Histogram1DData *proto,
+      calin::math::histogram::Histogram1D& hist) {
+    auto* hist_data = hist.dump_as_proto();
+    proto->IntegrateFrom(*hist_data);
+    delete hist_data;
+    hist.clear();
+  }
+}
+
 void RunInfoDiagnosticsVisitor::integrate_histograms()
 {
-  auto* event_number_hist_data = event_number_hist_.dump_as_proto();
-  partials_->mutable_event_number_histogram()->IntegrateFrom(*event_number_hist_data);
-  delete event_number_hist_data;
-  event_number_hist_.clear();
+  integrate_histogram_to_proto_and_clear(
+    partials_->mutable_event_number_histogram(), event_number_hist_);
 
-  auto* elapsed_time_hist_data = elapsed_time_hist_.dump_as_proto();
-  partials_->mutable_elapsed_time_histogram()->IntegrateFrom(*elapsed_time_hist_data);
-  delete elapsed_time_hist_data;
-  elapsed_time_hist_.clear();
+  integrate_histogram_to_proto_and_clear(
+    partials_->mutable_elapsed_time_histogram(), elapsed_time_hist_);
+  integrate_histogram_to_proto_and_clear(
+    partials_->mutable_trigger_physics_elapsed_time_histogram(), trigger_physics_elapsed_time_hist_);
+  integrate_histogram_to_proto_and_clear(
+    partials_->mutable_trigger_software_elapsed_time_histogram(), trigger_software_elapsed_time_hist_);
+  integrate_histogram_to_proto_and_clear(
+    partials_->mutable_trigger_pedestal_elapsed_time_histogram(), trigger_pedestal_elapsed_time_hist_);
+  integrate_histogram_to_proto_and_clear(
+    partials_->mutable_trigger_external_flasher_elapsed_time_histogram(), trigger_external_flasher_elapsed_time_hist_);
+  integrate_histogram_to_proto_and_clear(
+    partials_->mutable_trigger_internal_flasher_elapsed_time_histogram(), trigger_internal_flasher_elapsed_time_hist_);
+  integrate_histogram_to_proto_and_clear(
+    partials_->mutable_trigger_forced_array_elapsed_time_histogram(), trigger_forced_array_elapsed_time_hist_);
+  integrate_histogram_to_proto_and_clear(
+    partials_->mutable_trigger_ucts_aux_elapsed_time_histogram(), trigger_ucts_aux_elapsed_time_hist_);
 }
 
 namespace {
@@ -424,7 +475,22 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
   results_->set_max_event_time(std::max(results_->max_event_time(), partials_->max_event_time()));
 
   results_->mutable_event_number_histogram()->IntegrateFrom(partials_->event_number_histogram());
+
   results_->mutable_elapsed_time_histogram()->IntegrateFrom(partials_->elapsed_time_histogram());
+  results_->mutable_trigger_physics_elapsed_time_histogram()->IntegrateFrom(
+    partials_->trigger_physics_elapsed_time_histogram());
+  results_->mutable_trigger_software_elapsed_time_histogram()->IntegrateFrom(
+    partials_->trigger_software_elapsed_time_histogram());
+  results_->mutable_trigger_pedestal_elapsed_time_histogram()->IntegrateFrom(
+    partials_->trigger_pedestal_elapsed_time_histogram());
+  results_->mutable_trigger_external_flasher_elapsed_time_histogram()->IntegrateFrom(
+    partials_->trigger_external_flasher_elapsed_time_histogram());
+  results_->mutable_trigger_internal_flasher_elapsed_time_histogram()->IntegrateFrom(
+    partials_->trigger_internal_flasher_elapsed_time_histogram());
+  results_->mutable_trigger_forced_array_elapsed_time_histogram()->IntegrateFrom(
+    partials_->trigger_forced_array_elapsed_time_histogram());
+  results_->mutable_trigger_ucts_aux_elapsed_time_histogram()->IntegrateFrom(
+    partials_->trigger_ucts_aux_elapsed_time_histogram());
 
   if(partials_->event_number_sequence_size() > 0)
   {

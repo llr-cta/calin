@@ -292,7 +292,7 @@ calin::iact_data::actl_event_decoder::determine_trigger_type(
     if((trig_bits-1) & trig_bits) {
       return calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE;
     } else if(calin_tib_data->mono_trigger()) {
-      return calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL;
+      return calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS;
     } else if(calin_tib_data->stereo_trigger()) {
       return calin::ix::iact_data::telescope_event::TRIGGER_FORCED_BY_ARRAY;
     } else if(calin_tib_data->external_calibration_trigger()) {

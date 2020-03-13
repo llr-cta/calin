@@ -95,6 +95,21 @@ message RunInfo {
   calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 10 [
     (CFO).desc = "Histogram of elapsed time." ];
 
+  calin.ix.math.histogram.Histogram1DData trigger_physics_elapsed_time_histogram = 11 [
+    (CFO).desc = "Histogram of elapsed time for physics triggers." ];
+  calin.ix.math.histogram.Histogram1DData trigger_software_elapsed_time_histogram = 12 [
+    (CFO).desc = "Histogram of elapsed time for software triggers." ];
+  calin.ix.math.histogram.Histogram1DData trigger_pedestal_elapsed_time_histogram = 13 [
+    (CFO).desc = "Histogram of elapsed time for pedestal triggers." ];
+  calin.ix.math.histogram.Histogram1DData trigger_external_flasher_elapsed_time_histogram = 14 [
+    (CFO).desc = "Histogram of elapsed time for external flasher triggers." ];
+  calin.ix.math.histogram.Histogram1DData trigger_internal_flasher_elapsed_time_histogram = 15 [
+    (CFO).desc = "Histogram of elapsed time for internal flasher triggers." ];
+  calin.ix.math.histogram.Histogram1DData trigger_forced_array_elapsed_time_histogram = 16 [
+    (CFO).desc = "Histogram of elapsed time for forced array triggers." ];
+  calin.ix.math.histogram.Histogram1DData trigger_ucts_aux_elapsed_time_histogram = 17 [
+    (CFO).desc = "Histogram of elapsed time for UCTS triggers." ];
+
   uint64 num_events_missing_cdts                           = 20 [
     (CFO).desc = "Number of events without CDTS information.",
     (CFO).is_counter = true ];
@@ -177,14 +192,22 @@ message PartialRunInfo {
   uint64 num_duplicate_event_numbers                       = 6 [ (CFO).is_counter = true ];
 
   calin.ix.math.histogram.Histogram1DData event_number_histogram = 10;
-  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 11;
+  
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 20;
+  calin.ix.math.histogram.Histogram1DData trigger_physics_elapsed_time_histogram = 21;
+  calin.ix.math.histogram.Histogram1DData trigger_software_elapsed_time_histogram = 22;
+  calin.ix.math.histogram.Histogram1DData trigger_pedestal_elapsed_time_histogram = 23;
+  calin.ix.math.histogram.Histogram1DData trigger_external_flasher_elapsed_time_histogram = 24;
+  calin.ix.math.histogram.Histogram1DData trigger_internal_flasher_elapsed_time_histogram = 25;
+  calin.ix.math.histogram.Histogram1DData trigger_forced_array_elapsed_time_histogram = 26;
+  calin.ix.math.histogram.Histogram1DData trigger_ucts_aux_elapsed_time_histogram = 27;
 
-  repeated uint64 event_number_sequence                    = 20 [
+  repeated uint64 event_number_sequence                    = 30 [
     (CFO).integration_algorithm = APPEND ];
-  calin.ix.diagnostics.range.RunLengthEncodingBool cdts_presence         = 21;
-  calin.ix.diagnostics.range.RunLengthEncodingBool tib_presence          = 22;
-  calin.ix.diagnostics.range.RunLengthEncodingBool swat_presence         = 23;
-  calin.ix.diagnostics.range.RunLengthEncodingBool all_channels_presence = 24;
+  calin.ix.diagnostics.range.RunLengthEncodingBool cdts_presence         = 31;
+  calin.ix.diagnostics.range.RunLengthEncodingBool tib_presence          = 32;
+  calin.ix.diagnostics.range.RunLengthEncodingBool swat_presence         = 33;
+  calin.ix.diagnostics.range.RunLengthEncodingBool all_channels_presence = 34;
 
   uint64 num_mono_trigger                                  = 40 [ (CFO).is_counter = true ];
   uint64 num_stereo_trigger                                = 41 [ (CFO).is_counter = true ];

@@ -350,7 +350,7 @@ message ChannelTriggerMap {
 
 enum TriggerType {
   TRIGGER_UNKNOWN               = 0;
-  TRIGGER_INTERNAL              = 1;
+  TRIGGER_PHYSICS               = 1;
   TRIGGER_SOFTWARE              = 2;
   TRIGGER_PEDESTAL              = 3;
   TRIGGER_EXTENAL_FLASHER       = 4;
