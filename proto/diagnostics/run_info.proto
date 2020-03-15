@@ -170,6 +170,26 @@ message RunInfo {
     (CFO).desc = "Maximum absolute event time from all events.", (CFO).units = "ns",
     (CFO).integration_algorithm = MAX ];
 
+  calin.ix.math.histogram.Histogram1DData delta_t_histogram = 60 [
+    (CFO).desc = "Histogram of time between consecutive events.", (CFO).units="s" ];
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram = 61 [
+    (CFO).desc = "Histogram of log10 of time between consecutive events; log10(DeltaT/s)." ];
+  calin.ix.math.histogram.Histogram1DData delta2_t_histogram = 62 [
+    (CFO).desc = "Histogram of time between next-to-consecutive events.", (CFO).units="s" ];
+  calin.ix.math.histogram.Histogram1DData log10_delta2_t_histogram = 63 [
+    (CFO).desc = "Histogram of log10 of time between next-to-consecutive events; "
+      "log10(Delta2T/s)." ];
+
+  calin.ix.math.histogram.Histogram1DData trigger_physics_delta_t_histogram = 64 [
+    (CFO).desc = "Histogram of time between consecutive events.", (CFO).units="s" ];
+  calin.ix.math.histogram.Histogram1DData trigger_physics_log10_delta_t_histogram = 65 [
+    (CFO).desc = "Histogram of log10 of time between consecutive events; log10(DeltaT/s)." ];
+  calin.ix.math.histogram.Histogram1DData trigger_physics_delta2_t_histogram = 66 [
+    (CFO).desc = "Histogram of time between next-to-consecutive events.", (CFO).units="s" ];
+  calin.ix.math.histogram.Histogram1DData trigger_physics_log10_delta2_t_histogram = 67 [
+    (CFO).desc = "Histogram of log10 of time between next-to-consecutive events; "
+      "log10(Delta2T/s)." ];
+
   repeated ModuleRunInfo module                            = 100;
 };
 
@@ -192,7 +212,7 @@ message PartialRunInfo {
   uint64 num_duplicate_event_numbers                       = 6 [ (CFO).is_counter = true ];
 
   calin.ix.math.histogram.Histogram1DData event_number_histogram = 10;
-  
+
   calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 20;
   calin.ix.math.histogram.Histogram1DData trigger_physics_elapsed_time_histogram = 21;
   calin.ix.math.histogram.Histogram1DData trigger_software_elapsed_time_histogram = 22;
@@ -220,6 +240,8 @@ message PartialRunInfo {
 
   int64 min_event_time                                     = 50 [ (CFO).integration_algorithm = MIN ];
   int64 max_event_time                                     = 51 [ (CFO).integration_algorithm = MAX ];
+  repeated int64 event_time_sequence                       = 52 [ (CFO).integration_algorithm = APPEND ];
+  repeated uint32 event_type_sequence                      = 53 [ (CFO).integration_algorithm = APPEND ];
 
   repeated PartialModuleRunInfo module                     = 100;
 };
