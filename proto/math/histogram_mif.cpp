@@ -57,6 +57,8 @@ void calin::ix::math::histogram::Histogram1DData::IntegrateFrom(
         to->bins().data()+from_offset,
         to->mutable_bins()->mutable_data()+from_offset,
         [](double a, double b) { return a+b; });
+      to->set_xval_min(std::min(to->xval_min(), from.xval_min()));
+      to->set_xval_max(std::min(to->xval_max(), from.xval_max()));
     }
     else // "to" has not data in bins, just copy "from"
     {
@@ -65,6 +67,8 @@ void calin::ix::math::histogram::Histogram1DData::IntegrateFrom(
       std::copy(from.bins().data(), from.bins().data()+N,
         to->mutable_bins()->mutable_data());
       to->set_xval0(from.xval0());
+      to->set_xval_min(from.xval_min());
+      to->set_xval_max(from.xval_max());
     }
   }
 
