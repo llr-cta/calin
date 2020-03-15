@@ -190,6 +190,11 @@ message RunInfo {
     (CFO).desc = "Histogram of log10 of time between next-to-consecutive events; "
       "log10(Delta2T/s)." ];
 
+  calin.ix.math.histogram.Histogram1DData recorded_delta_t_histogram = 68 [
+    (CFO).desc = "Histogram of time between RECORDED events.", (CFO).units="s" ];
+  calin.ix.math.histogram.Histogram1DData recordewd_log10_delta_t_histogram = 69 [
+    (CFO).desc = "Histogram of log10 of time between RECORDED events; log10(DeltaT/s)." ];
+
   repeated ModuleRunInfo module                            = 100;
 };
 
