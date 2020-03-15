@@ -51,6 +51,10 @@ message Histogram1DConfig {
 };
 
 message Histogram1DData {
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // !! IF YOU ALTER THIS MESSAGE DONT FORGET TO ALSO MODIFY ITS MIF FUNCTION !!
+  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   option (CMO).message_integration_function = MIF_USER_GENERATED;
 
   double dxval                          = 1
