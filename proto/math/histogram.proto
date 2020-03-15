@@ -88,9 +88,9 @@ message Histogram1DData {
     [(CFO).desc = "Total x-val squared times weight in histogram",
      (CFO).units = "weight-units xval-units^2" ];
   double xval_min                       = 13
-    [(CFO).desc = "Smallest X value in historgram", (CFO).units = "xval-units" ];
+    [(CFO).desc = "Smallest X value in histogram", (CFO).units = "xval-units" ];
   double xval_max                       = 14
-   [(CFO).desc = "Largest X value in historgram", (CFO).units = "xval-units" ];
+   [(CFO).desc = "Largest X value in histogram", (CFO).units = "xval-units" ];
   string name                           = 15
     [(CFO).desc = "Name of the histogram"];
   string xval_units                     = 16
