@@ -93,7 +93,6 @@ public:
 private:
 
 
-  void integrate_histograms();
   void integrate_partials ();
 
   RunInfoDiagnosticsVisitor* parent_ = nullptr;
@@ -103,17 +102,6 @@ private:
   std::vector<unsigned> mod_counter_id_;
   std::vector<unsigned> mod_counter_mode_;
   std::vector<ModuleCounterProcessor*> mod_counter_processor_;
-
-  calin::math::histogram::Histogram1D event_number_hist_ { 1.0e4, 0.0, 1.0e9, 0.0 };
-
-  calin::math::histogram::Histogram1D elapsed_time_hist_ { 1.0, -60.0, 7200.0, 0.0 };
-  calin::math::histogram::Histogram1D trigger_physics_elapsed_time_hist_ { 1.0, -60.0, 7200.0, 0.0 };
-  calin::math::histogram::Histogram1D trigger_software_elapsed_time_hist_ { 1.0, -60.0, 7200.0, 0.0 };
-  calin::math::histogram::Histogram1D trigger_pedestal_elapsed_time_hist_ { 1.0, -60.0, 7200.0, 0.0 };
-  calin::math::histogram::Histogram1D trigger_external_flasher_elapsed_time_hist_ { 1.0, -60.0, 7200.0, 0.0 };
-  calin::math::histogram::Histogram1D trigger_internal_flasher_elapsed_time_hist_ { 1.0, -60.0, 7200.0, 0.0 };
-  calin::math::histogram::Histogram1D trigger_forced_array_elapsed_time_hist_ { 1.0, -60.0, 7200.0, 0.0 };
-  calin::math::histogram::Histogram1D trigger_ucts_aux_elapsed_time_hist_ { 1.0, -60.0, 7200.0, 0.0 };
 
   google::protobuf::Arena* arena_ = nullptr;
   calin::ix::diagnostics::run_info::RunInfo* results_ = nullptr;

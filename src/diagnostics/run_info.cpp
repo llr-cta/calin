@@ -112,15 +112,6 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   results_->Clear();
   partials_->Clear();
   run_config_->Clear();
-  event_number_hist_.clear();
-  elapsed_time_hist_.clear();
-  trigger_physics_elapsed_time_hist_.clear();
-  trigger_software_elapsed_time_hist_.clear();
-  trigger_pedestal_elapsed_time_hist_.clear();
-  trigger_external_flasher_elapsed_time_hist_.clear();
-  trigger_internal_flasher_elapsed_time_hist_.clear();
-  trigger_forced_array_elapsed_time_hist_.clear();
-  trigger_ucts_aux_elapsed_time_hist_.clear();
 
   run_config_->CopyFrom(*run_config);
 
@@ -178,6 +169,23 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
 
 bool RunInfoDiagnosticsVisitor::leave_telescope_run()
 {
+  if(parent_ == nullptr) {
+    results_->Clear();
+    for(int imod=0;imod<run_config_->configured_module_id_size();imod++) {
+      auto* mod = results_->add_module();
+      mod->set_configured_module_rank(imod);
+      mod->set_camera_module_id(run_config_->configured_module_id(imod));
+      for(unsigned icounter=0;icounter<mod_counter_id_.size(); icounter++) {
+        auto* counter = mod->add_counter_value();
+        counter->set_counter_id(mod_counter_id_[icounter]);
+        counter->set_counter_name(run_config_->camera_layout().module_counter_name(
+          mod_counter_id_[icounter]));
+        counter->set_test_mode(
+          calin::ix::diagnostics::run_info::CounterValueTestMode(mod_counter_mode_[icounter]));
+      }
+    }
+    integrate_partials();
+  }
   return true;
 }
 
@@ -185,31 +193,6 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   partials_->increment_num_events_found();
-  event_number_hist_.insert(event->local_event_number());
-
-  double elapsed_time_sec = event->elapsed_event_time().time_ns()*1e-9;
-  elapsed_time_hist_.insert(elapsed_time_sec);
-  switch(event->trigger_type()) {
-  case calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS:
-    trigger_physics_elapsed_time_hist_.insert(elapsed_time_sec); break;
-  case calin::ix::iact_data::telescope_event::TRIGGER_SOFTWARE:
-    trigger_software_elapsed_time_hist_.insert(elapsed_time_sec); break;
-  case calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL:
-    trigger_pedestal_elapsed_time_hist_.insert(elapsed_time_sec); break;
-  case calin::ix::iact_data::telescope_event::TRIGGER_EXTENAL_FLASHER:
-    trigger_external_flasher_elapsed_time_hist_.insert(elapsed_time_sec); break;
-  case calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER:
-    trigger_internal_flasher_elapsed_time_hist_.insert(elapsed_time_sec); break;
-  case calin::ix::iact_data::telescope_event::TRIGGER_FORCED_BY_ARRAY:
-    trigger_forced_array_elapsed_time_hist_.insert(elapsed_time_sec); break;
-  case calin::ix::iact_data::telescope_event::TRIGGER_UCTS_AUX:
-    trigger_ucts_aux_elapsed_time_hist_.insert(elapsed_time_sec); break;
-  case calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN:
-  case calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE:
-  default:
-    /* do nothing */
-    break;
-  };
 
   partials_->add_event_number_sequence(event->local_event_number());
   partials_->add_event_time_sequence(event->absolute_event_time().time_ns());
@@ -290,6 +273,12 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
 calin::ix::diagnostics::run_info::RunInfoConfig RunInfoDiagnosticsVisitor::default_config()
 {
   calin::ix::diagnostics::run_info::RunInfoConfig config;
+
+  config.set_event_number_histogram_resolution(10000);
+  config.set_event_time_histogram_resolution(1.0);
+  config.set_log10_delta_t_histogram_binsize(0.01);
+  config.set_delta_t_timeslice(100.0);
+
   config.mutable_default_nectarcam_config()->add_module_counter_test_id(0);
   config.mutable_default_nectarcam_config()->add_module_counter_test_id(1);
   config.mutable_default_nectarcam_config()->add_module_counter_test_id(2);
@@ -321,24 +310,6 @@ RunInfoDiagnosticsVisitor::run_config() const
 
 const calin::ix::diagnostics::run_info::RunInfo& RunInfoDiagnosticsVisitor::run_info()
 {
-  results_->Clear();
-  results_->set_min_event_time(std::numeric_limits<int64_t>::max());
-  results_->set_max_event_time(std::numeric_limits<int64_t>::min());
-  for(int imod=0;imod<run_config_->configured_module_id_size();imod++) {
-    auto* mod = results_->add_module();
-    mod->set_configured_module_rank(imod);
-    mod->set_camera_module_id(run_config_->configured_module_id(imod));
-    for(unsigned icounter=0;icounter<mod_counter_id_.size(); icounter++) {
-      auto* counter = mod->add_counter_value();
-      counter->set_counter_id(mod_counter_id_[icounter]);
-      counter->set_counter_name(run_config_->camera_layout().module_counter_name(
-        mod_counter_id_[icounter]));
-      counter->set_test_mode(
-        calin::ix::diagnostics::run_info::CounterValueTestMode(mod_counter_mode_[icounter]));
-    }
-  }
-  integrate_histograms();
-  integrate_partials();
   return *results_;
 }
 
@@ -349,43 +320,11 @@ const calin::ix::diagnostics::run_info::PartialRunInfo& RunInfoDiagnosticsVisito
 
 bool RunInfoDiagnosticsVisitor::merge_results()
 {
-  integrate_histograms();
-  parent_->partials_->IntegrateFrom(*partials_);
-  partials_->Clear();
-  return true;
-}
-
-namespace {
-  void integrate_histogram_to_proto_and_clear(calin::ix::math::histogram::Histogram1DData *proto,
-      calin::math::histogram::Histogram1D& hist) {
-    auto* hist_data = hist.dump_as_proto();
-    proto->IntegrateFrom(*hist_data);
-    delete hist_data;
-    hist.clear();
+  if(parent_) {
+    parent_->partials_->IntegrateFrom(*partials_);
+    partials_->Clear();
   }
-}
-
-void RunInfoDiagnosticsVisitor::integrate_histograms()
-{
-  integrate_histogram_to_proto_and_clear(
-    partials_->mutable_event_number_histogram(), event_number_hist_);
-
-  integrate_histogram_to_proto_and_clear(
-    partials_->mutable_elapsed_time_histogram(), elapsed_time_hist_);
-  integrate_histogram_to_proto_and_clear(
-    partials_->mutable_elapsed_time_histogram_trigger_physics(), trigger_physics_elapsed_time_hist_);
-  integrate_histogram_to_proto_and_clear(
-    partials_->mutable_elapsed_time_histogram_trigger_software(), trigger_software_elapsed_time_hist_);
-  integrate_histogram_to_proto_and_clear(
-    partials_->mutable_elapsed_time_histogram_trigger_pedestal(), trigger_pedestal_elapsed_time_hist_);
-  integrate_histogram_to_proto_and_clear(
-    partials_->mutable_elapsed_time_histogram_trigger_external_flasher(), trigger_external_flasher_elapsed_time_hist_);
-  integrate_histogram_to_proto_and_clear(
-    partials_->mutable_elapsed_time_histogram_trigger_internal_flasher(), trigger_internal_flasher_elapsed_time_hist_);
-  integrate_histogram_to_proto_and_clear(
-    partials_->mutable_elapsed_time_histogram_trigger_forced_array(), trigger_forced_array_elapsed_time_hist_);
-  integrate_histogram_to_proto_and_clear(
-    partials_->mutable_elapsed_time_histogram_trigger_ucts_aux(), trigger_ucts_aux_elapsed_time_hist_);
+  return true;
 }
 
 namespace {
@@ -458,44 +397,96 @@ namespace {
 
 void RunInfoDiagnosticsVisitor::integrate_partials()
 {
-  results_->increment_num_events_found(partials_->num_events_found());
-  results_->increment_num_events_missing_cdts(partials_->num_events_missing_cdts());
-  results_->increment_num_events_missing_tib(partials_->num_events_missing_tib());
-  results_->increment_num_events_missing_swat(partials_->num_events_missing_swat());
-  results_->increment_num_events_missing_modules(partials_->num_events_missing_modules());
+  results_->set_num_events_found(partials_->num_events_found());
+  results_->set_num_events_missing_cdts(partials_->num_events_missing_cdts());
+  results_->set_num_events_missing_tib(partials_->num_events_missing_tib());
+  results_->set_num_events_missing_swat(partials_->num_events_missing_swat());
+  results_->set_num_events_missing_modules(partials_->num_events_missing_modules());
 
-  results_->increment_num_mono_trigger(partials_->num_mono_trigger());
-  results_->increment_num_stereo_trigger(partials_->num_stereo_trigger()) ;
-  results_->increment_num_external_calibration_trigger(partials_->num_external_calibration_trigger());
-  results_->increment_num_internal_calibration_trigger(partials_->num_internal_calibration_trigger());
-  results_->increment_num_ucts_aux_trigger(partials_->num_ucts_aux_trigger());
-  results_->increment_num_pedestal_trigger(partials_->num_pedestal_trigger());
-  results_->increment_num_slow_control_trigger(partials_->num_slow_control_trigger());
-  results_->increment_num_busy_trigger(partials_->num_busy_trigger());
+  results_->set_num_mono_trigger(partials_->num_mono_trigger());
+  results_->set_num_stereo_trigger(partials_->num_stereo_trigger()) ;
+  results_->set_num_external_calibration_trigger(partials_->num_external_calibration_trigger());
+  results_->set_num_internal_calibration_trigger(partials_->num_internal_calibration_trigger());
+  results_->set_num_ucts_aux_trigger(partials_->num_ucts_aux_trigger());
+  results_->set_num_pedestal_trigger(partials_->num_pedestal_trigger());
+  results_->set_num_slow_control_trigger(partials_->num_slow_control_trigger());
+  results_->set_num_busy_trigger(partials_->num_busy_trigger());
 
-  results_->set_min_event_time(std::min(results_->min_event_time(), partials_->min_event_time()));
-  results_->set_max_event_time(std::max(results_->max_event_time(), partials_->max_event_time()));
-
-  results_->mutable_event_number_histogram()->IntegrateFrom(partials_->event_number_histogram());
-
-  results_->mutable_elapsed_time_histogram()->IntegrateFrom(partials_->elapsed_time_histogram());
-  results_->mutable_elapsed_time_histogram_trigger_physics()->IntegrateFrom(
-    partials_->elapsed_time_histogram_trigger_physics());
-  results_->mutable_elapsed_time_histogram_trigger_software()->IntegrateFrom(
-    partials_->elapsed_time_histogram_trigger_software());
-  results_->mutable_elapsed_time_histogram_trigger_pedestal()->IntegrateFrom(
-    partials_->elapsed_time_histogram_trigger_pedestal());
-  results_->mutable_elapsed_time_histogram_trigger_external_flasher()->IntegrateFrom(
-    partials_->elapsed_time_histogram_trigger_external_flasher());
-  results_->mutable_elapsed_time_histogram_trigger_internal_flasher()->IntegrateFrom(
-    partials_->elapsed_time_histogram_trigger_internal_flasher());
-  results_->mutable_elapsed_time_histogram_trigger_forced_array()->IntegrateFrom(
-    partials_->elapsed_time_histogram_trigger_forced_array());
-  results_->mutable_elapsed_time_histogram_trigger_ucts_aux()->IntegrateFrom(
-    partials_->elapsed_time_histogram_trigger_ucts_aux());
+  results_->set_min_event_time(partials_->min_event_time());
+  results_->set_max_event_time(partials_->max_event_time());
 
   if(partials_->event_number_sequence_size() > 0)
   {
+    calin::math::histogram::Histogram1D event_number_hist {
+      config_.event_number_histogram_resolution(), 0.0, 1.0e9,
+      double(run_config_->camera_layout().first_event_number()) };
+
+    calin::math::histogram::Histogram1D elapsed_time_hist {
+      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+    calin::math::histogram::Histogram1D trigger_physics_elapsed_time_hist {
+      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+    calin::math::histogram::Histogram1D trigger_software_elapsed_time_hist {
+      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+    calin::math::histogram::Histogram1D trigger_pedestal_elapsed_time_hist {
+      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+    calin::math::histogram::Histogram1D trigger_external_flasher_elapsed_time_hist {
+      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+    calin::math::histogram::Histogram1D trigger_internal_flasher_elapsed_time_hist {
+      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+    calin::math::histogram::Histogram1D trigger_forced_array_elapsed_time_hist {
+      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+    calin::math::histogram::Histogram1D trigger_ucts_aux_elapsed_time_hist {
+      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+
+    for(int ievent=0; ievent<partials_->event_number_sequence_size(); ++ievent) {
+      event_number_hist.insert(partials_->event_number_sequence(ievent));
+      if(partials_->event_time_sequence(ievent) > 0) {
+        double elapsed_time_sec =
+          (partials_->event_time_sequence(ievent)-run_config_->run_start_time().time_ns())*1e-9;
+        elapsed_time_hist.insert(elapsed_time_sec);
+        switch(partials_->event_type_sequence(ievent)) {
+        case calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS:
+          trigger_physics_elapsed_time_hist.insert(elapsed_time_sec); break;
+        case calin::ix::iact_data::telescope_event::TRIGGER_SOFTWARE:
+          trigger_software_elapsed_time_hist.insert(elapsed_time_sec); break;
+        case calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL:
+          trigger_pedestal_elapsed_time_hist.insert(elapsed_time_sec); break;
+        case calin::ix::iact_data::telescope_event::TRIGGER_EXTENAL_FLASHER:
+          trigger_external_flasher_elapsed_time_hist.insert(elapsed_time_sec); break;
+        case calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER:
+          trigger_internal_flasher_elapsed_time_hist.insert(elapsed_time_sec); break;
+        case calin::ix::iact_data::telescope_event::TRIGGER_FORCED_BY_ARRAY:
+          trigger_forced_array_elapsed_time_hist.insert(elapsed_time_sec); break;
+        case calin::ix::iact_data::telescope_event::TRIGGER_UCTS_AUX:
+          trigger_ucts_aux_elapsed_time_hist.insert(elapsed_time_sec); break;
+        case calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN:
+        case calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE:
+        default:
+          /* do nothing */
+          break;
+        };
+      }
+    }
+
+    event_number_hist.dump_as_proto(results_->mutable_event_number_histogram());
+
+    elapsed_time_hist.dump_as_proto(results_->mutable_elapsed_time_histogram());
+
+    trigger_physics_elapsed_time_hist.dump_as_proto(
+      results_->mutable_elapsed_time_histogram_trigger_physics());
+    trigger_software_elapsed_time_hist.dump_as_proto(
+      results_->mutable_elapsed_time_histogram_trigger_software());
+    trigger_pedestal_elapsed_time_hist.dump_as_proto(
+      results_->mutable_elapsed_time_histogram_trigger_pedestal());
+    trigger_external_flasher_elapsed_time_hist.dump_as_proto(
+      results_->mutable_elapsed_time_histogram_trigger_external_flasher());
+    trigger_internal_flasher_elapsed_time_hist.dump_as_proto(
+      results_->mutable_elapsed_time_histogram_trigger_internal_flasher());
+    trigger_forced_array_elapsed_time_hist.dump_as_proto(
+      results_->mutable_elapsed_time_histogram_trigger_forced_array());
+    trigger_ucts_aux_elapsed_time_hist.dump_as_proto(
+      results_->mutable_elapsed_time_histogram_trigger_ucts_aux());
+
     auto event_index = calin::util::algorithm::argsort(
       partials_->event_number_sequence().begin(), partials_->event_number_sequence().end());
 
@@ -522,51 +513,35 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
 
     std::vector<bool> event_value_bool(event_index.size());
     std::vector<int64_t> event_value_i64(event_index.size());
-    calin::ix::diagnostics::range::IndexRange range;
 
-    range.Clear();
     make_index_range_from_conditional_bool_rle(
       event_index, partials_->event_number_sequence().begin(),
       partials_->cdts_presence(),
-      event_value_bool, &range, false);
-    if(range.begin_index_size())
-      results_->mutable_events_missing_cdts()->IntegrateFrom(range);
+      event_value_bool, results_->mutable_events_missing_cdts(), false);
 
-    range.Clear();
     make_index_range_from_conditional_bool_rle(
       event_index, partials_->event_number_sequence().begin(),
       partials_->tib_presence(),
-      event_value_bool, &range, false);
-    if(range.begin_index_size())
-      results_->mutable_events_missing_tib()->IntegrateFrom(range);
+      event_value_bool, results_->mutable_events_missing_tib(), false);
 
-    range.Clear();
     make_index_range_from_conditional_bool_rle(
       event_index, partials_->event_number_sequence().begin(),
       partials_->swat_presence(),
-      event_value_bool, &range, false);
-    if(range.begin_index_size())
-      results_->mutable_events_missing_swat()->IntegrateFrom(range);
+      event_value_bool, results_->mutable_events_missing_swat(), false);
 
-    range.Clear();
     make_index_range_from_conditional_bool_rle(
       event_index, partials_->event_number_sequence().begin(),
       partials_->all_channels_presence(),
-      event_value_bool, &range, false);
-    if(range.begin_index_size())
-      results_->mutable_events_missing_modules()->IntegrateFrom(range);
+      event_value_bool, results_->mutable_events_missing_modules(), false);
 
     for(int imod=0;imod<partials_->module_size();imod++) {
       auto* rimod = results_->mutable_module(imod);
       auto& pimod = partials_->module(imod);
 
-      range.Clear();
       make_index_range_from_conditional_bool_rle(
         event_index, partials_->event_number_sequence().begin(),
         pimod.module_presence(),
-        event_value_bool, &range, false);
-      if(range.begin_index_size())
-        results_->mutable_module(imod)->mutable_events_missing()->IntegrateFrom(range);
+        event_value_bool, results_->mutable_module(imod)->mutable_events_missing(), false);
       rimod->set_num_events_present(pimod.num_events_present());
 
       for(unsigned icounter=0; icounter<mod_counter_id_.size(); icounter++) {
@@ -642,25 +617,16 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
         last_event_type = event_type;
       }
 
-      auto* hist_data = log10_delta_t_hist.dump_as_proto();
-      results_->mutable_log10_delta_t_histogram()->IntegrateFrom(*hist_data);
-      delete hist_data;
-
-      hist_data = log10_delta2_t_hist.dump_as_proto();
-      results_->mutable_log10_delta2_t_histogram()->IntegrateFrom(*hist_data);
-      delete hist_data;
-
-      hist_data = pt_log10_delta_t_hist.dump_as_proto();
-      results_->mutable_log10_delta_t_histogram_trigger_physics()->IntegrateFrom(*hist_data);
-      delete hist_data;
-
-      hist_data = pt_log10_delta2_t_hist.dump_as_proto();
-      results_->mutable_log10_delta2_t_histogram_trigger_physics()->IntegrateFrom(*hist_data);
-      delete hist_data;
-
-      hist_data = rec_log10_delta_t_hist.dump_as_proto();
-      results_->mutable_log10_delta_t_histogram_all_recorded()->IntegrateFrom(*hist_data);
-      delete hist_data;
+      log10_delta_t_hist.dump_as_proto(
+        results_->mutable_log10_delta_t_histogram());
+      log10_delta2_t_hist.dump_as_proto(
+        results_->mutable_log10_delta2_t_histogram());
+      pt_log10_delta_t_hist.dump_as_proto(
+        results_->mutable_log10_delta_t_histogram_trigger_physics());
+      pt_log10_delta2_t_hist.dump_as_proto(
+        results_->mutable_log10_delta2_t_histogram_trigger_physics());
+      rec_log10_delta_t_hist.dump_as_proto(
+        results_->mutable_log10_delta_t_histogram_all_recorded());
     }
   }
 }

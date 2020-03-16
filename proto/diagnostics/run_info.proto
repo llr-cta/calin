@@ -45,8 +45,17 @@ message CameraRunInfoConfig {
 message RunInfoConfig {
   repeated int32 module_counter_test_id                    = 1;
   repeated CounterValueTestMode module_counter_test_mode   = 2;
-  CameraRunInfoConfig default_nectarcam_config             = 10;
-  CameraRunInfoConfig default_lstcam_config                = 11;
+  double event_number_histogram_resolution                 = 10 [
+    (CFO).desc = "Resolution of event number histogram.", (CFO).units="events" ];
+  double event_time_histogram_resolution                   = 11 [
+    (CFO).desc = "Resolution of event time histograms.", (CFO).units="s" ];
+  double log10_delta_t_histogram_binsize                   = 12 [
+    (CFO).desc = "Resolution of log10(delta-T) histograms." ];
+  double delta_t_timeslice                                 = 13 [
+    (CFO).desc = "Resolution of time-dependent delta-T histogram time slices.",
+    (CFO).units="s" ];
+  CameraRunInfoConfig default_nectarcam_config             = 100;
+  CameraRunInfoConfig default_lstcam_config                = 101;
 };
 
 message CounterValues {
@@ -205,17 +214,6 @@ message PartialRunInfo {
   uint64 num_events_missing_swat                           = 4 [ (CFO).is_counter = true ];
   uint64 num_events_missing_modules                        = 5 [ (CFO).is_counter = true ];
   uint64 num_duplicate_event_numbers                       = 6 [ (CFO).is_counter = true ];
-
-  calin.ix.math.histogram.Histogram1DData event_number_histogram = 10;
-
-  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 20;
-  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_physics = 21;
-  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_software = 22;
-  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_pedestal = 23;
-  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_external_flasher = 24;
-  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_internal_flasher = 25;
-  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_forced_array = 26;
-  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_ucts_aux = 27;
 
   repeated uint64 event_number_sequence                    = 30 [
     (CFO).integration_algorithm = APPEND ];
