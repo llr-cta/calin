@@ -168,7 +168,8 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     return pc
 
 def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False,
-        xscale = 1, xoffset = 0, yscale = 1, yoffset = 0, *args, **nargs):
+        xscale = 1, xoffset = 0, yscale = 1, yoffset = 0,
+        xscale_as_log10 = False, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
@@ -183,12 +184,17 @@ def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False,
         hy /= h.sum_w()
     hx = np.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
     hy = np.append(hy, hy[-1]) * yscale + yoffset
+    if(xscale_as_log10):
+        hx = 10**hx
     so = plt.step(hx,hy, where='post', *args, **nargs)
+    if(xscale_as_log10):
+        so[0].axes.set_xscale('log')
     return so
 
 def plot_histogram_cumulative(h, plot_as_cdf = False, plot_as_cmf = False,
         right_to_left = False,
-        xscale = 1, xoffset = 0, yscale = 1, yoffset = 0, *args, **nargs):
+        xscale = 1, xoffset = 0, yscale = 1, yoffset = 0,
+        xscale_as_log10 = False, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
@@ -206,5 +212,9 @@ def plot_histogram_cumulative(h, plot_as_cdf = False, plot_as_cmf = False,
     else:
         hy = np.cumsum(hy)
     hy =  hy * yscale + yoffset
+    if(xscale_as_log10):
+        hx = 10**hx
     so = plt.plot(hx, hy, *args, **nargs)
+    if(xscale_as_log10):
+        so[0].axes.set_xscale('log')
     return so
