@@ -167,28 +167,40 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     axis.axis(np.asarray([-1,1,-1,1])*(R or 1.05*max_xy))
     return pc
 
-def plot_histogram(h, plot_as_pdf = False, plot_as_pmf = False,
+def plot_histogram(h, density = False, normalise = False,
         xscale = 1, xoffset = 0, yscale = 1, yoffset = 0,
-        xscale_as_log10 = False, *args, **nargs):
+        xscale_as_log10 = False, draw_poisson_errors = False, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
+        hdy = np.sqrt(h.all_weight())
     elif type(h) is calin.ix.math.histogram.Histogram1DData:
         hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
         hy = h.bins()
+        hdy = np.sqrt(h.bins())
     else:
         raise Exception('Unknown histogram type: '+str(type(h)))
-    if plot_as_pdf:
-        hy /= h.sum_w()*abs(h.dxval()*xscale)
-    elif plot_as_pmf:
+    if density:
+        hy /= abs(h.dxval()*xscale)
+        hdy /= abs(h.dxval()*xscale)
+    if normalise:
         hy /= h.sum_w()
+        hdy /= h.sum_w()
     hx = np.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
     hy = np.append(hy, hy[-1]) * yscale + yoffset
+    hdy = hdy * yscale + yoffset
     if(xscale_as_log10):
         hx = 10**hx
     so = plt.step(hx,hy, where='post', *args, **nargs)
     if(xscale_as_log10):
         so[0].axes.set_xscale('log')
+    if(draw_poisson_errors):
+        so1 = plt.vlines(0.5*(hx[:-1]+hx[1:]), hy[:-1]-hdy, hy[:-1]+hdy)
+        so1.set_linestyles(so[0].get_linestyle())
+        so1.set_color(so[0].get_color())
+        so1.set_linewidth(so[0].get_linewidth())
+        so1.set_zorder(so[0].get_zorder())
+        so = [ *so, so1 ]
     return so
 
 def plot_histogram_cumulative(h, plot_as_cdf = False, plot_as_cmf = False,
