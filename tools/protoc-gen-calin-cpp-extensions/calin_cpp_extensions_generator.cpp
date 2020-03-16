@@ -127,7 +127,6 @@ bool counter_field(const google::protobuf::FieldDescriptor* f,
     if(type != "float" and type != "double")
       type = "::google::protobuf::" + type;
     if(f->is_repeated()) {
-
       printer.Print("$type$ increment_$name$(int index, const $type$ count=1) { \n"
         "  while($name$_size() <= index) { add_$name$(0); };\n"
         "  set_$name$(index, $name$(index) + count); return $name$(index); }\n"
