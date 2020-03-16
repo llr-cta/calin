@@ -37,4 +37,6 @@
 
 %import "math/histogram.pb.i"
 
+%newobject calin::math::histogram::rebin;
+
 %include "math/histogram.hpp"

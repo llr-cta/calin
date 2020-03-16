@@ -28,3 +28,20 @@ namespace calin { namespace math { namespace histogram {
 template class BasicHistogram1D<accumulator::SimpleAccumulator>;
 
 } } } // namespace calin::math::histogram
+
+calin::ix::math::histogram::Histogram1DData*
+calin::math::histogram::rebin(
+  const calin::ix::math::histogram::Histogram1DData& from, unsigned rebinning_factor)
+{
+  rebinning_factor = std::max(rebinning_factor, 1U);
+  auto* to = new calin::ix::math::histogram::Histogram1DData(from);
+  to->set_dxval(from.dxval() * rebinning_factor);
+  to->clear_bins();
+  for(int ibin=0,obin=-1;ibin<from.bins_size();++ibin) {
+    if(ibin%rebinning_factor == 0) {
+      ++obin;
+    }
+    to->increment_bins(obin, from.bins(ibin));
+  }
+  return to;
+}

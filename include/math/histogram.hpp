@@ -927,4 +927,7 @@ class BinnedCDF: public BinnedData1D<double>
 CALIN_TYPEALIAS(SimpleHist, BasicHistogram1D<DefaultAccumulator>);
 CALIN_TYPEALIAS(Histogram1D, BasicHistogram1D<DefaultAccumulator>);
 
+calin::ix::math::histogram::Histogram1DData*
+rebin(const calin::ix::math::histogram::Histogram1DData& hist_data, unsigned rebinning_factor);
+
 } } } // namespace calin::math::histogram
