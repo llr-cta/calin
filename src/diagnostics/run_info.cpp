@@ -373,19 +373,19 @@ void RunInfoDiagnosticsVisitor::integrate_histograms()
   integrate_histogram_to_proto_and_clear(
     partials_->mutable_elapsed_time_histogram(), elapsed_time_hist_);
   integrate_histogram_to_proto_and_clear(
-    partials_->mutable_trigger_physics_elapsed_time_histogram(), trigger_physics_elapsed_time_hist_);
+    partials_->mutable_elapsed_time_histogram_trigger_physics(), trigger_physics_elapsed_time_hist_);
   integrate_histogram_to_proto_and_clear(
-    partials_->mutable_trigger_software_elapsed_time_histogram(), trigger_software_elapsed_time_hist_);
+    partials_->mutable_elapsed_time_histogram_trigger_software(), trigger_software_elapsed_time_hist_);
   integrate_histogram_to_proto_and_clear(
-    partials_->mutable_trigger_pedestal_elapsed_time_histogram(), trigger_pedestal_elapsed_time_hist_);
+    partials_->mutable_elapsed_time_histogram_trigger_pedestal(), trigger_pedestal_elapsed_time_hist_);
   integrate_histogram_to_proto_and_clear(
-    partials_->mutable_trigger_external_flasher_elapsed_time_histogram(), trigger_external_flasher_elapsed_time_hist_);
+    partials_->mutable_elapsed_time_histogram_trigger_external_flasher(), trigger_external_flasher_elapsed_time_hist_);
   integrate_histogram_to_proto_and_clear(
-    partials_->mutable_trigger_internal_flasher_elapsed_time_histogram(), trigger_internal_flasher_elapsed_time_hist_);
+    partials_->mutable_elapsed_time_histogram_trigger_internal_flasher(), trigger_internal_flasher_elapsed_time_hist_);
   integrate_histogram_to_proto_and_clear(
-    partials_->mutable_trigger_forced_array_elapsed_time_histogram(), trigger_forced_array_elapsed_time_hist_);
+    partials_->mutable_elapsed_time_histogram_trigger_forced_array(), trigger_forced_array_elapsed_time_hist_);
   integrate_histogram_to_proto_and_clear(
-    partials_->mutable_trigger_ucts_aux_elapsed_time_histogram(), trigger_ucts_aux_elapsed_time_hist_);
+    partials_->mutable_elapsed_time_histogram_trigger_ucts_aux(), trigger_ucts_aux_elapsed_time_hist_);
 }
 
 namespace {
@@ -479,20 +479,20 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
   results_->mutable_event_number_histogram()->IntegrateFrom(partials_->event_number_histogram());
 
   results_->mutable_elapsed_time_histogram()->IntegrateFrom(partials_->elapsed_time_histogram());
-  results_->mutable_trigger_physics_elapsed_time_histogram()->IntegrateFrom(
-    partials_->trigger_physics_elapsed_time_histogram());
-  results_->mutable_trigger_software_elapsed_time_histogram()->IntegrateFrom(
-    partials_->trigger_software_elapsed_time_histogram());
-  results_->mutable_trigger_pedestal_elapsed_time_histogram()->IntegrateFrom(
-    partials_->trigger_pedestal_elapsed_time_histogram());
-  results_->mutable_trigger_external_flasher_elapsed_time_histogram()->IntegrateFrom(
-    partials_->trigger_external_flasher_elapsed_time_histogram());
-  results_->mutable_trigger_internal_flasher_elapsed_time_histogram()->IntegrateFrom(
-    partials_->trigger_internal_flasher_elapsed_time_histogram());
-  results_->mutable_trigger_forced_array_elapsed_time_histogram()->IntegrateFrom(
-    partials_->trigger_forced_array_elapsed_time_histogram());
-  results_->mutable_trigger_ucts_aux_elapsed_time_histogram()->IntegrateFrom(
-    partials_->trigger_ucts_aux_elapsed_time_histogram());
+  results_->mutable_elapsed_time_histogram_trigger_physics()->IntegrateFrom(
+    partials_->elapsed_time_histogram_trigger_physics());
+  results_->mutable_elapsed_time_histogram_trigger_software()->IntegrateFrom(
+    partials_->elapsed_time_histogram_trigger_software());
+  results_->mutable_elapsed_time_histogram_trigger_pedestal()->IntegrateFrom(
+    partials_->elapsed_time_histogram_trigger_pedestal());
+  results_->mutable_elapsed_time_histogram_trigger_external_flasher()->IntegrateFrom(
+    partials_->elapsed_time_histogram_trigger_external_flasher());
+  results_->mutable_elapsed_time_histogram_trigger_internal_flasher()->IntegrateFrom(
+    partials_->elapsed_time_histogram_trigger_internal_flasher());
+  results_->mutable_elapsed_time_histogram_trigger_forced_array()->IntegrateFrom(
+    partials_->elapsed_time_histogram_trigger_forced_array());
+  results_->mutable_elapsed_time_histogram_trigger_ucts_aux()->IntegrateFrom(
+    partials_->elapsed_time_histogram_trigger_ucts_aux());
 
   if(partials_->event_number_sequence_size() > 0)
   {
