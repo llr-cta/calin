@@ -170,29 +170,19 @@ message RunInfo {
     (CFO).desc = "Maximum absolute event time from all events.", (CFO).units = "ns",
     (CFO).integration_algorithm = MAX ];
 
-  calin.ix.math.histogram.Histogram1DData delta_t_histogram = 60 [
-    (CFO).desc = "Histogram of time between consecutive events.", (CFO).units="s" ];
-  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram = 61 [
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram = 60 [
     (CFO).desc = "Histogram of log10 of time between consecutive events; log10(DeltaT/s)." ];
-  calin.ix.math.histogram.Histogram1DData delta2_t_histogram = 62 [
-    (CFO).desc = "Histogram of time between next-to-consecutive events.", (CFO).units="s" ];
-  calin.ix.math.histogram.Histogram1DData log10_delta2_t_histogram = 63 [
+  calin.ix.math.histogram.Histogram1DData log10_delta2_t_histogram = 61 [
     (CFO).desc = "Histogram of log10 of time between next-to-consecutive events; "
       "log10(Delta2T/s)." ];
 
-  calin.ix.math.histogram.Histogram1DData trigger_physics_delta_t_histogram = 64 [
-    (CFO).desc = "Histogram of time between consecutive events.", (CFO).units="s" ];
-  calin.ix.math.histogram.Histogram1DData trigger_physics_log10_delta_t_histogram = 65 [
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_trigger_physics = 62 [
     (CFO).desc = "Histogram of log10 of time between consecutive events; log10(DeltaT/s)." ];
-  calin.ix.math.histogram.Histogram1DData trigger_physics_delta2_t_histogram = 66 [
-    (CFO).desc = "Histogram of time between next-to-consecutive events.", (CFO).units="s" ];
-  calin.ix.math.histogram.Histogram1DData trigger_physics_log10_delta2_t_histogram = 67 [
+  calin.ix.math.histogram.Histogram1DData log10_delta2_t_histogram_trigger_physics = 63 [
     (CFO).desc = "Histogram of log10 of time between next-to-consecutive events; "
       "log10(Delta2T/s)." ];
 
-  calin.ix.math.histogram.Histogram1DData recorded_delta_t_histogram = 68 [
-    (CFO).desc = "Histogram of time between RECORDED events.", (CFO).units="s" ];
-  calin.ix.math.histogram.Histogram1DData recordewd_log10_delta_t_histogram = 69 [
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_all_recorded = 64 [
     (CFO).desc = "Histogram of log10 of time between RECORDED events; log10(DeltaT/s)." ];
 
   repeated ModuleRunInfo module                            = 100;

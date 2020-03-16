@@ -651,11 +651,15 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
       delete hist_data;
 
       hist_data = pt_log10_delta_t_hist.dump_as_proto();
-      results_->mutable_trigger_physics_log10_delta_t_histogram()->IntegrateFrom(*hist_data);
+      results_->mutable_log10_delta_t_histogram_trigger_physics()->IntegrateFrom(*hist_data);
       delete hist_data;
 
       hist_data = pt_log10_delta2_t_hist.dump_as_proto();
-      results_->mutable_trigger_physics_log10_delta2_t_histogram()->IntegrateFrom(*hist_data);
+      results_->mutable_log10_delta2_t_histogram_trigger_physics()->IntegrateFrom(*hist_data);
+      delete hist_data;
+
+      hist_data = rec_log10_delta_t_hist.dump_as_proto();
+      results_->mutable_log10_delta_t_histogram_all_recorded()->IntegrateFrom(*hist_data);
       delete hist_data;
     }
   }
