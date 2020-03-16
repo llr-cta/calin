@@ -577,17 +577,12 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
           rimod->mutable_counter_value(icounter)->mutable_value_range());
       }
 
-      calin::math::histogram::Histogram1D delta_t_hist { 1e-6, 0.0, 1.0, 0.0 };
       calin::math::histogram::Histogram1D log10_delta_t_hist { 0.01, -9.0, 9.0, 0.0 };
-      calin::math::histogram::Histogram1D delta2_t_hist { 1e-6, 0.0, 1.0, 0.0 };
       calin::math::histogram::Histogram1D log10_delta2_t_hist { 0.01, -9.0, 9.0, 0.0 };
 
-      calin::math::histogram::Histogram1D pt_delta_t_hist { 1e-6, 0.0, 1.0, 0.0 };
       calin::math::histogram::Histogram1D pt_log10_delta_t_hist { 0.01, -9.0, 9.0, 0.0 };
-      calin::math::histogram::Histogram1D pt_delta2_t_hist { 1e-6, 0.0, 1.0, 0.0 };
       calin::math::histogram::Histogram1D pt_log10_delta2_t_hist { 0.01, -9.0, 9.0, 0.0 };
 
-      calin::math::histogram::Histogram1D rec_delta_t_hist { 1e-6, 0.0, 1.0, 0.0 };
       calin::math::histogram::Histogram1D rec_log10_delta_t_hist { 0.01, -9.0, 9.0, 0.0 };
 
       uint64_t second_last_event_number = partials_->event_number_sequence(event_index[0]);
@@ -605,19 +600,16 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
         double dt = double(event_time-last_event_time)*1e-9;
         double log10_dt = std::log10(std::max(dt, 0.0));
 
-        rec_delta_t_hist.insert(dt);
         if(dt>0) {
           rec_log10_delta_t_hist.insert(log10_dt);
         }
 
         if(event_number == last_event_number+1 and event_time>0 and last_event_time>0) {
           double dt = double(event_time-last_event_time)*1e-9;
-          delta_t_hist.insert(dt);
           if(dt>0) {
             log10_delta_t_hist.insert(log10_dt);
           }
           if(event_type == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
-            pt_delta_t_hist.insert(dt);
             if(dt>0) {
               pt_log10_delta_t_hist.insert(log10_dt);
             }
@@ -627,20 +619,17 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
             double d2t = double(event_time-second_last_event_time)*1e-9;
             double log10_d2t = std::log10(std::max(d2t, 0.0));
 
-            delta2_t_hist.insert(d2t);
             if(d2t>0) {
               log10_delta2_t_hist.insert(log10_d2t);
             }
             if(event_type == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS and
                 last_event_type == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
-              pt_delta2_t_hist.insert(d2t);
               if(d2t>0) {
                 pt_log10_delta2_t_hist.insert(log10_d2t);
               }
             }
           } else if(event_number == last_event_number+2 and event_time>0 and last_event_time>0) {
             double d2t = double(event_time-last_event_number)*1e-9;
-            delta2_t_hist.insert(d2t);
             if(d2t>0) {
               log10_delta2_t_hist.insert(std::log10(d2t));
             }
@@ -653,32 +642,16 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
         last_event_type = event_type;
       }
 
-      auto* hist_data = delta_t_hist.dump_as_proto();
-      results_->mutable_delta_t_histogram()->IntegrateFrom(*hist_data);
-      delete hist_data;
-
-      hist_data = log10_delta_t_hist.dump_as_proto();
+      auto* hist_data = log10_delta_t_hist.dump_as_proto();
       results_->mutable_log10_delta_t_histogram()->IntegrateFrom(*hist_data);
-      delete hist_data;
-
-      hist_data = delta2_t_hist.dump_as_proto();
-      results_->mutable_delta2_t_histogram()->IntegrateFrom(*hist_data);
       delete hist_data;
 
       hist_data = log10_delta2_t_hist.dump_as_proto();
       results_->mutable_log10_delta2_t_histogram()->IntegrateFrom(*hist_data);
       delete hist_data;
 
-      hist_data = pt_delta_t_hist.dump_as_proto();
-      results_->mutable_trigger_physics_delta_t_histogram()->IntegrateFrom(*hist_data);
-      delete hist_data;
-
       hist_data = pt_log10_delta_t_hist.dump_as_proto();
       results_->mutable_trigger_physics_log10_delta_t_histogram()->IntegrateFrom(*hist_data);
-      delete hist_data;
-
-      hist_data = pt_delta2_t_hist.dump_as_proto();
-      results_->mutable_trigger_physics_delta2_t_histogram()->IntegrateFrom(*hist_data);
       delete hist_data;
 
       hist_data = pt_log10_delta2_t_hist.dump_as_proto();
