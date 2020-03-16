@@ -252,6 +252,7 @@ message CameraLayout {
   bool can_read_charges                                    = 43;
   bool can_read_peak_sample                                = 44;
   bool can_read_trigger_image                              = 45;
+  int64 first_event_number                                 = 46;
 
   repeated string module_counter_name                      = 50;
 

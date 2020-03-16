@@ -133,6 +133,7 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
   layout->set_can_read_charges(true);
   layout->set_can_read_peak_sample(false);
   layout->set_can_read_trigger_image(true);
+  layout->set_first_event_number(1);
 
   layout->add_module_counter_name("global_event_counter");
   layout->add_module_counter_name("bunch_counter");
