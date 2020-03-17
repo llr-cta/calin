@@ -186,12 +186,16 @@ message RunInfo {
       "log10(Delta2T/s)." ];
 
   calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_trigger_physics = 62 [
-    (CFO).desc = "Histogram of log10 of time between consecutive events; log10(DeltaT/s)." ];
+    (CFO).desc = "Histogram of log10 of time between consecutive events "
+      "for all physics triggers; log10(DeltaT/s)." ];
   calin.ix.math.histogram.Histogram1DData log10_delta2_t_histogram_trigger_physics = 63 [
-    (CFO).desc = "Histogram of log10 of time between next-to-consecutive events; "
-      "log10(Delta2T/s)." ];
+    (CFO).desc = "Histogram of log10 of time between next-to-consecutive "
+      "events for all sets of two consecutibe physics triggers; log10(Delta2T/s)." ];
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_2_trigger_physics = 64 [
+    (CFO).desc = "Histogram of log10 of time between consecutive events "
+      "where there are two consecutive physics triggers; log10(DeltaT/s)." ];
 
-  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_all_recorded = 64 [
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_all_recorded = 65 [
     (CFO).desc = "Histogram of log10 of time between RECORDED events; log10(DeltaT/s)." ];
 
   repeated ModuleRunInfo module                            = 100;

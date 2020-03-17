@@ -557,6 +557,7 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
 
       calin::math::histogram::Histogram1D pt_log10_delta_t_hist { 0.01, -9.0, 9.0, 0.0 };
       calin::math::histogram::Histogram1D pt_log10_delta2_t_hist { 0.01, -9.0, 9.0, 0.0 };
+      calin::math::histogram::Histogram1D pt2_log10_delta_t_hist { 0.01, -9.0, 9.0, 0.0 };
 
       calin::math::histogram::Histogram1D rec_log10_delta_t_hist { 0.01, -9.0, 9.0, 0.0 };
 
@@ -599,6 +600,9 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
             }
             if(event_type == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS and
                 last_event_type == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
+              if(dt>0) {
+                pt2_log10_delta_t_hist.insert(log10_dt);
+              }
               if(d2t>0) {
                 pt_log10_delta2_t_hist.insert(log10_d2t);
               }
@@ -625,6 +629,8 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
         results_->mutable_log10_delta_t_histogram_trigger_physics());
       pt_log10_delta2_t_hist.dump_as_proto(
         results_->mutable_log10_delta2_t_histogram_trigger_physics());
+      pt2_log10_delta_t_hist.dump_as_proto(
+        results_->mutable_log10_delta_t_histogram_2_trigger_physics());
       rec_log10_delta_t_hist.dump_as_proto(
         results_->mutable_log10_delta_t_histogram_all_recorded());
     }
