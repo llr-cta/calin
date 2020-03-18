@@ -81,6 +81,14 @@ char* system_dirname(char* x) {
 
 using namespace calin::util;
 
+int64_t calin::util::file::size(const std::string& filename)
+{
+  if(filename.empty())return false;
+  struct stat statbuf;
+  if(stat(filename.c_str(),&statbuf)<0)return -1;
+  return statbuf.st_size;
+}
+
 bool calin::util::file::exists(const std::string& filename)
 {
   if(filename.empty())return false;

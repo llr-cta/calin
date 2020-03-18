@@ -41,6 +41,9 @@
 
 namespace calin { namespace util { namespace file {
 
+//! Return size of filename in bytes of -1 if file doesn't exists
+int64_t size(const std::string& filename);
+
 //! Return true if filename exists on the filesystem
 bool exists(const std::string& filename);
 
