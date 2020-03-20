@@ -118,57 +118,6 @@ protected:
 #endif
 };
 
-#if 0
-class AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor:
-  public SingleGainDualWindowWaveformTreatmentEventVisitor
-{
-public:
-  AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor(
-      calin::ix::iact_data::waveform_treatment_event_visitor::
-        SingleGainDualWindowWaveformTreatmentEventVisitorConfig config = default_config(),
-      bool treat_high_gain = true, bool suppress_deprication_warning = false):
-    SingleGainDualWindowWaveformTreatmentEventVisitor(config, treat_high_gain)
-  {
-    if(not suppress_deprication_warning)
-      calin::util::log::LOG(calin::util::log::WARNING)
-        << "AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor is depricated.\n"
-        << "Use VCL_SingleGainDualWindowWaveformTreatmentEventVisitor instead.";
-    /* nothing to see here */
-  }
-
-  virtual ~AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor();
-
-  AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-        calin::iact_data::event_visitor::ParallelEventVisitor*>&
-      antecedent_visitors = { }) override;
-
-  bool visit_telescope_run(
-    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
-
-  bool visit_telescope_event(uint64_t seq_index,
-    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
-
-#ifndef SWIG
-  void avx2_analyze_waveforms(const uint16_t* __restrict__ data);
-  void avx2_analyze_waveforms_v2(const uint16_t* __restrict__ data);
-  void avx2_analyze_waveforms_v3(const uint16_t* __restrict__ data);
-#endif
-
-protected:
-#if defined(__AVX2__) and defined(__FMA__)
-#ifndef SWIG
-  __m256i*__restrict__ samples_ = nullptr;
-  __m256i*__restrict__ q_l_ = nullptr;
-  __m256i*__restrict__ q_u_ = nullptr;
-  __m256i*__restrict__ qt_l_ = nullptr;
-  __m256i*__restrict__ qt_u_ = nullptr;
-#endif
-#endif
-};
-#endif
-
 template<typename VCLArchitecture>
 class VCL_SingleGainDualWindowWaveformTreatmentEventVisitor:
   public SingleGainDualWindowWaveformTreatmentEventVisitor
