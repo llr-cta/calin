@@ -415,6 +415,8 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
   results_->set_min_event_time(partials_->min_event_time());
   results_->set_max_event_time(partials_->max_event_time());
 
+  const double thistmin = -60.0;
+  const double thistmax = 7200.0;
   if(partials_->event_number_sequence_size() > 0)
   {
     calin::math::histogram::Histogram1D event_number_hist {
@@ -422,21 +424,21 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
       double(run_config_->camera_layout().first_event_number()) };
 
     calin::math::histogram::Histogram1D elapsed_time_hist {
-      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_physics_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_software_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_pedestal_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_external_flasher_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_internal_flasher_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_forced_array_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
     calin::math::histogram::Histogram1D trigger_ucts_aux_elapsed_time_hist {
-      config_.event_time_histogram_resolution(), -60.0, 7200.0, 0.0 };
+      config_.event_time_histogram_resolution(), thistmin, thistmax, 0.0 };
 
     for(int ievent=0; ievent<partials_->event_number_sequence_size(); ++ievent) {
       event_number_hist.insert(partials_->event_number_sequence(ievent));
@@ -552,14 +554,23 @@ void RunInfoDiagnosticsVisitor::integrate_partials()
           rimod->mutable_counter_value(icounter)->mutable_value_range());
       }
 
-      calin::math::histogram::Histogram1D log10_delta_t_hist { 0.01, -9.0, 9.0, 0.0 };
-      calin::math::histogram::Histogram1D log10_delta2_t_hist { 0.01, -9.0, 9.0, 0.0 };
+      const double dthistmin = -9.0;
+      const double dthistmax = 9.0;
 
-      calin::math::histogram::Histogram1D pt_log10_delta_t_hist { 0.01, -9.0, 9.0, 0.0 };
-      calin::math::histogram::Histogram1D pt_log10_delta2_t_hist { 0.01, -9.0, 9.0, 0.0 };
-      calin::math::histogram::Histogram1D pt2_log10_delta_t_hist { 0.01, -9.0, 9.0, 0.0 };
+      calin::math::histogram::Histogram1D log10_delta_t_hist {
+        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+      calin::math::histogram::Histogram1D log10_delta2_t_hist {
+        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
 
-      calin::math::histogram::Histogram1D rec_log10_delta_t_hist { 0.01, -9.0, 9.0, 0.0 };
+      calin::math::histogram::Histogram1D pt_log10_delta_t_hist {
+        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+      calin::math::histogram::Histogram1D pt_log10_delta2_t_hist {
+        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+      calin::math::histogram::Histogram1D pt2_log10_delta_t_hist {
+        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+
+      calin::math::histogram::Histogram1D rec_log10_delta_t_hist {
+        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
 
       uint64_t second_last_event_number = partials_->event_number_sequence(event_index[0]);
       int64_t  second_last_event_time = partials_->event_time_sequence(event_index[0]);
