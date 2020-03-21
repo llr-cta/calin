@@ -424,7 +424,7 @@ message TelescopeEvent {
   ImageTreatmentMode image_treatment                        = 99 [
     (CFO).desc = "Image treatment mode." ];
   DigitizedSkyImage image                                   = 100 [
-    (CFO).desc = "Sky image recorded in a single-gain camera." ];
+    (CFO).desc = "Sky image recorded in a single or mixed gain camera." ];
   DigitizedSkyImage high_gain_image                         = 101 [
     (CFO).desc = "Sky image recorded in the high-gain path of a dual-gain "
       "camera." ];
