@@ -26,6 +26,18 @@ import "calin.proto";
 
 package calin.ix.iact_data.waveform_treatment_event_visitor;
 
+message OptimalWindowSumWaveformTreatmentEventVisitorConfig {
+  uint32 integration_n                                     = 1 [
+    (CFO).desc = "Size of integration window in samples." ];
+  int32 bkg_integration_0                                 = 2 [
+    (CFO).desc = "Start of background integration window in samples." ];
+  int32 sig_integration_0                                 = 3 [
+    (CFO).desc = "Default start of signal integration window in samples, if not "
+      "overridden by per-channel setting \"sig_integration_0_chan\"." ];
+  repeated int32 chan_sig_integration_0                   = 4 [
+    (CFO).desc = "Start of signal integration window in samples for each channel." ];
+};
+
 message SingleGainDualWindowWaveformTreatmentEventVisitorConfig {
   uint32 integration_n                                     = 1 [
     (CFO).desc = "Size of integration window in samples." ];

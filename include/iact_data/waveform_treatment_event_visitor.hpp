@@ -33,6 +33,96 @@
 
 namespace calin { namespace iact_data { namespace waveform_treatment_event_visitor {
 
+class OptimalWindowSumWaveformTreatmentEventVisitor:
+  public calin::iact_data::event_visitor::ParallelEventVisitor
+{
+public:
+  enum GainChannel { HIGH_GAIN, LOW_GAIN, SINGLE_OR_MIXED_GAIN };
+
+  OptimalWindowSumWaveformTreatmentEventVisitor(
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentEventVisitorConfig config = default_config(),
+      GainChannel gain_channel_to_treat = HIGH_GAIN);
+  virtual ~OptimalWindowSumWaveformTreatmentEventVisitor();
+
+  OptimalWindowSumWaveformTreatmentEventVisitor* new_sub_visitor(
+    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+      antecedent_visitors = { }) override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  static calin::ix::iact_data::waveform_treatment_event_visitor::
+    OptimalWindowSumWaveformTreatmentEventVisitorConfig default_config()
+  {
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentEventVisitorConfig cfg;
+    cfg.set_integration_n(16);
+    return cfg;
+  }
+
+  std::vector<int> chan_max() const { return make_vec(chan_max_); }
+  std::vector<int> chan_max_index() const { return make_vec(chan_max_index_); }
+  std::vector<int> chan_bkg_win_sum() const { return make_vec(chan_bkg_win_sum_); }
+  std::vector<int> chan_sig_win_sum() const { return make_vec(chan_sig_win_sum_); }
+  std::vector<int> chan_opt_sum() const { return make_vec(chan_opt_win_sum_); }
+  std::vector<int> chan_opt_sum_qt() const { return make_vec(chan_opt_win_sum_qt_); }
+  std::vector<int> chan_opt_index() const { return make_vec(chan_opt_win_index_); }
+  std::vector<int> chan_all_sum() const { return make_vec(chan_all_sum_); }
+
+#ifndef SWIG
+  const int*__restrict__ array_chan_max() const { return chan_max_; }
+  const int*__restrict__ array_chan_max_index() const { return chan_max_index_; }
+  const int*__restrict__ array_chan_bkg_win_sum() const { return chan_bkg_win_sum_; }
+  const int*__restrict__ array_chan_sig_win_sum() const { return chan_sig_win_sum_; }
+  const int*__restrict__ array_chan_opt_win_sum() const { return chan_opt_win_sum_; }
+  const int*__restrict__ array_chan_opt_win_sum_qt() const { return chan_opt_win_sum_qt_; }
+  const int*__restrict__ array_chan_opt_win_index() const { return chan_opt_win_index_; }
+  const int*__restrict__ array_chan_all_sum_q() const { return chan_all_sum_; }
+#endif
+
+protected:
+#ifndef SWIG
+  void reconfigure(unsigned nchan, unsigned nsamp);
+  void scalar_analyze_waveforms(const uint16_t* __restrict__ data);
+
+  template<typename T> std::vector<T> make_vec(const T* ptr) const {
+    return std::vector<T>(ptr, ptr+nchan_);
+  }
+
+  calin::ix::iact_data::waveform_treatment_event_visitor::
+    OptimalWindowSumWaveformTreatmentEventVisitorConfig config_;
+  GainChannel gain_channel_to_treat_ = HIGH_GAIN;
+  unsigned nchan_ = 0;
+  unsigned nsamp_ = 0;
+  unsigned window_n_;
+  int bkg_window_0_;
+  int*__restrict__ sig_window_0_ = nullptr;
+
+  int*__restrict__ chan_max_ = nullptr;
+  int*__restrict__ chan_max_index_ = nullptr;
+  int*__restrict__ chan_bkg_win_sum_ = nullptr;
+  int*__restrict__ chan_sig_win_sum_ = nullptr;
+  int*__restrict__ chan_opt_win_sum_ = nullptr;
+  int*__restrict__ chan_opt_win_sum_qt_ = nullptr;
+  int*__restrict__ chan_opt_win_index_ = nullptr;
+  int*__restrict__ chan_all_sum_ = nullptr;
+#endif
+};
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// POSSIBLY OBSOLETE VERSIONS
+//
+// *****************************************************************************
+// *****************************************************************************
+
 class SingleGainDualWindowWaveformTreatmentEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
@@ -117,6 +207,8 @@ protected:
   float*__restrict__ chan_mean_t_ = nullptr;
 #endif
 };
+
+
 
 template<typename VCLArchitecture>
 class VCL_SingleGainDualWindowWaveformTreatmentEventVisitor:
