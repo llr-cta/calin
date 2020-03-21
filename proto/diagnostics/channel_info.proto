@@ -28,7 +28,7 @@ import "math/histogram.proto";
 
 package calin.ix.diagnostics.channel_info;
 
-message ChannelDualWindowStats {
+message ChannelOptimalWindowStats {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
   uint32 num_entries                                                = 1 [
@@ -37,26 +37,42 @@ message ChannelDualWindowStats {
     (CFO).desc = "Histogram of maximum sample amplitude.",
     (CFO).units="DC" ];
   calin.ix.math.histogram.Histogram1DData max_samp_index_histogram  = 11 [
-    (CFO).desc = "Histogram of index within waveform of maximum sample.",
+    (CFO).desc = "Histogram ofindex within waveform of maximum sample.",
     (CFO).units="samples" ];
   calin.ix.math.histogram.Histogram1DData bkg_win_sum_histogram     = 12 [
-    (CFO).desc = "Histogram summed 'charge' in fixed background window.",
+    (CFO).desc = "Histogram of summed 'charge' in fixed background window.",
     (CFO).units="DC" ];
   calin.ix.math.histogram.Histogram1DData sig_win_sum_histogram     = 13 [
-    (CFO).desc = "Histogram summed 'charge' in fixed signal window.",
+    (CFO).desc = "Histogram of summed 'charge' in fixed signal window.",
     (CFO).units="DC" ];
-  calin.ix.math.histogram.Histogram1DData max_win_sum_histogram     = 14 [
-    (CFO).desc = "Histogram summed 'charge' in window that gives largest charge.",
+  calin.ix.math.histogram.Histogram1DData opt_win_sum_histogram     = 14 [
+    (CFO).desc = "Histogram of summed 'charge' in window that gives largest charge.",
     (CFO).units="DC" ];
-  calin.ix.math.histogram.Histogram1DData max_win_index_histogram   = 15 [
+  calin.ix.math.histogram.Histogram1DData opt_win_sum_qt_histogram  = 15 [
+    (CFO).desc = "Histogram of summed 'charge * time' in window that gives largest charge.",
+    (CFO).units="DC samples" ];
+  calin.ix.math.histogram.Histogram1DData opt_win_index_histogram   = 16 [
     (CFO).desc = "Histogram of index within waveform of start of window that "
       "gives largest charge.", (CFO).units="samples" ];
-  calin.ix.math.histogram.Histogram1DData waveform_sum_histogram    = 16 [
-    (CFO).desc = "Histogram summed 'charge' in window that gives largest charge.",
+  calin.ix.math.histogram.Histogram1DData waveform_sum_histogram    = 17 [
+    (CFO).desc = "Histogram of summed 'charge' in full waveform.",
     (CFO).units="DC" ];
+
+  calin.ix.math.histogram.Histogram1DData sig_minus_bkg_histogram   = 20 [
+    (CFO).desc = "Histogram of summed 'charge' difference between fixed signal and "
+      "background windows.",
+    (CFO).units="DC" ];
+  calin.ix.math.histogram.Histogram1DData opt_minus_bkg_histogram   = 21 [
+    (CFO).desc = "Histogram of summed 'charge' difference between optimal signal and "
+      "fixed background windows.",
+    (CFO).units="DC" ];
+  calin.ix.math.histogram.Histogram1DData opt_win_mean_time         = 22 [
+    (CFO).desc = "Histogram of mean time in optimal window after subtracting "
+      "contribution from estimated pedestal.",
+    (CFO).units="DC samples" ];
 };
 
-message DualWindowStats {
+message OptimalWindowStats {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
   uint32 integration_n                                     = 1 [
@@ -69,8 +85,12 @@ message DualWindowStats {
   repeated int32 chan_sig_integration_0                    = 4 [
     (CFO).desc = "Start of signal integration window in samples for each channel." ];
 
-  repeated ChannelDualWindowStats physics_trigger_stats           = 10 [
+  repeated ChannelOptimalWindowStats physics_trigger_stats          = 10 [
     (CFO).desc = "Statistics for all channels from physics trigger events." ];
-  repeated ChannelDualWindowStats pedestal_trigger_stats          = 11 [
+  repeated ChannelOptimalWindowStats pedestal_trigger_stats         = 11 [
     (CFO).desc = "Statistics for all channels from physics trigger events." ];
+  repeated ChannelOptimalWindowStats internal_flasher_trigger_stats = 12 [
+    (CFO).desc = "Statistics for all channels from internal-flasher trigger events." ];
+  repeated ChannelOptimalWindowStats external_flasher_trigger_stats = 13 [
+    (CFO).desc = "Statistics for all channels from external-flasher trigger events." ];
 };
