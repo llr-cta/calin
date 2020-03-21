@@ -115,6 +115,251 @@ protected:
 #endif
 };
 
+template<typename VCLArchitecture>
+class VCL_OptimalWindowSumWaveformTreatmentEventVisitor:
+  public OptimalWindowSumWaveformTreatmentEventVisitor
+{
+public:
+#ifndef SWIG
+  CALIN_TYPEALIAS(int16_vt, typename VCLArchitecture::int16_vt);
+  CALIN_TYPEALIAS(int16_bvt, typename VCLArchitecture::int16_bvt);
+  CALIN_TYPEALIAS(uint16_vt, typename VCLArchitecture::uint16_vt);
+
+  CALIN_TYPEALIAS(int32_vt, typename VCLArchitecture::int32_vt);
+  CALIN_TYPEALIAS(int32_bvt, typename VCLArchitecture::int32_bvt);
+  CALIN_TYPEALIAS(uint32_vt, typename VCLArchitecture::uint32_vt);
+
+  constexpr static unsigned num_int16 = VCLArchitecture::num_int16;
+  constexpr static unsigned num_int32 = VCLArchitecture::num_int32;
+#endif
+
+  VCL_OptimalWindowSumWaveformTreatmentEventVisitor(
+      calin::ix::iact_data::waveform_treatment_event_visitor::
+        OptimalWindowSumWaveformTreatmentEventVisitorConfig config = default_config(),
+      GainChannel gain_channel_to_treat = HIGH_GAIN):
+    OptimalWindowSumWaveformTreatmentEventVisitor(config, gain_channel_to_treat)
+  {
+    /* nothing to see here */
+  }
+
+  virtual ~VCL_OptimalWindowSumWaveformTreatmentEventVisitor()
+  {
+    free(samples_);
+  }
+
+  VCL_OptimalWindowSumWaveformTreatmentEventVisitor<VCLArchitecture>* new_sub_visitor(
+    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+      antecedent_visitors = { }) override
+  {
+    return new VCL_OptimalWindowSumWaveformTreatmentEventVisitor<VCLArchitecture>(config_);
+  }
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override
+  {
+    bool old_nsamp = nsamp_;
+    bool good = OptimalWindowSumWaveformTreatmentEventVisitor::visit_telescope_run(run_config, event_lifetime_manager);
+    if(nsamp_!=old_nsamp) {
+      auto* host_info = calin::provenance::system_info::the_host_info();
+      const unsigned nv_samp = (nsamp_+15)/16;
+      const unsigned nv_block = nv_samp*16;
+      calin::util::memory::safe_aligned_recalloc(samples_, nv_block, host_info->log2_simd_vec_size());
+    }
+    return good;
+  }
+
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override
+  {
+    const calin::ix::iact_data::telescope_event::Waveforms* wf = nullptr;
+    switch(gain_channel_to_treat_) {
+    case HIGH_GAIN:
+      if(event->has_high_gain_image() and
+          event->high_gain_image().has_camera_waveforms()) {
+        wf = &event->high_gain_image().camera_waveforms();
+      }
+      break;
+    case LOW_GAIN:
+      if(event->has_low_gain_image() and
+          event->low_gain_image().has_camera_waveforms()) {
+        wf = &event->low_gain_image().camera_waveforms();
+      }
+      break;
+    case SINGLE_OR_MIXED_GAIN:
+      if(event->has_image() and
+          event->image().has_camera_waveforms()) {
+        wf = &event->image().camera_waveforms();
+      }
+      break;
+    }
+    if(wf == nullptr)return true;
+    const uint16_t* data = reinterpret_cast<const uint16_t*>(
+      wf->raw_samples_array().data());
+    vcl_analyze_waveforms(data);
+    return true;
+  }
+
+#ifndef SWIG
+private:
+
+  void vcl_analyze_waveforms(const uint16_t* __restrict__ data)
+  {
+    unsigned nchan_block = (nchan_+num_int16-1)/num_int16;
+    unsigned nsamp_block = (nsamp_+num_int16-1)/num_int16;
+    unsigned nchan_left = nchan_;
+
+    for(unsigned ichan_block=0;ichan_block<nchan_block;++ichan_block)
+    {
+      unsigned ioffset_l = ichan_block*2*num_int32;
+      unsigned ioffset_h = ichan_block*2*num_int32 + num_int32;
+
+      unsigned nchan_proc = std::min(num_int16, nchan_left);
+      nchan_left -= num_int16;
+
+      for(unsigned isamp_block=0;isamp_block<nsamp_block;++isamp_block)
+      {
+        for(unsigned ichan_proc=0;ichan_proc<nchan_proc;++ichan_proc) {
+          samples_[isamp_block*num_int16 + ichan_proc].load(data
+            + (ichan_block*num_int16 + ichan_proc)*nsamp_
+            + isamp_block*num_int16);
+        }
+        calin::util::vcl::transpose(samples_ + isamp_block*num_int16);
+      }
+
+      int16_vt samp_max = samples_[0];
+      uint16_vt samp_max_index = 0;
+
+      int32_vt q_l = calin::util::vcl::extend_16_to_32_low(samples_[0]);
+      int32_vt q_h = calin::util::vcl::extend_16_to_32_high(samples_[0]);
+
+      int32_vt qt_l = 0;
+      int32_vt qt_h = 0;
+
+      // Fill the integration window sum up from first samples
+      unsigned isamp_win_end;
+      for(isamp_win_end=1;isamp_win_end<window_n_;++isamp_win_end) {
+        int16_vt sample = samples_[isamp_win_end];
+
+        int16_bvt samp_bigger_than_max = sample > samp_max;
+        samp_max = vcl::select(samp_bigger_than_max, sample, samp_max);
+        samp_max_index = vcl::select(samp_bigger_than_max, uint16_t(isamp_win_end), samp_max_index);
+
+        int32_vt sample32;
+
+        sample32 = calin::util::vcl::extend_16_to_32_low(sample);
+        q_l += sample32;
+        qt_l += sample32 * isamp_win_end;
+
+        sample32 = calin::util::vcl::extend_16_to_32_high(sample);
+        q_h += sample32;
+        qt_h += sample32 * isamp_win_end;
+      }
+
+      if(bkg_window_0_ == 0) {
+        q_l.store(chan_bkg_win_sum_ + ichan_block*2*num_int32);
+        q_h.store(chan_bkg_win_sum_ + ichan_block*2*num_int32 + num_int32);
+      }
+
+      int32_vt all_q_l = q_l;
+      int32_vt all_q_h = q_h;
+
+      int32_vt sig_q_l = q_l;
+      int32_vt sig_q_h = q_h;
+
+      int32_vt opt_q_l = q_l;
+      int32_vt opt_q_h = q_h;
+
+      int32_vt opt_qt_l = qt_l;
+      int32_vt opt_qt_h = qt_h;
+
+      uint32_vt opt_index_l = 0;
+      uint32_vt opt_index_h = 0;
+
+      uint32_vt sig_win_index_l;
+      uint32_vt sig_win_index_h;
+      sig_win_index_l.load(sig_window_0_ + ioffset_l);
+      sig_win_index_h.load(sig_window_0_ + ioffset_h);
+
+      // Now move integration window along waveform
+      unsigned isamp_win_begin;
+      for(isamp_win_begin=0; isamp_win_end<nsamp_; ++isamp_win_end) {
+        int16_vt sample = samples_[isamp_win_end];
+
+        int16_bvt samp_bigger_than_max = sample > samp_max;
+        samp_max = vcl::select(samp_bigger_than_max, sample, samp_max);
+        samp_max_index = vcl::select(samp_bigger_than_max, uint16_t(isamp_win_end), samp_max_index);
+
+        int32_vt sample32;
+        sample32 = calin::util::vcl::extend_16_to_32_low(sample);
+        q_l += sample32;
+        qt_l += sample32 * isamp_win_end;
+        all_q_l += sample32;
+
+        sample32 = calin::util::vcl::extend_16_to_32_high(sample);
+        q_h += sample32;
+        qt_h += sample32 * isamp_win_end;
+        all_q_h += sample32;
+
+        sample = samples_[isamp_win_begin];
+
+        sample32 = calin::util::vcl::extend_16_to_32_low(sample);
+        q_l -= sample32;
+        qt_l -= sample32 * isamp_win_begin;
+
+        sample32 = calin::util::vcl::extend_16_to_32_high(sample);
+        q_h -= sample32;
+        qt_h -= sample32 * isamp_win_begin;
+
+        ++isamp_win_begin;
+
+        sig_q_l = vcl::select(sig_win_index_l == isamp_win_begin, q_l, sig_q_l);
+        sig_q_h = vcl::select(sig_win_index_h == isamp_win_begin, q_h, sig_q_h);
+
+        int32_bvt q_bigger_than_max;
+        q_bigger_than_max = q_l > opt_q_l;
+        opt_q_l = vcl::select(q_bigger_than_max, q_l, opt_q_l);
+        opt_qt_l = vcl::select(q_bigger_than_max, qt_l, opt_qt_l);
+        opt_index_l = vcl::select(q_bigger_than_max, isamp_win_begin, opt_index_l);
+
+        q_bigger_than_max = q_h > opt_q_h;
+        opt_q_h = vcl::select(q_bigger_than_max, q_h, opt_q_h);
+        opt_qt_h = vcl::select(q_bigger_than_max, qt_h, opt_qt_h);
+        opt_index_h = vcl::select(q_bigger_than_max, isamp_win_begin, opt_index_h);
+
+        if(bkg_window_0_ == int(isamp_win_begin)) {
+          q_l.store(chan_bkg_win_sum_ + ichan_block*2*num_int32);
+          q_h.store(chan_bkg_win_sum_ + ichan_block*2*num_int32 + num_int32);
+        }
+      }
+
+      calin::util::vcl::extend_16_to_32_low(samp_max).store(chan_max_ + ioffset_l);
+      calin::util::vcl::extend_16_to_32_high(samp_max).store(chan_max_ + ioffset_h);
+      calin::util::vcl::extend_16_to_32_low(samp_max_index).store(chan_max_index_ + ioffset_l);
+      calin::util::vcl::extend_16_to_32_high(samp_max_index).store(chan_max_index_ + ioffset_h);
+      sig_q_l.store(chan_sig_win_sum_ + ioffset_l);
+      sig_q_h.store(chan_sig_win_sum_ + ioffset_h);
+      opt_q_l.store(chan_opt_win_sum_ + ioffset_l);
+      opt_q_h.store(chan_opt_win_sum_ + ioffset_h);
+      opt_qt_l.store(chan_opt_win_sum_qt_ + ioffset_l);
+      opt_qt_h.store(chan_opt_win_sum_qt_ + ioffset_h);
+      opt_index_l.store(chan_opt_win_index_ + ioffset_l);
+      opt_index_h.store(chan_opt_win_index_ + ioffset_h);
+      all_q_l.store(chan_all_sum_ + ioffset_l);
+      all_q_h.store(chan_all_sum_ + ioffset_h);
+    }
+  }
+
+  int16_vt*__restrict__ samples_ = nullptr;
+#endif
+};
+
+
+
+
+
+
 // *****************************************************************************
 // *****************************************************************************
 //
