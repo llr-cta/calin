@@ -70,9 +70,9 @@ public:
   std::vector<int> chan_max_index() const { return make_vec(chan_max_index_); }
   std::vector<int> chan_bkg_win_sum() const { return make_vec(chan_bkg_win_sum_); }
   std::vector<int> chan_sig_win_sum() const { return make_vec(chan_sig_win_sum_); }
-  std::vector<int> chan_opt_sum() const { return make_vec(chan_opt_win_sum_); }
-  std::vector<int> chan_opt_sum_qt() const { return make_vec(chan_opt_win_sum_qt_); }
-  std::vector<int> chan_opt_index() const { return make_vec(chan_opt_win_index_); }
+  std::vector<int> chan_opt_win_sum() const { return make_vec(chan_opt_win_sum_); }
+  std::vector<int> chan_opt_win_sum_qt() const { return make_vec(chan_opt_win_sum_qt_); }
+  std::vector<int> chan_opt_win_index() const { return make_vec(chan_opt_win_index_); }
   std::vector<int> chan_all_sum() const { return make_vec(chan_all_sum_); }
 
 #ifndef SWIG
