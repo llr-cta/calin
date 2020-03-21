@@ -43,6 +43,14 @@ public:
     calin::ix::iact_data::waveform_treatment_event_visitor::
       OptimalWindowSumWaveformTreatmentEventVisitorConfig config = default_config(),
       GainChannel gain_channel_to_treat = HIGH_GAIN);
+
+  OptimalWindowSumWaveformTreatmentEventVisitor(
+    GainChannel gain_channel_to_treat,
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentEventVisitorConfig config = default_config()):
+    OptimalWindowSumWaveformTreatmentEventVisitor(config, gain_channel_to_treat)
+  { /* nothing to see here */ }
+
   virtual ~OptimalWindowSumWaveformTreatmentEventVisitor();
 
   OptimalWindowSumWaveformTreatmentEventVisitor* new_sub_visitor(
@@ -138,6 +146,15 @@ public:
         OptimalWindowSumWaveformTreatmentEventVisitorConfig config = default_config(),
       GainChannel gain_channel_to_treat = HIGH_GAIN):
     OptimalWindowSumWaveformTreatmentEventVisitor(config, gain_channel_to_treat)
+  {
+    /* nothing to see here */
+  }
+
+  VCL_OptimalWindowSumWaveformTreatmentEventVisitor(
+    GainChannel gain_channel_to_treat,
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentEventVisitorConfig config = default_config()):
+    VCL_OptimalWindowSumWaveformTreatmentEventVisitor(config, gain_channel_to_treat)
   {
     /* nothing to see here */
   }
