@@ -97,8 +97,8 @@ ParallelEventVisitor::~ParallelEventVisitor()
 }
 
 ParallelEventVisitor* ParallelEventVisitor::new_sub_visitor(
-  const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-    calin::iact_data::event_visitor::ParallelEventVisitor*>& antecedent_visitors)
+  std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+    calin::iact_data::event_visitor::ParallelEventVisitor*> antecedent_visitors)
 {
   return new ParallelEventVisitor;
 }
@@ -123,5 +123,5 @@ bool ParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
 
 bool ParallelEventVisitor::merge_results()
 {
-  return true;  
+  return true;
 }

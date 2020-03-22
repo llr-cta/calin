@@ -59,7 +59,7 @@ OptimalWindowSumWaveformTreatmentEventVisitor::
 
 OptimalWindowSumWaveformTreatmentEventVisitor*
 OptimalWindowSumWaveformTreatmentEventVisitor::new_sub_visitor(
-  const std::map<ParallelEventVisitor*,ParallelEventVisitor*>&
+  std::map<ParallelEventVisitor*,ParallelEventVisitor*>
     antecedent_visitors)
 {
   return new OptimalWindowSumWaveformTreatmentEventVisitor(config_);
@@ -208,9 +208,9 @@ SingleGainDualWindowWaveformTreatmentEventVisitor::
   free(chan_mean_t_);
 }
 
-SingleGainDualWindowWaveformTreatmentEventVisitor* SingleGainDualWindowWaveformTreatmentEventVisitor::new_sub_visitor(
-  const std::map<ParallelEventVisitor*,ParallelEventVisitor*>&
-    antecedent_visitors)
+SingleGainDualWindowWaveformTreatmentEventVisitor*
+SingleGainDualWindowWaveformTreatmentEventVisitor::new_sub_visitor(
+  std::map<ParallelEventVisitor*,ParallelEventVisitor*> antecedent_visitors)
 {
   return new SingleGainDualWindowWaveformTreatmentEventVisitor(config_);
 }

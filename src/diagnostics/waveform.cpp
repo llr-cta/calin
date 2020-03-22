@@ -46,8 +46,8 @@ WaveformStatsParallelVisitor::~WaveformStatsParallelVisitor()
 }
 
 WaveformStatsParallelVisitor* WaveformStatsParallelVisitor::new_sub_visitor(
-  const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-      calin::iact_data::event_visitor::ParallelEventVisitor*>&
+  std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+      calin::iact_data::event_visitor::ParallelEventVisitor*>
     antecedent_visitors)
 {
   auto* sub_visitor = new WaveformStatsParallelVisitor(calculate_covariance_);

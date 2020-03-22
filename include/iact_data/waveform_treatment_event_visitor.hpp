@@ -54,8 +54,8 @@ public:
   virtual ~OptimalWindowSumWaveformTreatmentEventVisitor();
 
   OptimalWindowSumWaveformTreatmentEventVisitor* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override;
 
   bool visit_telescope_run(
@@ -165,8 +165,8 @@ public:
   }
 
   VCL_OptimalWindowSumWaveformTreatmentEventVisitor<VCLArchitecture>* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override
   {
     return new VCL_OptimalWindowSumWaveformTreatmentEventVisitor<VCLArchitecture>(config_);
@@ -396,8 +396,8 @@ public:
   virtual ~SingleGainDualWindowWaveformTreatmentEventVisitor();
 
   SingleGainDualWindowWaveformTreatmentEventVisitor* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override;
 
   bool visit_telescope_run(
@@ -508,8 +508,8 @@ public:
   }
 
   VCL_SingleGainDualWindowWaveformTreatmentEventVisitor<VCLArchitecture>* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override
   {
     return new VCL_SingleGainDualWindowWaveformTreatmentEventVisitor<VCLArchitecture>(config_);

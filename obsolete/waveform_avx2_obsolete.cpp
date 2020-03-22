@@ -58,8 +58,8 @@ AVX2_Unroll8_WaveformStatsParallelVisitor::~AVX2_Unroll8_WaveformStatsParallelVi
 
 AVX2_Unroll8_WaveformStatsParallelVisitor* AVX2_Unroll8_WaveformStatsParallelVisitor::
 new_sub_visitor(
-  const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-      calin::iact_data::event_visitor::ParallelEventVisitor*>&
+  std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+      calin::iact_data::event_visitor::ParallelEventVisitor*>
     antecedent_visitors)
 {
 #if defined(__AVX2__)

@@ -75,9 +75,9 @@ public:
   virtual ~ParallelEventVisitor();
 
   virtual ParallelEventVisitor* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-        calin::iact_data::event_visitor::ParallelEventVisitor*>&
-      antecedent_visitors = { });
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
+      antecedent_visitors = { } /* note pass by value ! */ );
 
   virtual bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::

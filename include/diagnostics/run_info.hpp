@@ -69,8 +69,8 @@ public:
   virtual ~RunInfoDiagnosticsVisitor();
 
   RunInfoDiagnosticsVisitor* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override;
 
   bool visit_telescope_run(
