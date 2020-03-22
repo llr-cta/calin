@@ -302,15 +302,19 @@ calin::ix::diagnostics::run_info::RunInfoConfig RunInfoDiagnosticsVisitor::defau
   return config;
 }
 
-const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration&
+calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
 RunInfoDiagnosticsVisitor::run_config() const
 {
-  return *run_config_;
+  auto* rc = run_config_->New();
+  rc->CopyFrom(*run_config_);
+  return rc;
 }
 
-const calin::ix::diagnostics::run_info::RunInfo& RunInfoDiagnosticsVisitor::run_info()
+calin::ix::diagnostics::run_info::RunInfo* RunInfoDiagnosticsVisitor::run_info()
 {
-  return *results_;
+  auto* r = results_->New();
+  r->CopyFrom(*results_);
+  return r;
 }
 
 const calin::ix::diagnostics::run_info::PartialRunInfo& RunInfoDiagnosticsVisitor::partial_run_info() const
