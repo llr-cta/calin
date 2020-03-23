@@ -94,6 +94,10 @@ public:
   const int*__restrict__ array_chan_all_sum_q() const { return chan_all_sum_; }
 #endif
 
+  unsigned window_n() const { return window_n_; };
+  int bkg_window_0() const { return bkg_window_0_; }
+  std::vector<int> sig_window_0() const { return make_vec(sig_window_0_); }
+
 protected:
 #ifndef SWIG
   void reconfigure(unsigned nchan, unsigned nsamp);
