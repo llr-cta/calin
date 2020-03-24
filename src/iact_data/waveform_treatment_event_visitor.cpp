@@ -129,6 +129,7 @@ reconfigure(unsigned nchan, unsigned nsamp)
     auto* host_info = calin::provenance::system_info::the_host_info();
     nchan_ = nchan;
     nsamp_ = nsamp;
+    chan_signal_type_.resize(nchan);
     unsigned nalloc = ((nchan_+31)/32)*32; // Worst case of AVX512
     safe_aligned_recalloc(sig_window_0_, nalloc, host_info->log2_simd_vec_size());
     safe_aligned_recalloc(chan_max_, nalloc, host_info->log2_simd_vec_size());
@@ -169,6 +170,7 @@ visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
   }
   if(wf == nullptr)return true;
   has_event_ = true;
+  chan_signal_type_.assign(wf->channel_signal_type().begin(), wf->channel_signal_type().end());
   const uint16_t* data = reinterpret_cast<const uint16_t*>(
     wf->raw_samples_array().data());
   scalar_analyze_waveforms(data);

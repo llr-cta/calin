@@ -76,6 +76,9 @@ public:
 
   bool has_event() const { return has_event_; }
 
+  unsigned nchan() const { return nchan_; }
+  unsigned nsamp() const { return nsamp_; }
+
   std::vector<int> chan_max() const { return make_vec(chan_max_); }
   std::vector<int> chan_max_index() const { return make_vec(chan_max_index_); }
   std::vector<int> chan_bkg_win_sum() const { return make_vec(chan_bkg_win_sum_); }
@@ -84,6 +87,7 @@ public:
   std::vector<int> chan_opt_win_sum_qt() const { return make_vec(chan_opt_win_sum_qt_); }
   std::vector<int> chan_opt_win_index() const { return make_vec(chan_opt_win_index_); }
   std::vector<int> chan_all_sum() const { return make_vec(chan_all_sum_); }
+  std::vector<int> chan_signal_type() const { return chan_signal_type_; };
 
 #ifndef SWIG
   const int*__restrict__ array_chan_max() const { return chan_max_; }
@@ -94,6 +98,7 @@ public:
   const int*__restrict__ array_chan_opt_win_sum_qt() const { return chan_opt_win_sum_qt_; }
   const int*__restrict__ array_chan_opt_win_index() const { return chan_opt_win_index_; }
   const int*__restrict__ array_chan_all_sum_q() const { return chan_all_sum_; }
+  const int*__restrict__ array_chan_signal_type() const { return chan_signal_type_.data(); };
 #endif
 
   unsigned window_n() const { return window_n_; };
@@ -119,6 +124,7 @@ protected:
   int*__restrict__ sig_window_0_ = nullptr;
 
   bool has_event_ = false;
+  std::vector<int> chan_signal_type_;
   int*__restrict__ chan_max_ = nullptr;
   int*__restrict__ chan_max_index_ = nullptr;
   int*__restrict__ chan_bkg_win_sum_ = nullptr;
@@ -221,6 +227,7 @@ public:
     }
     if(wf == nullptr)return true;
     has_event_ = true;
+    chan_signal_type_.assign(wf->channel_signal_type().begin(), wf->channel_signal_type().end());
     const uint16_t* data = reinterpret_cast<const uint16_t*>(
       wf->raw_samples_array().data());
     vcl_analyze_waveforms(data);
