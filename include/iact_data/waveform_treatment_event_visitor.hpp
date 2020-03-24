@@ -74,6 +74,8 @@ public:
     return cfg;
   }
 
+  bool has_event() const { return has_event_; }
+
   std::vector<int> chan_max() const { return make_vec(chan_max_); }
   std::vector<int> chan_max_index() const { return make_vec(chan_max_index_); }
   std::vector<int> chan_bkg_win_sum() const { return make_vec(chan_bkg_win_sum_); }
@@ -116,6 +118,7 @@ protected:
   int bkg_window_0_;
   int*__restrict__ sig_window_0_ = nullptr;
 
+  bool has_event_ = false;
   int*__restrict__ chan_max_ = nullptr;
   int*__restrict__ chan_max_index_ = nullptr;
   int*__restrict__ chan_bkg_win_sum_ = nullptr;
@@ -195,6 +198,7 @@ public:
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override
   {
     const calin::ix::iact_data::telescope_event::Waveforms* wf = nullptr;
+    has_event_ = false;
     switch(gain_channel_to_treat_) {
     case HIGH_GAIN:
       if(event->has_high_gain_image() and
@@ -216,6 +220,7 @@ public:
       break;
     }
     if(wf == nullptr)return true;
+    has_event_ = true;
     const uint16_t* data = reinterpret_cast<const uint16_t*>(
       wf->raw_samples_array().data());
     vcl_analyze_waveforms(data);
