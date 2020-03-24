@@ -74,7 +74,8 @@ public:
     return cfg;
   }
 
-  bool has_event() const { return has_event_; }
+  bool is_same_event(uint64_t a_seq_index) const { return a_seq_index == seq_index_; }
+  uint64_t seq_index() const { return seq_index_; }
 
   unsigned nchan() const { return nchan_; }
   unsigned nsamp() const { return nsamp_; }
@@ -123,7 +124,7 @@ protected:
   int bkg_window_0_;
   int*__restrict__ sig_window_0_ = nullptr;
 
-  bool has_event_ = false;
+  uint64_t seq_index_ = 0xFFFFFFFFFFFFFFFFULL;
   std::vector<int> chan_signal_type_;
   int*__restrict__ chan_max_ = nullptr;
   int*__restrict__ chan_max_index_ = nullptr;
@@ -204,7 +205,6 @@ public:
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override
   {
     const calin::ix::iact_data::telescope_event::Waveforms* wf = nullptr;
-    has_event_ = false;
     switch(gain_channel_to_treat_) {
     case HIGH_GAIN:
       if(event->has_high_gain_image() and
@@ -226,7 +226,7 @@ public:
       break;
     }
     if(wf == nullptr)return true;
-    has_event_ = true;
+    seq_index_ = seq_index;
     chan_signal_type_.assign(wf->channel_signal_type().begin(), wf->channel_signal_type().end());
     const uint16_t* data = reinterpret_cast<const uint16_t*>(
       wf->raw_samples_array().data());

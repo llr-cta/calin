@@ -147,7 +147,6 @@ bool OptimalWindowSumWaveformTreatmentEventVisitor::
 visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
 {
   const Waveforms* wf = nullptr;
-  has_event_ = false;
   switch(gain_channel_to_treat_) {
   case HIGH_GAIN:
     if(event->has_high_gain_image() and
@@ -169,7 +168,7 @@ visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
     break;
   }
   if(wf == nullptr)return true;
-  has_event_ = true;
+  seq_index_ = seq_index;
   chan_signal_type_.assign(wf->channel_signal_type().begin(), wf->channel_signal_type().end());
   const uint16_t* data = reinterpret_cast<const uint16_t*>(
     wf->raw_samples_array().data());
