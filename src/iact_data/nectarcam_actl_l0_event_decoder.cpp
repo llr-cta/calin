@@ -179,32 +179,40 @@ bool NectarCam_ACTL_L0_CameraEventDecoder::decode(
   {
     if(cta_event->has_higain()) {
       copy_single_gain_integrals(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_low_gain_image(), "high");
+        calin_event->mutable_low_gain_image(), "high",
+        calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN);
       copy_single_gain_waveforms(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_low_gain_image(), "high");
+        calin_event->mutable_low_gain_image(), "high",
+        calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN);
     }
 
     if(cta_event->has_logain()) {
       copy_single_gain_integrals(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_high_gain_image(), "low");
+        calin_event->mutable_high_gain_image(), "low",
+        calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN);
       copy_single_gain_waveforms(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_high_gain_image(), "low");
+        calin_event->mutable_high_gain_image(), "low",
+        calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN);
     }
   }
-  else
+  else // ! exchange_gain_channels
   {
     if(cta_event->has_higain()) {
       copy_single_gain_integrals(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_high_gain_image(), "high");
+        calin_event->mutable_high_gain_image(), "high",
+        calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN);
       copy_single_gain_waveforms(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_high_gain_image(), "high");
+        calin_event->mutable_high_gain_image(), "high",
+        calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN);
     }
 
     if(cta_event->has_logain()) {
       copy_single_gain_integrals(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_low_gain_image(), "low");
+        calin_event->mutable_low_gain_image(), "low",
+        calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN);
       copy_single_gain_waveforms(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_low_gain_image(), "low");
+        calin_event->mutable_low_gain_image(), "low",
+        calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN);
     }
   }
 
@@ -632,7 +640,8 @@ copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
   const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   const DataModel::PixelsChannel& cta_image,
   calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
-  const std::string& which_gain) const
+  const std::string& which_gain,
+  calin::ix::iact_data::telescope_event::SignalType signal_type) const
 {
   if(cta_image.has_integrals() and cta_image.integrals().has_gains())
   {
@@ -655,11 +664,14 @@ copy_single_gain_integrals(const DataModel::CameraEvent* cta_event,
       if(calin_event->module_index(ipix/7) == -1)
       {
         calin_q_image->add_channel_index(-1);
+        calin_q_image->add_channel_signal_type(
+          calin::ix::iact_data::telescope_event::SIGNAL_NONE);
         all_channels_present = false;
       }
       else
       {
         calin_q_image->add_channel_index(calin_q_image->channel_id_size());
+        calin_q_image->add_channel_signal_type(signal_type);
         calin_q_image->add_channel_id(ipix);
         calin_q_image->add_charge(*cta_q_data);
       }
@@ -673,7 +685,8 @@ copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
   const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
   const DataModel::PixelsChannel& cta_image,
   calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
-  const std::string& which_gain) const
+  const std::string& which_gain,
+  calin::ix::iact_data::telescope_event::SignalType signal_type) const
 {
   if(cta_image.has_waveforms() and cta_image.waveforms().has_samples())
   {
@@ -731,11 +744,14 @@ copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
       {
         all_channels_present = false;
         calin_wf_image->add_channel_index(-1);
+        calin_wf_image->add_channel_signal_type(
+          calin::ix::iact_data::telescope_event::SIGNAL_NONE);
         cta_wf_data += nsample;
       }
       else
       {
         calin_wf_image->add_channel_index(calin_wf_image->channel_id_size());
+        calin_wf_image->add_channel_signal_type(signal_type);
         calin_wf_image->add_channel_id(ipix);
         if(config_.separate_channel_waveforms())
         {

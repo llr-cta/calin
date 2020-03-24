@@ -93,13 +93,15 @@ protected:
     const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     const DataModel::PixelsChannel& cta_image,
     calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
-    const std::string& which_gain) const;
+    const std::string& which_gain,
+    calin::ix::iact_data::telescope_event::SignalType signal_type) const;
 
   virtual void copy_single_gain_waveforms(const DataModel::CameraEvent* cta_event,
     const calin::ix::iact_data::telescope_event::TelescopeEvent* calin_event,
     const DataModel::PixelsChannel& cta_image,
     calin::ix::iact_data::telescope_event::DigitizedSkyImage* calin_image,
-    const std::string& which_gain) const;
+    const std::string& which_gain,
+    calin::ix::iact_data::telescope_event::SignalType signal_type) const;
 
   unsigned get_nmod_from_event(const DataModel::CameraEvent* cta_event) const;
 
