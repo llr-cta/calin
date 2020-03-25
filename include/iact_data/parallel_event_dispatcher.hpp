@@ -150,6 +150,9 @@ private:
     const std::chrono::system_clock::time_point& start_time,
     std::atomic<uint_fast64_t>& ndispatched);
 
+  void write_initial_log_message(calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration* run_config, int nthread);
+
   void write_final_log_message(
     unsigned log_frequency, const std::chrono::system_clock::time_point& start_time,
     std::atomic<uint_fast64_t>& ndispatched);

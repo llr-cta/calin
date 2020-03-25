@@ -22,9 +22,11 @@
 
 #include <chrono>
 #include <type_traits>
+#include <iomanip>
 
 #include <util/string.hpp>
 #include <util/log.hpp>
+#include <util/timestamp.hpp>
 #include <iact_data/zfits_actl_data_source.hpp>
 #include <iact_data/cta_actl_event_decoder.hpp>
 #include <iact_data/event_dispatcher.hpp>
@@ -35,6 +37,7 @@
 
 using namespace calin::util::string;
 using namespace calin::util::log;
+using calin::util::timestamp::Timestamp;
 using namespace calin::iact_data::event_dispatcher;
 using namespace calin::io::data_source;
 using namespace calin::iact_data::telescope_data_source;
@@ -157,6 +160,7 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
   auto start_time = std::chrono::system_clock::now();
   std::atomic<uint_fast64_t> ndispatched { 0 };
 
+  write_initial_log_message(run_config, nthread);
   dispatch_run_configuration(run_config);
   if(nthread <= 0)
   {
@@ -185,6 +189,7 @@ process_run(std::vector<calin::io::data_source::DataSource<
   auto start_time = std::chrono::system_clock::now();
   std::atomic<uint_fast64_t> ndispatched { 0 };
 
+  write_initial_log_message(run_config, src_list.size());
   dispatch_run_configuration(run_config);
   if(src_list.size() == 1)
   {
@@ -475,6 +480,43 @@ void ParallelEventDispatcher::do_dispatcher_loop(
     dispatch_event(seq_index, event);
     release_event(event);
     arena = nullptr;
+  }
+}
+
+void ParallelEventDispatcher::write_initial_log_message(
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  int nthread)
+{
+  auto logger = LOG(INFO);
+  logger << "Dispatching " << run_config->filename() << "\n";
+
+  if(nthread) {
+    logger << "Using " << nthread << " threads to process ";
+  } else {
+    logger << "Processing ";
+  }
+
+  if(run_config->file_size() > 0) {
+    logger << std::setprecision(3) << double(run_config->file_size())*1e-9 << " GB (";
+  }
+  logger << run_config->fragment_filename_size();
+  if(run_config->fragment_filename_size()==1) {
+    logger << " file fragment";
+  } else {
+    logger << " file fragments";
+  }
+  if(run_config->file_size() > 0) {
+    logger << ")";
+  }
+
+  if(run_config->run_number() > 0 and run_config->run_start_time().time_ns()>0) {
+    logger << "\nRun number: " << run_config->run_number() << ", run start time: "
+      << Timestamp(run_config->run_start_time().time_ns()/1000000000ULL).as_string();
+  } else if(run_config->run_number()) {
+    logger << "\nRun number: " << run_config->run_number();
+  } else if(run_config->run_start_time().time_ns()>0) {
+    logger << "\nRun start time: "
+      << Timestamp(run_config->run_start_time().time_ns()/1000000000ULL).as_string();
   }
 }
 
