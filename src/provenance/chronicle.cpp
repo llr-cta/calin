@@ -73,7 +73,7 @@ register_file_open(const std::string& file_name,
   struct stat stat_buffer;
   if(::stat(file_name.c_str(), &stat_buffer) >= 0) {
     record->set_file_size(stat_buffer.st_size);
-    calin::util::timestamp::Timestamp(stat_buffer.st_mtime).as_proto(record->mutable_file_mtime());
+    calin::util::timestamp::Timestamp(stat_buffer.st_mtime, 1000000000LL).as_proto(record->mutable_file_mtime());
   }
   record->set_opened_by(opened_by);
   return record;

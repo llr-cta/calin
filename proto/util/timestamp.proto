@@ -27,11 +27,14 @@ import "calin.proto";
 package calin.ix.util.timestamp;
 
 message Timestamp {
-  uint64 unix_sec                      = 1 [
+  uint64 nsec                          = 1 [
+    (CFO).desc = "Number of nanoseconds since UNIX epoch of 1970-01-01, excluding "
+      "leap seconds." ];
+  uint64 unix_sec                      = 2 [
     (CFO).desc = "Number of seconds since UNIX epoch of 1970-01-01, excluding "
       "leap seconds." ];
-  uint32 unix_nsec                     = 2 [
+  uint32 unix_nsec                     = 3 [
     (CFO).desc = "Number of nanoseconds since start of second." ];
-  string printable                     = 3 [
+  string printable                     = 4 [
     (CFO).desc = "A printable version of the timestamp." ];
 };

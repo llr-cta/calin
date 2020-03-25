@@ -511,12 +511,12 @@ void ParallelEventDispatcher::write_initial_log_message(
 
   if(run_config->run_number() > 0 and run_config->run_start_time().time_ns()>0) {
     logger << "\nRun number: " << run_config->run_number() << ", run start time: "
-      << Timestamp(run_config->run_start_time().time_ns()/1000000000ULL).as_string();
+      << Timestamp(run_config->run_start_time().time_ns()).as_string();
   } else if(run_config->run_number()) {
     logger << "\nRun number: " << run_config->run_number();
   } else if(run_config->run_start_time().time_ns()>0) {
     logger << "\nRun start time: "
-      << Timestamp(run_config->run_start_time().time_ns()/1000000000ULL).as_string();
+      << Timestamp(run_config->run_start_time().time_ns()).as_string();
   }
 }
 
