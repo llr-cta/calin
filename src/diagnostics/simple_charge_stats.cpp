@@ -115,8 +115,8 @@ namespace {
         partials_gc.all_trig_ped_win_sum(), partials_gc.all_trig_num_events(),
         partials_gc.all_trig_ped_win_sum(), partials_gc.all_trig_num_events()));
     } else {
-      results_g->add_ped_trigger_full_wf_mean(0.0);
-      results_g->add_ped_trigger_full_wf_var(0.0);
+      results_g->add_all_trigger_ped_win_mean(0.0);
+      results_g->add_all_trigger_ped_win_var(0.0);
     }
 
     results_g->add_ped_trigger_event_count(partials_gc.ped_trig_num_events());
@@ -128,8 +128,8 @@ namespace {
         partials_gc.ped_trig_full_wf_sum(), partials_gc.ped_trig_num_events(),
         partials_gc.ped_trig_full_wf_sum(), partials_gc.ped_trig_num_events()));
     } else {
-      results_g->add_ped_trigger_full_wf_mean(-1.0);
-      results_g->add_ped_trigger_full_wf_var(-1.0);
+      results_g->add_ped_trigger_full_wf_mean(0.0);
+      results_g->add_ped_trigger_full_wf_var(0.0);
     }
   }
 }

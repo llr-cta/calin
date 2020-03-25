@@ -99,9 +99,6 @@ message PartialSimpleChargeStats {
     (CFO).desc = "Computed statistics for each configured channel" ];
 };
 
-
-
-
 message OptimalWindowStatsConfig {
   double opt_win_mean_time_histogram_resolution                     = 1 [
     (CFO).desc = "Resolution of pulse time resolution.", (CFO).units="sample" ];

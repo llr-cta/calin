@@ -66,6 +66,8 @@ public:
 
   static calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig default_config();
 
+  // const calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats& partials() const { return partials_; }
+
 private:
   SimpleChargeStatsVisitor* parent_ = nullptr;
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config_;
