@@ -98,7 +98,7 @@ public:
   const int*__restrict__ array_chan_opt_win_sum() const { return chan_opt_win_sum_; }
   const int*__restrict__ array_chan_opt_win_sum_qt() const { return chan_opt_win_sum_qt_; }
   const int*__restrict__ array_chan_opt_win_index() const { return chan_opt_win_index_; }
-  const int*__restrict__ array_chan_all_sum_q() const { return chan_all_sum_; }
+  const int*__restrict__ array_chan_all_sum() const { return chan_all_sum_; }
   const int*__restrict__ array_chan_signal_type() const { return chan_signal_type_.data(); };
 #endif
 
