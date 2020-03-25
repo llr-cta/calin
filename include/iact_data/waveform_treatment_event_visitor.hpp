@@ -183,7 +183,7 @@ public:
         calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override
   {
-    return new VCL_OptimalWindowSumWaveformTreatmentEventVisitor<VCLArchitecture>(config_);
+    return new VCL_OptimalWindowSumWaveformTreatmentEventVisitor<VCLArchitecture>(config_, gain_channel_to_treat_);
   }
 
   bool visit_telescope_run(
@@ -528,7 +528,7 @@ public:
         calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override
   {
-    return new VCL_SingleGainDualWindowWaveformTreatmentEventVisitor<VCLArchitecture>(config_);
+    return new VCL_SingleGainDualWindowWaveformTreatmentEventVisitor<VCLArchitecture>(config_, treat_high_gain_);
   }
 
   bool visit_telescope_run(

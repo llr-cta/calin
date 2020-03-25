@@ -62,7 +62,7 @@ OptimalWindowSumWaveformTreatmentEventVisitor::new_sub_visitor(
   std::map<ParallelEventVisitor*,ParallelEventVisitor*>
     antecedent_visitors)
 {
-  return new OptimalWindowSumWaveformTreatmentEventVisitor(config_);
+  return new OptimalWindowSumWaveformTreatmentEventVisitor(config_, gain_channel_to_treat_);
 }
 
 bool OptimalWindowSumWaveformTreatmentEventVisitor::
@@ -215,7 +215,7 @@ SingleGainDualWindowWaveformTreatmentEventVisitor*
 SingleGainDualWindowWaveformTreatmentEventVisitor::new_sub_visitor(
   std::map<ParallelEventVisitor*,ParallelEventVisitor*> antecedent_visitors)
 {
-  return new SingleGainDualWindowWaveformTreatmentEventVisitor(config_);
+  return new SingleGainDualWindowWaveformTreatmentEventVisitor(config_, treat_high_gain_);
 }
 
 bool SingleGainDualWindowWaveformTreatmentEventVisitor::
