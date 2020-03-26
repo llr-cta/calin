@@ -35,7 +35,7 @@ std::string Timestamp::as_string() const
   char buffer[] = "1999-12-31T23:59:59";
   strftime(buffer, sizeof(buffer)-1, "%Y-%m-%dT%H:%M:%S", &the_tm);
   std::string str(buffer);
-  uint32_t ms = unix_nsec()/1000;
+  uint32_t ms = unix_nsec()/1000000;
   if(ms<10) { str += ".00"; }
   else if(ms<100) { str += ".0"; }
   else { str += "."; }
