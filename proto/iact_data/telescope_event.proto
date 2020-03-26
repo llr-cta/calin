@@ -370,7 +370,7 @@ enum TriggerType {
   TRIGGER_INTERNAL_FLASHER      = 5;
   TRIGGER_FORCED_BY_ARRAY       = 6;
   TRIGGER_UCTS_AUX              = 7;
-  TRIGGER_MULTIPLE              = 99;
+  TRIGGER_MULTIPLE              = 8;
 };
 
 enum ImageTreatmentMode {
