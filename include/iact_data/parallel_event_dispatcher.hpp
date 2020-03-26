@@ -88,33 +88,6 @@ public:
     const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
 #endif
 
-#if 0
-  void process_nectarcam_zfits_run(const std::string& filename,
-    unsigned log_frequency = 0, int nthread = 0,
-    const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config =
-      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource_L0::default_decoder_config(),
-    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config =
-      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource_L0::default_config());
-
-  void process_nectarcam_zfits_run(const std::string& filename,
-    unsigned log_frequency, int nthread,
-    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config,
-    const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config =
-      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource_L0::default_decoder_config()) {
-    return process_nectarcam_zfits_run(filename, log_frequency, nthread,
-      decoder_config, zfits_config);
-  }
-
-  void process_nectarcam_zfits_run(const std::string& filename,
-    const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config,
-    unsigned log_frequency = 0, int nthread = 0,
-    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config =
-      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource_L0::default_config()) {
-    return process_nectarcam_zfits_run(filename, log_frequency, nthread,
-      decoder_config, zfits_config);
-  }
-#endif
-
   static calin::ix::iact_data::event_dispatcher::EventDispatcherConfig default_config();
 
   static bool merge_run_config(calin::ix::iact_data::
