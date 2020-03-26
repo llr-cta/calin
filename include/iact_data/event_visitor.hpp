@@ -91,4 +91,48 @@ public:
   virtual bool merge_results();
 };
 
+class FilteredDelegatingParallelEventVisitor: public ParallelEventVisitor
+{
+public:
+  FilteredDelegatingParallelEventVisitor();
+
+  virtual ~FilteredDelegatingParallelEventVisitor();
+
+  FilteredDelegatingParallelEventVisitor* new_sub_visitor(
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
+      antecedent_visitors = { } /* note pass by value ! */ ) override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::
+      TelescopeRunConfiguration* run_config,
+      EventLifetimeManager* event_lifetime_manager) override;
+  bool leave_telescope_run() override;
+
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  bool merge_results() override;
+
+  void add_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false);
+  void add_filtered_visitor(ParallelEventVisitor* visitor,
+    calin::ix::iact_data::telescope_event::TriggerType trigger_type,
+    bool adopt_visitor = false);
+
+protected:
+  struct DelegatedVisitor {
+    DelegatedVisitor(ParallelEventVisitor* _visitor, bool _adopt_visitor,
+        bool _unfiltered, calin::ix::iact_data::telescope_event::TriggerType _trigger_type):
+      visitor(_visitor), adopt_visitor(_adopt_visitor), unfiltered(_unfiltered),
+      trigger_type(_trigger_type) { /* nothing to see here */ }
+
+    ParallelEventVisitor* visitor;
+    bool adopt_visitor;
+    bool unfiltered;
+    calin::ix::iact_data::telescope_event::TriggerType trigger_type;
+  };
+
+  std::vector<DelegatedVisitor> delegates_;
+};
+
 } } } // namespace calin::iact_data::event_visitor
