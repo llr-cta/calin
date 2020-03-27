@@ -121,24 +121,24 @@ template<typename T> inline T* safe_aligned_calloc_and_fill(const size_t num, co
 
 template<typename T> inline void safe_aligned_calloc_and_fill(T*& ptr, const size_t num, const T& fill_val = T(), const size_t align = default_align)
 {
-  ptr = safe_aligned_calloc_and_fill<T>(num, align, fill_val);
+  ptr = safe_aligned_calloc_and_fill<T>(num, fill_val, align);
 }
 
 template<typename T> inline void safe_aligned_calloc_and_fill(T*__restrict__& ptr, const size_t num, const T& fill_val = T(), const size_t align = default_align)
 {
-  ptr = safe_aligned_calloc_and_fill<T>(num, align, fill_val);
+  ptr = safe_aligned_calloc_and_fill<T>(num, fill_val, align);
 }
 
 template<typename T> inline void safe_aligned_recalloc_and_fill(T*& ptr, const size_t num, const T& fill_val = T(), const size_t align = default_align)
 {
   free(ptr);
-  ptr = safe_aligned_calloc_and_fill<T>(num, align, fill_val);
+  ptr = safe_aligned_calloc_and_fill<T>(num, fill_val, align);
 }
 
 template<typename T> inline void safe_aligned_recalloc_and_fill(T*__restrict__& ptr, const size_t num, const T& fill_val = T(), const size_t align = default_align)
 {
   free(ptr);
-  ptr = safe_aligned_calloc_and_fill<T>(num, align, fill_val);
+  ptr = safe_aligned_calloc_and_fill<T>(num, fill_val, align);
 }
 
 
