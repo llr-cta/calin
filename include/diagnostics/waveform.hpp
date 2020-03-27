@@ -33,6 +33,58 @@
 
 namespace calin { namespace diagnostics { namespace waveform {
 
+class WaveformSumParallelVisitor:
+public iact_data::event_visitor::ParallelEventVisitor
+{
+public:
+  WaveformSumParallelVisitor();
+
+  virtual ~WaveformSumParallelVisitor();
+
+  WaveformSumParallelVisitor* new_sub_visitor(
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
+      antecedent_visitors) override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+  bool leave_telescope_run() override;
+
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  bool merge_results() override;
+
+  void high_gain_mean_wf(Eigen::MatrixXd& mean_waveform_out);
+  void low_gain_mean_wf(Eigen::MatrixXd& mean_waveform_out);
+  void high_gain_event_count(Eigen::VectorXi& count_out);
+  void low_gain_event_count(Eigen::VectorXi& count_out);
+
+protected:
+#ifndef SWIG
+  WaveformSumParallelVisitor* parent_ = nullptr;
+
+  unsigned partial_max_num_entries_ = 32768;
+
+  bool has_dual_gain_ = false;
+  unsigned nchan_ = 0;
+  unsigned nsamp_ = 0;
+
+  uint32_t num_entries_i32_ = 0;
+
+  uint64_t*__restrict__ high_gain_count_i64_ = nullptr;
+  uint64_t*__restrict__ low_gain_count_i64_ = nullptr;
+  int64_t*__restrict__ high_gain_wf_sum_i64_ = nullptr;
+  int64_t*__restrict__ low_gain_wf_sum_i64_ = nullptr;
+
+  uint32_t*__restrict__ high_gain_count_i32_ = nullptr;
+  uint32_t*__restrict__ low_gain_count_i32_ = nullptr;
+  int32_t*__restrict__ high_gain_wf_sum_i32_ = nullptr;
+  int32_t*__restrict__ low_gain_wf_sum_i32_ = nullptr;
+#endif // ndef SWIG
+};
+
 class WaveformStatsParallelVisitor:
   public iact_data::event_visitor::ParallelEventVisitor
 {

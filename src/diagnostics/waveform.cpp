@@ -22,15 +22,260 @@
 
 #include <math/special.hpp>
 #include <util/log.hpp>
+#include <util/memory.hpp>
 #include <diagnostics/waveform.hpp>
 #include <math/covariance_calc.hpp>
 #include <math/fftw_util.hpp>
 
-using calin::math::special::SQR;
 using namespace calin::util::log;
 using namespace calin::diagnostics::waveform;
 using namespace calin::math::fftw_util;
+using calin::math::special::SQR;
 using calin::math::covariance_calc::cov_i64_gen;
+using calin::util::memory::safe_aligned_recalloc_and_fill;
+
+WaveformSumParallelVisitor::WaveformSumParallelVisitor(): ParallelEventVisitor()
+{
+  // nothing to see here
+}
+
+WaveformSumParallelVisitor::~WaveformSumParallelVisitor()
+{
+  ::free(high_gain_count_i32_);
+  ::free(low_gain_count_i32_);
+  ::free(high_gain_wf_sum_i32_);
+  ::free(low_gain_wf_sum_i32_);
+  ::free(high_gain_count_i64_);
+  ::free(low_gain_count_i64_);
+  ::free(high_gain_wf_sum_i64_);
+  ::free(low_gain_wf_sum_i64_);
+}
+
+WaveformSumParallelVisitor* WaveformSumParallelVisitor::new_sub_visitor(
+  std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+    calin::iact_data::event_visitor::ParallelEventVisitor*> antecedent_visitors)
+{
+  auto* sub_visitor = new WaveformSumParallelVisitor();
+  sub_visitor->parent_ = this;
+  return sub_visitor;
+}
+
+bool WaveformSumParallelVisitor::visit_telescope_run(
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+{
+  has_dual_gain_ = (run_config->camera_layout().adc_gains() !=
+    calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN);
+
+  nchan_ = run_config->configured_channel_id_size();
+  nsamp_ = run_config->num_samples();
+
+  num_entries_i32_ = 0;
+
+  safe_aligned_recalloc_and_fill(high_gain_count_i32_, nchan_);
+  safe_aligned_recalloc_and_fill(high_gain_wf_sum_i32_, nchan_ * nsamp_);
+  safe_aligned_recalloc_and_fill(high_gain_count_i64_, nchan_);
+  safe_aligned_recalloc_and_fill(high_gain_wf_sum_i64_, nchan_ * nsamp_);
+
+  if(has_dual_gain_) {
+    safe_aligned_recalloc_and_fill(low_gain_count_i32_, nchan_);
+    safe_aligned_recalloc_and_fill(low_gain_wf_sum_i32_, nchan_ * nsamp_);
+    safe_aligned_recalloc_and_fill(low_gain_count_i64_, nchan_);
+    safe_aligned_recalloc_and_fill(low_gain_wf_sum_i64_, nchan_ * nsamp_);
+  }
+
+  return true;
+}
+
+namespace {
+  void integrate_i32_to_i64(unsigned nchan, unsigned nsamp,
+    uint32_t*__restrict__ count_i32, int32_t*__restrict__ wf_sum_i32,
+    uint64_t*__restrict__ count_i64, int64_t*__restrict__ wf_sum_i64)
+  {
+    for(unsigned ichan = 0; ichan<nchan; ichan++) {
+      count_i64[ichan] += count_i32[ichan];
+      count_i32[ichan] = 0;
+    }
+
+    nsamp *= nchan;
+    for(unsigned isamp = 0; isamp<nsamp; isamp++) {
+      wf_sum_i64[isamp] += wf_sum_i32[isamp];
+      wf_sum_i32[isamp] = 0;
+    }
+  }
+
+  void integrate_i64_to_parent(unsigned nchan, unsigned nsamp,
+    uint64_t*__restrict__ count_i64c, int64_t*__restrict__ wf_sum_i64c,
+    uint64_t*__restrict__ count_i64p, int64_t*__restrict__ wf_sum_i64p)
+  {
+    for(unsigned ichan = 0; ichan<nchan; ichan++) {
+      count_i64p[ichan] += count_i64c[ichan];
+    }
+
+    nsamp *= nchan;
+    for(unsigned isamp = 0; isamp<nsamp; isamp++) {
+      wf_sum_i64p[isamp] += wf_sum_i64c[isamp];
+    }
+  }
+}
+
+bool WaveformSumParallelVisitor::leave_telescope_run()
+{
+  num_entries_i32_ = 0;
+  integrate_i32_to_i64(nchan_, nsamp_, high_gain_count_i32_, high_gain_wf_sum_i32_,
+    high_gain_count_i64_, high_gain_wf_sum_i64_);
+  if(has_dual_gain_) {
+    integrate_i32_to_i64(nchan_, nsamp_, low_gain_count_i32_, low_gain_wf_sum_i32_,
+      low_gain_count_i64_, low_gain_wf_sum_i64_);
+  }
+  return true;
+}
+
+namespace {
+  void perform_single_gain_waveform_sum(unsigned nchan, unsigned nsamp,
+    const calin::ix::iact_data::telescope_event::Waveforms& wf,
+    uint32_t*__restrict__ count_i32, int32_t*__restrict__ wf_sum_i32)
+  {
+    for(unsigned ichan = 0; ichan<nchan; ichan++, count_i32++) {
+      if(wf.channel_signal_type(ichan) != calin::ix::iact_data::telescope_event::SIGNAL_NONE) {
+        ++(*count_i32);
+      }
+    }
+    nsamp *= nchan;
+    const int16_t*__restrict__ wf_sum_i16 = reinterpret_cast<const int16_t*>(wf.raw_samples_array().data());
+    for(unsigned isamp = 0; isamp<nsamp; isamp++) {
+      // Here we use the fact that the waveform data for missing channels has
+      // been zeroed out by the decoder
+      *(wf_sum_i32++) += *(wf_sum_i16++);
+    }
+  }
+
+  void perform_mixed_gain_waveform_sum(unsigned nchan, unsigned nsamp,
+    const calin::ix::iact_data::telescope_event::Waveforms& wf,
+    uint32_t*__restrict__ hg_count_i32, int32_t*__restrict__ hg_wf_sum_i32,
+    uint32_t*__restrict__ lg_count_i32, int32_t*__restrict__ lg_wf_sum_i32)
+  {
+    const int16_t*__restrict__ wf_sum_i16 = reinterpret_cast<const int16_t*>(wf.raw_samples_array().data());
+    for(unsigned ichan = 0; ichan<nchan; ichan++, hg_count_i32++, lg_count_i32++) {
+      if(wf.channel_signal_type(ichan) != calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN) {
+        ++(*lg_count_i32);
+        for(unsigned isamp = 0; isamp<nsamp; isamp++, hg_wf_sum_i32++) {
+          *(lg_wf_sum_i32++) += *(wf_sum_i16++);
+        }
+      } else if(wf.channel_signal_type(ichan) != calin::ix::iact_data::telescope_event::SIGNAL_NONE) {
+        ++(*hg_count_i32);
+        for(unsigned isamp = 0; isamp<nsamp; isamp++, lg_wf_sum_i32++) {
+          *(hg_wf_sum_i32++) += *(wf_sum_i16++);
+        }
+      } else {
+        wf_sum_i16 += nsamp;
+        hg_wf_sum_i32 += nsamp;
+        lg_wf_sum_i32 += nsamp;
+      }
+    }
+  }
+
+}
+
+bool WaveformSumParallelVisitor::visit_telescope_event(uint64_t seq_index,
+  calin::ix::iact_data::telescope_event::TelescopeEvent* event)
+{
+  if(!has_dual_gain_) {
+    if(event->has_image() and event->image().has_camera_waveforms()) {
+      num_entries_i32_++;
+      perform_single_gain_waveform_sum(nchan_, nsamp_,
+        event->image().camera_waveforms(), high_gain_count_i32_, high_gain_wf_sum_i32_);
+    }
+  } else {
+    if(event->has_image() and event->image().has_camera_waveforms()) {
+      num_entries_i32_++;
+      perform_mixed_gain_waveform_sum(nchan_, nsamp_,
+        event->image().camera_waveforms(),
+        high_gain_count_i32_, high_gain_wf_sum_i32_,
+        low_gain_count_i32_, low_gain_wf_sum_i32_);
+    } else {
+      if(event->has_high_gain_image() and event->high_gain_image().has_camera_waveforms()) {
+        num_entries_i32_++;
+        perform_single_gain_waveform_sum(nchan_, nsamp_,
+          event->high_gain_image().camera_waveforms(), high_gain_count_i32_, high_gain_wf_sum_i32_);
+        if(event->has_low_gain_image() and event->low_gain_image().has_camera_waveforms()) {
+          perform_single_gain_waveform_sum(nchan_, nsamp_,
+            event->low_gain_image().camera_waveforms(), low_gain_count_i32_, low_gain_wf_sum_i32_);
+        }
+      } else if(event->has_low_gain_image() and event->low_gain_image().has_camera_waveforms()) {
+        num_entries_i32_++;
+        perform_single_gain_waveform_sum(nchan_, nsamp_,
+          event->low_gain_image().camera_waveforms(), low_gain_count_i32_, low_gain_wf_sum_i32_);
+      }
+    }
+  }
+
+  if(num_entries_i32_ == partial_max_num_entries_) {
+    num_entries_i32_ = 0;
+    integrate_i32_to_i64(nchan_, nsamp_, high_gain_count_i32_, high_gain_wf_sum_i32_,
+      high_gain_count_i64_, high_gain_wf_sum_i64_);
+    if(has_dual_gain_) {
+      integrate_i32_to_i64(nchan_, nsamp_, low_gain_count_i32_, low_gain_wf_sum_i32_,
+        low_gain_count_i64_, low_gain_wf_sum_i64_);
+    }
+  }
+  return true;
+}
+
+bool WaveformSumParallelVisitor::merge_results()
+{
+  if(parent_) {
+    integrate_i64_to_parent(nchan_, nsamp_, high_gain_count_i64_, high_gain_wf_sum_i64_,
+      parent_->high_gain_count_i64_, parent_->high_gain_wf_sum_i64_);
+    if(has_dual_gain_) {
+      integrate_i64_to_parent(nchan_, nsamp_, low_gain_count_i64_, low_gain_wf_sum_i64_,
+        parent_->low_gain_count_i64_, parent_->low_gain_wf_sum_i64_);
+    }
+  }
+  return true;
+}
+
+void WaveformSumParallelVisitor::high_gain_mean_wf(Eigen::MatrixXd& wf_matrix_out)
+{
+  wf_matrix_out.resize(nchan_, nsamp_);
+  for(unsigned ichan=0;ichan<nchan_;ichan++) {
+    double count = high_gain_count_i64_[ichan];
+    for(unsigned isamp=0;isamp<nsamp_;isamp++) {
+      wf_matrix_out(ichan, isamp) =
+        double(high_gain_wf_sum_i64_[ichan*nsamp_ + isamp])/count;
+    }
+  }
+}
+
+void WaveformSumParallelVisitor::low_gain_mean_wf(Eigen::MatrixXd& wf_matrix_out)
+{
+  wf_matrix_out.resize(nchan_, nsamp_);
+  for(unsigned ichan=0;ichan<nchan_;ichan++) {
+    double count = low_gain_count_i64_[ichan];
+    for(unsigned isamp=0;isamp<nsamp_;isamp++) {
+      wf_matrix_out(ichan, isamp) =
+        double(low_gain_wf_sum_i64_[ichan*nsamp_ + isamp])/count;
+    }
+  }
+}
+
+void WaveformSumParallelVisitor::high_gain_event_count(Eigen::VectorXi& count_out)
+{
+  count_out.resize(nchan_);
+  for(unsigned ichan=0;ichan<nchan_;ichan++) {
+    count_out(ichan) = high_gain_count_i64_[ichan];
+  }
+}
+
+void WaveformSumParallelVisitor::low_gain_event_count(Eigen::VectorXi& count_out)
+{
+  count_out.resize(nchan_);
+  for(unsigned ichan=0;ichan<nchan_;ichan++) {
+    count_out(ichan) = low_gain_count_i64_[ichan];
+  }
+}
+
+
 
 WaveformStatsParallelVisitor::WaveformStatsParallelVisitor(
     bool calculate_psd, bool calculate_covariance):
