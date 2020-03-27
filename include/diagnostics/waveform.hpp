@@ -56,6 +56,8 @@ public:
 
   bool merge_results() override;
 
+  calin::ix::diagnostics::waveform::WaveformMean* mean_waveforms() const;
+
   void high_gain_mean_wf(Eigen::MatrixXd& mean_waveform_out);
   void low_gain_mean_wf(Eigen::MatrixXd& mean_waveform_out);
   void high_gain_event_count(Eigen::VectorXi& count_out);
