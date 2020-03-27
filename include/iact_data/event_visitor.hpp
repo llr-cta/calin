@@ -82,7 +82,7 @@ public:
   virtual bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::
       TelescopeRunConfiguration* run_config,
-      EventLifetimeManager* event_lifetime_manager);
+    EventLifetimeManager* event_lifetime_manager);
   virtual bool leave_telescope_run();
 
   virtual bool visit_telescope_event(uint64_t seq_index,
@@ -120,6 +120,7 @@ public:
     bool adopt_visitor = false);
 
 protected:
+#ifndef SWIG
   struct DelegatedVisitor {
     DelegatedVisitor(ParallelEventVisitor* _visitor, bool _adopt_visitor,
         bool _unfiltered, calin::ix::iact_data::telescope_event::TriggerType _trigger_type):
@@ -133,6 +134,7 @@ protected:
   };
 
   std::vector<DelegatedVisitor> delegates_;
+#endif
 };
 
 } } } // namespace calin::iact_data::event_visitor

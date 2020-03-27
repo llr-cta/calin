@@ -149,6 +149,9 @@ FilteredDelegatingParallelEventVisitor::new_sub_visitor(
   auto* sub_visitor = new FilteredDelegatingParallelEventVisitor();
   for(auto ivisitor : delegates_) {
     auto* dsv = ivisitor.visitor->new_sub_visitor(antecedent_visitors);
+    if(dsv == nullptr) {
+      throw std::runtime_error("FilteredDelegatingParallelEventVisitor::new_sub_visitor: delegated visitor returned null pointer.");
+    }
     antecedent_visitors[ivisitor.visitor] = dsv;
     if(ivisitor.unfiltered) {
       sub_visitor->add_visitor(dsv, /* adopt_visitor= */ true);
