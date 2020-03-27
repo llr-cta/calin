@@ -108,4 +108,38 @@ template<typename T> inline void safe_aligned_recalloc(T*__restrict__& ptr, cons
   ptr = safe_aligned_calloc<T>(num, align);
 }
 
+template<typename T> inline T* safe_aligned_calloc_and_fill(const size_t num, const T& fill_val = T(), const size_t align = default_align)
+{
+  T* ptr = aligned_calloc<T>(num, align);
+  if(ptr != nullptr) {
+    std::fill(ptr, ptr+num, fill_val);
+    return ptr;
+  }
+  throw std::runtime_error("Could not allocate array of " + std::to_string(num) +
+    " elements of size " + std::to_string(sizeof(T)) + " bytes");
+}
+
+template<typename T> inline void safe_aligned_calloc_and_fill(T*& ptr, const size_t num, const T& fill_val = T(), const size_t align = default_align)
+{
+  ptr = safe_aligned_calloc_and_fill<T>(num, align, fill_val);
+}
+
+template<typename T> inline void safe_aligned_calloc_and_fill(T*__restrict__& ptr, const size_t num, const T& fill_val = T(), const size_t align = default_align)
+{
+  ptr = safe_aligned_calloc_and_fill<T>(num, align, fill_val);
+}
+
+template<typename T> inline void safe_aligned_recalloc_and_fill(T*& ptr, const size_t num, const T& fill_val = T(), const size_t align = default_align)
+{
+  free(ptr);
+  ptr = safe_aligned_calloc_and_fill<T>(num, align, fill_val);
+}
+
+template<typename T> inline void safe_aligned_recalloc_and_fill(T*__restrict__& ptr, const size_t num, const T& fill_val = T(), const size_t align = default_align)
+{
+  free(ptr);
+  ptr = safe_aligned_calloc_and_fill<T>(num, align, fill_val);
+}
+
+
 } } } // namespace calin::util::memory
