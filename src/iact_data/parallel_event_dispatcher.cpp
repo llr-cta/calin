@@ -338,14 +338,13 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
     for(auto* v : visitors_)
     {
       ParallelEventVisitor* sv = v->new_sub_visitor(antecedent_visitors);
-      if(sv) {
-        d->add_visitor(sv, true);
-        antecedent_visitors[v] = sv;
-      } else {
-        d->add_visitor(v, false);
+      if(sv == nullptr) {
+        throw std::runtime_error("ParallelEventDispatcher::do_parallel_dispatcher_loops: delegated visitor returned null pointer.");
       }
+      d->add_visitor(sv, true);
+      antecedent_visitors[v] = sv;
     }
-    d->dispatch_run_configuration(run_config, /* dispatch_only_to_adopted_visitors = */true);
+    d->dispatch_run_configuration(run_config);
   }
 
   std::vector<std::thread> threads;
@@ -380,8 +379,8 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
 
   for(auto* d : sub_dispatchers)
   {
-    d->dispatch_leave_run(/* dispatch_only_to_adopted_visitors = */ true);
-    d->dispatch_merge_results(/* dispatch_only_to_adopted_visitors = */ true);
+    d->dispatch_leave_run();
+    d->dispatch_merge_results();
     delete d;
   }
 }
@@ -469,34 +468,20 @@ void ParallelEventDispatcher::write_final_log_message(
 }
 
 void ParallelEventDispatcher::
-dispatch_run_configuration(TelescopeRunConfiguration* run_config,
-  bool dispatch_only_to_adopted_visitors)
+dispatch_run_configuration(TelescopeRunConfiguration* run_config)
 {
-  if(dispatch_only_to_adopted_visitors) {
-    for(auto iv : adopted_visitors_)iv->visit_telescope_run(run_config, this);
-  } else {
-    for(auto iv : visitors_)iv->visit_telescope_run(run_config, this);
-  }
+  for(auto iv : visitors_)iv->visit_telescope_run(run_config, this);
+}
+
+void ParallelEventDispatcher::dispatch_leave_run()
+{
+  for(auto iv : visitors_)iv->leave_telescope_run();
 }
 
 void ParallelEventDispatcher::
-dispatch_leave_run(bool dispatch_only_to_adopted_visitors)
+dispatch_merge_results()
 {
-  if(dispatch_only_to_adopted_visitors) {
-    for(auto iv : adopted_visitors_)iv->leave_telescope_run();
-  } else {
-    for(auto iv : visitors_)iv->leave_telescope_run();
-  }
-}
-
-void ParallelEventDispatcher::
-dispatch_merge_results(bool dispatch_only_to_adopted_visitors)
-{
-  if(dispatch_only_to_adopted_visitors) {
-    for(auto iv : adopted_visitors_)iv->merge_results();
-  } else {
-    for(auto iv : visitors_)iv->merge_results();
-  }
+  for(auto iv : visitors_)iv->merge_results();
 }
 
 namespace {

@@ -100,12 +100,11 @@ private:
   // are not meant to be called directly as the visiors expect them to be
   // called in a specific order. They are liable to be made private.
   void dispatch_run_configuration(calin::ix::iact_data::
-    telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    bool dispatch_only_to_adopted_visitors = false);
+    telescope_run_configuration::TelescopeRunConfiguration* run_config);
   void dispatch_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
-  void dispatch_leave_run(bool dispatch_only_to_adopted_visitors = false);
-  void dispatch_merge_results(bool dispatch_only_to_adopted_visitors = true);
+  void dispatch_leave_run();
+  void dispatch_merge_results();
 
   void do_parallel_dispatcher_loops(
     calin::ix::iact_data::
