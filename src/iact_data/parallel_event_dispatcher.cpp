@@ -403,7 +403,7 @@ void ParallelEventDispatcher::do_dispatcher_loop(
       auto dt = std::chrono::system_clock::now() - start_time;
       LOG(INFO) << "Dispatched "
         << to_string_with_commas(ndispatched_val) << " events in "
-        << to_string_with_commas(duration_cast<seconds>(dt).count()) << " sec";
+        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec";
     }
 
     add_event_to_keep(event, seq_index, arena);
@@ -461,7 +461,7 @@ void ParallelEventDispatcher::write_final_log_message(
     auto dt = system_clock::now() - start_time;
     LOG(INFO) << "Dispatched "
       << to_string_with_commas(uint64_t(ndispatched)) << " events in "
-      << to_string_with_commas(duration_cast<seconds>(dt).count()) << " sec, "
+      << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
       << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
       << " us/event (finished)";
   }
