@@ -30,6 +30,8 @@ namespace calin { namespace provenance { namespace chronicle {
 
 const calin::ix::provenance::chronicle::Chronicle* the_chronicle();
 
+void reset_the_chronicle();
+
 #ifndef SWIG
 calin::ix::provenance::chronicle::Chronicle*
   copy_the_chronicle(calin::ix::provenance::chronicle::Chronicle* x = nullptr);

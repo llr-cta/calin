@@ -46,6 +46,12 @@ calin::provenance::chronicle::the_chronicle()
   return singleton_chronicle.get();
 }
 
+void calin::provenance::chronicle::reset_the_chronicle()
+{
+  std::lock_guard<std::mutex> lock { chronicle_mutex };
+  singleton_chronicle->Clear();
+}
+
 calin::ix::provenance::chronicle::Chronicle*
 calin::provenance::chronicle::copy_the_chronicle(calin::ix::provenance::chronicle::Chronicle* x)
 {
