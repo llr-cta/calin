@@ -119,6 +119,22 @@ public:
     calin::ix::iact_data::telescope_event::TriggerType trigger_type,
     bool adopt_visitor = false);
 
+  void add_physics_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
+    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS, adopt_visitor);
+  }
+  void add_software_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
+    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_SOFTWARE, adopt_visitor);
+  }
+  void add_pedestal_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
+    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL, adopt_visitor);
+  }
+  void add_external_flasher_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
+    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_EXTENAL_FLASHER, adopt_visitor);
+  }
+  void add_internal_flasher_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
+    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER, adopt_visitor);
+  }
+
 protected:
 #ifndef SWIG
   struct DelegatedVisitor {
