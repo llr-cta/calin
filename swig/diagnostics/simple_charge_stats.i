@@ -39,6 +39,6 @@
 %import "iact_data/event_visitor.i"
 %import "diagnostics/simple_charge_stats.pb.i"
 
-%newobject calin::diagnostics::simple_charge_stats::SimpleChargeStatsVisitor::simple_charge_stats();
+%newobject calin::diagnostics::simple_charge_stats::SimpleChargeStatsParallelEventVisitor::simple_charge_stats();
 
 %include "diagnostics/simple_charge_stats.hpp"

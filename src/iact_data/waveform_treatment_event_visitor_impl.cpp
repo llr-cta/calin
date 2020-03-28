@@ -30,7 +30,7 @@ using namespace calin::iact_data::waveform_treatment_event_visitor;
 using calin::util::memory::safe_aligned_recalloc;
 
 void calin::iact_data::waveform_treatment_event_visitor::
-OptimalWindowSumWaveformTreatmentEventVisitor::
+OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 scalar_analyze_waveforms(const uint16_t*__restrict__ data)
 {
   int imax = 0;

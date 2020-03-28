@@ -33,27 +33,27 @@
 
 namespace calin { namespace iact_data { namespace waveform_treatment_event_visitor {
 
-class OptimalWindowSumWaveformTreatmentEventVisitor:
+class OptimalWindowSumWaveformTreatmentParallelEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
   enum GainChannel { HIGH_GAIN, LOW_GAIN, SINGLE_OR_MIXED_GAIN };
 
-  OptimalWindowSumWaveformTreatmentEventVisitor(
+  OptimalWindowSumWaveformTreatmentParallelEventVisitor(
     calin::ix::iact_data::waveform_treatment_event_visitor::
-      OptimalWindowSumWaveformTreatmentEventVisitorConfig config = default_config(),
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
       GainChannel gain_channel_to_treat = HIGH_GAIN);
 
-  OptimalWindowSumWaveformTreatmentEventVisitor(
+  OptimalWindowSumWaveformTreatmentParallelEventVisitor(
     GainChannel gain_channel_to_treat,
     calin::ix::iact_data::waveform_treatment_event_visitor::
-      OptimalWindowSumWaveformTreatmentEventVisitorConfig config = default_config()):
-    OptimalWindowSumWaveformTreatmentEventVisitor(config, gain_channel_to_treat)
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config()):
+    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
   { /* nothing to see here */ }
 
-  virtual ~OptimalWindowSumWaveformTreatmentEventVisitor();
+  virtual ~OptimalWindowSumWaveformTreatmentParallelEventVisitor();
 
-  OptimalWindowSumWaveformTreatmentEventVisitor* new_sub_visitor(
+  OptimalWindowSumWaveformTreatmentParallelEventVisitor* new_sub_visitor(
     std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
         calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override;
@@ -66,10 +66,10 @@ public:
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
 
   static calin::ix::iact_data::waveform_treatment_event_visitor::
-    OptimalWindowSumWaveformTreatmentEventVisitorConfig default_config()
+    OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig default_config()
   {
     calin::ix::iact_data::waveform_treatment_event_visitor::
-      OptimalWindowSumWaveformTreatmentEventVisitorConfig cfg;
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig cfg;
     cfg.set_integration_n(16);
     return cfg;
   }
@@ -116,7 +116,7 @@ protected:
   }
 
   calin::ix::iact_data::waveform_treatment_event_visitor::
-    OptimalWindowSumWaveformTreatmentEventVisitorConfig config_;
+    OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config_;
   GainChannel gain_channel_to_treat_ = HIGH_GAIN;
   unsigned nchan_ = 0;
   unsigned nsamp_ = 0;
@@ -138,8 +138,8 @@ protected:
 };
 
 template<typename VCLArchitecture>
-class VCL_OptimalWindowSumWaveformTreatmentEventVisitor:
-  public OptimalWindowSumWaveformTreatmentEventVisitor
+class VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor:
+  public OptimalWindowSumWaveformTreatmentParallelEventVisitor
 {
 public:
 #ifndef SWIG
@@ -155,35 +155,35 @@ public:
   constexpr static unsigned num_int32 = VCLArchitecture::num_int32;
 #endif
 
-  VCL_OptimalWindowSumWaveformTreatmentEventVisitor(
+  VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor(
       calin::ix::iact_data::waveform_treatment_event_visitor::
-        OptimalWindowSumWaveformTreatmentEventVisitorConfig config = default_config(),
+        OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
       GainChannel gain_channel_to_treat = HIGH_GAIN):
-    OptimalWindowSumWaveformTreatmentEventVisitor(config, gain_channel_to_treat)
+    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
   {
     /* nothing to see here */
   }
 
-  VCL_OptimalWindowSumWaveformTreatmentEventVisitor(
+  VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor(
     GainChannel gain_channel_to_treat,
     calin::ix::iact_data::waveform_treatment_event_visitor::
-      OptimalWindowSumWaveformTreatmentEventVisitorConfig config = default_config()):
-    VCL_OptimalWindowSumWaveformTreatmentEventVisitor(config, gain_channel_to_treat)
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config()):
+    VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
   {
     /* nothing to see here */
   }
 
-  virtual ~VCL_OptimalWindowSumWaveformTreatmentEventVisitor()
+  virtual ~VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor()
   {
     free(samples_);
   }
 
-  VCL_OptimalWindowSumWaveformTreatmentEventVisitor<VCLArchitecture>* new_sub_visitor(
+  VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<VCLArchitecture>* new_sub_visitor(
     std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
         calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override
   {
-    return new VCL_OptimalWindowSumWaveformTreatmentEventVisitor<VCLArchitecture>(config_, gain_channel_to_treat_);
+    return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<VCLArchitecture>(config_, gain_channel_to_treat_);
   }
 
   bool visit_telescope_run(
@@ -191,7 +191,7 @@ public:
     calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override
   {
     bool old_nsamp = nsamp_;
-    bool good = OptimalWindowSumWaveformTreatmentEventVisitor::visit_telescope_run(run_config, event_lifetime_manager);
+    bool good = OptimalWindowSumWaveformTreatmentParallelEventVisitor::visit_telescope_run(run_config, event_lifetime_manager);
     if(nsamp_!=old_nsamp) {
       auto* host_info = calin::provenance::system_info::the_host_info();
       const unsigned nv_samp = (nsamp_+31)/32;

@@ -29,24 +29,24 @@
 
 namespace calin { namespace diagnostics { namespace simple_charge_stats {
 
-class SimpleChargeStatsVisitor:
+class SimpleChargeStatsParallelEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  SimpleChargeStatsVisitor(
-    calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentEventVisitor* high_gain_visitor,
-    calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentEventVisitor* low_gain_visitor,
+  SimpleChargeStatsParallelEventVisitor(
+    calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* high_gain_visitor,
+    calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* low_gain_visitor,
     const calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig& config = default_config());
 
-  SimpleChargeStatsVisitor(
-      calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentEventVisitor* mixed_or_unique_gain_visitor,
+  SimpleChargeStatsParallelEventVisitor(
+      calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* mixed_or_unique_gain_visitor,
       const calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig& config = default_config()):
-    SimpleChargeStatsVisitor(mixed_or_unique_gain_visitor, nullptr, config)
+    SimpleChargeStatsParallelEventVisitor(mixed_or_unique_gain_visitor, nullptr, config)
   { /* nothing to see here */ }
 
-  virtual ~SimpleChargeStatsVisitor();
+  virtual ~SimpleChargeStatsParallelEventVisitor();
 
-  SimpleChargeStatsVisitor* new_sub_visitor(
+  SimpleChargeStatsParallelEventVisitor* new_sub_visitor(
     std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
         calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override;
@@ -69,10 +69,10 @@ public:
   // const calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats& partials() const { return partials_; }
 
 private:
-  SimpleChargeStatsVisitor* parent_ = nullptr;
+  SimpleChargeStatsParallelEventVisitor* parent_ = nullptr;
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config_;
-  calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentEventVisitor* high_gain_visitor_ = nullptr;
-  calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentEventVisitor* low_gain_visitor_ = nullptr;
+  calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* high_gain_visitor_ = nullptr;
+  calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* low_gain_visitor_ = nullptr;
 
   bool has_dual_gain_ = false;
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats results_;

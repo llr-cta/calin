@@ -60,15 +60,15 @@ private:
 
 #endif // not defined SWIG
 
-class RunInfoDiagnosticsVisitor:
+class RunInfoDiagnosticsParallelEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  RunInfoDiagnosticsVisitor(const calin::ix::diagnostics::run_info::RunInfoConfig& config = default_config());
+  RunInfoDiagnosticsParallelEventVisitor(const calin::ix::diagnostics::run_info::RunInfoConfig& config = default_config());
 
-  virtual ~RunInfoDiagnosticsVisitor();
+  virtual ~RunInfoDiagnosticsParallelEventVisitor();
 
-  RunInfoDiagnosticsVisitor* new_sub_visitor(
+  RunInfoDiagnosticsParallelEventVisitor* new_sub_visitor(
     std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
         calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override;
@@ -96,7 +96,7 @@ private:
 
   void integrate_partials ();
 
-  RunInfoDiagnosticsVisitor* parent_ = nullptr;
+  RunInfoDiagnosticsParallelEventVisitor* parent_ = nullptr;
   calin::ix::diagnostics::run_info::RunInfoConfig config_ = default_config();
 
   std::vector<int64_t> mod_counter_values_;

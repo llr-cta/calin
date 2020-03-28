@@ -77,7 +77,7 @@ processCounters(std::vector<int64_t>& values, int64_t event_number)
   return offset;
 }
 
-RunInfoDiagnosticsVisitor::RunInfoDiagnosticsVisitor(
+RunInfoDiagnosticsParallelEventVisitor::RunInfoDiagnosticsParallelEventVisitor(
     const calin::ix::diagnostics::run_info::RunInfoConfig& config):
   calin::iact_data::event_visitor::ParallelEventVisitor(),
   config_(config),
@@ -89,23 +89,23 @@ RunInfoDiagnosticsVisitor::RunInfoDiagnosticsVisitor(
   // nothing to see here
 }
 
-RunInfoDiagnosticsVisitor::~RunInfoDiagnosticsVisitor()
+RunInfoDiagnosticsParallelEventVisitor::~RunInfoDiagnosticsParallelEventVisitor()
 {
   for(auto* iproc: mod_counter_processor_)delete iproc;
   delete arena_;
 }
 
-RunInfoDiagnosticsVisitor* RunInfoDiagnosticsVisitor::new_sub_visitor(
+RunInfoDiagnosticsParallelEventVisitor* RunInfoDiagnosticsParallelEventVisitor::new_sub_visitor(
   std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
       calin::iact_data::event_visitor::ParallelEventVisitor*>
     antecedent_visitors)
 {
-  RunInfoDiagnosticsVisitor* child = new RunInfoDiagnosticsVisitor(config_);
+  RunInfoDiagnosticsParallelEventVisitor* child = new RunInfoDiagnosticsParallelEventVisitor(config_);
   child->parent_ = this;
   return child;
 }
 
-bool RunInfoDiagnosticsVisitor::visit_telescope_run(
+bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
 {
@@ -167,7 +167,7 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_run(
   return true;
 }
 
-bool RunInfoDiagnosticsVisitor::leave_telescope_run()
+bool RunInfoDiagnosticsParallelEventVisitor::leave_telescope_run()
 {
   if(parent_ == nullptr) {
     results_->Clear();
@@ -189,7 +189,7 @@ bool RunInfoDiagnosticsVisitor::leave_telescope_run()
   return true;
 }
 
-bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
+bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   partials_->increment_num_events_found();
@@ -270,7 +270,7 @@ bool RunInfoDiagnosticsVisitor::visit_telescope_event(uint64_t seq_index,
   return true;
 }
 
-calin::ix::diagnostics::run_info::RunInfoConfig RunInfoDiagnosticsVisitor::default_config()
+calin::ix::diagnostics::run_info::RunInfoConfig RunInfoDiagnosticsParallelEventVisitor::default_config()
 {
   calin::ix::diagnostics::run_info::RunInfoConfig config;
 
@@ -303,26 +303,26 @@ calin::ix::diagnostics::run_info::RunInfoConfig RunInfoDiagnosticsVisitor::defau
 }
 
 calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
-RunInfoDiagnosticsVisitor::run_config() const
+RunInfoDiagnosticsParallelEventVisitor::run_config() const
 {
   auto* rc = run_config_->New();
   rc->CopyFrom(*run_config_);
   return rc;
 }
 
-calin::ix::diagnostics::run_info::RunInfo* RunInfoDiagnosticsVisitor::run_info()
+calin::ix::diagnostics::run_info::RunInfo* RunInfoDiagnosticsParallelEventVisitor::run_info()
 {
   auto* r = results_->New();
   r->CopyFrom(*results_);
   return r;
 }
 
-const calin::ix::diagnostics::run_info::PartialRunInfo& RunInfoDiagnosticsVisitor::partial_run_info() const
+const calin::ix::diagnostics::run_info::PartialRunInfo& RunInfoDiagnosticsParallelEventVisitor::partial_run_info() const
 {
   return *partials_;
 }
 
-bool RunInfoDiagnosticsVisitor::merge_results()
+bool RunInfoDiagnosticsParallelEventVisitor::merge_results()
 {
   if(parent_) {
     parent_->partials_->IntegrateFrom(*partials_);
@@ -399,7 +399,7 @@ namespace {
   }
 }
 
-void RunInfoDiagnosticsVisitor::integrate_partials()
+void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
 {
   results_->set_num_events_found(partials_->num_events_found());
   results_->set_num_events_missing_cdts(partials_->num_events_missing_cdts());

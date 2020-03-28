@@ -34,12 +34,12 @@ using calin::math::special::SQR;
 using calin::math::covariance_calc::cov_i64_gen;
 using calin::util::memory::safe_aligned_recalloc_and_fill;
 
-WaveformSumParallelVisitor::WaveformSumParallelVisitor(): ParallelEventVisitor()
+WaveformSumParallelEventVisitor::WaveformSumParallelEventVisitor(): ParallelEventVisitor()
 {
   // nothing to see here
 }
 
-WaveformSumParallelVisitor::~WaveformSumParallelVisitor()
+WaveformSumParallelEventVisitor::~WaveformSumParallelEventVisitor()
 {
   ::free(high_gain_count_i32_);
   ::free(low_gain_count_i32_);
@@ -51,16 +51,16 @@ WaveformSumParallelVisitor::~WaveformSumParallelVisitor()
   ::free(low_gain_wf_sum_i64_);
 }
 
-WaveformSumParallelVisitor* WaveformSumParallelVisitor::new_sub_visitor(
+WaveformSumParallelEventVisitor* WaveformSumParallelEventVisitor::new_sub_visitor(
   std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
     calin::iact_data::event_visitor::ParallelEventVisitor*> antecedent_visitors)
 {
-  auto* sub_visitor = new WaveformSumParallelVisitor();
+  auto* sub_visitor = new WaveformSumParallelEventVisitor();
   sub_visitor->parent_ = this;
   return sub_visitor;
 }
 
-bool WaveformSumParallelVisitor::visit_telescope_run(
+bool WaveformSumParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
 {
@@ -119,7 +119,7 @@ namespace {
   }
 }
 
-bool WaveformSumParallelVisitor::leave_telescope_run()
+bool WaveformSumParallelEventVisitor::leave_telescope_run()
 {
   num_entries_i32_ = 0;
   integrate_i32_to_i64(nchan_, nsamp_, high_gain_count_i32_, high_gain_wf_sum_i32_,
@@ -177,7 +177,7 @@ namespace {
 
 }
 
-bool WaveformSumParallelVisitor::visit_telescope_event(uint64_t seq_index,
+bool WaveformSumParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   if(!has_dual_gain_) {
@@ -222,7 +222,7 @@ bool WaveformSumParallelVisitor::visit_telescope_event(uint64_t seq_index,
   return true;
 }
 
-bool WaveformSumParallelVisitor::merge_results()
+bool WaveformSumParallelEventVisitor::merge_results()
 {
   if(parent_) {
     integrate_i64_to_parent(nchan_, nsamp_, high_gain_count_i64_, high_gain_wf_sum_i64_,
@@ -236,7 +236,7 @@ bool WaveformSumParallelVisitor::merge_results()
 }
 
 calin::ix::diagnostics::waveform::WaveformMean*
-WaveformSumParallelVisitor::mean_waveforms() const
+WaveformSumParallelEventVisitor::mean_waveforms() const
 {
   auto* results = new calin::ix::diagnostics::waveform::WaveformMean;
   if(high_gain_count_i64_) {
@@ -268,7 +268,7 @@ WaveformSumParallelVisitor::mean_waveforms() const
   return results;
 }
 
-void WaveformSumParallelVisitor::high_gain_mean_wf(Eigen::MatrixXd& wf_matrix_out)
+void WaveformSumParallelEventVisitor::high_gain_mean_wf(Eigen::MatrixXd& wf_matrix_out)
 {
   wf_matrix_out.resize(nchan_, nsamp_);
   for(unsigned ichan=0;ichan<nchan_;ichan++) {
@@ -280,7 +280,7 @@ void WaveformSumParallelVisitor::high_gain_mean_wf(Eigen::MatrixXd& wf_matrix_ou
   }
 }
 
-void WaveformSumParallelVisitor::low_gain_mean_wf(Eigen::MatrixXd& wf_matrix_out)
+void WaveformSumParallelEventVisitor::low_gain_mean_wf(Eigen::MatrixXd& wf_matrix_out)
 {
   wf_matrix_out.resize(nchan_, nsamp_);
   for(unsigned ichan=0;ichan<nchan_;ichan++) {
@@ -292,7 +292,7 @@ void WaveformSumParallelVisitor::low_gain_mean_wf(Eigen::MatrixXd& wf_matrix_out
   }
 }
 
-void WaveformSumParallelVisitor::high_gain_event_count(Eigen::VectorXi& count_out)
+void WaveformSumParallelEventVisitor::high_gain_event_count(Eigen::VectorXi& count_out)
 {
   count_out.resize(nchan_);
   for(unsigned ichan=0;ichan<nchan_;ichan++) {
@@ -300,7 +300,7 @@ void WaveformSumParallelVisitor::high_gain_event_count(Eigen::VectorXi& count_ou
   }
 }
 
-void WaveformSumParallelVisitor::low_gain_event_count(Eigen::VectorXi& count_out)
+void WaveformSumParallelEventVisitor::low_gain_event_count(Eigen::VectorXi& count_out)
 {
   count_out.resize(nchan_);
   for(unsigned ichan=0;ichan<nchan_;ichan++) {

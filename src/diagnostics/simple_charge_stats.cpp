@@ -34,10 +34,10 @@ using namespace calin::iact_data::waveform_treatment_event_visitor;
 using calin::math::special::SQR;
 using calin::math::covariance_calc::cov_i64_gen;
 
-SimpleChargeStatsVisitor::
-SimpleChargeStatsVisitor(
-    OptimalWindowSumWaveformTreatmentEventVisitor* high_gain_visitor,
-    OptimalWindowSumWaveformTreatmentEventVisitor* low_gain_visitor,
+SimpleChargeStatsParallelEventVisitor::
+SimpleChargeStatsParallelEventVisitor(
+    OptimalWindowSumWaveformTreatmentParallelEventVisitor* high_gain_visitor,
+    OptimalWindowSumWaveformTreatmentParallelEventVisitor* low_gain_visitor,
     const SimpleChargeStatsConfig& config):
   ParallelEventVisitor(), config_(config),
   high_gain_visitor_(high_gain_visitor), low_gain_visitor_(low_gain_visitor)
@@ -45,25 +45,25 @@ SimpleChargeStatsVisitor(
   // nothing to see here
 }
 
-SimpleChargeStatsVisitor::~SimpleChargeStatsVisitor()
+SimpleChargeStatsParallelEventVisitor::~SimpleChargeStatsParallelEventVisitor()
 {
   // nothing to see here
 }
 
-SimpleChargeStatsVisitor* SimpleChargeStatsVisitor::new_sub_visitor(
+SimpleChargeStatsParallelEventVisitor* SimpleChargeStatsParallelEventVisitor::new_sub_visitor(
   std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
     calin::iact_data::event_visitor::ParallelEventVisitor*> antecedent_visitors)
 {
-  auto* hgv = dynamic_cast<OptimalWindowSumWaveformTreatmentEventVisitor*>(
+  auto* hgv = dynamic_cast<OptimalWindowSumWaveformTreatmentParallelEventVisitor*>(
     antecedent_visitors[high_gain_visitor_]);
-  auto* lgv = dynamic_cast<OptimalWindowSumWaveformTreatmentEventVisitor*>(
+  auto* lgv = dynamic_cast<OptimalWindowSumWaveformTreatmentParallelEventVisitor*>(
     antecedent_visitors[low_gain_visitor_]); // good in case of nullptr also
-  auto* child = new SimpleChargeStatsVisitor(hgv, lgv, config_);
+  auto* child = new SimpleChargeStatsParallelEventVisitor(hgv, lgv, config_);
   child->parent_ = this;
   return child;
 }
 
-bool SimpleChargeStatsVisitor::visit_telescope_run(
+bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
 {
@@ -134,7 +134,7 @@ namespace {
   }
 }
 
-bool SimpleChargeStatsVisitor::leave_telescope_run()
+bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
 {
   if(parent_)return true;
 
@@ -152,7 +152,7 @@ bool SimpleChargeStatsVisitor::leave_telescope_run()
 
 namespace {
   void record_one_gain_channel_data(const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentEventVisitor* sum_visitor,
+    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
     unsigned ichan,
     calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats)
   {
@@ -167,7 +167,7 @@ namespace {
   }
 
   void record_one_visitor_data(uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentEventVisitor* sum_visitor,
+    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
     calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats* partials)
   {
     if(sum_visitor and sum_visitor->is_same_event(seq_index)) {
@@ -191,7 +191,7 @@ namespace {
   }
 } // anonymous namespace
 
-bool SimpleChargeStatsVisitor::visit_telescope_event(uint64_t seq_index,
+bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   if(high_gain_visitor_) {
@@ -203,7 +203,7 @@ bool SimpleChargeStatsVisitor::visit_telescope_event(uint64_t seq_index,
   return true;
 }
 
-bool SimpleChargeStatsVisitor::merge_results()
+bool SimpleChargeStatsParallelEventVisitor::merge_results()
 {
   if(parent_) {
     parent_->partials_.IntegrateFrom(partials_);
@@ -212,7 +212,7 @@ bool SimpleChargeStatsVisitor::merge_results()
 }
 
 calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats*
-SimpleChargeStatsVisitor::simple_charge_stats() const
+SimpleChargeStatsParallelEventVisitor::simple_charge_stats() const
 {
   auto* res = results_.New();
   res->CopyFrom(results_);
@@ -220,7 +220,7 @@ SimpleChargeStatsVisitor::simple_charge_stats() const
 }
 
 calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig
-SimpleChargeStatsVisitor::default_config()
+SimpleChargeStatsParallelEventVisitor::default_config()
 {
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config;
   return config;

@@ -33,15 +33,15 @@
 
 namespace calin { namespace diagnostics { namespace waveform {
 
-class WaveformSumParallelVisitor:
+class WaveformSumParallelEventVisitor:
 public iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  WaveformSumParallelVisitor();
+  WaveformSumParallelEventVisitor();
 
-  virtual ~WaveformSumParallelVisitor();
+  virtual ~WaveformSumParallelEventVisitor();
 
-  WaveformSumParallelVisitor* new_sub_visitor(
+  WaveformSumParallelEventVisitor* new_sub_visitor(
     std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
         calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors) override;
@@ -65,7 +65,7 @@ public:
 
 protected:
 #ifndef SWIG
-  WaveformSumParallelVisitor* parent_ = nullptr;
+  WaveformSumParallelEventVisitor* parent_ = nullptr;
 
   unsigned partial_max_num_entries_ = 32768;
 

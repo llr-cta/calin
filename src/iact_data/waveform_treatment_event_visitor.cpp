@@ -33,18 +33,18 @@ using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::iact_data::event_visitor;
 using calin::util::memory::safe_aligned_recalloc;
 
-OptimalWindowSumWaveformTreatmentEventVisitor::
-OptimalWindowSumWaveformTreatmentEventVisitor(
+OptimalWindowSumWaveformTreatmentParallelEventVisitor::
+OptimalWindowSumWaveformTreatmentParallelEventVisitor(
   calin::ix::iact_data::waveform_treatment_event_visitor::
-    OptimalWindowSumWaveformTreatmentEventVisitorConfig config,
+    OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config,
       GainChannel gain_channel_to_treat):
   ParallelEventVisitor(), config_(config), gain_channel_to_treat_(gain_channel_to_treat)
 {
   // nothing to see here
 }
 
-OptimalWindowSumWaveformTreatmentEventVisitor::
-~OptimalWindowSumWaveformTreatmentEventVisitor()
+OptimalWindowSumWaveformTreatmentParallelEventVisitor::
+~OptimalWindowSumWaveformTreatmentParallelEventVisitor()
 {
   free(sig_window_0_);
   free(chan_max_);
@@ -57,15 +57,15 @@ OptimalWindowSumWaveformTreatmentEventVisitor::
   free(chan_all_sum_);
 }
 
-OptimalWindowSumWaveformTreatmentEventVisitor*
-OptimalWindowSumWaveformTreatmentEventVisitor::new_sub_visitor(
+OptimalWindowSumWaveformTreatmentParallelEventVisitor*
+OptimalWindowSumWaveformTreatmentParallelEventVisitor::new_sub_visitor(
   std::map<ParallelEventVisitor*,ParallelEventVisitor*>
     antecedent_visitors)
 {
-  return new OptimalWindowSumWaveformTreatmentEventVisitor(config_, gain_channel_to_treat_);
+  return new OptimalWindowSumWaveformTreatmentParallelEventVisitor(config_, gain_channel_to_treat_);
 }
 
-bool OptimalWindowSumWaveformTreatmentEventVisitor::
+bool OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 visit_telescope_run(const TelescopeRunConfiguration* run_config,
   EventLifetimeManager* event_lifetime_manager)
 {
@@ -74,14 +74,14 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config,
   if(config_.integration_n()==0)window_n_ = run_config->num_samples();
   else window_n_ = config_.integration_n();
   if(window_n_ > run_config->num_samples())
-    throw std::out_of_range("OptimalWindowSumWaveformTreatmentEventVisitor: "
+    throw std::out_of_range("OptimalWindowSumWaveformTreatmentParallelEventVisitor: "
       "requested background window larger than number of samples: "
       + std::to_string(window_n_) + ">"
       + std::to_string(run_config->num_samples()));
 
   if(config_.bkg_integration_0() < -int(run_config->num_samples()-window_n_)
       or config_.bkg_integration_0() > int(run_config->num_samples()-window_n_))
-    throw std::out_of_range("OptimalWindowSumWaveformTreatmentEventVisitor: "
+    throw std::out_of_range("OptimalWindowSumWaveformTreatmentParallelEventVisitor: "
       "requested background window start "
       + std::to_string(config_.bkg_integration_0())
       + " out of allowed range: ["
@@ -99,7 +99,7 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config,
   else if(config_.chan_sig_integration_0_size() == int(nchan_))
     std::copy(config_.chan_sig_integration_0().begin(), config_.chan_sig_integration_0().end(), sig_window_0_);
   else
-    throw std::out_of_range("OptimalWindowSumWaveformTreatmentEventVisitor: "
+    throw std::out_of_range("OptimalWindowSumWaveformTreatmentParallelEventVisitor: "
       "size of chan_sig_integration_0 vector must be either zero or number of configured channels, "
       + std::to_string(config_.chan_sig_integration_0_size()) + " != 0 or "
       + std::to_string(nchan_));
@@ -108,7 +108,7 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config,
   {
     if(sig_window_0_[ichan] < -int(run_config->num_samples()-window_n_)
         or sig_window_0_[ichan] > int(run_config->num_samples()-window_n_))
-      throw std::out_of_range("OptimalWindowSumWaveformTreatmentEventVisitor: "
+      throw std::out_of_range("OptimalWindowSumWaveformTreatmentParallelEventVisitor: "
         "requested start of signal window for channel " + std::to_string(ichan) + ", "
         + std::to_string(sig_window_0_[ichan])
         + ", out of allowed range: ["
@@ -122,7 +122,7 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config,
   return true;
 }
 
-void OptimalWindowSumWaveformTreatmentEventVisitor::
+void OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 reconfigure(unsigned nchan, unsigned nsamp)
 {
   if(nchan != nchan_){
@@ -143,7 +143,7 @@ reconfigure(unsigned nchan, unsigned nsamp)
   }
 }
 
-bool OptimalWindowSumWaveformTreatmentEventVisitor::
+bool OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
 {
   const Waveforms* wf = nullptr;
