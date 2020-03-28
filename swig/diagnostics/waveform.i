@@ -41,4 +41,6 @@
 %apply Eigen::MatrixXd &OUTPUT { Eigen::MatrixXd& mean_waveform_out };
 %apply Eigen::VectorXi &OUTPUT { Eigen::VectorXi& count_out };
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& h };
+%newobject calin::diagnostics::waveform::WaveformSumParallelVisitor::mean_waveforms() const;
+
 %include "diagnostics/waveform.hpp"

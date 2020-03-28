@@ -240,10 +240,10 @@ WaveformSumParallelVisitor::mean_waveforms() const
 {
   auto* results = new calin::ix::diagnostics::waveform::WaveformMean;
   if(high_gain_count_i64_) {
+    auto* wf = results->add_high_gain();
     for(unsigned ichan=0;ichan<nchan_;ichan++) {
       if(high_gain_count_i64_[ichan]) {
         double count = high_gain_count_i64_[ichan];
-        auto* wf = results->add_high_gain();
         wf->set_num_entries(high_gain_count_i64_[ichan]);
         for(unsigned isamp=0;isamp<nsamp_;isamp++) {
           wf->add_mean_waveform(
@@ -254,9 +254,9 @@ WaveformSumParallelVisitor::mean_waveforms() const
   }
   if(low_gain_count_i64_) {
     for(unsigned ichan=0;ichan<nchan_;ichan++) {
+      auto* wf = results->add_low_gain();
       if(low_gain_count_i64_[ichan]) {
         double count = low_gain_count_i64_[ichan];
-        auto* wf = results->add_low_gain();
         wf->set_num_entries(low_gain_count_i64_[ichan]);
         for(unsigned isamp=0;isamp<nsamp_;isamp++) {
           wf->add_mean_waveform(
