@@ -240,30 +240,58 @@ WaveformSumParallelEventVisitor::mean_waveforms() const
 {
   auto* results = new calin::ix::diagnostics::waveform::WaveformMean;
   if(high_gain_count_i64_) {
-    auto* wf = results->add_high_gain();
+    int64_t* camera_wf_sum = nullptr;
+    safe_aligned_recalloc_and_fill(camera_wf_sum, nsamp_);
+    uint64_t camera_count = 0;
     for(unsigned ichan=0;ichan<nchan_;ichan++) {
+      auto* wf = results->add_channel_high_gain();
       if(high_gain_count_i64_[ichan]) {
+        camera_count += high_gain_count_i64_[ichan];
         double count = high_gain_count_i64_[ichan];
         wf->set_num_entries(high_gain_count_i64_[ichan]);
         for(unsigned isamp=0;isamp<nsamp_;isamp++) {
+          camera_wf_sum[isamp] += high_gain_wf_sum_i64_[ichan*nsamp_ + isamp];
           wf->add_mean_waveform(
             double(high_gain_wf_sum_i64_[ichan*nsamp_ + isamp])/count);
         }
       }
     }
+    if(camera_count) {
+      auto* wf = results->mutable_camera_high_gain();
+      double count = camera_count;
+      wf->set_num_entries(camera_count);
+      for(unsigned isamp=0;isamp<nsamp_;isamp++) {
+        wf->add_mean_waveform(double(camera_wf_sum[isamp])/count);
+      }
+    }
+    ::free(camera_wf_sum);
   }
   if(low_gain_count_i64_) {
+    int64_t* camera_wf_sum = nullptr;
+    safe_aligned_recalloc_and_fill(camera_wf_sum, nsamp_);
+    uint64_t camera_count = 0;
     for(unsigned ichan=0;ichan<nchan_;ichan++) {
-      auto* wf = results->add_low_gain();
+      auto* wf = results->add_channel_low_gain();
       if(low_gain_count_i64_[ichan]) {
+        camera_count += low_gain_count_i64_[ichan];
         double count = low_gain_count_i64_[ichan];
         wf->set_num_entries(low_gain_count_i64_[ichan]);
         for(unsigned isamp=0;isamp<nsamp_;isamp++) {
+          camera_wf_sum[isamp] += low_gain_wf_sum_i64_[ichan*nsamp_ + isamp];
           wf->add_mean_waveform(
             double(low_gain_wf_sum_i64_[ichan*nsamp_ + isamp])/count);
         }
       }
     }
+    if(camera_count) {
+      auto* wf = results->mutable_camera_low_gain();
+      double count = camera_count;
+      wf->set_num_entries(camera_count);
+      for(unsigned isamp=0;isamp<nsamp_;isamp++) {
+        wf->add_mean_waveform(double(camera_wf_sum[isamp])/count);
+      }
+    }
+    ::free(camera_wf_sum);
   }
   return results;
 }

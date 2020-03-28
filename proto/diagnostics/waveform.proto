@@ -28,7 +28,7 @@ import "math/histogram.proto";
 
 package calin.ix.diagnostics.waveform;
 
-message ChannelWaveformMean {
+message SingleWaveformMean {
   uint64 num_entries                                       = 1 [
     (CFO).desc = "Number of waveforms accumulated in the mean." ];
   repeated double mean_waveform                            = 2 [
@@ -36,10 +36,15 @@ message ChannelWaveformMean {
 };
 
 message WaveformMean {
-  repeated ChannelWaveformMean high_gain                   = 1 [
-    (CFO).desc = "Waveform mean for all high-gain (or single gain) channels." ];
-  repeated ChannelWaveformMean low_gain                    = 2 [
-    (CFO).desc = "Waveform mean for all low-gain channels." ];
+  SingleWaveformMean camera_high_gain                      = 1 [
+    (CFO).desc = "Waveform mean across all high-gain (or single gain) channels." ];
+  SingleWaveformMean camera_low_gain                       = 2 [
+    (CFO).desc = "Waveform mean across all low-gain channels." ];
+
+  repeated SingleWaveformMean channel_high_gain            = 10 [
+    (CFO).desc = "Waveform mean for each of the high-gain (or single gain) channels." ];
+  repeated SingleWaveformMean channel_low_gain             = 11 [
+    (CFO).desc = "Waveform mean for each of the low-gain channels." ];
 };
 
 message WaveformRawStats {
