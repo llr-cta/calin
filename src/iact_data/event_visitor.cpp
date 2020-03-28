@@ -188,7 +188,7 @@ bool FilteredDelegatingParallelEventVisitor::visit_telescope_event(uint64_t seq_
   bool good = true;
   for(auto ivisitor : delegates_) {
     if(ivisitor.unfiltered or event->trigger_type() == ivisitor.trigger_type) {
-      good &= ivisitor.visitor->leave_telescope_run();
+      good &= ivisitor.visitor->visit_telescope_event(seq_index, event);
     }
   }
   return good;
