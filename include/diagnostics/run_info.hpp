@@ -84,8 +84,16 @@ public:
 
   bool merge_results() override;
 
+#ifndef SWIG
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config(
+    calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* rc = nullptr) const;
+  calin::ix::diagnostics::run_info::RunInfo* run_info(calin::ix::diagnostics::run_info::RunInfo* ri = nullptr) const;
+#else
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config() const;
-  calin::ix::diagnostics::run_info::RunInfo* run_info();
+  void run_config(calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* rc) const;
+  calin::ix::diagnostics::run_info::RunInfo* run_info() const;
+  void run_info(calin::ix::diagnostics::run_info::RunInfo* ri) const;
+#endif
 
   const calin::ix::diagnostics::run_info::PartialRunInfo& partial_run_info() const;
 

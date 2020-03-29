@@ -303,18 +303,21 @@ calin::ix::diagnostics::run_info::RunInfoConfig RunInfoDiagnosticsParallelEventV
 }
 
 calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration*
-RunInfoDiagnosticsParallelEventVisitor::run_config() const
+RunInfoDiagnosticsParallelEventVisitor::run_config(
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* rc) const
 {
-  auto* rc = run_config_->New();
+  if(rc == nullptr)rc = run_config_->New();
   rc->CopyFrom(*run_config_);
   return rc;
 }
 
-calin::ix::diagnostics::run_info::RunInfo* RunInfoDiagnosticsParallelEventVisitor::run_info()
+calin::ix::diagnostics::run_info::RunInfo*
+RunInfoDiagnosticsParallelEventVisitor::run_info(
+  calin::ix::diagnostics::run_info::RunInfo* ri) const
 {
-  auto* r = results_->New();
-  r->CopyFrom(*results_);
-  return r;
+  if(ri == nullptr)ri = results_->New();
+  ri->CopyFrom(*results_);
+  return ri;
 }
 
 const calin::ix::diagnostics::run_info::PartialRunInfo& RunInfoDiagnosticsParallelEventVisitor::partial_run_info() const
