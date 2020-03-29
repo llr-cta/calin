@@ -37,12 +37,12 @@ class OptimalWindowSumWaveformTreatmentParallelEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  enum GainChannel { HIGH_GAIN, LOW_GAIN, SINGLE_OR_MIXED_GAIN };
+  enum GainChannel { HIGH_OR_SINGLE_GAIN, LOW_GAIN };
 
   OptimalWindowSumWaveformTreatmentParallelEventVisitor(
     calin::ix::iact_data::waveform_treatment_event_visitor::
       OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
-      GainChannel gain_channel_to_treat = HIGH_GAIN);
+    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN);
 
   OptimalWindowSumWaveformTreatmentParallelEventVisitor(
     GainChannel gain_channel_to_treat,
@@ -52,6 +52,19 @@ public:
   { /* nothing to see here */ }
 
   virtual ~OptimalWindowSumWaveformTreatmentParallelEventVisitor();
+
+  static OptimalWindowSumWaveformTreatmentParallelEventVisitor* New(
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
+    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN);
+
+  static OptimalWindowSumWaveformTreatmentParallelEventVisitor* New(
+    GainChannel gain_channel_to_treat,
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config())
+  {
+    return New(config, gain_channel_to_treat);
+  }
 
   OptimalWindowSumWaveformTreatmentParallelEventVisitor* new_sub_visitor(
     std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
@@ -117,7 +130,7 @@ protected:
 
   calin::ix::iact_data::waveform_treatment_event_visitor::
     OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config_;
-  GainChannel gain_channel_to_treat_ = HIGH_GAIN;
+  GainChannel gain_channel_to_treat_ = HIGH_OR_SINGLE_GAIN;
   unsigned nchan_ = 0;
   unsigned nsamp_ = 0;
   unsigned window_n_;
@@ -158,7 +171,7 @@ public:
   VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor(
       calin::ix::iact_data::waveform_treatment_event_visitor::
         OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
-      GainChannel gain_channel_to_treat = HIGH_GAIN):
+      GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN):
     OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
   {
     /* nothing to see here */
@@ -206,22 +219,19 @@ public:
   {
     const calin::ix::iact_data::telescope_event::Waveforms* wf = nullptr;
     switch(gain_channel_to_treat_) {
-    case HIGH_GAIN:
+    case HIGH_OR_SINGLE_GAIN:
       if(event->has_high_gain_image() and
           event->high_gain_image().has_camera_waveforms()) {
         wf = &event->high_gain_image().camera_waveforms();
+      } else if(event->has_image() and
+          event->image().has_camera_waveforms()) {
+        wf = &event->image().camera_waveforms();
       }
       break;
     case LOW_GAIN:
       if(event->has_low_gain_image() and
           event->low_gain_image().has_camera_waveforms()) {
         wf = &event->low_gain_image().camera_waveforms();
-      }
-      break;
-    case SINGLE_OR_MIXED_GAIN:
-      if(event->has_image() and
-          event->image().has_camera_waveforms()) {
-        wf = &event->image().camera_waveforms();
       }
       break;
     }

@@ -58,6 +58,32 @@ OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 }
 
 OptimalWindowSumWaveformTreatmentParallelEventVisitor*
+OptimalWindowSumWaveformTreatmentParallelEventVisitor::New(
+  calin::ix::iact_data::waveform_treatment_event_visitor::
+    OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config,
+  GainChannel gain_channel_to_treat)
+{
+#if INSTRSET >= 9
+  if(calin::provenance::system_info::has_avx512f()) {
+    return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<
+      calin::util::vcl::VCL5121Architecture>(config, gain_channel_to_treat);
+  }
+  bool has_avx512f();
+  if()
+#endif
+
+#if INSTRSET >= 8
+  if(calin::provenance::system_info::has_avx2()) {
+    return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<
+      calin::util::vcl::VCL256Architecture>(config, gain_channel_to_treat);
+  }
+#endif
+
+  return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<
+    calin::util::vcl::VCL128Architecture>(config, gain_channel_to_treat);
+}
+
+OptimalWindowSumWaveformTreatmentParallelEventVisitor*
 OptimalWindowSumWaveformTreatmentParallelEventVisitor::new_sub_visitor(
   std::map<ParallelEventVisitor*,ParallelEventVisitor*>
     antecedent_visitors)
@@ -148,22 +174,19 @@ visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
 {
   const Waveforms* wf = nullptr;
   switch(gain_channel_to_treat_) {
-  case HIGH_GAIN:
+  case HIGH_OR_SINGLE_GAIN:
     if(event->has_high_gain_image() and
         event->high_gain_image().has_camera_waveforms()) {
       wf = &event->high_gain_image().camera_waveforms();
+    } else if(event->has_image() and
+        event->image().has_camera_waveforms()) {
+      wf = &event->image().camera_waveforms();
     }
     break;
   case LOW_GAIN:
     if(event->has_low_gain_image() and
         event->low_gain_image().has_camera_waveforms()) {
       wf = &event->low_gain_image().camera_waveforms();
-    }
-    break;
-  case SINGLE_OR_MIXED_GAIN:
-    if(event->has_image() and
-        event->image().has_camera_waveforms()) {
-      wf = &event->image().camera_waveforms();
     }
     break;
   }
