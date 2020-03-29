@@ -236,9 +236,11 @@ bool WaveformSumParallelEventVisitor::merge_results()
 }
 
 calin::ix::diagnostics::waveform::WaveformMean*
-WaveformSumParallelEventVisitor::mean_waveforms() const
+WaveformSumParallelEventVisitor::mean_waveforms(
+  calin::ix::diagnostics::waveform::WaveformMean* results) const
 {
-  auto* results = new calin::ix::diagnostics::waveform::WaveformMean;
+  if(results == nullptr)results = new calin::ix::diagnostics::waveform::WaveformMean;
+
   if(high_gain_count_i64_) {
     int64_t* camera_wf_sum = nullptr;
     safe_aligned_recalloc_and_fill(camera_wf_sum, nsamp_);

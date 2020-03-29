@@ -56,7 +56,13 @@ public:
 
   bool merge_results() override;
 
+#ifndef SWIG
+  calin::ix::diagnostics::waveform::WaveformMean* mean_waveforms(
+    calin::ix::diagnostics::waveform::WaveformMean* wf = nullptr) const;
+#else
   calin::ix::diagnostics::waveform::WaveformMean* mean_waveforms() const;
+  void mean_waveforms(calin::ix::diagnostics::waveform::WaveformMean* wf) const;
+#endif
 
   void high_gain_mean_wf(Eigen::MatrixXd& mean_waveform_out);
   void low_gain_mean_wf(Eigen::MatrixXd& mean_waveform_out);
