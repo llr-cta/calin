@@ -212,11 +212,12 @@ bool SimpleChargeStatsParallelEventVisitor::merge_results()
 }
 
 calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats*
-SimpleChargeStatsParallelEventVisitor::simple_charge_stats() const
+SimpleChargeStatsParallelEventVisitor::simple_charge_stats(
+  calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats* stats) const
 {
-  auto* res = results_.New();
-  res->CopyFrom(results_);
-  return res;
+  if(stats == nullptr)stats = results_.New();
+  stats->CopyFrom(results_);
+  return stats;
 }
 
 calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig

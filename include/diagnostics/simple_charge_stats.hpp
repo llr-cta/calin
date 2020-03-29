@@ -62,7 +62,13 @@ public:
 
   bool merge_results() override;
 
+#ifndef SWIG
+  calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats* simple_charge_stats(
+    calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats* stats = nullptr) const;
+#else
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats* simple_charge_stats() const;
+  void simple_charge_stats(calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats* stats) const;
+#endif
 
   static calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig default_config();
 
