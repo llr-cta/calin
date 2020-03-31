@@ -51,6 +51,9 @@
 
 %apply uint64_t &OUTPUT { uint64_t& oid };
 
+%newobject calin::io::sql_serializer::SQLSerializer::
+  make_sqltable_tree(const std::string& table_name, const google::protobuf::Descriptor* d);
+
 /* %include "io/sql_statement.hpp" */
 %include "io/sql_serializer.hpp"
 /* %include "io/sqlite3_statement.hpp" */

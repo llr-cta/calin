@@ -98,6 +98,13 @@ struct SQLTableField
     return data_type == PT_MESSAGE ? data.p_message : nullptr; }
 };
 
+#ifdef SWIG
+} } }
+%template(VectorSQLTablePtr) std::vector<calin::io::sql_serializer::SQLTable*>;
+%template(VectorSQLTableFieldPtr) std::vector<calin::io::sql_serializer::SQLTableField*>;
+namespace calin { namespace io { namespace sql_serializer {
+#endif
+
 struct SQLTable
 {
   ~SQLTable() {
@@ -137,6 +144,8 @@ class SQLSerializer
   make_sqltable_tree(const std::string& table_name,
                      const google::protobuf::Descriptor* d);
 
+  void propagate_keys(SQLTable* t);
+
 protected:
 
   bool write_sql_to_log_ = false;
@@ -153,15 +162,16 @@ protected:
                        SQLTable* parent_table,
                        const google::protobuf::FieldDescriptor* parent_field_d);
 
+  void r_propagate_keys(SQLTable* t, std::vector<const SQLTableField*> keys);
+
   // ===========================================================================
   //
   // Overridable member functions to create SQL strings
   //
   // ===========================================================================
 
-   virtual std::string sub_name(const std::string& parent_name,
-                                const std::string& name);
-
+  virtual std::string sub_name(const std::string& parent_name, const std::string& name);
+  virtual std::string sql_oid_column_name();
 };
 
 } } } // namespace calin::io::sql_serializer

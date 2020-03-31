@@ -54,6 +54,11 @@ make_sqltable_tree(const std::string& table_name,
     /* parent_table= */ nullptr, /* parent_field_d= */ nullptr);
 }
 
+void SQLSerializer::propagate_keys(SQLTable* t)
+{
+  r_propagate_keys(t, { });
+}
+
 calin::io::sql_serializer::SQLTable* SQLSerializer::
 r_make_sqltable_tree(const std::string& table_name,
                      const google::protobuf::Descriptor* d,
@@ -176,6 +181,36 @@ r_make_sqltable_tree(const std::string& table_name,
   return t;
 }
 
+void SQLSerializer::r_propagate_keys(SQLTable* t, std::vector<const SQLTableField*> keys)
+{
+  for(unsigned ikey=0;ikey<keys.size();ikey++)
+  {
+    const SQLTableField* key = keys[keys.size()-ikey-1];
+    SQLTableField* f = new SQLTableField(*key);
+    f->field_type = SQLTableField::KEY_INHERITED;
+    t->fields.insert(t->fields.begin(), f);
+  }
+
+  if(t->parent_table != nullptr and keys.empty())
+  {
+    // We have a parent, but no inherited keys, so add parent OID as key
+    SQLTableField* f { new SQLTableField };
+    f->table          = t;
+    f->field_origin   = f;
+    f->field_type     = SQLTableField::KEY_PARENT_OID;
+    f->field_name     = sub_name(t->parent_table->table_name,
+                                 sql_oid_column_name());
+    f->field_d        = nullptr;
+    t->fields.insert(t->fields.begin(), f);
+  }
+
+  for(unsigned ikey=keys.size();ikey<t->fields.size();ikey++)
+    if(t->fields[ikey]->is_key())keys.push_back(t->fields[ikey]);
+
+  for(auto it : t->sub_tables)
+    r_propagate_keys(it, keys);
+}
+
 // =============================================================================
 // =============================================================================
 //
@@ -191,4 +226,9 @@ sub_name(const std::string& parent_name,const std::string& name)
   new_name += ".";
   new_name += name;
   return new_name;
+}
+
+std::string SQLSerializer::sql_oid_column_name()
+{
+  return "_ROWID_";
 }
