@@ -163,9 +163,6 @@ public:
   CALIN_TYPEALIAS(int32_vt, typename VCLArchitecture::int32_vt);
   CALIN_TYPEALIAS(int32_bvt, typename VCLArchitecture::int32_bvt);
   CALIN_TYPEALIAS(uint32_vt, typename VCLArchitecture::uint32_vt);
-
-  constexpr static unsigned num_int16 = VCLArchitecture::num_int16;
-  constexpr static unsigned num_int32 = VCLArchitecture::num_int32;
 #endif
 
   VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor(
@@ -249,6 +246,9 @@ private:
 
   void vcl_analyze_waveforms(const uint16_t* __restrict__ data)
   {
+    static constexpr unsigned num_int16 = VCLArchitecture::num_int16;
+    static constexpr unsigned num_int32 = VCLArchitecture::num_int32;
+
     unsigned nchan_block = (nchan_+num_int16-1)/num_int16;
     unsigned nsamp_block = (nsamp_+num_int16-1)/num_int16;
     unsigned nchan_left = nchan_;
