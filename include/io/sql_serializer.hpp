@@ -117,6 +117,7 @@ struct SQLTable
     delete stmt;
   }
 
+  const google::protobuf::Descriptor*       table_d = nullptr;
   std::string                               table_name;
   std::string                               table_desc;
   std::string                               table_units;
@@ -150,6 +151,9 @@ class SQLSerializer
   SQLTable* make_sqltable_tree(const std::string& table_name,
     const google::protobuf::Descriptor* d, const std::string& instance_desc = "",
     bool propagate_keys = true);
+
+  calin::ix::io::sql_serializer::SQLTableAndFieldCollection* sqltable_tree_as_proto(
+    const SQLTable* t);
 
   bool create_or_extend_tables(const std::string& table_name,
                                const google::protobuf::Descriptor* d_data,
@@ -188,6 +192,19 @@ protected:
   }
 
   template<typename FCN> void iterate_over_tables(const SQLTable* t, FCN fcn)
+  {
+    std::deque<const SQLTable*> all_t;
+    all_t.push_back(t);
+    while(!all_t.empty())
+    {
+      const SQLTable* it = all_t.front();
+      all_t.pop_front();
+      fcn(it);
+      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
+    }
+  }
+
+  template<typename FCN> void iterate_over_tables(const SQLTable* t, FCN fcn) const
   {
     std::deque<const SQLTable*> all_t;
     all_t.push_back(t);

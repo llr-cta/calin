@@ -98,6 +98,7 @@ r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Desc
   const std::string& table_desc, const std::string& table_units)
 {
   SQLTable* t { new SQLTable };
+  t->table_d             = d;
   t->parent_table        = parent_table;
   t->table_name          = table_name;
   t->parent_field_d      = parent_field_d;
@@ -589,9 +590,30 @@ std::string SQLSerializer::sql_add_field_to_table(const SQLTableField* f)
   return sql.str();
 }
 
+calin::ix::io::sql_serializer::SQLTableAndFieldCollection*
+SQLSerializer::sqltable_tree_as_proto(const SQLTable* t)
+{
+  auto* proto = new calin::ix::io::sql_serializer::SQLTableAndFieldCollection;
+  iterate_over_tables(t, [this,proto](const SQLTable* it) {
+    proto->mutable_tables()->AddAllocated(this->table_as_proto(it));
+  });
+  return proto;
+}
+
 calin::ix::io::sql_serializer::SQLTable* SQLSerializer::table_as_proto(const SQLTable* t)
 {
-  return nullptr;
+  auto* proto = new calin::ix::io::sql_serializer::SQLTable;
+  auto* root_t = t;
+  while(root_t->parent_table != nullptr)root_t = root_t->parent_table;
+  proto->set_base_name(root_t->table_name);
+  proto->set_table_name(t->table_name);
+  proto->set_sql_table_name(sql_table_name(t->table_name));
+  proto->set_description(t->table_desc);
+  proto->set_units(t->table_units);
+  if(t->table_d) {
+    proto->set_proto_message_type(t->table_d->full_name());
+  }
+  return proto;
 }
 
 calin::ix::io::sql_serializer::SQLTableField* SQLSerializer::field_as_proto(const SQLTableField* f)

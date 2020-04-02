@@ -40,6 +40,8 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%import "io/sql_serializer.pb.i"
+
 /* %ignore insert(const std::string& table_name,
                const google::protobuf::Message* m_data,
                const google::protobuf::Message* m_key = nullptr);
@@ -53,6 +55,8 @@
 
 %newobject calin::io::sql_serializer::SQLSerializer::
   make_sqltable_tree(const std::string& table_name, const google::protobuf::Descriptor* d);
+%newobject calin::io::sql_serializer::SQLSerializer::
+  sqltable_tree_as_proto(const SQLTable* t) const;
 
 /* %include "io/sql_statement.hpp" */
 %include "io/sql_serializer.hpp"

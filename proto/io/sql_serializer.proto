@@ -54,3 +54,9 @@ message SQLTableField
   uint32 proto_field_number   = 10 [(CFO).desc = "Protobuf field number"];
   uint32 proto_field_type     = 11 [(CFO).desc = "Protobuf field type"];
 }
+
+message SQLTableAndFieldCollection
+{
+  repeated SQLTable tables      = 1 [(CFO).desc = "Tables in collection."];
+  repeated SQLTableField fields = 2 [(CFO).desc = "Fields in collection."];
+}
