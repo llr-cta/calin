@@ -31,14 +31,15 @@
 #include <vector>
 #include <deque>
 
+#include <calin_global_definitions.hpp>
 #include <google/protobuf/message.h>
 #include <google/protobuf/descriptor.h>
-
-//#include <io/sql_statement.hpp>
+#include <io/sql_serializer.pb.h>
+#include <io/sql_statement.hpp>
 
 namespace calin { namespace io { namespace sql_serializer {
 
-struct SQLStatement {};
+CALIN_TYPEALIAS(SQLStatement, calin::io::sql_transceiver::SQLStatement);
 
 struct SQLTable;
 
@@ -64,6 +65,8 @@ struct SQLTableField
   std::string                               field_name;
   const google::protobuf::FieldDescriptor*  field_d = nullptr;
   std::vector<const google::protobuf::FieldDescriptor*> field_d_path;
+  std::string                               field_desc;
+  std::string                               field_units;
 
   DataPointerType                           data_type = PT_NULL;
   DataPointer                               data;
@@ -96,6 +99,7 @@ struct SQLTableField
     else return nullptr; }
   google::protobuf::Message* data_message() const {
     return data_type == PT_MESSAGE ? data.p_message : nullptr; }
+  std::string field_comment() const;
 };
 
 #ifdef SWIG
@@ -114,6 +118,8 @@ struct SQLTable
   }
 
   std::string                               table_name;
+  std::string                               table_desc;
+  std::string                               table_units;
   SQLTable*                                 parent_table = nullptr;
   const google::protobuf::FieldDescriptor*  parent_field_d = nullptr;
   std::vector<const google::protobuf::FieldDescriptor*> parent_field_d_path;
@@ -124,6 +130,7 @@ struct SQLTable
     for(auto t : sub_tables) { for(auto f : t->fields)
         if(f->field_type == SQLTableField::KEY_PARENT_OID)return true; }
     return false; }
+  std::string table_comment() const;
 };
 
 class SQLSerializer
@@ -140,15 +147,19 @@ class SQLSerializer
   //
   // ===========================================================================
 
-  SQLTable*
-  make_sqltable_tree(const std::string& table_name,
-                     const google::protobuf::Descriptor* d);
+  SQLTable* make_sqltable_tree(const std::string& table_name,
+    const google::protobuf::Descriptor* d, const std::string& instance_desc = "",
+    bool propagate_keys = true);
 
-  void propagate_keys(SQLTable* t);
+  bool create_or_extend_tables(const std::string& table_name,
+                               const google::protobuf::Descriptor* d_data,
+                               const std::string& instance_desc = "");
 
 protected:
 
   bool write_sql_to_log_ = false;
+  std::map<std::string, calin::ix::io::sql_serializer::SQLTable*> db_tables_;
+  std::map<std::string, calin::ix::io::sql_serializer::SQLTableField*> db_table_fields_;
 
   // ===========================================================================
   //
@@ -156,13 +167,38 @@ protected:
   //
   // ===========================================================================
 
-  SQLTable*
-  r_make_sqltable_tree(const std::string& table_name,
-                       const google::protobuf::Descriptor* d,
-                       SQLTable* parent_table,
-                       const google::protobuf::FieldDescriptor* parent_field_d);
+  SQLTable* r_make_sqltable_tree(const std::string& table_name,
+    const google::protobuf::Descriptor* d, SQLTable* parent_table,
+    const google::protobuf::FieldDescriptor* parent_field_d,
+    const std::string& table_desc, const std::string& table_units);
 
   void r_propagate_keys(SQLTable* t, std::vector<const SQLTableField*> keys);
+
+  template<typename FCN> void iterate_over_tables(SQLTable* t, FCN fcn)
+  {
+    std::deque<SQLTable*> all_t;
+    all_t.push_back(t);
+    while(!all_t.empty())
+    {
+      SQLTable* it = all_t.front();
+      all_t.pop_front();
+      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
+      fcn(it);
+    }
+  }
+
+  template<typename FCN> void iterate_over_tables(const SQLTable* t, FCN fcn)
+  {
+    std::deque<const SQLTable*> all_t;
+    all_t.push_back(t);
+    while(!all_t.empty())
+    {
+      const SQLTable* it = all_t.front();
+      all_t.pop_front();
+      fcn(it);
+      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
+    }
+  }
 
   // ===========================================================================
   //
@@ -172,6 +208,35 @@ protected:
 
   virtual std::string sub_name(const std::string& parent_name, const std::string& name);
   virtual std::string sql_oid_column_name();
+  virtual std::string sql_table_name(const std::string& name);
+  virtual std::string sql_field_name(const std::string& name);
+  virtual std::string sql_type(const google::protobuf::FieldDescriptor* d);
+
+  virtual std::string sql_comment(const std::string& comment,
+    unsigned first_line_indent = 0, unsigned multi_line_indent = 0,
+    bool newline_before_multi_line = false);
+
+  virtual std::string sql_create_table(const SQLTable* t);
+  virtual std::string sql_add_field_to_table(const SQLTableField* f);
+
+  // ===========================================================================
+  //
+  // Overridable prepare and execute statements
+  //
+  // ===========================================================================
+
+  virtual SQLStatement* prepare_statement(const std::string& sql);
+
+  virtual bool begin_transaction();
+  virtual bool commit_transaction();
+  virtual bool rollback_transaction();
+
+  virtual bool execute_one_no_data_statement(SQLStatement* stmt, bool ignore_errors = false);
+
+
+  bool do_create_or_extend_tables(const std::string& table_name, SQLTable* t);
+
+
 };
 
 } } } // namespace calin::io::sql_serializer
