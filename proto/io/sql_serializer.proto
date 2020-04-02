@@ -36,7 +36,8 @@ message SQLTable
   string table_name           = 2 [(CFO).desc = "Full table name"];
   string sql_table_name       = 3 [(CFO).desc = "SQL table name"];
   string description          = 4 [(CFO).desc = "Description of table"];
-  string proto_message_type   = 5 [(CFO).desc = "Protobuf message type"];
+  string units                = 5 [(CFO).desc = "Units for data in table"];
+  string proto_message_type   = 6 [(CFO).desc = "Protobuf message type"];
 }
 
 message SQLTableField

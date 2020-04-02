@@ -301,11 +301,36 @@ bool SQLSerializer::do_create_or_extend_tables(const std::string& table_name, SQ
     }
   });
 
-  if(not success) {
+  if(not success)
+  {
     rollback_transaction();
-    return false;
+    return success;
   }
 
+//  for(auto* itable : )
+
+  success = true;
+  for(SQLTable* it : new_tables) {
+    if(success) {
+      std::string sql = sql_create_index(it);
+      if(sql.empty()) continue;
+      auto* stmt = prepare_statement(sql);
+      if(not stmt->is_initialized()) {
+        LOG(ERROR) << "SQL error preparing CREATE INDEX: " << stmt->error_message() << '\n'
+                   << "SQL: " << stmt->sql();
+        success = false;
+      } else {
+        success = execute_one_no_data_statement(stmt);
+        delete stmt;
+      }
+    }
+  }
+
+  if(not success)
+  {
+    rollback_transaction();
+    return success;
+  }
 
   commit_transaction();
   return true;
@@ -561,5 +586,41 @@ std::string SQLSerializer::sql_add_field_to_table(const SQLTableField* f)
   if(not field_comment.empty()) {
     sql << sql_comment(field_comment,1,4,true);
   }
+  return sql.str();
+}
+
+calin::ix::io::sql_serializer::SQLTable* SQLSerializer::table_as_proto(const SQLTable* t)
+{
+  return nullptr;
+}
+
+calin::ix::io::sql_serializer::SQLTableField* SQLSerializer::field_as_proto(const SQLTableField* f)
+{
+  return nullptr;
+}
+
+std::vector<calin::ix::io::sql_serializer::SQLTableField*>
+SQLSerializer::table_fields_as_proto(const SQLTable* t)
+{
+  return {};
+}
+
+std::string SQLSerializer::sql_create_index(const SQLTable* t)
+{
+  std::vector<const SQLTableField*> keys;
+  for ( auto f : t->fields )
+    if(f->is_key())keys.push_back(f);
+  if(keys.empty())return {};
+  std::ostringstream sql;
+  sql << "CREATE UNIQUE INDEX ";
+  sql << sql_table_name(t->table_name + "$index") << "\n";
+  sql << "  ON " << sql_table_name(t->table_name) << " (\n";
+  for(auto f : keys)
+  {
+    sql << "    " << sql_field_name(f->field_name);
+    if(f != keys.back())sql << ',';
+    sql << '\n';
+  }
+  sql << "  )\n";
   return sql.str();
 }

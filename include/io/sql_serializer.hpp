@@ -48,11 +48,11 @@ enum DataPointerType {
 
 union DataPointer {
   DataPointer(): p_void(nullptr) { /* nothing to see here */ }
-  void* p_void;
-  const uint64_t* p_const_uint64;
-  uint64_t* p_uint64;
-  const google::protobuf::Message* p_const_message;
-  google::protobuf::Message* p_message;
+  void*                                     p_void;
+  const uint64_t*                           p_const_uint64;
+  uint64_t*                                 p_uint64;
+  const google::protobuf::Message*          p_const_message;
+  google::protobuf::Message*                p_message;
 };
 
 struct SQLTableField
@@ -218,6 +218,11 @@ protected:
 
   virtual std::string sql_create_table(const SQLTable* t);
   virtual std::string sql_add_field_to_table(const SQLTableField* f);
+  virtual std::string sql_create_index(const SQLTable* t);
+
+  virtual calin::ix::io::sql_serializer::SQLTable* table_as_proto(const SQLTable* t);
+  virtual calin::ix::io::sql_serializer::SQLTableField* field_as_proto(const SQLTableField* f);
+  virtual std::vector<calin::ix::io::sql_serializer::SQLTableField*> table_fields_as_proto(const SQLTable* t);
 
   // ===========================================================================
   //
