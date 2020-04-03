@@ -29,6 +29,7 @@
 
 %{
 #include "io/sql_serializer.hpp"
+#include "io/sqlite3_serializer.hpp"
 //#include "io/sqlite3_transceiver.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
@@ -60,4 +61,4 @@
 /* %include "io/sql_statement.hpp" */
 %include "io/sql_serializer.hpp"
 /* %include "io/sqlite3_statement.hpp" */
-/* %include "io/sqlite3_transceiver.hpp" */
+%include "io/sqlite3_serializer.hpp"
