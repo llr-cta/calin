@@ -118,47 +118,48 @@ bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
       }
     }
 
-    do_create_or_extend_tables(table_name, t);
+    if(not do_create_or_extend_tables(table_name, t)) {
+      return false;
+    }
 
     test_sqltable_tree_db_presence(t);
     if(not t->db_all_tree_fields_present)
       throw std::runtime_error("SQLSerializer::insert: not all fields preset in database");
   }
 
+  oid = 0;
   bool success = true;
-#if 0
-  if(t.insert_stmt == nullptr) {
-    unsigned nfield_before = db_table_fields_.size();
 
-  }
-
-  bool success = true;
   t->iterate_over_tables([this,&success](SQLTable* it) {
     if(success)
     {
-      if(it->insert_stmt == nullptr) {
-        it->insert_stmt = prepare_statement(sql_insert(it));
+      if(it->stmt_insert == nullptr) {
+        it->stmt_insert = prepare_statement(sql_insert(it));
       }
-      if(not it->insert_stmt->is_initialized())
+      if(not it->stmt_insert->is_initialized())
       {
-        LOG(ERROR) << "SQL error preparing INSERT: " << it->insert_stmt->error_message() << '\n'
-          << "SQL: " << it->insert_stmt->sql();
+        LOG(ERROR) << "SQL error preparing INSERT: " << it->stmt_insert->error_message() << '\n'
+          << "SQL: " << it->stmt_insert->sql();
         success = false;
       }
     }
   });
 
-  if(!success)return success;
+  if(not success)
+  {
+    return success;
+  }
 
   begin_transaction();
-//  success = r_exec_insert(t.get(), m, oid, 0, 0, false);
-  if(!success)
+
+  success = r_exec_insert(t, m, oid, 0, 0, false);
+  if(not success)
   {
     rollback_transaction();
     return success;
   }
+
   commit_transaction();
-#endif
   return success;
 }
 
@@ -497,6 +498,193 @@ bool SQLSerializer::execute_one_no_data_statement(SQLStatement* stmt, bool ignor
     }
     stmt->reset();
   }
+  return good;
+}
+
+void SQLSerializer::set_const_data_pointers(SQLTable* t, const google::protobuf::Message* m,
+  const uint64_t* parent_oid, const uint64_t* loop_id)
+{
+  for(auto f : t->fields)
+  {
+#if 0
+    LOG(INFO) << f->field_name << ' ' << f->field_type << ' ' << f << ' '
+              << f->field_origin << '\n';
+#endif
+    if(f->field_origin == f)
+    {
+      if(f->field_d != nullptr or f->oneof_d != nullptr)
+      {
+        const google::protobuf::Reflection* r = m->GetReflection();
+
+        for(auto d : f->field_d_path) {
+          if(!r->HasField(*m, d))goto next_field;
+          m = &r->GetMessage(*m, d);
+          r = m->GetReflection();
+        }
+        if(f->oneof_d or f->field_d->is_repeated() or r->HasField(*m, f->field_d)
+          /* or f->field_d->message_type()==nullptr */) {
+          f->set_data_const_message(m);
+        } else {
+          f->set_data_null();
+        }
+      }
+      else
+      {
+        switch(f->field_type)
+        {
+        case SQLTableField::KEY_PARENT_OID:
+          if(parent_oid != nullptr)
+            f->set_data_const_uint64(parent_oid);
+          break;
+        case SQLTableField::KEY_LOOP_ID:
+          if(loop_id != nullptr)
+            f->set_data_const_uint64(loop_id);
+          break;
+        case SQLTableField::KEY_INHERITED:      // handled earlier in tree
+        case SQLTableField::KEY_MAP_KEY:        // handled in if clause above
+        case SQLTableField::POD:                // handled in if clause above
+          assert(0);
+          break;
+        }
+      }
+    }
+ next_field:
+    ;
+  }
+}
+
+void SQLSerializer::bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
+  SQLStatement* stmt, bool bind_inherited_keys_only)
+{
+  unsigned ifield = 0;
+  for(auto f : t->fields)
+  {
+    if(not f->db_field_present) {
+      // if(f->is_key()) {
+      throw std::runtime_error("SQLSerializer::bind_fields_from_data_pointers: "
+        "column not present in DB : " + sub_name(t->table_name, f->field_name));
+      // }
+      continue;
+    }
+
+    //LOG(INFO) << t->table_name << " -> " << f->field_name;
+    if(not bind_inherited_keys_only or f->is_inherited())
+    {
+      f = f->field_origin;
+
+      if(f->is_data_null()) {
+        stmt->bind_null(ifield);
+      } else if(f->oneof_d != nullptr) {
+        const google::protobuf::Message* m = f->data_const_message();
+        const google::protobuf::Reflection* r = m->GetReflection();
+        stmt->bind_uint64(ifield, r->HasOneof(*m, f->oneof_d) ?
+          r->GetOneofFieldDescriptor(*m, f->oneof_d)->number() : 0);
+      } else if(f->field_d == nullptr) {
+        stmt->bind_uint64(ifield, *f->data_const_uint64());
+      } else if(f->field_d->is_repeated()) {
+        stmt->bind_repeated_field(ifield, loop_id, f->data_const_message(), f->field_d);
+      } else {
+        stmt->bind_field(ifield,  f->data_const_message(), f->field_d);
+      }
+      ifield++;
+    }
+  }
+}
+
+bool SQLSerializer::r_exec_insert(SQLTable* t, const google::protobuf::Message* m,
+  uint64_t& oid, uint64_t parent_oid, uint64_t loop_id, bool ignore_errors)
+{
+  // This function is too long and complex. The basic idea is to
+  // 1 iterate through all non-inherited fields (i.e. those whose values don't
+  //   come from higher up in the tree) and place a pointer to their values in
+  //   the f->data member. If the data is:
+  //   - a protobuf field : f->data has a pointer to the appropriate message
+  //     if the field is present in the mesage, null otherwise
+  //   - a loop_id : f->data is a pointer to the uint64_t loop index
+  //   - an oid : f->data is a pointer to the parent_oid for this table
+  //   - a protobuf oneof index : f->data is the message, should it be present,
+  //     null otherwise
+  // 2 values for all fields (inherited and new) are bound to the sql statement
+  //   - non repeated protobuf fields are bound using t->stmt->bind_field
+  //   - repeated protobuf fields using t->stmt->bind_repeated_field
+  //   - oneof by binding the probuf number of the selected field (bind_uint64)
+  //     or null if no field is selected
+  //   - non protobuf fields (oid, loop_id) using bind_uint64
+  //   - fields without f->data are bound to NULL
+  // 3 the statement is executed
+  // 4 the oid for the insert is stored in "oid" to be passed back to the caller
+  //   and on to any sub tables
+  // 5 all sub tables are processed by recursive calls to this function
+  //   - repeated sub tables are processed in a loop with loop_id passed in
+  //   - simple sub tables are called directly if the appropriate field is
+  //     set in the message
+
+  set_const_data_pointers(t, m, &parent_oid, &loop_id);
+  bind_fields_from_data_pointers(t, loop_id, t->stmt_insert);
+
+  bool good = true;
+  SQLStatement::StepStatus status = t->stmt_insert->step();
+  if(write_sql_to_log_)LOG(INFO) << t->stmt_insert->bound_sql();
+  switch(status)
+  {
+  case SQLStatement::ERROR:
+    good = false;
+    if(!ignore_errors)
+    {
+      LOG(ERROR) << "INSERT statement returned error: "
+                 << t->stmt_insert->error_message();
+      return false;
+    }
+    break;
+  case SQLStatement::OK_NO_DATA:
+    // this is what we expect
+    break;
+  case SQLStatement::OK_HAS_DATA:
+    LOG(ERROR) << "INSERT statement returned data" << '\n'
+               << t->stmt_insert->sql();
+    return false;
+  }
+  oid = t->stmt_insert->get_oid();
+  t->stmt_insert->reset();
+
+  for(auto st : t->sub_tables)
+  {
+    const google::protobuf::Reflection* r = m->GetReflection();
+    for(auto d : st->parent_field_d_path) {
+      if(!r->HasField(*m, d))goto next_sub_table;
+      m = &r->GetMessage(*m, d);
+      r = m->GetReflection();
+    }
+
+    if(st->parent_field_d->is_repeated())
+    {
+      uint64_t nloop = r->FieldSize(*m, st->parent_field_d);
+      for(uint64_t iloop = 0; iloop < nloop; iloop++)
+      {
+        const google::protobuf::Message* mi = m;
+        if(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE) {
+          mi = &r->GetRepeatedMessage(*m, st->parent_field_d, iloop); }
+        uint64_t unused_sub_table_oid = 0;
+        good &= r_exec_insert(st, mi, unused_sub_table_oid, oid, iloop,
+                              ignore_errors);
+        if(!ignore_errors and !good)return good;
+      }
+    }
+    else
+    {
+      assert(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE);
+      if(!r->HasField(*m, st->parent_field_d))goto next_sub_table;
+      m = &r->GetMessage(*m, st->parent_field_d);
+      r = m->GetReflection();
+      uint64_t unused_sub_table_oid = 0;
+      good &= r_exec_insert(st, m, unused_sub_table_oid, oid, 0,
+                            ignore_errors);
+      if(!ignore_errors and !good)return good;
+    }
+  next_sub_table:
+    ;
+  }
+
   return good;
 }
 

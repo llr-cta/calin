@@ -283,8 +283,16 @@ protected:
 
   virtual bool execute_one_no_data_statement(SQLStatement* stmt, bool ignore_errors = false);
 
+  virtual bool do_create_or_extend_tables(const std::string& table_name, SQLTable* t);
 
-  bool do_create_or_extend_tables(const std::string& table_name, SQLTable* t);
+  void set_const_data_pointers(SQLTable* t, const google::protobuf::Message* m, 
+    const uint64_t* parent_oid, const uint64_t* loop_id);
+
+  void bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
+    SQLStatement* stmt, bool bind_inherited_keys_only = false);
+
+  virtual bool r_exec_insert(SQLTable* t, const google::protobuf::Message* m,
+    uint64_t& oid, uint64_t parent_oid, uint64_t loop_id, bool ignore_errors);
 
 
 };
