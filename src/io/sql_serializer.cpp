@@ -266,7 +266,7 @@ bool SQLSerializer::do_create_or_extend_tables(const std::string& table_name, SQ
   std::vector<SQLTableField*> new_table_fields;
 
   begin_transaction();
-  iterate_over_tables(t, [this, &success, &new_tables, &new_table_fields](SQLTable* itable) {
+  t->iterate_over_tables([this, &success, &new_tables, &new_table_fields](SQLTable* itable) {
     if(success) {
       if(this->db_tables_.find(itable->table_name) == this->db_tables_.end()) {
         auto* stmt = prepare_statement(sql_create_table(itable));
@@ -568,7 +568,7 @@ calin::ix::io::sql_serializer::SQLTableAndFieldCollection*
 SQLSerializer::sqltable_tree_as_proto(const SQLTable* t)
 {
   auto* proto = new calin::ix::io::sql_serializer::SQLTableAndFieldCollection;
-  iterate_over_tables(t, [this,proto](const SQLTable* it) {
+  t->iterate_over_tables([this,proto](const SQLTable* it) {
     proto->mutable_tables()->AddAllocated(this->table_as_proto(it));
     for(auto f : it->fields) {
       proto->mutable_fields()->AddAllocated(this->field_as_proto(f));

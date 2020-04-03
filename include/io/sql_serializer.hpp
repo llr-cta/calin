@@ -110,6 +110,7 @@ struct SQLTableField
 namespace calin { namespace io { namespace sql_serializer {
 #endif
 
+
 struct SQLTable
 {
   ~SQLTable() {
@@ -133,6 +134,32 @@ struct SQLTable
         if(f->field_type == SQLTableField::KEY_PARENT_OID)return true; }
     return false; }
   std::string table_comment() const;
+
+  template<typename FCN> void iterate_over_tables(FCN fcn)
+  {
+    std::deque<SQLTable*> all_t;
+    all_t.push_back(this);
+    while(!all_t.empty())
+    {
+      SQLTable* it = all_t.front();
+      all_t.pop_front();
+      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
+      fcn(it);
+    }
+  }
+
+  template<typename FCN> void iterate_over_tables(FCN fcn) const
+  {
+    std::deque<const SQLTable*> all_t;
+    all_t.push_back(this);
+    while(!all_t.empty())
+    {
+      const SQLTable* it = all_t.front();
+      all_t.pop_front();
+      fcn(it);
+      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
+    }
+  }
 };
 
 class SQLSerializer
@@ -178,45 +205,6 @@ protected:
     const std::string& table_desc, const std::string& table_units);
 
   void r_propagate_keys(SQLTable* t, std::vector<const SQLTableField*> keys);
-
-  template<typename FCN> void iterate_over_tables(SQLTable* t, FCN fcn)
-  {
-    std::deque<SQLTable*> all_t;
-    all_t.push_back(t);
-    while(!all_t.empty())
-    {
-      SQLTable* it = all_t.front();
-      all_t.pop_front();
-      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
-      fcn(it);
-    }
-  }
-
-  template<typename FCN> void iterate_over_tables(const SQLTable* t, FCN fcn)
-  {
-    std::deque<const SQLTable*> all_t;
-    all_t.push_back(t);
-    while(!all_t.empty())
-    {
-      const SQLTable* it = all_t.front();
-      all_t.pop_front();
-      fcn(it);
-      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
-    }
-  }
-
-  template<typename FCN> void iterate_over_tables(const SQLTable* t, FCN fcn) const
-  {
-    std::deque<const SQLTable*> all_t;
-    all_t.push_back(t);
-    while(!all_t.empty())
-    {
-      const SQLTable* it = all_t.front();
-      all_t.pop_front();
-      fcn(it);
-      all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
-    }
-  }
 
   // ===========================================================================
   //
