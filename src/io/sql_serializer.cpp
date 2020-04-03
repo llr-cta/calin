@@ -234,6 +234,7 @@ void SQLSerializer::r_propagate_keys(SQLTable* t, std::vector<const SQLTableFiel
     const SQLTableField* key = keys[keys.size()-ikey-1];
     SQLTableField* f = new SQLTableField(*key);
     f->field_type = SQLTableField::KEY_INHERITED;
+    f->table      = t; // WARNING - is this correct ?
     t->fields.insert(t->fields.begin(), f);
   }
 
@@ -308,8 +309,6 @@ bool SQLSerializer::do_create_or_extend_tables(const std::string& table_name, SQ
     return success;
   }
 
-//  for(auto* itable : )
-
   success = true;
   for(SQLTable* it : new_tables) {
     if(success) {
@@ -333,57 +332,32 @@ bool SQLSerializer::do_create_or_extend_tables(const std::string& table_name, SQ
     return success;
   }
 
+  std::vector<calin::ix::io::sql_serializer::SQLTable*> new_table_protos;
+  std::vector<calin::ix::io::sql_serializer::SQLTableField*> new_field_protos;
+  for(auto t : new_tables) {
+    new_table_protos.push_back(table_as_proto(t));
+    for(auto f : t->fields) {
+      new_field_protos.push_back(field_as_proto(f));
+    }
+  }
+  for(auto f : new_table_fields) {
+    new_field_protos.push_back(field_as_proto(f));
+  }
+
+  // Try to insert into the intenal fields here
+
   commit_transaction();
+
+  for(auto pt : new_table_protos) {
+    db_tables_[pt->table_name()] = pt;
+  }
+  for(auto pf : new_field_protos) {
+    std::string fqdn = sub_name(pf->table_name(), pf->field_name());
+    db_table_fields_[fqdn] = pf;
+  }
+
   return true;
 }
-
-#if 0
-  iterate_over_tables(t, [this, &success, &new_tables, &new_table_fields](SQLTable* it) {
-    if(success) {
-      std::string
-      if(this->db_tables_.)
-      it->stmt = prepare_statement(sql_create_table(it, dict));
-        if(!it->stmt->is_initialized()) {
-          LOG(ERROR) << "SQL error preparing CREATE TABLE: "
-                     << it->stmt->error_message() << '\n'
-                     << "SQL: " << it->stmt->sql();
-          success = false; } } });
-  if(!success)return success;
-
-  begin_transaction();
-  success = r_exec_simple(t.get(), false);
-  if(!success)
-  {
-    rollback_transaction();
-    return success;
-  }
-
-  finalize_statements(t.get());
-  success = true;
-  iterate_over_tables(t.get(), [this, &success](SQLTable* it) {
-      if(success) {
-        std::string sql = sql_create_index(it);
-        if(not sql.empty())
-        {
-          it->stmt = prepare_statement(sql);
-          if(!it->stmt->is_initialized()) {
-            LOG(ERROR) << "SQL error preparing CREATE INDEX: "
-                      << it->stmt->error_message() << '\n'
-                      << "SQL: " << it->stmt->sql();
-            success = false; } } } });
-  if(!success)return success;
-  success = r_exec_simple(t.get(), false);
-  if(!success)
-  {
-    rollback_transaction();
-    return success;
-  }
-
-  insert_table_description(t.get(), instance_desc);
-  commit_transaction();
-  return success;
-}
-#endif
 
 SQLStatement* SQLSerializer::prepare_statement(const std::string& sql)
 {
@@ -596,6 +570,9 @@ SQLSerializer::sqltable_tree_as_proto(const SQLTable* t)
   auto* proto = new calin::ix::io::sql_serializer::SQLTableAndFieldCollection;
   iterate_over_tables(t, [this,proto](const SQLTable* it) {
     proto->mutable_tables()->AddAllocated(this->table_as_proto(it));
+    for(auto f : it->fields) {
+      proto->mutable_fields()->AddAllocated(this->field_as_proto(f));
+    }
   });
   return proto;
 }
@@ -618,13 +595,28 @@ calin::ix::io::sql_serializer::SQLTable* SQLSerializer::table_as_proto(const SQL
 
 calin::ix::io::sql_serializer::SQLTableField* SQLSerializer::field_as_proto(const SQLTableField* f)
 {
-  return nullptr;
-}
-
-std::vector<calin::ix::io::sql_serializer::SQLTableField*>
-SQLSerializer::table_fields_as_proto(const SQLTable* t)
-{
-  return {};
+  auto* proto = new calin::ix::io::sql_serializer::SQLTableField;
+  auto* root_t = f->table;
+  while(root_t->parent_table != nullptr)root_t = root_t->parent_table;
+  proto->set_base_name(root_t->table_name);
+  proto->set_table_name(f->table->table_name);
+  proto->set_field_name(f->field_name);
+  proto->set_sql_table_name(sql_table_name(f->table->table_name));
+  proto->set_sql_field_name(sql_table_name(f->field_name));
+  proto->set_description(f->field_desc);
+  proto->set_units(f->field_units);
+  if(f->field_d)
+  {
+    proto->set_proto_message_type(f->field_d->containing_type()->full_name());
+    proto->set_proto_field_name(f->field_d->name());
+    proto->set_proto_field_number(f->field_d->number());
+  }
+  else if(f->oneof_d)
+  {
+    proto->set_proto_message_type(f->oneof_d->containing_type()->full_name());
+    proto->set_proto_field_name(f->oneof_d->name());
+  }
+  return proto;
 }
 
 std::string SQLSerializer::sql_create_index(const SQLTable* t)

@@ -60,6 +60,7 @@ struct SQLTableField
   enum FieldType {
     KEY_INHERITED, KEY_PARENT_OID, KEY_LOOP_ID, KEY_MAP_KEY, POD };
   SQLTable*                                 table = nullptr;
+
   SQLTableField*                            field_origin = nullptr;
   FieldType                                 field_type;
   std::string                               field_name;
@@ -239,7 +240,6 @@ protected:
 
   virtual calin::ix::io::sql_serializer::SQLTable* table_as_proto(const SQLTable* t);
   virtual calin::ix::io::sql_serializer::SQLTableField* field_as_proto(const SQLTableField* f);
-  virtual std::vector<calin::ix::io::sql_serializer::SQLTableField*> table_fields_as_proto(const SQLTable* t);
 
   // ===========================================================================
   //
