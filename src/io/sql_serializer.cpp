@@ -68,7 +68,13 @@ std::string SQLTable::table_comment() const {
 
 SQLSerializer::~SQLSerializer()
 {
-  // nothing to see here
+  for(auto itable : db_tables_)delete itable.second;
+  for(auto ifield : db_table_fields_)delete ifield.second;
+  for(auto& ischema : schema_) {
+    for(auto& it : ischema.second) {
+      delete it.second;
+    }
+  }
 }
 
 calin::io::sql_serializer::SQLTable* SQLSerializer::
@@ -82,6 +88,7 @@ make_sqltable_tree(const std::string& table_name,
   if(propagate_keys) {
     r_propagate_keys(t, { });
   }
+  test_sqltable_tree_db_presence(t);
   return t;
 }
 
@@ -92,18 +99,81 @@ bool SQLSerializer::create_or_extend_tables(const std::string& table_name,
   return do_create_or_extend_tables(table_name, t.get());
 }
 
+bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
+  const google::protobuf::Message* m)
+{
+  const google::protobuf::Descriptor* d = m->GetDescriptor();
+  SQLTable* t = schema_[table_name][d];
+  if(t == nullptr) {
+    t = make_sqltable_tree(table_name, d);
+    schema_[table_name][d] = t;
+  }
+
+  if(not t->db_all_tree_fields_present)
+  {
+    for(auto& it : schema_[table_name]) {
+      if(it.second != t) {
+        delete it.second;
+        it.second = nullptr;
+      }
+    }
+
+    do_create_or_extend_tables(table_name, t);
+
+    test_sqltable_tree_db_presence(t);
+    if(not t->db_all_tree_fields_present)
+      throw std::runtime_error("SQLSerializer::insert: not all fields preset in database");
+  }
+
+  bool success = true;
+#if 0
+  if(t.insert_stmt == nullptr) {
+    unsigned nfield_before = db_table_fields_.size();
+
+  }
+
+  bool success = true;
+  t->iterate_over_tables([this,&success](SQLTable* it) {
+    if(success)
+    {
+      if(it->insert_stmt == nullptr) {
+        it->insert_stmt = prepare_statement(sql_insert(it));
+      }
+      if(not it->insert_stmt->is_initialized())
+      {
+        LOG(ERROR) << "SQL error preparing INSERT: " << it->insert_stmt->error_message() << '\n'
+          << "SQL: " << it->insert_stmt->sql();
+        success = false;
+      }
+    }
+  });
+
+  if(!success)return success;
+
+  begin_transaction();
+//  success = r_exec_insert(t.get(), m, oid, 0, 0, false);
+  if(!success)
+  {
+    rollback_transaction();
+    return success;
+  }
+  commit_transaction();
+#endif
+  return success;
+}
+
 calin::io::sql_serializer::SQLTable* SQLSerializer::
 r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Descriptor* d,
   SQLTable* parent_table, const google::protobuf::FieldDescriptor* parent_field_d,
   const std::string& table_desc, const std::string& table_units)
 {
   SQLTable* t { new SQLTable };
-  t->table_d             = d;
-  t->parent_table        = parent_table;
-  t->table_name          = table_name;
-  t->parent_field_d      = parent_field_d;
-  t->table_desc          = table_desc;
-  t->table_units         = table_units;
+  t->table_d                     = d;
+  t->parent_table                = parent_table;
+  t->table_name                  = table_name;
+  t->parent_field_d              = parent_field_d;
+  t->table_desc                  = table_desc;
+  t->table_units                 = table_units;
 
   for(int ioneof = 0; ioneof<d->oneof_decl_count(); ioneof++)
   {
@@ -115,7 +185,6 @@ r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Desc
     tf->field_name        = oo->name();
     tf->oneof_d           = oo;
     tf->field_desc        = "One-of selector";
-
     t->fields.push_back(tf);
   }
 
@@ -170,11 +239,11 @@ r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Desc
     else if(f->is_repeated())
     {
       sub_table = new SQLTable;
-      sub_table->parent_table      = t;
-      sub_table->table_name        = sub_name(table_name,f->name());
-      sub_table->parent_field_d    = f;
-      sub_table->table_desc        = field_desc;
-      sub_table->table_units       = field_units;
+      sub_table->parent_table                = t;
+      sub_table->table_name                  = sub_name(table_name,f->name());
+      sub_table->parent_field_d              = f;
+      sub_table->table_desc                  = field_desc;
+      sub_table->table_units                 = field_units;
 
       SQLTableField* tf { new SQLTableField };
       tf->table             = sub_table;
@@ -219,6 +288,8 @@ r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Desc
       tf->field_type        = SQLTableField::KEY_LOOP_ID;
       tf->field_name        = sub_name(sub_table->table_name, "loop_id");
       tf->field_d           = nullptr;
+      tf->db_field_present  = db_table_fields_.count(sub_name(t->table_name, tf->field_name));
+
       sub_table->fields.insert(sub_table->fields.begin(), tf);
     }
 
@@ -258,10 +329,28 @@ void SQLSerializer::r_propagate_keys(SQLTable* t, std::vector<const SQLTableFiel
     r_propagate_keys(it, keys);
 }
 
+void SQLSerializer::test_sqltable_tree_db_presence(SQLTable* t)
+{
+  t->iterate_over_tables([this](SQLTable* it) {
+    it->db_all_table_fields_present = true;
+    it->db_all_tree_fields_present = true;
+    for(auto* f : it->fields) {
+      f->db_field_present = this->db_table_fields_.count(sub_name(it->table_name, f->field_name));
+      it->db_all_table_fields_present &= f->db_field_present;
+    }
+    it->db_all_tree_fields_present = it->db_all_table_fields_present;
+  });
+  t->reverse_iterate_over_tables([](SQLTable* it) {
+    if(it->parent_table) {
+      it->parent_table->db_all_tree_fields_present &= it->db_all_table_fields_present;
+    }
+  });
+}
 
 bool SQLSerializer::do_create_or_extend_tables(const std::string& table_name, SQLTable* t)
 {
   bool success = true;
+
   std::vector<SQLTable*> new_tables;
   std::vector<SQLTableField*> new_table_fields;
 
@@ -503,6 +592,11 @@ std::string SQLSerializer::sql_type(const google::protobuf::FieldDescriptor* d)
   return "UNKNOWN";
 }
 
+std::string SQLSerializer::sql_insert_field_spec(const SQLTableField* f)
+{
+  return "?";
+}
+
 std::string SQLSerializer::sql_comment(const std::string& comment,
   unsigned first_line_indent, unsigned multi_line_indent,
   bool newline_before_multi_line)
@@ -636,5 +730,31 @@ std::string SQLSerializer::sql_create_index(const SQLTable* t)
     sql << '\n';
   }
   sql << "  )\n";
+  return sql.str();
+}
+
+std::string SQLSerializer::sql_insert(const SQLTable* t)
+{
+  std::ostringstream sql;
+  sql << "INSERT INTO " << sql_table_name(t->table_name);
+  if(t->fields.empty()) {
+    sql << " DEFAULT VALUES\n";
+    return sql.str();
+  }
+  sql << " (\n";
+  for ( auto f : t->fields )
+  {
+    sql << "  " << sql_field_name(f->field_name);
+    if(f != t->fields.back())sql << ',';
+    sql << '\n';
+  }
+  sql << ") VALUES (\n";
+  for ( auto f : t->fields )
+  {
+    sql << "  " << sql_insert_field_spec(f);
+    if(f != t->fields.back())sql << ',';
+    sql << '\n';
+  }
+  sql << ')';
   return sql.str();
 }

@@ -30,6 +30,7 @@
 #include <sstream>
 #include <vector>
 #include <deque>
+#include <list>
 
 #include <calin_global_definitions.hpp>
 #include <google/protobuf/message.h>
@@ -68,6 +69,8 @@ struct SQLTableField
   std::vector<const google::protobuf::FieldDescriptor*> field_d_path;
   std::string                               field_desc;
   std::string                               field_units;
+
+  bool                                      db_field_present = false;
 
   DataPointerType                           data_type = PT_NULL;
   DataPointer                               data;
@@ -116,7 +119,8 @@ struct SQLTable
   ~SQLTable() {
     for(auto ifield : fields)delete ifield;
     for(auto itable : sub_tables)delete itable;
-    delete stmt;
+    delete stmt_insert;
+    delete stmt_select;
   }
 
   const google::protobuf::Descriptor*       table_d = nullptr;
@@ -128,7 +132,13 @@ struct SQLTable
   std::vector<const google::protobuf::FieldDescriptor*> parent_field_d_path;
   std::vector<SQLTableField*>               fields;
   std::vector<SQLTable*>                    sub_tables;
-  SQLStatement*                             stmt = nullptr;
+
+  bool                                      db_all_table_fields_present = false;
+  bool                                      db_all_tree_fields_present = false;
+
+  SQLStatement*                             stmt_insert = nullptr;
+  SQLStatement*                             stmt_select = nullptr;
+
   bool children_need_oid() const {
     for(auto t : sub_tables) { for(auto f : t->fields)
         if(f->field_type == SQLTableField::KEY_PARENT_OID)return true; }
@@ -160,6 +170,21 @@ struct SQLTable
       all_t.insert(all_t.begin(), it->sub_tables.begin(), it->sub_tables.end());
     }
   }
+
+  template<typename FCN> void reverse_iterate_over_tables(FCN fcn)
+  {
+    std::list<SQLTable*> all_t;
+    this->iterate_over_tables([&all_t](SQLTable* it) { all_t.push_front(it); });
+    for(auto* it : all_t)fcn(it);
+  }
+
+  template<typename FCN> void reverse_iterate_over_tables(FCN fcn) const
+  {
+    std::list<const SQLTable*> all_t;
+    this->iterate_over_tables([&all_t](const SQLTable* it) { all_t.push_front(it); });
+    for(auto* it : all_t)fcn(it);
+  }
+
 };
 
 class SQLSerializer
@@ -183,15 +208,25 @@ class SQLSerializer
   calin::ix::io::sql_serializer::SQLTableAndFieldCollection* sqltable_tree_as_proto(
     const SQLTable* t);
 
-  bool create_or_extend_tables(const std::string& table_name,
-                               const google::protobuf::Descriptor* d_data,
-                               const std::string& instance_desc = "");
+  virtual bool create_or_extend_tables(const std::string& table_name,
+    const google::protobuf::Descriptor* d, const std::string& instance_desc = "");
+
+  virtual bool insert(const std::string& table_name, uint64_t& oid,
+    const google::protobuf::Message* m);
+
+  bool insert(const std::string& table_name, const google::protobuf::Message* m)
+  {
+    uint64_t oid;
+    return insert(table_name, oid, m);
+  }
 
 protected:
 
   bool write_sql_to_log_ = false;
   std::map<std::string, calin::ix::io::sql_serializer::SQLTable*> db_tables_;
   std::map<std::string, calin::ix::io::sql_serializer::SQLTableField*> db_table_fields_;
+
+  std::map<std::string, std::map<const google::protobuf::Descriptor*, SQLTable*> > schema_;
 
   // ===========================================================================
   //
@@ -206,6 +241,8 @@ protected:
 
   void r_propagate_keys(SQLTable* t, std::vector<const SQLTableField*> keys);
 
+  void test_sqltable_tree_db_presence(SQLTable* t);
+
   // ===========================================================================
   //
   // Overridable member functions to create SQL strings
@@ -218,6 +255,8 @@ protected:
   virtual std::string sql_field_name(const std::string& name);
   virtual std::string sql_type(const google::protobuf::FieldDescriptor* d);
 
+  virtual std::string sql_insert_field_spec(const SQLTableField* f);
+
   virtual std::string sql_comment(const std::string& comment,
     unsigned first_line_indent = 0, unsigned multi_line_indent = 0,
     bool newline_before_multi_line = false);
@@ -225,6 +264,7 @@ protected:
   virtual std::string sql_create_table(const SQLTable* t);
   virtual std::string sql_add_field_to_table(const SQLTableField* f);
   virtual std::string sql_create_index(const SQLTable* t);
+  virtual std::string sql_insert(const SQLTable* t);
 
   virtual calin::ix::io::sql_serializer::SQLTable* table_as_proto(const SQLTable* t);
   virtual calin::ix::io::sql_serializer::SQLTableField* field_as_proto(const SQLTableField* f);

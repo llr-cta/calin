@@ -42,11 +42,10 @@
 
 %import "io/sql_serializer.pb.i"
 
-/* %ignore insert(const std::string& table_name,
-               const google::protobuf::Message* m_data,
-               const google::protobuf::Message* m_key = nullptr);
+%ignore insert(const std::string& table_name,
+               const google::protobuf::Message* m);
 
-%ignore create_tables_and_insert(const std::string& table_name,
+/* %ignore create_tables_and_insert(const std::string& table_name,
               const google::protobuf::Message* m_data,
               const google::protobuf::Message* m_key = nullptr,
               const std::string& instance_desc = ""); */
