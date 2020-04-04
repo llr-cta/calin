@@ -456,16 +456,25 @@ SQLStatement* SQLSerializer::prepare_statement(const std::string& sql)
 
 bool SQLSerializer::begin_transaction()
 {
+  if(write_sql_to_log_) {
+    LOG(INFO) << "BEGIN TRANSACTION";
+  }
   return true;
 }
 
 bool SQLSerializer::commit_transaction()
 {
+  if(write_sql_to_log_) {
+    LOG(INFO) << "COMMIT TRANSACTION";
+  }
   return true;
 }
 
 bool SQLSerializer::rollback_transaction()
 {
+  if(write_sql_to_log_) {
+    LOG(INFO) << "ROLLBACK TRANSACTION";
+  }
   return true;
 }
 
