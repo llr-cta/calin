@@ -76,26 +76,44 @@ SQLite3Serializer(const std::string& filename_in, OpenMode open_mode,
 
 SQLite3Serializer::~SQLite3Serializer()
 {
-  if(adopt_db_)sqlite3_close(db_);
+  // Must delete all open prepared statements here before calling sqlite3_close
+  // so just delete all the SQLTables in the schema_, which in turn delete their
+  // open select & insert statements, then clear the schema_ so the base class
+  // doesn't delete them again
+  for(auto& ischema : schema_) {
+    for(auto& it : ischema.second) {
+      delete it.second;
+    }
+  }
+  schema_.clear();
+  if(adopt_db_)
+  {
+    if(sqlite3_close(db_) !=  SQLITE_OK) {
+      LOG(ERROR) << "SQLite3Serializer::~SQLite3Serializer: database connection did not close cleanly";
+    }
+  }
 }
 
 SQLStatement* SQLite3Serializer::prepare_statement(const std::string& sql)
 {
-  return new SQLite3Statement(sql, db_, true);
+  return new SQLite3Statement(sql, db_, /* make_bound_sql= */ write_sql_to_log_);
 }
 
 bool SQLite3Serializer::begin_transaction()
 {
+  SQLSerializer::begin_transaction(); // Write LOG message if requested
   return sqlite3_exec(db_, "BEGIN TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
 }
 
 bool SQLite3Serializer::commit_transaction()
 {
+  SQLSerializer::commit_transaction(); // Write LOG message if requested
   return sqlite3_exec(db_, "COMMIT TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
 }
 
 bool SQLite3Serializer::rollback_transaction()
 {
+  SQLSerializer::rollback_transaction(); // Write LOG message if requested
   return sqlite3_exec(db_, "ROLLBACK TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
 }
 
