@@ -157,6 +157,7 @@ std::string SQLite3Serializer::sql_type(const google::protobuf::FieldDescriptor*
 
 std::string SQLite3Serializer::sql_add_field_to_table(const SQLTableField* f)
 {
+  // SQLite3 does not support a "comment" in the SQL for ALTER TABLE
   std::ostringstream sql;
   sql << "ALTER TABLE " << sql_table_name(f->table->table_name)
     << " ADD COLUMN " << sql_field_name(f->field_name) << ' ' << sql_type(f->field_d);
