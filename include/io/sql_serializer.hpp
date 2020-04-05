@@ -225,12 +225,10 @@ class SQLSerializer
   virtual bool retrieve_by_oid(const std::string& table_name, uint64_t oid,
     google::protobuf::Message* m);
 
-#if 0
   virtual uint64_t count_entries_in_table(const std::string& table_name);
 
   virtual std::vector<uint64_t>
   retrieve_all_oids(const std::string& table_name);
-#endif
 
 protected:
 
@@ -278,7 +276,9 @@ protected:
   virtual std::string sql_add_field_to_table(const SQLTableField* f);
   virtual std::string sql_create_index(const SQLTable* t);
   virtual std::string sql_insert(const SQLTable* t);
-  virtual std::string sql_select_oid(const SQLTable* t);
+  virtual std::string sql_select_where_oid_equals(const SQLTable* t);
+  virtual std::string sql_count_entries(const std::string& table_name);
+  virtual std::string sql_select_oids(const std::string& table_name);
 
   virtual calin::ix::io::sql_serializer::SQLTable* table_as_proto(const SQLTable* t);
   virtual calin::ix::io::sql_serializer::SQLTableField* field_as_proto(const SQLTableField* f);

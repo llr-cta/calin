@@ -180,7 +180,7 @@ bool SQLSerializer::retrieve_by_oid(const std::string& table_name, uint64_t oid,
     {
       if(it->db_table_present) {
         if(it->stmt_select_oid == nullptr) {
-          it->stmt_select_oid = prepare_statement(sql_select_oid(it));
+          it->stmt_select_oid = prepare_statement(sql_select_where_oid_equals(it));
         }
         if(not it->stmt_select_oid->is_initialized())
         {
@@ -216,6 +216,80 @@ bool SQLSerializer::retrieve_by_oid(const std::string& table_name, uint64_t oid,
 
   commit_transaction();
   return success;
+}
+
+uint64_t SQLSerializer::count_entries_in_table(const std::string& table_name)
+{
+  std::unique_ptr<SQLStatement> stmt {
+    prepare_statement(sql_count_entries(table_name)) };
+  if(!stmt->is_initialized()) {
+    LOG(ERROR) << "SQL error preparing COUNT : "
+               << stmt->error_message() << '\n'
+               << "SQL: " << stmt->sql();
+    throw std::runtime_error("Could not prepare SQL count statement");
+  }
+
+  auto status = stmt->step();
+  if(status == SQLStatement::ERROR) {
+    LOG(ERROR) << "SQL error executing COUNT : "
+               << stmt->error_message() << '\n'
+               << "SQL: " << stmt->sql();
+    throw std::runtime_error("SQL count returned error");
+  } else if (status == SQLStatement::OK_NO_DATA) {
+    LOG(ERROR) << "SQL error executing COUNT : "
+               << stmt->error_message() << '\n'
+               << "SQL: " << stmt->sql();
+    throw std::logic_error("SQL count returned no data");
+  }
+
+  bool good = true;
+  uint64_t entries = stmt->extract_uint64(0, &good);
+  if(!good) {
+    LOG(ERROR) << "Could not extract value from SQL count\n"
+               << "SQL: " << stmt->sql();
+    throw std::logic_error("SQL count could not be extracted");
+  }
+
+  assert(stmt->step() == SQLStatement::OK_NO_DATA);
+
+  return entries;
+}
+
+std::vector<uint64_t> SQLSerializer::retrieve_all_oids(const std::string& table_name)
+{
+  std::unique_ptr<SQLStatement> stmt {
+    prepare_statement(sql_select_oids(table_name)) };
+
+  if(!stmt->is_initialized()) {
+    LOG(ERROR) << "SQL error preparing SELECT OID : "
+               << stmt->error_message() << '\n'
+               << "SQL: " << stmt->sql();
+    throw std::runtime_error("Could not prepare SQL select OID statement");
+  }
+
+  std::vector<uint64_t> oids;
+  SQLStatement::StepStatus status = SQLStatement::ERROR;
+  for(status = stmt->step(); status == SQLStatement::OK_HAS_DATA;
+    status = stmt->step())
+  {
+    bool good = true;
+    uint64_t oid = stmt->extract_uint64(0, &good);
+    if(!good) {
+      LOG(ERROR) << "Could not extract OID from SQL select\n"
+                 << "SQL: " << stmt->sql();
+      throw std::logic_error("SQL OID could not be extracted");
+    }
+    oids.emplace_back(oid);
+  }
+
+  if(status == SQLStatement::ERROR) {
+    LOG(ERROR) << "SQL error executing SELECT OID : "
+               << stmt->error_message() << '\n'
+               << "SQL: " << stmt->sql();
+    throw std::runtime_error("SQL SELECT OID returned error");
+  }
+
+  return oids;
 }
 
 calin::io::sql_serializer::SQLTable* SQLSerializer::
@@ -420,34 +494,32 @@ bool SQLSerializer::do_create_or_extend_tables(const std::string& table_name, SQ
   t->iterate_over_tables([this, &success, &new_tables, &new_table_fields](SQLTable* itable) {
     if(success) {
       if(this->db_tables_.find(itable->table_name) == this->db_tables_.end()) {
-        auto* stmt = prepare_statement(sql_create_table(itable));
+        std::unique_ptr<SQLStatement> stmt { prepare_statement(sql_create_table(itable)) };
         if(not stmt->is_initialized()) {
           LOG(ERROR) << "SQL error preparing CREATE TABLE: " << stmt->error_message() << '\n'
                      << "SQL: " << stmt->sql();
           success = false;
         } else {
-          success = execute_one_no_data_statement(stmt);
+          success = execute_one_no_data_statement(stmt.get());
           if(success) {
             new_tables.push_back(itable);
           }
         }
-        delete stmt;
       } else {
         for(auto ifield : itable->fields) {
           std::string fqdn = sub_name(itable->table_name, ifield->field_name);
           if(this->db_table_fields_.find(fqdn) == this->db_table_fields_.end()) {
-            auto* stmt = prepare_statement(sql_add_field_to_table(ifield));
+            std::unique_ptr<SQLStatement> stmt { prepare_statement(sql_add_field_to_table(ifield))  };
             if(not stmt->is_initialized()) {
               LOG(ERROR) << "SQL error preparing EXTEND TABLE: " << stmt->error_message() << '\n'
                          << "SQL: " << stmt->sql();
               success = false;
             } else {
-              success = execute_one_no_data_statement(stmt);
+              success = execute_one_no_data_statement(stmt.get());
               if(success) {
                 new_table_fields.push_back(ifield);
               }
             }
-            delete stmt;
           }
         }
       }
@@ -1022,7 +1094,7 @@ std::string SQLSerializer::sql_insert(const SQLTable* t)
   return sql.str();
 }
 
-std::string SQLSerializer::sql_select_oid(const SQLTable* t)
+std::string SQLSerializer::sql_select_where_oid_equals(const SQLTable* t)
 {
   if(not t->db_table_present) {
     return {};
@@ -1052,5 +1124,20 @@ std::string SQLSerializer::sql_select_oid(const SQLTable* t)
   }
   sql << "FROM " << sql_table_name(t->table_name) << " WHERE "
     << sql_field_name(oid_name) << " == ?";
+  return sql.str();
+}
+
+std::string SQLSerializer::sql_count_entries(const std::string& table_name)
+{
+  std::ostringstream sql;
+  sql << "SELECT COUNT(*) FROM " << sql_table_name(table_name);
+  return sql.str();
+}
+
+std::string SQLSerializer::sql_select_oids(const std::string& table_name)
+{
+  std::ostringstream sql;
+  sql << "SELECT " << sql_field_name(sql_oid_column_name()) << " FROM "
+    << sql_table_name(table_name);
   return sql.str();
 }
