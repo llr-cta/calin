@@ -120,7 +120,7 @@ struct SQLTable
     for(auto ifield : fields)delete ifield;
     for(auto itable : sub_tables)delete itable;
     delete stmt_insert;
-    delete stmt_select;
+    delete stmt_select_oid;
   }
 
   const google::protobuf::Descriptor*       table_d = nullptr;
@@ -132,12 +132,14 @@ struct SQLTable
   std::vector<const google::protobuf::FieldDescriptor*> parent_field_d_path;
   std::vector<SQLTableField*>               fields;
   std::vector<SQLTable*>                    sub_tables;
+  SQLTable*                                 root_table = nullptr;
 
+  bool                                      db_table_present = false;
   bool                                      db_all_table_fields_present = false;
   bool                                      db_all_tree_fields_present = false;
 
   SQLStatement*                             stmt_insert = nullptr;
-  SQLStatement*                             stmt_select = nullptr;
+  SQLStatement*                             stmt_select_oid = nullptr;
 
   bool children_need_oid() const {
     for(auto t : sub_tables) { for(auto f : t->fields)
@@ -220,6 +222,16 @@ class SQLSerializer
     return insert(table_name, oid, m);
   }
 
+  virtual bool retrieve_by_oid(const std::string& table_name, uint64_t oid,
+    google::protobuf::Message* m);
+
+#if 0
+  virtual uint64_t count_entries_in_table(const std::string& table_name);
+
+  virtual std::vector<uint64_t>
+  retrieve_all_oids(const std::string& table_name);
+#endif
+
 protected:
 
   bool write_sql_to_log_ = false;
@@ -256,6 +268,7 @@ protected:
   virtual std::string sql_type(const google::protobuf::FieldDescriptor* d);
 
   virtual std::string sql_insert_field_spec(const SQLTableField* f);
+  virtual std::string sql_select_field_spec(const SQLTableField* f);
 
   virtual std::string sql_comment(const std::string& comment,
     unsigned first_line_indent = 0, unsigned multi_line_indent = 0,
@@ -265,6 +278,7 @@ protected:
   virtual std::string sql_add_field_to_table(const SQLTableField* f);
   virtual std::string sql_create_index(const SQLTable* t);
   virtual std::string sql_insert(const SQLTable* t);
+  virtual std::string sql_select_oid(const SQLTable* t);
 
   virtual calin::ix::io::sql_serializer::SQLTable* table_as_proto(const SQLTable* t);
   virtual calin::ix::io::sql_serializer::SQLTableField* field_as_proto(const SQLTableField* f);
@@ -285,7 +299,7 @@ protected:
 
   virtual bool do_create_or_extend_tables(const std::string& table_name, SQLTable* t);
 
-  void set_const_data_pointers(SQLTable* t, const google::protobuf::Message* m, 
+  void set_const_data_pointers(SQLTable* t, const google::protobuf::Message* m,
     const uint64_t* parent_oid, const uint64_t* loop_id);
 
   void bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,

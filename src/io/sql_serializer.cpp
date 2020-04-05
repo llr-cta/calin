@@ -163,6 +163,61 @@ bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
   return success;
 }
 
+bool SQLSerializer::retrieve_by_oid(const std::string& table_name, uint64_t oid,
+  google::protobuf::Message* m)
+{
+  const google::protobuf::Descriptor* d = m->GetDescriptor();
+  SQLTable* t = schema_[table_name][d];
+  if(t == nullptr) {
+    t = make_sqltable_tree(table_name, d);
+    schema_[table_name][d] = t;
+  }
+
+  bool success = true;
+
+  t->iterate_over_tables([this,&success](SQLTable* it) {
+    if(success)
+    {
+      if(it->db_table_present) {
+        if(it->stmt_select_oid == nullptr) {
+          it->stmt_select_oid = prepare_statement(sql_select_oid(it));
+        }
+        if(not it->stmt_select_oid->is_initialized())
+        {
+          LOG(ERROR) << "SQL error preparing SELECT: " << it->stmt_select_oid->error_message() << '\n'
+            << "SQL: " << it->stmt_select_oid->sql();
+          success = false;
+        }
+      }
+    }
+  });
+
+  if(not success)
+  {
+    return success;
+  }
+
+  begin_transaction();
+
+  t->iterate_over_tables([this,&success](SQLTable* it) {
+    if(success)
+    {
+      if(it->stmt_select_oid != nullptr) {
+        success = execute_one_no_data_statement(it->stmt_select_oid);
+      }
+    }
+  });
+
+  if(not success)
+  {
+    rollback_transaction();
+    return success;
+  }
+
+  commit_transaction();
+  return success;
+}
+
 calin::io::sql_serializer::SQLTable* SQLSerializer::
 r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Descriptor* d,
   SQLTable* parent_table, const google::protobuf::FieldDescriptor* parent_field_d,
@@ -175,6 +230,11 @@ r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Desc
   t->parent_field_d              = parent_field_d;
   t->table_desc                  = table_desc;
   t->table_units                 = table_units;
+  if(parent_table == nullptr) {
+    t->root_table =              t;
+  } else {
+    t->root_table =              parent_table->root_table;
+  }
 
   for(int ioneof = 0; ioneof<d->oneof_decl_count(); ioneof++)
   {
@@ -333,8 +393,9 @@ void SQLSerializer::r_propagate_keys(SQLTable* t, std::vector<const SQLTableFiel
 void SQLSerializer::test_sqltable_tree_db_presence(SQLTable* t)
 {
   t->iterate_over_tables([this](SQLTable* it) {
-    it->db_all_table_fields_present = true;
-    it->db_all_tree_fields_present = true;
+    it->db_table_present = this->db_tables_.count(it->table_name);
+    it->db_all_table_fields_present = it->db_table_present;
+    it->db_all_tree_fields_present = it->db_table_present;
     for(auto* f : it->fields) {
       f->db_field_present = this->db_table_fields_.count(sub_name(it->table_name, f->field_name));
       it->db_all_table_fields_present &= f->db_field_present;
@@ -794,6 +855,11 @@ std::string SQLSerializer::sql_insert_field_spec(const SQLTableField* f)
   return "?";
 }
 
+std::string SQLSerializer::sql_select_field_spec(const SQLTableField* f)
+{
+  return sql_field_name(f->field_name);
+}
+
 std::string SQLSerializer::sql_comment(const std::string& comment,
   unsigned first_line_indent, unsigned multi_line_indent,
   bool newline_before_multi_line)
@@ -953,5 +1019,38 @@ std::string SQLSerializer::sql_insert(const SQLTable* t)
     sql << '\n';
   }
   sql << ')';
+  return sql.str();
+}
+
+std::string SQLSerializer::sql_select_oid(const SQLTable* t)
+{
+  if(not t->db_table_present) {
+    return {};
+  }
+
+  std::string oid_name;
+  if(t == t->root_table) {
+    oid_name = sql_oid_column_name();
+  } else {
+    oid_name = sub_name(t->root_table->table_name, sql_oid_column_name());
+  }
+
+  std::ostringstream sql;
+  sql << "SELECT\n";
+  bool first_field = true;
+  for ( auto f : t->fields ) {
+    if(f->db_field_present and f->field_name!=oid_name) {
+      if(not first_field) {
+        sql << ",\n";
+      }
+      sql << "  " << sql_field_name(f->field_name);
+      first_field = false;
+    }
+  }
+  if(not first_field) {
+    sql << '\n';
+  }
+  sql << "FROM " << sql_table_name(t->table_name) << " WHERE "
+    << sql_field_name(oid_name) << " == ?";
   return sql.str();
 }
