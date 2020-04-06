@@ -233,9 +233,9 @@ class SQLSerializer
 protected:
 
   bool write_sql_to_log_ = false;
+  std::atomic<int> transaction_count_ { 0 };
   std::map<std::string, calin::ix::io::sql_serializer::SQLTable*> db_tables_;
   std::map<std::string, calin::ix::io::sql_serializer::SQLTableField*> db_table_fields_;
-
   std::map<std::string, std::map<const google::protobuf::Descriptor*, SQLTable*> > schema_;
 
   // ===========================================================================

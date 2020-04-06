@@ -593,24 +593,30 @@ SQLStatement* SQLSerializer::prepare_statement(const std::string& sql)
 
 bool SQLSerializer::begin_transaction()
 {
-  if(write_sql_to_log_) {
-    LOG(INFO) << "BEGIN TRANSACTION";
+  if(transaction_count_.fetch_add(1) == 0) {
+    if(write_sql_to_log_) {
+      LOG(INFO) << "BEGIN TRANSACTION";
+    }
   }
   return true;
 }
 
 bool SQLSerializer::commit_transaction()
 {
-  if(write_sql_to_log_) {
-    LOG(INFO) << "COMMIT TRANSACTION";
+  if(transaction_count_.fetch_sub(1) == 1) {
+    if(write_sql_to_log_) {
+      LOG(INFO) << "COMMIT TRANSACTION";
+    }
   }
   return true;
 }
 
 bool SQLSerializer::rollback_transaction()
 {
-  if(write_sql_to_log_) {
-    LOG(INFO) << "ROLLBACK TRANSACTION";
+  if(transaction_count_.fetch_sub(1) == 1) {
+    if(write_sql_to_log_) {
+      LOG(INFO) << "ROLLBACK TRANSACTION";
+    }
   }
   return true;
 }
@@ -1303,7 +1309,7 @@ void SQLSerializer::retrieve_db_tables_and_fields()
     schema_[internal_tables_tablename()][d] = t;
   }
 
-  d = calin::ix::io::sql_serializer::SQLTable::descriptor();
+  d = calin::ix::io::sql_serializer::SQLTableField::descriptor();
   t = schema_[internal_fields_tablename()][d];
   if(t == nullptr) {
     t = make_sqltable_tree(internal_fields_tablename(), d, "calin database field list");
@@ -1313,6 +1319,7 @@ void SQLSerializer::retrieve_db_tables_and_fields()
 
   std::vector<uint64_t> oids;
 
+  begin_transaction();
   oids = retrieve_all_oids(internal_tables_tablename());
   for(auto oid : oids) {
     auto* proto_table = new calin::ix::io::sql_serializer::SQLTable;
@@ -1328,6 +1335,7 @@ void SQLSerializer::retrieve_db_tables_and_fields()
       db_table_fields_[sub_name(proto_field->table_name(), proto_field->field_name())] = proto_field;
     }
   }
+  commit_transaction();
 }
 
 void SQLSerializer::create_db_tables_and_fields()
@@ -1337,26 +1345,32 @@ void SQLSerializer::create_db_tables_and_fields()
   std::unique_ptr<SQLTable> tf { make_sqltable_tree(internal_fields_tablename(),
     calin::ix::io::sql_serializer::SQLTableField::descriptor(), "calin database field list") };
 
+  begin_transaction();
   if(not do_create_or_extend_tables(tt.get(), false)) {
+    rollback_transaction();
     throw std::runtime_error("create_db_tables_and_fields: could not create table: " +
       internal_tables_tablename());
   }
 
   if(not do_create_or_extend_tables(tf.get(), false)) {
+    rollback_transaction();
     throw std::runtime_error("create_db_tables_and_fields: could not create table: " +
       internal_fields_tablename());
   }
 
   for(auto pt : db_tables_) {
     if(not insert(internal_tables_tablename(), pt.second)) {
+      rollback_transaction();
       throw std::runtime_error("create_db_tables_and_fields: could not insert into table: " +
         internal_tables_tablename());
     }
   }
   for(auto pf : db_table_fields_) {
     if(not insert(internal_fields_tablename(), pf.second)) {
+      rollback_transaction();
       throw std::runtime_error("create_db_tables_and_fields: could not insert into table: " +
         internal_tables_tablename());
     }
   }
+  commit_transaction();
 }

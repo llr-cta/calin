@@ -111,20 +111,35 @@ SQLStatement* SQLite3Serializer::prepare_statement(const std::string& sql)
 
 bool SQLite3Serializer::begin_transaction()
 {
-  SQLSerializer::begin_transaction(); // Write LOG message if requested
-  return sqlite3_exec(db_, "BEGIN TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
+  if(transaction_count_.fetch_add(1) == 0) {
+    if(write_sql_to_log_) {
+      LOG(INFO) << "BEGIN TRANSACTION";
+    }
+    return sqlite3_exec(db_, "BEGIN TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
+  }
+  return true;
 }
 
 bool SQLite3Serializer::commit_transaction()
 {
-  SQLSerializer::commit_transaction(); // Write LOG message if requested
-  return sqlite3_exec(db_, "COMMIT TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
+  if(transaction_count_.fetch_sub(1) == 1) {
+    if(write_sql_to_log_) {
+      LOG(INFO) << "COMMIT TRANSACTION";
+    }
+    return sqlite3_exec(db_, "COMMIT TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
+  }
+  return true;
 }
 
 bool SQLite3Serializer::rollback_transaction()
 {
-  SQLSerializer::rollback_transaction(); // Write LOG message if requested
-  return sqlite3_exec(db_, "ROLLBACK TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
+  if(transaction_count_.fetch_sub(1) == 1) {
+    if(write_sql_to_log_) {
+      LOG(INFO) << "ROLLBACK TRANSACTION";
+    }
+    return sqlite3_exec(db_, "ROLLBACK TRANSACTION", NULL, NULL, NULL) == SQLITE_OK;
+  }
+  return true;
 }
 
 #if 0
