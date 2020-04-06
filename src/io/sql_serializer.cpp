@@ -180,9 +180,12 @@ bool SQLSerializer::retrieve_by_oid(const std::string& table_name, uint64_t oid,
     {
       if(it->db_table_present) {
         if(it->stmt_select_oid == nullptr) {
-          it->stmt_select_oid = prepare_statement(sql_select_where_oid_equals(it));
+          auto sql = sql_select_where_oid_equals(it);
+          if(not sql.empty()) {
+            it->stmt_select_oid = prepare_statement(sql);
+          }
         }
-        if(not it->stmt_select_oid->is_initialized())
+        if(it->stmt_select_oid != nullptr and not it->stmt_select_oid->is_initialized())
         {
           LOG(ERROR) << "SQL error preparing SELECT: " << it->stmt_select_oid->error_message() << '\n'
             << "SQL: " << it->stmt_select_oid->sql();
@@ -780,10 +783,9 @@ bool SQLSerializer::r_exec_insert(SQLTable* t, const google::protobuf::Message* 
     {
       assert(st->parent_field_d->type() == FieldDescriptor::TYPE_MESSAGE);
       if(!r->HasField(*m, st->parent_field_d))goto next_sub_table;
-      m = &r->GetMessage(*m, st->parent_field_d);
-      r = m->GetReflection();
+      const auto* stm = &r->GetMessage(*m, st->parent_field_d);
       uint64_t unused_sub_table_oid = 0;
-      good &= r_exec_insert(st, m, unused_sub_table_oid, oid, 0,
+      good &= r_exec_insert(st, stm, unused_sub_table_oid, oid, 0,
                             ignore_errors);
       if(!ignore_errors and !good)return good;
     }
@@ -1220,18 +1222,20 @@ std::string SQLSerializer::sql_select_where_oid_equals(const SQLTable* t)
 
   std::ostringstream sql;
   sql << "SELECT\n";
-  bool first_field = true;
+  bool has_field = false;
   for ( auto f : t->fields ) {
     if(f->db_field_present and f->field_name!=oid_name) {
-      if(not first_field) {
+      if(has_field) {
         sql << ",\n";
       }
       sql << "  " << sql_field_name(f->field_name);
-      first_field = false;
+      has_field = true;
     }
   }
-  if(not first_field) {
+  if(has_field) {
     sql << '\n';
+  } else {
+    sql << "NULL\n";
   }
   sql << "FROM " << sql_table_name(t->table_name) << " WHERE "
     << sql_field_name(oid_name) << " == ?";
