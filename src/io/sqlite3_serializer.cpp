@@ -44,6 +44,10 @@ SQLite3Serializer(const std::string& filename_in, OpenMode open_mode,
   if(open_mode == TRUNCATE_RW and filename.front() != ':' and
      filename.back() != ':')unlink(filename.c_str());
 
+  bool exists = false;
+  if(filename.front() != ':' and filename.back() != ':')
+    exists = calin::util::file::is_file(filename);
+
   int flags { 0 };
   switch(open_mode) {
     case EXISTING_OR_NEW_RW:
@@ -72,6 +76,12 @@ SQLite3Serializer(const std::string& filename_in, OpenMode open_mode,
 
   calin::provenance::chronicle::register_file_open(filename, access,
     __PRETTY_FUNCTION__);
+
+  if(exists) {
+    retrieve_db_tables_and_fields();
+  } else {
+    create_db_tables_and_fields();
+  }
 }
 
 SQLite3Serializer::~SQLite3Serializer()

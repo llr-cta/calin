@@ -252,6 +252,7 @@ protected:
   void r_propagate_keys(SQLTable* t, std::vector<const SQLTableField*> keys);
 
   void test_sqltable_tree_db_presence(SQLTable* t);
+  void force_sqltable_tree_db_presence(SQLTable* t);
 
   // ===========================================================================
   //
@@ -297,7 +298,7 @@ protected:
 
   virtual bool execute_one_no_data_statement(SQLStatement* stmt, bool ignore_errors = false);
 
-  virtual bool do_create_or_extend_tables(const std::string& table_name, SQLTable* t);
+  virtual bool do_create_or_extend_tables(SQLTable* t, bool write_new_tables_and_fields_to_db = true);
 
   void set_const_data_pointers(SQLTable* t, const google::protobuf::Message* m,
     const uint64_t* parent_oid, const uint64_t* loop_id);
@@ -310,6 +311,11 @@ protected:
 
   virtual bool exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
     bool ignore_errors = false);
+
+  virtual std::string internal_tables_tablename();
+  virtual std::string internal_fields_tablename();
+  virtual void retrieve_db_tables_and_fields();
+  virtual void create_db_tables_and_fields();
 };
 
 } } } // namespace calin::io::sql_serializer

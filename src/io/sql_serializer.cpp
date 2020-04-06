@@ -96,7 +96,7 @@ bool SQLSerializer::create_or_extend_tables(const std::string& table_name,
   const google::protobuf::Descriptor* d, const std::string& instance_desc)
 {
   std::unique_ptr<SQLTable> t { make_sqltable_tree(table_name, d, instance_desc) };
-  return do_create_or_extend_tables(table_name, t.get());
+  return do_create_or_extend_tables(t.get());
 }
 
 bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
@@ -118,7 +118,7 @@ bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
       }
     }
 
-    if(not do_create_or_extend_tables(table_name, t)) {
+    if(not do_create_or_extend_tables(t)) {
       return false;
     }
 
@@ -180,10 +180,7 @@ bool SQLSerializer::retrieve_by_oid(const std::string& table_name, uint64_t oid,
     {
       if(it->db_table_present) {
         if(it->stmt_select_oid == nullptr) {
-          auto sql = sql_select_where_oid_equals(it);
-          if(not sql.empty()) {
-            it->stmt_select_oid = prepare_statement(sql);
-          }
+          it->stmt_select_oid = prepare_statement(sql_select_where_oid_equals(it));
         }
         if(it->stmt_select_oid != nullptr and not it->stmt_select_oid->is_initialized())
         {
@@ -464,7 +461,20 @@ void SQLSerializer::test_sqltable_tree_db_presence(SQLTable* t)
   });
 }
 
-bool SQLSerializer::do_create_or_extend_tables(const std::string& table_name, SQLTable* t)
+void SQLSerializer::force_sqltable_tree_db_presence(SQLTable* t)
+{
+  t->iterate_over_tables([](SQLTable* it) {
+    it->db_table_present = true;
+    it->db_all_table_fields_present = true;
+    it->db_all_tree_fields_present = true;
+    for(auto* f : it->fields) {
+      f->db_field_present = true;
+    }
+  });
+}
+
+bool SQLSerializer::do_create_or_extend_tables(SQLTable* t,
+  bool write_new_tables_and_fields_to_db)
 {
   bool success = true;
 
@@ -548,7 +558,20 @@ bool SQLSerializer::do_create_or_extend_tables(const std::string& table_name, SQ
     new_field_protos.push_back(field_as_proto(f));
   }
 
-  // Try to insert into the intenal fields here
+  if(write_new_tables_and_fields_to_db) {
+    for(auto pt : new_table_protos) {
+      if(not insert(internal_tables_tablename(), pt)) {
+        rollback_transaction();
+        return false;
+      }
+    }
+    for(auto pf : new_field_protos) {
+      if(not insert(internal_fields_tablename(), pf)) {
+        rollback_transaction();
+        return false;
+      }
+    }
+  }
 
   commit_transaction();
 
@@ -1255,4 +1278,85 @@ std::string SQLSerializer::sql_select_oids(const std::string& table_name)
   sql << "SELECT " << sql_field_name(sql_oid_column_name()) << " FROM "
     << sql_table_name(table_name);
   return sql.str();
+}
+
+std::string SQLSerializer::internal_tables_tablename()
+{
+  return "calin.tables";
+}
+
+std::string SQLSerializer::internal_fields_tablename()
+{
+  return "calin.fields";
+}
+
+void SQLSerializer::retrieve_db_tables_and_fields()
+{
+  const google::protobuf::Descriptor* d;
+  SQLTable* t;
+
+  d = calin::ix::io::sql_serializer::SQLTable::descriptor();
+  t = schema_[internal_tables_tablename()][d];
+  if(t == nullptr) {
+    t = make_sqltable_tree(internal_tables_tablename(), d, "calin database table list");
+    force_sqltable_tree_db_presence(t);
+    schema_[internal_tables_tablename()][d] = t;
+  }
+
+  d = calin::ix::io::sql_serializer::SQLTable::descriptor();
+  t = schema_[internal_fields_tablename()][d];
+  if(t == nullptr) {
+    t = make_sqltable_tree(internal_fields_tablename(), d, "calin database field list");
+    force_sqltable_tree_db_presence(t);
+    schema_[internal_fields_tablename()][d] = t;
+  }
+
+  std::vector<uint64_t> oids;
+
+  oids = retrieve_all_oids(internal_tables_tablename());
+  for(auto oid : oids) {
+    auto* proto_table = new calin::ix::io::sql_serializer::SQLTable;
+    if(retrieve_by_oid(internal_tables_tablename(), oid, proto_table)) {
+      db_tables_[proto_table->table_name()] = proto_table;
+    }
+  }
+
+  oids = retrieve_all_oids(internal_fields_tablename());
+  for(auto oid : oids) {
+    auto* proto_field = new calin::ix::io::sql_serializer::SQLTableField;
+    if(retrieve_by_oid(internal_fields_tablename(), oid, proto_field)) {
+      db_table_fields_[sub_name(proto_field->table_name(), proto_field->field_name())] = proto_field;
+    }
+  }
+}
+
+void SQLSerializer::create_db_tables_and_fields()
+{
+  std::unique_ptr<SQLTable> tt { make_sqltable_tree(internal_tables_tablename(),
+    calin::ix::io::sql_serializer::SQLTable::descriptor(), "calin database table list") };
+  std::unique_ptr<SQLTable> tf { make_sqltable_tree(internal_fields_tablename(),
+    calin::ix::io::sql_serializer::SQLTableField::descriptor(), "calin database field list") };
+
+  if(not do_create_or_extend_tables(tt.get(), false)) {
+    throw std::runtime_error("create_db_tables_and_fields: could not create table: " +
+      internal_tables_tablename());
+  }
+
+  if(not do_create_or_extend_tables(tf.get(), false)) {
+    throw std::runtime_error("create_db_tables_and_fields: could not create table: " +
+      internal_fields_tablename());
+  }
+
+  for(auto pt : db_tables_) {
+    if(not insert(internal_tables_tablename(), pt.second)) {
+      throw std::runtime_error("create_db_tables_and_fields: could not insert into table: " +
+        internal_tables_tablename());
+    }
+  }
+  for(auto pf : db_table_fields_) {
+    if(not insert(internal_fields_tablename(), pf.second)) {
+      throw std::runtime_error("create_db_tables_and_fields: could not insert into table: " +
+        internal_tables_tablename());
+    }
+  }
 }
