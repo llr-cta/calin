@@ -213,3 +213,22 @@ message UnitTestDerivedRepeatedPODField {
   int32 d = 4 [(CFO).desc="A fourth int32 key value"];
   repeated int32 g = 7 [(CFO).desc="A repeated int32 key value"];
 }
+
+message UnitTestNullSet {
+
+}
+
+message UnitTestOneSet {
+  UnitTestNullSet zero = 1;
+}
+
+message UnitTestTwoSet {
+  UnitTestNullSet zero = 1;
+  UnitTestOneSet one = 2;
+}
+
+message UnitTestThreeSet {
+  UnitTestNullSet zero = 1;
+  UnitTestOneSet one = 2;
+  UnitTestTwoSet two = 3;
+}
