@@ -308,6 +308,10 @@ r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Desc
     t->root_table =              t;
   } else {
     t->root_table =              parent_table->root_table;
+    t->root_field_d_path =       parent_table->root_field_d_path;
+    if(parent_table->parent_field_d) {
+      t->root_field_d_path.emplace_back(parent_table->parent_field_d);
+    }
   }
 
   for(int ioneof = 0; ioneof<d->oneof_decl_count(); ioneof++)
@@ -344,32 +348,6 @@ r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Desc
     {
       sub_table = r_make_sqltable_tree(sub_name(table_name, f->name()),
         f->message_type(), t, f, field_desc, field_units);
-
-      if(parent_field_d and parent_field_d->is_map())
-      {
-        // Message can be inlined - so move its fields into primary table
-
-        for(auto ifield : sub_table->fields)
-        {
-          ifield->table           = t;
-          ifield->field_name      = sub_name(f->name(), ifield->field_name);
-          ifield->field_d_path.insert(ifield->field_d_path.begin(), f);
-          t->fields.push_back(ifield);
-        }
-        sub_table->fields.clear();
-
-        for(auto itable : sub_table->sub_tables)
-        {
-          itable->parent_table = t;
-          itable->parent_field_d_path.
-              insert(itable->parent_field_d_path.begin(), f);
-          t->sub_tables.push_back(itable);
-        }
-        sub_table->sub_tables.clear();
-
-        delete(sub_table);
-        continue;
-      }
     }
     else if(f->is_repeated())
     {
@@ -379,6 +357,12 @@ r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Desc
       sub_table->parent_field_d              = f;
       sub_table->table_desc                  = field_desc;
       sub_table->table_units                 = field_units;
+
+      sub_table->root_table                  = t->root_table;
+      sub_table->root_field_d_path           = t->root_field_d_path;
+      if(t->parent_field_d) {
+        sub_table->root_field_d_path.emplace_back(t->parent_field_d);
+      }
 
       SQLTableField* tf { new SQLTableField };
       tf->table             = sub_table;
@@ -408,14 +392,7 @@ r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Desc
 
     assert(sub_table);
 
-    if(f->is_map())
-    {
-      sub_table->fields.front()->field_name =
-          sub_name(sub_table->table_name,
-                   sub_table->fields.front()->field_name);
-      sub_table->fields.front()->field_type   = SQLTableField::KEY_MAP_KEY;
-    }
-    else if(f->is_repeated())
+    if(f->is_repeated())
     {
       SQLTableField* tf { new SQLTableField };
       tf->table             = sub_table;
@@ -451,8 +428,8 @@ void SQLSerializer::r_propagate_keys(SQLTable* t, std::vector<const SQLTableFiel
     f->table          = t;
     f->field_origin   = f;
     f->field_type     = SQLTableField::KEY_PARENT_OID;
-    f->field_name     = sub_name(t->parent_table->table_name,
-                                 sql_oid_column_name());
+    f->field_name     = sub_name(t->parent_table->table_name, sql_oid_column_name());
+    f->is_root_oid    = (t->parent_table == t->root_table);
     f->field_d        = nullptr;
     t->fields.insert(t->fields.begin(), f);
   }
@@ -658,11 +635,6 @@ void SQLSerializer::set_const_data_pointers(SQLTable* t, const google::protobuf:
       {
         const google::protobuf::Reflection* r = m->GetReflection();
 
-        for(auto d : f->field_d_path) {
-          if(!r->HasField(*m, d))goto next_field;
-          m = &r->GetMessage(*m, d);
-          r = m->GetReflection();
-        }
         if(f->oneof_d or f->field_d->is_repeated() or r->HasField(*m, f->field_d)
           /* or f->field_d->message_type()==nullptr */) {
           f->set_data_const_message(m);
@@ -683,15 +655,12 @@ void SQLSerializer::set_const_data_pointers(SQLTable* t, const google::protobuf:
             f->set_data_const_uint64(loop_id);
           break;
         case SQLTableField::KEY_INHERITED:      // handled earlier in tree
-        case SQLTableField::KEY_MAP_KEY:        // handled in if clause above
         case SQLTableField::POD:                // handled in if clause above
           assert(0);
           break;
         }
       }
     }
- next_field:
-    ;
   }
 }
 
@@ -792,12 +761,6 @@ bool SQLSerializer::r_exec_insert(SQLTable* t, const google::protobuf::Message* 
   for(auto st : t->sub_tables)
   {
     const google::protobuf::Reflection* r = m->GetReflection();
-    for(auto d : st->parent_field_d_path) {
-      if(!r->HasField(*m, d))goto next_sub_table;
-      m = &r->GetMessage(*m, d);
-      r = m->GetReflection();
-    }
-
     if(st->parent_field_d->is_repeated())
     {
       uint64_t nloop = r->FieldSize(*m, st->parent_field_d);

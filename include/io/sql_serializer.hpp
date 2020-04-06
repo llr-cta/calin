@@ -59,17 +59,17 @@ union DataPointer {
 struct SQLTableField
 {
   enum FieldType {
-    KEY_INHERITED, KEY_PARENT_OID, KEY_LOOP_ID, KEY_MAP_KEY, POD };
+    KEY_INHERITED, KEY_PARENT_OID, KEY_LOOP_ID, POD };
   SQLTable*                                 table = nullptr;
 
   SQLTableField*                            field_origin = nullptr;
   FieldType                                 field_type;
   std::string                               field_name;
   const google::protobuf::FieldDescriptor*  field_d = nullptr;
-  std::vector<const google::protobuf::FieldDescriptor*> field_d_path;
   std::string                               field_desc;
   std::string                               field_units;
 
+  bool                                      is_root_oid = false;
   bool                                      db_field_present = false;
 
   DataPointerType                           data_type = PT_NULL;
@@ -129,10 +129,10 @@ struct SQLTable
   std::string                               table_units;
   SQLTable*                                 parent_table = nullptr;
   const google::protobuf::FieldDescriptor*  parent_field_d = nullptr;
-  std::vector<const google::protobuf::FieldDescriptor*> parent_field_d_path;
   std::vector<SQLTableField*>               fields;
   std::vector<SQLTable*>                    sub_tables;
   SQLTable*                                 root_table = nullptr;
+  std::vector<const google::protobuf::FieldDescriptor*> root_field_d_path;
 
   bool                                      db_table_present = false;
   bool                                      db_all_table_fields_present = false;
