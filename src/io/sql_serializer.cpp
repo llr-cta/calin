@@ -199,11 +199,11 @@ bool SQLSerializer::retrieve_by_oid(const std::string& table_name, uint64_t oid,
 
   begin_transaction();
 
-  t->iterate_over_tables([this,&success](SQLTable* it) {
+  t->iterate_over_tables([this,oid,m,&success](SQLTable* it) {
     if(success)
     {
       if(it->stmt_select_oid != nullptr) {
-        success = execute_one_no_data_statement(it->stmt_select_oid);
+        success = exec_select_by_oid(it, oid, m, /* ignore_errors= */ false);
       }
     }
   });
@@ -250,7 +250,8 @@ uint64_t SQLSerializer::count_entries_in_table(const std::string& table_name)
     throw std::logic_error("SQL count could not be extracted");
   }
 
-  assert(stmt->step() == SQLStatement::OK_NO_DATA);
+  if(stmt->step() != SQLStatement::OK_NO_DATA)
+    throw std::runtime_error("SQLSerializer::count_entries_in_table: unexpected data returned");
 
   return entries;
 }
@@ -791,6 +792,35 @@ bool SQLSerializer::r_exec_insert(SQLTable* t, const google::protobuf::Message* 
   }
 
   return good;
+}
+
+bool SQLSerializer::
+exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
+  bool ignore_errors)
+{
+  t->stmt_select_oid->bind_uint64(0, oid);
+
+  unsigned count = 0;
+  SQLStatement::StepStatus status = SQLStatement::OK_HAS_DATA;
+  if(write_sql_to_log_)LOG(INFO) << t->stmt_select_oid->bound_sql();
+  while(status == SQLStatement::OK_HAS_DATA)
+  {
+    status = t->stmt_select_oid->step();
+    if(status != SQLStatement::OK_HAS_DATA)break;
+    ++count;
+
+  }
+
+  LOG(INFO) << "Reveived : " << count << " entries";
+
+  if(status == SQLStatement::ERROR and not ignore_errors) {
+    LOG(ERROR) << "SQL statement returned error: "
+      << t->stmt_select_oid->error_message() << '\n'
+      << "SQL: " << t->stmt_select_oid->sql();
+  }
+
+  t->stmt_select_oid->reset();
+  return status != SQLStatement::ERROR;
 }
 
 // =============================================================================

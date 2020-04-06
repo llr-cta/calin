@@ -308,7 +308,8 @@ protected:
   virtual bool r_exec_insert(SQLTable* t, const google::protobuf::Message* m,
     uint64_t& oid, uint64_t parent_oid, uint64_t loop_id, bool ignore_errors);
 
-
+  virtual bool exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
+    bool ignore_errors = false);
 };
 
 } } } // namespace calin::io::sql_serializer
