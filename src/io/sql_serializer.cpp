@@ -847,7 +847,7 @@ exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
   std::vector<uint64_t> step_loop_index = m_parent_loop_index;
 
   unsigned row_count = 0;
-  SQLStatement::StepStatus status = status = t->stmt_select_oid->step();
+  SQLStatement::StepStatus status = t->stmt_select_oid->step();
   if(write_sql_to_log_)LOG(INFO) << t->stmt_select_oid->bound_sql();
   while(status == SQLStatement::OK_HAS_DATA)
   {
@@ -873,15 +873,15 @@ exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
       // Walk m_parent to correct place
       m_parent = m_root;
       m_parent_loop_index = step_loop_index;
-      int iloop_index = 0;
+      unsigned iloop_index = 0;
       for(auto* d : t->root_field_d_path) {
         auto* r = m_parent->GetReflection();
         if(d->is_repeated()) {
           assert(iloop_index < m_parent_loop_index.size());
           int loop_index = m_parent_loop_index[iloop_index];
           ++iloop_index;
-          assert(loop_index < r->FieldSize(m, d));
-          // if(r->FieldSize(m, d) <= loop_index)r->AddMessage(m_parent, d);
+          assert(loop_index < r->FieldSize(*m, d));
+          // if(r->FieldSize(*m, d) <= loop_index)r->AddMessage(m_parent, d);
           m_parent = r->MutableRepeatedMessage(m_parent, d, loop_index);
         } else {
           m_parent = r->MutableMessage(m_parent, d);
