@@ -205,3 +205,11 @@ message UnitTestDerivedRepeatedSubMessage {
 
   repeated UnitTestBase f = 6 [(CFO).desc="A new repeated sub message"];
 }
+
+message UnitTestDerivedRepeatedPODField {
+  int32 a = 1 [(CFO).desc="An int32 key value"];
+  int32 b = 2 [(CFO).desc="A second int32 key value"];
+  int32 c = 3 [(CFO).desc="A third int32 key value"];
+  int32 d = 4 [(CFO).desc="A fourth int32 key value"];
+  repeated int32 g = 7 [(CFO).desc="A repeated int32 key value"];
+}
