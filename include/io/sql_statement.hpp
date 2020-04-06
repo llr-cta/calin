@@ -1,4 +1,4 @@
-/* 
+/*
 
    calin/io/sql_statement.hpp -- Stephen Fegan -- 2015-09-24
 
@@ -8,11 +8,11 @@
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
-   
+
    "calin" is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License version 2 or
    later, as published by the Free Software Foundation.
-    
+
    "calin" is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
@@ -38,20 +38,20 @@ class SQLStatement
 
   const std::string& sql() const { return sql_; }
   std::string bound_sql() const;
-    
+
   virtual unsigned num_columns();
 
   virtual bool is_initialized();
   virtual int error_code();
   virtual std::string error_message();
-    
+
   virtual void reset();
   virtual StepStatus step();
   virtual uint64_t get_oid();
-    
+
   bool bind_field(unsigned ifield, const google::protobuf::Message* m,
                   const google::protobuf::FieldDescriptor* d);
-  bool bind_repeated_field(unsigned ifield, uint64_t loop_id, 
+  bool bind_repeated_field(unsigned ifield, uint64_t loop_id,
                            const google::protobuf::Message* m,
                            const google::protobuf::FieldDescriptor* d);
 
@@ -72,7 +72,7 @@ class SQLStatement
 
   bool extract_field(unsigned icol, google::protobuf::Message* m,
                      const google::protobuf::FieldDescriptor* d);
-  bool extract_repeated_field(unsigned icol, uint64_t loop_id, 
+  bool extract_repeated_field(unsigned icol, uint64_t loop_id,
                               google::protobuf::Message* m,
                               const google::protobuf::FieldDescriptor* d);
 

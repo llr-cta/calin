@@ -794,24 +794,142 @@ bool SQLSerializer::r_exec_insert(SQLTable* t, const google::protobuf::Message* 
   return good;
 }
 
+namespace {
+  bool field_selected(const google::protobuf::FieldDescriptor* f,
+    const std::map<const google::protobuf::OneofDescriptor*,int>& oneof_map)
+  {
+    const google::protobuf::OneofDescriptor* c_oneof = f->containing_oneof();
+    if(c_oneof != nullptr and
+        (oneof_map.count(c_oneof)==0 or oneof_map.at(c_oneof) != f->number()))
+      return false;
+    return true;
+  }
+} // anonymous namespace
+
 bool SQLSerializer::
 exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
   bool ignore_errors)
 {
   t->stmt_select_oid->bind_uint64(0, oid);
 
-  unsigned count = 0;
-  SQLStatement::StepStatus status = SQLStatement::OK_HAS_DATA;
+  google::protobuf::Message* m_parent = nullptr;
+  std::vector<uint64_t> m_parent_loop_index;
+  for(auto ifield : t->fields) {
+    if(ifield->is_inherited() and not ifield->is_root_oid) {
+      m_parent_loop_index.emplace_back(0);
+    }
+  }
+  std::vector<uint64_t> step_loop_index = m_parent_loop_index;
+
+  unsigned row_count = 0;
+  SQLStatement::StepStatus status = status = t->stmt_select_oid->step();
   if(write_sql_to_log_)LOG(INFO) << t->stmt_select_oid->bound_sql();
   while(status == SQLStatement::OK_HAS_DATA)
   {
-    status = t->stmt_select_oid->step();
-    if(status != SQLStatement::OK_HAS_DATA)break;
-    ++count;
+    bool good = true;
+    auto ifield = t->fields.begin();
+    unsigned icol = 0;
+    uint64_t loop_id = 0;
+    google::protobuf::Message* m = nullptr;
+    std::map<const OneofDescriptor*, int> oneof_map;
 
+    ++row_count;
+
+    if((*ifield)->is_root_oid)++ifield;
+
+    while(icol<step_loop_index.size()) {
+      step_loop_index[icol] = t->stmt_select_oid->extract_uint64(icol, &good);
+      if(!good)goto next_step;
+      ++icol;
+      ++ifield;
+    }
+
+    if(m_parent == nullptr or step_loop_index != m_parent_loop_index) {
+      // Walk m_parent to correct place
+      m_parent = m_root;
+      m_parent_loop_index = step_loop_index;
+      int iloop_index = 0;
+      for(auto* d : t->root_field_d_path) {
+        auto* r = m_parent->GetReflection();
+        if(d->is_repeated()) {
+          assert(iloop_index < m_parent_loop_index.size());
+          int loop_index = m_parent_loop_index[iloop_index];
+          ++iloop_index;
+          assert(loop_index < r->FieldSize(m, d));
+          // if(r->FieldSize(m, d) <= loop_index)r->AddMessage(m_parent, d);
+          m_parent = r->MutableRepeatedMessage(m_parent, d, loop_index);
+        } else {
+          m_parent = r->MutableMessage(m_parent, d);
+        }
+      }
+      assert(iloop_index == m_parent_loop_index.size());
+    }
+
+    if(t->parent_table == nullptr) {
+      m = m_root;
+    } else if (not t->parent_field_d->is_repeated()) {
+      assert(t->parent_field_d->type()==FieldDescriptor::TYPE_MESSAGE);
+      m = m_parent->GetReflection()->MutableMessage(m_parent, t->parent_field_d);
+    }
+
+    if(ifield == t->fields.end()) goto next_step;
+
+    if((*ifield)->field_type == SQLTableField::KEY_LOOP_ID) {
+      loop_id = t->stmt_select_oid->extract_uint64(icol, &good);
+      if(!good)goto next_step;
+      ++icol;
+      ++ifield;
+    }
+
+    if(m == nullptr) {
+      // In this case we are talkling about a repeated field
+      auto* r = m_parent->GetReflection();
+      if(t->parent_field_d->type()==FieldDescriptor::TYPE_MESSAGE) {
+        if(r->FieldSize(*m_parent, t->parent_field_d) <= loop_id)
+          r->AddMessage(m_parent, t->parent_field_d);
+        m = r->MutableRepeatedMessage(m_parent, t->parent_field_d, loop_id);
+      } else {
+        m = m_parent;
+      }
+    }
+
+    while(ifield != t->fields.end() and (*ifield)->oneof_d) {
+      if(not t->stmt_select_oid->column_is_null(icol)) {
+        oneof_map[(*ifield)->oneof_d] = t->stmt_select_oid->extract_uint64(icol, &good);
+      }
+      if(!good)goto next_step;
+      ++icol;
+      ++ifield;
+    }
+
+    while(ifield != t->fields.end()) {
+      if(not t->stmt_select_oid->column_is_null(icol) and
+        field_selected((*ifield)->field_d, oneof_map))
+      {
+        if((*ifield)->field_d->is_repeated())
+          good = t->stmt_select_oid->extract_repeated_field(icol, loop_id, m, (*ifield)->field_d);
+        else
+          good = t->stmt_select_oid->extract_field(icol, m, (*ifield)->field_d);
+        if(!good)goto next_step;
+      }
+      ++icol;
+      ++ifield;
+    }
+
+next_step:
+    if(not good) {
+      throw std::runtime_error(
+        std::string("SQLSerializer::exec_select_by_oid: could not extract column ")
+        + std::to_string(icol) + " [" + (*ifield)->field_name + "]");
+    }
+
+    status = t->stmt_select_oid->step();
   }
 
-  LOG(INFO) << "Reveived : " << count << " entries";
+  if(write_sql_to_log_) {
+    if(row_count!=1)LOG(INFO) << "Retrieved " << row_count << " rows";
+    else LOG(INFO) << "Retreived " << row_count << " row";
+  }
 
   if(status == SQLStatement::ERROR and not ignore_errors) {
     LOG(ERROR) << "SQL statement returned error: "
