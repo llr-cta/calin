@@ -38,4 +38,8 @@
 
 %import "iact_data/event_visitor.i"
 %import "diagnostics/run_info.pb.i"
+
+%newobject calin::diagnostics::run_info::RunInfoDiagnosticsParallelEventVisitor::run_config();
+%newobject calin::diagnostics::run_info::RunInfoDiagnosticsParallelEventVisitor::run_info();
+
 %include "diagnostics/run_info.hpp"

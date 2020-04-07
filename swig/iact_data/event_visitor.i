@@ -40,7 +40,7 @@
   const std::map<calin::iact_data::event_visitor::TelescopeEventVisitor*,
     calin::iact_data::event_visitor::TelescopeEventVisitor*>& antecedent_visitors);
 %newobject new_sub_visitor(
-  const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-    calin::iact_data::event_visitor::ParallelEventVisitor*>& antecedent_visitors);
+  std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+    calin::iact_data::event_visitor::ParallelEventVisitor*> antecedent_visitors);
 
 %include "iact_data/event_visitor.hpp"

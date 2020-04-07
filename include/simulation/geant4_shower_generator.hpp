@@ -28,6 +28,7 @@
 #include"simulation/atmosphere.hpp"
 #include"simulation/tracker.hpp"
 #include"simulation/world_magnetic_model.hpp"
+#include"simulation/geant4_shower_generator.pb.h"
 
 #include"calin_global_definitions.hpp"
 
@@ -57,7 +58,18 @@ enum class VerbosityLevel {
 
 class Geant4ShowerGenerator
 {
- public:
+public:
+  CALIN_TYPEALIAS(config_type,
+    calin::ix::simulation::geant4_shower_generator::GEANT4ShowerGeneratorConfiguration);
+
+  Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
+                        calin::simulation::atmosphere::Atmosphere* atm,
+                        config_type config = default_config(),
+                        calin::simulation::world_magnetic_model::FieldVsElevation* bfield = nullptr,
+                        bool adopt_visitor = false,
+                        bool adopt_atm = false,
+                        bool adopt_bfield = false);
+
   Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                         calin::simulation::atmosphere::Atmosphere* atm,
                         unsigned num_atm_layers, double zground, double ztop,
@@ -93,7 +105,13 @@ class Geant4ShowerGenerator
 
   uint32_t random_seed() const { return seed_; }
 
- protected:
+  static double get_material_density(const std::string& material_name);
+  static config_type default_config();
+
+protected:
+  void construct(unsigned num_atm_layers, VerbosityLevel verbose_level,
+    double default_cut_value_cm, double detector_size, const std::string& material_name);
+
   calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
   calin::simulation::atmosphere::Atmosphere* atm_ = nullptr;

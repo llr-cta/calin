@@ -37,7 +37,4 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-//%apply double &OUTPUT { double& x, double& y };
-//%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& xv, Eigen::VectorXd& yv };
-
 %include "math/lomb_scargle.hpp"

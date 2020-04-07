@@ -168,6 +168,27 @@ bool append_4chars(std::string& t, unsigned u)
 
 calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
 {
+  std::set<std::string> env_whitelist;
+  env_whitelist.insert("USER");
+  env_whitelist.insert("PATH");
+  env_whitelist.insert("LD_LIBRARY_PATH");
+  env_whitelist.insert("PYTHONPATH");
+  env_whitelist.insert("DYLD_LIBRARY_PATH");
+  env_whitelist.insert("G4DATADIR");
+  env_whitelist.insert("G4DATADIR");
+  env_whitelist.insert("G4NEUTRONHPDATA");
+  env_whitelist.insert("G4LEDATA");
+  env_whitelist.insert("G4LEVELGAMMADATA");
+  env_whitelist.insert("G4RADIOACTIVEDATA");
+  env_whitelist.insert("G4SAIDXSDATA");
+  env_whitelist.insert("G4PARTICLEXSDATA");
+  env_whitelist.insert("G4ABLADATA");
+  env_whitelist.insert("G4INCLDATA");
+  env_whitelist.insert("G4PIIDATA");
+  env_whitelist.insert("G4ENSDFSTATEDATA");
+  env_whitelist.insert("G4REALSURFACEDATA");
+  env_whitelist.insert("G4TENDL");
+
   calin::ix::provenance::system_info::HostAndProcessInfo* info =
     new calin::ix::provenance::system_info::HostAndProcessInfo;
   info->set_process_id(::getpid());
@@ -183,13 +204,22 @@ calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
   for(char** ienv = environ; *ienv; ++ienv) {
     std::string env(*ienv);
     auto iequals = env.find_first_of('=');
-    if(iequals == std::string::npos)
-      (*info->mutable_environment())[env] = "";
-    else if(iequals == env.size()-1)
-      (*info->mutable_environment())[env.substr(0,iequals)] = "";
-    else
-      (*info->mutable_environment())[env.substr(0,iequals)] = env.substr(iequals+1);
+    std::string evar;
+    std::string eval;
+    if(iequals == std::string::npos) {
+      evar = env; eval = "";
+    } else if(iequals == env.size()-1) {
+      evar = env.substr(0,iequals); eval = "";
+    } else {
+      evar = env.substr(0,iequals); eval = env.substr(iequals+1);
+    }
+    if(env_whitelist.count(evar))
+      (*info->mutable_environment())[evar] = eval;
   }
+
+  char* cwd = ::getcwd(NULL, 0);
+  info->set_current_working_directory(cwd);
+  ::free(cwd);
 
   struct utsname uname_info;
   ::uname(&uname_info);

@@ -1,0 +1,176 @@
+/*
+
+   calin/proto/diagnostics/simple_charge_stats.proto -- Stephen Fegan -- 2020-03-20
+
+   Protobufs for (simple-sum) channel charge stats
+
+   Copyright 2020, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+option cc_enable_arenas = true;
+
+import "calin.proto";
+import "math/histogram.proto";
+
+package calin.ix.diagnostics.simple_charge_stats;
+
+message SimpleChargeStatsConfig {
+
+};
+
+message OneGainSimpleChargeStats {
+  repeated int64 all_trigger_event_count                            = 10 [
+    (CFO).desc = "Number of events for which gain is present." ];
+  repeated double all_trigger_ped_win_mean                          = 11 [
+    (CFO).desc = "Mean of pedestal-window charge estimate in over all events.",
+    (CFO).units = "DC" ];
+  repeated double all_trigger_ped_win_var                           = 12 [
+    (CFO).desc = "Variance of pedestal-window charge estimate over all events.",
+    (CFO).units = "DC^2" ];
+
+  repeated int64 ped_trigger_event_count                            = 20 [
+    (CFO).desc = "Number of pedestal events for gain channel is present." ];
+  repeated double ped_trigger_full_wf_mean                          = 21 [
+    (CFO).desc = "Mean of full-waveform charge estimate over pedestal events.",
+    (CFO).units = "DC" ];
+  repeated double ped_trigger_full_wf_var                           = 22 [
+    (CFO).desc = "Variance of full-waveform charge estimate over pedestal events.",
+    (CFO).units = "DC^2" ];
+};
+
+message SimpleChargeStats {
+  OneGainSimpleChargeStats high_gain                                = 10 [
+    (CFO).desc = "Stats for high-gain (in two gain cameras) or unique-gain channel." ];
+  OneGainSimpleChargeStats low_gain                                 = 20 [
+    (CFO).desc = "Stats for low-gain channel if camera supports two gain channels." ];
+};
+
+message PartialOneGainChannelSimpleChargeStats {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  int64 all_trig_num_events                                         = 10 [
+    (CFO).desc = "Number of events channel present.",
+    (CFO).is_counter=true ];
+  int64 all_trig_ped_win_sum                                        = 11 [
+    (CFO).desc = "Sum of pedestal window over all events.",
+    (CFO).is_counter=true ];
+  int64 all_trig_ped_win_sumsq                                      = 12 [
+    (CFO).desc = "Sum of pedestal window squared over all events.",
+    (CFO).is_counter=true ];
+
+  int64 ped_trig_num_events                                         = 20 [
+    (CFO).desc = "Number of events channel present.",
+    (CFO).is_counter=true ];
+  int64 ped_trig_full_wf_sum                                        = 21 [
+    (CFO).desc = "Sum of pedestal window over all events.",
+    (CFO).is_counter=true ];
+  int64 ped_trig_full_wf_sumsq                                      = 22 [
+    (CFO).desc = "Sum of pedestal window squared over all events.",
+    (CFO).is_counter=true ];
+}
+
+message PartialChannelSimpleChargeStats {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  PartialOneGainChannelSimpleChargeStats high_gain                  = 10 [
+    (CFO).desc = "High-gain (in two gain cameras) or unique-gain channel." ];
+  PartialOneGainChannelSimpleChargeStats low_gain                   = 11 [
+    (CFO).desc = "Low-gain channel if camera supports two gain channels." ];
+};
+
+message PartialSimpleChargeStats {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  repeated PartialChannelSimpleChargeStats channel                  = 100 [
+    (CFO).desc = "Computed statistics for each configured channel" ];
+};
+
+message OptimalWindowStatsConfig {
+  double opt_win_mean_time_histogram_resolution                     = 1 [
+    (CFO).desc = "Resolution of pulse time resolution.", (CFO).units="sample" ];
+};
+
+message ChannelOptimalWindowFullStats {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  uint32 num_entries                                                = 2 [
+    (CFO).desc = "Number of times this channel has data." ];
+
+  calin.ix.math.histogram.Histogram1DData max_samp_histogram        = 10 [
+    (CFO).desc = "Histogram of maximum sample amplitude.",
+    (CFO).units="DC" ];
+  calin.ix.math.histogram.Histogram1DData max_samp_index_histogram  = 11 [
+    (CFO).desc = "Histogram ofindex within waveform of maximum sample.",
+    (CFO).units="samples" ];
+  calin.ix.math.histogram.Histogram1DData bkg_win_sum_histogram     = 12 [
+    (CFO).desc = "Histogram of summed 'charge' in fixed background window.",
+    (CFO).units="DC" ];
+  calin.ix.math.histogram.Histogram1DData sig_win_sum_histogram     = 13 [
+    (CFO).desc = "Histogram of summed 'charge' in fixed signal window.",
+    (CFO).units="DC" ];
+  calin.ix.math.histogram.Histogram1DData opt_win_sum_histogram     = 14 [
+    (CFO).desc = "Histogram of summed 'charge' in window that gives largest charge.",
+    (CFO).units="DC" ];
+  calin.ix.math.histogram.Histogram1DData opt_win_sum_qt_histogram  = 15 [
+    (CFO).desc = "Histogram of summed 'charge * time' in window that gives largest charge.",
+    (CFO).units="DC samples" ];
+  calin.ix.math.histogram.Histogram1DData opt_win_index_histogram   = 16 [
+    (CFO).desc = "Histogram of index within waveform of start of window that "
+      "gives largest charge.", (CFO).units="samples" ];
+  calin.ix.math.histogram.Histogram1DData waveform_sum_histogram    = 17 [
+    (CFO).desc = "Histogram of summed 'charge' in full waveform.",
+    (CFO).units="DC" ];
+
+  calin.ix.math.histogram.Histogram1DData sig_minus_bkg_histogram   = 20 [
+    (CFO).desc = "Histogram of summed 'charge' difference between fixed signal and "
+      "background windows.",
+    (CFO).units="DC" ];
+  calin.ix.math.histogram.Histogram1DData opt_minus_bkg_histogram   = 21 [
+    (CFO).desc = "Histogram of summed 'charge' difference between optimal signal and "
+      "fixed background windows.",
+    (CFO).units="DC" ];
+  calin.ix.math.histogram.Histogram1DData opt_win_mean_time         = 22 [
+    (CFO).desc = "Histogram of mean time in optimal window after subtracting "
+      "contribution from estimated pedestal.",
+    (CFO).units="DC samples" ];
+};
+
+message OptimalWindowStats {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  uint32 integration_n                                     = 1 [
+    (CFO).desc = "Size of integration window in samples." ];
+  int32 bkg_integration_0                                  = 2 [
+    (CFO).desc = "Start of background integration window in samples." ];
+  int32 sig_integration_0                                  = 3 [
+    (CFO).desc = "Default start of signal integration window in samples, if not "
+      "overridden by per-channel setting \"sig_integration_0_chan\"." ];
+  repeated int32 chan_sig_integration_0                    = 4 [
+    (CFO).desc = "Start of signal integration window in samples for each channel." ];
+
+
+
+
+  repeated ChannelOptimalWindowFullStats physics_rawstats          = 10 [
+    (CFO).desc = "Statistics for all channels from physics trigger events." ];
+  repeated ChannelOptimalWindowFullStats pedestal_trigger_stats         = 11 [
+    (CFO).desc = "Statistics for all channels from physics trigger events." ];
+  repeated ChannelOptimalWindowFullStats internal_flasher_trigger_stats = 12 [
+    (CFO).desc = "Statistics for all channels from internal-flasher trigger events." ];
+  repeated ChannelOptimalWindowFullStats external_flasher_trigger_stats = 13 [
+    (CFO).desc = "Statistics for all channels from external-flasher trigger events." ];
+};

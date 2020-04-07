@@ -58,4 +58,5 @@
 %import "simulation/atmosphere.i"
 %import "simulation/tracker.i"
 
+%import "simulation/geant4_shower_generator.pb.i"
 %include "simulation/geant4_shower_generator.hpp"

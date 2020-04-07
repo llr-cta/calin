@@ -219,8 +219,8 @@ TYPED_TEST(VCLHexArrayRealTest, HexIDToXY_CW_Equals_Scalar) {
 }
 
 TYPED_TEST(VCLHexArrayRealTest, XYToHexID_Equals_Scalar) {
-  for(double x=-10.005; x<10.015; x+=0.02)
-    for(double y=-10.005; y<10.015; y+=0.02)
+  for(double x=-10.005; x<10.015; x+=0.04)
+    for(double y=-10.005; y<10.015; y+=0.04)
     {
       double xx1 = x;
       double yy1 = y;
@@ -236,8 +236,8 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexID_Equals_Scalar) {
 }
 
 TYPED_TEST(VCLHexArrayRealTest, XYToHexID_CW_Equals_Scalar) {
-  for(double x=-10.005; x<10.015; x+=0.02)
-    for(double y=-10.005; y<10.015; y+=0.02)
+  for(double x=-10.005; x<10.015; x+=0.04)
+    for(double y=-10.005; y<10.015; y+=0.04)
     {
       double xx1 = x;
       double yy1 = y;
@@ -282,8 +282,8 @@ TYPED_TEST(VCLHexArrayRealTest, XYToUV_Trans_Equals_Scalar) {
   float ctheta = std::cos(theta);
   float stheta = std::sin(theta);
   float scale = 0.9326575752f;
-  for(double x=-10.005; x<10.015; x+=0.02)
-    for(double y=-10.005; y<10.015; y+=0.02)
+  for(double x=-10.005; x<10.015; x+=0.04)
+    for(double y=-10.005; y<10.015; y+=0.04)
     {
       double xx1 = x;
       double yy1 = y;
@@ -335,7 +335,7 @@ TYPED_TEST(VCLHexArrayRealTest, HexIDToXY_Trans_Equals_Scalar_RNG) {
   float scale = 0.9326575752f;
 
   VCLRNG<typename TypeParam::architecture> rng(__PRETTY_FUNCTION__, "core");
-  for(unsigned i=0;i<1000000;i++)
+  for(unsigned i=0;i<100000;i++)
   {
     typename TypeParam::int_vt hexid;
     rng.uniform_int(hexid);
@@ -363,8 +363,8 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexID_Trans_Equals_Scalar) {
   float ctheta = std::cos(theta);
   float stheta = std::sin(theta);
   float scale = 0.9326575752f;
-  for(double x=-10.005; x<10.015; x+=0.02)
-    for(double y=-10.005; y<10.015; y+=0.02)
+  for(double x=-10.005; x<10.015; x+=0.04)
+    for(double y=-10.005; y<10.015; y+=0.04)
     {
       double xx1 = x;
       double yy1 = y;
@@ -386,8 +386,8 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexID_CW_Trans_Equals_Scalar) {
   float ctheta = std::cos(theta);
   float stheta = std::sin(theta);
   float scale = 0.9326575752f;
-  for(double x=-10.005; x<10.015; x+=0.02)
-    for(double y=-10.005; y<10.015; y+=0.02)
+  for(double x=-10.005; x<10.015; x+=0.04)
+    for(double y=-10.005; y<10.015; y+=0.04)
     {
       double xx1 = x;
       double yy1 = y;
@@ -411,7 +411,7 @@ TYPED_TEST(VCLHexArrayRealTest, XYToHexIDWithRemainder_Trans_FwdBack_RNG) {
   float scale = 0.9326575752f;
 
   VCLRNG<typename TypeParam::architecture> rng(__PRETTY_FUNCTION__, "core");
-  for(unsigned i=0;i<1000000;i++)
+  for(unsigned i=0;i<100000;i++)
   {
     typename TypeParam::real_vt x;
     typename TypeParam::real_vt y;

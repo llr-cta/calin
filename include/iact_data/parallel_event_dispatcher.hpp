@@ -88,33 +88,6 @@ public:
     const calin::ix::iact_data::event_dispatcher::EventDispatcherConfig& config = default_config());
 #endif
 
-#if 0
-  void process_nectarcam_zfits_run(const std::string& filename,
-    unsigned log_frequency = 0, int nthread = 0,
-    const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config =
-      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource_L0::default_decoder_config(),
-    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config =
-      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource_L0::default_config());
-
-  void process_nectarcam_zfits_run(const std::string& filename,
-    unsigned log_frequency, int nthread,
-    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config,
-    const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config =
-      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource_L0::default_decoder_config()) {
-    return process_nectarcam_zfits_run(filename, log_frequency, nthread,
-      decoder_config, zfits_config);
-  }
-
-  void process_nectarcam_zfits_run(const std::string& filename,
-    const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config,
-    unsigned log_frequency = 0, int nthread = 0,
-    const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config =
-      calin::iact_data::nectarcam_data_source::NectarCamZFITSDataSource_L0::default_config()) {
-    return process_nectarcam_zfits_run(filename, log_frequency, nthread,
-      decoder_config, zfits_config);
-  }
-#endif
-
   static calin::ix::iact_data::event_dispatcher::EventDispatcherConfig default_config();
 
   static bool merge_run_config(calin::ix::iact_data::
@@ -127,12 +100,11 @@ private:
   // are not meant to be called directly as the visiors expect them to be
   // called in a specific order. They are liable to be made private.
   void dispatch_run_configuration(calin::ix::iact_data::
-    telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    bool dispatch_only_to_adopted_visitors = false);
+    telescope_run_configuration::TelescopeRunConfiguration* run_config);
   void dispatch_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
-  void dispatch_leave_run(bool dispatch_only_to_adopted_visitors = false);
-  void dispatch_merge_results(bool dispatch_only_to_adopted_visitors = true);
+  void dispatch_leave_run();
+  void dispatch_merge_results();
 
   void do_parallel_dispatcher_loops(
     calin::ix::iact_data::
@@ -149,6 +121,9 @@ private:
     unsigned log_frequency,
     const std::chrono::system_clock::time_point& start_time,
     std::atomic<uint_fast64_t>& ndispatched);
+
+  void write_initial_log_message(calin::ix::iact_data::
+    telescope_run_configuration::TelescopeRunConfiguration* run_config, int nthread);
 
   void write_final_log_message(
     unsigned log_frequency, const std::chrono::system_clock::time_point& start_time,

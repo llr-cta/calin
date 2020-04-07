@@ -171,6 +171,12 @@
   // nothing to see here
 }
 
+%typemap(typecheck, precedence=5000) const Eigen::MatrixXd&
+{
+  // typemap(typecheck) const Eigen::VectorXd& -- calin_typemap_vectorxd.i
+  $1 = _swig_numpy_is_array($input) ? 1 : 0;
+}
+
 // ****************************** Eigen::MatrixXd& *****************************
 
 %typemap(in, fragment="Calin_Python_to_EigenMat")

@@ -60,17 +60,17 @@ private:
 
 #endif // not defined SWIG
 
-class RunInfoDiagnosticsVisitor:
+class RunInfoDiagnosticsParallelEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  RunInfoDiagnosticsVisitor(const calin::ix::diagnostics::run_info::RunInfoConfig& config = default_config());
+  RunInfoDiagnosticsParallelEventVisitor(const calin::ix::diagnostics::run_info::RunInfoConfig& config = default_config());
 
-  virtual ~RunInfoDiagnosticsVisitor();
+  virtual ~RunInfoDiagnosticsParallelEventVisitor();
 
-  RunInfoDiagnosticsVisitor* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+  RunInfoDiagnosticsParallelEventVisitor* new_sub_visitor(
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override;
 
   bool visit_telescope_run(
@@ -84,8 +84,17 @@ public:
 
   bool merge_results() override;
 
-  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration& run_config() const;
-  const calin::ix::diagnostics::run_info::RunInfo& run_info();
+#ifndef SWIG
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config(
+    calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* rc = nullptr) const;
+  calin::ix::diagnostics::run_info::RunInfo* run_info(calin::ix::diagnostics::run_info::RunInfo* ri = nullptr) const;
+#else
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config() const;
+  void run_config(calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* rc) const;
+  calin::ix::diagnostics::run_info::RunInfo* run_info() const;
+  void run_info(calin::ix::diagnostics::run_info::RunInfo* ri) const;
+#endif
+
   const calin::ix::diagnostics::run_info::PartialRunInfo& partial_run_info() const;
 
   static calin::ix::diagnostics::run_info::RunInfoConfig default_config();
@@ -93,10 +102,9 @@ public:
 private:
 
 
-  void integrate_histograms();
   void integrate_partials ();
 
-  RunInfoDiagnosticsVisitor* parent_ = nullptr;
+  RunInfoDiagnosticsParallelEventVisitor* parent_ = nullptr;
   calin::ix::diagnostics::run_info::RunInfoConfig config_ = default_config();
 
   std::vector<int64_t> mod_counter_values_;
@@ -104,8 +112,6 @@ private:
   std::vector<unsigned> mod_counter_mode_;
   std::vector<ModuleCounterProcessor*> mod_counter_processor_;
 
-  calin::math::histogram::Histogram1D event_number_hist_ { 1.0e4, 0.0, 1.0e9, 0.0 };
-  calin::math::histogram::Histogram1D elapsed_time_hist_ { 1.0, -60.0, 7200.0, 0.0 };
   google::protobuf::Arena* arena_ = nullptr;
   calin::ix::diagnostics::run_info::RunInfo* results_ = nullptr;
   calin::ix::diagnostics::run_info::PartialRunInfo* partials_ = nullptr;

@@ -87,7 +87,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
 
   calin_event->set_telescope_id(telescope_id_);
   calin_event->set_local_event_number(cta_event->tel_event_id());
-  calin_event->set_trigger_type(TRIGGER_SCIENCE);
+  calin_event->set_trigger_type(TRIGGER_UNKNOWN);
   calin_event->set_array_trigger_received(false);
   calin_event->set_array_event_number(cta_event->event_id());
   //calin_event->local_clock_time
@@ -307,6 +307,24 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
   if(calin_event->has_absolute_event_time() and run_start_time_!=0) {
     calin_event->mutable_elapsed_event_time()->set_time_ns(
       calin_event->absolute_event_time().time_ns() - run_start_time_);
+  }
+
+  // ==========================================================================
+  //
+  // FIGURE OUT EVENT TYPE
+  //
+  // ==========================================================================
+
+  if(calin_event->has_tib_data()) {
+    calin_event->set_trigger_type(
+      calin::iact_data::actl_event_decoder::determine_trigger_type(
+        &calin_event->tib_data(), nullptr));
+  } else if(calin_event->has_cdts_data()) {
+    calin_event->set_trigger_type(
+      calin::iact_data::actl_event_decoder::determine_trigger_type(
+        nullptr, &calin_event->cdts_data()));
+  } else {
+    // Now what cat? Now what?
   }
 
   // ==========================================================================
@@ -590,6 +608,14 @@ copy_single_gain_waveforms(
         std::copy(cta_waveforms, cta_waveforms+nsample_, calin_wf_raw_data);
         calin_wf_raw_data += nsample_;
         calin_waveforms->add_channel_index(calin_waveforms->channel_id_size());
+        if((has_gain_mask == 0x04) or (has_gain_mask == 0x0C and cta_pixel_mask[ipix] == 0x04)) {
+          calin_waveforms->add_channel_signal_type(calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN);
+        } else if ((has_gain_mask == 0x08) or (has_gain_mask == 0x0C and cta_pixel_mask[ipix] == 0x04)) {
+          calin_waveforms->add_channel_signal_type(calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN);
+        } else {
+          throw std::runtime_error("NectarCam_ACTL_R1_CameraEventDecoder::copy_single_gain_waveforms: Unhandled pixel mask: " +
+            std::to_string(unsigned(has_gain_mask)) + " / " + std::to_string(unsigned(cta_pixel_mask[ipix])));
+        }
         calin_waveforms->add_channel_id(ipix);
         if(config_.separate_channel_waveforms()) {
           auto* calin_samp = calin_waveforms->add_waveform()->mutable_samples();
@@ -611,6 +637,8 @@ copy_single_gain_waveforms(
         calin_wf_raw_data += nsample_;
         all_channels_present = false;
         calin_waveforms->add_channel_index(-1);
+        calin_waveforms->add_channel_signal_type(
+          calin::ix::iact_data::telescope_event::SIGNAL_NONE);
         cta_waveforms += nsample_;
       }
     }

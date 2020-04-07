@@ -527,7 +527,7 @@ TYPED_TEST(VCLRNGTests, CDFNormalFloatZCMoments)
     sumxx.accumulate(x*x);
     sumxxx.accumulate(x*x*x);
   }
-  
+
   typename TypeParam::float_vt m1 = sumx.total()/float(N);
   typename TypeParam::float_vt m2 = sumxx.total()/float(N);
   typename TypeParam::float_vt m3 = sumxxx.total()/float(N);

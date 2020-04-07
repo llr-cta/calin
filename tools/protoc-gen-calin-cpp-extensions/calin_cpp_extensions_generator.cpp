@@ -121,24 +121,29 @@ bool counter_field(const google::protobuf::FieldDescriptor* f,
   const calin::FieldOptions* cfo = &fopt->GetExtension(calin::CFO);
 
   if(!cfo->is_counter())return true;
-
-  if(f->is_repeated()) {
-    *error = "Repeated field cannot be counter: "+f->name();
-    return false;
-  }
-
   if(is_numeric_type(f->type())) {
     string name = allsmallcase(f->name());
     string type = f->cpp_type_name();
     if(type != "float" and type != "double")
       type = "::google::protobuf::" + type;
-    printer.Print("$type$ increment_$name$(const $type$ count=1) { \n"
-      "  set_$name$($name$() + count); return $name$(); }\n"
-      "$type$ increment_$name$_if(bool condition, const $type$ count=1) { \n"
-        "  if(condition) { set_$name$($name$() + count); }\n"
-        "  return $name$(); }\n",
-      "name", name, "type", type);
-    return true;
+    if(f->is_repeated()) {
+      printer.Print("$type$ increment_$name$(int index, const $type$ count=1) { \n"
+        "  while($name$_size() <= index) { add_$name$(0); };\n"
+        "  set_$name$(index, $name$(index) + count); return $name$(index); }\n"
+        "$type$ increment_$name$_if(bool condition, int index, const $type$ count=1) { \n"
+          "  if(condition) { return increment_$name$(index, count); }\n"
+          "  else { return $name$(index); } }\n",
+        "name", name, "type", type);
+      return true;
+    } else {
+      printer.Print("$type$ increment_$name$(const $type$ count=1) { \n"
+        "  set_$name$($name$() + count); return $name$(); }\n"
+        "$type$ increment_$name$_if(bool condition, const $type$ count=1) { \n"
+          "  if(condition) { set_$name$($name$() + count); }\n"
+          "  return $name$(); }\n",
+        "name", name, "type", type);
+      return true;
+    }
   } else {
     *error = "Non-numeric field cannot be counter: "+f->name();
     return false;

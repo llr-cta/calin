@@ -97,8 +97,8 @@ ParallelEventVisitor::~ParallelEventVisitor()
 }
 
 ParallelEventVisitor* ParallelEventVisitor::new_sub_visitor(
-  const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-    calin::iact_data::event_visitor::ParallelEventVisitor*>& antecedent_visitors)
+  std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+    calin::iact_data::event_visitor::ParallelEventVisitor*> antecedent_visitors)
 {
   return new ParallelEventVisitor;
 }
@@ -123,5 +123,97 @@ bool ParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
 
 bool ParallelEventVisitor::merge_results()
 {
-  return true;  
+  return true;
+}
+
+FilteredDelegatingParallelEventVisitor::
+FilteredDelegatingParallelEventVisitor():
+  ParallelEventVisitor()
+{
+  // nothing to see here
+}
+
+FilteredDelegatingParallelEventVisitor::
+~FilteredDelegatingParallelEventVisitor()
+{
+  for(auto ivisitor : delegates_) {
+    if(ivisitor.adopt_visitor)delete ivisitor.visitor;
+  }
+}
+
+FilteredDelegatingParallelEventVisitor*
+FilteredDelegatingParallelEventVisitor::new_sub_visitor(
+  std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+    calin::iact_data::event_visitor::ParallelEventVisitor*> antecedent_visitors)
+{
+  auto* sub_visitor = new FilteredDelegatingParallelEventVisitor();
+  for(auto ivisitor : delegates_) {
+    auto* dsv = ivisitor.visitor->new_sub_visitor(antecedent_visitors);
+    if(dsv == nullptr) {
+      throw std::runtime_error("FilteredDelegatingParallelEventVisitor::new_sub_visitor: delegated visitor returned null pointer.");
+    }
+    antecedent_visitors[ivisitor.visitor] = dsv;
+    if(ivisitor.unfiltered) {
+      sub_visitor->add_visitor(dsv, /* adopt_visitor= */ true);
+    } else {
+      sub_visitor->add_filtered_visitor(dsv, ivisitor.trigger_type, /* adopt_visitor= */ true);
+    }
+  }
+  return sub_visitor;
+}
+
+bool FilteredDelegatingParallelEventVisitor::visit_telescope_run(
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  EventLifetimeManager* event_lifetime_manager)
+{
+  bool good = true;
+  for(auto ivisitor : delegates_) {
+    good &= ivisitor.visitor->visit_telescope_run(run_config, event_lifetime_manager);
+  }
+  return good;
+}
+
+bool FilteredDelegatingParallelEventVisitor::leave_telescope_run()
+{
+  bool good = true;
+  for(auto ivisitor : delegates_) {
+    good &= ivisitor.visitor->leave_telescope_run();
+  }
+  return good;
+}
+
+bool FilteredDelegatingParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
+  calin::ix::iact_data::telescope_event::TelescopeEvent* event)
+{
+  bool good = true;
+  for(auto ivisitor : delegates_) {
+    if(ivisitor.unfiltered or event->trigger_type() == ivisitor.trigger_type) {
+      good &= ivisitor.visitor->visit_telescope_event(seq_index, event);
+    }
+  }
+  return good;
+}
+
+bool FilteredDelegatingParallelEventVisitor::merge_results()
+{
+  bool good = true;
+  for(auto ivisitor : delegates_) {
+    good &= ivisitor.visitor->merge_results();
+  }
+  return good;
+}
+
+void FilteredDelegatingParallelEventVisitor::add_visitor(
+  ParallelEventVisitor* visitor, bool adopt_visitor)
+{
+  delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ true,
+    calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN);
+}
+
+void FilteredDelegatingParallelEventVisitor::
+add_filtered_visitor(ParallelEventVisitor* visitor,
+  calin::ix::iact_data::telescope_event::TriggerType trigger_type,
+  bool adopt_visitor)
+{
+  delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ false, trigger_type);
 }

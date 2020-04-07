@@ -1,0 +1,61 @@
+/*
+
+   calin/proto/simulations/geant4_shower_generator.proto -- Stephen Fegan -- 2020-01-13
+
+   Protobufs for configuration of GEANT4 shower generator
+
+   Copyright 2020, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+//import "common_types.proto";
+
+package calin.ix.simulation.geant4_shower_generator;
+
+enum VerbosityLevel {
+  SUPPRESSED_ALL     = 0;
+  SUPRESSED_STDOUT   = 1;
+  NORMAL             = 2;
+  VERBOSE_EVENT      = 3;
+  VERBOSE_TRACKING   = 4;
+  VERBOSE_EVERYTHING = 5;
+};
+
+message GEANT4ShowerGeneratorConfiguration
+{
+  uint32 num_atm_layers                                    = 1
+    [(CFO).desc = "Number of atmospheric layers." ];
+  double zground                                           = 2
+    [(CFO).desc = "Altitude of ground level.", (CFO).units = "cm" ];
+  double ztop                                              = 3
+    [(CFO).desc = "Altitude of top of atmophere.", (CFO).units = "cm" ];
+  double tracking_cut_scale                                = 4
+    [(CFO).desc = "Particle tracking cut scale.", (CFO).units = "cm" ];
+
+  double detector_box_size                                 = 10
+    [(CFO).desc = "Size of box containing detector (in X & Y).",
+     (CFO).units = "cm" ];
+  string material                                          = 11
+    [(CFO).desc = "GEANT4 material name.",
+     (CFO).ref="http://geant4-userdoc.web.cern.ch/geant4-userdoc/UsersGuides/ForApplicationDeveloper/BackupVersions/V10.5-2.0/html/Appendix/materialNames.html#g4matrdb" ];
+
+  uint32 seed                                              = 20
+    [(CFO).desc = "GEANT4 random number seed." ];
+  VerbosityLevel verbosity                                 = 21
+    [(CFO).desc = "Verbosity of shower generator" ];
+};

@@ -53,7 +53,8 @@ using namespace calin::util::log;
 
 RNGCore::~RNGCore()
 {
-  // nothing to see here
+  if(chronicle_record_)
+    calin::provenance::chronicle::register_rng_close(chronicle_record_);
 }
 
 void RNGCore::bulk_uniform_uint64(void* buffer, std::size_t nbytes)
@@ -128,7 +129,8 @@ void RNGCore::write_provenance(
   const std::string& created_by, const std::string& comment)
 {
   const ix::math::rng::RNGCoreData* proto = this->as_proto();
-  calin::provenance::chronicle::register_rng_core(*proto, created_by, comment);
+  chronicle_record_ =
+    calin::provenance::chronicle::register_rng_core_open(*proto, created_by, comment);
   delete proto;
 }
 
@@ -149,7 +151,8 @@ RNG::RNG(CoreType core_type, const std::string& created_by,
       throw std::invalid_argument("Unsupported RNG core type: " + std::to_string(int(core_type)));
   }
   const ix::math::rng::RNGData* proto = this->as_proto();
-  calin::provenance::chronicle::register_calin_rng(*proto, created_by, comment);
+  chronicle_record_ =
+    calin::provenance::chronicle::register_calin_rng_open(*proto, created_by, comment);
   delete proto;
 }
 
@@ -171,7 +174,8 @@ RNG::RNG(uint64_t seed, CoreType core_type, const std::string& created_by,
       throw std::invalid_argument("Unsupported RNG core type: " + std::to_string(int(core_type)));
   }
   const ix::math::rng::RNGData* proto = this->as_proto();
-  calin::provenance::chronicle::register_calin_rng(*proto, created_by, comment);
+  chronicle_record_ =
+    calin::provenance::chronicle::register_calin_rng_open(*proto, created_by, comment);
   delete proto;
 }
 
@@ -180,7 +184,8 @@ RNG::RNG(RNGCore* core, bool adopt_core,
   core_(core), adopt_core_(adopt_core)
 {
   const ix::math::rng::RNGData* proto = this->as_proto();
-  calin::provenance::chronicle::register_calin_rng(*proto, created_by, comment);
+  chronicle_record_ =
+    calin::provenance::chronicle::register_calin_rng_open(*proto, created_by, comment);
   delete proto;
 }
 
@@ -194,13 +199,16 @@ RNG::RNG(const ix::math::rng::RNGData& proto, bool restore_state,
     bm_cachedval_ = proto.bm_cachedval();
   }
   const ix::math::rng::RNGData* proto2 = this->as_proto();
-  calin::provenance::chronicle::register_calin_rng(*proto2, created_by, comment);
+  chronicle_record_ =
+    calin::provenance::chronicle::register_calin_rng_open(*proto2, created_by, comment);
   delete proto2;
 }
 
 RNG::~RNG()
 {
   if(adopt_core_)delete core_;
+  if(chronicle_record_)
+    calin::provenance::chronicle::register_rng_close(chronicle_record_);
 }
 
 void RNG::save_to_proto(ix::math::rng::RNGData* proto) const

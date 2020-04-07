@@ -16,6 +16,16 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
+trigger:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - /
+    exclude:
+    - /travis.yml
+
 pool:
   vmImage: 'Ubuntu 16.04'
 

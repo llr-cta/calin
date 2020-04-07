@@ -1,0 +1,74 @@
+//-*-mode:protobuf; mode:font-lock;-*-
+
+/*
+
+   calin/proto/io/sql_serializer.proto -- Stephen Fegan -- 2020-03-31
+
+   Protobufs for database structure tables in SQL databases
+
+   Derived from sql_transceiver.proto -- Stephen Fegan -- 2015-10-10
+
+   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+
+package calin.ix.io.sql_serializer;
+
+message SQLSerializerVersion
+{
+  uint32 version              = 1 [(CFO).desc = "Version number describing what "
+    "fields the serializer should expect to find in the private database tables."];
+}
+
+message SQLSerializerParams
+{
+  uint32 version              = 1 [(CFO).desc = "Version number describing what "
+    "fields the serializer should expect to find in the private database tables."];
+}
+
+message SQLTable
+{
+  string base_name            = 1 [(CFO).desc = "Name of base table"];
+  string table_name           = 2 [(CFO).desc = "Full table name"];
+  string sql_table_name       = 3 [(CFO).desc = "SQL table name"];
+  string description          = 4 [(CFO).desc = "Description of table"];
+  string units                = 5 [(CFO).desc = "Units for data in table"];
+  string proto_message_type   = 6 [(CFO).desc = "Protobuf message type"];
+}
+
+message SQLTableField
+{
+  string base_name            = 1 [(CFO).desc = "Name of base table"];
+  string table_name           = 2 [(CFO).desc = "Full table name"];
+  string field_name           = 3 [(CFO).desc = "Full field name"];
+  string sql_table_name       = 4 [(CFO).desc = "SQL table name"];
+  string sql_field_name       = 5 [(CFO).desc = "SQL field name"];
+  string description          = 6 [(CFO).desc = "Description of table field"];
+  string units                = 7 [(CFO).desc = "Units for data in table field"];
+  string proto_message_type   = 8 [(CFO).desc = "Protobuf message type"];
+  string proto_field_name     = 9 [(CFO).desc = "Protobuf field name"];
+  uint32 proto_field_number   = 10 [(CFO).desc = "Protobuf field number"];
+  uint32 proto_field_type     = 11 [(CFO).desc = "Protobuf field type"];
+}
+
+message SQLTableAndFieldCollection
+{
+  repeated SQLTable tables      = 1 [(CFO).desc = "Tables in collection."];
+  repeated SQLTableField fields = 2 [(CFO).desc = "Fields in collection."];
+}

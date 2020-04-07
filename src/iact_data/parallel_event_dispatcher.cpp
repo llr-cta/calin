@@ -22,9 +22,11 @@
 
 #include <chrono>
 #include <type_traits>
+#include <iomanip>
 
 #include <util/string.hpp>
 #include <util/log.hpp>
+#include <util/timestamp.hpp>
 #include <iact_data/zfits_actl_data_source.hpp>
 #include <iact_data/cta_actl_event_decoder.hpp>
 #include <iact_data/event_dispatcher.hpp>
@@ -35,6 +37,7 @@
 
 using namespace calin::util::string;
 using namespace calin::util::log;
+using calin::util::timestamp::Timestamp;
 using namespace calin::iact_data::event_dispatcher;
 using namespace calin::io::data_source;
 using namespace calin::iact_data::telescope_data_source;
@@ -125,6 +128,7 @@ process_run(std::vector<calin::iact_data::telescope_data_source::
     calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
   for(auto* src: src_list)src_list_upcast.push_back(src);
   this->process_run(src_list_upcast, run_config, log_frequency);
+  delete run_config;
 }
 
 void ParallelEventDispatcher::
@@ -144,6 +148,7 @@ process_run(std::vector<calin::iact_data::telescope_data_source::
     calin::ix::iact_data::telescope_event::TelescopeEvent>*> src_list_upcast;
   for(auto* src: src_list)src_list_upcast.push_back(src);
   this->process_run(src_list_upcast, run_config, log_frequency);
+  delete run_config;
 }
 
 void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
@@ -155,6 +160,7 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
   auto start_time = std::chrono::system_clock::now();
   std::atomic<uint_fast64_t> ndispatched { 0 };
 
+  write_initial_log_message(run_config, nthread);
   dispatch_run_configuration(run_config);
   if(nthread <= 0)
   {
@@ -183,6 +189,7 @@ process_run(std::vector<calin::io::data_source::DataSource<
   auto start_time = std::chrono::system_clock::now();
   std::atomic<uint_fast64_t> ndispatched { 0 };
 
+  write_initial_log_message(run_config, src_list.size());
   dispatch_run_configuration(run_config);
   if(src_list.size() == 1)
   {
@@ -205,6 +212,7 @@ process_cta_zfits_run(const std::string& filename,
 {
   auto zfits_config = config.zfits();
   auto* cta_file = new CTAZFITSDataSource(filename, config.decoder(), zfits_config);
+  TelescopeRunConfiguration* run_config = cta_file->get_run_configuration();
 
   auto fragments = cta_file->all_fragment_names();
   if(fragments.empty()) {
@@ -216,9 +224,10 @@ process_cta_zfits_run(const std::string& filename,
 
   if(nthread == 1) {
     try {
-      process_run(cta_file, config.log_frequency());
+      process_run(cta_file, run_config, config.log_frequency());
     } catch(...) {
       delete cta_file;
+      delete run_config;
       throw;
     }
   } else {
@@ -226,7 +235,7 @@ process_cta_zfits_run(const std::string& filename,
       nthread*std::max(1U, zfits_config.file_fragment_stride()));
 
     std::vector<calin::iact_data::telescope_data_source::
-      TelescopeRandomAccessDataSourceWithRunConfig*> src_list(nthread);
+      TelescopeDataSource*> src_list(nthread);
     try {
       for(unsigned ithread=0; ithread<nthread; ithread++) {
         src_list[ithread] =
@@ -234,14 +243,16 @@ process_cta_zfits_run(const std::string& filename,
       }
       delete cta_file;
       cta_file = nullptr;
-      process_run(src_list, config.log_frequency());
+      process_run(src_list, run_config, config.log_frequency());
     } catch(...) {
       for(auto* src: src_list)delete src;
       delete cta_file;
+      delete run_config;
       throw;
     }
     for(auto* src: src_list)delete src;
   }
+  delete run_config;
 }
 
 void ParallelEventDispatcher::
@@ -282,74 +293,6 @@ process_cta_zmq_run(const std::string& endpoint,
   process_cta_zmq_run(endpoints, config);
 }
 #endif // defined(CALIN_HAVE_CTA_CAMERASTOACTL)
-
-#if 0
-void ParallelEventDispatcher::process_nectarcam_zfits_run(
-  const std::string& filename,
-  unsigned log_frequency, int nthread,
-  const calin::ix::iact_data::nectarcam_data_source::NectarCamCameraEventDecoderConfig& decoder_config,
-  const calin::ix::iact_data::zfits_data_source::ZFITSDataSourceConfig& zfits_config)
-{
-  auto start_time = std::chrono::system_clock::now();
-  std::atomic<uint_fast64_t> ndispatched { 0 };
-
-  calin::iact_data::zfits_actl_data_source::
-    ZFITSACTL_L0_CameraEventDataSource zfits_actl_src(filename, zfits_config);
-  calin::iact_data::nectarcam_actl_event_decoder::
-    NectarCam_ACTL_L0_CameraEventDecoder decoder(filename,
-      calin::util::file::extract_run_number_from_filename(filename),
-      decoder_config);
-
-  const DataModel::CameraEvent* actl_sample_event = nullptr;
-  const DataModel::CameraRunHeader* actl_run_header = nullptr;
-  try {
-    zfits_actl_src.set_next_index(0);
-    uint64_t unused_seq_index = 0;
-    actl_sample_event = zfits_actl_src.borrow_next_event(unused_seq_index);
-  } catch(...) {
-    // ignore errors that occur reading sample event;
-  }
-  try {
-    actl_run_header = zfits_actl_src.get_run_header();
-  } catch(...) {
-    // ignore errors that occur reading run header
-  }
-  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration run_config;
-  decoder.decode_run_config(&run_config, actl_run_header, actl_sample_event);
-  delete actl_run_header;
-  zfits_actl_src.release_borrowed_event(actl_sample_event);
-  zfits_actl_src.set_next_index(0);
-  run_config.clear_fragment_filename();
-  for(const auto& ifilename : zfits_actl_src.source_names())
-    run_config.add_fragment_filename(ifilename);
-
-  dispatch_run_configuration(&run_config);
-
-  zfits_actl_data_source::ZFITSConstACTL_L0_CameraEventDataSourceBorrowAdapter zfits_actl_borrow_src(&zfits_actl_src);
-  zfits_actl_data_source::ZFITSConstACTL_L0_CameraEventDataSourceReleaseAdapter zfits_actl_release_sink(&zfits_actl_src);
-
-  if(nthread <= 0)
-  {
-    calin::iact_data::actl_event_decoder::DecodedConstACTL_L0_CameraEventDataSource src(
-      &zfits_actl_borrow_src, &zfits_actl_release_sink, &decoder);
-    do_dispatcher_loop(&src, log_frequency, start_time, ndispatched);
-  }
-  else
-  {
-    calin::io::data_source::BidirectionalBufferedDataSourcePump<
-      const DataModel::CameraEvent> pump(&zfits_actl_borrow_src, &zfits_actl_release_sink,
-        /* buffer_size = */ 100, /* sink_unsent_data = */ true);
-    calin::iact_data::actl_event_decoder::DecodedConstACTL_L0_CameraEventDataSourceFactory factory(
-      &pump, &decoder);
-
-    do_parallel_dispatcher_loops(&run_config, &factory, nthread, log_frequency,
-      start_time, ndispatched);
-  }
-
-  dispatch_leave_run();
-  write_final_log_message(log_frequency, start_time, ndispatched);
-}
-#endif // 0
 
 calin::ix::iact_data::event_dispatcher::EventDispatcherConfig
 ParallelEventDispatcher::default_config()
@@ -395,14 +338,13 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
     for(auto* v : visitors_)
     {
       ParallelEventVisitor* sv = v->new_sub_visitor(antecedent_visitors);
-      if(sv) {
-        d->add_visitor(sv, true);
-        antecedent_visitors[v] = sv;
-      } else {
-        d->add_visitor(v, false);
+      if(sv == nullptr) {
+        throw std::runtime_error("ParallelEventDispatcher::do_parallel_dispatcher_loops: delegated visitor returned null pointer.");
       }
+      d->add_visitor(sv, true);
+      antecedent_visitors[v] = sv;
     }
-    d->dispatch_run_configuration(run_config, /* dispatch_only_to_adopted_visitors = */true);
+    d->dispatch_run_configuration(run_config);
   }
 
   std::vector<std::thread> threads;
@@ -437,8 +379,8 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
 
   for(auto* d : sub_dispatchers)
   {
-    d->dispatch_leave_run(/* dispatch_only_to_adopted_visitors = */ true);
-    d->dispatch_merge_results(/* dispatch_only_to_adopted_visitors = */ true);
+    d->dispatch_leave_run();
+    d->dispatch_merge_results();
     delete d;
   }
 }
@@ -461,7 +403,7 @@ void ParallelEventDispatcher::do_dispatcher_loop(
       auto dt = std::chrono::system_clock::now() - start_time;
       LOG(INFO) << "Dispatched "
         << to_string_with_commas(ndispatched_val) << " events in "
-        << to_string_with_commas(duration_cast<seconds>(dt).count()) << " sec";
+        << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec";
     }
 
     add_event_to_keep(event, seq_index, arena);
@@ -469,6 +411,43 @@ void ParallelEventDispatcher::do_dispatcher_loop(
     dispatch_event(seq_index, event);
     release_event(event);
     arena = nullptr;
+  }
+}
+
+void ParallelEventDispatcher::write_initial_log_message(
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  int nthread)
+{
+  auto logger = LOG(INFO);
+  logger << "Dispatching " << run_config->filename() << "\n";
+
+  if(nthread) {
+    logger << "Using " << nthread << " threads to process ";
+  } else {
+    logger << "Processing ";
+  }
+
+  if(run_config->file_size() > 0) {
+    logger << std::setprecision(3) << double(run_config->file_size())*1e-9 << " GB (";
+  }
+  logger << run_config->fragment_filename_size();
+  if(run_config->fragment_filename_size()==1) {
+    logger << " file fragment";
+  } else {
+    logger << " file fragments";
+  }
+  if(run_config->file_size() > 0) {
+    logger << ")";
+  }
+
+  if(run_config->run_number() > 0 and run_config->run_start_time().time_ns()>0) {
+    logger << "\nRun number: " << run_config->run_number() << ", run start time: "
+      << Timestamp(run_config->run_start_time().time_ns()).as_string();
+  } else if(run_config->run_number()) {
+    logger << "\nRun number: " << run_config->run_number();
+  } else if(run_config->run_start_time().time_ns()>0) {
+    logger << "\nRun start time: "
+      << Timestamp(run_config->run_start_time().time_ns()).as_string();
   }
 }
 
@@ -482,41 +461,27 @@ void ParallelEventDispatcher::write_final_log_message(
     auto dt = system_clock::now() - start_time;
     LOG(INFO) << "Dispatched "
       << to_string_with_commas(uint64_t(ndispatched)) << " events in "
-      << to_string_with_commas(duration_cast<seconds>(dt).count()) << " sec, "
+      << to_string_with_commas(double(duration_cast<milliseconds>(dt).count())*0.001,3) << " sec, "
       << to_string_with_commas(duration_cast<microseconds>(dt).count()/ndispatched)
       << " us/event (finished)";
   }
 }
 
 void ParallelEventDispatcher::
-dispatch_run_configuration(TelescopeRunConfiguration* run_config,
-  bool dispatch_only_to_adopted_visitors)
+dispatch_run_configuration(TelescopeRunConfiguration* run_config)
 {
-  if(dispatch_only_to_adopted_visitors) {
-    for(auto iv : adopted_visitors_)iv->visit_telescope_run(run_config, this);
-  } else {
-    for(auto iv : visitors_)iv->visit_telescope_run(run_config, this);
-  }
+  for(auto iv : visitors_)iv->visit_telescope_run(run_config, this);
+}
+
+void ParallelEventDispatcher::dispatch_leave_run()
+{
+  for(auto iv : visitors_)iv->leave_telescope_run();
 }
 
 void ParallelEventDispatcher::
-dispatch_leave_run(bool dispatch_only_to_adopted_visitors)
+dispatch_merge_results()
 {
-  if(dispatch_only_to_adopted_visitors) {
-    for(auto iv : adopted_visitors_)iv->leave_telescope_run();
-  } else {
-    for(auto iv : visitors_)iv->leave_telescope_run();
-  }
-}
-
-void ParallelEventDispatcher::
-dispatch_merge_results(bool dispatch_only_to_adopted_visitors)
-{
-  if(dispatch_only_to_adopted_visitors) {
-    for(auto iv : adopted_visitors_)iv->merge_results();
-  } else {
-    for(auto iv : visitors_)iv->merge_results();
-  }
+  for(auto iv : visitors_)iv->merge_results();
 }
 
 namespace {

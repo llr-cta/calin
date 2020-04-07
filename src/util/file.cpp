@@ -81,6 +81,26 @@ char* system_dirname(char* x) {
 
 using namespace calin::util;
 
+int64_t calin::util::file::size(const std::string& filename)
+{
+  if(filename.empty())return false;
+  struct stat statbuf;
+  if(stat(filename.c_str(),&statbuf)<0)return -1;
+  return statbuf.st_size;
+}
+
+//! Return total size of multiple files in bytes of -1 if any file doesn't exist
+int64_t calin::util::file::total_size(const std::vector<std::string>& filenames)
+{
+  int64_t total_size = 0;
+  for(const auto& f : filenames) {
+    int64_t file_size = size(f);
+    if(file_size < 0)return -1;
+    else total_size += file_size;
+  }
+  return total_size;
+}
+
 bool calin::util::file::exists(const std::string& filename)
 {
   if(filename.empty())return false;

@@ -40,6 +40,11 @@
 %import "iact_data/waveform_treatment_event_visitor.pb.i"
 %include "iact_data/waveform_treatment_event_visitor.hpp"
 
+%template (VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor256)
+  calin::iact_data::waveform_treatment_event_visitor::VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<calin::util::vcl::VCL256Architecture>;
+%template (VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor128)
+  calin::iact_data::waveform_treatment_event_visitor::VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<calin::util::vcl::VCL128Architecture>;
+
 %template (VCLSingleGainDualWindowWaveformTreatmentEventVisitor256)
   calin::iact_data::waveform_treatment_event_visitor::VCL_SingleGainDualWindowWaveformTreatmentEventVisitor<calin::util::vcl::VCL256Architecture>;
 %template (VCLSingleGainDualWindowWaveformTreatmentEventVisitor128)

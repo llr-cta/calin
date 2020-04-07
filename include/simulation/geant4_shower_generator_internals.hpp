@@ -143,13 +143,14 @@ public:
   EAS_FlatDetectorConstruction(calin::simulation::atmosphere::Atmosphere* atm,
       unsigned num_atm_layers, double zground_cm, double ztop_of_atm_cm,
       double layer_side_cm = 100E5,
-      calin::simulation::world_magnetic_model::FieldVsElevation* bfield=nullptr);
+      calin::simulation::world_magnetic_model::FieldVsElevation* bfield=nullptr,
+      const std::string& material_name = "G4_AIR");
   EAS_FlatDetectorConstruction(calin::simulation::atmosphere::Atmosphere* atm,
       unsigned num_atm_layers, double zground_cm, double ztop_of_atm_cm,
       calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
-      double layer_side_cm = 100E5):
+      double layer_side_cm = 100E5, const std::string& material_name = "G4_AIR"):
     EAS_FlatDetectorConstruction(atm, num_atm_layers, zground_cm, ztop_of_atm_cm,
-      layer_side_cm, bfield) { /* nothing to see here */ }
+      layer_side_cm, bfield, material_name) { /* nothing to see here */ }
 
   virtual ~EAS_FlatDetectorConstruction();
   G4VPhysicalVolume* Construct() override;
@@ -166,6 +167,7 @@ private:
   Eigen::Vector3d max_corner_;
   calin::simulation::world_magnetic_model::FieldVsElevation* bfield_;
   std::map<G4LogicalVolume*, G4ThreeVector> logical_bfield_;
+  const std::string material_name_;
 };
 
 class EAS_UserEventAction: public G4UserEventAction

@@ -45,8 +45,17 @@ message CameraRunInfoConfig {
 message RunInfoConfig {
   repeated int32 module_counter_test_id                    = 1;
   repeated CounterValueTestMode module_counter_test_mode   = 2;
-  CameraRunInfoConfig default_nectarcam_config             = 10;
-  CameraRunInfoConfig default_lstcam_config                = 11;
+  double event_number_histogram_resolution                 = 10 [
+    (CFO).desc = "Resolution of event number histogram.", (CFO).units="events" ];
+  double event_time_histogram_resolution                   = 11 [
+    (CFO).desc = "Resolution of event time histograms.", (CFO).units="s" ];
+  double log10_delta_t_histogram_binsize                   = 12 [
+    (CFO).desc = "Resolution of log10(delta-T) histograms." ];
+  double delta_t_timeslice                                 = 13 [
+    (CFO).desc = "Resolution of time-dependent delta-T histogram time slices.",
+    (CFO).units="s" ];
+  CameraRunInfoConfig default_nectarcam_config             = 100;
+  CameraRunInfoConfig default_lstcam_config                = 101;
 };
 
 message CounterValues {
@@ -94,6 +103,21 @@ message RunInfo {
 
   calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 10 [
     (CFO).desc = "Histogram of elapsed time." ];
+
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_physics = 11 [
+    (CFO).desc = "Histogram of elapsed time for physics triggers." ];
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_software = 12 [
+    (CFO).desc = "Histogram of elapsed time for software triggers." ];
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_pedestal = 13 [
+    (CFO).desc = "Histogram of elapsed time for pedestal triggers." ];
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_external_flasher = 14 [
+    (CFO).desc = "Histogram of elapsed time for external flasher triggers." ];
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_internal_flasher = 15 [
+    (CFO).desc = "Histogram of elapsed time for internal flasher triggers." ];
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_forced_array = 16 [
+    (CFO).desc = "Histogram of elapsed time for forced array triggers." ];
+  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram_trigger_ucts_aux = 17 [
+    (CFO).desc = "Histogram of elapsed time for UCTS triggers." ];
 
   uint64 num_events_missing_cdts                           = 20 [
     (CFO).desc = "Number of events without CDTS information.",
@@ -155,6 +179,25 @@ message RunInfo {
     (CFO).desc = "Maximum absolute event time from all events.", (CFO).units = "ns",
     (CFO).integration_algorithm = MAX ];
 
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram = 60 [
+    (CFO).desc = "Histogram of log10 of time between consecutive events; log10(DeltaT/s)." ];
+  calin.ix.math.histogram.Histogram1DData log10_delta2_t_histogram = 61 [
+    (CFO).desc = "Histogram of log10 of time between next-to-consecutive events; "
+      "log10(Delta2T/s)." ];
+
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_trigger_physics = 62 [
+    (CFO).desc = "Histogram of log10 of time between consecutive events "
+      "for all physics triggers; log10(DeltaT/s)." ];
+  calin.ix.math.histogram.Histogram1DData log10_delta2_t_histogram_trigger_physics = 63 [
+    (CFO).desc = "Histogram of log10 of time between next-to-consecutive "
+      "events for all sets of two consecutibe physics triggers; log10(Delta2T/s)." ];
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_2_trigger_physics = 64 [
+    (CFO).desc = "Histogram of log10 of time between consecutive events "
+      "where there are two consecutive physics triggers; log10(DeltaT/s)." ];
+
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_all_recorded = 65 [
+    (CFO).desc = "Histogram of log10 of time between RECORDED events; log10(DeltaT/s)." ];
+
   repeated ModuleRunInfo module                            = 100;
 };
 
@@ -176,15 +219,12 @@ message PartialRunInfo {
   uint64 num_events_missing_modules                        = 5 [ (CFO).is_counter = true ];
   uint64 num_duplicate_event_numbers                       = 6 [ (CFO).is_counter = true ];
 
-  calin.ix.math.histogram.Histogram1DData event_number_histogram = 10;
-  calin.ix.math.histogram.Histogram1DData elapsed_time_histogram = 11;
-
-  repeated uint64 event_number_sequence                    = 20 [
+  repeated uint64 event_number_sequence                    = 30 [
     (CFO).integration_algorithm = APPEND ];
-  calin.ix.diagnostics.range.RunLengthEncodingBool cdts_presence         = 21;
-  calin.ix.diagnostics.range.RunLengthEncodingBool tib_presence          = 22;
-  calin.ix.diagnostics.range.RunLengthEncodingBool swat_presence         = 23;
-  calin.ix.diagnostics.range.RunLengthEncodingBool all_channels_presence = 24;
+  calin.ix.diagnostics.range.RunLengthEncodingBool cdts_presence         = 31;
+  calin.ix.diagnostics.range.RunLengthEncodingBool tib_presence          = 32;
+  calin.ix.diagnostics.range.RunLengthEncodingBool swat_presence         = 33;
+  calin.ix.diagnostics.range.RunLengthEncodingBool all_channels_presence = 34;
 
   uint64 num_mono_trigger                                  = 40 [ (CFO).is_counter = true ];
   uint64 num_stereo_trigger                                = 41 [ (CFO).is_counter = true ];
@@ -197,6 +237,8 @@ message PartialRunInfo {
 
   int64 min_event_time                                     = 50 [ (CFO).integration_algorithm = MIN ];
   int64 max_event_time                                     = 51 [ (CFO).integration_algorithm = MAX ];
+  repeated int64 event_time_sequence                       = 52 [ (CFO).integration_algorithm = APPEND ];
+  repeated uint32 event_type_sequence                      = 53 [ (CFO).integration_algorithm = APPEND ];
 
   repeated PartialModuleRunInfo module                     = 100;
 };

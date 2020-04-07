@@ -494,7 +494,10 @@ template<typename Acc> class BasicHistogram1D:
   void set_weight_units(const std::string& units) { weight_units_=units; }
 
   // Functions to get size of histogram and clear it
-  void clear() { Base::clear(); sum_w_={}; sum_wx_={}; sum_wxx_={}; }
+  void clear() { Base::clear(); sum_w_={}; sum_wx_={}; sum_wxx_={};
+    min_x_ = std::numeric_limits<double>::infinity();
+    max_x_ = -std::numeric_limits<double>::infinity();
+  }
 
   // Insert x value weight into histogram
   inline bool insert(const double x, const double w = 1.0);
@@ -567,6 +570,10 @@ template<typename Acc> class BasicHistogram1D:
   double var() const { return sum_wxx()/sum_w()-mean()*mean(); }
   double std() const { return std::sqrt(var()); }
 
+  // Extreme values
+  double min_xval() const { return min_x_; }
+  double max_xval() const { return max_x_; }
+
   // Sum function over bins
   template<typename Fcn, typename IntAcc = Acc>
       double summation(const Fcn& fcn) const {
@@ -592,6 +599,8 @@ template<typename Acc> class BasicHistogram1D:
   Acc sum_w_;
   Acc sum_wx_;
   Acc sum_wxx_;
+  double min_x_ = std::numeric_limits<double>::infinity();
+  double max_x_ = -std::numeric_limits<double>::infinity();
   std::string name_;
   std::string weight_units_;
 };
@@ -608,6 +617,8 @@ insert(const double x, const double w)
     sum_w_.accumulate(wxx);
     sum_wx_.accumulate(wxx *= x);
     sum_wxx_.accumulate(wxx *= x);
+    min_x_ = std::min(min_x_, x);
+    max_x_ = std::max(max_x_, x);
   }
 
   bin.accumulate(w);
@@ -622,6 +633,7 @@ BasicHistogram1D(const calin::ix::math::histogram::Histogram1DData& data):
          data.xval_limit_lo(), data.xval_limit_hi(),
          data.overflow_lo(), data.overflow_hi(), data.xval_units()),
     sum_w_{data.sum_w()}, sum_wx_{data.sum_wx()}, sum_wxx_{data.sum_wxx()},
+    min_x_{data.xval_min()}, max_x_{data.xval_max()},
     name_{data.name()}, weight_units_{data.weight_units()}
 {
   // nothing to see here
@@ -645,6 +657,8 @@ dump_as_proto(calin::ix::math::histogram::Histogram1DData* data) const
   data->set_sum_w(sum_w_.total());
   data->set_sum_wx(sum_wx_.total());
   data->set_sum_wxx(sum_wxx_.total());
+  data->set_xval_min(min_x_);
+  data->set_xval_max(max_x_);
   data->set_name(name_);
   data->set_xval_units(this->xval_units_);
   data->set_weight_units(weight_units_);
@@ -668,6 +682,8 @@ bool BasicHistogram1D<Acc>::operator==(const BasicHistogram1D& o) const
       sum_w_ == o.sum_w_ and
       sum_wx_ == o.sum_wx_ and
       sum_wxx_ == o.sum_wxx_ and
+      min_x_ == o.min_x_ and
+      max_x_ == o.max_x_ and
       name_ == o.name_ and
       this->xval_units_ == o.xval_units_ and
       weight_units_ == o.weight_units_;
@@ -910,5 +926,8 @@ class BinnedCDF: public BinnedData1D<double>
 
 CALIN_TYPEALIAS(SimpleHist, BasicHistogram1D<DefaultAccumulator>);
 CALIN_TYPEALIAS(Histogram1D, BasicHistogram1D<DefaultAccumulator>);
+
+calin::ix::math::histogram::Histogram1DData*
+rebin(const calin::ix::math::histogram::Histogram1DData& hist_data, unsigned rebinning_factor);
 
 } } } // namespace calin::math::histogram

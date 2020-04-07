@@ -142,11 +142,13 @@ public:
   void log_message(Level level, const std::string& message,
     calin::util::timestamp::Timestamp timestamp = calin::util::timestamp::Timestamp::now()) override;
   calin::ix::util::log::Log log_messages() { return log_; }
+  void prune_log() { log_.clear_message(); }
  protected:
    calin::ix::util::log::Log log_;
 };
 
 ProtobufLogger* default_protobuf_logger();
+void prune_default_protobuf_log();
 
 class PythonLogger: public Logger
 {

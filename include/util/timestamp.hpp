@@ -31,11 +31,12 @@ namespace calin { namespace util { namespace timestamp {
 class Timestamp
 {
 public:
-  Timestamp(uint64_t sec = 0, uint32_t nsec = 0): sec_(sec), nsec_(nsec) { }
-  Timestamp(const timespec &tp): sec_(tp.tv_sec), nsec_(tp.tv_nsec) { }
-  Timestamp(const timeval &tp): sec_(tp.tv_sec), nsec_(tp.tv_usec*1000U) { }
-  uint64_t sec() const { return sec_; }
-  uint32_t nsec() const { return nsec_; }
+  Timestamp(): nsec_() { }
+  Timestamp(int64_t tval, int64_t tmultiplier = 1LL): nsec_(tval * tmultiplier) { }
+  Timestamp(const timespec &tp): nsec_(tp.tv_sec * 1000000000LL + tp.tv_nsec) { }
+  Timestamp(const timeval &tp): nsec_(tp.tv_sec * 1000000000LL + tp.tv_usec*1000LL) { }
+  uint64_t unix_sec() const { return nsec_/1000000000LL; }
+  uint32_t unix_nsec() const { return nsec_%1000000000LL; }
   std::string as_string() const;
 #ifndef SWIG
   calin::ix::util::timestamp::Timestamp* as_proto(calin::ix::util::timestamp::Timestamp* x = nullptr) const;
@@ -45,9 +46,9 @@ public:
 #endif
   static Timestamp now();
   double seconds_since(const Timestamp& then) const;
+  int64_t nanoseconds_since(const Timestamp& then) const;
 private:
-  uint64_t sec_ = 0;
-  uint32_t nsec_ = 0;
+  int64_t nsec_ = 0;
 };
 
 } } } // namespace calin::util::timestamp

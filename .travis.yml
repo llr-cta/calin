@@ -19,6 +19,8 @@ addons:
     - python3-dev
     - python3-numpy
     - libxerces-c-dev
+    - libpcap-dev
+    - libz-dev
 
 matrix:
   include:
@@ -92,6 +94,15 @@ matrix:
           packages:
           - *common_packages
           - g++-8
+    - compiler: gcc-9
+      env: BUILD_CC=gcc-9 BUILD_CXX=g++-9
+      addons: &gcc9_addons
+        apt:
+          sources:
+          - *common_sources
+          packages:
+          - *common_packages
+          - g++-9
     # - compiler: clang-3.9
     #   env: BUILD_TYPE=Debug GEANT4=FALSE BUILD_CC=clang-3.9 BUILD_CXX=clang++-3.9
     #   addons: &clang39_addons
@@ -206,6 +217,29 @@ install:
       touch $HOME/suppress_geant_build
     ); fi
   - |
+    if [ ! -f $LOCAL/bin/zstd ]
+    then (
+      wget https://github.com/facebook/zstd/releases/download/v1.4.4/zstd-1.4.4.tar.gz &&
+      tar zxf zstd-1.4.4.tar.gz &&
+      cd zstd-1.4.4 &&
+      make -j9 &&
+      make install PREFIX=$LOCAL &&
+      touch $HOME/suppress_geant_build
+    ); fi
+  - |
+    if [ ! -f $LOCAL/bin/ZFitsInspector -a -n "${CAMERASTOACTL_PASSWORD}" ]
+    then (
+      git clone https://llrcta-ciuser:${CAMERASTOACTL_PASSWORD}@github.com/llr-cta/CamerasToACTL.git &&
+      cd CamerasToACTL &&
+      mkdir mybuild &&
+      cd mybuild &&
+      cmake -DCMAKE_INSTALL_PREFIX=$LOCAL -DCMAKE_BUILD_TYPE=Release \
+            -DACTL_BUILD_ARCH=$BUILD_ARCH .. &&
+      make -j3 VERBOSE=1 &&
+      make install > /dev/null &&
+      touch $HOME/suppress_geant_build
+    ); fi
+  - |
     if [ "x$GEANT4" == "xTRUE" -a ! -f $LOCAL/bin/geant4.sh -a ! -f $HOME/suppress_geant_build ]
     then (
       wget http://geant4.cern.ch/support/source/geant4.10.04.tar.gz &&
@@ -249,7 +283,8 @@ script:
     make install | tail &&
     ./src/bin/write_system_info &&
     make test
-    ./unit_tests/simulation/test_vcl_raytracer
+#    ./unit_tests/math/test_hex_array_vcl
+#    ./unit_tests/simulation/test_vcl_raytracer
 #    ./unit_tests/math/speedtest_rng &&
 #    ./unit_tests/math/test_rng_vcl &&
 #    ./unit_tests/math/test_rng

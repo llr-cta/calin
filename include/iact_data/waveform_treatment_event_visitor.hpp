@@ -33,6 +33,384 @@
 
 namespace calin { namespace iact_data { namespace waveform_treatment_event_visitor {
 
+class OptimalWindowSumWaveformTreatmentParallelEventVisitor:
+  public calin::iact_data::event_visitor::ParallelEventVisitor
+{
+public:
+  enum GainChannel { HIGH_OR_SINGLE_GAIN, LOW_GAIN };
+
+  OptimalWindowSumWaveformTreatmentParallelEventVisitor(
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
+    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN);
+
+  OptimalWindowSumWaveformTreatmentParallelEventVisitor(
+    GainChannel gain_channel_to_treat,
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config()):
+    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
+  { /* nothing to see here */ }
+
+  virtual ~OptimalWindowSumWaveformTreatmentParallelEventVisitor();
+
+  static OptimalWindowSumWaveformTreatmentParallelEventVisitor* New(
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
+    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN);
+
+  static OptimalWindowSumWaveformTreatmentParallelEventVisitor* New(
+    GainChannel gain_channel_to_treat,
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config())
+  {
+    return New(config, gain_channel_to_treat);
+  }
+
+  OptimalWindowSumWaveformTreatmentParallelEventVisitor* new_sub_visitor(
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
+      antecedent_visitors = { }) override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  static calin::ix::iact_data::waveform_treatment_event_visitor::
+    OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig default_config()
+  {
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig cfg;
+    cfg.set_integration_n(16);
+    return cfg;
+  }
+
+  bool is_same_event(uint64_t a_seq_index) const { return a_seq_index == seq_index_; }
+  uint64_t seq_index() const { return seq_index_; }
+
+  unsigned nchan() const { return nchan_; }
+  unsigned nsamp() const { return nsamp_; }
+
+  std::vector<int> chan_max() const { return make_vec(chan_max_); }
+  std::vector<int> chan_max_index() const { return make_vec(chan_max_index_); }
+  std::vector<int> chan_bkg_win_sum() const { return make_vec(chan_bkg_win_sum_); }
+  std::vector<int> chan_sig_win_sum() const { return make_vec(chan_sig_win_sum_); }
+  std::vector<int> chan_opt_win_sum() const { return make_vec(chan_opt_win_sum_); }
+  std::vector<int> chan_opt_win_sum_qt() const { return make_vec(chan_opt_win_sum_qt_); }
+  std::vector<int> chan_opt_win_index() const { return make_vec(chan_opt_win_index_); }
+  std::vector<int> chan_all_sum() const { return make_vec(chan_all_sum_); }
+  std::vector<int> chan_signal_type() const { return chan_signal_type_; };
+
+#ifndef SWIG
+  const int*__restrict__ array_chan_max() const { return chan_max_; }
+  const int*__restrict__ array_chan_max_index() const { return chan_max_index_; }
+  const int*__restrict__ array_chan_bkg_win_sum() const { return chan_bkg_win_sum_; }
+  const int*__restrict__ array_chan_sig_win_sum() const { return chan_sig_win_sum_; }
+  const int*__restrict__ array_chan_opt_win_sum() const { return chan_opt_win_sum_; }
+  const int*__restrict__ array_chan_opt_win_sum_qt() const { return chan_opt_win_sum_qt_; }
+  const int*__restrict__ array_chan_opt_win_index() const { return chan_opt_win_index_; }
+  const int*__restrict__ array_chan_all_sum() const { return chan_all_sum_; }
+  const int*__restrict__ array_chan_signal_type() const { return chan_signal_type_.data(); };
+#endif
+
+  unsigned window_n() const { return window_n_; };
+  int bkg_window_0() const { return bkg_window_0_; }
+  std::vector<int> sig_window_0() const { return make_vec(sig_window_0_); }
+
+protected:
+#ifndef SWIG
+  void reconfigure(unsigned nchan, unsigned nsamp);
+  void scalar_analyze_waveforms(const uint16_t* __restrict__ data);
+
+  template<typename T> std::vector<T> make_vec(const T* ptr) const {
+    return std::vector<T>(ptr, ptr+nchan_);
+  }
+
+  calin::ix::iact_data::waveform_treatment_event_visitor::
+    OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config_;
+  GainChannel gain_channel_to_treat_ = HIGH_OR_SINGLE_GAIN;
+  unsigned nchan_ = 0;
+  unsigned nsamp_ = 0;
+  unsigned window_n_;
+  int bkg_window_0_;
+  int*__restrict__ sig_window_0_ = nullptr;
+
+  uint64_t seq_index_ = 0xFFFFFFFFFFFFFFFFULL;
+  std::vector<int> chan_signal_type_;
+  int*__restrict__ chan_max_ = nullptr;
+  int*__restrict__ chan_max_index_ = nullptr;
+  int*__restrict__ chan_bkg_win_sum_ = nullptr;
+  int*__restrict__ chan_sig_win_sum_ = nullptr;
+  int*__restrict__ chan_opt_win_sum_ = nullptr;
+  int*__restrict__ chan_opt_win_sum_qt_ = nullptr;
+  int*__restrict__ chan_opt_win_index_ = nullptr;
+  int*__restrict__ chan_all_sum_ = nullptr;
+#endif
+};
+
+template<typename VCLArchitecture>
+class VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor:
+  public OptimalWindowSumWaveformTreatmentParallelEventVisitor
+{
+public:
+#ifndef SWIG
+  CALIN_TYPEALIAS(int16_vt, typename VCLArchitecture::int16_vt);
+  CALIN_TYPEALIAS(int16_bvt, typename VCLArchitecture::int16_bvt);
+  CALIN_TYPEALIAS(uint16_vt, typename VCLArchitecture::uint16_vt);
+
+  CALIN_TYPEALIAS(int32_vt, typename VCLArchitecture::int32_vt);
+  CALIN_TYPEALIAS(int32_bvt, typename VCLArchitecture::int32_bvt);
+  CALIN_TYPEALIAS(uint32_vt, typename VCLArchitecture::uint32_vt);
+#endif
+
+  VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor(
+      calin::ix::iact_data::waveform_treatment_event_visitor::
+        OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
+      GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN):
+    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
+  {
+    /* nothing to see here */
+  }
+
+  VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor(
+    GainChannel gain_channel_to_treat,
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config()):
+    VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
+  {
+    /* nothing to see here */
+  }
+
+  virtual ~VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor()
+  {
+    free(samples_);
+  }
+
+  VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<VCLArchitecture>* new_sub_visitor(
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
+      antecedent_visitors = { }) override
+  {
+    return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<VCLArchitecture>(config_, gain_channel_to_treat_);
+  }
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override
+  {
+    bool old_nsamp = nsamp_;
+    bool good = OptimalWindowSumWaveformTreatmentParallelEventVisitor::visit_telescope_run(run_config, event_lifetime_manager);
+    if(nsamp_!=old_nsamp) {
+      auto* host_info = calin::provenance::system_info::the_host_info();
+      const unsigned nv_samp = (nsamp_+31)/32;
+      const unsigned nv_block = nv_samp*32;
+      calin::util::memory::safe_aligned_recalloc(samples_, nv_block, host_info->log2_simd_vec_size());
+    }
+    return good;
+  }
+
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override
+  {
+    const calin::ix::iact_data::telescope_event::Waveforms* wf = nullptr;
+    switch(gain_channel_to_treat_) {
+    case HIGH_OR_SINGLE_GAIN:
+      if(event->has_high_gain_image() and
+          event->high_gain_image().has_camera_waveforms()) {
+        wf = &event->high_gain_image().camera_waveforms();
+      } else if(event->has_image() and
+          event->image().has_camera_waveforms()) {
+        wf = &event->image().camera_waveforms();
+      }
+      break;
+    case LOW_GAIN:
+      if(event->has_low_gain_image() and
+          event->low_gain_image().has_camera_waveforms()) {
+        wf = &event->low_gain_image().camera_waveforms();
+      }
+      break;
+    }
+    if(wf == nullptr)return true;
+    seq_index_ = seq_index;
+    chan_signal_type_.assign(wf->channel_signal_type().begin(), wf->channel_signal_type().end());
+    const uint16_t* data = reinterpret_cast<const uint16_t*>(
+      wf->raw_samples_array().data());
+    vcl_analyze_waveforms(data);
+    return true;
+  }
+
+#ifndef SWIG
+private:
+
+  void vcl_analyze_waveforms(const uint16_t* __restrict__ data)
+  {
+    static constexpr unsigned num_int16 = VCLArchitecture::num_int16;
+    static constexpr unsigned num_int32 = VCLArchitecture::num_int32;
+
+    unsigned nchan_block = (nchan_+num_int16-1)/num_int16;
+    unsigned nsamp_block = (nsamp_+num_int16-1)/num_int16;
+    unsigned nchan_left = nchan_;
+
+    for(unsigned ichan_block=0;ichan_block<nchan_block;++ichan_block)
+    {
+      unsigned ioffset_l = ichan_block*2*num_int32;
+      unsigned ioffset_h = ichan_block*2*num_int32 + num_int32;
+
+      unsigned nchan_proc = std::min(num_int16, nchan_left);
+      nchan_left -= num_int16;
+
+      for(unsigned isamp_block=0;isamp_block<nsamp_block;++isamp_block)
+      {
+        for(unsigned ichan_proc=0;ichan_proc<nchan_proc;++ichan_proc) {
+          samples_[isamp_block*num_int16 + ichan_proc].load(data
+            + (ichan_block*num_int16 + ichan_proc)*nsamp_
+            + isamp_block*num_int16);
+        }
+        calin::util::vcl::transpose(samples_ + isamp_block*num_int16);
+      }
+
+      int16_vt samp_max = samples_[0];
+      uint16_vt samp_max_index = 0;
+
+      int32_vt q_l = calin::util::vcl::extend_16_to_32_low(samples_[0]);
+      int32_vt q_h = calin::util::vcl::extend_16_to_32_high(samples_[0]);
+
+      int32_vt qt_l = 0;
+      int32_vt qt_h = 0;
+
+      // Fill the integration window sum up from first samples
+      unsigned isamp_win_end;
+      for(isamp_win_end=1;isamp_win_end<window_n_;++isamp_win_end) {
+        int16_vt sample = samples_[isamp_win_end];
+
+        int16_bvt samp_bigger_than_max = sample > samp_max;
+        samp_max = vcl::select(samp_bigger_than_max, sample, samp_max);
+        samp_max_index = vcl::select(samp_bigger_than_max, uint16_t(isamp_win_end), samp_max_index);
+
+        int32_vt sample32;
+
+        sample32 = calin::util::vcl::extend_16_to_32_low(sample);
+        q_l += sample32;
+        qt_l += sample32 * isamp_win_end;
+
+        sample32 = calin::util::vcl::extend_16_to_32_high(sample);
+        q_h += sample32;
+        qt_h += sample32 * isamp_win_end;
+      }
+
+      if(bkg_window_0_ == 0) {
+        q_l.store(chan_bkg_win_sum_ + ichan_block*2*num_int32);
+        q_h.store(chan_bkg_win_sum_ + ichan_block*2*num_int32 + num_int32);
+      }
+
+      int32_vt all_q_l = q_l;
+      int32_vt all_q_h = q_h;
+
+      int32_vt sig_q_l = q_l;
+      int32_vt sig_q_h = q_h;
+
+      int32_vt opt_q_l = q_l;
+      int32_vt opt_q_h = q_h;
+
+      int32_vt opt_qt_l = qt_l;
+      int32_vt opt_qt_h = qt_h;
+
+      uint32_vt opt_index_l = 0;
+      uint32_vt opt_index_h = 0;
+
+      uint32_vt sig_win_index_l;
+      uint32_vt sig_win_index_h;
+      sig_win_index_l.load(sig_window_0_ + ioffset_l);
+      sig_win_index_h.load(sig_window_0_ + ioffset_h);
+
+      // Now move integration window along waveform
+      unsigned isamp_win_begin;
+      for(isamp_win_begin=0; isamp_win_end<nsamp_; ++isamp_win_end) {
+        int16_vt sample = samples_[isamp_win_end];
+
+        int16_bvt samp_bigger_than_max = sample > samp_max;
+        samp_max = vcl::select(samp_bigger_than_max, sample, samp_max);
+        samp_max_index = vcl::select(samp_bigger_than_max, uint16_t(isamp_win_end), samp_max_index);
+
+        int32_vt sample32;
+        sample32 = calin::util::vcl::extend_16_to_32_low(sample);
+        q_l += sample32;
+        qt_l += sample32 * isamp_win_end;
+        all_q_l += sample32;
+
+        sample32 = calin::util::vcl::extend_16_to_32_high(sample);
+        q_h += sample32;
+        qt_h += sample32 * isamp_win_end;
+        all_q_h += sample32;
+
+        sample = samples_[isamp_win_begin];
+
+        sample32 = calin::util::vcl::extend_16_to_32_low(sample);
+        q_l -= sample32;
+        qt_l -= sample32 * isamp_win_begin;
+
+        sample32 = calin::util::vcl::extend_16_to_32_high(sample);
+        q_h -= sample32;
+        qt_h -= sample32 * isamp_win_begin;
+
+        ++isamp_win_begin;
+
+        sig_q_l = vcl::select(sig_win_index_l == isamp_win_begin, q_l, sig_q_l);
+        sig_q_h = vcl::select(sig_win_index_h == isamp_win_begin, q_h, sig_q_h);
+
+        int32_bvt q_bigger_than_max;
+        q_bigger_than_max = q_l > opt_q_l;
+        opt_q_l = vcl::select(q_bigger_than_max, q_l, opt_q_l);
+        opt_qt_l = vcl::select(q_bigger_than_max, qt_l, opt_qt_l);
+        opt_index_l = vcl::select(q_bigger_than_max, isamp_win_begin, opt_index_l);
+
+        q_bigger_than_max = q_h > opt_q_h;
+        opt_q_h = vcl::select(q_bigger_than_max, q_h, opt_q_h);
+        opt_qt_h = vcl::select(q_bigger_than_max, qt_h, opt_qt_h);
+        opt_index_h = vcl::select(q_bigger_than_max, isamp_win_begin, opt_index_h);
+
+        if(bkg_window_0_ == int(isamp_win_begin)) {
+          q_l.store(chan_bkg_win_sum_ + ichan_block*2*num_int32);
+          q_h.store(chan_bkg_win_sum_ + ichan_block*2*num_int32 + num_int32);
+        }
+      }
+
+      calin::util::vcl::extend_16_to_32_low(samp_max).store(chan_max_ + ioffset_l);
+      calin::util::vcl::extend_16_to_32_high(samp_max).store(chan_max_ + ioffset_h);
+      calin::util::vcl::extend_16_to_32_low(samp_max_index).store(chan_max_index_ + ioffset_l);
+      calin::util::vcl::extend_16_to_32_high(samp_max_index).store(chan_max_index_ + ioffset_h);
+      sig_q_l.store(chan_sig_win_sum_ + ioffset_l);
+      sig_q_h.store(chan_sig_win_sum_ + ioffset_h);
+      opt_q_l.store(chan_opt_win_sum_ + ioffset_l);
+      opt_q_h.store(chan_opt_win_sum_ + ioffset_h);
+      opt_qt_l.store(chan_opt_win_sum_qt_ + ioffset_l);
+      opt_qt_h.store(chan_opt_win_sum_qt_ + ioffset_h);
+      opt_index_l.store(chan_opt_win_index_ + ioffset_l);
+      opt_index_h.store(chan_opt_win_index_ + ioffset_h);
+      all_q_l.store(chan_all_sum_ + ioffset_l);
+      all_q_h.store(chan_all_sum_ + ioffset_h);
+    }
+  }
+
+  int16_vt*__restrict__ samples_ = nullptr;
+#endif
+};
+
+
+
+
+
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// POSSIBLY OBSOLETE VERSIONS
+//
+// *****************************************************************************
+// *****************************************************************************
+
 class SingleGainDualWindowWaveformTreatmentEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
@@ -44,8 +422,8 @@ public:
   virtual ~SingleGainDualWindowWaveformTreatmentEventVisitor();
 
   SingleGainDualWindowWaveformTreatmentEventVisitor* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override;
 
   bool visit_telescope_run(
@@ -118,56 +496,7 @@ protected:
 #endif
 };
 
-#if 0
-class AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor:
-  public SingleGainDualWindowWaveformTreatmentEventVisitor
-{
-public:
-  AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor(
-      calin::ix::iact_data::waveform_treatment_event_visitor::
-        SingleGainDualWindowWaveformTreatmentEventVisitorConfig config = default_config(),
-      bool treat_high_gain = true, bool suppress_deprication_warning = false):
-    SingleGainDualWindowWaveformTreatmentEventVisitor(config, treat_high_gain)
-  {
-    if(not suppress_deprication_warning)
-      calin::util::log::LOG(calin::util::log::WARNING)
-        << "AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor is depricated.\n"
-        << "Use VCL_SingleGainDualWindowWaveformTreatmentEventVisitor instead.";
-    /* nothing to see here */
-  }
 
-  virtual ~AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor();
-
-  AVX2_SingleGainDualWindowWaveformTreatmentEventVisitor* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-        calin::iact_data::event_visitor::ParallelEventVisitor*>&
-      antecedent_visitors = { }) override;
-
-  bool visit_telescope_run(
-    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
-
-  bool visit_telescope_event(uint64_t seq_index,
-    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
-
-#ifndef SWIG
-  void avx2_analyze_waveforms(const uint16_t* __restrict__ data);
-  void avx2_analyze_waveforms_v2(const uint16_t* __restrict__ data);
-  void avx2_analyze_waveforms_v3(const uint16_t* __restrict__ data);
-#endif
-
-protected:
-#if defined(__AVX2__) and defined(__FMA__)
-#ifndef SWIG
-  __m256i*__restrict__ samples_ = nullptr;
-  __m256i*__restrict__ q_l_ = nullptr;
-  __m256i*__restrict__ q_u_ = nullptr;
-  __m256i*__restrict__ qt_l_ = nullptr;
-  __m256i*__restrict__ qt_u_ = nullptr;
-#endif
-#endif
-};
-#endif
 
 template<typename VCLArchitecture>
 class VCL_SingleGainDualWindowWaveformTreatmentEventVisitor:
@@ -205,11 +534,11 @@ public:
   }
 
   VCL_SingleGainDualWindowWaveformTreatmentEventVisitor<VCLArchitecture>* new_sub_visitor(
-    const std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
-        calin::iact_data::event_visitor::ParallelEventVisitor*>&
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override
   {
-    return new VCL_SingleGainDualWindowWaveformTreatmentEventVisitor<VCLArchitecture>(config_);
+    return new VCL_SingleGainDualWindowWaveformTreatmentEventVisitor<VCLArchitecture>(config_, treat_high_gain_);
   }
 
   bool visit_telescope_run(

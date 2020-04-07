@@ -382,4 +382,36 @@ private:
   std::vector<Eigen::MatrixXd> model_ray_obs_ct_;
 };
 
+// Constant density "Atmosphere" - for doing some simple simulations in fixed
+// substances (such as Iron etc)
+
+// Units:
+// Height, z:    cm
+// Density, rho: g/cm^3
+// Thickness, t: g/cm^2
+
+class IsotropicAtmosphere: public Atmosphere
+{
+public:
+  IsotropicAtmosphere(): Atmosphere() { /* nothing to see here */ }
+  IsotropicAtmosphere(double rho, double ztop, double zground, double nmo):
+    Atmosphere(),
+    rho_(rho), zground_(zground), ztop_(ztop), n_minus_one_(nmo) { }
+  virtual ~IsotropicAtmosphere();
+  virtual double rho(double z) override;
+  virtual double thickness(double z) override;
+  virtual double n_minus_one(double z) override;
+  virtual double dn_dz(double z, double& n_minus_one) override;
+
+  virtual double propagation_ct_correction(double z) override;
+  virtual double z_for_thickness(double t) override;
+  virtual double top_of_atmosphere() override;
+
+private:
+  double rho_         = 0.12219E-02; // g/cm^3
+  double zground_     = 0;           // cm;
+  double ztop_        = 100e5;       // cm;
+  double n_minus_one_ = 0.28232E-03;
+};
+
 } } } // namespace calin::simulation::atmosphere

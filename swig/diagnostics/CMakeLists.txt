@@ -14,7 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_SWIG_FILES counter.i module.i event_number.i waveform.i functional.i
-	value_capture.i delta_t.i run_info.i)
+	value_capture.i delta_t.i run_info.i simple_charge_stats.i stage1.i)
 set(CALIN_SWIG_TARGET diagnostics)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

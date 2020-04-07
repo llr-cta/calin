@@ -110,7 +110,7 @@ ZFITSSingleFileDataSource_L0(const std::string& filename,
     ZFITSSingleFileACTL_L0_CameraEventDataSource(filename, config), false,
     decoder, adopt_decoder, true)
 {
-  // nothing to see here
+  run_config_->set_file_size(calin::util::file::size(filename));
 }
 
 ZFITSSingleFileDataSource_L0::~ZFITSSingleFileDataSource_L0()
@@ -206,6 +206,11 @@ ZFITSDataSource_L0(const std::string& filename,
   decoder_->decode_run_config(run_config_, actl_run_header, actl_sample_event);
   delete actl_run_header;
   if(actl_sample_event)actl_zfits_->release_borrowed_event(actl_sample_event);
+  for(const auto& ffn : actl_zfits_->all_fragment_names()) {
+    run_config_->add_fragment_filename(ffn);
+  }
+  run_config_->set_file_size(calin::util::file::total_size(
+    actl_zfits_->all_fragment_names()));
   actl_zfits_->set_next_index(0);
 }
 

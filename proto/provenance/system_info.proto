@@ -218,6 +218,9 @@ message HostAndProcessInfo {
   map<string, string> environment                          = 9 [
     (CFO).desc = "Map of environment variables." ];
 
+  string current_working_directory                         = 10 [
+    (CFO).desc = "Current working directory." ];
+
   string uname_sysname                                     = 100 [
     (CFO).desc = "Name of the operating system implementation from uname()." ];
 

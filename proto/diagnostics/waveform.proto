@@ -28,6 +28,25 @@ import "math/histogram.proto";
 
 package calin.ix.diagnostics.waveform;
 
+message SingleWaveformMean {
+  uint64 num_entries                                       = 1 [
+    (CFO).desc = "Number of waveforms accumulated in the mean." ];
+  repeated double mean_waveform                            = 2 [
+    (CFO).desc = "Mean waveform for the channel." ];
+};
+
+message WaveformMean {
+  SingleWaveformMean camera_high_gain                      = 1 [
+    (CFO).desc = "Waveform mean across all high-gain (or single gain) channels." ];
+  SingleWaveformMean camera_low_gain                       = 2 [
+    (CFO).desc = "Waveform mean across all low-gain channels." ];
+
+  repeated SingleWaveformMean channel_high_gain            = 10 [
+    (CFO).desc = "Waveform mean for each of the high-gain (or single gain) channels." ];
+  repeated SingleWaveformMean channel_low_gain             = 11 [
+    (CFO).desc = "Waveform mean for each of the low-gain channels." ];
+};
+
 message WaveformRawStats {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
@@ -100,16 +119,17 @@ message CameraWaveformRawPSD {
     (CFO).desc = "Raw PSD for all low gain channels." ];
 };
 
-message WaveformMean {
-  uint32 num_entries                                       = 1 [
-    (CFO).desc = "Number of waveforms accumulated in the stats." ];
-  double sampling_period                                   = 2 [
-    (CFO).desc = "Time between each sample of waveform.", (CFO).units = "ns" ];
-  repeated double waveform_mean                            = 3 [
-    (CFO).desc = "Mean waveform." ];
-  repeated double waveform_rms                             = 4 [
-    (CFO).desc = "RMS of waveform." ];
-};
+
+// message WaveformMean {
+//   uint32 num_entries                                       = 1 [
+//     (CFO).desc = "Number of waveforms accumulated in the stats." ];
+//   double sampling_period                                   = 2 [
+//     (CFO).desc = "Time between each sample of waveform.", (CFO).units = "ns" ];
+//   repeated double waveform_mean                            = 3 [
+//     (CFO).desc = "Mean waveform." ];
+//   repeated double waveform_rms                             = 4 [
+//     (CFO).desc = "RMS of waveform." ];
+// };
 
 message WaveformPSD {
   uint32 num_entries                                       = 1 [

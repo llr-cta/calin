@@ -41,6 +41,12 @@
 
 namespace calin { namespace util { namespace file {
 
+//! Return size of filename in bytes of -1 if file doesn't exists
+int64_t size(const std::string& filename);
+
+//! Return total size of multiple files in bytes of -1 if any file doesn't exist
+int64_t total_size(const std::vector<std::string>& filenames);
+
 //! Return true if filename exists on the filesystem
 bool exists(const std::string& filename);
 

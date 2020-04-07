@@ -431,3 +431,47 @@ calin::simulation::atmosphere::us76_levels()
   levels.push_back({ 12000000.0, 0.24596E-10, 0.00000E+00, 0.56734E-11 });
   return levels;
 }
+
+// *****************************************************************************
+// Constant Density Atmosphere
+// *****************************************************************************
+
+IsotropicAtmosphere::~IsotropicAtmosphere()
+{
+  // nothing to see here
+}
+
+double IsotropicAtmosphere::rho(double z)
+{
+  return rho_;
+}
+
+double IsotropicAtmosphere::thickness(double z)
+{
+  return std::max(0.0, rho_*(ztop_-std::max(z, zground_)));
+}
+
+double IsotropicAtmosphere::n_minus_one(double z)
+{
+  return n_minus_one_;
+}
+
+double IsotropicAtmosphere::dn_dz(double z, double& n_minus_one)
+{
+  return 0;
+}
+
+double IsotropicAtmosphere::propagation_ct_correction(double z)
+{
+  return n_minus_one_*std::max(0.0, std::min(z, ztop_)-zground_);
+}
+
+double IsotropicAtmosphere::z_for_thickness(double t)
+{
+  return std::max(zground_, ztop_-std::max(0.0, t/rho_));
+}
+
+double IsotropicAtmosphere::top_of_atmosphere()
+{
+  return ztop_;
+}

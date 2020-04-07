@@ -37,5 +37,10 @@
 
 %import "iact_data/event_visitor.i"
 %import "diagnostics/waveform.pb.i"
+
+%apply Eigen::MatrixXd &OUTPUT { Eigen::MatrixXd& mean_waveform_out };
+%apply Eigen::VectorXi &OUTPUT { Eigen::VectorXi& count_out };
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& h };
+%newobject calin::diagnostics::waveform::WaveformSumParallelEventVisitor::mean_waveforms() const;
+
 %include "diagnostics/waveform.hpp"

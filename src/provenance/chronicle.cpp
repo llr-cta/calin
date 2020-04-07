@@ -38,12 +38,41 @@ std::mutex chronicle_mutex;
 std::unique_ptr<calin::ix::provenance::chronicle::Chronicle> singleton_chronicle {
   new calin::ix::provenance::chronicle::Chronicle };
 
+template<typename RepeatedFieldType> void prune_repeated_field(RepeatedFieldType* rf)
+{
+  int from = 0;
+  int to = 0;
+  while(from != rf->size()) {
+    while(to != rf->size() and not rf->Get(to).has_close_timestamp())++to;
+    from = std::max(to, from);
+    while(from != rf->size() and rf->Get(from).has_close_timestamp())++from;
+    if(from != rf->size()) {
+      rf->SwapElements(to, from);
+      ++to;
+      ++from;
+    }
+  }
+  if(to == 0) {
+    rf->Clear();
+  } else {
+    while(rf->size() > to)rf->RemoveLast();
+  }
+}
+
 } // anonymous namespace
 
 const calin::ix::provenance::chronicle::Chronicle*
 calin::provenance::chronicle::the_chronicle()
 {
   return singleton_chronicle.get();
+}
+
+void calin::provenance::chronicle::prune_the_chronicle()
+{
+  std::lock_guard<std::mutex> lock { chronicle_mutex };
+  prune_repeated_field(singleton_chronicle->mutable_file_io_record());
+  prune_repeated_field(singleton_chronicle->mutable_network_io_record());
+  prune_repeated_field(singleton_chronicle->mutable_rng_record());
 }
 
 calin::ix::provenance::chronicle::Chronicle*
@@ -73,7 +102,7 @@ register_file_open(const std::string& file_name,
   struct stat stat_buffer;
   if(::stat(file_name.c_str(), &stat_buffer) >= 0) {
     record->set_file_size(stat_buffer.st_size);
-    calin::util::timestamp::Timestamp(stat_buffer.st_mtime).as_proto(record->mutable_file_mtime());
+    calin::util::timestamp::Timestamp(stat_buffer.st_mtime, 1000000000LL).as_proto(record->mutable_file_mtime());
   }
   record->set_opened_by(opened_by);
   return record;
@@ -115,8 +144,8 @@ register_network_close(calin::ix::provenance::chronicle::NetworkIORecord* record
   if(nbytes_sent>=0)record->set_nbytes_sent(nbytes_sent);
 }
 
-void calin::provenance::chronicle::
-register_calin_rng(const calin::ix::math::rng::RNGData& rng_data,
+calin::ix::provenance::chronicle::RNGRecord* calin::provenance::chronicle::
+register_calin_rng_open(const calin::ix::math::rng::RNGData& rng_data,
   const std::string& created_by, const std::string& comment)
 {
   calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
@@ -125,46 +154,49 @@ register_calin_rng(const calin::ix::math::rng::RNGData& rng_data,
     std::lock_guard<std::mutex> lock { chronicle_mutex };
     record = singleton_chronicle->add_rng_record();
   }
-  ts.as_proto(record->mutable_timestamp());
+  ts.as_proto(record->mutable_open_timestamp());
   record->mutable_calin_rng()->CopyFrom(rng_data);
   record->set_comment(comment);
   record->set_created_by(created_by);
+  return record;
 }
 
-void calin::provenance::chronicle::
-register_rng_core(const calin::ix::math::rng::RNGCoreData& rng_core_data,
+calin::ix::provenance::chronicle::RNGRecord* calin::provenance::chronicle::
+register_rng_core_open(const calin::ix::math::rng::RNGCoreData& rng_core_data,
   const std::string& created_by, const std::string& comment)
 {
   calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
-  calin::ix::provenance::chronicle::RNGCoreRecord* record = nullptr;
+  calin::ix::provenance::chronicle::RNGRecord* record = nullptr;
   {
     std::lock_guard<std::mutex> lock { chronicle_mutex };
-    record = singleton_chronicle->add_rng_core_record();
+    record = singleton_chronicle->add_rng_record();
   }
-  ts.as_proto(record->mutable_timestamp());
+  ts.as_proto(record->mutable_open_timestamp());
   record->mutable_rng_core()->CopyFrom(rng_core_data);
   record->set_comment(comment);
   record->set_created_by(created_by);
+  return record;
 }
 
-void calin::provenance::chronicle::
-register_vcl_rng_core(const calin::ix::math::rng::VCLRNGCoreData& vcl_rng_core_data,
+calin::ix::provenance::chronicle::RNGRecord* calin::provenance::chronicle::
+register_vcl_rng_core_open(const calin::ix::math::rng::VCLRNGCoreData& vcl_rng_core_data,
   const std::string& created_by, const std::string& comment)
 {
   calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
-  calin::ix::provenance::chronicle::VCLRNGCoreRecord* record = nullptr;
+  calin::ix::provenance::chronicle::RNGRecord* record = nullptr;
   {
     std::lock_guard<std::mutex> lock { chronicle_mutex };
-    record = singleton_chronicle->add_vcl_rng_core_record();
+    record = singleton_chronicle->add_rng_record();
   }
-  ts.as_proto(record->mutable_timestamp());
+  ts.as_proto(record->mutable_open_timestamp());
   record->mutable_vcl_rng_core()->CopyFrom(vcl_rng_core_data);
   record->set_comment(comment);
   record->set_created_by(created_by);
+  return record;
 }
 
-void calin::provenance::chronicle::
-register_external_rng(uint64_t seed, const std::string& rng_type,
+calin::ix::provenance::chronicle::RNGRecord* calin::provenance::chronicle::
+register_external_rng_open(uint64_t seed, const std::string& rng_type,
   const std::string& created_by, void* rng_data, unsigned rng_data_size,
   const std::string& comment)
 {
@@ -174,7 +206,7 @@ register_external_rng(uint64_t seed, const std::string& rng_type,
     std::lock_guard<std::mutex> lock { chronicle_mutex };
     record = singleton_chronicle->add_rng_record();
   }
-  ts.as_proto(record->mutable_timestamp());
+  ts.as_proto(record->mutable_open_timestamp());
   auto* rng_data_proto = record->mutable_external_rng();
   rng_data_proto->set_seed(seed);
   rng_data_proto->set_rng_type(rng_type);
@@ -182,4 +214,13 @@ register_external_rng(uint64_t seed, const std::string& rng_type,
     rng_data_proto->set_rng_data(rng_data, rng_data_size);
   record->set_comment(comment);
   record->set_created_by(created_by);
+  return record;
+}
+
+void calin::provenance::chronicle::
+register_rng_close(calin::ix::provenance::chronicle::RNGRecord* record, uint64_t ncore_calls)
+{
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  ts.as_proto(record->mutable_close_timestamp());
+  if(ncore_calls>=0)record->set_ncore_calls(ncore_calls);
 }

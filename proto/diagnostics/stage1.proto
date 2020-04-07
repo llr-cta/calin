@@ -1,0 +1,64 @@
+/*
+
+   calin/proto/diagnostics/stage1.proto -- Stephen Fegan -- 2020-03-29
+
+   Protobufs for stage 1 diagnostics
+
+   Copyright 2020, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+option cc_enable_arenas = true;
+
+import "calin.proto";
+
+import "iact_data/telescope_run_configuration.proto";
+import "diagnostics/run_info.proto";
+import "diagnostics/simple_charge_stats.proto";
+import "diagnostics/waveform.proto";
+import "provenance/anthology.proto";
+//import "common_types.proto";
+
+package calin.ix.diagnostics.stage1;
+
+message Stage1 {
+  uint32 run_number                                        = 1 [
+    (CFO).desc = "Run number." ];
+  int64 run_start_time                                     = 2 [
+    (CFO).desc = "Approximate start date and time of run, possibly from NTP on "
+      "camera server, in nanoseconds pas the epoch.", (CFO).units = "ns" ];
+  string run_start_time_string                             = 3 [
+    (CFO).desc = "Approximate start date and time of run, possibly from NTP on "
+      "camera server, in nanoseconds pas the epoch.", (CFO).units = "ns" ];
+  uint32 telescope_id                                      = 4 [
+    (CFO).desc = "Telescope ID." ];
+  string filename                                          = 5 [
+    (CFO).desc = "Primary filename of run data." ];
+
+  calin.ix.iact_data.telescope_run_configuration.TelescopeRunConfiguration run_config = 10;
+
+  calin.ix.diagnostics.run_info.RunInfo run_info           = 11;
+
+  calin.ix.diagnostics.simple_charge_stats.SimpleChargeStats charge_stats = 12;
+
+  calin.ix.diagnostics.waveform.WaveformMean mean_wf_physics = 20;
+  calin.ix.diagnostics.waveform.WaveformMean mean_wf_pedestal = 21;
+  calin.ix.diagnostics.waveform.WaveformMean mean_wf_external_flasher = 22;
+  calin.ix.diagnostics.waveform.WaveformMean mean_wf_internal_flasher = 23;
+
+  calin.ix.provenance.anthology.Anthology provenance_anthology = 1000 [
+    (CFO).desc = "Provenance information registered at time of Stage1 results extraction." ];
+};

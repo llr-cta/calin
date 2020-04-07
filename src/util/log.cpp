@@ -127,6 +127,11 @@ ProtobufLogger* calin::util::log::default_protobuf_logger()
   return default_protobuf_logger_.get();
 }
 
+void calin::util::log::prune_default_protobuf_log()
+{
+  default_protobuf_logger()->prune_log();
+}
+
 MultiLogger::~MultiLogger()
 {
   //nothing to see here
