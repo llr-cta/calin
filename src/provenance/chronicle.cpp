@@ -38,6 +38,27 @@ std::mutex chronicle_mutex;
 std::unique_ptr<calin::ix::provenance::chronicle::Chronicle> singleton_chronicle {
   new calin::ix::provenance::chronicle::Chronicle };
 
+template<typename RepeatedFieldType> void prune_repeated_field(RepeatedFieldType* rf)
+{
+  int from = 0;
+  int to = 0;
+  while(from != rf->size()) {
+    while(to != rf->size() and not rf->Get(to).has_close_timestamp())++to;
+    from = std::max(to, from);
+    while(from != rf->size() and rf->Get(from).has_close_timestamp())++from;
+    if(from != rf->size()) {
+      rf->SwapElements(to, from);
+      ++to;
+      ++from;
+    }
+  }
+  if(to == 0) {
+    rf->Clear();
+  } else {
+    while(rf->size() > to)rf->RemoveLast();
+  }
+}
+
 } // anonymous namespace
 
 const calin::ix::provenance::chronicle::Chronicle*
@@ -46,10 +67,12 @@ calin::provenance::chronicle::the_chronicle()
   return singleton_chronicle.get();
 }
 
-void calin::provenance::chronicle::clear_the_chronicle()
+void calin::provenance::chronicle::prune_the_chronicle()
 {
   std::lock_guard<std::mutex> lock { chronicle_mutex };
-  singleton_chronicle->Clear();
+  prune_repeated_field(singleton_chronicle->mutable_file_io_record());
+  prune_repeated_field(singleton_chronicle->mutable_network_io_record());
+  prune_repeated_field(singleton_chronicle->mutable_rng_record());
 }
 
 calin::ix::provenance::chronicle::Chronicle*

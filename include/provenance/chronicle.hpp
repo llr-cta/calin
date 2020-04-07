@@ -30,7 +30,7 @@ namespace calin { namespace provenance { namespace chronicle {
 
 const calin::ix::provenance::chronicle::Chronicle* the_chronicle();
 
-void clear_the_chronicle();
+void prune_the_chronicle();
 
 #ifndef SWIG
 calin::ix::provenance::chronicle::Chronicle*
