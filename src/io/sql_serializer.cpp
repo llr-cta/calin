@@ -100,16 +100,9 @@ bool SQLSerializer::create_or_extend_tables(const std::string& table_name,
 }
 
 bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
-  const google::protobuf::Message* m, bool allow_mismatching_type)
+  const google::protobuf::Message* m, bool allow_incompatible_type)
 {
   const google::protobuf::Descriptor* d = m->GetDescriptor();
-  if(not allow_mismatching_type and db_tables_.count(table_name) and
-      db_tables_.at(table_name)->proto_message_type() != d->full_name()) {
-    throw std::runtime_error("SQLSerializer::insert: mistmatching types in table "
-      + table_name + " (" + db_tables_.at(table_name)->proto_message_type()
-      + " != " + d->full_name() + "). Retry with allow_mismatching_type=true to ignore.");
-  }
-
   SQLTable* t = schema_[table_name][d];
   if(t == nullptr) {
     t = make_sqltable_tree(table_name, d);
@@ -118,6 +111,14 @@ bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
 
   if(not t->db_all_tree_fields_present)
   {
+    if(not allow_incompatible_type and db_tables_.count(table_name) and
+        db_tables_.at(table_name)->proto_message_type() != d->full_name()) {
+      throw std::runtime_error("SQLSerializer::insert: inserting type "
+        + d->full_name() + " into table " + table_name + " (with native type "
+        + db_tables_.at(table_name)->proto_message_type()
+        + ") would require extending tables. Retry with \"allow_incompatible_type=true\" to allow.");
+    }
+
     for(auto& it : schema_[table_name]) {
       if(it.second != t) {
         delete it.second;
