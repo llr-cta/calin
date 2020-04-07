@@ -39,7 +39,7 @@ public:
   virtual ~VCLRNGCore()
   {
     if(chronicle_record_)
-      calin::provenance::chronicle::register_rng_close(chronicle_record_);
+      calin::provenance::chronicle::register_rng_close(chronicle_record_, calls_);
   }
 
   virtual uint64_vt uniform_uint64() = 0;
@@ -85,6 +85,7 @@ protected:
       calin::provenance::chronicle::register_vcl_rng_core_open(*proto, created_by, comment);
     delete proto;
   }
+  uint64_t calls_ = 0;
   calin::ix::provenance::chronicle::RNGRecord* chronicle_record_ = nullptr;
 };
 
@@ -762,6 +763,9 @@ private:
 template<typename VCLArchitecture> class NR3_VCLRNGCore:
   public VCLRNGCore<VCLArchitecture>
 {
+#ifndef SWIG
+  using VCLRNGCore<VCLArchitecture>::calls_;
+#endif
 public:
   CALIN_TYPEALIAS(uint64_vt, typename VCLArchitecture::uint64_vt);
 
@@ -911,7 +915,6 @@ private:
   }
 
   uint64_t seed_;
-  uint64_t calls_ = 0;
   uint64_vt sequence_seeds_;
   uint64_vt u_ = C_NR3_U_INIT;
   uint64_vt v_ = C_NR3_V_INIT;
