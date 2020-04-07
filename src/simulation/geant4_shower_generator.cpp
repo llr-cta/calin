@@ -83,7 +83,7 @@ void Geant4ShowerGenerator::construct(unsigned num_atm_layers,
 {
   while(seed_ == 0)seed_ = calin::math::rng::RNG::uint32_from_random_device();
   CLHEP::HepRandom::setTheSeed(seed_);
-  calin::provenance::chronicle::register_external_rng(seed_, "CLHEP::HepRandom",
+  calin::provenance::chronicle::register_external_rng_open(seed_, "CLHEP::HepRandom",
     __PRETTY_FUNCTION__);
 
   // get the pointer to the User Interface manager

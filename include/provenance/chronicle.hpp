@@ -30,7 +30,7 @@ namespace calin { namespace provenance { namespace chronicle {
 
 const calin::ix::provenance::chronicle::Chronicle* the_chronicle();
 
-void reset_the_chronicle();
+void clear_the_chronicle();
 
 #ifndef SWIG
 calin::ix::provenance::chronicle::Chronicle*
@@ -52,15 +52,21 @@ register_network_open(const std::string& endpoint,
 void register_network_close(calin::ix::provenance::chronicle::NetworkIORecord* record,
   int64_t nbytes_received = -1, int64_t nbytes_sent = -1);
 
-void register_calin_rng(const calin::ix::math::rng::RNGData& rng_data,
+calin::ix::provenance::chronicle::RNGRecord*
+register_calin_rng_open(const calin::ix::math::rng::RNGData& rng_data,
   const std::string& created_by, const std::string& comment = "");
-void register_rng_core(const calin::ix::math::rng::RNGCoreData& rng_data,
+calin::ix::provenance::chronicle::RNGRecord*
+register_rng_core_open(const calin::ix::math::rng::RNGCoreData& rng_data,
   const std::string& created_by, const std::string& comment = "");
-void register_vcl_rng_core(const calin::ix::math::rng::VCLRNGCoreData& vcl_rng_data,
+calin::ix::provenance::chronicle::RNGRecord*
+register_vcl_rng_core_open(const calin::ix::math::rng::VCLRNGCoreData& vcl_rng_data,
   const std::string& created_by, const std::string& comment = "");
-void register_external_rng(uint64_t seed, const std::string& rng_type,
+calin::ix::provenance::chronicle::RNGRecord*
+register_external_rng_open(uint64_t seed, const std::string& rng_type,
   const std::string& created_by, void* rng_data = nullptr, unsigned rng_data_size = 0,
   const std::string& comment = "");
+void register_rng_close(calin::ix::provenance::chronicle::RNGRecord* record,
+  uint64_t ncore_calls=0);
 
 //void register_rng_creation();
 

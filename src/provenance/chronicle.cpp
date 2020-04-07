@@ -46,7 +46,7 @@ calin::provenance::chronicle::the_chronicle()
   return singleton_chronicle.get();
 }
 
-void calin::provenance::chronicle::reset_the_chronicle()
+void calin::provenance::chronicle::clear_the_chronicle()
 {
   std::lock_guard<std::mutex> lock { chronicle_mutex };
   singleton_chronicle->Clear();
@@ -121,8 +121,8 @@ register_network_close(calin::ix::provenance::chronicle::NetworkIORecord* record
   if(nbytes_sent>=0)record->set_nbytes_sent(nbytes_sent);
 }
 
-void calin::provenance::chronicle::
-register_calin_rng(const calin::ix::math::rng::RNGData& rng_data,
+calin::ix::provenance::chronicle::RNGRecord* calin::provenance::chronicle::
+register_calin_rng_open(const calin::ix::math::rng::RNGData& rng_data,
   const std::string& created_by, const std::string& comment)
 {
   calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
@@ -131,46 +131,49 @@ register_calin_rng(const calin::ix::math::rng::RNGData& rng_data,
     std::lock_guard<std::mutex> lock { chronicle_mutex };
     record = singleton_chronicle->add_rng_record();
   }
-  ts.as_proto(record->mutable_timestamp());
+  ts.as_proto(record->mutable_open_timestamp());
   record->mutable_calin_rng()->CopyFrom(rng_data);
   record->set_comment(comment);
   record->set_created_by(created_by);
+  return record;
 }
 
-void calin::provenance::chronicle::
-register_rng_core(const calin::ix::math::rng::RNGCoreData& rng_core_data,
+calin::ix::provenance::chronicle::RNGRecord* calin::provenance::chronicle::
+register_rng_core_open(const calin::ix::math::rng::RNGCoreData& rng_core_data,
   const std::string& created_by, const std::string& comment)
 {
   calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
-  calin::ix::provenance::chronicle::RNGCoreRecord* record = nullptr;
+  calin::ix::provenance::chronicle::RNGRecord* record = nullptr;
   {
     std::lock_guard<std::mutex> lock { chronicle_mutex };
-    record = singleton_chronicle->add_rng_core_record();
+    record = singleton_chronicle->add_rng_record();
   }
-  ts.as_proto(record->mutable_timestamp());
+  ts.as_proto(record->mutable_open_timestamp());
   record->mutable_rng_core()->CopyFrom(rng_core_data);
   record->set_comment(comment);
   record->set_created_by(created_by);
+  return record;
 }
 
-void calin::provenance::chronicle::
-register_vcl_rng_core(const calin::ix::math::rng::VCLRNGCoreData& vcl_rng_core_data,
+calin::ix::provenance::chronicle::RNGRecord* calin::provenance::chronicle::
+register_vcl_rng_core_open(const calin::ix::math::rng::VCLRNGCoreData& vcl_rng_core_data,
   const std::string& created_by, const std::string& comment)
 {
   calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
-  calin::ix::provenance::chronicle::VCLRNGCoreRecord* record = nullptr;
+  calin::ix::provenance::chronicle::RNGRecord* record = nullptr;
   {
     std::lock_guard<std::mutex> lock { chronicle_mutex };
-    record = singleton_chronicle->add_vcl_rng_core_record();
+    record = singleton_chronicle->add_rng_record();
   }
-  ts.as_proto(record->mutable_timestamp());
+  ts.as_proto(record->mutable_open_timestamp());
   record->mutable_vcl_rng_core()->CopyFrom(vcl_rng_core_data);
   record->set_comment(comment);
   record->set_created_by(created_by);
+  return record;
 }
 
-void calin::provenance::chronicle::
-register_external_rng(uint64_t seed, const std::string& rng_type,
+calin::ix::provenance::chronicle::RNGRecord* calin::provenance::chronicle::
+register_external_rng_open(uint64_t seed, const std::string& rng_type,
   const std::string& created_by, void* rng_data, unsigned rng_data_size,
   const std::string& comment)
 {
@@ -180,7 +183,7 @@ register_external_rng(uint64_t seed, const std::string& rng_type,
     std::lock_guard<std::mutex> lock { chronicle_mutex };
     record = singleton_chronicle->add_rng_record();
   }
-  ts.as_proto(record->mutable_timestamp());
+  ts.as_proto(record->mutable_open_timestamp());
   auto* rng_data_proto = record->mutable_external_rng();
   rng_data_proto->set_seed(seed);
   rng_data_proto->set_rng_type(rng_type);
@@ -188,4 +191,13 @@ register_external_rng(uint64_t seed, const std::string& rng_type,
     rng_data_proto->set_rng_data(rng_data, rng_data_size);
   record->set_comment(comment);
   record->set_created_by(created_by);
+  return record;
+}
+
+void calin::provenance::chronicle::
+register_rng_close(calin::ix::provenance::chronicle::RNGRecord* record, uint64_t ncore_calls)
+{
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  ts.as_proto(record->mutable_close_timestamp());
+  if(ncore_calls>=0)record->set_ncore_calls(ncore_calls);
 }

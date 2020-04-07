@@ -47,6 +47,7 @@
 
 #include <calin_global_definitions.hpp>
 #include <math/rng.pb.h>
+#include <provenance/chronicle.pb.h>
 
 namespace calin { namespace math { namespace rng {
 
@@ -83,6 +84,7 @@ public:
 
 protected:
   void write_provenance(const std::string& created_by, const std::string& comment = "");
+  calin::ix::provenance::chronicle::RNGRecord* chronicle_record_ = nullptr;
 };
 
 class RNG
@@ -160,6 +162,7 @@ public:
 private:
   RNGCore* core_;
   bool adopt_core_;
+  calin::ix::provenance::chronicle::RNGRecord* chronicle_record_ = nullptr;
 
   // Cached values
   bool bm_hascached_ = false;

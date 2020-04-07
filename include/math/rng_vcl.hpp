@@ -36,7 +36,11 @@ template<typename VCLArchitecture> class VCLRNGCore
 public:
   CALIN_TYPEALIAS(uint64_vt, typename VCLArchitecture::uint64_vt);
 
-  virtual ~VCLRNGCore() { }
+  virtual ~VCLRNGCore()
+  {
+    if(chronicle_record_)
+      calin::provenance::chronicle::register_rng_close(chronicle_record_);
+  }
 
   virtual uint64_vt uniform_uint64() = 0;
 
@@ -77,9 +81,11 @@ protected:
   void write_provenance(const std::string& created_by, const std::string& comment = "")
   {
     const ix::math::rng::VCLRNGCoreData* proto = this->as_proto();
-    calin::provenance::chronicle::register_vcl_rng_core(*proto, created_by, comment);
+    chronicle_record_ =
+      calin::provenance::chronicle::register_vcl_rng_core_open(*proto, created_by, comment);
     delete proto;
   }
+  calin::ix::provenance::chronicle::RNGRecord* chronicle_record_ = nullptr;
 };
 
 template<typename VCLArchitecture> class VCLRNG
@@ -664,6 +670,7 @@ public:
 private:
   VCLRNGCore<VCLArchitecture>* core_ = nullptr;
   bool adopt_core_ = true;
+  calin::ix::provenance::chronicle::RNGRecord* chronicle_record_ = nullptr;
 };
 
 template<typename VCLRealArch> class VCLRealRNG
