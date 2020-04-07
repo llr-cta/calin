@@ -29,6 +29,7 @@ import "iact_data/telescope_run_configuration.proto";
 import "diagnostics/run_info.proto";
 import "diagnostics/simple_charge_stats.proto";
 import "diagnostics/waveform.proto";
+import "provenance/anthology.proto";
 //import "common_types.proto";
 
 package calin.ix.diagnostics.stage1;
@@ -57,4 +58,7 @@ message Stage1 {
   calin.ix.diagnostics.waveform.WaveformMean mean_wf_pedestal = 21;
   calin.ix.diagnostics.waveform.WaveformMean mean_wf_external_flasher = 22;
   calin.ix.diagnostics.waveform.WaveformMean mean_wf_internal_flasher = 23;
+
+  calin.ix.provenance.anthology.Anthology provenance_anthology = 1000 [
+    (CFO).desc = "Provenance information registered at time of Stage1 results extraction." ];
 };

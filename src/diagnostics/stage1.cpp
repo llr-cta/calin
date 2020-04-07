@@ -23,6 +23,7 @@
 
 #include <util/log.hpp>
 #include <diagnostics/stage1.hpp>
+#include <provenance/anthology.hpp>
 
 using namespace calin::util::log;
 using namespace calin::diagnostics::stage1;
@@ -112,6 +113,8 @@ calin::ix::diagnostics::stage1::Stage1* Stage1ParallelEventVisitor::stage1_resul
     calin::util::timestamp::Timestamp(stage1->run_config().run_start_time().time_ns()).as_string());
   stage1->set_telescope_id(stage1->run_config().telescope_id());
   stage1->set_filename(stage1->run_config().filename());
+
+  calin::provenance::anthology::get_current_anthology(stage1->mutable_provenance_anthology());
 
   return stage1;
 }
