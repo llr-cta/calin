@@ -100,9 +100,16 @@ bool SQLSerializer::create_or_extend_tables(const std::string& table_name,
 }
 
 bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
-  const google::protobuf::Message* m)
+  const google::protobuf::Message* m, bool allow_mismatching_type)
 {
   const google::protobuf::Descriptor* d = m->GetDescriptor();
+  if(not allow_mismatching_type and db_tables_.count(table_name) and
+      db_tables_.at(table_name)->proto_message_type() != d->full_name()) {
+    throw std::runtime_error("SQLSerializer::insert: mistmatching types in table "
+      + table_name + " (" + db_tables_.at(table_name)->proto_message_type()
+      + " != " + d->full_name() + "). Retry with allow_mismatching_type=true to ignore.");
+  }
+
   SQLTable* t = schema_[table_name][d];
   if(t == nullptr) {
     t = make_sqltable_tree(table_name, d);
@@ -152,7 +159,13 @@ bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
 
   begin_transaction();
 
-  success = r_exec_insert(t, m, oid, 0, 0, false);
+  try {
+    success = r_exec_insert(t, m, oid, 0, 0, false);
+  } catch(...) {
+    rollback_transaction();
+    throw;
+  }
+
   if(not success)
   {
     rollback_transaction();
@@ -199,14 +212,19 @@ bool SQLSerializer::retrieve_by_oid(const std::string& table_name, uint64_t oid,
 
   begin_transaction();
 
-  t->iterate_over_tables([this,oid,m,&success](SQLTable* it) {
-    if(success)
-    {
-      if(it->stmt_select_oid != nullptr) {
-        success = exec_select_by_oid(it, oid, m, /* ignore_errors= */ false);
+  try {
+    t->iterate_over_tables([this,oid,m,&success](SQLTable* it) {
+      if(success)
+      {
+        if(it->stmt_select_oid != nullptr) {
+          success = exec_select_by_oid(it, oid, m, /* ignore_errors= */ false);
+        }
       }
-    }
-  });
+    });
+  } catch(...) {
+    rollback_transaction();
+    throw;
+  }
 
   if(not success)
   {
@@ -482,95 +500,102 @@ bool SQLSerializer::do_create_or_extend_tables(SQLTable* t,
   std::vector<SQLTableField*> new_table_fields;
 
   begin_transaction();
-  t->iterate_over_tables([this, &success, &new_tables, &new_table_fields](SQLTable* itable) {
-    if(success) {
-      if(this->db_tables_.find(itable->table_name) == this->db_tables_.end()) {
-        std::unique_ptr<SQLStatement> stmt { prepare_statement(sql_create_table(itable)) };
-        if(not stmt->is_initialized()) {
-          LOG(ERROR) << "SQL error preparing CREATE TABLE: " << stmt->error_message() << '\n'
-                     << "SQL: " << stmt->sql();
-          success = false;
-        } else {
-          success = execute_one_no_data_statement(stmt.get());
-          if(success) {
-            new_tables.push_back(itable);
+
+  std::vector<calin::ix::io::sql_serializer::SQLTable*> new_table_protos;
+  std::vector<calin::ix::io::sql_serializer::SQLTableField*> new_field_protos;
+
+  try {
+    t->iterate_over_tables([this, &success, &new_tables, &new_table_fields](SQLTable* itable) {
+      if(success) {
+        if(this->db_tables_.find(itable->table_name) == this->db_tables_.end()) {
+          std::unique_ptr<SQLStatement> stmt { prepare_statement(sql_create_table(itable)) };
+          if(not stmt->is_initialized()) {
+            LOG(ERROR) << "SQL error preparing CREATE TABLE: " << stmt->error_message() << '\n'
+                       << "SQL: " << stmt->sql();
+            success = false;
+          } else {
+            success = execute_one_no_data_statement(stmt.get());
+            if(success) {
+              new_tables.push_back(itable);
+            }
           }
-        }
-      } else {
-        for(auto ifield : itable->fields) {
-          std::string fqdn = sub_name(itable->table_name, ifield->field_name);
-          if(this->db_table_fields_.find(fqdn) == this->db_table_fields_.end()) {
-            std::unique_ptr<SQLStatement> stmt { prepare_statement(sql_add_field_to_table(ifield))  };
-            if(not stmt->is_initialized()) {
-              LOG(ERROR) << "SQL error preparing EXTEND TABLE: " << stmt->error_message() << '\n'
-                         << "SQL: " << stmt->sql();
-              success = false;
-            } else {
-              success = execute_one_no_data_statement(stmt.get());
-              if(success) {
-                new_table_fields.push_back(ifield);
+        } else {
+          for(auto ifield : itable->fields) {
+            std::string fqdn = sub_name(itable->table_name, ifield->field_name);
+            if(this->db_table_fields_.find(fqdn) == this->db_table_fields_.end()) {
+              std::unique_ptr<SQLStatement> stmt { prepare_statement(sql_add_field_to_table(ifield))  };
+              if(not stmt->is_initialized()) {
+                LOG(ERROR) << "SQL error preparing EXTEND TABLE: " << stmt->error_message() << '\n'
+                           << "SQL: " << stmt->sql();
+                success = false;
+              } else {
+                success = execute_one_no_data_statement(stmt.get());
+                if(success) {
+                  new_table_fields.push_back(ifield);
+                }
               }
             }
           }
         }
       }
+    });
+
+    if(not success)
+    {
+      rollback_transaction();
+      return success;
     }
-  });
 
-  if(not success)
-  {
-    rollback_transaction();
-    return success;
-  }
-
-  success = true;
-  for(SQLTable* it : new_tables) {
-    if(success) {
-      std::string sql = sql_create_index(it);
-      if(sql.empty()) continue;
-      auto* stmt = prepare_statement(sql);
-      if(not stmt->is_initialized()) {
-        LOG(ERROR) << "SQL error preparing CREATE INDEX: " << stmt->error_message() << '\n'
-                   << "SQL: " << stmt->sql();
-        success = false;
-      } else {
-        success = execute_one_no_data_statement(stmt);
-        delete stmt;
+    success = true;
+    for(SQLTable* it : new_tables) {
+      if(success) {
+        std::string sql = sql_create_index(it);
+        if(sql.empty()) continue;
+        auto* stmt = prepare_statement(sql);
+        if(not stmt->is_initialized()) {
+          LOG(ERROR) << "SQL error preparing CREATE INDEX: " << stmt->error_message() << '\n'
+                     << "SQL: " << stmt->sql();
+          success = false;
+        } else {
+          success = execute_one_no_data_statement(stmt);
+          delete stmt;
+        }
       }
     }
-  }
 
-  if(not success)
-  {
-    rollback_transaction();
-    return success;
-  }
+    if(not success)
+    {
+      rollback_transaction();
+      return success;
+    }
 
-  std::vector<calin::ix::io::sql_serializer::SQLTable*> new_table_protos;
-  std::vector<calin::ix::io::sql_serializer::SQLTableField*> new_field_protos;
-  for(auto t : new_tables) {
-    new_table_protos.push_back(table_as_proto(t));
-    for(auto f : t->fields) {
+    for(auto t : new_tables) {
+      new_table_protos.push_back(table_as_proto(t));
+      for(auto f : t->fields) {
+        new_field_protos.push_back(field_as_proto(f));
+      }
+    }
+    for(auto f : new_table_fields) {
       new_field_protos.push_back(field_as_proto(f));
     }
-  }
-  for(auto f : new_table_fields) {
-    new_field_protos.push_back(field_as_proto(f));
-  }
 
-  if(write_new_tables_and_fields_to_db) {
-    for(auto pt : new_table_protos) {
-      if(not insert(internal_tables_tablename(), pt)) {
-        rollback_transaction();
-        return false;
+    if(write_new_tables_and_fields_to_db) {
+      for(auto pt : new_table_protos) {
+        if(not insert(internal_tables_tablename(), pt)) {
+          rollback_transaction();
+          return false;
+        }
+      }
+      for(auto pf : new_field_protos) {
+        if(not insert(internal_fields_tablename(), pf)) {
+          rollback_transaction();
+          return false;
+        }
       }
     }
-    for(auto pf : new_field_protos) {
-      if(not insert(internal_fields_tablename(), pf)) {
-        rollback_transaction();
-        return false;
-      }
-    }
+  } catch(...) {
+    rollback_transaction();
+    throw;
   }
 
   commit_transaction();
@@ -1296,6 +1321,11 @@ std::string SQLSerializer::internal_fields_tablename()
   return "calin.fields";
 }
 
+std::string SQLSerializer::internal_params_tablename()
+{
+  return "calin.params";
+}
+
 void SQLSerializer::retrieve_db_tables_and_fields()
 {
   const google::protobuf::Descriptor* d;
@@ -1340,12 +1370,21 @@ void SQLSerializer::retrieve_db_tables_and_fields()
 
 void SQLSerializer::create_db_tables_and_fields()
 {
+  std::unique_ptr<SQLTable> tp { make_sqltable_tree(internal_params_tablename(),
+    calin::ix::io::sql_serializer::SQLSerializerParams::descriptor(), "calin sql serializer parameters") };
   std::unique_ptr<SQLTable> tt { make_sqltable_tree(internal_tables_tablename(),
     calin::ix::io::sql_serializer::SQLTable::descriptor(), "calin database table list") };
   std::unique_ptr<SQLTable> tf { make_sqltable_tree(internal_fields_tablename(),
     calin::ix::io::sql_serializer::SQLTableField::descriptor(), "calin database field list") };
 
   begin_transaction();
+
+  if(not do_create_or_extend_tables(tp.get(), false)) {
+    rollback_transaction();
+    throw std::runtime_error("create_db_tables_and_fields: could not create table: " +
+      internal_params_tablename());
+  }
+
   if(not do_create_or_extend_tables(tt.get(), false)) {
     rollback_transaction();
     throw std::runtime_error("create_db_tables_and_fields: could not create table: " +
@@ -1358,6 +1397,14 @@ void SQLSerializer::create_db_tables_and_fields()
       internal_fields_tablename());
   }
 
+  calin::ix::io::sql_serializer::SQLSerializerParams params;
+  params.set_version(native_db_version_);
+  if(not insert(internal_params_tablename(), &params)) {
+    rollback_transaction();
+    throw std::runtime_error("create_db_tables_and_fields: could not insert into table: " +
+      internal_params_tablename());
+  }
+
   for(auto pt : db_tables_) {
     if(not insert(internal_tables_tablename(), pt.second)) {
       rollback_transaction();
@@ -1365,6 +1412,7 @@ void SQLSerializer::create_db_tables_and_fields()
         internal_tables_tablename());
     }
   }
+
   for(auto pf : db_table_fields_) {
     if(not insert(internal_fields_tablename(), pf.second)) {
       rollback_transaction();

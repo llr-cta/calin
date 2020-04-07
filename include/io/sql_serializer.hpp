@@ -214,7 +214,7 @@ class SQLSerializer
     const google::protobuf::Descriptor* d, const std::string& instance_desc = "");
 
   virtual bool insert(const std::string& table_name, uint64_t& oid,
-    const google::protobuf::Message* m);
+    const google::protobuf::Message* m, bool allow_mismatching_type = false);
 
   bool insert(const std::string& table_name, const google::protobuf::Message* m)
   {
@@ -234,6 +234,8 @@ protected:
 
   bool write_sql_to_log_ = false;
   std::atomic<int> transaction_count_ { 0 };
+  unsigned native_db_version_ = 1;
+  unsigned db_version_ = 1;
   std::map<std::string, calin::ix::io::sql_serializer::SQLTable*> db_tables_;
   std::map<std::string, calin::ix::io::sql_serializer::SQLTableField*> db_table_fields_;
   std::map<std::string, std::map<const google::protobuf::Descriptor*, SQLTable*> > schema_;
@@ -314,6 +316,7 @@ protected:
 
   virtual std::string internal_tables_tablename();
   virtual std::string internal_fields_tablename();
+  virtual std::string internal_params_tablename();
   virtual void retrieve_db_tables_and_fields();
   virtual void create_db_tables_and_fields();
 };
