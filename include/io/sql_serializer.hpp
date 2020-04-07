@@ -214,7 +214,7 @@ class SQLSerializer
     const google::protobuf::Descriptor* d, const std::string& instance_desc = "");
 
   virtual bool insert(const std::string& table_name, uint64_t& oid,
-    const google::protobuf::Message* m, bool allow_mismatching_type = false);
+    const google::protobuf::Message* m, bool allow_incompatible_type = false);
 
   bool insert(const std::string& table_name, const google::protobuf::Message* m)
   {
