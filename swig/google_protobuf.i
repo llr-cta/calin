@@ -52,7 +52,7 @@ namespace google { namespace protobuf {
 //%newobject Message::New() const;
 %nodefaultctor Message;
 %nodefaultctor Descriptor;
-%nodefaultctor Arena;
+//%nodefaultctor Arena;
 
 class Message
 {
