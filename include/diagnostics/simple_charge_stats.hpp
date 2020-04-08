@@ -83,6 +83,8 @@ private:
   bool has_dual_gain_ = false;
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats results_;
   calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats partials_;
+
+  std::vector<calin::math::histogram::Histogram1D*> ped_hist_;
 };
 
 } } } // namespace calin::diagnostics::simple_charge_stats

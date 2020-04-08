@@ -47,7 +47,7 @@ SimpleChargeStatsParallelEventVisitor(
 
 SimpleChargeStatsParallelEventVisitor::~SimpleChargeStatsParallelEventVisitor()
 {
-  // nothing to see here
+  for(auto* h : ped_hist_)delete h;
 }
 
 SimpleChargeStatsParallelEventVisitor* SimpleChargeStatsParallelEventVisitor::new_sub_visitor(
@@ -69,11 +69,19 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
 {
   partials_.Clear();
   results_.Clear();
+
   has_dual_gain_ = (run_config->camera_layout().adc_gains() !=
     calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN);
   for(unsigned ichan=0;ichan<run_config->configured_channel_id_size();++ichan) {
     partials_.add_channel();
   }
+
+  for(auto* h : ped_hist_)delete h;
+  ped_hist_.resize(run_config->configured_channel_id_size());
+  for(unsigned ichan=0;ichan<run_config->configured_channel_id_size();++ichan) {
+    ped_hist_[ichan] = new calin::math::histogram::Histogram1D(1.0);
+  }
+
   // if(high_gain_visitor_) {
   //   high_gain_results_->Clear();
   //   high_gain_results_->set_integration_n(high_gain_visitor_->window_n());
@@ -119,6 +127,11 @@ namespace {
       results_g->add_all_trigger_ped_win_var(0.0);
     }
 
+    if(partials_gc.has_ped_trig_full_wf_hist()) {
+      results_g->add_ped_trigger_full_wf_hist()->CopyFrom(
+        partials_gc.ped_trig_full_wf_hist());
+    }
+
     results_g->add_ped_trigger_event_count(partials_gc.ped_trig_num_events());
     if(partials_gc.ped_trig_num_events() > 0) {
       results_g->add_ped_trigger_full_wf_mean(
@@ -136,6 +149,13 @@ namespace {
 
 bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
 {
+  for(int ichan = 0; ichan<partials_.channel_size(); ichan++) {
+    auto* hp = ped_hist_[ichan]->dump_as_proto();
+    partials_.mutable_channel(ichan)->mutable_high_gain()->
+      mutable_ped_trig_full_wf_hist()->IntegrateFrom(*hp);
+    delete hp;
+  }
+
   if(parent_)return true;
 
   for(int ichan = 0; ichan<partials_.channel_size(); ichan++) {
@@ -196,6 +216,23 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
 {
   if(high_gain_visitor_) {
     record_one_visitor_data(seq_index, event, high_gain_visitor_, &partials_);
+    if(high_gain_visitor_->is_same_event(seq_index) and
+      event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL)
+    {
+      for(unsigned ichan=0; ichan<high_gain_visitor_->nchan(); ichan++) {
+        switch(high_gain_visitor_->array_chan_signal_type()[ichan]) {
+        case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
+        case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
+          ped_hist_[ichan]->insert(high_gain_visitor_->array_chan_all_sum()[ichan]);
+          break;
+        case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
+        case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
+        default:
+          // do nothing
+          break;
+        }
+      }
+    }
   }
   if(low_gain_visitor_) {
     record_one_visitor_data(seq_index, event, low_gain_visitor_, &partials_);

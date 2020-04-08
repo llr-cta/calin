@@ -50,6 +50,9 @@ message OneGainSimpleChargeStats {
   repeated double ped_trigger_full_wf_var                           = 22 [
     (CFO).desc = "Variance of full-waveform charge estimate over pedestal events.",
     (CFO).units = "DC^2" ];
+
+  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_hist = 30 [
+    (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events." ];
 };
 
 message SimpleChargeStats {
@@ -81,6 +84,9 @@ message PartialOneGainChannelSimpleChargeStats {
   int64 ped_trig_full_wf_sumsq                                      = 22 [
     (CFO).desc = "Sum of pedestal window squared over all events.",
     (CFO).is_counter=true ];
+
+  calin.ix.math.histogram.Histogram1DData ped_trig_full_wf_hist     = 30 [
+    (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events." ];
 }
 
 message PartialChannelSimpleChargeStats {
