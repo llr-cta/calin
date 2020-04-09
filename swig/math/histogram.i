@@ -37,6 +37,7 @@
 
 %import "math/histogram.pb.i"
 
-%newobject calin::math::histogram::rebin;
+%newobject calin::math::histogram::rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, unsigned rebinning_factor);
+%newobject calin::math::histogram::sparsify(const calin::ix::math::histogram::Histogram1DData& original_hist);
 
 %include "math/histogram.hpp"

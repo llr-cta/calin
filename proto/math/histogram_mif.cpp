@@ -21,6 +21,7 @@
 */
 
 #include <algorithm>
+#include <list>
 
 #include "math/histogram.pb.h"
 
@@ -35,15 +36,16 @@ void calin::ix::math::histogram::Histogram1DData::IntegrateFrom(
   to->set_dxval(from.dxval());
   to->set_xval_align(from.xval_align());
 
-  if(from.bins_size()) // If "from" is empty then skip merging the bins
+  if(from.bins_size()) // If "from" has dense data then we must copy it into "to"
   {
-    if(to->bins_size()) // If "to" has data we must merge
+    if(to->bins_size()) // If "to" also has dense data we must do an overlapping merge
     {
       double xval0 = std::min(to->xval0(), from.xval0());
       int to_offset = int((to->xval0() - xval0)/to->dxval());
       int from_offset = int((from.xval0() - xval0)/to->dxval());
       int to_n = to->bins_size();
       int N = std::max(to_n + to_offset, from.bins_size() + from_offset);
+
       to->mutable_bins()->Resize(N,0);
       if(to_offset) // Must move data in "to" array to later point
       {
@@ -57,18 +59,80 @@ void calin::ix::math::histogram::Histogram1DData::IntegrateFrom(
         to->bins().data()+from_offset,
         to->mutable_bins()->mutable_data()+from_offset,
         [](double a, double b) { return a+b; });
+
+      std::list<std::pair<int64_t, double> > new_sparse;
+      for(auto isparse : to->sparse_bins()) {
+        int64_t ibin = isparse.first + to_offset;
+        if(ibin<0 or ibin>=N) {
+          new_sparse.emplace_back(ibin, isparse.second) ;
+        } else {
+          (*to->mutable_bins())[ibin] += isparse.second;
+        }
+      }
+      to->mutable_sparse_bins()->clear();
+      for(auto isparse : new_sparse) {
+        (*to->mutable_sparse_bins())[isparse.first] = isparse.second;
+      }
+      for(auto isparse : from.sparse_bins()) {
+        int64_t ibin = isparse.first + from_offset;
+        if(ibin<0 or ibin>=N) {
+          (*to->mutable_sparse_bins())[ibin] += isparse.second;
+        } else {
+          (*to->mutable_bins())[ibin] += isparse.second;
+        }
+      }
+
       to->set_xval_min(std::min(to->xval_min(), from.xval_min()));
       to->set_xval_max(std::min(to->xval_max(), from.xval_max()));
     }
-    else // "to" has not data in bins, just copy "from"
+    else // "to" has no dense data in bins, just copy "from"
     {
+      double xval0 = from.xval0();
+      int to_offset = int((to->xval0() - xval0)/to->dxval());
+      int from_offset = 0;
       int N = from.bins_size();
       to->mutable_bins()->Resize(N, 0);
+
       std::copy(from.bins().data(), from.bins().data()+N,
         to->mutable_bins()->mutable_data());
       to->set_xval0(from.xval0());
+
+      std::list<std::pair<int64_t, double> > new_sparse;
+      for(auto isparse : to->sparse_bins()) {
+        int64_t ibin = isparse.first + to_offset;
+        if(ibin<0 or ibin>=N) {
+          new_sparse.emplace_back(ibin, isparse.second) ;
+        } else {
+          (*to->mutable_bins())[ibin] += isparse.second;
+        }
+      }
+      to->mutable_sparse_bins()->clear();
+      for(auto isparse : new_sparse) {
+        (*to->mutable_sparse_bins())[isparse.first] = isparse.second;
+      }
+      for(auto isparse : from.sparse_bins()) {
+        int64_t ibin = isparse.first + from_offset;
+        if(ibin<0 or ibin>=N) {
+          (*to->mutable_sparse_bins())[ibin] += isparse.second;
+        } else {
+          (*to->mutable_bins())[ibin] += isparse.second;
+        }
+      }
+
       to->set_xval_min(from.xval_min());
       to->set_xval_max(from.xval_max());
+    }
+  } else { // "from" has no dense data
+    double xval0 = to->xval0();
+    int from_offset = int((from.xval0() - xval0)/to->dxval());
+    int N = to->bins_size();
+    for(auto isparse : from.sparse_bins()) {
+      int64_t ibin = isparse.first + from_offset;
+      if(ibin<0 or ibin>=N) {
+        (*to->mutable_sparse_bins())[ibin] += isparse.second;
+      } else {
+        (*to->mutable_bins())[ibin] += isparse.second;
+      }
     }
   }
 

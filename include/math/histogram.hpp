@@ -927,7 +927,29 @@ class BinnedCDF: public BinnedData1D<double>
 CALIN_TYPEALIAS(SimpleHist, BasicHistogram1D<DefaultAccumulator>);
 CALIN_TYPEALIAS(Histogram1D, BasicHistogram1D<DefaultAccumulator>);
 
+#ifndef SWIG
 calin::ix::math::histogram::Histogram1DData*
-rebin(const calin::ix::math::histogram::Histogram1DData& hist_data, unsigned rebinning_factor);
+rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, unsigned rebinning_factor,
+  calin::ix::math::histogram::Histogram1DData* rebinned_hist = nullptr);
+#else
+calin::ix::math::histogram::Histogram1DData*
+rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, unsigned rebinning_factor);
+void  rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, unsigned rebinning_factor,
+  calin::ix::math::histogram::Histogram1DData* rebinned_hist);
+#endif
+
+#ifndef SWIG
+calin::ix::math::histogram::Histogram1DData*
+sparsify(const calin::ix::math::histogram::Histogram1DData& hist_data,
+  calin::ix::math::histogram::Histogram1DData* sparsified_hist = nullptr);
+#else
+calin::ix::math::histogram::Histogram1DData*
+sparsify(const calin::ix::math::histogram::Histogram1DData& hist_data);
+void sparsify(const calin::ix::math::histogram::Histogram1DData& hist_data,
+  calin::ix::math::histogram::Histogram1DData* sparsified_hist);
+#endif
+
+calin::ix::math::histogram::Histogram1DData*
+densify(const calin::ix::math::histogram::Histogram1DData& hist_data);
 
 } } } // namespace calin::math::histogram
