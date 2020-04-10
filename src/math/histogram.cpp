@@ -20,6 +20,8 @@
 
 */
 
+#include <algorithm>
+
 #include <math/accumulator.hpp>
 #include <math/histogram.hpp>
 #include <util/log.hpp>
@@ -59,6 +61,7 @@ calin::math::histogram::sparsify(
   const calin::ix::math::histogram::Histogram1DData& original_hist,
   calin::ix::math::histogram::Histogram1DData* sparsified_hist)
 {
+  constexpr uint64_t sparse_penelty = 1;
   uint64_t ihi = original_hist.bins_size();
   uint64_t ilo = 0;
   while(ihi>ilo and original_hist.bins(ihi-1) == 0)--ihi;
@@ -69,17 +72,17 @@ calin::math::histogram::sparsify(
   uint64_t best_ihi = ihi;
   uint64_t best_ilo = ilo;
 
+  uint64_t test_ihi = ihi;
+  uint64_t test_size_hi = size;
+  while(test_ihi>ilo and original_hist.bins(test_ihi-1) != 0)--test_ihi, test_size_hi += sparse_penelty;
+  while(test_ihi>ilo and original_hist.bins(test_ihi-1) == 0)--test_ihi, test_size_hi -= 1;
+
+  uint64_t test_ilo = ilo;
+  uint64_t test_size_lo = size;
+  while(test_ilo<ihi and original_hist.bins(test_ilo) != 0)++test_ilo, test_size_lo += sparse_penelty;
+  while(test_ilo<ihi and original_hist.bins(test_ilo) == 0)++test_ilo, test_size_lo -= 1;
+
   while(ihi > ilo) {
-    uint64_t test_ihi = ihi;
-    uint64_t test_size_hi = size;
-    while(test_ihi>ilo and original_hist.bins(test_ihi-1) != 0)--test_ihi, test_size_hi += 1;
-    while(test_ihi>ilo and original_hist.bins(test_ihi-1) == 0)--test_ihi, test_size_hi -= 1;
-
-    uint64_t test_ilo = ilo;
-    uint64_t test_size_lo = size;
-    while(test_ilo<ihi and original_hist.bins(test_ilo) != 0)++test_ilo, test_size_lo += 1;
-    while(test_ilo<ihi and original_hist.bins(test_ilo) == 0)++test_ilo, test_size_lo -= 1;
-
 #if 0
     LOG(INFO) << ilo << "," << ihi << "," << size << " -- "
       << ilo << "," << test_ihi << "," << test_size_hi << " -- "
@@ -89,10 +92,16 @@ calin::math::histogram::sparsify(
 
     if(test_size_hi <= test_size_lo) {
       ihi = test_ihi;
+      test_size_lo += test_size_hi - size;
       size = test_size_hi;
+      while(test_ihi>ilo and original_hist.bins(test_ihi-1) != 0)--test_ihi, test_size_hi += sparse_penelty;
+      while(test_ihi>ilo and original_hist.bins(test_ihi-1) == 0)--test_ihi, test_size_hi -= 1;
     } else {
       ilo = test_ilo;
+      test_size_hi += test_size_lo - size;
       size = test_size_lo;
+      while(test_ilo<ihi and original_hist.bins(test_ilo) != 0)++test_ilo, test_size_lo += sparse_penelty;
+      while(test_ilo<ihi and original_hist.bins(test_ilo) == 0)++test_ilo, test_size_lo -= 1;
     }
 
     if(size < best_size) {
@@ -128,7 +137,46 @@ calin::math::histogram::sparsify(
 
 calin::ix::math::histogram::Histogram1DData*
 calin::math::histogram::densify(
-  const calin::ix::math::histogram::Histogram1DData& hist_data)
+  const calin::ix::math::histogram::Histogram1DData& original_hist,
+  calin::ix::math::histogram::Histogram1DData* densified_hist)
 {
-  return nullptr;
+  if(densified_hist == nullptr) {
+    densified_hist = new calin::ix::math::histogram::Histogram1DData;
+  } else {
+    densified_hist->Clear();
+  }
+  densified_hist->CopyFrom(original_hist);
+  densified_hist->mutable_sparse_bins()->clear();
+
+  if(not original_hist.sparse_bins().empty()) {
+    int64_t first_bin = original_hist.sparse_bins().begin()->first;
+    int64_t last_bin = original_hist.sparse_bins().begin()->first + 1;
+    for(auto isparse : original_hist.sparse_bins()) {
+      first_bin = std::min(first_bin, isparse.first);
+      last_bin = std::max(last_bin, isparse.first + 1);
+    }
+
+    if(original_hist.bins_size()) {
+      first_bin = std::min(0LL, first_bin);
+      last_bin = std::max(int64_t(original_hist.bins_size()), last_bin);
+    }
+
+    densified_hist->mutable_bins()->Resize(last_bin-first_bin,0);
+
+    if(original_hist.bins_size() and first_bin!=0) {
+      std::fill(densified_hist->mutable_bins()->mutable_data(),
+        densified_hist->mutable_bins()->mutable_data()-first_bin, 0);
+      std::copy(
+        original_hist.bins().begin(), original_hist.bins().end(),
+        densified_hist->mutable_bins()->mutable_data()-first_bin);
+    }
+
+    densified_hist->set_xval0(original_hist.xval0() + first_bin*original_hist.dxval());
+
+    for(auto isparse : original_hist.sparse_bins()) {
+      (*densified_hist->mutable_bins())[isparse.first - first_bin] += isparse.second;
+    }
+  }
+
+  return densified_hist;
 }

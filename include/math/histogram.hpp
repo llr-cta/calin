@@ -940,16 +940,24 @@ void  rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, un
 
 #ifndef SWIG
 calin::ix::math::histogram::Histogram1DData*
-sparsify(const calin::ix::math::histogram::Histogram1DData& hist_data,
+sparsify(const calin::ix::math::histogram::Histogram1DData& original_hist,
   calin::ix::math::histogram::Histogram1DData* sparsified_hist = nullptr);
 #else
 calin::ix::math::histogram::Histogram1DData*
-sparsify(const calin::ix::math::histogram::Histogram1DData& hist_data);
-void sparsify(const calin::ix::math::histogram::Histogram1DData& hist_data,
+sparsify(const calin::ix::math::histogram::Histogram1DData& original_hist);
+void sparsify(const calin::ix::math::histogram::Histogram1DData& original_hist,
   calin::ix::math::histogram::Histogram1DData* sparsified_hist);
 #endif
 
+#ifndef SWIG
 calin::ix::math::histogram::Histogram1DData*
-densify(const calin::ix::math::histogram::Histogram1DData& hist_data);
+densify(const calin::ix::math::histogram::Histogram1DData& original_hist,
+  calin::ix::math::histogram::Histogram1DData* densified_hist = nullptr);
+#else
+calin::ix::math::histogram::Histogram1DData*
+densify(const calin::ix::math::histogram::Histogram1DData& original_hist);
+void densify(const calin::ix::math::histogram::Histogram1DData& original_hist,
+  calin::ix::math::histogram::Histogram1DData* densified_hist);
+#endif
 
 } } } // namespace calin::math::histogram
