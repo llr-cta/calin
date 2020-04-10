@@ -40,10 +40,11 @@ calin::math::histogram::rebin(
   calin::ix::math::histogram::Histogram1DData* rebinned_hist)
 {
   rebinning_factor = std::max(rebinning_factor, 1U);
-  if(rebinned_hist == nullptr)
+  if(rebinned_hist == nullptr) {
     rebinned_hist = new calin::ix::math::histogram::Histogram1DData;
-  else
+  } else {
     rebinned_hist->Clear();
+  }
   rebinned_hist->CopyFrom(original_hist);
   rebinned_hist->set_dxval(original_hist.dxval() * rebinning_factor);
   rebinned_hist->clear_bins();
@@ -52,6 +53,15 @@ calin::math::histogram::rebin(
       ++obin;
     }
     rebinned_hist->increment_bins(obin, original_hist.bins(ibin));
+  }
+  for(auto isparse : original_hist.sparse_bins()) {
+    int ibin = (isparse.first>=0) ? isparse.first/rebinning_factor :
+      (isparse.first - rebinning_factor + 1)/rebinning_factor;
+    if(ibin >= 0 and ibin < rebinned_hist->bins_size()) {
+      rebinned_hist->increment_bins(ibin, isparse.second);
+    } else {
+      (*rebinned_hist->mutable_sparse_bins())[ibin] += isparse.second;
+    }
   }
   return rebinned_hist;
 }
