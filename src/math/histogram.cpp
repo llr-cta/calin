@@ -61,12 +61,13 @@ calin::math::histogram::sparsify(
   const calin::ix::math::histogram::Histogram1DData& original_hist,
   calin::ix::math::histogram::Histogram1DData* sparsified_hist)
 {
-  constexpr int sparse_penelty = 1;
+  constexpr int datum_cost = 8;
+  constexpr int sparse_penelty = 4;
   int ihi = original_hist.bins_size();
   int ilo = 0;
   while(ihi>ilo and original_hist.bins(ihi-1) == 0)--ihi;
   while(ilo<ihi and original_hist.bins(ilo) == 0)++ilo;
-  int size = ihi-ilo;;
+  int size = (ihi-ilo)*datum_cost;
 
   int best_size = size;
   int best_ihi = ihi;
@@ -75,12 +76,12 @@ calin::math::histogram::sparsify(
   int test_ihi = ihi;
   int test_size_hi = size;
   while(test_ihi>ilo and original_hist.bins(test_ihi-1) != 0)--test_ihi, test_size_hi += sparse_penelty;
-  while(test_ihi>ilo and original_hist.bins(test_ihi-1) == 0)--test_ihi, test_size_hi -= 1;
+  while(test_ihi>ilo and original_hist.bins(test_ihi-1) == 0)--test_ihi, test_size_hi -= datum_cost;
 
   int test_ilo = ilo;
   int test_size_lo = size;
   while(test_ilo<ihi and original_hist.bins(test_ilo) != 0)++test_ilo, test_size_lo += sparse_penelty;
-  while(test_ilo<ihi and original_hist.bins(test_ilo) == 0)++test_ilo, test_size_lo -= 1;
+  while(test_ilo<ihi and original_hist.bins(test_ilo) == 0)++test_ilo, test_size_lo -= datum_cost;
 
   while(ihi > ilo) {
 #if 0
@@ -95,13 +96,13 @@ calin::math::histogram::sparsify(
       test_size_lo += test_size_hi - size;
       size = test_size_hi;
       while(test_ihi>ilo and original_hist.bins(test_ihi-1) != 0)--test_ihi, test_size_hi += sparse_penelty;
-      while(test_ihi>ilo and original_hist.bins(test_ihi-1) == 0)--test_ihi, test_size_hi -= 1;
+      while(test_ihi>ilo and original_hist.bins(test_ihi-1) == 0)--test_ihi, test_size_hi -= datum_cost;
     } else {
       ilo = test_ilo;
       test_size_hi += test_size_lo - size;
       size = test_size_lo;
       while(test_ilo<ihi and original_hist.bins(test_ilo) != 0)++test_ilo, test_size_lo += sparse_penelty;
-      while(test_ilo<ihi and original_hist.bins(test_ilo) == 0)++test_ilo, test_size_lo -= 1;
+      while(test_ilo<ihi and original_hist.bins(test_ilo) == 0)++test_ilo, test_size_lo -= datum_cost;
     }
 
     if(size < best_size) {
