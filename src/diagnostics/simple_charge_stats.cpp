@@ -128,8 +128,10 @@ namespace {
     }
 
     if(partials_gc.has_ped_trig_full_wf_hist()) {
-      results_g->add_ped_trigger_full_wf_hist()->CopyFrom(
-        partials_gc.ped_trig_full_wf_hist());
+      calin::math::histogram::sparsify(partials_gc.ped_trig_full_wf_hist(),
+        results_g->add_ped_trigger_full_wf_hist());
+      // results_g->add_ped_trigger_full_wf_hist()->CopyFrom(
+      //   partials_gc.ped_trig_full_wf_hist());
     }
 
     results_g->add_ped_trigger_event_count(partials_gc.ped_trig_num_events());
