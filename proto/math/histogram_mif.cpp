@@ -60,9 +60,9 @@ void calin::ix::math::histogram::Histogram1DData::IntegrateFrom(
         to->mutable_bins()->mutable_data()+from_offset,
         [](double a, double b) { return a+b; });
 
-      std::list<std::pair<int64_t, double> > new_sparse;
+      std::list<std::pair<int, double> > new_sparse;
       for(auto isparse : to->sparse_bins()) {
-        int64_t ibin = isparse.first + to_offset;
+        int ibin = isparse.first + to_offset;
         if(ibin<0 or ibin>=N) {
           new_sparse.emplace_back(ibin, isparse.second) ;
         } else {
@@ -74,7 +74,7 @@ void calin::ix::math::histogram::Histogram1DData::IntegrateFrom(
         (*to->mutable_sparse_bins())[isparse.first] = isparse.second;
       }
       for(auto isparse : from.sparse_bins()) {
-        int64_t ibin = isparse.first + from_offset;
+        int ibin = isparse.first + from_offset;
         if(ibin<0 or ibin>=N) {
           (*to->mutable_sparse_bins())[ibin] += isparse.second;
         } else {
@@ -97,9 +97,9 @@ void calin::ix::math::histogram::Histogram1DData::IntegrateFrom(
         to->mutable_bins()->mutable_data());
       to->set_xval0(from.xval0());
 
-      std::list<std::pair<int64_t, double> > new_sparse;
+      std::list<std::pair<int, double> > new_sparse;
       for(auto isparse : to->sparse_bins()) {
-        int64_t ibin = isparse.first + to_offset;
+        int ibin = isparse.first + to_offset;
         if(ibin<0 or ibin>=N) {
           new_sparse.emplace_back(ibin, isparse.second) ;
         } else {
@@ -111,7 +111,7 @@ void calin::ix::math::histogram::Histogram1DData::IntegrateFrom(
         (*to->mutable_sparse_bins())[isparse.first] = isparse.second;
       }
       for(auto isparse : from.sparse_bins()) {
-        int64_t ibin = isparse.first + from_offset;
+        int ibin = isparse.first + from_offset;
         if(ibin<0 or ibin>=N) {
           (*to->mutable_sparse_bins())[ibin] += isparse.second;
         } else {
@@ -127,7 +127,7 @@ void calin::ix::math::histogram::Histogram1DData::IntegrateFrom(
     int from_offset = int((from.xval0() - xval0)/to->dxval());
     int N = to->bins_size();
     for(auto isparse : from.sparse_bins()) {
-      int64_t ibin = isparse.first + from_offset;
+      int ibin = isparse.first + from_offset;
       if(ibin<0 or ibin>=N) {
         (*to->mutable_sparse_bins())[ibin] += isparse.second;
       } else {

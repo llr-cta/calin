@@ -66,7 +66,7 @@ message Histogram1DData {
     [(CFO).desc = "X-value of LHS of first bin", (CFO).units = "xval-units" ];
   repeated double bins                  = 4
     [(CFO).desc = "Weights for the bins", (CFO).units = "weight-units", (CFO).is_counter = true ];
-  map<int64, double> sparse_bins        = 5
+  map<int32, double> sparse_bins        = 5
     [(CFO).desc = "Weights for the sparsely stored bins", (CFO).units = "weight-units" ];
   bool limited                          = 6
     [(CFO).desc = "Limit the histogram range" ];

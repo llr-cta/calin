@@ -61,24 +61,24 @@ calin::math::histogram::sparsify(
   const calin::ix::math::histogram::Histogram1DData& original_hist,
   calin::ix::math::histogram::Histogram1DData* sparsified_hist)
 {
-  constexpr uint64_t sparse_penelty = 1;
-  uint64_t ihi = original_hist.bins_size();
-  uint64_t ilo = 0;
+  constexpr int sparse_penelty = 1;
+  int ihi = original_hist.bins_size();
+  int ilo = 0;
   while(ihi>ilo and original_hist.bins(ihi-1) == 0)--ihi;
   while(ilo<ihi and original_hist.bins(ilo) == 0)++ilo;
-  uint64_t size = ihi-ilo;;
+  int size = ihi-ilo;;
 
-  uint64_t best_size = size;
-  uint64_t best_ihi = ihi;
-  uint64_t best_ilo = ilo;
+  int best_size = size;
+  int best_ihi = ihi;
+  int best_ilo = ilo;
 
-  uint64_t test_ihi = ihi;
-  uint64_t test_size_hi = size;
+  int test_ihi = ihi;
+  int test_size_hi = size;
   while(test_ihi>ilo and original_hist.bins(test_ihi-1) != 0)--test_ihi, test_size_hi += sparse_penelty;
   while(test_ihi>ilo and original_hist.bins(test_ihi-1) == 0)--test_ihi, test_size_hi -= 1;
 
-  uint64_t test_ilo = ilo;
-  uint64_t test_size_lo = size;
+  int test_ilo = ilo;
+  int test_size_lo = size;
   while(test_ilo<ihi and original_hist.bins(test_ilo) != 0)++test_ilo, test_size_lo += sparse_penelty;
   while(test_ilo<ihi and original_hist.bins(test_ilo) == 0)++test_ilo, test_size_lo -= 1;
 
@@ -149,16 +149,16 @@ calin::math::histogram::densify(
   densified_hist->mutable_sparse_bins()->clear();
 
   if(not original_hist.sparse_bins().empty()) {
-    int64_t first_bin = original_hist.sparse_bins().begin()->first;
-    int64_t last_bin = original_hist.sparse_bins().begin()->first + 1;
+    int first_bin = original_hist.sparse_bins().begin()->first;
+    int last_bin = original_hist.sparse_bins().begin()->first + 1;
     for(auto isparse : original_hist.sparse_bins()) {
       first_bin = std::min(first_bin, isparse.first);
       last_bin = std::max(last_bin, isparse.first + 1);
     }
 
     if(original_hist.bins_size()) {
-      first_bin = std::min(0LL, first_bin);
-      last_bin = std::max(int64_t(original_hist.bins_size()), last_bin);
+      first_bin = std::min(0, first_bin);
+      last_bin = std::max(original_hist.bins_size(), last_bin);
     }
 
     densified_hist->mutable_bins()->Resize(last_bin-first_bin,0);
