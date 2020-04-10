@@ -175,6 +175,8 @@ def plot_histogram(h, density = False, normalise = False,
         hy = h.all_weight()
         hdy = np.sqrt(h.all_weight())
     elif type(h) is calin.ix.math.histogram.Histogram1DData:
+        if(h.sparse_bins_size() > 0):
+            h = calin.math.histogram.densify(h)
         hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
         hy = h.bins()
         hdy = np.sqrt(h.bins())
@@ -211,6 +213,8 @@ def plot_histogram_cumulative(h, plot_as_cdf = False, plot_as_cmf = False,
         hx = h.all_xval_left()
         hy = h.all_weight()
     elif type(h) is calin.ix.math.histogram.Histogram1DData:
+        if(h.sparse_bins_size() > 0):
+            h = calin.math.histogram.densify(h)
         hx = h.xval0()+h.dxval()*np.arange(0,h.bins_size())
         hy = h.bins()
     else:
