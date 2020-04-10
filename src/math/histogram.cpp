@@ -36,10 +36,10 @@ template class BasicHistogram1D<accumulator::SimpleAccumulator>;
 
 calin::ix::math::histogram::Histogram1DData*
 calin::math::histogram::rebin(
-  const calin::ix::math::histogram::Histogram1DData& original_hist, unsigned rebinning_factor,
+  const calin::ix::math::histogram::Histogram1DData& original_hist, int rebinning_factor,
   calin::ix::math::histogram::Histogram1DData* rebinned_hist)
 {
-  rebinning_factor = std::max(rebinning_factor, 1U);
+  rebinning_factor = std::max(rebinning_factor, 1);
   if(rebinned_hist == nullptr) {
     rebinned_hist = new calin::ix::math::histogram::Histogram1DData;
   } else {
@@ -54,9 +54,10 @@ calin::math::histogram::rebin(
     }
     rebinned_hist->increment_bins(obin, original_hist.bins(ibin));
   }
+  rebinned_hist->mutable_sparse_bins()->clear();
   for(auto isparse : original_hist.sparse_bins()) {
-    int ibin = (isparse.first>=0) ? isparse.first/rebinning_factor :
-      (isparse.first - rebinning_factor + 1)/rebinning_factor;
+    int ibin = (isparse.first>=0) ? (isparse.first/rebinning_factor) :
+      ((isparse.first - rebinning_factor + 1)/rebinning_factor);
     if(ibin >= 0 and ibin < rebinned_hist->bins_size()) {
       rebinned_hist->increment_bins(ibin, isparse.second);
     } else {

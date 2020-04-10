@@ -929,12 +929,12 @@ CALIN_TYPEALIAS(Histogram1D, BasicHistogram1D<DefaultAccumulator>);
 
 #ifndef SWIG
 calin::ix::math::histogram::Histogram1DData*
-rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, unsigned rebinning_factor,
+rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, int rebinning_factor,
   calin::ix::math::histogram::Histogram1DData* rebinned_hist = nullptr);
 #else
 calin::ix::math::histogram::Histogram1DData*
-rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, unsigned rebinning_factor);
-void  rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, unsigned rebinning_factor,
+rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, int rebinning_factor);
+void  rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, int rebinning_factor,
   calin::ix::math::histogram::Histogram1DData* rebinned_hist);
 #endif
 
