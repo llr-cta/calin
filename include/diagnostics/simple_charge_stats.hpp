@@ -88,7 +88,26 @@ private:
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats results_;
   calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats partials_;
 
-  std::vector<calin::math::histogram::Histogram1D*> ped_hist_;
+  struct ChannelHists {
+    ChannelHists(double time_resolution):
+      ped_spectrum(new calin::math::histogram::Histogram1D(1.0)),
+      ped_1_sum(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
+      ped_q_sum(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
+      ped_q2_sum(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0))
+    { /* nothing to see here */ }
+    ~ChannelHists() {
+      delete ped_spectrum;
+      delete ped_1_sum;
+      delete ped_q_sum;
+      delete ped_q2_sum;
+    }
+    calin::math::histogram::Histogram1D* ped_spectrum;
+    calin::math::histogram::Histogram1D* ped_1_sum;
+    calin::math::histogram::Histogram1D* ped_q_sum;
+    calin::math::histogram::Histogram1D* ped_q2_sum;
+  };
+
+  std::vector<ChannelHists*> chan_hists_;
 };
 
 } } } // namespace calin::diagnostics::simple_charge_stats

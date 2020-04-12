@@ -36,6 +36,10 @@ message SimpleChargeStatsConfig {
   int32 max_ped_hist_rebin_factor                                   = 11 [
     (CFO).desc = "Maximum rebinning factor for pedestal histogram, or zero if "
       "unrestricted rebinning is allowed." ];
+
+  double ped_time_hist_resolution                                   = 20 [
+    (CFO).desc = "Resolution of pedestal mean and variance histogram.",
+    (CFO).units = "s" ];
 };
 
 message OneGainSimpleChargeStats {
@@ -58,7 +62,17 @@ message OneGainSimpleChargeStats {
     (CFO).units = "DC^2" ];
 
   repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_hist = 30 [
-    (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events." ];
+    (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+
+  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_mean_vs_time = 40 [
+    (CFO).desc = "Histogram of time evolution of mean of full-waveform "
+      "charge estimate over pedestal events.",
+    (CFO).units = "s (bin-units), DC (value-units)"];
+  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_var_vs_time = 41 [
+    (CFO).desc = "Histogram of time evolution of variance of full-waveform "
+      "charge estimate over pedestal events.",
+    (CFO).units = "s (bin-units), DC^2 (value-units)"];
 };
 
 message SimpleChargeStats {
@@ -93,6 +107,13 @@ message PartialOneGainChannelSimpleChargeStats {
 
   calin.ix.math.histogram.Histogram1DData ped_trig_full_wf_hist     = 30 [
     (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events." ];
+
+  calin.ix.math.histogram.Histogram1DData ped_trig_time_1_sum       = 50 [
+    (CFO).desc = "Histogram of number of ped events vs time." ];
+  calin.ix.math.histogram.Histogram1DData ped_trig_time_q_sum       = 51 [
+    (CFO).desc = "Histogram of total charge from ped events vs time." ];
+  calin.ix.math.histogram.Histogram1DData ped_trig_time_q2_sum      = 52 [
+    (CFO).desc = "Histogram of total charge squared from ped events vs time." ];
 }
 
 message PartialChannelSimpleChargeStats {

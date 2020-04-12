@@ -47,7 +47,7 @@ SimpleChargeStatsParallelEventVisitor(
 
 SimpleChargeStatsParallelEventVisitor::~SimpleChargeStatsParallelEventVisitor()
 {
-  for(auto* h : ped_hist_)delete h;
+  for(auto* h : chan_hists_)delete h;
 }
 
 SimpleChargeStatsParallelEventVisitor* SimpleChargeStatsParallelEventVisitor::new_sub_visitor(
@@ -76,10 +76,10 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
     partials_.add_channel();
   }
 
-  for(auto* h : ped_hist_)delete h;
-  ped_hist_.resize(run_config->configured_channel_id_size());
+  for(auto* h : chan_hists_)delete h;
+  chan_hists_.resize(run_config->configured_channel_id_size());
   for(unsigned ichan=0;ichan<run_config->configured_channel_id_size();++ichan) {
-    ped_hist_[ichan] = new calin::math::histogram::Histogram1D(1.0);
+    chan_hists_[ichan] = new ChannelHists(config_.ped_time_hist_resolution());
   }
 
   // if(high_gain_visitor_) {
@@ -109,6 +109,29 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   return true;
 }
 
+namespace {
+  void transfer_histogram_with_rebin_if_necessary(
+    const calin::ix::math::histogram::Histogram1DData& from_hist,
+    calin::ix::math::histogram::Histogram1DData* to_hist,
+    int maximum_size, int maximum_rebin)
+  {
+    auto* hs = calin::math::histogram::sparsify(from_hist);
+    int rebin = 1;
+    if(maximum_size>0 and hs->bins_size()>maximum_size) {
+      rebin = (hs->bins_size()+maximum_size-1)/maximum_size;
+      if(maximum_rebin>0) {
+        rebin = std::min(rebin, maximum_rebin);
+      }
+    }
+    if(rebin) {
+      calin::math::histogram::rebin(*hs, rebin, to_hist);
+    } else {
+      to_hist->CopyFrom(*hs);
+    }
+    delete hs;
+  }
+} // anonymous namespace
+
 void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
   calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
   const calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats& partials_gc)
@@ -127,20 +150,29 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
   }
 
   if(partials_gc.has_ped_trig_full_wf_hist()) {
-    auto* hs = calin::math::histogram::sparsify(partials_gc.ped_trig_full_wf_hist());
-    int rebin = 1;
-    if(config_.max_ped_hist_bins()>0 and hs->bins_size()>config_.max_ped_hist_bins()) {
-      rebin = (hs->bins_size()+config_.max_ped_hist_bins()-1)/config_.max_ped_hist_bins();
-      if(config_.max_ped_hist_rebin_factor()>0) {
-        rebin = std::min(rebin, config_.max_ped_hist_rebin_factor());
+    transfer_histogram_with_rebin_if_necessary(partials_gc.ped_trig_full_wf_hist(),
+      results_g->add_ped_trigger_full_wf_hist(),
+      config_.max_ped_hist_bins(), config_.max_ped_hist_rebin_factor());
+  }
+
+  if(partials_gc.has_ped_trig_time_1_sum()) {
+    auto* mean_hist = new calin::ix::math::histogram::Histogram1DData;
+    auto* var_hist = new calin::ix::math::histogram::Histogram1DData;
+    mean_hist->CopyFrom(partials_gc.ped_trig_time_q_sum());
+    var_hist->CopyFrom(partials_gc.ped_trig_time_q2_sum());
+    for(unsigned ibin=0;ibin<partials_gc.ped_trig_time_1_sum().bins_size();ibin++) {
+      double count = partials_gc.ped_trig_time_1_sum().bins(ibin);
+      if(count>0) {
+        mean_hist->set_bins(ibin, mean_hist->bins(ibin)/count);
+        var_hist->set_bins(ibin, var_hist->bins(ibin)/count - SQR(mean_hist->bins(ibin)));
       }
     }
-    if(rebin) {
-      calin::math::histogram::rebin(*hs, rebin, results_g->add_ped_trigger_full_wf_hist());
-    } else {
-      results_g->add_ped_trigger_full_wf_hist()->CopyFrom(*hs);
-    }
-    delete hs;
+    calin::math::histogram::sparsify(*mean_hist,
+      results_g->add_ped_trigger_full_wf_mean_vs_time());
+    calin::math::histogram::sparsify(*var_hist,
+      results_g->add_ped_trigger_full_wf_var_vs_time());
+    delete var_hist;
+    delete mean_hist;
   }
 
   results_g->add_ped_trigger_event_count(partials_gc.ped_trig_num_events());
@@ -160,9 +192,18 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
 bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
 {
   for(int ichan = 0; ichan<partials_.channel_size(); ichan++) {
-    auto* hp = ped_hist_[ichan]->dump_as_proto();
+    auto* hp = chan_hists_[ichan]->ped_spectrum->dump_as_proto();
     partials_.mutable_channel(ichan)->mutable_high_gain()->
       mutable_ped_trig_full_wf_hist()->IntegrateFrom(*hp);
+    chan_hists_[ichan]->ped_1_sum->dump_as_proto(hp);
+    partials_.mutable_channel(ichan)->mutable_high_gain()->
+      mutable_ped_trig_time_1_sum()->IntegrateFrom(*hp);
+    chan_hists_[ichan]->ped_q_sum->dump_as_proto(hp);
+    partials_.mutable_channel(ichan)->mutable_high_gain()->
+      mutable_ped_trig_time_q_sum()->IntegrateFrom(*hp);
+    chan_hists_[ichan]->ped_q2_sum->dump_as_proto(hp);
+    partials_.mutable_channel(ichan)->mutable_high_gain()->
+      mutable_ped_trig_time_q2_sum()->IntegrateFrom(*hp);
     delete hp;
   }
 
@@ -229,11 +270,16 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
     if(high_gain_visitor_->is_same_event(seq_index) and
       event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL)
     {
+      double elapsed_event_time = event->elapsed_event_time().time_ns() * 1e-9;
       for(unsigned ichan=0; ichan<high_gain_visitor_->nchan(); ichan++) {
+        double wf_all_sum = high_gain_visitor_->array_chan_all_sum()[ichan];
         switch(high_gain_visitor_->array_chan_signal_type()[ichan]) {
         case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
         case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
-          ped_hist_[ichan]->insert(high_gain_visitor_->array_chan_all_sum()[ichan]);
+          chan_hists_[ichan]->ped_spectrum->insert(wf_all_sum);
+          chan_hists_[ichan]->ped_1_sum->insert(elapsed_event_time);
+          chan_hists_[ichan]->ped_q_sum->insert(elapsed_event_time, wf_all_sum);
+          chan_hists_[ichan]->ped_q2_sum->insert(elapsed_event_time, SQR(wf_all_sum));
           break;
         case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
         case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
@@ -273,5 +319,6 @@ SimpleChargeStatsParallelEventVisitor::default_config()
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config;
   config.set_max_ped_hist_bins(1000);
   config.set_max_ped_hist_rebin_factor(0);
+  config.set_ped_time_hist_resolution(30.0);
   return config;
 }
