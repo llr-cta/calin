@@ -636,7 +636,20 @@ BasicHistogram1D(const calin::ix::math::histogram::Histogram1DData& data):
     min_x_{data.xval_min()}, max_x_{data.xval_max()},
     name_{data.name()}, weight_units_{data.weight_units()}
 {
-  // nothing to see here
+  int offset = 0;
+  for(auto isparse: data.sparse_bins()) {
+    int ibin = isparse.first - offset;
+    while(ibin < 0) {
+      this->bins_.emplace_front();
+      ++ibin;
+      --offset;
+    }
+    while(ibin >= this->bins_.size()) {
+      this->bins_.emplace_back();
+    }
+    this->bins_[ibin].accumulate(isparse.second);
+  }
+  this->xval0_ += offset*this->dxval_;
 }
 
 template<typename Acc> calin::ix::math::histogram::Histogram1DData*
