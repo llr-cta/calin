@@ -109,43 +109,51 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   return true;
 }
 
-namespace {
-  void integrate_one_gain_partials(
-    calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
-    const calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats& partials_gc)
-  {
-    results_g->add_all_trigger_event_count(partials_gc.all_trig_num_events());
-    if(partials_gc.all_trig_num_events() > 0) {
-      results_g->add_all_trigger_ped_win_mean(
-        double(partials_gc.all_trig_ped_win_sum())/double(partials_gc.all_trig_num_events()));
-      results_g->add_all_trigger_ped_win_var(cov_i64_gen(
-        partials_gc.all_trig_ped_win_sumsq(), partials_gc.all_trig_num_events(),
-        partials_gc.all_trig_ped_win_sum(), partials_gc.all_trig_num_events(),
-        partials_gc.all_trig_ped_win_sum(), partials_gc.all_trig_num_events()));
-    } else {
-      results_g->add_all_trigger_ped_win_mean(0.0);
-      results_g->add_all_trigger_ped_win_var(0.0);
-    }
+void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
+  calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
+  const calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats& partials_gc)
+{
+  results_g->add_all_trigger_event_count(partials_gc.all_trig_num_events());
+  if(partials_gc.all_trig_num_events() > 0) {
+    results_g->add_all_trigger_ped_win_mean(
+      double(partials_gc.all_trig_ped_win_sum())/double(partials_gc.all_trig_num_events()));
+    results_g->add_all_trigger_ped_win_var(cov_i64_gen(
+      partials_gc.all_trig_ped_win_sumsq(), partials_gc.all_trig_num_events(),
+      partials_gc.all_trig_ped_win_sum(), partials_gc.all_trig_num_events(),
+      partials_gc.all_trig_ped_win_sum(), partials_gc.all_trig_num_events()));
+  } else {
+    results_g->add_all_trigger_ped_win_mean(0.0);
+    results_g->add_all_trigger_ped_win_var(0.0);
+  }
 
-    if(partials_gc.has_ped_trig_full_wf_hist()) {
-      calin::math::histogram::sparsify(partials_gc.ped_trig_full_wf_hist(),
-        results_g->add_ped_trigger_full_wf_hist());
-      // results_g->add_ped_trigger_full_wf_hist()->CopyFrom(
-      //   partials_gc.ped_trig_full_wf_hist());
+  if(partials_gc.has_ped_trig_full_wf_hist()) {
+    auto* hs = calin::math::histogram::sparsify(partials_gc.ped_trig_full_wf_hist());
+    int rebin = 1;
+    if(config_.max_ped_hist_bins()>0 and hs->bins_size()>config_.max_ped_hist_bins()) {
+      rebin = (hs->bins_size()+config_.max_ped_hist_bins()-1)/config_.max_ped_hist_bins();
+      if(config_.max_ped_hist_rebin_factor()>0) {
+        rebin = std::min(rebin, config_.max_ped_hist_rebin_factor());
+      }
     }
-
-    results_g->add_ped_trigger_event_count(partials_gc.ped_trig_num_events());
-    if(partials_gc.ped_trig_num_events() > 0) {
-      results_g->add_ped_trigger_full_wf_mean(
-        double(partials_gc.ped_trig_full_wf_sum())/double(partials_gc.ped_trig_num_events()));
-      results_g->add_ped_trigger_full_wf_var(cov_i64_gen(
-        partials_gc.ped_trig_full_wf_sumsq(), partials_gc.ped_trig_num_events(),
-        partials_gc.ped_trig_full_wf_sum(), partials_gc.ped_trig_num_events(),
-        partials_gc.ped_trig_full_wf_sum(), partials_gc.ped_trig_num_events()));
+    if(rebin) {
+      calin::math::histogram::rebin(*hs, rebin, results_g->add_ped_trigger_full_wf_hist());
     } else {
-      results_g->add_ped_trigger_full_wf_mean(0.0);
-      results_g->add_ped_trigger_full_wf_var(0.0);
+      results_g->add_ped_trigger_full_wf_hist()->CopyFrom(*hs);
     }
+    delete hs;
+  }
+
+  results_g->add_ped_trigger_event_count(partials_gc.ped_trig_num_events());
+  if(partials_gc.ped_trig_num_events() > 0) {
+    results_g->add_ped_trigger_full_wf_mean(
+      double(partials_gc.ped_trig_full_wf_sum())/double(partials_gc.ped_trig_num_events()));
+    results_g->add_ped_trigger_full_wf_var(cov_i64_gen(
+      partials_gc.ped_trig_full_wf_sumsq(), partials_gc.ped_trig_num_events(),
+      partials_gc.ped_trig_full_wf_sum(), partials_gc.ped_trig_num_events(),
+      partials_gc.ped_trig_full_wf_sum(), partials_gc.ped_trig_num_events()));
+  } else {
+    results_g->add_ped_trigger_full_wf_mean(0.0);
+    results_g->add_ped_trigger_full_wf_var(0.0);
   }
 }
 
@@ -263,5 +271,7 @@ calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig
 SimpleChargeStatsParallelEventVisitor::default_config()
 {
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config;
+  config.set_max_ped_hist_bins(1000);
+  config.set_max_ped_hist_rebin_factor(0);
   return config;
 }

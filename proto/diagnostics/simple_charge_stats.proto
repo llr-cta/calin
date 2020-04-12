@@ -29,7 +29,13 @@ import "math/histogram.proto";
 package calin.ix.diagnostics.simple_charge_stats;
 
 message SimpleChargeStatsConfig {
-
+  int32 max_ped_hist_bins                                           = 10 [
+    (CFO).desc = "Maximum number of dense bins in pedestal historgrams. The "
+      "histogram will be rebinned until the number is less than this, unless "
+      "the max_ped_hist_rebin_factor is exceeded. Default value is 1000 bins." ];
+  int32 max_ped_hist_rebin_factor                                   = 11 [
+    (CFO).desc = "Maximum rebinning factor for pedestal histogram, or zero if "
+      "unrestricted rebinning is allowed." ];
 };
 
 message OneGainSimpleChargeStats {

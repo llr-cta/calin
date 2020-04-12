@@ -75,6 +75,10 @@ public:
   // const calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats& partials() const { return partials_; }
 
 private:
+  void integrate_one_gain_partials(
+    calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
+    const calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats& partials_gc);
+
   SimpleChargeStatsParallelEventVisitor* parent_ = nullptr;
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config_;
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* high_gain_visitor_ = nullptr;
