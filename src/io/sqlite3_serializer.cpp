@@ -142,7 +142,6 @@ bool SQLite3Serializer::rollback_transaction()
   return true;
 }
 
-#if 0
 std::string SQLite3Serializer::sql_select_field_spec(const SQLTableField* f)
 {
   if(f->field_d) {
@@ -160,7 +159,6 @@ std::string SQLite3Serializer::sql_select_field_spec(const SQLTableField* f)
   }
   return sql_field_name(f->field_name);
 }
-#endif
 
 std::string SQLite3Serializer::sql_insert_field_spec(const SQLTableField* f)
 {

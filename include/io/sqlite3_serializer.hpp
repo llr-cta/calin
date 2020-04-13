@@ -60,7 +60,7 @@ protected:
   bool commit_transaction() override;
   bool rollback_transaction() override;
 
-  // std::string sql_select_field_spec(const SQLTableField* f) override;
+  std::string sql_select_field_spec(const SQLTableField* f) override;
   std::string sql_insert_field_spec(const SQLTableField* f) override;
   std::string sql_type(const google::protobuf::FieldDescriptor* d) override;
   std::string sql_add_field_to_table(const SQLTableField* f) override;
