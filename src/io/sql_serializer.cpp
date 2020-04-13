@@ -180,6 +180,8 @@ bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
 bool SQLSerializer::retrieve_by_oid(const std::string& table_name, uint64_t oid,
   google::protobuf::Message* m)
 {
+  m->Clear();
+
   const google::protobuf::Descriptor* d = m->GetDescriptor();
   SQLTable* t = schema_[table_name][d];
   if(t == nullptr) {
