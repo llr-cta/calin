@@ -92,6 +92,32 @@ make_sqltable_tree(const std::string& table_name,
   return t;
 }
 
+void SQLSerializer::register_externally_created_table(const std::string& table_name,
+  const google::protobuf::Descriptor* d, const std::string& instance_desc)
+{
+  std::unique_ptr<SQLTable> t { make_sqltable_tree(table_name, d, instance_desc) };
+
+  t->iterate_over_tables([this](SQLTable* itable) {
+    if(this->db_tables_.find(itable->table_name) == this->db_tables_.end()) {
+      auto* pt = table_as_proto(itable);
+      db_tables_[pt->table_name()] = pt;
+      for(auto ifield : itable->fields) {
+        auto* pf = field_as_proto(ifield);
+        std::string fqdn = sub_name(pf->table_name(), pf->field_name());
+        db_table_fields_[fqdn] = pf;
+      }
+    } else {
+      for(auto ifield : itable->fields) {
+        std::string fqdn = sub_name(itable->table_name, ifield->field_name);
+        if(this->db_table_fields_.find(fqdn) == this->db_table_fields_.end()) {
+          auto* pf = field_as_proto(ifield);
+          db_table_fields_[fqdn] = pf;
+        }
+      }
+    }
+  });
+}
+
 bool SQLSerializer::create_or_extend_tables(const std::string& table_name,
   const google::protobuf::Descriptor* d, const std::string& instance_desc)
 {
@@ -250,6 +276,7 @@ uint64_t SQLSerializer::count_entries_in_table(const std::string& table_name)
     throw std::runtime_error("Could not prepare SQL count statement");
   }
 
+  if(write_sql_to_log_)LOG(INFO) << stmt->bound_sql();
   auto status = stmt->step();
   if(status == SQLStatement::ERROR) {
     LOG(ERROR) << "SQL error executing COUNT : "
@@ -291,6 +318,7 @@ std::vector<uint64_t> SQLSerializer::retrieve_all_oids(const std::string& table_
 
   std::vector<uint64_t> oids;
   SQLStatement::StepStatus status = SQLStatement::ERROR;
+  if(write_sql_to_log_)LOG(INFO) << stmt->bound_sql();
   for(status = stmt->step(); status == SQLStatement::OK_HAS_DATA;
     status = stmt->step())
   {
@@ -1285,7 +1313,7 @@ std::string SQLSerializer::sql_select_where_oid_equals(const SQLTable* t)
       if(has_field) {
         sql << ",\n";
       }
-      sql << "  " << sql_field_name(f->field_name);
+      sql << "  " << sql_select_field_spec(f);
       has_field = true;
     }
   }
