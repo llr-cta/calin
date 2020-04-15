@@ -23,7 +23,7 @@ import calin.math.histogram
 import calin.ix.iact_data.instrument_layout
 import calin.math.regular_grid
 
-def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = None,
+def obsolete_plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = None,
         cbar_label = None):
     if(configured_channels is not None and len(configured_channels) != len(pix_data)):
         raise ValueError('configured_channels must either be None or have same length as pix_data')
@@ -52,7 +52,7 @@ def plot_camera(pix_data, camera_layout, configured_channels = None, ax_in = Non
         cbar.set_label(cbar_label)
     return pc
 
-def plot_module_camera(mod_data, camera_layout, configured_modules = None, ax_in = None,
+def obsolete_plot_module_camera(mod_data, camera_layout, configured_modules = None, ax_in = None,
         cbar_label = None, module_label_color = None, module_label_font_size = 8):
     if(configured_modules is not None and len(configured_modules) != len(mod_data)):
         raise ValueError('configured_modules must either be None or have same length as mod_data')
@@ -156,6 +156,53 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
     pc = matplotlib.collections.PatchCollection(pix, cmap=cmap)
     pc.set_array(np.asarray(pix_data))
     pc.set_linewidths(pix_lw)
+    axis = axis or plt.gca()
+    axis.add_collection(pc)
+
+    if draw_outline:
+        add_outline(axis, camera_layout, plate_scale=plate_scale, rotation=rotation,
+            outline_lw=outline_lw, outline_color=outline_color)
+
+    axis.axis('square')
+    axis.axis(np.asarray([-1,1,-1,1])*(R or 1.05*max_xy))
+    return pc
+
+def plot_camera_module_image(module_data, camera_layout, module_mask = None,
+        configured_modules = None, zero_suppression = None,
+        plate_scale = None, rotation = 0.0, R = None,
+        cmap = matplotlib.cm.CMRmap_r, axis = None, draw_outline = False,
+        mod_lw = 0, outline_lw = 0.5, outline_color = '#888888'):
+    if(module_mask is None and zero_suppression is not None):
+        module_mask = np.asarray(module_data)>zero_suppression
+    if(module_mask is not None and len(module_mask) != len(module_data)):
+        raise ValueError('module_mask must either be None or have same length as module_data')
+    if(configured_modules is not None and len(configured_modules) != len(module_data)):
+        raise ValueError('configured_modules must either be None or have same length as pix_data')
+    poly = []
+    poly_data = []
+    max_xy = 0
+    if plate_scale is None:
+        plate_scale = 1
+        if type(camera_layout) is calin.ix.iact_data.instrument_layout.TelescopeLayout:
+            plate_scale = 180/np.pi/camera_layout.effective_focal_length()
+    crot = np.cos(rotation/180.0*np.pi)
+    srot = np.sin(rotation/180.0*np.pi)
+    if type(camera_layout) is calin.ix.iact_data.instrument_layout.TelescopeLayout:
+        camera_layout = camera_layout.camera()
+    for mod_index in range(len(module_data)):
+        mod_id = int(configured_modules[mod_index]) if configured_modules is not None else mod_index
+        chan = camera_layout.module(mod_id)
+        if((module_mask is None or module_mask[mod_index]) and chan.module_index() != -1):
+            vx = chan.outline_polygon_vertex_x_view()*plate_scale
+            vy = chan.outline_polygon_vertex_y_view()*plate_scale
+            vx, vy = vx*crot - vy*srot, vy*crot + vx*srot
+            vv = np.column_stack([vx, vy])
+            max_xy = max(max_xy, max(abs(vx)), max(abs(vy)))
+            poly.append(plt.Polygon(vv,closed=True))
+            poly_data.append(module_data[mod_index])
+    pc = matplotlib.collections.PatchCollection(poly, cmap=cmap)
+    pc.set_array(np.asarray(poly_data))
+    pc.set_linewidths(mod_lw)
     axis = axis or plt.gca()
     axis.add_collection(pc)
 
