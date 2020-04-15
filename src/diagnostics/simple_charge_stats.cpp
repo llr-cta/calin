@@ -76,10 +76,10 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
     partials_.add_channel();
   }
 
-  for(auto* h : chan_hists_)delete h;
+  for(auto* h :chan_hists_)delete h;
   chan_hists_.resize(run_config->configured_channel_id_size());
-  for(unsigned ichan=0;ichan<run_config->configured_channel_id_size();++ichan) {
-    chan_hists_[ichan] = new ChannelHists(config_.ped_time_hist_resolution());
+  for(auto*& h : chan_hists_) {
+    h = new ChannelHists(has_dual_gain_, config_.ped_time_hist_resolution());
   }
 
   // if(high_gain_visitor_) {
@@ -155,13 +155,30 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
       config_.max_ped_hist_bins(), config_.max_ped_hist_rebin_factor());
   }
 
-  if(partials_gc.has_ped_trig_time_1_sum()) {
+  if(partials_gc.has_ext_trig_opt_sum_hist()) {
+    transfer_histogram_with_rebin_if_necessary(partials_gc.ext_trig_opt_sum_hist(),
+      results_g->add_ext_trig_opt_sum_hist(),
+      config_.max_ped_hist_bins(), config_.max_ped_hist_rebin_factor());
+  }
+
+  if(partials_gc.has_ext_trig_opt_max_hist()) {
+    transfer_histogram_with_rebin_if_necessary(partials_gc.ext_trig_opt_max_hist(),
+      results_g->add_ext_trig_opt_max_hist(),
+      config_.max_ped_hist_bins(), config_.max_ped_hist_rebin_factor());
+  }
+
+  if(partials_gc.has_ext_trig_opt_index_hist()) {
+    results_g->add_ext_trig_opt_index_hist()->CopyFrom(
+      partials_gc.ext_trig_opt_index_hist());
+  }
+
+  if(partials_gc.has_ped_trig_vs_time_1_sum()) {
     auto* mean_hist = new calin::ix::math::histogram::Histogram1DData;
     auto* var_hist = new calin::ix::math::histogram::Histogram1DData;
-    mean_hist->CopyFrom(partials_gc.ped_trig_time_q_sum());
-    var_hist->CopyFrom(partials_gc.ped_trig_time_q2_sum());
-    for(unsigned ibin=0;ibin<partials_gc.ped_trig_time_1_sum().bins_size();ibin++) {
-      double count = partials_gc.ped_trig_time_1_sum().bins(ibin);
+    mean_hist->CopyFrom(partials_gc.ped_trig_vs_time_q_sum());
+    var_hist->CopyFrom(partials_gc.ped_trig_vs_time_q2_sum());
+    for(unsigned ibin=0;ibin<partials_gc.ped_trig_vs_time_1_sum().bins_size();ibin++) {
+      double count = partials_gc.ped_trig_vs_time_1_sum().bins(ibin);
       if(count>0) {
         mean_hist->set_bins(ibin, mean_hist->bins(ibin)/count);
         var_hist->set_bins(ibin, var_hist->bins(ibin)/count - SQR(mean_hist->bins(ibin)));
@@ -189,22 +206,43 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
   }
 }
 
+void SimpleChargeStatsParallelEventVisitor::dump_single_gain_channel_hists_to_partials(
+  const SingleGainChannelHists& hists,
+  calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* partials)
+{
+  auto* hp = hists.ped_wf_q_sum->dump_as_proto();
+  partials->mutable_ped_trig_full_wf_hist()->IntegrateFrom(*hp);
+
+  hists.ext_opt_q_sum->dump_as_proto(hp);
+  partials->mutable_ext_trig_opt_sum_hist()->IntegrateFrom(*hp);
+
+  hists.ext_opt_index->dump_as_proto(hp);
+  partials->mutable_ext_trig_opt_index_hist()->IntegrateFrom(*hp);
+
+  hists.ext_opt_max->dump_as_proto(hp);
+  partials->mutable_ext_trig_opt_max_hist()->IntegrateFrom(*hp);
+
+  hists.ped_wf_1_sum_vs_time->dump_as_proto(hp);
+  partials->mutable_ped_trig_vs_time_1_sum()->IntegrateFrom(*hp);
+
+  hists.ped_wf_q_sum_vs_time->dump_as_proto(hp);
+  partials->mutable_ped_trig_vs_time_q_sum()->IntegrateFrom(*hp);
+
+  hists.ped_wf_q2_sum_vs_time->dump_as_proto(hp);
+  partials->mutable_ped_trig_vs_time_q2_sum()->IntegrateFrom(*hp);
+
+  delete hp;
+}
+
 bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
 {
   for(int ichan = 0; ichan<partials_.channel_size(); ichan++) {
-    auto* hp = chan_hists_[ichan]->ped_spectrum->dump_as_proto();
-    partials_.mutable_channel(ichan)->mutable_high_gain()->
-      mutable_ped_trig_full_wf_hist()->IntegrateFrom(*hp);
-    chan_hists_[ichan]->ped_1_sum->dump_as_proto(hp);
-    partials_.mutable_channel(ichan)->mutable_high_gain()->
-      mutable_ped_trig_time_1_sum()->IntegrateFrom(*hp);
-    chan_hists_[ichan]->ped_q_sum->dump_as_proto(hp);
-    partials_.mutable_channel(ichan)->mutable_high_gain()->
-      mutable_ped_trig_time_q_sum()->IntegrateFrom(*hp);
-    chan_hists_[ichan]->ped_q2_sum->dump_as_proto(hp);
-    partials_.mutable_channel(ichan)->mutable_high_gain()->
-      mutable_ped_trig_time_q2_sum()->IntegrateFrom(*hp);
-    delete hp;
+    dump_single_gain_channel_hists_to_partials(*chan_hists_[ichan]->high_gain,
+      partials_.mutable_channel(ichan)->mutable_high_gain());
+    if(has_dual_gain_) {
+      dump_single_gain_channel_hists_to_partials(*chan_hists_[ichan]->low_gain,
+        partials_.mutable_channel(ichan)->mutable_low_gain());
+    }
   }
 
   if(parent_)return true;
@@ -221,74 +259,67 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
   return true;
 }
 
-namespace {
-  void record_one_gain_channel_data(const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
-    unsigned ichan,
-    calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats)
-  {
-    one_gain_stats->increment_all_trig_num_events();
-    one_gain_stats->increment_all_trig_ped_win_sum(sum_visitor->array_chan_bkg_win_sum()[ichan]);
-    one_gain_stats->increment_all_trig_ped_win_sumsq(SQR(sum_visitor->array_chan_bkg_win_sum()[ichan]));
-    if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL) {
-      one_gain_stats->increment_ped_trig_num_events();
-      one_gain_stats->increment_ped_trig_full_wf_sum(sum_visitor->array_chan_all_sum()[ichan]);
-      one_gain_stats->increment_ped_trig_full_wf_sumsq(SQR(sum_visitor->array_chan_all_sum  ()[ichan]));
-    }
+void SimpleChargeStatsParallelEventVisitor::record_one_gain_channel_data(
+  const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+  const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
+  unsigned ichan, double elapsed_event_time,
+  calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats,
+  SingleGainChannelHists* one_gain_hists)
+{
+  one_gain_stats->increment_all_trig_num_events();
+  one_gain_stats->increment_all_trig_ped_win_sum(sum_visitor->array_chan_bkg_win_sum()[ichan]);
+  one_gain_stats->increment_all_trig_ped_win_sumsq(SQR(sum_visitor->array_chan_bkg_win_sum()[ichan]));
+  if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL) {
+    double wf_all_sum = sum_visitor->array_chan_all_sum()[ichan];
+    double sqr_wf_all_sum = SQR(wf_all_sum);
+    one_gain_stats->increment_ped_trig_num_events();
+    one_gain_stats->increment_ped_trig_full_wf_sum(wf_all_sum);
+    one_gain_stats->increment_ped_trig_full_wf_sumsq(sqr_wf_all_sum);
+    one_gain_hists->ped_wf_q_sum->insert(wf_all_sum);
+    one_gain_hists->ped_wf_1_sum_vs_time->insert(elapsed_event_time);
+    one_gain_hists->ped_wf_q_sum_vs_time->insert(elapsed_event_time, wf_all_sum);
+    one_gain_hists->ped_wf_q2_sum_vs_time->insert(elapsed_event_time, sqr_wf_all_sum);
+  } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER) {
+    one_gain_hists->ext_opt_q_sum->insert(sum_visitor->array_chan_opt_win_sum()[ichan]);
+    one_gain_hists->ext_opt_index->insert(sum_visitor->array_chan_opt_win_index()[ichan]);
+    one_gain_hists->ext_opt_max->insert(sum_visitor->array_chan_max()[ichan]);
   }
+}
 
-  void record_one_visitor_data(uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
-    calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats* partials)
-  {
-    if(sum_visitor and sum_visitor->is_same_event(seq_index)) {
-      for(unsigned ichan=0; ichan<sum_visitor->nchan(); ichan++) {
-        auto* pc = partials->mutable_channel(ichan);
-        switch(sum_visitor->array_chan_signal_type()[ichan]) {
-        case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
-        case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
-          record_one_gain_channel_data(event, sum_visitor, ichan, pc->mutable_high_gain());
-          break;
-        case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
-          record_one_gain_channel_data(event, sum_visitor, ichan, pc->mutable_low_gain());
-          break;
-        case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
-        default:
-          // do nothing
-          break;
-        }
+void SimpleChargeStatsParallelEventVisitor::record_one_visitor_data(
+  uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+  const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
+  calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats* partials)
+{
+  double elapsed_event_time = event->elapsed_event_time().time_ns() * 1e-9;
+
+  if(sum_visitor and sum_visitor->is_same_event(seq_index)) {
+    for(unsigned ichan=0; ichan<sum_visitor->nchan(); ichan++) {
+      auto* pc = partials->mutable_channel(ichan);
+      switch(sum_visitor->array_chan_signal_type()[ichan]) {
+      case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
+      case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
+        record_one_gain_channel_data(event, sum_visitor, ichan, elapsed_event_time,
+          pc->mutable_high_gain(), chan_hists_[ichan]->high_gain);
+        break;
+      case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
+        record_one_gain_channel_data(event, sum_visitor, ichan, elapsed_event_time,
+          pc->mutable_low_gain(), chan_hists_[ichan]->low_gain);
+        break;
+      case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
+      default:
+        // do nothing
+        break;
       }
     }
   }
-} // anonymous namespace
+}
 
 bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   if(high_gain_visitor_) {
     record_one_visitor_data(seq_index, event, high_gain_visitor_, &partials_);
-    if(high_gain_visitor_->is_same_event(seq_index) and
-      event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL)
-    {
-      double elapsed_event_time = event->elapsed_event_time().time_ns() * 1e-9;
-      for(unsigned ichan=0; ichan<high_gain_visitor_->nchan(); ichan++) {
-        double wf_all_sum = high_gain_visitor_->array_chan_all_sum()[ichan];
-        switch(high_gain_visitor_->array_chan_signal_type()[ichan]) {
-        case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
-        case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
-          chan_hists_[ichan]->ped_spectrum->insert(wf_all_sum);
-          chan_hists_[ichan]->ped_1_sum->insert(elapsed_event_time);
-          chan_hists_[ichan]->ped_q_sum->insert(elapsed_event_time, wf_all_sum);
-          chan_hists_[ichan]->ped_q2_sum->insert(elapsed_event_time, SQR(wf_all_sum));
-          break;
-        case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
-        case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
-        default:
-          // do nothing
-          break;
-        }
-      }
-    }
   }
   if(low_gain_visitor_) {
     record_one_visitor_data(seq_index, event, low_gain_visitor_, &partials_);

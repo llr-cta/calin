@@ -65,6 +65,13 @@ message OneGainSimpleChargeStats {
     (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events.",
     (CFO).units = "DC (bin-units), events (value-units)" ];
 
+  repeated calin.ix.math.histogram.Histogram1DData ext_trig_opt_sum_hist    = 35 [
+    (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events." ];
+  repeated calin.ix.math.histogram.Histogram1DData ext_trig_opt_max_hist    = 36 [
+    (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events." ];
+  repeated calin.ix.math.histogram.Histogram1DData ext_trig_opt_index_hist  = 37 [
+    (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events." ];
+
   repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_mean_vs_time = 40 [
     (CFO).desc = "Histogram of time evolution of mean of full-waveform "
       "charge estimate over pedestal events.",
@@ -108,11 +115,18 @@ message PartialOneGainChannelSimpleChargeStats {
   calin.ix.math.histogram.Histogram1DData ped_trig_full_wf_hist     = 30 [
     (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events." ];
 
-  calin.ix.math.histogram.Histogram1DData ped_trig_time_1_sum       = 50 [
+  calin.ix.math.histogram.Histogram1DData ext_trig_opt_sum_hist     = 35 [
+    (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events." ];
+  calin.ix.math.histogram.Histogram1DData ext_trig_opt_max_hist     = 36 [
+    (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events." ];
+  calin.ix.math.histogram.Histogram1DData ext_trig_opt_index_hist   = 37 [
+    (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events." ];
+
+  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_1_sum    = 50 [
     (CFO).desc = "Histogram of number of ped events vs time." ];
-  calin.ix.math.histogram.Histogram1DData ped_trig_time_q_sum       = 51 [
+  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_q_sum    = 51 [
     (CFO).desc = "Histogram of total charge from ped events vs time." ];
-  calin.ix.math.histogram.Histogram1DData ped_trig_time_q2_sum      = 52 [
+  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_q2_sum   = 52 [
     (CFO).desc = "Histogram of total charge squared from ped events vs time." ];
 }
 

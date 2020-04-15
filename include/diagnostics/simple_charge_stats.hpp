@@ -75,9 +75,70 @@ public:
   // const calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats& partials() const { return partials_; }
 
 private:
+  struct SingleGainChannelHists {
+    SingleGainChannelHists(double time_resolution):
+      ped_wf_q_sum(new calin::math::histogram::Histogram1D(1.0)),
+      ped_wf_1_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
+      ped_wf_q_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
+      ped_wf_q2_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
+      ext_opt_q_sum(new calin::math::histogram::Histogram1D(1.0)),
+      ext_opt_index(new calin::math::histogram::Histogram1D(1.0)),
+      ext_opt_max(new calin::math::histogram::Histogram1D(1.0))
+    { /* nothing to see here */ }
+
+    ~SingleGainChannelHists() {
+      delete ped_wf_q_sum;
+      delete ped_wf_1_sum_vs_time;
+      delete ped_wf_q_sum_vs_time;
+      delete ped_wf_q2_sum_vs_time;
+      delete ext_opt_q_sum;
+      delete ext_opt_index;
+      delete ext_opt_max;
+    }
+
+    calin::math::histogram::Histogram1D* ped_wf_q_sum;
+
+    calin::math::histogram::Histogram1D* ped_wf_1_sum_vs_time;
+    calin::math::histogram::Histogram1D* ped_wf_q_sum_vs_time;
+    calin::math::histogram::Histogram1D* ped_wf_q2_sum_vs_time;
+
+    calin::math::histogram::Histogram1D* ext_opt_q_sum;
+    calin::math::histogram::Histogram1D* ext_opt_index;
+    calin::math::histogram::Histogram1D* ext_opt_max;
+  };
+
+  struct ChannelHists {
+    ChannelHists(bool has_dual_gain_, double time_resolution):
+      high_gain(new SingleGainChannelHists(time_resolution)),
+      low_gain(has_dual_gain_ ? new SingleGainChannelHists(time_resolution) : nullptr)
+    { /* nothing to see here */ }
+
+    ~ChannelHists() {
+      delete high_gain;
+      delete low_gain;
+    }
+
+    SingleGainChannelHists* high_gain = nullptr;
+    SingleGainChannelHists* low_gain = nullptr;
+  };
+
   void integrate_one_gain_partials(
     calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
     const calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats& partials_gc);
+
+  void dump_single_gain_channel_hists_to_partials(
+    const SingleGainChannelHists& hists,
+    calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* partials);
+
+  void record_one_gain_channel_data(const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
+    unsigned ichan, double elapsed_event_time,
+    calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats,
+    SingleGainChannelHists* one_gain_hists);
+
+  void record_one_visitor_data(uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
+    calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats* partials);
 
   SimpleChargeStatsParallelEventVisitor* parent_ = nullptr;
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config_;
@@ -87,25 +148,6 @@ private:
   bool has_dual_gain_ = false;
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats results_;
   calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats partials_;
-
-  struct ChannelHists {
-    ChannelHists(double time_resolution):
-      ped_spectrum(new calin::math::histogram::Histogram1D(1.0)),
-      ped_1_sum(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
-      ped_q_sum(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
-      ped_q2_sum(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0))
-    { /* nothing to see here */ }
-    ~ChannelHists() {
-      delete ped_spectrum;
-      delete ped_1_sum;
-      delete ped_q_sum;
-      delete ped_q2_sum;
-    }
-    calin::math::histogram::Histogram1D* ped_spectrum;
-    calin::math::histogram::Histogram1D* ped_1_sum;
-    calin::math::histogram::Histogram1D* ped_q_sum;
-    calin::math::histogram::Histogram1D* ped_q2_sum;
-  };
 
   std::vector<ChannelHists*> chan_hists_;
 };
