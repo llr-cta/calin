@@ -460,7 +460,7 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
           trigger_software_elapsed_time_hist.insert(elapsed_time_sec); break;
         case calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL:
           trigger_pedestal_elapsed_time_hist.insert(elapsed_time_sec); break;
-        case calin::ix::iact_data::telescope_event::TRIGGER_EXTENAL_FLASHER:
+        case calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER:
           trigger_external_flasher_elapsed_time_hist.insert(elapsed_time_sec); break;
         case calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER:
           trigger_internal_flasher_elapsed_time_hist.insert(elapsed_time_sec); break;

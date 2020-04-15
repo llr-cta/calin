@@ -296,7 +296,7 @@ calin::iact_data::actl_event_decoder::determine_trigger_type(
     } else if(calin_tib_data->stereo_trigger()) {
       return calin::ix::iact_data::telescope_event::TRIGGER_FORCED_BY_ARRAY;
     } else if(calin_tib_data->external_calibration_trigger()) {
-      return calin::ix::iact_data::telescope_event::TRIGGER_EXTENAL_FLASHER;
+      return calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER;
     } else if(calin_tib_data->internal_calibration_trigger()) {
       return calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER;
     } else if(calin_tib_data->ucts_aux_trigger()) {

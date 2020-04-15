@@ -366,7 +366,7 @@ enum TriggerType {
   TRIGGER_PHYSICS               = 1;
   TRIGGER_SOFTWARE              = 2;
   TRIGGER_PEDESTAL              = 3;
-  TRIGGER_EXTENAL_FLASHER       = 4;
+  TRIGGER_EXTERNAL_FLASHER      = 4;
   TRIGGER_INTERNAL_FLASHER      = 5;
   TRIGGER_FORCED_BY_ARRAY       = 6;
   TRIGGER_UCTS_AUX              = 7;

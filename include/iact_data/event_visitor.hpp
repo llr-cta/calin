@@ -129,7 +129,7 @@ public:
     add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL, adopt_visitor);
   }
   void add_external_flasher_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
-    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_EXTENAL_FLASHER, adopt_visitor);
+    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER, adopt_visitor);
   }
   void add_internal_flasher_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
     add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER, adopt_visitor);
