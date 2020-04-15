@@ -210,7 +210,7 @@ class SQLSerializer
   calin::ix::io::sql_serializer::SQLTableAndFieldCollection* sqltable_tree_as_proto(
     const SQLTable* t);
 
-  void register_externally_created_table(const std::string& table_name,
+  virtual void register_externally_created_table(const std::string& table_name,
     const google::protobuf::Descriptor* d, const std::string& instance_desc = "");
 
   virtual bool create_or_extend_tables(const std::string& table_name,
