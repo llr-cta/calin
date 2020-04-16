@@ -141,6 +141,9 @@ struct SQLTable
   SQLStatement*                             stmt_insert = nullptr;
   SQLStatement*                             stmt_select_oid = nullptr;
 
+  uint64_t                                  num_rows_in_table = 0;
+  uint64_t                                  num_rows_in_subtree = 0;
+
   bool children_need_oid() const {
     for(auto t : sub_tables) { for(auto f : t->fields)
         if(f->field_type == SQLTableField::KEY_PARENT_OID)return true; }
@@ -229,6 +232,9 @@ class SQLSerializer
     google::protobuf::Message* m);
 
   virtual uint64_t count_entries_in_table(const std::string& table_name);
+
+  virtual SQLTable* count_entries_in_tree(const std::string& table_name,
+      const google::protobuf::Descriptor* d);
 
   virtual std::vector<uint64_t>
   retrieve_all_oids(const std::string& table_name);

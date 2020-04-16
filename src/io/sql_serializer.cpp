@@ -304,6 +304,32 @@ uint64_t SQLSerializer::count_entries_in_table(const std::string& table_name)
   return entries;
 }
 
+SQLTable* SQLSerializer::count_entries_in_tree(const std::string& table_name,
+  const google::protobuf::Descriptor* d)
+{
+  SQLTable* t = make_sqltable_tree(table_name, d);
+  begin_transaction();
+  try {
+    t->iterate_over_tables([this](SQLTable* it) {
+      if(db_tables_.count(it->table_name)) {
+        it->num_rows_in_table = this->count_entries_in_table(it->table_name);
+        it->num_rows_in_subtree = it->num_rows_in_table;
+      }
+    });
+  } catch(...) {
+    rollback_transaction();
+    delete t;
+    throw;
+  }
+  commit_transaction();
+  t->reverse_iterate_over_tables([](SQLTable* it) {
+    if(it->parent_table) {
+      it->parent_table->num_rows_in_subtree += it->num_rows_in_subtree;
+    }
+  });
+  return t;
+}
+
 std::vector<uint64_t> SQLSerializer::retrieve_all_oids(const std::string& table_name)
 {
   std::unique_ptr<SQLStatement> stmt {
