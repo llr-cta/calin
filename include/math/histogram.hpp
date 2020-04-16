@@ -644,7 +644,7 @@ BasicHistogram1D(const calin::ix::math::histogram::Histogram1DData& data):
       ++ibin;
       --offset;
     }
-    while(ibin >= this->bins_.size()) {
+    while(ibin >= int(this->bins_.size())) {
       this->bins_.emplace_back();
     }
     this->bins_[ibin].accumulate(isparse.second);

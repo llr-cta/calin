@@ -998,7 +998,7 @@ exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
       // In this case we are talkling about a repeated field
       auto* r = m_parent->GetReflection();
       if(t->parent_field_d->type()==FieldDescriptor::TYPE_MESSAGE) {
-        if(r->FieldSize(*m_parent, t->parent_field_d) <= loop_id)
+        if(r->FieldSize(*m_parent, t->parent_field_d) <= int(loop_id))
           r->AddMessage(m_parent, t->parent_field_d);
         m = r->MutableRepeatedMessage(m_parent, t->parent_field_d, loop_id);
       } else {
