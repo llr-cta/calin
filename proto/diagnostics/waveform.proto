@@ -47,6 +47,22 @@ message WaveformMean {
     (CFO).desc = "Waveform mean for each of the low-gain channels." ];
 };
 
+message SingleChannelWaveformCodeHist {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+  uint32 channel_id                                        = 1 [
+    (CFO).desc = "Channel ID in camera." ];
+  repeated uint64 high_gain_code_count                     = 10 [
+    (CFO).desc = "High or single-gain code histogram." ];
+  repeated uint64 low_gain_code_count                      = 11 [
+    (CFO).desc = "Low-gain code histogram." ];
+};
+
+message WaveformCodeHist {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+  repeated SingleChannelWaveformCodeHist channel           = 1 [
+    (CFO).desc = "Histogram for one channel." ];
+};
+
 message WaveformRawStats {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 

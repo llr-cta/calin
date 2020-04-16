@@ -93,6 +93,51 @@ protected:
 #endif // ndef SWIG
 };
 
+class WaveformCodeHistParallelEventVisitor:
+public iact_data::event_visitor::ParallelEventVisitor
+{
+public:
+  WaveformCodeHistParallelEventVisitor(uint16_t max_code = 4095);
+
+  virtual ~WaveformCodeHistParallelEventVisitor();
+
+  WaveformCodeHistParallelEventVisitor* new_sub_visitor(
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
+      antecedent_visitors) override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+  bool leave_telescope_run() override;
+
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  bool merge_results() override;
+
+  calin::ix::diagnostics::waveform::WaveformCodeHist* waveform_code_hist() const;
+
+protected:
+#ifndef SWIG
+  void analyze_wf_image(const calin::ix::iact_data::telescope_event::Waveforms& wf);
+
+  WaveformCodeHistParallelEventVisitor* parent_ = nullptr;
+
+  uint16_t max_code_ = 4095;
+
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
+  bool has_dual_gain_ = false;
+  unsigned nchan_ = 0;
+  unsigned nsamp_ = 0;
+
+  uint64_t*__restrict__ high_gain_code_hist_ = nullptr;
+  uint64_t*__restrict__ low_gain_code_hist_ = nullptr;
+#endif // ndef SWIG
+};
+
+
+
 class WaveformStatsParallelVisitor:
   public iact_data::event_visitor::ParallelEventVisitor
 {
