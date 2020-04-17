@@ -282,31 +282,26 @@ calin::iact_data::actl_event_decoder::determine_trigger_type(
   const calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_data)
 {
   if(calin_tib_data) {
-    unsigned trig_bits =
-      unsigned(calin_tib_data->mono_trigger() or calin_tib_data->stereo_trigger()) &
-      (unsigned(calin_tib_data->external_calibration_trigger()) << 1) &
-      (unsigned(calin_tib_data->internal_calibration_trigger()) << 2) &
-      (unsigned(calin_tib_data->ucts_aux_trigger()) << 3) &
-      (unsigned(calin_tib_data->pedestal_trigger()) << 4) &
-      (unsigned(calin_tib_data->slow_control_trigger()) << 5);
-    if((trig_bits-1) & trig_bits) {
-      return calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE;
-    } else if(calin_tib_data->mono_trigger()) {
+    switch(calin_tib_data->trigger_type()) {
+    case 0x01:
       return calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS;
-    } else if(calin_tib_data->stereo_trigger()) {
+    case 0x02:
       return calin::ix::iact_data::telescope_event::TRIGGER_FORCED_BY_ARRAY;
-    } else if(calin_tib_data->external_calibration_trigger()) {
+    case 0x04:
+    case 0x05: // allow either pure external or external/physics
       return calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER;
-    } else if(calin_tib_data->internal_calibration_trigger()) {
+    case 0x08:
       return calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER;
-    } else if(calin_tib_data->ucts_aux_trigger()) {
+    case 0x10:
       return calin::ix::iact_data::telescope_event::TRIGGER_UCTS_AUX;
-    } else if(calin_tib_data->pedestal_trigger()) {
+    case 0x20:
       return calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL;
-    } else if(calin_tib_data->slow_control_trigger()) {
+    case 0x40:
       return calin::ix::iact_data::telescope_event::TRIGGER_SOFTWARE;
-    } else {
+    case 0x80:
       return calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN;
+    default:
+      return calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE;
     }
   } else if(calin_cdts_data) {
 
