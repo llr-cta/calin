@@ -349,8 +349,10 @@ WaveformCodeHistParallelEventVisitor::
 ~WaveformCodeHistParallelEventVisitor()
 {
   delete run_config_;
-  ::free(high_gain_code_hist_);
-  ::free(low_gain_code_hist_);
+  ::free(high_gain_code_hist_u32_);
+  ::free(high_gain_code_hist_u64_);
+  ::free(low_gain_code_hist_u32_);
+  ::free(low_gain_code_hist_u64_);
 }
 
 WaveformCodeHistParallelEventVisitor* WaveformCodeHistParallelEventVisitor::
@@ -376,16 +378,22 @@ bool WaveformCodeHistParallelEventVisitor::visit_telescope_run(
   nchan_ = run_config->configured_channel_id_size();
   nsamp_ = run_config->num_samples();
 
+  max_nevent_in_u32_ = 0xFFFFFFFFU / nsamp_;
+  nevent_in_u32_ = 0;
+
   unsigned array_size = nchan_ * (unsigned(max_code_)+1);
-  calin::util::memory::safe_aligned_recalloc_and_fill(high_gain_code_hist_, array_size);
+  calin::util::memory::safe_aligned_recalloc_and_fill(high_gain_code_hist_u32_, array_size);
+  calin::util::memory::safe_aligned_recalloc_and_fill(high_gain_code_hist_u64_, array_size);
   if(has_dual_gain_) {
-     calin::util::memory::safe_aligned_recalloc_and_fill(low_gain_code_hist_, array_size);
+    calin::util::memory::safe_aligned_recalloc_and_fill(low_gain_code_hist_u32_, array_size);
+    calin::util::memory::safe_aligned_recalloc_and_fill(low_gain_code_hist_u64_, array_size);
   }
   return true;
 }
 
 bool WaveformCodeHistParallelEventVisitor::leave_telescope_run()
 {
+  transfer_u32_to_u64();
   return true;
 }
 
@@ -394,12 +402,12 @@ void WaveformCodeHistParallelEventVisitor::analyze_wf_image(
 {
   const uint16_t*__restrict__ data =
     reinterpret_cast<const uint16_t*__restrict__>(wf.raw_samples_array().data());
-  uint64_t*__restrict__ hg_hist = high_gain_code_hist_;
-  uint64_t*__restrict__ lg_hist = low_gain_code_hist_;
+  uint32_t*__restrict__ hg_hist = high_gain_code_hist_u32_;
+  uint32_t*__restrict__ lg_hist = low_gain_code_hist_u32_;
   unsigned ncode = max_code_+1;
   for(unsigned ichan=0;ichan<nchan_;ichan++,hg_hist+=ncode,lg_hist+=ncode)
   {
-    uint64_t*__restrict__ hist;
+    uint32_t*__restrict__ hist;
     switch(wf.channel_signal_type(ichan)) {
       case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
       case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
@@ -423,6 +431,21 @@ void WaveformCodeHistParallelEventVisitor::analyze_wf_image(
   }
 }
 
+void WaveformCodeHistParallelEventVisitor::transfer_u32_to_u64()
+{
+  unsigned array_size = nchan_ * (unsigned(max_code_)+1);
+  for(unsigned iarray=0; iarray<array_size; ++iarray) {
+    high_gain_code_hist_u64_[iarray] += high_gain_code_hist_u32_[iarray];
+    high_gain_code_hist_u32_[iarray] = 0;
+  }
+  if(has_dual_gain_) {
+    for(unsigned iarray=0; iarray<array_size; ++iarray) {
+      low_gain_code_hist_u64_[iarray] += low_gain_code_hist_u32_[iarray];
+      low_gain_code_hist_u32_[iarray] = 0;
+    }
+  }
+}
+
 bool WaveformCodeHistParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
@@ -436,6 +459,11 @@ bool WaveformCodeHistParallelEventVisitor::visit_telescope_event(uint64_t seq_in
       analyze_wf_image(event->low_gain_image().camera_waveforms());
     }
   }
+  ++nevent_in_u32_;
+  if(nevent_in_u32_ == max_nevent_in_u32_) {
+    transfer_u32_to_u64();
+  }
+
   return true;
 }
 
@@ -444,11 +472,11 @@ bool WaveformCodeHistParallelEventVisitor::merge_results()
   if(parent_) {
     unsigned array_size = nchan_ * (unsigned(max_code_)+1);
     for(unsigned i=0; i<array_size; ++i) {
-      parent_->high_gain_code_hist_[i] += high_gain_code_hist_[i];
+      parent_->high_gain_code_hist_u64_[i] += high_gain_code_hist_u64_[i];
     }
     if(has_dual_gain_) {
       for(unsigned i=0; i<array_size; ++i) {
-        parent_->low_gain_code_hist_[i] += low_gain_code_hist_[i];
+        parent_->low_gain_code_hist_u64_[i] += low_gain_code_hist_u64_[i];
       }
     }
   }
@@ -463,18 +491,72 @@ WaveformCodeHistParallelEventVisitor::waveform_code_hist() const
   for(unsigned ichan=0; ichan<nchan_; ++ichan) {
     auto* ch = h->add_channel();
     ch->set_channel_id(run_config_->configured_channel_id(ichan));
+    unsigned nzero=0;
     for(unsigned icode=0;icode<ncode; ++icode) {
-      ch->add_high_gain_code_count(high_gain_code_hist_[ichan*ncode + icode]);
+      // This algorithm suppresses trailing zeros
+      uint64_t count = high_gain_code_hist_u64_[ichan*ncode + icode];
+      if(count == 0)++nzero;
+      else {
+        while(nzero) {
+          ch->add_high_gain_code_count(0);
+          --nzero;
+        }
+        ch->add_high_gain_code_count(count);
+      }
     }
-    if(low_gain_code_hist_) {
+    if(low_gain_code_hist_u64_) {
+      nzero=0;
       for(unsigned icode=0;icode<ncode; ++icode) {
-        ch->add_low_gain_code_count(low_gain_code_hist_[ichan*ncode + icode]);
+        uint64_t count = low_gain_code_hist_u64_[ichan*ncode + icode];
+        if(count == 0)++nzero;
+        else {
+          while(nzero) {
+            ch->add_low_gain_code_count(0);
+            --nzero;
+          }
+          ch->add_low_gain_code_count(count);
+        }
       }
     }
   }
   return h;
 }
 
+calin::ix::diagnostics::waveform::CompactWaveformCodeHist*
+WaveformCodeHistParallelEventVisitor::compact_waveform_code_hist() const
+{
+  unsigned ncode = max_code_+1;
+  auto* h = new calin::ix::diagnostics::waveform::CompactWaveformCodeHist();
+  for(unsigned ichan=0; ichan<nchan_; ++ichan) {
+    auto* ch = h->add_channel();
+    ch->set_channel_id(run_config_->configured_channel_id(ichan));
+
+    calin::math::histogram::Histogram1D hist(1.0);
+    for(unsigned icode=0;icode<ncode; ++icode) {
+      uint64_t count = high_gain_code_hist_u64_[ichan*ncode + icode];
+      if(count != 0) {
+        hist.insert(double(icode), double(count));
+      }
+    }
+    auto* hist_data = hist.dump_as_proto();
+    calin::math::histogram::sparsify(*hist_data, ch->mutable_high_gain_code_hist());
+    delete hist_data;
+
+    if(low_gain_code_hist_u64_) {
+      hist.clear();
+      for(unsigned icode=0;icode<ncode; ++icode) {
+        uint64_t count = low_gain_code_hist_u64_[ichan*ncode + icode];
+        if(count != 0) {
+          hist.insert(double(icode), double(count));
+        }
+      }
+      hist_data = hist.dump_as_proto();
+      calin::math::histogram::sparsify(*hist_data, ch->mutable_low_gain_code_hist());
+      delete hist_data;
+    }
+  }
+  return h;
+}
 
 
 WaveformStatsParallelVisitor::WaveformStatsParallelVisitor(
