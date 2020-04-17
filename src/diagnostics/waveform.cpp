@@ -378,8 +378,8 @@ bool WaveformCodeHistParallelEventVisitor::visit_telescope_run(
   nchan_ = run_config->configured_channel_id_size();
   nsamp_ = run_config->num_samples();
 
-  max_nevent_in_u32_ = 0xFFFFFFFFU / nsamp_;
-  nevent_in_u32_ = 0;
+  max_nsamp_in_u32_ = 0xFFFFFFFFU / nsamp_;
+  nsamp_in_u32_ = 0;
 
   unsigned array_size = nchan_ * (unsigned(max_code_)+1);
   calin::util::memory::safe_aligned_recalloc_and_fill(high_gain_code_hist_u32_, array_size);
@@ -444,6 +444,7 @@ void WaveformCodeHistParallelEventVisitor::transfer_u32_to_u64()
       low_gain_code_hist_u32_[iarray] = 0;
     }
   }
+  nsamp_in_u32_ = 0;
 }
 
 bool WaveformCodeHistParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
@@ -459,8 +460,8 @@ bool WaveformCodeHistParallelEventVisitor::visit_telescope_event(uint64_t seq_in
       analyze_wf_image(event->low_gain_image().camera_waveforms());
     }
   }
-  ++nevent_in_u32_;
-  if(nevent_in_u32_ == max_nevent_in_u32_) {
+  ++nsamp_in_u32_;
+  if(nsamp_in_u32_ == max_nsamp_in_u32_) {
     transfer_u32_to_u64();
   }
 

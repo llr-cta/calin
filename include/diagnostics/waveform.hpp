@@ -133,8 +133,8 @@ protected:
   unsigned nchan_ = 0;
   unsigned nsamp_ = 0;
 
-  unsigned max_nevent_in_u32_ = 0;
-  unsigned nevent_in_u32_ = 0;
+  unsigned max_nsamp_in_u32_ = 0;
+  unsigned nsamp_in_u32_ = 0;
 
   uint32_t*__restrict__ high_gain_code_hist_u32_ = nullptr;
   uint32_t*__restrict__ low_gain_code_hist_u32_ = nullptr;
