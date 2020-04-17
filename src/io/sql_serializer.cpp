@@ -948,6 +948,9 @@ exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
 
     ++row_count;
 
+    // Protect against no-data queries in root table
+    if(ifield == t->fields.end()) goto next_step;
+
     if((*ifield)->is_root_oid)++ifield;
 
     while(icol<step_loop_index.size()) {
