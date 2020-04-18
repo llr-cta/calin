@@ -33,28 +33,28 @@ message SingleGainSimpleChargeHistsConfig {
     (CFO).desc = "Enable histogramming for this gain channel." ];
 
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig full_wf_qsum = 10 [
-    (CFO).desc = "Configuration for full waveform charge sum." ];
+    (CFO).desc = "Configuration for full-waveform charge sum." ];
 
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig full_wf_max = 11 [
-    (CFO).desc = "Configuration for full waveform maximum sample." ];
+    (CFO).desc = "Configuration for full-waveform maximum sample." ];
 
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig full_wf_max_index = 12 [
-    (CFO).desc = "Configuration for full waveform index of maximum sample." ];
+    (CFO).desc = "Configuration for full-waveform index of maximum sample." ];
 
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig opt_win_qsum = 13 [
-    (CFO).desc = "Configuration for optimal window charge sum." ];
+    (CFO).desc = "Configuration for optimal-window charge sum." ];
 
     calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig opt_win_qtsum = 14 [
-    (CFO).desc = "Configuration for optimal window amplitude-time sum." ];
+    (CFO).desc = "Configuration for optimal-window amplitude-time sum." ];
 
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig opt_win_index = 15 [
-    (CFO).desc = "Configuration for optimal window index." ];
+    (CFO).desc = "Configuration for optimal-window index." ];
 
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig ped_win_qsum = 16 [
-    (CFO).desc = "Configuration for fixed pedestal window charge sum." ];
+    (CFO).desc = "Configuration for fixed pedestal-window charge sum." ];
 
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig sig_win_qsum = 17 [
-    (CFO).desc = "Configuration for fixed signal window charge sum." ];
+    (CFO).desc = "Configuration for fixed signal-window charge sum." ];
 };
 
 message DualGainSimpleChargeHistsConfig {
