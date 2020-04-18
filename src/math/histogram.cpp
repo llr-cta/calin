@@ -34,6 +34,44 @@ template class BasicHistogram1D<accumulator::SimpleAccumulator>;
 
 } } } // namespace calin::math::histogram
 
+calin::math::histogram::Histogram1D* calin::math::histogram::new_histogram(
+  const calin::ix::math::histogram::AccumulatedAndSerializedHistogram1DConfig& config)
+{
+  if(config.enable() and config.dxval()!=0)
+    return new calin::math::histogram::Histogram1D(config);
+  return nullptr;
+}
+
+calin::ix::math::histogram::Histogram1DData* calin::math::histogram::compactify(
+  const calin::ix::math::histogram::Histogram1DData& original_hist,
+  int max_dense_bins_in_output, int max_output_rebinning,
+  calin::ix::math::histogram::Histogram1DData* compactified_hist)
+{
+  if(max_dense_bins_in_output<=0 or max_output_rebinning==1) {
+    // No rebinning needed or allowed, so just sparsify into output hist
+    return calin::math::histogram::sparsify(original_hist, compactified_hist);
+  } else {
+    std::unique_ptr<calin::ix::math::histogram::Histogram1DData> hist {
+      calin::math::histogram::sparsify(original_hist) };
+    int rebin = 1;
+    if(hist->bins_size()>max_dense_bins_in_output) {
+      rebin = (hist->bins_size()+max_dense_bins_in_output-1)/max_dense_bins_in_output;
+      if(max_output_rebinning != 0) {
+        rebin = std::min(rebin, max_output_rebinning);
+      }
+    }
+    if(rebin != 1) {
+      return calin::math::histogram::rebin(*hist, rebin, compactified_hist);
+    } else if(compactified_hist) {
+      compactified_hist->Clear();
+      compactified_hist->CopyFrom(*hist);
+      return compactified_hist;
+    } else {
+      return hist.release();
+    }
+  }
+}
+
 calin::ix::math::histogram::Histogram1DData*
 calin::math::histogram::rebin(
   const calin::ix::math::histogram::Histogram1DData& original_hist, int rebinning_factor,
