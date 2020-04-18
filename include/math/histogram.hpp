@@ -534,6 +534,8 @@ template<typename Acc> class BasicHistogram1D:
   // Insert x value weight into histogram
   inline bool insert(const double x, const double w = 1.0);
 
+  bool insert_hist(const BasicHistogram1D& h);
+
   unsigned insert_vec(const std::vector<double>& x, const double w = 1.0)
   {
     unsigned insert_count { 0 };
@@ -657,6 +659,36 @@ insert(const double x, const double w)
   }
 
   bin.accumulate(w);
+  return true;
+}
+
+template<typename Acc> bool BasicHistogram1D<Acc>::insert_hist(const BasicHistogram1D& h)
+{
+  if((h.dxval_ != this->dxval_) or (h.xval_align_ != this->xval_align_)
+      or (h.limited_ != this->limited_)
+      or (h.xval_limit_lo_ != this->xval_limit_lo_)
+      or (h.xval_limit_hi_ != this->xval_limit_hi_)) {
+    return false;
+  }
+
+  while(h.xval0_ < this->xval0_) {
+    this->bins_.emplace_front();
+    this->xval0_ -= this->dxval_;
+  }
+  int offset = int(round((h.xval0_ - this->xval0_)*this->dxval_inv_));
+  while(h.bins_.size()+offset > this->bins_.size()) {
+    this->bins_.emplace_back();
+  }
+  for(unsigned ibin=0 ; ibin<h.bins_.size(); ibin++) {
+    this->bins_.at(ibin + offset).accumulate(h.bins_[ibin]);
+  }
+  this->overflow_lo_.accumulate(h.overflow_lo_);
+  this->overflow_hi_.accumulate(h.overflow_hi_);
+  this->sum_w_.accumulate(h.sum_w_);
+  this->sum_wx_.accumulate(h.sum_wx_);
+  this->sum_wxx_.accumulate(h.sum_wxx_);
+  this->min_x_ = std::min(min_x_, h.min_x_);
+  this->max_x_ = std::max(max_x_, h.max_x_);
   return true;
 }
 
