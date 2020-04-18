@@ -670,7 +670,9 @@ template<typename Acc> bool BasicHistogram1D<Acc>::insert_hist(const BasicHistog
       or (h.xval_limit_hi_ != this->xval_limit_hi_)) {
     return false;
   }
-
+  if(this->bins_.empty()) {
+    this->xval0_ = h.xval0_;
+  }
   while(h.xval0_ < this->xval0_) {
     this->bins_.emplace_front();
     this->xval0_ -= this->dxval_;
