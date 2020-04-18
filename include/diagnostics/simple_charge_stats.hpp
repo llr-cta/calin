@@ -1,6 +1,6 @@
 /*
 
-   calin/diagnostics/channel_info.hpp -- Stephen Fegan -- 2020-03-20
+   calin/diagnostics/simple_charge_stats.hpp -- Stephen Fegan -- 2020-03-20
 
    Various information computed from channel data
 
