@@ -57,20 +57,9 @@ message SingleGainSimpleChargeHistsConfig {
     (CFO).desc = "Configuration for fixed signal-window charge sum." ];
 };
 
-message DualGainSimpleChargeHistsConfig {
+message SimpleChargeHistsConfig {
   SingleGainSimpleChargeHistsConfig high_gain                       = 10 [
     (CFO).desc = "Configuration for high or single-gain histograms." ];
   SingleGainSimpleChargeHistsConfig low_gain                        = 20 [
     (CFO).desc = "Configuration for low-gain histograms." ];
-};
-
-message SimpleChargeHistsConfig {
-  DualGainSimpleChargeHistsConfig pedestal_trigger                  = 10 [
-    (CFO).desc = "Configuration for pedestal trigger histograms." ];
-  DualGainSimpleChargeHistsConfig physics_trigger                   = 20 [
-    (CFO).desc = "Configuration for physics trigger histograms." ];
-  DualGainSimpleChargeHistsConfig external_flasher_trigger          = 30 [
-    (CFO).desc = "Configuration for external-flasher trigger histograms." ];
-  DualGainSimpleChargeHistsConfig internal_flasher_trigger          = 40 [
-    (CFO).desc = "Configuration for external-flasher trigger histograms." ];
 };
