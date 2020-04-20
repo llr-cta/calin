@@ -429,7 +429,9 @@ void WaveformCodeHistParallelEventVisitor::analyze_wf_image(
       for(unsigned isamp=1;isamp<nsamp_;++isamp,++data) {
         code = std::max(code, *data);
       }
-      ++hist[code];
+      if(code <= max_code_) {
+        ++hist[code];
+      }
     } else {
       for(unsigned isamp=0;isamp<nsamp_;++isamp,++data) {
         uint16_t code = *data;
