@@ -360,7 +360,7 @@ WaveformCodeHistParallelEventVisitor* WaveformCodeHistParallelEventVisitor::
 new_sub_visitor(std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
   calin::iact_data::event_visitor::ParallelEventVisitor*> antecedent_visitors)
 {
-  auto* sv = new WaveformCodeHistParallelEventVisitor(max_code_);
+  auto* sv = new WaveformCodeHistParallelEventVisitor(max_sample_only_,max_code_);
   sv->parent_ = this;
   return sv;
 }
