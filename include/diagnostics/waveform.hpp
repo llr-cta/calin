@@ -97,7 +97,7 @@ class WaveformCodeHistParallelEventVisitor:
 public iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  WaveformCodeHistParallelEventVisitor(uint16_t max_code = 4095);
+  WaveformCodeHistParallelEventVisitor(bool max_sample_only = false, uint16_t max_code = 4095);
 
   virtual ~WaveformCodeHistParallelEventVisitor();
 
@@ -126,6 +126,7 @@ protected:
 
   WaveformCodeHistParallelEventVisitor* parent_ = nullptr;
 
+  bool max_sample_only_ = false;
   uint16_t max_code_ = 4095;
 
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;

@@ -339,8 +339,9 @@ void WaveformSumParallelEventVisitor::low_gain_event_count(Eigen::VectorXi& coun
 }
 
 WaveformCodeHistParallelEventVisitor::
-WaveformCodeHistParallelEventVisitor(uint16_t max_code):
-  iact_data::event_visitor::ParallelEventVisitor(), max_code_(max_code)
+WaveformCodeHistParallelEventVisitor(bool max_sample_only, uint16_t max_code):
+  iact_data::event_visitor::ParallelEventVisitor(),
+  max_sample_only_(max_sample_only), max_code_(max_code)
 {
   // nothing to see here
 }
@@ -409,23 +410,32 @@ void WaveformCodeHistParallelEventVisitor::analyze_wf_image(
   {
     uint32_t*__restrict__ hist;
     switch(wf.channel_signal_type(ichan)) {
-      case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
-      case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
-        hist = hg_hist;
-        break;
-      case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
-        hist = lg_hist;
-        break;
-      case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
-      default:
-        data += nsamp_;
-        continue; // skip this channel
-      }
+    case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
+    case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
+      hist = hg_hist;
+      break;
+    case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
+      hist = lg_hist;
+      break;
+    case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
+    default:
+      data += nsamp_;
+      continue; // skip this channel
+    }
 
-    for(unsigned isamp = 0;isamp<nsamp_;++isamp,++data) {
-      int16_t code = *data;
-      if(code <= max_code_) {
-        ++hist[code];
+    if(max_sample_only_) {
+      uint16_t code = *data;
+      ++data;
+      for(unsigned isamp=1;isamp<nsamp_;++isamp,++data) {
+        code = std::max(code, *data);
+      }
+      ++hist[code];
+    } else {
+      for(unsigned isamp=0;isamp<nsamp_;++isamp,++data) {
+        uint16_t code = *data;
+        if(code <= max_code_) {
+          ++hist[code];
+        }
       }
     }
   }
