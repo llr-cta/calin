@@ -63,3 +63,7 @@ message SimpleChargeHistsConfig {
   SingleGainSimpleChargeHistsConfig low_gain                        = 20 [
     (CFO).desc = "Configuration for low-gain histograms." ];
 };
+
+message SimpleChargeHists {
+
+};
