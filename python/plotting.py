@@ -240,7 +240,7 @@ def plot_histogram(h, density = False, normalise = False,
     hdy = hdy * yscale + yoffset
     if(xscale_as_log10):
         hx = 10**hx
-    so = plt.step(hx,hy, where='post', *args, **nargs)
+    so = plt.step(hx,hy, *args, where='post', **nargs)
     if(xscale_as_log10):
         so[0].axes.set_xscale('log')
     if(draw_poisson_errors):
