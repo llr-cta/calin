@@ -218,28 +218,104 @@ SimpleChargeHistsParallelEventVisitor::simple_charge_hists(
 
 namespace {
 
-#if 0
   void pre_fill_hist_config(
     calin::ix::diagnostics::simple_charge_hists::SingleGainSimpleChargeHistsConfig* config,
     const std::string& trig, const std::string& gain,
-    double qsum_dx, int qsum_nmax, int qsum_rebin
+    double qsum_dx, int qsum_nmax, int qsum_rebin,
     double max_dx, int max_nmax, int max_rebin)
   {
+    config->Clear();
     config->set_enable_hists(true);
 
-    auto* hist = hg->mutable_full_wf_qsum();
-    hist->set_enable(true);
-    hist->set_dxval(dx_qsum);
+    auto* hist = config->mutable_full_wf_qsum();
+    hist->set_enable(false);
+    hist->set_dxval(qsum_dx);
     hist->set_xval_align(0.0);
-    hist->set_name(trig + "events " + gain + "-gain full waveform sum");
+    hist->set_name(trig + " events " + gain + "-gain full waveform charge sum");
     hist->set_xval_units("DC");
     hist->set_weight_units("events");
     hist->set_compactify_output(true);
-    hist->set_max_dense_bins_in_output(1000);
-    hist->set_max_output_rebinning(5);
+    hist->set_max_dense_bins_in_output(qsum_nmax);
+    hist->set_max_output_rebinning(qsum_rebin);
 
+    hist = config->mutable_full_wf_max();
+    hist->set_enable(false);
+    hist->set_dxval(max_dx);
+    hist->set_xval_align(0.0);
+    hist->set_name(trig + " events " + gain + "-gain full waveform max sample");
+    hist->set_xval_units("DC");
+    hist->set_weight_units("events");
+    hist->set_compactify_output(true);
+    hist->set_max_dense_bins_in_output(max_nmax);
+    hist->set_max_output_rebinning(max_rebin);
+
+    hist = config->mutable_full_wf_max_index();
+    hist->set_enable(false);
+    hist->set_dxval(1.0);
+    hist->set_xval_align(0.5);
+    hist->set_name(trig + " events " + gain + "-gain full waveform index of max sample");
+    hist->set_xval_units("samples");
+    hist->set_weight_units("events");
+    hist->set_compactify_output(false);
+    hist->set_max_dense_bins_in_output(0);
+    hist->set_max_output_rebinning(0);
+
+    hist = config->mutable_opt_win_qsum();
+    hist->set_enable(false);
+    hist->set_dxval(qsum_dx);
+    hist->set_xval_align(0.0);
+    hist->set_name(trig + " events " + gain + "-gain optimal window charge sum");
+    hist->set_xval_units("DC");
+    hist->set_weight_units("events");
+    hist->set_compactify_output(true);
+    hist->set_max_dense_bins_in_output(qsum_nmax);
+    hist->set_max_output_rebinning(qsum_rebin);
+
+    hist = config->mutable_opt_win_qtsum();
+    hist->set_enable(false);
+    hist->set_dxval(qsum_dx);
+    hist->set_xval_align(0.0);
+    hist->set_name(trig + " events " + gain + "-gain optimal window charge x time sum");
+    hist->set_xval_units("DC");
+    hist->set_weight_units("events");
+    hist->set_compactify_output(true);
+    hist->set_max_dense_bins_in_output(qsum_nmax);
+    hist->set_max_output_rebinning(qsum_rebin);
+
+    hist = config->mutable_opt_win_index();
+    hist->set_enable(false);
+    hist->set_dxval(1.0);
+    hist->set_xval_align(0.5);
+    hist->set_name(trig + " events " + gain + "-gain optimal window index");
+    hist->set_xval_units("samples");
+    hist->set_weight_units("events");
+    hist->set_compactify_output(false);
+    hist->set_max_dense_bins_in_output(0);
+    hist->set_max_output_rebinning(0);
+
+    hist = config->mutable_ped_win_qsum();
+    hist->set_enable(false);
+    hist->set_dxval(qsum_dx);
+    hist->set_xval_align(0.0);
+    hist->set_name(trig + " events " + gain + "-gain fixed pedestal window charge sum");
+    hist->set_xval_units("DC");
+    hist->set_weight_units("events");
+    hist->set_compactify_output(true);
+    hist->set_max_dense_bins_in_output(qsum_nmax);
+    hist->set_max_output_rebinning(qsum_rebin);
+
+    hist = config->mutable_sig_win_qsum();
+    hist->set_enable(false);
+    hist->set_dxval(qsum_dx);
+    hist->set_xval_align(0.0);
+    hist->set_name(trig + " events " + gain + "-gain fixed pedestal window charge sum");
+    hist->set_xval_units("DC");
+    hist->set_weight_units("events");
+    hist->set_compactify_output(true);
+    hist->set_max_dense_bins_in_output(qsum_nmax);
+    hist->set_max_output_rebinning(qsum_rebin);
   }
-#endif
+
 } // anonymous namespace
 
 calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig
@@ -247,23 +323,12 @@ SimpleChargeHistsParallelEventVisitor::ped_trig_default_config()
 {
   calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig config;
 
-  auto* hg = config.mutable_high_gain();
-  hg->set_enable_hists(true);
-
-  auto* hist = hg->mutable_full_wf_qsum();
-  hist->set_enable(true);
-  hist->set_dxval(1.0);
-  hist->set_xval_align(0.0);
-  hist->set_name("Pedestal events high-gain waveform sum");
-  hist->set_xval_units("DC");
-  hist->set_weight_units("events");
-  hist->set_compactify_output(true);
-  hist->set_max_dense_bins_in_output(1000);
-  hist->set_max_output_rebinning(5);
-
-  auto* lg = config.mutable_low_gain();
-  lg->CopyFrom(config.high_gain());
-  lg->mutable_full_wf_qsum()->set_name("Pedestal events low-gain waveform sum");
+  auto* hg_config = config.mutable_high_gain();
+  pre_fill_hist_config(hg_config, "pedestal", "high", 1.0, 1000, 5, 1.0, 100, 5);
+  hg_config->mutable_full_wf_qsum()->set_enable(true);
+  auto* lg_config = config.mutable_low_gain();
+  pre_fill_hist_config(lg_config, "pedestal", "low", 1.0, 200, 5, 1.0, 100, 5);
+  lg_config->mutable_full_wf_qsum()->set_enable(true);
 
   return config;
 }
@@ -273,38 +338,16 @@ SimpleChargeHistsParallelEventVisitor::phy_trig_default_config()
 {
   calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig config;
 
-  auto* hg = config.mutable_high_gain();
-  hg->set_enable_hists(true);
-
-  auto* hist = hg->mutable_full_wf_max();
-  hist->set_enable(true);
-  hist->set_dxval(10.0);
-  hist->set_xval_align(0.0);
-  hist->set_name("Physics events high-gain full-waveform maximum sample");
-  hist->set_xval_units("DC");
-  hist->set_weight_units("events");
-  hist->set_compactify_output(true);
-  hist->set_max_dense_bins_in_output(100);
-  hist->set_max_output_rebinning(10);
-
-  hist = hg->mutable_opt_win_qsum();
-  hist->CopyFrom(hg->full_wf_max());
-  hist->set_name("Physics events high-gain optimal window sum");
-
-  hist = hg->mutable_opt_win_index();
-  hist->set_enable(true);
-  hist->set_dxval(1.0);
-  hist->set_xval_align(0.5);
-  hist->set_name("Physics events high-gain optimal window index");
-  hist->set_xval_units("samples");
-  hist->set_weight_units("events");
-  hist->set_compactify_output(false);
-
-  auto* lg = config.mutable_low_gain();
-  lg->CopyFrom(config.high_gain());
-  lg->mutable_full_wf_max()->set_name("Physics events low-gain full-waveform maximum sample");
-  lg->mutable_opt_win_qsum()->set_name("Physics events low-gain optimal window sum");
-  lg->mutable_opt_win_index()->set_name("Physics events high-gain optimal window index");
+  auto* hg_config = config.mutable_high_gain();
+  pre_fill_hist_config(hg_config, "external-flasher", "high", 10.0, 100, 10, 1.0, 100, 5);
+  hg_config->mutable_full_wf_max()->set_enable(true);
+  hg_config->mutable_opt_win_qsum()->set_enable(true);
+  hg_config->mutable_opt_win_index()->set_enable(true);
+  auto* lg_config = config.mutable_low_gain();
+  pre_fill_hist_config(lg_config, "external-flasher", "low", 1.0, 100, 10, 1.0, 100, 5);
+  lg_config->mutable_full_wf_max()->set_enable(true);
+  lg_config->mutable_opt_win_qsum()->set_enable(true);
+  lg_config->mutable_opt_win_index()->set_enable(true);
 
   return config;
 }

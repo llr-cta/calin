@@ -44,7 +44,7 @@ message SingleGainSimpleChargeHistsConfig {
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig opt_win_qsum = 13 [
     (CFO).desc = "Configuration for optimal-window charge sum." ];
 
-    calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig opt_win_qtsum = 14 [
+  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig opt_win_qtsum = 14 [
     (CFO).desc = "Configuration for optimal-window amplitude-time sum." ];
 
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig opt_win_index = 15 [
