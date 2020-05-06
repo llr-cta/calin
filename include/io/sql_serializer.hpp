@@ -37,6 +37,7 @@
 #include <google/protobuf/descriptor.h>
 #include <io/sql_serializer.pb.h>
 #include <io/sql_statement.hpp>
+#include <util/log.hpp>
 
 namespace calin { namespace io { namespace sql_serializer {
 
@@ -79,6 +80,7 @@ struct SQLTableField
   bool is_key() const { return field_type!=POD; }
   bool is_inherited() const { return field_type==KEY_INHERITED or
         field_type==KEY_PARENT_OID; }
+  bool is_pod() const { return field_type==POD; }
 
   void set_data_null() { data_type = PT_NULL; data.p_void = nullptr; }
   void set_data_const_uint64(const uint64_t* p) {
@@ -194,7 +196,7 @@ struct SQLTable
 
 class SQLSerializer
 {
- public:
+public:
   SQLSerializer(bool write_sql_to_log = false):
       write_sql_to_log_(write_sql_to_log) { /* nothing to see here */ }
   virtual ~SQLSerializer();
@@ -217,16 +219,20 @@ class SQLSerializer
     const google::protobuf::Descriptor* d, const std::string& instance_desc = "");
 
   virtual bool create_or_extend_tables(const std::string& table_name,
-    const google::protobuf::Descriptor* d, const std::string& instance_desc = "");
+    const google::protobuf::Descriptor* d, const std::string& instance_desc = "",
+    bool allow_incompatible_type = false);
 
   virtual bool insert(const std::string& table_name, uint64_t& oid,
     const google::protobuf::Message* m, bool allow_incompatible_type = false);
 
-  bool insert(const std::string& table_name, const google::protobuf::Message* m)
+#ifndef SWIG
+  bool insert(const std::string& table_name, const google::protobuf::Message* m,
+    bool allow_incompatible_type = false)
   {
     uint64_t oid;
-    return insert(table_name, oid, m);
+    return insert(table_name, oid, m, allow_incompatible_type);
   }
+#endif
 
   virtual bool retrieve_by_oid(const std::string& table_name, uint64_t oid,
     google::protobuf::Message* m);
@@ -236,8 +242,19 @@ class SQLSerializer
   virtual SQLTable* count_entries_in_tree(const std::string& table_name,
       const google::protobuf::Descriptor* d);
 
-  virtual std::vector<uint64_t>
-  retrieve_all_oids(const std::string& table_name);
+  virtual std::vector<uint64_t> select_all_oids(const std::string& table_name);
+
+  std::vector<uint64_t> retrieve_all_oids(const std::string& table_name) {
+    // obsolete name for this function
+    calin::util::log::LOG(calin::util::log::INFO) << "Obsolete function, use \"select_all_oids\"";
+    return select_all_oids(table_name);
+  }
+
+  virtual std::vector<uint64_t> select_oids_matching(const std::string& table_name,
+    const google::protobuf::Message* value);
+
+  virtual std::vector<uint64_t> select_oids_in_range(const std::string& table_name,
+    const google::protobuf::Message* lower_bound, const google::protobuf::Message* upper_bound);
 
 protected:
 
@@ -291,6 +308,8 @@ protected:
   virtual std::string sql_select_where_oid_equals(const SQLTable* t);
   virtual std::string sql_count_entries(const std::string& table_name);
   virtual std::string sql_select_oids(const std::string& table_name);
+  virtual std::string sql_where_equals(const SQLTable* t);
+  virtual std::string sql_where_between_bounds(const SQLTable* t_lower, const SQLTable* t_upper);
 
   virtual calin::ix::io::sql_serializer::SQLTable* table_as_proto(const SQLTable* t);
   virtual calin::ix::io::sql_serializer::SQLTableField* field_as_proto(const SQLTableField* f);
@@ -314,14 +333,18 @@ protected:
   void set_const_data_pointers(SQLTable* t, const google::protobuf::Message* m,
     const uint64_t* parent_oid, const uint64_t* loop_id);
 
-  void bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
-    SQLStatement* stmt, bool bind_inherited_keys_only = false);
+  unsigned bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
+    SQLStatement* stmt, bool bind_inherited_keys_only = false,
+    unsigned first_field_index = 0);
 
   virtual bool r_exec_insert(SQLTable* t, const google::protobuf::Message* m,
     uint64_t& oid, uint64_t parent_oid, uint64_t loop_id, bool ignore_errors);
 
   virtual bool exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
     bool ignore_errors = false);
+
+  virtual std::vector<uint64_t> exec_select_oids(const std::string& sql,
+    const std::vector<SQLTable*>& where_clause_bind_fields = {});
 
   virtual std::string internal_tables_tablename();
   virtual std::string internal_fields_tablename();
