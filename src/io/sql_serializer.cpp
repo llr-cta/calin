@@ -1501,7 +1501,7 @@ std::string SQLSerializer::sql_where_between_bounds(
   }
 
   if(t_upper != nullptr) {
-    for ( auto f : t_lower->fields ) {
+    for ( auto f : t_upper->fields ) {
       if(f->db_field_present) {
         if(has_field) {
           sql << " AND\n";
