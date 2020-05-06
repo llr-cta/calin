@@ -62,3 +62,14 @@ message Stage1 {
   calin.ix.provenance.anthology.Anthology provenance_anthology = 1000 [
     (CFO).desc = "Provenance information registered at time of Stage1 results extraction." ];
 };
+
+message SelectByRunNumber {
+  uint32 run_number                                        = 1 [
+    (CFO).desc = "Run number." ];
+};
+
+message SelectByRunStartTime {
+  int64 run_start_time                                     = 1 [
+    (CFO).desc = "Approximate start date and time of run, possibly from NTP on "
+      "camera server, in nanoseconds pas the epoch.", (CFO).units = "ns" ];
+}
