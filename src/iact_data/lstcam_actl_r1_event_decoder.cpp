@@ -178,7 +178,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
 
     copy_single_gain_waveforms(calin_event->mutable_high_gain_image(),
       waveforms, pix_status, first_capacitor_id, drs_flag,
-      0x08, "high");
+      0x04, "high");
 
     waveforms += npix*nsample_;
     if(drs_flag) drs_flag += 4;
@@ -186,7 +186,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
 
     copy_single_gain_waveforms(calin_event->mutable_low_gain_image(),
       waveforms, pix_status, first_capacitor_id, drs_flag,
-      0x04, "low");
+      0x08, "low");
   }
 
   // ==========================================================================
@@ -610,7 +610,7 @@ copy_single_gain_waveforms(
         calin_waveforms->add_channel_index(calin_waveforms->channel_id_size());
         if((has_gain_mask == 0x04) or (has_gain_mask == 0x0C and cta_pixel_mask[ipix] == 0x04)) {
           calin_waveforms->add_channel_signal_type(calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN);
-        } else if ((has_gain_mask == 0x08) or (has_gain_mask == 0x0C and cta_pixel_mask[ipix] == 0x04)) {
+        } else if ((has_gain_mask == 0x08) or (has_gain_mask == 0x0C and cta_pixel_mask[ipix] == 0x08)) {
           calin_waveforms->add_channel_signal_type(calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN);
         } else {
           throw std::runtime_error("NectarCam_ACTL_R1_CameraEventDecoder::copy_single_gain_waveforms: Unhandled pixel mask: " +

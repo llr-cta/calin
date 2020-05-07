@@ -42,5 +42,7 @@
 %apply Eigen::VectorXi &OUTPUT { Eigen::VectorXi& count_out };
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& h };
 %newobject calin::diagnostics::waveform::WaveformSumParallelEventVisitor::mean_waveforms() const;
+%newobject calin::diagnostics::waveform::WaveformCodeHistParallelEventVisitor::waveform_code_hist() const;
+%newobject calin::diagnostics::waveform::WaveformCodeHistParallelEventVisitor::compact_waveform_code_hist() const;
 
 %include "diagnostics/waveform.hpp"

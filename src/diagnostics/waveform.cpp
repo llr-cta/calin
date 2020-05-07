@@ -338,6 +338,238 @@ void WaveformSumParallelEventVisitor::low_gain_event_count(Eigen::VectorXi& coun
   }
 }
 
+WaveformCodeHistParallelEventVisitor::
+WaveformCodeHistParallelEventVisitor(bool max_sample_only, uint16_t max_code):
+  iact_data::event_visitor::ParallelEventVisitor(),
+  max_sample_only_(max_sample_only), max_code_(max_code)
+{
+  // nothing to see here
+}
+
+WaveformCodeHistParallelEventVisitor::
+~WaveformCodeHistParallelEventVisitor()
+{
+  delete run_config_;
+  ::free(high_gain_code_hist_u32_);
+  ::free(high_gain_code_hist_u64_);
+  ::free(low_gain_code_hist_u32_);
+  ::free(low_gain_code_hist_u64_);
+}
+
+WaveformCodeHistParallelEventVisitor* WaveformCodeHistParallelEventVisitor::
+new_sub_visitor(std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+  calin::iact_data::event_visitor::ParallelEventVisitor*> antecedent_visitors)
+{
+  auto* sv = new WaveformCodeHistParallelEventVisitor(max_sample_only_,max_code_);
+  sv->parent_ = this;
+  return sv;
+}
+
+bool WaveformCodeHistParallelEventVisitor::visit_telescope_run(
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+{
+  delete(run_config_);
+
+  run_config_ = run_config->New();
+  run_config_->CopyFrom(*run_config);
+
+  has_dual_gain_ = (run_config->camera_layout().adc_gains() !=
+    calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN);
+  nchan_ = run_config->configured_channel_id_size();
+  nsamp_ = run_config->num_samples();
+
+  max_nsamp_in_u32_ = 0xFFFFFFFFU / nsamp_;
+  nsamp_in_u32_ = 0;
+
+  unsigned array_size = nchan_ * (unsigned(max_code_)+1);
+  calin::util::memory::safe_aligned_recalloc_and_fill(high_gain_code_hist_u32_, array_size);
+  calin::util::memory::safe_aligned_recalloc_and_fill(high_gain_code_hist_u64_, array_size);
+  if(has_dual_gain_) {
+    calin::util::memory::safe_aligned_recalloc_and_fill(low_gain_code_hist_u32_, array_size);
+    calin::util::memory::safe_aligned_recalloc_and_fill(low_gain_code_hist_u64_, array_size);
+  }
+  return true;
+}
+
+bool WaveformCodeHistParallelEventVisitor::leave_telescope_run()
+{
+  transfer_u32_to_u64();
+  return true;
+}
+
+void WaveformCodeHistParallelEventVisitor::analyze_wf_image(
+  const calin::ix::iact_data::telescope_event::Waveforms& wf)
+{
+  const uint16_t*__restrict__ data =
+    reinterpret_cast<const uint16_t*__restrict__>(wf.raw_samples_array().data());
+  uint32_t*__restrict__ hg_hist = high_gain_code_hist_u32_;
+  uint32_t*__restrict__ lg_hist = low_gain_code_hist_u32_;
+  unsigned ncode = max_code_+1;
+  for(unsigned ichan=0;ichan<nchan_;ichan++,hg_hist+=ncode,lg_hist+=ncode)
+  {
+    uint32_t*__restrict__ hist;
+    switch(wf.channel_signal_type(ichan)) {
+    case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
+    case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
+      hist = hg_hist;
+      break;
+    case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
+      hist = lg_hist;
+      break;
+    case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
+    default:
+      data += nsamp_;
+      continue; // skip this channel
+    }
+
+    if(max_sample_only_) {
+      uint16_t code = *data;
+      ++data;
+      for(unsigned isamp=1;isamp<nsamp_;++isamp,++data) {
+        code = std::max(code, *data);
+      }
+      if(code <= max_code_) {
+        ++hist[code];
+      }
+    } else {
+      for(unsigned isamp=0;isamp<nsamp_;++isamp,++data) {
+        uint16_t code = *data;
+        if(code <= max_code_) {
+          ++hist[code];
+        }
+      }
+    }
+  }
+}
+
+void WaveformCodeHistParallelEventVisitor::transfer_u32_to_u64()
+{
+  unsigned array_size = nchan_ * (unsigned(max_code_)+1);
+  for(unsigned iarray=0; iarray<array_size; ++iarray) {
+    high_gain_code_hist_u64_[iarray] += high_gain_code_hist_u32_[iarray];
+    high_gain_code_hist_u32_[iarray] = 0;
+  }
+  if(has_dual_gain_) {
+    for(unsigned iarray=0; iarray<array_size; ++iarray) {
+      low_gain_code_hist_u64_[iarray] += low_gain_code_hist_u32_[iarray];
+      low_gain_code_hist_u32_[iarray] = 0;
+    }
+  }
+  nsamp_in_u32_ = 0;
+}
+
+bool WaveformCodeHistParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
+  calin::ix::iact_data::telescope_event::TelescopeEvent* event)
+{
+  if(event->has_image()){
+    analyze_wf_image(event->image().camera_waveforms());
+  } else {
+    if(event->has_high_gain_image()){
+      analyze_wf_image(event->high_gain_image().camera_waveforms());
+    }
+    if(event->has_low_gain_image()){
+      analyze_wf_image(event->low_gain_image().camera_waveforms());
+    }
+  }
+  ++nsamp_in_u32_;
+  if(nsamp_in_u32_ == max_nsamp_in_u32_) {
+    transfer_u32_to_u64();
+  }
+
+  return true;
+}
+
+bool WaveformCodeHistParallelEventVisitor::merge_results()
+{
+  if(parent_) {
+    unsigned array_size = nchan_ * (unsigned(max_code_)+1);
+    for(unsigned i=0; i<array_size; ++i) {
+      parent_->high_gain_code_hist_u64_[i] += high_gain_code_hist_u64_[i];
+    }
+    if(has_dual_gain_) {
+      for(unsigned i=0; i<array_size; ++i) {
+        parent_->low_gain_code_hist_u64_[i] += low_gain_code_hist_u64_[i];
+      }
+    }
+  }
+  return true;
+}
+
+calin::ix::diagnostics::waveform::WaveformCodeHist*
+WaveformCodeHistParallelEventVisitor::waveform_code_hist() const
+{
+  unsigned ncode = max_code_+1;
+  auto* h = new calin::ix::diagnostics::waveform::WaveformCodeHist();
+  for(unsigned ichan=0; ichan<nchan_; ++ichan) {
+    auto* ch = h->add_channel();
+    ch->set_channel_id(run_config_->configured_channel_id(ichan));
+    unsigned nzero=0;
+    for(unsigned icode=0;icode<ncode; ++icode) {
+      // This algorithm suppresses trailing zeros
+      uint64_t count = high_gain_code_hist_u64_[ichan*ncode + icode];
+      if(count == 0)++nzero;
+      else {
+        while(nzero) {
+          ch->add_high_gain_code_count(0);
+          --nzero;
+        }
+        ch->add_high_gain_code_count(count);
+      }
+    }
+    if(low_gain_code_hist_u64_) {
+      nzero=0;
+      for(unsigned icode=0;icode<ncode; ++icode) {
+        uint64_t count = low_gain_code_hist_u64_[ichan*ncode + icode];
+        if(count == 0)++nzero;
+        else {
+          while(nzero) {
+            ch->add_low_gain_code_count(0);
+            --nzero;
+          }
+          ch->add_low_gain_code_count(count);
+        }
+      }
+    }
+  }
+  return h;
+}
+
+calin::ix::diagnostics::waveform::CompactWaveformCodeHist*
+WaveformCodeHistParallelEventVisitor::compact_waveform_code_hist() const
+{
+  unsigned ncode = max_code_+1;
+  auto* h = new calin::ix::diagnostics::waveform::CompactWaveformCodeHist();
+  for(unsigned ichan=0; ichan<nchan_; ++ichan) {
+    auto* ch = h->add_channel();
+    ch->set_channel_id(run_config_->configured_channel_id(ichan));
+
+    calin::math::histogram::Histogram1D hist(1.0);
+    for(unsigned icode=0;icode<ncode; ++icode) {
+      uint64_t count = high_gain_code_hist_u64_[ichan*ncode + icode];
+      if(count != 0) {
+        hist.insert(double(icode), double(count));
+      }
+    }
+    auto* hist_data = hist.dump_as_proto();
+    calin::math::histogram::sparsify(*hist_data, ch->mutable_high_gain_code_hist());
+    delete hist_data;
+
+    if(low_gain_code_hist_u64_) {
+      hist.clear();
+      for(unsigned icode=0;icode<ncode; ++icode) {
+        uint64_t count = low_gain_code_hist_u64_[ichan*ncode + icode];
+        if(count != 0) {
+          hist.insert(double(icode), double(count));
+        }
+      }
+      hist_data = hist.dump_as_proto();
+      calin::math::histogram::sparsify(*hist_data, ch->mutable_low_gain_code_hist());
+      delete hist_data;
+    }
+  }
+  return h;
+}
 
 
 WaveformStatsParallelVisitor::WaveformStatsParallelVisitor(

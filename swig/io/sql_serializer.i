@@ -54,9 +54,12 @@
 %apply uint64_t &OUTPUT { uint64_t& oid };
 
 %newobject calin::io::sql_serializer::SQLSerializer::
-  make_sqltable_tree(const std::string& table_name, const google::protobuf::Descriptor* d);
+  make_sqltable_tree(const std::string& table_name, const google::protobuf::Descriptor* d,
+  const std::string& instance_desc = "", bool propagate_keys = true);
 %newobject calin::io::sql_serializer::SQLSerializer::
   sqltable_tree_as_proto(const SQLTable* t) const;
+%newobject calin::io::sql_serializer::SQLSerializer::
+  count_entries_in_tree(const std::string& table_name, const google::protobuf::Descriptor* d);
 
 /* %include "io/sql_statement.hpp" */
 %include "io/sql_serializer.hpp"

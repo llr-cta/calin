@@ -92,11 +92,57 @@ make_sqltable_tree(const std::string& table_name,
   return t;
 }
 
-bool SQLSerializer::create_or_extend_tables(const std::string& table_name,
+void SQLSerializer::register_externally_created_table(const std::string& table_name,
   const google::protobuf::Descriptor* d, const std::string& instance_desc)
 {
   std::unique_ptr<SQLTable> t { make_sqltable_tree(table_name, d, instance_desc) };
-  return do_create_or_extend_tables(t.get());
+
+  t->iterate_over_tables([this](SQLTable* itable) {
+    if(this->db_tables_.find(itable->table_name) == this->db_tables_.end()) {
+      auto* pt = table_as_proto(itable);
+      db_tables_[pt->table_name()] = pt;
+      for(auto ifield : itable->fields) {
+        auto* pf = field_as_proto(ifield);
+        std::string fqdn = sub_name(pf->table_name(), pf->field_name());
+        db_table_fields_[fqdn] = pf;
+      }
+    } else {
+      for(auto ifield : itable->fields) {
+        std::string fqdn = sub_name(itable->table_name, ifield->field_name);
+        if(this->db_table_fields_.find(fqdn) == this->db_table_fields_.end()) {
+          auto* pf = field_as_proto(ifield);
+          db_table_fields_[fqdn] = pf;
+        }
+      }
+    }
+  });
+}
+
+bool SQLSerializer::create_or_extend_tables(const std::string& table_name,
+  const google::protobuf::Descriptor* d, const std::string& instance_desc,
+  bool allow_incompatible_type)
+{
+  std::unique_ptr<SQLTable> t { make_sqltable_tree(table_name, d, instance_desc) };
+
+  if(not t->db_all_tree_fields_present)
+  {
+    if(not allow_incompatible_type and db_tables_.count(table_name) and
+        db_tables_.at(table_name)->proto_message_type() != d->full_name()) {
+      throw std::runtime_error("SQLSerializer::create_or_extend_tables: extending type "
+        + d->full_name() + " onto table " + table_name + " (with native type "
+        + db_tables_.at(table_name)->proto_message_type()
+        + ") disallowed. Retry with \"allow_incompatible_type=true\" to allow.");
+    }
+
+    for(auto& it : schema_[table_name]) {
+      delete it.second;
+      it.second = nullptr;
+    }
+
+    return(do_create_or_extend_tables(t.get()));
+  }
+
+  return true;
 }
 
 bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
@@ -180,6 +226,8 @@ bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
 bool SQLSerializer::retrieve_by_oid(const std::string& table_name, uint64_t oid,
   google::protobuf::Message* m)
 {
+  m->Clear();
+
   const google::protobuf::Descriptor* d = m->GetDescriptor();
   SQLTable* t = schema_[table_name][d];
   if(t == nullptr) {
@@ -248,6 +296,7 @@ uint64_t SQLSerializer::count_entries_in_table(const std::string& table_name)
     throw std::runtime_error("Could not prepare SQL count statement");
   }
 
+  if(write_sql_to_log_)LOG(INFO) << stmt->bound_sql();
   auto status = stmt->step();
   if(status == SQLStatement::ERROR) {
     LOG(ERROR) << "SQL error executing COUNT : "
@@ -275,10 +324,98 @@ uint64_t SQLSerializer::count_entries_in_table(const std::string& table_name)
   return entries;
 }
 
-std::vector<uint64_t> SQLSerializer::retrieve_all_oids(const std::string& table_name)
+SQLTable* SQLSerializer::count_entries_in_tree(const std::string& table_name,
+  const google::protobuf::Descriptor* d)
 {
-  std::unique_ptr<SQLStatement> stmt {
-    prepare_statement(sql_select_oids(table_name)) };
+  SQLTable* t = make_sqltable_tree(table_name, d);
+  begin_transaction();
+  try {
+    t->iterate_over_tables([this](SQLTable* it) {
+      if(db_tables_.count(it->table_name)) {
+        it->num_rows_in_table = this->count_entries_in_table(it->table_name);
+        it->num_rows_in_subtree = it->num_rows_in_table;
+      }
+    });
+  } catch(...) {
+    rollback_transaction();
+    delete t;
+    throw;
+  }
+  commit_transaction();
+  t->reverse_iterate_over_tables([](SQLTable* it) {
+    if(it->parent_table) {
+      it->parent_table->num_rows_in_subtree += it->num_rows_in_subtree;
+    }
+  });
+  return t;
+}
+
+std::vector<uint64_t> SQLSerializer::select_all_oids(const std::string& table_name)
+{
+  std::string sql = sql_select_oids(table_name);
+  return exec_select_oids(sql);
+}
+
+namespace {
+  void validate_where_subtree(const SQLTable* t) {
+    if(not t->sub_tables.empty()) {
+      throw std::runtime_error("Where clause message must not have any sub-trees");
+    }
+    for(const auto* f : t->fields) {
+      if(not f->is_pod() or f->oneof_d != nullptr)
+        throw std::runtime_error("Where clause message fields must all be plain-old-data (& no one-ofs): " + f->field_name);
+    }
+  }
+} // anonymous namespace
+
+std::vector<uint64_t> SQLSerializer::select_oids_matching(const std::string& table_name,
+  const google::protobuf::Message* value)
+{
+  std::unique_ptr<SQLTable> t;
+  std::vector<SQLTable*> where_clause_bind_fields;
+  std::string sql = sql_select_oids(table_name);
+  if(value != nullptr) {
+    t.reset(make_sqltable_tree(table_name, value->GetDescriptor()));
+    validate_where_subtree(t.get());
+    set_const_data_pointers(t.get(), value, /* parent_oid=*/ nullptr, /* loop_id= */ nullptr);
+    sql += " ";
+    sql += sql_where_equals(t.get());
+    where_clause_bind_fields.push_back(t.get());
+  }
+  return exec_select_oids(sql, where_clause_bind_fields);
+}
+
+std::vector<uint64_t> SQLSerializer::select_oids_in_range(const std::string& table_name,
+  const google::protobuf::Message* lower_bound, const google::protobuf::Message* upper_bound)
+{
+  std::unique_ptr<SQLTable> t_lower;
+  std::unique_ptr<SQLTable> t_upper;
+  std::vector<SQLTable*> where_clause_bind_fields;
+
+  std::string sql = sql_select_oids(table_name);
+  if(lower_bound != nullptr or upper_bound != nullptr) {
+    if(lower_bound != nullptr) {
+      t_lower.reset(make_sqltable_tree(table_name, lower_bound->GetDescriptor()));
+      validate_where_subtree(t_lower.get());
+      set_const_data_pointers(t_lower.get(), lower_bound, /* parent_oid=*/ nullptr, /* loop_id= */ nullptr);
+      where_clause_bind_fields.push_back(t_lower.get());
+    }
+    if(upper_bound != nullptr) {
+      t_upper.reset(make_sqltable_tree(table_name, upper_bound->GetDescriptor()));
+      validate_where_subtree(t_upper.get());
+      set_const_data_pointers(t_upper.get(), upper_bound, /* parent_oid=*/ nullptr, /* loop_id= */ nullptr);
+      where_clause_bind_fields.push_back(t_upper.get());
+    }
+    sql += " ";
+    sql += sql_where_between_bounds(t_lower.get(), t_upper.get());
+  }
+  return exec_select_oids(sql, where_clause_bind_fields);
+}
+
+std::vector<uint64_t> SQLSerializer::exec_select_oids(const std::string& sql,
+  const std::vector<SQLTable*>& where_clause_bind_fields)
+{
+  std::unique_ptr<SQLStatement> stmt { prepare_statement(sql) };
 
   if(!stmt->is_initialized()) {
     LOG(ERROR) << "SQL error preparing SELECT OID : "
@@ -287,8 +424,15 @@ std::vector<uint64_t> SQLSerializer::retrieve_all_oids(const std::string& table_
     throw std::runtime_error("Could not prepare SQL select OID statement");
   }
 
+  unsigned bind_ifield = 0;
+  for(auto* t : where_clause_bind_fields) {
+    bind_ifield = bind_fields_from_data_pointers(t, /* loop_id= */ 0, stmt.get(),
+      /* bind_inherited_keys_only= */ false, /* first_field_index= */ bind_ifield);
+  }
+
   std::vector<uint64_t> oids;
   SQLStatement::StepStatus status = SQLStatement::ERROR;
+  if(write_sql_to_log_)LOG(INFO) << stmt->bound_sql();
   for(status = stmt->step(); status == SQLStatement::OK_HAS_DATA;
     status = stmt->step())
   {
@@ -723,10 +867,9 @@ void SQLSerializer::set_const_data_pointers(SQLTable* t, const google::protobuf:
   }
 }
 
-void SQLSerializer::bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
-  SQLStatement* stmt, bool bind_inherited_keys_only)
+unsigned SQLSerializer::bind_fields_from_data_pointers(const SQLTable* t, uint64_t loop_id,
+  SQLStatement* stmt, bool bind_inherited_keys_only, unsigned ifield)
 {
-  unsigned ifield = 0;
   for(auto f : t->fields)
   {
     if(not f->db_field_present) {
@@ -759,6 +902,7 @@ void SQLSerializer::bind_fields_from_data_pointers(const SQLTable* t, uint64_t l
       ifield++;
     }
   }
+  return ifield;
 }
 
 bool SQLSerializer::r_exec_insert(SQLTable* t, const google::protobuf::Message* m,
@@ -892,6 +1036,9 @@ exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
 
     ++row_count;
 
+    // Protect against no-data queries in root table
+    if(ifield == t->fields.end()) goto next_step;
+
     if((*ifield)->is_root_oid)++ifield;
 
     while(icol<step_loop_index.size()) {
@@ -942,7 +1089,7 @@ exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
       // In this case we are talkling about a repeated field
       auto* r = m_parent->GetReflection();
       if(t->parent_field_d->type()==FieldDescriptor::TYPE_MESSAGE) {
-        if(r->FieldSize(*m_parent, t->parent_field_d) <= loop_id)
+        if(r->FieldSize(*m_parent, t->parent_field_d) <= int(loop_id))
           r->AddMessage(m_parent, t->parent_field_d);
         m = r->MutableRepeatedMessage(m_parent, t->parent_field_d, loop_id);
       } else {
@@ -1283,7 +1430,7 @@ std::string SQLSerializer::sql_select_where_oid_equals(const SQLTable* t)
       if(has_field) {
         sql << ",\n";
       }
-      sql << "  " << sql_field_name(f->field_name);
+      sql << "  " << sql_select_field_spec(f);
       has_field = true;
     }
   }
@@ -1293,7 +1440,7 @@ std::string SQLSerializer::sql_select_where_oid_equals(const SQLTable* t)
     sql << "NULL\n";
   }
   sql << "FROM " << sql_table_name(t->table_name) << " WHERE "
-    << sql_field_name(oid_name) << " == ?";
+    << sql_field_name(oid_name) << " = ?";
   return sql.str();
 }
 
@@ -1309,6 +1456,62 @@ std::string SQLSerializer::sql_select_oids(const std::string& table_name)
   std::ostringstream sql;
   sql << "SELECT " << sql_field_name(sql_oid_column_name()) << " FROM "
     << sql_table_name(table_name);
+  return sql.str();
+}
+
+std::string SQLSerializer::sql_where_equals(const SQLTable* t)
+{
+  std::ostringstream sql;
+  sql << "WHERE\n";
+
+  bool has_field = false;
+  for ( auto f : t->fields ) {
+    if(f->db_field_present) {
+      if(has_field) {
+        sql << " AND\n";
+      }
+      sql << "  " << sql_field_name(f->field_name) << "=" << sql_insert_field_spec(f);
+      has_field = true;
+    }
+  }
+
+  return sql.str();
+}
+
+std::string SQLSerializer::sql_where_between_bounds(
+  const SQLTable* t_lower, const SQLTable* t_upper)
+{
+  if(t_lower == nullptr and t_upper == nullptr)return {};
+
+  std::ostringstream sql;
+  sql << "WHERE\n";
+
+  bool has_field = false;
+
+  if(t_lower != nullptr) {
+    for ( auto f : t_lower->fields ) {
+      if(f->db_field_present) {
+        if(has_field) {
+          sql << " AND\n";
+        }
+        sql << "  " << sql_field_name(f->field_name) << ">=" << sql_insert_field_spec(f);
+        has_field = true;
+      }
+    }
+  }
+
+  if(t_upper != nullptr) {
+    for ( auto f : t_upper->fields ) {
+      if(f->db_field_present) {
+        if(has_field) {
+          sql << " AND\n";
+        }
+        sql << "  " << sql_field_name(f->field_name) << "<=" << sql_insert_field_spec(f);
+        has_field = true;
+      }
+    }
+  }
+
   return sql.str();
 }
 
@@ -1351,7 +1554,7 @@ void SQLSerializer::retrieve_db_tables_and_fields()
   std::vector<uint64_t> oids;
 
   begin_transaction();
-  oids = retrieve_all_oids(internal_tables_tablename());
+  oids = select_all_oids(internal_tables_tablename());
   for(auto oid : oids) {
     auto* proto_table = new calin::ix::io::sql_serializer::SQLTable;
     if(retrieve_by_oid(internal_tables_tablename(), oid, proto_table)) {
@@ -1359,7 +1562,7 @@ void SQLSerializer::retrieve_db_tables_and_fields()
     }
   }
 
-  oids = retrieve_all_oids(internal_fields_tablename());
+  oids = select_all_oids(internal_fields_tablename());
   for(auto oid : oids) {
     auto* proto_field = new calin::ix::io::sql_serializer::SQLTableField;
     if(retrieve_by_oid(internal_fields_tablename(), oid, proto_field)) {

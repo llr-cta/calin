@@ -37,6 +37,18 @@
 
 %import "math/histogram.pb.i"
 
-%newobject calin::math::histogram::rebin;
+%newobject calin::math::histogram::BasicHistogram1D::dump_as_proto() const;
+%newobject calin::math::histogram::BasicHistogram1D::create_from_proto(
+  calin::ix::math::histogram::Histogram1DData& data);
+%newobject calin::math::histogram::BasicHistogram1D::serialize() const;
+%newobject calin::math::histogram::BasicHistogram1D::dump_as_compactified_proto(
+  int max_dense_bins_in_output, int max_output_rebinning) const;
+
+%newobject calin::math::histogram::new_histogram(const calin::ix::math::histogram::AccumulatedAndSerializedHistogram1DConfig& config);
+%newobject calin::math::histogram::compactify(const calin::ix::math::histogram::Histogram1DData& original_hist,
+  int max_dense_bins_in_output, int max_output_rebinning);
+%newobject calin::math::histogram::rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, unsigned rebinning_factor);
+%newobject calin::math::histogram::sparsify(const calin::ix::math::histogram::Histogram1DData& original_hist);
+%newobject calin::math::histogram::densify(const calin::ix::math::histogram::Histogram1DData& original_hist);
 
 %include "math/histogram.hpp"

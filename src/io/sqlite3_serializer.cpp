@@ -50,13 +50,14 @@ SQLite3Serializer(const std::string& filename_in, OpenMode open_mode,
 
   int flags { 0 };
   switch(open_mode) {
-    case EXISTING_OR_NEW_RW:
-    case TRUNCATE_RW:
-      flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE; break;
-    case EXISTING_RW:
-      flags = SQLITE_OPEN_READWRITE; break;
-    case READ_ONLY:
-      flags = SQLITE_OPEN_READONLY; break;
+  case EXISTING_OR_NEW_RW:
+  case TRUNCATE_RW:
+    flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE; break;
+  case EXISTING_RW:
+    flags = SQLITE_OPEN_READWRITE; break;
+  case READ_ONLY:
+  case READ_ONLY_NON_CALIN_DB:
+    flags = SQLITE_OPEN_READONLY; break;
   }
   if(sqlite3_open_v2(filename.c_str(), &db_, flags, NULL) != SQLITE_OK)
     throw std::runtime_error("Could not open: " + filename_in + "\n" +
@@ -70,6 +71,7 @@ SQLite3Serializer(const std::string& filename_in, OpenMode open_mode,
   case TRUNCATE_RW:
     access = calin::ix::provenance::chronicle::AT_TRUNCATE; break;
   case READ_ONLY:
+  case READ_ONLY_NON_CALIN_DB:
   default:
     access = calin::ix::provenance::chronicle::AT_READ; break;
   }
@@ -78,7 +80,9 @@ SQLite3Serializer(const std::string& filename_in, OpenMode open_mode,
     __PRETTY_FUNCTION__);
 
   if(exists) {
-    retrieve_db_tables_and_fields();
+    if(open_mode != READ_ONLY_NON_CALIN_DB) {
+      retrieve_db_tables_and_fields();
+    }
   } else {
     create_db_tables_and_fields();
   }
@@ -142,7 +146,6 @@ bool SQLite3Serializer::rollback_transaction()
   return true;
 }
 
-#if 0
 std::string SQLite3Serializer::sql_select_field_spec(const SQLTableField* f)
 {
   if(f->field_d) {
@@ -160,7 +163,6 @@ std::string SQLite3Serializer::sql_select_field_spec(const SQLTableField* f)
   }
   return sql_field_name(f->field_name);
 }
-#endif
 
 std::string SQLite3Serializer::sql_insert_field_spec(const SQLTableField* f)
 {

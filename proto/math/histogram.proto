@@ -30,24 +30,58 @@ import "calin.proto";
 package calin.ix.math.histogram;
 
 message Histogram1DConfig {
-  double dxval                          = 1
+  double dxval                          = 10
     [(CFO).desc = "Bin width", (CFO).units = "xval-units" ];
-  double xval_align                     = 2
+  double xval_align                     = 11
     [(CFO).desc = "Bin alignment, such that (x0/dx mod 1)=(xalign mod 1), where x0 is "
       "the x-value at the left hand side of the first (or any) bin.",
      (CFO).units = "bins" ];
-  bool limited                          = 5
+  bool limited                          = 12
     [(CFO).desc = "Limit the histogram range" ];
-  double xval_limit_lo                  = 6
+  double xval_limit_lo                  = 13
     [(CFO).desc = "Lower limit on X value", (CFO).units = "xval-units" ];
-  double xval_limit_hi                  = 7
+  double xval_limit_hi                  = 14
     [(CFO).desc = "Upper limit on X value", (CFO).units = "xval-units" ];
-  string name                           = 13
+  string name                           = 15
     [(CFO).desc = "Name of the histogram"];
-  string xval_units                     = 14
+  string xval_units                     = 16
     [(CFO).desc = "X-value units"];
-  string weight_units                   = 15
+  string weight_units                   = 17
     [(CFO).desc = "Weight units"];
+};
+
+message AccumulatedAndSerializedHistogram1DConfig {
+  bool enable                           = 1
+    [(CFO).desc = "Enable accumulation data into this histogram." ];
+  double dxval                          = 10
+    [(CFO).desc = "Bin width", (CFO).units = "xval-units" ];
+  double xval_align                     = 11
+    [(CFO).desc = "Bin alignment, such that (x0/dx mod 1)=(xalign mod 1), where x0 is "
+      "the x-value at the left hand side of the first (or any) bin.",
+     (CFO).units = "bins" ];
+  bool limited                          = 12
+    [(CFO).desc = "Limit the histogram range" ];
+  double xval_limit_lo                  = 13
+    [(CFO).desc = "Lower limit on X value", (CFO).units = "xval-units" ];
+  double xval_limit_hi                  = 14
+    [(CFO).desc = "Upper limit on X value", (CFO).units = "xval-units" ];
+  string name                           = 15
+    [(CFO).desc = "Name of the histogram"];
+  string xval_units                     = 16
+    [(CFO).desc = "X-value units"];
+  string weight_units                   = 17
+    [(CFO).desc = "Weight units"];
+  bool compactify_output                = 20
+    [(CFO).desc = "Sparsify histogram before writing, making them more compact "
+      "in case of outliers, without decreasing resolution. and possibly rebin "
+      "to a lower resolution depending on the \"max_dense_bins_in_output\" "
+      "and \"max_output_rebinning\" settings."];
+  int32 max_dense_bins_in_output        = 21
+    [(CFO).desc = "Maximum number of dense bins in output before rebinning is "
+      "triggered. Zero or negative implies rebinning never triggered."];
+  int32 max_output_rebinning            = 22
+    [(CFO).desc = "Maximum rebinning factor of output. A value less than 2 "
+      "disables rebinning."];
 };
 
 message Histogram1DData {
@@ -66,35 +100,37 @@ message Histogram1DData {
     [(CFO).desc = "X-value of LHS of first bin", (CFO).units = "xval-units" ];
   repeated double bins                  = 4
     [(CFO).desc = "Weights for the bins", (CFO).units = "weight-units", (CFO).is_counter = true ];
-  bool limited                          = 5
+  map<int32, double> sparse_bins        = 5
+    [(CFO).desc = "Weights for the sparsely stored bins", (CFO).units = "weight-units" ];
+  bool limited                          = 6
     [(CFO).desc = "Limit the histogram range" ];
-  double xval_limit_lo                  = 6
+  double xval_limit_lo                  = 7
     [(CFO).desc = "Lower limit on X value", (CFO).units = "xval-units" ];
-  double xval_limit_hi                  = 7
+  double xval_limit_hi                  = 8
     [(CFO).desc = "Upper limit on X value", (CFO).units = "xval-units" ];
-  double overflow_lo                    = 8
+  double overflow_lo                    = 9
     [(CFO).desc = "Total weight that overflows lower limit",
      (CFO).units = "weight-units", (CFO).is_counter = true ];
-  double overflow_hi                    = 9
+  double overflow_hi                    = 10
     [(CFO).desc = "Total weight that overflows upper limit",
      (CFO).units = "weight-units", (CFO).is_counter = true ];
-  double sum_w                          = 10
+  double sum_w                          = 11
     [(CFO).desc = "Total weight in histogram",
      (CFO).units = "weight-units", (CFO).is_counter = true ];
-  double sum_wx                         = 11
+  double sum_wx                         = 12
     [(CFO).desc = "Total x-val times weight in histogram",
      (CFO).units = "weight-units xval-units", (CFO).is_counter = true ];
-  double sum_wxx                        = 12
+  double sum_wxx                        = 13
     [(CFO).desc = "Total x-val squared times weight in histogram",
      (CFO).units = "weight-units xval-units^2", (CFO).is_counter = true ];
-  double xval_min                       = 13
+  double xval_min                       = 14
     [(CFO).desc = "Smallest X value in histogram", (CFO).units = "xval-units" ];
-  double xval_max                       = 14
+  double xval_max                       = 15
    [(CFO).desc = "Largest X value in histogram", (CFO).units = "xval-units" ];
-  string name                           = 15
+  string name                           = 16
     [(CFO).desc = "Name of the histogram"];
-  string xval_units                     = 16
+  string xval_units                     = 17
     [(CFO).desc = "X-value units"];
-  string weight_units                   = 17
+  string weight_units                   = 18
     [(CFO).desc = "Weight units"];
 };

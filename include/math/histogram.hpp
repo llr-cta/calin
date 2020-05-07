@@ -87,6 +87,11 @@ public:
       limited_{config.limited()}, xval_limit_lo_{config.xval_limit_lo()},
       xval_limit_hi_{config.xval_limit_hi()}, xval_units_{config.xval_units()}
     { /* nothing to see here */ }
+  BinnedData1D(const calin::ix::math::histogram::AccumulatedAndSerializedHistogram1DConfig& config):
+      dxval_{config.dxval()}, dxval_inv_{1.0/dxval_}, xval_align_{config.xval_align()},
+      limited_{config.limited()}, xval_limit_lo_{config.xval_limit_lo()},
+      xval_limit_hi_{config.xval_limit_hi()}, xval_units_{config.xval_units()}
+    { /* nothing to see here */ }
 
   BinnedData1D(const BinnedData1D& o) = default;
 #ifndef SWIG
@@ -471,6 +476,13 @@ template<typename Acc> class BasicHistogram1D:
       Base{config}, name_{config.name()}, weight_units_{config.weight_units()}
     { /* nothing to see here */ }
 
+  BasicHistogram1D(const calin::ix::math::histogram::AccumulatedAndSerializedHistogram1DConfig& config):
+      Base{config}, name_{config.name()}, weight_units_{config.weight_units()},
+      compatify_on_serialize_{config.compactify_output()},
+      serialize_max_dense_bins_in_output_ { config.max_dense_bins_in_output() },
+      serialize_max_output_rebinning_ { config.max_output_rebinning() }
+    { /* nothing to see here */ }
+
   BasicHistogram1D(const calin::ix::math::histogram::Histogram1DData& data);
 
   BasicHistogram1D(const BasicHistogram1D& o) = default;
@@ -478,10 +490,30 @@ template<typename Acc> class BasicHistogram1D:
   BasicHistogram1D& operator=(const BasicHistogram1D& o) = default;
 #endif
 
+#ifndef SWIG
   // Get all data as protobuf message
   calin::ix::math::histogram::Histogram1DData*
-    dump_as_proto(calin::ix::math::histogram::Histogram1DData* data = nullptr)
-      const;
+  dump_as_proto(calin::ix::math::histogram::Histogram1DData* data = nullptr)const;
+#else
+  calin::ix::math::histogram::Histogram1DData* dump_as_proto() const;
+  void dump_as_proto(calin::ix::math::histogram::Histogram1DData* data) const;
+#endif
+
+#ifndef SWIG
+  calin::ix::math::histogram::Histogram1DData*
+  dump_as_compactified_proto(int max_dense_bins_in_output, int max_output_rebinning,
+    calin::ix::math::histogram::Histogram1DData* data = nullptr) const;
+  calin::ix::math::histogram::Histogram1DData*
+  serialize(calin::ix::math::histogram::Histogram1DData* data = nullptr) const;
+#else
+  calin::ix::math::histogram::Histogram1DData*
+  dump_as_compactified_proto(int max_dense_bins_in_output, int max_output_rebinning);
+  void dump_as_compactified_proto(int max_dense_bins_in_output, int max_output_rebinning,
+    calin::ix::math::histogram::Histogram1DData* data) const;
+
+  calin::ix::math::histogram::Histogram1DData* serialize() const;
+  void serialize(calin::ix::math::histogram::Histogram1DData* data) const;
+#endif
 
   static BasicHistogram1D*
     create_from_proto(calin::ix::math::histogram::Histogram1DData& data) {
@@ -501,6 +533,8 @@ template<typename Acc> class BasicHistogram1D:
 
   // Insert x value weight into histogram
   inline bool insert(const double x, const double w = 1.0);
+
+  bool insert_hist(const BasicHistogram1D& h);
 
   unsigned insert_vec(const std::vector<double>& x, const double w = 1.0)
   {
@@ -603,6 +637,9 @@ template<typename Acc> class BasicHistogram1D:
   double max_x_ = -std::numeric_limits<double>::infinity();
   std::string name_;
   std::string weight_units_;
+  bool compatify_on_serialize_ = true;
+  int serialize_max_dense_bins_in_output_ = 0;
+  int serialize_max_output_rebinning_ = 1;
 };
 
 template<typename Acc> bool BasicHistogram1D<Acc>::
@@ -625,6 +662,38 @@ insert(const double x, const double w)
   return true;
 }
 
+template<typename Acc> bool BasicHistogram1D<Acc>::insert_hist(const BasicHistogram1D& h)
+{
+  if((h.dxval_ != this->dxval_) or (h.xval_align_ != this->xval_align_)
+      or (h.limited_ != this->limited_)
+      or (h.xval_limit_lo_ != this->xval_limit_lo_)
+      or (h.xval_limit_hi_ != this->xval_limit_hi_)) {
+    return false;
+  }
+  if(this->bins_.empty()) {
+    this->xval0_ = h.xval0_;
+  }
+  while(h.xval0_ < this->xval0_) {
+    this->bins_.emplace_front();
+    this->xval0_ -= this->dxval_;
+  }
+  int offset = int(round((h.xval0_ - this->xval0_)*this->dxval_inv_));
+  while(h.bins_.size()+offset > this->bins_.size()) {
+    this->bins_.emplace_back();
+  }
+  for(unsigned ibin=0 ; ibin<h.bins_.size(); ibin++) {
+    this->bins_.at(ibin + offset).accumulate(h.bins_[ibin]);
+  }
+  this->overflow_lo_.accumulate(h.overflow_lo_);
+  this->overflow_hi_.accumulate(h.overflow_hi_);
+  this->sum_w_.accumulate(h.sum_w_);
+  this->sum_wx_.accumulate(h.sum_wx_);
+  this->sum_wxx_.accumulate(h.sum_wxx_);
+  this->min_x_ = std::min(min_x_, h.min_x_);
+  this->max_x_ = std::max(max_x_, h.max_x_);
+  return true;
+}
+
 template<typename Acc>
 BasicHistogram1D<Acc>::
 BasicHistogram1D(const calin::ix::math::histogram::Histogram1DData& data):
@@ -636,7 +705,20 @@ BasicHistogram1D(const calin::ix::math::histogram::Histogram1DData& data):
     min_x_{data.xval_min()}, max_x_{data.xval_max()},
     name_{data.name()}, weight_units_{data.weight_units()}
 {
-  // nothing to see here
+  int offset = 0;
+  for(auto isparse: data.sparse_bins()) {
+    int ibin = isparse.first - offset;
+    while(ibin < 0) {
+      this->bins_.emplace_front();
+      ++ibin;
+      --offset;
+    }
+    while(ibin >= int(this->bins_.size())) {
+      this->bins_.emplace_back();
+    }
+    this->bins_[ibin].accumulate(isparse.second);
+  }
+  this->xval0_ += offset*this->dxval_;
 }
 
 template<typename Acc> calin::ix::math::histogram::Histogram1DData*
@@ -644,10 +726,10 @@ BasicHistogram1D<Acc>::
 dump_as_proto(calin::ix::math::histogram::Histogram1DData* data) const
 {
   if(data == nullptr)data = new calin::ix::math::histogram::Histogram1DData {};
+  else data->Clear();
   data->set_dxval(this->dxval_);
   data->set_xval_align(this->xval_align_);
   data->set_xval0(this->xval0_);
-  data->clear_bins();
   for(const auto& iacc : this->bins_)data->add_bins(iacc.total());
   data->set_limited(this->limited_);
   data->set_xval_limit_lo(this->xval_limit_lo_);
@@ -927,7 +1009,76 @@ class BinnedCDF: public BinnedData1D<double>
 CALIN_TYPEALIAS(SimpleHist, BasicHistogram1D<DefaultAccumulator>);
 CALIN_TYPEALIAS(Histogram1D, BasicHistogram1D<DefaultAccumulator>);
 
+Histogram1D* new_histogram(
+  const calin::ix::math::histogram::AccumulatedAndSerializedHistogram1DConfig& config);
+
+#ifndef SWIG
+calin::ix::math::histogram::Histogram1DData* compactify(
+  const calin::ix::math::histogram::Histogram1DData& original_hist,
+  int max_dense_bins_in_output, int max_output_rebinning,
+  calin::ix::math::histogram::Histogram1DData* compactified_hist = nullptr);
+#else
+calin::ix::math::histogram::Histogram1DData* compactify(
+  const calin::ix::math::histogram::Histogram1DData& original_hist,
+  int max_dense_bins_in_output, int max_output_rebinning);
+void compactify(
+  const calin::ix::math::histogram::Histogram1DData& original_hist,
+  int max_dense_bins_in_output, int max_output_rebinning,
+  calin::ix::math::histogram::Histogram1DData* compactified_hist);
+#endif
+
+#ifndef SWIG
 calin::ix::math::histogram::Histogram1DData*
-rebin(const calin::ix::math::histogram::Histogram1DData& hist_data, unsigned rebinning_factor);
+rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, int rebinning_factor,
+  calin::ix::math::histogram::Histogram1DData* rebinned_hist = nullptr);
+#else
+calin::ix::math::histogram::Histogram1DData*
+rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, int rebinning_factor);
+void  rebin(const calin::ix::math::histogram::Histogram1DData& original_hist, int rebinning_factor,
+  calin::ix::math::histogram::Histogram1DData* rebinned_hist);
+#endif
+
+#ifndef SWIG
+calin::ix::math::histogram::Histogram1DData*
+sparsify(const calin::ix::math::histogram::Histogram1DData& original_hist,
+  calin::ix::math::histogram::Histogram1DData* sparsified_hist = nullptr);
+#else
+calin::ix::math::histogram::Histogram1DData*
+sparsify(const calin::ix::math::histogram::Histogram1DData& original_hist);
+void sparsify(const calin::ix::math::histogram::Histogram1DData& original_hist,
+  calin::ix::math::histogram::Histogram1DData* sparsified_hist);
+#endif
+
+#ifndef SWIG
+calin::ix::math::histogram::Histogram1DData*
+densify(const calin::ix::math::histogram::Histogram1DData& original_hist,
+  calin::ix::math::histogram::Histogram1DData* densified_hist = nullptr);
+#else
+calin::ix::math::histogram::Histogram1DData*
+densify(const calin::ix::math::histogram::Histogram1DData& original_hist);
+void densify(const calin::ix::math::histogram::Histogram1DData& original_hist,
+  calin::ix::math::histogram::Histogram1DData* densified_hist);
+#endif
+
+template<typename Acc>
+calin::ix::math::histogram::Histogram1DData* BasicHistogram1D<Acc>::
+dump_as_compactified_proto(int max_dense_bins_in_output, int max_output_rebinning,
+  calin::ix::math::histogram::Histogram1DData* data) const
+{
+  std::unique_ptr<calin::ix::math::histogram::Histogram1DData> hist { dump_as_proto() };
+  return compactify(*hist, max_dense_bins_in_output, max_output_rebinning, data);
+}
+
+template<typename Acc>
+calin::ix::math::histogram::Histogram1DData* BasicHistogram1D<Acc>::
+serialize(calin::ix::math::histogram::Histogram1DData* data) const
+{
+  if(compatify_on_serialize_) {
+    return dump_as_compactified_proto(serialize_max_dense_bins_in_output_,
+      serialize_max_output_rebinning_, data);
+  } else {
+    return dump_as_proto(data);
+  }
+}
 
 } } } // namespace calin::math::histogram

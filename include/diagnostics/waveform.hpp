@@ -93,6 +93,59 @@ protected:
 #endif // ndef SWIG
 };
 
+class WaveformCodeHistParallelEventVisitor:
+public iact_data::event_visitor::ParallelEventVisitor
+{
+public:
+  WaveformCodeHistParallelEventVisitor(bool max_sample_only = false, uint16_t max_code = 4095);
+
+  virtual ~WaveformCodeHistParallelEventVisitor();
+
+  WaveformCodeHistParallelEventVisitor* new_sub_visitor(
+    std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+        calin::iact_data::event_visitor::ParallelEventVisitor*>
+      antecedent_visitors) override;
+
+  bool visit_telescope_run(
+    const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+  bool leave_telescope_run() override;
+
+  bool visit_telescope_event(uint64_t seq_index,
+    calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
+
+  bool merge_results() override;
+
+  calin::ix::diagnostics::waveform::WaveformCodeHist* waveform_code_hist() const;
+  calin::ix::diagnostics::waveform::CompactWaveformCodeHist* compact_waveform_code_hist() const;
+
+protected:
+#ifndef SWIG
+  void analyze_wf_image(const calin::ix::iact_data::telescope_event::Waveforms& wf);
+  void transfer_u32_to_u64();
+
+  WaveformCodeHistParallelEventVisitor* parent_ = nullptr;
+
+  bool max_sample_only_ = false;
+  uint16_t max_code_ = 4095;
+
+  calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
+  bool has_dual_gain_ = false;
+  unsigned nchan_ = 0;
+  unsigned nsamp_ = 0;
+
+  unsigned max_nsamp_in_u32_ = 0;
+  unsigned nsamp_in_u32_ = 0;
+
+  uint32_t*__restrict__ high_gain_code_hist_u32_ = nullptr;
+  uint32_t*__restrict__ low_gain_code_hist_u32_ = nullptr;
+  uint64_t*__restrict__ high_gain_code_hist_u64_ = nullptr;
+  uint64_t*__restrict__ low_gain_code_hist_u64_ = nullptr;
+#endif // ndef SWIG
+};
+
+
+
 class WaveformStatsParallelVisitor:
   public iact_data::event_visitor::ParallelEventVisitor
 {

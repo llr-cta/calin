@@ -1,8 +1,8 @@
 /*
 
-   calin/diagnostics/simple_charge_stats.hpp -- Stephen Fegan -- 2020-03-20
+   calin/diagnostics/simple_charge_hists.hpp -- Stephen Fegan -- 2020-04-17
 
-   Various information computed from channel data
+   Various histograms computed from channel data
 
    Copyright 2020, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
@@ -25,28 +25,28 @@
 #include <math/histogram.hpp>
 #include <iact_data/event_visitor.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
-#include <diagnostics/simple_charge_stats.pb.h>
+#include <diagnostics/simple_charge_hists.pb.h>
 
-namespace calin { namespace diagnostics { namespace simple_charge_stats {
+namespace calin { namespace diagnostics { namespace simple_charge_hists {
 
-class SimpleChargeStatsParallelEventVisitor:
+class SimpleChargeHistsParallelEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  SimpleChargeStatsParallelEventVisitor(
+  SimpleChargeHistsParallelEventVisitor(
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* high_gain_visitor,
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* low_gain_visitor,
-    const calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig& config = default_config());
+    const calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig& config = ped_trig_default_config());
 
-  SimpleChargeStatsParallelEventVisitor(
+  SimpleChargeHistsParallelEventVisitor(
       calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* mixed_or_unique_gain_visitor,
-      const calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig& config = default_config()):
-    SimpleChargeStatsParallelEventVisitor(mixed_or_unique_gain_visitor, nullptr, config)
+      const calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig& config = ped_trig_default_config()):
+    SimpleChargeHistsParallelEventVisitor(mixed_or_unique_gain_visitor, nullptr, config)
   { /* nothing to see here */ }
 
-  virtual ~SimpleChargeStatsParallelEventVisitor();
+  virtual ~SimpleChargeHistsParallelEventVisitor();
 
-  SimpleChargeStatsParallelEventVisitor* new_sub_visitor(
+  SimpleChargeHistsParallelEventVisitor* new_sub_visitor(
     std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
         calin::iact_data::event_visitor::ParallelEventVisitor*>
       antecedent_visitors = { }) override;
@@ -63,24 +63,32 @@ public:
   bool merge_results() override;
 
 #ifndef SWIG
-  calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats* simple_charge_stats(
-    calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats* stats = nullptr) const;
+  calin::ix::diagnostics::simple_charge_hists::SimpleChargeHists* simple_charge_hists(
+    calin::ix::diagnostics::simple_charge_hists::SimpleChargeHists* stats = nullptr) const;
 #else
-  calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats* simple_charge_stats() const;
-  void simple_charge_stats(calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats* stats) const;
+  calin::ix::diagnostics::simple_charge_hists::SimpleChargeHists* simple_charge_hists() const;
+  void simple_charge_hists(calin::ix::diagnostics::simple_charge_hists::SimpleChargeHists* stats) const;
 #endif
 
-  static calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig default_config();
+  static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig ped_trig_default_config();
+  static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig phy_trig_default_config();
+  static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig ext_trig_default_config();
+  static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig int_trig_default_config();
 
   // const calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats& partials() const { return partials_; }
 
 private:
+#if 0
   struct SingleGainChannelHists {
-    SingleGainChannelHists(double time_resolution, double dark_resolution, double bright_resolution):
+    SingleGainChannelHists():
+      full_wf_qsum(new_hist());
+      full_wf_max();
+      opt_win_qsum();
+      opt_win_index();
+      ped_win_qsum();
+      sig_win_qsum();
+
       ped_wf_q_sum(new calin::math::histogram::Histogram1D(dark_resolution)),
-      ped_wf_1_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
-      ped_wf_q_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
-      ped_wf_q2_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
       ext_opt_win_q_sum(new calin::math::histogram::Histogram1D(bright_resolution)),
       ext_opt_win_index(new calin::math::histogram::Histogram1D(1.0)),
       ext_opt_win_max(new calin::math::histogram::Histogram1D(bright_resolution)),
@@ -178,17 +186,18 @@ private:
   void record_one_visitor_data(uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
     const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
     calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats* partials);
+#endif
 
-  SimpleChargeStatsParallelEventVisitor* parent_ = nullptr;
-  calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config_;
+  SimpleChargeHistsParallelEventVisitor* parent_ = nullptr;
+  calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig config_;
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* high_gain_visitor_ = nullptr;
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* low_gain_visitor_ = nullptr;
 
   bool has_dual_gain_ = false;
-  calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats results_;
-  calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats partials_;
+  // calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats results_;
+  // calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats partials_;
 
-  std::vector<ChannelHists*> chan_hists_;
+  // std::vector<ChannelHists*> chan_hists_;
   //ChannelHists* camera_hists_;
 };
 
