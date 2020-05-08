@@ -34,7 +34,7 @@ template class BasicHistogram1D<accumulator::SimpleAccumulator>;
 
 } } } // namespace calin::math::histogram
 
-calin::math::histogram::Histogram1D* calin::math::histogram::new_histogram(
+calin::math::histogram::Histogram1D* calin::math::histogram::new_histogram_if_enabled(
   const calin::ix::math::histogram::AccumulatedAndSerializedHistogram1DConfig& config)
 {
   if(config.enable() and config.dxval()!=0)

@@ -1009,7 +1009,7 @@ class BinnedCDF: public BinnedData1D<double>
 CALIN_TYPEALIAS(SimpleHist, BasicHistogram1D<DefaultAccumulator>);
 CALIN_TYPEALIAS(Histogram1D, BasicHistogram1D<DefaultAccumulator>);
 
-Histogram1D* new_histogram(
+Histogram1D* new_histogram_if_enabled(
   const calin::ix::math::histogram::AccumulatedAndSerializedHistogram1DConfig& config);
 
 #ifndef SWIG
