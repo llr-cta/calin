@@ -252,7 +252,7 @@ protected:
   double dxval_           = 1.0;
   double dxval_inv_       = 1.0;
   double xval_align_      = 0.5;
-  double xval0_;
+  double xval0_           = 0;
   Container bins_;
   bool limited_           = false;
   double xval_limit_lo_   = -std::numeric_limits<double>::infinity();
