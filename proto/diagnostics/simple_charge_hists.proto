@@ -64,6 +64,43 @@ message SimpleChargeHistsConfig {
     (CFO).desc = "Configuration for low-gain histograms." ];
 };
 
-message SimpleChargeHists {
+message OneGainSimpleChargeHists {
+  calin.ix.math.histogram.Histogram1DData full_wf_qsum              = 10 [
+    (CFO).desc = "Histogram of sum of samples over full waveform.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
 
+  calin.ix.math.histogram.Histogram1DData full_wf_max               = 11 [
+    (CFO).desc = "Histogram of maximum sample value over full waveform.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData full_wf_max_index         = 12 [
+    (CFO).desc = "Histogram of index of maximum sample over full waveform.",
+    (CFO).units = "samples (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData opt_win_qsum              = 13 [
+    (CFO).desc = "Histogram of sum of samples over optimised window.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData opt_win_qtsum             = 14 [
+    (CFO).desc = "Histogram of sum of samples * sample index over optimised window.",
+    (CFO).units = "DC samples (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData opt_win_index             = 15 [
+    (CFO).desc = "Histogram of index of start of optimised window.",
+    (CFO).units = "samples (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData ped_win_qsum              = 16 [
+    (CFO).desc = "Histogram of sum of samples over fixed pedestal window.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData sig_win_qsum              = 17 [
+    (CFO).desc = "Histogram of sum of samples over fixed signal window.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+}
+
+message SimpleChargeHists {
+  repeated OneGainSimpleChargeHists high_gain_channel               = 1 [
+    (CFO).desc = "High gain (or single gain) histograms." ];
+  repeated OneGainSimpleChargeHists low_gain_channel                = 2 [
+    (CFO).desc = "Low gain (or single gain) histograms." ];
 };
