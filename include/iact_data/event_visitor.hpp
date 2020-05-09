@@ -157,7 +157,7 @@ protected:
       calin::iact_data::event_visitor::ParallelEventVisitor*> parent_visitors_;
 
   std::vector<DelegatedVisitor> delegates_;
-  std::map<calin::iact_data::event_visitor::ParallelEventVisitor*, DelegatedVisitor*> visitor_delegates_;
+  std::map<calin::iact_data::event_visitor::ParallelEventVisitor*, int> visitor_delegates_;
 #endif
 };
 

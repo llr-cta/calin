@@ -201,7 +201,7 @@ bool FilteredDelegatingParallelEventVisitor::merge_results()
   bool good = true;
   for(auto ivisitor : delegates_) {
     good &= ivisitor.visitor->merge_results();
-    visitor_delegates_[parent_visitors_[ivisitor.visitor]]->visitor_saw_event |= ivisitor.visitor_saw_event;
+    parent_->delegates_[parent_->visitor_delegates_[parent_visitors_[ivisitor.visitor]]].visitor_saw_event |= ivisitor.visitor_saw_event;
   }
   return good;
 }
@@ -211,7 +211,7 @@ void FilteredDelegatingParallelEventVisitor::add_visitor(
 {
   delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ true,
     calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN);
-  visitor_delegates_[visitor] = &delegates_.back();
+  visitor_delegates_[visitor] = delegates_.size() - 1;
 }
 
 void FilteredDelegatingParallelEventVisitor::
@@ -220,11 +220,11 @@ add_filtered_visitor(ParallelEventVisitor* visitor,
   bool adopt_visitor)
 {
   delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ false, trigger_type);
-  visitor_delegates_[visitor] = &delegates_.back();
+  visitor_delegates_[visitor] = delegates_.size() - 1;
 }
 
 bool FilteredDelegatingParallelEventVisitor::visitor_saw_event(ParallelEventVisitor* visitor) const
 {
   if(visitor_delegates_.count(visitor) == 0)return false;
-  return visitor_delegates_.at(visitor)->visitor_saw_event;
+  return delegates_[visitor_delegates_.at(visitor)].visitor_saw_event;
 }
