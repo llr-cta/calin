@@ -147,6 +147,7 @@ FilteredDelegatingParallelEventVisitor::new_sub_visitor(
     calin::iact_data::event_visitor::ParallelEventVisitor*> antecedent_visitors)
 {
   auto* sub_visitor = new FilteredDelegatingParallelEventVisitor();
+  sub_visitor->parent_ = this;
   for(auto ivisitor : delegates_) {
     auto* dsv = ivisitor.visitor->new_sub_visitor(antecedent_visitors);
     if(dsv != nullptr) {
@@ -155,6 +156,7 @@ FilteredDelegatingParallelEventVisitor::new_sub_visitor(
       } else {
         sub_visitor->add_filtered_visitor(dsv, ivisitor.trigger_type, /* adopt_visitor= */ true);
       }
+      sub_visitor->parent_visitors_[dsv] = ivisitor.visitor;
     }
     antecedent_visitors[ivisitor.visitor] = dsv;
   }
@@ -188,6 +190,7 @@ bool FilteredDelegatingParallelEventVisitor::visit_telescope_event(uint64_t seq_
   for(auto ivisitor : delegates_) {
     if(ivisitor.unfiltered or event->trigger_type() == ivisitor.trigger_type) {
       good &= ivisitor.visitor->visit_telescope_event(seq_index, event);
+      ivisitor.visitor_saw_event = true;
     }
   }
   return good;
@@ -198,6 +201,7 @@ bool FilteredDelegatingParallelEventVisitor::merge_results()
   bool good = true;
   for(auto ivisitor : delegates_) {
     good &= ivisitor.visitor->merge_results();
+    visitor_delegates_[parent_visitors_[ivisitor.visitor]]->visitor_saw_event |= ivisitor.visitor_saw_event;
   }
   return good;
 }
@@ -207,6 +211,7 @@ void FilteredDelegatingParallelEventVisitor::add_visitor(
 {
   delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ true,
     calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN);
+  visitor_delegates_[visitor] = &delegates_.back();
 }
 
 void FilteredDelegatingParallelEventVisitor::
@@ -215,4 +220,11 @@ add_filtered_visitor(ParallelEventVisitor* visitor,
   bool adopt_visitor)
 {
   delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ false, trigger_type);
+  visitor_delegates_[visitor] = &delegates_.back();
+}
+
+bool FilteredDelegatingParallelEventVisitor::visitor_saw_event(ParallelEventVisitor* visitor) const
+{
+  if(visitor_delegates_.count(visitor) == 0)return false;
+  return visitor_delegates_.at(visitor)->visitor_saw_event;
 }
