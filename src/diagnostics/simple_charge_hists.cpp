@@ -361,6 +361,25 @@ SimpleChargeHistsParallelEventVisitor::phy_trig_default_config()
   calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig config;
 
   auto* hg_config = config.mutable_high_gain();
+  pre_fill_hist_config(hg_config, "physics", "high", 10.0, 100, 10, 1.0, 100, 5);
+  hg_config->mutable_full_wf_max()->set_enable(true);
+  hg_config->mutable_opt_win_qsum()->set_enable(true);
+  hg_config->mutable_opt_win_index()->set_enable(true);
+  auto* lg_config = config.mutable_low_gain();
+  pre_fill_hist_config(lg_config, "physics", "low", 1.0, 100, 10, 1.0, 100, 5);
+  lg_config->mutable_full_wf_max()->set_enable(true);
+  lg_config->mutable_opt_win_qsum()->set_enable(true);
+  lg_config->mutable_opt_win_index()->set_enable(true);
+
+  return config;
+}
+
+calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig
+SimpleChargeHistsParallelEventVisitor::ext_trig_default_config()
+{
+  calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig config;
+
+  auto* hg_config = config.mutable_high_gain();
   pre_fill_hist_config(hg_config, "external-flasher", "high", 10.0, 100, 10, 1.0, 100, 5);
   hg_config->mutable_full_wf_max()->set_enable(true);
   hg_config->mutable_opt_win_qsum()->set_enable(true);
@@ -375,15 +394,14 @@ SimpleChargeHistsParallelEventVisitor::phy_trig_default_config()
 }
 
 calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig
-SimpleChargeHistsParallelEventVisitor::ext_trig_default_config()
-{
-  calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig config;
-  return config;
-}
-
-calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig
 SimpleChargeHistsParallelEventVisitor::int_trig_default_config()
 {
   calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig config;
+
+  auto* hg_config = config.mutable_high_gain();
+  pre_fill_hist_config(hg_config, "internal-flasher", "high", 1.0, 1000, 5, 1.0, 100, 5);
+  hg_config->mutable_sig_win_qsum()->set_enable(true);
+  hg_config->mutable_opt_win_index()->set_enable(true);
+
   return config;
 }
