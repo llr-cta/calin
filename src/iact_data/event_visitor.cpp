@@ -23,10 +23,12 @@
 #include <stdexcept>
 
 #include <iact_data/event_visitor.hpp>
+#include <util/log.hpp>
 
 using namespace calin::iact_data::event_visitor;
 using namespace calin::ix::iact_data::telescope_event;
 using namespace calin::ix::iact_data::telescope_run_configuration;
+using namespace calin::util::log;
 
 EventLifetimeManager::~EventLifetimeManager()
 {
@@ -187,7 +189,7 @@ bool FilteredDelegatingParallelEventVisitor::visit_telescope_event(uint64_t seq_
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
   bool good = true;
-  for(auto ivisitor : delegates_) {
+  for(auto& ivisitor : delegates_) {
     if(ivisitor.unfiltered or event->trigger_type() == ivisitor.trigger_type) {
       good &= ivisitor.visitor->visit_telescope_event(seq_index, event);
       ivisitor.visitor_saw_event = true;
