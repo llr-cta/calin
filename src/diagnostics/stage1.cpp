@@ -180,6 +180,7 @@ calin::ix::diagnostics::stage1::Stage1* Stage1ParallelEventVisitor::stage1_resul
   stage1->set_num_external_calibration_triggers(stage1->run_info().num_external_calibration_trigger());
   stage1->set_num_internal_calibration_trigger(stage1->run_info().num_internal_calibration_trigger());
 
+  stage1->mutable_config()->CopyFrom(config_);
   calin::provenance::anthology::get_current_anthology(stage1->mutable_provenance_anthology());
 
   return stage1;

@@ -120,6 +120,7 @@ message Stage1 {
   calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_external_flasher = 122;
   calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_internal_flasher = 33;
 
+  Stage1Config config                                      = 999;
   calin.ix.provenance.anthology.Anthology provenance_anthology = 1000 [
     (CFO).desc = "Provenance information registered at time of Stage1 results extraction." ];
 };
