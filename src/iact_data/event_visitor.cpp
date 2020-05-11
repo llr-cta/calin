@@ -203,7 +203,8 @@ bool FilteredDelegatingParallelEventVisitor::merge_results()
   bool good = true;
   for(auto ivisitor : delegates_) {
     good &= ivisitor.visitor->merge_results();
-    parent_->delegates_[parent_->visitor_delegates_[parent_visitors_[ivisitor.visitor]]].visitor_saw_event |= ivisitor.visitor_saw_event;
+    parent_->delegates_[parent_->visitor_delegates_.at(
+      parent_visitors_.at(ivisitor.visitor))].visitor_saw_event |= ivisitor.visitor_saw_event;
   }
   return good;
 }
