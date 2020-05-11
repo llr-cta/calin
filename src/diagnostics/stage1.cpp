@@ -135,13 +135,13 @@ bool Stage1ParallelEventVisitor::leave_telescope_run()
   bool good = FilteredDelegatingParallelEventVisitor::leave_telescope_run();
 
   if(config_.enable_ancillary_data()) {
-    int64_t start_time = run_info_pev_->min_event_time() / 1000000000LL;
-    int64_t end_time = run_info_pev_->max_event_time() / 1000000000LL;
+    int64_t start_time = run_info_pev_->min_event_time() / int64_t(1000000000);
+    int64_t end_time = run_info_pev_->max_event_time() / int64_t(1000000000);
     if(start_time > end_time) {
-      start_time = run_config_->run_start_time().time_ns() / 1000000000LL;
+      start_time = run_config_->run_start_time().time_ns() / int64_t(1000000000);
       end_time = start_time + 3600; // default to getting 1 hour of data
     } else {
-      start_time = std::min(start_time, run_config_->run_start_time().time_ns() / 1000000000LL);
+      start_time = std::min(start_time, run_config_->run_start_time().time_ns() / int64_t(1000000000));
     }
     start_time = std::max(start_time-30, int64_t(0));
     end_time = end_time+30;
