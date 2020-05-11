@@ -21,6 +21,7 @@
 */
 
 syntax = "proto3";
+option cc_enable_arenas = true;
 
 import "calin.proto";
 
@@ -153,6 +154,19 @@ message NectarCAMAncillaryData {
 
   ECCMeasurementSet ecc_measurements                       = 4 [
     (CFO).desc = "ECC measurements." ];
+
+  uint64 num_feb_temperature_measurements                  = 11 [
+    (CFO).desc = "Total number of FEB temperature measurements.",
+    (CFO).is_counter = true ];
+  uint64 num_hvpa_current_measurements                     = 12 [
+    (CFO).desc = "Total number of HVPA current measurements.",
+    (CFO).is_counter = true ];
+  uint64 num_hvpa_voltage_measurements                     = 13 [
+    (CFO).desc = "Total number of HVPA voltage measurements.",
+    (CFO).is_counter = true ];
+  uint64 num_ecc_measurements                              = 14 [
+    (CFO).desc = "Total number of ECC measurements.",
+    (CFO).is_counter = true ];
 };
 
 message SelectByTime {
@@ -172,4 +186,11 @@ message SelectByTimeAndCamera {
   fixed32 time                                             = 2 [
     (CFO).desc = "Time of measurement.", (CFO).units = "s",
     (CFO).sql.transform=TRANSFORM_UNIXTIME_TOFROM_DATETIME ];
+};
+
+message SelectByTimeStringAndCamera {
+  int32 camera                                             = 1 [
+    (CFO).desc = "Camera identifier." ];
+  string time                                              = 2 [
+    (CFO).desc = "Time of measurement." ];
 };

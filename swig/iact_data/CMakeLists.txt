@@ -15,7 +15,7 @@
 
 set(CALIN_SWIG_FILES telescope_data_source.i event_visitor.i event_dispatcher.i
 	functional_event_visitor.i instrument_layout.i nectarcam_layout.i lstcam_layout.i
-	waveform_treatment_event_visitor.i)
+	waveform_treatment_event_visitor.i nectarcam_ancillary_data.i)
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SWIG_FILES ${CALIN_SWIG_FILES} raw_actl_l0_event_data_source.i
 		raw_actl_r1_event_data_source.i actl_event_decoder.i)
