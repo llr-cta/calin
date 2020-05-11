@@ -1,6 +1,6 @@
 /*
 
-   calin/iact_data/lstcam_actl_event_decoder.cpp -- Stephen Fegan -- 2018-10-15
+   calin/iact_data/lstcam_actl_r1_event_decoder.cpp -- Stephen Fegan -- 2018-10-15
 
    A decoder of LSTCam ACTL data
 

@@ -1,6 +1,6 @@
 /*
 
-   calin/iact_data/nectarcam_actl_event_decoder.cpp -- Stephen Fegan -- 2018-09-21
+   calin/iact_data/nectarcam_actl_l0_event_decoder.cpp -- Stephen Fegan -- 2018-09-21
 
    A decoder of NectarCAM ACTL data
 
