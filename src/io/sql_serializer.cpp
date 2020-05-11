@@ -826,6 +826,7 @@ bool SQLSerializer::execute_one_no_data_statement(SQLStatement* stmt, bool ignor
 void SQLSerializer::set_const_data_pointers(SQLTable* t, const google::protobuf::Message* m,
   const uint64_t* parent_oid, const uint64_t* loop_id)
 {
+  constexpr bool disallow_null = true;
   for(auto f : t->fields)
   {
 #if 0
@@ -838,7 +839,7 @@ void SQLSerializer::set_const_data_pointers(SQLTable* t, const google::protobuf:
       {
         const google::protobuf::Reflection* r = m->GetReflection();
 
-        if(f->oneof_d or f->field_d->is_repeated() or r->HasField(*m, f->field_d)
+        if(f->oneof_d or f->field_d->is_repeated() or disallow_null or r->HasField(*m, f->field_d)
           /* or f->field_d->message_type()==nullptr */) {
           f->set_data_const_message(m);
         } else {
