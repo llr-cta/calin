@@ -43,6 +43,8 @@ namespace {
     auto* sql = new calin::io::sql_serializer::SQLite3Serializer(db_file,
       calin::io::sql_serializer::SQLite3Serializer::READ_ONLY_NON_CALIN_DB, log_sql);
 
+    data->set_database(db_file);
+
     sql->register_externally_created_table("monitoring_drawer_temperatures",
       calin::ix::iact_data::nectarcam_ancillary_data::FEBTemperatureMeasurement::descriptor());
     sql->register_externally_created_table("monitoring_channel_currents",

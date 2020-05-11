@@ -155,6 +155,8 @@ message NectarCAMAncillaryData {
   ECCMeasurementSet ecc_measurements                       = 4 [
     (CFO).desc = "ECC measurements." ];
 
+  string database                                          = 10 [
+    (CFO).desc = "Location or filename of ancillary database." ];
   uint64 num_feb_temperature_measurements                  = 11 [
     (CFO).desc = "Total number of FEB temperature measurements.",
     (CFO).is_counter = true ];
