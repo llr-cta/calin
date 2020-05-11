@@ -79,9 +79,7 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   for(auto* h :chan_hists_)delete h;
   chan_hists_.resize(run_config->configured_channel_id_size());
   for(auto*& h : chan_hists_) {
-    h = new ChannelHists(has_dual_gain_, config_.ped_time_hist_resolution(),
-      config_.dark_hist_hg_resolution(), config_.bright_hist_hg_resolution(),
-      config_.dark_hist_lg_resolution(), config_.bright_hist_lg_resolution());
+    h = new ChannelHists(has_dual_gain_, config_.ped_time_hist_resolution());
   }
 
   // if(high_gain_visitor_) {
@@ -111,29 +109,6 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   return true;
 }
 
-namespace {
-  void transfer_histogram_with_rebin_if_necessary(
-    const calin::ix::math::histogram::Histogram1DData& from_hist,
-    calin::ix::math::histogram::Histogram1DData* to_hist,
-    int maximum_size, int maximum_rebin)
-  {
-    auto* hs = calin::math::histogram::sparsify(from_hist);
-    int rebin = 1;
-    if(maximum_size>0 and hs->bins_size()>maximum_size) {
-      rebin = (hs->bins_size()+maximum_size-1)/maximum_size;
-      if(maximum_rebin>0) {
-        rebin = std::min(rebin, maximum_rebin);
-      }
-    }
-    if(rebin) {
-      calin::math::histogram::rebin(*hs, rebin, to_hist);
-    } else {
-      to_hist->CopyFrom(*hs);
-    }
-    delete hs;
-  }
-} // anonymous namespace
-
 void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
   calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
   const calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats& partials_gc)
@@ -149,40 +124,6 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
   } else {
     results_g->add_all_trigger_ped_win_mean(0.0);
     results_g->add_all_trigger_ped_win_var(0.0);
-  }
-
-  if(partials_gc.has_ped_trig_full_wf_hist()) {
-    transfer_histogram_with_rebin_if_necessary(partials_gc.ped_trig_full_wf_hist(),
-      results_g->add_ped_trigger_full_wf_hist(),
-      config_.max_dark_hist_bins(), config_.max_dark_hist_rebin_factor());
-  }
-
-  if(partials_gc.has_ext_trig_opt_sum_hist()) {
-    transfer_histogram_with_rebin_if_necessary(partials_gc.ext_trig_opt_sum_hist(),
-      results_g->add_ext_trigger_opt_win_sum_hist(),
-      config_.max_bright_hist_bins(), config_.max_bright_hist_rebin_factor());
-  }
-
-  if(partials_gc.has_ext_trig_opt_max_hist()) {
-    transfer_histogram_with_rebin_if_necessary(partials_gc.ext_trig_opt_max_hist(),
-      results_g->add_ext_trigger_full_wf_max_hist(),
-      config_.max_bright_hist_bins(), config_.max_bright_hist_rebin_factor());
-  }
-
-  if(partials_gc.has_ext_trig_opt_index_hist()) {
-    results_g->add_ext_trigger_opt_win_index_hist()->CopyFrom(
-      partials_gc.ext_trig_opt_index_hist());
-  }
-
-  if(partials_gc.has_phys_trig_opt_sum_hist()) {
-    transfer_histogram_with_rebin_if_necessary(partials_gc.phys_trig_opt_sum_hist(),
-      results_g->add_phys_trigger_opt_win_sum_hist(),
-      config_.max_bright_hist_bins(), config_.max_bright_hist_rebin_factor());
-  }
-
-  if(partials_gc.has_phys_trig_opt_index_hist()) {
-    results_g->add_phys_trigger_opt_win_index_hist()->CopyFrom(
-      partials_gc.phys_trig_opt_index_hist());
   }
 
   if(partials_gc.has_ped_trig_vs_time_1_sum()) {
@@ -223,25 +164,7 @@ void SimpleChargeStatsParallelEventVisitor::dump_single_gain_channel_hists_to_pa
   const SingleGainChannelHists& hists,
   calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* partials)
 {
-  auto* hp = hists.ped_wf_q_sum->dump_as_proto();
-  partials->mutable_ped_trig_full_wf_hist()->IntegrateFrom(*hp);
-
-  hists.ext_opt_win_q_sum->dump_as_proto(hp);
-  partials->mutable_ext_trig_opt_sum_hist()->IntegrateFrom(*hp);
-
-  hists.ext_opt_win_index->dump_as_proto(hp);
-  partials->mutable_ext_trig_opt_index_hist()->IntegrateFrom(*hp);
-
-  hists.ext_opt_win_max->dump_as_proto(hp);
-  partials->mutable_ext_trig_opt_max_hist()->IntegrateFrom(*hp);
-
-  hists.phys_opt_win_q_sum->dump_as_proto(hp);
-  partials->mutable_phys_trig_opt_sum_hist()->IntegrateFrom(*hp);
-
-  hists.phys_opt_win_index->dump_as_proto(hp);
-  partials->mutable_phys_trig_opt_index_hist()->IntegrateFrom(*hp);
-
-  hists.ped_wf_1_sum_vs_time->dump_as_proto(hp);
+  auto* hp = hists.ped_wf_1_sum_vs_time->dump_as_proto();
   partials->mutable_ped_trig_vs_time_1_sum()->IntegrateFrom(*hp);
 
   hists.ped_wf_q_sum_vs_time->dump_as_proto(hp);
@@ -294,17 +217,11 @@ void SimpleChargeStatsParallelEventVisitor::record_one_gain_channel_data(
     one_gain_stats->increment_ped_trig_num_events();
     one_gain_stats->increment_ped_trig_full_wf_sum(wf_all_sum);
     one_gain_stats->increment_ped_trig_full_wf_sumsq(sqr_wf_all_sum);
-    one_gain_hists->ped_wf_q_sum->insert(wf_all_sum);
     one_gain_hists->ped_wf_1_sum_vs_time->insert(elapsed_event_time);
     one_gain_hists->ped_wf_q_sum_vs_time->insert(elapsed_event_time, wf_all_sum);
     one_gain_hists->ped_wf_q2_sum_vs_time->insert(elapsed_event_time, sqr_wf_all_sum);
   } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER) {
-    one_gain_hists->ext_opt_win_q_sum->insert(sum_visitor->array_chan_opt_win_sum()[ichan]);
-    one_gain_hists->ext_opt_win_index->insert(sum_visitor->array_chan_opt_win_index()[ichan]);
-    one_gain_hists->ext_opt_win_max->insert(sum_visitor->array_chan_max()[ichan]);
   } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
-    one_gain_hists->phys_opt_win_q_sum->insert(sum_visitor->array_chan_opt_win_sum()[ichan]);
-    one_gain_hists->phys_opt_win_index->insert(sum_visitor->array_chan_opt_win_index()[ichan]);
   }
 }
 
@@ -370,17 +287,6 @@ calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig
 SimpleChargeStatsParallelEventVisitor::default_config()
 {
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config;
-
-  config.set_dark_hist_hg_resolution(1.0);
-  config.set_dark_hist_lg_resolution(1.0);
-  config.set_max_dark_hist_bins(1000);
-  config.set_max_dark_hist_rebin_factor(0);
-
-  config.set_bright_hist_hg_resolution(10.0);
-  config.set_bright_hist_lg_resolution(10.0);
-  config.set_max_bright_hist_bins(100);
-  config.set_max_bright_hist_rebin_factor(0);
-
   config.set_ped_time_hist_resolution(30.0);
   return config;
 }
