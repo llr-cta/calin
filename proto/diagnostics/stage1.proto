@@ -32,16 +32,19 @@ import "diagnostics/simple_charge_stats.proto";
 import "diagnostics/waveform.proto";
 import "provenance/anthology.proto";
 import "iact_data/waveform_treatment_event_visitor.proto";
+import "iact_data/nectarcam_ancillary_data.proto";
 //import "common_types.proto";
 
 package calin.ix.diagnostics.stage1;
 
 message Stage1Config {
-  bool enable_mean_waveform                                     = 1 [
+  bool enable_mean_waveform                                = 1 [
     (CFO).desc = "Enable calculation of mean waveforms for each trigger type." ];
-  bool enable_simple_waveform_hists                             = 2 [
+  bool enable_simple_waveform_hists                        = 2 [
     (CFO).desc = "Enable histograms of simple quantities based on waveforms "
       "(sum, max sample, etc...), for each trigger type." ];
+  bool enable_ancillary_data                               = 3 [
+    (CFO).desc = "Enable retrieval of ancillary database entries for run." ];
 
   // bool enable_max_code_hists                                        = 10 [
   //   (CFO).desc = "Enable max-sample code histograms, histograms of the "
@@ -59,7 +62,7 @@ message Stage1Config {
     (CFO).desc = "Configuration of low-gain optimal window sum. If not defined "
       "then the high-gain config is used." ];
 
-  calin.ix.diagnostics.run_info.RunInfoConfig run_info              = 102 [
+  calin.ix.diagnostics.run_info.RunInfoConfig run_info     = 102 [
     (CFO).desc = "Configuration of run info calculator." ];
 
   calin.ix.diagnostics.simple_charge_stats.SimpleChargeStatsConfig simple_charge_stats = 103 [
@@ -76,7 +79,14 @@ message Stage1Config {
 
   calin.ix.diagnostics.simple_charge_hists.SimpleChargeHistsConfig int_trigger_waveform_hists = 107 [
     (CFO).desc = "Configuration of simple waveform hists calculator for internal-flasher events." ];
+
+  string ancillary_database                                = 200 [
+    (CFO).desc = "Location of ancillary database if used." ];
 };
+
+message NectarCamSpecificStage1 {
+  calin.ix.iact_data.nectarcam_ancillary_data.NectarCAMAncillaryData ancillary_data = 1;
+}
 
 message Stage1 {
   uint32 run_number                                        = 1 [
@@ -123,6 +133,10 @@ message Stage1 {
   Stage1Config config                                      = 999;
   calin.ix.provenance.anthology.Anthology provenance_anthology = 1000 [
     (CFO).desc = "Provenance information registered at time of Stage1 results extraction." ];
+
+  oneof telescope_specific {
+    NectarCamSpecificStage1 nectarcam                      = 2000;
+  };
 };
 
 message SelectByRunNumber {

@@ -30,6 +30,7 @@
 #include <diagnostics/simple_charge_stats.hpp>
 #include <diagnostics/simple_charge_hists.hpp>
 #include <diagnostics/waveform.hpp>
+#include <iact_data/nectarcam_ancillary_data.hpp>
 
 namespace calin { namespace diagnostics { namespace stage1 {
 
@@ -59,6 +60,7 @@ public:
 
 private:
   calin::ix::diagnostics::stage1::Stage1Config config_;
+  const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
 
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* hg_sum_pev_ = nullptr;
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* lg_sum_pev_ = nullptr;
@@ -77,6 +79,7 @@ private:
   calin::diagnostics::waveform::WaveformSumParallelEventVisitor* wf_mean_ext_pev_ = nullptr;
   calin::diagnostics::waveform::WaveformSumParallelEventVisitor* wf_mean_int_pev_ = nullptr;
 
+  calin::ix::iact_data::nectarcam_ancillary_data::NectarCAMAncillaryData* nectarcam_ancillary_data_ = nullptr;
 };
 
 } } } // namespace calin::diagnostics::stage1
