@@ -28,6 +28,7 @@
 
 namespace calin { namespace iact_data { namespace nectarcam_layout {
 
+#ifndef SWIG
 calin::ix::iact_data::instrument_layout::CameraLayout*
 nectarcam_19module_layout(
   calin::ix::iact_data::instrument_layout::CameraLayout* layout = nullptr);
@@ -39,5 +40,15 @@ nectarcam_61module_layout(
 calin::ix::iact_data::instrument_layout::CameraLayout*
 nectarcam_layout(
   calin::ix::iact_data::instrument_layout::CameraLayout* layout = nullptr);
+#else
+calin::ix::iact_data::instrument_layout::CameraLayout* nectarcam_19module_layout();
+void nectarcam_19module_layout(calin::ix::iact_data::instrument_layout::CameraLayout* layout);
+
+calin::ix::iact_data::instrument_layout::CameraLayout* nectarcam_61module_layout();
+void nectarcam_61module_layout(calin::ix::iact_data::instrument_layout::CameraLayout* layout);
+
+calin::ix::iact_data::instrument_layout::CameraLayout* nectarcam_layout();
+void nectarcam_layout(calin::ix::iact_data::instrument_layout::CameraLayout* layout);
+#endif
 
 } } } // namespace calin::iact_data::nectarcam_layout
