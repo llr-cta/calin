@@ -485,8 +485,6 @@ Generate(const google::protobuf::FileDescriptor * file,
   {
     const google::protobuf::Descriptor* d = file->message_type(i);
     const google::protobuf::MessageOptions* mopt = &d->options();
-    if(!mopt->HasExtension(calin::CMO))continue;
-    const calin::MessageOptions* cmo = &mopt->GetExtension(calin::CMO);
 
     std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
         context->OpenForInsert(pb_to_hpp_filename(file->name()),
@@ -499,13 +497,17 @@ Generate(const google::protobuf::FileDescriptor * file,
       if(not counter_field(f, printer, error))return false;
     }
 
-    if(cmo->message_integration_function() != calin::MessageOptions::MIF_NONE)
+    if(mopt->HasExtension(calin::CMO))
     {
-      printer.Print("void IntegrateFrom(const $type$& from);\n", "type", d->name());
-    }
+      const calin::MessageOptions* cmo = &mopt->GetExtension(calin::CMO);
+      if(cmo->message_integration_function() != calin::MessageOptions::MIF_NONE) {
+        printer.Print("void IntegrateFrom(const $type$& from);\n", "type", d->name());
+      }
 
-    if(cmo->message_integration_function() == calin::MessageOptions::MIF_AUTOMATIC)
-      automatic_mif.push_back(d);
+      if(cmo->message_integration_function() == calin::MessageOptions::MIF_AUTOMATIC) {
+        automatic_mif.push_back(d);
+      }
+    }
   }
 
   if(not automatic_mif.empty())
