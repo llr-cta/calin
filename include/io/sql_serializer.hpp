@@ -250,6 +250,9 @@ public:
     return select_all_oids(table_name);
   }
 
+  virtual std::vector<uint64_t> select_oids_by_sql(const std::string& table_name,
+    const std::string& sql_where_and_limit = "");
+
   virtual std::vector<uint64_t> select_oids_matching(const std::string& table_name,
     const google::protobuf::Message* value);
 
