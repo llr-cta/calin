@@ -338,10 +338,9 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
     for(auto* v : visitors_)
     {
       ParallelEventVisitor* sv = v->new_sub_visitor(antecedent_visitors);
-      if(sv == nullptr) {
-        throw std::runtime_error("ParallelEventDispatcher::do_parallel_dispatcher_loops: delegated visitor returned null pointer.");
+      if(sv != nullptr) {
+        d->add_visitor(sv, true);
       }
-      d->add_visitor(sv, true);
       antecedent_visitors[v] = sv;
     }
     d->dispatch_run_configuration(run_config);

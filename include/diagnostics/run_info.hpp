@@ -84,6 +84,9 @@ public:
 
   bool merge_results() override;
 
+  int64_t min_event_time() const { return results_->min_event_time(); }
+  int64_t max_event_time() const { return results_->max_event_time(); }
+
 #ifndef SWIG
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config(
     calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* rc = nullptr) const;

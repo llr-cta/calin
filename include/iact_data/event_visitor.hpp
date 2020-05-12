@@ -135,6 +135,8 @@ public:
     add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER, adopt_visitor);
   }
 
+  bool visitor_saw_event(ParallelEventVisitor* visitor) const;
+
 protected:
 #ifndef SWIG
   struct DelegatedVisitor {
@@ -147,9 +149,15 @@ protected:
     bool adopt_visitor;
     bool unfiltered;
     calin::ix::iact_data::telescope_event::TriggerType trigger_type;
+    bool visitor_saw_event = false;
   };
 
+  FilteredDelegatingParallelEventVisitor* parent_ = nullptr;
+  std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
+      calin::iact_data::event_visitor::ParallelEventVisitor*> parent_visitors_;
+
   std::vector<DelegatedVisitor> delegates_;
+  std::map<calin::iact_data::event_visitor::ParallelEventVisitor*, int> visitor_delegates_;
 #endif
 };
 

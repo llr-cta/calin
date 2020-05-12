@@ -29,56 +29,6 @@ import "math/histogram.proto";
 package calin.ix.diagnostics.simple_charge_stats;
 
 message SimpleChargeStatsConfig {
-  int32 dark_hist_hg_resolution                                     = 10 [
-    (CFO).desc = "Binning for pedestal and internal flasher (SPE) "
-      "high-gain histograms. This sets the resolution of "
-      "the output histograms, and hence their size on disk, in conjunction with "
-      "the rebinning options \"max_ped_hist_bins\" and \"max_ped_hist_rebin_factor\"."
-      "It is the only option that affects the memory usage and speed of execution. "
-      "Default value is 1DC.",
-    (CFO).units="DC" ];
-  int32 dark_hist_lg_resolution                                     = 11 [
-    (CFO).desc = "Binning for pedestal and internal flasher (SPE) "
-      "low-gain histograms. This sets the resolution of "
-      "the output histograms, and hence their size on disk, in conjunction with "
-      "the rebinning options \"max_ped_hist_bins\" and \"max_ped_hist_rebin_factor\"."
-      "It is the only option that affects the memory usage and speed of execution. "
-      "Default value is 1DC.",
-    (CFO).units="DC" ];
-  int32 max_dark_hist_bins                                          = 12 [
-    (CFO).desc = "Maximum number of dense bins in pedestal and internal "
-      "flasher (SPE) historgrams. The "
-      "histogram will be rebinned until the number is less than this, unless "
-      "the max_ped_hist_rebin_factor is exceeded. Default value is 1000 bins." ];
-  int32 max_dark_hist_rebin_factor                                  = 13 [
-    (CFO).desc = "Maximum rebinning factor for pedestal and internal "
-      "flasher (SPE) histogram, or zero if unrestricted rebinning is allowed." ];
-
-  int32 bright_hist_hg_resolution                                   = 15 [
-    (CFO).desc = "Binning for the physics and external flasher "
-      "high-gain histograms. This sets the resolution of "
-      "the output histograms, and hence their size on disk, in conjunction with "
-      "the rebinning options \"max_ped_hist_bins\" and \"max_ped_hist_rebin_factor\"."
-      "It is the only option that affects the memory usage and speed of execution. "
-      "Default value is 10DC.",
-    (CFO).units="DC" ];
-  int32 bright_hist_lg_resolution                                   = 16 [
-    (CFO).desc = "Binning for the physics and external flasher "
-      "low-gain histograms. This sets the resolution of "
-      "the output histograms, and hence their size on disk, in conjunction with "
-      "the rebinning options \"max_ped_hist_bins\" and \"max_ped_hist_rebin_factor\"."
-      "It is the only option that affects the memory usage and speed of execution. "
-      "Default value is 10DC.",
-    (CFO).units="DC" ];
-  int32 max_bright_hist_bins                                        = 17 [
-    (CFO).desc = "Maximum number of dense bins in physics and external "
-      "flasher historgrams. The "
-      "histogram will be rebinned until the number is less than this, unless "
-      "the max_ped_hist_rebin_factor is exceeded. Default value is 200 bins." ];
-  int32 max_bright_hist_rebin_factor                                = 18 [
-    (CFO).desc = "Maximum rebinning factor for physics and external "
-      "flasher histogram, or zero if unrestricted rebinning is allowed." ];
-
   double ped_time_hist_resolution                                   = 20 [
     (CFO).desc = "Resolution of pedestal mean and variance histogram.",
     (CFO).units = "s" ];
@@ -102,27 +52,6 @@ message OneGainSimpleChargeStats {
   repeated double ped_trigger_full_wf_var                           = 22 [
     (CFO).desc = "Variance of full-waveform charge estimate over pedestal events.",
     (CFO).units = "DC^2" ];
-
-  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_hist = 30 [
-    (CFO).desc = "Histogram of full-waveform charge estimate over pedestal events.",
-    (CFO).units = "DC (bin-units), events (value-units)" ];
-
-  repeated calin.ix.math.histogram.Histogram1DData ext_trigger_full_wf_max_hist = 35 [
-    (CFO).desc = "Histogram of maximum sample "
-      "over external-trigger events." ];
-  repeated calin.ix.math.histogram.Histogram1DData ext_trigger_opt_win_sum_hist = 36 [
-    (CFO).desc = "Histogram of optimal-window charge estimate "
-      "over external-trigger events." ];
-  repeated calin.ix.math.histogram.Histogram1DData ext_trigger_opt_win_index_hist = 37 [
-    (CFO).desc = "Histogram of optimal-waveform position in waveform "
-      "over external-trigger events." ];
-
-  repeated calin.ix.math.histogram.Histogram1DData phys_trigger_opt_win_sum_hist = 40 [
-    (CFO).desc = "Histogram of full-waveform charge estimate "
-      "over physics-trigger events." ];
-  repeated calin.ix.math.histogram.Histogram1DData phys_trigger_opt_win_index_hist = 41 [
-    (CFO).desc = "Histogram of optimal-waveform position in waveform "
-      "over physics-trigger events." ];
 
   repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_mean_vs_time = 50 [
     (CFO).desc = "Histogram of time evolution of mean of full-waveform "
@@ -163,15 +92,6 @@ message PartialOneGainChannelSimpleChargeStats {
   int64 ped_trig_full_wf_sumsq                                      = 22 [
     (CFO).desc = "Sum of pedestal window squared over all events.",
     (CFO).is_counter=true ];
-
-  calin.ix.math.histogram.Histogram1DData ped_trig_full_wf_hist     = 30;
-
-  calin.ix.math.histogram.Histogram1DData ext_trig_opt_sum_hist     = 35;
-  calin.ix.math.histogram.Histogram1DData ext_trig_opt_max_hist     = 36;
-  calin.ix.math.histogram.Histogram1DData ext_trig_opt_index_hist   = 37;
-
-  calin.ix.math.histogram.Histogram1DData phys_trig_opt_sum_hist     = 40;
-  calin.ix.math.histogram.Histogram1DData phys_trig_opt_index_hist   = 41;
 
   calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_1_sum    = 50 [
     (CFO).desc = "Histogram of number of ped events vs time." ];

@@ -70,6 +70,9 @@ public:
   void simple_charge_hists(calin::ix::diagnostics::simple_charge_hists::SimpleChargeHists* stats) const;
 #endif
 
+  static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig all_enabled_config(
+    double qsum_dx=10.0, int qsum_nmax=100, int qsum_rebin=5,
+    double max_dx=10.0, int max_nmax=100, int max_rebin=5);
   static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig ped_trig_default_config();
   static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig phy_trig_default_config();
   static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig ext_trig_default_config();
@@ -78,84 +81,56 @@ public:
   // const calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats& partials() const { return partials_; }
 
 private:
-#if 0
   struct SingleGainChannelHists {
-    SingleGainChannelHists():
-      full_wf_qsum(new_hist());
-      full_wf_max();
-      opt_win_qsum();
-      opt_win_index();
-      ped_win_qsum();
-      sig_win_qsum();
-
-      ped_wf_q_sum(new calin::math::histogram::Histogram1D(dark_resolution)),
-      ext_opt_win_q_sum(new calin::math::histogram::Histogram1D(bright_resolution)),
-      ext_opt_win_index(new calin::math::histogram::Histogram1D(1.0)),
-      ext_opt_win_max(new calin::math::histogram::Histogram1D(bright_resolution)),
-      phys_opt_win_q_sum(new calin::math::histogram::Histogram1D(bright_resolution)),
-      phys_opt_win_index(new calin::math::histogram::Histogram1D(1.0))
+    SingleGainChannelHists(const
+        calin::ix::diagnostics::simple_charge_hists::SingleGainSimpleChargeHistsConfig& config):
+      full_wf_qsum(calin::math::histogram::new_histogram_if_enabled(config.full_wf_qsum())),
+      full_wf_max(calin::math::histogram::new_histogram_if_enabled(config.full_wf_max())),
+      full_wf_max_index(calin::math::histogram::new_histogram_if_enabled(config.full_wf_max_index())),
+      opt_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.opt_win_qsum())),
+      opt_win_qtsum(calin::math::histogram::new_histogram_if_enabled(config.opt_win_qtsum())),
+      opt_win_index(calin::math::histogram::new_histogram_if_enabled(config.opt_win_index())),
+      ped_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.ped_win_qsum())),
+      sig_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.sig_win_qsum()))
     { /* nothing to see here */ }
 
     ~SingleGainChannelHists() {
-      delete ped_wf_q_sum;
-      delete ped_wf_1_sum_vs_time;
-      delete ped_wf_q_sum_vs_time;
-      delete ped_wf_q2_sum_vs_time;
-      delete ext_opt_win_q_sum;
-      delete ext_opt_win_index;
-      delete ext_opt_win_max;
-      delete phys_opt_win_q_sum;
-      delete phys_opt_win_index;
+      delete full_wf_qsum;
+      delete full_wf_max;
+      delete full_wf_max_index;
+      delete opt_win_qsum;
+      delete opt_win_qtsum;
+      delete opt_win_index;
+      delete ped_win_qsum;
+      delete sig_win_qsum;
     }
 
-    calin::math::histogram::Histogram1D* ped_wf_q_sum;
-
-    calin::math::histogram::Histogram1D* ped_wf_1_sum_vs_time;
-    calin::math::histogram::Histogram1D* ped_wf_q_sum_vs_time;
-    calin::math::histogram::Histogram1D* ped_wf_q2_sum_vs_time;
-
-    calin::math::histogram::Histogram1D* ext_opt_win_q_sum;
-    calin::math::histogram::Histogram1D* ext_opt_win_index;
-    calin::math::histogram::Histogram1D* ext_opt_win_max;
-
-    calin::math::histogram::Histogram1D* phys_opt_win_q_sum;
-    calin::math::histogram::Histogram1D* phys_opt_win_index;
+    calin::math::histogram::Histogram1D* full_wf_qsum = nullptr;
+    calin::math::histogram::Histogram1D* full_wf_max = nullptr;
+    calin::math::histogram::Histogram1D* full_wf_max_index = nullptr;
+    calin::math::histogram::Histogram1D* opt_win_qsum = nullptr;
+    calin::math::histogram::Histogram1D* opt_win_qtsum = nullptr;
+    calin::math::histogram::Histogram1D* opt_win_index = nullptr;
+    calin::math::histogram::Histogram1D* ped_win_qsum = nullptr;
+    calin::math::histogram::Histogram1D* sig_win_qsum = nullptr;
   };
 
   struct DualGainChannelHists {
-    DualGainChannelHists(double lg_resolution):
-      ext_opt_win_1_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution)),
-      ext_opt_win_qhg_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution)),
-      ext_opt_win_q2hg_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution)),
-      phy_opt_1_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution)),
-      phy_opt_qhg_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution)),
-      phy_opt_q2hg_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution))
+    DualGainChannelHists(const calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig& config)
     { /* nothing to see here */ }
 
     ~DualGainChannelHists() {
-      delete ext_opt_win_1_sum_vs_qlg;
-      delete ext_opt_win_qhg_sum_vs_qlg;
-      delete ext_opt_win_q2hg_sum_vs_qlg;
-      delete phy_opt_1_sum_vs_qlg;
-      delete phy_opt_qhg_sum_vs_qlg;
-      delete phy_opt_q2hg_sum_vs_qlg;
     }
-
-    calin::math::histogram::Histogram1D* ext_opt_win_1_sum_vs_qlg;
-    calin::math::histogram::Histogram1D* ext_opt_win_qhg_sum_vs_qlg;
-    calin::math::histogram::Histogram1D* ext_opt_win_q2hg_sum_vs_qlg;
-    calin::math::histogram::Histogram1D* phy_opt_1_sum_vs_qlg;
-    calin::math::histogram::Histogram1D* phy_opt_qhg_sum_vs_qlg;
-    calin::math::histogram::Histogram1D* phy_opt_q2hg_sum_vs_qlg;
   };
 
   struct ChannelHists {
-    ChannelHists(bool has_dual_gain_, double time_resolution,
-        double hg_dark_resolution, double hg_bright_resolution,
-        double lg_dark_resolution, double lg_bright_resolution):
-      high_gain(new SingleGainChannelHists(time_resolution, hg_dark_resolution, hg_bright_resolution)),
-      low_gain(has_dual_gain_ ? new SingleGainChannelHists(time_resolution, lg_dark_resolution, lg_bright_resolution) : nullptr),
-      dual_gain(has_dual_gain_ ? new DualGainChannelHists(lg_bright_resolution) : nullptr)
+    ChannelHists(bool has_dual_gain_,
+        const calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig& config):
+      high_gain((config.has_high_gain() and config.high_gain().enable_hists()) ?
+        new SingleGainChannelHists(config.high_gain()) : nullptr),
+      low_gain((has_dual_gain_ and config.has_low_gain() and config.low_gain().enable_hists()) ?
+        new SingleGainChannelHists(config.low_gain()) : nullptr),
+      dual_gain(has_dual_gain_ ? new DualGainChannelHists(config) : nullptr)
     { /* nothing to see here */ }
 
     ~ChannelHists() {
@@ -169,24 +144,12 @@ private:
     DualGainChannelHists* dual_gain = nullptr;
   };
 
-  void integrate_one_gain_partials(
-    calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
-    const calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats& partials_gc);
-
-  void dump_single_gain_channel_hists_to_partials(
-    const SingleGainChannelHists& hists,
-    calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* partials);
-
-  void record_one_gain_channel_data(const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
-    unsigned ichan, double elapsed_event_time,
-    calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats,
-    SingleGainChannelHists* one_gain_hists);
+  void merge_one_gain_hists(SingleGainChannelHists* into, const SingleGainChannelHists* from);
+  void extract_one_gain_hists(calin::ix::diagnostics::simple_charge_hists::OneGainSimpleChargeHists* into,
+    const SingleGainChannelHists* from) const;
 
   void record_one_visitor_data(uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
-    calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats* partials);
-#endif
+    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor);
 
   SimpleChargeHistsParallelEventVisitor* parent_ = nullptr;
   calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig config_;
@@ -194,11 +157,8 @@ private:
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* low_gain_visitor_ = nullptr;
 
   bool has_dual_gain_ = false;
-  // calin::ix::diagnostics::simple_charge_stats::SimpleChargeStats results_;
-  // calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats partials_;
 
-  // std::vector<ChannelHists*> chan_hists_;
-  //ChannelHists* camera_hists_;
+  std::vector<ChannelHists*> chan_hists_;
 };
 
 } } } // namespace calin::diagnostics::simple_charge_stats

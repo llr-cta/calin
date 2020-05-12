@@ -27,40 +27,116 @@ import "calin.proto";
 
 import "iact_data/telescope_run_configuration.proto";
 import "diagnostics/run_info.proto";
+import "diagnostics/simple_charge_hists.proto";
 import "diagnostics/simple_charge_stats.proto";
 import "diagnostics/waveform.proto";
 import "provenance/anthology.proto";
+import "iact_data/waveform_treatment_event_visitor.proto";
+import "iact_data/nectarcam_ancillary_data.proto";
 //import "common_types.proto";
 
 package calin.ix.diagnostics.stage1;
+
+message Stage1Config {
+  bool enable_mean_waveform                                = 1 [
+    (CFO).desc = "Enable calculation of mean waveforms for each trigger type." ];
+  bool enable_simple_waveform_hists                        = 2 [
+    (CFO).desc = "Enable histograms of simple quantities based on waveforms "
+      "(sum, max sample, etc...), for each trigger type." ];
+  bool enable_ancillary_data                               = 3 [
+    (CFO).desc = "Enable retrieval of ancillary database entries for run." ];
+
+  // bool enable_max_code_hists                                        = 10 [
+  //   (CFO).desc = "Enable max-sample code histograms, histograms of the "
+  //     "frequency of each waveform maximum sample value, for each trigger type." ];
+  // bool enable_all_code_hists                                        = 11 [
+  //   (CFO).desc = "Enable all-sample code histograms, histograms of the "
+  //     "frequency of each waveform sample value, for each trigger type." ];
+
+  calin.ix.iact_data.waveform_treatment_event_visitor.
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig high_gain_opt_sum = 100 [
+    (CFO).desc = "Configuration of high-gain optimal window sum." ];
+
+  calin.ix.iact_data.waveform_treatment_event_visitor.
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig low_gain_opt_sum = 101 [
+    (CFO).desc = "Configuration of low-gain optimal window sum. If not defined "
+      "then the high-gain config is used." ];
+
+  calin.ix.diagnostics.run_info.RunInfoConfig run_info     = 102 [
+    (CFO).desc = "Configuration of run info calculator." ];
+
+  calin.ix.diagnostics.simple_charge_stats.SimpleChargeStatsConfig simple_charge_stats = 103 [
+    (CFO).desc = "Configuration of simple charge stats calculator." ];
+
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHistsConfig phy_trigger_waveform_hists = 104 [
+    (CFO).desc = "Configuration of simple waveform hists calculator for physics events." ];
+
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHistsConfig ped_trigger_waveform_hists = 105 [
+    (CFO).desc = "Configuration of simple waveform hists calculator for pedestal events." ];
+
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHistsConfig ext_trigger_waveform_hists = 106 [
+    (CFO).desc = "Configuration of simple waveform hists calculator for external-flasher events." ];
+
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHistsConfig int_trigger_waveform_hists = 107 [
+    (CFO).desc = "Configuration of simple waveform hists calculator for internal-flasher events." ];
+
+  string ancillary_database                                = 200 [
+    (CFO).desc = "Location of ancillary database if used." ];
+};
+
+message NectarCamSpecificStage1 {
+  calin.ix.iact_data.nectarcam_ancillary_data.NectarCAMAncillaryData ancillary_data = 1;
+}
 
 message Stage1 {
   uint32 run_number                                        = 1 [
     (CFO).desc = "Run number." ];
   int64 run_start_time                                     = 2 [
     (CFO).desc = "Approximate start date and time of run, possibly from NTP on "
-      "camera server, in nanoseconds pas the epoch.", (CFO).units = "ns" ];
+      "camera server, in nanoseconds after the epoch.", (CFO).units = "ns" ];
   string run_start_time_string                             = 3 [
     (CFO).desc = "Approximate start date and time of run, possibly from NTP on "
-      "camera server, in nanoseconds pas the epoch.", (CFO).units = "ns" ];
+      "camera server, in nanoseconds after the epoch.", (CFO).units = "ns" ];
   uint32 telescope_id                                      = 4 [
     (CFO).desc = "Telescope ID." ];
   string filename                                          = 5 [
     (CFO).desc = "Primary filename of run data." ];
+  int64 run_duration                                       = 6 [
+    (CFO).desc = "Run duration, possibly derived from NTP on "
+      "camera server, in nanoseconds.", (CFO).units = "ns" ];
 
-  calin.ix.iact_data.telescope_run_configuration.TelescopeRunConfiguration run_config = 10;
+  uint64 num_physics_triggers                              = 10 [
+    (CFO).desc = "Number of events classified as physics events." ];
+  uint64 num_pedestal_triggers                             = 11 [
+    (CFO).desc = "Number of events with pedestal trigger TIB bit set." ];
+  uint64 num_external_calibration_triggers                 = 12 [
+    (CFO).desc = "Number of events with external calibration trigger TIB bit set." ];
+  uint64 num_internal_calibration_trigger                  = 13 [
+    (CFO).desc = "Number of events with internal calibration trigger TIB bit set." ];
 
-  calin.ix.diagnostics.run_info.RunInfo run_info           = 11;
+  calin.ix.iact_data.telescope_run_configuration.TelescopeRunConfiguration run_config = 100;
 
-  calin.ix.diagnostics.simple_charge_stats.SimpleChargeStats charge_stats = 12;
+  calin.ix.diagnostics.run_info.RunInfo run_info           = 101;
 
-  calin.ix.diagnostics.waveform.WaveformMean mean_wf_physics = 20;
-  calin.ix.diagnostics.waveform.WaveformMean mean_wf_pedestal = 21;
-  calin.ix.diagnostics.waveform.WaveformMean mean_wf_external_flasher = 22;
-  calin.ix.diagnostics.waveform.WaveformMean mean_wf_internal_flasher = 23;
+  calin.ix.diagnostics.simple_charge_stats.SimpleChargeStats charge_stats = 102;
 
+  calin.ix.diagnostics.waveform.WaveformMean mean_wf_physics = 110;
+  calin.ix.diagnostics.waveform.WaveformMean mean_wf_pedestal = 111;
+  calin.ix.diagnostics.waveform.WaveformMean mean_wf_external_flasher = 112;
+  calin.ix.diagnostics.waveform.WaveformMean mean_wf_internal_flasher = 113;
+
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_physics = 120;
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_pedestal = 121;
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_external_flasher = 122;
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_internal_flasher = 33;
+
+  Stage1Config config                                      = 999;
   calin.ix.provenance.anthology.Anthology provenance_anthology = 1000 [
     (CFO).desc = "Provenance information registered at time of Stage1 results extraction." ];
+
+  oneof telescope_specific {
+    NectarCamSpecificStage1 nectarcam                      = 2000;
+  };
 };
 
 message SelectByRunNumber {

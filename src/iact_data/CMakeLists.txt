@@ -22,7 +22,8 @@ set(CALIN_SOURCES
 	functional_event_visitor.cpp instrument_layout.cpp
 	nectarcam_layout.cpp nectarcam_configuration.cpp
 	lstcam_layout.cpp
-	waveform_treatment_event_visitor.cpp waveform_treatment_event_visitor_impl.cpp)
+	waveform_treatment_event_visitor.cpp waveform_treatment_event_visitor_impl.cpp
+	nectarcam_ancillary_data.cpp)
 
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_SOURCES ${CALIN_SOURCES}

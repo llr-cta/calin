@@ -1,10 +1,10 @@
 /*
 
-   calin/iact_data/nectarcam_layout.i -- Stephen Fegan -- 2016-06-06
+   calin/iact_data/nectarcam_ancillary_data.i -- Stephen Fegan -- 2020-05-11
 
-   SWIG interface file for calin NectarCam camera layout
+   Classes to extract NectarCAM ancillary data from SQL database
 
-   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2020, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
@@ -20,11 +20,11 @@
 
 */
 
-%module (package="calin.iact_data") nectarcam_layout
+%module (package="calin.iact_data") nectarcam_ancillary_data
 %feature(autodoc,2);
 
 %{
-#include "iact_data/nectarcam_layout.hpp"
+#include "iact_data/nectarcam_ancillary_data.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -35,9 +35,11 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%newobject nectarcam_19module_layout();
-%newobject nectarcam_61module_layout();
-%newobject nectarcam_layout();
+%newobject retrieve_nectarcam_ancillary_data(const std::string& db_file,
+  int camera_id, int64_t start_time_sec, int64_t end_time_sec);
+%newobject retrieve_nectarcam_ancillary_data(const std::string& db_file,
+  int camera_id, const std::string& start_time_sec, const std::string& end_time_sec);
 
-%import "iact_data/instrument_layout.pb.i"
-%include "iact_data/nectarcam_layout.hpp"
+
+%import "iact_data/nectarcam_ancillary_data.pb.i"
+%include "iact_data/nectarcam_ancillary_data.hpp"

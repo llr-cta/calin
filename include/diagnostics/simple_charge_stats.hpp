@@ -76,89 +76,36 @@ public:
 
 private:
   struct SingleGainChannelHists {
-    SingleGainChannelHists(double time_resolution, double dark_resolution, double bright_resolution):
-      ped_wf_q_sum(new calin::math::histogram::Histogram1D(dark_resolution)),
+    SingleGainChannelHists(double time_resolution):
       ped_wf_1_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
       ped_wf_q_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
-      ped_wf_q2_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
-      ext_opt_win_q_sum(new calin::math::histogram::Histogram1D(bright_resolution)),
-      ext_opt_win_index(new calin::math::histogram::Histogram1D(1.0)),
-      ext_opt_win_max(new calin::math::histogram::Histogram1D(bright_resolution)),
-      phys_opt_win_q_sum(new calin::math::histogram::Histogram1D(bright_resolution)),
-      phys_opt_win_index(new calin::math::histogram::Histogram1D(1.0))
+      ped_wf_q2_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0))
     { /* nothing to see here */ }
 
     ~SingleGainChannelHists() {
-      delete ped_wf_q_sum;
       delete ped_wf_1_sum_vs_time;
       delete ped_wf_q_sum_vs_time;
       delete ped_wf_q2_sum_vs_time;
-      delete ext_opt_win_q_sum;
-      delete ext_opt_win_index;
-      delete ext_opt_win_max;
-      delete phys_opt_win_q_sum;
-      delete phys_opt_win_index;
     }
-
-    calin::math::histogram::Histogram1D* ped_wf_q_sum;
 
     calin::math::histogram::Histogram1D* ped_wf_1_sum_vs_time;
     calin::math::histogram::Histogram1D* ped_wf_q_sum_vs_time;
     calin::math::histogram::Histogram1D* ped_wf_q2_sum_vs_time;
-
-    calin::math::histogram::Histogram1D* ext_opt_win_q_sum;
-    calin::math::histogram::Histogram1D* ext_opt_win_index;
-    calin::math::histogram::Histogram1D* ext_opt_win_max;
-
-    calin::math::histogram::Histogram1D* phys_opt_win_q_sum;
-    calin::math::histogram::Histogram1D* phys_opt_win_index;
-  };
-
-  struct DualGainChannelHists {
-    DualGainChannelHists(double lg_resolution):
-      ext_opt_win_1_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution)),
-      ext_opt_win_qhg_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution)),
-      ext_opt_win_q2hg_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution)),
-      phy_opt_1_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution)),
-      phy_opt_qhg_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution)),
-      phy_opt_q2hg_sum_vs_qlg(new calin::math::histogram::Histogram1D(lg_resolution))
-    { /* nothing to see here */ }
-
-    ~DualGainChannelHists() {
-      delete ext_opt_win_1_sum_vs_qlg;
-      delete ext_opt_win_qhg_sum_vs_qlg;
-      delete ext_opt_win_q2hg_sum_vs_qlg;
-      delete phy_opt_1_sum_vs_qlg;
-      delete phy_opt_qhg_sum_vs_qlg;
-      delete phy_opt_q2hg_sum_vs_qlg;
-    }
-
-    calin::math::histogram::Histogram1D* ext_opt_win_1_sum_vs_qlg;
-    calin::math::histogram::Histogram1D* ext_opt_win_qhg_sum_vs_qlg;
-    calin::math::histogram::Histogram1D* ext_opt_win_q2hg_sum_vs_qlg;
-    calin::math::histogram::Histogram1D* phy_opt_1_sum_vs_qlg;
-    calin::math::histogram::Histogram1D* phy_opt_qhg_sum_vs_qlg;
-    calin::math::histogram::Histogram1D* phy_opt_q2hg_sum_vs_qlg;
   };
 
   struct ChannelHists {
-    ChannelHists(bool has_dual_gain_, double time_resolution,
-        double hg_dark_resolution, double hg_bright_resolution,
-        double lg_dark_resolution, double lg_bright_resolution):
-      high_gain(new SingleGainChannelHists(time_resolution, hg_dark_resolution, hg_bright_resolution)),
-      low_gain(has_dual_gain_ ? new SingleGainChannelHists(time_resolution, lg_dark_resolution, lg_bright_resolution) : nullptr),
-      dual_gain(has_dual_gain_ ? new DualGainChannelHists(lg_bright_resolution) : nullptr)
+    ChannelHists(bool has_dual_gain_, double time_resolution):
+      high_gain(new SingleGainChannelHists(time_resolution)),
+      low_gain(has_dual_gain_ ? new SingleGainChannelHists(time_resolution) : nullptr)
     { /* nothing to see here */ }
 
     ~ChannelHists() {
       delete high_gain;
       delete low_gain;
-      delete dual_gain;
     }
 
     SingleGainChannelHists* high_gain = nullptr;
     SingleGainChannelHists* low_gain = nullptr;
-    DualGainChannelHists* dual_gain = nullptr;
   };
 
   void integrate_one_gain_partials(

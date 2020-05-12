@@ -1,6 +1,6 @@
 /*
 
-   calin/iact_data/nectarcam_data_source.hpp -- Stephen Fegan -- 2016-01-11
+   calin/iact_data/nectarcam_actl_event_decoder.hpp -- Stephen Fegan -- 2016-01-11
 
    A supplier of single telescope data from NectarCam DAQ data files
 
