@@ -44,8 +44,7 @@ class SQLite3Serializer: public SQLSerializer
 public:
   enum OpenMode { EXISTING_OR_NEW_RW, EXISTING_RW, TRUNCATE_RW, READ_ONLY, READ_ONLY_NON_CALIN_DB };
 
-  SQLite3Serializer(const std::string& filename,
-                    OpenMode open_mode = EXISTING_OR_NEW_RW,
+  SQLite3Serializer(const std::string& filename, OpenMode open_mode = READ_ONLY,
                     bool write_sql_to_log = false);
   virtual ~SQLite3Serializer();
 
