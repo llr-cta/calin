@@ -33,6 +33,7 @@ using namespace calin::iact_data::waveform_treatment_event_visitor;
 
 using calin::math::special::SQR;
 using calin::math::covariance_calc::cov_i64_gen;
+using calin::math::covariance_calc::cov_double_gen;
 
 SimpleChargeStatsParallelEventVisitor::
 SimpleChargeStatsParallelEventVisitor(
@@ -154,9 +155,85 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
       partials_gc.ped_trig_full_wf_sumsq(), partials_gc.ped_trig_num_events(),
       partials_gc.ped_trig_full_wf_sum(), partials_gc.ped_trig_num_events(),
       partials_gc.ped_trig_full_wf_sum(), partials_gc.ped_trig_num_events()));
+
+    results_g->add_ped_trigger_ped_win_mean(
+      double(partials_gc.ped_trig_ped_win_sum())/double(partials_gc.ped_trig_num_events()));
+    results_g->add_ped_trigger_ped_win_var(cov_i64_gen(
+      partials_gc.ped_trig_ped_win_sumsq(), partials_gc.ped_trig_num_events(),
+      partials_gc.ped_trig_ped_win_sum(), partials_gc.ped_trig_num_events(),
+      partials_gc.ped_trig_ped_win_sum(), partials_gc.ped_trig_num_events()));
+
+    results_g->add_ped_trigger_sig_win_mean(
+      double(partials_gc.ped_trig_sig_win_sum())/double(partials_gc.ped_trig_num_events()));
+    results_g->add_ped_trigger_sig_win_var(cov_i64_gen(
+      partials_gc.ped_trig_sig_win_sumsq(), partials_gc.ped_trig_num_events(),
+      partials_gc.ped_trig_sig_win_sum(), partials_gc.ped_trig_num_events(),
+      partials_gc.ped_trig_sig_win_sum(), partials_gc.ped_trig_num_events()));
+
+    results_g->add_ped_trigger_opt_win_mean(
+      double(partials_gc.ped_trig_opt_win_sum())/double(partials_gc.ped_trig_num_events()));
+    results_g->add_ped_trigger_opt_win_var(cov_i64_gen(
+      partials_gc.ped_trig_opt_win_sumsq(), partials_gc.ped_trig_num_events(),
+      partials_gc.ped_trig_opt_win_sum(), partials_gc.ped_trig_num_events(),
+      partials_gc.ped_trig_opt_win_sum(), partials_gc.ped_trig_num_events()));
   } else {
     results_g->add_ped_trigger_full_wf_mean(0.0);
     results_g->add_ped_trigger_full_wf_var(0.0);
+    results_g->add_ped_trigger_ped_win_mean(0.0);
+    results_g->add_ped_trigger_ped_win_var(0.0);
+    results_g->add_ped_trigger_sig_win_mean(0.0);
+    results_g->add_ped_trigger_sig_win_var(0.0);
+    results_g->add_ped_trigger_opt_win_mean(0.0);
+    results_g->add_ped_trigger_opt_win_var(0.0);
+  }
+
+  results_g->add_ext_trigger_event_count(partials_gc.ext_trig_num_events());
+  if(partials_gc.ext_trig_num_events() > 0) {
+    results_g->add_ext_trigger_sig_win_mean(
+      double(partials_gc.ext_trig_sig_win_sum())/double(partials_gc.ext_trig_num_events()));
+    results_g->add_ext_trigger_sig_win_var(cov_i64_gen(
+      partials_gc.ext_trig_sig_win_sumsq(), partials_gc.ext_trig_num_events(),
+      partials_gc.ext_trig_sig_win_sum(), partials_gc.ext_trig_num_events(),
+      partials_gc.ext_trig_sig_win_sum(), partials_gc.ext_trig_num_events()));
+
+    results_g->add_ext_trigger_opt_win_mean(
+      double(partials_gc.ext_trig_opt_win_sum())/double(partials_gc.ext_trig_num_events()));
+    results_g->add_ext_trigger_opt_win_var(cov_i64_gen(
+      partials_gc.ext_trig_opt_win_sumsq(), partials_gc.ext_trig_num_events(),
+      partials_gc.ext_trig_opt_win_sum(), partials_gc.ext_trig_num_events(),
+      partials_gc.ext_trig_opt_win_sum(), partials_gc.ext_trig_num_events()));
+  } else {
+    results_g->add_ext_trigger_sig_win_mean(0.0);
+    results_g->add_ext_trigger_sig_win_var(0.0);
+    results_g->add_ext_trigger_opt_win_mean(0.0);
+    results_g->add_ext_trigger_opt_win_var(0.0);
+  }
+}
+
+void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_camera_partials(
+  calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
+  const calin::ix::diagnostics::simple_charge_stats::PartialOneGainCameraSimpleChargeStats& partials_gc)
+{
+  results_g->set_ext_trigger_all_channel_count(partials_gc.ext_trig_all_num_events());
+  if(partials_gc.ext_trig_all_num_events() > 0) {
+    results_g->set_ext_trigger_all_channel_sig_win_mean(
+      double(partials_gc.ext_trig_all_sig_win_sum())/double(partials_gc.ext_trig_all_num_events()));
+    results_g->set_ext_trigger_all_channel_sig_win_var(cov_double_gen(
+      partials_gc.ext_trig_all_sig_win_sumsq(), partials_gc.ext_trig_all_num_events(),
+      partials_gc.ext_trig_all_sig_win_sum(), partials_gc.ext_trig_all_num_events(),
+      partials_gc.ext_trig_all_sig_win_sum(), partials_gc.ext_trig_all_num_events()));
+
+    results_g->set_ext_trigger_all_channel_opt_win_mean(
+      double(partials_gc.ext_trig_all_opt_win_sum())/double(partials_gc.ext_trig_all_num_events()));
+    results_g->set_ext_trigger_all_channel_opt_win_var(cov_double_gen(
+      partials_gc.ext_trig_all_opt_win_sumsq(), partials_gc.ext_trig_all_num_events(),
+      partials_gc.ext_trig_all_opt_win_sum(), partials_gc.ext_trig_all_num_events(),
+      partials_gc.ext_trig_all_opt_win_sum(), partials_gc.ext_trig_all_num_events()));
+  } else {
+    results_g->add_ext_trigger_sig_win_mean(0.0);
+    results_g->add_ext_trigger_sig_win_var(0.0);
+    results_g->add_ext_trigger_opt_win_mean(0.0);
+    results_g->add_ext_trigger_opt_win_var(0.0);
   }
 }
 
@@ -196,7 +273,10 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
       integrate_one_gain_partials(results_.mutable_low_gain(), partials_chan.low_gain());
     }
   }
-
+  integrate_one_gain_camera_partials(results_.mutable_high_gain(), partials_.camera().high_gain());
+  if(has_dual_gain_) {
+    integrate_one_gain_camera_partials(results_.mutable_low_gain(), partials_.camera().low_gain());
+  }
   partials_.Clear();
   return true;
 }
@@ -206,21 +286,48 @@ void SimpleChargeStatsParallelEventVisitor::record_one_gain_channel_data(
   const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
   unsigned ichan, double elapsed_event_time,
   calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats,
-  SingleGainChannelHists* one_gain_hists)
+  SingleGainChannelHists* one_gain_hists, unsigned& nsum, int64_t& opt_sum, int64_t& sig_sum)
 {
   one_gain_stats->increment_all_trig_num_events();
   one_gain_stats->increment_all_trig_ped_win_sum(sum_visitor->array_chan_bkg_win_sum()[ichan]);
   one_gain_stats->increment_all_trig_ped_win_sumsq(SQR(sum_visitor->array_chan_bkg_win_sum()[ichan]));
   if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL) {
-    double wf_all_sum = sum_visitor->array_chan_all_sum()[ichan];
-    double sqr_wf_all_sum = SQR(wf_all_sum);
+    int64_t wf_all_sum = sum_visitor->array_chan_all_sum()[ichan];
+    int64_t sqr_wf_all_sum = SQR(wf_all_sum);
     one_gain_stats->increment_ped_trig_num_events();
     one_gain_stats->increment_ped_trig_full_wf_sum(wf_all_sum);
     one_gain_stats->increment_ped_trig_full_wf_sumsq(sqr_wf_all_sum);
+    int64_t ped_win_sum = sum_visitor->array_chan_bkg_win_sum()[ichan];
+    int64_t sqr_ped_win_sum = SQR(ped_win_sum);
+    one_gain_stats->increment_ped_trig_ped_win_sum(ped_win_sum);
+    one_gain_stats->increment_ped_trig_ped_win_sumsq(sqr_ped_win_sum);
+    int64_t sig_win_sum = sum_visitor->array_chan_sig_win_sum()[ichan];
+    int64_t sqr_sig_win_sum = SQR(sig_win_sum);
+    one_gain_stats->increment_ped_trig_sig_win_sum(sig_win_sum);
+    one_gain_stats->increment_ped_trig_sig_win_sumsq(sqr_sig_win_sum);
+    int64_t opt_win_sum = sum_visitor->array_chan_opt_win_sum()[ichan];
+    int64_t sqr_opt_win_sum = SQR(opt_win_sum);
+    one_gain_stats->increment_ped_trig_opt_win_sum(opt_win_sum);
+    one_gain_stats->increment_ped_trig_opt_win_sumsq(sqr_opt_win_sum);
     one_gain_hists->ped_wf_1_sum_vs_time->insert(elapsed_event_time);
     one_gain_hists->ped_wf_q_sum_vs_time->insert(elapsed_event_time, wf_all_sum);
     one_gain_hists->ped_wf_q2_sum_vs_time->insert(elapsed_event_time, sqr_wf_all_sum);
+    ++nsum;
+    opt_sum += opt_win_sum;
+    sig_sum += sig_win_sum;
   } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER) {
+    int64_t sig_win_sum = sum_visitor->array_chan_sig_win_sum()[ichan];
+    int64_t sqr_sig_win_sum = SQR(sig_win_sum);
+    one_gain_stats->increment_ext_trig_num_events();
+    one_gain_stats->increment_ext_trig_sig_win_sum(sig_win_sum);
+    one_gain_stats->increment_ext_trig_sig_win_sumsq(sqr_sig_win_sum);
+    int64_t opt_win_sum = sum_visitor->array_chan_opt_win_sum()[ichan];
+    int64_t sqr_opt_win_sum = SQR(opt_win_sum);
+    one_gain_stats->increment_ext_trig_opt_win_sum(opt_win_sum);
+    one_gain_stats->increment_ext_trig_opt_win_sumsq(sqr_opt_win_sum);
+    ++nsum;
+    opt_sum += opt_win_sum;
+    sig_sum += sig_win_sum;
   } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
   }
 }
@@ -233,22 +340,50 @@ void SimpleChargeStatsParallelEventVisitor::record_one_visitor_data(
   double elapsed_event_time = event->elapsed_event_time().time_ns() * 1e-9;
 
   if(sum_visitor and sum_visitor->is_same_event(seq_index)) {
+    unsigned nsum_hg = 0;
+    int64_t opt_sum_hg = 0;
+    int64_t sig_sum_hg = 0;
+    unsigned nsum_lg = 0;
+    int64_t opt_sum_lg = 0;
+    int64_t sig_sum_lg = 0;
     for(unsigned ichan=0; ichan<sum_visitor->nchan(); ichan++) {
       auto* pc = partials->mutable_channel(ichan);
       switch(sum_visitor->array_chan_signal_type()[ichan]) {
       case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
       case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
         record_one_gain_channel_data(event, sum_visitor, ichan, elapsed_event_time,
-          pc->mutable_high_gain(), chan_hists_[ichan]->high_gain);
+          pc->mutable_high_gain(), chan_hists_[ichan]->high_gain,
+          nsum_hg, opt_sum_hg, sig_sum_hg);
         break;
       case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
         record_one_gain_channel_data(event, sum_visitor, ichan, elapsed_event_time,
-          pc->mutable_low_gain(), chan_hists_[ichan]->low_gain);
+          pc->mutable_low_gain(), chan_hists_[ichan]->low_gain,
+          nsum_lg, opt_sum_lg, sig_sum_lg);
         break;
       case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
       default:
         // do nothing
         break;
+      }
+    }
+    if(nsum_hg == sum_visitor->nchan()) {
+      if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER) {
+        auto* pcam = partials->mutable_camera()->mutable_high_gain();
+        pcam->increment_ext_trig_all_num_events();
+        pcam->increment_ext_trig_all_sig_win_sum(sig_sum_hg);
+        pcam->increment_ext_trig_all_sig_win_sumsq(SQR(sig_sum_hg));
+        pcam->increment_ext_trig_all_opt_win_sum(opt_sum_hg);
+        pcam->increment_ext_trig_all_opt_win_sumsq(SQR(opt_sum_hg));
+      }
+    }
+    if(nsum_lg == sum_visitor->nchan()) {
+      if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER) {
+        auto* pcam = partials->mutable_camera()->mutable_low_gain();
+        pcam->increment_ext_trig_all_num_events();
+        pcam->increment_ext_trig_all_sig_win_sum(sig_sum_lg);
+        pcam->increment_ext_trig_all_sig_win_sumsq(SQR(sig_sum_lg));
+        pcam->increment_ext_trig_all_opt_win_sum(opt_sum_lg);
+        pcam->increment_ext_trig_all_opt_win_sumsq(SQR(opt_sum_lg));
       }
     }
   }
