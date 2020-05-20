@@ -127,6 +127,26 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
     results_g->add_all_trigger_ped_win_var(0.0);
   }
 
+  if(partials_gc.has_all_trig_pedwin_vs_time_1_sum()) {
+    auto* mean_hist = new calin::ix::math::histogram::Histogram1DData;
+    auto* var_hist = new calin::ix::math::histogram::Histogram1DData;
+    mean_hist->CopyFrom(partials_gc.all_trig_pedwin_vs_time_q_sum());
+    var_hist->CopyFrom(partials_gc.all_trig_pedwin_vs_time_q2_sum());
+    for(unsigned ibin=0;ibin<partials_gc.all_trig_pedwin_vs_time_1_sum().bins_size();ibin++) {
+      double count = partials_gc.all_trig_pedwin_vs_time_1_sum().bins(ibin);
+      if(count>0) {
+        mean_hist->set_bins(ibin, mean_hist->bins(ibin)/count);
+        var_hist->set_bins(ibin, var_hist->bins(ibin)/count - SQR(mean_hist->bins(ibin)));
+      }
+    }
+    calin::math::histogram::sparsify(*mean_hist,
+      results_g->add_all_trigger_ped_win_mean_vs_time());
+    calin::math::histogram::sparsify(*var_hist,
+      results_g->add_all_trigger_ped_win_var_vs_time());
+    delete var_hist;
+    delete mean_hist;
+  }
+
   if(partials_gc.has_ped_trig_vs_time_1_sum()) {
     auto* mean_hist = new calin::ix::math::histogram::Histogram1DData;
     auto* var_hist = new calin::ix::math::histogram::Histogram1DData;
@@ -241,7 +261,16 @@ void SimpleChargeStatsParallelEventVisitor::dump_single_gain_channel_hists_to_pa
   const SingleGainChannelHists& hists,
   calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* partials)
 {
-  auto* hp = hists.ped_wf_1_sum_vs_time->dump_as_proto();
+  auto* hp = hists.all_pedwin_1_sum_vs_time->dump_as_proto();
+  partials->mutable_all_trig_pedwin_vs_time_1_sum()->IntegrateFrom(*hp);
+
+  hists.all_pedwin_q_sum_vs_time->dump_as_proto(hp);
+  partials->mutable_all_trig_pedwin_vs_time_q_sum()->IntegrateFrom(*hp);
+
+  hists.all_pedwin_q2_sum_vs_time->dump_as_proto(hp);
+  partials->mutable_all_trig_pedwin_vs_time_q2_sum()->IntegrateFrom(*hp);
+
+  hists.ped_wf_1_sum_vs_time->dump_as_proto(hp);
   partials->mutable_ped_trig_vs_time_1_sum()->IntegrateFrom(*hp);
 
   hists.ped_wf_q_sum_vs_time->dump_as_proto(hp);
@@ -289,16 +318,20 @@ void SimpleChargeStatsParallelEventVisitor::record_one_gain_channel_data(
   SingleGainChannelHists* one_gain_hists, unsigned& nsum, int64_t& opt_sum, int64_t& sig_sum)
 {
   one_gain_stats->increment_all_trig_num_events();
-  one_gain_stats->increment_all_trig_ped_win_sum(sum_visitor->array_chan_bkg_win_sum()[ichan]);
-  one_gain_stats->increment_all_trig_ped_win_sumsq(SQR(sum_visitor->array_chan_bkg_win_sum()[ichan]));
+
+  int64_t ped_win_sum = sum_visitor->array_chan_bkg_win_sum()[ichan];
+  int64_t sqr_ped_win_sum = SQR(ped_win_sum);
+  one_gain_stats->increment_all_trig_ped_win_sum(ped_win_sum);
+  one_gain_stats->increment_all_trig_ped_win_sumsq(sqr_ped_win_sum);
+  one_gain_hists->all_pedwin_1_sum_vs_time->insert(elapsed_event_time);
+  one_gain_hists->all_pedwin_q_sum_vs_time->insert(elapsed_event_time, ped_win_sum);
+  one_gain_hists->all_pedwin_q2_sum_vs_time->insert(elapsed_event_time, sqr_ped_win_sum);
   if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL) {
     int64_t wf_all_sum = sum_visitor->array_chan_all_sum()[ichan];
     int64_t sqr_wf_all_sum = SQR(wf_all_sum);
     one_gain_stats->increment_ped_trig_num_events();
     one_gain_stats->increment_ped_trig_full_wf_sum(wf_all_sum);
     one_gain_stats->increment_ped_trig_full_wf_sumsq(sqr_wf_all_sum);
-    int64_t ped_win_sum = sum_visitor->array_chan_bkg_win_sum()[ichan];
-    int64_t sqr_ped_win_sum = SQR(ped_win_sum);
     one_gain_stats->increment_ped_trig_ped_win_sum(ped_win_sum);
     one_gain_stats->increment_ped_trig_ped_win_sumsq(sqr_ped_win_sum);
     int64_t sig_win_sum = sum_visitor->array_chan_sig_win_sum()[ichan];

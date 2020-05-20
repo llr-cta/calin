@@ -104,11 +104,20 @@ message OneGainSimpleChargeStats {
       "channels for external-flasher events.",
     (CFO).units = "DC^2" ];
 
-  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_mean_vs_time = 100 [
+  repeated calin.ix.math.histogram.Histogram1DData all_trigger_ped_win_mean_vs_time = 100 [
+    (CFO).desc = "Histogram of time evolution of mean of the pedestal-window "
+      "charge estimate over all events.",
+    (CFO).units = "s (bin-units), DC (weight-units)"];
+  repeated calin.ix.math.histogram.Histogram1DData all_trigger_ped_win_var_vs_time = 101 [
+    (CFO).desc = "Histogram of time evolution of variance of the pedestal-window "
+      "charge estimate over all events.",
+    (CFO).units = "s (bin-units), DC^2 (weight-units)"];
+
+  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_mean_vs_time = 110 [
     (CFO).desc = "Histogram of time evolution of mean of full-waveform "
       "charge estimate over pedestal events.",
     (CFO).units = "s (bin-units), DC (weight-units)"];
-  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_var_vs_time = 101 [
+  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_var_vs_time = 111 [
     (CFO).desc = "Histogram of time evolution of variance of full-waveform "
       "charge estimate over pedestal events.",
     (CFO).units = "s (bin-units), DC^2 (weight-units)"];
@@ -178,11 +187,17 @@ message PartialOneGainChannelSimpleChargeStats {
     (CFO).desc = "Sum of optimal window squared over external-flasher events.",
     (CFO).is_counter=true ];
 
-  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_1_sum    = 50 [
+  calin.ix.math.histogram.Histogram1DData all_trig_pedwin_vs_time_1_sum    = 50 [
+    (CFO).desc = "Histogram of number of all events vs time." ];
+  calin.ix.math.histogram.Histogram1DData all_trig_pedwin_vs_time_q_sum    = 51 [
+    (CFO).desc = "Histogram of pedestal-window charge from all events vs time." ];
+  calin.ix.math.histogram.Histogram1DData all_trig_pedwin_vs_time_q2_sum   = 52 [
+    (CFO).desc = "Histogram of pedestal-window charge squared from all events vs time." ];
+  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_1_sum    = 60 [
     (CFO).desc = "Histogram of number of ped events vs time." ];
-  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_q_sum    = 51 [
+  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_q_sum    = 61 [
     (CFO).desc = "Histogram of total charge from ped events vs time." ];
-  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_q2_sum   = 52 [
+  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_q2_sum   = 62 [
     (CFO).desc = "Histogram of total charge squared from ped events vs time." ];
 }
 

@@ -77,16 +77,26 @@ public:
 private:
   struct SingleGainChannelHists {
     SingleGainChannelHists(double time_resolution):
+      all_pedwin_1_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
+      all_pedwin_q_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
+      all_pedwin_q2_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
       ped_wf_1_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
       ped_wf_q_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
       ped_wf_q2_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0))
     { /* nothing to see here */ }
 
     ~SingleGainChannelHists() {
+      delete all_pedwin_1_sum_vs_time;
+      delete all_pedwin_q_sum_vs_time;
+      delete all_pedwin_q2_sum_vs_time;
       delete ped_wf_1_sum_vs_time;
       delete ped_wf_q_sum_vs_time;
       delete ped_wf_q2_sum_vs_time;
     }
+
+    calin::math::histogram::Histogram1D* all_pedwin_1_sum_vs_time;
+    calin::math::histogram::Histogram1D* all_pedwin_q_sum_vs_time;
+    calin::math::histogram::Histogram1D* all_pedwin_q2_sum_vs_time;
 
     calin::math::histogram::Histogram1D* ped_wf_1_sum_vs_time;
     calin::math::histogram::Histogram1D* ped_wf_q_sum_vs_time;
