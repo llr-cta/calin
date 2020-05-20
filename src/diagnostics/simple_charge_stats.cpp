@@ -139,6 +139,8 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
         var_hist->set_bins(ibin, var_hist->bins(ibin)/count - SQR(mean_hist->bins(ibin)));
       }
     }
+    calin::math::histogram::sparsify(partials_gc.all_trig_pedwin_vs_time_1_sum(),
+      results_g->add_all_trigger_ped_win_count_vs_time());
     calin::math::histogram::sparsify(*mean_hist,
       results_g->add_all_trigger_ped_win_mean_vs_time());
     calin::math::histogram::sparsify(*var_hist,
@@ -159,6 +161,8 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
         var_hist->set_bins(ibin, var_hist->bins(ibin)/count - SQR(mean_hist->bins(ibin)));
       }
     }
+    calin::math::histogram::sparsify(partials_gc.ped_trig_vs_time_1_sum(),
+      results_g->add_ped_trigger_full_wf_count_vs_time());
     calin::math::histogram::sparsify(*mean_hist,
       results_g->add_ped_trigger_full_wf_mean_vs_time());
     calin::math::histogram::sparsify(*var_hist,

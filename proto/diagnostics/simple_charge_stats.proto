@@ -30,7 +30,7 @@ package calin.ix.diagnostics.simple_charge_stats;
 
 message SimpleChargeStatsConfig {
   double ped_time_hist_resolution                                   = 20 [
-    (CFO).desc = "Resolution of pedestal mean and variance histogram.",
+    (CFO).desc = "Resolution of pedestal mean and variance vs time histogram.",
     (CFO).units = "s" ];
 };
 
@@ -104,20 +104,26 @@ message OneGainSimpleChargeStats {
       "channels for external-flasher events.",
     (CFO).units = "DC^2" ];
 
-  repeated calin.ix.math.histogram.Histogram1DData all_trigger_ped_win_mean_vs_time = 100 [
+  repeated calin.ix.math.histogram.Histogram1DData all_trigger_ped_win_count_vs_time = 100 [
+    (CFO).desc = "Number of events vs time in the all-event pedestal histograms.",
+    (CFO).units = "s (bin-units), events (weight-units)"];
+  repeated calin.ix.math.histogram.Histogram1DData all_trigger_ped_win_mean_vs_time = 101 [
     (CFO).desc = "Histogram of time evolution of mean of the pedestal-window "
       "charge estimate over all events.",
     (CFO).units = "s (bin-units), DC (weight-units)"];
-  repeated calin.ix.math.histogram.Histogram1DData all_trigger_ped_win_var_vs_time = 101 [
+  repeated calin.ix.math.histogram.Histogram1DData all_trigger_ped_win_var_vs_time = 102 [
     (CFO).desc = "Histogram of time evolution of variance of the pedestal-window "
       "charge estimate over all events.",
     (CFO).units = "s (bin-units), DC^2 (weight-units)"];
 
-  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_mean_vs_time = 110 [
+  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_count_vs_time = 110 [
+    (CFO).desc = "Number of events vs time in the all-event pedestal histograms.",
+    (CFO).units = "s (bin-units), events (weight-units)"];
+  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_mean_vs_time = 111 [
     (CFO).desc = "Histogram of time evolution of mean of full-waveform "
       "charge estimate over pedestal events.",
     (CFO).units = "s (bin-units), DC (weight-units)"];
-  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_var_vs_time = 111 [
+  repeated calin.ix.math.histogram.Histogram1DData ped_trigger_full_wf_var_vs_time = 112 [
     (CFO).desc = "Histogram of time evolution of variance of full-waveform "
       "charge estimate over pedestal events.",
     (CFO).units = "s (bin-units), DC^2 (weight-units)"];
