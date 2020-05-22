@@ -565,19 +565,19 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
       const double dthistmax = 9.0;
 
       calin::math::histogram::Histogram1D log10_delta_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
       calin::math::histogram::Histogram1D log10_delta2_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
 
       calin::math::histogram::Histogram1D pt_log10_delta_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
       calin::math::histogram::Histogram1D pt_log10_delta2_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
       calin::math::histogram::Histogram1D pt2_log10_delta_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
 
       calin::math::histogram::Histogram1D rec_log10_delta_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
 
       uint64_t second_last_event_number = partials_->event_number_sequence(event_index[0]);
       int64_t  second_last_event_time = partials_->event_time_sequence(event_index[0]);
