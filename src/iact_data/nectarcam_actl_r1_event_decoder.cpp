@@ -367,12 +367,24 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
     calin::iact_data::actl_event_decoder::decode_cdts_data(
       calin_event->mutable_cdts_data(), cta_event->nectarcam().cdts_data());
 
-    if(calin_event->cdts_data().white_rabbit_status() == 1) {
-      auto* calin_clock = calin_event->add_camera_clock();
-      calin_clock->set_clock_id(0);
-      calin_clock->set_time_value(calin_event->cdts_data().ucts_timestamp());
-      calin_clock->set_time_sequence_id(0);
-    }
+    const auto& cdts = calin_event->cdts_data();
+
+    // if(calin_event->cdts_data().white_rabbit_status() == 1) {
+    auto* calin_clock = calin_event->add_camera_clock();
+    calin_clock->set_clock_id(0);
+    calin_clock->set_time_value(cdts.ucts_timestamp());
+    calin_clock->set_time_sequence_id(0);
+
+    calin_clock = calin_event->add_camera_clock();
+    calin_clock->set_clock_id(1);
+    calin_clock->set_time_value(cdts.clock_counter());
+    calin_clock->set_time_sequence_id(cdts.pps_counter());
+
+    calin_clock = calin_event->add_camera_clock();
+    calin_clock->set_clock_id(2);
+    calin_clock->set_time_value(cdts.pps_counter());
+    calin_clock->set_time_sequence_id(cdts.pps_counter());
+    // }
   }
 
   // ==========================================================================
