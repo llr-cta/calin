@@ -399,6 +399,18 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   {
     calin::iact_data::actl_event_decoder::decode_tib_data(
       calin_event->mutable_tib_data(), cta_event->nectarcam().tib_data());
+
+    const auto& tib = calin_event->tib_data();
+
+    auto* calin_clock = calin_event->add_camera_clock();
+    calin_clock->set_clock_id(3);
+    calin_clock->set_time_value(tib.clock_counter());
+    calin_clock->set_time_sequence_id(tib.pps_counter());
+
+    calin_clock = calin_event->add_camera_clock();
+    calin_clock->set_clock_id(4);
+    calin_clock->set_time_value(tib.pps_counter());
+    calin_clock->set_time_sequence_id(0);
   }
 
   // ==========================================================================
