@@ -33,10 +33,14 @@ package calin.ix.iact_data.telescope_event;
 message Clock {
   int32 clock_id                                            = 1 [
     (CFO).desc = "Clock ID." ];
-  common_types.Time time                                    = 2 [
-    (CFO).desc = "Time according to the clock." ];
-  bool time_not_consecutive                                 = 3 [
-    (CFO).desc = "Time value not consecutive with previous value." ];
+  int64 time_value                                          = 2 [
+    (CFO).desc = "Time according to the clock in whatever units it counts." ];
+  int32 time_sequence_id                                    = 3 [
+    (CFO).desc = "Time sequence that this measurement belongs to. Some clocks "
+      "may be reset (or rollover) periodically. Clock times with the same "
+      "sequence id should increase consuctively but there may be a large jump "
+      "between concecutive measurement that have different sequence ids. An "
+      "example is a local oscillator counter that is reset to zero by the 1PPS." ];
 };
 
 message ModuleClocks {
@@ -101,7 +105,7 @@ message LSTCamModuleData {
     (CFO).desc = "Event counter, starting from 1.",
     (CFO).ref = "dragon_document_v5_3_00_04.pdf" ];
   uint32 trigger_counter                                    = 3 [
-    (CFO).desc = "Thee number of triggers Dragon gets since the beginning of "
+    (CFO).desc = "The number of triggers Dragon gets since the beginning of "
       "the run. Dragon counts the number of triggers even during the busy state "
       "i.e. readout dead time. Thus if there is a trigger issued during the busy "
       "state, trigger counter is incremented but the event counter is not. In "

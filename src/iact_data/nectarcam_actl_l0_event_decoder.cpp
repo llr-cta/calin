@@ -289,12 +289,26 @@ bool NectarCam_ACTL_L0_CameraEventDecoder::decode(
 
       module_data->set_bunch_event_time(ts);
 
-      int64_t time_ns = mod_counter->bunch_counter*1000000000LL + ts;
       auto* module_clocks = calin_event->add_module_clock();
       module_clocks->set_module_id(imod);
+
+      // Clock that combines TS1 and TS2
       auto* clock = module_clocks->add_clock();
       clock->set_clock_id(0);
-      clock->mutable_time()->set_time_ns(time_ns);
+      clock->set_time_value(ts);
+      clock->set_time_sequence_id(mod_counter->bunch_counter);
+
+      // Clock using TS1 only
+      clock = module_clocks->add_clock();
+      clock->set_clock_id(1);
+      clock->set_time_value(mod_counter->ts1);
+      clock->set_time_sequence_id(mod_counter->bunch_counter);
+
+      // Clock using PPS counter only
+      clock = module_clocks->add_clock();
+      clock->set_clock_id(2);
+      clock->set_time_value(mod_counter->bunch_counter);
+      clock->set_time_sequence_id(0);
     }
   }
 
@@ -313,7 +327,8 @@ bool NectarCam_ACTL_L0_CameraEventDecoder::decode(
     if(calin_event->cdts_data().white_rabbit_status() == 1) {
       auto* calin_clock = calin_event->add_camera_clock();
       calin_clock->set_clock_id(0);
-      calin_clock->mutable_time()->set_time_ns(calin_event->cdts_data().ucts_timestamp());
+      calin_clock->set_time_value(calin_event->cdts_data().ucts_timestamp());
+      calin_clock->set_time_sequence_id(0);
     }
   }
 

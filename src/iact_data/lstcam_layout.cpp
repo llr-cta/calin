@@ -135,6 +135,16 @@ CameraLayout* lstcam_general_layout(CameraLayout* layout,
   layout->set_can_read_trigger_image(false);
   layout->set_first_event_number(1);
 
+  layout->add_camera_clock_name("UCTS timestamp");
+  layout->add_camera_clock_name("UCTS 10MHz counter");
+  layout->add_camera_clock_name("UCTS pps counter");
+  layout->add_camera_clock_name("TIB 10MHz counter");
+  layout->add_camera_clock_name("TIB pps counter");
+
+  layout->add_module_clock_name("backplane 10MHz counter");
+  layout->add_module_clock_name("local 133MHz oscillator counter");
+  layout->add_module_clock_name("pps counter");
+
   layout->add_module_counter_name("backplane_10MHz_counter");
   layout->add_module_counter_name("pps_counter");
   layout->add_module_counter_name("event_counter");

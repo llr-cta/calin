@@ -243,17 +243,29 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
       module_data->set_local_133megahertz_counter(mod_counter->local_133MHz_counter);
 
       // Integer arithmatic approximate 133MHz to ns conversion
-      int64_t time_ns = (mod_counter->local_133MHz_counter
-        * config_.counts_to_time_133megahertz() /*30797ULL*/) >> 12;
+      // int64_t time_ns = (mod_counter->local_133MHz_counter
+      //   * config_.counts_to_time_133megahertz() /*30797ULL*/) >> 12;
+
       auto* module_clocks = calin_event->add_module_clock();
       module_clocks->set_module_id(imod);
+
+      // Clock using 10MHz clock that rolls over every 0.1us * 2^32 = 429 sec
       auto* clock = module_clocks->add_clock();
       clock->set_clock_id(0);
-      clock->mutable_time()->set_time_ns(time_ns);
+      clock->set_time_value(mod_counter->backplane_10MHz_counter);
+      clock->set_time_sequence_id(0); // What to set this to ?
+
+      // Clock using TS1 only
       clock = module_clocks->add_clock();
       clock->set_clock_id(1);
-      clock->mutable_time()->set_time_ns(mod_counter->pps_counter*1000000000ULL +
-        mod_counter->backplane_10MHz_counter*100ULL);
+      clock->set_time_value(mod_counter->local_133MHz_counter);
+      clock->set_time_sequence_id(mod_counter->pps_counter);
+
+      // Clock using PPS counter only
+      clock = module_clocks->add_clock();
+      clock->set_clock_id(2);
+      clock->set_time_value(mod_counter->pps_counter);
+      clock->set_time_sequence_id(0);
     }
   }
 
@@ -273,7 +285,8 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
     if(calin_event->cdts_data().white_rabbit_status() == 1) {
       auto* calin_clock = calin_event->add_camera_clock();
       calin_clock->set_clock_id(0);
-      calin_clock->mutable_time()->set_time_ns(calin_event->cdts_data().ucts_timestamp());
+      calin_clock->set_time_value(calin_event->cdts_data().ucts_timestamp());
+      calin_clock->set_time_sequence_id(0);
     }
   }
 
