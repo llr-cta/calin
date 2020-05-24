@@ -298,7 +298,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
     calin_clock = calin_event->add_camera_clock();
     calin_clock->set_clock_id(2);
     calin_clock->set_time_value(cdts.pps_counter());
-    calin_clock->set_time_sequence_id(cdts.pps_counter());
+    calin_clock->set_time_sequence_id(0);
     // }
   }
 
