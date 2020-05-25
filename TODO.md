@@ -2,6 +2,8 @@
 
 * Add decode of FEB charges in R1 format
 * Trigger calib plots into stage 1
+* Photo-statistics plots to S1
+* Histogram of number of channels
 * FEB & TIB oscillator frequency diagnostics
 * Run duration estimation when no UCTS
 * Implement pedestal distribution model
