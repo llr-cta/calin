@@ -108,11 +108,12 @@ void I64LinearRegressionAccumulator::shift_origin(int64_t x0, int64_t y0)
     int64_t dy0 = y0_ - y0;
     x0_  = x0;
     y0_  = y0;
-    X_  += W_*dx0;
-    Y_  += W_*dy0;
+    // Watch out for the order we do these shifts.. finish with X_ and Y_
     XX_ += 2*X_*dx0 + W_*dx0*dx0;
     XY_ += X_*dy0 + dx0*Y_ + W_*dx0*dy0;
     YY_ += 2*Y_*dy0 + W_*dy0*dy0;
+    X_  += W_*dx0;
+    Y_  += W_*dy0;
   }
 }
 
