@@ -97,11 +97,32 @@ namespace {
   }
 }
 
+void I64LinearRegressionAccumulator::shift_origin(int64_t x0, int64_t y0)
+{
+  if(not zero_set_) {
+    x0_ = x0;
+    y0_ = y0;
+    zero_set_ = true;
+  } else {
+    int64_t dx0 = x0_ - x0;
+    int64_t dy0 = y0_ - y0;
+    x0_  = x0;
+    y0_  = y0;
+    X_  += W_*dx0;
+    Y_  += W_*dy0;
+    XX_ += 2*X_*dx0 + W_*dx0*dx0;
+    XY_ += X_*dy0 + dx0*Y_ + W_*dx0*dy0;
+    YY_ += 2*Y_*dy0 + W_*dy0*dy0;
+  }
+}
+
 void I64LinearRegressionAccumulator::fit_parameters_and_d2(double& a, double& b, double& D2) const
 {
+#ifdef DEBUG_I64LinearRegressionAccumulator
   calin::util::log::LOG(calin::util::log::INFO)
     << "XX: " << double(XX_) << " X: " << double(X_) << " W: " << double(W_) << ' '
     << " XY: " << double(XY_) << " Y: " << double(Y_) << " YY: " << double(YY_);
+#endif
 
   __int128_t W = W_;
   __int128_t X = X_;
@@ -114,22 +135,29 @@ void I64LinearRegressionAccumulator::fit_parameters_and_d2(double& a, double& b,
   __int128_t sxx = XX*W - X*X;
   __int128_t syy = YY*W - Y*Y;
 
+#ifdef DEBUG_I64LinearRegressionAccumulator
   calin::util::log::LOG(calin::util::log::INFO)
     << "Sxx: " << double(sxx) << " Sxy: " << double(sxy) << " Syy: " << double(syy);
+#endif
 
   a = double(sxy)/double(sxx);
 
+#ifdef DEBUG_I64LinearRegressionAccumulator
   calin::util::log::LOG(calin::util::log::INFO)
     << "a_num: " << double(sxy) << " a_den: " << double(sxx) << " a: " << a;
+#endif
 
   __int128_t b_num = Y_*XX_ - X_*XY_;
 
   b = double(b_num)/double(sxx);
 
+#ifdef DEBUG_I64LinearRegressionAccumulator
   calin::util::log::LOG(calin::util::log::INFO)
     << "b_num: " << double(b_num) << " b: " << b;
+#endif
 
-  // This is where the fun starts !!
+  // This is where the fun starts - two 128bit multiplications into 256bits and
+  // then subtraction of terms to maintain full precision in SYY*SXX-SXY*SXY
 
   __uint128_t sxy_p = (sxy<0) ? (-sxy) : sxy;
 
@@ -141,21 +169,25 @@ void I64LinearRegressionAccumulator::fit_parameters_and_d2(double& a, double& b,
   mul256(sxx, syy, syy_sxx_h, syy_sxx_l);
   mul256(sxy_p, sxy_p, sxy_sxy_h, sxy_sxy_l);
 
+#ifdef DEBUG_I64LinearRegressionAccumulator
   calin::util::log::LOG(calin::util::log::INFO)
     << "syy_sxx_h: " << double(syy_sxx_h) << " syy_sxx_l: " << double(syy_sxx_l)
     << " sxy_sxy_h: " << double(sxy_sxy_h) << " sxy_sxy_l: " << double(sxy_sxy_l);
+#endif
 
   __uint128_t num_h = syy_sxx_h - sxy_sxy_h;
   __uint128_t num_l;
   if(syy_sxx_l >= sxy_sxy_l) {
     num_l = syy_sxx_l - sxy_sxy_l;
   } else {
-    num_l = ~(sxy_sxy_l - syy_sxx_l);
-    num_h -= 1;
+    num_l = ~(sxy_sxy_l - syy_sxx_l - 1); // Two's complement subtraction
+    num_h -= 1;                           // with carry from high-bits
   }
 
+#ifdef DEBUG_I64LinearRegressionAccumulator
   calin::util::log::LOG(calin::util::log::INFO)
     << "num_h: " << double(num_h) << " num_l: " << double(num_l);
+#endif
 
   D2 = (ldexp(double(num_h),128) + double(num_l))/double(sxx * W);
 }
@@ -163,70 +195,70 @@ void I64LinearRegressionAccumulator::fit_parameters_and_d2(double& a, double& b,
 
 void KahanLinearRegressionAccumulator::accumulate(double x, double y)
 {
-  if(not zero_set) {
-    x0 = x;
-    y0 = y;
-    W.accumulate(1.0);
-    zero_set = true;
+  if(not zero_set_) {
+    x0_ = x;
+    y0_ = y;
+    W_.accumulate(1.0);
+    zero_set_ = true;
   } else {
-    x -= x0;
-    y -= y0;
-    W.accumulate(1.0);
-    X.accumulate(x);
-    Y.accumulate(y);
-    XX.accumulate(x*x);
-    XY.accumulate(x*y);
-    YY.accumulate(y*y);
+    x -= x0_;
+    y -= y0_;
+    W_.accumulate(1.0);
+    X_.accumulate(x);
+    Y_.accumulate(y);
+    XX_.accumulate(x*x);
+    XY_.accumulate(x*y);
+    YY_.accumulate(y*y);
   }
 }
 
 void KahanLinearRegressionAccumulator::integrate_into(KahanLinearRegressionAccumulator& o)
 {
-  if(not o.zero_set) {
-    o.x0 = x0;
-    o.y0 = y0;
-    o.W  = W;
-    o.X  = X;
-    o.Y  = Y;
-    o.XX = XX;
-    o.XY = XY;
-    o.YY = YY;
-    o.zero_set = zero_set;
+  if(not o.zero_set_) {
+    o.x0_ = x0_;
+    o.y0_ = y0_;
+    o.W_  = W_;
+    o.X_  = X_;
+    o.Y_  = Y_;
+    o.XX_ = XX_;
+    o.XY_ = XY_;
+    o.YY_ = YY_;
+    o.zero_set_ = zero_set_;
   } else {
-    double dx0 = x0 - o.x0;
-    double dy0 = y0 - o.y0;
-    o.W.accumulate_from(W);
-    o.X.accumulate_from(X);
-    o.X.accumulate(W.total() * dx0);
-    o.Y.accumulate_from(Y);
-    o.Y.accumulate(W.total() * dy0);
-    o.XX.accumulate_from(XX);
-    o.XX.accumulate(2 * X.total() * dx0);
-    o.XX.accumulate(W.total() * dx0*dx0);
-    o.XY.accumulate_from(XY);
-    o.XY.accumulate(X.total() * dy0);
-    o.XY.accumulate(dx0 * Y.total());
-    o.XY.accumulate(W.total() * dx0*dy0);
-    o.YY.accumulate_from(YY);
-    o.YY.accumulate(2 * Y.total() * dy0);
-    o.YY.accumulate(W.total() * dy0*dy0);
+    double dx0 = x0_ - o.x0_;
+    double dy0 = y0_ - o.y0_;
+    o.W_.accumulate_from(W_);
+    o.X_.accumulate_from(X_);
+    o.X_.accumulate(W_.total() * dx0);
+    o.Y_.accumulate_from(Y_);
+    o.Y_.accumulate(W_.total() * dy0);
+    o.XX_.accumulate_from(XX_);
+    o.XX_.accumulate(2 * X_.total() * dx0);
+    o.XX_.accumulate(W_.total() * dx0*dx0);
+    o.XY_.accumulate_from(XY_);
+    o.XY_.accumulate(X_.total() * dy0);
+    o.XY_.accumulate(dx0 * Y_.total());
+    o.XY_.accumulate(W_.total() * dx0*dy0);
+    o.YY_.accumulate_from(YY_);
+    o.YY_.accumulate(2 * Y_.total() * dy0);
+    o.YY_.accumulate(W_.total() * dy0*dy0);
   }
 }
 
 void KahanLinearRegressionAccumulator::fit_parameters_and_d2(double& a, double& b, double& D2)
 {
   calin::util::log::LOG(calin::util::log::INFO)
-    << "XX: " << XX.total() << " X: " << X.total() << " W: " << W.total() << ' '
-    << " XY: " << XY.total() << " Y: " << Y.total() << " YY: " << YY.total();
+    << "XX: " << XX_.total() << " X: " << X_.total() << " W: " << W_.total() << ' '
+    << " XY: " << XY_.total() << " Y: " << Y_.total() << " YY: " << YY_.total();
 
-  calin::math::accumulator::KahanAccumulator a_num { XY };
-  a_num.accumulate(-X.total()*Y.total()/W.total());
+  calin::math::accumulator::KahanAccumulator a_num { XY_ };
+  a_num.accumulate(-X_.total()*Y_.total()/W_.total());
 
-  calin::math::accumulator::KahanAccumulator a_den { XX };
-  a_den.accumulate(-X.total()*X.total()/W.total());
+  calin::math::accumulator::KahanAccumulator a_den { XX_ };
+  a_den.accumulate(-X_.total()*X_.total()/W_.total());
 
   double a_dir = a_num.total()/a_den.total();
-  double b_dir = (Y.total() - a_dir*X.total())/W.total();
+  double b_dir = (Y_.total() - a_dir*X_.total())/W_.total();
 
   calin::util::log::LOG(calin::util::log::INFO)
     << "Direct A : " << a_dir;
@@ -234,25 +266,25 @@ void KahanLinearRegressionAccumulator::fit_parameters_and_d2(double& a, double& 
   calin::util::log::LOG(calin::util::log::INFO)
     << "Direct B : " << b_dir;
 
-  calin::math::accumulator::KahanAccumulator d2 { YY };
-  d2.accumulate_from_with_scaling(XX, a_dir*a_dir);
-  d2.accumulate_from_with_scaling(W, b_dir*b_dir);
-  d2.accumulate_from_with_scaling(XY, -2*a_dir);
-  d2.accumulate_from_with_scaling(X, 2*a_dir*b_dir);
-  d2.accumulate_from_with_scaling(Y, -2*b_dir);
+  calin::math::accumulator::KahanAccumulator d2 { YY_ };
+  d2.accumulate_from_with_scaling(XX_, a_dir*a_dir);
+  d2.accumulate_from_with_scaling(W_, b_dir*b_dir);
+  d2.accumulate_from_with_scaling(XY_, -2*a_dir);
+  d2.accumulate_from_with_scaling(X_, 2*a_dir*b_dir);
+  d2.accumulate_from_with_scaling(Y_, -2*b_dir);
 
   calin::util::log::LOG(calin::util::log::INFO)
     << "Direct D2 : " << d2.total();
 
   Eigen::Matrix2d m;
-  m << XX.total(), X.total(), X.total(), W.total();
+  m << XX_.total(), X_.total(), X_.total(), W_.total();
   Eigen::Vector2d v;
-  v << XY.total(), Y.total();
+  v << XY_.total(), Y_.total();
   Eigen::Vector2d ab = m.fullPivHouseholderQr().solve(v);
   a = ab(0);
   b = ab(1);
 
-  D2 = YY.total() + a*a*XX.total() + b*b*W.total() - 2*a*XY.total() - 2*b*Y.total() + 2*a*b*X.total();
+  D2 = YY_.total() + a*a*XX_.total() + b*b*W_.total() - 2*a*XY_.total() - 2*b*Y_.total() + 2*a*b*X_.total();
   // b = b - a*x0 + y0;
 }
 

@@ -34,10 +34,17 @@ public:
   I64LinearRegressionAccumulator() { /* nothing to see here */ }
   I64LinearRegressionAccumulator(int64_t x0, int64_t y0): zero_set_(true),
     x0_(x0), y0_(y0) { /* nothing to see here */ }
+
   void accumulate(int64_t x, int64_t y);
   void integrate_into(I64LinearRegressionAccumulator& other);
+
+  void shift_origin(int64_t x0, int64_t y0);
   void fit_parameters(double& a, double& b) const;
   void fit_parameters_and_d2(double& a, double& b, double& D2) const;
+
+  int64_t x0() const { return x0_; }
+  int64_t y0() const { return y0_; }
+  int64_t num_entries() const { return W_; }
 private:
 #ifndef SWIG
   bool zero_set_ = false;
@@ -56,23 +63,23 @@ class KahanLinearRegressionAccumulator
 {
 public:
   KahanLinearRegressionAccumulator() { /* nothing to see here */ }
-  KahanLinearRegressionAccumulator(double x0_, double y0_): zero_set(true),
-    x0(x0_), y0(y0_) { /* nothing to see here */ }
+  KahanLinearRegressionAccumulator(double x0, double y0): zero_set_(true),
+    x0_(x0), y0_(y0) { /* nothing to see here */ }
   void accumulate(double x, double y);
   void integrate_into(KahanLinearRegressionAccumulator& other);
   void fit_parameters(double& a, double& b);
   void fit_parameters_and_d2(double& a, double& b, double& D2);
 
 private:
-  bool zero_set = false;
-  double x0 = 0;
-  double y0 = 0;
-  calin::math::accumulator::SimpleAccumulator W;
-  calin::math::accumulator::SimpleAccumulator X;
-  calin::math::accumulator::SimpleAccumulator Y;
-  calin::math::accumulator::KahanAccumulator XX;
-  calin::math::accumulator::KahanAccumulator XY;
-  calin::math::accumulator::KahanAccumulator YY;
+  bool zero_set_ = false;
+  double x0_ = 0;
+  double y0_ = 0;
+  calin::math::accumulator::SimpleAccumulator W_;
+  calin::math::accumulator::SimpleAccumulator X_;
+  calin::math::accumulator::SimpleAccumulator Y_;
+  calin::math::accumulator::KahanAccumulator XX_;
+  calin::math::accumulator::KahanAccumulator XY_;
+  calin::math::accumulator::KahanAccumulator YY_;
 };
 
 Eigen::VectorXd polyfit(const Eigen::VectorXd& x, const Eigen::VectorXd& y, unsigned order);
