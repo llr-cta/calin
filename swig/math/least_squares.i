@@ -37,6 +37,8 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%apply double &OUTPUT { double& entries, double& mean_x, double& mean_y };
+%apply double &OUTPUT { double& sigma_xx, double& sigma_yy, double& sigma_xy };
 %apply double &OUTPUT { double& a, double& b, double& D2 };
 //%apply const Eigen::VectorXd &INPUT { const Eigen::VectorXd& x, const Eigen::VectorXd& y };
 

@@ -117,6 +117,39 @@ void I64LinearRegressionAccumulator::shift_origin(int64_t x0, int64_t y0)
   }
 }
 
+double I64LinearRegressionAccumulator::mean_x() const
+{
+  return double(X_)/double(W_);
+}
+
+double I64LinearRegressionAccumulator::mean_y() const
+{
+  return double(Y_)/double(W_);
+}
+
+void I64LinearRegressionAccumulator::moments(
+  double& entries, double& mean_x, double& mean_y,
+  double sigma_xx, double sigma_yy, double sigma_xy) const
+{
+  __int128_t W = W_;
+  __int128_t X = X_;
+  __int128_t Y = Y_;
+  __int128_t XX = XX_;
+  __int128_t XY = XY_;
+  __int128_t YY = YY_;
+
+  __int128_t sxy = XY*W - X*Y;
+  __int128_t sxx = XX*W - X*X;
+  __int128_t syy = YY*W - Y*Y;
+
+  entries = double(W);
+  mean_x = double(X)/entries;
+  mean_y = double(Y)/entries;
+  sigma_xx = double(sxx)/entries;
+  sigma_yy = double(syy)/entries;
+  sigma_xy = double(sxy)/entries;
+}
+
 void I64LinearRegressionAccumulator::fit_parameters_and_d2(double& a, double& b, double& D2) const
 {
 #ifdef DEBUG_I64LinearRegressionAccumulator
