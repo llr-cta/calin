@@ -28,6 +28,12 @@
 
 namespace calin { namespace math { namespace least_squares {
 
+// The purpose of this class is to do linear regression on highly correlated
+// integer values (such as clock tick values). In this case high (full)
+// precision must be maintained to allow for cancellation of almost all the most
+// significant bits. Accumulation is done in 128 bits and the calculation of the
+// least-square distance in 256 bits. For the clock case this is not overkill !
+
 class I64LinearRegressionAccumulator
 {
 public:
@@ -57,8 +63,8 @@ private:
   int64_t x0_ = 0;
   int64_t y0_ = 0;
   int64_t W_ = 0;
-  __int128_t X_ = 0;
-  __int128_t Y_ = 0;
+  __int128_t X_ = 0; // Switch to 128 bit here to allow accumulation of
+  __int128_t Y_ = 0; // nano-second clock times over 1 hour run at 10kHz
   __int128_t XX_ = 0;
   __int128_t XY_ = 0;
   __int128_t YY_ = 0;
