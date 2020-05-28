@@ -24,9 +24,11 @@
 
 #include <math/least_squares.hpp>
 #include <util/log.hpp>
+#include <math/special.hpp>
 
 using namespace calin::math::least_squares;
 using namespace calin::util::log;
+using calin::math::special::SQR;
 
 void I64LinearRegressionAccumulator::accumulate(int64_t x, int64_t y)
 {
@@ -129,7 +131,7 @@ double I64LinearRegressionAccumulator::mean_y() const
 
 void I64LinearRegressionAccumulator::moments(
   double& entries, double& mean_x, double& mean_y,
-  double sigma_xx, double sigma_yy, double sigma_xy) const
+  double& sigma_xx, double& sigma_yy, double& sigma_xy) const
 {
   __int128_t W = W_;
   __int128_t X = X_;
@@ -145,9 +147,9 @@ void I64LinearRegressionAccumulator::moments(
   entries = double(W);
   mean_x = double(X)/entries;
   mean_y = double(Y)/entries;
-  sigma_xx = double(sxx)/entries;
-  sigma_yy = double(syy)/entries;
-  sigma_xy = double(sxy)/entries;
+  sigma_xx = double(sxx)/SQR(entries);
+  sigma_yy = double(syy)/SQR(entries);
+  sigma_xy = double(sxy)/SQR(entries);
 }
 
 void I64LinearRegressionAccumulator::fit_parameters_and_d2(double& a, double& b, double& D2) const
@@ -165,6 +167,7 @@ void I64LinearRegressionAccumulator::fit_parameters_and_d2(double& a, double& b,
   __int128_t XY = XY_;
   __int128_t YY = YY_;
 
+  // Possible limitation on accumulation here - overflow of X*X and XX*W etc
   __int128_t sxy = XY*W - X*Y;
   __int128_t sxx = XX*W - X*X;
   __int128_t syy = YY*W - Y*Y;
