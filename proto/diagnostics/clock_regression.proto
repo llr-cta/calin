@@ -1,0 +1,62 @@
+/*
+
+   calin/proto/diagnostics/clock_regression.proto -- Stephen Fegan -- 2020-05-28
+
+   Protobufs for clock regression diagnostics
+
+   Copyright 2020, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+option cc_enable_arenas = true;
+
+import "calin.proto";
+
+package calin.ix.diagnostics.clock_regression;
+
+
+enum ClockPartitionMode {
+  SINGLE_PARTITION                                         = 0;
+  PARTITION_BY_CLOCK_SEQUENCE_ID                           = 1;
+  PARTITION_BY_LOCAL_EVENT_NUMBER                          = 2;
+  PARTITION_BY_MASTER_CLOCK                                = 3;
+};
+
+message SingleClockRegressionConfig {
+  int32 clock_id                                           = 1 [
+    (CFO).desc = "ID of camera or module clock to calculate regression on." ];
+  ClockPartitionMode partition_mode                        = 2 [
+    (CFO).desc = "How to partition the clock data into bins." ];
+  int64 partition_bin_size                                 = 3 [
+    (CFO).desc = "Size of clock partition bins, either in events or ticks of "
+      "master clock." ];
+  int64 master_clock_divisor                               = 4 [
+    (CFO).desc = "Divisor to apply to master clock before regression. Should "
+      "only be used if there is a risk of overflow of the 64-bit "
+      "accumulators." ];
+};
+
+message ClockRegressionConfig {
+  uint32 master_clock_id                                   = 1;
+
+  repeated SingleClockRegressionConfig camera_clocks       = 10;
+  repeated SingleClockRegressionConfig module_clocks       = 11;
+
+  repeated SingleClockRegressionConfig default_netarcam_camera_clocks = 100;
+  repeated SingleClockRegressionConfig default_netarcam_module_clocks = 101;
+  repeated SingleClockRegressionConfig default_lstcam_camera_clocks = 110;
+  repeated SingleClockRegressionConfig default_lstcam_module_clocks = 111;
+};
