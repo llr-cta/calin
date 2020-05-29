@@ -60,14 +60,16 @@ public:
 private:
   struct ClockTest {
     ~ClockTest() { for(auto& ibin : bins) { delete ibin.second; } }
-    calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig* config = nullptr;
+    const calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig* config = nullptr;
     std::map<int, calin::math::least_squares::I64LinearRegressionAccumulator*> bins;
   };
 
   struct ModuleClockTest {
-    calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig* config = nullptr;
+    const calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig* config = nullptr;
     std::vector<ClockTest> modules;
   };
+
+  void merge_into(ClockTest* to, const ClockTest& from);
 
   ClockRegressionParallelEventVisitor* parent_ = nullptr;
 

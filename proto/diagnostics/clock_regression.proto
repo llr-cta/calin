@@ -50,13 +50,13 @@ message SingleClockRegressionConfig {
 };
 
 message ClockRegressionConfig {
-  uint32 master_clock_id                                   = 1;
+  int32 master_clock_id                                    = 1;
 
   repeated SingleClockRegressionConfig camera_clocks       = 10;
   repeated SingleClockRegressionConfig module_clocks       = 11;
 
-  repeated SingleClockRegressionConfig default_netarcam_camera_clocks = 100;
-  repeated SingleClockRegressionConfig default_netarcam_module_clocks = 101;
+  repeated SingleClockRegressionConfig default_nectarcam_camera_clocks = 100;
+  repeated SingleClockRegressionConfig default_nectarcam_module_clocks = 101;
   repeated SingleClockRegressionConfig default_lstcam_camera_clocks = 110;
   repeated SingleClockRegressionConfig default_lstcam_module_clocks = 111;
 };
