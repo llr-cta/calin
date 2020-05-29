@@ -85,6 +85,7 @@ private:
   ClockRegressionParallelEventVisitor* parent_ = nullptr;
 
   calin::ix::diagnostics::clock_regression::ClockRegressionConfig config_;
+  int rebalance_ = 0;
   std::vector<ClockTest> camera_tests_;
   std::vector<ModuleClockTest> module_tests_;
 };

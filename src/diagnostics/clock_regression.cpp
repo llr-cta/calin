@@ -55,6 +55,8 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
 {
+  rebalance_ = config_.rebalance_nevent();
+
   camera_tests_.clear();
   module_tests_.clear();
 
@@ -135,7 +137,8 @@ namespace {
   void accumulate_clock(int64_t master_time, uint64_t local_event_number,
     const calin::ix::iact_data::telescope_event::Clock& clock,
     const calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig& config,
-    std::map<int, calin::math::least_squares::I64LinearRegressionAccumulator*>& bins)
+    std::map<int, calin::math::least_squares::I64LinearRegressionAccumulator*>& bins,
+    bool do_rebalance)
   {
     int ibin;
     switch(config.partition_mode()) {
@@ -159,12 +162,24 @@ namespace {
         new calin::math::least_squares::I64LinearRegressionAccumulator();
     }
     accumulator->accumulate(master_time, clock.time_value());
+    if(do_rebalance) {
+      accumulator->rebalance();
+    }
   }
 }
 
 bool ClockRegressionParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
+  bool do_rebalance = false;
+  if(rebalance_ > 0) {
+    --rebalance_;
+    if(rebalance_ == 0) {
+      rebalance_ = config_.rebalance_nevent();
+      do_rebalance = true;
+    }
+  }
+
   const auto* master_clock = find_clock(config_.master_clock_id(),event->camera_clock());
   if(master_clock == nullptr) {
     return true;
@@ -178,7 +193,8 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_event(uint64_t seq_ind
       if(ct.config->master_clock_divisor() > 1) {
         master_time /= ct.config->master_clock_divisor();
       }
-      accumulate_clock(master_time, event->local_event_number(), *test_clock, *ct.config, ct.bins);
+      accumulate_clock(master_time, event->local_event_number(), *test_clock,
+        *ct.config, ct.bins, do_rebalance);
     }
   }
 
@@ -193,7 +209,7 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_event(uint64_t seq_ind
       const auto* test_clock = find_clock(mt.config->clock_id(),imod.clock());
       if(test_clock) {
         accumulate_clock(master_time, event->local_event_number(), *test_clock,
-          *mt.config, mt.modules[imod.module_id()].bins);
+          *mt.config, mt.modules[imod.module_id()].bins, do_rebalance);
       }
     }
   }
@@ -208,6 +224,9 @@ void ClockRegressionParallelEventVisitor::merge_into(ClockTest* to, const ClockT
       to->bins[ibin.first] = new calin::math::least_squares::I64LinearRegressionAccumulator();
     }
     ibin.second->integrate_into(*to->bins[ibin.first]);
+    if(config_.rebalance_nevent() > 0) {
+      to->bins[ibin.first]->rebalance();
+    }
   }
 }
 
@@ -232,6 +251,7 @@ ClockRegressionParallelEventVisitor::default_config()
 {
   calin::ix::diagnostics::clock_regression::ClockRegressionConfig config;
   config.set_master_clock_id(0); // UCTS timestamp
+  config.set_rebalance_nevent(1000);
 
   // NectarCAM
 

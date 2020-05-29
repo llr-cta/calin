@@ -50,7 +50,11 @@ message SingleClockRegressionConfig {
 };
 
 message ClockRegressionConfig {
-  int32 master_clock_id                                    = 1;
+  int32 master_clock_id                                    = 1 [
+    (CFO).desc = "Master camera clock id to use in regression" ];
+  int32 rebalance_nevent                                   = 2 [
+    (CFO).desc = "Number of events between rebalancing, if positive, or "
+      "do not do rebalancing otherwise." ];
 
   repeated SingleClockRegressionConfig camera_clocks       = 10;
   repeated SingleClockRegressionConfig module_clocks       = 11;
