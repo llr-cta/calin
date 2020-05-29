@@ -22,6 +22,9 @@
 
 #include <Eigen/Dense>
 #include <diagnostics/clock_regression.hpp>
+#include <util/log.hpp>
+
+using namespace calin::util::log;
 
 using namespace calin::diagnostics::clock_regression;
 
