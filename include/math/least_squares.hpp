@@ -57,15 +57,17 @@ public:
 
   void moments(double& entries, double& mean_x, double& mean_y,
     double& sigma_xx, double& sigma_yy, double& sigma_xy) const;
+
+  void dump_to_log() const;
 private:
 #ifndef SWIG
   bool zero_set_ = false;
   int64_t x0_ = 0;
   int64_t y0_ = 0;
-  int64_t W_ = 0;
-  int64_t X_ = 0; // Could switch to 128 bit here to allow accumulation of
-  int64_t Y_ = 0; // nano-second clock times over 1 hour run at 10kHz .. BUT ..
-  __int128_t XX_ = 0; // need to be careful of overflow in calculation of SXX etc
+  __int128_t W_ = 0;
+  __int128_t X_ = 0;
+  __int128_t Y_ = 0;
+  __int128_t XX_ = 0;
   __int128_t XY_ = 0;
   __int128_t YY_ = 0;
 #endif

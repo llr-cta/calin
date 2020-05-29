@@ -28,6 +28,8 @@
 
 using namespace calin::math::least_squares;
 using namespace calin::util::log;
+
+using namespace calin::util::log;
 using calin::math::special::SQR;
 
 void I64LinearRegressionAccumulator::accumulate(int64_t x, int64_t y)
@@ -40,12 +42,14 @@ void I64LinearRegressionAccumulator::accumulate(int64_t x, int64_t y)
   } else {
     x -= x0_;
     y -= y0_;
+    __int128_t x128 = x;
+    __int128_t y128 = y;
     W_ += 1;
-    X_ += x;
-    Y_ += y;
-    XX_ += x*x;
-    XY_ += x*y;
-    YY_ += y*y;
+    X_ += x128;
+    Y_ += y128;
+    XX_ += x128*x128;
+    XY_ += x128*y128;
+    YY_ += y128*y128;
   }
 }
 
@@ -54,14 +58,14 @@ void I64LinearRegressionAccumulator::integrate_into(I64LinearRegressionAccumulat
   if(not o.zero_set_) {
     o = *this;
   } else {
-    int64_t dx0 = x0_ - o.x0_;
-    int64_t dy0 = y0_ - o.y0_;
+    __int128_t dx0 = x0_ - o.x0_;
+    __int128_t dy0 = y0_ - o.y0_;
     o.W_  += W_;
-    o.X_  += X_ + W_*dx0;
-    o.Y_  += Y_ + W_*dy0;
-    o.XX_ += XX_ + 2*X_*dx0 + W_*dx0*dx0;
+    o.X_  += X_                    + W_*dx0;
+    o.Y_  += Y_                    + W_*dy0;
+    o.XX_ += XX_ + 2*X_*dx0        + W_*dx0*dx0;
     o.XY_ += XY_ + X_*dy0 + dx0*Y_ + W_*dx0*dy0;
-    o.YY_ += YY_ + 2*Y_*dy0 + W_*dy0*dy0;
+    o.YY_ += YY_ + 2*Y_*dy0        + W_*dy0*dy0;
   }
 }
 
@@ -106,8 +110,8 @@ void I64LinearRegressionAccumulator::shift_origin(int64_t x0, int64_t y0)
     y0_ = y0;
     zero_set_ = true;
   } else {
-    int64_t dx0 = x0_ - x0;
-    int64_t dy0 = y0_ - y0;
+    __int128_t dx0 = x0_ - x0;
+    __int128_t dy0 = y0_ - y0;
     x0_  = x0;
     y0_  = y0;
     // Watch out for the order we do these shifts.. finish with X_ and Y_
@@ -133,20 +137,13 @@ void I64LinearRegressionAccumulator::moments(
   double& entries, double& mean_x, double& mean_y,
   double& sigma_xx, double& sigma_yy, double& sigma_xy) const
 {
-  __int128_t W = W_;
-  __int128_t X = X_;
-  __int128_t Y = Y_;
-  __int128_t XX = XX_;
-  __int128_t XY = XY_;
-  __int128_t YY = YY_;
+  __int128_t sxy = XY_*W_ - X_*Y_;
+  __int128_t sxx = XX_*W_ - X_*X_;
+  __int128_t syy = YY_*W_ - Y_*Y_;
 
-  __int128_t sxy = XY*W - X*Y;
-  __int128_t sxx = XX*W - X*X;
-  __int128_t syy = YY*W - Y*Y;
-
-  entries = double(W);
-  mean_x = double(X)/entries;
-  mean_y = double(Y)/entries;
+  entries = double(W_);
+  mean_x = double(X_)/entries;
+  mean_y = double(Y_)/entries;
   sigma_xx = double(sxx)/SQR(entries);
   sigma_yy = double(syy)/SQR(entries);
   sigma_xy = double(sxy)/SQR(entries);
@@ -160,17 +157,10 @@ void I64LinearRegressionAccumulator::fit_parameters_and_d2(double& a, double& b,
     << " XY: " << double(XY_) << " Y: " << double(Y_) << " YY: " << double(YY_);
 #endif
 
-  __int128_t W = W_;
-  __int128_t X = X_;
-  __int128_t Y = Y_;
-  __int128_t XX = XX_;
-  __int128_t XY = XY_;
-  __int128_t YY = YY_;
-
   // Possible limitation on accumulation here - overflow of X*X and XX*W etc
-  __int128_t sxy = XY*W - X*Y;
-  __int128_t sxx = XX*W - X*X;
-  __int128_t syy = YY*W - Y*Y;
+  __int128_t sxy = XY_*W_ - X_*Y_;
+  __int128_t sxx = XX_*W_ - X_*X_;
+  __int128_t syy = YY_*W_ - Y_*Y_;
 
 #ifdef DEBUG_I64LinearRegressionAccumulator
   calin::util::log::LOG(calin::util::log::INFO)
@@ -226,9 +216,21 @@ void I64LinearRegressionAccumulator::fit_parameters_and_d2(double& a, double& b,
     << "num_h: " << double(num_h) << " num_l: " << double(num_l);
 #endif
 
-  D2 = (ldexp(double(num_h),128) + double(num_l))/double(sxx * W);
+  D2 = (ldexp(double(num_h),128) + double(num_l))/double(sxx * W_);
 }
 
+void I64LinearRegressionAccumulator::dump_to_log() const
+{
+  LOG(INFO)
+    << "x0: " << x0_ << '\n'
+    << "y0: " << y0_ << '\n'
+    << "W: " << int64_t(W_ >> 64) << ' ' << uint64_t(W_ & ((__int128_t(1)<<64)-1)) << '\n'
+    << "X: " << int64_t(X_ >> 64) << ' ' << uint64_t(X_ & ((__int128_t(1)<<64)-1)) << '\n'
+    << "Y: " << int64_t(Y_ >> 64) << ' ' << uint64_t(Y_ & ((__int128_t(1)<<64)-1)) << '\n'
+    << "XX: " << int64_t(XX_ >> 64) << ' ' << uint64_t(XX_ & ((__int128_t(1)<<64)-1)) << '\n'
+    << "XY: " << int64_t(XY_ >> 64) << ' ' << uint64_t(XY_ & ((__int128_t(1)<<64)-1)) << '\n'
+    << "YY: " << int64_t(YY_ >> 64) << ' ' << uint64_t(YY_ & ((__int128_t(1)<<64)-1)) << '\n';
+}
 
 void KahanLinearRegressionAccumulator::accumulate(double x, double y)
 {
