@@ -44,7 +44,9 @@ public:
   void accumulate(int64_t x, int64_t y);
   void integrate_into(I64LinearRegressionAccumulator& other);
 
+  void rebalance();
   void shift_origin(int64_t x0, int64_t y0);
+
   void fit_parameters(double& a, double& b) const;
   void fit_parameters_and_d2(double& a, double& b, double& D2) const;
 

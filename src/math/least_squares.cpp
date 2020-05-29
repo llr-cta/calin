@@ -103,6 +103,11 @@ namespace {
   }
 }
 
+void I64LinearRegressionAccumulator::rebalance()
+{
+  shift_origin(x0_ + X_/W_, y0_ + Y_/W_);
+}
+
 void I64LinearRegressionAccumulator::shift_origin(int64_t x0, int64_t y0)
 {
   if(not zero_set_) {
