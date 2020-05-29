@@ -223,3 +223,88 @@ bool ClockRegressionParallelEventVisitor::merge_results()
   }
   return true;
 }
+
+calin::ix::diagnostics::clock_regression::ClockRegressionConfig
+ClockRegressionParallelEventVisitor::default_config()
+{
+  calin::ix::diagnostics::clock_regression::ClockRegressionConfig config;
+  config.set_master_clock_id(0); // UCTS timestamp
+
+  // NectarCAM
+
+  auto* clock = config.add_default_nectarcam_camera_clocks();
+  clock->set_clock_id(1); // UCTS 10MHz
+  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
+
+  clock = config.add_default_nectarcam_camera_clocks();
+  clock->set_clock_id(3); // TIB 10MHz
+  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
+
+  clock = config.add_default_nectarcam_module_clocks();
+  clock->set_clock_id(0); // local ~2ns TDC time
+  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
+
+  // LSTCAM
+
+  clock = config.add_default_lstcam_camera_clocks();
+  clock->set_clock_id(1); // UCTS 10MHz
+  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
+
+  clock = config.add_default_lstcam_camera_clocks();
+  clock->set_clock_id(3); // TIB 10MHz
+  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
+
+  clock = config.add_default_lstcam_module_clocks();
+  clock->set_clock_id(0); // backplane 10MHz counter
+  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::SINGLE_PARTITION);
+
+  clock = config.add_default_lstcam_module_clocks();
+  clock->set_clock_id(1); // local 133MHz TDC time
+  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
+
+  return config;
+}
+
+void ClockRegressionParallelEventVisitor::transfer_clock_results(
+  calin::ix::diagnostics::clock_regression::SingleClockRegressionResults* res,
+  const ClockTest& ct) const
+{
+  for(const auto& ibin : ct.bins) {
+    const auto* reg = ibin.second;
+    auto& reg_param = (*res->mutable_bins())[ibin.first];
+    reg_param.set_x0(reg->x0());
+    reg_param.set_y0(reg->y0());
+    reg_param.set_num_entries(reg->num_entries());
+    double a;
+    double b;
+    double d2;
+    reg->fit_parameters_and_d2(a,b,d2);
+    reg_param.set_a(a);
+    reg_param.set_b(b);
+    reg_param.set_d2(d2);
+  }
+}
+
+calin::ix::diagnostics::clock_regression::ClockRegressionResults*
+ClockRegressionParallelEventVisitor::clock_regression(
+  calin::ix::diagnostics::clock_regression::ClockRegressionResults* results) const
+{
+  if(results) {
+    results->Clear();
+  } else {
+    results = new calin::ix::diagnostics::clock_regression::ClockRegressionResults();
+  }
+
+  for(const auto& ct : camera_tests_) {
+    transfer_clock_results(results->add_camera_clock(), ct);
+  }
+
+  for(const auto& mt : module_tests_) {
+    auto* mod_res = results->add_module_clock();
+    for(const auto& ct : mt.modules) {
+      transfer_clock_results(mod_res->add_modules(), ct);
+    }
+  }
+
+  return results;
+}

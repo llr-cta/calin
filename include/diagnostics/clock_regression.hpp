@@ -57,6 +57,14 @@ public:
 
   static calin::ix::diagnostics::clock_regression::ClockRegressionConfig default_config();
 
+#ifndef SWIG
+  calin::ix::diagnostics::clock_regression::ClockRegressionResults* clock_regression(
+    calin::ix::diagnostics::clock_regression::ClockRegressionResults* results = nullptr) const;
+#else
+  calin::ix::diagnostics::clock_regression::ClockRegressionResults* clock_regression() const;
+  void clock_regression(calin::ix::diagnostics::clock_regression::ClockRegressionResults* results) const;
+#endif
+
 private:
   struct ClockTest {
     ~ClockTest() { for(auto& ibin : bins) { delete ibin.second; } }
@@ -70,6 +78,9 @@ private:
   };
 
   void merge_into(ClockTest* to, const ClockTest& from);
+
+  void transfer_clock_results(calin::ix::diagnostics::clock_regression::SingleClockRegressionResults* res,
+    const ClockTest& ct) const;
 
   ClockRegressionParallelEventVisitor* parent_ = nullptr;
 

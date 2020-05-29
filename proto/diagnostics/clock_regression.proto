@@ -60,3 +60,33 @@ message ClockRegressionConfig {
   repeated SingleClockRegressionConfig default_lstcam_camera_clocks = 110;
   repeated SingleClockRegressionConfig default_lstcam_module_clocks = 111;
 };
+
+message ClockRegressionParameters {
+  int64 x0                                                 = 1 [
+    (CFO).desc = "Master clock value at origin of regression." ];
+  int64 y0                                                 = 2 [
+    (CFO).desc = "Test clock value at origin of regression." ];
+  uint32 num_entries                                       = 3 [
+    (CFO).desc = "Number of entries in regression." ];
+  double a                                                 = 4 [
+    (CFO).desc = "Linear regression slope coefficient (test-clock ticks per "
+      "master-clock tick)." ];
+  double b                                                 = 5 [
+    (CFO).desc = "Linear regression offset coefficient (master-clock ticks at "
+      "origin of test clock)." ];
+  double d2                                                = 6 [
+    (CFO).desc = "Total least-squares residual in square test-clock ticks." ];
+};
+
+message SingleClockRegressionResults {
+  map<uint32, ClockRegressionParameters> bins              = 1;
+};
+
+message ModuleClockRegressionResults {
+  repeated SingleClockRegressionResults modules            = 1;
+};
+
+message ClockRegressionResults {
+  repeated SingleClockRegressionResults camera_clock       = 1;
+  repeated ModuleClockRegressionResults module_clock       = 2;
+};
