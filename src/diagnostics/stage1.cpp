@@ -100,6 +100,12 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
     this->add_external_flasher_trigger_visitor(charge_hists_ext_pev_);
     this->add_internal_flasher_trigger_visitor(charge_hists_int_pev_);
   }
+
+  if(config_.enable_clock_regression()) {
+    clock_regression_pev_ = new calin::diagnostics::clock_regression::
+      ClockRegressionParallelEventVisitor(config_.clock_regression());
+    this->add_visitor(clock_regression_pev_);
+  }
 }
 
 Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
@@ -116,6 +122,7 @@ Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
   delete run_info_pev_;
   delete lg_sum_pev_;
   delete hg_sum_pev_;
+  delete clock_regression_pev_;
 }
 
 bool Stage1ParallelEventVisitor::visit_telescope_run(
@@ -223,6 +230,10 @@ calin::ix::diagnostics::stage1::Stage1* Stage1ParallelEventVisitor::stage1_resul
     charge_hists_int_pev_->simple_charge_hists(stage1->mutable_wf_hists_internal_flasher());
   }
 
+  if(clock_regression_pev_) {
+    clock_regression_pev_->clock_regression(stage1->mutable_clock_regression());
+  }
+
   stage1->set_run_number(stage1->run_config().run_number());
   stage1->set_run_start_time(stage1->run_config().run_start_time().time_ns());
   stage1->set_run_start_time_string(
@@ -253,6 +264,7 @@ calin::ix::diagnostics::stage1::Stage1Config Stage1ParallelEventVisitor::default
   cfg.set_enable_mean_waveform(true);
   cfg.set_enable_simple_waveform_hists(true);
   cfg.set_enable_ancillary_data(true);
+  cfg.set_enable_clock_regression(true);
 
   cfg.mutable_high_gain_opt_sum()->CopyFrom(
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor::default_config());
@@ -275,6 +287,9 @@ calin::ix::diagnostics::stage1::Stage1Config Stage1ParallelEventVisitor::default
 
   cfg.mutable_int_trigger_waveform_hists()->CopyFrom(
     calin::diagnostics::simple_charge_hists::SimpleChargeHistsParallelEventVisitor::int_trig_default_config());
+
+  cfg.mutable_clock_regression()->CopyFrom(
+    calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor::default_config());
 
   return cfg;
 }

@@ -30,6 +30,7 @@ import "diagnostics/run_info.proto";
 import "diagnostics/simple_charge_hists.proto";
 import "diagnostics/simple_charge_stats.proto";
 import "diagnostics/waveform.proto";
+import "diagnostics/clock_regression.proto";
 import "provenance/anthology.proto";
 import "iact_data/waveform_treatment_event_visitor.proto";
 import "iact_data/nectarcam_ancillary_data.proto";
@@ -45,6 +46,8 @@ message Stage1Config {
       "(sum, max sample, etc...), for each trigger type." ];
   bool enable_ancillary_data                               = 3 [
     (CFO).desc = "Enable retrieval of ancillary database entries for run." ];
+  bool enable_clock_regression                             = 4 [
+    (CFO).desc = "Enable calculation of clock regression parameters." ];
 
   // bool enable_max_code_hists                                        = 10 [
   //   (CFO).desc = "Enable max-sample code histograms, histograms of the "
@@ -79,6 +82,9 @@ message Stage1Config {
 
   calin.ix.diagnostics.simple_charge_hists.SimpleChargeHistsConfig int_trigger_waveform_hists = 107 [
     (CFO).desc = "Configuration of simple waveform hists calculator for internal-flasher events." ];
+
+  calin.ix.diagnostics.clock_regression.ClockRegressionConfig clock_regression = 110 [
+    (CFO).desc = "Configuration of clock regression calculator." ];
 
   string ancillary_database                                = 200 [
     (CFO).desc = "Location of ancillary database if used." ];
@@ -119,6 +125,9 @@ message Stage1 {
   calin.ix.diagnostics.run_info.RunInfo run_info           = 101;
 
   calin.ix.diagnostics.simple_charge_stats.SimpleChargeStats charge_stats = 102;
+
+  calin.ix.diagnostics.clock_regression.ClockRegressionResults clock_regression = 103 [
+    (CFO).desc = "Results from regression calculator." ];
 
   calin.ix.diagnostics.waveform.WaveformMean mean_wf_physics = 110;
   calin.ix.diagnostics.waveform.WaveformMean mean_wf_pedestal = 111;
