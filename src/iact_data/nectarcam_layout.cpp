@@ -140,6 +140,7 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
   layout->add_camera_clock_name("UCTS pps counter");
   layout->add_camera_clock_name("TIB 10MHz counter");
   layout->add_camera_clock_name("TIB pps counter");
+  layout->add_camera_clock_name("FEB local 2ns TDC counter sum");
 
   layout->add_module_clock_name("local 2ns TDC time");
   layout->add_module_clock_name("local 125MHz oscillator counter");

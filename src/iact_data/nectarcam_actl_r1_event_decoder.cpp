@@ -267,6 +267,11 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
       trigger_map->mutable_trigger_image()->Resize(nmod_ * 7, 0x80000000);
     }
 
+    uint64_t mod_clock_sum = 0;
+    uint64_t mod_clock_seq_sum = 0;
+    int64_t mod_clock_num = 0;
+    bool mod_clock_valid = true;
+
     const auto* mod_data = cta_counters.data().data();
     for(unsigned imod=0;imod<nmod_;imod++, mod_data+=data_size)
     {
@@ -351,6 +356,17 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
       clock->set_clock_id(2);
       clock->set_time_value(mod_counter->bunch_counter);
       clock->set_time_sequence_id(0);
+
+      mod_clock_sum += ts;
+      mod_clock_seq_sum += mod_counter->bunch_counter;
+      mod_clock_num += 1;
+    }
+
+    if(mod_clock_valid and mod_clock_num==calin_event->module_index_size()) {
+      auto* calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(5);
+      calin_clock->set_time_value(mod_clock_sum);
+      calin_clock->set_time_sequence_id(mod_clock_seq_sum);
     }
   }
 
