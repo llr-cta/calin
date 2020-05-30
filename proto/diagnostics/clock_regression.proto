@@ -67,19 +67,24 @@ message ClockRegressionConfig {
 
 message ClockRegressionParameters {
   int64 x0                                                 = 1 [
-    (CFO).desc = "Master clock value at origin of regression." ];
+    (CFO).desc = "Master clock value at origin of regression.",
+    (CFO).units = "master-clock ticks" ];
   int64 y0                                                 = 2 [
-    (CFO).desc = "Test clock value at origin of regression." ];
+    (CFO).desc = "Test clock value at origin of regression.",
+    (CFO).units = "test-clock ticks" ];
   uint32 num_entries                                       = 3 [
     (CFO).desc = "Number of entries in regression." ];
   double a                                                 = 4 [
     (CFO).desc = "Linear regression slope coefficient (test-clock ticks per "
-      "master-clock tick)." ];
+      "master-clock tick).",
+    (CFO).units = "test-clock ticks/master-clock ticks" ];
   double b                                                 = 5 [
     (CFO).desc = "Linear regression offset coefficient (master-clock ticks at "
-      "origin of test clock)." ];
+      "origin of test clock).",
+    (CFO).units = "test-clock ticks" ];
   double d2                                                = 6 [
-    (CFO).desc = "Total least-squares residual in square test-clock ticks." ];
+    (CFO).desc = "Total least-squares residual.",
+    (CFO).units = "test-clock ticks squared" ];
 };
 
 message SingleClockRegressionResults {
