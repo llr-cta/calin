@@ -361,13 +361,6 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
       mod_clock_seq_sum += mod_counter->bunch_counter;
       mod_clock_num += 1;
     }
-
-    if(mod_clock_valid and mod_clock_num==calin_event->module_index_size()) {
-      auto* calin_clock = calin_event->add_camera_clock();
-      calin_clock->set_clock_id(5);
-      calin_clock->set_time_value(mod_clock_sum);
-      calin_clock->set_time_sequence_id(mod_clock_seq_sum);
-    }
   }
 
   // ==========================================================================
@@ -427,6 +420,19 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
     calin_clock->set_clock_id(4);
     calin_clock->set_time_value(tib.pps_counter());
     calin_clock->set_time_sequence_id(0);
+  }
+
+  // ==========================================================================
+  //
+  // ADD MODULE CLOCK SUM AFTER CDTS AND TIB, IF IT IS VALID
+  //
+  // ==========================================================================
+
+  if(mod_clock_valid and mod_clock_num==calin_event->module_index_size()) {
+    auto* calin_clock = calin_event->add_camera_clock();
+    calin_clock->set_clock_id(5);
+    calin_clock->set_time_value(mod_clock_sum);
+    calin_clock->set_time_sequence_id(mod_clock_seq_sum);
   }
 
   // ==========================================================================
