@@ -336,11 +336,20 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
 
       module_data->set_bunch_event_time(ts);
 
-      // If the first or second event in the new second bunch has a TS1
-      // value greater than 124987500 then we flag its value as potentially
-      // suspect
-      bool clock_is_suspect =
-        mod_counter->event_counter < 3 and mod_counter->ts1 > 124987500;
+      bool clock_is_suspect = false;
+      int32 time_seq_id = mod_counter->bunch_counter;
+
+      if(mod_counter->event_counter == 1 and mod_counter->ts1 > 124987500)
+      {
+        // Here we attempt to handle events where the TS1 value seems to
+        // still be at the a hight count value but the PPS event_counter
+        // says it should be the first event in the new PPS bunch. We can :
+        // - flag its value as potentially suspect
+        // - and/or try to fix the mismatch by decreasing its sequence id
+
+        clock_is_suspect = true;
+        time_seq_id -= 1;
+      }
 
       auto* module_clocks = calin_event->add_module_clock();
       module_clocks->set_module_id(imod);
@@ -349,20 +358,20 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
       auto* clock = module_clocks->add_clock();
       clock->set_clock_id(0);
       clock->set_time_value(ts);
-      clock->set_time_sequence_id(mod_counter->bunch_counter);
+      clock->set_time_sequence_id(time_seq_id);
       clock->set_time_value_may_be_suspect(clock_is_suspect);
 
       // Clock using TS1 only
       clock = module_clocks->add_clock();
       clock->set_clock_id(1);
       clock->set_time_value(mod_counter->ts1);
-      clock->set_time_sequence_id(mod_counter->bunch_counter);
+      clock->set_time_sequence_id(time_seq_id);
       clock->set_time_value_may_be_suspect(clock_is_suspect);
 
       // Clock using PPS counter only
       clock = module_clocks->add_clock();
       clock->set_clock_id(2);
-      clock->set_time_value(mod_counter->bunch_counter);
+      clock->set_time_value(time_seq_id);
       clock->set_time_sequence_id(0);
       clock->set_time_value_may_be_suspect(clock_is_suspect);
 
