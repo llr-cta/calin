@@ -41,6 +41,11 @@ message Clock {
       "sequence id should increase consuctively but there may be a large jump "
       "between concecutive measurement that have different sequence ids. An "
       "example is a local oscillator counter that is reset to zero by the 1PPS." ];
+  bool time_value_may_be_suspect                            = 4 [
+    (CFO).desc = "Time time value (or combination of time_value and "
+      "time_sequence_id) may be suspect. This value could be derived from "
+      "status bits available from the clock itself (eg UCTS) or from some "
+      "clock validation algorithm in the decoder." ];
 };
 
 message ModuleClocks {
