@@ -397,22 +397,26 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
 
     const auto& cdts = calin_event->cdts_data();
 
-    // if(calin_event->cdts_data().white_rabbit_status() == 1) {
+    bool clock_may_be_suspect =
+      (calin_event->cdts_data().white_rabbit_status() & 0x01) == 0;
+
     auto* calin_clock = calin_event->add_camera_clock();
     calin_clock->set_clock_id(0);
     calin_clock->set_time_value(cdts.ucts_timestamp());
     calin_clock->set_time_sequence_id(0);
+    calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
 
     calin_clock = calin_event->add_camera_clock();
     calin_clock->set_clock_id(1);
     calin_clock->set_time_value(cdts.clock_counter());
     calin_clock->set_time_sequence_id(cdts.pps_counter());
+    calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
 
     calin_clock = calin_event->add_camera_clock();
     calin_clock->set_clock_id(2);
     calin_clock->set_time_value(cdts.pps_counter());
     calin_clock->set_time_sequence_id(0);
-    // }
+    calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
   }
 
   // ==========================================================================
