@@ -110,6 +110,11 @@ message Stage1 {
   int64 run_duration                                       = 6 [
     (CFO).desc = "Run duration, possibly derived from NTP on "
       "camera server, in nanoseconds.", (CFO).units = "ns" ];
+  double run_duration_sec                                  = 7 [
+    (CFO).desc = "Run duration, possibly derived from NTP on "
+      "camera server, in nanoseconds.", (CFO).units = "sec" ];
+  uint64 num_events_found                                  = 8 [
+    (CFO).desc = "Number of events found." ];
 
   uint64 num_physics_triggers                              = 10 [
     (CFO).desc = "Number of events classified as physics events." ];

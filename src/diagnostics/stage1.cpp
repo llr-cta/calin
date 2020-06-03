@@ -242,6 +242,8 @@ calin::ix::diagnostics::stage1::Stage1* Stage1ParallelEventVisitor::stage1_resul
   stage1->set_filename(stage1->run_config().filename());
   stage1->set_run_duration(
     std::max(stage1->run_info().max_event_time()-stage1->run_info().min_event_time(), int64_t(-1)));
+  stage1->set_run_duration_sec((stage1->run_duration()==-1) ? -1.0: double(stage1->run_duration())*1e-9);
+  stage1->set_num_events_found(stage1->run_info().num_events_found());
 
   stage1->set_num_physics_triggers(stage1->run_info().num_mono_trigger());
   stage1->set_num_pedestal_triggers(stage1->run_info().num_pedestal_trigger());
