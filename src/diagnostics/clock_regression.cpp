@@ -185,10 +185,19 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_event(uint64_t seq_ind
     return true;
   }
 
+  if(master_clock->time_value_may_be_suspect() and
+      config_.include_possibly_suspect_master_time_values() == false) {
+    return true;
+  }
+
   for(auto& ct : camera_tests_)
   {
     const auto* test_clock = find_clock(ct.config->clock_id(),event->camera_clock());
     if(test_clock) {
+      if(test_clock->time_value_may_be_suspect() and
+          ct.config->include_possibly_suspect_time_values() == false) {
+        continue;
+      }
       int64_t master_time = master_clock->time_value();
       if(ct.config->master_clock_divisor() > 1) {
         master_time /= ct.config->master_clock_divisor();
@@ -208,6 +217,10 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_event(uint64_t seq_ind
     for(auto& imod : event->module_clock()) {
       const auto* test_clock = find_clock(mt.config->clock_id(),imod.clock());
       if(test_clock) {
+        if(test_clock->time_value_may_be_suspect() and
+            mt.config->include_possibly_suspect_time_values() == false) {
+          continue;
+        }
         accumulate_clock(master_time, event->local_event_number(), *test_clock,
           *mt.config, mt.modules[imod.module_id()].bins, do_rebalance);
       }

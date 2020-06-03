@@ -47,12 +47,18 @@ message SingleClockRegressionConfig {
     (CFO).desc = "Divisor to apply to master clock before regression. Should "
       "only be used if there is a risk of overflow of the 64-bit "
       "accumulators." ];
+  bool include_possibly_suspect_time_values                = 5 [
+    (CFO).desc = "Include values of the test clock that are flagged as "
+      "possibly suspicious in the regression." ];
 };
 
 message ClockRegressionConfig {
   int32 master_clock_id                                    = 1 [
-    (CFO).desc = "Master camera clock id to use in regression" ];
-  int32 rebalance_nevent                                   = 2 [
+    (CFO).desc = "Master camera clock id to use in regression." ];
+  bool include_possibly_suspect_master_time_values         = 2 [
+    (CFO).desc = "Include values of the master clock that are flagged as "
+      "possibly suspicious in the regression." ];
+  int32 rebalance_nevent                                   = 3 [
     (CFO).desc = "Number of events between rebalancing, if positive, or "
       "do not do rebalancing otherwise." ];
 
