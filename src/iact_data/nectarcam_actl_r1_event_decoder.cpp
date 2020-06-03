@@ -220,6 +220,11 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
+  uint64_t mod_clock_sum = 0;
+  uint64_t mod_clock_seq_sum = 0;
+  int64_t mod_clock_num = 0;
+  bool mod_clock_valid = true;
+  
   if(cta_event->nectarcam().has_counters())
   {
     struct NectarCounters {
@@ -266,11 +271,6 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
       trigger_map->mutable_hit_channel_id()->Reserve(20);
       trigger_map->mutable_trigger_image()->Resize(nmod_ * 7, 0x80000000);
     }
-
-    uint64_t mod_clock_sum = 0;
-    uint64_t mod_clock_seq_sum = 0;
-    int64_t mod_clock_num = 0;
-    bool mod_clock_valid = true;
 
     const auto* mod_data = cta_counters.data().data();
     for(unsigned imod=0;imod<nmod_;imod++, mod_data+=data_size)
