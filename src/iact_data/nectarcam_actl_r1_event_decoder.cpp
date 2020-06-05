@@ -376,7 +376,7 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
       clock->set_time_value_may_be_suspect(clock_is_suspect);
 
       mod_clock_sum += ts;
-      mod_clock_seq_sum += mod_counter->bunch_counter;
+      mod_clock_seq_sum += time_seq_id;
       mod_clock_num += 1;
       mod_clock_is_suspect |= clock_is_suspect;
     }
