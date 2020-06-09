@@ -228,24 +228,24 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   if(cta_event->nectarcam().has_counters())
   {
     struct NectarCounters {
-      uint32_t global_event_counter;
-      uint16_t bunch_counter;
-      uint16_t event_counter;
-      uint32_t ts1;
-      int8_t   ts2_event;
-      int8_t   ts2_bunch;
-      uint16_t ts2_empty;
+      /*  4 */ uint32_t global_event_counter;
+      /*  6 */ uint16_t bunch_counter;
+      /*  8 */ uint16_t event_counter;
+      /* 12 */ uint32_t ts1;
+      /* 13 */ int8_t   ts2_event;
+      /* 14 */ int8_t   ts2_bunch;
+      /* 16 */ uint16_t ts2_empty;
     }__attribute__((packed));
 
     struct NectarCountersWithTriggerPattern {
-      uint32_t global_event_counter;
-      uint16_t bunch_counter;
-      uint16_t event_counter;
-      uint32_t ts1;
-      int8_t   ts2_event;
-      int8_t   ts2_bunch;
-      uint16_t ts2_empty;
-      uint32_t trigger_pattern;
+      /*  4 */ uint32_t global_event_counter;
+      /*  6 */ uint16_t bunch_counter;
+      /*  8 */ uint16_t event_counter;
+      /* 12 */ uint32_t ts1;
+      /* 13 */ int8_t   ts2_event;
+      /* 14 */ int8_t   ts2_bunch;
+      /* 16 */ uint16_t ts2_empty;
+      /* 20 */ uint32_t trigger_pattern;
     }__attribute__((packed));
 
     const auto& cta_counters = cta_event->nectarcam().counters();
