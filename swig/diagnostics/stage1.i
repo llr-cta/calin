@@ -37,6 +37,7 @@
 %import "calin_global_definitions.i"
 
 %import "iact_data/event_visitor.i"
+%import "diagnostics/stage1.pb.i"
 
 /* %newobject calin::diagnostics::run_info::RunInfoDiagnosticsParallelEventVisitor::run_config();
 %newobject calin::diagnostics::run_info::RunInfoDiagnosticsParallelEventVisitor::run_info(); */
