@@ -223,6 +223,34 @@ bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
   return success;
 }
 
+bool SQLSerializer::delete_by_oid(const std::string& table_name, uint64_t oid)
+{
+  bool success = true;
+
+  begin_transaction();
+
+  for(const auto& itable : db_tables_) {
+    if(itable.second->base_name() == table_name) {
+      std::unique_ptr<SQLStatement> stmt {
+        prepare_statement(sql_delete_where_oid_equals(itable.second)) };
+      stmt->bind_uint64(0, oid);
+      success &= execute_one_no_data_statement(stmt.get(), false);
+    }
+    if(!success) {
+      break;
+    }
+  }
+
+  if(not success)
+  {
+    rollback_transaction();
+    return success;
+  }
+
+  commit_transaction();
+  return success;
+}
+
 bool SQLSerializer::retrieve_by_oid(const std::string& table_name, uint64_t oid,
   google::protobuf::Message* m)
 {
@@ -1452,6 +1480,22 @@ std::string SQLSerializer::sql_select_where_oid_equals(const SQLTable* t)
     sql << "NULL\n";
   }
   sql << "FROM " << sql_table_name(t->table_name) << " WHERE "
+    << sql_field_name(oid_name) << " = ?";
+  return sql.str();
+}
+
+std::string SQLSerializer::sql_delete_where_oid_equals(
+  const calin::ix::io::sql_serializer::SQLTable* t)
+{
+  std::string oid_name;
+  if(t->base_name() == t->table_name()) {
+    oid_name = sql_oid_column_name();
+  } else {
+    oid_name = sub_name(t->base_name(), sql_oid_column_name());
+  }
+
+  std::ostringstream sql;
+  sql << "DELETE FROM " << t->sql_table_name() << " WHERE "
     << sql_field_name(oid_name) << " = ?";
   return sql.str();
 }

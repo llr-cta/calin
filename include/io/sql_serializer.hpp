@@ -234,6 +234,8 @@ public:
   }
 #endif
 
+  virtual bool delete_by_oid(const std::string& table_name, uint64_t oid);
+
   virtual bool retrieve_by_oid(const std::string& table_name, uint64_t oid,
     google::protobuf::Message* m);
 
@@ -309,6 +311,7 @@ protected:
   virtual std::string sql_create_index(const SQLTable* t);
   virtual std::string sql_insert(const SQLTable* t);
   virtual std::string sql_select_where_oid_equals(const SQLTable* t);
+  virtual std::string sql_delete_where_oid_equals(const calin::ix::io::sql_serializer::SQLTable* t);
   virtual std::string sql_count_entries(const std::string& table_name);
   virtual std::string sql_select_oids(const std::string& table_name);
   virtual std::string sql_where_equals(const SQLTable* t);
