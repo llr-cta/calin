@@ -158,6 +158,11 @@ message SelectByRunNumber {
     (CFO).desc = "Run number." ];
 };
 
+message SelectByFilename {
+  string filename                                          = 1 [
+    (CFO).desc = "Primary filename of run data." ];
+};
+
 message SelectByRunStartTime {
   int64 run_start_time                                     = 1 [
     (CFO).desc = "Approximate start date and time of run, possibly from NTP on "
