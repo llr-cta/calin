@@ -304,7 +304,27 @@ calin::iact_data::actl_event_decoder::determine_trigger_type(
       return calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE;
     }
   } else if(calin_cdts_data) {
-
+    switch(calin_cdts_data->trigger_type()) {
+    case 0x01:
+      return calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS;
+    case 0x02:
+      return calin::ix::iact_data::telescope_event::TRIGGER_FORCED_BY_ARRAY;
+    case 0x04:
+    case 0x05: // allow either pure external or external/physics
+      return calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER;
+    case 0x08:
+      return calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER;
+    case 0x10:
+      return calin::ix::iact_data::telescope_event::TRIGGER_UCTS_AUX;
+    case 0x20:
+      return calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL;
+    case 0x40:
+      return calin::ix::iact_data::telescope_event::TRIGGER_SOFTWARE;
+    case 0x80:
+      return calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN;
+    default:
+      return calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE;
+    }
   }
   return calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN;
 }
