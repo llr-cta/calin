@@ -388,9 +388,10 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
+  // SJF : UCTS has bit 0x02 in effect, contrary to what is in CamerasToACTL - 2020-06-28
   if(cta_event->nectarcam().has_cdts_data()
     and cta_event->nectarcam().cdts_data().has_data()
-    and cta_event->nectarcam().extdevices_presence() & 0x01)
+    and cta_event->nectarcam().extdevices_presence() & 0x02)
   {
     calin::iact_data::actl_event_decoder::decode_cdts_data(
       calin_event->mutable_cdts_data(), cta_event->nectarcam().cdts_data());
@@ -425,9 +426,10 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
+  // SJF : TIB has bit 0x01 in effect, contrary to what is in CamerasToACTL - 2020-06-28
   if(cta_event->nectarcam().has_tib_data()
     and cta_event->nectarcam().tib_data().has_data()
-    and cta_event->nectarcam().extdevices_presence() & 0x02)
+    and cta_event->nectarcam().extdevices_presence() & 0x01)
   {
     calin::iact_data::actl_event_decoder::decode_tib_data(
       calin_event->mutable_tib_data(), cta_event->nectarcam().tib_data());

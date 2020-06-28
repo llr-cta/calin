@@ -277,7 +277,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
 
   if(cta_event->lstcam().has_cdts_data()
     and cta_event->lstcam().cdts_data().has_data()
-    and cta_event->lstcam().extdevices_presence() & 0x01)
+    and cta_event->lstcam().extdevices_presence() & 0x02)
   {
     calin::iact_data::actl_event_decoder::decode_cdts_data(
       calin_event->mutable_cdts_data(), cta_event->lstcam().cdts_data());
@@ -310,7 +310,7 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
 
   if(cta_event->lstcam().has_tib_data()
     and cta_event->lstcam().tib_data().has_data()
-    and cta_event->lstcam().extdevices_presence() & 0x02)
+    and cta_event->lstcam().extdevices_presence() & 0x01)
   {
     calin::iact_data::actl_event_decoder::decode_tib_data(
       calin_event->mutable_tib_data(), cta_event->lstcam().tib_data());
