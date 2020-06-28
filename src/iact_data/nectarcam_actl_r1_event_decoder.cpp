@@ -485,7 +485,11 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
-  if(calin_event->has_tib_data()) {
+  if(calin_event->has_tib_data() and calin_event->has_cdts_data()) {
+    calin_event->set_trigger_type(
+      calin::iact_data::actl_event_decoder::determine_trigger_type(
+        &calin_event->tib_data(), &calin_event->cdts_data()));
+  } else if(calin_event->has_tib_data()) {
     calin_event->set_trigger_type(
       calin::iact_data::actl_event_decoder::determine_trigger_type(
         &calin_event->tib_data(), nullptr));

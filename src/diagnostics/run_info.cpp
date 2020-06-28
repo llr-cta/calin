@@ -218,7 +218,7 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
   calin::diagnostics::range::encode_value(
     partials_->mutable_all_channels_presence(), event->all_modules_present());
 
-  // TIB TRIGGER BITS
+  // TIB TRIGGER BITS (from TIB or fallback to CDTS)
   if(event->has_tib_data()) {
     const auto& tib = event->tib_data();
     partials_->increment_num_mono_trigger(tib.mono_trigger());
@@ -229,6 +229,16 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
     partials_->increment_num_pedestal_trigger(tib.pedestal_trigger());
     partials_->increment_num_slow_control_trigger(tib.slow_control_trigger());
     partials_->increment_num_busy_trigger(tib.busy_trigger());
+  } else if(event->has_cdts_data()) {
+    const auto& cdts = event->cdts_data();
+    partials_->increment_num_mono_trigger(cdts.mono_trigger());
+    partials_->increment_num_stereo_trigger(cdts.stereo_trigger());
+    partials_->increment_num_external_calibration_trigger(cdts.external_calibration_trigger());
+    partials_->increment_num_internal_calibration_trigger(cdts.internal_calibration_trigger());
+    partials_->increment_num_ucts_aux_trigger(cdts.ucts_aux_trigger());
+    partials_->increment_num_pedestal_trigger(cdts.pedestal_trigger());
+    partials_->increment_num_slow_control_trigger(cdts.slow_control_trigger());
+    partials_->increment_num_busy_trigger(cdts.busy_trigger());
   }
 
   // EVENT TIME

@@ -189,9 +189,27 @@ message CDTSData {
   uint32 cdts_version                                       = 13 [
     (CFO).desc = "CDTS software version. Should be x.y.z where x is 2 bytes "
       "and y, z are a byte each. Only implemented for version>=3." ];
+
   uint32 version                                            = 20 [
     (CFO).desc = "CDTS message version number. Allows user to determine "
       "which fields are present."];
+
+  bool mono_trigger                                         = 30 [
+    (CFO).desc = "Mono trigger type bit set." ];
+  bool stereo_trigger                                       = 31 [
+    (CFO).desc = "Stereo trigger type bit set." ];
+  bool external_calibration_trigger                         = 32 [
+    (CFO).desc = "External calibration trigger type bit set." ];
+  bool internal_calibration_trigger                         = 33 [
+    (CFO).desc = "Internal calibration trigger type bit set." ];
+  bool ucts_aux_trigger                                     = 34 [
+    (CFO).desc = "UCTS auxiliary trigger type bit set." ];
+  bool pedestal_trigger                                     = 35 [
+    (CFO).desc = "Pedestal trigger type bit set." ];
+  bool slow_control_trigger                                 = 36 [
+    (CFO).desc = "Slow control trigger type bit set." ];
+  bool busy_trigger                                         = 37 [
+    (CFO).desc = "Busy trigger type bit set." ];
 };
 
 message TIBData {
@@ -207,6 +225,10 @@ message TIBData {
     (CFO).units = "us" ];
   uint32 stereo_pattern                                     = 4 [
     (CFO).desc = "Stereo bit pattern (9 bits)." ];
+  uint32 trigger_type                                       = 5 [
+    (CFO).desc = "Type of event that triggered the readout." ];
+  uint32 spare_bits                                         = 6 [
+    (CFO).desc = "Unused bits." ];
 
   bool mono_trigger                                         = 10 [
     (CFO).desc = "Mono trigger type bit set." ];
@@ -224,12 +246,6 @@ message TIBData {
     (CFO).desc = "Slow control trigger type bit set." ];
   bool busy_trigger                                         = 17 [
     (CFO).desc = "Busy trigger type bit set." ];
-
-  uint32 spare_bits                                         = 20 [
-    (CFO).desc = "Unused bits." ];
-
-  uint32 trigger_type                                       = 30 [
-    (CFO).desc = "Type of event that triggered the readout." ];
 };
 
 message SWATData {
