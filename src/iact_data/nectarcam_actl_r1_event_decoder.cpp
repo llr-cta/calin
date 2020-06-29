@@ -102,11 +102,16 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   calin_event->set_configuration_id(cta_event->configuration_id());
   calin_event->set_pedestal_dataset_id(cta_event->ped_id());
 
-  calin_event->mutable_absolute_event_time()->set_time_ns(
-    uint64_t(cta_event->trigger_time_s())*uint64_t(1000000000)
-    + uint64_t(cta_event->trigger_time_qns()>>2));
-  calin_event->mutable_elapsed_event_time()->set_time_ns(
-    calin_event->absolute_event_time().time_ns() - run_start_time_);
+  // ---------------------------------------------------------------------------
+  // DONT TRUST TIME FROM CAMERA SERVER UNTIL WE KNOW WHAT IT IS
+  // ---------------------------------------------------------------------------
+  // calin_event->mutable_absolute_event_time()->set_time_ns(
+  //   uint64_t(cta_event->trigger_time_s())*uint64_t(1000000000)
+  //   + uint64_t(cta_event->trigger_time_qns()>>2));
+  // calin_event->mutable_elapsed_event_time()->set_time_ns(
+  //   calin_event->absolute_event_time().time_ns() - run_start_time_);
+  calin_event->clear_absolute_event_time();
+  calin_event->clear_elapsed_event_time();
 
   bool all_modules_present = true;
   if(cta_event->nectarcam().has_module_status())
