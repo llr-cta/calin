@@ -134,6 +134,9 @@ message RunInfo {
   uint64 num_duplicate_event_numbers                       = 24 [
     (CFO).desc = "Number of duplicated event numbers found.",
     (CFO).is_counter = true ];
+  uint64 num_events_missing_tib_and_cdts                   = 25 [
+    (CFO).desc = "Number of events without TIB and CDTS information.",
+    (CFO).is_counter = true ];
 
   calin.ix.diagnostics.range.IndexRange events_missing_cdts    = 30 [
     (CFO).desc = "List of event ranges without UCTS information." ];
@@ -218,6 +221,7 @@ message PartialRunInfo {
   uint64 num_events_missing_swat                           = 4 [ (CFO).is_counter = true ];
   uint64 num_events_missing_modules                        = 5 [ (CFO).is_counter = true ];
   uint64 num_duplicate_event_numbers                       = 6 [ (CFO).is_counter = true ];
+  uint64 num_events_missing_tib_and_cdts                   = 7 [ (CFO).is_counter = true ];
 
   repeated uint64 event_number_sequence                    = 30 [
     (CFO).integration_algorithm = APPEND ];

@@ -208,6 +208,10 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
   calin::diagnostics::range::encode_value(
     partials_->mutable_tib_presence(), event->has_tib_data());
 
+  // UCTS & TIB
+  partials_->increment_num_events_missing_tib_and_cdts_if(
+    !event->has_tib_data() and !event->has_cdts_data());
+
   // SWAT
   partials_->increment_num_events_missing_swat_if(!event->has_swat_data());
   calin::diagnostics::range::encode_value(
@@ -419,6 +423,7 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
   results_->set_num_events_missing_tib(partials_->num_events_missing_tib());
   results_->set_num_events_missing_swat(partials_->num_events_missing_swat());
   results_->set_num_events_missing_modules(partials_->num_events_missing_modules());
+  results_->set_num_events_missing_tib_and_cdts(partials_->num_events_missing_tib_and_cdts());
 
   results_->set_num_mono_trigger(partials_->num_mono_trigger());
   results_->set_num_stereo_trigger(partials_->num_stereo_trigger()) ;
