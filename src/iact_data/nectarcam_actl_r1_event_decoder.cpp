@@ -395,34 +395,37 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
 
   // SJF : UCTS has bit 0x02 in effect, contrary to what is in CamerasToACTL - 2020-06-28
   if(cta_event->nectarcam().has_cdts_data()
-    and cta_event->nectarcam().cdts_data().has_data()
-    and cta_event->nectarcam().extdevices_presence() & 0x02)
+    and cta_event->nectarcam().cdts_data().has_data())
   {
     calin::iact_data::actl_event_decoder::decode_cdts_data(
       calin_event->mutable_cdts_data(), cta_event->nectarcam().cdts_data());
 
     const auto& cdts = calin_event->cdts_data();
 
-    bool clock_may_be_suspect =
-      (calin_event->cdts_data().white_rabbit_status() & 0x01) == 0;
+    if(cdts.event_counter() != cta_event->tel_event_id()) {
+      calin_event->clear_cdts_data();
+    } else {
+      bool clock_may_be_suspect =
+        (calin_event->cdts_data().white_rabbit_status() & 0x01) == 0;
 
-    auto* calin_clock = calin_event->add_camera_clock();
-    calin_clock->set_clock_id(0);
-    calin_clock->set_time_value(cdts.ucts_timestamp());
-    calin_clock->set_time_sequence_id(0);
-    calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
+      auto* calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(0);
+      calin_clock->set_time_value(cdts.ucts_timestamp());
+      calin_clock->set_time_sequence_id(0);
+      calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
 
-    calin_clock = calin_event->add_camera_clock();
-    calin_clock->set_clock_id(1);
-    calin_clock->set_time_value(cdts.clock_counter());
-    calin_clock->set_time_sequence_id(cdts.pps_counter());
-    calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
+      calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(1);
+      calin_clock->set_time_value(cdts.clock_counter());
+      calin_clock->set_time_sequence_id(cdts.pps_counter());
+      calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
 
-    calin_clock = calin_event->add_camera_clock();
-    calin_clock->set_clock_id(2);
-    calin_clock->set_time_value(cdts.pps_counter());
-    calin_clock->set_time_sequence_id(0);
-    calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
+      calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(2);
+      calin_clock->set_time_value(cdts.pps_counter());
+      calin_clock->set_time_sequence_id(0);
+      calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
+    }
   }
 
   // ==========================================================================
@@ -433,23 +436,26 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
 
   // SJF : TIB has bit 0x01 in effect, contrary to what is in CamerasToACTL - 2020-06-28
   if(cta_event->nectarcam().has_tib_data()
-    and cta_event->nectarcam().tib_data().has_data()
-    and cta_event->nectarcam().extdevices_presence() & 0x01)
+    and cta_event->nectarcam().tib_data().has_data())
   {
     calin::iact_data::actl_event_decoder::decode_tib_data(
       calin_event->mutable_tib_data(), cta_event->nectarcam().tib_data());
 
     const auto& tib = calin_event->tib_data();
 
-    auto* calin_clock = calin_event->add_camera_clock();
-    calin_clock->set_clock_id(3);
-    calin_clock->set_time_value(tib.clock_counter());
-    calin_clock->set_time_sequence_id(tib.pps_counter());
+    if(tib.event_counter() != cta_event->tel_event_id()) {
+      calin_event->clear_tib_data();
+    } else {
+      auto* calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(3);
+      calin_clock->set_time_value(tib.clock_counter());
+      calin_clock->set_time_sequence_id(tib.pps_counter());
 
-    calin_clock = calin_event->add_camera_clock();
-    calin_clock->set_clock_id(4);
-    calin_clock->set_time_value(tib.pps_counter());
-    calin_clock->set_time_sequence_id(0);
+      calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(4);
+      calin_clock->set_time_value(tib.pps_counter());
+      calin_clock->set_time_sequence_id(0);
+    }
   }
 
   // ==========================================================================
@@ -784,14 +790,13 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
 
   if(cta_event and cta_event->has_nectarcam()
     and cta_event->nectarcam().has_cdts_data()
-    and cta_event->nectarcam().cdts_data().has_data()
-    and cta_event->nectarcam().extdevices_presence() & 0x01)
+    and cta_event->nectarcam().cdts_data().has_data())
   {
     calin::ix::iact_data::telescope_event::CDTSData calin_cdts_data;
     calin::iact_data::actl_event_decoder::decode_cdts_data(
       &calin_cdts_data, cta_event->nectarcam().cdts_data());
 
-    if(calin_cdts_data.white_rabbit_status() == 1) {
+    if(calin_cdts_data.event_counter() == cta_event->tel_event_id()) {
       run_start_time_ = calin_cdts_data.ucts_timestamp();
       calin_run_config->mutable_run_start_time()->set_time_ns(run_start_time_);
     }
