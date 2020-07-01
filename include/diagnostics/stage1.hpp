@@ -29,6 +29,7 @@
 #include <diagnostics/run_info.hpp>
 #include <diagnostics/simple_charge_stats.hpp>
 #include <diagnostics/simple_charge_hists.hpp>
+#include <diagnostics/clock_regression.hpp>
 #include <diagnostics/waveform.hpp>
 #include <iact_data/nectarcam_ancillary_data.hpp>
 
@@ -80,6 +81,8 @@ private:
   calin::diagnostics::waveform::WaveformSumParallelEventVisitor* wf_mean_int_pev_ = nullptr;
 
   calin::ix::iact_data::nectarcam_ancillary_data::NectarCAMAncillaryData* nectarcam_ancillary_data_ = nullptr;
+
+  calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor* clock_regression_pev_ = nullptr;
 };
 
 } } } // namespace calin::diagnostics::stage1

@@ -19,7 +19,7 @@ set(CALIN_TARGET_LIBRARY calin_diagnostics)
 set(CALIN_SOURCES counter.cpp module.cpp event_number.cpp waveform.cpp
   waveform_psd.cpp functional.cpp value_capture.cpp
   delta_t.cpp run_info.cpp simple_charge_stats.cpp simple_charge_hists.cpp
-  stage1.cpp)
+  stage1.cpp clock_regression.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})
 target_link_libraries(${CALIN_TARGET_LIBRARY} calin_proto_diagnostics

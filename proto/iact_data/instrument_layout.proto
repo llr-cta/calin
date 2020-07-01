@@ -254,7 +254,9 @@ message CameraLayout {
   bool can_read_trigger_image                              = 45;
   int64 first_event_number                                 = 46;
 
-  repeated string module_counter_name                      = 50;
+  repeated string camera_clock_name                        = 50;
+  repeated string module_clock_name                        = 51;
+  repeated string module_counter_name                      = 52;
 
   repeated uint32 outline_polygon_vertex_index             = 60 [
     (CFO).desc = "Index of end of camera polygon lines." ];

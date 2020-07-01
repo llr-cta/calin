@@ -39,7 +39,10 @@ public:
   SimpleAccumulator(const value_type val=0): sum_{val} { /* nothing to see here */ }
   void reset(double val=0) { sum_ = val; }
   void accumulate(const value_type x) { sum_ += x; }
+  void accumulate_from(const SimpleAccumulator& o) { sum_ += o.sum_; }
+  void accumulate_from_with_scaling(const SimpleAccumulator& o, double s) { sum_ += s*o.sum_; }
   value_type total() const { return sum_; };
+  value_type correction() const { return 0; }
   operator value_type() const { return total(); }
   bool operator== (const SimpleAccumulator& o) const { return sum_==o.sum_; }
 private:
@@ -62,14 +65,20 @@ public:
     cor_=(T-sum_)-Y;
     sum_=T;
   }
+  void accumulate_from(const SimpleAccumulator& o) { accumulate(o.total()); }
+  void accumulate_from(const BasicKahanAccumulator<value_type>& o) {
+    accumulate(o.total()); accumulate(o.correction()); }
+
+  void accumulate_from_with_scaling(const SimpleAccumulator& o, double s) { accumulate(s*o.total()); }
+  void accumulate_from_with_scaling(const BasicKahanAccumulator<value_type>& o, double s) {
+    accumulate(s*o.total()); accumulate(s*o.correction()); }
+
   value_type total() const { return sum_; }
   value_type correction() const { return -cor_; }
   std::vector<value_type> corrections() const { return { correction() }; }
   operator value_type() const { return total(); }
-  bool operator== (const BasicKahanAccumulator<value_type>& o) const
-  {
-    return sum_==o.sum_ and cor_==o.cor_;
-  }
+  bool operator== (const BasicKahanAccumulator<value_type>& o) const {
+    return sum_==o.sum_ and cor_==o.cor_; }
 private:
   value_type sum_;
   value_type cor_;

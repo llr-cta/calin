@@ -208,6 +208,10 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
   calin::diagnostics::range::encode_value(
     partials_->mutable_tib_presence(), event->has_tib_data());
 
+  // UCTS & TIB
+  partials_->increment_num_events_missing_tib_and_cdts_if(
+    !event->has_tib_data() and !event->has_cdts_data());
+
   // SWAT
   partials_->increment_num_events_missing_swat_if(!event->has_swat_data());
   calin::diagnostics::range::encode_value(
@@ -218,7 +222,7 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
   calin::diagnostics::range::encode_value(
     partials_->mutable_all_channels_presence(), event->all_modules_present());
 
-  // TIB TRIGGER BITS
+  // TIB TRIGGER BITS (from TIB or fallback to CDTS)
   if(event->has_tib_data()) {
     const auto& tib = event->tib_data();
     partials_->increment_num_mono_trigger(tib.mono_trigger());
@@ -229,6 +233,16 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
     partials_->increment_num_pedestal_trigger(tib.pedestal_trigger());
     partials_->increment_num_slow_control_trigger(tib.slow_control_trigger());
     partials_->increment_num_busy_trigger(tib.busy_trigger());
+  } else if(event->has_cdts_data()) {
+    const auto& cdts = event->cdts_data();
+    partials_->increment_num_mono_trigger(cdts.mono_trigger());
+    partials_->increment_num_stereo_trigger(cdts.stereo_trigger());
+    partials_->increment_num_external_calibration_trigger(cdts.external_calibration_trigger());
+    partials_->increment_num_internal_calibration_trigger(cdts.internal_calibration_trigger());
+    partials_->increment_num_ucts_aux_trigger(cdts.ucts_aux_trigger());
+    partials_->increment_num_pedestal_trigger(cdts.pedestal_trigger());
+    partials_->increment_num_slow_control_trigger(cdts.slow_control_trigger());
+    partials_->increment_num_busy_trigger(cdts.busy_trigger());
   }
 
   // EVENT TIME
@@ -409,6 +423,7 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
   results_->set_num_events_missing_tib(partials_->num_events_missing_tib());
   results_->set_num_events_missing_swat(partials_->num_events_missing_swat());
   results_->set_num_events_missing_modules(partials_->num_events_missing_modules());
+  results_->set_num_events_missing_tib_and_cdts(partials_->num_events_missing_tib_and_cdts());
 
   results_->set_num_mono_trigger(partials_->num_mono_trigger());
   results_->set_num_stereo_trigger(partials_->num_stereo_trigger()) ;
@@ -565,19 +580,19 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
       const double dthistmax = 9.0;
 
       calin::math::histogram::Histogram1D log10_delta_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
       calin::math::histogram::Histogram1D log10_delta2_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
 
       calin::math::histogram::Histogram1D pt_log10_delta_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
       calin::math::histogram::Histogram1D pt_log10_delta2_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
       calin::math::histogram::Histogram1D pt2_log10_delta_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
 
       calin::math::histogram::Histogram1D rec_log10_delta_t_hist {
-        config_.delta_t_timeslice(), dthistmin, dthistmax, 0.0 };
+        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
 
       uint64_t second_last_event_number = partials_->event_number_sequence(event_index[0]);
       int64_t  second_last_event_time = partials_->event_time_sequence(event_index[0]);

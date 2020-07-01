@@ -156,6 +156,15 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_ucts_address(cdts_data->ucts_address);
     calin_cdts_data->set_cdts_version(cdts_data->cdts_version);
     calin_cdts_data->set_version(3);
+
+    calin_cdts_data->set_mono_trigger(cdts_data->trigger_type & 0x01);
+    calin_cdts_data->set_stereo_trigger(cdts_data->trigger_type & 0x02);
+    calin_cdts_data->set_external_calibration_trigger(cdts_data->trigger_type & 0x04);
+    calin_cdts_data->set_internal_calibration_trigger(cdts_data->trigger_type & 0x08);
+    calin_cdts_data->set_ucts_aux_trigger(cdts_data->trigger_type & 0x10);
+    calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
+    calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
+    calin_cdts_data->set_busy_trigger(cdts_data->trigger_type & 0x80);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V2)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V2*>(&cta_cdts_data.front());
@@ -174,6 +183,15 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_ucts_address(0);
     calin_cdts_data->set_cdts_version(0);
     calin_cdts_data->set_version(2);
+
+    calin_cdts_data->set_mono_trigger(cdts_data->trigger_type & 0x01);
+    calin_cdts_data->set_stereo_trigger(cdts_data->trigger_type & 0x02);
+    calin_cdts_data->set_external_calibration_trigger(cdts_data->trigger_type & 0x04);
+    calin_cdts_data->set_internal_calibration_trigger(cdts_data->trigger_type & 0x08);
+    calin_cdts_data->set_ucts_aux_trigger(cdts_data->trigger_type & 0x10);
+    calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
+    calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
+    calin_cdts_data->set_busy_trigger(cdts_data->trigger_type & 0x80);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V1)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V1*>(&cta_cdts_data.front());
@@ -192,6 +210,15 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_ucts_address(0);
     calin_cdts_data->set_cdts_version(0);
     calin_cdts_data->set_version(1);
+
+    calin_cdts_data->set_mono_trigger(cdts_data->trigger_type & 0x01);
+    calin_cdts_data->set_stereo_trigger(cdts_data->trigger_type & 0x02);
+    calin_cdts_data->set_external_calibration_trigger(cdts_data->trigger_type & 0x04);
+    calin_cdts_data->set_internal_calibration_trigger(cdts_data->trigger_type & 0x08);
+    calin_cdts_data->set_ucts_aux_trigger(cdts_data->trigger_type & 0x10);
+    calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
+    calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
+    calin_cdts_data->set_busy_trigger(cdts_data->trigger_type & 0x80);
   } else if(cta_cdts_data.size() == sizeof(CDTSMessageData_V0)) {
     const auto* cdts_data =
       reinterpret_cast<const CDTSMessageData_V0*>(&cta_cdts_data.front());
@@ -210,10 +237,18 @@ decode_cdts_data(calin::ix::iact_data::telescope_event::CDTSData* calin_cdts_dat
     calin_cdts_data->set_ucts_address(0);
     calin_cdts_data->set_cdts_version(0);
     calin_cdts_data->set_version(0);
+
+    calin_cdts_data->set_mono_trigger(cdts_data->trigger_type & 0x01);
+    calin_cdts_data->set_stereo_trigger(cdts_data->trigger_type & 0x02);
+    calin_cdts_data->set_external_calibration_trigger(cdts_data->trigger_type & 0x04);
+    calin_cdts_data->set_internal_calibration_trigger(cdts_data->trigger_type & 0x08);
+    calin_cdts_data->set_ucts_aux_trigger(cdts_data->trigger_type & 0x10);
+    calin_cdts_data->set_pedestal_trigger(cdts_data->trigger_type & 0x20);
+    calin_cdts_data->set_slow_control_trigger(cdts_data->trigger_type & 0x40);
+    calin_cdts_data->set_busy_trigger(cdts_data->trigger_type & 0x80);
   } else {
     throw std::runtime_error("CDTS data array not expected size");
   }
-
 }
 
 void calin::iact_data::actl_event_decoder::
@@ -264,6 +299,9 @@ decode_tib_data(calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
   calin_tib_data->set_clock_counter(tib_data->clock_counter_lo16
     + (tib_data->clock_counter_hi8<<16) );
   calin_tib_data->set_stereo_pattern(tib_data->stereo_pattern&0x0001FFFF);
+  calin_tib_data->set_trigger_type(tib_data->trigger_type);
+  calin_tib_data->set_spare_bits(tib_data->stereo_pattern>>9);
+
   calin_tib_data->set_mono_trigger(tib_data->trigger_type & 0x01);
   calin_tib_data->set_stereo_trigger(tib_data->trigger_type & 0x02);
   calin_tib_data->set_external_calibration_trigger(tib_data->trigger_type & 0x04);
@@ -272,8 +310,6 @@ decode_tib_data(calin::ix::iact_data::telescope_event::TIBData* calin_tib_data,
   calin_tib_data->set_pedestal_trigger(tib_data->trigger_type & 0x20);
   calin_tib_data->set_slow_control_trigger(tib_data->trigger_type & 0x40);
   calin_tib_data->set_busy_trigger(tib_data->trigger_type & 0x80);
-  calin_tib_data->set_spare_bits(tib_data->stereo_pattern>>9);
-  calin_tib_data->set_trigger_type(tib_data->trigger_type);
 }
 
 calin::ix::iact_data::telescope_event::TriggerType
@@ -304,7 +340,27 @@ calin::iact_data::actl_event_decoder::determine_trigger_type(
       return calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE;
     }
   } else if(calin_cdts_data) {
-
+    switch(calin_cdts_data->trigger_type()) {
+    case 0x01:
+      return calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS;
+    case 0x02:
+      return calin::ix::iact_data::telescope_event::TRIGGER_FORCED_BY_ARRAY;
+    case 0x04:
+    case 0x05: // allow either pure external or external/physics
+      return calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER;
+    case 0x08:
+      return calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER;
+    case 0x10:
+      return calin::ix::iact_data::telescope_event::TRIGGER_UCTS_AUX;
+    case 0x20:
+      return calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL;
+    case 0x40:
+      return calin::ix::iact_data::telescope_event::TRIGGER_SOFTWARE;
+    case 0x80:
+      return calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN;
+    default:
+      return calin::ix::iact_data::telescope_event::TRIGGER_MULTIPLE;
+    }
   }
   return calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN;
 }

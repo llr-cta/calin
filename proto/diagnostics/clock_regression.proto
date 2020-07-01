@@ -1,0 +1,107 @@
+/*
+
+   calin/proto/diagnostics/clock_regression.proto -- Stephen Fegan -- 2020-05-28
+
+   Protobufs for clock regression diagnostics
+
+   Copyright 2020, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+option cc_enable_arenas = true;
+
+import "calin.proto";
+
+package calin.ix.diagnostics.clock_regression;
+
+
+enum ClockPartitionMode {
+  SINGLE_PARTITION                                         = 0;
+  PARTITION_BY_CLOCK_SEQUENCE_ID                           = 1;
+  PARTITION_BY_LOCAL_EVENT_NUMBER                          = 2;
+  PARTITION_BY_MASTER_CLOCK                                = 3;
+};
+
+message SingleClockRegressionConfig {
+  int32 clock_id                                           = 1 [
+    (CFO).desc = "ID of camera or module clock to calculate regression on." ];
+  ClockPartitionMode partition_mode                        = 2 [
+    (CFO).desc = "How to partition the clock data into bins." ];
+  int64 partition_bin_size                                 = 3 [
+    (CFO).desc = "Size of clock partition bins, either in events or ticks of "
+      "master clock." ];
+  int64 master_clock_divisor                               = 4 [
+    (CFO).desc = "Divisor to apply to master clock before regression. Should "
+      "only be used if there is a risk of overflow of the 64-bit "
+      "accumulators." ];
+  bool include_possibly_suspect_time_values                = 5 [
+    (CFO).desc = "Include values of the test clock that are flagged as "
+      "possibly suspicious in the regression." ];
+};
+
+message ClockRegressionConfig {
+  int32 master_clock_id                                    = 1 [
+    (CFO).desc = "Master camera clock id to use in regression." ];
+  bool include_possibly_suspect_master_time_values         = 2 [
+    (CFO).desc = "Include values of the master clock that are flagged as "
+      "possibly suspicious in the regression." ];
+  int32 rebalance_nevent                                   = 3 [
+    (CFO).desc = "Number of events between rebalancing, if positive, or "
+      "do not do rebalancing otherwise." ];
+
+  repeated SingleClockRegressionConfig camera_clocks       = 10;
+  repeated SingleClockRegressionConfig module_clocks       = 11;
+
+  repeated SingleClockRegressionConfig default_nectarcam_camera_clocks = 100;
+  repeated SingleClockRegressionConfig default_nectarcam_module_clocks = 101;
+  repeated SingleClockRegressionConfig default_lstcam_camera_clocks = 110;
+  repeated SingleClockRegressionConfig default_lstcam_module_clocks = 111;
+};
+
+message ClockRegressionParameters {
+  int64 x0                                                 = 1 [
+    (CFO).desc = "Master clock value at origin of regression.",
+    (CFO).units = "master-clock ticks" ];
+  int64 y0                                                 = 2 [
+    (CFO).desc = "Test clock value at origin of regression.",
+    (CFO).units = "test-clock ticks" ];
+  uint32 num_entries                                       = 3 [
+    (CFO).desc = "Number of entries in regression." ];
+  double a                                                 = 4 [
+    (CFO).desc = "Linear regression slope coefficient (test-clock ticks per "
+      "master-clock tick).",
+    (CFO).units = "test-clock ticks/master-clock ticks" ];
+  double b                                                 = 5 [
+    (CFO).desc = "Linear regression offset coefficient (master-clock ticks at "
+      "origin of test clock).",
+    (CFO).units = "test-clock ticks" ];
+  double d2                                                = 6 [
+    (CFO).desc = "Total least-squares residual.",
+    (CFO).units = "test-clock ticks squared" ];
+};
+
+message SingleClockRegressionResults {
+  map<uint32, ClockRegressionParameters> bins              = 1;
+};
+
+message ModuleClockRegressionResults {
+  repeated SingleClockRegressionResults modules            = 1;
+};
+
+message ClockRegressionResults {
+  repeated SingleClockRegressionResults camera_clock       = 1;
+  repeated ModuleClockRegressionResults module_clock       = 2;
+};

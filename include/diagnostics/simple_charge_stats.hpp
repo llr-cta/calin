@@ -77,16 +77,26 @@ public:
 private:
   struct SingleGainChannelHists {
     SingleGainChannelHists(double time_resolution):
-      ped_wf_1_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
-      ped_wf_q_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0)),
-      ped_wf_q2_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0))
+      all_pedwin_1_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0, 0.0)),
+      all_pedwin_q_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0, 0.0)),
+      all_pedwin_q2_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0, 0.0)),
+      ped_wf_1_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0, 0.0)),
+      ped_wf_q_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0, 0.0)),
+      ped_wf_q2_sum_vs_time(new calin::math::histogram::Histogram1D(time_resolution, -60.0, 86400.0, 0.0))
     { /* nothing to see here */ }
 
     ~SingleGainChannelHists() {
+      delete all_pedwin_1_sum_vs_time;
+      delete all_pedwin_q_sum_vs_time;
+      delete all_pedwin_q2_sum_vs_time;
       delete ped_wf_1_sum_vs_time;
       delete ped_wf_q_sum_vs_time;
       delete ped_wf_q2_sum_vs_time;
     }
+
+    calin::math::histogram::Histogram1D* all_pedwin_1_sum_vs_time;
+    calin::math::histogram::Histogram1D* all_pedwin_q_sum_vs_time;
+    calin::math::histogram::Histogram1D* all_pedwin_q2_sum_vs_time;
 
     calin::math::histogram::Histogram1D* ped_wf_1_sum_vs_time;
     calin::math::histogram::Histogram1D* ped_wf_q_sum_vs_time;
@@ -112,6 +122,10 @@ private:
     calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
     const calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats& partials_gc);
 
+  void integrate_one_gain_camera_partials(
+    calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
+    const calin::ix::diagnostics::simple_charge_stats::PartialOneGainCameraSimpleChargeStats& partials_gc);
+
   void dump_single_gain_channel_hists_to_partials(
     const SingleGainChannelHists& hists,
     calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* partials);
@@ -120,7 +134,8 @@ private:
     const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
     unsigned ichan, double elapsed_event_time,
     calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats,
-    SingleGainChannelHists* one_gain_hists);
+    SingleGainChannelHists* one_gain_hists,
+    unsigned& nsum, int64_t& opt_sum, int64_t& sig_sum);
 
   void record_one_visitor_data(uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
     const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,

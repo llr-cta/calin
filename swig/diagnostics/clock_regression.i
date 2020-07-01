@@ -1,8 +1,8 @@
 /*
 
-   calin/diagnostics/stage1.i -- Stephen Fegan -- 2020-03-28
+   calin/diagnostics/clock_regression.i -- Stephen Fegan -- 2020-05-29
 
-   SWIG interface file for stage 1 diagnostics
+   SWIG interface file for clock regression tests
 
    Copyright 2020, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
@@ -20,12 +20,12 @@
 
 */
 
-%module (package="calin.diagnostics") stage1
+%module (package="calin.diagnostics") clock_regression
 %feature(autodoc,2);
 
 %{
 #include "iact_data/event_visitor.hpp"
-#include "diagnostics/stage1.hpp"
+#include "diagnostics/clock_regression.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -37,9 +37,8 @@
 %import "calin_global_definitions.i"
 
 %import "iact_data/event_visitor.i"
-%import "diagnostics/stage1.pb.i"
+%import "diagnostics/clock_regression.pb.i"
 
-/* %newobject calin::diagnostics::run_info::RunInfoDiagnosticsParallelEventVisitor::run_config();
-%newobject calin::diagnostics::run_info::RunInfoDiagnosticsParallelEventVisitor::run_info(); */
+%newobject calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor::clock_regression() const;
 
-%include "diagnostics/stage1.hpp"
+%include "diagnostics/clock_regression.hpp"

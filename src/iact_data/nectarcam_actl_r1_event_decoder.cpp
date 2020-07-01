@@ -102,11 +102,16 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   calin_event->set_configuration_id(cta_event->configuration_id());
   calin_event->set_pedestal_dataset_id(cta_event->ped_id());
 
-  calin_event->mutable_absolute_event_time()->set_time_ns(
-    uint64_t(cta_event->trigger_time_s())*uint64_t(1000000000)
-    + uint64_t(cta_event->trigger_time_qns()>>2));
-  calin_event->mutable_elapsed_event_time()->set_time_ns(
-    calin_event->absolute_event_time().time_ns() - run_start_time_);
+  // ---------------------------------------------------------------------------
+  // DONT TRUST TIME FROM CAMERA SERVER UNTIL WE KNOW WHAT IT IS
+  // ---------------------------------------------------------------------------
+  // calin_event->mutable_absolute_event_time()->set_time_ns(
+  //   uint64_t(cta_event->trigger_time_s())*uint64_t(1000000000)
+  //   + uint64_t(cta_event->trigger_time_qns()>>2));
+  // calin_event->mutable_elapsed_event_time()->set_time_ns(
+  //   calin_event->absolute_event_time().time_ns() - run_start_time_);
+  calin_event->clear_absolute_event_time();
+  calin_event->clear_elapsed_event_time();
 
   bool all_modules_present = true;
   if(cta_event->nectarcam().has_module_status())
@@ -220,27 +225,32 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
+  uint64_t mod_clock_sum = 0;
+  uint64_t mod_clock_seq_sum = 0;
+  int64_t mod_clock_num = 0;
+  bool mod_clock_is_suspect = false;
+
   if(cta_event->nectarcam().has_counters())
   {
     struct NectarCounters {
-      uint32_t global_event_counter;
-      uint16_t bunch_counter;
-      uint16_t event_counter;
-      uint32_t ts1;
-      int8_t   ts2_event;
-      int8_t   ts2_bunch;
-      uint16_t ts2_empty;
+      /*  4 */ uint32_t global_event_counter;
+      /*  6 */ uint16_t bunch_counter;
+      /*  8 */ uint16_t event_counter;
+      /* 12 */ uint32_t ts1;
+      /* 13 */ int8_t   ts2_event;
+      /* 14 */ int8_t   ts2_bunch;
+      /* 16 */ uint16_t ts2_empty;
     }__attribute__((packed));
 
     struct NectarCountersWithTriggerPattern {
-      uint32_t global_event_counter;
-      uint16_t bunch_counter;
-      uint16_t event_counter;
-      uint32_t ts1;
-      int8_t   ts2_event;
-      int8_t   ts2_bunch;
-      uint16_t ts2_empty;
-      uint32_t trigger_pattern;
+      /*  4 */ uint32_t global_event_counter;
+      /*  6 */ uint16_t bunch_counter;
+      /*  8 */ uint16_t event_counter;
+      /* 12 */ uint32_t ts1;
+      /* 13 */ int8_t   ts2_event;
+      /* 14 */ int8_t   ts2_bunch;
+      /* 16 */ uint16_t ts2_empty;
+      /* 20 */ uint32_t trigger_pattern;
     }__attribute__((packed));
 
     const auto& cta_counters = cta_event->nectarcam().counters();
@@ -331,12 +341,49 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
 
       module_data->set_bunch_event_time(ts);
 
-      int64_t time_ns = mod_counter->bunch_counter*1000000000LL + ts;
+      bool clock_is_suspect = false;
+      int32 time_seq_id = mod_counter->bunch_counter;
+
+      if(mod_counter->event_counter == 1 and mod_counter->ts1 > 124987500)
+      {
+        // Here we attempt to handle events where the TS1 value seems to
+        // still be at the a hight count value but the PPS event_counter
+        // says it should be the first event in the new PPS bunch. We can :
+        // - flag its value as potentially suspect
+        // - and/or try to fix the mismatch by decreasing its sequence id
+
+        clock_is_suspect = true;
+        time_seq_id -= 1;
+      }
+
       auto* module_clocks = calin_event->add_module_clock();
       module_clocks->set_module_id(imod);
+
+      // Clock that combines TS1 and TS2
       auto* clock = module_clocks->add_clock();
       clock->set_clock_id(0);
-      clock->mutable_time()->set_time_ns(time_ns);
+      clock->set_time_value(ts);
+      clock->set_time_sequence_id(time_seq_id);
+      clock->set_time_value_may_be_suspect(clock_is_suspect);
+
+      // Clock using TS1 only
+      clock = module_clocks->add_clock();
+      clock->set_clock_id(1);
+      clock->set_time_value(mod_counter->ts1);
+      clock->set_time_sequence_id(time_seq_id);
+      clock->set_time_value_may_be_suspect(clock_is_suspect);
+
+      // Clock using PPS counter only
+      clock = module_clocks->add_clock();
+      clock->set_clock_id(2);
+      clock->set_time_value(time_seq_id);
+      clock->set_time_sequence_id(0);
+      clock->set_time_value_may_be_suspect(clock_is_suspect);
+
+      mod_clock_sum += ts;
+      mod_clock_seq_sum += time_seq_id;
+      mod_clock_num += 1;
+      mod_clock_is_suspect |= clock_is_suspect;
     }
   }
 
@@ -346,17 +393,38 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
+  // SJF : UCTS has bit 0x02 in effect, contrary to what is in CamerasToACTL - 2020-06-28
   if(cta_event->nectarcam().has_cdts_data()
-    and cta_event->nectarcam().cdts_data().has_data()
-    and cta_event->nectarcam().extdevices_presence() & 0x01)
+    and cta_event->nectarcam().cdts_data().has_data())
   {
     calin::iact_data::actl_event_decoder::decode_cdts_data(
       calin_event->mutable_cdts_data(), cta_event->nectarcam().cdts_data());
 
-    if(calin_event->cdts_data().white_rabbit_status() == 1) {
+    const auto& cdts = calin_event->cdts_data();
+
+    if(cdts.event_counter() != cta_event->tel_event_id()) {
+      calin_event->clear_cdts_data();
+    } else {
+      bool clock_may_be_suspect =
+        (calin_event->cdts_data().white_rabbit_status() & 0x01) == 0;
+
       auto* calin_clock = calin_event->add_camera_clock();
       calin_clock->set_clock_id(0);
-      calin_clock->mutable_time()->set_time_ns(calin_event->cdts_data().ucts_timestamp());
+      calin_clock->set_time_value(cdts.ucts_timestamp());
+      calin_clock->set_time_sequence_id(0);
+      calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
+
+      calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(1);
+      calin_clock->set_time_value(cdts.clock_counter());
+      calin_clock->set_time_sequence_id(cdts.pps_counter());
+      calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
+
+      calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(2);
+      calin_clock->set_time_value(cdts.pps_counter());
+      calin_clock->set_time_sequence_id(0);
+      calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
     }
   }
 
@@ -366,12 +434,42 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
+  // SJF : TIB has bit 0x01 in effect, contrary to what is in CamerasToACTL - 2020-06-28
   if(cta_event->nectarcam().has_tib_data()
-    and cta_event->nectarcam().tib_data().has_data()
-    and cta_event->nectarcam().extdevices_presence() & 0x02)
+    and cta_event->nectarcam().tib_data().has_data())
   {
     calin::iact_data::actl_event_decoder::decode_tib_data(
       calin_event->mutable_tib_data(), cta_event->nectarcam().tib_data());
+
+    const auto& tib = calin_event->tib_data();
+
+    if(tib.event_counter() != cta_event->tel_event_id()) {
+      calin_event->clear_tib_data();
+    } else {
+      auto* calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(3);
+      calin_clock->set_time_value(tib.clock_counter());
+      calin_clock->set_time_sequence_id(tib.pps_counter());
+
+      calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(4);
+      calin_clock->set_time_value(tib.pps_counter());
+      calin_clock->set_time_sequence_id(0);
+    }
+  }
+
+  // ==========================================================================
+  //
+  // ADD MODULE CLOCK SUM AFTER CDTS AND TIB, IF IT IS VALID
+  //
+  // ==========================================================================
+
+  if(mod_clock_num==calin_event->module_index_size()) {
+    auto* calin_clock = calin_event->add_camera_clock();
+    calin_clock->set_clock_id(5);
+    calin_clock->set_time_value(mod_clock_sum);
+    calin_clock->set_time_sequence_id(mod_clock_seq_sum);
+    calin_clock->set_time_value_may_be_suspect(mod_clock_is_suspect);
   }
 
   // ==========================================================================
@@ -398,7 +496,11 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   //
   // ==========================================================================
 
-  if(calin_event->has_tib_data()) {
+  if(calin_event->has_tib_data() and calin_event->has_cdts_data()) {
+    calin_event->set_trigger_type(
+      calin::iact_data::actl_event_decoder::determine_trigger_type(
+        &calin_event->tib_data(), &calin_event->cdts_data()));
+  } else if(calin_event->has_tib_data()) {
     calin_event->set_trigger_type(
       calin::iact_data::actl_event_decoder::determine_trigger_type(
         &calin_event->tib_data(), nullptr));
@@ -688,14 +790,13 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
 
   if(cta_event and cta_event->has_nectarcam()
     and cta_event->nectarcam().has_cdts_data()
-    and cta_event->nectarcam().cdts_data().has_data()
-    and cta_event->nectarcam().extdevices_presence() & 0x01)
+    and cta_event->nectarcam().cdts_data().has_data())
   {
     calin::ix::iact_data::telescope_event::CDTSData calin_cdts_data;
     calin::iact_data::actl_event_decoder::decode_cdts_data(
       &calin_cdts_data, cta_event->nectarcam().cdts_data());
 
-    if(calin_cdts_data.white_rabbit_status() == 1) {
+    if(calin_cdts_data.event_counter() == cta_event->tel_event_id()) {
       run_start_time_ = calin_cdts_data.ucts_timestamp();
       calin_run_config->mutable_run_start_time()->set_time_ns(run_start_time_);
     }

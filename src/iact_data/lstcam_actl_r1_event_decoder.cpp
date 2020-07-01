@@ -95,11 +95,16 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
   calin_event->set_configuration_id(cta_event->configuration_id());
   calin_event->set_pedestal_dataset_id(cta_event->ped_id());
 
-  calin_event->mutable_absolute_event_time()->set_time_ns(
-    uint64_t(cta_event->trigger_time_s())*uint64_t(1000000000)
-    + uint64_t(cta_event->trigger_time_qns()>>2));
-  calin_event->mutable_elapsed_event_time()->set_time_ns(
-    calin_event->absolute_event_time().time_ns() - run_start_time_);
+  // ---------------------------------------------------------------------------
+  // DONT TRUST TIME FROM CAMERA SERVER UNTIL WE KNOW WHAT IT IS
+  // ---------------------------------------------------------------------------
+  // calin_event->mutable_absolute_event_time()->set_time_ns(
+  //   uint64_t(cta_event->trigger_time_s())*uint64_t(1000000000)
+  //   + uint64_t(cta_event->trigger_time_qns()>>2));
+  // calin_event->mutable_elapsed_event_time()->set_time_ns(
+  //   calin_event->absolute_event_time().time_ns() - run_start_time_);
+  calin_event->clear_absolute_event_time();
+  calin_event->clear_elapsed_event_time();
 
   bool all_modules_present = true;
   if(cta_event->lstcam().has_module_status())
@@ -243,17 +248,29 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
       module_data->set_local_133megahertz_counter(mod_counter->local_133MHz_counter);
 
       // Integer arithmatic approximate 133MHz to ns conversion
-      int64_t time_ns = (mod_counter->local_133MHz_counter
-        * config_.counts_to_time_133megahertz() /*30797ULL*/) >> 12;
+      // int64_t time_ns = (mod_counter->local_133MHz_counter
+      //   * config_.counts_to_time_133megahertz() /*30797ULL*/) >> 12;
+
       auto* module_clocks = calin_event->add_module_clock();
       module_clocks->set_module_id(imod);
+
+      // Clock using 10MHz clock that rolls over every 0.1us * 2^32 = 429 sec
       auto* clock = module_clocks->add_clock();
       clock->set_clock_id(0);
-      clock->mutable_time()->set_time_ns(time_ns);
+      clock->set_time_value(mod_counter->backplane_10MHz_counter);
+      clock->set_time_sequence_id(0); // What to set this to ?
+
+      // Clock using TS1 only
       clock = module_clocks->add_clock();
       clock->set_clock_id(1);
-      clock->mutable_time()->set_time_ns(mod_counter->pps_counter*1000000000ULL +
-        mod_counter->backplane_10MHz_counter*100ULL);
+      clock->set_time_value(mod_counter->local_133MHz_counter);
+      clock->set_time_sequence_id(mod_counter->pps_counter);
+
+      // Clock using PPS counter only
+      clock = module_clocks->add_clock();
+      clock->set_clock_id(2);
+      clock->set_time_value(mod_counter->pps_counter);
+      clock->set_time_sequence_id(0);
     }
   }
 
@@ -264,16 +281,36 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
   // ==========================================================================
 
   if(cta_event->lstcam().has_cdts_data()
-    and cta_event->lstcam().cdts_data().has_data()
-    and cta_event->lstcam().extdevices_presence() & 0x01)
+    and cta_event->lstcam().cdts_data().has_data())
   {
     calin::iact_data::actl_event_decoder::decode_cdts_data(
       calin_event->mutable_cdts_data(), cta_event->lstcam().cdts_data());
 
-    if(calin_event->cdts_data().white_rabbit_status() == 1) {
+    const auto& cdts = calin_event->cdts_data();
+
+    if(cdts.event_counter() != cta_event->tel_event_id()) {
+      calin_event->clear_cdts_data();
+    } else {
+      bool clock_may_be_suspect =
+        (calin_event->cdts_data().white_rabbit_status() & 0x01) == 0;
+
       auto* calin_clock = calin_event->add_camera_clock();
       calin_clock->set_clock_id(0);
-      calin_clock->mutable_time()->set_time_ns(calin_event->cdts_data().ucts_timestamp());
+      calin_clock->set_time_value(cdts.ucts_timestamp());
+      calin_clock->set_time_sequence_id(0);
+      calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
+
+      calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(1);
+      calin_clock->set_time_value(cdts.clock_counter());
+      calin_clock->set_time_sequence_id(cdts.pps_counter());
+      calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
+
+      calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(2);
+      calin_clock->set_time_value(cdts.pps_counter());
+      calin_clock->set_time_sequence_id(0);
+      calin_clock->set_time_value_may_be_suspect(clock_may_be_suspect);
     }
   }
 
@@ -284,11 +321,26 @@ bool LSTCam_ACTL_R1_CameraEventDecoder::decode(
   // ==========================================================================
 
   if(cta_event->lstcam().has_tib_data()
-    and cta_event->lstcam().tib_data().has_data()
-    and cta_event->lstcam().extdevices_presence() & 0x02)
+    and cta_event->lstcam().tib_data().has_data())
   {
     calin::iact_data::actl_event_decoder::decode_tib_data(
       calin_event->mutable_tib_data(), cta_event->lstcam().tib_data());
+
+    const auto& tib = calin_event->tib_data();
+
+    if(tib.event_counter() != cta_event->tel_event_id()) {
+      calin_event->clear_tib_data();
+    } else {
+      auto* calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(3);
+      calin_clock->set_time_value(tib.clock_counter());
+      calin_clock->set_time_sequence_id(tib.pps_counter());
+
+      calin_clock = calin_event->add_camera_clock();
+      calin_clock->set_clock_id(4);
+      calin_clock->set_time_value(tib.pps_counter());
+      calin_clock->set_time_sequence_id(0);
+    }
   }
 
   // ==========================================================================
@@ -537,14 +589,13 @@ abort_pixel_based_method:
   // ==========================================================================
 
   if(cta_event->lstcam().has_cdts_data()
-    and cta_event->lstcam().cdts_data().has_data()
-    and cta_event->lstcam().extdevices_presence() & 0x01)
+    and cta_event->lstcam().cdts_data().has_data())
   {
     calin::ix::iact_data::telescope_event::CDTSData calin_cdts_data;
     calin::iact_data::actl_event_decoder::decode_cdts_data(
       &calin_cdts_data, cta_event->lstcam().cdts_data());
 
-    if(calin_cdts_data.white_rabbit_status() == 1) {
+    if(calin_cdts_data.event_counter() == cta_event->tel_event_id()) {
       run_start_time_ = calin_cdts_data.ucts_timestamp();
       calin_run_config->mutable_run_start_time()->set_time_ns(run_start_time_);
     }
