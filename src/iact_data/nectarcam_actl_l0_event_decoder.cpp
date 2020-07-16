@@ -439,7 +439,7 @@ bool NectarCam_ACTL_L0_CameraEventDecoder::decode_run_config(
   switch(config_.camera_type())
   {
   case NectarCamCameraEventDecoderConfig::AUTOMATIC:
-    if(run_number_ > 877) {
+    if(run_number_ >= 824) {
       nectarcam_layout::nectarcam_layout(
         calin_run_config->mutable_camera_layout());
     } else {
