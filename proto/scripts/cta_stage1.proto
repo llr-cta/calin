@@ -23,11 +23,11 @@
 syntax = "proto3";
 
 import "calin.proto";
-import "provenance/anthology.proto";
-import "iact_data/telescope_run_configuration.proto";
+// import "provenance/anthology.proto";
+// import "iact_data/telescope_run_configuration.proto";
 import "iact_data/cta_data_source.proto";
 import "iact_data/zfits_data_source.proto";
-import "util/options_processor.proto";
+// import "util/options_processor.proto";
 import "io/zmq_data_source.proto";
 import "diagnostics/stage1.proto";
 
@@ -52,6 +52,10 @@ message CommandLineOptions {
     (CFO).desc = "Replace runs (files) that are already in the DB. Runs are matched "
       "based on the full path name specified. This option has no effect if "
       "\"skip_existing\" is also specified. Only applies to files (not ZMQ endpoints)." ];
+  uint32 start_file_index                                  = 15 [
+    (CFO).desc = "Set the start index if multiple files are given. Only really "
+      "useful for processing a large list of runs where one of the runs caused "
+      "the processing to teminate with a segfault. Hopefully this never happens."];
 
   uint32 log_frequency                                     = 20 [
     (CFO).desc = "Print a message to log every \"log_frequency\" events." ];

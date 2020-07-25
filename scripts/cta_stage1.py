@@ -107,7 +107,8 @@ if(endpoints[0].startswith('tcp://') or endpoints[0].startswith('ipc://')
     sql.insert(opt.db_results_table_name(), visitor.stage1_results())
 else:
     first_file = True
-    for ifile, filename in enumerate(endpoints):
+    for ifile, filename in enumerate(endpoints[opt.start_file_index():]):
+        ifile += opt.start_file_index()
         if not first_file:
             print("-"*80)
         first_file = False
