@@ -459,6 +459,6 @@ calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig
 SimpleChargeStatsParallelEventVisitor::default_config()
 {
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config;
-  config.set_ped_time_hist_resolution(30.0);
+  config.set_ped_time_hist_resolution(5.0);
   return config;
 }
