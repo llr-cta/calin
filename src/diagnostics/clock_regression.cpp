@@ -280,6 +280,11 @@ ClockRegressionParallelEventVisitor::default_config()
   clock->set_clock_id(5); // FEB local oscillator sum
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
 
+  clock = config.add_default_nectarcam_camera_clocks();
+  clock->set_clock_id(5); // FEB local oscillator sum
+  clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_MASTER_CLOCK);
+  clock->set_partition_bin_size(250000000);
+
   clock = config.add_default_nectarcam_module_clocks();
   clock->set_clock_id(0); // local ~2ns TDC time
   clock->set_partition_mode(calin::ix::diagnostics::clock_regression::PARTITION_BY_CLOCK_SEQUENCE_ID);
