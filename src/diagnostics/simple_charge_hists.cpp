@@ -49,6 +49,9 @@ SimpleChargeHistsParallelEventVisitor(
 SimpleChargeHistsParallelEventVisitor::~SimpleChargeHistsParallelEventVisitor()
 {
   for(auto* h : chan_hists_)delete h;
+  delete cam_hists_high_gain_;
+  delete cam_hists_low_gain_;
+  delete cam_hists_dual_gain_;
 }
 
 SimpleChargeHistsParallelEventVisitor* SimpleChargeHistsParallelEventVisitor::new_sub_visitor(
@@ -76,7 +79,15 @@ bool SimpleChargeHistsParallelEventVisitor::visit_telescope_run(
   for(auto*& h : chan_hists_) {
     h = new ChannelHists(has_dual_gain_, config_);
   }
-
+  delete cam_hists_high_gain_;
+  cam_hists_high_gain_ = new SingleGainCameraHists(config_.high_gain());
+  if(has_dual_gain_) {
+    cam_hists_low_gain_ = new SingleGainCameraHists(config_.low_gain());
+    cam_hists_dual_gain_ = new DualGainCameraHists(config_.dual_gain());
+  } else {
+    cam_hists_low_gain_ = nullptr;
+    cam_hists_dual_gain_ = nullptr;
+  }
   return true;
 }
 
