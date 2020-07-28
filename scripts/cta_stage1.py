@@ -18,6 +18,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 import sys
+import traceback
 import numpy
 
 import calin.iact_data.raw_actl_r1_event_data_source
@@ -133,7 +134,7 @@ else:
             else:
                 print("Failed to insert stage1 results into database")
         except Exception as x:
-            print(x)
+            traceback.print_exception(*sys.exc_info())
             pass
 
 # The end
