@@ -177,11 +177,19 @@ private:
   };
 
   void merge_one_gain_hists(SingleGainChannelHists* into, const SingleGainChannelHists* from);
+  void merge_one_gain_cam_hists(SingleGainCameraHists* into, const SingleGainCameraHists* from);
+  void merge_dual_gain_cam_hists(DualGainCameraHists* into, const DualGainCameraHists* from);
+
   void extract_one_gain_hists(calin::ix::diagnostics::simple_charge_hists::OneGainSimpleChargeHists* into,
     const SingleGainChannelHists* from) const;
+  void extract_one_gain_cam_hists(calin::ix::diagnostics::simple_charge_hists::OneGainSimpleChargeCameraHists* into,
+    const SingleGainCameraHists* from) const;
+  void extract_dual_gain_cam_hists(calin::ix::diagnostics::simple_charge_hists::DualGainSimpleChargeCameraHists* into,
+    const DualGainCameraHists* from) const;
 
   void record_one_visitor_data(uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor);
+    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
+    unsigned& high_gain_nchan_presence, unsigned& low_gain_nchan_presence);
 
   SimpleChargeHistsParallelEventVisitor* parent_ = nullptr;
   calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig config_;
