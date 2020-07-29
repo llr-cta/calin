@@ -658,7 +658,7 @@ void SQLSerializer::test_sqltable_tree_db_presence(SQLTable* t)
   });
   t->reverse_iterate_over_tables([](SQLTable* it) {
     if(it->parent_table) {
-      it->parent_table->db_all_tree_fields_present &= it->db_all_table_fields_present;
+      it->parent_table->db_all_tree_fields_present &= it->db_all_tree_fields_present;
     }
   });
 }
