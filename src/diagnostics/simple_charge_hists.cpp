@@ -165,6 +165,15 @@ bool SimpleChargeHistsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
     record_one_visitor_data(seq_index, event, low_gain_visitor_,
       high_gain_nchan_presence, low_gain_nchan_presence);
   }
+  if(cam_hists_high_gain_) {
+    cam_hists_high_gain_->nchan_present->insert(high_gain_nchan_presence);
+  }
+  if(cam_hists_low_gain_) {
+    cam_hists_low_gain_->nchan_present->insert(low_gain_nchan_presence);
+  }
+  if(cam_hists_dual_gain_) {
+    cam_hists_dual_gain_->nchan_present->insert(high_gain_nchan_presence+low_gain_nchan_presence);
+  }
   return true;
 }
 
