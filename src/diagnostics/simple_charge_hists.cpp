@@ -542,7 +542,7 @@ SimpleChargeHistsParallelEventVisitor::int_trig_default_config()
   pre_fill_hist_config(lg_config, "internal-flasher", "low", 1.0, 100, 10, 1.0, 100, 5);
   lg_config->mutable_nchan_present()->set_enable(true);
   auto* g2_config = config.mutable_dual_gain();
-  pre_fill_dual_gain_hist_config(g2_config, "external-flasher");
+  pre_fill_dual_gain_hist_config(g2_config, "internal-flasher");
   g2_config->mutable_nchan_present()->set_enable(true);
 
   return config;
