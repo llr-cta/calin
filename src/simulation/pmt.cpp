@@ -348,25 +348,27 @@ PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig&
     gamma_a_n_    = 1.0/SQR(config_.stage_n_gain_rms_frac());
     gamma_b_n_    = gamma_a_n_/stage_n_gain_;
 
-    stage_n_x1_cdf_ = stage_pmf({0.0, 1.0}, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
-    stage_n_x2_cdf_ = stage_pmf(stage_n_x1_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
-    stage_n_x3_cdf_ = stage_pmf(stage_n_x2_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+    if(use_new_stage_n_algorithm_) {
+      stage_n_x1_cdf_ = stage_pmf({0.0, 1.0}, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+      stage_n_x2_cdf_ = stage_pmf(stage_n_x1_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+      stage_n_x3_cdf_ = stage_pmf(stage_n_x2_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
 
-    renorm_pmf(stage_n_x1_cdf_);
-    renorm_pmf(stage_n_x2_cdf_);
-    renorm_pmf(stage_n_x3_cdf_);
+      renorm_pmf(stage_n_x1_cdf_);
+      renorm_pmf(stage_n_x2_cdf_);
+      renorm_pmf(stage_n_x3_cdf_);
 
-    double psum = 0;
-    for(auto & ibin : stage_n_x1_cdf_) { psum += ibin; ibin = psum; }
-    if(psum<1.0) { stage_n_x1_cdf_.push_back(1.0) ; }
+      double psum = 0;
+      for(auto & ibin : stage_n_x1_cdf_) { psum += ibin; ibin = psum; }
+      if(psum<1.0) { stage_n_x1_cdf_.push_back(1.0) ; }
 
-    psum = 0;
-    for(auto & ibin : stage_n_x2_cdf_) { psum += ibin; ibin = psum; }
-    if(psum<1.0) { stage_n_x2_cdf_.push_back(1.0) ; }
+      psum = 0;
+      for(auto & ibin : stage_n_x2_cdf_) { psum += ibin; ibin = psum; }
+      if(psum<1.0) { stage_n_x2_cdf_.push_back(1.0) ; }
 
-    psum = 0;
-    for(auto & ibin : stage_n_x3_cdf_) { psum += ibin; ibin = psum; }
-    if(psum<1.0) { stage_n_x3_cdf_.push_back(1.0) ; }
+      psum = 0;
+      for(auto & ibin : stage_n_x3_cdf_) { psum += ibin; ibin = psum; }
+      if(psum<1.0) { stage_n_x3_cdf_.push_back(1.0) ; }
+    }
   }
 }
 
