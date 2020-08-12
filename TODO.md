@@ -10,7 +10,7 @@
   - abs gain
   - muon
   - high/low
-* Cuts on mean trace gustos
+* Cuts on mean trace histos
 * pedestal and gain to WF treatment
 * Trigger calib plots into stage 1
 * Photo-statistics plots to S1
