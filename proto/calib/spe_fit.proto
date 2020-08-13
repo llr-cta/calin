@@ -24,6 +24,7 @@ syntax = "proto3";
 
 import "calin.proto";
 import "math/fftw_util.proto";
+import "simulation/pmt.proto";
 
 package calin.ix.calib.spe_fit;
 
@@ -46,6 +47,60 @@ message GeneralPoissonMESConfig {
   double ses_norm_warning_threshold                        = 11 [
     (CFO).desc = "Threshold difference of SES normalization from unity "
       "before issuing warning. This value is multiplied by 1/nsample."];
-  calin.ix.math.fftw_util.FFTWPlanningRigor fftw_planning     = 20 [
+  calin.ix.math.fftw_util.FFTWPlanningRigor fftw_planning  = 20 [
+    (CFO).desc = "FFTW planning rigor to use." ];
+};
+
+message TwoComponentLombardMartinMESConfig {
+  calin.ix.simulation.pmt.PMTSimTwoPopulationConfig pmt    = 1 [
+    (CFO).desc = "Configuration and initial parameters for PMT model." ];
+
+  double sensitivity                                       = 2 [
+    (CFO).desc = "Relationship between charge in PMT (in electrons) and signal "
+      "in electronic (in DC). For example, in NectarCAM a gain of 40,000 "
+      "corresponds to 58 DC, giving a sensitivity of 0.00145." ];
+
+  bool free_total_gain                                     = 3 [
+    (CFO).desc = "Treat the total gain of the PMT as free parameter." ];
+  bool free_stage_0_hi_gain                                = 4 [
+    (CFO).desc = "Treat \"stage_0_hi_gain\" as free parameter; the "
+      "mean gain of first stage for electons in high-gain population." ];
+  bool free_stage_0_hi_gain_rms_frac                       = 5 [
+    (CFO).desc = "Treat \"stage_0_hi_gain_rms_frac\" as free parameter; the "
+      "additional non-Poisson RMS for electons in high-gain population of first "
+      "stage as fraction of mean." ];
+  bool free_stage_0_lo_prob                                = 6 [
+    (CFO).desc = "Treat \"stage_0_lo_prob\" as free parameter; the probability "
+      "of electron being amplified in low-gain population in stage 0." ];
+  bool free_stage_0_lo_gain                                = 7 [
+    (CFO).desc = "Treat \"stage_0_lo_gain\" as free parameter; the mean gain of "
+      "first stage for electons in low-gain population." ];
+  bool free_stage_0_lo_gain_rms_frac                       = 8 [
+    (CFO).desc = "Treat \"stage_0_lo_gain_rms_frac\" as free parameter; the "
+      "additional non-Poisson RMS for electons in low-gain population of first "
+      "stage as fraction of mean." ];
+  bool free_stage_n_gain_rms_frac                          = 9 [
+    (CFO).desc = "Treay \"stage_n_gain_rms_frac\" as free parameter; the "
+      "additional non-Poisson RMS of latter stages (n>0) as fraction of mean." ];
+
+  double intensity_rms_frac                                = 10 [
+    (CFO).desc = "Additional non-Poisson RMS in the number of PEs generated at "
+      "the photo-cathode, as a fraction of mean." ];
+  bool free_intensity_rms_frac                             = 11 [
+    (CFO).desc = "Treat \"intensity_rms_frac\" as a free parameter in the model; "
+      "the additional non-Poisson RMS in the number of PEs generated at "
+      "the photo-cathode, as a fraction of mean" ];
+
+  double on_off_ped_shift                                  = 12 [
+    (CFO).desc = "Shift mean of on and off pedestal distributions." ];
+  bool free_on_off_ped_shift                               = 13 [
+    (CFO).desc = "Treat \"on_off_ped_shift\" as a free parameter; the shift "
+      "between the on and off pedestal distributions." ];
+
+  double precision                                         = 19 [
+    (CFO).desc = "Precision to use in PMF for number of electrons generated at "
+      "each pf the stages, and at the photo-cathode." ];
+
+  calin.ix.math.fftw_util.FFTWPlanningRigor fftw_planning  = 20 [
     (CFO).desc = "FFTW planning rigor to use." ];
 };
