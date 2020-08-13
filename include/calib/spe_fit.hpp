@@ -408,6 +408,40 @@ protected:
   Eigen::VectorXd nes_weight_deriv_;
 };
 
+class TwoComponentLombardMartinMES: public MultiElectronSpectrum
+{
+public:
+  TwoComponentLombardMartinMES(
+    const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config = default_config());
+  virtual ~TwoComponentLombardMartinMES();
+
+  unsigned num_parameters() override;
+  std::vector<calin::math::function::ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  double pdf_ped(double x) override;
+  double pdf_gradient_ped(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_ped(double x, VecRef gradient, MatRef hessian) override;
+
+  double pdf_mes(double x) override;
+  double pdf_gradient_mes(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian) override;
+
+  double intensity_pe() override;
+  double ped_rms_dc() override;
+  double ped_zero_dc() override;
+  double ses_mean_dc() override;
+  double ses_rms_pe() override;
+
+  static calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig default_config();
+private:
+  calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig config_;
+  double intensity_pe_ = 0;
+};
+
 class SPELikelihood: public calin::math::function::MultiAxisFunction
 {
  public:
