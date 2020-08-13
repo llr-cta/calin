@@ -37,20 +37,35 @@ using namespace calin::calib::spe_fit;
 
 TwoComponentLombardMartinMES::
 TwoComponentLombardMartinMES(
-    const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config):
-  MultiElectronSpectrum(), config_(config)
+    calin::math::function::ParameterizableSingleAxisFunction* ped_pdf,
+    const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config,
+    bool adopt_ped_pdf):
+  MultiElectronSpectrum(), config_(config),
+  ped_pdf_(ped_pdf), adopt_ped_pdf_(adopt_ped_pdf)
 {
   // nothing to see here
 }
 
 TwoComponentLombardMartinMES::~TwoComponentLombardMartinMES()
 {
-  // nothing to see here
+  if(adopt_ped_pdf_)delete ped_pdf_;
 }
 
 unsigned TwoComponentLombardMartinMES::num_parameters()
 {
   unsigned nparam = 1; // light_intensity
+  if(config_.free_intensity_rms_frac()) { ++nparam; }
+  if(config_.free_total_gain()) { ++nparam; }
+  if(config_.free_stage_0_lo_prob()) { ++nparam; }
+  if(config_.free_stage_0_hi_gain()) { ++nparam; }
+  if(config_.free_stage_0_lo_gain()) { ++nparam; }
+  if(config_.free_stage_0_hi_gain_rms_frac()) { ++nparam; }
+  if(config_.free_stage_0_lo_gain_rms_frac()) { ++nparam; }
+  if(config_.free_stage_n_gain_rms_frac()) { ++nparam; }
+  if(ped_pdf_) {
+    if(config_.free_on_off_ped_shift()) { ++nparam; }
+    nparam += ped_pdf_->num_parameters();
+  }
   return nparam;
 }
 
@@ -60,19 +75,109 @@ TwoComponentLombardMartinMES::parameters()
   constexpr double inf = std::numeric_limits<double>::infinity();
   std::vector<math::function::ParameterAxis> pvec;
   pvec.push_back({ "light_intensity", "PE", true, 0, false, inf });
+  if(config_.free_intensity_rms_frac()) {
+    pvec.push_back({ "light_intensity_rms_frac", "1", true, 0, false, inf }); }
+  if(config_.free_total_gain()) {
+    pvec.push_back({ "total_gain", "DC", true, 0, false, inf }); }
+  if(config_.free_stage_0_lo_prob()) {
+    pvec.push_back({ "stage_0_lo_prob", "1", true, 0, true, 1 }); }
+  if(config_.free_stage_0_hi_gain()) {
+    pvec.push_back({ "stage_0_hi_gain", "1", true, 0, false, inf }); }
+  if(config_.free_stage_0_lo_gain()) {
+    pvec.push_back({ "stage_0_lo_gain", "1", true, 0, false, inf }); }
+  if(config_.free_stage_0_hi_gain_rms_frac()) {
+    pvec.push_back({ "stage_0_hi_gain_rms_frac", "1", true, 0, false, inf }); }
+  if(config_.free_stage_0_lo_gain_rms_frac()) {
+    pvec.push_back({ "stage_0_lo_gain_rms_frac", "1", true, 0, false, inf }); }
+  if(config_.free_stage_n_gain_rms_frac()) {
+    pvec.push_back({ "stage_n_gain_rms_frac", "1", true, 0, false, inf }); }
+  if(ped_pdf_) {
+    if(config_.free_on_off_ped_shift()) {
+      pvec.push_back({ "on_off_ped_shift", "1", false, -inf, false, inf }); }
+    std::vector<math::function::ParameterAxis> pped { ped_pdf_->parameters() };
+    for(auto& ip : pped)ip.name = std::string("ped.") + ip.name;
+    pvec.insert(pvec.end(), pped.begin(), pped.end());
+  }
   return pvec;
 }
 
 Eigen::VectorXd TwoComponentLombardMartinMES::parameter_values()
 {
   Eigen::VectorXd param(num_parameters());
-  param[0] = intensity_pe_;
+  unsigned iparam = 0;
+  param[iparam++] = intensity_pe_;
+  if(config_.free_intensity_rms_frac()) {
+    param[iparam++] = config_.intensity_rms_frac();
+  }
+  if(config_.free_total_gain()) {
+    param[iparam++] = config_.pmt().total_gain()*config_.sensitivity();
+  }
+  if(config_.free_stage_0_lo_prob()) {
+    param[iparam++] = config_.pmt().stage_0_lo_prob();
+  }
+  if(config_.free_stage_0_hi_gain()) {
+    param[iparam++] = config_.pmt().stage_0_hi_gain();
+  }
+  if(config_.free_stage_0_lo_gain()) {
+    param[iparam++] = config_.pmt().stage_0_lo_gain();
+  }
+  if(config_.free_stage_0_hi_gain_rms_frac()) {
+    param[iparam++] = config_.pmt().stage_0_hi_gain_rms_frac();
+  }
+  if(config_.free_stage_0_lo_gain_rms_frac()) {
+    param[iparam++] = config_.pmt().stage_0_lo_gain_rms_frac();
+  }
+  if(config_.free_stage_n_gain_rms_frac()) {
+    param[iparam++] = config_.pmt().stage_n_gain_rms_frac();
+  }
+  if(ped_pdf_) {
+    if(config_.free_on_off_ped_shift()) {
+      param[iparam++] = config_.on_off_ped_shift();
+    }
+    unsigned num_ped_params = ped_pdf_->num_parameters();
+    param.segment(iparam,num_ped_params) = ped_pdf_->parameter_values();
+    iparam += num_ped_params;
+  }
   return param;
 }
 
 void TwoComponentLombardMartinMES::set_parameter_values(ConstVecRef values)
 {
-
+  verify_set_parameter_values(values, "TwoComponentLombardMartinMES");
+  unsigned iparam = 0;
+  intensity_pe_ = values[iparam++];
+  if(config_.free_intensity_rms_frac()) {
+    config_.set_intensity_rms_frac(values[iparam++]);
+  }
+  if(config_.free_total_gain()) {
+    config_.mutable_pmt()->set_total_gain(values[iparam++]/config_.sensitivity());
+  }
+  if(config_.free_stage_0_lo_prob()) {
+    config_.mutable_pmt()->set_stage_0_lo_prob(values[iparam++]);
+  }
+  if(config_.free_stage_0_hi_gain()) {
+    config_.mutable_pmt()->set_stage_0_hi_gain(values[iparam++]);
+  }
+  if(config_.free_stage_0_lo_gain()) {
+    config_.mutable_pmt()->set_stage_0_lo_gain(values[iparam++]);
+  }
+  if(config_.free_stage_0_hi_gain_rms_frac()) {
+    config_.mutable_pmt()->set_stage_0_hi_gain_rms_frac(values[iparam++]);
+  }
+  if(config_.free_stage_0_lo_gain_rms_frac()) {
+    config_.mutable_pmt()->set_stage_0_lo_gain_rms_frac(values[iparam++]);
+  }
+  if(config_.free_stage_n_gain_rms_frac()) {
+    config_.mutable_pmt()->set_stage_n_gain_rms_frac(values[iparam++]);
+  }
+  if(ped_pdf_) {
+    if(config_.free_on_off_ped_shift()) {
+      config_.set_on_off_ped_shift(values[iparam++]);
+    }
+    unsigned num_ped_params = ped_pdf_->num_parameters();
+    ped_pdf_->set_parameter_values(values.segment(iparam,num_ped_params));
+    iparam += num_ped_params;
+  }
 }
 
 bool TwoComponentLombardMartinMES::can_calculate_parameter_gradient()
@@ -87,6 +192,9 @@ bool TwoComponentLombardMartinMES::can_calculate_parameter_hessian()
 
 double TwoComponentLombardMartinMES::pdf_ped(double x)
 {
+  if(not ped_pdf_) {
+    throw std::runtime_error("TwoComponentLombardMartinMES::pdf_ped: no pedestal pdf supplied");
+  }
   return 0;
 }
 
@@ -161,7 +269,7 @@ TwoComponentLombardMartinMES::default_config()
 
   config.set_sensitivity(58.0/40000.0);
   config.set_free_total_gain(true);
-  config.set_free_stage_0_hi_gain(false);
+  config.set_free_stage_0_hi_gain(true);
   config.set_free_stage_0_hi_gain_rms_frac(false);
   config.set_free_stage_0_lo_prob(false);
   config.set_free_stage_0_lo_gain(false);

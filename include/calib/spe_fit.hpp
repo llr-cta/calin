@@ -412,7 +412,15 @@ class TwoComponentLombardMartinMES: public MultiElectronSpectrum
 {
 public:
   TwoComponentLombardMartinMES(
-    const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config = default_config());
+    calin::math::function::ParameterizableSingleAxisFunction* ped_pdf,
+    const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config = default_config(),
+    bool adopt_ped_pdf = false);
+  TwoComponentLombardMartinMES(
+      const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config,
+      calin::math::function::ParameterizableSingleAxisFunction* ped_pdf = nullptr,
+      bool adopt_ped_ped = false):
+    TwoComponentLombardMartinMES(ped_pdf, config, adopt_ped_ped) { /* nothing to see here */ }
+
   virtual ~TwoComponentLombardMartinMES();
 
   unsigned num_parameters() override;
@@ -436,10 +444,15 @@ public:
   double ses_mean_dc() override;
   double ses_rms_pe() override;
 
+  calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig config() const { return config_; }
+  calin::ix::simulation::pmt::PMTSimTwoPopulationConfig pmt() const { return config_.pmt(); }
+
   static calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig default_config();
 private:
   calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig config_;
-  double intensity_pe_ = 0;
+  double intensity_pe_ = 1.0;
+  calin::math::function::ParameterizableSingleAxisFunction* ped_pdf_;
+  bool adopt_ped_pdf_ = false;
 };
 
 class SPELikelihood: public calin::math::function::MultiAxisFunction
