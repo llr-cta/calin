@@ -299,8 +299,9 @@ PMTSimPolya::calc_pmf(double precision, bool log_progress) const
 
 PMTSimTwoPopulation::
 PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig& config,
-    math::rng::RNG* rng, bool use_new_stage_n_algorithm):
-  config_(config), rng_(rng), use_new_stage_n_algorithm_(use_new_stage_n_algorithm)
+    math::rng::RNG* rng, bool use_new_stage_n_algorithm, bool adopt_rng):
+  config_(config), rng_(rng), adopt_rng_(adopt_rng),
+  use_new_stage_n_algorithm_(use_new_stage_n_algorithm)
 {
   if(config.num_stage()==0)
     throw std::runtime_error("PMTSimTwoPopulation: number of stages must be positive.");
@@ -320,8 +321,6 @@ PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig&
   }
   if(config.stage_n_gain_rms_frac()<0)
     throw std::runtime_error("PMTSimTwoPopulation: stage 1+ excess RMS must be zero or positive.");
-
-  if(rng==nullptr)rng_ = my_rng_ = new RNG(__PRETTY_FUNCTION__);
 
   if(config_.stage_0_hi_gain_rms_frac() > 0) {
     gamma_a_0_hi_ = 1.0/SQR(config_.stage_0_hi_gain_rms_frac());
@@ -372,6 +371,11 @@ PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig&
   }
 }
 
+PMTSimTwoPopulation::~PMTSimTwoPopulation()
+{
+  if(adopt_rng_)delete rng_;
+}
+
 double PMTSimTwoPopulation::
 stage_p0(double p0_last, double gain, double gain_rms_frac)
 {
@@ -414,11 +418,6 @@ void PMTSimTwoPopulation::recalc_total_gain_and_p0()
 
   if(config_.suppress_zero())
     total_gain_ /= 1.0-p0_;
-}
-
-PMTSimTwoPopulation::~PMTSimTwoPopulation()
-{
-  // nothing to see here
 }
 
 double PMTSimTwoPopulation::rv()

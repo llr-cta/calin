@@ -85,7 +85,15 @@ class PMTSimTwoPopulation: public SignalSource
 {
 public:
   PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig& config,
-    math::rng::RNG* rng = nullptr, bool use_new_stage_n_algorithm = true);
+    math::rng::RNG* rng, bool use_new_stage_n_algorithm = true, bool adopt_rng = false);
+  PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig& config,
+      bool use_new_stage_n_algorithm = true):
+    PMTSimTwoPopulation(config, new calin::math::rng::RNG(__PRETTY_FUNCTION__),
+      use_new_stage_n_algorithm, /* adopt_rng = */ true)
+  {
+    // nothing to see here
+  }
+
   virtual ~PMTSimTwoPopulation();
   virtual double rv() override;
 
@@ -139,7 +147,8 @@ public:
   }
 
   math::rng::RNG* rng() const { return rng_; }
-  void set_rng(math::rng::RNG* rng) { delete my_rng_; my_rng_=0; rng_=rng; }
+  void set_rng(math::rng::RNG* rng, bool adopt_rng = false) {
+    if(adopt_rng_)delete rng_; rng_=rng; adopt_rng_ = adopt_rng; }
   uint64_t nflop() const { return nflop_; }
 
   static calin::ix::simulation::pmt::PMTSimTwoPopulationConfig cta_model_4();
@@ -168,7 +177,7 @@ protected:
   double           gamma_a_n_                 = 0.0;
   double           gamma_b_n_                 = 0.0;
   math::rng::RNG*  rng_                       = nullptr;
-  math::rng::RNG*  my_rng_                    = nullptr;
+  bool             adopt_rng_                 = false;
   std::vector<double> stage_n_x1_cdf_;
   std::vector<double> stage_n_x2_cdf_;
   std::vector<double> stage_n_x3_cdf_;
