@@ -32,18 +32,20 @@
 #include <calib/spe_fit.hpp>
 #include <simulation/pmt.hpp>
 #include <util/log.hpp>
+#include <math/special.hpp>
 
 using namespace calin::calib::spe_fit;
+using calin::math::special::round_up_power_of_two;
 
 TwoComponentLombardMartinMES::
-TwoComponentLombardMartinMES(
+TwoComponentLombardMartinMES(double x0, unsigned npoint,
     calin::math::function::ParameterizableSingleAxisFunction* ped_pdf,
     const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config,
     bool adopt_ped_pdf):
-  MultiElectronSpectrum(), config_(config),
+  MultiElectronSpectrum(), config_(config), x0_(x0), npoint_(npoint),
   ped_pdf_(ped_pdf), adopt_ped_pdf_(adopt_ped_pdf)
 {
-  // nothing to see here
+  calculate_mes();
 }
 
 TwoComponentLombardMartinMES::~TwoComponentLombardMartinMES()
@@ -107,33 +109,24 @@ Eigen::VectorXd TwoComponentLombardMartinMES::parameter_values()
   unsigned iparam = 0;
   param[iparam++] = intensity_pe_;
   if(config_.free_intensity_rms_frac()) {
-    param[iparam++] = config_.intensity_rms_frac();
-  }
+    param[iparam++] = config_.intensity_rms_frac(); }
   if(config_.free_total_gain()) {
-    param[iparam++] = config_.pmt().total_gain()*config_.sensitivity();
-  }
+    param[iparam++] = config_.pmt().total_gain()*config_.sensitivity(); }
   if(config_.free_stage_0_lo_prob()) {
-    param[iparam++] = config_.pmt().stage_0_lo_prob();
-  }
+    param[iparam++] = config_.pmt().stage_0_lo_prob(); }
   if(config_.free_stage_0_hi_gain()) {
-    param[iparam++] = config_.pmt().stage_0_hi_gain();
-  }
+    param[iparam++] = config_.pmt().stage_0_hi_gain(); }
   if(config_.free_stage_0_lo_gain()) {
-    param[iparam++] = config_.pmt().stage_0_lo_gain();
-  }
+    param[iparam++] = config_.pmt().stage_0_lo_gain(); }
   if(config_.free_stage_0_hi_gain_rms_frac()) {
-    param[iparam++] = config_.pmt().stage_0_hi_gain_rms_frac();
-  }
+    param[iparam++] = config_.pmt().stage_0_hi_gain_rms_frac(); }
   if(config_.free_stage_0_lo_gain_rms_frac()) {
-    param[iparam++] = config_.pmt().stage_0_lo_gain_rms_frac();
-  }
+    param[iparam++] = config_.pmt().stage_0_lo_gain_rms_frac(); }
   if(config_.free_stage_n_gain_rms_frac()) {
-    param[iparam++] = config_.pmt().stage_n_gain_rms_frac();
-  }
+    param[iparam++] = config_.pmt().stage_n_gain_rms_frac(); }
   if(ped_pdf_) {
     if(config_.free_on_off_ped_shift()) {
-      param[iparam++] = config_.on_off_ped_shift();
-    }
+      param[iparam++] = config_.on_off_ped_shift(); }
     unsigned num_ped_params = ped_pdf_->num_parameters();
     param.segment(iparam,num_ped_params) = ped_pdf_->parameter_values();
     iparam += num_ped_params;
@@ -147,37 +140,29 @@ void TwoComponentLombardMartinMES::set_parameter_values(ConstVecRef values)
   unsigned iparam = 0;
   intensity_pe_ = values[iparam++];
   if(config_.free_intensity_rms_frac()) {
-    config_.set_intensity_rms_frac(values[iparam++]);
-  }
+    config_.set_intensity_rms_frac(values[iparam++]); }
   if(config_.free_total_gain()) {
-    config_.mutable_pmt()->set_total_gain(values[iparam++]/config_.sensitivity());
-  }
+    config_.mutable_pmt()->set_total_gain(values[iparam++]/config_.sensitivity()); }
   if(config_.free_stage_0_lo_prob()) {
-    config_.mutable_pmt()->set_stage_0_lo_prob(values[iparam++]);
-  }
+    config_.mutable_pmt()->set_stage_0_lo_prob(values[iparam++]); }
   if(config_.free_stage_0_hi_gain()) {
-    config_.mutable_pmt()->set_stage_0_hi_gain(values[iparam++]);
-  }
+    config_.mutable_pmt()->set_stage_0_hi_gain(values[iparam++]); }
   if(config_.free_stage_0_lo_gain()) {
-    config_.mutable_pmt()->set_stage_0_lo_gain(values[iparam++]);
-  }
+    config_.mutable_pmt()->set_stage_0_lo_gain(values[iparam++]); }
   if(config_.free_stage_0_hi_gain_rms_frac()) {
-    config_.mutable_pmt()->set_stage_0_hi_gain_rms_frac(values[iparam++]);
-  }
+    config_.mutable_pmt()->set_stage_0_hi_gain_rms_frac(values[iparam++]); }
   if(config_.free_stage_0_lo_gain_rms_frac()) {
-    config_.mutable_pmt()->set_stage_0_lo_gain_rms_frac(values[iparam++]);
-  }
+    config_.mutable_pmt()->set_stage_0_lo_gain_rms_frac(values[iparam++]); }
   if(config_.free_stage_n_gain_rms_frac()) {
-    config_.mutable_pmt()->set_stage_n_gain_rms_frac(values[iparam++]);
-  }
+    config_.mutable_pmt()->set_stage_n_gain_rms_frac(values[iparam++]); }
   if(ped_pdf_) {
     if(config_.free_on_off_ped_shift()) {
-      config_.set_on_off_ped_shift(values[iparam++]);
-    }
+      config_.set_on_off_ped_shift(values[iparam++]); }
     unsigned num_ped_params = ped_pdf_->num_parameters();
     ped_pdf_->set_parameter_values(values.segment(iparam,num_ped_params));
     iparam += num_ped_params;
   }
+  calculate_mes();
 }
 
 bool TwoComponentLombardMartinMES::can_calculate_parameter_gradient()
@@ -192,7 +177,7 @@ bool TwoComponentLombardMartinMES::can_calculate_parameter_hessian()
 
 double TwoComponentLombardMartinMES::pdf_ped(double x)
 {
-  if(not ped_pdf_) {
+  if(ped_pdf_ == nullptr) {
     throw std::runtime_error("TwoComponentLombardMartinMES::pdf_ped: no pedestal pdf supplied");
   }
   return 0;
@@ -257,6 +242,9 @@ TwoComponentLombardMartinMES::default_config()
 {
   calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig config;
 
+  config.set_sensitivity(58.0/40000.0);
+  config.set_dx(1.0);
+
   auto* pmt = config.mutable_pmt();
   pmt->set_num_stage(7);
   pmt->set_total_gain(40000.0);
@@ -267,7 +255,6 @@ TwoComponentLombardMartinMES::default_config()
   pmt->set_stage_0_lo_prob(0.15);
   pmt->set_stage_n_gain_rms_frac(0.0);
 
-  config.set_sensitivity(58.0/40000.0);
   config.set_free_total_gain(true);
   config.set_free_stage_0_hi_gain(true);
   config.set_free_stage_0_hi_gain_rms_frac(false);
@@ -282,4 +269,12 @@ TwoComponentLombardMartinMES::default_config()
   config.set_precision(1e-10);
 
   return config;
+}
+
+void TwoComponentLombardMartinMES::calculate_mes()
+{
+  calin::simulation::pmt::PMTSimTwoPopulation pmt(config_.pmt(), /* rng = */ nullptr,
+    /* use_new_stage_n_algorithm = */ false, /* adopt_rng = */ false);
+  unsigned mes_npoint = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
+
 }

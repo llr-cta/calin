@@ -411,15 +411,16 @@ protected:
 class TwoComponentLombardMartinMES: public MultiElectronSpectrum
 {
 public:
-  TwoComponentLombardMartinMES(
+  TwoComponentLombardMartinMES(double x0, unsigned npoint,
     calin::math::function::ParameterizableSingleAxisFunction* ped_pdf,
     const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config = default_config(),
     bool adopt_ped_pdf = false);
-  TwoComponentLombardMartinMES(
+  TwoComponentLombardMartinMES(double x0, unsigned npoint,
       const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config,
       calin::math::function::ParameterizableSingleAxisFunction* ped_pdf = nullptr,
       bool adopt_ped_ped = false):
-    TwoComponentLombardMartinMES(ped_pdf, config, adopt_ped_ped) { /* nothing to see here */ }
+    TwoComponentLombardMartinMES(x0, npoint, ped_pdf, config, adopt_ped_ped)
+  { /* nothing to see here */ }
 
   virtual ~TwoComponentLombardMartinMES();
 
@@ -449,9 +450,13 @@ public:
 
   static calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig default_config();
 private:
+  void calculate_mes();
+
   calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig config_;
+  double x0_;
+  unsigned npoint_;
   double intensity_pe_ = 1.0;
-  calin::math::function::ParameterizableSingleAxisFunction* ped_pdf_;
+  calin::math::function::ParameterizableSingleAxisFunction* ped_pdf_ = nullptr;
   bool adopt_ped_pdf_ = false;
 };
 
@@ -475,7 +480,9 @@ class SPELikelihood: public calin::math::function::MultiAxisFunction
                                     MatRef hessian) override;
   double error_up() override { return 0.5; }
 
- private:
+private:
+  void calculate_mes();
+
   MultiElectronSpectrum* mes_model_;
   unsigned npar_;
   const calin::math::histogram::SimpleHist mes_data_;
