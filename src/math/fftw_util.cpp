@@ -28,9 +28,6 @@
 #include <util/file.hpp>
 #include <math/fftw_util.hpp>
 
-using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
-using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
-
 #if INSTRSET >= 7
 void calin::math::fftw_util::hcvec_multiply_and_add_real(double* ovec, const double* ivec1,
   const double* ivec2, double real_addand, unsigned nsample)

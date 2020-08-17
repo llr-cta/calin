@@ -43,9 +43,6 @@ using namespace calin::util::log;
 using calin::math::special::SQR;
 using calin::math::function::assign_parameters;
 
-using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
-using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
-
 // ============================================================================
 //
 // GeneralPoissonMES - Poisson model using generic SES and pedestal

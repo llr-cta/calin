@@ -25,6 +25,7 @@
 #include<util/log.hpp>
 #include<util/vcl.hpp>
 #include<math/fftw_util.pb.h>
+#include<fftw3.h>
 
 namespace calin { namespace math { namespace fftw_util {
 
@@ -495,6 +496,9 @@ void hcvec_polynomial_old(T* ovec, const T* ivec, const std::vector<T>& p, unsig
 void hcvec_polynomial(double* ovec, const double* ivec,
   const std::vector<double>& p, unsigned nsample);
 #endif
+
+using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
+using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 
 #endif // defined SWIG
 
