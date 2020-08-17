@@ -118,6 +118,15 @@ public:
     double precision = 1e-10, bool log_progress = false,
     calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE) const;
 
+#ifndef SWIG
+  calin::ix::simulation::pmt::PMTSimPMF calc_multi_electron_spectrum(
+    double intensity_mean, double intensity_rms_frac,
+    const double* ped_hc_dft,
+    unsigned npoint, unsigned nstage = 0,
+    double precision = 1e-10, bool log_progress = false,
+    calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE) const;
+#endif
+
   double total_gain() const { return total_gain_; }
   double p0() const { return p0_; }
   double stage_0_gain() const {

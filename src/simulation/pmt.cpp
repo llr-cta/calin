@@ -34,18 +34,15 @@
 #include <math/special.hpp>
 #include <math/accumulator.hpp>
 #include <util/log.hpp>
-#include <math/fftw_util.hpp>
 #include <provenance/chronicle.hpp>
 #include <math/fftw_util.hpp>
 
 using namespace calin::simulation::pmt;
 using calin::math::special::SQR;
+using calin::math::special::round_up_power_of_two;
 using calin::math::rng::RNG;
 using namespace calin::util::log;
 using namespace calin::math::fftw_util;
-
-using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
-using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 
 SignalSource::~SignalSource()
 {
@@ -849,22 +846,37 @@ calin::ix::simulation::pmt::PMTSimPMF PMTSimTwoPopulation::calc_multi_electron_s
   double precision, bool log_progress,
   calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor) const
 {
+  if(npoint == 0) {
+    if(ped_hc_dft.size()==0) {
+      npoint = round_up_power_of_two(std::min(1.0, intensity_mean) * total_gain_ * 4.0);
+    } else if(ped_hc_dft.size() != npoint) {
+      throw std::runtime_error("Pedestal PDF must be same size as npoint.");
+    }
+  }
+
+  const double* ped_hc_dft_data = nullptr;
+  if(ped_hc_dft.size() != 0)ped_hc_dft_data = ped_hc_dft.data();
+
+  return calc_multi_electron_spectrum(intensity_mean, intensity_rms_frac,
+    ped_hc_dft_data, npoint, nstage, precision, log_progress, fftw_rigor);
+}
+
+calin::ix::simulation::pmt::PMTSimPMF PMTSimTwoPopulation::calc_multi_electron_spectrum(
+  double intensity_mean, double intensity_rms_frac,
+  const double* ped_hc_dft, unsigned npoint, unsigned nstage,
+  double precision, bool log_progress,
+  calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor) const
+{
   int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor);
   double nadd;
   double nmul;
   double nfma;
 
   if(npoint == 0) {
-    if(ped_hc_dft.size()==0) {
-      npoint = int(std::min(1.0, intensity_mean) * total_gain_ * 4.0);
-      unsigned log_npoint = 0;
-      while(npoint) {
-        npoint >>= 1;
-        ++log_npoint;
-      }
-      npoint = 1 << log_npoint;
+    if(ped_hc_dft==nullptr) {
+      npoint = round_up_power_of_two(std::min(1.0, intensity_mean) * total_gain_ * 4.0);
     } else {
-      npoint = ped_hc_dft.size();
+      throw std::runtime_error("Pedestal PDF must be NULL if npoint is zero.");
     }
   }
 
@@ -892,17 +904,14 @@ calin::ix::simulation::pmt::PMTSimPMF PMTSimTwoPopulation::calc_multi_electron_s
   nflop_ += ppe.size() * npoint * 2;
 
   // Add the arbitrary pedestal noise if requested
-  if(ped_hc_dft.size() > 0) {
-    if(ped_hc_dft.size() != npoint) {
-      throw std::runtime_error("Pedestal PDF must be same size as npoint.");
-    }
-    hcvec_scale_and_multiply(fmes.get(), fmes.get(), ped_hc_dft.data(), npoint);
+  if(ped_hc_dft != nullptr) {
+    hcvec_scale_and_multiply(fmes.get(), fmes.get(), ped_hc_dft, npoint);
     nflop_ += npoint * 2;
   }
 
   // Prepare the backward DFT
   uptr_fftw_plan bwd_plan = {
-    fftw_plan_r2r_1d(npoint, fmes.get(), fmes.get(), FFTW_HC2R , plan_flags),
+    fftw_plan_r2r_1d(npoint, fmes.get(), fmes.get(), FFTW_HC2R, plan_flags),
     fftw_destroy_plan };
   assert(bwd_plan);
   fftw_execute(bwd_plan.get());
@@ -1213,7 +1222,7 @@ Eigen::VectorXd ExponentialTraceSim::trace()
 
   fftw_execute(trace_plan_fwd_);
 
-    hcvec_scale_and_multiply(trace_, trace_, pmt_pulse_fft_, nsample_, 1.0/double(nsample_));
+  hcvec_scale_and_multiply(trace_, trace_, pmt_pulse_fft_, nsample_, 1.0/double(nsample_));
   fftw_execute(trace_plan_rev_);
 
   Eigen::VectorXd trace(nsample_);
