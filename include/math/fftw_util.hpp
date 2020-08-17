@@ -360,6 +360,8 @@ void hcvec_polynomial_vcl(typename VCLReal::real_t* ovec,
   const typename VCLReal::real_t* ivec,
   const std::vector<typename VCLReal::real_t>& p, unsigned nsample)
 {
+  // No user servicable parts inside
+
   if(p.empty()) {
     hcvec_set_real(ovec, typename VCLReal::real_t(0), nsample);
     return;
@@ -370,6 +372,7 @@ void hcvec_polynomial_vcl(typename VCLReal::real_t* ovec,
   const typename VCLReal::real_t* ri = ivec;
   const typename VCLReal::real_t* ci = ivec + nsample;
 
+  // Evaluate the zero frequency (real-only) component
   auto pi = p.end();
   --pi;
   *ro = *pi;
@@ -380,6 +383,8 @@ void hcvec_polynomial_vcl(typename VCLReal::real_t* ovec,
 
   ++ro, ++ri;
 
+  // Evaluate two AVX vectors of real and complex compnents (i.e. 2 * num_real
+  // frequencies) using vector types
   while(co - ro >= 4*VCLReal::num_real)
   {
     pi = p.end();
@@ -425,6 +430,7 @@ void hcvec_polynomial_vcl(typename VCLReal::real_t* ovec,
     vco_b.store(co);
   }
 
+  // Evaluate any remaining real & complex frequencies that don't fit inro a vector
   --co, --ci;
 
   while(ro < co)
@@ -451,6 +457,7 @@ void hcvec_polynomial_vcl(typename VCLReal::real_t* ovec,
     --co, --ci;
   }
 
+  // For even numbers of frequencies, finish with final real-only component
   if(ro==co) {
     pi = p.end();
     --pi;
@@ -489,7 +496,7 @@ void hcvec_polynomial(double* ovec, const double* ivec,
   const std::vector<double>& p, unsigned nsample);
 #endif
 
-#endif
+#endif // defined SWIG
 
 Eigen::VectorXd fftw_r2hc(const Eigen::VectorXd& x,
   calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
