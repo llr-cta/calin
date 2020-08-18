@@ -34,6 +34,7 @@
 #include <util/log.hpp>
 #include <math/special.hpp>
 
+using namespace calin::math::fftw_util;
 using namespace calin::calib::spe_fit;
 using calin::math::special::round_up_power_of_two;
 
@@ -43,7 +44,7 @@ TwoComponentLombardMartinMES(double x0, unsigned npoint,
     const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config,
     bool adopt_ped_pdf):
   MultiElectronSpectrum(), config_(config), x0_(x0), npoint_(npoint),
-  ped_pdf_(ped_pdf), adopt_ped_pdf_(adopt_ped_pdf)
+  ped_pdf_(ped_pdf), adopt_ped_pdf_(adopt_ped_pdf), mes_pmf_(npoint), off_pmf_(npoint)
 {
   calculate_mes();
 }
@@ -273,8 +274,75 @@ TwoComponentLombardMartinMES::default_config()
 
 void TwoComponentLombardMartinMES::calculate_mes()
 {
-  calin::simulation::pmt::PMTSimTwoPopulation pmt(config_.pmt(), /* rng = */ nullptr,
-    /* use_new_stage_n_algorithm = */ false, /* adopt_rng = */ false);
   unsigned mes_npoint = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
 
+  uptr_fftw_data ped_hc_dft { nullptr, fftw_free };
+  if(ped_pdf_ != nullptr) {
+    // FFT of pedestal
+    ped_hc_dft.reset(fftw_alloc_real(mes_npoint));
+    assert(ped_hc_dft);
+    for(unsigned ipoint=0; ipoint!=mes_npoint; ++ipoint) {
+      ped_hc_dft.get()[ipoint] = ped_pdf_->value_1d(mes_x(ipoint));
+    }
+
+    // If there is no shift in the on & off pedestal position then store the
+    // pedestal spectrum we calculated for later before doing FFT
+    if(config_.on_off_ped_shift() == 0) {
+      rebin_spectrum(off_pmf_, ped_hc_dft.get(), mes_npoint);
+    }
+
+    // Do the forward DFT transforming fped
+    int plan_flags = proto_planning_enum_to_fftw_flag(config_.fftw_planning());
+    uptr_fftw_plan fwd_plan = {
+      fftw_plan_r2r_1d(mes_npoint, ped_hc_dft.get(), ped_hc_dft.get(),
+        FFTW_R2HC, plan_flags), fftw_destroy_plan };
+    assert(fwd_plan);
+    fftw_execute(fwd_plan.get());
+  }
+
+  calin::simulation::pmt::PMTSimTwoPopulation pmt(config_.pmt(), /* rng = */ nullptr,
+    /* use_new_stage_n_algorithm = */ false, /* adopt_rng = */ false);
+
+  calin::ix::simulation::pmt::PMTSimPMF mes;
+  mes = pmt.calc_multi_electron_spectrum(intensity_pe_, config_.intensity_rms_frac(),
+    ped_hc_dft.get(), mes_npoint, 0, config_.precision(), /* log_progress= */ false,
+    config_.fftw_planning());
+
+  rebin_spectrum(mes_pmf_, mes.pn().data(), mes_npoint);
+
+  // If pedestal is defined and on/off shift is specified then calculate off spectrum
+  if(ped_pdf_ != nullptr and config_.on_off_ped_shift() != 0) {
+    for(unsigned ipoint=0; ipoint!=mes_npoint; ++ipoint) {
+      ped_hc_dft.get()[ipoint] = ped_pdf_->value_1d(off_x(ipoint));
+    }
+    rebin_spectrum(off_pmf_, ped_hc_dft.get(), mes_npoint);
+  }
+}
+
+void TwoComponentLombardMartinMES::
+rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes)
+{
+  double sensitivity_over_dx = config_.sensitivity()/config_.dx();
+  double dx_over_sensitivity = config_.dx()/config_.sensitivity();
+
+  pmf_out.setZero();
+  for(unsigned imes=0; imes<nmes; imes++) {
+    double xpmf_l = (double(imes)-0.5)*sensitivity_over_dx;
+    double xpmf_r = (double(imes)+0.5)*sensitivity_over_dx;
+    int ipmf_l = floor(xpmf_l);
+    int ipmf_r = floor(xpmf_r);
+    if(ipmf_l >= npoint_) {
+      continue;
+    }
+    if(ipmf_l == ipmf_r) {
+      pmf_out[ipmf_l] += mes_in[imes];
+    } else if (ipmf_l != ipmf_r) {
+      if(ipmf_l>=0) {
+        pmf_out[ipmf_l] += (ipmf_r - xpmf_l)*dx_over_sensitivity*mes_in[imes];
+      }
+      if(ipmf_r<npoint_) {
+        pmf_out[ipmf_r] += (xpmf_r - ipmf_r)*dx_over_sensitivity*mes_in[imes];
+      }
+    }
+  }
 }
