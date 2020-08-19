@@ -94,6 +94,13 @@ Eigen::VectorXd calin::math::fftw_util::fftw_hc2r(const Eigen::VectorXd& f,
   return Eigen::Map<Eigen::VectorXd>(x.get(), f.size());
 }
 
+Eigen::VectorXd calin::math::fftw_util::hcvec_scale_and_add_real(const Eigen::VectorXd& ivec, double scale, double real_addand)
+{
+  Eigen::VectorXd ovec = ivec;
+  hcvec_scale_and_add_real(ovec.data(), scale, real_addand, ovec.size());
+  return ovec;
+}
+
 bool calin::math::fftw_util::load_wisdom_from_file(std::string filename)
 {
   calin::util::file::expand_filename_in_place(filename);

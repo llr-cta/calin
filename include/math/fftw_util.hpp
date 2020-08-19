@@ -499,6 +499,8 @@ using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 
 #endif // defined SWIG
 
+Eigen::VectorXd hcvec_scale_and_add_real(const Eigen::VectorXd& ivec, double scale, double real_addand);
+
 Eigen::VectorXd fftw_r2hc(const Eigen::VectorXd& x,
   calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
 Eigen::VectorXd fftw_hc2r(const Eigen::VectorXd& f,
