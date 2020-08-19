@@ -37,6 +37,7 @@
 using namespace calin::math::fftw_util;
 using namespace calin::calib::spe_fit;
 using calin::math::special::round_up_power_of_two;
+using namespace calin::util::log;
 
 TwoComponentLombardMartinMES::
 TwoComponentLombardMartinMES(double x0, unsigned npoint,
@@ -319,8 +320,40 @@ void TwoComponentLombardMartinMES::calculate_mes()
   }
 }
 
+Eigen::VectorXd TwoComponentLombardMartinMES::ses_pmf() const
+{
+  unsigned mes_npoint = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
+  calin::simulation::pmt::PMTSimTwoPopulation pmt(config_.pmt(), /* rng = */ nullptr,
+    /* use_new_stage_n_algorithm = */ false, /* adopt_rng = */ false);
+
+  calin::ix::simulation::pmt::PMTSimPMF ses;
+  ses = pmt.calc_pmf_fft(mes_npoint, 0, config_.precision(),
+    /* log_progress= */ false, /* skip_inverse_fft = */ false,
+    config_.fftw_planning());
+
+  Eigen::VectorXd ses_pmf(npoint_);
+  rebin_spectrum(ses_pmf, ses.pn().data(), mes_npoint);
+  return ses_pmf;
+}
+
+Eigen::VectorXd TwoComponentLombardMartinMES::ses_pmf_full_resolution() const
+{
+  unsigned mes_npoint = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
+  calin::simulation::pmt::PMTSimTwoPopulation pmt(config_.pmt(), /* rng = */ nullptr,
+    /* use_new_stage_n_algorithm = */ false, /* adopt_rng = */ false);
+
+  calin::ix::simulation::pmt::PMTSimPMF ses;
+  ses = pmt.calc_pmf_fft(mes_npoint, 0, config_.precision(),
+    /* log_progress= */ false, /* skip_inverse_fft = */ false,
+    config_.fftw_planning());
+
+  Eigen::VectorXd ses_pmf(mes_npoint);
+  std::copy(ses.pn().data(), ses.pn().data()+mes_npoint, ses_pmf.data());
+  return ses_pmf;
+}
+
 void TwoComponentLombardMartinMES::
-rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes)
+rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes) const
 {
   double sensitivity_over_dx = config_.sensitivity()/config_.dx();
   double dx_over_sensitivity = config_.dx()/config_.sensitivity();
@@ -331,12 +364,12 @@ rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes)
     double xpmf_r = (double(imes)+0.5)*sensitivity_over_dx;
     int ipmf_l = floor(xpmf_l);
     int ipmf_r = floor(xpmf_r);
-    if(ipmf_l >= npoint_) {
+    if(ipmf_l >= int(npoint_)) {
       continue;
     }
     if(ipmf_l == ipmf_r) {
       pmf_out[ipmf_l] += mes_in[imes];
-    } else if (ipmf_l != ipmf_r) {
+    } else {
       if(ipmf_l>=0) {
         pmf_out[ipmf_l] += (ipmf_r - xpmf_l)*dx_over_sensitivity*mes_in[imes];
       }
@@ -344,5 +377,10 @@ rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes)
         pmf_out[ipmf_r] += (xpmf_r - ipmf_r)*dx_over_sensitivity*mes_in[imes];
       }
     }
+#if 0
+    if(imes<10)LOG(INFO) << imes << ' ' << mes_in[imes] << ' '
+      << xpmf_l << ' ' << ipmf_l << ' ' << (ipmf_l>=0 ? pmf_out[ipmf_l] : 0) << ' '
+      << xpmf_r << ' ' << ipmf_r << ' ' << (ipmf_r>=0 ? pmf_out[ipmf_r] : 0);
+#endif
   }
 }
