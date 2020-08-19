@@ -760,8 +760,25 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
   OUTPUT.set_stage_statistics_summary(stage_summary);
 
   if(skip_inverse_fft) {
-    std::copy(fkmo.get(), fkmo.get()+npoint, OUTPUT.mutable_pn()->begin());
+    // Renomalize the DFT to correct for any error in normalization of PMF
+    // and to suppress the zero electron case if requested (remeber that DFT
+    // of delta-fn is a constant real value)
+
+    double scale = 1.0/fkmo.get()[0];
+    double shift = 0.0;
+
+    if(config_.suppress_zero()) {
+      scale /= 1.0-p0_;
+      shift = -p0_*scale;
+    }
+
+    hcvec_copy_with_scale_and_add_real(OUTPUT.mutable_pn()->begin(),
+      fkmo.get(), scale, shift, npoint);
   } else {
+    // Renomalize the inverse DFT as required, but also correct for any error
+    // in normalization of PMF (given by the zero-frequency component)
+    double norm = 1.0/double(npoint)/fkmo.get()[0];
+
     // Prepare the backward DFT
     uptr_fftw_plan bwd_plan = {
       fftw_plan_r2r_1d(npoint, fkmo.get(), fk.get(),
@@ -772,7 +789,10 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
     fftw_flops(bwd_plan.get(), &nadd, &nmul, &nfma);
     nflop_ += uint64_t(nmul) + uint64_t(nfma);
 
-    const double norm = 1/double(npoint);
+    if(config_.suppress_zero()) {
+      norm /= 1.0 - norm*fk.get()[0];
+      fk.get()[0] = 0.0;
+    }
     std::transform(fk.get(), fk.get()+npoint, OUTPUT.mutable_pn()->begin(),
       [norm](double x) { return x*norm; });
     nflop_ += npoint;
