@@ -283,7 +283,7 @@ void TwoComponentLombardMartinMES::calculate_mes()
     ped_hc_dft.reset(fftw_alloc_real(mes_npoint));
     assert(ped_hc_dft);
     for(unsigned ipoint=0; ipoint!=mes_npoint; ++ipoint) {
-      ped_hc_dft.get()[ipoint] = ped_pdf_->value_1d(mes_x(ipoint));
+      ped_hc_dft.get()[ipoint] = ped_pdf_->value_1d(mes_x(ipoint))*config_.sensitivity();
     }
 
     // If there is no shift in the on & off pedestal position then store the
@@ -314,7 +314,7 @@ void TwoComponentLombardMartinMES::calculate_mes()
   // If pedestal is defined and on/off shift is specified then calculate off spectrum
   if(ped_pdf_ != nullptr and config_.on_off_ped_shift() != 0) {
     for(unsigned ipoint=0; ipoint!=mes_npoint; ++ipoint) {
-      ped_hc_dft.get()[ipoint] = ped_pdf_->value_1d(off_x(ipoint));
+      ped_hc_dft.get()[ipoint] = ped_pdf_->value_1d(off_x(ipoint))*config_.sensitivity();
     }
     rebin_spectrum(off_pmf_, ped_hc_dft.get(), mes_npoint);
   }
