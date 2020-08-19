@@ -22,12 +22,32 @@
 
 #pragma once
 
+#include<algorithm>
+
 #include<util/log.hpp>
 #include<util/vcl.hpp>
 #include<math/fftw_util.pb.h>
 #include<fftw3.h>
 
 namespace calin { namespace math { namespace fftw_util {
+
+inline unsigned hcvec_num_real(unsigned nsample) {
+  // 1 -> 1
+  // 2 -> 2
+  // 3 -> 2
+  // 4 -> 3
+  // 5 -> 3
+  return std::min(nsample/2+1, nsample); // Min to handle zero case
+}
+
+inline unsigned hcvec_num_imag(unsigned nsample) {
+  // 1 -> 0
+  // 2 -> 0
+  // 3 -> 1
+  // 4 -> 1
+  // 5 -> 2
+  return (std::max(nsample,1U)-1)/2; // Max to handle zero case
+}
 
 #ifndef SWIG
 
@@ -105,96 +125,73 @@ template<typename T>
 void hcvec_scale(T* ovec, unsigned nsample,
   T scale = 1.0)
 {
-  T *ro = ovec;
-  T *re = ovec + nsample;
-  while(ro<re)
-    *(ro++) *= scale;
+  for(unsigned i=0; i<nsample; ++i) {
+    ovec[i] *= scale;
+  }
 }
 
 template<typename T>
-void hcvec_scale_and_add(T* ovec, const T* ivec, unsigned nsample,
+void hcvec_add_scaled(T* ovec, const T* ivec, unsigned nsample,
   T scale = 1.0)
 {
-  T *ro = ovec;
-  T *re = ovec + nsample;
-  const T *ri = ivec;
-  while(ro<re)
-    *(ro++) += *(ri++)*scale;
+  for(unsigned i=0; i<nsample; ++i) {
+    ovec[i] += ivec[i]*scale;
+  }
 }
 
 template<typename T>
 void hcvec_set_real(T* ovec, T real_value, unsigned nsample)
 {
-  T *ro = ovec;
-  T *co = ovec + nsample-1;
-  (*ro++) = real_value;
-  while(ro < co)
-  {
-    (*ro++) = real_value;
-    (*co--) = T(0);
+  const unsigned nreal = hcvec_num_real(nsample);
+  for(unsigned i=0; i<nreal; ++i) {
+    ovec[i] = real_value;
   }
-  if(ro==co)(*ro) = real_value;
+  for(unsigned i=nreal; i<nsample; ++i) {
+    ovec[i] = T(0);
+  }
 }
 
 template<typename T>
-void hcvec_add_real(T* ovec, T real_value, unsigned nsample)
+void hcvec_add_real(T* ovec, T real_addand, unsigned nsample)
 {
-  T *ro = ovec;
-  T *co = ovec + nsample-1;
-  (*ro++) += real_value;
-  while(ro < co)
-  {
-    (*ro++) += real_value;
-    --co;
+  const unsigned nreal = hcvec_num_real(nsample);
+  for(unsigned i=0; i<nreal; ++i) {
+    ovec[i] += real_addand;
   }
-  if(ro==co)(*ro) += real_value;
 }
 
 template<typename T>
-void hcvec_scale_and_add_real(T* ovec, T scale, T real_value, unsigned nsample)
+void hcvec_scale_and_add_real(T* ovec, T scale, T real_addand, unsigned nsample)
 {
-  T *ro = ovec;
-  T *co = ovec + nsample-1;
-  *ro = *ro * scale + real_value;
-  ++ro;
-  while(ro < co)
-  {
-    *ro = *ro * scale + real_value;
-    *co = *co * scale;
-    ++ro;
-    --co;
+  const unsigned nreal = hcvec_num_real(nsample);
+  for(unsigned i=0; i<nreal; ++i) {
+    ovec[i] = ovec[i] * scale + real_addand;
   }
-  if(ro==co)(*ro) = *ro * scale + real_value;
+  for(unsigned i=nreal; i<nsample; ++i) {
+    ovec[i] = ovec[i] * scale;
+  }
 }
 
 template<typename T>
 T hcvec_sum_real(const T* ivec, unsigned nsample)
 {
-  const T *ro = ivec;
-  const T *co = ivec + nsample-1;
-  T sum_real = (*ro++);
-  while(ro < co)
-  {
-    sum_real += (*ro++);
-    --co;
+  const unsigned nreal = hcvec_num_real(nsample);
+  T sum_real = T(0);
+  for(unsigned i=0; i<nreal; ++i) {
+    sum_real += ivec[i];
   }
-  if(ro==co)sum_real += (*ro);
   return sum_real;
 }
 
 template<typename T>
 T hcvec_avg_real(const T* ivec, unsigned nsample)
 {
-  const T *ro = ivec;
-  const T *co = ivec + nsample-1;
-  T sum_real = (*ro++);
-  while(ro < co)
-  {
-    sum_real += (*ro++);
-    --co;
+  const unsigned nreal = hcvec_num_real(nsample);
+  T sum_real = T(0);
+  for(unsigned i=0; i<nreal; ++i) {
+    sum_real += ivec[i];
   }
-  if(ro==co)sum_real += (*ro++);
-  return sum_real/double(ro-ivec);
+  return sum_real/double(nreal);
 }
 
 template<typename T>
