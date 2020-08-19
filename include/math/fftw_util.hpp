@@ -161,6 +161,19 @@ void hcvec_add_real(T* ovec, T real_addand, unsigned nsample)
 }
 
 template<typename T>
+void hcvec_copy_with_scale_and_add_real(T* ovec, const T* ivec,
+  T scale, T real_addand, unsigned nsample)
+{
+  const unsigned nreal = hcvec_num_real(nsample);
+  for(unsigned i=0; i<nreal; ++i) {
+    ovec[i] = ivec[i] * scale + real_addand;
+  }
+  for(unsigned i=nreal; i<nsample; ++i) {
+    ovec[i] = ivec[i] * scale;
+  }
+}
+
+template<typename T>
 void hcvec_scale_and_add_real(T* ovec, T scale, T real_addand, unsigned nsample)
 {
   const unsigned nreal = hcvec_num_real(nsample);
@@ -499,6 +512,9 @@ using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 
 #endif // defined SWIG
 
+// Expose some of these functions in more SWIG friendly way
+double hcvec_sum_real(const Eigen::VectorXd& ivec);
+double hcvec_avg_real(const Eigen::VectorXd& ivec);
 Eigen::VectorXd hcvec_scale_and_add_real(const Eigen::VectorXd& ivec, double scale, double real_addand);
 
 Eigen::VectorXd fftw_r2hc(const Eigen::VectorXd& x,

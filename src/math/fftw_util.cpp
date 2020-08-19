@@ -101,6 +101,16 @@ Eigen::VectorXd calin::math::fftw_util::hcvec_scale_and_add_real(const Eigen::Ve
   return ovec;
 }
 
+double calin::math::fftw_util::hcvec_sum_real(const Eigen::VectorXd& ivec)
+{
+  return hcvec_sum_real(ivec.data(), ivec.size());
+}
+
+double calin::math::fftw_util::hcvec_avg_real(const Eigen::VectorXd& ivec)
+{
+  return hcvec_avg_real(ivec.data(), ivec.size());
+}
+
 bool calin::math::fftw_util::load_wisdom_from_file(std::string filename)
 {
   calin::util::file::expand_filename_in_place(filename);
