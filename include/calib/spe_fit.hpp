@@ -448,15 +448,17 @@ public:
   calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig config() const { return config_; }
   calin::ix::simulation::pmt::PMTSimTwoPopulationConfig pmt() const { return config_.pmt(); }
 
-  const Eigen::VectorXd& mes_pmf() const { return mes_pmf_; }
-  const Eigen::VectorXd& off_pmf() const { return off_pmf_; }
+  Eigen::VectorXd mes_pmf() const { return mes_pmf_; }
+  Eigen::VectorXd off_pmf() const { return off_pmf_; }
+  Eigen::VectorXd ses_pmf() const;
+  Eigen::VectorXd ses_pmf_full_resolution() const;
 
   static calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig default_config();
 private:
   void calculate_mes();
   double mes_x(int i) const { return x0_ + double(i)*config_.sensitivity() - 0.5*config_.dx(); }
   double off_x(int i) const { return mes_x(i) + config_.on_off_ped_shift(); }
-  void rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes);
+  void rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes) const;
 
   calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig config_;
   double x0_;
