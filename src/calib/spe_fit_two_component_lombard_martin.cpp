@@ -44,7 +44,7 @@ TwoComponentLombardMartinMES(double x0, unsigned npoint,
     calin::math::function::ParameterizableSingleAxisFunction* ped_pdf,
     const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config,
     bool adopt_ped_pdf):
-  MultiElectronSpectrum(), config_(config), x0_(x0), npoint_(npoint),
+  MultiElectronSpectrum(), config_(config), x0_(x0), dx_inv_(1.0/config.dx()), npoint_(npoint),
   ped_pdf_(ped_pdf), adopt_ped_pdf_(adopt_ped_pdf), mes_pmf_(npoint), off_pmf_(npoint)
 {
   calculate_mes();
@@ -182,7 +182,9 @@ double TwoComponentLombardMartinMES::pdf_ped(double x)
   if(ped_pdf_ == nullptr) {
     throw std::runtime_error("TwoComponentLombardMartinMES::pdf_ped: no pedestal pdf supplied");
   }
-  return 0;
+  int i = ibin(x);
+  if(i<0 or i>=npoint_)return 0.0;
+  return std::max(off_pmf_[i], 0.0);
 }
 
 double TwoComponentLombardMartinMES::pdf_gradient_ped(double x, VecRef gradient)
@@ -199,7 +201,9 @@ double TwoComponentLombardMartinMES::pdf_gradient_hessian_ped(double x, VecRef g
 
 double TwoComponentLombardMartinMES::pdf_mes(double x)
 {
-  return 0;
+  int i = ibin(x);
+  if(i<0 or i>=npoint_)return 0.0;
+  return std::max(mes_pmf_[i], 0.0);
 }
 
 double TwoComponentLombardMartinMES::pdf_gradient_mes(double x, VecRef gradient)
@@ -216,27 +220,46 @@ double TwoComponentLombardMartinMES::pdf_gradient_hessian_mes(double x, VecRef g
 
 double TwoComponentLombardMartinMES::intensity_pe()
 {
-  return 0;
+  return intensity_pe_;
 }
 
 double TwoComponentLombardMartinMES::ped_rms_dc()
 {
-  return 0;
+  double m = ped_sum_px_/ped_sum_p_;
+  return std::sqrt(ped_sum_pxx_/ped_sum_p_ - m*m);
 }
 
 double TwoComponentLombardMartinMES::ped_zero_dc()
 {
-  return 0;
+  return ped_sum_px_/ped_sum_p_;
 }
 
 double TwoComponentLombardMartinMES::ses_mean_dc()
 {
-  return 0;
+  Eigen::VectorXd ses = ses_pmf_full_resolution();
+  double sum_p = 0;
+  double sum_px = 0;
+  for(unsigned i=0; i<ses.size(); ++i) {
+    double x = i;
+    sum_p += ses[i];
+    sum_px += ses[i]*x;
+  }
+  return sum_px/sum_p;
 }
 
 double TwoComponentLombardMartinMES::ses_rms_pe()
 {
-  return 0;
+  Eigen::VectorXd ses = ses_pmf_full_resolution();
+  double sum_p = 0;
+  double sum_px = 0;
+  double sum_pxx = 0;
+  for(unsigned i=0; i<ses.size(); ++i) {
+    double x = i;
+    sum_p += ses[i];
+    sum_px += ses[i]*x;
+    sum_pxx += ses[i]*x*x;
+  }
+  return std::sqrt(sum_pxx*sum_p/(sum_px*sum_px) - 1);
 }
 
 calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig
@@ -279,11 +302,20 @@ void TwoComponentLombardMartinMES::calculate_mes()
 
   uptr_fftw_data ped_hc_dft { nullptr, fftw_free };
   if(ped_pdf_ != nullptr) {
+    ped_sum_p_ = 0;
+    ped_sum_px_ = 0;
+    ped_sum_pxx_ = 0;
+
     // FFT of pedestal
     ped_hc_dft.reset(fftw_alloc_real(mes_npoint));
     assert(ped_hc_dft);
     for(unsigned ipoint=0; ipoint!=mes_npoint; ++ipoint) {
-      ped_hc_dft.get()[ipoint] = ped_pdf_->value_1d(mes_x(ipoint))*config_.sensitivity();
+      double x = mes_x(ipoint);
+      double p = ped_pdf_->value_1d(x)*config_.sensitivity();
+      ped_hc_dft.get()[ipoint] = p;
+      ped_sum_p_ += p;
+      ped_sum_px_ += p*x;
+      ped_sum_pxx_ += p*x*x;
     }
 
     // If there is no shift in the on & off pedestal position then store the
@@ -355,7 +387,7 @@ Eigen::VectorXd TwoComponentLombardMartinMES::ses_pmf_full_resolution() const
 void TwoComponentLombardMartinMES::
 rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes) const
 {
-  double sensitivity_over_dx = config_.sensitivity()/config_.dx();
+  double sensitivity_over_dx = config_.sensitivity()*dx_inv_;
   double dx_over_sensitivity = config_.dx()/config_.sensitivity();
 
   pmf_out.setZero();

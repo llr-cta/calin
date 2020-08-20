@@ -458,16 +458,22 @@ private:
   void calculate_mes();
   double mes_x(int i) const { return x0_ + double(i)*config_.sensitivity() - 0.5*config_.dx(); }
   double off_x(int i) const { return mes_x(i) + config_.on_off_ped_shift(); }
+  int ibin(double x) { return std::round((x-x0_)*dx_inv_); }
   void rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes) const;
 
   calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig config_;
   double x0_;
+  double dx_inv_ = 0.0;
   unsigned npoint_;
   double intensity_pe_ = 1.0;
   calin::math::function::ParameterizableSingleAxisFunction* ped_pdf_ = nullptr;
   bool adopt_ped_pdf_ = false;
   Eigen::VectorXd mes_pmf_;
   Eigen::VectorXd off_pmf_;
+
+  double ped_sum_p_ = 0;
+  double ped_sum_px_ = 0;
+  double ped_sum_pxx_ = 0;
 };
 
 class SPELikelihood: public calin::math::function::MultiAxisFunction
