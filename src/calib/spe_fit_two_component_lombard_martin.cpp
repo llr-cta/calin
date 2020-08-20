@@ -244,7 +244,7 @@ double TwoComponentLombardMartinMES::ses_mean_dc()
     sum_p += ses[i];
     sum_px += ses[i]*x;
   }
-  return sum_px/sum_p;
+  return sum_px/sum_p*config_.sensitivity();
 }
 
 double TwoComponentLombardMartinMES::ses_rms_pe()
