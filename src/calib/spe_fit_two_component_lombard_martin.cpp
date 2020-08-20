@@ -184,7 +184,7 @@ double TwoComponentLombardMartinMES::pdf_ped(double x)
   }
   int i = ibin(x);
   if(i<0 or i>=npoint_)return 0.0;
-  return std::max(off_pmf_[i], 0.0);
+  return std::max(off_pmf_[i], 0.0)*dx_inv_;
 }
 
 double TwoComponentLombardMartinMES::pdf_gradient_ped(double x, VecRef gradient)
@@ -203,7 +203,7 @@ double TwoComponentLombardMartinMES::pdf_mes(double x)
 {
   int i = ibin(x);
   if(i<0 or i>=npoint_)return 0.0;
-  return std::max(mes_pmf_[i], 0.0);
+  return std::max(mes_pmf_[i], 0.0)*dx_inv_;
 }
 
 double TwoComponentLombardMartinMES::pdf_gradient_mes(double x, VecRef gradient)
