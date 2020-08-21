@@ -331,7 +331,7 @@ PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig&
   stage_n_gain_ = std::pow(config.total_gain()/stage_0_gain(), 1/double(config_.num_stage()-1));
   recalc_total_gain_and_p0();
   unsigned iter = 10;
-  while(std::abs(total_gain_/config.total_gain() - 1)>1e-8) {
+  while(std::abs(total_gain_/config.total_gain() - 1)>1e-10) {
     if(iter == 0) {
       throw std::runtime_error("PMTSimTwoPopulation: iteration limit reached in calculating stage gain");
     }
