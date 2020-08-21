@@ -30,8 +30,10 @@
 #include <util/string_to_protobuf.hpp>
 #include <util/file.hpp>
 #include <util/string.hpp>
+#include <util/log.hpp>
 
 using namespace calin::util::options_processor;
+using namespace calin::util::log;
 
 OptionHandler::~OptionHandler()
 {
@@ -119,7 +121,7 @@ handle_option(const std::string& key, bool has_val, const std::string& val)
     if(ifind == std::string::npos)
       field_name = key.substr(istart);
     else
-      field_name = key.substr(istart,ifind);
+      field_name = key.substr(istart,ifind-istart);
 
     if(field_name.empty())return OptionHandlerResult::UNKNOWN_OPTION;
 
