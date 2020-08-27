@@ -26,6 +26,7 @@
 
 #include <math/function.hpp>
 #include <math/pdf_1d.hpp>
+#include <math/fftw_util.hpp>
 #include <calib/pmt_ses_models.pb.h>
 
 namespace calin { namespace calib { namespace pmt_ses_models {
@@ -101,8 +102,9 @@ private:
 class LombardMartinPrescottPMTModel {
 public:
   LombardMartinPrescottPMTModel(
-    const calin::ix::config::pmt_ses_models::LombardMartinPrescottPMTModelConfig& config,
-    double precision = 1e-10);
+    const calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig& config,
+    double precision = 1e-10,
+    calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
 
   std::vector<double> stage_0_pmf() const { return stage_0_pmf_; }
   std::vector<double> stage_n_pmf() const { return stage_n_pmf_; }
@@ -119,11 +121,16 @@ public:
   double stage_0_Exx() const { return stage_0_Exx_; }
   double stage_n_Exx() const { return stage_n_Exx_; }
 
+  Eigen::VectorXd calc_ses(unsigned npoint);
+
 private:
+  void calc_ses_dft(double* dft, double* buffer, unsigned npoint);
+
   void set_stage_n_gain(double stage_n_gain);
 
-  calin::ix::config::pmt_ses_models::LombardMartinPrescottPMTModelConfig config_;
+  calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig config_;
   double precision_;
+  calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor_;
 
   double p0_ = 0;
   double total_gain_ = 0;

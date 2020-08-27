@@ -26,7 +26,7 @@ syntax = "proto3";
 
 import "calin.proto";
 
-package calin.ix.config.pmt_ses_models;
+package calin.ix.calib.pmt_ses_models;
 
 message LombardMartinPrescottPMTModelConfig {
   uint32 num_stage                                         = 1 [

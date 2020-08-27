@@ -34,10 +34,11 @@
 
 using namespace calin::util::log;
 using namespace calin::calib::pmt_ses_models;
+using namespace calin::math::fftw_util;
 using calin::math::special::SQR;
 
 namespace {
-  void validate_config(const calin::ix::config::pmt_ses_models::LombardMartinPrescottPMTModelConfig& config) {
+  void validate_config(const calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig& config) {
     if(config.num_stage()<2)
       throw std::runtime_error("LombardMartinPrescottPMTModel: number of stages must be greater than 1.");
     if(config.total_gain()<=0)
@@ -67,8 +68,9 @@ namespace {
 
 LombardMartinPrescottPMTModel::
 LombardMartinPrescottPMTModel(
-  const calin::ix::config::pmt_ses_models::LombardMartinPrescottPMTModelConfig& config,
-  double precision): config_(config), precision_(precision)
+  const calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig& config,
+  double precision, calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor):
+    config_(config), precision_(precision), fftw_rigor_(fftw_rigor)
 {
   validate_config(config);
 
@@ -191,4 +193,75 @@ polya_pmf(double mean, double rms_frac, double precision)
     if(psum.total() > 0.99 and pkx < precision)break;
   }
   return pk;
+}
+
+void LombardMartinPrescottPMTModel::calc_ses_dft(double* dft, double* buffer, unsigned npoint)
+{
+  int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor_);
+
+  // Pointers to the two buffers that will be swapped at every stage
+  double* fk = dft;
+  double* fkmo = buffer;
+
+  // Temporarily make zero-padded copy of single n-stage PMF in fk
+  std::fill(fk, fk+npoint, 0.0);
+  std::copy(stage_n_pmf_.begin(), stage_n_pmf_.end(), fk);
+
+  // Do the forward DFT transforming pmf into fkmo
+  uptr_fftw_plan fwd_plan = {
+    fftw_plan_r2r_1d(npoint, fk, fkmo, FFTW_R2HC, plan_flags), fftw_destroy_plan };
+  assert(fwd_plan);
+  fftw_execute(fwd_plan.get());
+
+  // Do the convolutions nstage-2 times from fkmo to fk, swapping back each time
+  for(unsigned ik=1; ik<(config_.num_stage()-1); ik++)
+  {
+    hcvec_polynomial(fk, fkmo, stage_n_pmf_, npoint);
+    std::swap(fk, fkmo);
+  }
+
+  // Do the final stage convolution
+  hcvec_polynomial(fk, fkmo, stage_0_pmf_, npoint);
+  std::swap(fk, fkmo);
+
+  double scale = 1.0/fkmo[0];
+  double shift = 0.0;
+
+  if(config_.suppress_zero()) {
+    scale /= 1.0-p0_;
+    shift = -p0_*scale;
+  }
+
+  hcvec_copy_with_scale_and_add_real(dft, fkmo, scale, shift, npoint);
+}
+
+Eigen::VectorXd LombardMartinPrescottPMTModel::calc_ses(unsigned npoint)
+{
+  int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor_);
+
+  // Assign a buffer to hold DFT of SES
+  uptr_fftw_data dft { fftw_alloc_real(npoint), fftw_free };
+  assert(dft);
+
+  // Assign a working buffer to hold working DFT of the SES
+  uptr_fftw_data buffer { fftw_alloc_real(npoint), fftw_free };
+  assert(buffer);
+
+  calc_ses_dft(dft.get(), buffer.get(), npoint);
+
+  // Prepare the backward DFT
+  uptr_fftw_plan bwd_plan = {
+    fftw_plan_r2r_1d(npoint, dft.get(), buffer.get(),
+                    FFTW_HC2R, plan_flags), fftw_destroy_plan };
+  assert(bwd_plan);
+  fftw_execute(bwd_plan.get());
+
+  Eigen::VectorXd ses(npoint);
+
+  double norm = 1.0/double(npoint);
+
+  std::transform(buffer.get(), buffer.get()+npoint, ses.data(),
+    [norm](double x) { return x*norm; });
+
+  return ses;
 }

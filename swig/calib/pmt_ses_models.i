@@ -26,6 +26,7 @@
 %{
 #include "math/log_quadratic_spline_pdf_1d.hpp"
 #include "calib/pmt_ses_models.hpp"
+#include "calib/pmt_ses_models.pb.h"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -44,4 +45,5 @@
 
 %apply double &OUTPUT { double& mx, double& mxx };
 
+%import "calib/pmt_ses_models.pb.i"
 %include "calib/pmt_ses_models.hpp"
