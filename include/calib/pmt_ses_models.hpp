@@ -26,6 +26,7 @@
 
 #include <math/function.hpp>
 #include <math/pdf_1d.hpp>
+#include <calib/pmt_ses_models.pb.h>
 
 namespace calin { namespace calib { namespace pmt_ses_models {
 
@@ -95,6 +96,47 @@ private:
   Eigen::MatrixXd mxx_curv_ = Eigen::MatrixXd::Zero(4,4);
 
   unsigned num_warnings_ = 5;
+};
+
+class LombardMartinPrescottPMTModel {
+public:
+  LombardMartinPrescottPMTModel(
+    const calin::ix::config::pmt_ses_models::LombardMartinPrescottPMTModelConfig& config,
+    double precision = 1e-10);
+
+  std::vector<double> stage_0_pmf() const { return stage_0_pmf_; }
+  std::vector<double> stage_n_pmf() const { return stage_n_pmf_; }
+
+  double p0() const { return p0_; }
+  double total_gain() const { return total_gain_; }
+  double resolution() const { return resolution_; }
+
+  static std::vector<double> polya_pmf(double mean, double rms_frac, double precision = 1e-10);
+
+  double stage_0_gain() const { return stage_0_gain_; }
+  double stage_n_gain() const { return stage_n_gain_; }
+
+  double stage_0_Exx() const { return stage_0_Exx_; }
+  double stage_n_Exx() const { return stage_n_Exx_; }
+
+private:
+  void set_stage_n_gain(double stage_n_gain);
+
+  calin::ix::config::pmt_ses_models::LombardMartinPrescottPMTModelConfig config_;
+  double precision_;
+
+  double p0_ = 0;
+  double total_gain_ = 0;
+  double resolution_ = 0;
+
+  double stage_0_gain_ = 0;
+  double stage_n_gain_ = 0;
+
+  double stage_0_Exx_ = 0;
+  double stage_n_Exx_ = 0;
+
+  std::vector<double> stage_0_pmf_;
+  std::vector<double> stage_n_pmf_;
 };
 
 // ********************************** OBSOLETE *********************************

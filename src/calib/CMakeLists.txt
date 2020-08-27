@@ -17,7 +17,7 @@ add_library(calin_calib SHARED spe_fit.cpp spe_fit_poisson_gaussian.cpp
   spe_fit_general_poisson.cpp spe_fit_two_component_lombard_martin.cpp
   spe_robust.cpp pmt_model_pg.cpp
   spe_fit_fast_single_value_general_poisson.cpp
-  pmt_ses_models.cpp)
+  pmt_ses_models.cpp pmt_ses_models_lombard_martin_prescott.cpp)
 target_link_libraries(calin_calib calin_math calin_simulation calin_proto_calib)
 target_link_libraries(calin_calib ${FFTW_LIBRARIES} ${EXTRA_LIBS})
 

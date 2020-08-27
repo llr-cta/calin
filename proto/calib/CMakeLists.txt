@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_PROTO spe_fit.proto)
+set(CALIN_SWIG_PROTO spe_fit.proto pmt_ses_models.proto)
 set(CALIN_PACKAGE calib)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 
