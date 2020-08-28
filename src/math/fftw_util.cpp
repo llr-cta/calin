@@ -44,6 +44,11 @@ void calin::math::fftw_util::hcvec_polynomial(double* ovec, const double* ivec,
   //hcvec_polynomial<double>(ovec, ivec, p, nsample);
 }
 
+void calin::math::fftw_util::hcvec_multi_stage_polynomial(double* ovec, double* ivec,
+  const std::vector<const std::vector<double>*>& stage_p, unsigned nsample)
+{
+  hcvec_multi_stage_polynomial_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, ivec, stage_p, nsample);
+}
 #endif
 
 Eigen::VectorXd calin::math::fftw_util::fftw_r2hc(const Eigen::VectorXd& x,

@@ -507,6 +507,234 @@ void hcvec_polynomial(double* ovec, const double* ivec,
   const std::vector<double>& p, unsigned nsample);
 #endif
 
+// *****************************************************************************
+// *****************************************************************************
+//
+// Multi stage polynomial
+//
+// *****************************************************************************
+// *****************************************************************************
+
+template<typename T>
+void hcvec_multi_stage_polynomial(T* ovec, const T* ivec,
+  const std::vector<const std::vector<T>*>& stage_p, unsigned nsample)
+{
+  T *ro = ovec;
+  T *co = ovec + nsample;
+  const T *ri = ivec;
+  const T *ci = ivec + nsample;
+
+  T vri = *ri;
+  T vci;
+
+  for(auto p: stage_p)
+  {
+    auto pi = p->end();
+    --pi;
+    T vro = *pi;
+    while(pi != p->begin()) {
+      --pi;
+      vro = vro * vri + (*pi);
+    }
+    vri = vro;
+  }
+  *ro = vri;
+
+  ++ro, ++ri;
+  --co, --ci;
+
+  while(ro < co)
+  {
+    vri = *ri;
+    vci = *ci;
+
+    for(auto p: stage_p)
+    {
+      auto pi = p->end();
+      --pi;
+
+      T vro = *pi;
+      T vco = T(0);
+
+      while(pi != p->begin()) {
+        --pi;
+        T vvro = vro * vri - vco * vci + (*pi);
+        vco    = vro * vci + vco * vri;
+        vro   = vvro;
+      }
+      vri = vro;
+      vci = vco;
+    }
+    *ro = vri;
+    *co = vci;
+
+    ++ro, ++ri;
+    --co, --ci;
+  }
+
+  if(ro==co) {
+    vri = *ri;
+    for(auto p: stage_p)
+    {
+      auto pi = p->end();
+      --pi;
+      T vro = *pi;
+      while(pi != p->begin()) {
+        --pi;
+        vro = vro * vri + (*pi);
+      }
+      vri = vro;
+    }
+    *ro = vri;
+  }
+}
+
+// Extremely complex version with vectorization and unrolling of vector loop. In
+// this version the order of the inner loops are inverted so that each frequency
+// is passed through all the polynomials before moving to the next (to improve
+// cache performance)
+template<typename VCLReal>
+void hcvec_multi_stage_polynomial_vcl(typename VCLReal::real_t* ovec,
+  const typename VCLReal::real_t* ivec,
+  const std::vector<const std::vector<typename VCLReal::real_t>*>& stage_p, unsigned nsample)
+{
+  // No user servicable parts inside
+
+  typename VCLReal::real_t* ro = ovec;
+  typename VCLReal::real_t* co = ovec + nsample;
+  const typename VCLReal::real_t* ri = ivec;
+  const typename VCLReal::real_t* ci = ivec + nsample;
+
+  // Evaluate the zero frequency (real-only) component
+
+  typename VCLReal::real_t sri = *ri;
+  typename VCLReal::real_t sci;
+  for(auto p: stage_p)
+  {
+    auto pi = p->end();
+    --pi;
+    typename VCLReal::real_t sro = *pi;
+    while(pi != p->begin()) {
+      --pi;
+      sro = sro * sri + (*pi);
+    }
+    sri = sro;
+  }
+  *ro = sri;
+  ++ro, ++ri;
+
+  // Evaluate two AVX vectors of real and complex compnents (i.e. 2 * num_real
+  // frequencies) using vector types
+  while(co - ro >= 4*VCLReal::num_real)
+  {
+    typename VCLReal::real_vt vri_a; vri_a.load(ri);
+    ri += VCLReal::num_real;
+    typename VCLReal::real_vt vri_b; vri_b.load(ri);
+    ri += VCLReal::num_real;
+
+    ci -= VCLReal::num_real;
+    typename VCLReal::real_vt vci_a; vci_a.load(ci);
+    ci -= VCLReal::num_real;
+    typename VCLReal::real_vt vci_b; vci_b.load(ci);
+
+    for(auto p: stage_p)
+    {
+      auto pi = p->end();
+
+      typename VCLReal::real_vt vpi = *(--pi);
+
+      typename VCLReal::real_vt vro_a = vpi;
+      typename VCLReal::real_vt vco_a = typename VCLReal::real_t(0);
+      typename VCLReal::real_vt vro_b = vpi;
+      typename VCLReal::real_vt vco_b = typename VCLReal::real_t(0);
+
+      while(pi != p->begin()) {
+        vpi = *(--pi);
+
+        typename VCLReal::real_vt vro_t;
+
+        vro_t  = vro_a*vri_a - calin::util::vcl::reverse(vco_a*vci_a) + vpi;
+        vco_a  = calin::util::vcl::reverse(vro_a)*vci_a + vco_a*calin::util::vcl::reverse(vri_a);
+        vro_a  = vro_t;
+
+        vro_t  = vro_b*vri_b - calin::util::vcl::reverse(vco_b*vci_b) + vpi;
+        vco_b  = calin::util::vcl::reverse(vro_b)*vci_b + vco_b*calin::util::vcl::reverse(vri_b);
+        vro_b  = vro_t;
+      }
+
+      vri_a = vro_a;
+      vci_a = vco_a;
+      vri_b = vro_b;
+      vci_b = vco_b;
+    }
+
+    vri_a.store(ro);
+    ro += VCLReal::num_real;
+    vri_b.store(ro);
+    ro += VCLReal::num_real;
+
+    co -= VCLReal::num_real;
+    vci_a.store(co);
+    co -= VCLReal::num_real;
+    vci_b.store(co);
+  }
+
+  // Evaluate any remaining real & complex frequencies that don't fit inro a vector
+  --co, --ci;
+
+  while(ro < co)
+  {
+    sri = *ri;
+    sci = *ci;
+
+    for(auto p: stage_p)
+    {
+      auto pi = p->end();
+      --pi;
+
+      typename VCLReal::real_t sro = *pi;
+      typename VCLReal::real_t sco = 0;
+
+      while(pi != p->begin()) {
+        --pi;
+        typename VCLReal::real_t sro_t = sro * sri - sco * sci + (*pi);
+        sco     = sro * sci + sco * sri;
+        sro     = sro_t;
+      }
+      sri = sro;
+      sci = sco;
+    }
+    *ro = sri;
+    *co = sci;
+
+    ++ro, ++ri;
+    --co, --ci;
+  }
+
+  // For even numbers of frequencies, finish with final real-only component
+  if(ro==co) {
+    sri = *ri;
+    for(auto p: stage_p)
+    {
+      auto pi = p->end();
+      --pi;
+      typename VCLReal::real_t sro = *pi;
+      while(pi != p->begin()) {
+        --pi;
+        sro = sro * sri + (*pi);
+      }
+      sri = sro;
+    }
+    *ro = sri;
+  }
+}
+
+// NOTE : This function overrides the template for systems with AVX !!!
+#if INSTRSET >= 7
+void hcvec_multi_stage_polynomial(double* ovec, double* ivec,
+  const std::vector<const std::vector<double>*>& stage_p, unsigned nsample);
+#endif
+
 using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
 using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 
