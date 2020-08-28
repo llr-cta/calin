@@ -625,17 +625,21 @@ void hcvec_multi_stage_polynomial_vcl(typename VCLReal::real_t* ovec,
 
   // Evaluate two AVX vectors of real and complex compnents (i.e. 2 * num_real
   // frequencies) using vector types
-  while(co - ro >= 4*VCLReal::num_real)
+  while(co - ro >= 6*VCLReal::num_real)
   {
     typename VCLReal::real_vt vri_a; vri_a.load(ri);
     ri += VCLReal::num_real;
     typename VCLReal::real_vt vri_b; vri_b.load(ri);
+    ri += VCLReal::num_real;
+    typename VCLReal::real_vt vri_c; vri_c.load(ri);
     ri += VCLReal::num_real;
 
     ci -= VCLReal::num_real;
     typename VCLReal::real_vt vci_a; vci_a.load(ci);
     ci -= VCLReal::num_real;
     typename VCLReal::real_vt vci_b; vci_b.load(ci);
+    ci -= VCLReal::num_real;
+    typename VCLReal::real_vt vci_c; vci_c.load(ci);
 
     for(auto p: stage_p)
     {
@@ -647,6 +651,8 @@ void hcvec_multi_stage_polynomial_vcl(typename VCLReal::real_t* ovec,
       typename VCLReal::real_vt vco_a = typename VCLReal::real_t(0);
       typename VCLReal::real_vt vro_b = vpi;
       typename VCLReal::real_vt vco_b = typename VCLReal::real_t(0);
+      typename VCLReal::real_vt vro_c = vpi;
+      typename VCLReal::real_vt vco_c = typename VCLReal::real_t(0);
 
       while(pi != p->begin()) {
         vpi = *(--pi);
@@ -660,23 +666,33 @@ void hcvec_multi_stage_polynomial_vcl(typename VCLReal::real_t* ovec,
         vro_t  = vro_b*vri_b - calin::util::vcl::reverse(vco_b*vci_b) + vpi;
         vco_b  = calin::util::vcl::reverse(vro_b)*vci_b + vco_b*calin::util::vcl::reverse(vri_b);
         vro_b  = vro_t;
+
+        vro_t  = vro_c*vri_c - calin::util::vcl::reverse(vco_c*vci_c) + vpi;
+        vco_c  = calin::util::vcl::reverse(vro_c)*vci_c + vco_c*calin::util::vcl::reverse(vri_c);
+        vro_c  = vro_t;
       }
 
       vri_a = vro_a;
       vci_a = vco_a;
       vri_b = vro_b;
       vci_b = vco_b;
+      vri_c = vro_c;
+      vci_c = vco_c;
     }
 
     vri_a.store(ro);
     ro += VCLReal::num_real;
     vri_b.store(ro);
     ro += VCLReal::num_real;
+    vri_c.store(ro);
+    ro += VCLReal::num_real;
 
     co -= VCLReal::num_real;
     vci_a.store(co);
     co -= VCLReal::num_real;
     vci_b.store(co);
+    co -= VCLReal::num_real;
+    vci_c.store(co);
   }
 
   // Evaluate any remaining real & complex frequencies that don't fit inro a vector
