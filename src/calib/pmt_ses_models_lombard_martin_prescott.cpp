@@ -115,6 +115,8 @@ LombardMartinPrescottPMTModel(
     }
   }
 
+  // Compute the stage-n gain required to achieve desired total gain, iterating
+  // for zero-suppression if required
   set_stage_n_gain(
     std::pow(config.total_gain()/stage_0_gain_, 1/double(config_.num_stage()-1)));
   unsigned iter = 10;
@@ -125,6 +127,18 @@ LombardMartinPrescottPMTModel(
     --iter;
     set_stage_n_gain(stage_n_gain_ *
       std::pow(config.total_gain()/total_gain_, 1/double(config_.num_stage()-1)));
+  }
+
+  // Compute "zero suppression adjusted" stage 0 PMF
+  if(config_.suppress_zero()) {
+    double scale = 1.0 / (1.0-p0_);
+    double shift = -p0_*scale;
+    stage_0_pmf_zsa_.resize(stage_0_pmf_.size());
+    std::transform(stage_0_pmf_.begin(), stage_0_pmf_.end(), stage_0_pmf_zsa_.begin(),
+      [scale](double x) { return x*scale; });
+    stage_0_pmf_zsa_[0] += shift;
+  } else {
+    stage_0_pmf_zsa_ = stage_0_pmf_;
   }
 }
 
@@ -195,73 +209,68 @@ polya_pmf(double mean, double rms_frac, double precision)
   return pk;
 }
 
-void LombardMartinPrescottPMTModel::calc_ses_dft(double* dft, double* buffer, unsigned npoint)
+Eigen::VectorXd LombardMartinPrescottPMTModel::calc_spectrum(unsigned npoint,
+  const std::vector<double>* pe_spec)
 {
   int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor_);
 
-  // Pointers to the two buffers that will be swapped at every stage
-  double* fk = dft;
-  double* fkmo = buffer;
+  // Assign a buffer to hold DFT of SES / MES
+  uptr_fftw_data dft { fftw_alloc_real(npoint), fftw_free };
+  assert(dft);
 
-  // Temporarily make zero-padded copy of single n-stage PMF in fk
-  std::fill(fk, fk+npoint, 0.0);
-  std::copy(stage_n_pmf_.begin(), stage_n_pmf_.end(), fk);
+  // Assign a buffer to hold temporary data
+  uptr_fftw_data buffer { fftw_alloc_real(npoint), fftw_free };
+  assert(buffer);
 
-  // Do the forward DFT transforming pmf into fkmo
+  // Temporarily make zero-padded copy of single n-stage PMF in the buffer
+  std::copy(stage_n_pmf_.begin(), stage_n_pmf_.end(), buffer.get());
+  std::fill(buffer.get()+stage_n_pmf_.size(), buffer.get()+npoint, 0.0);
+
+  // Do the out-of-place forward DFT transforming pmf to Fourier space in "dft"
   uptr_fftw_plan fwd_plan = {
-    fftw_plan_r2r_1d(npoint, fk, fkmo, FFTW_R2HC, plan_flags), fftw_destroy_plan };
+    fftw_plan_r2r_1d(npoint, buffer.get(), dft.get(), FFTW_R2HC, plan_flags), fftw_destroy_plan };
   assert(fwd_plan);
   fftw_execute(fwd_plan.get());
 
-  // Do the convolutions nstage-2 times from fkmo to fk, swapping back each time
-  for(unsigned ik=1; ik<(config_.num_stage()-1); ik++)
-  {
-    hcvec_polynomial(fk, fkmo, stage_n_pmf_, npoint);
-    std::swap(fk, fkmo);
+  std::vector<const std::vector<double>*> all_stages;
+  all_stages.reserve(config_.num_stage());
+
+  // Do num_stage()-2 convolutions with the "n-stage" PMF
+  std::vector<double> stage_0_pmf_adjusted;
+  for(unsigned istage=0; istage<config_.num_stage()-2; istage++) {
+    all_stages.push_back(&stage_n_pmf_);
   }
 
-  // Do the final stage convolution
-  hcvec_polynomial(fk, fkmo, stage_0_pmf_, npoint);
-  std::swap(fk, fkmo);
+  // Then convolve with stage 0 PMF (zero suppress adjusted if necessary)
+  all_stages.push_back(&stage_0_pmf_zsa_);
 
-  double scale = 1.0/fkmo[0];
-  double shift = 0.0;
-
-  if(config_.suppress_zero()) {
-    scale /= 1.0-p0_;
-    shift = -p0_*scale;
+  if(pe_spec != nullptr) {
+    all_stages.push_back(pe_spec);
   }
 
-  hcvec_copy_with_scale_and_add_real(dft, fkmo, scale, shift, npoint);
+  // Do the convolutions
+  hcvec_multi_stage_polynomial(dft.get(), dft.get(), all_stages, npoint);
+
+  // Prepare the inverse DFT
+  uptr_fftw_plan bwd_plan = {
+    fftw_plan_r2r_1d(npoint, dft.get(), buffer.get(), FFTW_HC2R, plan_flags),
+    fftw_destroy_plan };
+  assert(bwd_plan);
+  fftw_execute(bwd_plan.get());
+
+  // Copy the spectrum to the output vector, normalizing for FFTW comventions
+  Eigen::VectorXd spec(npoint);
+  double norm = 1.0/double(npoint);
+  std::transform(buffer.get(), buffer.get()+npoint, spec.data(),
+    [norm](double x) { return x*norm; });
+
+  return spec;
 }
 
 Eigen::VectorXd LombardMartinPrescottPMTModel::calc_ses(unsigned npoint)
 {
-  int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor_);
-
-  // Assign a buffer to hold DFT of SES
-  uptr_fftw_data dft { fftw_alloc_real(npoint), fftw_free };
-  assert(dft);
-
-  // Assign a working buffer to hold working DFT of the SES
-  uptr_fftw_data buffer { fftw_alloc_real(npoint), fftw_free };
-  assert(buffer);
-
-  calc_ses_dft(dft.get(), buffer.get(), npoint);
-
-  // Prepare the backward DFT
-  uptr_fftw_plan bwd_plan = {
-    fftw_plan_r2r_1d(npoint, dft.get(), buffer.get(),
-                    FFTW_HC2R, plan_flags), fftw_destroy_plan };
-  assert(bwd_plan);
-  fftw_execute(bwd_plan.get());
-
-  Eigen::VectorXd ses(npoint);
-
-  double norm = 1.0/double(npoint);
-
-  std::transform(buffer.get(), buffer.get()+npoint, ses.data(),
-    [norm](double x) { return x*norm; });
-
-  return ses;
+  if(npoint==0) {
+    npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4.0);
+  }
+  return calc_spectrum(npoint);
 }

@@ -121,11 +121,10 @@ public:
   double stage_0_Exx() const { return stage_0_Exx_; }
   double stage_n_Exx() const { return stage_n_Exx_; }
 
-  Eigen::VectorXd calc_ses(unsigned npoint);
+  Eigen::VectorXd calc_ses(unsigned npoint = 0);
 
 private:
-  void calc_ses_dft(double* dft, double* buffer, unsigned npoint);
-
+  Eigen::VectorXd calc_spectrum(unsigned npoint, const std::vector<double>* pe_spec = nullptr);
   void set_stage_n_gain(double stage_n_gain);
 
   calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig config_;
@@ -143,6 +142,7 @@ private:
   double stage_n_Exx_ = 0;
 
   std::vector<double> stage_0_pmf_;
+  std::vector<double> stage_0_pmf_zsa_;
   std::vector<double> stage_n_pmf_;
 };
 
