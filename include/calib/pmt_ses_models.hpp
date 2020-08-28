@@ -122,9 +122,22 @@ public:
   double stage_n_Exx() const { return stage_n_Exx_; }
 
   Eigen::VectorXd calc_ses(unsigned npoint = 0);
+  Eigen::VectorXd calc_mes(double mean, double rms_frac, unsigned npoint = 0);
+  Eigen::VectorXd calc_mes(const std::vector<double>& pe_pmf, unsigned npoint = 0);
+#ifndef SWIG
+  Eigen::VectorXd calc_mes(double mean, double rms_frac, unsigned npoint,
+    const double* ped, bool ped_is_fft=false);
+  Eigen::VectorXd calc_mes(const std::vector<double>& pe_pmf, unsigned npoint,
+    const double* ped, bool ped_is_fft=false);
+#endif
+  Eigen::VectorXd calc_mes(double mean, double rms_frac, const Eigen::VectorXd& ped,
+    bool ped_is_fft=false);
+  Eigen::VectorXd calc_mes(const std::vector<double>& pe_pmf, const Eigen::VectorXd& ped,
+    bool ped_is_fft=false);
 
 private:
-  Eigen::VectorXd calc_spectrum(unsigned npoint, const std::vector<double>* pe_spec = nullptr);
+  Eigen::VectorXd calc_spectrum(unsigned npoint, const std::vector<double>* pe_spec = nullptr,
+    const double* ped = nullptr, bool ped_is_fft = false);
   void set_stage_n_gain(double stage_n_gain);
 
   calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig config_;

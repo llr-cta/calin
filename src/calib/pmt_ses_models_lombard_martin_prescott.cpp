@@ -210,7 +210,7 @@ polya_pmf(double mean, double rms_frac, double precision)
 }
 
 Eigen::VectorXd LombardMartinPrescottPMTModel::calc_spectrum(unsigned npoint,
-  const std::vector<double>* pe_spec)
+  const std::vector<double>* pe_spec, const double* ped, bool ped_is_fft)
 {
   int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor_);
 
@@ -232,6 +232,7 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_spectrum(unsigned npoint,
   assert(fwd_plan);
   fftw_execute(fwd_plan.get());
 
+  // Set up the convolutions
   std::vector<const std::vector<double>*> all_stages;
   all_stages.reserve(config_.num_stage());
 
@@ -244,12 +245,26 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_spectrum(unsigned npoint,
   // Then convolve with stage 0 PMF (zero suppress adjusted if necessary)
   all_stages.push_back(&stage_0_pmf_zsa_);
 
+  // Finally convolve with the PE spectrum PMF
   if(pe_spec != nullptr) {
     all_stages.push_back(pe_spec);
   }
 
   // Do the convolutions
   hcvec_multi_stage_polynomial(dft.get(), dft.get(), all_stages, npoint);
+
+  // If we have a pedestal then apply it
+  if(ped != nullptr) {
+    if(ped_is_fft) {
+      hcvec_scale_and_multiply(dft.get(), dft.get(), ped, npoint);
+    } else {
+      if(fftw_alignment_of((double*)ped) != fftw_alignment_of(buffer.get())) {
+        throw std::runtime_error("Pedestal buffer not correctly aligned");
+      }
+      fftw_execute_r2r(fwd_plan.get(), (double*)ped, buffer.get());
+      hcvec_scale_and_multiply(dft.get(), dft.get(), buffer.get(), npoint);
+    }
+  }
 
   // Prepare the inverse DFT
   uptr_fftw_plan bwd_plan = {
@@ -273,4 +288,53 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_ses(unsigned npoint)
     npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4.0);
   }
   return calc_spectrum(npoint);
+}
+
+Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
+  double mean, double rms_frac, unsigned npoint)
+{
+  if(npoint==0) {
+    npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4 * mean);
+  }
+  std::vector<double> pe_pmf = polya_pmf(mean, rms_frac, precision_);
+  return calc_spectrum(npoint, &pe_pmf);
+}
+
+Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
+  const std::vector<double>& pe_pmf, unsigned npoint)
+{
+  double mean = 0;
+  for(unsigned ipe=0; ipe<pe_pmf.size(); ipe++) {
+    mean += pe_pmf[ipe]*ipe;
+  }
+  if(npoint==0) {
+    npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4 * mean);
+  }
+  return calc_spectrum(npoint, &pe_pmf);
+}
+
+Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
+  double mean, double rms_frac, unsigned npoint, const double* ped, bool ped_is_fft)
+{
+  std::vector<double> pe_pmf = polya_pmf(mean, rms_frac, precision_);
+  return calc_spectrum(npoint, &pe_pmf, ped, ped_is_fft);
+}
+
+Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
+  const std::vector<double>& pe_pmf, unsigned npoint, const double* ped, bool ped_is_fft)
+{
+  return calc_spectrum(npoint, &pe_pmf, ped, ped_is_fft);
+}
+
+Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
+  double mean, double rms_frac, const Eigen::VectorXd& ped, bool ped_is_fft)
+{
+  std::vector<double> pe_pmf = polya_pmf(mean, rms_frac, precision_);
+  return calc_spectrum(ped.size(), &pe_pmf, ped.data(), ped_is_fft);
+}
+
+Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
+  const std::vector<double>& pe_pmf, const Eigen::VectorXd& ped, bool ped_is_fft)
+{
+  return calc_spectrum(ped.size(), &pe_pmf, ped.data(), ped_is_fft);
 }
