@@ -408,21 +408,21 @@ protected:
   Eigen::VectorXd nes_weight_deriv_;
 };
 
-class TwoComponentLombardMartinMES: public MultiElectronSpectrum
+class LombardMartinPrescottMES: public MultiElectronSpectrum
 {
 public:
-  TwoComponentLombardMartinMES(double x0, unsigned npoint,
+  LombardMartinPrescottMES(double x0, unsigned npoint,
     calin::math::function::ParameterizableSingleAxisFunction* ped_pdf,
-    const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config = default_config(),
+    const calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig& config = default_config(),
     bool adopt_ped_pdf = false);
-  TwoComponentLombardMartinMES(double x0, unsigned npoint,
-      const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config,
+  LombardMartinPrescottMES(double x0, unsigned npoint,
+      const calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig& config,
       calin::math::function::ParameterizableSingleAxisFunction* ped_pdf = nullptr,
       bool adopt_ped_ped = false):
-    TwoComponentLombardMartinMES(x0, npoint, ped_pdf, config, adopt_ped_ped)
+    LombardMartinPrescottMES(x0, npoint, ped_pdf, config, adopt_ped_ped)
   { /* nothing to see here */ }
 
-  virtual ~TwoComponentLombardMartinMES();
+  virtual ~LombardMartinPrescottMES();
 
   unsigned num_parameters() override;
   std::vector<calin::math::function::ParameterAxis> parameters() override;
@@ -445,15 +445,15 @@ public:
   double ses_mean_dc() override;
   double ses_rms_pe() override;
 
-  calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig config() const { return config_; }
-  calin::ix::simulation::pmt::PMTSimTwoPopulationConfig pmt() const { return config_.pmt(); }
+  calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig config() const { return config_; }
+  calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig pmt() const { return config_.pmt(); }
 
   Eigen::VectorXd mes_pmf() const { return mes_pmf_; }
   Eigen::VectorXd off_pmf() const { return off_pmf_; }
   Eigen::VectorXd ses_pmf() const;
   Eigen::VectorXd ses_pmf_full_resolution() const;
 
-  static calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig default_config();
+  static calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig default_config();
 private:
   void calculate_mes();
   double mes_x(int i) const { return x0_ + double(i)*config_.sensitivity() - 0.5*config_.dx(); }
@@ -461,7 +461,7 @@ private:
   int ibin(double x) { return std::round((x-x0_)*dx_inv_); }
   void rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes) const;
 
-  calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig config_;
+  calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig config_;
   double x0_;
   double dx_inv_ = 0.0;
   unsigned npoint_;
@@ -474,6 +474,9 @@ private:
   double ped_sum_p_ = 0;
   double ped_sum_px_ = 0;
   double ped_sum_pxx_ = 0;
+
+  double pmt_total_gain_ = 0;
+  double pmt_resolution_ = 0;
 };
 
 class SPELikelihood: public calin::math::function::MultiAxisFunction

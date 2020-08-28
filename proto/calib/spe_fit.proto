@@ -24,7 +24,7 @@ syntax = "proto3";
 
 import "calin.proto";
 import "math/fftw_util.proto";
-import "simulation/pmt.proto";
+import "calib/pmt_ses_models.proto";
 
 package calin.ix.calib.spe_fit;
 
@@ -51,7 +51,7 @@ message GeneralPoissonMESConfig {
     (CFO).desc = "FFTW planning rigor to use." ];
 };
 
-message TwoComponentLombardMartinMESConfig {
+message LombardMartinPrescottMESConfig {
   double sensitivity                                       = 1 [
     (CFO).desc = "Relationship between charge in PMT (in electrons) and signal "
       "in electronic (in DC). For example, in NectarCAM a gain of 40,000 "
@@ -59,7 +59,7 @@ message TwoComponentLombardMartinMESConfig {
   double dx                                                = 2 [
     (CFO).desc = "Width of bins in spectrum, likely this is 1.0." ];
 
-  calin.ix.simulation.pmt.PMTSimTwoPopulationConfig pmt    = 10 [
+  calin.ix.calib.pmt_ses_models.LombardMartinPrescottPMTModelConfig pmt = 10 [
     (CFO).desc = "Configuration and initial parameters for PMT model." ];
 
   bool free_total_gain                                     = 11 [

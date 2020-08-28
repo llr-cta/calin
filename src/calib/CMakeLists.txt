@@ -14,7 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 add_library(calin_calib SHARED spe_fit.cpp spe_fit_poisson_gaussian.cpp
-  spe_fit_general_poisson.cpp spe_fit_two_component_lombard_martin.cpp
+  spe_fit_general_poisson.cpp spe_fit_lombard_martin_prescott.cpp
   spe_robust.cpp pmt_model_pg.cpp
   spe_fit_fast_single_value_general_poisson.cpp
   pmt_ses_models.cpp pmt_ses_models_lombard_martin_prescott.cpp)

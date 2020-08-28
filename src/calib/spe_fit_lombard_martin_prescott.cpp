@@ -30,7 +30,7 @@
 #include <math/fftw_util.hpp>
 #include <math/accumulator.hpp>
 #include <calib/spe_fit.hpp>
-#include <simulation/pmt.hpp>
+#include <calib/pmt_ses_models.hpp>
 #include <util/log.hpp>
 #include <math/special.hpp>
 
@@ -39,10 +39,10 @@ using namespace calin::calib::spe_fit;
 using calin::math::special::round_up_power_of_two;
 using namespace calin::util::log;
 
-TwoComponentLombardMartinMES::
-TwoComponentLombardMartinMES(double x0, unsigned npoint,
+LombardMartinPrescottMES::
+LombardMartinPrescottMES(double x0, unsigned npoint,
     calin::math::function::ParameterizableSingleAxisFunction* ped_pdf,
-    const calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig& config,
+    const calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig& config,
     bool adopt_ped_pdf):
   MultiElectronSpectrum(), config_(config), x0_(x0), dx_inv_(1.0/config.dx()), npoint_(npoint),
   ped_pdf_(ped_pdf), adopt_ped_pdf_(adopt_ped_pdf), mes_pmf_(npoint), off_pmf_(npoint)
@@ -50,12 +50,12 @@ TwoComponentLombardMartinMES(double x0, unsigned npoint,
   calculate_mes();
 }
 
-TwoComponentLombardMartinMES::~TwoComponentLombardMartinMES()
+LombardMartinPrescottMES::~LombardMartinPrescottMES()
 {
   if(adopt_ped_pdf_)delete ped_pdf_;
 }
 
-unsigned TwoComponentLombardMartinMES::num_parameters()
+unsigned LombardMartinPrescottMES::num_parameters()
 {
   unsigned nparam = 1; // light_intensity
   if(config_.free_intensity_rms_frac()) { ++nparam; }
@@ -74,7 +74,7 @@ unsigned TwoComponentLombardMartinMES::num_parameters()
 }
 
 std::vector<calin::math::function::ParameterAxis>
-TwoComponentLombardMartinMES::parameters()
+LombardMartinPrescottMES::parameters()
 {
   constexpr double inf = std::numeric_limits<double>::infinity();
   std::vector<math::function::ParameterAxis> pvec;
@@ -105,7 +105,7 @@ TwoComponentLombardMartinMES::parameters()
   return pvec;
 }
 
-Eigen::VectorXd TwoComponentLombardMartinMES::parameter_values()
+Eigen::VectorXd LombardMartinPrescottMES::parameter_values()
 {
   Eigen::VectorXd param(num_parameters());
   unsigned iparam = 0;
@@ -136,9 +136,9 @@ Eigen::VectorXd TwoComponentLombardMartinMES::parameter_values()
   return param;
 }
 
-void TwoComponentLombardMartinMES::set_parameter_values(ConstVecRef values)
+void LombardMartinPrescottMES::set_parameter_values(ConstVecRef values)
 {
-  verify_set_parameter_values(values, "TwoComponentLombardMartinMES");
+  verify_set_parameter_values(values, "LombardMartinPrescottMES");
   unsigned iparam = 0;
   intensity_pe_ = values[iparam++];
   if(config_.free_intensity_rms_frac()) {
@@ -167,105 +167,87 @@ void TwoComponentLombardMartinMES::set_parameter_values(ConstVecRef values)
   calculate_mes();
 }
 
-bool TwoComponentLombardMartinMES::can_calculate_parameter_gradient()
+bool LombardMartinPrescottMES::can_calculate_parameter_gradient()
 {
   return false;
 }
 
-bool TwoComponentLombardMartinMES::can_calculate_parameter_hessian()
+bool LombardMartinPrescottMES::can_calculate_parameter_hessian()
 {
   return false;
 }
 
-double TwoComponentLombardMartinMES::pdf_ped(double x)
+double LombardMartinPrescottMES::pdf_ped(double x)
 {
   if(ped_pdf_ == nullptr) {
-    throw std::runtime_error("TwoComponentLombardMartinMES::pdf_ped: no pedestal pdf supplied");
+    throw std::runtime_error("LombardMartinPrescottMES::pdf_ped: no pedestal pdf supplied");
   }
   int i = ibin(x);
   if(i<0 or i>=npoint_)return 0.0;
   return std::max(off_pmf_[i], 0.0)*dx_inv_;
 }
 
-double TwoComponentLombardMartinMES::pdf_gradient_ped(double x, VecRef gradient)
+double LombardMartinPrescottMES::pdf_gradient_ped(double x, VecRef gradient)
 {
-  throw std::runtime_error("TwoComponentLombardMartinMES: pdf_gradient_ped not implemented");
+  throw std::runtime_error("LombardMartinPrescottMES: pdf_gradient_ped not implemented");
   return 0;
 }
 
-double TwoComponentLombardMartinMES::pdf_gradient_hessian_ped(double x, VecRef gradient, MatRef hessian)
+double LombardMartinPrescottMES::pdf_gradient_hessian_ped(double x, VecRef gradient, MatRef hessian)
 {
-  throw std::runtime_error("TwoComponentLombardMartinMES: pdf_gradient_hessian_ped not implemented");
+  throw std::runtime_error("LombardMartinPrescottMES: pdf_gradient_hessian_ped not implemented");
   return 0;
 }
 
-double TwoComponentLombardMartinMES::pdf_mes(double x)
+double LombardMartinPrescottMES::pdf_mes(double x)
 {
   int i = ibin(x);
   if(i<0 or i>=npoint_)return 0.0;
   return std::max(mes_pmf_[i], 0.0)*dx_inv_;
 }
 
-double TwoComponentLombardMartinMES::pdf_gradient_mes(double x, VecRef gradient)
+double LombardMartinPrescottMES::pdf_gradient_mes(double x, VecRef gradient)
 {
-  throw std::runtime_error("TwoComponentLombardMartinMES: pdf_gradient_mes not implemented");
+  throw std::runtime_error("LombardMartinPrescottMES: pdf_gradient_mes not implemented");
   return 0;
 }
 
-double TwoComponentLombardMartinMES::pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
+double LombardMartinPrescottMES::pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian)
 {
-  throw std::runtime_error("TwoComponentLombardMartinMES: pdf_gradient_hessian_mes not implemented");
+  throw std::runtime_error("LombardMartinPrescottMES: pdf_gradient_hessian_mes not implemented");
   return 0;
 }
 
-double TwoComponentLombardMartinMES::intensity_pe()
+double LombardMartinPrescottMES::intensity_pe()
 {
   return intensity_pe_;
 }
 
-double TwoComponentLombardMartinMES::ped_rms_dc()
+double LombardMartinPrescottMES::ped_rms_dc()
 {
   double m = ped_sum_px_/ped_sum_p_;
   return std::sqrt(ped_sum_pxx_/ped_sum_p_ - m*m);
 }
 
-double TwoComponentLombardMartinMES::ped_zero_dc()
+double LombardMartinPrescottMES::ped_zero_dc()
 {
   return ped_sum_px_/ped_sum_p_;
 }
 
-double TwoComponentLombardMartinMES::ses_mean_dc()
+double LombardMartinPrescottMES::ses_mean_dc()
 {
-  Eigen::VectorXd ses = ses_pmf_full_resolution();
-  double sum_p = 0;
-  double sum_px = 0;
-  for(unsigned i=0; i<ses.size(); ++i) {
-    double x = i;
-    sum_p += ses[i];
-    sum_px += ses[i]*x;
-  }
-  return sum_px/sum_p*config_.sensitivity();
+  return pmt_total_gain_*config_.sensitivity();
 }
 
-double TwoComponentLombardMartinMES::ses_rms_pe()
+double LombardMartinPrescottMES::ses_rms_pe()
 {
-  Eigen::VectorXd ses = ses_pmf_full_resolution();
-  double sum_p = 0;
-  double sum_px = 0;
-  double sum_pxx = 0;
-  for(unsigned i=0; i<ses.size(); ++i) {
-    double x = i;
-    sum_p += ses[i];
-    sum_px += ses[i]*x;
-    sum_pxx += ses[i]*x*x;
-  }
-  return std::sqrt(sum_pxx*sum_p/(sum_px*sum_px) - 1);
+  return pmt_resolution_;
 }
 
-calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig
-TwoComponentLombardMartinMES::default_config()
+calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig
+LombardMartinPrescottMES::default_config()
 {
-  calin::ix::calib::spe_fit::TwoComponentLombardMartinMESConfig config;
+  calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig config;
 
   config.set_sensitivity(58.0/40000.0);
   config.set_dx(1.0);
@@ -296,23 +278,23 @@ TwoComponentLombardMartinMES::default_config()
   return config;
 }
 
-void TwoComponentLombardMartinMES::calculate_mes()
+void LombardMartinPrescottMES::calculate_mes()
 {
   unsigned mes_npoint = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
 
-  uptr_fftw_data ped_hc_dft { nullptr, fftw_free };
+  uptr_fftw_data ped { nullptr, fftw_free };
   if(ped_pdf_ != nullptr) {
     ped_sum_p_ = 0;
     ped_sum_px_ = 0;
     ped_sum_pxx_ = 0;
 
     // FFT of pedestal
-    ped_hc_dft.reset(fftw_alloc_real(mes_npoint));
-    assert(ped_hc_dft);
+    ped.reset(fftw_alloc_real(mes_npoint));
+    assert(ped);
     for(unsigned ipoint=0; ipoint!=mes_npoint; ++ipoint) {
       double x = mes_x(ipoint);
       double p = ped_pdf_->value_1d(x)*config_.sensitivity();
-      ped_hc_dft.get()[ipoint] = p;
+      ped.get()[ipoint] = p;
       ped_sum_p_ += p;
       ped_sum_px_ += p*x;
       ped_sum_pxx_ += p*x*x;
@@ -321,70 +303,59 @@ void TwoComponentLombardMartinMES::calculate_mes()
     // If there is no shift in the on & off pedestal position then store the
     // pedestal spectrum we calculated for later before doing FFT
     if(config_.on_off_ped_shift() == 0) {
-      rebin_spectrum(off_pmf_, ped_hc_dft.get(), mes_npoint);
+      rebin_spectrum(off_pmf_, ped.get(), mes_npoint);
     }
-
-    // Do the forward DFT transforming fped
-    int plan_flags = proto_planning_enum_to_fftw_flag(config_.fftw_planning());
-    uptr_fftw_plan fwd_plan = {
-      fftw_plan_r2r_1d(mes_npoint, ped_hc_dft.get(), ped_hc_dft.get(),
-        FFTW_R2HC, plan_flags), fftw_destroy_plan };
-    assert(fwd_plan);
-    fftw_execute(fwd_plan.get());
   }
 
-  calin::simulation::pmt::PMTSimTwoPopulation pmt(config_.pmt(), /* rng = */ nullptr,
-    /* use_new_stage_n_algorithm = */ false, /* adopt_rng = */ false);
+  calin::calib::pmt_ses_models::LombardMartinPrescottPMTModel pmt(config_.pmt(),
+    config_.precision(), config_.fftw_planning());
 
-  calin::ix::simulation::pmt::PMTSimPMF mes;
-  mes = pmt.calc_multi_electron_spectrum(intensity_pe_, config_.intensity_rms_frac(),
-    ped_hc_dft.get(), mes_npoint, 0, config_.precision(), /* log_progress= */ false,
-    config_.fftw_planning());
+  pmt_total_gain_ = pmt.total_gain();
+  pmt_resolution_ = pmt.resolution();
 
-  rebin_spectrum(mes_pmf_, mes.pn().data(), mes_npoint);
+  Eigen::VectorXd mes;
+  mes = pmt.calc_mes(intensity_pe_, config_.intensity_rms_frac(), mes_npoint, ped.get());
+
+  rebin_spectrum(mes_pmf_, mes.data(), mes_npoint);
 
   // If pedestal is defined and on/off shift is specified then calculate off spectrum
   if(ped_pdf_ != nullptr and config_.on_off_ped_shift() != 0) {
     for(unsigned ipoint=0; ipoint!=mes_npoint; ++ipoint) {
-      ped_hc_dft.get()[ipoint] = ped_pdf_->value_1d(off_x(ipoint))*config_.sensitivity();
+      ped.get()[ipoint] = ped_pdf_->value_1d(off_x(ipoint))*config_.sensitivity();
     }
-    rebin_spectrum(off_pmf_, ped_hc_dft.get(), mes_npoint);
+    rebin_spectrum(off_pmf_, ped.get(), mes_npoint);
   }
 }
 
-Eigen::VectorXd TwoComponentLombardMartinMES::ses_pmf() const
+Eigen::VectorXd LombardMartinPrescottMES::ses_pmf() const
 {
   unsigned mes_npoint = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
-  calin::simulation::pmt::PMTSimTwoPopulation pmt(config_.pmt(), /* rng = */ nullptr,
-    /* use_new_stage_n_algorithm = */ false, /* adopt_rng = */ false);
 
-  calin::ix::simulation::pmt::PMTSimPMF ses;
-  ses = pmt.calc_pmf_fft(mes_npoint, 0, config_.precision(),
-    /* log_progress= */ false, /* skip_inverse_fft = */ false,
-    config_.fftw_planning());
+  calin::calib::pmt_ses_models::LombardMartinPrescottPMTModel pmt(config_.pmt(),
+    config_.precision(), config_.fftw_planning());
+
+  Eigen::VectorXd ses;
+  ses = pmt.calc_ses(mes_npoint);
 
   Eigen::VectorXd ses_pmf(npoint_);
-  rebin_spectrum(ses_pmf, ses.pn().data(), mes_npoint);
+  rebin_spectrum(ses_pmf, ses.data(), mes_npoint);
   return ses_pmf;
 }
 
-Eigen::VectorXd TwoComponentLombardMartinMES::ses_pmf_full_resolution() const
+Eigen::VectorXd LombardMartinPrescottMES::ses_pmf_full_resolution() const
 {
   unsigned mes_npoint = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
-  calin::simulation::pmt::PMTSimTwoPopulation pmt(config_.pmt(), /* rng = */ nullptr,
-    /* use_new_stage_n_algorithm = */ false, /* adopt_rng = */ false);
 
-  calin::ix::simulation::pmt::PMTSimPMF ses;
-  ses = pmt.calc_pmf_fft(mes_npoint, 0, config_.precision(),
-    /* log_progress= */ false, /* skip_inverse_fft = */ false,
-    config_.fftw_planning());
+  calin::calib::pmt_ses_models::LombardMartinPrescottPMTModel pmt(config_.pmt(),
+    config_.precision(), config_.fftw_planning());
 
-  Eigen::VectorXd ses_pmf(mes_npoint);
-  std::copy(ses.pn().data(), ses.pn().data()+mes_npoint, ses_pmf.data());
-  return ses_pmf;
+  Eigen::VectorXd ses;
+  ses = pmt.calc_ses(mes_npoint);
+
+  return ses;
 }
 
-void TwoComponentLombardMartinMES::
+void LombardMartinPrescottMES::
 rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes) const
 {
   double sensitivity_over_dx = config_.sensitivity()*dx_inv_;
