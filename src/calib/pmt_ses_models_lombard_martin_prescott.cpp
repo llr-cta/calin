@@ -258,9 +258,6 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_spectrum(unsigned npoint,
     if(ped_is_fft) {
       hcvec_scale_and_multiply(dft.get(), dft.get(), ped, npoint);
     } else {
-      if(fftw_alignment_of((double*)ped) != fftw_alignment_of(buffer.get())) {
-        throw std::runtime_error("Pedestal buffer not correctly aligned");
-      }
       fftw_execute_r2r(fwd_plan.get(), (double*)ped, buffer.get());
       hcvec_scale_and_multiply(dft.get(), dft.get(), buffer.get(), npoint);
     }
@@ -330,11 +327,18 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
   double mean, double rms_frac, const Eigen::VectorXd& ped, bool ped_is_fft)
 {
   std::vector<double> pe_pmf = polya_pmf(mean, rms_frac, precision_);
-  return calc_spectrum(ped.size(), &pe_pmf, ped.data(), ped_is_fft);
+  // Assign a buffer to hold (properly aligned) pedestal data
+  uptr_fftw_data ped_copy { fftw_alloc_real(ped.size()), fftw_free };
+  assert(ped_copy);
+  std::copy(ped.data(), ped.data()+ped.size(), ped_copy.get());
+  return calc_spectrum(ped.size(), &pe_pmf, ped_copy.get(), ped_is_fft);
 }
 
 Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
   const std::vector<double>& pe_pmf, const Eigen::VectorXd& ped, bool ped_is_fft)
 {
-  return calc_spectrum(ped.size(), &pe_pmf, ped.data(), ped_is_fft);
+  uptr_fftw_data ped_copy { fftw_alloc_real(ped.size()), fftw_free };
+  assert(ped_copy);
+  std::copy(ped.data(), ped.data()+ped.size(), ped_copy.get());
+  return calc_spectrum(ped.size(), &pe_pmf, ped_copy.get(), ped_is_fft);
 }
