@@ -54,6 +54,11 @@ void calin::math::fftw_util::hcvec_gaussian_dft(double* ovec, double mean, doubl
 {
   hcvec_gaussian_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, mean, sigma, nsample);
 }
+
+void calin::math::fftw_util::hcvec_delta_dft(double* ovec, double x0, unsigned nsample)
+{
+  hcvec_delta_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, x0, nsample);
+}
 #endif
 
 Eigen::VectorXd calin::math::fftw_util::fftw_r2hc(const Eigen::VectorXd& x,
@@ -131,6 +136,18 @@ Eigen::VectorXd calin::math::fftw_util::hcvec_gaussian_dft(double mean, double s
   }
   return ovec;
 }
+
+Eigen::VectorXd calin::math::fftw_util::hcvec_delta_dft(double x0, unsigned nsample, bool vcl)
+{
+  Eigen::VectorXd ovec(nsample);
+  if(vcl) {
+    hcvec_delta_dft(ovec.data(), x0, nsample);
+  } else {
+    hcvec_delta_dft<double>(ovec.data(), x0, nsample);
+  }
+  return ovec;
+}
+
 
 bool calin::math::fftw_util::load_wisdom_from_file(std::string filename)
 {
