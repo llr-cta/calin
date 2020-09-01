@@ -841,7 +841,7 @@ void hcvec_gaussian_dft_vcl(typename VCLReal::real_t* ovec,
     typename VCLReal::real_t c = std::cos(x);
     typename VCLReal::real_t s = std::sin(x);
     (*ro++) = amp*c;
-    (*co--) = amp*s;
+    (*co--) = -amp*s;
   }
 
   if(ro==co) {
