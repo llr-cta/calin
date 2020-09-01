@@ -443,7 +443,7 @@ void hcvec_polynomial_vcl(typename VCLReal::real_t* ovec,
     vco_b.store(co);
   }
 
-  // Evaluate any remaining real & complex frequencies that don't fit inro a vector
+  // Evaluate any remaining real & complex frequencies that don't fit into a vector
   --co, --ci;
 
   while(ro < co)
@@ -697,7 +697,7 @@ void hcvec_multi_stage_polynomial_vcl(typename VCLReal::real_t* ovec,
     vci_c.store(co);
   }
 
-  // Evaluate any remaining real & complex frequencies that don't fit inro a vector
+  // Evaluate any remaining real & complex frequencies that don't fit into a vector
   --co, --ci;
 
   while(ro < co)
@@ -830,7 +830,7 @@ void hcvec_gaussian_dft_vcl(typename VCLReal::real_t* ovec,
     s.store(co);
   }
 
-  // Evaluate any remaining real & complex frequencies that don't fit inro a vector
+  // Evaluate any remaining real & complex frequencies that don't fit into a vector
   --co;
 
   while(ro < co)
