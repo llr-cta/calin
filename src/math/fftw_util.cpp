@@ -49,6 +49,11 @@ void calin::math::fftw_util::hcvec_multi_stage_polynomial(double* ovec, double* 
 {
   hcvec_multi_stage_polynomial_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, ivec, stage_p, nsample);
 }
+
+void calin::math::fftw_util::hcvec_gaussian_dft(double* ovec, double mean, double sigma, unsigned nsample)
+{
+  hcvec_gaussian_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, mean, sigma, nsample);
+}
 #endif
 
 Eigen::VectorXd calin::math::fftw_util::fftw_r2hc(const Eigen::VectorXd& x,
@@ -114,6 +119,13 @@ double calin::math::fftw_util::hcvec_sum_real(const Eigen::VectorXd& ivec)
 double calin::math::fftw_util::hcvec_avg_real(const Eigen::VectorXd& ivec)
 {
   return hcvec_avg_real(ivec.data(), ivec.size());
+}
+
+Eigen::VectorXd calin::math::fftw_util::hcvec_gaussian_dft(double mean, double sigma, unsigned nsample)
+{
+  Eigen::VectorXd ovec(nsample);
+  hcvec_gaussian_dft(ovec.data(), mean, sigma, nsample);
+  return ovec;
 }
 
 bool calin::math::fftw_util::load_wisdom_from_file(std::string filename)

@@ -22,11 +22,13 @@
 
 #pragma once
 
+#include<cmath>
 #include<algorithm>
 
 #include<util/log.hpp>
 #include<util/vcl.hpp>
 #include<math/fftw_util.pb.h>
+#include<math/special.hpp>
 #include<fftw3.h>
 
 namespace calin { namespace math { namespace fftw_util {
@@ -751,6 +753,117 @@ void hcvec_multi_stage_polynomial(double* ovec, double* ivec,
   const std::vector<const std::vector<double>*>& stage_p, unsigned nsample);
 #endif
 
+// *****************************************************************************
+// *****************************************************************************
+//
+// Analytic DFT of Gaussian
+//
+// *****************************************************************************
+// *****************************************************************************
+
+template<typename T>
+void hcvec_gaussian_dft(T* ovec, T mean, T sigma, unsigned nsample)
+{
+  T *ro = ovec;
+  T *co = ovec + nsample-1;
+
+  T nsample_inv = 1.0/T(nsample);
+  T scale = 2.0*calin::math::special::SQR(M_PI*sigma*nsample_inv);
+  T phase = 2*M_PI*mean*nsample_inv;
+
+  (*ro++) = 1.0;
+
+  while(ro < co)
+  {
+    T x = T(ro-ovec);
+    T amp = std::exp(-calin::math::special::SQR(x) * scale);
+    x *= phase;
+    T c = std::cos(x);
+    T s = std::sin(x);
+    (*ro++) = amp*c;
+    (*co--) = -amp*s;
+  }
+
+  if(ro==co) {
+    T x = T(ro-ovec);
+    T amp = std::exp(-calin::math::special::SQR(x) * scale);
+    (*ro++) = -amp;
+  }
+}
+
+template<typename VCLReal>
+void hcvec_gaussian_dft_vcl(typename VCLReal::real_t* ovec,
+  typename VCLReal::real_t mean, typename VCLReal::real_t sigma, unsigned nsample)
+{
+  // No user servicable parts inside
+
+  typename VCLReal::real_t* ro = ovec;
+  typename VCLReal::real_t* co = ovec + nsample;
+
+  typename VCLReal::real_t nsample_inv = 1.0/typename VCLReal::real_t(nsample);
+  typename VCLReal::real_t scale = 2.0*calin::math::special::SQR(M_PI*sigma*nsample_inv);
+  typename VCLReal::real_t phase = 2*M_PI*mean*nsample_inv;
+
+  // Evaluate the zero frequency (real-only) component
+  (*ro++) = 1.0;
+
+  // Evaluate three AVX vectors of real and complex compnents (i.e. 3 * num_real
+  // frequencies) using vector types
+  typename VCLReal::real_vt x = VCLReal::iota() + 1.0;
+  while(co - ro >= 2*VCLReal::num_real)
+  {
+    typename VCLReal::real_vt amp = vcl::exp(-x*x*scale);
+    typename VCLReal::real_vt c;
+    typename VCLReal::real_vt s = vcl::sincos(&c, x*phase);
+
+    c *= amp;
+    s *= amp;
+
+    s = -calin::util::vcl::reverse(s);
+
+    x += VCLReal::num_real;
+
+    c.store(ro);
+    ro += VCLReal::num_real;
+
+    co -= VCLReal::num_real;
+    s.store(co);
+  }
+
+  // Evaluate any remaining real & complex frequencies that don't fit inro a vector
+  --co;
+
+  while(ro < co)
+  {
+    typename VCLReal::real_t x = typename VCLReal::real_t(ro-ovec);
+    typename VCLReal::real_t amp = std::exp(-calin::math::special::SQR(x) * scale);
+    x *= phase;
+    typename VCLReal::real_t c = std::cos(x);
+    typename VCLReal::real_t s = std::sin(x);
+    (*ro++) = amp*c;
+    (*co--) = amp*s;
+  }
+
+  if(ro==co) {
+    typename VCLReal::real_t x = double(ro-ovec);
+    typename VCLReal::real_t amp = std::exp(-calin::math::special::SQR(x) * scale);
+    (*ro++) = -amp;
+  }
+}
+
+// NOTE : This function overrides the template for systems with AVX !!!
+#if INSTRSET >= 7
+void hcvec_gaussian_dft(double* ovec, double mean, double sigma, unsigned nsample);
+#endif
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// Various other functions and SWIG definitions
+//
+// *****************************************************************************
+// *****************************************************************************
+
 using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
 using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 
@@ -760,6 +873,7 @@ using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 double hcvec_sum_real(const Eigen::VectorXd& ivec);
 double hcvec_avg_real(const Eigen::VectorXd& ivec);
 Eigen::VectorXd hcvec_scale_and_add_real(const Eigen::VectorXd& ivec, double scale, double real_addand);
+Eigen::VectorXd hcvec_gaussian_dft(double mean, double sigma, unsigned nsample);
 
 Eigen::VectorXd fftw_r2hc(const Eigen::VectorXd& x,
   calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
