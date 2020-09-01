@@ -121,10 +121,14 @@ double calin::math::fftw_util::hcvec_avg_real(const Eigen::VectorXd& ivec)
   return hcvec_avg_real(ivec.data(), ivec.size());
 }
 
-Eigen::VectorXd calin::math::fftw_util::hcvec_gaussian_dft(double mean, double sigma, unsigned nsample)
+Eigen::VectorXd calin::math::fftw_util::hcvec_gaussian_dft(double mean, double sigma, unsigned nsample, bool vcl)
 {
   Eigen::VectorXd ovec(nsample);
-  hcvec_gaussian_dft(ovec.data(), mean, sigma, nsample);
+  if(vcl) {
+    hcvec_gaussian_dft(ovec.data(), mean, sigma, nsample);
+  } else {
+    hcvec_gaussian_dft<double>(ovec.data(), mean, sigma, nsample);
+  }
   return ovec;
 }
 

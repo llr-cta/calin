@@ -873,7 +873,7 @@ using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 double hcvec_sum_real(const Eigen::VectorXd& ivec);
 double hcvec_avg_real(const Eigen::VectorXd& ivec);
 Eigen::VectorXd hcvec_scale_and_add_real(const Eigen::VectorXd& ivec, double scale, double real_addand);
-Eigen::VectorXd hcvec_gaussian_dft(double mean, double sigma, unsigned nsample);
+Eigen::VectorXd hcvec_gaussian_dft(double mean, double sigma, unsigned nsample, bool vcl = true);
 
 Eigen::VectorXd fftw_r2hc(const Eigen::VectorXd& x,
   calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
