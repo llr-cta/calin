@@ -450,6 +450,10 @@ public:
   calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig config() const { return config_; }
   calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig pmt() const { return config_.pmt(); }
 
+  double x0() const { return x0_; }
+  unsigned npoint() const { return npoint_; }
+  unsigned mes_npoint() const { return mes_npoint_; }
+
   Eigen::VectorXd mes_pmf() const { return mes_pmf_; }
   Eigen::VectorXd off_pmf() const { return off_pmf_; }
   Eigen::VectorXd ses_pmf() const;
