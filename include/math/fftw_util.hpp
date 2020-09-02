@@ -809,7 +809,7 @@ void hcvec_gaussian_dft_vcl(typename VCLReal::real_t* ovec,
   // Evaluate the zero frequency (real-only) component
   (*ro++) = 1.0;
 
-  // Evaluate three AVX vectors of real and complex compnents (i.e. 3 * num_real
+  // Evaluate AVX vectors of real and complex compnents (i.e. num_real
   // frequencies) using vector types
   typename VCLReal::real_vt x = VCLReal::iota() + 1.0;
   while(co - ro >= 2*VCLReal::num_real)
