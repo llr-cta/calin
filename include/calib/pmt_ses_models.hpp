@@ -107,7 +107,7 @@ public:
       dft(fftw_alloc_real(npoint), fftw_free),
       basis_dft(fftw_alloc_real(npoint), fftw_free)
     {
-      calin::math::fftw_util::hcvec_delta_dft(basis_dft.get(), 1, npoint);
+      calin::math::fftw_util::hcvec_delta_dft(basis_dft.get(), 1.0, npoint);
     }
     Eigen::VectorXd pmf_as_vec() const {
       Eigen::VectorXd outvec(npoint);
