@@ -37,6 +37,7 @@
 using namespace calin::math::fftw_util;
 using namespace calin::calib::spe_fit;
 using calin::math::special::round_up_power_of_two;
+using calin::math::special::SQR;
 using namespace calin::util::log;
 
 LombardMartinPrescottMES::
@@ -47,6 +48,13 @@ LombardMartinPrescottMES(double x0, unsigned npoint,
   MultiElectronSpectrum(), config_(config), x0_(x0), dx_inv_(1.0/config.dx()), npoint_(npoint),
   ped_pdf_(ped_pdf), adopt_ped_pdf_(adopt_ped_pdf), mes_pmf_(npoint), off_pmf_(npoint)
 {
+  mes_npoint_ = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
+  if(config_.use_gaussian_pedestal() or ped_pdf!=nullptr) {
+    ped_.reset(fftw_alloc_real(mes_npoint_));
+    if(!ped_) {
+      throw std::runtime_error("Could not allocate memory for pedestal buffer");
+    }
+  }
   calculate_mes();
 }
 
@@ -66,7 +74,11 @@ unsigned LombardMartinPrescottMES::num_parameters()
   if(config_.free_stage_0_hi_gain_rms_frac()) { ++nparam; }
   if(config_.free_stage_0_lo_gain_rms_frac()) { ++nparam; }
   if(config_.free_stage_n_gain_rms_frac()) { ++nparam; }
-  if(ped_pdf_) {
+  if(config_.use_gaussian_pedestal()) {
+    if(config_.free_on_off_ped_shift()) { ++nparam; }
+    if(config_.free_ped_gaussian_mean()) { ++nparam; }
+    if(config_.free_ped_gaussian_sigma()) { ++nparam; }
+  } else if(ped_pdf_) {
     if(config_.free_on_off_ped_shift()) { ++nparam; }
     nparam += ped_pdf_->num_parameters();
   }
@@ -95,7 +107,14 @@ LombardMartinPrescottMES::parameters()
     pvec.push_back({ "stage_0_lo_gain_rms_frac", "1", true, 0, false, inf }); }
   if(config_.free_stage_n_gain_rms_frac()) {
     pvec.push_back({ "stage_n_gain_rms_frac", "1", true, 0, false, inf }); }
-  if(ped_pdf_) {
+  if(config_.use_gaussian_pedestal()) {
+    if(config_.free_on_off_ped_shift()) {
+      pvec.push_back({ "on_off_ped_shift", "DC", false, -inf, false, inf }); }
+    if(config_.free_ped_gaussian_mean()) {
+      pvec.push_back({ "ped_gaussian_mean", "DC", false, -inf, false, inf }); }
+    if(config_.free_ped_gaussian_sigma()) {
+      pvec.push_back({ "ped_gaussian_sigma", "DC", true, 0, false, inf }); }
+  } else if(ped_pdf_) {
     if(config_.free_on_off_ped_shift()) {
       pvec.push_back({ "on_off_ped_shift", "1", false, -inf, false, inf }); }
     std::vector<math::function::ParameterAxis> pped { ped_pdf_->parameters() };
@@ -126,7 +145,14 @@ Eigen::VectorXd LombardMartinPrescottMES::parameter_values()
     param[iparam++] = config_.pmt().stage_0_lo_gain_rms_frac(); }
   if(config_.free_stage_n_gain_rms_frac()) {
     param[iparam++] = config_.pmt().stage_n_gain_rms_frac(); }
-  if(ped_pdf_) {
+  if(config_.use_gaussian_pedestal()) {
+    if(config_.free_on_off_ped_shift()) {
+      param[iparam++] = config_.on_off_ped_shift(); }
+    if(config_.free_ped_gaussian_mean()) {
+      param[iparam++] = config_.ped_gaussian_mean(); }
+    if(config_.free_ped_gaussian_sigma()) {
+      param[iparam++] = config_.ped_gaussian_sigma(); }
+  } else if(ped_pdf_) {
     if(config_.free_on_off_ped_shift()) {
       param[iparam++] = config_.on_off_ped_shift(); }
     unsigned num_ped_params = ped_pdf_->num_parameters();
@@ -157,7 +183,14 @@ void LombardMartinPrescottMES::set_parameter_values(ConstVecRef values)
     config_.mutable_pmt()->set_stage_0_lo_gain_rms_frac(values[iparam++]); }
   if(config_.free_stage_n_gain_rms_frac()) {
     config_.mutable_pmt()->set_stage_n_gain_rms_frac(values[iparam++]); }
-  if(ped_pdf_) {
+  if(config_.use_gaussian_pedestal()) {
+    if(config_.free_on_off_ped_shift()) {
+      config_.set_on_off_ped_shift(values[iparam++]); }
+    if(config_.free_ped_gaussian_mean()) {
+      config_.set_ped_gaussian_mean(values[iparam++]); }
+    if(config_.free_ped_gaussian_sigma()) {
+      config_.set_ped_gaussian_sigma(values[iparam++]); }
+  } else if(ped_pdf_) {
     if(config_.free_on_off_ped_shift()) {
       config_.set_on_off_ped_shift(values[iparam++]); }
     unsigned num_ped_params = ped_pdf_->num_parameters();
@@ -179,8 +212,8 @@ bool LombardMartinPrescottMES::can_calculate_parameter_hessian()
 
 double LombardMartinPrescottMES::pdf_ped(double x)
 {
-  if(ped_pdf_ == nullptr) {
-    throw std::runtime_error("LombardMartinPrescottMES::pdf_ped: no pedestal pdf supplied");
+  if(config_.use_gaussian_pedestal() == false and ped_pdf_ == nullptr) {
+    throw std::runtime_error("LombardMartinPrescottMES::pdf_ped: no pedestal pdf specified");
   }
   int i = ibin(x);
   if(i<0 or i>=npoint_)return 0.0;
@@ -225,13 +258,25 @@ double LombardMartinPrescottMES::intensity_pe()
 
 double LombardMartinPrescottMES::ped_rms_dc()
 {
-  double m = ped_sum_px_/ped_sum_p_;
-  return std::sqrt(ped_sum_pxx_/ped_sum_p_ - m*m);
+  if(config_.use_gaussian_pedestal()) {
+    return config_.ped_gaussian_sigma();
+  } else if(ped_pdf_ != nullptr) {
+    double m = ped_sum_px_/ped_sum_p_;
+    return std::sqrt(ped_sum_pxx_/ped_sum_p_ - m*m);
+  } else {
+    throw std::runtime_error("LombardMartinPrescottMES::ped_rms_dc: no pedestal pdf specified");
+  }
 }
 
 double LombardMartinPrescottMES::ped_zero_dc()
 {
-  return ped_sum_px_/ped_sum_p_;
+  if(config_.use_gaussian_pedestal()) {
+    return config_.ped_gaussian_mean();
+  } else if(ped_pdf_ != nullptr) {
+    return ped_sum_px_/ped_sum_p_;
+  } else {
+    throw std::runtime_error("LombardMartinPrescottMES::ped_zero_dc: no pedestal pdf specified");
+  }
 }
 
 double LombardMartinPrescottMES::ses_mean_dc()
@@ -273,6 +318,12 @@ LombardMartinPrescottMES::default_config()
   config.set_free_intensity_rms_frac(false);
   config.set_on_off_ped_shift(0.0);
   config.set_free_on_off_ped_shift(false);
+  config.set_use_gaussian_pedestal(false);
+  config.set_ped_gaussian_mean(3000.0);
+  config.set_ped_gaussian_sigma(12.0);
+  config.set_free_ped_gaussian_mean(true);
+  config.set_free_ped_gaussian_sigma(true);
+
   config.set_precision(1e-10);
 
   return config;
@@ -280,18 +331,26 @@ LombardMartinPrescottMES::default_config()
 
 void LombardMartinPrescottMES::calculate_mes()
 {
-  unsigned mes_npoint = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
+  double sensitivity_inv = 1.0/config_.sensitivity();
 
+  bool ped_is_fft = false;
   uptr_fftw_data ped { nullptr, fftw_free };
-  if(ped_pdf_ != nullptr) {
+  if(config_.use_gaussian_pedestal()) {
+    ped.reset(fftw_alloc_real(mes_npoint_));
+    assert(ped);
+    ped_is_fft = true;
+    calin::math::fftw_util::hcvec_gaussian_dft(ped.get(),
+      (config_.ped_gaussian_mean() - x0_)*sensitivity_inv,
+      config_.ped_gaussian_sigma()*sensitivity_inv, mes_npoint_);
+  } else if(ped_pdf_ != nullptr) {
     ped_sum_p_ = 0;
     ped_sum_px_ = 0;
     ped_sum_pxx_ = 0;
 
     // FFT of pedestal
-    ped.reset(fftw_alloc_real(mes_npoint));
+    ped.reset(fftw_alloc_real(mes_npoint_));
     assert(ped);
-    for(unsigned ipoint=0; ipoint!=mes_npoint; ++ipoint) {
+    for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
       double x = mes_x(ipoint);
       double p = ped_pdf_->value_1d(x)*config_.sensitivity();
       ped.get()[ipoint] = p;
@@ -303,7 +362,7 @@ void LombardMartinPrescottMES::calculate_mes()
     // If there is no shift in the on & off pedestal position then store the
     // pedestal spectrum we calculated for later before doing FFT
     if(config_.on_off_ped_shift() == 0) {
-      rebin_spectrum(off_pmf_, ped.get(), mes_npoint);
+      rebin_spectrum(off_pmf_, ped.get(), mes_npoint_);
     }
   }
 
@@ -314,43 +373,47 @@ void LombardMartinPrescottMES::calculate_mes()
   pmt_resolution_ = pmt.resolution();
 
   Eigen::VectorXd mes;
-  mes = pmt.calc_mes(intensity_pe_, config_.intensity_rms_frac(), mes_npoint, ped.get());
+  mes = pmt.calc_mes(intensity_pe_, config_.intensity_rms_frac(), mes_npoint_, ped.get(), ped_is_fft);
 
-  rebin_spectrum(mes_pmf_, mes.data(), mes_npoint);
+  rebin_spectrum(mes_pmf_, mes.data(), mes_npoint_);
 
-  // If pedestal is defined and on/off shift is specified then calculate off spectrum
-  if(ped_pdf_ != nullptr and config_.on_off_ped_shift() != 0) {
-    for(unsigned ipoint=0; ipoint!=mes_npoint; ++ipoint) {
+  if(config_.use_gaussian_pedestal()) {
+    const double scale = 0.5/SQR(config_.ped_gaussian_sigma());
+    const double norm = 1.0/(sqrt(2*M_PI)*config_.ped_gaussian_sigma())*config_.sensitivity();
+    for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
+      const double x = off_x(ipoint) - config_.ped_gaussian_mean();
+      ped.get()[ipoint] = norm*std::exp(-SQR(x)*scale);
+    }
+    rebin_spectrum(off_pmf_, ped.get(), mes_npoint_);
+  } else if(ped_pdf_ != nullptr and config_.on_off_ped_shift() != 0) {
+    // If pedestal is defined and on/off shift is specified then calculate off spectrum
+    for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
       ped.get()[ipoint] = ped_pdf_->value_1d(off_x(ipoint))*config_.sensitivity();
     }
-    rebin_spectrum(off_pmf_, ped.get(), mes_npoint);
+    rebin_spectrum(off_pmf_, ped.get(), mes_npoint_);
   }
 }
 
 Eigen::VectorXd LombardMartinPrescottMES::ses_pmf() const
 {
-  unsigned mes_npoint = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
-
   calin::calib::pmt_ses_models::LombardMartinPrescottPMTModel pmt(config_.pmt(),
     config_.precision(), config_.fftw_planning());
 
   Eigen::VectorXd ses;
-  ses = pmt.calc_ses(mes_npoint);
+  ses = pmt.calc_ses(mes_npoint_);
 
   Eigen::VectorXd ses_pmf(npoint_);
-  rebin_spectrum(ses_pmf, ses.data(), mes_npoint);
+  rebin_spectrum(ses_pmf, ses.data(), mes_npoint_);
   return ses_pmf;
 }
 
 Eigen::VectorXd LombardMartinPrescottMES::ses_pmf_full_resolution() const
 {
-  unsigned mes_npoint = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
-
   calin::calib::pmt_ses_models::LombardMartinPrescottPMTModel pmt(config_.pmt(),
     config_.precision(), config_.fftw_planning());
 
   Eigen::VectorXd ses;
-  ses = pmt.calc_ses(mes_npoint);
+  ses = pmt.calc_ses(mes_npoint_);
 
   return ses;
 }

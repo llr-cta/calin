@@ -209,82 +209,113 @@ polya_pmf(double mean, double rms_frac, double precision)
   return pk;
 }
 
-Eigen::VectorXd LombardMartinPrescottPMTModel::calc_spectrum(unsigned npoint,
-  const std::vector<double>* pe_spec, const double* ped, bool ped_is_fft)
+void LombardMartinPrescottPMTModel::calc_spectrum(
+  Tableau& tableau, const std::vector<double>* pe_spec, const double* ped, bool ped_is_fft)
 {
   int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor_);
 
-  // Assign a buffer to hold DFT of SES / MES
-  uptr_fftw_data dft { fftw_alloc_real(npoint), fftw_free };
-  assert(dft);
-
-  // Assign a buffer to hold temporary data
-  uptr_fftw_data buffer { fftw_alloc_real(npoint), fftw_free };
-  assert(buffer);
-
-  // Temporarily make zero-padded copy of single n-stage PMF in the buffer
-  std::copy(stage_n_pmf_.begin(), stage_n_pmf_.end(), buffer.get());
-  std::fill(buffer.get()+stage_n_pmf_.size(), buffer.get()+npoint, 0.0);
-
-  // Do the out-of-place forward DFT transforming pmf to Fourier space in "dft"
-  uptr_fftw_plan fwd_plan = {
-    fftw_plan_r2r_1d(npoint, buffer.get(), dft.get(), FFTW_R2HC, plan_flags), fftw_destroy_plan };
-  assert(fwd_plan);
-  fftw_execute(fwd_plan.get());
-
   // Set up the convolutions
   std::vector<const std::vector<double>*> all_stages;
-  all_stages.reserve(config_.num_stage());
+  all_stages.reserve(config_.num_stage()+1);
 
-  // Do num_stage()-2 convolutions with the "n-stage" PMF
+  // Do num_stage()-1 convolutions with the "n-stage" PMF
   std::vector<double> stage_0_pmf_adjusted;
-  for(unsigned istage=0; istage<config_.num_stage()-2; istage++) {
+  for(unsigned istage=0; istage<config_.num_stage()-1; istage++) {
     all_stages.push_back(&stage_n_pmf_);
   }
 
   // Then convolve with stage 0 PMF (zero suppress adjusted if necessary)
   all_stages.push_back(&stage_0_pmf_zsa_);
 
-  // Finally convolve with the PE spectrum PMF
+  // Finally convolve with the PE spectrum PMF if given
   if(pe_spec != nullptr) {
     all_stages.push_back(pe_spec);
   }
 
   // Do the convolutions
-  hcvec_multi_stage_polynomial(dft.get(), dft.get(), all_stages, npoint);
+  hcvec_multi_stage_polynomial(tableau.dft.get(), tableau.basis_dft.get(),
+    all_stages, tableau.npoint);
 
   // If we have a pedestal then apply it
   if(ped != nullptr) {
     if(ped_is_fft) {
-      hcvec_scale_and_multiply(dft.get(), dft.get(), ped, npoint);
+      hcvec_scale_and_multiply(tableau.dft.get(), tableau.dft.get(),
+        ped, tableau.npoint);
     } else {
-      fftw_execute_r2r(fwd_plan.get(), (double*)ped, buffer.get());
-      hcvec_scale_and_multiply(dft.get(), dft.get(), buffer.get(), npoint);
+      uptr_fftw_plan fwd_plan = {
+        fftw_plan_r2r_1d(tableau.npoint, (double*)ped, tableau.pmf.get(),
+          FFTW_R2HC, plan_flags), fftw_destroy_plan };
+      assert(fwd_plan);
+      fftw_execute(fwd_plan.get());
+      hcvec_scale_and_multiply(tableau.dft.get(), tableau.dft.get(),
+        tableau.pmf.get(), tableau.npoint);
     }
   }
 
   // Prepare the inverse DFT
   uptr_fftw_plan bwd_plan = {
-    fftw_plan_r2r_1d(npoint, dft.get(), buffer.get(), FFTW_HC2R, plan_flags),
+    fftw_plan_r2r_1d(tableau.npoint, tableau.dft.get(), tableau.pmf.get(), FFTW_HC2R, plan_flags),
     fftw_destroy_plan };
   assert(bwd_plan);
   fftw_execute(bwd_plan.get());
 
   // Copy the spectrum to the output vector, normalizing for FFTW comventions
-  Eigen::VectorXd spec(npoint);
-  double norm = 1.0/double(npoint);
-  std::transform(buffer.get(), buffer.get()+npoint, spec.data(),
+  double norm = 1.0/double(tableau.npoint);
+  std::transform(tableau.pmf.get(), tableau.pmf.get()+tableau.npoint, tableau.pmf.get(),
     [norm](double x) { return x*norm; });
+}
 
-  return spec;
+void LombardMartinPrescottPMTModel::calc_ses(Tableau& tableau)
+{
+  calc_spectrum(tableau);
 }
 
 Eigen::VectorXd LombardMartinPrescottPMTModel::calc_ses(unsigned npoint)
 {
   if(npoint==0) {
-    npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4.0);
+    npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4);
   }
-  return calc_spectrum(npoint);
+  Tableau tableau(npoint);
+  calc_spectrum(tableau);
+  return tableau.pmf_as_vec();
+}
+
+void LombardMartinPrescottPMTModel::calc_mes(
+  Tableau& tableau, double mean, double rms_frac,
+  const double* ped, bool ped_is_fft)
+{
+  std::vector<double> pe_pmf = polya_pmf(mean, rms_frac, precision_);
+  calc_spectrum(tableau, &pe_pmf, ped, ped_is_fft);
+}
+
+void LombardMartinPrescottPMTModel::calc_mes(
+  Tableau& tableau, const std::vector<double>& pe_pmf,
+  const double* ped, bool ped_is_fft)
+{
+  calc_spectrum(tableau, &pe_pmf, ped, ped_is_fft);
+}
+
+Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
+  double mean, double rms_frac, unsigned npoint, const double* ped, bool ped_is_fft)
+{
+  if(npoint==0) {
+    throw std::runtime_error("LombardMartinPrescottPMTModel::calc_mes: npoint must be positive");
+  }
+  std::vector<double> pe_pmf = polya_pmf(mean, rms_frac, precision_);
+  Tableau tableau(npoint);
+  calc_spectrum(tableau, &pe_pmf, ped, ped_is_fft);
+  return tableau.pmf_as_vec();
+}
+
+Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
+  const std::vector<double>& pe_pmf, unsigned npoint, const double* ped, bool ped_is_fft)
+{
+  if(npoint==0) {
+    throw std::runtime_error("LombardMartinPrescottPMTModel::calc_mes: npoint must be positive");
+  }
+  Tableau tableau(npoint);
+  calc_spectrum(tableau, &pe_pmf, ped, ped_is_fft);
+  return tableau.pmf_as_vec();
 }
 
 Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
@@ -293,52 +324,38 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
   if(npoint==0) {
     npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4 * mean);
   }
-  std::vector<double> pe_pmf = polya_pmf(mean, rms_frac, precision_);
-  return calc_spectrum(npoint, &pe_pmf);
+  return calc_mes(mean, rms_frac, npoint, nullptr, false);
 }
 
 Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
   const std::vector<double>& pe_pmf, unsigned npoint)
 {
-  double mean = 0;
-  for(unsigned ipe=0; ipe<pe_pmf.size(); ipe++) {
-    mean += pe_pmf[ipe]*ipe;
-  }
   if(npoint==0) {
+    double mean = 0;
+    for(unsigned ipe=0; ipe<pe_pmf.size(); ipe++) {
+      mean += pe_pmf[ipe]*ipe;
+    }
     npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4 * mean);
   }
-  return calc_spectrum(npoint, &pe_pmf);
-}
-
-Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
-  double mean, double rms_frac, unsigned npoint, const double* ped, bool ped_is_fft)
-{
-  std::vector<double> pe_pmf = polya_pmf(mean, rms_frac, precision_);
-  return calc_spectrum(npoint, &pe_pmf, ped, ped_is_fft);
-}
-
-Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
-  const std::vector<double>& pe_pmf, unsigned npoint, const double* ped, bool ped_is_fft)
-{
-  return calc_spectrum(npoint, &pe_pmf, ped, ped_is_fft);
+  return calc_mes(pe_pmf, npoint, nullptr, false);
 }
 
 Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
   double mean, double rms_frac, const Eigen::VectorXd& ped, bool ped_is_fft)
 {
-  std::vector<double> pe_pmf = polya_pmf(mean, rms_frac, precision_);
   // Assign a buffer to hold (properly aligned) pedestal data
   uptr_fftw_data ped_copy { fftw_alloc_real(ped.size()), fftw_free };
   assert(ped_copy);
   std::copy(ped.data(), ped.data()+ped.size(), ped_copy.get());
-  return calc_spectrum(ped.size(), &pe_pmf, ped_copy.get(), ped_is_fft);
+  return calc_mes(mean, rms_frac, ped.size(), ped_copy.get(), ped_is_fft);
 }
 
 Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
   const std::vector<double>& pe_pmf, const Eigen::VectorXd& ped, bool ped_is_fft)
 {
+  // Assign a buffer to hold (properly aligned) pedestal data
   uptr_fftw_data ped_copy { fftw_alloc_real(ped.size()), fftw_free };
   assert(ped_copy);
   std::copy(ped.data(), ped.data()+ped.size(), ped_copy.get());
-  return calc_spectrum(ped.size(), &pe_pmf, ped_copy.get(), ped_is_fft);
+  return calc_mes(pe_pmf, ped.size(), ped_copy.get(), ped_is_fft);
 }

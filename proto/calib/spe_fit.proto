@@ -99,6 +99,19 @@ message LombardMartinPrescottMESConfig {
     (CFO).desc = "Treat \"on_off_ped_shift\" as a free parameter; the shift "
       "between the on and off pedestal distributions." ];
 
+  bool use_gaussian_pedestal                               = 24 [
+    (CFO).desc = "Use internal Gaussian pedestal model." ];
+  double ped_gaussian_mean                                 = 25 [
+    (CFO).desc = "Mean of Gaussian pedestal model." ];
+  double ped_gaussian_sigma                                = 26 [
+    (CFO).desc = "RMS of Gaussian pedestal model." ];
+  bool free_ped_gaussian_mean                              = 27 [
+    (CFO).desc = "Treat \"free_ped_gaussian_mean\" as a free parameter; "
+      "mean of Gaussian pedestal model." ];
+  bool free_ped_gaussian_sigma                             = 28 [
+    (CFO).desc = "Treat \"free_ped_gaussian_sigma\" as a free parameter; "
+      "RMS of Gaussian pedestal model." ];
+
   double precision                                         = 30 [
     (CFO).desc = "Precision to use in PMF for number of electrons generated at "
       "each pf the stages, and at the photo-cathode." ];

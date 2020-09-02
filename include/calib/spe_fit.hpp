@@ -36,6 +36,7 @@
 #include "math/m_estimate.hpp"
 #include "math/data_modeling.hpp"
 #include "calib/spe_fit.pb.h"
+#include "math/fftw_util.hpp"
 
 namespace calin { namespace calib { namespace spe_fit {
 
@@ -464,7 +465,12 @@ private:
   calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig config_;
   double x0_;
   double dx_inv_ = 0.0;
+
   unsigned npoint_;
+  unsigned mes_npoint_;
+
+  calin::math::fftw_util::uptr_fftw_data ped_ { nullptr, fftw_free };
+
   double intensity_pe_ = 1.0;
   calin::math::function::ParameterizableSingleAxisFunction* ped_pdf_ = nullptr;
   bool adopt_ped_pdf_ = false;

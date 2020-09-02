@@ -101,6 +101,31 @@ private:
 
 class LombardMartinPrescottPMTModel {
 public:
+  struct Tableau {
+    Tableau(unsigned npoint_): npoint(npoint_),
+      pmf(fftw_alloc_real(npoint), fftw_free),
+      dft(fftw_alloc_real(npoint), fftw_free),
+      basis_dft(fftw_alloc_real(npoint), fftw_free)
+    {
+      calin::math::fftw_util::hcvec_delta_dft(basis_dft.get(), 1, npoint);
+    }
+    Eigen::VectorXd pmf_as_vec() const {
+      Eigen::VectorXd outvec(npoint);
+      std::copy(pmf.get(), pmf.get()+npoint, outvec.data());
+      return outvec;
+    }
+    Eigen::VectorXd dft_as_vec() const {
+      Eigen::VectorXd outvec(npoint);
+      std::copy(dft.get(), dft.get()+npoint, outvec.data());
+      return outvec;
+    }
+
+    unsigned npoint;
+    calin::math::fftw_util::uptr_fftw_data pmf;
+    calin::math::fftw_util::uptr_fftw_data dft;
+    calin::math::fftw_util::uptr_fftw_data basis_dft;
+  };
+
   LombardMartinPrescottPMTModel(
     const calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig& config,
     double precision = 1e-10,
@@ -121,22 +146,32 @@ public:
   double stage_0_Exx() const { return stage_0_Exx_; }
   double stage_n_Exx() const { return stage_n_Exx_; }
 
+  void calc_ses(Tableau& tableau);
   Eigen::VectorXd calc_ses(unsigned npoint = 0);
-  Eigen::VectorXd calc_mes(double mean, double rms_frac, unsigned npoint = 0);
-  Eigen::VectorXd calc_mes(const std::vector<double>& pe_pmf, unsigned npoint = 0);
+
 #ifndef SWIG
+  void calc_mes(Tableau& tableau, double mean, double rms_frac,
+    const double* ped, bool ped_is_fft=false);
+  void calc_mes(Tableau& tableau, const std::vector<double>& pe_pmf,
+    const double* ped, bool ped_is_fft=false);
+
   Eigen::VectorXd calc_mes(double mean, double rms_frac, unsigned npoint,
     const double* ped, bool ped_is_fft=false);
   Eigen::VectorXd calc_mes(const std::vector<double>& pe_pmf, unsigned npoint,
     const double* ped, bool ped_is_fft=false);
 #endif
+
+  Eigen::VectorXd calc_mes(double mean, double rms_frac, unsigned npoint = 0);
+  Eigen::VectorXd calc_mes(const std::vector<double>& pe_pmf, unsigned npoint = 0);
+
   Eigen::VectorXd calc_mes(double mean, double rms_frac, const Eigen::VectorXd& ped,
     bool ped_is_fft=false);
   Eigen::VectorXd calc_mes(const std::vector<double>& pe_pmf, const Eigen::VectorXd& ped,
     bool ped_is_fft=false);
 
 private:
-  Eigen::VectorXd calc_spectrum(unsigned npoint, const std::vector<double>* pe_spec = nullptr,
+  void calc_spectrum(Tableau& tableau,
+    const std::vector<double>* pe_spec = nullptr,
     const double* ped = nullptr, bool ped_is_fft = false);
   void set_stage_n_gain(double stage_n_gain);
 
