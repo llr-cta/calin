@@ -804,7 +804,7 @@ void hcvec_gaussian_dft_vcl(typename VCLReal::real_t* ovec,
 
   typename VCLReal::real_t nsample_inv = 1.0/typename VCLReal::real_t(nsample);
   typename VCLReal::real_t scale = 2.0*calin::math::special::SQR(M_PI*sigma*nsample_inv);
-  typename VCLReal::real_t phase = 2*M_PI*mean*nsample_inv;
+  typename VCLReal::real_t phase = -2*M_PI*mean*nsample_inv;
 
   // Evaluate the zero frequency (real-only) component
   (*ro++) = 1.0;
@@ -821,7 +821,7 @@ void hcvec_gaussian_dft_vcl(typename VCLReal::real_t* ovec,
     c *= amp;
     s *= amp;
 
-    s = -calin::util::vcl::reverse(s);
+    s = calin::util::vcl::reverse(s);
 
     x += VCLReal::num_real;
 
@@ -843,7 +843,7 @@ void hcvec_gaussian_dft_vcl(typename VCLReal::real_t* ovec,
     typename VCLReal::real_t c = std::cos(x);
     typename VCLReal::real_t s = std::sin(x);
     (*ro++) = amp*c;
-    (*co--) = -amp*s;
+    (*co--) = amp*s;
   }
 
   if(ro==co) {
