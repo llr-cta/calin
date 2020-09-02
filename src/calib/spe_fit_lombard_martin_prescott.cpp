@@ -338,7 +338,7 @@ void LombardMartinPrescottMES::calculate_mes()
   if(config_.use_gaussian_pedestal()) {
     ped_is_fft = true;
     calin::math::fftw_util::hcvec_gaussian_dft(ped_.get(),
-      (config_.ped_gaussian_mean() - x0_)*sensitivity_inv,
+      (config_.ped_gaussian_mean() - x0_ + 0.5*config_.dx())*sensitivity_inv,
       config_.ped_gaussian_sigma()*sensitivity_inv, mes_npoint_);
   } else if(ped_pdf_ != nullptr) {
     ped_sum_p_ = 0;
