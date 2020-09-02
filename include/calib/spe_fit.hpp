@@ -37,6 +37,7 @@
 #include "math/data_modeling.hpp"
 #include "calib/spe_fit.pb.h"
 #include "math/fftw_util.hpp"
+#include <calib/pmt_ses_models.hpp>
 
 namespace calin { namespace calib { namespace spe_fit {
 
@@ -469,6 +470,7 @@ private:
   unsigned npoint_;
   unsigned mes_npoint_;
 
+  mutable calin::calib::pmt_ses_models::LombardMartinPrescottPMTModel::Tableau tableau_;
   calin::math::fftw_util::uptr_fftw_data ped_ { nullptr, fftw_free };
 
   double intensity_pe_ = 1.0;

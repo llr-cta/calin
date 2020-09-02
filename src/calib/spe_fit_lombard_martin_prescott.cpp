@@ -46,9 +46,10 @@ LombardMartinPrescottMES(double x0, unsigned npoint,
     const calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig& config,
     bool adopt_ped_pdf):
   MultiElectronSpectrum(), config_(config), x0_(x0), dx_inv_(1.0/config.dx()), npoint_(npoint),
+  mes_npoint_(round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1)),
+  tableau_(mes_npoint_),
   ped_pdf_(ped_pdf), adopt_ped_pdf_(adopt_ped_pdf), mes_pmf_(npoint), off_pmf_(npoint)
 {
-  mes_npoint_ = round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1);
   if(config_.use_gaussian_pedestal() or ped_pdf!=nullptr) {
     ped_.reset(fftw_alloc_real(mes_npoint_));
     if(!ped_) {
@@ -334,12 +335,9 @@ void LombardMartinPrescottMES::calculate_mes()
   double sensitivity_inv = 1.0/config_.sensitivity();
 
   bool ped_is_fft = false;
-  uptr_fftw_data ped { nullptr, fftw_free };
   if(config_.use_gaussian_pedestal()) {
-    ped.reset(fftw_alloc_real(mes_npoint_));
-    assert(ped);
     ped_is_fft = true;
-    calin::math::fftw_util::hcvec_gaussian_dft(ped.get(),
+    calin::math::fftw_util::hcvec_gaussian_dft(ped_.get(),
       (config_.ped_gaussian_mean() - x0_)*sensitivity_inv,
       config_.ped_gaussian_sigma()*sensitivity_inv, mes_npoint_);
   } else if(ped_pdf_ != nullptr) {
@@ -348,12 +346,10 @@ void LombardMartinPrescottMES::calculate_mes()
     ped_sum_pxx_ = 0;
 
     // FFT of pedestal
-    ped.reset(fftw_alloc_real(mes_npoint_));
-    assert(ped);
     for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
       double x = mes_x(ipoint);
       double p = ped_pdf_->value_1d(x)*config_.sensitivity();
-      ped.get()[ipoint] = p;
+      ped_.get()[ipoint] = p;
       ped_sum_p_ += p;
       ped_sum_px_ += p*x;
       ped_sum_pxx_ += p*x*x;
@@ -362,7 +358,7 @@ void LombardMartinPrescottMES::calculate_mes()
     // If there is no shift in the on & off pedestal position then store the
     // pedestal spectrum we calculated for later before doing FFT
     if(config_.on_off_ped_shift() == 0) {
-      rebin_spectrum(off_pmf_, ped.get(), mes_npoint_);
+      rebin_spectrum(off_pmf_, ped_.get(), mes_npoint_);
     }
   }
 
@@ -372,25 +368,24 @@ void LombardMartinPrescottMES::calculate_mes()
   pmt_total_gain_ = pmt.total_gain();
   pmt_resolution_ = pmt.resolution();
 
-  Eigen::VectorXd mes;
-  mes = pmt.calc_mes(intensity_pe_, config_.intensity_rms_frac(), mes_npoint_, ped.get(), ped_is_fft);
+  pmt.calc_mes(tableau_, intensity_pe_, config_.intensity_rms_frac(), ped_.get(), ped_is_fft);
 
-  rebin_spectrum(mes_pmf_, mes.data(), mes_npoint_);
+  rebin_spectrum(mes_pmf_, tableau_.pmf.get(), mes_npoint_);
 
   if(config_.use_gaussian_pedestal()) {
     const double scale = 0.5/SQR(config_.ped_gaussian_sigma());
     const double norm = 1.0/(sqrt(2*M_PI)*config_.ped_gaussian_sigma())*config_.sensitivity();
     for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
       const double x = off_x(ipoint) - config_.ped_gaussian_mean();
-      ped.get()[ipoint] = norm*std::exp(-SQR(x)*scale);
+      ped_.get()[ipoint] = norm*std::exp(-SQR(x)*scale);
     }
-    rebin_spectrum(off_pmf_, ped.get(), mes_npoint_);
+    rebin_spectrum(off_pmf_, ped_.get(), mes_npoint_);
   } else if(ped_pdf_ != nullptr and config_.on_off_ped_shift() != 0) {
     // If pedestal is defined and on/off shift is specified then calculate off spectrum
     for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
-      ped.get()[ipoint] = ped_pdf_->value_1d(off_x(ipoint))*config_.sensitivity();
+      ped_.get()[ipoint] = ped_pdf_->value_1d(off_x(ipoint))*config_.sensitivity();
     }
-    rebin_spectrum(off_pmf_, ped.get(), mes_npoint_);
+    rebin_spectrum(off_pmf_, ped_.get(), mes_npoint_);
   }
 }
 
@@ -399,11 +394,10 @@ Eigen::VectorXd LombardMartinPrescottMES::ses_pmf() const
   calin::calib::pmt_ses_models::LombardMartinPrescottPMTModel pmt(config_.pmt(),
     config_.precision(), config_.fftw_planning());
 
-  Eigen::VectorXd ses;
-  ses = pmt.calc_ses(mes_npoint_);
+  pmt.calc_ses(tableau_);
 
   Eigen::VectorXd ses_pmf(npoint_);
-  rebin_spectrum(ses_pmf, ses.data(), mes_npoint_);
+  rebin_spectrum(ses_pmf, tableau_.pmf.get(), mes_npoint_);
   return ses_pmf;
 }
 
@@ -412,10 +406,8 @@ Eigen::VectorXd LombardMartinPrescottMES::ses_pmf_full_resolution() const
   calin::calib::pmt_ses_models::LombardMartinPrescottPMTModel pmt(config_.pmt(),
     config_.precision(), config_.fftw_planning());
 
-  Eigen::VectorXd ses;
-  ses = pmt.calc_ses(mes_npoint_);
-
-  return ses;
+  pmt.calc_ses(tableau_);
+  return tableau_.pmf_as_vec();
 }
 
 void LombardMartinPrescottMES::
