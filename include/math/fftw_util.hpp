@@ -863,6 +863,126 @@ void hcvec_gaussian_dft(double* ovec, double mean, double sigma, unsigned nsampl
 // *****************************************************************************
 // *****************************************************************************
 //
+// Analytic DFT of Double-Gaussian
+//
+// *****************************************************************************
+// *****************************************************************************
+
+template<typename T>
+void hcvec_2gaussian_dft(T* ovec, T mean, T sigma, T split, unsigned nsample)
+{
+  T *ro = ovec;
+  T *co = ovec + nsample-1;
+
+  T nsample_inv = 1.0/T(nsample);
+  T scale = 2.0*calin::math::special::SQR(M_PI*sigma*nsample_inv);
+  T phase1 = -2*M_PI*(mean-0.5*split)*nsample_inv;
+  T phase2 = -2*M_PI*(mean+0.5*split)*nsample_inv;
+
+  (*ro++) = 1.0;
+
+  while(ro < co)
+  {
+    T x = T(ro-ovec);
+    T amp = 0.5*std::exp(-calin::math::special::SQR(x) * scale);
+    T x1 = x*phase1;
+    T c = std::cos(x1);
+    T s = std::sin(x1);
+    T x2 = x*phase2;
+    c += std::cos(x2);
+    s += std::sin(x2);
+    (*ro++) = amp*c;
+    (*co--) = amp*s;
+  }
+
+  if(ro==co) {
+    T x = T(ro-ovec);
+    T amp = 0.5*std::exp(-calin::math::special::SQR(x) * scale);
+    T x1 = x*phase1;
+    T c = std::cos(x1);
+    T x2 = x*phase2;
+    c += std::cos(x2);
+    (*ro++) = amp*c;
+  }
+}
+
+template<typename VCLReal>
+void hcvec_2gaussian_dft_vcl(typename VCLReal::real_t* ovec,
+  typename VCLReal::real_t mean, typename VCLReal::real_t sigma, typename VCLReal::real_t split, unsigned nsample)
+{
+  // No user servicable parts inside
+
+  typename VCLReal::real_t* ro = ovec;
+  typename VCLReal::real_t* co = ovec + nsample;
+
+  typename VCLReal::real_t nsample_inv = 1.0/typename VCLReal::real_t(nsample);
+  typename VCLReal::real_t scale = 2.0*calin::math::special::SQR(M_PI*sigma*nsample_inv);
+  typename VCLReal::real_t phase1 = -2*M_PI*(mean-0.5*split)*nsample_inv;
+  typename VCLReal::real_t phase2 = -2*M_PI*(mean+0.5*split)*nsample_inv;
+
+  // Evaluate the zero frequency (real-only) component
+  (*ro++) = 1.0;
+
+  // Evaluate AVX vectors of real and complex compnents (i.e. num_real
+  // frequencies) using vector types
+  typename VCLReal::real_vt x = VCLReal::iota() + 1.0;
+  while(co - ro >= 2*VCLReal::num_real)
+  {
+    typename VCLReal::real_vt amp = 0.5*vcl::exp(-x*x*scale);
+    typename VCLReal::real_vt c1;
+    typename VCLReal::real_vt s1 = vcl::sincos(&c1, x*phase1);
+    typename VCLReal::real_vt c2;
+    typename VCLReal::real_vt s2 = vcl::sincos(&c2, x*phase2);
+
+    c1 = amp*(c1 + c2);
+    s1 = amp*(s1 + s2);
+    s1 = calin::util::vcl::reverse(s1);
+
+    x += VCLReal::num_real;
+
+    c1.store(ro);
+    ro += VCLReal::num_real;
+
+    co -= VCLReal::num_real;
+    s1.store(co);
+  }
+
+  // Evaluate any remaining real & complex frequencies that don't fit into a vector
+  --co;
+
+  while(ro < co)
+  {
+    typename VCLReal::real_t x = typename VCLReal::real_t(ro-ovec);
+    typename VCLReal::real_t amp = 0.5*std::exp(-calin::math::special::SQR(x) * scale);
+    typename VCLReal::real_t x1 = x*phase1;
+    typename VCLReal::real_t c = std::cos(x1);
+    typename VCLReal::real_t s = std::sin(x1);
+    typename VCLReal::real_t x2 = x*phase2;
+    c += std::cos(x2);
+    s += std::sin(x2);
+    (*ro++) = amp*c;
+    (*co--) = amp*s;
+  }
+
+  if(ro==co) {
+    typename VCLReal::real_t x = typename VCLReal::real_t(ro-ovec);
+    typename VCLReal::real_t amp = 0.5*std::exp(-calin::math::special::SQR(x) * scale);
+    typename VCLReal::real_t x1 = x*phase1;
+    typename VCLReal::real_t c = std::cos(x1);
+    typename VCLReal::real_t x2 = x*phase2;
+    c += std::cos(x2);
+    (*ro++) = amp*c;
+  }
+}
+
+// NOTE : This function overrides the template for systems with AVX !!!
+#if INSTRSET >= 7
+void hcvec_2gaussian_dft(double* ovec, double mean, double sigma, double split, unsigned nsample);
+#endif
+
+// *****************************************************************************
+// *****************************************************************************
+//
 // Analytic DFT of Delta(x-x0)
 //
 // *****************************************************************************
@@ -969,6 +1089,7 @@ double hcvec_sum_real(const Eigen::VectorXd& ivec);
 double hcvec_avg_real(const Eigen::VectorXd& ivec);
 Eigen::VectorXd hcvec_scale_and_add_real(const Eigen::VectorXd& ivec, double scale, double real_addand);
 Eigen::VectorXd hcvec_gaussian_dft(double mean, double sigma, unsigned nsample, bool vcl = true);
+Eigen::VectorXd hcvec_2gaussian_dft(double mean, double sigma, double split, unsigned nsample, bool vcl = true);
 Eigen::VectorXd hcvec_delta_dft(double x0, unsigned nsample, bool vcl = true);
 
 Eigen::VectorXd fftw_r2hc(const Eigen::VectorXd& x,

@@ -55,6 +55,12 @@ void calin::math::fftw_util::hcvec_gaussian_dft(double* ovec, double mean, doubl
   hcvec_gaussian_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, mean, sigma, nsample);
 }
 
+void calin::math::fftw_util::hcvec_2gaussian_dft(double* ovec, double mean, double sigma, double split, unsigned nsample)
+{
+  hcvec_2gaussian_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, mean, sigma, split, nsample);
+  // hcvec_gaussian_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, mean, sigma, nsample);
+}
+
 void calin::math::fftw_util::hcvec_delta_dft(double* ovec, double x0, unsigned nsample)
 {
   hcvec_delta_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, x0, nsample);
@@ -133,6 +139,17 @@ Eigen::VectorXd calin::math::fftw_util::hcvec_gaussian_dft(double mean, double s
     hcvec_gaussian_dft(ovec.data(), mean, sigma, nsample);
   } else {
     hcvec_gaussian_dft<double>(ovec.data(), mean, sigma, nsample);
+  }
+  return ovec;
+}
+
+Eigen::VectorXd calin::math::fftw_util::hcvec_2gaussian_dft(double mean, double sigma, double split, unsigned nsample, bool vcl)
+{
+  Eigen::VectorXd ovec(nsample);
+  if(vcl) {
+    hcvec_2gaussian_dft(ovec.data(), mean, sigma, split, nsample);
+  } else {
+    hcvec_2gaussian_dft<double>(ovec.data(), mean, sigma, split, nsample);
   }
   return ovec;
 }
