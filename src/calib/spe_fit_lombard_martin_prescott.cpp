@@ -79,6 +79,7 @@ unsigned LombardMartinPrescottMES::num_parameters()
     if(config_.free_on_off_ped_shift()) { ++nparam; }
     if(config_.free_ped_gaussian_mean()) { ++nparam; }
     if(config_.free_ped_gaussian_sigma()) { ++nparam; }
+    if(config_.free_ped_2gaussian_split()) { ++nparam; }
   } else if(ped_pdf_) {
     if(config_.free_on_off_ped_shift()) { ++nparam; }
     nparam += ped_pdf_->num_parameters();
@@ -115,6 +116,8 @@ LombardMartinPrescottMES::parameters()
       pvec.push_back({ "ped_gaussian_mean", "DC", false, -inf, false, inf }); }
     if(config_.free_ped_gaussian_sigma()) {
       pvec.push_back({ "ped_gaussian_sigma", "DC", true, 0, false, inf }); }
+    if(config_.free_ped_2gaussian_split()) {
+      pvec.push_back({ "ped_2gaussian_split", "DC", true, 0, false, inf }); }
   } else if(ped_pdf_) {
     if(config_.free_on_off_ped_shift()) {
       pvec.push_back({ "on_off_ped_shift", "1", false, -inf, false, inf }); }
@@ -153,6 +156,8 @@ Eigen::VectorXd LombardMartinPrescottMES::parameter_values()
       param[iparam++] = config_.ped_gaussian_mean(); }
     if(config_.free_ped_gaussian_sigma()) {
       param[iparam++] = config_.ped_gaussian_sigma(); }
+    if(config_.free_ped_2gaussian_split()) {
+      param[iparam++] = config_.ped_2gaussian_split(); }
   } else if(ped_pdf_) {
     if(config_.free_on_off_ped_shift()) {
       param[iparam++] = config_.on_off_ped_shift(); }
@@ -191,6 +196,8 @@ void LombardMartinPrescottMES::set_parameter_values(ConstVecRef values)
       config_.set_ped_gaussian_mean(values[iparam++]); }
     if(config_.free_ped_gaussian_sigma()) {
       config_.set_ped_gaussian_sigma(values[iparam++]); }
+    if(config_.free_ped_2gaussian_split()) {
+      config_.set_ped_2gaussian_split(values[iparam++]); }
   } else if(ped_pdf_) {
     if(config_.free_on_off_ped_shift()) {
       config_.set_on_off_ped_shift(values[iparam++]); }
@@ -324,6 +331,8 @@ LombardMartinPrescottMES::default_config()
   config.set_ped_gaussian_sigma(12.0);
   config.set_free_ped_gaussian_mean(true);
   config.set_free_ped_gaussian_sigma(true);
+  config.set_ped_2gaussian_split(0.0);
+  config.set_free_ped_2gaussian_split(false);
 
   config.set_precision(1e-10);
 
@@ -337,9 +346,17 @@ void LombardMartinPrescottMES::calculate_mes()
   bool ped_is_fft = false;
   if(config_.use_gaussian_pedestal()) {
     ped_is_fft = true;
-    calin::math::fftw_util::hcvec_gaussian_dft(ped_.get(),
-      (config_.ped_gaussian_mean() - x0_ + 0.5*config_.dx())*sensitivity_inv,
-      config_.ped_gaussian_sigma()*sensitivity_inv, mes_npoint_);
+    if(config_.ped_2gaussian_split() != 0) {
+      calin::math::fftw_util::hcvec_2gaussian_dft(ped_.get(),
+        (config_.ped_gaussian_mean() - x0_ + 0.5*config_.dx())*sensitivity_inv,
+        config_.ped_gaussian_sigma()*sensitivity_inv,
+        config_.ped_2gaussian_split()*sensitivity_inv,
+        mes_npoint_);
+    } else {
+      calin::math::fftw_util::hcvec_gaussian_dft(ped_.get(),
+        (config_.ped_gaussian_mean() - x0_ + 0.5*config_.dx())*sensitivity_inv,
+        config_.ped_gaussian_sigma()*sensitivity_inv, mes_npoint_);
+    }
   } else if(ped_pdf_ != nullptr) {
     ped_sum_p_ = 0;
     ped_sum_px_ = 0;
@@ -374,10 +391,19 @@ void LombardMartinPrescottMES::calculate_mes()
 
   if(config_.use_gaussian_pedestal()) {
     const double scale = 0.5/SQR(config_.ped_gaussian_sigma());
-    const double norm = 1.0/(sqrt(2*M_PI)*config_.ped_gaussian_sigma())*config_.sensitivity();
-    for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
-      const double x = off_x(ipoint) - config_.ped_gaussian_mean();
-      ped_.get()[ipoint] = norm*std::exp(-SQR(x)*scale);
+    if(config_.ped_2gaussian_split() != 0) {
+      const double norm = 0.5/(sqrt(2*M_PI)*config_.ped_gaussian_sigma())*config_.sensitivity();
+      for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
+        const double x1 = off_x(ipoint) - config_.ped_gaussian_mean() + 0.5*config_.ped_2gaussian_split();
+        const double x2 = off_x(ipoint) - config_.ped_gaussian_mean() - 0.5*config_.ped_2gaussian_split();
+        ped_.get()[ipoint] = norm*(std::exp(-SQR(x1)*scale) + std::exp(-SQR(x2)*scale));
+      }
+    } else {
+      const double norm = 1.0/(sqrt(2*M_PI)*config_.ped_gaussian_sigma())*config_.sensitivity();
+      for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
+        const double x = off_x(ipoint) - config_.ped_gaussian_mean();
+        ped_.get()[ipoint] = norm*std::exp(-SQR(x)*scale);
+      }
     }
     rebin_spectrum(off_pmf_, ped_.get(), mes_npoint_);
   } else if(ped_pdf_ != nullptr and config_.on_off_ped_shift() != 0) {

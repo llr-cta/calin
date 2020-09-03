@@ -106,16 +106,21 @@ message LombardMartinPrescottMESConfig {
   double ped_gaussian_sigma                                = 26 [
     (CFO).desc = "RMS of Gaussian pedestal model." ];
   bool free_ped_gaussian_mean                              = 27 [
-    (CFO).desc = "Treat \"free_ped_gaussian_mean\" as a free parameter; "
+    (CFO).desc = "Treat \"ped_gaussian_mean\" as a free parameter; "
       "mean of Gaussian pedestal model." ];
   bool free_ped_gaussian_sigma                             = 28 [
-    (CFO).desc = "Treat \"free_ped_gaussian_sigma\" as a free parameter; "
+    (CFO).desc = "Treat \"ped_gaussian_sigma\" as a free parameter; "
       "RMS of Gaussian pedestal model." ];
+  double ped_2gaussian_split                               = 29 [
+    (CFO).desc = "Split between peaks of two pedestal Gaussians." ];
+  bool free_ped_2gaussian_split                            = 30 [
+    (CFO).desc = "Treat \"ped_2gaussian_split\" as a free parameter; "
+      "split between peaks of two pedestal Gaussians." ];
 
-  double precision                                         = 30 [
+  double precision                                         = 40 [
     (CFO).desc = "Precision to use in PMF for number of electrons generated at "
       "each pf the stages, and at the photo-cathode." ];
 
-  calin.ix.math.fftw_util.FFTWPlanningRigor fftw_planning  = 31 [
+  calin.ix.math.fftw_util.FFTWPlanningRigor fftw_planning  = 41 [
     (CFO).desc = "FFTW planning rigor to use." ];
 };
