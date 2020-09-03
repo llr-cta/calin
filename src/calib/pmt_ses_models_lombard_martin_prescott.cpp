@@ -219,7 +219,6 @@ void LombardMartinPrescottPMTModel::calc_spectrum(
   all_stages.reserve(config_.num_stage()+1);
 
   // Do num_stage()-1 convolutions with the "n-stage" PMF
-  std::vector<double> stage_0_pmf_adjusted;
   for(unsigned istage=0; istage<config_.num_stage()-1; istage++) {
     all_stages.push_back(&stage_n_pmf_);
   }
