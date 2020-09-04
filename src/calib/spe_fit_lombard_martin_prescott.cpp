@@ -267,7 +267,7 @@ double LombardMartinPrescottMES::intensity_pe()
 double LombardMartinPrescottMES::ped_rms_dc()
 {
   if(config_.use_gaussian_pedestal()) {
-    return config_.ped_gaussian_sigma();
+    return std::sqrt(SQR(config_.ped_gaussian_sigma()) + 0.25*SQR(config_.ped_2gaussian_split()));
   } else if(ped_pdf_ != nullptr) {
     double m = ped_sum_px_/ped_sum_p_;
     return std::sqrt(ped_sum_pxx_/ped_sum_p_ - m*m);
@@ -392,14 +392,14 @@ void LombardMartinPrescottMES::calculate_mes()
   if(config_.use_gaussian_pedestal()) {
     const double scale = 0.5/SQR(config_.ped_gaussian_sigma());
     if(config_.ped_2gaussian_split() != 0) {
-      const double norm = 0.5/(sqrt(2*M_PI)*config_.ped_gaussian_sigma())*config_.sensitivity();
+      const double norm = std::abs(0.5/(sqrt(2*M_PI)*config_.ped_gaussian_sigma())*config_.sensitivity());
       for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
         const double x1 = off_x(ipoint) - config_.ped_gaussian_mean() + 0.5*config_.ped_2gaussian_split();
         const double x2 = off_x(ipoint) - config_.ped_gaussian_mean() - 0.5*config_.ped_2gaussian_split();
         ped_.get()[ipoint] = norm*(std::exp(-SQR(x1)*scale) + std::exp(-SQR(x2)*scale));
       }
     } else {
-      const double norm = 1.0/(sqrt(2*M_PI)*config_.ped_gaussian_sigma())*config_.sensitivity();
+      const double norm = std::abs(1.0/(sqrt(2*M_PI)*config_.ped_gaussian_sigma())*config_.sensitivity());
       for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
         const double x = off_x(ipoint) - config_.ped_gaussian_mean();
         ped_.get()[ipoint] = norm*std::exp(-SQR(x)*scale);
