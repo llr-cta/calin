@@ -91,7 +91,8 @@ private:
       opt_win_qtsum(calin::math::histogram::new_histogram_if_enabled(config.opt_win_qtsum())),
       opt_win_index(calin::math::histogram::new_histogram_if_enabled(config.opt_win_index())),
       ped_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.ped_win_qsum())),
-      sig_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.sig_win_qsum()))
+      sig_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.sig_win_qsum())),
+      sig_ped_qsum_diff(calin::math::histogram::new_histogram_if_enabled(config.sig_ped_qsum_diff()))
     {
       /* nothing to see here */
     }
@@ -105,6 +106,7 @@ private:
       delete opt_win_index;
       delete ped_win_qsum;
       delete sig_win_qsum;
+      delete sig_ped_qsum_diff;
     }
 
     calin::math::histogram::Histogram1D* full_wf_qsum = nullptr;
@@ -115,6 +117,7 @@ private:
     calin::math::histogram::Histogram1D* opt_win_index = nullptr;
     calin::math::histogram::Histogram1D* ped_win_qsum = nullptr;
     calin::math::histogram::Histogram1D* sig_win_qsum = nullptr;
+    calin::math::histogram::Histogram1D* sig_ped_qsum_diff = nullptr;
   };
 
   struct DualGainChannelHists {

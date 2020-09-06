@@ -56,6 +56,9 @@ message SingleGainSimpleChargeHistsConfig {
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig sig_win_qsum = 17 [
     (CFO).desc = "Configuration for fixed signal-window charge sum." ];
 
+  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig sig_ped_qsum_diff = 18 [
+    (CFO).desc = "Configuration for difference between fixed signal and pedestal-window charge sum." ];
+
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig nchan_present = 20 [
     (CFO).desc = "Configuration for number of channels present in image." ];
 };
@@ -108,6 +111,10 @@ message OneGainSimpleChargeHists {
 
   calin.ix.math.histogram.Histogram1DData sig_win_qsum              = 17 [
     (CFO).desc = "Histogram of sum of samples over fixed signal window.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData sig_ped_qsum_diff         = 18 [
+    (CFO).desc = "Histogram of difference between sum of samples over fixed signal and pedestal window.",
     (CFO).units = "DC (bin-units), events (value-units)" ];
 }
 
