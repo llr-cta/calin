@@ -390,20 +390,16 @@ void LombardMartinPrescottMES::calculate_mes()
   rebin_spectrum(mes_pmf_, tableau_.pmf.get(), mes_npoint_);
 
   if(config_.use_gaussian_pedestal()) {
-    const double scale = 0.5/SQR(config_.ped_gaussian_sigma());
+    double sensitivity_inv = 1.0/config_.sensitivity();
     if(config_.ped_2gaussian_split() != 0) {
-      const double norm = std::abs(0.5/(sqrt(2*M_PI)*config_.ped_gaussian_sigma())*config_.sensitivity());
-      for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
-        const double x1 = off_x(ipoint) - config_.ped_gaussian_mean() + 0.5*config_.ped_2gaussian_split();
-        const double x2 = off_x(ipoint) - config_.ped_gaussian_mean() - 0.5*config_.ped_2gaussian_split();
-        ped_.get()[ipoint] = norm*(std::exp(-SQR(x1)*scale) + std::exp(-SQR(x2)*scale));
-      }
+      calin::math::special::two_gaussian(ped_.get(), mes_npoint_,
+        (config_.ped_gaussian_mean() - config_.on_off_ped_shift() - x0_ + 0.5*config_.dx())*sensitivity_inv,
+        config_.ped_gaussian_sigma()*sensitivity_inv,
+        config_.ped_2gaussian_split()*sensitivity_inv);
     } else {
-      const double norm = std::abs(1.0/(sqrt(2*M_PI)*config_.ped_gaussian_sigma())*config_.sensitivity());
-      for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
-        const double x = off_x(ipoint) - config_.ped_gaussian_mean();
-        ped_.get()[ipoint] = norm*std::exp(-SQR(x)*scale);
-      }
+      calin::math::special::gaussian(ped_.get(), mes_npoint_,
+        (config_.ped_gaussian_mean() - config_.on_off_ped_shift() - x0_ + 0.5*config_.dx())*sensitivity_inv,
+        config_.ped_gaussian_sigma() * sensitivity_inv);
     }
     rebin_spectrum(off_pmf_, ped_.get(), mes_npoint_);
   } else if(ped_pdf_ != nullptr and config_.on_off_ped_shift() != 0) {
