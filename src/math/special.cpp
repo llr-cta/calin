@@ -24,3 +24,43 @@
 #include <math/special.hpp>
 
 using namespace calin::math::special;
+
+void calin::math::special::gaussian(double* vec, unsigned n, double mean, double sigma)
+{
+#if INSTRSET >= 7
+  calin::math::special::gaussian_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(vec, n, mean, sigma);
+#else
+  calin::math::special::gaussian_scalar(vec, n, mean, sigma);
+#endif
+}
+
+void calin::math::special::two_gaussian(double* vec, unsigned n, double mean, double sigma, double split)
+{
+#if INSTRSET >= 7
+  calin::math::special::two_gaussian_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(vec, n, mean, sigma, split);
+#else
+  calin::math::special::two_gaussian_scalar(vec, n, mean, sigma, split);
+#endif
+}
+
+Eigen::VectorXd calin::math::special::gaussian(unsigned n, double mean, double sigma, bool vcl)
+{
+  Eigen::VectorXd vec(n);
+  if(vcl) {
+    gaussian(vec.data(), n, mean, sigma);
+  } else {
+    calin::math::special::gaussian_scalar(vec.data(), n, mean, sigma);
+  }
+  return vec;
+}
+
+Eigen::VectorXd calin::math::special::two_gaussian(unsigned n, double mean, double sigma, double scale, bool vcl)
+{
+  Eigen::VectorXd vec(n);
+  if(vcl) {
+    two_gaussian(vec.data(), n, mean, sigma, scale);
+  } else {
+    calin::math::special::two_gaussian_scalar(vec.data(), n, mean, sigma, scale);
+  }
+  return vec;
+}
