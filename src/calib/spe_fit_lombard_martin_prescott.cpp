@@ -91,18 +91,22 @@ std::vector<calin::math::function::ParameterAxis>
 LombardMartinPrescottMES::parameters()
 {
   constexpr double inf = std::numeric_limits<double>::infinity();
+  constexpr double tiny_val = std::numeric_limits<double>::epsilon();
+  // constexpr double tiny_val = std::numeric_limits<double>::min();
+  // constexpr double epsilon = std::numeric_limits<double>::epsilon();
+
   std::vector<math::function::ParameterAxis> pvec;
   pvec.push_back({ "light_intensity", "PE", true, 0, false, inf });
   if(config_.free_intensity_rms_frac()) {
     pvec.push_back({ "light_intensity_rms_frac", "1", true, 0, false, inf }); }
   if(config_.free_total_gain()) {
-    pvec.push_back({ "total_gain", "DC", true, 0, false, inf }); }
+    pvec.push_back({ "total_gain", "DC", true, tiny_val, false, inf }); }
   if(config_.free_stage_0_lo_prob()) {
-    pvec.push_back({ "stage_0_lo_prob", "1", true, 0, true, 1 }); }
+    pvec.push_back({ "stage_0_lo_prob", "1", true, 0, true, 1.0 }); }
   if(config_.free_stage_0_hi_gain()) {
-    pvec.push_back({ "stage_0_hi_gain", "1", true, 0, false, inf }); }
+    pvec.push_back({ "stage_0_hi_gain", "1", true, tiny_val, false, inf }); }
   if(config_.free_stage_0_lo_gain()) {
-    pvec.push_back({ "stage_0_lo_gain", "1", true, 0, false, inf }); }
+    pvec.push_back({ "stage_0_lo_gain", "1", true, tiny_val, false, inf }); }
   if(config_.free_stage_0_hi_gain_rms_frac()) {
     pvec.push_back({ "stage_0_hi_gain_rms_frac", "1", true, 0, false, inf }); }
   if(config_.free_stage_0_lo_gain_rms_frac()) {
@@ -409,6 +413,16 @@ void LombardMartinPrescottMES::calculate_mes()
     }
     rebin_spectrum(off_pmf_, ped_.get(), mes_npoint_);
   }
+}
+
+Eigen::VectorXd LombardMartinPrescottMES::pe_pmf() const
+{
+  std::vector<double> pe_pmf_vec =
+    calin::calib::pmt_ses_models::LombardMartinPrescottPMTModel::
+    polya_pmf(intensity_pe_, config_.intensity_rms_frac(), config_.precision());
+  Eigen::VectorXd pe_pmf_eig(pe_pmf_vec.size());
+  std::copy(pe_pmf_vec.begin(), pe_pmf_vec.end(), pe_pmf_eig.data());
+  return pe_pmf_eig;
 }
 
 Eigen::VectorXd LombardMartinPrescottMES::ses_pmf() const

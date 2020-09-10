@@ -454,6 +454,8 @@ public:
   unsigned npoint() const { return npoint_; }
   unsigned mes_npoint() const { return mes_npoint_; }
 
+  Eigen::VectorXd pe_pmf() const;
+
   Eigen::VectorXd mes_pmf() const { return mes_pmf_; }
   Eigen::VectorXd off_pmf() const { return off_pmf_; }
   Eigen::VectorXd ses_pmf() const;
