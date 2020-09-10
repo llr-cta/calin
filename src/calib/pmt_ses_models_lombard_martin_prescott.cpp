@@ -87,31 +87,31 @@ LombardMartinPrescottPMTModel(
 
   if(config.stage_0_lo_prob()>0) {
     double Plo = config.stage_0_lo_prob();
-    if(config.stage_0_lo_pmf_size() == 0) {
-      stage_0_gain_ += Plo * config.stage_0_lo_gain();
-      stage_0_Exx_ += Plo * polya_Exx(config.stage_0_lo_gain(), config.stage_0_lo_gain_rms_frac());
-      std::vector<double> pmf = polya_pmf(config.stage_0_lo_gain(), config.stage_0_lo_gain_rms_frac(), precision);
-      if(pmf.size() > stage_0_pmf_.size()) {
-        stage_0_pmf_.resize(pmf.size(), 0.0);
-      }
-      std::transform(pmf.begin(), pmf.end(), stage_0_pmf_.begin(), stage_0_pmf_.begin(),
-        [Plo](double x, double y) { return Plo*x + y; });
+    std::vector<double> pmf;
+    if(config.stage_0_lo_pmf_size()) {
+      pmf.resize(config.stage_0_lo_pmf_size());
+      std::copy(config.stage_0_lo_pmf().begin(), config.stage_0_lo_pmf().end(), pmf.begin());
+    } else if(config.stage_0_lo_half_gaussian_pmf()) {
+      pmf = half_gaussian_pmf(config.stage_0_lo_gain(), precision);
     } else {
-      if(config.stage_0_lo_pmf_size() > stage_0_pmf_.size()) {
-        stage_0_pmf_.resize(config.stage_0_lo_pmf_size(), 0.0);
-      }
-      calin::math::accumulator::KahanAccumulator psum;
-      for(int i=0; i<config.stage_0_lo_pmf_size(); ++i) {
-        double pi = config.stage_0_lo_pmf(i);
-        psum.accumulate(pi);
-        stage_0_pmf_[i] += Plo * pi;
-        stage_0_gain_ += Plo * double(i) * pi;
-        stage_0_Exx_ += Plo * SQR(double(i)) * pi;
-      }
-      psum.accumulate(-1.0);
-      if(std::abs(psum.total()) > precision) {
-        LOG(WARNING) << "LombardMartinPrescottPMTModel: stage 0 low-gain PMF normalization error exceeds specified precision.";
-      }
+      pmf = polya_pmf(config.stage_0_lo_gain(), config.stage_0_lo_gain_rms_frac(), precision);
+    }
+
+    if(pmf.size() > stage_0_pmf_.size()) {
+      stage_0_pmf_.resize(pmf.size(), 0.0);
+    }
+
+    calin::math::accumulator::KahanAccumulator psum;
+    for(unsigned i=0; i<pmf.size(); ++i) {
+      double pi = pmf[i];
+      psum.accumulate(pi);
+      stage_0_pmf_[i] += Plo * pi;
+      stage_0_gain_ += Plo * double(i) * pi;
+      stage_0_Exx_ += Plo * SQR(double(i)) * pi;
+    }
+    psum.accumulate(-1.0);
+    if(std::abs(psum.total()) > precision) {
+      LOG(WARNING) << "LombardMartinPrescottPMTModel: stage 0 low-gain PMF normalization error exceeds specified precision.";
     }
   }
 
@@ -205,6 +205,26 @@ polya_pmf(double mean, double rms_frac, double precision)
     pk.push_back(pkx);
     psum.accumulate(pkx);
     if(psum.total() > 0.99 and pkx < precision)break;
+  }
+  return pk;
+}
+
+std::vector<double> LombardMartinPrescottPMTModel::
+half_gaussian_pmf(double mean, double precision)
+{
+  const double C1      = 0.5*M_2_SQRTPI/(std::abs(mean)+0.5);
+
+  const double pcutoff = 1.0 - precision;
+
+  std::vector<double> pk;
+  pk.reserve(5*int(ceil(mean)));
+
+  double p_last = 0;
+  for(unsigned ix=0;p_last<pcutoff;ix++)
+  {
+    double p = std::erf((double(ix)+1.0)*C1);
+    pk.push_back(p-p_last);
+    p_last = p;
   }
   return pk;
 }
@@ -357,4 +377,17 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
   assert(ped_copy);
   std::copy(ped.data(), ped.data()+ped.size(), ped_copy.get());
   return calc_mes(pe_pmf, ped.size(), ped_copy.get(), ped_is_fft);
+}
+
+calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig
+LombardMartinPrescottPMTModel::nectarcam_config()
+{
+  calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig cfg;
+  cfg.set_num_stage(7);
+  cfg.set_total_gain(40000.0);
+  cfg.set_stage_0_hi_gain(12.0);
+  cfg.set_stage_0_lo_prob(0.15);
+  cfg.set_stage_0_lo_gain(3.0);
+  cfg.set_suppress_zero(true);
+  return cfg;
 }

@@ -51,13 +51,15 @@ message LombardMartinPrescottPMTModelConfig {
   double stage_n_gain_rms_frac                             = 8 [
     (CFO).desc = "Additional non-Poisson RMS of latter stages (n>0) as "
       "fraction of mean." ];
-  repeated double stage_0_lo_pmf                           = 9 [
+  bool stage_0_lo_half_gaussian_pmf                        = 9 [
+    (CFO).desc = "Use half-Gaussian PMF for stage 0 low-gain component." ];
+  repeated double stage_0_lo_pmf                           = 10 [
     (CFO).desc = "Externally supplied stage 0 (low-charge) PMF. This should "
       "be normalized to unity, with each element 'i' specifying the probability "
       "of seeing 'i' electrins from the low-charge compoent of stage 0."
       "If it is not supplied then the stage 0 PMF is assumed to be a Polya distribution "
       "with parameters given by \"stage_0_lo_gain\" and \"stage_0_lo_gain_rms_frac\". "
       "This option can specify the full stage 0 PMF if \"stage_0_lo_prob=1.0\"."];
-  bool suppress_zero                                       = 10 [
+  bool suppress_zero                                       = 11 [
     (CFO).desc = "Suppress events with zero charge." ];
 };

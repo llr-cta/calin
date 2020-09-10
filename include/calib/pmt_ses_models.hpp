@@ -139,6 +139,7 @@ public:
   double resolution() const { return resolution_; }
 
   static std::vector<double> polya_pmf(double mean, double rms_frac, double precision = 1e-10);
+  static std::vector<double> half_gaussian_pmf(double mean, double precision = 1e-10);
 
   double stage_0_gain() const { return stage_0_gain_; }
   double stage_n_gain() const { return stage_n_gain_; }
@@ -169,6 +170,7 @@ public:
   Eigen::VectorXd calc_mes(const std::vector<double>& pe_pmf, const Eigen::VectorXd& ped,
     bool ped_is_fft=false);
 
+  static calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig nectarcam_config();
 private:
   void calc_spectrum(Tableau& tableau,
     const std::vector<double>* pe_spec = nullptr,
