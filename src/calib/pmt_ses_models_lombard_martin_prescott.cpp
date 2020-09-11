@@ -212,7 +212,7 @@ polya_pmf(double mean, double rms_frac, double precision)
 std::vector<double> LombardMartinPrescottPMTModel::
 half_gaussian_pmf(double mean, double precision)
 {
-  const double C1      = 0.5*M_2_SQRTPI/(std::abs(mean)+0.5);
+  const double C1      = 0.5*M_2_SQRTPI/(std::abs(mean));
 
   const double pcutoff = 1.0 - precision;
 
@@ -222,7 +222,7 @@ half_gaussian_pmf(double mean, double precision)
   double p_last = 0;
   for(unsigned ix=0;p_last<pcutoff;ix++)
   {
-    double p = std::erf((double(ix)+1.0)*C1);
+    double p = std::erf((double(ix)+0.5)*C1);
     pk.push_back(p-p_last);
     p_last = p;
   }
