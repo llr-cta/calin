@@ -217,7 +217,7 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
 def plot_histogram(h, density = False, normalise = False,
         xscale = 1, xoffset = 0, yscale = 1, yoffset = 0,
         xscale_as_log10 = False, draw_poisson_errors = False,
-        histtype='steps', ecolor=None, *args, **nargs):
+        histtype='steps', ecolor=None, axis = None, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
@@ -241,10 +241,11 @@ def plot_histogram(h, density = False, normalise = False,
     hdy = hdy * yscale + yoffset
     if(xscale_as_log10):
         hx = 10**hx
+    axis = axis or plt.gca()
     if(histtype=='step' or histtype=='steps'):
-        so = plt.step(hx,hy, *args, where='post', **nargs)
+        so = axis.step(hx,hy, *args, where='post', **nargs)
         if(draw_poisson_errors):
-            so1 = plt.vlines(0.5*(hx[:-1]+hx[1:]), hy[:-1]-hdy, hy[:-1]+hdy)
+            so1 = axis.vlines(0.5*(hx[:-1]+hx[1:]), hy[:-1]-hdy, hy[:-1]+hdy)
             so1.set_linestyles(so[0].get_linestyle())
             so1.set_color(so[0].get_color() if ecolor is None else ecolor)
             so1.set_linewidth(so[0].get_linewidth())
@@ -254,7 +255,7 @@ def plot_histogram(h, density = False, normalise = False,
         yerr = None
         if(draw_poisson_errors):
             yerr = hdy
-        so = plt.bar(hx[:-1], hy[:-1], *args, width=hx[1:]-hx[:-1], align='edge',
+        so = axis.bar(hx[:-1], hy[:-1], *args, width=hx[1:]-hx[:-1], align='edge',
             yerr=yerr, ecolor='black' if ecolor is None else ecolor, **nargs)
     else:
         raise Exception('Unknown histogram plotting type: '+histtype)
@@ -265,7 +266,7 @@ def plot_histogram(h, density = False, normalise = False,
 def plot_histogram_cumulative(h, plot_as_cdf = False, plot_as_cmf = False,
         right_to_left = False,
         xscale = 1, xoffset = 0, yscale = 1, yoffset = 0,
-        xscale_as_log10 = False, *args, **nargs):
+        xscale_as_log10 = False, axis = None, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
         hx = h.all_xval_left()
         hy = h.all_weight()
@@ -287,7 +288,8 @@ def plot_histogram_cumulative(h, plot_as_cdf = False, plot_as_cmf = False,
     hy =  hy * yscale + yoffset
     if(xscale_as_log10):
         hx = 10**hx
-    so = plt.plot(hx, hy, *args, **nargs)
+    axis = axis or plt.gca()
+    so = axis.plot(hx, hy, *args, **nargs)
     if(xscale_as_log10):
         so[0].axes.set_xscale('log')
     return so
