@@ -501,12 +501,14 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   // ==========================================================================
 
   if(mod_clock_num==calin_event->module_index_size()) {
+    calin_event->add_camera_clock_index(calin_event->camera_clock_size());
     auto* calin_clock = calin_event->add_camera_clock();
     calin_clock->set_clock_id(7);
     calin_clock->set_time_value(mod_clock_sum);
     calin_clock->set_time_sequence_id(mod_clock_seq_sum);
     calin_clock->set_time_value_may_be_suspect(mod_clock_is_suspect);
 
+    calin_event->add_camera_clock_index(calin_event->camera_clock_size());
     calin_clock = calin_event->add_camera_clock();
     calin_clock->set_clock_id(8);
     calin_clock->set_time_value(mod_clock_seq_sum*125000000ULL + mod_clock_sum);
@@ -514,7 +516,7 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
     calin_clock->set_time_value_may_be_suspect(mod_clock_is_suspect);
   } else {
     calin_event->add_camera_clock_index(-1);
-    calin_event->add_camera_clock_index(-1);  
+    calin_event->add_camera_clock_index(-1);
   }
 
   // ==========================================================================
