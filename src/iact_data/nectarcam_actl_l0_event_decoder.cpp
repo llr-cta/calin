@@ -326,22 +326,34 @@ bool NectarCam_ACTL_L0_CameraEventDecoder::decode(
 
     const auto& cdts = calin_event->cdts_data();
 
-    // if(calin_event->cdts_data().white_rabbit_status() == 1) {
+    calin_event->add_camera_clock_index(calin_event->camera_clock_size());
     auto* calin_clock = calin_event->add_camera_clock();
     calin_clock->set_clock_id(0);
     calin_clock->set_time_value(cdts.ucts_timestamp());
     calin_clock->set_time_sequence_id(0);
 
+    calin_event->add_camera_clock_index(calin_event->camera_clock_size());
     calin_clock = calin_event->add_camera_clock();
     calin_clock->set_clock_id(1);
     calin_clock->set_time_value(cdts.clock_counter());
     calin_clock->set_time_sequence_id(cdts.pps_counter());
 
+    calin_event->add_camera_clock_index(calin_event->camera_clock_size());
     calin_clock = calin_event->add_camera_clock();
     calin_clock->set_clock_id(2);
     calin_clock->set_time_value(cdts.pps_counter());
     calin_clock->set_time_sequence_id(0);
-    // }
+
+    calin_event->add_camera_clock_index(calin_event->camera_clock_size());
+    calin_clock = calin_event->add_camera_clock();
+    calin_clock->set_clock_id(3);
+    calin_clock->set_time_value(cdts.pps_counter()*10000000ULL + cdts.clock_counter());
+    calin_clock->set_time_sequence_id(0);
+  } else {
+    calin_event->add_camera_clock_index(-1);
+    calin_event->add_camera_clock_index(-1);
+    calin_event->add_camera_clock_index(-1);
+    calin_event->add_camera_clock_index(-1);
   }
 
   // ==========================================================================
@@ -358,16 +370,37 @@ bool NectarCam_ACTL_L0_CameraEventDecoder::decode(
 
     const auto& tib = calin_event->tib_data();
 
+    calin_event->add_camera_clock_index(calin_event->camera_clock_size());
     auto* calin_clock = calin_event->add_camera_clock();
-    calin_clock->set_clock_id(3);
+    calin_clock->set_clock_id(4);
     calin_clock->set_time_value(tib.clock_counter());
     calin_clock->set_time_sequence_id(tib.pps_counter());
 
+    calin_event->add_camera_clock_index(calin_event->camera_clock_size());
     calin_clock = calin_event->add_camera_clock();
-    calin_clock->set_clock_id(4);
+    calin_clock->set_clock_id(5);
     calin_clock->set_time_value(tib.pps_counter());
     calin_clock->set_time_sequence_id(0);
+
+    calin_event->add_camera_clock_index(calin_event->camera_clock_size());
+    calin_clock = calin_event->add_camera_clock();
+    calin_clock->set_clock_id(6);
+    calin_clock->set_time_value(tib.pps_counter()*10000000ULL + tib.clock_counter());
+    calin_clock->set_time_sequence_id(0);
+  } else {
+    calin_event->add_camera_clock_index(-1);
+    calin_event->add_camera_clock_index(-1);
+    calin_event->add_camera_clock_index(-1);
   }
+
+  // ==========================================================================
+  //
+  // L0 VERSION DOESN'T SUPPORT MODULE CLOCK SUM
+  //
+  // ==========================================================================
+
+  calin_event->add_camera_clock_index(-1);
+  calin_event->add_camera_clock_index(-1);
 
   // ==========================================================================
   //
