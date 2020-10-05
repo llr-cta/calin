@@ -157,7 +157,11 @@ public:
 
   math::rng::RNG* rng() const { return rng_; }
   void set_rng(math::rng::RNG* rng, bool adopt_rng = false) {
-    if(adopt_rng_)delete rng_; rng_=rng; adopt_rng_ = adopt_rng; }
+    if(adopt_rng_) {
+      delete rng_;
+    }
+    rng_ = rng;
+    adopt_rng_ = adopt_rng; }
   uint64_t nflop() const { return nflop_; }
 
   static calin::ix::simulation::pmt::PMTSimTwoPopulationConfig cta_model_4();
