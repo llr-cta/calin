@@ -248,7 +248,7 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
     trigger_type_code_hist_.insert(tib.trigger_type());
     if(event->has_cdts_data()) {
       const auto& cdts = event->cdts_data();
-      trigger_type_code_diff_hist_.insert(tib.trigger_type() - cdts.trigger_type());
+      trigger_type_code_diff_hist_.insert(int(tib.trigger_type()) - int(cdts.trigger_type()));
       partials_->increment_num_tib_ucts_trigger_code_mismatch_if(tib.trigger_type() != cdts.trigger_type());
     }
   } else if(event->has_cdts_data()) {
