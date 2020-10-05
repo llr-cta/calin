@@ -617,99 +617,99 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
           event_value_bool, event_value_i64,
           rimod->mutable_counter_value(icounter)->mutable_value_range());
       }
+    }
 
-      const double dthistmin = -9.0;
-      const double dthistmax = 9.0;
+    const double dthistmin = -9.0;
+    const double dthistmax = 9.0;
 
-      calin::math::histogram::Histogram1D log10_delta_t_hist {
-        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
-      calin::math::histogram::Histogram1D log10_delta2_t_hist {
-        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
+    calin::math::histogram::Histogram1D log10_delta_t_hist {
+      config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
+    calin::math::histogram::Histogram1D log10_delta2_t_hist {
+      config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
 
-      calin::math::histogram::Histogram1D pt_log10_delta_t_hist {
-        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
-      calin::math::histogram::Histogram1D pt_log10_delta2_t_hist {
-        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
-      calin::math::histogram::Histogram1D pt2_log10_delta_t_hist {
-        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
+    calin::math::histogram::Histogram1D pt_log10_delta_t_hist {
+      config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
+    calin::math::histogram::Histogram1D pt_log10_delta2_t_hist {
+      config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
+    calin::math::histogram::Histogram1D pt2_log10_delta_t_hist {
+      config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
 
-      calin::math::histogram::Histogram1D rec_log10_delta_t_hist {
-        config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
+    calin::math::histogram::Histogram1D rec_log10_delta_t_hist {
+      config_.log10_delta_t_histogram_binsize(), dthistmin, dthistmax, 0.0 };
 
-      uint64_t second_last_event_number = partials_->event_number_sequence(event_index[0]);
-      int64_t  second_last_event_time = partials_->event_time_sequence(event_index[0]);
+    uint64_t second_last_event_number = partials_->event_number_sequence(event_index[0]);
+    int64_t  second_last_event_time = partials_->event_time_sequence(event_index[0]);
 
-      uint64_t last_event_number = partials_->event_number_sequence(event_index[0]);
-      int64_t  last_event_time = partials_->event_time_sequence(event_index[0]);
-      uint32_t last_event_type = partials_->event_type_sequence(event_index[0]);
+    last_event_number = partials_->event_number_sequence(event_index[0]);
+    int64_t  last_event_time = partials_->event_time_sequence(event_index[0]);
+    uint32_t last_event_type = partials_->event_type_sequence(event_index[0]);
 
-      for(unsigned ievent=1; ievent<event_index.size(); ievent++) {
-        uint64_t event_number = partials_->event_number_sequence(event_index[ievent]);
-        int64_t  event_time = partials_->event_time_sequence(event_index[ievent]);
-        uint32_t event_type = partials_->event_type_sequence(event_index[ievent]);
+    for(unsigned ievent=1; ievent<event_index.size(); ievent++) {
+      uint64_t event_number = partials_->event_number_sequence(event_index[ievent]);
+      int64_t  event_time = partials_->event_time_sequence(event_index[ievent]);
+      uint32_t event_type = partials_->event_type_sequence(event_index[ievent]);
 
-        double dt = double(event_time-last_event_time)*1e-9;
-        double log10_dt = std::log10(std::max(dt, 0.0));
+      double dt = double(event_time-last_event_time)*1e-9;
+      double log10_dt = std::log10(std::max(dt, 0.0));
 
-        if(dt>0) {
-          rec_log10_delta_t_hist.insert(log10_dt);
-        } else {
-          results_->increment_num_delta_t_all_recorded_not_positive();
-        }
-
-        if(event_number == last_event_number+1 and event_time>0 and last_event_time>0) {
-          double dt = double(event_time-last_event_time)*1e-9;
-          if(dt>0) {
-            log10_delta_t_hist.insert(log10_dt);
-          }
-          if(event_type == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
-            if(dt>0) {
-              pt_log10_delta_t_hist.insert(log10_dt);
-            }
-          }
-
-          if(event_number == second_last_event_number+2 and second_last_event_time>0) {
-            double d2t = double(event_time-second_last_event_time)*1e-9;
-            double log10_d2t = std::log10(std::max(d2t, 0.0));
-
-            if(d2t>0) {
-              log10_delta2_t_hist.insert(log10_d2t);
-            }
-            if(event_type == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS and
-                last_event_type == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
-              if(dt>0) {
-                pt2_log10_delta_t_hist.insert(log10_dt);
-              }
-              if(d2t>0) {
-                pt_log10_delta2_t_hist.insert(log10_d2t);
-              }
-            }
-          } else if(event_number == last_event_number+2 and event_time>0 and last_event_time>0) {
-            double d2t = double(event_time-last_event_number)*1e-9;
-            if(d2t>0) {
-              log10_delta2_t_hist.insert(std::log10(d2t));
-            }
-          }
-        }
-        second_last_event_number = last_event_number;
-        second_last_event_time = last_event_time;
-        last_event_number = event_number;
-        last_event_time = event_time;
-        last_event_type = event_type;
+      if(dt>0) {
+        rec_log10_delta_t_hist.insert(log10_dt);
+      } else {
+        results_->increment_num_delta_t_all_recorded_not_positive();
       }
 
-      log10_delta_t_hist.dump_as_proto(
-        results_->mutable_log10_delta_t_histogram());
-      log10_delta2_t_hist.dump_as_proto(
-        results_->mutable_log10_delta2_t_histogram());
-      pt_log10_delta_t_hist.dump_as_proto(
-        results_->mutable_log10_delta_t_histogram_trigger_physics());
-      pt_log10_delta2_t_hist.dump_as_proto(
-        results_->mutable_log10_delta2_t_histogram_trigger_physics());
-      pt2_log10_delta_t_hist.dump_as_proto(
-        results_->mutable_log10_delta_t_histogram_2_trigger_physics());
-      rec_log10_delta_t_hist.dump_as_proto(
-        results_->mutable_log10_delta_t_histogram_all_recorded());
+      if(event_number == last_event_number+1 and event_time>0 and last_event_time>0) {
+        double dt = double(event_time-last_event_time)*1e-9;
+        if(dt>0) {
+          log10_delta_t_hist.insert(log10_dt);
+        }
+        if(event_type == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
+          if(dt>0) {
+            pt_log10_delta_t_hist.insert(log10_dt);
+          }
+        }
+
+        if(event_number == second_last_event_number+2 and second_last_event_time>0) {
+          double d2t = double(event_time-second_last_event_time)*1e-9;
+          double log10_d2t = std::log10(std::max(d2t, 0.0));
+
+          if(d2t>0) {
+            log10_delta2_t_hist.insert(log10_d2t);
+          }
+          if(event_type == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS and
+              last_event_type == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
+            if(dt>0) {
+              pt2_log10_delta_t_hist.insert(log10_dt);
+            }
+            if(d2t>0) {
+              pt_log10_delta2_t_hist.insert(log10_d2t);
+            }
+          }
+        } else if(event_number == last_event_number+2 and event_time>0 and last_event_time>0) {
+          double d2t = double(event_time-last_event_number)*1e-9;
+          if(d2t>0) {
+            log10_delta2_t_hist.insert(std::log10(d2t));
+          }
+        }
+      }
+      second_last_event_number = last_event_number;
+      second_last_event_time = last_event_time;
+      last_event_number = event_number;
+      last_event_time = event_time;
+      last_event_type = event_type;
     }
+
+    log10_delta_t_hist.dump_as_proto(
+      results_->mutable_log10_delta_t_histogram());
+    log10_delta2_t_hist.dump_as_proto(
+      results_->mutable_log10_delta2_t_histogram());
+    pt_log10_delta_t_hist.dump_as_proto(
+      results_->mutable_log10_delta_t_histogram_trigger_physics());
+    pt_log10_delta2_t_hist.dump_as_proto(
+      results_->mutable_log10_delta2_t_histogram_trigger_physics());
+    pt2_log10_delta_t_hist.dump_as_proto(
+      results_->mutable_log10_delta_t_histogram_2_trigger_physics());
+    rec_log10_delta_t_hist.dump_as_proto(
+      results_->mutable_log10_delta_t_histogram_all_recorded());
   }
 }
