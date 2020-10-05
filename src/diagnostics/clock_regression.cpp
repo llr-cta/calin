@@ -120,7 +120,7 @@ bool ClockRegressionParallelEventVisitor::leave_telescope_run()
 }
 
 namespace {
-  const calin::ix::iact_data::telescope_event::Clock* find_clock(unsigned id,
+  const calin::ix::iact_data::telescope_event::Clock* find_clock(int id,
     const google::protobuf::RepeatedPtrField<calin::ix::iact_data::telescope_event::Clock>& clocks)
   {
     if(id < clocks.size() and clocks[id].clock_id() == id) {
