@@ -152,7 +152,7 @@ void LombardMartinPrescottPMTModel::set_stage_n_gain(double stage_n_gain)
   p0_ = stage_n_pmf_[0];
   double Exx = stage_n_Exx_;
 
-  for(int istage=0; istage<config_.num_stage()-2; ++istage) {
+  for(int istage=0; istage<int(config_.num_stage())-2; ++istage) {
     Exx = (stage_n_Exx_-stage_n_gain_)*SQR(total_gain_) + Exx*stage_n_gain_;
     total_gain_ *= stage_n_gain_;
     p0_ = calin::math::least_squares::polyval(stage_n_pmf_, p0_);
