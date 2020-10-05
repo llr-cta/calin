@@ -511,7 +511,7 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
     calin_event->add_camera_clock_index(calin_event->camera_clock_size());
     calin_clock = calin_event->add_camera_clock();
     calin_clock->set_clock_id(8);
-    calin_clock->set_time_value(mod_clock_seq_sum*125000000ULL + mod_clock_sum);
+    calin_clock->set_time_value(mod_clock_seq_sum*1000000000ULL + mod_clock_sum);
     calin_clock->set_time_sequence_id(0);
     calin_clock->set_time_value_may_be_suspect(mod_clock_is_suspect);
   } else {
