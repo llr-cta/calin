@@ -73,7 +73,7 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
 
   has_dual_gain_ = (run_config->camera_layout().adc_gains() !=
     calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN);
-  for(unsigned ichan=0;ichan<run_config->configured_channel_id_size();++ichan) {
+  for(int ichan=0;ichan<run_config->configured_channel_id_size();++ichan) {
     partials_.add_channel();
   }
 
@@ -132,7 +132,7 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
     auto* var_hist = new calin::ix::math::histogram::Histogram1DData;
     mean_hist->CopyFrom(partials_gc.all_trig_pedwin_vs_time_q_sum());
     var_hist->CopyFrom(partials_gc.all_trig_pedwin_vs_time_q2_sum());
-    for(unsigned ibin=0;ibin<partials_gc.all_trig_pedwin_vs_time_1_sum().bins_size();ibin++) {
+    for(int ibin=0;ibin<partials_gc.all_trig_pedwin_vs_time_1_sum().bins_size();ibin++) {
       double count = partials_gc.all_trig_pedwin_vs_time_1_sum().bins(ibin);
       if(count>0) {
         mean_hist->set_bins(ibin, mean_hist->bins(ibin)/count);
@@ -154,7 +154,7 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
     auto* var_hist = new calin::ix::math::histogram::Histogram1DData;
     mean_hist->CopyFrom(partials_gc.ped_trig_vs_time_q_sum());
     var_hist->CopyFrom(partials_gc.ped_trig_vs_time_q2_sum());
-    for(unsigned ibin=0;ibin<partials_gc.ped_trig_vs_time_1_sum().bins_size();ibin++) {
+    for(int ibin=0;ibin<partials_gc.ped_trig_vs_time_1_sum().bins_size();ibin++) {
       double count = partials_gc.ped_trig_vs_time_1_sum().bins(ibin);
       if(count>0) {
         mean_hist->set_bins(ibin, mean_hist->bins(ibin)/count);
