@@ -103,8 +103,6 @@ public:
   static calin::ix::diagnostics::run_info::RunInfoConfig default_config();
 
 private:
-
-
   void integrate_partials ();
 
   RunInfoDiagnosticsParallelEventVisitor* parent_ = nullptr;
@@ -119,6 +117,8 @@ private:
   calin::ix::diagnostics::run_info::RunInfo* results_ = nullptr;
   calin::ix::diagnostics::run_info::PartialRunInfo* partials_ = nullptr;
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
+  calin::math::histogram::SimpleHist trigger_type_code_hist_ = { 1.0 };
+  calin::math::histogram::SimpleHist trigger_type_code_diff_hist_ = { 1.0 };
 };
 
 } } } // namespace calin::diagnostics::run_info

@@ -121,6 +121,9 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_run(
   partials_->set_min_event_time(std::numeric_limits<int64_t>::max());
   partials_->set_max_event_time(std::numeric_limits<int64_t>::min());
 
+  trigger_type_code_hist_.clear();
+  trigger_type_code_diff_hist_.clear();
+
   calin::ix::diagnostics::run_info::RunInfoConfig config = config_;
   if(config.module_counter_test_id_size() == 0 and
       config.module_counter_test_mode_size() == 0) {
@@ -233,6 +236,12 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
     partials_->increment_num_pedestal_trigger(tib.pedestal_trigger());
     partials_->increment_num_slow_control_trigger(tib.slow_control_trigger());
     partials_->increment_num_busy_trigger(tib.busy_trigger());
+    trigger_type_code_hist_.insert(tib.trigger_type());
+    if(event->has_cdts_data()) {
+      const auto& cdts = event->cdts_data();
+      trigger_type_code_diff_hist_.insert(tib.trigger_type() - cdts.trigger_type());
+      partials_->increment_num_tib_ucts_trigger_code_mismatch_if(tib.trigger_type() != cdts.trigger_type());
+    }
   } else if(event->has_cdts_data()) {
     const auto& cdts = event->cdts_data();
     partials_->increment_num_mono_trigger(cdts.mono_trigger());
@@ -243,6 +252,7 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
     partials_->increment_num_pedestal_trigger(cdts.pedestal_trigger());
     partials_->increment_num_slow_control_trigger(cdts.slow_control_trigger());
     partials_->increment_num_busy_trigger(cdts.busy_trigger());
+    trigger_type_code_hist_.insert(cdts.trigger_type());
   }
 
   // EVENT TIME
@@ -344,6 +354,10 @@ bool RunInfoDiagnosticsParallelEventVisitor::merge_results()
   if(parent_) {
     parent_->partials_->IntegrateFrom(*partials_);
     partials_->Clear();
+    parent_->trigger_type_code_hist_.insert_hist(trigger_type_code_hist_);
+    trigger_type_code_hist_.clear();
+    parent_->trigger_type_code_diff_hist_.insert_hist(trigger_type_code_diff_hist_);
+    trigger_type_code_diff_hist_.clear();
   }
   return true;
 }
@@ -433,9 +447,15 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
   results_->set_num_pedestal_trigger(partials_->num_pedestal_trigger());
   results_->set_num_slow_control_trigger(partials_->num_slow_control_trigger());
   results_->set_num_busy_trigger(partials_->num_busy_trigger());
+  results_->set_num_tib_ucts_trigger_code_mismatch(partials_->num_tib_ucts_trigger_code_mismatch());
 
   results_->set_min_event_time(partials_->min_event_time());
   results_->set_max_event_time(partials_->max_event_time());
+
+  trigger_type_code_hist_.dump_as_compactified_proto(0, 0,
+    results_->mutable_trigger_code_histogram());
+  trigger_type_code_diff_hist_.dump_as_compactified_proto(0, 0,
+    results_->mutable_tib_ucts_trigger_code_diff_histogram());
 
   const double thistmin = -60.0;
   const double thistmax = 7200.0;
@@ -611,6 +631,8 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
 
         if(dt>0) {
           rec_log10_delta_t_hist.insert(log10_dt);
+        } else {
+          results_->increment_num_delta_t_all_recorded_not_positive();
         }
 
         if(event_number == last_event_number+1 and event_time>0 and last_event_time>0) {

@@ -175,31 +175,55 @@ message RunInfo {
     (CFO).desc = "Number of events with busy trigger trigger TIB bit set.",
     (CFO).is_counter = true ];
 
-  int64 min_event_time                                     = 50 [
-    (CFO).desc = "Minimum absolute event time from all events.", (CFO).units = "ns",
+  calin.ix.math.histogram.Histogram1DData trigger_code_histogram = 48 [
+    (CFO).desc = "Histogram of TIB (or UCTS if unavailable) trigger code" ];
+  calin.ix.math.histogram.Histogram1DData tib_ucts_trigger_code_diff_histogram = 49 [
+    (CFO).desc = "Histogram of TIB trigger code minus UCTS trigger code, for "
+      "events where both are available."];
+  uint64 num_tib_ucts_trigger_code_mismatch                = 50 [
+    (CFO).desc = "Number of events where TIB and UCTS triiger codes do not match.",
+    (CFO).is_counter = true ];
+
+  int64 min_event_time                                     = 60 [
+    (CFO).desc = "Minimum absolute event time from all events.",
+    (CFO).units = "ns",
     (CFO).integration_algorithm = MIN ];
-  int64 max_event_time                                     = 51 [
-    (CFO).desc = "Maximum absolute event time from all events.", (CFO).units = "ns",
+  int64 max_event_time                                     = 61 [
+    (CFO).desc = "Maximum absolute event time from all events.",
+    (CFO).units = "ns",
+    (CFO).integration_algorithm = MAX ];
+  repeated int64 camera_clock_min_time                     = 62 [
+    (CFO).desc = "Minimum event time for each of the camera clocks.",
+    (CFO).units = "ticks",
+    (CFO).integration_algorithm = MIN ];
+  repeated int64 camera_clock_max_time                     = 63 [
+    (CFO).desc = "Maximum event time for each of the camera clocks.",
+    (CFO).units = "ticks",
     (CFO).integration_algorithm = MAX ];
 
-  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram = 60 [
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram = 70 [
     (CFO).desc = "Histogram of log10 of time between consecutive events; log10(DeltaT/s)." ];
-  calin.ix.math.histogram.Histogram1DData log10_delta2_t_histogram = 61 [
+  calin.ix.math.histogram.Histogram1DData log10_delta2_t_histogram = 71 [
     (CFO).desc = "Histogram of log10 of time between next-to-consecutive events; "
       "log10(Delta2T/s)." ];
 
-  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_trigger_physics = 62 [
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_trigger_physics = 72 [
     (CFO).desc = "Histogram of log10 of time between consecutive events "
       "for all physics triggers; log10(DeltaT/s)." ];
-  calin.ix.math.histogram.Histogram1DData log10_delta2_t_histogram_trigger_physics = 63 [
+  calin.ix.math.histogram.Histogram1DData log10_delta2_t_histogram_trigger_physics = 73 [
     (CFO).desc = "Histogram of log10 of time between next-to-consecutive "
       "events for all sets of two consecutibe physics triggers; log10(Delta2T/s)." ];
-  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_2_trigger_physics = 64 [
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_2_trigger_physics = 74 [
     (CFO).desc = "Histogram of log10 of time between consecutive events "
       "where there are two consecutive physics triggers; log10(DeltaT/s)." ];
 
-  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_all_recorded = 65 [
+  calin.ix.math.histogram.Histogram1DData log10_delta_t_histogram_all_recorded = 75 [
     (CFO).desc = "Histogram of log10 of time between RECORDED events; log10(DeltaT/s)." ];
+
+  uint64 num_delta_t_all_recorded_not_positive             = 76 [
+    (CFO).desc = "Number of events where time did not move forward with "
+      "respect to previous recorded event.",
+    (CFO).is_counter = true ];
 
   repeated ModuleRunInfo module                            = 100;
 };
@@ -238,11 +262,14 @@ message PartialRunInfo {
   uint64 num_pedestal_trigger                              = 45 [ (CFO).is_counter = true ];
   uint64 num_slow_control_trigger                          = 46 [ (CFO).is_counter = true ];
   uint64 num_busy_trigger                                  = 47 [ (CFO).is_counter = true ];
+  uint64 num_tib_ucts_trigger_code_mismatch                = 48 [ (CFO).is_counter = true ];
 
   int64 min_event_time                                     = 50 [ (CFO).integration_algorithm = MIN ];
   int64 max_event_time                                     = 51 [ (CFO).integration_algorithm = MAX ];
-  repeated int64 event_time_sequence                       = 52 [ (CFO).integration_algorithm = APPEND ];
-  repeated uint32 event_type_sequence                      = 53 [ (CFO).integration_algorithm = APPEND ];
+  repeated int64 camera_clock_min_time                     = 52 [ (CFO).integration_algorithm = MIN ];
+  repeated int64 camera_clock_max_time                     = 53 [ (CFO).integration_algorithm = MAX ];
+  repeated int64 event_time_sequence                       = 54 [ (CFO).integration_algorithm = APPEND ];
+  repeated uint32 event_type_sequence                      = 55 [ (CFO).integration_algorithm = APPEND ];
 
   repeated PartialModuleRunInfo module                     = 100;
 };
