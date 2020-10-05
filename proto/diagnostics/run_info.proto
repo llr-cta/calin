@@ -192,11 +192,15 @@ message RunInfo {
     (CFO).desc = "Maximum absolute event time from all events.",
     (CFO).units = "ns",
     (CFO).integration_algorithm = MAX ];
-  repeated int64 camera_clock_min_time                     = 62 [
+  repeated int64 camera_clock_presence                     = 62 [
+    (CFO).desc = "Number of events for which each camera clock is available.",
+    (CFO).units = "evenst",
+    (CFO).integration_algorithm = SUM, (CFO).is_counter = true ];
+  repeated int64 camera_clock_min_time                     = 63 [
     (CFO).desc = "Minimum event time for each of the camera clocks.",
     (CFO).units = "ticks",
     (CFO).integration_algorithm = MIN ];
-  repeated int64 camera_clock_max_time                     = 63 [
+  repeated int64 camera_clock_max_time                     = 64 [
     (CFO).desc = "Maximum event time for each of the camera clocks.",
     (CFO).units = "ticks",
     (CFO).integration_algorithm = MAX ];
@@ -266,10 +270,11 @@ message PartialRunInfo {
 
   int64 min_event_time                                     = 50 [ (CFO).integration_algorithm = MIN ];
   int64 max_event_time                                     = 51 [ (CFO).integration_algorithm = MAX ];
-  repeated int64 camera_clock_min_time                     = 52 [ (CFO).integration_algorithm = MIN ];
-  repeated int64 camera_clock_max_time                     = 53 [ (CFO).integration_algorithm = MAX ];
-  repeated int64 event_time_sequence                       = 54 [ (CFO).integration_algorithm = APPEND ];
-  repeated uint32 event_type_sequence                      = 55 [ (CFO).integration_algorithm = APPEND ];
+  repeated int64 camera_clock_presence                     = 52 [ (CFO).integration_algorithm = SUM, (CFO).is_counter = true ];
+  repeated int64 camera_clock_min_time                     = 53 [ (CFO).integration_algorithm = MIN ];
+  repeated int64 camera_clock_max_time                     = 54 [ (CFO).integration_algorithm = MAX ];
+  repeated int64 event_time_sequence                       = 55 [ (CFO).integration_algorithm = APPEND ];
+  repeated uint32 event_type_sequence                      = 56 [ (CFO).integration_algorithm = APPEND ];
 
   repeated PartialModuleRunInfo module                     = 100;
 };

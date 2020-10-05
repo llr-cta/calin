@@ -121,6 +121,15 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_run(
   partials_->set_min_event_time(std::numeric_limits<int64_t>::max());
   partials_->set_max_event_time(std::numeric_limits<int64_t>::min());
 
+  for(int iclock=0; iclock<run_config_->camera_layout().camera_clock_name_size(); ++iclock) {
+    results_->add_camera_clock_presence(0);
+    results_->add_camera_clock_min_time(std::numeric_limits<int64_t>::max());
+    results_->add_camera_clock_max_time(std::numeric_limits<int64_t>::min());
+    partials_->add_camera_clock_presence(0);
+    partials_->add_camera_clock_min_time(std::numeric_limits<int64_t>::max());
+    partials_->add_camera_clock_max_time(std::numeric_limits<int64_t>::min());
+  }
+
   trigger_type_code_hist_.clear();
   trigger_type_code_diff_hist_.clear();
 
@@ -260,6 +269,15 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
     auto t = event->absolute_event_time().time_ns();
     partials_->set_max_event_time(std::max(partials_->max_event_time(), t));
     partials_->set_min_event_time(std::min(partials_->min_event_time(), t));
+  }
+
+  // CAMERA CLOCK TIMES
+  for(const auto& clock : event->camera_clock()) {
+    partials_->increment_camera_clock_presence(clock.clock_id());
+    partials_->set_camera_clock_min_time(clock.clock_id(),
+      std::min(partials_->camera_clock_min_time(clock.clock_id()), clock.time_value()));
+    partials_->set_camera_clock_max_time(clock.clock_id(),
+      std::max(partials_->camera_clock_max_time(clock.clock_id()), clock.time_value()));
   }
 
   // MODULES
@@ -451,6 +469,10 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
 
   results_->set_min_event_time(partials_->min_event_time());
   results_->set_max_event_time(partials_->max_event_time());
+
+  (*results_->mutable_camera_clock_presence()) = partials_->camera_clock_presence();
+  (*results_->mutable_camera_clock_max_time()) = partials_->camera_clock_max_time();
+  (*results_->mutable_camera_clock_min_time()) = partials_->camera_clock_min_time();
 
   trigger_type_code_hist_.dump_as_compactified_proto(0, 0,
     results_->mutable_trigger_code_histogram());
