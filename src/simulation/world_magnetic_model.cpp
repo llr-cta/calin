@@ -74,10 +74,14 @@ WMM::WMM(const std::string& cof_file, double date):
   if(!MAG_robustReadMagModels(cof_file.c_str(),mag_->magnetic_models, 1))
     throw std::runtime_error("Cannot open WMM COF file: " + cof_file
       + "\n" + strerror(errno));
+
+  auto* file_record = calin::provenance::chronicle::register_file_open(cof_file,
+    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
+  calin::provenance::chronicle::register_file_close(file_record);
+
   if(mag_->magnetic_models[0] == nullptr)
     throw std::runtime_error("Magnetic model is NULL");
-  calin::provenance::chronicle::register_file_open(cof_file,
-    calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
+
 
   if(date == 0)mag_->date = mag_->magnetic_models[0]->epoch;
   else mag_->date = date;

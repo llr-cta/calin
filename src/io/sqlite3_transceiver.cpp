@@ -67,13 +67,18 @@ SQLite3Transceiver(const std::string& filename_in, OpenMode open_mode,
     access = calin::ix::provenance::chronicle::AT_READ; break;
   }
 
-  calin::provenance::chronicle::register_file_open(filename, access,
+  file_record_ = calin::provenance::chronicle::register_file_open(filename, access,
     __PRETTY_FUNCTION__);
 }
 
 SQLite3Transceiver::~SQLite3Transceiver()
 {
-  if(adopt_db_)sqlite3_close(db_);
+  if(adopt_db_) {
+    if(file_record_) {
+      calin::provenance::chronicle::register_file_close(file_record_);
+    }
+    sqlite3_close(db_);
+  }
 }
 
 #if 0

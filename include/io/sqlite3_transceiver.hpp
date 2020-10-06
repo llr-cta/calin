@@ -32,8 +32,9 @@
 
 #include <sqlite3.h>
 
-#include "io/sql_transceiver.hpp"
-#include "io/sqlite3_statement.hpp"
+#include <provenance/chronicle.pb.h>
+#include <io/sql_transceiver.hpp>
+#include <io/sqlite3_statement.hpp>
 
 namespace calin { namespace io { namespace sql_transceiver {
 
@@ -51,6 +52,7 @@ protected:
   sqlite3* db_ = nullptr;
   bool adopt_db_ = false;
   OpenMode open_mode_ = EXISTING_OR_NEW_RW;
+  calin::ix::provenance::chronicle::FileIORecord* file_record_ = nullptr;
 
   SQLStatement* prepare_statement(const std::string& sql) override;
 

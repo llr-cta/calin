@@ -25,6 +25,7 @@
 
 #include <string>
 
+#include <provenance/chronicle.pb.h>
 #include <calin_global_definitions.hpp>
 #include <io/packet_stream.pb.h>
 
@@ -122,6 +123,7 @@ public:
   bool get_packet(std::string& packet_out, uint64_t& seq_index_out) override;
 private:
   PacketInStream* upstream_ = nullptr;
+  calin::ix::provenance::chronicle::FileIORecord* file_record_ = nullptr;
 };
 
 class FramedFilePacketOutStream final: public PacketOutStream
@@ -135,6 +137,7 @@ public:
   bool put_packet(const std::string& packet, uint64_t seq_index) override;
 private:
   PacketOutStream* downstream_ = nullptr;
+  calin::ix::provenance::chronicle::FileIORecord* file_record_ = nullptr;
 };
 
 } } } // namespace calin::io::packet_stream

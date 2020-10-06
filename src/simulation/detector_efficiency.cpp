@@ -62,7 +62,7 @@ AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
   if(!stream.good())
     throw std::runtime_error("Could not open: "+filename);
 
-  calin::provenance::chronicle::register_file_open(filename,
+  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
   std::getline(stream,line); // skip first line
@@ -105,6 +105,7 @@ AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
     e_ev_.push_back(e);
     absorption_.push_back(abs);
   }
+  calin::provenance::chronicle::register_file_close(file_record);
 }
 
 AtmosphericAbsorption::AtmosphericAbsorption(const std::string& filename,
@@ -114,7 +115,7 @@ AtmosphericAbsorption::AtmosphericAbsorption(const std::string& filename,
   if(!stream.good())
     throw std::runtime_error("Could not open: "+filename);
 
-  calin::provenance::chronicle::register_file_open(filename,
+  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
 
@@ -149,6 +150,7 @@ next_header_line:
   }
 
   if(levels_cm.size() < 2) {
+    calin::provenance::chronicle::register_file_close(file_record);
     throw std::runtime_error("Must have 2 or more levels in absorption file: "+
       filename);
   }
@@ -185,6 +187,7 @@ next_header_line:
     }
     std::getline(stream,line);
   }
+  calin::provenance::chronicle::register_file_close(file_record);
 }
 
 InterpLinear1D AtmosphericAbsorption::opticalDepthForAltitude(double h) const
@@ -335,8 +338,9 @@ AngularEfficiency::AngularEfficiency(const std::string& filename):
   this->insert_from_2column_file_with_filter(filename,
     [](double& theta_in_w_out, double& eff) {
       theta_in_w_out = std::cos(theta_in_w_out/180.0*M_PI); return true; });
-  calin::provenance::chronicle::register_file_open(filename,
+  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
+  calin::provenance::chronicle::register_file_close(file_record);
 }
 
 void AngularEfficiency::scaleEff(const InterpLinear1D& eff)

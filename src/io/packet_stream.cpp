@@ -221,7 +221,7 @@ FramedFilePacketInStream::FramedFilePacketInStream(const std::string& filename,
   int fd = open(filename.c_str(), O_RDONLY);
   if(fd==-1)throw std::runtime_error(std::string("Error opening \"") +
     filename + "\": " + std::strerror(errno));
-  calin::provenance::chronicle::register_file_open(filename,
+  file_record_ = calin::provenance::chronicle::register_file_open(filename,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   auto* filestream = new FileInputStream(fd);
   filestream->SetCloseOnDelete(true);
@@ -233,6 +233,7 @@ FramedFilePacketInStream::FramedFilePacketInStream(const std::string& filename,
 FramedFilePacketInStream::~FramedFilePacketInStream()
 {
   delete upstream_;
+  calin::provenance::chronicle::register_file_close(file_record_);
 }
 
 bool FramedFilePacketInStream::
@@ -249,7 +250,7 @@ FramedFilePacketOutStream::FramedFilePacketOutStream(const std::string& filename
   int fd = open(filename.c_str(), O_WRONLY|O_CREAT|(append?O_APPEND:O_TRUNC), mode);
   if(fd==-1)throw std::runtime_error(std::string("Error opening \"") +
     filename + "\" for writing: " + std::strerror(errno));
-  calin::provenance::chronicle::register_file_open(filename,
+  file_record_ = calin::provenance::chronicle::register_file_open(filename,
     append?calin::ix::provenance::chronicle::AT_WRITE:
       calin::ix::provenance::chronicle::AT_TRUNCATE, __PRETTY_FUNCTION__);
   auto* filestream = new FileOutputStream(fd);
@@ -262,6 +263,7 @@ FramedFilePacketOutStream::FramedFilePacketOutStream(const std::string& filename
 FramedFilePacketOutStream::~FramedFilePacketOutStream()
 {
   delete downstream_;
+  calin::provenance::chronicle::register_file_close(file_record_);
 }
 
 bool FramedFilePacketOutStream::
