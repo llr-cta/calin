@@ -228,7 +228,7 @@ double LombardMartinPrescottMES::pdf_ped(double x)
     throw std::runtime_error("LombardMartinPrescottMES::pdf_ped: no pedestal pdf specified");
   }
   int i = ibin(x);
-  if(i<0 or i>=npoint_)return 0.0;
+  if(i<0 or i>=int(npoint_))return 0.0;
   return std::max(off_pmf_[i], 0.0)*dx_inv_;
 }
 
@@ -247,7 +247,7 @@ double LombardMartinPrescottMES::pdf_gradient_hessian_ped(double x, VecRef gradi
 double LombardMartinPrescottMES::pdf_mes(double x)
 {
   int i = ibin(x);
-  if(i<0 or i>=npoint_)return 0.0;
+  if(i<0 or i>=int(npoint_))return 0.0;
   return std::max(mes_pmf_[i], 0.0)*dx_inv_;
 }
 
@@ -467,7 +467,7 @@ rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes) co
       if(ipmf_l>=0) {
         pmf_out[ipmf_l] += (ipmf_r - xpmf_l)*dx_over_sensitivity*mes_in[imes];
       }
-      if(ipmf_r<npoint_) {
+      if(ipmf_r<int(npoint_)) {
         pmf_out[ipmf_r] += (xpmf_r - ipmf_r)*dx_over_sensitivity*mes_in[imes];
       }
     }
