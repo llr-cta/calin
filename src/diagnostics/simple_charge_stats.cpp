@@ -49,6 +49,7 @@ SimpleChargeStatsParallelEventVisitor(
 SimpleChargeStatsParallelEventVisitor::~SimpleChargeStatsParallelEventVisitor()
 {
   for(auto* h : chan_hists_)delete h;
+  delete camera_hists_;
 }
 
 SimpleChargeStatsParallelEventVisitor* SimpleChargeStatsParallelEventVisitor::new_sub_visitor(
@@ -80,8 +81,12 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   for(auto* h :chan_hists_)delete h;
   chan_hists_.resize(run_config->configured_channel_id_size());
   for(auto*& h : chan_hists_) {
-    h = new ChannelHists(has_dual_gain_, config_.ped_time_hist_resolution());
+    // For now on do not use per-channel low gain histograms
+    h = new ChannelHists(/* has_dual_gain_ */ false, config_.ped_time_hist_resolution(), 3600.0);
   }
+
+  delete camera_hists_;
+  camera_hists_ = new ChannelHists(has_dual_gain_, 60.0, 86400.0);
 
   // if(high_gain_visitor_) {
   //   high_gain_results_->Clear();
@@ -236,29 +241,74 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
 
 void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_camera_partials(
   calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
-  const calin::ix::diagnostics::simple_charge_stats::PartialOneGainCameraSimpleChargeStats& partials_gc)
+  const calin::ix::diagnostics::simple_charge_stats::PartialOneGainCameraSimpleChargeStats& partials_g)
 {
-  results_g->set_ext_trigger_all_channel_count(partials_gc.ext_trig_all_num_events());
-  if(partials_gc.ext_trig_all_num_events() > 0) {
+  results_g->set_ext_trigger_all_channel_count(partials_g.ext_trig_all_num_events());
+  if(partials_g.ext_trig_all_num_events() > 0) {
     results_g->set_ext_trigger_all_channel_sig_win_mean(
-      double(partials_gc.ext_trig_all_sig_win_sum())/double(partials_gc.ext_trig_all_num_events()));
+      double(partials_g.ext_trig_all_sig_win_sum())/double(partials_g.ext_trig_all_num_events()));
     results_g->set_ext_trigger_all_channel_sig_win_var(cov_double_gen(
-      partials_gc.ext_trig_all_sig_win_sumsq(), partials_gc.ext_trig_all_num_events(),
-      partials_gc.ext_trig_all_sig_win_sum(), partials_gc.ext_trig_all_num_events(),
-      partials_gc.ext_trig_all_sig_win_sum(), partials_gc.ext_trig_all_num_events()));
+      partials_g.ext_trig_all_sig_win_sumsq(), partials_g.ext_trig_all_num_events(),
+      partials_g.ext_trig_all_sig_win_sum(), partials_g.ext_trig_all_num_events(),
+      partials_g.ext_trig_all_sig_win_sum(), partials_g.ext_trig_all_num_events()));
 
     results_g->set_ext_trigger_all_channel_opt_win_mean(
-      double(partials_gc.ext_trig_all_opt_win_sum())/double(partials_gc.ext_trig_all_num_events()));
+      double(partials_g.ext_trig_all_opt_win_sum())/double(partials_g.ext_trig_all_num_events()));
     results_g->set_ext_trigger_all_channel_opt_win_var(cov_double_gen(
-      partials_gc.ext_trig_all_opt_win_sumsq(), partials_gc.ext_trig_all_num_events(),
-      partials_gc.ext_trig_all_opt_win_sum(), partials_gc.ext_trig_all_num_events(),
-      partials_gc.ext_trig_all_opt_win_sum(), partials_gc.ext_trig_all_num_events()));
+      partials_g.ext_trig_all_opt_win_sumsq(), partials_g.ext_trig_all_num_events(),
+      partials_g.ext_trig_all_opt_win_sum(), partials_g.ext_trig_all_num_events(),
+      partials_g.ext_trig_all_opt_win_sum(), partials_g.ext_trig_all_num_events()));
   } else {
     results_g->add_ext_trigger_sig_win_mean(0.0);
     results_g->add_ext_trigger_sig_win_var(0.0);
     results_g->add_ext_trigger_opt_win_mean(0.0);
     results_g->add_ext_trigger_opt_win_var(0.0);
   }
+
+  if(partials_g.has_all_trig_pedwin_vs_time_1_sum()) {
+    auto* mean_hist = new calin::ix::math::histogram::Histogram1DData;
+    auto* var_hist = new calin::ix::math::histogram::Histogram1DData;
+    mean_hist->CopyFrom(partials_g.all_trig_pedwin_vs_time_q_sum());
+    var_hist->CopyFrom(partials_g.all_trig_pedwin_vs_time_q2_sum());
+    for(int ibin=0;ibin<partials_g.all_trig_pedwin_vs_time_1_sum().bins_size();ibin++) {
+      double count = partials_g.all_trig_pedwin_vs_time_1_sum().bins(ibin);
+      if(count>0) {
+        mean_hist->set_bins(ibin, mean_hist->bins(ibin)/count);
+        var_hist->set_bins(ibin, var_hist->bins(ibin)/count - SQR(mean_hist->bins(ibin)));
+      }
+    }
+    calin::math::histogram::sparsify(partials_g.all_trig_pedwin_vs_time_1_sum(),
+      results_g->mutable_camera_all_trigger_ped_win_count_vs_time());
+    calin::math::histogram::sparsify(*mean_hist,
+      results_g->mutable_camera_all_trigger_ped_win_mean_vs_time());
+    calin::math::histogram::sparsify(*var_hist,
+      results_g->mutable_camera_all_trigger_ped_win_var_vs_time());
+    delete var_hist;
+    delete mean_hist;
+  }
+
+  if(partials_g.has_ped_trig_vs_time_1_sum()) {
+    auto* mean_hist = new calin::ix::math::histogram::Histogram1DData;
+    auto* var_hist = new calin::ix::math::histogram::Histogram1DData;
+    mean_hist->CopyFrom(partials_g.ped_trig_vs_time_q_sum());
+    var_hist->CopyFrom(partials_g.ped_trig_vs_time_q2_sum());
+    for(int ibin=0;ibin<partials_g.ped_trig_vs_time_1_sum().bins_size();ibin++) {
+      double count = partials_g.ped_trig_vs_time_1_sum().bins(ibin);
+      if(count>0) {
+        mean_hist->set_bins(ibin, mean_hist->bins(ibin)/count);
+        var_hist->set_bins(ibin, var_hist->bins(ibin)/count - SQR(mean_hist->bins(ibin)));
+      }
+    }
+    calin::math::histogram::sparsify(partials_g.ped_trig_vs_time_1_sum(),
+      results_g->mutable_camera_ped_trigger_full_wf_count_vs_time());
+    calin::math::histogram::sparsify(*mean_hist,
+      results_g->mutable_camera_ped_trigger_full_wf_mean_vs_time());
+    calin::math::histogram::sparsify(*var_hist,
+      results_g->mutable_camera_ped_trigger_full_wf_var_vs_time());
+    delete var_hist;
+    delete mean_hist;
+  }
+
 }
 
 void SimpleChargeStatsParallelEventVisitor::dump_single_gain_channel_hists_to_partials(
@@ -286,15 +336,51 @@ void SimpleChargeStatsParallelEventVisitor::dump_single_gain_channel_hists_to_pa
   delete hp;
 }
 
+void SimpleChargeStatsParallelEventVisitor::dump_single_gain_camera_hists_to_partials(
+  const SingleGainChannelHists& hists,
+  calin::ix::diagnostics::simple_charge_stats::PartialOneGainCameraSimpleChargeStats* partials)
+{
+  auto* hp = hists.all_pedwin_1_sum_vs_time->dump_as_proto();
+  partials->mutable_all_trig_pedwin_vs_time_1_sum()->IntegrateFrom(*hp);
+
+  hists.all_pedwin_q_sum_vs_time->dump_as_proto(hp);
+  partials->mutable_all_trig_pedwin_vs_time_q_sum()->IntegrateFrom(*hp);
+
+  hists.all_pedwin_q2_sum_vs_time->dump_as_proto(hp);
+  partials->mutable_all_trig_pedwin_vs_time_q2_sum()->IntegrateFrom(*hp);
+
+  hists.ped_wf_1_sum_vs_time->dump_as_proto(hp);
+  partials->mutable_ped_trig_vs_time_1_sum()->IntegrateFrom(*hp);
+
+  hists.ped_wf_q_sum_vs_time->dump_as_proto(hp);
+  partials->mutable_ped_trig_vs_time_q_sum()->IntegrateFrom(*hp);
+
+  hists.ped_wf_q2_sum_vs_time->dump_as_proto(hp);
+  partials->mutable_ped_trig_vs_time_q2_sum()->IntegrateFrom(*hp);
+
+  delete hp;
+}
+
 bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
 {
   for(int ichan = 0; ichan<partials_.channel_size(); ichan++) {
     dump_single_gain_channel_hists_to_partials(*chan_hists_[ichan]->high_gain,
       partials_.mutable_channel(ichan)->mutable_high_gain());
-    if(has_dual_gain_) {
+    delete chan_hists_[ichan]->high_gain;
+    chan_hists_[ichan]->high_gain = nullptr;
+    if(has_dual_gain_ and chan_hists_[ichan]->low_gain) {
       dump_single_gain_channel_hists_to_partials(*chan_hists_[ichan]->low_gain,
         partials_.mutable_channel(ichan)->mutable_low_gain());
+      delete chan_hists_[ichan]->low_gain;
+      chan_hists_[ichan]->low_gain = nullptr;
     }
+  }
+
+  dump_single_gain_camera_hists_to_partials(*camera_hists_->high_gain,
+    partials_.mutable_camera()->mutable_high_gain());
+  if(has_dual_gain_ and camera_hists_->low_gain) {
+    dump_single_gain_camera_hists_to_partials(*camera_hists_->low_gain,
+      partials_.mutable_camera()->mutable_low_gain());
   }
 
   if(parent_)return true;
@@ -319,7 +405,8 @@ void SimpleChargeStatsParallelEventVisitor::record_one_gain_channel_data(
   const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
   unsigned ichan, double elapsed_event_time,
   calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats,
-  SingleGainChannelHists* one_gain_hists, unsigned& nsum, int64_t& opt_sum, int64_t& sig_sum)
+  SingleGainChannelHists* one_gain_hists,
+  unsigned& nsum, int64_t& opt_sum, int64_t& sig_sum, int64_t& bkg_sum, int64_t& wf_sum)
 {
   one_gain_stats->increment_all_trig_num_events();
 
@@ -327,46 +414,48 @@ void SimpleChargeStatsParallelEventVisitor::record_one_gain_channel_data(
   int64_t sqr_ped_win_sum = SQR(ped_win_sum);
   one_gain_stats->increment_all_trig_ped_win_sum(ped_win_sum);
   one_gain_stats->increment_all_trig_ped_win_sumsq(sqr_ped_win_sum);
-  one_gain_hists->all_pedwin_1_sum_vs_time->insert(elapsed_event_time);
-  one_gain_hists->all_pedwin_q_sum_vs_time->insert(elapsed_event_time, ped_win_sum);
-  one_gain_hists->all_pedwin_q2_sum_vs_time->insert(elapsed_event_time, sqr_ped_win_sum);
+  if(one_gain_hists) {
+    one_gain_hists->all_pedwin_1_sum_vs_time->insert(elapsed_event_time);
+    one_gain_hists->all_pedwin_q_sum_vs_time->insert(elapsed_event_time, ped_win_sum);
+    one_gain_hists->all_pedwin_q2_sum_vs_time->insert(elapsed_event_time, sqr_ped_win_sum);
+  }
+  int64_t wf_all_sum = sum_visitor->array_chan_all_sum()[ichan];
+  int64_t sig_win_sum = sum_visitor->array_chan_sig_win_sum()[ichan];
+  int64_t bkg_win_sum = sum_visitor->array_chan_bkg_win_sum()[ichan];
+  int64_t opt_win_sum = sum_visitor->array_chan_opt_win_sum()[ichan];
   if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL) {
-    int64_t wf_all_sum = sum_visitor->array_chan_all_sum()[ichan];
     int64_t sqr_wf_all_sum = SQR(wf_all_sum);
     one_gain_stats->increment_ped_trig_num_events();
     one_gain_stats->increment_ped_trig_full_wf_sum(wf_all_sum);
     one_gain_stats->increment_ped_trig_full_wf_sumsq(sqr_wf_all_sum);
     one_gain_stats->increment_ped_trig_ped_win_sum(ped_win_sum);
     one_gain_stats->increment_ped_trig_ped_win_sumsq(sqr_ped_win_sum);
-    int64_t sig_win_sum = sum_visitor->array_chan_sig_win_sum()[ichan];
     int64_t sqr_sig_win_sum = SQR(sig_win_sum);
     one_gain_stats->increment_ped_trig_sig_win_sum(sig_win_sum);
     one_gain_stats->increment_ped_trig_sig_win_sumsq(sqr_sig_win_sum);
-    int64_t opt_win_sum = sum_visitor->array_chan_opt_win_sum()[ichan];
     int64_t sqr_opt_win_sum = SQR(opt_win_sum);
     one_gain_stats->increment_ped_trig_opt_win_sum(opt_win_sum);
     one_gain_stats->increment_ped_trig_opt_win_sumsq(sqr_opt_win_sum);
-    one_gain_hists->ped_wf_1_sum_vs_time->insert(elapsed_event_time);
-    one_gain_hists->ped_wf_q_sum_vs_time->insert(elapsed_event_time, wf_all_sum);
-    one_gain_hists->ped_wf_q2_sum_vs_time->insert(elapsed_event_time, sqr_wf_all_sum);
-    ++nsum;
-    opt_sum += opt_win_sum;
-    sig_sum += sig_win_sum;
+    if(one_gain_hists) {
+      one_gain_hists->ped_wf_1_sum_vs_time->insert(elapsed_event_time);
+      one_gain_hists->ped_wf_q_sum_vs_time->insert(elapsed_event_time, wf_all_sum);
+      one_gain_hists->ped_wf_q2_sum_vs_time->insert(elapsed_event_time, sqr_wf_all_sum);
+    }
   } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER) {
-    int64_t sig_win_sum = sum_visitor->array_chan_sig_win_sum()[ichan];
     int64_t sqr_sig_win_sum = SQR(sig_win_sum);
     one_gain_stats->increment_ext_trig_num_events();
     one_gain_stats->increment_ext_trig_sig_win_sum(sig_win_sum);
     one_gain_stats->increment_ext_trig_sig_win_sumsq(sqr_sig_win_sum);
-    int64_t opt_win_sum = sum_visitor->array_chan_opt_win_sum()[ichan];
     int64_t sqr_opt_win_sum = SQR(opt_win_sum);
     one_gain_stats->increment_ext_trig_opt_win_sum(opt_win_sum);
     one_gain_stats->increment_ext_trig_opt_win_sumsq(sqr_opt_win_sum);
-    ++nsum;
-    opt_sum += opt_win_sum;
-    sig_sum += sig_win_sum;
   } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
   }
+  ++nsum;
+  opt_sum += opt_win_sum;
+  sig_sum += sig_win_sum;
+  bkg_sum += bkg_win_sum;
+  wf_sum += wf_all_sum;
 }
 
 void SimpleChargeStatsParallelEventVisitor::record_one_visitor_data(
@@ -380,9 +469,14 @@ void SimpleChargeStatsParallelEventVisitor::record_one_visitor_data(
     unsigned nsum_hg = 0;
     int64_t opt_sum_hg = 0;
     int64_t sig_sum_hg = 0;
+    int64_t bkg_sum_hg = 0;
+    int64_t all_sum_hg = 0;
+
     unsigned nsum_lg = 0;
     int64_t opt_sum_lg = 0;
     int64_t sig_sum_lg = 0;
+    int64_t bkg_sum_lg = 0;
+    int64_t all_sum_lg = 0;
     for(unsigned ichan=0; ichan<sum_visitor->nchan(); ichan++) {
       auto* pc = partials->mutable_channel(ichan);
       switch(sum_visitor->array_chan_signal_type()[ichan]) {
@@ -390,12 +484,12 @@ void SimpleChargeStatsParallelEventVisitor::record_one_visitor_data(
       case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
         record_one_gain_channel_data(event, sum_visitor, ichan, elapsed_event_time,
           pc->mutable_high_gain(), chan_hists_[ichan]->high_gain,
-          nsum_hg, opt_sum_hg, sig_sum_hg);
+          nsum_hg, opt_sum_hg, sig_sum_hg, bkg_sum_hg, all_sum_hg);
         break;
       case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
         record_one_gain_channel_data(event, sum_visitor, ichan, elapsed_event_time,
           pc->mutable_low_gain(), chan_hists_[ichan]->low_gain,
-          nsum_lg, opt_sum_lg, sig_sum_lg);
+          nsum_lg, opt_sum_lg, sig_sum_lg, bkg_sum_lg, all_sum_lg);
         break;
       case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
       default:
@@ -404,6 +498,9 @@ void SimpleChargeStatsParallelEventVisitor::record_one_visitor_data(
       }
     }
     if(nsum_hg == sum_visitor->nchan()) {
+      camera_hists_->high_gain->all_pedwin_1_sum_vs_time->insert(elapsed_event_time);
+      camera_hists_->high_gain->all_pedwin_q_sum_vs_time->insert(elapsed_event_time, bkg_sum_hg);
+      camera_hists_->high_gain->all_pedwin_q2_sum_vs_time->insert(elapsed_event_time, bkg_sum_hg*bkg_sum_hg);
       if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER) {
         auto* pcam = partials->mutable_camera()->mutable_high_gain();
         pcam->increment_ext_trig_all_num_events();
@@ -411,9 +508,16 @@ void SimpleChargeStatsParallelEventVisitor::record_one_visitor_data(
         pcam->increment_ext_trig_all_sig_win_sumsq(SQR(sig_sum_hg));
         pcam->increment_ext_trig_all_opt_win_sum(opt_sum_hg);
         pcam->increment_ext_trig_all_opt_win_sumsq(SQR(opt_sum_hg));
+      } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL) {
+        camera_hists_->high_gain->ped_wf_1_sum_vs_time->insert(elapsed_event_time);
+        camera_hists_->high_gain->ped_wf_q_sum_vs_time->insert(elapsed_event_time, all_sum_hg);
+        camera_hists_->high_gain->ped_wf_q2_sum_vs_time->insert(elapsed_event_time, all_sum_hg*all_sum_hg);
       }
     }
     if(nsum_lg == sum_visitor->nchan()) {
+      camera_hists_->low_gain->all_pedwin_1_sum_vs_time->insert(elapsed_event_time);
+      camera_hists_->low_gain->all_pedwin_q_sum_vs_time->insert(elapsed_event_time, bkg_sum_lg);
+      camera_hists_->low_gain->all_pedwin_q2_sum_vs_time->insert(elapsed_event_time, bkg_sum_lg*bkg_sum_lg);
       if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER) {
         auto* pcam = partials->mutable_camera()->mutable_low_gain();
         pcam->increment_ext_trig_all_num_events();
@@ -421,6 +525,10 @@ void SimpleChargeStatsParallelEventVisitor::record_one_visitor_data(
         pcam->increment_ext_trig_all_sig_win_sumsq(SQR(sig_sum_lg));
         pcam->increment_ext_trig_all_opt_win_sum(opt_sum_lg);
         pcam->increment_ext_trig_all_opt_win_sumsq(SQR(opt_sum_lg));
+      } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL) {
+        camera_hists_->low_gain->ped_wf_1_sum_vs_time->insert(elapsed_event_time);
+        camera_hists_->low_gain->ped_wf_q_sum_vs_time->insert(elapsed_event_time, all_sum_lg);
+        camera_hists_->low_gain->ped_wf_q2_sum_vs_time->insert(elapsed_event_time, all_sum_lg*all_sum_lg);
       }
     }
   }
