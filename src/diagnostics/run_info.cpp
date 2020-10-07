@@ -24,9 +24,11 @@
 #include <util/algorithm.hpp>
 #include <diagnostics/run_info.hpp>
 #include <diagnostics/range.hpp>
+#include <math/special.hpp>
 
 using namespace calin::util::log;
 using namespace calin::diagnostics::run_info;
+using calin::math::special::SQR;
 
 ModuleCounterProcessor::~ModuleCounterProcessor()
 {
@@ -92,6 +94,9 @@ RunInfoDiagnosticsParallelEventVisitor::RunInfoDiagnosticsParallelEventVisitor(
 RunInfoDiagnosticsParallelEventVisitor::~RunInfoDiagnosticsParallelEventVisitor()
 {
   for(auto* iproc: mod_counter_processor_)delete iproc;
+  for(auto& mod_hists : mod_counter_hist_) {
+    for(auto* hist : mod_hists)delete hist;
+  }
   delete arena_;
 }
 
@@ -151,6 +156,11 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_run(
   mod_counter_id_.clear();
   mod_counter_mode_.clear();
   mod_counter_processor_.clear();
+  for(auto& mod_hists : mod_counter_hist_) {
+    for(auto* hist : mod_hists)delete hist;
+  }
+  mod_counter_hist_.clear();
+
   for(int icounter=0;icounter<std::max(config.module_counter_test_id_size(),
       config.module_counter_test_mode_size());icounter++) {
     int counter_id = config.module_counter_test_id(icounter);
@@ -166,6 +176,7 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_run(
     } else {
       mod_counter_processor_.push_back(new DirectModuleCounterProcessor());
     }
+    mod_counter_hist_.emplace_back(run_config->configured_module_id_size());
   }
   if(not mod_counter_id_.empty())
     mod_counter_values_.reserve(run_config->configured_module_id_size());
@@ -173,14 +184,30 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_run(
   for(int imod=0;imod<run_config->configured_module_id_size();imod++) {
     auto* m = partials_->add_module();
     for(unsigned icounter=0;icounter<mod_counter_id_.size();icounter++) {
-      m->add_counter_value();
+      if(config_.enable_module_counter_test_value_range()) {
+        m->add_counter_value();
+      }
+      m->add_counter_value_squared_sum_histogram();
     }
   }
+
   return true;
 }
 
 bool RunInfoDiagnosticsParallelEventVisitor::leave_telescope_run()
 {
+  for(int imod=0;imod<run_config_->configured_module_id_size();imod++) {
+    for(unsigned icounter=0;icounter<mod_counter_id_.size(); icounter++) {
+      if(mod_counter_hist_[icounter][imod] != nullptr) {
+        auto* pimod = partials_->mutable_module(imod);
+        mod_counter_hist_[icounter][imod]->dump_as_proto(
+          pimod->mutable_counter_value_squared_sum_histogram(icounter));
+        delete mod_counter_hist_[icounter][imod];
+      }
+    }
+  }
+  mod_counter_hist_.clear();
+
   if(parent_ == nullptr) {
     results_->Clear();
     for(int imod=0;imod<run_config_->configured_module_id_size();imod++) {
@@ -304,8 +331,20 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_event(uint64_t seq_
     for(int imod=0; imod<event->module_counter_size(); imod++) {
       unsigned mod_id = event->module_counter(imod).module_id();
       auto* mod = partials_->mutable_module(mod_id);
-      calin::diagnostics::range::encode_value(
-        mod->mutable_counter_value(icounter), mod_counter_values_[imod]);
+
+      if(mod_counter_values_[imod]) {
+        if(mod_counter_hist_[icounter][mod_id] == nullptr) {
+          mod_counter_hist_[icounter][mod_id] =
+            new calin::math::histogram::SimpleHist(config_.event_number_histogram_resolution());
+        }
+        mod_counter_hist_[icounter][mod_id]->insert(event->local_event_number(),
+          SQR(mod_counter_values_[imod]));
+      }
+
+      if(config_.enable_module_counter_test_value_range()) {
+        calin::diagnostics::range::encode_value(
+          mod->mutable_counter_value(icounter), mod_counter_values_[imod]);
+      }
     }
   }
 
@@ -611,11 +650,15 @@ void RunInfoDiagnosticsParallelEventVisitor::integrate_partials()
       rimod->set_num_events_present(pimod.num_events_present());
 
       for(unsigned icounter=0; icounter<mod_counter_id_.size(); icounter++) {
-        make_index_range_from_i64_value_rle(
-          event_index, partials_->event_number_sequence().begin(),
-          pimod.module_presence(), pimod.counter_value(icounter),
-          event_value_bool, event_value_i64,
-          rimod->mutable_counter_value(icounter)->mutable_value_range());
+        rimod->mutable_counter_value(icounter)->mutable_value_squared_sum_histogram()->IntegrateFrom(
+          pimod.counter_value_squared_sum_histogram(icounter));
+        if(config_.enable_module_counter_test_value_range()) {
+          make_index_range_from_i64_value_rle(
+            event_index, partials_->event_number_sequence().begin(),
+            pimod.module_presence(), pimod.counter_value(icounter),
+            event_value_bool, event_value_i64,
+            rimod->mutable_counter_value(icounter)->mutable_value_range());
+        }
       }
     }
 

@@ -112,6 +112,7 @@ private:
   std::vector<unsigned> mod_counter_id_;
   std::vector<unsigned> mod_counter_mode_;
   std::vector<ModuleCounterProcessor*> mod_counter_processor_;
+  std::vector<std::vector<calin::math::histogram::SimpleHist*> > mod_counter_hist_;
 
   google::protobuf::Arena* arena_ = nullptr;
   calin::ix::diagnostics::run_info::RunInfo* results_ = nullptr;
