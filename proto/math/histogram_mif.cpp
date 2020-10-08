@@ -29,10 +29,27 @@ void calin::ix::math::histogram::Histogram1DData::IntegrateFrom(
   const calin::ix::math::histogram::Histogram1DData& from)
 {
   calin::ix::math::histogram::Histogram1DData* to = this;
+  if(from.dxval() == 0) {
+    // Empty histogram - do nbothing !
+    return;
+  }
   if(to->dxval() and (to->dxval() != from.dxval() or
-    to->xval_align() != from.xval_align()))
-    throw std::invalid_argument("merge_histogram1d_data: incompatible bin "
-      "configurations.");
+      to->xval_align() != from.xval_align())) {
+    std::string warning = "merge_histogram1d_data: incompatible bin configurations: ";
+    if(not from.name().empty()) {
+      warning += from.name() + std::string(": ");
+    }
+    if(to->dxval() != from.dxval()) {
+      warning += std::to_string(to->dxval()) + "!=" + std::to_string(from.dxval());
+      if(to->xval_align() != from.xval_align()) {
+        warning += " and " + std::to_string(to->xval_align()) + "!=" + std::to_string(from.xval_align());
+      }
+    } else {
+      warning += std::to_string(to->xval_align()) + "!=" + std::to_string(from.xval_align());
+    }
+
+    throw std::invalid_argument(warning);
+  }
   to->set_dxval(from.dxval());
   to->set_xval_align(from.xval_align());
 
