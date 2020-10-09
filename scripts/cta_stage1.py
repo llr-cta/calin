@@ -108,6 +108,9 @@ if(endpoints[0].startswith('tcp://') or endpoints[0].startswith('ipc://')
     sql.insert(opt.db_results_table_name(), visitor.stage1_results())
 else:
     first_file = True
+    failed_files = []
+    nsuccess = 0;
+    nskip = 0;
     for ifile, filename in enumerate(endpoints[opt.start_file_index():]):
         ifile += opt.start_file_index()
         if not first_file:
@@ -119,6 +122,7 @@ else:
             oids = sql.select_oids_matching(opt.db_results_table_name(), selector)
             if oids and opt.skip_existing():
                 print("#%d: skipping %s"%(ifile,filename))
+                nskip += 1
                 continue
             if oids and opt.replace_existing():
                 for oid in oids:
@@ -131,10 +135,29 @@ else:
             good, oid = sql.insert(opt.db_results_table_name(), s1pev.stage1_results())
             if(good):
                 print("Inserted stage1 results into database with OID:",oid)
+                nsuccess += 1
             else:
                 print("Failed to insert stage1 results into database")
+                failed_files.append(filename)
         except Exception as x:
             traceback.print_exception(*sys.exc_info())
+            failed_files.append(filename)
             pass
+
+    print("")
+    print("="*80)
+    if(nsuccess > 0):
+        print("Successfully processed",nsuccess,"runs." if nsuccess!=1 else "run.")
+    if(nskip > 0):
+        print("Skipped",nskip,"runs" if nsuccess!=1 else "run","that were alreadin in database.")
+    if(len(failed_files) > 0):
+        print("Processing failed for",len(failed_files),"runs." if len(failed_files)!=1 else "run.")
+        if(len(failed_files) > 1):
+            print("Failed files :")
+            for filename in failed_files:
+                print("--", filename)
+        else:
+            print("Failed file :",failed_files[0])
+    print("="*80)
 
 # The end
