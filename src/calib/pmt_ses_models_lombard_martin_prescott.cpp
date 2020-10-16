@@ -59,6 +59,12 @@ namespace {
     }
     if(config.stage_n_gain_rms_frac()<0)
       throw std::runtime_error("PMTSimTwoPopulation: stage 1+ excess RMS must be zero or positive.");
+    if(config.apply_downsampling()) {
+      if(config.downsampling_num_stage() >= config.num_stage())
+        throw std::runtime_error("PMTSimTwoPopulation: number of stages for down-sampling must be smaller than total.");
+      if(config.downsampling_factor() <= 1)
+        throw std::runtime_error("PMTSimTwoPopulation: down-sampling factor must be greater than one.");
+    }
   }
 
   inline double polya_Exx(double mean, double rms_frac) {
@@ -139,6 +145,14 @@ LombardMartinPrescottPMTModel(
     stage_0_pmf_zsa_[0] += shift;
   } else {
     stage_0_pmf_zsa_ = stage_0_pmf_;
+  }
+
+  // If downsampling is enabled then calculate the downsampled PMF for the
+  // number of stages that the user requested
+  if(config_.apply_downsampling()) {
+    stage_n_pmf_downsampled_ = multi_stage_polya_pmf(config_.downsampling_num_stage(),
+      stage_n_gain_, config_.stage_n_gain_rms_frac(),
+      config_.downsampling_factor(), precision_);
   }
 }
 
@@ -248,10 +262,9 @@ multi_stage_polya_pmf(unsigned nstage, double mean, double rms_frac, unsigned re
     for(unsigned ix=1;psum<pcutoff;ix++)
   	{
   	  double pkx = 0;
-  	  for(unsigned ii=ix-std::min(ix,unsigned(pkmo.size()-1));ii<ix;ii++)
-  	    {
-      		pkx += pk[ii]*pkmo[ix-ii]*(double(ix)+double(ii)*bmo);
-  	    }
+  	  for(unsigned ii=ix-std::min(ix,unsigned(pkmo.size()-1));ii<ix;ii++) {
+    		pkx += pk[ii]*pkmo[ix-ii]*(double(ix)+double(ii)*bmo);
+	    }
   	  pkx *= mu/double(ix)/C1;
   	  psum += pkx;
   	  pk.push_back(pkx);
@@ -325,9 +338,18 @@ void LombardMartinPrescottPMTModel::calc_spectrum(
   std::vector<const std::vector<double>*> all_stages;
   all_stages.reserve(config_.num_stage()+1);
 
-  // Do num_stage()-1 convolutions with the "n-stage" PMF
-  for(unsigned istage=0; istage<config_.num_stage()-1; istage++) {
-    all_stages.push_back(&stage_n_pmf_);
+  if(config_.apply_downsampling()) {
+    // Do one convolution with downsampled multi-stage PMF followed by ...
+    all_stages.push_back(&stage_n_pmf_downsampled_);
+    // num_stage()-downsampling_num_stage()-1 convolutions with the "n-stage" PMF
+    for(unsigned istage=config_.downsampling_num_stage(); istage<config_.num_stage()-1; istage++) {
+      all_stages.push_back(&stage_n_pmf_);
+    }
+  } else {
+    // Do num_stage()-1 convolutions with the "n-stage" PMF
+    for(unsigned istage=0; istage<config_.num_stage()-1; istage++) {
+      all_stages.push_back(&stage_n_pmf_);
+    }
   }
 
   // Then convolve with stage 0 PMF (zero suppress adjusted if necessary)
@@ -380,6 +402,7 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_ses(unsigned npoint)
 {
   if(npoint==0) {
     npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4);
+    if(config_.apply_downsampling())npoint /= config_.downsampling_factor();
   }
   Tableau tableau(npoint);
   calc_spectrum(tableau);
@@ -429,6 +452,7 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
 {
   if(npoint==0) {
     npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4 * mean);
+    if(config_.apply_downsampling())npoint /= config_.downsampling_factor();
   }
   return calc_mes(mean, rms_frac, npoint, nullptr, false);
 }
@@ -442,6 +466,7 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
       mean += pe_pmf[ipe]*ipe;
     }
     npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4 * mean);
+    if(config_.apply_downsampling())npoint /= config_.downsampling_factor();
   }
   return calc_mes(pe_pmf, npoint, nullptr, false);
 }
@@ -476,5 +501,8 @@ LombardMartinPrescottPMTModel::nectarcam_config()
   cfg.set_stage_0_lo_prob(0.15);
   cfg.set_stage_0_lo_gain(3.0);
   cfg.set_suppress_zero(true);
+  cfg.set_apply_downsampling(false);
+  cfg.set_downsampling_num_stage(4);
+  cfg.set_downsampling_factor(16);
   return cfg;
 }

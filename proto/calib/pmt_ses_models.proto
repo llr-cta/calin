@@ -62,4 +62,15 @@ message LombardMartinPrescottPMTModelConfig {
       "This option can specify the full stage 0 PMF if \"stage_0_lo_prob=1.0\"."];
   bool suppress_zero                                       = 11 [
     (CFO).desc = "Suppress events with zero charge." ];
+  bool apply_downsampling                                  = 12 [
+    (CFO).desc = "Apply downsampling (rebinning) to the SES and MES spectra. "
+      "The calculation is stopped after the PMF for the final n stages has been "
+      "calculated. This partial spectrum is rebinned as requested and the "
+      "remaining stages are calculated." ];
+  uint32 downsampling_num_stage                            = 13 [
+    (CFO).desc = "Number of stages to compute before applying downsampling. "
+      "This *must* be less than num_stages, and *should* be kept as small "
+      "as possible to improve performance." ];
+  uint32 downsampling_factor                               = 14 [
+    (CFO).desc = "Downsampling factor to apply, if requested." ];
 };
