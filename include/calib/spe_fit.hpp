@@ -447,6 +447,14 @@ public:
   double ses_mean_dc() override;
   double ses_rms_pe() override;
 
+  double downsampled_sensitivity() const {
+    double sensitivity = config_.sensitivity();
+    if(config_.pmt().apply_downsampling()) {
+      sensitivity *= std::max(config_.pmt().downsampling_factor(), 1U);
+    }
+    return sensitivity;
+  }
+
   calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig config() const { return config_; }
   calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig pmt() const { return config_.pmt(); }
 

@@ -46,7 +46,7 @@ LombardMartinPrescottMES(double x0, unsigned npoint,
     const calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig& config,
     bool adopt_ped_pdf):
   MultiElectronSpectrum(), config_(config), x0_(x0), dx_inv_(1.0/config.dx()), npoint_(npoint),
-  mes_npoint_(round_up_power_of_two(double(npoint_+1)/config_.sensitivity()+1)),
+  mes_npoint_(round_up_power_of_two(double(npoint_+1)/downsampled_sensitivity()+1)),
   tableau_(mes_npoint_),
   ped_pdf_(ped_pdf), adopt_ped_pdf_(adopt_ped_pdf), mes_pmf_(npoint), off_pmf_(npoint)
 {
@@ -345,23 +345,25 @@ LombardMartinPrescottMES::default_config()
 
 void LombardMartinPrescottMES::calculate_mes()
 {
-  double sensitivity_inv = 1.0/config_.sensitivity();
+  const double downsampled_sensitivity_inv = 1.0/downsampled_sensitivity();
 
   bool ped_is_fft = false;
   if(config_.use_gaussian_pedestal()) {
     ped_is_fft = true;
     if(config_.ped_2gaussian_split() != 0) {
       calin::math::fftw_util::hcvec_2gaussian_dft(ped_.get(),
-        (config_.ped_gaussian_mean() - x0_ + 0.5*config_.dx())*sensitivity_inv,
-        config_.ped_gaussian_sigma()*sensitivity_inv,
-        config_.ped_2gaussian_split()*sensitivity_inv,
+        (config_.ped_gaussian_mean() - x0_ + 0.5*config_.dx())*downsampled_sensitivity_inv,
+        config_.ped_gaussian_sigma()*downsampled_sensitivity_inv,
+        config_.ped_2gaussian_split()*downsampled_sensitivity_inv,
         mes_npoint_);
     } else {
       calin::math::fftw_util::hcvec_gaussian_dft(ped_.get(),
-        (config_.ped_gaussian_mean() - x0_ + 0.5*config_.dx())*sensitivity_inv,
-        config_.ped_gaussian_sigma()*sensitivity_inv, mes_npoint_);
+        (config_.ped_gaussian_mean() - x0_ + 0.5*config_.dx())*downsampled_sensitivity_inv,
+        config_.ped_gaussian_sigma()*downsampled_sensitivity_inv, mes_npoint_);
     }
   } else if(ped_pdf_ != nullptr) {
+    const double _downsampled_sensitivity = downsampled_sensitivity();
+
     ped_sum_p_ = 0;
     ped_sum_px_ = 0;
     ped_sum_pxx_ = 0;
@@ -369,7 +371,7 @@ void LombardMartinPrescottMES::calculate_mes()
     // FFT of pedestal
     for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
       double x = mes_x(ipoint);
-      double p = ped_pdf_->value_1d(x)*config_.sensitivity();
+      double p = ped_pdf_->value_1d(x)*_downsampled_sensitivity;
       ped_.get()[ipoint] = p;
       ped_sum_p_ += p;
       ped_sum_px_ += p*x;
@@ -394,22 +396,22 @@ void LombardMartinPrescottMES::calculate_mes()
   rebin_spectrum(mes_pmf_, tableau_.pmf.get(), mes_npoint_);
 
   if(config_.use_gaussian_pedestal()) {
-    double sensitivity_inv = 1.0/config_.sensitivity();
     if(config_.ped_2gaussian_split() != 0) {
       calin::math::special::two_gaussian(ped_.get(), mes_npoint_,
-        (config_.ped_gaussian_mean() - config_.on_off_ped_shift() - x0_ + 0.5*config_.dx())*sensitivity_inv,
-        config_.ped_gaussian_sigma()*sensitivity_inv,
-        config_.ped_2gaussian_split()*sensitivity_inv);
+        (config_.ped_gaussian_mean() - config_.on_off_ped_shift() - x0_ + 0.5*config_.dx())*downsampled_sensitivity_inv,
+        config_.ped_gaussian_sigma()*downsampled_sensitivity_inv,
+        config_.ped_2gaussian_split()*downsampled_sensitivity_inv);
     } else {
       calin::math::special::gaussian(ped_.get(), mes_npoint_,
-        (config_.ped_gaussian_mean() - config_.on_off_ped_shift() - x0_ + 0.5*config_.dx())*sensitivity_inv,
-        config_.ped_gaussian_sigma() * sensitivity_inv);
+        (config_.ped_gaussian_mean() - config_.on_off_ped_shift() - x0_ + 0.5*config_.dx())*downsampled_sensitivity_inv,
+        config_.ped_gaussian_sigma() * downsampled_sensitivity_inv);
     }
     rebin_spectrum(off_pmf_, ped_.get(), mes_npoint_);
   } else if(ped_pdf_ != nullptr and config_.on_off_ped_shift() != 0) {
     // If pedestal is defined and on/off shift is specified then calculate off spectrum
+    const double _downsampled_sensitivity = downsampled_sensitivity();
     for(unsigned ipoint=0; ipoint!=mes_npoint_; ++ipoint) {
-      ped_.get()[ipoint] = ped_pdf_->value_1d(off_x(ipoint))*config_.sensitivity();
+      ped_.get()[ipoint] = ped_pdf_->value_1d(off_x(ipoint))*_downsampled_sensitivity;
     }
     rebin_spectrum(off_pmf_, ped_.get(), mes_npoint_);
   }
@@ -449,8 +451,8 @@ Eigen::VectorXd LombardMartinPrescottMES::ses_pmf_full_resolution() const
 void LombardMartinPrescottMES::
 rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes) const
 {
-  double sensitivity_over_dx = config_.sensitivity()*dx_inv_;
-  double dx_over_sensitivity = config_.dx()/config_.sensitivity();
+  double sensitivity_over_dx = downsampled_sensitivity()*dx_inv_;
+  double dx_over_sensitivity = config_.dx()/downsampled_sensitivity();
 
   pmf_out.setZero();
   for(unsigned imes=0; imes<nmes; imes++) {
