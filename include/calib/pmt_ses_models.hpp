@@ -139,7 +139,9 @@ public:
   double resolution() const { return resolution_; }
 
   static std::vector<double> polya_pmf(double mean, double rms_frac, double precision = 1e-10);
+  static std::vector<double> multi_stage_polya_pmf(unsigned nstage, double mean, double rms_frac, unsigned rebinning = 0, double precision = 1e-10);
   static std::vector<double> half_gaussian_pmf(double mean, double precision = 1e-10);
+  static void rebin_pmf(std::vector<double>& pmf, unsigned binning);
 
   double stage_0_gain() const { return stage_0_gain_; }
   double stage_n_gain() const { return stage_n_gain_; }

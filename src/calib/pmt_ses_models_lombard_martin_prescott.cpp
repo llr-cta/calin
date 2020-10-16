@@ -209,6 +209,61 @@ polya_pmf(double mean, double rms_frac, double precision)
   return pk;
 }
 
+// Implements the calculation of the PDF for the multi-stage Polya distribution
+// using the algoirithm from Prescott (1965). The calculation is O(n^2) in the
+// number of total entries in the final PDF, which is itself some factor (4-5)
+// times the total gain.
+
+std::vector<double> LombardMartinPrescottPMTModel::
+multi_stage_polya_pmf(unsigned nstage, double mean, double rms_frac, unsigned rebinning, double precision)
+{
+  std::vector<double> pk;
+  std::vector<double> pkmo;
+  pk.reserve(5*int(pow(mean,nstage)));
+  pkmo.reserve(5*int(pow(mean,nstage)));
+
+  pk.push_back(0.0);
+  pk.push_back(1.0);
+
+  const double mu      = mean;
+  const double b       = SQR(rms_frac);
+  const double bmu     = b*mu;
+  const double bmo     = b-1.0;
+
+  for(unsigned ik=0;ik<nstage;ik++)
+  {
+    std::swap(pk, pkmo);
+
+    double C1      = 1.0 + bmu*(1.0-pkmo[0]);
+    double pcutoff = 1.0 - precision*((ik==nstage-1)?0.1:1.0);
+    double psum;
+
+    pk.resize(1);
+    if(b == 0)
+      pk[0] = std::exp(mu*(pkmo[0]-1.0));
+    else
+      pk[0] = pow(C1,-1.0/b);
+    psum = pk[0];
+
+    for(unsigned ix=1;psum<pcutoff;ix++)
+  	{
+  	  double pkx = 0;
+  	  for(unsigned ii=ix-std::min(ix,unsigned(pkmo.size()-1));ii<ix;ii++)
+  	    {
+      		pkx += pk[ii]*pkmo[ix-ii]*(double(ix)+double(ii)*bmo);
+  	    }
+  	  pkx *= mu/double(ix)/C1;
+  	  psum += pkx;
+  	  pk.push_back(pkx);
+  	  if(pkx/psum < 1e-10)break;
+  	}
+  }
+
+  rebin_pmf(pk, rebinning);
+
+  return pk;
+}
+
 std::vector<double> LombardMartinPrescottPMTModel::
 half_gaussian_pmf(double mean, double precision)
 {
@@ -227,6 +282,38 @@ half_gaussian_pmf(double mean, double precision)
     p_last = p;
   }
   return pk;
+}
+
+void LombardMartinPrescottPMTModel::
+rebin_pmf(std::vector<double>& pmf, unsigned binning)
+{
+  if(binning <= 1)return;
+  if(binning % 2 == 1) {
+    // odd binning - all PMF entries go to one bin only
+    const unsigned newbin = (binning + 1)/2;
+    unsigned obin = 0;
+    for(unsigned ibin=1; ibin<pmf.size(); ++ibin) {
+      if(ibin % binning == newbin) {
+        pmf[++obin] = pmf[ibin];
+      } else {
+        pmf[obin] += pmf[ibin];
+      }
+    }
+    pmf.resize(obin+1);
+  } else {
+    const unsigned newbin = binning/2;
+    unsigned obin = 0;
+    for(unsigned ibin=1; ibin<pmf.size(); ++ibin) {
+      if(ibin % binning == newbin) {
+        double p = 0.5*pmf[ibin];
+        pmf[obin] += p;
+        pmf[++obin] = p;
+      } else {
+        pmf[obin] += pmf[ibin];
+      }
+    }
+    pmf.resize(obin+1);
+  }
 }
 
 void LombardMartinPrescottPMTModel::calc_spectrum(
