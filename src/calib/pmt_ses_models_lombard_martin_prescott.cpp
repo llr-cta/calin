@@ -278,6 +278,52 @@ multi_stage_polya_pmf(unsigned nstage, double mean, double rms_frac, unsigned re
 }
 
 std::vector<double> LombardMartinPrescottPMTModel::
+multi_stage_pmf(Tableau& tableau, unsigned nstage, const std::vector<double>& pmf,
+  unsigned rebinning, double precision)
+{
+  // Set up the convolutions
+  std::vector<const std::vector<double>*> all_stages(nstage, &pmf);
+
+  // Do the convolutions
+  hcvec_multi_stage_polynomial(tableau.dft.get(), tableau.basis_dft.get(),
+    all_stages, tableau.npoint);
+
+  // Execute the inverse DFT
+  fftw_execute(tableau.dft_to_pmf_bwd_plan.get());
+
+  // Copy the spectrum to the output vector, normalizing for FFTW conventions
+  const double norm = 1.0/double(tableau.npoint);
+
+  // Copy the PMF into the vector
+  precision *= nstage;
+  const double pcutoff = 1.0 - precision;
+
+  std::vector<double> pk;
+  pk.reserve(tableau.npoint);
+  calin::math::accumulator::KahanAccumulator psum;
+  for(unsigned ipoint=0;ipoint<tableau.npoint && psum.total()<pcutoff;ipoint++) {
+    double p = norm * tableau.pmf.get()[ipoint];
+    psum.accumulate(p);
+    pk.push_back(p);
+    if(psum.total() > 0.99 and p < precision)break;
+  }
+
+  rebin_pmf(pk, rebinning);
+  return pk;
+}
+
+std::vector<double> LombardMartinPrescottPMTModel::
+multi_stage_pmf(unsigned npoint, unsigned nstage, const std::vector<double>& pmf,
+  unsigned rebinning, double precision, calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor)
+{
+  if(npoint==0) {
+    throw std::runtime_error("LombardMartinPrescottPMTModel::multi_stage_pmf: npoint must be positive");
+  }
+  Tableau tableau(npoint, fftw_rigor);
+  return multi_stage_pmf(tableau, nstage, pmf, rebinning, precision);
+}
+
+std::vector<double> LombardMartinPrescottPMTModel::
 half_gaussian_pmf(double mean, double precision)
 {
   const double C1      = 0.5*M_2_SQRTPI/(std::abs(mean));
@@ -381,13 +427,9 @@ void LombardMartinPrescottPMTModel::calc_spectrum(
   }
 
   // Prepare the inverse DFT
-  uptr_fftw_plan bwd_plan = {
-    fftw_plan_r2r_1d(tableau.npoint, tableau.dft.get(), tableau.pmf.get(), FFTW_HC2R, plan_flags),
-    fftw_destroy_plan };
-  assert(bwd_plan);
-  fftw_execute(bwd_plan.get());
+  fftw_execute(tableau.dft_to_pmf_bwd_plan.get());
 
-  // Copy the spectrum to the output vector, normalizing for FFTW comventions
+  // Copy the spectrum to the output vector, normalizing for FFTW conventions
   double norm = 1.0/double(tableau.npoint);
   std::transform(tableau.pmf.get(), tableau.pmf.get()+tableau.npoint, tableau.pmf.get(),
     [norm](double x) { return x*norm; });
@@ -404,7 +446,7 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_ses(unsigned npoint)
     npoint = calin::math::special::round_up_power_of_two(total_gain_ * 4);
     if(config_.apply_downsampling())npoint /= config_.downsampling_factor();
   }
-  Tableau tableau(npoint);
+  Tableau tableau(npoint, fftw_rigor_);
   calc_spectrum(tableau);
   return tableau.pmf_as_vec();
 }
@@ -431,7 +473,7 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
     throw std::runtime_error("LombardMartinPrescottPMTModel::calc_mes: npoint must be positive");
   }
   std::vector<double> pe_pmf = polya_pmf(mean, rms_frac, precision_);
-  Tableau tableau(npoint);
+  Tableau tableau(npoint, fftw_rigor_);
   calc_spectrum(tableau, &pe_pmf, ped, ped_is_fft);
   return tableau.pmf_as_vec();
 }
@@ -442,7 +484,7 @@ Eigen::VectorXd LombardMartinPrescottPMTModel::calc_mes(
   if(npoint==0) {
     throw std::runtime_error("LombardMartinPrescottPMTModel::calc_mes: npoint must be positive");
   }
-  Tableau tableau(npoint);
+  Tableau tableau(npoint, fftw_rigor_);
   calc_spectrum(tableau, &pe_pmf, ped, ped_is_fft);
   return tableau.pmf_as_vec();
 }

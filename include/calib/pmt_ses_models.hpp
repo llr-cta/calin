@@ -102,10 +102,14 @@ private:
 class LombardMartinPrescottPMTModel {
 public:
   struct Tableau {
-    Tableau(unsigned npoint_): npoint(npoint_),
+    Tableau(unsigned npoint_, calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE):
+      npoint(npoint_),
       pmf(fftw_alloc_real(npoint), fftw_free),
       dft(fftw_alloc_real(npoint), fftw_free),
-      basis_dft(fftw_alloc_real(npoint), fftw_free)
+      basis_dft(fftw_alloc_real(npoint), fftw_free),
+      dft_to_pmf_bwd_plan(fftw_plan_r2r_1d(npoint, dft.get(), pmf.get(), FFTW_HC2R,
+          calin::math::fftw_util::proto_planning_enum_to_fftw_flag(fftw_rigor)),
+        fftw_destroy_plan)
     {
       calin::math::fftw_util::hcvec_delta_dft(basis_dft.get(), 1.0, npoint);
     }
@@ -124,6 +128,7 @@ public:
     calin::math::fftw_util::uptr_fftw_data pmf;
     calin::math::fftw_util::uptr_fftw_data dft;
     calin::math::fftw_util::uptr_fftw_data basis_dft;
+    calin::math::fftw_util::uptr_fftw_plan dft_to_pmf_bwd_plan;
   };
 
   LombardMartinPrescottPMTModel(
@@ -143,6 +148,11 @@ public:
 
   static std::vector<double> polya_pmf(double mean, double rms_frac, double precision = 1e-10);
   static std::vector<double> multi_stage_polya_pmf(unsigned nstage, double mean, double rms_frac, unsigned rebinning = 0, double precision = 1e-10);
+#ifndef SWIG
+  static std::vector<double> multi_stage_pmf(Tableau& tableau, unsigned nstage, const std::vector<double>& pmf, unsigned rebinning = 0, double precision = 1e-10);
+#endif
+  static std::vector<double> multi_stage_pmf(unsigned npoint, unsigned nstage, const std::vector<double>& pmf, unsigned rebinning = 0, double precision = 1e-10,
+    calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
   static std::vector<double> half_gaussian_pmf(double mean, double precision = 1e-10);
   static void rebin_pmf(std::vector<double>& pmf, unsigned binning);
 
