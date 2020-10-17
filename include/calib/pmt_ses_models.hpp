@@ -150,6 +150,7 @@ public:
   static std::vector<double> multi_stage_polya_pmf(unsigned nstage, double mean, double rms_frac, unsigned rebinning = 0, double precision = 1e-10);
 #ifndef SWIG
   static std::vector<double> multi_stage_pmf(Tableau& tableau, unsigned nstage, const std::vector<double>& pmf, unsigned rebinning = 0, double precision = 1e-10);
+  static unsigned rebin_pmf(double* pmf, unsigned npmf, unsigned binning);
 #endif
   static std::vector<double> multi_stage_pmf(unsigned npoint, unsigned nstage, const std::vector<double>& pmf, unsigned rebinning = 0, double precision = 1e-10,
     calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);

@@ -291,24 +291,30 @@ multi_stage_pmf(Tableau& tableau, unsigned nstage, const std::vector<double>& pm
   // Execute the inverse DFT
   fftw_execute(tableau.dft_to_pmf_bwd_plan.get());
 
-  // Copy the spectrum to the output vector, normalizing for FFTW conventions
-  const double norm = 1.0/double(tableau.npoint);
+  // Find the positive part of the PMF
+  precision *= nstage*tableau.npoint;
+  const double pcutoff1 = tableau.npoint - precision;
+  const double pcutoff2 = 0.99 * tableau.npoint;
 
-  // Copy the PMF into the vector
-  precision *= nstage;
-  const double pcutoff = 1.0 - precision;
-
-  std::vector<double> pk;
-  pk.reserve(tableau.npoint);
   calin::math::accumulator::KahanAccumulator psum;
-  for(unsigned ipoint=0;ipoint<tableau.npoint && psum.total()<pcutoff;ipoint++) {
-    double p = norm * tableau.pmf.get()[ipoint];
+  unsigned ipoint;
+  for(ipoint=0;ipoint<tableau.npoint && psum.total()<pcutoff1;ipoint++) {
+    double p = tableau.pmf.get()[ipoint];
     psum.accumulate(p);
-    pk.push_back(p);
-    if(psum.total() > 0.99 and p < precision)break;
+    if(psum.total() > pcutoff2 and p < precision)break;
   }
 
-  rebin_pmf(pk, rebinning);
+  // Rebin the PMF is necessary
+  unsigned npmf = rebin_pmf(tableau.pmf.get(), ipoint, rebinning);
+
+  // Copy the spectrum to the output vector, normalizing for FFTW conventions
+  const double norm = 1.0/double(tableau.npoint);
+  std::vector<double> pk;
+  pk.reserve(npmf);
+  for(unsigned ipmf=0; ipmf<npmf; ipmf++) {
+    pk.push_back(norm * tableau.pmf.get()[ipmf]);
+  }
+
   return pk;
 }
 
@@ -343,26 +349,27 @@ half_gaussian_pmf(double mean, double precision)
   return pk;
 }
 
-void LombardMartinPrescottPMTModel::
-rebin_pmf(std::vector<double>& pmf, unsigned binning)
+unsigned LombardMartinPrescottPMTModel::
+rebin_pmf(double* pmf, unsigned npmf, unsigned binning)
 {
-  if(binning <= 1)return;
-  if(binning % 2 == 1) {
+  if(npmf==0 or binning <= 1) {
+    return npmf;
+  } else if(binning % 2 == 1) {
     // odd binning - all PMF entries go to one bin only
     const unsigned newbin = (binning + 1)/2;
     unsigned obin = 0;
-    for(unsigned ibin=1; ibin<pmf.size(); ++ibin) {
+    for(unsigned ibin=1; ibin<npmf; ++ibin) {
       if(ibin % binning == newbin) {
         pmf[++obin] = pmf[ibin];
       } else {
         pmf[obin] += pmf[ibin];
       }
     }
-    pmf.resize(obin+1);
+    return obin+1;
   } else {
     const unsigned newbin = binning/2;
     unsigned obin = 0;
-    for(unsigned ibin=1; ibin<pmf.size(); ++ibin) {
+    for(unsigned ibin=1; ibin<npmf; ++ibin) {
       if(ibin % binning == newbin) {
         double p = 0.5*pmf[ibin];
         pmf[obin] += p;
@@ -371,8 +378,16 @@ rebin_pmf(std::vector<double>& pmf, unsigned binning)
         pmf[obin] += pmf[ibin];
       }
     }
-    pmf.resize(obin+1);
+    return obin+1;
   }
+}
+
+void LombardMartinPrescottPMTModel::
+rebin_pmf(std::vector<double>& pmf, unsigned binning)
+{
+  unsigned new_size = rebin_pmf(pmf.data(), pmf.size(), binning);
+  pmf.resize(new_size);
+  return;
 }
 
 void LombardMartinPrescottPMTModel::calc_spectrum(
