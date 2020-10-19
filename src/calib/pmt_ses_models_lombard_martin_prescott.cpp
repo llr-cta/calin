@@ -406,7 +406,7 @@ stage_n_pmf_downsampled(Tableau& tableau) const
   } else {
     return multi_stage_pmf(tableau, config_.downsampling_num_stage(), stage_n_pmf_,
       config_.downsampling_factor(), precision_,
-      /* suppress_wraparound_warning = */ false, /* wraparound_warning_count = */ nullptr);
+      suppress_wraparound_warning_,  &num_wraparound_warnings_sent_);
   }
 }
 

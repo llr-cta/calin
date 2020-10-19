@@ -190,6 +190,10 @@ public:
     bool ped_is_fft=false);
 
   static calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig nectarcam_config();
+
+  void suppress_wraparound_warning(bool suppress=true) { suppress_wraparound_warning_ = suppress; }
+  unsigned num_wraparound_warning_sent() const { return num_wraparound_warnings_sent_; }
+
 private:
   void calc_spectrum(Tableau& tableau,
     const std::vector<double>* pe_spec = nullptr,
@@ -213,6 +217,9 @@ private:
   std::vector<double> stage_0_pmf_;
   std::vector<double> stage_0_pmf_zsa_;
   std::vector<double> stage_n_pmf_;
+
+  bool suppress_wraparound_warning_ = false;
+  mutable unsigned num_wraparound_warnings_sent_ = 0;
 };
 
 // ********************************** OBSOLETE *********************************
