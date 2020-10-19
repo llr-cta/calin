@@ -149,10 +149,13 @@ public:
   static std::vector<double> polya_pmf(double mean, double rms_frac, double precision = 1e-10);
   static std::vector<double> multi_stage_polya_pmf(unsigned nstage, double mean, double rms_frac, unsigned rebinning = 0, double precision = 1e-10);
 #ifndef SWIG
-  static std::vector<double> multi_stage_pmf(Tableau& tableau, unsigned nstage, const std::vector<double>& pmf, unsigned rebinning = 0, double precision = 1e-10);
+  static std::vector<double> multi_stage_pmf(Tableau& tableau, unsigned nstage,
+    const std::vector<double>& pmf, unsigned rebinning = 0, double precision = 1e-10,
+    bool suppress_wraparound_warning = false, unsigned* wraparound_warning_count = nullptr);
   static unsigned rebin_pmf(double* pmf, unsigned npmf, unsigned binning);
 #endif
-  static std::vector<double> multi_stage_pmf(unsigned npoint, unsigned nstage, const std::vector<double>& pmf, unsigned rebinning = 0, double precision = 1e-10,
+  static std::vector<double> multi_stage_pmf(unsigned npoint, unsigned nstage,
+    const std::vector<double>& pmf, unsigned rebinning = 0, double precision = 1e-10,
     calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
   static std::vector<double> half_gaussian_pmf(double mean, double precision = 1e-10);
   static void rebin_pmf(std::vector<double>& pmf, unsigned binning);

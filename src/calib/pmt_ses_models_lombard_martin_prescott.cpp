@@ -279,7 +279,8 @@ multi_stage_polya_pmf(unsigned nstage, double mean, double rms_frac, unsigned re
 
 std::vector<double> LombardMartinPrescottPMTModel::
 multi_stage_pmf(Tableau& tableau, unsigned nstage, const std::vector<double>& pmf,
-  unsigned rebinning, double precision)
+  unsigned rebinning, double precision, bool suppress_wraparound_warning,
+  unsigned* wraparound_warning_count)
 {
   // Set up the convolutions
   std::vector<const std::vector<double>*> all_stages(nstage, &pmf);
@@ -302,6 +303,15 @@ multi_stage_pmf(Tableau& tableau, unsigned nstage, const std::vector<double>& pm
     double p = tableau.pmf.get()[ipoint];
     psum.accumulate(p);
     if(psum.total() > pcutoff2 and p < precision)break;
+  }
+
+  if(!suppress_wraparound_warning) {
+    if(ipoint*100 > tableau.npoint*95) {
+      LOG(WARNING) << "multi_stage_pmf: calculated PMF length close to buffer size; possible wrap around.";
+      if(wraparound_warning_count) {
+        ++(*wraparound_warning_count);
+      }
+    }
   }
 
   // Rebin the PMF is necessary
