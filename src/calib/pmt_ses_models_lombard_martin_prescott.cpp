@@ -146,14 +146,6 @@ LombardMartinPrescottPMTModel(
   } else {
     stage_0_pmf_zsa_ = stage_0_pmf_;
   }
-
-  // If downsampling is enabled then calculate the downsampled PMF for the
-  // number of stages that the user requested
-  if(config_.apply_downsampling()) {
-    stage_n_pmf_downsampled_ = multi_stage_polya_pmf(config_.downsampling_num_stage(),
-      stage_n_gain_, config_.stage_n_gain_rms_frac(),
-      config_.downsampling_factor(), precision_);
-  }
 }
 
 void LombardMartinPrescottPMTModel::set_stage_n_gain(double stage_n_gain)
@@ -400,6 +392,24 @@ rebin_pmf(std::vector<double>& pmf, unsigned binning)
   return;
 }
 
+std::vector<double> LombardMartinPrescottPMTModel::
+stage_n_pmf_downsampled(Tableau& tableau) const
+{
+  if(not config_.apply_downsampling())return {};
+
+  if(config_.downsampling_num_stage()<4 or
+      (config_.downsampling_num_stage()==4 and stage_n_gain_<4.5) or
+      (config_.downsampling_num_stage()==5 and stage_n_gain_<3.0)) {
+    return multi_stage_polya_pmf(config_.downsampling_num_stage(),
+      stage_n_gain_, config_.stage_n_gain_rms_frac(),
+      config_.downsampling_factor(), precision_);
+  } else {
+    return multi_stage_pmf(tableau, config_.downsampling_num_stage(), stage_n_pmf_,
+      config_.downsampling_factor(), precision_,
+      /* suppress_wraparound_warning = */ false, /* wraparound_warning_count = */ nullptr);
+  }
+}
+
 void LombardMartinPrescottPMTModel::calc_spectrum(
   Tableau& tableau, const std::vector<double>* pe_spec, const double* ped, bool ped_is_fft)
 {
@@ -409,9 +419,11 @@ void LombardMartinPrescottPMTModel::calc_spectrum(
   std::vector<const std::vector<double>*> all_stages;
   all_stages.reserve(config_.num_stage()+1);
 
+  std::vector<double> _stage_n_pmf_downsampled;
   if(config_.apply_downsampling()) {
     // Do one convolution with downsampled multi-stage PMF followed by ...
-    all_stages.push_back(&stage_n_pmf_downsampled_);
+    _stage_n_pmf_downsampled = stage_n_pmf_downsampled(tableau);
+    all_stages.push_back(&_stage_n_pmf_downsampled);
     // num_stage()-downsampling_num_stage()-1 convolutions with the "n-stage" PMF
     for(unsigned istage=config_.downsampling_num_stage(); istage<config_.num_stage()-1; istage++) {
       all_stages.push_back(&stage_n_pmf_);

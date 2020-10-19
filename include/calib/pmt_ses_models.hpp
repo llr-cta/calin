@@ -140,7 +140,7 @@ public:
   std::vector<double> stage_n_pmf() const { return stage_n_pmf_; }
 
   std::vector<double> stage_0_pmf_zsa() const { return stage_0_pmf_zsa_; }
-  std::vector<double> stage_n_pmf_downsampled() const { return stage_n_pmf_downsampled_; }
+  std::vector<double> stage_n_pmf_downsampled(Tableau& tableau) const;
 
   double p0() const { return p0_; }
   double total_gain() const { return total_gain_; }
@@ -213,7 +213,6 @@ private:
   std::vector<double> stage_0_pmf_;
   std::vector<double> stage_0_pmf_zsa_;
   std::vector<double> stage_n_pmf_;
-  std::vector<double> stage_n_pmf_downsampled_;
 };
 
 // ********************************** OBSOLETE *********************************
