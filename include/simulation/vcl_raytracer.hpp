@@ -822,6 +822,8 @@ public:
 
   bool_vt doesObscure(const Ray& ray_in, Ray& ray_out, real_vt n) const override
   {
+    constexpr real_t inf = std::numeric_limits<real_t>::infinity();
+
     const vec3_vt u = nhat_.template cast<real_vt>();
     const vec3_vt v = ray_in.direction();
 
@@ -848,23 +850,28 @@ public:
 
     const real_vt q = -0.5*(b + sign_combine(vcl::sqrt(vcl::max(disc, 0)), b));
 
-    const real_vt t1 = vcl::select(a>0, c/q, -u_dot_D0*u_dot_v - half_length_); // note that since u_dot_v=+/-1
-    const real_vt t2 = vcl::select(a>0, q/a, -u_dot_D0*u_dot_v + half_length_); // we multiply rather than divide
+    const real_vt tc1 = vcl::select(a>0, c/q, -inf);
+    const real_vt tc2 = vcl::select(a>0, q/a, inf);
 
-    const bool_vt future_intersection = vcl::max(t1,t2) >= 0;
+    const real_vt u_dot_v_inv = real_vt(1.0)/u_dot_v;
+    const real_vt tp1 = vcl::select(u_dot_v==0, -inf, (-u_dot_D0 - half_length_)*u_dot_v_inv);
+    const real_vt tp2 = vcl::select(u_dot_v==0, inf, (-u_dot_D0 + half_length_)*u_dot_v_inv);
 
-    const real_vt d1 = vcl::mul_add(t1, u_dot_v, u_dot_D0);
-    const real_vt d2 = vcl::mul_add(t2, u_dot_v, u_dot_D0);
+    const real_vt t_in = vcl::max(vcl::min(tc1, tc2), vcl::min(tp1, tp2));
+    const real_vt t_out = vcl::min(vcl::max(tc1, tc2), vcl::max(tp1, tp2));
+
+    const bool_vt future_finite_intersection = t_out > vcl::max(t_in, 0);
+
+    const bool_vt does_obscure = future_finite_intersection;
 
     // using calin::util::log::LOG;
     // using calin::util::log::INFO;
-    // LOG(INFO) << t1[0] << ' ' << t2[0] << ' ' << d1[0] << ' ' << d2[0];
+    // if(does_obscure[0]) {
+    //   LOG(INFO) << ray_in.x()[0] << ' ' << ray_in.y()[0] << ' '
+    //     << tc1[0] << ' ' << tc2[0] << ' ' << tp1[0] << ' ' << tp2[0];
+    // }
 
-    const bool_vt finite_intersection =
-      (vcl::min(vcl::abs(d1), vcl::abs(d2)) <= half_length_) or
-      (vcl::min(d1, d2)<-half_length_ and vcl::max(d1, d2)>=half_length_);
-
-    return intersects_cylinder & future_intersection & finite_intersection;
+    return does_obscure;
   }
 
   virtual VCLTubeObscuration<VCLRealType>* clone() const override
