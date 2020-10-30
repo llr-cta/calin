@@ -34,8 +34,11 @@
 #include <math/geometry_vcl.hpp>
 #include <simulation/vso_telescope.hpp>
 #include <simulation/vso_obscuration.hpp>
+#include <util/log.hpp>
 
 namespace calin { namespace simulation { namespace vcl_raytracer {
+
+#ifndef SWIG
 
 enum VCLScopeTraceStatus {
   STS_MASKED_ON_ENTRY,
@@ -110,6 +113,7 @@ public:
 template<typename VCLRealType> class VCLAlignedBoxObscuration;
 template<typename VCLRealType> class VCLAlignedRectangularAperture;
 template<typename VCLRealType> class VCLAlignedCircularAperture;
+template<typename VCLRealType> class VCLTubeObscuration;
 
 template<typename VCLRealType> class VCLScopeRayTracer: public VCLRealType
 {
@@ -783,6 +787,108 @@ private:
   real_t flat_to_flat_z_2_;
 };
 
+template<typename VCLRealType> class VCLTubeObscuration:
+  public VCLObscuration<VCLRealType>
+{
+public:
+  using typename VCLObscuration<VCLRealType>::real_vt;
+  using typename VCLObscuration<VCLRealType>::bool_vt;
+  using typename VCLObscuration<VCLRealType>::vec3_vt;
+  using typename VCLObscuration<VCLRealType>::Ray;
+  using typename VCLObscuration<VCLRealType>::vec3_t;
+  using typename VCLObscuration<VCLRealType>::mat3_t;
+  using typename VCLObscuration<VCLRealType>::real_t;
+
+  VCLTubeObscuration(const vec3_t& x1, const vec3_t& x2, const real_t& radius):
+    VCLObscuration<VCLRealType>(), x1_(x1), x2_(x2), r_(radius),
+    xc_(0.5*(x1_+x2_)), r2_(r_*r_)
+  {
+    nhat_ = x2_-x1_;
+    half_length_ = 0.5*nhat_.norm();
+    nhat_.normalize();
+  }
+
+  VCLTubeObscuration(const calin::simulation::vs_optics::VSOTubeObscuration& o):
+    VCLTubeObscuration(o.end1_pos().template cast<real_t>(),
+      o.end2_pos().template cast<real_t>(), o.radius())
+  {
+    // nothing to see here
+  }
+
+  virtual ~VCLTubeObscuration()
+  {
+    // nothing to see here
+  }
+
+  bool_vt doesObscure(const Ray& ray_in, Ray& ray_out, real_vt n) const override
+  {
+    const vec3_vt u = nhat_.template cast<real_vt>();
+    const vec3_vt v = ray_in.direction();
+
+    const vec3_vt D0 = ray_in.position() - xc_.template cast<real_vt>();
+    const real_vt u_dot_v = u.dot(v);
+    const real_vt u_dot_D0 = u.dot(D0);
+    const real_vt v_dot_D0 = v.dot(D0);
+
+    // Calculate quadratic equation coefficients and discriminant
+    const real_vt a = vcl::nmul_add(u_dot_v, u_dot_v, 1.0); // 1-(u.v)^2
+    const real_vt b = 2.0*nmul_add(u_dot_D0, u_dot_v, v_dot_D0); // D0.v - (D0.u)*(u.v)
+    const real_vt c = nmul_add(u_dot_D0, u_dot_D0, D0.squaredNorm()) - r2_; // D0^2 - (D0.u)^2 - r^2
+
+    const real_vt disc = nmul_add(4.0*a, c, b*b); // b^2 - 4*a*c
+
+    // Find rays that come close enough to possibly obscure - rest can be ignored
+    // Must handle case rays parallel to cylinder (a=b=0)
+    const bool_vt intersects_cylinder = (vcl::select(a>0, disc, -c) >= 0);
+
+    if(not horizontal_or(intersects_cylinder)) {
+      // Fast exit for case where closest approach for all rays with cylinder is greater than r^2
+      return false;
+    }
+
+    const real_vt q = -0.5*(b + sign_combine(vcl::sqrt(vcl::max(disc, 0)), b));
+
+    const real_vt t1 = vcl::select(a>0, c/q, -u_dot_D0*u_dot_v - half_length_); // note that since u_dot_v=+/-1
+    const real_vt t2 = vcl::select(a>0, q/a, -u_dot_D0*u_dot_v + half_length_); // we multiply rather than divide
+
+    const bool_vt future_intersection = vcl::max(t1,t2) >= 0;
+
+    const real_vt d1 = vcl::mul_add(t1, u_dot_v, u_dot_D0);
+    const real_vt d2 = vcl::mul_add(t2, u_dot_v, u_dot_D0);
+
+    // using calin::util::log::LOG;
+    // using calin::util::log::INFO;
+    // LOG(INFO) << t1[0] << ' ' << t2[0] << ' ' << d1[0] << ' ' << d2[0];
+
+    const bool_vt finite_intersection =
+      (vcl::min(vcl::abs(d1), vcl::abs(d2)) <= half_length_) or
+      (vcl::min(d1, d2)<-half_length_ and vcl::max(d1, d2)>=half_length_);
+
+    return intersects_cylinder & future_intersection & finite_intersection;
+  }
+
+  virtual VCLTubeObscuration<VCLRealType>* clone() const override
+  {
+    return new VCLTubeObscuration<VCLRealType>(*this);
+  }
+
+private:
+  vec3_t x1_;
+  vec3_t x2_;
+  real_t r_;
+
+  vec3_t xc_;
+  vec3_t nhat_;
+
+  real_t r2_;
+  real_t half_length_;
+};
+
 // std::ostream& operator <<(std::ostream& stream, const VSORayTracer::TraceInfo& o);
+
+#endif
+
+bool test_tube_obscuration(const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, double radius,
+  const Eigen::Vector3d& r, const Eigen::Vector3d& u);
 
 } } } // namespace calin::simulations::vcl_raytracer

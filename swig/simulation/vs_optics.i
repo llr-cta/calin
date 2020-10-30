@@ -32,6 +32,7 @@
 #include "simulation/vso_telescope.hpp"
 #include "simulation/vso_array.hpp"
 #include "simulation/vso_raytracer.hpp"
+#include "simulation/vcl_raytracer.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -64,3 +65,4 @@
 %template(VectorVSOTelescope) std::vector<calin::simulation::vs_optics::VSOTelescope*>;
 %include "simulation/vso_array.hpp"
 %include "simulation/vso_raytracer.hpp"
+%include "simulation/vcl_raytracer.hpp"

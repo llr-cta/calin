@@ -137,6 +137,7 @@ class VSOTubeObscuration: public VSOObscuration
 
   const Eigen::Vector3d& end1_pos() const { return fX1; }
   const Eigen::Vector3d& end2_pos() const { return fX2; }
+  double radius() const { return fR; }
   double diameter() const { return 2.0*fR; }
 
  private:

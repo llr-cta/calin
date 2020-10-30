@@ -31,6 +31,7 @@
 
 namespace calin { namespace math { namespace geometry {
 
+// WHY DID I USE A CLASS HERE ??
 template<typename VCLReal> struct VCL: public VCLReal
 {
 public:
@@ -226,7 +227,7 @@ public:
     real_vt st = sqrt(x*x+y*y);
     real_vt st_inv = 1.0/st;
 
-    // If we are aong the z-axis (z=+/-1) then we arrange for matrix to be
+    // If we are along the z-axis (z=+/-1) then we arrange for matrix to be
     // diagonal with (+1,1,+1) or (-1,1,-1)
     bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon();
 
@@ -236,6 +237,24 @@ public:
     m << z*cp, -sp, x,
          z*sp,  cp, y,
           -st,   0, z;
+  }
+
+  static inline void derotation_z_to_xyz_Rzy(mat3_vt& m,
+    const real_vt x, const real_vt y, const real_vt z)
+  {
+    real_vt st = sqrt(x*x+y*y);
+    real_vt st_inv = 1.0/st;
+
+    // If we are along the z-axis (z=+/-1) then we arrange for matrix to be
+    // diagonal with (+1,1,+1) or (-1,1,-1)
+    bool_vt is_uz = st < std::numeric_limits<real_t>::epsilon();
+
+    real_vt sp = select(is_uz, 0.0, y * st_inv);
+    real_vt cp = select(is_uz, 1.0, x * st_inv);
+
+    m << z*cp, z*sp, -st,
+          -sp,   cp,   0,
+            x,    y,   z;
   }
 
   static inline void rotation_z_to_xyz_Rzyz(mat3_vt& m,
