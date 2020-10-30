@@ -853,16 +853,16 @@ public:
     const real_vt tc1 = vcl::select(a>0, c/q, -inf);
     const real_vt tc2 = vcl::select(a>0, q/a, inf);
 
+    // Calculate time ray passes cylinder end planes - if parallel to them then
+    // set times to tp1/2=-/+inf if ray between planes, tp1=tp2=+inf if outside planes
     const real_vt u_dot_v_inv = real_vt(1.0)/u_dot_v;
-    const real_vt tp1 = vcl::select(u_dot_v==0, -inf, (-u_dot_D0 - half_length_)*u_dot_v_inv);
+    const real_vt tp1 = vcl::select(u_dot_v==0, vcl::sign_combine(inf, vcl::abs(u_dot_D0)-half_length_), (-u_dot_D0 - half_length_)*u_dot_v_inv);
     const real_vt tp2 = vcl::select(u_dot_v==0, inf, (-u_dot_D0 + half_length_)*u_dot_v_inv);
 
     const real_vt t_in = vcl::max(vcl::min(tc1, tc2), vcl::min(tp1, tp2));
     const real_vt t_out = vcl::min(vcl::max(tc1, tc2), vcl::max(tp1, tp2));
 
-    const bool_vt future_finite_intersection = t_out > vcl::max(t_in, 0);
-
-    const bool_vt does_obscure = future_finite_intersection;
+    const bool_vt does_obscure = t_out > vcl::max(t_in, 0);
 
     // using calin::util::log::LOG;
     // using calin::util::log::INFO;
