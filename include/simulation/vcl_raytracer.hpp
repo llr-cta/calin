@@ -142,6 +142,7 @@ public:
     using calin::simulation::vs_optics::VSOAlignedBoxObscuration;
     using calin::simulation::vs_optics::VSOAlignedRectangularAperture;
     using calin::simulation::vs_optics::VSOAlignedCircularAperture;
+    using calin::simulation::vs_optics::VSOTubeObscuration;
 
     scope_pos_               = scope->pos().cast<real_t>();
     global_to_reflector_rot_ = scope->rotationGlobalToReflector().cast<real_t>();
@@ -590,6 +591,8 @@ private:
         to.push_back(new VCLAlignedRectangularAperture<VCLRealType>(*dc_obs));
       } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedCircularAperture*>(obs)) {
         to.push_back(new VCLAlignedCircularAperture<VCLRealType>(*dc_obs));
+      } else if(const auto* dc_obs = dynamic_cast<const VSOTubeObscuration*>(obs)) {
+        to.push_back(new VCLTubeObscuration<VCLRealType>(*dc_obs));
       } else {
         throw std::runtime_error("Unsupported " + type + " obscuration type");
       }
@@ -850,10 +853,12 @@ public:
 
     const real_vt q = -0.5*(b + sign_combine(vcl::sqrt(vcl::max(disc, 0)), b));
 
+    // Calculate time ray passes through cylinder - if parallel to them then
+    // set times to tp1/2=-/+inf if ray between planes, tp1=tp2=+inf if outside planes
     const real_vt tc1 = vcl::select(a>0, c/q, -inf);
     const real_vt tc2 = vcl::select(a>0, q/a, inf);
 
-    // Calculate time ray passes cylinder end planes - if parallel to them then
+    // Calculate time ray passes through end planes - if parallel to them then
     // set times to tp1/2=-/+inf if ray between planes, tp1=tp2=+inf if outside planes
     const real_vt u_dot_v_inv = real_vt(1.0)/u_dot_v;
     const real_vt tp1 = vcl::select(u_dot_v==0, vcl::sign_combine(inf, vcl::abs(u_dot_D0)-half_length_), (-u_dot_D0 - half_length_)*u_dot_v_inv);
