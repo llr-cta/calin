@@ -29,11 +29,48 @@
 #include <math/ray_vcl.hpp>
 #include <math/rng_vcl.hpp>
 #include <math/geometry_vcl.hpp>
+#include <simulation/vso_array.hpp>
 #include <simulation/vcl_raytracer.hpp>
 #include <simulation/ray_processor.hpp>
 #include <util/log.hpp>
 
 namespace calin { namespace simulation { namespace vcl_ray_processor {
+
+class SingleRayVCLScopeTraceInfo
+{
+public:
+  int64_t          status;
+
+  double           reflec_x;
+  double           reflec_z;
+
+  uint64_t         pre_reflection_obs_hitmask;
+  uint64_t         post_reflection_obs_hitmask;
+  uint64_t         camera_obs_hitmask;
+
+  int64_t          mirror_hexid;
+  int64_t          mirror_id;
+  Eigen::Vector3d  mirror_reflection_point;
+  double           mirror_n_dot_u;
+
+  double           fplane_x;
+  double           fplane_z;
+  double           fplane_t;
+  double           fplane_uy;
+
+  int64_t          pixel_hexid;
+  int64_t          pixel_id;
+};
+
+class SingleRayVCLScopeTraceInfoProcessor
+{
+public:
+  virtual ~SingleRayVCLScopeTraceInfoProcessor();
+  virtual void start_processing();
+  virtual void process_vcl_scope_trace_info(unsigned scope_id, bool hit_fplane,
+    const SingleRayVCLScopeTraceInfo& trace_info, double pe_weight);
+  virtual void finish_processing();
+};
 
 template<typename VCLArchitecture> class VCLRayTracerRayProcessorDouble:
   public calin::simulation::ray_processor::RayProcessor
