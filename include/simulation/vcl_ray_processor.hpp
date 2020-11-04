@@ -39,6 +39,10 @@ namespace calin { namespace simulation { namespace vcl_ray_processor {
 class SingleRayVCLScopeTraceInfo
 {
 public:
+  bool             hit_fplane;
+  double           ray_weight;
+  unsigned         scope_id;
+
   int64_t          status;
 
   double           reflec_x;
@@ -67,9 +71,21 @@ class SingleRayVCLScopeTraceInfoProcessor
 public:
   virtual ~SingleRayVCLScopeTraceInfoProcessor();
   virtual void start_processing();
-  virtual void process_vcl_scope_trace_info(unsigned scope_id, bool hit_fplane,
-    const SingleRayVCLScopeTraceInfo& trace_info, double pe_weight);
+  virtual void process_vcl_scope_trace_info(const SingleRayVCLScopeTraceInfo& trace_info);
   virtual void finish_processing();
+};
+
+class RecordingSingleRayVCLScopeTraceInfoProcessor: public SingleRayVCLScopeTraceInfoProcessor
+{
+public:
+  RecordingSingleRayVCLScopeTraceInfoProcessor();
+  virtual ~RecordingSingleRayVCLScopeTraceInfoProcessor();
+  void start_processing() override;
+  void process_vcl_scope_trace_info(const SingleRayVCLScopeTraceInfo& trace_info) override;
+  unsigned ntrace() const { return traces_.size(); }
+  SingleRayVCLScopeTraceInfo trace(unsigned itrace) const { return traces_.at(itrace); }
+private:
+  std::vector<SingleRayVCLScopeTraceInfo> traces_;
 };
 
 template<typename VCLArchitecture> class VCLRayTracerRayProcessorDouble:
@@ -80,6 +96,8 @@ public:
   CALIN_TYPEALIAS(double_at, typename VCLArchitecture::double_at);
   CALIN_TYPEALIAS(int64_vt, typename VCLArchitecture::int64_vt);
   CALIN_TYPEALIAS(int64_at, typename VCLArchitecture::int64_at);
+  CALIN_TYPEALIAS(uint64_vt, typename VCLArchitecture::uint64_vt);
+  CALIN_TYPEALIAS(uint64_at, typename VCLArchitecture::uint64_at);
   CALIN_TYPEALIAS(bool_vt, typename VCLArchitecture::double_bvt);
 
   CALIN_TYPEALIAS(VCLRealType, calin::util::vcl::VCLDoubleReal<VCLArchitecture>);
@@ -112,10 +130,21 @@ public:
     }
   }
 
+  VCLRayTracerRayProcessorDouble(calin::simulation::vs_optics::VSOArray* array,
+    SingleRayVCLScopeTraceInfoProcessor* vcl_sti_visitor, ArchRNG* rng = nullptr,
+    bool adopt_array = false, bool adopt_visitor = false,
+    bool adopt_rng = false): VCLRayTracerRayProcessorDouble(array,
+      (calin::simulation::pe_processor::PEProcessor*)nullptr, rng, adopt_array,
+      adopt_visitor, adopt_rng)
+  {
+    vcl_sti_visitor_ = vcl_sti_visitor;
+  }
+
   virtual ~VCLRayTracerRayProcessorDouble()
   {
     if(adopt_array_)delete array_;
     if(adopt_visitor_)delete visitor_;
+    if(adopt_visitor_)delete vcl_sti_visitor_;
     if(adopt_rng_)delete rng_;
   }
 
@@ -136,7 +165,12 @@ public:
   void start_processing() override
   {
     nhit_ = 0;
-    visitor_->start_processing();
+    if(vcl_sti_visitor_) {
+      vcl_sti_visitor_->start_processing();
+    }
+    if(visitor_) {
+      visitor_->start_processing();
+    }
   }
 
   void process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
@@ -163,7 +197,12 @@ public:
     for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++) {
       process_buffered_rays(iscope);
     }
-    visitor_->finish_processing();
+    if(vcl_sti_visitor_) {
+      vcl_sti_visitor_->finish_processing();
+    }
+    if(visitor_) {
+      visitor_->finish_processing();
+    }
   }
 
   uint64_t nhit() const { return nhit_; }
@@ -202,13 +241,79 @@ private:
       info.pixel_id.store(fp_pixel_id);
 
       unsigned mray = std::min(VCLRealType::num_real, nray);
-      for(unsigned jray=0; jray<mray; jray++) {
-        if(imask & (0x1<<jray)) {
-          ++nhit_;
-          visitor_->process_focal_plane_hit(scope_id, fp_pixel_id[jray],
-            double(fp_x[jray]), double(fp_z[jray]),
-            double(fp_t[jray]) + ray_ct_[iray+jray]*math::constants::cgs_1_c,
-            ray_w_[iray+jray]);
+
+      if(vcl_sti_visitor_) {
+        SingleRayVCLScopeTraceInfo single_info;
+
+        int64_at status;
+        double_at reflec_x;
+        double_at reflec_z;
+        uint64_at pre_reflection_obs_hitmask;
+        uint64_at post_reflection_obs_hitmask;
+        uint64_at camera_obs_hitmask;
+        int64_at mirror_hexid;
+        int64_at mirror_id;
+        double_at mirror_reflection_point_x;
+        double_at mirror_reflection_point_y;
+        double_at mirror_reflection_point_z;
+        double_at mirror_n_dot_u;
+        double_at fplane_uy;
+        int64_at pixel_hexid;
+
+        info.status.store(status);
+        info.reflec_x.store(reflec_x);
+        info.reflec_z.store(reflec_z);
+        info.pre_reflection_obs_hitmask.store(pre_reflection_obs_hitmask);
+        info.post_reflection_obs_hitmask.store(post_reflection_obs_hitmask);
+        info.camera_obs_hitmask.store(camera_obs_hitmask);
+        info.mirror_hexid.store(mirror_hexid);
+        info.mirror_id.store(mirror_id);
+        info.mirror_reflection_point.x().store(mirror_reflection_point_x);
+        info.mirror_reflection_point.y().store(mirror_reflection_point_y);
+        info.mirror_reflection_point.z().store(mirror_reflection_point_z);
+        info.mirror_n_dot_u.store(mirror_n_dot_u);
+        info.fplane_uy.store(fplane_uy);
+        info.pixel_hexid.store(pixel_hexid);
+
+        for(unsigned jray=0; jray<mray; jray++) {
+          bool hit_fplane = imask & (0x1<<jray);
+          if(hit_fplane) {
+            single_info.hit_fplane = hit_fplane;
+            single_info.ray_weight = ray_w_[iray+jray];
+            single_info.scope_id = scope_id;
+            single_info.status = status[jray];
+            single_info.reflec_x = reflec_x[jray];
+            single_info.reflec_z = reflec_z[jray];
+            single_info.pre_reflection_obs_hitmask = pre_reflection_obs_hitmask[jray];
+            single_info.post_reflection_obs_hitmask = post_reflection_obs_hitmask[jray];
+            single_info.camera_obs_hitmask = camera_obs_hitmask[jray];
+            single_info.mirror_hexid = mirror_hexid[jray];
+            single_info.mirror_id = mirror_id[jray];
+            single_info.mirror_reflection_point << mirror_reflection_point_x[jray],
+              mirror_reflection_point_y[jray], mirror_reflection_point_z[jray];
+            single_info.mirror_n_dot_u = mirror_n_dot_u[jray];
+            single_info.fplane_x = fp_x[jray];
+            single_info.fplane_z = fp_z[jray];
+            single_info.fplane_t = fp_t[jray] + ray_ct_[iray+jray]*math::constants::cgs_1_c;
+            single_info.fplane_uy = fplane_uy[jray];
+            single_info.pixel_hexid = pixel_hexid[jray];
+            single_info.pixel_id = fp_pixel_id[jray];
+
+            ++nhit_;
+            vcl_sti_visitor_->process_vcl_scope_trace_info(single_info);
+          }
+        }
+      }
+
+      if(visitor_) {
+        for(unsigned jray=0; jray<mray; jray++) {
+          if(imask & (0x1<<jray)) {
+            ++nhit_;
+            visitor_->process_focal_plane_hit(scope_id, fp_pixel_id[jray],
+              double(fp_x[jray]), double(fp_z[jray]),
+              double(fp_t[jray]) + ray_ct_[iray+jray]*math::constants::cgs_1_c,
+              ray_w_[iray+jray]);
+          }
         }
       }
 
@@ -220,6 +325,7 @@ private:
   calin::simulation::vs_optics::VSOArray* array_ = nullptr;
   bool adopt_array_ = false;
   calin::simulation::pe_processor::PEProcessor* visitor_ = nullptr;
+  SingleRayVCLScopeTraceInfoProcessor* vcl_sti_visitor_ = nullptr;
   bool adopt_visitor_ = false;
   RNG* rng_ = nullptr;
   bool adopt_rng_ = false;

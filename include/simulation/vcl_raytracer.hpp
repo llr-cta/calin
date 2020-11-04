@@ -77,18 +77,18 @@ public:
   uint_vt             post_reflection_obs_hitmask;  // Bitmask for post-reflection obscurations hit by ray
   uint_vt             camera_obs_hitmask;  // Bitmask for camera frame obscurations hit by ray
 
-  int_vt              mirror_hexid;  // Hex ID of mirror facet hit by ray
+  int_vt              mirror_hexid;  // Grid hex ID of mirror facet hit by ray
   int_vt              mirror_id;     // Sequential ID of mirror facet hit by ray
   vec3_vt             mirror_reflection_point; // Ray intersection point on mirror sphere
   real_vt             mirror_n_dot_u; // Cosine if angle between ray and mirror normal
 
-  real_vt             fplane_x;
-  real_vt             fplane_z;
-  real_vt             fplane_t;
-  real_vt             fplane_uy;
+  real_vt             fplane_x;  // Ray intersection point on focal plane
+  real_vt             fplane_z;  // Ray intersection point on focal plane
+  real_vt             fplane_t;  // Ray intersection time on focal plane
+  real_vt             fplane_uy; // Cosine of angle between ray and focal plane (normal)
 
-  int_vt              pixel_hexid;
-  int_vt              pixel_id;
+  int_vt              pixel_hexid; // Grid hex ID of pixel on focal plane
+  int_vt              pixel_id;    // Sequential ID of pixel on focal plane (or -1)
 };
 
 template<typename VCLRealType> class VCLObscuration: public VCLRealType

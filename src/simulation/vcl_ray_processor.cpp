@@ -34,9 +34,8 @@ void SingleRayVCLScopeTraceInfoProcessor::start_processing()
   // nothing to see here
 }
 
-void SingleRayVCLScopeTraceInfoProcessor::process_vcl_scope_trace_info(
-  unsigned scope_id, bool hit_fplane,
-  const SingleRayVCLScopeTraceInfo& trace_info, double pe_weight)
+void SingleRayVCLScopeTraceInfoProcessor::
+process_vcl_scope_trace_info(const SingleRayVCLScopeTraceInfo& trace_info)
 {
   // nothing to see here
 }
@@ -44,4 +43,26 @@ void SingleRayVCLScopeTraceInfoProcessor::process_vcl_scope_trace_info(
 void SingleRayVCLScopeTraceInfoProcessor::finish_processing()
 {
   // nothing to see here
+}
+
+RecordingSingleRayVCLScopeTraceInfoProcessor::RecordingSingleRayVCLScopeTraceInfoProcessor():
+  SingleRayVCLScopeTraceInfoProcessor()
+{
+  // nothing to see here
+}
+
+RecordingSingleRayVCLScopeTraceInfoProcessor::~RecordingSingleRayVCLScopeTraceInfoProcessor()
+{
+  // nothing to see here
+}
+
+void RecordingSingleRayVCLScopeTraceInfoProcessor::start_processing()
+{
+  traces_.clear();
+}
+
+void RecordingSingleRayVCLScopeTraceInfoProcessor::
+process_vcl_scope_trace_info(const SingleRayVCLScopeTraceInfo& trace_info)
+{
+  traces_.emplace_back(trace_info);
 }
