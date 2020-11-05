@@ -41,20 +41,20 @@ namespace calin { namespace simulation { namespace vcl_raytracer {
 #ifndef SWIG
 
 enum VCLScopeTraceStatus {
-  STS_MASKED_ON_ENTRY,
-  STS_TRAVELLING_AWAY_REFLECTOR,
-  STS_MISSED_REFLECTOR_SPHERE,
-  STS_OUTSIDE_REFLECTOR_APERTURE,
-  STS_NO_MIRROR,
-  STS_MISSED_MIRROR_SPHERE,
-  STS_MISSED_MIRROR_EDGE,
-  STS_OBSCURED_BEFORE_MIRROR,
-      TS_MISSED_WINDOW,
-  STS_OBSCURED_BEFORE_FOCAL_PLANE,
-  STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,
-  STS_OUTSIDE_FOCAL_PLANE_APERTURE,
-  STS_TS_NO_PIXEL,
-  STS_TS_FOUND_PIXEL
+  STS_MASKED_ON_ENTRY,                        // 0
+  STS_TRAVELLING_AWAY_REFLECTOR,              // 1
+  STS_MISSED_REFLECTOR_SPHERE,                // 2
+  STS_OUTSIDE_REFLECTOR_APERTURE,             // 4
+  STS_NO_MIRROR,                              // 5
+  STS_MISSED_MIRROR_SPHERE,                   // 6
+  STS_MISSED_MIRROR_EDGE,                     // 7
+  STS_OBSCURED_BEFORE_MIRROR,                 // 8
+      TS_MISSED_WINDOW,                       // 9
+  STS_OBSCURED_BEFORE_FOCAL_PLANE,            // 10
+  STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,       // 11
+  STS_OUTSIDE_FOCAL_PLANE_APERTURE,           // 12
+  STS_TS_NO_PIXEL,                            // 13
+  STS_TS_FOUND_PIXEL                          // 14
 };
 
 template<typename VCLRealType> class VCLScopeTraceInfo: public VCLRealType
@@ -71,6 +71,7 @@ public:
   int_vt              status;    // Status of ray at end of tracing
 
   real_vt             reflec_x;  // Ray intersection point on reflector sphere
+  real_vt             reflec_y;  // Ray intersection point on reflector sphere
   real_vt             reflec_z;  // Ray intersection point on reflector sphere
 
   uint_vt             pre_reflection_obs_hitmask;   // Bitmask for pre-reflection obscurations hit by ray
@@ -79,7 +80,9 @@ public:
 
   int_vt              mirror_hexid;  // Grid hex ID of mirror facet hit by ray
   int_vt              mirror_id;     // Sequential ID of mirror facet hit by ray
-  vec3_vt             mirror_reflection_point; // Ray intersection point on mirror sphere
+  real_vt             mirror_x;      // Ray intersection point with mirror facet
+  real_vt             mirror_y;      // Ray intersection point with mirror facet
+  real_vt             mirror_z;      // Ray intersection point with mirror facet
   real_vt             mirror_n_dot_u; // Cosine if angle between ray and mirror normal
 
   real_vt             fplane_x;  // Ray intersection point on focal plane
@@ -352,6 +355,7 @@ public:
 #endif
 
     info.reflec_x     = select(mask, ray.position().x(), 0);
+    info.reflec_y     = select(mask, ray.position().y(), 0);
     info.reflec_z     = select(mask, ray.position().z(), 0);
 
     // Test aperture
@@ -415,7 +419,10 @@ public:
 
     vec3_vt mirror_center = mirror_pos + mirror_dir * mirror_r;
 
-    info.mirror_reflection_point = ray.position();
+    info.mirror_x     = select(mask, ray.position().x(), 0);
+    info.mirror_y     = select(mask, ray.position().y(), 0);
+    info.mirror_z     = select(mask, ray.position().z(), 0);
+
     ray.translate_origin(mirror_center);
 
     // *************************************************************************
@@ -483,7 +490,7 @@ public:
     // Translate back to reflector frame
 #if 1
     // Since we store the reflection point in info, now we just copy it back
-    ray.mutable_position() = info.mirror_reflection_point;
+    ray.mutable_position() << info.mirror_x, info.mirror_y, info.mirror_z;
 #else
     // No need to do the subtraction
     ray.untranslate_origin(mirror_center);

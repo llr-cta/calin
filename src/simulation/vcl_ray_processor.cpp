@@ -66,3 +66,47 @@ process_vcl_scope_trace_info(const SingleRayVCLScopeTraceInfo& trace_info)
 {
   traces_.emplace_back(trace_info);
 }
+
+RayMapSingleRayVCLScopeTraceInfoProcessor::
+RayMapSingleRayVCLScopeTraceInfoProcessor(double xside, unsigned nside, MapQuantity map_quantity):
+  SingleRayVCLScopeTraceInfoProcessor(),
+  dx_inv_(double(nside)/xside), xside_2_(0.5*xside), nside_(nside), map_quantity_(map_quantity), hist_(nside, nside)
+{
+  // nothing to see here
+}
+
+RayMapSingleRayVCLScopeTraceInfoProcessor::~RayMapSingleRayVCLScopeTraceInfoProcessor()
+{
+  // nothing to see here
+}
+
+void RayMapSingleRayVCLScopeTraceInfoProcessor::start_processing()
+{
+  hist_.setZero();
+}
+
+void RayMapSingleRayVCLScopeTraceInfoProcessor::
+process_vcl_scope_trace_info(const SingleRayVCLScopeTraceInfo& trace_info)
+{
+  double x;
+  double y;
+  switch(map_quantity_) {
+  case MQ_FOCAL_PLANE_POSITION:
+    x = trace_info.fplane_x;
+    y = trace_info.fplane_z;
+    break;
+  case MQ_REFLECTOR_SPHERE_POSITION:
+    x = trace_info.reflec_x;
+    y = trace_info.reflec_z;
+    break;
+  case MQ_MIRROR_FACET_POSITION:
+    x = trace_info.mirror_x;
+    y = trace_info.mirror_z;
+    break;
+  }
+  int ix = std::round((x + xside_2_)*dx_inv_ );
+  int iy = std::round((y + xside_2_)*dx_inv_);
+  if(ix>=0 and iy>=0 and ix<nside_ and iy<nside_) {
+    hist_(ix,iy) += trace_info.ray_weight;
+  }
+}
