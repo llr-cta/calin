@@ -414,14 +414,10 @@ public:
 
     vec3_vt mirror_pos;
     mirror_pos.x() = vcl::lookup<0x40000000>(info.mirror_id, mirror_x_lookup_);
-    mirror_pos.z() = vcl::lookup<0x40000000>(info.mirror_id, mirror_z_lookup_);
     mirror_pos.y() = vcl::lookup<0x40000000>(info.mirror_id, mirror_y_lookup_);
+    mirror_pos.z() = vcl::lookup<0x40000000>(info.mirror_id, mirror_z_lookup_);
 
     vec3_vt mirror_center = mirror_pos + mirror_dir * mirror_r;
-
-    info.mirror_x     = select(mask, ray.position().x(), 0);
-    info.mirror_y     = select(mask, ray.position().y(), 0);
-    info.mirror_z     = select(mask, ray.position().z(), 0);
 
     ray.translate_origin(mirror_center);
 
@@ -488,13 +484,11 @@ public:
 #endif
 
     // Translate back to reflector frame
-#if 1
-    // Since we store the reflection point in info, now we just copy it back
-    ray.mutable_position() << info.mirror_x, info.mirror_y, info.mirror_z;
-#else
-    // No need to do the subtraction
     ray.untranslate_origin(mirror_center);
-#endif
+
+    info.mirror_x     = select(mask, ray.position().x(), 0);
+    info.mirror_y     = select(mask, ray.position().y(), 0);
+    info.mirror_z     = select(mask, ray.position().z(), 0);
 
     // *************************************************************************
     // *************** RAY IS NOW BACK IN REFLECTOR COORDINATES ****************
