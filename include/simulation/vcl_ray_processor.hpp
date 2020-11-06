@@ -92,25 +92,33 @@ private:
 };
 
 enum MapQuantity {
-  MQ_FOCAL_PLANE_POSITION,                    // 0
-  MQ_REFLECTOR_SPHERE_POSITION,               // 1
-  MQ_MIRROR_FACET_POSITION                    // 2
+  MQ_WEIGHT_BY_FOCAL_PLANE_POSITION,                        // 0
+  MQ_WEIGHT_BY_REFLECTOR_SPHERE_POSITION,                   // 1
+  MQ_WEIGHT_BY_MIRROR_FACET_POSITION,                       // 2
+  MQ_MIRROR_INCIDENCE_ANGLE_BY_FOCAL_PLANE_POSITION,        // 3
+  MQ_MIRROR_INCIDENCE_ANGLE_BY_MIRROR_FACET_POSITION,       // 4
+  MQ_FOCAL_PLANE_INCIDENCE_ANGLE_BY_FOCAL_PLANE_POSITION,   // 5
+  MQ_FOCAL_PLANE_INCIDENCE_ANGLE_BY_MIRROR_FACET_POSITION   // 6
 };
 
 class RayMapSingleRayVCLScopeTraceInfoProcessor: public SingleRayVCLScopeTraceInfoProcessor
 {
 public:
-  RayMapSingleRayVCLScopeTraceInfoProcessor(double xside, unsigned nside, MapQuantity map_quantity = MQ_FOCAL_PLANE_POSITION);
+  RayMapSingleRayVCLScopeTraceInfoProcessor(double xside, unsigned nside,
+    MapQuantity map_quantity = MQ_WEIGHT_BY_FOCAL_PLANE_POSITION);
   virtual ~RayMapSingleRayVCLScopeTraceInfoProcessor();
   void start_processing() override;
   void process_vcl_scope_trace_info(const SingleRayVCLScopeTraceInfo& trace_info) override;
+  void finish_processing() override;
   const Eigen::MatrixXd& hist() const { return hist_; }
+  const Eigen::MatrixXd& weight() const { return weight_; }
 private:
   double dx_inv_;
   double xside_2_;
   int nside_;
   MapQuantity map_quantity_;
   Eigen::MatrixXd hist_;
+  Eigen::MatrixXd weight_;
 };
 
 template<typename VCLArchitecture> class VCLRayTracerRayProcessorDouble:

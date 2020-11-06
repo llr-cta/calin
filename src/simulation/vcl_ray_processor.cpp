@@ -70,7 +70,8 @@ process_vcl_scope_trace_info(const SingleRayVCLScopeTraceInfo& trace_info)
 RayMapSingleRayVCLScopeTraceInfoProcessor::
 RayMapSingleRayVCLScopeTraceInfoProcessor(double xside, unsigned nside, MapQuantity map_quantity):
   SingleRayVCLScopeTraceInfoProcessor(),
-  dx_inv_(double(nside)/xside), xside_2_(0.5*xside), nside_(nside), map_quantity_(map_quantity), hist_(nside, nside)
+  dx_inv_(double(nside)/xside), xside_2_(0.5*xside), nside_(nside),
+  map_quantity_(map_quantity), hist_(nside, nside), weight_(nside, nside)
 {
   // nothing to see here
 }
@@ -83,6 +84,7 @@ RayMapSingleRayVCLScopeTraceInfoProcessor::~RayMapSingleRayVCLScopeTraceInfoProc
 void RayMapSingleRayVCLScopeTraceInfoProcessor::start_processing()
 {
   hist_.setZero();
+  weight_.setZero();
 }
 
 void RayMapSingleRayVCLScopeTraceInfoProcessor::
@@ -90,23 +92,65 @@ process_vcl_scope_trace_info(const SingleRayVCLScopeTraceInfo& trace_info)
 {
   double x;
   double y;
+  double q;
   switch(map_quantity_) {
-  case MQ_FOCAL_PLANE_POSITION:
+  case MQ_WEIGHT_BY_FOCAL_PLANE_POSITION:
     x = trace_info.fplane_x;
     y = trace_info.fplane_z;
+    q = 1.0;
     break;
-  case MQ_REFLECTOR_SPHERE_POSITION:
+  case MQ_WEIGHT_BY_REFLECTOR_SPHERE_POSITION:
     x = trace_info.reflec_x;
     y = trace_info.reflec_z;
+    q = 1.0;
     break;
-  case MQ_MIRROR_FACET_POSITION:
+  case MQ_WEIGHT_BY_MIRROR_FACET_POSITION:
     x = trace_info.mirror_x;
     y = trace_info.mirror_z;
+    q = 1.0;
+    break;
+  case MQ_MIRROR_INCIDENCE_ANGLE_BY_FOCAL_PLANE_POSITION:
+    x = trace_info.fplane_x;
+    y = trace_info.fplane_z;
+    q = trace_info.mirror_n_dot_u;
+    break;
+  case MQ_MIRROR_INCIDENCE_ANGLE_BY_MIRROR_FACET_POSITION:
+    x = trace_info.mirror_x;
+    y = trace_info.mirror_z;
+    q = trace_info.mirror_n_dot_u;
+    break;
+  case MQ_FOCAL_PLANE_INCIDENCE_ANGLE_BY_FOCAL_PLANE_POSITION:
+    x = trace_info.fplane_x;
+    y = trace_info.fplane_z;
+    q = trace_info.fplane_uy;
+    break;
+  case MQ_FOCAL_PLANE_INCIDENCE_ANGLE_BY_MIRROR_FACET_POSITION:
+    x = trace_info.mirror_x;
+    y = trace_info.mirror_z;
+    q = trace_info.fplane_uy;
     break;
   }
   int ix = std::round((x + xside_2_)*dx_inv_ );
   int iy = std::round((y + xside_2_)*dx_inv_);
   if(ix>=0 and iy>=0 and ix<nside_ and iy<nside_) {
-    hist_(ix,iy) += trace_info.ray_weight;
+    hist_(ix,iy) += trace_info.ray_weight*q;
+    weight_(ix,iy) += trace_info.ray_weight;
+  }
+}
+
+void RayMapSingleRayVCLScopeTraceInfoProcessor::finish_processing()
+{
+  switch(map_quantity_) {
+  case MQ_WEIGHT_BY_FOCAL_PLANE_POSITION:
+  case MQ_WEIGHT_BY_REFLECTOR_SPHERE_POSITION:
+  case MQ_WEIGHT_BY_MIRROR_FACET_POSITION:
+    // no post-processing needed
+    break;
+  case MQ_MIRROR_INCIDENCE_ANGLE_BY_FOCAL_PLANE_POSITION:
+  case MQ_MIRROR_INCIDENCE_ANGLE_BY_MIRROR_FACET_POSITION:
+  case MQ_FOCAL_PLANE_INCIDENCE_ANGLE_BY_FOCAL_PLANE_POSITION:
+  case MQ_FOCAL_PLANE_INCIDENCE_ANGLE_BY_MIRROR_FACET_POSITION:
+    hist_.array() = (hist_.array().abs() / weight_.array()).acos()*180.0/M_PI;
+    break;
   }
 }
