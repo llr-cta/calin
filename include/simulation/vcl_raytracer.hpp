@@ -896,7 +896,8 @@ public:
     const real_vt t_in = vcl::max(vcl::min(tc1, tc2), vcl::min(tp1, tp2));
     const real_vt t_out = vcl::min(vcl::max(tc1, tc2), vcl::max(tp1, tp2));
 
-    const bool_vt does_obscure = t_out > vcl::max(t_in, 0);
+    const real_vt t_prop = vcl::max(t_in, 0);
+    const bool_vt does_obscure = t_out > t_prop;
 
     // using calin::util::log::LOG;
     // using calin::util::log::INFO;
@@ -904,6 +905,9 @@ public:
     //   LOG(INFO) << ray_in.x()[0] << ' ' << ray_in.y()[0] << ' '
     //     << tc1[0] << ' ' << tc2[0] << ' ' << tp1[0] << ' ' << tp2[0];
     // }
+
+    ray_out = ray_in;
+    ray_out.propagate_dist_with_mask(does_obscure, t_prop, n);
 
     return does_obscure;
   }

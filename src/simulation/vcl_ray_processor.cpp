@@ -133,7 +133,7 @@ process_vcl_scope_trace_info(const SingleRayVCLScopeTraceInfo& trace_info)
   int ix = std::round((x + xside_2_)*dx_inv_ );
   int iy = std::round((y + xside_2_)*dx_inv_);
   if(ix>=0 and iy>=0 and ix<nside_ and iy<nside_) {
-    hist_(ix,iy) += trace_info.ray_weight*q;
+    hist_(ix,iy) += q * trace_info.ray_weight;
     weight_(ix,iy) += trace_info.ray_weight;
   }
 }
