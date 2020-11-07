@@ -44,17 +44,17 @@ enum VCLScopeTraceStatus {
   STS_MASKED_ON_ENTRY,                        // 0
   STS_TRAVELLING_AWAY_REFLECTOR,              // 1
   STS_MISSED_REFLECTOR_SPHERE,                // 2
-  STS_OUTSIDE_REFLECTOR_APERTURE,             // 4
-  STS_NO_MIRROR,                              // 5
-  STS_MISSED_MIRROR_SPHERE,                   // 6
-  STS_MISSED_MIRROR_EDGE,                     // 7
-  STS_OBSCURED_BEFORE_MIRROR,                 // 8
-      TS_MISSED_WINDOW,                       // 9
-  STS_OBSCURED_BEFORE_FOCAL_PLANE,            // 10
-  STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,       // 11
-  STS_OUTSIDE_FOCAL_PLANE_APERTURE,           // 12
-  STS_TS_NO_PIXEL,                            // 13
-  STS_TS_FOUND_PIXEL                          // 14
+  STS_OUTSIDE_REFLECTOR_APERTURE,             // 3
+  STS_NO_MIRROR,                              // 4
+  STS_MISSED_MIRROR_SPHERE,                   // 5
+  STS_MISSED_MIRROR_EDGE,                     // 6
+  STS_OBSCURED_BEFORE_MIRROR,                 // 7
+      TS_MISSED_WINDOW,                       // 8
+  STS_OBSCURED_BEFORE_FOCAL_PLANE,            // 9
+  STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,       // 10
+  STS_OUTSIDE_FOCAL_PLANE_APERTURE,           // 11
+  STS_TS_NO_PIXEL,                            // 12
+  STS_TS_FOUND_PIXEL                          // 13
 };
 
 template<typename VCLRealType> class VCLScopeTraceInfo: public VCLRealType
