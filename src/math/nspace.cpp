@@ -62,7 +62,7 @@ SparseNSpace::SparseNSpace(const std::vector<Axis> axes):
 {
   N_ = 1;
   for(unsigned i=0; i<axes.size(); ++i) {
-    const auto& ax { axes[i] };
+    const Axis& ax ( axes[i] );
     const double dx = (ax.xhi - ax.xlo)/ax.n;
     xlo_[i] = ax.xlo;
     xhi_[i] = ax.xhi;
