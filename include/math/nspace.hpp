@@ -47,6 +47,9 @@ public:
 
   std::vector<Axis> axes() const;
 
+  unsigned naxes() const { return xlo_.size(); }
+  Axis axis(unsigned iaxis) const;
+
   uint64_t num_occupied_cells() {
     return bins_.size();
   }
@@ -155,6 +158,12 @@ public:
     if(ifind == bins_.end())return 0;
     return (*ifind).second;
   }
+
+  SparseNSpace project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi);
+  SparseNSpace project_along_axis(unsigned iaxis);
+
+  Eigen::VectorXd as_vector() const;
+  Eigen::MatrixXd as_matrix() const;
 
   double total_weight() const;
 
