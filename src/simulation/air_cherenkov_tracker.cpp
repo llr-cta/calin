@@ -34,6 +34,7 @@
 #include <simulation/air_cherenkov_tracker.hpp>
 #include <util/log.hpp>
 #include <math/geometry.hpp>
+#include <math/nspace.hpp>
 #include <cmath>
 
 using namespace calin::util::log;
@@ -265,4 +266,96 @@ void CherenkovTrackYieldLogger::visit_cherenkov_track(
   track_altitude_.push_back(cherenkov_track.x_mid.z());
   track_length_.push_back(cherenkov_track.dx);
   track_yield_.push_back(cherenkov_track.yield_density);
+}
+
+CherenkovTrackYieldNSpaceVisitor::CherenkovTrackYieldNSpaceVisitor(
+    const calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig& config):
+  AirCherenkovTrackVisitor(),
+  config_(config), space_(space_axes(config)), x_(space_.naxes())
+{
+  // nothing to see here
+}
+
+CherenkovTrackYieldNSpaceVisitor::~CherenkovTrackYieldNSpaceVisitor()
+{
+  // nothing to see here
+}
+
+void CherenkovTrackYieldNSpaceVisitor::visit_event(const Event& event, bool& kill_event)
+{
+  // nothing to see here
+}
+
+void CherenkovTrackYieldNSpaceVisitor::visit_cherenkov_track(
+  const AirCherenkovTrack& cherenkov_track, bool& kill_track)
+{
+  // track_altitude_.push_back(cherenkov_track.x_mid.z());
+  // track_length_.push_back(cherenkov_track.dx);
+  // track_yield_.push_back(cherenkov_track.yield_density);
+}
+
+namespace {
+
+  calin::math::nspace::Axis make_axis(
+    const calin::ix::simulation::tracker::AxisBinning& ax)
+  {
+    return { ax.lo_bound(), ax.hi_bound(), ax.num_bins() };
+  }
+
+} // anonymous namespace
+
+std::vector<calin::math::nspace::Axis> CherenkovTrackYieldNSpaceVisitor::space_axes(
+  const calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig& config)
+{
+  std::vector<calin::math::nspace::Axis> axes;
+  switch(config.axis_variables()) {
+  default:
+  case calin::ix::simulation::tracker::XY:
+    axes.push_back(make_axis(config.xy_axis()));
+    axes.push_back(make_axis(config.xy_axis()));
+    break;
+  case calin::ix::simulation::tracker::UXUY:
+    axes.push_back(make_axis(config.uxuy_axis()));
+    axes.push_back(make_axis(config.uxuy_axis()));
+    break;
+  case calin::ix::simulation::tracker::DEPTH_XY:
+    axes.push_back(make_axis(config.depth_axis()));
+    axes.push_back(make_axis(config.xy_axis()));
+    axes.push_back(make_axis(config.xy_axis()));
+    break;
+  case calin::ix::simulation::tracker::DEPTH_UXUY:
+    axes.push_back(make_axis(config.depth_axis()));
+    axes.push_back(make_axis(config.uxuy_axis()));
+    axes.push_back(make_axis(config.uxuy_axis()));
+    break;
+  case calin::ix::simulation::tracker::DEPTH_XY_UXUY:
+    axes.push_back(make_axis(config.depth_axis()));
+    axes.push_back(make_axis(config.xy_axis()));
+    axes.push_back(make_axis(config.xy_axis()));
+    axes.push_back(make_axis(config.uxuy_axis()));
+    axes.push_back(make_axis(config.uxuy_axis()));
+    break;
+  }
+  return axes;
+}
+
+calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig
+CherenkovTrackYieldNSpaceVisitor::default_config()
+{
+  calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig cfg;
+  cfg.set_axis_variables(calin::ix::simulation::tracker::DEPTH_XY);
+
+  cfg.mutable_depth_axis()->set_lo_bound(0);
+  cfg.mutable_depth_axis()->set_hi_bound(1300);
+  cfg.mutable_depth_axis()->set_num_bins(26);
+
+  cfg.mutable_xy_axis()->set_lo_bound(-1050.0);
+  cfg.mutable_xy_axis()->set_hi_bound(1050.0);
+  cfg.mutable_xy_axis()->set_num_bins(21);
+
+  cfg.mutable_uxuy_axis()->set_lo_bound(-2.0*M_PI/180.0);
+  cfg.mutable_uxuy_axis()->set_hi_bound(2.0*M_PI/180.0);
+  cfg.mutable_uxuy_axis()->set_num_bins(21);
+
+  return cfg;
 }

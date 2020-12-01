@@ -33,6 +33,7 @@
 #include"simulation/tracker.hpp"
 #include"simulation/tracker.pb.h"
 #include"math/rng.hpp"
+#include <math/nspace.hpp>
 
 namespace calin { namespace simulation { namespace air_cherenkov_tracker {
 
@@ -171,5 +172,26 @@ private:
   std::vector<double> track_length_;
   std::vector<double> track_yield_;
 };
+
+class CherenkovTrackYieldNSpaceVisitor: public AirCherenkovTrackVisitor
+{
+public:
+  CherenkovTrackYieldNSpaceVisitor(
+    const calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig& config = default_config());
+  virtual ~CherenkovTrackYieldNSpaceVisitor();
+  void visit_event(const Event& event, bool& kill_event) override;
+  void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
+    bool& kill_track) override;
+
+  static calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig default_config();
+private:
+  static std::vector<calin::math::nspace::Axis> space_axes(
+    const calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig& config);
+
+  calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig config_;
+  calin::math::nspace::SparseNSpace space_;
+  Eigen::VectorXd x_;
+};
+
 
 } } } // namespace calin::simulation::air_cherenkov_tracker

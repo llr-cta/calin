@@ -83,3 +83,38 @@ message ShowerMovieProducerTrackVisitorConfig
     [(CFO).desc = "Scaling of Cherenkov photon yield to limit number of "
       "photons." ];
 }
+
+enum AxisVariables {
+  XY                 = 0;
+  UXUY               = 1;
+  DEPTH_XY           = 2;
+  DEPTH_UXUY         = 3;
+  DEPTH_XY_UXUY      = 4;
+};
+
+message AxisBinning
+{
+  double lo_bound                                          = 1
+    [(CFO).desc = "Low bound for the axis dimension.",
+     (CFO).units = "g/cm^2, cm, 1 (depending on variable)." ];
+  double hi_bound                                          = 2
+   [(CFO).desc = "High bound for the axis dimension.",
+    (CFO).units = "g/cm^2, cm, 1 (depending on variable)." ];
+  uint32 num_bins                                          = 3
+    [(CFO).desc = "Number of bins in this dimension." ];
+};
+
+message CherenkovTrackYieldNSpaceVisitorConfig
+{
+  AxisVariables axis_variables                             = 1
+    [(CFO).desc = "Axis variable configuration." ];
+
+  AxisBinning depth_axis                                   = 2
+    [(CFO).desc = "Binning configuration along depth axis." ];
+
+  AxisBinning xy_axis                                      = 3
+    [(CFO).desc = "Binning configuration along X-Y axes." ];
+
+  AxisBinning uxuy_axis                                    = 4
+    [(CFO).desc = "Binning configuration along UX-UY axes." ];
+};
