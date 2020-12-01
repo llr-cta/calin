@@ -57,7 +57,7 @@ SparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
   }
 }
 
-SparseNSpace::SparseNSpace(const std::vector<Axis> axes):
+SparseNSpace::SparseNSpace(const std::vector<Axis>& axes):
   xlo_(axes.size()), xhi_(axes.size()), dx_(axes.size()), dx_inv_(axes.size()),
   n_(axes.size())
 {

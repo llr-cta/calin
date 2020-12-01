@@ -43,7 +43,7 @@ class SparseNSpace
 public:
   SparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
     const Eigen::VectorXi& n);
-  SparseNSpace(const std::vector<Axis> axes);
+  SparseNSpace(const std::vector<Axis>& axes);
 
   std::vector<Axis> axes() const;
 
