@@ -51,6 +51,7 @@
 %import "simulation/vs_optics.i"
 %import "simulation/tracker.pb.i"
 %import "math/histogram.i"
+%import "math/nspace.i"
 %import "simulation/ray_processor.i"
 //%newobject *::dump_as_proto() const;
 //%newobject *::create_from_proto;
