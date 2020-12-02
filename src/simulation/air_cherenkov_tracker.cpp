@@ -46,6 +46,11 @@ AirCherenkovTrackVisitor::~AirCherenkovTrackVisitor()
   // nothing to see here
 }
 
+void AirCherenkovTrackVisitor::visit_atmosphere(calin::simulation::atmosphere::Atmosphere* atm)
+{
+  // default is to do nothing
+}
+
 void AirCherenkovTrackVisitor::visit_event(const Event& event, bool& kill_event)
 {
   // default is to do nothing
@@ -271,7 +276,7 @@ void CherenkovTrackYieldLogger::visit_cherenkov_track(
 CherenkovTrackYieldNSpaceVisitor::CherenkovTrackYieldNSpaceVisitor(
     const calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig& config):
   AirCherenkovTrackVisitor(),
-  config_(config), space_(space_axes(config)), x_(space_.naxes())
+  config_(config), space_(space_axes(config)), p_(space_.naxes())
 {
   // nothing to see here
 }
@@ -281,17 +286,45 @@ CherenkovTrackYieldNSpaceVisitor::~CherenkovTrackYieldNSpaceVisitor()
   // nothing to see here
 }
 
+void CherenkovTrackYieldNSpaceVisitor::visit_atmosphere(calin::simulation::atmosphere::Atmosphere* atm)
+{
+  atm_ = atm;
+}
+
 void CherenkovTrackYieldNSpaceVisitor::visit_event(const Event& event, bool& kill_event)
 {
-  // nothing to see here
+  x0_ = event.x0;
+  rot_ = calin::math::geometry::rotation_z_to_vec_Rzyz(-event.u0).transpose();
+  uz0_inv_ = 1.0/event.u0.z();
 }
 
 void CherenkovTrackYieldNSpaceVisitor::visit_cherenkov_track(
   const AirCherenkovTrack& cherenkov_track, bool& kill_track)
 {
-  // track_altitude_.push_back(cherenkov_track.x_mid.z());
-  // track_length_.push_back(cherenkov_track.dx);
-  // track_yield_.push_back(cherenkov_track.yield_density);
+  double t = atm_->thickness(cherenkov_track.x_mid.z())*uz0_inv_;
+  Eigen::Vector3d x = rot_ * (cherenkov_track.x_mid - x0_);
+  Eigen::Vector3d u = rot_ * cherenkov_track.dx_hat;
+
+  switch(config_.axis_variables()) {
+  default:
+  case calin::ix::simulation::tracker::XY:
+    p_ << x.x(), x.y();
+    break;
+  case calin::ix::simulation::tracker::UXUY:
+    p_ << u.x(), u.y();
+    break;
+  case calin::ix::simulation::tracker::DEPTH_XY:
+    p_ << t, x.x(), x.y();
+    break;
+  case calin::ix::simulation::tracker::DEPTH_UXUY:
+    p_ << t, u.x(), u.y();
+    break;
+  case calin::ix::simulation::tracker::DEPTH_XY_UXUY:
+    p_ << t, x.x(), x.y(), u.x(), u.y();
+    break;
+  }
+
+  space_.accumulate(p_, cherenkov_track.yield_density);
 }
 
 namespace {

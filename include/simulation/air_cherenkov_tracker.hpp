@@ -76,6 +76,7 @@ class AirCherenkovTrackVisitor
 {
 public:
   virtual ~AirCherenkovTrackVisitor();
+  virtual void visit_atmosphere(calin::simulation::atmosphere::Atmosphere* atm);
   virtual void visit_event(const Event& event, bool& kill_event);
   virtual void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
     bool& kill_track);
@@ -179,9 +180,13 @@ public:
   CherenkovTrackYieldNSpaceVisitor(
     const calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig& config = default_config());
   virtual ~CherenkovTrackYieldNSpaceVisitor();
+  void visit_atmosphere(calin::simulation::atmosphere::Atmosphere* atm) override;
   void visit_event(const Event& event, bool& kill_event) override;
   void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
     bool& kill_track) override;
+
+  const calin::math::nspace::SparseNSpace& nspace() const { return space_; }
+  // Eigen::Matrix3d rotation_matrix() const { return rot_; }
 
   static calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig default_config();
 private:
@@ -190,7 +195,12 @@ private:
 
   calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig config_;
   calin::math::nspace::SparseNSpace space_;
-  Eigen::VectorXd x_;
+  Eigen::VectorXd p_;
+  Eigen::Vector3d x0_;
+  Eigen::Matrix3d rot_;
+
+  calin::simulation::atmosphere::Atmosphere* atm_ = nullptr;
+  double uz0_inv_;
 };
 
 
