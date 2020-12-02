@@ -114,6 +114,36 @@ inline void rotation_z_to_vec(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
   return rotation_z_to_xyz(m, v.x(), v.y(), v.z());
 }
 
+inline void rotation_z_to_xyz_Rzyz(Eigen::Matrix3d& m,
+  const double x, const double y, const double z)
+{
+  double st = std::sqrt(x*x+y*y);
+  if(st == 0.0) {
+    if(z>=0) {
+      m.setIdentity();
+    } else {
+      m << -1,  0,  0,
+            0,  1,  0,
+            0,  0, -1;
+    }
+  } else {
+    double st_inv = 1.0/st;
+    double sp = y * st_inv;
+    double cp = x * st_inv;
+    double sp2 = sp*sp;
+    double cp2 = cp*cp;
+    double zmo_cpsp = (z-1)*cp*sp;
+    m << z*cp2+sp2,  zmo_cpsp, x,
+          zmo_cpsp, z*sp2+cp2, y,
+                -x,        -y, z;
+  }
+}
+
+inline void rotation_z_to_vec_Rzyz(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+{
+  return rotation_z_to_xyz_Rzyz(m, v.x(), v.y(), v.z());
+}
+
 #ifndef SWIG
 
 // -----------------------------------------------------------------------------
@@ -149,6 +179,22 @@ inline Eigen::Matrix3d rotation_z_to_vec(const Eigen::Vector3d v)
   rotation_z_to_vec(m, v);
   return m;
 }
+
+inline Eigen::Matrix3d rotation_z_to_xyz_Rzyz(
+  const double x, const double y, const double z)
+{
+  Eigen::Matrix3d m;
+  rotation_z_to_xyz_Rzyz(m, x, y, z);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_z_to_vec_Rzyz(const Eigen::Vector3d v)
+{
+  Eigen::Matrix3d m;
+  rotation_z_to_vec_Rzyz(m, v);
+  return m;
+}
+
 #endif
 
 } } } // namespace calin::math::geometry
