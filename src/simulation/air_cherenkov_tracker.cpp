@@ -307,6 +307,9 @@ void CherenkovTrackYieldNSpaceVisitor::visit_cherenkov_track(
 
   switch(config_.axis_variables()) {
   default:
+  case calin::ix::simulation::tracker::DEPTH:
+    p_ << t;
+    break;
   case calin::ix::simulation::tracker::XY:
     p_ << x.x(), x.y();
     break;
@@ -343,6 +346,9 @@ std::vector<calin::math::nspace::Axis> CherenkovTrackYieldNSpaceVisitor::space_a
   std::vector<calin::math::nspace::Axis> axes;
   switch(config.axis_variables()) {
   default:
+  case calin::ix::simulation::tracker::DEPTH:
+    axes.push_back(make_axis(config.depth_axis()));
+    break;
   case calin::ix::simulation::tracker::XY:
     axes.push_back(make_axis(config.xy_axis()));
     axes.push_back(make_axis(config.xy_axis()));

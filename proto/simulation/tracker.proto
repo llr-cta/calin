@@ -85,11 +85,12 @@ message ShowerMovieProducerTrackVisitorConfig
 }
 
 enum AxisVariables {
-  XY                 = 0;
-  UXUY               = 1;
-  DEPTH_XY           = 2;
-  DEPTH_UXUY         = 3;
-  DEPTH_XY_UXUY      = 4;
+  DEPTH              = 0;
+  XY                 = 1;
+  UXUY               = 2;
+  DEPTH_XY           = 3;
+  DEPTH_UXUY         = 4;
+  DEPTH_XY_UXUY      = 5;
 };
 
 message AxisBinning
