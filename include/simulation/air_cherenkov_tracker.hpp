@@ -76,7 +76,7 @@ class AirCherenkovTrackVisitor
 {
 public:
   virtual ~AirCherenkovTrackVisitor();
-  virtual void visit_atmosphere(calin::simulation::atmosphere::Atmosphere* atm);
+  virtual void set_atmosphere(calin::simulation::atmosphere::Atmosphere* atm);
   virtual void visit_event(const Event& event, bool& kill_event);
   virtual void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
     bool& kill_track);
@@ -88,14 +88,9 @@ class AirCherenkovParameterCalculatorTrackVisitor:
 {
 public:
   AirCherenkovParameterCalculatorTrackVisitor(AirCherenkovTrackVisitor* visitor,
-      calin::simulation::atmosphere::Atmosphere* atm,
-      const calin::ix::simulation::tracker::AirCherenkovParameterCalculatorTrackVisitorConfig& cfg = default_config(),
-      bool adopt_visitor = false, bool adopt_atm = false):
-    calin::simulation::tracker::TrackVisitor(),
-    visitor_(visitor), adopt_visitor_(adopt_visitor),
-    atm_(atm), adopt_atm_(adopt_atm) { if(cfg.enable_forced_cherenkov_angle_mode()) {
-      enable_forced_cherenkov_angle_mode_ = true;
-      set_forced_cherenkov_angle(cfg.forced_cherenkov_angle()); } }
+    calin::simulation::atmosphere::Atmosphere* atm,
+    const calin::ix::simulation::tracker::AirCherenkovParameterCalculatorTrackVisitorConfig& cfg = default_config(),
+    bool adopt_visitor = false, bool adopt_atm = false);
   virtual ~AirCherenkovParameterCalculatorTrackVisitor();
   void visit_event(const Event& event, bool& kill_event) override;
   void visit_track(const calin::simulation::tracker::Track& track,
@@ -180,7 +175,7 @@ public:
   CherenkovTrackYieldNSpaceVisitor(
     const calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig& config = default_config());
   virtual ~CherenkovTrackYieldNSpaceVisitor();
-  void visit_atmosphere(calin::simulation::atmosphere::Atmosphere* atm) override;
+  void set_atmosphere(calin::simulation::atmosphere::Atmosphere* atm) override;
   void visit_event(const Event& event, bool& kill_event) override;
   void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
     bool& kill_track) override;

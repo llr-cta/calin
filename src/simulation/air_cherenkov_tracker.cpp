@@ -46,7 +46,7 @@ AirCherenkovTrackVisitor::~AirCherenkovTrackVisitor()
   // nothing to see here
 }
 
-void AirCherenkovTrackVisitor::visit_atmosphere(calin::simulation::atmosphere::Atmosphere* atm)
+void AirCherenkovTrackVisitor::set_atmosphere(calin::simulation::atmosphere::Atmosphere* atm)
 {
   // default is to do nothing
 }
@@ -65,6 +65,22 @@ visit_cherenkov_track(const AirCherenkovTrack& track, bool& kill_track)
 void AirCherenkovTrackVisitor::leave_event()
 {
   // default is to do nothing
+}
+
+AirCherenkovParameterCalculatorTrackVisitor::
+AirCherenkovParameterCalculatorTrackVisitor(AirCherenkovTrackVisitor* visitor,
+    calin::simulation::atmosphere::Atmosphere* atm,
+    const calin::ix::simulation::tracker::AirCherenkovParameterCalculatorTrackVisitorConfig& cfg,
+    bool adopt_visitor, bool adopt_atm):
+  calin::simulation::tracker::TrackVisitor(),
+  visitor_(visitor), adopt_visitor_(adopt_visitor),
+  atm_(atm), adopt_atm_(adopt_atm)
+{
+  if(cfg.enable_forced_cherenkov_angle_mode()) {
+    enable_forced_cherenkov_angle_mode_ = true;
+    set_forced_cherenkov_angle(cfg.forced_cherenkov_angle());
+  }
+  visitor->set_atmosphere(atm);
 }
 
 AirCherenkovParameterCalculatorTrackVisitor::
@@ -286,7 +302,7 @@ CherenkovTrackYieldNSpaceVisitor::~CherenkovTrackYieldNSpaceVisitor()
   // nothing to see here
 }
 
-void CherenkovTrackYieldNSpaceVisitor::visit_atmosphere(calin::simulation::atmosphere::Atmosphere* atm)
+void CherenkovTrackYieldNSpaceVisitor::set_atmosphere(calin::simulation::atmosphere::Atmosphere* atm)
 {
   atm_ = atm;
 }
