@@ -74,6 +74,16 @@ SparseNSpace::SparseNSpace(const std::vector<Axis>& axes):
   }
 }
 
+void SparseNSpace::injest(const SparseNSpace& o)
+{
+  if(xlo_!=o.xlo_ or xhi_!=o.xhi_ or n_!=o.n_) {
+    throw std::runtime_error("SparseNSpace: cannot injest space with incompatibe axis defifinition");
+  }
+  for(auto i : o.bins_) {
+    bins_[i.first] += i.second;
+  }
+}
+
 std::vector<calin::math::nspace::Axis> SparseNSpace::axes() const
 {
   std::vector<calin::math::nspace::Axis> a;

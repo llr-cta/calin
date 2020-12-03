@@ -45,6 +45,9 @@ public:
     const Eigen::VectorXi& n);
   SparseNSpace(const std::vector<Axis>& axes);
 
+  void clear() { bins_.clear(); }
+  void injest(const SparseNSpace& o);
+  
   std::vector<Axis> axes() const;
 
   unsigned naxes() const { return xlo_.size(); }
