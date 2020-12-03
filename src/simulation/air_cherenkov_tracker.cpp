@@ -317,7 +317,7 @@ void CherenkovTrackYieldNSpaceVisitor::visit_event(const Event& event, bool& kil
 {
   x0_ = event.x0;
   rot_ = calin::math::geometry::rotation_z_to_vec_Rzyz(-event.u0).transpose();
-  uz0_inv_ = 1.0/event.u0.z();
+  uz0_inv_ = 1.0/std::abs(event.u0.z());
 }
 
 void CherenkovTrackYieldNSpaceVisitor::visit_cherenkov_track(
