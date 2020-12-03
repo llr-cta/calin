@@ -133,6 +133,7 @@ public:
   virtual ~EAS_DetectorConstruction();
   G4VPhysicalVolume* Construct() override = 0;
   void ConstructSDandField() override = 0;
+  virtual const G4VPhysicalVolume* get_world_physical() const = 0;
   virtual bool ray_intersects_detector(const Eigen::Vector3d& pos,
     const Eigen::Vector3d& dir) = 0;
 };
@@ -155,6 +156,7 @@ public:
   virtual ~EAS_FlatDetectorConstruction();
   G4VPhysicalVolume* Construct() override;
   void ConstructSDandField() override;
+  const G4VPhysicalVolume* get_world_physical() const override;
   bool ray_intersects_detector(const Eigen::Vector3d& pos,
     const Eigen::Vector3d& dir) override;
 private:
@@ -168,6 +170,7 @@ private:
   calin::simulation::world_magnetic_model::FieldVsElevation* bfield_;
   std::map<G4LogicalVolume*, G4ThreeVector> logical_bfield_;
   const std::string material_name_;
+  G4VPhysicalVolume* world_physical_ = nullptr;
 };
 
 class EAS_UserEventAction: public G4UserEventAction

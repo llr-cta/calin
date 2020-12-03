@@ -123,6 +123,11 @@ void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
   const G4ParticleDefinition* pdg_info =
       the_step->GetTrack()->GetParticleDefinition();
 
+  if(the_step->GetTrack()->GetVolume() == detector_geometry_->get_world_physical()) {
+    the_step->GetTrack()->SetTrackStatus(fStopAndKill);
+    return;
+  }
+
   if(apply_kinetic_energy_cut(pdg_info->GetPDGEncoding()))
   {
     if(pre_step_pt->GetKineticEnergy() < ecut_) {
@@ -326,6 +331,7 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
                             0);                         // its copy number}
   }
 
+  world_physical_ = world_physical;
   return world_physical;
 }
 
@@ -343,6 +349,12 @@ void EAS_FlatDetectorConstruction::ConstructSDandField()
     G4AutoDelete::Register(mag_field);
     G4AutoDelete::Register(field_mgr);
   }
+}
+
+const G4VPhysicalVolume*
+EAS_FlatDetectorConstruction::get_world_physical() const
+{
+  return world_physical_;
 }
 
 bool EAS_FlatDetectorConstruction::
