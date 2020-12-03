@@ -138,14 +138,20 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
   cherenkov.sin_thetac     = std::sqrt(cherenkov.sin2_thetac);
 
   if(std::isnan(cherenkov.yield_density) or cherenkov.yield_density>1e6) {
-    LOG(INFO) << '(' // << cherenkov.x0.transpose() << ") ("
-              << cherenkov.x_mid.transpose() << ") "
-              << cherenkov.dx << ' '
-              << cherenkov.n << ' ' << track.q << ' ' << track.pdg_type << ' '
-              << cherenkov.e_mid << ' ' << track.mass << ' '
-              << g2 << ' ' << b2 << ' '
-              << cherenkov.sin2_thetac << ' '
-              << cherenkov.yield_density;
+    LOG(INFO) << "Excessive Cherenkov yield density: Y="
+              << cherenkov.yield_density
+              << "\n  x0=(" << cherenkov.particle_track->x0.transpose()
+              << ")\n  x1=(" << cherenkov.particle_track->x1.transpose()
+              << ") dx=" << cherenkov.dx
+              << "\n  n=" << cherenkov.n
+              << " q=" << track.q
+              << " pdg=" << track.pdg_type
+              << " (" << particle_type_to_string(track.type)
+              << ") e="<< cherenkov.e_mid
+              << " m=" << track.mass
+              << "\n  g2=" << g2
+              << " b2=" << b2
+              << " sin2(tc)=" << cherenkov.sin2_thetac;
   }
 
   visitor_->visit_cherenkov_track(cherenkov, kill_track);
