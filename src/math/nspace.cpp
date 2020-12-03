@@ -160,7 +160,7 @@ Eigen::MatrixXd SparseNSpace::as_matrix() const
   m.setZero();
   for(auto i : bins_) {
     if(i.first >= 0) {
-      auto qr = std::div(i.first, int64_t(n_[0]));
+      auto qr = std::div(i.first, int64_t(n_[1]));
       m(qr.quot, qr.rem) = i.second;
     }
   }
