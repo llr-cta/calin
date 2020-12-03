@@ -116,17 +116,19 @@ EAS_SteppingAction::~EAS_SteppingAction()
 
 void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
 {
+  if(the_step->GetTrack()->GetVolume() == detector_geometry_->get_world_physical()) {
+    // Don't process tracks that are propagating only in the world volume
+    // BUT don't suppress them in case there are tiny gaps beyween atm layers
+    // the_step->GetTrack()->SetTrackStatus(fStopAndKill);
+    return;
+  }
+
   const G4StepPoint* pre_step_pt = the_step->GetPreStepPoint();
 
   double pre_step_pt_etot = pre_step_pt->GetTotalEnergy();
 
   const G4ParticleDefinition* pdg_info =
       the_step->GetTrack()->GetParticleDefinition();
-
-  if(the_step->GetTrack()->GetVolume() == detector_geometry_->get_world_physical()) {
-    the_step->GetTrack()->SetTrackStatus(fStopAndKill);
-    return;
-  }
 
   if(apply_kinetic_energy_cut(pdg_info->GetPDGEncoding()))
   {
