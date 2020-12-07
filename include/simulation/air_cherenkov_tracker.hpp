@@ -180,6 +180,8 @@ public:
   void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
     bool& kill_track) override;
 
+  void clear();
+  
   const calin::math::nspace::SparseNSpace& nspace() const { return space_; }
   // Eigen::Matrix3d rotation_matrix() const { return rot_; }
 

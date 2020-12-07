@@ -308,6 +308,11 @@ CherenkovTrackYieldNSpaceVisitor::~CherenkovTrackYieldNSpaceVisitor()
   // nothing to see here
 }
 
+void CherenkovTrackYieldNSpaceVisitor::clear()
+{
+  space_.clear();
+}
+
 void CherenkovTrackYieldNSpaceVisitor::set_atmosphere(calin::simulation::atmosphere::Atmosphere* atm)
 {
   atm_ = atm;
