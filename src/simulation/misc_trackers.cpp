@@ -256,6 +256,14 @@ visit_track(const Track& track, bool& kill_track)
     ground_tracks_.push_back(track);
 }
 
+// =============================================================================
+// =============================================================================
+//
+// RecordingTrackVisitor
+//
+// =============================================================================
+// =============================================================================
+
 RecordingTrackVisitor::RecordingTrackVisitor(): TrackVisitor()
 {
   // nothing to see here
@@ -286,7 +294,7 @@ visit_track(const Track& track, bool& kill_track)
     tracks_.push_back(track);
 }
 
-void RecordingTrackVisitor::
+bool RecordingTrackVisitor::
 replay_event(calin::simulation::tracker::TrackVisitor* visitor) const
 {
   bool kill_event = false;
@@ -298,6 +306,93 @@ replay_event(calin::simulation::tracker::TrackVisitor* visitor) const
     }
   }
   visitor->leave_event();
+  return kill_event;
+}
+
+// =============================================================================
+// =============================================================================
+//
+// SubshowerTrackVisitor
+//
+// =============================================================================
+// =============================================================================
+
+SubshowerTrackVisitor::SubshowerTrackVisitor(double subshower_energy_mev): TrackVisitor()
+{
+  // nothing to see here
+}
+
+SubshowerTrackVisitor::~SubshowerTrackVisitor()
+{
+  // nothing to see here
+}
+
+void SubshowerTrackVisitor::
+visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
+{
+  if(not replay_) {
+    trunk_track_visitor_.visit_event(event, kill_event);
+    subshowers_.clear();
+  }
+}
+
+void SubshowerTrackVisitor::
+visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
+{
+  if(replay_) {
+    Track subshower_track = track;
+    subshower_track.t0 += current_subshower_->t0;
+    subshower_track.t1 += current_subshower_->t0;
+    subshower_track.weight *= current_subshower_->weight;
+    replay_visitor_->visit_track(subshower_track, kill_track);
+  } else if(track.type==calin::simulation::tracker::ParticleType::GAMMA and
+      track.e0<subshower_energy_mev_) {
+    Event subshower_event;
+    subshower_event.type = track.type;
+    subshower_event.x0 = track.x0;
+    subshower_event.u0 = track.u0;
+    subshower_event.e0 = track.e0;
+    subshower_event.t0 = track.t0;
+    subshower_event.weight = track.weight;
+    subshowers_.push_back(subshower_event);
+    kill_track = true;
+  } else {
+    trunk_track_visitor_.visit_track(track, kill_track);
+  }
+}
+
+void SubshowerTrackVisitor::leave_event()
+{
+  if(not replay_) {
+    trunk_track_visitor_.leave_event();
+  }
+}
+
+calin::simulation::tracker::Event SubshowerTrackVisitor::event() const
+{
+  return trunk_track_visitor_.event();
+}
+
+void SubshowerTrackVisitor::clear()
+{
+  trunk_track_visitor_.clear_tracks();
+  subshowers_.clear();
+}
+
+bool SubshowerTrackVisitor::generate_shower(
+  calin::simulation::tracker::ShowerGenerator* generator,
+  calin::simulation::tracker::TrackVisitor* visitor)
+{
+  replay_ = true;
+  bool kill_event = trunk_track_visitor_.replay_event(visitor);
+  if(not kill_event) {
+    for(const auto& sub_event : subshowers_) {
+      current_subshower_ = &sub_event;
+      generator->generate_showers(1, sub_event.type, sub_event.e0,
+        sub_event.x0, sub_event.u0);
+    }
+  }
+  return kill_event;
 }
 
 // =============================================================================
