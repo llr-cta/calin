@@ -98,13 +98,13 @@ class EAS_DetectorConstruction;
 class EAS_SteppingAction: public G4UserSteppingAction
 {
 public:
-  EAS_SteppingAction(calin::simulation::tracker::TrackVisitor* visitor,
-    EAS_DetectorConstruction* detector_geometry = nullptr);
+  EAS_SteppingAction(EAS_DetectorConstruction* detector_geometry = nullptr);
   virtual ~EAS_SteppingAction();
 
   void UserSteppingAction(const G4Step*) override;
 
   void setEminCut(double emin_MeV) { ecut_ = emin_MeV/CLHEP::MeV; }
+  void set_visitor(calin::simulation::tracker::TrackVisitor* visitor) { visitor_=visitor; }
 
 protected:
   double ecut_  = 0;
@@ -176,12 +176,13 @@ private:
 class EAS_UserEventAction: public G4UserEventAction
 {
 public:
-  EAS_UserEventAction(calin::simulation::tracker::TrackVisitor* visitor);
+  EAS_UserEventAction();
   virtual ~EAS_UserEventAction();
   void BeginOfEventAction(const G4Event *anEvent) override;
   void EndOfEventAction(const G4Event *anEvent) override;
+  void set_visitor(calin::simulation::tracker::TrackVisitor* visitor) { visitor_=visitor; }
 private:
-  calin::simulation::tracker::TrackVisitor* visitor_;
+  calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
 };
 
 class EAS_ExceptionHandler: public G4ExceptionHandler

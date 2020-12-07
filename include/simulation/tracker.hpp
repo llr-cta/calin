@@ -39,18 +39,6 @@ namespace calin { namespace simulation { namespace tracker {
 enum class ParticleType { GAMMA, ELECTRON, POSITRON, MUON, ANTI_MUON,
     PROTON, ANTI_PROTON, OTHER };
 
-class ShowerGenerator
-{
-public:
-  virtual ~ShowerGenerator();
-  virtual void generate_showers(unsigned num_events,
-                        calin::simulation::tracker::ParticleType type,
-                        double total_energy,
-                        const Eigen::Vector3d& x0 = Eigen::Vector3d(0,0,0),
-                        const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
-                        double weight=1.0) = 0;
-};
-
 ParticleType pdg_type_to_particle_type(int pdg_type);
 int particle_type_to_pdg_type(ParticleType track_type);
 double particle_type_to_mass(ParticleType track_type);
@@ -108,6 +96,18 @@ public:
   virtual void visit_event(const Event& event, bool& kill_event);
   virtual void visit_track(const Track& track, bool& kill_track);
   virtual void leave_event();
+};
+
+class ShowerGenerator
+{
+public:
+  virtual ~ShowerGenerator();
+  virtual void generate_showers(TrackVisitor* visitor, unsigned num_events,
+                        calin::simulation::tracker::ParticleType type,
+                        double total_energy,
+                        const Eigen::Vector3d& x0 = Eigen::Vector3d(0,0,0),
+                        const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
+                        double weight=1.0) = 0;
 };
 
 class MultiDelegatingTrackVisitor: public TrackVisitor

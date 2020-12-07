@@ -41,17 +41,15 @@ enum PropagationMode { FWD_TO_GROUND, BWD_FIXED_DISTANCE };
 class BFieldTrackGenerator
 {
  public:
-  BFieldTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
-    const Eigen::Vector3d& bfield_nT, double zground_or_dist, double step_size,
-    PropagationMode propagation_mode = FWD_TO_GROUND,
-    bool adopt_visitor = false);
-  BFieldTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
+  BFieldTrackGenerator(const Eigen::Vector3d& bfield_nT,
     double zground_or_dist, double step_size,
-    PropagationMode propagation_mode = FWD_TO_GROUND,
-    bool adopt_visitor = false);
+    PropagationMode propagation_mode = FWD_TO_GROUND);
+  BFieldTrackGenerator(double zground_or_dist, double step_size,
+    PropagationMode propagation_mode = FWD_TO_GROUND);
   virtual ~BFieldTrackGenerator();
 
-  void generate_showers(unsigned num_events,
+  void generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
+                        unsigned num_events,
                         calin::simulation::tracker::ParticleType type,
                         double total_energy,
                         const Eigen::Vector3d& x0 = Eigen::Vector3d(0,0,0),
@@ -59,8 +57,6 @@ class BFieldTrackGenerator
                         double weight=1.0);
 
  protected:
-  calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
-  bool adopt_visitor_ = false;
   Eigen::Vector3d bfield_;
   PropagationMode propagation_mode_ = FWD_TO_GROUND;
   double zground_or_dist_ = 0.0;

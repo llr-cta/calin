@@ -40,13 +40,13 @@ TEST(TestGeant4, MakeGeant4Simulator) {
   //CLHEP::HepRandom::setTheSeed(time(0));
   Atmosphere* atm = LayeredAtmosphere::us76();
   TrackVisitor* visitor = new TrackVisitor;
-  Geant4ShowerGenerator sim(visitor, atm,
+  Geant4ShowerGenerator sim(atm,
                             100, 0, atm->top_of_atmosphere(), nullptr,
                             //VerbosityLevel::SUPRESSED_STDOUT);
                             //VerbosityLevel::NORMAL);
                             VerbosityLevel::VERBOSE_EVERYTHING);
   sim.set_minimum_energy_cut(20); // MeV
-  sim.generate_showers(100, ParticleType::MUON, 1e6,
+  sim.generate_showers(visitor, 100, ParticleType::MUON, 1e6,
                       Eigen::Vector3d(0, 0, atm->top_of_atmosphere()));
   delete(visitor);
   delete(atm);

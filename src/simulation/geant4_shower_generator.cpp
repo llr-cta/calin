@@ -31,13 +31,11 @@ using namespace calin::simulation::geant4_shower_generator;
 using namespace calin::util::log;
 
 Geant4ShowerGenerator::
-Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
-                      calin::simulation::atmosphere::Atmosphere* atm,
+Geant4ShowerGenerator(calin::simulation::atmosphere::Atmosphere* atm,
                       config_type config,
                       calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
-                      bool adopt_visitor, bool adopt_atm, bool adopt_bfield):
+                      bool adopt_atm, bool adopt_bfield):
   calin::simulation::tracker::ShowerGenerator(),
-  visitor_(visitor), adopt_visitor_(adopt_visitor),
   atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(config.ztop()), zground_(config.zground()),
   bfield_(bfield), adopt_bfield_(adopt_bfield), seed_(config.seed())
 {
@@ -62,15 +60,13 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
 }
 
 Geant4ShowerGenerator::
-Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
-                      calin::simulation::atmosphere::Atmosphere* atm,
+Geant4ShowerGenerator(calin::simulation::atmosphere::Atmosphere* atm,
                       unsigned num_atm_layers, double zground, double ztop,
                       calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
                       VerbosityLevel verbose_level, uint32_t seed,
                       double default_cut_value_cm,
-                      bool adopt_visitor, bool adopt_atm, bool adopt_bfield):
+                      bool adopt_atm, bool adopt_bfield):
   calin::simulation::tracker::ShowerGenerator(),
-  visitor_(visitor), adopt_visitor_(adopt_visitor),
   atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground),
   bfield_(bfield), adopt_bfield_(adopt_bfield), seed_(seed)
 {
@@ -145,10 +141,10 @@ void Geant4ShowerGenerator::construct(unsigned num_atm_layers,
         detector_size, material_name);
   run_manager_->SetUserInitialization(detector_constructor);
 
-  event_action_ = new EAS_UserEventAction(visitor_);
+  event_action_ = new EAS_UserEventAction();
   run_manager_->SetUserAction(event_action_);
 
-  step_action_ = new EAS_SteppingAction(visitor_, detector_constructor);
+  step_action_ = new EAS_SteppingAction(detector_constructor);
   run_manager_->SetUserAction(step_action_);
 
   gen_action_ = new EAS_PrimaryGeneratorAction();
@@ -187,13 +183,17 @@ void Geant4ShowerGenerator::set_minimum_energy_cut(double emin_mev)
 }
 
 void Geant4ShowerGenerator::
-generate_showers(unsigned num_events,
+generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
+                unsigned num_events,
                 calin::simulation::tracker::ParticleType type,
                 double total_energy,
                 const Eigen::Vector3d& x0,
                 const Eigen::Vector3d& u0,
                 double weight)
 {
+  event_action_->set_visitor(visitor);
+  step_action_->set_visitor(visitor);
+
   G4GeneralParticleSource* gps = new G4GeneralParticleSource();
 
   // default particle kinematic
@@ -225,6 +225,9 @@ generate_showers(unsigned num_events,
 
   // start a run
   run_manager_->BeamOn(num_events);
+
+  event_action_->set_visitor(nullptr);
+  step_action_->set_visitor(nullptr);
 }
 
 double Geant4ShowerGenerator::

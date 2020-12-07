@@ -101,10 +101,8 @@ ClassifyNewTrack(const G4Track* track)
 // ============================================================================
 
 EAS_SteppingAction::
-EAS_SteppingAction(calin::simulation::tracker::TrackVisitor* visitor,
-    EAS_DetectorConstruction* detector_geometry):
-  G4UserSteppingAction(), visitor_(visitor),
-  detector_geometry_(detector_geometry)
+EAS_SteppingAction(EAS_DetectorConstruction* detector_geometry):
+  G4UserSteppingAction(), detector_geometry_(detector_geometry)
 {
   /* nothing to see here */
 }
@@ -374,8 +372,7 @@ ray_intersects_detector(const Eigen::Vector3d& pos, const Eigen::Vector3d& dir)
 
 
 EAS_UserEventAction::
-EAS_UserEventAction(calin::simulation::tracker::TrackVisitor* visitor):
-  G4UserEventAction(), visitor_(visitor)
+EAS_UserEventAction(): G4UserEventAction()
 {
   // nothing to see here
 }

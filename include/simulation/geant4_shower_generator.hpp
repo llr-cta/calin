@@ -62,22 +62,18 @@ public:
   CALIN_TYPEALIAS(config_type,
     calin::ix::simulation::geant4_shower_generator::GEANT4ShowerGeneratorConfiguration);
 
-  Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
-                        calin::simulation::atmosphere::Atmosphere* atm,
+  Geant4ShowerGenerator(calin::simulation::atmosphere::Atmosphere* atm,
                         config_type config = default_config(),
                         calin::simulation::world_magnetic_model::FieldVsElevation* bfield = nullptr,
-                        bool adopt_visitor = false,
                         bool adopt_atm = false,
                         bool adopt_bfield = false);
 
-  Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
-                        calin::simulation::atmosphere::Atmosphere* atm,
+  Geant4ShowerGenerator(calin::simulation::atmosphere::Atmosphere* atm,
                         unsigned num_atm_layers, double zground, double ztop,
                         calin::simulation::world_magnetic_model::FieldVsElevation* bfield = nullptr,
                         VerbosityLevel verbose_level = VerbosityLevel::SUPRESSED_STDOUT,
                         uint32_t seed = 0,
                         double default_cut_value_cm = 10.0,
-                        bool adopt_visitor = false,
                         bool adopt_atm = false,
                         bool adopt_bfield = false);
 #if 0
@@ -96,7 +92,8 @@ public:
   virtual ~Geant4ShowerGenerator();
 
   void set_minimum_energy_cut(double emin_mev);
-  void generate_showers(unsigned num_events,
+  void generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
+                        unsigned num_events,
                         calin::simulation::tracker::ParticleType type,
                         double total_energy,
                         const Eigen::Vector3d& x0 = Eigen::Vector3d(0,0,0),
@@ -112,8 +109,6 @@ protected:
   void construct(unsigned num_atm_layers, VerbosityLevel verbose_level,
     double default_cut_value_cm, double detector_size, const std::string& material_name);
 
-  calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
-  bool adopt_visitor_ = false;
   calin::simulation::atmosphere::Atmosphere* atm_ = nullptr;
   bool adopt_atm_ = false;
   double ztop_of_atm_ = 0;

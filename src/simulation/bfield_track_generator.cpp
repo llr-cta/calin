@@ -35,10 +35,10 @@ namespace {
 }
 
 BFieldTrackGenerator::
-BFieldTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
-    const Eigen::Vector3d& bfield_nT, double zground_or_dist, double step_size,
-    PropagationMode propagation_mode, bool adopt_visitor):
-  visitor_(visitor), adopt_visitor_(adopt_visitor), bfield_(bfield_nT),
+BFieldTrackGenerator(const Eigen::Vector3d& bfield_nT,
+    double zground_or_dist, double step_size,
+    PropagationMode propagation_mode):
+  bfield_(bfield_nT),
   propagation_mode_(propagation_mode), zground_or_dist_(zground_or_dist),
   step_size_(std::abs(step_size))
 {
@@ -46,10 +46,9 @@ BFieldTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
 }
 
 BFieldTrackGenerator::
-BFieldTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
-    double zground_or_dist, double step_size,
-    PropagationMode propagation_mode, bool adopt_visitor):
-  visitor_(visitor), adopt_visitor_(adopt_visitor), bfield_(Eigen::Vector3d::Zero()),
+BFieldTrackGenerator(double zground_or_dist, double step_size,
+    PropagationMode propagation_mode):
+  bfield_(Eigen::Vector3d::Zero()),
   propagation_mode_(propagation_mode), zground_or_dist_(zground_or_dist),
   step_size_(std::abs(step_size))
 {
@@ -58,11 +57,11 @@ BFieldTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
 
 BFieldTrackGenerator::~BFieldTrackGenerator()
 {
-  if(adopt_visitor_)delete visitor_;
+  // nothing to see here
 }
 
-void BFieldTrackGenerator::generate_showers(unsigned num_events,
-  calin::simulation::tracker::ParticleType type, double total_energy,
+void BFieldTrackGenerator::generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
+  unsigned num_events, calin::simulation::tracker::ParticleType type, double total_energy,
   const Eigen::Vector3d& x0, const Eigen::Vector3d& u0, double weight)
 {
   tracker::Event event;
@@ -100,7 +99,7 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
   {
     bool kill_event = false;
     event.event_id = event_id_++;
-    visitor_->visit_event(event, kill_event);
+    visitor->visit_event(event, kill_event);
     if(kill_event)continue;
 
     if(propagation_mode_ == FWD_TO_GROUND)
@@ -147,7 +146,7 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
 
         umid = umid_new;
 
-        visitor_->visit_track(track, kill_track);
+        visitor->visit_track(track, kill_track);
       }
     }
     else // propagation_mode_ == BWD_FIXED_DISTANCE
@@ -182,11 +181,11 @@ void BFieldTrackGenerator::generate_showers(unsigned num_events,
 
         dist += step_size_;
 
-        visitor_->visit_track(track, kill_track);
+        visitor->visit_track(track, kill_track);
       }
 
     }
 
-    visitor_->leave_event();
+    visitor->leave_event();
   }
 }

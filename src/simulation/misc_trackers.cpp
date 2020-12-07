@@ -388,7 +388,7 @@ bool SubshowerTrackVisitor::generate_shower(
   if(not kill_event) {
     for(const auto& sub_event : subshowers_) {
       current_subshower_ = &sub_event;
-      generator->generate_showers(1, sub_event.type, sub_event.e0,
+      generator->generate_showers(visitor, 1, sub_event.type, sub_event.e0,
         sub_event.x0, sub_event.u0);
     }
   }
