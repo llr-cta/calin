@@ -31,6 +31,7 @@ using calin::math::special::SQR;
 StraightTrackGenerator::
 StraightTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
     double zground, bool adopt_visitor):
+  calin::simulation::tracker::ShowerGenerator(),
   visitor_(visitor), adopt_visitor_(adopt_visitor), zground_(zground)
 {
   // nothing to see here

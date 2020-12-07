@@ -56,7 +56,7 @@ enum class VerbosityLevel {
   SUPPRESSED_ALL, SUPRESSED_STDOUT, NORMAL, VERBOSE_EVENT, VERBOSE_TRACKING,
     VERBOSE_EVERYTHING };
 
-class Geant4ShowerGenerator
+class Geant4ShowerGenerator: public calin::simulation::tracker::ShowerGenerator
 {
 public:
   CALIN_TYPEALIAS(config_type,
@@ -101,7 +101,7 @@ public:
                         double total_energy,
                         const Eigen::Vector3d& x0 = Eigen::Vector3d(0,0,0),
                         const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
-                        double weight=1.0);
+                        double weight=1.0) override;
 
   uint32_t random_seed() const { return seed_; }
 

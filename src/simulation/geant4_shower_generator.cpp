@@ -36,6 +36,7 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                       config_type config,
                       calin::simulation::world_magnetic_model::FieldVsElevation* bfield,
                       bool adopt_visitor, bool adopt_atm, bool adopt_bfield):
+  calin::simulation::tracker::ShowerGenerator(),
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(config.ztop()), zground_(config.zground()),
   bfield_(bfield), adopt_bfield_(adopt_bfield), seed_(config.seed())
@@ -68,9 +69,10 @@ Geant4ShowerGenerator(calin::simulation::tracker::TrackVisitor* visitor,
                       VerbosityLevel verbose_level, uint32_t seed,
                       double default_cut_value_cm,
                       bool adopt_visitor, bool adopt_atm, bool adopt_bfield):
-    visitor_(visitor), adopt_visitor_(adopt_visitor),
-    atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground),
-    bfield_(bfield), adopt_bfield_(adopt_bfield), seed_(seed)
+  calin::simulation::tracker::ShowerGenerator(),
+  visitor_(visitor), adopt_visitor_(adopt_visitor),
+  atm_(atm), adopt_atm_(adopt_atm), ztop_of_atm_(ztop), zground_(zground),
+  bfield_(bfield), adopt_bfield_(adopt_bfield), seed_(seed)
 {
   auto config = default_config();
   construct(num_atm_layers, verbose_level, default_cut_value_cm,
