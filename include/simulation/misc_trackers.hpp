@@ -145,10 +145,18 @@ public:
   void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
   void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
   void leave_event() override;
-  calin::simulation::tracker::Event event() const;
   void clear();
-  void generate_subshowers(calin::simulation::tracker::ShowerGenerator* generator,
+  void generate_showers(calin::simulation::tracker::ShowerGenerator* generator,
     calin::simulation::tracker::TrackVisitor* visitor, unsigned num_event = 1);
+
+  calin::simulation::tracker::Event event() const;
+  const std::vector<calin::simulation::tracker::Track>& trunk_tracks() const {
+    return trunk_track_visitor_.tracks();
+  }
+  const std::vector<calin::simulation::tracker::Event>& subshowers() const {
+    return subshowers_;
+  }
+
 private:
   RecordingTrackVisitor trunk_track_visitor_;
   double subshower_energy_mev_;

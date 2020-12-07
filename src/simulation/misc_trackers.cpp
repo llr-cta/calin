@@ -407,7 +407,7 @@ void SubshowerTrackVisitor::clear()
   subshowers_.clear();
 }
 
-void SubshowerTrackVisitor::generate_subshowers(
+void SubshowerTrackVisitor::generate_showers(
   calin::simulation::tracker::ShowerGenerator* generator,
   calin::simulation::tracker::TrackVisitor* visitor, unsigned num_event)
 {
