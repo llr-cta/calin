@@ -47,11 +47,14 @@ public:
 
   void clear() { bins_.clear(); }
   void injest(const SparseNSpace& o);
-  
+
   std::vector<Axis> axes() const;
 
   unsigned naxes() const { return xlo_.size(); }
   Axis axis(unsigned iaxis) const;
+
+  Eigen::VectorXd axis_bin_centers(unsigned iaxis) const;
+  Eigen::VectorXd axis_bin_edges(unsigned iaxis) const;
 
   uint64_t num_occupied_cells() {
     return bins_.size();

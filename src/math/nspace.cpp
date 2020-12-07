@@ -102,6 +102,30 @@ calin::math::nspace::Axis SparseNSpace::axis(unsigned iaxis) const
   return a;
 }
 
+Eigen::VectorXd SparseNSpace::axis_bin_centers(unsigned iaxis) const
+{
+  if(iaxis >= n_.size()) {
+    throw std::runtime_error("SparseNSpace: iaxis out of range");
+  }
+  Eigen::VectorXd x(n_[iaxis]);
+  for(unsigned i=0; i<n_[iaxis]; i++) {
+    x[i] = xlo_[iaxis] + dx_[iaxis] * (0.5 + i);
+  }
+  return x;
+}
+
+Eigen::VectorXd SparseNSpace::axis_bin_edges(unsigned iaxis) const
+{
+  if(iaxis >= n_.size()) {
+    throw std::runtime_error("SparseNSpace: iaxis out of range");
+  }
+  Eigen::VectorXd x(n_[iaxis]+1);
+  for(unsigned i=0; i<=n_[iaxis]; i++) {
+    x[i] = xlo_[iaxis] + dx_[iaxis] * i;
+  }
+  return x;
+}
+
 calin::math::nspace::SparseNSpace SparseNSpace::
 project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi)
 {
