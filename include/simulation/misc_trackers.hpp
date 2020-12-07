@@ -31,6 +31,24 @@
 
 namespace calin { namespace simulation { namespace misc_trackers {
 
+class TrackOnlyDelegateTrackVisitor: public calin::simulation::tracker::TrackVisitor
+{
+public:
+  TrackOnlyDelegateTrackVisitor(
+    calin::simulation::tracker::TrackVisitor* delegate, bool adopt_delegate = false);
+  TrackOnlyDelegateTrackVisitor(
+    calin::simulation::tracker::TrackVisitor* delegate, double t0, double weight,
+    bool adopt_delegate = false);
+  virtual ~TrackOnlyDelegateTrackVisitor();
+  void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
+private:
+  calin::simulation::tracker::TrackVisitor* delegate_ = nullptr;
+  bool adopt_delegate_ = false;
+  bool has_time_offset_ = false;
+  double t0_ = 0;
+  double weight_ = 0;
+};
+
 class LengthLimitingTrackVisitor: public calin::simulation::tracker::TrackVisitor
 {
 public:
@@ -110,8 +128,8 @@ public:
   void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
   void add_particle_type_filter(calin::simulation::tracker::ParticleType pt);
   calin::simulation::tracker::Event event() const { return event_; }
-  std::vector<calin::simulation::tracker::Track> tracks() const { return tracks_; }
-  bool replay_event(calin::simulation::tracker::TrackVisitor* visitor) const;
+  const std::vector<calin::simulation::tracker::Track>& tracks() const { return tracks_; }
+  void replay_event(calin::simulation::tracker::TrackVisitor* visitor) const;
   void clear_tracks() { tracks_.clear(); }
 private:
   calin::simulation::tracker::Event event_;
@@ -129,15 +147,12 @@ public:
   void leave_event() override;
   calin::simulation::tracker::Event event() const;
   void clear();
-  bool generate_shower(calin::simulation::tracker::ShowerGenerator* generator,
-    calin::simulation::tracker::TrackVisitor* visitor);
+  void generate_subshowers(calin::simulation::tracker::ShowerGenerator* generator,
+    calin::simulation::tracker::TrackVisitor* visitor, unsigned num_event = 1);
 private:
-  bool replay_ = false;
-  calin::simulation::tracker::TrackVisitor* replay_visitor_ = nullptr;
   RecordingTrackVisitor trunk_track_visitor_;
   double subshower_energy_mev_;
   std::vector<calin::simulation::tracker::Event> subshowers_;
-  const calin::simulation::tracker::Event* current_subshower_ = nullptr;
 };
 
 class ShowerMovieProducerTrackVisitor:

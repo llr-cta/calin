@@ -34,6 +34,44 @@ using namespace calin::simulation::tracker;
 using namespace calin::simulation::misc_trackers;
 using namespace calin::util::log;
 
+TrackOnlyDelegateTrackVisitor::
+TrackOnlyDelegateTrackVisitor(calin::simulation::tracker::TrackVisitor* delegate,
+    bool adopt_delegate):
+  calin::simulation::tracker::TrackVisitor(),
+  delegate_(delegate), adopt_delegate_(adopt_delegate)
+{
+  // nothing to see here
+}
+
+TrackOnlyDelegateTrackVisitor::
+TrackOnlyDelegateTrackVisitor(calin::simulation::tracker::TrackVisitor* delegate,
+    double t0, double weight, bool adopt_delegate):
+  calin::simulation::tracker::TrackVisitor(),
+  delegate_(delegate), adopt_delegate_(adopt_delegate),
+  has_time_offset_(true), t0_(t0), weight_(weight)
+{
+  // nothing to see here
+}
+
+TrackOnlyDelegateTrackVisitor::~TrackOnlyDelegateTrackVisitor()
+{
+  if(adopt_delegate_)delete delegate_;
+}
+
+void TrackOnlyDelegateTrackVisitor::visit_track(
+  const calin::simulation::tracker::Track& track, bool& kill_track)
+{
+  if(has_time_offset_) {
+    Track offset_track = track;
+    offset_track.t0 += t0_;
+    offset_track.t1 += t0_;
+    offset_track.weight *= weight_;
+    delegate_->visit_track(offset_track, kill_track);
+  } else {
+    delegate_->visit_track(track, kill_track);
+  }
+}
+
 LengthLimitingTrackVisitor::LengthLimitingTrackVisitor(TrackVisitor* visitor,
     double dx_max, double z_max, bool adopt_visitor): TrackVisitor(),
   visitor_(visitor), adopt_visitor_(adopt_visitor),
@@ -294,7 +332,7 @@ visit_track(const Track& track, bool& kill_track)
     tracks_.push_back(track);
 }
 
-bool RecordingTrackVisitor::
+void RecordingTrackVisitor::
 replay_event(calin::simulation::tracker::TrackVisitor* visitor) const
 {
   bool kill_event = false;
@@ -306,7 +344,6 @@ replay_event(calin::simulation::tracker::TrackVisitor* visitor) const
     }
   }
   visitor->leave_event();
-  return kill_event;
 }
 
 // =============================================================================
@@ -330,23 +367,16 @@ SubshowerTrackVisitor::~SubshowerTrackVisitor()
 void SubshowerTrackVisitor::
 visit_event(const calin::simulation::tracker::Event& event, bool& kill_event)
 {
-  if(not replay_) {
-    trunk_track_visitor_.visit_event(event, kill_event);
-    subshowers_.clear();
-  }
+  trunk_track_visitor_.visit_event(event, kill_event);
+  subshowers_.clear();
 }
 
 void SubshowerTrackVisitor::
 visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 {
-  if(replay_) {
-    Track subshower_track = track;
-    subshower_track.t0 += current_subshower_->t0;
-    subshower_track.t1 += current_subshower_->t0;
-    subshower_track.weight *= current_subshower_->weight;
-    replay_visitor_->visit_track(subshower_track, kill_track);
-  } else if(track.type==calin::simulation::tracker::ParticleType::GAMMA and
-      track.e0<subshower_energy_mev_) {
+  if(track.type==calin::simulation::tracker::ParticleType::GAMMA and
+    track.e0<subshower_energy_mev_)
+  {
     Event subshower_event;
     subshower_event.type = track.type;
     subshower_event.x0 = track.x0;
@@ -363,9 +393,7 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
 
 void SubshowerTrackVisitor::leave_event()
 {
-  if(not replay_) {
-    trunk_track_visitor_.leave_event();
-  }
+  trunk_track_visitor_.leave_event();
 }
 
 calin::simulation::tracker::Event SubshowerTrackVisitor::event() const
@@ -379,20 +407,26 @@ void SubshowerTrackVisitor::clear()
   subshowers_.clear();
 }
 
-bool SubshowerTrackVisitor::generate_shower(
+void SubshowerTrackVisitor::generate_subshowers(
   calin::simulation::tracker::ShowerGenerator* generator,
-  calin::simulation::tracker::TrackVisitor* visitor)
+  calin::simulation::tracker::TrackVisitor* visitor, unsigned num_event)
 {
-  replay_ = true;
-  bool kill_event = trunk_track_visitor_.replay_event(visitor);
-  if(not kill_event) {
-    for(const auto& sub_event : subshowers_) {
-      current_subshower_ = &sub_event;
-      generator->generate_showers(visitor, 1, sub_event.type, sub_event.e0,
-        sub_event.x0, sub_event.u0);
+  while(num_event--) {
+    bool kill_event = false;
+    visitor->visit_event(trunk_track_visitor_.event(), kill_event);
+    if(not kill_event) {
+      TrackOnlyDelegateTrackVisitor trunk_visitor(visitor);
+      trunk_track_visitor_.replay_event(&trunk_visitor);
+      for(const auto& subshower_event : subshowers_) {
+        TrackOnlyDelegateTrackVisitor subshower_visitor(visitor,
+          subshower_event.t0, subshower_event.weight);
+        generator->generate_showers(&subshower_visitor, 1,
+          subshower_event.type, subshower_event.e0,
+          subshower_event.x0, subshower_event.u0);
+      }
     }
+    visitor->leave_event();
   }
-  return kill_event;
 }
 
 // =============================================================================
