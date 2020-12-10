@@ -171,6 +171,11 @@ Geant4ShowerGenerator::~Geant4ShowerGenerator()
   delete exception_handler_;
 }
 
+void Geant4ShowerGenerator::apply_command(const std::string command)
+{
+  ui_manager_->ApplyCommand(command);
+}
+
 void Geant4ShowerGenerator::set_minimum_energy_cut(double emin_mev)
 {
   step_action_->setEminCut(emin_mev);

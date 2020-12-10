@@ -102,6 +102,8 @@ public:
 
   uint32_t random_seed() const { return seed_; }
 
+  void apply_command(const std::string command);
+
   static double get_material_density(const std::string& material_name);
   static config_type default_config();
 
