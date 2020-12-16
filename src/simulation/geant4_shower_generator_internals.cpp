@@ -345,9 +345,6 @@ void EAS_FlatDetectorConstruction::ConstructSDandField()
     field_mgr->CreateChordFinder(mag_field);
     G4bool force_to_all_daughters = true;
     ilogical_bfield.first->SetFieldManager(field_mgr, force_to_all_daughters);
-    // Register the field and its manager for deleting
-    G4AutoDelete::Register(mag_field);
-    G4AutoDelete::Register(field_mgr);
   }
 }
 
