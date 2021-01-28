@@ -30,7 +30,7 @@
 
 namespace calin { namespace math { namespace nspace {
 
-class Axis
+struct Axis
 {
 public:
   double xlo;

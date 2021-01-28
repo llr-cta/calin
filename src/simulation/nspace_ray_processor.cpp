@@ -24,13 +24,13 @@
 #include <simulation/nspace_ray_processor.hpp>
 
 using namespace calin::util::log;
-using namespace calin::simulation::nspace_ray_processor;
+using namespace calin::simulation::ray_processor;
 
 NSpaceRayProcessor::
 NSpaceRayProcessor(const calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig& config):
   RayProcessor(),
   config_(config), space_(nspace_axes()), p_(space_.naxes()),
-  x0_(config_.x_origin(), config_.y_origin(), config_.observation_altitude()),
+  x0_(config_.x_origin(), config_.y_origin(), config_.observation_altitude())
 {
   // nothing to see here
 }
@@ -53,26 +53,28 @@ NSpaceRayProcessor::detector_spheres()
   //   unsigned iobs = 0;         // Observation layer associated with this detector
   // };
 
-  std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> sphere;
+  std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> spheres;
+  calin::simulation::ray_processor::RayProcessorDetectorSphere sphere;
   sphere.r0 = x0_;
   sphere.radius = M_SQRT2 * config_.xy_radius();
   sphere.iobs = config_.observation_level();
-  return sphere;
+  spheres.push_back(sphere);
+  return spheres;
 }
 
 void NSpaceRayProcessor::start_processing()
 {
-  if(config.clear_at_new_event()) {
-    nspace_.clear();
+  if(config_.clear_at_new_event()) {
+    space_.clear();
   }
 }
 
 void NSpaceRayProcessor::process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
   double pe_weight)
 {
-  Vector3d x = ray.position() - x0_;
-  Vector3d u = rot_ * ray.direction();
-  switch(config.axis_variables()) {
+  Eigen::Vector3d x = ray.position() - x0_;
+  Eigen::Vector3d u = rot_ * ray.direction();
+  switch(config_.axis_variables()) {
   case calin::ix::simulation::ray_processor::XY:
   default:
     p_[0] = x[0];
@@ -83,7 +85,7 @@ void NSpaceRayProcessor::process_ray(unsigned scope_id, const calin::math::ray::
     p_[1] = u[2];
     break;
   case calin::ix::simulation::ray_processor::T:
-    p_[0] = ray.t();
+    p_[0] = ray.time()*1e9;
     break;
   case calin::ix::simulation::ray_processor::XY_UXUY:
     p_[0] = x[0];
@@ -94,20 +96,72 @@ void NSpaceRayProcessor::process_ray(unsigned scope_id, const calin::math::ray::
   case calin::ix::simulation::ray_processor::XY_T:
     p_[0] = x[0];
     p_[1] = x[1];
-    p_[2] = ray.t();
+    p_[2] = ray.time()*1e9;
     break;
   case calin::ix::simulation::ray_processor::XY_UXUY_T:
     p_[0] = x[0];
     p_[1] = x[1];
     p_[2] = u[0];
     p_[3] = u[2];
-    p_[4] = ray.t();
+    p_[4] = ray.time()*1e9;
     break;
   };
-  space_.insert(p_, pe_weight);
+  space_.accumulate(p_, pe_weight);
 }
 
 void NSpaceRayProcessor::finish_processing()
 {
   // nothing to see here
+}
+
+std::vector<calin::math::nspace::Axis>
+NSpaceRayProcessor::nspace_axes() const
+{
+  std::vector<calin::math::nspace::Axis> axes;
+
+  switch(config_.axis_variables()) {
+  case calin::ix::simulation::ray_processor::XY:
+  case calin::ix::simulation::ray_processor::XY_UXUY:
+  case calin::ix::simulation::ray_processor::XY_T:
+  case calin::ix::simulation::ray_processor::XY_UXUY_T:
+  default:
+    axes.push_back({-config_.xy_radius(), config_.xy_radius(), config_.xy_num_bins()});
+    axes.push_back({-config_.xy_radius(), config_.xy_radius(), config_.xy_num_bins()});
+    break;
+  case calin::ix::simulation::ray_processor::UXUY:
+  case calin::ix::simulation::ray_processor::T:
+    // do nothing
+    break;
+  };
+
+  switch(config_.axis_variables()) {
+  case calin::ix::simulation::ray_processor::UXUY:
+  case calin::ix::simulation::ray_processor::XY_UXUY:
+  case calin::ix::simulation::ray_processor::XY_UXUY_T:
+    axes.push_back({-config_.uxuy_radius()/180.0*M_PI, config_.uxuy_radius()/180.0*M_PI, config_.uxuy_num_bins()});
+    axes.push_back({-config_.uxuy_radius()/180.0*M_PI, config_.uxuy_radius()/180.0*M_PI, config_.uxuy_num_bins()});
+    break;
+  case calin::ix::simulation::ray_processor::XY:
+  case calin::ix::simulation::ray_processor::XY_T:
+  case calin::ix::simulation::ray_processor::T:
+  default:
+    // do nothing
+    break;
+  };
+
+  switch(config_.axis_variables()) {
+  case calin::ix::simulation::ray_processor::T:
+  case calin::ix::simulation::ray_processor::XY_T:
+  case calin::ix::simulation::ray_processor::XY_UXUY_T:
+    axes.push_back({0.0, config_.t_duration(), config_.t_num_bins()});
+    break;
+  case calin::ix::simulation::ray_processor::XY:
+  case calin::ix::simulation::ray_processor::UXUY:
+  case calin::ix::simulation::ray_processor::XY_UXUY:
+  default:
+    // do nothing
+    break;
+  };
+
+  return axes;
 }

@@ -25,20 +25,10 @@
 #include <vector>
 #include <math/ray.hpp>
 #include <math/nspace.hpp>
-#include <math/ray_processor.hpp>
-#include <math/ray_processor.pb.h>
+#include <simulation/ray_processor.hpp>
+#include <simulation/ray_processor.pb.h>
 
 namespace calin { namespace simulation { namespace ray_processor {
-
-struct RayProcessorDetectorSphere
-{
-  RayProcessorDetectorSphere() { /* nothing to see here */ }
-  RayProcessorDetectorSphere(const Eigen::Vector3d& r0_, double radius, unsigned iobs_ = 0):
-      r0(r0_), radius(radius), iobs(iobs_) { /* nothing to see here */ }
-  Eigen::Vector3d r0;        // Center of detector sphere [cm]
-  double radius = 0;         // Squared radius of sphere  [cm^2]
-  unsigned iobs = 0;         // Observation layer associated with this detector
-};
 
 class NSpaceRayProcessor: public RayProcessor
 {
@@ -51,7 +41,7 @@ public:
     double pe_weight) override;
   void finish_processing() override;
 protected:
-  std::vector<calin::math::nspace::Axis> nspace_axes();
+  std::vector<calin::math::nspace::Axis> nspace_axes() const;
   calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig config_;
   calin::math::nspace::SparseNSpace space_;
   Eigen::VectorXd p_;
