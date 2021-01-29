@@ -211,6 +211,7 @@ MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
     calin::math::rng::RNG* rng, bool adopt_visitor, bool adopt_rng):
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   epsilon0_(epsilon0), bandwidth_(bandwidth), do_color_photons_(do_color_photons),
+  weight_(1.0), weighted_bandwidth_(bandwidth_/weight_), 
   rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)), adopt_rng_(rng ? adopt_rng : true)
 {
   visitor->set_bandpass(epsilon0, bandwidth, do_color_photons);
@@ -239,7 +240,7 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
   CherenkovPhoton photon;
   bool no_photon_emitted = true;
 
-  const double dX_track = cherenkov_track.yield_density * bandwidth_;
+  const double dX_track = cherenkov_track.yield_density * weighted_bandwidth_;
 
   Eigen::Matrix3d Mrot;
   Eigen::Vector3d u0;
@@ -256,6 +257,7 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
       photon.air_cherenkov_track = &cherenkov_track;
       calin::math::geometry::rotation_z_to_vec(Mrot, cherenkov_track.dx_hat);
       photon.epsilon = 0;
+      photon.weight = weight_;
     }
 
     double dX_frac = 1.0 - dX_left/dX_track;
@@ -264,8 +266,8 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
     u0 << cherenkov_track.sin_thetac*std::cos(phi), cherenkov_track.sin_thetac*std::sin(phi), cherenkov_track.cos_thetac;
     photon.u0 = Mrot * u0;
     photon.t0 = cherenkov_track.t0 + cherenkov_track.dt*dX_frac;
-    visitor_->visit_cherenkov_photon(photon);
     if(do_color_photons_)photon.epsilon = epsilon0_ + rng_->uniform()*bandwidth_;
+    visitor_->visit_cherenkov_photon(photon);
   }
   dX_emission_ -= dX_left;
 }

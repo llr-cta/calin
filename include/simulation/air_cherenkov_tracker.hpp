@@ -114,6 +114,7 @@ struct CherenkovPhoton
   Eigen::Vector3d u0;       // Direction of photon at emission          [cm]
   double t0;                // Time at emission                         [ns]
   double epsilon;           // Photon energy, 0 if none, or -1 for PE   [eV]
+  double weight;            // Photon weight (between 0 and 1)
 
   // Air Cherenkov track from underlying simulator
   const AirCherenkovTrack* air_cherenkov_track;
@@ -147,6 +148,8 @@ private:
   double epsilon0_ = 1.5;
   double bandwidth_ = 3.0;
   bool do_color_photons_ = false;
+  double weight_ = 1.0;
+  double weighted_bandwidth_;
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
   double dX_emission_ = -1;
@@ -181,7 +184,7 @@ public:
     bool& kill_track) override;
 
   void clear();
-  
+
   const calin::math::nspace::SparseNSpace& nspace() const { return space_; }
   // Eigen::Matrix3d rotation_matrix() const { return rot_; }
 
