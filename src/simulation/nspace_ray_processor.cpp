@@ -72,8 +72,12 @@ void NSpaceRayProcessor::start_processing()
 void NSpaceRayProcessor::process_ray(unsigned scope_id, const calin::math::ray::Ray& ray,
   double pe_weight)
 {
-  Eigen::Vector3d x = ray.position() - x0_;
-  Eigen::Vector3d u = rot_ * ray.direction();
+  calin::math::ray::Ray ray_copy = ray;
+  if(not ray_copy.propagate_to_plane(Eigen::Vector3d::UnitZ(), -x0_[2], /*time_reversal_ok=*/ false)) {
+    return;
+  }
+  Eigen::Vector3d x = ray_copy.position() - x0_;
+  Eigen::Vector3d u = rot_ * ray_copy.direction();
   switch(config_.axis_variables()) {
   case calin::ix::simulation::ray_processor::XY:
   default:
@@ -164,4 +168,23 @@ NSpaceRayProcessor::nspace_axes() const
   };
 
   return axes;
+}
+
+calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig
+NSpaceRayProcessor::default_config()
+{
+  calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig config;
+  config.set_axis_variables(calin::ix::simulation::ray_processor::XY);
+  config.set_xy_radius(50000);
+  config.set_xy_num_bins(1024);
+  config.set_uxuy_radius(2.0);
+  config.set_uxuy_num_bins(512);
+  config.set_t_duration(100000);
+  config.set_t_num_bins(100000);
+  config.set_observation_altitude(0.0);
+  config.set_x_origin(0.0);
+  config.set_y_origin(0.0);
+  config.set_observation_level(0);
+  config.set_clear_at_new_event(false);
+  return config;
 }
