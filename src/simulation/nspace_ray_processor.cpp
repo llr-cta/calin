@@ -175,9 +175,9 @@ NSpaceRayProcessor::default_config()
 {
   calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig config;
   config.set_axis_variables(calin::ix::simulation::ray_processor::XY);
-  config.set_xy_radius(50000);
+  config.set_xy_radius(51200);
   config.set_xy_num_bins(1024);
-  config.set_uxuy_radius(2.0);
+  config.set_uxuy_radius(2.56);
   config.set_uxuy_num_bins(512);
   config.set_t_duration(100000);
   config.set_t_num_bins(100000);

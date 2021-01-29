@@ -41,6 +41,7 @@ public:
     double pe_weight) override;
   void finish_processing() override;
   static calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig default_config();
+  const calin::math::nspace::SparseNSpace& nspace() const { return space_; }
 protected:
   std::vector<calin::math::nspace::Axis> nspace_axes() const;
   calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig config_;
