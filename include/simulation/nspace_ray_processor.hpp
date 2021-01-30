@@ -41,11 +41,14 @@ public:
     double pe_weight) override;
   void finish_processing() override;
   static calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig default_config();
+  void clear();
+  unsigned nevent() const { return nevent_; }
   const calin::math::nspace::SparseNSpace& nspace() const { return space_; }
 protected:
   std::vector<calin::math::nspace::Axis> nspace_axes() const;
   calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig config_;
   calin::math::nspace::SparseNSpace space_;
+  unsigned nevent_ = 0;
   Eigen::VectorXd p_;
   Eigen::Vector3d x0_;
   Eigen::Matrix3d rot_ = Eigen::Matrix3d::Identity();

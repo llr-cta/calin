@@ -65,7 +65,7 @@ NSpaceRayProcessor::detector_spheres()
 void NSpaceRayProcessor::start_processing()
 {
   if(config_.clear_at_new_event()) {
-    space_.clear();
+    clear();
   }
 }
 
@@ -86,7 +86,7 @@ void NSpaceRayProcessor::process_ray(unsigned scope_id, const calin::math::ray::
     break;
   case calin::ix::simulation::ray_processor::UXUY:
     p_[0] = u[0];
-    p_[1] = u[2];
+    p_[1] = u[1];
     break;
   case calin::ix::simulation::ray_processor::T:
     p_[0] = ray.time()*1e9;
@@ -95,7 +95,7 @@ void NSpaceRayProcessor::process_ray(unsigned scope_id, const calin::math::ray::
     p_[0] = x[0];
     p_[1] = x[1];
     p_[2] = u[0];
-    p_[3] = u[2];
+    p_[3] = u[1];
     break;
   case calin::ix::simulation::ray_processor::XY_T:
     p_[0] = x[0];
@@ -106,7 +106,7 @@ void NSpaceRayProcessor::process_ray(unsigned scope_id, const calin::math::ray::
     p_[0] = x[0];
     p_[1] = x[1];
     p_[2] = u[0];
-    p_[3] = u[2];
+    p_[3] = u[1];
     p_[4] = ray.time()*1e9;
     break;
   };
@@ -115,7 +115,13 @@ void NSpaceRayProcessor::process_ray(unsigned scope_id, const calin::math::ray::
 
 void NSpaceRayProcessor::finish_processing()
 {
-  // nothing to see here
+  ++nevent_;
+}
+
+void NSpaceRayProcessor::clear()
+{
+  nevent_ = 0;
+  space_.clear();
 }
 
 std::vector<calin::math::nspace::Axis>
