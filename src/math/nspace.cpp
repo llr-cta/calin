@@ -34,15 +34,15 @@ struct Axis
   unsigned n;
 };
 
-SparseNSpace::
-SparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
+TreeSparseNSpace::
+TreeSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
     const Eigen::VectorXi& n):
   xlo_(xlo.size()), xhi_(xlo.size()), dx_(xlo.size()), dx_inv_(xlo.size()),
   n_(xlo.size())
 {
   if(std::min({xlo.size(), xhi.size(), n.size()}) !=
       std::max({xlo.size(), xhi.size(), n.size()})) {
-    throw std::runtime_error("SparseNSpace: xhi, xlo and n must all have same size");
+    throw std::runtime_error("TreeSparseNSpace: xhi, xlo and n must all have same size");
   }
 
   N_ = 1;
@@ -57,7 +57,7 @@ SparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
   }
 }
 
-SparseNSpace::SparseNSpace(const std::vector<Axis>& axes):
+TreeSparseNSpace::TreeSparseNSpace(const std::vector<Axis>& axes):
   xlo_(axes.size()), xhi_(axes.size()), dx_(axes.size()), dx_inv_(axes.size()),
   n_(axes.size())
 {
@@ -74,17 +74,17 @@ SparseNSpace::SparseNSpace(const std::vector<Axis>& axes):
   }
 }
 
-void SparseNSpace::injest(const SparseNSpace& o)
+void TreeSparseNSpace::injest(const TreeSparseNSpace& o)
 {
   if(xlo_!=o.xlo_ or xhi_!=o.xhi_ or n_!=o.n_) {
-    throw std::runtime_error("SparseNSpace: cannot injest space with incompatibe axis defifinition");
+    throw std::runtime_error("TreeSparseNSpace: cannot injest space with incompatibe axis defifinition");
   }
   for(auto i : o.bins_) {
     bins_[i.first] += i.second;
   }
 }
 
-std::vector<calin::math::nspace::Axis> SparseNSpace::axes() const
+std::vector<calin::math::nspace::Axis> TreeSparseNSpace::axes() const
 {
   std::vector<calin::math::nspace::Axis> a;
   for(unsigned i=0; i<xlo_.size(); i++) {
@@ -93,19 +93,19 @@ std::vector<calin::math::nspace::Axis> SparseNSpace::axes() const
   return a;
 }
 
-calin::math::nspace::Axis SparseNSpace::axis(unsigned iaxis) const
+calin::math::nspace::Axis TreeSparseNSpace::axis(unsigned iaxis) const
 {
   if(iaxis >= n_.size()) {
-    throw std::runtime_error("SparseNSpace: iaxis out of range");
+    throw std::runtime_error("TreeSparseNSpace: iaxis out of range");
   }
   calin::math::nspace::Axis a { xlo_[iaxis], xhi_[iaxis], static_cast<unsigned int>(n_[iaxis]) };
   return a;
 }
 
-Eigen::VectorXd SparseNSpace::axis_bin_centers(unsigned iaxis) const
+Eigen::VectorXd TreeSparseNSpace::axis_bin_centers(unsigned iaxis) const
 {
   if(iaxis >= n_.size()) {
-    throw std::runtime_error("SparseNSpace: iaxis out of range");
+    throw std::runtime_error("TreeSparseNSpace: iaxis out of range");
   }
   Eigen::VectorXd x(n_[iaxis]);
   for(unsigned i=0; i<n_[iaxis]; i++) {
@@ -114,10 +114,10 @@ Eigen::VectorXd SparseNSpace::axis_bin_centers(unsigned iaxis) const
   return x;
 }
 
-Eigen::VectorXd SparseNSpace::axis_bin_edges(unsigned iaxis) const
+Eigen::VectorXd TreeSparseNSpace::axis_bin_edges(unsigned iaxis) const
 {
   if(iaxis >= n_.size()) {
-    throw std::runtime_error("SparseNSpace: iaxis out of range");
+    throw std::runtime_error("TreeSparseNSpace: iaxis out of range");
   }
   Eigen::VectorXd x(n_[iaxis]+1);
   for(unsigned i=0; i<=n_[iaxis]; i++) {
@@ -126,11 +126,11 @@ Eigen::VectorXd SparseNSpace::axis_bin_edges(unsigned iaxis) const
   return x;
 }
 
-calin::math::nspace::SparseNSpace SparseNSpace::
+calin::math::nspace::TreeSparseNSpace TreeSparseNSpace::
 project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi)
 {
   if(iaxis >= n_.size()) {
-    throw std::runtime_error("SparseNSpace: iaxis out of range");
+    throw std::runtime_error("TreeSparseNSpace: iaxis out of range");
   }
 
   std::vector<calin::math::nspace::Axis> a;
@@ -140,7 +140,7 @@ project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi)
     }
   }
 
-  SparseNSpace newspace(a);
+  TreeSparseNSpace newspace(a);
 
   int64_t div_lo = 1;
   for(unsigned jaxis=iaxis+1; jaxis<n_.size(); jaxis++) {
@@ -164,16 +164,16 @@ project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi)
   return newspace;
 }
 
-calin::math::nspace::SparseNSpace SparseNSpace::
+calin::math::nspace::TreeSparseNSpace TreeSparseNSpace::
 project_along_axis(unsigned iaxis)
 {
   return this->project_along_axis(iaxis, 0, n_[std::max(iaxis,unsigned(n_.size()-1))]);
 }
 
-Eigen::VectorXd SparseNSpace::as_vector() const
+Eigen::VectorXd TreeSparseNSpace::as_vector() const
 {
   if(n_.size() != 1) {
-    throw std::runtime_error("SparseNSpace: only single-axis spaces can be converted to vectors");
+    throw std::runtime_error("TreeSparseNSpace: only single-axis spaces can be converted to vectors");
   }
   Eigen::VectorXd v(n_[0]);
   v.setZero();
@@ -185,10 +185,10 @@ Eigen::VectorXd SparseNSpace::as_vector() const
   return v;
 }
 
-Eigen::MatrixXd SparseNSpace::as_matrix() const
+Eigen::MatrixXd TreeSparseNSpace::as_matrix() const
 {
   if(n_.size() != 2) {
-    throw std::runtime_error("SparseNSpace: only two-axis spaces can be converted to matrices");
+    throw std::runtime_error("TreeSparseNSpace: only two-axis spaces can be converted to matrices");
   }
   Eigen::MatrixXd m(n_[0], n_[1]);
   m.setZero();
@@ -201,7 +201,7 @@ Eigen::MatrixXd SparseNSpace::as_matrix() const
   return m;
 }
 
-double SparseNSpace::total_weight() const {
+double TreeSparseNSpace::total_weight() const {
   double w0 = 0;
   for(auto i : bins_) {
     if(i.first >= 0) {
@@ -211,7 +211,7 @@ double SparseNSpace::total_weight() const {
   return w0;
 }
 
-Eigen::VectorXd SparseNSpace::mean_and_total_weight(double& w0) const {
+Eigen::VectorXd TreeSparseNSpace::mean_and_total_weight(double& w0) const {
   Eigen::VectorXd w1(xlo_.size());
   Eigen::VectorXd x(xlo_.size());
   w0 = 0;
@@ -226,12 +226,12 @@ Eigen::VectorXd SparseNSpace::mean_and_total_weight(double& w0) const {
   return w1/w0;
 }
 
-Eigen::VectorXd SparseNSpace::mean() const {
+Eigen::VectorXd TreeSparseNSpace::mean() const {
   double w0;
   return mean_and_total_weight(w0);
 }
 
-Eigen::MatrixXd SparseNSpace::covar_mean_and_total_weight(Eigen::VectorXd& w1, double& w0) const {
+Eigen::MatrixXd TreeSparseNSpace::covar_mean_and_total_weight(Eigen::VectorXd& w1, double& w0) const {
   Eigen::MatrixXd w2(xlo_.size(), xlo_.size());
   w1.resize(xlo_.size());
   Eigen::VectorXd x(xlo_.size());
@@ -250,8 +250,114 @@ Eigen::MatrixXd SparseNSpace::covar_mean_and_total_weight(Eigen::VectorXd& w1, d
   return w2/w0 - w1*w1.transpose(); // outer product
 }
 
-Eigen::MatrixXd SparseNSpace::covar() const {
+Eigen::MatrixXd TreeSparseNSpace::covar() const {
   double w0;
   Eigen::VectorXd w1(xlo_.size());
   return covar_mean_and_total_weight(w1, w0);
 }
+
+// =============================================================================
+// =============================================================================
+
+// BlockSparseNSpace
+
+// =============================================================================
+// =============================================================================
+
+BlockSparseNSpace::
+BlockSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
+    const Eigen::VectorXi& n)
+{
+  if(std::min({xlo.size(), xhi.size(), n.size()}) !=
+      std::max({xlo.size(), xhi.size(), n.size()})) {
+    throw std::runtime_error("BlockSparseNSpace: xhi, xlo and n must all have same size");
+  }
+
+  N_ = 1;
+  for(unsigned i=0; i<xlo.size(); ++i) {
+    const double dx = (xhi[i] - xlo[i])/n[i];
+    xlo_[i] = xlo[i];
+    xhi_[i] = xhi[i];
+    n_[i] = n[i];
+    N_ *= n[i];
+    dx_[i] = dx;
+    dx_inv_[i] = 1.0/dx;
+  }
+
+
+}
+
+BlockSparseNSpace::BlockSparseNSpace(const std::vector<Axis>& axes)
+{
+
+}
+
+void BlockSparseNSpace::index(
+  const Eigen::VectorXd& x, int64_t& array_index, int64_t& block_index) const
+{
+  if(x.size() != xlo_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: dimensional mismatch");
+  }
+
+  array_index = 0;
+  block_index = 0;
+  for(int i=0; i<xlo_.size(); i++) {
+    int ii = (x(i)-xlo_(i))*dx_inv_(i);
+    if(ii<0 or ii>=n_(i)) {
+      array_index = block_index = -1;
+    }
+
+    block_index = (block_index<<block_shift_) | (ii&block_mask_);
+    array_index = array_index*n_(i) + (ii>>block_shift_);
+  }
+}
+
+double& BlockSparseNSpace::cell_ref(int64_t array_index, int64_t block_index)
+{
+  double* block = array_[array_index];
+  if(block == nullptr) {
+    if(alloc_next_ == nullptr) {
+      if(alloc_free_list_.empty()) {
+        alloc_next_ = new double[alloc_size_];
+        alloc_all_list_.push_front(alloc_next_);
+      } else {
+        alloc_next_ = alloc_free_list_.front();
+        alloc_free_list_.pop_front();
+      }
+      alloc_end_ = alloc_next_ + alloc_size_;
+    }
+
+    block = alloc_next_;
+    alloc_next_ += block_size_;
+    std::fill(block, block+block_size_, 0);
+
+    if(alloc_next_ == alloc_end_) {
+      alloc_next_ = alloc_end_ = nullptr;
+    }
+  }
+  return block[block_index];
+}
+
+double BlockSparseNSpace::cell_val(int64_t array_index, int64_t block_index) const
+{
+  const double* block = array_[array_index];
+  if(block == nullptr) { return 0; }
+  return block[block_index];
+}
+
+void BlockSparseNSpace::accumulate(const Eigen::VectorXd& x, double w)
+{
+  int64_t array_index;
+  int64_t block_index;
+  index(x, array_index, block_index);
+  if(array_index == -1) {
+    overflow_ += w;
+  } else {
+    cell_ref(array_index,block_index) += w;
+  }
+}
+
+  // void clear() { bins_.clear(); }
+  // void injest(const BlockSparseNSpace& o);
+
+  // std::vector<Axis> axes() const;

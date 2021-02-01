@@ -24,9 +24,11 @@
 
 #include <vector>
 #include <map>
+#include <list>
 #include <cstdlib>
 
 #include <Eigen/Dense>
+#include <calin_global_definitions.hpp>
 
 namespace calin { namespace math { namespace nspace {
 
@@ -38,15 +40,15 @@ public:
   unsigned n;
 };
 
-class SparseNSpace
+class TreeSparseNSpace
 {
 public:
-  SparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
+  TreeSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
     const Eigen::VectorXi& n);
-  SparseNSpace(const std::vector<Axis>& axes);
+  TreeSparseNSpace(const std::vector<Axis>& axes);
 
   void clear() { bins_.clear(); }
-  void injest(const SparseNSpace& o);
+  void injest(const TreeSparseNSpace& o);
 
   std::vector<Axis> axes() const;
 
@@ -66,7 +68,7 @@ public:
 
   int64_t index(const Eigen::VectorXd& x) const {
     if(x.size() != xlo_.size()) {
-      throw std::runtime_error("SparseNSpace: dimensional mismatch");
+      throw std::runtime_error("TreeSparseNSpace: dimensional mismatch");
     }
     int64_t indx = 0;
     for(int i=0; i<xlo_.size(); i++) {
@@ -79,7 +81,7 @@ public:
 
   Eigen::VectorXd x_corner(int64_t indx) const {
     if(indx < 0 or indx >= N_) {
-      throw std::runtime_error("SparseNSpace: index out of range");
+      throw std::runtime_error("TreeSparseNSpace: index out of range");
     }
     int n = xlo_.size();
     Eigen::VectorXd x(n);
@@ -94,7 +96,7 @@ public:
 
   Eigen::VectorXd x_center(int64_t indx) const {
     if(indx < 0 or indx >= N_) {
-      throw std::runtime_error("SparseNSpace: index out of range");
+      throw std::runtime_error("TreeSparseNSpace: index out of range");
     }
     int n = xlo_.size();
     Eigen::VectorXd x(n);
@@ -109,10 +111,10 @@ public:
 
   void x_center(Eigen::VectorXd& x, int64_t indx) const {
     if(indx < 0 or indx >= N_) {
-      throw std::runtime_error("SparseNSpace: index out of range");
+      throw std::runtime_error("TreeSparseNSpace: index out of range");
     }
     if(x.size() != xlo_.size()) {
-      throw std::runtime_error("SparseNSpace: dimensional mismatch");
+      throw std::runtime_error("TreeSparseNSpace: dimensional mismatch");
     }
     int n = xlo_.size();
     for(unsigned i=n; i>0;) {
@@ -165,8 +167,8 @@ public:
     return (*ifind).second;
   }
 
-  SparseNSpace project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi);
-  SparseNSpace project_along_axis(unsigned iaxis);
+  TreeSparseNSpace project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi);
+  TreeSparseNSpace project_along_axis(unsigned iaxis);
 
   Eigen::VectorXd as_vector() const;
   Eigen::MatrixXd as_matrix() const;
@@ -189,5 +191,65 @@ private:
 
   std::map<int64_t, double> bins_;
 };
+
+class BlockSparseNSpace
+{
+public:
+  BlockSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
+    const Eigen::VectorXi& n);
+  BlockSparseNSpace(const std::vector<Axis>& axes);
+
+  // void clear() { bins_.clear(); }
+  // void injest(const BlockSparseNSpace& o);
+
+  // std::vector<Axis> axes() const;
+  //
+  // unsigned naxes() const { return xlo_.size(); }
+  // Axis axis(unsigned iaxis) const;
+
+  // Eigen::VectorXd axis_bin_centers(unsigned iaxis) const;
+  // Eigen::VectorXd axis_bin_edges(unsigned iaxis) const;
+
+  // uint64_t num_occupied_cells() {
+  //   return array_occupancy_ * block_size_;
+  // }
+  //
+  // uint64_t size() const {
+  //   return N_;
+  // }
+  //
+  void accumulate(const Eigen::VectorXd& x, double w = 1.0);
+
+private:
+  void index(const Eigen::VectorXd& x, int64_t& array_index, int64_t& block_index) const;
+  double& cell_ref(int64_t array_index, int64_t block_index);
+  double cell_val(int64_t array_index, int64_t block_index) const;
+
+  Eigen::VectorXd xlo_;
+  Eigen::VectorXd xhi_;
+  Eigen::VectorXd dx_;
+  Eigen::VectorXd dx_inv_;
+  Eigen::VectorXi n_;
+  int64_t N_;
+
+  unsigned block_shift_;
+  unsigned block_mask_;
+  unsigned block_size_;
+
+  double* alloc_next_;
+  double* alloc_end_;
+  unsigned alloc_size_;
+  std::list<double*> alloc_free_list_;
+  std::list<double*> alloc_all_list_;
+
+
+  unsigned array_occupancy_;
+  unsigned array_size_;
+  double overflow_ = 0;
+  std::vector<double*> array_;
+  unsigned next_index_;
+};
+
+CALIN_TYPEALIAS(SparseNSpace, TreeSparseNSpace);
 
 } } } // namespace calin::math::nspace
