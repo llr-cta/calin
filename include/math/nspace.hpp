@@ -196,32 +196,48 @@ class BlockSparseNSpace
 {
 public:
   BlockSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
-    const Eigen::VectorXi& n);
-  BlockSparseNSpace(const std::vector<Axis>& axes);
+    const Eigen::VectorXi& n, unsigned log2_block_size = 0);
+  BlockSparseNSpace(const std::vector<Axis>& axes, unsigned log2_block_size = 0);
 
-  // void clear() { bins_.clear(); }
+  ~BlockSparseNSpace();
+
+  void clear();
   // void injest(const BlockSparseNSpace& o);
 
-  // std::vector<Axis> axes() const;
-  //
-  // unsigned naxes() const { return xlo_.size(); }
-  // Axis axis(unsigned iaxis) const;
+  std::vector<Axis> axes() const;
+  unsigned naxes() const { return xlo_.size(); }
+  Axis axis(unsigned iaxis) const;
 
-  // Eigen::VectorXd axis_bin_centers(unsigned iaxis) const;
-  // Eigen::VectorXd axis_bin_edges(unsigned iaxis) const;
+  Eigen::VectorXd axis_bin_centers(unsigned iaxis) const;
+  Eigen::VectorXd axis_bin_edges(unsigned iaxis) const;
 
-  // uint64_t num_occupied_cells() {
-  //   return array_occupancy_ * block_size_;
-  // }
-  //
-  // uint64_t size() const {
-  //   return N_;
-  // }
-  //
+  bool index(const Eigen::VectorXd& x, int64_t& array_index, int64_t& block_index) const;
+  bool x_center(Eigen::VectorXd& x_out, int64_t array_index, int64_t block_index) const;
+
+  uint64_t size() const { return N_; }
+  uint64_t allocated_size() const { return alloc_all_list_.size()*alloc_size_; }
+  uint64_t used_size() const {
+    uint64_t us = (alloc_all_list_.size()-alloc_free_list_.size())*alloc_size_;
+    if(alloc_next_) { us -= alloc_end_-alloc_next_; }
+    return us;
+  }
+
   void accumulate(const Eigen::VectorXd& x, double w = 1.0);
 
+  double overflow_weight() const;
+  double weight(const Eigen::VectorXd& x) const;
+
+  double total_weight() const;
+
+  Eigen::VectorXd mean_and_total_weight(double& w0) const;
+  Eigen::VectorXd mean() const;
+  //
+  // Eigen::MatrixXd covar_mean_and_total_weight(Eigen::VectorXd& w1, double& w0) const;
+  // Eigen::MatrixXd covar() const;
+
 private:
-  void index(const Eigen::VectorXd& x, int64_t& array_index, int64_t& block_index) const;
+  static unsigned validated_log2_block_size(unsigned log2_block_size, unsigned naxis);
+  double* block_ptr(int64_t array_index);
   double& cell_ref(int64_t array_index, int64_t block_index);
   double cell_val(int64_t array_index, int64_t block_index) const;
 
@@ -236,18 +252,16 @@ private:
   unsigned block_mask_;
   unsigned block_size_;
 
-  double* alloc_next_;
-  double* alloc_end_;
+  double* alloc_next_ = nullptr;
+  double* alloc_end_ = nullptr;
   unsigned alloc_size_;
   std::list<double*> alloc_free_list_;
   std::list<double*> alloc_all_list_;
 
-
-  unsigned array_occupancy_;
-  unsigned array_size_;
-  double overflow_ = 0;
+  Eigen::VectorXi narray_;
+  int64_t Narray_;
   std::vector<double*> array_;
-  unsigned next_index_;
+  double overflow_ = 0;
 };
 
 CALIN_TYPEALIAS(SparseNSpace, TreeSparseNSpace);

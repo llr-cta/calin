@@ -23,16 +23,36 @@
 #include <exception>
 #include <algorithm>
 
+#include <util/log.hpp>
 #include <math/nspace.hpp>
 
 using namespace calin::math::nspace;
+using namespace calin::util::log;
 
-struct Axis
+namespace {
+
+Eigen::VectorXd xlo_from_axes(const std::vector<calin::math::nspace::Axis>& axes)
 {
-  double xlo;
-  double xhi;
-  unsigned n;
-};
+  Eigen::VectorXd xlo(axes.size());
+  std::transform(axes.begin(), axes.end(), xlo.data(), [](Axis a){return a.xlo;});
+  return xlo;
+}
+
+Eigen::VectorXd xhi_from_axes(const std::vector<calin::math::nspace::Axis>& axes)
+{
+  Eigen::VectorXd xhi(axes.size());
+  std::transform(axes.begin(), axes.end(), xhi.data(), [](Axis a){return a.xhi;});
+  return xhi;
+}
+
+Eigen::VectorXi n_from_axes(const std::vector<calin::math::nspace::Axis>& axes)
+{
+  Eigen::VectorXi n(axes.size());
+  std::transform(axes.begin(), axes.end(), n.data(), [](Axis a){return a.n;});
+  return n;
+}
+
+} // anonymous namespace
 
 TreeSparseNSpace::
 TreeSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
@@ -58,20 +78,9 @@ TreeSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
 }
 
 TreeSparseNSpace::TreeSparseNSpace(const std::vector<Axis>& axes):
-  xlo_(axes.size()), xhi_(axes.size()), dx_(axes.size()), dx_inv_(axes.size()),
-  n_(axes.size())
+  TreeSparseNSpace(xlo_from_axes(axes), xhi_from_axes(axes), n_from_axes(axes))
 {
-  N_ = 1;
-  for(unsigned i=0; i<axes.size(); ++i) {
-    const Axis& ax ( axes[i] );
-    const double dx = (ax.xhi - ax.xlo)/ax.n;
-    xlo_[i] = ax.xlo;
-    xhi_[i] = ax.xhi;
-    n_[i] = ax.n;
-    N_ *= ax.n;
-    dx_[i] = dx;
-    dx_inv_[i] = 1.0/dx;
-  }
+  // nothing to see here
 }
 
 void TreeSparseNSpace::injest(const TreeSparseNSpace& o)
@@ -266,7 +275,10 @@ Eigen::MatrixXd TreeSparseNSpace::covar() const {
 
 BlockSparseNSpace::
 BlockSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
-    const Eigen::VectorXi& n)
+    const Eigen::VectorXi& n, unsigned log2_block_size):
+  xlo_(xlo.size()), xhi_(xlo.size()), dx_(xlo.size()), dx_inv_(xlo.size()),
+  n_(xlo.size()), narray_(xlo.size())
+
 {
   if(std::min({xlo.size(), xhi.size(), n.size()}) !=
       std::max({xlo.size(), xhi.size(), n.size()})) {
@@ -284,15 +296,47 @@ BlockSparseNSpace(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
     dx_inv_[i] = 1.0/dx;
   }
 
+  block_shift_ = validated_log2_block_size(log2_block_size, xlo.size());
+  block_mask_ = (1<<block_shift_) - 1;
+  block_size_ = 1<<(block_shift_ * xlo.size());
 
+  alloc_size_ = std::max(block_size_, 1048576U);
+
+  Narray_ = 1;
+  for(unsigned i=0; i<xlo.size(); ++i) {
+    narray_[i] = (n[i]+block_mask_)>>block_shift_;
+    Narray_ *= narray_[i];
+  }
+
+  array_.resize(Narray_, nullptr);
 }
 
-BlockSparseNSpace::BlockSparseNSpace(const std::vector<Axis>& axes)
+BlockSparseNSpace::BlockSparseNSpace(const std::vector<Axis>& axes, unsigned log2_block_size):
+  BlockSparseNSpace(xlo_from_axes(axes), xhi_from_axes(axes), n_from_axes(axes), log2_block_size)
 {
-
+  // nothing to see here
 }
 
-void BlockSparseNSpace::index(
+BlockSparseNSpace::~BlockSparseNSpace()
+{
+  for(auto* array : alloc_all_list_) {
+    delete array;
+  }
+}
+
+unsigned BlockSparseNSpace::
+validated_log2_block_size(unsigned log2_block_size, unsigned naxis)
+{
+  if(log2_block_size==0) {
+    unsigned block_size = 1;
+    for(log2_block_size=1; block_size<1024; log2_block_size++) {
+      block_size <<= naxis;
+    }
+  }
+  return std::max(1U, log2_block_size);
+}
+
+bool BlockSparseNSpace::index(
   const Eigen::VectorXd& x, int64_t& array_index, int64_t& block_index) const
 {
   if(x.size() != xlo_.size()) {
@@ -305,14 +349,41 @@ void BlockSparseNSpace::index(
     int ii = (x(i)-xlo_(i))*dx_inv_(i);
     if(ii<0 or ii>=n_(i)) {
       array_index = block_index = -1;
+      return false;
     }
 
     block_index = (block_index<<block_shift_) | (ii&block_mask_);
-    array_index = array_index*n_(i) + (ii>>block_shift_);
+    array_index = array_index*narray_(i) + (ii>>block_shift_);
   }
+  return true;
 }
 
-double& BlockSparseNSpace::cell_ref(int64_t array_index, int64_t block_index)
+bool BlockSparseNSpace::x_center(Eigen::VectorXd& x, int64_t array_index, int64_t block_index) const
+{
+  if(block_index<0 or block_index>=block_size_ or array_index<0 or array_index>=array_.size()) {
+    return false;
+  }
+
+  if(x.size() != xlo_.size()) {
+    x.resize(xlo_.size());
+  }
+
+  for(unsigned i=xlo_.size(); i>0;) {
+    --i;
+    auto qr = std::div(array_index, int64_t(narray_[i]));
+    unsigned ix = (qr.rem<<block_shift_) + block_index&block_mask_;
+    if(ix >= n_[i]) {
+      return false;
+    }
+    x[i] = xlo_[i] + dx_[i] * (ix + 0.5);
+    array_index = qr.quot;
+    block_index >>= block_shift_;
+  }
+
+  return true;
+}
+
+double* BlockSparseNSpace::block_ptr(int64_t array_index)
 {
   double* block = array_[array_index];
   if(block == nullptr) {
@@ -327,7 +398,7 @@ double& BlockSparseNSpace::cell_ref(int64_t array_index, int64_t block_index)
       alloc_end_ = alloc_next_ + alloc_size_;
     }
 
-    block = alloc_next_;
+    block = array_[array_index] = alloc_next_;
     alloc_next_ += block_size_;
     std::fill(block, block+block_size_, 0);
 
@@ -335,7 +406,12 @@ double& BlockSparseNSpace::cell_ref(int64_t array_index, int64_t block_index)
       alloc_next_ = alloc_end_ = nullptr;
     }
   }
-  return block[block_index];
+  return block;
+}
+
+double& BlockSparseNSpace::cell_ref(int64_t array_index, int64_t block_index)
+{
+  return block_ptr(array_index)[block_index];
 }
 
 double BlockSparseNSpace::cell_val(int64_t array_index, int64_t block_index) const
@@ -349,15 +425,115 @@ void BlockSparseNSpace::accumulate(const Eigen::VectorXd& x, double w)
 {
   int64_t array_index;
   int64_t block_index;
-  index(x, array_index, block_index);
-  if(array_index == -1) {
-    overflow_ += w;
-  } else {
+  if(index(x, array_index, block_index)) {
+    // LOG(INFO) << x << ' ' << array_index << ' ' << block_index;
     cell_ref(array_index,block_index) += w;
+  } else {
+    overflow_ += w;
   }
 }
 
-  // void clear() { bins_.clear(); }
-  // void injest(const BlockSparseNSpace& o);
+void BlockSparseNSpace::clear()
+{
 
-  // std::vector<Axis> axes() const;
+}
+
+// void injest(const BlockSparseNSpace& o);
+
+std::vector<Axis> BlockSparseNSpace::axes() const
+{
+  std::vector<calin::math::nspace::Axis> a;
+  for(unsigned i=0; i<xlo_.size(); i++) {
+    a.push_back({xlo_[i], xhi_[i], static_cast<unsigned int>(n_[i])});
+  }
+  return a;
+}
+
+Axis BlockSparseNSpace::axis(unsigned iaxis) const
+{
+  if(iaxis >= n_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: iaxis out of range");
+  }
+  calin::math::nspace::Axis a { xlo_[iaxis], xhi_[iaxis], static_cast<unsigned int>(n_[iaxis]) };
+  return a;
+}
+
+Eigen::VectorXd BlockSparseNSpace::axis_bin_centers(unsigned iaxis) const
+{
+  if(iaxis >= n_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: iaxis out of range");
+  }
+  Eigen::VectorXd x(n_[iaxis]);
+  for(unsigned i=0; i<n_[iaxis]; i++) {
+    x[i] = xlo_[iaxis] + dx_[iaxis] * (0.5 + i);
+  }
+  return x;
+}
+
+Eigen::VectorXd BlockSparseNSpace::axis_bin_edges(unsigned iaxis) const
+{
+  if(iaxis >= n_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: iaxis out of range");
+  }
+  Eigen::VectorXd x(n_[iaxis]+1);
+  for(unsigned i=0; i<=n_[iaxis]; i++) {
+    x[i] = xlo_[iaxis] + dx_[iaxis] * i;
+  }
+  return x;
+}
+
+double BlockSparseNSpace::overflow_weight() const
+{
+  return overflow_;
+}
+
+double BlockSparseNSpace::weight(const Eigen::VectorXd& x) const
+{
+  int64_t array_index;
+  int64_t block_index;
+  if(index(x, array_index, block_index)) {
+    return cell_val(array_index,block_index);
+  } else {
+    return overflow_;
+  }
+}
+
+double BlockSparseNSpace::total_weight() const
+{
+  double w0 = 0;
+  for(auto* block : array_) {
+    if(block) {
+      for(unsigned i=0;i<block_size_;++i) {
+        w0 += block[i];
+      }
+    }
+  }
+  return w0;
+}
+
+Eigen::VectorXd BlockSparseNSpace::mean_and_total_weight(double& w0) const
+{
+  Eigen::VectorXd w1(xlo_.size());
+  Eigen::VectorXd x(xlo_.size());
+  w0 = 0;
+  w1.setZero();
+  for(unsigned array_index=0; array_index<array_.size(); ++array_index)
+  {
+    auto* block = array_[array_index];
+    if(block) {
+      for(unsigned block_index=0;block_index<block_size_;++block_index) {
+        if(x_center(x, array_index, block_index)) {
+          w0 += block[block_index];
+          w1 += x * block[block_index];
+        }
+      }
+    }
+  }
+  return w1/w0;
+}
+
+Eigen::VectorXd BlockSparseNSpace::mean() const
+{
+  double w0;
+  return mean_and_total_weight(w0);
+}
