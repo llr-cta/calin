@@ -93,6 +93,37 @@ void TreeSparseNSpace::injest(const TreeSparseNSpace& o)
   }
 }
 
+void TreeSparseNSpace::accumulate_many(const Eigen::MatrixXd& x, double w)
+{
+  Eigen::VectorXd xx(xlo_.size());
+  int64_t array_index;
+  int64_t block_index;
+  if(x.cols() != xlo_.size()){
+    throw std::runtime_error("BlockSparseNSpace: dimensional mismatch in number of matrix columns");
+  }
+  for(unsigned irow=0; irow<x.rows(); ++irow) {
+    xx = x.row(irow);
+    bins_[index(xx)] += w;
+  }
+}
+
+void TreeSparseNSpace::accumulate_many(const Eigen::MatrixXd& x, const Eigen::VectorXd& w)
+{
+  Eigen::VectorXd xx(xlo_.size());
+  int64_t array_index;
+  int64_t block_index;
+  if(x.cols() != xlo_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: dimensional mismatch in number of matrix columns");
+  }
+  if(x.rows() != w.rows()) {
+    throw std::runtime_error("BlockSparseNSpace: dimensional mismatch in number of matrix & vector rows");
+  }
+  for(unsigned irow=0; irow<x.rows(); ++irow) {
+    xx = x.row(irow);
+    bins_[index(xx)] += w[irow];
+  }
+}
+
 std::vector<calin::math::nspace::Axis> TreeSparseNSpace::axes() const
 {
   std::vector<calin::math::nspace::Axis> a;
@@ -430,6 +461,47 @@ void BlockSparseNSpace::accumulate(const Eigen::VectorXd& x, double w)
     cell_ref(array_index,block_index) += w;
   } else {
     overflow_ += w;
+  }
+}
+
+void BlockSparseNSpace::accumulate_many(const Eigen::MatrixXd& x, double w)
+{
+  Eigen::VectorXd xx(xlo_.size());
+  int64_t array_index;
+  int64_t block_index;
+  if(x.cols() != xlo_.size()){
+    throw std::runtime_error("BlockSparseNSpace: dimensional mismatch in number of matrix columns");
+  }
+  for(unsigned irow=0; irow<x.rows(); ++irow) {
+    xx = x.row(irow);
+    if(index(xx, array_index, block_index)) {
+      // LOG(INFO) << x << ' ' << array_index << ' ' << block_index;
+      cell_ref(array_index,block_index) += w;
+    } else {
+      overflow_ += w;
+    }
+  }
+}
+
+void BlockSparseNSpace::accumulate_many(const Eigen::MatrixXd& x, const Eigen::VectorXd& w)
+{
+  Eigen::VectorXd xx(xlo_.size());
+  int64_t array_index;
+  int64_t block_index;
+  if(x.cols() != xlo_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: dimensional mismatch in number of matrix columns");
+  }
+  if(x.rows() != w.rows()) {
+    throw std::runtime_error("BlockSparseNSpace: dimensional mismatch in number of matrix & vector rows");
+  }
+  for(unsigned irow=0; irow<x.rows(); ++irow) {
+    xx = x.row(irow);
+    if(index(xx, array_index, block_index)) {
+      // LOG(INFO) << x << ' ' << array_index << ' ' << block_index;
+      cell_ref(array_index,block_index) += w[irow];
+    } else {
+      overflow_ += w[irow];
+    }
   }
 }
 

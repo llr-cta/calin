@@ -129,6 +129,9 @@ public:
     bins_[index(x)] += w;
   }
 
+  void accumulate_many(const Eigen::MatrixXd& x, double w = 1.0);
+  void accumulate_many(const Eigen::MatrixXd& x, const Eigen::VectorXd& w);
+
   double overflow_weight() const {
     auto ifind = bins_.find(-1);
     if(ifind == bins_.end())return 0;
@@ -223,6 +226,8 @@ public:
   }
 
   void accumulate(const Eigen::VectorXd& x, double w = 1.0);
+  void accumulate_many(const Eigen::MatrixXd& x, double w = 1.0);
+  void accumulate_many(const Eigen::MatrixXd& x, const Eigen::VectorXd& w);
 
   double overflow_weight() const;
   double weight(const Eigen::VectorXd& x) const;
