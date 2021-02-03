@@ -231,9 +231,9 @@ public:
 
   Eigen::VectorXd mean_and_total_weight(double& w0) const;
   Eigen::VectorXd mean() const;
-  //
-  // Eigen::MatrixXd covar_mean_and_total_weight(Eigen::VectorXd& w1, double& w0) const;
-  // Eigen::MatrixXd covar() const;
+
+  Eigen::MatrixXd covar_mean_and_total_weight(Eigen::VectorXd& w1, double& w0) const;
+  Eigen::MatrixXd covar() const;
 
 private:
   static unsigned validated_log2_block_size(unsigned log2_block_size, unsigned naxis);

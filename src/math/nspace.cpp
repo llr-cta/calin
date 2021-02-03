@@ -371,7 +371,7 @@ bool BlockSparseNSpace::x_center(Eigen::VectorXd& x, int64_t array_index, int64_
   for(unsigned i=xlo_.size(); i>0;) {
     --i;
     auto qr = std::div(array_index, int64_t(narray_[i]));
-    unsigned ix = (qr.rem<<block_shift_) + block_index&block_mask_;
+    unsigned ix = (qr.rem<<block_shift_) | (block_index&block_mask_);
     if(ix >= n_[i]) {
       return false;
     }
@@ -536,4 +536,35 @@ Eigen::VectorXd BlockSparseNSpace::mean() const
 {
   double w0;
   return mean_and_total_weight(w0);
+}
+
+Eigen::MatrixXd BlockSparseNSpace::covar_mean_and_total_weight(Eigen::VectorXd& w1, double& w0) const
+{
+  Eigen::MatrixXd w2(xlo_.size(), xlo_.size());
+  w1.resize(xlo_.size());
+  Eigen::VectorXd x(xlo_.size());
+  w0 = 0;
+  w1.setZero();
+  w2.setZero();
+  for(unsigned array_index=0; array_index<array_.size(); ++array_index)
+  {
+    auto* block = array_[array_index];
+    if(block) {
+      for(unsigned block_index=0;block_index<block_size_;++block_index) {
+        if(x_center(x, array_index, block_index)) {
+          w0 += block[block_index];
+          w1 += x * block[block_index];
+          w2.noalias() += x * x.transpose() * block[block_index]; // outer product
+        }
+      }
+    }
+  }
+  w1 /= w0;
+  return w2/w0 - w1*w1.transpose(); // outer product
+}
+
+Eigen::MatrixXd BlockSparseNSpace::covar() const {
+  double w0;
+  Eigen::VectorXd w1(xlo_.size());
+  return covar_mean_and_total_weight(w1, w0);
 }
