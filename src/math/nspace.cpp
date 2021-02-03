@@ -96,8 +96,6 @@ void TreeSparseNSpace::injest(const TreeSparseNSpace& o)
 void TreeSparseNSpace::accumulate_many(const Eigen::MatrixXd& x, double w)
 {
   Eigen::VectorXd xx(xlo_.size());
-  int64_t array_index;
-  int64_t block_index;
   if(x.cols() != xlo_.size()){
     throw std::runtime_error("BlockSparseNSpace: dimensional mismatch in number of matrix columns");
   }
@@ -110,8 +108,6 @@ void TreeSparseNSpace::accumulate_many(const Eigen::MatrixXd& x, double w)
 void TreeSparseNSpace::accumulate_many(const Eigen::MatrixXd& x, const Eigen::VectorXd& w)
 {
   Eigen::VectorXd xx(xlo_.size());
-  int64_t array_index;
-  int64_t block_index;
   if(x.cols() != xlo_.size()) {
     throw std::runtime_error("BlockSparseNSpace: dimensional mismatch in number of matrix columns");
   }
@@ -507,7 +503,10 @@ void BlockSparseNSpace::accumulate_many(const Eigen::MatrixXd& x, const Eigen::V
 
 void BlockSparseNSpace::clear()
 {
-
+  overflow_ = 0;
+  std::fill(array_.begin(), array_.end(), nullptr);
+  alloc_next_ = alloc_end_ = nullptr;
+  alloc_free_list_ = alloc_all_list_;
 }
 
 // void injest(const BlockSparseNSpace& o);
