@@ -204,7 +204,11 @@ public:
 
   ~BlockSparseNSpace();
 
+  BlockSparseNSpace(const BlockSparseNSpace&) = delete;
+  BlockSparseNSpace& operator=(const BlockSparseNSpace&) = delete;
+
   void clear();
+  
   // void injest(const BlockSparseNSpace& o);
 
   std::vector<Axis> axes() const;

@@ -347,7 +347,7 @@ BlockSparseNSpace::BlockSparseNSpace(const std::vector<Axis>& axes, unsigned log
 BlockSparseNSpace::~BlockSparseNSpace()
 {
   for(auto* array : alloc_all_list_) {
-    delete array;
+    delete[] array;
   }
 }
 
