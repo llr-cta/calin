@@ -170,8 +170,8 @@ public:
     return (*ifind).second;
   }
 
-  TreeSparseNSpace project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi);
-  TreeSparseNSpace project_along_axis(unsigned iaxis);
+  TreeSparseNSpace* project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi) const;
+  TreeSparseNSpace* project_along_axis(unsigned iaxis) const;
 
   Eigen::VectorXd as_vector() const;
   Eigen::MatrixXd as_matrix() const;
@@ -208,8 +208,8 @@ public:
   BlockSparseNSpace& operator=(const BlockSparseNSpace&) = delete;
 
   void clear();
-  
-  // void injest(const BlockSparseNSpace& o);
+
+  void injest(const BlockSparseNSpace& o);
 
   std::vector<Axis> axes() const;
   unsigned naxes() const { return xlo_.size(); }
@@ -221,7 +221,12 @@ public:
   bool index(const Eigen::VectorXd& x, int64_t& array_index, int64_t& block_index) const;
   bool x_center(Eigen::VectorXd& x_out, int64_t array_index, int64_t block_index) const;
 
+  bool index_of_bin(const Eigen::VectorXi& ix, int64_t& array_index, int64_t& block_index) const;
+  bool bin_coords(Eigen::VectorXi& ix_out, int64_t array_index, int64_t block_index) const;
+
   uint64_t size() const { return N_; }
+  uint64_t block_size() const { return block_size_; }
+  uint64_t block_array_size() const { return array_.size(); }
   uint64_t allocated_size() const { return alloc_all_list_.size()*alloc_size_; }
   uint64_t used_size() const {
     uint64_t us = (alloc_all_list_.size()-alloc_free_list_.size())*alloc_size_;
@@ -235,6 +240,15 @@ public:
 
   double overflow_weight() const;
   double weight(const Eigen::VectorXd& x) const;
+
+  BlockSparseNSpace* project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi, unsigned log2_block_size = 0) const;
+  BlockSparseNSpace* project_along_axis(unsigned iaxis, unsigned log2_block_size = 0) const;
+
+  Eigen::MatrixXd select_as_vector(const Eigen::VectorXi& bin_coords) const;
+  Eigen::MatrixXd select_as_matrix(const Eigen::VectorXi& bin_coords) const;
+
+  Eigen::VectorXd as_vector() const;
+  Eigen::MatrixXd as_matrix() const;
 
   double total_weight() const;
 

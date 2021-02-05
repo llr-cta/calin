@@ -38,6 +38,9 @@
 %apply double &OUTPUT { double& w0 };
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& w1 };
 %apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& x_out };
+%apply Eigen::VectorXi &OUTPUT { Eigen::VectorXi& ix_out };
 %apply int64_t &OUTPUT { int64_t& array_index, int64_t& block_index };
+
+%newobject project_along_axis;
 
 %include "math/nspace.hpp"

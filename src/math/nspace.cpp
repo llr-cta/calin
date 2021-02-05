@@ -162,8 +162,8 @@ Eigen::VectorXd TreeSparseNSpace::axis_bin_edges(unsigned iaxis) const
   return x;
 }
 
-calin::math::nspace::TreeSparseNSpace TreeSparseNSpace::
-project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi)
+calin::math::nspace::TreeSparseNSpace* TreeSparseNSpace::
+project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi) const
 {
   if(iaxis >= n_.size()) {
     throw std::runtime_error("TreeSparseNSpace: iaxis out of range");
@@ -176,7 +176,7 @@ project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi)
     }
   }
 
-  TreeSparseNSpace newspace(a);
+  TreeSparseNSpace* newspace = new TreeSparseNSpace(a);
 
   int64_t div_lo = 1;
   for(unsigned jaxis=iaxis+1; jaxis<n_.size(); jaxis++) {
@@ -185,23 +185,23 @@ project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi)
 
   for(auto i : bins_) {
     if(i.first < 0) {
-      newspace.bins_[i.first] += i.second;
+      newspace->bins_[i.first] += i.second;
     } else {
       auto qr_lo = std::div(i.first, div_lo);
       auto qr_hi = std::div(qr_lo.quot, int64_t(n_[iaxis]));
       if(qr_hi.rem >= axis_cell_lo and qr_hi.rem <= axis_cell_hi) {
         int64_t inew = qr_lo.rem + qr_hi.quot * div_lo;
-        newspace.bins_[inew] += i.second;
+        newspace->bins_[inew] += i.second;
       } else {
-        newspace.bins_[-1] += i.second;
+        newspace->bins_[-1] += i.second;
       }
     }
   }
   return newspace;
 }
 
-calin::math::nspace::TreeSparseNSpace TreeSparseNSpace::
-project_along_axis(unsigned iaxis)
+calin::math::nspace::TreeSparseNSpace* TreeSparseNSpace::
+project_along_axis(unsigned iaxis) const
 {
   return this->project_along_axis(iaxis, 0, n_[std::max(iaxis,unsigned(n_.size()-1))]);
 }
@@ -410,6 +410,52 @@ bool BlockSparseNSpace::x_center(Eigen::VectorXd& x, int64_t array_index, int64_
   return true;
 }
 
+bool BlockSparseNSpace::index_of_bin(const Eigen::VectorXi& ix, int64_t& array_index, int64_t& block_index) const
+{
+  if(ix.size() != xlo_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: dimensional mismatch");
+  }
+
+  array_index = 0;
+  block_index = 0;
+  for(int i=0; i<xlo_.size(); i++) {
+    int ii = ix(i);
+    if(ii<0 or ii>=n_(i)) {
+      array_index = block_index = -1;
+      return false;
+    }
+
+    block_index = (block_index<<block_shift_) | (ii&block_mask_);
+    array_index = array_index*narray_(i) + (ii>>block_shift_);
+  }
+  return true;
+}
+
+bool BlockSparseNSpace::bin_coords(Eigen::VectorXi& ix, int64_t array_index, int64_t block_index) const
+{
+  if(block_index<0 or block_index>=block_size_ or array_index<0 or array_index>=array_.size()) {
+    return false;
+  }
+
+  if(ix.size() != xlo_.size()) {
+    ix.resize(xlo_.size());
+  }
+
+  for(unsigned i=xlo_.size(); i>0;) {
+    --i;
+    auto qr = std::div(array_index, int64_t(narray_[i]));
+    unsigned iix = (qr.rem<<block_shift_) | (block_index&block_mask_);
+    if(iix >= n_[i]) {
+      return false;
+    }
+    ix[i] = iix;
+    array_index = qr.quot;
+    block_index >>= block_shift_;
+  }
+
+  return true;
+}
+
 double* BlockSparseNSpace::block_ptr(int64_t array_index)
 {
   double* block = array_[array_index];
@@ -509,7 +555,26 @@ void BlockSparseNSpace::clear()
   alloc_free_list_ = alloc_all_list_;
 }
 
-// void injest(const BlockSparseNSpace& o);
+void BlockSparseNSpace::injest(const BlockSparseNSpace& o)
+{
+  if(xlo_!=o.xlo_ or xhi_!=o.xhi_ or n_!=o.n_) {
+    throw std::runtime_error("BlockSparseNSpace: cannot injest space with incompatible axis definition");
+  }
+  if(o.block_shift_ == block_shift_) {
+    for(unsigned array_index=0; array_index<array_.size(); ++array_index) {
+      const double* oblock = o.array_[array_index];
+      if(oblock) {
+        double* block = block_ptr(array_index);
+        for(unsigned block_index=0; block_index<block_size_; ++block_index) {
+          block[block_index] += oblock[block_index];
+        }
+      }
+    }
+  } else {
+    throw std::runtime_error("BlockSparseNSpace: different block sizes not (yet) supported");
+  }
+  overflow_ += o.overflow_;
+}
 
 std::vector<Axis> BlockSparseNSpace::axes() const
 {
@@ -567,6 +632,182 @@ double BlockSparseNSpace::weight(const Eigen::VectorXd& x) const
   } else {
     return overflow_;
   }
+}
+
+BlockSparseNSpace* BlockSparseNSpace::project_along_axis(unsigned iaxis,
+  unsigned axis_cell_lo, unsigned axis_cell_hi, unsigned log2_block_size) const
+{
+  if(iaxis >= n_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: iaxis out of range");
+  }
+
+  std::vector<calin::math::nspace::Axis> a;
+  for(unsigned i=0; i<xlo_.size(); i++) {
+    if(i != iaxis) {
+      a.push_back({xlo_[i], xhi_[i], static_cast<unsigned int>(n_[i])});
+    }
+  }
+
+  BlockSparseNSpace* new_space = new BlockSparseNSpace(a, log2_block_size);
+  new_space->overflow_ = overflow_;
+
+  Eigen::VectorXi ix(n_.size());
+  Eigen::VectorXi new_ix(n_.size() - 1);
+
+  for(unsigned array_index=0; array_index<array_.size(); ++array_index) {
+    double* block = array_[array_index];
+    if(block) {
+      for(unsigned block_index=0; block_index<block_size_; ++block_index) {
+        if(bin_coords(ix, array_index, block_index)) {
+          if(ix[iaxis] >= axis_cell_lo and ix[iaxis] <= axis_cell_hi) {
+            if(iaxis != 0) {
+              new_ix.head(iaxis) = ix.head(iaxis);
+            }
+            if(iaxis != n_.size()-1) {
+              new_ix.tail(n_.size()-1-iaxis) = ix.tail(n_.size()-1-iaxis);
+            }
+            int64_t new_array_index;
+            int64_t new_block_index;
+            new_space->index_of_bin(new_ix, new_array_index, new_block_index);
+            new_space->block_ptr(new_array_index)[new_block_index] += block[block_index];
+          } else {
+            new_space->overflow_ += block[block_index];
+          }
+        }
+      }
+    }
+  }
+  return new_space;
+}
+
+BlockSparseNSpace* BlockSparseNSpace::project_along_axis(unsigned iaxis,
+  unsigned log2_block_size) const
+{
+  return this->project_along_axis(iaxis, 0, n_[std::max(iaxis,unsigned(n_.size()-1))], log2_block_size);
+}
+
+Eigen::MatrixXd BlockSparseNSpace::select_as_vector(const Eigen::VectorXi& bin_coords) const
+{
+  Eigen::VectorXi xi = bin_coords;
+  if(xi.size() != n_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: dimensional mismatch in bin coordinates");
+  }
+  int iaxis = -1;
+  for(unsigned i=0;i<n_.size();++i) {
+    if(xi[i] < 0) {
+      if(iaxis == -1) {
+        iaxis = i;
+      } else {
+        throw std::runtime_error("BlockSparseNSpace: only one dimension can be extracted in vector");
+      }
+    } else if(xi[i] >= n_[i]) {
+      throw std::runtime_error("BlockSparseNSpace: selected index out of range");
+    }
+  }
+  if(iaxis == -1) {
+    throw std::runtime_error("BlockSparseNSpace: one dimension must be chosen for extraction");
+  }
+
+  Eigen::VectorXd v(n_[iaxis]);
+  v.setZero();
+
+  for(xi[iaxis]=0; xi[iaxis]<n_[iaxis]; ++xi[iaxis]) {
+    int64_t array_index;
+    int64_t block_index;
+    if(index_of_bin(xi, array_index, block_index) and array_[array_index]!=nullptr) {
+      v(xi[iaxis]) = array_[array_index][block_index];
+    }
+  }
+
+  return v;
+}
+
+Eigen::MatrixXd BlockSparseNSpace::select_as_matrix(const Eigen::VectorXi& bin_coords) const
+{
+  Eigen::VectorXi xi = bin_coords;
+  if(xi.size() != n_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: dimensional mismatch in bin coordinates");
+  }
+  int iaxis = -1;
+  int jaxis = -1;
+  for(unsigned i=0;i<n_.size();++i) {
+    if(xi[i] < 0) {
+      if(iaxis == -1) {
+        iaxis = i;
+      } else if(jaxis == -1) {
+        jaxis = i;
+      } else {
+        throw std::runtime_error("BlockSparseNSpace: only one dimension can be extracted in vector");
+      }
+    } else if(xi[i] >= n_[i]) {
+      throw std::runtime_error("BlockSparseNSpace: selected index out of range");
+    }
+  }
+  if(jaxis == -1) {
+    throw std::runtime_error("BlockSparseNSpace: two dimensions must be chosen for extraction");
+  }
+
+  Eigen::MatrixXd m(n_[iaxis],n_[jaxis]);
+  m.setZero();
+
+  for(xi[iaxis]=0; xi[iaxis]<n_[iaxis]; ++xi[iaxis]) {
+    for(xi[jaxis]=0; xi[jaxis]<n_[jaxis]; ++xi[jaxis]) {
+      int64_t array_index;
+      int64_t block_index;
+      if(index_of_bin(xi, array_index, block_index) and array_[array_index]!=nullptr) {
+        m(xi[iaxis],xi[jaxis]) = array_[array_index][block_index];
+      }
+    }
+  }
+
+  return m;
+}
+
+
+Eigen::VectorXd BlockSparseNSpace::as_vector() const
+{
+  if(n_.size() != 1) {
+    throw std::runtime_error("BlockSparseNSpace: only single-axis spaces can be converted to vectors");
+  }
+  Eigen::VectorXi ix(n_.size() /* =1 */);
+  Eigen::VectorXd v(n_[0]);
+  v.setZero();
+
+  for(unsigned array_index=0; array_index<array_.size(); ++array_index)
+  {
+    auto* block = array_[array_index];
+    if(block) {
+      for(unsigned block_index=0; block_index<block_size_; ++block_index) {
+        if(bin_coords(ix, array_index, block_index)) {
+          v(ix(0)) = block[block_index];
+        }
+      }
+    }
+  }
+  return v;
+}
+
+Eigen::MatrixXd BlockSparseNSpace::as_matrix() const
+{
+  if(n_.size() != 2) {
+    throw std::runtime_error("BlockSparseNSpace: only two-axis spaces can be converted to matrices");
+  }
+  Eigen::VectorXi ix(n_.size() /* =2 */);
+  Eigen::MatrixXd m(n_[0],n_[1]);
+  m.setZero();
+
+  for(unsigned array_index=0; array_index<array_.size(); ++array_index)
+  {
+    auto* block = array_[array_index];
+    if(block) {
+      for(unsigned block_index=0; block_index<block_size_; ++block_index) {
+        if(bin_coords(ix, array_index, block_index)) {
+          m(ix(0),ix(1)) = block[block_index];
+        }
+      }
+    }
+  }
+  return m;
 }
 
 double BlockSparseNSpace::total_weight() const
