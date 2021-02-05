@@ -57,7 +57,7 @@ NSpaceRayProcessor::detector_spheres()
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> spheres;
   calin::simulation::ray_processor::RayProcessorDetectorSphere sphere;
   sphere.r0 = x0_;
-  sphere.radius = M_SQRT2 * config_.xy_radius();
+  sphere.radius = M_SQRT1_2 * config_.xy_diameter();
   sphere.iobs = config_.observation_level();
   spheres.push_back(sphere);
   return spheres;
@@ -130,14 +130,17 @@ NSpaceRayProcessor::nspace_axes() const
 {
   std::vector<calin::math::nspace::Axis> axes;
 
+  double xy_radius = 0.5*config_.xy_diameter();
+  double uxuy_radius = 0.5*config_.uxuy_diameter()/180.0*M_PI;
+
   switch(config_.axis_variables()) {
   case calin::ix::simulation::ray_processor::XY:
   case calin::ix::simulation::ray_processor::XY_UXUY:
   case calin::ix::simulation::ray_processor::XY_T:
   case calin::ix::simulation::ray_processor::XY_UXUY_T:
   default:
-    axes.push_back({-config_.xy_radius(), config_.xy_radius(), config_.xy_num_bins()});
-    axes.push_back({-config_.xy_radius(), config_.xy_radius(), config_.xy_num_bins()});
+    axes.push_back({-xy_radius, xy_radius, config_.xy_num_bins()});
+    axes.push_back({-xy_radius, xy_radius, config_.xy_num_bins()});
     break;
   case calin::ix::simulation::ray_processor::UXUY:
   case calin::ix::simulation::ray_processor::T:
@@ -149,8 +152,8 @@ NSpaceRayProcessor::nspace_axes() const
   case calin::ix::simulation::ray_processor::UXUY:
   case calin::ix::simulation::ray_processor::XY_UXUY:
   case calin::ix::simulation::ray_processor::XY_UXUY_T:
-    axes.push_back({-config_.uxuy_radius()/180.0*M_PI, config_.uxuy_radius()/180.0*M_PI, config_.uxuy_num_bins()});
-    axes.push_back({-config_.uxuy_radius()/180.0*M_PI, config_.uxuy_radius()/180.0*M_PI, config_.uxuy_num_bins()});
+    axes.push_back({-uxuy_radius, uxuy_radius, config_.uxuy_num_bins()});
+    axes.push_back({-uxuy_radius, uxuy_radius, config_.uxuy_num_bins()});
     break;
   case calin::ix::simulation::ray_processor::XY:
   case calin::ix::simulation::ray_processor::XY_T:
@@ -182,9 +185,9 @@ NSpaceRayProcessor::default_config()
 {
   calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig config;
   config.set_axis_variables(calin::ix::simulation::ray_processor::XY);
-  config.set_xy_radius(51200);
+  config.set_xy_diameter(102400);
   config.set_xy_num_bins(1024);
-  config.set_uxuy_radius(2.56);
+  config.set_uxuy_diameter(5.12);
   config.set_uxuy_num_bins(512);
   config.set_t_duration(100000);
   config.set_t_num_bins(100000);
