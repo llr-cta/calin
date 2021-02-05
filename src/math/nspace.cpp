@@ -738,7 +738,7 @@ Eigen::MatrixXd BlockSparseNSpace::select_as_matrix(const Eigen::VectorXi& bin_c
       } else if(jaxis == -1) {
         jaxis = i;
       } else {
-        throw std::runtime_error("BlockSparseNSpace: only one dimension can be extracted in vector");
+        throw std::runtime_error("BlockSparseNSpace: only two dimensions can be extracted in matrix");
       }
     } else if(xi[i] >= n_[i]) {
       throw std::runtime_error("BlockSparseNSpace: selected index out of range");
