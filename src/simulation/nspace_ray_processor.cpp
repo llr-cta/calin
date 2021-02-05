@@ -27,9 +27,10 @@ using namespace calin::util::log;
 using namespace calin::simulation::ray_processor;
 
 NSpaceRayProcessor::
-NSpaceRayProcessor(const calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig& config):
+NSpaceRayProcessor(const calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig& config,
+    unsigned nspace_log2_block_size):
   RayProcessor(),
-  config_(config), space_(nspace_axes()), p_(space_.naxes()),
+  config_(config), space_(nspace_axes(), nspace_log2_block_size), p_(space_.naxes()),
   x0_(config_.x_origin(), config_.y_origin(), config_.observation_altitude())
 {
   // nothing to see here

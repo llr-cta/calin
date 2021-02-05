@@ -33,7 +33,8 @@ namespace calin { namespace simulation { namespace ray_processor {
 class NSpaceRayProcessor: public RayProcessor
 {
 public:
-  NSpaceRayProcessor(const calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig& config);
+  NSpaceRayProcessor(const calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig& config,
+    unsigned nspace_log2_block_size = 0);
   virtual ~NSpaceRayProcessor();
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> detector_spheres() override;
   void start_processing() override;
@@ -43,11 +44,11 @@ public:
   static calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig default_config();
   void clear();
   unsigned nevent() const { return nevent_; }
-  const calin::math::nspace::SparseNSpace& nspace() const { return space_; }
+  const calin::math::nspace::BlockSparseNSpace& nspace() const { return space_; }
 protected:
   std::vector<calin::math::nspace::Axis> nspace_axes() const;
   calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig config_;
-  calin::math::nspace::SparseNSpace space_;
+  calin::math::nspace::BlockSparseNSpace space_;
   unsigned nevent_ = 0;
   Eigen::VectorXd p_;
   Eigen::Vector3d x0_;
