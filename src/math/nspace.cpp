@@ -711,11 +711,12 @@ Eigen::MatrixXd BlockSparseNSpace::select_as_vector(const Eigen::VectorXi& bin_c
   Eigen::VectorXd v(n_[iaxis]);
   v.setZero();
 
-  for(xi[iaxis]=0; xi[iaxis]<n_[iaxis]; ++xi[iaxis]) {
+  for(unsigned ix=0; ix<n_[iaxis]; ++ix) {
+    xi[iaxis] = ix;
     int64_t array_index;
     int64_t block_index;
     if(index_of_bin(xi, array_index, block_index) and array_[array_index]!=nullptr) {
-      v(xi[iaxis]) = array_[array_index][block_index];
+      v(ix) = array_[array_index][block_index];
     }
   }
 
@@ -750,12 +751,14 @@ Eigen::MatrixXd BlockSparseNSpace::select_as_matrix(const Eigen::VectorXi& bin_c
   Eigen::MatrixXd m(n_[iaxis],n_[jaxis]);
   m.setZero();
 
-  for(xi[iaxis]=0; xi[iaxis]<n_[iaxis]; ++xi[iaxis]) {
-    for(xi[jaxis]=0; xi[jaxis]<n_[jaxis]; ++xi[jaxis]) {
+  for(unsigned ix=0; ix<n_[iaxis]; ++ix) {
+    xi[iaxis] = ix;
+    for(unsigned jx=0; jx<n_[jaxis]; ++jx) {
+      xi[jaxis] = jx;
       int64_t array_index;
       int64_t block_index;
       if(index_of_bin(xi, array_index, block_index) and array_[array_index]!=nullptr) {
-        m(xi[iaxis],xi[jaxis]) = array_[array_index][block_index];
+        m(ix, jx) = array_[array_index][block_index];
       }
     }
   }
