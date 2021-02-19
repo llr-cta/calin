@@ -229,6 +229,8 @@ public:
   calin::math::interpolation_1d::InterpLinear1D opticalDepthForAltitude(double h) const;
   ACTEffectiveBandwidth integrateBandwidth(double h0, double w0,
     const DetectionEfficiency& eff) const;
+  ACTEffectiveBandwidth integrateBandwidth(double h0, double w0,
+    const DetectionEfficiency& eff, double emin, double emax) const;
   const std::vector<double>& energy_ev() const { return e_ev_; }
   std::vector<double> levels_cm() const;
 private:

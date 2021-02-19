@@ -255,6 +255,54 @@ integrateBandwidth(double h0, double w0, const DetectionEfficiency& eff) const
   return bandwidth;
 }
 
+ACTEffectiveBandwidth AtmosphericAbsorption::
+integrateBandwidth(double h0, double w0, const DetectionEfficiency& eff,
+  double emin, double emax) const
+{
+  InterpLinear1D abs0 = opticalDepthForAltitude(h0);
+  ACTEffectiveBandwidth bandwidth(w0);
+
+  bool obslevel = false;
+  for(unsigned ih=0;ih<absorption_.front().nXY();ih++)
+  {
+    double h = absorption_.front().xi(ih);
+    if(h==h0 && !obslevel)
+    {
+      obslevel = true;
+    }
+    else if(h>h0 && !obslevel)
+    {
+      ih--;
+      h = h0;
+      obslevel = true;
+    }
+    InterpLinear1D Y0;
+    InterpLinear1D Y1;
+    InterpLinear1D Y2;
+    for(unsigned ie=0;ie<e_ev_.size();ie++)
+  	{
+  	  double e = e_ev_[ie];
+  	  double mfp = std::fabs(absorption_[ie](h)-abs0(e));
+  	  double abs = std::exp(-mfp/w0);
+  	  Y0.insert(e, abs);
+  	  Y1.insert(e, mfp/(w0*w0)*abs);
+  	  Y2.insert(e, mfp*(0.5*mfp/w0-1.0)/(w0*w0*w0)*abs);
+  	}
+    Y0 *= eff;
+    Y1 *= eff;
+    Y2 *= eff;
+
+    bandwidth_t y(Y0.integrate(emin,emax), Y1.integrate(emin,emax), Y2.integrate(emin,emax));
+#ifdef ACT_LIGHT_YIELD_TAYLOR_SERIES_IN_LOG
+    y.dn_dw   = y.dn_dw/y.n;
+    y.d2n_dw2 = y.d2n_dw2/y.n - 0.5*SQR(y.dn_dw);
+    y.n       = std::log(y.n);
+#endif
+    bandwidth.insert(h, y);
+  }
+  return bandwidth;
+}
+
 std::vector<double> AtmosphericAbsorption::levels_cm() const
 {
   return absorption_.front().all_xi();
