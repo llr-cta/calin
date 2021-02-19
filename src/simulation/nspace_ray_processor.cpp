@@ -38,7 +38,7 @@ NSpaceRayProcessor(const calin::ix::simulation::ray_processor::NSpaceRayProcesso
 
 NSpaceRayProcessor::~NSpaceRayProcessor()
 {
-  // nothing to see here
+  delete effective_bandwidth_;
 }
 
 std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
@@ -123,6 +123,20 @@ void NSpaceRayProcessor::clear()
 {
   nevent_ = 0;
   space_.clear();
+}
+
+void NSpaceRayProcessor::set_detection_efficiencies(
+  double epsilon0, double bandwidth,
+  const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+  const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+  double w0)
+{
+  delete effective_bandwidth_;
+  calin::simulation::detector_efficiency::DetectionEfficiency scaled_eff = detector_efficiency;
+  scaled_eff *= 1.0/bandwidth;
+  effective_bandwidth_ = new simulation::detector_efficiency::ACTEffectiveBandwidth(
+    atmospheric_absorption.integrateBandwidth(
+      x0_.z(), std::fabs(w0), scaled_eff, epsilon0, epsilon0+bandwidth));
 }
 
 std::vector<calin::math::nspace::Axis>

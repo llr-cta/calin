@@ -27,6 +27,7 @@
 #include <math/nspace.hpp>
 #include <simulation/ray_processor.hpp>
 #include <simulation/ray_processor.pb.h>
+#include <simulation/detector_efficiency.hpp>
 
 namespace calin { namespace simulation { namespace ray_processor {
 
@@ -45,6 +46,14 @@ public:
   void clear();
   unsigned nevent() const { return nevent_; }
   const calin::math::nspace::BlockSparseNSpace& nspace() const { return space_; }
+
+  void set_detection_efficiencies(
+    double epsilon0, double bandwidth,
+    const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
+    const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
+    double w0);
+  calin::simulation::detector_efficiency::ACTEffectiveBandwidth* effective_bandwidth() const { return effective_bandwidth_; }
+
 protected:
   std::vector<calin::math::nspace::Axis> nspace_axes() const;
   calin::ix::simulation::ray_processor::NSpaceRayProcessorConfig config_;
@@ -53,6 +62,7 @@ protected:
   Eigen::VectorXd p_;
   Eigen::Vector3d x0_;
   Eigen::Matrix3d rot_ = Eigen::Matrix3d::Identity();
+  calin::simulation::detector_efficiency::ACTEffectiveBandwidth* effective_bandwidth_ = nullptr;
 };
 
 } } } // namespace calin::simulation::ray_processor
