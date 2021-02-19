@@ -36,12 +36,14 @@
 #include <string>
 
 #include <util/log.hpp>
+#include <util/file.hpp>
 #include <provenance/chronicle.hpp>
 #include <math/special.hpp>
 #include <util/string.hpp>
 #include <simulation/detector_efficiency.hpp>
 
 using calin::math::special::SQR;
+using calin::util::file::expand_filename;
 using calin::util::string::chomp;
 using calin::util::string::from_string;
 using namespace calin::util::log;
@@ -58,11 +60,12 @@ AtmosphericAbsorption::
 AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
     double ground_level_km, double spacing_km)
 {
-  std::ifstream stream(filename.c_str());
+  std::string fn = expand_filename(filename);
+  std::ifstream stream(fn.c_str());
   if(!stream.good())
-    throw std::runtime_error("Could not open: "+filename);
+    throw std::runtime_error("Could not open: "+fn);
 
-  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
+  auto* file_record = calin::provenance::chronicle::register_file_open(fn,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
   std::getline(stream,line); // skip first line
@@ -111,11 +114,12 @@ AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
 AtmosphericAbsorption::AtmosphericAbsorption(const std::string& filename,
   std::vector<double> levels_cm)
 {
-  std::ifstream stream(filename.c_str());
+  std::string fn = expand_filename(filename);
+  std::ifstream stream(fn.c_str());
   if(!stream.good())
-    throw std::runtime_error("Could not open: "+filename);
+    throw std::runtime_error("Could not open: "+fn);
 
-  auto* file_record = calin::provenance::chronicle::register_file_open(filename,
+  auto* file_record = calin::provenance::chronicle::register_file_open(fn,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
 
@@ -152,7 +156,7 @@ next_header_line:
   if(levels_cm.size() < 2) {
     calin::provenance::chronicle::register_file_close(file_record);
     throw std::runtime_error("Must have 2 or more levels in absorption file: "+
-      filename);
+      fn);
   }
 
   while(stream)
