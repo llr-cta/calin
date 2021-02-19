@@ -142,6 +142,10 @@ public:
   void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
     bool& kill_track) override;
   void leave_event() override;
+  double epsilon0() const { return epsilon0_; }
+  double bandwidth() const { return bandwidth_; }
+  bool do_color_photons() const { return do_color_photons_; }
+  double weight() const { return weight_; }
 private:
   CherenkovPhotonVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
