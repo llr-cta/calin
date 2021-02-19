@@ -111,6 +111,9 @@ void NSpaceRayProcessor::process_ray(unsigned scope_id, const calin::math::ray::
     p_[4] = ray.time()*1e9;
     break;
   };
+  if(effective_bandwidth_) {
+    pe_weight *= effective_bandwidth_->bandwidth(ray.z(), std::fabs(ray.uz()));
+  }
   space_.accumulate(p_, pe_weight);
 }
 
