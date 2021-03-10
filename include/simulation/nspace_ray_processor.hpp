@@ -46,6 +46,7 @@ public:
   void clear();
   unsigned nevent() const { return nevent_; }
   const calin::math::nspace::BlockSparseNSpace& nspace() const { return space_; }
+  calin::math::nspace::BlockSparseNSpace& mutable_nspace() { return space_; }
 
   void set_detection_efficiencies(
     double epsilon0, double bandwidth,
