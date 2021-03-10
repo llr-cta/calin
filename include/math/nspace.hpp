@@ -207,6 +207,7 @@ public:
   BlockSparseNSpace(const BlockSparseNSpace&) = delete;
   BlockSparseNSpace& operator=(const BlockSparseNSpace&) = delete;
 
+  void prune_below_threshold(double threshold);
   void clear();
 
   void injest(const BlockSparseNSpace& o);
@@ -257,6 +258,11 @@ public:
 
   Eigen::MatrixXd covar_mean_and_total_weight(Eigen::VectorXd& w1, double& w0) const;
   Eigen::MatrixXd covar() const;
+
+#if 0
+  void subspace_covar_mean_and_total_weight(const Eigen::VectorXi& subspace_axes,
+    BlockSparseNSpace** w2_space, BlockSparseNSpace** w1_space, BlockSparseNSpace** w0_space);
+#endif
 
 private:
   static unsigned validated_log2_block_size(unsigned log2_block_size, unsigned naxis);

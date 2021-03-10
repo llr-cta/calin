@@ -203,7 +203,7 @@ project_along_axis(unsigned iaxis, unsigned axis_cell_lo, unsigned axis_cell_hi)
 calin::math::nspace::TreeSparseNSpace* TreeSparseNSpace::
 project_along_axis(unsigned iaxis) const
 {
-  return this->project_along_axis(iaxis, 0, n_[std::max(iaxis,unsigned(n_.size()-1))]);
+  return this->project_along_axis(iaxis, 0, n_[std::min(iaxis,unsigned(n_.size()-1))]);
 }
 
 Eigen::VectorXd TreeSparseNSpace::as_vector() const
@@ -555,6 +555,20 @@ void BlockSparseNSpace::clear()
   alloc_free_list_ = alloc_all_list_;
 }
 
+void BlockSparseNSpace::prune_below_threshold(double threshold)
+{
+  for(auto* block : array_) {
+    if(block) {
+      for(unsigned i=0;i<block_size_; ++i) {
+        if(block[i] <= threshold) {
+          overflow_ += block[i];
+          block[i] = 0;
+        }
+      }
+    }
+  }
+}
+
 void BlockSparseNSpace::injest(const BlockSparseNSpace& o)
 {
   if(xlo_!=o.xlo_ or xhi_!=o.xhi_ or n_!=o.n_) {
@@ -683,7 +697,7 @@ BlockSparseNSpace* BlockSparseNSpace::project_along_axis(unsigned iaxis,
 BlockSparseNSpace* BlockSparseNSpace::project_along_axis(unsigned iaxis,
   unsigned log2_block_size) const
 {
-  return this->project_along_axis(iaxis, 0, n_[std::max(iaxis,unsigned(n_.size()-1))], log2_block_size);
+  return this->project_along_axis(iaxis, 0, n_[std::min(iaxis,unsigned(n_.size()-1))], log2_block_size);
 }
 
 Eigen::MatrixXd BlockSparseNSpace::select_as_vector(const Eigen::VectorXi& bin_coords) const
@@ -883,3 +897,19 @@ Eigen::MatrixXd BlockSparseNSpace::covar() const {
   Eigen::VectorXd w1(xlo_.size());
   return covar_mean_and_total_weight(w1, w0);
 }
+
+#if 0
+void BlockSparseNSpace::subspace_covar_mean_and_total_weight(const Eigen::VectorXi& subspace_axes,
+  BlockSparseNSpace** w2_space, BlockSparseNSpace** w1_space, BlockSparseNSpace** w0_space)
+{
+  if(subspace_axes.size() == 0) {
+    std::runtime_error("BlockSparseNSpace: subspace should have at least one axis");
+  }
+  for(unsigned i=0; i<subspace_axes.size(); ++i) {
+    if(subspace_axes[i] >= n_.size() {
+      throw std::runtime_error("BlockSparseNSpace: subspace axis out of range");
+    }
+  }
+
+}
+#endif
