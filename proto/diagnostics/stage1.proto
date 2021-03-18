@@ -153,6 +153,38 @@ message Stage1 {
   };
 };
 
+message Stage1POD {
+  uint32 run_number                                        = 1 [
+    (CFO).desc = "Run number." ];
+  int64 run_start_time                                     = 2 [
+    (CFO).desc = "Approximate start date and time of run, possibly from NTP on "
+      "camera server, in nanoseconds after the epoch.", (CFO).units = "ns" ];
+  string run_start_time_string                             = 3 [
+    (CFO).desc = "Approximate start date and time of run, possibly from NTP on "
+      "camera server, in nanoseconds after the epoch.", (CFO).units = "ns" ];
+  uint32 telescope_id                                      = 4 [
+    (CFO).desc = "Telescope ID." ];
+  string filename                                          = 5 [
+    (CFO).desc = "Primary filename of run data." ];
+  int64 run_duration                                       = 6 [
+    (CFO).desc = "Run duration, possibly derived from NTP on "
+      "camera server, in nanoseconds.", (CFO).units = "ns" ];
+  double run_duration_sec                                  = 7 [
+    (CFO).desc = "Run duration, possibly derived from NTP on "
+      "camera server, in nanoseconds.", (CFO).units = "sec" ];
+  uint64 num_events_found                                  = 8 [
+    (CFO).desc = "Number of events found." ];
+
+  uint64 num_physics_triggers                              = 10 [
+    (CFO).desc = "Number of events classified as physics events." ];
+  uint64 num_pedestal_triggers                             = 11 [
+    (CFO).desc = "Number of events with pedestal trigger TIB bit set." ];
+  uint64 num_external_calibration_triggers                 = 12 [
+    (CFO).desc = "Number of events with external calibration trigger TIB bit set." ];
+  uint64 num_internal_calibration_trigger                  = 13 [
+    (CFO).desc = "Number of events with internal calibration trigger TIB bit set." ];
+}
+
 message SelectByRunNumber {
   uint32 run_number                                        = 1 [
     (CFO).desc = "Run number." ];

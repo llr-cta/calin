@@ -263,10 +263,10 @@ visit_cherenkov_photon(const calin::simulation::air_cherenkov_tracker::Cherenkov
         u0_dot_dx = cherenkov_photon.u0.dot(dx);
         dr2 = dx.squaredNorm() - u0_dot_dx*u0_dot_dx;
         if(dr2<SQR(isphere.radius)) {
-          visitor_->process_ray(scope_id, ray, /* pe_weight = */ 1.0);
+          visitor_->process_ray(scope_id, ray, cherenkov_photon.weight);
         }
       } else {
-        visitor_->process_ray(scope_id, ray, /* pe_weight = */ 1.0);
+        visitor_->process_ray(scope_id, ray, cherenkov_photon.weight);
       }
     }
     ++scope_id;

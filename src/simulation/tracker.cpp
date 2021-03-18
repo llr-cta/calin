@@ -29,6 +29,11 @@
 using namespace calin::simulation::tracker;
 using namespace calin::util::log;
 
+ShowerGenerator::~ShowerGenerator()
+{
+  // nothing to see here
+}
+
 std::ostream& calin::simulation::tracker::operator<<(std::ostream& stream,
   const calin::simulation::tracker::Track& t)
 {

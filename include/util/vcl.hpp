@@ -380,6 +380,8 @@ template<typename VCLArchitecture> struct VCLFloatReal
   static inline int_vt round_to_int(real_vt x) {
     return vcl::round_to_int(x);
   }
+
+  static real_vt iota() { return VCLArchitecture::float_iota(); }
 };
 
 template<typename VCLArchitecture> struct VCLDoubleReal
@@ -425,6 +427,8 @@ template<typename VCLArchitecture> struct VCLDoubleReal
   static inline int_vt round_to_int(real_vt x) {
     return vcl::round_to_int64(x);
   }
+
+  static real_vt iota() { return VCLArchitecture::double_iota(); }
 };
 
 struct VCL128Architecture
@@ -482,6 +486,11 @@ struct VCL128Architecture
 
   typedef VCLFloatReal<VCL128Architecture> float_real;
   typedef VCLDoubleReal<VCL128Architecture> double_real;
+
+  static inline float_vt float_iota() {
+    return float_vt(0.0f, 1.0f, 2.0f, 3.0f); }
+  static inline double_vt double_iota() {
+    return double_vt(0.0, 1.0); }
 };
 
 struct VCL256Architecture
@@ -539,6 +548,11 @@ struct VCL256Architecture
 
   typedef VCLFloatReal<VCL256Architecture> float_real;
   typedef VCLDoubleReal<VCL256Architecture> double_real;
+
+  static inline float_vt float_iota() {
+    return float_vt(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f); }
+  static inline double_vt double_iota() {
+    return double_vt(0.0, 1.0, 2.0, 3.0); }
 };
 
 struct VCL512Architecture
@@ -595,6 +609,11 @@ struct VCL512Architecture
 
   typedef VCLFloatReal<VCL512Architecture> float_real;
   typedef VCLDoubleReal<VCL512Architecture> double_real;
+
+  static inline float_vt float_iota() {
+    return float_vt(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f); }
+  static inline double_vt double_iota() {
+    return double_vt(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0); }
 };
 
 typedef VCLFloatReal<VCL128Architecture> VCL128FloatReal;

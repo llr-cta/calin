@@ -31,6 +31,24 @@
 
 namespace calin { namespace simulation { namespace misc_trackers {
 
+class TrackOnlyDelegateTrackVisitor: public calin::simulation::tracker::TrackVisitor
+{
+public:
+  TrackOnlyDelegateTrackVisitor(
+    calin::simulation::tracker::TrackVisitor* delegate, bool adopt_delegate = false);
+  TrackOnlyDelegateTrackVisitor(
+    calin::simulation::tracker::TrackVisitor* delegate, double t0, double weight,
+    bool adopt_delegate = false);
+  virtual ~TrackOnlyDelegateTrackVisitor();
+  void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
+private:
+  calin::simulation::tracker::TrackVisitor* delegate_ = nullptr;
+  bool adopt_delegate_ = false;
+  bool has_time_offset_ = false;
+  double t0_ = 0;
+  double weight_ = 0;
+};
+
 class LengthLimitingTrackVisitor: public calin::simulation::tracker::TrackVisitor
 {
 public:
@@ -69,8 +87,8 @@ class DebugStatsTrackVisitor: public calin::simulation::tracker::TrackVisitor
 public:
   DebugStatsTrackVisitor();
   virtual ~DebugStatsTrackVisitor();
-  virtual void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event);
-  virtual void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track);
+  void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
+  void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
   std::vector<int> particle_pdg_types() const;
   unsigned track_length_zero(int pdg_type) const;
   const calin::math::histogram::SimpleHist& track_length_log_hist(int pdg_type) const;
@@ -90,8 +108,8 @@ class GroundInterceptTrackVisitor: public calin::simulation::tracker::TrackVisit
 public:
   GroundInterceptTrackVisitor(double ground_level_cm);
   virtual ~GroundInterceptTrackVisitor();
-  virtual void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event);
-  virtual void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track);
+  void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
+  void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
   void add_particle_type_filter(calin::simulation::tracker::ParticleType pt);
   std::vector<calin::simulation::tracker::Track> ground_tracks() const { return ground_tracks_; }
   void clear_tracks() { ground_tracks_.clear(); }
@@ -106,17 +124,43 @@ class RecordingTrackVisitor: public calin::simulation::tracker::TrackVisitor
 public:
   RecordingTrackVisitor();
   virtual ~RecordingTrackVisitor();
-  virtual void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event);
-  virtual void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track);
+  void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
+  void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
   void add_particle_type_filter(calin::simulation::tracker::ParticleType pt);
   calin::simulation::tracker::Event event() const { return event_; }
-  std::vector<calin::simulation::tracker::Track> tracks() const { return tracks_; }
+  const std::vector<calin::simulation::tracker::Track>& tracks() const { return tracks_; }
   void replay_event(calin::simulation::tracker::TrackVisitor* visitor) const;
   void clear_tracks() { tracks_.clear(); }
 private:
   calin::simulation::tracker::Event event_;
   std::vector<calin::simulation::tracker::Track> tracks_;
   std::set<calin::simulation::tracker::ParticleType> type_filter_;
+};
+
+class SubshowerTrackVisitor: public calin::simulation::tracker::TrackVisitor
+{
+public:
+  SubshowerTrackVisitor(double subshower_energy_mev = 1000.0);
+  virtual ~SubshowerTrackVisitor();
+  void visit_event(const calin::simulation::tracker::Event& event, bool& kill_event) override;
+  void visit_track(const calin::simulation::tracker::Track& track, bool& kill_track) override;
+  void leave_event() override;
+  void clear();
+  void generate_showers(calin::simulation::tracker::ShowerGenerator* generator,
+    calin::simulation::tracker::TrackVisitor* visitor, unsigned num_event = 1);
+
+  calin::simulation::tracker::Event event() const;
+  const std::vector<calin::simulation::tracker::Track>& trunk_tracks() const {
+    return trunk_track_visitor_.tracks();
+  }
+  const std::vector<calin::simulation::tracker::Event>& subshowers() const {
+    return subshowers_;
+  }
+
+private:
+  RecordingTrackVisitor trunk_track_visitor_;
+  double subshower_energy_mev_;
+  std::vector<calin::simulation::tracker::Event> subshowers_;
 };
 
 class ShowerMovieProducerTrackVisitor:

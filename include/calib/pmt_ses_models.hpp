@@ -26,6 +26,8 @@
 
 #include <math/function.hpp>
 #include <math/pdf_1d.hpp>
+#include <math/fftw_util.hpp>
+#include <calib/pmt_ses_models.pb.h>
 
 namespace calin { namespace calib { namespace pmt_ses_models {
 
@@ -95,6 +97,129 @@ private:
   Eigen::MatrixXd mxx_curv_ = Eigen::MatrixXd::Zero(4,4);
 
   unsigned num_warnings_ = 5;
+};
+
+class LombardMartinPrescottPMTModel {
+public:
+  struct Tableau {
+    Tableau(unsigned npoint_, calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE):
+      npoint(npoint_),
+      pmf(fftw_alloc_real(npoint), fftw_free),
+      dft(fftw_alloc_real(npoint), fftw_free),
+      basis_dft(fftw_alloc_real(npoint), fftw_free),
+      dft_to_pmf_bwd_plan(fftw_plan_r2r_1d(npoint, dft.get(), pmf.get(), FFTW_HC2R,
+          calin::math::fftw_util::proto_planning_enum_to_fftw_flag(fftw_rigor)),
+        fftw_destroy_plan)
+    {
+      calin::math::fftw_util::hcvec_delta_dft(basis_dft.get(), 1.0, npoint);
+    }
+    Eigen::VectorXd pmf_as_vec() const {
+      Eigen::VectorXd outvec(npoint);
+      std::copy(pmf.get(), pmf.get()+npoint, outvec.data());
+      return outvec;
+    }
+    Eigen::VectorXd dft_as_vec() const {
+      Eigen::VectorXd outvec(npoint);
+      std::copy(dft.get(), dft.get()+npoint, outvec.data());
+      return outvec;
+    }
+
+    unsigned npoint;
+    calin::math::fftw_util::uptr_fftw_data pmf;
+    calin::math::fftw_util::uptr_fftw_data dft;
+    calin::math::fftw_util::uptr_fftw_data basis_dft;
+    calin::math::fftw_util::uptr_fftw_plan dft_to_pmf_bwd_plan;
+  };
+
+  LombardMartinPrescottPMTModel(
+    const calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig& config,
+    double precision = 1e-10,
+    calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
+
+  std::vector<double> stage_0_pmf() const { return stage_0_pmf_; }
+  std::vector<double> stage_n_pmf() const { return stage_n_pmf_; }
+
+  std::vector<double> stage_0_pmf_zsa() const { return stage_0_pmf_zsa_; }
+  std::vector<double> stage_n_pmf_downsampled(Tableau& tableau) const;
+
+  double p0() const { return p0_; }
+  double total_gain() const { return total_gain_; }
+  double resolution() const { return resolution_; }
+
+  static std::vector<double> polya_pmf(double mean, double rms_frac, double precision = 1e-10);
+  static std::vector<double> multi_stage_polya_pmf(unsigned nstage, double mean, double rms_frac, unsigned rebinning = 0, double precision = 1e-10);
+#ifndef SWIG
+  static std::vector<double> multi_stage_pmf(Tableau& tableau, unsigned nstage,
+    const std::vector<double>& pmf, unsigned rebinning = 0, double precision = 1e-10,
+    bool suppress_wraparound_warning = false, unsigned* wraparound_warning_count = nullptr);
+  static unsigned rebin_pmf(double* pmf, unsigned npmf, unsigned binning);
+#endif
+  static std::vector<double> multi_stage_pmf(unsigned npoint, unsigned nstage,
+    const std::vector<double>& pmf, unsigned rebinning = 0, double precision = 1e-10,
+    calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor = calin::ix::math::fftw_util::ESTIMATE);
+  static std::vector<double> half_gaussian_pmf(double mean, double precision = 1e-10);
+  static void rebin_pmf(std::vector<double>& pmf, unsigned binning);
+
+  double stage_0_gain() const { return stage_0_gain_; }
+  double stage_n_gain() const { return stage_n_gain_; }
+
+  double stage_0_Exx() const { return stage_0_Exx_; }
+  double stage_n_Exx() const { return stage_n_Exx_; }
+
+  void calc_ses(Tableau& tableau);
+  Eigen::VectorXd calc_ses(unsigned npoint = 0);
+
+#ifndef SWIG
+  void calc_mes(Tableau& tableau, double mean, double rms_frac,
+    const double* ped, bool ped_is_fft=false);
+  void calc_mes(Tableau& tableau, const std::vector<double>& pe_pmf,
+    const double* ped, bool ped_is_fft=false);
+
+  Eigen::VectorXd calc_mes(double mean, double rms_frac, unsigned npoint,
+    const double* ped, bool ped_is_fft=false);
+  Eigen::VectorXd calc_mes(const std::vector<double>& pe_pmf, unsigned npoint,
+    const double* ped, bool ped_is_fft=false);
+#endif
+
+  Eigen::VectorXd calc_mes(double mean, double rms_frac, unsigned npoint = 0);
+  Eigen::VectorXd calc_mes(const std::vector<double>& pe_pmf, unsigned npoint = 0);
+
+  Eigen::VectorXd calc_mes(double mean, double rms_frac, const Eigen::VectorXd& ped,
+    bool ped_is_fft=false);
+  Eigen::VectorXd calc_mes(const std::vector<double>& pe_pmf, const Eigen::VectorXd& ped,
+    bool ped_is_fft=false);
+
+  static calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig nectarcam_config();
+
+  void suppress_wraparound_warning(bool suppress=true) { suppress_wraparound_warning_ = suppress; }
+  unsigned num_wraparound_warning_sent() const { return num_wraparound_warnings_sent_; }
+
+private:
+  void calc_spectrum(Tableau& tableau,
+    const std::vector<double>* pe_spec = nullptr,
+    const double* ped = nullptr, bool ped_is_fft = false);
+  void set_stage_n_gain(double stage_n_gain);
+
+  calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig config_;
+  double precision_;
+  calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor_;
+
+  double p0_ = 0;
+  double total_gain_ = 0;
+  double resolution_ = 0;
+
+  double stage_0_gain_ = 0;
+  double stage_n_gain_ = 0;
+
+  double stage_0_Exx_ = 0;
+  double stage_n_Exx_ = 0;
+
+  std::vector<double> stage_0_pmf_;
+  std::vector<double> stage_0_pmf_zsa_;
+  std::vector<double> stage_n_pmf_;
+
+  bool suppress_wraparound_warning_ = false;
+  mutable unsigned num_wraparound_warnings_sent_ = 0;
 };
 
 // ********************************** OBSOLETE *********************************

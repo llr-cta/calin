@@ -34,18 +34,15 @@
 #include <math/special.hpp>
 #include <math/accumulator.hpp>
 #include <util/log.hpp>
-#include <math/fftw_util.hpp>
 #include <provenance/chronicle.hpp>
 #include <math/fftw_util.hpp>
 
 using namespace calin::simulation::pmt;
 using calin::math::special::SQR;
+using calin::math::special::round_up_power_of_two;
 using calin::math::rng::RNG;
 using namespace calin::util::log;
 using namespace calin::math::fftw_util;
-
-using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
-using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
 
 SignalSource::~SignalSource()
 {
@@ -299,8 +296,9 @@ PMTSimPolya::calc_pmf(double precision, bool log_progress) const
 
 PMTSimTwoPopulation::
 PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig& config,
-    math::rng::RNG* rng, bool use_new_stage_n_algorithm):
-  config_(config), rng_(rng), use_new_stage_n_algorithm_(use_new_stage_n_algorithm)
+    math::rng::RNG* rng, bool use_new_stage_n_algorithm, bool adopt_rng):
+  config_(config), rng_(rng), adopt_rng_(adopt_rng),
+  use_new_stage_n_algorithm_(use_new_stage_n_algorithm)
 {
   if(config.num_stage()==0)
     throw std::runtime_error("PMTSimTwoPopulation: number of stages must be positive.");
@@ -321,8 +319,6 @@ PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig&
   if(config.stage_n_gain_rms_frac()<0)
     throw std::runtime_error("PMTSimTwoPopulation: stage 1+ excess RMS must be zero or positive.");
 
-  if(rng==nullptr)rng_ = my_rng_ = new RNG(__PRETTY_FUNCTION__);
-
   if(config_.stage_0_hi_gain_rms_frac() > 0) {
     gamma_a_0_hi_ = 1.0/SQR(config_.stage_0_hi_gain_rms_frac());
     gamma_b_0_hi_ = gamma_a_0_hi_/config_.stage_0_hi_gain();
@@ -335,7 +331,7 @@ PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig&
   stage_n_gain_ = std::pow(config.total_gain()/stage_0_gain(), 1/double(config_.num_stage()-1));
   recalc_total_gain_and_p0();
   unsigned iter = 10;
-  while(std::abs(total_gain_/config.total_gain() - 1)>1e-8) {
+  while(std::abs(total_gain_/config.total_gain() - 1)>1e-10) {
     if(iter == 0) {
       throw std::runtime_error("PMTSimTwoPopulation: iteration limit reached in calculating stage gain");
     }
@@ -348,26 +344,33 @@ PMTSimTwoPopulation(const calin::ix::simulation::pmt::PMTSimTwoPopulationConfig&
     gamma_a_n_    = 1.0/SQR(config_.stage_n_gain_rms_frac());
     gamma_b_n_    = gamma_a_n_/stage_n_gain_;
 
-    stage_n_x1_cdf_ = stage_pmf({0.0, 1.0}, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
-    stage_n_x2_cdf_ = stage_pmf(stage_n_x1_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
-    stage_n_x3_cdf_ = stage_pmf(stage_n_x2_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+    if(use_new_stage_n_algorithm_) {
+      stage_n_x1_cdf_ = stage_pmf({0.0, 1.0}, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+      stage_n_x2_cdf_ = stage_pmf(stage_n_x1_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
+      stage_n_x3_cdf_ = stage_pmf(stage_n_x2_cdf_, stage_n_gain_, config_.stage_n_gain_rms_frac(), 1e-8);
 
-    renorm_pmf(stage_n_x1_cdf_);
-    renorm_pmf(stage_n_x2_cdf_);
-    renorm_pmf(stage_n_x3_cdf_);
+      renorm_pmf(stage_n_x1_cdf_);
+      renorm_pmf(stage_n_x2_cdf_);
+      renorm_pmf(stage_n_x3_cdf_);
 
-    double psum = 0;
-    for(auto & ibin : stage_n_x1_cdf_) { psum += ibin; ibin = psum; }
-    if(psum<1.0) { stage_n_x1_cdf_.push_back(1.0) ; }
+      double psum = 0;
+      for(auto & ibin : stage_n_x1_cdf_) { psum += ibin; ibin = psum; }
+      if(psum<1.0) { stage_n_x1_cdf_.push_back(1.0) ; }
 
-    psum = 0;
-    for(auto & ibin : stage_n_x2_cdf_) { psum += ibin; ibin = psum; }
-    if(psum<1.0) { stage_n_x2_cdf_.push_back(1.0) ; }
+      psum = 0;
+      for(auto & ibin : stage_n_x2_cdf_) { psum += ibin; ibin = psum; }
+      if(psum<1.0) { stage_n_x2_cdf_.push_back(1.0) ; }
 
-    psum = 0;
-    for(auto & ibin : stage_n_x3_cdf_) { psum += ibin; ibin = psum; }
-    if(psum<1.0) { stage_n_x3_cdf_.push_back(1.0) ; }
+      psum = 0;
+      for(auto & ibin : stage_n_x3_cdf_) { psum += ibin; ibin = psum; }
+      if(psum<1.0) { stage_n_x3_cdf_.push_back(1.0) ; }
+    }
   }
+}
+
+PMTSimTwoPopulation::~PMTSimTwoPopulation()
+{
+  if(adopt_rng_)delete rng_;
 }
 
 double PMTSimTwoPopulation::
@@ -412,11 +415,6 @@ void PMTSimTwoPopulation::recalc_total_gain_and_p0()
 
   if(config_.suppress_zero())
     total_gain_ /= 1.0-p0_;
-}
-
-PMTSimTwoPopulation::~PMTSimTwoPopulation()
-{
-  // nothing to see here
 }
 
 double PMTSimTwoPopulation::rv()
@@ -655,7 +653,8 @@ fft_log_progress(unsigned istage, double* fk, unsigned npoint, int plan_flags) c
     << ", p(0)=" << *pk/npoint << ", <x>=" << pi/p1
     //<< ", EVF(x)=" << pii*p1/(pi*pi)
     << ", res(x)=" << sqrt(pii*p1/(pi*pi) - 1)
-    << ", 1-norm=" << 1.0-(p1 + (config_.suppress_zero()?(*pk):0))/double(npoint);
+    << ", 1-norm=" << 1.0-(p1 + (config_.suppress_zero()?(*pk):0))/double(npoint)
+    << ", nflop=" << nflop_;
   return stream.str();
 }
 
@@ -761,8 +760,25 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
   OUTPUT.set_stage_statistics_summary(stage_summary);
 
   if(skip_inverse_fft) {
-    std::copy(fkmo.get(), fkmo.get()+npoint, OUTPUT.mutable_pn()->begin());
+    // Renomalize the DFT to correct for any error in normalization of PMF
+    // and to suppress the zero electron case if requested (remeber that DFT
+    // of delta-fn is a constant real value)
+
+    double scale = 1.0/fkmo.get()[0];
+    double shift = 0.0;
+
+    if(config_.suppress_zero()) {
+      scale /= 1.0-p0_;
+      shift = -p0_*scale;
+    }
+
+    hcvec_copy_with_scale_and_add_real(OUTPUT.mutable_pn()->begin(),
+      fkmo.get(), scale, shift, npoint);
   } else {
+    // Renomalize the inverse DFT as required, but also correct for any error
+    // in normalization of PMF (given by the zero-frequency component)
+    double norm = 1.0/double(npoint)/fkmo.get()[0];
+
     // Prepare the backward DFT
     uptr_fftw_plan bwd_plan = {
       fftw_plan_r2r_1d(npoint, fkmo.get(), fk.get(),
@@ -773,7 +789,10 @@ PMTSimTwoPopulation::calc_pmf_fft(unsigned npoint, unsigned nstage, double preci
     fftw_flops(bwd_plan.get(), &nadd, &nmul, &nfma);
     nflop_ += uint64_t(nmul) + uint64_t(nfma);
 
-    const double norm = 1/double(npoint);
+    if(config_.suppress_zero()) {
+      norm /= 1.0 - norm*fk.get()[0];
+      fk.get()[0] = 0.0;
+    }
     std::transform(fk.get(), fk.get()+npoint, OUTPUT.mutable_pn()->begin(),
       [norm](double x) { return x*norm; });
     nflop_ += npoint;
@@ -847,22 +866,37 @@ calin::ix::simulation::pmt::PMTSimPMF PMTSimTwoPopulation::calc_multi_electron_s
   double precision, bool log_progress,
   calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor) const
 {
+  if(npoint == 0) {
+    if(ped_hc_dft.size()==0) {
+      npoint = round_up_power_of_two(std::min(1.0, intensity_mean) * total_gain_ * 4.0);
+    } else if(ped_hc_dft.size() != npoint) {
+      throw std::runtime_error("Pedestal PDF must be same size as npoint.");
+    }
+  }
+
+  const double* ped_hc_dft_data = nullptr;
+  if(ped_hc_dft.size() != 0)ped_hc_dft_data = ped_hc_dft.data();
+
+  return calc_multi_electron_spectrum(intensity_mean, intensity_rms_frac,
+    ped_hc_dft_data, npoint, nstage, precision, log_progress, fftw_rigor);
+}
+
+calin::ix::simulation::pmt::PMTSimPMF PMTSimTwoPopulation::calc_multi_electron_spectrum(
+  double intensity_mean, double intensity_rms_frac,
+  const double* ped_hc_dft, unsigned npoint, unsigned nstage,
+  double precision, bool log_progress,
+  calin::ix::math::fftw_util::FFTWPlanningRigor fftw_rigor) const
+{
   int plan_flags = proto_planning_enum_to_fftw_flag(fftw_rigor);
   double nadd;
   double nmul;
   double nfma;
 
   if(npoint == 0) {
-    if(ped_hc_dft.size()==0) {
-      npoint = int(std::min(1.0, intensity_mean) * total_gain_ * 4.0);
-      unsigned log_npoint = 0;
-      while(npoint) {
-        npoint >>= 1;
-        ++log_npoint;
-      }
-      npoint = 1 << log_npoint;
+    if(ped_hc_dft==nullptr) {
+      npoint = round_up_power_of_two(std::min(1.0, intensity_mean) * total_gain_ * 4.0);
     } else {
-      npoint = ped_hc_dft.size();
+      throw std::runtime_error("Pedestal PDF must be NULL if npoint is zero.");
     }
   }
 
@@ -890,17 +924,14 @@ calin::ix::simulation::pmt::PMTSimPMF PMTSimTwoPopulation::calc_multi_electron_s
   nflop_ += ppe.size() * npoint * 2;
 
   // Add the arbitrary pedestal noise if requested
-  if(ped_hc_dft.size() > 0) {
-    if(ped_hc_dft.size() != npoint) {
-      throw std::runtime_error("Pedestal PDF must be same size as npoint.");
-    }
-    hcvec_scale_and_multiply(fmes.get(), fmes.get(), ped_hc_dft.data(), npoint);
+  if(ped_hc_dft != nullptr) {
+    hcvec_scale_and_multiply(fmes.get(), fmes.get(), ped_hc_dft, npoint);
     nflop_ += npoint * 2;
   }
 
   // Prepare the backward DFT
   uptr_fftw_plan bwd_plan = {
-    fftw_plan_r2r_1d(npoint, fmes.get(), fmes.get(), FFTW_HC2R , plan_flags),
+    fftw_plan_r2r_1d(npoint, fmes.get(), fmes.get(), FFTW_HC2R, plan_flags),
     fftw_destroy_plan };
   assert(bwd_plan);
   fftw_execute(bwd_plan.get());
@@ -1211,7 +1242,7 @@ Eigen::VectorXd ExponentialTraceSim::trace()
 
   fftw_execute(trace_plan_fwd_);
 
-    hcvec_scale_and_multiply(trace_, trace_, pmt_pulse_fft_, nsample_, 1.0/double(nsample_));
+  hcvec_scale_and_multiply(trace_, trace_, pmt_pulse_fft_, nsample_, 1.0/double(nsample_));
   fftw_execute(trace_plan_rev_);
 
   Eigen::VectorXd trace(nsample_);

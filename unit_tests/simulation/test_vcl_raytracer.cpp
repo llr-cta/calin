@@ -238,9 +238,13 @@ TEST(TestVCLRaytracer, CompareToScalar) {
   }
 
   std::cout
-    << s_moments.sum_w() << ' '
+    << "S: " << s_moments.sum_w() << ' '
     << s_moments.mean_x() << ' ' << s_moments.mean_y() << ' '
     << s_moments.var_x() << ' ' << s_moments.var_y() << '\n';
+  std::cout
+    << "V: " << v_moments.sum_w() << ' '
+    << v_moments.mean_x() << ' ' << v_moments.mean_y() << ' '
+    << v_moments.var_x() << ' ' << v_moments.var_y() << '\n';
 
   EXPECT_NEAR(v_moments.sum_w(), s_moments.sum_w(), 2.5);
   EXPECT_NEAR(v_moments.mean_x(), s_moments.mean_x(), 4e-3);
@@ -300,9 +304,13 @@ TEST(TestVCLRaytracer, CompareToScalar_Obscured) {
   }
 
   std::cout
-    << s_moments.sum_w() << ' '
+    << "S: " << s_moments.sum_w() << ' '
     << s_moments.mean_x() << ' ' << s_moments.mean_y() << ' '
     << s_moments.var_x() << ' ' << s_moments.var_y() << '\n';
+  std::cout
+    << "V: " << v_moments.sum_w() << ' '
+    << v_moments.mean_x() << ' ' << v_moments.mean_y() << ' '
+    << v_moments.var_x() << ' ' << v_moments.var_y() << '\n';
 
   EXPECT_NEAR(v_moments.sum_w(), s_moments.sum_w(), 2.5);
   EXPECT_NEAR(v_moments.mean_x(), s_moments.mean_x(), 4e-3);

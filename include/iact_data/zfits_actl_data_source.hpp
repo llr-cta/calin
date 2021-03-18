@@ -151,6 +151,7 @@ public:
 private:
   std::string filename_;
   ACTL::IO::ProtobufIFits* zfits_ = nullptr;
+  calin::ix::provenance::chronicle::FileIORecord* file_record_ = nullptr;
   uint64_t next_event_index_ = 0;
   DataModel::CameraRunHeader* run_header_ = nullptr;
   config_type config_;
@@ -360,6 +361,7 @@ public:
 private:
   std::string filename_;
   ACTL::IO::ProtobufIFits* zfits_ = nullptr;
+  calin::ix::provenance::chronicle::FileIORecord* file_record_ = nullptr;
   uint64_t next_event_index_ = 0;
   R1::CameraConfiguration* run_header_ = nullptr;
   config_type config_;

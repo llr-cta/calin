@@ -29,19 +29,19 @@ using namespace calin::simulation::straight_track_generator;
 using calin::math::special::SQR;
 
 StraightTrackGenerator::
-StraightTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
-    double zground, bool adopt_visitor):
-  visitor_(visitor), adopt_visitor_(adopt_visitor), zground_(zground)
+StraightTrackGenerator(double zground):
+  calin::simulation::tracker::ShowerGenerator(), zground_(zground)
 {
   // nothing to see here
 }
 
 StraightTrackGenerator::~StraightTrackGenerator()
 {
-  if(adopt_visitor_)delete visitor_;
+  // nothing to see here
 }
 
-void StraightTrackGenerator::generate_showers(unsigned num_events,
+void StraightTrackGenerator::generate_showers(
+  calin::simulation::tracker::TrackVisitor* visitor, unsigned num_events,
   calin::simulation::tracker::ParticleType type, double total_energy,
   const Eigen::Vector3d& x0, const Eigen::Vector3d& u0, double weight)
 {
@@ -91,10 +91,10 @@ void StraightTrackGenerator::generate_showers(unsigned num_events,
   {
     bool kill_event = false;
     event.event_id = event_id_++;
-    visitor_->visit_event(event, kill_event);
+    visitor->visit_event(event, kill_event);
     if(kill_event)continue;
     bool kill_track = false;
-    visitor_->visit_track(track, kill_track);
-    visitor_->leave_event();
+    visitor->visit_track(track, kill_track);
+    visitor->leave_event();
   }
 }

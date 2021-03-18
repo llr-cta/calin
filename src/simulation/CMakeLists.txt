@@ -22,7 +22,8 @@ set(CALIN_SOURCES atmosphere.cpp atmosphere_refraction.cpp pmt.cpp
 	tracker.cpp misc_trackers.cpp
   straight_track_generator.cpp quadrature_iact_array_integration.cpp
  	bfield_track_generator.cpp vso_quadrature_iact_array_integration.cpp
-	detector_efficiency.cpp world_magnetic_model.cpp vcl_iact.cpp
+	detector_efficiency.cpp world_magnetic_model.cpp vcl_iact.cpp vcl_raytracer.cpp
+	vcl_ray_processor.cpp nspace_ray_processor.cpp
 	GeomagnetismLibrary.c)
 
 if(GEANT4_FOUND)

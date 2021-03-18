@@ -33,6 +33,7 @@
 #include"simulation/tracker.hpp"
 #include"simulation/tracker.pb.h"
 #include"math/rng.hpp"
+#include <math/nspace.hpp>
 
 namespace calin { namespace simulation { namespace air_cherenkov_tracker {
 
@@ -75,6 +76,7 @@ class AirCherenkovTrackVisitor
 {
 public:
   virtual ~AirCherenkovTrackVisitor();
+  virtual void set_atmosphere(calin::simulation::atmosphere::Atmosphere* atm);
   virtual void visit_event(const Event& event, bool& kill_event);
   virtual void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
     bool& kill_track);
@@ -86,14 +88,9 @@ class AirCherenkovParameterCalculatorTrackVisitor:
 {
 public:
   AirCherenkovParameterCalculatorTrackVisitor(AirCherenkovTrackVisitor* visitor,
-      calin::simulation::atmosphere::Atmosphere* atm,
-      const calin::ix::simulation::tracker::AirCherenkovParameterCalculatorTrackVisitorConfig& cfg = default_config(),
-      bool adopt_visitor = false, bool adopt_atm = false):
-    calin::simulation::tracker::TrackVisitor(),
-    visitor_(visitor), adopt_visitor_(adopt_visitor),
-    atm_(atm), adopt_atm_(adopt_atm) { if(cfg.enable_forced_cherenkov_angle_mode()) {
-      enable_forced_cherenkov_angle_mode_ = true;
-      set_forced_cherenkov_angle(cfg.forced_cherenkov_angle()); } }
+    calin::simulation::atmosphere::Atmosphere* atm,
+    const calin::ix::simulation::tracker::AirCherenkovParameterCalculatorTrackVisitorConfig& cfg = default_config(),
+    bool adopt_visitor = false, bool adopt_atm = false);
   virtual ~AirCherenkovParameterCalculatorTrackVisitor();
   void visit_event(const Event& event, bool& kill_event) override;
   void visit_track(const calin::simulation::tracker::Track& track,
@@ -117,6 +114,7 @@ struct CherenkovPhoton
   Eigen::Vector3d u0;       // Direction of photon at emission          [cm]
   double t0;                // Time at emission                         [ns]
   double epsilon;           // Photon energy, 0 if none, or -1 for PE   [eV]
+  double weight;            // Photon weight (between 0 and 1)
 
   // Air Cherenkov track from underlying simulator
   const AirCherenkovTrack* air_cherenkov_track;
@@ -144,12 +142,18 @@ public:
   void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
     bool& kill_track) override;
   void leave_event() override;
+  double epsilon0() const { return epsilon0_; }
+  double bandwidth() const { return bandwidth_; }
+  bool do_color_photons() const { return do_color_photons_; }
+  double weight() const { return weight_; }
 private:
   CherenkovPhotonVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
   double epsilon0_ = 1.5;
   double bandwidth_ = 3.0;
   bool do_color_photons_ = false;
+  double weight_ = 1.0;
+  double weighted_bandwidth_;
   calin::math::rng::RNG* rng_ = nullptr;
   bool adopt_rng_ = false;
   double dX_emission_ = -1;
@@ -171,5 +175,37 @@ private:
   std::vector<double> track_length_;
   std::vector<double> track_yield_;
 };
+
+class CherenkovTrackYieldNSpaceVisitor: public AirCherenkovTrackVisitor
+{
+public:
+  CherenkovTrackYieldNSpaceVisitor(
+    const calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig& config = default_config());
+  virtual ~CherenkovTrackYieldNSpaceVisitor();
+  void set_atmosphere(calin::simulation::atmosphere::Atmosphere* atm) override;
+  void visit_event(const Event& event, bool& kill_event) override;
+  void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
+    bool& kill_track) override;
+
+  void clear();
+
+  const calin::math::nspace::SparseNSpace& nspace() const { return space_; }
+  // Eigen::Matrix3d rotation_matrix() const { return rot_; }
+
+  static calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig default_config();
+private:
+  static std::vector<calin::math::nspace::Axis> space_axes(
+    const calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig& config);
+
+  calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig config_;
+  calin::math::nspace::SparseNSpace space_;
+  Eigen::VectorXd p_;
+  Eigen::Vector3d x0_;
+  Eigen::Matrix3d rot_;
+
+  calin::simulation::atmosphere::Atmosphere* atm_ = nullptr;
+  double uz0_inv_;
+};
+
 
 } } } // namespace calin::simulation::air_cherenkov_tracker

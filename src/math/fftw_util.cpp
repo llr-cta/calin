@@ -28,9 +28,6 @@
 #include <util/file.hpp>
 #include <math/fftw_util.hpp>
 
-using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
-using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
-
 #if INSTRSET >= 7
 void calin::math::fftw_util::hcvec_multiply_and_add_real(double* ovec, const double* ivec1,
   const double* ivec2, double real_addand, unsigned nsample)
@@ -47,6 +44,27 @@ void calin::math::fftw_util::hcvec_polynomial(double* ovec, const double* ivec,
   //hcvec_polynomial<double>(ovec, ivec, p, nsample);
 }
 
+void calin::math::fftw_util::hcvec_multi_stage_polynomial(double* ovec, double* ivec,
+  const std::vector<const std::vector<double>*>& stage_p, unsigned nsample)
+{
+  hcvec_multi_stage_polynomial_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, ivec, stage_p, nsample);
+}
+
+void calin::math::fftw_util::hcvec_gaussian_dft(double* ovec, double mean, double sigma, unsigned nsample)
+{
+  hcvec_gaussian_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, mean, sigma, nsample);
+}
+
+void calin::math::fftw_util::hcvec_2gaussian_dft(double* ovec, double mean, double sigma, double split, unsigned nsample)
+{
+  hcvec_2gaussian_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, mean, sigma, split, nsample);
+  // hcvec_gaussian_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, mean, sigma, nsample);
+}
+
+void calin::math::fftw_util::hcvec_delta_dft(double* ovec, double x0, unsigned nsample)
+{
+  hcvec_delta_dft_vcl<calin::util::vcl::VCLDoubleReal<calin::util::vcl::VCL256Architecture> >(ovec, x0, nsample);
+}
 #endif
 
 Eigen::VectorXd calin::math::fftw_util::fftw_r2hc(const Eigen::VectorXd& x,
@@ -96,6 +114,57 @@ Eigen::VectorXd calin::math::fftw_util::fftw_hc2r(const Eigen::VectorXd& f,
 
   return Eigen::Map<Eigen::VectorXd>(x.get(), f.size());
 }
+
+Eigen::VectorXd calin::math::fftw_util::hcvec_scale_and_add_real(const Eigen::VectorXd& ivec, double scale, double real_addand)
+{
+  Eigen::VectorXd ovec = ivec;
+  hcvec_scale_and_add_real(ovec.data(), scale, real_addand, ovec.size());
+  return ovec;
+}
+
+double calin::math::fftw_util::hcvec_sum_real(const Eigen::VectorXd& ivec)
+{
+  return hcvec_sum_real(ivec.data(), ivec.size());
+}
+
+double calin::math::fftw_util::hcvec_avg_real(const Eigen::VectorXd& ivec)
+{
+  return hcvec_avg_real(ivec.data(), ivec.size());
+}
+
+Eigen::VectorXd calin::math::fftw_util::hcvec_gaussian_dft(double mean, double sigma, unsigned nsample, bool vcl)
+{
+  Eigen::VectorXd ovec(nsample);
+  if(vcl) {
+    hcvec_gaussian_dft(ovec.data(), mean, sigma, nsample);
+  } else {
+    hcvec_gaussian_dft<double>(ovec.data(), mean, sigma, nsample);
+  }
+  return ovec;
+}
+
+Eigen::VectorXd calin::math::fftw_util::hcvec_2gaussian_dft(double mean, double sigma, double split, unsigned nsample, bool vcl)
+{
+  Eigen::VectorXd ovec(nsample);
+  if(vcl) {
+    hcvec_2gaussian_dft(ovec.data(), mean, sigma, split, nsample);
+  } else {
+    hcvec_2gaussian_dft<double>(ovec.data(), mean, sigma, split, nsample);
+  }
+  return ovec;
+}
+
+Eigen::VectorXd calin::math::fftw_util::hcvec_delta_dft(double x0, unsigned nsample, bool vcl)
+{
+  Eigen::VectorXd ovec(nsample);
+  if(vcl) {
+    hcvec_delta_dft(ovec.data(), x0, nsample);
+  } else {
+    hcvec_delta_dft<double>(ovec.data(), x0, nsample);
+  }
+  return ovec;
+}
+
 
 bool calin::math::fftw_util::load_wisdom_from_file(std::string filename)
 {

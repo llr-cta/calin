@@ -159,7 +159,7 @@ ZFITSSingleFileACTL_L0_CameraEventDataSource(const std::string& filename, config
     throw std::runtime_error("ZFits file " + filename_ + " has no table: " +
       config.events_table_name());
 
-  calin::provenance::chronicle::register_file_open(filename_,
+  file_record_ = calin::provenance::chronicle::register_file_open(filename_,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
 
   if(config.verify_file_after_open() or config.repair_broken_file())
@@ -183,6 +183,7 @@ ZFITSSingleFileACTL_L0_CameraEventDataSource(const std::string& filename, config
 ZFITSSingleFileACTL_L0_CameraEventDataSource::~ZFITSSingleFileACTL_L0_CameraEventDataSource()
 {
   delete zfits_;
+  calin::provenance::chronicle::register_file_close(file_record_);
   delete run_header_;
 }
 

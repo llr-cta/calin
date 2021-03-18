@@ -27,6 +27,8 @@ ARG threads=2
 
 ADD / /build/calin/
 
+RUN pip3 install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
 # RUN apt-get update -y
 #
 # RUN apt-get install -y software-properties-common

@@ -35,6 +35,7 @@
 #include "simulation/quadrature_iact_array_integration.hpp"
 #include "simulation/vso_quadrature_iact_array_integration.hpp"
 #include "simulation/vcl_ray_processor.hpp"
+#include "simulation/nspace_ray_processor.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -51,6 +52,7 @@
 %import "simulation/vs_optics.i"
 %import "simulation/tracker.pb.i"
 %import "math/histogram.i"
+%import "math/nspace.i"
 %import "simulation/ray_processor.i"
 //%newobject *::dump_as_proto() const;
 //%newobject *::create_from_proto;

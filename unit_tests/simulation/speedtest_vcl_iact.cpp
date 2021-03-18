@@ -50,7 +50,7 @@ TEST(SpeedTestVCLIACT, Generate100Protons1TeV) {
   auto* act = new calin::simulation::vcl_iact::VCLIACTTrackVisitor<
     calin::util::vcl::VCL256Architecture>(atm, config);
 
-  Geant4ShowerGenerator sim(act, atm,
+  Geant4ShowerGenerator sim(atm,
                             1000, 0, atm->top_of_atmosphere(), nullptr,
                             //VerbosityLevel::SUPRESSED_STDOUT);
                             VerbosityLevel::NORMAL);
@@ -62,7 +62,7 @@ TEST(SpeedTestVCLIACT, Generate100Protons1TeV) {
   uint64_t nray = 0;
 
   for(unsigned i=0; i<100; i++) {
-    sim.generate_showers(1, ParticleType::PROTON, 1000E3,
+    sim.generate_showers(act, 1, ParticleType::PROTON, 1000E3,
                         Eigen::Vector3d(0, 0, atm->top_of_atmosphere()),
                         Eigen::Vector3d(0, 0, -1.0));
     ntrack += act->num_tracks();

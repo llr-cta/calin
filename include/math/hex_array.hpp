@@ -53,7 +53,20 @@ void nh_to_xy(int *, double *, double *);
 //
 // *****************************************************************************
 
-inline unsigned positive_hexid_to_ringid_root(unsigned hexid)
+inline unsigned positive_hexid_to_ringid_double_root(unsigned hexid)
+{
+  // Adapted from VCL version
+  const double four_over_three = 4.0/3.0;
+  const double one_over_three = 1.0/3.0;
+  double arg = hexid;
+  arg = arg * four_over_three + one_over_three;
+  arg = std::sqrt(arg);
+  const double one_half = 0.5;
+  arg = arg * one_half + one_half;
+  return arg;
+}
+
+inline unsigned positive_hexid_to_ringid_float_root(unsigned hexid)
 {
   // See: http://www.codecodex.com/wiki/Calculate_an_integer_square_root
   const unsigned iarg = 1+4*(hexid-1)/3;
@@ -63,6 +76,15 @@ inline unsigned positive_hexid_to_ringid_root(unsigned hexid)
   // sqrt(float) is quicker here but loses precision by iarg ~= 2^24 -
   // you have been warned :-)
   return (unsigned(std::sqrt(float(iarg)))+1)/2;
+}
+
+inline unsigned positive_hexid_to_ringid_root(unsigned hexid)
+{
+  if(hexid < 12589056) {
+    return positive_hexid_to_ringid_float_root(hexid);
+  } else {
+    return positive_hexid_to_ringid_double_root(hexid);
+  }
 }
 
 inline unsigned positive_hexid_to_ringid_loop(unsigned hexid)

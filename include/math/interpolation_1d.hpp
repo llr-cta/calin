@@ -306,7 +306,7 @@ public:
     do
     {
       double x;
-      double y;
+      T y;
       std::istringstream lstream(line);
       lstream >> x >> y;
       if(lstream) {
@@ -320,13 +320,13 @@ public:
     file_record->set_comment(comment);
     calin::provenance::chronicle::register_file_close(file_record);
   }
+#endif
 
   void insert_from_2column_file(const std::string& filename)
   {
-    insert_from_2column_file(filename,
+    insert_from_2column_file_with_filter(filename,
       [](double& x, T&y) { /* null transform & filter */ return true; });
   }
-#endif
 
 private:
   Interpolator m_interp;

@@ -34,24 +34,27 @@
 #include <math/geometry_vcl.hpp>
 #include <simulation/vso_telescope.hpp>
 #include <simulation/vso_obscuration.hpp>
+#include <util/log.hpp>
 
 namespace calin { namespace simulation { namespace vcl_raytracer {
 
+#ifndef SWIG
+
 enum VCLScopeTraceStatus {
-  STS_MASKED_ON_ENTRY,
-  STS_TRAVELLING_AWAY_REFLECTOR,
-  STS_MISSED_REFLECTOR_SPHERE,
-  STS_OUTSIDE_REFLECTOR_APERTURE,
-  STS_NO_MIRROR,
-  STS_MISSED_MIRROR_SPHERE,
-  STS_MISSED_MIRROR_EDGE,
-  STS_OBSCURED_BEFORE_MIRROR,
-      TS_MISSED_WINDOW,
-  STS_OBSCURED_BEFORE_FOCAL_PLANE,
-  STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,
-  STS_OUTSIDE_FOCAL_PLANE_APERTURE,
-  STS_TS_NO_PIXEL,
-  STS_TS_FOUND_PIXEL
+  STS_MASKED_ON_ENTRY,                        // 0
+  STS_TRAVELLING_AWAY_REFLECTOR,              // 1
+  STS_MISSED_REFLECTOR_SPHERE,                // 2
+  STS_OUTSIDE_REFLECTOR_APERTURE,             // 3
+  STS_NO_MIRROR,                              // 4
+  STS_MISSED_MIRROR_SPHERE,                   // 5
+  STS_MISSED_MIRROR_EDGE,                     // 6
+  STS_OBSCURED_BEFORE_MIRROR,                 // 7
+      TS_MISSED_WINDOW,                       // 8
+  STS_OBSCURED_BEFORE_FOCAL_PLANE,            // 9
+  STS_TRAVELLING_AWAY_FROM_FOCAL_PLANE,       // 10
+  STS_OUTSIDE_FOCAL_PLANE_APERTURE,           // 11
+  STS_TS_NO_PIXEL,                            // 12
+  STS_TS_FOUND_PIXEL                          // 13
 };
 
 template<typename VCLRealType> class VCLScopeTraceInfo: public VCLRealType
@@ -65,27 +68,30 @@ public:
   using typename VCLRealType::vec3_vt;
   using typename VCLRealType::mat3_vt;
 
-  int_vt              status;
+  int_vt              status;    // Status of ray at end of tracing
 
-  real_vt             reflec_x;
-  real_vt             reflec_z;
+  real_vt             reflec_x;  // Ray intersection point on reflector sphere
+  real_vt             reflec_y;  // Ray intersection point on reflector sphere
+  real_vt             reflec_z;  // Ray intersection point on reflector sphere
 
-  int_vt              mirror_hexid;
-  int_vt              mirror_id;
-  vec3_vt             mirror_pos;
-  vec3_vt             mirror_dir;
-  real_vt             mirror_r;
-  vec3_vt             mirror_normal;
-  real_vt             mirror_normal_dispersion;
-  vec3_vt             mirror_scattered;
+  uint_vt             pre_reflection_obs_hitmask;   // Bitmask for pre-reflection obscurations hit by ray
+  uint_vt             post_reflection_obs_hitmask;  // Bitmask for post-reflection obscurations hit by ray
+  uint_vt             camera_obs_hitmask;  // Bitmask for camera frame obscurations hit by ray
 
-  real_vt             fplane_x;
-  real_vt             fplane_z;
-  real_vt             fplane_t;
-  real_vt             fplane_uy;
+  int_vt              mirror_hexid;  // Grid hex ID of mirror facet hit by ray
+  int_vt              mirror_id;     // Sequential ID of mirror facet hit by ray
+  real_vt             mirror_x;      // Ray intersection point with mirror facet
+  real_vt             mirror_y;      // Ray intersection point with mirror facet
+  real_vt             mirror_z;      // Ray intersection point with mirror facet
+  real_vt             mirror_n_dot_u; // Cosine if angle between ray and mirror normal
 
-  int_vt              pixel_hexid;
-  int_vt              pixel_id;
+  real_vt             fplane_x;  // Ray intersection point on focal plane
+  real_vt             fplane_z;  // Ray intersection point on focal plane
+  real_vt             fplane_t;  // Ray intersection time on focal plane
+  real_vt             fplane_uy; // Cosine of angle between ray and focal plane (normal)
+
+  int_vt              pixel_hexid; // Grid hex ID of pixel on focal plane
+  int_vt              pixel_id;    // Sequential ID of pixel on focal plane (or -1)
 };
 
 template<typename VCLRealType> class VCLObscuration: public VCLRealType
@@ -110,6 +116,7 @@ public:
 template<typename VCLRealType> class VCLAlignedBoxObscuration;
 template<typename VCLRealType> class VCLAlignedRectangularAperture;
 template<typename VCLRealType> class VCLAlignedCircularAperture;
+template<typename VCLRealType> class VCLTubeObscuration;
 
 template<typename VCLRealType> class VCLScopeRayTracer: public VCLRealType
 {
@@ -118,10 +125,13 @@ public:
   using typename VCLRealType::int_t;
   using typename VCLRealType::uint_t;
   using typename VCLRealType::bool_int_vt;
+  using typename VCLRealType::bool_uint_vt;
   using typename VCLRealType::mat3_t;
   using typename VCLRealType::vec3_t;
   using typename VCLRealType::real_vt;
   using typename VCLRealType::bool_vt;
+  using typename VCLRealType::int_vt;
+  using typename VCLRealType::uint_vt;
   using typename VCLRealType::vec3_vt;
   using typename VCLRealType::mat3_vt;
   using Ray = calin::math::ray::VCLRay<VCLRealType>;
@@ -138,6 +148,7 @@ public:
     using calin::simulation::vs_optics::VSOAlignedBoxObscuration;
     using calin::simulation::vs_optics::VSOAlignedRectangularAperture;
     using calin::simulation::vs_optics::VSOAlignedCircularAperture;
+    using calin::simulation::vs_optics::VSOTubeObscuration;
 
     scope_pos_               = scope->pos().cast<real_t>();
     global_to_reflector_rot_ = scope->rotationGlobalToReflector().cast<real_t>();
@@ -320,12 +331,16 @@ public:
     // Test for obscuration of incoming ray
     bool_vt was_obscured = false;
     real_vt ct_obscured = std::numeric_limits<real_t>::infinity();
+    uint_vt hitmask = 1;
+    info.pre_reflection_obs_hitmask = uint_vt(0);
     for(const auto* obs : pre_reflection_obscuration) {
       Ray ray_out;
       bool_vt was_obscured_here = obs->doesObscure(ray, ray_out, ref_index_);
       ct_obscured = vcl::select(was_obscured_here,
         vcl::min(ct_obscured, ray_out.ct()), ct_obscured);
       was_obscured |= was_obscured_here;
+      info.pre_reflection_obs_hitmask |= vcl::select(bool_uint_vt(was_obscured_here), hitmask, 0);
+      hitmask <<= 1;
     }
 
     // Remember initial ct to test reflection happens after emission
@@ -340,6 +355,7 @@ public:
 #endif
 
     info.reflec_x     = select(mask, ray.position().x(), 0);
+    info.reflec_y     = select(mask, ray.position().y(), 0);
     info.reflec_z     = select(mask, ray.position().z(), 0);
 
     // Test aperture
@@ -383,23 +399,25 @@ public:
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
 
-    info.mirror_dir.x() = vcl::lookup<0x40000000>(info.mirror_id, mirror_nx_lookup_);
-    info.mirror_dir.z() = vcl::lookup<0x40000000>(info.mirror_id, mirror_nz_lookup_);
+    vec3_vt mirror_dir;
+    mirror_dir.x() = vcl::lookup<0x40000000>(info.mirror_id, mirror_nx_lookup_);
+    mirror_dir.z() = vcl::lookup<0x40000000>(info.mirror_id, mirror_nz_lookup_);
 #if 1
     // Is it faster to use lookup table than to compute ?
-    info.mirror_dir.y() = vcl::lookup<0x40000000>(info.mirror_id, mirror_ny_lookup_);
+    mirror_dir.y() = vcl::lookup<0x40000000>(info.mirror_id, mirror_ny_lookup_);
 #else
-    info.mirror_dir.y() = sqrt(nmul_add(info.mirror_dir.z(),info.mirror_dir.z(),
-      nmul_add(info.mirror_dir.x(),info.mirror_dir.x(),1.0)));
+    mirror_dir.y() = sqrt(nmul_add(mirror_dir.z(), mirror_dir.z(),
+      nmul_add( mirror_dir.x(), mirror_dir.x(),1.0)));
 #endif
 
-    info.mirror_r = vcl::lookup<0x40000000>(info.mirror_id, mirror_r_lookup_);
+    real_vt mirror_r = vcl::lookup<0x40000000>(info.mirror_id, mirror_r_lookup_);
 
-    info.mirror_pos.x() = vcl::lookup<0x40000000>(info.mirror_id, mirror_x_lookup_);
-    info.mirror_pos.z() = vcl::lookup<0x40000000>(info.mirror_id, mirror_z_lookup_);
-    info.mirror_pos.y() = vcl::lookup<0x40000000>(info.mirror_id, mirror_y_lookup_);
+    vec3_vt mirror_pos;
+    mirror_pos.x() = vcl::lookup<0x40000000>(info.mirror_id, mirror_x_lookup_);
+    mirror_pos.y() = vcl::lookup<0x40000000>(info.mirror_id, mirror_y_lookup_);
+    mirror_pos.z() = vcl::lookup<0x40000000>(info.mirror_id, mirror_z_lookup_);
 
-    vec3_vt mirror_center = info.mirror_pos + info.mirror_dir * info.mirror_r;
+    vec3_vt mirror_center = mirror_pos + mirror_dir * mirror_r;
 
     ray.translate_origin(mirror_center);
 
@@ -410,19 +428,17 @@ public:
     // Propagate to intersection with the mirror sphere
     info.status = select(bool_int_vt(mask), STS_MISSED_MIRROR_SPHERE, info.status);
     mask = ray.propagate_to_y_sphere_2nd_interaction_fwd_bwd_with_mask(mask,
-      info.mirror_r, -info.mirror_r, ref_index_);
+      mirror_r, -mirror_r, ref_index_);
     mask &= ray.ct() >= ct0;
 #ifdef DEBUG_STATUS
     std::cout << ' ' << mask[0] << '/' << info.status[0];
 #endif
 
-
     // Impact point relative to facet attchment point
-    vec3_vt ray_pos = ray.position() + mirror_center - info.mirror_pos;
+    vec3_vt ray_pos = ray.position() + mirror_center - mirror_pos;
     calin::math::geometry::VCL<VCLRealType>::
       derotate_in_place_Ry(ray_pos, reflec_crot_, reflec_srot_);
 
-    vec3_vt mirror_dir = info.mirror_dir;
     calin::math::geometry::VCL<VCLRealType>::
       derotate_in_place_Ry(mirror_dir, reflec_crot_, reflec_srot_);
 
@@ -446,23 +462,33 @@ public:
 #endif
 
     // Calculate mirror normal at impact point
-    info.mirror_normal = -ray.position() * (1.0/info.mirror_r);
+    vec3_vt mirror_normal = -ray.position() * (1.0/mirror_r);
 
     // Scatter the normal to account for the spot size ot the focal length of the
     // radius. The spot size is given as the DIAMETER at the focal distance.
     // Must divide by 2 (for reflection) and another 2 for diameter -> radius
-    info.mirror_normal_dispersion =
+    real_vt mirror_normal_dispersion =
       vcl::lookup<0x40000000>(info.mirror_id, mirror_normdisp_lookup_);
 
-    info.mirror_scattered = info.mirror_normal;
+    // Scatter the normal direction randomly
     calin::math::geometry::VCL<VCLRealType>::scatter_direction_in_place(
-      info.mirror_scattered, info.mirror_normal_dispersion, *rng_);
+      mirror_normal, mirror_normal_dispersion, *rng_);
 
     // Reflect ray
-    ray.reflect_from_surface_with_mask(mask, info.mirror_scattered);
+#if 1
+    info.mirror_n_dot_u = ray.direction().dot(mirror_normal);
+    ray.mutable_direction() -= mirror_normal * select(mask, 2.0*info.mirror_n_dot_u, 0);
+#else
+    // Do not use this function any longer as we wish to keep u dot n
+    ray.reflect_from_surface_with_mask(mask, info.mirror_normal_scattered);
+#endif
 
     // Translate back to reflector frame
     ray.untranslate_origin(mirror_center);
+
+    info.mirror_x     = select(mask, ray.position().x(), 0);
+    info.mirror_y     = select(mask, ray.position().y(), 0);
+    info.mirror_z     = select(mask, ray.position().z(), 0);
 
     // *************************************************************************
     // *************** RAY IS NOW BACK IN REFLECTOR COORDINATES ****************
@@ -481,12 +507,16 @@ public:
     // that are given in reflector coordinates (telescope arms etc)
     was_obscured = false;
     ct_obscured = std::numeric_limits<real_t>::infinity();
+    hitmask = uint_vt(1);
+    info.post_reflection_obs_hitmask = uint_vt(0);
     for(const auto* obs : post_reflection_obscuration) {
       Ray ray_out;
       bool_vt was_obscured_here = obs->doesObscure(ray, ray_out, ref_index_);
       ct_obscured = vcl::select(was_obscured_here,
         vcl::min(ct_obscured, ray_out.ct()), ct_obscured);
       was_obscured |= was_obscured_here;
+      info.post_reflection_obs_hitmask |= vcl::select(bool_uint_vt(was_obscured_here), hitmask, 0);
+      hitmask <<= 1;
     }
 
     // Refract in window
@@ -500,12 +530,16 @@ public:
 
     // Test for obscuration on way to focal plane - second with obscurations
     // that are given in focal plane coordinates
+    hitmask = uint_vt(1);
+    info.camera_obs_hitmask = uint_vt(0);
     for(const auto* obs : camera_obscuration) {
       Ray ray_out;
       bool_vt was_obscured_here = obs->doesObscure(ray, ray_out, ref_index_);
       ct_obscured = vcl::select(was_obscured_here,
         vcl::min(ct_obscured, ray_out.ct()), ct_obscured);
       was_obscured |= was_obscured_here;
+      info.camera_obs_hitmask |= vcl::select(bool_uint_vt(was_obscured_here), hitmask, 0);
+      hitmask <<= 1;
     }
 
     // Propagate to focal plane
@@ -586,6 +620,8 @@ private:
         to.push_back(new VCLAlignedRectangularAperture<VCLRealType>(*dc_obs));
       } else if(const auto* dc_obs = dynamic_cast<const VSOAlignedCircularAperture*>(obs)) {
         to.push_back(new VCLAlignedCircularAperture<VCLRealType>(*dc_obs));
+      } else if(const auto* dc_obs = dynamic_cast<const VSOTubeObscuration*>(obs)) {
+        to.push_back(new VCLTubeObscuration<VCLRealType>(*dc_obs));
       } else {
         throw std::runtime_error("Unsupported " + type + " obscuration type");
       }
@@ -783,6 +819,121 @@ private:
   real_t flat_to_flat_z_2_;
 };
 
+template<typename VCLRealType> class VCLTubeObscuration:
+  public VCLObscuration<VCLRealType>
+{
+public:
+  using typename VCLObscuration<VCLRealType>::real_vt;
+  using typename VCLObscuration<VCLRealType>::bool_vt;
+  using typename VCLObscuration<VCLRealType>::vec3_vt;
+  using typename VCLObscuration<VCLRealType>::Ray;
+  using typename VCLObscuration<VCLRealType>::vec3_t;
+  using typename VCLObscuration<VCLRealType>::mat3_t;
+  using typename VCLObscuration<VCLRealType>::real_t;
+
+  VCLTubeObscuration(const vec3_t& x1, const vec3_t& x2, const real_t& radius):
+    VCLObscuration<VCLRealType>(), x1_(x1), x2_(x2), r_(radius),
+    xc_(0.5*(x1_+x2_)), r2_(r_*r_)
+  {
+    nhat_ = x2_-x1_;
+    half_length_ = 0.5*nhat_.norm();
+    nhat_.normalize();
+  }
+
+  VCLTubeObscuration(const calin::simulation::vs_optics::VSOTubeObscuration& o):
+    VCLTubeObscuration(o.end1_pos().template cast<real_t>(),
+      o.end2_pos().template cast<real_t>(), o.radius())
+  {
+    // nothing to see here
+  }
+
+  virtual ~VCLTubeObscuration()
+  {
+    // nothing to see here
+  }
+
+  bool_vt doesObscure(const Ray& ray_in, Ray& ray_out, real_vt n) const override
+  {
+    constexpr real_t inf = std::numeric_limits<real_t>::infinity();
+
+    const vec3_vt u = nhat_.template cast<real_vt>();
+    const vec3_vt v = ray_in.direction();
+
+    const vec3_vt D0 = ray_in.position() - xc_.template cast<real_vt>();
+    const real_vt u_dot_v = u.dot(v);
+    const real_vt u_dot_D0 = u.dot(D0);
+    const real_vt v_dot_D0 = v.dot(D0);
+
+    // Calculate quadratic equation coefficients and discriminant
+    const real_vt a = vcl::nmul_add(u_dot_v, u_dot_v, 1.0); // 1-(u.v)^2
+    const real_vt b = 2.0*nmul_add(u_dot_D0, u_dot_v, v_dot_D0); // D0.v - (D0.u)*(u.v)
+    const real_vt c = nmul_add(u_dot_D0, u_dot_D0, D0.squaredNorm()) - r2_; // D0^2 - (D0.u)^2 - r^2
+
+    const real_vt disc = nmul_add(4.0*a, c, b*b); // b^2 - 4*a*c
+
+    // Find rays that come close enough to possibly obscure - rest can be ignored
+    // Must handle case of rays parallel to cylinder (a=b=0)
+    const bool_vt intersects_cylinder = (vcl::select(a>0, disc, -c) >= 0);
+
+    if(not horizontal_or(intersects_cylinder)) {
+      // Fast exit for case where closest approach for all rays with cylinder is greater than r^2
+      return false;
+    }
+
+    const real_vt q = -0.5*(b + sign_combine(vcl::sqrt(vcl::max(disc, 0)), b));
+
+    // Calculate time ray passes through cylinder - if parallel to them then
+    // set times to tp1/2=-/+inf if ray between planes, tp1=tp2=+inf if outside planes
+    const real_vt tc1 = vcl::select(a>0, c/q, -inf);
+    const real_vt tc2 = vcl::select(a>0, q/a, inf);
+
+    // Calculate time ray passes through end planes - if parallel to them then
+    // set times to tp1/2=-/+inf if ray between planes, tp1=tp2=+inf if outside planes
+    const real_vt u_dot_v_inv = real_vt(1.0)/u_dot_v;
+    const real_vt tp1 = vcl::select(u_dot_v==0, vcl::sign_combine(inf, vcl::abs(u_dot_D0)-half_length_), (-u_dot_D0 - half_length_)*u_dot_v_inv);
+    const real_vt tp2 = vcl::select(u_dot_v==0, inf, (-u_dot_D0 + half_length_)*u_dot_v_inv);
+
+    const real_vt t_in = vcl::max(vcl::min(tc1, tc2), vcl::min(tp1, tp2));
+    const real_vt t_out = vcl::min(vcl::max(tc1, tc2), vcl::max(tp1, tp2));
+
+    const real_vt t_prop = vcl::max(t_in, 0);
+    const bool_vt does_obscure = t_out > t_prop;
+
+    // using calin::util::log::LOG;
+    // using calin::util::log::INFO;
+    // if(does_obscure[0]) {
+    //   LOG(INFO) << ray_in.x()[0] << ' ' << ray_in.y()[0] << ' '
+    //     << tc1[0] << ' ' << tc2[0] << ' ' << tp1[0] << ' ' << tp2[0];
+    // }
+
+    ray_out = ray_in;
+    ray_out.propagate_dist_with_mask(does_obscure, t_prop, n);
+
+    return does_obscure;
+  }
+
+  virtual VCLTubeObscuration<VCLRealType>* clone() const override
+  {
+    return new VCLTubeObscuration<VCLRealType>(*this);
+  }
+
+private:
+  vec3_t x1_;
+  vec3_t x2_;
+  real_t r_;
+
+  vec3_t xc_;
+  vec3_t nhat_;
+
+  real_t r2_;
+  real_t half_length_;
+};
+
 // std::ostream& operator <<(std::ostream& stream, const VSORayTracer::TraceInfo& o);
+
+#endif
+
+bool test_tube_obscuration(const Eigen::Vector3d& x1, const Eigen::Vector3d& x2, double radius,
+  const Eigen::Vector3d& r, const Eigen::Vector3d& u);
 
 } } } // namespace calin::simulations::vcl_raytracer

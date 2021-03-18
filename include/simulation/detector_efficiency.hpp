@@ -116,7 +116,13 @@ struct CherenkovBandwidthTaylorCoefficients
 
 inline std::ostream& operator<<(std::ostream& stream, const CherenkovBandwidthTaylorCoefficients& c)
 {
-  stream << "[ " << c.n << ' ' << c.dn_dw << ' ' << c.d2n_dw2 << " ]";
+  stream << c.n << ' ' << c.dn_dw << ' ' << c.d2n_dw2;
+  return stream;
+}
+
+inline std::istream& operator>>(std::istream& stream, CherenkovBandwidthTaylorCoefficients& c)
+{
+  stream >> c.n >> c.dn_dw >> c.d2n_dw2;
   return stream;
 }
 
@@ -229,6 +235,8 @@ public:
   calin::math::interpolation_1d::InterpLinear1D opticalDepthForAltitude(double h) const;
   ACTEffectiveBandwidth integrateBandwidth(double h0, double w0,
     const DetectionEfficiency& eff) const;
+  ACTEffectiveBandwidth integrateBandwidth(double h0, double w0,
+    const DetectionEfficiency& eff, double emin, double emax) const;
   const std::vector<double>& energy_ev() const { return e_ev_; }
   std::vector<double> levels_cm() const;
 private:

@@ -362,3 +362,23 @@ calin::math::least_squares::polyfit(const Eigen::VectorXd& x, const Eigen::Vecto
   }
   return X.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(y);
 }
+
+double calin::math::least_squares::polyval(const Eigen::VectorXd& p, double x)
+{
+  unsigned i = p.size();
+  double y = p(--i);
+  while(i) {
+    y = y*x + p(--i);
+  }
+  return y;
+}
+
+double calin::math::least_squares::polyval(const std::vector<double>& p, double x)
+{
+  unsigned i = p.size();
+  double y = p[--i];
+  while(i) {
+    y = y*x + p[--i];
+  }
+  return y;
+}

@@ -98,6 +98,18 @@ public:
   virtual void leave_event();
 };
 
+class ShowerGenerator
+{
+public:
+  virtual ~ShowerGenerator();
+  virtual void generate_showers(TrackVisitor* visitor, unsigned num_events,
+                        calin::simulation::tracker::ParticleType type,
+                        double total_energy,
+                        const Eigen::Vector3d& x0 = Eigen::Vector3d(0,0,0),
+                        const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
+                        double weight=1.0) = 0;
+};
+
 class MultiDelegatingTrackVisitor: public TrackVisitor
 {
 public:

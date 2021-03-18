@@ -1,0 +1,76 @@
+/*
+
+   calin/proto/simulations/ray_processor.proto -- Stephen Fegan -- 2021-01-15
+
+   Protobufs for ray processor configuration
+
+   Copyright 2021, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+//import "common_types.proto";
+
+package calin.ix.simulation.ray_processor;
+
+enum AxisVariables {
+  XY                 = 0;
+  UXUY               = 1;
+  T                  = 2;
+  XY_UXUY            = 3;
+  XY_T               = 4;
+  XY_UXUY_T          = 5;
+};
+
+message NSpaceRayProcessorConfig
+{
+  AxisVariables axis_variables                             = 1
+    [(CFO).desc = "Axis variable configuration." ];
+
+  double xy_diameter                                       = 2
+    [(CFO).desc = "Diameter of X-Y coordinate space.", (CFO).units="cm" ];
+
+  uint32 xy_num_bins                                       = 3
+    [(CFO).desc = "Number of bins on each axis of X-Y coordinate space." ];
+
+  double uxuy_diameter                                     = 4
+    [(CFO).desc = "Diameter of UX-UY coordinate space (FoV).", (CFO).units="deg" ];
+
+  uint32 uxuy_num_bins                                     = 5
+    [(CFO).desc = "Number of bins on each axis of UX-UY coordinate space." ];
+
+  double t_duration                                        = 6
+    [(CFO).desc = "Duration of time coordinate.", (CFO).units="ns" ];
+
+  uint32 t_num_bins                                        = 7
+    [(CFO).desc = "Number of bins along the time coordinate axis." ];
+
+  double observation_altitude                              = 8
+    [(CFO).desc = "Altitude for the array.", (CFO).units="cm" ];
+
+  double x_origin                                          = 9
+    [(CFO).desc = "X origin (center) of array.", (CFO).units="cm" ];
+
+  double y_origin                                          = 10
+    [(CFO).desc = "Y origin (center) of array.", (CFO).units="cm" ];
+
+  uint32 observation_level                                 = 11
+    [(CFO).desc = "Observation level for this array." ];
+
+  bool clear_at_new_event                                  = 12
+    [(CFO).desc = "Clear the NSpace before each new event." ];
+};

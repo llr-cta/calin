@@ -35,23 +35,21 @@
 
 namespace calin { namespace simulation { namespace straight_track_generator {
 
-class StraightTrackGenerator
+class StraightTrackGenerator: public calin::simulation::tracker::ShowerGenerator
 {
  public:
-  StraightTrackGenerator(calin::simulation::tracker::TrackVisitor* visitor,
-                        double zground, bool adopt_visitor = false);
+  StraightTrackGenerator(double zground);
   virtual ~StraightTrackGenerator();
 
-  void generate_showers(unsigned num_events,
+  void generate_showers(calin::simulation::tracker::TrackVisitor* visitor,
+                        unsigned num_events,
                         calin::simulation::tracker::ParticleType type,
                         double total_energy,
                         const Eigen::Vector3d& x0 = Eigen::Vector3d(0,0,0),
                         const Eigen::Vector3d& u0 = Eigen::Vector3d(0,0,-1),
-                        double weight=1.0);
+                        double weight=1.0) override;
 
  protected:
-  calin::simulation::tracker::TrackVisitor* visitor_ = nullptr;
-  bool adopt_visitor_ = false;
   double zground_ = 0;
   int event_id_ = 0;
 };

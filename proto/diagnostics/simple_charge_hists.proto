@@ -55,13 +55,29 @@ message SingleGainSimpleChargeHistsConfig {
 
   calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig sig_win_qsum = 17 [
     (CFO).desc = "Configuration for fixed signal-window charge sum." ];
+
+  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig sig_ped_qsum_diff = 18 [
+    (CFO).desc = "Configuration for difference between fixed signal and pedestal-window charge sum." ];
+
+  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig nchan_present = 20 [
+    (CFO).desc = "Configuration for number of channels present in image." ];
+};
+
+message DualGainSimpleChargeHistsConfig {
+  bool enable_hists                                                 = 1 [
+    (CFO).desc = "Enable histogramming for this gain channel." ];
+
+  calin.ix.math.histogram.AccumulatedAndSerializedHistogram1DConfig nchan_present = 20 [
+    (CFO).desc = "Configuration for number of channels present in image." ];
 };
 
 message SimpleChargeHistsConfig {
   SingleGainSimpleChargeHistsConfig high_gain                       = 10 [
     (CFO).desc = "Configuration for high or single-gain histograms." ];
   SingleGainSimpleChargeHistsConfig low_gain                        = 20 [
-    (CFO).desc = "Configuration for low-gain histograms." ];
+  (CFO).desc = "Configuration for low-gain histograms." ];
+  DualGainSimpleChargeHistsConfig dual_gain                         = 30 [
+    (CFO).desc = "Configuration for dual-gain histograms." ];
 };
 
 message OneGainSimpleChargeHists {
@@ -96,11 +112,33 @@ message OneGainSimpleChargeHists {
   calin.ix.math.histogram.Histogram1DData sig_win_qsum              = 17 [
     (CFO).desc = "Histogram of sum of samples over fixed signal window.",
     (CFO).units = "DC (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData sig_ped_qsum_diff         = 18 [
+    (CFO).desc = "Histogram of difference between sum of samples over fixed signal and pedestal window.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+}
+
+message OneGainSimpleChargeCameraHists {
+  calin.ix.math.histogram.Histogram1DData nchan_present             = 10 [
+    (CFO).desc = "Histogram of sum of channels present in image.",
+    (CFO).units = "channels (bin-units), events (value-units)" ];
+}
+
+message DualGainSimpleChargeCameraHists {
+  calin.ix.math.histogram.Histogram1DData nchan_present             = 10 [
+    (CFO).desc = "Histogram of sum of channels present in image.",
+    (CFO).units = "channels (bin-units), events (value-units)" ];
 }
 
 message SimpleChargeHists {
   repeated OneGainSimpleChargeHists high_gain_channel               = 1 [
-    (CFO).desc = "High gain (or single gain) histograms." ];
+    (CFO).desc = "High gain (or single gain) histograms for each channel." ];
   repeated OneGainSimpleChargeHists low_gain_channel                = 2 [
-    (CFO).desc = "Low gain (or single gain) histograms." ];
+    (CFO).desc = "Low gain (or single gain) histograms for each channel." ];
+  OneGainSimpleChargeCameraHists high_gain_camera                   = 10 [
+    (CFO).desc = "High gain (or single gain) histograms for camera." ];
+  OneGainSimpleChargeCameraHists low_gain_camera                    = 11 [
+    (CFO).desc = "Low gain (or single gain) histograms for camera." ];
+  DualGainSimpleChargeCameraHists dual_gain_camera                  = 12 [
+    (CFO).desc = "Dual gain histograms for camera." ];
 };

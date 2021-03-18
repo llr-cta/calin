@@ -103,8 +103,6 @@ public:
   static calin::ix::diagnostics::run_info::RunInfoConfig default_config();
 
 private:
-
-
   void integrate_partials ();
 
   RunInfoDiagnosticsParallelEventVisitor* parent_ = nullptr;
@@ -114,11 +112,14 @@ private:
   std::vector<unsigned> mod_counter_id_;
   std::vector<unsigned> mod_counter_mode_;
   std::vector<ModuleCounterProcessor*> mod_counter_processor_;
+  std::vector<std::vector<calin::math::histogram::SimpleHist*> > mod_counter_hist_;
 
   google::protobuf::Arena* arena_ = nullptr;
   calin::ix::diagnostics::run_info::RunInfo* results_ = nullptr;
   calin::ix::diagnostics::run_info::PartialRunInfo* partials_ = nullptr;
   calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
+  calin::math::histogram::SimpleHist trigger_type_code_hist_ = { 1.0, -1.0, 256.0 };
+  calin::math::histogram::SimpleHist trigger_type_code_diff_hist_ = { 1.0, -256.0, 256.0 };
 };
 
 } } } // namespace calin::diagnostics::run_info

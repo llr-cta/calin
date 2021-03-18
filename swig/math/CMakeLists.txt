@@ -18,7 +18,7 @@ set(CALIN_SWIG_FILES function.i pdf_1d.i histogram.i optimizer.i
 	interpolation_1d.i healpix_array.i ray_generator.i geometry.i moments_calc.i
 	data_modeling.i fftw_util.i regular_grid.i lomb_scargle.i
 	# simd.i fft_simd.i
-	b_spline.i spline_interpolation.i least_squares.i)
+	b_spline.i spline_interpolation.i least_squares.i nspace.i)
 set(CALIN_SWIG_TARGET math)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

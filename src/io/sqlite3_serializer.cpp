@@ -76,7 +76,7 @@ SQLite3Serializer(const std::string& filename_in, OpenMode open_mode,
     access = calin::ix::provenance::chronicle::AT_READ; break;
   }
 
-  calin::provenance::chronicle::register_file_open(filename, access,
+  file_record_ = calin::provenance::chronicle::register_file_open(filename, access,
     __PRETTY_FUNCTION__);
 
   if(exists) {
@@ -104,6 +104,9 @@ SQLite3Serializer::~SQLite3Serializer()
   {
     if(sqlite3_close(db_) !=  SQLITE_OK) {
       LOG(ERROR) << "SQLite3Serializer::~SQLite3Serializer: database connection did not close cleanly";
+    }
+    if(file_record_) {
+      calin::provenance::chronicle::register_file_close(file_record_);
     }
   }
 }

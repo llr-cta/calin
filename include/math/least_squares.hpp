@@ -99,5 +99,9 @@ private:
 };
 
 Eigen::VectorXd polyfit(const Eigen::VectorXd& x, const Eigen::VectorXd& y, unsigned order);
+double polyval(const Eigen::VectorXd& p, double x);
+#ifndef SWIG
+double polyval(const std::vector<double>& p, double x);
+#endif
 
 } } } // namespace calin::math::least_squares

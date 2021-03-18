@@ -36,6 +36,8 @@
 #include "math/m_estimate.hpp"
 #include "math/data_modeling.hpp"
 #include "calib/spe_fit.pb.h"
+#include "math/fftw_util.hpp"
+#include <calib/pmt_ses_models.hpp>
 
 namespace calin { namespace calib { namespace spe_fit {
 
@@ -408,6 +410,97 @@ protected:
   Eigen::VectorXd nes_weight_deriv_;
 };
 
+class LombardMartinPrescottMES: public MultiElectronSpectrum
+{
+public:
+  LombardMartinPrescottMES(double x0, unsigned npoint,
+    calin::math::function::ParameterizableSingleAxisFunction* ped_pdf,
+    const calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig& config = default_config(),
+    bool adopt_ped_pdf = false);
+  LombardMartinPrescottMES(double x0, unsigned npoint,
+      const calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig& config,
+      calin::math::function::ParameterizableSingleAxisFunction* ped_pdf = nullptr,
+      bool adopt_ped_ped = false):
+    LombardMartinPrescottMES(x0, npoint, ped_pdf, config, adopt_ped_ped)
+  { /* nothing to see here */ }
+
+  virtual ~LombardMartinPrescottMES();
+
+  unsigned num_parameters() override;
+  std::vector<calin::math::function::ParameterAxis> parameters() override;
+  Eigen::VectorXd parameter_values() override;
+  void set_parameter_values(ConstVecRef values) override;
+  bool can_calculate_parameter_gradient() override;
+  bool can_calculate_parameter_hessian() override;
+
+  double pdf_ped(double x) override;
+  double pdf_gradient_ped(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_ped(double x, VecRef gradient, MatRef hessian) override;
+
+  double pdf_mes(double x) override;
+  double pdf_gradient_mes(double x, VecRef gradient) override;
+  double pdf_gradient_hessian_mes(double x, VecRef gradient, MatRef hessian) override;
+
+  double intensity_pe() override;
+  double ped_rms_dc() override;
+  double ped_zero_dc() override;
+  double ses_mean_dc() override;
+  double ses_rms_pe() override;
+
+  double downsampled_sensitivity() const {
+    double sensitivity = config_.sensitivity();
+    if(config_.pmt().apply_downsampling()) {
+      sensitivity *= std::max(config_.pmt().downsampling_factor(), 1U);
+    }
+    return sensitivity;
+  }
+
+  calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig config() const { return config_; }
+  calin::ix::calib::pmt_ses_models::LombardMartinPrescottPMTModelConfig pmt() const { return config_.pmt(); }
+
+  double x0() const { return x0_; }
+  unsigned npoint() const { return npoint_; }
+  unsigned mes_npoint() const { return mes_npoint_; }
+
+  Eigen::VectorXd pe_pmf() const;
+
+  Eigen::VectorXd mes_pmf() const { return mes_pmf_; }
+  Eigen::VectorXd off_pmf() const { return off_pmf_; }
+  Eigen::VectorXd ses_pmf() const;
+  Eigen::VectorXd ses_pmf_full_resolution() const;
+
+  static calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig default_config();
+private:
+  void calculate_mes();
+  double mes_x(int i) const { return x0_ + double(i)*config_.sensitivity() - 0.5*config_.dx(); }
+  double off_x(int i) const { return mes_x(i) + config_.on_off_ped_shift(); }
+  int ibin(double x) { return std::round((x-x0_)*dx_inv_); }
+  void rebin_spectrum(Eigen::VectorXd& pmf_out, const double* mes_in, unsigned nmes) const;
+
+  calin::ix::calib::spe_fit::LombardMartinPrescottMESConfig config_;
+  double x0_;
+  double dx_inv_ = 0.0;
+
+  unsigned npoint_;
+  unsigned mes_npoint_;
+
+  mutable calin::calib::pmt_ses_models::LombardMartinPrescottPMTModel::Tableau tableau_;
+  calin::math::fftw_util::uptr_fftw_data ped_ { nullptr, fftw_free };
+
+  double intensity_pe_ = 1.0;
+  calin::math::function::ParameterizableSingleAxisFunction* ped_pdf_ = nullptr;
+  bool adopt_ped_pdf_ = false;
+  Eigen::VectorXd mes_pmf_;
+  Eigen::VectorXd off_pmf_;
+
+  double ped_sum_p_ = 0;
+  double ped_sum_px_ = 0;
+  double ped_sum_pxx_ = 0;
+
+  double pmt_total_gain_ = 0;
+  double pmt_resolution_ = 0;
+};
+
 class SPELikelihood: public calin::math::function::MultiAxisFunction
 {
  public:
@@ -428,7 +521,9 @@ class SPELikelihood: public calin::math::function::MultiAxisFunction
                                     MatRef hessian) override;
   double error_up() override { return 0.5; }
 
- private:
+private:
+  void calculate_mes();
+
   MultiElectronSpectrum* mes_model_;
   unsigned npar_;
   const calin::math::histogram::SimpleHist mes_data_;

@@ -43,9 +43,6 @@ using namespace calin::util::log;
 using calin::math::special::SQR;
 using calin::math::function::assign_parameters;
 
-using uptr_fftw_plan = std::unique_ptr<fftw_plan_s,void(*)(fftw_plan_s*)>;
-using uptr_fftw_data = std::unique_ptr<double,void(*)(void*)>;
-
 // ============================================================================
 //
 // GeneralPoissonMES - Poisson model using generic SES and pedestal
@@ -703,15 +700,15 @@ void GeneralPoissonMES::set_cache(bool force)
     double poisson_factor {
       std::exp(dbl_n*log_intensity - intensity_pe_ - lgamma(dbl_n+1.0) -
                log_nsample) };
-    hcvec_scale_and_add(mes_spec_, nes_fft_[ines], noversample_, poisson_factor);
+    hcvec_add_scaled(mes_spec_, nes_fft_[ines], noversample_, poisson_factor);
 
     if(calc_gradient)
     {
-      hcvec_scale_and_add(mes_grad_[0],
+      hcvec_add_scaled(mes_grad_[0],
         nes_fft_[ines], noversample_, poisson_factor*(dbl_n/intensity_pe_ - 1.0));
       if(ines>0)
         for(unsigned ipar=0;ipar<ses_npar;ipar++)
-          hcvec_scale_and_add(mes_grad_[1+ped_npar+ipar], nes_fft_[ines-1],
+          hcvec_add_scaled(mes_grad_[1+ped_npar+ipar], nes_fft_[ines-1],
                               noversample_, dbl_n*poisson_factor);
     }
   }
@@ -720,20 +717,20 @@ void GeneralPoissonMES::set_cache(bool force)
   {
     hcvec_scale_and_multiply(mes_grad_[0],
       mes_grad_[0], ped_fft_, noversample_, dx_oversample_);
-    hcvec_scale_and_add(mes_grad_[0],
+    hcvec_add_scaled(mes_grad_[0],
       ped_fft_, noversample_, -std::exp(-intensity_pe_-log_nsample));
     for(unsigned ipar=0;ipar<ped_npar;ipar++)
     {
       hcvec_scale_and_multiply(mes_grad_[1+ipar],
         mes_spec_, ped_grad_fft_[ipar], noversample_, dx_oversample_);
-      hcvec_scale_and_add(mes_grad_[1+ipar],
+      hcvec_add_scaled(mes_grad_[1+ipar],
         ped_grad_fft_[ipar], noversample_, std::exp(-intensity_pe_-log_nsample));
     }
     for(unsigned ipar=0;ipar<ses_npar;ipar++)
     {
       hcvec_scale_and_multiply(mes_grad_[1+ped_npar+ipar],
         mes_grad_[1+ped_npar+ipar], ses_grad_fft_[ipar], noversample_, dx_oversample_);
-      hcvec_scale_and_add(mes_grad_[1+ped_npar+ipar],
+      hcvec_add_scaled(mes_grad_[1+ped_npar+ipar],
         ses_grad_fft_[ipar], noversample_,
         std::exp(log_intensity -intensity_pe_ - log_nsample));
       hcvec_scale_and_multiply(mes_grad_[1+ped_npar+ipar],
@@ -742,7 +739,7 @@ void GeneralPoissonMES::set_cache(bool force)
   }
 
   hcvec_scale_and_multiply(mes_spec_, mes_spec_, ped_fft_, noversample_, dx_oversample_);
-  hcvec_scale_and_add(mes_spec_, ped_fft_, noversample_,
+  hcvec_add_scaled(mes_spec_, ped_fft_, noversample_,
                       std::exp(-intensity_pe_-log_nsample));
   fftw_execute(mes_plan_rev_);
 

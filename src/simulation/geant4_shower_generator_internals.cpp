@@ -101,10 +101,8 @@ ClassifyNewTrack(const G4Track* track)
 // ============================================================================
 
 EAS_SteppingAction::
-EAS_SteppingAction(calin::simulation::tracker::TrackVisitor* visitor,
-    EAS_DetectorConstruction* detector_geometry):
-  G4UserSteppingAction(), visitor_(visitor),
-  detector_geometry_(detector_geometry)
+EAS_SteppingAction(EAS_DetectorConstruction* detector_geometry):
+  G4UserSteppingAction(), detector_geometry_(detector_geometry)
 {
   /* nothing to see here */
 }
@@ -116,6 +114,13 @@ EAS_SteppingAction::~EAS_SteppingAction()
 
 void EAS_SteppingAction::UserSteppingAction(const G4Step* the_step)
 {
+  if(the_step->GetTrack()->GetVolume() == detector_geometry_->get_world_physical()) {
+    // Don't process tracks that are propagating only in the world volume
+    // BUT don't suppress them in case there are tiny gaps beyween atm layers
+    // the_step->GetTrack()->SetTrackStatus(fStopAndKill);
+    return;
+  }
+
   const G4StepPoint* pre_step_pt = the_step->GetPreStepPoint();
 
   double pre_step_pt_etot = pre_step_pt->GetTotalEnergy();
@@ -326,6 +331,7 @@ G4VPhysicalVolume* EAS_FlatDetectorConstruction::Construct()
                             0);                         // its copy number}
   }
 
+  world_physical_ = world_physical;
   return world_physical;
 }
 
@@ -339,10 +345,13 @@ void EAS_FlatDetectorConstruction::ConstructSDandField()
     field_mgr->CreateChordFinder(mag_field);
     G4bool force_to_all_daughters = true;
     ilogical_bfield.first->SetFieldManager(field_mgr, force_to_all_daughters);
-    // Register the field and its manager for deleting
-    G4AutoDelete::Register(mag_field);
-    G4AutoDelete::Register(field_mgr);
   }
+}
+
+const G4VPhysicalVolume*
+EAS_FlatDetectorConstruction::get_world_physical() const
+{
+  return world_physical_;
 }
 
 bool EAS_FlatDetectorConstruction::
@@ -360,8 +369,7 @@ ray_intersects_detector(const Eigen::Vector3d& pos, const Eigen::Vector3d& dir)
 
 
 EAS_UserEventAction::
-EAS_UserEventAction(calin::simulation::tracker::TrackVisitor* visitor):
-  G4UserEventAction(), visitor_(visitor)
+EAS_UserEventAction(): G4UserEventAction()
 {
   // nothing to see here
 }
