@@ -306,7 +306,7 @@ public:
     do
     {
       double x;
-      double y;
+      T y;
       std::istringstream lstream(line);
       lstream >> x >> y;
       if(lstream) {
