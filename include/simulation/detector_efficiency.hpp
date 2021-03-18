@@ -116,7 +116,13 @@ struct CherenkovBandwidthTaylorCoefficients
 
 inline std::ostream& operator<<(std::ostream& stream, const CherenkovBandwidthTaylorCoefficients& c)
 {
-  stream << "[ " << c.n << ' ' << c.dn_dw << ' ' << c.d2n_dw2 << " ]";
+  stream << c.n << ' ' << c.dn_dw << ' ' << c.d2n_dw2;
+  return stream;
+}
+
+inline std::istream& operator>>(std::istream& stream, CherenkovBandwidthTaylorCoefficients& c)
+{
+  stream >> c.n >> c.dn_dw >> c.d2n_dw2;
   return stream;
 }
 
