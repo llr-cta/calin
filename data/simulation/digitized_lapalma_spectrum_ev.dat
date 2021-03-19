@@ -1,18 +1,21 @@
-# NSB sky spectrum for La Palma - Stephen Fegan - sfegan@llr.in2p3.fr
-# February 2017
-#
-# Digitized from Benn, C. R. and Ellison, S. L. (1998b). 
-#                La Palma Night-Sky Brightness. 
+# File: data/simulation/digitized_lapalma_spectrum_ev.dat
+# Author: Stephen Fegan - sfegan@llr.in2p3.fr
+# Date: 2017-02-23
+# Copyright: Stephen Fegan, 2017-02-23
+# License: CC-BY-SA-4.0
+# Provenance:
+# - Digitized from Benn, C. R. and Ellison, S. L. (1998b).
+#                La Palma Night-Sky Brightness.
 #                La Palma technical note 115, IAC.
-#                http://www.ing.iac.es/Astronomy/observing/conditions/skybr/skybr.html 
+#                http://www.ing.iac.es/Astronomy/observing/conditions/skybr/skybr.html
 #                (retrieved 2017-02-16).
-# 
-# Extrapolated into UV after removing UV absorption in atmosphere
-# and reapplying the absporption after.
+# - Removed UV absorption based on "data/simulation/atm_trans_2147_1_10_0_0_2147.dat"
+# - Extrapolated into UV assuming exponential spectrum in photon energy
+# - Reapply UV absorption in atmosphere using same model
+# Reference: Fegan S.J., MST-CAM-TN-0169, 2017
+# Author's note : see "Google Drive/Work/CTA/IsotropicEmission/LST/NSB spectrum - la palma.ipynb"
 #
-# Author's note : see Google Drive/Work/CTA/IsotropicEmission/LST/NSB in PEs.ipynb
-#
-# Reference : Fegan S.J., MST-CAM-TN-0169, 2017
+# NSB sky spectrum for La Palma, flux vs photon energy
 #
 # Columns : Photon energy [eV]
 #           Spectrum [ph cm$^{-2}$ ns$^{-1}$ sr$^{-1}$ eV$^{-1}$]
