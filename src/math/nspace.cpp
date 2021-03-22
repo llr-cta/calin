@@ -827,6 +827,21 @@ Eigen::MatrixXd BlockSparseNSpace::as_matrix() const
   return m;
 }
 
+uint64_t BlockSparseNSpace::num_occupied_cells() const
+{
+  uint64_t count = 0;
+  for(auto* block : array_) {
+    if(block) {
+      for(unsigned i=0;i<block_size_;++i) {
+        if(block[i]) {
+          ++count;
+        };
+      }
+    }
+  }
+  return count;
+}
+
 double BlockSparseNSpace::total_weight() const
 {
   double w0 = 0;

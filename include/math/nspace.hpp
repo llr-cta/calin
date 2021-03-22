@@ -251,6 +251,8 @@ public:
   Eigen::VectorXd as_vector() const;
   Eigen::MatrixXd as_matrix() const;
 
+  uint64_t num_occupied_cells() const;
+
   double total_weight() const;
 
   Eigen::VectorXd mean_and_total_weight(double& w0) const;
