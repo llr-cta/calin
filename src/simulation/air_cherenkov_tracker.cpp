@@ -211,7 +211,7 @@ MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
     calin::math::rng::RNG* rng, bool adopt_visitor, bool adopt_rng):
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   epsilon0_(epsilon0), bandwidth_(bandwidth), do_color_photons_(do_color_photons),
-  weight_(1.0), weighted_bandwidth_(bandwidth_/weight_), 
+  weight_(1.0), weighted_bandwidth_(bandwidth_/weight_),
   rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)), adopt_rng_(rng ? adopt_rng : true)
 {
   visitor->set_bandpass(epsilon0, bandwidth, do_color_photons);
@@ -426,4 +426,62 @@ CherenkovTrackYieldNSpaceVisitor::default_config()
   cfg.mutable_uxuy_axis()->set_num_bins(21);
 
   return cfg;
+}
+
+MultiDelegatingAirCherenkovTrackVisitor::
+MultiDelegatingAirCherenkovTrackVisitor(): AirCherenkovTrackVisitor()
+{
+  // nothing to see here
+}
+
+MultiDelegatingAirCherenkovTrackVisitor::
+~MultiDelegatingAirCherenkovTrackVisitor()
+{
+  for(auto* d : adopted_delegates_) {
+    delete d;
+  }
+}
+
+void MultiDelegatingAirCherenkovTrackVisitor::
+set_atmosphere(calin::simulation::atmosphere::Atmosphere* atm)
+{
+  for(auto* d : delegates_) {
+    d->set_atmosphere(atm);
+  }
+}
+
+void MultiDelegatingAirCherenkovTrackVisitor::
+visit_event(const Event& event, bool& kill_event)
+{
+  for(auto* d : delegates_) {
+    bool d_kill_event = false;
+    d->visit_event(event, d_kill_event);
+    kill_event = kill_event or d_kill_event;
+  }
+}
+
+void MultiDelegatingAirCherenkovTrackVisitor::
+visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track)
+{
+  for(auto* d : delegates_) {
+    bool d_kill_track = false;
+    d->visit_cherenkov_track(cherenkov_track, d_kill_track);
+    kill_track = kill_track or d_kill_track;
+  }
+}
+
+void MultiDelegatingAirCherenkovTrackVisitor::leave_event()
+{
+  for(auto* d : delegates_) {
+    d->leave_event();
+  }
+}
+
+void MultiDelegatingAirCherenkovTrackVisitor::
+add_delegate(AirCherenkovTrackVisitor* delegate, bool adopt_delegate)
+{
+  delegates_.push_back(delegate);
+  if(adopt_delegate) {
+    adopted_delegates_.push_back(delegate);
+  }
 }

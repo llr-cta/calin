@@ -207,5 +207,21 @@ private:
   double uz0_inv_;
 };
 
+class MultiDelegatingAirCherenkovTrackVisitor: public AirCherenkovTrackVisitor
+{
+public:
+  MultiDelegatingAirCherenkovTrackVisitor();
+  virtual ~MultiDelegatingAirCherenkovTrackVisitor();
+  void set_atmosphere(calin::simulation::atmosphere::Atmosphere* atm) override;
+  void visit_event(const Event& event, bool& kill_event) override;
+  void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
+    bool& kill_track) override;
+  void leave_event()override;
+  void add_delegate(AirCherenkovTrackVisitor* delegate, bool adopt_delegate);
+protected:
+  std::list<AirCherenkovTrackVisitor*> delegates_;
+  std::list<AirCherenkovTrackVisitor*> adopted_delegates_;
+};
+
 
 } } } // namespace calin::simulation::air_cherenkov_tracker
