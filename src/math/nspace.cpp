@@ -590,6 +590,48 @@ void BlockSparseNSpace::injest(const BlockSparseNSpace& o)
   overflow_ += o.overflow_;
 }
 
+void BlockSparseNSpace::injest_from_subspace(const Eigen::VectorXd& x_super, const BlockSparseNSpace& o)
+{
+  if(xlo_.size() != x_super.size() + o.xlo_.size()) {
+    throw std::runtime_error("BlockSparseNSpace: incotrrect number of axes in coordinates and subspace");
+  }
+  if(xlo_.tail(xlo_.size()-x_super.size())!=o.xlo_ or
+      xhi_.tail(xhi_.size()-x_super.size())!=o.xhi_ or
+      n_.tail(n_.size()-x_super.size())!=o.n_) {
+    throw std::runtime_error("BlockSparseNSpace: cannot injest sub-space with incompatible axis definition");
+  }
+
+  Eigen::VectorXi xi_super(n_.size());
+  for(int i=0; i<x_super.size(); i++) {
+    int ii = (x_super(i)-xlo_(i))*dx_inv_(i);
+    if(ii<0 or ii>=n_(i)) {
+      overflow_ += o.total_weight();
+      return;
+    }
+    xi_super(i) = ii;
+  }
+
+  Eigen::VectorXi xi_sub(o.n_.size());
+  for(unsigned oarray_index=0; oarray_index<o.array_.size(); ++oarray_index) {
+    const double* oblock = o.array_[oarray_index];
+    if(oblock) {
+      for(unsigned oblock_index=0; oblock_index<o.block_size_; ++oblock_index) {
+        o.bin_coords(xi_sub, oarray_index, oblock_index);
+        xi_super.tail(xi_sub.size()) = xi_sub;
+        int64_t array_index;
+        int64_t block_index;
+        if(not index_of_bin(xi_super, array_index, block_index)) {
+          throw std::logic_error("Index does not appear to be in superspace");
+        }
+        double* block = block_ptr(array_index);
+        block[block_index] += oblock[oblock_index];
+      }
+    }
+  }
+
+  overflow_ += o.overflow_;
+}
+
 std::vector<Axis> BlockSparseNSpace::axes() const
 {
   std::vector<calin::math::nspace::Axis> a;
@@ -605,6 +647,32 @@ Axis BlockSparseNSpace::axis(unsigned iaxis) const
     throw std::runtime_error("BlockSparseNSpace: iaxis out of range");
   }
   calin::math::nspace::Axis a { xlo_[iaxis], xhi_[iaxis], static_cast<unsigned int>(n_[iaxis]) };
+  return a;
+}
+
+std::vector<Axis> BlockSparseNSpace::make_superspace_axes(
+  const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi, const Eigen::VectorXi& n) const
+{
+  if(std::min({xlo.size(), xhi.size(), n.size()}) !=
+      std::max({xlo.size(), xhi.size(), n.size()})) {
+    throw std::runtime_error("BlockSparseNSpace: xhi, xlo and n must all have same size");
+  }
+  std::vector<calin::math::nspace::Axis> a;
+  for(unsigned i=0; i<xlo.size(); i++) {
+    a.push_back({xlo[i], xhi[i], static_cast<unsigned int>(n[i])});
+  }
+  for(unsigned i=0; i<xlo_.size(); i++) {
+    a.push_back({xlo_[i], xhi_[i], static_cast<unsigned int>(n_[i])});
+  }
+  return a;
+}
+
+std::vector<Axis> BlockSparseNSpace::make_superspace_axes(const std::vector<Axis>& axes) const
+{
+  std::vector<calin::math::nspace::Axis> a = axes;
+  for(unsigned i=0; i<xlo_.size(); i++) {
+    a.push_back({xlo_[i], xhi_[i], static_cast<unsigned int>(n_[i])});
+  }
   return a;
 }
 
@@ -926,5 +994,36 @@ void BlockSparseNSpace::subspace_covar_mean_and_total_weight(const Eigen::Vector
     }
   }
 
+}
+#endif
+
+#if 0
+#include <blosc.h>
+uint64_t BlockSparseNSpace::test_blosc_size(int clevel, int doshuffle,
+  const std::string& compname, int nthreads) const
+{
+  uint64_t blosc_size = 0;
+  double* cdata = new double[block_size_ + 16];
+  blosc_init();
+  blosc_set_nthreads(std::max(nthreads,1));
+  blosc_set_compressor(compname.c_str());
+  for(unsigned array_index=0; array_index<array_.size(); ++array_index)
+  {
+    auto* block = array_[array_index];
+    if(block) {
+      int csize = blosc_compress(clevel, doshuffle, sizeof(double),
+        block_size_*sizeof(double), block,
+        cdata, (block_size_+16)*sizeof(double));
+      if (csize == 0) {
+        throw std::runtime_error("Buffer is uncompressible.");
+      } else if (csize < 0) {
+        throw std::runtime_error("Blosc error reported.");
+      }
+      blosc_size += csize;
+    }
+  }
+  blosc_destroy();
+  delete[] cdata;
+  return blosc_size;
 }
 #endif
