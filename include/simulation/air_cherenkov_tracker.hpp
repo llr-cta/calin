@@ -217,7 +217,7 @@ public:
   void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
     bool& kill_track) override;
   void leave_event()override;
-  void add_delegate(AirCherenkovTrackVisitor* delegate, bool adopt_delegate);
+  void add_delegate(AirCherenkovTrackVisitor* delegate, bool adopt_delegate = false);
 protected:
   std::list<AirCherenkovTrackVisitor*> delegates_;
   std::list<AirCherenkovTrackVisitor*> adopted_delegates_;
