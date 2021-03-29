@@ -189,7 +189,7 @@ public:
 
   void clear();
 
-  const calin::math::nspace::SparseNSpace& nspace() const { return space_; }
+  const calin::math::nspace::BlockSparseNSpace& nspace() const { return space_; }
   // Eigen::Matrix3d rotation_matrix() const { return rot_; }
 
   static calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig default_config();
@@ -198,7 +198,7 @@ private:
     const calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig& config);
 
   calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig config_;
-  calin::math::nspace::SparseNSpace space_;
+  calin::math::nspace::BlockSparseNSpace space_;
   Eigen::VectorXd p_;
   Eigen::Vector3d x0_;
   Eigen::Matrix3d rot_;
