@@ -24,11 +24,13 @@
 
 #include <math/ray.hpp>
 #include <math/special.hpp>
+#include <math/least_squares.hpp>
 #include <util/log.hpp>
 
 using namespace calin::math::ray;
 using namespace calin::util::log;
 using calin::math::special::SQR;
+using calin::math::least_squares::polyval_and_derivative;
 
 //! Propagates free particle to the given plane
 bool Ray::propagate_to_plane(const Eigen::Vector3d& normal, double d,
@@ -454,4 +456,36 @@ Ray::IPOut Ray::propagate_to_cylinder(const Eigen::Vector3d& center,
 
   propagate_dist(time, n);
   return ipo;
+}
+
+bool Ray::propagate_to_polynomial_surface(const double* p, unsigned np,
+  bool time_reversal_ok, double n, double tol, unsigned niter)
+{
+  double time = 0;
+  double D = 0;
+  do {
+    // Use Newton's method to find root to given tolerance
+    double x = this->x() + time*ux();
+    double y = this->y() + time*uy();
+    double z = this->z() + time*uz();
+
+    double yps;
+    double dyps_dtau;
+    double tau = x*x + z*z;
+    polyval_and_derivative(yps, dyps_dtau, p, np, tau);
+    D = y - yps;
+    double dD_dt = uy() - 2*dyps_dtau*(ux()*x + uz()*z);
+    time -= D/dD_dt;
+  } while(fabs(D)>tol and --niter);
+
+  if(niter == 0) {
+    throw std::runtime_error("propagate_to_polynomial_surface: Maximum number of iterations reached in Newton's method");
+  }
+
+  if(time>=0 or time_reversal_ok) {
+    propagate_dist(time, n);
+    return true;
+  }
+
+  return false;
 }

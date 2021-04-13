@@ -174,6 +174,17 @@ public:
     const Eigen::Vector3d& normal, double radius,
     IntersectionPoint ip = IP_CLOSEST, bool time_reversal_ok = true, double n = 1.0);
 
+#ifndef SWIG
+  bool propagate_to_polynomial_surface(const double* p, unsigned np,
+    bool time_reversal_ok = true, double n = 1.0, double tol = 1e-8, unsigned niter = 100);
+#endif
+
+  bool propagate_to_polynomial_surface(const Eigen::VectorXd& p,
+    bool time_reversal_ok = true, double n = 1.0, double tol = 1e-8, unsigned niter = 100)
+  {
+    return propagate_to_polynomial_surface(p.data(), p.size(), time_reversal_ok, n, tol, niter);
+  }
+
 private:
   Eigen::Vector3d pos_ = Eigen::Vector3d::Zero();
   Eigen::Vector3d dir_ = Eigen::Vector3d::Zero();
