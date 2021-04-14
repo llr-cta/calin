@@ -459,8 +459,11 @@ Ray::IPOut Ray::propagate_to_cylinder(const Eigen::Vector3d& center,
 }
 
 bool Ray::propagate_to_polynomial_surface(const double* p, unsigned np,
+  double rho2_min, double rho2_max,
   bool time_reversal_ok, double n, double tol, unsigned niter)
 {
+  // Start with proagation to tangent plane at rho2=0 (to avoid possible
+  // selection of wrong root)
   double time = (p[0] - this->y()) / uy();
   double D = 0;
   do {
@@ -470,11 +473,11 @@ bool Ray::propagate_to_polynomial_surface(const double* p, unsigned np,
     double z = this->z() + time*uz();
 
     double yps;
-    double dyps_dtau;
-    double tau = x*x + z*z;
-    polyval_and_derivative(yps, dyps_dtau, p, np, tau);
+    double dyps_drho2;
+    double rho2 = x*x + z*z;
+    polyval_and_derivative(yps, dyps_drho2, p, np, rho2);
     D = y - yps;
-    double dD_dt = uy() - 2*dyps_dtau*(ux()*x + uz()*z);
+    double dD_dt = uy() - 2*dyps_drho2*(ux()*x + uz()*z);
     time -= D/dD_dt;
   } while(fabs(D)>tol and --niter);
 
@@ -482,7 +485,11 @@ bool Ray::propagate_to_polynomial_surface(const double* p, unsigned np,
     throw std::runtime_error("propagate_to_polynomial_surface: Maximum number of iterations reached in Newton's method");
   }
 
-  if(time>=0 or time_reversal_ok) {
+  double x = this->x() + time*ux();
+  double z = this->z() + time*uz();
+  double rho2 = x*x + z*z;
+
+  if((time>=0 or time_reversal_ok) and rho2>=rho2_min and rho2<=rho2_max) {
     propagate_dist(time, n);
     return true;
   }
@@ -496,11 +503,11 @@ Eigen::Vector3d Ray::norm_of_polynomial_surface(const double* p, unsigned np) co
   double z = this->z();
 
   double yps;
-  double dyps_dtau;
-  double tau = x*x + z*z;
-  polyval_and_derivative(yps, dyps_dtau, p, np, tau);
+  double dyps_drho2;
+  double rho2 = x*x + z*z;
+  polyval_and_derivative(yps, dyps_drho2, p, np, rho2);
 
-  Eigen::Vector3d norm(2*x*dyps_dtau, -1, 2*z*dyps_dtau);
+  Eigen::Vector3d norm(2*x*dyps_drho2, -1, 2*z*dyps_drho2);
   norm.normalize();
 
   return norm;

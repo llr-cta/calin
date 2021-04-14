@@ -176,13 +176,15 @@ public:
 
 #ifndef SWIG
   bool propagate_to_polynomial_surface(const double* p, unsigned np,
+    double rho2_min = 0, double rho2_max = std::numeric_limits<double>::infinity(),
     bool time_reversal_ok = true, double n = 1.0, double tol = 1e-8, unsigned niter = 100);
 #endif
 
   bool propagate_to_polynomial_surface(const Eigen::VectorXd& p,
+    double rho2_min = 0, double rho2_max = std::numeric_limits<double>::infinity(),
     bool time_reversal_ok = true, double n = 1.0, double tol = 1e-8, unsigned niter = 100)
   {
-    return propagate_to_polynomial_surface(p.data(), p.size(), time_reversal_ok, n, tol, niter);
+    return propagate_to_polynomial_surface(p.data(), p.size(), rho2_min, rho2_max, time_reversal_ok, n, tol, niter);
   }
 
 #ifndef SWIG
