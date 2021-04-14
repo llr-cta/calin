@@ -185,6 +185,22 @@ public:
     return propagate_to_polynomial_surface(p.data(), p.size(), time_reversal_ok, n, tol, niter);
   }
 
+#ifndef SWIG
+  Eigen::Vector3d norm_of_polynomial_surface(const double* p, unsigned np) const;
+  void reflect_from_polynomial_surface(const double* p, unsigned np);
+#endif
+
+  Eigen::Vector3d norm_of_polynomial_surface(const Eigen::VectorXd& p) const
+  {
+    return norm_of_polynomial_surface(p.data(), p.size());
+  }
+
+  void reflect_from_polynomial_surface(const Eigen::VectorXd& p)
+  {
+    reflect_from_polynomial_surface(p.data(), p.size());
+  }
+
+
 private:
   Eigen::Vector3d pos_ = Eigen::Vector3d::Zero();
   Eigen::Vector3d dir_ = Eigen::Vector3d::Zero();

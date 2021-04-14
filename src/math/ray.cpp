@@ -461,7 +461,7 @@ Ray::IPOut Ray::propagate_to_cylinder(const Eigen::Vector3d& center,
 bool Ray::propagate_to_polynomial_surface(const double* p, unsigned np,
   bool time_reversal_ok, double n, double tol, unsigned niter)
 {
-  double time = 0;
+  double time = (p[0] - this->y()) / uy();
   double D = 0;
   do {
     // Use Newton's method to find root to given tolerance
@@ -488,4 +488,25 @@ bool Ray::propagate_to_polynomial_surface(const double* p, unsigned np,
   }
 
   return false;
+}
+
+Eigen::Vector3d Ray::norm_of_polynomial_surface(const double* p, unsigned np) const
+{
+  double x = this->x();
+  double z = this->z();
+
+  double yps;
+  double dyps_dtau;
+  double tau = x*x + z*z;
+  polyval_and_derivative(yps, dyps_dtau, p, np, tau);
+
+  Eigen::Vector3d norm(2*x*dyps_dtau, -1, 2*z*dyps_dtau);
+  norm.normalize();
+
+  return norm;
+}
+
+void Ray::reflect_from_polynomial_surface(const double* p, unsigned np)
+{
+  reflect_from_surface(norm_of_polynomial_surface(p,np));
 }
