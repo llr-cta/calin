@@ -459,12 +459,20 @@ Ray::IPOut Ray::propagate_to_cylinder(const Eigen::Vector3d& center,
 }
 
 bool Ray::propagate_to_polynomial_surface(const double* p, unsigned np,
-  double rho2_min, double rho2_max,
-  bool time_reversal_ok, double n, double tol, unsigned niter)
+  double rho2_min, double rho2_max, bool time_reversal_ok, double n,
+  bool ray_is_close_to_surface, double tol, unsigned niter)
 {
-  // Start with proagation to tangent plane at rho2=0 (to avoid possible
-  // selection of wrong root)
-  double time = (p[0] - this->y()) / uy();
+  double time;
+  if(ray_is_close_to_surface) {
+    // If we are told that we are already close to the surface then start from
+    // where we are already.
+    time = 0;
+  } else {
+    // Start with proagation to tangent plane at rho2=0 (to avoid possible
+    // selection of wrong root)
+    time = (p[0] - this->y()) / uy();
+  }
+
   double D = 0;
   do {
     // Use Newton's method to find root to given tolerance
