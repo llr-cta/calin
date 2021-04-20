@@ -26,6 +26,10 @@
 
 namespace calin { namespace simulation { namespace sct_optics {
 
+constexpr double COS_PI = -1;
+constexpr double SIN_PI = 0;
+constexpr double COS_PI_2 = 0;
+constexpr double SIN_PI_2 = 1;
 constexpr double COS_PI_4 = M_SQRT1_2;
 constexpr double SIN_PI_4 = M_SQRT1_2;
 constexpr double COS_PI_8 = 9.2387953251128674e-01;
@@ -40,6 +44,8 @@ class SCTFacetScheme
 public:
   virtual ~SCTFacetScheme();
   virtual int find_facet(double x, double z) = 0;
+  virtual double facet_area(int ifacet) = 0;
+  virtual bool facet_centroid(int ifacet, double& x_out, double& z_out) = 0;
 };
 
 class SCTPrimaryFacetScheme: public SCTFacetScheme
@@ -49,7 +55,9 @@ public:
   SCTPrimaryFacetScheme(double r1i, double r1o, double r2i, double r2o, double gap_2):
     SCTFacetScheme(), r1i_(r1i), r1o_(r1o), r2i_(r2i), r2o_(r2o), gap_2_(gap_2) { }
   virtual ~SCTPrimaryFacetScheme();
-  virtual int find_facet(double x, double z);
+  virtual int find_facet(double x, double z) override;
+  virtual double facet_area(int ifacet) override;
+  virtual bool facet_centroid(int ifacet, double& x_out, double& z_out) override;
 private:
   double r1i_ = 219.350*COS_PI_16;        // inner radius of inner panel (flat edge distance from origin)
   double r1o_ = 340.000*COS_PI_32 - 0.7; // outer radius of inner panel
@@ -65,7 +73,9 @@ public:
   SCTSecondaryFacetScheme(double r1i, double r1o, double r2i, double r2o, double gap_2):
     SCTFacetScheme(), r1i_(r1i), r1o_(r1o), r2i_(r2i), r2o_(r2o), gap_2_(gap_2) { }
   virtual ~SCTSecondaryFacetScheme();
-  virtual int find_facet(double x, double z);
+  virtual int find_facet(double x, double z) override;
+  virtual double facet_area(int ifacet) override;
+  virtual bool facet_centroid(int ifacet, double& x_out, double& z_out) override;
 private:
   double r1i_ = 39.45*COS_PI_8;        // inner radius of inner panel (flat edge distance from origin)
   double r1o_ = 159.65*COS_PI_16 - 0.7; // outer radius of inner panel

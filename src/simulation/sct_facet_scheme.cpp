@@ -83,6 +83,63 @@ int SCTPrimaryFacetScheme::find_facet(double x, double y)
   return -1;
 }
 
+
+double SCTPrimaryFacetScheme::facet_area(int ifacet)
+{
+  if(ifacet<0) {
+    return 0;
+  } else if(ifacet<16) {
+    return r1o_*r1o_*SIN_PI_16/COS_PI_32/COS_PI_32
+     - r1i_*r1i_*SIN_PI_16/COS_PI_16;
+  }  else if(ifacet<48) {
+    return (r2o_*r2o_ - r2i_*r2i_)*SIN_PI_32/COS_PI_32;
+  }
+  return 0;
+}
+
+namespace {
+  void rotate_in_place(double& x, double&y, double C, double S) {
+    double x_new = C*x + S*y;
+    y = C*y - S*x;
+    x = x_new;
+  }
+}
+
+bool SCTPrimaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
+{
+  if(ifacet<0) {
+    return false;
+  } else if(ifacet < 16) {
+    x = 0;
+    // y = 0.5*(r1i_ + r1o_);
+    y = std::sqrt(0.5*(r1o_*r1o_*COS_PI_16/COS_PI_32/COS_PI_32 + r1i_*r1i_));
+    rotate_in_place(x, y, COS_PI_16, SIN_PI_16);
+    if((ifacet & 1) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_8, SIN_PI_8);
+    if((ifacet & 2) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_4, SIN_PI_4);
+    if((ifacet & 4) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
+    if((ifacet & 8) == 0)x = -x;
+  } else if(ifacet < 48) {
+    x = 0;
+    // y = 0.5*(r2i_ + r2o_);
+    y = std::sqrt(0.5*(r2i_*r2i_ + r2o_*r2o_));
+    ifacet -= 16;
+    rotate_in_place(x, y, COS_PI_32, SIN_PI_32);
+    if((ifacet & 1) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_16, SIN_PI_16);
+    if((ifacet & 2) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_8, SIN_PI_8);
+    if((ifacet & 4) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_4, SIN_PI_4);
+    if((ifacet & 8) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
+    if((ifacet & 16) == 0)x = -x;
+  }
+  return false;
+}
+
 SCTSecondaryFacetScheme::~SCTSecondaryFacetScheme()
 {
   // nothing to see here
@@ -127,4 +184,49 @@ int SCTSecondaryFacetScheme::find_facet(double x, double y)
   }
 
   return -1;
+}
+
+double SCTSecondaryFacetScheme::facet_area(int ifacet)
+{
+  if(ifacet<0) {
+    return 0;
+  } else if(ifacet<16) {
+    return r1o_*r1o_*SIN_PI_8/COS_PI_16/COS_PI_16
+     - r1i_*r1i_*SIN_PI_8/COS_PI_8;
+  }  else if(ifacet<48) {
+    return (r2o_*r2o_ - r2i_*r2i_)*SIN_PI_16/COS_PI_16;
+  }
+  return 0;
+}
+
+bool SCTSecondaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
+{
+  if(ifacet<0) {
+    return false;
+  } else if(ifacet < 8) {
+    x = 0;
+    // y = 0.5*(r1i_ + r1o_);
+    y = std::sqrt(0.5*(r1o_*r1o_*COS_PI_8/COS_PI_16/COS_PI_16 + r1i_*r1i_));
+    // y = std::sqrt(0.5*(r1i_*r1i_ + r1o_*r1o_));
+    rotate_in_place(x, y, COS_PI_8, SIN_PI_8);
+    if((ifacet & 1) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_4, SIN_PI_4);
+    if((ifacet & 2) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
+    if((ifacet & 4) == 0)x = -x;
+  } else if(ifacet < 24) {
+    x = 0;
+    // y = 0.5*(r2i_ + r2o_);
+    y = std::sqrt(0.5*(r2i_*r2i_ + r2o_*r2o_));
+    ifacet -= 8;
+    rotate_in_place(x, y, COS_PI_16, SIN_PI_16);
+    if((ifacet & 1) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_8, SIN_PI_8);
+    if((ifacet & 2) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_4, SIN_PI_4);
+    if((ifacet & 4) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
+    if((ifacet & 8) == 0)x = -x;
+  }
+  return false;
 }

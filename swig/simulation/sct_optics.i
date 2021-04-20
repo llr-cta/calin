@@ -37,4 +37,7 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
+%apply double &OUTPUT { double& x_out };
+%apply double &OUTPUT { double& z_out };
+
 %include "simulation/sct_facet_scheme.hpp"
