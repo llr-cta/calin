@@ -46,7 +46,7 @@ int SCTPrimaryFacetScheme::find_facet(double x, double y)
   sector |= x1>=0;
   x1 = std::abs(x1);
 
-  double x2 = y1;
+  double x2 = -y1;
   double y2 = x1;
   sector = (sector<<1) | (x2>=0);
   x2 = std::abs(x2);
@@ -97,7 +97,7 @@ int SCTSecondaryFacetScheme::find_facet(double x, double y)
   sector |= x1>=0;
   x1 = std::abs(x1);
 
-  double x2 = y1;
+  double x2 = -y1;
   double y2 = x1;
   sector = (sector<<1) | (x2>=0);
   x2 = std::abs(x2);
