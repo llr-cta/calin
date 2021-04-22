@@ -23,29 +23,42 @@
 #pragma once
 
 #include <cmath>
+#include <Eigen/Dense>
 
 namespace calin { namespace simulation { namespace sct_optics {
 
-constexpr double COS_PI = -1;
-constexpr double SIN_PI = 0;
-constexpr double COS_PI_2 = 0;
-constexpr double SIN_PI_2 = 1;
-constexpr double COS_PI_4 = M_SQRT1_2;
-constexpr double SIN_PI_4 = M_SQRT1_2;
-constexpr double COS_PI_8 = 9.2387953251128674e-01;
-constexpr double SIN_PI_8 = 3.8268343236508978e-01;
-constexpr double COS_PI_16 = 9.8078528040323043e-01;
-constexpr double SIN_PI_16 = 1.9509032201612825e-01;
-constexpr double COS_PI_32 = 9.9518472667219693e-01;
-constexpr double SIN_PI_32 = 9.8017140329560604e-02;
+// from mpmath import mp
+// mp.dps = 50
+// c = -1
+// s = 0
+// for i in range(0,6):
+//     print("constexpr double COS_PI_%d = %s;"%(2**i,c))
+//     print("constexpr double SIN_PI_%d = %s;"%(2**i,s))
+//     s = mp.sqrt((1-c)/2)
+//     c = mp.sqrt((1+c)/2)
+
+constexpr double COS_PI_1 = -1.0;
+constexpr double SIN_PI_1 = 0.0;
+constexpr double COS_PI_2 = 0.0;
+constexpr double SIN_PI_2 = 1.0;
+constexpr double COS_PI_4 = 0.70710678118654752440084436210484903928483593768847;
+constexpr double SIN_PI_4 = 0.70710678118654752440084436210484903928483593768847;
+constexpr double COS_PI_8 = 0.92387953251128675612818318939678828682241662586364;
+constexpr double SIN_PI_8 = 0.38268343236508977172845998403039886676134456248563;
+constexpr double COS_PI_16 = 0.98078528040323044912618223613423903697393373089334;
+constexpr double SIN_PI_16 = 0.19509032201612826784828486847702224092769161775195;
+constexpr double COS_PI_32 = 0.99518472667219688624483695310947992157547486872986;
+constexpr double SIN_PI_32 = 0.0980171403295606019941955638886418458611366731675;
 
 class SCTFacetScheme
 {
 public:
   virtual ~SCTFacetScheme();
   virtual int find_facet(double x, double z) = 0;
+  virtual unsigned num_facets() = 0;
   virtual double facet_area(int ifacet) = 0;
   virtual bool facet_centroid(int ifacet, double& x_out, double& z_out) = 0;
+  Eigen::VectorXi bulk_find_facet(const Eigen::VectorXd& x, const Eigen::VectorXd& z);
 };
 
 class SCTPrimaryFacetScheme: public SCTFacetScheme
@@ -56,6 +69,7 @@ public:
     SCTFacetScheme(), r1i_(r1i), r1o_(r1o), r2i_(r2i), r2o_(r2o), gap_2_(gap_2) { }
   virtual ~SCTPrimaryFacetScheme();
   virtual int find_facet(double x, double z) override;
+  virtual unsigned num_facets() override;
   virtual double facet_area(int ifacet) override;
   virtual bool facet_centroid(int ifacet, double& x_out, double& z_out) override;
 
@@ -81,6 +95,7 @@ public:
     SCTFacetScheme(), r1i_(r1i), r1o_(r1o), r2i_(r2i), r2o_(r2o), gap_2_(gap_2) { }
   virtual ~SCTSecondaryFacetScheme();
   virtual int find_facet(double x, double z) override;
+  virtual unsigned num_facets() override;
   virtual double facet_area(int ifacet) override;
   virtual bool facet_centroid(int ifacet, double& x_out, double& z_out) override;
 

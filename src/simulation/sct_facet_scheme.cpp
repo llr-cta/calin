@@ -22,6 +22,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <stdexcept>
 
 #include <simulation/sct_facet_scheme.hpp>
 
@@ -30,6 +31,19 @@ using namespace calin::simulation::sct_optics;
 SCTFacetScheme::~SCTFacetScheme()
 {
   // nothing to see here
+}
+
+Eigen::VectorXi SCTFacetScheme::
+bulk_find_facet(const Eigen::VectorXd& x, const Eigen::VectorXd& z)
+{
+  if(x.size() != z.size()) {
+    throw std::runtime_error("bulk_find_facet: X and Z must have same size");
+  }
+  Eigen::VectorXi id(z.size());
+  for(unsigned i=0;i<id.size(); ++i) {
+    id(i) = this->find_facet(x(i), z(i));
+  }
+  return id;
 }
 
 SCTPrimaryFacetScheme::~SCTPrimaryFacetScheme()
@@ -83,16 +97,26 @@ int SCTPrimaryFacetScheme::find_facet(double x, double y)
   return -1;
 }
 
+unsigned SCTPrimaryFacetScheme::num_facets()
+{
+  return 48;
+}
 
 double SCTPrimaryFacetScheme::facet_area(int ifacet)
 {
   if(ifacet<0) {
     return 0;
   } else if(ifacet<16) {
-    return r1o_*r1o_*SIN_PI_16/COS_PI_32/COS_PI_32
-     - r1i_*r1i_*SIN_PI_16/COS_PI_16;
+    const double r0 = gap_2_/SIN_PI_16;
+    const double ri = std::max(r1i_ - r0, 0.0);
+    const double ro = r1o_ - r0*COS_PI_32;
+    return ro*ro*SIN_PI_16/COS_PI_32/COS_PI_32
+     - ri*ri*SIN_PI_16/COS_PI_16;
   }  else if(ifacet<48) {
-    return (r2o_*r2o_ - r2i_*r2i_)*SIN_PI_32/COS_PI_32;
+    const double r0 = gap_2_/SIN_PI_32;
+    const double ri = std::max(r2i_ - r0, 0.0);
+    const double ro = r2o_ - r0;
+    return (ro*ro - ri*ri)*SIN_PI_32/COS_PI_32;
   }
   return 0;
 }
@@ -110,9 +134,9 @@ bool SCTPrimaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
   if(ifacet<0) {
     return false;
   } else if(ifacet < 16) {
-    const double r0 = gap_2_/COS_PI_16;
+    const double r0 = gap_2_/SIN_PI_16;
     const double ri = std::max(r1i_ - r0, 0.0);
-    const double ro = r1o_ - r0;
+    const double ro = r1o_ - r0*COS_PI_32;
     x = 0;
     // y = 0.5*(r1i_ + r1o_);
     y = std::sqrt(0.5*(ro*ro*COS_PI_16/COS_PI_32/COS_PI_32 + ri*ri)) + r0;
@@ -124,8 +148,9 @@ bool SCTPrimaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
     if((ifacet & 4) == 0)x = -x;
     rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
     if((ifacet & 8) == 0)x = -x;
+    return true;
   } else if(ifacet < 48) {
-    const double r0 = gap_2_/COS_PI_32;
+    const double r0 = gap_2_/SIN_PI_32;
     const double ri = std::max(r2i_ - r0, 0.0);
     const double ro = r2o_ - r0;
     x = 0;
@@ -142,6 +167,7 @@ bool SCTPrimaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
     if((ifacet & 8) == 0)x = -x;
     rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
     if((ifacet & 16) == 0)x = -x;
+    return true;
   }
   return false;
 }
@@ -192,15 +218,26 @@ int SCTSecondaryFacetScheme::find_facet(double x, double y)
   return -1;
 }
 
+unsigned SCTSecondaryFacetScheme::num_facets()
+{
+  return 24;
+}
+
 double SCTSecondaryFacetScheme::facet_area(int ifacet)
 {
   if(ifacet<0) {
     return 0;
-  } else if(ifacet<16) {
-    return r1o_*r1o_*SIN_PI_8/COS_PI_16/COS_PI_16
-     - r1i_*r1i_*SIN_PI_8/COS_PI_8;
-  }  else if(ifacet<48) {
-    return (r2o_*r2o_ - r2i_*r2i_)*SIN_PI_16/COS_PI_16;
+  } else if(ifacet<8) {
+    const double r0 = gap_2_/SIN_PI_8;
+    const double ri = std::max(r1i_ - r0, 0.0);
+    const double ro = r1o_ - r0*COS_PI_16;
+    return ro*ro*SIN_PI_8/COS_PI_16/COS_PI_16
+     - ri*ri*SIN_PI_8/COS_PI_8;
+  }  else if(ifacet<24) {
+    const double r0 = gap_2_/SIN_PI_16;
+    const double ri = std::max(r2i_ - r0, 0.0);
+    const double ro = r2o_ - r0;
+    return (ro*ro - ri*ri)*SIN_PI_16/COS_PI_16;
   }
   return 0;
 }
@@ -210,9 +247,9 @@ bool SCTSecondaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
   if(ifacet<0) {
     return false;
   } else if(ifacet < 8) {
-    const double r0 = gap_2_/COS_PI_8;
+    const double r0 = gap_2_/SIN_PI_8;
     const double ri = std::max(r1i_ - r0, 0.0);
-    const double ro = r1o_ - r0;
+    const double ro = r1o_ - r0*COS_PI_16;
     x = 0;
     y = std::sqrt(0.5*(ro*ro*COS_PI_8/COS_PI_16/COS_PI_16 + ri*ri)) + r0;
     // y = std::sqrt(0.5*(r1i_*r1i_ + r1o_*r1o_));
@@ -222,8 +259,9 @@ bool SCTSecondaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
     if((ifacet & 2) == 0)x = -x;
     rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
     if((ifacet & 4) == 0)x = -x;
+    return true;
   } else if(ifacet < 24) {
-    const double r0 = gap_2_/COS_PI_16;
+    const double r0 = gap_2_/SIN_PI_16;
     const double ri = std::max(r2i_ - r0, 0.0);
     const double ro = r2o_ - r0;
     x = 0;
@@ -237,6 +275,7 @@ bool SCTSecondaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
     if((ifacet & 4) == 0)x = -x;
     rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
     if((ifacet & 8) == 0)x = -x;
+    return true;
   }
   return false;
 }
