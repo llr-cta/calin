@@ -58,12 +58,19 @@ public:
   virtual int find_facet(double x, double z) override;
   virtual double facet_area(int ifacet) override;
   virtual bool facet_centroid(int ifacet, double& x_out, double& z_out) override;
+
+  static double default_r1i() { return 219.350*COS_PI_16; }
+  static double default_r1o() { return 340.000*COS_PI_32 - 0.7; }
+  static double default_r2i() { return 340.000*COS_PI_32 + 0.7; }
+  static double default_r2o() { return 483.1875*COS_PI_32; }
+  static double default_gap_2() { return 0.7; }
+
 private:
-  double r1i_ = 219.350*COS_PI_16;        // inner radius of inner panel (flat edge distance from origin)
-  double r1o_ = 340.000*COS_PI_32 - 0.7; // outer radius of inner panel
-  double r2i_ = 340.000*COS_PI_32 + 0.7; // inner radius of outer panel
-  double r2o_ = 483.1875*COS_PI_32;      // outer radius of outer panel
-  double gap_2_ = 0.7;                   // half the gap between panels along edge
+  double r1i_ = default_r1i(); // inner radius of inner panel (flat edge distance from origin)
+  double r1o_ = default_r1o(); // outer radius of inner panel
+  double r2i_ = default_r2i(); // inner radius of outer panel
+  double r2o_ = default_r2o(); // outer radius of outer panel
+  double gap_2_ = default_gap_2(); // half the gap between panels along edge
 };
 
 class SCTSecondaryFacetScheme: public SCTFacetScheme
@@ -76,12 +83,19 @@ public:
   virtual int find_facet(double x, double z) override;
   virtual double facet_area(int ifacet) override;
   virtual bool facet_centroid(int ifacet, double& x_out, double& z_out) override;
+
+  static double default_r1i() { return 39.45*COS_PI_8; }
+  static double default_r1o() { return 159.65*COS_PI_16 - 0.7; }
+  static double default_r2i() { return 159.65*COS_PI_16 + 0.7; }
+  static double default_r2o() { return 270.83*COS_PI_16; }
+  static double default_gap_2() { return 0.7; }
+
 private:
-  double r1i_ = 39.45*COS_PI_8;        // inner radius of inner panel (flat edge distance from origin)
-  double r1o_ = 159.65*COS_PI_16 - 0.7; // outer radius of inner panel
-  double r2i_ = 159.65*COS_PI_16 + 0.7; // inner radius of outer panel
-  double r2o_ = 270.83*COS_PI_16;       // outer radius of outer panel
-  double gap_2_ = 0.7;                  // half the gap between panels along edge
+  double r1i_ = default_r1i(); // inner radius of inner panel (flat edge distance from origin)
+  double r1o_ = default_r1o(); // outer radius of inner panel
+  double r2i_ = default_r2i(); // inner radius of outer panel
+  double r2o_ = default_r2o(); // outer radius of outer panel
+  double gap_2_ = default_gap_2(); // half the gap between panels along edge
 };
 
 } } } // namespace calin::simulations::sct_optics
