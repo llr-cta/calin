@@ -28,7 +28,7 @@
 namespace calin { namespace simulation { namespace sct_optics {
 
 // from mpmath import mp
-// mp.dps = 50
+// mp.dps = 50 # far more digits than needed
 // c = -1
 // s = 0
 // for i in range(0,6):
