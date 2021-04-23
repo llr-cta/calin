@@ -14,7 +14,8 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_SWIG_PROTO pmt.proto vs_optics.proto tracker.proto atmosphere.proto
-	ray_processor.proto vcl_iact.proto geant4_shower_generator.proto)
+	ray_processor.proto vcl_iact.proto geant4_shower_generator.proto
+	sct_optics.proto)
 set(CALIN_PACKAGE simulation)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 

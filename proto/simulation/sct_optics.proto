@@ -1,0 +1,117 @@
+//-*-mode:protobuf; mode:font-lock;-*-
+
+/*
+
+   calin/proto/simulations/sct_optics.proto -- Stephen Fegan -- 2021-04-23
+
+   Protobufs for defining SCT optics arrays
+
+   Copyright 2021, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+import "common_types.proto";
+import "simulation/vs_optics.proto";
+
+package calin.ix.simulation.sct_optics;
+
+// ============================================================================
+//
+// PARAMETERS THAT DEFINE CONCRETE ARRAY
+//
+// ============================================================================
+
+message SCTFacetScheme
+{
+  double inner_ring_inner_radius                           = 1 [
+    (CFO).desc = "Inner radius of inner ring or mirrors (distance between"
+      "origin and line defining inner edge of facet).", (CFO).units="cm" ];
+  double inner_ring_outer_radius                           = 2 [
+    (CFO).desc = "Outer radius of inner ring or mirrors (distance between"
+      "origin and line defining outer edge of facet).", (CFO).units="cm" ];
+  double outer_ring_inner_radius                           = 3 [
+    (CFO).desc = "Inner radius of outer ring or mirrors (distance between"
+      "origin and line defining inner edge of facet).", (CFO).units="cm" ];
+  double outer_ring_outer_radius                           = 4 [
+    (CFO).desc = "Outer radius of outer ring or mirrors (distance between"
+      "origin and line defining outer edge of facet).", (CFO).units="cm" ];
+  double long_edge_half_gap                                = 5 [
+    (CFO).desc = "Half the distance facets along their long edge.",
+    (CFO).units="cm" ];
+};
+
+message SCTFacet
+{
+  uint32 id                                                = 1
+    [(CFO).desc = "Sequential facet identification number, starting at zero."];
+  bool removed                                             = 2
+    [(CFO).desc = "True if this mirror facet has been removed."];
+  double spot_size                                         = 3 [
+    (CFO).desc = "Parameter describing spot size from this mirror in "
+      "perfectly aligned system.", (CFO).units="cm" ];
+  calin.ix.common_types.Matrix3D offset                    = 4 [
+    (CFO).desc = "Facet offset, if needed.", (CFO).units="cm" ];
+  calin.ix.common_types.Matrix3D rotation                  = 5 [
+    (CFO).desc = "Facet rotation matrix, if needed." ];
+};
+
+message SCTTelescope
+{
+  repeated double primary_sag_polynomial                   = 10 [
+    (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
+      "are function of squared-distance from optic axis in cm.",
+    (CFO).units = "cm" ];
+  calin.ix.common_types.Matrix3D primary_rotation          = 11 [
+    (CFO).desc = "Primary rotation matrix, if needed." ];
+  SCTFacetScheme primary_facet_scheme                      = 12 [
+    (CFO).desc = "Primary facet scheme." ];
+  repeated SCTFacet primary_facets                         = 13 [
+    (CFO).desc = "Primary facet parameters." ];
+};
+
+// ============================================================================
+//
+// PARAMETERS USED TO CONSTRUCT RANDOM ARRAY
+//
+// ============================================================================
+
+message SCTRandomArrayParameters
+{
+  repeated double primary_sag_polynomial                   = 10 [
+    (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
+      "are function of squared-distance from optic axis in cm.",
+    (CFO).units = "cm" ];
+  calin.ix.common_types.Matrix3D primary_rotation          = 11 [
+    (CFO).desc = "Primary rotation matrix, if needed." ];
+  SCTFacetScheme primary_facet_scheme                      = 12 [
+    (CFO).desc = "Primary facet scheme." ];
+
+  repeated double secondary_sag_polynomial                 = 20 [
+    (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
+      "are function of squared-distance from optic axis in cm.",
+    (CFO).units = "cm" ];
+  calin.ix.common_types.Matrix3D secondary_rotation        = 21 [
+    (CFO).desc = "Primary rotation matrix, if needed." ];
+  SCTFacetScheme secondary_facet_scheme                    = 22 [
+    (CFO).desc = "Primary facet scheme." ];
+
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_primary_obscuration   = 30;
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_secondary_obscuration = 31;
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_camera_obscuration    = 32;
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData camera_obscuration        = 33;
+};
