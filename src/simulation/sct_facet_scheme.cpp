@@ -109,13 +109,13 @@ double SCTPrimaryFacetScheme::facet_area(int ifacet)
   } else if(ifacet<16) {
     const double r0 = gap_2_/SIN_PI_16;
     const double ri = std::max(r1i_ - r0, 0.0);
-    const double ro = r1o_ - r0*COS_PI_32;
+    const double ro = std::max(r1o_ - r0*COS_PI_32, 0.0);
     return ro*ro*SIN_PI_16/COS_PI_32/COS_PI_32
      - ri*ri*SIN_PI_16/COS_PI_16;
   }  else if(ifacet<48) {
     const double r0 = gap_2_/SIN_PI_32;
     const double ri = std::max(r2i_ - r0, 0.0);
-    const double ro = r2o_ - r0;
+    const double ro = std::max(r2o_ - r0, 0.0);
     return (ro*ro - ri*ri)*SIN_PI_32/COS_PI_32;
   }
   return 0;
@@ -230,13 +230,13 @@ double SCTSecondaryFacetScheme::facet_area(int ifacet)
   } else if(ifacet<8) {
     const double r0 = gap_2_/SIN_PI_8;
     const double ri = std::max(r1i_ - r0, 0.0);
-    const double ro = r1o_ - r0*COS_PI_16;
+    const double ro = std::max(r1o_ - r0*COS_PI_16, 0.0);
     return ro*ro*SIN_PI_8/COS_PI_16/COS_PI_16
      - ri*ri*SIN_PI_8/COS_PI_8;
   }  else if(ifacet<24) {
     const double r0 = gap_2_/SIN_PI_16;
     const double ri = std::max(r2i_ - r0, 0.0);
-    const double ro = r2o_ - r0;
+    const double ro = std::max(r2o_ - r0, 0.0);
     return (ro*ro - ri*ri)*SIN_PI_16/COS_PI_16;
   }
   return 0;
