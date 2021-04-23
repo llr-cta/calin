@@ -53,6 +53,7 @@ SCTPrimaryFacetScheme::~SCTPrimaryFacetScheme()
 
 int SCTPrimaryFacetScheme::find_facet(double x, double y)
 {
+  // Find mirror sector by repeated folding along 5 symmetry axes
   unsigned sector = 0;
 
   double x1 = x;
@@ -179,6 +180,7 @@ SCTSecondaryFacetScheme::~SCTSecondaryFacetScheme()
 
 int SCTSecondaryFacetScheme::find_facet(double x, double y)
 {
+  // Find mirror sector by repeated folding along 4 symmetry axes
   unsigned sector = 0;
 
   double x1 = x;
