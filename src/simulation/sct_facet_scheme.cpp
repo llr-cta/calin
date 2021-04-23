@@ -136,10 +136,10 @@ bool SCTPrimaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
   } else if(ifacet < 16) {
     const double r0 = gap_2_/SIN_PI_16;
     const double ri = std::max(r1i_ - r0, 0.0);
-    const double ro = r1o_ - r0*COS_PI_32;
+    const double ro = std::max(r1o_ - r0*COS_PI_32, 0.0);
     x = 0;
-    // y = 0.5*(r1i_ + r1o_);
-    y = std::sqrt(0.5*(ro*ro*COS_PI_16/COS_PI_32/COS_PI_32 + ri*ri)) + r0;
+    y = 2.0*(ro*ro*ro/COS_PI_32 - ri*ri*ri/COS_PI_16)/
+      (3.0*(ro*ro/COS_PI_32/COS_PI_32 - ri*ri/COS_PI_16)) + r0;
     rotate_in_place(x, y, COS_PI_16, SIN_PI_16);
     if((ifacet & 1) == 0)x = -x;
     rotate_in_place(x, y, COS_PI_8, SIN_PI_8);
@@ -152,10 +152,10 @@ bool SCTPrimaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
   } else if(ifacet < 48) {
     const double r0 = gap_2_/SIN_PI_32;
     const double ri = std::max(r2i_ - r0, 0.0);
-    const double ro = r2o_ - r0;
+    const double ro = std::max(r2o_ - r0, 0.0);
     x = 0;
     // y = 0.5*(r2i_ + r2o_);
-    y = std::sqrt(0.5*(ro*ro + ri*ri)) + r0;
+    y = 2.0*(ro*ro*ro-ri*ri*ri)/(3.0*(ro*ro-ri*ri)) + r0;
     ifacet -= 16;
     rotate_in_place(x, y, COS_PI_32, SIN_PI_32);
     if((ifacet & 1) == 0)x = -x;
@@ -249,10 +249,10 @@ bool SCTSecondaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
   } else if(ifacet < 8) {
     const double r0 = gap_2_/SIN_PI_8;
     const double ri = std::max(r1i_ - r0, 0.0);
-    const double ro = r1o_ - r0*COS_PI_16;
+    const double ro = std::max(r1o_ - r0*COS_PI_16, 0.0);
     x = 0;
-    y = std::sqrt(0.5*(ro*ro*COS_PI_8/COS_PI_16/COS_PI_16 + ri*ri)) + r0;
-    // y = std::sqrt(0.5*(r1i_*r1i_ + r1o_*r1o_));
+    y = 2.0*(ro*ro*ro/COS_PI_16 - ri*ri*ri/COS_PI_8)/
+      (3.0*(ro*ro/COS_PI_16/COS_PI_16 - ri*ri/COS_PI_8)) + r0;
     rotate_in_place(x, y, COS_PI_8, SIN_PI_8);
     if((ifacet & 1) == 0)x = -x;
     rotate_in_place(x, y, COS_PI_4, SIN_PI_4);
@@ -263,9 +263,9 @@ bool SCTSecondaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
   } else if(ifacet < 24) {
     const double r0 = gap_2_/SIN_PI_16;
     const double ri = std::max(r2i_ - r0, 0.0);
-    const double ro = r2o_ - r0;
+    const double ro = std::max(r2o_ - r0, 0.0);
     x = 0;
-    y = std::sqrt(0.5*(ro*ro + ri*ri)) + r0;
+    y = 2.0*(ro*ro*ro-ri*ri*ri)/(3.0*(ro*ro-ri*ri)) + r0;
     ifacet -= 8;
     rotate_in_place(x, y, COS_PI_16, SIN_PI_16);
     if((ifacet & 1) == 0)x = -x;
