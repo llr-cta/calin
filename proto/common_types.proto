@@ -184,3 +184,26 @@ message Matrix3D
   double zz                             = 9
     [(CFO).desc = "ZZ element of matrix : m(2,2)." ];
 };
+
+message EulerAngles3D
+{
+  enum RotationOrder {
+    ZXZ                                 = 0;
+    XYX                                 = 1;
+    YZY                                 = 2;
+    ZYZ                                 = 3;
+    XZX                                 = 4;
+    YXY                                 = 5;
+  };
+
+  RotationOrder rotation_order          = 1
+    [(CFO).desc = "Order of rotations. For example, if the order is YXY then a "
+      "point initially at r=(x,y,z) will end up at "
+      "r_prime=R_Y(gamma)R_X(beta)R_Y(alpha)r" ];
+  double alpha                          = 2
+    [(CFO).desc = "First rotation angle [0,360].", (CFO).units="deg" ];
+  double beta                           = 3
+    [(CFO).desc = "Second rotation angle [0,180].", (CFO).units="deg" ];
+  double gamma                          = 4
+    [(CFO).desc = "Third rotation angle [0,360].", (CFO).units="deg" ];
+};
