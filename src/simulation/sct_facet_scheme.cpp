@@ -173,6 +173,16 @@ bool SCTPrimaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
   return false;
 }
 
+double SCTPrimaryFacetScheme::inner_radius()
+{
+  return r1i_;
+}
+
+double SCTPrimaryFacetScheme::outer_radius()
+{
+  return r2o_/COS_PI_32;
+}
+
 SCTSecondaryFacetScheme::~SCTSecondaryFacetScheme()
 {
   // nothing to see here
@@ -280,4 +290,14 @@ bool SCTSecondaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
     return true;
   }
   return false;
+}
+
+double SCTSecondaryFacetScheme::inner_radius()
+{
+  return r1i_;
+}
+
+double SCTSecondaryFacetScheme::outer_radius()
+{
+  return r2o_/COS_PI_16;
 }
