@@ -76,11 +76,13 @@ message SCTTelescope
     (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
       "are function of squared-distance from optic axis in cm.",
     (CFO).units = "cm" ];
-  calin.ix.common_types.Matrix3D primary_rotation          = 11 [
+  calin.ix.common_types.Vector3D primary_offset            = 11 [
+    (CFO).desc = "Primary origin in reflector frame, if needed.", (CFO).units="cm" ];
+  calin.ix.common_types.Matrix3D primary_rotation          = 12 [
     (CFO).desc = "Primary rotation matrix, if needed." ];
-  SCTFacetScheme primary_facet_scheme                      = 12 [
+  SCTFacetScheme primary_facet_scheme                      = 13 [
     (CFO).desc = "Primary facet scheme." ];
-  repeated SCTFacet primary_facets                         = 13 [
+  repeated SCTFacet primary_facets                         = 14 [
     (CFO).desc = "Primary facet parameters." ];
 };
 
@@ -92,23 +94,34 @@ message SCTTelescope
 
 message SCTRandomArrayParameters
 {
+  common_types.EarthCoordinates array_origin               = 1
+    [(CFO).desc = "Coordinates of origin of array reference frame on Earth"];
+  calin.ix.simulation.vs_optics.UserDefinedArrayLayout array_layout = 2;
+
+  double focal_length                                      = 3 [
+    (CFO).desc = "Effective focal length of system.", (CFO).units = "cm" ];
+
   repeated double primary_sag_polynomial                   = 10 [
     (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
-      "are function of squared-distance from optic axis in cm.",
-    (CFO).units = "cm" ];
-  calin.ix.common_types.Matrix3D primary_rotation          = 11 [
-    (CFO).desc = "Primary rotation matrix, if needed." ];
-  SCTFacetScheme primary_facet_scheme                      = 12 [
+      "are function of squared-distance from optic axis in units of focal length.",
+    (CFO).units = "focal-length" ];
+  calin.ix.common_types.Vector3D primary_offset            = 11 [
+    (CFO).desc = "Primary origin in reflector frame, if needed.", (CFO).units="cm" ];
+  calin.ix.common_types.EulerAngles3D primary_rotation     = 12 [
+    (CFO).desc = "Primary rotation angles, if needed." ];
+  SCTFacetScheme primary_facet_scheme                      = 13 [
     (CFO).desc = "Primary facet scheme." ];
 
   repeated double secondary_sag_polynomial                 = 20 [
     (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
-      "are function of squared-distance from optic axis in cm.",
-    (CFO).units = "cm" ];
-  calin.ix.common_types.Matrix3D secondary_rotation        = 21 [
-    (CFO).desc = "Primary rotation matrix, if needed." ];
-  SCTFacetScheme secondary_facet_scheme                    = 22 [
-    (CFO).desc = "Primary facet scheme." ];
+      "are function of squared-distance from optic axis in units of focal length.",
+    (CFO).units = "focal-length" ];
+  calin.ix.common_types.Vector3D secondary_offset          = 21 [
+    (CFO).desc = "Secondary origin in reflector frame, if needed.", (CFO).units="cm" ];
+  calin.ix.common_types.EulerAngles3D secondary_rotation   = 22 [
+    (CFO).desc = "Secondary rotation angles, if needed." ];
+  SCTFacetScheme secondary_facet_scheme                    = 23 [
+    (CFO).desc = "Secondary facet scheme." ];
 
   repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_primary_obscuration   = 30;
   repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_secondary_obscuration = 31;
