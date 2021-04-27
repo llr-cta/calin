@@ -187,25 +187,29 @@ class VSOAlignedBoxObscuration: public VSOObscuration
 class VSOAlignedRectangularAperture: public VSOObscuration
 {
 public:
-  VSOAlignedRectangularAperture(double center_y, double flat_to_flat_xy):
+  VSOAlignedRectangularAperture(double center_y, double flat_to_flat_xy, bool inverted = false):
     VSOObscuration(), center_(0,0,center_y),
-    flat_to_flat_x_2_(0.5*flat_to_flat_xy), flat_to_flat_z_2_(0.5*flat_to_flat_xy)
+    flat_to_flat_x_2_(0.5*flat_to_flat_xy), flat_to_flat_z_2_(0.5*flat_to_flat_xy),
+    inverted_(inverted)
   {
    // nothing to see here
   }
 
   VSOAlignedRectangularAperture(const Eigen::Vector3d& center,
-                                double flat_to_flat_xy):
+                                double flat_to_flat_xy, bool inverted = false):
     VSOObscuration(), center_(center),
-    flat_to_flat_x_2_(0.5*flat_to_flat_xy), flat_to_flat_z_2_(0.5*flat_to_flat_xy)
+    flat_to_flat_x_2_(0.5*flat_to_flat_xy), flat_to_flat_z_2_(0.5*flat_to_flat_xy),
+    inverted_(inverted)
   {
    // nothing to see here
   }
 
   VSOAlignedRectangularAperture(const Eigen::Vector3d& center,
-                                double flat_to_flat_x, double flat_to_flat_z):
+                                double flat_to_flat_x, double flat_to_flat_z,
+                                bool inverted = false):
     VSOObscuration(), center_(center),
-    flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z)
+    flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z),
+    inverted_(inverted)
   {
    // nothing to see here
   }
@@ -229,11 +233,13 @@ public:
   const Eigen::Vector3d& center() const { return center_; }
   double flat_to_flat_x_2() const { return flat_to_flat_x_2_; }
   double flat_to_flat_z_2() const { return flat_to_flat_z_2_; }
+  bool inverted() const { return inverted_; }
 
 private:
   Eigen::Vector3d         center_;
   double                  flat_to_flat_x_2_;
   double                  flat_to_flat_z_2_;
+  bool                    inverted_;
 };
 
 class VSOAlignedTileAperture: public VSOObscuration
@@ -318,15 +324,17 @@ private:
 class VSOAlignedCircularAperture: public VSOObscuration
 {
 public:
-  VSOAlignedCircularAperture(double center_y, double diameter):
-    VSOObscuration(), center_(0,0,center_y), radius_sq_(0.25*diameter*diameter)
+  VSOAlignedCircularAperture(double center_y, double diameter, bool inverted = false):
+    VSOObscuration(), center_(0,0,center_y), radius_sq_(0.25*diameter*diameter),
+    inverted_(inverted)
   {
    // nothing to see here
   }
 
-  VSOAlignedCircularAperture(const Eigen::Vector3d& center, double diameter):
-    VSOObscuration(), center_(center), radius_sq_(0.25*diameter*diameter)
-  {
+  VSOAlignedCircularAperture(const Eigen::Vector3d& center, double diameter, bool inverted = false):
+    VSOObscuration(), center_(center), radius_sq_(0.25*diameter*diameter),
+    inverted_(inverted)
+{
    // nothing to see here
   }
 
@@ -347,11 +355,13 @@ public:
     const ix::simulation::vs_optics::VSOAlignedCircularApertureData& d);
 
   const Eigen::Vector3d& center() const { return center_; }
-  const double radius_sq() const { return radius_sq_; }
+  double radius_sq() const { return radius_sq_; }
+  bool inverted() const { return inverted_; }
 
 private:
   Eigen::Vector3d         center_;
   double                  radius_sq_;
+  bool                    inverted_;
 };
 
 } } } // namespace calin::simulation::vs_optics

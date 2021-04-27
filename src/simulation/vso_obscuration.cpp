@@ -244,7 +244,11 @@ doesObscure(const calin::math::ray::Ray& r_in, calin::math::ray::Ray& r_out, dou
     const double De =
       std::max(fabs(r_out.x()-center_.x())-flat_to_flat_x_2_,
                fabs(r_out.z()-center_.z())-flat_to_flat_z_2_);
-    return De > 0;
+    if(inverted_) {
+      return De <= 0;
+    } else {
+      return De > 0;
+    }
   }
 
   return false;
@@ -264,6 +268,7 @@ VSOAlignedRectangularAperture::dump_as_proto(
   calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center_pos());
   dd->set_flat_to_flat_x(2*flat_to_flat_x_2_);
   dd->set_flat_to_flat_z(2*flat_to_flat_z_2_);
+  dd->set_invert(inverted_);
   return d;
 }
 
@@ -272,7 +277,7 @@ VSOAlignedRectangularAperture* VSOAlignedRectangularAperture::create_from_proto(
 {
   return new VSOAlignedRectangularAperture(
     calin::math::vector3d_util::from_proto(d.center_pos()),
-    d.flat_to_flat_x(), d.flat_to_flat_z());
+    d.flat_to_flat_x(), d.flat_to_flat_z(), d.invert());
 }
 
 // *****************************************************************************
@@ -352,7 +357,11 @@ doesObscure(const calin::math::ray::Ray& r_in, calin::math::ray::Ray& r_out, dou
   {
     const double D2e =
       SQR(r_out.x()-center_.x())+SQR(r_out.z()-center_.z())-radius_sq_;
-    return D2e > 0;
+    if(inverted_) {
+      return D2e <= 0;
+    } else {
+      return D2e > 0;
+    }
   }
 
   return false;
@@ -371,6 +380,7 @@ VSOAlignedCircularAperture::dump_as_proto(
   auto* dd = d->mutable_circular_aperture();
   calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center_pos());
   dd->set_diameter(2*sqrt(radius_sq_));
+  dd->set_invert(inverted_);
   return d;
 }
 
@@ -378,20 +388,13 @@ VSOAlignedCircularAperture* VSOAlignedCircularAperture::create_from_proto(
   const calin::ix::simulation::vs_optics::VSOAlignedCircularApertureData& d)
 {
   return new VSOAlignedCircularAperture(
-    calin::math::vector3d_util::from_proto(d.center_pos()),d.diameter());
+    calin::math::vector3d_util::from_proto(d.center_pos()),d.diameter(),d.invert());
 }
 
 // *****************************************************************************
 // *****************************************************************************
 //
 // VSOAlignedTileAperture
-//
-// *****************************************************************************
-// *****************************************************************************
-// *****************************************************************************
-// *****************************************************************************
-//
-// VSOAlignedRectangularAperture
 //
 // *****************************************************************************
 // *****************************************************************************
