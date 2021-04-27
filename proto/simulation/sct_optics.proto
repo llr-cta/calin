@@ -72,7 +72,7 @@ message SCTFacet
 
 message SCTTelescope
 {
-  repeated double primary_sag_polynomial                   = 10 [
+  repeated double primary_surface_polynomial               = 10 [
     (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
       "are function of squared-distance from optic axis in cm.",
     (CFO).units = "cm" ];
@@ -104,7 +104,7 @@ message SCTRandomArrayParameters
   repeated double primary_sag_polynomial                   = 10 [
     (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
       "are function of squared-distance from optic axis in units of focal length.",
-    (CFO).units = "focal-length" ];
+    (CFO).units = "focal-length", (CFO).ref="SCT-OPTMO/121108" ];
   calin.ix.common_types.Vector3D primary_offset            = 11 [
     (CFO).desc = "Primary origin in reflector frame, if needed.", (CFO).units="cm" ];
   calin.ix.common_types.EulerAngles3D primary_rotation     = 12 [
@@ -112,19 +112,36 @@ message SCTRandomArrayParameters
   SCTFacetScheme primary_facet_scheme                      = 13 [
     (CFO).desc = "Primary facet scheme." ];
 
-  repeated double secondary_sag_polynomial                 = 20 [
-    (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
+  double secondary_distance                                = 20 [
+    (CFO).desc = "Position of secondary surface along optical axis at zero sag. "
+      "This should be 1/q in the nomenclature of SCT-OPTMO/121108.",
+    (CFO).units = "focal-length", (CFO).ref="SCT-OPTMO/121108" ];
+  repeated double secondary_sag_polynomial                 = 21 [
+    (CFO).desc = "Coefficients describing secondary surface sag. Coefficients "
       "are function of squared-distance from optic axis in units of focal length.",
-    (CFO).units = "focal-length" ];
-  calin.ix.common_types.Vector3D secondary_offset          = 21 [
-    (CFO).desc = "Secondary origin in reflector frame, if needed.", (CFO).units="cm" ];
-  calin.ix.common_types.EulerAngles3D secondary_rotation   = 22 [
+    (CFO).units = "focal-length", (CFO).ref="SCT-OPTMO/121108" ];
+  calin.ix.common_types.Vector3D secondary_offset          = 22 [
+    (CFO).desc = "Secondary offset in reflector frame, if needed.", (CFO).units="cm" ];
+  calin.ix.common_types.EulerAngles3D secondary_rotation   = 23 [
     (CFO).desc = "Secondary rotation angles, if needed." ];
-  SCTFacetScheme secondary_facet_scheme                    = 23 [
+  SCTFacetScheme secondary_facet_scheme                    = 24 [
     (CFO).desc = "Secondary facet scheme." ];
 
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_primary_obscuration   = 30;
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_secondary_obscuration = 31;
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_camera_obscuration    = 32;
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData camera_obscuration        = 33;
+  double camera_distance                                   = 30 [
+    (CFO).desc = "Position of camera surface along optical axis at zero sag. "
+      "This should be 1/q-(1-alpha) in the nomenclature of SCT-OPTMO/121108.",
+    (CFO).units = "focal-length", (CFO).ref="SCT-OPTMO/121108" ];
+  repeated double camera_sag_polynomial                    = 31 [
+    (CFO).desc = "Coefficients describing camera surface sag. Coefficients "
+      "are function of squared-distance from optic axis in units of cm.",
+    (CFO).units = "focal-length", (CFO).ref="SCT-OPTMO/121108" ];
+  calin.ix.common_types.Vector3D camera_offset             = 32 [
+    (CFO).desc = "Camera offset in reflector frame, if needed.", (CFO).units="cm" ];
+  calin.ix.common_types.EulerAngles3D camera_rotation      = 33 [
+    (CFO).desc = "Camera rotation angles, if needed." ];
+
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_primary_obscuration   = 40;
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_secondary_obscuration = 41;
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_camera_obscuration    = 42;
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData camera_obscuration        = 43;
 };
