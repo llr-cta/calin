@@ -1,10 +1,8 @@
-//-*-mode:swig;-*-
-
 /*
 
-   calin/simulation/sct_optics.i -- Stephen Fegan -- 2021-04-19
+   calin/simulation/sct_ray_tracer.cpp -- Stephen Fegan -- 2021-04-27
 
-   SWIG interface file for calin.simulation.sct_optics
+   Class for SCT ray tracing
 
    Copyright 2021, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
@@ -22,26 +20,19 @@
 
 */
 
-%module (package="calin.simulation") sct_optics
-%feature(autodoc,2);
+#include <cmath>
+#include <algorithm>
+#include <stdexcept>
 
-%{
-#include "simulation/sct_facet_scheme.hpp"
-#include "simulation/sct_ray_tracer.hpp"
-#define SWIG_FILE_WITH_INIT
-  %}
+#include <simulation/sct_ray_tracer.hpp>
 
-%init %{
-  import_array();
-%}
+using namespace calin::simulation::sct_optics;
 
-%include "calin_typemaps.i"
-%import "calin_global_definitions.i"
+calin::ix::simulation::sct_optics::SCTArray*
+calin::simulation::sct_optics::make_sct_array(
+  calin::ix::simulation::sct_optics::SCTRandomArrayParameters* param)
+{
+  auto* array = new calin::ix::simulation::sct_optics::SCTArray();
 
-%apply double &OUTPUT { double& x_out };
-%apply double &OUTPUT { double& z_out };
-
-%newobject make_sct_array;
-
-%include "simulation/sct_facet_scheme.hpp"
-%include "simulation/sct_ray_tracer.hpp"
+  return array;
+}

@@ -86,6 +86,14 @@ message SCTTelescope
     (CFO).desc = "Primary facet parameters." ];
 };
 
+message SCTArray
+{
+  common_types.EarthCoordinates array_origin               = 1
+    [(CFO).desc = "Coordinates of origin of array reference frame on Earth." ];
+  repeated SCTTelescope telescope                          = 2
+    [(CFO).desc = "Telescopes"];
+};
+
 // ============================================================================
 //
 // PARAMETERS USED TO CONSTRUCT RANDOM ARRAY
