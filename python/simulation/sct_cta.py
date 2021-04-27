@@ -55,12 +55,18 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
         scope.set_y(scope_y)
         scope.set_z(sct.array_origin().elevation())
 
-    sct.set_focal_length(558.630)
+    F = 558.630
+    q = 2/3
+    alpha = 2/3
 
-    sct.set_primary_sag_polynomial(numpy.asarray([
+    sct.set_focal_length(F)
+
+    pp = numpy.asarray([
         1.4237e-6,  0.11107,  -6.4869e-3,  -6.0375e-3,  1.4912e-2,
         -5.6809e-2, 0.13774,  -0.24615,    0.30847,     -0.26204,
-        0.13550,    -3.3061e-2]))
+        0.13550,    -3.3061e-2])
+
+    sct.set_primary_sag_polynomial(pp)
 
     primary_facet_scheme = sct.mutable_primary_facet_scheme()
     primary_facet_scheme.set_inner_ring_inner_radius(219.350*COS_PI_16);
@@ -69,42 +75,56 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
     primary_facet_scheme.set_outer_ring_outer_radius(483.1875*COS_PI_32)
     primary_facet_scheme.set_long_edge_half_gap(0.7)
 
-    q = 2/3
-    alpha = 2/3
-    sct.set_secondary_distance(1/q)
-    sct.set_secondary_sag_polynomial(numpy.asarray([
+    ps = numpy.asarray([
         4.5094360e-7,  -0.4167062710,  -0.1442213045,  0.67307608,   -3.539924707,
         15.8620298,    -59.11580194,   170.5778772,    -350.8596568, 452.9519853,
-        -274.1880908]))
+        -274.1880908])
+
+    rsec1i = 39.45
+    rsec1o = 159.65
+    rsec2i = 159.65
+    rsec2o = 270.83
+
+    sct.set_secondary_distance(1/q)
+    sct.set_secondary_sag_polynomial(ps)
 
     secondary_facet_scheme = sct.mutable_secondary_facet_scheme()
-    secondary_facet_scheme.set_inner_ring_inner_radius(39.45*COS_PI_8);
-    secondary_facet_scheme.set_inner_ring_outer_radius(159.65*COS_PI_16 - 0.7)
-    secondary_facet_scheme.set_outer_ring_inner_radius(159.65*COS_PI_16 + 0.7)
-    secondary_facet_scheme.set_outer_ring_outer_radius(270.83*COS_PI_16)
+    secondary_facet_scheme.set_inner_ring_inner_radius(rsec1i*COS_PI_8);
+    secondary_facet_scheme.set_inner_ring_outer_radius(rsec1o*COS_PI_16 - 0.7)
+    secondary_facet_scheme.set_outer_ring_inner_radius(rsec2i*COS_PI_16 + 0.7)
+    secondary_facet_scheme.set_outer_ring_outer_radius(rsec2o*COS_PI_16)
     secondary_facet_scheme.set_long_edge_half_gap(0.7)
 
     sct.set_camera_distance(1/q - (1-alpha))
     sct.set_camera_sag_polynomial(numpy.asarray([
-        0, -0.7454, 4.9950])) # Values from confluence 
+        -0.0004475234, -0.7454, 4.9950])) # Values from confluence
     #    0, -0.8327, 4.9950])) # Values from SCT-OPTMO/121108
 
-    # rhop_min = 2.193503
-    # rhop_max = 4.831875
-    # rhos_min = 0.3950
-    # rhos_max = 2.7081
-    # pc = 0.01*asarray([651.485, -1.33436e-03, 2.86525e-8])
-
-
     if(obscure):
-        pass
+        rdisk = rsec2o
+        zdisk = F*(sct.secondary_distance() + numpy.polyval(numpy.flipud(ps), (rdisk/F)**2))
 
-    if include_window:
-        # win = mst.mutable_spherical_window()
-        # win.set_front_y_coord(mst.focal_plane().translation().y() - 427.5/10)
-        # win.set_outer_radius(3443.0/10)
-        # win.set_thickness(5.25/10.0)
-        # win.set_refractive_index(1.5)
-        pass
+        obs = sct.add_primary_obscuration()
+        obs.mutable_circular_aperture().mutable_center_pos().set_y(zdisk)
+        obs.mutable_circular_aperture().set_diameter(rdisk * 2)
+        obs.mutable_circular_aperture().set_invert(True)
+
+        rbaffle = 284.48
+        zbaffle_in = 780.5
+        zbaffle_out = zbaffle_in - 100.33
+
+        obs = sct.add_primary_obscuration()
+        obs.mutable_tube().mutable_end1_pos().set_y(zbaffle_in)
+        obs.mutable_tube().mutable_end2_pos().set_y(zbaffle_out)
+        obs.mutable_tube().set_diameter(rbaffle * 2)
+
+        sct.add_secondary_obscuration().CopyFrom(obs)
+
+    if(include_window):
+        win = sct.mutable_window()
+        win.set_front_y_coord(F*(1/q - (1-alpha)) + 5)
+        win.set_outer_radius(0.0) # plane window
+        win.set_thickness(0.6)
+        win.set_refractive_index(1.49)
 
     return sct

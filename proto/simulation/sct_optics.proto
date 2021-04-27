@@ -140,8 +140,16 @@ message SCTRandomArrayParameters
   calin.ix.common_types.EulerAngles3D camera_rotation      = 33 [
     (CFO).desc = "Camera rotation angles, if needed." ];
 
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_primary_obscuration   = 40;
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_secondary_obscuration = 41;
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData pre_camera_obscuration    = 42;
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData camera_obscuration        = 43;
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData primary_obscuration   = 40 [
+    (CFO).desc = "Obscurations between photon emission and reflection at the "
+      "primary mirror surface." ];
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData secondary_obscuration = 41 [
+    (CFO).desc = "Obscurations between reflections at the primary and secondary "
+      "mirror surfaces." ];
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData camera_obscuration    = 42 [
+    (CFO).desc = "Obscurations between reflection at the secondary mirror and  "
+      "reception at the camera surface." ];
+
+  calin.ix.simulation.vs_optics.SphericalWindowParameters window = 50 [
+    (CFO).desc = "Parameters of camera protection window." ];
 };
