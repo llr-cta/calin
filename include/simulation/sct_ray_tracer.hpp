@@ -31,6 +31,6 @@
 namespace calin { namespace simulation { namespace sct_optics {
 
 calin::ix::simulation::sct_optics::SCTArray*
-make_sct_array(calin::ix::simulation::sct_optics::SCTRandomArrayParameters* param);
+make_sct_array(calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param);
 
 } } } // namespace calin::simulations::sct_optics

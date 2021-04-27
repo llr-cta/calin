@@ -30,9 +30,9 @@ using namespace calin::simulation::sct_optics;
 
 calin::ix::simulation::sct_optics::SCTArray*
 calin::simulation::sct_optics::make_sct_array(
-  calin::ix::simulation::sct_optics::SCTRandomArrayParameters* param)
+  calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param)
 {
   auto* array = new calin::ix::simulation::sct_optics::SCTArray();
-
+  array->mutable_array_origin()->CopyFrom(param.array_origin());
   return array;
 }
