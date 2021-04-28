@@ -65,6 +65,7 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
         1.4237e-6,  0.11107,  -6.4869e-3,  -6.0375e-3,  1.4912e-2,
         -5.6809e-2, 0.13774,  -0.24615,    0.30847,     -0.26204,
         0.13550,    -3.3061e-2])
+    pp *= F * F**(-2*numpy.arange(0,len(pp)))
 
     sct.set_primary_sag_polynomial(pp)
 
@@ -79,13 +80,14 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
         4.5094360e-7,  -0.4167062710,  -0.1442213045,  0.67307608,   -3.539924707,
         15.8620298,    -59.11580194,   170.5778772,    -350.8596568, 452.9519853,
         -274.1880908])
+    ps *= F * F**(-2*numpy.arange(0,len(ps)))
 
     rsec1i = 39.45
     rsec1o = 159.65
     rsec2i = 159.65
     rsec2o = 270.83
 
-    sct.set_secondary_distance(1/q)
+    sct.set_secondary_distance(F/q)
     sct.set_secondary_sag_polynomial(ps)
 
     secondary_facet_scheme = sct.mutable_secondary_facet_scheme()
@@ -95,14 +97,16 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
     secondary_facet_scheme.set_outer_ring_outer_radius(rsec2o*COS_PI_16)
     secondary_facet_scheme.set_long_edge_half_gap(0.7)
 
-    sct.set_camera_distance(1/q - (1-alpha))
-    sct.set_camera_sag_polynomial(numpy.asarray([
-        -0.0004475234, -0.7454, 4.9950])) # Values from confluence
-    #    0, -0.8327, 4.9950])) # Values from SCT-OPTMO/121108
+    # pc = numpy.asarray([0, -0.8327, 4.9950])) # Values from SCT-OPTMO/121108
+    # pc *= F * F**(-2*arange(0,len(pc)))
+    pc = numpy.asarray([-0.2499999999998863, -1.33436e-03, 2.86525e-8]) # Values from confluence
+
+    sct.set_camera_distance(F*(1/q - (1-alpha)))
+    sct.set_camera_sag_polynomial(pc)
 
     if(obscure):
         rdisk = rsec2o
-        zdisk = F*(sct.secondary_distance() + numpy.polyval(numpy.flipud(ps), (rdisk/F)**2))
+        zdisk = sct.secondary_distance() + numpy.polyval(numpy.flipud(ps), rdisk**2)
 
         obs = sct.add_primary_obscuration()
         obs.mutable_circular_aperture().mutable_center_pos().set_y(zdisk)
@@ -122,7 +126,7 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
 
     if(include_window):
         win = sct.mutable_window()
-        win.set_front_y_coord(F*(1/q - (1-alpha)) + 5)
+        win.set_front_y_coord(sct.camera_distance() + 5)
         win.set_outer_radius(0.0) # plane window
         win.set_thickness(0.6)
         win.set_refractive_index(1.49)

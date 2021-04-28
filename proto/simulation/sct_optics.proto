@@ -111,8 +111,8 @@ message SCTRandomArrayParameters
 
   repeated double primary_sag_polynomial                   = 10 [
     (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
-      "are function of squared-distance from optic axis in units of focal length.",
-    (CFO).units = "focal-length", (CFO).ref="SCT-OPTMO/121108" ];
+      "are function of squared-distance from optic axis in units of cm.",
+    (CFO).units = "cm", (CFO).ref="SCT-OPTMO/121108" ];
   calin.ix.common_types.Vector3D primary_offset            = 11 [
     (CFO).desc = "Primary origin in reflector frame, if needed.", (CFO).units="cm" ];
   calin.ix.common_types.EulerAngles3D primary_rotation     = 12 [
@@ -122,12 +122,12 @@ message SCTRandomArrayParameters
 
   double secondary_distance                                = 20 [
     (CFO).desc = "Position of secondary surface along optical axis at zero sag. "
-      "This should be 1/q in the nomenclature of SCT-OPTMO/121108.",
-    (CFO).units = "focal-length", (CFO).ref="SCT-OPTMO/121108" ];
+      "This should be F/q in the nomenclature of SCT-OPTMO/121108.",
+    (CFO).units = "cm", (CFO).ref="SCT-OPTMO/121108" ];
   repeated double secondary_sag_polynomial                 = 21 [
     (CFO).desc = "Coefficients describing secondary surface sag. Coefficients "
-      "are function of squared-distance from optic axis in units of focal length.",
-    (CFO).units = "focal-length", (CFO).ref="SCT-OPTMO/121108" ];
+      "are function of squared-distance from optic axis in units of cm.",
+    (CFO).units = "cm", (CFO).ref="SCT-OPTMO/121108" ];
   calin.ix.common_types.Vector3D secondary_offset          = 22 [
     (CFO).desc = "Secondary offset in reflector frame, if needed.", (CFO).units="cm" ];
   calin.ix.common_types.EulerAngles3D secondary_rotation   = 23 [
@@ -137,12 +137,14 @@ message SCTRandomArrayParameters
 
   double camera_distance                                   = 30 [
     (CFO).desc = "Position of camera surface along optical axis at zero sag. "
-      "This should be 1/q-(1-alpha) in the nomenclature of SCT-OPTMO/121108.",
-    (CFO).units = "focal-length", (CFO).ref="SCT-OPTMO/121108" ];
+      "This should be F*(1/q-(1-alpha)) in the nomenclature of SCT-OPTMO/121108, "
+      "possibly adjusted for finite image focus distance and for the effects "
+      "of the window.",
+    (CFO).units = "cm", (CFO).ref="SCT-OPTMO/121108" ];
   repeated double camera_sag_polynomial                    = 31 [
     (CFO).desc = "Coefficients describing camera surface sag. Coefficients "
       "are function of squared-distance from optic axis in units of cm.",
-    (CFO).units = "focal-length", (CFO).ref="SCT-OPTMO/121108" ];
+    (CFO).units = "cm", (CFO).ref="SCT-OPTMO/121108" ];
   calin.ix.common_types.Vector3D camera_offset             = 32 [
     (CFO).desc = "Camera offset in reflector frame, if needed.", (CFO).units="cm" ];
   calin.ix.common_types.EulerAngles3D camera_rotation      = 33 [
