@@ -199,7 +199,7 @@ message EulerAngles3D
   RotationOrder rotation_order          = 1
     [(CFO).desc = "Order of rotations. For example, if the order is YXY then a "
       "point initially at r=(x,y,z) will end up at "
-      "r_prime=R_Y(gamma)R_X(beta)R_Y(alpha)r" ];
+      "r_prime=R_Y(alpha)R_X(beta)R_Y(gamma)r" ];
   double alpha                          = 2
     [(CFO).desc = "First rotation angle [0,360].", (CFO).units="deg" ];
   double beta                           = 3
