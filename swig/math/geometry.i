@@ -36,4 +36,5 @@
 %import "calin_global_definitions.i"
 
 %apply Eigen::Matrix3d &OUTPUT { Eigen::Matrix3d& m };
+
 %include "math/geometry.hpp"

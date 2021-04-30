@@ -28,6 +28,7 @@
 #include <Eigen/Dense>
 
 #include <common_types.pb.h>
+#include <math/rng.hpp>
 
 namespace calin { namespace math { namespace geometry {
 
@@ -201,5 +202,12 @@ inline Eigen::Matrix3d rotation_z_to_vec_Rzyz(const Eigen::Vector3d v)
 
 Eigen::Quaterniond euler_to_quaternion(const calin::ix::common_types::EulerAngles3D& euler);
 Eigen::Matrix3d euler_to_matrix(const calin::ix::common_types::EulerAngles3D& euler);
+
+void quaternion_to_euler(calin::ix::common_types::EulerAngles3D& euler,
+  const Eigen::Quaterniond& q);
+void matrix_to_euler(calin::ix::common_types::EulerAngles3D& euler,
+  const Eigen::Matrix3d& m);
+
+void scattering_eulers(calin::ix::common_types::EulerAngles3D& euler, double dispersion, calin::math::rng::RNG& rng);
 
 } } } // namespace calin::math::geometry
