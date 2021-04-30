@@ -149,7 +149,7 @@ inline void rotation_z_to_vec_Rzyz(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
 #ifndef SWIG
 
 // -----------------------------------------------------------------------------
-// Skip in SWIG as templates map above functions in equivalents of these
+// Skip in SWIG as SWIG output templates map above functions in equivalents of these
 // -----------------------------------------------------------------------------
 
 inline Eigen::Matrix3d rotation_theta_phi(
@@ -197,9 +197,9 @@ inline Eigen::Matrix3d rotation_z_to_vec_Rzyz(const Eigen::Vector3d v)
   return m;
 }
 
+#endif
+
 Eigen::Quaterniond euler_to_quaternion(const calin::ix::common_types::EulerAngles3D& euler);
 Eigen::Matrix3d euler_to_matrix(const calin::ix::common_types::EulerAngles3D& euler);
-
-#endif
 
 } } } // namespace calin::math::geometry

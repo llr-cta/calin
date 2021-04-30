@@ -40,8 +40,8 @@ euler_to_quaternion(const calin::ix::common_types::EulerAngles3D& euler)
   switch(euler.rotation_order()) {
   case calin::ix::common_types::EulerAngles3D::ZXZ:
     return AngleAxisd(euler.alpha()*(M_PI/180.0), Vector3d::UnitZ())
-        * AngleAxisd(euler.beta()*(M_PI/180.0), Vector3d::UnitX())
-        * AngleAxisd(euler.gamma()*(M_PI/180.0), Vector3d::UnitZ());
+          * AngleAxisd(euler.beta()*(M_PI/180.0), Vector3d::UnitX())
+          * AngleAxisd(euler.gamma()*(M_PI/180.0), Vector3d::UnitZ());
   case calin::ix::common_types::EulerAngles3D::XYX:
     return AngleAxisd(euler.alpha()*(M_PI/180.0), Vector3d::UnitX())
           * AngleAxisd(euler.beta()*(M_PI/180.0), Vector3d::UnitY())
@@ -56,12 +56,12 @@ euler_to_quaternion(const calin::ix::common_types::EulerAngles3D& euler)
           * AngleAxisd(euler.gamma()*(M_PI/180.0), Vector3d::UnitZ());
   case calin::ix::common_types::EulerAngles3D::XZX:
     return AngleAxisd(euler.alpha()*(M_PI/180.0), Vector3d::UnitX())
-            * AngleAxisd(euler.beta()*(M_PI/180.0), Vector3d::UnitZ())
-            * AngleAxisd(euler.gamma()*(M_PI/180.0), Vector3d::UnitX());
+          * AngleAxisd(euler.beta()*(M_PI/180.0), Vector3d::UnitZ())
+          * AngleAxisd(euler.gamma()*(M_PI/180.0), Vector3d::UnitX());
   case calin::ix::common_types::EulerAngles3D::YXY:
     return AngleAxisd(euler.alpha()*(M_PI/180.0), Vector3d::UnitY())
-            * AngleAxisd(euler.beta()*(M_PI/180.0), Vector3d::UnitX())
-            * AngleAxisd(euler.gamma()*(M_PI/180.0), Vector3d::UnitY());
+          * AngleAxisd(euler.beta()*(M_PI/180.0), Vector3d::UnitX())
+          * AngleAxisd(euler.gamma()*(M_PI/180.0), Vector3d::UnitY());
   default:
     throw std::runtime_error("Unsupported rotation order");
   }
