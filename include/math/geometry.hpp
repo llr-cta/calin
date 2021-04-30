@@ -27,6 +27,8 @@
 #include <algorithm>
 #include <Eigen/Dense>
 
+#include <common_types.pb.h>
+
 namespace calin { namespace math { namespace geometry {
 
 inline bool box_has_future_intersection(double& tmin, double& tmax,
@@ -194,6 +196,9 @@ inline Eigen::Matrix3d rotation_z_to_vec_Rzyz(const Eigen::Vector3d v)
   rotation_z_to_vec_Rzyz(m, v);
   return m;
 }
+
+Eigen::Quaterniond euler_to_quaternion(const calin::ix::common_types::EulerAngles3D& euler);
+Eigen::Matrix3d euler_to_matrix(const calin::ix::common_types::EulerAngles3D& euler);
 
 #endif
 
