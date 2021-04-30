@@ -72,6 +72,12 @@ message SCTFacet
 
 message SCTTelescope
 {
+  uint32 id                                                = 1
+    [(CFO).desc = "Sequential telescope identification number, starting at zero."];
+  common_types.Vector3D position                           = 2
+    [(CFO).desc = "Position of the reflector center in the array frame. ",
+     (CFO).units = "cm" ];
+
   repeated double primary_surface_polynomial               = 10 [
     (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
       "are function of squared-distance from optic axis in cm.",
@@ -104,9 +110,24 @@ message SCTRandomArrayParameters
 {
   common_types.EarthCoordinates array_origin               = 1
     [(CFO).desc = "Coordinates of origin of array reference frame on Earth"];
-  calin.ix.simulation.vs_optics.UserDefinedArrayLayout array_layout = 2;
+  calin.ix.simulation.vs_optics.UserDefinedArrayLayout array_layout = 2
+    [(CFO).desc = "Coordinates of telescopes with respect to array"];
+  double telescope_position_xy_dispersion                  = 3
+    [(CFO).desc = "Dispersion in telescope positions in horizontal direcion",
+    (CFO).units="cm" ];
+  double telescope_position_z_dispersion                   = 4
+    [(CFO).desc = "Dispersion in telescope positions in vertical direcion",
+    (CFO).units="cm"];
+  calin.ix.common_types.Vector3D reflector_origin          = 5 [
+    (CFO).desc = "Offset of the reflector origin in the reflector frame  with "
+      "respect to the telescope position, which is defined by the crossing of "
+      "the drive axes. This allows an offset between the center of the nominal "
+      "primary mirror surface and the drive axes to be accounted for. For "
+      "example, a vector of (0,D,0) would put the reflector origin a distance "
+      "D from the telescope position along the nominal optical axis.",
+    (CFO).units="cm" ];
 
-  double focal_length                                      = 3 [
+  double focal_length                                      = 9 [
     (CFO).desc = "Effective focal length of system.", (CFO).units = "cm" ];
 
   repeated double primary_sag_polynomial                   = 10 [
@@ -115,9 +136,19 @@ message SCTRandomArrayParameters
     (CFO).units = "cm", (CFO).ref="SCT-OPTMO/121108" ];
   calin.ix.common_types.Vector3D primary_offset            = 11 [
     (CFO).desc = "Primary origin in reflector frame, if needed.", (CFO).units="cm" ];
-  calin.ix.common_types.EulerAngles3D primary_rotation     = 12 [
+  double primary_offset_xz_dispersion                      = 12 [
+    (CFO).desc = "Dispersion of primary position perpendicular to optic axis. This "
+      "defines a per-telescope random component that is added to the primary_offset "
+      "specified by the \"primary_offset\" variable.",
+    (CFO).units="cm" ];
+  double primary_offset_y_dispersion                       = 13 [
+    (CFO).desc = "Dispersion of primary position parallel to optic axis. This "
+      "defines a per-telescope random component that is added to the primary_offset "
+      "specified by the \"primary_offset\" variable.",
+    (CFO).units="cm" ];
+  calin.ix.common_types.EulerAngles3D primary_rotation     = 14 [
     (CFO).desc = "Primary rotation angles, if needed." ];
-  SCTFacetScheme primary_facet_scheme                      = 13 [
+  SCTFacetScheme primary_facet_scheme                      = 15 [
     (CFO).desc = "Primary facet scheme." ];
 
   double secondary_distance                                = 20 [

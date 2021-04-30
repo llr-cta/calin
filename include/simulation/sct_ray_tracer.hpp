@@ -25,12 +25,37 @@
 #include <cmath>
 #include <Eigen/Dense>
 
+#include <math/rng.hpp>
 #include <simulation/sct_optics.pb.h>
 #include <simulation/sct_facet_scheme.hpp>
 
 namespace calin { namespace simulation { namespace sct_optics {
 
-calin::ix::simulation::sct_optics::SCTArray*
-make_sct_array(calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param);
+#ifndef SWIG
+calin::ix::simulation::sct_optics::SCTTelescope* make_sct_telescope(
+  calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param,
+  double x, double y, double z,
+  calin::math::rng::RNG* rng = nullptr,
+  calin::ix::simulation::sct_optics::SCTTelescope* telescope = nullptr);
+calin::ix::simulation::sct_optics::SCTArray* make_sct_array(
+  calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param,
+  calin::math::rng::RNG* rng = nullptr,
+  calin::ix::simulation::sct_optics::SCTArray* array = nullptr);
+#else
+calin::ix::simulation::sct_optics::SCTTelescope* make_sct_telescope(
+  calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param,
+  double x, double y, double z, calin::math::rng::RNG* rng = nullptr);
+void make_sct_telescope(
+  calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param,
+  double x, double y, double z, calin::math::rng::RNG* rng,
+  calin::ix::simulation::sct_optics::SCTTelescope* telescope);
+calin::ix::simulation::sct_optics::SCTArray* make_sct_array(
+  calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param,
+  calin::math::rng::RNG* rng = nullptr);
+void make_sct_array(
+  calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param,
+  calin::math::rng::RNG* rng,
+  calin::ix::simulation::sct_optics::SCTArray* array);
+#endif
 
 } } } // namespace calin::simulations::sct_optics
