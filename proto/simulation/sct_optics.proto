@@ -84,7 +84,7 @@ message SCTTelescope
     (CFO).units = "cm" ];
   calin.ix.common_types.Vector3D primary_offset            = 11 [
     (CFO).desc = "Primary origin in reflector frame, if needed.", (CFO).units="cm" ];
-  calin.ix.common_types.Matrix3D primary_rotation          = 12 [
+  calin.ix.common_types.EulerAngles3D primary_rotation     = 12 [
     (CFO).desc = "Primary rotation matrix, if needed." ];
   SCTFacetScheme primary_facet_scheme                      = 13 [
     (CFO).desc = "Primary facet scheme." ];
@@ -138,7 +138,7 @@ message SCTRandomArrayParameters
     (CFO).desc = "Primary origin in reflector frame, if needed.", (CFO).units="cm" ];
   double primary_offset_xz_dispersion                      = 12 [
     (CFO).desc = "Dispersion of primary position perpendicular to optic axis. This "
-      "defines a per-telescope random component that is added to the primary_offset "
+      "defines a per-telescope random component that is added to the primary offset "
       "specified by the \"primary_offset\" variable.",
     (CFO).units="cm" ];
   double primary_offset_y_dispersion                       = 13 [
@@ -148,7 +148,12 @@ message SCTRandomArrayParameters
     (CFO).units="cm" ];
   calin.ix.common_types.EulerAngles3D primary_rotation     = 14 [
     (CFO).desc = "Primary rotation angles, if needed." ];
-  SCTFacetScheme primary_facet_scheme                      = 15 [
+  double primary_rotation_dispersion                       = 15 [
+    (CFO).desc = "Dispersion of primary direction. This defines a per-telescope "
+      "random component that is compounded with the primary rotation angle "
+      "specified by the \"primary_rotation\" variable.",
+    (CFO).units="deg" ];
+  SCTFacetScheme primary_facet_scheme                      = 16 [
     (CFO).desc = "Primary facet scheme." ];
 
   double secondary_distance                                = 20 [
@@ -161,9 +166,24 @@ message SCTRandomArrayParameters
     (CFO).units = "cm", (CFO).ref="SCT-OPTMO/121108" ];
   calin.ix.common_types.Vector3D secondary_offset          = 22 [
     (CFO).desc = "Secondary offset in reflector frame, if needed.", (CFO).units="cm" ];
-  calin.ix.common_types.EulerAngles3D secondary_rotation   = 23 [
+  double secondary_offset_xz_dispersion                    = 23 [
+    (CFO).desc = "Dispersion of secondary position perpendicular to optic axis. This "
+      "defines a per-telescope random component that is added to the secondary offset "
+      "specified by the \"secondary_offset\" variable.",
+    (CFO).units="cm" ];
+  double secondary_offset_y_dispersion                     = 24 [
+    (CFO).desc = "Dispersion of secondary position parallel to optic axis. This "
+      "defines a per-telescope random component that is added to the secondary offset "
+      "specified by the \"secondary_offset\" variable.",
+    (CFO).units="cm" ];
+  calin.ix.common_types.EulerAngles3D secondary_rotation   = 25 [
     (CFO).desc = "Secondary rotation angles, if needed." ];
-  SCTFacetScheme secondary_facet_scheme                    = 24 [
+  double secondary_rotation_dispersion                     = 26 [
+    (CFO).desc = "Dispersion of secondary direction. This defines a per-telescope "
+      "random component that is compounded with the secondary rotation angle "
+      "specified by the \"secondary_rotation\" variable.",
+    (CFO).units="deg" ];
+  SCTFacetScheme secondary_facet_scheme                    = 27 [
     (CFO).desc = "Secondary facet scheme." ];
 
   double camera_distance                                   = 30 [

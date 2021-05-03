@@ -24,10 +24,13 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include <util/log.hpp>
+#include <math/geometry.hpp>
 #include <math/vector3d_util.hpp>
 #include <simulation/sct_ray_tracer.hpp>
 
 using namespace calin::simulation::sct_optics;
+using namespace calin::util::log;
 
 calin::ix::simulation::sct_optics::SCTTelescope*
 calin::simulation::sct_optics::make_sct_telescope(
@@ -70,16 +73,26 @@ calin::simulation::sct_optics::make_sct_telescope(
   if(param.primary_offset_y_dispersion() > 0) {
     primary_offset.y() += param.primary_offset_y_dispersion()*rng->normal();
   }
-  calin::math::vector3d_util::dump_as_proto(primary_offset,
-    telescope->mutable_primary_offset());
+  if(primary_offset.squaredNorm() > 0) {
+    calin::math::vector3d_util::dump_as_proto(primary_offset,
+      telescope->mutable_primary_offset());
+  }
 
-  // telescope->CopyFrom()
-  // repeated double primary_surface_polynomial               = 10 [
-  //   (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
-  //     "are function of squared-distance from optic axis in cm.",
-  //   (CFO).units = "cm" ];
-  // calin.ix.common_types.Vector3D primary_offset            = 11 [
-  //   (CFO).desc = "Primary origin in reflector frame, if needed.", (CFO).units="cm" ];
+  Eigen::Quaterniond primary_rotation =
+    calin::math::geometry::euler_to_quaternion(param.primary_rotation());
+  if(param.primary_rotation_dispersion() >= 0) {
+    primary_rotation =
+      calin::math::geometry::euler_to_quaternion(
+        calin::math::geometry::scattering_euler(param.primary_rotation_dispersion(),
+          *rng, calin::ix::common_types::EulerAngles3D::XYX)) * primary_rotation;
+  }
+  if(primary_rotation.vec().squaredNorm() > 0) {
+    telescope->mutable_primary_rotation()->set_rotation_order(
+      calin::ix::common_types::EulerAngles3D::XYX);
+    calin::math::geometry::quaternion_to_euler(
+      telescope->mutable_primary_rotation(), primary_rotation);
+  }
+
   // calin.ix.common_types.Matrix3D primary_rotation          = 12 [
   //   (CFO).desc = "Primary rotation matrix, if needed." ];
   // SCTFacetScheme primary_facet_scheme                      = 13 [
