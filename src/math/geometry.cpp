@@ -74,16 +74,16 @@ euler_to_matrix(const calin::ix::common_types::EulerAngles3D& euler)
 }
 
 void calin::math::geometry::quaternion_to_euler(
-  calin::ix::common_types::EulerAngles3D& euler, const Eigen::Quaterniond& q)
+  calin::ix::common_types::EulerAngles3D* euler, const Eigen::Quaterniond& q)
 {
   return matrix_to_euler(euler, q.toRotationMatrix());
 }
 
 void calin::math::geometry::matrix_to_euler(
-  calin::ix::common_types::EulerAngles3D& euler, const Eigen::Matrix3d& m)
+  calin::ix::common_types::EulerAngles3D* euler, const Eigen::Matrix3d& m)
 {
   Eigen::Vector3d v;
-  switch(euler.rotation_order()) {
+  switch(euler->rotation_order()) {
   case calin::ix::common_types::EulerAngles3D::ZXZ:
     v = m.eulerAngles(2,0,2); break;
   case calin::ix::common_types::EulerAngles3D::XYX:
@@ -99,26 +99,36 @@ void calin::math::geometry::matrix_to_euler(
   default:
     throw std::runtime_error("Unsupported rotation order");
   }
-  euler.set_alpha(v(0) * 180.0/M_PI);
-  euler.set_beta(v(1) * 180.0/M_PI);
-  euler.set_gamma(v(2) * 180.0/M_PI);
+  euler->set_alpha(v(0) * 180.0/M_PI);
+  euler->set_beta(v(1) * 180.0/M_PI);
+  euler->set_gamma(v(2) * 180.0/M_PI);
 }
 
 void calin::math::geometry::scattering_eulers(
-  calin::ix::common_types::EulerAngles3D& euler, double dispersion, math::rng::RNG& rng)
+  calin::ix::common_types::EulerAngles3D* euler, double dispersion, math::rng::RNG& rng)
 {
   if(dispersion<=0)
   {
-    euler.set_alpha(0);
-    euler.set_beta(0);
-    euler.set_gamma(0);
+    euler->set_alpha(0);
+    euler->set_beta(0);
+    euler->set_gamma(0);
     return;
   }
 
   const double phi = rng.uniform() * 360.0 - 180.0;
   const double theta = dispersion*std::sqrt(-2.0*std::log(rng.uniform()));
 
-  euler.set_alpha(phi);
-  euler.set_beta(theta);
-  euler.set_gamma(-phi);
+  euler->set_alpha(phi);
+  euler->set_beta(theta);
+  euler->set_gamma(-phi);
+}
+
+calin::ix::common_types::EulerAngles3D
+calin::math::geometry::scattering_eulers(double dispersion, calin::math::rng::RNG& rng,
+  calin::ix::common_types::EulerAngles3D::RotationOrder rotation_order)
+{
+  calin::ix::common_types::EulerAngles3D euler;
+  euler.set_rotation_order(rotation_order);
+  scattering_eulers(&euler, dispersion, rng);
+  return euler;
 }
