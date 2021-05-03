@@ -116,6 +116,14 @@ calin::simulation::sct_optics::make_sct_telescope(
       calin::math::geometry::scattering_euler(facet_euler,
         param.primary_facet_rotation_dispersion(), *rng);
     }
+
+    if(param.primary_facet_spot_size_mean()>0
+        and param.primary_facet_spot_size_dispersion()>0) {
+      facet->set_spot_size(rng->gamma_by_mean_and_sigma(
+        param.primary_facet_spot_size_mean(), param.primary_facet_spot_size_dispersion()));
+    } else if(param.primary_facet_spot_size_mean()>0) {
+      facet->set_spot_size(param.primary_facet_spot_size_mean());
+    }
   }
   for(auto id : param.primary_facets_removed()) {
     if(id < primary_facet_scheme.num_facets()) {

@@ -169,8 +169,11 @@ message SCTRandomArrayParameters
     (CFO).desc = "Dispersion of primary facet direction. This defines a per-facet "
       "random scattering direction.",
     (CFO).units="deg" ];
-  double primary_facet_spot_size                           = 111 [
-    (CFO).desc = "Spot size from the primary facets.",
+  double primary_facet_spot_size_mean                      = 111 [
+    (CFO).desc = "Mean spot size distribution from the primary facets.",
+    (CFO).units="deg" ];
+  double primary_facet_spot_size_dispersion                = 112 [
+    (CFO).desc = "Dispersion of spot size distribution from the primary facets.",
     (CFO).units="deg" ];
 
   double secondary_distance                                = 200 [
