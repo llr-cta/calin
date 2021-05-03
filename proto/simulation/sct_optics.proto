@@ -64,8 +64,8 @@ message SCTFacet
   double spot_size                                         = 3 [
     (CFO).desc = "Parameter describing spot size from this mirror in "
       "perfectly aligned system.", (CFO).units="cm" ];
-  calin.ix.common_types.Vector3D offset                    = 4 [
-    (CFO).desc = "Facet offset, if needed.", (CFO).units="cm" ];
+  calin.ix.common_types.Vector3D position                  = 4 [
+    (CFO).desc = "Facet centroid position in the reflector frame.", (CFO).units="cm" ];
   calin.ix.common_types.EulerAngles3D rotation             = 5 [
     (CFO).desc = "Facet rotation angles, if needed." ];
 };
@@ -79,7 +79,7 @@ message SCTTelescope
      (CFO).units = "cm" ];
 
   repeated double primary_surface_polynomial               = 10 [
-    (CFO).desc = "Coefficients describing primary surface sag. Coefficients "
+    (CFO).desc = "Coefficients describing primary surface. Coefficients "
       "are function of squared-distance from optic axis in cm.",
     (CFO).units = "cm" ];
   calin.ix.common_types.Vector3D primary_offset            = 11 [
@@ -90,6 +90,28 @@ message SCTTelescope
     (CFO).desc = "Primary facet scheme." ];
   repeated SCTFacet primary_facets                         = 14 [
     (CFO).desc = "Primary facet parameters." ];
+
+  repeated double secondary_surface_polynomial             = 20 [
+    (CFO).desc = "Coefficients describing secondary surface. Coefficients "
+      "are function of squared-distance from optic axis in cm.",
+    (CFO).units = "cm" ];
+  calin.ix.common_types.Vector3D secondary_offset          = 21 [
+    (CFO).desc = "Secondary origin in reflector frame, if needed.", (CFO).units="cm" ];
+  calin.ix.common_types.EulerAngles3D secondary_rotation   = 22 [
+    (CFO).desc = "Secondary rotation matrix, if needed." ];
+  SCTFacetScheme secondary_facet_scheme                    = 23 [
+    (CFO).desc = "Secondary facet scheme." ];
+  repeated SCTFacet secondary_facets                       = 24 [
+    (CFO).desc = "Secondary facet parameters." ];
+
+  repeated double camera_surface_polynomial                = 30 [
+    (CFO).desc = "Coefficients describing camera surface. Coefficients "
+      "are function of squared-distance from optic axis in cm.",
+    (CFO).units = "cm" ];
+  calin.ix.common_types.Vector3D camera_offset             = 31 [
+    (CFO).desc = "Camera origin in reflector frame, if needed.", (CFO).units="cm" ];
+  calin.ix.common_types.EulerAngles3D camera_rotation      = 32 [
+    (CFO).desc = "Camera rotation matrix, if needed." ];
 };
 
 message SCTArray
@@ -207,29 +229,62 @@ message SCTRandomArrayParameters
     (CFO).desc = "Secondary facet scheme." ];
   repeated uint32 secondary_facets_removed                 = 208 [
     (CFO).desc = "List of secondary facets removed." ];
+  double secondary_facet_offset_xz_dispersion                = 209 [
+    (CFO).desc = "Dispersion of secondary facet positions perpendicular to optic axis. This "
+      "defines a per-facet random component that is added to the facet position.",
+    (CFO).units="cm" ];
+  double secondary_facet_offset_y_dispersion                 = 210 [
+    (CFO).desc = "Dispersion of secondary facet positions parallel to optic axis. This "
+      "defines a per-facet random component that is added to the facet position.",
+    (CFO).units="cm" ];
+  double secondary_facet_rotation_dispersion                 = 211 [
+    (CFO).desc = "Dispersion of secondary facet direction. This defines a per-facet "
+      "random scattering direction.",
+    (CFO).units="deg" ];
+  double secondary_facet_spot_size_mean                      = 212 [
+    (CFO).desc = "Mean spot size distribution from the secondary facets.",
+    (CFO).units="deg" ];
+  double secondary_facet_spot_size_dispersion                = 213 [
+    (CFO).desc = "Dispersion of spot size distribution from the secondary facets.",
+    (CFO).units="deg" ];
 
-  double camera_distance                                   = 300 [
+  double camera_distance                                     = 300 [
     (CFO).desc = "Position of camera surface along optical axis at zero sag. "
       "This should be F*(1/q-(1-alpha)) in the nomenclature of SCT-OPTMO/121108, "
       "possibly adjusted for finite image focus distance and for the effects "
       "of the window.",
     (CFO).units = "cm", (CFO).ref="SCT-OPTMO/121108" ];
-  repeated double camera_sag_polynomial                    = 301 [
+  repeated double camera_sag_polynomial                      = 301 [
     (CFO).desc = "Coefficients describing camera surface sag. Coefficients "
       "are function of squared-distance from optic axis in units of cm.",
     (CFO).units = "cm", (CFO).ref="SCT-OPTMO/121108" ];
-  calin.ix.common_types.Vector3D camera_offset             = 302 [
+  calin.ix.common_types.Vector3D camera_offset               = 302 [
     (CFO).desc = "Camera offset in reflector frame, if needed.", (CFO).units="cm" ];
-  calin.ix.common_types.EulerAngles3D camera_rotation      = 303 [
+  double camera_offset_xz_dispersion                         = 303 [
+    (CFO).desc = "Dispersion of camera position perpendicular to optic axis. This "
+      "defines a per-telescope random component that is added to the camera offset "
+      "specified by the \"camera_offset\" variable.",
+    (CFO).units="cm" ];
+  double camera_offset_y_dispersion                          = 304 [
+    (CFO).desc = "Dispersion of camera position parallel to optic axis. This "
+      "defines a per-telescope random component that is added to the camera offset "
+      "specified by the \"camera_offset\" variable.",
+    (CFO).units="cm" ];
+  calin.ix.common_types.EulerAngles3D camera_rotation        = 305 [
     (CFO).desc = "Camera rotation angles, if needed." ];
+  double camera_rotation_dispersion                          = 306 [
+    (CFO).desc = "Dispersion of camera direction. This defines a per-telescope "
+      "random component that is compounded with the camera rotation angle "
+      "specified by the \"secondary_rotation\" variable.",
+    (CFO).units="deg" ];
 
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData primary_obscuration   = 40 [
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData primary_obscuration   = 400 [
     (CFO).desc = "Obscurations between photon emission and reflection at the "
       "primary mirror surface." ];
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData secondary_obscuration = 41 [
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData secondary_obscuration = 401 [
     (CFO).desc = "Obscurations between reflections at the primary and secondary "
       "mirror surfaces." ];
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData camera_obscuration    = 42 [
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData camera_obscuration    = 402 [
     (CFO).desc = "Obscurations between reflection at the secondary mirror and  "
       "reception at the camera surface." ];
 
