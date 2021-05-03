@@ -188,12 +188,12 @@ message Matrix3D
 message EulerAngles3D
 {
   enum RotationOrder {
-    ZXZ                                 = 0;
-    XYX                                 = 1;
-    YZY                                 = 2;
+    XYX                                 = 0;
+    YZY                                 = 1;
+    ZXZ                                 = 2;
     ZYZ                                 = 3;
-    XZX                                 = 4;
-    YXY                                 = 5;
+    YXY                                 = 4;
+    XZX                                 = 5;
   };
 
   RotationOrder rotation_order          = 1
