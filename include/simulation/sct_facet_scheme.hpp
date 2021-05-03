@@ -24,6 +24,7 @@
 
 #include <cmath>
 #include <Eigen/Dense>
+#include <simulation/sct_optics.pb.h>
 
 namespace calin { namespace simulation { namespace sct_optics {
 
@@ -69,6 +70,11 @@ public:
   SCTPrimaryFacetScheme(): SCTFacetScheme() { };
   SCTPrimaryFacetScheme(double r1i, double r1o, double r2i, double r2o, double gap_2):
     SCTFacetScheme(), r1i_(r1i), r1o_(r1o), r2i_(r2i), r2o_(r2o), gap_2_(gap_2) { }
+  SCTPrimaryFacetScheme(const calin::ix::simulation::sct_optics::SCTFacetScheme& scheme):
+    SCTFacetScheme(),
+    r1i_(scheme.inner_ring_inner_radius()), r1o_(scheme.inner_ring_outer_radius()),
+    r2i_(scheme.outer_ring_inner_radius()), r2o_(scheme.outer_ring_outer_radius()),
+    gap_2_(scheme.long_edge_half_gap()) { }
   virtual ~SCTPrimaryFacetScheme();
   virtual int find_facet(double x, double z) override;
   virtual unsigned num_facets() override;
@@ -97,6 +103,11 @@ public:
   SCTSecondaryFacetScheme(): SCTFacetScheme() { };
   SCTSecondaryFacetScheme(double r1i, double r1o, double r2i, double r2o, double gap_2):
     SCTFacetScheme(), r1i_(r1i), r1o_(r1o), r2i_(r2i), r2o_(r2o), gap_2_(gap_2) { }
+  SCTSecondaryFacetScheme(const calin::ix::simulation::sct_optics::SCTFacetScheme& scheme):
+    SCTFacetScheme(),
+    r1i_(scheme.inner_ring_inner_radius()), r1o_(scheme.inner_ring_outer_radius()),
+    r2i_(scheme.outer_ring_inner_radius()), r2o_(scheme.outer_ring_outer_radius()),
+    gap_2_(scheme.long_edge_half_gap()) { }
   virtual ~SCTSecondaryFacetScheme();
   virtual int find_facet(double x, double z) override;
   virtual unsigned num_facets() override;
