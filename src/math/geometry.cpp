@@ -104,7 +104,7 @@ void calin::math::geometry::matrix_to_euler(
   euler->set_gamma(v(2) * 180.0/M_PI);
 }
 
-void calin::math::geometry::scattering_eulers(
+void calin::math::geometry::scattering_euler(
   calin::ix::common_types::EulerAngles3D* euler, double dispersion, math::rng::RNG& rng)
 {
   if(dispersion<=0)
@@ -124,11 +124,17 @@ void calin::math::geometry::scattering_eulers(
 }
 
 calin::ix::common_types::EulerAngles3D
-calin::math::geometry::scattering_eulers(double dispersion, calin::math::rng::RNG& rng,
+calin::math::geometry::scattering_euler(double dispersion, calin::math::rng::RNG& rng,
   calin::ix::common_types::EulerAngles3D::RotationOrder rotation_order)
 {
   calin::ix::common_types::EulerAngles3D euler;
   euler.set_rotation_order(rotation_order);
-  scattering_eulers(&euler, dispersion, rng);
+  scattering_euler(&euler, dispersion, rng);
   return euler;
+}
+
+bool calin::math::geometry::euler_is_zero(
+  const calin::ix::common_types::EulerAngles3D& euler)
+{
+  return euler.alpha() == euler.beta() == euler.gamma() == 0;
 }
