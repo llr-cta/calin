@@ -34,6 +34,25 @@
 using namespace calin::simulation::sct_optics;
 using namespace calin::util::log;
 
+SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* array,
+    calin::math::rng::RNG* rng, bool adopt_array, bool adopt_rng):
+  array_(array), rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__,
+    "SCT ray tracer")), adopt_array_(adopt_array), adopt_rng_(rng ? adopt_rng : true)
+{
+  // nothing to see here
+}
+
+SCTRayTracer::~SCTRayTracer()
+{
+  if(adopt_array_)delete array_;
+  if(adopt_rng_)delete rng_;
+}
+
+void SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ray::Ray& ray)
+{
+  
+}
+
 calin::ix::simulation::sct_optics::SCTTelescope*
 calin::simulation::sct_optics::make_sct_telescope(
   calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param,
@@ -282,8 +301,9 @@ calin::simulation::sct_optics::make_sct_array(
   calin::math::rng::RNG* rng,
   calin::ix::simulation::sct_optics::SCTArray* array)
 {
+  calin::math::rng::RNG* my_rng = nullptr;
   if(rng == nullptr) {
-    rng = new calin::math::rng::RNG(__PRETTY_FUNCTION__, "Random SCT array generation");
+    my_rng = rng = new calin::math::rng::RNG(__PRETTY_FUNCTION__, "Random SCT array generation");
   }
   if(array == nullptr) {
     array = new calin::ix::simulation::sct_optics::SCTArray();
@@ -299,6 +319,6 @@ calin::simulation::sct_optics::make_sct_array(
     telescope->set_id(iscope);
     make_sct_telescope(param, pos.x(), pos.y(), pos.z(), rng, telescope);
   }
-
+  delete my_rng;
   return array;
 }
