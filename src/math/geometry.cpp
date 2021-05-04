@@ -99,6 +99,11 @@ void calin::math::geometry::matrix_to_euler(
   default:
     throw std::runtime_error("Unsupported rotation order");
   }
+  if(v(1) < 0) {
+    v(0) = std::fmod(v(0) + 2*M_PI, 2*M_PI) - M_PI;
+    v(1) = std::fabs(v(1));
+    v(2) = std::fmod(v(2) + 2*M_PI, 2*M_PI) - M_PI;
+  }
   euler->set_alpha(v(0) * 180.0/M_PI);
   euler->set_beta(v(1) * 180.0/M_PI);
   euler->set_gamma(v(2) * 180.0/M_PI);
