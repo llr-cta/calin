@@ -103,6 +103,7 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
 
     sct.set_camera_distance(F*(1/q - (1-alpha)))
     sct.set_camera_sag_polynomial(pc)
+    sct.set_camera_radius(81*0.5)
 
     if(obscure):
         rdisk = rsec2o

@@ -112,14 +112,16 @@ message SCTTelescope
     (CFO).desc = "Camera origin in reflector frame, if needed.", (CFO).units="cm" ];
   calin.ix.common_types.EulerAngles3D camera_rotation      = 32 [
     (CFO).desc = "Camera rotation matrix, if needed." ];
+  double camera_radius                                     = 33 [
+    (CFO).desc = "Camera radius.", (CFO).units="cm" ];
 };
 
 message SCTArray
 {
-  common_types.EarthCoordinates array_origin               = 1
-    [(CFO).desc = "Coordinates of origin of array reference frame on Earth." ];
-  repeated SCTTelescope telescope                          = 2
-    [(CFO).desc = "Telescopes"];
+  common_types.EarthCoordinates array_origin               = 1 [
+    (CFO).desc = "Coordinates of origin of array reference frame on Earth." ];
+  repeated SCTTelescope telescope                          = 2 [
+    (CFO).desc = "Telescopes" ];
 };
 
 // ============================================================================
@@ -277,6 +279,8 @@ message SCTRandomArrayParameters
       "random component that is compounded with the camera rotation angle "
       "specified by the \"secondary_rotation\" variable.",
     (CFO).units="deg" ];
+  double camera_radius                                       = 307 [
+    (CFO).desc = "Camera radius.", (CFO).units="cm" ];
 
   repeated calin.ix.simulation.vs_optics.VSOObscurationData primary_obscuration   = 400 [
     (CFO).desc = "Obscurations between photon emission and reflection at the "
