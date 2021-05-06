@@ -187,18 +187,18 @@ class VSOAlignedBoxObscuration: public VSOObscuration
 class VSOAlignedRectangularAperture: public VSOObscuration
 {
 public:
-  VSOAlignedRectangularAperture(double center_y, double flat_to_flat_xy, bool inverted = false):
-    VSOObscuration(), center_(0,0,center_y),
-    flat_to_flat_x_2_(0.5*flat_to_flat_xy), flat_to_flat_z_2_(0.5*flat_to_flat_xy),
+  VSOAlignedRectangularAperture(double center_y, double flat_to_flat_xz, bool inverted = false):
+    VSOObscuration(), center_(0,center_y,0),
+    flat_to_flat_x_2_(0.5*flat_to_flat_xz), flat_to_flat_z_2_(0.5*flat_to_flat_xz),
     inverted_(inverted)
   {
    // nothing to see here
   }
 
   VSOAlignedRectangularAperture(const Eigen::Vector3d& center,
-                                double flat_to_flat_xy, bool inverted = false):
+                                double flat_to_flat_xz, bool inverted = false):
     VSOObscuration(), center_(center),
-    flat_to_flat_x_2_(0.5*flat_to_flat_xy), flat_to_flat_z_2_(0.5*flat_to_flat_xy),
+    flat_to_flat_x_2_(0.5*flat_to_flat_xz), flat_to_flat_z_2_(0.5*flat_to_flat_xz),
     inverted_(inverted)
   {
    // nothing to see here
@@ -289,7 +289,7 @@ class VSOAlignedHexagonalAperture: public VSOObscuration
 {
 public:
   VSOAlignedHexagonalAperture(double center_y, double flat_to_flat):
-    VSOObscuration(), center_(0,0,center_y), flat_to_flat_2_(0.5*flat_to_flat)
+    VSOObscuration(), center_(0,center_y,0), flat_to_flat_2_(0.5*flat_to_flat)
   {
    // nothing to see here
   }
@@ -325,7 +325,7 @@ class VSOAlignedCircularAperture: public VSOObscuration
 {
 public:
   VSOAlignedCircularAperture(double center_y, double diameter, bool inverted = false):
-    VSOObscuration(), center_(0,0,center_y), radius_sq_(0.25*diameter*diameter),
+    VSOObscuration(), center_(0,center_y,0), radius_sq_(0.25*diameter*diameter),
     inverted_(inverted)
   {
    // nothing to see here
