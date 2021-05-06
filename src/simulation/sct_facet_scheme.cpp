@@ -128,6 +128,13 @@ namespace {
     y = C*y - S*x;
     x = x_new;
   }
+
+  void rotate_in_place(Eigen::VectorXd& x, Eigen::VectorXd& y, double C, double S) {
+    Eigen::VectorXd x_new = C*x + S*y;
+    y = C*y - S*x;
+    x = x_new;
+  }
+
 }
 
 bool SCTPrimaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
@@ -157,6 +164,71 @@ bool SCTPrimaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
     x = 0;
     // y = 0.5*(r2i_ + r2o_);
     y = 2.0*(ro*ro*ro-ri*ri*ri)/(3.0*(ro*ro-ri*ri)) + r0;
+    ifacet -= 16;
+    rotate_in_place(x, y, COS_PI_32, SIN_PI_32);
+    if((ifacet & 1) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_16, SIN_PI_16);
+    if((ifacet & 2) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_8, SIN_PI_8);
+    if((ifacet & 4) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_4, SIN_PI_4);
+    if((ifacet & 8) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
+    if((ifacet & 16) == 0)x = -x;
+    return true;
+  }
+  return false;
+}
+
+bool SCTPrimaryFacetScheme::facet_vertices(int ifacet, Eigen::VectorXd& x, Eigen::VectorXd& y)
+{
+  if(ifacet<-2) {
+    return false;
+  } else if(ifacet>=-1 and ifacet < 16) {
+    const double r0 = gap_2_/SIN_PI_16;
+    const double ri = std::max(r1i_ - r0, 0.0);
+    const double ro = std::max(r1o_ - r0*COS_PI_32, 0.0);
+    x.resize(5);
+    y.resize(5);
+    x << ri*SIN_PI_16/COS_PI_16,
+         ro*SIN_PI_16/COS_PI_32,
+         0,
+         -ro*SIN_PI_16/COS_PI_32,
+         -ri*SIN_PI_16/COS_PI_16;
+    y << r0 + ri,
+         r0 + ro*COS_PI_16/COS_PI_32,
+         r0 + ro/COS_PI_32,
+         r0 + ro*COS_PI_16/COS_PI_32,
+         r0 + ri;
+    if(ifacet==-1) {
+      return true;
+    }
+    rotate_in_place(x, y, COS_PI_16, SIN_PI_16);
+    if((ifacet & 1) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_8, SIN_PI_8);
+    if((ifacet & 2) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_4, SIN_PI_4);
+    if((ifacet & 4) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
+    if((ifacet & 8) == 0)x = -x;
+    return true;
+  } else if(ifacet < 48) {
+    const double r0 = gap_2_/SIN_PI_32;
+    const double ri = std::max(r2i_ - r0, 0.0);
+    const double ro = std::max(r2o_ - r0, 0.0);
+    x.resize(4);
+    y.resize(4);
+    x << ri*SIN_PI_32/COS_PI_32,
+         ro*SIN_PI_32/COS_PI_32,
+         -ro*SIN_PI_32/COS_PI_32,
+         -ri*SIN_PI_32/COS_PI_32;
+    y << r0 + ri,
+         r0 + ro,
+         r0 + ro,
+         r0 + ri;
+     if(ifacet==-2) {
+       return true;
+     }
     ifacet -= 16;
     rotate_in_place(x, y, COS_PI_32, SIN_PI_32);
     if((ifacet & 1) == 0)x = -x;
@@ -290,6 +362,68 @@ bool SCTSecondaryFacetScheme::facet_centroid(int ifacet, double& x, double& y)
     return true;
   }
   return false;
+}
+
+bool SCTSecondaryFacetScheme::facet_vertices(int ifacet, Eigen::VectorXd& x, Eigen::VectorXd& y)
+{
+  if(ifacet<-2) {
+    return false;
+  } else if(ifacet>=-1 and ifacet<8) {
+    const double r0 = gap_2_/SIN_PI_8;
+    const double ri = std::max(r1i_ - r0, 0.0);
+    const double ro = std::max(r1o_ - r0*COS_PI_16, 0.0);
+    x.resize(5);
+    y.resize(5);
+    x << ri*SIN_PI_8/COS_PI_8,
+         ro*SIN_PI_8/COS_PI_16,
+         0,
+         -ro*SIN_PI_8/COS_PI_16,
+         -ri*SIN_PI_8/COS_PI_8;
+    y << r0 + ri,
+         r0 + ro*COS_PI_8/COS_PI_16,
+         r0 + ro/COS_PI_16,
+         r0 + ro*COS_PI_8/COS_PI_16,
+         r0 + ri;
+    if(ifacet == -1) {
+      return true;
+    }
+    rotate_in_place(x, y, COS_PI_8, SIN_PI_8);
+    if((ifacet & 1) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_4, SIN_PI_4);
+    if((ifacet & 2) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
+    if((ifacet & 4) == 0)x = -x;
+    return true;
+  } else if(ifacet < 24) {
+    const double r0 = gap_2_/SIN_PI_16;
+    const double ri = std::max(r2i_ - r0, 0.0);
+    const double ro = std::max(r2o_ - r0, 0.0);
+    x.resize(4);
+    y.resize(4);
+    x << ri*SIN_PI_16/COS_PI_16,
+         ro*SIN_PI_16/COS_PI_16,
+         -ro*SIN_PI_16/COS_PI_16,
+         -ri*SIN_PI_16/COS_PI_16;
+    y << r0 + ri,
+         r0 + ro,
+         r0 + ro,
+         r0 + ri;
+    if(ifacet == -1) {
+      return true;
+    }
+    ifacet -= 8;
+    rotate_in_place(x, y, COS_PI_16, SIN_PI_16);
+    if((ifacet & 1) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_8, SIN_PI_8);
+    if((ifacet & 2) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_4, SIN_PI_4);
+    if((ifacet & 4) == 0)x = -x;
+    rotate_in_place(x, y, COS_PI_2, SIN_PI_2);
+    if((ifacet & 8) == 0)x = -x;
+    return true;
+  }
+  return false;
+
 }
 
 double SCTSecondaryFacetScheme::inner_radius()

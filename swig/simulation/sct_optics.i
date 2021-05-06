@@ -41,6 +41,9 @@
 %apply double &OUTPUT { double& x_out };
 %apply double &OUTPUT { double& z_out };
 
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& x_out };
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& z_out };
+
 %newobject make_sct_array;
 
 %include "simulation/sct_facet_scheme.hpp"

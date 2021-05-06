@@ -59,6 +59,7 @@ public:
   virtual unsigned num_facets() = 0;
   virtual double facet_area(int ifacet) = 0;
   virtual bool facet_centroid(int ifacet, double& x_out, double& z_out) = 0;
+  virtual bool facet_vertices(int ifacet, Eigen::VectorXd& x_out, Eigen::VectorXd& z_out) = 0;
   virtual double inner_radius() = 0;
   virtual double outer_radius() = 0;
   Eigen::VectorXi bulk_find_facet(const Eigen::VectorXd& x, const Eigen::VectorXd& z);
@@ -80,6 +81,7 @@ public:
   virtual unsigned num_facets() override;
   virtual double facet_area(int ifacet) override;
   virtual bool facet_centroid(int ifacet, double& x_out, double& z_out) override;
+  virtual bool facet_vertices(int ifacet, Eigen::VectorXd& x_out, Eigen::VectorXd& z_out) override;
   virtual double inner_radius() override;
   virtual double outer_radius() override;
 
@@ -113,6 +115,7 @@ public:
   virtual unsigned num_facets() override;
   virtual double facet_area(int ifacet) override;
   virtual bool facet_centroid(int ifacet, double& x_out, double& z_out) override;
+  virtual bool facet_vertices(int ifacet, Eigen::VectorXd& x_out, Eigen::VectorXd& z_out) override;
   virtual double inner_radius() override;
   virtual double outer_radius() override;
 
