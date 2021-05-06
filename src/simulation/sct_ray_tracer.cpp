@@ -62,6 +62,15 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
       (not calin::math::geometry::euler_is_zero(scope_params.primary_rotation()));
     scope->p_rho_max = SQR(scope->p_scheme->outer_radius());
     scope->p_rho_min = SQR(scope->p_scheme->inner_radius());
+    scope->p_facets.resize(scope->p_scheme->num_facets());
+    for(unsigned i=0;i<scope->p_scheme->num_facets();++i) {
+      if(i<scope_params.primary_facets_size()) {
+        scope->p_facets[i].removed = scope_params.primary_facets(i).removed();
+        scope->p_facets[i].spot_size = scope_params.primary_facets(i).spot_size();
+      } else {
+        scope->p_facets[i].removed = true;
+      }
+    }
 
     // *************************************************************************
     // SECONDARY
@@ -81,6 +90,15 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
       (not calin::math::geometry::euler_is_zero(scope_params.secondary_rotation()));
     scope->s_rho_max = SQR(scope->s_scheme->outer_radius());
     scope->s_rho_min = SQR(scope->s_scheme->inner_radius());
+    scope->s_facets.resize(scope->s_scheme->num_facets());
+    for(unsigned i=0;i<scope->s_scheme->num_facets();++i) {
+      if(i<scope_params.secondary_facets_size()) {
+        scope->s_facets[i].removed = scope_params.secondary_facets(i).removed();
+        scope->s_facets[i].spot_size = scope_params.secondary_facets(i).spot_size();
+      } else {
+        scope->s_facets[i].removed = true;
+      }
+    }
 
     // *************************************************************************
     // CAMERA
@@ -134,6 +152,29 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
 {
   const Telescope* scope = scopes_[iscope];
 
+  // Test for obscuration of incoming ray
+  unsigned nobs = scope->primary_obscuration.size();
+  unsigned obs_ihit  = nobs;
+  double   obs_time  = ray.ct();
+  for(unsigned iobs=0;iobs<nobs;iobs++)
+  {
+    math::ray::Ray ray_out;
+    if(scope->primary_obscuration[iobs]->doesObscure(ray, ray_out, n_))
+    {
+      if((obs_ihit==nobs)||(ray_out.ct()<obs_time)) {
+        obs_ihit = iobs;
+        obs_time = ray_out.ct();
+      }
+    }
+  }
+
+  if(obs_ihit!=nobs)
+  {
+    results.status = RTS_OBSCURED_BEFORE_PRIMARY;
+    results.obscuration_id = obs_ihit;
+    return false;
+  }
+
   // ***************************************************************************
   // TRANSFORM RAY INTO PRIMARY FRAME
   // ***************************************************************************
@@ -157,8 +198,7 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   }
 
   results.primary_facet = scope->p_scheme->find_facet(ray.x(), ray.z());
-  if((results.primary_facet<0) or (results.primary_facet>=scope->param->primary_facets_size())
-    or (scope->param->primary_facets(results.primary_facet).removed()))
+  if((results.primary_facet<0) or (scope->p_facets[results.primary_facet].removed))
   {
     if(scope->p_has_frame_change) {
       ray.derotate(scope->p_rotation);
@@ -186,6 +226,29 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
 
   results.primary_position = ray.position();
 
+  // Test for obscuration of ray between primary and secondary
+  nobs = scope->secondary_obscuration.size();
+  obs_ihit  = nobs;
+  obs_time  = ray.ct();
+  for(unsigned iobs=0;iobs<nobs;iobs++)
+  {
+    math::ray::Ray ray_out;
+    if(scope->secondary_obscuration[iobs]->doesObscure(ray, ray_out, n_))
+    {
+      if((obs_ihit==nobs)||(ray_out.ct()<obs_time)) {
+        obs_ihit = iobs;
+        obs_time = ray_out.ct();
+      }
+    }
+  }
+
+  if(obs_ihit!=nobs)
+  {
+    results.status = RTS_OBSCURED_BEFORE_SECONDARY;
+    results.obscuration_id = obs_ihit + scope->primary_obscuration.size();
+    return false;
+  }
+
   // ***************************************************************************
   // TRANSFORM RAY INTO SECONDARY FRAME
   // ***************************************************************************
@@ -209,8 +272,7 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   }
 
   results.secondary_facet = scope->s_scheme->find_facet(ray.x(), ray.z());
-  if((results.secondary_facet<0) or (results.secondary_facet>=scope->param->secondary_facets_size())
-    or (scope->param->secondary_facets(results.secondary_facet).removed()))
+  if((results.secondary_facet<0) or (scope->s_facets[results.secondary_facet].removed))
   {
     if(scope->s_has_frame_change) {
       ray.derotate(scope->s_rotation);

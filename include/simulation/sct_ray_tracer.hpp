@@ -59,6 +59,8 @@ struct SCTRayTracerResults
   Eigen::Vector3d secondary_position;
   int secondary_facet;
 
+  int obscuration_id;
+
   Eigen::Vector3d camera_position;
   Eigen::Vector3d final_position;
 };
@@ -72,6 +74,15 @@ public:
   bool trace_ray_in_reflector_frame(unsigned iscope, calin::math::ray::Ray& ray,
     SCTRayTracerResults& results);
 private:
+  struct Facet
+  {
+    bool removed;
+    double spot_size;
+    bool has_frame_change;
+    Eigen::Vector3d offset;
+    Eigen::Matrix3d rotation;
+  };
+
   struct Telescope
   {
     ~Telescope() {
@@ -91,6 +102,7 @@ private:
     double p_rho_max;
     const double* p_surface;
     unsigned p_surface_n;
+    std::vector<Facet> p_facets;
 
     SCTSecondaryFacetScheme* s_scheme;
     bool s_has_frame_change;
@@ -100,6 +112,7 @@ private:
     double s_rho_max;
     const double* s_surface;
     unsigned s_surface_n;
+    std::vector<Facet> s_facets;
 
     bool c_has_frame_change;
     Eigen::Vector3d c_offset;
