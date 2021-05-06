@@ -99,6 +99,23 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
       (not calin::math::geometry::euler_is_zero(scope_params.camera_rotation()));
     scope->c_rho_max = SQR(scope_params.camera_radius());
 
+    // *************************************************************************
+    // OBSCURATIONS
+    // *************************************************************************
+
+    for(const auto& obs_param : scope_params.primary_obscuration()) {
+      scope->primary_obscuration.push_back(
+        calin::simulation::vs_optics::VSOObscuration::create_from_proto(obs_param));
+    }
+    for(const auto& obs_param : scope_params.secondary_obscuration()) {
+      scope->secondary_obscuration.push_back(
+        calin::simulation::vs_optics::VSOObscuration::create_from_proto(obs_param));
+    }
+    for(const auto& obs_param : scope_params.camera_obscuration()) {
+      scope->camera_obscuration.push_back(
+        calin::simulation::vs_optics::VSOObscuration::create_from_proto(obs_param));
+    }
+
     scopes_.push_back(scope);
   }
 }
@@ -499,6 +516,24 @@ calin::simulation::sct_optics::make_sct_telescope(
       telescope->mutable_camera_rotation(), camera_rotation);
   }
   telescope->set_camera_radius(param.camera_radius());
+
+  // ***************************************************************************
+  // ***************************************************************************
+  //
+  // OBSCURATIONS
+  //
+  // ***************************************************************************
+  // ***************************************************************************
+
+  for(const auto& obs_param : param.primary_obscuration()) {
+    telescope->add_primary_obscuration()->CopyFrom(obs_param);
+  }
+  for(const auto& obs_param : param.secondary_obscuration()) {
+    telescope->add_secondary_obscuration()->CopyFrom(obs_param);
+  }
+  for(const auto& obs_param : param.camera_obscuration()) {
+    telescope->add_camera_obscuration()->CopyFrom(obs_param);
+  }
 
   return telescope;
 }

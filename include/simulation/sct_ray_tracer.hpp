@@ -27,6 +27,7 @@
 
 #include <math/rng.hpp>
 #include <math/ray.hpp>
+#include <simulation/vso_obscuration.hpp>
 #include <simulation/sct_optics.pb.h>
 #include <simulation/sct_facet_scheme.hpp>
 
@@ -76,6 +77,9 @@ private:
     ~Telescope() {
       delete p_scheme;
       delete s_scheme;
+      for(auto* obs : primary_obscuration)delete obs;
+      for(auto* obs : secondary_obscuration)delete obs;
+      for(auto* obs : camera_obscuration)delete obs;
     }
     const calin::ix::simulation::sct_optics::SCTTelescope* param;
 
@@ -104,6 +108,9 @@ private:
     const double* c_surface;
     unsigned c_surface_n;
 
+    std::vector<calin::simulation::vs_optics::VSOObscuration*> primary_obscuration;
+    std::vector<calin::simulation::vs_optics::VSOObscuration*> secondary_obscuration;
+    std::vector<calin::simulation::vs_optics::VSOObscuration*> camera_obscuration;
   };
 
   const calin::ix::simulation::sct_optics::SCTArray* array_ = nullptr;
