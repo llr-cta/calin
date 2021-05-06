@@ -334,7 +334,7 @@ public:
   VSOAlignedCircularAperture(const Eigen::Vector3d& center, double diameter, bool inverted = false):
     VSOObscuration(), center_(center), radius_sq_(0.25*diameter*diameter),
     inverted_(inverted)
-{
+  {
    // nothing to see here
   }
 
