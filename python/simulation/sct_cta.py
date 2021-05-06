@@ -105,25 +105,50 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
     sct.set_camera_sag_polynomial(pc)
     sct.set_camera_radius(81*0.5)
 
-    if(obscure):
-        rdisk = rsec2o
-        zdisk = sct.secondary_distance() + numpy.polyval(numpy.flipud(ps), rdisk**2)
+    s_disk_r = rsec2o
+    s_disk_z = sct.secondary_distance() + numpy.polyval(numpy.flipud(ps), s_disk_r**2)
 
+    s_baffle_r = 284.48
+    s_baffle_zin = 780.5
+    s_baffle_zout = s_baffle_zin - 100.33
+
+    p_baffle_r = 497.84
+    p_baffle_zin = 43.38
+    p_baffle_zout = p_baffle_zin + 152.4
+
+    if(obscure):
+        # Incoming rays : disk to approximate secondary
         obs = sct.add_primary_obscuration()
-        obs.mutable_circular_aperture().mutable_center_pos().set_y(zdisk)
-        obs.mutable_circular_aperture().set_diameter(rdisk * 2)
+        obs.mutable_circular_aperture().mutable_center_pos().set_y(s_disk_z)
+        obs.mutable_circular_aperture().set_diameter(s_disk_r * 2)
         obs.mutable_circular_aperture().set_invert(True)
 
-        rbaffle = 284.48
-        zbaffle_in = 780.5
-        zbaffle_out = zbaffle_in - 100.33
-
+        # Incoming rays : tube to approximate secondary baffle
         obs = sct.add_primary_obscuration()
-        obs.mutable_tube().mutable_end1_pos().set_y(zbaffle_in)
-        obs.mutable_tube().mutable_end2_pos().set_y(zbaffle_out)
-        obs.mutable_tube().set_diameter(rbaffle * 2)
+        obs.mutable_tube().mutable_end1_pos().set_y(s_baffle_zin)
+        obs.mutable_tube().mutable_end2_pos().set_y(s_baffle_zout)
+        obs.mutable_tube().set_diameter(s_baffle_r * 2)
+        # sct.add_secondary_obscuration().CopyFrom(obs)
 
-        sct.add_secondary_obscuration().CopyFrom(obs)
+        # Incoming rays : circular aperture to approximate primary baffle
+        obs = sct.add_primary_obscuration()
+        obs.mutable_circular_aperture().mutable_center_pos().set_y(p_baffle_zout)
+        obs.mutable_circular_aperture().set_diameter(p_baffle_r * 2)
+
+        # Post-primary rays : circular aperture to approximate secondary baffle
+        obs = sct.add_secondary_obscuration()
+        obs.mutable_circular_aperture().mutable_center_pos().set_y(s_baffle_zout)
+        obs.mutable_circular_aperture().set_diameter(s_baffle_r * 2)
+    else:
+        # Incoming rays : circular aperture to approximate primary baffle
+        obs = sct.add_primary_obscuration()
+        obs.mutable_circular_aperture().mutable_center_pos().set_y(p_baffle_zin)
+        obs.mutable_circular_aperture().set_diameter(p_baffle_r * 2)
+
+        # Post-primary rays : circular aperture to approximate secondary baffle
+        obs = sct.add_secondary_obscuration()
+        obs.mutable_circular_aperture().mutable_center_pos().set_y(s_baffle_zin)
+        obs.mutable_circular_aperture().set_diameter(s_baffle_r * 2)
 
     if(include_window):
         win = sct.mutable_window()
