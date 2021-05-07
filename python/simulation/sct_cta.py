@@ -38,6 +38,9 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
     from calin.simulation.sct_optics import COS_PI_8
     from calin.simulation.sct_optics import COS_PI_16
     from calin.simulation.sct_optics import COS_PI_32
+    from calin.simulation.sct_optics import SIN_PI_8
+    from calin.simulation.sct_optics import SIN_PI_16
+    from calin.simulation.sct_optics import SIN_PI_32
 
     sct = calin.ix.simulation.sct_optics.SCTRandomArrayParameters()
     sct.mutable_array_origin().set_latitude(dms(28, 45, 47.36))
@@ -70,10 +73,14 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
     sct.set_primary_sag_polynomial(pp)
 
     primary_facet_scheme = sct.mutable_primary_facet_scheme()
-    primary_facet_scheme.set_inner_ring_inner_radius(219.350*COS_PI_16);
-    primary_facet_scheme.set_inner_ring_outer_radius(340.000*COS_PI_32 - 0.7)
-    primary_facet_scheme.set_outer_ring_inner_radius(340.000*COS_PI_32 + 0.7)
-    primary_facet_scheme.set_outer_ring_outer_radius(483.1875*COS_PI_32)
+    # primary_facet_scheme.set_inner_ring_inner_radius(219.350*COS_PI_16);
+    # primary_facet_scheme.set_inner_ring_outer_radius(340.000*COS_PI_32 - 0.7)
+    # primary_facet_scheme.set_outer_ring_inner_radius(340.000*COS_PI_32 + 0.7)
+    # primary_facet_scheme.set_outer_ring_outer_radius(483.1875*COS_PI_32)
+    primary_facet_scheme.set_inner_ring_inner_radius(215.136);
+    primary_facet_scheme.set_inner_ring_outer_radius(339.305*COS_PI_32)
+    primary_facet_scheme.set_outer_ring_inner_radius(339.122)
+    primary_facet_scheme.set_outer_ring_outer_radius(480.929)
     primary_facet_scheme.set_long_edge_half_gap(0.7)
 
     ps = numpy.asarray([
@@ -82,19 +89,20 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
         -274.1880908])
     ps *= F * F**(-2*numpy.arange(0,len(ps)))
 
-    rsec1i = 39.45
-    rsec1o = 159.65
-    rsec2i = 159.65
-    rsec2o = 270.83
+    rsec2o = 270.816
 
     sct.set_secondary_distance(F/q)
     sct.set_secondary_sag_polynomial(ps)
 
     secondary_facet_scheme = sct.mutable_secondary_facet_scheme()
-    secondary_facet_scheme.set_inner_ring_inner_radius(rsec1i*COS_PI_8);
-    secondary_facet_scheme.set_inner_ring_outer_radius(rsec1o*COS_PI_16 - 0.7)
-    secondary_facet_scheme.set_outer_ring_inner_radius(rsec2i*COS_PI_16 + 0.7)
-    secondary_facet_scheme.set_outer_ring_outer_radius(rsec2o*COS_PI_16)
+    # secondary_facet_scheme.set_inner_ring_inner_radius(rsec1i*COS_PI_8);
+    # secondary_facet_scheme.set_inner_ring_outer_radius(rsec1o*COS_PI_16 - 0.7)
+    # secondary_facet_scheme.set_outer_ring_inner_radius(rsec2i*COS_PI_16 + 0.7)
+    # secondary_facet_scheme.set_outer_ring_outer_radius(rsec2o*COS_PI_16)
+    secondary_facet_scheme.set_inner_ring_inner_radius(38.867);
+    secondary_facet_scheme.set_inner_ring_outer_radius(158.969*COS_PI_16)
+    secondary_facet_scheme.set_outer_ring_inner_radius(157.383)
+    secondary_facet_scheme.set_outer_ring_outer_radius(265.748)
     secondary_facet_scheme.set_long_edge_half_gap(0.7)
 
     # pc = numpy.asarray([0, -0.8327, 4.9950])) # Values from SCT-OPTMO/121108
