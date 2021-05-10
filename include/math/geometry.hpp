@@ -225,6 +225,23 @@ inline void derotate_in_place_z_to_u_Rzy(Eigen::Vector3d& v, const Eigen::Vector
   derotate_in_place_Ry(v, u.z(), st);
 }
 
+// Note this function generates scattered vectors with RMS of
+// dispersion_per_axis on each of the axes perpendicular to v
+inline void
+scatter_direction_in_place(Eigen::Vector3d& v, double dispersion_per_axis,
+  calin::math::rng::RNG& rng)
+{
+  Eigen::Vector3d x;
+  rng.normal_two_bm(x.x(), x.y());
+  x.x() *= dispersion_per_axis;
+  x.y() *= dispersion_per_axis;
+  x.z() = sqrt(1.0-x.x()*x.x()-x.y()*x.y());
+
+  // Use the simpler rotate fuction (Rzy) as X and Y directions are arbitrary
+  rotate_in_place_z_to_u_Rzy(x, v);
+  v = x;
+}
+
 #ifndef SWIG
 
 // -----------------------------------------------------------------------------
