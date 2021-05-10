@@ -136,6 +136,7 @@ public:
   double exponential(double mean) { return -mean*std::log(uniform()); }
   double normal();
   double normal(double mean, double sigma) { return mean+normal()*sigma; }
+  void normal_two_bm(double& x, double& y);
   double gamma_by_alpha_and_beta(double alpha, double beta);
   double gamma_by_mean_and_sigma(const double mean, const double sigma) {
     double b = mean/(sigma*sigma);
