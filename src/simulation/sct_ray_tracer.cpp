@@ -66,7 +66,7 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     for(unsigned i=0;i<scope->p_scheme->num_facets();++i) {
       if(i<scope_params.primary_facets_size()) {
         scope->p_facets[i].removed = scope_params.primary_facets(i).removed();
-        scope->p_facets[i].spot_size = scope_params.primary_facets(i).spot_size();
+        scope->p_facets[i].spot_size = scope_params.primary_facets(i).spot_size() * (M_PI/180.0);
       } else {
         scope->p_facets[i].removed = true;
       }
@@ -94,7 +94,7 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     for(unsigned i=0;i<scope->s_scheme->num_facets();++i) {
       if(i<scope_params.secondary_facets_size()) {
         scope->s_facets[i].removed = scope_params.secondary_facets(i).removed();
-        scope->s_facets[i].spot_size = scope_params.secondary_facets(i).spot_size();
+        scope->s_facets[i].spot_size = scope_params.secondary_facets(i).spot_size() * (M_PI/180.0);;
       } else {
         scope->s_facets[i].removed = true;
       }
