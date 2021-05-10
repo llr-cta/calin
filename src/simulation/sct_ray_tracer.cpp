@@ -198,7 +198,8 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   }
 
   results.primary_facet = scope->p_scheme->find_facet(ray.x(), ray.z());
-  if((results.primary_facet<0) or (scope->p_facets[results.primary_facet].removed))
+  const auto& primary_facet = scope->p_facets[results.primary_facet];
+  if((results.primary_facet<0) or (primary_facet.removed))
   {
     if(scope->p_has_frame_change) {
       ray.derotate(scope->p_rotation);
@@ -213,7 +214,9 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
 
   ray.reflect_from_polynomial_surface(scope->p_surface, scope->p_surface_n);
 
-  // TODO : SCATTER RAY
+  if(primary_facet.spot_size > 0) {
+    calin::math::geometry::scatter_direction_in_place(ray.direction(), primary_facet.spot_size, *rng_);
+  }
 
   // ***************************************************************************
   // TRANSFORM RAY BACK INTO REFLECTOR FRAME
@@ -272,7 +275,8 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   }
 
   results.secondary_facet = scope->s_scheme->find_facet(ray.x(), ray.z());
-  if((results.secondary_facet<0) or (scope->s_facets[results.secondary_facet].removed))
+  const auto& secondary_facet = scope->s_facets[results.secondary_facet];
+  if((results.secondary_facet<0) or (secondary_facet.removed))
   {
     if(scope->s_has_frame_change) {
       ray.derotate(scope->s_rotation);
@@ -287,7 +291,9 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
 
   ray.reflect_from_polynomial_surface(scope->s_surface, scope->s_surface_n);
 
-  // TODO : SCATTER RAY
+  if(secondary_facet.spot_size > 0) {
+    calin::math::geometry::scatter_direction_in_place(ray.direction(), secondary_facet.spot_size, *rng_);
+  }
 
   // ***************************************************************************
   // TRANSFORM RAY BACK INTO REFLECTOR FRAME
