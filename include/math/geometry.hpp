@@ -147,6 +147,84 @@ inline void rotation_z_to_vec_Rzyz(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
   return rotation_z_to_xyz_Rzyz(m, v.x(), v.y(), v.z());
 }
 
+inline void rotate_in_place_2d(double& x, double& y,
+  const double& cos_theta, const double& sin_theta)
+{
+  double xnew = cos_theta*x - sin_theta*y;
+  y = cos_theta*y + sin_theta*x;
+  x = xnew;
+}
+
+inline void derotate_in_place_2d(double& x, double& y,
+  const double& cos_theta, const double& sin_theta)
+{
+  double xnew = cos_theta*x + sin_theta*y;
+  y = cos_theta*y - sin_theta*x;
+  x = xnew;
+}
+
+inline void rotate_in_place_Rz(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  rotate_in_place_2d(v.x(), v.y(), cos_theta, sin_theta);
+}
+
+inline void derotate_in_place_Rz(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  derotate_in_place_2d(v.x(), v.y(), cos_theta, sin_theta);
+}
+
+inline void rotate_in_place_Ry(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  rotate_in_place_2d(v.z(), v.x(), cos_theta, sin_theta);
+}
+
+inline void derotate_in_place_Ry(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  derotate_in_place_2d(v.z(), v.x(), cos_theta, sin_theta);
+}
+
+inline void rotate_in_place_Rx(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  rotate_in_place_2d(v.y(), v.z(), cos_theta, sin_theta);
+}
+
+inline void derotate_in_place_Rx(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  derotate_in_place_2d(v.y(), v.z(), cos_theta, sin_theta);
+}
+
+inline void rotate_in_place_z_to_u_Rzy(Eigen::Vector3d& v, const Eigen::Vector3d& u)
+{
+  const double st = sqrt(u.x()*u.x() + u.y()*u.y());
+  if(st < std::numeric_limits<double>::epsilon()) {
+    return;
+  }
+  const double st_inv = 1.0/st;
+  const double sp = u.y() * st_inv;
+  const double cp = u.x() * st_inv;
+  rotate_in_place_Ry(v, u.z(), st);
+  rotate_in_place_Rz(v, cp, sp);
+}
+
+inline void derotate_in_place_z_to_u_Rzy(Eigen::Vector3d& v, const Eigen::Vector3d& u)
+{
+  const double st = sqrt(u.x()*u.x() + u.y()*u.y());
+  if(st < std::numeric_limits<double>::epsilon()) {
+    return;
+  }
+  const double st_inv = 1.0/st;
+  const double sp = u.y() * st_inv;
+  const double cp = u.x() * st_inv;
+  derotate_in_place_Rz(v, cp, sp);
+  derotate_in_place_Ry(v, u.z(), st);
+}
+
 #ifndef SWIG
 
 // -----------------------------------------------------------------------------
