@@ -63,6 +63,12 @@ public:
   virtual double inner_radius() = 0;
   virtual double outer_radius() = 0;
   Eigen::VectorXi bulk_find_facet(const Eigen::VectorXd& x, const Eigen::VectorXd& z);
+#ifndef SWIG
+  Eigen::Vector3d facet_centroid_3d(int ifacet, const double* p, unsigned pn);
+#endif
+  Eigen::Vector3d facet_centroid_3d(int ifacet, const Eigen::VectorXd p) {
+    return facet_centroid_3d(ifacet, p.data(), p.size());
+  }
 };
 
 class SCTPrimaryFacetScheme: public SCTFacetScheme

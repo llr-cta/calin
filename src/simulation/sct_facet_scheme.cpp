@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include <math/least_squares.hpp>
 #include <simulation/sct_facet_scheme.hpp>
 
 using namespace calin::simulation::sct_optics;
@@ -44,6 +45,17 @@ bulk_find_facet(const Eigen::VectorXd& x, const Eigen::VectorXd& z)
     id(i) = this->find_facet(x(i), z(i));
   }
   return id;
+}
+
+Eigen::Vector3d SCTFacetScheme::
+facet_centroid_3d(int ifacet, const double* p, unsigned pn)
+{
+  Eigen::Vector3d rc;
+  if(this->facet_centroid(ifacet, rc.x(), rc.z())) {
+    const double rho2 = rc.x()*rc.x() + rc.z()*rc.z();
+    rc.y() = calin::math::least_squares::polyval(p, pn, rho2);
+  }
+  return rc;
 }
 
 SCTPrimaryFacetScheme::~SCTPrimaryFacetScheme()
