@@ -51,6 +51,7 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     // *************************************************************************
 
     scope->p_scheme = new SCTPrimaryFacetScheme(scope_params.primary_facet_scheme());
+    scope->p_scheme_loose = nullptr;
     scope->p_surface = scope_params.primary_surface_polynomial().data();
     scope->p_surface_n = scope_params.primary_surface_polynomial_size();
     if(scope->s_surface_n == 0) {
@@ -60,6 +61,7 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     scope->p_offset = calin::math::vector3d_util::from_proto(scope_params.primary_offset());
     scope->p_has_frame_change = (scope->p_offset.squaredNorm()>0) or
       (not calin::math::geometry::euler_is_zero(scope_params.primary_rotation()));
+    scope->p_facets_have_frame_change = false;
     scope->p_rho_max = SQR(scope->p_scheme->outer_radius());
     scope->p_rho_min = SQR(scope->p_scheme->inner_radius());
     scope->p_facets.resize(scope->p_scheme->num_facets());
@@ -67,7 +69,7 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
       auto& facet = scope->p_facets[i];
       if(i<scope_params.primary_facets_size()) {
         facet.removed = scope_params.primary_facets(i).removed();
-        facet.spot_size = scope_params.primary_facets(i).spot_size() * (M_PI/180.0);
+        facet.roughness = 0.5 * scope_params.primary_facets(i).spot_size() * (M_PI/180.0);
         facet.rotation = calin::math::geometry::euler_to_matrix(
           scope_params.primary_facets(i).rotation()).transpose();
         Eigen::Vector3d nominal_position = scope->p_scheme->facet_centroid_3d(i,
@@ -77,11 +79,20 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
           actual_position = calin::math::vector3d_util::from_proto(
             scope_params.primary_facets(i).position());
         }
-        facet.offset = actual_position - scope->p_facets[i].rotation.transpose()*nominal_position;
+        facet.offset = actual_position - facet.rotation.transpose()*nominal_position;
         facet.has_frame_change = (facet.offset.squaredNorm()>0) or
           (not calin::math::geometry::euler_is_zero(scope_params.primary_facets(i).rotation()));
+        scope->p_facets_have_frame_change |= facet.has_frame_change;
       } else {
         facet.removed = true;
+      }
+    }
+    if(scope->p_facets_have_frame_change and scope_params.has_primary_facet_scheme_loose()) {
+      scope->p_scheme_loose = new SCTPrimaryFacetScheme(scope_params.primary_facet_scheme_loose());
+      scope->p_rho_max = SQR(scope->p_scheme_loose->outer_radius());
+      scope->p_rho_min = SQR(scope->p_scheme_loose->inner_radius());
+      if(scope->p_scheme->num_facets() != scope->p_scheme_loose->num_facets()) {
+        throw std::runtime_error("Primary surface facet schemes must have same number of facets.");
       }
     }
 
@@ -90,6 +101,8 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     // *************************************************************************
 
     scope->s_scheme = new SCTSecondaryFacetScheme(scope_params.secondary_facet_scheme());
+    scope->s_scheme_loose = nullptr;
+
     scope->s_surface = scope_params.secondary_surface_polynomial().data();
     scope->s_surface_n = scope_params.secondary_surface_polynomial_size();
     if(scope->s_surface_n == 0) {
@@ -101,15 +114,39 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
       - scope->s_rotation.transpose() * Eigen::Vector3d(0, scope->s_surface[0], 0);
     scope->s_has_frame_change = (scope->s_offset.squaredNorm()>0) or
       (not calin::math::geometry::euler_is_zero(scope_params.secondary_rotation()));
+    scope->s_facets_have_frame_change = false;
     scope->s_rho_max = SQR(scope->s_scheme->outer_radius());
     scope->s_rho_min = SQR(scope->s_scheme->inner_radius());
     scope->s_facets.resize(scope->s_scheme->num_facets());
     for(unsigned i=0;i<scope->s_scheme->num_facets();++i) {
+      auto& facet = scope->s_facets[i];
       if(i<scope_params.secondary_facets_size()) {
-        scope->s_facets[i].removed = scope_params.secondary_facets(i).removed();
-        scope->s_facets[i].spot_size = scope_params.secondary_facets(i).spot_size() * (M_PI/180.0);;
+        facet.removed = scope_params.secondary_facets(i).removed();
+        facet.roughness = 0.5 * scope_params.secondary_facets(i).spot_size() * (M_PI/180.0);
+        facet.rotation = calin::math::geometry::euler_to_matrix(
+          scope_params.secondary_facets(i).rotation()).transpose();
+        Eigen::Vector3d nominal_position = scope->s_scheme->facet_centroid_3d(i,
+          scope->s_surface,scope->s_surface_n);
+        Eigen::Vector3d actual_position = nominal_position;
+        if(scope_params.secondary_facets(i).has_position()) {
+          actual_position = calin::math::vector3d_util::from_proto(
+            scope_params.secondary_facets(i).position());
+        }
+        facet.offset = actual_position - facet.rotation.transpose()*nominal_position;
+        facet.has_frame_change = (facet.offset.squaredNorm()>0) or
+          (not calin::math::geometry::euler_is_zero(scope_params.secondary_facets(i).rotation()));
+        scope->s_facets_have_frame_change |= facet.has_frame_change;
       } else {
-        scope->s_facets[i].removed = true;
+        facet.removed = true;
+      }
+    }
+
+    if(scope->s_facets_have_frame_change and scope_params.has_secondary_facet_scheme_loose()) {
+      scope->s_scheme_loose = new SCTSecondaryFacetScheme(scope_params.secondary_facet_scheme_loose());
+      scope->s_rho_max = SQR(scope->s_scheme_loose->outer_radius());
+      scope->s_rho_min = SQR(scope->s_scheme_loose->inner_radius());
+      if(scope->s_scheme->num_facets() != scope->s_scheme_loose->num_facets()) {
+        throw std::runtime_error("Secondary surface facet schemes must have same number of facets.");
       }
     }
 
@@ -210,7 +247,11 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
     return false;
   }
 
-  results.primary_facet = scope->p_scheme->find_facet(ray.x(), ray.z());
+  if(scope->p_scheme_loose) {
+    results.primary_facet = scope->p_scheme_loose->find_facet(ray.x(), ray.z());
+  } else {
+    results.primary_facet = scope->p_scheme->find_facet(ray.x(), ray.z());
+  }
   const auto& primary_facet = scope->p_facets[results.primary_facet];
   if((results.primary_facet<0) or (primary_facet.removed))
   {
@@ -223,12 +264,63 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
     return false;
   }
 
-  // TODO : PER FACET OFFSET AND ALIGNMENT
+  // ***************************************************************************
+  // TRANSFORM INTO PRIMARY FACET FRAME IF THERE IS ONE
+  // ***************************************************************************
 
-  ray.reflect_from_polynomial_surface(scope->p_surface, scope->p_surface_n);
+  if(primary_facet.has_frame_change) {
 
-  if(primary_facet.spot_size > 0) {
-    calin::math::geometry::scatter_direction_in_place(ray.direction(), primary_facet.spot_size, *rng_);
+    ray.translate_origin(primary_facet.offset);
+    ray.rotate(primary_facet.rotation);
+
+    good = ray.propagate_to_polynomial_surface(scope->p_surface, scope->p_surface_n,
+      scope->p_rho_min, scope->p_rho_max, /* time_reversal_ok= */ true, /* n= */ n_,
+      /* ray_is_close_to_surface= */ true, /* tol= */ 1e-8);
+    if(not good) {
+      ray.derotate(primary_facet.rotation);
+      ray.untranslate_origin(primary_facet.offset);
+      if(scope->p_has_frame_change) {
+        ray.derotate(scope->p_rotation);
+        ray.untranslate_origin(scope->p_offset);
+      }
+      results.status = RTS_MISSED_PRIMARY;
+      return false;
+    }
+  }
+
+  if(scope->p_scheme_loose) {
+    if(scope->p_scheme->find_facet(ray.x(), ray.z()) != results.primary_facet) {
+      if(primary_facet.has_frame_change) {
+        ray.derotate(primary_facet.rotation);
+        ray.untranslate_origin(primary_facet.offset);
+      }
+      if(scope->p_has_frame_change) {
+        ray.derotate(scope->p_rotation);
+        ray.untranslate_origin(scope->p_offset);
+      }
+      results.primary_position = ray.position();
+      results.status = RTS_NO_PRIMARY_FACET;
+      return false;
+    }
+  }
+
+  if(primary_facet.roughness > 0) {
+    results.primary_reflection_cosine =
+      ray.reflect_from_rough_polynomial_surface(
+        scope->p_surface, scope->p_surface_n, primary_facet.roughness, *rng_);
+  } else {
+    results.primary_reflection_cosine =
+      ray.reflect_from_polynomial_surface(
+        scope->p_surface, scope->p_surface_n);
+  }
+
+  // ***************************************************************************
+  // TRANSFORM BACK INTO PRIMARY FRAME
+  // ***************************************************************************
+
+  if(primary_facet.has_frame_change) {
+    ray.derotate(primary_facet.rotation);
+    ray.untranslate_origin(primary_facet.offset);
   }
 
   // ***************************************************************************
@@ -287,7 +379,11 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
     return false;
   }
 
-  results.secondary_facet = scope->s_scheme->find_facet(ray.x(), ray.z());
+  if(scope->s_scheme_loose) {
+    results.secondary_facet = scope->s_scheme_loose->find_facet(ray.x(), ray.z());
+  } else {
+    results.secondary_facet = scope->s_scheme->find_facet(ray.x(), ray.z());
+  }
   const auto& secondary_facet = scope->s_facets[results.secondary_facet];
   if((results.secondary_facet<0) or (secondary_facet.removed))
   {
@@ -300,12 +396,62 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
     return false;
   }
 
-  // TODO : PER FACET OFFSET AND ALIGNMENT
+  // ***************************************************************************
+  // TRANSFORM INTO SECONDARY FACET FRAME IF THERE IS ONE
+  // ***************************************************************************
 
-  ray.reflect_from_polynomial_surface(scope->s_surface, scope->s_surface_n);
+  if(secondary_facet.has_frame_change) {
+    ray.translate_origin(secondary_facet.offset);
+    ray.rotate(secondary_facet.rotation);
 
-  if(secondary_facet.spot_size > 0) {
-    calin::math::geometry::scatter_direction_in_place(ray.direction(), secondary_facet.spot_size, *rng_);
+    good = ray.propagate_to_polynomial_surface(scope->s_surface, scope->s_surface_n,
+      scope->s_rho_min, scope->s_rho_max, /* time_reversal_ok= */ true, /* n= */ n_,
+      /* ray_is_close_to_surface= */ true, /* tol= */ 1e-8);
+    if(not good) {
+      ray.derotate(secondary_facet.rotation);
+      ray.untranslate_origin(secondary_facet.offset);
+      if(scope->s_has_frame_change) {
+        ray.derotate(scope->s_rotation);
+        ray.untranslate_origin(scope->s_offset);
+      }
+      results.status = RTS_MISSED_SECONDARY;
+      return false;
+    }
+  }
+
+  if(scope->s_scheme_loose) {
+    if(scope->s_scheme->find_facet(ray.x(), ray.z()) != results.secondary_facet) {
+      if(secondary_facet.has_frame_change) {
+        ray.derotate(secondary_facet.rotation);
+        ray.untranslate_origin(secondary_facet.offset);
+      }
+      if(scope->s_has_frame_change) {
+        ray.derotate(scope->s_rotation);
+        ray.untranslate_origin(scope->s_offset);
+      }
+      results.secondary_position = ray.position();
+      results.status = RTS_NO_SECONDARY_FACET;
+      return false;
+    }
+  }
+
+  if(secondary_facet.roughness > 0) {
+    results.secondary_reflection_cosine =
+      ray.reflect_from_rough_polynomial_surface(
+        scope->s_surface, scope->s_surface_n, secondary_facet.roughness, *rng_);
+  } else {
+    results.secondary_reflection_cosine =
+      ray.reflect_from_polynomial_surface(
+        scope->s_surface, scope->s_surface_n);
+  }
+
+  // ***************************************************************************
+  // TRANSFORM BACK INTO SECONDARY FRAME
+  // ***************************************************************************
+
+  if(secondary_facet.has_frame_change) {
+    ray.derotate(secondary_facet.rotation);
+    ray.untranslate_origin(secondary_facet.offset);
   }
 
   // ***************************************************************************
@@ -428,6 +574,9 @@ calin::simulation::sct_optics::make_sct_telescope(
       telescope->mutable_primary_rotation(), primary_rotation);
   }
   telescope->mutable_primary_facet_scheme()->CopyFrom(param.primary_facet_scheme());
+  if(param.has_primary_facet_scheme_loose()) {
+    telescope->mutable_primary_facet_scheme_loose()->CopyFrom(param.primary_facet_scheme_loose());
+  }
 
   auto primary_facet_scheme = calin::simulation::sct_optics::SCTPrimaryFacetScheme(
     param.primary_facet_scheme());
@@ -512,6 +661,9 @@ calin::simulation::sct_optics::make_sct_telescope(
       telescope->mutable_secondary_rotation(), secondary_rotation);
   }
   telescope->mutable_secondary_facet_scheme()->CopyFrom(param.secondary_facet_scheme());
+  if(param.has_secondary_facet_scheme_loose()) {
+    telescope->mutable_secondary_facet_scheme_loose()->CopyFrom(param.secondary_facet_scheme_loose());
+  }
 
   auto secondary_facet_scheme = calin::simulation::sct_optics::SCTSecondaryFacetScheme(
     param.secondary_facet_scheme());

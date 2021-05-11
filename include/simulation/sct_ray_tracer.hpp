@@ -55,9 +55,11 @@ struct SCTRayTracerResults
   SCTRayTracerStatus status;
   Eigen::Vector3d primary_position;
   int primary_facet;
+  double primary_reflection_cosine;
 
   Eigen::Vector3d secondary_position;
   int secondary_facet;
+  double secondary_reflection_cosine;
 
   int obscuration_id;
 
@@ -77,7 +79,7 @@ private:
   struct Facet
   {
     bool removed;
-    double spot_size;
+    double roughness;
     bool has_frame_change;
     Eigen::Vector3d offset;
     Eigen::Matrix3d rotation;
@@ -87,7 +89,9 @@ private:
   {
     ~Telescope() {
       delete p_scheme;
+      delete p_scheme_loose;
       delete s_scheme;
+      delete s_scheme_loose;
       for(auto* obs : primary_obscuration)delete obs;
       for(auto* obs : secondary_obscuration)delete obs;
       for(auto* obs : camera_obscuration)delete obs;
@@ -95,7 +99,9 @@ private:
     const calin::ix::simulation::sct_optics::SCTTelescope* param;
 
     SCTPrimaryFacetScheme* p_scheme;
+    SCTPrimaryFacetScheme* p_scheme_loose;
     bool p_has_frame_change;
+    bool p_facets_have_frame_change;
     Eigen::Vector3d p_offset;
     Eigen::Matrix3d p_rotation;
     double p_rho_min;
@@ -105,7 +111,9 @@ private:
     std::vector<Facet> p_facets;
 
     SCTSecondaryFacetScheme* s_scheme;
+    SCTSecondaryFacetScheme* s_scheme_loose;
     bool s_has_frame_change;
+    bool s_facets_have_frame_change;
     Eigen::Vector3d s_offset;
     Eigen::Matrix3d s_rotation;
     double s_rho_min;
