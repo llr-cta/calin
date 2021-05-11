@@ -88,7 +88,10 @@ message SCTTelescope
     (CFO).desc = "Primary rotation matrix, if needed." ];
   SCTFacetScheme primary_facet_scheme                      = 13 [
     (CFO).desc = "Primary facet scheme." ];
-  repeated SCTFacet primary_facets                         = 14 [
+  SCTFacetScheme primary_facet_scheme_loose                = 14 [
+    (CFO).desc = "Primary facet scheme with enough margin to accomodate facet "
+      "offsets." ];
+  repeated SCTFacet primary_facets                         = 15 [
     (CFO).desc = "Primary facet parameters." ];
 
   repeated double secondary_surface_polynomial             = 20 [
@@ -101,7 +104,10 @@ message SCTTelescope
     (CFO).desc = "Secondary rotation matrix, if needed." ];
   SCTFacetScheme secondary_facet_scheme                    = 23 [
     (CFO).desc = "Secondary facet scheme." ];
-  repeated SCTFacet secondary_facets                       = 24 [
+  SCTFacetScheme secondary_facet_scheme_loose              = 24 [
+    (CFO).desc = "Secondary facet scheme with enough margin to accomodate facet "
+      "offsets." ];
+  repeated SCTFacet secondary_facets                       = 25 [
     (CFO).desc = "Secondary facet parameters." ];
 
   repeated double camera_surface_polynomial                = 30 [
@@ -192,24 +198,27 @@ message SCTRandomArrayParameters
     (CFO).units="deg" ];
   SCTFacetScheme primary_facet_scheme                      = 106 [
     (CFO).desc = "Primary facet scheme." ];
-  repeated uint32 primary_facets_removed                   = 107 [
+  SCTFacetScheme primary_facet_scheme_loose                = 107 [
+    (CFO).desc = "Primary facet scheme with enough margin to allow facet "
+      "offsets to be accomodated." ];
+  repeated uint32 primary_facets_removed                   = 108 [
     (CFO).desc = "List of primary facets removed." ];
-  double primary_facet_offset_xz_dispersion                = 108 [
+  double primary_facet_offset_xz_dispersion                = 109 [
     (CFO).desc = "Dispersion of primary facet positions perpendicular to optic axis. This "
       "defines a per-facet random component that is added to the facet position.",
     (CFO).units="cm" ];
-  double primary_facet_offset_y_dispersion                 = 109 [
+  double primary_facet_offset_y_dispersion                 = 110 [
     (CFO).desc = "Dispersion of primary facet positions parallel to optic axis. This "
       "defines a per-facet random component that is added to the facet position.",
     (CFO).units="cm" ];
-  double primary_facet_rotation_dispersion                 = 110 [
+  double primary_facet_rotation_dispersion                 = 111 [
     (CFO).desc = "Dispersion of primary facet direction. This defines a per-facet "
       "random scattering direction.",
     (CFO).units="deg" ];
-  double primary_facet_spot_size_mean                      = 111 [
+  double primary_facet_spot_size_mean                      = 112 [
     (CFO).desc = "Mean spot size distribution from the primary facets.",
     (CFO).units="deg" ];
-  double primary_facet_spot_size_dispersion                = 112 [
+  double primary_facet_spot_size_dispersion                = 113 [
     (CFO).desc = "Dispersion of spot size distribution from the primary facets.",
     (CFO).units="deg" ];
 
@@ -242,57 +251,60 @@ message SCTRandomArrayParameters
     (CFO).units="deg" ];
   SCTFacetScheme secondary_facet_scheme                    = 207 [
     (CFO).desc = "Secondary facet scheme." ];
-  repeated uint32 secondary_facets_removed                 = 208 [
+  SCTFacetScheme secondary_facet_scheme_loose              = 208 [
+    (CFO).desc = "Secondary facet scheme with enough margin to allow facet "
+      "offsets to be accomodated." ];
+  repeated uint32 secondary_facets_removed                 = 209 [
     (CFO).desc = "List of secondary facets removed." ];
-  double secondary_facet_offset_xz_dispersion                = 209 [
+  double secondary_facet_offset_xz_dispersion              = 210 [
     (CFO).desc = "Dispersion of secondary facet positions perpendicular to optic axis. This "
       "defines a per-facet random component that is added to the facet position.",
     (CFO).units="cm" ];
-  double secondary_facet_offset_y_dispersion                 = 210 [
+  double secondary_facet_offset_y_dispersion               = 211 [
     (CFO).desc = "Dispersion of secondary facet positions parallel to optic axis. This "
       "defines a per-facet random component that is added to the facet position.",
     (CFO).units="cm" ];
-  double secondary_facet_rotation_dispersion                 = 211 [
+  double secondary_facet_rotation_dispersion               = 212 [
     (CFO).desc = "Dispersion of secondary facet direction. This defines a per-facet "
       "random scattering direction.",
     (CFO).units="deg" ];
-  double secondary_facet_spot_size_mean                      = 212 [
+  double secondary_facet_spot_size_mean                    = 213 [
     (CFO).desc = "Mean spot size distribution from the secondary facets.",
     (CFO).units="deg" ];
-  double secondary_facet_spot_size_dispersion                = 213 [
+  double secondary_facet_spot_size_dispersion              = 214 [
     (CFO).desc = "Dispersion of spot size distribution from the secondary facets.",
     (CFO).units="deg" ];
 
-  double camera_distance                                     = 300 [
+  double camera_distance                                   = 300 [
     (CFO).desc = "Position of camera surface along optical axis at zero sag. "
       "This should be F*(1/q-(1-alpha)) in the nomenclature of SCT-OPTMO/121108, "
       "possibly adjusted for finite image focus distance and for the effects "
       "of the window.",
     (CFO).units = "cm", (CFO).ref="SCT-OPTMO/121108" ];
-  repeated double camera_sag_polynomial                      = 301 [
+  repeated double camera_sag_polynomial                    = 301 [
     (CFO).desc = "Coefficients describing camera surface sag. Coefficients "
       "are function of squared-distance from optic axis in units of cm.",
     (CFO).units = "cm", (CFO).ref="SCT-OPTMO/121108" ];
-  calin.ix.common_types.Vector3D camera_offset               = 302 [
+  calin.ix.common_types.Vector3D camera_offset             = 302 [
     (CFO).desc = "Camera offset in reflector frame, if needed.", (CFO).units="cm" ];
-  double camera_offset_xz_dispersion                         = 303 [
+  double camera_offset_xz_dispersion                       = 303 [
     (CFO).desc = "Dispersion of camera position perpendicular to optic axis. This "
       "defines a per-telescope random component that is added to the camera offset "
       "specified by the \"camera_offset\" variable.",
     (CFO).units="cm" ];
-  double camera_offset_y_dispersion                          = 304 [
+  double camera_offset_y_dispersion                        = 304 [
     (CFO).desc = "Dispersion of camera position parallel to optic axis. This "
       "defines a per-telescope random component that is added to the camera offset "
       "specified by the \"camera_offset\" variable.",
     (CFO).units="cm" ];
-  calin.ix.common_types.EulerAngles3D camera_rotation        = 305 [
+  calin.ix.common_types.EulerAngles3D camera_rotation      = 305 [
     (CFO).desc = "Camera rotation angles, if needed." ];
-  double camera_rotation_dispersion                          = 306 [
+  double camera_rotation_dispersion                        = 306 [
     (CFO).desc = "Dispersion of camera direction. This defines a per-telescope "
       "random component that is compounded with the camera rotation angle "
       "specified by the \"secondary_rotation\" variable.",
     (CFO).units="deg" ];
-  double camera_radius                                       = 307 [
+  double camera_radius                                     = 307 [
     (CFO).desc = "Camera radius.", (CFO).units="cm" ];
 
   repeated calin.ix.simulation.vs_optics.VSOObscurationData primary_obscuration   = 400 [

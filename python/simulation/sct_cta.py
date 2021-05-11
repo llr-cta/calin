@@ -83,6 +83,13 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
     primary_facet_scheme.set_outer_ring_outer_radius(480.929)
     primary_facet_scheme.set_long_edge_half_gap(0.7)
 
+    primary_facet_scheme_loose = sct.mutable_primary_facet_scheme_loose()
+    primary_facet_scheme_loose.set_inner_ring_inner_radius(214.436);
+    primary_facet_scheme_loose.set_inner_ring_outer_radius(338.397)
+    primary_facet_scheme_loose.set_outer_ring_inner_radius(338.397)
+    primary_facet_scheme_loose.set_outer_ring_outer_radius(481.629)
+    primary_facet_scheme_loose.set_long_edge_half_gap(0.0)
+
     ps = numpy.asarray([
         4.5094360e-7,  -0.4167062710,  -0.1442213045,  0.67307608,   -3.539924707,
         15.8620298,    -59.11580194,   170.5778772,    -350.8596568, 452.9519853,
@@ -95,19 +102,22 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
     sct.set_secondary_sag_polynomial(ps)
 
     secondary_facet_scheme = sct.mutable_secondary_facet_scheme()
-    # secondary_facet_scheme.set_inner_ring_inner_radius(rsec1i*COS_PI_8);
-    # secondary_facet_scheme.set_inner_ring_outer_radius(rsec1o*COS_PI_16 - 0.7)
-    # secondary_facet_scheme.set_outer_ring_inner_radius(rsec2i*COS_PI_16 + 0.7)
-    # secondary_facet_scheme.set_outer_ring_outer_radius(rsec2o*COS_PI_16)
     secondary_facet_scheme.set_inner_ring_inner_radius(38.867);
     secondary_facet_scheme.set_inner_ring_outer_radius(158.969*COS_PI_16)
     secondary_facet_scheme.set_outer_ring_inner_radius(157.383)
     secondary_facet_scheme.set_outer_ring_outer_radius(265.748)
     secondary_facet_scheme.set_long_edge_half_gap(0.7)
 
-    # pc = numpy.asarray([0, -0.8327, 4.9950])) # Values from SCT-OPTMO/121108
-    # pc *= F * F**(-2*arange(0,len(pc)))
-    pc = numpy.asarray([-0.2499999999998863, -1.33436e-03, 2.86525e-8]) # Values from confluence
+    secondary_facet_scheme_loose = sct.mutable_secondary_facet_scheme_loose()
+    secondary_facet_scheme_loose.set_inner_ring_inner_radius(38.167);
+    secondary_facet_scheme_loose.set_inner_ring_outer_radius(156.649)
+    secondary_facet_scheme_loose.set_outer_ring_inner_radius(156.649)
+    secondary_facet_scheme_loose.set_outer_ring_outer_radius(266.448)
+    secondary_facet_scheme_loose.set_long_edge_half_gap(0.0)
+
+    pc = numpy.asarray([0, -0.8327, 4.9950]) # Values from SCT-OPTMO/121108
+    pc *= F * F**(-2*numpy.arange(0,len(pc)))
+    # pc = numpy.asarray([-0.2499999999998863, -1.33436e-03, 2.86525e-8]) # Values from confluence
 
     sct.set_camera_distance(F*(1/q - (1-alpha)))
     sct.set_camera_sag_polynomial(pc)
