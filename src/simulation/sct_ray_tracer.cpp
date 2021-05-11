@@ -56,7 +56,7 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     if(scope->s_surface_n == 0) {
       throw std::runtime_error("Primary surface polynomial must have at least one coefficient");
     }
-    scope->p_rotation = calin::math::geometry::euler_to_matrix(scope_params.primary_rotation());
+    scope->p_rotation = calin::math::geometry::euler_to_matrix(scope_params.primary_rotation()).transpose();
     scope->p_offset = calin::math::vector3d_util::from_proto(scope_params.primary_offset());
     scope->p_has_frame_change = (scope->p_offset.squaredNorm()>0) or
       (not calin::math::geometry::euler_is_zero(scope_params.primary_rotation()));
@@ -64,11 +64,24 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     scope->p_rho_min = SQR(scope->p_scheme->inner_radius());
     scope->p_facets.resize(scope->p_scheme->num_facets());
     for(unsigned i=0;i<scope->p_scheme->num_facets();++i) {
+      auto& facet = scope->p_facets[i];
       if(i<scope_params.primary_facets_size()) {
-        scope->p_facets[i].removed = scope_params.primary_facets(i).removed();
-        scope->p_facets[i].spot_size = scope_params.primary_facets(i).spot_size() * (M_PI/180.0);
+        facet.removed = scope_params.primary_facets(i).removed();
+        facet.spot_size = scope_params.primary_facets(i).spot_size() * (M_PI/180.0);
+        facet.rotation = calin::math::geometry::euler_to_matrix(
+          scope_params.primary_facets(i).rotation()).transpose();
+        Eigen::Vector3d nominal_position = scope->p_scheme->facet_centroid_3d(i,
+          scope->p_surface,scope->p_surface_n);
+        Eigen::Vector3d actual_position = nominal_position;
+        if(scope_params.primary_facets(i).has_position()) {
+          actual_position = calin::math::vector3d_util::from_proto(
+            scope_params.primary_facets(i).position());
+        }
+        facet.offset = actual_position - scope->p_facets[i].rotation.transpose()*nominal_position;
+        facet.has_frame_change = (facet.offset.squaredNorm()>0) or
+          (not calin::math::geometry::euler_is_zero(scope_params.primary_facets(i).rotation()));
       } else {
-        scope->p_facets[i].removed = true;
+        facet.removed = true;
       }
     }
 
@@ -82,7 +95,7 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     if(scope->s_surface_n == 0) {
       throw std::runtime_error("Secondary surface polynomial must have at least one coefficient");
     }
-    scope->s_rotation = calin::math::geometry::euler_to_matrix(scope_params.secondary_rotation());
+    scope->s_rotation = calin::math::geometry::euler_to_matrix(scope_params.secondary_rotation()).transpose();
     scope->s_offset = Eigen::Vector3d(0, scope->s_surface[0], 0)
       + calin::math::vector3d_util::from_proto(scope_params.secondary_offset())
       - scope->s_rotation.transpose() * Eigen::Vector3d(0, scope->s_surface[0], 0);
