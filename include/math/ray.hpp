@@ -28,6 +28,7 @@
 #include <Eigen/Geometry>
 #include <calin_global_definitions.hpp>
 #include <math/constants.hpp>
+#include <math/rng.hpp>
 
 namespace calin { namespace math { namespace ray {
 
@@ -82,8 +83,10 @@ public:
   void derotate(const Eigen::Matrix3d& rot) {
     pos_ = rot.transpose() * pos_; dir_ = rot.transpose() * dir_; }
 
-  void reflect_from_surface(const Eigen::Vector3d& surface_norm) {
-    dir_ -= surface_norm * (2.0*(dir_.dot(surface_norm)));
+  double reflect_from_surface(const Eigen::Vector3d& surface_norm) {
+    double dir_dot_norm = dir_.dot(surface_norm);
+    dir_ -= surface_norm * (2.0*dir_dot_norm);
+    return dir_dot_norm;
   }
 
   // Refract at incoming surface (where n>1 and norm.dir<0)
@@ -192,7 +195,9 @@ public:
 
 #ifndef SWIG
   Eigen::Vector3d norm_of_polynomial_surface(const double* p, unsigned np) const;
-  void reflect_from_polynomial_surface(const double* p, unsigned np);
+  double reflect_from_polynomial_surface(const double* p, unsigned np);
+  double reflect_from_rough_polynomial_surface(const double* p, unsigned np,
+    double roughness, calin::math::rng::RNG& rng);
 #endif
 
   Eigen::Vector3d norm_of_polynomial_surface(const Eigen::VectorXd& p) const
@@ -200,11 +205,16 @@ public:
     return norm_of_polynomial_surface(p.data(), p.size());
   }
 
-  void reflect_from_polynomial_surface(const Eigen::VectorXd& p)
+  double reflect_from_polynomial_surface(const Eigen::VectorXd& p)
   {
-    reflect_from_polynomial_surface(p.data(), p.size());
+    return reflect_from_polynomial_surface(p.data(), p.size());
   }
 
+  double reflect_from_rough_polynomial_surface(const Eigen::VectorXd& p,
+    double roughness, calin::math::rng::RNG& rng)
+  {
+    return reflect_from_rough_polynomial_surface(p.data(), p.size(), roughness, rng);
+  }
 
 private:
   Eigen::Vector3d pos_ = Eigen::Vector3d::Zero();

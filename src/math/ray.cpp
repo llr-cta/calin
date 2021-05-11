@@ -25,6 +25,7 @@
 #include <math/ray.hpp>
 #include <math/special.hpp>
 #include <math/least_squares.hpp>
+#include <math/geometry.hpp>
 #include <util/log.hpp>
 
 using namespace calin::math::ray;
@@ -521,7 +522,15 @@ Eigen::Vector3d Ray::norm_of_polynomial_surface(const double* p, unsigned np) co
   return norm;
 }
 
-void Ray::reflect_from_polynomial_surface(const double* p, unsigned np)
+double Ray::reflect_from_polynomial_surface(const double* p, unsigned np)
 {
-  reflect_from_surface(norm_of_polynomial_surface(p,np));
+  return reflect_from_surface(norm_of_polynomial_surface(p,np));
+}
+
+double Ray::reflect_from_rough_polynomial_surface(const double* p, unsigned np,
+  double roughness, calin::math::rng::RNG& rng)
+{
+  auto norm = norm_of_polynomial_surface(p,np);
+  calin::math::geometry::scatter_direction_in_place(norm, roughness, rng);
+  return reflect_from_surface(norm);
 }
