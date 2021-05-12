@@ -303,10 +303,13 @@ void quaternion_to_euler(calin::ix::common_types::EulerAngles3D* euler,
 void matrix_to_euler(calin::ix::common_types::EulerAngles3D* euler,
   const Eigen::Matrix3d& m);
 
-void scattering_euler(calin::ix::common_types::EulerAngles3D* euler, double dispersion, calin::math::rng::RNG& rng);
+void scattering_euler(calin::ix::common_types::EulerAngles3D* euler, double dispersion,
+  calin::math::rng::RNG& rng, double twist_dispersion = 0);
+
 calin::ix::common_types::EulerAngles3D scattering_euler(double dispersion, calin::math::rng::RNG& rng,
+  double twist_dispersion = 0,
   calin::ix::common_types::EulerAngles3D::RotationOrder rotation_order =
-    calin::ix::common_types::EulerAngles3D::XYX);
+    calin::ix::common_types::EulerAngles3D::YXY);
 
 bool euler_is_zero(const calin::ix::common_types::EulerAngles3D& euler);
 

@@ -215,10 +215,14 @@ message SCTRandomArrayParameters
     (CFO).desc = "Dispersion of primary facet direction. This defines a per-facet "
       "random scattering direction.",
     (CFO).units="deg" ];
-  double primary_facet_spot_size_mean                      = 112 [
+  double primary_facet_twist_rotation_dispersion           = 112 [
+    (CFO).desc = "Twist on the secondary direction around the y axis. This "
+      "defines the dispersion of a per-facet random twist around the y direction.",
+    (CFO).units="deg" ];
+  double primary_facet_spot_size_mean                      = 113 [
     (CFO).desc = "Mean spot size distribution from the primary facets.",
     (CFO).units="deg" ];
-  double primary_facet_spot_size_dispersion                = 113 [
+  double primary_facet_spot_size_dispersion                = 114 [
     (CFO).desc = "Dispersion of spot size distribution from the primary facets.",
     (CFO).units="deg" ];
 
@@ -266,12 +270,16 @@ message SCTRandomArrayParameters
     (CFO).units="cm" ];
   double secondary_facet_rotation_dispersion               = 212 [
     (CFO).desc = "Dispersion of secondary facet direction. This defines a per-facet "
-      "random scattering direction.",
+      "random scattering on the facet normal direction.",
     (CFO).units="deg" ];
-  double secondary_facet_spot_size_mean                    = 213 [
+  double secondary_facet_twist_rotation_dispersion         = 213 [
+    (CFO).desc = "Twist on the secondary direction around the y axis. This "
+      "defines the dispersion of a per-facet random twist around the y direction.",
+    (CFO).units="deg" ];
+  double secondary_facet_spot_size_mean                    = 214 [
     (CFO).desc = "Mean spot size distribution from the secondary facets.",
     (CFO).units="deg" ];
-  double secondary_facet_spot_size_dispersion              = 214 [
+  double secondary_facet_spot_size_dispersion              = 215 [
     (CFO).desc = "Dispersion of spot size distribution from the secondary facets.",
     (CFO).units="deg" ];
 

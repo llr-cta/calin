@@ -565,11 +565,11 @@ calin::simulation::sct_optics::make_sct_telescope(
     primary_rotation =
       calin::math::geometry::euler_to_quaternion(
         calin::math::geometry::scattering_euler(param.primary_rotation_dispersion(),
-          *rng, calin::ix::common_types::EulerAngles3D::XYX)) * primary_rotation;
+          *rng, calin::ix::common_types::EulerAngles3D::YXY)) * primary_rotation;
   }
   if(primary_rotation.vec().squaredNorm() > 0) {
     telescope->mutable_primary_rotation()->set_rotation_order(
-      calin::ix::common_types::EulerAngles3D::XYX);
+      calin::ix::common_types::EulerAngles3D::YXY);
     calin::math::geometry::quaternion_to_euler(
       telescope->mutable_primary_rotation(), primary_rotation);
   }
@@ -596,11 +596,13 @@ calin::simulation::sct_optics::make_sct_telescope(
       facet_position.y() += param.primary_facet_offset_y_dispersion()*rng->normal();
     }
     calin::math::vector3d_util::dump_as_proto(facet_position, facet->mutable_position());
-    if(param.primary_facet_rotation_dispersion() > 0) {
+    if(param.primary_facet_rotation_dispersion() > 0 or
+        param.primary_facet_twist_rotation_dispersion() > 0) {
       auto* facet_euler = facet->mutable_rotation();
-      facet_euler->set_rotation_order(calin::ix::common_types::EulerAngles3D::XYX);
+      facet_euler->set_rotation_order(calin::ix::common_types::EulerAngles3D::YXY);
       calin::math::geometry::scattering_euler(facet_euler,
-        param.primary_facet_rotation_dispersion(), *rng);
+        param.primary_facet_rotation_dispersion(), *rng,
+        param.primary_facet_twist_rotation_dispersion());
     }
     if(param.primary_facet_spot_size_mean()>0
         and param.primary_facet_spot_size_dispersion()>0) {
@@ -652,11 +654,11 @@ calin::simulation::sct_optics::make_sct_telescope(
     secondary_rotation =
       calin::math::geometry::euler_to_quaternion(
         calin::math::geometry::scattering_euler(param.secondary_rotation_dispersion(),
-          *rng, calin::ix::common_types::EulerAngles3D::XYX)) * secondary_rotation;
+          *rng, calin::ix::common_types::EulerAngles3D::YXY)) * secondary_rotation;
   }
   if(secondary_rotation.vec().squaredNorm() > 0) {
     telescope->mutable_secondary_rotation()->set_rotation_order(
-      calin::ix::common_types::EulerAngles3D::XYX);
+      calin::ix::common_types::EulerAngles3D::YXY);
     calin::math::geometry::quaternion_to_euler(
       telescope->mutable_secondary_rotation(), secondary_rotation);
   }
@@ -683,11 +685,13 @@ calin::simulation::sct_optics::make_sct_telescope(
       facet_position.y() += param.secondary_facet_offset_y_dispersion()*rng->normal();
     }
     calin::math::vector3d_util::dump_as_proto(facet_position, facet->mutable_position());
-    if(param.secondary_facet_rotation_dispersion() > 0) {
+    if(param.secondary_facet_rotation_dispersion() > 0 or
+        param.secondary_facet_twist_rotation_dispersion() > 0) {
       auto* facet_euler = facet->mutable_rotation();
-      facet_euler->set_rotation_order(calin::ix::common_types::EulerAngles3D::XYX);
+      facet_euler->set_rotation_order(calin::ix::common_types::EulerAngles3D::YXY);
       calin::math::geometry::scattering_euler(facet_euler,
-        param.secondary_facet_rotation_dispersion(), *rng);
+        param.secondary_facet_rotation_dispersion(), *rng,
+        param.secondary_facet_twist_rotation_dispersion());
     }
 
     if(param.secondary_facet_spot_size_mean()>0
@@ -740,11 +744,11 @@ calin::simulation::sct_optics::make_sct_telescope(
     camera_rotation =
       calin::math::geometry::euler_to_quaternion(
         calin::math::geometry::scattering_euler(param.camera_rotation_dispersion(),
-          *rng, calin::ix::common_types::EulerAngles3D::XYX)) * camera_rotation;
+          *rng, calin::ix::common_types::EulerAngles3D::YXY)) * camera_rotation;
   }
   if(camera_rotation.vec().squaredNorm() > 0) {
     telescope->mutable_camera_rotation()->set_rotation_order(
-      calin::ix::common_types::EulerAngles3D::XYX);
+      calin::ix::common_types::EulerAngles3D::YXY);
     calin::math::geometry::quaternion_to_euler(
       telescope->mutable_camera_rotation(), camera_rotation);
   }

@@ -110,31 +110,36 @@ void calin::math::geometry::matrix_to_euler(
 }
 
 void calin::math::geometry::scattering_euler(
-  calin::ix::common_types::EulerAngles3D* euler, double dispersion, math::rng::RNG& rng)
+  calin::ix::common_types::EulerAngles3D* euler, double dispersion, math::rng::RNG& rng,
+  double twist_dispersion)
 {
-  if(dispersion<=0)
+  double alpha = 0;
+  double beta = 0;
+  double gamma = 0;
+
+  if(dispersion>0)
   {
-    euler->set_alpha(0);
-    euler->set_beta(0);
-    euler->set_gamma(0);
-    return;
+    alpha = rng.uniform() * 360.0 - 180.0;
+    beta = dispersion*std::sqrt(-2.0*std::log(rng.uniform()));
+    gamma = -alpha;
   }
 
-  const double phi = rng.uniform() * 360.0 - 180.0;
-  const double theta = dispersion*std::sqrt(-2.0*std::log(rng.uniform()));
+  if(twist_dispersion > 0) {
+    gamma = std::fmod(std::fmod(gamma + rng.uniform()*twist_dispersion + 180, 360) + 360, 360) - 180;
+  }
 
-  euler->set_alpha(phi);
-  euler->set_beta(theta);
-  euler->set_gamma(-phi);
+  euler->set_alpha(alpha);
+  euler->set_beta(beta);
+  euler->set_gamma(gamma);
 }
 
 calin::ix::common_types::EulerAngles3D
 calin::math::geometry::scattering_euler(double dispersion, calin::math::rng::RNG& rng,
-  calin::ix::common_types::EulerAngles3D::RotationOrder rotation_order)
+  double twist_dispersion, calin::ix::common_types::EulerAngles3D::RotationOrder rotation_order)
 {
   calin::ix::common_types::EulerAngles3D euler;
   euler.set_rotation_order(rotation_order);
-  scattering_euler(&euler, dispersion, rng);
+  scattering_euler(&euler, dispersion, rng, twist_dispersion);
   return euler;
 }
 
