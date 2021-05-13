@@ -29,6 +29,7 @@
 #include <calin_global_definitions.hpp>
 #include <math/constants.hpp>
 #include <math/rng.hpp>
+#include <math/geometry.hpp>
 
 namespace calin { namespace math { namespace ray {
 
@@ -194,7 +195,11 @@ public:
   }
 
 #ifndef SWIG
-  Eigen::Vector3d norm_of_polynomial_surface(const double* p, unsigned np) const;
+  inline Eigen::Vector3d norm_of_polynomial_surface(const double* p, unsigned np) const
+  {
+    return calin::math::geometry::norm_of_polynomial_surface(this->x(), this->z(), p, np);
+  }
+
   double reflect_from_polynomial_surface(const double* p, unsigned np);
   double reflect_from_rough_polynomial_surface(const double* p, unsigned np,
     double roughness, calin::math::rng::RNG& rng);

@@ -29,6 +29,7 @@
 
 #include <common_types.pb.h>
 #include <math/rng.hpp>
+#include <math/least_squares.hpp>
 
 namespace calin { namespace math { namespace geometry {
 
@@ -142,9 +143,71 @@ inline void rotation_z_to_xyz_Rzyz(Eigen::Matrix3d& m,
   }
 }
 
+inline void rotation_y_to_xyz_Ryxy(Eigen::Matrix3d& m,
+  const double x, const double y, const double z)
+{
+  double st = std::sqrt(z*z+x*x);
+  if(st == 0.0) {
+    if(y>=0) {
+      m.setIdentity();
+    } else {
+      m <<  1,  0,  0,
+            0, -1,  0,
+            0,  0, -1;
+    }
+  } else {
+    double st_inv = 1.0/st;
+    double sp = x * st_inv;
+    double cp = z * st_inv;
+    double sp2 = sp*sp;
+    double cp2 = cp*cp;
+    double ymo_cpsp = (y-1)*cp*sp;
+
+    m << y*sp2+cp2, x,  ymo_cpsp,
+                -x, y,        -z,
+          ymo_cpsp, z, y*cp2+sp2;
+  }
+}
+
+inline void rotation_x_to_xyz_Rxzx(Eigen::Matrix3d& m,
+  const double x, const double y, const double z)
+{
+  double st = sqrt(y*y+z*z);
+  if(st == 0.0) {
+    if(y>=0) {
+      m.setIdentity();
+    } else {
+      m << -1,  0,  0,
+            0, -1,  0,
+            0,  0,  1;
+    }
+  } else {
+    double st_inv = 1.0/st;
+    double sp = z * st_inv;
+    double cp = y * st_inv;
+    double sp2 = sp*sp;
+    double cp2 = cp*cp;
+    double xmo_cpsp = (x-1)*cp*sp;
+
+    m << x,        -y,        -z,
+         y, x*cp2+sp2,  xmo_cpsp,
+         z,  xmo_cpsp, x*sp2+cp2;
+  }
+}
+
 inline void rotation_z_to_vec_Rzyz(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
 {
   return rotation_z_to_xyz_Rzyz(m, v.x(), v.y(), v.z());
+}
+
+inline void rotation_y_to_xyz_Ryxy(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+{
+  return rotation_y_to_xyz_Ryxy(m, v.x(), v.y(), v.z());
+}
+
+inline void rotation_x_to_xyz_Rxzx(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+{
+  return rotation_x_to_xyz_Rxzx(m, v.x(), v.y(), v.z());
 }
 
 inline void rotate_in_place_2d(double& x, double& y,
@@ -312,5 +375,25 @@ calin::ix::common_types::EulerAngles3D scattering_euler(double dispersion, calin
     calin::ix::common_types::EulerAngles3D::YXY);
 
 bool euler_is_zero(const calin::ix::common_types::EulerAngles3D& euler);
+
+#ifndef SWIG
+inline Eigen::Vector3d norm_of_polynomial_surface(double x, double z, const double* p, unsigned np)
+{
+  double yps;
+  double dyps_drho2;
+  double rho2 = x*x + z*z;
+  calin::math::least_squares::polyval_and_derivative(yps, dyps_drho2, p, np, rho2);
+
+  Eigen::Vector3d norm(2*x*dyps_drho2, -1, 2*z*dyps_drho2);
+  norm.normalize();
+
+  return norm;
+}
+#endif
+
+inline Eigen::Vector3d norm_of_polynomial_surface(double x, double z, const Eigen::VectorXd& p)
+{
+  return norm_of_polynomial_surface(x, z, p.data(), p.size());
+}
 
 } } } // namespace calin::math::geometry

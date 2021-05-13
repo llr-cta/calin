@@ -506,22 +506,6 @@ bool Ray::propagate_to_polynomial_surface(const double* p, unsigned np,
   return false;
 }
 
-Eigen::Vector3d Ray::norm_of_polynomial_surface(const double* p, unsigned np) const
-{
-  double x = this->x();
-  double z = this->z();
-
-  double yps;
-  double dyps_drho2;
-  double rho2 = x*x + z*z;
-  polyval_and_derivative(yps, dyps_drho2, p, np, rho2);
-
-  Eigen::Vector3d norm(2*x*dyps_drho2, -1, 2*z*dyps_drho2);
-  norm.normalize();
-
-  return norm;
-}
-
 double Ray::reflect_from_polynomial_surface(const double* p, unsigned np)
 {
   return reflect_from_surface(norm_of_polynomial_surface(p,np));
