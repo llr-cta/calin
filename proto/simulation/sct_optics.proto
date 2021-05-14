@@ -204,25 +204,36 @@ message SCTRandomArrayParameters
   repeated uint32 primary_facets_removed                   = 108 [
     (CFO).desc = "List of primary facets removed." ];
   double primary_facet_offset_xz_dispersion                = 109 [
-    (CFO).desc = "Dispersion of primary facet positions perpendicular to optic axis. This "
+    (CFO).desc = "Dispersion of primary facet positions perpendicular to normal. This "
       "defines a per-facet random component that is added to the facet position.",
     (CFO).units="cm" ];
   double primary_facet_offset_y_dispersion                 = 110 [
-    (CFO).desc = "Dispersion of primary facet positions parallel to optic axis. This "
+    (CFO).desc = "Dispersion of primary facet positions parallel to its normal. This "
       "defines a per-facet random component that is added to the facet position.",
     (CFO).units="cm" ];
-  double primary_facet_rotation_dispersion                 = 111 [
-    (CFO).desc = "Dispersion of primary facet direction. This defines a per-facet "
-      "random scattering direction.",
+  double primary_facet_theta_rotation_dispersion           = 111 [
+    (CFO).desc = "Dispersion of primary facet direction in the theta direction "
+      "(around axis perpendicular to the normal and optic-axis). This defines "
+      "a per-facet random scattering direction.",
     (CFO).units="deg" ];
-  double primary_facet_twist_rotation_dispersion           = 112 [
-    (CFO).desc = "Twist on the secondary direction around the y axis. This "
-      "defines the dispersion of a per-facet random twist around the y direction.",
+  double primary_facet_phi_rotation_dispersion             = 112 [
+    (CFO).desc = "Dispersion of primary facet direction in the phi direction "
+      "(around axis perpendicular to theta-axis and normal). This defines "
+      "a per-facet random scattering direction.",
     (CFO).units="deg" ];
-  double primary_facet_spot_size_mean                      = 113 [
+  double primary_facet_rho_rotation_dispersion             = 113 [
+    (CFO).desc = "Dispersion of primary facet direction in the rho direction "
+      "(around the normal). This defines a per-facet random scattering direction.",
+    (CFO).units="deg" ];
+  double primary_facet_theta_canting                       = 114 [
+    (CFO).desc = "Rotation of primary facet direction around theta axis "
+      "(around axis perpendicular to the normal and optic-axis) proportional to "
+      "facet distance off axis.",
+    (CFO).units="deg/cm" ];
+  double primary_facet_spot_size_mean                      = 115 [
     (CFO).desc = "Mean spot size distribution from the primary facets.",
     (CFO).units="deg" ];
-  double primary_facet_spot_size_dispersion                = 114 [
+  double primary_facet_spot_size_dispersion                = 116 [
     (CFO).desc = "Dispersion of spot size distribution from the primary facets.",
     (CFO).units="deg" ];
 
@@ -268,18 +279,29 @@ message SCTRandomArrayParameters
     (CFO).desc = "Dispersion of secondary facet positions parallel to optic axis. This "
       "defines a per-facet random component that is added to the facet position.",
     (CFO).units="cm" ];
-  double secondary_facet_rotation_dispersion               = 212 [
-    (CFO).desc = "Dispersion of secondary facet direction. This defines a per-facet "
-      "random scattering on the facet normal direction.",
+  double secondary_facet_theta_rotation_dispersion         = 212 [
+    (CFO).desc = "Dispersion of secondary facet direction in the theta direction "
+      "(around axis perpendicular to the normal and optic-axis). This defines "
+      "a per-facet random scattering direction.",
     (CFO).units="deg" ];
-  double secondary_facet_twist_rotation_dispersion         = 213 [
-    (CFO).desc = "Twist on the secondary direction around the y axis. This "
-      "defines the dispersion of a per-facet random twist around the y direction.",
+  double secondary_facet_phi_rotation_dispersion           = 213 [
+    (CFO).desc = "Dispersion of secondary facet direction in the phi direction "
+      "(around axis perpendicular to theta-axis and normal). This defines "
+      "a per-facet random scattering direction.",
     (CFO).units="deg" ];
-  double secondary_facet_spot_size_mean                    = 214 [
+  double secondary_facet_rho_rotation_dispersion           = 214 [
+    (CFO).desc = "Dispersion of secondary facet direction in the rho direction "
+      "(around the normal). This defines a per-facet random scattering direction.",
+    (CFO).units="deg" ];
+  double secondary_facet_theta_canting                     = 215 [
+    (CFO).desc = "Rotation of secondary facet direction around theta axis "
+      "(around axis perpendicular to the normal and optic-axis) proportional to "
+      "facet distance off axis.",
+    (CFO).units="deg/cm" ];
+  double secondary_facet_spot_size_mean                    = 216 [
     (CFO).desc = "Mean spot size distribution from the secondary facets.",
     (CFO).units="deg" ];
-  double secondary_facet_spot_size_dispersion              = 215 [
+  double secondary_facet_spot_size_dispersion              = 217 [
     (CFO).desc = "Dispersion of spot size distribution from the secondary facets.",
     (CFO).units="deg" ];
 

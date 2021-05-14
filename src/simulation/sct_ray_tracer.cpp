@@ -54,7 +54,7 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     scope->p_scheme_loose = nullptr;
     scope->p_surface = scope_params.primary_surface_polynomial().data();
     scope->p_surface_n = scope_params.primary_surface_polynomial_size();
-    if(scope->s_surface_n == 0) {
+    if(scope->p_surface_n == 0) {
       throw std::runtime_error("Primary surface polynomial must have at least one coefficient");
     }
     scope->p_rotation = calin::math::geometry::euler_to_matrix(scope_params.primary_rotation()).transpose();
@@ -68,12 +68,16 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     for(unsigned i=0;i<scope->p_scheme->num_facets();++i) {
       auto& facet = scope->p_facets[i];
       if(i<scope_params.primary_facets_size()) {
-        facet.removed = scope_params.primary_facets(i).removed();
-        facet.roughness = 0.5 * scope_params.primary_facets(i).spot_size() * (M_PI/180.0);
-        facet.rotation = calin::math::geometry::euler_to_matrix(
-          scope_params.primary_facets(i).rotation()).transpose();
         Eigen::Vector3d nominal_position = scope->p_scheme->facet_centroid_3d(i,
           scope->p_surface,scope->p_surface_n);
+        Eigen::Vector3d facet_normal = calin::math::geometry::norm_of_polynomial_surface(
+          nominal_position.x(), nominal_position.z(), scope->p_surface, scope->p_surface_n);
+        Eigen::Matrix3d facet_frame_matrix = calin::math::geometry::rotation_y_to_vec_Ryx(
+          facet_normal);
+        facet.removed = scope_params.primary_facets(i).removed();
+        facet.roughness = 0.5 * scope_params.primary_facets(i).spot_size() * (M_PI/180.0);
+        facet.rotation = facet_frame_matrix * calin::math::geometry::euler_to_matrix(
+          scope_params.primary_facets(i).rotation()).transpose() * facet_frame_matrix.transpose();
         Eigen::Vector3d actual_position = nominal_position;
         if(scope_params.primary_facets(i).has_position()) {
           actual_position = calin::math::vector3d_util::from_proto(
@@ -121,12 +125,16 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     for(unsigned i=0;i<scope->s_scheme->num_facets();++i) {
       auto& facet = scope->s_facets[i];
       if(i<scope_params.secondary_facets_size()) {
-        facet.removed = scope_params.secondary_facets(i).removed();
-        facet.roughness = 0.5 * scope_params.secondary_facets(i).spot_size() * (M_PI/180.0);
-        facet.rotation = calin::math::geometry::euler_to_matrix(
-          scope_params.secondary_facets(i).rotation()).transpose();
         Eigen::Vector3d nominal_position = scope->s_scheme->facet_centroid_3d(i,
           scope->s_surface,scope->s_surface_n);
+        Eigen::Vector3d facet_normal = calin::math::geometry::norm_of_polynomial_surface(
+          nominal_position.x(), nominal_position.z(), scope->s_surface, scope->s_surface_n);
+        Eigen::Matrix3d facet_frame_matrix = calin::math::geometry::rotation_y_to_vec_Ryx(
+          facet_normal);
+        facet.removed = scope_params.secondary_facets(i).removed();
+        facet.roughness = 0.5 * scope_params.secondary_facets(i).spot_size() * (M_PI/180.0);
+        facet.rotation = facet_frame_matrix * calin::math::geometry::euler_to_matrix(
+          scope_params.secondary_facets(i).rotation()).transpose() * facet_frame_matrix.transpose();
         Eigen::Vector3d actual_position = nominal_position;
         if(scope_params.secondary_facets(i).has_position()) {
           actual_position = calin::math::vector3d_util::from_proto(
@@ -585,25 +593,54 @@ calin::simulation::sct_optics::make_sct_telescope(
     facet->set_id(ifacet);
     Eigen::Vector3d facet_position(0,0,0);
     primary_facet_scheme.facet_centroid(ifacet, facet_position.x(), facet_position.z());
+    double facet_off_axis_dist = facet_position.norm();
     facet_position.y() = calin::math::least_squares::polyval(
       telescope->primary_surface_polynomial().data(),
       telescope->primary_surface_polynomial_size(), facet_position.squaredNorm());
+    Eigen::Vector3d facet_normal = calin::math::geometry::norm_of_polynomial_surface(
+      facet_position.x(), facet_position.z(), telescope->primary_surface_polynomial().data(),
+      telescope->primary_surface_polynomial_size());
+    Eigen::Matrix3d facet_frame_matrix = calin::math::geometry::rotation_y_to_vec_Ryx(
+      facet_normal);
+    Eigen::Vector3d facet_offset(0,0,0);
     if(param.primary_facet_offset_xz_dispersion() > 0) {
-      facet_position.x() += param.primary_facet_offset_xz_dispersion()*rng->normal();
-      facet_position.z() += param.primary_facet_offset_xz_dispersion()*rng->normal();
+      facet_offset.x() = param.primary_facet_offset_xz_dispersion()*rng->normal();
+      facet_offset.z() = param.primary_facet_offset_xz_dispersion()*rng->normal();
     }
     if(param.primary_facet_offset_y_dispersion() > 0) {
-      facet_position.y() += param.primary_facet_offset_y_dispersion()*rng->normal();
+      facet_offset.y() = param.primary_facet_offset_y_dispersion()*rng->normal();
     }
+    facet_position += facet_frame_matrix * facet_offset;
     calin::math::vector3d_util::dump_as_proto(facet_position, facet->mutable_position());
-    if(param.primary_facet_rotation_dispersion() > 0 or
-        param.primary_facet_twist_rotation_dispersion() > 0) {
+
+    Eigen::Quaterniond facet_rotation = Eigen::Quaterniond::Identity();
+    if(param.primary_facet_rho_rotation_dispersion() > 0) {
+      facet_rotation = Eigen::AngleAxisd(
+        param.primary_facet_rho_rotation_dispersion()*rng->normal()*(M_PI/180.0),
+        Eigen::Vector3d::UnitY()) * facet_rotation;
+    }
+    if(param.primary_facet_phi_rotation_dispersion() > 0) {
+      facet_rotation = Eigen::AngleAxisd(
+        param.primary_facet_phi_rotation_dispersion()*rng->normal()*(M_PI/180.0),
+        Eigen::Vector3d::UnitZ()) * facet_rotation;
+    }
+    if(param.primary_facet_theta_rotation_dispersion() > 0) {
+      facet_rotation = Eigen::AngleAxisd(
+        (param.primary_facet_theta_rotation_dispersion()*rng->normal()
+          + facet_off_axis_dist*param.primary_facet_theta_canting())*(M_PI/180.0),
+        Eigen::Vector3d::UnitX()) * facet_rotation;
+    } else if(param.primary_facet_theta_canting() != 0) {
+      facet_rotation = Eigen::AngleAxisd(
+        facet_off_axis_dist*param.primary_facet_theta_canting()*(M_PI/180.0),
+        Eigen::Vector3d::UnitX()) * facet_rotation;
+    }
+    if(facet_rotation.vec().squaredNorm() > 0) {
       auto* facet_euler = facet->mutable_rotation();
       facet_euler->set_rotation_order(calin::ix::common_types::EulerAngles3D::YXY);
-      calin::math::geometry::scattering_euler(facet_euler,
-        param.primary_facet_rotation_dispersion(), *rng,
-        param.primary_facet_twist_rotation_dispersion());
+      calin::math::geometry::quaternion_to_euler(facet_euler, facet_rotation);
+        // facet_frame_matrix * facet_rotation * facet_frame_matrix.transpose());
     }
+
     if(param.primary_facet_spot_size_mean()>0
         and param.primary_facet_spot_size_dispersion()>0) {
       facet->set_spot_size(rng->gamma_by_mean_and_sigma(
@@ -674,24 +711,52 @@ calin::simulation::sct_optics::make_sct_telescope(
     facet->set_id(ifacet);
     Eigen::Vector3d facet_position(0,0,0);
     secondary_facet_scheme.facet_centroid(ifacet, facet_position.x(), facet_position.z());
+    double facet_off_axis_dist = facet_position.norm();
     facet_position.y() = calin::math::least_squares::polyval(
       telescope->secondary_surface_polynomial().data(),
       telescope->secondary_surface_polynomial_size(), facet_position.squaredNorm());
+    Eigen::Vector3d facet_normal = calin::math::geometry::norm_of_polynomial_surface(
+      facet_position.x(), facet_position.z(), telescope->secondary_surface_polynomial().data(),
+      telescope->secondary_surface_polynomial_size());
+    Eigen::Matrix3d facet_frame_matrix = calin::math::geometry::rotation_y_to_vec_Ryx(
+      facet_normal);
+    Eigen::Vector3d facet_offset(0,0,0);
     if(param.secondary_facet_offset_xz_dispersion() > 0) {
-      facet_position.x() += param.secondary_facet_offset_xz_dispersion()*rng->normal();
-      facet_position.z() += param.secondary_facet_offset_xz_dispersion()*rng->normal();
+      facet_offset.x() = param.secondary_facet_offset_xz_dispersion()*rng->normal();
+      facet_offset.z() = param.secondary_facet_offset_xz_dispersion()*rng->normal();
     }
     if(param.secondary_facet_offset_y_dispersion() > 0) {
-      facet_position.y() += param.secondary_facet_offset_y_dispersion()*rng->normal();
+      facet_offset.y() = param.secondary_facet_offset_y_dispersion()*rng->normal();
     }
+    facet_position += facet_frame_matrix * facet_offset;
     calin::math::vector3d_util::dump_as_proto(facet_position, facet->mutable_position());
-    if(param.secondary_facet_rotation_dispersion() > 0 or
-        param.secondary_facet_twist_rotation_dispersion() > 0) {
+
+    Eigen::Quaterniond facet_rotation = Eigen::Quaterniond::Identity();
+    if(param.secondary_facet_rho_rotation_dispersion() > 0) {
+      facet_rotation = Eigen::AngleAxisd(
+        param.secondary_facet_rho_rotation_dispersion()*rng->normal()*(M_PI/180.0),
+        Eigen::Vector3d::UnitY()) * facet_rotation;
+    }
+    if(param.secondary_facet_phi_rotation_dispersion() > 0) {
+      facet_rotation = Eigen::AngleAxisd(
+        param.secondary_facet_phi_rotation_dispersion()*rng->normal()*(M_PI/180.0),
+        Eigen::Vector3d::UnitZ()) * facet_rotation;
+    }
+    if(param.secondary_facet_theta_rotation_dispersion() > 0) {
+      facet_rotation = Eigen::AngleAxisd(
+        (param.secondary_facet_theta_rotation_dispersion()*rng->normal()
+          + facet_off_axis_dist*param.secondary_facet_theta_canting())*(M_PI/180.0),
+        Eigen::Vector3d::UnitX()) * facet_rotation;
+    } else if(param.secondary_facet_theta_canting() != 0) {
+      facet_rotation = Eigen::AngleAxisd(
+        facet_off_axis_dist*param.secondary_facet_theta_canting()*(M_PI/180.0),
+        Eigen::Vector3d::UnitX()) * facet_rotation;
+    }
+    if(facet_rotation.vec().squaredNorm() > 0) {
       auto* facet_euler = facet->mutable_rotation();
       facet_euler->set_rotation_order(calin::ix::common_types::EulerAngles3D::YXY);
-      calin::math::geometry::scattering_euler(facet_euler,
-        param.secondary_facet_rotation_dispersion(), *rng,
-        param.secondary_facet_twist_rotation_dispersion());
+      calin::math::geometry::quaternion_to_euler(facet_euler, facet_rotation);
+        // facet_frame_matrix * facet_rotation * facet_frame_matrix.transpose());
     }
 
     if(param.secondary_facet_spot_size_mean()>0
