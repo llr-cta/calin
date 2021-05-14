@@ -19,6 +19,7 @@ import numpy
 import calin.math.rng
 import calin.math.hex_array
 import calin.simulation.sct_optics
+import calin.ix.simulation.sct_optics
 
 def dms(d,m,s):
     # Note that "negative" d=0 (e.g. -00:30:00) must be specified as 00:-30:00 or 00:00:-30
