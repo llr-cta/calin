@@ -255,7 +255,7 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
     {
       no_photon_emitted = false;
       photon.air_cherenkov_track = &cherenkov_track;
-      calin::math::geometry::rotation_z_to_vec(Mrot, cherenkov_track.dx_hat);
+      calin::math::geometry::rotation_z_to_vec_Rzy(Mrot, cherenkov_track.dx_hat);
       photon.epsilon = 0;
       photon.weight = weight_;
     }
