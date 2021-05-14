@@ -200,12 +200,12 @@ inline void rotation_z_to_vec_Rzyz(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
   return rotation_z_to_xyz_Rzyz(m, v.x(), v.y(), v.z());
 }
 
-inline void rotation_y_to_xyz_Ryxy(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+inline void rotation_y_to_vec_Ryxy(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
 {
   return rotation_y_to_xyz_Ryxy(m, v.x(), v.y(), v.z());
 }
 
-inline void rotation_x_to_xyz_Rxzx(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+inline void rotation_x_to_vec_Rxzx(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
 {
   return rotation_x_to_xyz_Rxzx(m, v.x(), v.y(), v.z());
 }
@@ -356,6 +356,19 @@ inline Eigen::Matrix3d rotation_z_to_vec_Rzyz(const Eigen::Vector3d v)
   return m;
 }
 
+inline Eigen::Matrix3d rotation_y_to_vec_Ryxy(const Eigen::Vector3d& v)
+{
+  Eigen::Matrix3d m;
+  rotation_y_to_vec_Ryxy(m, v);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_x_to_vec_Rxzx(const Eigen::Vector3d& v)
+{
+  Eigen::Matrix3d m;
+  rotation_x_to_vec_Rxzx(m, v);
+  return m;
+}
 #endif
 
 Eigen::Quaterniond euler_to_quaternion(const calin::ix::common_types::EulerAngles3D& euler);
