@@ -113,31 +113,61 @@ inline void rotation_z_to_xyz_Rzy(Eigen::Matrix3d& m,
   }
 }
 
-inline void rotation_y_to_xyz_Ryz(Eigen::Matrix3d& m,
+inline void rotation_y_to_xyz_Ryx(Eigen::Matrix3d& m,
   const double x, const double y, const double z)
 {
-  double st = std::sqrt(x*x+y*y);
+  double st = std::sqrt(z*z+x*x);
+  if(st == 0.0) {
+    if(z>=0) {
+      m.setIdentity();
+    } else {
+      m <<  1,  0,  0,
+            0, -1,  0,
+            0,  0, -1;
+    }
+  } else {
+    double sp = x/st;
+    double cp = z/st;
+    m <<  cp, x, y*sp,
+           0, y,  -st,
+         -sp, z, y*cp;
+  }
+}
+
+inline void rotation_x_to_xyz_Rxz(Eigen::Matrix3d& m,
+  const double x, const double y, const double z)
+{
+  double st = std::sqrt(y*y+z*z);
   if(st == 0.0) {
     if(z>=0) {
       m.setIdentity();
     } else {
       m << -1,  0,  0,
-            0,  1,  0,
-            0,  0, -1;
+            0, -1,  0,
+            0,  0,  1;
     }
   } else {
-    double sp = y/st;
-    double cp = x/st;
-    m << z*cp, -sp, x,
-         z*sp,  cp, y,
-          -st,   0, z;
+    double sp = z/st;
+    double cp = y/st;
+    m <<  x,  -st,   0,
+          y, x*cp, -sp,
+          z, x*sp,  cp;
   }
 }
-
 
 inline void rotation_z_to_vec_Rzy(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
 {
   return rotation_z_to_xyz_Rzy(m, v.x(), v.y(), v.z());
+}
+
+inline void rotation_y_to_vec_Ryx(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+{
+  return rotation_y_to_xyz_Ryx(m, v.x(), v.y(), v.z());
+}
+
+inline void rotation_x_to_vec_Rxz(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+{
+  return rotation_x_to_xyz_Rxz(m, v.x(), v.y(), v.z());
 }
 
 inline void rotation_z_to_xyz_Rzyz(Eigen::Matrix3d& m,
@@ -360,6 +390,36 @@ inline Eigen::Matrix3d rotation_z_to_vec_Rzy(const Eigen::Vector3d v)
 {
   Eigen::Matrix3d m;
   rotation_z_to_vec_Rzy(m, v);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_y_to_xyz_Ryx(
+  const double x, const double y, const double z)
+{
+  Eigen::Matrix3d m;
+  rotation_y_to_xyz_Ryx(m, x, y, z);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_y_to_vec_Ryx(const Eigen::Vector3d v)
+{
+  Eigen::Matrix3d m;
+  rotation_y_to_vec_Ryx(m, v);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_x_to_xyz_Rxz(
+  const double x, const double y, const double z)
+{
+  Eigen::Matrix3d m;
+  rotation_x_to_xyz_Rxz(m, x, y, z);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_x_to_vec_Rxz(const Eigen::Vector3d v)
+{
+  Eigen::Matrix3d m;
+  rotation_x_to_vec_Rxz(m, v);
   return m;
 }
 
