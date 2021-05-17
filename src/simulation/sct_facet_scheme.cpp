@@ -488,9 +488,7 @@ Eigen::VectorXi SCTSecondaryFacetScheme::S1() const
 Eigen::VectorXi SCTSecondaryFacetScheme::S2() const
 {
   Eigen::VectorXi id(8);
-  id << 19, 18, 16, 17, 21, 20, 22, 23,
-        39, 38, 36, 37, 33, 32, 34, 35,
-        43, 42, 40, 41, 45, 44, 46, 47,
-        31, 30, 28, 29, 25, 24, 26, 27;
+  id <<  9,  8, 10, 11, 19, 18, 16, 17,
+        21, 20, 22, 23, 15, 14, 12, 13;
   return id;
 }
