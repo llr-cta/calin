@@ -273,17 +273,17 @@ double SCTPrimaryFacetScheme::outer_radius()
   return r2o_/COS_PI_32;
 }
 
-Eigen::VectorXi SCTPrimaryFacetScheme::P1() const
+Eigen::VectorXi SCTPrimaryFacetScheme::P1()
 {
-  Eigen::VectorXi id(8);
+  Eigen::VectorXi id(16);
   id <<  1,  0,  2,  3, 11, 10,  8,  9,
         13, 12, 14, 15,  7,  6,  4,  5;
   return id;
 }
 
-Eigen::VectorXi SCTPrimaryFacetScheme::P2() const
+Eigen::VectorXi SCTPrimaryFacetScheme::P2()
 {
-  Eigen::VectorXi id(8);
+  Eigen::VectorXi id(32);
   id << 19, 18, 16, 17, 21, 20, 22, 23,
         39, 38, 36, 37, 33, 32, 34, 35,
         43, 42, 40, 41, 45, 44, 46, 47,
@@ -478,16 +478,16 @@ double SCTSecondaryFacetScheme::outer_radius()
   return r2o_/COS_PI_16;
 }
 
-Eigen::VectorXi SCTSecondaryFacetScheme::S1() const
+Eigen::VectorXi SCTSecondaryFacetScheme::S1()
 {
   Eigen::VectorXi id(8);
   id <<  0,  1,  5,  4,  6,  7,  3,  2;
   return id;
 }
 
-Eigen::VectorXi SCTSecondaryFacetScheme::S2() const
+Eigen::VectorXi SCTSecondaryFacetScheme::S2()
 {
-  Eigen::VectorXi id(8);
+  Eigen::VectorXi id(16);
   id <<  9,  8, 10, 11, 19, 18, 16, 17,
         21, 20, 22, 23, 15, 14, 12, 13;
   return id;
