@@ -97,6 +97,9 @@ public:
   static double default_r2o() { return 483.1875*COS_PI_32; }
   static double default_gap_2() { return 0.7; }
 
+  Eigen::VectorXi P1() const;
+  Eigen::VectorXi P2() const;
+
 private:
   double r1i_ = default_r1i(); // inner radius of inner panel (flat edge distance from origin)
   double r1o_ = default_r1o(); // outer radius of inner panel
@@ -130,6 +133,9 @@ public:
   static double default_r2i() { return 159.65*COS_PI_16 + 0.7; }
   static double default_r2o() { return 270.83*COS_PI_16; }
   static double default_gap_2() { return 0.7; }
+
+  Eigen::VectorXi S1() const;
+  Eigen::VectorXi S2() const;
 
 private:
   double r1i_ = default_r1i(); // inner radius of inner panel (flat edge distance from origin)
