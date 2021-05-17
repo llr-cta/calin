@@ -74,7 +74,7 @@ public:
     calin::math::rng::RNG* rng = nullptr, bool adopt_array = false, bool adopt_rng = false);
   ~SCTRayTracer();
   bool trace_ray_in_reflector_frame(unsigned iscope, calin::math::ray::Ray& ray,
-    SCTRayTracerResults& results);
+    SCTRayTracerResults& results, bool skip_primary = false) const;
 private:
   struct Facet
   {
@@ -96,6 +96,7 @@ private:
       for(auto* obs : secondary_obscuration)delete obs;
       for(auto* obs : camera_obscuration)delete obs;
     }
+
     const calin::ix::simulation::sct_optics::SCTTelescope* param;
 
     SCTPrimaryFacetScheme* p_scheme;
@@ -133,6 +134,11 @@ private:
     std::vector<calin::simulation::vs_optics::VSOObscuration*> secondary_obscuration;
     std::vector<calin::simulation::vs_optics::VSOObscuration*> camera_obscuration;
   };
+
+  bool trace_ray_to_primary_in_reflector_frame(const Telescope* scope,
+    calin::math::ray::Ray& ray, SCTRayTracerResults& results) const;
+  bool trace_ray_to_secondary_in_reflector_frame(const Telescope* scope,
+    calin::math::ray::Ray& ray, SCTRayTracerResults& results) const;
 
   const calin::ix::simulation::sct_optics::SCTArray* array_ = nullptr;
   calin::math::rng::RNG* rng_ = nullptr;

@@ -205,10 +205,12 @@ SCTRayTracer::~SCTRayTracer()
   }
 }
 
-bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ray::Ray& ray,
-  SCTRayTracerResults& results)
+bool SCTRayTracer::trace_ray_to_primary_in_reflector_frame(const Telescope* scope,
+  calin::math::ray::Ray& ray, SCTRayTracerResults& results) const
 {
-  const Telescope* scope = scopes_[iscope];
+  // ***************************************************************************
+  // Ray starts (and ends) in nominal telescope reflector frame
+  // ***************************************************************************
 
   // Test for obscuration of incoming ray
   unsigned nobs = scope->primary_obscuration.size();
@@ -341,11 +343,20 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   }
 
   results.primary_position = ray.position();
+  return true;
+}
+
+bool SCTRayTracer::trace_ray_to_secondary_in_reflector_frame(const Telescope* scope,
+  calin::math::ray::Ray& ray, SCTRayTracerResults& results) const
+{
+  // ***************************************************************************
+  // Ray starts (and ends) in nominal telescope reflector frame
+  // ***************************************************************************
 
   // Test for obscuration of ray between primary and secondary
-  nobs = scope->secondary_obscuration.size();
-  obs_ihit  = nobs;
-  obs_time  = ray.ct();
+  unsigned nobs = scope->secondary_obscuration.size();
+  unsigned obs_ihit  = nobs;
+  double   obs_time  = ray.ct();
   for(unsigned iobs=0;iobs<nobs;iobs++)
   {
     math::ray::Ray ray_out;
@@ -374,7 +385,7 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
     ray.rotate(scope->s_rotation);
   }
 
-  good = ray.propagate_to_polynomial_surface(scope->s_surface, scope->s_surface_n,
+  bool good = ray.propagate_to_polynomial_surface(scope->s_surface, scope->s_surface_n,
     scope->s_rho_min, scope->s_rho_max, /* time_reversal_ok= */ false, /* n= */ n_,
     /* ray_is_close_to_surface= */ false, /* tol= */ 1e-8);
 
@@ -472,6 +483,22 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   }
 
   results.secondary_position = ray.position();
+  return true;
+}
+
+
+bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ray::Ray& ray,
+  SCTRayTracerResults& results, bool skip_primary) const
+{
+  const Telescope* scope = scopes_[iscope];
+
+  if((not skip_primary) and (not trace_ray_to_primary_in_reflector_frame(scope, ray, results))) {
+    return false;
+  }
+
+  if(not trace_ray_to_secondary_in_reflector_frame(scope, ray, results)) {
+    return false;
+  }
 
   // ***************************************************************************
   // TRANSFORM RAY INTO CAMERA FRAME
@@ -482,7 +509,7 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
     ray.rotate(scope->c_rotation);
   }
 
-  good = ray.propagate_to_polynomial_surface(scope->c_surface, scope->c_surface_n,
+  bool good = ray.propagate_to_polynomial_surface(scope->c_surface, scope->c_surface_n,
     0, scope->c_rho_max, /* time_reversal_ok= */ false, /* n= */ n_,
     /* ray_is_close_to_surface= */ false, /* tol= */ 1e-8);
 
