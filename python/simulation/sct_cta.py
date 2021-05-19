@@ -18,8 +18,10 @@
 import numpy
 import calin.math.rng
 import calin.math.hex_array
+import calin.math.vector3d_util
 import calin.simulation.sct_optics
 import calin.ix.simulation.sct_optics
+import scipy.spatial.transform
 
 def dms(d,m,s):
     # Note that "negative" d=0 (e.g. -00:30:00) must be specified as 00:-30:00 or 00:00:-30
@@ -35,7 +37,8 @@ def dms(d,m,s):
         s = abs(s)
     return sign * (d + m/60.0 + s/3600.0)
 
-def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
+def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False,
+        obscure_oss = False):
     from calin.simulation.sct_optics import COS_PI_8
     from calin.simulation.sct_optics import COS_PI_16
     from calin.simulation.sct_optics import COS_PI_32
@@ -175,5 +178,60 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False):
         win.set_outer_radius(0.0) # plane window
         win.set_thickness(0.6)
         win.set_refractive_index(1.49)
+
+    if(obscure_oss):
+        r0 = p_baffle_r
+        z0 = p_baffle_zin
+
+        for theta in [0, 135, -135]:
+            m = scipy.spatial.transform.Rotation.from_rotvec(
+                [0,theta/180*numpy.pi,0]).as_matrix()
+            x0 = numpy.asarray([0, z0, r0])
+            # Incoming rays : secondary support main beam (1)
+            x1 = numpy.dot(m, x0 + numpy.asarray([0, 0, 0]))
+            x2 = numpy.dot(m, x0 + numpy.asarray([0, 628.32+178.27, 192.0-412.34]))
+            obs = sct.add_primary_obscuration()
+            calin.math.vector3d_util.dump_as_proto(x1, obs.mutable_tube().mutable_end1_pos())
+            calin.math.vector3d_util.dump_as_proto(x2, obs.mutable_tube().mutable_end2_pos())
+            obs.mutable_tube().set_diameter(16.83)
+
+            # Post primary rays : secondary support main beam (1)
+            # The main beams are out of the optical path for rays reflected from
+            # the primary so we don't add them to the secondary obscuration
+            # sct.add_secondary_obscuration().CopyFrom(obs)
+
+            # Incoming rays : secondary support beam (2)
+            x1 = numpy.dot(m, x0 + numpy.asarray([0, 628.32, -14.45-412.34]))
+            x2 = numpy.dot(m, x0 + numpy.asarray([0, 628.32, 234.77-412.34]))
+            obs = sct.add_primary_obscuration()
+            calin.math.vector3d_util.dump_as_proto(x1, obs.mutable_tube().mutable_end1_pos())
+            calin.math.vector3d_util.dump_as_proto(x2, obs.mutable_tube().mutable_end2_pos())
+            obs.mutable_tube().set_diameter(15.24)
+
+            # Post primary rays : secondary support beam (2)
+            sct.add_secondary_obscuration().CopyFrom(obs)
+
+            # Incoming rays : secondary support beam (3)
+            x1 = numpy.dot(m, x0 + numpy.asarray([0, 628.32, -14.45-412.34]))
+            x2 = numpy.dot(m, x0 + numpy.asarray([0, 628.32-312.42, 323.06-412.34]))
+            obs = sct.add_primary_obscuration()
+            calin.math.vector3d_util.dump_as_proto(x1, obs.mutable_tube().mutable_end1_pos())
+            calin.math.vector3d_util.dump_as_proto(x2, obs.mutable_tube().mutable_end2_pos())
+            obs.mutable_tube().set_diameter(15.24)
+
+            # Post primary rays : secondary support beam (3)
+            sct.add_secondary_obscuration().CopyFrom(obs)
+
+            # Incoming rays : secondary support beam (4)
+            x1 = numpy.dot(m, x0 + numpy.asarray([0, 628.32, -14.45-412.34]))
+            x2 = numpy.dot(m, x0 + numpy.asarray([0, 628.32+149.86, 192.41-412.34]))
+            obs = sct.add_primary_obscuration()
+            calin.math.vector3d_util.dump_as_proto(x1, obs.mutable_tube().mutable_end1_pos())
+            calin.math.vector3d_util.dump_as_proto(x2, obs.mutable_tube().mutable_end2_pos())
+            obs.mutable_tube().set_diameter(15.24)
+
+            # Post primary rays : secondary support beam (3)
+            sct.add_secondary_obscuration().CopyFrom(obs)
+
 
     return sct
