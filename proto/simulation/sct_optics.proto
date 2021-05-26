@@ -72,11 +72,25 @@ message SCTFacet
 
 message SCTTelescope
 {
-  uint32 id                                                = 1
-    [(CFO).desc = "Sequential telescope identification number, starting at zero."];
-  common_types.Vector3D position                           = 2
-    [(CFO).desc = "Position of the reflector center in the array frame. ",
-     (CFO).units = "cm" ];
+  uint32 id                                                = 1 [
+    (CFO).desc = "Sequential telescope identification number, starting at zero."];
+  common_types.Vector3D position                           = 2 [
+    (CFO).desc = "Position of the reflector center in the array frame. ",
+    (CFO).units = "cm" ];
+  double azimuth_elevation_axes_separation                 = 3 [
+    (CFO).desc = "Separation between the azimuth and elevation axes. Positive "
+      "values indicate that the elevation axis is at a positive value along the "
+      "y-axis (at zero azimuth).",
+    (CFO).units="cm" ];
+  calin.ix.common_types.Vector3D reflector_origin          = 4 [
+    (CFO).desc = "Offset of the reflector origin in the reflector frame  with "
+      "respect to the telescope position, which is defined by the point on the "
+      "azimuth axes closest to the elevation axis. This allows an offset between "
+      "the center of the nominal primary mirror surface and the drive axes to be "
+      "accounted for. For example, a vector of (0,D,0) would put the reflector "
+      "origin a distance D from the telescope position along the nominal optical "
+      "axis.",
+    (CFO).units="cm" ];
 
   repeated double primary_surface_polynomial               = 10 [
     (CFO).desc = "Coefficients describing primary surface. Coefficients "
@@ -161,13 +175,19 @@ message SCTRandomArrayParameters
   double telescope_position_z_dispersion                   = 4
     [(CFO).desc = "Dispersion in telescope positions in vertical direcion",
     (CFO).units="cm"];
-  calin.ix.common_types.Vector3D reflector_origin          = 5 [
+  double azimuth_elevation_axes_separation                 = 5 [
+    (CFO).desc = "Separation between the azimuth and elevation axes. Positive "
+      "values indicate that the elevation axis is at a positive value along the "
+      "y-axis (at zero azimuth).",
+    (CFO).units="cm" ];
+  calin.ix.common_types.Vector3D reflector_origin          = 6 [
     (CFO).desc = "Offset of the reflector origin in the reflector frame  with "
-      "respect to the telescope position, which is defined by the crossing of "
-      "the drive axes. This allows an offset between the center of the nominal "
-      "primary mirror surface and the drive axes to be accounted for. For "
-      "example, a vector of (0,D,0) would put the reflector origin a distance "
-      "D from the telescope position along the nominal optical axis.",
+      "respect to the telescope position, which is defined by the point on the "
+      "azimuth axes closest to the elevation axis. This allows an offset between "
+      "the center of the nominal primary mirror surface and the drive axes to be "
+      "accounted for. For example, a vector of (0,D,0) would put the reflector "
+      "origin a distance D from the telescope position along the nominal optical "
+      "axis.",
     (CFO).units="cm" ];
 
   double focal_length                                      = 10 [

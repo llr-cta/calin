@@ -193,6 +193,8 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     }
 
     scopes_.push_back(scope);
+
+    point_telescope(scopes_.size()-1, 0, 0);
   }
 }
 
@@ -203,6 +205,28 @@ SCTRayTracer::~SCTRayTracer()
   for(auto* scope : scopes_) {
     delete scope;
   }
+}
+
+bool SCTRayTracer::trace_ray_in_global_frame(unsigned iscope, calin::math::ray::Ray& ray,
+  SCTRayTracerResults& results, bool translate_back_to_global_frame) const
+{
+  if(iscope >= scopes_.size()) {
+    throw std::runtime_error("SCTRayTracer::trace_ray_in_global_frame: iscope out of range");
+  }
+
+  const Telescope* scope = scopes_[iscope];
+
+  ray.translate_origin(scope->reflector_position);
+  ray.rotate(scope->reflector_rotation);
+
+  bool good = this->trace_ray_in_reflector_frame(iscope, ray, results);
+
+  if(translate_back_to_global_frame) {
+    ray.derotate(scope->reflector_rotation);
+    ray.untranslate_origin(scope->reflector_position);
+  }
+
+  return good;
 }
 
 bool SCTRayTracer::trace_ray_to_primary_in_reflector_frame(const Telescope* scope,
@@ -486,10 +510,13 @@ bool SCTRayTracer::trace_ray_to_secondary_in_reflector_frame(const Telescope* sc
   return true;
 }
 
-
 bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ray::Ray& ray,
   SCTRayTracerResults& results, bool skip_primary) const
 {
+  if(iscope >= scopes_.size()) {
+    throw std::runtime_error("SCTRayTracer::trace_ray_in_reflector_frame: iscope out of range");
+  }
+
   const Telescope* scope = scopes_[iscope];
 
   if((not skip_primary) and (not trace_ray_to_primary_in_reflector_frame(scope, ray, results))) {
@@ -539,6 +566,37 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   return true;
 }
 
+void SCTRayTracer::point_telescope(unsigned iscope, double el_deg, double az_deg, double phi_deg)
+{
+  if(iscope >= scopes_.size()) {
+    throw std::runtime_error("SCTRayTracer::point_telescope: iscope out of range");
+  }
+
+  Telescope* scope = scopes_[iscope];
+
+  Eigen::Quaterniond rot;
+  Eigen::Vector3d pos;
+
+  pos = calin::math::vector3d_util::from_proto(scope->param->position());
+  rot = Eigen::AngleAxisd(az_deg*M_PI/180.0, Eigen::Vector3d::UnitZ());
+
+  pos += rot.inverse() * Eigen::Vector3d(0, scope->param->azimuth_elevation_axes_separation(), 0);
+  rot = Eigen::AngleAxisd(-el_deg*M_PI/180.0, Eigen::Vector3d::UnitX()) * rot;
+
+  pos += rot.inverse() * calin::math::vector3d_util::from_proto(scope->param->reflector_origin());
+  rot = Eigen::AngleAxisd(phi_deg*M_PI/180.0, Eigen::Vector3d::UnitZ()) * rot;
+
+  scope->reflector_position = pos;
+  scope->reflector_rotation = rot;
+}
+
+void SCTRayTracer::point_all_telescopes(double el_deg, double az_deg, double phi_deg)
+{
+  for(unsigned iscope=0; iscope<scopes_.size(); ++iscope) {
+    point_telescope(iscope, el_deg, az_deg, phi_deg);
+  }
+}
+
 calin::ix::simulation::sct_optics::SCTTelescope*
 calin::simulation::sct_optics::make_sct_telescope(
   calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param,
@@ -566,6 +624,11 @@ calin::simulation::sct_optics::make_sct_telescope(
   telescope->mutable_position()->set_x(x);
   telescope->mutable_position()->set_y(y);
   telescope->mutable_position()->set_z(z);
+
+  telescope->set_azimuth_elevation_axes_separation(
+    param.azimuth_elevation_axes_separation());
+  telescope->mutable_reflector_origin()->CopyFrom(
+    param.reflector_origin());
 
   // ***************************************************************************
   // ***************************************************************************
