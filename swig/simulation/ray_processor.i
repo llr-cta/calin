@@ -29,6 +29,7 @@
 #include "simulation/pe_processor.hpp"
 #include "simulation/ray_processor.hpp"
 #include "simulation/vso_ray_processor.hpp"
+#include "simulation/sct_ray_processor.hpp"
 #include "simulation/vcl_ray_processor.hpp"
 #include "simulation/nspace_ray_processor.hpp"
 #define SWIG_FILE_WITH_INIT
@@ -55,6 +56,7 @@
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>;
 
 %include "simulation/vso_ray_processor.hpp"
+%include "simulation/sct_ray_processor.hpp"
 
 %import "math/nspace.i"
 %include "simulation/nspace_ray_processor.hpp"
