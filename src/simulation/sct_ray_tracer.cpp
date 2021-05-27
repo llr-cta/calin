@@ -549,7 +549,12 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
     return false;
   }
 
+  results.fp_position = ray.position();
+
   results.camera_position = ray.position();
+  results.camera_time = ray.time();
+  results.camera_module_id = -1;
+  results.camera_pixel_id = -1;
 
   // ***************************************************************************
   // TRANSFORM RAY BACK INTO REFLECTOR FRAME
@@ -561,7 +566,6 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   }
 
   results.final_position = ray.position();
-
   results.status = RTS_COMPLETE;
   return true;
 }
