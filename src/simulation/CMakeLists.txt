@@ -17,7 +17,7 @@ set(CALIN_TARGET_LIBRARY calin_simulation)
 set(CALIN_SOURCES atmosphere.cpp atmosphere_refraction.cpp pmt.cpp
 	vso_pixel.cpp vso_mirror.cpp vso_obscuration.cpp vso_telescope.cpp
   vso_array.cpp vso_raytracer.cpp
-	sct_facet_scheme.cpp sct_ray_tracer.cpp
+	sct_facet_scheme.cpp sct_ray_tracer.cpp sct_ray_processor.cpp
 	pe_processor.cpp ray_processor.cpp vso_ray_processor.cpp
 	air_cherenkov_tracker.cpp iact_array_tracker.cpp
 	tracker.cpp misc_trackers.cpp
