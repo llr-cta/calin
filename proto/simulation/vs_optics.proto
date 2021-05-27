@@ -172,6 +172,8 @@ message VSOObscurationData {
     VSOAlignedHexagonalApertureData hexagonal_aperture     = 6;
     VSOAlignedTileApertureData tile_aperture               = 7;
   }
+  string identification                                    = 100 [
+    (CFO).desc = "Identifying name of obscuration, for convenience." ];
 };
 
 message VSOTelescopeData {

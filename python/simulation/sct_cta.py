@@ -153,33 +153,39 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False,
         obs.mutable_circular_aperture().mutable_center_pos().set_y(s_disk_z)
         obs.mutable_circular_aperture().set_diameter(s_disk_r * 2)
         obs.mutable_circular_aperture().set_invert(True)
+        obs.set_identification("Secondary mirror")
 
         # Incoming rays : tube to approximate secondary baffle
         obs = sct.add_primary_obscuration()
         obs.mutable_tube().mutable_end1_pos().set_y(s_baffle_zin)
         obs.mutable_tube().mutable_end2_pos().set_y(s_baffle_zout)
         obs.mutable_tube().set_diameter(s_baffle_r * 2)
+        obs.set_identification("Secondary baffle")
         # sct.add_secondary_obscuration().CopyFrom(obs)
 
         # # Incoming rays : circular aperture to approximate primary baffle
         # obs = sct.add_primary_obscuration()
         # obs.mutable_circular_aperture().mutable_center_pos().set_y(p_baffle_zout)
         # obs.mutable_circular_aperture().set_diameter(p_baffle_r * 2)
+        # obs.set_identification("Primary baffle (aperture)")
 
         # Post-primary rays : circular aperture to approximate secondary baffle
         obs = sct.add_secondary_obscuration()
         obs.mutable_circular_aperture().mutable_center_pos().set_y(s_baffle_zout)
         obs.mutable_circular_aperture().set_diameter(s_baffle_r * 2)
+        obs.set_identification("Secondary baffle")
 
     # Incoming rays : circular aperture to protect primary mirror
     obs = sct.add_primary_obscuration()
     obs.mutable_circular_aperture().mutable_center_pos().set_y(p_aperture_y)
     obs.mutable_circular_aperture().set_diameter(p_aperture_r * 2)
+    obs.set_identification("Primary aperture")
 
     # Post-primary rays : circular aperture to protect secondary mirror
     obs = sct.add_secondary_obscuration()
     obs.mutable_circular_aperture().mutable_center_pos().set_y(s_aperture_y)
     obs.mutable_circular_aperture().set_diameter(s_aperture_r * 2)
+    obs.set_identification("Secondary aperture")
 
     if(include_window):
         win = sct.mutable_window()
@@ -192,7 +198,7 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False,
         r0 = p_baffle_r
         z0 = p_baffle_zin
 
-        for theta in [0, 135, -135]:
+        for itheta, theta in enumerate([0, 135, -135]):
             m = scipy.spatial.transform.Rotation.from_rotvec(
                 [0,theta/180*numpy.pi,0]).as_matrix()
             x0 = numpy.asarray([0, z0, r0])
@@ -203,6 +209,7 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False,
             calin.math.vector3d_util.dump_as_proto(x1, obs.mutable_tube().mutable_end1_pos())
             calin.math.vector3d_util.dump_as_proto(x2, obs.mutable_tube().mutable_end2_pos())
             obs.mutable_tube().set_diameter(16.83)
+            obs.set_identification("Secondary support %c1"%(65+itheta))
 
             # Post primary rays : secondary support main beam (1)
             # The main beams are out of the optical path for rays reflected from
@@ -216,6 +223,7 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False,
             calin.math.vector3d_util.dump_as_proto(x1, obs.mutable_tube().mutable_end1_pos())
             calin.math.vector3d_util.dump_as_proto(x2, obs.mutable_tube().mutable_end2_pos())
             obs.mutable_tube().set_diameter(15.24)
+            obs.set_identification("Secondary support %c2"%(65+itheta))
 
             # Post primary rays : secondary support beam (2)
             sct.add_secondary_obscuration().CopyFrom(obs)
@@ -227,6 +235,7 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False,
             calin.math.vector3d_util.dump_as_proto(x1, obs.mutable_tube().mutable_end1_pos())
             calin.math.vector3d_util.dump_as_proto(x2, obs.mutable_tube().mutable_end2_pos())
             obs.mutable_tube().set_diameter(15.24)
+            obs.set_identification("Secondary support %c3"%(65+itheta))
 
             # Post primary rays : secondary support beam (3)
             sct.add_secondary_obscuration().CopyFrom(obs)
@@ -238,8 +247,9 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False,
             calin.math.vector3d_util.dump_as_proto(x1, obs.mutable_tube().mutable_end1_pos())
             calin.math.vector3d_util.dump_as_proto(x2, obs.mutable_tube().mutable_end2_pos())
             obs.mutable_tube().set_diameter(15.24)
+            obs.set_identification("Secondary support %c4"%(65+itheta))
 
-            # Post primary rays : secondary support beam (3)
+            # Post primary rays : secondary support beam (4)
             sct.add_secondary_obscuration().CopyFrom(obs)
 
 
