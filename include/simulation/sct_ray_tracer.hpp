@@ -79,16 +79,27 @@ public:
   SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* array,
     calin::math::rng::RNG* rng = nullptr, bool adopt_array = false, bool adopt_rng = false);
   ~SCTRayTracer();
-  bool trace_ray_in_global_frame(unsigned iscope, calin::math::ray::Ray& ray,
-    SCTRayTracerResults& results, bool translate_back_to_global_frame = true) const;
-  bool trace_ray_in_reflector_frame(unsigned iscope, calin::math::ray::Ray& ray,
-    SCTRayTracerResults& results, bool skip_primary = false) const;
-  void point_telescope(unsigned iscope, double el_deg, double az_deg, double phi_deg = 0);
-  void point_all_telescopes(double el_deg, double az_deg, double phi_deg = 0);
+
+  unsigned num_telescopes() const { return scopes_.size(); }
+  const Eigen::Vector3d& detector_sphere_center(unsigned iscope) {
+    return scopes_.at(iscope)->detector_sphere_center; }
+  double detector_sphere_radius(unsigned iscope) {
+    return scopes_.at(iscope)->p_r_max; }
+
   const Eigen::Vector3d& reflector_position(unsigned iscope) const {
     return scopes_.at(iscope)->reflector_position; }
   const Eigen::Matrix3d& reflector_rotation(unsigned iscope) const {
     return scopes_.at(iscope)->reflector_rotation; }
+
+  void point_telescope(unsigned iscope, double el_deg, double az_deg, double phi_deg = 0);
+  void point_all_telescopes(double el_deg, double az_deg, double phi_deg = 0);
+
+  bool trace_ray_in_global_frame(unsigned iscope, calin::math::ray::Ray& ray,
+    SCTRayTracerResults& results, bool translate_back_to_global_frame = true) const;
+  bool trace_ray_in_reflector_frame(unsigned iscope, calin::math::ray::Ray& ray,
+    SCTRayTracerResults& results, bool skip_primary = false) const;
+
+
 private:
   struct Facet
   {
@@ -124,6 +135,8 @@ private:
     const double* p_surface;
     unsigned p_surface_n;
     std::vector<Facet> p_facets;
+    double p_r_max;
+    double p_y_max;
 
     SCTSecondaryFacetScheme* s_scheme;
     SCTSecondaryFacetScheme* s_scheme_loose;
@@ -150,6 +163,8 @@ private:
 
     Eigen::Vector3d reflector_position;
     Eigen::Matrix3d reflector_rotation;
+
+    Eigen::Vector3d detector_sphere_center;
   };
 
   bool trace_ray_to_primary_in_reflector_frame(const Telescope* scope,

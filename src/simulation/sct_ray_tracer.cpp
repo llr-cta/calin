@@ -99,6 +99,9 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
         throw std::runtime_error("Primary surface facet schemes must have same number of facets.");
       }
     }
+    scope->p_r_max = std::sqrt(scope->p_rho_max);
+    scope->p_y_max = calin::math::least_squares::polyval(
+      scope->p_surface, scope->p_surface_n, scope->p_rho_max);
 
     // *************************************************************************
     // SECONDARY
@@ -592,6 +595,9 @@ void SCTRayTracer::point_telescope(unsigned iscope, double el_deg, double az_deg
 
   scope->reflector_position = pos;
   scope->reflector_rotation = rot;
+
+  scope->detector_sphere_center = pos
+    + scope->reflector_rotation.transpose()*Eigen::Vector3d(0,scope->p_y_max,0);
 }
 
 void SCTRayTracer::point_all_telescopes(double el_deg, double az_deg, double phi_deg)

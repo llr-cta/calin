@@ -155,19 +155,17 @@ SCTRayProcessor::~SCTRayProcessor()
   if(adopt_array_)delete array_;
   if(adopt_visitor_)delete visitor_;
   if(adopt_rng_)delete rng_;
+  delete ray_tracer_;
 }
 
 std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
 SCTRayProcessor::detector_spheres()
 {
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> s;
-  // for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++)
-  // {
-  //   auto* scope = array_->telescope(iscope);
-  //   Eigen::Vector3d sphere_center = scope->reflectorIPCenter();
-  //   scope->reflectorToGlobal_pos(sphere_center);
-  //   s.emplace_back(sphere_center, 0.5*scope->reflectorIP());
-  // }
+  for(unsigned iscope=0; iscope<ray_tracer_->num_telescopes(); iscope++) {
+    s.emplace_back(ray_tracer_->detector_sphere_center(iscope),
+      ray_tracer_->detector_sphere_radius(iscope));
+  }
   return s;
 }
 
