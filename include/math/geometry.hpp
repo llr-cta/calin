@@ -517,12 +517,12 @@ inline bool square_grid_site_center(double& x_out, double& y_out,
   int isite, double pitch, unsigned nside, double xc = 0, double yc = 0)
 {
   if((isite<0)or(isite>calin::math::special::SQR(nside)))return false;
-  const double half_side = 0.5*nside;
+  const double half_side = 0.5*nside - 0.5;
   div_t div_res = std::div(isite, nside);
   const int ux = div_res.rem;
   const int uy = div_res.quot;
-  x_out = (ux - half_side)*pitch + xc;
-  y_out = (uy - half_side)*pitch + yc;
+  x_out = (double(ux) - half_side)*pitch + xc;
+  y_out = (double(uy) - half_side)*pitch + yc;
   return true;
 }
 
