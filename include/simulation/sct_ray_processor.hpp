@@ -62,6 +62,9 @@ class SCTTracedRayVisitor2PEProcessorAdapter: public SCTTracedRayVisitor
 public:
   SCTTracedRayVisitor2PEProcessorAdapter(
     calin::simulation::pe_processor::PEProcessor* visitor,
+    bool use_fp_position = false,
+    calin::simulation::sct_optics::SCTRayTracerStatus status_min
+      = calin::simulation::sct_optics::RTS_MISSED_CAMERA,
     bool adopt_visitor = false);
   virtual ~SCTTracedRayVisitor2PEProcessorAdapter();
   void start_processing() override;
@@ -70,6 +73,8 @@ public:
   void finish_processing() override;
 private:
   calin::simulation::pe_processor::PEProcessor* visitor_ = nullptr;
+  bool use_fp_position_ = false;
+  calin::simulation::sct_optics::SCTRayTracerStatus status_min_;
   bool adopt_visitor_ = false;
 };
 

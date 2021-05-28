@@ -52,9 +52,12 @@ void SCTTracedRayVisitor::finish_processing()
 
 SCTTracedRayVisitor2PEProcessorAdapter::
 SCTTracedRayVisitor2PEProcessorAdapter(
-    calin::simulation::pe_processor::PEProcessor* visitor, bool adopt_visitor):
+    calin::simulation::pe_processor::PEProcessor* visitor, bool use_fp_position,
+    calin::simulation::sct_optics::SCTRayTracerStatus status_min,
+    bool adopt_visitor):
   SCTTracedRayVisitor(),
-  visitor_(visitor), adopt_visitor_(adopt_visitor)
+  visitor_(visitor), use_fp_position_(use_fp_position), status_min_(status_min),
+  adopt_visitor_(adopt_visitor)
 {
   // nothing to see here
 }
@@ -74,9 +77,20 @@ void SCTTracedRayVisitor2PEProcessorAdapter::
 process_traced_ray(unsigned scope_id,
   const calin::simulation::sct_optics::SCTRayTracerResults& trace, double pe_weight)
 {
-  if(trace.status >= calin::simulation::sct_optics::RTS_MISSED_CAMERA) {
+  double x;
+  double z;
+
+  if(use_fp_position_) {
+    x = trace.fp_position.x();
+    z = trace.fp_position.z();
+  } else {
+    x = trace.camera_position.x();
+    z = trace.camera_position.z();
+  }
+
+  if(trace.status >= status_min_) {
     visitor_->process_focal_plane_hit(scope_id, trace.camera_pixel_id,
-      trace.camera_position.x(), trace.camera_position.z(), trace.camera_time, pe_weight);
+      x, z, trace.camera_time, pe_weight);
   }
 }
 
