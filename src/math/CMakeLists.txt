@@ -23,7 +23,7 @@ set(CALIN_SOURCES accumulator.cpp histogram.cpp function.cpp
 	optimizer.cpp nlopt_optimizer.cpp cminpack_optimizer.cpp
 	hessian.cpp brent.cpp
 	log_quadratic_spline_pdf_1d.cpp covariance_calc.cpp
-	special.cpp hex_array.cpp hex_array_vvv.cpp
+	special.cpp hex_array.cpp hex_array_vvv.cpp square_array.cpp
 	geometry.cpp vector3d_util.cpp ray.cpp
 	rng.cpp fftw_util.cpp healpix_array.cpp position_generator.cpp
 	direction_generator.cpp ray_generator.cpp data_modeling.cpp m_estimate.cpp
