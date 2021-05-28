@@ -610,7 +610,7 @@ void SCTRayTracer::point_all_telescopes(double el_deg, double az_deg, double phi
 calin::ix::simulation::sct_optics::SCTTelescope*
 calin::simulation::sct_optics::make_sct_telescope(
   calin::ix::simulation::sct_optics::SCTRandomArrayParameters& param,
-  double x, double y, double z,
+  double telescope_x, double telescope_y, double telescope_z,
   calin::math::rng::RNG* rng,
   calin::ix::simulation::sct_optics::SCTTelescope* telescope)
 {
@@ -624,16 +624,16 @@ calin::simulation::sct_optics::make_sct_telescope(
   }
 
   if(param.telescope_position_xy_dispersion() > 0) {
-    x += param.telescope_position_xy_dispersion()*rng->normal();
-    y += param.telescope_position_xy_dispersion()*rng->normal();
+    telescope_x += param.telescope_position_xy_dispersion()*rng->normal();
+    telescope_y += param.telescope_position_xy_dispersion()*rng->normal();
   }
   if(param.telescope_position_z_dispersion() > 0) {
-    z += param.telescope_position_z_dispersion()*rng->normal();
+    telescope_z += param.telescope_position_z_dispersion()*rng->normal();
   }
 
-  telescope->mutable_position()->set_x(x);
-  telescope->mutable_position()->set_y(y);
-  telescope->mutable_position()->set_z(z);
+  telescope->mutable_position()->set_x(telescope_x);
+  telescope->mutable_position()->set_y(telescope_y);
+  telescope->mutable_position()->set_z(telescope_z);
 
   telescope->set_azimuth_elevation_axes_separation(
     param.azimuth_elevation_axes_separation());
@@ -918,6 +918,40 @@ calin::simulation::sct_optics::make_sct_telescope(
       telescope->mutable_camera_rotation(), camera_rotation);
   }
   telescope->set_camera_radius(param.camera_radius());
+
+  telescope->mutable_camera_module_grid()->CopyFrom(param.camera_module_grid());
+  telescope->mutable_camera_module_pixel_grid()->CopyFrom(param.camera_module_pixel_grid());
+
+  std::set<unsigned> module_missing(
+    param.camera_modules_missing().begin(),param.camera_modules_missing().end());
+  unsigned pix_id = 0;
+  unsigned mod_id = 0;
+  unsigned grid_id = 0;
+  for(unsigned iy=0; iy<param.camera_module_grid().num_side(); ++iy) {
+    for(unsigned ix=0; ix<param.camera_module_grid().num_side(); ++ix) {
+      double x;
+      double z;
+      calin::math::geometry::square_grid_site_center(x,z,grid_id,
+        param.camera_module_grid().spacing(),param.camera_module_grid().num_side(),
+        param.camera_module_grid().x_center(), param.camera_module_grid().y_center());
+      if((param.camera_module_max_radius()<=0 or std::sqrt(x*x+z*z)<param.camera_module_max_radius())
+          and (not module_missing.count(grid_id))) {
+        auto* module = telescope->add_camera_modules();
+        module->set_id(mod_id);
+        module->set_grid_id(grid_id);
+        module->set_first_pixel_id(pix_id);
+        module->mutable_center_position()->set_x(x);
+        module->mutable_center_position()->set_y(calin::math::least_squares::polyval(
+            telescope->camera_surface_polynomial().data(),
+            telescope->camera_surface_polynomial_size(), x*x+z*z));
+        module->mutable_center_position()->set_z(z);
+
+        pix_id += SQR(param.camera_module_pixel_grid().num_side());
+        ++mod_id;
+      }
+      ++grid_id;
+    }
+  }
 
   // ***************************************************************************
   // ***************************************************************************

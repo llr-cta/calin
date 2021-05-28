@@ -128,7 +128,16 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False,
 
     sct.set_camera_distance(F*(1/q - (1-alpha)))
     sct.set_camera_sag_polynomial(pc)
-    sct.set_camera_radius(81*0.5)
+
+    sct.mutable_camera_module_grid().set_num_side(15)
+    sct.mutable_camera_module_grid().set_spacing(5.40)
+
+    sct.mutable_camera_module_pixel_grid().set_num_side(8)
+    sct.mutable_camera_module_pixel_grid().set_spacing(0.6506)
+
+    sct.set_camera_module_max_radius(40)
+    sct.set_camera_radius(sct.camera_module_max_radius()
+         + sct.camera_module_grid().spacing()/sqrt(2))
 
     p_aperture_r = primary_facet_scheme_loose.outer_ring_outer_radius() / COS_PI_32;
     p_aperture_y = numpy.polyval(numpy.flipud(pp), p_aperture_r**2)
