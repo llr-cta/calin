@@ -80,15 +80,14 @@ process_traced_ray(unsigned scope_id,
   double x;
   double z;
 
-  if(use_fp_position_) {
-    x = trace.fp_position.x();
-    z = trace.fp_position.z();
-  } else {
-    x = trace.camera_position.x();
-    z = trace.camera_position.z();
-  }
-
   if(trace.status >= status_min_) {
+    if(use_fp_position_) {
+      x = trace.fp_position.x();
+      z = trace.fp_position.z();
+    } else {
+      x = trace.camera_position.x();
+      z = trace.camera_position.z();
+    }
     visitor_->process_focal_plane_hit(scope_id, trace.camera_pixel_id,
       x, z, trace.camera_time, pe_weight);
   }
