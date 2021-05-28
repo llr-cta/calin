@@ -30,9 +30,9 @@
 
 namespace calin { namespace math { namespace special {
 
-template<typename T> inline T SQR(T x) { return x*x; }
-template<typename T> inline T CUBE(T x) { return x*x*x; }
-template<typename T> inline T QUAD(T x) { return SQR(SQR(x)); }
+template<typename T> constexpr inline T SQR(T x) { return x*x; }
+template<typename T> constexpr inline T CUBE(T x) { return x*x*x; }
+template<typename T> constexpr inline T QUAD(T x) { return SQR(SQR(x)); }
 
 inline double dawson(double x)
 {
