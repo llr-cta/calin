@@ -30,6 +30,7 @@
 #include <common_types.pb.h>
 #include <math/rng.hpp>
 #include <math/least_squares.hpp>
+#include <math/special.hpp>
 
 namespace calin { namespace math { namespace geometry {
 
@@ -489,6 +490,40 @@ inline Eigen::Vector3d norm_of_polynomial_surface(double x, double z, const doub
 inline Eigen::Vector3d norm_of_polynomial_surface(double x, double z, const Eigen::VectorXd& p)
 {
   return norm_of_polynomial_surface(x, z, p.data(), p.size());
+}
+
+inline int find_square_grid_site(double x, double y, double pitch_inv, unsigned nside,
+  double xc = 0, double yc = 0, double dead_space_fraction = 0)
+{
+  const double half_side = 0.5*nside;
+  x = (x - xc)*pitch_inv + half_side;
+  y = (y - yc)*pitch_inv + half_side;
+  const int ux = int(x);
+  const int uy = int(y);
+  if(std::min(ux,uy)<0 or std::max(ux,uy)>=nside) {
+    return -1;
+  }
+  if(dead_space_fraction>0) {
+    x -= ux;
+    y -= uy;
+    if(std::min(std::min(x,y), 1.0-std::max(x,y))<dead_space_fraction) {
+      return -1;
+    }
+  }
+  return uy*nside+ux;
+}
+
+inline bool square_grid_site_center(double& x_out, double& y_out,
+  int isite, double pitch, unsigned nside, double xc = 0, double yc = 0)
+{
+  if((isite<0)or(isite>calin::math::special::SQR(nside)))return false;
+  const double half_side = 0.5*nside;
+  div_t div_res = std::div(isite, nside);
+  const int ux = div_res.rem;
+  const int uy = div_res.quot;
+  x_out = (ux - half_side)*pitch + xc;
+  y_out = (uy - half_side)*pitch + yc;
+  return true;
 }
 
 } } } // namespace calin::math::geometry
