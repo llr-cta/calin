@@ -159,6 +159,7 @@ VSORayProcessor::~VSORayProcessor()
   if(adopt_array_)delete array_;
   if(adopt_visitor_)delete visitor_;
   if(adopt_rng_)delete rng_;
+  delete ray_tracer_;
 }
 
 std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
