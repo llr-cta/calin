@@ -178,6 +178,31 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
       (not calin::math::geometry::euler_is_zero(scope_params.camera_rotation()));
     scope->c_rho_max = SQR(scope_params.camera_radius());
 
+    scope->c_module_pitch_inv = 1.0/scope_params.camera_module_grid().spacing();
+    scope->c_module_nside = scope_params.camera_module_grid().num_side();
+    scope->c_module_xc = scope_params.camera_module_grid().x_center();
+    scope->c_module_yc = scope_params.camera_module_grid().y_center();
+    scope->c_modules.resize(SQR(scope->c_module_nside), nullptr);
+    for(const auto& m : scope_params.camera_modules()) {
+      if(m.grid_id() >= scope->c_modules.size()) {
+        throw std::runtime_error("Module grid_id out of range:\n"+m.DebugString());
+      }
+      if(scope->c_modules[m.grid_id()] != nullptr) {
+        throw std::runtime_error("Duplicate module grid_id:\n"+m.DebugString());
+      }
+      auto* cm = scope->c_modules[m.grid_id()] = new CameraModule;
+      cm->id = m.id();
+      cm->first_pixel_id = m.first_pixel_id();
+      calin::math::vector3d_util::set_from_proto(cm->position, m.center_position());
+    }
+
+    scope->c_pixel_pitch_inv = 1.0/scope_params.camera_module_pixel_grid().spacing();
+    scope->c_pixel_nside = scope_params.camera_module_pixel_grid().num_side();
+    scope->c_pixel_xc = scope_params.camera_module_pixel_grid().x_center();
+    scope->c_pixel_yc = scope_params.camera_module_pixel_grid().y_center();
+    scope->c_pixel_dead_space_fraction =
+      scope_params.camera_module_pixel_grid().dead_space_width() * scope->c_pixel_pitch_inv;
+
     // *************************************************************************
     // OBSCURATIONS
     // *************************************************************************
@@ -531,6 +556,34 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   }
 
   // ***************************************************************************
+  // Ray starts (and ends) in nominal telescope reflector frame
+  // ***************************************************************************
+
+  // Test for obscuration of ray between secondary and camera
+  unsigned nobs = scope->camera_obscuration.size();
+  unsigned obs_ihit  = nobs;
+  double   obs_time  = ray.ct();
+  for(unsigned iobs=0;iobs<nobs;iobs++)
+  {
+    math::ray::Ray ray_out;
+    if(scope->camera_obscuration[iobs]->doesObscure(ray, ray_out, n_))
+    {
+      if((obs_ihit==nobs)||(ray_out.ct()<obs_time)) {
+        obs_ihit = iobs;
+        obs_time = ray_out.ct();
+      }
+    }
+  }
+
+  if(obs_ihit!=nobs)
+  {
+    results.status = RTS_OBSCURED_BEFORE_CAMERA;
+    results.obscuration_id = obs_ihit
+      + scope->secondary_obscuration.size() + scope->primary_obscuration.size();
+    return false;
+  }
+
+  // ***************************************************************************
   // TRANSFORM RAY INTO CAMERA FRAME
   // ***************************************************************************
 
@@ -554,10 +607,66 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
 
   results.fp_position = ray.position();
 
+  // ***************************************************************************
+  // Find camera module
+  // ***************************************************************************
+
+  results.camera_module_grid_id = calin::math::geometry::find_square_grid_site(
+    ray.x(), ray.z(), scope->c_module_pitch_inv, scope->c_module_nside,
+    scope->c_module_xc, scope->c_module_yc);
+
+  if(results.camera_module_grid_id < 0) {
+    if(scope->c_has_frame_change) {
+      ray.derotate(scope->c_rotation);
+      ray.untranslate_origin(scope->c_offset);
+    }
+    results.status = RTS_NO_MODULE;
+    return false;
+  }
+
+  const auto* module = scope->c_modules[results.camera_module_grid_id];
+  if(module == nullptr) {
+    if(scope->c_has_frame_change) {
+      ray.derotate(scope->c_rotation);
+      ray.untranslate_origin(scope->c_offset);
+    }
+    results.status = RTS_NO_MODULE;
+    return false;
+  }
+
+  results.camera_module_id = module->id;
+
+  // ***************************************************************************
+  // Find pixel
+  // ***************************************************************************
+
+  good = ray.propagate_to_y_plane(-module->position.y(), /* time_reversal_ok= */ true,
+    scope->c_surface_n);
+  if(!good) {
+    if(scope->c_has_frame_change) {
+      ray.derotate(scope->c_rotation);
+      ray.untranslate_origin(scope->c_offset);
+    }
+    results.status = RTS_MISSED_MODULE;
+    return false;
+  }
+
+  results.camera_module_pixel_id = calin::math::geometry::find_square_grid_site(
+    ray.x(), ray.z(), scope->c_pixel_pitch_inv, scope->c_pixel_nside,
+    scope->c_pixel_xc, scope->c_pixel_yc, scope->c_pixel_dead_space_fraction);
+
+  if(results.camera_module_pixel_id < 0) {
+    if(scope->c_has_frame_change) {
+      ray.derotate(scope->c_rotation);
+      ray.untranslate_origin(scope->c_offset);
+    }
+    results.status = RTS_NO_PIXEL;
+    return false;
+  }
+
+  results.camera_pixel_id = module->first_pixel_id + results.camera_module_pixel_id;
   results.camera_position = ray.position();
   results.camera_time = ray.time();
-  results.camera_module_id = -1;
-  results.camera_pixel_id = -1;
 
   // ***************************************************************************
   // TRANSFORM RAY BACK INTO REFLECTOR FRAME

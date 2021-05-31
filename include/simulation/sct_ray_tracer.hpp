@@ -46,8 +46,11 @@ enum SCTRayTracerStatus
 
   RTS_OBSCURED_BEFORE_CAMERA    = 7,
   RTS_MISSED_CAMERA             = 8,
+  RTS_NO_MODULE                 = 9,
+  RTS_MISSED_MODULE             = 10,
+  RTS_NO_PIXEL                  = 11,
 
-  RTS_COMPLETE                  = 9
+  RTS_COMPLETE                  = 12
 };
 
 struct SCTRayTracerResults
@@ -67,7 +70,9 @@ struct SCTRayTracerResults
 
   Eigen::Vector3d camera_position;
   double camera_time;
+  int camera_module_grid_id;
   int camera_module_id;
+  int camera_module_pixel_id;
   int camera_pixel_id;
 
   Eigen::Vector3d final_position;
@@ -108,6 +113,13 @@ private:
     bool has_frame_change;
     Eigen::Vector3d offset;
     Eigen::Matrix3d rotation;
+  };
+
+  struct CameraModule
+  {
+    unsigned id;
+    unsigned first_pixel_id;
+    Eigen::Vector3d position;
   };
 
   struct Telescope
@@ -156,6 +168,18 @@ private:
     double c_rho_max;
     const double* c_surface;
     unsigned c_surface_n;
+
+    double c_module_pitch_inv;
+    double c_module_nside;
+    double c_module_xc;
+    double c_module_yc;
+    std::vector<CameraModule*> c_modules;
+
+    double c_pixel_pitch_inv;
+    double c_pixel_nside;
+    double c_pixel_xc;
+    double c_pixel_yc;
+    double c_pixel_dead_space_fraction;
 
     std::vector<calin::simulation::vs_optics::VSOObscuration*> primary_obscuration;
     std::vector<calin::simulation::vs_optics::VSOObscuration*> secondary_obscuration;
