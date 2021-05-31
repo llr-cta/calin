@@ -498,8 +498,8 @@ inline int find_square_grid_site(double x, double y, double pitch_inv, unsigned 
   const double half_side = 0.5*nside;
   x = (x - xc)*pitch_inv + half_side;
   y = (y - yc)*pitch_inv + half_side;
-  const int ux = int(x);
-  const int uy = int(y);
+  const int ux = int(std::floor(x));
+  const int uy = int(std::floor(y));
   if(std::min(ux,uy)<0 or std::max(ux,uy)>=nside) {
     return -1;
   }
