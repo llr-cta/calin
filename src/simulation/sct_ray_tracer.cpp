@@ -1126,7 +1126,7 @@ void calin::simulation::sct_optics::pixel_centers(
   Eigen::VectorXd& x_out, Eigen::VectorXd& z_out)
 {
   unsigned nmodpix = SQR(scope_params.camera_module_pixel_grid().num_side());
-  unsigned npix = scope_params.camera_modules_size()*npix;
+  unsigned npix = scope_params.camera_modules_size()*nmodpix;
   x_out.resize(npix);
   z_out.resize(npix);
   for(const auto& m : scope_params.camera_modules()) {
@@ -1139,14 +1139,9 @@ void calin::simulation::sct_optics::pixel_centers(
       if(ipix >= npix) {
         throw std::runtime_error("Pixel number out of range : "+std::to_string(ipix));
       }
-      double xp;
-      double yp;
-      if(calin::math::geometry::square_grid_site_center(xp, yp, imodpix,
-          scope_params.camera_module_grid().spacing(),
-          scope_params.camera_module_grid().num_side(), xm, ym)) {
-        x_out[ipix] = xp + xm;
-        z_out[ipix] = yp + ym;
-      }
+      calin::math::geometry::square_grid_site_center(x_out[ipix], z_out[ipix], imodpix,
+        scope_params.camera_module_pixel_grid().spacing(),
+        scope_params.camera_module_pixel_grid().num_side(), xm, ym);
     }
   }
 }
