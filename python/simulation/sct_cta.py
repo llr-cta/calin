@@ -137,7 +137,7 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False,
 
     sct.set_camera_module_max_radius(40)
     sct.set_camera_radius(sct.camera_module_max_radius()
-         + sct.camera_module_grid().spacing()/sqrt(2))
+         + sct.camera_module_grid().spacing()/numpy.sqrt(2))
 
     p_aperture_r = primary_facet_scheme_loose.outer_ring_outer_radius() / COS_PI_32;
     p_aperture_y = numpy.polyval(numpy.flipud(pp), p_aperture_r**2)

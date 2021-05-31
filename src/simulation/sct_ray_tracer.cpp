@@ -194,12 +194,12 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
       cm->id = m.id();
       cm->first_pixel_id = m.first_pixel_id();
       calin::math::vector3d_util::set_from_proto(cm->position, m.center_position());
+      cm->position.x() += scope_params.camera_module_pixel_grid().x_center();
+      cm->position.z() += scope_params.camera_module_pixel_grid().y_center();
     }
 
     scope->c_pixel_pitch_inv = 1.0/scope_params.camera_module_pixel_grid().spacing();
     scope->c_pixel_nside = scope_params.camera_module_pixel_grid().num_side();
-    scope->c_pixel_xc = scope_params.camera_module_pixel_grid().x_center();
-    scope->c_pixel_yc = scope_params.camera_module_pixel_grid().y_center();
     scope->c_pixel_dead_space_fraction =
       scope_params.camera_module_pixel_grid().dead_space_width() * scope->c_pixel_pitch_inv;
 
@@ -653,7 +653,7 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
 
   results.camera_module_pixel_id = calin::math::geometry::find_square_grid_site(
     ray.x(), ray.z(), scope->c_pixel_pitch_inv, scope->c_pixel_nside,
-    scope->c_pixel_xc, scope->c_pixel_yc, scope->c_pixel_dead_space_fraction);
+    module->position.x(), module->position.z(), scope->c_pixel_dead_space_fraction);
 
   if(results.camera_module_pixel_id < 0) {
     if(scope->c_has_frame_change) {
@@ -715,6 +715,16 @@ void SCTRayTracer::point_all_telescopes(double el_deg, double az_deg, double phi
     point_telescope(iscope, el_deg, az_deg, phi_deg);
   }
 }
+
+void SCTRayTracer::pixel_centers(unsigned iscope, Eigen::VectorXd& x_out, Eigen::VectorXd& z_out) const
+{
+  if(iscope >= scopes_.size()) {
+    throw std::runtime_error("SCTRayTracer::point_telescope: iscope out of range");
+  }
+
+  calin::simulation::sct_optics::pixel_centers(*scopes_[iscope]->param, x_out, z_out);
+}
+
 
 calin::ix::simulation::sct_optics::SCTTelescope*
 calin::simulation::sct_optics::make_sct_telescope(
@@ -1109,4 +1119,34 @@ calin::simulation::sct_optics::make_sct_array(
   }
   delete my_rng;
   return array;
+}
+
+void calin::simulation::sct_optics::pixel_centers(
+  const calin::ix::simulation::sct_optics::SCTTelescope& scope_params,
+  Eigen::VectorXd& x_out, Eigen::VectorXd& z_out)
+{
+  unsigned nmodpix = SQR(scope_params.camera_module_pixel_grid().num_side());
+  unsigned npix = scope_params.camera_modules_size()*npix;
+  x_out.resize(npix);
+  z_out.resize(npix);
+  for(const auto& m : scope_params.camera_modules()) {
+    const double xm =
+      m.center_position().x() + scope_params.camera_module_pixel_grid().x_center();
+    const double ym =
+      m.center_position().z() + scope_params.camera_module_pixel_grid().y_center();
+    for(unsigned imodpix=0;imodpix<nmodpix;++imodpix) {
+      unsigned ipix = m.first_pixel_id() + imodpix;
+      if(ipix >= npix) {
+        throw std::runtime_error("Pixel number out of range : "+std::to_string(ipix));
+      }
+      double xp;
+      double yp;
+      if(calin::math::geometry::square_grid_site_center(xp, yp, imodpix,
+          scope_params.camera_module_grid().spacing(),
+          scope_params.camera_module_grid().num_side(), xm, ym)) {
+        x_out[ipix] = xp + xm;
+        z_out[ipix] = yp + ym;
+      }
+    }
+  }
 }

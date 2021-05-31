@@ -78,6 +78,9 @@ struct SCTRayTracerResults
   Eigen::Vector3d final_position;
 };
 
+void pixel_centers(const calin::ix::simulation::sct_optics::SCTTelescope& telescope,
+  Eigen::VectorXd& x_out, Eigen::VectorXd& z_out);
+
 class SCTRayTracer
 {
 public:
@@ -104,6 +107,7 @@ public:
   bool trace_ray_in_reflector_frame(unsigned iscope, calin::math::ray::Ray& ray,
     SCTRayTracerResults& results, bool skip_primary = false) const;
 
+  void pixel_centers(unsigned iscope, Eigen::VectorXd& x_out, Eigen::VectorXd& z_out) const;
 
 private:
   struct Facet
@@ -177,8 +181,8 @@ private:
 
     double c_pixel_pitch_inv;
     double c_pixel_nside;
-    double c_pixel_xc;
-    double c_pixel_yc;
+    // double c_pixel_xc;
+    // double c_pixel_yc;
     double c_pixel_dead_space_fraction;
 
     std::vector<calin::simulation::vs_optics::VSOObscuration*> primary_obscuration;
