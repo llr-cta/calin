@@ -196,6 +196,8 @@ void SCTRayProcessor::process_ray(unsigned scope_id,
 
   calin::math::ray::Ray ray_copy(ray);
   sct_optics::SCTRayTracerResults trace_info;
+  trace_info.camera_pixel_id = -1;
+
   ray_tracer_->trace_ray_in_global_frame(scope_id, ray_copy, trace_info);
 
 #if 0
@@ -212,9 +214,9 @@ void SCTRayProcessor::process_ray(unsigned scope_id,
 #if 0
   static unsigned counter = 0;
   if(counter++<10) {
-    LOG(INFO) << trace_info.status << ' ' << trace_info.mirror_hexid << ' '
-      << trace_info.reflec_x << ' ' << trace_info.reflec_z << ' '
-      << trace_info.reflec_dx << ' ' << trace_info.reflec_dz;
+    LOG(INFO) << trace_info.status << ' '
+      << trace_info.primary_facet << ' ' << trace_info.primary_position.x() << ' ' << trace_info.primary_position.z() << ' '
+      << trace_info.secondary_facet << ' ' << trace_info.secondary_position.x() << ' ' << trace_info.secondary_position.z();
   }
 #endif
 

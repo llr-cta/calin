@@ -64,7 +64,7 @@ public:
     calin::simulation::pe_processor::PEProcessor* visitor,
     bool use_fp_position = false,
     calin::simulation::sct_optics::SCTRayTracerStatus status_min
-      = calin::simulation::sct_optics::RTS_MISSED_CAMERA,
+      = calin::simulation::sct_optics::RTS_COMPLETE,
     bool adopt_visitor = false);
   virtual ~SCTTracedRayVisitor2PEProcessorAdapter();
   void start_processing() override;
@@ -103,6 +103,14 @@ public:
     bool adopt_visitor=false);
   void add_pe_visitor(calin::simulation::pe_processor::PEProcessor* visitor,
     bool adopt_visitor=false);
+
+
+  void point_telescope(unsigned iscope, double el_deg, double az_deg, double phi_deg = 0) {
+    ray_tracer_->point_telescope(iscope, el_deg, az_deg, phi_deg);
+  }
+  void point_all_telescopes(double el_deg, double az_deg, double phi_deg = 0) {
+    ray_tracer_->point_all_telescopes(el_deg, az_deg, phi_deg);
+  }
 
 #if 0
   void set_all_detection_efficiencies(
