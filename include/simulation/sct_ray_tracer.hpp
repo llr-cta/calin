@@ -195,6 +195,8 @@ private:
     Eigen::Vector3d detector_sphere_center;
   };
 
+  bool ray_reaches_primary(const Telescope* scope,
+    const calin::math::ray::Ray& ray) const;
   bool trace_ray_to_primary_in_reflector_frame(const Telescope* scope,
     calin::math::ray::Ray& ray, SCTRayTracerResults& results) const;
   bool trace_ray_to_secondary_in_reflector_frame(const Telescope* scope,

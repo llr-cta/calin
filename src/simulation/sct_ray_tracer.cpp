@@ -257,6 +257,61 @@ bool SCTRayTracer::trace_ray_in_global_frame(unsigned iscope, calin::math::ray::
   return good;
 }
 
+bool SCTRayTracer::ray_reaches_primary(const Telescope* scope,
+  const calin::math::ray::Ray& ray) const
+{
+  if(ray.y() > scope->p_y_max) {
+    // case 1 : ray is outside of aperture coming towards it (presuably the most
+    // likely case for distant light)
+    if(ray.uy() >= 0) {
+      return false;
+    }
+    const double dist = (scope->p_y_max-ray.y())/ray.uy();
+    const double x_a = ray.x() + dist*ray.ux();
+    const double z_a = ray.z() + dist*ray.uz();
+    const double rho_a = x_a*x_a + z_a*z_a;
+
+    // If ray propagates to outside the aperture then it reaches primary
+    return rho_a < scope->p_rho_max;
+  } else if(ray.y() < scope->p_surface[0]) {
+    // case 2 : ray is behind the tangential plane and can never reach primary
+    return false;
+  } else {
+    const double x = ray.x();
+    const double z = ray.z();
+    const double rho = x*x + z*z;
+    if(rho > scope->p_rho_max) {
+      // case 3 : ray is outside curved edge of mirror containment cylinder and
+      // can never reach primary
+      return false;
+    } else {
+      // case 4 : ray is inside curved edge of mirror containment cylinder. Test
+      // whether it is behind primary or not
+      double y_mirror = calin::math::least_squares::polyval(
+        scope->p_surface, scope->p_surface_n, rho);
+
+      if(ray.y() < y_mirror) {
+        // Ray is behind the mirror so it can never reach primary
+        return false;
+      }
+
+      if(ray.uy() < 0) {
+        // Ray has negative y momentum component so will reach primary
+        return true;
+      }
+
+      const double dist = (scope->p_y_max-ray.y())/ray.uy();
+      const double x_a = ray.x() + dist*ray.ux();
+      const double z_a = ray.z() + dist*ray.uz();
+      const double rho_a = x_a*x_a + z_a*z_a;
+
+      // If ray propagates to outside the aperture then it reaches primary
+      return rho_a > scope->p_rho_max;
+    }
+  }
+  return false;
+}
+
 bool SCTRayTracer::trace_ray_to_primary_in_reflector_frame(const Telescope* scope,
   calin::math::ray::Ray& ray, SCTRayTracerResults& results) const
 {
