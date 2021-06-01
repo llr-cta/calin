@@ -119,3 +119,19 @@ message CherenkovTrackYieldNSpaceVisitorConfig
   AxisBinning uxuy_axis                                    = 4
     [(CFO).desc = "Binning configuration along UX-UY axes." ];
 };
+
+message MCCherenkovPhotonGeneratorConfig
+{
+  double epsilon0                                          = 1
+    [(CFO).desc = "Low bound on Cherenkov photon energies.", (CFO).units="eV" ];
+
+  double bandwidth                                         = 2
+    [(CFO).desc = "Bandwidth for Cherenkov photon energies.", (CFO).units="eV" ];
+
+  bool do_color_photons                                    = 3
+    [(CFO).desc = "Color the generated Cherenkov photon." ];
+
+  double weight                                            = 4
+    [(CFO).desc = "Weighting to apply to photons. This adjusts the track "
+      "length between emitted photons." ];
+};

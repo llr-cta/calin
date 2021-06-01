@@ -134,6 +134,10 @@ class MCCherenkovPhotonGenerator: public AirCherenkovTrackVisitor
 {
 public:
   MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
+    const calin::ix::simulation::tracker::MCCherenkovPhotonGeneratorConfig& config,
+    calin::math::rng::RNG* rng = nullptr,
+    bool adopt_visitor = false, bool adopt_rng = false);
+  MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
     double epsilon0 = 1.5, double bandwidth = 3.0, bool do_color_photons = false,
     calin::math::rng::RNG* rng = nullptr,
     bool adopt_visitor = false, bool adopt_rng = false);
@@ -146,6 +150,7 @@ public:
   double bandwidth() const { return bandwidth_; }
   bool do_color_photons() const { return do_color_photons_; }
   double weight() const { return weight_; }
+  static calin::ix::simulation::tracker::MCCherenkovPhotonGeneratorConfig default_config();
 private:
   CherenkovPhotonVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;

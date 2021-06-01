@@ -207,8 +207,25 @@ void CherenkovPhotonVisitor::leave_event()
 
 MCCherenkovPhotonGenerator::
 MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
+    const calin::ix::simulation::tracker::MCCherenkovPhotonGeneratorConfig& config,
+    calin::math::rng::RNG* rng, bool adopt_visitor, bool adopt_rng):
+  AirCherenkovTrackVisitor(),
+  visitor_(visitor), adopt_visitor_(adopt_visitor),
+  epsilon0_(config.epsilon0()), bandwidth_(config.bandwidth()),
+  do_color_photons_(config.do_color_photons()),
+  weight_(config.weight()), weighted_bandwidth_(bandwidth_/weight_),
+  rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)),
+  adopt_rng_(rng ? adopt_rng : true)
+{
+  visitor->set_bandpass(epsilon0_, bandwidth_, do_color_photons_);
+  dX_emission_ = rng_->exponential();
+}
+
+MCCherenkovPhotonGenerator::
+MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
     double epsilon0, double bandwidth, bool do_color_photons,
     calin::math::rng::RNG* rng, bool adopt_visitor, bool adopt_rng):
+  AirCherenkovTrackVisitor(),
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   epsilon0_(epsilon0), bandwidth_(bandwidth), do_color_photons_(do_color_photons),
   weight_(1.0), weighted_bandwidth_(bandwidth_/weight_),
@@ -270,6 +287,17 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
     visitor_->visit_cherenkov_photon(photon);
   }
   dX_emission_ -= dX_left;
+}
+
+calin::ix::simulation::tracker::MCCherenkovPhotonGeneratorConfig
+MCCherenkovPhotonGenerator::default_config()
+{
+  calin::ix::simulation::tracker::MCCherenkovPhotonGeneratorConfig cfg;
+  cfg.set_epsilon0(1.5);
+  cfg.set_bandwidth(3.0);
+  cfg.set_do_color_photons(0);
+  cfg.set_weight(1.0);
+  return cfg;
 }
 
 CherenkovTrackYieldLogger::CherenkovTrackYieldLogger(): AirCherenkovTrackVisitor()
