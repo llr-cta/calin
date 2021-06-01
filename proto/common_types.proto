@@ -155,15 +155,55 @@ message SpectralResponsePoint
 
 message Vector3D
 {
-  option (CMO).sql.default_inline_message = true;
-
   double x                              = 1
-    [(CFO).desc = "$PARENT_DESC_PS$X-coordinate.",
-     (CFO).units = "$PARENT_UNITS$"];
+    [(CFO).desc = "X element of vector : v(0)." ];
   double y                              = 2
-    [(CFO).desc = "$PARENT_DESC_PS$Y-coordinate.",
-     (CFO).units = "$PARENT_UNITS$"];
+    [(CFO).desc = "Y element of vector : v(1)." ];
   double z                              = 3
-    [(CFO).desc = "$PARENT_DESC_PS$Z-coordinate.",
-     (CFO).units = "$PARENT_UNITS$"];
+    [(CFO).desc = "Z element of vector : v(2)." ];
+};
+
+message Matrix3D
+{
+  double xx                             = 1
+    [(CFO).desc = "XX element of matrix : m(0,0)." ];
+  double xy                             = 2
+    [(CFO).desc = "XY element of matrix : m(0,1)." ];
+  double xz                             = 3
+    [(CFO).desc = "XZ element of matrix : m(0,2)." ];
+  double yx                             = 4
+    [(CFO).desc = "YX element of matrix : m(1,0)." ];
+  double yy                             = 5
+    [(CFO).desc = "YY element of matrix : m(1,1)." ];
+  double yz                             = 6
+    [(CFO).desc = "YZ element of matrix : m(1,2)." ];
+  double zx                             = 7
+    [(CFO).desc = "ZX element of matrix : m(2,0)." ];
+  double zy                             = 8
+    [(CFO).desc = "ZY element of matrix : m(2,1)." ];
+  double zz                             = 9
+    [(CFO).desc = "ZZ element of matrix : m(2,2)." ];
+};
+
+message EulerAngles3D
+{
+  enum RotationOrder {
+    YXY                                 = 0;
+    XZX                                 = 1;
+    ZYZ                                 = 2;
+    YZY                                 = 3;
+    ZXZ                                 = 4;
+    XYX                                 = 5;
+  };
+
+  RotationOrder rotation_order          = 1
+    [(CFO).desc = "Order of rotations. For example, if the order is YXY then a "
+      "point initially at r=(x,y,z) will end up at "
+      "r_prime=R_Y(alpha)R_X(beta)R_Y(gamma)r" ];
+  double alpha                          = 2
+    [(CFO).desc = "First rotation angle [0,360].", (CFO).units="deg" ];
+  double beta                           = 3
+    [(CFO).desc = "Second rotation angle [0,180].", (CFO).units="deg" ];
+  double gamma                          = 4
+    [(CFO).desc = "Third rotation angle [0,360].", (CFO).units="deg" ];
 };

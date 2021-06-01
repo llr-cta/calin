@@ -83,7 +83,7 @@ bool PositionNestedByDirectionRayGenerator::compute_rot_and_shift()
 {
   Eigen::Vector3d dir;
   if(not dir_gen_->next_as_vector(dir, dir_weight_))return false;
-  rot_ = base_rot_ * calin::math::geometry::rotation_z_to_vec(dir);
+  rot_ = base_rot_ * calin::math::geometry::rotation_z_to_vec_Rzy(dir);
   //LOG(INFO) << rot_;
   shift_post_rot_ = base_shift_post_rot_ + rot_*base_shift_pre_rot_;
   return true;

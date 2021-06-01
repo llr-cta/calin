@@ -1,10 +1,12 @@
+//-*-mode:swig;-*-
+
 /*
 
-   calin/math/geometry.i -- Stephen Fegan -- 2017-01-19
+   calin/simulation/sct_optics.i -- Stephen Fegan -- 2021-04-19
 
-   SWIG interface file for calin.math.geometry
+   SWIG interface file for calin.simulation.sct_optics
 
-   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2021, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
@@ -20,11 +22,12 @@
 
 */
 
-%module (package="calin.math") geometry
+%module (package="calin.simulation") sct_optics
 %feature(autodoc,2);
 
 %{
-#include "math/geometry.hpp"
+#include "simulation/sct_facet_scheme.hpp"
+#include "simulation/sct_ray_tracer.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -35,7 +38,13 @@
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
 
-%apply double &OUTPUT { double& x_out, double& y_out };
-%apply Eigen::Matrix3d &OUTPUT { Eigen::Matrix3d& m };
+%apply double &OUTPUT { double& x_out };
+%apply double &OUTPUT { double& z_out };
 
-%include "math/geometry.hpp"
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& x_out };
+%apply Eigen::VectorXd &OUTPUT { Eigen::VectorXd& z_out };
+
+%newobject make_sct_array;
+
+%include "simulation/sct_facet_scheme.hpp"
+%include "simulation/sct_ray_tracer.hpp"

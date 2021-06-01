@@ -49,7 +49,9 @@ namespace calin { namespace simulation { namespace vs_optics {
 
 class VSOObscuration
 {
- public:
+public:
+  VSOObscuration(const std::string& identification = ""):
+    identification_(identification) { /* nothing to see here */ }
   virtual ~VSOObscuration();
   virtual bool doesObscure(const calin::math::ray::Ray& p_in,
                            calin::math::ray::Ray& p_out, double n) const = 0;
@@ -66,6 +68,11 @@ class VSOObscuration
 
   static VSOObscuration*
   create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d);
+
+  const std::string& identification() const { return identification_; }
+
+protected:
+  std::string identification_;
 };
 
 class VSODiskObscuration: public VSOObscuration
@@ -73,8 +80,9 @@ class VSODiskObscuration: public VSOObscuration
  public:
   VSODiskObscuration(const Eigen::Vector3d& center,
                      const Eigen::Vector3d& normal,
-                     double radius):
-      VSOObscuration(), fX0(center), fN(normal), fR(radius), fD0()
+                     double radius,
+                     const std::string& identification = ""):
+      VSOObscuration(identification), fX0(center), fN(normal), fR(radius), fD0()
   {
     fD0 = center.dot(normal);
   }
@@ -109,8 +117,8 @@ class VSOTubeObscuration: public VSOObscuration
 {
  public:
   VSOTubeObscuration(const Eigen::Vector3d& x1, const Eigen::Vector3d& x2,
-                     double radius):
-      VSOObscuration(), fX1(x1), fX2(x2), fR(radius), fN(), fD1(), fD2()
+                     double radius, const std::string& identification = ""):
+      VSOObscuration(identification), fX1(x1), fX2(x2), fR(radius), fN(), fD1(), fD2()
   {
     fN = x2-x1;
     fN.normalize();
@@ -154,8 +162,9 @@ class VSOAlignedBoxObscuration: public VSOObscuration
 {
  public:
   VSOAlignedBoxObscuration(const Eigen::Vector3d& max_corner,
-                           const Eigen::Vector3d& min_corner):
-      VSOObscuration(), min_corner_(min_corner), max_corner_(max_corner)
+                           const Eigen::Vector3d& min_corner,
+                           const std::string& identification = ""):
+      VSOObscuration(identification), min_corner_(min_corner), max_corner_(max_corner)
   {
     // nothing to see here
   }
@@ -187,25 +196,31 @@ class VSOAlignedBoxObscuration: public VSOObscuration
 class VSOAlignedRectangularAperture: public VSOObscuration
 {
 public:
-  VSOAlignedRectangularAperture(double center_y, double flat_to_flat_xy):
-    VSOObscuration(), center_(0,0,center_y),
-    flat_to_flat_x_2_(0.5*flat_to_flat_xy), flat_to_flat_z_2_(0.5*flat_to_flat_xy)
+  VSOAlignedRectangularAperture(double center_y, double flat_to_flat_xz, bool inverted = false,
+      const std::string& identification = ""):
+    VSOObscuration(identification), center_(0,center_y,0),
+    flat_to_flat_x_2_(0.5*flat_to_flat_xz), flat_to_flat_z_2_(0.5*flat_to_flat_xz),
+    inverted_(inverted)
   {
    // nothing to see here
   }
 
   VSOAlignedRectangularAperture(const Eigen::Vector3d& center,
-                                double flat_to_flat_xy):
-    VSOObscuration(), center_(center),
-    flat_to_flat_x_2_(0.5*flat_to_flat_xy), flat_to_flat_z_2_(0.5*flat_to_flat_xy)
+                                double flat_to_flat_xz, bool inverted = false,
+                                const std::string& identification = ""):
+    VSOObscuration(identification), center_(center),
+    flat_to_flat_x_2_(0.5*flat_to_flat_xz), flat_to_flat_z_2_(0.5*flat_to_flat_xz),
+    inverted_(inverted)
   {
    // nothing to see here
   }
 
   VSOAlignedRectangularAperture(const Eigen::Vector3d& center,
-                                double flat_to_flat_x, double flat_to_flat_z):
+                                double flat_to_flat_x, double flat_to_flat_z,
+                                bool inverted = false):
     VSOObscuration(), center_(center),
-    flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z)
+    flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z),
+    inverted_(inverted)
   {
    // nothing to see here
   }
@@ -229,11 +244,13 @@ public:
   const Eigen::Vector3d& center() const { return center_; }
   double flat_to_flat_x_2() const { return flat_to_flat_x_2_; }
   double flat_to_flat_z_2() const { return flat_to_flat_z_2_; }
+  bool inverted() const { return inverted_; }
 
 private:
   Eigen::Vector3d         center_;
   double                  flat_to_flat_x_2_;
   double                  flat_to_flat_z_2_;
+  bool                    inverted_;
 };
 
 class VSOAlignedTileAperture: public VSOObscuration
@@ -242,8 +259,9 @@ public:
   VSOAlignedTileAperture(const Eigen::Vector3d& center,
       double pitch_x, double pitch_z,
       double center_x, double center_z,
-      double support_width_x, double support_width_z):
-    VSOObscuration(), center_(center),
+      double support_width_x, double support_width_z,
+      const std::string& identification = ""):
+    VSOObscuration(identification), center_(center),
     pitch_x_inv_(1.0/pitch_x), pitch_z_inv_(1.0/pitch_z),
     edge_x_(center_x - 0.5*pitch_x),
     edge_z_(center_z - 0.5*pitch_z),
@@ -282,14 +300,16 @@ private:
 class VSOAlignedHexagonalAperture: public VSOObscuration
 {
 public:
-  VSOAlignedHexagonalAperture(double center_y, double flat_to_flat):
-    VSOObscuration(), center_(0,0,center_y), flat_to_flat_2_(0.5*flat_to_flat)
+  VSOAlignedHexagonalAperture(double center_y, double flat_to_flat,
+                              const std::string& identification = ""):
+    VSOObscuration(identification), center_(0,center_y,0), flat_to_flat_2_(0.5*flat_to_flat)
   {
    // nothing to see here
   }
 
-  VSOAlignedHexagonalAperture(const Eigen::Vector3d& center, double flat_to_flat):
-    VSOObscuration(), center_(center), flat_to_flat_2_(0.5*flat_to_flat)
+  VSOAlignedHexagonalAperture(const Eigen::Vector3d& center, double flat_to_flat,
+      const std::string& identification = ""):
+    VSOObscuration(identification), center_(center), flat_to_flat_2_(0.5*flat_to_flat)
   {
    // nothing to see here
   }
@@ -318,14 +338,18 @@ private:
 class VSOAlignedCircularAperture: public VSOObscuration
 {
 public:
-  VSOAlignedCircularAperture(double center_y, double diameter):
-    VSOObscuration(), center_(0,0,center_y), radius_sq_(0.25*diameter*diameter)
+  VSOAlignedCircularAperture(double center_y, double diameter, bool inverted = false,
+      const std::string& identification = ""):
+    VSOObscuration(identification), center_(0,center_y,0), radius_sq_(0.25*diameter*diameter),
+    inverted_(inverted)
   {
    // nothing to see here
   }
 
-  VSOAlignedCircularAperture(const Eigen::Vector3d& center, double diameter):
-    VSOObscuration(), center_(center), radius_sq_(0.25*diameter*diameter)
+  VSOAlignedCircularAperture(const Eigen::Vector3d& center, double diameter, bool inverted = false,
+      const std::string& identification = ""):
+    VSOObscuration(identification), center_(center), radius_sq_(0.25*diameter*diameter),
+    inverted_(inverted)
   {
    // nothing to see here
   }
@@ -347,11 +371,13 @@ public:
     const ix::simulation::vs_optics::VSOAlignedCircularApertureData& d);
 
   const Eigen::Vector3d& center() const { return center_; }
-  const double radius_sq() const { return radius_sq_; }
+  double radius_sq() const { return radius_sq_; }
+  bool inverted() const { return inverted_; }
 
 private:
   Eigen::Vector3d         center_;
   double                  radius_sq_;
+  bool                    inverted_;
 };
 
 } } } // namespace calin::simulation::vs_optics

@@ -211,10 +211,15 @@ public:
   void clear();
 
   void injest(const BlockSparseNSpace& o);
+  void injest_from_subspace(const Eigen::VectorXd& x_super, const BlockSparseNSpace& o);
 
   std::vector<Axis> axes() const;
   unsigned naxes() const { return xlo_.size(); }
   Axis axis(unsigned iaxis) const;
+
+  std::vector<Axis> make_superspace_axes(const Eigen::VectorXd& xlo, const Eigen::VectorXd& xhi,
+    const Eigen::VectorXi& n) const;
+  std::vector<Axis> make_superspace_axes(const std::vector<Axis>& axes) const;
 
   Eigen::VectorXd axis_bin_centers(unsigned iaxis) const;
   Eigen::VectorXd axis_bin_edges(unsigned iaxis) const;
@@ -234,6 +239,10 @@ public:
     if(alloc_next_) { us -= alloc_end_-alloc_next_; }
     return us;
   }
+#if 0
+  uint64_t test_blosc_size(int clevel = 5, int doshuffle = 1,
+    const std::string& compname = "blosclz", int nthreads = 1) const;
+#endif
 
   void accumulate(const Eigen::VectorXd& x, double w = 1.0);
   void accumulate_many(const Eigen::MatrixXd& x, double w = 1.0);
@@ -250,6 +259,8 @@ public:
 
   Eigen::VectorXd as_vector() const;
   Eigen::MatrixXd as_matrix() const;
+
+  uint64_t num_occupied_cells() const;
 
   double total_weight() const;
 

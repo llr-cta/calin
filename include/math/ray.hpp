@@ -28,6 +28,8 @@
 #include <Eigen/Geometry>
 #include <calin_global_definitions.hpp>
 #include <math/constants.hpp>
+#include <math/rng.hpp>
+#include <math/geometry.hpp>
 
 namespace calin { namespace math { namespace ray {
 
@@ -82,8 +84,10 @@ public:
   void derotate(const Eigen::Matrix3d& rot) {
     pos_ = rot.transpose() * pos_; dir_ = rot.transpose() * dir_; }
 
-  void reflect_from_surface(const Eigen::Vector3d& surface_norm) {
-    dir_ -= surface_norm * (2.0*(dir_.dot(surface_norm)));
+  double reflect_from_surface(const Eigen::Vector3d& surface_norm) {
+    double dir_dot_norm = dir_.dot(surface_norm);
+    dir_ -= surface_norm * (2.0*dir_dot_norm);
+    return dir_dot_norm;
   }
 
   // Refract at incoming surface (where n>1 and norm.dir<0)
@@ -173,6 +177,49 @@ public:
   IPOut propagate_to_cylinder(const Eigen::Vector3d& center,
     const Eigen::Vector3d& normal, double radius,
     IntersectionPoint ip = IP_CLOSEST, bool time_reversal_ok = true, double n = 1.0);
+
+#ifndef SWIG
+  bool propagate_to_polynomial_surface(const double* p, unsigned np,
+    double rho2_min = 0, double rho2_max = std::numeric_limits<double>::infinity(),
+    bool time_reversal_ok = true, double n = 1.0,
+    bool ray_is_close_to_surface = false, double tol = 1e-8, unsigned niter = 100);
+#endif
+
+  bool propagate_to_polynomial_surface(const Eigen::VectorXd& p,
+    double rho2_min = 0, double rho2_max = std::numeric_limits<double>::infinity(),
+    bool time_reversal_ok = true, double n = 1.0,
+    bool ray_is_close_to_surface = false, double tol = 1e-8, unsigned niter = 100)
+  {
+    return propagate_to_polynomial_surface(p.data(), p.size(), rho2_min, rho2_max,
+      time_reversal_ok, n, ray_is_close_to_surface, tol, niter);
+  }
+
+#ifndef SWIG
+  inline Eigen::Vector3d norm_of_polynomial_surface(const double* p, unsigned np) const
+  {
+    return calin::math::geometry::norm_of_polynomial_surface(this->x(), this->z(), p, np);
+  }
+
+  double reflect_from_polynomial_surface(const double* p, unsigned np);
+  double reflect_from_rough_polynomial_surface(const double* p, unsigned np,
+    double roughness, calin::math::rng::RNG& rng);
+#endif
+
+  Eigen::Vector3d norm_of_polynomial_surface(const Eigen::VectorXd& p) const
+  {
+    return norm_of_polynomial_surface(p.data(), p.size());
+  }
+
+  double reflect_from_polynomial_surface(const Eigen::VectorXd& p)
+  {
+    return reflect_from_polynomial_surface(p.data(), p.size());
+  }
+
+  double reflect_from_rough_polynomial_surface(const Eigen::VectorXd& p,
+    double roughness, calin::math::rng::RNG& rng)
+  {
+    return reflect_from_rough_polynomial_surface(p.data(), p.size(), roughness, rng);
+  }
 
 private:
   Eigen::Vector3d pos_ = Eigen::Vector3d::Zero();

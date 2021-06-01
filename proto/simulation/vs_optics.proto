@@ -112,6 +112,9 @@ message VSOAlignedRectangularApertureData {
   double flat_to_flat_z                                    = 3
     [(CFO).desc = "Height of the rectangle in Z",
      (CFO).units = "cm"];
+  bool invert                                              = 4
+    [(CFO).desc = "If true then invert the obscuration, blocking rays that "
+      "collide with the rectangle rather than those outside." ];
 };
 
 message VSOAlignedTileApertureData {
@@ -154,6 +157,9 @@ message VSOAlignedCircularApertureData {
   double diameter                                          = 2
     [(CFO).desc = "Diameter of the disk",
      (CFO).units = "cm"];
+  bool invert                                              = 3
+   [(CFO).desc = "If true then invert the obscuration, blocking rays that "
+     "collide with the circle rather than those outside." ];
 }
 
 message VSOObscurationData {
@@ -166,6 +172,8 @@ message VSOObscurationData {
     VSOAlignedHexagonalApertureData hexagonal_aperture     = 6;
     VSOAlignedTileApertureData tile_aperture               = 7;
   }
+  string identification                                    = 100 [
+    (CFO).desc = "Identifying name of obscuration, for convenience." ];
 };
 
 message VSOTelescopeData {

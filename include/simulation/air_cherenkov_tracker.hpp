@@ -134,6 +134,10 @@ class MCCherenkovPhotonGenerator: public AirCherenkovTrackVisitor
 {
 public:
   MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
+    const calin::ix::simulation::tracker::MCCherenkovPhotonGeneratorConfig& config,
+    calin::math::rng::RNG* rng = nullptr,
+    bool adopt_visitor = false, bool adopt_rng = false);
+  MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
     double epsilon0 = 1.5, double bandwidth = 3.0, bool do_color_photons = false,
     calin::math::rng::RNG* rng = nullptr,
     bool adopt_visitor = false, bool adopt_rng = false);
@@ -146,6 +150,7 @@ public:
   double bandwidth() const { return bandwidth_; }
   bool do_color_photons() const { return do_color_photons_; }
   double weight() const { return weight_; }
+  static calin::ix::simulation::tracker::MCCherenkovPhotonGeneratorConfig default_config();
 private:
   CherenkovPhotonVisitor* visitor_ = nullptr;
   bool adopt_visitor_ = false;
@@ -189,7 +194,7 @@ public:
 
   void clear();
 
-  const calin::math::nspace::SparseNSpace& nspace() const { return space_; }
+  const calin::math::nspace::BlockSparseNSpace& nspace() const { return space_; }
   // Eigen::Matrix3d rotation_matrix() const { return rot_; }
 
   static calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig default_config();
@@ -198,13 +203,29 @@ private:
     const calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig& config);
 
   calin::ix::simulation::tracker::CherenkovTrackYieldNSpaceVisitorConfig config_;
-  calin::math::nspace::SparseNSpace space_;
+  calin::math::nspace::BlockSparseNSpace space_;
   Eigen::VectorXd p_;
   Eigen::Vector3d x0_;
   Eigen::Matrix3d rot_;
 
   calin::simulation::atmosphere::Atmosphere* atm_ = nullptr;
   double uz0_inv_;
+};
+
+class MultiDelegatingAirCherenkovTrackVisitor: public AirCherenkovTrackVisitor
+{
+public:
+  MultiDelegatingAirCherenkovTrackVisitor();
+  virtual ~MultiDelegatingAirCherenkovTrackVisitor();
+  void set_atmosphere(calin::simulation::atmosphere::Atmosphere* atm) override;
+  void visit_event(const Event& event, bool& kill_event) override;
+  void visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track,
+    bool& kill_track) override;
+  void leave_event()override;
+  void add_delegate(AirCherenkovTrackVisitor* delegate, bool adopt_delegate = false);
+protected:
+  std::list<AirCherenkovTrackVisitor*> delegates_;
+  std::list<AirCherenkovTrackVisitor*> adopted_delegates_;
 };
 
 

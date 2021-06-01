@@ -24,11 +24,14 @@
 
 #include <math/ray.hpp>
 #include <math/special.hpp>
+#include <math/least_squares.hpp>
+#include <math/geometry.hpp>
 #include <util/log.hpp>
 
 using namespace calin::math::ray;
 using namespace calin::util::log;
 using calin::math::special::SQR;
+using calin::math::least_squares::polyval_and_derivative;
 
 //! Propagates free particle to the given plane
 bool Ray::propagate_to_plane(const Eigen::Vector3d& normal, double d,
@@ -454,4 +457,64 @@ Ray::IPOut Ray::propagate_to_cylinder(const Eigen::Vector3d& center,
 
   propagate_dist(time, n);
   return ipo;
+}
+
+bool Ray::propagate_to_polynomial_surface(const double* p, unsigned np,
+  double rho2_min, double rho2_max, bool time_reversal_ok, double n,
+  bool ray_is_close_to_surface, double tol, unsigned niter)
+{
+  double time;
+  if(ray_is_close_to_surface) {
+    // If we are told that we are already close to the surface then start from
+    // where we are already.
+    time = 0;
+  } else {
+    // Start with proagation to tangent plane at rho2=0 (to avoid possible
+    // selection of wrong root)
+    time = (p[0] - this->y()) / uy();
+  }
+
+  double D = 0;
+  do {
+    // Use Newton's method to find root to given tolerance
+    double x = this->x() + time*ux();
+    double y = this->y() + time*uy();
+    double z = this->z() + time*uz();
+
+    double yps;
+    double dyps_drho2;
+    double rho2 = x*x + z*z;
+    polyval_and_derivative(yps, dyps_drho2, p, np, rho2);
+    D = y - yps;
+    double dD_dt = uy() - 2*dyps_drho2*(ux()*x + uz()*z);
+    time -= D/dD_dt;
+  } while(fabs(D)>tol and --niter);
+
+  if(niter == 0) {
+    throw std::runtime_error("propagate_to_polynomial_surface: Maximum number of iterations reached in Newton's method");
+  }
+
+  double x = this->x() + time*ux();
+  double z = this->z() + time*uz();
+  double rho2 = x*x + z*z;
+
+  if((time>=0 or time_reversal_ok) and rho2>=rho2_min and rho2<=rho2_max) {
+    propagate_dist(time, n);
+    return true;
+  }
+
+  return false;
+}
+
+double Ray::reflect_from_polynomial_surface(const double* p, unsigned np)
+{
+  return reflect_from_surface(norm_of_polynomial_surface(p,np));
+}
+
+double Ray::reflect_from_rough_polynomial_surface(const double* p, unsigned np,
+  double roughness, calin::math::rng::RNG& rng)
+{
+  auto norm = norm_of_polynomial_surface(p,np);
+  calin::math::geometry::scatter_direction_in_place(norm, roughness, rng);
+  return reflect_from_surface(norm);
 }

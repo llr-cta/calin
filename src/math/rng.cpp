@@ -259,6 +259,22 @@ double RNG::normal()
   }
 }
 
+void RNG::normal_two_bm(double &x, double& y)
+{
+  double v1;
+  double v2;
+  double rsq;
+  do
+	{
+	  v1 = 2.0*uniform() - 1.0;
+	  v2 = 2.0*uniform() - 1.0;
+	  rsq = v1*v1 + v2*v2;
+	}while(rsq >= 1.0 || rsq == 0.0);
+  const double fac = sqrt(-2.0*log(rsq)/rsq);
+  x = v1*fac;
+  y = v2*fac;
+}
+
 /**
  *  Returns a deviate distributed as a gamma distribution, i.e., a
  *  waiting time to the i'th event in a Poisson process of unit mean.

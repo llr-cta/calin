@@ -735,15 +735,16 @@ public:
   using typename VCLObscuration<VCLRealType>::vec3_t;
   using typename VCLObscuration<VCLRealType>::real_t;
 
-  VCLAlignedCircularAperture(const vec3_t& center, const real_t& diameter):
+  VCLAlignedCircularAperture(const vec3_t& center, const real_t& diameter, bool invert = false):
     VCLObscuration<VCLRealType>(), center_(center),
-    radius_sq_(0.25*diameter*diameter)
+    radius_sq_(0.25*diameter*diameter), inverted_(invert)
   {
     // nothing to see here
   }
   VCLAlignedCircularAperture(const calin::simulation::vs_optics::VSOAlignedCircularAperture& o):
     VCLObscuration<VCLRealType>(),
-    center_(o.center().template cast<real_t>()), radius_sq_(o.radius_sq())
+    center_(o.center().template cast<real_t>()), radius_sq_(o.radius_sq()),
+    inverted_(o.inverted())
   {
     // nothing to see here
   }
@@ -759,7 +760,11 @@ public:
       /*time_reversal_ok=*/ false, n);
     const real_vt r2 =
       SQR(ray_out.x()-center_.x())+SQR(ray_out.z()-center_.z())-radius_sq_;
-    return ray_reaches_plane & (r2>0);
+    if(inverted_) {
+      return ray_reaches_plane & (r2<=0);
+    } else {
+      return ray_reaches_plane & (r2>0);
+    }
   }
   virtual VCLAlignedCircularAperture<VCLRealType>* clone() const override
   {
@@ -768,6 +773,7 @@ public:
 private:
   vec3_t center_;
   real_t radius_sq_;
+  bool inverted_;
 };
 
 template<typename VCLRealType> class VCLAlignedRectangularAperture:
@@ -782,16 +788,18 @@ public:
   using typename VCLObscuration<VCLRealType>::real_t;
 
   VCLAlignedRectangularAperture(const vec3_t& center,
-      const real_t& flat_to_flat_x, const real_t& flat_to_flat_z):
+      const real_t& flat_to_flat_x, const real_t& flat_to_flat_z, bool invert = false):
     VCLObscuration<VCLRealType>(), center_(center),
-    flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z)
+    flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z),
+    inverted_(invert)
   {
     // nothing to see here
   }
   VCLAlignedRectangularAperture(const calin::simulation::vs_optics::VSOAlignedRectangularAperture& o):
     VCLObscuration<VCLRealType>(),
     center_(o.center().template cast<real_t>()),
-    flat_to_flat_x_2_(o.flat_to_flat_x_2()), flat_to_flat_z_2_(o.flat_to_flat_z_2())
+    flat_to_flat_x_2_(o.flat_to_flat_x_2()), flat_to_flat_z_2_(o.flat_to_flat_z_2()),
+    inverted_(o.inverted())
   {
     // nothing to see here
   }
@@ -807,7 +815,11 @@ public:
       /*time_reversal_ok=*/ false, n);
     const real_vt dx = vcl::abs(ray_out.x()-center_.x()) - flat_to_flat_x_2_;
     const real_vt dz = vcl::abs(ray_out.z()-center_.z()) - flat_to_flat_z_2_;
-    return ray_reaches_plane & (vcl::max(dx,dz)>0);
+    if(inverted_) {
+      return ray_reaches_plane & (vcl::max(dx,dz)<=0);            
+    } else {
+      return ray_reaches_plane & (vcl::max(dx,dz)>0);
+    }
   }
   virtual VCLAlignedRectangularAperture<VCLRealType>* clone() const override
   {
@@ -817,6 +829,7 @@ private:
   vec3_t center_;
   real_t flat_to_flat_x_2_;
   real_t flat_to_flat_z_2_;
+  bool inverted_;
 };
 
 template<typename VCLRealType> class VCLTubeObscuration:

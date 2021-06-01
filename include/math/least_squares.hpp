@@ -99,9 +99,35 @@ private:
 };
 
 Eigen::VectorXd polyfit(const Eigen::VectorXd& x, const Eigen::VectorXd& y, unsigned order);
-double polyval(const Eigen::VectorXd& p, double x);
+
 #ifndef SWIG
-double polyval(const std::vector<double>& p, double x);
+double polyval(const double* p, unsigned np, double x);
+
+inline double polyval(const std::vector<double>& p, double x)
+{
+  return polyval(p.data(), p.size(), x);
+}
+
+void polyval_and_derivative(double& y, double& dy_dx,
+  const double* p, unsigned np, double x);
+
+inline void polyval_and_derivative(double& y, double& dy_dx,
+  const std::vector<double>& p, double x)
+{
+  polyval_and_derivative(y, dy_dx, p.data(), p.size(), x);
+}
+
 #endif
+
+inline double polyval(const Eigen::VectorXd& p, double x)
+{
+  return polyval(p.data(), p.size(), x);
+}
+
+inline void polyval_and_derivative(double& y, double& dy_dx,
+  const Eigen::VectorXd& p, double x)
+{
+  polyval_and_derivative(y, dy_dx, p.data(), p.size(), x);
+}
 
 } } } // namespace calin::math::least_squares

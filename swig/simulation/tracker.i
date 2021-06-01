@@ -34,6 +34,8 @@
 #include "simulation/iact_array_tracker.hpp"
 #include "simulation/quadrature_iact_array_integration.hpp"
 #include "simulation/vso_quadrature_iact_array_integration.hpp"
+#include "simulation/vso_ray_processor.hpp"
+#include "simulation/sct_ray_processor.hpp"
 #include "simulation/vcl_ray_processor.hpp"
 #include "simulation/nspace_ray_processor.hpp"
 #define SWIG_FILE_WITH_INIT

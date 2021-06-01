@@ -1,10 +1,10 @@
 /*
 
-   calin/simulation/vso_ray_processor.cpp -- Stephen Fegan -- 2017-01-16
+   calin/simulation/vso_ray_processor.cpp -- Stephen Fegan -- 2021-05-27
 
-   VSO ray (weight, scope, ray) processor.
+   SCT ray (weight, scope, ray) processor.
 
-   Copyright 2017, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2021, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
@@ -21,140 +21,149 @@
 */
 
 #include <math/special.hpp>
-#include <simulation/vso_ray_processor.hpp>
+#include <simulation/sct_ray_processor.hpp>
 
-using namespace calin::simulation::vso_ray_processor;
+using namespace calin::simulation::sct_ray_processor;
 using calin::math::special::SQR;
 
 #include <util/log.hpp>
 using namespace calin::util::log;
 
-VSOTracedRayVisitor::~VSOTracedRayVisitor()
+SCTTracedRayVisitor::~SCTTracedRayVisitor()
 {
   // nothing to see here
 }
 
-void VSOTracedRayVisitor::start_processing()
+void SCTTracedRayVisitor::start_processing()
 {
   // nothing to see here
 }
 
-void VSOTracedRayVisitor::process_traced_ray(unsigned scope_id,
-  const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
+void SCTTracedRayVisitor::process_traced_ray(unsigned scope_id,
+  const calin::simulation::sct_optics::SCTRayTracerResults& trace, double pe_weight)
 {
   // nothing to see here
 }
 
-void VSOTracedRayVisitor::finish_processing()
+void SCTTracedRayVisitor::finish_processing()
 {
   // nothing to see here
 }
 
-VSOTracedRayVisitor2PEProcessorAdapter::
-VSOTracedRayVisitor2PEProcessorAdapter(
-    calin::simulation::pe_processor::PEProcessor* visitor, bool adopt_visitor):
-  VSOTracedRayVisitor(),
-  visitor_(visitor), adopt_visitor_(adopt_visitor)
+SCTTracedRayVisitor2PEProcessorAdapter::
+SCTTracedRayVisitor2PEProcessorAdapter(
+    calin::simulation::pe_processor::PEProcessor* visitor, bool use_fp_position,
+    calin::simulation::sct_optics::SCTRayTracerStatus status_min,
+    bool adopt_visitor):
+  SCTTracedRayVisitor(),
+  visitor_(visitor), use_fp_position_(use_fp_position), status_min_(status_min),
+  adopt_visitor_(adopt_visitor)
 {
   // nothing to see here
 }
 
-VSOTracedRayVisitor2PEProcessorAdapter::
-~VSOTracedRayVisitor2PEProcessorAdapter()
+SCTTracedRayVisitor2PEProcessorAdapter::
+~SCTTracedRayVisitor2PEProcessorAdapter()
 {
   if(adopt_visitor_)delete visitor_;
 }
 
-void VSOTracedRayVisitor2PEProcessorAdapter::start_processing()
+void SCTTracedRayVisitor2PEProcessorAdapter::start_processing()
 {
   visitor_->start_processing();
 }
 
-void VSOTracedRayVisitor2PEProcessorAdapter::
+void SCTTracedRayVisitor2PEProcessorAdapter::
 process_traced_ray(unsigned scope_id,
-  const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
+  const calin::simulation::sct_optics::SCTRayTracerResults& trace, double pe_weight)
 {
-  if(not trace.rayHitFocalPlane())return;
-  if(trace.pixel != nullptr) {
-    visitor_->process_focal_plane_hit(scope_id, trace.pixel->id(),
-      trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
-  } else {
-    visitor_->process_focal_plane_hit(scope_id, -1,
-      trace.fplane_x, trace.fplane_z, trace.fplane_t, pe_weight);
+  double x;
+  double z;
+
+  if(trace.status >= status_min_) {
+    if(use_fp_position_) {
+      x = trace.fp_position.x();
+      z = trace.fp_position.z();
+    } else {
+      x = trace.camera_position.x();
+      z = trace.camera_position.z();
+    }
+    visitor_->process_focal_plane_hit(scope_id, trace.camera_pixel_id,
+      x, z, trace.camera_time, pe_weight);
   }
 }
 
-void VSOTracedRayVisitor2PEProcessorAdapter::finish_processing()
+void SCTTracedRayVisitor2PEProcessorAdapter::finish_processing()
 {
   visitor_->finish_processing();
 }
 
-VSOMultiTracedRayVisitor::VSOMultiTracedRayVisitor():
-  VSOTracedRayVisitor(), visitors_()
+SCTMultiTracedRayVisitor::SCTMultiTracedRayVisitor():
+  SCTTracedRayVisitor(), visitors_()
 {
   // nothing to see here
 }
 
-VSOMultiTracedRayVisitor::~VSOMultiTracedRayVisitor()
+SCTMultiTracedRayVisitor::~SCTMultiTracedRayVisitor()
 {
   for(auto* ivisitor : adopted_visitors_)delete ivisitor;
 }
 
-void VSOMultiTracedRayVisitor::start_processing()
+void SCTMultiTracedRayVisitor::start_processing()
 {
   for(auto* ivisitor : visitors_)ivisitor->start_processing();
 }
 
-void VSOMultiTracedRayVisitor::process_traced_ray(unsigned scope_id,
-  const calin::simulation::vs_optics::VSOTraceInfo& trace, double pe_weight)
+void SCTMultiTracedRayVisitor::process_traced_ray(unsigned scope_id,
+  const calin::simulation::sct_optics::SCTRayTracerResults& trace, double pe_weight)
 {
   for(auto* ivisitor : visitors_)
     ivisitor->process_traced_ray(scope_id, trace, pe_weight);
 }
 
-void VSOMultiTracedRayVisitor::finish_processing()
+void SCTMultiTracedRayVisitor::finish_processing()
 {
   for(auto* ivisitor : visitors_)ivisitor->finish_processing();
 }
 
-void VSOMultiTracedRayVisitor::add_visitor(VSOTracedRayVisitor* visitor,
+void SCTMultiTracedRayVisitor::add_visitor(SCTTracedRayVisitor* visitor,
   bool adopt_visitor)
 {
   visitors_.push_back(visitor);
   if(adopt_visitor)adopted_visitors_.push_back(visitor);
 }
 
-VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
-    VSOTracedRayVisitor* visitor, calin::math::rng::RNG* rng,
+SCTRayProcessor::SCTRayProcessor(calin::ix::simulation::sct_optics::SCTArray* array,
+    SCTTracedRayVisitor* visitor, calin::math::rng::RNG* rng,
     bool adopt_array, bool adopt_visitor, bool adopt_rng):
   calin::simulation::ray_processor::RayProcessor(),
   array_(array), adopt_array_(adopt_array),
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)),
   adopt_rng_(rng ? adopt_rng : true),
-  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_)),
-  scope_response_(array->numTelescopes())
+  ray_tracer_(new calin::simulation::sct_optics::SCTRayTracer(array_, rng_)) //,
+  // scope_response_(array->numTelescopes())
 {
   // nothing to see hee
 }
 
-VSORayProcessor::VSORayProcessor(calin::simulation::vs_optics::VSOArray* array,
+SCTRayProcessor::SCTRayProcessor(calin::ix::simulation::sct_optics::SCTArray* array,
     calin::simulation::pe_processor::PEProcessor* visitor,
     calin::math::rng::RNG* rng,
     bool adopt_array, bool adopt_visitor, bool adopt_rng):
   calin::simulation::ray_processor::RayProcessor(),
   array_(array), adopt_array_(adopt_array),
-  visitor_(new VSOTracedRayVisitor2PEProcessorAdapter(visitor, adopt_visitor)),
+  visitor_(new SCTTracedRayVisitor2PEProcessorAdapter(visitor, adopt_visitor)),
   adopt_visitor_(true),
   rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)),
   adopt_rng_(rng ? adopt_rng : true),
-  ray_tracer_(new calin::simulation::vs_optics::VSORayTracer(array_, rng_)),
-  scope_response_(array->numTelescopes())
+  ray_tracer_(new calin::simulation::sct_optics::SCTRayTracer(array_, rng_)) //,
+  // scope_response_(array->numTelescopes())
 {
   // nothing to see here
 }
 
-VSORayProcessor::~VSORayProcessor()
+SCTRayProcessor::~SCTRayProcessor()
 {
   if(adopt_array_)delete array_;
   if(adopt_visitor_)delete visitor_;
@@ -163,36 +172,35 @@ VSORayProcessor::~VSORayProcessor()
 }
 
 std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>
-VSORayProcessor::detector_spheres()
+SCTRayProcessor::detector_spheres()
 {
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere> s;
-  for(unsigned iscope=0; iscope<array_->numTelescopes(); iscope++)
-  {
-    auto* scope = array_->telescope(iscope);
-    Eigen::Vector3d sphere_center = scope->reflectorIPCenter();
-    scope->reflectorToGlobal_pos(sphere_center);
-    s.emplace_back(sphere_center, 0.5*scope->reflectorIP());
+  for(unsigned iscope=0; iscope<ray_tracer_->num_telescopes(); iscope++) {
+    s.emplace_back(ray_tracer_->detector_sphere_center(iscope),
+      ray_tracer_->detector_sphere_radius(iscope));
   }
   return s;
 }
 
-void VSORayProcessor::start_processing()
+void SCTRayProcessor::start_processing()
 {
   nhit_ = 0;
   visitor_->start_processing();
 }
 
-void VSORayProcessor::process_ray(unsigned scope_id,
+void SCTRayProcessor::process_ray(unsigned scope_id,
   const calin::math::ray::Ray& ray, double pe_weight)
 {
   double z0 = ray.position().z();
   double w = ray.direction().z();
-  auto* scope = array_->telescope(scope_id);
 
   calin::math::ray::Ray ray_copy(ray);
-  vs_optics::VSOTraceInfo trace_info;
-  ray_tracer_->trace(ray_copy, trace_info, scope);
+  sct_optics::SCTRayTracerResults trace_info;
+  trace_info.camera_pixel_id = -1;
 
+  ray_tracer_->trace_ray_in_global_frame(scope_id, ray_copy, trace_info);
+
+#if 0
   const ScopeResponse& scope_response { scope_response_[scope_id] };
   if(scope_response.has_effective_bandwidth)
     pe_weight *= scope_response.effective_bandwidth.bandwidth(z0, std::fabs(w));
@@ -201,32 +209,33 @@ void VSORayProcessor::process_ray(unsigned scope_id,
 
   if(trace_info.rayHitFocalPlane())
     pe_weight *= scope_response.cone_efficiency.y(trace_info.fplane_uy);
+#endif
 
 #if 0
   static unsigned counter = 0;
   if(counter++<10) {
-    LOG(INFO) << trace_info.status << ' ' << trace_info.mirror_hexid << ' '
-      << trace_info.reflec_x << ' ' << trace_info.reflec_z << ' '
-      << trace_info.reflec_dx << ' ' << trace_info.reflec_dz;
+    LOG(INFO) << trace_info.status << ' '
+      << trace_info.primary_facet << ' ' << trace_info.primary_position.x() << ' ' << trace_info.primary_position.z() << ' '
+      << trace_info.secondary_facet << ' ' << trace_info.secondary_position.x() << ' ' << trace_info.secondary_position.z();
   }
 #endif
 
-  if(trace_info.pixel != nullptr) {
+  if(trace_info.camera_pixel_id >= 0) {
     ++nhit_;
   }
   visitor_->process_traced_ray(scope_id, trace_info, pe_weight);
 }
 
-void VSORayProcessor::finish_processing()
+void SCTRayProcessor::finish_processing()
 {
   visitor_->finish_processing();
 }
 
-void VSORayProcessor::add_fp_hit_trace_visitor(VSOTracedRayVisitor* visitor,
+void SCTRayProcessor::add_fp_hit_trace_visitor(SCTTracedRayVisitor* visitor,
   bool adopt_visitor)
 {
   if(multi_visitor_ == nullptr) {
-    multi_visitor_ = new VSOMultiTracedRayVisitor;
+    multi_visitor_ = new SCTMultiTracedRayVisitor;
     multi_visitor_->add_visitor(visitor_, adopt_visitor_);
     visitor_ = multi_visitor_;
     adopt_visitor_ = true;
@@ -234,14 +243,15 @@ void VSORayProcessor::add_fp_hit_trace_visitor(VSOTracedRayVisitor* visitor,
   multi_visitor_->add_visitor(visitor, adopt_visitor);
 }
 
-void VSORayProcessor::add_pe_visitor(
+void SCTRayProcessor::add_pe_visitor(
   calin::simulation::pe_processor::PEProcessor* visitor, bool adopt_visitor)
 {
-  add_fp_hit_trace_visitor(new VSOTracedRayVisitor2PEProcessorAdapter(visitor,
+  add_fp_hit_trace_visitor(new SCTTracedRayVisitor2PEProcessorAdapter(visitor,
     adopt_visitor), true);
 }
 
-void VSORayProcessor::set_all_detection_efficiencies(
+#if 0
+void SCTRayProcessor::set_all_detection_efficiencies(
   const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
   const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
   double w0,
@@ -252,14 +262,14 @@ void VSORayProcessor::set_all_detection_efficiencies(
       atmospheric_absorption, w0, cone_efficiency);
 }
 
-void VSORayProcessor::set_all_detector_response_without_atmospheric_absorption(
+void SCTRayProcessor::set_all_detector_response_without_atmospheric_absorption(
   const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency)
 {
   for(unsigned iscope=0; iscope<scope_response_.size(); iscope++)
     set_scope_detector_response_without_atmospheric_absorption(iscope, detector_efficiency);
 }
 
-void VSORayProcessor::set_all_detector_and_atmosphere_response(
+void SCTRayProcessor::set_all_detector_and_atmosphere_response(
   const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
   const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
   double w0)
@@ -269,14 +279,14 @@ void VSORayProcessor::set_all_detector_and_atmosphere_response(
       atmospheric_absorption, w0);
 }
 
-void VSORayProcessor::set_all_cone_angular_response(
+void SCTRayProcessor::set_all_cone_angular_response(
   const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
 {
   for(unsigned iscope=0; iscope<scope_response_.size(); iscope++)
     set_scope_cone_angular_response(iscope, cone_efficiency);
 }
 
-void VSORayProcessor::set_scope_detection_efficiencies(unsigned iscope,
+void SCTRayProcessor::set_scope_detection_efficiencies(unsigned iscope,
   const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
   const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
   double w0,
@@ -294,7 +304,7 @@ void VSORayProcessor::set_scope_detection_efficiencies(unsigned iscope,
   scope_response_[iscope].cone_efficiency = cone_efficiency;
 }
 
-void VSORayProcessor::
+void SCTRayProcessor::
 set_scope_detector_response_without_atmospheric_absorption(unsigned iscope,
   const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency)
 {
@@ -307,7 +317,7 @@ set_scope_detector_response_without_atmospheric_absorption(unsigned iscope,
   scope_response_[iscope].detector_bandwidth = detector_efficiency.integrate();
 }
 
-void VSORayProcessor::
+void SCTRayProcessor::
 set_scope_detector_and_atmosphere_response(unsigned iscope,
   const calin::simulation::detector_efficiency::DetectionEfficiency& detector_efficiency,
   const calin::simulation::detector_efficiency::AtmosphericAbsorption& atmospheric_absorption,
@@ -324,7 +334,7 @@ set_scope_detector_and_atmosphere_response(unsigned iscope,
   scope_response_[iscope].detector_bandwidth = detector_efficiency.integrate();
 }
 
-void VSORayProcessor::set_scope_cone_angular_response(unsigned iscope,
+void SCTRayProcessor::set_scope_cone_angular_response(unsigned iscope,
   const calin::simulation::detector_efficiency::AngularEfficiency& cone_efficiency)
 {
   if(iscope >= scope_response_.size())
@@ -332,3 +342,4 @@ void VSORayProcessor::set_scope_cone_angular_response(unsigned iscope,
 
   scope_response_[iscope].cone_efficiency = cone_efficiency;
 }
+#endif

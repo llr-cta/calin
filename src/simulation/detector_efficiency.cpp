@@ -69,6 +69,7 @@ AtmosphericAbsorption(const std::string& filename, OldStyleAtmObsFlag flag,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
   std::getline(stream,line); // skip first line
+  file_record->set_comment(line);
   double e = 0;
   double z = 0;
   InterpLinear1D abs;
@@ -122,7 +123,7 @@ AtmosphericAbsorption::AtmosphericAbsorption(const std::string& filename,
   auto* file_record = calin::provenance::chronicle::register_file_open(fn,
     calin::ix::provenance::chronicle::AT_READ, __PRETTY_FUNCTION__);
   std::string line;
-
+  std::string comment;
   std::getline(stream,line);
 
   while(levels_cm.empty() and stream)
@@ -131,10 +132,13 @@ AtmosphericAbsorption::AtmosphericAbsorption(const std::string& filename,
     std::string token;
     line_stream >> token;
     if(token.empty()) {
+      comment += '\n';
       // Empty line : move on to next line
       goto next_header_line;
     } else if(token[0]=='#') {
       // Comment line : look for pattern of H2= and H1= and import levels
+      comment += line;
+      comment += '\n';
       line_stream >> token;
       if(token != "H2=")goto next_header_line;
       double h_km;
@@ -191,6 +195,7 @@ next_header_line:
     }
     std::getline(stream,line);
   }
+  file_record->set_comment(comment);
   calin::provenance::chronicle::register_file_close(file_record);
 }
 

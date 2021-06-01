@@ -207,11 +207,28 @@ void CherenkovPhotonVisitor::leave_event()
 
 MCCherenkovPhotonGenerator::
 MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
+    const calin::ix::simulation::tracker::MCCherenkovPhotonGeneratorConfig& config,
+    calin::math::rng::RNG* rng, bool adopt_visitor, bool adopt_rng):
+  AirCherenkovTrackVisitor(),
+  visitor_(visitor), adopt_visitor_(adopt_visitor),
+  epsilon0_(config.epsilon0()), bandwidth_(config.bandwidth()),
+  do_color_photons_(config.do_color_photons()),
+  weight_(config.weight()), weighted_bandwidth_(bandwidth_/weight_),
+  rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)),
+  adopt_rng_(rng ? adopt_rng : true)
+{
+  visitor->set_bandpass(epsilon0_, bandwidth_, do_color_photons_);
+  dX_emission_ = rng_->exponential();
+}
+
+MCCherenkovPhotonGenerator::
+MCCherenkovPhotonGenerator(CherenkovPhotonVisitor* visitor,
     double epsilon0, double bandwidth, bool do_color_photons,
     calin::math::rng::RNG* rng, bool adopt_visitor, bool adopt_rng):
+  AirCherenkovTrackVisitor(),
   visitor_(visitor), adopt_visitor_(adopt_visitor),
   epsilon0_(epsilon0), bandwidth_(bandwidth), do_color_photons_(do_color_photons),
-  weight_(1.0), weighted_bandwidth_(bandwidth_/weight_), 
+  weight_(1.0), weighted_bandwidth_(bandwidth_/weight_),
   rng_(rng ? rng : new calin::math::rng::RNG(__PRETTY_FUNCTION__)), adopt_rng_(rng ? adopt_rng : true)
 {
   visitor->set_bandpass(epsilon0, bandwidth, do_color_photons);
@@ -255,7 +272,7 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
     {
       no_photon_emitted = false;
       photon.air_cherenkov_track = &cherenkov_track;
-      calin::math::geometry::rotation_z_to_vec(Mrot, cherenkov_track.dx_hat);
+      calin::math::geometry::rotation_z_to_vec_Rzy(Mrot, cherenkov_track.dx_hat);
       photon.epsilon = 0;
       photon.weight = weight_;
     }
@@ -270,6 +287,17 @@ visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track
     visitor_->visit_cherenkov_photon(photon);
   }
   dX_emission_ -= dX_left;
+}
+
+calin::ix::simulation::tracker::MCCherenkovPhotonGeneratorConfig
+MCCherenkovPhotonGenerator::default_config()
+{
+  calin::ix::simulation::tracker::MCCherenkovPhotonGeneratorConfig cfg;
+  cfg.set_epsilon0(1.5);
+  cfg.set_bandwidth(3.0);
+  cfg.set_do_color_photons(0);
+  cfg.set_weight(1.0);
+  return cfg;
 }
 
 CherenkovTrackYieldLogger::CherenkovTrackYieldLogger(): AirCherenkovTrackVisitor()
@@ -426,4 +454,62 @@ CherenkovTrackYieldNSpaceVisitor::default_config()
   cfg.mutable_uxuy_axis()->set_num_bins(21);
 
   return cfg;
+}
+
+MultiDelegatingAirCherenkovTrackVisitor::
+MultiDelegatingAirCherenkovTrackVisitor(): AirCherenkovTrackVisitor()
+{
+  // nothing to see here
+}
+
+MultiDelegatingAirCherenkovTrackVisitor::
+~MultiDelegatingAirCherenkovTrackVisitor()
+{
+  for(auto* d : adopted_delegates_) {
+    delete d;
+  }
+}
+
+void MultiDelegatingAirCherenkovTrackVisitor::
+set_atmosphere(calin::simulation::atmosphere::Atmosphere* atm)
+{
+  for(auto* d : delegates_) {
+    d->set_atmosphere(atm);
+  }
+}
+
+void MultiDelegatingAirCherenkovTrackVisitor::
+visit_event(const Event& event, bool& kill_event)
+{
+  for(auto* d : delegates_) {
+    bool d_kill_event = false;
+    d->visit_event(event, d_kill_event);
+    kill_event = kill_event or d_kill_event;
+  }
+}
+
+void MultiDelegatingAirCherenkovTrackVisitor::
+visit_cherenkov_track(const AirCherenkovTrack& cherenkov_track, bool& kill_track)
+{
+  for(auto* d : delegates_) {
+    bool d_kill_track = false;
+    d->visit_cherenkov_track(cherenkov_track, d_kill_track);
+    kill_track = kill_track or d_kill_track;
+  }
+}
+
+void MultiDelegatingAirCherenkovTrackVisitor::leave_event()
+{
+  for(auto* d : delegates_) {
+    d->leave_event();
+  }
+}
+
+void MultiDelegatingAirCherenkovTrackVisitor::
+add_delegate(AirCherenkovTrackVisitor* delegate, bool adopt_delegate)
+{
+  delegates_.push_back(delegate);
+  if(adopt_delegate) {
+    adopted_delegates_.push_back(delegate);
+  }
 }

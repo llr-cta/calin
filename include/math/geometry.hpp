@@ -27,6 +27,11 @@
 #include <algorithm>
 #include <Eigen/Dense>
 
+#include <common_types.pb.h>
+#include <math/rng.hpp>
+#include <math/least_squares.hpp>
+#include <math/special.hpp>
+
 namespace calin { namespace math { namespace geometry {
 
 inline bool box_has_future_intersection(double& tmin, double& tmax,
@@ -88,7 +93,7 @@ inline void rotation_theta_phi(Eigen::Matrix3d& m, double theta, double phi)
   return rotation_theta_phi(m, ct, st, cp, sp);
 }
 
-inline void rotation_z_to_xyz(Eigen::Matrix3d& m,
+inline void rotation_z_to_xyz_Rzy(Eigen::Matrix3d& m,
   const double x, const double y, const double z)
 {
   double st = std::sqrt(x*x+y*y);
@@ -109,9 +114,61 @@ inline void rotation_z_to_xyz(Eigen::Matrix3d& m,
   }
 }
 
-inline void rotation_z_to_vec(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+inline void rotation_y_to_xyz_Ryx(Eigen::Matrix3d& m,
+  const double x, const double y, const double z)
 {
-  return rotation_z_to_xyz(m, v.x(), v.y(), v.z());
+  double st = std::sqrt(z*z+x*x);
+  if(st == 0.0) {
+    if(z>=0) {
+      m.setIdentity();
+    } else {
+      m <<  1,  0,  0,
+            0, -1,  0,
+            0,  0, -1;
+    }
+  } else {
+    double sp = x/st;
+    double cp = z/st;
+    m <<  cp, x, y*sp,
+           0, y,  -st,
+         -sp, z, y*cp;
+  }
+}
+
+inline void rotation_x_to_xyz_Rxz(Eigen::Matrix3d& m,
+  const double x, const double y, const double z)
+{
+  double st = std::sqrt(y*y+z*z);
+  if(st == 0.0) {
+    if(z>=0) {
+      m.setIdentity();
+    } else {
+      m << -1,  0,  0,
+            0, -1,  0,
+            0,  0,  1;
+    }
+  } else {
+    double sp = z/st;
+    double cp = y/st;
+    m <<  x,  -st,   0,
+          y, x*cp, -sp,
+          z, x*sp,  cp;
+  }
+}
+
+inline void rotation_z_to_vec_Rzy(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+{
+  return rotation_z_to_xyz_Rzy(m, v.x(), v.y(), v.z());
+}
+
+inline void rotation_y_to_vec_Ryx(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+{
+  return rotation_y_to_xyz_Ryx(m, v.x(), v.y(), v.z());
+}
+
+inline void rotation_x_to_vec_Rxz(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+{
+  return rotation_x_to_xyz_Rxz(m, v.x(), v.y(), v.z());
 }
 
 inline void rotation_z_to_xyz_Rzyz(Eigen::Matrix3d& m,
@@ -139,15 +196,172 @@ inline void rotation_z_to_xyz_Rzyz(Eigen::Matrix3d& m,
   }
 }
 
+inline void rotation_y_to_xyz_Ryxy(Eigen::Matrix3d& m,
+  const double x, const double y, const double z)
+{
+  double st = std::sqrt(z*z+x*x);
+  if(st == 0.0) {
+    if(y>=0) {
+      m.setIdentity();
+    } else {
+      m <<  1,  0,  0,
+            0, -1,  0,
+            0,  0, -1;
+    }
+  } else {
+    double st_inv = 1.0/st;
+    double sp = x * st_inv;
+    double cp = z * st_inv;
+    double sp2 = sp*sp;
+    double cp2 = cp*cp;
+    double ymo_cpsp = (y-1)*cp*sp;
+
+    m << y*sp2+cp2, x,  ymo_cpsp,
+                -x, y,        -z,
+          ymo_cpsp, z, y*cp2+sp2;
+  }
+}
+
+inline void rotation_x_to_xyz_Rxzx(Eigen::Matrix3d& m,
+  const double x, const double y, const double z)
+{
+  double st = sqrt(y*y+z*z);
+  if(st == 0.0) {
+    if(y>=0) {
+      m.setIdentity();
+    } else {
+      m << -1,  0,  0,
+            0, -1,  0,
+            0,  0,  1;
+    }
+  } else {
+    double st_inv = 1.0/st;
+    double sp = z * st_inv;
+    double cp = y * st_inv;
+    double sp2 = sp*sp;
+    double cp2 = cp*cp;
+    double xmo_cpsp = (x-1)*cp*sp;
+
+    m << x,        -y,        -z,
+         y, x*cp2+sp2,  xmo_cpsp,
+         z,  xmo_cpsp, x*sp2+cp2;
+  }
+}
+
 inline void rotation_z_to_vec_Rzyz(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
 {
   return rotation_z_to_xyz_Rzyz(m, v.x(), v.y(), v.z());
 }
 
+inline void rotation_y_to_vec_Ryxy(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+{
+  return rotation_y_to_xyz_Ryxy(m, v.x(), v.y(), v.z());
+}
+
+inline void rotation_x_to_vec_Rxzx(Eigen::Matrix3d& m, const Eigen::Vector3d& v)
+{
+  return rotation_x_to_xyz_Rxzx(m, v.x(), v.y(), v.z());
+}
+
+inline void rotate_in_place_2d(double& x, double& y,
+  const double& cos_theta, const double& sin_theta)
+{
+  double xnew = cos_theta*x - sin_theta*y;
+  y = cos_theta*y + sin_theta*x;
+  x = xnew;
+}
+
+inline void derotate_in_place_2d(double& x, double& y,
+  const double& cos_theta, const double& sin_theta)
+{
+  double xnew = cos_theta*x + sin_theta*y;
+  y = cos_theta*y - sin_theta*x;
+  x = xnew;
+}
+
+inline void rotate_in_place_Rz(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  rotate_in_place_2d(v.x(), v.y(), cos_theta, sin_theta);
+}
+
+inline void derotate_in_place_Rz(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  derotate_in_place_2d(v.x(), v.y(), cos_theta, sin_theta);
+}
+
+inline void rotate_in_place_Ry(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  rotate_in_place_2d(v.z(), v.x(), cos_theta, sin_theta);
+}
+
+inline void derotate_in_place_Ry(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  derotate_in_place_2d(v.z(), v.x(), cos_theta, sin_theta);
+}
+
+inline void rotate_in_place_Rx(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  rotate_in_place_2d(v.y(), v.z(), cos_theta, sin_theta);
+}
+
+inline void derotate_in_place_Rx(Eigen::Vector3d& v,
+  const double& cos_theta, const double& sin_theta)
+{
+  derotate_in_place_2d(v.y(), v.z(), cos_theta, sin_theta);
+}
+
+inline void rotate_in_place_z_to_u_Rzy(Eigen::Vector3d& v, const Eigen::Vector3d& u)
+{
+  const double st = sqrt(u.x()*u.x() + u.y()*u.y());
+  if(st < std::numeric_limits<double>::epsilon()) {
+    return;
+  }
+  const double st_inv = 1.0/st;
+  const double sp = u.y() * st_inv;
+  const double cp = u.x() * st_inv;
+  rotate_in_place_Ry(v, u.z(), st);
+  rotate_in_place_Rz(v, cp, sp);
+}
+
+inline void derotate_in_place_z_to_u_Rzy(Eigen::Vector3d& v, const Eigen::Vector3d& u)
+{
+  const double st = sqrt(u.x()*u.x() + u.y()*u.y());
+  if(st < std::numeric_limits<double>::epsilon()) {
+    return;
+  }
+  const double st_inv = 1.0/st;
+  const double sp = u.y() * st_inv;
+  const double cp = u.x() * st_inv;
+  derotate_in_place_Rz(v, cp, sp);
+  derotate_in_place_Ry(v, u.z(), st);
+}
+
+// Note this function generates scattered vectors with RMS of
+// dispersion_per_axis on each of the axes perpendicular to v
+inline void
+scatter_direction_in_place(Eigen::Vector3d& v, double dispersion_per_axis,
+  calin::math::rng::RNG& rng)
+{
+  Eigen::Vector3d x;
+  rng.normal_two_bm(x.x(), x.y());
+  x.x() *= dispersion_per_axis;
+  x.y() *= dispersion_per_axis;
+  x.z() = sqrt(1.0-x.x()*x.x()-x.y()*x.y());
+
+  // Use the simpler rotate fuction (Rzy) as X and Y directions are arbitrary
+  rotate_in_place_z_to_u_Rzy(x, v);
+  v = x;
+}
+
 #ifndef SWIG
 
 // -----------------------------------------------------------------------------
-// Skip in SWIG as templates map above functions in equivalents of these
+// Skip in SWIG as SWIG output templates map above functions in equivalents of these
 // -----------------------------------------------------------------------------
 
 inline Eigen::Matrix3d rotation_theta_phi(
@@ -165,18 +379,48 @@ inline Eigen::Matrix3d rotation_theta_phi(double theta, double phi)
   return m;
 }
 
-inline Eigen::Matrix3d rotation_z_to_xyz(
+inline Eigen::Matrix3d rotation_z_to_xyz_Rzy(
   const double x, const double y, const double z)
 {
   Eigen::Matrix3d m;
-  rotation_z_to_xyz(m, x, y, z);
+  rotation_z_to_xyz_Rzy(m, x, y, z);
   return m;
 }
 
-inline Eigen::Matrix3d rotation_z_to_vec(const Eigen::Vector3d v)
+inline Eigen::Matrix3d rotation_z_to_vec_Rzy(const Eigen::Vector3d v)
 {
   Eigen::Matrix3d m;
-  rotation_z_to_vec(m, v);
+  rotation_z_to_vec_Rzy(m, v);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_y_to_xyz_Ryx(
+  const double x, const double y, const double z)
+{
+  Eigen::Matrix3d m;
+  rotation_y_to_xyz_Ryx(m, x, y, z);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_y_to_vec_Ryx(const Eigen::Vector3d v)
+{
+  Eigen::Matrix3d m;
+  rotation_y_to_vec_Ryx(m, v);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_x_to_xyz_Rxz(
+  const double x, const double y, const double z)
+{
+  Eigen::Matrix3d m;
+  rotation_x_to_xyz_Rxz(m, x, y, z);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_x_to_vec_Rxz(const Eigen::Vector3d v)
+{
+  Eigen::Matrix3d m;
+  rotation_x_to_vec_Rxz(m, v);
   return m;
 }
 
@@ -195,6 +439,95 @@ inline Eigen::Matrix3d rotation_z_to_vec_Rzyz(const Eigen::Vector3d v)
   return m;
 }
 
+inline Eigen::Matrix3d rotation_y_to_vec_Ryxy(const Eigen::Vector3d& v)
+{
+  Eigen::Matrix3d m;
+  rotation_y_to_vec_Ryxy(m, v);
+  return m;
+}
+
+inline Eigen::Matrix3d rotation_x_to_vec_Rxzx(const Eigen::Vector3d& v)
+{
+  Eigen::Matrix3d m;
+  rotation_x_to_vec_Rxzx(m, v);
+  return m;
+}
 #endif
+
+Eigen::Quaterniond euler_to_quaternion(const calin::ix::common_types::EulerAngles3D& euler);
+Eigen::Matrix3d euler_to_matrix(const calin::ix::common_types::EulerAngles3D& euler);
+
+void quaternion_to_euler(calin::ix::common_types::EulerAngles3D* euler,
+  const Eigen::Quaterniond& q);
+void matrix_to_euler(calin::ix::common_types::EulerAngles3D* euler,
+  const Eigen::Matrix3d& m);
+
+void scattering_euler(calin::ix::common_types::EulerAngles3D* euler, double dispersion,
+  calin::math::rng::RNG& rng, double twist_dispersion = 0);
+
+calin::ix::common_types::EulerAngles3D scattering_euler(double dispersion, calin::math::rng::RNG& rng,
+  double twist_dispersion = 0,
+  calin::ix::common_types::EulerAngles3D::RotationOrder rotation_order =
+    calin::ix::common_types::EulerAngles3D::YXY);
+
+bool euler_is_zero(const calin::ix::common_types::EulerAngles3D& euler);
+
+#ifndef SWIG
+inline Eigen::Vector3d norm_and_y_of_polynomial_surface(double& yps, double x, double z,
+  const double* p, unsigned np)
+{
+  double dyps_drho2;
+  double rho2 = x*x + z*z;
+  calin::math::least_squares::polyval_and_derivative(yps, dyps_drho2, p, np, rho2);
+  Eigen::Vector3d norm(2*x*dyps_drho2, -1, 2*z*dyps_drho2);
+  norm.normalize();
+  return norm;
+}
+
+inline Eigen::Vector3d norm_of_polynomial_surface(double x, double z, const double* p, unsigned np)
+{
+  double yps;
+  return norm_and_y_of_polynomial_surface(yps, x, z, p, np);
+}
+#endif
+
+inline Eigen::Vector3d norm_of_polynomial_surface(double x, double z, const Eigen::VectorXd& p)
+{
+  return norm_of_polynomial_surface(x, z, p.data(), p.size());
+}
+
+inline int find_square_grid_site(double x, double y, double pitch_inv, unsigned nside,
+  double xc = 0, double yc = 0, double dead_space_fraction = 0)
+{
+  const double half_side = 0.5*nside;
+  x = (x - xc)*pitch_inv + half_side;
+  y = (y - yc)*pitch_inv + half_side;
+  const int ux = int(std::floor(x));
+  const int uy = int(std::floor(y));
+  if(std::min(ux,uy)<0 or std::max(ux,uy)>=nside) {
+    return -1;
+  }
+  if(dead_space_fraction>0) {
+    x -= ux;
+    y -= uy;
+    if(std::min(std::min(x,y), 1.0-std::max(x,y))<dead_space_fraction) {
+      return -1;
+    }
+  }
+  return uy*nside+ux;
+}
+
+inline bool square_grid_site_center(double& x_out, double& y_out,
+  int isite, double pitch, unsigned nside, double xc = 0, double yc = 0)
+{
+  if((isite<0)or(isite>calin::math::special::SQR(nside)))return false;
+  const double half_side = 0.5*nside - 0.5;
+  div_t div_res = std::div(isite, nside);
+  const int ux = div_res.rem;
+  const int uy = div_res.quot;
+  x_out = (double(ux) - half_side)*pitch + xc;
+  y_out = (double(uy) - half_side)*pitch + yc;
+  return true;
+}
 
 } } } // namespace calin::math::geometry
