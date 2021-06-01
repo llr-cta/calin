@@ -185,10 +185,10 @@ def sct1_config(obscure = True, scope_x=0, scope_y=0, include_window = False,
         obs.set_identification("Secondary baffle")
 
     # Incoming rays : circular aperture to protect primary mirror
-    obs = sct.add_primary_obscuration()
-    obs.mutable_circular_aperture().mutable_center_pos().set_y(p_aperture_y)
-    obs.mutable_circular_aperture().set_diameter(p_aperture_r * 2)
-    obs.set_identification("Primary aperture")
+    # obs = sct.add_primary_obscuration()
+    # obs.mutable_circular_aperture().mutable_center_pos().set_y(p_aperture_y)
+    # obs.mutable_circular_aperture().set_diameter(p_aperture_r * 2)
+    # obs.set_identification("Primary aperture")
 
     # Post-primary rays : circular aperture to protect secondary mirror
     obs = sct.add_secondary_obscuration()

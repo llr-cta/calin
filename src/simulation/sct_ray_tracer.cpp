@@ -351,9 +351,13 @@ bool SCTRayTracer::trace_ray_to_primary_in_reflector_frame(const Telescope* scop
     ray.rotate(scope->p_rotation);
   }
 
-  bool good = ray.propagate_to_polynomial_surface(scope->p_surface, scope->p_surface_n,
-    scope->p_rho_min, scope->p_rho_max, /* time_reversal_ok= */ false, /* n= */ n_,
-    /* ray_is_close_to_surface= */ false, /* tol= */ 1e-8);
+  bool good = ray_reaches_primary(scope, ray);
+
+  if(good) {
+    good = ray.propagate_to_polynomial_surface(scope->p_surface, scope->p_surface_n,
+      scope->p_rho_min, scope->p_rho_max, /* time_reversal_ok= */ false, /* n= */ n_,
+      /* ray_is_close_to_surface= */ false, /* tol= */ 1e-8);
+  }
 
   if(!good) {
     if(scope->p_has_frame_change) {
