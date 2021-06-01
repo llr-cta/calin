@@ -473,17 +473,21 @@ calin::ix::common_types::EulerAngles3D scattering_euler(double dispersion, calin
 bool euler_is_zero(const calin::ix::common_types::EulerAngles3D& euler);
 
 #ifndef SWIG
-inline Eigen::Vector3d norm_of_polynomial_surface(double x, double z, const double* p, unsigned np)
+inline Eigen::Vector3d norm_and_y_of_polynomial_surface(double& yps, double x, double z,
+  const double* p, unsigned np)
 {
-  double yps;
   double dyps_drho2;
   double rho2 = x*x + z*z;
   calin::math::least_squares::polyval_and_derivative(yps, dyps_drho2, p, np, rho2);
-
   Eigen::Vector3d norm(2*x*dyps_drho2, -1, 2*z*dyps_drho2);
   norm.normalize();
-
   return norm;
+}
+
+inline Eigen::Vector3d norm_of_polynomial_surface(double x, double z, const double* p, unsigned np)
+{
+  double yps;
+  return norm_and_y_of_polynomial_surface(yps, x, z, p, np);
 }
 #endif
 
