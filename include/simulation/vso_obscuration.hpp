@@ -217,8 +217,8 @@ public:
 
   VSOAlignedRectangularAperture(const Eigen::Vector3d& center,
                                 double flat_to_flat_x, double flat_to_flat_z,
-                                bool inverted = false):
-    VSOObscuration(), center_(center),
+                                bool inverted = false, const std::string& identification = ""):
+    VSOObscuration(identification), center_(center),
     flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z),
     inverted_(inverted)
   {

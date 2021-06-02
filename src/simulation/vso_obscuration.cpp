@@ -70,7 +70,6 @@ create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
     throw std::runtime_error("VSOObscuration::create_from_proto: unknown obscuration type");
     return 0;
   }
-  obs->identification_ = d.identification();
   return obs;
 }
 
@@ -103,7 +102,7 @@ dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
   calin::math::vector3d_util::dump_as_proto(fX0, dd->mutable_center_pos());
   calin::math::vector3d_util::dump_as_proto(fN, dd->mutable_normal());
   dd->set_diameter(2.0*fR);
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -113,7 +112,7 @@ create_from_proto(const ix::simulation::vs_optics::VSODiskObscurationData& d)
   return new VSODiskObscuration(
     calin::math::vector3d_util::from_proto(d.center_pos()),
     calin::math::vector3d_util::from_proto(d.normal()),
-    d.diameter()/2.0);
+    d.diameter()/2.0, d.identification());
 }
 
 VSODiskObscuration* VSODiskObscuration::clone() const
@@ -162,7 +161,7 @@ dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
   calin::math::vector3d_util::dump_as_proto(fX1, dd->mutable_end1_pos());
   calin::math::vector3d_util::dump_as_proto(fX2, dd->mutable_end2_pos());
   dd->set_diameter(2.0*fR);
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -172,7 +171,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d)
   return new VSOTubeObscuration(
     calin::math::vector3d_util::from_proto(d.end1_pos()),
     calin::math::vector3d_util::from_proto(d.end2_pos()),
-    d.diameter()/2.0);
+    d.diameter()/2.0, d.identification());
 }
 
 VSOTubeObscuration* VSOTubeObscuration::clone() const
@@ -222,7 +221,7 @@ VSOAlignedBoxObscuration::dump_as_proto(
   auto* dd = d->mutable_aligned_box();
   calin::math::vector3d_util::dump_as_proto(max_corner_, dd->mutable_max_corner());
   calin::math::vector3d_util::dump_as_proto(min_corner_, dd->mutable_min_corner());
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -231,7 +230,8 @@ VSOAlignedBoxObscuration* VSOAlignedBoxObscuration::create_from_proto(
 {
   return new VSOAlignedBoxObscuration(
     calin::math::vector3d_util::from_proto(d.max_corner()),
-    calin::math::vector3d_util::from_proto(d.min_corner()));
+    calin::math::vector3d_util::from_proto(d.min_corner()),
+    d.identification());
 }
 
 // *****************************************************************************
@@ -282,7 +282,7 @@ VSOAlignedRectangularAperture::dump_as_proto(
   dd->set_flat_to_flat_x(2*flat_to_flat_x_2_);
   dd->set_flat_to_flat_z(2*flat_to_flat_z_2_);
   dd->set_invert(inverted_);
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -291,7 +291,7 @@ VSOAlignedRectangularAperture* VSOAlignedRectangularAperture::create_from_proto(
 {
   return new VSOAlignedRectangularAperture(
     calin::math::vector3d_util::from_proto(d.center_pos()),
-    d.flat_to_flat_x(), d.flat_to_flat_z(), d.invert());
+    d.flat_to_flat_x(), d.flat_to_flat_z(), d.invert(), d.identification());
 }
 
 // *****************************************************************************
@@ -340,7 +340,7 @@ VSOAlignedHexagonalAperture::dump_as_proto(
   auto* dd = d->mutable_hexagonal_aperture();
   calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center_pos());
   dd->set_flat_to_flat(2*flat_to_flat_2_);
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -348,7 +348,8 @@ VSOAlignedHexagonalAperture* VSOAlignedHexagonalAperture::create_from_proto(
   const calin::ix::simulation::vs_optics::VSOAlignedHexagonalApertureData& d)
 {
   return new VSOAlignedHexagonalAperture(
-    calin::math::vector3d_util::from_proto(d.center_pos()), d.flat_to_flat());
+    calin::math::vector3d_util::from_proto(d.center_pos()), d.flat_to_flat(),
+    d.identification());
 }
 
 // *****************************************************************************
@@ -396,7 +397,7 @@ VSOAlignedCircularAperture::dump_as_proto(
   calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center_pos());
   dd->set_diameter(2*sqrt(radius_sq_));
   dd->set_invert(inverted_);
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -404,7 +405,8 @@ VSOAlignedCircularAperture* VSOAlignedCircularAperture::create_from_proto(
   const calin::ix::simulation::vs_optics::VSOAlignedCircularApertureData& d)
 {
   return new VSOAlignedCircularAperture(
-    calin::math::vector3d_util::from_proto(d.center_pos()),d.diameter(),d.invert());
+    calin::math::vector3d_util::from_proto(d.center_pos()),d.diameter(),d.invert(),
+    d.identification());
 }
 
 // *****************************************************************************
@@ -473,7 +475,7 @@ VSOAlignedTileAperture::dump_as_proto(
   dd->set_center_z(edge_z_ + 0.5*dd->pitch_z());
   dd->set_support_width_x(2.0*opaque_frac_x_2_*dd->pitch_x());
   dd->set_support_width_z(2.0*opaque_frac_z_2_*dd->pitch_z());
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -484,5 +486,5 @@ VSOAlignedTileAperture* VSOAlignedTileAperture::create_from_proto(
     calin::math::vector3d_util::from_proto(d.center_pos()),
     d.pitch_x(), d.pitch_z(),
     d.center_x(), d.center_z(),
-    d.support_width_x(), d.support_width_z());
+    d.support_width_x(), d.support_width_z(), d.identification());
 }
