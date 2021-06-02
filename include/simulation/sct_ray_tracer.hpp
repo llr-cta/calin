@@ -166,6 +166,8 @@ private:
     const double* s_surface;
     unsigned s_surface_n;
     std::vector<Facet> s_facets;
+    double s_r_max;
+    double s_y_min;
 
     bool c_has_frame_change;
     Eigen::Vector3d c_offset;
@@ -204,6 +206,9 @@ private:
 
   bool ray_reaches_primary(const Telescope* scope,
     const calin::math::ray::Ray& ray) const;
+  bool ray_obscured_by_secondary(const Telescope* scope,
+    const calin::math::ray::Ray& ray) const;
+
   bool trace_ray_to_primary_in_reflector_frame(const Telescope* scope,
     calin::math::ray::Ray& ray, SCTRayTracerResults& results) const;
   bool trace_ray_to_secondary_in_reflector_frame(const Telescope* scope,

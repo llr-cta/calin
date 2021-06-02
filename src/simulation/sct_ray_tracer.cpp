@@ -151,7 +151,6 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
         facet.removed = true;
       }
     }
-
     if(scope->s_facets_have_frame_change and scope_params.has_secondary_facet_scheme_loose()) {
       scope->s_scheme_loose = new SCTSecondaryFacetScheme(scope_params.secondary_facet_scheme_loose());
       scope->s_rho_max = SQR(scope->s_scheme_loose->outer_radius());
@@ -160,6 +159,9 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
         throw std::runtime_error("Secondary surface facet schemes must have same number of facets.");
       }
     }
+    scope->s_r_max = std::sqrt(scope->s_rho_max);
+    scope->s_y_min = calin::math::least_squares::polyval(
+      scope->s_surface, scope->s_surface_n, scope->s_rho_max);
 
     // *************************************************************************
     // CAMERA
@@ -329,6 +331,48 @@ bool SCTRayTracer::ray_reaches_primary(const Telescope* scope,
   }
   return false;
 }
+
+bool SCTRayTracer::ray_obscured_by_secondary(const Telescope* scope,
+  const calin::math::ray::Ray& ray) const
+{
+  // Approximate argument that does not account for extremely inclined rays
+  // that could cross mirror surface twice
+
+  if(ray.y() > scope->s_y_min) {
+    // case 1 : ray is outside of aperture coming towards it (presuably the most
+    // likely case for distant light)
+    if(ray.uy() >= 0) {
+      return false;
+    }
+    const double dist = (scope->s_y_min-ray.y())/ray.uy();
+    const double x_a = ray.x() + dist*ray.ux();
+    const double z_a = ray.z() + dist*ray.uz();
+    const double rho_a = x_a*x_a + z_a*z_a;
+
+    if(ray.y()>scope->s_surface[0]) {
+      return rho_a > scope->s_rho_max;
+    } else {
+      const double x = ray.x();
+      const double z = ray.z();
+      const double rho = x*x + z*z;
+      if(rho > scope->s_rho_max) {
+        return rho_a > scope->s_rho_max;
+      } else {
+        double y_mirror = calin::math::least_squares::polyval(
+          scope->s_surface, scope->s_surface_n, rho);
+        if(ray.y() > y_mirror) {
+          return rho_a > scope->s_rho_max;
+        } else {
+          return rho_a < scope->s_rho_max;
+        }
+      }
+    }
+  } else {
+    return false;
+  }
+  return false;
+}
+
 
 bool SCTRayTracer::trace_ray_to_primary_in_reflector_frame(const Telescope* scope,
   calin::math::ray::Ray& ray, SCTRayTracerResults& results) const
