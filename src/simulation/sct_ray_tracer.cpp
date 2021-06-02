@@ -220,6 +220,24 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
         calin::simulation::vs_optics::VSOObscuration::create_from_proto(obs_param));
     }
 
+    // *************************************************************************
+    // WINDOW
+    // *************************************************************************
+
+    if(scope_params.has_window()) {
+      scope->w_thickness     = scope_params.window().thickness();
+      scope->w_front_y_coord = scope_params.window().front_y_coord();
+      scope->w_outer_radius  = scope_params.window().outer_radius();;
+      scope->w_n             = scope_params.window().refractive_index();
+      scope->w_n_ratio       = scope->w_n/n_;
+    } else {
+      scope->w_thickness     = 0;
+      scope->w_front_y_coord = 0;
+      scope->w_outer_radius  = 0;
+      scope->w_n             = n_;;
+      scope->w_n_ratio       = 1.0;
+    }
+
     scopes_.push_back(scope);
 
     point_telescope(scopes_.size()-1, 0, 0);
@@ -640,6 +658,65 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
     results.obscuration_id = obs_ihit
       + scope->secondary_obscuration.size() + scope->primary_obscuration.size();
     return false;
+  }
+
+  // ***************************************************************************
+  // Refraction at camera window, if defined
+  // ***************************************************************************
+
+  if(scope->w_thickness > 0)
+  {
+    Eigen::Vector3d er;
+    bool good;
+    if(scope->w_outer_radius > 0) {
+      // Spherical window
+      good = ray.propagate_to_y_sphere_1st_interaction_fwd_only(
+        scope->w_outer_radius, scope->w_front_y_coord-2*scope->w_outer_radius, n_);
+      er = ray.position();
+      er.y() -= scope->w_front_y_coord-scope->w_outer_radius;
+      er *= 1.0/scope->w_outer_radius;
+    } else {
+      good = ray.propagate_to_y_plane(-scope->w_front_y_coord, n_);
+      er << 0, 1, 0;
+    }
+
+    if(!good)
+    {
+      results.status = RTS_MISSED_WINDOW;
+      return false;
+    }
+
+    ray.refract_at_surface_in(er, scope->w_n_ratio);
+
+    if(scope->w_outer_radius > 0) {
+      // Spherical window
+      good = ray.propagate_to_y_sphere_1st_interaction_fwd_only(
+        scope->w_outer_radius-scope->w_thickness,
+        scope->w_front_y_coord-2*scope->w_outer_radius-scope->w_thickness,
+        scope->w_n);
+      er = ray.position();
+      er.y() -= scope->w_front_y_coord - scope->w_outer_radius;
+      er *= -1.0/(scope->w_outer_radius-scope->w_thickness);
+    } else {
+      good = ray.propagate_to_y_plane(-scope->w_front_y_coord+scope->w_thickness, scope->w_n);
+      er << 0, -1, 0;
+    }
+
+    if(!good)
+    {
+      // Case of internal surface not encountered - ray exits outer again
+      results.status = RTS_MISSED_WINDOW;
+      return false;
+    }
+
+    good = ray.refract_at_surface_out(er, scope->w_n_ratio);
+
+    if(!good)
+    {
+      // Total internal reflection not supported
+      results.status = RTS_MISSED_WINDOW;
+      return false;
+    }
   }
 
   // ***************************************************************************
@@ -1148,6 +1225,16 @@ calin::simulation::sct_optics::make_sct_telescope(
   for(const auto& obs_param : param.camera_obscuration()) {
     telescope->add_camera_obscuration()->CopyFrom(obs_param);
   }
+
+  // ***************************************************************************
+  // ***************************************************************************
+  //
+  // WINDOW
+  //
+  // ***************************************************************************
+  // ***************************************************************************
+
+  telescope->mutable_window()->CopyFrom(param.window());
 
   return telescope;
 }

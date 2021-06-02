@@ -46,11 +46,12 @@ enum SCTRayTracerStatus
 
   RTS_OBSCURED_BEFORE_CAMERA    = 7,
   RTS_MISSED_CAMERA             = 8,
-  RTS_NO_MODULE                 = 9,
-  RTS_MISSED_MODULE             = 10,
-  RTS_NO_PIXEL                  = 11,
+  RTS_MISSED_WINDOW             = 9,
+  RTS_NO_MODULE                 = 10,
+  RTS_MISSED_MODULE             = 11,
+  RTS_NO_PIXEL                  = 12,
 
-  RTS_COMPLETE                  = 12
+  RTS_COMPLETE                  = 13
 };
 
 struct SCTRayTracerResults
@@ -184,6 +185,12 @@ private:
     // double c_pixel_xc;
     // double c_pixel_yc;
     double c_pixel_dead_space_fraction;
+
+    double w_thickness;
+    double w_front_y_coord;
+    double w_outer_radius;
+    double w_n;
+    double w_n_ratio;
 
     std::vector<calin::simulation::vs_optics::VSOObscuration*> primary_obscuration;
     std::vector<calin::simulation::vs_optics::VSOObscuration*> secondary_obscuration;
