@@ -110,6 +110,8 @@ public:
 
   void pixel_centers(unsigned iscope, Eigen::VectorXd& x_out, Eigen::VectorXd& z_out) const;
 
+  std::vector<std::string> obscuration_identifications(unsigned iscope) const;
+
 private:
   struct Facet
   {

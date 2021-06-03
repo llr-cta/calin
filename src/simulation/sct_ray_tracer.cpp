@@ -905,6 +905,23 @@ void SCTRayTracer::pixel_centers(unsigned iscope, Eigen::VectorXd& x_out, Eigen:
   calin::simulation::sct_optics::pixel_centers(*scopes_[iscope]->param, x_out, z_out);
 }
 
+std::vector<std::string> SCTRayTracer::obscuration_identifications(unsigned iscope) const
+{
+  if(iscope >= scopes_.size()) {
+    throw std::runtime_error("SCTRayTracer::obscuration_identifications: iscope out of range");
+  }
+  std::vector<std::string> identifications;
+  for(const auto* obs : scopes_[iscope]->primary_obscuration) {
+    identifications.push_back("P: " + obs->identification());
+  }
+  for(const auto* obs : scopes_[iscope]->secondary_obscuration) {
+    identifications.push_back("S: " + obs->identification());
+  }
+  for(const auto* obs : scopes_[iscope]->camera_obscuration) {
+    identifications.push_back("C: " + obs->identification());
+  }
+  return identifications;
+}
 
 calin::ix::simulation::sct_optics::SCTTelescope*
 calin::simulation::sct_optics::make_sct_telescope(
