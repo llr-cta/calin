@@ -539,7 +539,7 @@ VSOBoxCollectionObscuration(const std::vector<VSOTubeObscuration*>& tubes,
       min_vol = vol;
     }
   }
-#if 1
+#if 0
   LOG(INFO) << identification_ << " : ntube=" << tubes.size() << "\n  min_vol="
     << min_vol <<  " cm^3, min_area= " << min_area << " cm^2, \n  theta="
     << min_theta << "\n  min_corner=" << min_corner_.transpose() << "\n  max_corner=" << max_corner_.transpose();
