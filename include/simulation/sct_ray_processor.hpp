@@ -144,6 +144,8 @@ public:
 
   uint64_t nhit() { return nhit_; }
 
+  const calin::simulation::sct_optics::SCTRayTracer* raytracer() const { return ray_tracer_; }
+
 private:
   calin::ix::simulation::sct_optics::SCTArray* array_ = nullptr;
   bool adopt_array_ = false;
