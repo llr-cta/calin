@@ -42,6 +42,7 @@
 using namespace calin::math::ray;
 using namespace calin::simulation::vs_optics;
 using calin::math::special::SQR;
+using namespace calin::util::log;
 
 VSOObscuration::~VSOObscuration()
 {
@@ -66,6 +67,8 @@ create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
     obs = VSOAlignedHexagonalAperture::create_from_proto(d.hexagonal_aperture());
   } else if(d.has_tile_aperture()) {
     obs = VSOAlignedTileAperture::create_from_proto(d.tile_aperture());
+  } else if(d.has_box_collection()) {
+    obs = VSOBoxCollectionObscuration::create_from_proto(d.box_collection());
   } else {
     throw std::runtime_error("VSOObscuration::create_from_proto: unknown obscuration type");
     return 0;
@@ -487,4 +490,126 @@ VSOAlignedTileAperture* VSOAlignedTileAperture::create_from_proto(
     d.pitch_x(), d.pitch_z(),
     d.center_x(), d.center_z(),
     d.support_width_x(), d.support_width_z(), d.identification());
+}
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOBoxCollectionObscuration
+//
+// *****************************************************************************
+// *****************************************************************************
+
+VSOBoxCollectionObscuration::
+VSOBoxCollectionObscuration(const std::vector<VSOTubeObscuration*>& tubes,
+    const std::string& identification, bool adopt_obscurations):
+  VSOObscuration(identification),
+  tubes_(tubes), adopt_obscurations_(adopt_obscurations)
+{
+  constexpr double inf = std::numeric_limits<double>::infinity();
+  double min_vol = inf;
+  double min_area;
+  double min_theta;
+  for(double theta = 0; theta<360.0; theta+=1.0) {
+    double st = std::sin(theta/180.0*M_PI);
+    double ct = std::cos(theta/180.0*M_PI);
+    Eigen::Vector3d min_corner(inf,inf,inf);
+    Eigen::Vector3d max_corner(-inf,-inf,-inf);
+    for(const auto* tube : tubes) {
+      Eigen::Vector3d x1(ct*tube->end1_pos().x()+st*tube->end1_pos().z(),
+        tube->end1_pos().y(), ct*tube->end1_pos().z()-st*tube->end1_pos().x());
+      Eigen::Vector3d x2(ct*tube->end2_pos().x()+st*tube->end2_pos().z(),
+        tube->end2_pos().y(), ct*tube->end2_pos().z()-st*tube->end2_pos().x());
+      min_corner.x() = std::min(min_corner.x(), std::min(x1.x(),x2.x())-tube->radius());
+      max_corner.x() = std::max(max_corner.x(), std::max(x1.x(),x2.x())+tube->radius());
+      min_corner.y() = std::min(min_corner.y(), std::min(x1.y(),x2.y())-tube->radius());
+      max_corner.y() = std::max(max_corner.y(), std::max(x1.y(),x2.y())+tube->radius());
+      min_corner.z() = std::min(min_corner.z(), std::min(x1.z(),x2.z())-tube->radius());
+      max_corner.z() = std::max(max_corner.z(), std::max(x1.z(),x2.z())+tube->radius());
+    }
+    Eigen::Vector3d dx = max_corner-min_corner;
+    double vol = dx.x()*dx.y()*dx.z();
+    if(vol < min_vol) {
+      min_corner_ = min_corner;
+      max_corner_ = max_corner;
+      crot_ = ct;
+      srot_ = st;
+      min_theta = theta;
+      min_area = dx.x()*dx.z();
+      min_vol = vol;
+    }
+  }
+#if 1
+  LOG(INFO) << identification_ << " : ntube=" << tubes.size() << "\n  min_vol="
+    << min_vol <<  " cm^3, min_area= " << min_area << " cm^2, \n  theta="
+    << min_theta << "\n  min_corner=" << min_corner_.transpose() << "\n  max_corner=" << max_corner_.transpose();
+#endif
+}
+
+VSOBoxCollectionObscuration::~VSOBoxCollectionObscuration()
+{
+  if(adopt_obscurations_) {
+    for(auto* obs : tubes_)delete obs;
+  }
+}
+
+bool VSOBoxCollectionObscuration::doesObscure(const calin::math::ray::Ray& p_in,
+  calin::math::ray::Ray& p_out, double n) const
+{
+  Eigen::Vector3d pos(crot_*p_in.x()+srot_*p_in.z(), p_in.y(), crot_*p_in.z()-srot_*p_in.x());
+  Eigen::Vector3d dir(crot_*p_in.ux()+srot_*p_in.uz(), p_in.uy(), crot_*p_in.uz()-srot_*p_in.ux());
+  bool hits_box = calin::math::geometry::box_has_future_intersection(
+    min_corner_, max_corner_, pos, dir);
+  if(not hits_box) {
+    // fast exit if outer box not hit
+    return false;
+  }
+
+  bool hits_tube = false;
+  double obs_time  = std::numeric_limits<double>::infinity();
+  for(const auto* tube : tubes_) {
+    math::ray::Ray ray_out;
+    if(tube->doesObscure(p_in, ray_out, n)) {
+      hits_tube = true;
+      if(ray_out.ct() < obs_time) {
+        p_out = ray_out;
+        obs_time = ray_out.ct();
+      }
+    }
+  }
+  return hits_tube;
+}
+
+VSOBoxCollectionObscuration* VSOBoxCollectionObscuration::clone() const
+{
+  std::vector<VSOTubeObscuration*> new_tubes;
+  for(auto* obs : tubes_) {
+    new_tubes.push_back(obs->clone());
+  }
+  return new VSOBoxCollectionObscuration(new_tubes, identification_, true);
+}
+
+calin::ix::simulation::vs_optics::VSOObscurationData*
+VSOBoxCollectionObscuration::dump_as_proto(
+  calin::ix::simulation::vs_optics::VSOObscurationData* d) const
+{
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
+  auto* dd = d->mutable_box_collection();
+  for(auto* obs : tubes_) {
+    calin::ix::simulation::vs_optics::VSOObscurationData obs_data;
+    obs->dump_as_proto(&obs_data);
+    dd->CopyFrom(obs_data.tube());
+  }
+  dd->set_identification(identification_);
+  return d;
+}
+
+VSOBoxCollectionObscuration* VSOBoxCollectionObscuration::create_from_proto(
+    const ix::simulation::vs_optics::VSOBoxCollectionObscurationData& d)
+{
+  std::vector<VSOTubeObscuration*> new_tubes;
+  for(const auto& obs_data : d.tube_obscuration()) {
+    new_tubes.push_back(VSOTubeObscuration::create_from_proto(obs_data));
+  }
+  return new VSOBoxCollectionObscuration(new_tubes, d.identification(), true);
 }

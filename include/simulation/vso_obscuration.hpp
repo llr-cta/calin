@@ -380,4 +380,35 @@ private:
   bool                    inverted_;
 };
 
+class VSOBoxCollectionObscuration: public VSOObscuration
+{
+public:
+  VSOBoxCollectionObscuration(const std::vector<VSOTubeObscuration*>& tubes,
+      const std::string& identification = "", bool adopt_obscurations = false);
+
+  virtual ~VSOBoxCollectionObscuration();
+  bool doesObscure(const calin::math::ray::Ray& p_in,
+                  calin::math::ray::Ray& p_out, double n) const override;
+  VSOBoxCollectionObscuration* clone() const override;
+
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
+  static VSOBoxCollectionObscuration* create_from_proto(
+    const ix::simulation::vs_optics::VSOBoxCollectionObscurationData& d);
+
+private:
+  std::vector<VSOTubeObscuration*> tubes_;
+  bool                    adopt_obscurations_;
+  Eigen::Vector3d         min_corner_;
+  Eigen::Vector3d         max_corner_;
+  double                  crot_ = 1.0;
+  double                  srot_ = 0.0;
+};
+
 } } } // namespace calin::simulation::vs_optics

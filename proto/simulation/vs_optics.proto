@@ -177,7 +177,7 @@ message VSOAlignedCircularApertureData {
 }
 
 message VSOBoxCollectionObscurationData {
-  repeated VSOTubeObscurationData tube_obsurations         = 1
+  repeated VSOTubeObscurationData tube_obscuration          = 1
     [(CFO).desc = "Tube obscurations that are in this box." ];
   string identification                                    = 100 [
     (CFO).desc = "Identifying name of obscuration, for convenience." ];
