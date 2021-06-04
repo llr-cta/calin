@@ -42,6 +42,24 @@ public:
   virtual void finish_processing();
 };
 
+class SCTRecordingTracedRayVisitor: public SCTTracedRayVisitor
+{
+public:
+  SCTRecordingTracedRayVisitor(): SCTTracedRayVisitor() { /* nothing to see here */}
+  virtual ~SCTRecordingTracedRayVisitor();
+  virtual void start_processing() override;
+  virtual void process_traced_ray(unsigned scope_id,
+    const calin::simulation::sct_optics::SCTRayTracerResults& trace, double pe_weight) override;
+  virtual void finish_processing() override;
+  unsigned num_events() const { return results_.size(); }
+  calin::simulation::sct_optics::SCTRayTracerResults results(unsigned ievent,
+    unsigned& scope_id_out, double& pe_weight_out) const;
+private:
+  std::vector<unsigned> scope_id_;
+  std::vector<calin::simulation::sct_optics::SCTRayTracerResults> results_;
+  std::vector<double> pe_weight_;
+};
+
 class SCTMultiTracedRayVisitor: public SCTTracedRayVisitor
 {
 public:
@@ -52,6 +70,8 @@ public:
     const calin::simulation::sct_optics::SCTRayTracerResults& trace, double pe_weight) override;
   void finish_processing() override;
   void add_visitor(SCTTracedRayVisitor* visitor, bool adopt_visitor);
+  void add_pe_processor(calin::simulation::pe_processor::PEProcessor* pe_processor,
+    bool adopt_pe_processor);
 private:
   std::vector<SCTTracedRayVisitor*> visitors_;
   std::vector<SCTTracedRayVisitor*> adopted_visitors_;

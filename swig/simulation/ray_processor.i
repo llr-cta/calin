@@ -56,6 +56,9 @@
   std::vector<calin::simulation::ray_processor::RayProcessorDetectorSphere>;
 
 %include "simulation/vso_ray_processor.hpp"
+
+%apply unsigned &OUTPUT { unsigned& scope_id_out };
+%apply double &OUTPUT { double& pe_weight_out };
 %include "simulation/sct_ray_processor.hpp"
 
 %import "math/nspace.i"

@@ -50,6 +50,43 @@ void SCTTracedRayVisitor::finish_processing()
   // nothing to see here
 }
 
+SCTRecordingTracedRayVisitor::~SCTRecordingTracedRayVisitor()
+{
+  // nothing to see here
+}
+
+void SCTRecordingTracedRayVisitor::start_processing()
+{
+  scope_id_.clear();
+  results_.clear();
+  pe_weight_.clear();
+}
+
+void SCTRecordingTracedRayVisitor::process_traced_ray(unsigned scope_id,
+  const calin::simulation::sct_optics::SCTRayTracerResults& trace, double pe_weight)
+{
+  scope_id_.push_back(scope_id);
+  results_.push_back(trace);
+  pe_weight_.push_back(pe_weight);
+}
+
+void SCTRecordingTracedRayVisitor::finish_processing()
+{
+  // nothing to see here
+}
+
+calin::simulation::sct_optics::SCTRayTracerResults
+SCTRecordingTracedRayVisitor::results(unsigned ievent, unsigned& scope_id_out,
+  double& pe_weight_out) const
+{
+  if(ievent >= results_.size()) {
+    throw std::out_of_range("SCTRecordingTracedRayVisitor::results: ievent out of range");
+  }
+  scope_id_out = scope_id_[ievent];
+  pe_weight_out = pe_weight_[ievent];
+  return results_[ievent];
+}
+
 SCTTracedRayVisitor2PEProcessorAdapter::
 SCTTracedRayVisitor2PEProcessorAdapter(
     calin::simulation::pe_processor::PEProcessor* visitor, bool use_fp_position,
@@ -131,6 +168,13 @@ void SCTMultiTracedRayVisitor::add_visitor(SCTTracedRayVisitor* visitor,
 {
   visitors_.push_back(visitor);
   if(adopt_visitor)adopted_visitors_.push_back(visitor);
+}
+
+void SCTMultiTracedRayVisitor::add_pe_processor(
+  calin::simulation::pe_processor::PEProcessor* pe_processor, bool adopt_pe_processor)
+{
+  add_visitor(new SCTTracedRayVisitor2PEProcessorAdapter(pe_processor, adopt_pe_processor),
+    /* adopt_visitor = */ true);
 }
 
 SCTRayProcessor::SCTRayProcessor(calin::ix::simulation::sct_optics::SCTArray* array,
