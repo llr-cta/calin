@@ -196,6 +196,7 @@ private:
     double w_n;
     double w_n_ratio;
 
+    bool enable_secondary_obscuration_model;
     std::vector<calin::simulation::vs_optics::VSOObscuration*> primary_obscuration;
     std::vector<calin::simulation::vs_optics::VSOObscuration*> secondary_obscuration;
     std::vector<calin::simulation::vs_optics::VSOObscuration*> camera_obscuration;

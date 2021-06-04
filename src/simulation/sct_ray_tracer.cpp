@@ -209,6 +209,8 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     // OBSCURATIONS
     // *************************************************************************
 
+    scope->enable_secondary_obscuration_model =
+      scope_params.enable_secondary_obscuration_model();
     for(const auto& obs_param : scope_params.primary_obscuration()) {
       scope->primary_obscuration.push_back(
         calin::simulation::vs_optics::VSOObscuration::create_from_proto(obs_param));
@@ -350,26 +352,27 @@ bool SCTRayTracer::ray_obscured_by_secondary(const Telescope* scope,
     const double rho_a = x_a*x_a + z_a*z_a;
 
     if(ray.y()>scope->s_surface[0]) {
-      return rho_a > scope->s_rho_max;
+      return rho_a < scope->s_rho_max;
     } else {
       const double x = ray.x();
       const double z = ray.z();
       const double rho = x*x + z*z;
       if(rho > scope->s_rho_max) {
-        return rho_a > scope->s_rho_max;
+        return rho_a < scope->s_rho_max;
       } else {
         double y_mirror = calin::math::least_squares::polyval(
           scope->s_surface, scope->s_surface_n, rho);
         if(ray.y() > y_mirror) {
-          return rho_a > scope->s_rho_max;
-        } else {
           return rho_a < scope->s_rho_max;
+        } else {
+          return rho_a > scope->s_rho_max;
         }
       }
     }
   } else {
     return false;
   }
+  // never reaches here
   return false;
 }
 
@@ -381,6 +384,14 @@ bool SCTRayTracer::trace_ray_to_primary_in_reflector_frame(const Telescope* scop
   // Ray starts (and ends) in nominal telescope reflector frame
   // ***************************************************************************
 
+  if(scope->enable_secondary_obscuration_model) {
+    if(ray_obscured_by_secondary(scope, ray)) {
+      results.status = RTS_OBSCURED_BEFORE_PRIMARY;
+      results.obscuration_id = 0;
+      return false;
+    }
+  }
+
   // Test for obscuration of incoming ray
   unsigned nobs = scope->primary_obscuration.size();
   unsigned obs_ihit  = nobs;
@@ -391,7 +402,7 @@ bool SCTRayTracer::trace_ray_to_primary_in_reflector_frame(const Telescope* scop
     if(scope->primary_obscuration[iobs]->doesObscure(ray, ray_out, n_))
     {
       if((obs_ihit==nobs)||(ray_out.ct()<obs_time)) {
-        obs_ihit = iobs;
+        obs_ihit = iobs + (scope->enable_secondary_obscuration_model ? 1:0);
         obs_time = ray_out.ct();
       }
     }
@@ -545,7 +556,8 @@ bool SCTRayTracer::trace_ray_to_secondary_in_reflector_frame(const Telescope* sc
   if(obs_ihit!=nobs)
   {
     results.status = RTS_OBSCURED_BEFORE_SECONDARY;
-    results.obscuration_id = obs_ihit + scope->primary_obscuration.size();
+    results.obscuration_id = obs_ihit + scope->primary_obscuration.size() +
+      (scope->enable_secondary_obscuration_model ? 1:0);
     return false;
   }
 
@@ -700,7 +712,8 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   {
     results.status = RTS_OBSCURED_BEFORE_CAMERA;
     results.obscuration_id = obs_ihit
-      + scope->secondary_obscuration.size() + scope->primary_obscuration.size();
+      + scope->secondary_obscuration.size() + scope->primary_obscuration.size() +
+        (scope->enable_secondary_obscuration_model ? 1:0);
     return false;
   }
 
@@ -911,6 +924,9 @@ std::vector<std::string> SCTRayTracer::obscuration_identifications(unsigned isco
     throw std::runtime_error("SCTRayTracer::obscuration_identifications: iscope out of range");
   }
   std::vector<std::string> identifications;
+  if(scopes_[iscope]->enable_secondary_obscuration_model) {
+    identifications.push_back("P: secondary mirror");
+  }
   for(const auto* obs : scopes_[iscope]->primary_obscuration) {
     identifications.push_back("P: " + obs->identification());
   }
@@ -1277,6 +1293,8 @@ calin::simulation::sct_optics::make_sct_telescope(
   // ***************************************************************************
   // ***************************************************************************
 
+  telescope->set_enable_secondary_obscuration_model(
+    param.enable_secondary_obscuration_model());
   for(const auto& obs_param : param.primary_obscuration()) {
     telescope->add_primary_obscuration()->CopyFrom(obs_param);
   }
