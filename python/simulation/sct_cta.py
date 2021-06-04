@@ -310,4 +310,18 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
             # Post primary rays : secondary bracing short
             new_s_tube().CopyFrom(tube)
 
+            if(obscuration_model >= 3):
+                # Incoming rays : camera support main beam
+                x1 = numpy.dot(m, x0 + numpy.asarray([0, 628.32, -14.45-412.34]))
+                x2 = numpy.dot(m, numpy.asarray([0, -47.24, 153.416]))
+                tube = sct.add_primary_obscuration().mutable_tube() # new_p_tube()
+                calin.math.vector3d_util.dump_as_proto(x1, tube.mutable_end1_pos())
+                calin.math.vector3d_util.dump_as_proto(x2, tube.mutable_end2_pos())
+                tube.set_diameter(13.97)
+                tube.set_identification("Camera support main beam %c"%(65+itheta))
+
+                # Post primary rays : secondary truss beam (2)
+                #new_s_tube().CopyFrom(tube)
+                sct.add_secondary_obscuration().mutable_tube().CopyFrom(tube)
+
     return sct
