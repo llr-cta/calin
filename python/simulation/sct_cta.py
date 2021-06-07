@@ -148,8 +148,9 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
     s_disk_r = rsec2o
     s_disk_z = sct.secondary_distance() + numpy.polyval(numpy.flipud(ps), s_disk_r**2)
 
-    s_baffle_r = 284.48
-    s_baffle_zin = 780.5
+    s_baffle_rin  = 284.48
+    s_baffle_rout = 287.12
+    s_baffle_zin  = 780.5
     s_baffle_zout = s_baffle_zin - 100.33
 
     p_baffle_r = 497.84
@@ -191,13 +192,25 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
         obs = sct.add_primary_obscuration().mutable_tube()
         obs.mutable_end1_pos().set_y(s_baffle_zin)
         obs.mutable_end2_pos().set_y(s_baffle_zout)
-        obs.set_diameter(s_baffle_r * 2)
+        obs.set_diameter(s_baffle_rin * 2)
         obs.set_identification("Secondary baffle")
+
+        obs = sct.add_primary_obscuration().mutable_annulus()
+        obs.center_pos().set_y(s_baffle_zin)
+        obs.set_inner_diameter(s_baffle_rin * 2)
+        obs.set_outer_diameter(s_baffle_rout * 2)
+        obs.set_identification("Secondary baffle inner tube")
+
+        obs = sct.add_primary_obscuration().mutable_annulus()
+        obs.center_pos().set_y(s_baffle_zout)
+        obs.set_inner_diameter(s_baffle_rin * 2)
+        obs.set_outer_diameter(s_baffle_rout * 2)
+        obs.set_identification("Secondary baffle outer tube")
 
         # Post-primary rays : circular aperture to approximate secondary baffle
         obs = sct.add_secondary_obscuration().mutable_circular_aperture()
         obs.mutable_center_pos().set_y(s_baffle_zout)
-        obs.set_diameter(s_baffle_r * 2)
+        obs.set_diameter(s_baffle_rin * 2)
         obs.set_identification("Secondary baffle")
 
         r0 = 510.77   # p_baffle_r
@@ -273,8 +286,8 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
 
             # Incoming rays : secondary bracing short
             # Uncomment below line if brace extention is desired
-            # x1 = numpy.dot(m, x0 + numpy.asarray([0, 628.32-312.42, 323.06-412.34-203.53]))
-            x1 = numpy.dot(m, x0 + numpy.asarray([0, 628.32-312.42, 323.06-412.34-265.43]))
+            x1 = numpy.dot(m, x0 + numpy.asarray([0, 628.32-312.42, 323.06-412.34-203.53]))
+            # x1 = numpy.dot(m, x0 + numpy.asarray([0, 628.32-312.42, 323.06-412.34-265.43]))
             x2 = numpy.dot(m, x0 + numpy.asarray([0, 628.32-312.42, 323.06-412.34]))
             tube = new_p_tube()
             calin.math.vector3d_util.dump_as_proto(x1, tube.mutable_end1_pos())
@@ -287,16 +300,16 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
 
             # Uncomment entries below if brace extention is desired
             # Incoming rays : secondary bracing short (extention)
-            # x1 = numpy.dot(m, x0 + numpy.asarray([0, 628.32-312.42, 323.06-412.34-265.43]))
-            # x2 = numpy.dot(m, x0 + numpy.asarray([0, 628.32-312.42, 323.06-412.34-201.53]))
-            # obs = sct.add_primary_obscuration()
-            # calin.math.vector3d_util.dump_as_proto(x1, obs.mutable_tube().mutable_end1_pos())
-            # calin.math.vector3d_util.dump_as_proto(x2, obs.mutable_tube().mutable_end2_pos())
-            # obs.mutable_tube().set_diameter(13.97)
-            # obs.set_identification("Secondary bracing %c-Se"%(65+itheta))
-            #
-            # # Post primary rays : secondary bracing short (extention)
-            # sct.add_secondary_obscuration().CopyFrom(obs)
+            x1 = numpy.dot(m, x0 + numpy.asarray([0, 628.32-312.42, 323.06-412.34-265.43]))
+            x2 = numpy.dot(m, x0 + numpy.asarray([0, 628.32-312.42, 323.06-412.34-201.53]))
+            tube = new_p_tube()
+            calin.math.vector3d_util.dump_as_proto(x1, tube.mutable_end1_pos())
+            calin.math.vector3d_util.dump_as_proto(x2, tube.mutable_end2_pos())
+            tube.set_diameter(13.97)
+            tube.set_identification("Secondary bracing %c-Se"%(65+itheta))
+
+            # Post primary rays : secondary bracing short (extention)
+            new_s_tube().CopyFrom(tube)
 
             # Incoming rays : secondary bracing long
             x1 = numpy.dot(m, numpy.asarray([0, -47.24, 153.416]))
@@ -323,5 +336,26 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
                 # Post primary rays : secondary truss beam (2)
                 #new_s_tube().CopyFrom(tube)
                 sct.add_secondary_obscuration().mutable_tube().CopyFrom(tube)
+
+        # Post primary rays : camera mounting frame
+        obs = sct.add_secondary_obscuration().mutable_octagonal_box()
+        obs.mutable_center().set_y(627.38 + 0.635)
+        obs.set_flat_to_flat_width(153.67)
+        obs.set_height(15.24)
+        obs.set_identification("Camera mounting frame")
+
+        # Incoming rays : camera mounting frame
+        sct.add_primary_obscuration().mutable_octagonal_box().CopyFrom(obs)
+
+        # Post primary rays : camera mounting frame
+        obs = sct.add_secondary_obscuration().mutable_octagonal_box()
+        obs.mutable_center().set_y(627.38)
+        obs.set_flat_to_flat_width(119.45)
+        obs.set_height(105.74)
+        obs.set_identification("Camera")
+
+        # Incoming rays : camera mounting frame
+        sct.add_primary_obscuration().mutable_octagonal_box().CopyFrom(obs)
+
 
     return sct

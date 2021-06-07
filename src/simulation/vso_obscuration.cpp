@@ -71,6 +71,8 @@ create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
     obs = VSOBoxCollectionObscuration::create_from_proto(d.box_collection());
   } else if(d.has_octagonal_box()) {
     obs = VSOAlignedOctBoxObscuration::create_from_proto(d.octagonal_box());
+  } else if(d.has_annulus()) {
+    obs = VSOAlignedAnnulus::create_from_proto(d.annulus());
   } else {
     throw std::runtime_error("VSOObscuration::create_from_proto: unknown obscuration type");
     return 0;
@@ -547,6 +549,59 @@ VSOAlignedTileAperture* VSOAlignedTileAperture::create_from_proto(
     d.pitch_x(), d.pitch_z(),
     d.center_x(), d.center_z(),
     d.support_width_x(), d.support_width_z(), d.identification());
+}
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOAlignedAnnulus
+//
+// *****************************************************************************
+// *****************************************************************************
+
+VSOAlignedAnnulus::~VSOAlignedAnnulus()
+{
+  // nothing to see here
+}
+
+bool VSOAlignedAnnulus::
+doesObscure(const calin::math::ray::Ray& r_in, calin::math::ray::Ray& r_out, double n) const
+{
+  r_out = r_in;
+  if(r_out.propagate_to_y_plane(-center_.y(), false, n))
+  {
+    const double D2e =
+      SQR(r_out.x()-center_.x())+SQR(r_out.z()-center_.z());
+    return (D2e>=inner_radius_sq_)and(D2e<=outer_radius_sq_);
+  }
+
+  return false;
+}
+
+VSOAlignedAnnulus* VSOAlignedAnnulus::clone() const
+{
+  return new VSOAlignedAnnulus(center_,2*sqrt(outer_radius_sq_),2*sqrt(inner_radius_sq_));
+}
+
+calin::ix::simulation::vs_optics::VSOObscurationData*
+VSOAlignedAnnulus::dump_as_proto(
+  calin::ix::simulation::vs_optics::VSOObscurationData* d) const
+{
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
+  auto* dd = d->mutable_annulus();
+  calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center_pos());
+  dd->set_outer_diameter(2*sqrt(outer_radius_sq_));
+  dd->set_inner_diameter(2*sqrt(inner_radius_sq_));
+  dd->set_identification(identification_);
+  return d;
+}
+
+VSOAlignedAnnulus* VSOAlignedAnnulus::create_from_proto(
+  const calin::ix::simulation::vs_optics::VSOAlignedAnnulusData& d)
+{
+  return new VSOAlignedAnnulus(
+    calin::math::vector3d_util::from_proto(d.center_pos()),d.outer_diameter(),d.inner_diameter(),
+    d.identification());
 }
 
 // *****************************************************************************

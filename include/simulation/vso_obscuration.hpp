@@ -418,6 +418,55 @@ private:
   bool                    inverted_;
 };
 
+class VSOAlignedAnnulus: public VSOObscuration
+{
+public:
+  VSOAlignedAnnulus(double center_y, double outer_diameter, double inner_diameter,
+      const std::string& identification = ""):
+    VSOObscuration(identification), center_(0,center_y,0),
+    outer_radius_sq_(0.25*outer_diameter*outer_diameter),
+    inner_radius_sq_(0.25*inner_diameter*inner_diameter)
+  {
+   // nothing to see here
+  }
+
+  VSOAlignedAnnulus(const Eigen::Vector3d& center,
+      double outer_diameter, double inner_diameter,
+      const std::string& identification = ""):
+    VSOObscuration(identification), center_(center),
+    outer_radius_sq_(0.25*outer_diameter*outer_diameter),
+    inner_radius_sq_(0.25*inner_diameter*inner_diameter)
+  {
+   // nothing to see here
+  }
+
+  virtual ~VSOAlignedAnnulus();
+  bool doesObscure(const calin::math::ray::Ray& p_in,
+                  calin::math::ray::Ray& p_out, double n) const override;
+  VSOAlignedAnnulus* clone() const override;
+
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
+  static VSOAlignedAnnulus* create_from_proto(
+    const ix::simulation::vs_optics::VSOAlignedAnnulusData& d);
+
+  const Eigen::Vector3d& center() const { return center_; }
+  double outer_radius_sq() const { return outer_radius_sq_; }
+  double inner_radius_sq() const { return inner_radius_sq_; }
+
+private:
+  Eigen::Vector3d         center_;
+  double                  outer_radius_sq_;
+  double                  inner_radius_sq_;
+};
+
+
 class VSOBoxCollectionObscuration: public VSOObscuration
 {
 public:
