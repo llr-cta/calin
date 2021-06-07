@@ -193,6 +193,44 @@ class VSOAlignedBoxObscuration: public VSOObscuration
   Eigen::Vector3d         max_corner_;
 };
 
+class VSOAlignedOctBoxObscuration: public VSOObscuration
+{
+ public:
+  VSOAlignedOctBoxObscuration(const Eigen::Vector3d& center,
+                              double flat_to_flat_width, double height,
+                              const std::string& identification = ""):
+    VSOObscuration(identification), center_(center),
+    flat_to_flat_width_(flat_to_flat_width), height_(height)
+  {
+    // nothing to see here
+  }
+
+  virtual ~VSOAlignedOctBoxObscuration();
+  bool doesObscure(const calin::math::ray::Ray& r_in,
+                   calin::math::ray::Ray& r_out, double n) const override;
+  VSOAlignedOctBoxObscuration* clone() const override;
+
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
+  static VSOAlignedOctBoxObscuration* create_from_proto(
+    const ix::simulation::vs_optics::VSOAlignedOctBoxObscurationData& d);
+
+  const Eigen::Vector3d& center() const { return center_; }
+  double flat_to_flat_width() const { return flat_to_flat_width_; }
+  double height() const { return height_; }
+
+ private:
+  Eigen::Vector3d         center_;
+  double                  flat_to_flat_width_;
+  double                  height_;
+};
+
 class VSOAlignedRectangularAperture: public VSOObscuration
 {
 public:

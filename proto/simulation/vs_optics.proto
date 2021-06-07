@@ -97,6 +97,20 @@ message VSOTubeObscurationData {
    (CFO).desc = "Identifying name of obscuration, for convenience." ];
 };
 
+message VSOAlignedOctBoxObscurationData {
+  common_types.Vector3D center                             = 1
+    [(CFO).desc = "Center of the octoganal box.",
+     (CFO).units = "cm" ];
+  double flat_to_flat_width                                = 2
+    [(CFO).desc = "Flat-to-flat width of the box in the X-Z plane.",
+     (CFO).units = "cm" ];
+  double height                                            = 3
+    [(CFO).desc = "Height of the box in the Y direction.",
+     (CFO).units = "cm" ];
+  string identification                                    = 100 [
+   (CFO).desc = "Identifying name of obscuration, for convenience." ];
+};
+
 message VSOAlignedBoxObscurationData {
   common_types.Vector3D max_corner                         = 1
     [(CFO).desc = "Corner of box with max values of x,y,z.",
@@ -176,6 +190,20 @@ message VSOAlignedCircularApertureData {
    (CFO).desc = "Identifying name of obscuration, for convenience." ];
 }
 
+message VSOAlignedAnnulusData {
+  common_types.Vector3D center_pos                         = 1
+    [(CFO).desc = "Position of the center of the annulus in reflector frame. ",
+     (CFO).units = "cm" ];
+  double outer_diameter                                    = 2
+    [(CFO).desc = "Outer diameter of the annulus.",
+     (CFO).units = "cm"];
+  double inner_diameter                                    = 3
+    [(CFO).desc = "Inner diameter of the annulus",
+     (CFO).units = "cm"];
+  string identification                                    = 100 [
+   (CFO).desc = "Identifying name of obscuration, for convenience." ];
+}
+
 message VSOBoxCollectionObscurationData {
   repeated VSOTubeObscurationData tube_obscuration          = 1
     [(CFO).desc = "Tube obscurations that are in this box." ];
@@ -193,8 +221,11 @@ message VSOObscurationData {
     VSOAlignedHexagonalApertureData hexagonal_aperture     = 6;
     VSOAlignedTileApertureData tile_aperture               = 7;
     VSOBoxCollectionObscurationData box_collection         = 8;
+    VSOAlignedOctBoxObscurationData octagonal_box          = 9;
+    VSOAlignedAnnulusData annulus                          = 10;
   }
 };
+
 
 message VSOTelescopeData {
   uint32 id                                                = 1

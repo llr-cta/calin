@@ -69,6 +69,8 @@ create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
     obs = VSOAlignedTileAperture::create_from_proto(d.tile_aperture());
   } else if(d.has_box_collection()) {
     obs = VSOBoxCollectionObscuration::create_from_proto(d.box_collection());
+  } else if(d.has_octagonal_box()) {
+    obs = VSOAlignedOctBoxObscuration::create_from_proto(d.octagonal_box());
   } else {
     throw std::runtime_error("VSOObscuration::create_from_proto: unknown obscuration type");
     return 0;
@@ -234,6 +236,61 @@ VSOAlignedBoxObscuration* VSOAlignedBoxObscuration::create_from_proto(
   return new VSOAlignedBoxObscuration(
     calin::math::vector3d_util::from_proto(d.max_corner()),
     calin::math::vector3d_util::from_proto(d.min_corner()),
+    d.identification());
+}
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOAlignedOctBoxObscuration
+//
+// *****************************************************************************
+// *****************************************************************************
+
+VSOAlignedOctBoxObscuration::~VSOAlignedOctBoxObscuration()
+{
+  // nothing to see here
+}
+
+bool VSOAlignedOctBoxObscuration::
+doesObscure(const Ray& r_in, Ray& r_out, double n) const
+{
+  double tmin;
+  double tmax;
+  if(calin::math::geometry::oct_box_has_future_intersection(tmin, tmax,
+    center_, flat_to_flat_width_, height_, r_in.position(), r_in.direction()))
+  {
+    r_out = r_in;
+    if(tmin > 0)r_out.propagate_dist(tmin, n);
+    return true;
+  }
+
+  return false;
+}
+
+VSOAlignedOctBoxObscuration* VSOAlignedOctBoxObscuration::clone() const
+{
+  return new VSOAlignedOctBoxObscuration(*this);
+}
+
+calin::ix::simulation::vs_optics::VSOObscurationData*
+VSOAlignedOctBoxObscuration::dump_as_proto(
+  calin::ix::simulation::vs_optics::VSOObscurationData* d) const
+{
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
+  auto* dd = d->mutable_octagonal_box();
+  calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center());
+  dd->set_flat_to_flat_width(flat_to_flat_width_);
+  dd->set_height(height_);
+  dd->set_identification(identification_);
+  return d;
+}
+
+VSOAlignedOctBoxObscuration* VSOAlignedOctBoxObscuration::create_from_proto(
+  const ix::simulation::vs_optics::VSOAlignedOctBoxObscurationData& d)
+{
+  return new VSOAlignedOctBoxObscuration(
+    calin::math::vector3d_util::from_proto(d.center()), d.flat_to_flat_width(), d.height(),
     d.identification());
 }
 
