@@ -925,7 +925,7 @@ std::vector<std::string> SCTRayTracer::obscuration_identifications(unsigned isco
   }
   std::vector<std::string> identifications;
   if(scopes_[iscope]->enable_secondary_obscuration_model) {
-    identifications.push_back("P: secondary mirror");
+    identifications.push_back("P: Secondary mirror");
   }
   for(const auto* obs : scopes_[iscope]->primary_obscuration) {
     identifications.push_back("P: " + obs->identification());
