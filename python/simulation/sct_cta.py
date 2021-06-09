@@ -211,7 +211,7 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
         obs = sct.add_secondary_obscuration().mutable_circular_aperture()
         obs.mutable_center_pos().set_y(s_baffle_zout)
         obs.set_diameter(s_baffle_rin * 2)
-        obs.set_identification("Secondary baffle")
+        obs.set_identification("Secondary baffle (aperture)")
 
         r0 = 510.77   # p_baffle_r
         z0 = -0.94    # p_baffle_zin
@@ -312,7 +312,7 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
             new_s_tube().CopyFrom(tube)
 
             # Incoming rays : secondary bracing long
-            x1 = numpy.dot(m, numpy.asarray([0, -47.24, 153.416]))
+            x1 = numpy.dot(m, numpy.asarray([0, -47.24, 171.20]))
             x2 = numpy.dot(m, x0 + numpy.asarray([0, 628.32-312.42, 323.06-412.34]))
             tube = new_p_tube()
             calin.math.vector3d_util.dump_as_proto(x1, tube.mutable_end1_pos())
@@ -324,18 +324,27 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
             new_s_tube().CopyFrom(tube)
 
             if(obscuration_model >= 3):
-                # Incoming rays : camera support main beam
-                x1 = numpy.dot(m, x0 + numpy.asarray([0, 628.32, -14.45-412.34]))
-                x2 = numpy.dot(m, numpy.asarray([0, -47.24, 153.416]))
-                tube = sct.add_primary_obscuration().mutable_tube() # new_p_tube()
+                # Post primary rays : camera support main beam (does not obcure incoming rays)
+                x1 = numpy.dot(m, numpy.asarray([0, 627.38,  84.38]))
+                x2 = numpy.dot(m, numpy.asarray([0, -47.24, 171.20]))
+                tube = new_s_tube()
                 calin.math.vector3d_util.dump_as_proto(x1, tube.mutable_end1_pos())
                 calin.math.vector3d_util.dump_as_proto(x2, tube.mutable_end2_pos())
                 tube.set_diameter(13.97)
                 tube.set_identification("Camera support main beam %c"%(65+itheta))
 
-                # Post primary rays : secondary truss beam (2)
-                #new_s_tube().CopyFrom(tube)
-                sct.add_secondary_obscuration().mutable_tube().CopyFrom(tube)
+        if(obscuration_model >= 3):
+            for itheta, theta in enumerate([45, -45]):
+                # Post primary rays : camera support main beam 4 & 5 (does not obcure incoming rays)
+                m = scipy.spatial.transform.Rotation.from_rotvec(
+                    [0,theta/180*numpy.pi,0]).as_matrix()
+                x1 = numpy.dot(m, numpy.asarray([0, 627.38,  84.38]))
+                x2 = numpy.dot(m, numpy.asarray([0, -47.24, 171.20]))
+                tube = sct.add_secondary_obscuration().mutable_tube()
+                calin.math.vector3d_util.dump_as_proto(x1, tube.mutable_end1_pos())
+                calin.math.vector3d_util.dump_as_proto(x2, tube.mutable_end2_pos())
+                tube.set_diameter(13.97)
+                tube.set_identification("Camera support main beam %c"%(68+itheta))
 
         # Post primary rays : camera mounting frame
         obs = sct.add_secondary_obscuration().mutable_octagonal_box()
@@ -344,18 +353,11 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
         obs.set_height(15.24)
         obs.set_identification("Camera mounting frame")
 
-        # Incoming rays : camera mounting frame
-        sct.add_primary_obscuration().mutable_octagonal_box().CopyFrom(obs)
-
-        # Post primary rays : camera mounting frame
+        # Post primary rays : camera
         obs = sct.add_secondary_obscuration().mutable_octagonal_box()
         obs.mutable_center().set_y(627.38)
         obs.set_flat_to_flat_width(119.45)
         obs.set_height(105.74)
         obs.set_identification("Camera")
-
-        # Incoming rays : camera mounting frame
-        sct.add_primary_obscuration().mutable_octagonal_box().CopyFrom(obs)
-
 
     return sct
