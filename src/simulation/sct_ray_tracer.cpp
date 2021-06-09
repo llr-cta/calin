@@ -402,7 +402,7 @@ bool SCTRayTracer::trace_ray_to_primary_in_reflector_frame(const Telescope* scop
     if(scope->primary_obscuration[iobs]->doesObscure(ray, ray_out, n_))
     {
       if((obs_ihit==nobs)||(ray_out.ct()<obs_time)) {
-        obs_ihit = iobs + (scope->enable_secondary_obscuration_model ? 1:0);
+        obs_ihit = iobs;
         obs_time = ray_out.ct();
       }
     }
@@ -411,7 +411,7 @@ bool SCTRayTracer::trace_ray_to_primary_in_reflector_frame(const Telescope* scop
   if(obs_ihit!=nobs)
   {
     results.status = RTS_OBSCURED_BEFORE_PRIMARY;
-    results.obscuration_id = obs_ihit;
+    results.obscuration_id = obs_ihit + (scope->enable_secondary_obscuration_model ? 1:0);
     return false;
   }
 
