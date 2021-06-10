@@ -193,19 +193,19 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
         obs.mutable_end1_pos().set_y(s_baffle_zin)
         obs.mutable_end2_pos().set_y(s_baffle_zout)
         obs.set_diameter(s_baffle_rin * 2)
-        obs.set_identification("Secondary baffle")
+        obs.set_identification("Secondary baffle tube")
 
         obs = sct.add_primary_obscuration().mutable_annulus()
         obs.center_pos().set_y(s_baffle_zin)
         obs.set_inner_diameter(s_baffle_rin * 2)
         obs.set_outer_diameter(s_baffle_rout * 2)
-        obs.set_identification("Secondary baffle inner tube")
+        obs.set_identification("Secondary baffle inner ring")
 
         obs = sct.add_primary_obscuration().mutable_annulus()
         obs.center_pos().set_y(s_baffle_zout)
         obs.set_inner_diameter(s_baffle_rin * 2)
         obs.set_outer_diameter(s_baffle_rout * 2)
-        obs.set_identification("Secondary baffle outer tube")
+        obs.set_identification("Secondary baffle outer ring")
 
         # Post-primary rays : circular aperture to approximate secondary baffle
         obs = sct.add_secondary_obscuration().mutable_circular_aperture()
