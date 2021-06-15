@@ -50,16 +50,16 @@ def sct1_config(obscuration_model = 1, scope_x=0, scope_y=0, include_window = Fa
     sct.mutable_array_origin().set_latitude(dms(28, 45, 47.36))
     sct.mutable_array_origin().set_longitude(dms(-17, 53, 23.93))
     sct.mutable_array_origin().set_elevation(2147 * 100.0)
-    try:
+    if(numpy.iterable(scope_x) and numpy.iterable(scope_y)):
         for i in range(max(len(scope_x), len(scope_y))):
             scope = sct.mutable_array_layout().add_scope_positions();
-            scope.set_x(scope_x[i])
-            scope.set_y(scope_y[i])
-            scope.set_z(mst.array_origin().elevation())
-    except:
+            scope.set_x(float(scope_x[i]))
+            scope.set_y(float(scope_y[i]))
+            scope.set_z(sct.array_origin().elevation())
+    else:
         scope = sct.mutable_array_layout().add_scope_positions();
-        scope.set_x(scope_x)
-        scope.set_y(scope_y)
+        scope.set_x(float(scope_x))
+        scope.set_y(float(scope_y))
         scope.set_z(sct.array_origin().elevation())
 
     sct.set_azimuth_elevation_axes_separation(160.0)
