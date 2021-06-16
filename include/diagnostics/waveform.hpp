@@ -75,6 +75,7 @@ protected:
   WaveformSumParallelEventVisitor* parent_ = nullptr;
 
   bool calculate_variance_ = false;
+  uint32_t sample_max_ = 4096;
   unsigned partial_max_num_entries_ = 32768;
 
   bool has_dual_gain_ = false;
