@@ -149,7 +149,7 @@ else:
     if(nsuccess > 0):
         print("Successfully processed",nsuccess,"runs." if nsuccess!=1 else "run.")
     if(nskip > 0):
-        print("Skipped",nskip,"runs" if nsuccess!=1 else "run","that were already in in database.")
+        print("Skipped",nskip,"runs that were" if nsuccess!=1 else "run that was","already in in database.")
     if(len(failed_files) > 0):
         print("Processing failed for",len(failed_files),"runs." if len(failed_files)!=1 else "run.")
         if(len(failed_files) > 1):
