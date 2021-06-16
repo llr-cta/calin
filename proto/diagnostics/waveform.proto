@@ -33,6 +33,8 @@ message SingleWaveformMean {
     (CFO).desc = "Number of waveforms accumulated in the mean." ];
   repeated double mean_waveform                            = 2 [
     (CFO).desc = "Mean waveform for the channel." ];
+  repeated double waveform_variance                        = 3 [
+    (CFO).desc = "Variance of waveform for the channel." ];
 };
 
 message WaveformMean {

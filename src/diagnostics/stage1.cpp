@@ -70,10 +70,10 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
   this->add_visitor(charge_stats_pev_);
 
   if(config_.enable_mean_waveform()) {
-    wf_mean_phy_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor();
-    wf_mean_ped_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor();
-    wf_mean_ext_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor();
-    wf_mean_int_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor();
+    wf_mean_phy_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor(config.calculate_waveform_variance());
+    wf_mean_ped_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor(config.calculate_waveform_variance());
+    wf_mean_ext_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor(config.calculate_waveform_variance());
+    wf_mean_int_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor(config.calculate_waveform_variance());
 
     this->add_physics_trigger_visitor(wf_mean_phy_pev_);
     this->add_pedestal_trigger_visitor(wf_mean_ped_pev_);

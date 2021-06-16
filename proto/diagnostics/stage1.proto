@@ -56,6 +56,10 @@ message Stage1Config {
   //   (CFO).desc = "Enable all-sample code histograms, histograms of the "
   //     "frequency of each waveform sample value, for each trigger type." ];
 
+  bool calculate_waveform_variance                         = 50 [
+    (CFO).desc = "Calculate the variance of the individual waveform sample for "
+      "each chanel. Must have \"enable_mean_waveform=true\" for this to function." ];
+
   calin.ix.iact_data.waveform_treatment_event_visitor.
       OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig high_gain_opt_sum = 100 [
     (CFO).desc = "Configuration of high-gain optimal window sum." ];
@@ -142,7 +146,7 @@ message Stage1 {
   calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_physics = 120;
   calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_pedestal = 121;
   calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_external_flasher = 122;
-  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_internal_flasher = 33;
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_internal_flasher = 123;
 
   Stage1Config config                                      = 999;
   calin.ix.provenance.anthology.Anthology provenance_anthology = 1000 [
