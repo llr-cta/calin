@@ -359,7 +359,11 @@ WaveformSumParallelEventVisitor::mean_waveforms(
   }
   if(low_gain_count_i64_) {
     int64_t* camera_wf_sum = nullptr;
+    int64_t* camera_wf_sumsq = nullptr;
     safe_aligned_recalloc_and_fill(camera_wf_sum, nsamp_);
+    if(high_gain_wf_sumsq_i64_) {
+      safe_aligned_recalloc_and_fill(camera_wf_sumsq, nsamp_);
+    }
     uint64_t camera_count = 0;
     for(unsigned ichan=0;ichan<nchan_;ichan++) {
       auto* wf = results->add_channel_low_gain();
@@ -374,6 +378,7 @@ WaveformSumParallelEventVisitor::mean_waveforms(
         }
         if(low_gain_wf_sumsq_i64_) {
           for(unsigned isamp=0;isamp<nsamp_;isamp++) {
+            camera_wf_sumsq[isamp] += low_gain_wf_sumsq_i64_[ichan*nsamp_ + isamp];
             wf->add_waveform_variance(
               cov_i64_gen(low_gain_wf_sumsq_i64_[ichan*nsamp_ + isamp], low_gain_count_i64_[ichan],
                 low_gain_wf_sum_i64_[ichan*nsamp_ + isamp], low_gain_count_i64_[ichan],
@@ -389,8 +394,17 @@ WaveformSumParallelEventVisitor::mean_waveforms(
       for(unsigned isamp=0;isamp<nsamp_;isamp++) {
         wf->add_mean_waveform(double(camera_wf_sum[isamp])/count);
       }
+      if(camera_wf_sumsq) {
+        for(unsigned isamp=0;isamp<nsamp_;isamp++) {
+          wf->add_waveform_variance(
+            cov_i64_gen(camera_wf_sumsq[isamp], count,
+              camera_wf_sum[isamp], count,
+              camera_wf_sum[isamp], count));
+        }
+      }
     }
     ::free(camera_wf_sum);
+    ::free(camera_wf_sumsq);
   }
   return results;
 }
