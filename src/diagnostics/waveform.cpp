@@ -38,7 +38,7 @@ WaveformSumParallelEventVisitor::WaveformSumParallelEventVisitor(
     bool calculate_variance, uint32_t sample_max): ParallelEventVisitor(),
   calculate_variance_(calculate_variance), sample_max_(sample_max),
   partial_max_num_entries_(std::max(1U, calculate_variance ?
-      0x8000000U/(SQR(std::min(sample_max,65536U))) :
+      0x8000000U/SQR(std::min(sample_max,65536U)) :
       0x8000000U/std::min(sample_max,65536U)))
 {
   // nothing to see here
