@@ -348,9 +348,9 @@ WaveformSumParallelEventVisitor::mean_waveforms(
       if(camera_wf_sumsq) {
         for(unsigned isamp=0;isamp<nsamp_;isamp++) {
           wf->add_waveform_variance(
-            cov_i64_gen(camera_wf_sumsq[isamp], count,
-              camera_wf_sum[isamp], count,
-              camera_wf_sum[isamp], count));
+            cov_i64_gen(camera_wf_sumsq[isamp], camera_count,
+              camera_wf_sum[isamp], camera_count,
+              camera_wf_sum[isamp], camera_count));
         }
       }
     }
@@ -397,9 +397,9 @@ WaveformSumParallelEventVisitor::mean_waveforms(
       if(camera_wf_sumsq) {
         for(unsigned isamp=0;isamp<nsamp_;isamp++) {
           wf->add_waveform_variance(
-            cov_i64_gen(camera_wf_sumsq[isamp], count,
-              camera_wf_sum[isamp], count,
-              camera_wf_sum[isamp], count));
+            cov_i64_gen(camera_wf_sumsq[isamp], camera_count,
+              camera_wf_sum[isamp], camera_count,
+              camera_wf_sum[isamp], camera_count));
         }
       }
     }
