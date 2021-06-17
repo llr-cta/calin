@@ -237,7 +237,6 @@ namespace {
       }
     }
   }
-
 }
 
 bool WaveformSumParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
