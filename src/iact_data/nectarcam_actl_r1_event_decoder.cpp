@@ -159,11 +159,6 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   {
     const unsigned npix = nmod_*7;
     unsigned single_gain_dataset_size = npix*nsample_*sizeof(int16_t);
-    if(cta_event->waveform().data().size() != 2*single_gain_dataset_size)
-      throw(std::runtime_error("NectarCam_ACTL_R1_CameraEventDecoder::decode: "
-        "Samples array incorrect size: "
-        + std::to_string(cta_event->waveform().data().size())
-        + ", expected: " + std::to_string(2*single_gain_dataset_size)));
     if(cta_event->pixel_status().data().size() != npix)
       throw(std::runtime_error("NectarCam_ACTL_R1_CameraEventDecoder::decode: "
         "Pixel status array incorrect size: "
@@ -175,13 +170,26 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
     const int16_t* waveforms =
       reinterpret_cast<const int16_t*>(cta_event->waveform().data().data());
 
-    copy_single_gain_waveforms(calin_event, waveforms, pix_status,
-      calin_event->mutable_high_gain_image()->mutable_camera_waveforms(),
-      0x04, "high");
+    if(cta_event->waveform().data().size() == 2*single_gain_dataset_size) {
+      copy_single_gain_waveforms(calin_event, waveforms, pix_status,
+        calin_event->mutable_high_gain_image()->mutable_camera_waveforms(),
+        0x04, "high");
 
-    copy_single_gain_waveforms(calin_event, waveforms+npix*nsample_, pix_status,
-      calin_event->mutable_low_gain_image()->mutable_camera_waveforms(),
-      0x08, "low");
+      copy_single_gain_waveforms(calin_event, waveforms+npix*nsample_, pix_status,
+        calin_event->mutable_low_gain_image()->mutable_camera_waveforms(),
+        0x08, "low");
+    } else if(cta_event->waveform().data().size() == single_gain_dataset_size) {
+      copy_single_gain_waveforms(calin_event, waveforms, pix_status,
+        calin_event->mutable_image()->mutable_camera_waveforms(),
+        0x0C, "mixed");
+    } else {
+      throw(std::runtime_error("NectarCam_ACTL_R1_CameraEventDecoder::decode: "
+        "Samples array incorrect size: "
+        + std::to_string(cta_event->waveform().data().size())
+        + ", expected: " + std::to_string(2*single_gain_dataset_size)
+        + " (dual gain mode) or " + std::to_string(single_gain_dataset_size)
+        + " (mixed gain)"));
+    }
   }
 #if 0
 
