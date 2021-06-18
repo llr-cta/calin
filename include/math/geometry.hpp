@@ -567,7 +567,7 @@ inline int find_square_grid_site(double x, double y, double pitch_inv, unsigned 
   y = (y - yc)*pitch_inv + half_side;
   const int ux = int(std::floor(x));
   const int uy = int(std::floor(y));
-  if(std::min(ux,uy)<0 or std::max(ux,uy)>=nside) {
+  if(std::min(ux,uy)<0 or std::max(ux,uy)>=int(nside)) {
     return -1;
   }
   if(dead_space_fraction>0) {
@@ -583,7 +583,7 @@ inline int find_square_grid_site(double x, double y, double pitch_inv, unsigned 
 inline bool square_grid_site_center(double& x_out, double& y_out,
   int isite, double pitch, unsigned nside, double xc = 0, double yc = 0)
 {
-  if((isite<0)or(isite>calin::math::special::SQR(nside)))return false;
+  if((isite<0)or(isite>int(calin::math::special::SQR(nside))))return false;
   const double half_side = 0.5*nside - 0.5;
   div_t div_res = std::div(isite, nside);
   const int ux = div_res.rem;

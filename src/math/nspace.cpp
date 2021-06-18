@@ -144,7 +144,7 @@ Eigen::VectorXd TreeSparseNSpace::axis_bin_centers(unsigned iaxis) const
     throw std::runtime_error("TreeSparseNSpace: iaxis out of range");
   }
   Eigen::VectorXd x(n_[iaxis]);
-  for(unsigned i=0; i<n_[iaxis]; i++) {
+  for(int i=0; i<n_[iaxis]; i++) {
     x[i] = xlo_[iaxis] + dx_[iaxis] * (0.5 + i);
   }
   return x;
@@ -156,7 +156,7 @@ Eigen::VectorXd TreeSparseNSpace::axis_bin_edges(unsigned iaxis) const
     throw std::runtime_error("TreeSparseNSpace: iaxis out of range");
   }
   Eigen::VectorXd x(n_[iaxis]+1);
-  for(unsigned i=0; i<=n_[iaxis]; i++) {
+  for(int i=0; i<=n_[iaxis]; i++) {
     x[i] = xlo_[iaxis] + dx_[iaxis] * i;
   }
   return x;
@@ -387,7 +387,7 @@ bool BlockSparseNSpace::index(
 
 bool BlockSparseNSpace::x_center(Eigen::VectorXd& x, int64_t array_index, int64_t block_index) const
 {
-  if(block_index<0 or block_index>=block_size_ or array_index<0 or array_index>=array_.size()) {
+  if(block_index<0 or block_index>=block_size_ or array_index<0 or array_index>=int64_t(array_.size())) {
     return false;
   }
 
@@ -433,7 +433,7 @@ bool BlockSparseNSpace::index_of_bin(const Eigen::VectorXi& ix, int64_t& array_i
 
 bool BlockSparseNSpace::bin_coords(Eigen::VectorXi& ix, int64_t array_index, int64_t block_index) const
 {
-  if(block_index<0 or block_index>=block_size_ or array_index<0 or array_index>=array_.size()) {
+  if(block_index<0 or block_index>=block_size_ or array_index<0 or array_index>=int64_t(array_.size())) {
     return false;
   }
 
@@ -444,7 +444,7 @@ bool BlockSparseNSpace::bin_coords(Eigen::VectorXi& ix, int64_t array_index, int
   for(unsigned i=xlo_.size(); i>0;) {
     --i;
     auto qr = std::div(array_index, int64_t(narray_[i]));
-    unsigned iix = (qr.rem<<block_shift_) | (block_index&block_mask_);
+    int iix = (qr.rem<<block_shift_) | (block_index&block_mask_);
     if(iix >= n_[i]) {
       return false;
     }
@@ -682,7 +682,7 @@ Eigen::VectorXd BlockSparseNSpace::axis_bin_centers(unsigned iaxis) const
     throw std::runtime_error("BlockSparseNSpace: iaxis out of range");
   }
   Eigen::VectorXd x(n_[iaxis]);
-  for(unsigned i=0; i<n_[iaxis]; i++) {
+  for(int i=0; i<n_[iaxis]; i++) {
     x[i] = xlo_[iaxis] + dx_[iaxis] * (0.5 + i);
   }
   return x;
@@ -694,7 +694,7 @@ Eigen::VectorXd BlockSparseNSpace::axis_bin_edges(unsigned iaxis) const
     throw std::runtime_error("BlockSparseNSpace: iaxis out of range");
   }
   Eigen::VectorXd x(n_[iaxis]+1);
-  for(unsigned i=0; i<=n_[iaxis]; i++) {
+  for(int i=0; i<=n_[iaxis]; i++) {
     x[i] = xlo_[iaxis] + dx_[iaxis] * i;
   }
   return x;
@@ -741,7 +741,7 @@ BlockSparseNSpace* BlockSparseNSpace::project_along_axis(unsigned iaxis,
     if(block) {
       for(unsigned block_index=0; block_index<block_size_; ++block_index) {
         if(bin_coords(ix, array_index, block_index)) {
-          if(ix[iaxis] >= axis_cell_lo and ix[iaxis] <= axis_cell_hi) {
+          if(ix[iaxis] >= int(axis_cell_lo) and ix[iaxis] <= int(axis_cell_hi)) {
             if(iaxis != 0) {
               new_ix.head(iaxis) = ix.head(iaxis);
             }
@@ -793,7 +793,7 @@ Eigen::MatrixXd BlockSparseNSpace::select_as_vector(const Eigen::VectorXi& bin_c
   Eigen::VectorXd v(n_[iaxis]);
   v.setZero();
 
-  for(unsigned ix=0; ix<n_[iaxis]; ++ix) {
+  for(int ix=0; ix<n_[iaxis]; ++ix) {
     xi[iaxis] = ix;
     int64_t array_index;
     int64_t block_index;
@@ -833,7 +833,7 @@ Eigen::MatrixXd BlockSparseNSpace::select_as_matrix(const Eigen::VectorXi& bin_c
   Eigen::MatrixXd m(n_[iaxis],n_[jaxis]);
   m.setZero();
 
-  for(unsigned ix=0; ix<n_[iaxis]; ++ix) {
+  for(int ix=0; ix<n_[iaxis]; ++ix) {
     xi[iaxis] = ix;
     for(unsigned jx=0; jx<n_[jaxis]; ++jx) {
       xi[jaxis] = jx;
