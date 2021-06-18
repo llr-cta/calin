@@ -56,40 +56,56 @@ namespace {
 
     std::vector<uint64_t> oids;
 
-    oids = sql->select_oids_in_range("monitoring_drawer_temperatures", start, end);
-    for(auto oid : oids) {
-      calin::ix::iact_data::nectarcam_ancillary_data::FEBTemperatureMeasurement meas;
-      if(sql->retrieve_by_oid("monitoring_drawer_temperatures", oid, &meas)) {
-        data->increment_num_feb_temperature_measurements();
-        (*data->mutable_feb_temperature())[meas.drawer()].add_measurement()->CopyFrom(meas);
+    try {
+      oids = sql->select_oids_in_range("monitoring_drawer_temperatures", start, end);
+      for(auto oid : oids) {
+        calin::ix::iact_data::nectarcam_ancillary_data::FEBTemperatureMeasurement meas;
+        if(sql->retrieve_by_oid("monitoring_drawer_temperatures", oid, &meas)) {
+          data->increment_num_feb_temperature_measurements();
+          (*data->mutable_feb_temperature())[meas.drawer()].add_measurement()->CopyFrom(meas);
+        }
       }
+    } catch(...) {
+      // no problem !
     }
 
-    oids = sql->select_oids_in_range("monitoring_channel_currents", start, end);
-    for(auto oid : oids) {
-      calin::ix::iact_data::nectarcam_ancillary_data::HVPACurrentMeasurement meas;
-      if(sql->retrieve_by_oid("monitoring_channel_currents", oid, &meas)) {
-        data->increment_num_hvpa_current_measurements();
-        (*data->mutable_hvpa_current())[meas.drawer()*7 + meas.channel()].add_measurement()->CopyFrom(meas);
+    try {
+      oids = sql->select_oids_in_range("monitoring_channel_currents", start, end);
+      for(auto oid : oids) {
+        calin::ix::iact_data::nectarcam_ancillary_data::HVPACurrentMeasurement meas;
+        if(sql->retrieve_by_oid("monitoring_channel_currents", oid, &meas)) {
+          data->increment_num_hvpa_current_measurements();
+          (*data->mutable_hvpa_current())[meas.drawer()*7 + meas.channel()].add_measurement()->CopyFrom(meas);
+        }
       }
+    } catch(...) {
+      // ce n'est pas grave
     }
 
-    oids = sql->select_oids_in_range("monitoring_channel_voltages", start, end);
-    for(auto oid : oids) {
-      calin::ix::iact_data::nectarcam_ancillary_data::HVPAVoltageMeasurement meas;
-      if(sql->retrieve_by_oid("monitoring_channel_voltages", oid, &meas)) {
-        data->increment_num_hvpa_voltage_measurements();
-        (*data->mutable_hvpa_voltage())[meas.drawer()*7 + meas.channel()].add_measurement()->CopyFrom(meas);
+    try {
+      oids = sql->select_oids_in_range("monitoring_channel_voltages", start, end);
+      for(auto oid : oids) {
+        calin::ix::iact_data::nectarcam_ancillary_data::HVPAVoltageMeasurement meas;
+        if(sql->retrieve_by_oid("monitoring_channel_voltages", oid, &meas)) {
+          data->increment_num_hvpa_voltage_measurements();
+          (*data->mutable_hvpa_voltage())[meas.drawer()*7 + meas.channel()].add_measurement()->CopyFrom(meas);
+        }
       }
+    } catch(...) {
+      // no worries !
     }
 
-    oids = sql->select_oids_in_range("monitoring_ecc", start, end);
-    for(auto oid : oids) {
-      calin::ix::iact_data::nectarcam_ancillary_data::ECCMeasurement meas;
-      if(sql->retrieve_by_oid("monitoring_ecc", oid, &meas)) {
-        data->increment_num_ecc_measurements();
-        data->mutable_ecc_measurements()->add_measurement()->CopyFrom(meas);
+    try {
+      oids = sql->select_oids_in_range("monitoring_ecc", start, end);
+      for(auto oid : oids) {
+        calin::ix::iact_data::nectarcam_ancillary_data::ECCMeasurement meas;
+        if(sql->retrieve_by_oid("monitoring_ecc", oid, &meas)) {
+          data->increment_num_ecc_measurements();
+          data->mutable_ecc_measurements()->add_measurement()->CopyFrom(meas);
+        }
       }
+    } catch(...) {
+      //  ne t'inquiete pas
     }
 
     delete sql;
