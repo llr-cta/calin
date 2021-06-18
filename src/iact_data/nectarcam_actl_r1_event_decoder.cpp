@@ -174,7 +174,6 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
       copy_single_gain_waveforms(calin_event, waveforms, pix_status,
         calin_event->mutable_high_gain_image()->mutable_camera_waveforms(),
         0x04, "high");
-
       copy_single_gain_waveforms(calin_event, waveforms+npix*nsample_, pix_status,
         calin_event->mutable_low_gain_image()->mutable_camera_waveforms(),
         0x08, "low");
@@ -191,41 +190,6 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
         + " (mixed gain)"));
     }
   }
-#if 0
-
-  if(exchange_gain_channels_)
-  {
-    if(cta_event->has_higain()) {
-      copy_single_gain_integrals(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_low_gain_image(), "high");
-      copy_single_gain_waveforms(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_low_gain_image(), "high");
-    }
-
-    if(cta_event->has_logain()) {
-      copy_single_gain_integrals(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_high_gain_image(), "low");
-      copy_single_gain_waveforms(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_high_gain_image(), "low");
-    }
-  }
-  else
-  {
-    if(cta_event->has_higain()) {
-      copy_single_gain_integrals(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_high_gain_image(), "high");
-      copy_single_gain_waveforms(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_high_gain_image(), "high");
-    }
-
-    if(cta_event->has_logain()) {
-      copy_single_gain_integrals(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_low_gain_image(), "low");
-      copy_single_gain_waveforms(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_low_gain_image(), "low");
-    }
-  }
-#endif
 
   // ==========================================================================
   //
