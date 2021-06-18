@@ -135,7 +135,9 @@ void FederatedRayProcessor::process_ray(unsigned scope_id,
 {
   auto iprocessor =
     std::upper_bound(nsphere_.begin(), nsphere_.end(), scope_id);
-  assert(iprocessor != nsphere_.end());
+  if(iprocessor == nsphere_.end()) {
+    throw std::logic_error("iprocessor out of range : scope_id="+std::to_string(scope_id));
+  }
   if(iprocessor == nsphere_.begin())
     processors_.front()->process_ray(scope_id, ray, pe_weight);
   else
@@ -151,9 +153,11 @@ void FederatedRayProcessor::finish_processing()
 void FederatedRayProcessor::add_processor(RayProcessor* processor,
   bool adopt_processor)
 {
+  unsigned scope_id_base = 0;
+  if(not nsphere_.empty())scope_id_base = nsphere_.back();
   processors_.emplace_back(processor);
   if(adopt_processor)adopted_processors_.emplace_back(processor);
-  nsphere_.emplace_back(processor->detector_spheres().size());
+  nsphere_.emplace_back(scope_id_base + processor->detector_spheres().size());
 }
 
 FederatedPEProcessor* FederatedRayProcessor::add_processor_and_pe_visitor(
@@ -162,7 +166,7 @@ FederatedPEProcessor* FederatedRayProcessor::add_processor_and_pe_visitor(
   bool adopt_ray_processor)
 {
   unsigned scope_id_base = 0;
-  if(nsphere_.empty())scope_id_base = nsphere_.back();
+  if(not nsphere_.empty())scope_id_base = nsphere_.back();
   add_processor(ray_processor, adopt_ray_processor);
   return new FederatedPEProcessor(pe_processor, scope_id_base);
 }
