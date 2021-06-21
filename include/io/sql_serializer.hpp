@@ -197,10 +197,11 @@ struct SQLTable
 class SQLSerializer
 {
 public:
-  SQLSerializer(bool write_sql_to_log = false):
-      write_sql_to_log_(write_sql_to_log) { /* nothing to see here */ }
+  SQLSerializer() { /* nothing to see here */ }
   virtual ~SQLSerializer();
 
+  void set_write_errors_to_log(bool log_errors = true) { write_errors_to_log_ = log_errors; }
+  void set_write_sql_to_log(bool log_sql = true) { write_sql_to_log_ = log_sql; }
 
   // ===========================================================================
   //
@@ -263,7 +264,9 @@ public:
 
 protected:
 
+  bool write_errors_to_log_ = true;
   bool write_sql_to_log_ = false;
+
   std::atomic<int> transaction_count_ { 0 };
   unsigned native_db_version_ = 1;
   unsigned db_version_ = 1;

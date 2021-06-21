@@ -192,7 +192,7 @@ bool SQLSerializer::insert(const std::string& table_name, uint64_t& oid,
       }
       if(not it->stmt_insert->is_initialized())
       {
-        LOG(ERROR) << "SQL error preparing INSERT: " << it->stmt_insert->error_message() << '\n'
+        LOG_IF(write_errors_to_log_, ERROR) << "SQL error preparing INSERT: " << it->stmt_insert->error_message() << '\n'
           << "SQL: " << it->stmt_insert->sql();
         success = false;
       }
@@ -274,7 +274,7 @@ bool SQLSerializer::retrieve_by_oid(const std::string& table_name, uint64_t oid,
         }
         if(it->stmt_select_oid != nullptr and not it->stmt_select_oid->is_initialized())
         {
-          LOG(ERROR) << "SQL error preparing SELECT: " << it->stmt_select_oid->error_message() << '\n'
+          LOG_IF(write_errors_to_log_, ERROR) << "SQL error preparing SELECT: " << it->stmt_select_oid->error_message() << '\n'
             << "SQL: " << it->stmt_select_oid->sql();
           success = false;
         }
@@ -318,31 +318,37 @@ uint64_t SQLSerializer::count_entries_in_table(const std::string& table_name)
   std::unique_ptr<SQLStatement> stmt {
     prepare_statement(sql_count_entries(table_name)) };
   if(!stmt->is_initialized()) {
-    LOG(ERROR) << "SQL error preparing COUNT : "
-               << stmt->error_message() << '\n'
-               << "SQL: " << stmt->sql();
+    LOG_IF(write_errors_to_log_, ERROR)
+      << "SQL error preparing COUNT : "
+      << stmt->error_message() << '\n'
+      << "SQL: " << stmt->sql();
     throw std::runtime_error("Could not prepare SQL count statement");
   }
 
-  if(write_sql_to_log_)LOG(INFO) << stmt->bound_sql();
+  if(write_sql_to_log_) {
+    LOG(INFO) << stmt->bound_sql();
+  }
   auto status = stmt->step();
   if(status == SQLStatement::ERROR) {
-    LOG(ERROR) << "SQL error executing COUNT : "
-               << stmt->error_message() << '\n'
-               << "SQL: " << stmt->sql();
+    LOG_IF(write_errors_to_log_, ERROR)
+      << "SQL error executing COUNT : "
+      << stmt->error_message() << '\n'
+      << "SQL: " << stmt->sql();
     throw std::runtime_error("SQL count returned error");
   } else if (status == SQLStatement::OK_NO_DATA) {
-    LOG(ERROR) << "SQL error executing COUNT : "
-               << stmt->error_message() << '\n'
-               << "SQL: " << stmt->sql();
+    LOG_IF(write_errors_to_log_, ERROR)
+      << "SQL error executing COUNT : "
+      << stmt->error_message() << '\n'
+      << "SQL: " << stmt->sql();
     throw std::logic_error("SQL count returned no data");
   }
 
   bool good = true;
   uint64_t entries = stmt->extract_uint64(0, &good);
   if(!good) {
-    LOG(ERROR) << "Could not extract value from SQL count\n"
-               << "SQL: " << stmt->sql();
+    LOG_IF(write_errors_to_log_, ERROR)
+      << "Could not extract value from SQL count\n"
+      << "SQL: " << stmt->sql();
     throw std::logic_error("SQL count could not be extracted");
   }
 
@@ -457,9 +463,10 @@ std::vector<uint64_t> SQLSerializer::exec_select_oids(const std::string& sql,
   std::unique_ptr<SQLStatement> stmt { prepare_statement(sql) };
 
   if(!stmt->is_initialized()) {
-    LOG(ERROR) << "SQL error preparing SELECT OID : "
-               << stmt->error_message() << '\n'
-               << "SQL: " << stmt->sql();
+    LOG_IF(write_errors_to_log_, ERROR)
+      << "SQL error preparing SELECT OID : "
+      << stmt->error_message() << '\n'
+      << "SQL: " << stmt->sql();
     throw std::runtime_error("Could not prepare SQL select OID statement");
   }
 
@@ -471,24 +478,28 @@ std::vector<uint64_t> SQLSerializer::exec_select_oids(const std::string& sql,
 
   std::vector<uint64_t> oids;
   SQLStatement::StepStatus status = SQLStatement::ERROR;
-  if(write_sql_to_log_)LOG(INFO) << stmt->bound_sql();
+  if(write_sql_to_log_) {
+    LOG(INFO) << stmt->bound_sql();
+  }
   for(status = stmt->step(); status == SQLStatement::OK_HAS_DATA;
     status = stmt->step())
   {
     bool good = true;
     uint64_t oid = stmt->extract_uint64(0, &good);
     if(!good) {
-      LOG(ERROR) << "Could not extract OID from SQL select\n"
-                 << "SQL: " << stmt->sql();
+      LOG_IF(write_errors_to_log_, ERROR)
+        << "Could not extract OID from SQL select\n"
+        << "SQL: " << stmt->sql();
       throw std::logic_error("SQL OID could not be extracted");
     }
     oids.emplace_back(oid);
   }
 
   if(status == SQLStatement::ERROR) {
-    LOG(ERROR) << "SQL error executing SELECT OID : "
-               << stmt->error_message() << '\n'
-               << "SQL: " << stmt->sql();
+    LOG_IF(write_errors_to_log_, ERROR)
+      << "SQL error executing SELECT OID : "
+      << stmt->error_message() << '\n'
+      << "SQL: " << stmt->sql();
     throw std::runtime_error("SQL SELECT OID returned error");
   }
 
@@ -694,8 +705,9 @@ bool SQLSerializer::do_create_or_extend_tables(SQLTable* t,
         if(this->db_tables_.find(itable->table_name) == this->db_tables_.end()) {
           std::unique_ptr<SQLStatement> stmt { prepare_statement(sql_create_table(itable)) };
           if(not stmt->is_initialized()) {
-            LOG(ERROR) << "SQL error preparing CREATE TABLE: " << stmt->error_message() << '\n'
-                       << "SQL: " << stmt->sql();
+            LOG_IF(write_errors_to_log_, ERROR)
+              << "SQL error preparing CREATE TABLE: " << stmt->error_message() << '\n'
+              << "SQL: " << stmt->sql();
             success = false;
           } else {
             success = execute_one_no_data_statement(stmt.get());
@@ -709,8 +721,9 @@ bool SQLSerializer::do_create_or_extend_tables(SQLTable* t,
             if(this->db_table_fields_.find(fqdn) == this->db_table_fields_.end()) {
               std::unique_ptr<SQLStatement> stmt { prepare_statement(sql_add_field_to_table(ifield))  };
               if(not stmt->is_initialized()) {
-                LOG(ERROR) << "SQL error preparing EXTEND TABLE: " << stmt->error_message() << '\n'
-                           << "SQL: " << stmt->sql();
+                LOG_IF(write_errors_to_log_, ERROR)
+                  << "SQL error preparing EXTEND TABLE: " << stmt->error_message() << '\n'
+                  << "SQL: " << stmt->sql();
                 success = false;
               } else {
                 success = execute_one_no_data_statement(stmt.get());
@@ -737,8 +750,9 @@ bool SQLSerializer::do_create_or_extend_tables(SQLTable* t,
         if(sql.empty()) continue;
         auto* stmt = prepare_statement(sql);
         if(not stmt->is_initialized()) {
-          LOG(ERROR) << "SQL error preparing CREATE INDEX: " << stmt->error_message() << '\n'
-                     << "SQL: " << stmt->sql();
+          LOG_IF(write_errors_to_log_, ERROR)
+            << "SQL error preparing CREATE INDEX: " << stmt->error_message() << '\n'
+            << "SQL: " << stmt->sql();
           success = false;
         } else {
           success = execute_one_no_data_statement(stmt);
@@ -836,16 +850,19 @@ bool SQLSerializer::execute_one_no_data_statement(SQLStatement* stmt, bool ignor
   if(stmt != nullptr)
   {
     SQLStatement::StepStatus status = stmt->step();
-    if(write_sql_to_log_)LOG(INFO) << stmt->bound_sql();
+    if(write_sql_to_log_) {
+      LOG(INFO) << stmt->bound_sql();
+    }
     switch(status)
     {
     case SQLStatement::ERROR:
       good = false;
       if(not ignore_errors)
       {
-        LOG(ERROR) << "SQL statement returned error: "
-                   << stmt->error_message() << '\n'
-                   << "SQL: " << stmt->sql();
+        LOG_IF(write_errors_to_log_, ERROR)
+          << "SQL statement returned error: "
+          << stmt->error_message() << '\n'
+          << "SQL: " << stmt->sql();
         return good;
       }
       break;
@@ -853,8 +870,9 @@ bool SQLSerializer::execute_one_no_data_statement(SQLStatement* stmt, bool ignor
       // this is what we expect
       break;
     case SQLStatement::OK_HAS_DATA:
-      LOG(ERROR) << "Simple SQL statement returned data" << '\n'
-                 << "SQL: " << stmt->sql();
+      LOG_IF(write_errors_to_log_, ERROR)
+        << "Simple SQL statement returned data" << '\n'
+        << "SQL: " << stmt->sql();
       return false;
     }
     stmt->reset();
@@ -978,15 +996,18 @@ bool SQLSerializer::r_exec_insert(SQLTable* t, const google::protobuf::Message* 
 
   bool good = true;
   SQLStatement::StepStatus status = t->stmt_insert->step();
-  if(write_sql_to_log_)LOG(INFO) << t->stmt_insert->bound_sql();
+  if(write_sql_to_log_) {
+    LOG(INFO) << t->stmt_insert->bound_sql();
+  }
   switch(status)
   {
   case SQLStatement::ERROR:
     good = false;
     if(!ignore_errors)
     {
-      LOG(ERROR) << "INSERT statement returned error: "
-                 << t->stmt_insert->error_message();
+      LOG_IF(write_errors_to_log_, ERROR)
+        << "INSERT statement returned error: "
+        << t->stmt_insert->error_message();
       return false;
     }
     break;
@@ -994,8 +1015,9 @@ bool SQLSerializer::r_exec_insert(SQLTable* t, const google::protobuf::Message* 
     // this is what we expect
     break;
   case SQLStatement::OK_HAS_DATA:
-    LOG(ERROR) << "INSERT statement returned data" << '\n'
-               << t->stmt_insert->sql();
+    LOG_IF(write_errors_to_log_, ERROR)
+      << "INSERT statement returned data" << '\n'
+      << t->stmt_insert->sql();
     return false;
   }
   oid = t->stmt_insert->get_oid();
@@ -1064,7 +1086,9 @@ exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
 
   unsigned row_count = 0;
   SQLStatement::StepStatus status = t->stmt_select_oid->step();
-  if(write_sql_to_log_)LOG(INFO) << t->stmt_select_oid->bound_sql();
+  if(write_sql_to_log_) {
+    LOG(INFO) << t->stmt_select_oid->bound_sql();
+  }
   while(status == SQLStatement::OK_HAS_DATA)
   {
     bool good = true;
@@ -1176,7 +1200,8 @@ next_step:
   }
 
   if(status == SQLStatement::ERROR and not ignore_errors) {
-    LOG(ERROR) << "SQL statement returned error: "
+    LOG_IF(write_errors_to_log_, ERROR)
+      << "SQL statement returned error: "
       << t->stmt_select_oid->error_message() << '\n'
       << "SQL: " << t->stmt_select_oid->sql();
   }
