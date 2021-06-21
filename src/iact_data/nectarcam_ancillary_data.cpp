@@ -41,7 +41,9 @@ namespace {
     }
 
     auto* sql = new calin::io::sql_serializer::SQLite3Serializer(db_file,
-      calin::io::sql_serializer::SQLite3Serializer::READ_ONLY_NON_CALIN_DB, log_sql);
+      calin::io::sql_serializer::SQLite3Serializer::READ_ONLY_NON_CALIN_DB);
+    sql->set_write_sql_to_log(log_sql);
+    sql->set_write_errors_to_log(log_sql);
 
     data->set_database(db_file);
 
@@ -66,7 +68,7 @@ namespace {
         }
       }
     } catch(...) {
-      // no problem !
+      LOG(WARNING) << "No FEB temperature measurements in ancillary DB";
     }
 
     try {
@@ -79,7 +81,7 @@ namespace {
         }
       }
     } catch(...) {
-      // ce n'est pas grave
+      LOG(WARNING) << "No FPM current measurements in ancillary DB";
     }
 
     try {
@@ -92,7 +94,7 @@ namespace {
         }
       }
     } catch(...) {
-      // no worries !
+      LOG(WARNING) << "No FPM voltage measurements in ancillary DB";
     }
 
     try {
@@ -105,7 +107,7 @@ namespace {
         }
       }
     } catch(...) {
-      //  ne t'inquiete pas
+      LOG(WARNING) << "No ECC measurements in ancillary DB";
     }
 
     delete sql;
