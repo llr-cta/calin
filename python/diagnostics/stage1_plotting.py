@@ -81,10 +81,16 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
         draw_outline=draw_outline, axis=axis)
 
+    vmin = 0.5/ri.num_events_found()
+    vmin_color_change = vmin**0.4
+    def label_color(value):
+        return 'k' if value < vmin_color_change else 'w'
+
     if(mod_label_fontsize):
-        for cmid in rc.configured_module_id():
+        for imod, cmid in enumerate(rc.configured_module_id()):
             m = rc.camera_layout().module(int(cmid))
-            axis.text(m.x(), m.y(), '%d'%(m.module_index()), ha='center', va='center', fontsize=mod_label_fontsize)
+            axis.text(m.x(), m.y(), '%d'%(m.module_index()), ha='center', va='center',
+                fontsize=mod_label_fontsize, color=label_color(modmissing[imod]))
 
     for ip, pp in enumerate(additional_polygons):
         if(draw_outline):
@@ -99,9 +105,8 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
             p.set_fill(False)
             axis.add_patch(p)
         if(aux_label_fontsize):
-            axis.text(xy[0], xy[1], polygon_name[ip], ha='center', va='center', fontsize=aux_label_fontsize)
-
-    vmin = 0.5/ri.num_events_found()
+            axis.text(xy[0], xy[1], polygon_name[ip], ha='center', va='center',
+            fontsize=aux_label_fontsize, color=label_color(additional_polygon_data[ip]))
 
     pc.set_norm(matplotlib.colors.LogNorm(vmin=vmin,vmax=1.0))
     axis.axis(numpy.asarray([-1,1,-1,1])*1.05*max([ymax,xmax,abs(xmin),abs(ymin)]))
