@@ -26,7 +26,7 @@ import calin.diagnostics.stage1
 
 def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis = None,
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
-        mod_label_fontsize=4, aux_label_fontsize=5.5):
+        mod_label_fontsize=4, aux_label_fontsize=5.5, stat_label_fontsize=4.75):
     SQRT3_2 = numpy.sqrt(3)/2
     RAD_30 = 30.0/180.0*numpy.pi
 
@@ -46,13 +46,17 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
     xmax = max(xmax,ymax)
     ymax = xmax
 
-    num_event_missing = int(ri.event_numbers_found().end_index()[-1])-ri.num_events_found()-1+int(sum(ri.duplicate_event_numbers().count()))
-    frac_event_missing = float(num_event_missing)/float(ri.event_numbers_found().end_index()[-1])
+    evts_ondisk    = int(ri.num_events_found())
+    evts_maxid     = int(ri.event_numbers_found().end_index()[-1])
+    evts_duplicate = int(sum(ri.duplicate_event_numbers().count()))
+
+    num_event_missing = evts_maxid-evts_ondisk-1+evts_duplicate
+    frac_event_missing = float(num_event_missing)/float(evts_maxid)
 
     additional_polygons = [ ]
-    additional_polygon_data = [ ri.num_events_missing_tib()/ri.num_events_found(),
-                                ri.num_events_missing_cdts()/ri.num_events_found(),
-                                ri.num_events_missing_tib_and_cdts()/ri.num_events_found(),
+    additional_polygon_data = [ ri.num_events_missing_tib()/evts_ondisk,
+                                ri.num_events_missing_cdts()/evts_ondisk,
+                                ri.num_events_missing_tib_and_cdts()/evts_ondisk,
                                 frac_event_missing]
 
     polygon_name = [ 'tib', 'cdts', 'both', 'no\nevent' ]
@@ -71,7 +75,7 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
 
     calin.plotting.add_outline(axis, cl, hatch='//', zorder=-1)
 
-    modmissing = numpy.asarray([max(float(ri.num_events_found()-ri.module(i).num_events_present()),1e-10)/ri.num_events_found() \
+    modmissing = numpy.asarray([max(float(evts_ondisk-ri.module(i).num_events_present()),1e-10)/evts_ondisk \
         for i in range(ri.module_size())],dtype=float)
 
     pc = calin.plotting.plot_camera_module_image(modmissing, cl,
@@ -81,7 +85,7 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
         draw_outline=draw_outline, axis=axis)
 
-    vmin = 0.5/ri.num_events_found()
+    vmin = 0.5/evts_ondisk
     vmin_color_change = vmin**0.4
     def label_color(value):
         return 'k' if value < vmin_color_change else 'w'
@@ -108,11 +112,18 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
             axis.text(xy[0], xy[1], polygon_name[ip], ha='center', va='center',
             fontsize=aux_label_fontsize, color=label_color(additional_polygon_data[ip]))
 
+    if(stat_label_fontsize):
+        axis.text(xmin,ymin,
+            f'Event counts\nOn disk:   {evts_ondisk:,}\nTriggered: {evts_maxid-1:,}\nDuplicate: {evts_duplicate:,}',
+            ha='left', va='bottom', fontfamily='monospace',
+            fontsize=stat_label_fontsize);
+
     pc.set_norm(matplotlib.colors.LogNorm(vmin=vmin,vmax=1.0))
     axis.axis(numpy.asarray([-1,1,-1,1])*1.05*max([ymax,xmax,abs(xmin),abs(ymin)]))
     axis.get_xaxis().set_visible(False)
     axis.get_yaxis().set_visible(False)
 
-    cb = matplotlib.pyplot.colorbar(pc, ax=axis, label='Missing event fraction')
+    cb = matplotlib.pyplot.colorbar(pc, ax=axis, label='Missing component fraction')
+    cb.ax.plot([xmin, xmax], [1.0/evts_ondisk, 1.0/evts_ondisk], 'g-', lw=0.75) # my data is between 0 and 1
 
     return pc
