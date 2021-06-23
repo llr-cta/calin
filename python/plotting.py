@@ -171,15 +171,16 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
         configured_modules = None, zero_suppression = None,
         plate_scale = None, rotation = 0.0, R = None,
         cmap = matplotlib.cm.CMRmap_r, axis = None, draw_outline = False,
-        mod_lw = 0, outline_lw = 0.5, outline_color = '#888888'):
+        mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        additional_polygons = [], additional_polygon_data = []):
     if(module_mask is None and zero_suppression is not None):
         module_mask = np.asarray(module_data)>zero_suppression
     if(module_mask is not None and len(module_mask) != len(module_data)):
         raise ValueError('module_mask must either be None or have same length as module_data')
     if(configured_modules is not None and len(configured_modules) != len(module_data)):
         raise ValueError('configured_modules must either be None or have same length as pix_data')
-    poly = []
-    poly_data = []
+    poly = additional_polygons.copy()
+    poly_data = additional_polygon_data.copy()
     max_xy = 0
     if plate_scale is None:
         plate_scale = 1
@@ -198,7 +199,7 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
             vx, vy = vx*crot - vy*srot, vy*crot + vx*srot
             vv = np.column_stack([vx, vy])
             max_xy = max(max_xy, max(abs(vx)), max(abs(vy)))
-            poly.append(plt.Polygon(vv,closed=True))
+            poly.append(matplotlib.patches.Polygon(vv,closed=True))
             poly_data.append(module_data[mod_index])
     pc = matplotlib.collections.PatchCollection(poly, cmap=cmap)
     pc.set_array(np.asarray(poly_data))
