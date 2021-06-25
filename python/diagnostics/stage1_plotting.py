@@ -23,6 +23,7 @@ import numpy
 
 import calin.plotting
 import calin.diagnostics.stage1
+import calin.iact_data.instrument_layout
 
 def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis = None,
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
@@ -59,7 +60,7 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
                                 ri.num_events_missing_tib_and_cdts()/evts_ondisk,
                                 frac_event_missing]
 
-    polygon_name = [ 'tib', 'cdts', 'both', 'no\nevent' ]
+    polygon_name = [ 'tib', 'cdts', 'both', 'lost\nevent' ]
 
     rad = 10
     additional_polygons.append(
@@ -71,9 +72,8 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
     additional_polygons.append(
         matplotlib.patches.Circle(xy=(xmax-1.5*rad,ymin+1.5*rad), radius=1.5*rad))
 
-    axis = axis or matplotlib.pyplot.gca()
-
-    calin.plotting.add_outline(axis, cl, hatch='//', zorder=-1)
+    if(axis is None):
+        axis = matplotlib.pyplot.gca()
 
     modmissing = numpy.asarray([max(float(evts_ondisk-ri.module(i).num_events_present()),1e-10)/evts_ondisk \
         for i in range(ri.module_size())],dtype=float)
@@ -83,10 +83,10 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
         additional_polygons=additional_polygons,
         additional_polygon_data=additional_polygon_data,
         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
-        draw_outline=draw_outline, axis=axis)
+        draw_outline=draw_outline, axis=axis, hatch_missing_modules=True)
 
     vmin = 0.5/evts_ondisk
-    vmin_color_change = vmin**0.4
+    vmin_color_change = vmin**0.45
     def label_color(value):
         return 'k' if value < vmin_color_change else 'w'
 
@@ -123,7 +123,7 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
     axis.get_xaxis().set_visible(False)
     axis.get_yaxis().set_visible(False)
 
-    cb = matplotlib.pyplot.colorbar(pc, ax=axis, label='Missing component fraction')
+    cb = axis.get_figure().colorbar(pc, ax=axis, label='Component missing fraction')
     cb.ax.plot([xmin, xmax], [1.0/evts_ondisk, 1.0/evts_ondisk], 'g-', lw=0.75) # my data is between 0 and 1
 
     return pc
