@@ -182,7 +182,7 @@ bool Stage1ParallelEventVisitor::leave_telescope_run()
               retrieve_nectarcam_ancillary_data(db_filename, run_config_->telescope_id(),
                 start_time, end_time);
         } else {
-          LOG(INFO) << "NectarCAM ancillary database not found: " << db_filename;
+          LOG(WARNING) << "NectarCAM ancillary database not found: " << db_filename;
         }
         break;
       case calin::ix::iact_data::instrument_layout::CameraLayout::LSTCAM:
