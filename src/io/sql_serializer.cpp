@@ -1154,7 +1154,7 @@ exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
       auto* r = m_parent->GetReflection();
       if(t->parent_field_d->type()==FieldDescriptor::TYPE_MESSAGE) {
         if(r->FieldSize(*m_parent, t->parent_field_d) <= int(loop_id))
-          r->AddMessage(m_parent, t->parent_field_d);
+          r->AddMessage(m_parent, t->parent_field_d)->Clear();
         m = r->MutableRepeatedMessage(m_parent, t->parent_field_d, loop_id);
       } else {
         m = m_parent;
@@ -1171,7 +1171,8 @@ exec_select_by_oid(SQLTable* t, uint64_t oid, google::protobuf::Message* m_root,
     }
 
     while(ifield != t->fields.end()) {
-      if(not t->stmt_select_oid->column_is_null(icol) and
+      if((*ifield)->db_field_present and
+        not t->stmt_select_oid->column_is_null(icol) and
         field_selected((*ifield)->field_d, oneof_map))
       {
         if((*ifield)->field_d->is_repeated())
