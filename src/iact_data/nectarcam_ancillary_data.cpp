@@ -175,6 +175,7 @@ namespace {
           	COPY_OLD_2_NEW(light_02);
           	COPY_OLD_2_NEW(light_03);
           	COPY_OLD_2_NEW(light_04);
+            data->mutable_ecc_measurements()->add_measurement()->CopyFrom(meas);
           } else {
             good = false;
           }
