@@ -26,7 +26,7 @@ import calin.diagnostics.stage1
 import calin.iact_data.instrument_layout
 
 def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis = None,
-        draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        draw_outline=True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, aux_label_fontsize=5.5, stat_label_fontsize=4.75):
     SQRT3_2 = numpy.sqrt(3)/2
     RAD_30 = 30.0/180.0*numpy.pi
@@ -82,8 +82,8 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
         configured_modules=rc.configured_module_id(),
         additional_polygons=additional_polygons,
         additional_polygon_data=additional_polygon_data,
-        mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
-        draw_outline=draw_outline, axis=axis, hatch_missing_modules=True)
+        draw_outline=draw_outline, mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
+        axis=axis, hatch_missing_modules=True)
 
     vmin = 0.5/evts_ondisk
     vmin_color_change = vmin**0.45
@@ -127,3 +127,71 @@ def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis
     cb.ax.plot([xmin, xmax], [1.0/evts_ondisk, 1.0/evts_ondisk], 'g-', lw=0.75) # my data is between 0 and 1
 
     return pc
+
+def draw_feb_temperatures(stage1, temperature_set=1, cmap = matplotlib.cm.CMRmap, axis = None,
+        draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        mod_label_fontsize=4, stat_label_fontsize=4.75):
+    tfeb1 = []
+    tfeb2 = []
+    for modid in stage1.run_config().configured_module_id() :
+        if(stage1.nectarcam().ancillary_data().feb_temperature_has_key(int(modid))):
+            measurement_set = stage1.nectarcam().ancillary_data().feb_temperature(int(modid))
+            tfeb1.append(numpy.mean([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]))
+            tfeb2.append(numpy.mean([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())]))
+    tfeb = tfeb1 if temperature_set==1 else tfeb2
+
+    if(axis is None):
+        axis = matplotlib.pyplot.gca()
+
+    pc = calin.plotting.plot_camera_module_image(tfeb, stage1.run_config().camera_layout(),
+                    configured_modules=stage1.run_config().configured_module_id(),
+                    axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                    mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
+                    hatch_missing_modules=True, stats_format=u'%4.2f\u00b0C',
+                    stats_fontsize=stat_label_fontsize)
+    cb = axis.get_figure().colorbar(pc, label=u'FEB temperature %d [\u2103]'%temperature_set)
+
+    if(mod_label_fontsize is not None and mod_label_fontsize>0):
+        calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
+                                configured_modules=stage1.run_config().configured_module_id(),
+                                pc=pc, module_values = tfeb, fontsize=mod_label_fontsize)
+
+    axis.get_xaxis().set_visible(False)
+    axis.get_yaxis().set_visible(False)
+
+    def measurement_val(m):
+        m = numpy.asarray(m)
+        return ' ====' if(numpy.all(m==0) or numpy.any(m<-30) or numpy.any(m>50)) else \
+            ' %4.1f'%numpy.mean(m)
+
+    if(stage1.nectarcam().ancillary_data().has_ecc_measurements() and \
+            stage1.nectarcam().ancillary_data().ecc_measurements().measurement_size()>0):
+        measurement_set = stage1.nectarcam().ancillary_data().ecc_measurements()
+
+        tecc = 'ECC'
+        tecc += measurement_val([measurement_set.measurement(i).temp_01() for i in range(measurement_set.measurement_size())])
+        tecc += measurement_val([measurement_set.measurement(i).temp_02() for i in range(measurement_set.measurement_size())])
+        tecc += measurement_val([measurement_set.measurement(i).temp_03() for i in range(measurement_set.measurement_size())])
+        tecc += measurement_val([measurement_set.measurement(i).temp_04() for i in range(measurement_set.measurement_size())])
+        tecc += '\n\u00b0C'
+        tecc += measurement_val([measurement_set.measurement(i).temp_05() for i in range(measurement_set.measurement_size())])
+        tecc += measurement_val([measurement_set.measurement(i).temp_06() for i in range(measurement_set.measurement_size())])
+        tecc += measurement_val([measurement_set.measurement(i).temp_07() for i in range(measurement_set.measurement_size())])
+        tecc += measurement_val([measurement_set.measurement(i).temp_08() for i in range(measurement_set.measurement_size())])
+        tecc += '\n'
+        tecc += measurement_val([measurement_set.measurement(i).temp_09() for i in range(measurement_set.measurement_size())])[1:]
+        tecc += measurement_val([measurement_set.measurement(i).temp_10() for i in range(measurement_set.measurement_size())])
+        tecc += measurement_val([measurement_set.measurement(i).temp_11() for i in range(measurement_set.measurement_size())])
+        tecc += measurement_val([measurement_set.measurement(i).temp_12() for i in range(measurement_set.measurement_size())])
+
+        tecc4 = measurement_val([measurement_set.measurement(i).temp_13() for i in range(measurement_set.measurement_size())])[1:]
+        tecc4 += measurement_val([measurement_set.measurement(i).temp_14() for i in range(measurement_set.measurement_size())])
+        tecc4 += measurement_val([measurement_set.measurement(i).temp_15() for i in range(measurement_set.measurement_size())])
+        tecc4 += measurement_val([measurement_set.measurement(i).temp_16() for i in range(measurement_set.measurement_size())])
+
+        if(tecc4 != '==== ==== ==== ===='):
+            tecc += '\n' + tecc4
+
+        max_xy = max(numpy.max(numpy.abs(stage1.run_config().camera_layout().outline_polygon_vertex_x())),
+                          numpy.max(numpy.abs(stage1.run_config().camera_layout().outline_polygon_vertex_y())))
+        axis.text(max_xy,max_xy,tecc,ha='right',va='top',fontfamily='monospace',fontsize=stat_label_fontsize)
