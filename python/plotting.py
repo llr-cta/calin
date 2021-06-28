@@ -119,37 +119,39 @@ def add_outline(axis, layout, plate_scale = 1.0, rotation = 0.0, fill=False,
         all_p.append(p)
     return all_p
 
-def add_stats(axis, max_xy, values, ids, units='', stats_fontsize=4.75, stats_format='%.3f'):
-    if(units):
-        stats_format += ' ' + units
-    axis.text(-max_xy,max_xy,('Median : '+stats_format+'\nMAD : '+stats_format)%(
-            numpy.median(values), numpy.median(abs(values - numpy.median(values)))),
+def add_stats(axis, max_xy, values, ids, stats_fontsize=4.75, stats_format='%.3f',
+        draw_top12 = True):
+    axis.text(-max_xy,max_xy,('Median : '+stats_format+'\nMAD : '+stats_format+
+                '\nMin : '+stats_format+'\nMax : '+stats_format)%(
+            numpy.median(values), numpy.median(abs(values - numpy.median(values))),
+            numpy.min(values), numpy.max(values)),
         fontsize=stats_fontsize, fontfamily='monospace',
         ha='left', va='top')
-    nshow = min(len(values),12)
-    isort = numpy.argsort(values)
-    id_len = numpy.max(list(map(lambda i: len(str(i)), ids)))
-    id_fmt = '%%0%dd'%id_len
-    topN = 'Top %d\n'%nshow
-    for i in range(nshow):
-        if(i):
-            topN += '\n' if(i%4 == 0) else ' '
-        topN += id_fmt%ids[isort[-(i+1)]]
-    axis.text(-max_xy,-max_xy,topN,
-        fontsize=stats_fontsize, fontfamily='monospace',
-        ha='left', va='bottom')
-    botN = 'Bottom %d\n'%nshow
-    for i in range(nshow):
-        if(i):
-            botN += '\n' if(i%4 == 0) else ' '
-        botN += id_fmt%ids[isort[i]]
-    axis.text(max_xy,-max_xy,botN,
-        fontsize=stats_fontsize, fontfamily='monospace',
-        ha='right', va='bottom')
+    if(draw_top12):
+        nshow = min(len(values),12)
+        isort = numpy.argsort(values)
+        id_len = numpy.max(list(map(lambda i: len(str(i)), ids)))
+        id_fmt = '%%0%dd'%id_len
+        topN = 'Top %d\n'%nshow
+        for i in range(nshow):
+            if(i):
+                topN += '\n' if(i%4 == 0) else ' '
+            topN += id_fmt%ids[isort[-(i+1)]]
+        axis.text(-max_xy,-max_xy,topN,
+            fontsize=stats_fontsize, fontfamily='monospace',
+            ha='left', va='bottom')
+        botN = 'Bottom %d\n'%nshow
+        for i in range(nshow):
+            if(i):
+                botN += '\n' if(i%4 == 0) else ' '
+            botN += id_fmt%ids[isort[i]]
+        axis.text(max_xy,-max_xy,botN,
+            fontsize=stats_fontsize, fontfamily='monospace',
+            ha='right', va='bottom')
 
 def add_module_numbers(axis, camera_layout, configured_modules = None, dx = 0, dy = 0,
-        plate_scale = 1.0, rotation = 0.0,
-        pc = None, module_values = None, hsv_hi_threshold=0.45, hsv_hi_color = 'k', hsv_lo_color = 'w',
+        plate_scale = 1.0, rotation = 0.0, pc = None, module_values = None,
+        brightness_hi_threshold=0.45, brightness_hi_color = 'k', brightness_lo_color = 'w',
         nonconfigured_color = None, **args):
 
     if(configured_modules is None):
@@ -160,16 +162,19 @@ def add_module_numbers(axis, camera_layout, configured_modules = None, dx = 0, d
 
     modules_labelled = numpy.zeros(camera_layout.module_size(), dtype=bool)
 
+    def rgba_to_brightness(rgba):
+        return colorsys.rgb_to_hls(*rgba[:3])[1]
+
     crot = numpy.cos(rotation/180.0*numpy.pi)
     srot = numpy.sin(rotation/180.0*numpy.pi)
     for i, modid in enumerate(configured_modules):
         m = camera_layout.module(int(modid))
-        label_color = hsv_hi_color
+        label_color = brightness_hi_color
         if(pc is not None and module_values is not None):
             rgba = pc.cmap(pc.norm(module_values[i]))
-            hsv = colorsys.rgb_to_hls(*rgba[:3])
-            if(hsv[1] < hsv_hi_threshold):
-                label_color = hsv_lo_color
+            brightness = rgba_to_brightness(rgba)
+            if(brightness < brightness_hi_threshold):
+                label_color = brightness_lo_color
         x = (m.x()*crot - m.y()*srot)*plate_scale
         y = (m.y()*crot + m.x()*srot)*plate_scale
         axis.text(x+dx, y+dy, '%d'%modid, ha='center', va='center',
@@ -190,7 +195,7 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         cmap = matplotlib.cm.CMRmap_r, axis = None, draw_outline = False,
         pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         hatch_missing_channels = False,
-        draw_stats = False, stats_fontsize = 4.75, stats_format='%.3f', units='',
+        draw_stats = False, stats_fontsize = 4.75, stats_format='%.3f', draw_top12 = True,
         additional_polygons = [], additional_polygon_data = []):
     if(channel_mask is None and zero_suppression is not None):
         channel_mask = numpy.asarray(channel_data)>zero_suppression
@@ -256,7 +261,8 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
 
     if(draw_stats):
         add_stats(axis, max_xy, pix_data, pix_ids,
-            stats_fontsize=stats_fontsize, stats_format=stats_format, units=units)
+           stats_fontsize=stats_fontsize, stats_format=stats_format,
+           draw_top12=draw_top12)
 
     axis.axis('square')
     axis.axis(numpy.asarray([-1,1,-1,1])*(R or 1.05*max_xy))
@@ -268,7 +274,7 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
         cmap = matplotlib.cm.CMRmap_r, axis = None, draw_outline = False,
         mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         hatch_missing_modules = False,
-        draw_stats = False, stats_fontsize = 4.75, stats_format='%.3f', units='',
+        draw_stats = False, stats_fontsize = 4.75, stats_format='%.3f', draw_top12 = True,
         additional_polygons = [], additional_polygon_data = []):
     if(module_mask is None and zero_suppression is not None):
         module_mask = numpy.asarray(module_data)>zero_suppression
@@ -305,6 +311,8 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
             mod_data.append(module_data[mod_index])
             mod_ids.append(mod_id)
 
+    axis = axis or matplotlib.pyplot.gca()
+
     if draw_outline and hatch_missing_modules and configured_modules is not None and \
             len(configured_modules) != camera_layout.module_size():
         add_outline(axis, camera_layout, hatch='///',
@@ -314,7 +322,6 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
     pc = matplotlib.collections.PatchCollection(poly, cmap=cmap)
     pc.set_array(numpy.asarray(poly_data))
     pc.set_linewidths(mod_lw)
-    axis = axis or matplotlib.pyplot.gca()
     axis.add_collection(pc)
 
     if draw_outline:
@@ -331,7 +338,8 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
 
     if(draw_stats):
         add_stats(axis, max_xy, mod_data, mod_ids,
-            stats_fontsize=stats_fontsize, stats_format=stats_format, units=units)
+            stats_fontsize=stats_fontsize, stats_format=stats_format,
+            draw_top12=draw_top12)
 
     axis.axis('square')
     axis.axis(numpy.asarray([-1,1,-1,1])*(R or 1.05*max_xy))
