@@ -25,6 +25,40 @@ import calin.plotting
 import calin.diagnostics.stage1
 import calin.iact_data.instrument_layout
 
+def draw_pedrms(stage1, all_events_ped_win=False, low_gain=False,
+        cmap = matplotlib.cm.CMRmap_r, axis = None,
+        draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        mod_label_fontsize=4, aux_label_fontsize=5.5, stat_label_fontsize=4.75):
+    rc = stage1.const_run_config()
+    cl = rc.const_camera_layout()
+
+    if(axis is None):
+        axis = matplotlib.pyplot.gca()
+
+    charge_stats = stage1.const_charge_stats().const_low_gain() if low_gain \
+        else stage1.const_charge_stats().const_high_gain()
+
+    if(all_events_ped_win):
+        nsamp = stage1.config().low_gain_opt_sum().integration_n() if low_gain \
+            else stage1.config().high_gain_opt_sum().integration_n()
+        values = charge_stats.all_trigger_ped_win_var()
+    else:
+        nsamp = rc.num_samples()
+        values = charge_stats.ped_trigger_full_wf_var()
+
+    pc = calin.plotting.plot_camera_image(
+        numpy.sqrt(values), cl,
+        configured_channels=rc.configured_channel_id(),
+        draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
+        axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format='%.2f DC')
+
+    cb = axis.get_figure().colorbar(pc, ax=axis, label='Pedestal %d-sample RMS [DC]'%nsamp)
+
+    axis.get_xaxis().set_visible(False)
+    axis.get_yaxis().set_visible(False)
+
+    return pc
+
 def draw_missing_components_fraction(stage1, cmap = matplotlib.cm.CMRmap_r, axis = None,
         draw_outline=True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, aux_label_fontsize=5.5, stat_label_fontsize=4.75):
