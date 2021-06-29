@@ -121,9 +121,9 @@ def add_outline(axis, layout, plate_scale = 1.0, rotation = 0.0, fill=False,
 
 def add_stats(axis, max_xy, values, ids, stats_fontsize=4.75, stats_format='%.3f',
         draw_top12 = True):
-    axis.text(-max_xy,max_xy,('Median : '+stats_format+'\nMAD : '+stats_format+
+    axis.text(-max_xy,max_xy,('Median : '+stats_format+u'\nScale : '+stats_format+
                 '\nMin : '+stats_format+'\nMax : '+stats_format)%(
-            numpy.median(values), numpy.median(abs(values - numpy.median(values))),
+            numpy.median(values), 1.4826*numpy.median(abs(values - numpy.median(values))),
             numpy.min(values), numpy.max(values)),
         fontsize=stats_fontsize, fontfamily='monospace',
         ha='left', va='top')
