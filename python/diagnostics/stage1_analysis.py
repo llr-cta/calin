@@ -1,6 +1,6 @@
 # calin/python/diagnostics/stage1_analysis.py -- Stephen Fegan -- 2021-06-30
 #
-# Analysis of stage 1 data
+# Analysis of stage-one data
 #
 # Copyright 2021, Stephen Fegan <sfegan@llr.in2p3.fr>
 # Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris

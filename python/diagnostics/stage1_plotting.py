@@ -1,6 +1,6 @@
 # calin/python/diagnostics/stage1_plotting.py -- Stephen Fegan -- 2021-06-23
 #
-# Rendering of custom stage 1 diagnostics plots
+# Rendering of custom stage-one diagnostics plots
 #
 # Copyright 2021, Stephen Fegan <sfegan@llr.in2p3.fr>
 # Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
@@ -23,6 +23,7 @@ import numpy
 
 import calin.plotting
 import calin.diagnostics.stage1
+import calin.diagnostics.stage1_analysis
 import calin.iact_data.instrument_layout
 
 def draw_pedestal_value(stage1, all_events_ped_win=False, low_gain=False,
@@ -326,3 +327,71 @@ def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'in
         max_xy = max(numpy.max(numpy.abs(stage1.run_config().camera_layout().outline_polygon_vertex_x())),
                           numpy.max(numpy.abs(stage1.run_config().camera_layout().outline_polygon_vertex_y())))
         axis.text(max_xy,max_xy,tecc,ha='right',va='top',fontfamily='monospace',fontsize=stat_label_fontsize)
+
+def draw_all_clock_regression(stage1,
+        axis_freq = None, axis_t0 = None, axis_chi2 = None, clockid=0, cmap = 'inferno',
+        draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        mod_label_fontsize=4, stat_label_fontsize=4.75):
+
+    freq_offset_ppm, time_offset_ns, d2_per_event, n_problem_bins = \
+        calin.diagnostics.stage1_analysis.summarize_module_clock_regression(stage1, clockid)
+
+    if(axis_freq is not None):
+        axis = axis_freq
+        data = freq_offset_ppm
+        pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
+                        configured_modules=stage1.run_config().configured_module_id(),
+                        axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                        mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
+                        hatch_missing_modules=True, stats_format=u'%.2f ppm',
+                        stats_fontsize=stat_label_fontsize)
+        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency offset [PPM]')
+
+        if(mod_label_fontsize is not None and mod_label_fontsize>0):
+            calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
+                                    configured_modules=stage1.run_config().configured_module_id(),
+                                    pc=pc, module_values = data,
+                                    fontsize=mod_label_fontsize)
+
+        axis.get_xaxis().set_visible(False)
+        axis.get_yaxis().set_visible(False)
+
+    if(axis_t0 is not None):
+        axis = axis_t0
+        data = time_offset_ns
+        pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
+                        configured_modules=stage1.run_config().configured_module_id(),
+                        axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                        mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
+                        hatch_missing_modules=True, stats_format=u'%.2f ns',
+                        stats_fontsize=stat_label_fontsize)
+        cb = axis.get_figure().colorbar(pc, label='UCTS time at FEB clock reset [ns]')
+
+        if(mod_label_fontsize is not None and mod_label_fontsize>0):
+            calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
+                                    configured_modules=stage1.run_config().configured_module_id(),
+                                    pc=pc, module_values = data,
+                                    fontsize=mod_label_fontsize)
+
+        axis.get_xaxis().set_visible(False)
+        axis.get_yaxis().set_visible(False)
+
+    if(axis_chi2 is not None):
+        axis = axis_chi2
+        data = d2_per_event
+        pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
+                        configured_modules=stage1.run_config().configured_module_id(),
+                        axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                        mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
+                        hatch_missing_modules=True, stats_format=u'%.2f ns^2',
+                        stats_fontsize=stat_label_fontsize)
+        cb = axis.get_figure().colorbar(pc, label='Linrear-fit residual per event [ns$^2$]')
+
+        if(mod_label_fontsize is not None and mod_label_fontsize>0):
+            calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
+                                    configured_modules=stage1.run_config().configured_module_id(),
+                                    pc=pc, module_values = data,
+                                    fontsize=mod_label_fontsize)
+
+        axis.get_xaxis().set_visible(False)
+        axis.get_yaxis().set_visible(False)
