@@ -708,6 +708,16 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
       config_mod_id.push_back(mod_id);
     }
   }
+  else if(cta_run_header
+    and cta_run_header->has_nectarcam()
+    and cta_run_header->nectarcam().has_expected_modules_id()
+    and cta_run_header->nectarcam().expected_modules_id().data().size() == nmod_*sizeof(uint16_t))
+  {
+    const uint16_t* mod_id =
+      reinterpret_cast<const uint16_t*>(&
+        cta_run_header->nectarcam().expected_modules_id().data().front());
+    for(unsigned imod=0;imod<nmod_;imod++)config_mod_id.push_back(mod_id[imod]);
+  }
   else if(calin_run_config->has_nectarcam() and
     unsigned(calin_run_config->nectarcam().module_size()) == nmod_)
   {
@@ -719,16 +729,6 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
           std::to_string(nmod_camera));
       config_mod_id.push_back(mod_id);
     }
-  }
-  else if(cta_run_header
-    and cta_run_header->has_nectarcam()
-    and cta_run_header->nectarcam().has_expected_modules_id()
-    and cta_run_header->nectarcam().expected_modules_id().data().size() == nmod_*sizeof(uint16_t))
-  {
-    const uint16_t* mod_id =
-      reinterpret_cast<const uint16_t*>(&
-        cta_run_header->nectarcam().expected_modules_id().data().front());
-    for(unsigned imod=0;imod<nmod_;imod++)config_mod_id.push_back(mod_id[imod]);
   }
   else
   {
