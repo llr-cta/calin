@@ -188,6 +188,32 @@ def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r', axis = None,
 
     return pc
 
+def draw_module_dataorder(stage1, cmap = 'inferno', axis=None,
+        draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        mod_label_fontsize=4):
+
+    if(axis is None):
+        axis = matplotlib.pyplot.gca()
+
+    data = numpy.arange(stage1.run_config().configured_module_id_size())
+
+    pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
+                    configured_modules=stage1.run_config().configured_module_id(),
+                    axis=axis, cmap=cmap, draw_outline=True, draw_stats=False,
+                    mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
+                    hatch_missing_modules=True)
+    cb = axis.get_figure().colorbar(pc, label='Module data order')
+
+    if(mod_label_fontsize is not None and mod_label_fontsize>0):
+        calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
+                                configured_modules=stage1.run_config().configured_module_id(),
+                                pc=pc, module_values = data, fontsize=mod_label_fontsize)
+
+    axis.get_xaxis().set_visible(False)
+    axis.get_yaxis().set_visible(False)
+
+    return pc
+
 def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, cmap = 'inferno', axis=None,
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, stat_label_fontsize=4.75):
@@ -255,6 +281,8 @@ def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, cmap = 'inferno',
         max_xy = max(numpy.max(numpy.abs(stage1.run_config().camera_layout().outline_polygon_vertex_x())),
                           numpy.max(numpy.abs(stage1.run_config().camera_layout().outline_polygon_vertex_y())))
         axis.text(max_xy,max_xy,tecc,ha='right',va='top',fontfamily='monospace',fontsize=stat_label_fontsize)
+
+    return pc
 
 def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'inferno', axis = None,
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
@@ -328,6 +356,8 @@ def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'in
                           numpy.max(numpy.abs(stage1.run_config().camera_layout().outline_polygon_vertex_y())))
         axis.text(max_xy,max_xy,tecc,ha='right',va='top',fontfamily='monospace',fontsize=stat_label_fontsize)
 
+    return pc
+
 def draw_all_clock_regression(stage1,
         axis_freq = None, axis_t0 = None, axis_chi2 = None, clockid=0, cmap = 'inferno',
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
@@ -395,3 +425,5 @@ def draw_all_clock_regression(stage1,
 
         axis.get_xaxis().set_visible(False)
         axis.get_yaxis().set_visible(False)
+
+    return pc
