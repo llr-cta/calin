@@ -53,9 +53,9 @@ def summarize_module_clock_regression(stage1, iclock=0):
 
         mask = numpy.bitwise_and(numpy.bitwise_or(mask_oob_intercept, mask_oob_residual), mask_n)
 
-        mod_freq_offset_ppm[imod] = 1e6*(numpy.mean(all_a[mask_n])-1) if numpy.count_nonzero(mask_n) else nan
-        mod_time_offset_ns[imod] = numpy.mean(all_y_at_0[mask_n]) if numpy.count_nonzero(mask_n) else nan
-        mod_d2_per_event[imod] = numpy.mean(all_d2[mask_n]/all_n[mask_n]) if numpy.count_nonzero(mask_n) else nan
+        mod_freq_offset_ppm[imod] = 1e6*(numpy.mean(all_a[mask_n])-1) if numpy.count_nonzero(mask_n) else numpy.nan
+        mod_time_offset_ns[imod] = numpy.mean(all_y_at_0[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
+        mod_d2_per_event[imod] = numpy.mean(all_d2[mask_n]/all_n[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
         mod_problem_bins[imod] = numpy.count_nonzero(mask)
 
     return mod_freq_offset_ppm, mod_time_offset_ns, mod_d2_per_event, mod_problem_bins
