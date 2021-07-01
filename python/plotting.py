@@ -127,11 +127,11 @@ def add_stats(axis, max_xy, values, ids, mask=None, stats_fontsize=4.75, stats_f
             raise ValueError('Mask must either be None or have same length as values')
 
         mask = asarray(mask, dtype=bool)
-        if(numpy.count_nonzero(mask) == 0):
-            return
-
         values = numpy.asarray(values)[mask]
         ids = numpyt.asarray(ids)[mask]
+
+    if(len(values) == 0):
+        return
 
     axis.text(-max_xy,max_xy,('Median : '+stats_format+u'\nScale : '+stats_format+
                 '\nMin : '+stats_format+'\nMax : '+stats_format)%(
