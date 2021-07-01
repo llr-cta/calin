@@ -26,6 +26,60 @@ import calin.diagnostics.stage1
 import calin.diagnostics.stage1_analysis
 import calin.iact_data.instrument_layout
 
+def draw_log_delta_t_histogram(stage1, event_set = [ 'all' ],axis = None):
+    if(axis is None):
+        axis = matplotlib.pyplot.gca()
+
+    ri = stage1.const_run_info()
+    for set in event_set:
+        if(set == 'physics'):
+            dt_h = ri.const_log10_delta_t_histogram_trigger_physics()
+            dt2_h = ri.const_log10_delta_t_histogram_trigger_physics()
+        elif(set == 'consecutive'):
+            dt_h = ri.const_log10_delta_t_histogram()
+            dt2_h = ri.const_log10_delta2_t_histogram()
+        else:
+            dt_h = ri.const_log10_delta_t_histogram_all_recorded()
+            dt2_h = None
+
+        calin.plotting.plot_histogram(dt_h,axis=axis,xoffset=6,xscale_as_log10=True,
+            normalise=True,density=True,label='Delta-T : $t_{i+1}-t_i$')
+        if(dt2_h is not None):
+            calin.plotting.plot_histogram(dt2_h,axis=axis,xoffset=6,xscale_as_log10=True,
+                normalise=True,density=True,label='Delta-2T : $t_{i+2}-t_i$')
+
+    axis.set_yscale('log')
+    axis.set_xlabel('Time difference [us]')
+    axis.set_ylabel('Density [1]')
+    axis.legend(loc=8)
+    axis.grid()
+
+    dt_sh = calin.math.histogram.SimpleHist(dt_h)
+    axis.text(10**(dt_sh.min_xval()+6), dt_sh.weight(0)/dt_sh.sum_w()/dt_sh.dxval()*0.4,
+        '%.3fus'%(10**(dt_sh.min_xval()+6)), ha='left')
+
+    if(dt2_h is not None):
+        dt2_sh = calin.math.histogram.SimpleHist(dt2_h)
+        axis.text(10**(dt2_sh.min_xval()+6), dt2_sh.weight(0)/dt2_sh.sum_w()/dt2_sh.dxval()*0.5,
+            '%.2fus'%(10**(dt2_sh.min_xval()+6)), ha='left')
+
+    def to_khz(x):
+        x = numpy.array(x).astype(float)
+        near_zero = numpy.isclose(x, 0)
+        x[near_zero] = numpy.inf
+        x[~near_zero] = 1e3 / x[~near_zero]
+        return x
+
+    def from_khz(x):
+        x = numpy.array(x).astype(float)
+        near_zero = numpy.isclose(x, 0)
+        x[near_zero] = numpy.inf
+        x[~near_zero] = 1e-3 / x[~near_zero]
+        return x
+
+    secax = axis.secondary_xaxis('top', functions=(to_khz, from_khz))
+    secax.set_xlabel('Frequency [kHz]')
+
 def draw_pedestal_value(stage1, all_events_ped_win=False, low_gain=False,
         cmap = 'inferno', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
@@ -42,13 +96,15 @@ def draw_pedestal_value(stage1, all_events_ped_win=False, low_gain=False,
     if(all_events_ped_win):
         nsamp = stage1.config().low_gain_opt_sum().integration_n() if low_gain \
             else stage1.config().high_gain_opt_sum().integration_n()
+        nevent = charge_stats.all_trigger_event_count()
         values = charge_stats.all_trigger_ped_win_mean()/nsamp
     else:
         nsamp = rc.num_samples()
+        nevent = charge_stats.ped_trigger_event_count()
         values = charge_stats.ped_trigger_full_wf_mean()/nsamp
 
     pc = calin.plotting.plot_camera_image(
-        values, cl, cmap=cmap,
+        values, cl, channel_mask=nevent>0, cmap=cmap,
         configured_channels=rc.configured_channel_id(),
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format='%.2f DC')
@@ -76,13 +132,15 @@ def draw_pedestal_rms(stage1, all_events_ped_win=False, low_gain=False,
     if(all_events_ped_win):
         nsamp = stage1.config().low_gain_opt_sum().integration_n() if low_gain \
             else stage1.config().high_gain_opt_sum().integration_n()
+        nevent = charge_stats.all_trigger_event_count()
         values = charge_stats.all_trigger_ped_win_var()
     else:
         nsamp = rc.num_samples()
+        nevent = charge_stats.ped_trigger_event_count()
         values = charge_stats.ped_trigger_full_wf_var()
 
     pc = calin.plotting.plot_camera_image(
-        numpy.sqrt(values), cl, cmap=cmap,
+        numpy.sqrt(values), cl, channel_mask=nevent>0, cmap=cmap,
         configured_channels=rc.configured_channel_id(),
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format='%.2f DC')
@@ -145,7 +203,7 @@ def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r', axis = None,
         draw_outline=draw_outline, mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
         axis=axis, hatch_missing_modules=True)
 
-    vmin = 0.5/evts_ondisk
+    vmin = 1/evts_ondisk**1.1
     vmin_color_change = vmin**0.45
     def label_color(value):
         return 'k' if value < vmin_color_change else 'w'
@@ -214,16 +272,42 @@ def draw_module_dataorder(stage1, cmap = 'inferno', axis=None,
 
     return pc
 
+def draw_channel_dataorder(stage1, cmap = 'inferno', axis=None,
+        draw_outline = True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888'):
+
+    if(axis is None):
+        axis = matplotlib.pyplot.gca()
+
+    data = numpy.arange(stage1.run_config().configured_channel_id_size())
+
+    pc = calin.plotting.plot_camera_image(data, stage1.run_config().camera_layout(),
+                    configured_channels=stage1.run_config().configured_channel_id(),
+                    axis=axis, cmap=cmap, draw_outline=True, draw_stats=False,
+                    pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
+                    hatch_missing_channels=True)
+    cb = axis.get_figure().colorbar(pc, label='Channel data order')
+
+    axis.get_xaxis().set_visible(False)
+    axis.get_yaxis().set_visible(False)
+
+    return pc
+
 def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, cmap = 'inferno', axis=None,
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, stat_label_fontsize=4.75):
     tfeb1 = []
     tfeb2 = []
+    mask = []
     for modid in stage1.run_config().configured_module_id() :
         if(stage1.nectarcam().ancillary_data().feb_temperature_has_key(int(modid))):
             measurement_set = stage1.nectarcam().ancillary_data().feb_temperature(int(modid))
             tfeb1.append(numpy.mean([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]))
             tfeb2.append(numpy.mean([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())]))
+            mask.append(True)
+        else:
+            tfeb1.append(numpy.nan)
+            tfeb2.append(numpy.nan)
+            mask.append(False)
     tfeb = tfeb1 if temperature_set==1 else tfeb2
 
     if(axis is None):
@@ -231,7 +315,7 @@ def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, cmap = 'inferno',
 
     pc = calin.plotting.plot_camera_module_image(tfeb, stage1.run_config().camera_layout(),
                     configured_modules=stage1.run_config().configured_module_id(),
-                    axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                    module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
                     mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
                     hatch_missing_modules=True, stats_format=u'%4.2f\u00b0C',
                     stats_fontsize=stat_label_fontsize)
@@ -293,11 +377,17 @@ def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'in
 
     tfeb1 = []
     tfeb2 = []
+    mask = []
     for modid in stage1.run_config().configured_module_id() :
         if(stage1.nectarcam().ancillary_data().feb_temperature_has_key(int(modid))):
             measurement_set = stage1.nectarcam().ancillary_data().feb_temperature(int(modid))
             tfeb1.append(minmax([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]))
             tfeb2.append(minmax([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())]))
+            mask.append(True)
+        else:
+            tfeb1.append(numpy.nan)
+            tfeb2.append(numpy.nan)
+            mask.append(False)
     tfeb = tfeb1 if temperature_set==1 else tfeb2
 
     if(axis is None):
@@ -305,7 +395,7 @@ def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'in
 
     pc = calin.plotting.plot_camera_module_image(tfeb, stage1.run_config().camera_layout(),
                     configured_modules=stage1.run_config().configured_module_id(),
-                    axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                    module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
                     mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
                     hatch_missing_modules=True, stats_format=u'%4.2f\u00b0C',
                     stats_fontsize=stat_label_fontsize)
@@ -365,13 +455,14 @@ def draw_all_clock_regression(stage1,
 
     freq_offset_ppm, time_offset_ns, d2_per_event, n_problem_bins = \
         calin.diagnostics.stage1_analysis.summarize_module_clock_regression(stage1, clockid)
+    mask = numpy.isfinite(freq_offset_ppm)
 
     if(axis_freq is not None):
         axis = axis_freq
         data = freq_offset_ppm
         pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
                         configured_modules=stage1.run_config().configured_module_id(),
-                        axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                        module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
                         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
                         hatch_missing_modules=True, stats_format=u'%.2f ppm',
                         stats_fontsize=stat_label_fontsize)
@@ -391,7 +482,7 @@ def draw_all_clock_regression(stage1,
         data = time_offset_ns
         pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
                         configured_modules=stage1.run_config().configured_module_id(),
-                        axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                        module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
                         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
                         hatch_missing_modules=True, stats_format=u'%.2f ns',
                         stats_fontsize=stat_label_fontsize)
@@ -411,7 +502,7 @@ def draw_all_clock_regression(stage1,
         data = d2_per_event
         pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
                         configured_modules=stage1.run_config().configured_module_id(),
-                        axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                        module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
                         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
                         hatch_missing_modules=True, stats_format=u'%.2f ns^2',
                         stats_fontsize=stat_label_fontsize)
