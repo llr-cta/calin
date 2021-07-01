@@ -119,8 +119,20 @@ def add_outline(axis, layout, plate_scale = 1.0, rotation = 0.0, fill=False,
         all_p.append(p)
     return all_p
 
-def add_stats(axis, max_xy, values, ids, stats_fontsize=4.75, stats_format='%.3f',
+def add_stats(axis, max_xy, values, ids, mask=None, stats_fontsize=4.75, stats_format='%.3f',
         draw_top12 = True):
+
+    if(mask is not None):
+        if(len(mask) != len(values)):
+            raise ValueError('Mask must either be None or have same length as values')
+
+        mask = asarray(mask, dtype=bool)
+        if(numpy.count_nonzero(mask) == 0):
+            return
+
+        values = numpy.asarray(values)[mask]
+        ids = numpyt.asarray(ids)[mask]
+
     axis.text(-max_xy,max_xy,('Median : '+stats_format+u'\nScale : '+stats_format+
                 '\nMin : '+stats_format+'\nMax : '+stats_format)%(
             numpy.median(values), 1.4826*numpy.median(abs(values - numpy.median(values))),
