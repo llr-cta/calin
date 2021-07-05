@@ -41,7 +41,7 @@ cfg = calin.iact_data.event_dispatcher.ParallelEventDispatcher.default_config()
 opt = calin.ix.scripts.cta_stage1.CommandLineOptions()
 opt.set_run_number(0)
 opt.set_o('calin_stage1.sqlite')
-opt.set_db_results_table_name('stage1')
+opt.set_db_stage1_table_name('stage1')
 opt.set_log_frequency(cfg.log_frequency())
 opt.set_nthread(1)
 opt.mutable_decoder().CopyFrom(cfg.decoder())
@@ -98,14 +98,14 @@ sql_mode = calin.io.sql_serializer.SQLite3Serializer.EXISTING_OR_NEW_RW
 if opt.truncate_db():
     sql_mode = calin.io.sql_serializer.SQLite3Serializer.TRUNCATE_RW
 sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
-sql.create_or_extend_tables(opt.db_results_table_name(),
+sql.create_or_extend_tables(opt.db_stage1_table_name(),
     calin.ix.diagnostics.stage1.Stage1.descriptor())
 
 # Run all the visitors
 if(endpoints[0].startswith('tcp://') or endpoints[0].startswith('ipc://')
         or endpoints[0].startswith('pgm://') or endpoints[0].startswith('pgme://')):
     dispatcher.process_cta_zmq_run(endpoints, cfg)
-    sql.insert(opt.db_results_table_name(), visitor.stage1_results())
+    sql.insert(opt.db_stage1_table_name(), visitor.stage1_results())
 else:
     first_file = True
     failed_files = []
@@ -119,20 +119,20 @@ else:
         if(opt.skip_existing() or opt.replace_existing()):
             selector = calin.ix.diagnostics.stage1.SelectByFilename()
             selector.set_filename(filename)
-            oids = sql.select_oids_matching(opt.db_results_table_name(), selector)
+            oids = sql.select_oids_matching(opt.db_stage1_table_name(), selector)
             if oids and opt.skip_existing():
                 print("#%d: skipping %s"%(ifile,filename))
                 nskip += 1
                 continue
             if oids and opt.replace_existing():
                 for oid in oids:
-                    sql.delete_by_oid(opt.db_results_table_name(), oid)
+                    sql.delete_by_oid(opt.db_stage1_table_name(), oid)
         print("#%d: processing %s"%(ifile,filename))
         try:
             calin.util.log.prune_default_protobuf_log()
             calin.provenance.chronicle.prune_the_chronicle()
             dispatcher.process_cta_zfits_run(filename, cfg)
-            good, oid = sql.insert(opt.db_results_table_name(), s1pev.stage1_results())
+            good, oid = sql.insert(opt.db_stage1_table_name(), s1pev.stage1_results())
             if(good):
                 print("Inserted stage1 results into database with OID:",oid)
                 nsuccess += 1
