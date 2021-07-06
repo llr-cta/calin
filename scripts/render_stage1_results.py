@@ -30,6 +30,45 @@ import calin.provenance.chronicle
 import calin.provenance.anthology
 import calin.diagnostics.stage1_plotting
 
+import matplotlib
+import matplotlib.figure
+import matplotlib.backends.backend_agg
+import io
+import os
+
+class FilesystemUploader:
+    def __init__(self, root_directory):
+        self.root_directory = os.path.normpath(os.path.expanduser(root_directory)) if root_directory else '.'
+        if(not os.path.isdir(self.root_directory)):
+            raise RuntimeError('Base path os not directory : '+self.root_directory)
+
+    def make_path(self, rel_path):
+        if(not rel_path):
+            return ''
+        rel_path = os.path.normpath(rel_path)
+        abs_path = os.path.normpath(os.path.join(self.root_directory, rel_path))
+        if((self.root_directory == '.' and (abs_path.startswith('../') or abs_path.startswith('/')))
+                or (self.root_directory != '.' and not abs_path.startswith(self.root_directory))):
+            raise RuntimeError('Cannot make path outside of base : '+rel_path)
+        if(not os.path.isdir(abs_path)):
+            (head, tail) = os.path.split(rel_path)
+            self.make_path(head)
+            # print("mkdir",abs_path)
+            os.mkdir(abs_path)
+        return abs_path
+
+    def upload_from_io(self, rel_filepath, iostream):
+        (rel_path, filename) = os.path.split(rel_filepath)
+        abs_path = os.path.join(self.make_path(rel_path), filename)
+        mode = 'wb' if iostream is io.StringIO else 'w'
+        with open(abs_path, mode) as f:
+            f.write(iostream.getvalue())
+
+    def upload_png_from_figure(self, rel_filepath, figure):
+        (rel_path, filename) = os.path.split(rel_filepath)
+        abs_path = os.path.join(self.make_path(rel_path), filename)
+        matplotlib.backends.backend_agg.FigureCanvasAgg(figure).print_png(abs_path)
+
 py_log = calin.util.log.PythonLogger()
 py_log.this.disown()
 calin.util.log.default_logger().add_logger(calin.util.log.default_protobuf_logger(),False)
@@ -40,6 +79,7 @@ opt.set_db('calin_stage1.sqlite')
 opt.set_db_stage1_table_name('stage1')
 opt.set_base_directory('.')
 opt.set_summary_csv('stage1_summary.csv')
+opt.set_figure_dpi(200)
 
 opt_proc = calin.util.options_processor.OptionsProcessor(opt, True);
 opt_proc.process_arguments(sys.argv)
@@ -67,13 +107,49 @@ if(len(opt_proc.problem_options()) != 0):
         print("  \"%s\""%o)
     exit(1)
 
-endpoints          = opt_proc.arguments()
-sql_file           = opt.db();
-
 # Open SQL file
+sql_file = opt.db();
 sql_mode = calin.io.sql_serializer.SQLite3Serializer.READ_ONLY
 sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
 
+# Uploader
+uploader = FilesystemUploader(opt.base_directory())
 
+sql_where = ''
+if(opt.run_number() > 0):
+    sql_where = 'WHERE run_number=%d'%opt.run_number()
+elif(opt.from_run_number() > 0 and opt.to_run_number() > 0):
+    sql_where = 'WHERE run_number>=%d AND run_number<=%d'%(
+        opt.from_run_number(), opt.to_run_number())
+elif(opt.from_run_number() > 0):
+    sql_where = 'WHERE run_number>=%d'%opt.from_run_number()
+elif(opt.to_run_number() > 0):
+    sql_where = 'WHERE run_number<=%d'%opt.to_run_number()
+
+if(sql_where):
+    all_oid = sql.select_oids_by_sql(opt.db_stage1_table_name(), sql_where)
+else:
+    all_oid = sql.select_all_oids(opt.db_stage1_table_name())
+
+
+figure_dpi = max(opt.figure_dpi(), 20)
+
+for oid in all_oid:
+    stage1 = calin.ix.diagnostics.stage1.Stage1()
+    sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
+    runno = stage1.run_number()
+    runbatchpath = 'runs%d-%d/'%(int(runno/1000)*1000, (int(runno/1000)+1)*1000)
+    print('Run :', runno)
+
+    ############################################################################
+    # FIGURE : Missing components
+    ############################################################################
+
+    ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+    calin.diagnostics.stage1_plotting.draw_missing_components_fraction(stage1,
+        axis=ax, mod_label_fontsize=4, aux_label_fontsize=5.5)
+    ax.set_title('Missing components, run : %d'%runno)
+    uploader.upload_png_from_figure(
+        runbatchpath+'run%d/run%d_missing_components.png'%(runno,runno),ax.figure)
 
 # The end
