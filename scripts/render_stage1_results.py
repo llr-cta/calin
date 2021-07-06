@@ -132,14 +132,20 @@ else:
     all_oid = sql.select_all_oids(opt.db_stage1_table_name())
 
 
-figure_dpi = max(opt.figure_dpi(), 20)
+figure_dpi = max(opt.figure_dpi(), 60)
 
 for oid in all_oid:
     stage1 = calin.ix.diagnostics.stage1.Stage1()
     sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
     runno = stage1.run_number()
-    runbatchpath = 'runs%d-%d/'%(int(runno/1000)*1000, (int(runno/1000)+1)*1000)
     print('Run :', runno)
+
+    def upload_figure(runno, quantity, f):
+        runbatchpath = 'runs%d-%d'%(int(runno/1000)*1000, (int(runno/1000)+1)*1000)
+        uploader.upload_png_from_figure(
+            'by run/%s/run%d/run%d_%s.png'%(runbatchpath, runno, runno, quantity), f)
+        uploader.upload_png_from_figure(
+            'by quantity/%s/%s/run%d_%s.png'%(quantity, runbatchpath, runno, quantity), f)
 
     ############################################################################
     # FIGURE : Missing components
@@ -149,7 +155,84 @@ for oid in all_oid:
     calin.diagnostics.stage1_plotting.draw_missing_components_fraction(stage1,
         axis=ax, mod_label_fontsize=4, aux_label_fontsize=5.5)
     ax.set_title('Missing components, run : %d'%runno)
-    uploader.upload_png_from_figure(
-        runbatchpath+'run%d/run%d_missing_components.png'%(runno,runno),ax.figure)
+    upload_figure(runno, 'missing_components', ax.figure)
+
+    ############################################################################
+    # FIGURE : Pedestals
+    ############################################################################
+
+    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_high_gain()
+            and max(stage1.const_charge_stats().const_high_gain().ped_trigger_event_count())>0):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=False,low_gain=False, axis=ax)
+        ax.set_title('High-gain pedestal mean (ped events), run : %d'%runno)
+        upload_figure(runno, 'pedestal_mean_hg_ped_evt', ax.figure)
+
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=False,low_gain=False, axis=ax)
+        ax.set_title('High-gain pedestal rms (ped events), run : %d'%runno)
+        upload_figure(runno, 'pedestal_rms_hg_ped_evt', ax.figure)
+
+    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_low_gain()
+            and max(stage1.const_charge_stats().const_low_gain().ped_trigger_event_count())>0):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=False,low_gain=True, axis=ax)
+        ax.set_title('Low-gain pedestal mean (ped events), run : %d'%runno)
+        upload_figure(runno, 'pedestal_mean_lg_ped_evt', ax.figure)
+
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=False,low_gain=True, axis=ax)
+        ax.set_title('Low-gain pedestal rms (ped events), run : %d'%runno)
+        upload_figure(runno, 'pedestal_rms_lg_ped_evt', ax.figure)
+
+    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_high_gain()
+            and max(stage1.const_charge_stats().const_high_gain().all_trigger_event_count())>0):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=True,low_gain=False, axis=ax)
+        ax.set_title('High-gain pedestal mean (all events), run : %d'%runno)
+        upload_figure(runno, 'pedestal_mean_hg_all_evt', ax.figure)
+
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=True,low_gain=False, axis=ax)
+        ax.set_title('High-gain pedestal rms (all events), run : %d'%runno)
+        upload_figure(runno, 'pedestal_rms_hg_all_evt', ax.figure)
+
+    if(stage1.has_charge_stats() and stage1.const_charge_stats().has_low_gain()
+            and max(stage1.const_charge_stats().const_low_gain().all_trigger_event_count())>0):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_pedestal_value(stage1,all_events_ped_win=True,low_gain=True, axis=ax)
+        ax.set_title('Low-gain pedestal mean (all events), run : %d'%runno)
+        upload_figure(runno, 'pedestal_mean_lg_all_evt', ax.figure)
+
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_pedestal_rms(stage1,all_events_ped_win=True,low_gain=True, axis=ax)
+        ax.set_title('Low-gain pedestal rms (all events), run : %d'%runno)
+        upload_figure(runno, 'pedestal_rms_lg_all_evt', ax.figure)
+
+    ############################################################################
+    # FIGURE : FEB temperatures
+    ############################################################################
+
+    if(stage1.has_nectarcam() and stage1.const_nectarcam().has_ancillary_data() and
+            len(stage1.const_nectarcam().const_ancillary_data().feb_temperature_keys())>0):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,1,axis=ax)
+        ax.set_title('FEB temperature 1, run : %d'%runno)
+        upload_figure(runno, 'feb_temperature_1', ax.figure)
+
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,2,axis=ax)
+        ax.set_title('FEB temperature 2, run : %d'%runno)
+        upload_figure(runno, 'feb_temperature_2', ax.figure)
+
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,1,axis=ax)
+        ax.set_title('FEB temperature 1, run : %d'%runno)
+        upload_figure(runno, 'feb_temperature_spread_1', ax.figure)
+
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,2,axis=ax)
+        ax.set_title('FEB temperature 2, run : %d'%runno)
+        upload_figure(runno, 'feb_temperature_spread_2', ax.figure)
 
 # The end

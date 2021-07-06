@@ -97,7 +97,8 @@ def draw_pedestal_value(stage1, all_events_ped_win=False, low_gain=False,
         else stage1.const_charge_stats().const_high_gain()
 
     if(all_events_ped_win):
-        nsamp = stage1.config().low_gain_opt_sum().integration_n() if low_gain \
+        nsamp = stage1.config().low_gain_opt_sum().integration_n() if \
+                (low_gain and stage1.config().has_low_gain_opt_sum()) \
             else stage1.config().high_gain_opt_sum().integration_n()
         nevent = charge_stats.all_trigger_event_count()
         values = charge_stats.all_trigger_ped_win_mean()/nsamp
@@ -133,7 +134,8 @@ def draw_pedestal_rms(stage1, all_events_ped_win=False, low_gain=False,
         else stage1.const_charge_stats().const_high_gain()
 
     if(all_events_ped_win):
-        nsamp = stage1.config().low_gain_opt_sum().integration_n() if low_gain \
+        nsamp = stage1.config().low_gain_opt_sum().integration_n() if \
+                (low_gain and stage1.config().has_low_gain_opt_sum()) \
             else stage1.config().high_gain_opt_sum().integration_n()
         nevent = charge_stats.all_trigger_event_count()
         values = charge_stats.all_trigger_ped_win_var()
