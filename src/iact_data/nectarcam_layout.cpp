@@ -135,21 +135,29 @@ CameraLayout* nectarcam_general_layout(CameraLayout* layout,
   layout->set_can_read_trigger_image(true);
   layout->set_first_event_number(1);
 
-  layout->add_camera_clock_name("UCTS timestamp");
-  layout->add_camera_clock_name("UCTS 10MHz counter");
-  layout->add_camera_clock_name("UCTS pps counter");
-  layout->add_camera_clock_name("UCTS combined 10MHz and pps counter");
+  #define ADD_CAMERA_CLOCK(name, freq) \
+    layout->add_camera_clock_name(name); \
+    layout->add_camera_clock_frequency(freq)
 
-  layout->add_camera_clock_name("TIB 10MHz counter");
-  layout->add_camera_clock_name("TIB pps counter");
-  layout->add_camera_clock_name("TIB combined 10MHz and pps counter");
+  #define ADD_MODULE_CLOCK(name, freq) \
+    layout->add_module_clock_name(name); \
+    layout->add_module_clock_frequency(freq)
 
-  layout->add_camera_clock_name("FEB local 2ns TDC counter sum");
-  layout->add_camera_clock_name("FEB local pps and 2ns TDC counter sum");
+  ADD_CAMERA_CLOCK("UCTS timestamp",                        1.0e9);
+  ADD_CAMERA_CLOCK("UCTS 10MHz counter",                    1.0e7);
+  ADD_CAMERA_CLOCK("UCTS pps counter",                      1.0);
+  ADD_CAMERA_CLOCK("UCTS combined 10MHz and pps counter",   1.0e7);
 
-  layout->add_module_clock_name("local 2ns TDC time");
-  layout->add_module_clock_name("local 125MHz oscillator counter");
-  layout->add_module_clock_name("pps counter");
+  ADD_CAMERA_CLOCK("TIB 10MHz counter",                     1.0e7);
+  ADD_CAMERA_CLOCK("TIB pps counter",                       1.0);
+  ADD_CAMERA_CLOCK("TIB combined 10MHz and pps counter",    1.0e7);
+
+  ADD_CAMERA_CLOCK("FEB local 2ns TDC counter sum",         double(modvec.size())*1.0e9);
+  ADD_CAMERA_CLOCK("FEB local pps and 2ns TDC counter sum", double(modvec.size())*1.0e9);
+
+  ADD_MODULE_CLOCK("local 2ns TDC time",                    1.0e9);
+  ADD_MODULE_CLOCK("local 125MHz oscillator counter",       1.25e8);
+  ADD_MODULE_CLOCK("pps counter",                           1.0);
 
   layout->add_module_counter_name("global_event_counter");
   layout->add_module_counter_name("bunch_counter");

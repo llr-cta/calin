@@ -752,6 +752,9 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
     }
   }
 
+  calin_run_config->mutable_camera_layout()->set_camera_clock_frequency(7, double(config_mod_id.size())*1e9);
+  calin_run_config->mutable_camera_layout()->set_camera_clock_frequency(8, double(config_mod_id.size())*1e9);
+
   calin::iact_data::telescope_data_source::report_run_configuration_problems(calin_run_config);
 
   // ---------------------------------------------------------------------------

@@ -255,8 +255,14 @@ message CameraLayout {
   int64 first_event_number                                 = 46;
 
   repeated string camera_clock_name                        = 50;
-  repeated string module_clock_name                        = 51;
-  repeated string module_counter_name                      = 52;
+  repeated double camera_clock_frequency                   = 51 [
+    (CFO).desc = "Frequency of camera clock.", (CFO).units = "GHz" ];
+
+  repeated string module_clock_name                        = 52;
+  repeated double module_clock_frequency                   = 53 [
+    (CFO).desc = "Frequency of module clock.", (CFO).units = "GHz" ];
+
+  repeated string module_counter_name                      = 54;
 
   repeated uint32 outline_polygon_vertex_index             = 60 [
     (CFO).desc = "Index of end of camera polygon lines." ];
