@@ -30,6 +30,8 @@
 #include <math/regular_grid.hpp>
 #include <math/special.hpp>
 #include <iact_data/instrument_layout.hpp>
+#include <iact_data/nectarcam_layout.hpp>
+#include <iact_data/lstcam_layout.hpp>
 #include <util/log.hpp>
 
 using namespace calin::math::regular_grid;
@@ -378,4 +380,24 @@ calin::iact_data::instrument_layout::channel_outline(
 
   delete grid;
   return outline;
+}
+
+calin::ix::iact_data::instrument_layout::CameraLayout*
+calin::iact_data::instrument_layout::camera_layout(
+  calin::ix::iact_data::instrument_layout::CameraLayout::CameraType camera_type,
+  calin::ix::iact_data::instrument_layout::CameraLayout* layout)
+{
+  switch(camera_type) {
+  case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM:
+    return calin::iact_data::nectarcam_layout::nectarcam_layout(layout);
+  case calin::ix::iact_data::instrument_layout::CameraLayout::LSTCAM:
+    return calin::iact_data::lstcam_layout::lstcam_layout(layout);
+  case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM_TESTBENCH_19CHANNEL:
+    return calin::iact_data::nectarcam_layout::nectarcam_19module_layout(layout);
+  case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM_TESTBENCH_61CHANNEL:
+    return calin::iact_data::nectarcam_layout::nectarcam_61module_layout(layout);
+  case calin::ix::iact_data::instrument_layout::CameraLayout::NO_CAMERA:
+  default:
+    return nullptr;
+  }
 }

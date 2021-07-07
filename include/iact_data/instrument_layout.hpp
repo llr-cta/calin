@@ -67,5 +67,13 @@ calin::ix::iact_data::instrument_layout::OutlinePolygon* channel_outline(
   const calin::ix::iact_data::instrument_layout::CameraLayout& camera_layout,
   const std::vector<unsigned>& channel_id);
 
+#ifndef SWIG
+calin::ix::iact_data::instrument_layout::CameraLayout*
+camera_layout(calin::ix::iact_data::instrument_layout::CameraLayout::CameraType camera_type,
+  calin::ix::iact_data::instrument_layout::CameraLayout* layout = nullptr);
+#else
+calin::ix::iact_data::instrument_layout::CameraLayout*
+camera_layout(calin::ix::iact_data::instrument_layout::CameraLayout::CameraType camera_type);
+#endif
 
 } } } // namespace calin::iact_data::instrument_layout
