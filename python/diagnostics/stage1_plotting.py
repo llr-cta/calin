@@ -530,9 +530,9 @@ def draw_all_clock_regression(stage1,
                         configured_modules=stage1.run_config().configured_module_id(),
                         module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
                         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
-                        hatch_missing_modules=True, stats_format=u'%.2f ppm',
+                        hatch_missing_modules=True, stats_format=u'%.3f ppm',
                         stats_fontsize=stat_label_fontsize)
-        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency spread [PPM]')
+        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency drift [PPM]')
 
         if(mod_label_fontsize is not None and mod_label_fontsize>0):
             calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),

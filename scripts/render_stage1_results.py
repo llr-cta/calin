@@ -259,8 +259,8 @@ for oid in all_oid:
         ax3.set_title('FEB clock vs UCTS fit residual, run : %d'%runno)
         upload_figure(runno, 'feb_clock_residual', ax3.figure)
 
-        ax4.set_title('FEB clock frequency_spread, run : %d'%runno)
-        upload_figure(runno, 'feb_clock_frequency_spread', ax3.figure)
+        ax4.set_title('FEB clock frequency drift, run : %d'%runno)
+        upload_figure(runno, 'feb_clock_frequency_drift', ax4.figure)
 
 
 # The end
