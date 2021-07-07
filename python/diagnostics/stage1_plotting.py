@@ -454,11 +454,12 @@ def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'in
     return pc
 
 def draw_all_clock_regression(stage1,
-        axis_freq = None, axis_t0 = None, axis_chi2 = None, clockid=0, cmap = 'inferno',
+        axis_freq = None, axis_t0 = None, axis_chi2 = None, axis_freq_spread = None,
+        clockid=0, cmap = 'inferno',
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, stat_label_fontsize=4.75):
 
-    freq_offset_ppm, time_offset_ns, d2_per_event, n_problem_bins = \
+    freq_offset_ppm, freq_spread_ppm, time_offset_ns, d2_per_event, n_problem_bins = \
         calin.diagnostics.stage1_analysis.summarize_module_clock_regression(stage1, clockid)
     mask = numpy.isfinite(freq_offset_ppm)
 
@@ -512,6 +513,26 @@ def draw_all_clock_regression(stage1,
                         hatch_missing_modules=True, stats_format=u'%.2f ns^2',
                         stats_fontsize=stat_label_fontsize)
         cb = axis.get_figure().colorbar(pc, label='Linrear-fit residual per event [ns$^2$]')
+
+        if(mod_label_fontsize is not None and mod_label_fontsize>0):
+            calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
+                                    configured_modules=stage1.run_config().configured_module_id(),
+                                    pc=pc, module_values = data,
+                                    fontsize=mod_label_fontsize)
+
+        axis.get_xaxis().set_visible(False)
+        axis.get_yaxis().set_visible(False)
+
+    if(axis_freq_spread is not None):
+        axis = axis_freq_spread
+        data = freq_spread_ppm
+        pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
+                        configured_modules=stage1.run_config().configured_module_id(),
+                        module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                        mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
+                        hatch_missing_modules=True, stats_format=u'%.2f ppm',
+                        stats_fontsize=stat_label_fontsize)
+        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency spread [PPM]')
 
         if(mod_label_fontsize is not None and mod_label_fontsize>0):
             calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),

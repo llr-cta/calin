@@ -227,12 +227,40 @@ for oid in all_oid:
 
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,1,axis=ax)
-        ax.set_title('FEB temperature 1, run : %d'%runno)
+        ax.set_title('FEB temperature spread 1, run : %d'%runno)
         upload_figure(runno, 'feb_temperature_spread_1', ax.figure)
 
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,2,axis=ax)
-        ax.set_title('FEB temperature 2, run : %d'%runno)
+        ax.set_title('FEB temperature spread 2, run : %d'%runno)
         upload_figure(runno, 'feb_temperature_spread_2', ax.figure)
+
+    ############################################################################
+    # FIGURE : FEB clocks
+    ############################################################################
+
+    iclock = 0
+    if(stage1.has_clock_regression() and \
+            stage1.const_clock_regression().module_clock_size()>=iclock and \
+            stage1.const_clock_regression().const_module_clock(iclock).modules_size() > 0):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        ax2 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        ax3 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        ax4 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+
+        calin.diagnostics.stage1_plotting.draw_all_clock_regression(stage1,ax,ax2,ax3,ax4)
+
+        ax.set_title('FEB clock frequency error, run : %d'%runno)
+        upload_figure(runno, 'feb_clock_frequency_error', ax.figure)
+
+        ax2.set_title('FEB clock offset from UCTS, run : %d'%runno)
+        upload_figure(runno, 'feb_clock_offset', ax2.figure)
+
+        ax3.set_title('FEB clock vs UCTS fit residual, run : %d'%runno)
+        upload_figure(runno, 'feb_clock_residual', ax3.figure)
+
+        ax4.set_title('FEB clock frequency_spread, run : %d'%runno)
+        upload_figure(runno, 'feb_clock_frequency_spread', ax3.figure)
+
 
 # The end
