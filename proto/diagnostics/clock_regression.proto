@@ -94,7 +94,8 @@ message ClockRegressionParameters {
 };
 
 message SingleClockRegressionResults {
-  map<uint32, ClockRegressionParameters> bins              = 1;
+  int32 clock_id                                           = 1;
+  map<uint32, ClockRegressionParameters> bins              = 2;
 };
 
 message ModuleClockRegressionResults {
@@ -102,6 +103,7 @@ message ModuleClockRegressionResults {
 };
 
 message ClockRegressionResults {
-  repeated SingleClockRegressionResults camera_clock       = 1;
-  repeated ModuleClockRegressionResults module_clock       = 2;
+  int32 master_clock_id                                    = 1;
+  repeated SingleClockRegressionResults camera_clock       = 2;
+  repeated ModuleClockRegressionResults module_clock       = 3;
 };

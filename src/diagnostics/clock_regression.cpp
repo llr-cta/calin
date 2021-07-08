@@ -319,6 +319,7 @@ void ClockRegressionParallelEventVisitor::transfer_clock_results(
   calin::ix::diagnostics::clock_regression::SingleClockRegressionResults* res,
   const ClockTest& ct) const
 {
+  res->set_clock_id(ct.config->clock_id());
   for(const auto& ibin : ct.bins) {
     const auto* reg = ibin.second;
     auto& reg_param = (*res->mutable_bins())[ibin.first];
@@ -344,6 +345,8 @@ ClockRegressionParallelEventVisitor::clock_regression(
   } else {
     results = new calin::ix::diagnostics::clock_regression::ClockRegressionResults();
   }
+
+  results->set_master_clock_id(config_.master_clock_id());
 
   for(const auto& ct : camera_tests_) {
     transfer_clock_results(results->add_camera_clock(), ct);
