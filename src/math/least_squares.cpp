@@ -105,7 +105,9 @@ namespace {
 
 void I64LinearRegressionAccumulator::rebalance()
 {
-  shift_origin(x0_ + X_/W_, y0_ + Y_/W_);
+  if(W_) {
+    shift_origin(x0_ + X_/W_, y0_ + Y_/W_);
+  }
 }
 
 void I64LinearRegressionAccumulator::shift_origin(int64_t x0, int64_t y0)
@@ -287,9 +289,7 @@ void I64LinearRegressionAccumulatorIgnoringFirstDatum::integrate_first_event()
 
 void I64LinearRegressionAccumulatorIgnoringFirstDatum::rebalance()
 {
-  if(accumulator_.num_entries()) {
-    accumulator_.rebalance();
-  }
+  accumulator_.rebalance();
 }
 
 void KahanLinearRegressionAccumulator::accumulate(double x, double y)
