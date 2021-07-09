@@ -137,7 +137,7 @@ namespace {
   void accumulate_clock(int64_t master_time, uint64_t local_event_number,
     const calin::ix::iact_data::telescope_event::Clock& clock,
     const calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig& config,
-    std::map<int, calin::math::least_squares::I64LinearRegressionAccumulator*>& bins,
+    std::map<int, calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor::RegressionAccumulator*>& bins,
     bool do_rebalance)
   {
     int ibin;
@@ -159,7 +159,7 @@ namespace {
     auto* accumulator = bins[ibin];
     if(accumulator == nullptr) {
       bins[ibin] = accumulator =
-        new calin::math::least_squares::I64LinearRegressionAccumulator();
+        new calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor::RegressionAccumulator();
     }
     accumulator->accumulate(master_time, clock.time_value());
     if(do_rebalance) {
@@ -234,7 +234,7 @@ void ClockRegressionParallelEventVisitor::merge_into(ClockTest* to, const ClockT
 {
   for(auto& ibin : from.bins) {
     if(to->bins[ibin.first] == nullptr) {
-      to->bins[ibin.first] = new calin::math::least_squares::I64LinearRegressionAccumulator();
+      to->bins[ibin.first] = new calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor::RegressionAccumulator();
     }
     ibin.second->integrate_into(*to->bins[ibin.first]);
     if(config_.rebalance_nevent() > 0) {
@@ -321,7 +321,7 @@ void ClockRegressionParallelEventVisitor::transfer_clock_results(
 {
   res->set_clock_id(ct.config->clock_id());
   for(const auto& ibin : ct.bins) {
-    const auto* reg = ibin.second;
+    const auto* reg = &ibin.second->accumulator();
     auto& reg_param = (*res->mutable_bins())[ibin.first];
     reg_param.set_x0(reg->x0());
     reg_param.set_y0(reg->y0());

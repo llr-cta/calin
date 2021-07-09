@@ -34,6 +34,8 @@ class ClockRegressionParallelEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
 public:
+  using RegressionAccumulator = calin::math::least_squares::I64LinearRegressionAccumulatorIgnoringFirstDatum;
+
   ClockRegressionParallelEventVisitor(
     const calin::ix::diagnostics::clock_regression::ClockRegressionConfig& config = default_config());
 
@@ -66,10 +68,11 @@ public:
 #endif
 
 private:
+
   struct ClockTest {
     ~ClockTest() { for(auto& ibin : bins) { delete ibin.second; } }
     const calin::ix::diagnostics::clock_regression::SingleClockRegressionConfig* config = nullptr;
-    std::map<int, calin::math::least_squares::I64LinearRegressionAccumulator*> bins;
+    std::map<int, RegressionAccumulator*> bins;
   };
 
   struct ModuleClockTest {
