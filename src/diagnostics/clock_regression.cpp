@@ -322,17 +322,20 @@ void ClockRegressionParallelEventVisitor::transfer_clock_results(
   res->set_clock_id(ct.config->clock_id());
   for(const auto& ibin : ct.bins) {
     const auto* reg = &ibin.second->accumulator();
-    auto& reg_param = (*res->mutable_bins())[ibin.first];
-    reg_param.set_x0(reg->x0());
-    reg_param.set_y0(reg->y0());
-    reg_param.set_num_entries(reg->num_entries());
-    double a;
-    double b;
-    double d2;
-    reg->fit_parameters_and_d2(a,b,d2);
-    reg_param.set_a(a);
-    reg_param.set_b(b);
-    reg_param.set_d2(d2);
+
+    if(reg->num_entries()) {
+      auto& reg_param = (*res->mutable_bins())[ibin.first];
+      reg_param.set_x0(reg->x0());
+      reg_param.set_y0(reg->y0());
+      reg_param.set_num_entries(reg->num_entries());
+      double a;
+      double b;
+      double d2;
+      reg->fit_parameters_and_d2(a,b,d2);
+      reg_param.set_a(a);
+      reg_param.set_b(b);
+      reg_param.set_d2(d2);
+    }
   }
 }
 
