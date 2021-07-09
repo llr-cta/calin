@@ -107,6 +107,9 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_run(
       ModuleClockTest mct;
       mct.config = &mod_test;
       mct.modules.resize(run_config->configured_module_id_size());
+      for(auto& ct : mct.modules) {
+        ct.config = mct.config;
+      }
       module_tests_.push_back(mct);
     }
   }
