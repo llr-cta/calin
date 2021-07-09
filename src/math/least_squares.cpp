@@ -287,7 +287,9 @@ void I64LinearRegressionAccumulatorIgnoringFirstDatum::integrate_first_event()
 
 void I64LinearRegressionAccumulatorIgnoringFirstDatum::rebalance()
 {
-  accumulator_.rebalance();
+  if(accumulator_.num_entries()) {
+    accumulator_.rebalance();
+  }
 }
 
 void KahanLinearRegressionAccumulator::accumulate(double x, double y)
