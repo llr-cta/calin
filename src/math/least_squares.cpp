@@ -53,7 +53,7 @@ void I64LinearRegressionAccumulator::accumulate(int64_t x, int64_t y)
   }
 }
 
-void I64LinearRegressionAccumulator::integrate_into(I64LinearRegressionAccumulator& o)
+void I64LinearRegressionAccumulator::integrate_into(I64LinearRegressionAccumulator& o) const
 {
   if(not o.zero_set_) {
     o = *this;
@@ -235,6 +235,59 @@ void I64LinearRegressionAccumulator::dump_to_log() const
     << "XX: " << int64_t(XX_ >> 64) << ' ' << uint64_t(XX_ & ((__int128_t(1)<<64)-1)) << '\n'
     << "XY: " << int64_t(XY_ >> 64) << ' ' << uint64_t(XY_ & ((__int128_t(1)<<64)-1)) << '\n'
     << "YY: " << int64_t(YY_ >> 64) << ' ' << uint64_t(YY_ & ((__int128_t(1)<<64)-1)) << '\n';
+}
+
+void I64LinearRegressionAccumulatorIgnoringFirstDatum::
+accumulate(int64_t x, int64_t y)
+{
+  if(has_x0_) {
+    if(x >= x0_) {
+      accumulator_.accumulate(x, y);
+    } else {
+      accumulator_.accumulate(x0_, y0_);
+      x0_ = x;
+      y0_ = y;
+    }
+  } else {
+    x0_ = x;
+    y0_ = y;
+    has_x0_ = true;
+  }
+}
+
+void I64LinearRegressionAccumulatorIgnoringFirstDatum::
+integrate_into(I64LinearRegressionAccumulatorIgnoringFirstDatum& o) const
+{
+  accumulator_.integrate_into(o.accumulator_);
+
+  if(has_x0_) {
+    if(o.has_x0_) {
+      if(x0_ >= o.x0_) {
+        o.accumulator_.accumulate(x0_, y0_);
+      } else {
+        o.accumulator_.accumulate(o.x0_, o.y0_);
+        o.x0_ = x0_;
+        o.y0_ = y0_;
+      }
+    } else {
+      o.x0_ = x0_;
+      o.y0_ = y0_;
+      o.has_x0_ = true;
+    }
+  }
+}
+
+void I64LinearRegressionAccumulatorIgnoringFirstDatum::integrate_first_event()
+{
+  if(has_x0_) {
+    accumulator_.accumulate(x0_, y0_);
+    has_x0_ = false;
+  }
+}
+
+void I64LinearRegressionAccumulatorIgnoringFirstDatum::rebalance()
+{
+  accumulator_.rebalance();
 }
 
 void KahanLinearRegressionAccumulator::accumulate(double x, double y)

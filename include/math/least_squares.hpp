@@ -42,7 +42,7 @@ public:
     x0_(x0), y0_(y0) { /* nothing to see here */ }
 
   void accumulate(int64_t x, int64_t y);
-  void integrate_into(I64LinearRegressionAccumulator& other);
+  void integrate_into(I64LinearRegressionAccumulator& other) const;
 
   void rebalance();
   void shift_origin(int64_t x0, int64_t y0);
@@ -72,6 +72,27 @@ private:
   __int128_t XX_ = 0;
   __int128_t XY_ = 0;
   __int128_t YY_ = 0;
+#endif
+};
+
+class I64LinearRegressionAccumulatorIgnoringFirstDatum
+{
+public:
+  I64LinearRegressionAccumulatorIgnoringFirstDatum() { /* nothing to see here */ }
+
+  void accumulate(int64_t x, int64_t y);
+  void integrate_into(I64LinearRegressionAccumulatorIgnoringFirstDatum& other) const;
+
+  void rebalance();
+  void integrate_first_event();
+
+  I64LinearRegressionAccumulator& accumulator() { return accumulator_; }
+private:
+#ifndef SWIG
+  bool has_x0_ = false;
+  int64_t x0_;
+  int64_t y0_;
+  I64LinearRegressionAccumulator accumulator_;
 #endif
 };
 
