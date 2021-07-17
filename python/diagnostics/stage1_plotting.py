@@ -471,134 +471,51 @@ def draw_all_clock_regression(stage1,
     cam_freq_offset_ppm, cam_freq_spread_ppm, cam_time_offset_ns, cam_time_spread_ns, cam_d2_per_event = \
         calin.diagnostics.stage1_analysis.summarize_camera_clock_regressions(stage1)
 
-    if(axis_freq is not None):
-        axis = axis_freq
-        data = freq_offset_ppm
-        pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
+    def draw_it(axis, mod_data, cam_data, stats_format, cb_label):
+        pc = calin.plotting.plot_camera_module_image(mod_data, stage1.run_config().camera_layout(),
                         configured_modules=stage1.run_config().configured_module_id(),
                         module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
                         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
-                        hatch_missing_modules=True, stats_format=u'%.2f ppm',
+                        hatch_missing_modules=True, stats_format=stats_format,
                         stats_fontsize=stat_label_fontsize)
-        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency offset [ppm]')
+        cb = axis.get_figure().colorbar(pc, label=cb_label)
 
         if(mod_label_fontsize is not None and mod_label_fontsize>0):
             calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
                                     configured_modules=stage1.run_config().configured_module_id(),
-                                    pc=pc, module_values = data,
+                                    pc=pc, module_values=mod_data,
                                     fontsize=mod_label_fontsize)
 
         if(stat_label_fontsize is not None and stat_label_fontsize>0):
-            axis.text(max_xy,max_xy,('UCTS 10MHz : %.2f ppm\nTIB 10MHz : %.2f ppm\nFEB sum : %.2f ppm')%(
-                    cam_freq_offset_ppm[0], cam_freq_offset_ppm[1], cam_freq_offset_ppm[2]),
+            fmt_string = 'UCTS 10MHz : %s\nTIB 10MHz : %s\nFEB sum : %s'%(stats_format,stats_format,stats_format)
+            axis.text(max_xy,max_xy,fmt_string%(cam_freq_offset_ppm[0], cam_freq_offset_ppm[1], cam_freq_offset_ppm[2]),
                 fontsize=stat_label_fontsize, fontfamily='monospace',
                 ha='right', va='top')
 
         axis.get_xaxis().set_visible(False)
         axis.get_yaxis().set_visible(False)
+
+        return pc
+
+    all_pc = []
+    if(axis_freq is not None):
+        all_pc.append(draw_it(axis_freq, freq_offset_ppm, cam_freq_offset_ppm, '%.2f ppm',
+            'FEB oscillator frequency offset [ppm]'))
 
     if(axis_t0 is not None):
-        axis = axis_t0
-        data = time_offset_ns
-        pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
-                        configured_modules=stage1.run_config().configured_module_id(),
-                        module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
-                        mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
-                        hatch_missing_modules=True, stats_format=u'%.2f ns',
-                        stats_fontsize=stat_label_fontsize)
-        cb = axis.get_figure().colorbar(pc, label='UCTS time at FEB clock reset [ns]')
-
-        if(mod_label_fontsize is not None and mod_label_fontsize>0):
-            calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
-                                    configured_modules=stage1.run_config().configured_module_id(),
-                                    pc=pc, module_values = data,
-                                    fontsize=mod_label_fontsize)
-
-        if(stat_label_fontsize is not None and stat_label_fontsize>0):
-            axis.text(max_xy,max_xy,('UCTS 10MHz : %.2f ns\nTIB 10MHz : %.2f ns\nFEB sum : %.2f ns')%(
-                    cam_time_offset_ns[0], cam_time_offset_ns[1], cam_time_offset_ns[2]),
-                fontsize=stat_label_fontsize, fontfamily='monospace',
-                ha='right', va='top')
-
-        axis.get_xaxis().set_visible(False)
-        axis.get_yaxis().set_visible(False)
+        all_pc.append(draw_it(axis_t0, time_offset_ns, cam_time_offset_ns, u'%.2f ns',
+            'UCTS time at FEB clock reset [ns]'))
 
     if(axis_chi2 is not None):
-        axis = axis_chi2
-        data = numpy.sqrt(d2_per_event)
-        pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
-                        configured_modules=stage1.run_config().configured_module_id(),
-                        module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
-                        mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
-                        hatch_missing_modules=True, stats_format=u'%.2f ns',
-                        stats_fontsize=stat_label_fontsize)
-        cb = axis.get_figure().colorbar(pc, label='Linear-fit RMS residual per event [ns]')
-
-        if(mod_label_fontsize is not None and mod_label_fontsize>0):
-            calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
-                                    configured_modules=stage1.run_config().configured_module_id(),
-                                    pc=pc, module_values = data,
-                                    fontsize=mod_label_fontsize)
-
-        if(stat_label_fontsize is not None and stat_label_fontsize>0):
-            axis.text(max_xy,max_xy,('UCTS 10MHz : %.2f ns\nTIB 10MHz : %.2f ns\nFEB sum : %.2f ns')%(
-                    numpy.sqrt(cam_d2_per_event[0]), numpy.sqrt(cam_d2_per_event[1]), numpy.sqrt(cam_d2_per_event[2])),
-                fontsize=stat_label_fontsize, fontfamily='monospace',
-                ha='right', va='top')
-
-        axis.get_xaxis().set_visible(False)
-        axis.get_yaxis().set_visible(False)
+        all_pc.append(draw_it(axis_chi2, numpy.sqrt(d2_per_event), numpy.sqrt(cam_d2_per_event), u'%.2f ns',
+            'Linear-fit RMS residual per event [ns]'))
 
     if(axis_freq_spread is not None):
-        axis = axis_freq_spread
-        data = freq_spread_ppm
-        pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
-                        configured_modules=stage1.run_config().configured_module_id(),
-                        module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
-                        mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
-                        hatch_missing_modules=True, stats_format=u'%.3f ppm',
-                        stats_fontsize=stat_label_fontsize)
-        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency drift [ppm]')
-
-        if(mod_label_fontsize is not None and mod_label_fontsize>0):
-            calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
-                                    configured_modules=stage1.run_config().configured_module_id(),
-                                    pc=pc, module_values = data,
-                                    fontsize=mod_label_fontsize)
-
-        if(stat_label_fontsize is not None and stat_label_fontsize>0):
-            axis.text(max_xy,max_xy,('UCTS 10MHz : %.2f ppm\nTIB 10MHz : %.2f ppm\nFEB sum : %.2f ppm')%(
-                    cam_freq_spread_ppm[0], cam_freq_spread_ppm[1], cam_freq_spread_ppm[2]),
-                fontsize=stat_label_fontsize, fontfamily='monospace',
-                ha='right', va='top')
-
-        axis.get_xaxis().set_visible(False)
-        axis.get_yaxis().set_visible(False)
+        all_pc.append(draw_it(axis_freq_spread, freq_spread_ppm, cam_freq_spread_ppm, '%.3f ppm',
+            'FEB oscillator frequency drift [ppm]'))
 
     if(axis_t0_spread is not None):
-        axis = axis_t0_spread
-        data = time_spread_ns
-        pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
-                        configured_modules=stage1.run_config().configured_module_id(),
-                        module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
-                        mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
-                        hatch_missing_modules=True, stats_format=u'%.3f ns',
-                        stats_fontsize=stat_label_fontsize)
-        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency drift [ns]')
+        all_pc.append(draw_it(axis_t0_spread, time_spread_ns, cam_time_spread_ns, '%.3f ns',
+            'Spread in UCTS time at FEB clock reset [ns]]'))
 
-        if(mod_label_fontsize is not None and mod_label_fontsize>0):
-            calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
-                                    configured_modules=stage1.run_config().configured_module_id(),
-                                    pc=pc, module_values = data,
-                                    fontsize=mod_label_fontsize)
-
-        if(stat_label_fontsize is not None and stat_label_fontsize>0):
-            axis.text(max_xy,max_xy,('UCTS 10MHz : %.2f ns\nTIB 10MHz : %.2f ppm\nFEB ns : %.2f ns')%(
-                    cam_time_spread_ns[0], cam_time_spread_ns[1], cam_time_spread_ns[2]),
-                fontsize=stat_label_fontsize, fontfamily='monospace',
-                ha='right', va='top')
-
-        axis.get_xaxis().set_visible(False)
-        axis.get_yaxis().set_visible(False)
-
-    return pc
+    return all_pc
