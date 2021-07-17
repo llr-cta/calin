@@ -488,7 +488,7 @@ def draw_all_clock_regression(stage1,
 
         if(stat_label_fontsize is not None and stat_label_fontsize>0):
             fmt_string = 'UCTS 10MHz : %s\nTIB 10MHz : %s\nFEB sum : %s'%(stats_format,stats_format,stats_format)
-            axis.text(max_xy,max_xy,fmt_string%(cam_freq_offset_ppm[0], cam_freq_offset_ppm[1], cam_freq_offset_ppm[2]),
+            axis.text(max_xy,max_xy,fmt_string%(cam_data[0], cam_data[1], cam_data[2]),
                 fontsize=stat_label_fontsize, fontfamily='monospace',
                 ha='right', va='top')
 
