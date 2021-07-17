@@ -500,22 +500,22 @@ def draw_all_clock_regression(stage1,
     all_pc = []
     if(axis_freq is not None):
         all_pc.append(draw_it(axis_freq, freq_offset_ppm, cam_freq_offset_ppm, '%.2f ppm',
-            'FEB oscillator frequency offset [ppm]'))
+            'Mean oscillator frequency offset [ppm]'))
 
     if(axis_t0 is not None):
-        all_pc.append(draw_it(axis_t0, time_offset_ns, cam_time_offset_ns, u'%.2f ns',
-            'UCTS time at FEB clock reset [ns]'))
+        all_pc.append(draw_it(axis_t0, time_offset_ns, cam_time_offset_ns, '%.2f ns',
+            'Mean UCTS time at counter reset [ns]'))
 
     if(axis_chi2 is not None):
-        all_pc.append(draw_it(axis_chi2, numpy.sqrt(d2_per_event), numpy.sqrt(cam_d2_per_event), u'%.2f ns',
+        all_pc.append(draw_it(axis_chi2, numpy.sqrt(d2_per_event), numpy.sqrt(cam_d2_per_event), '%.2f ns',
             'Linear-fit RMS residual per event [ns]'))
 
     if(axis_freq_spread is not None):
         all_pc.append(draw_it(axis_freq_spread, freq_spread_ppm, cam_freq_spread_ppm, '%.3f ppm',
-            'FEB oscillator frequency drift [ppm]'))
+            'Drift in oscillator frequency [ppm]'))
 
     if(axis_t0_spread is not None):
         all_pc.append(draw_it(axis_t0_spread, time_spread_ns, cam_time_spread_ns, '%.3f ns',
-            'Spread in UCTS time at FEB clock reset [ns]]'))
+            'Drift in UCTS time at counter reset [ns]'))
 
     return all_pc
