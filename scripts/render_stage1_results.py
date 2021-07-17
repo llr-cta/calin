@@ -247,8 +247,9 @@ for oid in all_oid:
         ax2 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         ax3 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         ax4 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        ax5 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
 
-        calin.diagnostics.stage1_plotting.draw_all_clock_regression(stage1,ax,ax2,ax3,ax4)
+        calin.diagnostics.stage1_plotting.draw_all_clock_regression(stage1,ax,ax2,ax3,ax4,ax5)
 
         ax.set_title('FEB clock frequency error, run : %d'%runno)
         upload_figure(runno, 'feb_clock_frequency_error', ax.figure)
@@ -262,5 +263,7 @@ for oid in all_oid:
         ax4.set_title('FEB clock frequency drift, run : %d'%runno)
         upload_figure(runno, 'feb_clock_frequency_drift', ax4.figure)
 
+        ax5.set_title('FEB clock offset from UCTS drift, run : %d'%runno)
+        upload_figure(runno, 'feb_clock_offset_drift', ax5.figure)
 
 # The end

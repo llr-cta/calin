@@ -23,6 +23,7 @@ def summarize_camera_clock_regressions(stage1):
     cam_freq_offset_ppm = numpy.zeros(stage1.const_clock_regression().camera_clock_size())
     cam_freq_spread_ppm = numpy.zeros_like(cam_freq_offset_ppm)
     cam_time_offset_ns = numpy.zeros_like(cam_freq_offset_ppm)
+    cam_time_spread_ns = numpy.zeros_like(cam_freq_offset_ppm)
     cam_d2_per_event = numpy.zeros_like(cam_freq_offset_ppm)
 
     print("summarize_camera_clock_regressions: don't forget to remove temporary code")
@@ -46,7 +47,6 @@ def summarize_camera_clock_regressions(stage1):
             clock_id = stage1.const_config().const_clock_regression().default_nectarcam_camera_clocks(iclock).clock_id()
         clock_freq = cl.camera_clock_frequency(clock_id)
         clock_nominal_a = clock_freq/master_clock_freq
-        print(iclock, clock_id, clock_freq, master_clock_freq, clock_nominal_a)
 
         all_t = sorted(clock.bins_keys())
         all_x0 = numpy.zeros(len(all_t), dtype=numpy.int64)
@@ -65,22 +65,24 @@ def summarize_camera_clock_regressions(stage1):
             all_d2[ikey] = bin.d2()
             all_n[ikey] = bin.num_entries()
 
-        # all_y_at_0 = (numpy.remainder(all_x0,1000000000) - all_y0) + all_y0*(all_a-1) - all_b/all_a
-        all_y_at_0 = numpy.remainder(all_x0,1000000000) - all_y0/all_a - all_b/all_a
+        # all_x_at_0 = (numpy.remainder(all_x0,1000000000) - all_y0) + all_y0*(1-1/all_a) - all_b/all_a
+        all_x_at_0 = numpy.remainder(all_x0,1000000000) - all_y0/all_a - all_b/all_a
 
         mask_n = all_n>5
 
         cam_freq_offset_ppm[iclock] = 1e6*(numpy.mean(all_a[mask_n])/clock_nominal_a-1) if numpy.count_nonzero(mask_n) else numpy.nan
         cam_freq_spread_ppm[iclock] = 1e6*(numpy.max(all_a[mask_n])-numpy.min(all_a[mask_n]))/clock_nominal_a if numpy.count_nonzero(mask_n) else numpy.nan
-        cam_time_offset_ns[iclock] = 1e9/clock_freq*numpy.mean(all_y_at_0[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
+        cam_time_offset_ns[iclock] = numpy.mean(all_x_at_0[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
+        cam_time_spread_ns[iclock] = (numpy.max(all_x_at_0[mask_n])-numpy.min(all_x_at_0[mask_n])) if numpy.count_nonzero(mask_n) else numpy.nan
         cam_d2_per_event[iclock] = (1e9/clock_freq)**2*numpy.mean(all_d2[mask_n]/all_n[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
 
-    return cam_freq_offset_ppm, cam_freq_spread_ppm, cam_time_offset_ns, cam_d2_per_event
+    return cam_freq_offset_ppm, cam_freq_spread_ppm, cam_time_offset_ns, cam_time_spread_ns, cam_d2_per_event
 
 def summarize_module_clock_regression(stage1, iclock=0):
     mod_freq_offset_ppm = numpy.zeros(stage1.run_config().configured_module_id_size())
     mod_freq_spread_ppm = numpy.zeros_like(mod_freq_offset_ppm)
     mod_time_offset_ns = numpy.zeros_like(mod_freq_offset_ppm)
+    mod_time_spread_ns = numpy.zeros_like(mod_freq_offset_ppm)
     mod_d2_per_event = numpy.zeros_like(mod_freq_offset_ppm)
     mod_problem_bins = numpy.zeros_like(mod_freq_offset_ppm)
 
@@ -116,7 +118,8 @@ def summarize_module_clock_regression(stage1, iclock=0):
         mod_freq_offset_ppm[imod] = 1e6*(numpy.mean(all_a[mask_n])-1) if numpy.count_nonzero(mask_n) else numpy.nan
         mod_freq_spread_ppm[imod] = 1e6*(numpy.max(all_a[mask_n])-numpy.min(all_a[mask_n])) if numpy.count_nonzero(mask_n) else numpy.nan
         mod_time_offset_ns[imod] = numpy.mean(all_y_at_0[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
+        mod_time_spread_ns[imod] = (numpy.max(all_y_at_0[mask_n])-numpy.min(all_y_at_0[mask_n])) if numpy.count_nonzero(mask_n) else numpy.nan
         mod_d2_per_event[imod] = numpy.mean(all_d2[mask_n]/all_n[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
         mod_problem_bins[imod] = numpy.count_nonzero(mask)
 
-    return mod_freq_offset_ppm, mod_freq_spread_ppm, mod_time_offset_ns, mod_d2_per_event, mod_problem_bins
+    return mod_freq_offset_ppm, mod_freq_spread_ppm, mod_time_offset_ns, mod_time_spread_ns, mod_d2_per_event, mod_problem_bins

@@ -454,14 +454,22 @@ def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'in
     return pc
 
 def draw_all_clock_regression(stage1,
-        axis_freq = None, axis_t0 = None, axis_chi2 = None, axis_freq_spread = None,
+        axis_freq = None, axis_t0 = None, axis_chi2 = None, axis_freq_spread = None, axis_t0_spread = None,
         clockid=0, cmap = 'inferno',
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, stat_label_fontsize=4.75):
 
-    freq_offset_ppm, freq_spread_ppm, time_offset_ns, d2_per_event, n_problem_bins = \
+    rc = stage1.const_run_config()
+    cl = rc.const_camera_layout()
+    max_xy = max(numpy.max(numpy.abs(cl.outline_polygon_vertex_x())),
+                 numpy.max(numpy.abs(cl.outline_polygon_vertex_y())))
+
+    freq_offset_ppm, freq_spread_ppm, time_offset_ns, time_spread_ns, d2_per_event, n_problem_bins = \
         calin.diagnostics.stage1_analysis.summarize_module_clock_regression(stage1, clockid)
     mask = numpy.isfinite(freq_offset_ppm)
+
+    cam_freq_offset_ppm, cam_freq_spread_ppm, cam_time_offset_ns, cam_time_spread_ns, cam_d2_per_event = \
+        calin.diagnostics.stage1_analysis.summarize_camera_clock_regressions(stage1)
 
     if(axis_freq is not None):
         axis = axis_freq
@@ -472,13 +480,19 @@ def draw_all_clock_regression(stage1,
                         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
                         hatch_missing_modules=True, stats_format=u'%.2f ppm',
                         stats_fontsize=stat_label_fontsize)
-        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency offset [PPM]')
+        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency offset [ppm]')
 
         if(mod_label_fontsize is not None and mod_label_fontsize>0):
             calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
                                     configured_modules=stage1.run_config().configured_module_id(),
                                     pc=pc, module_values = data,
                                     fontsize=mod_label_fontsize)
+
+        if(stat_label_fontsize is not None and stat_label_fontsize>0):
+            axis.text(max_xy,max_xy,('UCTS 10MHz : %.2f ppm\nTIB 10MHz : %.2f ppm\nFEB sum : %.2f ppm')%(
+                    cam_freq_offset_ppm[0], cam_freq_offset_ppm[1], cam_freq_offset_ppm[2]),
+                fontsize=stat_label_fontsize, fontfamily='monospace',
+                ha='right', va='top')
 
         axis.get_xaxis().set_visible(False)
         axis.get_yaxis().set_visible(False)
@@ -500,25 +514,37 @@ def draw_all_clock_regression(stage1,
                                     pc=pc, module_values = data,
                                     fontsize=mod_label_fontsize)
 
+        if(stat_label_fontsize is not None and stat_label_fontsize>0):
+            axis.text(max_xy,max_xy,('UCTS 10MHz : %.2f ns\nTIB 10MHz : %.2f ns\nFEB sum : %.2f ns')%(
+                    cam_time_offset_ns[0], cam_time_offset_ns[1], cam_time_offset_ns[2]),
+                fontsize=stat_label_fontsize, fontfamily='monospace',
+                ha='right', va='top')
+
         axis.get_xaxis().set_visible(False)
         axis.get_yaxis().set_visible(False)
 
     if(axis_chi2 is not None):
         axis = axis_chi2
-        data = d2_per_event
+        data = numpy.sqrt(d2_per_event)
         pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
                         configured_modules=stage1.run_config().configured_module_id(),
                         module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
                         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
-                        hatch_missing_modules=True, stats_format=u'%.2f ns^2',
+                        hatch_missing_modules=True, stats_format=u'%.2f ns',
                         stats_fontsize=stat_label_fontsize)
-        cb = axis.get_figure().colorbar(pc, label='Linrear-fit residual per event [ns$^2$]')
+        cb = axis.get_figure().colorbar(pc, label='Linear-fit RMS residual per event [ns]')
 
         if(mod_label_fontsize is not None and mod_label_fontsize>0):
             calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
                                     configured_modules=stage1.run_config().configured_module_id(),
                                     pc=pc, module_values = data,
                                     fontsize=mod_label_fontsize)
+
+        if(stat_label_fontsize is not None and stat_label_fontsize>0):
+            axis.text(max_xy,max_xy,('UCTS 10MHz : %.2f ns\nTIB 10MHz : %.2f ns\nFEB sum : %.2f ns')%(
+                    numpy.sqrt(cam_d2_per_event[0]), numpy.sqrt(cam_d2_per_event[1]), numpy.sqrt(cam_d2_per_event[2])),
+                fontsize=stat_label_fontsize, fontfamily='monospace',
+                ha='right', va='top')
 
         axis.get_xaxis().set_visible(False)
         axis.get_yaxis().set_visible(False)
@@ -532,13 +558,45 @@ def draw_all_clock_regression(stage1,
                         mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
                         hatch_missing_modules=True, stats_format=u'%.3f ppm',
                         stats_fontsize=stat_label_fontsize)
-        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency drift [PPM]')
+        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency drift [ppm]')
 
         if(mod_label_fontsize is not None and mod_label_fontsize>0):
             calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
                                     configured_modules=stage1.run_config().configured_module_id(),
                                     pc=pc, module_values = data,
                                     fontsize=mod_label_fontsize)
+
+        if(stat_label_fontsize is not None and stat_label_fontsize>0):
+            axis.text(max_xy,max_xy,('UCTS 10MHz : %.2f ppm\nTIB 10MHz : %.2f ppm\nFEB sum : %.2f ppm')%(
+                    cam_freq_spread_ppm[0], cam_freq_spread_ppm[1], cam_freq_spread_ppm[2]),
+                fontsize=stat_label_fontsize, fontfamily='monospace',
+                ha='right', va='top')
+
+        axis.get_xaxis().set_visible(False)
+        axis.get_yaxis().set_visible(False)
+
+    if(axis_t0_spread is not None):
+        axis = axis_t0_spread
+        data = time_spread_ns
+        pc = calin.plotting.plot_camera_module_image(data, stage1.run_config().camera_layout(),
+                        configured_modules=stage1.run_config().configured_module_id(),
+                        module_mask=mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                        mod_lw=mod_lw, outline_lw=outline_lw, outline_color=outline_color,
+                        hatch_missing_modules=True, stats_format=u'%.3f ns',
+                        stats_fontsize=stat_label_fontsize)
+        cb = axis.get_figure().colorbar(pc, label='FEB oscillator frequency drift [ns]')
+
+        if(mod_label_fontsize is not None and mod_label_fontsize>0):
+            calin.plotting.add_module_numbers(axis, stage1.run_config().camera_layout(),
+                                    configured_modules=stage1.run_config().configured_module_id(),
+                                    pc=pc, module_values = data,
+                                    fontsize=mod_label_fontsize)
+
+        if(stat_label_fontsize is not None and stat_label_fontsize>0):
+            axis.text(max_xy,max_xy,('UCTS 10MHz : %.2f ns\nTIB 10MHz : %.2f ppm\nFEB ns : %.2f ns')%(
+                    cam_time_spread_ns[0], cam_time_spread_ns[1], cam_time_spread_ns[2]),
+                fontsize=stat_label_fontsize, fontfamily='monospace',
+                ha='right', va='top')
 
         axis.get_xaxis().set_visible(False)
         axis.get_yaxis().set_visible(False)
