@@ -217,26 +217,26 @@ for oid in all_oid:
             len(stage1.const_nectarcam().const_ancillary_data().feb_temperature_keys())>0):
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,1,axis=ax)
-        ax.set_title('FEB temperature 1, run : %d'%runno)
-        upload_figure(runno, 'feb_temperature_1', ax.figure)
+        ax.set_title('Temperature (FEB 1), run : %d'%runno)
+        upload_figure(runno, 'temperature_1', ax.figure)
 
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,2,axis=ax)
-        ax.set_title('FEB temperature 2, run : %d'%runno)
-        upload_figure(runno, 'feb_temperature_2', ax.figure)
+        ax.set_title('Temperature (FEB 2), run : %d'%runno)
+        upload_figure(runno, 'temperature_2', ax.figure)
 
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,1,axis=ax)
-        ax.set_title('FEB temperature spread 1, run : %d'%runno)
-        upload_figure(runno, 'feb_temperature_spread_1', ax.figure)
+        ax.set_title('Temperature spread (FEB 1), run : %d'%runno)
+        upload_figure(runno, 'temperature_spread_1', ax.figure)
 
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,2,axis=ax)
-        ax.set_title('FEB temperature spread 2, run : %d'%runno)
-        upload_figure(runno, 'feb_temperature_spread_2', ax.figure)
+        ax.set_title('Temperature spread (FEB 2), run : %d'%runno)
+        upload_figure(runno, 'temperature_spread_2', ax.figure)
 
     ############################################################################
-    # FIGURE : FEB clocks
+    # FIGURE : clock regression
     ############################################################################
 
     iclock = 0
@@ -251,19 +251,33 @@ for oid in all_oid:
 
         calin.diagnostics.stage1_plotting.draw_all_clock_regression(stage1,ax,ax2,ax3,ax4,ax5)
 
-        ax.set_title('FEB clock frequency error, run : %d'%runno)
-        upload_figure(runno, 'feb_clock_frequency_error', ax.figure)
+        ax.set_title('Clock frequency error, run : %d'%runno)
+        upload_figure(runno, 'clock_frequency_error', ax.figure)
 
-        ax2.set_title('FEB clock offset from UCTS, run : %d'%runno)
-        upload_figure(runno, 'feb_clock_offset', ax2.figure)
+        ax2.set_title('Clock offset from UCTS, run : %d'%runno)
+        upload_figure(runno, 'clock_offset', ax2.figure)
 
-        ax3.set_title('FEB clock vs UCTS fit residual, run : %d'%runno)
-        upload_figure(runno, 'feb_clock_residual', ax3.figure)
+        ax3.set_title('Clock vs UCTS fit RMS residual, run : %d'%runno)
+        upload_figure(runno, 'clock_residual', ax3.figure)
 
-        ax4.set_title('FEB clock frequency drift, run : %d'%runno)
-        upload_figure(runno, 'feb_clock_frequency_drift', ax4.figure)
+        ax4.set_title('Clock frequency spread, run : %d'%runno)
+        upload_figure(runno, 'clock_frequency_spread', ax4.figure)
 
-        ax5.set_title('FEB clock offset from UCTS drift, run : %d'%runno)
-        upload_figure(runno, 'feb_clock_offset_drift', ax5.figure)
+        ax5.set_title('Clock offset from UCTS spread, run : %d'%runno)
+        upload_figure(runno, 'clock_offset_spread', ax5.figure)
+
+    ############################################################################
+    # FIGURE : channel and module data order
+    ############################################################################
+
+    ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+    calin.diagnostics.stage1_plotting.draw_module_dataorder(stage1, axis=ax)
+    ax.set_title('Module data ordering, run : %d'%runno)
+    upload_figure(runno, 'data_ordering_module', ax.figure)
+
+    ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+    calin.diagnostics.stage1_plotting.draw_channel_dataorder(stage1, axis=ax)
+    ax.set_title('Channel data ordering, run : %d'%runno)
+    upload_figure(runno, 'data_ordering_channel', ax.figure)
 
 # The end
