@@ -223,8 +223,7 @@ message NectarCAMAncillaryData {
     (CFO).desc = "Total number of ECC measurements.",
     (CFO).is_counter = true ];
   uint32 ecc_data_version                                  = 15 [
-    (CFO).desc = "ECC data version. Either 0 or 1.",
-    (CFO).is_counter = true ];
+    (CFO).desc = "ECC data version. Either 0 or 1." ];
 };
 
 message SelectByTime {
