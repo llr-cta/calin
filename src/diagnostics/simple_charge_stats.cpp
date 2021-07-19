@@ -391,6 +391,9 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
     if(has_dual_gain_) {
       integrate_one_gain_partials(results_.mutable_low_gain(), partials_chan.low_gain());
     }
+    if(partials_.camera().num_event_trigger_hitmap_found() > 0) {
+      results_.add_channel_triggered_count(partials_chan.all_trig_num_events_triggered());
+    }
   }
   integrate_one_gain_camera_partials(results_.mutable_high_gain(), partials_.camera().high_gain());
   if(has_dual_gain_) {
@@ -537,11 +540,19 @@ void SimpleChargeStatsParallelEventVisitor::record_one_visitor_data(
 bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
+
   if(high_gain_visitor_) {
     record_one_visitor_data(seq_index, event, high_gain_visitor_, &partials_);
   }
   if(low_gain_visitor_) {
     record_one_visitor_data(seq_index, event, low_gain_visitor_, &partials_);
+  }
+  if(event->has_trigger_map()) {
+    partials_.mutable_camera()->increment_num_event_trigger_hitmap_found();
+    for(auto ichan : event->trigger_map().hit_channel_id()) {
+      auto* pc = partials_.mutable_channel(ichan);
+      pc->increment_all_trig_num_events_triggered();
+    }
   }
   return true;
 }
