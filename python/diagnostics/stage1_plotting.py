@@ -585,7 +585,7 @@ def draw_nectarcam_fpm_measurements(stage1,
 
     if(axis_voltage_spread is not None):
         all_pc.append(draw_it(axis_voltage_spread, v_spread, v_mask,
-            '%.1f V', 'Measured pixel voltage spread [V]'))
+            '%.1f V', 'Measured pixel voltage spread (max-min) [V]'))
 
     if(axis_cw_current is not None):
         all_pc.append(draw_it(axis_cw_current, icw_mean, i_mask,
@@ -593,14 +593,14 @@ def draw_nectarcam_fpm_measurements(stage1,
 
     if(axis_cw_current_spread is not None):
         all_pc.append(draw_it(axis_cw_current_spread, icw_spread, i_mask,
-            '%.1f uA', 'Measured CW current spread [uA]'))
+            '%.1f uA', 'Measured CW current spread (max-min) [uA]'))
 
     if(axis_board_current is not None):
         all_pc.append(draw_it(axis_board_current, iboard_mean, i_mask,
-            '%.1f uA', 'Mean measured HVPA current [uA]'))
+            '%.1f uA', 'Mean measured HVPA current[uA]'))
 
     if(axis_board_current_spread is not None):
         all_pc.append(draw_it(axis_board_current_spread, iboard_spread, i_mask,
-            '%.1f uA', 'Measured HVPA current spread [uA]'))
+            '%.1f uA', 'Measured HVPA current spread (max-min) [uA]'))
 
     return all_pc

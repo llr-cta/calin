@@ -304,7 +304,7 @@ for oid in all_oid:
         ax3.set_title('HVPA board current, run : %d'%runno)
         upload_figure(runno, 'hvpa_board_current_mean', ax3.figure)
 
-        ax4.set_title('HVPA voltage spread (max-min), run : %d'%runno)
+        ax4.set_title('HVPA voltage spread, run : %d'%runno)
         upload_figure(runno, 'hvpa_voltage_spread', ax4.figure)
 
         ax5.set_title('HVPA Cockroft-Walton current spread, run : %d'%runno)
