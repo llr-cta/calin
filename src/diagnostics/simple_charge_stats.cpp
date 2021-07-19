@@ -548,10 +548,11 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
     record_one_visitor_data(seq_index, event, low_gain_visitor_, &partials_);
   }
   if(event->has_trigger_map()) {
-    partials_.mutable_camera()->increment_num_event_trigger_hitmap_found();
+    if(event->trigger_map().hit_channel_id_size()>0) {
+      partials_.mutable_camera()->increment_num_event_trigger_hitmap_found();
+    }
     for(auto ichan : event->trigger_map().hit_channel_id()) {
-      auto* pc = partials_.mutable_channel(ichan);
-      pc->increment_all_trig_num_events_triggered();
+      partials_.mutable_channel(ichan)->increment_all_trig_num_events_triggered();
     }
   }
   return true;
