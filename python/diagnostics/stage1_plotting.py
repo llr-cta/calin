@@ -519,3 +519,88 @@ def draw_all_clock_regression(stage1,
             'Drift in UCTS time at counter reset [ns]'))
 
     return all_pc
+
+def draw_nectarcam_fpm_measurements(stage1,
+        axis_voltage=None, axis_cw_current=None, axis_board_current=None,
+        axis_voltage_spread=None, axis_cw_current_spread=None, axis_board_current_spread = None,
+        cmap = 'inferno',
+        draw_outline = True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        stat_label_fontsize=4.75):
+
+    v_mean = []
+    v_spread = []
+    v_mask = []
+
+    iboard_mean = []
+    iboard_spread = []
+    icw_mean = []
+    icw_spread = []
+    i_mask = []
+    for chanid in stage1.run_config().configured_channel_id() :
+        if(stage1.nectarcam().ancillary_data().hvpa_voltage_has_key(int(chanid))):
+            measurement_set = stage1.nectarcam().ancillary_data().hvpa_voltage(int(chanid))
+            measurements = [measurement_set.measurement(i).voltage() for i in range(measurement_set.measurement_size())]
+            v_mean.append(numpy.mean(measurements))
+            v_spread.append(numpy.max(measurements)-numpy.min(measurements))
+            v_mask.append(True)
+        else:
+            v_mean.append(numpy.nan)
+            v_spread.append(numpy.nan)
+            v_mask.append(False)
+
+        if(stage1.nectarcam().ancillary_data().hvpa_current_has_key(int(chanid))):
+            measurement_set = stage1.nectarcam().ancillary_data().hvpa_current(int(chanid))
+            measurements = [measurement_set.measurement(i).current() for i in range(measurement_set.measurement_size())]
+            icw_mean.append(numpy.mean(measurements))
+            icw_spread.append(numpy.max(measurements)-numpy.min(measurements))
+            measurements = [measurement_set.measurement(i).load_current() for i in range(measurement_set.measurement_size())]
+            iboard_mean.append(numpy.mean(measurements))
+            iboard_spread.append(numpy.max(measurements)-numpy.min(measurements))
+            i_mask.append(True)
+        else:
+            icw_mean.append(numpy.nan)
+            icw_spread.append(numpy.nan)
+            iboard_mean.append(numpy.nan)
+            iboard_spread.append(numpy.nan)
+            i_mask.append(False)
+
+    def draw_it(axis, chan_data, chan_mask, stats_format, cb_label):
+        pc = calin.plotting.plot_camera_image(chan_data, stage1.run_config().camera_layout(),
+                        configured_channels=stage1.run_config().configured_channel_id(),
+                        channel_mask=chan_mask, axis=axis, cmap=cmap, draw_outline=True, draw_stats=True,
+                        pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
+                        hatch_missing_channels=True, stats_format=stats_format,
+                        stats_fontsize=stat_label_fontsize)
+        cb = axis.get_figure().colorbar(pc, label=cb_label)
+
+        axis.get_xaxis().set_visible(False)
+        axis.get_yaxis().set_visible(False)
+
+        return pc
+
+    all_pc = []
+    if(axis_voltage is not None):
+        all_pc.append(draw_it(axis_voltage, v_mean, v_mask,
+            '%.1f V', 'Mean measured pixel voltage [V]'))
+
+    if(axis_voltage_spread is not None):
+        all_pc.append(draw_it(axis_voltage_spread, v_spread, v_mask,
+            '%.1f V', 'Measured pixel voltage spread [V]'))
+
+    if(axis_cw_current is not None):
+        all_pc.append(draw_it(axis_cw_current, icw_mean, i_mask,
+            '%.1f uA', 'Mean measured CW current [uA]'))
+
+    if(axis_cw_current_spread is not None):
+        all_pc.append(draw_it(axis_cw_current_spread, icw_spread, i_mask,
+            '%.1f uA', 'Measured CW current spread [uA]'))
+
+    if(axis_board_current is not None):
+        all_pc.append(draw_it(axis_board_current, iboard_mean, i_mask,
+            '%.1f uA', 'Mean measured HVPA current [uA]'))
+
+    if(axis_board_current_spread is not None):
+        all_pc.append(draw_it(axis_board_current_spread, iboard_spread, i_mask,
+            '%.1f uA', 'Measured HVPA current spread [uA]'))
+
+    return all_pc

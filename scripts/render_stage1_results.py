@@ -280,4 +280,38 @@ for oid in all_oid:
     ax.set_title('Channel data ordering, run : %d'%runno)
     upload_figure(runno, 'data_ordering_channel', ax.figure)
 
+    ############################################################################
+    # FIGURE : FPM voltage and current
+    ############################################################################
+
+    if(stage1.has_nectarcam() and stage1.const_nectarcam().has_ancillary_data() and
+            len(stage1.const_nectarcam().const_ancillary_data().hvpa_voltage_keys())>0):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        ax2 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        ax3 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        ax4 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        ax5 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        ax6 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+
+        calin.diagnostics.stage1_plotting.draw_nectarcam_fpm_measurements(stage1,ax,ax2,ax3,ax4,ax5,ax6)
+
+        ax.set_title('HVPA mean voltage, run : %d'%runno)
+        upload_figure(runno, 'hvpa_voltage_mean', ax.figure)
+
+        ax2.set_title('HVPA Cockroft-Walton current, run : %d'%runno)
+        upload_figure(runno, 'hvpa_cw_current_mean', ax2.figure)
+
+        ax3.set_title('HVPA board current, run : %d'%runno)
+        upload_figure(runno, 'hvpa_board_current_mean', ax3.figure)
+
+        ax4.set_title('HVPA voltage spread (max-min), run : %d'%runno)
+        upload_figure(runno, 'hvpa_voltage_spread', ax4.figure)
+
+        ax5.set_title('HVPA Cockroft-Walton current spread, run : %d'%runno)
+        upload_figure(runno, 'hvpa_cw_current_spread', ax5.figure)
+
+        ax6.set_title('HVPA board current spread, run : %d'%runno)
+        upload_figure(runno, 'hvpa_board_current_spread', ax6.figure)
+
+
 # The end
