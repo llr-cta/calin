@@ -65,15 +65,15 @@ def summarize_camera_clock_regressions(stage1):
             all_d2[ikey] = bin.d2()
             all_n[ikey] = bin.num_entries()
 
-        # all_x_at_0 = (numpy.remainder(all_x0,1000000000) - all_y0) + all_y0*(1-1/all_a) - all_b/all_a
-        all_x_at_0 = numpy.remainder(all_x0,1000000000) - all_y0/all_a - all_b/all_a
-
         mask_n = all_n>5
+
+        # all_x_at_0 = (numpy.remainder(all_x0,1000000000) - all_y0) + all_y0*(1-1/all_a) - all_b/all_a
+        all_x_at_0 = numpy.remainder(all_x0[mask_n],1000000000) - all_y0[mask_n]/all_a[mask_n] - all_b[mask_n]/all_a[mask_n]
 
         cam_freq_offset_ppm[iclock] = 1e6*(numpy.mean(all_a[mask_n])/clock_nominal_a-1) if numpy.count_nonzero(mask_n) else numpy.nan
         cam_freq_spread_ppm[iclock] = 1e6*(numpy.max(all_a[mask_n])-numpy.min(all_a[mask_n]))/clock_nominal_a if numpy.count_nonzero(mask_n) else numpy.nan
-        cam_time_offset_ns[iclock] = numpy.mean(all_x_at_0[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
-        cam_time_spread_ns[iclock] = (numpy.max(all_x_at_0[mask_n])-numpy.min(all_x_at_0[mask_n])) if numpy.count_nonzero(mask_n) else numpy.nan
+        cam_time_offset_ns[iclock] = numpy.mean(all_x_at_0) if numpy.count_nonzero(mask_n) else numpy.nan
+        cam_time_spread_ns[iclock] = (numpy.max(all_x_at_0)-numpy.min(all_x_at_0)) if numpy.count_nonzero(mask_n) else numpy.nan
         cam_d2_per_event[iclock] = (1e9/clock_freq)**2*numpy.mean(all_d2[mask_n]/all_n[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
 
     return cam_freq_offset_ppm, cam_freq_spread_ppm, cam_time_offset_ns, cam_time_spread_ns, cam_d2_per_event
