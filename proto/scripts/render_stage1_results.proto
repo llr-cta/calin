@@ -53,4 +53,6 @@ message CommandLineOptions {
   int32 to_run_number                                      = 9;
 
   uint32 figure_dpi                                        = 30;
+
+  bool force_nectarcam_61_camera                           = 100;
 };

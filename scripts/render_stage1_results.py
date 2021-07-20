@@ -29,6 +29,7 @@ import calin.ix.scripts.render_stage1_results
 import calin.provenance.chronicle
 import calin.provenance.anthology
 import calin.diagnostics.stage1_plotting
+import calin.iact_data.nectarcam_layout
 
 import matplotlib
 import matplotlib.figure
@@ -68,6 +69,54 @@ class FilesystemUploader:
         (rel_path, filename) = os.path.split(rel_filepath)
         abs_path = os.path.join(self.make_path(rel_path), filename)
         matplotlib.backends.backend_agg.FigureCanvasAgg(figure).print_png(abs_path)
+
+def cast_to_nectarcam_61_camera(stage1):
+    if(stage1.const_run_config().configured_module_id_size() != 61):
+        raise RuntimeError('cast_to_nectarcam_61_camera : run must have 61 modules')
+
+    chan_index = stage1.const_run_config().configured_channel_index()
+    mod_index = stage1.const_run_config().configured_module_index()
+
+
+    ad = stage1.nectarcam().ancillary_data().Clone()
+    stage1.mutable_nectarcam().mutable_ancillary_data().clear_feb_temperature()
+    for imod in ad.feb_temperature_keys():
+        ofm = ad.feb_temperature(imod)
+        nfm = stage1.mutable_nectarcam().mutable_ancillary_data().mutable_feb_temperature(int(mod_index[imod]))
+        for im in range(ofm.measurement_size()):
+            msmt = nfm.add_measurement()
+            msmt.CopyFrom(ofm.measurement(im))
+            msmt.set_drawer(int(mod_index[msmt.drawer()]))
+
+    stage1.mutable_nectarcam().mutable_ancillary_data().clear_hvpa_voltage()
+    for ichan in ad.hvpa_voltage_keys():
+        ovm = ad.hvpa_voltage(ichan)
+        nvm = stage1.mutable_nectarcam().mutable_ancillary_data().mutable_hvpa_voltage(int(chan_index[ichan]))
+        for im in range(ovm.measurement_size()):
+            msmt = nvm.add_measurement()
+            msmt.CopyFrom(ovm.measurement(im))
+            msmt.set_drawer(int(mod_index[msmt.drawer()]))
+
+    stage1.mutable_nectarcam().mutable_ancillary_data().clear_hvpa_current()
+    for ichan in ad.hvpa_current_keys():
+        ocm = ad.hvpa_current(ichan)
+        ncm = stage1.mutable_nectarcam().mutable_ancillary_data().mutable_hvpa_current(int(chan_index[ichan]))
+        for im in range(ocm.measurement_size()):
+            msmt = ncm.add_measurement()
+            msmt.CopyFrom(ocm.measurement(im))
+            msmt.set_drawer(int(mod_index[msmt.drawer()]))
+
+    stage1.mutable_run_config().clear_camera_layout()
+    stage1.mutable_run_config().mutable_camera_layout().CopyFrom(calin.iact_data.nectarcam_layout.nectarcam_61module_layout())
+    stage1.mutable_run_config().clear_configured_channel_id()
+    stage1.mutable_run_config().set_configured_channel_id(numpy.asarray(range(61*7),dtype=numpy.int32))
+    stage1.mutable_run_config().clear_configured_channel_index()
+    stage1.mutable_run_config().set_configured_channel_index(numpy.asarray(range(61*7),dtype=numpy.int32))
+
+    stage1.mutable_run_config().clear_configured_module_id()
+    stage1.mutable_run_config().set_configured_module_id(numpy.asarray(range(61),dtype=numpy.int32))
+    stage1.mutable_run_config().clear_configured_module_index()
+    stage1.mutable_run_config().set_configured_module_index(numpy.asarray(range(61),dtype=numpy.int32))
 
 py_log = calin.util.log.PythonLogger()
 py_log.this.disown()
@@ -139,6 +188,9 @@ for oid in all_oid:
     sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
     runno = stage1.run_number()
     print('Run :', runno)
+
+    if(opt.force_nectarcam_61_camera()):
+        cast_to_nectarcam_61_camera(stage1)
 
     def upload_figure(runno, quantity, f):
         runbatchpath = 'runs%d-%d'%(int(runno/1000)*1000, (int(runno/1000)+1)*1000)
