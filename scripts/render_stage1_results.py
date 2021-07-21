@@ -77,7 +77,6 @@ def cast_to_nectarcam_61_camera(stage1):
     chan_index = stage1.const_run_config().configured_channel_index()
     mod_index = stage1.const_run_config().configured_module_index()
 
-
     ad = stage1.nectarcam().ancillary_data().Clone()
     stage1.mutable_nectarcam().mutable_ancillary_data().clear_feb_temperature()
     for imod in ad.feb_temperature_keys():
