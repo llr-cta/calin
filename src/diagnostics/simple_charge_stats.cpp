@@ -131,6 +131,7 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
     results_g->add_all_trigger_ped_win_mean(0.0);
     results_g->add_all_trigger_ped_win_var(0.0);
   }
+  results_g->add_all_trigger_num_wf_clipped(partials_gc.all_trig_num_wf_clipped());
 
   if(partials_gc.has_all_trig_pedwin_vs_time_1_sum()) {
     auto* mean_hist = new calin::ix::math::histogram::Histogram1DData;
@@ -215,6 +216,7 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
     results_g->add_ped_trigger_opt_win_mean(0.0);
     results_g->add_ped_trigger_opt_win_var(0.0);
   }
+  results_g->add_ped_trigger_num_wf_clipped(partials_gc.ped_trig_num_wf_clipped());
 
   results_g->add_ext_trigger_event_count(partials_gc.ext_trig_num_events());
   if(partials_gc.ext_trig_num_events() > 0) {
@@ -237,6 +239,13 @@ void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_partials(
     results_g->add_ext_trigger_opt_win_mean(0.0);
     results_g->add_ext_trigger_opt_win_var(0.0);
   }
+  results_g->add_ext_trigger_num_wf_clipped(partials_gc.ext_trig_num_wf_clipped());
+
+  results_g->add_phy_trigger_event_count(partials_gc.ext_trig_num_events());
+  results_g->add_phy_trigger_num_wf_clipped(partials_gc.ext_trig_num_wf_clipped());
+
+  results_g->add_int_trigger_event_count(partials_gc.int_trig_num_events());
+  results_g->add_int_trigger_num_wf_clipped(partials_gc.int_trig_num_wf_clipped());
 }
 
 void SimpleChargeStatsParallelEventVisitor::integrate_one_gain_camera_partials(
@@ -409,7 +418,8 @@ void SimpleChargeStatsParallelEventVisitor::record_one_gain_channel_data(
   unsigned ichan, double elapsed_event_time,
   calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats,
   SingleGainChannelHists* one_gain_hists,
-  unsigned& nsum, int64_t& opt_sum, int64_t& sig_sum, int64_t& bkg_sum, int64_t& wf_sum)
+  unsigned& nsum, int64_t& opt_sum, int64_t& sig_sum, int64_t& bkg_sum, int64_t& wf_sum,
+  unsigned wf_clipping_value)
 {
   one_gain_stats->increment_all_trig_num_events();
 
@@ -453,6 +463,22 @@ void SimpleChargeStatsParallelEventVisitor::record_one_gain_channel_data(
     one_gain_stats->increment_ext_trig_opt_win_sum(opt_win_sum);
     one_gain_stats->increment_ext_trig_opt_win_sumsq(sqr_opt_win_sum);
   } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
+    one_gain_stats->increment_phys_trig_num_events();
+  } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER) {
+    one_gain_stats->increment_int_trig_num_events();
+  }
+  int chan_max = sum_visitor->array_chan_max()[ichan];
+  if(chan_max >= wf_clipping_value) {
+    one_gain_stats->increment_all_trig_num_wf_clipped();
+    if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL) {
+      one_gain_stats->increment_ped_trig_num_wf_clipped();
+    } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER) {
+      one_gain_stats->increment_ext_trig_num_wf_clipped();
+    } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
+      one_gain_stats->increment_phys_trig_num_wf_clipped();
+    } else if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER) {
+      one_gain_stats->increment_int_trig_num_wf_clipped();
+    }
   }
   ++nsum;
   opt_sum += opt_win_sum;
@@ -487,12 +513,12 @@ void SimpleChargeStatsParallelEventVisitor::record_one_visitor_data(
       case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
         record_one_gain_channel_data(event, sum_visitor, ichan, elapsed_event_time,
           pc->mutable_high_gain(), chan_hists_[ichan]->high_gain,
-          nsum_hg, opt_sum_hg, sig_sum_hg, bkg_sum_hg, all_sum_hg);
+          nsum_hg, opt_sum_hg, sig_sum_hg, bkg_sum_hg, all_sum_hg, config_.high_gain_wf_clipping_value());
         break;
       case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
         record_one_gain_channel_data(event, sum_visitor, ichan, elapsed_event_time,
           pc->mutable_low_gain(), chan_hists_[ichan]->low_gain,
-          nsum_lg, opt_sum_lg, sig_sum_lg, bkg_sum_lg, all_sum_lg);
+          nsum_lg, opt_sum_lg, sig_sum_lg, bkg_sum_lg, all_sum_lg, config_.low_gain_wf_clipping_value());
         break;
       case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
       default:
@@ -579,6 +605,8 @@ calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig
 SimpleChargeStatsParallelEventVisitor::default_config()
 {
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config;
+  config.set_high_gain_wf_clipping_value(4095);
+  config.set_low_gain_wf_clipping_value(4095);
   config.set_ped_time_hist_resolution(5.0);
   return config;
 }
