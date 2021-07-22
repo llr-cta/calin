@@ -189,6 +189,9 @@ message SimpleChargeStats {
     (CFO).desc = "Stats for low-gain channel if camera supports two gain channels." ];
   repeated int64 channel_triggered_count                            = 30 [
     (CFO).desc = "Number of events for which the trigger bit is set for each channel." ];
+  calin.ix.math.histogram.Histogram1DData num_channel_triggered_hist = 31 [
+    (CFO).desc = "Histogram of number of channels triggered.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
 };
 
 message PartialOneGainChannelSimpleChargeStats {
@@ -341,6 +344,9 @@ message PartialCameraSimpleChargeStats {
   uint64 num_event_trigger_hitmap_found                            = 20 [
     (CFO).desc = "Number of events for which the trigger hitmap was found.",
     (CFO).is_counter=true ];
+  calin.ix.math.histogram.Histogram1DData num_channel_triggered_hist = 21 [
+    (CFO).desc = "Histogram of number of channels triggered.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
 };
 
 message PartialSimpleChargeStats {

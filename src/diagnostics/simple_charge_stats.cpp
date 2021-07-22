@@ -86,7 +86,7 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   }
 
   delete camera_hists_;
-  camera_hists_ = new ChannelHists(has_dual_gain_, 60.0, 86400.0);
+  camera_hists_ = new CameraHists(has_dual_gain_, 60.0, 86400.0);
 
   // if(high_gain_visitor_) {
   //   high_gain_results_->Clear();
@@ -391,6 +391,8 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
     dump_single_gain_camera_hists_to_partials(*camera_hists_->low_gain,
       partials_.mutable_camera()->mutable_low_gain());
   }
+  auto* hp = camera_hists_->num_channel_triggered_hist->dump_as_proto();
+  partials_.mutable_camera()->mutable_num_channel_triggered_hist()->IntegrateFrom(*hp);
 
   if(parent_)return true;
 
@@ -408,6 +410,9 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
   if(has_dual_gain_) {
     integrate_one_gain_camera_partials(results_.mutable_low_gain(), partials_.camera().low_gain());
   }
+  results_.mutable_num_channel_triggered_hist()->IntegrateFrom(
+    partials_.camera().num_channel_triggered_hist());
+
   partials_.Clear();
   return true;
 }
@@ -566,7 +571,6 @@ void SimpleChargeStatsParallelEventVisitor::record_one_visitor_data(
 bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
-
   if(high_gain_visitor_) {
     record_one_visitor_data(seq_index, event, high_gain_visitor_, &partials_);
   }
@@ -580,6 +584,7 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
     for(auto ichan : event->trigger_map().hit_channel_id()) {
       partials_.mutable_channel(ichan)->increment_all_trig_num_events_triggered();
     }
+    camera_hists_->num_channel_triggered_hist->insert(event->trigger_map().hit_channel_id_size());
   }
   return true;
 }

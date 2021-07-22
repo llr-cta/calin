@@ -118,6 +118,25 @@ private:
     SingleGainChannelHists* low_gain = nullptr;
   };
 
+  struct CameraHists {
+    CameraHists(bool has_dual_gain_, double time_resolution, double time_max = 3600.0):
+      high_gain(new SingleGainChannelHists(time_resolution, time_max)),
+      low_gain(has_dual_gain_ ? new SingleGainChannelHists(time_resolution, time_max) : nullptr),
+      num_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0))
+    { /* nothing to see here */ }
+
+    ~CameraHists() {
+      delete num_channel_triggered_hist;
+      delete high_gain;
+      delete low_gain;
+    }
+
+    SingleGainChannelHists* high_gain = nullptr;
+    SingleGainChannelHists* low_gain = nullptr;
+
+    calin::math::histogram::Histogram1D* num_channel_triggered_hist = nullptr;
+  };
+
   void integrate_one_gain_partials(
     calin::ix::diagnostics::simple_charge_stats::OneGainSimpleChargeStats* results_g,
     const calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats& partials_gc);
@@ -140,7 +159,7 @@ private:
     calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats,
     SingleGainChannelHists* one_gain_hists,
     unsigned& nsum, int64_t& opt_sum, int64_t& sig_sum, int64_t& bkg_sum, int64_t& wf_sum,
-    unsigned wf_clipping_value);
+     unsigned wf_clipping_value);
 
   void record_one_visitor_data(uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
     const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
@@ -156,7 +175,7 @@ private:
   calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats partials_;
 
   std::vector<ChannelHists*> chan_hists_;
-  ChannelHists* camera_hists_ = nullptr;
+  CameraHists* camera_hists_ = nullptr;
 };
 
 } } } // namespace calin::diagnostics::simple_charge_stats
