@@ -59,9 +59,23 @@ calin::ix::iact_data::instrument_layout::CameraLayout* reduce_camera_channels(
   const calin::ix::iact_data::instrument_layout::CameraLayout& layout_in,
   const std::vector<unsigned>& channel_id, bool recenter = false);
 
+inline calin::ix::iact_data::instrument_layout::CameraLayout* reduce_camera_channels(
+  const calin::ix::iact_data::instrument_layout::CameraLayout& layout_in,
+  const Eigen::VectorXi& channel_id, bool recenter = false)
+{
+  return reduce_camera_channels(layout_in, calin::eigen_to_stdvec_unsigned(channel_id), recenter);
+}
+
 calin::ix::iact_data::instrument_layout::CameraLayout* reduce_camera_modules(
   const calin::ix::iact_data::instrument_layout::CameraLayout& layout_in,
   const std::vector<unsigned>& module_id, bool recenter = false);
+
+inline calin::ix::iact_data::instrument_layout::CameraLayout* reduce_camera_modules(
+  const calin::ix::iact_data::instrument_layout::CameraLayout& layout_in,
+  const Eigen::VectorXi& module_id, bool recenter = false)
+{
+  return reduce_camera_modules(layout_in, calin::eigen_to_stdvec_unsigned(module_id), recenter);
+}
 
 calin::ix::iact_data::instrument_layout::OutlinePolygon* channel_outline(
   const calin::ix::iact_data::instrument_layout::CameraLayout& camera_layout,
