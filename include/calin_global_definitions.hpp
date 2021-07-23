@@ -63,9 +63,19 @@ inline std::vector<int> eigen_to_stdvec(const Eigen::VectorXi& x)
   return std::vector<int>(x.data(), x.data()+x.size());
 }
 
+inline std::vector<unsigned> eigen_to_stdvec_unsigned(const Eigen::VectorXi& x)
+{
+  return std::vector<unsigned>(x.data(), x.data()+x.size());
+}
+
 inline Eigen::VectorXi std_to_eigenvec(const std::vector<int> &x)
 {
   return Eigen::Map<const Eigen::VectorXi>(&x.front(), x.size());
+}
+
+inline Eigen::VectorXi std_to_eigenvec_unsigned(const std::vector<unsigned> &x)
+{
+  return Eigen::Map<const Eigen::VectorXi>(reinterpret_cast<const int*>(&x.front()), x.size());
 }
 
 template<typename T>
