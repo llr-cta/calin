@@ -181,7 +181,7 @@ void calin::iact_data::instrument_layout::map_channels_using_from_coordinates(
 calin::ix::iact_data::instrument_layout::CameraLayout*
 calin::iact_data::instrument_layout::reduce_camera_channels(
   const calin::ix::iact_data::instrument_layout::CameraLayout& in,
-  const std::vector<unsigned int>& channel_id, bool recenter)
+  const Eigen::VectorXi& channel_id, bool recenter)
 {
   std::vector<int> in_to_out(in.channel_size(), -1);
 
@@ -283,7 +283,7 @@ calin::iact_data::instrument_layout::reduce_camera_channels(
 calin::ix::iact_data::instrument_layout::CameraLayout*
 calin::iact_data::instrument_layout::reduce_camera_modules(
   const calin::ix::iact_data::instrument_layout::CameraLayout& in,
-  const std::vector<unsigned>& module_id, bool recenter)
+  const Eigen::VectorXi& module_id, bool recenter)
 {
   std::vector<int> in_to_out(in.module_size(), -1);
   std::vector<unsigned> channel_id;
@@ -303,7 +303,8 @@ calin::iact_data::instrument_layout::reduce_camera_modules(
     }
   }
 
-  auto* out = reduce_camera_channels(in, channel_id, recenter);
+  Eigen::VectorXi eigen_channel_id = calin::std_to_eigenvec_unsigned(channel_id);
+  auto* out = reduce_camera_channels(in, eigen_channel_id, recenter);
 
   double shift_x = in.pixel_grid_offset_x() - out->pixel_grid_offset_x();
   double shift_y = in.pixel_grid_offset_y() - out->pixel_grid_offset_y();
