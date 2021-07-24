@@ -43,11 +43,11 @@ unsigned calin::iact_data::algorithms::find_channel_islands(
       --nstack;
       cid = island_count[nisland + nstack];
     } else {
-      cid = channel_id[ichannel_id];
       if(channel_island_id[ichannel_id] >= 0) {
         ++ichannel_id;
         continue;
       } else {
+        cid = channel_id[ichannel_id];
         channel_island_id[ichannel_id] = nisland;
         island_count[nisland] = 1;
         ++nisland;
