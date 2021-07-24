@@ -16,7 +16,7 @@
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --save-temps")
 
 set(CALIN_TARGET_LIBRARY calin_iact_data)
-set(CALIN_SOURCES
+set(CALIN_SOURCES algorithms.cpp
 	telescope_data_source.cpp event_visitor.cpp
 	event_dispatcher.cpp parallel_event_dispatcher.cpp
 	functional_event_visitor.cpp instrument_layout.cpp
