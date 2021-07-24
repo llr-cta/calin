@@ -39,34 +39,32 @@ unsigned calin::iact_data::algorithms::find_channel_islands(
   unsigned ichannel_id = 0;
   while(ichannel_id<nchannel_id or nstack>0) {
     int cid;
-    int ciid;
     if(nstack) {
       --nstack;
-      cid = channel_id[island_count[nisland + nstack]];
-      ciid = channel_island_id[island_count[nisland + nstack]];
+      cid = island_count[nisland + nstack];
     } else {
       cid = channel_id[ichannel_id];
-      ciid = channel_island_id[ichannel_id];
-      if(ciid >= 0) {
+      if(channel_island_id[ichannel_id] >= 0) {
         ++ichannel_id;
         continue;
       } else {
-        ciid = nisland++;
-        channel_island_id[ichannel_id] = ciid;
-        island_count[ciid] = 1;
+        channel_island_id[ichannel_id] = nisland;
+        island_count[nisland] = 1;
+        ++nisland;
         ++ichannel_id;
       }
     }
     for(auto ncid : camera.channel(cid).neighbour_channel_indexes()) {
-      if(ncid > channel_id[ichannel_id]) {
+      if(ncid > channel_id[ichannel_id-1]) {
         const auto* found_channel_id =
           std::lower_bound(channel_id+ichannel_id, last_channel_id, ncid);
         if(found_channel_id<last_channel_id and *found_channel_id==ncid) {
           unsigned ifound_channel_id = found_channel_id-channel_id;
           if(channel_island_id[ifound_channel_id] == -1) {
+            int ciid = nisland-1;
             channel_island_id[ifound_channel_id] = ciid;
             island_count[ciid] += 1;
-            island_count[nisland + nstack] = ifound_channel_id;
+            island_count[nisland + nstack] = ncid;
             ++nstack;
           }
         }
