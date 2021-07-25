@@ -32,6 +32,29 @@
 
 namespace calin { namespace iact_data { namespace algorithms {
 
+/*
+
+  Find "islands" of contigous channels and return the number of channels in
+  each island.
+
+  INPUT :
+  camera : the IACT camera layout specifying the graph of channel neighbours
+  channel_id : array of channel IDs that make up the "land mass" of the islands.
+      The array *must* contain channels IDs in monotonic ascending order.
+  nchannel_id : number of channels in the channel_id array
+
+  RETURNS :
+  nisland : the number of islands found.
+
+  OUTPUT :
+  channel_island_id : island number to which each channel_id belongs. Must be
+      pre-allocated to size of at least nchannel_id
+  island_count : count of number of channels in each island. Must be
+      pre-allocated to size of at least nchannel_id. Only the first "nisland"
+      entries of this array will contain useful values (although all entries may
+      be modified by the algorithm).
+
+  */
 #ifndef SWIG
 unsigned find_channel_islands(
   const calin::ix::iact_data::instrument_layout::CameraLayout& camera,
