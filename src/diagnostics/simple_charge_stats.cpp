@@ -20,11 +20,14 @@
 
 */
 
+#include <algorithm>
+
 #include <util/log.hpp>
 #include <math/special.hpp>
 #include <util/algorithm.hpp>
 #include <diagnostics/simple_charge_stats.hpp>
 #include <math/covariance_calc.hpp>
+#include <iact_data/algorithms.hpp>
 
 using namespace calin::util::log;
 using namespace calin::diagnostics::simple_charge_stats;
@@ -87,6 +90,14 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
 
   delete camera_hists_;
   camera_hists_ = new CameraHists(has_dual_gain_, 60.0, 86400.0);
+
+  delete data_order_camera_;
+  data_order_camera_ = calin::iact_data::instrument_layout::reduce_camera_channels(
+    run_config->camera_layout(),
+    reinterpret_cast<const unsigned*>(run_config->configured_channel_id().data()),
+    run_config->configured_channel_id_size());
+  channel_island_id_.resize(run_config->configured_channel_id_size());
+  channel_island_count_.resize(run_config->configured_channel_id_size());
 
   // if(high_gain_visitor_) {
   //   high_gain_results_->Clear();
@@ -394,6 +405,12 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
   auto* hp = camera_hists_->num_channel_triggered_hist->dump_as_proto();
   partials_.mutable_camera()->mutable_num_channel_triggered_hist()->IntegrateFrom(*hp);
 
+  hp = camera_hists_->num_contiguous_channel_triggered_hist->dump_as_proto();
+  partials_.mutable_camera()->mutable_num_contiguous_channel_triggered_hist()->IntegrateFrom(*hp);
+
+  hp = camera_hists_->phys_trig_num_contiguous_channel_triggered_hist->dump_as_proto();
+  partials_.mutable_camera()->mutable_phys_trig_num_contiguous_channel_triggered_hist()->IntegrateFrom(*hp);
+
   if(parent_)return true;
 
   for(int ichan = 0; ichan<partials_.channel_size(); ichan++) {
@@ -404,6 +421,7 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
     }
     if(partials_.camera().num_event_trigger_hitmap_found() > 0) {
       results_.add_channel_triggered_count(partials_chan.all_trig_num_events_triggered());
+      results_.add_phy_trigger_few_neighbor_channel_triggered_count(partials_chan.phy_trig_few_neighbor_channel_triggered_count());
     }
   }
   integrate_one_gain_camera_partials(results_.mutable_high_gain(), partials_.camera().high_gain());
@@ -412,6 +430,10 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
   }
   results_.mutable_num_channel_triggered_hist()->IntegrateFrom(
     partials_.camera().num_channel_triggered_hist());
+  results_.mutable_num_contiguous_channel_triggered_hist()->IntegrateFrom(
+    partials_.camera().num_contiguous_channel_triggered_hist());
+  results_.mutable_phy_trigger_num_contiguous_channel_triggered_hist()->IntegrateFrom(
+    partials_.camera().phys_trig_num_contiguous_channel_triggered_hist());
 
   partials_.Clear();
   return true;
@@ -585,6 +607,26 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
       partials_.mutable_channel(ichan)->increment_all_trig_num_events_triggered();
     }
     camera_hists_->num_channel_triggered_hist->insert(event->trigger_map().hit_channel_id_size());
+    int num_contiguous_channel_triggered = 0;
+    if(event->trigger_map().hit_channel_id_size() > 0) {
+      unsigned nisland = calin::iact_data::algorithms::find_channel_islands(
+        *data_order_camera_, reinterpret_cast<const int*>(event->trigger_map().hit_channel_id().data()),
+        event->trigger_map().hit_channel_id_size(), channel_island_id_.data(),
+        channel_island_count_.data());
+      num_contiguous_channel_triggered = channel_island_count_[0]; // guarenteed to have at least one island
+      for(unsigned iisland=1; iisland<nisland; iisland++) {
+        num_contiguous_channel_triggered = std::max(num_contiguous_channel_triggered, channel_island_count_[iisland]);
+      }
+    }
+    camera_hists_->num_contiguous_channel_triggered_hist->insert(num_contiguous_channel_triggered);
+    if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
+      camera_hists_->phys_trig_num_contiguous_channel_triggered_hist->insert(num_contiguous_channel_triggered);
+      if(num_contiguous_channel_triggered < config_.nearest_neighbor_nchannel_threshold()) {
+        for(auto ichan : event->trigger_map().hit_channel_id()) {
+          partials_.mutable_channel(ichan)->increment_phy_trig_few_neighbor_channel_triggered_count();
+        }
+      }
+    }
   }
   return true;
 }
@@ -612,6 +654,7 @@ SimpleChargeStatsParallelEventVisitor::default_config()
   calin::ix::diagnostics::simple_charge_stats::SimpleChargeStatsConfig config;
   config.set_high_gain_wf_clipping_value(4095);
   config.set_low_gain_wf_clipping_value(4095);
+  config.set_nearest_neighbor_nchannel_threshold(3);
   config.set_ped_time_hist_resolution(5.0);
   return config;
 }
