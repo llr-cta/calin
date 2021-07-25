@@ -79,11 +79,10 @@ unsigned calin::iact_data::algorithms::find_channel_islands(
   const Eigen::VectorXi& channel_id,
   Eigen::VectorXi& channel_island_id, Eigen::VectorXi& island_count)
 {
-  Eigen::VectorXi temp_island_count;
   channel_island_id.resize(channel_id.size());
-  temp_island_count.resize(channel_id.size());
+  island_count.resize(channel_id.size());
   unsigned nisland = find_channel_islands(camera, channel_id.data(), channel_id.size(),
-    channel_island_id.data(), temp_island_count.data());
-  island_count = temp_island_count.head(nisland);
+    channel_island_id.data(), island_count.data());
+  island_count = island_count.head(nisland);
   return nisland;
 }
