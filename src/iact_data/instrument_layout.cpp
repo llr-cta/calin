@@ -181,7 +181,7 @@ void calin::iact_data::instrument_layout::map_channels_using_from_coordinates(
 calin::ix::iact_data::instrument_layout::CameraLayout*
 calin::iact_data::instrument_layout::reduce_camera_channels(
   const calin::ix::iact_data::instrument_layout::CameraLayout& in,
-  const Eigen::VectorXi& channel_id, bool recenter)
+  const unsigned* channel_id, unsigned nchannel_id, bool recenter)
 {
   std::vector<int> in_to_out(in.channel_size(), -1);
 
@@ -189,7 +189,7 @@ calin::iact_data::instrument_layout::reduce_camera_channels(
   double max_x = 0;
   double min_y = 0;
   double max_y = 0;
-  for(unsigned i=0;i<channel_id.size();++i) {
+  for(unsigned i=0;i<nchannel_id;++i) {
     if(channel_id[i] >= unsigned(in.channel_size())) {
       throw std::runtime_error("Channel ID out of range: " +
         std::to_string(channel_id[i]));
@@ -219,7 +219,7 @@ calin::iact_data::instrument_layout::reduce_camera_channels(
   out->set_camera_type(in.camera_type());
   out->set_camera_number(in.camera_number());
 
-  for(unsigned ichan=0;ichan<channel_id.size();++ichan) {
+  for(unsigned ichan=0;ichan<nchannel_id;++ichan) {
     const auto& ic = in.channel(channel_id[ichan]);
     auto* oc = out->add_channel();
 
@@ -283,12 +283,12 @@ calin::iact_data::instrument_layout::reduce_camera_channels(
 calin::ix::iact_data::instrument_layout::CameraLayout*
 calin::iact_data::instrument_layout::reduce_camera_modules(
   const calin::ix::iact_data::instrument_layout::CameraLayout& in,
-  const Eigen::VectorXi& module_id, bool recenter)
+  const unsigned* module_id, unsigned nmodule_id, bool recenter)
 {
   std::vector<int> in_to_out(in.module_size(), -1);
   std::vector<unsigned> channel_id;
 
-  for(unsigned i=0;i<module_id.size();++i) {
+  for(unsigned i=0;i<nmodule_id;++i) {
     if(module_id[i] >= unsigned(in.module_size())) {
       throw std::runtime_error("Module ID out of range: " +
         std::to_string(module_id[i]));
@@ -309,7 +309,7 @@ calin::iact_data::instrument_layout::reduce_camera_modules(
   double shift_x = in.pixel_grid_offset_x() - out->pixel_grid_offset_x();
   double shift_y = in.pixel_grid_offset_y() - out->pixel_grid_offset_y();
 
-  for(unsigned imod=0, ichan=0;imod<module_id.size();++imod) {
+  for(unsigned imod=0, ichan=0;imod<nmodule_id;++imod) {
     const auto& im = in.module(module_id[imod]);
     auto* om = out->add_module();
 
@@ -346,7 +346,7 @@ calin::iact_data::instrument_layout::reduce_camera_modules(
 calin::ix::iact_data::instrument_layout::OutlinePolygon*
 calin::iact_data::instrument_layout::channel_outline(
   const calin::ix::iact_data::instrument_layout::CameraLayout& camera_layout,
-  const std::vector<unsigned>& channel_id)
+  const unsigned* channel_id, unsigned nchannel_id)
 {
   auto* grid = make_grid_from_instrument_layout(camera_layout);
   if(grid == nullptr)
@@ -355,7 +355,8 @@ calin::iact_data::instrument_layout::channel_outline(
 
   std::vector<unsigned> camera_grid_ids;
   std::vector<bool> channel_ids_selected(camera_layout.channel_size(), false);
-  for(auto ichan : channel_id) {
+  for(unsigned ichannel_id=0; ichannel_id<nchannel_id; ichannel_id++) {
+    unsigned ichan = channel_id[ichannel_id];
     if(ichan >= unsigned(camera_layout.channel_size())) {
       delete grid;
       throw std::runtime_error("Channel ID out of range: "
