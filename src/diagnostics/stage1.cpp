@@ -101,6 +101,21 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
     this->add_internal_flasher_trigger_visitor(charge_hists_int_pev_);
   }
 
+  if(config_.enable_trigger_bit_waveform_hists()) {
+    charge_hists_trig_bit_set_pev_ = new calin::diagnostics::simple_charge_hists::
+      SimpleChargeHistsParallelEventVisitor(hg_sum_pev_, nullptr,
+        config_.l0_trigger_bit_waveform_hists(),
+        new calin::diagnostics::simple_charge_hists::SimpleChargeHistsTriggerBitFilter(
+          /*trigger_bit_status_required_for_accept=*/true),/*adopt_filter=*/true);
+    charge_hists_trig_bit_clr_pev_ = new calin::diagnostics::simple_charge_hists::
+      SimpleChargeHistsParallelEventVisitor(hg_sum_pev_, nullptr,
+        config_.l0_trigger_bit_waveform_hists(),
+        new calin::diagnostics::simple_charge_hists::SimpleChargeHistsTriggerBitFilter(
+          /*trigger_bit_status_required_for_accept=*/false),/*adopt_filter=*/true);
+    this->add_visitor(charge_hists_trig_bit_set_pev_);
+    this->add_visitor(charge_hists_trig_bit_clr_pev_);
+  }
+
   if(config_.enable_clock_regression()) {
     clock_regression_pev_ = new calin::diagnostics::clock_regression::
       ClockRegressionParallelEventVisitor(config_.clock_regression());
@@ -114,6 +129,8 @@ Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
   delete charge_hists_ped_pev_;
   delete charge_hists_ext_pev_;
   delete charge_hists_int_pev_;
+  delete charge_hists_trig_bit_set_pev_;
+  delete charge_hists_trig_bit_clr_pev_;
   delete wf_mean_int_pev_;
   delete wf_mean_ext_pev_;
   delete wf_mean_ped_pev_;
@@ -230,6 +247,13 @@ calin::ix::diagnostics::stage1::Stage1* Stage1ParallelEventVisitor::stage1_resul
     charge_hists_int_pev_->simple_charge_hists(stage1->mutable_wf_hists_internal_flasher());
   }
 
+  if(charge_hists_trig_bit_set_pev_ and this->visitor_saw_event(charge_hists_trig_bit_set_pev_)) {
+    charge_hists_trig_bit_set_pev_->simple_charge_hists(stage1->mutable_wf_hists_l0_trigger_bit_set());
+  }
+  if(charge_hists_trig_bit_clr_pev_ and this->visitor_saw_event(charge_hists_trig_bit_clr_pev_)) {
+    charge_hists_trig_bit_clr_pev_->simple_charge_hists(stage1->mutable_wf_hists_l0_trigger_bit_clear());
+  }
+
   if(clock_regression_pev_) {
     clock_regression_pev_->clock_regression(stage1->mutable_clock_regression());
   }
@@ -289,6 +313,9 @@ calin::ix::diagnostics::stage1::Stage1Config Stage1ParallelEventVisitor::default
 
   cfg.mutable_int_trigger_waveform_hists()->CopyFrom(
     calin::diagnostics::simple_charge_hists::SimpleChargeHistsParallelEventVisitor::int_trig_default_config());
+
+  cfg.mutable_l0_trigger_bit_waveform_hists()->CopyFrom(
+    calin::diagnostics::simple_charge_hists::SimpleChargeHistsParallelEventVisitor::l0_trig_bits_default_config());
 
   cfg.mutable_clock_regression()->CopyFrom(
     calin::diagnostics::clock_regression::ClockRegressionParallelEventVisitor::default_config());

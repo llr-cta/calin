@@ -75,6 +75,9 @@ private:
   calin::diagnostics::simple_charge_hists::SimpleChargeHistsParallelEventVisitor* charge_hists_ext_pev_ = nullptr;
   calin::diagnostics::simple_charge_hists::SimpleChargeHistsParallelEventVisitor* charge_hists_int_pev_ = nullptr;
 
+  calin::diagnostics::simple_charge_hists::SimpleChargeHistsParallelEventVisitor* charge_hists_trig_bit_set_pev_ = nullptr;
+  calin::diagnostics::simple_charge_hists::SimpleChargeHistsParallelEventVisitor* charge_hists_trig_bit_clr_pev_ = nullptr;
+
   calin::diagnostics::waveform::WaveformSumParallelEventVisitor* wf_mean_phy_pev_ = nullptr;
   calin::diagnostics::waveform::WaveformSumParallelEventVisitor* wf_mean_ped_pev_ = nullptr;
   calin::diagnostics::waveform::WaveformSumParallelEventVisitor* wf_mean_ext_pev_ = nullptr;

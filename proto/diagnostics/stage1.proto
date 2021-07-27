@@ -48,6 +48,9 @@ message Stage1Config {
     (CFO).desc = "Enable retrieval of ancillary database entries for run." ];
   bool enable_clock_regression                             = 4 [
     (CFO).desc = "Enable calculation of clock regression parameters." ];
+  bool enable_trigger_bit_waveform_hists                   = 5 [
+    (CFO).desc = "Enable histograms of simple quantities based on waveforms "
+      "(sum, max sample, etc...) correlated against trigger bit." ];
 
   // bool enable_max_code_hists                                        = 10 [
   //   (CFO).desc = "Enable max-sample code histograms, histograms of the "
@@ -86,6 +89,9 @@ message Stage1Config {
 
   calin.ix.diagnostics.simple_charge_hists.SimpleChargeHistsConfig int_trigger_waveform_hists = 107 [
     (CFO).desc = "Configuration of simple waveform hists calculator for internal-flasher events." ];
+
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHistsConfig l0_trigger_bit_waveform_hists = 108 [
+    (CFO).desc = "Configuration of simple waveform hists calculator for correlated with L0 trigger bit." ];
 
   calin.ix.diagnostics.clock_regression.ClockRegressionConfig clock_regression = 110 [
     (CFO).desc = "Configuration of clock regression calculator." ];
@@ -147,6 +153,9 @@ message Stage1 {
   calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_pedestal = 121;
   calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_external_flasher = 122;
   calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_internal_flasher = 123;
+
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_l0_trigger_bit_set = 130;
+  calin.ix.diagnostics.simple_charge_hists.SimpleChargeHists wf_hists_l0_trigger_bit_clear = 131;
 
   Stage1Config config                                      = 999;
   calin.ix.provenance.anthology.Anthology provenance_anthology = 1000 [
