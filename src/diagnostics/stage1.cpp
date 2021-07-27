@@ -101,7 +101,7 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
     this->add_internal_flasher_trigger_visitor(charge_hists_int_pev_);
   }
 
-  if(config_.enable_trigger_bit_waveform_hists()) {
+  if(config_.enable_l0_trigger_bit_waveform_hists()) {
     charge_hists_trig_bit_set_pev_ = new calin::diagnostics::simple_charge_hists::
       SimpleChargeHistsParallelEventVisitor(hg_sum_pev_, nullptr,
         config_.l0_trigger_bit_waveform_hists(),
@@ -289,6 +289,7 @@ calin::ix::diagnostics::stage1::Stage1Config Stage1ParallelEventVisitor::default
   calin::ix::diagnostics::stage1::Stage1Config cfg;
   cfg.set_enable_mean_waveform(true);
   cfg.set_enable_simple_waveform_hists(true);
+  cfg.set_enable_l0_trigger_bit_waveform_hists(true);
   cfg.set_enable_ancillary_data(true);
   cfg.set_enable_clock_regression(true);
 
