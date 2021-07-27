@@ -114,6 +114,32 @@ void calin::iact_data::instrument_layout::compute_camera_and_module_outlines(
       module_layout->mutable_outline_polygon_vertex_x(),
       module_layout->mutable_outline_polygon_vertex_y());
   }
+
+  double x = camera_layout->outline_polygon_vertex_x(0);
+  double y = camera_layout->outline_polygon_vertex_y(0);
+  camera_layout->set_camera_boundary_box_left(x);
+  camera_layout->set_camera_boundary_box_right(x);
+  camera_layout->set_camera_boundary_box_bottom(y);
+  camera_layout->set_camera_boundary_box_top(y);
+  camera_layout->set_camera_boundary_maxabs_xy(std::max(std::abs(x),std::abs(y)));
+  camera_layout->set_camera_boundary_max_r(x*x+y*y);
+  for(unsigned ivertex=1;ivertex<camera_layout->outline_polygon_vertex_x_size();++ivertex) {
+    double x = camera_layout->outline_polygon_vertex_x(ivertex);
+    double y = camera_layout->outline_polygon_vertex_y(ivertex);
+    camera_layout->set_camera_boundary_box_left(
+      std::min(camera_layout->camera_boundary_box_left(),x));
+    camera_layout->set_camera_boundary_box_right(
+      std::max(camera_layout->camera_boundary_box_right(),x));
+    camera_layout->set_camera_boundary_box_bottom(
+      std::min(camera_layout->camera_boundary_box_bottom(),y));
+    camera_layout->set_camera_boundary_box_top(
+      std::max(camera_layout->camera_boundary_box_top(),y));
+    camera_layout->set_camera_boundary_maxabs_xy(
+      std::max(camera_layout->camera_boundary_maxabs_xy(),std::max(std::abs(x),std::abs(y))));
+    camera_layout->set_camera_boundary_max_r(
+      std::max(camera_layout->camera_boundary_max_r(),x*x+y*y));
+  }
+  camera_layout->set_camera_boundary_max_r(std::sqrt(camera_layout->camera_boundary_max_r()));
 }
 
 void calin::iact_data::instrument_layout::map_channels_using_grid(

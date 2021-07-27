@@ -237,6 +237,24 @@ message CameraLayout {
       "order, or -1 if that pixel is not connected to an electronics channel." ];
   repeated uint32 boundary_pixel_channel_index             = 21 [
     (CFO).desc = "Index into channel array for each of the boundary pixels." ];
+  double camera_boundary_box_left                          = 22 [
+    (CFO).desc = "X coordinate of left edge of camera boundary box.",
+    (CFO).units = "cm" ];
+  double camera_boundary_box_right                         = 23 [
+    (CFO).desc = "X coordinate of right edge of camera boundary box.",
+    (CFO).units = "cm" ];
+  double camera_boundary_box_bottom                        = 24 [
+    (CFO).desc = "Y coordinate of bottom edge of camera boundary box.",
+    (CFO).units = "cm" ];
+  double camera_boundary_box_top                           = 25 [
+    (CFO).desc = "Y coordinate of top edge of camera boundary box.",
+    (CFO).units = "cm" ];
+  double camera_boundary_maxabs_xy                         = 26 [
+    (CFO).desc = "Maximum absolute values of X and Y corners of boundary box.",
+    (CFO).units = "cm" ];
+  double camera_boundary_max_r                             = 27 [
+    (CFO).desc = "Maximum radius of vertices of camera boundary.",
+    (CFO).units = "cm" ];
 
   uint32 channels_per_modules                              = 30 [
     (CFO).desc = "Number of channels per module." ];
