@@ -39,9 +39,11 @@ SimpleChargeHistsParallelEventVisitor::
 SimpleChargeHistsParallelEventVisitor(
     OptimalWindowSumWaveformTreatmentParallelEventVisitor* high_gain_visitor,
     OptimalWindowSumWaveformTreatmentParallelEventVisitor* low_gain_visitor,
-    const SimpleChargeHistsConfig& config):
+    const SimpleChargeHistsConfig& config,
+    SimpleChargeHistsFilter* filter, bool adopt_filter):
   ParallelEventVisitor(), config_(config),
-  high_gain_visitor_(high_gain_visitor), low_gain_visitor_(low_gain_visitor)
+  high_gain_visitor_(high_gain_visitor), low_gain_visitor_(low_gain_visitor),
+  filter_(filter), adopt_filter_(adopt_filter)
 {
   // nothing to see here
 }
@@ -52,6 +54,7 @@ SimpleChargeHistsParallelEventVisitor::~SimpleChargeHistsParallelEventVisitor()
   delete cam_hists_high_gain_;
   delete cam_hists_low_gain_;
   delete cam_hists_dual_gain_;
+  if(adopt_filter_)delete filter_;
 }
 
 SimpleChargeHistsParallelEventVisitor* SimpleChargeHistsParallelEventVisitor::new_sub_visitor(
@@ -62,7 +65,8 @@ SimpleChargeHistsParallelEventVisitor* SimpleChargeHistsParallelEventVisitor::ne
     antecedent_visitors[high_gain_visitor_]);
   auto* lgv = dynamic_cast<OptimalWindowSumWaveformTreatmentParallelEventVisitor*>(
     antecedent_visitors[low_gain_visitor_]); // good in case of nullptr also
-  auto* child = new SimpleChargeHistsParallelEventVisitor(hgv, lgv, config_);
+  auto* child = new SimpleChargeHistsParallelEventVisitor(hgv, lgv, config_,
+    filter_==nullptr?nullptr:filter_->clone(), filter_==nullptr?false:true);
   child->parent_ = this;
   return child;
 }
@@ -118,12 +122,16 @@ void SimpleChargeHistsParallelEventVisitor::record_one_visitor_data(
     switch(sum_visitor->array_chan_signal_type()[ichan]) {
     case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
     case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
-      hists = chan_hists_[ichan]->high_gain;
-      ++high_gain_nchan_presence;
+      if(filter_==nullptr or filter_->event_should_be_accepted(event, ichan, /*low_gain=*/ false)) {
+        hists = chan_hists_[ichan]->high_gain;
+        ++high_gain_nchan_presence;
+      }
       break;
     case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
-      hists = chan_hists_[ichan]->low_gain;
-      ++low_gain_nchan_presence;
+      if(filter_==nullptr or filter_->event_should_be_accepted(event, ichan, /*low_gain=*/ true)) {
+        hists = chan_hists_[ichan]->low_gain;
+        ++low_gain_nchan_presence;
+      }
       break;
     case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
     default:
@@ -163,18 +171,18 @@ bool SimpleChargeHistsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
   if(high_gain_visitor_) {
     record_one_visitor_data(seq_index, event, high_gain_visitor_,
       high_gain_nchan_presence, low_gain_nchan_presence);
+    if(cam_hists_high_gain_) {
+      cam_hists_high_gain_->nchan_present->insert(high_gain_nchan_presence);
+    }
   }
   if(low_gain_visitor_) {
     record_one_visitor_data(seq_index, event, low_gain_visitor_,
       high_gain_nchan_presence, low_gain_nchan_presence);
+    if(cam_hists_low_gain_) {
+      cam_hists_low_gain_->nchan_present->insert(low_gain_nchan_presence);
+    }
   }
-  if(cam_hists_high_gain_) {
-    cam_hists_high_gain_->nchan_present->insert(high_gain_nchan_presence);
-  }
-  if(cam_hists_low_gain_) {
-    cam_hists_low_gain_->nchan_present->insert(low_gain_nchan_presence);
-  }
-  if(cam_hists_dual_gain_) {
+  if((high_gain_visitor_ or low_gain_visitor_) and cam_hists_dual_gain_) {
     cam_hists_dual_gain_->nchan_present->insert(high_gain_nchan_presence+low_gain_nchan_presence);
   }
   return true;
@@ -566,4 +574,69 @@ SimpleChargeHistsParallelEventVisitor::int_trig_default_config()
   g2_config->mutable_nchan_present()->set_enable(true);
 
   return config;
+}
+
+calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig
+SimpleChargeHistsParallelEventVisitor::l0_trig_bits_default_config()
+{
+  calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig config;
+  auto* hg_config = config.mutable_high_gain();
+
+  hg_config->Clear();
+  hg_config->set_enable_hists(true);
+
+  auto* hist = hg_config->mutable_full_wf_max();
+  hist->set_enable(true);
+  hist->set_dxval(1.0);
+  hist->set_xval_align(0.0);
+  hist->set_name("All events (L0 trigger-bit selected) high-gain max sample");
+  hist->set_xval_units("DC");
+  hist->set_weight_units("events");
+  hist->set_compactify_output(true);
+
+  hist = hg_config->mutable_opt_win_qsum();
+  hist->set_enable(true);
+  hist->set_dxval(10.0);
+  hist->set_xval_align(0.0);
+  hist->set_name("All events (L0 trigger-bit selected) high-gain optimal window charge sum");
+  hist->set_xval_units("DC");
+  hist->set_weight_units("events");
+  hist->set_compactify_output(true);
+
+  return config;
+}
+
+SimpleChargeHistsFilter::~SimpleChargeHistsFilter()
+{
+  // nothing to see here
+}
+
+SimpleChargeHistsTriggerBitFilter::
+SimpleChargeHistsTriggerBitFilter(bool trigger_bit_status_required_for_accept):
+  SimpleChargeHistsFilter(),
+  trigger_bit_status_required_for_accept_(trigger_bit_status_required_for_accept)
+{
+  // nothing to see here
+}
+
+SimpleChargeHistsTriggerBitFilter::~SimpleChargeHistsTriggerBitFilter()
+{
+  // nothing to see here
+}
+
+bool SimpleChargeHistsTriggerBitFilter::
+event_should_be_accepted(const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+  unsigned ichan, bool low_gain)
+{
+  if(event->has_trigger_map()) {
+    return (event->trigger_map().trigger_image(ichan)>0) ==
+      trigger_bit_status_required_for_accept_;
+  } else {
+    return false;
+  }
+}
+
+SimpleChargeHistsTriggerBitFilter* SimpleChargeHistsTriggerBitFilter::clone()
+{
+  return new SimpleChargeHistsTriggerBitFilter(trigger_bit_status_required_for_accept_);
 }
