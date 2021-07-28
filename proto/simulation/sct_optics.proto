@@ -168,13 +168,15 @@ message SCTTelescope
   SCTSquareGrid camera_module_pixel_grid                   = 36 [
     (CFO).desc = "Square grid describing the position of the modules." ];
 
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData primary_obscuration   = 40 [
+  bool enable_secondary_obscuration_model                  = 40 [
+    (CFO).desc = "Enable the secondary obscuration model for incoming rays" ];
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData primary_obscuration   = 41 [
     (CFO).desc = "Obscurations between photon emission and reflection at the "
       "primary mirror surface." ];
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData secondary_obscuration = 41 [
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData secondary_obscuration = 42 [
     (CFO).desc = "Obscurations between reflections at the primary and secondary "
       "mirror surfaces." ];
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData camera_obscuration    = 42 [
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData camera_obscuration    = 43 [
     (CFO).desc = "Obscurations between reflection at the secondary mirror and  "
       "reception at the camera surface." ];
 
@@ -398,13 +400,15 @@ message SCTRandomArrayParameters
   SCTSquareGrid camera_module_pixel_grid                   = 311 [
     (CFO).desc = "Square grid describing the position of the modules." ];
 
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData primary_obscuration   = 400 [
+  bool enable_secondary_obscuration_model                  = 400 [
+    (CFO).desc = "Enable the secondary obscuration model for incoming rays" ];
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData primary_obscuration   = 401 [
     (CFO).desc = "Obscurations between photon emission and reflection at the "
       "primary mirror surface." ];
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData secondary_obscuration = 401 [
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData secondary_obscuration = 402 [
     (CFO).desc = "Obscurations between reflections at the primary and secondary "
       "mirror surfaces." ];
-  repeated calin.ix.simulation.vs_optics.VSOObscurationData camera_obscuration    = 402 [
+  repeated calin.ix.simulation.vs_optics.VSOObscurationData camera_obscuration    = 403 [
     (CFO).desc = "Obscurations between reflection at the secondary mirror and  "
       "reception at the camera surface." ];
 

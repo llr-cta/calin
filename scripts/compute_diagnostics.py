@@ -45,7 +45,7 @@ opt.set_window_size(16)
 opt.set_sig_window_start(24)
 opt.set_bkg_window_start(0)
 opt.set_nthread(4)
-opt.set_db_results_table_name('diagnostics_results')
+opt.set_db_stage1_table_name('diagnostics_results')
 opt.set_calculate_covariance_matrices(True)
 opt.mutable_zfits().CopyFrom(calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_config())
@@ -296,10 +296,10 @@ delta_t_values = delta_t_capture.results()
 t0 = t0_stats.results()
 
 # Write the results
-sql.create_tables(opt.db_results_table_name(), results.descriptor())
-sql.insert(opt.db_results_table_name(), results)
+sql.create_tables(opt.db_stage1_table_name(), results.descriptor())
+sql.insert(opt.db_stage1_table_name(), results)
 
-#sql.create_tables_and_insert(opt.db_results_table_name(), results)
+#sql.create_tables_and_insert(opt.db_stage1_table_name(), results)
 
 sql.create_tables_and_insert("glitch_event", glitch)
 sql.create_tables_and_insert("glitch_bunch_event", bunch_event_glitch)

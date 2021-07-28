@@ -41,7 +41,9 @@ namespace {
     }
 
     auto* sql = new calin::io::sql_serializer::SQLite3Serializer(db_file,
-      calin::io::sql_serializer::SQLite3Serializer::READ_ONLY_NON_CALIN_DB, log_sql);
+      calin::io::sql_serializer::SQLite3Serializer::READ_ONLY_NON_CALIN_DB);
+    sql->set_write_sql_to_log(log_sql);
+    sql->set_write_errors_to_log(log_sql);
 
     data->set_database(db_file);
 
@@ -55,41 +57,135 @@ namespace {
       calin::ix::iact_data::nectarcam_ancillary_data::ECCMeasurement::descriptor());
 
     std::vector<uint64_t> oids;
+    bool good = true;
 
-    oids = sql->select_oids_in_range("monitoring_drawer_temperatures", start, end);
-    for(auto oid : oids) {
-      calin::ix::iact_data::nectarcam_ancillary_data::FEBTemperatureMeasurement meas;
-      if(sql->retrieve_by_oid("monitoring_drawer_temperatures", oid, &meas)) {
-        data->increment_num_feb_temperature_measurements();
-        (*data->mutable_feb_temperature())[meas.drawer()].add_measurement()->CopyFrom(meas);
+    try {
+      oids = sql->select_oids_in_range("monitoring_drawer_temperatures", start, end);
+      for(auto oid : oids) {
+        calin::ix::iact_data::nectarcam_ancillary_data::FEBTemperatureMeasurement meas;
+        meas.Clear();
+        if(sql->retrieve_by_oid("monitoring_drawer_temperatures", oid, &meas)) {
+          data->increment_num_feb_temperature_measurements();
+          (*data->mutable_feb_temperature())[meas.drawer()].add_measurement()->CopyFrom(meas);
+        } else {
+          good = false;
+        }
       }
+    } catch(...) {
+      good = false;
+    }
+    if(not good) {
+      LOG(WARNING) << "Error retrieving FEB temperature measurements from ancillary DB";
     }
 
-    oids = sql->select_oids_in_range("monitoring_channel_currents", start, end);
-    for(auto oid : oids) {
-      calin::ix::iact_data::nectarcam_ancillary_data::HVPACurrentMeasurement meas;
-      if(sql->retrieve_by_oid("monitoring_channel_currents", oid, &meas)) {
-        data->increment_num_hvpa_current_measurements();
-        (*data->mutable_hvpa_current())[meas.drawer()*7 + meas.channel()].add_measurement()->CopyFrom(meas);
+    good = true;
+    try {
+      oids = sql->select_oids_in_range("monitoring_channel_currents", start, end);
+      for(auto oid : oids) {
+        calin::ix::iact_data::nectarcam_ancillary_data::HVPACurrentMeasurement meas;
+        meas.Clear();
+        if(sql->retrieve_by_oid("monitoring_channel_currents", oid, &meas)) {
+          data->increment_num_hvpa_current_measurements();
+          (*data->mutable_hvpa_current())[meas.drawer()*7 + meas.channel()].add_measurement()->CopyFrom(meas);
+        } else {
+          good = false;
+        }
       }
+    } catch(...) {
+      good = false;
+    }
+    if(not good) {
+      LOG(WARNING) << "Error retrieving FPM current measurements from ancillary DB";
     }
 
-    oids = sql->select_oids_in_range("monitoring_channel_voltages", start, end);
-    for(auto oid : oids) {
-      calin::ix::iact_data::nectarcam_ancillary_data::HVPAVoltageMeasurement meas;
-      if(sql->retrieve_by_oid("monitoring_channel_voltages", oid, &meas)) {
-        data->increment_num_hvpa_voltage_measurements();
-        (*data->mutable_hvpa_voltage())[meas.drawer()*7 + meas.channel()].add_measurement()->CopyFrom(meas);
+    good = true;
+    try {
+      oids = sql->select_oids_in_range("monitoring_channel_voltages", start, end);
+      for(auto oid : oids) {
+        calin::ix::iact_data::nectarcam_ancillary_data::HVPAVoltageMeasurement meas;
+        meas.Clear();
+        if(sql->retrieve_by_oid("monitoring_channel_voltages", oid, &meas)) {
+          data->increment_num_hvpa_voltage_measurements();
+          (*data->mutable_hvpa_voltage())[meas.drawer()*7 + meas.channel()].add_measurement()->CopyFrom(meas);
+        } else {
+          good = false;
+        }
       }
+    } catch(...) {
+      good = false;
+    }
+    if(not good) {
+      LOG(WARNING) << "Error retrieving FPM voltage measurements from ancillary DB";
     }
 
-    oids = sql->select_oids_in_range("monitoring_ecc", start, end);
-    for(auto oid : oids) {
-      calin::ix::iact_data::nectarcam_ancillary_data::ECCMeasurement meas;
-      if(sql->retrieve_by_oid("monitoring_ecc", oid, &meas)) {
-        data->increment_num_ecc_measurements();
-        data->mutable_ecc_measurements()->add_measurement()->CopyFrom(meas);
+    good = true;
+    try {
+      oids = sql->select_oids_in_range("monitoring_ecc", start, end);
+      for(auto oid : oids) {
+        calin::ix::iact_data::nectarcam_ancillary_data::ECCMeasurement meas;
+        meas.Clear();
+        if(sql->retrieve_by_oid("monitoring_ecc", oid, &meas)) {
+          data->increment_num_ecc_measurements();
+          data->mutable_ecc_measurements()->add_measurement()->CopyFrom(meas);
+        } else {
+          good = false;
+        }
       }
+      data->set_ecc_data_version(1);
+    } catch(...) {
+      good = false;
+    }
+    if(not good) {
+      good = true;
+      try {
+        oids = sql->select_oids_in_range("monitoring_ecc", start, end);
+        for(auto oid : oids) {
+          calin::ix::iact_data::nectarcam_ancillary_data::ECCMeasurement meas;
+          calin::ix::iact_data::nectarcam_ancillary_data::ECCMeasurement_OLD old_meas;
+          meas.Clear();
+          old_meas.Clear();
+          if(sql->retrieve_by_oid("monitoring_ecc", oid, &old_meas)) {
+            data->increment_num_ecc_measurements();
+#define COPY_OLD_2_NEW(x) meas.set_##x(old_meas.x())
+            COPY_OLD_2_NEW(camera);
+            COPY_OLD_2_NEW(time);
+            COPY_OLD_2_NEW(state);
+            COPY_OLD_2_NEW(temp_avg);
+          	COPY_OLD_2_NEW(temp_01);
+          	COPY_OLD_2_NEW(temp_02);
+          	COPY_OLD_2_NEW(temp_03);
+          	COPY_OLD_2_NEW(temp_04);
+          	COPY_OLD_2_NEW(temp_05);
+          	COPY_OLD_2_NEW(temp_06);
+          	COPY_OLD_2_NEW(temp_09);
+          	COPY_OLD_2_NEW(temp_10);
+          	COPY_OLD_2_NEW(temp_11);
+          	COPY_OLD_2_NEW(temp_12);
+          	COPY_OLD_2_NEW(current_psb1);
+          	COPY_OLD_2_NEW(current_psb2);
+            COPY_OLD_2_NEW(fan_speed_03);
+          	COPY_OLD_2_NEW(fan_speed_04);
+          	COPY_OLD_2_NEW(air_pressure_diff);
+          	COPY_OLD_2_NEW(water_pressure_01);
+          	COPY_OLD_2_NEW(water_pressure_02);
+          	COPY_OLD_2_NEW(humidity);
+          	COPY_OLD_2_NEW(back_doors_open);
+          	COPY_OLD_2_NEW(shutter_status);
+          	COPY_OLD_2_NEW(light_01);
+          	COPY_OLD_2_NEW(light_02);
+          	COPY_OLD_2_NEW(light_03);
+          	COPY_OLD_2_NEW(light_04);
+            data->mutable_ecc_measurements()->add_measurement()->CopyFrom(meas);
+          } else {
+            good = false;
+          }
+        }
+      } catch(...) {
+        good = false;
+      }
+    }
+    if(not good) {
+      LOG(WARNING) << "Error retrieving ECC measurements from ancillary DB";
     }
 
     delete sql;

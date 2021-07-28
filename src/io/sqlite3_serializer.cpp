@@ -36,9 +36,8 @@ using namespace calin::io::sql_serializer;
 using namespace calin::io::sql_transceiver;
 
 SQLite3Serializer::
-SQLite3Serializer(const std::string& filename_in, OpenMode open_mode,
-                  bool write_sql_to_log):
-    SQLSerializer(write_sql_to_log), adopt_db_(true), open_mode_(open_mode)
+SQLite3Serializer(const std::string& filename_in, OpenMode open_mode):
+    SQLSerializer(), adopt_db_(true), open_mode_(open_mode)
 {
   std::string filename = calin::util::file::expand_filename(filename_in);
   if(open_mode == TRUNCATE_RW and filename.front() != ':' and
@@ -103,7 +102,7 @@ SQLite3Serializer::~SQLite3Serializer()
   if(adopt_db_)
   {
     if(sqlite3_close(db_) !=  SQLITE_OK) {
-      LOG(ERROR) << "SQLite3Serializer::~SQLite3Serializer: database connection did not close cleanly";
+      LOG_IF(write_errors_to_log_, ERROR) << "SQLite3Serializer::~SQLite3Serializer: database connection did not close cleanly";
     }
     if(file_record_) {
       calin::provenance::chronicle::register_file_close(file_record_);

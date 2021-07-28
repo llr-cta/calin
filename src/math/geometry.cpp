@@ -146,5 +146,5 @@ calin::math::geometry::scattering_euler(double dispersion, calin::math::rng::RNG
 bool calin::math::geometry::euler_is_zero(
   const calin::ix::common_types::EulerAngles3D& euler)
 {
-  return euler.alpha() == euler.beta() == euler.gamma() == 0;
+  return euler.alpha()==0 and euler.beta()==0 and euler.gamma()==0;
 }

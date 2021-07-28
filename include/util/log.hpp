@@ -264,6 +264,16 @@ inline LoggerStream LOG(Level level, Logger* logger = default_logger())
   return LoggerStream(logger, level);
 }
 
+inline LoggerStream LOG_IF(bool do_log, Level level, Logger* logger = default_logger())
+{
+  return LoggerStream(logger, do_log ? level : Level::DISCARD);
+}
+
+inline LoggerStream LOG_UNLESS(bool dont_log, Level level, Logger* logger = default_logger())
+{
+  return LoggerStream(logger, dont_log ? Level::DISCARD : level);
+}
+
 #endif // ifndef SWIG
 
 #if 0

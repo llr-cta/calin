@@ -237,6 +237,24 @@ message CameraLayout {
       "order, or -1 if that pixel is not connected to an electronics channel." ];
   repeated uint32 boundary_pixel_channel_index             = 21 [
     (CFO).desc = "Index into channel array for each of the boundary pixels." ];
+  double camera_boundary_box_left                          = 22 [
+    (CFO).desc = "X coordinate of left edge of camera boundary box.",
+    (CFO).units = "cm" ];
+  double camera_boundary_box_right                         = 23 [
+    (CFO).desc = "X coordinate of right edge of camera boundary box.",
+    (CFO).units = "cm" ];
+  double camera_boundary_box_bottom                        = 24 [
+    (CFO).desc = "Y coordinate of bottom edge of camera boundary box.",
+    (CFO).units = "cm" ];
+  double camera_boundary_box_top                           = 25 [
+    (CFO).desc = "Y coordinate of top edge of camera boundary box.",
+    (CFO).units = "cm" ];
+  double camera_boundary_maxabs_xy                         = 26 [
+    (CFO).desc = "Maximum absolute values of X and Y corners of boundary box.",
+    (CFO).units = "cm" ];
+  double camera_boundary_max_r                             = 27 [
+    (CFO).desc = "Maximum radius of vertices of camera boundary.",
+    (CFO).units = "cm" ];
 
   uint32 channels_per_modules                              = 30 [
     (CFO).desc = "Number of channels per module." ];
@@ -255,8 +273,14 @@ message CameraLayout {
   int64 first_event_number                                 = 46;
 
   repeated string camera_clock_name                        = 50;
-  repeated string module_clock_name                        = 51;
-  repeated string module_counter_name                      = 52;
+  repeated double camera_clock_frequency                   = 51 [
+    (CFO).desc = "Frequency of camera clock.", (CFO).units = "GHz" ];
+
+  repeated string module_clock_name                        = 52;
+  repeated double module_clock_frequency                   = 53 [
+    (CFO).desc = "Frequency of module clock.", (CFO).units = "GHz" ];
+
+  repeated string module_counter_name                      = 54;
 
   repeated uint32 outline_polygon_vertex_index             = 60 [
     (CFO).desc = "Index of end of camera polygon lines." ];

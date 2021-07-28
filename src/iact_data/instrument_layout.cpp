@@ -30,6 +30,8 @@
 #include <math/regular_grid.hpp>
 #include <math/special.hpp>
 #include <iact_data/instrument_layout.hpp>
+#include <iact_data/nectarcam_layout.hpp>
+#include <iact_data/lstcam_layout.hpp>
 #include <util/log.hpp>
 
 using namespace calin::math::regular_grid;
@@ -112,6 +114,32 @@ void calin::iact_data::instrument_layout::compute_camera_and_module_outlines(
       module_layout->mutable_outline_polygon_vertex_x(),
       module_layout->mutable_outline_polygon_vertex_y());
   }
+
+  double x = camera_layout->outline_polygon_vertex_x(0);
+  double y = camera_layout->outline_polygon_vertex_y(0);
+  camera_layout->set_camera_boundary_box_left(x);
+  camera_layout->set_camera_boundary_box_right(x);
+  camera_layout->set_camera_boundary_box_bottom(y);
+  camera_layout->set_camera_boundary_box_top(y);
+  camera_layout->set_camera_boundary_maxabs_xy(std::max(std::abs(x),std::abs(y)));
+  camera_layout->set_camera_boundary_max_r(x*x+y*y);
+  for(unsigned ivertex=1;ivertex<camera_layout->outline_polygon_vertex_x_size();++ivertex) {
+    double x = camera_layout->outline_polygon_vertex_x(ivertex);
+    double y = camera_layout->outline_polygon_vertex_y(ivertex);
+    camera_layout->set_camera_boundary_box_left(
+      std::min(camera_layout->camera_boundary_box_left(),x));
+    camera_layout->set_camera_boundary_box_right(
+      std::max(camera_layout->camera_boundary_box_right(),x));
+    camera_layout->set_camera_boundary_box_bottom(
+      std::min(camera_layout->camera_boundary_box_bottom(),y));
+    camera_layout->set_camera_boundary_box_top(
+      std::max(camera_layout->camera_boundary_box_top(),y));
+    camera_layout->set_camera_boundary_maxabs_xy(
+      std::max(camera_layout->camera_boundary_maxabs_xy(),std::max(std::abs(x),std::abs(y))));
+    camera_layout->set_camera_boundary_max_r(
+      std::max(camera_layout->camera_boundary_max_r(),x*x+y*y));
+  }
+  camera_layout->set_camera_boundary_max_r(std::sqrt(camera_layout->camera_boundary_max_r()));
 }
 
 void calin::iact_data::instrument_layout::map_channels_using_grid(
@@ -179,7 +207,7 @@ void calin::iact_data::instrument_layout::map_channels_using_from_coordinates(
 calin::ix::iact_data::instrument_layout::CameraLayout*
 calin::iact_data::instrument_layout::reduce_camera_channels(
   const calin::ix::iact_data::instrument_layout::CameraLayout& in,
-  const std::vector<unsigned int>& channel_id, bool recenter)
+  const unsigned* channel_id, unsigned nchannel_id, bool recenter)
 {
   std::vector<int> in_to_out(in.channel_size(), -1);
 
@@ -187,7 +215,7 @@ calin::iact_data::instrument_layout::reduce_camera_channels(
   double max_x = 0;
   double min_y = 0;
   double max_y = 0;
-  for(unsigned i=0;i<channel_id.size();++i) {
+  for(unsigned i=0;i<nchannel_id;++i) {
     if(channel_id[i] >= unsigned(in.channel_size())) {
       throw std::runtime_error("Channel ID out of range: " +
         std::to_string(channel_id[i]));
@@ -217,7 +245,7 @@ calin::iact_data::instrument_layout::reduce_camera_channels(
   out->set_camera_type(in.camera_type());
   out->set_camera_number(in.camera_number());
 
-  for(unsigned ichan=0;ichan<channel_id.size();++ichan) {
+  for(unsigned ichan=0;ichan<nchannel_id;++ichan) {
     const auto& ic = in.channel(channel_id[ichan]);
     auto* oc = out->add_channel();
 
@@ -281,12 +309,12 @@ calin::iact_data::instrument_layout::reduce_camera_channels(
 calin::ix::iact_data::instrument_layout::CameraLayout*
 calin::iact_data::instrument_layout::reduce_camera_modules(
   const calin::ix::iact_data::instrument_layout::CameraLayout& in,
-  const std::vector<unsigned>& module_id, bool recenter)
+  const unsigned* module_id, unsigned nmodule_id, bool recenter)
 {
   std::vector<int> in_to_out(in.module_size(), -1);
   std::vector<unsigned> channel_id;
 
-  for(unsigned i=0;i<module_id.size();++i) {
+  for(unsigned i=0;i<nmodule_id;++i) {
     if(module_id[i] >= unsigned(in.module_size())) {
       throw std::runtime_error("Module ID out of range: " +
         std::to_string(module_id[i]));
@@ -301,12 +329,13 @@ calin::iact_data::instrument_layout::reduce_camera_modules(
     }
   }
 
-  auto* out = reduce_camera_channels(in, channel_id, recenter);
+  Eigen::VectorXi eigen_channel_id = calin::std_to_eigenvec_unsigned(channel_id);
+  auto* out = reduce_camera_channels(in, eigen_channel_id, recenter);
 
   double shift_x = in.pixel_grid_offset_x() - out->pixel_grid_offset_x();
   double shift_y = in.pixel_grid_offset_y() - out->pixel_grid_offset_y();
 
-  for(unsigned imod=0, ichan=0;imod<module_id.size();++imod) {
+  for(unsigned imod=0, ichan=0;imod<nmodule_id;++imod) {
     const auto& im = in.module(module_id[imod]);
     auto* om = out->add_module();
 
@@ -343,7 +372,7 @@ calin::iact_data::instrument_layout::reduce_camera_modules(
 calin::ix::iact_data::instrument_layout::OutlinePolygon*
 calin::iact_data::instrument_layout::channel_outline(
   const calin::ix::iact_data::instrument_layout::CameraLayout& camera_layout,
-  const std::vector<unsigned>& channel_id)
+  const unsigned* channel_id, unsigned nchannel_id)
 {
   auto* grid = make_grid_from_instrument_layout(camera_layout);
   if(grid == nullptr)
@@ -352,7 +381,8 @@ calin::iact_data::instrument_layout::channel_outline(
 
   std::vector<unsigned> camera_grid_ids;
   std::vector<bool> channel_ids_selected(camera_layout.channel_size(), false);
-  for(auto ichan : channel_id) {
+  for(unsigned ichannel_id=0; ichannel_id<nchannel_id; ichannel_id++) {
+    unsigned ichan = channel_id[ichannel_id];
     if(ichan >= unsigned(camera_layout.channel_size())) {
       delete grid;
       throw std::runtime_error("Channel ID out of range: "
@@ -378,4 +408,24 @@ calin::iact_data::instrument_layout::channel_outline(
 
   delete grid;
   return outline;
+}
+
+calin::ix::iact_data::instrument_layout::CameraLayout*
+calin::iact_data::instrument_layout::camera_layout(
+  calin::ix::iact_data::instrument_layout::CameraLayout::CameraType camera_type,
+  calin::ix::iact_data::instrument_layout::CameraLayout* layout)
+{
+  switch(camera_type) {
+  case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM:
+    return calin::iact_data::nectarcam_layout::nectarcam_layout(layout);
+  case calin::ix::iact_data::instrument_layout::CameraLayout::LSTCAM:
+    return calin::iact_data::lstcam_layout::lstcam_layout(layout);
+  case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM_TESTBENCH_19CHANNEL:
+    return calin::iact_data::nectarcam_layout::nectarcam_19module_layout(layout);
+  case calin::ix::iact_data::instrument_layout::CameraLayout::NECTARCAM_TESTBENCH_61CHANNEL:
+    return calin::iact_data::nectarcam_layout::nectarcam_61module_layout(layout);
+  case calin::ix::iact_data::instrument_layout::CameraLayout::NO_CAMERA:
+  default:
+    return nullptr;
+  }
 }

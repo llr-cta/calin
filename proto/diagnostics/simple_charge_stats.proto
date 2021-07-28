@@ -29,6 +29,16 @@ import "math/histogram.proto";
 package calin.ix.diagnostics.simple_charge_stats;
 
 message SimpleChargeStatsConfig {
+  uint32 high_gain_wf_clipping_value                                = 1 [
+    (CFO).desc = "Waveform value above which the high-gain signal should be "
+      "considered as clipped.",
+    (CFO).units = "DC" ];
+  uint32 low_gain_wf_clipping_value                                 = 2 [
+    (CFO).desc = "Waveform value abov which the low-gain signal should be "
+      "considered as clipped.",
+    (CFO).units = "DC" ];
+  int32 nearest_neighbor_nchannel_threshold                         = 3 [
+    (CFO).desc = "Number of neighboring channels nominally needed to trigger." ];
   double ped_time_hist_resolution                                   = 20 [
     (CFO).desc = "Resolution of pedestal mean and variance vs time histogram.",
     (CFO).units = "s" ];
@@ -43,6 +53,9 @@ message OneGainSimpleChargeStats {
   repeated double all_trigger_ped_win_var                           = 12 [
     (CFO).desc = "Variance of pedestal-window charge estimate over all events.",
     (CFO).units = "DC^2" ];
+  repeated int64 all_trigger_num_wf_clipped                         = 13 [
+    (CFO).desc = "Number of events where waveform is clipped.",
+    (CFO).is_counter=true ];
 
   repeated int64 ped_trigger_event_count                            = 20 [
     (CFO).desc = "Number of pedestal events for gain channel is present." ];
@@ -70,6 +83,9 @@ message OneGainSimpleChargeStats {
   repeated double ped_trigger_opt_win_var                           = 28 [
     (CFO).desc = "Variance of optimal-window charge estimate over pedestal events.",
     (CFO).units = "DC^2" ];
+  repeated int64 ped_trigger_num_wf_clipped                         = 29 [
+    (CFO).desc = "Number of events where waveform is clipped.",
+    (CFO).is_counter=true ];
 
   repeated int64 ext_trigger_event_count                            = 40 [
     (CFO).desc = "Number of external-flasher events for gain channel is present." ];
@@ -103,6 +119,21 @@ message OneGainSimpleChargeStats {
     (CFO).desc = "Histogram of sum of signal-window charge estimate over all "
       "channels for external-flasher events.",
     (CFO).units = "DC^2" ];
+  repeated int64 ext_trigger_num_wf_clipped                         = 50 [
+    (CFO).desc = "Number of events where waveform is clipped.",
+    (CFO).is_counter=true ];
+
+  repeated int64 phy_trigger_event_count                            = 60 [
+    (CFO).desc = "Number of external-flasher events for gain channel is present." ];
+  repeated int64 phy_trigger_num_wf_clipped                         = 61 [
+    (CFO).desc = "Number of events where waveform is clipped.",
+    (CFO).is_counter=true ];
+
+  repeated int64 int_trigger_event_count                            = 80 [
+    (CFO).desc = "Number of external-flasher events for gain channel is present." ];
+  repeated int64 int_trigger_num_wf_clipped                         = 81 [
+    (CFO).desc = "Number of events where waveform is clipped.",
+    (CFO).is_counter=true ];
 
   calin.ix.math.histogram.Histogram1DData camera_all_trigger_ped_win_count_vs_time = 90 [
     (CFO).desc = "Number of events vs time in the all-event pedestal histograms.",
@@ -158,6 +189,21 @@ message SimpleChargeStats {
     (CFO).desc = "Stats for high-gain (in two gain cameras) or unique-gain channel." ];
   OneGainSimpleChargeStats low_gain                                 = 20 [
     (CFO).desc = "Stats for low-gain channel if camera supports two gain channels." ];
+  repeated int64 channel_triggered_count                            = 30 [
+    (CFO).desc = "Number of events for which the trigger bit is set for each channel." ];
+  repeated int64 phy_trigger_few_neighbor_channel_triggered_count   = 31 [
+    (CFO).desc = "Number of events for which the trigger bit is set for each channel "
+      "in physics events where the nearest-neighbor trigger is seemingly not "
+      "satisfied." ];
+  calin.ix.math.histogram.Histogram1DData num_channel_triggered_hist = 32 [
+    (CFO).desc = "Histogram of number of channels triggered.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
+  calin.ix.math.histogram.Histogram1DData num_contiguous_channel_triggered_hist = 33 [
+    (CFO).desc = "Histogram of number of channels triggered.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
+  calin.ix.math.histogram.Histogram1DData phy_trigger_num_contiguous_channel_triggered_hist = 34 [
+    (CFO).desc = "Histogram of number of channels triggered.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
 };
 
 message PartialOneGainChannelSimpleChargeStats {
@@ -171,6 +217,9 @@ message PartialOneGainChannelSimpleChargeStats {
     (CFO).is_counter=true ];
   int64 all_trig_ped_win_sumsq                                      = 12 [
     (CFO).desc = "Sum of pedestal window squared over all events.",
+    (CFO).is_counter=true ];
+  int64 all_trig_num_wf_clipped                                     = 13 [
+    (CFO).desc = "Number of events where waveform is clipped.",
     (CFO).is_counter=true ];
 
   int64 ped_trig_num_events                                         = 20 [
@@ -200,6 +249,9 @@ message PartialOneGainChannelSimpleChargeStats {
   int64 ped_trig_opt_win_sumsq                                      = 28 [
     (CFO).desc = "Sum of optimal window squared over pedestal events.",
     (CFO).is_counter=true ];
+  int64 ped_trig_num_wf_clipped                                     = 29 [
+    (CFO).desc = "Number of events where waveform is clipped.",
+    (CFO).is_counter=true ];
 
   int64 ext_trig_num_events                                         = 30 [
     (CFO).desc = "Number of events channel present.",
@@ -216,18 +268,35 @@ message PartialOneGainChannelSimpleChargeStats {
   int64 ext_trig_opt_win_sumsq                                      = 34 [
     (CFO).desc = "Sum of optimal window squared over external-flasher events.",
     (CFO).is_counter=true ];
+  int64 ext_trig_num_wf_clipped                                     = 35 [
+    (CFO).desc = "Number of events where waveform is clipped.",
+    (CFO).is_counter=true ];
 
-  calin.ix.math.histogram.Histogram1DData all_trig_pedwin_vs_time_1_sum    = 50 [
+  int64 phys_trig_num_events                                        = 40 [
+    (CFO).desc = "Number of events channel present.",
+    (CFO).is_counter=true ];
+  int64 phys_trig_num_wf_clipped                                    = 41 [
+    (CFO).desc = "Number of events where waveform is clipped.",
+    (CFO).is_counter=true ];
+
+  int64 int_trig_num_events                                         = 50 [
+    (CFO).desc = "Number of events channel present.",
+    (CFO).is_counter=true ];
+  int64 int_trig_num_wf_clipped                                     = 51 [
+    (CFO).desc = "Number of events where waveform is clipped.",
+    (CFO).is_counter=true ];
+
+  calin.ix.math.histogram.Histogram1DData all_trig_pedwin_vs_time_1_sum    = 100 [
     (CFO).desc = "Histogram of number of all events vs time." ];
-  calin.ix.math.histogram.Histogram1DData all_trig_pedwin_vs_time_q_sum    = 51 [
+  calin.ix.math.histogram.Histogram1DData all_trig_pedwin_vs_time_q_sum    = 101 [
     (CFO).desc = "Histogram of pedestal-window charge from all events vs time." ];
-  calin.ix.math.histogram.Histogram1DData all_trig_pedwin_vs_time_q2_sum   = 52 [
+  calin.ix.math.histogram.Histogram1DData all_trig_pedwin_vs_time_q2_sum   = 102 [
     (CFO).desc = "Histogram of pedestal-window charge squared from all events vs time." ];
-  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_1_sum    = 60 [
+  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_1_sum    = 120 [
     (CFO).desc = "Histogram of number of ped events vs time." ];
-  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_q_sum    = 61 [
+  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_q_sum    = 121 [
     (CFO).desc = "Histogram of total charge from ped events vs time." ];
-  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_q2_sum   = 62 [
+  calin.ix.math.histogram.Histogram1DData ped_trig_vs_time_q2_sum   = 122 [
     (CFO).desc = "Histogram of total charge squared from ped events vs time." ];
 }
 
@@ -238,6 +307,15 @@ message PartialChannelSimpleChargeStats {
     (CFO).desc = "High-gain (in two gain cameras) or unique-gain channel." ];
   PartialOneGainChannelSimpleChargeStats low_gain                   = 11 [
     (CFO).desc = "Low-gain channel if camera supports two gain channels." ];
+
+  int64 all_trig_num_events_triggered                               = 20 [
+    (CFO).desc = "Number of events where channel has trigger bit set.",
+    (CFO).is_counter=true ];
+  int64 phy_trig_few_neighbor_channel_triggered_count               = 21 [
+    (CFO).desc = "Number of events for which the trigger bit is set for each channel "
+      "in physics events where the nearest-neighbor trigger is seemingly not "
+      "satisfied.",
+    (CFO).is_counter=true ];
 };
 
 message PartialOneGainCameraSimpleChargeStats {
@@ -280,6 +358,18 @@ message PartialCameraSimpleChargeStats {
     (CFO).desc = "High-gain (in two gain cameras) or unique-gain channel." ];
   PartialOneGainCameraSimpleChargeStats low_gain                   = 11 [
     (CFO).desc = "Low-gain channel if camera supports two gain channels." ];
+  uint64 num_event_trigger_hitmap_found                            = 20 [
+    (CFO).desc = "Number of events for which the trigger hitmap was found.",
+    (CFO).is_counter=true ];
+  calin.ix.math.histogram.Histogram1DData num_channel_triggered_hist = 22 [
+    (CFO).desc = "Histogram of number of channels triggered.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
+  calin.ix.math.histogram.Histogram1DData num_contiguous_channel_triggered_hist = 23 [
+    (CFO).desc = "Histogram of number of channels triggered.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
+  calin.ix.math.histogram.Histogram1DData phys_trig_num_contiguous_channel_triggered_hist = 24 [
+    (CFO).desc = "Histogram of number of channels triggered.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
 };
 
 message PartialSimpleChargeStats {
@@ -290,80 +380,4 @@ message PartialSimpleChargeStats {
 
   PartialCameraSimpleChargeStats  camera                            = 200 [
     (CFO).desc = "Computed statistics for full camera" ];
-};
-
-message OptimalWindowStatsConfig {
-  double opt_win_mean_time_histogram_resolution                     = 1 [
-    (CFO).desc = "Resolution of pulse time resolution.", (CFO).units="sample" ];
-};
-
-message ChannelOptimalWindowFullStats {
-  option (CMO).message_integration_function = MIF_AUTOMATIC;
-
-  uint32 num_entries                                                = 2 [
-    (CFO).desc = "Number of times this channel has data." ];
-
-  calin.ix.math.histogram.Histogram1DData max_samp_histogram        = 10 [
-    (CFO).desc = "Histogram of maximum sample amplitude.",
-    (CFO).units="DC" ];
-  calin.ix.math.histogram.Histogram1DData max_samp_index_histogram  = 11 [
-    (CFO).desc = "Histogram ofindex within waveform of maximum sample.",
-    (CFO).units="samples" ];
-  calin.ix.math.histogram.Histogram1DData bkg_win_sum_histogram     = 12 [
-    (CFO).desc = "Histogram of summed 'charge' in fixed background window.",
-    (CFO).units="DC" ];
-  calin.ix.math.histogram.Histogram1DData sig_win_sum_histogram     = 13 [
-    (CFO).desc = "Histogram of summed 'charge' in fixed signal window.",
-    (CFO).units="DC" ];
-  calin.ix.math.histogram.Histogram1DData opt_win_sum_histogram     = 14 [
-    (CFO).desc = "Histogram of summed 'charge' in window that gives largest charge.",
-    (CFO).units="DC" ];
-  calin.ix.math.histogram.Histogram1DData opt_win_sum_qt_histogram  = 15 [
-    (CFO).desc = "Histogram of summed 'charge * time' in window that gives largest charge.",
-    (CFO).units="DC samples" ];
-  calin.ix.math.histogram.Histogram1DData opt_win_index_histogram   = 16 [
-    (CFO).desc = "Histogram of index within waveform of start of window that "
-      "gives largest charge.", (CFO).units="samples" ];
-  calin.ix.math.histogram.Histogram1DData waveform_sum_histogram    = 17 [
-    (CFO).desc = "Histogram of summed 'charge' in full waveform.",
-    (CFO).units="DC" ];
-
-  calin.ix.math.histogram.Histogram1DData sig_minus_bkg_histogram   = 20 [
-    (CFO).desc = "Histogram of summed 'charge' difference between fixed signal and "
-      "background windows.",
-    (CFO).units="DC" ];
-  calin.ix.math.histogram.Histogram1DData opt_minus_bkg_histogram   = 21 [
-    (CFO).desc = "Histogram of summed 'charge' difference between optimal signal and "
-      "fixed background windows.",
-    (CFO).units="DC" ];
-  calin.ix.math.histogram.Histogram1DData opt_win_mean_time         = 22 [
-    (CFO).desc = "Histogram of mean time in optimal window after subtracting "
-      "contribution from estimated pedestal.",
-    (CFO).units="DC samples" ];
-};
-
-message OptimalWindowStats {
-  option (CMO).message_integration_function = MIF_AUTOMATIC;
-
-  uint32 integration_n                                     = 1 [
-    (CFO).desc = "Size of integration window in samples." ];
-  int32 bkg_integration_0                                  = 2 [
-    (CFO).desc = "Start of background integration window in samples." ];
-  int32 sig_integration_0                                  = 3 [
-    (CFO).desc = "Default start of signal integration window in samples, if not "
-      "overridden by per-channel setting \"sig_integration_0_chan\"." ];
-  repeated int32 chan_sig_integration_0                    = 4 [
-    (CFO).desc = "Start of signal integration window in samples for each channel." ];
-
-
-
-
-  repeated ChannelOptimalWindowFullStats physics_rawstats          = 10 [
-    (CFO).desc = "Statistics for all channels from physics trigger events." ];
-  repeated ChannelOptimalWindowFullStats pedestal_trigger_stats         = 11 [
-    (CFO).desc = "Statistics for all channels from physics trigger events." ];
-  repeated ChannelOptimalWindowFullStats internal_flasher_trigger_stats = 12 [
-    (CFO).desc = "Statistics for all channels from internal-flasher trigger events." ];
-  repeated ChannelOptimalWindowFullStats external_flasher_trigger_stats = 13 [
-    (CFO).desc = "Statistics for all channels from external-flasher trigger events." ];
 };

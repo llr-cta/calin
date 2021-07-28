@@ -66,7 +66,7 @@ message CommandLineOptions {
   int32 nthread                                            = 30 [
     (CFO).desc = "Number of computation threads. A value of -1 disables "
       "threading completely." ];
-  string db_results_table_name                             = 31 [
+  string db_stage1_table_name                             = 31 [
     (CFO).desc = "Table name of results structure in database." ];
 
   calin.ix.iact_data.zfits_data_source.ZFITSDataSourceConfig zfits = 100 [

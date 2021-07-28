@@ -39,6 +39,7 @@
 %newobject reduce_camera_channels;
 %newobject reduce_camera_modules;
 %newobject channel_outline;
+%newobject camera_layout;
 
 %apply const std::vector<unsigned int> & { const std::vector<unsigned int>& channel_id };
 %apply const std::vector<unsigned int> & { const std::vector<unsigned int>& module_id };

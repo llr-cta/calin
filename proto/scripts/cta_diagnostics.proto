@@ -40,7 +40,7 @@ message CommandLineOptions {
 
   string o                                                 = 10 [
     (CFO).desc = "SQLite3 output file name." ];
-  string db_results_table_name                             = 11 [
+  string db_stage1_table_name                             = 11 [
     (CFO).desc = "Table name of results structure in database." ];
 
   uint32 log_frequency                                     = 20 [

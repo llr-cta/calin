@@ -40,7 +40,7 @@ message CommandLineOptions {
 
   string o                                                 = 10 [
     (CFO).desc = "SQLite3 output file name." ];
-  string db_results_table_name                             = 11 [
+  string db_stage1_table_name                             = 11 [
     (CFO).desc = "Table name of results structure in database." ];
   bool truncate_db                                         = 12 [
     (CFO).desc = "Truncate the SQLite3 file when opening it. Warning, this "

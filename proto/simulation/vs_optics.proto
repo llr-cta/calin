@@ -79,6 +79,8 @@ message VSODiskObscurationData {
   double diameter                                          = 3
     [(CFO).desc = "Diameter of the disk",
      (CFO).units = "cm"];
+  string identification                                    = 100 [
+   (CFO).desc = "Identifying name of obscuration, for convenience." ];
 };
 
 message VSOTubeObscurationData {
@@ -91,6 +93,22 @@ message VSOTubeObscurationData {
   double diameter                                          = 3
     [(CFO).desc = "Cross-sectional diameter of the tube",
      (CFO).units = "cm"];
+  string identification                                    = 100 [
+   (CFO).desc = "Identifying name of obscuration, for convenience." ];
+};
+
+message VSOAlignedOctBoxObscurationData {
+  common_types.Vector3D center                             = 1
+    [(CFO).desc = "Center of the octoganal box.",
+     (CFO).units = "cm" ];
+  double flat_to_flat_width                                = 2
+    [(CFO).desc = "Flat-to-flat width of the box in the X-Z plane.",
+     (CFO).units = "cm" ];
+  double height                                            = 3
+    [(CFO).desc = "Height of the box in the Y direction.",
+     (CFO).units = "cm" ];
+  string identification                                    = 100 [
+   (CFO).desc = "Identifying name of obscuration, for convenience." ];
 };
 
 message VSOAlignedBoxObscurationData {
@@ -100,6 +118,8 @@ message VSOAlignedBoxObscurationData {
   common_types.Vector3D min_corner                         = 2
     [(CFO).desc = "Corner of box with min values of x,y,z.",
      (CFO).units = "cm" ];
+  string identification                                    = 100 [
+   (CFO).desc = "Identifying name of obscuration, for convenience." ];
 };
 
 message VSOAlignedRectangularApertureData {
@@ -115,6 +135,8 @@ message VSOAlignedRectangularApertureData {
   bool invert                                              = 4
     [(CFO).desc = "If true then invert the obscuration, blocking rays that "
       "collide with the rectangle rather than those outside." ];
+  string identification                                    = 100 [
+   (CFO).desc = "Identifying name of obscuration, for convenience." ];
 };
 
 message VSOAlignedTileApertureData {
@@ -139,6 +161,8 @@ message VSOAlignedTileApertureData {
   double support_width_z                                   = 7
     [(CFO).desc = "Center of tile opening in Z",
      (CFO).units = "cm"];
+  string identification                                    = 100 [
+   (CFO).desc = "Identifying name of obscuration, for convenience." ];
 };
 
 message VSOAlignedHexagonalApertureData {
@@ -148,6 +172,8 @@ message VSOAlignedHexagonalApertureData {
   double flat_to_flat                                      = 2
     [(CFO).desc = "Flat to flat width of the hexagon",
      (CFO).units = "cm"];
+  string identification                                    = 100 [
+   (CFO).desc = "Identifying name of obscuration, for convenience." ];
 }
 
 message VSOAlignedCircularApertureData {
@@ -160,7 +186,30 @@ message VSOAlignedCircularApertureData {
   bool invert                                              = 3
    [(CFO).desc = "If true then invert the obscuration, blocking rays that "
      "collide with the circle rather than those outside." ];
+  string identification                                    = 100 [
+   (CFO).desc = "Identifying name of obscuration, for convenience." ];
 }
+
+message VSOAlignedAnnulusData {
+  common_types.Vector3D center_pos                         = 1
+    [(CFO).desc = "Position of the center of the annulus in reflector frame. ",
+     (CFO).units = "cm" ];
+  double outer_diameter                                    = 2
+    [(CFO).desc = "Outer diameter of the annulus.",
+     (CFO).units = "cm"];
+  double inner_diameter                                    = 3
+    [(CFO).desc = "Inner diameter of the annulus",
+     (CFO).units = "cm"];
+  string identification                                    = 100 [
+   (CFO).desc = "Identifying name of obscuration, for convenience." ];
+}
+
+message VSOBoxCollectionObscurationData {
+  repeated VSOTubeObscurationData tube_obscuration          = 1
+    [(CFO).desc = "Tube obscurations that are in this box." ];
+  string identification                                    = 100 [
+    (CFO).desc = "Identifying name of obscuration, for convenience." ];
+};
 
 message VSOObscurationData {
   oneof type {
@@ -171,10 +220,12 @@ message VSOObscurationData {
     VSOAlignedCircularApertureData circular_aperture       = 5;
     VSOAlignedHexagonalApertureData hexagonal_aperture     = 6;
     VSOAlignedTileApertureData tile_aperture               = 7;
+    VSOBoxCollectionObscurationData box_collection         = 8;
+    VSOAlignedOctBoxObscurationData octagonal_box          = 9;
+    VSOAlignedAnnulusData annulus                          = 10;
   }
-  string identification                                    = 100 [
-    (CFO).desc = "Identifying name of obscuration, for convenience." ];
 };
+
 
 message VSOTelescopeData {
   uint32 id                                                = 1

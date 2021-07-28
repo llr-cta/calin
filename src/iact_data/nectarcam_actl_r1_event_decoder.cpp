@@ -159,11 +159,6 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
   {
     const unsigned npix = nmod_*7;
     unsigned single_gain_dataset_size = npix*nsample_*sizeof(int16_t);
-    if(cta_event->waveform().data().size() != 2*single_gain_dataset_size)
-      throw(std::runtime_error("NectarCam_ACTL_R1_CameraEventDecoder::decode: "
-        "Samples array incorrect size: "
-        + std::to_string(cta_event->waveform().data().size())
-        + ", expected: " + std::to_string(2*single_gain_dataset_size)));
     if(cta_event->pixel_status().data().size() != npix)
       throw(std::runtime_error("NectarCam_ACTL_R1_CameraEventDecoder::decode: "
         "Pixel status array incorrect size: "
@@ -175,49 +170,26 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode(
     const int16_t* waveforms =
       reinterpret_cast<const int16_t*>(cta_event->waveform().data().data());
 
-    copy_single_gain_waveforms(calin_event, waveforms, pix_status,
-      calin_event->mutable_high_gain_image()->mutable_camera_waveforms(),
-      0x04, "high");
-
-    copy_single_gain_waveforms(calin_event, waveforms+npix*nsample_, pix_status,
-      calin_event->mutable_low_gain_image()->mutable_camera_waveforms(),
-      0x08, "low");
-  }
-#if 0
-
-  if(exchange_gain_channels_)
-  {
-    if(cta_event->has_higain()) {
-      copy_single_gain_integrals(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_low_gain_image(), "high");
-      copy_single_gain_waveforms(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_low_gain_image(), "high");
-    }
-
-    if(cta_event->has_logain()) {
-      copy_single_gain_integrals(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_high_gain_image(), "low");
-      copy_single_gain_waveforms(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_high_gain_image(), "low");
+    if(cta_event->waveform().data().size() == 2*single_gain_dataset_size) {
+      copy_single_gain_waveforms(calin_event, waveforms, pix_status,
+        calin_event->mutable_high_gain_image()->mutable_camera_waveforms(),
+        0x04, "high");
+      copy_single_gain_waveforms(calin_event, waveforms+npix*nsample_, pix_status,
+        calin_event->mutable_low_gain_image()->mutable_camera_waveforms(),
+        0x08, "low");
+    } else if(cta_event->waveform().data().size() == single_gain_dataset_size) {
+      copy_single_gain_waveforms(calin_event, waveforms, pix_status,
+        calin_event->mutable_image()->mutable_camera_waveforms(),
+        0x0C, "mixed");
+    } else {
+      throw(std::runtime_error("NectarCam_ACTL_R1_CameraEventDecoder::decode: "
+        "Samples array incorrect size: "
+        + std::to_string(cta_event->waveform().data().size())
+        + ", expected: " + std::to_string(2*single_gain_dataset_size)
+        + " (dual gain mode) or " + std::to_string(single_gain_dataset_size)
+        + " (mixed gain)"));
     }
   }
-  else
-  {
-    if(cta_event->has_higain()) {
-      copy_single_gain_integrals(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_high_gain_image(), "high");
-      copy_single_gain_waveforms(cta_event, calin_event, cta_event->higain(),
-        calin_event->mutable_high_gain_image(), "high");
-    }
-
-    if(cta_event->has_logain()) {
-      copy_single_gain_integrals(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_low_gain_image(), "low");
-      copy_single_gain_waveforms(cta_event, calin_event, cta_event->logain(),
-        calin_event->mutable_low_gain_image(), "low");
-    }
-  }
-#endif
 
   // ==========================================================================
   //
@@ -736,6 +708,16 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
       config_mod_id.push_back(mod_id);
     }
   }
+  else if(cta_run_header
+    and cta_run_header->has_nectarcam()
+    and cta_run_header->nectarcam().has_expected_modules_id()
+    and cta_run_header->nectarcam().expected_modules_id().data().size() == nmod_*sizeof(uint16_t))
+  {
+    const uint16_t* mod_id =
+      reinterpret_cast<const uint16_t*>(&
+        cta_run_header->nectarcam().expected_modules_id().data().front());
+    for(unsigned imod=0;imod<nmod_;imod++)config_mod_id.push_back(mod_id[imod]);
+  }
   else if(calin_run_config->has_nectarcam() and
     unsigned(calin_run_config->nectarcam().module_size()) == nmod_)
   {
@@ -747,16 +729,6 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
           std::to_string(nmod_camera));
       config_mod_id.push_back(mod_id);
     }
-  }
-  else if(cta_run_header
-    and cta_run_header->has_nectarcam()
-    and cta_run_header->nectarcam().has_expected_modules_id()
-    and cta_run_header->nectarcam().expected_modules_id().data().size() == nmod_*sizeof(uint16_t))
-  {
-    const uint16_t* mod_id =
-      reinterpret_cast<const uint16_t*>(&
-        cta_run_header->nectarcam().expected_modules_id().data().front());
-    for(unsigned imod=0;imod<nmod_;imod++)config_mod_id.push_back(mod_id[imod]);
   }
   else
   {
@@ -779,6 +751,9 @@ bool NectarCam_ACTL_R1_CameraEventDecoder::decode_run_config(
       calin_run_config->set_configured_channel_index(mod_id*7+ipix, imod*7+ipix);
     }
   }
+
+  calin_run_config->mutable_camera_layout()->set_camera_clock_frequency(7, double(config_mod_id.size())*1e9);
+  calin_run_config->mutable_camera_layout()->set_camera_clock_frequency(8, double(config_mod_id.size())*1e9);
 
   calin::iact_data::telescope_data_source::report_run_configuration_problems(calin_run_config);
 

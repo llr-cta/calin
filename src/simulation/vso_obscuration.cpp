@@ -42,6 +42,7 @@
 using namespace calin::math::ray;
 using namespace calin::simulation::vs_optics;
 using calin::math::special::SQR;
+using namespace calin::util::log;
 
 VSOObscuration::~VSOObscuration()
 {
@@ -66,11 +67,16 @@ create_from_proto(const ix::simulation::vs_optics::VSOObscurationData& d)
     obs = VSOAlignedHexagonalAperture::create_from_proto(d.hexagonal_aperture());
   } else if(d.has_tile_aperture()) {
     obs = VSOAlignedTileAperture::create_from_proto(d.tile_aperture());
+  } else if(d.has_box_collection()) {
+    obs = VSOBoxCollectionObscuration::create_from_proto(d.box_collection());
+  } else if(d.has_octagonal_box()) {
+    obs = VSOAlignedOctBoxObscuration::create_from_proto(d.octagonal_box());
+  } else if(d.has_annulus()) {
+    obs = VSOAlignedAnnulus::create_from_proto(d.annulus());
   } else {
     throw std::runtime_error("VSOObscuration::create_from_proto: unknown obscuration type");
     return 0;
   }
-  obs->identification_ = d.identification();
   return obs;
 }
 
@@ -103,7 +109,7 @@ dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
   calin::math::vector3d_util::dump_as_proto(fX0, dd->mutable_center_pos());
   calin::math::vector3d_util::dump_as_proto(fN, dd->mutable_normal());
   dd->set_diameter(2.0*fR);
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -113,7 +119,7 @@ create_from_proto(const ix::simulation::vs_optics::VSODiskObscurationData& d)
   return new VSODiskObscuration(
     calin::math::vector3d_util::from_proto(d.center_pos()),
     calin::math::vector3d_util::from_proto(d.normal()),
-    d.diameter()/2.0);
+    d.diameter()/2.0, d.identification());
 }
 
 VSODiskObscuration* VSODiskObscuration::clone() const
@@ -162,7 +168,7 @@ dump_as_proto(ix::simulation::vs_optics::VSOObscurationData* d) const
   calin::math::vector3d_util::dump_as_proto(fX1, dd->mutable_end1_pos());
   calin::math::vector3d_util::dump_as_proto(fX2, dd->mutable_end2_pos());
   dd->set_diameter(2.0*fR);
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -172,7 +178,7 @@ create_from_proto(const ix::simulation::vs_optics::VSOTubeObscurationData& d)
   return new VSOTubeObscuration(
     calin::math::vector3d_util::from_proto(d.end1_pos()),
     calin::math::vector3d_util::from_proto(d.end2_pos()),
-    d.diameter()/2.0);
+    d.diameter()/2.0, d.identification());
 }
 
 VSOTubeObscuration* VSOTubeObscuration::clone() const
@@ -222,7 +228,7 @@ VSOAlignedBoxObscuration::dump_as_proto(
   auto* dd = d->mutable_aligned_box();
   calin::math::vector3d_util::dump_as_proto(max_corner_, dd->mutable_max_corner());
   calin::math::vector3d_util::dump_as_proto(min_corner_, dd->mutable_min_corner());
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -231,7 +237,63 @@ VSOAlignedBoxObscuration* VSOAlignedBoxObscuration::create_from_proto(
 {
   return new VSOAlignedBoxObscuration(
     calin::math::vector3d_util::from_proto(d.max_corner()),
-    calin::math::vector3d_util::from_proto(d.min_corner()));
+    calin::math::vector3d_util::from_proto(d.min_corner()),
+    d.identification());
+}
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOAlignedOctBoxObscuration
+//
+// *****************************************************************************
+// *****************************************************************************
+
+VSOAlignedOctBoxObscuration::~VSOAlignedOctBoxObscuration()
+{
+  // nothing to see here
+}
+
+bool VSOAlignedOctBoxObscuration::
+doesObscure(const Ray& r_in, Ray& r_out, double n) const
+{
+  double tmin;
+  double tmax;
+  if(calin::math::geometry::oct_box_has_future_intersection(tmin, tmax,
+    center_, flat_to_flat_width_, height_, r_in.position(), r_in.direction()))
+  {
+    r_out = r_in;
+    if(tmin > 0)r_out.propagate_dist(tmin, n);
+    return true;
+  }
+
+  return false;
+}
+
+VSOAlignedOctBoxObscuration* VSOAlignedOctBoxObscuration::clone() const
+{
+  return new VSOAlignedOctBoxObscuration(*this);
+}
+
+calin::ix::simulation::vs_optics::VSOObscurationData*
+VSOAlignedOctBoxObscuration::dump_as_proto(
+  calin::ix::simulation::vs_optics::VSOObscurationData* d) const
+{
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
+  auto* dd = d->mutable_octagonal_box();
+  calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center());
+  dd->set_flat_to_flat_width(flat_to_flat_width_);
+  dd->set_height(height_);
+  dd->set_identification(identification_);
+  return d;
+}
+
+VSOAlignedOctBoxObscuration* VSOAlignedOctBoxObscuration::create_from_proto(
+  const ix::simulation::vs_optics::VSOAlignedOctBoxObscurationData& d)
+{
+  return new VSOAlignedOctBoxObscuration(
+    calin::math::vector3d_util::from_proto(d.center()), d.flat_to_flat_width(), d.height(),
+    d.identification());
 }
 
 // *****************************************************************************
@@ -282,7 +344,7 @@ VSOAlignedRectangularAperture::dump_as_proto(
   dd->set_flat_to_flat_x(2*flat_to_flat_x_2_);
   dd->set_flat_to_flat_z(2*flat_to_flat_z_2_);
   dd->set_invert(inverted_);
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -291,7 +353,7 @@ VSOAlignedRectangularAperture* VSOAlignedRectangularAperture::create_from_proto(
 {
   return new VSOAlignedRectangularAperture(
     calin::math::vector3d_util::from_proto(d.center_pos()),
-    d.flat_to_flat_x(), d.flat_to_flat_z(), d.invert());
+    d.flat_to_flat_x(), d.flat_to_flat_z(), d.invert(), d.identification());
 }
 
 // *****************************************************************************
@@ -340,7 +402,7 @@ VSOAlignedHexagonalAperture::dump_as_proto(
   auto* dd = d->mutable_hexagonal_aperture();
   calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center_pos());
   dd->set_flat_to_flat(2*flat_to_flat_2_);
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -348,7 +410,8 @@ VSOAlignedHexagonalAperture* VSOAlignedHexagonalAperture::create_from_proto(
   const calin::ix::simulation::vs_optics::VSOAlignedHexagonalApertureData& d)
 {
   return new VSOAlignedHexagonalAperture(
-    calin::math::vector3d_util::from_proto(d.center_pos()), d.flat_to_flat());
+    calin::math::vector3d_util::from_proto(d.center_pos()), d.flat_to_flat(),
+    d.identification());
 }
 
 // *****************************************************************************
@@ -396,7 +459,7 @@ VSOAlignedCircularAperture::dump_as_proto(
   calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center_pos());
   dd->set_diameter(2*sqrt(radius_sq_));
   dd->set_invert(inverted_);
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -404,7 +467,8 @@ VSOAlignedCircularAperture* VSOAlignedCircularAperture::create_from_proto(
   const calin::ix::simulation::vs_optics::VSOAlignedCircularApertureData& d)
 {
   return new VSOAlignedCircularAperture(
-    calin::math::vector3d_util::from_proto(d.center_pos()),d.diameter(),d.invert());
+    calin::math::vector3d_util::from_proto(d.center_pos()),d.diameter(),d.invert(),
+    d.identification());
 }
 
 // *****************************************************************************
@@ -473,7 +537,7 @@ VSOAlignedTileAperture::dump_as_proto(
   dd->set_center_z(edge_z_ + 0.5*dd->pitch_z());
   dd->set_support_width_x(2.0*opaque_frac_x_2_*dd->pitch_x());
   dd->set_support_width_z(2.0*opaque_frac_z_2_*dd->pitch_z());
-  d->set_identification(identification_);
+  dd->set_identification(identification_);
   return d;
 }
 
@@ -484,5 +548,180 @@ VSOAlignedTileAperture* VSOAlignedTileAperture::create_from_proto(
     calin::math::vector3d_util::from_proto(d.center_pos()),
     d.pitch_x(), d.pitch_z(),
     d.center_x(), d.center_z(),
-    d.support_width_x(), d.support_width_z());
+    d.support_width_x(), d.support_width_z(), d.identification());
+}
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOAlignedAnnulus
+//
+// *****************************************************************************
+// *****************************************************************************
+
+VSOAlignedAnnulus::~VSOAlignedAnnulus()
+{
+  // nothing to see here
+}
+
+bool VSOAlignedAnnulus::
+doesObscure(const calin::math::ray::Ray& r_in, calin::math::ray::Ray& r_out, double n) const
+{
+  r_out = r_in;
+  if(r_out.propagate_to_y_plane(-center_.y(), false, n))
+  {
+    const double D2e =
+      SQR(r_out.x()-center_.x())+SQR(r_out.z()-center_.z());
+    return (D2e>=inner_radius_sq_)and(D2e<=outer_radius_sq_);
+  }
+
+  return false;
+}
+
+VSOAlignedAnnulus* VSOAlignedAnnulus::clone() const
+{
+  return new VSOAlignedAnnulus(center_,2*sqrt(outer_radius_sq_),2*sqrt(inner_radius_sq_));
+}
+
+calin::ix::simulation::vs_optics::VSOObscurationData*
+VSOAlignedAnnulus::dump_as_proto(
+  calin::ix::simulation::vs_optics::VSOObscurationData* d) const
+{
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
+  auto* dd = d->mutable_annulus();
+  calin::math::vector3d_util::dump_as_proto(center_, dd->mutable_center_pos());
+  dd->set_outer_diameter(2*sqrt(outer_radius_sq_));
+  dd->set_inner_diameter(2*sqrt(inner_radius_sq_));
+  dd->set_identification(identification_);
+  return d;
+}
+
+VSOAlignedAnnulus* VSOAlignedAnnulus::create_from_proto(
+  const calin::ix::simulation::vs_optics::VSOAlignedAnnulusData& d)
+{
+  return new VSOAlignedAnnulus(
+    calin::math::vector3d_util::from_proto(d.center_pos()),d.outer_diameter(),d.inner_diameter(),
+    d.identification());
+}
+
+// *****************************************************************************
+// *****************************************************************************
+//
+// VSOBoxCollectionObscuration
+//
+// *****************************************************************************
+// *****************************************************************************
+
+VSOBoxCollectionObscuration::
+VSOBoxCollectionObscuration(const std::vector<VSOTubeObscuration*>& tubes,
+    const std::string& identification, bool adopt_obscurations):
+  VSOObscuration(identification),
+  tubes_(tubes), adopt_obscurations_(adopt_obscurations)
+{
+  constexpr double inf = std::numeric_limits<double>::infinity();
+  double min_vol = inf;
+  double min_area;
+  double min_theta;
+  for(double theta = 0; theta<360.0; theta+=1.0) {
+    double st = std::sin(theta/180.0*M_PI);
+    double ct = std::cos(theta/180.0*M_PI);
+    Eigen::Vector3d min_corner(inf,inf,inf);
+    Eigen::Vector3d max_corner(-inf,-inf,-inf);
+    for(const auto* tube : tubes) {
+      Eigen::Vector3d x1(ct*tube->end1_pos().x()+st*tube->end1_pos().z(),
+        tube->end1_pos().y(), ct*tube->end1_pos().z()-st*tube->end1_pos().x());
+      Eigen::Vector3d x2(ct*tube->end2_pos().x()+st*tube->end2_pos().z(),
+        tube->end2_pos().y(), ct*tube->end2_pos().z()-st*tube->end2_pos().x());
+      min_corner.x() = std::min(min_corner.x(), std::min(x1.x(),x2.x())-tube->radius());
+      max_corner.x() = std::max(max_corner.x(), std::max(x1.x(),x2.x())+tube->radius());
+      min_corner.y() = std::min(min_corner.y(), std::min(x1.y(),x2.y())-tube->radius());
+      max_corner.y() = std::max(max_corner.y(), std::max(x1.y(),x2.y())+tube->radius());
+      min_corner.z() = std::min(min_corner.z(), std::min(x1.z(),x2.z())-tube->radius());
+      max_corner.z() = std::max(max_corner.z(), std::max(x1.z(),x2.z())+tube->radius());
+    }
+    Eigen::Vector3d dx = max_corner-min_corner;
+    double vol = dx.x()*dx.y()*dx.z();
+    if(vol < min_vol) {
+      min_corner_ = min_corner;
+      max_corner_ = max_corner;
+      crot_ = ct;
+      srot_ = st;
+      min_theta = theta;
+      min_area = dx.x()*dx.z();
+      min_vol = vol;
+    }
+  }
+#if 0
+  LOG(INFO) << identification_ << " : ntube=" << tubes.size() << "\n  min_vol="
+    << min_vol <<  " cm^3, min_area= " << min_area << " cm^2, \n  theta="
+    << min_theta << "\n  min_corner=" << min_corner_.transpose() << "\n  max_corner=" << max_corner_.transpose();
+#endif
+}
+
+VSOBoxCollectionObscuration::~VSOBoxCollectionObscuration()
+{
+  if(adopt_obscurations_) {
+    for(auto* obs : tubes_)delete obs;
+  }
+}
+
+bool VSOBoxCollectionObscuration::doesObscure(const calin::math::ray::Ray& p_in,
+  calin::math::ray::Ray& p_out, double n) const
+{
+  Eigen::Vector3d pos(crot_*p_in.x()+srot_*p_in.z(), p_in.y(), crot_*p_in.z()-srot_*p_in.x());
+  Eigen::Vector3d dir(crot_*p_in.ux()+srot_*p_in.uz(), p_in.uy(), crot_*p_in.uz()-srot_*p_in.ux());
+  bool hits_box = calin::math::geometry::box_has_future_intersection(
+    min_corner_, max_corner_, pos, dir);
+  if(not hits_box) {
+    // fast exit if outer box not hit
+    return false;
+  }
+
+  bool hits_tube = false;
+  double obs_time  = std::numeric_limits<double>::infinity();
+  for(const auto* tube : tubes_) {
+    math::ray::Ray ray_out;
+    if(tube->doesObscure(p_in, ray_out, n)) {
+      hits_tube = true;
+      if(ray_out.ct() < obs_time) {
+        p_out = ray_out;
+        obs_time = ray_out.ct();
+      }
+    }
+  }
+  return hits_tube;
+}
+
+VSOBoxCollectionObscuration* VSOBoxCollectionObscuration::clone() const
+{
+  std::vector<VSOTubeObscuration*> new_tubes;
+  for(auto* obs : tubes_) {
+    new_tubes.push_back(obs->clone());
+  }
+  return new VSOBoxCollectionObscuration(new_tubes, identification_, true);
+}
+
+calin::ix::simulation::vs_optics::VSOObscurationData*
+VSOBoxCollectionObscuration::dump_as_proto(
+  calin::ix::simulation::vs_optics::VSOObscurationData* d) const
+{
+  if(d == nullptr)d = new calin::ix::simulation::vs_optics::VSOObscurationData;
+  auto* dd = d->mutable_box_collection();
+  for(auto* obs : tubes_) {
+    calin::ix::simulation::vs_optics::VSOObscurationData obs_data;
+    obs->dump_as_proto(&obs_data);
+    dd->CopyFrom(obs_data.tube());
+  }
+  dd->set_identification(identification_);
+  return d;
+}
+
+VSOBoxCollectionObscuration* VSOBoxCollectionObscuration::create_from_proto(
+    const ix::simulation::vs_optics::VSOBoxCollectionObscurationData& d)
+{
+  std::vector<VSOTubeObscuration*> new_tubes;
+  for(const auto& obs_data : d.tube_obscuration()) {
+    new_tubes.push_back(VSOTubeObscuration::create_from_proto(obs_data));
+  }
+  return new VSOBoxCollectionObscuration(new_tubes, d.identification(), true);
 }

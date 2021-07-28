@@ -193,6 +193,44 @@ class VSOAlignedBoxObscuration: public VSOObscuration
   Eigen::Vector3d         max_corner_;
 };
 
+class VSOAlignedOctBoxObscuration: public VSOObscuration
+{
+ public:
+  VSOAlignedOctBoxObscuration(const Eigen::Vector3d& center,
+                              double flat_to_flat_width, double height,
+                              const std::string& identification = ""):
+    VSOObscuration(identification), center_(center),
+    flat_to_flat_width_(flat_to_flat_width), height_(height)
+  {
+    // nothing to see here
+  }
+
+  virtual ~VSOAlignedOctBoxObscuration();
+  bool doesObscure(const calin::math::ray::Ray& r_in,
+                   calin::math::ray::Ray& r_out, double n) const override;
+  VSOAlignedOctBoxObscuration* clone() const override;
+
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
+  static VSOAlignedOctBoxObscuration* create_from_proto(
+    const ix::simulation::vs_optics::VSOAlignedOctBoxObscurationData& d);
+
+  const Eigen::Vector3d& center() const { return center_; }
+  double flat_to_flat_width() const { return flat_to_flat_width_; }
+  double height() const { return height_; }
+
+ private:
+  Eigen::Vector3d         center_;
+  double                  flat_to_flat_width_;
+  double                  height_;
+};
+
 class VSOAlignedRectangularAperture: public VSOObscuration
 {
 public:
@@ -217,8 +255,8 @@ public:
 
   VSOAlignedRectangularAperture(const Eigen::Vector3d& center,
                                 double flat_to_flat_x, double flat_to_flat_z,
-                                bool inverted = false):
-    VSOObscuration(), center_(center),
+                                bool inverted = false, const std::string& identification = ""):
+    VSOObscuration(identification), center_(center),
     flat_to_flat_x_2_(0.5*flat_to_flat_x), flat_to_flat_z_2_(0.5*flat_to_flat_z),
     inverted_(inverted)
   {
@@ -378,6 +416,86 @@ private:
   Eigen::Vector3d         center_;
   double                  radius_sq_;
   bool                    inverted_;
+};
+
+class VSOAlignedAnnulus: public VSOObscuration
+{
+public:
+  VSOAlignedAnnulus(double center_y, double outer_diameter, double inner_diameter,
+      const std::string& identification = ""):
+    VSOObscuration(identification), center_(0,center_y,0),
+    outer_radius_sq_(0.25*outer_diameter*outer_diameter),
+    inner_radius_sq_(0.25*inner_diameter*inner_diameter)
+  {
+   // nothing to see here
+  }
+
+  VSOAlignedAnnulus(const Eigen::Vector3d& center,
+      double outer_diameter, double inner_diameter,
+      const std::string& identification = ""):
+    VSOObscuration(identification), center_(center),
+    outer_radius_sq_(0.25*outer_diameter*outer_diameter),
+    inner_radius_sq_(0.25*inner_diameter*inner_diameter)
+  {
+   // nothing to see here
+  }
+
+  virtual ~VSOAlignedAnnulus();
+  bool doesObscure(const calin::math::ray::Ray& p_in,
+                  calin::math::ray::Ray& p_out, double n) const override;
+  VSOAlignedAnnulus* clone() const override;
+
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
+  static VSOAlignedAnnulus* create_from_proto(
+    const ix::simulation::vs_optics::VSOAlignedAnnulusData& d);
+
+  const Eigen::Vector3d& center() const { return center_; }
+  double outer_radius_sq() const { return outer_radius_sq_; }
+  double inner_radius_sq() const { return inner_radius_sq_; }
+
+private:
+  Eigen::Vector3d         center_;
+  double                  outer_radius_sq_;
+  double                  inner_radius_sq_;
+};
+
+
+class VSOBoxCollectionObscuration: public VSOObscuration
+{
+public:
+  VSOBoxCollectionObscuration(const std::vector<VSOTubeObscuration*>& tubes,
+      const std::string& identification = "", bool adopt_obscurations = false);
+
+  virtual ~VSOBoxCollectionObscuration();
+  bool doesObscure(const calin::math::ray::Ray& p_in,
+                  calin::math::ray::Ray& p_out, double n) const override;
+  VSOBoxCollectionObscuration* clone() const override;
+
+#ifndef SWIG
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto(
+    calin::ix::simulation::vs_optics::VSOObscurationData* d = nullptr) const override;
+#else
+  calin::ix::simulation::vs_optics::VSOObscurationData* dump_as_proto() const override;
+  void dump_as_proto(calin::ix::simulation::vs_optics::VSOObscurationData* d) const override;
+#endif
+
+  static VSOBoxCollectionObscuration* create_from_proto(
+    const ix::simulation::vs_optics::VSOBoxCollectionObscurationData& d);
+
+private:
+  std::vector<VSOTubeObscuration*> tubes_;
+  bool                    adopt_obscurations_;
+  Eigen::Vector3d         min_corner_;
+  Eigen::Vector3d         max_corner_;
+  double                  crot_ = 1.0;
+  double                  srot_ = 0.0;
 };
 
 } } } // namespace calin::simulation::vs_optics

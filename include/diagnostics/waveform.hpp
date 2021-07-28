@@ -37,7 +37,8 @@ class WaveformSumParallelEventVisitor:
 public iact_data::event_visitor::ParallelEventVisitor
 {
 public:
-  WaveformSumParallelEventVisitor();
+  WaveformSumParallelEventVisitor(bool calculate_variance = false,
+    uint32_t sample_max = 4096);
 
   virtual ~WaveformSumParallelEventVisitor();
 
@@ -73,6 +74,8 @@ protected:
 #ifndef SWIG
   WaveformSumParallelEventVisitor* parent_ = nullptr;
 
+  bool calculate_variance_ = false;
+  uint32_t sample_max_ = 4096;
   unsigned partial_max_num_entries_ = 32768;
 
   bool has_dual_gain_ = false;
@@ -85,11 +88,15 @@ protected:
   uint64_t*__restrict__ low_gain_count_i64_ = nullptr;
   int64_t*__restrict__ high_gain_wf_sum_i64_ = nullptr;
   int64_t*__restrict__ low_gain_wf_sum_i64_ = nullptr;
+  int64_t*__restrict__ high_gain_wf_sumsq_i64_ = nullptr;
+  int64_t*__restrict__ low_gain_wf_sumsq_i64_ = nullptr;
 
   uint32_t*__restrict__ high_gain_count_i32_ = nullptr;
   uint32_t*__restrict__ low_gain_count_i32_ = nullptr;
   int32_t*__restrict__ high_gain_wf_sum_i32_ = nullptr;
   int32_t*__restrict__ low_gain_wf_sum_i32_ = nullptr;
+  int32_t*__restrict__ high_gain_wf_sumsq_i32_ = nullptr;
+  int32_t*__restrict__ low_gain_wf_sumsq_i32_ = nullptr;
 #endif // ndef SWIG
 };
 

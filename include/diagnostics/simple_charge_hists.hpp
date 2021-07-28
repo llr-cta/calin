@@ -29,6 +29,27 @@
 
 namespace calin { namespace diagnostics { namespace simple_charge_hists {
 
+class SimpleChargeHistsFilter
+{
+public:
+  virtual ~SimpleChargeHistsFilter();
+  virtual bool event_should_be_accepted(const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+    unsigned ichan, bool low_gain) = 0;
+  virtual SimpleChargeHistsFilter* clone() = 0;
+};
+
+class SimpleChargeHistsTriggerBitFilter: public SimpleChargeHistsFilter
+{
+public:
+  SimpleChargeHistsTriggerBitFilter(bool trigger_bit_status_required_for_accept = false);
+  virtual ~SimpleChargeHistsTriggerBitFilter();
+  bool event_should_be_accepted(const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
+    unsigned ichan, bool low_gain) override;
+  SimpleChargeHistsTriggerBitFilter* clone() override;
+private:
+  bool trigger_bit_status_required_for_accept_;
+};
+
 class SimpleChargeHistsParallelEventVisitor:
   public calin::iact_data::event_visitor::ParallelEventVisitor
 {
@@ -36,12 +57,14 @@ public:
   SimpleChargeHistsParallelEventVisitor(
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* high_gain_visitor,
     calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* low_gain_visitor,
-    const calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig& config = ped_trig_default_config());
+    const calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig& config = ped_trig_default_config(),
+    SimpleChargeHistsFilter* filter = nullptr, bool adopt_filter = false);
 
   SimpleChargeHistsParallelEventVisitor(
       calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* mixed_or_unique_gain_visitor,
-      const calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig& config = ped_trig_default_config()):
-    SimpleChargeHistsParallelEventVisitor(mixed_or_unique_gain_visitor, nullptr, config)
+      const calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig& config = ped_trig_default_config(),
+      SimpleChargeHistsFilter* filter = nullptr, bool adopt_filter = false):
+    SimpleChargeHistsParallelEventVisitor(mixed_or_unique_gain_visitor, nullptr, config, filter, adopt_filter)
   { /* nothing to see here */ }
 
   virtual ~SimpleChargeHistsParallelEventVisitor();
@@ -77,6 +100,7 @@ public:
   static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig phy_trig_default_config();
   static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig ext_trig_default_config();
   static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig int_trig_default_config();
+  static calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig l0_trig_bits_default_config();
 
   // const calin::ix::diagnostics::simple_charge_stats::PartialSimpleChargeStats& partials() const { return partials_; }
 
@@ -205,6 +229,9 @@ private:
   SingleGainCameraHists* cam_hists_high_gain_ = nullptr;
   SingleGainCameraHists* cam_hists_low_gain_ = nullptr;
   DualGainCameraHists* cam_hists_dual_gain_ = nullptr;
+
+  SimpleChargeHistsFilter* filter_ = nullptr;
+  bool adopt_filter_ = false;
 };
 
 } } } // namespace calin::diagnostics::simple_charge_stats

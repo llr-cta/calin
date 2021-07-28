@@ -1,0 +1,58 @@
+/*
+
+   calin/proto/scripts/render_stage1_results.proto -- Stephen Fegan -- 2021-07-05
+
+   Protobufs for command line options for render_stage1_results.py
+
+   Copyright 2021, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+
+   This file is part of "calin"
+
+   "calin" is free software: you can redistribute it and/or modify it
+   under the terms of the GNU General Public License version 2 or
+   later, as published by the Free Software Foundation.
+
+   "calin" is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+*/
+
+syntax = "proto3";
+
+import "calin.proto";
+// import "diagnostics/stage1.proto";
+
+package calin.ix.scripts.render_stage1_results;
+
+message GoogleDriveOptions {
+  string credentials_json                                  = 1;
+  string token_file_json                                   = 2;
+  string base_directory                                    = 3;
+  string summary_sheet                                     = 4;
+};
+
+message CommandLineOptions {
+  string db                                                = 1 [
+    (CFO).desc = "SQLite3 output file name." ];
+  string db_stage1_table_name                              = 2 [
+    (CFO).desc = "Table name of results structure in database." ];
+
+  bool upload_to_google_drive                              = 3 [
+    (CFO).desc = "Write plots to Google Drive, othewise to the filesystem." ];
+
+  string google_drive_security_config_json                 = 4;
+
+  string base_directory                                    = 5;
+  string summary_csv                                       = 6;
+
+  int32 run_number                                         = 7;
+  int32 from_run_number                                    = 8;
+  int32 to_run_number                                      = 9;
+
+  uint32 figure_dpi                                        = 30;
+
+  bool force_nectarcam_61_camera                           = 100;
+};

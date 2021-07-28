@@ -151,7 +151,6 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
         facet.removed = true;
       }
     }
-
     if(scope->s_facets_have_frame_change and scope_params.has_secondary_facet_scheme_loose()) {
       scope->s_scheme_loose = new SCTSecondaryFacetScheme(scope_params.secondary_facet_scheme_loose());
       scope->s_rho_max = SQR(scope->s_scheme_loose->outer_radius());
@@ -160,6 +159,9 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
         throw std::runtime_error("Secondary surface facet schemes must have same number of facets.");
       }
     }
+    scope->s_r_max = std::sqrt(scope->s_rho_max);
+    scope->s_y_min = calin::math::least_squares::polyval(
+      scope->s_surface, scope->s_surface_n, scope->s_rho_max);
 
     // *************************************************************************
     // CAMERA
@@ -207,6 +209,8 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     // OBSCURATIONS
     // *************************************************************************
 
+    scope->enable_secondary_obscuration_model =
+      scope_params.enable_secondary_obscuration_model();
     for(const auto& obs_param : scope_params.primary_obscuration()) {
       scope->primary_obscuration.push_back(
         calin::simulation::vs_optics::VSOObscuration::create_from_proto(obs_param));
@@ -218,6 +222,24 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     for(const auto& obs_param : scope_params.camera_obscuration()) {
       scope->camera_obscuration.push_back(
         calin::simulation::vs_optics::VSOObscuration::create_from_proto(obs_param));
+    }
+
+    // *************************************************************************
+    // WINDOW
+    // *************************************************************************
+
+    if(scope_params.has_window()) {
+      scope->w_thickness     = scope_params.window().thickness();
+      scope->w_front_y_coord = scope_params.window().front_y_coord();
+      scope->w_outer_radius  = scope_params.window().outer_radius();;
+      scope->w_n             = scope_params.window().refractive_index();
+      scope->w_n_ratio       = scope->w_n/n_;
+    } else {
+      scope->w_thickness     = 0;
+      scope->w_front_y_coord = 0;
+      scope->w_outer_radius  = 0;
+      scope->w_n             = n_;;
+      scope->w_n_ratio       = 1.0;
     }
 
     scopes_.push_back(scope);
@@ -312,12 +334,63 @@ bool SCTRayTracer::ray_reaches_primary(const Telescope* scope,
   return false;
 }
 
+bool SCTRayTracer::ray_obscured_by_secondary(const Telescope* scope,
+  const calin::math::ray::Ray& ray) const
+{
+  // Approximate argument that does not account for extremely inclined rays
+  // that could cross mirror surface twice
+
+  if(ray.y() > scope->s_y_min) {
+    // case 1 : ray is outside of aperture coming towards it (presuably the most
+    // likely case for distant light)
+    if(ray.uy() >= 0) {
+      return false;
+    }
+    const double dist = (scope->s_y_min-ray.y())/ray.uy();
+    const double x_a = ray.x() + dist*ray.ux();
+    const double z_a = ray.z() + dist*ray.uz();
+    const double rho_a = x_a*x_a + z_a*z_a;
+
+    if(ray.y()>scope->s_surface[0]) {
+      return rho_a < scope->s_rho_max;
+    } else {
+      const double x = ray.x();
+      const double z = ray.z();
+      const double rho = x*x + z*z;
+      if(rho > scope->s_rho_max) {
+        return rho_a < scope->s_rho_max;
+      } else {
+        double y_mirror = calin::math::least_squares::polyval(
+          scope->s_surface, scope->s_surface_n, rho);
+        if(ray.y() > y_mirror) {
+          return rho_a < scope->s_rho_max;
+        } else {
+          return rho_a > scope->s_rho_max;
+        }
+      }
+    }
+  } else {
+    return false;
+  }
+  // never reaches here
+  return false;
+}
+
+
 bool SCTRayTracer::trace_ray_to_primary_in_reflector_frame(const Telescope* scope,
   calin::math::ray::Ray& ray, SCTRayTracerResults& results) const
 {
   // ***************************************************************************
   // Ray starts (and ends) in nominal telescope reflector frame
   // ***************************************************************************
+
+  if(scope->enable_secondary_obscuration_model) {
+    if(ray_obscured_by_secondary(scope, ray)) {
+      results.status = RTS_OBSCURED_BEFORE_PRIMARY;
+      results.obscuration_id = 0;
+      return false;
+    }
+  }
 
   // Test for obscuration of incoming ray
   unsigned nobs = scope->primary_obscuration.size();
@@ -338,7 +411,7 @@ bool SCTRayTracer::trace_ray_to_primary_in_reflector_frame(const Telescope* scop
   if(obs_ihit!=nobs)
   {
     results.status = RTS_OBSCURED_BEFORE_PRIMARY;
-    results.obscuration_id = obs_ihit;
+    results.obscuration_id = obs_ihit + (scope->enable_secondary_obscuration_model ? 1:0);
     return false;
   }
 
@@ -483,7 +556,8 @@ bool SCTRayTracer::trace_ray_to_secondary_in_reflector_frame(const Telescope* sc
   if(obs_ihit!=nobs)
   {
     results.status = RTS_OBSCURED_BEFORE_SECONDARY;
-    results.obscuration_id = obs_ihit + scope->primary_obscuration.size();
+    results.obscuration_id = obs_ihit + scope->primary_obscuration.size() +
+      (scope->enable_secondary_obscuration_model ? 1:0);
     return false;
   }
 
@@ -638,8 +712,68 @@ bool SCTRayTracer::trace_ray_in_reflector_frame(unsigned iscope, calin::math::ra
   {
     results.status = RTS_OBSCURED_BEFORE_CAMERA;
     results.obscuration_id = obs_ihit
-      + scope->secondary_obscuration.size() + scope->primary_obscuration.size();
+      + scope->secondary_obscuration.size() + scope->primary_obscuration.size() +
+        (scope->enable_secondary_obscuration_model ? 1:0);
     return false;
+  }
+
+  // ***************************************************************************
+  // Refraction at camera window, if defined
+  // ***************************************************************************
+
+  if(scope->w_thickness > 0)
+  {
+    Eigen::Vector3d er;
+    bool good;
+    if(scope->w_outer_radius > 0) {
+      // Spherical window
+      good = ray.propagate_to_y_sphere_1st_interaction_fwd_only(
+        scope->w_outer_radius, scope->w_front_y_coord-2*scope->w_outer_radius, n_);
+      er = ray.position();
+      er.y() -= scope->w_front_y_coord-scope->w_outer_radius;
+      er *= 1.0/scope->w_outer_radius;
+    } else {
+      good = ray.propagate_to_y_plane(-scope->w_front_y_coord, n_);
+      er << 0, 1, 0;
+    }
+
+    if(!good)
+    {
+      results.status = RTS_MISSED_WINDOW;
+      return false;
+    }
+
+    ray.refract_at_surface_in(er, scope->w_n_ratio);
+
+    if(scope->w_outer_radius > 0) {
+      // Spherical window
+      good = ray.propagate_to_y_sphere_1st_interaction_fwd_only(
+        scope->w_outer_radius-scope->w_thickness,
+        scope->w_front_y_coord-2*scope->w_outer_radius-scope->w_thickness,
+        scope->w_n);
+      er = ray.position();
+      er.y() -= scope->w_front_y_coord - scope->w_outer_radius;
+      er *= -1.0/(scope->w_outer_radius-scope->w_thickness);
+    } else {
+      good = ray.propagate_to_y_plane(-scope->w_front_y_coord+scope->w_thickness, scope->w_n);
+      er << 0, -1, 0;
+    }
+
+    if(!good)
+    {
+      // Case of internal surface not encountered - ray exits outer again
+      results.status = RTS_MISSED_WINDOW;
+      return false;
+    }
+
+    good = ray.refract_at_surface_out(er, scope->w_n_ratio);
+
+    if(!good)
+    {
+      // Total internal reflection not supported
+      results.status = RTS_MISSED_WINDOW;
+      return false;
+    }
   }
 
   // ***************************************************************************
@@ -784,6 +918,26 @@ void SCTRayTracer::pixel_centers(unsigned iscope, Eigen::VectorXd& x_out, Eigen:
   calin::simulation::sct_optics::pixel_centers(*scopes_[iscope]->param, x_out, z_out);
 }
 
+std::vector<std::string> SCTRayTracer::obscuration_identifications(unsigned iscope) const
+{
+  if(iscope >= scopes_.size()) {
+    throw std::runtime_error("SCTRayTracer::obscuration_identifications: iscope out of range");
+  }
+  std::vector<std::string> identifications;
+  if(scopes_[iscope]->enable_secondary_obscuration_model) {
+    identifications.push_back("P: Secondary mirror");
+  }
+  for(const auto* obs : scopes_[iscope]->primary_obscuration) {
+    identifications.push_back("P: " + obs->identification());
+  }
+  for(const auto* obs : scopes_[iscope]->secondary_obscuration) {
+    identifications.push_back("S: " + obs->identification());
+  }
+  for(const auto* obs : scopes_[iscope]->camera_obscuration) {
+    identifications.push_back("C: " + obs->identification());
+  }
+  return identifications;
+}
 
 calin::ix::simulation::sct_optics::SCTTelescope*
 calin::simulation::sct_optics::make_sct_telescope(
@@ -1139,6 +1293,8 @@ calin::simulation::sct_optics::make_sct_telescope(
   // ***************************************************************************
   // ***************************************************************************
 
+  telescope->set_enable_secondary_obscuration_model(
+    param.enable_secondary_obscuration_model());
   for(const auto& obs_param : param.primary_obscuration()) {
     telescope->add_primary_obscuration()->CopyFrom(obs_param);
   }
@@ -1148,6 +1304,16 @@ calin::simulation::sct_optics::make_sct_telescope(
   for(const auto& obs_param : param.camera_obscuration()) {
     telescope->add_camera_obscuration()->CopyFrom(obs_param);
   }
+
+  // ***************************************************************************
+  // ***************************************************************************
+  //
+  // WINDOW
+  //
+  // ***************************************************************************
+  // ***************************************************************************
+
+  telescope->mutable_window()->CopyFrom(param.window());
 
   return telescope;
 }

@@ -46,11 +46,12 @@ enum SCTRayTracerStatus
 
   RTS_OBSCURED_BEFORE_CAMERA    = 7,
   RTS_MISSED_CAMERA             = 8,
-  RTS_NO_MODULE                 = 9,
-  RTS_MISSED_MODULE             = 10,
-  RTS_NO_PIXEL                  = 11,
+  RTS_MISSED_WINDOW             = 9,
+  RTS_NO_MODULE                 = 10,
+  RTS_MISSED_MODULE             = 11,
+  RTS_NO_PIXEL                  = 12,
 
-  RTS_COMPLETE                  = 12
+  RTS_COMPLETE                  = 13
 };
 
 struct SCTRayTracerResults
@@ -109,6 +110,8 @@ public:
 
   void pixel_centers(unsigned iscope, Eigen::VectorXd& x_out, Eigen::VectorXd& z_out) const;
 
+  std::vector<std::string> obscuration_identifications(unsigned iscope) const;
+
 private:
   struct Facet
   {
@@ -165,6 +168,8 @@ private:
     const double* s_surface;
     unsigned s_surface_n;
     std::vector<Facet> s_facets;
+    double s_r_max;
+    double s_y_min;
 
     bool c_has_frame_change;
     Eigen::Vector3d c_offset;
@@ -185,6 +190,13 @@ private:
     // double c_pixel_yc;
     double c_pixel_dead_space_fraction;
 
+    double w_thickness;
+    double w_front_y_coord;
+    double w_outer_radius;
+    double w_n;
+    double w_n_ratio;
+
+    bool enable_secondary_obscuration_model;
     std::vector<calin::simulation::vs_optics::VSOObscuration*> primary_obscuration;
     std::vector<calin::simulation::vs_optics::VSOObscuration*> secondary_obscuration;
     std::vector<calin::simulation::vs_optics::VSOObscuration*> camera_obscuration;
@@ -197,6 +209,9 @@ private:
 
   bool ray_reaches_primary(const Telescope* scope,
     const calin::math::ray::Ray& ray) const;
+  bool ray_obscured_by_secondary(const Telescope* scope,
+    const calin::math::ray::Ray& ray) const;
+
   bool trace_ray_to_primary_in_reflector_frame(const Telescope* scope,
     calin::math::ray::Ray& ray, SCTRayTracerResults& results) const;
   bool trace_ray_to_secondary_in_reflector_frame(const Telescope* scope,

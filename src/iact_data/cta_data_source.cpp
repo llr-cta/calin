@@ -172,6 +172,9 @@ CTAZFITSDataSource::construct_delegate(std::string filename,
       config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_R1);
     } else if (zfits_actl_data_source::is_zfits_l0(filename, config.events_table_name())) {
       config.set_data_model(calin::ix::iact_data::zfits_data_source::ACTL_DATA_MODEL_L0);
+    } else {
+      throw std::runtime_error(
+        "CTAZFITSDataSource::construct_delegate: could not auto-detect data model: " + filename);
     }
   }
 
