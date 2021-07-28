@@ -738,9 +738,9 @@ std::string ZMQACTL_R1_CameraEventDataSource::receive_status_string() const
 ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::
 InProcPayloadDistributer(void* zmq_ctx, unsigned endpoint_count):
   zmq_ctx_(zmq_ctx), endpoint_count_(endpoint_count),
-  downstream_master_(new calin::io::zmq_inproc::ZMQPusher(zmq_ctx_, downstream_endpoint(), 100,
+  downstream_principal_(new calin::io::zmq_inproc::ZMQPusher(zmq_ctx_, downstream_endpoint(), 100,
     calin::io::zmq_inproc::ZMQBindOrConnect::BIND, calin::io::zmq_inproc::ZMQProtocol::PUB_SUB)),
-  upstream_master_(new calin::io::zmq_inproc::ZMQPuller(zmq_ctx_, upstream_endpoint(), 100,
+  upstream_principal_(new calin::io::zmq_inproc::ZMQPuller(zmq_ctx_, upstream_endpoint(), 100,
     calin::io::zmq_inproc::ZMQBindOrConnect::BIND, calin::io::zmq_inproc::ZMQProtocol::PUSH_PULL))
 {
   // nothing to see here
@@ -749,8 +749,8 @@ InProcPayloadDistributer(void* zmq_ctx, unsigned endpoint_count):
 ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::
 ~InProcPayloadDistributer()
 {
-  delete downstream_master_;
-  delete upstream_master_;
+  delete downstream_principal_;
+  delete upstream_principal_;
 }
 
 std::tuple<calin::io::zmq_inproc::ZMQPusher*, calin::io::zmq_inproc::ZMQPuller*>
@@ -767,26 +767,26 @@ void ZMQACTL_R1_CameraEventDataSource::InProcPayloadDistributer::main_loop()
   unsigned num_no_header = 0;
 
   ZMQACTL_R1_CameraEventDataSource::InProcPayload payload;
-  while(upstream_master_->pull_assert_size(&payload, sizeof(payload))
+  while(upstream_principal_->pull_assert_size(&payload, sizeof(payload))
     and payload.message_type == ZMQACTL_R1_CameraEventDataSource::InProcPayload::ABORT)
   {
     switch(payload.message_type)
     {
     case ZMQACTL_R1_CameraEventDataSource::InProcPayload::HEADER:
       if(!header_sent) {
-        downstream_master_->push(&payload, sizeof(payload));
+        downstream_principal_->push(&payload, sizeof(payload));
       }
       header_sent = true;
       break;
     case ZMQACTL_R1_CameraEventDataSource::InProcPayload::NO_HEADER:
       num_no_header++;
       if(!header_sent and num_no_header==num_connections_) {
-        downstream_master_->push(&payload, sizeof(payload));
+        downstream_principal_->push(&payload, sizeof(payload));
       }
       break;
     case ZMQACTL_R1_CameraEventDataSource::InProcPayload::END_OF_STREAM:
       if(!eos_sent) {
-        downstream_master_->push(&payload, sizeof(payload));
+        downstream_principal_->push(&payload, sizeof(payload));
       }
       eos_sent = true;
       break;

@@ -32,11 +32,11 @@ def summarize_camera_clock_regressions(stage1):
         # Temporary : remove when all data has been reprocessed with new version
         cl = calin.iact_data.instrument_layout.camera_layout(cl.camera_type())
 
-    master_clock_id = stage1.const_clock_regression().master_clock_id();
-    if(master_clock_id == 0):
+    principal_clock_id = stage1.const_clock_regression().principal_clock_id();
+    if(principal_clock_id == 0):
         # Temporary : remove when all data has been reprocessed with new version
-        master_clock_id = stage1.const_config().const_clock_regression().master_clock_id()
-    master_clock_freq = cl.camera_clock_frequency(master_clock_id)
+        principal_clock_id = stage1.const_config().const_clock_regression().principal_clock_id()
+    principal_clock_freq = cl.camera_clock_frequency(principal_clock_id)
 
     for iclock in range(len(cam_freq_offset_ppm)):
         clock = stage1.const_clock_regression().const_camera_clock(iclock)
@@ -46,7 +46,7 @@ def summarize_camera_clock_regressions(stage1):
             # Temporary : remove when all data has been reprocessed with new version
             clock_id = stage1.const_config().const_clock_regression().default_nectarcam_camera_clocks(iclock).clock_id()
         clock_freq = cl.camera_clock_frequency(clock_id)
-        clock_nominal_a = clock_freq/master_clock_freq
+        clock_nominal_a = clock_freq/principal_clock_freq
 
         all_t = sorted(clock.bins_keys())
         all_x0 = numpy.zeros(len(all_t), dtype=numpy.int64)

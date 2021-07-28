@@ -495,8 +495,8 @@ public:
     void* zmq_ctx_ { nullptr };
     unsigned endpoint_count_ { 0 };
     std::atomic<unsigned> num_connections_ { 0 };
-    calin::io::zmq_inproc::ZMQPusher* downstream_master_;
-    calin::io::zmq_inproc::ZMQPuller* upstream_master_;
+    calin::io::zmq_inproc::ZMQPusher* downstream_principal_;
+    calin::io::zmq_inproc::ZMQPuller* upstream_principal_;
     calin::io::zmq_inproc::ZMQPuller* new_downstream_puller();
     calin::io::zmq_inproc::ZMQPusher* new_upstream_pusher();
     std::string upstream_endpoint() const;
