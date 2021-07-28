@@ -27,9 +27,9 @@ import calin.diagnostics.stage1_analysis
 import calin.iact_data.instrument_layout
 
 def draw_channel_event_fraction(stage1, channel_count, cb_label=None, log_scale=True,
-        cmap = 'CMRmap_r', axis = None,
+        lin_scale_suppress_zero=False, cmap = 'CMRmap_r', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
-        stat_label_fontsize=4.75):
+        stat_label_fontsize=4.75, stat_format='%.3e'):
     rc = stage1.const_run_config()
     cl = rc.const_camera_layout()
     ri = stage1.const_run_info()
@@ -46,7 +46,8 @@ def draw_channel_event_fraction(stage1, channel_count, cb_label=None, log_scale=
         configured_channels=rc.configured_channel_id(), cmap=cmap,
         draw_outline=draw_outline, pix_lw=pix_lw,
         outline_lw=outline_lw, outline_color=outline_color,
-        axis=axis, hatch_missing_channels=True)
+        axis=axis, hatch_missing_channels=True, draw_stats=True,
+        stats_format=stat_format, stats_fontsize=stat_label_fontsize)
 
     if(log_scale):
         vmin = 1/evts_ondisk**1.1
@@ -54,13 +55,16 @@ def draw_channel_event_fraction(stage1, channel_count, cb_label=None, log_scale=
 
         pc.set_norm(matplotlib.colors.LogNorm(vmin=vmin,vmax=1.0))
         axis.axis(numpy.asarray([-1,1,-1,1])*1.05*max_xy)
-        axis.get_xaxis().set_visible(False)
-        axis.get_yaxis().set_visible(False)
 
         cb = axis.get_figure().colorbar(pc, ax=axis, label=cb_label)
         cb.ax.plot([-max_xy, max_xy], [1.0/evts_ondisk, 1.0/evts_ondisk], 'g-', lw=0.75)
     else:
+        if(not lin_scale_suppress_zero):
+            pc.set_clim(0,pc.get_clim()[1])
         cb = axis.get_figure().colorbar(pc, ax=axis, label=cb_label)
+
+    axis.get_xaxis().set_visible(False)
+    axis.get_yaxis().set_visible(False)
 
     return pc
 
@@ -664,7 +668,7 @@ def draw_low_gain_channel_event_fraction(stage1, cmap = 'inferno', axis = None,
 def draw_trigger_event_fraction(stage1, cmap = 'inferno', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         stat_label_fontsize=4.75):
-    channel_count = stage1.const_channel_stats().channel_triggered_count()
+    channel_count = stage1.const_charge_stats().channel_triggered_count()
     return draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
         log_scale=False, cmap=cmap, axis=axis,
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
