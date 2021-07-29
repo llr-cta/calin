@@ -408,6 +408,9 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
   hp = camera_hists_->num_contiguous_channel_triggered_hist->dump_as_proto();
   partials_.mutable_camera()->mutable_num_contiguous_channel_triggered_hist()->IntegrateFrom(*hp);
 
+  hp = camera_hists_->phys_trig_num_channel_triggered_hist->dump_as_proto();
+  partials_.mutable_camera()->mutable_phys_trig_num_channel_triggered_hist()->IntegrateFrom(*hp);
+
   hp = camera_hists_->phys_trig_num_contiguous_channel_triggered_hist->dump_as_proto();
   partials_.mutable_camera()->mutable_phys_trig_num_contiguous_channel_triggered_hist()->IntegrateFrom(*hp);
 
@@ -432,6 +435,8 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
     partials_.camera().num_channel_triggered_hist());
   results_.mutable_num_contiguous_channel_triggered_hist()->IntegrateFrom(
     partials_.camera().num_contiguous_channel_triggered_hist());
+  results_.mutable_phy_trigger_num_channel_triggered_hist()->IntegrateFrom(
+    partials_.camera().phys_trig_num_channel_triggered_hist());
   results_.mutable_phy_trigger_num_contiguous_channel_triggered_hist()->IntegrateFrom(
     partials_.camera().phys_trig_num_contiguous_channel_triggered_hist());
 
@@ -620,6 +625,7 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
     }
     camera_hists_->num_contiguous_channel_triggered_hist->insert(num_contiguous_channel_triggered);
     if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
+      camera_hists_->phys_trig_num_channel_triggered_hist->insert(event->trigger_map().hit_channel_id_size());
       camera_hists_->phys_trig_num_contiguous_channel_triggered_hist->insert(num_contiguous_channel_triggered);
       if(num_contiguous_channel_triggered < config_.nearest_neighbor_nchannel_threshold()) {
         for(auto ichan : event->trigger_map().hit_channel_id()) {

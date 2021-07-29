@@ -124,12 +124,14 @@ private:
       low_gain(has_dual_gain_ ? new SingleGainChannelHists(time_resolution, time_max) : nullptr),
       num_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0)),
       num_contiguous_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0)),
+      phys_trig_num_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0)),
       phys_trig_num_contiguous_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0))
     { /* nothing to see here */ }
 
     ~CameraHists() {
       delete num_channel_triggered_hist;
       delete num_contiguous_channel_triggered_hist;
+      delete phys_trig_num_channel_triggered_hist;
       delete phys_trig_num_contiguous_channel_triggered_hist;
       delete high_gain;
       delete low_gain;
@@ -140,6 +142,7 @@ private:
 
     calin::math::histogram::Histogram1D* num_channel_triggered_hist = nullptr;
     calin::math::histogram::Histogram1D* num_contiguous_channel_triggered_hist = nullptr;
+    calin::math::histogram::Histogram1D* phys_trig_num_channel_triggered_hist = nullptr;
     calin::math::histogram::Histogram1D* phys_trig_num_contiguous_channel_triggered_hist = nullptr;
   };
 
