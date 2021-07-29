@@ -364,5 +364,39 @@ for oid in all_oid:
         ax6.set_title('HVPA board current spread, run : %d'%runno)
         upload_figure(runno, 'hvpa_board_current_spread', ax6.figure)
 
+    ############################################################################
+    # FIGURE : L0 trigger frequency
+    ############################################################################
+
+    if(stage1.const_charge_stats().channel_triggered_count_size()>0):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_trigger_event_fraction(stage1, axis=ax)
+        ax.set_title('L0 trigger bit frequency, run : %d'%runno)
+        upload_figure(runno, 'trigger_l0_bit_frequency', ax.figure)
+
+    if(stage1.const_charge_stats().phy_trigger_few_neighbor_channel_triggered_count_size()>0):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_nn_failed_phy_trigger_event_fraction(stage1, axis=ax)
+        ax.set_title('L0 trigger bit in sub-3NN events, run : %d'%runno)
+        upload_figure(runno, 'trigger_sub_3nn_l0_bit_frequency', ax.figure)
+
+    if(stage1.const_charge_stats().const_num_channel_triggered_hist().sum_w()):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax)
+        ax.set_title('L0 trigger bit histogram (all events), run : %d'%runno)
+        upload_figure(runno, 'trigger_l0_bit_count', ax.figure)
+
+    if(stage1.const_charge_stats().const_phy_trigger_num_channel_triggered_hist().sum_w()):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax,
+            phys_trigger=True)
+        ax.set_title('L0 trigger bit histogram (physics events), run : %d'%runno)
+        upload_figure(runno, 'trigger_l0_bit_count_phys', ax.figure)
+
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax,
+            phys_trigger=True,zoom=True)
+        ax.set_title('L0 trigger bit histogram (physics events), run : %d'%runno)
+        upload_figure(runno, 'trigger_l0_bit_count_phys_zoom', ax.figure)
 
 # The end
