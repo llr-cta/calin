@@ -62,6 +62,9 @@ def draw_channel_event_fraction(stage1, channel_count, cb_label=None, log_scale=
         if(not lin_scale_suppress_zero):
             pc.set_clim(0,pc.get_clim()[1])
         cb = axis.get_figure().colorbar(pc, ax=axis, label=cb_label)
+        cb.formatter.set_powerlimits((-2, 2))
+        cb.formatter.set_useMathText(True)
+        cb.update_ticks()
 
     axis.get_xaxis().set_visible(False)
     axis.get_yaxis().set_visible(False)
@@ -673,3 +676,33 @@ def draw_trigger_event_fraction(stage1, cmap = 'inferno', axis = None,
         log_scale=False, cmap=cmap, axis=axis,
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         stat_label_fontsize=stat_label_fontsize)
+
+def draw_nn_failed_phy_trigger_event_fraction(stage1, cmap = 'CMRmap_r', axis = None,
+        draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        stat_label_fontsize=4.75):
+    channel_count = stage1.const_charge_stats().phy_trigger_few_neighbor_channel_triggered_count()
+    return draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
+        log_scale=False, cmap=cmap, axis=axis,
+        draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
+        stat_label_fontsize=stat_label_fontsize)
+
+def draw_num_channel_triggered_hist(stage1, axis = None, phys_trigger = False, zoom = False):
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+    mult_hist = stage1.const_charge_stats().const_phy_trigger_num_channel_triggered_hist() \
+        if phys_trigger else stage1.const_charge_stats().const_num_channel_triggered_hist()
+    nn_hist = stage1.const_charge_stats().const_phy_trigger_num_contiguous_channel_triggered_hist() \
+        if phys_trigger else stage1.const_charge_stats().const_num_contiguous_channel_triggered_hist()
+    calin.plotting.plot_histogram(mult_hist, hatch='/', color='C0', lw=2, label='Multiplicity',
+         histtype='step', axis=axis, normalise=True)
+    calin.plotting.plot_histogram(nn_hist, hatch='\\\\', color='C1', lw=1, label='Neighbours',
+         histtype='step', axis=axis, normalise=True)
+    if(zoom):
+        axis.set_xlim(-0.5,9.5)
+        axis.set_xticks(numpy.arange(0,10))
+    else:
+        axis.set_xlim(0.25,stage1.run_config().configured_channel_index_size())
+        axis.set_xscale('log')
+    axis.set_yscale('log')
+    axis.legend()
+    axis.set_xlabel('Number of channels')
+    axis.set_ylabel('Probability')
