@@ -385,25 +385,24 @@ def plot_histogram(h, density = False, normalise = False,
     if(xscale_as_log10):
         hx = 10**hx
     axis = axis or matplotlib.pyplot.gca()
-    if(histtype=='step' or histtype=='steps'):
-        so = axis.step(hx,hy, *args, where='post', **nargs)
-        if(draw_poisson_errors):
-            so1 = axis.vlines(0.5*(hx[:-1]+hx[1:]), hy[:-1]-hdy, hy[:-1]+hdy)
-            so1.set_linestyles(so[0].get_linestyle())
-            so1.set_color(so[0].get_color() if ecolor is None else ecolor)
-            so1.set_linewidth(so[0].get_linewidth())
-            so1.set_zorder(so[0].get_zorder())
-            so = [ *so, so1 ]
-    elif(histtype=='bar' or histtype=='bars'):
-        yerr = None
-        if(draw_poisson_errors):
-            yerr = hdy
-        so = axis.bar(hx[:-1], hy[:-1], *args, width=hx[1:]-hx[:-1], align='edge',
-            yerr=yerr, ecolor='black' if ecolor is None else ecolor, **nargs)
-    else:
-        raise Exception('Unknown histogram plotting type: '+histtype)
+
+    histtype='step' if histtype=='steps' else histtype
+    histtype='stepfilled' if histtype=='stepsfilled' else histtype
+    histtype='bar' if histtype=='bars' else histtype
+
+    _, _, so = axis.hist(hx[:-1],hx,weights=hy[:-1],histtype=histtype,**nargs)
+
+    if(draw_poisson_errors):
+        so1 = axis.vlines(0.5*(hx[:-1]+hx[1:]), hy[:-1]-hdy, hy[:-1]+hdy)
+        so1.set_linestyles(so[0].get_linestyle())
+        so1.set_color(so[0].get_color() if ecolor is None else ecolor)
+        so1.set_linewidth(so[0].get_linewidth())
+        so1.set_zorder(so[0].get_zorder())
+        so = [ *so, so1 ]
+
     if(xscale_as_log10):
-        so[0].axes.set_xscale('log')
+        axis.set_xscale('log')
+
     return so
 
 def plot_histogram_cumulative(h, plot_as_cdf = False, plot_as_cmf = False,
