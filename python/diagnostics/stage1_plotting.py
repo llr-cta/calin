@@ -71,18 +71,18 @@ def draw_channel_event_fraction(stage1, channel_count, cb_label=None, log_scale=
 
     return pc
 
-def draw_log_delta_t_histogram(stage1, event_set = 'all',axis = None):
+def draw_log_delta_t_histogram(stage1, event_set = 'all', axis = None):
     if(axis is None):
         axis = matplotlib.pyplot.gca()
 
-    if(event_set is str):
-        event_set = list(event_set)
+    if(type(event_set) is str):
+        event_set = [event_set]
 
     ri = stage1.const_run_info()
     for set in event_set:
         if(set == 'physics'):
             dt_h = ri.const_log10_delta_t_histogram_trigger_physics()
-            dt2_h = ri.const_log10_delta_t_histogram_trigger_physics()
+            dt2_h = ri.const_log10_delta2_t_histogram_trigger_physics()
         elif(set == 'consecutive'):
             dt_h = ri.const_log10_delta_t_histogram()
             dt2_h = ri.const_log10_delta2_t_histogram()
@@ -99,7 +99,7 @@ def draw_log_delta_t_histogram(stage1, event_set = 'all',axis = None):
     axis.set_yscale('log')
     axis.set_xlabel('Time difference [us]')
     axis.set_ylabel('Density [1]')
-    axis.legend(loc=8)
+    axis.legend()
     axis.grid()
 
     dt_sh = calin.math.histogram.SimpleHist(dt_h)
