@@ -30,45 +30,11 @@ import calin.provenance.chronicle
 import calin.provenance.anthology
 import calin.diagnostics.stage1_plotting
 import calin.iact_data.nectarcam_layout
+import calin.io.uploader
 
 import matplotlib
 import matplotlib.figure
 import matplotlib.backends.backend_agg
-import io
-import os
-
-class FilesystemUploader:
-    def __init__(self, root_directory):
-        self.root_directory = os.path.normpath(os.path.expanduser(root_directory)) if root_directory else '.'
-        if(not os.path.isdir(self.root_directory)):
-            raise RuntimeError('Base path os not directory : '+self.root_directory)
-
-    def make_path(self, rel_path):
-        if(not rel_path):
-            return ''
-        rel_path = os.path.normpath(rel_path)
-        abs_path = os.path.normpath(os.path.join(self.root_directory, rel_path))
-        if((self.root_directory == '.' and (abs_path.startswith('../') or abs_path.startswith('/')))
-                or (self.root_directory != '.' and not abs_path.startswith(self.root_directory))):
-            raise RuntimeError('Cannot make path outside of base : '+rel_path)
-        if(not os.path.isdir(abs_path)):
-            (head, tail) = os.path.split(rel_path)
-            self.make_path(head)
-            # print("mkdir",abs_path)
-            os.mkdir(abs_path)
-        return abs_path
-
-    def upload_from_io(self, rel_filepath, iostream):
-        (rel_path, filename) = os.path.split(rel_filepath)
-        abs_path = os.path.join(self.make_path(rel_path), filename)
-        mode = 'wb' if iostream is io.StringIO else 'w'
-        with open(abs_path, mode) as f:
-            f.write(iostream.getvalue())
-
-    def upload_png_from_figure(self, rel_filepath, figure):
-        (rel_path, filename) = os.path.split(rel_filepath)
-        abs_path = os.path.join(self.make_path(rel_path), filename)
-        matplotlib.backends.backend_agg.FigureCanvasAgg(figure).print_png(abs_path)
 
 def cast_to_nectarcam_61_camera(stage1):
     if(stage1.const_run_config().configured_module_id_size() != 61):
@@ -161,7 +127,7 @@ sql_mode = calin.io.sql_serializer.SQLite3Serializer.READ_ONLY
 sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
 
 # Uploader
-uploader = FilesystemUploader(opt.base_directory())
+uploader = calin.io.uploader.FilesystemUploader(opt.base_directory())
 
 sql_where = ''
 if(opt.run_number() > 0):
