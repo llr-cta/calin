@@ -17,6 +17,7 @@
 
 import io
 import os
+import os.path
 
 import matplotlib
 import matplotlib.figure
@@ -77,8 +78,8 @@ class GoogleDriveUploader(Uploader):
     def __init__(self, token_file, root_folder_id, credentials_file = None):
         self.scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
         self.root_folder_id = root_folder_id
-        self.token_file = token_file
-        self.credentials_file = credentials_file
+        self.token_file = os.path.expanduser(token_file)
+        self.credentials_file = os.path.expanduser(credentials_file)
         self.creds = None
         self.directory = {}
         self.auth()
