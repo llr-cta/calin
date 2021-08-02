@@ -126,9 +126,6 @@ sql_file = opt.db();
 sql_mode = calin.io.sql_serializer.SQLite3Serializer.READ_ONLY
 sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
 
-# Uploader
-uploader = calin.io.uploader.FilesystemUploader(opt.base_directory())
-
 sql_where = ''
 if(opt.run_number() > 0):
     sql_where = 'WHERE run_number=%d'%opt.run_number()
@@ -149,6 +146,12 @@ else:
 figure_dpi = max(opt.figure_dpi(), 60)
 
 for oid in all_oid:
+    if(opt.upload_to_google_drive()):
+        uploader = calin.io.uploader.GoogleDriveUploader(opt.google().token_file(),
+            opt.google().base_directory(), opt.google().credentials_file())
+    else:
+        uploader = calin.io.uploader.FilesystemUploader(opt.base_directory())
+
     stage1 = calin.ix.diagnostics.stage1.Stage1()
     sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
     runno = stage1.run_number()
