@@ -31,14 +31,26 @@ import googleapiclient.discovery
 import google.auth.transport.requests
 
 class Uploader:
-    def __init__(self):
+    def __init__(self, loud=False):
+        self.loud = loud
         pass
 
-    def upload_from_io(self, rel_filepath, mime_type, iostream):
-        raise RuntimeError('upload_from_io: unimplemented in base class')
+    def do_single_upload_from_io(self, rel_filepaths, mime_type, iostream):
+        raise RuntimeError('do_single_upload_from_io: unimplemented in base class')
 
-    def upload_png_from_figure(self, rel_filepath, figure):
-        raise RuntimeError('upload_png_from_figure: unimplemented in base class')
+    def upload_from_io(self, rel_filepaths, mime_type, iostream):
+        if(type(rel_filepaths) is not list):
+            rel_filepaths = [ rel_filepaths ]
+        for rel_filepath in rel_filepaths:
+            if(self.loud):
+                print("Uploading:",rel_filepath)
+            self.do_single_upload_from_io(rel_filepath, mime_type, iostream)
+
+    def upload_png_from_figure(self, rel_filepaths, figure):
+        canvas = matplotlib.backends.backend_agg.FigureCanvas(figure)
+        output = io.BytesIO()
+        canvas.print_png(output)
+        return self.upload_from_io(rel_filepaths, 'image/png', output)
 
 
 class FilesystemUploader(Uploader):
@@ -62,17 +74,12 @@ class FilesystemUploader(Uploader):
             os.mkdir(abs_path)
         return abs_path
 
-    def upload_from_io(self, rel_filepath, mime_type, iostream):
+    def do_single_upload_from_io(self, rel_filepath, mime_type, iostream):
         (rel_path, filename) = os.path.split(rel_filepath)
         abs_path = os.path.join(self.make_path(rel_path), filename)
         mode = 'wb' if iostream is io.StringIO else 'w'
         with open(abs_path, mode) as f:
             f.write(iostream.getvalue())
-
-    def upload_png_from_figure(self, rel_filepath, figure):
-        (rel_path, filename) = os.path.split(rel_filepath)
-        abs_path = os.path.join(self.make_path(rel_path), filename)
-        matplotlib.backends.backend_agg.FigureCanvasAgg(figure).print_png(abs_path)
 
 class GoogleDriveUploader(Uploader):
     def __init__(self, token_file, root_folder_id, credentials_file = None):
@@ -124,7 +131,7 @@ class GoogleDriveUploader(Uploader):
             response = self.drive_service.files().list(\
                 spaces='drive',
                 fields='files(id, name)',
-                q="name='%s' and '%s' in parents and mimeType='application/vnd.google-apps.folder'"%(tail,parent)).execute()
+                q="name='%s' and '%s' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'"%(tail,parent)).execute()
             files = response.get('files', [])
             if(files):
                 self.directory[rel_path] = files[0].get('id')
@@ -138,13 +145,13 @@ class GoogleDriveUploader(Uploader):
                 self.directory[rel_path] = response.get('id')
         return self.directory[rel_path]
 
-    def upload_from_io(self, rel_filepath, mime_type, iostream):
+    def do_single_upload_from_io(self, rel_filepath, mime_type, iostream):
         (rel_path, filename) = os.path.split(rel_filepath)
         parent = self.make_path(rel_path)
         response = self.drive_service.files().list(\
             spaces='drive',
             fields='files(id, name)',
-            q="name='%s' and '%s' in parents"%(filename,parent)).execute()
+            q="name='%s' and '%s' in parents and trashed=false"%(filename,parent)).execute()
         files = response.get('files', [])
         media = googleapiclient.http.MediaIoBaseUpload(iostream, mimetype=mime_type)
         if(files):
@@ -166,9 +173,3 @@ class GoogleDriveUploader(Uploader):
                 media_body=media,
                 fields='id').execute()
         return response.get('id')
-
-    def upload_png_from_figure(self, rel_filepath, figure):
-        canvas = matplotlib.backends.backend_agg.FigureCanvas(figure)
-        output = io.BytesIO()
-        canvas.print_png(output)
-        return self.upload_from_io(rel_filepath, 'image/png', output)

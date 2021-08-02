@@ -162,10 +162,10 @@ for oid in all_oid:
 
     def upload_figure(runno, quantity, f):
         runbatchpath = 'runs%d-%d'%(int(runno/1000)*1000, (int(runno/1000)+1)*1000)
-        uploader.upload_png_from_figure(
-            'by run/%s/run%d/run%d_%s.png'%(runbatchpath, runno, runno, quantity), f)
-        uploader.upload_png_from_figure(
-            'by quantity/%s/%s/run%d_%s.png'%(quantity, runbatchpath, runno, quantity), f)
+        filenames = [ \
+            'by run/%s/run%d/run%d_%s.png'%(runbatchpath, runno, runno, quantity),
+            'by quantity/%s/%s/run%d_%s.png'%(quantity, runbatchpath, runno, quantity) ]
+        uploader.upload_png_from_figure(filenames, f)
 
     ############################################################################
     # FIGURE : Missing components
