@@ -106,20 +106,20 @@ def summarize_module_clock_regression(stage1, iclock=0):
             all_d2[ikey] = bin.d2()
             all_n[ikey] = bin.num_entries()
 
-        # all_y_at_0 = (numpy.remainder(all_x0,1000000000) - all_y0) + all_y0*(all_a-1) - all_b/all_a
-        all_y_at_0 = numpy.remainder(all_x0,1000000000) - all_y0/all_a - all_b/all_a
-
-        mask_oob_intercept = numpy.bitwise_or(all_y_at_0>250, all_y_at_0<40)
-        mask_oob_residual = numpy.sqrt(all_d2) > 100*numpy.sqrt(all_n)
         mask_n = all_n>5
 
-        mask = numpy.bitwise_and(numpy.bitwise_or(mask_oob_intercept, mask_oob_residual), mask_n)
+        # all_x_at_0 = (numpy.remainder(all_x0,1000000000) - all_y0) + all_y0*(1-1/all_a) - all_b/all_a
+        all_x_at_0 = numpy.remainder(all_x0[mask_n],1000000000) - all_y0[mask_n]/all_a[mask_n] - all_b[mask_n]/all_a[mask_n]
+
+        mask_oob_intercept = numpy.bitwise_or(all_x_at_0>250, all_x_at_0<40)
+        mask_oob_residual = numpy.sqrt(all_d2[mask_n]) > 100*numpy.sqrt(all_n[mask_n])
+        mask_oob = numpy.bitwise_or(mask_oob_intercept, mask_oob_residual)
 
         mod_freq_offset_ppm[imod] = 1e6*(numpy.mean(all_a[mask_n])-1) if numpy.count_nonzero(mask_n) else numpy.nan
         mod_freq_spread_ppm[imod] = 1e6*(numpy.max(all_a[mask_n])-numpy.min(all_a[mask_n])) if numpy.count_nonzero(mask_n) else numpy.nan
-        mod_time_offset_ns[imod] = numpy.mean(all_y_at_0[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
-        mod_time_spread_ns[imod] = (numpy.max(all_y_at_0[mask_n])-numpy.min(all_y_at_0[mask_n])) if numpy.count_nonzero(mask_n) else numpy.nan
+        mod_time_offset_ns[imod] = numpy.mean(all_x_at_0) if numpy.count_nonzero(mask_n) else numpy.nan
+        mod_time_spread_ns[imod] = (numpy.max(all_x_at_0)-numpy.min(all_x_at_0)) if numpy.count_nonzero(mask_n) else numpy.nan
         mod_d2_per_event[imod] = numpy.mean(all_d2[mask_n]/all_n[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
-        mod_problem_bins[imod] = numpy.count_nonzero(mask)
+        mod_problem_bins[imod] = numpy.count_nonzero(mask_oob)
 
     return mod_freq_offset_ppm, mod_freq_spread_ppm, mod_time_offset_ns, mod_time_spread_ns, mod_d2_per_event, mod_problem_bins
