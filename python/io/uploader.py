@@ -19,6 +19,7 @@ import io
 import os
 import os.path
 import time
+import fcntl
 
 import matplotlib
 import matplotlib.figure
@@ -107,30 +108,35 @@ class GoogleDriveUploader(Uploader):
         super().__init__(overwrite=overwrite,loud=loud)
 
     def auth(self):
-        # The file token.pickle stores the user's access and refresh tokens, and is
-        # created automatically when the authorization flow completes for the first
-        # time.
-        if os.path.exists(self.token_file):
-            with open(self.token_file, 'rb') as token:
-                self.creds = pickle.load(token)
+        with open(self.token_file+".lock",'ab') as lockfile:
+            fcntl.lockf(lockfile, fcntl.LOCK_EX)
 
-        # If there are no (valid) credentials available, let the user log in.
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(google.auth.transport.requests.Request())
-            elif self.credentials_file and os.path.exists(self.credentials_file):
-                flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-                    self.credentials_file, self.scopes)
-                creds = flow.run_local_server(port=0)
-            else:
-                # flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-                #     'credentials.json', SCOPES)
-                # creds = flow.run_local_server(port=0)
-                raise RuntimeError('GoogleDriveUploader: could not find valid access token')
+            # The file token.pickle stores the user's access and refresh tokens, and is
+            # created automatically when the authorization flow completes for the first
+            # time.
+            if os.path.exists(self.token_file):
+                with open(self.token_file, 'rb') as token:
+                    self.creds = pickle.load(token)
 
-            # Save the credentials for the next run
-            with open(self.token_file, 'wb') as token:
-                pickle.dump(self.creds, token)
+            # If there are no (valid) credentials available, let the user log in.
+            if not self.creds or not self.creds.valid:
+                if self.creds and self.creds.expired and self.creds.refresh_token:
+                    self.creds.refresh(google.auth.transport.requests.Request())
+                elif self.credentials_file and os.path.exists(self.credentials_file):
+                    flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+                        self.credentials_file, self.scopes)
+                    creds = flow.run_local_server(port=0)
+                else:
+                    # flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+                    #     'credentials.json', SCOPES)
+                    # creds = flow.run_local_server(port=0)
+                    raise RuntimeError('GoogleDriveUploader: could not find valid access token')
+
+                # Save the credentials for the next run
+                with open(self.token_file, 'wb') as token:
+                    pickle.dump(self.creds, token)
+
+            fcntl.lockf(lockfile, fcntl.LOCK_UN)
 
         self.drive_service = googleapiclient.discovery.build('drive', 'v3', credentials=self.creds)
 
