@@ -20,6 +20,7 @@
 import sys
 import traceback
 import numpy
+import concurrent.futures
 
 import calin.io.sql_serializer
 import calin.util.log
@@ -122,31 +123,37 @@ if(len(opt_proc.problem_options()) != 0):
         print("  \"%s\""%o)
     exit(1)
 
-# Open SQL file
 sql_file = opt.db();
 sql_mode = calin.io.sql_serializer.SQLite3Serializer.READ_ONLY
-sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
-
-sql_where = ''
-if(opt.run_number() > 0):
-    sql_where = 'WHERE run_number=%d'%opt.run_number()
-elif(opt.from_run_number() > 0 and opt.to_run_number() > 0):
-    sql_where = 'WHERE run_number>=%d AND run_number<=%d'%(
-        opt.from_run_number(), opt.to_run_number())
-elif(opt.from_run_number() > 0):
-    sql_where = 'WHERE run_number>=%d'%opt.from_run_number()
-elif(opt.to_run_number() > 0):
-    sql_where = 'WHERE run_number<=%d'%opt.to_run_number()
-
-if(sql_where):
-    all_oid = sql.select_oids_by_sql(opt.db_stage1_table_name(), sql_where)
-else:
-    all_oid = sql.select_all_oids(opt.db_stage1_table_name())
-
 
 figure_dpi = max(opt.figure_dpi(), 60)
 
-for oid in all_oid:
+def get_oids():
+    # Open SQL file
+    sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
+
+    sql_where = ''
+    if(opt.run_number() > 0):
+        sql_where = 'WHERE run_number=%d'%opt.run_number()
+    elif(opt.from_run_number() > 0 and opt.to_run_number() > 0):
+        sql_where = 'WHERE run_number>=%d AND run_number<=%d'%(
+            opt.from_run_number(), opt.to_run_number())
+    elif(opt.from_run_number() > 0):
+        sql_where = 'WHERE run_number>=%d'%opt.from_run_number()
+    elif(opt.to_run_number() > 0):
+        sql_where = 'WHERE run_number<=%d'%opt.to_run_number()
+
+    if(sql_where):
+        all_oid = sql.select_oids_by_sql(opt.db_stage1_table_name(), sql_where)
+    else:
+        all_oid = sql.select_all_oids(opt.db_stage1_table_name())
+
+    return all_oid
+
+def render_oid(oid):
+    # Open SQL file
+    sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
+
     if(opt.upload_to_google_drive()):
         uploader = calin.io.uploader.GoogleDriveUploader(opt.google().token_file(),
             opt.google().base_directory(), opt.google().credentials_file(),
@@ -370,5 +377,34 @@ for oid in all_oid:
             phys_trigger=True,zoom=True)
         ax.set_title('L0 trigger bit histogram (physics events), run : %d'%runno)
         upload_figure(runno, 'trigger_l0_bit_count_phys_zoom', ax.figure)
+
+    return True
+
+all_oid = get_oids()
+all_status = []
+
+if(opt.nthread()>1):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=opt.nthread()) as executor:
+        results = executor.map(render_oid, all_oid)
+        for status in results:
+            try:
+                if(status):
+                    all_status.append(True)
+            except:
+                all_status.append(False)
+else:
+    for oid in all_oid:
+        try:
+            render_oid(oid)
+            all_status.append(True)
+        except:
+            all_status.append(False)
+
+print("=================================== RESULTS ===================================")
+sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
+for oid_status in zip(all_oid, all_status):
+    stage1pod = calin.ix.diagnostics.stage1.Stage1POD()
+    sql.retrieve_by_oid(opt.db_stage1_table_name(), oid_status[0], stage1pod)
+    print(stage1pod.run_number(), "success" if oid_status[1] else "*** FAILED ***")
 
 # The end

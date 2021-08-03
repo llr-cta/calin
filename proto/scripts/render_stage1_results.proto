@@ -55,6 +55,8 @@ message CommandLineOptions {
   bool loud_upload                                         = 10;
   bool overwrite                                           = 11;
 
+  uint32 nthread                                           = 12;
+
   uint32 figure_dpi                                        = 30;
 
   bool force_nectarcam_61_camera                           = 100;
