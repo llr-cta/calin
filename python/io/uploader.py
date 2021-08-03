@@ -199,7 +199,8 @@ class GoogleDriveUploader(Uploader):
             return response.get('id')
 
     def upload_from_io(self, rel_filepaths, mime_type, iostream):
-        ordinal=["first", "second", "third", "fourth", "fifth", "sixth"]
+        ordinal=["first", "second", "third", "fourth", "fifth", "sixth", "seventh",
+            "eigth","ninth","tenth"]
         if(type(rel_filepaths) is not list):
             rel_filepaths = [ rel_filepaths ]
         for rel_filepath in rel_filepaths:
@@ -211,8 +212,11 @@ class GoogleDriveUploader(Uploader):
                     uploaded = True
                 except googleapiclient.errors.HttpError:
                     if(ntry<5):
-                        print("Upload failed on %s attempt, trying again"%ordinal[ntry], file=sys.stderr)
-                        time.sleep(2**ntry)
+                        if(ntry<len(ordinal)):
+                            print("Upload failed on %s attempt, trying again"%ordinal[ntry], file=sys.stderr)
+                        else:
+                            print("Upload failed on attempt %d, trying again"%ntry, file=sys.stderr)
+                        time.sleep(min(2**ntry,100))
                         ntry += 1
                     else:
                         print("Upload failed on final attempt", file=sys.stderr)
