@@ -61,7 +61,9 @@
 %newobject calin::io::sql_serializer::SQLSerializer::
   count_entries_in_tree(const std::string& table_name, const google::protobuf::Descriptor* d);
 
+%thread;
 /* %include "io/sql_statement.hpp" */
 %include "io/sql_serializer.hpp"
 /* %include "io/sqlite3_statement.hpp" */
 %include "io/sqlite3_serializer.hpp"
+%nothread;
