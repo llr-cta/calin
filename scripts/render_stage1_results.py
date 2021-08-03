@@ -94,6 +94,7 @@ opt.set_db_stage1_table_name('stage1')
 opt.set_base_directory('.')
 opt.set_summary_csv('stage1_summary.csv')
 opt.set_figure_dpi(200)
+opt.set_overwrite(True)
 
 opt_proc = calin.util.options_processor.OptionsProcessor(opt, True);
 opt_proc.process_arguments(sys.argv)
@@ -148,9 +149,11 @@ figure_dpi = max(opt.figure_dpi(), 60)
 for oid in all_oid:
     if(opt.upload_to_google_drive()):
         uploader = calin.io.uploader.GoogleDriveUploader(opt.google().token_file(),
-            opt.google().base_directory(), opt.google().credentials_file())
+            opt.google().base_directory(), opt.google().credentials_file(),
+            overwrite=opt.overwrite(), loud=opt.loud_upload())
     else:
-        uploader = calin.io.uploader.FilesystemUploader(opt.base_directory())
+        uploader = calin.io.uploader.FilesystemUploader(opt.base_directory(),
+            overwrite=opt.overwrite(), loud=opt.loud_upload())
 
     stage1 = calin.ix.diagnostics.stage1.Stage1()
     sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
