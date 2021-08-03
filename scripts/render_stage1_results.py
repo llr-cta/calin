@@ -154,6 +154,11 @@ def render_oid(oid):
     # Open SQL file
     sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
 
+    stage1 = calin.ix.diagnostics.stage1.Stage1()
+    sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
+    runno = stage1.run_number()
+    print('Run :', runno)
+
     if(opt.upload_to_google_drive()):
         uploader = calin.io.uploader.GoogleDriveUploader(opt.google().token_file(),
             opt.google().base_directory(), opt.google().credentials_file(),
@@ -161,11 +166,6 @@ def render_oid(oid):
     else:
         uploader = calin.io.uploader.FilesystemUploader(opt.base_directory(),
             overwrite=opt.overwrite(), loud=opt.loud_upload())
-
-    stage1 = calin.ix.diagnostics.stage1.Stage1()
-    sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
-    runno = stage1.run_number()
-    print('Run :', runno)
 
     if(opt.force_nectarcam_61_camera()):
         cast_to_nectarcam_61_camera(stage1)
@@ -384,7 +384,7 @@ all_oid = get_oids()
 all_status = []
 
 if(opt.nthread()>1):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=opt.nthread()) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=opt.nthread()) as executor:
         results = executor.map(render_oid, all_oid)
         for status in results:
             try:
