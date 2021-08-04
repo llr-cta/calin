@@ -378,6 +378,8 @@ visit_track(const calin::simulation::tracker::Track& track, bool& kill_track)
     track.e0<subshower_energy_mev_)
   {
     Event subshower_event;
+    subshower_event.event_id = subshowers_.size();
+    subshower_event.pdg_type = track.pdg_type;
     subshower_event.type = track.type;
     subshower_event.x0 = track.x0;
     subshower_event.u0 = track.u0;
