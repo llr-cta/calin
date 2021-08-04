@@ -788,24 +788,30 @@ def draw_mean_wf_deviation_from_camera_mean(stage1, dataset='pedestal',
     else:
         cwf -= numpy.mean(pedestals)
 
+    mask = numpy.zeros(mwf.channel_high_gain_size(),dtype=bool)
     chi2 = numpy.zeros(mwf.channel_high_gain_size())
     for ichan in range(mwf.channel_high_gain_size()):
         if(low_gain):
-            wf = mwf.const_camera_low_gain(ichan).mean_waveform()
+            chan = mwf.const_camera_low_gain(ichan)
         else:
-            wf = mwf.const_channel_high_gain(ichan).mean_waveform()
-        if(pedestals is None):
-            wf -= numpy.mean(wf)
+            chan = mwf.const_channel_high_gain(ichan)
+        if(wf.num_entries()):
+            wf = chan.mean_waveform()
+            if(pedestals is None):
+                wf -= numpy.mean(wf)
+            else:
+                wf -= pedestals[ichan]
+            mask[ichan] = True
+            chi2[ichan] = sum((wf-cwf)**2)
         else:
-            wf -= pedestals[ichan]
-        chi2[ichan] = sum((wf-cwf)**2)
+            chi2[ichan] = numpy.nan
 
     rc = stage1.const_run_config()
     cl = rc.const_camera_layout()
 
     pc = calin.plotting.plot_camera_image(numpy.sqrt(chi2), cl,
-        configured_channels=rc.configured_channel_id(), cmap=cmap,
-        draw_outline=draw_outline, pix_lw=pix_lw,
+        configured_channels=rc.configured_channel_id(), channel_mask = mask,
+        cmap=cmap, draw_outline=draw_outline, pix_lw=pix_lw,
         outline_lw=outline_lw, outline_color=outline_color,
         axis=axis, hatch_missing_channels=True, draw_stats=True,
         stats_format=stat_format, stats_fontsize=stat_label_fontsize)
