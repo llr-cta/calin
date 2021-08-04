@@ -95,6 +95,7 @@ process_vcl_scope_trace_info(const SingleRayVCLScopeTraceInfo& trace_info)
   double q;
   switch(map_quantity_) {
   case MQ_WEIGHT_BY_FOCAL_PLANE_POSITION:
+  default:
     x = trace_info.fplane_x;
     y = trace_info.fplane_z;
     q = 1.0;
