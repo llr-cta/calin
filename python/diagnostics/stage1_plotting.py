@@ -342,7 +342,7 @@ def draw_channel_dataorder(stage1, cmap = 'inferno', axis=None,
 
     return pc
 
-def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, cmap = 'inferno', axis=None,
+def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, cmap = 'coolwarm', axis=None,
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, stat_label_fontsize=4.75):
     tfeb1 = []
@@ -653,20 +653,24 @@ def draw_nectarcam_fpm_measurements(stage1,
 def draw_high_gain_channel_event_fraction(stage1, cmap = 'inferno', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         stat_label_fontsize=4.75):
-    channel_count = stage1.const_channel_stats().const_high_gain().all_trigger_event_count()
-    return draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
+    channel_count = stage1.const_charge_stats().const_high_gain().all_trigger_event_count()
+    pc = draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
         log_scale=False, cmap=cmap, axis=axis,
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         stat_label_fontsize=stat_label_fontsize)
+    pc.set_clim([0,1])
+    return pc
 
 def draw_low_gain_channel_event_fraction(stage1, cmap = 'inferno', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         stat_label_fontsize=4.75):
-    channel_count = stage1.const_channel_stats().const_low_gain().all_trigger_event_count()
-    return draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
+    channel_count = stage1.const_charge_stats().const_low_gain().all_trigger_event_count()
+    pc = draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
         log_scale=False, cmap=cmap, axis=axis,
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         stat_label_fontsize=stat_label_fontsize)
+    pc.set_clim([0,1])
+    return pc
 
 def draw_trigger_event_fraction(stage1, cmap = 'inferno', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
@@ -706,3 +710,108 @@ def draw_num_channel_triggered_hist(stage1, axis = None, phys_trigger = False, z
     axis.legend()
     axis.set_xlabel('Number of channels')
     axis.set_ylabel('Probability')
+
+def draw_mean_wf(stage1, dataset='pedestal', low_gain = False, pedestals = None,
+        subtract_pedestal = False, axis = None):
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+
+    if(dataset == 'pedestal'):
+        mwf = stage1.const_mean_wf_pedestal()
+    elif(dataset == 'physics'):
+        mwf = stage1.const_mean_wf_physics()
+    elif(dataset == 'external_flasher'):
+        mwf = stage1.const_mean_wf_external_flasher()
+    elif(dataset == 'internal_flasher'):
+        mwf = stage1.const_mean_wf_internal_flasher()
+    else:
+        raise RuntimeError('Unknown data set : '+dataset)
+
+    has_label = False
+    for ichan in range(mwf.channel_high_gain_size()):
+        if(low_gain):
+            chan = mwf.const_channel_low_gain(ichan)
+        else:
+            chan = mwf.const_channel_high_gain(ichan)
+        if(chan.num_entries()):
+            wf = chan.mean_waveform()
+            if(subtract_pedestal):
+                if(pedestals is None):
+                    wf -= numpy.mean(wf)
+                else:
+                    wf -= pedestals[ichan]
+            if(has_label):
+                axis.plot(wf,'k',alpha=0.1)
+            else:
+                axis.plot(wf,'k',alpha=0.1,label='channel')
+                has_label = True
+    if(low_gain):
+        cam = mwf.const_camera_low_gain()
+    else:
+        cam = mwf.const_camera_high_gain()
+    if(cam.num_entries()):
+        wf = cam.mean_waveform()
+        if(subtract_pedestal):
+            if(pedestals is None):
+                wf -= numpy.mean(wf)
+            else:
+                wf -= numpy.mean(pedestals)
+        axis.plot(wf,'C1',label='Camera average')
+    axis.legend()
+    axis.grid()
+    axis.set_xlabel('Waveform sample number')
+    axis.set_ylabel('Mean waveform amplitude [DC]')
+
+def draw_mean_wf_deviation_from_camera_mean(stage1, dataset='pedestal',
+        pedestals = None, low_gain=False, axis = None, cmap = 'inferno',
+        draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        stat_label_fontsize=4.75, stat_format='%.2f DC'):
+
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+
+    if(dataset == 'pedestal'):
+        mwf = stage1.const_mean_wf_pedestal()
+    elif(dataset == 'physics'):
+        mwf = stage1.const_mean_wf_physics()
+    elif(dataset == 'external_flasher'):
+        mwf = stage1.const_mean_wf_external_flasher()
+    elif(dataset == 'internal_flasher'):
+        mwf = stage1.const_mean_wf_internal_flasher()
+    else:
+        raise RuntimeError('Unknown data set : '+dataset)
+
+    if(low_gain):
+        cwf = mwf.const_camera_low_gain().mean_waveform()
+    else:
+        cwf = mwf.const_camera_high_gain().mean_waveform()
+    if(pedestals is None):
+        cwf -= numpy.mean(cwf)
+    else:
+        cwf -= numpy.mean(pedestals)
+
+    chi2 = numpy.zeros(mwf.channel_high_gain_size())
+    for ichan in range(mwf.channel_high_gain_size()):
+        if(low_gain):
+            wf = mwf.const_camera_low_gain(ichan).mean_waveform()
+        else:
+            wf = mwf.const_channel_high_gain(ichan).mean_waveform()
+        if(pedestals is None):
+            wf -= numpy.mean(wf)
+        else:
+            wf -= pedestals[ichan]
+        chi2[ichan] = sum((wf-cwf)**2)
+
+    rc = stage1.const_run_config()
+    cl = rc.const_camera_layout()
+
+    pc = calin.plotting.plot_camera_image(numpy.sqrt(chi2), cl,
+        configured_channels=rc.configured_channel_id(), cmap=cmap,
+        draw_outline=draw_outline, pix_lw=pix_lw,
+        outline_lw=outline_lw, outline_color=outline_color,
+        axis=axis, hatch_missing_channels=True, draw_stats=True,
+        stats_format=stat_format, stats_fontsize=stat_label_fontsize)
+
+    cb = axis.get_figure().colorbar(pc, ax=axis, label='Waveform RMS from camera mean [DC]')
+    axis.get_xaxis().set_visible(False)
+    axis.get_yaxis().set_visible(False)
+
+    return pc
