@@ -395,7 +395,7 @@ def plot_histogram(h, density = False, normalise = False,
     if(draw_poisson_errors):
         so1 = axis.vlines(0.5*(hx[:-1]+hx[1:]), hy[:-1]-hdy, hy[:-1]+hdy)
         so1.set_linestyles(so[0].get_linestyle())
-        so1.set_color(so[0].get_color() if ecolor is None else ecolor)
+        so1.set_color(so[0].get_edgecolor() if ecolor is None else ecolor)
         so1.set_linewidth(so[0].get_linewidth())
         so1.set_zorder(so[0].get_zorder())
         so = [ *so, so1 ]
