@@ -235,8 +235,8 @@ void SCTRayProcessor::start_processing()
 void SCTRayProcessor::process_ray(unsigned scope_id,
   const calin::math::ray::Ray& ray, double pe_weight)
 {
-  double z0 = ray.position().z();
-  double w = ray.direction().z();
+  // double z0 = ray.position().z();
+  // double w = ray.direction().z();
 
   calin::math::ray::Ray ray_copy(ray);
   sct_optics::SCTRayTracerResults trace_info;
