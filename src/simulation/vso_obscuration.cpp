@@ -620,8 +620,8 @@ VSOBoxCollectionObscuration(const std::vector<VSOTubeObscuration*>& tubes,
 {
   constexpr double inf = std::numeric_limits<double>::infinity();
   double min_vol = inf;
-  double min_area;
-  double min_theta;
+  // double min_area;
+  // double min_theta;
   for(double theta = 0; theta<360.0; theta+=1.0) {
     double st = std::sin(theta/180.0*M_PI);
     double ct = std::cos(theta/180.0*M_PI);
@@ -646,8 +646,8 @@ VSOBoxCollectionObscuration(const std::vector<VSOTubeObscuration*>& tubes,
       max_corner_ = max_corner;
       crot_ = ct;
       srot_ = st;
-      min_theta = theta;
-      min_area = dx.x()*dx.z();
+      // min_theta = theta;
+      // min_area = dx.x()*dx.z();
       min_vol = vol;
     }
   }
