@@ -492,7 +492,7 @@ if(opt.nthread()>1):
                 if(status):
                     all_status.append(True)
             except Exception as e:
-                print(e)
+                traceback.print_exception(*sys.exc_info())
                 all_status.append(False)
 else:
     for oid in all_oid:
@@ -500,7 +500,7 @@ else:
             good = render_oid(oid)
             all_status.append(good)
         except Exception as e:
-            print(e)
+            traceback.print_exception(*sys.exc_info())
             all_status.append(False)
 
 print("=================================== RESULTS ===================================")
