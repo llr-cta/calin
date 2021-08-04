@@ -400,7 +400,7 @@ def render_oid(oid):
 
             ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
             calin.diagnostics.stage1_plotting.draw_mean_wf_deviation_from_camera_mean(stage1,
-                dataset='pedestal')
+                axis=ax,dataset='pedestal')
             ax.set_title('RMS waveform offset (pedestal, high-gain), run : %d'%runno)
             upload_figure(runno, 'waveform_mean_pedestal_hg_offset_rms', ax.figure)
 
@@ -421,7 +421,7 @@ def render_oid(oid):
 
             ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
             calin.diagnostics.stage1_plotting.draw_mean_wf_deviation_from_camera_mean(stage1,
-                dataset='pedestal', low_gain=True)
+                axis=ax, dataset='pedestal', low_gain=True)
             ax.set_title('RMS waveform offset (pedestal, low-gain), run : %d'%runno)
             upload_figure(runno, 'waveform_mean_pedestal_lg_offset_rms', ax.figure)
 
