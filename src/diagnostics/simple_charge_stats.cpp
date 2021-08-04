@@ -451,7 +451,7 @@ void SimpleChargeStatsParallelEventVisitor::record_one_gain_channel_data(
   calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats,
   SingleGainChannelHists* one_gain_hists,
   unsigned& nsum, int64_t& opt_sum, int64_t& sig_sum, int64_t& bkg_sum, int64_t& wf_sum,
-  unsigned wf_clipping_value)
+  int wf_clipping_value)
 {
   one_gain_stats->increment_all_trig_num_events();
 

@@ -29,11 +29,11 @@ import "math/histogram.proto";
 package calin.ix.diagnostics.simple_charge_stats;
 
 message SimpleChargeStatsConfig {
-  uint32 high_gain_wf_clipping_value                                = 1 [
+  int32 high_gain_wf_clipping_value                                 = 1 [
     (CFO).desc = "Waveform value above which the high-gain signal should be "
       "considered as clipped.",
     (CFO).units = "DC" ];
-  uint32 low_gain_wf_clipping_value                                 = 2 [
+  int32 low_gain_wf_clipping_value                                  = 2 [
     (CFO).desc = "Waveform value abov which the low-gain signal should be "
       "considered as clipped.",
     (CFO).units = "DC" ];
