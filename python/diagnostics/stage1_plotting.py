@@ -792,10 +792,10 @@ def draw_mean_wf_deviation_from_camera_mean(stage1, dataset='pedestal',
     chi2 = numpy.zeros(mwf.channel_high_gain_size())
     for ichan in range(mwf.channel_high_gain_size()):
         if(low_gain):
-            chan = mwf.const_camera_low_gain(ichan)
+            chan = mwf.const_channel_low_gain(ichan)
         else:
             chan = mwf.const_channel_high_gain(ichan)
-        if(wf.num_entries()):
+        if(chan.num_entries()):
             wf = chan.mean_waveform()
             if(pedestals is None):
                 wf -= numpy.mean(wf)
