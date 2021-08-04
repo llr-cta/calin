@@ -84,8 +84,8 @@ report_run_configuration_problems(
           << irank  << " and " << mod_map[mod_id];
       }
     }
-    if(!module_id_strictly_increasing)
-      LOG(INFO,logger) << "Module ids not strictly increasing.";
+    // if(!module_id_strictly_increasing)
+    //   LOG(INFO,logger) << "Module ids not strictly increasing.";
     if(mod_map.size() != cam_nmod) {
       auto log = LOG(INFO,logger);
       log << mod_map.size() << " modules configured, " << cam_nmod-mod_map.size()
