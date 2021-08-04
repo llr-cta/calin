@@ -123,7 +123,7 @@ void calin::iact_data::instrument_layout::compute_camera_and_module_outlines(
   camera_layout->set_camera_boundary_box_top(y);
   camera_layout->set_camera_boundary_maxabs_xy(std::max(std::abs(x),std::abs(y)));
   camera_layout->set_camera_boundary_max_r(x*x+y*y);
-  for(unsigned ivertex=1;ivertex<camera_layout->outline_polygon_vertex_x_size();++ivertex) {
+  for(int ivertex=1;ivertex<camera_layout->outline_polygon_vertex_x_size();++ivertex) {
     double x = camera_layout->outline_polygon_vertex_x(ivertex);
     double y = camera_layout->outline_polygon_vertex_y(ivertex);
     camera_layout->set_camera_boundary_box_left(
@@ -205,7 +205,7 @@ void calin::iact_data::instrument_layout::map_channels_using_from_coordinates(
 }
 
 calin::ix::iact_data::instrument_layout::CameraLayout*
-calin::iact_data::instrument_layout::reduce_camera_channels(
+calin::iact_data::instrument_layout::reorder_camera_channels(
   const calin::ix::iact_data::instrument_layout::CameraLayout& in,
   const unsigned* channel_id, unsigned nchannel_id, bool recenter)
 {
@@ -307,7 +307,7 @@ calin::iact_data::instrument_layout::reduce_camera_channels(
 }
 
 calin::ix::iact_data::instrument_layout::CameraLayout*
-calin::iact_data::instrument_layout::reduce_camera_modules(
+calin::iact_data::instrument_layout::reorder_camera_modules(
   const calin::ix::iact_data::instrument_layout::CameraLayout& in,
   const unsigned* module_id, unsigned nmodule_id, bool recenter)
 {
@@ -330,7 +330,7 @@ calin::iact_data::instrument_layout::reduce_camera_modules(
   }
 
   Eigen::VectorXi eigen_channel_id = calin::std_to_eigenvec_unsigned(channel_id);
-  auto* out = reduce_camera_channels(in, eigen_channel_id, recenter);
+  auto* out = reorder_camera_channels(in, eigen_channel_id, recenter);
 
   double shift_x = in.pixel_grid_offset_x() - out->pixel_grid_offset_x();
   double shift_y = in.pixel_grid_offset_y() - out->pixel_grid_offset_y();

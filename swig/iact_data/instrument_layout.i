@@ -36,8 +36,8 @@
 %import "calin_global_definitions.i"
 
 %newobject make_grid_from_instrument_layout;
-%newobject reduce_camera_channels;
-%newobject reduce_camera_modules;
+%newobject reorder_camera_channels;
+%newobject reorder_camera_modules;
 %newobject channel_outline;
 %newobject camera_layout;
 

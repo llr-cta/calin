@@ -92,7 +92,7 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   camera_hists_ = new CameraHists(has_dual_gain_, 60.0, 86400.0);
 
   delete data_order_camera_;
-  data_order_camera_ = calin::iact_data::instrument_layout::reduce_camera_channels(
+  data_order_camera_ = calin::iact_data::instrument_layout::reorder_camera_channels(
     run_config->camera_layout(),
     reinterpret_cast<const unsigned*>(run_config->configured_channel_id().data()),
     run_config->configured_channel_id_size());

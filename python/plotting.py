@@ -265,7 +265,7 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
 
     if draw_outline and hatch_missing_channels and configured_channels is not None and \
             len(configured_channels) != camera_layout.channel_size():
-        cl_conf = calin.iact_data.instrument_layout.reduce_camera_channels(
+        cl_conf = calin.iact_data.instrument_layout.reorder_camera_channels(
             camera_layout, numpy.asarray(configured_channels,dtype=numpy.int32))
         calin.plotting.add_outline(axis, cl_conf,
             plate_scale=plate_scale, rotation=rotation,
@@ -342,7 +342,7 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
 
     if draw_outline and hatch_missing_modules and configured_modules is not None and \
             len(configured_modules) != camera_layout.module_size():
-        cl_conf = calin.iact_data.instrument_layout.reduce_camera_modules(
+        cl_conf = calin.iact_data.instrument_layout.reorder_camera_modules(
             camera_layout, numpy.array(configured_modules, dtype=numpy.int32))
         calin.plotting.add_outline(axis, cl_conf,
             plate_scale=plate_scale, rotation=rotation,
