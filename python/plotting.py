@@ -15,8 +15,10 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot
 import matplotlib.collections
+import matplotlib.path
+import matplotlib.patches
 import colorsys
 import numpy
 
@@ -89,6 +91,8 @@ def obsolete_plot_module_camera(mod_data, camera_layout, configured_modules = No
         cbar.set_label(cbar_label)
     return pc
 
+################################### OBSOLETE ###################################
+
 def layout_to_polygon_vxy(layout, plate_scale = 1.0, rotation = 0.0):
     crot = numpy.cos(rotation/180.0*numpy.pi)
     srot = numpy.sin(rotation/180.0*numpy.pi)
@@ -110,14 +114,39 @@ def layout_to_polygon(layout, plate_scale = 1.0, rotation = 0.0, **args):
         return all_p[0]
     return all_p
 
+################################################################################
+
+def layout_to_path(layout, plate_scale = 1.0, rotation = 0.0):
+    crot = numpy.cos(rotation/180.0*numpy.pi)
+    srot = numpy.sin(rotation/180.0*numpy.pi)
+    vx = layout.outline_polygon_vertex_x()*plate_scale
+    vy = layout.outline_polygon_vertex_y()*plate_scale
+    vx, vy = vx*crot - vy*srot, vy*crot + vx*srot
+
+    nv = nv = layout.outline_polygon_vertex_x_size()+layout.outline_polygon_vertex_index_size()
+    v = numpy.zeros((nv,2))
+    c = numpy.zeros(nv,dtype=numpy.uint8)
+
+    iv = 0
+    for ic in range(layout.outline_polygon_vertex_index_size()):
+        nv = layout.outline_polygon_vertex_index(ic) - iv
+        v[iv+ic:iv+ic+nv,0] = vx[iv:iv+nv]
+        v[iv+ic:iv+ic+nv,1] = vy[iv:iv+nv]
+        c[iv+ic]            = matplotlib.path.Path.MOVETO
+        c[iv+ic+1:iv+ic+nv] = matplotlib.path.Path.LINETO
+        c[iv+ic+nv]         = matplotlib.path.Path.CLOSEPOLY
+        iv = layout.outline_polygon_vertex_index(ic)
+
+    return matplotlib.path.Path(v,c)
+
+def layout_to_path_patch(layout, plate_scale = 1.0, rotation = 0.0, **args):
+    p = layout_to_path(layout, plate_scale, rotation)
+    return matplotlib.patches.PathPatch(p, **args)
+
 def add_outline(axis, layout, plate_scale = 1.0, rotation = 0.0, fill=False,
         outline_lw = 0.5, outline_ls = '-', outline_color = '#888888', **args):
-    all_p = []
-    for vxy in layout_to_polygon_vxy(layout, plate_scale, rotation):
-        p = axis.add_patch(matplotlib.pyplot.Polygon(vxy,
+    return axis.add_patch(layout_to_path_patch(layout, plate_scale, rotation,
             fill=fill, lw=outline_lw, ls=outline_ls, edgecolor=outline_color, **args))
-        all_p.append(p)
-    return all_p
 
 def add_stats(axis, max_xy, values, ids, mask=None, stats_fontsize=4.75, stats_format='%.3f',
         draw_top12 = True):
@@ -248,10 +277,16 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
 
     axis = axis or matplotlib.pyplot.gca()
 
+    cl_conf = camera_layout
     if draw_outline and hatch_missing_channels and configured_channels is not None and \
             len(configured_channels) != camera_layout.channel_size():
-        add_outline(axis, camera_layout, hatch='///',
+        cl_conf = calin.iact_data.instrument_layout.reorder_camera_channels(
+            camera_layout, numpy.asarray(configured_channels,dtype=numpy.int32))
+        add_outline(axis, camera_layout, hatch='////',
             plate_scale=plate_scale, rotation=rotation,
+            outline_lw=outline_lw, outline_color=outline_color, zorder=-2)
+        add_outline(axis, cl_conf,
+            plate_scale=plate_scale, rotation=rotation, fill=True, facecolor='w',
             outline_lw=outline_lw, outline_color=outline_color, zorder=-1)
 
     pc = matplotlib.collections.PatchCollection(poly, cmap=cmap)
@@ -265,8 +300,6 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
 
     if draw_outline and hatch_missing_channels and configured_channels is not None and \
             len(configured_channels) != camera_layout.channel_size():
-        cl_conf = calin.iact_data.instrument_layout.reorder_camera_channels(
-            camera_layout, numpy.asarray(configured_channels,dtype=numpy.int32))
         calin.plotting.add_outline(axis, cl_conf,
             plate_scale=plate_scale, rotation=rotation,
             outline_lw=outline_lw, outline_color=outline_color)
