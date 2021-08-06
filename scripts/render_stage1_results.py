@@ -483,10 +483,11 @@ def render_oid(oid):
     # FIGURE : mean event rate and on-disk fraction
     ############################################################################
 
-    ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
-    calin.diagnostics.stage1_plotting.draw_elapsed_time_hist(stage1, axis=ax)
-    ax.set_title('Event rate on disk, run : %d'%runno)
-    upload_figure(runno, 'event_rate', ax.figure)
+    if(stage1.const_run_info().const_elapsed_time_histogram().sum_w()):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_elapsed_time_hist(stage1, axis=ax)
+        ax.set_title('Event rate on disk, run : %d'%runno)
+        upload_figure(runno, 'event_rate', ax.figure)
 
     return True
 
