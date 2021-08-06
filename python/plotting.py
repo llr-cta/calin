@@ -21,6 +21,7 @@ import matplotlib.path
 import matplotlib.patches
 import colorsys
 import numpy
+import copy
 
 import calin.math.histogram
 import calin.ix.iact_data.instrument_layout
