@@ -836,27 +836,27 @@ def draw_elapsed_time_hist(stage1, axis = None):
     ri = stage1.const_run_info()
     so = []
     so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram(),
-        xright=ri.elapsed_time_histogram().xval_max(),
+        # xright=ri.elapsed_time_histogram().xval_max(),
         color='C0', density=True, lw=2, label='All events', axis=axis))
     if(ri.elapsed_time_histogram_trigger_physics().sum_w()):
         so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_physics(),
-            xright=ri.elapsed_time_histogram().xval_max(),
+            # xright=ri.elapsed_time_histogram().xval_max(),
             color='C1', density=True, label='Physics', axis=axis))
     if(ri.elapsed_time_histogram_trigger_pedestal().sum_w()):
         so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_pedestal(),
-            xright=ri.elapsed_time_histogram().xval_max(),
+            # xright=ri.elapsed_time_histogram().xval_max(),
             color='C2', density=True, label='Pedestal', axis=axis))
     if(ri.elapsed_time_histogram_trigger_external_flasher().sum_w()):
         so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_external_flasher(),
-            xright=ri.elapsed_time_histogram().xval_max(),
+            # xright=ri.elapsed_time_histogram().xval_max(),
             color='C3', density=True, label='External flasher', axis=axis))
     if(ri.elapsed_time_histogram_trigger_internal_flasher().sum_w()):
         so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_internal_flasher(),
-            xright=ri.elapsed_time_histogram().xval_max(),
+            # xright=ri.elapsed_time_histogram().xval_max(),
             color='C4', density=True, label='Internal flasher', axis=axis))
 
     axis.set_ylim([0,axis.get_ylim()[1]*1.15])
-    axis.set_xlabel('Elapsed Time [s]')
+    axis.set_xlabel('Elapsed time [s]')
     axis.set_ylabel('Event rate on disk [Hz]')
     axis.legend(loc=4)
     axis.grid()
