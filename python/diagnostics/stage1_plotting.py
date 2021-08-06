@@ -350,20 +350,23 @@ def draw_channel_dataorder(stage1, cmap = 'inferno', axis=None,
 def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, cmap = 'coolwarm', axis=None,
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, stat_label_fontsize=4.75):
-    tfeb1 = []
-    tfeb2 = []
+    tfeb = []
     mask = []
     for modid in stage1.run_config().configured_module_id() :
         if(stage1.nectarcam().ancillary_data().feb_temperature_has_key(int(modid))):
             measurement_set = stage1.nectarcam().ancillary_data().feb_temperature(int(modid))
-            tfeb1.append(numpy.mean([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]))
-            tfeb2.append(numpy.mean([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())]))
-            mask.append(True)
+            mt = numpy.asarray([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]) if temperature_set==1 \
+                else numpy.asarray([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())])
+            mmask = mt != 0
+            if(numpy.count_nonzero(mmask)):
+                tfeb.append(numpy.mean(mt[mmask]))
+                mask.append(True)
+            else:
+                tfeb.append(numpy.nan)
+                mask.append(False)
         else:
-            tfeb1.append(numpy.nan)
-            tfeb2.append(numpy.nan)
+            tfeb.append(numpy.nan)
             mask.append(False)
-    tfeb = tfeb1 if temperature_set==1 else tfeb2
 
     if(axis is None):
         axis = matplotlib.pyplot.gca()
@@ -430,20 +433,23 @@ def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'in
     def minmax(x):
         return numpy.max(x)-numpy.min(x)
 
-    tfeb1 = []
-    tfeb2 = []
+    tfeb = []
     mask = []
     for modid in stage1.run_config().configured_module_id() :
         if(stage1.nectarcam().ancillary_data().feb_temperature_has_key(int(modid))):
             measurement_set = stage1.nectarcam().ancillary_data().feb_temperature(int(modid))
-            tfeb1.append(minmax([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]))
-            tfeb2.append(minmax([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())]))
-            mask.append(True)
+            mt = numpy.asarray([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]) if temperature_set==1 \
+                else numpy.asarray([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())])
+            mmask = mt != 0
+            if(numpy.count_nonzero(mmask)>1):
+                tfeb.append(minmax(mt[mmask]))
+                mask.append(True)
+            else:
+                tfeb.append(numpy.nan)
+                mask.append(False)
         else:
-            tfeb1.append(numpy.nan)
-            tfeb2.append(numpy.nan)
+            tfeb.append(numpy.nan)
             mask.append(False)
-    tfeb = tfeb1 if temperature_set==1 else tfeb2
 
     if(axis is None):
         axis = matplotlib.pyplot.gca()
