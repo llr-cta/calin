@@ -230,6 +230,48 @@ def add_module_numbers(axis, camera_layout, configured_modules = None, dx = 0, d
                 axis.text(x+dx, y+dy, '%d'%modid, ha='center', va='center',
                     color=nonconfigured_color, **args)
 
+def add_colorbar_and_clipping(axis, pc,
+        camera_layout=None, plate_scale = 1.0, rotation = 0.0, configured_channels=None,
+        cb_label=None, percentile=100, percentile_factor=2.0,
+        under_color=None, over_color=None, clip_highlight='0044ff', clip_highlight_lw=1.5):
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+    dmax = numpy.max(pc.get_array())
+    dmin = numpy.min(pc.get_array())
+    dmed = numpy.median(pc.get_array())
+    dpch = numpy.percentile(pc.get_array(),min(100,percentile))
+    dpcl = numpy.percentile(pc.get_array(),max(0,100-percentile))
+    liml = max(dmin, dmed + (dpcl-dmed)*percentile_factor)
+    limh = min(dmax, dmed + (dpch-dmed)*percentile_factor)
+    pc.cmap = copy.copy(pc.cmap)
+    pc.set_clim(liml,limh)
+    cb_clip = 'neither'
+    if(liml>dmin):
+        if(under_color is not None):
+            pc.cmap.set_under(under_color)
+        if(limh<dmax):
+            if(over_color is not None):
+                pc.cmap.set_over(over_color)
+            cb_clip = 'both'
+        else:
+            cb_clip = 'min'
+    elif(limh<dmax):
+        if(over_color is not None):
+            pc.cmap.set_over(over_color)
+        cb_clip = 'max'
+
+    cb = axis.get_figure().colorbar(pc, ax=axis, label=cb_label, extend=cb_clip)
+
+    if(cb_clip != 'neither' and camera_layout is not None and clip_highlight is not None):
+        if(configured_channels is None):
+            configured_channels = numpy.arange(camera_layout.channel_size())
+        clipped_mask = numpy.bitwise_or(pc.get_array()>limh, pc.get_array()<liml)
+        clipped_camera_layout = calin.iact_data.instrument_layout.reorder_camera_channels(
+            camera_layout, configured_channels[clipped_mask])
+        add_outline(axis,clipped_camera_layout, plate_scale=plate_scale, rotation=rotation,
+            color=clip_highlight, outline_lw=clip_highlight_lw)
+
+    return cb
+
 def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         configured_channels = None, zero_suppression = None,
         plate_scale = None, rotation = 0.0, R = None,
@@ -282,7 +324,7 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
             len(configured_channels) != camera_layout.channel_size():
         cl_conf = calin.iact_data.instrument_layout.reorder_camera_channels(
             camera_layout, numpy.asarray(configured_channels,dtype=numpy.int32))
-        add_outline(axis, camera_layout, hatch='////',
+        add_outline(axis, camera_layout, hatch='/////',
             plate_scale=plate_scale, rotation=rotation,
             outline_lw=outline_lw, outline_color=outline_color, zorder=-2)
         add_outline(axis, cl_conf,
@@ -358,10 +400,16 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
 
     axis = axis or matplotlib.pyplot.gca()
 
+    cl_conf = camera_layout
     if draw_outline and hatch_missing_modules and configured_modules is not None and \
             len(configured_modules) != camera_layout.module_size():
-        add_outline(axis, camera_layout, hatch='///',
+        cl_conf = calin.iact_data.instrument_layout.reorder_camera_modules(
+            camera_layout, numpy.array(configured_modules, dtype=numpy.int32))
+        add_outline(axis, camera_layout, hatch='/////',
             plate_scale=plate_scale, rotation=rotation,
+            outline_lw=outline_lw, outline_color=outline_color, zorder=-2)
+        add_outline(axis, cl_conf,
+            plate_scale=plate_scale, rotation=rotation, fill=True, facecolor='w',
             outline_lw=outline_lw, outline_color=outline_color, zorder=-1)
 
     pc = matplotlib.collections.PatchCollection(poly, cmap=cmap)
@@ -375,8 +423,6 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
 
     if draw_outline and hatch_missing_modules and configured_modules is not None and \
             len(configured_modules) != camera_layout.module_size():
-        cl_conf = calin.iact_data.instrument_layout.reorder_camera_modules(
-            camera_layout, numpy.array(configured_modules, dtype=numpy.int32))
         calin.plotting.add_outline(axis, cl_conf,
             plate_scale=plate_scale, rotation=rotation,
             outline_lw=outline_lw, outline_color=outline_color)
@@ -392,6 +438,7 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
 
 def plot_histogram(h, density = False, normalise = False,
         xscale = 1, xoffset = 0, yscale = 1, yoffset = 0,
+        xleft = -numpy.inf, xright = numpy.inf,
         xscale_as_log10 = False, draw_poisson_errors = False,
         histtype='steps', ecolor=None, axis = None, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
@@ -406,13 +453,25 @@ def plot_histogram(h, density = False, normalise = False,
         hdy = numpy.sqrt(h.bins())
     else:
         raise Exception('Unknown histogram type: '+str(type(h)))
+
+    hx = numpy.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
+
+    if(hx[0] < xleft):
+        if(hx[1] < xleft):
+            raise ValueError("xleft outside of first bin")
+        hx[0] = xleft
+    if(hx[-1] > xright):
+        if(hx[-2] > xright):
+            raise ValueError("xright outside of final bin")
+        hx[-1] = xright
+
     if density:
-        hy /= abs(h.dxval()*xscale)
-        hdy /= abs(h.dxval()*xscale)
+        hy /= numpy.abs(numpy.diff(hx))
+        hdy /= numpy.abs(numpy.diff(hx))
     if normalise:
         hy /= h.sum_w()
         hdy /= h.sum_w()
-    hx = numpy.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
+
     hy = numpy.append(hy, hy[-1]) * yscale + yoffset
     hdy = hdy * yscale + yoffset
     if(xscale_as_log10):
