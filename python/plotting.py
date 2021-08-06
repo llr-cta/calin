@@ -234,7 +234,7 @@ def add_module_numbers(axis, camera_layout, configured_modules = None, dx = 0, d
 def add_colorbar_and_clipping(axis, pc,
         camera_layout=None, plate_scale = 1.0, rotation = 0.0, configured_channels=None,
         cb_label=None, percentile=100, percentile_factor=2.0,
-        under_color=None, over_color=None, clip_highlight='0044ff', clip_highlight_lw=1.5):
+        under_color=None, over_color=None, clip_highlight='#0044ff', clip_highlight_lw=1.5):
     axis = axis if axis is not None else matplotlib.pyplot.gca()
     dmax = numpy.max(pc.get_array())
     dmin = numpy.min(pc.get_array())
