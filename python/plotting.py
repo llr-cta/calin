@@ -326,7 +326,7 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
             len(configured_channels) != camera_layout.channel_size():
         cl_conf = calin.iact_data.instrument_layout.reorder_camera_channels(
             camera_layout, numpy.asarray(configured_channels,dtype=numpy.int32))
-        add_outline(axis, camera_layout, hatch='/////',
+        add_outline(axis, camera_layout, hatch='XXXXX',
             plate_scale=plate_scale, rotation=rotation,
             outline_lw=outline_lw, outline_color=outline_color, zorder=-2)
         add_outline(axis, cl_conf,
@@ -407,7 +407,7 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
             len(configured_modules) != camera_layout.module_size():
         cl_conf = calin.iact_data.instrument_layout.reorder_camera_modules(
             camera_layout, numpy.array(configured_modules, dtype=numpy.int32))
-        add_outline(axis, camera_layout, hatch='/////',
+        add_outline(axis, camera_layout, hatch='XXXXX',
             plate_scale=plate_scale, rotation=rotation,
             outline_lw=outline_lw, outline_color=outline_color, zorder=-2)
         add_outline(axis, cl_conf,
@@ -455,6 +455,9 @@ def plot_histogram(h, density = False, normalise = False,
         hdy = numpy.sqrt(h.bins())
     else:
         raise Exception('Unknown histogram type: '+str(type(h)))
+
+    if(len(hx) == 0):
+        return
 
     hx = numpy.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
 
