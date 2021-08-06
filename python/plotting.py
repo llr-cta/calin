@@ -231,16 +231,17 @@ def add_module_numbers(axis, camera_layout, configured_modules = None, dx = 0, d
                 axis.text(x+dx, y+dy, '%d'%modid, ha='center', va='center',
                     color=nonconfigured_color, **args)
 
-def add_colorbar_and_clipping(axis, pc,
+def add_colorbar_and_clipping(axis, pc, data, mask=None,
         camera_layout=None, plate_scale = 1.0, rotation = 0.0, configured_channels=None,
         cb_label=None, percentile=100, percentile_factor=2.0,
         under_color=None, over_color=None, clip_highlight='#0044ff', clip_highlight_lw=1.5):
     axis = axis if axis is not None else matplotlib.pyplot.gca()
-    dmax = numpy.max(pc.get_array())
-    dmin = numpy.min(pc.get_array())
-    dmed = numpy.median(pc.get_array())
-    dpch = numpy.percentile(pc.get_array(),min(100,percentile))
-    dpcl = numpy.percentile(pc.get_array(),max(0,100-percentile))
+    mask = mask if mask is not None else ones_like(data, dtype=bool)
+    dmax = numpy.max(data[mask])
+    dmin = numpy.min(data[mask])
+    dmed = numpy.median(data[mask])
+    dpch = numpy.percentile(data[mask],min(100,percentile))
+    dpcl = numpy.percentile(data[mask],max(0,100-percentile))
     liml = max(dmin, dmed + (dpcl-dmed)*percentile_factor)
     limh = min(dmax, dmed + (dpch-dmed)*percentile_factor)
     pc.cmap = copy.copy(pc.cmap)
@@ -265,11 +266,11 @@ def add_colorbar_and_clipping(axis, pc,
     if(cb_clip != 'neither' and camera_layout is not None and clip_highlight is not None):
         if(configured_channels is None):
             configured_channels = numpy.arange(camera_layout.channel_size())
-        clipped_mask = numpy.bitwise_or(pc.get_array()>limh, pc.get_array()<liml)
+        clipped_mask = numpy.bitwise_and(mask, numpy.bitwise_or(data>limh, data<liml))
         clipped_camera_layout = calin.iact_data.instrument_layout.reorder_camera_channels(
             camera_layout, configured_channels[clipped_mask])
         add_outline(axis,clipped_camera_layout, plate_scale=plate_scale, rotation=rotation,
-            color=clip_highlight, outline_lw=clip_highlight_lw)
+            outline_color=clip_highlight, outline_lw=clip_highlight_lw)
 
     return cb
 

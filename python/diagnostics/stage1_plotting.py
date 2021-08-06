@@ -189,13 +189,16 @@ def draw_pedestal_rms(stage1, all_events_ped_win=False, low_gain=False,
         nevent = charge_stats.ped_trigger_event_count()
         values = charge_stats.ped_trigger_full_wf_var()
 
+    data = numpy.sqrt(values)
+    mask = nevent>0
+
     pc = calin.plotting.plot_camera_image(
-        numpy.sqrt(values), cl, channel_mask=nevent>0, cmap=cmap,
+        data, cl, channel_mask=mask, cmap=cmap,
         configured_channels=rc.configured_channel_id(),
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format='%.2f DC')
 
-    cb = calin.plotting.add_colorbar_and_clipping(axis, pc, percentile=99.5, percentile_factor=2.0,
+    cb = calin.plotting.add_colorbar_and_clipping(axis, pc, data, mask=mask, percentile=99.5,
             camera_layout=cl, configured_channels=rc.configured_channel_id(),
             cb_label='Pedestal %d-sample RMS [DC]'%nsamp)
 
@@ -807,18 +810,22 @@ def draw_mean_wf_deviation_from_camera_mean(stage1, dataset='pedestal',
             chi2[ichan] = sum((wf-cwf)**2)
         else:
             chi2[ichan] = numpy.nan
+    data = numpy.sqrt(chi2)
 
     rc = stage1.const_run_config()
     cl = rc.const_camera_layout()
 
-    pc = calin.plotting.plot_camera_image(numpy.sqrt(chi2), cl,
+    pc = calin.plotting.plot_camera_image(data, cl,
         configured_channels=rc.configured_channel_id(), channel_mask = mask,
         cmap=cmap, draw_outline=draw_outline, pix_lw=pix_lw,
         outline_lw=outline_lw, outline_color=outline_color,
         axis=axis, hatch_missing_channels=True, draw_stats=True,
         stats_format=stat_format, stats_fontsize=stat_label_fontsize)
 
-    cb = axis.get_figure().colorbar(pc, ax=axis, label='Waveform RMS from camera mean [DC]')
+    cb = calin.plotting.add_colorbar_and_clipping(axis, pc, data, mask=mask, percentile=99.5,
+            camera_layout=cl, configured_channels=rc.configured_channel_id(),
+            cb_label='Waveform RMS from camera mean [DC]')
+
     axis.get_xaxis().set_visible(False)
     axis.get_yaxis().set_visible(False)
 
