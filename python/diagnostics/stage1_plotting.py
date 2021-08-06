@@ -195,12 +195,14 @@ def draw_pedestal_rms(stage1, all_events_ped_win=False, low_gain=False,
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format='%.2f DC')
 
-    cb = axis.get_figure().colorbar(pc, ax=axis, label='Pedestal %d-sample RMS [DC]'%nsamp)
+    cb = calin.plotting.add_colorbar_and_clipping(axis, pc, percentile=99.5, percentile_factor=2.0,
+            camera_layout=cl, configured_channels=rc.configured_channel_id(),
+            cb_label='Pedestal %d-sample RMS [DC]'%nsamp)
 
     axis.get_xaxis().set_visible(False)
     axis.get_yaxis().set_visible(False)
 
-    return pc
+    return pc, cb
 
 def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r', axis = None,
         draw_outline=True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
@@ -821,3 +823,35 @@ def draw_mean_wf_deviation_from_camera_mean(stage1, dataset='pedestal',
     axis.get_yaxis().set_visible(False)
 
     return pc
+
+def draw_elapsed_time_hist(stage1, axis = None):
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+    ri = stage1.const_run_info()
+    so = []
+    so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram(),
+        xright=ri.elapsed_time_histogram().xval_max(),
+        color='C0', density=True, lw=2, label='All events', axis=axis))
+    if(ri.elapsed_time_histogram_trigger_physics().sum_w()):
+        so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_physics(),
+            xright=ri.elapsed_time_histogram().xval_max(),
+            color='C1', density=True, label='Physics', axis=axis))
+    if(ri.elapsed_time_histogram_trigger_pedestal().sum_w()):
+        so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_pedestal(),
+            xright=ri.elapsed_time_histogram().xval_max(),
+            color='C2', density=True, label='Pedestal', axis=axis))
+    if(ri.elapsed_time_histogram_trigger_external_flasher().sum_w()):
+        so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_external_flasher(),
+            xright=ri.elapsed_time_histogram().xval_max(),
+            color='C3', density=True, label='External flasher', axis=axis))
+    if(ri.elapsed_time_histogram_trigger_internal_flasher().sum_w()):
+        so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_internal_flasher(),
+            xright=ri.elapsed_time_histogram().xval_max(),
+            color='C4', density=True, label='Internal flasher', axis=axis))
+
+    axis.set_ylim([0,axis.get_ylim()[1]*1.15])
+    axis.set_xlabel('Elapsed Time [s]')
+    axis.set_ylabel('Event rate on disk [Hz]')
+    axis.legend(loc=4)
+    axis.grid()
+
+    return so
