@@ -248,22 +248,22 @@ def render_oid(oid):
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,1,axis=ax)
         ax.set_title('Temperature (FEB 1), run : %d'%runno)
-        upload_figure(runno, 'temperature_1', ax.figure)
+        upload_figure(runno, 'temperature_feb1', ax.figure)
 
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,2,axis=ax)
         ax.set_title('Temperature (FEB 2), run : %d'%runno)
-        upload_figure(runno, 'temperature_2', ax.figure)
+        upload_figure(runno, 'temperature_feb2', ax.figure)
 
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,1,axis=ax)
         ax.set_title('Temperature spread (FEB 1), run : %d'%runno)
-        upload_figure(runno, 'temperature_spread_1', ax.figure)
+        upload_figure(runno, 'temperature_spread_feb1', ax.figure)
 
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,2,axis=ax)
         ax.set_title('Temperature spread (FEB 2), run : %d'%runno)
-        upload_figure(runno, 'temperature_spread_2', ax.figure)
+        upload_figure(runno, 'temperature_spread_feb2', ax.figure)
 
     ############################################################################
     # FIGURE : clock regression
@@ -488,6 +488,30 @@ def render_oid(oid):
         calin.diagnostics.stage1_plotting.draw_elapsed_time_hist(stage1, axis=ax)
         ax.set_title('Event rate on disk, run : %d'%runno)
         upload_figure(runno, 'event_rate', ax.figure)
+
+    if(stage1.const_run_info().const_log10_delta_t_histogram_all_recorded().sum_w()):
+        f = matplotlib.figure.Figure(dpi=figure_dpi)
+        f.subplots_adjust(top=0.85)
+        ax = f.subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'all', axis=ax)
+        ax.set_title('Event $\Delta$T distribution (all events), run : %d'%runno)
+        upload_figure(runno, 'event_delta_t_all', ax.figure)
+
+    if(stage1.const_run_info().const_log10_delta_t_histogram().sum_w()):
+        f = matplotlib.figure.Figure(dpi=figure_dpi)
+        f.subplots_adjust(top=0.85)
+        ax = f.subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'consecutive', axis=ax)
+        ax.set_title('Event $\Delta$T distribution (consecutive events), run : %d'%runno)
+        upload_figure(runno, 'event_delta_t_consecutive', ax.figure)
+
+    if(stage1.const_run_info().const_log10_delta_t_histogram_trigger_physics().sum_w()):
+        f = matplotlib.figure.Figure(dpi=figure_dpi)
+        f.subplots_adjust(top=0.85)
+        ax = f.subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'physics', axis=ax)
+        ax.set_title('Event $\Delta$T distribution (consecutive physics events), run : %d'%runno)
+        upload_figure(runno, 'event_delta_t_physics', ax.figure)
 
     return True
 
