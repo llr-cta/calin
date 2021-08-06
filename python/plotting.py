@@ -213,10 +213,13 @@ def add_module_numbers(axis, camera_layout, configured_modules = None, dx = 0, d
         m = camera_layout.module(int(modid))
         label_color = brightness_hi_color
         if(pc is not None and module_values is not None):
-            rgba = pc.cmap(pc.norm(module_values[i]))
-            brightness = rgba_to_brightness(rgba)
-            if(brightness < brightness_hi_threshold):
-                label_color = brightness_lo_color
+            if(module_values[i] is numpy.nan):
+                label_color = brightness_hi_color
+            else:
+                rgba = pc.cmap(pc.norm(module_values[i]))
+                brightness = rgba_to_brightness(rgba)
+                if(brightness < brightness_hi_threshold):
+                    label_color = brightness_lo_color
         x = (m.x()*crot - m.y()*srot)*plate_scale
         y = (m.y()*crot + m.x()*srot)*plate_scale
         axis.text(x+dx, y+dy, '%d'%modid, ha='center', va='center',
