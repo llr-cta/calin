@@ -92,24 +92,31 @@ def draw_log_delta_t_histogram(stage1, event_set = 'all', axis = None):
 
         calin.plotting.plot_histogram(dt_h,axis=axis,xoffset=6,xscale_as_log10=True,
             normalise=True,density=True,label='Delta-T : $t_{i+1}-t_i$')
-        if(dt2_h is not None):
+        if(dt2_h is not None and dt2_h.sum_w()>0):
             calin.plotting.plot_histogram(dt2_h,axis=axis,xoffset=6,xscale_as_log10=True,
                 normalise=True,density=True,label='Delta-2T : $t_{i+2}-t_i$')
 
     axis.set_yscale('log')
     axis.set_xlabel('Time difference [us]')
     axis.set_ylabel('Density [1]')
-    axis.legend()
+    axis.legend(loc='lower center')
     axis.grid()
 
-    dt_sh = calin.math.histogram.SimpleHist(dt_h)
-    axis.text(10**(dt_sh.min_xval()+6), dt_sh.weight(0)/dt_sh.sum_w()/dt_sh.dxval()*0.4,
-        '%.3fus'%(10**(dt_sh.min_xval()+6)), ha='left')
+    if(dt_h.sum_w()>0): # protect against calling weight(0) on empty histogram
+        dt_sh = calin.math.histogram.SimpleHist(dt_h)
+        label_x = 10**(dt_sh.min_xval()+6)
+        label_y = dt_sh.weight(0)/dt_sh.sum_w()/dt_sh.dxval()*0.4
+        axis.text(label_x, label_y, '%.3fus'%(10**(dt_sh.min_xval()+6)), ha='left', va='bottom')
+        if(label_y < axis.get_ylim()[0]):
+            axis.set_ylim(label_y, axis.get_ylim()[1])
 
-    if(dt2_h is not None):
+    if(dt2_h is not None and dt2_h.sum_w()>0):
         dt2_sh = calin.math.histogram.SimpleHist(dt2_h)
-        axis.text(10**(dt2_sh.min_xval()+6), dt2_sh.weight(0)/dt2_sh.sum_w()/dt2_sh.dxval()*0.5,
-            '%.2fus'%(10**(dt2_sh.min_xval()+6)), ha='left')
+        label_x = 10**(dt2_sh.min_xval()+6)
+        label_y = dt2_sh.weight(0)/dt2_sh.sum_w()/dt2_sh.dxval()*0.5
+        axis.text(label_x, label_y, '%.2fus'%(10**(dt2_sh.min_xval()+6)), ha='left', va='bottom')
+        if(label_y < axis.get_ylim()[0]):
+            axis.set_ylim(label_y, axis.get_ylim()[1])
 
     def to_khz(x):
         x = numpy.array(x).astype(float)
@@ -865,6 +872,20 @@ def draw_elapsed_time_hist(stage1, axis = None):
     axis.set_xlabel('Elapsed time [s]')
     axis.set_ylabel('Event rate on disk [Hz]')
     axis.legend(loc=4)
+    axis.grid()
+
+    return so
+
+def draw_event_number_histogram(stage1, axis = None):
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+    ri = stage1.const_run_info()
+
+    so = calin.plotting.plot_histogram(ri.const_event_number_histogram(),lw=2,density=True,
+        xleft=1,xright=ri.const_event_number_histogram().xval_max(), axis=axis)
+
+    axis.set_ylim([0,axis.get_ylim()[1]*1.15])
+    axis.set_xlabel('Event number')
+    axis.set_ylabel('Fraction of events on disk')
     axis.grid()
 
     return so

@@ -157,7 +157,7 @@ def render_oid(oid):
     stage1 = calin.ix.diagnostics.stage1.Stage1()
     sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
     runno = stage1.run_number()
-    print('Run :', runno)
+    print('Started run :', runno)
 
     if(opt.upload_to_google_drive()):
         uploader = calin.io.uploader.GoogleDriveUploader(opt.google().token_file(),
@@ -513,6 +513,13 @@ def render_oid(oid):
         ax.set_title('Event $\Delta$T distribution (consecutive physics events), run : %d'%runno)
         upload_figure(runno, 'event_delta_t_physics', ax.figure)
 
+    if(stage1.const_run_info().const_event_number_histogram().sum_w()):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_event_number_histogram(stage1, axis=ax)
+        ax.set_title('Event fraction on disk, run : %d'%runno)
+        upload_figure(runno, 'event_fraction', ax.figure)
+
+    print('Finished run :', runno)
     return True
 
 all_oid = get_oids()
