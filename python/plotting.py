@@ -442,6 +442,7 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
     return pc
 
 def plot_histogram(h, density = False, normalise = False,
+        weight_scale_function=None,
         xscale = 1, xoffset = 0, yscale = 1, yoffset = 0,
         xleft = -numpy.inf, xright = numpy.inf,
         xscale_as_log10 = False, draw_poisson_errors = False,
@@ -461,6 +462,10 @@ def plot_histogram(h, density = False, normalise = False,
 
     if(len(hx) == 0):
         return
+
+    if(weight_scale_function is not None):
+        hy = weight_scale_function(hy)
+        hdy = weight_scale_function(hdy) # This probably doesn't make sense
 
     hx = numpy.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
 
@@ -490,15 +495,26 @@ def plot_histogram(h, density = False, normalise = False,
     histtype='stepfilled' if histtype=='stepsfilled' else histtype
     histtype='bar' if histtype=='bars' else histtype
 
-    _, _, so = axis.hist(hx[:-1],hx,weights=hy[:-1],histtype=histtype,**nargs)
+    if(histtype == 'floating'):
+        so = axis.step(hx,hy, *args, where='post', **nargs)
 
-    if(draw_poisson_errors):
-        so1 = axis.vlines(0.5*(hx[:-1]+hx[1:]), hy[:-1]-hdy, hy[:-1]+hdy)
-        so1.set_linestyles(so[0].get_linestyle())
-        so1.set_color(so[0].get_edgecolor() if ecolor is None else ecolor)
-        so1.set_linewidth(so[0].get_linewidth())
-        so1.set_zorder(so[0].get_zorder())
-        so = [ *so, so1 ]
+        if(draw_poisson_errors):
+            so1 = axis.vlines(0.5*(hx[:-1]+hx[1:]), hy[:-1]-hdy, hy[:-1]+hdy)
+            so1.set_linestyles(so[0].get_linestyle())
+            so1.set_color(so[0].get_color() if ecolor is None else ecolor)
+            so1.set_linewidth(so[0].get_linewidth())
+            so1.set_zorder(so[0].get_zorder())
+            so = [ *so, so1 ]
+    else:
+        _, _, so = axis.hist(hx[:-1],hx,weights=hy[:-1],histtype=histtype,**nargs)
+
+        if(draw_poisson_errors):
+            so1 = axis.vlines(0.5*(hx[:-1]+hx[1:]), hy[:-1]-hdy, hy[:-1]+hdy)
+            so1.set_linestyles(so[0].get_linestyle())
+            so1.set_color(so[0].get_edgecolor() if ecolor is None else ecolor)
+            so1.set_linewidth(so[0].get_linewidth())
+            so1.set_zorder(so[0].get_zorder())
+            so = [ *so, so1 ]
 
     if(xscale_as_log10):
         axis.set_xscale('log')
