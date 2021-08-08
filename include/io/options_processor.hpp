@@ -29,7 +29,6 @@
 #include <string>
 
 #include <google/protobuf/message.h>
-#include <util/options_processor.pb.h>
 
 namespace calin { namespace io { namespace options_processor {
 
@@ -53,8 +52,8 @@ struct OptionSpec
 };
 
 #ifdef SWIG
-} } } // namespace calin::util::options_processor
-%template (Vector_OptionsProcessor_OptionSpec) std::vector<calin::util::options_processor::OptionSpec>;
+} } } // namespace calin::io::options_processor
+%template (Vector_OptionsProcessor_OptionSpec) std::vector<calin::io::options_processor::OptionSpec>;
 namespace calin { namespace util { namespace options_processor {
 #endif
 
@@ -148,7 +147,6 @@ public:
   std::string usage(unsigned width = 80);
   bool help_requested() { return help_handler_ != nullptr
     and help_handler_->was_option_handled(); }
-  // const calin::ix::util::options_processor::CommandLineArguments& command_line_arguments() { return cla_; }
 protected:
   ProtobufOptionHandler* priority_protobuf_handler_ = nullptr;
   std::vector<OptionHandler*> handlers_;
@@ -163,4 +161,4 @@ protected:
   google::protobuf::Message* message_ = nullptr;
 };
 
-} } } // namespace calin::util::options_processor
+} } } // namespace calin::io::options_processor
