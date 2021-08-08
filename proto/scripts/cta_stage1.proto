@@ -75,7 +75,7 @@ message CommandLineOptions {
 };
 
 // message Results {
-//   calin.ix.util.options_processor.CommandLineArguments command_line_arguments = 1 [
+//   calin.ix.io.options_processor.CommandLineArguments command_line_arguments = 1 [
 //     (CFO).desc = "Command line options passed to script." ];
 //   CommandLineOptions command_line_options                  = 2 [
 //     (CFO).desc = "Command line options passed to script." ];

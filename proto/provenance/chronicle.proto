@@ -79,9 +79,22 @@ message RNGRecord
     [ (CFO).sql.inline_message=true ];
 }
 
+message CommandLineProcessingRecord {
+  calin.ix.util.timestamp.Timestamp timestamp              = 1 [
+    (CFO).sql.inline_message=true ];
+  repeated string arguments                                = 2 [
+    (CFO).desc = "Command line arguments." ];
+  repeated string processed_options_json                   = 3 [
+    (CFO).desc = "JSON representation of processed options, probably "
+      "produced from protobuf." ];
+  string comment                                           = 4;
+  string processed_by                                      = 5;
+};
+
 message Chronicle
 {
   repeated FileIORecord file_io_record                     = 1;
   repeated NetworkIORecord network_io_record               = 2;
   repeated RNGRecord rng_record                            = 10;
+  repeated CommandLineProcessingRecord command_line_record = 20;
 }

@@ -24,7 +24,7 @@ import concurrent.futures
 
 import calin.io.sql_serializer
 import calin.util.log
-import calin.util.options_processor
+import calin.io.options_processor
 import calin.ix.diagnostics.stage1
 import calin.ix.scripts.render_stage1_results
 import calin.provenance.chronicle
@@ -97,7 +97,7 @@ opt.set_summary_csv('stage1_summary.csv')
 opt.set_figure_dpi(200)
 opt.set_overwrite(True)
 
-opt_proc = calin.util.options_processor.OptionsProcessor(opt, True);
+opt_proc = calin.io.options_processor.OptionsProcessor(opt, True);
 opt_proc.process_arguments(sys.argv)
 
 if(opt_proc.help_requested()):

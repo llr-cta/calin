@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_FILES options_processor.i timestamp.i log.i string.i file.i)
+set(CALIN_SWIG_FILES timestamp.i log.i string.i file.i)
 set(CALIN_SWIG_TARGET util)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

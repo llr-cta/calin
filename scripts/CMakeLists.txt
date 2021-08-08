@@ -13,8 +13,6 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-install(PROGRAMS compute_diagnostics.py DESTINATION ${CALIN_BIN_INSTALL_DIR})
-install(PROGRAMS cta_diagnostics.py DESTINATION ${CALIN_BIN_INSTALL_DIR})
 install(PROGRAMS cta_stage1.py DESTINATION ${CALIN_BIN_INSTALL_DIR})
 install(PROGRAMS render_stage1_results.py DESTINATION ${CALIN_BIN_INSTALL_DIR})
 install(PROGRAMS scriptSPEFit.py DESTINATION ${CALIN_BIN_INSTALL_DIR})

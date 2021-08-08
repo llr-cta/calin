@@ -1,6 +1,6 @@
 /*
 
-   calin/util/options_processor.hpp -- Stephen Fegan -- 2016-08-05
+   calin/io/options_processor.hpp -- Stephen Fegan -- 2016-08-05
 
    Process command line options to protobuf
 
@@ -31,7 +31,7 @@
 #include <google/protobuf/message.h>
 #include <util/options_processor.pb.h>
 
-namespace calin { namespace util { namespace options_processor {
+namespace calin { namespace io { namespace options_processor {
 
 enum class OptionHandlerResult {
   INVALID_OPTION_NAME,
@@ -65,6 +65,7 @@ public:
   virtual OptionHandlerResult handle_option(const std::string& key,
     bool has_val, const std::string& val) = 0;
   virtual std::vector<OptionSpec> list_options() = 0;
+  virtual std::string get_configured_options_as_json() = 0;
 };
 
 class SimpleOptionHandler: public OptionHandler
@@ -82,6 +83,7 @@ public:
     bool has_val, const std::string& val) override;
   std::vector<OptionSpec> list_options() override;
   bool was_option_handled() { return option_handled_; }
+  std::string get_configured_options_as_json() override;
 protected:
   std::string key_;
   std::string alt_key_;
@@ -99,6 +101,7 @@ public:
   std::vector<OptionSpec> list_options() override;
   void load_json_cfg(const std::string& json_file_name);
   void save_json_cfg(const std::string& json_file_name);
+  std::string get_configured_options_as_json() override;
 protected:
   std::vector<OptionSpec> r_list_options(const std::string& prefix,
     const google::protobuf::Message* m);
@@ -145,7 +148,7 @@ public:
   std::string usage(unsigned width = 80);
   bool help_requested() { return help_handler_ != nullptr
     and help_handler_->was_option_handled(); }
-  const calin::ix::util::options_processor::CommandLineArguments& command_line_arguments() { return cla_; }
+  // const calin::ix::util::options_processor::CommandLineArguments& command_line_arguments() { return cla_; }
 protected:
   ProtobufOptionHandler* priority_protobuf_handler_ = nullptr;
   std::vector<OptionHandler*> handlers_;
@@ -158,8 +161,6 @@ protected:
   std::vector<std::string> arguments_;
   google::protobuf::Message* default_message_ = nullptr;
   google::protobuf::Message* message_ = nullptr;
-
-  calin::ix::util::options_processor::CommandLineArguments cla_;
 };
 
 } } } // namespace calin::util::options_processor

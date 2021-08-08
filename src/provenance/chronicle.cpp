@@ -224,3 +224,19 @@ register_rng_close(calin::ix::provenance::chronicle::RNGRecord* record, uint64_t
   ts.as_proto(record->mutable_close_timestamp());
   if(ncore_calls>=0)record->set_ncore_calls(ncore_calls);
 }
+
+calin::ix::provenance::chronicle::CommandLineProcessingRecord*
+calin::provenance::chronicle::register_command_line_processing(
+  const std::string& processed_by, const std::string& comment)
+{
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  calin::ix::provenance::chronicle::CommandLineProcessingRecord* record = nullptr;
+  {
+    std::lock_guard<std::mutex> lock { chronicle_mutex };
+    record = singleton_chronicle->add_command_line_record();
+  }
+  ts.as_proto(record->mutable_timestamp());
+  record->set_comment(comment);
+  record->set_processed_by(processed_by);
+  return record;
+}

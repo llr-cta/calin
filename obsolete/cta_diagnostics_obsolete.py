@@ -27,7 +27,7 @@ import calin.iact_data.event_dispatcher
 import calin.io.sql_transceiver
 import calin.util.log
 import calin.provenance.anthology
-import calin.util.options_processor
+import calin.io.options_processor
 import calin.ix.scripts.cta_diagnostics
 
 py_log = calin.util.log.PythonLogger()
@@ -48,7 +48,7 @@ opt.mutable_zfits().CopyFrom(cfg.zfits())
 opt.mutable_zmq().CopyFrom(cfg.zmq())
 opt.mutable_run_info().CopyFrom(calin.diagnostics.run_info.RunInfoDiagnosticsParallelEventVisitor.default_config())
 
-opt_proc = calin.util.options_processor.OptionsProcessor(opt, True);
+opt_proc = calin.io.options_processor.OptionsProcessor(opt, True);
 opt_proc.process_arguments(sys.argv)
 
 if(opt_proc.help_requested()):

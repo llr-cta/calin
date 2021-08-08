@@ -67,6 +67,8 @@ register_external_rng_open(uint64_t seed, const std::string& rng_type,
   const std::string& comment = "");
 void register_rng_close(calin::ix::provenance::chronicle::RNGRecord* record,
   uint64_t ncore_calls=0);
+calin::ix::provenance::chronicle::CommandLineProcessingRecord*
+register_command_line_processing(const std::string& processed_by, const std::string& comment = "");
 
 //void register_rng_creation();
 

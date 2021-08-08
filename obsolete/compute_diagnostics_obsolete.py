@@ -31,7 +31,7 @@ import calin.diagnostics.delta_t
 import calin.io.sql_transceiver
 import calin.util.log
 import calin.provenance.anthology
-import calin.util.options_processor
+import calin.io.options_processor
 import calin.ix.scripts.compute_diagnostics
 
 py_log = calin.util.log.PythonLogger()
@@ -53,7 +53,7 @@ opt.mutable_decoder().CopyFrom(calin.iact_data.telescope_data_source.\
     NectarCamZFITSDataSource.default_decoder_config())
 #opt.mutable_decoder().set_exchange_gain_channels(True);
 
-opt_proc = calin.util.options_processor.OptionsProcessor(opt, True);
+opt_proc = calin.io.options_processor.OptionsProcessor(opt, True);
 opt_proc.process_arguments(sys.argv)
 
 if(opt_proc.help_requested()):
