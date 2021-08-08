@@ -110,7 +110,7 @@ def draw_log_delta_t_histogram(stage1, event_set = 'all', axis = None):
         if(label_y < axis.get_ylim()[0]):
             axis.set_ylim(label_y, axis.get_ylim()[1])
 
-    if(dt2_h is not None and dt2_h.sum_w()>0):
+    if(dt2_h is not None and dt2_h.sum_w()>0): # protect against calling weight(0) on empty histogram
         dt2_sh = calin.math.histogram.SimpleHist(dt2_h)
         label_x = 10**(dt2_sh.min_xval()+6)
         label_y = dt2_sh.weight(0)/dt2_sh.sum_w()/dt2_sh.dxval()*0.5
