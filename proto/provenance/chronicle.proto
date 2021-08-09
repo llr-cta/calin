@@ -79,14 +79,20 @@ message RNGRecord
     [ (CFO).sql.inline_message=true ];
 }
 
+message ProcessedOption {
+  string type                                              = 1 [
+    (CFO).desc = "Type name of processed option." ];
+  string json                                              = 2 [
+    (CFO).desc = "JSON representation of processed option, probably "
+      "produced from protobuf." ];
+};
+
 message CommandLineProcessingRecord {
   calin.ix.util.timestamp.Timestamp timestamp              = 1 [
     (CFO).sql.inline_message=true ];
   repeated string arguments                                = 2 [
     (CFO).desc = "Command line arguments." ];
-  repeated string processed_options_json                   = 3 [
-    (CFO).desc = "JSON representation of processed options, probably "
-      "produced from protobuf." ];
+  repeated ProcessedOption processed_options               = 3;
   string comment                                           = 4;
   string processed_by                                      = 5;
 };

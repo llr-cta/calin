@@ -85,10 +85,18 @@ std::vector<OptionSpec> SimpleOptionHandler::list_options()
   return options;
 }
 
-std::string SimpleOptionHandler::get_configured_options_as_json()
+std::string SimpleOptionHandler::get_options_as_json()
 {
-  std::string out = "{\"" + key_ + "\": " + (option_handled_?std::string("true"):std::string("false")) + '}';
+  std::string out = {};
+  if(enable_json_) {
+    out = "{\"" + key_ + "\": " + (option_handled_?std::string("true"):std::string("false")) + '}';
+  }
   return out;
+}
+
+std::string SimpleOptionHandler::get_options_type_name()
+{
+  return {};
 }
 
 // ============================================================================
@@ -275,9 +283,14 @@ r_list_options(const std::string& prefix, const google::protobuf::Message* m)
   return options;
 }
 
-std::string ProtobufOptionHandler::get_configured_options_as_json()
+std::string ProtobufOptionHandler::get_options_as_json()
 {
   return calin::io::json::encode_protobuf_to_json_string(message_);
+}
+
+std::string ProtobufOptionHandler::get_options_type_name()
+{
+  return message_->GetTypeName();
 }
 
 // ============================================================================
@@ -485,6 +498,16 @@ terminate_processing:
       assert(0);
     case OptionHandlerResult::OPTION_OK:
       break;
+    }
+  }
+
+  for(auto* ihandler : handlers_)
+  {
+    std::string json = ihandler->get_options_as_json();
+    if(not json.empty()) {
+      auto* opt_record = clp_record->add_processed_options();
+      opt_record->set_json(json);
+      opt_record->set_type(ihandler->get_options_type_name());
     }
   }
 }

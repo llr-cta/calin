@@ -54,7 +54,7 @@ struct OptionSpec
 #ifdef SWIG
 } } } // namespace calin::io::options_processor
 %template (Vector_OptionsProcessor_OptionSpec) std::vector<calin::io::options_processor::OptionSpec>;
-namespace calin { namespace util { namespace options_processor {
+namespace calin { namespace io { namespace options_processor {
 #endif
 
 class OptionHandler
@@ -64,30 +64,34 @@ public:
   virtual OptionHandlerResult handle_option(const std::string& key,
     bool has_val, const std::string& val) = 0;
   virtual std::vector<OptionSpec> list_options() = 0;
-  virtual std::string get_configured_options_as_json() = 0;
+  virtual std::string get_options_as_json() = 0;
+  virtual std::string get_options_type_name() = 0;
 };
 
 class SimpleOptionHandler: public OptionHandler
 {
 public:
-  SimpleOptionHandler(const std::string& key, const std::string& help_text):
-    OptionHandler(), key_(key), description_(help_text)
+  SimpleOptionHandler(const std::string& key, const std::string& help_text,
+      bool enable_json = true):
+    OptionHandler(), key_(key), description_(help_text), enable_json_(enable_json)
   { /* nothing to see here */ }
   SimpleOptionHandler(const std::string& key, const std::string& alt_key,
-      const std::string& help_text):
-    OptionHandler(), key_(key), alt_key_(alt_key), description_(help_text)
+      const std::string& help_text, bool enable_json = true):
+    OptionHandler(), key_(key), alt_key_(alt_key), description_(help_text), enable_json_(enable_json)
   { /* nothing to see here */ }
   virtual ~SimpleOptionHandler();
   OptionHandlerResult handle_option(const std::string& key,
     bool has_val, const std::string& val) override;
   std::vector<OptionSpec> list_options() override;
   bool was_option_handled() { return option_handled_; }
-  std::string get_configured_options_as_json() override;
+  std::string get_options_as_json() override;
+  std::string get_options_type_name() override;
 protected:
   std::string key_;
   std::string alt_key_;
   std::string description_;
   bool option_handled_ = false;
+  bool enable_json_ = true;
 };
 
 class ProtobufOptionHandler: public OptionHandler
@@ -100,7 +104,8 @@ public:
   std::vector<OptionSpec> list_options() override;
   void load_json_cfg(const std::string& json_file_name);
   void save_json_cfg(const std::string& json_file_name);
-  std::string get_configured_options_as_json() override;
+  std::string get_options_as_json() override;
+  std::string get_options_type_name() override;
 protected:
   std::vector<OptionSpec> r_list_options(const std::string& prefix,
     const google::protobuf::Message* m);
