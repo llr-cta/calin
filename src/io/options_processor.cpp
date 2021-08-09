@@ -311,7 +311,8 @@ OptionsProcessor::OptionsProcessor(google::protobuf::Message* message,
     priority_protobuf_handler_(new ProtobufOptionHandler(message))
 {
   if(add_help_option) {
-    help_handler_ = new SimpleOptionHandler("h", "help", "Print help message.");
+    help_handler_ = new SimpleOptionHandler("h", "help", "Print help message.",
+      /*enable_json=*/ false);
     add_option_handler(help_handler_, true);
   }
   add_option_handler(priority_protobuf_handler_, true);
