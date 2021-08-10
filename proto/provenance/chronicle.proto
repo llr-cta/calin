@@ -102,7 +102,7 @@ message CommandLineProcessingRecord {
 };
 
 message ProcessingRecord {
-  calin.ix.util.timestamp.Timestamp start_timestamp        = 1
+  calin.ix.util.timestamp.Timestamp open_timestamp        = 1
     [ (CFO).sql.inline_message=true ];
   string type                                              = 2 [
     (CFO).desc = "Type of the tool doing the processing, probably the "
@@ -117,7 +117,7 @@ message ProcessingRecord {
   string created_by                                        = 8;
   uint64 num_items_processed                               = 9
     [ (CFO).is_counter=true ];
-  calin.ix.util.timestamp.Timestamp finish_timestamp       = 10
+  calin.ix.util.timestamp.Timestamp close_timestamp       = 10
     [ (CFO).sql.inline_message=true ];
 };
 

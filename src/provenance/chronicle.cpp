@@ -73,6 +73,7 @@ void calin::provenance::chronicle::prune_the_chronicle()
   prune_repeated_field(singleton_chronicle->mutable_file_io_record());
   prune_repeated_field(singleton_chronicle->mutable_network_io_record());
   prune_repeated_field(singleton_chronicle->mutable_rng_record());
+  prune_repeated_field(singleton_chronicle->mutable_processing_record());
 }
 
 calin::ix::provenance::chronicle::Chronicle*
@@ -243,7 +244,7 @@ calin::provenance::chronicle::register_command_line_processing(
 
 calin::ix::provenance::chronicle::ProcessingRecord*
 calin::provenance::chronicle::register_processing_start(
-  const std::string& type, const std::string& description, 
+  const std::string& type, const std::string& description,
   const std::string& created_by, const std::string& comment)
 {
   calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
@@ -252,7 +253,7 @@ calin::provenance::chronicle::register_processing_start(
     std::lock_guard<std::mutex> lock { chronicle_mutex };
     record = singleton_chronicle->add_processing_record();
   }
-  ts.as_proto(record->mutable_start_timestamp());
+  ts.as_proto(record->mutable_open_timestamp());
   record->set_type(type);
   record->set_description(description);
   record->set_created_by(created_by);
@@ -264,5 +265,5 @@ void calin::provenance::chronicle::register_processing_finish(
   calin::ix::provenance::chronicle::ProcessingRecord* record)
 {
   calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
-  ts.as_proto(record->mutable_finish_timestamp());
+  ts.as_proto(record->mutable_close_timestamp());
 }
