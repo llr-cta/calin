@@ -24,6 +24,7 @@
 #include <util/log.hpp>
 #include <util/file.hpp>
 #include <util/timestamp.hpp>
+#include <io/json.hpp>
 #include <diagnostics/stage1.hpp>
 #include <provenance/anthology.hpp>
 
@@ -150,6 +151,12 @@ bool Stage1ParallelEventVisitor::visit_telescope_run(
   delete nectarcam_ancillary_data_;
   nectarcam_ancillary_data_ = nullptr;
   run_config_ = run_config;
+  processing_record_ = calin::provenance::chronicle::register_processing_start(
+    "Stage1ParallelEventVisitor", "Stage 1 data reduction", __PRETTY_FUNCTION__);
+  processing_record_->add_primary_inputs(run_config->filename());
+  auto* config_json = processing_record_->add_config();
+  config_json->set_type(config_.GetTypeName());
+  config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
   return FilteredDelegatingParallelEventVisitor::visit_telescope_run(
     run_config, event_lifetime_manager);
 }
@@ -207,6 +214,10 @@ bool Stage1ParallelEventVisitor::leave_telescope_run()
       default:
         break;
     }
+  }
+
+  if(processing_record_) {
+    calin::provenance::chronicle::register_processing_finish(processing_record_);
   }
 
   return good;

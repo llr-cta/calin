@@ -32,6 +32,7 @@
 #include <diagnostics/clock_regression.hpp>
 #include <diagnostics/waveform.hpp>
 #include <iact_data/nectarcam_ancillary_data.hpp>
+#include <provenance/chronicle.hpp>
 
 namespace calin { namespace diagnostics { namespace stage1 {
 
@@ -61,6 +62,8 @@ public:
 
 private:
   calin::ix::diagnostics::stage1::Stage1Config config_;
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record_ = nullptr;
+  
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
 
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* hg_sum_pev_ = nullptr;
