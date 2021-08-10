@@ -55,8 +55,10 @@ message NetworkIORecord
   AccessType access                                        = 2;
   string endpoint_name                                     = 3;
   string comment                                           = 4;
-  int64 nbytes_received                                    = 5;
-  int64 nbytes_sent                                        = 6;
+  int64 nbytes_received                                    = 5
+    [ (CFO).is_counter=true ];
+  int64 nbytes_sent                                        = 6
+    [ (CFO).is_counter=true ];
   string opened_by                                         = 7;
   calin.ix.util.timestamp.Timestamp close_timestamp        = 8
     [ (CFO).sql.inline_message=true ];
@@ -74,16 +76,18 @@ message RNGRecord
   }
   string comment                                           = 6;
   string created_by                                        = 7;
-  uint64 ncore_calls                                       = 8;
+  uint64 ncore_calls                                       = 8
+    [ (CFO).is_counter=true ];
   calin.ix.util.timestamp.Timestamp close_timestamp        = 9
     [ (CFO).sql.inline_message=true ];
 }
 
-message ProcessedOption {
+message JSONConfiguration {
   string type                                              = 1 [
-    (CFO).desc = "Type name of processed option." ];
+    (CFO).desc = "Type name of the configuration set (probably a "
+        "protobuf type name)." ];
   string json                                              = 2 [
-    (CFO).desc = "JSON representation of processed option, probably "
+    (CFO).desc = "JSON representation of configuration set, probably "
       "produced from protobuf." ];
 };
 
@@ -92,9 +96,29 @@ message CommandLineProcessingRecord {
     (CFO).sql.inline_message=true ];
   repeated string arguments                                = 2 [
     (CFO).desc = "Command line arguments." ];
-  repeated ProcessedOption processed_options               = 3;
+  repeated JSONConfiguration processed_options             = 3;
   string comment                                           = 4;
   string processed_by                                      = 5;
+};
+
+message ProcessingRecord {
+  calin.ix.util.timestamp.Timestamp start_timestamp        = 1
+    [ (CFO).sql.inline_message=true ];
+  string type                                              = 2 [
+    (CFO).desc = "Type of the tool doing the processing, probably the "
+      "C++ or Python class name." ];
+  string description                                       = 3 [
+    (CFO).desc = "Human consumable description of the processing." ];
+  repeated JSONConfiguration config                        = 4
+    [ (CFO).desc = "JSON representation of configuration of the processor, possibly "
+      "split over multiple json strings. Probably a protobuf encoded as JSON." ];
+  repeated string primary_inputs                           = 5;
+  string comment                                           = 7;
+  string created_by                                        = 8;
+  uint64 num_items_processed                               = 9
+    [ (CFO).is_counter=true ];
+  calin.ix.util.timestamp.Timestamp finish_timestamp       = 10
+    [ (CFO).sql.inline_message=true ];
 };
 
 message Chronicle
@@ -103,4 +127,5 @@ message Chronicle
   repeated NetworkIORecord network_io_record               = 2;
   repeated RNGRecord rng_record                            = 10;
   repeated CommandLineProcessingRecord command_line_record = 20;
+  repeated ProcessingRecord processing_record              = 30;
 }
