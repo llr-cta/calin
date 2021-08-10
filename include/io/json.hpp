@@ -27,10 +27,10 @@
 
 namespace calin { namespace io { namespace json {
 
-std::string encode_protobuf_to_json_string(const google::protobuf::Message* message);
+std::string encode_protobuf_to_json_string(const google::protobuf::Message& message);
 void save_protobuf_to_json_file(const std::string& filename,
-  const google::protobuf::Message* message);
-inline void save_protobuf_to_json_file(const google::protobuf::Message* message,
+  const google::protobuf::Message& message);
+inline void save_protobuf_to_json_file(const google::protobuf::Message& message,
     const std::string& filename) {
   save_protobuf_to_json_file(filename, message);
 }

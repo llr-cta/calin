@@ -197,7 +197,7 @@ void ProtobufOptionHandler::load_json_cfg(const std::string& json_file_name)
 
 void ProtobufOptionHandler::save_json_cfg(const std::string& json_file_name)
 {
-  calin::io::json::save_protobuf_to_json_file(json_file_name, message_);
+  calin::io::json::save_protobuf_to_json_file(json_file_name, *message_);
 }
 
 std::vector<OptionSpec> ProtobufOptionHandler::
@@ -285,7 +285,7 @@ r_list_options(const std::string& prefix, const google::protobuf::Message* m)
 
 std::string ProtobufOptionHandler::get_options_as_json()
 {
-  return calin::io::json::encode_protobuf_to_json_string(message_);
+  return calin::io::json::encode_protobuf_to_json_string(*message_);
 }
 
 std::string ProtobufOptionHandler::get_options_type_name()

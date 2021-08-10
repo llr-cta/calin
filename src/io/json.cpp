@@ -36,26 +36,26 @@
 #include <libgen.h>
 
 std::string calin::io::json::
-encode_protobuf_to_json_string(const google::protobuf::Message* message)
+encode_protobuf_to_json_string(const google::protobuf::Message& message)
 {
   google::protobuf::util::JsonPrintOptions opt;
   opt.add_whitespace = true;
   opt.always_print_primitive_fields = true;
   std::string s;
-  if(!google::protobuf::util::MessageToJsonString(*message, &s, opt).ok()) {
+  if(!google::protobuf::util::MessageToJsonString(message, &s, opt).ok()) {
     throw std::runtime_error("Could not encode message as JSON");
   }
   return s;
 }
 
 void calin::io::json::save_protobuf_to_json_file(const std::string& filename,
-  const google::protobuf::Message* message)
+  const google::protobuf::Message& message)
 {
   google::protobuf::util::JsonPrintOptions opt;
   opt.add_whitespace = true;
   opt.always_print_primitive_fields = true;
   std::string s;
-  if(!google::protobuf::util::MessageToJsonString(*message, &s, opt).ok())
+  if(!google::protobuf::util::MessageToJsonString(message, &s, opt).ok())
     throw std::runtime_error("Could not encode message as JSON");
   auto file_record = calin::provenance::chronicle::register_file_open(filename,
       calin::ix::provenance::chronicle::AT_WRITE, __PRETTY_FUNCTION__);
