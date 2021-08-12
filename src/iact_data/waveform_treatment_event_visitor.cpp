@@ -35,10 +35,12 @@ using calin::util::memory::safe_aligned_recalloc;
 
 OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 OptimalWindowSumWaveformTreatmentParallelEventVisitor(
-  calin::ix::iact_data::waveform_treatment_event_visitor::
-    OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config,
-      GainChannel gain_channel_to_treat):
-  ParallelEventVisitor(), config_(config), gain_channel_to_treat_(gain_channel_to_treat)
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config,
+    GainChannel gain_channel_to_treat,
+    const std::string& processing_report_comment):
+  ParallelEventVisitor(), config_(config), gain_channel_to_treat_(gain_channel_to_treat),
+  processing_report_comment_(processing_report_comment)
 {
   // nothing to see here
 }
@@ -61,12 +63,12 @@ OptimalWindowSumWaveformTreatmentParallelEventVisitor*
 OptimalWindowSumWaveformTreatmentParallelEventVisitor::New(
   calin::ix::iact_data::waveform_treatment_event_visitor::
     OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config,
-  GainChannel gain_channel_to_treat)
+  GainChannel gain_channel_to_treat, const std::string& processing_report_comment)
 {
 #if INSTRSET >= 9
   if(calin::provenance::system_info::has_avx512f()) {
     return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<
-      calin::util::vcl::VCL5121Architecture>(config, gain_channel_to_treat);
+      calin::util::vcl::VCL5121Architecture>(config, gain_channel_to_treat, processing_report_comment);
   }
   bool has_avx512f();
   if()
@@ -75,12 +77,12 @@ OptimalWindowSumWaveformTreatmentParallelEventVisitor::New(
 #if INSTRSET >= 8
   if(calin::provenance::system_info::has_avx2()) {
     return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<
-      calin::util::vcl::VCL256Architecture>(config, gain_channel_to_treat);
+      calin::util::vcl::VCL256Architecture>(config, gain_channel_to_treat, processing_report_comment);
   }
 #endif
 
   return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<
-    calin::util::vcl::VCL128Architecture>(config, gain_channel_to_treat);
+    calin::util::vcl::VCL128Architecture>(config, gain_channel_to_treat, processing_report_comment);
 }
 
 OptimalWindowSumWaveformTreatmentParallelEventVisitor*

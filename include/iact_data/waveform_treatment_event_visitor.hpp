@@ -29,6 +29,7 @@
 #include <util/log.hpp>
 #include <iact_data/waveform_treatment_event_visitor.pb.h>
 #include <provenance/system_info.hpp>
+#include <provenance/chronicle.hpp>
 #include <util/memory.hpp>
 
 namespace calin { namespace iact_data { namespace waveform_treatment_event_visitor {
@@ -42,13 +43,16 @@ public:
   OptimalWindowSumWaveformTreatmentParallelEventVisitor(
     calin::ix::iact_data::waveform_treatment_event_visitor::
       OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
-    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN);
+    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN,
+    const std::string& processing_report_comment = {});
 
   OptimalWindowSumWaveformTreatmentParallelEventVisitor(
-    GainChannel gain_channel_to_treat,
-    calin::ix::iact_data::waveform_treatment_event_visitor::
-      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config()):
-    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
+      GainChannel gain_channel_to_treat,
+      calin::ix::iact_data::waveform_treatment_event_visitor::
+        OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
+      const std::string& processing_report_comment = {}) :
+    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat,
+      processing_report_comment)
   { /* nothing to see here */ }
 
   virtual ~OptimalWindowSumWaveformTreatmentParallelEventVisitor();
@@ -56,14 +60,16 @@ public:
   static OptimalWindowSumWaveformTreatmentParallelEventVisitor* New(
     calin::ix::iact_data::waveform_treatment_event_visitor::
       OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
-    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN);
+    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN,
+    const std::string& processing_report_comment = {});
 
   static OptimalWindowSumWaveformTreatmentParallelEventVisitor* New(
     GainChannel gain_channel_to_treat,
     calin::ix::iact_data::waveform_treatment_event_visitor::
-      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config())
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
+    const std::string& processing_report_comment = {})
   {
-    return New(config, gain_channel_to_treat);
+    return New(config, gain_channel_to_treat, processing_report_comment);
   }
 
   OptimalWindowSumWaveformTreatmentParallelEventVisitor* new_sub_visitor(
@@ -131,6 +137,9 @@ protected:
   calin::ix::iact_data::waveform_treatment_event_visitor::
     OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config_;
   GainChannel gain_channel_to_treat_ = HIGH_OR_SINGLE_GAIN;
+
+  std::string processing_report_comment_ = {};
+
   unsigned nchan_ = 0;
   unsigned nsamp_ = 0;
   unsigned window_n_;
@@ -168,8 +177,9 @@ public:
   VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor(
       calin::ix::iact_data::waveform_treatment_event_visitor::
         OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
-      GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN):
-    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
+      GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN,
+      const std::string& processing_report_comment = {}):
+    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat, processing_report_comment)
   {
     /* nothing to see here */
   }
@@ -242,8 +252,7 @@ public:
   }
 
 #ifndef SWIG
-private:
-
+protected:
   void vcl_analyze_waveforms(const uint16_t* __restrict__ data)
   {
     static constexpr unsigned num_int16 = VCLArchitecture::num_int16;
