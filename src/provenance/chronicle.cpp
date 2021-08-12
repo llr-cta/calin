@@ -243,15 +243,18 @@ calin::provenance::chronicle::register_command_line_processing(
 }
 
 calin::ix::provenance::chronicle::ProcessingRecord*
-calin::provenance::chronicle::register_processing_start(
+calin::provenance::chronicle::register_subprocessing_start(
+  calin::ix::provenance::chronicle::ProcessingRecord* parent_processing_record,
   const std::string& type, const std::string& description,
   const std::string& created_by, const std::string& comment)
 {
   calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
-  calin::ix::provenance::chronicle::ProcessingRecord* record = nullptr;
-  {
+  calin::ix::provenance::chronicle::ProcessingRecord* record;
+  if(parent_processing_record == nullptr) {
     std::lock_guard<std::mutex> lock { chronicle_mutex };
     record = singleton_chronicle->add_processing_record();
+  } else {
+    record = parent_processing_record->add_sub_processing_record();
   }
   ts.as_proto(record->mutable_open_timestamp());
   record->set_type(type);
@@ -259,6 +262,14 @@ calin::provenance::chronicle::register_processing_start(
   record->set_created_by(created_by);
   record->set_comment(comment);
   return record;
+}
+
+calin::ix::provenance::chronicle::ProcessingRecord*
+calin::provenance::chronicle::register_processing_start(
+  const std::string& type, const std::string& description,
+  const std::string& created_by, const std::string& comment)
+{
+  return register_subprocessing_start(nullptr, type, description, created_by, comment);
 }
 
 void calin::provenance::chronicle::register_processing_finish(

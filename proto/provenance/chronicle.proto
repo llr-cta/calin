@@ -119,6 +119,8 @@ message ProcessingRecord {
     [ (CFO).is_counter=true ];
   calin.ix.util.timestamp.Timestamp close_timestamp       = 10
     [ (CFO).sql.inline_message=true ];
+  repeated ProcessingRecord sub_processing_record         = 20
+    [ (CFO).desc = "Records of processing that are \"children\" of this process." ];
 };
 
 message Chronicle

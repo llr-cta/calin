@@ -72,6 +72,11 @@ calin::ix::provenance::chronicle::CommandLineProcessingRecord*
 register_command_line_processing(const std::string& processed_by, const std::string& comment = "");
 
 calin::ix::provenance::chronicle::ProcessingRecord*
+register_subprocessing_start(
+  calin::ix::provenance::chronicle::ProcessingRecord* parent_processing_record,
+  const std::string& type, const std::string& description,
+  const std::string& created_by, const std::string& comment = "");
+calin::ix::provenance::chronicle::ProcessingRecord*
 register_processing_start(const std::string& type, const std::string& description,
   const std::string& created_by, const std::string& comment = "");
 void register_processing_finish(calin::ix::provenance::chronicle::ProcessingRecord* record);
