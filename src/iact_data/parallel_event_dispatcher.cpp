@@ -29,7 +29,6 @@
 #include <util/timestamp.hpp>
 #include <iact_data/zfits_actl_data_source.hpp>
 #include <iact_data/cta_actl_event_decoder.hpp>
-#include <iact_data/event_dispatcher.hpp>
 #include <iact_data/parallel_event_dispatcher.hpp>
 #include <io/data_source.hpp>
 #include <io/buffered_data_source.hpp>

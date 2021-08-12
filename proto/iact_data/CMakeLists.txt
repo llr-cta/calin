@@ -15,7 +15,7 @@
 
 set(CALIN_SWIG_PROTO instrument_layout.proto telescope_event.proto
 	zfits_data_source.proto telescope_run_configuration.proto
-	functional_event_visitor.proto waveform_treatment_event_visitor.proto
+	waveform_treatment_event_visitor.proto
 	nectarcam_data_source.proto nectarcam_configuration.proto
 	nectarcam_ancillary_data.proto
 	lstcam_data_source.proto lstcam_configuration.proto
