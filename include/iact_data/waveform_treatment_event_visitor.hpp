@@ -43,16 +43,13 @@ public:
   OptimalWindowSumWaveformTreatmentParallelEventVisitor(
     calin::ix::iact_data::waveform_treatment_event_visitor::
       OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
-    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN,
-    const std::string& processing_report_comment = {});
+    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN);
 
   OptimalWindowSumWaveformTreatmentParallelEventVisitor(
       GainChannel gain_channel_to_treat,
       calin::ix::iact_data::waveform_treatment_event_visitor::
-        OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
-      const std::string& processing_report_comment = {}) :
-    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat,
-      processing_report_comment)
+        OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config()) :
+    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
   { /* nothing to see here */ }
 
   virtual ~OptimalWindowSumWaveformTreatmentParallelEventVisitor();
@@ -60,16 +57,14 @@ public:
   static OptimalWindowSumWaveformTreatmentParallelEventVisitor* New(
     calin::ix::iact_data::waveform_treatment_event_visitor::
       OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
-    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN,
-    const std::string& processing_report_comment = {});
+    GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN);
 
   static OptimalWindowSumWaveformTreatmentParallelEventVisitor* New(
     GainChannel gain_channel_to_treat,
     calin::ix::iact_data::waveform_treatment_event_visitor::
-      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
-    const std::string& processing_report_comment = {})
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config())
   {
-    return New(config, gain_channel_to_treat, processing_report_comment);
+    return New(config, gain_channel_to_treat);
   }
 
   OptimalWindowSumWaveformTreatmentParallelEventVisitor* new_sub_visitor(
@@ -139,8 +134,6 @@ protected:
     OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config_;
   GainChannel gain_channel_to_treat_ = HIGH_OR_SINGLE_GAIN;
 
-  std::string processing_report_comment_ = {};
-
   unsigned nchan_ = 0;
   unsigned nsamp_ = 0;
   unsigned window_n_;
@@ -178,9 +171,8 @@ public:
   VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor(
       calin::ix::iact_data::waveform_treatment_event_visitor::
         OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config(),
-      GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN,
-      const std::string& processing_report_comment = {}):
-    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat, processing_report_comment)
+      GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN):
+    OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
   {
     /* nothing to see here */
   }
@@ -212,8 +204,14 @@ public:
     calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
     calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override
   {
+    if(processing_record) {
+      if(processing_record->type().empty()) {
+        processing_record->set_type(calin::util::vcl::templated_class_name<VCLArchitecture>("VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor"));
+      }
+      // Rest of the entries are set by OptimalWindowSumWaveformTreatmentParallelEventVisitor::visit_telescope_run
+    }
     bool old_nsamp = nsamp_;
-    bool good = OptimalWindowSumWaveformTreatmentParallelEventVisitor::visit_telescope_run(run_config, event_lifetime_manager, nullptr);
+    bool good = OptimalWindowSumWaveformTreatmentParallelEventVisitor::visit_telescope_run(run_config, event_lifetime_manager, processing_record);
     if(nsamp_!=old_nsamp) {
       auto* host_info = calin::provenance::system_info::the_host_info();
       const unsigned nv_samp = (nsamp_+31)/32;

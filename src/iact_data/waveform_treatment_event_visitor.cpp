@@ -23,6 +23,7 @@
 #include <stdexcept>
 
 #include <util/memory.hpp>
+#include <io/json.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
 #include <provenance/system_info.hpp>
 
@@ -37,10 +38,8 @@ OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 OptimalWindowSumWaveformTreatmentParallelEventVisitor(
     calin::ix::iact_data::waveform_treatment_event_visitor::
       OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config,
-    GainChannel gain_channel_to_treat,
-    const std::string& processing_report_comment):
-  ParallelEventVisitor(), config_(config), gain_channel_to_treat_(gain_channel_to_treat),
-  processing_report_comment_(processing_report_comment)
+    GainChannel gain_channel_to_treat):
+  ParallelEventVisitor(), config_(config), gain_channel_to_treat_(gain_channel_to_treat)
 {
   // nothing to see here
 }
@@ -63,12 +62,12 @@ OptimalWindowSumWaveformTreatmentParallelEventVisitor*
 OptimalWindowSumWaveformTreatmentParallelEventVisitor::New(
   calin::ix::iact_data::waveform_treatment_event_visitor::
     OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config,
-  GainChannel gain_channel_to_treat, const std::string& processing_report_comment)
+  GainChannel gain_channel_to_treat)
 {
 #if INSTRSET >= 9
   if(calin::provenance::system_info::has_avx512f()) {
     return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<
-      calin::util::vcl::VCL5121Architecture>(config, gain_channel_to_treat, processing_report_comment);
+      calin::util::vcl::VCL5121Architecture>(config, gain_channel_to_treat);
   }
   bool has_avx512f();
   if()
@@ -77,12 +76,12 @@ OptimalWindowSumWaveformTreatmentParallelEventVisitor::New(
 #if INSTRSET >= 8
   if(calin::provenance::system_info::has_avx2()) {
     return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<
-      calin::util::vcl::VCL256Architecture>(config, gain_channel_to_treat, processing_report_comment);
+      calin::util::vcl::VCL256Architecture>(config, gain_channel_to_treat);
   }
 #endif
 
   return new VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor<
-    calin::util::vcl::VCL128Architecture>(config, gain_channel_to_treat, processing_report_comment);
+    calin::util::vcl::VCL128Architecture>(config, gain_channel_to_treat);
 }
 
 OptimalWindowSumWaveformTreatmentParallelEventVisitor*
@@ -98,6 +97,23 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config,
   EventLifetimeManager* event_lifetime_manager,
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
+  if(processing_record) {
+    if(processing_record->type().empty()) {
+      processing_record->set_type("OptimalWindowSumWaveformTreatmentParallelEventVisitor");
+    }
+    if(gain_channel_to_treat_ == LOW_GAIN) {
+      processing_record->set_description("Optimal-window low-gain waveform sum");
+    } else if (run_config->camera_layout().adc_gains() !=
+        calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN) {
+      processing_record->set_description("Optimal-window high-gain waveform sum");
+    } else {
+      processing_record->set_description("Optimal-window waveform sum");
+    }
+    auto* config_json = processing_record->add_config();
+    config_json->set_type(config_.GetTypeName());
+    config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+  }
+
   reconfigure(run_config->configured_channel_id_size(), run_config->num_samples());
 
   if(config_.integration_n()==0)window_n_ = run_config->num_samples();
