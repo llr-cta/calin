@@ -155,7 +155,6 @@ bool Stage1ParallelEventVisitor::visit_telescope_run(
   if(processing_record) {
     processing_record->set_type("Stage1ParallelEventVisitor");
     processing_record->set_description("Stage 1 data reduction");
-    processing_record->add_primary_inputs(run_config->filename());
     auto* config_json = processing_record->add_config();
     config_json->set_type(config_.GetTypeName());
     config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));

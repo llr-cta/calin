@@ -120,6 +120,9 @@ bool FilteredDelegatingParallelEventVisitor::visit_telescope_run(
     if(processing_record) {
       ivisitor.sub_processing_record = calin::provenance::chronicle::register_processing_start(
         __PRETTY_FUNCTION__, ivisitor.processing_record_comment);
+      for(const auto& input : processing_record.primary_inputs()) {
+        ivisitor.sub_processing_record->add_primary_inputs(input);
+      }
     }
     good &= ivisitor.visitor->visit_telescope_run(run_config, event_lifetime_manager, ivisitor.sub_processing_record);
   }
