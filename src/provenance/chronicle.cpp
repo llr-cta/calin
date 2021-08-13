@@ -253,7 +253,7 @@ calin::provenance::chronicle::register_subprocessing_start(
     std::lock_guard<std::mutex> lock { chronicle_mutex };
     record = singleton_chronicle->add_processing_record();
   } else {
-    record = parent_processing_record->add_sub_processing_record();
+    record = parent_processing_record->add_subprocessing_record();
   }
   ts.as_proto(record->mutable_open_timestamp());
   record->set_created_by(created_by);

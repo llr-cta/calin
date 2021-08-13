@@ -116,15 +116,15 @@ bool FilteredDelegatingParallelEventVisitor::visit_telescope_run(
 {
   bool good = true;
   for(auto ivisitor : delegates_) {
-    ivisitor.sub_processing_record = nullptr;
+    ivisitor.subprocessing_record = nullptr;
     if(processing_record) {
-      ivisitor.sub_processing_record = calin::provenance::chronicle::register_processing_start(
-        __PRETTY_FUNCTION__, ivisitor.processing_record_comment);
-      for(const auto& input : processing_record.primary_inputs()) {
-        ivisitor.sub_processing_record->add_primary_inputs(input);
+      ivisitor.subprocessing_record = calin::provenance::chronicle::register_subprocessing_start(
+        processing_record, __PRETTY_FUNCTION__, ivisitor.processing_record_comment);
+      for(const auto& input : processing_record->primary_inputs()) {
+        ivisitor.subprocessing_record->add_primary_inputs(input);
       }
     }
-    good &= ivisitor.visitor->visit_telescope_run(run_config, event_lifetime_manager, ivisitor.sub_processing_record);
+    good &= ivisitor.visitor->visit_telescope_run(run_config, event_lifetime_manager, ivisitor.subprocessing_record);
   }
   return good;
 }
@@ -134,13 +134,13 @@ bool FilteredDelegatingParallelEventVisitor::leave_telescope_run(
 {
   bool good = true;
   for(auto ivisitor : delegates_) {
-    if((processing_record == nullptr) ^ (ivisitor.sub_processing_record == nullptr)) {
-      throw std::logic_error("FilteredDelegatingParallelEventVisitor::leave_telescope_run: inconsistent sub_processing_record");
+    if((processing_record == nullptr) ^ (ivisitor.subprocessing_record == nullptr)) {
+      throw std::logic_error("FilteredDelegatingParallelEventVisitor::leave_telescope_run: inconsistent subprocessing_record");
     }
-    good &= ivisitor.visitor->leave_telescope_run(ivisitor.sub_processing_record);
-    if(ivisitor.sub_processing_record) {
-      calin::provenance::chronicle::register_processing_finish(ivisitor.sub_processing_record);
-      ivisitor.sub_processing_record = nullptr;
+    good &= ivisitor.visitor->leave_telescope_run(ivisitor.subprocessing_record);
+    if(ivisitor.subprocessing_record) {
+      calin::provenance::chronicle::register_processing_finish(ivisitor.subprocessing_record);
+      ivisitor.subprocessing_record = nullptr;
     }
   }
   return good;

@@ -131,7 +131,7 @@ protected:
     calin::ix::iact_data::telescope_event::TriggerType trigger_type;
     bool visitor_saw_event = false;
     std::string processing_record_comment;
-    calin::ix::provenance::chronicle::ProcessingRecord* sub_processing_record = nullptr;
+    calin::ix::provenance::chronicle::ProcessingRecord* subprocessing_record = nullptr;
   };
 
   FilteredDelegatingParallelEventVisitor* parent_ = nullptr;

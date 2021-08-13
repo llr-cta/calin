@@ -117,9 +117,9 @@ message ProcessingRecord {
   string created_by                                        = 8;
   uint64 num_items_processed                               = 9
     [ (CFO).is_counter=true ];
-  calin.ix.util.timestamp.Timestamp close_timestamp       = 10
+  calin.ix.util.timestamp.Timestamp close_timestamp        = 10
     [ (CFO).sql.inline_message=true ];
-  repeated ProcessingRecord sub_processing_record         = 20
+  repeated ProcessingRecord subprocessing_record           = 20
     [ (CFO).desc = "Records of processing that are \"children\" of this process." ];
 };
 
