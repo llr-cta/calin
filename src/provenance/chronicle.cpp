@@ -245,7 +245,6 @@ calin::provenance::chronicle::register_command_line_processing(
 calin::ix::provenance::chronicle::ProcessingRecord*
 calin::provenance::chronicle::register_subprocessing_start(
   calin::ix::provenance::chronicle::ProcessingRecord* parent_processing_record,
-  const std::string& type, const std::string& description,
   const std::string& created_by, const std::string& comment)
 {
   calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
@@ -257,8 +256,6 @@ calin::provenance::chronicle::register_subprocessing_start(
     record = parent_processing_record->add_sub_processing_record();
   }
   ts.as_proto(record->mutable_open_timestamp());
-  record->set_type(type);
-  record->set_description(description);
   record->set_created_by(created_by);
   record->set_comment(comment);
   return record;
@@ -266,10 +263,9 @@ calin::provenance::chronicle::register_subprocessing_start(
 
 calin::ix::provenance::chronicle::ProcessingRecord*
 calin::provenance::chronicle::register_processing_start(
-  const std::string& type, const std::string& description,
   const std::string& created_by, const std::string& comment)
 {
-  return register_subprocessing_start(nullptr, type, description, created_by, comment);
+  return register_subprocessing_start(nullptr, created_by, comment);
 }
 
 void calin::provenance::chronicle::register_processing_finish(
