@@ -152,12 +152,14 @@ bool Stage1ParallelEventVisitor::visit_telescope_run(
   delete nectarcam_ancillary_data_;
   nectarcam_ancillary_data_ = nullptr;
   run_config_ = run_config;
-  processing_record_ = calin::provenance::chronicle::register_processing_start(
-    "Stage1ParallelEventVisitor", "Stage 1 data reduction", __PRETTY_FUNCTION__);
-  processing_record_->add_primary_inputs(run_config->filename());
-  auto* config_json = processing_record_->add_config();
-  config_json->set_type(config_.GetTypeName());
-  config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+  if(processing_record) {
+    processing_record->set_type("Stage1ParallelEventVisitor");
+    processing_record->set_description("Stage 1 data reduction");
+    processing_record->add_primary_inputs(run_config->filename());
+    auto* config_json = processing_record->add_config();
+    config_json->set_type(config_.GetTypeName());
+    config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+  }
   return FilteredDelegatingParallelEventVisitor::visit_telescope_run(
     run_config, event_lifetime_manager, processing_record);
 }
@@ -165,7 +167,7 @@ bool Stage1ParallelEventVisitor::visit_telescope_run(
 bool Stage1ParallelEventVisitor::leave_telescope_run(
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
-  bool good = FilteredDelegatingParallelEventVisitor::leave_telescope_run();
+  bool good = FilteredDelegatingParallelEventVisitor::leave_telescope_run(processing_record);
 
   if(config_.enable_ancillary_data()) {
     int64_t start_time = run_info_pev_->min_event_time() / int64_t(1000000000);
@@ -216,10 +218,6 @@ bool Stage1ParallelEventVisitor::leave_telescope_run(
       default:
         break;
     }
-  }
-
-  if(processing_record_) {
-    calin::provenance::chronicle::register_processing_finish(processing_record_);
   }
 
   return good;

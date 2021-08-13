@@ -64,7 +64,6 @@ public:
 
 private:
   calin::ix::diagnostics::stage1::Stage1Config config_;
-  calin::ix::provenance::chronicle::ProcessingRecord* processing_record_ = nullptr;
 
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
 
