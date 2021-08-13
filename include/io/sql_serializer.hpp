@@ -264,6 +264,8 @@ public:
 
 protected:
 
+  unsigned max_recursive_message_depth_ = 2;
+  
   bool write_errors_to_log_ = true;
   bool write_sql_to_log_ = false;
 
@@ -283,7 +285,8 @@ protected:
   SQLTable* r_make_sqltable_tree(const std::string& table_name,
     const google::protobuf::Descriptor* d, SQLTable* parent_table,
     const google::protobuf::FieldDescriptor* parent_field_d,
-    const std::string& table_desc, const std::string& table_units);
+    const std::string& table_desc, const std::string& table_units,
+    std::map<std::string,unsigned>& recursive_message_depth);
 
   void r_propagate_keys(SQLTable* t, std::vector<const SQLTableField*> keys);
 

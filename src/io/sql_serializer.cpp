@@ -82,9 +82,10 @@ make_sqltable_tree(const std::string& table_name,
   const google::protobuf::Descriptor* d, const std::string& instance_desc,
   bool propagate_keys)
 {
+  std::map<std::string,unsigned> recursive_message_depth;
   auto* t = r_make_sqltable_tree(table_name, d,
     /* parent_table= */ nullptr, /* parent_field_d= */ nullptr,
-    /* table_desc = */ instance_desc, /* table_units= */ "");
+    /* table_desc = */ instance_desc, /* table_units= */ "", recursive_message_depth);
   if(propagate_keys) {
     r_propagate_keys(t, { });
   }
@@ -509,7 +510,8 @@ std::vector<uint64_t> SQLSerializer::exec_select_oids(const std::string& sql,
 calin::io::sql_serializer::SQLTable* SQLSerializer::
 r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Descriptor* d,
   SQLTable* parent_table, const google::protobuf::FieldDescriptor* parent_field_d,
-  const std::string& table_desc, const std::string& table_units)
+  const std::string& table_desc, const std::string& table_units,
+  std::map<std::string,unsigned>& recursive_message_depth)
 {
   SQLTable* t { new SQLTable };
   t->table_d                     = d;
@@ -560,8 +562,12 @@ r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Desc
 
     if(f->type()==FieldDescriptor::TYPE_MESSAGE)
     {
-      sub_table = r_make_sqltable_tree(sub_name(table_name, f->name()),
-        f->message_type(), t, f, field_desc, field_units);
+      if(recursive_message_depth[f->name()] < max_recursive_message_depth_) {
+        ++recursive_message_depth[f->name()];
+        sub_table = r_make_sqltable_tree(sub_name(table_name, f->name()),
+          f->message_type(), t, f, field_desc, field_units, recursive_message_depth);
+        --recursive_message_depth[f->name()];
+      }
     }
     else if(f->is_repeated())
     {
@@ -604,22 +610,22 @@ r_make_sqltable_tree(const std::string& table_name, const google::protobuf::Desc
       continue;
     }
 
-    assert(sub_table);
+    if(sub_table) {
+      if(f->is_repeated())
+      {
+        SQLTableField* tf { new SQLTableField };
+        tf->table             = sub_table;
+        tf->field_origin      = tf;
+        tf->field_type        = SQLTableField::KEY_LOOP_ID;
+        tf->field_name        = sub_name(sub_table->table_name, "loop_id");
+        tf->field_d           = nullptr;
+        tf->db_field_present  = db_table_fields_.count(sub_name(t->table_name, tf->field_name));
 
-    if(f->is_repeated())
-    {
-      SQLTableField* tf { new SQLTableField };
-      tf->table             = sub_table;
-      tf->field_origin      = tf;
-      tf->field_type        = SQLTableField::KEY_LOOP_ID;
-      tf->field_name        = sub_name(sub_table->table_name, "loop_id");
-      tf->field_d           = nullptr;
-      tf->db_field_present  = db_table_fields_.count(sub_name(t->table_name, tf->field_name));
+        sub_table->fields.insert(sub_table->fields.begin(), tf);
+      }
 
-      sub_table->fields.insert(sub_table->fields.begin(), tf);
+      t->sub_tables.insert(t->sub_tables.end(), sub_table);
     }
-
-    t->sub_tables.insert(t->sub_tables.end(), sub_table);
   }
   return t;
 }
