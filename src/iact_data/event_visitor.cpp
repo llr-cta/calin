@@ -35,64 +35,6 @@ EventLifetimeManager::~EventLifetimeManager()
   // nothing to see here
 }
 
-TelescopeEventVisitor::~TelescopeEventVisitor()
-{
-  // nothing to see here
-}
-
-bool TelescopeEventVisitor::demand_waveforms()
-{
-  return true;
-}
-
-bool TelescopeEventVisitor::is_parallelizable()
-{
-  return false;
-}
-
-TelescopeEventVisitor* TelescopeEventVisitor::new_sub_visitor(
-  const std::map<TelescopeEventVisitor*,TelescopeEventVisitor*>&
-    antecedent_visitors)
-{
-  throw std::runtime_error("TelescopeEventVisitor: parallel sub workers not "
-    "implemented.");
-  return nullptr;
-}
-
-bool TelescopeEventVisitor::
-visit_telescope_run(const TelescopeRunConfiguration* run_config)
-{
-  return true;
-}
-
-bool TelescopeEventVisitor::leave_telescope_run()
-{
-  return true;
-}
-
-bool TelescopeEventVisitor::
-visit_telescope_event(uint64_t seq_index, TelescopeEvent* event)
-{
-  return true;
-}
-
-bool TelescopeEventVisitor::leave_telescope_event()
-{
-  return true;
-}
-
-bool TelescopeEventVisitor::visit_waveform(unsigned ichan,
-    ChannelWaveform* high_gain, ChannelWaveform* low_gain)
-{
-  return true;
-}
-
-bool TelescopeEventVisitor::merge_results()
-{
-  return true;
-}
-
-
 ParallelEventVisitor::~ParallelEventVisitor()
 {
   // nothing to see here
