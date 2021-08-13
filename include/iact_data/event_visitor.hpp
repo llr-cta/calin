@@ -123,7 +123,8 @@ protected:
         bool _unfiltered, calin::ix::iact_data::telescope_event::TriggerType _trigger_type,
         const std::string& _processing_record_comment):
       visitor(_visitor), adopt_visitor(_adopt_visitor), unfiltered(_unfiltered),
-      trigger_type(_trigger_type), processing_record_comment(_processing_record_comment) { /* nothing to see here */ }
+      trigger_type(_trigger_type), processing_record_comment(_processing_record_comment)
+    { /* nothing to see here */ }
 
     ParallelEventVisitor* visitor;
     bool adopt_visitor;
