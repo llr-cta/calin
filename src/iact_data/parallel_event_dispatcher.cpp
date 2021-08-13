@@ -94,9 +94,10 @@ void ParallelEventDispatcher::release_event(
 }
 
 void ParallelEventDispatcher::
-add_visitor(ParallelEventVisitor* visitor, bool adopt_visitor)
+add_visitor(ParallelEventVisitor* visitor,
+  const std::string& processing_record_comment, bool adopt_visitor)
 {
-  visitors_.emplace_back(visitor);
+  visitors_.emplace_back(visitor, processing_record_comment);
   if(adopt_visitor)adopted_visitors_.emplace_back(visitor);
 }
 
@@ -160,7 +161,7 @@ void ParallelEventDispatcher::process_run(calin::io::data_source::DataSource<
   std::atomic<uint_fast64_t> ndispatched { 0 };
 
   write_initial_log_message(run_config, nthread);
-  dispatch_run_configuration(run_config);
+  dispatch_run_configuration(run_config, /*register_processor=*/ true);
   if(nthread <= 0)
   {
     do_dispatcher_loop(src, log_frequency, start_time, ndispatched);
@@ -189,7 +190,7 @@ process_run(std::vector<calin::io::data_source::DataSource<
   std::atomic<uint_fast64_t> ndispatched { 0 };
 
   write_initial_log_message(run_config, src_list.size());
-  dispatch_run_configuration(run_config);
+  dispatch_run_configuration(run_config, /*register_processor=*/ true);
   if(src_list.size() == 1)
   {
     do_dispatcher_loop(src_list[0], log_frequency, start_time, ndispatched);
@@ -314,7 +315,7 @@ ParallelEventDispatcher::default_config()
 void ParallelEventDispatcher::
 dispatch_event(uint64_t seq_index, TelescopeEvent* event)
 {
-  for(auto iv : visitors_)iv->visit_telescope_event(seq_index, event);
+  for(const auto& iv : visitors_)iv.visitor->visit_telescope_event(seq_index, event);
 }
 
 void ParallelEventDispatcher::do_parallel_dispatcher_loops(
@@ -334,15 +335,15 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
 
     std::map<ParallelEventVisitor*,ParallelEventVisitor*>
       antecedent_visitors;
-    for(auto* v : visitors_)
+    for(const auto& iv : visitors_)
     {
-      ParallelEventVisitor* sv = v->new_sub_visitor(antecedent_visitors);
+      ParallelEventVisitor* sv = iv.visitor->new_sub_visitor(antecedent_visitors);
       if(sv != nullptr) {
         d->add_visitor(sv, true);
       }
-      antecedent_visitors[v] = sv;
+      antecedent_visitors[iv.visitor] = sv;
     }
-    d->dispatch_run_configuration(run_config);
+    d->dispatch_run_configuration(run_config, /*register_processor=*/ false);
   }
 
   std::vector<std::thread> threads;
@@ -466,20 +467,37 @@ void ParallelEventDispatcher::write_final_log_message(
 }
 
 void ParallelEventDispatcher::
-dispatch_run_configuration(TelescopeRunConfiguration* run_config)
+dispatch_run_configuration(TelescopeRunConfiguration* run_config, bool register_processor)
 {
-  for(auto iv : visitors_)iv->visit_telescope_run(run_config, this);
+  for(auto iv : visitors_) {
+    if(register_processor) {
+      iv.processing_record = calin::provenance::chronicle::
+        register_processing_start(__PRETTY_FUNCTION__, iv.processing_record_comment);
+      if(not run_config->filename().empty()) {
+        iv.processing_record->add_primary_inputs(run_config->filename());
+      }
+    }
+    iv.visitor->visit_telescope_run(run_config, this, iv.processing_record);
+  }
 }
 
 void ParallelEventDispatcher::dispatch_leave_run()
 {
-  for(auto iv : visitors_)iv->leave_telescope_run();
+  for(auto iv : visitors_) {
+    iv.visitor->leave_telescope_run(iv.processing_record);
+    if(iv.processing_record) {
+      calin::provenance::chronicle::register_processing_finish(iv.processing_record);
+      iv.processing_record = nullptr;
+    }
+  }
 }
 
 void ParallelEventDispatcher::
 dispatch_merge_results()
 {
-  for(auto iv : visitors_)iv->merge_results();
+  for(auto iv : visitors_) {
+    iv.visitor->merge_results();
+  }
 }
 
 namespace {

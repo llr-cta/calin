@@ -51,7 +51,14 @@ public:
 
   void add_visitor(
     calin::iact_data::event_visitor::ParallelEventVisitor* visitor,
+    const std::string& processing_record_comment,
     bool adopt_visitor = false);
+
+  void add_visitor(
+      calin::iact_data::event_visitor::ParallelEventVisitor* visitor,
+      bool adopt_visitor = false) {
+    add_visitor(visitor, std::string{}, adopt_visitor);
+  }
 
   void process_run(calin::iact_data::telescope_data_source::
     TelescopeRandomAccessDataSourceWithRunConfig* src,
@@ -96,11 +103,23 @@ public:
       telescope_run_configuration::TelescopeRunConfiguration& from);
 
 private:
+#ifndef SWIG
+  struct DelegatedVisitor {
+    DelegatedVisitor(calin::iact_data::event_visitor::ParallelEventVisitor* _visitor,
+        const std::string& _processing_record_comment):
+      visitor(_visitor), processing_record_comment(_processing_record_comment)
+    { /* nothing to see here */ }
+
+    calin::iact_data::event_visitor::ParallelEventVisitor* visitor;
+    std::string processing_record_comment;
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr;
+  };
+
   // These functions allow events to be passed on to the visitors - they
   // are not meant to be called directly as the visiors expect them to be
   // called in a specific order. They are liable to be made private.
   void dispatch_run_configuration(calin::ix::iact_data::
-    telescope_run_configuration::TelescopeRunConfiguration* run_config);
+    telescope_run_configuration::TelescopeRunConfiguration* run_config, bool register_processor);
   void dispatch_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
   void dispatch_leave_run();
@@ -129,10 +148,8 @@ private:
     unsigned log_frequency, const std::chrono::system_clock::time_point& start_time,
     std::atomic<uint_fast64_t>& ndispatched);
 
-  std::vector<calin::iact_data::event_visitor::ParallelEventVisitor*>
-    adopted_visitors_;
-  std::vector<calin::iact_data::event_visitor::ParallelEventVisitor*>
-    visitors_;
+  std::vector<calin::iact_data::event_visitor::ParallelEventVisitor*> adopted_visitors_;
+  std::vector<DelegatedVisitor> visitors_;
 
   struct managed_event {
     unsigned usage_count;
@@ -150,6 +167,7 @@ private:
 
   std::map<calin::ix::iact_data::telescope_event::TelescopeEvent*, managed_event>
     event_keep_;
+#endif
 };
 
 } } } // namespace calin::iact_data::event_dispatcher
