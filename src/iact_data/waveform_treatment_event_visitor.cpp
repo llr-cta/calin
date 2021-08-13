@@ -95,7 +95,8 @@ OptimalWindowSumWaveformTreatmentParallelEventVisitor::new_sub_visitor(
 
 bool OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 visit_telescope_run(const TelescopeRunConfiguration* run_config,
-  EventLifetimeManager* event_lifetime_manager)
+  EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   reconfigure(run_config->configured_channel_id_size(), run_config->num_samples());
 
@@ -245,7 +246,8 @@ SingleGainDualWindowWaveformTreatmentEventVisitor::new_sub_visitor(
 
 bool SingleGainDualWindowWaveformTreatmentEventVisitor::
 visit_telescope_run(const TelescopeRunConfiguration* run_config,
-  EventLifetimeManager* event_lifetime_manager)
+  EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   reconfigure(run_config->configured_channel_id_size(), run_config->num_samples());
 

@@ -79,7 +79,8 @@ public:
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
 
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
@@ -208,10 +209,11 @@ public:
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override
   {
     bool old_nsamp = nsamp_;
-    bool good = OptimalWindowSumWaveformTreatmentParallelEventVisitor::visit_telescope_run(run_config, event_lifetime_manager);
+    bool good = OptimalWindowSumWaveformTreatmentParallelEventVisitor::visit_telescope_run(run_config, event_lifetime_manager, nullptr);
     if(nsamp_!=old_nsamp) {
       auto* host_info = calin::provenance::system_info::the_host_info();
       const unsigned nv_samp = (nsamp_+31)/32;
@@ -437,7 +439,8 @@ public:
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
 
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
@@ -552,10 +555,11 @@ public:
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override
   {
     bool old_nsamp = nsamp_;
-    bool good = SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config, event_lifetime_manager);
+    bool good = SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config, event_lifetime_manager, nullptr);
     if(nsamp_!=old_nsamp) {
       auto* host_info = calin::provenance::system_info::the_host_info();
       const unsigned nv_samp = (nsamp_+15)/16;

@@ -28,6 +28,7 @@
 #include <calin_global_config.hpp>
 #include <iact_data/telescope_run_configuration.pb.h>
 #include <iact_data/telescope_event.pb.h>
+#include <provenance/chronicle.hpp>
 
 namespace calin { namespace iact_data { namespace event_visitor {
 
@@ -54,8 +55,10 @@ public:
   virtual bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::
       TelescopeRunConfiguration* run_config,
-    EventLifetimeManager* event_lifetime_manager);
-  virtual bool leave_telescope_run();
+    EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr);
+  virtual bool leave_telescope_run(
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr);
 
   virtual bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event);
@@ -78,8 +81,10 @@ public:
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::
       TelescopeRunConfiguration* run_config,
-      EventLifetimeManager* event_lifetime_manager) override;
-  bool leave_telescope_run() override;
+      EventLifetimeManager* event_lifetime_manager,
+      calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
+  bool leave_telescope_run(
+      calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
 
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;

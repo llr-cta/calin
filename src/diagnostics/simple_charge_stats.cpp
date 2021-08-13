@@ -70,7 +70,8 @@ SimpleChargeStatsParallelEventVisitor* SimpleChargeStatsParallelEventVisitor::ne
 
 bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   partials_.Clear();
   results_.Clear();
@@ -381,7 +382,8 @@ void SimpleChargeStatsParallelEventVisitor::dump_single_gain_camera_hists_to_par
   delete hp;
 }
 
-bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
+bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   for(int ichan = 0; ichan<partials_.channel_size(); ichan++) {
     dump_single_gain_channel_hists_to_partials(*chan_hists_[ichan]->high_gain,

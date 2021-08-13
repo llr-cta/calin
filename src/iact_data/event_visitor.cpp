@@ -49,12 +49,14 @@ ParallelEventVisitor* ParallelEventVisitor::new_sub_visitor(
 
 bool ParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  EventLifetimeManager* event_lifetime_manager)
+  EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   return true;
 }
 
-bool ParallelEventVisitor::leave_telescope_run()
+bool ParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   return true;
 }
@@ -109,7 +111,8 @@ FilteredDelegatingParallelEventVisitor::new_sub_visitor(
 
 bool FilteredDelegatingParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  EventLifetimeManager* event_lifetime_manager)
+  EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   bool good = true;
   for(auto ivisitor : delegates_) {
@@ -118,7 +121,8 @@ bool FilteredDelegatingParallelEventVisitor::visit_telescope_run(
   return good;
 }
 
-bool FilteredDelegatingParallelEventVisitor::leave_telescope_run()
+bool FilteredDelegatingParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   bool good = true;
   for(auto ivisitor : delegates_) {

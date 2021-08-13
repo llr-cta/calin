@@ -72,7 +72,8 @@ WaveformSumParallelEventVisitor* WaveformSumParallelEventVisitor::new_sub_visito
 
 bool WaveformSumParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   has_dual_gain_ = (run_config->camera_layout().adc_gains() !=
     calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN);
@@ -150,7 +151,8 @@ namespace {
   }
 }
 
-bool WaveformSumParallelEventVisitor::leave_telescope_run()
+bool WaveformSumParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   num_entries_i32_ = 0;
   integrate_i32_to_i64(nchan_, nsamp_,
@@ -477,7 +479,8 @@ new_sub_visitor(std::map<calin::iact_data::event_visitor::ParallelEventVisitor*,
 
 bool WaveformCodeHistParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   delete(run_config_);
 
@@ -502,7 +505,8 @@ bool WaveformCodeHistParallelEventVisitor::visit_telescope_run(
   return true;
 }
 
-bool WaveformCodeHistParallelEventVisitor::leave_telescope_run()
+bool WaveformCodeHistParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   transfer_u32_to_u64();
   return true;
@@ -707,7 +711,8 @@ WaveformStatsParallelVisitor* WaveformStatsParallelVisitor::new_sub_visitor(
 
 bool WaveformStatsParallelVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   run_config_ = run_config;
   results_.Clear();
@@ -771,7 +776,8 @@ bool WaveformStatsParallelVisitor::visit_telescope_run(
   return true;
 }
 
-bool WaveformStatsParallelVisitor::leave_telescope_run()
+bool WaveformStatsParallelVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   for(int ichan=0; ichan<results_.high_gain_size(); ichan++)
     merge_partial(partial_.mutable_high_gain(ichan),

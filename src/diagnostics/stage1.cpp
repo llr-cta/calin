@@ -145,7 +145,8 @@ Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
 
 bool Stage1ParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   LOG(INFO) << LOGO;
   delete nectarcam_ancillary_data_;
@@ -158,10 +159,11 @@ bool Stage1ParallelEventVisitor::visit_telescope_run(
   config_json->set_type(config_.GetTypeName());
   config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
   return FilteredDelegatingParallelEventVisitor::visit_telescope_run(
-    run_config, event_lifetime_manager);
+    run_config, event_lifetime_manager, processing_record);
 }
 
-bool Stage1ParallelEventVisitor::leave_telescope_run()
+bool Stage1ParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   bool good = FilteredDelegatingParallelEventVisitor::leave_telescope_run();
 

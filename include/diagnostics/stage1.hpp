@@ -46,9 +46,11 @@ public:
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
 
-  bool leave_telescope_run() override;
+  bool leave_telescope_run(
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
 
 #ifndef SWIG
   calin::ix::diagnostics::stage1::Stage1* stage1_results(
@@ -63,7 +65,7 @@ public:
 private:
   calin::ix::diagnostics::stage1::Stage1Config config_;
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record_ = nullptr;
-  
+
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config_ = nullptr;
 
   calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* hg_sum_pev_ = nullptr;

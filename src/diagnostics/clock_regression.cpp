@@ -53,7 +53,8 @@ ClockRegressionParallelEventVisitor::new_sub_visitor(
 
 bool ClockRegressionParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   rebalance_ = config_.rebalance_nevent();
 
@@ -117,7 +118,8 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_run(
   return true;
 }
 
-bool ClockRegressionParallelEventVisitor::leave_telescope_run()
+bool ClockRegressionParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   return true;
 }

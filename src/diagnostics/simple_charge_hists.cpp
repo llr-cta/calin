@@ -73,7 +73,8 @@ SimpleChargeHistsParallelEventVisitor* SimpleChargeHistsParallelEventVisitor::ne
 
 bool SimpleChargeHistsParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   has_dual_gain_ = (run_config->camera_layout().adc_gains() !=
     calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN);
@@ -104,7 +105,8 @@ bool SimpleChargeHistsParallelEventVisitor::visit_telescope_run(
   return true;
 }
 
-bool SimpleChargeHistsParallelEventVisitor::leave_telescope_run()
+bool SimpleChargeHistsParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   return true;
 }
