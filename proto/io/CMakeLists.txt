@@ -13,8 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_PROTO sql_transceiver.proto packet_stream.proto
-	zmq_data_source.proto sql_serializer.proto)
+set(CALIN_SWIG_PROTO packet_stream.proto zmq_data_source.proto sql_serializer.proto)
 set(CALIN_PACKAGE io)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 
