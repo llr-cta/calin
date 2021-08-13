@@ -157,6 +157,10 @@ private:
     google::protobuf::Arena* arena;
   };
 
+  std::map<calin::ix::iact_data::telescope_event::TelescopeEvent*, managed_event>
+    event_keep_;
+#endif
+
   void add_event_to_keep(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event,
     uint64_t seq_index, google::protobuf::Arena* arena);
@@ -164,10 +168,6 @@ private:
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
   void release_event(
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
-
-  std::map<calin::ix::iact_data::telescope_event::TelescopeEvent*, managed_event>
-    event_keep_;
-#endif
 };
 
 } } } // namespace calin::iact_data::event_dispatcher

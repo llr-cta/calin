@@ -94,7 +94,7 @@ FilteredDelegatingParallelEventVisitor::new_sub_visitor(
 {
   auto* sub_visitor = new FilteredDelegatingParallelEventVisitor();
   sub_visitor->parent_ = this;
-  for(auto ivisitor : delegates_) {
+  for(auto& ivisitor : delegates_) {
     auto* dsv = ivisitor.visitor->new_sub_visitor(antecedent_visitors);
     if(dsv != nullptr) {
       if(ivisitor.unfiltered) {
@@ -115,7 +115,7 @@ bool FilteredDelegatingParallelEventVisitor::visit_telescope_run(
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   bool good = true;
-  for(auto ivisitor : delegates_) {
+  for(auto& ivisitor : delegates_) {
     ivisitor.subprocessing_record = nullptr;
     if(processing_record) {
       ivisitor.subprocessing_record = calin::provenance::chronicle::register_subprocessing_start(
@@ -133,7 +133,7 @@ bool FilteredDelegatingParallelEventVisitor::leave_telescope_run(
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   bool good = true;
-  for(auto ivisitor : delegates_) {
+  for(auto& ivisitor : delegates_) {
     if((processing_record == nullptr) ^ (ivisitor.subprocessing_record == nullptr)) {
       throw std::logic_error("FilteredDelegatingParallelEventVisitor::leave_telescope_run: inconsistent subprocessing_record");
     }
@@ -162,7 +162,7 @@ bool FilteredDelegatingParallelEventVisitor::visit_telescope_event(uint64_t seq_
 bool FilteredDelegatingParallelEventVisitor::merge_results()
 {
   bool good = true;
-  for(auto ivisitor : delegates_) {
+  for(auto& ivisitor : delegates_) {
     good &= ivisitor.visitor->merge_results();
     parent_->delegates_[parent_->visitor_delegates_.at(
       parent_visitors_.at(ivisitor.visitor))].visitor_saw_event |= ivisitor.visitor_saw_event;

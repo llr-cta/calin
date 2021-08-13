@@ -315,7 +315,9 @@ ParallelEventDispatcher::default_config()
 void ParallelEventDispatcher::
 dispatch_event(uint64_t seq_index, TelescopeEvent* event)
 {
-  for(const auto& iv : visitors_)iv.visitor->visit_telescope_event(seq_index, event);
+  for(const auto& iv : visitors_) {
+    iv.visitor->visit_telescope_event(seq_index, event);
+  }
 }
 
 void ParallelEventDispatcher::do_parallel_dispatcher_loops(
@@ -335,8 +337,7 @@ void ParallelEventDispatcher::do_parallel_dispatcher_loops(
 
     std::map<ParallelEventVisitor*,ParallelEventVisitor*>
       antecedent_visitors;
-    for(const auto& iv : visitors_)
-    {
+    for(const auto& iv : visitors_) {
       ParallelEventVisitor* sv = iv.visitor->new_sub_visitor(antecedent_visitors);
       if(sv != nullptr) {
         d->add_visitor(sv, true);
@@ -469,7 +470,7 @@ void ParallelEventDispatcher::write_final_log_message(
 void ParallelEventDispatcher::
 dispatch_run_configuration(TelescopeRunConfiguration* run_config, bool register_processor)
 {
-  for(auto iv : visitors_) {
+  for(auto& iv : visitors_) {
     if(register_processor) {
       iv.processing_record = calin::provenance::chronicle::
         register_processing_start(__PRETTY_FUNCTION__, iv.processing_record_comment);
@@ -483,7 +484,7 @@ dispatch_run_configuration(TelescopeRunConfiguration* run_config, bool register_
 
 void ParallelEventDispatcher::dispatch_leave_run()
 {
-  for(auto iv : visitors_) {
+  for(auto& iv : visitors_) {
     iv.visitor->leave_telescope_run(iv.processing_record);
     if(iv.processing_record) {
       calin::provenance::chronicle::register_processing_finish(iv.processing_record);
@@ -495,7 +496,7 @@ void ParallelEventDispatcher::dispatch_leave_run()
 void ParallelEventDispatcher::
 dispatch_merge_results()
 {
-  for(auto iv : visitors_) {
+  for(const auto& iv : visitors_) {
     iv.visitor->merge_results();
   }
 }
