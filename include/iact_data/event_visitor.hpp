@@ -91,25 +91,27 @@ public:
 
   bool merge_results() override;
 
-  void add_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false);
-  void add_filtered_visitor(ParallelEventVisitor* visitor,
+  void add_visitor(ParallelEventVisitor* visitor, const std::string& processing_record_comment = {}, bool adopt_visitor = false);
+
+  void add_trigger_type_filtered_visitor(ParallelEventVisitor* visitor,
     calin::ix::iact_data::telescope_event::TriggerType trigger_type,
+    const std::string& processing_record_comment = {},
     bool adopt_visitor = false);
 
-  void add_physics_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
-    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS, adopt_visitor);
+  void add_physics_trigger_visitor(ParallelEventVisitor* visitor, const std::string& processing_record_comment = {}, bool adopt_visitor = false) {
+    add_trigger_type_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS, processing_record_comment, adopt_visitor);
   }
-  void add_software_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
-    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_SOFTWARE, adopt_visitor);
+  void add_software_trigger_visitor(ParallelEventVisitor* visitor, const std::string& processing_record_comment = {}, bool adopt_visitor = false) {
+    add_trigger_type_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_SOFTWARE, processing_record_comment, adopt_visitor);
   }
-  void add_pedestal_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
-    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL, adopt_visitor);
+  void add_pedestal_trigger_visitor(ParallelEventVisitor* visitor, const std::string& processing_record_comment = {}, bool adopt_visitor = false) {
+    add_trigger_type_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_PEDESTAL, processing_record_comment, adopt_visitor);
   }
-  void add_external_flasher_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
-    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER, adopt_visitor);
+  void add_external_flasher_trigger_visitor(ParallelEventVisitor* visitor, const std::string& processing_record_comment = {}, bool adopt_visitor = false) {
+    add_trigger_type_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_EXTERNAL_FLASHER, processing_record_comment, adopt_visitor);
   }
-  void add_internal_flasher_trigger_visitor(ParallelEventVisitor* visitor, bool adopt_visitor = false) {
-    add_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER, adopt_visitor);
+  void add_internal_flasher_trigger_visitor(ParallelEventVisitor* visitor, const std::string& processing_record_comment = {}, bool adopt_visitor = false) {
+    add_trigger_type_filtered_visitor(visitor, calin::ix::iact_data::telescope_event::TRIGGER_INTERNAL_FLASHER, processing_record_comment, adopt_visitor);
   }
 
   bool visitor_saw_event(ParallelEventVisitor* visitor) const;
@@ -118,15 +120,18 @@ protected:
 #ifndef SWIG
   struct DelegatedVisitor {
     DelegatedVisitor(ParallelEventVisitor* _visitor, bool _adopt_visitor,
-        bool _unfiltered, calin::ix::iact_data::telescope_event::TriggerType _trigger_type):
+        bool _unfiltered, calin::ix::iact_data::telescope_event::TriggerType _trigger_type,
+        const std::string& _processing_record_comment):
       visitor(_visitor), adopt_visitor(_adopt_visitor), unfiltered(_unfiltered),
-      trigger_type(_trigger_type) { /* nothing to see here */ }
+      trigger_type(_trigger_type), processing_record_comment(_processing_record_comment) { /* nothing to see here */ }
 
     ParallelEventVisitor* visitor;
     bool adopt_visitor;
     bool unfiltered;
     calin::ix::iact_data::telescope_event::TriggerType trigger_type;
     bool visitor_saw_event = false;
+    std::string processing_record_comment;
+    calin::ix::provenance::chronicle::ProcessingRecord* sub_processing_record = nullptr;
   };
 
   FilteredDelegatingParallelEventVisitor* parent_ = nullptr;

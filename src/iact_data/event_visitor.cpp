@@ -98,9 +98,9 @@ FilteredDelegatingParallelEventVisitor::new_sub_visitor(
     auto* dsv = ivisitor.visitor->new_sub_visitor(antecedent_visitors);
     if(dsv != nullptr) {
       if(ivisitor.unfiltered) {
-        sub_visitor->add_visitor(dsv, /* adopt_visitor= */ true);
+        sub_visitor->add_visitor(dsv, ivisitor.processing_record_comment, /* adopt_visitor= */ true);
       } else {
-        sub_visitor->add_filtered_visitor(dsv, ivisitor.trigger_type, /* adopt_visitor= */ true);
+        sub_visitor->add_trigger_type_filtered_visitor(dsv, ivisitor.trigger_type, ivisitor.processing_record_comment, /* adopt_visitor= */ true);
       }
       sub_visitor->parent_visitors_[dsv] = ivisitor.visitor;
     }
@@ -116,7 +116,12 @@ bool FilteredDelegatingParallelEventVisitor::visit_telescope_run(
 {
   bool good = true;
   for(auto ivisitor : delegates_) {
-    good &= ivisitor.visitor->visit_telescope_run(run_config, event_lifetime_manager);
+    ivisitor.sub_processing_record = nullptr;
+    if(processing_record) {
+      ivisitor.sub_processing_record = calin::provenance::chronicle::register_processing_start(
+        __PRETTY_FUNCTION__, ivisitor.processing_record_comment);
+    }
+    good &= ivisitor.visitor->visit_telescope_run(run_config, event_lifetime_manager, ivisitor.sub_processing_record);
   }
   return good;
 }
@@ -126,7 +131,14 @@ bool FilteredDelegatingParallelEventVisitor::leave_telescope_run(
 {
   bool good = true;
   for(auto ivisitor : delegates_) {
-    good &= ivisitor.visitor->leave_telescope_run();
+    if((processing_record == nullptr) ^ (ivisitor.sub_processing_record == nullptr)) {
+      throw std::logic_error("FilteredDelegatingParallelEventVisitor::leave_telescope_run: inconsistent sub_processing_record");
+    }
+    good &= ivisitor.visitor->leave_telescope_run(ivisitor.sub_processing_record);
+    if(ivisitor.sub_processing_record) {
+      calin::provenance::chronicle::register_processing_finish(ivisitor.sub_processing_record);
+      ivisitor.sub_processing_record = nullptr;
+    }
   }
   return good;
 }
@@ -156,19 +168,21 @@ bool FilteredDelegatingParallelEventVisitor::merge_results()
 }
 
 void FilteredDelegatingParallelEventVisitor::add_visitor(
-  ParallelEventVisitor* visitor, bool adopt_visitor)
+  ParallelEventVisitor* visitor, const std::string& processing_record_comment,
+  bool adopt_visitor)
 {
   delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ true,
-    calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN);
+    calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN, processing_record_comment);
   visitor_delegates_[visitor] = delegates_.size() - 1;
 }
 
 void FilteredDelegatingParallelEventVisitor::
-add_filtered_visitor(ParallelEventVisitor* visitor,
+add_trigger_type_filtered_visitor(ParallelEventVisitor* visitor,
   calin::ix::iact_data::telescope_event::TriggerType trigger_type,
+  const std::string& processing_record_comment,
   bool adopt_visitor)
 {
-  delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ false, trigger_type);
+  delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ false, trigger_type, processing_record_comment);
   visitor_delegates_[visitor] = delegates_.size() - 1;
 }
 
