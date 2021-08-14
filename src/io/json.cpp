@@ -70,7 +70,7 @@ std::string calin::io::json::json_for_dictionary(
   for(unsigned i=0;i<keyval.size();++i) {
     const auto& kv = keyval[i];
     std::string comma = (i==keyval.size()-1)?"":",";
-    s += " \"" + kv.first + ": " + kv.second + comma + "\n";
+    s += " \"" + kv.first + "\": " + kv.second + comma + "\n";
   }
   s+= "}\n";
   return s;
