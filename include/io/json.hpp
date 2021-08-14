@@ -27,6 +27,34 @@
 
 namespace calin { namespace io { namespace json {
 
+std::string escape_json(const std::string &s);
+
+template<typename T> inline std::string json_value(T x) {
+  return std::to_string(x);
+}
+
+inline std::string json_value(bool b) {
+  return b ? "true" : "false";
+}
+
+inline std::string json_string_value(const std::string& s) {
+  return "\"" + escape_json(s) + "\"";
+}
+
+inline std::string json_value(const std::string& s) {
+  return json_string_value(s);
+}
+
+inline std::string json_value(const char* s) {
+  return json_string_value(s);
+}
+
+template<typename T> inline std::string json_for_single_value(const std::string key, T val) {
+  return "{\n \"" + key + "\": " + json_value(val) + "\n}\n";
+}
+
+std::string json_for_dictionary(const std::vector<std::pair<std::string,std::string> >& keyval);
+
 std::string encode_protobuf_to_json_string(const google::protobuf::Message& message);
 void save_protobuf_to_json_file(const std::string& filename,
   const google::protobuf::Message& message);

@@ -35,6 +35,47 @@
 
 #include <libgen.h>
 
+#include <sstream>
+#include <iomanip>
+
+// https://stackoverflow.com/questions/7724448/simple-json-string-escape-for-c
+
+std::string calin::io::json::escape_json(const std::string &s) {
+  std::ostringstream o;
+  for (auto c = s.cbegin(); c != s.cend(); c++) {
+    switch (*c) {
+    case '"': o << "\\\""; break;
+    case '\\': o << "\\\\"; break;
+    case '\b': o << "\\b"; break;
+    case '\f': o << "\\f"; break;
+    case '\n': o << "\\n"; break;
+    case '\r': o << "\\r"; break;
+    case '\t': o << "\\t"; break;
+    default:
+      if ('\x00' <= *c && *c <= '\x1f') {
+        o << "\\u"
+          << std::hex << std::setw(4) << std::setfill('0') << (int)*c;
+      } else {
+        o << *c;
+      }
+    }
+  }
+  return o.str();
+}
+
+std::string calin::io::json::json_for_dictionary(
+  const std::vector<std::pair<std::string,std::string> >& keyval)
+{
+  std::string s = "{\n";
+  for(unsigned i=0;i<keyval.size();++i) {
+    const auto& kv = keyval[i];
+    std::string comma = (i==keyval.size()-1)?"":",";
+    s += " \"" + kv.first + ": " + kv.second + comma + "\n";
+  }
+  s+= "}\n";
+  return s;
+}
+
 std::string calin::io::json::
 encode_protobuf_to_json_string(const google::protobuf::Message& message)
 {
