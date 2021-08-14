@@ -150,6 +150,20 @@ CALIN_DEFINE_T_FROM_STRING(unsigned, unsigned_from_string)
 
 #undef CALIN_DEFINE_T_FROM_STRING
 
+// https://stackoverflow.com/questions/5100718/integer-to-hex-string-in-c
 
+template <typename I> std::string number_to_hexstring(I w, size_t hex_len = sizeof(I)<<1)
+{
+  static const char* digits = "0123456789ABCDEF";
+  std::string rc(hex_len,'0');
+  for (size_t i=0, j=(hex_len-1)*4 ; i<hex_len; ++i,j-=4)
+      rc[i] = digits[(w>>j) & 0x0f];
+  return rc;
+}
+
+inline std::string instance_identifier(void* ptr)
+{
+  return number_to_hexstring(reinterpret_cast<intptr_t>(ptr));
+}
 
 } } } // namespace calin::util::string
