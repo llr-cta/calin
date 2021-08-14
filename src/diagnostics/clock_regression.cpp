@@ -22,6 +22,7 @@
 
 #include <Eigen/Dense>
 #include <diagnostics/clock_regression.hpp>
+#include <io/json.hpp>
 #include <util/log.hpp>
 
 using namespace calin::util::log;
@@ -56,6 +57,14 @@ bool ClockRegressionParallelEventVisitor::visit_telescope_run(
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
+  if(processing_record) {
+    processing_record->set_type("ClockRegressionParallelEventVisitor");
+    processing_record->set_description("Clock regression calculator");
+    auto* config_json = processing_record->add_config();
+    config_json->set_type(config_.GetTypeName());
+    config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+  }
+
   rebalance_ = config_.rebalance_nevent();
 
   camera_tests_.clear();

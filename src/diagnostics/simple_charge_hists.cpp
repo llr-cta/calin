@@ -76,6 +76,13 @@ bool SimpleChargeHistsParallelEventVisitor::visit_telescope_run(
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
+  if(processing_record) {
+    processing_record->set_type("SimpleChargeHistsParallelEventVisitor");
+    auto* config_json = processing_record->add_config();
+    config_json->set_type(config_.GetTypeName());
+    config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+  }
+
   has_dual_gain_ = (run_config->camera_layout().adc_gains() !=
     calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN);
 
