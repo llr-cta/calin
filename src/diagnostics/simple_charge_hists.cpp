@@ -80,6 +80,7 @@ bool SimpleChargeHistsParallelEventVisitor::visit_telescope_run(
 {
   if(processing_record) {
     processing_record->set_type("SimpleChargeHistsParallelEventVisitor");
+    processing_record->set_description("Per-channel waveform sum histogramming");
     auto* config_json = processing_record->add_config();
     config_json->set_type(config_.GetTypeName());
     config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));

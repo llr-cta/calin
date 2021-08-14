@@ -28,6 +28,8 @@
 #include <diagnostics/simple_charge_stats.hpp>
 #include <math/covariance_calc.hpp>
 #include <iact_data/algorithms.hpp>
+#include <io/json.hpp>
+#include <util/string.hpp>
 
 using namespace calin::util::log;
 using namespace calin::diagnostics::simple_charge_stats;
@@ -73,6 +75,21 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
+  if(processing_record) {
+    processing_record->set_type("SimpleChargeStatsParallelEventVisitor");
+    processing_record->set_description("Per-channel waveform statistics and analysis");
+    auto* config_json = processing_record->add_config();
+    config_json->set_type(config_.GetTypeName());
+    config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+    config_json = processing_record->add_config();
+    std::vector<std::pair<std::string,std::string> > keyval;
+    keyval.emplace_back("highGainWaveformSumInstance",
+      calin::io::json::json_string_value(calin::util::string::instance_identifier(high_gain_visitor_)));
+    keyval.emplace_back("lowGainWaveformSumInstance",
+      calin::io::json::json_string_value(calin::util::string::instance_identifier(low_gain_visitor_)));
+    config_json->set_json(calin::io::json::json_for_dictionary(keyval));
+  }
+
   partials_.Clear();
   results_.Clear();
 

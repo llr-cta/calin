@@ -76,10 +76,10 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
     wf_mean_ext_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor(config.calculate_waveform_variance());
     wf_mean_int_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor(config.calculate_waveform_variance());
 
-    this->add_physics_trigger_visitor(wf_mean_phy_pev_);
-    this->add_pedestal_trigger_visitor(wf_mean_ped_pev_);
-    this->add_external_flasher_trigger_visitor(wf_mean_ext_pev_);
-    this->add_internal_flasher_trigger_visitor(wf_mean_int_pev_);
+    this->add_physics_trigger_visitor(wf_mean_phy_pev_, "Physics triggers");
+    this->add_pedestal_trigger_visitor(wf_mean_ped_pev_, "Pedestal triggers");
+    this->add_external_flasher_trigger_visitor(wf_mean_ext_pev_, "External-flasher triggers");
+    this->add_internal_flasher_trigger_visitor(wf_mean_int_pev_, "Internal-flasher triggers");
   }
 
   if(config_.enable_simple_waveform_hists()) {
@@ -96,10 +96,10 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
       SimpleChargeHistsParallelEventVisitor(hg_sum_pev_, lg_sum_pev_,
         config_.int_trigger_waveform_hists());
 
-    this->add_physics_trigger_visitor(charge_hists_phy_pev_);
-    this->add_pedestal_trigger_visitor(charge_hists_ped_pev_);
-    this->add_external_flasher_trigger_visitor(charge_hists_ext_pev_);
-    this->add_internal_flasher_trigger_visitor(charge_hists_int_pev_);
+    this->add_physics_trigger_visitor(charge_hists_phy_pev_, "Physics triggers");
+    this->add_pedestal_trigger_visitor(charge_hists_ped_pev_, "Pedestal triggers");
+    this->add_external_flasher_trigger_visitor(charge_hists_ext_pev_, "External-flasher triggers");
+    this->add_internal_flasher_trigger_visitor(charge_hists_int_pev_, "Internal-flasher triggers");
   }
 
   if(config_.enable_l0_trigger_bit_waveform_hists()) {
@@ -113,8 +113,8 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
         config_.l0_trigger_bit_waveform_hists(),
         new calin::diagnostics::simple_charge_hists::SimpleChargeHistsTriggerBitFilter(
           /*trigger_bit_status_required_for_accept=*/false),/*adopt_filter=*/true);
-    this->add_visitor(charge_hists_trig_bit_set_pev_);
-    this->add_visitor(charge_hists_trig_bit_clr_pev_);
+    this->add_visitor(charge_hists_trig_bit_set_pev_, "L0 trigger-bit set");
+    this->add_visitor(charge_hists_trig_bit_clr_pev_, "L0 trigger-bit clear");
   }
 
   if(config_.enable_clock_regression()) {

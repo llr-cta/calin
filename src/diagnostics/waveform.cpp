@@ -22,6 +22,7 @@
 
 #include <math/special.hpp>
 #include <util/log.hpp>
+#include <io/json.hpp>
 #include <util/memory.hpp>
 #include <diagnostics/waveform.hpp>
 #include <math/covariance_calc.hpp>
@@ -75,6 +76,16 @@ bool WaveformSumParallelEventVisitor::visit_telescope_run(
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
+  if(processing_record) {
+    processing_record->set_type("WaveformSumParallelEventVisitor");
+    processing_record->set_description("Mean waveform calculator");
+    auto* config_json = processing_record->add_config();
+    std::vector<std::pair<std::string,std::string> > keyval;
+    keyval.emplace_back("calculateVariance", calin::io::json::json_value(calculate_variance_));
+    keyval.emplace_back("sampleMax", calin::io::json::json_value(sample_max_));
+    config_json->set_json(calin::io::json::json_for_dictionary(keyval));
+  }
+
   has_dual_gain_ = (run_config->camera_layout().adc_gains() !=
     calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN);
 
@@ -482,6 +493,16 @@ bool WaveformCodeHistParallelEventVisitor::visit_telescope_run(
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
+  if(processing_record) {
+    processing_record->set_type("WaveformCodeHistParallelEventVisitor");
+    processing_record->set_description("Waveform code hisograms");
+    auto* config_json = processing_record->add_config();
+    std::vector<std::pair<std::string,std::string> > keyval;
+    keyval.emplace_back("maxSampleOnly", calin::io::json::json_value(max_sample_only_));
+    keyval.emplace_back("maxCode", calin::io::json::json_value(max_code_));
+    config_json->set_json(calin::io::json::json_for_dictionary(keyval));
+  }
+
   delete(run_config_);
 
   run_config_ = run_config->New();
@@ -714,6 +735,16 @@ bool WaveformStatsParallelVisitor::visit_telescope_run(
   calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
   calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
+  if(processing_record) {
+    processing_record->set_type("WaveformStatsParallelVisitor");
+    processing_record->set_description("Waveform mean, PSD and covariance calculator");
+    auto* config_json = processing_record->add_config();
+    std::vector<std::pair<std::string,std::string> > keyval;
+    keyval.emplace_back("calculatePsd", calin::io::json::json_value(calculate_psd_));
+    keyval.emplace_back("calculateCovariance", calin::io::json::json_value(calculate_covariance_));
+    config_json->set_json(calin::io::json::json_for_dictionary(keyval));
+  }
+
   run_config_ = run_config;
   results_.Clear();
   unsigned N = run_config->num_samples();
