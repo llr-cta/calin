@@ -477,6 +477,7 @@ dispatch_run_configuration(TelescopeRunConfiguration* run_config, bool register_
       if(not run_config->filename().empty()) {
         iv.processing_record->add_primary_inputs(run_config->filename());
       }
+      iv.processing_record->set_instance(calin::util::string::instance_identifier(iv.visitor));
     }
     iv.visitor->visit_telescope_run(run_config, this, iv.processing_record);
   }

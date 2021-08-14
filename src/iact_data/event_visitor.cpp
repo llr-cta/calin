@@ -24,6 +24,7 @@
 
 #include <iact_data/event_visitor.hpp>
 #include <util/log.hpp>
+#include <util/string.hpp>
 
 using namespace calin::iact_data::event_visitor;
 using namespace calin::ix::iact_data::telescope_event;
@@ -123,6 +124,7 @@ bool FilteredDelegatingParallelEventVisitor::visit_telescope_run(
       for(const auto& input : processing_record->primary_inputs()) {
         ivisitor.subprocessing_record->add_primary_inputs(input);
       }
+      ivisitor.subprocessing_record->set_instance(calin::util::string::instance_identifier(ivisitor.visitor));
     }
     good &= ivisitor.visitor->visit_telescope_run(run_config, event_lifetime_manager, ivisitor.subprocessing_record);
   }
