@@ -23,6 +23,7 @@
 #include <util/log.hpp>
 #include <math/special.hpp>
 #include <util/algorithm.hpp>
+#include <util/string.hpp>
 #include <io/json.hpp>
 #include <diagnostics/simple_charge_hists.hpp>
 #include <math/covariance_calc.hpp>
@@ -82,6 +83,15 @@ bool SimpleChargeHistsParallelEventVisitor::visit_telescope_run(
     auto* config_json = processing_record->add_config();
     config_json->set_type(config_.GetTypeName());
     config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+    config_json = processing_record->add_config();
+    std::vector<std::pair<std::string,std::string> > keyval;
+    keyval.emplace_back("highGainWaveformSumInstance",
+      calin::io::json::json_string_value(calin::util::string::instance_identifier(high_gain_visitor_)));
+    keyval.emplace_back("lowGainWaveformSumInstance",
+      calin::io::json::json_string_value(calin::util::string::instance_identifier(low_gain_visitor_)));
+    keyval.emplace_back("filterInstance",
+      calin::io::json::json_string_value(calin::util::string::instance_identifier(filter_)));
+    config_json->set_json(calin::io::json::json_for_dictionary(keyval));
   }
 
   has_dual_gain_ = (run_config->camera_layout().adc_gains() !=

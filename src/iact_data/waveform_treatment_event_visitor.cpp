@@ -112,6 +112,9 @@ visit_telescope_run(const TelescopeRunConfiguration* run_config,
     auto* config_json = processing_record->add_config();
     config_json->set_type(config_.GetTypeName());
     config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+    config_json = processing_record->add_config();
+    config_json->set_json(calin::io::json::json_for_single_value("gainChannelToTreat",
+      (gain_channel_to_treat_== LOW_GAIN)?"LOW_GAIN":"HIGH_OR_SINGLE_GAIN"));
   }
 
   reconfigure(run_config->configured_channel_id_size(), run_config->num_samples());
