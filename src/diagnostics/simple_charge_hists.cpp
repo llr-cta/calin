@@ -23,6 +23,7 @@
 #include <util/log.hpp>
 #include <math/special.hpp>
 #include <util/algorithm.hpp>
+#include <io/json.hpp>
 #include <diagnostics/simple_charge_hists.hpp>
 #include <math/covariance_calc.hpp>
 
