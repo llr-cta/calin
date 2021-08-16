@@ -357,11 +357,13 @@ calin::provenance::system_info::copy_the_host_info(calin::ix::provenance::system
   return x;
 }
 
-void calin::provenance::system_info::write_system_info_to_log(calin::util::log::Level level,
-  calin::util::log::Logger* logger)
+std::string calin::provenance::system_info::system_info_string(
+  const calin::ix::provenance::system_info::HostAndProcessInfo* host_info)
 {
-  const auto* host_info = calin::provenance::system_info::the_host_info();
-  auto L = LOG(level, logger);
+  if(host_info == nullptr) {
+    host_info = calin::provenance::system_info::the_host_info();
+  }
+  std::ostringstream L;
   L << host_info->uname_sysname() << " " << host_info->uname_release() << " on "
     << host_info->cpu_processor_brand() << '\n';
   if(host_info->cpu_has_sse()) {
@@ -392,6 +394,14 @@ void calin::provenance::system_info::write_system_info_to_log(calin::util::log::
     if(host_info->cpu_has_sse2())L << " SSE2";
     if(host_info->cpu_has_sse())L << " SSE";
   }
+  return L.str();
+}
+
+void calin::provenance::system_info::write_system_info_to_log(calin::util::log::Level level,
+  calin::util::log::Logger* logger)
+{
+  auto L = LOG(level, logger);
+  L << system_info_string();
 }
 
 bool calin::provenance::system_info::has_avx()

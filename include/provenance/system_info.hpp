@@ -47,6 +47,8 @@ calin::ix::provenance::system_info::HostAndProcessInfo* copy_the_host_info();
 void copy_the_host_info(calin::ix::provenance::system_info::HostAndProcessInfo* x);
 #endif
 
+std::string system_info_string(const calin::ix::provenance::system_info::HostAndProcessInfo* host_info=nullptr);
+
 void write_system_info_to_log(calin::util::log::Level level = calin::util::log::INFO,
   calin::util::log::Logger* logger = calin::util::log::default_logger());
 
