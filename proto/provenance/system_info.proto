@@ -176,10 +176,10 @@ message BuildInfo {
   bool compiled_with_avx512vpopcntdq                       = 352 [
     (CFO).desc = "Macro __AVX512VPOPCNTDQ__ defined at compile time." ];
 
-  bool compiled_with_avx5124vnniw                          = 353 [
+  bool compiled_with_avx512_4vnniw                          = 353 [
     (CFO).desc = "Macro __AVX5124VNNIW__ defined at compile time." ];
 
-  bool compiled_with_avx5124fmaps                          = 354 [
+  bool compiled_with_avx512_4fmaps                          = 354 [
     (CFO).desc = "Macro __AVX5124FMAPS__ defined at compile time." ];
 };
 
