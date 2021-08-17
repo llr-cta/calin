@@ -118,7 +118,7 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_run(
 {
   if(processing_record) {
     processing_record->set_type("RunInfoDiagnosticsParallelEventVisitor");
-    processing_record->set_description("Miscellaneous run information estimator");
+    processing_record->set_description("Miscellaneous run information");
     auto* config_json = processing_record->add_config();
     config_json->set_type(config_.GetTypeName());
     config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));

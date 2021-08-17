@@ -78,7 +78,11 @@ bool WaveformSumParallelEventVisitor::visit_telescope_run(
 {
   if(processing_record) {
     processing_record->set_type("WaveformSumParallelEventVisitor");
-    processing_record->set_description("Mean waveform calculator");
+    if(calculate_variance_) {
+      processing_record->set_description("Mean waveform and variance");
+    } else {
+      processing_record->set_description("Mean waveform");      
+    }
     auto* config_json = processing_record->add_config();
     std::vector<std::pair<std::string,std::string> > keyval;
     keyval.emplace_back("calculateVariance", calin::io::json::json_value(calculate_variance_));
