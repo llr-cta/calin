@@ -364,7 +364,7 @@ std::string calin::provenance::system_info::build_info_string(
     build_info = calin::provenance::system_info::the_build_info();
   }
   std::ostringstream L;
-  L << "Git origin : " << build_info->git_origin_url() << ", branch : " << build_info->git_branch() << "\n"
+  L << "Git origin : " << build_info->git_origin_url() << "  Branch : " << build_info->git_branch() << "\n"
     << "Git commit : " << build_info->git_commit_sha1() << " from " << build_info->git_commit_date();
   if(build_info->git_repo_status() == "dirty") {
     L << " (dirty)";

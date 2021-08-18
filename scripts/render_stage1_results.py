@@ -21,6 +21,7 @@ import sys
 import traceback
 import numpy
 import concurrent.futures
+import io
 
 import calin.io.sql_serializer
 import calin.util.log
@@ -29,6 +30,7 @@ import calin.ix.diagnostics.stage1
 import calin.ix.scripts.render_stage1_results
 import calin.provenance.chronicle
 import calin.provenance.anthology
+import calin.provenance.printer
 import calin.diagnostics.stage1_plotting
 import calin.iact_data.nectarcam_layout
 import calin.io.uploader
@@ -170,12 +172,18 @@ def render_oid(oid):
     if(opt.force_nectarcam_61_camera()):
         cast_to_nectarcam_61_camera(stage1)
 
-    def upload_figure(runno, quantity, f):
+    def filenames(runno, quantity, extension):
         runbatchpath = 'runs%d-%d'%(int(runno/1000)*1000, (int(runno/1000)+1)*1000)
         filenames = [ \
-            'by run/%s/run%d/run%d_%s.png'%(runbatchpath, runno, runno, quantity),
-            'by quantity/%s/%s/run%d_%s.png'%(quantity, runbatchpath, runno, quantity) ]
-        uploader.upload_png_from_figure(filenames, f)
+            'by run/%s/run%d/run%d_%s.%s'%(runbatchpath, runno, runno, quantity, extension),
+            'by quantity/%s/%s/run%d_%s.%s'%(quantity, runbatchpath, runno, quantity, extension) ]
+        return filenames
+
+    def upload_figure(runno, quantity, f):
+        uploader.upload_png_from_figure(filenames(runno, quantity, 'png'), f)
+
+    def upload_text(runno, quantity, iostream):
+        uploader.upload_from_io(filenames(runno, quantity, 'txt'), 'text/plain', iostream)
 
     ############################################################################
     # FIGURE : Missing components
@@ -518,6 +526,14 @@ def render_oid(oid):
         calin.diagnostics.stage1_plotting.draw_event_number_histogram(stage1, axis=ax)
         ax.set_title('Event fraction on disk, run : %d'%runno)
         upload_figure(runno, 'event_fraction', ax.figure)
+
+    ############################################################################
+    # PROVENANCE LOG
+    ############################################################################
+
+    writer = io.StringIO()
+    calin.provenance.printer.print_provenance(writer, stage1.const_provenance_anthology())
+    upload_text(runno, 'provenance_log_stage1', writer)
 
     print('Finished run :', runno)
     return True

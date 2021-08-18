@@ -1,4 +1,4 @@
-# calin/python/diagnostics/print_provenance.py -- Stephen Fegan -- 2021-08-18
+# calin/python/diagnostics/printer.py -- Stephen Fegan -- 2021-08-18
 #
 # Print the provenance
 #
