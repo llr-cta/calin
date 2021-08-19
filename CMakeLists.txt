@@ -125,7 +125,7 @@ endif()
 
 ## Find the CTA CamerasToACTL package
 set(CALIN_HAVE_CTA_CAMERASTOACTL FALSE)
-find_package(CTA_CamerasToACTL)
+find_package(CTA_CAMERASTOACTL)
 if(CTA_CAMERASTOACTL_FOUND)
 	set(CALIN_HAVE_CTA_CAMERASTOACTL TRUE)
 endif()

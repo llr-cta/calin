@@ -3,7 +3,7 @@
 # NUMPY_FOUND
 # will be set by this script
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 
 #if(NUMPY_FIND_QUIETLY)
 #  find_package(PythonInterp QUIET)
@@ -45,4 +45,4 @@ if(PYTHON_NUMPY_INCLUDE_DIR)
 endif(PYTHON_NUMPY_INCLUDE_DIR)
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(NumPy DEFAULT_MSG PYTHON_NUMPY_INCLUDE_DIR)
+find_package_handle_standard_args(Numpy DEFAULT_MSG PYTHON_NUMPY_INCLUDE_DIR)
