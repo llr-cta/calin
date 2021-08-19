@@ -1,0 +1,48 @@
+name: CI build and test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-16.04]
+        compiler: [ [gcc-5, g++-5] ]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: install prerequisites
+      shell: bash
+      run: |
+        apt-get update -y
+        apt-get install -y gsl-bin libgsl0-dev libfftw3-dev python-numpy \
+          libzmq3-dev python3 python3-dev python3-numpy libxerces-c-dev \
+          libpcap-dev libz-dev ${{ matrix.compiler[0] }}
+    - name: configure
+      shell: bash
+      run: |
+        mkdir mybuild &&                                               \
+        cd mybuild &&                                                  \
+        cmake -DCALIN_BUILD_ARCH=${arch}                               \
+              -DCMAKE_BUILD_TYPE=Release                               \
+              -DCMAKE_INSTALL_PREFIX=/usr                              \
+              -DCALIN_PYTHON_SUB_DIR=lib/python3.6                     \
+              ..
+    # - name: compile
+    #   shell: bash
+    #   run: |
+    #     ${CPP} -o utm_ellipse -DELLIPSE_TEST_MAIN datum.cpp utm.cpp
+    #     ${CPP} -o utm_sphere -DSPHERE_TEST_MAIN datum.cpp utm.cpp
+    #   env:
+    #     CPP: ${{ matrix.cpp }}
+    # - name: ellipse_test
+    #   run: ./utm_ellipse
+    # - name: sphere_test
+    #   run: ./utm_sphere
