@@ -234,7 +234,7 @@ void ReparameterizedTwoGaussianSES::update_cached_values()
       break;
     }
 
-    if(i>200)throw std::runtime_error(
+    if(i>400)throw std::runtime_error(
         "ReparameterizedTwoGaussianSES: too many iterations");
     mh = mh_est;
     sh = sh_est;
