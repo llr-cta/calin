@@ -234,11 +234,12 @@ void ReparameterizedTwoGaussianSES::update_cached_values()
       break;
     }
 
-    LOG(INFO) << i << ' ' << mh_est << ' ' << sh_est << ' '
-      << std::abs(mh_est - mh)/mx << ' ' << std::abs(sh_est - sh )/mx;
 
-    if(i>200)throw std::runtime_error(
-        "ReparameterizedTwoGaussianSES: too many iterations");
+    if(i>200) {
+      LOG(ERROR) << "Iteration limit : " << i << ' ' << mh_est << ' ' << sh_est << ' '
+        << std::abs(mh_est - mh)/mx << ' ' << std::abs(sh_est - sh )/mx;
+      throw std::runtime_error("ReparameterizedTwoGaussianSES: too many iterations");
+    }
     mh = mh_est;
     sh = sh_est;
   }

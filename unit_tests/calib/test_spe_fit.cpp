@@ -674,7 +674,7 @@ TEST(TestGeneralPoissonMES_ExpGauss, GradientCheck_MES)
                     &MultiElectronSpectrum::pdf_gradient_mes,
                     &MultiElectronSpectrum::pdf_gradient_hessian_mes,
                     { 1.123, 0.100000, 0.2, 0.3, 0.2, 1.321, 0.35 },
-                    { dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 0.5);
+                    { dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 1.0);
 
   // std::ofstream file("spec.dat");
   // Eigen::VectorXd mes_spec = mes_model.multi_electron_spectrum();
@@ -861,7 +861,7 @@ TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_MES)
                     &MultiElectronSpectrum::pdf_gradient_mes,
                     &MultiElectronSpectrum::pdf_gradient_hessian_mes,
                     { 1.123, 10.0, 0.100000, 0.2, 0.3, 0.2, 1.321, 0.35 },
-                    { dp1, dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 0.5);
+                    { dp1, dp1, dp1, dp1, dp1, dp1, dp1, dp1}, -1.0, 9.0, 1.0);
 }
 
 TEST(TestGeneralPoissonMES_ExpGaussWithShift, GradientCheck_PED)
