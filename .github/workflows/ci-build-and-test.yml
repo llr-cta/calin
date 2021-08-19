@@ -35,8 +35,6 @@ jobs:
         $CC -v
         python -V
         python3 -V
-      env:
-        CC: ${{ matrix.compiler[0] }}
     - name: Configure build
       shell: bash
       run: |
@@ -48,9 +46,9 @@ jobs:
               -DCALIN_PYTHON_SUB_DIR=lib/python3.8                        \
               -DNO_GEANT4:BOOLEAN=TRUE                                    \
               ..
-      env:
+    - env:
         CC: ${{ matrix.compiler[0] }}
-        CPP: ${{ matrix.compiler[1] }}
+        CXX: ${{ matrix.compiler[1] }}
     # - name: compile
     #   shell: bash
     #   run: |
