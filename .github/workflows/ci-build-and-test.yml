@@ -12,14 +12,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-20.04]
-        compiler: [ [gcc-11, g++-11, 'gcc-11 g++-11' ],
+        compiler: [ [gcc-11, g++-11, 'gcc-11 g++-11'],
                     [gcc-10, g++-10, 'gcc-10 g++-10'],
                     [gcc-9, g++-9, 'gcc-9 g++-9'],
                     [gcc-8, g++-8, 'gcc-8 g++-8'],
                     [gcc-7, g++-7, 'gcc-7 g++-7'],
-                    [clang-12, clang++-12, 'clang-12' ],
-                    [clang-11, clang++-11, 'clang-11' ],
-                    [clang-10, clang++-10, 'clang-10' ] ]
+                    [clang-12, clang++-12, 'clang-12'],
+                    [clang-11, clang++-11, 'clang-11'],
+                    [clang-10, clang++-10, 'clang-10'] ]
 
     runs-on: ${{ matrix.os }}
 
@@ -66,4 +66,4 @@ jobs:
       shell: bash
       run: |
         cd mybuild
-        make test
+        ctest --output-on-failure
