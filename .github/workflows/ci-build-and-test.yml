@@ -45,7 +45,7 @@ jobs:
               -DCMAKE_BUILD_TYPE=Release                                  \
               -DCMAKE_INSTALL_PREFIX=/usr                                 \
               -DCALIN_PYTHON_SUB_DIR=lib/python3.8                        \
-              -DNO_GEANT4:BOOLEAN=TRUE                                    \
+              -DNO_GEANT4=TRUE                                            \
               -D
               ..
         env:
