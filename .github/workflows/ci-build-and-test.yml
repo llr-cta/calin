@@ -39,7 +39,7 @@ jobs:
           libprotobuf-dev protobuf-compiler libprotoc-dev libzstd-dev          \
           ${{ matrix.compiler[2] }}
         wget https://github.com/llr-cta/CamerasToACTLRelease/releases/download/latest/CamerasToACTL-1.16.1-unknown.x86_64.rpm
-        rpm -qlp CamerasToACTL-1.16.1-unknown.x86_64.rpm
+        rpm -i --force CamerasToACTL-1.16.1-unknown.x86_64.rpm
     - name: Print version information
       shell: bash
       run: |
