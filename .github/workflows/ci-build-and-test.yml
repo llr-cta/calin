@@ -36,8 +36,10 @@ jobs:
         sudo apt-get install -y gsl-bin libgsl0-dev libfftw3-dev python-numpy  \
           libzmq3-dev python3 python3-dev python3-numpy libxerces-c-dev        \
           libpcap-dev libz-dev libprotobuf-c-dev protobuf-c-compiler           \
-          libprotobuf-dev protobuf-compiler libprotoc-dev                      \
+          libprotobuf-dev protobuf-compiler libprotoc-dev libzstd-dev          \
           ${{ matrix.compiler[2] }}
+        wget https://github.com/llr-cta/CamerasToACTLRelease/releases/download/latest/CamerasToACTL-1.16.1-unknown.x86_64.rpm
+        sudo rpm -i CamerasToACTL-1.16.1-unknown.x86_64.rpm
     - name: Print version information
       shell: bash
       run: |
