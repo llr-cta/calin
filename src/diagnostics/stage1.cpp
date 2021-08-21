@@ -24,6 +24,7 @@
 #include <util/log.hpp>
 #include <util/file.hpp>
 #include <util/timestamp.hpp>
+#include <io/json.hpp>
 #include <diagnostics/stage1.hpp>
 #include <provenance/anthology.hpp>
 
@@ -75,10 +76,10 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
     wf_mean_ext_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor(config.calculate_waveform_variance());
     wf_mean_int_pev_ = new calin::diagnostics::waveform::WaveformSumParallelEventVisitor(config.calculate_waveform_variance());
 
-    this->add_physics_trigger_visitor(wf_mean_phy_pev_);
-    this->add_pedestal_trigger_visitor(wf_mean_ped_pev_);
-    this->add_external_flasher_trigger_visitor(wf_mean_ext_pev_);
-    this->add_internal_flasher_trigger_visitor(wf_mean_int_pev_);
+    this->add_physics_trigger_visitor(wf_mean_phy_pev_, "Physics triggers");
+    this->add_pedestal_trigger_visitor(wf_mean_ped_pev_, "Pedestal triggers");
+    this->add_external_flasher_trigger_visitor(wf_mean_ext_pev_, "External-flasher triggers");
+    this->add_internal_flasher_trigger_visitor(wf_mean_int_pev_, "Internal-flasher triggers");
   }
 
   if(config_.enable_simple_waveform_hists()) {
@@ -95,10 +96,10 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
       SimpleChargeHistsParallelEventVisitor(hg_sum_pev_, lg_sum_pev_,
         config_.int_trigger_waveform_hists());
 
-    this->add_physics_trigger_visitor(charge_hists_phy_pev_);
-    this->add_pedestal_trigger_visitor(charge_hists_ped_pev_);
-    this->add_external_flasher_trigger_visitor(charge_hists_ext_pev_);
-    this->add_internal_flasher_trigger_visitor(charge_hists_int_pev_);
+    this->add_physics_trigger_visitor(charge_hists_phy_pev_, "Physics triggers");
+    this->add_pedestal_trigger_visitor(charge_hists_ped_pev_, "Pedestal triggers");
+    this->add_external_flasher_trigger_visitor(charge_hists_ext_pev_, "External-flasher triggers");
+    this->add_internal_flasher_trigger_visitor(charge_hists_int_pev_, "Internal-flasher triggers");
   }
 
   if(config_.enable_l0_trigger_bit_waveform_hists()) {
@@ -112,8 +113,8 @@ Stage1ParallelEventVisitor::Stage1ParallelEventVisitor(const calin::ix::diagnost
         config_.l0_trigger_bit_waveform_hists(),
         new calin::diagnostics::simple_charge_hists::SimpleChargeHistsTriggerBitFilter(
           /*trigger_bit_status_required_for_accept=*/false),/*adopt_filter=*/true);
-    this->add_visitor(charge_hists_trig_bit_set_pev_);
-    this->add_visitor(charge_hists_trig_bit_clr_pev_);
+    this->add_visitor(charge_hists_trig_bit_set_pev_, "L0 trigger-bit set");
+    this->add_visitor(charge_hists_trig_bit_clr_pev_, "L0 trigger-bit clear");
   }
 
   if(config_.enable_clock_regression()) {
@@ -144,19 +145,28 @@ Stage1ParallelEventVisitor::~Stage1ParallelEventVisitor()
 
 bool Stage1ParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   LOG(INFO) << LOGO;
   delete nectarcam_ancillary_data_;
   nectarcam_ancillary_data_ = nullptr;
   run_config_ = run_config;
+  if(processing_record) {
+    processing_record->set_type("Stage1ParallelEventVisitor");
+    processing_record->set_description("Stage 1 data reduction");
+    auto* config_json = processing_record->add_config();
+    config_json->set_type(config_.GetTypeName());
+    config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+  }
   return FilteredDelegatingParallelEventVisitor::visit_telescope_run(
-    run_config, event_lifetime_manager);
+    run_config, event_lifetime_manager, processing_record);
 }
 
-bool Stage1ParallelEventVisitor::leave_telescope_run()
+bool Stage1ParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
-  bool good = FilteredDelegatingParallelEventVisitor::leave_telescope_run();
+  bool good = FilteredDelegatingParallelEventVisitor::leave_telescope_run(processing_record);
 
   if(config_.enable_ancillary_data()) {
     int64_t start_time = run_info_pev_->min_event_time() / int64_t(1000000000);

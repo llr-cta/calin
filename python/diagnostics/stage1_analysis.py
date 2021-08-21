@@ -32,11 +32,11 @@ def summarize_camera_clock_regressions(stage1):
         # Temporary : remove when all data has been reprocessed with new version
         cl = calin.iact_data.instrument_layout.camera_layout(cl.camera_type())
 
-    master_clock_id = stage1.const_clock_regression().master_clock_id();
-    if(master_clock_id == 0):
+    principal_clock_id = stage1.const_clock_regression().principal_clock_id();
+    if(principal_clock_id == 0):
         # Temporary : remove when all data has been reprocessed with new version
-        master_clock_id = stage1.const_config().const_clock_regression().master_clock_id()
-    master_clock_freq = cl.camera_clock_frequency(master_clock_id)
+        principal_clock_id = stage1.const_config().const_clock_regression().principal_clock_id()
+    principal_clock_freq = cl.camera_clock_frequency(principal_clock_id)
 
     for iclock in range(len(cam_freq_offset_ppm)):
         clock = stage1.const_clock_regression().const_camera_clock(iclock)
@@ -46,7 +46,7 @@ def summarize_camera_clock_regressions(stage1):
             # Temporary : remove when all data has been reprocessed with new version
             clock_id = stage1.const_config().const_clock_regression().default_nectarcam_camera_clocks(iclock).clock_id()
         clock_freq = cl.camera_clock_frequency(clock_id)
-        clock_nominal_a = clock_freq/master_clock_freq
+        clock_nominal_a = clock_freq/principal_clock_freq
 
         all_t = sorted(clock.bins_keys())
         all_x0 = numpy.zeros(len(all_t), dtype=numpy.int64)
@@ -106,20 +106,41 @@ def summarize_module_clock_regression(stage1, iclock=0):
             all_d2[ikey] = bin.d2()
             all_n[ikey] = bin.num_entries()
 
-        # all_y_at_0 = (numpy.remainder(all_x0,1000000000) - all_y0) + all_y0*(all_a-1) - all_b/all_a
-        all_y_at_0 = numpy.remainder(all_x0,1000000000) - all_y0/all_a - all_b/all_a
-
-        mask_oob_intercept = numpy.bitwise_or(all_y_at_0>250, all_y_at_0<40)
-        mask_oob_residual = numpy.sqrt(all_d2) > 100*numpy.sqrt(all_n)
         mask_n = all_n>5
 
-        mask = numpy.bitwise_and(numpy.bitwise_or(mask_oob_intercept, mask_oob_residual), mask_n)
+        # all_x_at_0 = (numpy.remainder(all_x0,1000000000) - all_y0) + all_y0*(1-1/all_a) - all_b/all_a
+        all_x_at_0 = numpy.remainder(all_x0[mask_n],1000000000) - all_y0[mask_n]/all_a[mask_n] - all_b[mask_n]/all_a[mask_n]
+
+        mask_oob_intercept = numpy.bitwise_or(all_x_at_0>250, all_x_at_0<40)
+        mask_oob_residual = numpy.sqrt(all_d2[mask_n]) > 100*numpy.sqrt(all_n[mask_n])
+        mask_oob = numpy.bitwise_or(mask_oob_intercept, mask_oob_residual)
 
         mod_freq_offset_ppm[imod] = 1e6*(numpy.mean(all_a[mask_n])-1) if numpy.count_nonzero(mask_n) else numpy.nan
         mod_freq_spread_ppm[imod] = 1e6*(numpy.max(all_a[mask_n])-numpy.min(all_a[mask_n])) if numpy.count_nonzero(mask_n) else numpy.nan
-        mod_time_offset_ns[imod] = numpy.mean(all_y_at_0[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
-        mod_time_spread_ns[imod] = (numpy.max(all_y_at_0[mask_n])-numpy.min(all_y_at_0[mask_n])) if numpy.count_nonzero(mask_n) else numpy.nan
+        mod_time_offset_ns[imod] = numpy.mean(all_x_at_0) if numpy.count_nonzero(mask_n) else numpy.nan
+        mod_time_spread_ns[imod] = (numpy.max(all_x_at_0)-numpy.min(all_x_at_0)) if numpy.count_nonzero(mask_n) else numpy.nan
         mod_d2_per_event[imod] = numpy.mean(all_d2[mask_n]/all_n[mask_n]) if numpy.count_nonzero(mask_n) else numpy.nan
-        mod_problem_bins[imod] = numpy.count_nonzero(mask)
+        mod_problem_bins[imod] = numpy.count_nonzero(mask_oob)
 
     return mod_freq_offset_ppm, mod_freq_spread_ppm, mod_time_offset_ns, mod_time_spread_ns, mod_d2_per_event, mod_problem_bins
+
+def estimate_run_pedestal(stage1, low_gain=False):
+    rc = stage1.const_run_config()
+    cl = rc.const_camera_layout()
+
+    charge_stats = stage1.const_charge_stats().const_low_gain() if low_gain \
+        else stage1.const_charge_stats().const_high_gain()
+
+    if(charge_stats.ped_trigger_event_count()):
+        nsamp = rc.num_samples()
+        nevent = charge_stats.ped_trigger_event_count()
+        values = charge_stats.ped_trigger_full_wf_mean()/nsamp
+    else:
+        nsamp = stage1.config().low_gain_opt_sum().integration_n() if \
+                (low_gain and stage1.config().has_low_gain_opt_sum()) \
+            else stage1.config().high_gain_opt_sum().integration_n()
+        nevent = charge_stats.all_trigger_event_count()
+        values = charge_stats.all_trigger_ped_win_mean()/nsamp
+
+    values[nevent==0] = numpy.nan
+    return values

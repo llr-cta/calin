@@ -399,7 +399,7 @@ bool BlockSparseNSpace::x_center(Eigen::VectorXd& x, int64_t array_index, int64_
     --i;
     auto qr = std::div(array_index, int64_t(narray_[i]));
     unsigned ix = (qr.rem<<block_shift_) | (block_index&block_mask_);
-    if(ix >= n_[i]) {
+    if(ix >= unsigned(n_[i])) {
       return false;
     }
     x[i] = xlo_[i] + dx_[i] * (ix + 0.5);
@@ -835,7 +835,7 @@ Eigen::MatrixXd BlockSparseNSpace::select_as_matrix(const Eigen::VectorXi& bin_c
 
   for(int ix=0; ix<n_[iaxis]; ++ix) {
     xi[iaxis] = ix;
-    for(unsigned jx=0; jx<n_[jaxis]; ++jx) {
+    for(unsigned jx=0; jx<unsigned(n_[jaxis]); ++jx) {
       xi[jaxis] = jx;
       int64_t array_index;
       int64_t block_index;

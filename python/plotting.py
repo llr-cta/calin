@@ -15,10 +15,13 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-import matplotlib.pyplot as plt
+import matplotlib.pyplot
 import matplotlib.collections
+import matplotlib.path
+import matplotlib.patches
 import colorsys
 import numpy
+import copy
 
 import calin.math.histogram
 import calin.ix.iact_data.instrument_layout
@@ -89,6 +92,8 @@ def obsolete_plot_module_camera(mod_data, camera_layout, configured_modules = No
         cbar.set_label(cbar_label)
     return pc
 
+################################### OBSOLETE ###################################
+
 def layout_to_polygon_vxy(layout, plate_scale = 1.0, rotation = 0.0):
     crot = numpy.cos(rotation/180.0*numpy.pi)
     srot = numpy.sin(rotation/180.0*numpy.pi)
@@ -110,14 +115,39 @@ def layout_to_polygon(layout, plate_scale = 1.0, rotation = 0.0, **args):
         return all_p[0]
     return all_p
 
+################################################################################
+
+def layout_to_path(layout, plate_scale = 1.0, rotation = 0.0):
+    crot = numpy.cos(rotation/180.0*numpy.pi)
+    srot = numpy.sin(rotation/180.0*numpy.pi)
+    vx = layout.outline_polygon_vertex_x()*plate_scale
+    vy = layout.outline_polygon_vertex_y()*plate_scale
+    vx, vy = vx*crot - vy*srot, vy*crot + vx*srot
+
+    nv = nv = layout.outline_polygon_vertex_x_size()+layout.outline_polygon_vertex_index_size()
+    v = numpy.zeros((nv,2))
+    c = numpy.zeros(nv,dtype=numpy.uint8)
+
+    iv = 0
+    for ic in range(layout.outline_polygon_vertex_index_size()):
+        nv = layout.outline_polygon_vertex_index(ic) - iv
+        v[iv+ic:iv+ic+nv,0] = vx[iv:iv+nv]
+        v[iv+ic:iv+ic+nv,1] = vy[iv:iv+nv]
+        c[iv+ic]            = matplotlib.path.Path.MOVETO
+        c[iv+ic+1:iv+ic+nv] = matplotlib.path.Path.LINETO
+        c[iv+ic+nv]         = matplotlib.path.Path.CLOSEPOLY
+        iv = layout.outline_polygon_vertex_index(ic)
+
+    return matplotlib.path.Path(v,c)
+
+def layout_to_path_patch(layout, plate_scale = 1.0, rotation = 0.0, **args):
+    p = layout_to_path(layout, plate_scale, rotation)
+    return matplotlib.patches.PathPatch(p, **args)
+
 def add_outline(axis, layout, plate_scale = 1.0, rotation = 0.0, fill=False,
         outline_lw = 0.5, outline_ls = '-', outline_color = '#888888', **args):
-    all_p = []
-    for vxy in layout_to_polygon_vxy(layout, plate_scale, rotation):
-        p = axis.add_patch(matplotlib.pyplot.Polygon(vxy,
+    return axis.add_patch(layout_to_path_patch(layout, plate_scale, rotation,
             fill=fill, lw=outline_lw, ls=outline_ls, edgecolor=outline_color, **args))
-        all_p.append(p)
-    return all_p
 
 def add_stats(axis, max_xy, values, ids, mask=None, stats_fontsize=4.75, stats_format='%.3f',
         draw_top12 = True):
@@ -183,10 +213,13 @@ def add_module_numbers(axis, camera_layout, configured_modules = None, dx = 0, d
         m = camera_layout.module(int(modid))
         label_color = brightness_hi_color
         if(pc is not None and module_values is not None):
-            rgba = pc.cmap(pc.norm(module_values[i]))
-            brightness = rgba_to_brightness(rgba)
-            if(brightness < brightness_hi_threshold):
-                label_color = brightness_lo_color
+            if(module_values[i] is numpy.nan):
+                label_color = brightness_hi_color
+            else:
+                rgba = pc.cmap(pc.norm(module_values[i]))
+                brightness = rgba_to_brightness(rgba)
+                if(brightness < brightness_hi_threshold):
+                    label_color = brightness_lo_color
         x = (m.x()*crot - m.y()*srot)*plate_scale
         y = (m.y()*crot + m.x()*srot)*plate_scale
         axis.text(x+dx, y+dy, '%d'%modid, ha='center', va='center',
@@ -200,6 +233,49 @@ def add_module_numbers(axis, camera_layout, configured_modules = None, dx = 0, d
                 y = (m.y()*crot + m.x()*srot)*plate_scale
                 axis.text(x+dx, y+dy, '%d'%modid, ha='center', va='center',
                     color=nonconfigured_color, **args)
+
+def add_colorbar_and_clipping(axis, pc, data, mask=None,
+        camera_layout=None, plate_scale = 1.0, rotation = 0.0, configured_channels=None,
+        cb_label=None, percentile=100, percentile_factor=2.0,
+        under_color=None, over_color=None, clip_highlight='#0044ff', clip_highlight_lw=1.5):
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+    mask = mask if mask is not None else ones_like(data, dtype=bool)
+    dmax = numpy.max(data[mask])
+    dmin = numpy.min(data[mask])
+    dmed = numpy.median(data[mask])
+    dpch = numpy.percentile(data[mask],min(100,percentile))
+    dpcl = numpy.percentile(data[mask],max(0,100-percentile))
+    liml = max(dmin, dmed + (dpcl-dmed)*percentile_factor)
+    limh = min(dmax, dmed + (dpch-dmed)*percentile_factor)
+    pc.cmap = copy.copy(pc.cmap)
+    pc.set_clim(liml,limh)
+    cb_clip = 'neither'
+    if(liml>dmin):
+        if(under_color is not None):
+            pc.cmap.set_under(under_color)
+        if(limh<dmax):
+            if(over_color is not None):
+                pc.cmap.set_over(over_color)
+            cb_clip = 'both'
+        else:
+            cb_clip = 'min'
+    elif(limh<dmax):
+        if(over_color is not None):
+            pc.cmap.set_over(over_color)
+        cb_clip = 'max'
+
+    cb = axis.get_figure().colorbar(pc, ax=axis, label=cb_label, extend=cb_clip)
+
+    if(cb_clip != 'neither' and camera_layout is not None and clip_highlight is not None):
+        if(configured_channels is None):
+            configured_channels = numpy.arange(camera_layout.channel_size())
+        clipped_mask = numpy.bitwise_and(mask, numpy.bitwise_or(data>limh, data<liml))
+        clipped_camera_layout = calin.iact_data.instrument_layout.reorder_camera_channels(
+            camera_layout, configured_channels[clipped_mask])
+        add_outline(axis,clipped_camera_layout, plate_scale=plate_scale, rotation=rotation,
+            outline_color=clip_highlight, outline_lw=clip_highlight_lw)
+
+    return cb
 
 def plot_camera_image(channel_data, camera_layout, channel_mask = None,
         configured_channels = None, zero_suppression = None,
@@ -248,10 +324,16 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
 
     axis = axis or matplotlib.pyplot.gca()
 
+    cl_conf = camera_layout
     if draw_outline and hatch_missing_channels and configured_channels is not None and \
             len(configured_channels) != camera_layout.channel_size():
-        add_outline(axis, camera_layout, hatch='///',
+        cl_conf = calin.iact_data.instrument_layout.reorder_camera_channels(
+            camera_layout, numpy.asarray(configured_channels,dtype=numpy.int32))
+        add_outline(axis, camera_layout, hatch='XXXXX',
             plate_scale=plate_scale, rotation=rotation,
+            outline_lw=outline_lw, outline_color=outline_color, zorder=-2)
+        add_outline(axis, cl_conf,
+            plate_scale=plate_scale, rotation=rotation, fill=True, facecolor='w',
             outline_lw=outline_lw, outline_color=outline_color, zorder=-1)
 
     pc = matplotlib.collections.PatchCollection(poly, cmap=cmap)
@@ -265,8 +347,6 @@ def plot_camera_image(channel_data, camera_layout, channel_mask = None,
 
     if draw_outline and hatch_missing_channels and configured_channels is not None and \
             len(configured_channels) != camera_layout.channel_size():
-        cl_conf = calin.iact_data.instrument_layout.reduce_camera_channels(
-            camera_layout, numpy.asarray(configured_channels,dtype=numpy.int32))
         calin.plotting.add_outline(axis, cl_conf,
             plate_scale=plate_scale, rotation=rotation,
             outline_lw=outline_lw, outline_color=outline_color)
@@ -325,10 +405,16 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
 
     axis = axis or matplotlib.pyplot.gca()
 
+    cl_conf = camera_layout
     if draw_outline and hatch_missing_modules and configured_modules is not None and \
             len(configured_modules) != camera_layout.module_size():
-        add_outline(axis, camera_layout, hatch='///',
+        cl_conf = calin.iact_data.instrument_layout.reorder_camera_modules(
+            camera_layout, numpy.array(configured_modules, dtype=numpy.int32))
+        add_outline(axis, camera_layout, hatch='XXXXX',
             plate_scale=plate_scale, rotation=rotation,
+            outline_lw=outline_lw, outline_color=outline_color, zorder=-2)
+        add_outline(axis, cl_conf,
+            plate_scale=plate_scale, rotation=rotation, fill=True, facecolor='w',
             outline_lw=outline_lw, outline_color=outline_color, zorder=-1)
 
     pc = matplotlib.collections.PatchCollection(poly, cmap=cmap)
@@ -342,8 +428,6 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
 
     if draw_outline and hatch_missing_modules and configured_modules is not None and \
             len(configured_modules) != camera_layout.module_size():
-        cl_conf = calin.iact_data.instrument_layout.reduce_camera_modules(
-            camera_layout, numpy.array(configured_modules, dtype=numpy.int32))
         calin.plotting.add_outline(axis, cl_conf,
             plate_scale=plate_scale, rotation=rotation,
             outline_lw=outline_lw, outline_color=outline_color)
@@ -358,7 +442,9 @@ def plot_camera_module_image(module_data, camera_layout, module_mask = None,
     return pc
 
 def plot_histogram(h, density = False, normalise = False,
+        weight_scale_function=None,
         xscale = 1, xoffset = 0, yscale = 1, yoffset = 0,
+        xleft = -numpy.inf, xright = numpy.inf,
         xscale_as_log10 = False, draw_poisson_errors = False,
         histtype='steps', ecolor=None, axis = None, *args, **nargs):
     if type(h) is calin.math.histogram.SimpleHist:
@@ -373,20 +459,45 @@ def plot_histogram(h, density = False, normalise = False,
         hdy = numpy.sqrt(h.bins())
     else:
         raise Exception('Unknown histogram type: '+str(type(h)))
+
+    if(len(hx) == 0):
+        return
+
+    if(weight_scale_function is not None):
+        hy = weight_scale_function(hy)
+        hdy = weight_scale_function(hdy) # This probably doesn't make sense
+
+    hx = numpy.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
+
+    if(hx[0] < xleft):
+        if(hx[1] < xleft):
+            raise ValueError("xleft outside of first bin")
+        hx[0] = xleft
+    if(hx[-1] > xright):
+        if(hx[-2] > xright):
+            raise ValueError("xright outside of final bin")
+        hx[-1] = xright
+
     if density:
-        hy /= abs(h.dxval()*xscale)
-        hdy /= abs(h.dxval()*xscale)
+        hy /= numpy.abs(numpy.diff(hx))
+        hdy /= numpy.abs(numpy.diff(hx))
     if normalise:
         hy /= h.sum_w()
         hdy /= h.sum_w()
-    hx = numpy.append(hx, hx[-1]+h.dxval()) * xscale + xoffset
+
     hy = numpy.append(hy, hy[-1]) * yscale + yoffset
     hdy = hdy * yscale + yoffset
     if(xscale_as_log10):
         hx = 10**hx
     axis = axis or matplotlib.pyplot.gca()
-    if(histtype=='step' or histtype=='steps'):
+
+    histtype='step' if histtype=='steps' else histtype
+    histtype='stepfilled' if histtype=='stepsfilled' else histtype
+    histtype='bar' if histtype=='bars' else histtype
+
+    if(histtype == 'floating'):
         so = axis.step(hx,hy, *args, where='post', **nargs)
+
         if(draw_poisson_errors):
             so1 = axis.vlines(0.5*(hx[:-1]+hx[1:]), hy[:-1]-hdy, hy[:-1]+hdy)
             so1.set_linestyles(so[0].get_linestyle())
@@ -394,16 +505,20 @@ def plot_histogram(h, density = False, normalise = False,
             so1.set_linewidth(so[0].get_linewidth())
             so1.set_zorder(so[0].get_zorder())
             so = [ *so, so1 ]
-    elif(histtype=='bar' or histtype=='bars'):
-        yerr = None
-        if(draw_poisson_errors):
-            yerr = hdy
-        so = axis.bar(hx[:-1], hy[:-1], *args, width=hx[1:]-hx[:-1], align='edge',
-            yerr=yerr, ecolor='black' if ecolor is None else ecolor, **nargs)
     else:
-        raise Exception('Unknown histogram plotting type: '+histtype)
+        _, _, so = axis.hist(hx[:-1],hx,weights=hy[:-1],histtype=histtype,**nargs)
+
+        if(draw_poisson_errors):
+            so1 = axis.vlines(0.5*(hx[:-1]+hx[1:]), hy[:-1]-hdy, hy[:-1]+hdy)
+            so1.set_linestyles(so[0].get_linestyle())
+            so1.set_color(so[0].get_edgecolor() if ecolor is None else ecolor)
+            so1.set_linewidth(so[0].get_linewidth())
+            so1.set_zorder(so[0].get_zorder())
+            so = [ *so, so1 ]
+
     if(xscale_as_log10):
-        so[0].axes.set_xscale('log')
+        axis.set_xscale('log')
+
     return so
 
 def plot_histogram_cumulative(h, plot_as_cdf = False, plot_as_cmf = False,

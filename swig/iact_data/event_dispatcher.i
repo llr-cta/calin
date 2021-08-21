@@ -25,7 +25,6 @@
 %nothread;
 
 %{
-#include "iact_data/event_dispatcher.hpp"
 #include "iact_data/parallel_event_dispatcher.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
@@ -42,6 +41,5 @@
 %import "iact_data/event_dispatcher.pb.i"
 
 %thread; // Release Pyhton GIL for all functions here (since some use threads)
-%include "iact_data/event_dispatcher.hpp"
 %include "iact_data/parallel_event_dispatcher.hpp"
 %nothread;

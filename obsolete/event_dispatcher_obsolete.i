@@ -1,10 +1,10 @@
 /*
 
-   calin/util/options_processor.i -- Stephen Fegan -- 2016-03-21
+   calin/iact_data/event_dispatcher.i -- Stephen Fegan -- 2016-02-10
 
-   SWIG interface file for options processor
+   SWIG interface file for calin event dispatcher and visitor
 
-   Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
+   Copyright 2015, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
 
    This file is part of "calin"
@@ -20,11 +20,12 @@
 
 */
 
-%module (package="calin.util") options_processor
+%module (package="calin.iact_data", threads="1") event_dispatcher
 %feature(autodoc,2);
+%nothread;
 
 %{
-#include "util/options_processor.hpp"
+#include "iact_data/parallel_event_dispatcher.hpp"
 #define SWIG_FILE_WITH_INIT
   %}
 
@@ -34,5 +35,11 @@
 
 %include "calin_typemaps.i"
 %import "calin_global_definitions.i"
+%include "calin_global_config.hpp"
 
-%include "util/options_processor.hpp"
+%import "iact_data/event_visitor.i"
+%import "iact_data/event_dispatcher.pb.i"
+
+%thread; // Release Pyhton GIL for all functions here (since some use threads)
+%include "iact_data/parallel_event_dispatcher.hpp"
+%nothread;

@@ -28,6 +28,8 @@
 #include <diagnostics/simple_charge_stats.hpp>
 #include <math/covariance_calc.hpp>
 #include <iact_data/algorithms.hpp>
+#include <io/json.hpp>
+#include <util/string.hpp>
 
 using namespace calin::util::log;
 using namespace calin::diagnostics::simple_charge_stats;
@@ -70,8 +72,24 @@ SimpleChargeStatsParallelEventVisitor* SimpleChargeStatsParallelEventVisitor::ne
 
 bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
+  if(processing_record) {
+    processing_record->set_type("SimpleChargeStatsParallelEventVisitor");
+    processing_record->set_description("Per-channel waveform statistics and analysis");
+    auto* config_json = processing_record->add_config();
+    config_json->set_type(config_.GetTypeName());
+    config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+    config_json = processing_record->add_config();
+    std::vector<std::pair<std::string,std::string> > keyval;
+    keyval.emplace_back("highGainWaveformSumInstance",
+      calin::io::json::json_string_value(calin::util::string::instance_identifier(high_gain_visitor_)));
+    keyval.emplace_back("lowGainWaveformSumInstance",
+      calin::io::json::json_string_value(calin::util::string::instance_identifier(low_gain_visitor_)));
+    config_json->set_json(calin::io::json::json_for_dictionary(keyval));
+  }
+
   partials_.Clear();
   results_.Clear();
 
@@ -89,10 +107,10 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_run(
   }
 
   delete camera_hists_;
-  camera_hists_ = new CameraHists(has_dual_gain_, 60.0, 86400.0);
+  camera_hists_ = new CameraHists(has_dual_gain_, config_.ped_time_hist_resolution(), 86400.0);
 
   delete data_order_camera_;
-  data_order_camera_ = calin::iact_data::instrument_layout::reduce_camera_channels(
+  data_order_camera_ = calin::iact_data::instrument_layout::reorder_camera_channels(
     run_config->camera_layout(),
     reinterpret_cast<const unsigned*>(run_config->configured_channel_id().data()),
     run_config->configured_channel_id_size());
@@ -381,7 +399,8 @@ void SimpleChargeStatsParallelEventVisitor::dump_single_gain_camera_hists_to_par
   delete hp;
 }
 
-bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
+bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   for(int ichan = 0; ichan<partials_.channel_size(); ichan++) {
     dump_single_gain_channel_hists_to_partials(*chan_hists_[ichan]->high_gain,
@@ -408,6 +427,9 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
   hp = camera_hists_->num_contiguous_channel_triggered_hist->dump_as_proto();
   partials_.mutable_camera()->mutable_num_contiguous_channel_triggered_hist()->IntegrateFrom(*hp);
 
+  hp = camera_hists_->phys_trig_num_channel_triggered_hist->dump_as_proto();
+  partials_.mutable_camera()->mutable_phys_trig_num_channel_triggered_hist()->IntegrateFrom(*hp);
+
   hp = camera_hists_->phys_trig_num_contiguous_channel_triggered_hist->dump_as_proto();
   partials_.mutable_camera()->mutable_phys_trig_num_contiguous_channel_triggered_hist()->IntegrateFrom(*hp);
 
@@ -432,6 +454,8 @@ bool SimpleChargeStatsParallelEventVisitor::leave_telescope_run()
     partials_.camera().num_channel_triggered_hist());
   results_.mutable_num_contiguous_channel_triggered_hist()->IntegrateFrom(
     partials_.camera().num_contiguous_channel_triggered_hist());
+  results_.mutable_phy_trigger_num_channel_triggered_hist()->IntegrateFrom(
+    partials_.camera().phys_trig_num_channel_triggered_hist());
   results_.mutable_phy_trigger_num_contiguous_channel_triggered_hist()->IntegrateFrom(
     partials_.camera().phys_trig_num_contiguous_channel_triggered_hist());
 
@@ -446,7 +470,7 @@ void SimpleChargeStatsParallelEventVisitor::record_one_gain_channel_data(
   calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats,
   SingleGainChannelHists* one_gain_hists,
   unsigned& nsum, int64_t& opt_sum, int64_t& sig_sum, int64_t& bkg_sum, int64_t& wf_sum,
-  unsigned wf_clipping_value)
+  int wf_clipping_value)
 {
   one_gain_stats->increment_all_trig_num_events();
 
@@ -620,6 +644,7 @@ bool SimpleChargeStatsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
     }
     camera_hists_->num_contiguous_channel_triggered_hist->insert(num_contiguous_channel_triggered);
     if(event->trigger_type() == calin::ix::iact_data::telescope_event::TRIGGER_PHYSICS) {
+      camera_hists_->phys_trig_num_channel_triggered_hist->insert(event->trigger_map().hit_channel_id_size());
       camera_hists_->phys_trig_num_contiguous_channel_triggered_hist->insert(num_contiguous_channel_triggered);
       if(num_contiguous_channel_triggered < config_.nearest_neighbor_nchannel_threshold()) {
         for(auto ichan : event->trigger_map().hit_channel_id()) {

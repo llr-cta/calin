@@ -24,7 +24,6 @@
 
 #include <iact_data/event_visitor.hpp>
 #include <util/log.hpp>
-#include <util/string.hpp>
 
 using namespace calin::iact_data::event_visitor;
 using namespace calin::ix::iact_data::telescope_event;
@@ -50,14 +49,12 @@ ParallelEventVisitor* ParallelEventVisitor::new_sub_visitor(
 
 bool ParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  EventLifetimeManager* event_lifetime_manager,
-  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
+  EventLifetimeManager* event_lifetime_manager)
 {
   return true;
 }
 
-bool ParallelEventVisitor::leave_telescope_run(
-  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
+bool ParallelEventVisitor::leave_telescope_run()
 {
   return true;
 }
@@ -95,13 +92,13 @@ FilteredDelegatingParallelEventVisitor::new_sub_visitor(
 {
   auto* sub_visitor = new FilteredDelegatingParallelEventVisitor();
   sub_visitor->parent_ = this;
-  for(auto& ivisitor : delegates_) {
+  for(auto ivisitor : delegates_) {
     auto* dsv = ivisitor.visitor->new_sub_visitor(antecedent_visitors);
     if(dsv != nullptr) {
       if(ivisitor.unfiltered) {
-        sub_visitor->add_visitor(dsv, ivisitor.processing_record_comment, /* adopt_visitor= */ true);
+        sub_visitor->add_visitor(dsv, /* adopt_visitor= */ true);
       } else {
-        sub_visitor->add_trigger_type_filtered_visitor(dsv, ivisitor.trigger_type, ivisitor.processing_record_comment, /* adopt_visitor= */ true);
+        sub_visitor->add_filtered_visitor(dsv, ivisitor.trigger_type, /* adopt_visitor= */ true);
       }
       sub_visitor->parent_visitors_[dsv] = ivisitor.visitor;
     }
@@ -112,38 +109,20 @@ FilteredDelegatingParallelEventVisitor::new_sub_visitor(
 
 bool FilteredDelegatingParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  EventLifetimeManager* event_lifetime_manager,
-  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
+  EventLifetimeManager* event_lifetime_manager)
 {
   bool good = true;
-  for(auto& ivisitor : delegates_) {
-    ivisitor.subprocessing_record = nullptr;
-    if(processing_record) {
-      ivisitor.subprocessing_record = calin::provenance::chronicle::register_subprocessing_start(
-        processing_record, __PRETTY_FUNCTION__, ivisitor.processing_record_comment);
-      for(const auto& input : processing_record->primary_inputs()) {
-        ivisitor.subprocessing_record->add_primary_inputs(input);
-      }
-      ivisitor.subprocessing_record->set_instance(calin::util::string::instance_identifier(ivisitor.visitor));
-    }
-    good &= ivisitor.visitor->visit_telescope_run(run_config, event_lifetime_manager, ivisitor.subprocessing_record);
+  for(auto ivisitor : delegates_) {
+    good &= ivisitor.visitor->visit_telescope_run(run_config, event_lifetime_manager);
   }
   return good;
 }
 
-bool FilteredDelegatingParallelEventVisitor::leave_telescope_run(
-  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
+bool FilteredDelegatingParallelEventVisitor::leave_telescope_run()
 {
   bool good = true;
-  for(auto& ivisitor : delegates_) {
-    if((processing_record == nullptr) ^ (ivisitor.subprocessing_record == nullptr)) {
-      throw std::logic_error("FilteredDelegatingParallelEventVisitor::leave_telescope_run: inconsistent subprocessing_record");
-    }
-    good &= ivisitor.visitor->leave_telescope_run(ivisitor.subprocessing_record);
-    if(ivisitor.subprocessing_record) {
-      calin::provenance::chronicle::register_processing_finish(ivisitor.subprocessing_record);
-      ivisitor.subprocessing_record = nullptr;
-    }
+  for(auto ivisitor : delegates_) {
+    good &= ivisitor.visitor->leave_telescope_run();
   }
   return good;
 }
@@ -164,7 +143,7 @@ bool FilteredDelegatingParallelEventVisitor::visit_telescope_event(uint64_t seq_
 bool FilteredDelegatingParallelEventVisitor::merge_results()
 {
   bool good = true;
-  for(auto& ivisitor : delegates_) {
+  for(auto ivisitor : delegates_) {
     good &= ivisitor.visitor->merge_results();
     parent_->delegates_[parent_->visitor_delegates_.at(
       parent_visitors_.at(ivisitor.visitor))].visitor_saw_event |= ivisitor.visitor_saw_event;
@@ -173,21 +152,19 @@ bool FilteredDelegatingParallelEventVisitor::merge_results()
 }
 
 void FilteredDelegatingParallelEventVisitor::add_visitor(
-  ParallelEventVisitor* visitor, const std::string& processing_record_comment,
-  bool adopt_visitor)
+  ParallelEventVisitor* visitor, bool adopt_visitor)
 {
   delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ true,
-    calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN, processing_record_comment);
+    calin::ix::iact_data::telescope_event::TRIGGER_UNKNOWN);
   visitor_delegates_[visitor] = delegates_.size() - 1;
 }
 
 void FilteredDelegatingParallelEventVisitor::
-add_trigger_type_filtered_visitor(ParallelEventVisitor* visitor,
+add_filtered_visitor(ParallelEventVisitor* visitor,
   calin::ix::iact_data::telescope_event::TriggerType trigger_type,
-  const std::string& processing_record_comment,
   bool adopt_visitor)
 {
-  delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ false, trigger_type, processing_record_comment);
+  delegates_.emplace_back(visitor, adopt_visitor, /*unfiltered=*/ false, trigger_type);
   visitor_delegates_[visitor] = delegates_.size() - 1;
 }
 

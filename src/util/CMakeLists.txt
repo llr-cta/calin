@@ -14,7 +14,7 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 set(CALIN_TARGET_LIBRARY calin_util)
-set(CALIN_SOURCES string.cpp file.cpp log.cpp options_processor.cpp
+set(CALIN_SOURCES string.cpp file.cpp log.cpp
   string_to_protobuf.cpp timestamp.cpp vcl.cpp)
 
 add_library(${CALIN_TARGET_LIBRARY} SHARED ${CALIN_SOURCES})

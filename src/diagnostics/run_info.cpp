@@ -24,6 +24,7 @@
 #include <util/algorithm.hpp>
 #include <diagnostics/run_info.hpp>
 #include <diagnostics/range.hpp>
+#include <io/json.hpp>
 #include <math/special.hpp>
 
 using namespace calin::util::log;
@@ -112,8 +113,17 @@ RunInfoDiagnosticsParallelEventVisitor* RunInfoDiagnosticsParallelEventVisitor::
 
 bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
+  if(processing_record) {
+    processing_record->set_type("RunInfoDiagnosticsParallelEventVisitor");
+    processing_record->set_description("Miscellaneous run information");
+    auto* config_json = processing_record->add_config();
+    config_json->set_type(config_.GetTypeName());
+    config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+  }
+
   results_->Clear();
   partials_->Clear();
   run_config_->Clear();
@@ -194,7 +204,8 @@ bool RunInfoDiagnosticsParallelEventVisitor::visit_telescope_run(
   return true;
 }
 
-bool RunInfoDiagnosticsParallelEventVisitor::leave_telescope_run()
+bool RunInfoDiagnosticsParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   for(int imod=0;imod<run_config_->configured_module_id_size();imod++) {
     for(unsigned icounter=0;icounter<mod_counter_id_.size(); icounter++) {

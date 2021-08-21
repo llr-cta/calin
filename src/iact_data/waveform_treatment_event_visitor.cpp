@@ -23,6 +23,7 @@
 #include <stdexcept>
 
 #include <util/memory.hpp>
+#include <io/json.hpp>
 #include <iact_data/waveform_treatment_event_visitor.hpp>
 #include <provenance/system_info.hpp>
 
@@ -35,9 +36,9 @@ using calin::util::memory::safe_aligned_recalloc;
 
 OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 OptimalWindowSumWaveformTreatmentParallelEventVisitor(
-  calin::ix::iact_data::waveform_treatment_event_visitor::
-    OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config,
-      GainChannel gain_channel_to_treat):
+    calin::ix::iact_data::waveform_treatment_event_visitor::
+      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config,
+    GainChannel gain_channel_to_treat):
   ParallelEventVisitor(), config_(config), gain_channel_to_treat_(gain_channel_to_treat)
 {
   // nothing to see here
@@ -93,8 +94,29 @@ OptimalWindowSumWaveformTreatmentParallelEventVisitor::new_sub_visitor(
 
 bool OptimalWindowSumWaveformTreatmentParallelEventVisitor::
 visit_telescope_run(const TelescopeRunConfiguration* run_config,
-  EventLifetimeManager* event_lifetime_manager)
+  EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
+  if(processing_record) {
+    if(processing_record->type().empty()) {
+      processing_record->set_type("OptimalWindowSumWaveformTreatmentParallelEventVisitor");
+    }
+    if(gain_channel_to_treat_ == LOW_GAIN) {
+      processing_record->set_description("Optimal-window low-gain waveform sum");
+    } else if (run_config->camera_layout().adc_gains() !=
+        calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN) {
+      processing_record->set_description("Optimal-window high-gain waveform sum");
+    } else {
+      processing_record->set_description("Optimal-window waveform sum");
+    }
+    auto* config_json = processing_record->add_config();
+    config_json->set_type(config_.GetTypeName());
+    config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+    config_json = processing_record->add_config();
+    config_json->set_json(calin::io::json::json_for_single_value("gainChannelToTreat",
+      (gain_channel_to_treat_== LOW_GAIN)?"LOW_GAIN":"HIGH_OR_SINGLE_GAIN"));
+  }
+
   reconfigure(run_config->configured_channel_id_size(), run_config->num_samples());
 
   if(config_.integration_n()==0)window_n_ = run_config->num_samples();
@@ -243,7 +265,8 @@ SingleGainDualWindowWaveformTreatmentEventVisitor::new_sub_visitor(
 
 bool SingleGainDualWindowWaveformTreatmentEventVisitor::
 visit_telescope_run(const TelescopeRunConfiguration* run_config,
-  EventLifetimeManager* event_lifetime_manager)
+  EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   reconfigure(run_config->configured_channel_id_size(), run_config->num_samples());
 

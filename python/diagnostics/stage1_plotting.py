@@ -27,9 +27,9 @@ import calin.diagnostics.stage1_analysis
 import calin.iact_data.instrument_layout
 
 def draw_channel_event_fraction(stage1, channel_count, cb_label=None, log_scale=True,
-        cmap = 'CMRmap_r', axis = None,
+        lin_scale_suppress_zero=False, cmap = 'CMRmap_r', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
-        stat_label_fontsize=4.75):
+        stat_label_fontsize=4.75, stat_format='%.3e'):
     rc = stage1.const_run_config()
     cl = rc.const_camera_layout()
     ri = stage1.const_run_info()
@@ -46,7 +46,8 @@ def draw_channel_event_fraction(stage1, channel_count, cb_label=None, log_scale=
         configured_channels=rc.configured_channel_id(), cmap=cmap,
         draw_outline=draw_outline, pix_lw=pix_lw,
         outline_lw=outline_lw, outline_color=outline_color,
-        axis=axis, hatch_missing_channels=True)
+        axis=axis, hatch_missing_channels=True, draw_stats=True,
+        stats_format=stat_format, stats_fontsize=stat_label_fontsize)
 
     if(log_scale):
         vmin = 1/evts_ondisk**1.1
@@ -54,28 +55,34 @@ def draw_channel_event_fraction(stage1, channel_count, cb_label=None, log_scale=
 
         pc.set_norm(matplotlib.colors.LogNorm(vmin=vmin,vmax=1.0))
         axis.axis(numpy.asarray([-1,1,-1,1])*1.05*max_xy)
-        axis.get_xaxis().set_visible(False)
-        axis.get_yaxis().set_visible(False)
 
         cb = axis.get_figure().colorbar(pc, ax=axis, label=cb_label)
         cb.ax.plot([-max_xy, max_xy], [1.0/evts_ondisk, 1.0/evts_ondisk], 'g-', lw=0.75)
     else:
+        if(not lin_scale_suppress_zero):
+            pc.set_clim(0,pc.get_clim()[1])
         cb = axis.get_figure().colorbar(pc, ax=axis, label=cb_label)
+        cb.formatter.set_powerlimits((-2, 2))
+        cb.formatter.set_useMathText(True)
+        cb.update_ticks()
+
+    axis.get_xaxis().set_visible(False)
+    axis.get_yaxis().set_visible(False)
 
     return pc
 
-def draw_log_delta_t_histogram(stage1, event_set = 'all',axis = None):
+def draw_log_delta_t_histogram(stage1, event_set = 'all', axis = None):
     if(axis is None):
         axis = matplotlib.pyplot.gca()
 
-    if(event_set is str):
-        event_set = list(event_set)
+    if(type(event_set) is str):
+        event_set = [event_set]
 
     ri = stage1.const_run_info()
     for set in event_set:
         if(set == 'physics'):
             dt_h = ri.const_log10_delta_t_histogram_trigger_physics()
-            dt2_h = ri.const_log10_delta_t_histogram_trigger_physics()
+            dt2_h = ri.const_log10_delta2_t_histogram_trigger_physics()
         elif(set == 'consecutive'):
             dt_h = ri.const_log10_delta_t_histogram()
             dt2_h = ri.const_log10_delta2_t_histogram()
@@ -85,24 +92,31 @@ def draw_log_delta_t_histogram(stage1, event_set = 'all',axis = None):
 
         calin.plotting.plot_histogram(dt_h,axis=axis,xoffset=6,xscale_as_log10=True,
             normalise=True,density=True,label='Delta-T : $t_{i+1}-t_i$')
-        if(dt2_h is not None):
+        if(dt2_h is not None and dt2_h.sum_w()>0):
             calin.plotting.plot_histogram(dt2_h,axis=axis,xoffset=6,xscale_as_log10=True,
                 normalise=True,density=True,label='Delta-2T : $t_{i+2}-t_i$')
 
     axis.set_yscale('log')
     axis.set_xlabel('Time difference [us]')
     axis.set_ylabel('Density [1]')
-    axis.legend(loc=8)
+    axis.legend(loc='lower center')
     axis.grid()
 
-    dt_sh = calin.math.histogram.SimpleHist(dt_h)
-    axis.text(10**(dt_sh.min_xval()+6), dt_sh.weight(0)/dt_sh.sum_w()/dt_sh.dxval()*0.4,
-        '%.3fus'%(10**(dt_sh.min_xval()+6)), ha='left')
+    if(dt_h.sum_w()>0): # protect against calling weight(0) on empty histogram
+        dt_sh = calin.math.histogram.SimpleHist(dt_h)
+        label_x = 10**(dt_sh.min_xval()+6)
+        label_y = dt_sh.weight(0)/dt_sh.sum_w()/dt_sh.dxval()*0.4
+        axis.text(label_x, label_y, '%.3fus'%(10**(dt_sh.min_xval()+6)), ha='left', va='bottom')
+        if(label_y < axis.get_ylim()[0]):
+            axis.set_ylim(label_y, axis.get_ylim()[1])
 
-    if(dt2_h is not None):
+    if(dt2_h is not None and dt2_h.sum_w()>0): # protect against calling weight(0) on empty histogram
         dt2_sh = calin.math.histogram.SimpleHist(dt2_h)
-        axis.text(10**(dt2_sh.min_xval()+6), dt2_sh.weight(0)/dt2_sh.sum_w()/dt2_sh.dxval()*0.5,
-            '%.2fus'%(10**(dt2_sh.min_xval()+6)), ha='left')
+        label_x = 10**(dt2_sh.min_xval()+6)
+        label_y = dt2_sh.weight(0)/dt2_sh.sum_w()/dt2_sh.dxval()*0.5
+        axis.text(label_x, label_y, '%.2fus'%(10**(dt2_sh.min_xval()+6)), ha='left', va='bottom')
+        if(label_y < axis.get_ylim()[0]):
+            axis.set_ylim(label_y, axis.get_ylim()[1])
 
     def to_khz(x):
         x = numpy.array(x).astype(float)
@@ -182,18 +196,23 @@ def draw_pedestal_rms(stage1, all_events_ped_win=False, low_gain=False,
         nevent = charge_stats.ped_trigger_event_count()
         values = charge_stats.ped_trigger_full_wf_var()
 
+    data = numpy.sqrt(values)
+    mask = nevent>0
+
     pc = calin.plotting.plot_camera_image(
-        numpy.sqrt(values), cl, channel_mask=nevent>0, cmap=cmap,
+        data, cl, channel_mask=mask, cmap=cmap,
         configured_channels=rc.configured_channel_id(),
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         axis=axis, hatch_missing_channels=True, draw_stats=True, stats_format='%.2f DC')
 
-    cb = axis.get_figure().colorbar(pc, ax=axis, label='Pedestal %d-sample RMS [DC]'%nsamp)
+    cb = calin.plotting.add_colorbar_and_clipping(axis, pc, data, mask=mask, percentile=99.5,
+            camera_layout=cl, configured_channels=rc.configured_channel_id(),
+            cb_label='Pedestal %d-sample RMS [DC]'%nsamp)
 
     axis.get_xaxis().set_visible(False)
     axis.get_yaxis().set_visible(False)
 
-    return pc
+    return pc, cb
 
 def draw_missing_components_fraction(stage1, cmap = 'CMRmap_r', axis = None,
         draw_outline=True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
@@ -335,23 +354,26 @@ def draw_channel_dataorder(stage1, cmap = 'inferno', axis=None,
 
     return pc
 
-def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, cmap = 'inferno', axis=None,
+def draw_nectarcam_feb_temperatures(stage1, temperature_set=1, cmap = 'coolwarm', axis=None,
         draw_outline = True, mod_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         mod_label_fontsize=4, stat_label_fontsize=4.75):
-    tfeb1 = []
-    tfeb2 = []
+    tfeb = []
     mask = []
     for modid in stage1.run_config().configured_module_id() :
         if(stage1.nectarcam().ancillary_data().feb_temperature_has_key(int(modid))):
             measurement_set = stage1.nectarcam().ancillary_data().feb_temperature(int(modid))
-            tfeb1.append(numpy.mean([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]))
-            tfeb2.append(numpy.mean([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())]))
-            mask.append(True)
+            mt = numpy.asarray([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]) if temperature_set==1 \
+                else numpy.asarray([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())])
+            mmask = mt != 0
+            if(numpy.count_nonzero(mmask)):
+                tfeb.append(numpy.mean(mt[mmask]))
+                mask.append(True)
+            else:
+                tfeb.append(numpy.nan)
+                mask.append(False)
         else:
-            tfeb1.append(numpy.nan)
-            tfeb2.append(numpy.nan)
+            tfeb.append(numpy.nan)
             mask.append(False)
-    tfeb = tfeb1 if temperature_set==1 else tfeb2
 
     if(axis is None):
         axis = matplotlib.pyplot.gca()
@@ -418,20 +440,23 @@ def draw_nectarcam_feb_temperatures_minmax(stage1, temperature_set=1, cmap = 'in
     def minmax(x):
         return numpy.max(x)-numpy.min(x)
 
-    tfeb1 = []
-    tfeb2 = []
+    tfeb = []
     mask = []
     for modid in stage1.run_config().configured_module_id() :
         if(stage1.nectarcam().ancillary_data().feb_temperature_has_key(int(modid))):
             measurement_set = stage1.nectarcam().ancillary_data().feb_temperature(int(modid))
-            tfeb1.append(minmax([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]))
-            tfeb2.append(minmax([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())]))
-            mask.append(True)
+            mt = numpy.asarray([measurement_set.measurement(i).tfeb1() for i in range(measurement_set.measurement_size())]) if temperature_set==1 \
+                else numpy.asarray([measurement_set.measurement(i).tfeb2() for i in range(measurement_set.measurement_size())])
+            mmask = mt != 0
+            if(numpy.count_nonzero(mmask)>1):
+                tfeb.append(minmax(mt[mmask]))
+                mask.append(True)
+            else:
+                tfeb.append(numpy.nan)
+                mask.append(False)
         else:
-            tfeb1.append(numpy.nan)
-            tfeb2.append(numpy.nan)
+            tfeb.append(numpy.nan)
             mask.append(False)
-    tfeb = tfeb1 if temperature_set==1 else tfeb2
 
     if(axis is None):
         axis = matplotlib.pyplot.gca()
@@ -646,26 +671,221 @@ def draw_nectarcam_fpm_measurements(stage1,
 def draw_high_gain_channel_event_fraction(stage1, cmap = 'inferno', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         stat_label_fontsize=4.75):
-    channel_count = stage1.const_channel_stats().const_high_gain().all_trigger_event_count()
-    return draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
+    channel_count = stage1.const_charge_stats().const_high_gain().all_trigger_event_count()
+    pc = draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
         log_scale=False, cmap=cmap, axis=axis,
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         stat_label_fontsize=stat_label_fontsize)
+    pc.set_clim([0,1])
+    return pc
 
 def draw_low_gain_channel_event_fraction(stage1, cmap = 'inferno', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         stat_label_fontsize=4.75):
-    channel_count = stage1.const_channel_stats().const_low_gain().all_trigger_event_count()
+    channel_count = stage1.const_charge_stats().const_low_gain().all_trigger_event_count()
+    pc = draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
+        log_scale=False, cmap=cmap, axis=axis,
+        draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
+        stat_label_fontsize=stat_label_fontsize)
+    pc.set_clim([0,1])
+    return pc
+
+def draw_trigger_event_fraction(stage1, cmap = 'inferno', axis = None,
+        draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        stat_label_fontsize=4.75):
+    channel_count = stage1.const_charge_stats().channel_triggered_count()
     return draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
         log_scale=False, cmap=cmap, axis=axis,
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         stat_label_fontsize=stat_label_fontsize)
 
-def draw_trigger_event_fraction(stage1, cmap = 'inferno', axis = None,
+def draw_nn_failed_phy_trigger_event_fraction(stage1, cmap = 'CMRmap_r', axis = None,
         draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
         stat_label_fontsize=4.75):
-    channel_count = stage1.const_channel_stats().channel_triggered_count()
+    channel_count = stage1.const_charge_stats().phy_trigger_few_neighbor_channel_triggered_count()
     return draw_channel_event_fraction(stage1, channel_count, cb_label='Event fraction',
         log_scale=False, cmap=cmap, axis=axis,
         draw_outline=draw_outline, pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
         stat_label_fontsize=stat_label_fontsize)
+
+def draw_num_channel_triggered_hist(stage1, axis = None, phys_trigger = False, zoom = False):
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+    mult_hist = stage1.const_charge_stats().const_phy_trigger_num_channel_triggered_hist() \
+        if phys_trigger else stage1.const_charge_stats().const_num_channel_triggered_hist()
+    nn_hist = stage1.const_charge_stats().const_phy_trigger_num_contiguous_channel_triggered_hist() \
+        if phys_trigger else stage1.const_charge_stats().const_num_contiguous_channel_triggered_hist()
+    calin.plotting.plot_histogram(mult_hist, hatch='/', color='C0', lw=2, label='Multiplicity',
+         histtype='step', axis=axis, normalise=True)
+    calin.plotting.plot_histogram(nn_hist, hatch='\\\\', color='C1', lw=1, label='Neighbours',
+         histtype='step', axis=axis, normalise=True)
+    if(zoom):
+        axis.set_xlim(-0.5,9.5)
+        axis.set_xticks(numpy.arange(0,10))
+    else:
+        axis.set_xlim(0.25,stage1.run_config().configured_channel_index_size())
+        axis.set_xscale('log')
+    axis.set_yscale('log')
+    axis.legend()
+    axis.set_xlabel('Number of channels')
+    axis.set_ylabel('Probability')
+
+def draw_mean_wf(stage1, dataset='pedestal', low_gain = False, pedestals = None,
+        subtract_pedestal = False, axis = None):
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+
+    if(dataset == 'pedestal'):
+        mwf = stage1.const_mean_wf_pedestal()
+    elif(dataset == 'physics'):
+        mwf = stage1.const_mean_wf_physics()
+    elif(dataset == 'external_flasher'):
+        mwf = stage1.const_mean_wf_external_flasher()
+    elif(dataset == 'internal_flasher'):
+        mwf = stage1.const_mean_wf_internal_flasher()
+    else:
+        raise RuntimeError('Unknown data set : '+dataset)
+
+    has_label = False
+    for ichan in range(mwf.channel_high_gain_size()):
+        if(low_gain):
+            chan = mwf.const_channel_low_gain(ichan)
+        else:
+            chan = mwf.const_channel_high_gain(ichan)
+        if(chan.num_entries()):
+            wf = chan.mean_waveform()
+            if(subtract_pedestal):
+                if(pedestals is None):
+                    wf -= numpy.mean(wf)
+                else:
+                    wf -= pedestals[ichan]
+            if(has_label):
+                axis.plot(wf,'k',alpha=0.1)
+            else:
+                axis.plot(wf,'k',alpha=0.1,label='channel')
+                has_label = True
+    if(low_gain):
+        cam = mwf.const_camera_low_gain()
+    else:
+        cam = mwf.const_camera_high_gain()
+    if(cam.num_entries()):
+        wf = cam.mean_waveform()
+        if(subtract_pedestal):
+            if(pedestals is None):
+                wf -= numpy.mean(wf)
+            else:
+                wf -= numpy.mean(pedestals)
+        axis.plot(wf,'C1',label='Camera average')
+    axis.legend()
+    axis.grid()
+    axis.set_xlabel('Waveform sample number')
+    axis.set_ylabel('Mean waveform amplitude [DC]')
+
+def draw_mean_wf_deviation_from_camera_mean(stage1, dataset='pedestal',
+        pedestals = None, low_gain=False, axis = None, cmap = 'inferno',
+        draw_outline=True, pix_lw = 0, outline_lw = 0.5, outline_color = '#888888',
+        stat_label_fontsize=4.75, stat_format='%.2f DC'):
+
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+
+    if(dataset == 'pedestal'):
+        mwf = stage1.const_mean_wf_pedestal()
+    elif(dataset == 'physics'):
+        mwf = stage1.const_mean_wf_physics()
+    elif(dataset == 'external_flasher'):
+        mwf = stage1.const_mean_wf_external_flasher()
+    elif(dataset == 'internal_flasher'):
+        mwf = stage1.const_mean_wf_internal_flasher()
+    else:
+        raise RuntimeError('Unknown data set : '+dataset)
+
+    if(low_gain):
+        cwf = mwf.const_camera_low_gain().mean_waveform()
+    else:
+        cwf = mwf.const_camera_high_gain().mean_waveform()
+    if(pedestals is None):
+        cwf -= numpy.mean(cwf)
+    else:
+        cwf -= numpy.mean(pedestals)
+
+    mask = numpy.zeros(mwf.channel_high_gain_size(),dtype=bool)
+    chi2 = numpy.zeros(mwf.channel_high_gain_size())
+    for ichan in range(mwf.channel_high_gain_size()):
+        if(low_gain):
+            chan = mwf.const_channel_low_gain(ichan)
+        else:
+            chan = mwf.const_channel_high_gain(ichan)
+        if(chan.num_entries()):
+            wf = chan.mean_waveform()
+            if(pedestals is None):
+                wf -= numpy.mean(wf)
+            else:
+                wf -= pedestals[ichan]
+            mask[ichan] = True
+            chi2[ichan] = sum((wf-cwf)**2)
+        else:
+            chi2[ichan] = numpy.nan
+    data = numpy.sqrt(chi2)
+
+    rc = stage1.const_run_config()
+    cl = rc.const_camera_layout()
+
+    pc = calin.plotting.plot_camera_image(data, cl,
+        configured_channels=rc.configured_channel_id(), channel_mask = mask,
+        cmap=cmap, draw_outline=draw_outline, pix_lw=pix_lw,
+        outline_lw=outline_lw, outline_color=outline_color,
+        axis=axis, hatch_missing_channels=True, draw_stats=True,
+        stats_format=stat_format, stats_fontsize=stat_label_fontsize)
+
+    cb = calin.plotting.add_colorbar_and_clipping(axis, pc, data, mask=mask, percentile=99.5,
+            camera_layout=cl, configured_channels=rc.configured_channel_id(),
+            cb_label='Waveform RMS from camera mean [DC]')
+
+    axis.get_xaxis().set_visible(False)
+    axis.get_yaxis().set_visible(False)
+
+    return pc
+
+def draw_elapsed_time_hist(stage1, axis = None):
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+    ri = stage1.const_run_info()
+    so = []
+    so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram(),
+        # xright=ri.elapsed_time_histogram().xval_max(),
+        color='C0', density=True, lw=2, label='All events', axis=axis))
+    if(ri.elapsed_time_histogram_trigger_physics().sum_w()):
+        so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_physics(),
+            # xright=ri.elapsed_time_histogram().xval_max(),
+            color='C1', density=True, label='Physics', axis=axis))
+    if(ri.elapsed_time_histogram_trigger_pedestal().sum_w()):
+        so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_pedestal(),
+            # xright=ri.elapsed_time_histogram().xval_max(),
+            color='C2', density=True, label='Pedestal', axis=axis))
+    if(ri.elapsed_time_histogram_trigger_external_flasher().sum_w()):
+        so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_external_flasher(),
+            # xright=ri.elapsed_time_histogram().xval_max(),
+            color='C3', density=True, label='External flasher', axis=axis))
+    if(ri.elapsed_time_histogram_trigger_internal_flasher().sum_w()):
+        so.append(calin.plotting.plot_histogram(ri.elapsed_time_histogram_trigger_internal_flasher(),
+            # xright=ri.elapsed_time_histogram().xval_max(),
+            color='C4', density=True, label='Internal flasher', axis=axis))
+
+    axis.set_ylim([0,axis.get_ylim()[1]*1.15])
+    axis.set_xlabel('Elapsed time [s]')
+    axis.set_ylabel('Event rate on disk [Hz]')
+    axis.legend(loc=4)
+    axis.grid()
+
+    return so
+
+def draw_event_number_histogram(stage1, axis = None):
+    axis = axis if axis is not None else matplotlib.pyplot.gca()
+    ri = stage1.const_run_info()
+
+    so = calin.plotting.plot_histogram(ri.const_event_number_histogram(),lw=2,density=True,
+        xleft=1,xright=ri.const_event_number_histogram().xval_max(), axis=axis)
+
+    axis.set_ylim([0,axis.get_ylim()[1]*1.15])
+    axis.set_xlabel('Event number')
+    axis.set_ylabel('Fraction of events on disk')
+    axis.grid()
+
+    return so

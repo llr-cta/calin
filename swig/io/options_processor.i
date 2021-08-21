@@ -1,8 +1,8 @@
 /*
 
-   calin/proto/util/timestamp.proto -- Stephen Fegan -- 2017-10-29
+   calin/util/options_processor.i -- Stephen Fegan -- 2016-03-21
 
-   A non-precision timestamp class
+   SWIG interface file for options processor
 
    Copyright 2016, Stephen Fegan <sfegan@llr.in2p3.fr>
    Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
@@ -20,13 +20,19 @@
 
 */
 
-syntax = "proto3";
+%module (package="calin.io") options_processor
+%feature(autodoc,2);
 
-import "calin.proto";
+%{
+#include "io/options_processor.hpp"
+#define SWIG_FILE_WITH_INIT
+  %}
 
-package calin.ix.util.options_processor;
+%init %{
+  import_array();
+%}
 
-message CommandLineArguments {
-  repeated string argument                                 = 1 [
-    (CFO).desc = "Command line arguments." ];
-};
+%include "calin_typemaps.i"
+%import "calin_global_definitions.i"
+
+%include "io/options_processor.hpp"

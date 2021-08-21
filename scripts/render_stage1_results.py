@@ -20,55 +20,24 @@
 import sys
 import traceback
 import numpy
+import concurrent.futures
+import io
 
 import calin.io.sql_serializer
 import calin.util.log
-import calin.util.options_processor
+import calin.io.options_processor
 import calin.ix.diagnostics.stage1
 import calin.ix.scripts.render_stage1_results
 import calin.provenance.chronicle
 import calin.provenance.anthology
+import calin.provenance.printer
 import calin.diagnostics.stage1_plotting
 import calin.iact_data.nectarcam_layout
+import calin.io.uploader
 
 import matplotlib
 import matplotlib.figure
 import matplotlib.backends.backend_agg
-import io
-import os
-
-class FilesystemUploader:
-    def __init__(self, root_directory):
-        self.root_directory = os.path.normpath(os.path.expanduser(root_directory)) if root_directory else '.'
-        if(not os.path.isdir(self.root_directory)):
-            raise RuntimeError('Base path os not directory : '+self.root_directory)
-
-    def make_path(self, rel_path):
-        if(not rel_path):
-            return ''
-        rel_path = os.path.normpath(rel_path)
-        abs_path = os.path.normpath(os.path.join(self.root_directory, rel_path))
-        if((self.root_directory == '.' and (abs_path.startswith('../') or abs_path.startswith('/')))
-                or (self.root_directory != '.' and not abs_path.startswith(self.root_directory))):
-            raise RuntimeError('Cannot make path outside of base : '+rel_path)
-        if(not os.path.isdir(abs_path)):
-            (head, tail) = os.path.split(rel_path)
-            self.make_path(head)
-            # print("mkdir",abs_path)
-            os.mkdir(abs_path)
-        return abs_path
-
-    def upload_from_io(self, rel_filepath, iostream):
-        (rel_path, filename) = os.path.split(rel_filepath)
-        abs_path = os.path.join(self.make_path(rel_path), filename)
-        mode = 'wb' if iostream is io.StringIO else 'w'
-        with open(abs_path, mode) as f:
-            f.write(iostream.getvalue())
-
-    def upload_png_from_figure(self, rel_filepath, figure):
-        (rel_path, filename) = os.path.split(rel_filepath)
-        abs_path = os.path.join(self.make_path(rel_path), filename)
-        matplotlib.backends.backend_agg.FigureCanvasAgg(figure).print_png(abs_path)
 
 def cast_to_nectarcam_61_camera(stage1):
     if(stage1.const_run_config().configured_module_id_size() != 61):
@@ -128,8 +97,9 @@ opt.set_db_stage1_table_name('stage1')
 opt.set_base_directory('.')
 opt.set_summary_csv('stage1_summary.csv')
 opt.set_figure_dpi(200)
+opt.set_overwrite(True)
 
-opt_proc = calin.util.options_processor.OptionsProcessor(opt, True);
+opt_proc = calin.io.options_processor.OptionsProcessor(opt, True);
 opt_proc.process_arguments(sys.argv)
 
 if(opt_proc.help_requested()):
@@ -155,48 +125,65 @@ if(len(opt_proc.problem_options()) != 0):
         print("  \"%s\""%o)
     exit(1)
 
-# Open SQL file
 sql_file = opt.db();
 sql_mode = calin.io.sql_serializer.SQLite3Serializer.READ_ONLY
-sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
-
-# Uploader
-uploader = FilesystemUploader(opt.base_directory())
-
-sql_where = ''
-if(opt.run_number() > 0):
-    sql_where = 'WHERE run_number=%d'%opt.run_number()
-elif(opt.from_run_number() > 0 and opt.to_run_number() > 0):
-    sql_where = 'WHERE run_number>=%d AND run_number<=%d'%(
-        opt.from_run_number(), opt.to_run_number())
-elif(opt.from_run_number() > 0):
-    sql_where = 'WHERE run_number>=%d'%opt.from_run_number()
-elif(opt.to_run_number() > 0):
-    sql_where = 'WHERE run_number<=%d'%opt.to_run_number()
-
-if(sql_where):
-    all_oid = sql.select_oids_by_sql(opt.db_stage1_table_name(), sql_where)
-else:
-    all_oid = sql.select_all_oids(opt.db_stage1_table_name())
-
 
 figure_dpi = max(opt.figure_dpi(), 60)
 
-for oid in all_oid:
+def get_oids():
+    # Open SQL file
+    sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
+
+    sql_where = ''
+    if(opt.run_number() > 0):
+        sql_where = 'WHERE run_number=%d'%opt.run_number()
+    elif(opt.from_run_number() > 0 and opt.to_run_number() > 0):
+        sql_where = 'WHERE run_number>=%d AND run_number<=%d'%(
+            opt.from_run_number(), opt.to_run_number())
+    elif(opt.from_run_number() > 0):
+        sql_where = 'WHERE run_number>=%d'%opt.from_run_number()
+    elif(opt.to_run_number() > 0):
+        sql_where = 'WHERE run_number<=%d'%opt.to_run_number()
+
+    if(sql_where):
+        all_oid = sql.select_oids_by_sql(opt.db_stage1_table_name(), sql_where)
+    else:
+        all_oid = sql.select_all_oids(opt.db_stage1_table_name())
+
+    return all_oid
+
+def render_oid(oid):
+    # Open SQL file
+    sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
+
     stage1 = calin.ix.diagnostics.stage1.Stage1()
     sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1)
     runno = stage1.run_number()
-    print('Run :', runno)
+    print('Started run :', runno)
+
+    if(opt.upload_to_google_drive()):
+        uploader = calin.io.uploader.GoogleDriveUploader(opt.google().token_file(),
+            opt.google().base_directory(), opt.google().credentials_file(),
+            overwrite=opt.overwrite(), loud=opt.loud_upload())
+    else:
+        uploader = calin.io.uploader.FilesystemUploader(opt.base_directory(),
+            overwrite=opt.overwrite(), loud=opt.loud_upload())
 
     if(opt.force_nectarcam_61_camera()):
         cast_to_nectarcam_61_camera(stage1)
 
-    def upload_figure(runno, quantity, f):
+    def filenames(runno, quantity, extension):
         runbatchpath = 'runs%d-%d'%(int(runno/1000)*1000, (int(runno/1000)+1)*1000)
-        uploader.upload_png_from_figure(
-            'by run/%s/run%d/run%d_%s.png'%(runbatchpath, runno, runno, quantity), f)
-        uploader.upload_png_from_figure(
-            'by quantity/%s/%s/run%d_%s.png'%(quantity, runbatchpath, runno, quantity), f)
+        filenames = [ \
+            'by run/%s/run%d/run%d_%s.%s'%(runbatchpath, runno, runno, quantity, extension),
+            'by quantity/%s/%s/run%d_%s.%s'%(quantity, runbatchpath, runno, quantity, extension) ]
+        return filenames
+
+    def upload_figure(runno, quantity, f):
+        uploader.upload_png_from_figure(filenames(runno, quantity, 'png'), f)
+
+    def upload_text(runno, quantity, iostream):
+        uploader.upload_from_io(filenames(runno, quantity, 'txt'), 'text/plain', iostream)
 
     ############################################################################
     # FIGURE : Missing components
@@ -269,22 +256,22 @@ for oid in all_oid:
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,1,axis=ax)
         ax.set_title('Temperature (FEB 1), run : %d'%runno)
-        upload_figure(runno, 'temperature_1', ax.figure)
+        upload_figure(runno, 'temperature_feb1', ax.figure)
 
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures(stage1,2,axis=ax)
         ax.set_title('Temperature (FEB 2), run : %d'%runno)
-        upload_figure(runno, 'temperature_2', ax.figure)
+        upload_figure(runno, 'temperature_feb2', ax.figure)
 
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,1,axis=ax)
         ax.set_title('Temperature spread (FEB 1), run : %d'%runno)
-        upload_figure(runno, 'temperature_spread_1', ax.figure)
+        upload_figure(runno, 'temperature_spread_feb1', ax.figure)
 
         ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
         calin.diagnostics.stage1_plotting.draw_nectarcam_feb_temperatures_minmax(stage1,2,axis=ax)
         ax.set_title('Temperature spread (FEB 2), run : %d'%runno)
-        upload_figure(runno, 'temperature_spread_2', ax.figure)
+        upload_figure(runno, 'temperature_spread_feb2', ax.figure)
 
     ############################################################################
     # FIGURE : clock regression
@@ -364,5 +351,220 @@ for oid in all_oid:
         ax6.set_title('HVPA board current spread, run : %d'%runno)
         upload_figure(runno, 'hvpa_board_current_spread', ax6.figure)
 
+    ############################################################################
+    # FIGURE : L0 trigger frequency
+    ############################################################################
+
+    if(stage1.const_charge_stats().channel_triggered_count_size()>0):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_trigger_event_fraction(stage1, axis=ax)
+        ax.set_title('L0 trigger bit frequency, run : %d'%runno)
+        upload_figure(runno, 'trigger_l0_bit_frequency', ax.figure)
+
+    if(stage1.const_charge_stats().phy_trigger_few_neighbor_channel_triggered_count_size()>0):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_nn_failed_phy_trigger_event_fraction(stage1, axis=ax)
+        ax.set_title('L0 trigger bit in sub-3NN events, run : %d'%runno)
+        upload_figure(runno, 'trigger_sub_3nn_l0_bit_frequency', ax.figure)
+
+    if(stage1.const_charge_stats().const_num_channel_triggered_hist().sum_w()):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax)
+        ax.set_title('L0 trigger bit histogram (all events), run : %d'%runno)
+        upload_figure(runno, 'trigger_l0_bit_count', ax.figure)
+
+    if(stage1.const_charge_stats().const_phy_trigger_num_channel_triggered_hist().sum_w()):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax,
+            phys_trigger=True)
+        ax.set_title('L0 trigger bit histogram (physics events), run : %d'%runno)
+        upload_figure(runno, 'trigger_l0_bit_count_phys', ax.figure)
+
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_num_channel_triggered_hist(stage1,axis=ax,
+            phys_trigger=True,zoom=True)
+        ax.set_title('L0 trigger bit histogram (physics events), run : %d'%runno)
+        upload_figure(runno, 'trigger_l0_bit_count_phys_zoom', ax.figure)
+
+    ############################################################################
+    # FIGURE : mean waveforms
+    ############################################################################
+
+    if(stage1.has_mean_wf_pedestal() and stage1.has_charge_stats()):
+        if(stage1.const_mean_wf_pedestal().channel_high_gain_size() \
+                and stage1.const_mean_wf_pedestal().has_camera_high_gain() \
+                and stage1.const_charge_stats().has_high_gain() \
+                and numpy.count_nonzero(stage1.const_charge_stats().const_high_gain().ped_trigger_event_count())):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='pedestal')
+            ax.set_title('Mean waveform (pedestal, high-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_pedestal_hg', ax.figure)
+
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='pedestal',
+                subtract_pedestal=True)
+            ax.set_title('Mean waveform offset (pedestal, high-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_pedestal_hg_offset', ax.figure)
+
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf_deviation_from_camera_mean(stage1,
+                axis=ax,dataset='pedestal')
+            ax.set_title('RMS waveform offset (pedestal, high-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_pedestal_hg_offset_rms', ax.figure)
+
+        if(stage1.const_mean_wf_pedestal().channel_low_gain_size() \
+                and stage1.const_mean_wf_pedestal().has_camera_low_gain() \
+                and stage1.const_charge_stats().has_low_gain() \
+                and numpy.count_nonzero(stage1.const_charge_stats().const_low_gain().ped_trigger_event_count())):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='pedestal',low_gain=True)
+            ax.set_title('Mean waveform (pedestal, low-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_pedestal_lg', ax.figure)
+
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='pedestal',low_gain=True,
+                subtract_pedestal=True)
+            ax.set_title('Mean waveform offset (pedestal, low-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_pedestal_lg_offset', ax.figure)
+
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf_deviation_from_camera_mean(stage1,
+                axis=ax, dataset='pedestal', low_gain=True)
+            ax.set_title('RMS waveform offset (pedestal, low-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_pedestal_lg_offset_rms', ax.figure)
+
+    if(stage1.has_mean_wf_physics() and stage1.has_charge_stats()):
+        if(stage1.const_mean_wf_physics().channel_high_gain_size() \
+                and stage1.const_mean_wf_physics().has_camera_high_gain() \
+                and stage1.const_charge_stats().has_high_gain() \
+                and numpy.count_nonzero(stage1.const_charge_stats().const_high_gain().phy_trigger_event_count())):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='physics')
+            ax.set_title('Mean waveform (physics, high-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_physics_hg', ax.figure)
+        if(stage1.const_mean_wf_physics().channel_low_gain_size() \
+                and stage1.const_mean_wf_physics().has_camera_low_gain() \
+                and stage1.const_charge_stats().has_low_gain() \
+                and numpy.count_nonzero(stage1.const_charge_stats().const_low_gain().phy_trigger_event_count())):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='physics',low_gain=True)
+            ax.set_title('Mean waveform (physics, low-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_physics_lg', ax.figure)
+
+    if(stage1.has_mean_wf_external_flasher() and stage1.has_charge_stats()):
+        if(stage1.const_mean_wf_external_flasher().channel_high_gain_size() \
+                and stage1.const_mean_wf_external_flasher().has_camera_high_gain() \
+                and stage1.const_charge_stats().has_high_gain() \
+                and numpy.count_nonzero(stage1.const_charge_stats().const_high_gain().ext_trigger_event_count())):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='external_flasher')
+            ax.set_title('Mean waveform (ext flasher, high-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_external_flasher_hg', ax.figure)
+        if(stage1.const_mean_wf_external_flasher().channel_low_gain_size() \
+                and stage1.const_mean_wf_external_flasher().has_camera_low_gain() \
+                and stage1.const_charge_stats().has_low_gain() \
+                and numpy.count_nonzero(stage1.const_charge_stats().const_low_gain().ext_trigger_event_count())):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='external_flasher',low_gain=True)
+            ax.set_title('Mean waveform (ext flasher, low-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_external_flasher_lg', ax.figure)
+
+    if(stage1.has_mean_wf_internal_flasher() and stage1.has_charge_stats()):
+        if(stage1.const_mean_wf_internal_flasher().channel_high_gain_size() \
+                and stage1.const_mean_wf_internal_flasher().has_camera_high_gain() \
+                and stage1.const_charge_stats().has_high_gain() \
+                and numpy.count_nonzero(stage1.const_charge_stats().const_high_gain().int_trigger_event_count())):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='internal_flasher')
+            ax.set_title('Mean waveform (int flasher, high-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_internal_flasher_hg', ax.figure)
+        if(stage1.const_mean_wf_internal_flasher().channel_low_gain_size() \
+                and stage1.const_mean_wf_internal_flasher().has_camera_low_gain() \
+                and stage1.const_charge_stats().has_low_gain() \
+                and numpy.count_nonzero(stage1.const_charge_stats().const_low_gain().int_trigger_event_count())):
+            ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+            calin.diagnostics.stage1_plotting.draw_mean_wf(stage1,axis=ax,dataset='internal_flasher',low_gain=True)
+            ax.set_title('Mean waveform (int flasher, low-gain), run : %d'%runno)
+            upload_figure(runno, 'waveform_mean_internal_flasher_lg', ax.figure)
+
+    ############################################################################
+    # FIGURE : mean event rate and on-disk fraction
+    ############################################################################
+
+    if(stage1.const_run_info().const_elapsed_time_histogram().sum_w()):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_elapsed_time_hist(stage1, axis=ax)
+        ax.set_title('Event rate on disk, run : %d'%runno)
+        upload_figure(runno, 'event_rate', ax.figure)
+
+    if(stage1.const_run_info().const_log10_delta_t_histogram_all_recorded().sum_w()):
+        f = matplotlib.figure.Figure(dpi=figure_dpi)
+        f.subplots_adjust(top=0.85)
+        ax = f.subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'all', axis=ax)
+        ax.set_title('Event $\Delta$T distribution (all events), run : %d'%runno)
+        upload_figure(runno, 'event_delta_t_all', ax.figure)
+
+    if(stage1.const_run_info().const_log10_delta_t_histogram().sum_w()):
+        f = matplotlib.figure.Figure(dpi=figure_dpi)
+        f.subplots_adjust(top=0.85)
+        ax = f.subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'consecutive', axis=ax)
+        ax.set_title('Event $\Delta$T distribution (consecutive events), run : %d'%runno)
+        upload_figure(runno, 'event_delta_t_consecutive', ax.figure)
+
+    if(stage1.const_run_info().const_log10_delta_t_histogram_trigger_physics().sum_w()):
+        f = matplotlib.figure.Figure(dpi=figure_dpi)
+        f.subplots_adjust(top=0.85)
+        ax = f.subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_log_delta_t_histogram(stage1, event_set = 'physics', axis=ax)
+        ax.set_title('Event $\Delta$T distribution (consecutive physics events), run : %d'%runno)
+        upload_figure(runno, 'event_delta_t_physics', ax.figure)
+
+    if(stage1.const_run_info().const_event_number_histogram().sum_w()):
+        ax = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+        calin.diagnostics.stage1_plotting.draw_event_number_histogram(stage1, axis=ax)
+        ax.set_title('Event fraction on disk, run : %d'%runno)
+        upload_figure(runno, 'event_fraction', ax.figure)
+
+    ############################################################################
+    # PROVENANCE LOG
+    ############################################################################
+
+    writer = io.StringIO()
+    calin.provenance.printer.print_provenance(writer, stage1.const_provenance_anthology())
+    upload_text(runno, 'provenance_log_stage1', writer)
+
+    print('Finished run :', runno)
+    return True
+
+all_oid = get_oids()
+all_status = []
+
+if(opt.nthread()>1):
+    with concurrent.futures.ProcessPoolExecutor(max_workers=opt.nthread()) as executor:
+        results = executor.map(render_oid, all_oid)
+        for status in results:
+            try:
+                if(status):
+                    all_status.append(True)
+            except Exception as e:
+                traceback.print_exception(*sys.exc_info())
+                all_status.append(False)
+else:
+    for oid in all_oid:
+        try:
+            good = render_oid(oid)
+            all_status.append(good)
+        except Exception as e:
+            traceback.print_exception(*sys.exc_info())
+            all_status.append(False)
+
+print("=================================== RESULTS ===================================")
+sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
+for oid_status in zip(all_oid, all_status):
+    stage1pod = calin.ix.diagnostics.stage1.Stage1POD()
+    sql.retrieve_by_oid(opt.db_stage1_table_name(), oid_status[0], stage1pod)
+    print(stage1pod.run_number(), "success" if oid_status[1] else "*** FAILED ***")
 
 # The end

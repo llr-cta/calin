@@ -13,8 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_FILES counter.i module.i event_number.i waveform.i functional.i
-	value_capture.i delta_t.i run_info.i simple_charge_stats.i simple_charge_hists.i
+set(CALIN_SWIG_FILES run_info.i simple_charge_stats.i simple_charge_hists.i
 	clock_regression.i stage1.i)
 set(CALIN_SWIG_TARGET diagnostics)
 

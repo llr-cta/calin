@@ -13,7 +13,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-set(CALIN_SWIG_PROTO timestamp.proto log.proto options_processor.proto)
+set(CALIN_SWIG_PROTO timestamp.proto log.proto)
 set(CALIN_PACKAGE util)
 set(CALIN_TARGET_LIBRARY calin_proto_${CALIN_PACKAGE})
 

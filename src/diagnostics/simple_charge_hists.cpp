@@ -23,6 +23,8 @@
 #include <util/log.hpp>
 #include <math/special.hpp>
 #include <util/algorithm.hpp>
+#include <util/string.hpp>
+#include <io/json.hpp>
 #include <diagnostics/simple_charge_hists.hpp>
 #include <math/covariance_calc.hpp>
 
@@ -73,8 +75,26 @@ SimpleChargeHistsParallelEventVisitor* SimpleChargeHistsParallelEventVisitor::ne
 
 bool SimpleChargeHistsParallelEventVisitor::visit_telescope_run(
   const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager)
+  calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
+  if(processing_record) {
+    processing_record->set_type("SimpleChargeHistsParallelEventVisitor");
+    processing_record->set_description("Per-channel waveform sum histograms");
+    auto* config_json = processing_record->add_config();
+    config_json->set_type(config_.GetTypeName());
+    config_json->set_json(calin::io::json::encode_protobuf_to_json_string(config_));
+    config_json = processing_record->add_config();
+    std::vector<std::pair<std::string,std::string> > keyval;
+    keyval.emplace_back("highGainWaveformSumInstance",
+      calin::io::json::json_string_value(calin::util::string::instance_identifier(high_gain_visitor_)));
+    keyval.emplace_back("lowGainWaveformSumInstance",
+      calin::io::json::json_string_value(calin::util::string::instance_identifier(low_gain_visitor_)));
+    keyval.emplace_back("filterInstance",
+      calin::io::json::json_string_value(calin::util::string::instance_identifier(filter_)));
+    config_json->set_json(calin::io::json::json_for_dictionary(keyval));
+  }
+
   has_dual_gain_ = (run_config->camera_layout().adc_gains() !=
     calin::ix::iact_data::instrument_layout::CameraLayout::SINGLE_GAIN);
 
@@ -104,7 +124,8 @@ bool SimpleChargeHistsParallelEventVisitor::visit_telescope_run(
   return true;
 }
 
-bool SimpleChargeHistsParallelEventVisitor::leave_telescope_run()
+bool SimpleChargeHistsParallelEventVisitor::leave_telescope_run(
+  calin::ix::provenance::chronicle::ProcessingRecord* processing_record)
 {
   return true;
 }

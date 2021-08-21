@@ -54,7 +54,7 @@ unsigned calin::iact_data::algorithms::find_channel_islands(
         ++ichannel_id;
       }
     }
-    for(auto ncid : camera.channel(cid).neighbour_channel_indexes()) {
+    for(int ncid : camera.channel(cid).neighbour_channel_indexes()) {
       if(ncid > channel_id[ichannel_id-1]) {
         const auto* found_channel_id =
           std::lower_bound(channel_id+ichannel_id, last_channel_id, ncid);

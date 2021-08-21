@@ -351,32 +351,3 @@ void calin::util::file::replace_question_with_number(std::string& filename, unsi
   if(iquestion != filename.npos)
     filename.replace(iquestion,1, std::to_string(n));
 }
-
-void calin::util::file::save_protobuf_to_json_file(const std::string& filename,
-  const google::protobuf::Message* message)
-{
-  google::protobuf::util::JsonPrintOptions opt;
-  opt.add_whitespace = true;
-  opt.always_print_primitive_fields = true;
-  std::string s;
-  if(!google::protobuf::util::MessageToJsonString(*message, &s, opt).ok())
-    throw std::runtime_error("Could not encode message as JSON");
-  std::ofstream stream(filename);
-  if(!stream)throw std::runtime_error("Could not open file: "+filename);
-  stream << s;
-  if(!stream)throw std::runtime_error("Error writing file: "+filename);
-}
-
-void calin::util::file::load_protobuf_from_json_file(const std::string& filename,
-  google::protobuf::Message* message)
-{
-  std::ifstream stream(filename);
-  if(!stream)throw std::runtime_error("Could not open file: "+filename);
-  std::stringstream buffer;
-  buffer << stream.rdbuf();
-  google::protobuf::util::JsonParseOptions opt;
-  opt.ignore_unknown_fields = false;
-  if(!google::protobuf::util::
-    JsonStringToMessage(buffer.str(), message, opt).ok())
-    throw std::runtime_error("Could not decode JSON file: "+filename);
-}

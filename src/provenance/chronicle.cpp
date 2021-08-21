@@ -73,6 +73,7 @@ void calin::provenance::chronicle::prune_the_chronicle()
   prune_repeated_field(singleton_chronicle->mutable_file_io_record());
   prune_repeated_field(singleton_chronicle->mutable_network_io_record());
   prune_repeated_field(singleton_chronicle->mutable_rng_record());
+  prune_repeated_field(singleton_chronicle->mutable_processing_record());
 }
 
 calin::ix::provenance::chronicle::Chronicle*
@@ -223,4 +224,53 @@ register_rng_close(calin::ix::provenance::chronicle::RNGRecord* record, uint64_t
   calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
   ts.as_proto(record->mutable_close_timestamp());
   if(ncore_calls>=0)record->set_ncore_calls(ncore_calls);
+}
+
+calin::ix::provenance::chronicle::CommandLineProcessingRecord*
+calin::provenance::chronicle::register_command_line_processing(
+  const std::string& processed_by, const std::string& comment)
+{
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  calin::ix::provenance::chronicle::CommandLineProcessingRecord* record = nullptr;
+  {
+    std::lock_guard<std::mutex> lock { chronicle_mutex };
+    record = singleton_chronicle->add_command_line_record();
+  }
+  ts.as_proto(record->mutable_timestamp());
+  record->set_comment(comment);
+  record->set_processed_by(processed_by);
+  return record;
+}
+
+calin::ix::provenance::chronicle::ProcessingRecord*
+calin::provenance::chronicle::register_subprocessing_start(
+  calin::ix::provenance::chronicle::ProcessingRecord* parent_processing_record,
+  const std::string& created_by, const std::string& comment)
+{
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  calin::ix::provenance::chronicle::ProcessingRecord* record;
+  if(parent_processing_record == nullptr) {
+    std::lock_guard<std::mutex> lock { chronicle_mutex };
+    record = singleton_chronicle->add_processing_record();
+  } else {
+    record = parent_processing_record->add_subprocessing_record();
+  }
+  ts.as_proto(record->mutable_open_timestamp());
+  record->set_created_by(created_by);
+  record->set_comment(comment);
+  return record;
+}
+
+calin::ix::provenance::chronicle::ProcessingRecord*
+calin::provenance::chronicle::register_processing_start(
+  const std::string& created_by, const std::string& comment)
+{
+  return register_subprocessing_start(nullptr, created_by, comment);
+}
+
+void calin::provenance::chronicle::register_processing_finish(
+  calin::ix::provenance::chronicle::ProcessingRecord* record)
+{
+  calin::util::timestamp::Timestamp ts = calin::util::timestamp::Timestamp::now();
+  ts.as_proto(record->mutable_close_timestamp());
 }

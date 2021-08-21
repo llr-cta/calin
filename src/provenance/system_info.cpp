@@ -143,10 +143,10 @@ calin::ix::provenance::system_info::BuildInfo* new_build_info()
   info->set_compiled_with_avx512vpopcntdq(true);
 #endif
 #ifdef __AVX5124VNNIW__
-  info->set_compiled_with_avx5124vnniw(true);
+  info->set_compiled_with_avx512_4vnniw(true);
 #endif
 #ifdef __AVX5124MAPS__
-  info->set_compiled_with_avx5124maps(true);
+  info->set_compiled_with_avx512_4maps(true);
 #endif
 
   return info;
@@ -357,11 +357,57 @@ calin::provenance::system_info::copy_the_host_info(calin::ix::provenance::system
   return x;
 }
 
-void calin::provenance::system_info::write_system_info_to_log(calin::util::log::Level level,
-  calin::util::log::Logger* logger)
+std::string calin::provenance::system_info::build_info_string(
+  const calin::ix::provenance::system_info::BuildInfo* build_info)
 {
-  const auto* host_info = calin::provenance::system_info::the_host_info();
-  auto L = LOG(level, logger);
+  if(build_info == nullptr) {
+    build_info = calin::provenance::system_info::the_build_info();
+  }
+  std::ostringstream L;
+  L << "Git origin : " << build_info->git_origin_url() << "  Branch : " << build_info->git_branch() << "\n"
+    << "Git commit : " << build_info->git_commit_sha1() << " from " << build_info->git_commit_date();
+  if(build_info->git_repo_status() == "dirty") {
+    L << " (dirty)";
+  }
+  L << '\n';
+  if(build_info->compiled_with_sse()) {
+    L << "Built with :";
+    if(build_info->compiled_with_avx512f())L << " AVX-512F";
+    if(build_info->compiled_with_avx512dq())L << "/DQ";
+    if(build_info->compiled_with_avx512ifma())L << "/IFMA";
+    if(build_info->compiled_with_avx512pf())L << "/PF";
+    if(build_info->compiled_with_avx512er())L << "/ER";
+    if(build_info->compiled_with_avx512cd())L << "/CD";
+    if(build_info->compiled_with_avx512bw())L << "/BW";
+    if(build_info->compiled_with_avx512vl())L << "/VL";
+    if(build_info->compiled_with_avx512vbmi())L << "/VBMI";
+    if(build_info->compiled_with_avx512vbmi2())L << "/VBMI2";
+    if(build_info->compiled_with_avx512vnni())L << "/VNNI";
+    if(build_info->compiled_with_avx512bitalg())L << "/BITALG";
+    if(build_info->compiled_with_avx512vpopcntdq())L << "/VPOPCNTDQ";
+    if(build_info->compiled_with_avx512_4vnniw())L << "/4VNNIW";
+    if(build_info->compiled_with_avx512_4fmaps())L << "/4FMAPS";
+    if(build_info->compiled_with_avx2())L << " AVX2";
+    if(build_info->compiled_with_avx())L << " AVX";
+    if(build_info->compiled_with_fma3())L << " FMA3";
+    if(build_info->compiled_with_fma4())L << " FMA4";
+    if(build_info->compiled_with_sse4_2())L << " SSE4.2";
+    if(build_info->compiled_with_sse4_1())L << " SSE4.1";
+    if(build_info->compiled_with_ssse3())L << " SSSE3";
+    if(build_info->compiled_with_sse3())L << " SSE3";
+    if(build_info->compiled_with_sse2())L << " SSE2";
+    if(build_info->compiled_with_sse())L << " SSE";
+  }
+  return L.str();
+}
+
+std::string calin::provenance::system_info::system_info_string(
+  const calin::ix::provenance::system_info::HostAndProcessInfo* host_info)
+{
+  if(host_info == nullptr) {
+    host_info = calin::provenance::system_info::the_host_info();
+  }
+  std::ostringstream L;
   L << host_info->uname_sysname() << " " << host_info->uname_release() << " on "
     << host_info->cpu_processor_brand() << '\n';
   if(host_info->cpu_has_sse()) {
@@ -392,6 +438,14 @@ void calin::provenance::system_info::write_system_info_to_log(calin::util::log::
     if(host_info->cpu_has_sse2())L << " SSE2";
     if(host_info->cpu_has_sse())L << " SSE";
   }
+  return L.str();
+}
+
+void calin::provenance::system_info::write_system_info_to_log(calin::util::log::Level level,
+  calin::util::log::Logger* logger)
+{
+  auto L = LOG(level, logger);
+  L << system_info_string();
 }
 
 bool calin::provenance::system_info::has_avx()

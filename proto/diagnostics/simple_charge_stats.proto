@@ -29,11 +29,11 @@ import "math/histogram.proto";
 package calin.ix.diagnostics.simple_charge_stats;
 
 message SimpleChargeStatsConfig {
-  uint32 high_gain_wf_clipping_value                                = 1 [
+  int32 high_gain_wf_clipping_value                                 = 1 [
     (CFO).desc = "Waveform value above which the high-gain signal should be "
       "considered as clipped.",
     (CFO).units = "DC" ];
-  uint32 low_gain_wf_clipping_value                                 = 2 [
+  int32 low_gain_wf_clipping_value                                  = 2 [
     (CFO).desc = "Waveform value abov which the low-gain signal should be "
       "considered as clipped.",
     (CFO).units = "DC" ];
@@ -201,8 +201,11 @@ message SimpleChargeStats {
   calin.ix.math.histogram.Histogram1DData num_contiguous_channel_triggered_hist = 33 [
     (CFO).desc = "Histogram of number of channels triggered.",
     (CFO).units = "channels (bin-units), events (weight-units)" ];
-  calin.ix.math.histogram.Histogram1DData phy_trigger_num_contiguous_channel_triggered_hist = 34 [
-    (CFO).desc = "Histogram of number of channels triggered.",
+  calin.ix.math.histogram.Histogram1DData phy_trigger_num_channel_triggered_hist = 34 [
+    (CFO).desc = "Histogram of number of channels triggered in physics events.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
+  calin.ix.math.histogram.Histogram1DData phy_trigger_num_contiguous_channel_triggered_hist = 35 [
+    (CFO).desc = "Histogram of number of channels triggered in physics events.",
     (CFO).units = "channels (bin-units), events (weight-units)" ];
 };
 
@@ -367,8 +370,11 @@ message PartialCameraSimpleChargeStats {
   calin.ix.math.histogram.Histogram1DData num_contiguous_channel_triggered_hist = 23 [
     (CFO).desc = "Histogram of number of channels triggered.",
     (CFO).units = "channels (bin-units), events (weight-units)" ];
-  calin.ix.math.histogram.Histogram1DData phys_trig_num_contiguous_channel_triggered_hist = 24 [
-    (CFO).desc = "Histogram of number of channels triggered.",
+  calin.ix.math.histogram.Histogram1DData phys_trig_num_channel_triggered_hist = 24 [
+    (CFO).desc = "Histogram of number of channels triggered in physics-trigger events.",
+    (CFO).units = "channels (bin-units), events (weight-units)" ];
+  calin.ix.math.histogram.Histogram1DData phys_trig_num_contiguous_channel_triggered_hist = 25 [
+    (CFO).desc = "Histogram of number of channels triggered in physics-trigger events.",
     (CFO).units = "channels (bin-units), events (weight-units)" ];
 };
 

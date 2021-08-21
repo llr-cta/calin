@@ -67,7 +67,7 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     scope->p_facets.resize(scope->p_scheme->num_facets());
     for(unsigned i=0;i<scope->p_scheme->num_facets();++i) {
       auto& facet = scope->p_facets[i];
-      if(i<scope_params.primary_facets_size()) {
+      if(i<unsigned(scope_params.primary_facets_size())) {
         Eigen::Vector3d nominal_position = scope->p_scheme->facet_centroid_3d(i,
           scope->p_surface,scope->p_surface_n);
         Eigen::Vector3d facet_normal = calin::math::geometry::norm_of_polynomial_surface(
@@ -127,7 +127,7 @@ SCTRayTracer::SCTRayTracer(const calin::ix::simulation::sct_optics::SCTArray* ar
     scope->s_facets.resize(scope->s_scheme->num_facets());
     for(unsigned i=0;i<scope->s_scheme->num_facets();++i) {
       auto& facet = scope->s_facets[i];
-      if(i<scope_params.secondary_facets_size()) {
+      if(i<unsigned(scope_params.secondary_facets_size())) {
         Eigen::Vector3d nominal_position = scope->s_scheme->facet_centroid_3d(i,
           scope->s_surface,scope->s_surface_n);
         Eigen::Vector3d facet_normal = calin::math::geometry::norm_of_polynomial_surface(
@@ -980,7 +980,7 @@ calin::simulation::sct_optics::make_sct_telescope(
   // ***************************************************************************
   // ***************************************************************************
 
-  for(unsigned i=0;i<param.primary_sag_polynomial_size();++i) {
+  for(int i=0;i<param.primary_sag_polynomial_size();++i) {
     double p_i = param.primary_sag_polynomial(i);
     telescope->add_primary_surface_polynomial(p_i);
   }
@@ -1095,7 +1095,7 @@ calin::simulation::sct_optics::make_sct_telescope(
   // ***************************************************************************
   // ***************************************************************************
 
-  for(unsigned i=0;i<param.secondary_sag_polynomial_size();++i) {
+  for(int i=0;i<param.secondary_sag_polynomial_size();++i) {
     double p_i = param.secondary_sag_polynomial(i);
     if(i == 0) {
       p_i += param.secondary_distance();
@@ -1213,7 +1213,7 @@ calin::simulation::sct_optics::make_sct_telescope(
   // ***************************************************************************
   // ***************************************************************************
 
-  for(unsigned i=0;i<param.camera_sag_polynomial_size();++i) {
+  for(int i=0;i<param.camera_sag_polynomial_size();++i) {
     double p_i = param.camera_sag_polynomial(i);
     if(i == 0) {
       p_i += param.camera_distance();
@@ -1261,8 +1261,8 @@ calin::simulation::sct_optics::make_sct_telescope(
   unsigned grid_id = 0;
   for(unsigned iy=0; iy<param.camera_module_grid().num_side(); ++iy) {
     for(unsigned ix=0; ix<param.camera_module_grid().num_side(); ++ix) {
-      double x;
-      double z;
+      double x = 0;
+      double z = 0;
       calin::math::geometry::square_grid_site_center(x,z,grid_id,
         param.camera_module_grid().spacing(),param.camera_module_grid().num_side(),
         param.camera_module_grid().x_center(), param.camera_module_grid().y_center());
@@ -1335,7 +1335,7 @@ calin::simulation::sct_optics::make_sct_array(
   }
   array->mutable_array_origin()->CopyFrom(param.array_origin());
 
-  for(unsigned iscope=0;iscope<param.array_layout().scope_positions_size();++iscope)
+  for(int iscope=0;iscope<param.array_layout().scope_positions_size();++iscope)
   {
     const auto& pos = param.array_layout().scope_positions(iscope);
     auto* telescope = array->add_telescope();

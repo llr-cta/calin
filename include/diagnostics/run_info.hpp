@@ -75,9 +75,11 @@ public:
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
 
-  bool leave_telescope_run() override;
+  bool leave_telescope_run(
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
 
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;

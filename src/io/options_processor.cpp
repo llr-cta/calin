@@ -26,13 +26,15 @@
 #include <google/protobuf/descriptor.pb.h>
 
 #include <calin.pb.h>
-#include <util/options_processor.hpp>
+#include <io/json.hpp>
+#include <io/options_processor.hpp>
 #include <util/string_to_protobuf.hpp>
 #include <util/file.hpp>
 #include <util/string.hpp>
 #include <util/log.hpp>
+#include <provenance/chronicle.hpp>
 
-using namespace calin::util::options_processor;
+using namespace calin::io::options_processor;
 using namespace calin::util::log;
 
 OptionHandler::~OptionHandler()
@@ -81,6 +83,20 @@ std::vector<OptionSpec> SimpleOptionHandler::list_options()
     options.emplace_back(o);
   }
   return options;
+}
+
+std::string SimpleOptionHandler::get_options_as_json()
+{
+  std::string out = {};
+  if(enable_json_) {
+    out = "{\"" + key_ + "\": " + (option_handled_?std::string("true"):std::string("false")) + '}';
+  }
+  return out;
+}
+
+std::string SimpleOptionHandler::get_options_type_name()
+{
+  return {};
 }
 
 // ============================================================================
@@ -159,7 +175,7 @@ handle_option(const std::string& key, bool has_val, const std::string& val)
           return OptionHandlerResult::KNOWN_OPTION_HAS_INVALID_VALUE;
         }
       }
-      if(string_to_protobuf::string_to_protobuf_field(val, message_, f, f_path))
+      if(calin::util::string_to_protobuf::string_to_protobuf_field(val, message_, f, f_path))
         return OptionHandlerResult::OPTION_OK;
       else
         return OptionHandlerResult::KNOWN_OPTION_HAS_INVALID_VALUE;
@@ -176,12 +192,12 @@ std::vector<OptionSpec> ProtobufOptionHandler::list_options()
 
 void ProtobufOptionHandler::load_json_cfg(const std::string& json_file_name)
 {
-  calin::util::file::load_protobuf_from_json_file(json_file_name, message_);
+  calin::io::json::load_protobuf_from_json_file(json_file_name, message_);
 }
 
 void ProtobufOptionHandler::save_json_cfg(const std::string& json_file_name)
 {
-  calin::util::file::save_protobuf_to_json_file(json_file_name, message_);
+  calin::io::json::save_protobuf_to_json_file(json_file_name, *message_);
 }
 
 std::vector<OptionSpec> ProtobufOptionHandler::
@@ -252,7 +268,7 @@ r_list_options(const std::string& prefix, const google::protobuf::Message* m)
       }
       if(f->is_repeated())
         o.value_type = std::string("vector<")+o.value_type+">";
-      string_to_protobuf::protobuf_field_to_string(o.value_default, m, f);
+      calin::util::string_to_protobuf::protobuf_field_to_string(o.value_default, m, f);
       o.value_units      = "";
       o.description      = "";
       const google::protobuf::FieldOptions* fopt { &f->options() };
@@ -265,6 +281,16 @@ r_list_options(const std::string& prefix, const google::protobuf::Message* m)
     }
   }
   return options;
+}
+
+std::string ProtobufOptionHandler::get_options_as_json()
+{
+  return calin::io::json::encode_protobuf_to_json_string(*message_);
+}
+
+std::string ProtobufOptionHandler::get_options_type_name()
+{
+  return message_->GetTypeName();
 }
 
 // ============================================================================
@@ -285,7 +311,8 @@ OptionsProcessor::OptionsProcessor(google::protobuf::Message* message,
     priority_protobuf_handler_(new ProtobufOptionHandler(message))
 {
   if(add_help_option) {
-    help_handler_ = new SimpleOptionHandler("h", "help", "Print help message.");
+    help_handler_ = new SimpleOptionHandler("h", "help", "Print help message.",
+      /*enable_json=*/ false);
     add_option_handler(help_handler_, true);
   }
   add_option_handler(priority_protobuf_handler_, true);
@@ -329,7 +356,11 @@ struct OptionDetails
 void OptionsProcessor::process_arguments(const std::vector<std::string>& args,
   bool first_arg_is_program_name)
 {
-  for(const auto& iarg: args)cla_.add_argument(iarg);
+  auto* clp_record = calin::provenance::chronicle::register_command_line_processing(
+    __PRETTY_FUNCTION__);
+  for(const auto& iarg: args) {
+    clp_record->add_arguments(iarg);
+  }
 
   std::vector<OptionDetails> options;
 
@@ -468,6 +499,16 @@ terminate_processing:
       assert(0);
     case OptionHandlerResult::OPTION_OK:
       break;
+    }
+  }
+
+  for(auto* ihandler : handlers_)
+  {
+    std::string json = ihandler->get_options_as_json();
+    if(not json.empty()) {
+      auto* opt_record = clp_record->add_processed_options();
+      opt_record->set_json(json);
+      opt_record->set_type(ihandler->get_options_type_name());
     }
   }
 }

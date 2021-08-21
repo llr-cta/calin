@@ -29,6 +29,7 @@
 #include <util/log.hpp>
 #include <iact_data/waveform_treatment_event_visitor.pb.h>
 #include <provenance/system_info.hpp>
+#include <provenance/chronicle.hpp>
 #include <util/memory.hpp>
 
 namespace calin { namespace iact_data { namespace waveform_treatment_event_visitor {
@@ -45,9 +46,9 @@ public:
     GainChannel gain_channel_to_treat = HIGH_OR_SINGLE_GAIN);
 
   OptimalWindowSumWaveformTreatmentParallelEventVisitor(
-    GainChannel gain_channel_to_treat,
-    calin::ix::iact_data::waveform_treatment_event_visitor::
-      OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config()):
+      GainChannel gain_channel_to_treat,
+      calin::ix::iact_data::waveform_treatment_event_visitor::
+        OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config = default_config()) :
     OptimalWindowSumWaveformTreatmentParallelEventVisitor(config, gain_channel_to_treat)
   { /* nothing to see here */ }
 
@@ -73,7 +74,8 @@ public:
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
 
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
@@ -131,6 +133,7 @@ protected:
   calin::ix::iact_data::waveform_treatment_event_visitor::
     OptimalWindowSumWaveformTreatmentParallelEventVisitorConfig config_;
   GainChannel gain_channel_to_treat_ = HIGH_OR_SINGLE_GAIN;
+
   unsigned nchan_ = 0;
   unsigned nsamp_ = 0;
   unsigned window_n_;
@@ -198,10 +201,17 @@ public:
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override
   {
+    if(processing_record) {
+      if(processing_record->type().empty()) {
+        processing_record->set_type(calin::util::vcl::templated_class_name<VCLArchitecture>("VCL_OptimalWindowSumWaveformTreatmentParallelEventVisitor"));
+      }
+      // Rest of the entries are set by OptimalWindowSumWaveformTreatmentParallelEventVisitor::visit_telescope_run
+    }
     bool old_nsamp = nsamp_;
-    bool good = OptimalWindowSumWaveformTreatmentParallelEventVisitor::visit_telescope_run(run_config, event_lifetime_manager);
+    bool good = OptimalWindowSumWaveformTreatmentParallelEventVisitor::visit_telescope_run(run_config, event_lifetime_manager, processing_record);
     if(nsamp_!=old_nsamp) {
       auto* host_info = calin::provenance::system_info::the_host_info();
       const unsigned nv_samp = (nsamp_+31)/32;
@@ -242,8 +252,7 @@ public:
   }
 
 #ifndef SWIG
-private:
-
+protected:
   void vcl_analyze_waveforms(const uint16_t* __restrict__ data)
   {
     static constexpr unsigned num_int16 = VCLArchitecture::num_int16;
@@ -428,7 +437,8 @@ public:
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
 
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
@@ -543,10 +553,11 @@ public:
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override
   {
     bool old_nsamp = nsamp_;
-    bool good = SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config, event_lifetime_manager);
+    bool good = SingleGainDualWindowWaveformTreatmentEventVisitor::visit_telescope_run(run_config, event_lifetime_manager, nullptr);
     if(nsamp_!=old_nsamp) {
       auto* host_info = calin::provenance::system_info::the_host_info();
       const unsigned nv_samp = (nsamp_+15)/16;

@@ -53,9 +53,11 @@ public:
 
   bool visit_telescope_run(
     const calin::ix::iact_data::telescope_run_configuration::TelescopeRunConfiguration* run_config,
-    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager) override;
+    calin::iact_data::event_visitor::EventLifetimeManager* event_lifetime_manager,
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
 
-  bool leave_telescope_run() override;
+  bool leave_telescope_run(
+    calin::ix::provenance::chronicle::ProcessingRecord* processing_record = nullptr) override;
 
   bool visit_telescope_event(uint64_t seq_index,
     calin::ix::iact_data::telescope_event::TelescopeEvent* event) override;
@@ -124,12 +126,14 @@ private:
       low_gain(has_dual_gain_ ? new SingleGainChannelHists(time_resolution, time_max) : nullptr),
       num_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0)),
       num_contiguous_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0)),
+      phys_trig_num_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0)),
       phys_trig_num_contiguous_channel_triggered_hist(new calin::math::histogram::Histogram1D(1.0))
     { /* nothing to see here */ }
 
     ~CameraHists() {
       delete num_channel_triggered_hist;
       delete num_contiguous_channel_triggered_hist;
+      delete phys_trig_num_channel_triggered_hist;
       delete phys_trig_num_contiguous_channel_triggered_hist;
       delete high_gain;
       delete low_gain;
@@ -140,6 +144,7 @@ private:
 
     calin::math::histogram::Histogram1D* num_channel_triggered_hist = nullptr;
     calin::math::histogram::Histogram1D* num_contiguous_channel_triggered_hist = nullptr;
+    calin::math::histogram::Histogram1D* phys_trig_num_channel_triggered_hist = nullptr;
     calin::math::histogram::Histogram1D* phys_trig_num_contiguous_channel_triggered_hist = nullptr;
   };
 
@@ -165,7 +170,7 @@ private:
     calin::ix::diagnostics::simple_charge_stats::PartialOneGainChannelSimpleChargeStats* one_gain_stats,
     SingleGainChannelHists* one_gain_hists,
     unsigned& nsum, int64_t& opt_sum, int64_t& sig_sum, int64_t& bkg_sum, int64_t& wf_sum,
-     unsigned wf_clipping_value);
+    int wf_clipping_value);
 
   void record_one_visitor_data(uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
     const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,

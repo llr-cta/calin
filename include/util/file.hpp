@@ -111,19 +111,4 @@ void replace_question_with_number(std::string& filename, unsigned n);
 std::vector<std::string> file_fragments(std::string filename,
   const std::string& extension, unsigned fragment_stride=1U);
 
-void save_protobuf_to_json_file(const std::string& filename,
-  const google::protobuf::Message* message);
-inline void save_protobuf_to_json_file(const google::protobuf::Message* message,
-    const std::string& filename) {
-  save_protobuf_to_json_file(filename, message);
-}
-
-void load_protobuf_from_json_file(const std::string& filename,
-  google::protobuf::Message* message);
-inline void load_protobuf_from_json_file(google::protobuf::Message* message,
-    const std::string& filename) {
-  load_protobuf_from_json_file(filename, message);
-}
-
-
 } } } // namespace calin::util::file

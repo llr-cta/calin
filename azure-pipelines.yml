@@ -1,6 +1,6 @@
 # calin/azure-pipelines.yaml -- Stephen Fegan -- 2018-11-13
 #
-# Build calin Docker images using Microsift Azure compute platform and push
+# Build calin Docker images using Microsoft Azure compute platform and push
 # them to the Docker hub.
 #
 # Copyright 2018, Stephen Fegan <sfegan@llr.in2p3.fr>
@@ -19,7 +19,7 @@
 trigger:
   branches:
     include:
-    - master
+    - main
   paths:
     include:
     - /

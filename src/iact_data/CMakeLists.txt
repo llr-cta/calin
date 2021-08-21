@@ -18,8 +18,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --save-temps")
 set(CALIN_TARGET_LIBRARY calin_iact_data)
 set(CALIN_SOURCES algorithms.cpp
 	telescope_data_source.cpp event_visitor.cpp
-	event_dispatcher.cpp parallel_event_dispatcher.cpp
-	functional_event_visitor.cpp instrument_layout.cpp
+	parallel_event_dispatcher.cpp
+	instrument_layout.cpp
 	nectarcam_layout.cpp nectarcam_configuration.cpp
 	lstcam_layout.cpp
 	waveform_treatment_event_visitor.cpp waveform_treatment_event_visitor_impl.cpp
