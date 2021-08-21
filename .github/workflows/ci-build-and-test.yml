@@ -39,7 +39,7 @@ jobs:
           libprotobuf-dev protobuf-compiler libprotoc-dev libzstd-dev          \
           ${{ matrix.compiler[2] }}
         wget https://github.com/llr-cta/CamerasToACTLRelease/releases/download/latest/CamerasToACTL.tgz
-        sudo tar zxvf CamerasToACTL.tgz -C /
+        sudo tar zxf CamerasToACTL.tgz -C /
     - name: Print version information
       shell: bash
       run: |
