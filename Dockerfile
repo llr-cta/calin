@@ -45,7 +45,7 @@ RUN cd /build/calin &&                                             \
     cmake -DCALIN_BUILD_ARCH=${arch}                               \
           -DCMAKE_BUILD_TYPE=Release                               \
           -DCMAKE_INSTALL_PREFIX=/usr                              \
-          -DCALIN_PYTHON_SUB_DIR=lib/python3.6                     \
+          -DCALIN_PYTHON_SUB_DIR=lib/python3.8                     \
           .. &&                                                    \
     make -j${threads} &&                                           \
     make install &&                                                \
