@@ -14,19 +14,20 @@
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 if(GEANT4_FOUND)
-	if(NOT NO_GEANT4_TEST)
-		add_executable(test_geant4 test_geant4.cpp)
-		target_link_libraries(test_geant4 ${GTEST_BOTH_LIBRARIES}
-					     calin_simulation calin_math calin_proto)
-		add_test(TestGeant4 test_geant4)
-		install(TARGETS test_geant4
-		  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
+	add_executable(test_geant4 test_geant4.cpp)
+	target_link_libraries(test_geant4 ${GTEST_BOTH_LIBRARIES}
+				     calin_simulation calin_math calin_proto)
+	install(TARGETS test_geant4
+	  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
 
-		add_executable(speedtest_vcl_iact speedtest_vcl_iact.cpp)
-		target_link_libraries(speedtest_vcl_iact ${GTEST_BOTH_LIBRARIES}
-					     calin_simulation calin_math calin_proto)
-		install(TARGETS speedtest_vcl_iact
-		  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
+	add_executable(speedtest_vcl_iact speedtest_vcl_iact.cpp)
+	target_link_libraries(speedtest_vcl_iact ${GTEST_BOTH_LIBRARIES}
+				     calin_simulation calin_math calin_proto)
+	install(TARGETS speedtest_vcl_iact
+	  DESTINATION ${CALIN_UNIT_TEST_INSTALL_DIR})
+
+	if(NOT NO_GEANT4_TEST)
+		add_test(TestGeant4 test_geant4)
 	endif()
 endif()
 
