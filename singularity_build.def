@@ -38,9 +38,11 @@ From: ubuntu:20.04
     export SHELL=/bin/bash
 
 %post
+    echo "deb http://us.archive.ubuntu.com/ubuntu focal main universe" > /etc/apt/sources.list
+    echo "deb http://us.archive.ubuntu.com/ubuntu/ focal-security main universe" >> /etc/apt/sources.list
     apt-get -y update
     apt-get -y upgrade
-    apt-get install -y                           \
+    apt-get -y install                                             \
         wget                                                       \
         libgsl0                                                    \
         libzmq3                                                    \
@@ -81,7 +83,7 @@ From: ubuntu:20.04
         libprotoc
     apt-get -y autoremove —purge
     apt-get -y clean
-    
+
     pip3 install ipyparallel ipywidgets cdsapi ecmwf-api-client
     pip3 install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
