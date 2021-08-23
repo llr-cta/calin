@@ -25,6 +25,8 @@ on:
       - main
     paths-ignore:
       - .github/workflows/native-build-and-test.yml
+      - azure-pipelines.yml
+      - Dockerfile
 
 jobs:
   build:

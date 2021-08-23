@@ -24,6 +24,7 @@ on:
     paths-ignore:
       - singularity_build.def
       - .github/workflows/singularity-build-and-deploy.yml
+      - azure-pipelines.yml
   pull_request:
     branches:
       - main

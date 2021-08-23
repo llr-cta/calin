@@ -25,6 +25,9 @@ trigger:
     - /
     exclude:
     - /travis.yml
+    - /singularity_build.def
+    - /.github/workflows/singularity-build-and-deploy.yml
+    - /.github/workflows/native-build-and-test.yml
 
 pool:
   vmImage: 'Ubuntu 16.04'
