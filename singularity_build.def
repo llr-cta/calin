@@ -103,6 +103,9 @@ From: ubuntu:20.04
     curl -L https://github.com/llr-cta/Geant4Build/releases/download/ubuntu-20.04-10.7.2/Geant4-ubuntu-20.04-10.7.2.tbz2 | tar -jxf - -C /
     curl -L https://github.com/llr-cta/CamerasToACTLRelease/releases/download/latest/CamerasToACTL.tgz | tar -zxf - -C /
 
+    tar -zxf /tmp/calin_installed.tgz -C /
+    rm -f /tmp/calin_installed.tgz
+
     ipython3 profile create default
     jupyter notebook --allow-root --generate-config
     sed -i -e '/c.NotebookApp.ip/s/^#//'                           \
@@ -116,6 +119,8 @@ From: ubuntu:20.04
        /root/.jupyter/jupyter_notebook_config.py
 
     mkdir /data
+
+    ldconfig
 
     NOW=`date`
     echo "export NOW=\"${NOW}\"" >> $SINGULARITY_ENVIRONMENT
