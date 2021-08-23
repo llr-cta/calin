@@ -17,7 +17,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-name: Native build and test
+name: Singularity build and deploy
 
 on:
   push:
@@ -77,8 +77,9 @@ jobs:
       shell: bash
       run: |
         find /usr -print > /tmp/files_after.txt
-        cat files_before.txt files_after.txt | sort | uniq -u > files_added.txt
-        tar -zcvf /tmp/calin_installed.tgz -C / -T files_added.txt
+        cat /tmp/files_before.txt /tmp/files_after.txt | sort | uniq -u > /tmp/files_added.txt
+        tar -zcvf /tmp/calin_installed.tgz -C / -T /tmp/files_added.txt
+        ls -l /tmp/calin_installed.tgz
 
     - name: Set up Go 1.13
       uses: actions/setup-go@v1
