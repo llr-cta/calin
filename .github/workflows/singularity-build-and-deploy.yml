@@ -110,8 +110,9 @@ jobs:
     - name: Build calin singularity container
       run: |
         sudo -E singularity build calin-${{ matrix.arch }}.sif singularity_build.def
+        ls -l calin-${{ matrix.arch }}.sif
 
     - name: Login and deploy Container
       run: |
-        echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ secrets.GHCR_USERNAME }} --password-stdin oras://ghcr.io
-        singularity push calin-${{ matrix.arch }}.sif oras://ghcr.io/${GITHUB_REPOSITORY}:${{ matrix.arch }}
+        echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ github.actor }} --password-stdin oras://ghcr.io
+        singularity push calin-${{ matrix.arch }}.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
