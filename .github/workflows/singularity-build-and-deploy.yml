@@ -21,7 +21,10 @@ name: Singularity build and deploy
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+    paths-ignore:
+      - .github/workflows/native-build-and-test.yml
 
 jobs:
   build:

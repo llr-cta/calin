@@ -19,9 +19,17 @@ name: Native build and test
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+    paths-ignore:
+      - singularity_build.def
+      - .github/workflows/singularity-build-and-deploy.yml
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+    paths-ignore:
+      - singularity_build.def
+      - .github/workflows/singularity-build-and-deploy.yml
 
 jobs:
   build:
