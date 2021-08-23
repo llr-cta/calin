@@ -62,25 +62,22 @@ From: ubuntu:20.04
         libxerces-c3.2                                             \
         vim                                                        \
         curl                                                       \
-        libcurl4                                                   \
-        libcurl4-openssl                                           \
         ffmpeg                                                     \
         libgeos                                                    \
         libgeos++                                                  \
-        libhdf5                                                    \
         hdf5-tools                                                 \
         libjpeg                                                    \
-        libnetcdf                                                  \
+        libnetcdf15                                                \
         netcdf-bin                                                 \
         netcdf-doc                                                 \
         proj-bin                                                   \
-        libproj                                                    \
+        libproj15                                                  \
         libopenjp2-7                                               \
         libopenjp2-tools                                           \
         zstd                                                       \
-        libprotobuf-c                                              \
-        libprotobuf                                                \
-        libprotoc
+        libprotobuf-c1                                             \
+        libprotobuf17                                              \
+        libprotoc17
     apt-get -y autoremove —purge
     apt-get -y clean
 
