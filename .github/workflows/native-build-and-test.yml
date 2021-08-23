@@ -25,12 +25,15 @@ on:
       - singularity_build.def
       - .github/workflows/singularity-build-and-deploy.yml
       - azure-pipelines.yml
+      - Dockerfile
   pull_request:
     branches:
       - main
     paths-ignore:
       - singularity_build.def
       - .github/workflows/singularity-build-and-deploy.yml
+      - azure-pipelines.yml
+      - Dockerfile
 
 jobs:
   build:

@@ -63,10 +63,10 @@ From: ubuntu:20.04
         vim                                                        \
         curl                                                       \
         ffmpeg                                                     \
-        libgeos                                                    \
-        libgeos++                                                  \
+        libgeos-3.8.0                                              \
+        libgeos-c1v5                                               \
         hdf5-tools                                                 \
-        libjpeg                                                    \
+        libjpeg8                                                   \
         libnetcdf15                                                \
         netcdf-bin                                                 \
         netcdf-doc                                                 \
