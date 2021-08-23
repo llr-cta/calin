@@ -21,7 +21,7 @@ From: ubuntu:20.04
 %files
     /tmp/calin_installed.tgz
 
-%env
+%environment
     export G4DATADIR=/usr/share/Geant4-10.7.2/data
     export G4NEUTRONHPDATA="$G4DATADIR/G4NDL4.6"
     export G4LEDATA="$G4DATADIR/G4EMLOW7.13"
