@@ -101,7 +101,7 @@ jobs:
         sudo mkdir -p /usr/local/var/singularity/mnt && \
         mkdir -p $GOPATH/src/github.com/sylabs && \
         cd $GOPATH/src/github.com/sylabs && \
-        wget -qO- https://github.com/sylabs/singularity/releases/download/v${SINGULARITY_VERSION}/singularity-${SINGULARITY_VERSION}.tar.gz | tar -zxf - && \
+        wget https://github.com/sylabs/singularity/archive/refs/tags/v3.6.4.tar.gz  | tar -zxf - && \
         cd singularity && \
         ./mconfig -p /usr/local && \
         make -C builddir && \
