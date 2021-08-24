@@ -102,7 +102,7 @@ jobs:
         mkdir -p $GOPATH/src/github.com/sylabs && \
         cd $GOPATH/src/github.com/sylabs && \
         wget -qO- https://github.com/sylabs/singularity/releases/download/v${SINGULARITY_VERSION}/singularity-${SINGULARITY_VERSION}.tar.gz | tar -zxf - && \
-        cd singularity-ce-${SINGULARITY_VERSION} && \
+        cd singularity-${SINGULARITY_VERSION} && \
         ./mconfig -p /usr/local && \
         make -C builddir && \
         sudo make -C builddir install
@@ -111,8 +111,14 @@ jobs:
       run: |
         sudo -E singularity build calin-${{ matrix.arch }}.sif singularity_build.def
         ls -l calin-${{ matrix.arch }}.sif
+        singularity inspect calin-${{ matrix.arch }}.sif
 
     - name: Login and deploy Container
       run: |
         echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ github.actor }} --password-stdin oras://ghcr.io
         singularity push calin-${{ matrix.arch }}.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: calin-${{ matrix.arch }}
+        path: calin-${{ matrix.arch }}.sif
