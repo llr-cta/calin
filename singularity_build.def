@@ -130,7 +130,7 @@ From: ubuntu:20.04
     Version v0.0.1
 
 %help
-    This is container containing calin and all its dependencies
+    This is a container containing calin and all of its dependencies
 
 %runscript
-    exec /usr/local/bin/jupyter-notebook "$@"
+    exec /usr/bin/jupyter-notebook "$@"

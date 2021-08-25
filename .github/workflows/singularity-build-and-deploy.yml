@@ -118,6 +118,11 @@ jobs:
         echo ${{ secrets.GITHUB_TOKEN }} | singularity remote login -u ${{ github.actor }} --password-stdin oras://ghcr.io
         singularity push -U calin-${{ matrix.arch }}.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
 
+    - name: Pull container and compare
+      run: |
+        singularity pull calin-pulled.sif oras://ghcr.io/${{ github.repository }}:${{ matrix.arch }}
+        diff calin-${{ matrix.arch }}.sif calin-pulled.sif
+
     - uses: actions/upload-artifact@v2
       with:
         name: calin-${{ matrix.arch }}
