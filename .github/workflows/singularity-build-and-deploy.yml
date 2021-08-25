@@ -102,7 +102,7 @@ jobs:
         mkdir -p $GOPATH/src/github.com/sylabs && \
         cd $GOPATH/src/github.com/sylabs && \
         wget -qO- https://github.com/sylabs/singularity/archive/refs/tags/v3.6.4.tar.gz  | tar -zxf - && \
-        cd singularity && \
+        cd singularity-3.6.4 && \
         ./mconfig -p /usr/local && \
         make -C builddir && \
         sudo make -C builddir install
