@@ -77,11 +77,12 @@ From: ubuntu:20.04
         zstd                                                       \
         libprotobuf-c1                                             \
         libprotobuf17                                              \
-        libprotoc17
+        libprotoc17                                                \
+        python3-ipywidgets
     apt-get -y autoremove
     apt-get -y clean
 
-    pip3 install ipyparallel ipywidgets cdsapi ecmwf-api-client
+    pip3 install ipyparallel cdsapi ecmwf-api-client
     pip3 install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
     export G4DATADIR=/usr/share/Geant4-10.7.2/data
