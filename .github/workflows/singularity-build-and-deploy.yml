@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [ 'broadwell' ]
+        arch: [ 'generic', 'ivybridge', 'broadwell' ]
 
     runs-on: ubuntu-20.04
 
