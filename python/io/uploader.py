@@ -17,6 +17,7 @@
 
 import io
 import os
+import sys
 import os.path
 import time
 import fcntl
@@ -53,6 +54,8 @@ class Uploader:
         canvas.print_png(output)
         return self.upload_from_io(rel_filepaths, 'image/png', output)
 
+    def retrieve_sheet(self, sheet_id, row_start=0):
+        raise RuntimeError('retrieve_sheet: unimplemented in base class')
 
 class FilesystemUploader(Uploader):
     def __init__(self, root_directory, overwrite=True, loud=False):
@@ -104,6 +107,8 @@ class GoogleDriveUploader(Uploader):
         self.credentials_file = os.path.expanduser(credentials_file)
         self.creds = None
         self.directory = {}
+        self.drive_service = None
+        self.sheets_service = None
         self.auth()
         super().__init__(overwrite=overwrite,loud=loud)
 
@@ -139,6 +144,7 @@ class GoogleDriveUploader(Uploader):
             fcntl.lockf(lockfile, fcntl.LOCK_UN)
 
         self.drive_service = googleapiclient.discovery.build('drive', 'v3', credentials=self.creds)
+        self.sheets_service = googleapiclient.discovery.build('sheets', 'v4', credentials=self.creds)
 
     def make_path(self, rel_path):
         if(not rel_path):
@@ -217,7 +223,7 @@ class GoogleDriveUploader(Uploader):
                     self.do_single_upload_from_io(rel_filepath, mime_type, iostream)
                     uploaded = True
                 except googleapiclient.errors.HttpError:
-                    if(ntry<5):
+                    if(ntry<4):
                         if(ntry<len(ordinal)):
                             print("Upload failed on %s attempt, trying again"%ordinal[ntry], file=sys.stderr)
                         else:
@@ -227,3 +233,37 @@ class GoogleDriveUploader(Uploader):
                     else:
                         print("Upload failed on final attempt", file=sys.stderr)
                         raise
+
+    def get_sheet_id_and_tab_name(self, sheet_id_and_tab_name):
+        bits = sheet_id_and_tab_name.split('#')
+        if(len(bits) <= 1):
+            return sheet_id_and_tab_name, ''
+        elif(len(bits) == 2):
+            return bits[0], "'"+bits[1]+"'!"
+        else:
+            raise RuntimeError("Could not understand sheet and tab specification: "+sheet_id_and_tab_name)
+
+    def retrieve_sheet(self, sheet_id_and_tab_name, row_start=0):
+        ordinal=["first", "second", "third", "fourth", "fifth", "sixth", "seventh",
+            "eigth","ninth","tenth"]
+        sheet_id, range = self.get_sheet_id_and_tab_name(sheet_id_and_tab_name)
+        range += 'A%d:ZZZ'%(row_start+1)
+        ntry = 0
+        retrieved = False
+        while(not retrieved):
+            try:
+                response = self.sheets_service.spreadsheets().values().get(spreadsheetId=sheet_id,range=range).execute()
+                retrieved = True
+            except googleapiclient.errors.HttpError:
+                if(ntry<4):
+                    if(ntry<len(ordinal)):
+                        print("Retrieve sheet failed on %s attempt, trying again"%ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Retrieve sheet failed on attempt %d, trying again"%ntry, file=sys.stderr)
+                    time.sleep(min(2**ntry,100))
+                    ntry += 1
+                else:
+                    print("Retrieve sheet failed on final attempt", file=sys.stderr)
+                    raise
+
+        return response['values']
