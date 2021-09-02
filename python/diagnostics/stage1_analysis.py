@@ -162,6 +162,15 @@ def median_measured_voltage(stage1):
         v[i] = numpy.median(vm)
     return numpy.median(v)
 
+def median_voltage(stage1):
+    if(stage1.const_run_config().has_nectarcam() and stage1.const_run_config().const_nectarcam().module_size() > 0):
+        nc = stage1.const_run_config().const_nectarcam()
+        return numpy.median([nc.const_module(im).hvpa_voltage() for im in range(nc.module_size())])
+    elif(stage1.const_nectarcam().const_ancillary_data().num_hvpa_voltage_measurements()>0):
+        return median_measured_voltage(stage1)
+    else:
+        return -1
+
 def median_feb_temp(stage1, temperature_set=1):
     if(not stage1.has_nectarcam() or not stage1.const_nectarcam().has_ancillary_data()):
         return None
