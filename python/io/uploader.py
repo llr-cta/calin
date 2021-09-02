@@ -57,6 +57,9 @@ class Uploader:
     def retrieve_sheet(self, sheet_id, row_start=0):
         raise RuntimeError('retrieve_sheet: unimplemented in base class')
 
+    def append_row_to_sheet(self, sheet_id_and_tab_name, row, row_start=0):
+        raise RuntimeError('retrieve_sheet: unimplemented in base class')
+
 class FilesystemUploader(Uploader):
     def __init__(self, root_directory, overwrite=True, loud=False):
         self.root_directory = os.path.normpath(os.path.expanduser(root_directory)) if root_directory else '.'
@@ -210,8 +213,8 @@ class GoogleDriveUploader(Uploader):
                 fields='id').execute()
             return response.get('id')
 
-    def upload_from_io(self, rel_filepaths, mime_type, iostream):
-        ordinal=["first", "second", "third", "fourth", "fifth", "sixth", "seventh",
+    def upload_from_io(self, rel_filepaths, mime_type, iostream, max_try=5):
+        ordinal=["zeroth", "first", "second", "third", "fourth", "fifth", "sixth", "seventh",
             "eigth","ninth","tenth"]
         if(type(rel_filepaths) is not list):
             rel_filepaths = [ rel_filepaths ]
@@ -219,19 +222,22 @@ class GoogleDriveUploader(Uploader):
             ntry = 0
             uploaded = False
             while(not uploaded):
+                ntry += 1
                 try:
                     self.do_single_upload_from_io(rel_filepath, mime_type, iostream)
                     uploaded = True
                 except googleapiclient.errors.HttpError:
-                    if(ntry<4):
+                    if(ntry<max_try):
                         if(ntry<len(ordinal)):
                             print("Upload failed on %s attempt, trying again"%ordinal[ntry], file=sys.stderr)
                         else:
                             print("Upload failed on attempt %d, trying again"%ntry, file=sys.stderr)
                         time.sleep(min(2**ntry,100))
-                        ntry += 1
                     else:
-                        print("Upload failed on final attempt", file=sys.stderr)
+                        if(ntry<len(ordinal)):
+                            print("Upload failed on %s and final attempt"%ordinal[ntry], file=sys.stderr)
+                        else:
+                            print("Upload failed on final attempt %d"%ntry, file=sys.stderr)
                         raise
 
     def get_sheet_id_and_tab_name(self, sheet_id_and_tab_name):
@@ -243,27 +249,64 @@ class GoogleDriveUploader(Uploader):
         else:
             raise RuntimeError("Could not understand sheet and tab specification: "+sheet_id_and_tab_name)
 
-    def retrieve_sheet(self, sheet_id_and_tab_name, row_start=0):
-        ordinal=["first", "second", "third", "fourth", "fifth", "sixth", "seventh",
+    def retrieve_sheet(self, sheet_id_and_tab_name, row_start=0, max_try=2):
+        ordinal=["zeroth", "first", "second", "third", "fourth", "fifth", "sixth", "seventh",
             "eigth","ninth","tenth"]
         sheet_id, range = self.get_sheet_id_and_tab_name(sheet_id_and_tab_name)
         range += 'A%d:ZZZ'%(row_start+1)
         ntry = 0
         retrieved = False
         while(not retrieved):
+            ntry += 1
             try:
-                response = self.sheets_service.spreadsheets().values().get(spreadsheetId=sheet_id,range=range).execute()
+                response = self.sheets_service.spreadsheets().values().get(
+                    spreadsheetId=sheet_id,range=range).execute()
                 retrieved = True
             except googleapiclient.errors.HttpError:
-                if(ntry<4):
+                if(ntry<max_try):
                     if(ntry<len(ordinal)):
-                        print("Retrieve sheet failed on %s attempt, trying again"%ordinal[ntry], file=sys.stderr)
+                        print("Failed to retrieve sheet on %s attempt, trying again"%ordinal[ntry], file=sys.stderr)
                     else:
-                        print("Retrieve sheet failed on attempt %d, trying again"%ntry, file=sys.stderr)
+                        print("Failed to retrieve sheet on attempt %d, trying again"%ntry, file=sys.stderr)
                     time.sleep(min(2**ntry,100))
-                    ntry += 1
                 else:
-                    print("Retrieve sheet failed on final attempt", file=sys.stderr)
+                    if(ntry<len(ordinal)):
+                        print("Failed to retrieve sheet on %s and final attempt"%ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to retrieve sheet on final attempt %d"%ntry, file=sys.stderr)
                     raise
 
         return response['values']
+
+    def append_row_to_sheet(self, sheet_id_and_tab_name, row, row_start=0, max_try=2):
+        ordinal=["zeroth", "first", "second", "third", "fourth", "fifth", "sixth", "seventh",
+            "eigth","ninth","tenth"]
+        sheet_id, range = self.get_sheet_id_and_tab_name(sheet_id_and_tab_name)
+        range += 'A%d:ZZZ'%(row_start+1)
+        ntry = 0
+        added = False
+        while(not added):
+            ntry += 1
+            try:
+                body = {
+                    'values': [row]
+                }
+                response = self.sheets_service.spreadsheets().values().append(
+                    spreadsheetId=sheet_id, range=range,
+                    valueInputOption='USER_ENTERED', body=body).execute()
+                added = True
+            except googleapiclient.errors.HttpError:
+                if(ntry<max_try):
+                    if(ntry<len(ordinal)):
+                        print("Failed to append to sheet on %s attempt, trying again"%ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to append to sheet on attempt %d, trying again"%ntry, file=sys.stderr)
+                    time.sleep(min(2**ntry,100))
+                else:
+                    if(ntry<len(ordinal)):
+                        print("Failed to append to sheet on %s and final attempt"%ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to append to sheet on final attempt %d"%ntry, file=sys.stderr)
+                    raise
+
+        return response.get('updates').get('updatedCells')
