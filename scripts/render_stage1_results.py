@@ -32,6 +32,7 @@ import calin.provenance.chronicle
 import calin.provenance.anthology
 import calin.provenance.printer
 import calin.diagnostics.stage1_plotting
+import calin.diagnostics.stage1_summary
 import calin.iact_data.nectarcam_layout
 import calin.io.uploader
 
@@ -95,7 +96,8 @@ opt = calin.ix.scripts.render_stage1_results.CommandLineOptions()
 opt.set_db('calin_stage1.sqlite')
 opt.set_db_stage1_table_name('stage1')
 opt.set_base_directory('.')
-opt.set_summary_csv('stage1_summary.csv')
+opt.set_summary_sheet('stage1_summary.csv')
+opt.set_run_log_sheet('logsheet.csv')
 opt.set_figure_dpi(200)
 opt.set_overwrite(True)
 
@@ -130,6 +132,21 @@ sql_mode = calin.io.sql_serializer.SQLite3Serializer.READ_ONLY
 
 figure_dpi = max(opt.figure_dpi(), 60)
 
+if(opt.upload_to_google_drive()):
+    uploader = calin.io.uploader.GoogleDriveUploader(opt.const_google().token_file(),
+        opt.base_directory(), opt.const_google().credentials_file(),
+        overwrite=opt.overwrite(), loud=opt.loud_upload())
+else:
+    uploader = calin.io.uploader.FilesystemUploader(opt.base_directory(),
+        overwrite=opt.overwrite(), loud=opt.loud_upload())
+
+logsheet = dict()
+if(opt.run_log_sheet()):
+    db_rows = uploader.retrieve_sheet(opt.run_log_sheet(),row_start=1)
+    logsheet = calin.diagnostics.stage1_summary.make_logsheet_dict(db_rows)
+
+del uploader
+
 def get_oids():
     # Open SQL file
     sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
@@ -162,8 +179,8 @@ def render_oid(oid):
     print('Started run :', runno)
 
     if(opt.upload_to_google_drive()):
-        uploader = calin.io.uploader.GoogleDriveUploader(opt.google().token_file(),
-            opt.google().base_directory(), opt.google().credentials_file(),
+        uploader = calin.io.uploader.GoogleDriveUploader(opt.const_google().token_file(),
+            opt.base_directory(), opt.const_google().credentials_file(),
             overwrite=opt.overwrite(), loud=opt.loud_upload())
     else:
         uploader = calin.io.uploader.FilesystemUploader(opt.base_directory(),
