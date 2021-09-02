@@ -88,7 +88,7 @@ def stage1_summary_elements(stage1, logsheet=dict()):
         zero_suppress(calin.diagnostics.stage1_analysis.median_feb_temp(stage1),fmt='{:.2f}',threshold=-40),
         zero_suppress(calin.diagnostics.stage1_analysis.spread_feb_temp(stage1),fmt='{:.2f}',threshold=-1),
         '%.2f'%(charge_stats.const_low_gain().ext_trigger_all_channel_opt_win_mean()/run_config.configured_channel_id_size()-250*16) if charge_stats.const_low_gain().ext_trigger_all_channel_count() else '',
-        '%.2f'%(sqrt(charge_stats.const_low_gain().ext_trigger_all_channel_opt_win_var())/run_config.configured_channel_id_size()) if charge_stats.const_low_gain().ext_trigger_all_channel_count() else '',
+        '%.2f'%(numpy.sqrt(charge_stats.const_low_gain().ext_trigger_all_channel_opt_win_var())/run_config.configured_channel_id_size()) if charge_stats.const_low_gain().ext_trigger_all_channel_count() else '',
 
         logsheet.get(run_config.run_number(), ''),
         '%d'%run_config.fragment_filename_size(),
