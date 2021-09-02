@@ -132,19 +132,23 @@ sql_mode = calin.io.sql_serializer.SQLite3Serializer.READ_ONLY
 
 figure_dpi = max(opt.figure_dpi(), 60)
 
-if(opt.upload_to_google_drive()):
-    uploader = calin.io.uploader.GoogleDriveUploader(opt.const_google().token_file(),
-        opt.base_directory(), opt.const_google().credentials_file(),
-        overwrite=opt.overwrite(), loud=opt.loud_upload())
-else:
-    uploader = calin.io.uploader.FilesystemUploader(opt.base_directory(),
-        overwrite=opt.overwrite(), loud=opt.loud_upload())
+
+def new_uploader():
+    if(opt.upload_to_google_drive()):
+        uploader = calin.io.uploader.GoogleDriveUploader(opt.const_google().token_file(),
+            opt.base_directory(), opt.const_google().credentials_file(),
+            overwrite=opt.overwrite(), loud=opt.loud_upload())
+    else:
+        uploader = calin.io.uploader.FilesystemUploader(opt.base_directory(),
+            overwrite=opt.overwrite(), loud=opt.loud_upload())
+    return uploader
+
+uploader = new_uploader()
 
 logsheet = dict()
 if(opt.run_log_sheet()):
     db_rows = uploader.retrieve_sheet(opt.run_log_sheet(),row_start=1)
     logsheet = calin.diagnostics.stage1_summary.make_logsheet_dict(db_rows)
-
 del uploader
 
 def get_oids():
@@ -178,13 +182,7 @@ def render_oid(oid):
     runno = stage1.run_number()
     print('Started run :', runno)
 
-    if(opt.upload_to_google_drive()):
-        uploader = calin.io.uploader.GoogleDriveUploader(opt.const_google().token_file(),
-            opt.base_directory(), opt.const_google().credentials_file(),
-            overwrite=opt.overwrite(), loud=opt.loud_upload())
-    else:
-        uploader = calin.io.uploader.FilesystemUploader(opt.base_directory(),
-            overwrite=opt.overwrite(), loud=opt.loud_upload())
+    uploader = new_uploader()
 
     if(opt.force_nectarcam_61_camera()):
         cast_to_nectarcam_61_camera(stage1)
@@ -551,6 +549,14 @@ def render_oid(oid):
     writer = io.StringIO()
     calin.provenance.printer.print_provenance(writer, stage1.const_provenance_anthology())
     upload_text(runno, 'provenance_log_stage1', writer)
+
+    ############################################################################
+    # WRITE SUMMARY SHEET
+    ############################################################################
+
+    if(opt.summary_sheet()):
+        summary_elements = calin.diagnostics.stage1_summary.stage1_summary_elements(stage1, logsheet)
+        uploader.append_row_to_sheet(opt.summary_sheet(), summary_elements, row_start=3)
 
     print('Finished run :', runno)
     return True
