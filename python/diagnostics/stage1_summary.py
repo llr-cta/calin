@@ -15,6 +15,7 @@
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 # A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
+import sys
 import numpy
 import calin.diagnostics.stage1
 import calin.diagnostics.stage1_analysis
@@ -25,6 +26,24 @@ def zero_suppress(x, fmt=None, threshold=0):
         return ''
     x_str = fmt.format(x) if fmt else str(x)
     return x_str if x>threshold else ''
+
+def make_logsheet_dict(logsheet_db_rows):
+    logsheet = dict()
+    for irow, row in enumerate(logsheet_db_rows):
+        try:
+            run_lo = int(row[0])
+            run_hi = int(row[1])
+        except:
+            run_lo = -1
+            run_hi = -1
+        url = row[3]
+        if(run_lo > 0):
+            for run in range(run_lo, run_hi + 1):
+                if(run in logsheet):
+                    print("Duplicate run : ",irun,run,logsheet[run],row,file=sys.stderr)
+                else:
+                    logsheet[run] = url
+    return logsheet
 
 def stage1_summary_elements(stage1, logsheet=dict()):
     run_info = stage1.const_run_info()
