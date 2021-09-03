@@ -22,7 +22,7 @@ import calin.diagnostics.stage1_analysis
 import calin.iact_data.instrument_layout
 
 def zero_suppress(x, fmt=None, threshold=0):
-    if x is None:
+    if x is None or isnan(x):
         return ''
     x_str = fmt.format(x) if fmt else str(x)
     return x_str if x>threshold else ''
