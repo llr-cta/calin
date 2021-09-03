@@ -555,7 +555,8 @@ def render_oid(oid):
     ############################################################################
 
     if(opt.summary_sheet()):
-        summary_elements = calin.diagnostics.stage1_summary.stage1_summary_elements(stage1, logsheet)
+        summary_elements = calin.diagnostics.stage1_summary.stage1_summary_elements(stage1,
+            logsheet.get(stage1.run_number(), ''))
         uploader.append_row_to_sheet(opt.summary_sheet(), summary_elements, row_start=3)
 
     print('Finished run :', runno)

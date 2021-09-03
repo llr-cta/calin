@@ -45,7 +45,7 @@ def make_logsheet_dict(logsheet_db_rows):
                     logsheet[run] = url
     return logsheet
 
-def stage1_summary_elements(stage1, logsheet=dict()):
+def stage1_summary_elements(stage1, logsheet_url='', dqm_url=''):
     run_info = stage1.const_run_info()
     run_config = stage1.const_run_config()
     charge_stats = stage1.const_charge_stats()
@@ -90,7 +90,8 @@ def stage1_summary_elements(stage1, logsheet=dict()):
         '%.2f'%(charge_stats.const_low_gain().ext_trigger_all_channel_opt_win_mean()/run_config.configured_channel_id_size()-250*16) if charge_stats.const_low_gain().ext_trigger_all_channel_count() else '',
         '%.2f'%(numpy.sqrt(charge_stats.const_low_gain().ext_trigger_all_channel_opt_win_var())/run_config.configured_channel_id_size()) if charge_stats.const_low_gain().ext_trigger_all_channel_count() else '',
 
-        logsheet.get(run_config.run_number(), ''),
+        '=HYPERLINK("' + logsheet_url + '","Logbook")' if logsheet_url else '',
+        '=HYPERLINK("' + dqm_url + '","DQM")' if dqm_url else '',
         '%d'%run_config.fragment_filename_size(),
         '%.3f'%(run_config.file_size()/1e9),
         '%d'%run_config.configured_module_id_size(),
