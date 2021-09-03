@@ -27,11 +27,7 @@ def summarize_camera_clock_regressions(stage1):
     cam_time_spread_ns = numpy.zeros_like(cam_freq_offset_ppm)
     cam_d2_per_event = numpy.zeros_like(cam_freq_offset_ppm)
 
-    print("summarize_camera_clock_regressions: don't forget to remove temporary code")
     cl = stage1.const_run_config().const_camera_layout()
-    if(cl.camera_clock_name_size() != cl.camera_clock_frequency_size()):
-        # Temporary : remove when all data has been reprocessed with new version
-        cl = calin.iact_data.instrument_layout.camera_layout(cl.camera_type())
 
     principal_clock_id = stage1.const_clock_regression().principal_clock_id();
     if(principal_clock_id == 0):
