@@ -149,6 +149,7 @@ logsheet = dict()
 if(opt.run_log_sheet()):
     db_rows = uploader.retrieve_sheet(opt.run_log_sheet(),row_start=1)
     logsheet = calin.diagnostics.stage1_summary.make_logsheet_dict(db_rows)
+
 del uploader
 
 def get_oids():
@@ -596,6 +597,12 @@ else:
         except Exception as e:
             traceback.print_exception(*sys.exc_info())
             all_status.append(False)
+
+
+if(opt.upload_to_google_drive() and opt.summary_sheet()):
+    uploader = new_uploader()
+    uploader.sort_sheet(opt.summary_sheet(), 33, row_start=3)
+    del uploader
 
 print("=================================== RESULTS ===================================")
 sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
