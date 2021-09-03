@@ -123,13 +123,24 @@ class GoogleDriveUploader(Uploader):
         self.directory = {}
         self.drive_service = None
         self.sheets_service = None
+        self.lockfile = open(self.token_file+".lock",'ab')
+        self.lockcount = 0
         self.auth()
         super().__init__(overwrite=overwrite,loud=loud)
 
-    def auth(self):
-        with open(self.token_file+".lock",'ab') as lockfile:
-            fcntl.lockf(lockfile, fcntl.LOCK_EX)
+    def lock(self):
+        if(self.lockcount == 0):
+            fcntl.lockf(self.lockfile, fcntl.LOCK_EX)
+        self.lockcount += 1
 
+    def unlock(self):
+        self.lockcount -= 1
+        if(self.lockcount == 0):
+            fcntl.lockf(self.lockfile, fcntl.LOCK_UN)
+
+    def auth(self):
+        self.lock()
+        try:
             # The file token.pickle stores the user's access and refresh tokens, and is
             # created automatically when the authorization flow completes for the first
             # time.
@@ -146,17 +157,16 @@ class GoogleDriveUploader(Uploader):
                         self.credentials_file, self.scopes)
                     creds = flow.run_local_server(port=0)
                 else:
-                    # flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-                    #     'credentials.json', SCOPES)
-                    # creds = flow.run_local_server(port=0)
                     raise RuntimeError('GoogleDriveUploader: could not find valid access token')
 
                 # Save the credentials for the next run
                 with open(self.token_file, 'wb') as token:
                     pickle.dump(self.creds, token)
+        except:
+            self.unlock()
+            raise
 
-            fcntl.lockf(lockfile, fcntl.LOCK_UN)
-
+        self.unlock()
         self.drive_service = googleapiclient.discovery.build('drive', 'v3', credentials=self.creds)
         self.sheets_service = googleapiclient.discovery.build('sheets', 'v4', credentials=self.creds)
 
@@ -166,26 +176,40 @@ class GoogleDriveUploader(Uploader):
         rel_path = os.path.normpath(rel_path)
         if(rel_path.startswith('../')):
             raise RuntimeError('Cannot make path outside of base : '+rel_path)
+
         if(rel_path not in self.directory):
-            (head, tail) = os.path.split(rel_path)
-            parent = self.make_path(head, do_create)
-            response = self.drive_service.files().list(\
-                spaces='drive',
-                fields='files(id, name)',
-                q="name='%s' and '%s' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'"%(tail,parent)).execute()
-            files = response.get('files', [])
-            if(files):
-                self.directory[rel_path] = files[0].get('id')
-            elif(do_create):
-                response = self.drive_service.files().create(\
-                    body={ \
-                        'name' : tail,
-                        'mimeType' : 'application/vnd.google-apps.folder',
-                        'parents' : [ parent ] },
-                    fields='id').execute()
-                self.directory[rel_path] = response.get('id')
-            else:
-                return ''
+            if(do_create):
+                self.lock()
+
+            try:
+                (head, tail) = os.path.split(rel_path)
+                parent = self.make_path(head, do_create)
+                response = self.drive_service.files().list(\
+                    spaces='drive',
+                    fields='files(id, name)',
+                    q="name='%s' and '%s' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'"%(tail,parent)).execute()
+                files = response.get('files', [])
+                if(files):
+                    self.directory[rel_path] = files[0].get('id')
+                elif(do_create):
+                    response = self.drive_service.files().create(\
+                        body={ \
+                            'name' : tail,
+                            'mimeType' : 'application/vnd.google-apps.folder',
+                            'parents' : [ parent ] },
+                        fields='id').execute()
+                    self.directory[rel_path] = response.get('id')
+                else:
+                    # do_create is false, so no need to unlock
+                    return ''
+            except:
+                if(do_create):
+                    self.unlock()
+                raise()
+
+            if(do_create):
+                self.unlock()
+
         return self.directory[rel_path]
 
     def do_single_upload_from_io(self, rel_filepath, mime_type, iostream):
