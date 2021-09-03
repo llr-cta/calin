@@ -32,14 +32,13 @@ std::string Timestamp::as_string() const
   time_t ts = time_t(unix_sec());
   struct tm the_tm;
   localtime_r(&ts, &the_tm);
-  char buffer[] = "1999-12-31T23:59:59";
-  strftime(buffer, sizeof(buffer)-1, "%Y-%m-%dT%H:%M:%S", &the_tm);
+  char buffer[] = "1999-12-31T23:59:59.000+0000";
+  strftime(buffer, sizeof(buffer)-1, "%FT%T.000%z", &the_tm);
   std::string str(buffer);
   uint32_t ms = unix_nsec()/1000000;
-  if(ms<10) { str += ".00"; }
-  else if(ms<100) { str += ".0"; }
-  else { str += "."; }
-  str += std::to_string(ms);
+  if(ms<10) { str.replace(22,1,std::to_string(ms)); }
+  else if(ms<100) { str.replace(21,2,std::to_string(ms)); }
+  else { str.replace(20,3,std::to_string(ms)); }
   return str;
 }
 
