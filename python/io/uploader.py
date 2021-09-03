@@ -128,6 +128,12 @@ class GoogleDriveUploader(Uploader):
         self.auth()
         super().__init__(overwrite=overwrite,loud=loud)
 
+    def drive_service(self):
+        return self.drive_service
+
+    def sheets_service(self):
+        return self.sheets_service
+
     def lock(self):
         if(self.lockcount == 0):
             fcntl.lockf(self.lockfile, fcntl.LOCK_EX)
@@ -184,6 +190,11 @@ class GoogleDriveUploader(Uploader):
             try:
                 (head, tail) = os.path.split(rel_path)
                 parent = self.make_path(head, do_create)
+                if(not parent):
+                    if(do_create == False):
+                        return ''
+                    else:
+                        raise RuntimeError('Parent was not created')
                 response = self.drive_service.files().list(\
                     spaces='drive',
                     fields='files(id, name)',
