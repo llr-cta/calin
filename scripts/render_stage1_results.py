@@ -187,11 +187,20 @@ def render_oid(oid):
     if(opt.force_nectarcam_61_camera()):
         cast_to_nectarcam_61_camera(stage1)
 
+    def runbatch_path(runno):
+        return 'runs%d-%d'%(int(runno/1000)*1000, (int(runno/1000)+1)*1000)
+
+    def run_path(runno):
+        return 'by run/%s/run%d'%(runbatch_path(runno), runno)
+
+    def quantity_path(quantity, runno):
+        return 'by quantity/%s/%s'%(quantity, runbatch_path(runno))
+
     def filenames(runno, quantity, extension):
-        runbatchpath = 'runs%d-%d'%(int(runno/1000)*1000, (int(runno/1000)+1)*1000)
+        filename = '/run%d_%s.%s'%(runno, quantity, extension)
         filenames = [ \
-            'by run/%s/run%d/run%d_%s.%s'%(runbatchpath, runno, runno, quantity, extension),
-            'by quantity/%s/%s/run%d_%s.%s'%(quantity, runbatchpath, runno, quantity, extension) ]
+            run_path(runno) + filename,
+            quantity_path(quantity, runno) + filename ]
         return filenames
 
     def upload_figure(runno, quantity, f):
@@ -556,8 +565,12 @@ def render_oid(oid):
 
     if(opt.summary_sheet()):
         summary_elements = calin.diagnostics.stage1_summary.stage1_summary_elements(stage1,
-            logsheet.get(stage1.run_number(), ''))
+            logsheet.get(stage1.run_number(), ''), uploader.get_url(run_path(runno)))
         uploader.append_row_to_sheet(opt.summary_sheet(), summary_elements, row_start=3)
+
+    ############################################################################
+    # THE END
+    ############################################################################
 
     print('Finished run :', runno)
     return True
