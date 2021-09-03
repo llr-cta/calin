@@ -60,6 +60,9 @@ class Uploader:
     def append_row_to_sheet(self, sheet_id_and_tab_name, row, row_start=0):
         raise RuntimeError('retrieve_sheet: unimplemented in base class')
 
+    def get_url(self, rel_filepath):
+        raise RuntimeError('get_url: unimplemented in base class')
+
 class FilesystemUploader(Uploader):
     def __init__(self, root_directory, overwrite=True, loud=False):
         self.root_directory = os.path.normpath(os.path.expanduser(root_directory)) if root_directory else '.'
@@ -100,6 +103,14 @@ class FilesystemUploader(Uploader):
         with open(abs_path, mode) as f:
             f.write(iostream.getvalue())
         return abs_path
+
+    def get_url(self, rel_filepath):
+        (rel_path, filename) = os.path.split(rel_filepath)
+        abs_path = os.path.join(self.make_path(rel_path), filename)
+        if(os.path.exists(abs_path)):
+            return "file://"+abs_path
+        else:
+            return ''
 
 class GoogleDriveUploader(Uploader):
     def __init__(self, token_file, root_folder_id, credentials_file=None,
@@ -149,7 +160,7 @@ class GoogleDriveUploader(Uploader):
         self.drive_service = googleapiclient.discovery.build('drive', 'v3', credentials=self.creds)
         self.sheets_service = googleapiclient.discovery.build('sheets', 'v4', credentials=self.creds)
 
-    def make_path(self, rel_path):
+    def make_path(self, rel_path, do_create = True):
         if(not rel_path):
             return self.root_folder_id
         rel_path = os.path.normpath(rel_path)
@@ -157,7 +168,7 @@ class GoogleDriveUploader(Uploader):
             raise RuntimeError('Cannot make path outside of base : '+rel_path)
         if(rel_path not in self.directory):
             (head, tail) = os.path.split(rel_path)
-            parent = self.make_path(head)
+            parent = self.make_path(head, do_create)
             response = self.drive_service.files().list(\
                 spaces='drive',
                 fields='files(id, name)',
@@ -165,7 +176,7 @@ class GoogleDriveUploader(Uploader):
             files = response.get('files', [])
             if(files):
                 self.directory[rel_path] = files[0].get('id')
-            else:
+            elif(do_create):
                 response = self.drive_service.files().create(\
                     body={ \
                         'name' : tail,
@@ -173,6 +184,8 @@ class GoogleDriveUploader(Uploader):
                         'parents' : [ parent ] },
                     fields='id').execute()
                 self.directory[rel_path] = response.get('id')
+            else:
+                return ''
         return self.directory[rel_path]
 
     def do_single_upload_from_io(self, rel_filepath, mime_type, iostream):
@@ -310,3 +323,26 @@ class GoogleDriveUploader(Uploader):
                     raise
 
         return response.get('updates').get('updatedCells')
+
+    def get_url(self, rel_filepath):
+        if(rel_filepath in self.directory):
+            id = self.directory[relpath]
+            response = self.drive_service.files().list(\
+                spaces='drive',
+                fields='files(webViewLink)',
+                q="id='%s' and trashed=false"%(id)).execute()
+            files = response.get('files', [])
+            for file in response.get('files', []):
+                return file.get('webViewLink')
+        else:
+            (rel_path, filename) = os.path.split(rel_filepath)
+            parent = self.make_path(rel_path, do_create = False)
+            if parent:
+                response = self.drive_service.files().list(\
+                    spaces='drive',
+                    fields='files(webViewLink)',
+                    q="name='%s' and '%s' in parents and trashed=false"%(filename,parent)).execute()
+                files = response.get('files', [])
+                for file in response.get('files', []):
+                    return file.get('webViewLink')
+        return ''
