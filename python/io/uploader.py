@@ -326,7 +326,7 @@ class GoogleDriveUploader(Uploader):
 
     def get_url(self, rel_filepath):
         if(rel_filepath in self.directory):
-            id = self.directory[relpath]
+            id = self.directory[rel_filepath]
             response = self.drive_service.files().list(\
                 spaces='drive',
                 fields='files(webViewLink)',
