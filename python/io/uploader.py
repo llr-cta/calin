@@ -17,6 +17,7 @@
 
 import io
 import os
+import sys
 import os.path
 import time
 import fcntl
@@ -53,6 +54,14 @@ class Uploader:
         canvas.print_png(output)
         return self.upload_from_io(rel_filepaths, 'image/png', output)
 
+    def retrieve_sheet(self, sheet_id, row_start=0):
+        raise RuntimeError('retrieve_sheet: unimplemented in base class')
+
+    def append_row_to_sheet(self, sheet_id_and_tab_name, row, row_start=0):
+        raise RuntimeError('retrieve_sheet: unimplemented in base class')
+
+    def get_url(self, rel_filepath):
+        raise RuntimeError('get_url: unimplemented in base class')
 
 class FilesystemUploader(Uploader):
     def __init__(self, root_directory, overwrite=True, loud=False):
@@ -95,22 +104,51 @@ class FilesystemUploader(Uploader):
             f.write(iostream.getvalue())
         return abs_path
 
+    def get_url(self, rel_filepath):
+        (rel_path, filename) = os.path.split(rel_filepath)
+        abs_path = os.path.join(self.make_path(rel_path), filename)
+        if(os.path.exists(abs_path)):
+            return "file://"+abs_path
+        else:
+            return ''
+
 class GoogleDriveUploader(Uploader):
     def __init__(self, token_file, root_folder_id, credentials_file=None,
             overwrite=True, loud=False):
+        self.ordinal = ["zeroth", "first", "second", "third", "fourth", "fifth",
+            "sixth", "seventh", "eigth","ninth","tenth"]
         self.scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
         self.root_folder_id = root_folder_id
         self.token_file = os.path.expanduser(token_file)
         self.credentials_file = os.path.expanduser(credentials_file)
         self.creds = None
         self.directory = {}
+        self.drive_service = None
+        self.sheets_service = None
+        self.lockfile = open(self.token_file+".lock",'ab')
+        self.lockcount = 0
         self.auth()
         super().__init__(overwrite=overwrite,loud=loud)
 
-    def auth(self):
-        with open(self.token_file+".lock",'ab') as lockfile:
-            fcntl.lockf(lockfile, fcntl.LOCK_EX)
+    def get_drive_service(self):
+        return self.drive_service
 
+    def get_sheets_service(self):
+        return self.sheets_service
+
+    def lock(self):
+        if(self.lockcount == 0):
+            fcntl.lockf(self.lockfile, fcntl.LOCK_EX)
+        self.lockcount += 1
+
+    def unlock(self):
+        self.lockcount -= 1
+        if(self.lockcount == 0):
+            fcntl.lockf(self.lockfile, fcntl.LOCK_UN)
+
+    def auth(self):
+        self.lock()
+        try:
             # The file token.pickle stores the user's access and refresh tokens, and is
             # created automatically when the authorization flow completes for the first
             # time.
@@ -127,43 +165,64 @@ class GoogleDriveUploader(Uploader):
                         self.credentials_file, self.scopes)
                     creds = flow.run_local_server(port=0)
                 else:
-                    # flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-                    #     'credentials.json', SCOPES)
-                    # creds = flow.run_local_server(port=0)
                     raise RuntimeError('GoogleDriveUploader: could not find valid access token')
 
                 # Save the credentials for the next run
                 with open(self.token_file, 'wb') as token:
                     pickle.dump(self.creds, token)
+        except:
+            self.unlock()
+            raise
 
-            fcntl.lockf(lockfile, fcntl.LOCK_UN)
-
+        self.unlock()
         self.drive_service = googleapiclient.discovery.build('drive', 'v3', credentials=self.creds)
+        self.sheets_service = googleapiclient.discovery.build('sheets', 'v4', credentials=self.creds)
 
-    def make_path(self, rel_path):
+    def make_path(self, rel_path, do_create = True):
         if(not rel_path):
             return self.root_folder_id
         rel_path = os.path.normpath(rel_path)
         if(rel_path.startswith('../')):
             raise RuntimeError('Cannot make path outside of base : '+rel_path)
+
         if(rel_path not in self.directory):
-            (head, tail) = os.path.split(rel_path)
-            parent = self.make_path(head)
-            response = self.drive_service.files().list(\
-                spaces='drive',
-                fields='files(id, name)',
-                q="name='%s' and '%s' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'"%(tail,parent)).execute()
-            files = response.get('files', [])
-            if(files):
-                self.directory[rel_path] = files[0].get('id')
-            else:
-                response = self.drive_service.files().create(\
-                    body={ \
-                        'name' : tail,
-                        'mimeType' : 'application/vnd.google-apps.folder',
-                        'parents' : [ parent ] },
-                    fields='id').execute()
-                self.directory[rel_path] = response.get('id')
+            if(do_create):
+                self.lock()
+
+            try:
+                (head, tail) = os.path.split(rel_path)
+                parent = self.make_path(head, do_create)
+                if(not parent):
+                    if(do_create == False):
+                        return ''
+                    else:
+                        raise RuntimeError('Parent was not created')
+                response = self.drive_service.files().list(\
+                    spaces='drive',
+                    fields='files(id, name)',
+                    q="name='%s' and '%s' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'"%(tail,parent)).execute()
+                files = response.get('files', [])
+                if(files):
+                    self.directory[rel_path] = files[0].get('id')
+                elif(do_create):
+                    response = self.drive_service.files().create(\
+                        body={ \
+                            'name' : tail,
+                            'mimeType' : 'application/vnd.google-apps.folder',
+                            'parents' : [ parent ] },
+                        fields='id').execute()
+                    self.directory[rel_path] = response.get('id')
+                else:
+                    # do_create is false, so no need to unlock
+                    return ''
+            except:
+                if(do_create):
+                    self.unlock()
+                raise()
+
+            if(do_create):
+                self.unlock()
+
         return self.directory[rel_path]
 
     def do_single_upload_from_io(self, rel_filepath, mime_type, iostream):
@@ -204,26 +263,227 @@ class GoogleDriveUploader(Uploader):
                 fields='id').execute()
             return response.get('id')
 
-    def upload_from_io(self, rel_filepaths, mime_type, iostream):
-        ordinal=["first", "second", "third", "fourth", "fifth", "sixth", "seventh",
-            "eigth","ninth","tenth"]
+    def upload_from_io(self, rel_filepaths, mime_type, iostream, max_try=5):
         if(type(rel_filepaths) is not list):
             rel_filepaths = [ rel_filepaths ]
         for rel_filepath in rel_filepaths:
             ntry = 0
             uploaded = False
             while(not uploaded):
+                ntry += 1
                 try:
                     self.do_single_upload_from_io(rel_filepath, mime_type, iostream)
                     uploaded = True
                 except googleapiclient.errors.HttpError:
-                    if(ntry<5):
-                        if(ntry<len(ordinal)):
-                            print("Upload failed on %s attempt, trying again"%ordinal[ntry], file=sys.stderr)
+                    if(ntry<max_try):
+                        if(ntry<len(self.ordinal)):
+                            print("Upload failed on %s attempt, trying again"%self.ordinal[ntry], file=sys.stderr)
                         else:
                             print("Upload failed on attempt %d, trying again"%ntry, file=sys.stderr)
                         time.sleep(min(2**ntry,100))
-                        ntry += 1
                     else:
-                        print("Upload failed on final attempt", file=sys.stderr)
+                        if(ntry<len(self.ordinal)):
+                            print("Upload failed on %s and final attempt"%self.ordinal[ntry], file=sys.stderr)
+                        else:
+                            print("Upload failed on final attempt %d"%ntry, file=sys.stderr)
                         raise
+
+    def get_sheet_id_and_tab_name(self, sheet_id_and_tab_name):
+        bits = sheet_id_and_tab_name.split('#')
+        if(len(bits) <= 1):
+            return sheet_id_and_tab_name, ''
+        elif(len(bits) == 2):
+            return bits[0], bits[1]
+        else:
+            raise RuntimeError("Could not understand sheet and tab specification: "+sheet_id_and_tab_name)
+
+    def retrieve_sheet(self, sheet_id_and_tab_name, row_start=0, max_try=2):
+        sheet_id, range = self.get_sheet_id_and_tab_name(sheet_id_and_tab_name)
+        if range:
+            range = "'" + range + "'!"
+        range += 'A%d:ZZZ'%(row_start+1)
+        ntry = 0
+        retrieved = False
+        while(not retrieved):
+            ntry += 1
+            try:
+                response = self.sheets_service.spreadsheets().values().get(
+                    spreadsheetId=sheet_id,range=range).execute()
+                retrieved = True
+            except googleapiclient.errors.HttpError:
+                if(ntry<max_try):
+                    if(ntry<len(self.ordinal)):
+                        print("Failed to retrieve sheet on %s attempt, trying again"%self.ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to retrieve sheet on attempt %d, trying again"%ntry, file=sys.stderr)
+                    time.sleep(min(2**ntry,100))
+                else:
+                    if(ntry<len(self.ordinal)):
+                        print("Failed to retrieve sheet on %s and final attempt"%self.ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to retrieve sheet on final attempt %d"%ntry, file=sys.stderr)
+                    raise
+
+        return response['values']
+
+    def append_row_to_sheet(self, sheet_id_and_tab_name, row, row_start=0, max_try=2):
+        sheet_id, range = self.get_sheet_id_and_tab_name(sheet_id_and_tab_name)
+        if range:
+            range = "'" + range + "'!"
+        range += 'A%d:ZZZ'%(row_start+1)
+        ntry = 0
+        added = False
+        while(not added):
+            ntry += 1
+            try:
+                body = {
+                    'values': [row]
+                }
+                response = self.sheets_service.spreadsheets().values().append(
+                    spreadsheetId=sheet_id, range=range,
+                    valueInputOption='USER_ENTERED', body=body).execute()
+                added = True
+            except googleapiclient.errors.HttpError:
+                if(ntry<max_try):
+                    if(ntry<len(self.ordinal)):
+                        print("Failed to append to sheet on %s attempt, trying again"%self.ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to append to sheet on attempt %d, trying again"%ntry, file=sys.stderr)
+                    time.sleep(min(2**ntry,100))
+                else:
+                    if(ntry<len(self.ordinal)):
+                        print("Failed to append to sheet on %s and final attempt"%self.ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to append to sheet on final attempt %d"%ntry, file=sys.stderr)
+                    raise
+
+        return response.get('updates').get('updatedCells')
+
+    def get_url(self, rel_filepath):
+        if(rel_filepath in self.directory):
+            id = self.directory[rel_filepath]
+            response = self.drive_service.files().get(fileId=id,
+                fields='webViewLink').execute()
+            return response.get('webViewLink')
+        else:
+            (rel_path, filename) = os.path.split(rel_filepath)
+            parent = self.make_path(rel_path, do_create = False)
+            if parent:
+                response = self.drive_service.files().list(\
+                    spaces='drive',
+                    fields='files(webViewLink)',
+                    q="name='%s' and '%s' in parents and trashed=false"%(filename,parent)).execute()
+                files = response.get('files', [])
+                for file in response.get('files', []):
+                    return file.get('webViewLink')
+        return ''
+
+    def get_sheet_tab_dict(self, sheet_id, max_try=2):
+        done = False
+        tabs = dict()
+        ntry = 0
+        while(not done):
+            ntry += 1
+            try:
+                sheet_metadata = self.sheets_service.spreadsheets().get(spreadsheetId=sheet_id,
+                    fields='sheets(properties(title,sheetId))').execute()
+
+                for sheet in sheet_metadata.get('sheets'):
+                    tabs[sheet.get("properties").get('title')] = \
+                        sheet.get("properties").get('sheetId')
+                done = True
+            except googleapiclient.errors.HttpError:
+                if(ntry<max_try):
+                    if(ntry<len(self.ordinal)):
+                        print("Failed to get sheet tabs on %s attempt, trying again"%self.ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to get sheet tabs on attempt %d, trying again"%ntry, file=sys.stderr)
+                    time.sleep(min(2**ntry,100))
+                else:
+                    if(ntry<len(self.ordinal)):
+                        print("Failed to get sheet tabs on %s and final attempt"%self.ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to get sheet tabs on final attempt %d"%ntry, file=sys.stderr)
+                    raise
+        return tabs
+
+    def get_sheet_tab_ids(self, sheet_id, max_try=2):
+        done = False
+        tabs = []
+        ntry = 0
+        while(not done):
+            ntry += 1
+            try:
+                sheet_metadata = self.sheets_service.spreadsheets().get(spreadsheetId=sheet_id,
+                    fields='sheets(properties(title,sheetId))').execute()
+
+                for sheet in sheet_metadata.get('sheets'):
+                    tabs.append(sheet.get("properties").get('sheetId'))
+                done = True
+            except googleapiclient.errors.HttpError:
+                if(ntry<max_try):
+                    if(ntry<len(self.ordinal)):
+                        print("Failed to get sheet tabs on %s attempt, trying again"%self.ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to get sheet tabs on attempt %d, trying again"%ntry, file=sys.stderr)
+                    time.sleep(min(2**ntry,100))
+                else:
+                    if(ntry<len(self.ordinal)):
+                        print("Failed to get sheet tabs on %s and final attempt"%self.ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to get sheet tabs on final attempt %d"%ntry, file=sys.stderr)
+                    raise
+        return tabs
+
+    def sort_sheet(self, sheet_id_and_tab_name, sort_column, ascending_order = True,
+            row_start=0, max_try=2):
+        sheet_id, tab_name = self.get_sheet_id_and_tab_name(sheet_id_and_tab_name)
+        ntry = 0
+        done = False
+        tab_id = ''
+        while(not done):
+            ntry += 1
+            try:
+                if(tab_name):
+                    tabs = self.get_sheet_tab_dict(sheet_id)
+                    if(tab_name in tabs):
+                        tab_id = tabs[tab_name]
+                    else:
+                        raise RuntimeError('Sheet not found ' + tab_name)
+                else:
+                    tab_id = self.get_sheet_tab_idf(sheet_id)[0]
+
+                self.sheets_service.spreadsheets().batchUpdate(spreadsheetId=sheet_id,
+                    body={
+                        'requests' : [
+                            {
+                                'sortRange' : {
+                                    'range' : {
+                                        'sheetId' : tab_id,
+                                        'startRowIndex' : row_start
+                                    },
+                                    'sortSpecs' : [
+                                        {
+                                            "sortOrder" : "ASCENDING" if ascending_order else "DESCENDING",
+                                            "dimensionIndex": sort_column
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }).execute()
+
+                done = True
+            except googleapiclient.errors.HttpError:
+                if(ntry<max_try):
+                    if(ntry<len(self.ordinal)):
+                        print("Failed to sort sheet on %s attempt, trying again"%self.ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to sort sheet on attempt %d, trying again"%ntry, file=sys.stderr)
+                    time.sleep(min(2**ntry,100))
+                else:
+                    if(ntry<len(self.ordinal)):
+                        print("Failed to sort sheet on %s and final attempt"%self.ordinal[ntry], file=sys.stderr)
+                    else:
+                        print("Failed to sort sheet on final attempt %d"%ntry, file=sys.stderr)
+                    raise

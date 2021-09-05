@@ -32,6 +32,7 @@ import calin.provenance.chronicle
 import calin.provenance.anthology
 import calin.provenance.printer
 import calin.diagnostics.stage1_plotting
+import calin.diagnostics.stage1_summary
 import calin.iact_data.nectarcam_layout
 import calin.io.uploader
 
@@ -95,7 +96,8 @@ opt = calin.ix.scripts.render_stage1_results.CommandLineOptions()
 opt.set_db('calin_stage1.sqlite')
 opt.set_db_stage1_table_name('stage1')
 opt.set_base_directory('.')
-opt.set_summary_csv('stage1_summary.csv')
+opt.set_summary_sheet('stage1_summary.csv')
+opt.set_run_log_sheet('logsheet.csv')
 opt.set_figure_dpi(200)
 opt.set_overwrite(True)
 
@@ -130,6 +132,26 @@ sql_mode = calin.io.sql_serializer.SQLite3Serializer.READ_ONLY
 
 figure_dpi = max(opt.figure_dpi(), 60)
 
+
+def new_uploader():
+    if(opt.upload_to_google_drive()):
+        uploader = calin.io.uploader.GoogleDriveUploader(opt.const_google().token_file(),
+            opt.base_directory(), opt.const_google().credentials_file(),
+            overwrite=opt.overwrite(), loud=opt.loud_upload())
+    else:
+        uploader = calin.io.uploader.FilesystemUploader(opt.base_directory(),
+            overwrite=opt.overwrite(), loud=opt.loud_upload())
+    return uploader
+
+uploader = new_uploader()
+
+logsheet = dict()
+if(opt.run_log_sheet()):
+    db_rows = uploader.retrieve_sheet(opt.run_log_sheet(),row_start=1)
+    logsheet = calin.diagnostics.stage1_summary.make_logsheet_dict(db_rows)
+
+del uploader
+
 def get_oids():
     # Open SQL file
     sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
@@ -161,22 +183,25 @@ def render_oid(oid):
     runno = stage1.run_number()
     print('Started run :', runno)
 
-    if(opt.upload_to_google_drive()):
-        uploader = calin.io.uploader.GoogleDriveUploader(opt.google().token_file(),
-            opt.google().base_directory(), opt.google().credentials_file(),
-            overwrite=opt.overwrite(), loud=opt.loud_upload())
-    else:
-        uploader = calin.io.uploader.FilesystemUploader(opt.base_directory(),
-            overwrite=opt.overwrite(), loud=opt.loud_upload())
+    uploader = new_uploader()
 
     if(opt.force_nectarcam_61_camera()):
         cast_to_nectarcam_61_camera(stage1)
 
+    def runbatch_path(runno):
+        return 'runs%d-%d'%(int(runno/1000)*1000, (int(runno/1000)+1)*1000)
+
+    def run_path(runno):
+        return 'by run/%s/run%d'%(runbatch_path(runno), runno)
+
+    def quantity_path(quantity, runno):
+        return 'by quantity/%s/%s'%(quantity, runbatch_path(runno))
+
     def filenames(runno, quantity, extension):
-        runbatchpath = 'runs%d-%d'%(int(runno/1000)*1000, (int(runno/1000)+1)*1000)
+        filename = '/run%d_%s.%s'%(runno, quantity, extension)
         filenames = [ \
-            'by run/%s/run%d/run%d_%s.%s'%(runbatchpath, runno, runno, quantity, extension),
-            'by quantity/%s/%s/run%d_%s.%s'%(quantity, runbatchpath, runno, quantity, extension) ]
+            run_path(runno) + filename,
+            quantity_path(quantity, runno) + filename ]
         return filenames
 
     def upload_figure(runno, quantity, f):
@@ -535,6 +560,19 @@ def render_oid(oid):
     calin.provenance.printer.print_provenance(writer, stage1.const_provenance_anthology())
     upload_text(runno, 'provenance_log_stage1', writer)
 
+    ############################################################################
+    # WRITE SUMMARY SHEET
+    ############################################################################
+
+    if(opt.summary_sheet()):
+        summary_elements = calin.diagnostics.stage1_summary.stage1_summary_elements(stage1,
+            logsheet.get(stage1.run_number(), ''), uploader.get_url(run_path(runno)))
+        uploader.append_row_to_sheet(opt.summary_sheet(), summary_elements, row_start=3)
+
+    ############################################################################
+    # THE END
+    ############################################################################
+
     print('Finished run :', runno)
     return True
 
@@ -559,6 +597,12 @@ else:
         except Exception as e:
             traceback.print_exception(*sys.exc_info())
             all_status.append(False)
+
+
+if(opt.upload_to_google_drive() and opt.summary_sheet()):
+    uploader = new_uploader()
+    uploader.sort_sheet(opt.summary_sheet(), 33, row_start=3)
+    del uploader
 
 print("=================================== RESULTS ===================================")
 sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)

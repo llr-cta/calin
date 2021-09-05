@@ -1,10 +1,39 @@
-name: CI build and test
+# calin/.github/workflows/native-build-and-test.yml - Stephen Fegan - 2021-08-19
+#
+# Continuous integration using Github Actions : build and test calin
+#
+# Copyright 2021, Stephen Fegan <sfegan@llr.in2p3.fr>
+# Laboratoire Leprince-Ringuet, CNRS/IN2P3, Ecole Polytechnique, Institut Polytechnique de Paris
+#
+# This file is part of "calin"
+#
+# "calin" is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License version 2 or later, as published by
+# the Free Software Foundation.
+#
+# "calin" is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+name: Native build and test
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+    paths-ignore:
+      - singularity_build.def
+      - .github/workflows/singularity-build-and-deploy.yml
+      - azure-pipelines.yml
+      - Dockerfile
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+    paths-ignore:
+      - singularity_build.def
+      - .github/workflows/singularity-build-and-deploy.yml
+      - azure-pipelines.yml
+      - Dockerfile
 
 jobs:
   build:
@@ -38,8 +67,8 @@ jobs:
           libpcap-dev libz-dev libprotobuf-c-dev protobuf-c-compiler           \
           libprotobuf-dev protobuf-compiler libprotoc-dev libzstd-dev          \
           ${{ matrix.compiler[2] }}
-        wget https://github.com/llr-cta/CamerasToACTLRelease/releases/download/latest/CamerasToACTL.tgz
-        sudo tar zxf CamerasToACTL.tgz -C /
+        curl -L https://github.com/llr-cta/CamerasToACTLRelease/releases/download/latest/CamerasToACTL.tgz | sudo tar -zxf - -C /
+        curl -L https://github.com/llr-cta/Geant4Build/releases/download/ubuntu-20.04-10.7.2/Geant4-ubuntu-20.04-10.7.2.tbz2 | sudo tar -jxf - -C /
     - name: Print version information
       shell: bash
       run: |
@@ -57,7 +86,7 @@ jobs:
               -DCMAKE_BUILD_TYPE=Release                                  \
               -DCMAKE_INSTALL_PREFIX=/usr                                 \
               -DCALIN_PYTHON_SUB_DIR=lib/python3.8                        \
-              -DNO_GEANT4:BOOLEAN=TRUE                                    \
+              -DNO_GEANT4_TEST:BOOLEAN=TRUE                               \
               ..
     - name: Build
       shell: bash

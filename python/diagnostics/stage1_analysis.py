@@ -18,6 +18,7 @@
 import numpy
 import calin.diagnostics.stage1
 import calin.iact_data.instrument_layout
+import calin.ix.math.histogram
 
 def summarize_camera_clock_regressions(stage1):
     cam_freq_offset_ppm = numpy.zeros(stage1.const_clock_regression().camera_clock_size())
@@ -26,11 +27,7 @@ def summarize_camera_clock_regressions(stage1):
     cam_time_spread_ns = numpy.zeros_like(cam_freq_offset_ppm)
     cam_d2_per_event = numpy.zeros_like(cam_freq_offset_ppm)
 
-    print("summarize_camera_clock_regressions: don't forget to remove temporary code")
     cl = stage1.const_run_config().const_camera_layout()
-    if(cl.camera_clock_name_size() != cl.camera_clock_frequency_size()):
-        # Temporary : remove when all data has been reprocessed with new version
-        cl = calin.iact_data.instrument_layout.camera_layout(cl.camera_type())
 
     principal_clock_id = stage1.const_clock_regression().principal_clock_id();
     if(principal_clock_id == 0):
@@ -144,3 +141,105 @@ def estimate_run_pedestal(stage1, low_gain=False):
 
     values[nevent==0] = numpy.nan
     return values
+
+def median_measured_voltage(stage1):
+    if(not stage1.has_nectarcam() or not stage1.const_nectarcam().has_ancillary_data()):
+        return None
+    nca_data = stage1.const_nectarcam().const_ancillary_data()
+    k = nca_data.hvpa_voltage_keys();
+    if(len(k) == 0):
+        return None
+    v = numpy.zeros(len(k))
+    for i,k in enumerate(k):
+        all_m = nca_data.const_hvpa_voltage(k)
+        vm = []
+        for j in range(all_m.measurement_size()):
+            vm.append(all_m.const_measurement(j).voltage())
+        v[i] = numpy.median(vm)
+    return numpy.median(v)
+
+def median_voltage(stage1):
+    if(stage1.const_run_config().has_nectarcam() and stage1.const_run_config().const_nectarcam().module_size() > 0):
+        nc = stage1.const_run_config().const_nectarcam()
+        return numpy.median([nc.const_module(im).hvpa_voltage() for im in range(nc.module_size())])
+    elif(stage1.const_nectarcam().const_ancillary_data().num_hvpa_voltage_measurements()>0):
+        return median_measured_voltage(stage1)
+    else:
+        return -1
+
+def median_feb_temp(stage1, temperature_set=1):
+    if(not stage1.has_nectarcam() or not stage1.const_nectarcam().has_ancillary_data()):
+        return None
+    nca_data = stage1.const_nectarcam().const_ancillary_data()
+    k = nca_data.feb_temperature_keys();
+    if(len(k) == 0):
+        return None
+    t = numpy.zeros(len(k))
+    for i,k in enumerate(k):
+        all_m = nca_data.const_feb_temperature(k)
+        tm = []
+        for j in range(all_m.measurement_size()):
+            if(temperature_set == 1):
+                tm.append(all_m.const_measurement(j).tfeb1())
+            else:
+                tm.append(all_m.const_measurement(j).tfeb2())
+        t[i] = numpy.median(tm)
+    return numpy.median(t)
+
+def spread_feb_temp(stage1, temperature_set=1):
+    if(not stage1.has_nectarcam() or not stage1.const_nectarcam().has_ancillary_data()):
+        return None
+    nca_data = stage1.const_nectarcam().const_ancillary_data()
+    k = nca_data.feb_temperature_keys();
+    if(len(k) == 0):
+        return None
+    t = numpy.zeros(len(k))
+    for i,k in enumerate(k):
+        all_m = nca_data.const_feb_temperature(k)
+        tm = []
+        for j in range(all_m.measurement_size()):
+            if(temperature_set == 1):
+                tm.append(all_m.const_measurement(j).tfeb1())
+            else:
+                tm.append(all_m.const_measurement(j).tfeb2())
+        t[i] = numpy.median(tm)
+    return numpy.max(t)-numpy.min(t)
+
+def run_duration(stage1):
+    run_info = stage1.const_run_info()
+    camera_layout = stage1.const_run_config().const_camera_layout()
+    camera_clocks = [ 0, 3, 6, 8, 2, 5 ]
+    camera_clocks_run_duration = []
+    for ic in camera_clocks:
+        camera_clocks_run_duration.append(
+            (run_info.camera_clock_max_time(ic)-run_info.camera_clock_min_time(ic))/
+                camera_layout.camera_clock_frequency())
+    camera_clocks_run_duration = numpy.asarray(camera_clocks_run_duration)
+    camera_clocks_run_duration = camera_clocks_run_duration[camera_clocks_run_duration>0]
+    median_run_duration = numpy.median(camera_clocks_run_duration)
+    for the_run_duration in camera_clocks_run_duration:
+        if(numpy.abs(the_run_duration - median_run_duration) < 1):
+            return the_run_duration
+    return None
+
+def num_wf(stage1):
+    nwfp = calin.ix.math.histogram.Histogram1DData()
+    if(stage1.has_wf_hists_pedestal()):
+        wfh = stage1.const_wf_hists_pedestal()
+        if(wfh.has_dual_gain_camera() and wfh.const_dual_gain_camera().has_nchan_present()):
+            nwfp.IntegrateFrom(wfh.const_dual_gain_camera().const_nchan_present())
+    if(stage1.has_wf_hists_physics()):
+        wfh = stage1.const_wf_hists_physics()
+        if(wfh.has_dual_gain_camera() and wfh.const_dual_gain_camera().has_nchan_present()):
+            nwfp.IntegrateFrom(wfh.const_dual_gain_camera().const_nchan_present())
+    if(stage1.has_wf_hists_external_flasher()):
+        wfh = stage1.const_wf_hists_external_flasher()
+        if(wfh.has_dual_gain_camera() and wfh.const_dual_gain_camera().has_nchan_present()):
+            nwfp.IntegrateFrom(wfh.const_dual_gain_camera().const_nchan_present())
+    if(stage1.has_wf_hists_internal_flasher()):
+        wfh = stage1.const_wf_hists_internal_flasher()
+        if(wfh.has_dual_gain_camera() and wfh.const_dual_gain_camera().has_nchan_present()):
+            nwfp.IntegrateFrom(wfh.const_dual_gain_camera().const_nchan_present())
+    if(nwfp.sum_w() == 0 or stage1.const_run_config().configured_channel_id_size() == 0):
+        return 0
+    return nwfp.sum_wx()/nwfp.sum_w()/stage1.const_run_config().configured_channel_id_size()
