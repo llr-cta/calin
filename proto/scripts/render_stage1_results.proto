@@ -51,10 +51,15 @@ message CommandLineOptions {
   int32 from_run_number                                    = 9;
   int32 to_run_number                                      = 10;
 
-  bool loud_upload                                         = 11;
-  bool overwrite                                           = 12;
+  bool skip_existing                                       = 11 [
+    (CFO).desc = "Skip runs (files) for which there is already an entry in the "
+      "summary sheet (if it is configured). Runs are matched based on the last three "
+      "components of their path name, e.g. \"2021/20210901/NectarCAM.Run2571.0000.fits.fz\"."];
 
-  uint32 nthread                                           = 13;
+  bool loud_upload                                         = 12;
+  bool overwrite                                           = 13;
+
+  uint32 nthread                                           = 14;
 
   uint32 figure_dpi                                        = 30;
 

@@ -143,16 +143,7 @@ def new_uploader():
             overwrite=opt.overwrite(), loud=opt.loud_upload())
     return uploader
 
-uploader = new_uploader()
-
-logsheet = dict()
-if(opt.run_log_sheet()):
-    db_rows = uploader.retrieve_sheet(opt.run_log_sheet(),row_start=1)
-    logsheet = calin.diagnostics.stage1_summary.make_logsheet_dict(db_rows)
-
-del uploader
-
-def get_oids():
+def get_oids(get_filenames = False):
     # Open SQL file
     sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
 
@@ -172,7 +163,15 @@ def get_oids():
     else:
         all_oid = sql.select_all_oids(opt.db_stage1_table_name())
 
-    return all_oid
+    if(get_filenames):
+        all_filename = []
+        stage1pod = calin.ix.diagnostics.stage1.Stage1POD()
+        for oid in all_oid:
+            sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1pod)
+            all_filename.append(stage1pod.filename())
+        return all_oid, all_filename
+    else:
+        return all_oid
 
 def render_oid(oid):
     # Open SQL file
@@ -576,8 +575,33 @@ def render_oid(oid):
     print('Finished run :', runno)
     return True
 
-all_oid = get_oids()
+uploader = new_uploader()
+
+logsheet = dict()
+if(opt.run_log_sheet()):
+    db_rows = uploader.retrieve_sheet(opt.run_log_sheet(),row_start=1)
+    logsheet = calin.diagnostics.stage1_summary.make_logsheet_dict(db_rows)
+
+all_oid = []
 all_status = []
+
+if(opt.summary_sheet() and opt.skip_existing()):
+    superset_all_oid, superset_all_filenames = get_oids(get_filenames = True)
+    summary_rows = uploader.retrieve_sheet(opt.summary_sheet(),row_start=3)
+    for ioid in range(len(superset_all_oid)):
+        skip_oid = False
+        for row in summary_rows:
+            if(superset_all_filenames[ioid].endswith(row[-1])):
+                skip_oid = True
+                break
+        if(skip_oid):
+            print("Skipping :",superset_all_filenames[ioid])
+        else:
+            all_oid.append(superset_all_oid[ioid])
+else:
+    all_oid = get_oids()
+
+del uploader
 
 if(opt.nthread()>1):
     with concurrent.futures.ProcessPoolExecutor(max_workers=opt.nthread()) as executor:
