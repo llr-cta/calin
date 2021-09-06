@@ -32,7 +32,7 @@ std::string Timestamp::as_string() const
   time_t ts = time_t(unix_sec());
   struct tm the_tm;
   localtime_r(&ts, &the_tm);
-  char buffer[] = "1999-12-31T23:59:59.000+0000";
+  char buffer[] = "1999-12-31T23:59:59.999+1400";
   strftime(buffer, sizeof(buffer)-1, "%FT%T.000%z", &the_tm);
   std::string str(buffer);
   uint32_t ms = unix_nsec()/1000000;
