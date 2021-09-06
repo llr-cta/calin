@@ -143,7 +143,11 @@ def new_uploader():
             overwrite=opt.overwrite(), loud=opt.loud_upload())
     return uploader
 
-def get_oids(get_filenames = False):
+def get_oids():
+    all_oid = []
+    all_filename = []
+    all_runno = []
+
     # Open SQL file
     sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
 
@@ -163,15 +167,13 @@ def get_oids(get_filenames = False):
     else:
         all_oid = sql.select_all_oids(opt.db_stage1_table_name())
 
-    if(get_filenames):
-        all_filename = []
-        stage1pod = calin.ix.diagnostics.stage1.Stage1POD()
-        for oid in all_oid:
-            sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1pod)
-            all_filename.append(stage1pod.filename())
-        return all_oid, all_filename
-    else:
-        return all_oid
+    stage1pod = calin.ix.diagnostics.stage1.Stage1POD()
+    for oid in all_oid:
+        sql.retrieve_by_oid(opt.db_stage1_table_name(), oid, stage1pod)
+        all_runno.append(stage1pod.run_number())
+        all_filename.append(stage1pod.filename())
+
+    return all_oid, all_runno, all_filename
 
 def render_oid(oid):
     # Open SQL file
@@ -583,23 +585,27 @@ if(opt.run_log_sheet()):
     logsheet = calin.diagnostics.stage1_summary.make_logsheet_dict(db_rows)
 
 all_oid = []
+all_runno = []
+all_filename = []
 all_status = []
 
 if(opt.summary_sheet() and opt.skip_existing()):
-    superset_all_oid, superset_all_filenames = get_oids(get_filenames = True)
+    superset_all_oid, superset_all_runno, superset_all_filenames = get_oids()
     summary_rows = uploader.retrieve_sheet(opt.summary_sheet(),row_start=3)
-    for ioid in range(len(superset_all_oid)):
+    for oid, runno, filename in zip(superset_all_oid, superset_all_runno, superset_all_filenames):
         skip_oid = False
         for row in summary_rows:
-            if(superset_all_filenames[ioid].endswith(row[-1])):
+            if(filename.endswith(row[-1])):
                 skip_oid = True
                 break
         if(skip_oid):
-            print("Skipping :",superset_all_filenames[ioid])
+            print("Skipping :",filename)
         else:
-            all_oid.append(superset_all_oid[ioid])
+            all_oid.append(oid)
+            all_runno.append(runno)
+            all_filename.append(filename)
 else:
-    all_oid = get_oids()
+    all_oid, all_runno, all_filename = get_oids()
 
 del uploader
 
@@ -633,10 +639,7 @@ if(opt.upload_to_google_drive() and opt.summary_sheet()):
     del uploader
 
 print("=================================== RESULTS ===================================")
-sql = calin.io.sql_serializer.SQLite3Serializer(sql_file, sql_mode)
-for oid_status in zip(all_oid, all_status):
-    stage1pod = calin.ix.diagnostics.stage1.Stage1POD()
-    sql.retrieve_by_oid(opt.db_stage1_table_name(), oid_status[0], stage1pod)
-    print(stage1pod.run_number(), "success" if oid_status[1] else "*** FAILED ***")
+for runno_status in zip(all_runno, all_status):
+    print(runno_status[0], "success" if runno_status[1] else "*** FAILED ***")
 
 # The end
