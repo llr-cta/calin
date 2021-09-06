@@ -603,6 +603,10 @@ else:
 
 del uploader
 
+if(not all_oid):
+    print("No runs to process, exiting")
+    sys.exit()
+
 if(opt.nthread()>1):
     with concurrent.futures.ProcessPoolExecutor(max_workers=opt.nthread()) as executor:
         results = executor.map(render_oid, all_oid)
