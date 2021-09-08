@@ -157,16 +157,37 @@ private:
   struct SingleGainCameraHists {
     SingleGainCameraHists(const
         calin::ix::diagnostics::simple_charge_hists::SingleGainSimpleChargeHistsConfig& config):
-      nchan_present(calin::math::histogram::new_histogram_if_enabled(config.nchan_present()))
+      nchan_present(calin::math::histogram::new_histogram_if_enabled(config.nchan_present())),
+      opt_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.opt_win_qsum())),
+      ped_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.ped_win_qsum())),
+      sig_win_qsum(calin::math::histogram::new_histogram_if_enabled(config.sig_win_qsum()))
     {
       /* nothing to see here */
     }
 
     ~SingleGainCameraHists() {
       delete nchan_present;
+      delete opt_win_qsum;
+      delete ped_win_qsum;
+      delete sig_win_qsum;
     }
 
+    void reset_sums() {
+      event_nchan_present_sum = 0;
+      event_opt_win_qsum = 0;
+      event_ped_win_qsum = 0;
+      event_sig_win_qsum = 0;
+    }
+
+    unsigned event_nchan_present_sum = 0;
+    double event_opt_win_qsum = 0;
+    double event_ped_win_qsum = 0;
+    double event_sig_win_qsum = 0;
+
     calin::math::histogram::Histogram1D* nchan_present = nullptr;
+    calin::math::histogram::Histogram1D* opt_win_qsum = nullptr;
+    calin::math::histogram::Histogram1D* ped_win_qsum = nullptr;
+    calin::math::histogram::Histogram1D* sig_win_qsum = nullptr;
   };
 
   struct DualGainCameraHists {
@@ -217,8 +238,7 @@ private:
     const DualGainCameraHists* from) const;
 
   void record_one_visitor_data(uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
-    unsigned& high_gain_nchan_presence, unsigned& low_gain_nchan_presence);
+    const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor);
 
   SimpleChargeHistsParallelEventVisitor* parent_ = nullptr;
   calin::ix::diagnostics::simple_charge_hists::SimpleChargeHistsConfig config_;

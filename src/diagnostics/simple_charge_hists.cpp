@@ -132,26 +132,26 @@ bool SimpleChargeHistsParallelEventVisitor::leave_telescope_run(
 
 void SimpleChargeHistsParallelEventVisitor::record_one_visitor_data(
   uint64_t seq_index, const calin::ix::iact_data::telescope_event::TelescopeEvent* event,
-  const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor,
-  unsigned& high_gain_nchan_presence, unsigned& low_gain_nchan_presence)
+  const calin::iact_data::waveform_treatment_event_visitor::OptimalWindowSumWaveformTreatmentParallelEventVisitor* sum_visitor)
 {
   if(not sum_visitor or not sum_visitor->is_same_event(seq_index))
     return;
 
   for(unsigned ichan=0; ichan<sum_visitor->nchan(); ichan++) {
     SingleGainChannelHists* hists = nullptr;
+    SingleGainCameraHists* cam_hists = nullptr;
     switch(sum_visitor->array_chan_signal_type()[ichan]) {
     case calin::ix::iact_data::telescope_event::SIGNAL_UNIQUE_GAIN:
     case calin::ix::iact_data::telescope_event::SIGNAL_HIGH_GAIN:
       if(filter_==nullptr or filter_->event_should_be_accepted(event, ichan, /*low_gain=*/ false)) {
         hists = chan_hists_[ichan]->high_gain;
-        ++high_gain_nchan_presence;
+        cam_hists = cam_hists_high_gain_;
       }
       break;
     case calin::ix::iact_data::telescope_event::SIGNAL_LOW_GAIN:
       if(filter_==nullptr or filter_->event_should_be_accepted(event, ichan, /*low_gain=*/ true)) {
         hists = chan_hists_[ichan]->low_gain;
-        ++low_gain_nchan_presence;
+        cam_hists = cam_hists_low_gain_;
       }
       break;
     case calin::ix::iact_data::telescope_event::SIGNAL_NONE:
@@ -181,30 +181,68 @@ void SimpleChargeHistsParallelEventVisitor::record_one_visitor_data(
         hists->sig_ped_qsum_diff->insert(sum_visitor->array_chan_sig_win_sum()[ichan]
           - sum_visitor->array_chan_bkg_win_sum()[ichan]);
     }
+
+    if(cam_hists) {
+      ++cam_hists->event_nchan_present_sum;
+      cam_hists->event_opt_win_qsum += sum_visitor->array_chan_opt_win_sum()[ichan];
+      cam_hists->event_ped_win_qsum += sum_visitor->array_chan_bkg_win_sum()[ichan];
+      cam_hists->event_sig_win_qsum += sum_visitor->array_chan_sig_win_sum()[ichan];
+    }
   }
 }
 
 bool SimpleChargeHistsParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
-  unsigned high_gain_nchan_presence = 0;
-  unsigned low_gain_nchan_presence = 0;
   if(high_gain_visitor_) {
-    record_one_visitor_data(seq_index, event, high_gain_visitor_,
-      high_gain_nchan_presence, low_gain_nchan_presence);
-    if(cam_hists_high_gain_ and cam_hists_high_gain_->nchan_present) {
-      cam_hists_high_gain_->nchan_present->insert(high_gain_nchan_presence);
+    if(cam_hists_high_gain_) {
+      cam_hists_high_gain_->reset_sums();
+    }
+    record_one_visitor_data(seq_index, event, high_gain_visitor_);
+    if(cam_hists_high_gain_) {
+      if(cam_hists_high_gain_->nchan_present) {
+        cam_hists_high_gain_->nchan_present->insert(cam_hists_high_gain_->event_nchan_present_sum);
+      }
+      if(cam_hists_high_gain_->opt_win_qsum) {
+        cam_hists_high_gain_->opt_win_qsum->insert(cam_hists_high_gain_->event_opt_win_qsum);
+      }
+      if(cam_hists_high_gain_->ped_win_qsum) {
+        cam_hists_high_gain_->ped_win_qsum->insert(cam_hists_high_gain_->event_ped_win_qsum);
+      }
+      if(cam_hists_high_gain_->sig_win_qsum) {
+        cam_hists_high_gain_->sig_win_qsum->insert(cam_hists_high_gain_->event_sig_win_qsum);
+      }
     }
   }
   if(low_gain_visitor_) {
-    record_one_visitor_data(seq_index, event, low_gain_visitor_,
-      high_gain_nchan_presence, low_gain_nchan_presence);
-    if(cam_hists_low_gain_ and cam_hists_low_gain_->nchan_present) {
-      cam_hists_low_gain_->nchan_present->insert(low_gain_nchan_presence);
+    if(cam_hists_low_gain_) {
+      cam_hists_low_gain_->reset_sums();
+    }
+    record_one_visitor_data(seq_index, event, low_gain_visitor_);
+    if(cam_hists_low_gain_) {
+      if(cam_hists_low_gain_->nchan_present) {
+        cam_hists_low_gain_->nchan_present->insert(cam_hists_low_gain_->event_nchan_present_sum);
+      }
+      if(cam_hists_low_gain_->opt_win_qsum) {
+        cam_hists_low_gain_->opt_win_qsum->insert(cam_hists_low_gain_->event_opt_win_qsum);
+      }
+      if(cam_hists_low_gain_->ped_win_qsum) {
+        cam_hists_low_gain_->ped_win_qsum->insert(cam_hists_low_gain_->event_ped_win_qsum);
+      }
+      if(cam_hists_low_gain_->sig_win_qsum) {
+        cam_hists_low_gain_->sig_win_qsum->insert(cam_hists_low_gain_->event_sig_win_qsum);
+      }
     }
   }
   if((high_gain_visitor_ or low_gain_visitor_) and cam_hists_dual_gain_ and cam_hists_dual_gain_->nchan_present) {
-    cam_hists_dual_gain_->nchan_present->insert(high_gain_nchan_presence+low_gain_nchan_presence);
+    unsigned nchan_present = 0;
+    if(cam_hists_high_gain_) {
+      nchan_present += cam_hists_high_gain_->event_nchan_present_sum;
+    }
+    if(cam_hists_low_gain_) {
+      nchan_present += cam_hists_low_gain_->event_nchan_present_sum;
+    }
+    cam_hists_dual_gain_->nchan_present->insert(nchan_present);
   }
   return true;
 }
@@ -227,6 +265,9 @@ void SimpleChargeHistsParallelEventVisitor::merge_one_gain_cam_hists(SingleGainC
   const SingleGainCameraHists* from)
 {
   if(from->nchan_present)into->nchan_present->insert_hist(*from->nchan_present);
+  if(from->opt_win_qsum)into->opt_win_qsum->insert_hist(*from->opt_win_qsum);
+  if(from->ped_win_qsum)into->ped_win_qsum->insert_hist(*from->ped_win_qsum);
+  if(from->sig_win_qsum)into->sig_win_qsum->insert_hist(*from->sig_win_qsum);
 }
 
 void SimpleChargeHistsParallelEventVisitor::merge_dual_gain_cam_hists(DualGainCameraHists* into,
@@ -279,6 +320,9 @@ void SimpleChargeHistsParallelEventVisitor::extract_one_gain_cam_hists(
   const SingleGainCameraHists* from) const
 {
   if(from->nchan_present)from->nchan_present->serialize(into->mutable_nchan_present());
+  if(from->opt_win_qsum)from->opt_win_qsum->serialize(into->mutable_opt_win_qsum());
+  if(from->ped_win_qsum)from->ped_win_qsum->serialize(into->mutable_ped_win_qsum());
+  if(from->sig_win_qsum)from->sig_win_qsum->serialize(into->mutable_sig_win_qsum());
 }
 
 void SimpleChargeHistsParallelEventVisitor::extract_dual_gain_cam_hists(

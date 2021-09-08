@@ -122,6 +122,18 @@ message OneGainSimpleChargeCameraHists {
   calin.ix.math.histogram.Histogram1DData nchan_present             = 10 [
     (CFO).desc = "Histogram of sum of channels present in image.",
     (CFO).units = "channels (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData opt_win_qsum              = 13 [
+    (CFO).desc = "Histogram of sum of samples over optimised window.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData ped_win_qsum              = 16 [
+    (CFO).desc = "Histogram of sum of samples over fixed pedestal window.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
+
+  calin.ix.math.histogram.Histogram1DData sig_win_qsum              = 17 [
+    (CFO).desc = "Histogram of sum of samples over fixed signal window.",
+    (CFO).units = "DC (bin-units), events (value-units)" ];
 }
 
 message DualGainSimpleChargeCameraHists {
