@@ -760,7 +760,7 @@ def draw_mean_wf(stage1, dataset='pedestal', low_gain = False, pedestals = None,
             if(has_label):
                 axis.plot(wf,'k',alpha=0.1)
             else:
-                axis.plot(wf,'k',alpha=0.1,label='channel')
+                axis.plot(wf,'k',alpha=0.1,label='Channels')
                 has_label = True
     if(low_gain):
         cam = mwf.const_camera_low_gain()
