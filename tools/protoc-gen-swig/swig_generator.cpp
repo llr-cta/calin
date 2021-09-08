@@ -422,28 +422,25 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
           "$type$* $name$(int index) {\n"
           "  verify_range(index, $$self->$name$_size());\n"
           "  return $$self->mutable_$name$(index); }\n"
-          "void const_$name$(std::vector<const $type$*> &OUTPUT) {\n"
+          "std::vector<const $scoped_type$*> const_$name$() {\n"
           "  const auto& array = $$self->$name$();\n"
-          "  OUTPUT.resize(array.size());\n"
-//          "  std::transform(array.begin(), array.end(), OUTPUT.begin(),\n"
-//          "    std::addressof<const $scoped_type$>);\n"
+          "  std::vector<const $scoped_type$*> OUTPUT(array.size());\n"
           "  std::copy(array.data(), array.data()+array.size(), OUTPUT.begin());\n"
+          "  return OUTPUT;\n"
           "}\n"
-          "void mutable_$name$(std::vector<$type$*> &OUTPUT) {\n"
+          "std::vector<$scoped_type$*> mutable_$name$() {\n"
           "  auto* array = $$self->mutable_$name$();\n"
-          "  OUTPUT.resize(array->size());\n"
-//          "  std::transform(array->begin(), array->end(), OUTPUT.begin(),\n"
-//          "    std::addressof<$scoped_type$>);\n"
+          "  std::vector<$scoped_type$*> OUTPUT(array->size());\n"
           "  std::copy(array->mutable_data(), array->mutable_data()+array->size(), OUTPUT.begin());\n"
+          "  return OUTPUT;\n"
           "}\n"
-          "void $name$(std::vector<$type$*> &OUTPUT) {\n"
+          "std::vector<$scoped_type$*> $name$() {\n"
           "  auto* array = $$self->mutable_$name$();\n"
-          "  OUTPUT.resize(array->size());\n"
-//          "  std::transform(array->begin(), array->end(), OUTPUT.begin(),\n"
-//          "    std::addressof<$scoped_type$>);\n"
+          "  std::vector<$scoped_type$*> OUTPUT(array->size());\n"
           "  std::copy(array->mutable_data(), array->mutable_data()+array->size(), OUTPUT.begin());\n"
+          "  return OUTPUT;\n"
           "}\n"
-          "void set_$name$(const std::vector<$type$*>& INPUT) {\n"
+          "void set_$name$(const std::vector<const $scoped_type$*>& INPUT) {\n"
           "  $$self->clear_$name$();\n"
           "  for(const auto* m : INPUT)$$self->add_$name$()->MergeFrom(*m);\n"
           "}\n");
@@ -626,10 +623,24 @@ void print_message(Printer* I, const google::protobuf::Descriptor* d)
       ifind = package_name_cc.find_first_of('.', ifind))
     package_name_cc[ifind++] = '_';
 
+  // I->Print(
+  //   "\n"
+  //   "%template(Vector_$package_name_cc$_$class_name$)\n"
+  //   "  std::vector<$package_name$::$class_name$>;\n",
+  //   "package_name", package_name,
+  //   "package_name_cc", CamelCase(package_name_cc),
+  //   "class_name", the_class_name);
   I->Print(
     "\n"
-    "%template(Vector_$package_name_cc$_$class_name$)\n"
+    "%template(Vector_Ptr_$package_name_cc$_$class_name$)\n"
     "  std::vector<$package_name$::$class_name$*>;\n",
+    "package_name", package_name,
+    "package_name_cc", CamelCase(package_name_cc),
+    "class_name", the_class_name);
+  I->Print(
+    "\n"
+    "%template(Vector_ConstPtr_$package_name_cc$_$class_name$)\n"
+    "  std::vector<const $package_name$::$class_name$*>;\n",
     "package_name", package_name,
     "package_name_cc", CamelCase(package_name_cc),
     "class_name", the_class_name);
