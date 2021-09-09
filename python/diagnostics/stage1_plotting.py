@@ -20,6 +20,7 @@ import matplotlib.collections
 import matplotlib.patches
 import matplotlib.colors
 import numpy
+import scipy.special
 
 import calin.plotting
 import calin.diagnostics.stage1
@@ -889,3 +890,153 @@ def draw_event_number_histogram(stage1, axis = None):
     axis.grid()
 
     return so
+
+def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
+        ped = None, pedvarbase = None, evf = 1.2,
+        axis_hist = None, axis_median = None, axis_gain = None, axis_intensity = None,
+        cmap = 'inferno', stat_label_fontsize=4.75, pix_lw = 0, outline_lw = 0.5,
+        outline_color = '#888888'):
+
+    axis_hist = axis_hist if axis_hist is not None else matplotlib.pyplot.gca()
+
+    if(dataset == 'physics'):
+        wfh = stage1.const_wf_hists_physics()
+    elif(dataset == 'pedestal'):
+        wfh = stage1.const_wf_hists_pedestal()
+    elif(dataset == 'external_flasher'):
+        wfh = stage1.const_wf_hists_external_flasher()
+    elif(dataset == 'internal_flasher'):
+        wfh = stage1.const_wf_hists_internal_flasher()
+    else:
+        raise RuntimeError('Unknown dataset type :',dataset)
+
+    all_hist = []
+    if(low_gain):
+        csg = stage1.const_charge_stats().const_low_gain()
+        for i in range(wfh.low_gain_channel_size()):
+            all_hist.append(wfh.const_low_gain_channel(i))
+        cam_hist = wfh.const_low_gain_camera()
+    else:
+        csg = stage1.const_charge_stats().const_high_gain()
+        for i in range(wfh.high_gain_channel_size()):
+            all_hist.append(wfh.const_high_gain_channel(i))
+        cam_hist = wfh.const_high_gain_camera()
+
+    if ped is None:
+        ped = calin.diagnostics.stage1_analysis.estimate_run_pedestal(stage1, low_gain)
+        nsamp = stage1.config().low_gain_opt_sum().integration_n() if \
+                (low_gain and stage1.config().has_low_gain_opt_sum()) \
+            else stage1.config().high_gain_opt_sum().integration_n()
+        ped *= nsamp
+
+    p_x_lr = 0.005
+    all_xl = []
+    all_xr = []
+    all_xc = []
+
+    xl_min = numpy.inf
+    xr_max = -numpy.inf
+    has_label = False
+
+    for i in range(len(all_hist)):
+        offset = ped[i]
+        if(all_hist[i].has_opt_win_qsum()):
+            h = calin.math.histogram.densify(all_hist[i].const_opt_win_qsum())
+        else:
+            h = calin.math.histogram.densify(all_hist[i].const_sig_win_qsum())
+        x = h.xval0() + h.dxval()*numpy.arange(h.bins_size()+1)
+        y = numpy.append(0, numpy.cumsum(h.bins()))
+        xl,xc,xr = numpy.interp(y[-1]*numpy.asarray([p_x_lr,0.5,1-p_x_lr]),y,x)-offset
+        xl_min = min(xl_min, 1.5*(xl-xc) + xc)
+        xr_max = max(xr_max, 1.5*(xr-xc) + xc)
+        all_xl.append(xl)
+        all_xc.append(xc)
+        all_xr.append(xr)
+        args = dict()
+        if(not has_label):
+            args['label'] = 'Channels'
+            has_label = True
+        calin.plotting.plot_histogram(h, xoffset=-offset, histtype='floating',
+            color='k', alpha=0.1, density=True, normalise=True, axis=axis_hist, **args)
+
+    h = None
+    if(cam_hist.has_opt_win_qsum()):
+        h = calin.math.histogram.densify(cam_hist.const_opt_win_qsum())
+    elif(cam_hist.has_sig_win_qsum()):
+        h = calin.math.histogram.densify(cam_hist.const_sig_win_qsum())
+    if(h is not None):
+        scale = 1/len(all_hist)
+        offset = sum(ped) * scale
+        calin.plotting.plot_histogram(h, xscale=scale, xoffset=-offset, histtype='floating',
+            color='C1', density=True, normalise=True, label='Camera average', axis=axis_hist)
+
+    axis_hist.set_xlim(xl_min - 0.025*(xr_max-xl_min), xr_max + 0.025*(xr_max-xl_min))
+    axis_hist.set_yscale('log')
+    axis_hist.set_xlabel('Summed waveform [DC]')
+    axis_hist.set_ylabel('Density [1/DC]')
+    axis_hist.legend(loc=1)
+
+    if(axis_median is not None):
+        all_median = numpy.asarray(all_xc)
+        data = all_median/numpy.median(all_median)
+        mask = numpy.ones_like(all_median, dtype=bool)
+        rc = stage1.const_run_config()
+        cl = rc.const_camera_layout()
+
+        pc = calin.plotting.plot_camera_image(data, cl, channel_mask=mask,
+                        configured_channels=rc.configured_channel_id(),
+                        axis=axis_median, cmap=cmap, draw_outline=True, draw_stats=True,
+                        pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
+                        hatch_missing_channels=True, stats_format='%.3f',
+                        stats_fontsize=stat_label_fontsize)
+
+        cb = calin.plotting.add_colorbar_and_clipping(axis_median, pc, data, mask=mask, percentile=99.5,
+                camera_layout=cl, configured_channels=rc.configured_channel_id(),
+                cb_label='Gain estimate [DC]')
+
+        # cb = axis_median.get_figure().colorbar(pc, ax=axis_median, label='Median relative signal')
+
+        axis_median.get_xaxis().set_visible(False)
+        axis_median.get_yaxis().set_visible(False)
+
+    if(axis_gain is not None):
+        all_rms = (numpy.asarray(all_xr)-numpy.asarray(all_xl))/(-2*scipy.special.erfinv(0.005*2-1)*numpy.sqrt(2))
+        all_var = all_rms**2
+        if pedvarbase is not None:
+            all_var -= pedvarbase
+        all_gain = all_var/numpy.asarray(all_xc)/evf
+
+        pc = calin.plotting.plot_camera_image(all_gain, cl, channel_mask=mask,
+                        configured_channels=rc.configured_channel_id(),
+                        axis=axis_gain, cmap=cmap, draw_outline=True, draw_stats=True,
+                        pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
+                        hatch_missing_channels=True, stats_format='%.2f DC',
+                        stats_fontsize=stat_label_fontsize)
+
+        cb = calin.plotting.add_colorbar_and_clipping(axis_gain, pc, all_gain, mask=mask, percentile=99.5,
+                camera_layout=cl, configured_channels=rc.configured_channel_id(),
+                cb_label='Gain estimate [DC]')
+
+        # cb = axis_gain.get_figure().colorbar(pc, ax=axis_gain, label='Gain estimate [DC]')
+
+        axis_gain.get_xaxis().set_visible(False)
+        axis_gain.get_yaxis().set_visible(False)
+
+        if(axis_intensity is not None):
+            all_intensity = numpy.asarray(all_xc)/all_gain
+
+            pc = calin.plotting.plot_camera_image(all_intensity, cl, channel_mask=mask,
+                            configured_channels=rc.configured_channel_id(),
+                            axis=axis_intensity, cmap=cmap, draw_outline=True, draw_stats=True,
+                            pix_lw=pix_lw, outline_lw=outline_lw, outline_color=outline_color,
+                            hatch_missing_channels=True, stats_format='%.3f PE',
+                            stats_fontsize=stat_label_fontsize)
+
+            cb = calin.plotting.add_colorbar_and_clipping(axis_intensity, pc, all_intensity, mask=mask, percentile=99.5,
+                    camera_layout=cl, configured_channels=rc.configured_channel_id(),
+                    cb_label='Intensity estimate [PE]')
+
+            # cb = axis_intensity.get_figure().colorbar(pc, ax=axis_intensity, label='Intensity estimate [PE]')
+
+            axis_intensity.get_xaxis().set_visible(False)
+            axis_intensity.get_yaxis().set_visible(False)

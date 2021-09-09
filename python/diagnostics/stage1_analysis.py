@@ -122,20 +122,16 @@ def summarize_module_clock_regression(stage1, iclock=0):
     return mod_freq_offset_ppm, mod_freq_spread_ppm, mod_time_offset_ns, mod_time_spread_ns, mod_d2_per_event, mod_problem_bins
 
 def estimate_run_pedestal(stage1, low_gain=False):
-    rc = stage1.const_run_config()
-    cl = rc.const_camera_layout()
-
     charge_stats = stage1.const_charge_stats().const_low_gain() if low_gain \
         else stage1.const_charge_stats().const_high_gain()
-
-    if(charge_stats.ped_trigger_event_count()):
-        nsamp = rc.num_samples()
+    if(numpy.max(charge_stats.ped_trigger_event_count()) > 1000):
+        nsamp = stage1.const_run_config().num_samples()
         nevent = charge_stats.ped_trigger_event_count()
         values = charge_stats.ped_trigger_full_wf_mean()/nsamp
     else:
-        nsamp = stage1.config().low_gain_opt_sum().integration_n() if \
-                (low_gain and stage1.config().has_low_gain_opt_sum()) \
-            else stage1.config().high_gain_opt_sum().integration_n()
+        nsamp = stage1.const_config().const_low_gain_opt_sum().integration_n() if \
+                (low_gain and stage1.const_config().has_low_gain_opt_sum()) \
+            else stage1.const_config().const_high_gain_opt_sum().integration_n()
         nevent = charge_stats.all_trigger_event_count()
         values = charge_stats.all_trigger_ped_win_mean()/nsamp
 

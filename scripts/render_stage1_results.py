@@ -212,6 +212,52 @@ def render_oid(oid):
         uploader.upload_from_io(filenames(runno, quantity, 'txt'), 'text/plain', iostream)
 
     ############################################################################
+    # FIGURE : charge histograms for all trigger types
+    ############################################################################
+
+    for trigger_type in [ 'physics', 'pedestal', 'external_flasher', 'internal_flasher' ]:
+        for gain in ['hg', 'lg']:
+            if(trigger_type == 'physics'):
+                wfh = stage1.const_wf_hists_physics()
+            elif(trigger_type == 'pedestal'):
+                wfh = stage1.const_wf_hists_pedestal()
+            elif(trigger_type == 'external_flasher'):
+                wfh = stage1.const_wf_hists_external_flasher()
+            elif(trigger_type == 'internal_flasher'):
+                wfh = stage1.const_wf_hists_internal_flasher()
+
+            if(gain == 'hg'):
+                has_data = wfh.has_high_gain_camera() and \
+                    wfh.const_high_gain_camera().has_nchan_present() and \
+                    wfh.const_high_gain_camera().const_nchan_present().sum_wx() > 0 and \
+                    wfh.high_gain_channel_size() > 0 and \
+                    (wfh.const_high_gain_channel(0).has_opt_win_qsum() or wfh.const_high_gain_channel(0).has_sig_win_qsum())
+            else:
+                has_data = wfh.has_low_gain_camera() and \
+                    wfh.const_low_gain_camera().has_nchan_present() and \
+                    wfh.const_low_gain_camera().const_nchan_present().sum_wx() > 0 and \
+                    wfh.low_gain_channel_size() > 0 and \
+                    (wfh.const_low_gain_channel(0).has_opt_win_qsum() or wfh.const_low_gain_channel(0).has_sig_win_qsum())
+
+            if has_data:
+                f = matplotlib.figure.Figure(dpi=figure_dpi)
+                f.subplots_adjust(top=0.85)
+                ax = f.subplots(1,1)
+                ax2 = matplotlib.figure.Figure(dpi=figure_dpi).subplots(1,1)
+                ax3 = None
+                ax4 = None
+
+                calin.diagnostics.stage1_plotting.draw_charge_spectrum(stage1,
+                    dataset=trigger_type, low_gain = True if gain=='lg' else False,
+                    axis_hist=ax, axis_median=ax2, axis_gain=ax3, axis_intensity=ax4)
+
+                ax.set_title(('Low' if gain=='lg' else 'High')+'-gain charge spectrum, '+trigger_type.replace('_',' ')+' events, run : %d'%runno)
+                upload_figure(runno, 'charge_spectrum_'+trigger_type+'_'+gain, ax.figure)
+
+                ax2.set_title(('Low' if gain=='lg' else 'High')+'median relative charge, '+trigger_type.replace('_',' ')+' events, run : %d'%runno)
+                upload_figure(runno, 'charge_median_'+trigger_type+'_'+gain, ax2.figure)
+
+    ############################################################################
     # FIGURE : Missing components
     ############################################################################
 
