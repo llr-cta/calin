@@ -28,6 +28,7 @@
 
 #include <thread>
 #include <memory>
+#include <time.h>
 
 #include <calin_global_config.hpp>
 #include <provenance/system_info.hpp>
@@ -168,6 +169,8 @@ bool append_4chars(std::string& t, unsigned u)
 
 calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
 {
+  tzset();
+
   std::set<std::string> env_whitelist;
   env_whitelist.insert("USER");
   env_whitelist.insert("PATH");
