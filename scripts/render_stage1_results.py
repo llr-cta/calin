@@ -251,10 +251,10 @@ def render_oid(oid):
                     dataset=trigger_type, low_gain = True if gain=='lg' else False,
                     axis_hist=ax, axis_median=ax2, axis_gain=ax3, axis_intensity=ax4)
 
-                ax.set_title(('Low' if gain=='lg' else 'High')+'-gain charge spectrum, '+trigger_type.replace('_',' ')+' events, run : %d'%runno)
+                ax.set_title(('Low' if gain=='lg' else 'High')+'-gain charge spectrum ('+trigger_type.replace('_',' ')+' events), run : %d'%runno)
                 upload_figure(runno, 'charge_spectrum_'+trigger_type+'_'+gain, ax.figure)
 
-                ax2.set_title(('Low' if gain=='lg' else 'High')+'median relative charge, '+trigger_type.replace('_',' ')+' events, run : %d'%runno)
+                ax2.set_title(('Low' if gain=='lg' else 'High')+'-gain median relative charge ('+trigger_type.replace('_',' ')+' events), run : %d'%runno)
                 upload_figure(runno, 'charge_median_'+trigger_type+'_'+gain, ax2.figure)
 
     ############################################################################

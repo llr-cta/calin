@@ -184,6 +184,7 @@ void SimpleChargeHistsParallelEventVisitor::record_one_visitor_data(
 
     if(cam_hists) {
       ++cam_hists->event_nchan_present_sum;
+      cam_hists->event_full_wf_qsum += sum_visitor->array_chan_all_sum()[ichan];
       cam_hists->event_opt_win_qsum += sum_visitor->array_chan_opt_win_sum()[ichan];
       cam_hists->event_ped_win_qsum += sum_visitor->array_chan_bkg_win_sum()[ichan];
       cam_hists->event_sig_win_qsum += sum_visitor->array_chan_sig_win_sum()[ichan];
@@ -200,17 +201,21 @@ bool SimpleChargeHistsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
     }
     record_one_visitor_data(seq_index, event, high_gain_visitor_);
     if(cam_hists_high_gain_) {
+      double scale = double(high_gain_visitor_->nchan())/double(cam_hists_high_gain_->event_nchan_present_sum);
       if(cam_hists_high_gain_->nchan_present) {
         cam_hists_high_gain_->nchan_present->insert(cam_hists_high_gain_->event_nchan_present_sum);
       }
+      if(cam_hists_high_gain_->full_wf_qsum) {
+        cam_hists_high_gain_->full_wf_qsum->insert(scale*cam_hists_high_gain_->event_full_wf_qsum);
+      }
       if(cam_hists_high_gain_->opt_win_qsum) {
-        cam_hists_high_gain_->opt_win_qsum->insert(cam_hists_high_gain_->event_opt_win_qsum);
+        cam_hists_high_gain_->opt_win_qsum->insert(scale*cam_hists_high_gain_->event_opt_win_qsum);
       }
       if(cam_hists_high_gain_->ped_win_qsum) {
-        cam_hists_high_gain_->ped_win_qsum->insert(cam_hists_high_gain_->event_ped_win_qsum);
+        cam_hists_high_gain_->ped_win_qsum->insert(scale*cam_hists_high_gain_->event_ped_win_qsum);
       }
       if(cam_hists_high_gain_->sig_win_qsum) {
-        cam_hists_high_gain_->sig_win_qsum->insert(cam_hists_high_gain_->event_sig_win_qsum);
+        cam_hists_high_gain_->sig_win_qsum->insert(scale*cam_hists_high_gain_->event_sig_win_qsum);
       }
     }
   }
@@ -220,17 +225,21 @@ bool SimpleChargeHistsParallelEventVisitor::visit_telescope_event(uint64_t seq_i
     }
     record_one_visitor_data(seq_index, event, low_gain_visitor_);
     if(cam_hists_low_gain_) {
+      double scale = double(low_gain_visitor_->nchan())/double(cam_hists_low_gain_->event_nchan_present_sum);
       if(cam_hists_low_gain_->nchan_present) {
         cam_hists_low_gain_->nchan_present->insert(cam_hists_low_gain_->event_nchan_present_sum);
       }
+      if(cam_hists_low_gain_->full_wf_qsum) {
+        cam_hists_low_gain_->full_wf_qsum->insert(scale*cam_hists_low_gain_->event_full_wf_qsum);
+      }
       if(cam_hists_low_gain_->opt_win_qsum) {
-        cam_hists_low_gain_->opt_win_qsum->insert(cam_hists_low_gain_->event_opt_win_qsum);
+        cam_hists_low_gain_->opt_win_qsum->insert(scale*cam_hists_low_gain_->event_opt_win_qsum);
       }
       if(cam_hists_low_gain_->ped_win_qsum) {
-        cam_hists_low_gain_->ped_win_qsum->insert(cam_hists_low_gain_->event_ped_win_qsum);
+        cam_hists_low_gain_->ped_win_qsum->insert(scale*cam_hists_low_gain_->event_ped_win_qsum);
       }
       if(cam_hists_low_gain_->sig_win_qsum) {
-        cam_hists_low_gain_->sig_win_qsum->insert(cam_hists_low_gain_->event_sig_win_qsum);
+        cam_hists_low_gain_->sig_win_qsum->insert(scale*cam_hists_low_gain_->event_sig_win_qsum);
       }
     }
   }
@@ -265,6 +274,7 @@ void SimpleChargeHistsParallelEventVisitor::merge_one_gain_cam_hists(SingleGainC
   const SingleGainCameraHists* from)
 {
   if(from->nchan_present)into->nchan_present->insert_hist(*from->nchan_present);
+  if(from->full_wf_qsum)into->full_wf_qsum->insert_hist(*from->full_wf_qsum);
   if(from->opt_win_qsum)into->opt_win_qsum->insert_hist(*from->opt_win_qsum);
   if(from->ped_win_qsum)into->ped_win_qsum->insert_hist(*from->ped_win_qsum);
   if(from->sig_win_qsum)into->sig_win_qsum->insert_hist(*from->sig_win_qsum);
@@ -320,6 +330,7 @@ void SimpleChargeHistsParallelEventVisitor::extract_one_gain_cam_hists(
   const SingleGainCameraHists* from) const
 {
   if(from->nchan_present)from->nchan_present->serialize(into->mutable_nchan_present());
+  if(from->full_wf_qsum)from->full_wf_qsum->serialize(into->mutable_full_wf_qsum());
   if(from->opt_win_qsum)from->opt_win_qsum->serialize(into->mutable_opt_win_qsum());
   if(from->ped_win_qsum)from->ped_win_qsum->serialize(into->mutable_ped_win_qsum());
   if(from->sig_win_qsum)from->sig_win_qsum->serialize(into->mutable_sig_win_qsum());
@@ -555,10 +566,14 @@ SimpleChargeHistsParallelEventVisitor::ped_trig_default_config()
   auto* hg_config = config.mutable_high_gain();
   pre_fill_hist_config(hg_config, "pedestal", "high", 1.0, 1000, 5, 1.0, 100, 5);
   hg_config->mutable_full_wf_qsum()->set_enable(true);
+  hg_config->mutable_opt_win_qsum()->set_enable(true);
+  hg_config->mutable_opt_win_index()->set_enable(true);
   hg_config->mutable_nchan_present()->set_enable(true);
   auto* lg_config = config.mutable_low_gain();
   pre_fill_hist_config(lg_config, "pedestal", "low", 1.0, 200, 5, 1.0, 100, 5);
   lg_config->mutable_full_wf_qsum()->set_enable(true);
+  lg_config->mutable_opt_win_qsum()->set_enable(true);
+  lg_config->mutable_opt_win_index()->set_enable(true);
   lg_config->mutable_nchan_present()->set_enable(true);
   auto* g2_config = config.mutable_dual_gain();
   pre_fill_dual_gain_hist_config(g2_config, "pedestal");
@@ -628,6 +643,7 @@ SimpleChargeHistsParallelEventVisitor::int_trig_default_config()
   pre_fill_hist_config(hg_config, "internal-flasher", "high", 1.0, 1000, 5, 1.0, 100, 5);
   hg_config->mutable_sig_win_qsum()->set_enable(true);
   hg_config->mutable_ped_win_qsum()->set_enable(true);
+  hg_config->mutable_opt_win_qsum()->set_enable(true);
   hg_config->mutable_opt_win_index()->set_enable(true);
   hg_config->mutable_sig_ped_qsum_diff()->set_enable(true);
   hg_config->mutable_nchan_present()->set_enable(true);

@@ -174,17 +174,20 @@ private:
 
     void reset_sums() {
       event_nchan_present_sum = 0;
+      event_full_wf_qsum = 0;
       event_opt_win_qsum = 0;
       event_ped_win_qsum = 0;
       event_sig_win_qsum = 0;
     }
 
     unsigned event_nchan_present_sum = 0;
+    double event_full_wf_qsum = 0;
     double event_opt_win_qsum = 0;
     double event_ped_win_qsum = 0;
     double event_sig_win_qsum = 0;
 
     calin::math::histogram::Histogram1D* nchan_present = nullptr;
+    calin::math::histogram::Histogram1D* full_wf_qsum = nullptr;
     calin::math::histogram::Histogram1D* opt_win_qsum = nullptr;
     calin::math::histogram::Histogram1D* ped_win_qsum = nullptr;
     calin::math::histogram::Histogram1D* sig_win_qsum = nullptr;
