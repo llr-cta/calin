@@ -195,51 +195,55 @@ void SimpleChargeHistsParallelEventVisitor::record_one_visitor_data(
 bool SimpleChargeHistsParallelEventVisitor::visit_telescope_event(uint64_t seq_index,
   calin::ix::iact_data::telescope_event::TelescopeEvent* event)
 {
+  if(cam_hists_high_gain_) {
+    cam_hists_high_gain_->reset_sums();
+  }
+  if(cam_hists_low_gain_) {
+    cam_hists_low_gain_->reset_sums();
+  }
   if(high_gain_visitor_) {
-    if(cam_hists_high_gain_) {
-      cam_hists_high_gain_->reset_sums();
-    }
     record_one_visitor_data(seq_index, event, high_gain_visitor_);
     if(cam_hists_high_gain_) {
-      double scale = double(high_gain_visitor_->nchan())/double(cam_hists_high_gain_->event_nchan_present_sum);
       if(cam_hists_high_gain_->nchan_present) {
         cam_hists_high_gain_->nchan_present->insert(cam_hists_high_gain_->event_nchan_present_sum);
       }
-      if(cam_hists_high_gain_->full_wf_qsum) {
-        cam_hists_high_gain_->full_wf_qsum->insert(scale*cam_hists_high_gain_->event_full_wf_qsum);
-      }
-      if(cam_hists_high_gain_->opt_win_qsum) {
-        cam_hists_high_gain_->opt_win_qsum->insert(scale*cam_hists_high_gain_->event_opt_win_qsum);
-      }
-      if(cam_hists_high_gain_->ped_win_qsum) {
-        cam_hists_high_gain_->ped_win_qsum->insert(scale*cam_hists_high_gain_->event_ped_win_qsum);
-      }
-      if(cam_hists_high_gain_->sig_win_qsum) {
-        cam_hists_high_gain_->sig_win_qsum->insert(scale*cam_hists_high_gain_->event_sig_win_qsum);
+      if(cam_hists_high_gain_->event_nchan_present_sum) {
+        double scale = double(high_gain_visitor_->nchan())/double(cam_hists_high_gain_->event_nchan_present_sum);
+        if(cam_hists_high_gain_->full_wf_qsum) {
+          cam_hists_high_gain_->full_wf_qsum->insert(scale*cam_hists_high_gain_->event_full_wf_qsum);
+        }
+        if(cam_hists_high_gain_->opt_win_qsum) {
+          cam_hists_high_gain_->opt_win_qsum->insert(scale*cam_hists_high_gain_->event_opt_win_qsum);
+        }
+        if(cam_hists_high_gain_->ped_win_qsum) {
+          cam_hists_high_gain_->ped_win_qsum->insert(scale*cam_hists_high_gain_->event_ped_win_qsum);
+        }
+        if(cam_hists_high_gain_->sig_win_qsum) {
+          cam_hists_high_gain_->sig_win_qsum->insert(scale*cam_hists_high_gain_->event_sig_win_qsum);
+        }
       }
     }
   }
   if(low_gain_visitor_) {
-    if(cam_hists_low_gain_) {
-      cam_hists_low_gain_->reset_sums();
-    }
     record_one_visitor_data(seq_index, event, low_gain_visitor_);
     if(cam_hists_low_gain_) {
-      double scale = double(low_gain_visitor_->nchan())/double(cam_hists_low_gain_->event_nchan_present_sum);
       if(cam_hists_low_gain_->nchan_present) {
         cam_hists_low_gain_->nchan_present->insert(cam_hists_low_gain_->event_nchan_present_sum);
       }
-      if(cam_hists_low_gain_->full_wf_qsum) {
-        cam_hists_low_gain_->full_wf_qsum->insert(scale*cam_hists_low_gain_->event_full_wf_qsum);
-      }
-      if(cam_hists_low_gain_->opt_win_qsum) {
-        cam_hists_low_gain_->opt_win_qsum->insert(scale*cam_hists_low_gain_->event_opt_win_qsum);
-      }
-      if(cam_hists_low_gain_->ped_win_qsum) {
-        cam_hists_low_gain_->ped_win_qsum->insert(scale*cam_hists_low_gain_->event_ped_win_qsum);
-      }
-      if(cam_hists_low_gain_->sig_win_qsum) {
-        cam_hists_low_gain_->sig_win_qsum->insert(scale*cam_hists_low_gain_->event_sig_win_qsum);
+      if(cam_hists_low_gain_->event_nchan_present_sum) {
+        double scale = double(low_gain_visitor_->nchan())/double(cam_hists_low_gain_->event_nchan_present_sum);
+        if(cam_hists_low_gain_->full_wf_qsum) {
+          cam_hists_low_gain_->full_wf_qsum->insert(scale*cam_hists_low_gain_->event_full_wf_qsum);
+        }
+        if(cam_hists_low_gain_->opt_win_qsum) {
+          cam_hists_low_gain_->opt_win_qsum->insert(scale*cam_hists_low_gain_->event_opt_win_qsum);
+        }
+        if(cam_hists_low_gain_->ped_win_qsum) {
+          cam_hists_low_gain_->ped_win_qsum->insert(scale*cam_hists_low_gain_->event_ped_win_qsum);
+        }
+        if(cam_hists_low_gain_->sig_win_qsum) {
+          cam_hists_low_gain_->sig_win_qsum->insert(scale*cam_hists_low_gain_->event_sig_win_qsum);
+        }
       }
     }
   }
