@@ -169,8 +169,6 @@ bool append_4chars(std::string& t, unsigned u)
 
 calin::ix::provenance::system_info::HostAndProcessInfo* new_host_info()
 {
-  tzsetwall();
-  
   std::set<std::string> env_whitelist;
   env_whitelist.insert("USER");
   env_whitelist.insert("PATH");
