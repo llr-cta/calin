@@ -324,7 +324,10 @@ class GoogleDriveUploader(Uploader):
                         print("Failed to retrieve sheet on final attempt %d"%ntry, file=sys.stderr)
                     raise
 
-        return response['values']
+        if response and 'values' in response:
+            return response['values']
+        else:
+            return []
 
     def append_row_to_sheet(self, sheet_id_and_tab_name, row, row_start=0, max_try=2):
         sheet_id, range = self.get_sheet_id_and_tab_name(sheet_id_and_tab_name)
