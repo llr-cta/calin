@@ -42,6 +42,12 @@ message SimpleChargeStatsConfig {
   double ped_time_hist_resolution                                   = 20 [
     (CFO).desc = "Resolution of pedestal mean and variance vs time histogram.",
     (CFO).units = "s" ];
+  double dual_gain_sample_resolution                                = 21 [
+    (CFO).desc = "Resolution of high-gain vs low-gain max sample histogram.",
+    (CFO).units = "DC" ];
+  double dual_gain_sum_resolution                                   = 22 [
+    (CFO).desc = "Resolution of high-gain vs low-gain window sum histogram.",
+    (CFO).units = "DC" ];
 };
 
 message OneGainSimpleChargeStats {
@@ -184,11 +190,35 @@ message OneGainSimpleChargeStats {
     (CFO).units = "s (bin-units), DC^2 (weight-units)"];
 };
 
+message DualGainSimpleChargeStats {
+  repeated calin.ix.math.histogram.Histogram1DData all_max_sample_count = 10 [
+    (CFO).desc = "Number of events binned by low-gain maximum sample.",
+    (CFO).units = "LG-DC (bin-units), events (weight-units)"];
+  repeated calin.ix.math.histogram.Histogram1DData all_max_sample_mean = 11 [
+    (CFO).desc = "Mean of high-gain maximum sample binned by low-gain maximum sample.",
+    (CFO).units = "LG-DC (bin-units), HG-DC (weight-units)"];
+  repeated calin.ix.math.histogram.Histogram1DData all_max_sample_var = 12 [
+    (CFO).desc = "Variance of high-gain maximum sample binned by low-gain maximum sample.",
+    (CFO).units = "LG-DC (bin-units), HG-DC^2 (weight-units)"];
+
+  repeated calin.ix.math.histogram.Histogram1DData all_opt_sum_count = 20 [
+    (CFO).desc = "Number of events binned by low-gain optimal waveform sum.",
+    (CFO).units = "LG-DC (bin-units), events (weight-units)"];
+  repeated calin.ix.math.histogram.Histogram1DData all_opt_sum_mean = 21 [
+    (CFO).desc = "Mean of high-gain optimal waveform sum binned by low-gain optimal waveform sum.",
+    (CFO).units = "LG-DC (bin-units), HG-DC (weight-units)"];
+  repeated calin.ix.math.histogram.Histogram1DData all_opt_sum_var = 22 [
+    (CFO).desc = "Variance of high-gain optimal waveform sum binned by low-gain optimal waveform sum.",
+    (CFO).units = "LG-DC (bin-units), HG-DC^2 (weight-units)"];
+};
+
 message SimpleChargeStats {
   OneGainSimpleChargeStats high_gain                                = 10 [
     (CFO).desc = "Stats for high-gain (in two gain cameras) or unique-gain channel." ];
-  OneGainSimpleChargeStats low_gain                                 = 20 [
+  OneGainSimpleChargeStats low_gain                                 = 11 [
     (CFO).desc = "Stats for low-gain channel if camera supports two gain channels." ];
+  DualGainSimpleChargeStats dual_gain                               = 20 [
+    (CFO).desc = "Stats for dual-gain channel if camera supports two gain channels." ];
   repeated int64 channel_triggered_count                            = 30 [
     (CFO).desc = "Number of events for which the trigger bit is set for each channel." ];
   repeated int64 phy_trigger_few_neighbor_channel_triggered_count   = 31 [
@@ -303,6 +333,30 @@ message PartialOneGainChannelSimpleChargeStats {
     (CFO).desc = "Histogram of total charge squared from ped events vs time." ];
 }
 
+message PartialDualGainChannelSimpleChargeStats {
+  option (CMO).message_integration_function = MIF_AUTOMATIC;
+
+  calin.ix.math.histogram.Histogram1DData all_max_sample_1 = 10 [
+    (CFO).desc = "Number of events binned by low-gain maximum sample.",
+    (CFO).units = "LG-DC (bin-units), events (weight-units)"];
+  calin.ix.math.histogram.Histogram1DData all_max_sample_q = 11 [
+    (CFO).desc = "Sum of high-gain maximum sample binned by low-gain maximum sample.",
+    (CFO).units = "LG-DC (bin-units), HG-DC (weight-units)"];
+  calin.ix.math.histogram.Histogram1DData all_max_sample_q2 = 12 [
+    (CFO).desc = "Sum of high-gain maximum sample squared binned by low-gain maximum sample.",
+    (CFO).units = "LG-DC (bin-units), HG-DC^2 (weight-units)"];
+
+  calin.ix.math.histogram.Histogram1DData all_opt_sum_1 = 20 [
+    (CFO).desc = "Number of events binned by low-gain optimal waveform sum.",
+    (CFO).units = "LG-DC (bin-units), events (weight-units)"];
+  calin.ix.math.histogram.Histogram1DData all_opt_sum_q = 21 [
+    (CFO).desc = "Sum of high-gain optimal waveform sum binned by low-gain optimal waveform sum.",
+    (CFO).units = "LG-DC (bin-units), HG-DC (weight-units)"];
+  calin.ix.math.histogram.Histogram1DData all_opt_sum_q2 = 22 [
+    (CFO).desc = "Sum of high-gain optimal waveform sum squared binned by low-gain optimal waveform sum.",
+    (CFO).units = "LG-DC (bin-units), HG-DC^2 (weight-units)"];
+};
+
 message PartialChannelSimpleChargeStats {
   option (CMO).message_integration_function = MIF_AUTOMATIC;
 
@@ -310,6 +364,8 @@ message PartialChannelSimpleChargeStats {
     (CFO).desc = "High-gain (in two gain cameras) or unique-gain channel." ];
   PartialOneGainChannelSimpleChargeStats low_gain                   = 11 [
     (CFO).desc = "Low-gain channel if camera supports two gain channels." ];
+  PartialDualGainChannelSimpleChargeStats dual_gain                 = 12 [
+    (CFO).desc = "Dual-gain stats if camera supports two gain channels." ];
 
   int64 all_trig_num_events_triggered                               = 20 [
     (CFO).desc = "Number of events where channel has trigger bit set.",
