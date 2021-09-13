@@ -239,7 +239,7 @@ def add_colorbar_and_clipping(axis, pc, data, mask=None,
         cb_label=None, percentile=100, percentile_factor=2.0,
         under_color=None, over_color=None, clip_highlight='#0044ff', clip_highlight_lw=1.5):
     axis = axis if axis is not None else matplotlib.pyplot.gca()
-    mask = mask if mask is not None else ones_like(data, dtype=bool)
+    mask = mask if mask is not None else numpy.ones_like(data, dtype=bool)
     dmax = numpy.max(data[mask])
     dmin = numpy.min(data[mask])
     dmed = numpy.median(data[mask])
