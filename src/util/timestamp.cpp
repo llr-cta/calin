@@ -27,13 +27,18 @@
 
 using namespace calin::util::timestamp;
 
-std::string Timestamp::as_string() const
+std::string Timestamp::as_string(bool utc) const
 {
   time_t ts = time_t(unix_sec());
   struct tm the_tm;
-  localtime_r(&ts, &the_tm);
   char buffer[80];
-  strftime(buffer, sizeof(buffer), "%FT%T.000%z", &the_tm);
+  if(utc) {
+    gmtime_r(&ts, &the_tm);
+    strftime(buffer, sizeof(buffer), "%FT%T.000", &the_tm);
+  } else {
+    localtime_r(&ts, &the_tm);
+    strftime(buffer, sizeof(buffer), "%FT%T.000%z", &the_tm);
+  }
   std::string str(buffer);
   uint32_t ms = unix_nsec()/1000000;
   if(ms<10) { str.replace(22,1,std::to_string(ms)); }
@@ -43,14 +48,20 @@ std::string Timestamp::as_string() const
 }
 
 calin::ix::util::timestamp::Timestamp*
-Timestamp::as_proto(calin::ix::util::timestamp::Timestamp* x) const
+Timestamp::as_proto(calin::ix::util::timestamp::Timestamp* x, bool utc) const
 {
   if(x == nullptr)x = new calin::ix::util::timestamp::Timestamp;
   x->set_unix_sec(unix_sec());
   x->set_unix_nsec(unix_nsec());
   x->set_nsec(nsec_);
-  x->set_printable(as_string());
+  x->set_printable(as_string(utc));
   return x;
+}
+
+calin::ix::util::timestamp::Timestamp*
+Timestamp::as_proto(bool utc, calin::ix::util::timestamp::Timestamp* x) const
+{
+  return this->as_proto(x, utc);
 }
 
 Timestamp Timestamp::now()
