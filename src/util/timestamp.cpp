@@ -34,7 +34,7 @@ std::string Timestamp::as_string(bool utc) const
   char buffer[80];
   if(utc) {
     gmtime_r(&ts, &the_tm);
-    strftime(buffer, sizeof(buffer), "%FT%T.000", &the_tm);
+    strftime(buffer, sizeof(buffer), "%FT%T.000Z", &the_tm);
   } else {
     localtime_r(&ts, &the_tm);
     strftime(buffer, sizeof(buffer), "%FT%T.000%z", &the_tm);
