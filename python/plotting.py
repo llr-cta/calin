@@ -156,9 +156,9 @@ def add_stats(axis, max_xy, values, ids, mask=None, stats_fontsize=4.75, stats_f
         if(len(mask) != len(values)):
             raise ValueError('Mask must either be None or have same length as values')
 
-        mask = asarray(mask, dtype=bool)
+        mask = numpy.asarray(mask, dtype=bool)
         values = numpy.asarray(values)[mask]
-        ids = numpyt.asarray(ids)[mask]
+        ids = numpy.asarray(ids)[mask]
 
     if(len(values) == 0):
         return
