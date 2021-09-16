@@ -38,6 +38,7 @@ ADD / /build/calin/
 # RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
 
 RUN cd /build/calin &&                                             \
+    git describe --contains --all HEAD &&                          \
     mkdir mybuild &&                                               \
     cd mybuild &&                                                  \
     cmake -DCALIN_BUILD_ARCH=${arch}                               \
