@@ -128,6 +128,23 @@ def estimate_run_pedestal(stage1, low_gain=False):
         nsamp = stage1.const_run_config().num_samples()
         nevent = charge_stats.ped_trigger_event_count()
         values = charge_stats.ped_trigger_full_wf_mean()/nsamp
+    elif True:
+        nevent = numpy.zeros_like(charge_stats.all_trigger_event_count())
+        values = numpy.zeros_like(charge_stats.all_trigger_event_count(), dtype=float)
+        all_mwf = []
+        if stage1.has_mean_wf_pedestal(): all_mwf.append(stage1.const_mean_wf_pedestal())
+        if stage1.has_mean_wf_physics(): all_mwf.append(stage1.const_mean_wf_physics())
+        if stage1.has_mean_wf_external_flasher(): all_mwf.append(stage1.const_mean_wf_external_flasher())
+        if stage1.has_mean_wf_internal_flasher(): all_mwf.append(stage1.const_mean_wf_internal_flasher())
+        for mwf in all_mwf:
+            if low_gain:
+                all_chan = [ mwf.channel_low_gain(ichan) for ichan in range(mwf.channel_low_gain_size()) ]
+            else:
+                all_chan = [ mwf.channel_high_gain(ichan) for ichan in range(mwf.channel_high_gain_size()) ]
+            if len(all_chan) == len(nevent):
+                nevent += numpy.asarray([ c.num_entries() for c in all_chan ])
+                values += numpy.asarray([ c.num_entries()*(c.mean_waveform(4) if c.num_entries() else 0) for c in all_chan ])
+        values[nevent>0] /= nevent[nevent>0]
     else:
         nsamp = stage1.const_config().const_low_gain_opt_sum().integration_n() if \
                 (low_gain and stage1.const_config().has_low_gain_opt_sum()) \
