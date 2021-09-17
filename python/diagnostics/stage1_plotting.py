@@ -1040,3 +1040,133 @@ def draw_charge_spectrum(stage1, dataset = 'external_flasher', low_gain = False,
 
             axis_intensity.get_xaxis().set_visible(False)
             axis_intensity.get_yaxis().set_visible(False)
+
+def draw_high_gain_low_gain(stage1, dataset='max_sample', subtract_pedestal=False, axis_hist = None, axis_P0 = None, axis_P1 = None):
+    if(not stage1.has_charge_stats() or not stage1.const_charge_stats().has_dual_gain() or \
+            stage1.const_charge_stats().const_dual_gain().all_max_sample_count_size() == 0):
+        return
+
+    axis_hist = axis_hist if axis_hist is not None else matplotlib.pyplot.gca()
+
+    dg = stage1.const_charge_stats().const_dual_gain()
+
+    all_h_c = []
+    all_h_m = []
+    all_h_v = []
+    if(dataset == 'max_sample'):
+        hg_scale = 1.0
+        lg_scale = 1.0
+        dataset_label = 'maximum sample'
+        xcut_base = 30
+        for ichan in range(dg.all_opt_sum_count_size()):
+            all_h_c.append(dg.all_max_sample_count(ichan))
+            all_h_m.append(dg.all_max_sample_mean(ichan))
+            all_h_v.append(dg.all_max_sample_var(ichan))
+    elif(dataset == 'opt_sum'):
+        conf_hg = stage1.const_config().const_high_gain_opt_sum()
+        conf_lg = stage1.const_config().const_low_gain_opt_sum() if stage1.const_config().has_low_gain_opt_sum() else stage1.const_config().const_high_gain_opt_sum()
+        hg_scale = 1.0/float(conf_hg.integration_n())
+        lg_scale = 1.0/float(conf_lg.integration_n())
+        dataset_label = '%d-sample average'%conf_hg.integration_n()
+        xcut_base = 8
+        for ichan in range(dg.all_opt_sum_count_size()):
+            all_h_c.append(dg.all_opt_sum_count(ichan))
+            all_h_m.append(dg.all_opt_sum_mean(ichan))
+            all_h_v.append(dg.all_opt_sum_var(ichan))
+    else:
+        raise RuntimeError('Unknown dataset : '+dataset)
+
+
+    all_hg_ped = calin.diagnostics.stage1_analysis.estimate_run_pedestal(stage1, low_gain=False)
+    all_lg_ped = calin.diagnostics.stage1_analysis.estimate_run_pedestal(stage1, low_gain=True)
+
+    all_P0 = []
+    all_P1 = []
+
+    minx = numpy.inf
+    maxx = -numpy.inf
+    for h_c, h_m, h_v, hg_ped, lg_ped in zip(all_h_c, all_h_m, all_h_v, all_hg_ped, all_lg_ped):
+        h_c = calin.math.histogram.densify(h_c)
+        h_m = calin.math.histogram.densify(h_m)
+        h_v = calin.math.histogram.densify(h_v)
+
+        m = h_c.bins()>0
+        if numpy.count_nonzero(m) == 0:
+            continue
+
+        x = h_c.xval0() + (numpy.arange(h_c.bins_size())+0.5)*h_c.dxval()
+        y = h_m.bins()
+
+        vindex = int((h_v.xval0()-h_c.xval0())/h_v.dxval())
+
+        dy = y*0
+        dy[vindex:vindex+h_v.bins_size()] = numpy.sqrt(h_v.bins())
+        dy = dy/(numpy.sqrt(h_c.bins())+1e-9)
+
+        xcut = xcut_base
+        if(subtract_pedestal):
+            x = lg_scale * x - lg_ped
+            y = hg_scale * y - hg_ped
+        else:
+            x = lg_scale * x
+            y = hg_scale * y
+            xcut += lg_ped
+        dy = hg_scale * dy
+
+        mm = numpy.bitwise_and(h_c.bins()>10, numpy.bitwise_and(x>xcut , y<4000))
+
+        if(numpy.count_nonzero(mm) > 5):
+            P = numpy.polyfit(x[mm], y[mm], 1, w=dy[mm])
+            all_P0.append(P[0])
+            all_P1.append(P[1])
+        else:
+            all_P0.append(numpy.nan)
+            all_P1.append(numpy.nan)
+
+        minx = min(minx, numpy.min(x[m]))
+        maxx = max(maxx, numpy.max(x[m]))
+
+        axis_hist.plot(x[m], y[m], 'k.', markersize=2, alpha=0.2)
+
+    axis_hist.set_xlim(minx-10, min(maxx+10,700))
+    axis_hist.set_xlabel('Low-gain %s [DC]'%dataset_label)
+    axis_hist.set_ylabel('Mean high-gain %s [DC]'%dataset_label)
+    axis_hist.grid()
+
+    if(axis_P0):
+        mask = ~numpy.isnan(all_P0)
+        if(numpy.count_nonzero(mask)):
+            cl = stage1.const_run_config().const_camera_layout()
+            ccid = stage1.const_run_config().configured_channel_id()
+            pc = calin.plotting.plot_camera_image(all_P0, cl, channel_mask=mask,
+                configured_channels=ccid, cmap='inferno', axis=axis_P0,
+                draw_outline=True, hatch_missing_channels=True)
+            cb = axis_P0.get_figure().colorbar(pc, ax=axis_P0, label='High/Low ratio')
+            # calin.plotting.add_colorbar_and_clipping(gca(), pc, asarray(all_P0), camera_layout=cl,
+            #             configured_channels=s1.run_config().configured_channel_id(),
+            #             percentile=99.5, percentile_factor=2.0, cb_label='High/Low gain')
+            calin.plotting.add_stats(axis_P0, cl.camera_boundary_maxabs_xy(), all_P0,
+                 ccid, mask=mask)
+
+            axis_P0.get_xaxis().set_visible(False)
+            axis_P0.get_yaxis().set_visible(False)
+
+    if(axis_P1):
+        mask = ~numpy.isnan(all_P1)
+        if(numpy.count_nonzero(mask)):
+            cl = stage1.const_run_config().const_camera_layout()
+            ccid = stage1.const_run_config().configured_channel_id()
+            pc = calin.plotting.plot_camera_image(all_P1, cl, channel_mask=mask,
+                configured_channels=ccid, cmap='inferno', axis=axis_P1,
+                draw_outline=True, hatch_missing_channels=True)
+            cb = axis_P1.get_figure().colorbar(pc, ax=axis_P1, label='High/Low intercept')
+            # calin.plotting.add_colorbar_and_clipping(gca(), pc, asarray(all_P0), camera_layout=cl,
+            #             configured_channels=s1.run_config().configured_channel_id(),
+            #             percentile=99.5, percentile_factor=2.0, cb_label='High/Low gain')
+            calin.plotting.add_stats(axis_P1, cl.camera_boundary_maxabs_xy(), all_P1,
+                 ccid, mask=mask)
+
+            axis_P1.get_xaxis().set_visible(False)
+            axis_P1.get_yaxis().set_visible(False)
+
+    return all_P0, all_P1
