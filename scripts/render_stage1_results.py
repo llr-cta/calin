@@ -185,6 +185,7 @@ def render_oid(oid):
     print('Started run :', runno)
 
     uploader = new_uploader()
+    figure_factory = calin.plotting.MatplotlibFigureFactory(dpi=figure_dpi)
 
     if(opt.force_nectarcam_61_camera()):
         cast_to_nectarcam_61_camera(stage1)
@@ -210,6 +211,26 @@ def render_oid(oid):
 
     def upload_text(runno, quantity, iostream):
         uploader.upload_from_io(filenames(runno, quantity, 'txt'), 'text/plain', iostream)
+
+    ############################################################################
+    # FIGURE : high-gain vs low-gain values
+    ############################################################################
+
+    results = calin.diagnostics.stage1_plotting.draw_high_gain_low_gain(stage1,
+        dataset='max_sample', subtract_pedestal=True, figure_factory=figure_factory)
+
+    if(results is not None):
+        fig_dict = results[0]
+        for fig_name in fig_dict.keys():
+            upload_figure(runno, fig_name, fig_dict[fig_name][0])
+
+    results = calin.diagnostics.stage1_plotting.draw_high_gain_low_gain(stage1,
+        dataset='opt_sum', subtract_pedestal=True, figure_factory=figure_factory)
+
+    if(results is not None):
+        fig_dict = results[0]
+        for fig_name in fig_dict.keys():
+            upload_figure(runno, fig_name, fig_dict[fig_name][0])
 
     ############################################################################
     # FIGURE : charge histograms for all trigger types
